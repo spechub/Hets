@@ -131,6 +131,14 @@ fromSigSortItem :: Maybe SigItem -> Maybe (Annoted SortItem)
 fromSigSortItem (Just (ASortItem s)) = Just s
 fromSigSortItem _ = Nothing
 
+fromSigOpItem :: Maybe SigItem -> Maybe (Annoted OpItem)
+fromSigOpItem (Just (AnOpItem o)) = Just o
+fromSigOpItem _ = Nothing
+
+fromSigPredItem :: Maybe SigItem -> Maybe (Annoted PredItem)
+fromSigPredItem (Just (APredItem p)) = Just p
+fromSigPredItem _ = Nothing
+
 hasSort :: Sign -> SortId -> Bool
 hasSort sigma id = hasElem sigma hasSigSortItem id
 
@@ -308,8 +316,8 @@ addSubsortDecl itm defn super env sub pos =
      let res = addSortItem (getName env) itm (getSigma env') sub (Just super) defn pos
      return env' { getSigma = res }
 
-toVarDecl :: VAR -> SortId -> Pos -> VarDecl
-toVarDecl var id pos = VarDecl var id (ListPos Colon pos)
+toVarDecl :: SortId -> (Pos, String) -> VAR -> VarDecl
+toVarDecl id pos var = VarDecl var id (getListPos pos)
 
 -- FIXME
 --
@@ -372,7 +380,8 @@ addSubsortDefn :: Annoted SORT_ITEM -> LocalEnv -> SORT -> VAR -> SORT
 addSubsortDefn itm env sub var super f (pos,token) p =
   let
     colpos = head $ drop 2 p
-    defn   = SubsortDefn (toVarDecl var super colpos) (toFormula env f) p
+    defn   = SubsortDefn (toVarDecl super (colpos,":") var)
+                         (toFormula env f) p
   in
     do env'   <- checkSortExists env pos super
        env''  <- checkSubDistinctSuper env' pos sub super
@@ -432,11 +441,134 @@ addSORT_ITEM env itm pos =
     (Subsort_defn s v t f p) -> addSubsortDefn itm env s v t f pos p;
     (Iso_decl l p)           -> addIsoDecl itm env l pos p
 
+addPredItem :: Filename -> Annoted PRED_ITEM -> Sign -> Id -> PredType
+               -> Maybe PredDefn -> (Pos, String) -> Sign
+addPredItem name ann sigma id typ defn pos =
+  let
+    res = getPred sigma id
+  in
+    if (isJust res) then
+      let
+        itm = fromJust $ fromSigPredItem res
+        old = item itm
+        new = old { predDefn = if (isJust defn) then
+                                 defn
+                               else
+                                 predDefn old,
+                    predPos  = getItemPos name pos,
+                    altPreds = (altPreds old) ++ [predPos old] }
+      in
+        updateSigItem sigma id
+                      (APredItem (mergeAnnos ann (itm { item = new })))
+    else
+      let
+        new = PredItem id typ defn (getItemPos name pos) []
+      in
+        updateSigItem sigma id (APredItem (cloneAnnos ann new))
+    
+genPredType :: LocalEnv -> PRED_TYPE -> (Pos, String) -> PredType
+               -> Result PredType
+genPredType env (Pred_type [] _) (pos,_) pt = return pt
+genPredType env (Pred_type (h:t) _) (pos,_) pt =
+  do env'  <- checkSortExists env pos h
+     genPredType env' (Pred_type t []) (pos,"") (pt++[h])
+
+addPredDecl :: Annoted PRED_ITEM -> PRED_TYPE -> LocalEnv -> PRED_NAME
+               -> (Pos, String) -> Result LocalEnv
+addPredDecl itm t env name pos =
+  do typ <- genPredType env t pos []
+     return env { getSigma =
+           addPredItem (getName env) itm (getSigma env) name typ Nothing pos }
+
+strPosPredDecl :: [Pos] -> [String]
+strPosPredDecl [] = []
+strPosPredDecl l  = (genComma $ init l) ++ [":"]
+
+strPosArgDecl :: [Pos] -> [String]
+strPosArgDecl [] = []
+strPosArgDecl l  = (genComma $ init l) ++ [":"]
+
+genVarDecl :: SORT -> [VAR] -> [(Pos, String)] -> [VarDecl]
+genVarDecl s [] _          = []
+genVarDecl s l []          = genVarDecl s l [((0,0),"")]
+genVarDecl s (a:as) (p:ps) = (toVarDecl s p a):(genVarDecl s as ps)
+
+checkArgDecl :: LocalEnv -> (Pos, String) -> ARG_DECL
+                -> Result ([VarDecl],[SortId])
+checkArgDecl env pos (Arg_decl v s p) =
+  do env' <- checkSortExists env (fst pos) s
+     return ((genVarDecl s v (zip p (strPosArgDecl p))),[s])
+
+checkArgDecls :: LocalEnv -> [ARG_DECL] -> [(Pos, String)]
+                 -> Result ([VarDecl],[SortId])
+checkArgDecls env [] _          = return ([],[])
+checkArgDecls env (a:as) []     = checkArgDecls env (a:as) [((0,0),"")]
+checkArgDecls env (a:as) (p:ps) =
+  do (v1,s1) <- checkArgDecl env p a
+     (va,sa) <- checkArgDecls env as ps
+     return (v1++va,s1++sa)
+
+checkUniqueVars :: ([VarDecl],[SortId]) -> Pos -> Result ([VarDecl],[SortId])
+checkUniqueVars (v,s) pos = if (allUnique v) then
+                              return (v,s)
+                            else
+                              fatal_error "variable names not distinct" pos
+
+checkArgDeclsDistinct :: LocalEnv -> [ARG_DECL] -> [(Pos, String)] -> Pos
+                         -> Result ([VarDecl],[SortId])
+checkArgDeclsDistinct env l p pos =
+  do (v,s) <- checkArgDecls env l p
+     checkUniqueVars (v,s) pos
+
+posStrArgDecls :: [Pos] -> [String]
+posStrArgDecls [] = []
+posStrArgDecls l  = "(" : (genSemi $ tail $ init l) ++ [")"]
+
+simpleIdToId :: SIMPLE_ID -> Id
+simpleIdToId sid = Id [sid] [] []
+
+varDeclToVarId :: VarDecl -> Term
+varDeclToVarId v = VarId (simpleIdToId $ varId v) (varSort v) Inferred []
+
+addPredDefn :: LocalEnv -> Annoted PRED_ITEM -> PRED_NAME -> PRED_HEAD
+               -> Annoted FORMULA -> (Pos, String) -> [Pos]
+               -> Result LocalEnv
+addPredDefn env ann name (Pred_head l pp) f (pos,tok) p =
+  do (vars,sorts) <- checkArgDeclsDistinct env l (zip pp (posStrArgDecls pp))
+                                           pos
+     let sigma'  = addPredItem (getName env) ann (getSigma env) name sorts
+                               Nothing (pos,tok)
+     let phi     = toFormula (env { getSigma = sigma', getGlobal =
+                                    Global vars }) f
+     let defn    = PredDef vars phi (pp++p)
+     let sigma'' = addPredItem (getName env) ann sigma' name sorts
+                               (Just defn) (pos,tok)
+     return env { getSigma = sigma'',
+                  getPsi   = Sentences ((sentences $ getPsi env) ++
+                             [toNamedSentence env "" 
+                             (cloneAnnos ann (Quantified Forall vars
+                             (Connect EquivOp [PredAppl name sorts
+                             (map varDeclToVarId vars) Inferred [],phi]
+                             [])[]))]) }
+
+addPRED_ITEM :: LocalEnv -> Annoted PRED_ITEM -> (Pos, String)
+                -> Result LocalEnv
+addPRED_ITEM env itm pos =
+  case (item itm) of
+    (Pred_decl l t p)   -> chainPos env (addPredDecl itm t) l [pos] p
+                                    strPosPredDecl;
+    (Pred_defn n h f p) -> addPredDefn env itm n h f pos p
+
+strPosPRED_ITEM :: [Pos] -> [String]
+strPosPRED_ITEM [] = []
+strPosPRED_ITEM (h:t) = "preds":(genSemi t)
+
 addSIG_ITEMS :: LocalEnv -> SIG_ITEMS -> Result LocalEnv
 addSIG_ITEMS env (Sort_items l p) = chainPos env addSORT_ITEM l 
-                                              [] p strPosSORT_ITEM
+                                             [] p strPosSORT_ITEM
 addSIG_ITEMS env (Op_items _ p) = return env
-addSIG_ITEMS env (Pred_items _ p) = return env
+addSIG_ITEMS env (Pred_items l p) = chainPos env addPRED_ITEM l [] p
+                                             strPosPRED_ITEM
 addSIG_ITEMS env (Datatype_items _ p) = return env
 
 strPosVarItems :: [Pos] -> [String]
