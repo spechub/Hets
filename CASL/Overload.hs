@@ -157,9 +157,15 @@ minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> [[TERM]]
 minExpTerm_op sign op terms
     = let expandedTerms = map minExpTerm sign terms
           expansions = permute expandedTerms
+          possiblsOps = Map.toList $ Map.filter (==op) (opMap sign)
           computeProfile cs
-              = map (id . permute) cs
+              = [ (op, qualifiedTerms) | qualifiedTerms <- permute cs,
+                  lessSort sign possibleOps qualifiedTerms ]
           profiles = map computeProfile expansions
+          in map qualifyTerm profiles
+    where
+    lessSort sign ops terms
+        = all ((a,b) -> b <= a) (zip ops terms) -- < def. in sign
 
 -- -- --
 -- ein Problem koennten noch die Definitionen von sort' <= sort und
