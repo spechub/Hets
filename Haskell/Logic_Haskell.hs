@@ -64,6 +64,8 @@ import Haskell.HatParser                 (HsDecls,
                                           hatParser)
 import Haskell.HaskellUtils              (extractSentences)
 import Common.Result                     (Result (..))
+import Common.Lib.Pretty
+import Common.PrettyPrint
 
 instance Typeable ModuleInfo
 instance PrettyPrint ModuleInfo
@@ -79,6 +81,9 @@ instance Language Haskell  -- default definition is okay
 
 type Sign = ModuleInfo 
 type Morphism = ()
+
+instance PrettyPrint () where
+   printText0 ga s = text "()"
 
 instance Category Haskell Sign Morphism  
 

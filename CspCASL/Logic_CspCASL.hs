@@ -54,6 +54,7 @@ import CASL.SymbolParser
 import Data.Dynamic
 
 import Common.PrettyPrint
+import Common.Lib.Pretty
 
 import CspCASL.ATC_CspCASL
 
@@ -61,6 +62,9 @@ import CspCASL.ATC_CspCASL
 -- instances
 data CspCASL = CspCASL deriving (Show)
 instance Language CspCASL  -- default definition is okay
+
+instance PrettyPrint () where
+   printText0 ga s = text "()"
 
 instance Category CspCASL () ()
     where
@@ -100,7 +104,6 @@ instance LatticeWithTop () where
 
 -- CspCASL logic
 
-instance PrettyPrint ()
 
 instance Sentences CspCASL () () () () ()
 

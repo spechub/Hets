@@ -28,7 +28,7 @@ maxdiags :: Int
 maxdiags = 20
 
 -- | severness of diagnostic messages
-data DiagKind = FatalError | Error | Warning | Hint deriving (Eq, Ord, Show)
+data DiagKind = FatalError | Error | Warning | Hint | Debug deriving (Eq, Ord, Show)
 
 -- | a diagnostic message with a position
 data Diagnosis = Diag { diagKind :: DiagKind

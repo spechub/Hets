@@ -23,6 +23,7 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Data.Dynamic
 import Common.PrettyPrint
+import Common.Lib.Pretty
 
 data SymbType = OpAsItemType OpType
 	      | PredAsItemType PredType
@@ -284,3 +285,6 @@ legalMor mor =
         sigma2 = mtarget mor
         smap = sort_map mor
 
+
+instance PrettyPrint Morphism where
+  printText0 ga s = text (show s)

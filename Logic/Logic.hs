@@ -164,7 +164,7 @@ class (Language lid, PrettyPrint basic_spec,
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
 class (Category lid sign morphism, Eq sentence, Show sentence, PrettyPrint sign,
-       Ord symbol, Show symbol ,
+       PrettyPrint morphism, Ord symbol, Show symbol ,
        ATermConvertible sentence, ATermConvertible symbol,
        ATermConvertible sign, ATermConvertible morphism,
        ATermConvertible proof_tree)

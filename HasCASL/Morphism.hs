@@ -19,6 +19,8 @@ import HasCASL.Symbol
 import Common.Id
 import Common.Result
 import Data.Dynamic
+import Common.PrettyPrint
+import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 
 data SymbolType = OpAsItemType TypeScheme 
@@ -99,4 +101,5 @@ morphismUnion m1 m2 = do s <- merge (msource m1) $ msource m2
 			 return $ mkMorphism s t
 
 
-
+instance PrettyPrint Morphism where
+  printText0 ga s = text (show s)
