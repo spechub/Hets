@@ -29,18 +29,18 @@ import Common.AnnoState(emptyAnnos)
 import Data.Dynamic
 import Control.Monad.State
 import Common.Lib.Map as Map
+import HasCASL.Morphism
+
+type Sign = Env
+type HasCASL_Sublogics = ()
+type Sentence = Formula
+type Symbol = ()
+type RawSymbol = ()
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data HasCASL = HasCASL deriving (Show)
 instance Language HasCASL -- default definition is okay
-
-type Sign = Env
-type Morphism = ()
-type HasCASL_Sublogics = ()
-type Sentence = Formula
-type Symbol = ()
-type RawSymbol = ()
 
 -- abstract syntax, parsing (and printing)
 
@@ -67,11 +67,13 @@ instance Syntax HasCASL BasicSpec
 	 parse_symb_items HasCASL = Just(toParseFun symbItems ())
 	 parse_symb_map_items HasCASL = Just(toParseFun symbMapItems ())
 
-instance Category HasCASL Sign Morphism where 
-    ide HasCASL _ = ()
-    comp HasCASL _ _ = Just ()
-    dom HasCASL _ = initialEnv
-    cod HasCASL _ = initialEnv
+instance Category HasCASL Env Morphism where 
+    ide HasCASL e = ideMor e
+    comp HasCASL m1 m2 = Just $ compMor m1 m2
+    dom HasCASL m = msource m
+    cod HasCASL m = mtarget m
+    legal_obj HasCASL e = legalEnv e
+    legal_mor HasCASL m = legalMor m
 
 instance Sentences HasCASL Sentence () Sign Morphism Symbol
 
@@ -86,9 +88,9 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
     signature_union HasCASL = merge
     empty_signature HasCASL = initialEnv
     stat_symb_map_items HasCASL _ = return $ Map.single () ()
-    induced_from_to_morphism HasCASL _ _ _ = return ()
-    induced_from_morphism HasCASL _ _ = return ()
-    morphism_union HasCASL _ _ = return ()
+    induced_from_to_morphism HasCASL _ e1 e2 = return $ mkMorphism e1 e2
+    induced_from_morphism HasCASL _ e = return $ ideMor e
+    morphism_union HasCASL m1 m2 = morphismUnion m1 m2
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
