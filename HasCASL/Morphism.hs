@@ -13,20 +13,30 @@ Morphism on 'Env' (as for CASL)
 module HasCASL.Morphism where
 
 import HasCASL.Le
+import HasCASL.HToken
 import HasCASL.As
+import HasCASL.PrintAs
 import HasCASL.Merge
 import HasCASL.Symbol
 import Common.Id
+import Common.Keywords
 import Common.Result
 import Data.Dynamic
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
 data SymbolType = OpAsItemType TypeScheme 
 		| TypeAsItemType Kind
-		| ClassAsItemType
+		| ClassAsItemType Kind
 		  deriving (Show, Eq, Ord)
+
+instance PrettyPrint SymbolType where
+    printText0 ga t = case t of 
+      OpAsItemType sc -> printText0 ga sc
+      TypeAsItemType k -> printText0 ga k
+      ClassAsItemType k -> printText0 ga k
 
 instance Ord TypeScheme where
     t1 <= t2 = t1 == t2 || show t1 < show t2
@@ -41,12 +51,30 @@ idToRaw :: Id -> RawSymbol
 idToRaw x = AnID x
 
 symbTypeToKind :: SymbolType -> SymbKind
-symbTypeToKind (OpAsItemType _) = SK_op
-symbTypeToKind (TypeAsItemType _)     = SK_type
-symbTypeToKind ClassAsItemType      = SK_class
+symbTypeToKind (OpAsItemType _)    = SK_op
+symbTypeToKind (TypeAsItemType _)  = SK_type
+symbTypeToKind (ClassAsItemType _) = SK_class
 
 symbolToRaw :: Symbol -> RawSymbol
-symbolToRaw (Symbol idt typ) = AKindedId (symbTypeToKind typ) idt
+symbolToRaw sym = ASymbol sym
+-- symbolToRaw (Symbol idt typ) = AKindedId (symbTypeToKind typ) idt
+
+symOf :: Env -> Set.Set Symbol
+symOf sigma = 
+    let classes = Map.foldWithKey ( \ i ks s -> 
+			Set.insert (Symbol i $ ClassAsItemType $
+				    Intersection (classKinds ks) []) s) 
+		  Set.empty $ classMap sigma
+	types = Map.foldWithKey ( \ i ti s -> 
+			Set.insert (Symbol i $ TypeAsItemType $
+				    typeKind ti) s) 
+		classes $ typeMap sigma
+        ops = Map.foldWithKey ( \ i ts s0 ->
+		      foldr ( \ t s1 -> 
+			  Set.insert (Symbol i $ OpAsItemType $ 
+				      opType t) s1) s0 $ opInfos ts)
+	      types $ assumps sigma
+	in ops
 
 statSymbMapItems :: [SymbMapItems] -> Result (Map.Map RawSymbol RawSymbol)
 statSymbMapItems sl =  return (Map.fromList $ concat $ map s1 sl)
@@ -76,7 +104,7 @@ matchSymb x                            (ASymbol y)              =  x==y
 matchSymb (Symbol idt _)                (AnID di)               = idt==di
 matchSymb (Symbol idt _)        (AKindedId _ di)                = idt==di
 
-data Morphism = Morphism {msource,mtarget :: Env}
+data Morphism = Morphism {msource, mtarget :: Env}
                          deriving (Eq, Show, Typeable)
 
 mkMorphism :: Env -> Env -> Morphism
@@ -100,14 +128,21 @@ morphismUnion m1 m2 = do s <- merge (msource m1) $ msource m2
 			 t <- merge (mtarget m1) $ mtarget m2
 			 return $ mkMorphism s t
 
+morphismToSymbMap :: Morphism -> Map.Map Symbol Symbol
+morphismToSymbMap _ = Map.empty
 
 -- Some quick and dirty instances
 
 instance PrettyPrint Morphism where
-  printText0 ga s = text (show s)
+  printText0 _ga s = text (show s)
 
 instance PrettyPrint Symbol where
-  printText0 ga s = text (show s)
+  printText0 ga s = text (case symbType s of 
+			  OpAsItemType _ -> opS
+			  TypeAsItemType _ -> typeS
+			  ClassAsItemType _ -> classS) <+> 
+                    printText0 ga (symName s) <+> text colonS <+> 
+		    printText0 ga (symbType s)
 
 instance PrettyPrint RawSymbol where
-  printText0 ga s = text (show s)
+  printText0 _ga s = text (show s)

@@ -23,11 +23,14 @@ import HasCASL.PrintLe
 import HasCASL.AsToLe
 import HasCASL.Symbol
 import HasCASL.ParseItem
+import HasCASL.TypeCheck
 import Common.Result
 import Logic.ParsecInterface
 import Logic.Logic
 import Common.AnnoState(emptyAnnos)
 import Data.Dynamic
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import HasCASL.Morphism
 import Common.PrettyPrint
@@ -95,6 +98,10 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     id_to_raw HasCASL = idToRaw
     matches HasCASL = matchSymb
     sym_name HasCASL = symName
+    sym_of HasCASL = symOf -- \ _ -> Set.empty
+    symmap_of HasCASL = morphismToSymbMap
+
+    final_union HasCASL e1 e2 = merge e1 e2
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Term SymbItems SymbMapItems

@@ -55,17 +55,24 @@ diffClass c1 c2 =
 
 -- | compute difference of type infos
 diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
-diffType t1 _t2 = Just t1
+diffType t1 _t2 = Nothing -- Just t1
 
 -- | compute difference of overloaded operations
 diffAss :: OpInfos -> OpInfos -> Maybe OpInfos
-diffAss a1 _a2 = Just a1
+diffAss a1 _a2 = Nothing -- Just a1
 
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
-cleanEnv e = e { envDiags = [], sentences = [], counter = 1,
-                 assumps = filterAssumps (not . isVarDefn) (assumps e), 
-                 typeMap = Map.filter (not . isTypeVarDefn) (typeMap e) }
+cleanEnv e = diffEnv e 
+	     { envDiags = [], sentences = [], counter = 1,
+               assumps = filterAssumps (not . isVarDefn) (assumps e), 
+               typeMap = Map.filter (not . isTypeVarDefn) (typeMap e) }
+	     preEnv 
+
+-- | environment with predefined types and operations
+preEnv :: Env  
+preEnv = initialEnv { typeMap = addUnit Map.empty
+		    , assumps = addOps Map.empty }
 
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
