@@ -1,0 +1,39 @@
+imports
+{
+{- --------------------------------------------------------------------------
+  HetCATS/CASL/StaticAnalysis.ag|.hs
+  $Id$
+  Authors: Pascal Schmidt
+  Year:    2002
+-----------------------------------------------------------------------------
+  TODO
+
+-------------------------------------------------------------------------- -}
+import Id
+import Sign
+import AS_Basic_CASL
+import FiniteMap
+import Graph
+
+addSort :: Sign -> SORT -> Sign
+addSort a b = a
+
+emptySign :: Sign
+emptySign = SignAsMap emptyFM empty
+
+unifySign :: Sign -> Sign -> Sign
+unifySign a b = a
+
+}
+
+DATA SORT_ITEM | Sort_decl sorts:{[SORT]} pos:{[Pos]}
+               | Subsort_decl sorts:{[SORT]} sort:SORT pos:{[Pos]}
+               | Subsort_defn sort:SORT var:VAR oldsort:SORT form:{Annoted FORMULA} pos:{[Pos]}
+               | Iso_decl sorts:{[SORT]} pos:{[Pos]}
+
+ATTR SORT_ITEM [ | sigma:Sign err:{[String]} | delta:Sign ]
+
+SEM SORT_ITEM
+  | Sort_decl    loc.temp  = foldl addSort emptySign @sorts
+                 lhs.delta = @temp
+                    .sigma = unifySign @lhs.sigma @temp
