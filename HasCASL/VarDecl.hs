@@ -109,7 +109,6 @@ addTypeId warn defn _ kind i =
 addTypeKind :: Bool -> TypeDefn -> Id -> Kind -> State Env () 
 addTypeKind warn d i k = 
     do tk <- gets typeMap
-       c <- gets counter
        let rk = rawKind k
        case Map.lookup i tk of
 	      Nothing -> case d of
@@ -123,7 +122,7 @@ addTypeKind warn d i k =
 		     then do let isKnownInst = k `elem` ks
 				 insts = if isKnownInst then ks else
 					Set.toList $ mkIntersection (k:ks)
-				 Result ds mDef = mergeTypeDefn tk c defn d
+				 Result ds mDef = mergeTypeDefn defn d
 			     if warn && isKnownInst && case (defn, d) of 
 			         (PreDatatype, DatatypeDefn _) -> False
 			         _ -> True
@@ -197,9 +196,7 @@ addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn
 	-> State Env (Maybe UninstOpId)
 addOpId i sc attrs defn = 
     do e <- get
-       let tm = typeMap e
-	   as = assumps e
-	   c = counter e
+       let as = assumps e
            TypeScheme _ ty _ = sc 
            ds = if placeCount i > 1 then case unalias ty of 
 		   FunType arg _ _ _ -> case unalias arg of
@@ -212,7 +209,7 @@ addOpId i sc attrs defn =
            (l, r) = partitionOpId e i sc
 	   oInfo = OpInfo sc attrs defn 
        if null ds then 
-	       do let Result es mo = foldM (mergeOpInfo tm c) oInfo l
+	       do let Result es mo = foldM merge oInfo l
 		  addDiags $ map (improveDiag i) es
 	          if i `elem` map fst bList then addDiags $ [mkDiag Error 
 			  "illegal overloading of predefined identifier" i]

@@ -604,6 +604,7 @@ instance PrintLaTeX RawSymbol where
       AKindedId k i -> printSK k <> printLatex0 ga i
       AQualId i t -> printSK (symbTypeToKind t) <> printLatex0 ga i <+> colon 
 		       <+> printLatex0 ga t
+      ASymbol s -> printLatex0 ga s
 
 
 ------------------------------- Morphism ------------------------------------

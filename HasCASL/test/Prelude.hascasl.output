@@ -26,11 +26,13 @@ type  : Type+ -> Type+ -> Type+ -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : Pred s
 var x : s
-program (op def[_var_3_v3] : forall s : Type . Pred s_v-1) =
-            \ (var x : s) : s_v1 . ()
+program (op def[_var_3_v3]
+         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+          = \ (var x : s) : s_v1 . ()
         %% def is also total (identical to tt) 
-program (op tt[_var_6_v6] : forall s : Type . Pred s_v-1) =
-            \ (var x : s) : s_v1 . ()
+program (op tt[_var_6_v6]
+         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+          = \ (var x : s) : s_v1 . ()
         %% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -57,7 +59,7 @@ pred eq : s * s
     (\ (var x : s) : _var_28_v28
        . (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
            (var x : s, var x : s),
-     op tt[_var_28_v28] : forall s : Type . Pred s_v-1)
+     op tt[_var_28_v28] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
 . (fun __=__[s * s_v1 ->? s]
    : forall s : Type . s_v-1 * s_v-1 ->? Unit)
     (\ (var x : s, var y : s_v1)
@@ -102,7 +104,7 @@ class Cpo < Type
               = all (\ n : nat . s (n) <<= x);
        op sup : (nat -> c) ->? c;}
 class Pcpo < Cpo
-      {var p : Pcpo; op bottom : p;}
+      {var p : Pcpo; op : p;}
 class instance Flatcpo < Cpo
                {var f : Flatcpo; program __ <<= [f] __ = eq}
 var c : Cpo; d : Cpo
@@ -178,8 +180,8 @@ __res__
     %(op)% = \ (var x : s, var y : t) .! (var x : s)
 __when__else__
   : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
-bottom : forall p : Pcpo . p_v-1 %(fun)%
-def : forall s : Type . Pred s_v-1 %(op)%
+bottom : forall a : Type . a_v-1 %(fun)%
+def : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit) %(op)%
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 eq : forall s : Type . s_v-1 * s_v-1 ->? Unit %(pred)%
 f : c --> d %(var)%
@@ -198,7 +200,7 @@ true
   : bool %(construct bool)%
   : Unit ->? Unit %(pred)%
   : Unit %(fun)%
-tt : forall s : Type . Pred s_v-1 %(op)%
+tt : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit) %(op)%
 x : s %(var)%
 x1 : c %(var)%
 x2 : c %(var)%
@@ -206,10 +208,12 @@ y1 : d %(var)%
 y2 : d %(var)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (op def[_var_3_v3] : forall s : Type . Pred s_v-1) =
-            \ (var x : s) : s_v1 . () %(pe_def)%
-program (op tt[_var_6_v6] : forall s : Type . Pred s_v-1) =
-            \ (var x : s) : s_v1 . () %(pe_tt)%
+program (op def[_var_3_v3]
+         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+          = \ (var x : s) : s_v1 . () %(pe_def)%
+program (op tt[_var_6_v6]
+         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+          = \ (var x : s) : s_v1 . () %(pe_tt)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
@@ -231,7 +235,7 @@ forall x : s; y : t
   (\ (var x : s) : _var_28_v28
      . (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
          (var x : s, var x : s),
-   op tt[_var_28_v28] : forall s : Type . Pred s_v-1)
+   op tt[_var_28_v28] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
 (fun __=__[s * s_v1 ->? s]
  : forall s : Type . s_v-1 * s_v-1 ->? Unit)
   (\ (var x : s, var y : s_v1)
@@ -348,6 +352,10 @@ free type bool
 *** Error 134.20, unexpected mixfix token: isChain
 *** Error 134.3, unexpected mixfix token: all
 *** Hint 139.5, is type variable 'p'
+*** Error 141.4, wrong type scheme of 'bottom'
+  expected: forall p : Pcpo . p_v-1
+     found: forall a : Type . a_v-1
+
 *** Error 141.4, illegal overloading of predefined identifier 'bottom'
 *** Error 143.3, unexpected mixfix token: all
 *** Hint 148.6, is type variable 'f'

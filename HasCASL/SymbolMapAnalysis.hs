@@ -25,7 +25,6 @@ import HasCASL.AsToLe
 import HasCASL.Symbol
 import HasCASL.RawSym
 import HasCASL.Morphism
-import HasCASL.ClassAna
 import HasCASL.MapTerm
 import HasCASL.Unify
 import HasCASL.VarDecl
@@ -52,10 +51,10 @@ inducedFromMorphism rmap sigma = do
       matchesND rsy sy = 
         sy `matchSymb` rsy && 
         case rsy of
-          AQualId _ _ -> True
+          ASymbol _ -> True
           -- unqualified raw symbols need some matching symbol
           -- that is not directly mapped
-          _ -> Map.lookup (AQualId (symName sy) $ symType sy) rmap == Nothing
+          _ -> Map.lookup (ASymbol sy) rmap == Nothing
   -- ... if not, generate an error
   if Set.isEmpty incorrectRsyms then return () else
     pplain_error ()
@@ -66,7 +65,7 @@ inducedFromMorphism rmap sigma = do
   -- compute the sort map (as a Map)
   myTypeIdMap <- foldr
               (\ (s, ti) m -> 
-	       do s' <- typeFun rmap s (typeKind ti)
+	       do s' <- typeFun sigma rmap s (typeKind ti)
                   m1 <- m
                   return $ Map.insert s s' m1) 
               (return Map.empty) $ Map.toList srcTypeMap
@@ -75,7 +74,7 @@ inducedFromMorphism rmap sigma = do
 			       Map.insert (Map.findWithDefault i i myTypeIdMap)
 					  (mapTypeInfo myTypeIdMap k) m)
 	                    Map.empty srcTypeMap
-  op_Map <- Map.foldWithKey (opFun rmap sigma tarTypeMap myTypeIdMap)
+  op_Map <- Map.foldWithKey (opFun rmap sigma myTypeIdMap)
               (return Map.empty) (assumps sigma)
   -- compute target signature
   let sigma' = Map.foldWithKey (mapOps myTypeIdMap op_Map) sigma
@@ -104,10 +103,10 @@ mapTypeDefn im td =
     _ -> td
 
 -- | compute type mapping
-typeFun :: RawSymbolMap -> Id -> Kind -> Result Id
-typeFun rmap s k = do
+typeFun :: Env -> RawSymbolMap -> Id -> Kind -> Result Id
+typeFun e rmap s k = do
     let rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
-               [AQualId s $ TypeAsItemType k, AnID s, AKindedId SK_type s]
+               [ASymbol $ idToTypeSymbol e s k, AnID s, AKindedId SK_type s]
     -- rsys contains the raw symbols to which s is mapped to
     case Set.size rsys of
           0 -> return s  -- use default = identity mapping
@@ -118,11 +117,11 @@ typeFun rmap s k = do
                  nullPos
 
 -- | compute mapping of functions
-opFun :: RawSymbolMap -> Env -> TypeMap -> IdMap -> Id -> OpInfos 
+opFun :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfos 
       -> Result FunMap -> Result FunMap
-opFun rmap e tm type_Map i ots m = 
+opFun rmap e type_Map i ots m = 
     -- first consider all directly mapped profiles
-    let (ots1,m1) = foldr (directOpMap rmap e tm type_Map i) 
+    let (ots1,m1) = foldr (directOpMap rmap e type_Map i) 
 		    (Set.empty, m) $ opInfos ots
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
@@ -135,67 +134,61 @@ opFun rmap e tm type_Map i ots m =
                )
                nullPos
        (Just rsy, Nothing) -> 
-          Set.fold (insertmapOpSym e tm type_Map i rsy) m1 ots1
+          Set.fold (insertmapOpSym e type_Map i rsy) m1 ots1
        (Nothing, Just rsy) -> 
-          Set.fold (insertmapOpSym e tm type_Map i rsy) m1 ots1
+          Set.fold (insertmapOpSym e type_Map i rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
-       (Nothing,Nothing) -> Set.fold (unchangedOpSym tm type_Map i) m1 ots1
+       (Nothing,Nothing) -> Set.fold (unchangedOpSym type_Map i) m1 ots1
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
-directOpMap :: RawSymbolMap -> Env -> TypeMap -> IdMap -> Id -> OpInfo 
-	    -> (Set.Set TySc, Result FunMap) -> (Set.Set TySc, Result FunMap)
-directOpMap rmap e tm type_Map i oi (ots,m) = let ot = opType oi in
-    case Map.lookup (AQualId i $ OpAsItemType ot) rmap of
+directOpMap :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfo 
+	    -> (Set.Set TypeScheme, Result FunMap) 
+	    -> (Set.Set TypeScheme, Result FunMap)
+directOpMap rmap e type_Map i oi (ots,m) = let ot = opType oi in
+    case Map.lookup (ASymbol $ idToOpSymbol e i ot) rmap of
         Just rsy -> 
-          (ots, insertmapOpSym e tm type_Map i rsy (TySc ot) m)
-        Nothing -> (Set.insert (TySc ot) ots, m)
+          (ots, insertmapOpSym e type_Map i rsy ot m)
+        Nothing -> (Set.insert (ot) ots, m)
     -- map op symbol (id,ot) to raw symbol rsy
-mapOpSym :: Env -> TypeMap -> IdMap -> Id -> TySc -> RawSymbol 
-	     -> Result (Id, TySc)
-mapOpSym e tm type_Map i ot rsy = 
-    let sc1@(TySc sc) = mapTySc tm type_Map ot in 
-      case rsy of
-      AnID id' -> return (id', sc1)
-      AKindedId SK_op id' -> return (id', sc1)
-      AQualId id' (OpAsItemType ot') ->
-        let (mt, ds) = runState (anaTypeScheme ot') e 
-		 {typeMap = tm} 
-        in case mt of 
-           Nothing -> Result (envDiags ds) $ Just (i, sc1)
-	   Just nt -> if isUnifiable (typeMap ds) 0 sc nt
-		   then return (id', TySc ot')
-		   else pplain_error (i, sc1)
+mapOpSym :: Env -> IdMap -> Id -> TypeScheme -> RawSymbol 
+	     -> Result (Id, TypeScheme)
+mapOpSym e type_Map i ot rsy = 
+    let sc = mapTypeScheme type_Map ot 
+	err d = pplain_error (i, sc) 
 			    (text "Operation symbol " 
-			     <+> printText (AQualId i $ OpAsItemType sc) 
-			     <+> text "is mapped to type" <+>  printText ot'
-			     <+> text "but should be mapped to type" <+>  
-			     printText sc) nullPos
-      _ -> pplain_error (i, sc1)
-               (text "Operation symbol "
-                <+> printText (AQualId i $ OpAsItemType sc) 
-		<+> text" is mapped to symbol of wrong kind:" 
-                <+> printText rsy) 
-               nullPos
+			     <+> printText (idToOpSymbol e i sc) 
+			     $$ text "is mapped to" <+> d) nullPos in 
+      case rsy of
+      AnID id' -> return (id', sc)
+      AKindedId k id' -> case k of 
+	  SK_op -> return (id', sc)
+	  _ -> err (text "wrongly kinded raw symbol" $$ printText rsy)
+      ASymbol sy -> case symType sy of 
+          OpAsItemType ot2 -> if ot2 == expand (typeMap $ symEnv sy) sc 
+			      then return (symName sy, ot2)
+	      else err (text "wrong type" $$ printText ot2)
+	  _ ->  err (text "wrongly kinded symbol" $$ printText sy)
+      _ -> error "mapOpSym"		 
+
     -- insert mapping of op symbol (id, ot) to raw symbol rsy into m
-insertmapOpSym :: Env -> TypeMap -> IdMap -> Id -> RawSymbol -> TySc
+insertmapOpSym :: Env -> IdMap -> Id -> RawSymbol -> TypeScheme
 	       -> Result FunMap -> Result FunMap
-insertmapOpSym e tm type_Map i rsy ot m = do  
+insertmapOpSym e type_Map i rsy ot m = do  
       m1 <- m        
-      (id',kind') <- mapOpSym e tm type_Map i ot rsy
+      (id',kind') <- mapOpSym e type_Map i ot rsy
       return (Map.insert (i, ot) (id',kind') m1)
     -- insert mapping of op symbol (id,ot) to itself into m
-unchangedOpSym :: TypeMap -> IdMap -> Id -> TySc -> Result FunMap 
+unchangedOpSym :: IdMap -> Id -> TypeScheme -> Result FunMap 
 	       -> Result FunMap
-unchangedOpSym tm im i ot m = do
+unchangedOpSym im i ot m = do
       m1 <- m
-      return (Map.insert (i, ot) (i, mapTySc tm im ot) m1)
+      return (Map.insert (i, ot) (i, mapTypeScheme im ot) m1)
   -- map the ops in the source signature
 mapOps :: IdMap -> FunMap -> Id -> OpInfos -> Env -> Env
 mapOps type_Map op_Map i ots e = 
-    let tm = typeMap e in
     foldr ( \ ot e' ->
-	let sc = TySc $ opType ot
-	    (id', TySc sc') = Map.findWithDefault (i, mapTySc tm type_Map sc)
+	let sc = opType ot
+	    (id', sc') = Map.findWithDefault (i, mapTypeScheme type_Map sc)
 			 (i, sc) op_Map
 	    in execState (addOpId id' sc' (opAttrs ot) 
 			  (mapOpDefn type_Map $ opDefn ot)) e')
@@ -212,94 +205,6 @@ mapOpDefn im d = case d of
 mapConstrInfo :: IdMap -> ConstrInfo -> ConstrInfo
 mapConstrInfo im ci = ci { constrType = mapTypeScheme im $ constrType ci}
 
--- Some auxiliary functions for inducedFromToMorphism
-testMatch :: RawSymbolMap -> Symbol -> Symbol -> Bool
-testMatch rmap sym1 sym2 =
-  Map.foldWithKey match1 True rmap
-  where
-  match1 rsy1 rsy2 b = b && ((sym1 `matchSymb` rsy1) <= (sym2 `matchSymb`rsy2))
-
-canBeMapped :: RawSymbolMap -> Symbol -> Symbol -> Bool
-canBeMapped rmap sym1@(Symbol {symType = ClassAsItemType _k1}) 
-                 sym2@(Symbol {symType = ClassAsItemType _k2}) = 
-   testMatch rmap sym1 sym2
-canBeMapped rmap sym1@(Symbol {symType = TypeAsItemType _k1}) 
-                 sym2@(Symbol {symType = TypeAsItemType _k2}) = 
-   testMatch rmap sym1 sym2
-canBeMapped rmap sym1@(Symbol {symType = OpAsItemType _ot1}) 
-                 sym2@(Symbol {symType = OpAsItemType _ot2}) = 
-   testMatch rmap sym1 sym2
-canBeMapped _ _ _ = False
-
-preservesName :: Symbol -> Symbol -> Bool
-preservesName sym1 sym2 = symName sym1 == symName sym2
-
-
--- try to extend a symbol map with a yet unmapped symbol
-extendSymbMap :: TypeMap -> SymbolMap -> Symbol -> Symbol -> Maybe SymbolMap
-extendSymbMap tm akmap sym1 sym2 =
-  if case (symType sym1, symType sym2) of 
-    (ClassAsItemType k1, ClassAsItemType k2) -> rawKind k1 == rawKind k2
-    (TypeAsItemType k1, TypeAsItemType k2) ->  rawKind k1 == rawKind k2
-    (OpAsItemType ot1, OpAsItemType ot2) ->
-	  let TySc sc2 = 
-		  mapTySc tm (Map.foldWithKey ( \ s1 s2 m ->
-				Map.insert (symName s1) (symName s2) m)
-			        Map.empty akmap) $ TySc ot1 
-	      in isUnifiable tm 0 (mapTypeOfScheme (expandAlias tm) ot2) sc2
-    _ -> False
-  then Just $ Map.insert sym1 sym2 akmap
-  else Nothing
-
--- Type for posmap
--- Each symbol is mapped to the set symbols it possibly can be mapped to
--- Additionally, we store a flag meaning "no default map" and the 
--- cardinality of the symobl set
--- For efficiency reasons, we also carry around an indexing of posmap
--- according to the pairs (flag,cardinality). Since several symbols
--- may lead to the same pair, we have to associate a list of symbols
--- (and corresponding symbol sets) with each pair.
--- Hence, PosMap really is a pair to two maps. 
-type PosMap = (Map.Map Symbol (SymbolSet,(Bool,Int)), 
-               Map.Map (Bool,Int) [(Symbol,SymbolSet)])
-
--- Some basic operations on PosMap
-
--- postpone entries with no default mapping and size > 1
-postponeEntry :: Symbol -> SymbolSet -> Bool
-postponeEntry sym symset = 
-  not $ Set.any (preservesName sym) symset && Set.size symset > 1
-
-removeFromPosmap :: Symbol -> (Bool,Int) -> PosMap -> PosMap
-removeFromPosmap sym card (posmap1,posmap2) =
-  (Map.delete sym posmap1,
-   Map.update removeSym1 card posmap2)
-  where
-  removeSym [] = []
-  removeSym ((x,y):l) = if x==sym then l else (x,y):removeSym l
-  removeSym1 l = case removeSym l of
-    [] -> Nothing
-    l1 -> Just l1
-
-addToPosmap :: Symbol -> SymbolSet -> PosMap -> PosMap
-addToPosmap sym symset (posmap1,posmap2) =
-  (Map.insert sym (symset,card) posmap1,
-   Map.listInsert card (sym,symset) posmap2)
-  where card = (postponeEntry sym symset,Set.size symset)
-
--- restrict posmap such that each symbol from symset1 is only mapped
--- to symbols from symset2
-restrictPosMap :: SymbolSet -> SymbolSet -> PosMap -> PosMap
-restrictPosMap symset1 symset2 posmap =
-  Set.fold restrictPosMap1 posmap symset1
-  where
-  restrictPosMap1 sym1 pm@(posmap1,_)  =
-    case Map.lookup sym1 posmap1 of
-      Nothing -> pm
-      Just (symset,card) ->
-         addToPosmap sym1 (symset `Set.intersection` symset2)
-          $ removeFromPosmap sym1 card posmap
-
 -- the main function
 inducedFromToMorphism :: RawSymbolMap -> Env -> Env -> Result Morphism
 inducedFromToMorphism rmap sigma1 sigma2 = do
@@ -311,93 +216,18 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
   --debug 3 ("sigma2",sigma2)
   if isSubEnv (mtarget mor1) sigma2 
    -- yes => we are done
-   then return (mor1 {mtarget = sigma2})
+   then return $ mor1 { mtarget = sigma2
+		      , funMap = Map.map ( \ (i, sc) -> 
+		          (i, expand (typeMap sigma2) sc)) $ funMap mor1 }
    -- no => OK, we've to take the hard way
-   else {- pfatal_error (text "No symbol mapping for "
+   else pfatal_error (text "No symbol mapping found for "
            $$ printText rmap 
 	   $$ text "sigma1" $$ printText sigma1
 	   $$ text "inducedFromMorphism sigma1" $$ printText (mtarget mor1)
 	   $$ text "to sigma2" $$ printText sigma2
 	   $$ text "difference" $$ printText (diffEnv (mtarget mor1) sigma2))
-	      nullPos -}
-        inducedFromToMorphism2 rmap sigma1 sigma2
-
-inducedFromToMorphism2 :: RawSymbolMap -> Env -> Env -> Result Morphism
-inducedFromToMorphism2 rmap sigma1 sigma2 = do
-  -- 2. Compute initial posmap, using all possible mappings of symbols
-     let symset1 = symOf sigma1
-         symset2 = symOf sigma2
-         addCard sym s = (s,(postponeEntry sym s,Set.size s))
-         ins1 sym = Map.insert sym
-                    (addCard sym $ Set.filter (canBeMapped rmap sym) symset2)
-         posmap1 = Set.fold ins1 Map.empty symset1
-         ins2 sym1 (symset,card) = Map.listInsert card (sym1,symset)
-         posmap2 = Map.foldWithKey ins2 Map.empty posmap1
-         posmap = (posmap1,posmap2)
-     case Map.lookup (True,0) posmap2 of
-       Nothing -> return ()
-       Just syms -> pfatal_error
-         (text "No symbol mapping for "
-           <+> printText (Set.fromList $ map fst syms)) nullPos
-     -- 3. call recursive function with empty akmap and initial posmap
-     smap <- tryToInduce sigma1 sigma2 Map.empty posmap
-     smap1 <- case smap of
-                 Nothing -> pfatal_error
-			    (text "No signature morphism for symbol map"
-			     $$ text "rmap" $$ printText rmap
-			     $$ text "sigma1" $$ printText sigma1
-			     $$ text "sigma2" $$ printText sigma2)
-			    nullPos
-                 Just x -> return x
-     -- 9./10. compute and return the resulting morphism
-     symbMapToMorphism sigma1 sigma2 smap1
-
-     -- 4. recursive depth first function
-     -- ambiguous map leads to fatal error (similar to exception)
-tryToInduce :: Env -> Env -> SymbolMap -> PosMap -> Result (Maybe SymbolMap)
-tryToInduce sigma1 sigma2 akmap (posmap1, posmap2) = do
-       --debug 5 ("akmap",akmap)
-       --debug 6 ("posmap",(posmap1,posmap2))
-       if Map.isEmpty posmap2 then return $ Just akmap -- 4a.
-        else do
-          --debug 7 ("posmap'",posmap')
-          --debug 8 ("sym1",sym1)
-          akmap1 <- tryToInduce1 sigma1 sigma2 akmap posmap' sym1 symset1
-          if isNothing akmap1 
-            -- 6. no map for symset1, hence try symset2
-            then tryToInduce1 sigma1 sigma2 akmap posmap' sym1 symset2
-            else return akmap1 -- otherwise, use symset1 only
-       where
-       -- 4b. take symbol with minimal remaining values (MRV)
-       (card,(sym1,symset):_symsets) = Map.findMin posmap2
-       (symset1,symset2) = Set.partition (preservesName sym1) symset
-       posmap' = removeFromPosmap sym1 card (posmap1,posmap2)
-     -- 5. to 7.
-tryToInduce1 :: Env -> Env -> SymbolMap -> PosMap -> Symbol 
-	     -> SymbolSet -> Result (Maybe SymbolMap)
-tryToInduce1 sigma1 sigma2 akmap posmap sym1 symset =
-       Set.fold (tryToInduce2 sigma1 sigma2 akmap posmap sym1) 
-                (return Nothing) symset
-tryToInduce2 :: Env -> Env -> SymbolMap -> PosMap -> Symbol 
-	     -> Symbol -> Result (Maybe SymbolMap) -> Result (Maybe SymbolMap)
-tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
-       -- 5.1. to 5.3. consistency check
-       akmapSoFar1 <- akmapSoFar
-       akmap' <- case extendSymbMap (typeMap sigma1) akmap sym1 sym2 of
-         Nothing -> return Nothing
-         -- constraint propagation
-         Just akmap1 -> tryToInduce sigma1 sigma2 akmap1 posmap
-       -- 6./7. uniqueness check
-       case (akmap',akmapSoFar1) of
-         (Nothing,Nothing) -> return Nothing
-         (Just smap,Nothing) -> return (Just smap)
-         (Nothing,Just smap) -> return (Just smap)
-         (Just smap1,Just smap2) -> 
-            fail $ shows 
-             (text "Ambiguous symbol map" $$ 
-              text "Map1" <+> printText smap1 $$
-              text "Map2" <+> printText smap2) 
-            ""
+	      nullPos
+--        inducedFromToMorphism2 rmap sigma1 sigma2
 
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism

@@ -134,6 +134,13 @@ data SymbolType = OpAsItemType TypeScheme
 data Symbol = Symbol {symName :: Id, symType :: SymbolType, symEnv :: Env} 
               deriving Show
 
+instance Eq Symbol where
+    s1 == s2 = (symName s1, symType s1) == (symName s2, symType s2)
+
+instance Ord Symbol where
+    s1 <= s2 = (symName s1, symType s1) <= (symName s2, symType s2)
+
+
 type SymbolMap = Map.Map Symbol Symbol 
 type SymbolSet = Set.Set Symbol 
 
@@ -146,9 +153,10 @@ idToClassSymbol e idt k = Symbol idt (ClassAsItemType k) e
 idToOpSymbol :: Env -> Id -> TypeScheme -> Symbol
 idToOpSymbol e idt typ = Symbol idt (OpAsItemType typ) e
 
--- note that the type of a raw symbol is not analysed!
+-- note that the type of a qualified raw symbol is not analysed!
 data RawSymbol = AnID Id | AKindedId SymbKind Id 
                | AQualId Id SymbolType
+	       | ASymbol Symbol
                  deriving (Show, Eq, Ord)
 
 type RawSymbolMap = Map.Map RawSymbol RawSymbol
@@ -160,6 +168,7 @@ rawSymName :: RawSymbol -> Id
 rawSymName (AnID i) = i
 rawSymName (AKindedId _ i) = i
 rawSymName (AQualId i _) = i
+rawSymName (ASymbol s) = symName s
 
 symbTypeToKind :: SymbolType -> SymbKind
 symbTypeToKind (OpAsItemType _)    = SK_op
@@ -167,7 +176,7 @@ symbTypeToKind (TypeAsItemType _)  = SK_type
 symbTypeToKind (ClassAsItemType _) = SK_class
 
 symbolToRaw :: Symbol -> RawSymbol
-symbolToRaw sym = AQualId (symName sym) $ symType sym
+symbolToRaw sym = ASymbol sym
 
 symbKindToRaw :: SymbKind -> Id -> RawSymbol
 symbKindToRaw Implicit = AnID 
@@ -176,7 +185,4 @@ symbKindToRaw sk = AKindedId $ case sk of
                    SK_fun -> SK_op
                    SK_sort -> SK_type
                    _ -> sk
-
--- new type to defined a different Eq and Ord instance
-data TySc = TySc TypeScheme deriving Show
 

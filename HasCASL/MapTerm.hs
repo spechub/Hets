@@ -14,9 +14,12 @@ rename symbols of terms according to a signature morphisms
 module HasCASL.MapTerm where
 
 import HasCASL.As
+import HasCASL.Le
 import Common.Id
 
-mapTerm :: ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type) -> Term -> Term
+type Rename = ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type)
+
+mapTerm :: Rename -> Term -> Term
 mapTerm m t = case t of
    QualVar vd -> QualVar $ mapVar (snd m) vd
    QualOp b (InstOpId i ts ps) sc qs -> 
@@ -48,6 +51,25 @@ mapGenVar _ tv = tv
 mapVar :: (Type -> Type) -> VarDecl -> VarDecl
 mapVar m (VarDecl v ty q ps) = VarDecl v (m ty) q ps
 
-mapEq :: ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type) 
-      -> ProgEq -> ProgEq
+mapEq :: Rename -> ProgEq -> ProgEq
 mapEq m (ProgEq p t ps) = ProgEq (mapTerm m p) (mapTerm m t) ps
+
+mapOpInfo :: Rename -> OpInfo -> OpInfo
+mapOpInfo m oi = oi { opType = mapTypeOfScheme (snd m) $ opType oi
+		    , opAttrs = map (mapOpAttr m) $ opAttrs oi
+		    , opDefn = renameOpDefn m $ opDefn oi }
+
+mapOpAttr :: Rename -> OpAttr -> OpAttr
+mapOpAttr m o = case o of 
+    UnitOpAttr t p -> UnitOpAttr (mapTerm m t) p
+    _ -> o
+
+renameOpDefn :: Rename -> OpDefn -> OpDefn
+renameOpDefn m d = case d of
+    SelectData cs i -> SelectData (map (renameConstrInfo $ snd m) cs) i
+    Definition b t -> Definition b $ mapTerm m t
+    _ -> d
+
+renameConstrInfo :: (Type -> Type) -> ConstrInfo -> ConstrInfo
+renameConstrInfo m c = c { constrType = mapTypeOfScheme m $ constrType c }
+

@@ -10,86 +10,120 @@ op emptySet : Set S; {__} : S -> Set S;
    __*__ : Set S * Set T -> Set (S * T);
    __disjointUnion__ : Set S * Set S -> Set (S * Bool);
    inl, inr : S -> S * Bool
-forall x : S; x' : S; y : T; s : Set S; s' : Set S; t : Set T
+forall x : S; x' : S; y : T; s : Set S@(S ->? Unit);
+       s' : Set S@(S ->? Unit); t : Set T@(T ->? Unit)
 . (fun not__ : Unit ->? Unit)
-    ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-       (var x : S, op emptySet[S] : forall S : Type . Set S_v-1))
-. (fun __<=>__ : Unit * Unit ->? Unit)
-    ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+    ((op __isIn__[S]
+      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
        (var x : S,
-        (op {__}[S] : forall S : Type . S_v-1 -> Set S_v-1)(var x' : S)),
+        op emptySet[S] : forall S : Type . Set S_v-1@(S_v-1 ->? Unit)))
+. (fun __<=>__ : Unit * Unit ->? Unit)
+    ((op __isIn__[S]
+      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+       (var x : S,
+        (op {__}[S]
+         : forall S : Type . S_v-1 -> Set S_v-1@(S_v-1 ->? Unit))
+          (var x' : S)),
      (fun __=__[S] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
        (var x : S, var x' : S))
 . (fun __<=>__ : Unit * Unit ->? Unit)
-    ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-       (var x : S, var s : Set S),
-     (var s : Set S)(var x : S))
+    ((op __isIn__[S]
+      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+       (var x : S, var s : Set S@(S ->? Unit)),
+     (var s : Set S@(S ->? Unit))(var x : S))
 . (fun __<=>__ : Unit * Unit ->? Unit)
     ((op __subset__[S]
-      : forall S : Type . Pred (Set S_v-1 * Set S_v-1))
-       (var s : Set S, var s' : Set S),
+      : forall S : Type .
+          Pred (Set S_v-1 * Set S_v-1)@(Set S_v-1@(S_v-1 ->? Unit) *
+                                        Set S_v-1@(S_v-1 ->? Unit) ->? Unit))
+       (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)),
      forall x : S
        . (fun __=>__ : Unit * Unit ->? Unit)
-           ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-              (var x : S, var s : Set S),
-            (op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-              (var x : S, var s' : Set S)))
+           ((op __isIn__[S]
+             : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+              (var x : S, var s : Set S@(S ->? Unit)),
+            (op __isIn__[S]
+             : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+              (var x : S, var s' : Set S@(S ->? Unit))))
 . (fun __<=>__ : Unit * Unit ->? Unit)
-    ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+    ((op __isIn__[S]
+      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
        (var x : S,
         (op __union__[S]
-         : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1)
-          (var s : Set S, var s' : Set S)),
+         : forall S : Type .
+             Set S_v-1@(S_v-1 ->? Unit) *
+             Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit))
+          (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))),
      (fun __\/__ : Unit * Unit ->? Unit)
-       ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-          (var x : S, var s : Set S),
-        (op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-          (var x : S, var s' : Set S)))
+       ((op __isIn__[S]
+         : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+          (var x : S, var s : Set S@(S ->? Unit)),
+        (op __isIn__[S]
+         : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+          (var x : S, var s' : Set S@(S ->? Unit))))
 . (fun __<=>__ : Unit * Unit ->? Unit)
-    ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+    ((op __isIn__[S]
+      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
        (var x : S,
         (op __intersection__[S]
-         : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1)
-          (var s : Set S, var s' : Set S)),
+         : forall S : Type .
+             Set S_v-1@(S_v-1 ->? Unit) *
+             Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit))
+          (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))),
      (fun __/\__ : Unit * Unit ->? Unit)
-       ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-          (var x : S, var s : Set S),
-        (op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-          (var x : S, var s' : Set S)))
+       ((op __isIn__[S]
+         : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+          (var x : S, var s : Set S@(S ->? Unit)),
+        (op __isIn__[S]
+         : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+          (var x : S, var s' : Set S@(S ->? Unit))))
 . (fun __<=>__ : Unit * Unit ->? Unit)
-    ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+    ((op __isIn__[S]
+      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
        (var x : S,
         (op __\\__[S]
-         : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1)
-          (var s : Set S, var s' : Set S)),
+         : forall S : Type .
+             Set S_v-1@(S_v-1 ->? Unit) *
+             Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit))
+          (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))),
      (fun __/\__ : Unit * Unit ->? Unit)
-       ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-          (var x : S, var s : Set S),
+       ((op __isIn__[S]
+         : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+          (var x : S, var s : Set S@(S ->? Unit)),
         (fun not__ : Unit ->? Unit)
-          ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-             (var x : S, var s' : Set S))))
+          ((op __isIn__[S]
+            : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+             (var x : S, var s' : Set S@(S ->? Unit)))))
 . (fun __<=>__ : Unit * Unit ->? Unit)
     ((op __disjoint__[S]
-      : forall S : Type . Pred (Set S_v-1 * Set S_v-1))
-       (var s : Set S, var s' : Set S),
+      : forall S : Type .
+          Pred (Set S_v-1 * Set S_v-1)@(Set S_v-1@(S_v-1 ->? Unit) *
+                                        Set S_v-1@(S_v-1 ->? Unit) ->? Unit))
+       (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)),
      (fun __=__[S ->? Unit] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
        ((op __intersection__[S]
-         : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1)
-          (var s : Set S, var s' : Set S),
-        op emptySet[S] : forall S : Type . Set S_v-1))
+         : forall S : Type .
+             Set S_v-1@(S_v-1 ->? Unit) *
+             Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit))
+          (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)),
+        op emptySet[S] : forall S : Type . Set S_v-1@(S_v-1 ->? Unit)))
 . (fun __<=>__ : Unit * Unit ->? Unit)
     ((op __isIn__[S * T]
-      : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
        ((var x : S, var y : T),
         (op __*__[S; T]
          : forall S : Type; T : Type .
-             Set S_v-1 * Set T_v-2 -> Set (S_v-1 * T_v-2))
-          (var s : Set S, var t : Set T)),
+             Set S_v-1@(S_v-1 ->? Unit) *
+             Set T_v-2@(T_v-2 ->? Unit) -> Set (S_v-1 * T_v-2)@(S_v-1 *
+                                                                T_v-2 ->? Unit))
+          (var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))),
      (fun __/\__ : Unit * Unit ->? Unit)
-       ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-          (var x : S, var s : Set S),
-        (op __isIn__[T] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-          (var y : T, var t : Set T)))
+       ((op __isIn__[S]
+         : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+          (var x : S, var s : Set S@(S ->? Unit)),
+        (op __isIn__[T]
+         : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+          (var y : T, var t : Set T@(T ->? Unit))))
 . (fun __=__[S * Bool] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
     ((op inl[S] : forall S : Type . S_v-1 -> S_v-1 * Bool)(var x : S),
      (var x : S, op False : Bool))
@@ -114,7 +148,9 @@ False : Bool %(op)%
 True : Bool %(op)%
 __*__
   : forall S : Type; T : Type .
-      Set S_v-1 * Set T_v-2 -> Set (S_v-1 * T_v-2)
+      Set S_v-1@(S_v-1 ->? Unit) *
+      Set T_v-2@(T_v-2 ->? Unit) -> Set (S_v-1 * T_v-2)@(S_v-1 *
+                                                         T_v-2 ->? Unit)
     %(op)%
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
@@ -123,111 +159,165 @@ __=>__ : Unit * Unit ->? Unit %(fun)%
 __=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
 __\\__
-  : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1 %(op)%
+  : forall S : Type .
+      Set S_v-1@(S_v-1 ->? Unit) *
+      Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit)
+    %(op)%
 __disjoint__
-  : forall S : Type . Pred (Set S_v-1 * Set S_v-1) %(op)%
+  : forall S : Type .
+      Pred (Set S_v-1 * Set S_v-1)@(Set S_v-1@(S_v-1 ->? Unit) *
+                                    Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+    %(op)%
 __disjointUnion__
-  : forall S : Type . Set S_v-1 * Set S_v-1 -> Set (S_v-1 * Bool)
+  : forall S : Type .
+      Set S_v-1@(S_v-1 ->? Unit) *
+      Set S_v-1@(S_v-1 ->? Unit) -> Set (S_v-1 * Bool)@(S_v-1 *
+                                                        Bool ->? Unit)
     %(op)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __intersection__
-  : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1 %(op)%
-__isIn__ : forall S : Type . S_v-1 * Set S_v-1 ->? Unit %(op)%
-__subset__ : forall S : Type . Pred (Set S_v-1 * Set S_v-1) %(op)%
+  : forall S : Type .
+      Set S_v-1@(S_v-1 ->? Unit) *
+      Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit)
+    %(op)%
+__isIn__
+  : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit
+    %(op)%
+__subset__
+  : forall S : Type .
+      Pred (Set S_v-1 * Set S_v-1)@(Set S_v-1@(S_v-1 ->? Unit) *
+                                    Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+    %(op)%
 __union__
-  : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1 %(op)%
+  : forall S : Type .
+      Set S_v-1@(S_v-1 ->? Unit) *
+      Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit)
+    %(op)%
 __when__else__
   : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
 bottom : forall a : Type . a_v-1 %(fun)%
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
-emptySet : forall S : Type . Set S_v-1 %(op)%
+emptySet : forall S : Type . Set S_v-1@(S_v-1 ->? Unit) %(op)%
 false : Unit %(fun)%
 inl : forall S : Type . S_v-1 -> S_v-1 * Bool %(op)%
 inr : forall S : Type . S_v-1 -> S_v-1 * Bool %(op)%
 not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
-{__} : forall S : Type . S_v-1 -> Set S_v-1 %(op)%
+{__} : forall S : Type . S_v-1 -> Set S_v-1@(S_v-1 ->? Unit) %(op)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun not__ : Unit ->? Unit)
-  ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-     (var x : S, op emptySet[S] : forall S : Type . Set S_v-1))
-(fun __<=>__ : Unit * Unit ->? Unit)
-  ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+  ((op __isIn__[S]
+    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
      (var x : S,
-      (op {__}[S] : forall S : Type . S_v-1 -> Set S_v-1)(var x' : S)),
+      op emptySet[S] : forall S : Type . Set S_v-1@(S_v-1 ->? Unit)))
+(fun __<=>__ : Unit * Unit ->? Unit)
+  ((op __isIn__[S]
+    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+     (var x : S,
+      (op {__}[S]
+       : forall S : Type . S_v-1 -> Set S_v-1@(S_v-1 ->? Unit))
+        (var x' : S)),
    (fun __=__[S] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
      (var x : S, var x' : S))
 (fun __<=>__ : Unit * Unit ->? Unit)
-  ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-     (var x : S, var s : Set S),
-   (var s : Set S)(var x : S))
+  ((op __isIn__[S]
+    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+     (var x : S, var s : Set S@(S ->? Unit)),
+   (var s : Set S@(S ->? Unit))(var x : S))
 (fun __<=>__ : Unit * Unit ->? Unit)
   ((op __subset__[S]
-    : forall S : Type . Pred (Set S_v-1 * Set S_v-1))
-     (var s : Set S, var s' : Set S),
+    : forall S : Type .
+        Pred (Set S_v-1 * Set S_v-1)@(Set S_v-1@(S_v-1 ->? Unit) *
+                                      Set S_v-1@(S_v-1 ->? Unit) ->? Unit))
+     (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)),
    forall x : S
      . (fun __=>__ : Unit * Unit ->? Unit)
-         ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-            (var x : S, var s : Set S),
-          (op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-            (var x : S, var s' : Set S)))
+         ((op __isIn__[S]
+           : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+            (var x : S, var s : Set S@(S ->? Unit)),
+          (op __isIn__[S]
+           : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+            (var x : S, var s' : Set S@(S ->? Unit))))
 (fun __<=>__ : Unit * Unit ->? Unit)
-  ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+  ((op __isIn__[S]
+    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
      (var x : S,
       (op __union__[S]
-       : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1)
-        (var s : Set S, var s' : Set S)),
+       : forall S : Type .
+           Set S_v-1@(S_v-1 ->? Unit) *
+           Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit))
+        (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))),
    (fun __\/__ : Unit * Unit ->? Unit)
-     ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-        (var x : S, var s : Set S),
-      (op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-        (var x : S, var s' : Set S)))
+     ((op __isIn__[S]
+       : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+        (var x : S, var s : Set S@(S ->? Unit)),
+      (op __isIn__[S]
+       : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+        (var x : S, var s' : Set S@(S ->? Unit))))
 (fun __<=>__ : Unit * Unit ->? Unit)
-  ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+  ((op __isIn__[S]
+    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
      (var x : S,
       (op __intersection__[S]
-       : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1)
-        (var s : Set S, var s' : Set S)),
+       : forall S : Type .
+           Set S_v-1@(S_v-1 ->? Unit) *
+           Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit))
+        (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))),
    (fun __/\__ : Unit * Unit ->? Unit)
-     ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-        (var x : S, var s : Set S),
-      (op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-        (var x : S, var s' : Set S)))
+     ((op __isIn__[S]
+       : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+        (var x : S, var s : Set S@(S ->? Unit)),
+      (op __isIn__[S]
+       : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+        (var x : S, var s' : Set S@(S ->? Unit))))
 (fun __<=>__ : Unit * Unit ->? Unit)
-  ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+  ((op __isIn__[S]
+    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
      (var x : S,
       (op __\\__[S]
-       : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1)
-        (var s : Set S, var s' : Set S)),
+       : forall S : Type .
+           Set S_v-1@(S_v-1 ->? Unit) *
+           Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit))
+        (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))),
    (fun __/\__ : Unit * Unit ->? Unit)
-     ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-        (var x : S, var s : Set S),
+     ((op __isIn__[S]
+       : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+        (var x : S, var s : Set S@(S ->? Unit)),
       (fun not__ : Unit ->? Unit)
-        ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-           (var x : S, var s' : Set S))))
+        ((op __isIn__[S]
+          : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+           (var x : S, var s' : Set S@(S ->? Unit)))))
 (fun __<=>__ : Unit * Unit ->? Unit)
   ((op __disjoint__[S]
-    : forall S : Type . Pred (Set S_v-1 * Set S_v-1))
-     (var s : Set S, var s' : Set S),
+    : forall S : Type .
+        Pred (Set S_v-1 * Set S_v-1)@(Set S_v-1@(S_v-1 ->? Unit) *
+                                      Set S_v-1@(S_v-1 ->? Unit) ->? Unit))
+     (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)),
    (fun __=__[S ->? Unit] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
      ((op __intersection__[S]
-       : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1)
-        (var s : Set S, var s' : Set S),
-      op emptySet[S] : forall S : Type . Set S_v-1))
+       : forall S : Type .
+           Set S_v-1@(S_v-1 ->? Unit) *
+           Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit))
+        (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)),
+      op emptySet[S] : forall S : Type . Set S_v-1@(S_v-1 ->? Unit)))
 (fun __<=>__ : Unit * Unit ->? Unit)
   ((op __isIn__[S * T]
-    : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
+    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
      ((var x : S, var y : T),
       (op __*__[S; T]
        : forall S : Type; T : Type .
-           Set S_v-1 * Set T_v-2 -> Set (S_v-1 * T_v-2))
-        (var s : Set S, var t : Set T)),
+           Set S_v-1@(S_v-1 ->? Unit) *
+           Set T_v-2@(T_v-2 ->? Unit) -> Set (S_v-1 * T_v-2)@(S_v-1 *
+                                                              T_v-2 ->? Unit))
+        (var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))),
    (fun __/\__ : Unit * Unit ->? Unit)
-     ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-        (var x : S, var s : Set S),
-      (op __isIn__[T] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)
-        (var y : T, var t : Set T)))
+     ((op __isIn__[S]
+       : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+        (var x : S, var s : Set S@(S ->? Unit)),
+      (op __isIn__[T]
+       : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+        (var y : T, var t : Set T@(T ->? Unit))))
 (fun __=__[S * Bool] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   ((op inl[S] : forall S : Type . S_v-1 -> S_v-1 * Bool)(var x : S),
    (var x : S, op False : Bool))

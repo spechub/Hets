@@ -184,9 +184,7 @@ instance Unifiable Type where
 	       case Map.lookup n m of
 	       Just s -> s
 	       _ -> TypeName i k n)
-    match m (a, s) (b, t) = mm m (a, expandAlias m s) 
-			    (b, expandAlias m t)
-      where 
+    match = mm where 
       mm tm t1 (b2, ExpandedType _ t2) = mm tm t1 (b2, t2)
       mm tm (b1, ExpandedType _ t1) t2 = mm tm (b1, t1) t2
       mm tm t1 (b2, LazyType t2 _) = mm tm t1 (b2, t2)
@@ -266,6 +264,9 @@ repl m = rename ( \ i k n ->
 		 case Map.lookup (TypeArg i k Other []) m of
 		      Just s -> s 
 		      Nothing -> TypeName i k n)
+
+expand :: TypeMap -> TypeScheme -> TypeScheme
+expand = mapTypeOfScheme . expandAlias  
 
 expandAlias :: TypeMap -> Type -> Type
 expandAlias tm t = 

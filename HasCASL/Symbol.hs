@@ -17,48 +17,19 @@ import HasCASL.Le
 import HasCASL.PrintLe
 import HasCASL.As
 import HasCASL.Unify
-import HasCASL.Merge
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-
-instance Eq TySc where
-    TySc sc1 == TySc sc2 = sc1 == sc2
-
-instance Ord TySc where
-    TySc (TypeScheme v1 t1 _) <= TySc (TypeScheme v2 t2 _) 
-	= (v1, t1) <= (v2, t2) 
-
-data SyTy = OpAsITy TySc
-	  | TypeAsITy Kind
-	  | ClassAsITy Kind
-	    deriving (Show, Eq, Ord)
-
--- just for the Eq and Ord instances for Symbol
-toSyTy :: SymbolType -> SyTy
-toSyTy st = case st of
-    OpAsItemType sc -> OpAsITy $ TySc sc
-    TypeAsItemType k -> TypeAsITy k
-    ClassAsItemType k -> ClassAsITy k
-
-instance Eq Symbol where
-    s1 == s2 = (symName s1, toSyTy $ symType s1) == 
-	       (symName s2, toSyTy $ symType s2)
-
-instance Ord Symbol where
-    s1 <= s2 = (symName s1, toSyTy $ symType s1) <= 
-	       (symName s2, toSyTy $ symType s2)
 
 checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a 
 checkSymbols s1 s2 r = 
     let s = s1 Set.\\ s2 in
     if Set.isEmpty s then r else
        pfatal_error 
-       (ptext "unknown symbols: " 
+       (text "unknown symbols: " 
           <+> printText s) $ posOfId $ symName $ Set.findMin s
 
 dependentSyms :: Symbol -> Env -> SymbolSet
@@ -133,17 +104,17 @@ closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s))
 symOf :: Env -> SymbolSet
 symOf sigma = 
     let classes = Map.foldWithKey ( \ i ks s -> 
-			Set.insert (Symbol i (ClassAsItemType $
-				    Intersection (classKinds ks) []) sigma) s)
+			Set.insert (idToClassSymbol sigma i $ 
+				    Intersection (classKinds ks) []) s)
 		  Set.empty $ classMap sigma
 	types = Map.foldWithKey ( \ i ti s -> 
-			Set.insert (Symbol i (TypeAsItemType $
-				    typeKind ti) sigma) s) 
+			Set.insert (idToTypeSymbol sigma i $
+				    typeKind ti) s) 
 		classes $ typeMap sigma
         ops = Map.foldWithKey ( \ i ts s0 ->
 		      foldr ( \ t s1 -> 
-			  Set.insert (Symbol i (OpAsItemType $
-				      opType t) sigma) s1) s0 $ opInfos ts)
+			  Set.insert (idToOpSymbol sigma i $
+				      opType t) s1) s0 $ opInfos ts)
 	      types $ assumps sigma
 	in ops
 

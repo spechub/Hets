@@ -128,12 +128,13 @@ mapSig sign =
 mapMor :: CasM.Morphism f e m -> Morphism
 mapMor m = let tm = CasM.sort_map m 
 	       f1 = map ( \ ((i, ot), (j, t)) -> 
-			  ((i, TySc $ fromOpType ot (opKind ot)),
-			   (j, TySc $ mapTypeScheme tm $ fromOpType ot t)))
+			  ((i, fromOpType ot (opKind ot)),
+			   (j, mapTypeScheme tm 
+			            $ fromOpType ot t)))
 		    $ Map.toList $ CasM.fun_map m
 	       f2 = map ( \ ((i, pt), j) -> 
-			  let sc = TySc $ fromPredType pt
-			  in ((i, sc), (j, mapTySc Map.empty tm sc))) 
+			  let sc = fromPredType pt
+			  in ((i, sc), (j, mapTypeScheme tm sc))) 
 		    $ Map.toList $ CasM.pred_map m
 	    in (mkMorphism (mapSig $ CasM.msource m) (mapSig $ CasM.mtarget m))
 	   { typeIdMap = tm , funMap = Map.fromList (f2 ++ f1) }

@@ -17,7 +17,7 @@ type a5(a : Type)
 type a5(a : Type) := a5 a_v14 -> Unit
 type a6(a : Type)
 type a7 : Type -> Type := \ a : Type . a6 a_v-1 -> Unit
-type a6(a : Type) := a7 a_v17 -> Unit
+type a6(a : Type) := a7 a_v17@(a6 a_v17 -> Unit) -> Unit
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 MyAlias : Type -> Type := \ t : Type . t_v-1 ->? Unit
@@ -63,4 +63,4 @@ true : Unit %(fun)%
 *** Error 11.15, duplicates at '(11,19)' for 'a'
 *** Error 13.9, duplicates at '(13,11)' for 'a'
 *** Error 17.14, illegal recursive type synonym 'a5 a_v14 -> Unit'
-*** Error 23.14, illegal recursive type synonym 'a7 a_v17 -> Unit'
+*** Error 23.14, illegal recursive type synonym 'a7 a_v17@(a6 a_v17 -> Unit) -> Unit'

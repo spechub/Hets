@@ -108,7 +108,9 @@ matchSymb sy rsy = let ty = symType sy in
        (case rsy of 
 		AnID _ -> True
 		AKindedId k _ -> symbTypeToKind ty == k
-		AQualId _ t -> matchSymbType (symEnv sy) ty t)
+		AQualId _ _t -> error "matchSymb" 
+	              -- matchSymbType (symEnv sy) ty t
+                ASymbol s -> s == sy)
 
 anaSymbolType :: SymbolType -> State Env (Maybe SymbolType)
 anaSymbolType t = 

@@ -28,6 +28,7 @@ import HasCASL.Unify
 import HasCASL.OpDecl
 import HasCASL.TypeDecl
 import HasCASL.Builtin
+import HasCASL.MapTerm
 import Data.Maybe
 import Data.List
 
@@ -56,12 +57,11 @@ instance Eq Env where
 
 -- | compute difference of signatures 
 diffEnv :: Env -> Env -> Env
-diffEnv e1 e2 = let tm = typeMap e2 
-                    c = max (counter e1) $ counter e2 in
+diffEnv e1 e2 = let tm = typeMap e2 in
     initialEnv
        { classMap = Map.differenceWith diffClass (classMap e1) (classMap e2)
        , typeMap = Map.differenceWith diffType (typeMap e1) tm
-       , assumps = Map.differenceWith (diffAss c tm) (assumps e1) (assumps e2)
+       , assumps = Map.differenceWith (diffAss tm) (assumps e1) (assumps e2)
        }
 
 -- | compute difference of class infos
@@ -73,15 +73,16 @@ diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
 diffType _ _ = Nothing
 
 -- | compute difference of overloaded operations
-diffAss :: Int -> TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos
-diffAss c tm (OpInfos l1) (OpInfos l2) = 
+diffAss :: TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos
+diffAss tm (OpInfos l1) (OpInfos l2) = 
     let l3 = diffOps l1 l2 in
         if null l3 then Nothing else Just (OpInfos l3)
     where diffOps [] _ = []
           diffOps (o:os) ps = 
-              let rs = diffOps os ps in
-              if any (\ p -> isUnifiable tm c (opType o) (opType p)) ps
-                 then rs else o:rs
+              let rs = diffOps os ps 
+		  n = mapOpInfo (id, expandAlias tm) o
+              in if any (instScheme tm 1 (opType n) . expand tm . opType) ps
+		 then rs else n:rs
  
 -- | environment with predefined types and operations
 addPreDefs :: Env -> Env  

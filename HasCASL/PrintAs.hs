@@ -93,7 +93,9 @@ instance PrettyPrint Type where
 	          TypeToken _ -> id
 		  BracketType _ _ _ -> id
 		  _ -> parens) (printText0 ga t2) 
-	ExpandedType t1 _ -> printText0 ga t1
+	ExpandedType t1 t2 -> printText0 ga t1 <> (case t2 of
+				ProductType [] _ -> empty 
+				_ -> text asP <> parens (printText0 ga t2))
         TypeToken t -> printText0 ga t
         BracketType k l _ -> bracket k $ commaT_text ga l
         KindedType t kind _ -> (case t of 

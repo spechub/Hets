@@ -154,3 +154,4 @@ instance PrettyPrint RawSymbol where
       AKindedId k i -> printSK k <> printText0 ga i
       AQualId i t -> printSK (symbTypeToKind t) <> printText0 ga i <+> colon 
 		       <+> printText0 ga t
+      ASymbol s -> printText0 ga s
