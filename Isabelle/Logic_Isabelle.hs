@@ -15,7 +15,15 @@ Portability :  non-portable (imports Logic)
 module Isabelle.Logic_Isabelle where
 
 import Data.Dynamic
+
 import Common.DynamicUtils 
+import Common.Lib.Pretty
+import Common.AS_Annotation
+import Common.PrettyPrint
+import Common.DefaultMorphism
+
+import ATC.IsaSign
+import Logic.Logic
 
 import Isabelle.IsaSign
 import Isabelle.IsaPrint
@@ -23,11 +31,6 @@ import Isabelle.IsaPrint
 import Isabelle.IsaProve
 #endif
 
-import Logic.Logic
-import Common.Lib.Pretty
-import Common.AS_Annotation
-import Common.PrettyPrint
-import ATC.IsaSign
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -51,19 +54,13 @@ instance Typeable Sentence where
 instance Typeable Sign where
     typeOf _ = mkTyConApp signTc []
 
-instance Category Isabelle Sign ()  
-    where
-         -- ide :: id -> object -> morphism
-	 ide Isabelle _ = ()
-         -- comp :: id -> morphism -> morphism -> Maybe morphism
-	 comp Isabelle _ _ = return ()
-         -- dom, cod :: id -> morphism -> object
-	 dom Isabelle _ = emptySign
-	 cod Isabelle _ = emptySign
-         -- legal_obj :: id -> object -> Bool
-	 legal_obj Isabelle _ = True -- ??? too simplistic
-         -- legal_mor :: id -> morphism -> Bool
-	 legal_mor Isabelle _ = False
+instance Category Isabelle Sign IsabelleMorphism where
+  dom Isabelle = domOfDefaultMorphism
+  cod Isabelle = codOfDefaultMorphism
+  ide Isabelle = ideOfDefaultMorphism
+  comp Isabelle = compOfDefaultMorphism
+  legal_obj Isabelle = const True
+  legal_mor Isabelle = legalDefaultMorphism (legal_obj Isabelle)
 
 -- abstract syntax, parsing (and printing)
 
@@ -71,8 +68,8 @@ instance Logic.Logic.Syntax Isabelle () () ()
     -- default implementation is fine!
 
 
-instance Sentences Isabelle Sentence () Sign () ()  where
-      map_sen Isabelle () s = return s
+instance Sentences Isabelle Sentence () Sign IsabelleMorphism ()  where
+      map_sen Isabelle _ s = return s
       print_named Isabelle ga (NamedSen lab sen) = 
 	(if null lab then empty 
 	else text lab <+> colon <> space) <> printText0 ga sen
@@ -85,12 +82,13 @@ instance Sentences Isabelle Sentence () Sign () ()  where
 instance StaticAnalysis Isabelle () Sentence ()
                () ()
                Sign 
-               () () ()  where
+               IsabelleMorphism () ()  where
          sign_to_basic_spec Isabelle _sigma _sens = ()
          empty_signature Isabelle = emptySign
-         inclusion Isabelle _ _ = return ()
+         inclusion Isabelle = defaultInclusion (is_subsig Isabelle)
+         is_subsig Isabelle = const $ const True -- TODO!!
 
 instance Logic Isabelle () () Sentence () ()
                Sign 
-               () () () ()
+               IsabelleMorphism () () ()
     -- again default implementations are fine

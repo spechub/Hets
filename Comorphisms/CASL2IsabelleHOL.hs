@@ -16,7 +16,7 @@ Portability :  non-portable (imports Logic.Logic)
 
 module Comorphisms.CASL2IsabelleHOL where
 
-import Logic.Logic
+import Logic.Logic as Logic
 import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Result
@@ -71,7 +71,7 @@ instance Comorphism CASL2IsabelleHOL
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign 
-               () () () ()  where
+               IsabelleMorphism () () ()  where
     sourceLogic _ = CASL
     sourceSublogic _ = CASL_SL
                       { has_sub = False, -- no subsorting yet ...
@@ -84,7 +84,10 @@ instance Comorphism CASL2IsabelleHOL
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_theory _ = transTheory sigTrCASL formTrCASL
-     --map_morphism _ morphism1 -> Maybe morphism2
+    map_morphism CASL2IsabelleHOL mor = do
+       (sig1,_) <- map_sign CASL2IsabelleHOL (Logic.dom CASL mor)
+       (sig2,_) <- map_sign CASL2IsabelleHOL (cod CASL mor)
+       inclusion Isabelle sig1 sig2
     map_sentence _ sign =
       return . mapSen formTrCASL sign
      --map_symbol :: cid -> symbol1 -> Set symbol2

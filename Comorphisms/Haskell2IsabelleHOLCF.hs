@@ -21,13 +21,15 @@ This one translates directly from OrigTiMonad. Problems with constants that are 
 
 module Comorphisms.Haskell2IsabelleHOLCF where
 
-import Logic.Logic
+import Data.List
+import Data.Maybe
+
+import Logic.Logic as Logic
 import Logic.Comorphism
+
 import Common.Result as Result
 import Common.Id as Id
 import qualified Common.Lib.Map as Map
-import Data.List
-import Data.Maybe
 import Common.AS_Annotation (Named)
 
 -- Haskell
@@ -114,14 +116,17 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
                () () ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign 
-               () () () ()  where
-    sourceLogic _ = Haskell
-    sourceSublogic _ = ()
-    targetLogic _ = Isabelle
-    targetSublogic _ = ()
-    map_sign _ = transSignature
-    map_sentence _ = transSentence
-    map_morphism _ _ = return ()
+               IsabelleMorphism () () ()  where
+    sourceLogic Haskell2IsabelleHOLCF = Haskell
+    sourceSublogic Haskell2IsabelleHOLCF = ()
+    targetLogic Haskell2IsabelleHOLCF = Isabelle
+    targetSublogic Haskell2IsabelleHOLCF = ()
+    map_sign Haskell2IsabelleHOLCF = transSignature
+    map_sentence Haskell2IsabelleHOLCF = transSentence
+    map_morphism Haskell2IsabelleHOLCF mor = do
+       (sig1,_) <- map_sign Haskell2IsabelleHOLCF (Logic.dom Haskell mor)
+       (sig2,_) <- map_sign Haskell2IsabelleHOLCF (cod Haskell mor)
+       inclusion Isabelle sig1 sig2
 --    map_theory _ = transTheory
 
 ------------------------------ Isa auxiliaries ----------------------------------

@@ -19,7 +19,7 @@ Portability :  non-portable (imports Logic.Logic)
 
 module Comorphisms.CoCASL2IsabelleHOL where
 
-import Logic.Logic
+import Logic.Logic as Logic
 import Logic.Comorphism
 import Data.List as List
 import Data.Maybe
@@ -53,13 +53,16 @@ instance Comorphism CoCASL2IsabelleHOL
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign 
-               () () () ()  where
+               IsabelleMorphism () () ()  where
     sourceLogic _ = CoCASL
     sourceSublogic _ = ()
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_theory _ = transTheory sigTrCoCASL formTrCoCASL
-    --map_morphism _ morphism1 -> Maybe morphism2
+    map_morphism CoCASL2IsabelleHOL mor = do
+       (sig1,_) <- map_sign CoCASL2IsabelleHOL (Logic.dom CoCASL mor)
+       (sig2,_) <- map_sign CoCASL2IsabelleHOL (cod CoCASL mor)
+       inclusion Isabelle sig1 sig2
     map_sentence _ sign =
       return . mapSen formTrCoCASL sign
     --map_symbol :: cid -> symbol1 -> Set symbol2

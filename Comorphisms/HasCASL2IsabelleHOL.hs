@@ -14,7 +14,7 @@ Portability :  non-portable (imports Logic.Logic)
 
 module Comorphisms.HasCASL2IsabelleHOL where
 
-import Logic.Logic
+import Logic.Logic as Logic
 import Logic.Comorphism
 import Common.Id
 import Common.Result
@@ -49,7 +49,7 @@ instance Comorphism HasCASL2IsabelleHOL
                Symbol RawSymbol ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign 
-               () () () ()  where
+               IsabelleMorphism () () ()  where
     sourceLogic _ = HasCASL
     sourceSublogic _ = HasCASL_SL
                        { has_sub = False,   -- subsorting
@@ -65,7 +65,10 @@ instance Comorphism HasCASL2IsabelleHOL
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_sign _ = transSignature
-    -- map_morphism _ morphism1 -> Maybe morphism2
+    map_morphism HasCASL2IsabelleHOL mor = do
+       (sig1,_) <- map_sign HasCASL2IsabelleHOL (Logic.dom HasCASL mor)
+       (sig2,_) <- map_sign HasCASL2IsabelleHOL (cod HasCASL mor)
+       inclusion Isabelle sig1 sig2
     map_sentence _ sign phi =
        case transSentence sign phi of
          Nothing   -> warning (Sentence {senTerm = true}) 

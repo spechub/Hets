@@ -64,7 +64,7 @@ isabelleProver =
               prove = isaProve False
             }
 
-isabelleConsChecker :: ConsChecker Sign Sentence () ()
+isabelleConsChecker :: ConsChecker Sign Sentence IsabelleMorphism ()
 isabelleConsChecker =
      ConsChecker { cons_checker_name = "Isabelle-refute",
                    cons_checker_sublogic = "Isabelle",
