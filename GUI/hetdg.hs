@@ -10,12 +10,7 @@ import Static.DotGraph
 
 import GUI.ConvertDevToAbstractGraph
 
-import Data.Char
-import DaVinciGraph
-import GraphDisp
 import GUI.AbstractGraphView
-import Data.IORef
-
 
 proceed fname showdg = do
   res <- ana_file1 logicGraph defaultLogic fname
