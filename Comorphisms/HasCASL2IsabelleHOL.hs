@@ -438,25 +438,14 @@ transTotalLambda sign t = transTerm sign t
 
 ----------------- translation of case alternatives ------------------
 
-{- todo
-nested case patterns:
-1. check if set of patterns is
-1a. one pattern consisting of a variable => we are done
-1b. set of constructor patterns 
-    1b1. sort patterns according to leading constructor
-    1b2. for each group of patterns with the same leading constructor
-         1b2a. for each argument position, call 1. recursively
-
--}
-
 {- Annotation concerning Patterns:
-     Following the HasCASL-Summary and the limits of this encoding
-     patterns may take the form:
+     Following the HasCASL-Summary and the limits of the encoding
+     from HasCASL to Isabelle/HOL patterns may take the form:
         QualVar, QualOp, ApplTerm, TupleTerm and TypedTerm 
 -}
 
--- Input: List of case alternative one pattern per term
--- Functionality: Tests wheter pattern is a variable -> case alternative are
+-- Input: List of case alternative (one pattern per term)
+-- Functionality: Tests wheter pattern is a variable -> case alternative is
 --                translated
 arangeCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
 arangeCaseAlts sign peqs 
@@ -467,8 +456,7 @@ arangeCaseAlts sign peqs
 -- Input: List of case alternatives, that patterns does consist of datatype constructors
 --        (with arguments) or tupels
 -- Functionality: Groups case alternatives by leading pattern-constructor
---                each pattern group is 'unfolded'
--- !! Von hier an hat man es nur mit EINER Art von leading constructor zu tun!!
+--                each pattern group is flattened
 sortCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
 sortCaseAlts sign peqs = 
   let consList
@@ -490,6 +478,7 @@ getCons sign tyId =
 getName :: ProgEq -> TypeId
 getName (ProgEq pat _ _) = (getTypeName pat)
 
+getTypeName :: Pattern -> TypeId
 getTypeName p =
    case p of
      QualVar (VarDecl _ typ _ _)       -> name typ
@@ -526,24 +515,16 @@ groupCons peqs name = filter hasSameName peqs
 -- Input: List of case alternatives with same leading constructor
 -- Functionality: Tests whether the constructor has no arguments, if so
 --                translates case alternatives
---                if not
-
 flattenPattern :: Env -> [ProgEq] -> (IsaSign.Term, IsaSign.Term)
 flattenPattern sign peqs
   | null peqs         = error "Missing constructor alternative in case pattern."
   | isSingle peqs     = (transCaseAlt sign) (head peqs)
- -- at this stage there are patterns left which use 'ApplTerm' or 'TupleTerm'
- -- or the 'TypedTerm' variant of one of them
+  -- at this stage there are patterns left which use 'ApplTerm' or 'TupleTerm'
+  -- or the 'TypedTerm' variant of one of them
   | otherwise = let m = concentrate (matricize peqs) sign
                 in 
                     transCaseAlt sign (ProgEq (shrinkPat m) (term m) nullPos)
 
-{- First of all a matrix is allocated (matriArg) with the arguments of a
- constructor resp.  of a tuple. They're binded with the term, that would
- be executed if the pattern matched.  Then the resulting list of
- matrices is grouped by the leading argument. (groupArgs) Afterwards -
- if a list of grouped arguments has more than one element - the last
- pattern argument (in the list 'patterns') is ...  -}
 
 data CaseMatrix = CaseMatrix { patBrand :: PatBrand,
                                cons     :: Maybe As.Term,
@@ -560,26 +541,16 @@ instance Eq CaseMatrix where
                 && (cons cmx     == cons cmx')
                 && (newArgs cmx  == newArgs cmx')
 
--- Input: List with CaseMatrix of same leading constructor pattern
--- Functionality: First: Groups CMs so that these CMs are in one list
---                that only differ in their last argument
---                then: reduces list of every CMslist to one CM
---                if there's only one CM left -> 
---
-concentrate :: [CaseMatrix] -> Env -> CaseMatrix
-concentrate cmxs sign
-  | isSingle cmsWithSubstitutedLastArg = head cmsWithSubstitutedLastArg
-  | otherwise                          = concentrate cmsWithSubstitutedLastArg sign
-  where cmll = Data.List.nub (map (groupByArgs cmxs) [0..(length cmxs-1)])
-        cmsWithSubstitutedLastArg = map (redArgs sign) cmll
-
-
-groupByArgs :: [CaseMatrix] -> Int -> [CaseMatrix]
-groupByArgs cmxs i
-  | and (map null (map args cmxs)) = cmxs
-  | otherwise                      = (filter equalPat cmxs)
-  where patE = init (args (cmxs !! i))
-        equalPat cmx = isSingle (args cmx) || init (args cmx) == patE
+{- First of all a matrix is allocated (matriArg) with the arguments of a
+ constructor resp.  of a tuple. They're binded with the term, that would
+ be executed if the pattern matched.  Then the resulting list of
+ matrices is grouped by the leading argument. (groupArgs) Afterwards -
+ if a list of grouped arguments has more than one element - the last
+ pattern argument (in the list 'patterns') is replaced by a new variable.
+ n patterns are reduced to one pattern.
+ This procedure is repeated until there's only one case alternative
+ for each constructor.
+  -}
 
 -- Functionality: turns ProgEq into CaseMatrix
 matricize :: [ProgEq] -> [CaseMatrix]
@@ -634,6 +605,25 @@ matriArg pat cTerm =
             q@(QualOp _ _ _ _)               -> (Just q, snd tp)
             _                                -> (Nothing, [ct] ++ snd tp))
 
+-- Input: List with CaseMatrix of same leading constructor pattern
+-- Functionality: First: Groups CMs so that these CMs are in one list
+--                that only differ in their last argument
+--                then: reduces list of every CMslist to one CM
+concentrate :: [CaseMatrix] -> Env -> CaseMatrix
+concentrate cmxs sign
+  | isSingle cmsWithSubstitutedLastArg = head cmsWithSubstitutedLastArg
+  | otherwise                          = concentrate cmsWithSubstitutedLastArg sign
+  where cmll = Data.List.nub (map (groupByArgs cmxs) [0..(length cmxs-1)])
+        cmsWithSubstitutedLastArg = map (redArgs sign) cmll
+
+
+groupByArgs :: [CaseMatrix] -> Int -> [CaseMatrix]
+groupByArgs cmxs i
+  | and (map null (map args cmxs)) = cmxs
+  | otherwise                      = (filter equalPat cmxs)
+  where patE = init (args (cmxs !! i))
+        equalPat cmx = isSingle (args cmx) || init (args cmx) == patE
+
 
 redArgs :: Env -> [CaseMatrix] -> CaseMatrix
 redArgs sign cmxs
@@ -644,7 +634,8 @@ redArgs sign cmxs
   where testPatBrand pb cmx = pb == patBrand cmx
 
 -- Input: List of CMs thats leading constructor and arguments except the last one are equal
--- Functionality: Reduces n CMs to one with same last argument in pattern
+-- Functionality: Reduces n CMs to one with same last argument in pattern (perhaps a new 
+--                variable
 redAppl :: [CaseMatrix] -> Env -> CaseMatrix
 redAppl cmxs sign
   | and (map null (map args cmxs)) = head cmxs
@@ -678,7 +669,11 @@ redAppl cmxs sign
                cmx { args    = init(args cmx), 
                      newArgs = newVar : (newArgs cmx),
                      term    = CaseTerm newVar newPeqs' [] }
+         newProgEq (p, t) = ProgEq p t nullPos
 
+-- Input: ProgEqs that were build to replace a argument 
+--        with a case statement
+-- Functionality: 
 recArgs :: Env -> [ProgEq] -> [ProgEq]
 recArgs sign peqs 
   | isSingle groupedByCons 
@@ -693,14 +688,11 @@ recArgs sign peqs
           | isSingle g = doPEQ gByCs (res ++ g)
           | otherwise  = doPEQ gByCs (res ++ [(toPEQ (testPEQs sign g))])
         toPEQ cmx = ProgEq (shrinkPat cmx) (term cmx) nullPos
+        testPEQs sign peqs
+          | null peqs = error "HasCASL2IsabelleHOL.testPEQs"
+          | otherwise = concentrate (matricize peqs) sign
 
-testPEQs :: Env -> [ProgEq] -> CaseMatrix
-testPEQs sign peqs
-  | null peqs = error "HasCASL2IsabelleHOL.testPEQs"
-  | otherwise = concentrate (matricize peqs) sign
-
-newProgEq (p, t) = ProgEq p t nullPos
-
+-- accumulates arguments of caseMatrix to one pattern
 shrinkPat :: CaseMatrix -> As.Term
 shrinkPat cmx = 
   case patBrand cmx of
@@ -746,6 +738,7 @@ transPat sign (TupleTerm terms _) =
   foldl1 (binConst isaPair) (map (transPat sign) terms)
 transPat _ (QualOp _ (InstOpId i _ _) _ _) = con (showIsa i)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
+
 
 -- showPEQ peqs = "PEQ-Liste: "++show (map spe peqs) ++"\n\n"
 -- spe (ProgEq pat term _) = "PEQ Pattern: " ++ sT pat++"   "++"Term: "++sT term++"\n"
