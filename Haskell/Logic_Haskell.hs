@@ -39,7 +39,7 @@ import Haskell.ATC_Haskell      -- ???
 import Common.PrettyPrint       (PrettyPrint)
 -- import Common.ATerm.Conversion  -- ???
 
-import GHC.IOBase               (unsafePerformIO)
+import System.IO.Unsafe (unsafePerformIO)
 import Haskell.Hatchet.MultiModule (readModuleInfo)
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
                                           joinModuleInfo,
