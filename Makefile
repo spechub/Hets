@@ -280,7 +280,7 @@ install: hets-opt install-hets
 
 genRules: $(generated_rule_files)
 
-$(atc_der_files): $(atc_files) $(genrule_header_files)
+$(atc_der_files): $(atc_files) $(genrule_header_files) utils/genRules
 	$(foreach file,$(atc_files),$(gen_atc_files))
 
 CASL/ATC_CASL.der.hs: $(CASL_files) utils/genRules
