@@ -17,6 +17,7 @@ module Logic_CASL where
 import AS_Basic_CASL
 import Print_AS_Basic
 import Parse_AS_Basic
+import SymbolParser
 
 import Sign
 import Logic
