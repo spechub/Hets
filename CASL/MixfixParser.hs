@@ -22,6 +22,7 @@ import List(intersperse)
 
 -- for testing
 import Token
+import Formula
 import PrettyPrint
 import Print_AS_Basic
 import GlobalAnnotationsFunctions
@@ -29,19 +30,11 @@ import Anno_Parser
 
 -- precedence graph stuff
 
-precAnnos = [ "%prec({__+__} < {__*__})%", "%prec({__*__} < {__^__})%" ]
-assocAnnos = ["%left_assoc(__+__)%"]
-listAnnos = "%list([__], [], __::__)%"
--- don't put in list ids twice! (no danger!)
-
-testAnnos = addGlobalAnnos emptyGlobalAnnos 
-	    $ map (parseString annotationL) 
-	    (listAnnos:precAnnos ++ assocAnnos)
 
 checkArg :: GlobalAnnos -> AssocEither -> Id -> Id -> Bool
 checkArg g dir op arg = 
     if arg == op 
-       then isAssoc dir (assoc_annos g) op
+       then isAssoc dir (assoc_annos g) op || not (isInfix op)
        else 
        case precRel (prec_annos g) op arg of
        Lower -> True
@@ -61,8 +54,8 @@ checkAnyArg g op arg =
 -- and arguments must follow in parenthesis
 
 data State = State { rule :: Id
-                   , matchTerm ::Bool  -- false (literally match place) 
-		                       -- or false (treat as non-terminal)
+                   , matchTerm ::Bool  -- False (literally match place) 
+		                       -- or True (treat as non-terminal)
                    , arglist :: [TERM]   -- currently collected arguments 
 		                          -- in reverse order
 		   , dotPos :: [Token]
@@ -96,11 +89,15 @@ instance Show State where
 instance (Show a) => Show (Set a) where
     showsPrec _ = shows . setToList
 
-commaTok, placeTok, openParenTok, closeParenTok :: Token
+commaTok, placeTok, openParenTok, closeParenTok, parenTok :: Token
 commaTok = mkSimpleId ","
 placeTok = mkSimpleId place
 openParenTok = mkSimpleId "("
 closeParenTok = mkSimpleId ")"
+parenTok = mkSimpleId "()" -- unique indicator
+colonTok, asTok :: Token
+colonTok = mkSimpleId ":"
+asTok = mkSimpleId "as"
 
 getTokenList :: Id -> [Token]
 getTokenList (Id ts cs _) = 
@@ -118,23 +115,29 @@ bracketToks = [openParenTok, closeParenTok]
 
 mkApplState :: Int -> Id -> State
 mkApplState n ide = State ide False [] 
-		    (getTokenList ide ++ bracketToks) n
+		    (getTokenList ide ++ [parenTok]) n
 
-type Chart = FiniteMap Int (Set State)
+type ParseMap = FiniteMap Int (Set State)
 
-initialState :: Set Id -> GlobalAnnos -> Int -> Set State
-initialState is g i = 
+lookUp :: (Ord key) => FiniteMap key (Set a) -> key -> Set a
+lookUp m i = lookupWithDefaultFM m emptySet i
+
+initialState :: GlobalAnnos -> Set Id -> Int -> Set State
+initialState g is i = 
        mapSet (mkApplState i) is `union` 
        mapSet (mkState i) is `union` 
        listStates g i `addToSet` 
-       bracketTerm i 
+       bracketTerm i `addToSet`
+       sortedTerm i
 
 -- qualified names not handled yet
-
-bracketTerm :: Int -> State 
-bracketTerm i = let v = Id bracketToks [] []
+sortedTerm :: Int -> State 
+sortedTerm i = let v = Id [placeTok, colonTok] [] []
 		    in State v True [] (getTokenList v) i
 
+bracketTerm :: Int -> State 
+bracketTerm i = let v = Id [parenTok] [] []
+		    in State v True [] (getTokenList v) i
 
 listId :: Id
 -- unique id (usually "[]" yield two tokens)
@@ -155,8 +158,15 @@ listStates g i = case list_lit (literal_annos g) of
 			       ++ b2) i
 			     ]
 
-scan :: Token -> Int -> Chart -> Chart
-scan t i m = 
+scan :: TERM -> Int -> ParseMap -> ParseMap
+scan trm i m = 
+  let t = case trm of 
+	  Mixfix_token x -> x
+	  Mixfix_sorted_term _ _ -> colonTok
+	  Mixfix_cast _ _ -> asTok
+          Mixfix_parenthesized _ _ -> parenTok
+          _ -> error "scan"
+  in
     addToFM m (i+1) (mkSet $ 
        foldr (\ (State o b a ts k) l ->
 	      if null ts || head ts /= t 
@@ -165,18 +175,27 @@ scan t i m =
 	             (State o True a 
 		      (placeTok : commaTok : tail ts) k)
                      : (State o True a (placeTok : tail ts) k) : l
+              else if t == parenTok then
+                     (State o b (a ++ termArgs) (tail ts) k) : l
+	      else if t == colonTok || t == asTok then
+	             if null a then l else 
+	                (State o b [mkTerm $ head a] [] k) : l
 	           else (State o b a (tail ts) k) : l) [] 
 	      (setToList $ lookUp m i))
-
-lookUp :: (Ord key) => FiniteMap key (Set a) -> key -> Set a
-lookUp m i = lookupWithDefaultFM m emptySet i
-
-compl :: GlobalAnnos -> Chart -> [State] -> [State]
+     where mkTerm t1 = case trm of 
+	                  Mixfix_sorted_term s ps -> Sorted_term t1 s ps
+	                  Mixfix_cast s ps -> Cast t1 s ps
+			  _ -> t1
+           termArgs = case trm of 
+                           Mixfix_parenthesized ts _ -> ts
+	                   _ -> []
+	      
+compl :: GlobalAnnos -> ParseMap -> [State] -> [State]
 compl g m l = 
   concat $ map (collectArg g m) 
   $ filter (\ (State _ _ _ ts _) -> null ts) l
 
-collectArg :: GlobalAnnos -> Chart -> State -> [State]
+collectArg :: GlobalAnnos -> ParseMap -> State -> [State]
 -- pre: finished rule 
 collectArg g m s@(State _ _ _ _ k) = 
     map (\ (State o _ a ts k1) ->
@@ -194,10 +213,11 @@ filterByPrec g (State argIde _ _ _ _) (State opIde b args (hd:ts) _) =
 				    || head ts == closeParenTok) then True
 	       else let n = length args in
 		    if isLeftArg opIde n then 
-		       if isPostfix opIde && not (isPostfix argIde) then False
+		       if isPostfix opIde && (isPrefix argIde
+					      || isInfix argIde) then False
 		       else checkArg g ALeft opIde argIde 
 		    else if isRightArg opIde n then 
-                            if isPrefix opIde && isMixfix argIde then False
+                            if isPrefix opIde && isInfix argIde then False
 	                    else checkArg g ARight opIde argIde
                          else checkAnyArg g opIde argIde
        else False
@@ -208,44 +228,6 @@ isLeftArg (Id ts _ _) n = n + 1 == (length $ takeWhile isPlace ts)
 isRightArg (Id ts _ _) n = n == (length $ filter isPlace ts) - 
 	      (length $ takeWhile isPlace (reverse ts))
 	  
-complRec :: GlobalAnnos -> Chart -> [State] -> [State]
-complRec g m l = let l1 = compl g m l in 
-    if null l1 then l else complRec g m l1 ++ l
-
-complete :: GlobalAnnos -> Int  -> Chart -> Chart
-complete g i m = addToFM m i $ mkSet $ complRec g m $ setToList $ lookUp m i 
-
-predict :: Set Id -> GlobalAnnos -> Int -> Chart -> Chart
-predict ms g i m = if any (\ (State _ b _ ts _) -> not (null ts) 
-			 && isPlace (head ts) && b) 
-		 (setToList $ lookUp m i)
-		 then addToFM_C union m i (initialState ms g i)
-		 else m 
-
-nextState :: Set Id -> GlobalAnnos -> [Token] -> Int -> Chart -> Chart
-nextState rules pG toks pos chart = 
-    if null toks then chart
-    else let c1 = predict rules pG pos chart
-             c2 = scan (head toks) pos c1
-	 in if isEmptySet $ lookUp c2 (pos + 1) then c2
-	    else nextState rules pG (tail toks) (pos + 1) 
-		     (complete pG (pos + 1) c2)
-
-mkChart :: Set Id -> GlobalAnnos -> [Token] -> Chart
-mkChart rules g toks = nextState rules g toks 0 
-		     (unitFM 0 $ initialState rules g 0)
-
-sucChart :: Chart -> Bool
-sucChart m = any (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
-	     setToList $ lookUp m $ sizeFM m - 1
-
-
-getAppls :: GlobalAnnos -> Chart -> [TERM]
-getAppls g m = 
-    map (asListAppl g) $ 
-	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
-	     setToList $ lookUp m $ sizeFM m - 1
-
 stateToAppl :: State -> TERM
 stateToAppl (State i _ a _ _) = asAppl i (reverse a) nullPos
 
@@ -259,22 +241,97 @@ asListAppl g s@(State i _ a _ _) =
         where mkList [] = asAppl c [] nullPos
 	      mkList (hd:tl) = asAppl f [hd, mkList tl] nullPos
 
+complRec :: GlobalAnnos -> ParseMap -> [State] -> [State]
+complRec g m l = let l1 = compl g m l in 
+    if null l1 then l else complRec g m l1 ++ l
+
+complete :: GlobalAnnos -> Int  -> ParseMap -> ParseMap
+complete g i m = addToFM m i $ mkSet $ complRec g m $ setToList $ lookUp m i 
+
+predict :: GlobalAnnos -> Set Id -> Int -> ParseMap -> ParseMap
+predict g is i m = if any (\ (State _ b _ ts _) -> not (null ts) 
+			 && isPlace (head ts) && b) 
+		 (setToList $ lookUp m i)
+		 then addToFM_C union m i (initialState g is i)
+		 else m 
+
+nextState :: GlobalAnnos -> Set Id -> TERM -> Int -> ParseMap -> ParseMap
+nextState g is trm i m = 
+	         complete g (i + 1) $
+		 scan trm i $
+		 predict g is i m     
+
+type Chart = (Int, [Diagnosis], ParseMap)
+
+iterateStates :: GlobalAnnos -> Set Id -> [TERM] -> Chart -> Chart
+iterateStates g is terms c@(i, ds, m) = 
+    if null terms then c
+       else case head terms of
+            Mixfix_term ts -> iterateStates g is (ts ++ tail terms) c
+            Mixfix_bracketed ts ps -> 
+		iterateStates g is (expand "[" "]" ts ps ++ tail terms) c
+	    Mixfix_braced ts ps -> 
+		iterateStates g is (expand "{" "}" ts ps ++ tail terms) c
+            t -> let m1 = nextState g is t i m
+                 in if isEmptySet $ lookUp m1 (i + 1) 
+		    then (i+1, Error ("unexpected term: " 
+				      ++ show (printText0 g t))
+			       (posOfTerm t) : ds, m)
+                    else iterateStates g is (tail terms) (i+1, ds, m1)
+  where expand o c ts ps = 
+          let ps1 = if length ps == length ts + 1 then ps
+		    else replicate (length ts + 1) nullPos
+	      seps = map Mixfix_token 
+		(zipWith Token (o : replicate (length ts - 1) "," ++ [c]) ps1)
+	  in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
+	    		    
+posOfTerm :: TERM -> Pos
+posOfTerm term =
+    case term of
+	      Mixfix_token t -> tokPos t
+	      Mixfix_term ts -> posOfTerm (head ts)
+	      Simple_id i -> tokPos i
+	      Mixfix_qual_pred _ -> nullPos 
+	      _ -> case get_pos_l term of 
+		   Nothing -> nullPos
+		   Just l -> if null l then nullPos else head l
+
+
+mkChart :: GlobalAnnos -> Set Id -> [TERM] -> Chart
+mkChart g is terms = iterateStates g is terms 
+		     (0, [], unitFM 0 $ initialState g is 0)
+
+getAppls :: GlobalAnnos -> Int -> ParseMap -> [TERM]
+getAppls g i m = 
+    map (asListAppl g) $ 
+	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
+	     setToList $ lookUp m i
+
+parseMixfix :: GlobalAnnos -> Set Id -> [TERM] -> [TERM]
+parseMixfix g is terms =
+    let (i, _, m) = mkChart g is terms
+    in  getAppls g i m
+
 -- start testing
 
-myRules = ["__^__", "__*__", "__+__", "[__]",
-	   "x", "0", "1", "2", "3", "4", "5", "a", "b"]
+testSingleCharTokens l r t = 
+    let g = addGlobalAnnos emptyGlobalAnnos 
+			 $ map (parseString annotationL) l
+	in map (printText g)
+		$ parseMixfix g (mkSet $ map (parseString parseId) r)
+		      (map (\ c -> Mixfix_token . mkSimpleId 
+			   $ if c == '_' then place else [c]) t)
+
+myAnnos = [ "%prec({__+__} < {__*__})%", "%prec({__*__} < {__^__})%"
+	  , "%left_assoc(__+__)%"
+	  , "%list([__], [], __::__)%"]
+
+myIs = ["__^__", "__*__", "__+__", "[__]",
+	"x", "0", "1", "2", "3", "4", "5", "a", "b", "-__", "__!"]
 
 myTokens = "4*x^4+3*x^3+2*x^2+1*x^1+0*x^0"
 
-
-myChart g r t = mkChart (mkSet $ map (parseString parseId) r) g
-		  (map (\ c -> mkSimpleId $ if c == '_' then place 
-			else [c]) t)
-
-myAppls g r t = map (printText g)
-	      $ getAppls g (myChart g r t)
-
-testAppls = myAppls testAnnos myRules myTokens
+testAppl = testSingleCharTokens myAnnos myIs myTokens
 
 -- --------------------------------------------------------------- 
 -- convert literals 
