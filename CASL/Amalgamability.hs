@@ -51,15 +51,13 @@ type CASLMor = Morphism () () ()
 -- Miscellaneous types
 type DiagSort = (Node, SORT) 
 
--- TODO: test
+-- PrettyPrint instance (for diagnostic output)
 instance PrettyPrint (Diagram CASLSign CASLMor) where
     printText0 ga diag = 
 	ptext "nodes: " 
         <+> (printText0 ga (labNodes diag))
 	<+> ptext "\nedges: "
 	<+> (printText0 ga (labEdges diag))
-
-
 
 
 -- | Compute the Sorts set -- a disjoint union of all the sets
@@ -71,6 +69,24 @@ sorts diag =
         appendSorts sl (n, Sign { sortSet = s }) =
 	    sl ++ (map (mkNodeSortPair n) (Set.toList s))
     in foldl appendSorts [] (labNodes diag)
+
+
+-- | Convert the relation representation from list of pairs 
+-- (val, equiv. class tag) to a list of equivalence classes.
+taggedValsToEquivClasses :: Ord tag
+			 => [(a, tag)] -- ^ a list of (value, tag) pairs
+			 -> [[a]]
+taggedValsToEquivClasses rel =
+    let -- prepMap: create a map with all the equivalence class tags mapped to
+	-- empty lists
+        prepMap rel = 
+	    foldl (\m -> \k -> Map.insert (snd k) [] m) Map.empty rel
+	-- conv: perform actual conversion
+	convert [] m = map snd (Map.toAscList m)
+	convert ((ds, ect) : dsps) m =
+	    let m' = Map.update (\ec -> Just (ds : ec)) ect m
+	    in convert dsps m'
+    in convert rel (prepMap rel)
 
 
 -- | Compute the simeq relation for given diagram.
@@ -118,41 +134,50 @@ simeq diag =
 	        rel' = mergeWith (cmpl ++ [dsp]) dsp dsps
 	    in merge rel' (pos + 1)
 
-        -- prepMap: create a map with all the equivalence class tags mapped to
-	-- empty lists
-        prepMap rel = 
-	    foldl (\m -> \k -> Map.insert (snd k) [] m) Map.empty rel
-
-        -- convert the relation representation from list of pairs 
-	-- (val, equiv. class tag) to a list of equivalence classes
-	convert [] m = map snd (Map.toAscList m)
-	convert ((ds, ect) : dsps) m =
-	    let m' = Map.update (\ec -> Just (ds : ec)) ect m
-	    in convert dsps m'
-
         -- compute the relation
 	rel = map (\ds -> (ds, ds)) (sorts diag)
 	rel' = merge rel 0
-    in convert rel' (prepMap rel')
+    in taggedValsToEquivClasses rel'
 
 
 -- | Compute the simeq_tau relation for given diagram.
-simeq_tau :: Diagram CASLSign CASLMor
-	  -> [LEdge CASLMor]
+simeq_tau :: [LEdge CASLMor]
 	  -> [[DiagSort]]
--- TODO
-simeq_tau _ _ = []
+simeq_tau sink = 
+    let -- tagEdge: for given morphism m create a list of pairs 
+	-- (a, b) where a is DiagSort from the source signature that
+	-- is mapped by m to DiagSort b
+        tagEdge (sn, tn, Morphism { sort_map = sm }) = 
+	    map (\(ss, ts) -> ((sn, ss), (tn, ts))) (Map.toList sm)
+        rel = foldl (\l -> \e -> l ++ (tagEdge e)) [] sink
+    in taggedValsToEquivClasses rel
 
 
 -- | Check that one equivalence relation is a subset of another.
 -- The relations are represented as a lists of equivalence classes,
 -- where equivalence classes are lists of elements.
 subRelation :: Eq a
-	    => [[a]]
-	    -> [[a]]
-	    -> Bool
--- TODO
-subRelation _ _ = True
+	    => [[a]]  -- ^ the relation that is supposed to be a subset
+	    -> [[a]]  -- ^ the relation that is supposed to be a superset
+	    -> [a]
+-- ^ returns a list of elements that are in the same equivalence class of the 
+-- first relation but are not in the same equivalence class of the second 
+-- relation. If the list is empty then the first relation is a subset of the
+-- second one.
+subRelation [] _ = []
+subRelation ((elt : elts) : eqcls) sup =
+    let findEqCl elt [] = [] -- this should never be the case
+	findEqCl elt (eqcl : eqcls) =
+	    if elem elt eqcl then eqcl else findEqCl elt eqcls
+        checkEqCl [] supEqCl = []
+	checkEqCl (elt : elts) supEqCl =
+	    if elem elt supEqCl 
+	       then checkEqCl elts supEqCl
+	       else [elt]
+	curFail = checkEqCl elts (findEqCl elt sup)
+    in case curFail of 
+	    [] -> subRelation eqcls sup
+	    _ -> (elt : curFail)
 
 
 -- | The amalgamability checking function for CASL.
@@ -161,9 +186,12 @@ ensuresAmalgamability :: Diagram CASLSign CASLMor -- ^ the diagram to be checked
 		      -> Result Amalgamates
 ensuresAmalgamability diag sink = 
     do let s = simeq diag
-	   st = simeq_tau diag sink
-       if not (subRelation st s)
-	  then return No
-	  else return DontKnow -- TODO
-       --warning DontKnow (showPretty diag "") nullPos -- test
+	   st = simeq_tau sink
+       -- 1. Checking the  inclusion (*). If it doesn't hold, the specification is
+       -- incorrect.
        --warning DontKnow (showPretty s "") nullPos -- test
+       --warning DontKnow (showPretty st "") nullPos -- test
+       case subRelation st s of
+	    nss@(_ : _) -> let sortString = renderText Nothing (printText nss)
+	                   in do return (No ("sorts " ++ sortString)) -- TODO: more informative message
+	    [] -> return DontKnow -- TODO
