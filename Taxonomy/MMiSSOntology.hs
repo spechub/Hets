@@ -8,7 +8,10 @@ At the moment, the module ist designed for storing ontologies in the "MMiSS sens
 The module defines a data type \tt{MMISSOntology} which stores all information contained in a MMiSS-Ontology. \tt{emptyMMiSSOntology} provides a fresh, clean ontology labeld with the delivered name. After creating an empty ontology, the insertion functions () should be used to fill the ontology. 
 --}
 
-{-- MMiSSOntology provides the abstract data type for an Ontology
+{-- | 
+      MMiSSOntology provides the abstract data type for an Ontology
+
+   todo: add a new edge type for equivalence which should be visited only once
 --}
 
 module Taxonomy.MMiSSOntology (
