@@ -27,6 +27,8 @@ import Common.GlobalAnnotations (emptyGlobalAnnos)
 import Syntax.GlobalLibraryAnnotations (initGlobalAnnos)
 import Options
 import System.Environment
+import System.Posix
+import System
 
 import Comorphisms.LogicGraph
 import Logic.Grothendieck
@@ -38,6 +40,9 @@ import Static.DevGraph
 import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
 import GUI.WebInterface
+import InfoBus 
+import Events
+import Destructible
 #endif
 
 -- for checking the whole ATerm interface
@@ -176,9 +181,10 @@ showGraph file opt env =
             putIfVerbose opt 3 "Converting Graph"
             (gid, gv, _cmaps) <- convertGraph graphMem ln libenv
             GUI.AbstractGraphView.redisplay gid gv
-            --putIfVerbose opt 1 "Hit Return when finished"
-            getLine
-            return ()
+            graph <- get_graphid gid gv
+            sync(destroyed graph)
+            InfoBus.shutdown
+            exitImmediately ExitSuccess 
 #endif
         Nothing -> putIfVerbose opt 1
             ("Error: Basic Analysis is neccessary to display "

@@ -126,7 +126,10 @@ return_fail graphs msg =
 
 -- lookup a graph descriptor and execute a command on the graph
 -- the delete flag specifies if the graph should be removed from the graph list afterwards
--- fetch_graph :: Descr -> GraphInfo -> Bool -> a ?
+fetch_graph :: Descr -> GraphInfo -> Bool 
+     -> ((AbstractionGraph, Descr) -> IO (AbstractionGraph, Descr, Descr, Maybe String)) 
+     -> IO Result
+
 fetch_graph gid gv delete cmd =
   do (gs,ev_cnt) <- readIORef gv
      case lookup gid gs of
@@ -137,6 +140,12 @@ fetch_graph gid gv delete cmd =
                     where gs' = remove gid gs
        Nothing -> return (Result 0 (Just ("Graph id "++show gid++" not found")))
 
+get_graphid :: Descr -> GraphInfo -> IO OurGraph
+get_graphid gid gv = do
+  (gs,ev_cnt) <- readIORef gv
+  case lookup gid gs of
+       Just g -> return $ theGraph g
+       Nothing -> error "get_graphid: graph does not exists"
 
 -- These are the operations of the interface
 
@@ -194,7 +203,6 @@ delgraph gid gv =
   fetch_graph gid gv True
    (\(g,ev_cnt) -> do destroy (theGraph g)
                       return (g,0,ev_cnt+1,Nothing))
-
 
 delallgraphs :: GraphInfo -> IO ()
 delallgraphs gv = do
@@ -674,3 +682,5 @@ getEdgeName (name,_,_) = name
 
 getEdgeLabel :: EdgeValue -> Maybe (LEdge DGLinkLab)
 getEdgeLabel (_,_,label) = label
+
+
