@@ -268,9 +268,10 @@ data AxBinding
   | AxiomDecl      AxiomName Formula
   deriving (Eq,Show)
 
-data AxiomBndr
- = AxiomBndr HsName
- | AxiomBndrSig HsName HsQualType
+data Formula
+  = AxQuant   Quantifier Formula
+  | AxEq      Formula HsExp SrcLoc
+  | AxExp     HsExp
   deriving (Eq,Show)
 
 data Quantifier
@@ -279,10 +280,12 @@ data Quantifier
    | AxExistsOne [AxiomBndr]
   deriving (Eq,Show)
 
-data Formula
-  = AxQuant   Quantifier Formula
-  | AxEq      Formula HsExp SrcLoc
-  | AxExp     HsExp
+data AxiomBndr
+ = AxiomBndr HsName
+ | AxiomBndrSig HsName HsQualType
   deriving (Eq,Show)
+
+
+
 
 
