@@ -54,8 +54,10 @@ import Common.Lib.Pretty
 --     should be added
 --      or should it be kept separately?
 -- what about open theorems of a node???
+type NODE_NAME = (SIMPLE_ID, String, Int)
+
 data DGNodeLab = DGNode {
-                dgn_name :: Maybe SIMPLE_ID,
+                dgn_name :: NODE_NAME,
                 dgn_sign :: G_sign,
                 dgn_sens :: G_l_sentence_list,
                 dgn_nf :: Maybe Node,
@@ -63,10 +65,48 @@ data DGNodeLab = DGNode {
                 dgn_origin :: DGOrigin
               }
             | DGRef {
-                dgn_renamed :: Maybe SIMPLE_ID,
+                dgn_renamed :: NODE_NAME,
                 dgn_libname :: LIB_NAME,
                 dgn_node :: Node
               } deriving (Show,Eq) 
+
+isInternalNode :: DGNodeLab -> Bool
+isInternalNode (DGNode n _ _ _ _ _) = isInternal n
+isInternalNode _ = False
+
+-- gets the name of a development graph node as a string
+getDGNodeName :: DGNodeLab -> String
+getDGNodeName (DGNode n _ _ _ _ _) = showName n
+getDGNodeName (DGRef n _ _) = showName n
+
+emptyName :: NODE_NAME
+emptyName = (mkSimpleId "","",0)
+
+showInt :: Int -> String
+showInt i = if i==0 then "" else show i
+
+showName :: NODE_NAME -> String
+showName (n,s,i) = show n ++ if ext=="" then "" else "_"++ext
+                   where ext = s ++ showInt i
+
+makeName :: SIMPLE_ID -> NODE_NAME
+makeName n = (n,"",0)
+
+getName :: NODE_NAME -> SIMPLE_ID
+getName (n,_,_) = n
+
+makeMaybeName :: Maybe SIMPLE_ID -> NODE_NAME
+makeMaybeName Nothing = emptyName
+makeMaybeName (Just n) = makeName n
+
+inc :: NODE_NAME -> NODE_NAME
+inc (n,s,i) = (n,s,i+1)
+
+isInternal :: NODE_NAME ->  Bool
+isInternal (_,s,i) = (i/=0) || s/=""
+
+extName :: String -> NODE_NAME -> NODE_NAME
+extName s (n,s1,i) = (n,s1++showInt i++s,0)
 
 isDGRef :: DGNodeLab -> Bool
 isDGRef (DGNode _ _ _ _ _ _) = False
@@ -154,7 +194,7 @@ getLogic (EmptyNode l) = l
 nodeSigUnion :: LogicGraph -> DGraph -> [NodeSig] -> DGOrigin -> Result (NodeSig, DGraph)
 nodeSigUnion lgraph dg nodeSigs orig =
   do sigUnion@(G_sign lid _) <- gsigManyUnion lgraph (map getSig nodeSigs)
-     let nodeContents = DGNode {dgn_name = Nothing,
+     let nodeContents = DGNode {dgn_name = emptyName,
 				dgn_sign = sigUnion,
 				dgn_sens = G_l_sentence_list lid [],
 				dgn_nf = Nothing,
@@ -185,7 +225,7 @@ extendDGraph _ n@(EmptyNode _) _ _ =
              \trying to add a morphism originating from an empty node"
 extendDGraph dg (NodeSig (n, G_sign lid _)) morph orig =
     let targetSig = cod Grothendieck morph
-        nodeContents = DGNode {dgn_name = Nothing,
+        nodeContents = DGNode {dgn_name = emptyName,
 			       dgn_sign = targetSig,
 			       dgn_sens = G_l_sentence_list lid [],
 			       dgn_nf = Nothing,
@@ -213,7 +253,7 @@ extendDGraphRev _ n@(EmptyNode _) _ _ =
              \trying to add a morphism pointing to an empty node"
 extendDGraphRev dg (NodeSig (n, G_sign lid _)) morph orig =
     let sourceSig = dom Grothendieck morph
-        nodeContents = DGNode {dgn_name = Nothing,
+        nodeContents = DGNode {dgn_name = emptyName,
 			       dgn_sign = sourceSig,
 			       dgn_sens = G_l_sentence_list lid [],
 			       dgn_nf = Nothing,
@@ -296,11 +336,6 @@ type LibEnv = Map.Map LIB_NAME GlobalContext
 
 emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
-
-get_dgn_name :: DGNodeLab -> Maybe SIMPLE_ID
-get_dgn_name (DGNode (Just name) _ _ _ _ _) = Just name
-get_dgn_name (DGRef (Just name) _ _) = Just name
-get_dgn_name _ = Nothing
 
 instance PrettyPrint DGOrigin where
   printText0 _ origin = case origin of

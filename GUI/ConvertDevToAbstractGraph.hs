@@ -108,6 +108,7 @@ type GInfo = (IORef ProofStatus,
               Descr,
               LIB_NAME,
               GraphInfo,
+              IORef Bool, -- show internal names?
               HetcatsOpts)
 
 initializeConverter :: IO (IORef GraphMem)
@@ -163,6 +164,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
+  showInternalNames <- newIORef True
   ioRefProofStatus <- newIORef (globContext, libname2dg convMaps,
 		                [([]::[DGRule], []::[DGChange])],
 				dGraph)
@@ -171,7 +173,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
   let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
       actGraphInfo = graphInfo graphMem
 --  graphId <- newIORef 0
-  let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, hetsOpts)
+  let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, showInternalNames, hetsOpts)
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
          -- action on "open"
@@ -201,7 +203,13 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
          -- the global menu
              [GlobalMenu (Menu Nothing
                [Menu (Just "Unnamed nodes")
-                 [Button "Hide" 
+                 [Button "Hide/show names" 
+                          (do b <- readIORef showInternalNames
+                              writeIORef showInternalNames (not b)
+                              putStrLn ("showInternalNames ="++show b)
+                              redisplay gid actGraphInfo
+                              return ()    ),
+                  Button "Hide nodes" 
                           (do --gid <- readIORef graphId
                               Result descr _ <- hideSetOfNodeTypes gid
 			                            ["internal",
@@ -211,7 +219,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                               redisplay gid actGraphInfo
                               return ()    ),
 
-                  Button "Show" 
+                  Button "Show nodes" 
                           (do --gid <- readIORef graphId
 			      descr <- readIORef event
                               showIt gid descr actGraphInfo
@@ -375,7 +383,7 @@ openProofStatus filename ioRefProofStatus convRef hetsOpts =
 proofMenu :: GInfo
              -> (ProofStatus -> IO (Res.Result ProofStatus))
              -> IO ()
-proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _) proofFun 
+proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _, _) proofFun 
   = do
   proofStatus <- readIORef ioRefProofStatus
   Res.Result diags res <- proofFun proofStatus
@@ -433,9 +441,12 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
 -- local menu for the nodetypes internal and locallyEmpty_internal
-createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
+createLocalMenuNodeTypeInternal color convRef dGraph 
+                                gInfo@(_,_,_,_,_,_,showInternalNames,_) =
                  Ellipse $$$ Color color
-		 $$$ ValueTitle (\ (s,_,_) -> return "")
+		 $$$ ValueTitle (\ (s,_,_) -> do
+                       b <- readIORef showInternalNames
+                       if b then return s else return "")
                  $$$ LocalMenu (Menu (Just "node menu")
                     [--createLocalMenuButtonShowSpec convRef dGraph,
 		     createLocalMenuButtonShowNumberOfNode,
@@ -452,7 +463,7 @@ createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
 
 -- local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
 createLocalMenuNodeTypeDgRef color convRef actGraphInfo 
-			     ioRefGraphMem graphMem (_,_,_,_,_,_,hetsOpts) = 
+			     ioRefGraphMem graphMem (_,_,_,_,_,_,_,hetsOpts) = 
                  Box $$$ Color color
 		 $$$ ValueTitle (\ (s,_,_) -> return s)
 		 $$$ LocalMenu (Button "Show referenced library"
@@ -504,7 +515,7 @@ createLocalMenuButtonTranslateTheory gInfo =
 -}
 --createLocalMenuTaxonomy :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
 --                     DGraph -> IO ()
-createLocalMenuTaxonomy (proofStatus,_,_,_,_,_,_) convRef dGraph =
+createLocalMenuTaxonomy (proofStatus,_,_,_,_,_,_,_) convRef dGraph =
       (Menu (Just "Taxonomy graphs")
        [createMenuButton "Subsort graph" 
 	       (passTh displaySubsortGraph) convRef dGraph,
@@ -521,7 +532,7 @@ createLocalMenuTaxonomy (proofStatus,_,_,_,_,_,_) convRef dGraph =
  
 
 
-createLocalMenuButtonShowSublogic (proofStatus,_,_,_,_,_,_) = 
+createLocalMenuButtonShowSublogic (proofStatus,_,_,_,_,_,_,_) = 
   createMenuButton "Show sublogic" (getSublogicOfNode proofStatus)
 createLocalMenuButtonShowNodeOrigin  = 
   createMenuButton "Show origin" showOriginOfNode 
@@ -600,7 +611,8 @@ createLocalMenuButtonShowNumberOfNode =
 createLocalEdgeMenu gInfo = 
     LocalMenu (Menu (Just "edge menu")
 	       [createLocalMenuButtonShowMorphismOfEdge gInfo,
-		createLocalMenuButtonShowOriginOfEdge gInfo]
+		createLocalMenuButtonShowOriginOfEdge gInfo,
+                createLocalMenuButtonCheckconsistencyOfEdge gInfo]
 	      )
 
 createLocalEdgeMenuThmEdge gInfo =
@@ -684,9 +696,7 @@ getSignatureOfNode descr ab2dgNode dgraph =
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
            (DGNode name (G_sign _ sig) _ _ _ _) ->
-              let title = case name of
-                   Nothing -> "Signature"
-                   Just n -> "Signature of "++showPretty n ""
+              let title = "Signature of "++showName name
                in createTextDisplay title (showPretty sig "") [size(80,50)]
               --putStrLn ((showPretty sig) "\n")
            (DGRef _ _ _) -> error 
@@ -715,7 +725,7 @@ lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
 used by the node menu defined in initializeGraph-}
 getTheoryOfNode :: GInfo -> Descr -> AGraphToDGraphNode -> 
                      DGraph -> IO()
-getTheoryOfNode  (proofStatusRef,_,_,_,_,_,hetsOpts) descr ab2dgNode dgraph = do
+getTheoryOfNode  (proofStatusRef,_,_,_,_,_,_,hetsOpts) descr ab2dgNode dgraph = do
  r <- lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph
  case r of
   Res.Result diags res -> do
@@ -736,9 +746,7 @@ displayTheory ext node dgraph gth =
     let dgnode = lab' (context node dgraph)
         str = printTheory (simplifyTh gth) in case dgnode of
            (DGNode name (G_sign _ _) _ _ _ _) ->
-              let thname = case name of
-                   Nothing -> "InternalNode"++show node
-                   Just n -> showPretty n ""
+              let thname = showName name
                   title = ext ++ " of " ++ thname
                in createTextSaveDisplay title (thname++".het") str [size(100,50)]
               --putStrLn ((showPretty sig) "\n")
@@ -751,7 +759,7 @@ displayTheory ext node dgraph gth =
 used by the node menu defined in initializeGraph-}
 translateTheoryOfNode :: GInfo -> Descr -> AGraphToDGraphNode -> 
                      DGraph -> IO()
-translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,opts) descr ab2dgNode dgraph = do
+translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts) descr ab2dgNode dgraph = do
  (_,libEnv,_,_) <- readIORef proofStatusRef
  case (do
    (_libname, node) <- 
@@ -796,13 +804,11 @@ getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
       let dgnode = lab' (context node dgraph)
           name = case dgnode of
                        (DGNode name _ _ _ _ _) -> name
-                       _ -> Nothing
+                       _ -> emptyName
        in case computeTheory libEnv dgraph node of
         Res.Result _ (Just th) ->
                 let logstr = show $ sublogicOfTh th
-                    title = case name of
-                     Nothing -> "Sublogic"
-                     Just n -> "Sublogic of "++showPretty n ""
+                    title =  "Sublogic of "++showName name
                  in createTextDisplay title logstr [size(30,10)]
         Res.Result diags _ -> 
           error ("Could not compute theory for sublogic computation: "++
@@ -820,9 +826,7 @@ showOriginOfNode descr ab2dgNode dgraph =
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
            (DGNode name _ _ _ _ orig) ->    
-              let title = case name of
-                     Nothing -> "Origin of node"
-                     Just n -> "Origin of node "++showPretty n ""
+              let title =  "Origin of node "++showName name
                in createTextDisplay title 
                     (showPretty orig "") [size(30,10)]
     Nothing -> error ("node with descriptor "
@@ -832,7 +836,7 @@ showOriginOfNode descr ab2dgNode dgraph =
 
 {- start local theorem proving or consistency checking at a node -}
 --proveAtNode :: Bool -> Descr -> AGraphToDGraphNode -> DGraph -> IO()
-proveAtNode checkCons gInfo@(_,_,convRef,_,_,_,_) descr ab2dgNode dgraph = 
+proveAtNode checkCons gInfo@(_,_,convRef,_,_,_,_,_) descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
     Just libNode -> 
       do convMaps <- readIORef convRef
@@ -879,7 +883,7 @@ showProofStatusOfThm descr Nothing =
 
 {- check consistency of the edge -}
 checkconsistencyOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
-checkconsistencyOfEdge _ (ref,_,_,_,_,_,opts) (Just (source,target,linklab)) = do 
+checkconsistencyOfEdge _ (ref,_,_,_,_,_,_,opts) (Just (source,target,linklab)) = do 
   (_,libEnv,_,dgraph) <- readIORef ref
   let dgtar = lab' (context target dgraph)
   case dgtar of
@@ -957,13 +961,7 @@ convertNodesAux convMaps descr graphInfo ((node,dgnode):lNodes) libname =
                                        descr graphInfo lNodes libname)
      return newConvMaps
 
--- gets the name of a development graph node as a string
-						  
-getDGNodeName :: DGNodeLab -> String
-getDGNodeName dgnode =
-  case get_dgn_name dgnode of
-    Just simpleId -> tokStr simpleId
-    Nothing -> ""
+
 
 -- gets the type of a development graph edge as a string
 getDGNodeType :: DGNodeLab -> IO String
@@ -971,9 +969,9 @@ getDGNodeType dgnode =
   do let nodetype = getDGNodeTypeAux dgnode
      case (isDGRef dgnode) of
        True -> return (nodetype++"dg_ref")
-       False -> case get_dgn_name dgnode of
-                  Just _ -> return (nodetype++"spec")
-                  Nothing -> return (nodetype++"internal")
+       False -> if isInternalNode dgnode 
+                   then return (nodetype++"internal")
+                   else return (nodetype++"spec")
     
 getDGNodeTypeAux :: DGNodeLab -> String
 getDGNodeTypeAux dgnode = if (locallyEmpty dgnode) then "locallyEmpty_"

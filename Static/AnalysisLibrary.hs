@@ -270,10 +270,10 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx@(gannos, genv, _) l
      else
      resToIORes $ message () analyseMessage
   (gen',(imp,params,parsig,allparams),dg') <- 
-     resToIORes (ana_GENERICITY lgraph gctx l opts gen)
+     resToIORes (ana_GENERICITY lgraph gctx l opts (extName "P" (makeName spn)) gen)
   (sp',body,dg'') <- 
      resToIORes (ana_SPEC lgraph (gannos,genv,dg') 
-                          allparams (Just spn) opts (item asp))
+                          allparams (makeName spn) opts (item asp))
   let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
   if Map.member spn genv 
    then resToIORes (plain_error (libItem',gctx,l,libenv)
@@ -430,9 +430,9 @@ ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
               vn gen vt gsis pos = do
   let adj = adjustPos (headPos pos)
   (gen',(imp,params,parsig,allparams),dg') <- 
-       ana_GENERICITY lgraph gctx l opts gen
+       ana_GENERICITY lgraph gctx l opts (extName "VG" (makeName vn)) gen
   (vt',(src,tar),dg'') <- 
-       ana_VIEW_TYPE lgraph (gannos,genv,dg') l allparams opts vt
+       ana_VIEW_TYPE lgraph (gannos,genv,dg') l allparams opts (makeName vn) vt
   let gsigmaS = getSig src
       gsigmaT = getSig tar
   G_sign lidS sigmaS <- return gsigmaS
@@ -501,7 +501,7 @@ refNodesig :: LIB_NAME -> (DGraph, [NodeSig]) -> (Maybe SIMPLE_ID, NodeSig)
            -> (DGraph, [NodeSig])
 refNodesig ln (dg,refdNodes) (name,NodeSig(n,sigma)) =
   let node_contents = DGRef {
-        dgn_renamed = name,
+        dgn_renamed = makeMaybeName name,
         dgn_libname = ln,
         dgn_node = n }
       [node] = newNodes 0 dg

@@ -670,21 +670,13 @@ prettyPrintPath dgraph path =
 {- returns the name of the source node of the given edge-}
 prettyPrintSourceNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintSourceNode dgraph (src,_,_) =
-  case get_dgn_name lab of
-    Just simpleId -> tokStr simpleId
-    Nothing -> ""
-  where
-    lab = lab' (context src dgraph)
+   getDGNodeName $ lab' (context src dgraph)
 
 
 {- returns the name of the target node of the given edge-}
 prettyPrintTargetNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintTargetNode dgraph (_,tgt,_) =
-  case get_dgn_name lab of
-    Just simpleId -> tokStr simpleId
-    Nothing -> ""
-  where
-    lab = lab' (context tgt dgraph)
+   getDGNodeName $ lab' (context tgt dgraph)
 
 
 {- creates a unproven global thm edge for the given path, i.e. with the same source and target nodes and the same morphism as the path -}
@@ -1377,7 +1369,7 @@ basicInferenceNode checkCons lg (ln,node)
           DGNode _ _ _ _ _ _-> dgn_name nlab
           DGRef _ _ _ -> dgn_renamed nlab
         thName = showPretty (getLIB_ID ln) "_"
-                 ++ maybe (show node) (flip showPretty "") nodeName
+                 ++ {-maybe (show node)-} showName nodeName
     -- compute the list of proof goals
     let inEdges = inn dGraph node
         localEdges = filter isUnprovenLocalThm inEdges

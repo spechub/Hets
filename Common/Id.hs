@@ -8,7 +8,7 @@ Stability   :  provisional
 Portability :  portable
 
 
-This modul supplies positions, simple and mixfix identifiers. 
+This module supplies positions, simple and mixfix identifiers. 
 A simple identifier is a lexical token given by a string and a start position.
 
 -  A 'place' is a special token within mixfix identifiers.
@@ -75,6 +75,9 @@ type SIMPLE_ID = Token
 -- | a 'Token' with 'nullPos'
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullPos
+
+extSimpleId :: String -> SIMPLE_ID -> SIMPLE_ID
+extSimpleId s sid = sid {tokStr = tokStr sid ++ s}
 
 -- | show the plain string
 showTok :: Token -> ShowS
