@@ -4,14 +4,11 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   scanner for Casl tokens and extensions to Parsec
-   
-   <http://www.cs.uu.nl/~daan/parsec.html>
-   extended with 'consumeNothing'
+   scanner for Casl tokens using Parsec <http://www.cs.uu.nl/~daan/parsec.html>
    
    <http://www.cofi.info/Documents/CASL/Summary/>
    from 25 March 2001
@@ -98,8 +95,7 @@ p `enclosedBy` q = begDoEnd q p q
 checkWith :: (Show a) => GenParser tok st a -> (a -> Bool) 
 	  -> GenParser tok st a
 p `checkWith` f = do x <- p
-		     if f x then return x else 
-		       consumeNothing >> unexpected (show x)
+		     if f x then return x else unexpected (show x)
 
 separatedBy :: GenParser tok st a -> GenParser tok st b 
 	    -> GenParser tok st ([a], [b])
