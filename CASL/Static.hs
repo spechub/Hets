@@ -26,9 +26,9 @@
 -- Export declarations
 -----------------------------------------------------------------------------
 
-module Static ( basicAnalysis, statSymbMapItems, statSymbItems,
+module Static {-( basicAnalysis, statSymbMapItems, statSymbItems,
                 symbolToRaw, idToRaw, symOf, symmapOf, matches,
-                isSubSig, symName ) where
+                isSubSig, symName )-} where
 
 ------------------------------------------------------------------------------
 -- Imports from other modules
@@ -45,7 +45,6 @@ import GlobalAnnotationsFunctions
 import AS_Basic_CASL
 import Sign
 import Result
-import Graph
 import Latin
 import Utils
 import Logic ( EndoMap )
@@ -73,6 +72,7 @@ data LocalEnv = Env { getName   :: Filename,
                       getSign   :: Sign,
                       getPsi    :: Sentences,
                       getGlobal :: GlobalVars }
+	      deriving Show
 
 data SigLocalEnv = SigEnv { localEnv  :: LocalEnv,
                             selectors :: [Annoted OpItem],
@@ -1095,7 +1095,7 @@ ana_BASIC_ITEMS sigma _itm =
                     { getSign = updateOpItems (getName $ localEnv sigma')
                                               (getSign $ localEnv sigma')
                                               (selectors sigma') }
-    (Free_datatype free_types pos)
+    (Free_datatype _free_types _pos)
       -> return sigma;
     (Sort_gen sig_items pos)
       -> ana_sort_gen sigma sig_items pos;
@@ -1117,13 +1117,13 @@ ana_BASIC_SPEC sigma (Basic_spec l) = foldM ana_BASIC_ITEMS sigma l
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                  -> Result (Sign,Sign,[(String,Sentence)])
-basicAnalysis (spec,sigma,ga) = return(emptySign,emptySign,[])
-{-  do env <- ana_BASIC_SPEC
+basicAnalysis (spec,sigma,ga) = -- return(emptySign,emptySign,[])
+  do env <- ana_BASIC_SPEC
             (Env "unknown" ga sigma emptySentences emptyGlobal) spec
      let sigma' = getSign env
-     let delta  = signDiff sigma sigma'
-     return (delta,sigma',flattenSentences $ getPsi env)
--}
+     let delta  = signDiff sigma' sigma
+     return (sigma', delta,flattenSentences $ getPsi env)
+
 ------------------------------------------------------------------------------
 --
 --                             Static Analysis
@@ -1134,7 +1134,7 @@ basicAnalysis (spec,sigma,ga) = return(emptySign,emptySign,[])
 -- FIXME
 --
 signDiff :: Sign -> Sign -> Sign
-signDiff a b = b
+signDiff a b = emptySign {getMap = minusFM (getMap a) (getMap b)}
 
 checkItem :: Sign -> (Id,SigItem) -> Bool
 checkItem sigma (idt,si) =

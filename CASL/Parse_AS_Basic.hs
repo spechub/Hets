@@ -91,8 +91,9 @@ dotFormulae = do d <- dotT
 			Nothing -> return (Axiom_items ns ps)
 			Just t -> return (Axiom_items ns
 			       (ps ++ [tokPos t]))
-    where aFormula = bind appendAnno (annoParser formula) lineAnnos
 
+aFormula  :: AParser (Annoted FORMULA)
+aFormula = bind appendAnno (annoParser formula) lineAnnos
 
 -- ------------------------------------------------------------------------
 -- basicSpec

@@ -19,6 +19,7 @@ import SortItem
 import OpItem
 import RunParsers
 import RunMixfixParser
+import RunStaticAna
 
 main :: IO ()
 main = exec lineParser fileParser
@@ -36,6 +37,8 @@ lineParser = [
  ("MixfixFormula", HetParser resolveForm),
  ("VarIds", HetParser varId)]
 
-fileParser = [("BasicSpec", HetParser basicSpec)]
+fileParser = [("BasicSpec", HetParser basicSpec)
+	      , ("analysis", HetParser runAna)
+	     ]
 
 \end{code}

@@ -1,4 +1,4 @@
-{-# OPTIONS -fno-warn-missing-methods #-}
+
 {- HetCATS/CASL/Logic_CASL.hs
    $Id$
    Authors: Klaus Lüttich
@@ -19,10 +19,13 @@ import Print_AS_Basic
 import Parse_AS_Basic
 import SymbolParser
 import ParsecInterface
+import AS_Annotation
 import AnnoState(emptyAnnos)
-
+import Parsec
+import FiniteMap
 import Sign
 import Logic
+import Lexer((<<))
 
 import qualified Sublogics
 import qualified Static
@@ -36,10 +39,13 @@ instance Category CASL Sign Morphism
     where
          -- ide :: id -> object -> morphism
 	 ide CASL sigma = Morphism { msource = sigma,
-                                     mtarget = sigma
+                                     mtarget = sigma,
+				     sort_map = emptyFM,
+				     fun_map = emptyFM,
+				     pred_map = emptyFM
                                    }
          -- o :: id -> morphism -> morphism -> Maybe morphism
-	 comp CASL sigma1 sigma2 = Just sigma1 -- ???
+	 comp CASL sigma1 _sigma2 = Just sigma1 -- ???
          -- dom, cod :: id -> morphism -> object
 	 dom CASL _ = emptySign
 	 cod CASL _ = emptySign
@@ -70,7 +76,14 @@ instance LatticeWithTop Sublogics.CASL_Sublogics where
 -- CASL logic
 
 instance Sentences CASL Sentence () Sign Morphism Symbol where
--- missing
+      map_sen CASL _morphism s = return s
+      parse_sentence CASL _sign str = 
+	  case runParser (aFormula << eof) emptyAnnos "" str of
+	  Right _ -> return $ Axiom $ Annoted 
+		     (AxiomDecl [] (TrueAtom []) []) [] [] []
+	  Left err -> fail $ show err
+      provers CASL = [] 
+      cons_checkers CASL = []
 
 instance StaticAnalysis CASL BASIC_SPEC Sentence ()
                SYMB_ITEMS SYMB_MAP_ITEMS
@@ -83,8 +96,9 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          -- ensures_amalgamability :: id
          --   -> (Diagram Sign Morphism, Node, Sign, LEdge Morphism, Morphism)
          --   -> Result (Diagram Sign Morphism)
+	 ensures_amalgamability CASL _ = fail "ensures_amalgamability nyi"
 
-         sign_to_basic_spec CASL sigma sens = Basic_spec []
+         sign_to_basic_spec CASL _sigma _sens = Basic_spec []
 
          symbol_to_raw CASL = Static.symbolToRaw
          id_to_raw CASL = Static.idToRaw
@@ -93,23 +107,27 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          matches CASL = Static.matches
          sym_name CASL = Static.symName
          
-         -- add_sign :: id -> Sign -> Sign -> Sign      
+         -- add_sign :: id -> Sign -> Sign -> Sign
+	 add_sign CASL s1 s2 = s1 {getMap = plusFM (getMap s1) (getMap s2)}
          empty_signature CASL = emptySign
-         signature_union CASL sigma1 sigma2 = return sigma1 -- ??? incorrect
-         morphism_union CASL mor1 mor2 = return mor1 -- ??? incorrect
+         signature_union CASL sigma1 _sigma2 = return sigma1 -- ??? incorrect
+         morphism_union CASL mor1 _mor2 = return mor1 -- ??? incorrect
          -- final_union :: id -> Sign -> Sign -> Result Sign
+	 final_union CASL s1 s2 = return $ 
+	          s1 {getMap = plusFM (getMap s1) (getMap s2)}
          is_subsig CASL = Static.isSubSig
-         cogenerated_sign CASL rsys sigma = return (ide CASL sigma)
-         generated_sign CASL rsys sigma = return (ide CASL sigma)
+         cogenerated_sign CASL _rsys sigma = return (ide CASL sigma)
+         generated_sign CASL _rsys sigma = return (ide CASL sigma)
          -- generated_sign, cogenerated_sign :: id -> [RawSymbol]
          --                -> Sign -> Result Morphism
-         induced_from_morphism CASL rmap sigma = return (ide CASL sigma) -- ???
-         induced_from_to_morphism CASL rmap sigmaS sigmaT =
+         induced_from_morphism CASL _rmap sigma = return (ide CASL sigma)-- ???
+         induced_from_to_morphism CASL _rmap sigmaS _sigmaT =
            return (ide CASL sigmaS) -- ???
          --induced_from_to_morphism :: id -> EndoMap RawSymbol
          --               -> Sign -> Sign -> Result Morphism
          -- extend_morphism :: id -> Sign -> Morphism -> Sign -> Sign
-         --               -> Result Morphism                  
+         --               -> Result Morphism
+         extend_morphism CASL _s m _s1 _s2 = return m
 
 instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS

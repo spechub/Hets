@@ -8,6 +8,7 @@ import FiniteMap
 import Graph
 import List(intersperse)
 import Maybe(mapMaybe)
+import GlobalAnnotations()
 
 type SortId = Id  -- non-mixfix, but possibly compound
 
@@ -182,12 +183,10 @@ instance Eq SigItem where
 
 data Sign = SignAsMap { getMap   :: (FiniteMap Id [SigItem]),
                         getGraph :: (Graph SortId ()) }
+	  deriving Show
 
 instance Eq Sign where
   (==) (SignAsMap m _) (SignAsMap n _) = n==m
-
-instance Show Sign where
-    show = error "show for type Sign not defined"
 
 emptySign :: Sign
 emptySign = SignAsMap emptyFM empty
@@ -229,7 +228,7 @@ data Morphism = Morphism {msource,mtarget :: Sign,
                           sort_map :: Sort_map, 
                           fun_map :: Fun_map, 
                           pred_map :: Pred_map}
-                         deriving (Eq)
+                         deriving (Eq, Show)
 
 -- ??? this needs to be implemented!
 --         legal_sign :: Sign -> Bool
