@@ -26,7 +26,7 @@ main = do as <- getArgs
 		        [inp,oup] -> return (inp,oup)
 			_   -> error "give a filename to read and a filename to write"
 	  ld <- read_sml_ATerm inp
-	  putStrLn $ "In: " ++ inp ++ "\nOut: " ++ oup ++ "\n" ++ show ld
+	  putStrLn $ "In: " ++ inp ++ "\nOut: " ++ oup ++ "\n" 
 	  putStrLn "Starting to write the output..."
 	  hout <- openFile oup WriteMode
 	  hPutStr hout $ printLIB_DEFN_text ld
