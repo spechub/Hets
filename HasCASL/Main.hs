@@ -20,5 +20,4 @@ lineParser = [
  ("BasicItems", HetParser basicItems),
  ("Items", HetParser basicSpec)]
 
-fileParser = [("BasicSpec", HetParser basicSpec),
-	     ("Prelude", HetParser basicSpec)]
+fileParser = [("BasicSpec", HetParser basicSpec)]

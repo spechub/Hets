@@ -14,87 +14,100 @@ __
 <=
 .a
 'a'
-=[a,b]
-<[a,b]
-<=[a,b]
-.a[a,b]
-'a'[a,b]
-__*__
-a=e=b
-a= e=b
-a= e=b
-a= e=__b__
-(a=b)
-(a__b)
-(a__b)a
-b(a__b)
-b(a__b)a
-{a__b}
-{a__b}a
-b{a__b}
-b{a__b}a
-[a__b]
-[a__b]a
-b[a__b]
-b[a__b]a
-(a,=,b)
-({},[],{[]{}})
-{{},[],{[]{}}}
-[{},[],{[]{}}]
-((var y:bb))
-((op y:bb))
-((op__<__: ##))
-((op__<__: ## -> --))
-((op__<__:bb))
-((op__<__:? ?bb))
-((op__<__:? ? ##))
-((op__<__: ?##))
-((pred y:bb))
-((pred y:bb*bb))
-((var y:bb->bb))
-a=e= <b
+= [a, b]
+< [a, b]
+<= [a, b]
+.a [a, b]
+'a' [a, b]
+__ * __
+a =e= b
+a = e = b
+a = e = b
+a = e = __ b __
+(a = b)
+(a __ b)
+(a __ b) a
+b (a __ b)
+b (a __ b) a
+{a __ b}
+{a __ b} a
+b {a __ b}
+b {a __ b} a
+[a __ b]
+[a __ b] a
+b [a __ b]
+b [a __ b] a
+(a, =, b)
+({}, [], {[] {}})
+{{}, [], {[] {}}}
+[{}, [], {[] {}}]
+(var y : bb)
+(op y : bb)
+(op __<__ : ##)
+(op __<__ : ## -> --)
+(op __<__ : bb)
+(op __<__ : () ->? bb)
+(op __<__ : () ->? ##)
+(op y : bb ->? ())
+(op y : bb × bb ->? ())
+(var y : bb -> bb)
+a = e =< b
 ys as b
-((pred y:bb))
-((pred y:bb))
-((pred y:()))
-(predy y:bb)
-(predy:bb)
-(predy:bb)
-exists1(predy::bb)
-exists predy:bb·a
-exists!a:v·x
-exists!a:v·x
-exists! # :v·x
-forall a:v·x
-\a:v·x
-\a:v·x
-\a:v.!x
-\a:v.!x
-\a:v· !x
-\a:v· !x
+(op y : bb ->? ())
+(op y : bb ->? ())
+(op y : () ->? ())
+(predy y : bb)
+(predy : bb)
+(predy : bb)
+exists1 (predy :: bb)
+exists predy : bb . a
+exists! a : v . x
+exists! a : v . x
+exists! # : v . x
+forall a : v . x
+\ a : v . x
+\ a : v . x
+\ a : v .! x
+\ a : v .! x
+\ a : v . ! x
+\ a : v . ! x
 a if b
 a when b else c
 def x
-def#
-{}when[]else{}
-a/\b/\c
-a\/b\/c
-a=>b
-a<=>b
+def #
+{} when [] else {}
+a /\ b /\ c
+a \/ b \/ c
+a => b
+a <=> b
 true
 false
-#as b
-b in#
-a\a:v.! !x
-= e=
-=e<
-=e<
-=ea
-=e a
-=a=
-=a=
-==e=
-==e=
-=e=e=e=
-=e=e=e=
-= e=e=e=
+# as b
+b in #
+a \ a : v .! ! x
+= e =
+= e <
+= e <
+= ea
+= e a
+= a =
+= a =
+== e =
+== e =
+=e= e =e=
+=e= e =e=
+= e =e= e =
+(op __<__ : () ->? ## -> bb)
+(op __<__ : () ->? aa × bb)
+let x = y in z
+let x = y;
+    x = y;
+    x = y in z
+let x = y;
+    x = y;
+    x = y in z in t
+let x = (y in z) in x
+let x = \ y : t . y in x (x)
+let x = case x in t of y -> z;
+    x = y in x
+()

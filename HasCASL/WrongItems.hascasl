@@ -5,3 +5,5 @@ type ->?
 type *
 type -->
 type -->?
+op a:? b
+op a: ? b
