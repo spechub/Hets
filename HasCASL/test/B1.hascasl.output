@@ -1,17 +1,17 @@
-a < (e,g)
+a < (e, g)
 b
 c
 d < a
 e
 f
 g
-h = (a,b)
+h = (a, b)
 j = {_ < t}
 Type Constructors
 [__] :a ->b
 a__b :a ->b
 t :a
-x :(a,{_ < t},b) %(var)%
+x :(a, {_ < t}, b) %(var)%
 y :Type %(var)%
 Assumptions
 x : s %(var)%

@@ -5,7 +5,7 @@ d < e
 e
 g < a
 h = Type
-i = (g,a)
+i = (a, g)
 Type Constructors
 t :Type %(var)%
 Assumptions

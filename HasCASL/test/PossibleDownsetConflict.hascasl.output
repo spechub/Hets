@@ -3,7 +3,7 @@ b = {_ < s}
 c
 d
 e = a
-h < (a,b,e)
+h < (a, b, e)
 Type Constructors
 s :Type %(var)%
 t :Type %(var)%

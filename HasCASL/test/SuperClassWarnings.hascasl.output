@@ -1,7 +1,7 @@
 a < b
 b
 c
-d < (a,b)
+d < (a, b)
 e < f
 f
 g < h
