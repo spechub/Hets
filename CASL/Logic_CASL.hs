@@ -33,6 +33,8 @@ import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import Data.Dynamic
 
+import CASL.CCC.OnePoint
+
 data CASL = CASL deriving Show
 
 instance Language CASL  -- default definition is okay

@@ -44,6 +44,7 @@ import WriteFn
 
 import Haskell.Haskell2DG
 
+
 main :: IO ()
 main = 
     do opt <- getArgs >>= hetcatsOpts
