@@ -9,7 +9,6 @@ import Common.Lib.Graph
 import Data.List(intersperse)
 import Data.Maybe(mapMaybe)
 import Data.Dynamic
-import Common.GlobalAnnotations()
 
 type SortId = Id  -- non-mixfix, but possibly compound
 
