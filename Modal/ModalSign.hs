@@ -51,4 +51,4 @@ isSubModalSign a b =
     && isSubMapSet (rigidPreds a) (rigidPreds b)
     && Map.subsetBy sublist (modies a) (modies b)
     && Map.subsetBy sublist (termModies a) (termModies b)
-    where sublist c d =  null (c List.\\ d)
+    where sublist = const $ const True
