@@ -16,6 +16,7 @@
 
   für pr_epsilon:
   Einbettungs-Signaturmorphismus, ueber Funktion in LocalEnv.hs
+  Frage: Konstruktoren/Selektoren in fun_map?
 
   Testen mit hetcats/hetcats.hs (Klaus kontakten)
 
