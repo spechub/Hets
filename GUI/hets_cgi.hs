@@ -10,7 +10,8 @@ Portability  : non-portable
    Interface for web page with WASH/CGI
 
    todo:
-     - default for checkbox regarding logging of input must be "selected"
+     - default for checkbox regarding logging of input must be "selected" 
+       .. done
      - temporary files should be created with these permissions:
         -rw-rw-r-- (than every member of grp agcofi can remove 
 		    temporary files)
@@ -64,7 +65,7 @@ page1 title =
       text "output pretty print ASCII"
       selectTex <- checkboxInputField (attr "valus" "yes")
       text "output pretty print LaTeX"
-      selectAchiv <- p ( checkboxInputField(attr "valus" "yes") ##
+      selectAchiv <- p ( checkboxInputField(attr "checked" "checked") ##
 			 text "If this checkbox is selected, your input will be logged!")
       -- submit/reset botton
       p (submit (F5 input selectTree selectEnv selectTex selectAchiv)
