@@ -128,9 +128,14 @@ inclusionMor e1 e2 =
   if isSubEnv e1 e2
      then return (embedMorphism e1 e2)
      else Result [Diag Error 
-          ("Attempt to construct inclusion between non-subsignatures:"
-           ++ "\nSignature 1:\n" ++ showPretty e1 "\nSignature 2:\n" 
-           ++ showPretty e2 "") nullPos] Nothing
+          ("Attempt to construct inclusion between non-subsignatures:\n"
+           ++ showEnvDiff e1 e2) nullPos] Nothing
+
+showEnvDiff :: Env -> Env -> String
+showEnvDiff e1 e2 = 
+    "Signature 1:\n" ++ showPretty e1 "\nSignature 2:\n" 
+           ++ showPretty e2 "\nDifference\n" ++ showPretty 
+              (diffEnv e1 e2) ""
 
 symbMapToMorphism :: Env -> Env -> SymbolMap -> Result Morphism
 -- consider partial symbol map
@@ -143,7 +148,7 @@ symbMapToMorphism sigma1 sigma2 smap = do
   where
   myIdMap i k m = do
     m1 <- m 
-    sym <- maybeToResult nullPos 
+    sym <- maybeToResult (posOfId i)
              ("symbMapToMorphism - Could not map type "++showId i "")
              $ Map.lookup (Symbol { symName = i
                                   , symType = TypeAsItemType 
@@ -154,16 +159,16 @@ symbMapToMorphism sigma1 sigma2 smap = do
   insFun i ot m = do
     let osc = opType ot
     m1 <- m
-    sym <- maybeToResult nullPos 
+    sym <- maybeToResult (posOfId i)
              ("symbMapToMorphism - Could not map op "++showId i "")
              $ Map.lookup (Symbol { symName = i
                                   , symType = OpAsItemType osc
                                   , symEnv = sigma1 }) smap
     k <- case symType sym of
         OpAsItemType sc -> return sc
-        _ -> plain_error (osc)
-              ("symbMapToMorphism - Wrong result symbol type for op"
-               ++showId i "") nullPos 
+        _ -> Result [mkDiag Error
+                     "symbMapToMorphism - Wrong result symbol type for op" i]
+             Nothing
     return (Map.insert (i, osc) (symName sym, k) m1)
 
 legalEnv :: Env -> Bool

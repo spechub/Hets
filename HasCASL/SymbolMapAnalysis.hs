@@ -34,7 +34,6 @@ import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
-import Common.Lib.Pretty
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap1 sigma = do
@@ -42,7 +41,7 @@ inducedFromMorphism rmap1 sigma = do
   rmap <- anaRawMap sigma sigma rmap1
   let syms = symOf sigma
       srcTypeMap = typeMap sigma
-      incorrectRsyms = Map.foldWithKey
+      wrongRsyms = Map.foldWithKey
         (\rsy _ -> if Set.any (matchesND rsy) syms
                     then id
                     else Set.insert rsy)
@@ -56,35 +55,35 @@ inducedFromMorphism rmap1 sigma = do
           -- that is not directly mapped
           _ -> Map.lookup (ASymbol sy) rmap == Nothing
   -- ... if not, generate an error
-  if Set.isEmpty incorrectRsyms then return () else
-    pplain_error ()
-       (text "the following symbols:"
-        <+> printText incorrectRsyms 
-        $$ text "are already mapped directly or do not match with signature"
-        $$ printText sigma) nullPos
+  if Set.isEmpty wrongRsyms then do
   -- compute the sort map (as a Map)
-  myTypeIdMap <- foldr
+      myTypeIdMap <- foldr
               (\ (s, ti) m -> 
                do s' <- typeFun sigma rmap s (typeKind ti)
                   m1 <- m
                   return $ Map.insert s s' m1) 
               (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
-  let tarTypeMap = addUnit $ Map.foldWithKey ( \ i k m -> 
-                               Map.insert (Map.findWithDefault i i myTypeIdMap)
-                                          (mapTypeInfo myTypeIdMap k) m)
-                            Map.empty srcTypeMap
-  op_Map <- Map.foldWithKey (opFun rmap sigma myTypeIdMap)
-              (return Map.empty) (assumps sigma)
+      let tarTypeMap = addUnit $ Map.foldWithKey 
+                       ( \ i k m -> Map.insert 
+                         (Map.findWithDefault i i myTypeIdMap)
+                         (mapTypeInfo myTypeIdMap k) m)
+                       Map.empty srcTypeMap
+      op_Map <- Map.foldWithKey (opFun rmap sigma myTypeIdMap)
+                (return Map.empty) (assumps sigma)
   -- compute target signature
-  let sigma' = Map.foldWithKey (mapOps myTypeIdMap op_Map) sigma
-               { typeMap = tarTypeMap, assumps = Map.empty }
-                              $ assumps sigma
+      let sigma' = Map.foldWithKey (mapOps myTypeIdMap op_Map) sigma
+                   { typeMap = tarTypeMap, assumps = Map.empty }
+                   $ assumps sigma
   -- return assembled morphism
-  Result (envDiags sigma') $ Just ()
-  return $ (mkMorphism sigma (diffEnv sigma' preEnv))
-             { typeIdMap = myTypeIdMap
-             , funMap = op_Map }
+      Result (envDiags sigma') $ Just ()
+      return $ (mkMorphism sigma (diffEnv sigma' preEnv))
+                 { typeIdMap = myTypeIdMap
+                 , funMap = op_Map }
+      else Result [Diag Error 
+           ("the following symbols: " ++ showPretty wrongRsyms 
+            "\nare already mapped directly or do not match with signature\n"
+            ++ showPretty sigma "") nullPos] Nothing
 
 mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo 
 mapTypeInfo im ti = 
@@ -111,10 +110,8 @@ typeFun e rmap s k = do
     case Set.size rsys of
           0 -> return s  -- use default = identity mapping
           1 -> return $ rawSymName $ Set.findMin rsys -- take the unique rsy
-          _ -> pplain_error s  -- ambiguity! generate an error 
-                 (text "type: " <+> printText s 
-                  <+> text "mapped ambiguously:" <+> printText rsys)
-                 nullPos
+          _ -> Result [mkDiag Error ("type: " ++ showPretty s 
+                       " mapped ambiguously") rsys] Nothing
 
 -- | compute mapping of functions
 opFun :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfos 
@@ -126,13 +123,8 @@ opFun rmap e type_Map i ots m =
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
        (Just rsy1, Just rsy2) -> 
-          do m' <- m
-             pplain_error m'
-               (text "Operation" <+> printText i
-                <+> text "is mapped twice:"
-                <+> printText rsy1 <+> text "," <+> printText rsy2
-               )
-               nullPos
+             Result [mkDiag Error ("Operation " ++ showId i " is mapped twice")
+                     (rsy1, rsy2)] Nothing 
        (Just rsy, Nothing) -> 
           Set.fold (insertmapOpSym e type_Map i rsy) m1 ots1
        (Nothing, Just rsy) -> 
@@ -154,20 +146,19 @@ mapOpSym :: Env -> IdMap -> Id -> TypeScheme -> RawSymbol
              -> Result (Id, TypeScheme)
 mapOpSym e type_Map i ot rsy = 
     let sc = mapTypeScheme type_Map ot 
-        err d = pplain_error (i, sc) 
-                            (text "Operation symbol " 
-                             <+> printText (idToOpSymbol e i sc) 
-                             $$ text "is mapped to" <+> d) nullPos in 
+        err d = Result [mkDiag Error ("Operation symbol " ++
+                             showPretty (idToOpSymbol e i sc) 
+                             "\nis mapped to " ++ d) rsy] Nothing in 
       case rsy of
       AnID id' -> return (id', sc)
       AKindedId k id' -> case k of 
           SK_op -> return (id', sc)
-          _ -> err (text "wrongly kinded raw symbol" $$ printText rsy)
+          _ -> err "wrongly kinded raw symbol"
       ASymbol sy -> case symType sy of 
           OpAsItemType ot2 -> if ot2 == expand (typeMap $ symEnv sy) sc 
                               then return (symName sy, ot2)
-              else err (text "wrong type" $$ printText ot2)
-          _ ->  err (text "wrongly kinded symbol" $$ printText sy)
+              else err "wrongly typed symbol"
+          _ ->  err "wrongly kinded symbol"
       _ -> error "mapOpSym"              
 
     -- insert mapping of op symbol (id, ot) to raw symbol rsy into m
@@ -229,14 +220,10 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
               && symbTypeToKind t1 == SK_type 
               && symbTypeToKind t2 == SK_type then
           return mor1 { typeIdMap = Map.single n1 n2 } 
-          else pfatal_error (text "No symbol mapping found for "
-           $$ printText rmap 
-           $$ text "sigma1" $$ printText sigma1
-           $$ text "inducedFromMorphism sigma1" $$ printText (mtarget mor1)
-           $$ text "to sigma2" $$ printText sigma2
-           $$ text "difference" $$ printText (diffEnv (mtarget mor1) sigma2))
-              nullPos
---        inducedFromToMorphism2 rmap sigma1 sigma2
+          else Result [Diag Error ("No symbol mapping found for:\n"
+           ++ showPretty rmap "\nOrignal Signature1:\n"
+           ++ showPretty sigma1 "\nInduced "
+           ++ showEnvDiff (mtarget mor1) sigma2) nullPos] Nothing
 
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism

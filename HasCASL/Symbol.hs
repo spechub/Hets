@@ -14,15 +14,17 @@ Portability :  portable
 module HasCASL.Symbol where
 
 import HasCASL.Le
-import HasCASL.PrintLe
+import HasCASL.PrintLe()
 import HasCASL.As
 import HasCASL.RawSym
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
-import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+
+instance PosItem Symbol where
+    get_pos = Just . posOfId . symName 
 
 checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a 
 checkSymbols s1 s2 r = 
@@ -30,8 +32,7 @@ checkSymbols s1 s2 r =
                  Set.filter (not . matchSymb e2 . ASymbol) d)
                   s1 $ Set.toList s2 in
     if Set.isEmpty s then r else
-       Result [Diag Error ("unknown symbols: " ++  showPretty s "") 
-              $ posOfId $ symName $ Set.findMin s] Nothing
+       Result [mkDiag Error "unknown symbols" s] Nothing
 
 dependentSyms :: Symbol -> Env -> SymbolSet
 dependentSyms sym sig = 
