@@ -313,8 +313,8 @@ commaSep1 :: GenParser Char st a -> GenParser Char st [a]
 commaSep1 p = fmap fst $ separatedBy p commaT
 
 placeS :: GenParser Char st String
-placeS = string place
+placeS = try (string place) <?> place
 
 placeT :: GenParser Char st Token
-placeT = pToken (try (placeS) <?> place)
+placeT = pToken placeS
 
