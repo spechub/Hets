@@ -20,9 +20,9 @@ pred eq : s × s
   (\ x : s; y : s . y res eq (x,y))
 type s < ? s
 program all (p : (? s)) : (? ()) = eq (p,tt)
-program And ((x,y : (? ()))) : (? ()) = t1 () res t2 ()
-program __ impl __ ((x,y : (? ()))) = eq (x,x And y)
-program __ or __ ((x,y : (? ()))) : (? ()) =
+program And (x,y : (? ())) : (? ()) = t1 () res t2 ()
+program __ impl __ (x,y : (? ())) = eq (x,x And y)
+program __ or __ (x,y : (? ())) : (? ()) =
 	all (\ r : (? ()) . ((x impl r) res (y impl r)) impl r);
 	ex (p : (? s)) : (? ()) =
 	all (\ r : (? ()) . all (\ x : s . p (x) impl r) impl r);
@@ -280,7 +280,7 @@ type s,abcdefghijlklmnopqrstuvwxyz,ABCDEFGHIJKLMONOPQRSTUVWXYZ,
      a_b_c,ab2,ab_2_3_a,a',a'b''2
 op __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__ : s × s -> s
    %% NO-BRACKET-SIGNs
-op 'a','"','\\','\n','\000','\255','\x00','\xFF','\o000','\o377',
+op 'a','\"','\\','\n','\000','\255','\x00','\xFF','\o000','\o377',
    '^','1','2','3','4','5','6','7','8','9','0','ß','!','§','$','&',
    '/','(',')','=','?','\\' : s
    %%characters
