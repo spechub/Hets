@@ -53,7 +53,7 @@ todo for Jorina:
 
 module Proofs.Proofs where
 
-import Data.Typeable
+import Data.Dynamic
 import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
@@ -63,7 +63,7 @@ import Common.Result
 import Common.Lib.Graph
 import Common.Lib.Set (fromList)
 import qualified Common.Lib.Map as Map
-import List(nub)
+import Data.List(nub)
 import Data.Maybe
 import Common.Id
 import Common.AS_Annotation
