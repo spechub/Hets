@@ -16,7 +16,7 @@
    TODO:
      - Posix Spezifikation zu command line interfaces \/
      - Dokumentation zu System.Console.GetOpt vom ghc \/
-     - Flag und HetCATSOpts Datentyp anpassen
+     - Flag und HetCATSOpts Datentyp anpassen \/
      - options Liste erweitern
      - parse funktionen schreiben
      - form_opt_rec anpassen
@@ -32,7 +32,7 @@ Usage: hetcats [OPTION...] file ... file
   -p       --just-parse         just parse -- no analysis
   -O DIR   --output-dir=DIR     output DIR
   -o OTYPES  --output-types=OTYPES  select OTYPES of output files
-  -l id id? --output-logic=id id?  select output logic and optional logic coding
+...?  -l id id? --output-logic=id id?  select output logic and optional logic coding
   -L DIR   --casl-libdir=DIR    CASL library directory
 
   -w --width tex=10cm het=75
@@ -57,59 +57,146 @@ import Data.List
 import System.Console.GetOpt
 
 {- | 'Flag' describes the raw options -}
-data Flag = Verbose Int
-	  | Version
-	  | Help
-	  | InType   InType
-	  | OutTypes [OutType] 
-	  | Analysis [AnaFlag]
-	  | LibDir FilePath
-	  | OutDir FilePath
+data Flag = Verbose Int        -- how verbose shall we be?
+	  | Version            -- print version number
+	  | Help               -- print usage message
+	  | InType   InType    -- type of input file
+	  | OutDir FilePath    -- destination directory for output files
+	  | OutTypes [OutType] -- types of output to generate
+	  | Analysis [AnaFlag] -- to analyse or not to analyse
+	  | Pretty [PrettyOpt] -- options for the pretty-printer
+	  | LibDir FilePath    -- CASL library directory
 	    deriving (Show,Eq)
 
-data HetcatsOpts = HcOpt { verbose  :: Int     -- ^greater than null for 
-			                       -- turning verbosity on.  
-			 , libdir   :: FilePath
-			 , outdir   :: FilePath
-			 , infile   :: FilePath
-			 , intype   :: InType
-			 , outtypes :: [OutType]
-			 , rawoptions :: [Flag]
-			 , analysis :: Bool
-			 } deriving (Show,Eq)
+{- | 'HetcatsOpts' describes the interpreted options -}
+data HetcatsOpts = 
+    HcOpt { verbose  :: Int       -- greater than null to turn verbosity on
+	  , infile   :: FilePath  -- file to be read
+	  , intype   :: InType    -- type of the file to be read
+	  , outdir   :: FilePath  -- output directory
+	  , outtypes :: [OutType] -- list of output types to be generated
+	  , analysis :: Bool      -- False if analysis should be skipped
+	  , libdir   :: FilePath  -- CASL library directory
+	  , rawoptions :: [Flag]
+	  } deriving (Show,Eq)
 
 default_HetcatsOpts :: HetcatsOpts
-default_HetcatsOpts = HcOpt { verbose = 0
-			    , libdir  = ""
-			    , outdir = "."
-		           -- or like cats: same as that of the input file
-			    , infile = ""
-			    , intype   = SML_Gen_ATerm NonBAF
-			    , outtypes = [HetCASLOut Ascii]
-                           {- better default options, but 
-			      the unlying functions are not jet implemented :
-			    , intype   = HetCASLIn
-			    , outtypes = [Global_Env [XML]] -}
-			    , rawoptions = []
-			    , analysis = True
-			    }
+default_HetcatsOpts = 
+    HcOpt { verbose = 0
+	  , infile = ""
+	  , intype   = SML_Gen_ATerm NonBAF
+	  , outdir = "."
+	    -- ...or like cats: same as that of the input file
+	  , outtypes = [HetCASLOut Ascii]
+            {- better default options, but 
+	    the underlying functions are not yet implemented:
+	  , intype   = HetCASLIn
+	  , outtypes = [Global_Env [XML]]
+	    -}
+	  , analysis = True
+	  , libdir  = ""
+	  , rawoptions = []
+	  }
 
+-- valid input types
 data InType = SML_Gen_ATerm ATFlag | CASLIn | HetCASLIn
 	      deriving (Show,Eq)
 
+-- valid types of AT (BAF or not BAF)
 data ATFlag = BAF | NonBAF
-	       deriving (Show,Eq)
+	      deriving (Show,Eq)
 
--- differences between HetCASLOut and Global_Env ??
+-- ...differences between HetCASLOut and Global_Env ??
+-- TODO:  Pretty, AST, dg, het..., graph
+-- valid output types
 data OutType = HetCASLOut OutFormat | Global_Env OutFormat
 	       deriving (Show,Eq)
 
+-- valid output formats
 data OutFormat = XML | Ascii | Latex
-	       deriving (Show,Eq)
+		 deriving (Show,Eq)
 
+-- valid analysis flags: (static or no analysis)
 data AnaFlag = Static | None
 	       deriving (Show,Eq)
 
+-- valid pretty-printing options (width for LateX, Ascii width)
+data PrettyOpt = Tex String | Het Int
+		 deriving (Show, Eq)
+	       
+-- this list describes all options and gives usage Information
+options :: [OptDescr Flag]
+options =
+    [ Option ['v'] ["verbose"] (OptArg parse_verb "Int")       
+      "chatty output on stderr"
+    , Option ['V'] ["version"] (NoArg Version)       
+      "show version number"
+    , Option ['h'] ["help", "usage"] (NoArg Help) 
+      "show usage information"
+    , Option ['i'] ["input-type"]  (ReqArg inp_type "TYPE")  
+      "TYPE of input file: gen_trm | gen_trm_baf | hetcasl (default) | casl (via cats)"
+    , Option ['O'] ["output-dir"]  (ReqArg (\x -> OutDir x) "DIR")  
+      "destination directory for output files"
+    , Option ['o'] ["output-types"] (ReqArg out_types "TYPE") 
+      "TYPE of output files: hetcasl-latex | hetcasl-ascii | global-env"
+    , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR") 
+      "CASL library directory"
+    , Option ['p'] ["just-parse"]  (NoArg (Analysis [None]))
+      "skip static analysis - just parse"
+    ]
+
+-- a String describing the Options of hetcats
+hetcats_usage :: String
+hetcats_usage = usageInfo header options
+    where header = "Usage: hetcats [OPTION...] file"
+
+-- parses the optional Argument to --verbose
+parse_verb :: Maybe String -- optional Argument to --verbose
+	   -> Flag -- Parsed verbose flag 
+parse_verb Nothing  = Verbose 1
+parse_verb (Just s) = Verbose $
+		      case reads s of
+				   []   -> error'
+				   [(i,"")] -> i
+				   _    -> error'
+    where error' = error $
+		   "\""++ s ++"\" is not a valid Int\n"
+			   ++ hetcats_usage
+
+-- Just the function to get the input-type right
+inp_type :: String -> Flag
+inp_type s | "gen-trm" `isPrefixOf` s = InType $ trm_type s
+	   | s == "casl"    = InType CASLIn
+	   | s == "hetcasl" = InType HetCASLIn
+	   | otherwise = error ("unknown input type: " ++ s ++ "\n" ++
+				hetcats_usage)
+    where trm_type trm | "baf" `isSuffixOf` trm = SML_Gen_ATerm BAF 
+		       | otherwise = SML_Gen_ATerm NonBAF
+
+-- sets the corect output type(s)
+out_types :: String -> Flag
+out_types s | ',' `elem` s = case merge_out_types $ split_types s of
+			     [x] -> x
+			     _ -> error "internal error after merging OutTypes"
+	    | s == "hetcasl-latex"  = OutTypes [HetCASLOut Latex]
+	    | s == "hetcasl-ascii"  = OutTypes [HetCASLOut Ascii]
+	    | s == "global-env-xml" = OutTypes [Global_Env XML]
+	    | otherwise = error ("unknown output type: " ++ s ++ "\n" ++
+				 hetcats_usage)
+    where split_types = map out_types . splitOn ',' 
+
+-- merges [OutTypes[a]] into OutTypes[a]
+merge_out_types :: [Flag] -> [Flag]
+merge_out_types flags = 
+    let (ots,flags') = partition is_out_type flags 
+	is_out_type f = case f of
+			OutTypes _ -> True
+			_          -> False
+	concatTypes l ot = case ot of
+			   OutTypes l' -> l++l'
+			   _ -> error "internal error in merging OutTypes"
+	ots' = foldl concatTypes [] ots
+    in if null ots' then flags' else (OutTypes ots'):flags'  
 
 -- This function parses all options
 hetcatsOpts :: [String] -> IO HetcatsOpts
@@ -193,71 +280,3 @@ check_out_dir flags in_file =
 	     fail $ "no writeable output directory available\n" ++
 		    hetcats_usage
 
--- a String describing the Options of hetcats
-hetcats_usage :: String
-hetcats_usage = usageInfo header options
-    where header = "Usage: hetcats [OPTION...] file"
-
--- this list describes all options and gives usage Information
-options :: [OptDescr Flag]
-options =
- [ Option ['v'] ["verbose"] (OptArg parse_verb "Int")       
-            "chatty output on stderr"
- , Option ['V'] ["version"] (NoArg Version)       
-            "show version number"
- , Option ['h'] ["help", "usage"] (NoArg Help) 
-            "show usage information"
- , Option ['i'] ["input-type"]  (ReqArg inp_type "TYPE")  
-            "TYPE of input file: gen-trm | gen-trm-baf | hetcasl (default) | casl (via cats)"
- , Option ['O'] ["output-dir"]  (ReqArg (\x -> OutDir x) "DIR")  
-            "output DIR"
- , Option ['o'] ["output-types"] (ReqArg out_types "TYPE") 
-            "select TYPE of output files: hetcasl-latex | hetcasl-ascii | global-env"
- , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR") 
-            "CASL library directory"
- , Option ['p'] ["just--parse"]  (NoArg (Analysis [None]))
-            "skip static analysis - just parse"
- ]
-
--- | parse the optional Argument to --verbose
-parse_verb :: Maybe String -- ^ optional Argument to --verbose
-	   -> Flag -- ^ Parsed verbose flag 
-parse_verb Nothing  = Verbose 1
-parse_verb (Just s) = Verbose $ case reads s of
-					     []   -> error'
-					     [(i,"")] -> i
-					     _    -> error'
-    where error' = error $ "\""++ s ++"\" is not an Int\n" ++ hetcats_usage
-
--- Just the function to get the input-type right
-inp_type :: String -> Flag
-inp_type s | "gen-trm" `isPrefixOf` s = InType $ trm_type s
-	   | s == "casl"    = InType CASLIn
-	   | s == "hetcasl" = InType HetCASLIn
-	   | otherwise = error ("unknown input type: " ++ s ++ "\n" ++
-				hetcats_usage)
-    where trm_type trm | "baf" `isSuffixOf` trm = SML_Gen_ATerm BAF 
-		       | otherwise = SML_Gen_ATerm NonBAF
-
-out_types :: String -> Flag
-out_types s | ',' `elem` s = case merge_out_types $ split_types s of
-			     [x] -> x
-			     _ -> error "internal error after merging OutTypes"
-	    | s == "hetcasl-latex"  = OutTypes [HetCASLOut Latex]
-	    | s == "hetcasl-ascii"  = OutTypes [HetCASLOut Ascii]
-	    | s == "global-env-xml" = OutTypes [Global_Env XML]
-	    | otherwise = error ("unknown output type: " ++ s ++ "\n" ++
-				 hetcats_usage)
-    where split_types = map out_types . splitOn ',' 
-
-merge_out_types :: [Flag] -> [Flag]
-merge_out_types flags = 
-    let (ots,flags') = partition is_out_type flags 
-	is_out_type f = case f of
-			OutTypes _ -> True
-			_          -> False
-	concatTypes l ot = case ot of
-			   OutTypes l' -> l++l'
-			   _ -> error "internal error in merging OutTypes"
-	ots' = foldl concatTypes [] ots
-    in if null ots' then flags' else (OutTypes ots'):flags'  
