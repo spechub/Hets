@@ -19,8 +19,9 @@ import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
-import Common.GlobalAnnotationsFunctions
+import Common.AnalyseAnnos
 import Common.PrettyPrint
+import Common.Result
 import Common.Print_AS_Annotation()
 import Common.Lib.Pretty
 
@@ -33,7 +34,7 @@ convertGlobalAnnos ga = c_prec (prec_annos ga)
 	      ++ c_displ (display_annos ga)
               ++ c_lit_an (literal_annos ga)
 
-mergeGlobalAnnos::GlobalAnnos->GlobalAnnos->GlobalAnnos
+mergeGlobalAnnos::GlobalAnnos->GlobalAnnos->Result GlobalAnnos
 mergeGlobalAnnos ga1 ga2 = addGlobalAnnos ga1 $ convertGlobalAnnos ga2
 
 c_prec::PrecedenceGraph->[Annotation]
