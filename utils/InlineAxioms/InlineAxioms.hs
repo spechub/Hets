@@ -217,7 +217,7 @@ indexVar (HsVar (UnQual (HsIdent v))) =
   case reverse v of
     i:'_':_ -> [(v,ord(i)-ord('h'))] 
     _ -> []
--- special treatment of CASL Var_decl's, since these should not count
+-- special treatment of CASL Var_decls, since these should not count
 -- as enumerated lists
 indexVar (HsVar _) = error "inlineAxioms: qualified var"
 indexVar (HsApp (HsCon (UnQual (HsIdent "Var_decl"))) (HsList exprs)) = 

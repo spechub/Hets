@@ -15,6 +15,7 @@
 (defvar casl-mode-map (let ((keymap (make-keymap)))
 			(define-key keymap "\C-c\C-c" 'comment-region)
 			(define-key keymap "\C-c\C-r" 'casl-run-hets)
+			(define-key keymap "\C-c\C-g" 'casl-run-hetsg)
 			(define-key keymap "\C-c\C-n" 'casl-compile-goto-next-error)
 			keymap) 
   "Keymap for CASL major mode")
@@ -248,6 +249,28 @@
 	(message "%s errors have been found." (length casl-error-list)))
       (pop-to-buffer old-buffer)
       )))
+
+(defun casl-run-hetsg ()
+  "Run hets -g process to compile the current CASL file."
+  (interactive)
+  (save-buffer nil)
+  (setq old-buffer (current-buffer))
+  (if hets-program 
+      (setq casl-hets-program hets-program)
+      (setq casl-hets-program "hets"))
+  (let* ((casl-hets-file-name (buffer-file-name))
+	 (outbuf (get-buffer-create "*hets-run*")))
+    (set-buffer outbuf)
+    (setq buffer-read-only nil)
+    (buffer-disable-undo (current-buffer))
+    (erase-buffer)
+    (buffer-enable-undo (current-buffer))
+    (pop-to-buffer outbuf)
+    (insert casl-hets-program " " casl-hets-file-name "\n")
+    (call-process shell-file-name nil t nil "-c" 
+			 (concat casl-hets-program " -g " casl-hets-file-name))
+      ))
+
 
 ;; also functions with old hets-program?
 (defun casl-parse-error ()
