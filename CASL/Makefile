@@ -5,5 +5,5 @@
 check: capa 
 	./runcheck.sh
 
-capa: Main.hs RunParsers.hs
+capa: Main.hs RunParsers.hs RunMixfixParser.hs
 	./ghc-call
