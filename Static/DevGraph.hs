@@ -128,8 +128,11 @@ instance PrettyPrint NodeSig where
 getNode (NodeSig (n,sigma)) = Just n
 getNode (EmptyNode _) = Nothing
 
+emptyG_sign :: AnyLogic -> G_sign
+emptyG_sign (Logic lid) = G_sign lid (empty_signature lid)
+
 getSig (NodeSig (n,sigma)) = sigma
-getSig (EmptyNode (Logic lid)) = G_sign lid (empty_signature lid)
+getSig (EmptyNode l) = emptyG_sign l
 
 getNodeAndSig (NodeSig (n,sigma)) = Just (n,sigma)
 getNodeAndSig (EmptyNode _) = Nothing
@@ -241,8 +244,9 @@ data DiagNodeLab = DiagNode { dn_sig :: NodeSig }
 emptyDiagNodeLab :: AnyLogic -> DiagNodeLab
 emptyDiagNodeLab l = DiagNode { dn_sig = EmptyNode l }
 
-data DiagLinkLab = DiagLink 
-		   deriving Show
+data DiagLinkLab = DiagLink { dl_morphism :: GMorphism }
+		   deriving (Eq, Show)
+
 type BasedParUnitSig = (DiagNodeSig, ParUnitSig)
 
 type Diag = Diagram DiagNodeLab DiagLinkLab
