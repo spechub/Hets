@@ -42,7 +42,8 @@ data TidyModule
          tidyDefDecls   :: [AHsDecl],                -- default decls
          tidyTySigs     :: [AHsDecl],                -- top-level type sigs
          tidyFunBinds   :: [AHsDecl],                -- top-level function bindings
-         tidyPatBinds   :: [AHsDecl]                 -- top-level pattern bindings
+         tidyPatBinds   :: [AHsDecl],                -- top-level pattern bindings
+         tidyAxiomBinds :: [AHsDecl]                 -- ExtHaskell
        } deriving Show
 
 initTidyModule :: AHsModule -> TidyModule 
@@ -60,7 +61,8 @@ initTidyModule (AHsModule modName exports imports _decls)
          tidyDefDecls     = [],
          tidyTySigs       = [],
          tidyFunBinds     = [], 
-         tidyPatBinds     = [] 
+         tidyPatBinds     = [],
+         tidyAxiomBinds   = []
      }
 
 tidyModuleToAHsModule :: TidyModule -> AHsModule
@@ -77,7 +79,8 @@ tidyModuleToAHsModule tmod
                        tidyDefDecls tmod,
                        tidyTySigs tmod,
                        tidyFunBinds tmod,
-                       tidyPatBinds tmod])
+                       tidyPatBinds tmod,
+                       tidyAxiomBinds tmod])
 
 
 tidyModule :: AHsModule -> TidyModule 
@@ -108,5 +111,7 @@ tidyModule mod@(AHsModule _modName _exports _imports decls)
               -> let oldFunBinds   = tidyFunBinds tidy   in makeTidyModule tidy{tidyFunBinds   = d:oldFunBinds} decls
            (AHsPatBind _ _ _ _) 
               -> let oldPatBinds   = tidyPatBinds tidy   in makeTidyModule tidy{tidyPatBinds   = d:oldPatBinds} decls
+           (AHsAxiomBind _)
+              -> let oldAxiomBinds = tidyAxiomBinds tidy in makeTidyModule tidy{tidyAxiomBinds = d:oldAxiomBinds} decls
 
            
