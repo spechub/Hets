@@ -18,33 +18,33 @@ import Monad                    (when)
 
 import List                     (null)
 
-import MultiModule              (writeModuleInfo, readModuleInfo, toString)
+import Haskell.Hatchet.MultiModule              (writeModuleInfo, readModuleInfo, toString)
 
-import MultiModuleBasics        -- (ModuleInfo(..), joinModuleInfo)
+import Haskell.Hatchet.MultiModuleBasics        -- (ModuleInfo(..), joinModuleInfo)
 
-import TIModule                 (tiModule, 
+import Haskell.Hatchet.TIModule                 (tiModule, 
                                  Timing (..))
 
-import HsParser                 (parse)
+import Haskell.Hatchet.HsParser                 (parse)
 
-import HsSyn                    (HsModule, 
+import Haskell.Hatchet.HsSyn                    (HsModule, 
                                  SrcLoc (..))
 
-import AnnotatedHsSyn           (ASrcLoc (..),
+import Haskell.Hatchet.AnnotatedHsSyn           (ASrcLoc (..),
                                  bogusASrcLoc,
                                  AModule(..),
                                  AHsModule)
 
-import HsParseMonad             (ParseResult (..))
+import Haskell.Hatchet.HsParseMonad             (ParseResult (..))
 
 
-import Env                      (listToEnv)
+import Haskell.Hatchet.Env                      (listToEnv)
 
-import System                   (getArgs,
+import System.Environment       (getArgs,
                                  getProgName)
 
 
-import HaskellPrelude           (tyconsMembersHaskellPrelude, 
+import Haskell.Hatchet.HaskellPrelude           (tyconsMembersHaskellPrelude, 
                                  preludeDefs, 
                                  preludeSynonyms,
                                  preludeTyconAndClassKinds,
@@ -53,7 +53,7 @@ import HaskellPrelude           (tyconsMembersHaskellPrelude,
                                  preludeDataCons)
 
 
-import Opts                     (processCmdLine,
+import Haskell.Hatchet.Opts                     (processCmdLine,
                                  makeUsageInfo,
                                  usageHeader)
 
@@ -61,24 +61,24 @@ import CPUTime                  (getCPUTime,
                                  cpuTimePrecision)
 
 
-import Utils                    (rJustify,
+import Haskell.Hatchet.Utils                    (rJustify,
                                  lJustify,
                                  getAModuleName,
                                  doDump
                                  )
 
-import Class                    (emptyClassHierarchy)
+import Haskell.Hatchet.Class                    (emptyClassHierarchy)
 
-import FiniteMaps               (listToFM,
+import Haskell.Hatchet.FiniteMaps               (listToFM,
                                  filterFM)
 
-import Type                     (assumpToPair)
+import Haskell.Hatchet.Type                     (assumpToPair)
 
-import Representation           (Assump (..))
+import Haskell.Hatchet.Representation           (Assump (..))
 
-import SynConvert               (toAHsModule)
+import Haskell.Hatchet.SynConvert               (toAHsModule)
 
-import HsParsePostProcess       (fixFunBindsInModule)
+import Haskell.Hatchet.HsParsePostProcess       (fixFunBindsInModule)
 
 --------------------------------------------------------------------------------
 
@@ -149,12 +149,12 @@ main =
 
     -- this is the modInfo to print into an intermediate file
      let modInfo = ModuleInfo { varAssumps = moduleEnv, 
-                                moduleName = Utils.getAModuleName annotatedSyntax,
+                                moduleName = getAModuleName annotatedSyntax,
                                 dconsAssumps = dataConEnv, 
                                 classHierarchy = newClassHierarchy,
                                 kinds = newKindInfoTable,
-                                tyconsMembers = MultiModuleBasics.getTyconsMembers moduleRenamed,
-                                infixDecls = MultiModuleBasics.getInfixDecls moduleRenamed,
+                                tyconsMembers = getTyconsMembers moduleRenamed,
+                                infixDecls = getInfixDecls moduleRenamed,
                                 synonyms = moduleSynonyms }
 
 -- possibly write the intermediate file, if command line specifies so
