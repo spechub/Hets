@@ -23,7 +23,6 @@ import Common.Result            -- Result
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
---import qualified Common.Lib.Rel as Rel        -- not used directly
 import qualified Common.Id      as Id
 import qualified Common.Named   as Named
 
@@ -38,12 +37,10 @@ import Data.List                ( partition )
 -}
 {-
     TODO-List:
-    * check whether Common.Lib.Rel needs to be imported
-    * retain [Pos] in TERMs and FORMULAe, don't throw them away(!)
     * generalize 'is_unambiguous' (see 'choose') and make it available globally
     * replace 'case' statements w/ pattern matching where possible
     * generalize minExpFORMULA_pred/minExpTerm_op/minExpTerm_cond
-    * try to utilize Sets instead of Lists
+    * utilize Sets instead of Lists
     * generalize pairing func.s to inl/inr
     * check whether Qual_var expansion works as it is supposed to
     * generalize expansion for Qual_var and Sorted_term
@@ -52,7 +49,7 @@ import Data.List                ( partition )
     * sweep op-like logic from minExpTerm_cond where it is unneeded
     * generalize zipped_all
     * generalize qualifyTerms or implement locally - too much structural force
-    * gemeralize minimize_* or implement locally - needed only in one func. each
+    * gemeralize minimize_* or implement locally - needed only in one f. each
     * use more let/in constructs (instead of where) to simulate workflow
 -}
 
