@@ -35,7 +35,7 @@ data HasCASL2Haskell = HasCASL2Haskell deriving Show
 instance Language HasCASL2Haskell -- default definition is okay
 
 instance Comorphism HasCASL2Haskell
-               HasCASL ()
+               HasCASL HasCASL_Sublogics
                BasicSpec Sentence SymbItems SymbMapItems
                Env
                Morphism
@@ -46,7 +46,7 @@ instance Comorphism HasCASL2Haskell
                ()
                () () () where
     sourceLogic _ = HasCASL
-    sourceSublogic _ = ()
+    sourceSublogic _ = top
     targetLogic _ = Haskell
     targetSublogic _ = ()
     --map_morphism _ morphism1 -> Maybe morphism2
