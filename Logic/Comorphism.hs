@@ -178,6 +178,12 @@ instance (Comorphism cid1
             return (si3, se3s ++ catMaybes
                           (map (mapNamedM (map_sentence cid2 si2')) se2s'))
 
+   map_theory (CompComorphism cid1 cid2) = 
+       \ti1 -> 
+         do ti2 <- map_theory cid1 ti1
+            ti2' <- coerce (targetLogic cid1) (sourceLogic cid2) ti2 
+            map_theory cid2 ti2'
+
    map_morphism (CompComorphism cid1 cid2) = \ m1 -> 
        do m2 <- map_morphism cid1 m1 
 	  m3 <- coerce (targetLogic cid1) (sourceLogic cid2) m2
