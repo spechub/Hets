@@ -1,7 +1,7 @@
 class Type
 var t : Type
 class TYPE = Type; TYPE = Type
-type Pred__ : Type- -> Type; Unit : TYPE
+type Pred : Type- -> Type; Unit : TYPE
 class a, b, c
 class a, b, c < d; a
 type s : c
@@ -58,7 +58,6 @@ Data4 : Type %[type __ ::=
 	       Cons41 : Data1 × Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
 	       Cons42 : Data2 × Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
 Pred : (Type -> Type, Type- -> Type) := \ a : Type . a ->? Unit
-Pred__ : Type- -> Type
 Unit : (Type, TYPE)
 s : (c, Type) < ? s
 t : Type %(var)%
@@ -109,6 +108,7 @@ Warning (line 11, column 10) redeclared class 'b'
 Warning (line 11, column 13) redeclared class 'c'
 Warning (line 11, column 19) redeclared class 'a'
 Error (line 11, column 19) class cannot become an alias class 'a'
+Error (line 18, column 14) unexpected term '\ x : s . ()'
 Error (line 20, column 12) unexpected mixfix token: res
 Error (line 20, column 37) unexpected mixfix token: x
 Hint (line 15, column 11) type 's' is not unifiable with 's ->? Unit'

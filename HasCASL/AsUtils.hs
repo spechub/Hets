@@ -117,14 +117,15 @@ posOfPat :: Pattern -> Pos
 posOfPat pat =
     case pat of
     PatternVar vs -> getMyPos vs
+    PatternConstr (InstOpId i _ _) _ qs -> firstPos [i] qs
     ResolvedMixPattern i _ _ -> posOfId i
-    PatternConstr (InstOpId i _ _) _ _ qs -> firstPos [i] qs
-    PatternToken t -> tokPos t
-    BracketPattern _ ps qs -> firstPos ps qs
+    ApplPattern p1 p2 ps -> firstPos [p1, p2] ps
     TuplePattern ps qs -> firstPos ps qs
-    MixfixPattern ps -> posOf ps
     TypedPattern p _ ps -> firstPos [p] ps
     AsPattern p1 p2 ps -> firstPos [p1, p2] ps
+    PatternToken t -> tokPos t
+    MixfixPattern ps -> posOf ps
+    BracketPattern _ ps qs -> firstPos ps qs
 
 instance PosItem VarDecl where
     get_pos (VarDecl v _ _ ps) = Just $ firstPos [v] ps

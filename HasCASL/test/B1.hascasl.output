@@ -13,12 +13,12 @@ type t : a
 class h = (a, b)
 class h = (a, b)
 class j={v.v< t}
-type a__b, [__] : a -> b
+type a, [ : a -> b
 var x : a; y : Type; x : y
 var
 var x : b
 var x : {_ < t}
-type  : b
+type a : b
 %% Classes ---------------------------------------------------------------
 a < (e, g)
 b
@@ -32,8 +32,8 @@ j = {_ < t}
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type
-[__] : a -> b
-a__b : a -> b
+[ : a -> b
+a : (a -> b, b)
 t : a
 x : (a, {_ < t}, b) %(var)%
 y : Type %(var)%
@@ -76,4 +76,7 @@ Hint (line 31, column 12) is type variable 'y'
 Error (line 33, column 9) unknown type 's'
 Hint (line 35, column 5) is type variable 'x'
 Warning (line 37, column 9) unchecked type 't'
-Error (line 39, column 6) wrong arity of 'a__'
+Error (line 39, column 6) incompatible kind of: a
+  expected: Type
+     found: Type -> Type
+

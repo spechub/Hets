@@ -275,12 +275,14 @@ extractBindings pat =
 		         let vd = VarDecl v ty sk ps
 			 return (PatternVar vd, [vd]) 
 		     _ -> return (pat, [l])
+--    PatternConstr _ _ _ -> return (pat, [])
     ResolvedMixPattern i pats ps -> do 
          l <- mapM extractBindings pats
 	 return (ResolvedMixPattern i (map fst l) ps, concatMap snd l)
-    PatternConstr i sc pats ps -> do 
-         l <- mapM extractBindings pats
-	 return (PatternConstr i sc (map fst l) ps, concatMap snd l)
+    ApplPattern p1 p2 ps -> do
+         (p3, l1) <- extractBindings p1
+         (p4, l2) <- extractBindings p2
+	 return (ApplPattern p3 p4 ps, l1 ++ l2) 
     TuplePattern pats ps -> do 
          l <- mapM extractBindings pats
 	 return (TuplePattern (map fst l) ps, concatMap snd l)
@@ -294,6 +296,10 @@ extractBindings pat =
 		 return (PatternVar vd, [vd])
 	     _ -> do (newP, bs) <- extractBindings p
 		     return (TypedPattern newP newT ps, bs)
+    AsPattern p1 p2 ps -> do
+         (p3, l1) <- extractBindings p1
+         (p4, l2) <- extractBindings p2
+	 return (AsPattern p3 p4 ps, l1 ++ l2) 
     _ -> return (pat, [])
 --     _ -> error ("extractBindings: " ++ show pat)
 
@@ -346,7 +352,10 @@ toPat i _ ar qs =
     else if isUnknownId i then
          PatternVar (VarDecl (simpleIdToId $ unToken i) 
 		     (MixfixType []) Other qs)
-    else ResolvedMixPattern i ar qs
+    else ResolvedMixPattern i 
+	     (if null ar then [] 
+	     else if isSingle ar then [head ar] 
+	     else [TuplePattern ar qs]) qs
 
 type PatChart = Chart Pattern ()
 

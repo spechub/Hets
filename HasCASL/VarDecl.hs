@@ -162,7 +162,7 @@ convertTypeToClass (BracketType Parens ts ps) =
 				    catMaybes cs) ps
 	     else return Nothing
 
-convertTypeToClass t = 
+convertTypeToClass _ = 
     do return Nothing
 
 convertTypeToKind :: Type -> State Env (Maybe Kind)
@@ -176,7 +176,7 @@ convertTypeToKind (FunType t1 FunArr t2 ps) =
 convertTypeToKind (BracketType Parens [t] _) = 
     do convertTypeToKind t
 
-convertTypeToKind ty@(MixfixType [t1, TypeToken t]) = 
+convertTypeToKind (MixfixType [t1, TypeToken t]) = 
     let s = tokStr t 
 	v = case s of 
 		   "+" -> CoVar 

@@ -17,7 +17,6 @@ module HasCASL.TypeCheck where
 import HasCASL.Unify 
 import HasCASL.VarDecl
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.MixAna
 import qualified Common.Lib.Map as Map
@@ -25,6 +24,7 @@ import Common.Id
 import Common.Result
 import Common.GlobalAnnotations
 import Common.Lib.State
+import Common.PrettyPrint
 import Data.Maybe
 
 
@@ -75,8 +75,7 @@ resolveTerm ga mt trm = do
     mtrm <- resolve ga trm
     case mtrm of 
 	      Nothing -> return Nothing
-	      Just t -> typeCheck mt t 
-
+	      Just t -> typeCheck infer mt t 
 
 mUnifySc :: Maybe Type -> OpInfo
 	 -> State Env (Maybe (Subst, Type, OpInfo))
@@ -88,22 +87,25 @@ mUnifySc mt oi = do
      case ms of Nothing -> return Nothing
 		Just s -> return $ Just (s, subst s ty, oi)
 
-checkList :: [Type] -> [Term] -> State Env [(Subst, [Type], [Term])]
-checkList [] [] = return [(eps, [], [])]
-checkList (ty : rty) (trm : rt) = do 
-      fts <- infer (Just ty) trm
+checkList :: (Maybe Type -> a -> State Env [(Subst, Type, a)])
+	  -> [Type] -> [a] -> State Env [(Subst, [Type], [a])]
+checkList _ [] [] = return [(eps, [], [])]
+checkList inf (ty : rty) (trm : rt) = do 
+      fts <- inf (Just ty) trm
       combs <- mapM ( \ (sf, tyf, tf) -> do
-		      rts <- checkList (map (subst sf) rty) rt
-		      mapM ( \ (sr, tys, tts) -> 
-			     return (compSubst sf sr,
+		      rts <- checkList inf (map (subst sf) rty) rt
+		      return $ map ( \ (sr, tys, tts) -> 
+			     (compSubst sf sr,
 				     subst sr tyf : tys,
 				     tf : tts)) rts) fts
       return $ concat combs
-checkList _ _ = error "checkList"
+checkList _ _ _ = error "checkList"
 
-typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
-typeCheck mt trm = 
-    do alts <- infer mt trm
+typeCheck :: (PosItem a, PrettyPrint a) => 
+	     (Maybe Type -> a -> State Env [(Subst, Type, a)])
+	  -> Maybe Type -> a -> State Env (Maybe a)
+typeCheck inf mt trm = 
+    do alts <- inf mt trm
        if null alts then 
 	  do addDiags [mkDiag Error "no typing for" trm]
 	     return Nothing
@@ -114,7 +116,7 @@ typeCheck mt trm =
 			 ("ambiguous typings \n\t" ++
 			  showSepList (showString "\n\t") 
 			  showPretty (take 5 $ map ( \ (_,_,t) -> t) alts) "")
-			    $ posOfTerm trm]
+			    $ getMyPos trm]
 	          return Nothing
 
 freshTypeVar :: State Env Type		  
@@ -123,6 +125,28 @@ freshTypeVar = do var <- toEnvState freshVar
 
 freshVars :: [a] -> State Env [Type]
 freshVars l = mapM (const freshTypeVar) l
+
+inferAppl :: (PosItem a, PrettyPrint a) => 
+	     (Maybe Type -> a -> State Env [(Subst, Type, a)])
+	  -> (a -> a -> a)   
+          -> Maybe Type -> a  -> a -> State Env [(Subst, Type, a)]
+inferAppl inf appl mt t1 t2 = do
+	    aty <- freshTypeVar
+	    rty <- case mt of 
+		  Nothing -> freshTypeVar
+		  Just ty -> return ty
+	    ops <- inf (Just $ FunType aty PFunArr rty []) t1
+	    combs <- mapM ( \ (sf, _, tf) -> do 
+		   args <- inf (Just $ subst sf aty) t2 
+		   return $ map ( \ (sa, _, ta) -> 
+			  (compSubst sf sa, 
+			   subst sa (subst sf rty), 
+			   appl tf ta)) args) ops
+	    let res = concat combs 
+	    if null res then 
+	       do addDiags [mkDiag Error "no type match for" (appl t1 t2)]
+		  return res
+	       else  return res
 
 infer :: Maybe Type -> Term -> State Env [(Subst, Type, Term)]
 infer mt trm = do
@@ -157,23 +181,8 @@ infer mt trm = do
 						  (opType oi) ps)) ls
 	    else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)
 		 (if isSingle ts then head ts else TupleTerm ts ps) ps
-	ApplTerm t1 t2 ps -> do 
-	    aty <- freshTypeVar
-	    rty <- case mt of 
-		  Nothing -> freshTypeVar
-		  Just ty -> return ty
-	    ops <- infer (Just $ FunType aty PFunArr rty []) t1
-	    combs <- mapM ( \ (sf, _, tf) -> do 
-		   args <- infer (Just $ subst sf aty) t2 
-		   return $ map ( \ (sa, _, ta) -> 
-			  (compSubst sf sa, 
-			   subst sa (subst sf rty), 
-			   ApplTerm tf ta ps)) args) ops
-	    let res = concat combs 
-	    if null res then 
-	       do addDiags [mkDiag Error "no type match for" trm]
-		  return res
-	       else  return res
+	ApplTerm t1 t2 ps -> inferAppl infer ( \ x y -> ApplTerm x y ps) 
+			     mt t1 t2
 	TupleTerm ts ps -> do
 	     vs <- freshVars ts
 	     let pt = ProductType vs []
@@ -182,7 +191,7 @@ infer mt trm = do
 	     case ms of 
 		     Nothing -> return []
 		     Just s  -> do 
-                         ls <- checkList (subst s vs) ts 
+                         ls <- checkList infer (subst s vs) ts 
 			 return $ map ( \ (su, tys, trms) ->
                                    (compSubst s su, ProductType tys ps, 
 				    TupleTerm trms ps)) ls
@@ -229,8 +238,23 @@ infer mt trm = do
 		    putAssumps as
 		    return $ map ( \ (s, typ, tr) -> 
 			(s, typ, QuantifiedTerm quant decls tr ps)) rs
-	_ -> do ty <- freshTypeVar
-		return [(eps, ty, trm)]
+	CaseTerm oft eqs ps -> do 
+	    ts <- infer Nothing oft
+	    rty <- case mt of 
+		   Nothing -> freshTypeVar
+		   Just ty -> return ty
+	    if null ts then addDiags [mkDiag Error 
+				      "unresolved of-term in case" oft]
+	        else return () 
+	    rs <- mapM ( \ (s1, oty, otrm) -> do 
+		 es <- inferCaseEqs oty (subst s1 rty) eqs
+		 return $ map ( \ (s2, _, ty, nes) ->
+				(compSubst s1 s2, ty, 
+				 CaseTerm otrm nes ps)) es) ts
+	    return $ concat rs
+    	_ -> do ty <- freshTypeVar
+		addDiags [mkDiag Error "unexpected term" trm]
+		return [(eps, ty, trm)] 
                 
 {-
 Quantifier [GenVarDecl] Term [Pos]
@@ -243,5 +267,100 @@ Quantifier [GenVarDecl] Term [Pos]
 	  | LetTerm [ProgEq] Term [Pos]
 -}
 
+-- | type check patterns
+inferPat :: Maybe Type -> Pattern -> State Env [(Subst, Type, Pattern)]
+inferPat mt pat = do 
+    tm <- gets typeMap
+    as <- gets assumps
+    case pat of
+	PatternVar (VarDecl v t sk ps) -> do  
+	    let Result ds ms = mUnify tm mt t
+	    addDiags ds 
+	    case ms of 
+		Nothing -> return []
+		Just s -> do let ty = (subst s t) 
+			     return [(s, ty, PatternVar (VarDecl v ty sk ps))]
+	PatternConstr io sc qs -> do
+	    ty <- toEnvState $ freshInst sc
+	    let Result ds ms = mUnify tm mt ty
+	    addDiags ds 
+	    case ms of 
+		Nothing -> return []
+		Just s -> return [(s, subst s ty, PatternConstr io sc qs)]
+	ResolvedMixPattern i ts ps ->
+	    if null ts then do 
+	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
+	       mls <- mapM (mUnifySc mt) ois
+	       let ls = catMaybes mls
+	       if null ls then do addDiags [mkDiag Error "no match for" i]
+				  return []
+	          else return $ map ( \ (s, ty, oi) -> 
+			      case opDefn oi of
+			      VarDefn -> (s, ty, 
+					  PatternVar $ VarDecl i ty Other ps)
+			      _ -> (s, ty, PatternConstr (InstOpId i [] [])
+						  (opType oi) ps)) ls
+	    else inferPat mt $ ApplPattern (ResolvedMixPattern i [] ps)
+		 (if isSingle ts then head ts else TuplePattern ts ps) ps
+	ApplPattern p1 p2 ps -> inferAppl inferPat 
+				( \ x y -> ApplPattern x y ps) mt p1 p2
+	TuplePattern ts ps -> do
+	     vs <- freshVars ts
+	     let pt = ProductType vs []
+	         Result ds ms = mUnify tm mt pt
+	     addDiags ds
+	     case ms of 
+		     Nothing -> return []
+		     Just s  -> do 
+                         ls <- checkList inferPat (subst s vs) ts 
+			 return $ map ( \ (su, tys, trms) ->
+                                   (compSubst s su, ProductType tys ps, 
+				    TuplePattern trms ps)) ls
+	TypedPattern p ty ps -> do 
+		    let Result ds ms = mUnify tm mt ty
+		    addDiags ds
+		    case ms of 
+		        Nothing -> return []
+			Just s -> do 
+			    rs <- inferPat (Just $ subst s ty) p
+			    return $ map ( \ (s2, typ, tr) -> 
+				(compSubst s s2, typ, 
+				 TypedPattern tr ty ps)) rs
+	_ -> do ty <- freshTypeVar
+		addDiags [mkDiag Error "unexpected pattern" pat]
+		return [(eps, ty, pat)] 
 
+inferCaseEq :: Type -> Type -> ProgEq 
+	    -> State Env [(Subst, Type, Type, ProgEq)]
+inferCaseEq pty tty (ProgEq pat trm ps) = do
+   as <- gets assumps
+   let newAs = filterAssumps ( \ o -> case opDefn o of
+					      ConstructData _ -> True
+					      VarDefn -> True
+					      _ -> False) as
+   putAssumps newAs
+   pats <- inferPat (Just pty) pat 
+   putAssumps as
+   if null pats then addDiags [mkDiag Error "unresolved case pattern" pat]
+      else return ()
+   es <- mapM ( \ (s, ty, p) -> do 
+		(_, bs) <- extractBindings p
+		mapM_ addVarDecl bs
+		ts <- infer (Just $  subst s tty) trm
+		putAssumps as
+		return $ map ( \ (st, tyt, t) -> 
+		       (compSubst s st, subst st ty, tyt, 
+			ProgEq p t ps)) ts) pats
+   return $ concat es
+
+inferCaseEqs :: Type -> Type -> [ProgEq] 
+	    -> State Env [(Subst, Type, Type, [ProgEq])]
+inferCaseEqs pty tTy [] = return [(eps, pty, tTy, [])]
+inferCaseEqs pty tty (eq:eqs) = do 
+  fts <- inferCaseEq pty tty eq
+  rs <- mapM (\ (_, pty1, tty1, ne) -> do 
+	      rts <- inferCaseEqs pty1 tty1 eqs
+	      return $ map ( \ (s2, pty2, tty2, nes) ->
+			     (s2, pty2, tty2, ne:nes)) rts) fts
+  return $ concat rs
 

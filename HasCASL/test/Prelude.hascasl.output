@@ -7,8 +7,8 @@ var s : Type; t : Type
 type Unit
      %% flat cpo with bottom
      %% type aliases
-type Pred__ : Type- -> Type := \ (t : Type)(t : Type-) . t ->? Unit
-type ?__ : Type -> Type := \ t : Type . Unit ->? t
+type Pred : Type- -> Type := \ (t : Type)(t : Type-) . t ->? Unit
+type ? : Type -> Type := \ t : Type . Unit ->? t
 op true, false : Unit ->? Unit
 op __/\__, __\/__, __=>__, __if__, __<=>__ : Unit × Unit ->? Unit
 op not : Unit ->? Unit
@@ -16,10 +16,10 @@ op : forall s : Type .  s × s ->? Unit
    %% =e=
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% (builtin) type (constructors)
-type __->?__ : Type- -> Type+ -> Type
+type __ : Type- -> Type+ -> Type
 %% nested pairs are different from n-tupels (n > 2)
-type __*__ : Type+ -> Type+ -> Type
-type __*__*__ : Type+ -> Type+ -> Type+ -> Type
+type __ : Type+ -> Type+ -> Type
+type __ : Type+ -> Type+ -> Type+ -> Type
 %% ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"  
@@ -32,8 +32,8 @@ program tt = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
-type __->__ : Type- -> Type+ -> Type
-type s->t < s ->? t
+type __ : Type- -> Type+ -> Type
+type s < s ->? t
 . (op __=__ : forall a : Type .  a × a ->? Unit) (__ in s -> t,
 						  \ f : s ->? t . all (\ x : s . def f (x)))
 %% total functions
@@ -96,16 +96,16 @@ class Pcpo < Cpo
 class instance Flatcpo < Cpo
 	       {var f : Flatcpo; program __ <<= [f] __ = eq}
 var c : Cpo; d : Cpo
-type instance __*__ : Cpo+ -> Cpo+ -> Cpo
+type instance __ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
 program (__<<=__)((x1 : _var_42, y1 : _var_43),
 		  (x2 : _var_44, y2 : _var_45))
 	= (x1 <<= x2) und (y1 <<= y2)
-type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
+type instance __ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
 %% Pcont
-type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
-type c-->?d < c ->? d
+type instance __ : Cpo- -> Cpo+ -> Pcpo
+type c < c ->? d
 . (op __=__ : forall a : Type .  a × a ->? Unit) (__ in c -->? d,
 						  \ f : c ->? d . all
 								  (\ (x, y : c) . (def (f x) und x
@@ -134,13 +134,13 @@ type c-->?d < c ->? d
 program f <<= [c -->? d] g =
 	all (\ x : c . def (f x) impl f (x) <<= g (x))
 %% Tcont
-type instance __-->__ : Cpo- -> Cpo+ -> Cpo
-type c-->d < c -->? d
+type instance __ : Cpo- -> Cpo+ -> Cpo
+type c < c -->? d
 . (op __=__ : forall a : Type .  a × a ->? Unit) (__ in c --> d,
 						  \ f : c -->? d . all (\ x : c . def f (x)))
 var f : c --> d; g : c --> d
 program (__<<=__)(f : _var_59, g : _var_60) = f <<= [c -->? d] g
-type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
+type instance __ : Cpo- -> Pcpo+ -> Pcpo
 op Y : forall p : Pcpo .  (p -->? p) --> p
 op undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! x)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,29 +155,21 @@ Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
 ? : Type -> Type := \ t : Type . Unit ->? t
-?__ : Type -> Type := \ t : Type . Unit ->? t
 Pred : (Type -> Type, Type- -> Type) := \ a : Type . a ->? Unit
-Pred__ : Type- -> Type := \ (t : Type)(t : Type-) . t ->? Unit
 Unit : (Type, Pcpo)
-__*__ : (Type+ -> Type+ -> Type, Pcpo+ -> Pcpo+ -> Pcpo,
-	 Cpo+ -> Cpo+ -> Cpo)
-__*__*__ : Type+ -> Type+ -> Type+ -> Type
-__-->__ : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Pcpo+ -> Pcpo)
-__-->?__ : Cpo- -> Cpo+ -> Pcpo
-__->__ : Type- -> Type+ -> Type
-__->?__ : Type- -> Type+ -> Type
+__ : (Type- -> Type+ -> Type, Cpo- -> Pcpo+ -> Pcpo,
+      Cpo- -> Cpo+ -> Cpo, Cpo- -> Cpo+ -> Pcpo, Pcpo+ -> Pcpo+ -> Pcpo,
+      Cpo+ -> Cpo+ -> Cpo, Type+ -> Type+ -> Type+ -> Type,
+      Type+ -> Type+ -> Type)
 bool : (Type, Flatcpo) %[free type __ ::=
 			      true : -> __
 			      false : -> __]%
-c : Cpo %(var)%
-c-->d : Type < c -->? d
-c-->?d : Type < c ->? d
+c : (Cpo, Type) < (c -->? d, c ->? d) %(var)%
 d : Cpo %(var)%
 f : Flatcpo %(var)%
 nat : (Type, Flatcpo)
 p : Pcpo %(var)%
-s : Type < ? s %(var)%
-s->t : Type < s ->? t
+s : Type < (? s, s ->? t) %(var)%
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 Y : forall p : Pcpo .  (p -->? p) --> p
@@ -261,23 +253,38 @@ Error (line 22, column 8) wrong type scheme of '__=__'
   expected: forall a : Type .  a × a ->? Unit
      found: forall s : Type .  s × s ->? Unit
 
+Error (line 31, column 6) incompatible kind of: __
+  expected: Type -> Type -> Type -> Type
+     found: Type -> Type -> Type
+
+Error (line 42, column 15) unexpected term '\ x : s . ()'
+Error (line 44, column 14) unexpected term '\ x : s . ()'
 Error (line 46, column 11) unexpected mixfix token: und
 Error (line 46, column 9) no toplevel pattern '__ und __ (x, y : Unit) : Unit : Unit'
+Warning (line 50, column 6) redeclared type '__'
+Warning (line 52, column 6) redeclared type 's'
 Error (line 54, column 3) expected further mixfix token: ["/\\","<=>","=","=>","=e="]
 Error (line 54, column 42) ambiguous mixfix term
 	def f x
 	(def__)(f) x
 Error (line 54, column 32) unexpected mixfix token: all
+Error (line 54, column 3) unexpected term '__'
+Error (line 54, column 32) unexpected term '\ f : s ->? t . all (\ x : s . def f (x))'
 Error (line 65, column 18) ambiguous mixfix term
 	def ((__res__)(x, y))
 	(def__)((__res__)(x, y))
 Error (line 65, column 59) unexpected mixfix token: und
+Error (line 65, column 18) unexpected term '\ (x : s, y : t) . def (x res y)'
+Error (line 65, column 52) unexpected term '\ (x : s, y : t) . (def y) und (def x)'
+Error (line 74, column 11) unexpected term '\ x : s . eq (x, x)'
 Error (line 75, column 15) ambiguous mixfix term
 	(__res__)(x, eq (x, y))
 	(__res__)(x, eq) (x, y)
 Error (line 75, column 44) ambiguous mixfix term
 	(__res__)(y, eq (x, y))
 	(__res__)(y, eq) (x, y)
+Error (line 75, column 15) unexpected term '\ (x, y : s) . x res eq (x, y)'
+Error (line 75, column 44) unexpected term '\ (x, y : s) . y res eq (x, y)'
 Warning (line 85, column 6) redeclared type 's'
 Error (line 90, column 45) unexpected mixfix token: t1
 Error (line 93, column 11) unexpected mixfix token: impl
@@ -326,13 +333,23 @@ Error (line 174, column 45) unexpected mixfix token: +
 Error (line 173, column 40) unexpected mixfix token: und
 Error (line 172, column 28) unexpected mixfix token: isChain
 Error (line 171, column 9) unexpected mixfix token: all
+Error (line 170, column 4) unexpected term '__'
+Error (line 171, column 9) unexpected term '\ f : c ->? d . all
+		(\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
+		(\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
+				  (\ m : nat . def f (s (m)) und eq
+					       (sup (\ n : nat .! f (s (n + m))), f (sup (s)))))'
 Error (line 176, column 16) unexpected mixfix token: [
+Warning (line 181, column 7) redeclared type 'c'
 Error (line 182, column 4) expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 Error (line 182, column 46) ambiguous mixfix term
 	def f x
 	(def__)(f) x
 Error (line 182, column 36) unexpected mixfix token: all
+Error (line 182, column 4) unexpected term '__'
+Error (line 182, column 36) unexpected term '\ f : c -->? d . all (\ x : c . def f (x))'
 Error (line 186, column 25) unexpected mixfix token: [
 Error (line 193, column 32) unexpected mixfix token: impl
 Error (line 192, column 40) unexpected mixfix token: und
 Error (line 192, column 3) unexpected mixfix token: all
+Error (line 195, column 45) unexpected term '\ x : c -->? p .! x'

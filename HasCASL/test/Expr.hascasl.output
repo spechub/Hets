@@ -1,12 +1,13 @@
 type bool ::= true | 
 	      false
 op a : bool = (op true : bool)
-op notA : bool = case a of true -> false | 
-			   false -> true
-op b : bool = let x : _var_2 = true;
-		  y : _var_3 = false;
-		  z : _var_4 = x in true
-op b : bool -> bool = \ x : _var_6 . x
+op notA : bool = case (op a : bool) of true : bool ->
+				       (op false : bool) | 
+				       false : bool -> (op true : bool)
+op b : bool = let x : _var_1 = true;
+		  y : _var_2 = false;
+		  z : _var_3 = x in true
+op b : bool -> bool = \ x : _var_5 . x
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type
@@ -21,14 +22,20 @@ __=>__ : Unit × Unit ->? Unit
 __=e=__ : forall a : Type .  a × a ->? Unit
 __\/__ : Unit × Unit ->? Unit
 a : bool = (op true : bool)
-b : bool -> bool = \ x : _var_6 . x
-  : bool = let x : _var_2 = true;
-	       y : _var_3 = false;
-	       z : _var_4 = x in true
+b : bool -> bool = \ x : _var_5 . x
+  : bool = let x : _var_1 = true;
+	       y : _var_2 = false;
+	       z : _var_3 = x in true
 def__ : forall a : Type .  a ->? Unit
 false : bool %(construct bool)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a
 not__ : Unit ->? Unit
-notA : bool = case a of true -> false | 
-			false -> true
+notA : bool = case (op a : bool) of true : bool ->
+				    (op false : bool) | 
+				    false : bool -> (op true : bool)
 true : bool %(construct bool)%
+%% Diagnostics -----------------------------------------------------------
+Error (line 7, column 49) unexpected term 'let x : _var_1 = true;
+    y : _var_2 = false;
+    z : _var_3 = x in true'
+Error (line 9, column 28) unexpected term '\ x : _var_5 . x'

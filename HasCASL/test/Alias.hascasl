@@ -1,0 +1,2 @@
+var s: Type
+type MyPred s := s ->? Unit

@@ -211,19 +211,19 @@ data Term = QualVar Var Type [Pos]
 
 data Pattern = PatternVar VarDecl
              -- pos ";"s
-	     | ResolvedMixPattern Id [Pattern] [Pos] 
-	     | PatternConstr InstOpId TypeScheme [Pattern] [Pos] 
-	     -- constructor or toplevel operation applied to arguments
+	     | PatternConstr InstOpId TypeScheme [Pos] 
+	     -- constructor or toplevel operation
 	     -- pos "("s, ")"s
+	     | ResolvedMixPattern Id [Pattern] [Pos] 
+	     | ApplPattern Pattern Pattern [Pos]
+	     | TuplePattern [Pattern] [Pos]
+	     -- pos "(", ","s, ")"
+	     | TypedPattern Pattern Type [Pos]	     -- pos ":"  
+	     | AsPattern Pattern Pattern [Pos]	     -- pos "@"
              | PatternToken Token
 	     | BracketPattern BracketKind [Pattern] [Pos]
 	     -- pos brackets, ","s
-	     | TuplePattern [Pattern] [Pos]
-	     -- pos ","s
-	     | MixfixPattern [Pattern] -- or HO-Pattern
-	     | TypedPattern Pattern Type [Pos]	     -- pos ":"  
-	     | AsPattern Pattern Pattern [Pos]
-	     -- pos "@"
+	     | MixfixPattern [Pattern] 
 	       deriving (Show)
 
 data ProgEq = ProgEq Pattern Term Pos deriving (Show)
@@ -343,16 +343,18 @@ instance Eq Term where
 
 instance Eq Pattern where
     PatternVar l1 == PatternVar l2 = l1 == l2 
+    PatternConstr i1 t1  _ == PatternConstr i2 t2  _ = 
+	(i1, t1) == (i2, t2)
     ResolvedMixPattern i1 l1 _ == ResolvedMixPattern i2 l2 _ = 
 	(i1, l1) == (i2, l2) 
-    PatternConstr i1 t1 l1 _ == PatternConstr i2 t2 l2 _ = 
-	(i1, l1, t1) == (i2, l2, t2)
+    ApplPattern i1 t1 _ == ApplPattern i2 t2 _ = 
+	(i1, t1) == (i2, t2)
+    TypedPattern p1 t1 _ == TypedPattern p2 t2 _ = (p1, t1) == (p2, t2) 
+    AsPattern p1 q1 _ == AsPattern p2 q2 _ = (p1, q1) == (p2, q2) 
     PatternToken t1 == PatternToken t2 = t1 == t2
     BracketPattern b1 l1 _ == BracketPattern b2 l2 _ = (b1, l1) == (b2, l2) 
     TuplePattern l1 _ == TuplePattern l2 _ = l1 == l2
     MixfixPattern l1 == MixfixPattern l2 = l1 == l2
-    TypedPattern p1 t1 _ == TypedPattern p2 t2 _ = (p1, t1) == (p2, t2) 
-    AsPattern p1 q1 _ == AsPattern p2 q2 _ = (p1, q1) == (p2, q2) 
     _ == _ = False
 
 instance Eq ProgEq where

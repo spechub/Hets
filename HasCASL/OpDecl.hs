@@ -156,10 +156,10 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 	       putAssumps as
 	       case mt of 
 		   Just newTerm  -> case removeResultType newPat of
-		       PatternConstr (InstOpId i _tys _) sc args ps ->
-			   do addOpId i sc [] $ Definition $ 
-			          if null args then newTerm
-				     else LambdaTerm args Partial newTerm ps
+		       PatternConstr (InstOpId i _tys _) sc _ -> do
+			   addOpId i sc [] $ Definition newTerm
+			   return $ ProgEq newPat newTerm qs
+		       ApplPattern _ _ _ -> 
 			      return $ ProgEq newPat newTerm qs
 		       ResolvedMixPattern _ _ _  ->
 			      return $ ProgEq newPat newTerm qs

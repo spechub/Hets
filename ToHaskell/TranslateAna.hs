@@ -330,10 +330,7 @@ translateTerm as tm idc t =
     LetTerm progeqs t1 _pos -> 
         HsLet (map (translateLetProgEq as tm) progeqs)
 	      (translateTerm as tm (Just UpperId) t1)
-
-    TermToken _ttok -> err
-    MixfixTerm _ts -> err
-    BracketTerm _ _ _ -> err
+    _ -> err
 
 --Uebersetzung von Pattern
 -- | Conversion of patterns form HasCASL to haskell.
@@ -344,26 +341,31 @@ translatePattern as tm idc pat =
       PatternVar (VarDecl v _ty _sepki _pos) 
 	  -> HsPVar $ HsIdent $ translateIdWithType LowerId v
       --PatternConstr .... -> HsPRec HsQname [HsPatField]
-      PatternConstr (InstOpId uid _t _p) ts pats _pos -> 
+      PatternConstr (InstOpId uid _t _p) ts _pos -> 
         let oid = findUniqueId uid ts tm as
 	in case oid of
 	  Just i ->
 	    --hier wird manchmal UpperId und manchmal LowerId benötigt??
 	    case idc of
 	      Just c ->
-		 HsPApp (UnQual $ HsIdent $ translateIdWithType c i)
-	                (map (translatePattern as tm idc) pats)
+		 HsPApp (UnQual $ HsIdent $ translateIdWithType c i) []
 	      _ ->
-		 HsPApp (UnQual $ HsIdent $ translateIdWithType UpperId i)
-	                (map (translatePattern as tm  idc) pats)
+		 HsPApp (UnQual $ HsIdent $ translateIdWithType UpperId i) []
 	  _ -> error ("Proplem with finding of unique id" ++ show pat)
-      PatternToken _ -> err
-      BracketPattern _ _ _ -> err
-      TuplePattern pats _pos -> HsPTuple $ map (translatePattern as tm idc) pats
-      MixfixPattern _ -> err
-      TypedPattern p _ty _pos -> translatePattern as tm idc p --Typ implizit
+      ApplPattern p1 p2 _pos -> 
+	  let tp = translatePattern as tm  idc p1
+	      a = translatePattern as tm  idc p2
+	      in case tp of
+                 HsPApp u os -> HsPApp u (os ++ [a])
+		 _ -> error ("problematic application pattern " ++ show pat)
+      TuplePattern pats _pos -> 
+	  HsPTuple $ map (translatePattern as tm idc) pats
+      TypedPattern p _ty _pos -> translatePattern as tm idc p 
+      --Typ implizit
       --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
       AsPattern _p1 _p2 _pos -> error "AsPattern nyi"
+      _ -> err
+
 
 -- Uebersetzung der ProgEq fuer einen HasCASL-Caseterm
 translateCaseProgEq :: Assumps -> TypeMap -> ProgEq -> HsAlt
