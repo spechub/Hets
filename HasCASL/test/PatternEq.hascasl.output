@@ -18,6 +18,7 @@ program (op b : s) : s = (op a : s)
 op x : s; y : t
 op c : t = (op snd : s * t -> t)((op x : s) : s, (op y : t) : t)
 %% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type

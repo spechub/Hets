@@ -2,6 +2,7 @@ type a
 op f : a -> a
 program (op f : a -> a)(v : a @ (var _ : a)) = (var v : a)
 %% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type

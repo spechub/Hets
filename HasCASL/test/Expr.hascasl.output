@@ -12,6 +12,7 @@ op b : bool
        in (op True : bool)
 op b : bool -> bool = \ (var x : bool) . (var x : bool)
 %% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type

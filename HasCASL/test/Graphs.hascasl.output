@@ -94,6 +94,7 @@ forall x : S; x' : S; y : T; s : Set S; s' : Set S; t : Set T
      (var x : S, op True : Bool))
 %% Type Constructors -----------------------------------------------------
 Bool : Type
+Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 S : Type %(var)%
 Set : Type -> Type := \ S : Type . S ->? Unit

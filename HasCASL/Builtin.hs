@@ -158,6 +158,9 @@ addUnit tm = foldr ( \ (i, k, d) m ->
 	      : (simpleIdToId $ mkSimpleId "Pred", 
 		FunKind star star [],
 		AliasTypeDefn defType)
+	      : (simpleIdToId $ mkSimpleId "Logical", 
+		star, AliasTypeDefn $ simpleTypeScheme $ 
+		 FunType logicalType PFunArr logicalType [])
 	      : (productId, prodKind, NoTypeDefn)
 	      : map ( \ a -> (arrowId a, funKind, NoTypeDefn)) 
 		[FunArr, PFunArr, ContFunArr, PContFunArr]

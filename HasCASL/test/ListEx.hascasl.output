@@ -25,6 +25,7 @@ List
      %[free type List(a : Type+)
          ::= Nil : List a
              Cons : a * List a -> List a (head : a; tail : List a)]%
+Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Tree
   : Type+ -> Type

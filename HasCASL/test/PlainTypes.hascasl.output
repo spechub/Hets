@@ -25,6 +25,7 @@ c < Type
 d < Type
 %% Type Constructors -----------------------------------------------------
 List : a -> b
+Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 [__] : a -> b

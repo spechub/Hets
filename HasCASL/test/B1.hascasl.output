@@ -30,6 +30,7 @@ g < Type
 h < (c, a, b)
 j < {v . v < t}
 %% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 [__] : a -> b

@@ -12,6 +12,7 @@ program (op g[_var_6; _var_7]
              (var a : _var_6, var b : _var_7))
           = (var a : _var_6)
 %% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
 Pair
   : Type -> Type -> Type
      %[free type Pair(a : Type)(b : Type)

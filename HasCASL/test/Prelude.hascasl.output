@@ -131,6 +131,7 @@ Cpo < Type
 Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Pcpo := Unit
 __*__

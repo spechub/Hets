@@ -34,6 +34,7 @@ op z : s
 . (op x : s) in s %(bla_label)%
 . (op x : s) in t
 %% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
