@@ -8,6 +8,20 @@ Stability    : provisional
 Portability  : non-portable
 
    Interface for web page with WASH/CGI
+
+   todo:
+     - default for checkbox regarding logging of input must be "selected"
+     - temporary files should be created with these permissions:
+        -rw-rw-r-- (than every member of grp agcofi can remove 
+		    temporary files)
+     - LaTeX code should only be available as download
+     - ASCII code should also be available as download
+     - additionally to (show random) the temporary file names 
+       should contain a fraction of the seconds since epoch and/or
+       the ProcessID
+     - english sentences in the output need corrections
+     - when the HTML-PrettyPrinting is available: generated HTML-Code 
+       instead of poorly rendered ASCII has to be inserted as response
 -}
 
 module Main where
