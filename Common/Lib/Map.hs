@@ -58,7 +58,7 @@
 ----------------------------------------------------------------------------------
 module Common.Lib.Map  ( 
             -- * Map type
-              Map          -- instance Eq,Show
+              Map          -- instance Eq,Ord,Show
             , EndoMap
 
             -- * Operators
@@ -210,7 +210,7 @@ m1 \\ m2 = difference m1 m2
 --------------------------------------------------------------------}
 -- | A Map from keys @k@ and values @a@. 
 data Map k a  = Tip 
-              | Bin !Size !k a !(Map k a) !(Map k a) 
+              | Bin {-# UNPACK #-} !Size k a !(Map k a) !(Map k a) 
 
 type EndoMap a = Map a a
 
@@ -1240,6 +1240,13 @@ bin k x l r
 --------------------------------------------------------------------}
 instance (Eq k,Eq a) => Eq (Map k a) where
   t1 == t2  = (size t1 == size t2) && (toAscList t1 == toAscList t2)
+
+{--------------------------------------------------------------------
+  Ord 
+--------------------------------------------------------------------}
+
+instance (Ord k, Ord v) => Ord (Map k v) where
+    compare m1 m2 = compare (toList m1) (toList m2)
 
 {--------------------------------------------------------------------
   Functor
