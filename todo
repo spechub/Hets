@@ -170,6 +170,10 @@ emacs mode:
   show hets output immediately
   C-c C-g for hets -g
   when hets terminates abnormally (e.g. with a fail), emacs loops
+  C-n jumps to the next error, but the message windows is not always scrolled
+    in such a way that the error is at the top (for long error lists)
+  Version for XEamcs?
+
 
 OWL-DL logic
 OWL-DL -> CASL
