@@ -21,7 +21,7 @@ import System.Environment
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import CspCASL.Print_AS_CSP_CASL
-import Common.GlobalAnnotationsFunctions(emptyGlobalAnnos)
+import Common.GlobalAnnotations
 
 import Common.AnnoState
 
