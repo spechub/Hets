@@ -57,6 +57,7 @@ module Options where
 
 import Version
 import Common.Utils
+import Common.Result
 
 import System.Directory
 import System.Exit
@@ -504,3 +505,13 @@ doIfVerbose opts level func =
     if (verbose opts) >= level then func
         else return ()
 
+-- | show diagnostic messages (see Result.hs), according to verbosity level
+showDiags :: HetcatsOpts -> [Diagnosis] -> IO()
+showDiags opts diags = do
+  sequence $ map (putStrLn . show) $ filter (relevantDiagKind . diagKind) $ diags
+  return ()
+  where relevantDiagKind FatalError = True
+        relevantDiagKind Error = True
+        relevantDiagKind Warning = (verbose opts) >= 1
+        relevantDiagKind Hint = (verbose opts) >= 3
+        relevantDiagKind Debug  = (verbose opts) >= 3

@@ -130,7 +130,7 @@ ana_LIB_DEFN lgraph l opts libenv (Lib_defn ln alibItems pos ans) = do
     IOResult (do
       Result diags res <-
          ioresToIO (ana_LIB_ITEM lgraph l1 opts libenv1 gctx1 l1 libItem)
-      sequence (map (putStrLn . show) diags)
+      showDiags opts diags
       if hasErrors diags then fail "Stopped due to errors"
        else case res of
          Just (libItem',gctx1',l1',libenv1') -> 
