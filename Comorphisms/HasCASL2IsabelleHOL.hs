@@ -58,7 +58,7 @@ instance Comorphism HasCASL2IsabelleHOL
                          has_type_classes = False,
                          has_polymorphism = False,
                          has_type_constructors = False,
-                         which_logic = FOL
+                         which_logic = HOL
                        }
     targetLogic _ = Isabelle
     targetSublogic _ = ()
@@ -92,7 +92,7 @@ transSignature sign =
     constTab = Map.foldWithKey insertOps 
                                Map.empty 
                                (assumps sign),
-    dataTypeTab = [],
+    dataTypeTab = [], 
     syn = () },
     [] )  -- for now, no sentences
    where 
@@ -129,11 +129,15 @@ transType :: Type -> Typ
 transType (TypeName typeId _ _) = Type(showIsa typeId,[])
 transType (ProductType types _) = foldr1 IsaSign.mkProductType 
                                          (map transType types)
-transType (FunType type1 _ type2 _) = (transType type1) 
-                                        --> (mkOptionType (transType type2))
+transType (FunType type1 arr type2 _) = case arr of
+                                          PFunArr -> (transType type1) 
+                                                       --> (mkOptionType (transType type2))
+                                          FunArr  -> (transType type1) --> (transType type2)
+                                          _       -> error "[Comorphims.HasCASL2IsabelleHOL] Not supported function type in use"
 transType _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported type in use"
 
-
+--transDatatypes :: TypeMap -> DataTypeTab
+--transDatatypes 
 
 ------------------------------ Formulas ------------------------------
 
@@ -163,9 +167,16 @@ transTerm sign (ApplTerm term1 term2 _) =
        QualOp Pred _ _ _ -> con "pApp" 
                               `App` (transTerm sign term1) 
                               `App` (transTerm sign term2)
-       _                 -> con "app" 
-                              `App` (transTerm sign term1) 
-                              `App` (transTerm sign term2)
+       QualOp Op _ typeScheme _ -> if isPart typeScheme then mkApp "app" sign term1 term2
+                                                        else mkApp "apt" sign term1 term2
+       _                 -> mkApp "app" sign term1 term2
+     where mkApp s sign t1 t2 = con s 
+                                 `App` (transTerm sign term1) 
+                                 `App` (transTerm sign term2)
+           isPart (TypeScheme _ (_ :=> op) _) = case op of
+                                                  FunType _ PFunArr _ _ -> True
+                                                  FunType _ FunArr _ _  -> False
+                                                  _                     -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong operation type"
 transTerm sign (QuantifiedTerm quant varDecls phi _) = 
   foldr (quantify quant) 
         (transTerm sign phi) 
@@ -228,7 +239,7 @@ transLog sign opId opTerm term
              t1 = head ts
              t2 = last ts
              getTerms (TupleTerm terms _) = terms
-             getTerms _ = error "[Comorphims.HasCASL2IsabelleHOL] Wrong formula definition?!"
+             getTerms _ = error "[Comorphims.HasCASL2IsabelleHOL] Incorrect formula coding in abstract syntax"
 
 
 quantify :: Quantifier -> (Var,Type) -> IsaSign.Term -> IsaSign.Term
