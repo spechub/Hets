@@ -81,6 +81,15 @@ import ATC.AS_Annotation
 -- diagrams are just graphs
 type Diagram object morphism = Graph object morphism
 
+-- | Amalgamability analysis might be undecidable, so we need
+-- a special type for the result of ensures_amalgamability
+
+-- TODO: add parameters (e.g. nodes) to "No" so that the error 
+-- messages are more helpful
+data Amalgamates = Yes
+		 | No 
+		 | DontKnow
+
 -- languages, define like "data CASL = CASL deriving Show" 
 
 class Show lid => Language lid where
@@ -224,11 +233,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          stat_symb_map_items :: 
 	     lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol] 
-         -- architectural sharing analysis for one morphism
+         -- architectural sharing analysis
          ensures_amalgamability :: lid ->
-              (Diagram sign morphism, Node, sign, LEdge morphism, morphism) -> 
-               Result (Diagram sign morphism)
-         -- do we need it also for sinks consisting of two morphisms?
+              (Diagram sign morphism, [LEdge morphism]) -> Result Amalgamates
 
          -- symbols and symbol maps
          symbol_to_raw :: lid -> symbol -> raw_symbol
