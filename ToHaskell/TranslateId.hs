@@ -1,3 +1,15 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Uni Bremen 2003
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
+   Translation of identifiers from HasCASL to haskell.
+-}
+
 module ToHaskell.TranslateId where
 
 import Common.Id
@@ -31,7 +43,7 @@ translateId :: Id -> String
 translateId (Id tlist idlist _poslist) = 
     (translateTokens tlist) ++ (translateCompound idlist)
 
-
+-- | Translates a list of token according to the 'symbolMapping'.
 translateTokens :: [Token] -> String
 translateTokens [] = ""
 translateTokens (t:ts) = 
@@ -52,9 +64,12 @@ firstDigit s = if startsWithDigit s then
 subPlace :: String
 subPlace = "_2"
 
+-- | Converts characters that are not valid for identifiers in haskell 
+--   according to the symbol map.
 symbolMapping :: Char -> String
 symbolMapping c = Map.findWithDefault [c] c symbolMap
 
+-- | Translation of the compoundlist of an identifier.
 translateCompound :: [Id] -> String
 --  [      ,      ]
 -- _C     _k     _J
@@ -112,5 +127,4 @@ symbolTable =
     ('¿' , "_q"),    -- \191
     ('×' , "_m"),    -- \215
     ('÷' , "_g")]    -- \247
-
 
