@@ -55,9 +55,11 @@ showSepList s f (x:r) = f x . s . showSepList s f r
 type Keyword = Token
 type TokenOrPlace = Token
  
+place :: String
 place = "__"
 
-isPlace(Token t _) = t == place
+isPlace :: TokenOrPlace -> Bool
+isPlace (Token t _) = t == place
  
 -- an identifier may be mixfix (though not for a sort) and compound
 -- TokenOrPlace list must be non-empty!
@@ -71,6 +73,7 @@ instance Eq Id where
 instance Ord Id where
     Id tops1 ids1 _ <= Id tops2 ids2 _ = tops1 <= tops2 && ids1 <= ids2
 
+showId :: Id -> ShowS
 showId (Id ts is _) = 
 	let (toks, places) = splitMixToken ts 
             comps = if null is then showString "" else 
@@ -79,6 +82,7 @@ showId (Id ts is _) =
 	    showToks = showSepList (showString "") showTok
 	in  showToks toks . comps . showToks places
 
+splitMixToken :: [Token] -> ([Token],[Token])
 splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 	      (reverse toks, reverse pls)
 
@@ -88,8 +92,37 @@ splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 type SIMPLE_ID = Token
 
 ---- some useful predicates for Ids -------------------------------------
+isOrdAppl :: Id -> Bool
+isOrdAppl = not . isMixfix
+
 isMixfix :: Id -> Bool
 isMixfix (Id tops _ _) = any isPlace tops 
+
+isPrefix :: Id -> Bool
+isPrefix (Id tops _ _) = isFstTokenRemPlaces tops 
+
+isPostfix :: Id -> Bool
+isPostfix (Id tops _ _) = isFstTokenRemPlaces $ reverse tops
+
+-- a helper predicate on [TokenOrPlace]
+isFstTokenRemPlaces :: [TokenOrPlace] -> Bool
+isFstTokenRemPlaces tops = 
+    case tops of
+    [] -> False
+    (x:xs)
+	| null xs   -> False
+	| otherwise -> (not $ isPlace x) && all isPlace xs
+
+isInfix2 :: Id -> Bool
+isInfix2 (Id tops _ _)
+    | length tops == 3 = (isPlace . head) tops 
+			 && (isPlace . last) tops
+			 && (not . isPlace . head . tail) tops
+    | otherwise = False
+
+isInfix :: Id -> Bool
+isInfix (Id tops _ _) = (isPlace . head) tops 
+			&& (isPlace . last) tops
 
 isCompound :: Id -> Bool
 isCompound (Id _ cs _) = not $ null cs
