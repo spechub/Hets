@@ -26,8 +26,7 @@ AG         = $(PERL) utils/ag
 HADDOCK    = $(PERL) utils/haddock
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
-# please remove '-O2' if compilation lasts to long on your system
-# but please don't commit to cvs server
+# use target hets-opt for optimization
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
              -package uni-server
@@ -125,7 +124,7 @@ hets: $(sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
 hets-opt: $(sources)
-	$(MAKE) distclean
+	$(MAKE) real_clean
 	$(MAKE) hets-optimized
 
 hets-optimized: $(sources)
