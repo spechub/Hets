@@ -61,7 +61,7 @@ instance Comorphism HasCASL2Haskell
     map_morphism _ mor = do
        (sig1,_) <- map_sign HasCASL2Haskell (dom HasCASL mor)
        (sig2,_) <- map_sign HasCASL2Haskell (cod HasCASL mor)
-       return (sig1,sig2)
+       inclusion Haskell sig1 sig2
     map_sentence _ = mapSingleSentence
     --map_symbol :: cid -> symbol1 -> Set symbol2
     map_theory _ = mapTheory

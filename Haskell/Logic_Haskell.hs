@@ -23,6 +23,7 @@ import Common.DynamicUtils
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.AS_Annotation
+import Common.DefaultMorphism
 
 import Haskell.ATC_Haskell      -- generated ATerm conversions
 import Haskell.HatParser                
@@ -74,15 +75,15 @@ instance Language Haskell where
   \ type classes and monadic effects.\ 
   \ See http://www.haskell.org"
 
-type HaskellMorphism = (Sign,Sign)
+type HaskellMorphism = DefaultMorphism Sign
 
 instance Category Haskell Sign HaskellMorphism where
-  dom Haskell = fst
-  cod Haskell = snd
-  ide Haskell sig = (sig,sig)
-  comp Haskell (sig1,sig) (sig2,sig3) = if sig == sig2 then 
-    return (sig1,sig3) else 
-    fail "target of first and source of second Haskell morphism are different"
+  dom Haskell = domOfDefaultMorphism
+  cod Haskell = codOfDefaultMorphism
+  ide Haskell = ideOfDefaultMorphism
+  comp Haskell = compOfDefaultMorphism
+  legal_obj Haskell = const True
+  legal_mor Haskell = legalDefaultMorphism (legal_obj Haskell)
 
 -- abstract syntax, parsing (and printing)
 
@@ -109,14 +110,6 @@ instance Sentences Haskell (TiDecl PNT) () Sign HaskellMorphism Symbol where
     provers Haskell = [] 
     cons_checkers Haskell = []
 
-instance PrettyPrint HaskellMorphism where
-  printText0 ga (sig1,sig2) =
-    printText0 ga sig1 $$ ptext "->" $$ printText0 ga sig2
-
-instance PrintLaTeX HaskellMorphism where
-  printLatex0 ga (sig1,sig2) =
-    printLatex0 ga sig1 $$ ptext "\\rightarrow" $$ printLatex0 ga sig2
-
 instance StaticAnalysis Haskell HsDecls
                (TiDecl PNT) () 
                SYMB_ITEMS SYMB_MAP_ITEMS
@@ -127,7 +120,7 @@ instance StaticAnalysis Haskell HsDecls
     empty_signature Haskell = emptySign
     signature_union Haskell s = return . addSign s
     final_union Haskell = signature_union Haskell
-    inclusion Haskell sig1 sig2 = return (sig1,sig2)
+    inclusion Haskell = defaultInclusion (is_subsig Haskell)
     is_subsig Haskell = isSubSign
 
 instance Logic Haskell Haskell_Sublogics
