@@ -599,7 +599,7 @@ createEdgeTypes g = map createEdgeType ((nub (map (\(_,_,l) -> l) (labEdges g)))
              (str,
               Solid
               $$$ Head "arrow"
-              $$$ Dir "first"
+--              $$$ Dir "first"
               $$$ ValueTitle (\ (name, _) -> return name)
 --               $$$ TitleFunc (\ (name, _) -> name)
               $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int))
