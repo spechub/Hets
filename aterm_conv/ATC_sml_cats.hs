@@ -20,7 +20,7 @@
 module ATC_sml_cats (from_sml_ATerm,read_sml_ATerm) where
 
 -- for debugging only
--- import IOExts (trace)
+--import IOExts (trace)
 
 import List (isPrefixOf)
 
@@ -1833,7 +1833,7 @@ instance ATermConvertible LIB_ITEM where
 		as  = toAnnoList ad att
 		ac''= addLAnnoList as ac'
 		ad' = pos_l
-		in (AS_Library.Spec_defn aa' ab' ac'' ad')
+		in AS_Library.Spec_defn aa' ab' ac'' ad'
 	    (AAppl "view-defn" [ aa,ab,ac,ad,_ ])  ->
 		let  -- the annotation list is lost !!!!
 		aa' = fromATermSIMPLE_ID (getATermByIndexSp1 aa att)
@@ -1890,7 +1890,8 @@ skipPosFlag :: String -> ATermTable -> ([Pos],Bool,ATermTable)
 skipPosFlag mcon att   = 		
     case getATerm att of
     AAppl con [reg_i,b_i,item_i] | mcon == con ->
-          if pCon then skipPosFlag mcon at'
+          if pCon then let (r_pos_l,r_b,r_at') = skipPosFlag mcon at'
+		       in (pos_l,r_b || b,r_at')
 	  else (pos_l,b,at')
 	      where pCon  = case getATerm at' of
 			    AAppl con' _ | mcon == con' -> True
