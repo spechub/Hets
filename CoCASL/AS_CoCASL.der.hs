@@ -61,7 +61,7 @@ data C_FORMULA =
 	     | Diamond MODALITY (FORMULA C_FORMULA) [Pos]
                -- The identifier and the term specify the kind of the modality
                -- pos: "<>"
-	     | CoSort_gen_ax [Constraint] Bool -- flag: belongs to a cofree type?
+	     | CoSort_gen_ax [SORT] [OP_SYMB] Bool -- flag: belongs to a cofree type?
              deriving (Eq, Ord, Show)
 
 cotypeS, cotypesS, cogeneratedS, diamondS, greaterS 

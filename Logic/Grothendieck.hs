@@ -250,6 +250,18 @@ data G_sublogics = forall lid sublogics
 instance Show G_sublogics where
     show (G_sublogics _ l) = show l
 
+instance Eq G_sublogics where
+    (G_sublogics lid1 l1) == (G_sublogics lid2 l2) =
+       coerce lid1 lid2 l1 == Just l2
+
+instance Ord G_sublogics where
+    compare (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
+     case coerce lid1 lid2 l2 of
+       Just l2' -> if l1==l2' then EQ
+                     else if l1 <<= l2' then LT
+                     else GT
+       Nothing -> error "Attempt to compare sublogics of different logics"
+
 -- | Homogeneous Grothendieck signature morphisms
 data G_morphism = forall lid sublogics
         basic_spec sentence symb_items symb_map_items

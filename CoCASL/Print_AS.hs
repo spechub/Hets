@@ -88,16 +88,10 @@ instance PrettyPrint C_FORMULA where
 			 _ -> (<+>)
 	    in ptext lessS `sp` printText0 ga t `sp` ptext greaterS 
 		   <+> printText0 ga f
-    printText0 ga (CoSort_gen_ax constrs _) = 
+    printText0 ga (CoSort_gen_ax sorts ops _) = 
         text cogeneratedS <> 
         braces (text sortS <+> commaT_text ga sorts 
                 <> semi <+> semiT_text ga ops)
-         <+> (if null sortMap then empty
-               else text withS 
-                <+> fsep (punctuate comma (map printSortMap sortMap)))
-        where (sorts,ops,sortMap) = recover_Sort_gen_ax constrs
-              printSortMap (s1,s2) =
-                printText0 ga s1 <+> ptext "|->" <+> printText0 ga s2
 
 instance PrettyPrint MODALITY where
     printText0 ga (Simple_mod ident) = 

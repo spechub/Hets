@@ -11,7 +11,8 @@ Portability :  portable
 -}
 
 {- todo:
-  correct map_C_FORMULA, getCoDataGenSig
+  correct map_C_FORMULA
+  translation of cogen ax
   analysis of modal formulas
 -}
 
@@ -262,17 +263,7 @@ toCoSortGenAx ps isFree (sorts, ops) = do
     let sortList = Set.toList sorts
         opSyms = map ( \ c ->  Qual_op_name (compId c)  
 		      (toOP_TYPE $ compType c) []) $ Set.toList ops
-        resType _ (Op_name _) = False
-        resType s (Qual_op_name _ t _) = res_OP_TYPE t ==s
-        getIndex s = maybe (-1) id $ findIndex (==s) sortList
-        addIndices (Op_name _) = 
-          error "CoCASL/StaticAna: Internal error in function addIndices"
-        addIndices os@(Qual_op_name _ t _) = 
-            (os,map getIndex $ args_OP_TYPE t)
-        collectOps s = 
-          Constraint s (map addIndices $ filter (resType s) opSyms) s
-        constrs = map collectOps sortList
-        f = ExtFORMULA $ CoSort_gen_ax constrs isFree
+        f = ExtFORMULA $ CoSort_gen_ax sortList opSyms isFree
     if null sortList then 
               addDiags[Diag Error "missing cogenerated sort" (headPos ps)]
               else return ()
@@ -294,17 +285,17 @@ getCoGenSig si = case si of
 
 getCoDataGenSig :: [Annoted CODATATYPE_DECL] -> (Set.Set Id, Set.Set Component)
 getCoDataGenSig dl = 
-    let alts = map (( \ (CoDatatype_decl s al _) -> (s, al)) . item) dl
+    let get_sel1 s al = case al of 
+	  CoSubsorts _ _ ->  []
+	  CoTotal_construct _ l _ -> concatMap (getCoCompType s) l
+	  CoPartial_construct _ l _ -> concatMap (getCoCompType s) l
+        get_sel (s,als) = concatMap (get_sel1 s . item) als 
+        alts = map (( \ (CoDatatype_decl s al _) -> (s, al)) . item) dl
 	sorts = map fst alts
-	cs = catMaybes $ concatMap ( \ (s, al) -> map (( \ a -> 
-	      let (i, ty, _) = getCoConsType s a
-	      in maybe Nothing (\j -> Just $ Component j ty) i)) 
-		       $ filter ( \ a ->
-				  case a of 
-				  CoSubsorts _ _ -> False
-				  _ -> True)
-		       $ map item al) alts
-	in (Set.fromList sorts, Set.fromList cs)
+        sels = concatMap computeComp $ concatMap get_sel alts
+        computeComp (Just i,ot) = [Component i ot]
+        computeComp _ = []
+	in (Set.fromList sorts, Set.fromList sels)
 
 resultToState :: (a -> Result a) -> a -> State (Sign f e) a
 resultToState f a = do 
