@@ -271,9 +271,12 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 release: 
 	$(RM) -r HetCATS
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository\
-            co HetCATS
+            co -P HetCATS
 	$(RM) -r uni
-	ln -s ../uni uni
+	-ln -s ../uni uni
+	$(RM) -r programatica
+	-mkdir programatica 
+	-ln -s ../../programatica/tools programatica/tools
 	(cd HetCATS; $(MAKE) derivedSources; ./clean.sh; \
            find . -name CVS -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
            $(RM) clean.*; mv Makefile Makefile.orig; \
