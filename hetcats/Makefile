@@ -125,6 +125,9 @@ hacapa: ../HasCASL/Main.hs $(drifted_files)
 Version.hs: Version.in version_nr
 	$(PERL) ../utils/build_version.pl version_nr < Version.in > $@
 
+## two hardcoded dependencies for a correct generation of Version.hs
+Options.hs: Version.hs
+hetcats.hs: Version.hs
 ####################################################################
 ## rules for DrIFT
 
