@@ -118,7 +118,7 @@ data Env = Env { classMap :: ClassMap
                , sentences :: [Named Sentence]       
                , envDiags :: [Diagnosis]
                , preIds :: (PrecMap, Set.Set Id)
-               , counter :: !Int
+               , counter :: Int
                } deriving Show
 
 initialEnv :: Env
