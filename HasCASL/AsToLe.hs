@@ -131,7 +131,7 @@ anaBasicItem _ (GenVarItems l ps) =
     do ul <- mapM anaGenVarDecl l
        return $ GenVarItems (catMaybes ul) ps
 anaBasicItem ga (ProgItems l ps) = 
-    do ul <- mapAnM (anaProgEq ga) l
+    do ul <- mapAnMaybe (anaProgEq ga) l
        return $ ProgItems ul ps
 anaBasicItem _ (FreeDatatype l ps) = 
     do al <- mapAnMaybe ana1Datatype l

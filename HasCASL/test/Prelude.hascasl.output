@@ -23,15 +23,12 @@ type __*__ : Type+ -> Type+ -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : Pred s
 var x : s
-program (op def[_var_3_v3]
-         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+program (op def[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
           = \ (var x : s) : s . ()
         %% def is also total (identical to tt) 
-program (op tt[_var_6_v6]
-         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+program (op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
           = \ (var x : s) : s . ()
         %% tt is total "op tt(x: s): unit = ()"
-program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
 type __->__ : Type- -> Type+ -> Type
 type __->__(s : Type)(t : Type) < s_v1 ->? t_v2
@@ -40,7 +37,6 @@ op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
      = \ (var x : s, var y : t) .! (var x : s) as s_v1
 op fst : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
      = \ (var x : s, var y : t) .! (var x : s) as s_v1
-program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
 . (fun __=__[_var_33_v33 * _var_35_v35 ->? _var_33_v33]
    : forall s : Type . s_v-1 * s_v-1 ->? Unit)
@@ -77,17 +73,8 @@ pred eq : s * s
 %% for type inference 
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
 type s < ? s_v1
-program all (p : Pred (s)) : Pred Unit = eq (p, tt)
 %% the cast from ?s to s is still done manually here (for the strict "und")
-program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
 %% use "And" instead of "und" to avoid cast from "?unit" to "unit"
-program __ impl __ (x, y : Pred Unit) : Pred Unit = eq (x, x And y)
-program __ or __ (x, y : Pred Unit) : Pred Unit =
-            all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
-program ex (p : Pred (s)) : Pred Unit =
-            all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
-program ff () : Pred Unit = all (\ r : Pred Unit . r ())
-program neg (r : Pred Unit) : Pred Unit = r impl ff
 %% the type instance for the first "eq" should be "?t" 
 %% this is explicitely enforced by "\ .f(x)"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,27 +88,19 @@ class Cpo < Type
 class Pcpo < Cpo
       {var p : Pcpo; op bottom : p;}
 class instance Flatcpo < Cpo
-               {var f : Flatcpo; program __ <<= [f] __ = eq}
+               {var f : Flatcpo;}
 var c : Cpo; d : Cpo
 type instance __*__ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
-program (pred __<<=__[c * d] : forall c : Cpo . c_v-1 * c_v-1)
-          ((var x1 : c, var y1 : d), (var x2 : c, var y2 : d))
-          = (x1 <<= x2) und (y1 <<= y2)
 type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
 %% Pcont
 type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
-type __-->?__(c : Cpo)(d : Cpo) < c_v159 ->? d_v164
-program f <<= [c -->? d] g =
-            all (\ x : c . def (f x) impl f (x) <<= g (x))
+type __-->?__(c : Cpo)(d : Cpo) < c_v155 ->? d_v160
 %% Tcont
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
-type __-->__(c : Cpo)(d : Cpo) < c_v159 -->? d_v164
+type __-->__(c : Cpo)(d : Cpo) < c_v155 -->? d_v160
 var f : c --> d; g : c --> d
-program (pred __<<=__[c --> d] : forall c : Cpo . c_v-1 * c_v-1)
-          (var f : c --> d, var g : c --> d)
-          = f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op undefined : forall c : Cpo; p : Pcpo . c_v-1 -->? p_v-2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,10 +122,10 @@ __*__
      Type+ -> Type+ -> Type)
 __-->__
   : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Pcpo+ -> Pcpo,
-     Type- -> Type+ -> Type) < (c_v159 -->? d_v164, __-->?__, __->__)
+     Type- -> Type+ -> Type) < (c_v155 -->? d_v160, __-->?__, __->__)
 __-->?__
   : (Cpo- -> Cpo+ -> Pcpo,
-     Type- -> Type+ -> Type) < (c_v159 ->? d_v164, __->?__)
+     Type- -> Type+ -> Type) < (c_v155 ->? d_v160, __->?__)
 __->__ : Type- -> Type+ -> Type < (s_v1 ->? t_v2, __->?__)
 __->?__ : Type- -> Type+ -> Type
 bool
@@ -154,11 +133,11 @@ bool
      %[free type bool
          ::= true : bool
              false : bool]%
-c : Cpo %(var_159)%
-d : Cpo %(var_164)%
-f : Flatcpo %(var_163)%
+c : Cpo %(var_155)%
+d : Cpo %(var_160)%
+f : Flatcpo %(var_159)%
 nat : Flatcpo
-p : Pcpo %(var_162)%
+p : Pcpo %(var_158)%
 s : Type %(var_1)%
 t : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
@@ -206,11 +185,9 @@ y1 : d %(var)%
 y2 : d %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (op def[_var_3_v3]
-         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+program (op def[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
           = \ (var x : s) : s . () %(pe_def)%
-program (op tt[_var_6_v6]
-         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+program (op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
           = \ (var x : s) : s . () %(pe_tt)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
@@ -268,13 +245,7 @@ free type bool
 *** Hint 30.8, redeclared type '__*__'
 *** FatalError 31.6, illegal type pattern: __ * __ * __
 *** Hint 42.16, variable shadows global name(s) 'x'
-*** Hint 42.15, unable to prove: s < _var_4_v4
-*** Error 42.15, in term'\ (var x : s) : s . ()' of type '_var_4_v4 ->? Unit'
- unresolved constraints '{ s < _var_4_v4 }'
 *** Hint 44.15, variable shadows global name(s) 'x'
-*** Hint 44.14, unable to prove: s < _var_7_v7
-*** Error 44.14, in term'\ (var x : s) : s . ()' of type '_var_7_v7 ->? Unit'
- unresolved constraints '{ s < _var_7_v7 }'
 *** Error 46.11, unexpected mixfix token: und
 *** Hint 50.8, redeclared type '__->__'
 *** Error 52.8, incompatible kind of: __->__
@@ -294,7 +265,7 @@ free type bool
     
 *** Hint 60.9, untypable application (with result type: t)
  'snd(x : s, var y : t)'
-*** Error 60.9, no typing for 'snd(x : s, var y : t) : t'
+*** Error 60.30, no typing for 'program snd(x : s, var y : t) : t = y'
 *** Error 65.18, ambiguous mixfix term
   def(__res__(x, y))
   def__(__res__(x, y))
@@ -409,37 +380,18 @@ free type bool
     
 *** Hint 87.9, untypable application (with result type: Unit ->? Unit)
  'all(var p : s ->? Unit)'
-*** Error 87.9, no typing for 'all(var p : s ->? Unit) : Unit ->? Unit'
-*** Hint 90.9, no type match for: And
-  with (maximal) type: _var_153_v153 ->? Unit ->? Unit
-  known types:
-    
-*** Hint 90.9, untypable application (with result type: Unit ->? Unit)
- 'And(x, var y : Unit ->? Unit)'
-*** Error 90.9, no typing for 'And(x, var y : Unit ->? Unit) : Unit ->? Unit'
+*** Error 87.38, no typing for 'program all(var p : s ->? Unit) : Unit ->? Unit = eq(p, tt)'
+*** Error 90.45, unexpected mixfix token: t1
 *** Error 93.11, unexpected mixfix token: impl
+*** Error 93.58, unexpected mixfix token: And
 *** Error 95.11, unexpected mixfix token: or
-*** Hint 98.9, no type match for: ex
-  with (maximal) type: _var_154_v154 ->? Unit ->? Unit
-  known types:
-    
-*** Hint 98.9, untypable application (with result type: Unit ->? Unit)
- 'ex(var p : s ->? Unit)'
-*** Error 98.9, no typing for 'ex(var p : s ->? Unit) : Unit ->? Unit'
-*** Hint 101.9, no type match for: ff
-  with (maximal) type: _var_155_v155 ->? Unit ->? Unit
-  known types:
-    
-*** Hint 101.9, untypable application (with result type: Unit ->? Unit)
- 'ff()'
-*** Error 101.9, no typing for 'ff() : Unit ->? Unit'
-*** Hint 103.9, no type match for: neg
-  with (maximal) type: _var_156_v156 ->? Unit ->? Unit
-  known types:
-    
-*** Hint 103.9, untypable application (with result type: Unit ->? Unit)
- 'neg(var r : Unit ->? Unit)'
-*** Error 103.9, no typing for 'neg(var r : Unit ->? Unit) : Unit ->? Unit'
+*** Error 96.21, unexpected mixfix token: impl
+*** Error 95.48, unexpected mixfix token: all
+*** Error 99.32, unexpected mixfix token: impl
+*** Error 99.17, unexpected mixfix token: all
+*** Error 98.39, unexpected mixfix token: all
+*** Error 101.29, unexpected mixfix token: all
+*** Error 103.44, unexpected mixfix token: impl
 *** Error 108.51, unexpected mixfix token: impl
 *** Error 108.22, unexpected mixfix token: all
 *** Error 108.3, unexpected mixfix token: all
@@ -466,14 +418,6 @@ free type bool
 *** Hint 153.5, is type variable 'c'
 *** Hint 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
-*** Hint 159.10, in type of '((var x1 : c, var y1 : d), (var x2 : c, var y2 : d))'
-  type '(c * d) * (c * d)' (157.13)
-  is not unifiable with type 'Unit ->? _var_168_v168 * _var_169_v169' (119.16)
-
-*** Hint 159.10, variable shadows global name(s) 'x1'
-*** Hint 159.14, variable shadows global name(s) 'y1'
-*** Hint 159.23, variable shadows global name(s) 'x2'
-*** Hint 159.27, variable shadows global name(s) 'y2'
 *** Error 159.45, unexpected mixfix token: und
 *** Error 169.9, incompatible kind of: __-->?__
   expected: Type- -> Type+ -> Type
@@ -485,29 +429,8 @@ free type bool
 *** Error 172.39, unexpected mixfix token: und
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
-*** Hint 10.18, no type match for: __::__
-  with (maximal) type: _var_187_v187 ->? _var_185_v185 ->? _var_186_v186
-  known types:
-    
-*** Hint 10.18, untypable application (with result type: _var_185_v185 ->? _var_186_v186)
- '__::__(c(var -->? : _var_177_v177)(var d : _var_178_v178), [])'
-*** Hint 10.18, untypable application '__::__(c(var -->? : _var_177_v177)(var d : _var_178_v178), [])
-    (var g : _var_179_v179)'
-*** Hint 10.18, no type match for: __::__
-  with (maximal) type: _var_190_v190 ->? _var_188_v188 ->? _var_189_v189
-  known types:
-    
-*** Hint 10.18, untypable application (with result type: _var_188_v188 ->? _var_189_v189)
- '__::__(c(var -->? : _var_177_v177)(var d : _var_178_v178), [])'
-*** Hint 10.18, untypable application '__::__(c(var -->? : _var_177_v177)(var d : _var_178_v178), [])
-    (var g : _var_179_v179)'
-*** Hint 176.13, untypable application '__<<=__
-    (var f : _var_176_v176,
-     __::__(c(var -->? : _var_177_v177)(var d : _var_178_v178), [])
-       (var g : _var_179_v179))'
-*** Error 176.13, no typing for '__<<=__(var f : _var_176_v176,
-          __::__(c(var -->? : _var_177_v177)(var d : _var_178_v178), [])
-            (var g : _var_179_v179))'
+*** Error 176.51, unexpected mixfix token: impl
+*** Error 176.31, unexpected mixfix token: all
 *** Error 181.9, incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
@@ -517,14 +440,8 @@ free type bool
   def(f)(x)
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
-*** Hint 186.10, in type of '(var f : c --> d, var g : c --> d)'
-  type '(c --> d) * (c --> d)' (184.13)
-  is not unifiable with type 'Unit ->? _var_194_v194 * _var_195_v195' (119.16)
-
-*** Hint 186.10, variable shadows global name(s) 'f'
-*** Hint 186.16, variable shadows global name(s) 'g'
 *** Error 186.26, unexpected mixfix token: c
-*** Error 190.9, incompatible kind of: p_v162 -->? p_v162
+*** Error 190.9, incompatible kind of: p_v158 -->? p_v158
   expected: Cpo-
      found: Type
 

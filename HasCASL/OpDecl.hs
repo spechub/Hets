@@ -141,23 +141,14 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 -- ProgEq
 -- ----------------------------------------------------------------------------
 
-anaProgEq :: GlobalAnnos -> ProgEq -> State Env ProgEq
-anaProgEq ga pe@(ProgEq pat trm qs) =
-    do vs <- gets localVars
-       mp <- checkPattern ga pat
+anaProgEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)
+anaProgEq ga pe@(ProgEq _ _ q) =
+    do mp <- resolveTerm ga Nothing (LetTerm Program [pe] 
+                                     (BracketTerm Parens [] [q]) [q])
        case mp of 
-           Nothing -> return pe
-           Just newPat -> do 
-               let exbs = extractVars newPat
-               checkUniqueVars exbs
-               mapM_ addLocalVar exbs
-               mt <- resolveTerm ga Nothing trm 
-               -- guarantee that type of pattern and term are equal!
-               putLocalVars vs
-               case mt of 
-                   Just newTerm  -> let newPrg = ProgEq newPat newTerm qs in
-                     case getAppl newPat of
-                       Just (i, sc, _) -> do 
+           Just (LetTerm _ (newPrg@(ProgEq newPat _ _) : _) _ _) -> 
+               case getAppl newPat of
+               Just (i, sc, _) -> do 
                            addOpId i sc [] $ NoOpDefn Op
                            appendSentences [NamedSen ("pe_" ++ showId i "")
                                             $ ProgEqSen i sc newPrg]
@@ -166,12 +157,12 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
                               else addDiags [mkDiag Warning
                                          "illegal lhs pattern"
                                          newPat]
-                           return newPrg
-                       _ -> do addDiags [mkDiag Error 
+                           return $ Just newPrg
+               Nothing -> do addDiags [mkDiag Error 
                                          "illegal toplevel pattern"
                                          newPat]
-                               return newPrg
-                   _ -> return $ ProgEq newPat trm qs 
+                             return Nothing
+           _ -> return Nothing
 
 getApplConstr :: Pattern -> (Pattern, [Pattern])
 getApplConstr pat = 

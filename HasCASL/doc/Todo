@@ -56,8 +56,6 @@ program equations or case patterns. (Merge.hs?)
 
 Sentences for attributes comm, assoc, unit are not generated yet.
 
-the LHS type of a program equation is not propagated to the RHS
-
 
 
 CASL:

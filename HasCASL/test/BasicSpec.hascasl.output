@@ -8,18 +8,8 @@ type s : c
 pred tt : s
 var x : s
 program (pred tt : s) = \ (var x : s) : s . ()
-program __ res __ (x : s, y : t) : s = x;
-        fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
 pred eq : s * s
 type s < ? s
-program all (p : (? s)) : (? Unit) = eq (p, tt)
-program And (x, y : (? Unit)) : (? Unit) = t1 () res t2 ()
-program __ impl __ (x, y : (? Unit)) = eq (x, x And y)
-program __ or __ (x, y : (? Unit)) : (? Unit) =
-            all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
-        ex (p : (? s)) : (? Unit) =
-            all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
-        ff () : (? Unit) = all (\ r : (? Unit) . r ())
 forall x : t; y : t
 . %(..)%
   (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
@@ -205,9 +195,6 @@ type Data4
 *** Warning 11.13, redeclared class 'c'
 *** Warning 11.19, redeclared class 'a'
 *** Hint 18.15, variable shadows global name(s) 'x'
-*** Hint 18.14, unable to prove: s < _var_2_v2
-*** Error 18.14, in term'\ (var x : s) : s . ()' of type '_var_2_v2 ->? Unit'
- unresolved constraints '{ s < _var_2_v2 }'
 *** Error 20.12, unexpected mixfix token: res
 *** Hint 21.1, no type match for: fst
   with (maximal) type: _var_4_v4 ->? s
@@ -215,51 +202,38 @@ type Data4
     
 *** Hint 21.1, untypable application (with result type: s)
  'fst(x : s, var y : t)'
-*** Error 21.1, no typing for 'fst(x : s, var y : t) : s'
+*** Error 21.22, no typing for 'program fst(x : s, var y : t) : s = x'
 *** Hint 22.1, no type match for: snd
   with (maximal) type: _var_5_v5 ->? t
   known types:
     
 *** Hint 22.1, untypable application (with result type: t)
  'snd(x : s, var y : t)'
-*** Error 22.1, no typing for 'snd(x : s, var y : t) : t'
+*** Error 22.22, no typing for 'program snd(x : s, var y : t) : t = y'
 *** Hint 28.9, no type match for: all
   with (maximal) type: _var_6_v6 ->? ? Unit
   known types:
     
 *** Hint 28.9, untypable application (with result type: ? Unit)
  'all(var p : ? s)'
-*** Error 28.9, no typing for 'all(var p : ? s) : ? Unit'
-*** Hint 30.9, no type match for: And
-  with (maximal) type: _var_7_v7 ->? ? Unit
-  known types:
-    
-*** Hint 30.9, untypable application (with result type: ? Unit)
- 'And(x, var y : ? Unit)'
-*** Error 30.9, no typing for 'And(x, var y : ? Unit) : ? Unit'
+*** Error 28.33, no typing for 'program all(var p : ? s) : ? Unit = eq(p, tt)'
+*** Error 30.40, unexpected mixfix token: t1
 *** Error 32.12, unexpected mixfix token: impl
+*** Error 32.45, unexpected mixfix token: And
 *** Error 34.12, unexpected mixfix token: or
-*** Hint 37.3, no type match for: ex
-  with (maximal) type: _var_8_v8 ->? ? Unit
-  known types:
-    
-*** Hint 37.3, untypable application (with result type: ? Unit)
- 'ex(var p : ? s)'
-*** Error 37.3, no typing for 'ex(var p : ? s) : ? Unit'
-*** Hint 40.3, no type match for: ff
-  with (maximal) type: _var_9_v9 ->? ? Unit
-  known types:
-    
-*** Hint 40.3, untypable application (with result type: ? Unit)
- 'ff()'
-*** Error 40.3, no typing for 'ff() : ? Unit'
+*** Error 35.21, unexpected mixfix token: impl
+*** Error 34.44, unexpected mixfix token: all
+*** Error 38.32, unexpected mixfix token: impl
+*** Error 38.17, unexpected mixfix token: all
+*** Error 37.27, unexpected mixfix token: all
+*** Error 40.20, unexpected mixfix token: all
 *** Hint 47.3, in type of '(var x : t, var y : t)'
   type 't * t' (45.11)
-  is not unifiable with type 'Unit ->? _var_12_v12 * _var_13_v13'
+  is not unifiable with type 'Unit ->? _var_9_v9 * _var_10_v10'
 
 *** Hint 47.3, in type of '(var x : s, var y : t)'
   type 's * t' (16.9)
-  is not unifiable with type 'Unit ->? _var_12_v12 * _var_13_v13'
+  is not unifiable with type 'Unit ->? _var_9_v9 * _var_10_v10'
 
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e
