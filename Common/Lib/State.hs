@@ -15,8 +15,6 @@
 
 module Common.Lib.State where
 
-import Control.Monad
-
 -- ---------------------------------------------------------------------------
 -- Our fixed state monad
 newtype State s a = State { runState :: s -> (a, s) }

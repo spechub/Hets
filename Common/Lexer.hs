@@ -23,7 +23,6 @@ module Common.Lexer where
 
 import Data.Char (digitToInt, isDigit)
 import Common.Id (Token(..), place)
-import Control.Monad (MonadPlus (mplus), liftM2)
 import Common.Lib.Parsec
 
 
@@ -69,12 +68,12 @@ infixl <<
 infixr 5 <:>
 
 (<:>) :: (Monad m) => m a -> m [a] -> m [a]
-(<:>) = liftM2 (:)
+(<:>) = bind (:)
 
 infixr 5 <++>
 
-(<++>) :: (Monad m, MonadPlus p) => m (p a) -> m (p a) -> m (p a)
-(<++>) = liftM2 mplus
+(<++>) :: (Monad m) => m [a] -> m [a] -> m [a]
+(<++>) = bind (++)
 
 -- Functor extension
 single :: (Functor f, Monad m) => f a -> f (m a)
