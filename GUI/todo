@@ -5,6 +5,7 @@ Jorina
   George fragen wg. proofs-Menü
 
   Warum werden bei import_test-1.casl nicht alle internen Knoten versteckt?
+	--> in GUI/AbstractGraphView weitermachen
 
   Ausgaben (show spec etc.) in eigenes Fenster, mittels htk
     (George oder Christoph fragen)

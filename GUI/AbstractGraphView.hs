@@ -428,6 +428,28 @@ hidenodetype gid nodetype gv = fetch_graph gid gv False (\(g,ev_cnt) ->
 
                                         )
 
+hideSetOfNodeTypes :: Descr -> [String] -> GraphInfo -> IO Result
+hideSetOfNodeTypes gid nodetypes gv =
+  fetch_graph gid gv False (\(g,ev_cnt) ->
+    case sequence [lookup nodetype (nodeTypes g)|nodetype <- nodetypes] of
+      Just typelist ->
+	do let nodelist = [descr|(descr,(tp,_)) <- (nodes g), elem tp nodetypes]
+	   case nodelist of
+             [] -> return (g,0,ev_cnt,Just ("hidenodetype: no nodes" 
+		    ++" of types "++(showList nodetypes ",")++
+		    " found in graph "++(show gid)))
+	     node_list -> do (Result de error) <- hidenodes gid nodelist gv
+			     info <- readIORef gv
+			     return (snd (get gid (fst info)), de, (snd info), error)
+      Nothing -> return (g,0,ev_cnt,Just ("hidenodetype: illegal node types "
+				 ++"in list: "++(showList nodetypes ",")))
+
+                                        )
+
+--showList :: [String] -> String
+--showList [] = ""
+--showList (elem:[]) = elem
+--showList (elem:list) = elem ++ ", " ++ (showList list)
 
 -- like hidenodes, but replaces the hidden nodes by a new node
 -- with a menu to unhide the nodes (not yet implemented)

@@ -123,8 +123,9 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                [GlobalMenu(Menu (Just "internal nodes")
                  [Button "Hide" 
                           (do --gid <- readIORef graphId
-                              Result descr _ <- hidenodetype gid
-			                            "internal"
+                              Result descr _ <- hideSetOfNodeTypes gid
+			                            ["internal",
+			                            "locallyEmpty_internal"]
 			                            actGraphInfo
                               writeIORef event descr
                               redisplay gid actGraphInfo
