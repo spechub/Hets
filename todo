@@ -4,6 +4,8 @@ Plan and priority list for CoFI tool activities
 Tina (Till)
 ************************************************
 
+List.casl should go through
+
 in Comorphisms/CASL2IsabelleHOL.hs:
 remove typedecls and op decls generated for datatypes
 
@@ -65,6 +67,8 @@ Jorina (Till)
 
 GUI: 
   use save button for saving proof info
+
+improve efficiency (e.g. of UserManual/Sbcs.casl), using profiling
 
 development graph calculus
 - Stack overflow for "show just subtree"
@@ -160,7 +164,12 @@ subsort definitions: are conservative if formula is satisfiable
 Heng (Klaus)
 ************************************************
 
-emacs mode
+emacs mode: 
+  highlight does not work properly for HasCASL/Set.het or UserManual/Sbcs.casl
+     some operation symbols
+  show hets output immediately
+  C-c C-g for hets -g
+  when hets terminates abnormally (e.g. with a fail), emacs loops
 
 OWL-DL logic
 OWL-DL -> CASL
@@ -260,6 +269,13 @@ IsaWin: support CASL-libraries
 ************************************************
 Till
 ************************************************
+
+theorem link menu for proof obligations
+
+
+UserManual/Chapter7.casl: local thm link starting from Monoid leads to type error 
+in Isabelle. Reason: Inlineaxioms does not translate ga_totality axioms
+correctly.
 
 Buffer.het, sublogic of node Buffer:
 Fail: illegal node type in sublogic computation
