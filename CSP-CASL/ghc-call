@@ -1,0 +1,2 @@
+ghc --make -fglasgow-exts -Wall -i..:../CASL:../fgl:../parsec:../pretty -package data Main.hs
+#MixfixParser.hs 
