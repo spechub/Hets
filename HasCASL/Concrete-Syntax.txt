@@ -26,7 +26,7 @@ SIG-ITEMS       ::= sort/sorts SORT-ITEM ; ... ; SORT-ITEM
                   | op/ops OP-ITEM ; ... ; OP-ITEM ;/
                   | pred/preds PRED-ITEM ; ... ; PRED-ITEM ;/   %% old style
 
-TYPE-ITEM       ::= TYPE-PATTERN , ... , TYPE-PATTERN
+SORT-ITEM       ::= TYPE-PATTERN , ... , TYPE-PATTERN
                   | TYPE-PATTERN , ... , TYPE-PATTERN : KIND
                   | TYPE-PATTERN , ... , TYPE-PATTERN < TYPE 
                   | TYPE-PATTERN = ... = TYPE-PATTERN
