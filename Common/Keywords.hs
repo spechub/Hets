@@ -174,3 +174,8 @@ versionS  = "version"
 viewS  = "view"
 withS  = "with"
 withinS  = "within"
+
+refinementS, refinedS, behaviourallyS :: String
+refinementS = "refinement"
+refinedS = "refined"
+behaviourallyS = "behaviourally"
