@@ -104,7 +104,7 @@ initialState :: GlobalAnnos -> ([Id], [Id], [Id]) -> Int -> [State]
 initialState g (ops, preds, both) i = 
     let mkPredState b toks = State (Id toks [] [], b) [] [] toks i
 	mkTokState = mkPredState IsOp
-    in mkTokState [parenTok] : 
+    in concat [mkTokState [parenTok] : 
        mkTokState [termTok, colonTok] :
        mkTokState [termTok, asTok] :
        mkTokState [varTok] :
@@ -112,13 +112,13 @@ initialState g (ops, preds, both) i =
        mkTokState [opTok, parenTok] :
        mkPredState IsPred [predTok] :
        mkPredState IsPred [predTok, parenTok] :
-       listStates g i ++
-       map (mkState i IsOp) ops ++ 
-       map (mkApplState i IsOp) ops ++
-       map (mkState i IsPred) preds ++ 
-       map (mkApplState i IsPred) preds ++
-       map (mkState i IsBoth) both ++ 
-       map (mkApplState i IsBoth) both
+       listStates g i, 
+       map (mkState i IsBoth) both,
+       map (mkApplState i IsBoth) both,
+       map (mkState i IsPred) preds,
+       map (mkApplState i IsPred) preds,
+       map (mkState i IsOp) ops,
+       map (mkApplState i IsOp) ops]
 
 type ParseMap = Map Int [State]
 
