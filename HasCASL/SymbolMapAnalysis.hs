@@ -65,26 +65,26 @@ inducedFromMorphism rmap sigma = do
   -- compute the sort map (as a Map)
   myTypeIdMap <- foldr
               (\ (s, ti) m -> 
-	       do s' <- typeFun sigma rmap s (typeKind ti)
+               do s' <- typeFun sigma rmap s (typeKind ti)
                   m1 <- m
                   return $ Map.insert s s' m1) 
               (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
   let tarTypeMap = addUnit $ Map.foldWithKey ( \ i k m -> 
-			       Map.insert (Map.findWithDefault i i myTypeIdMap)
-					  (mapTypeInfo myTypeIdMap k) m)
-	                    Map.empty srcTypeMap
+                               Map.insert (Map.findWithDefault i i myTypeIdMap)
+                                          (mapTypeInfo myTypeIdMap k) m)
+                            Map.empty srcTypeMap
   op_Map <- Map.foldWithKey (opFun rmap sigma myTypeIdMap)
               (return Map.empty) (assumps sigma)
   -- compute target signature
   let sigma' = Map.foldWithKey (mapOps myTypeIdMap op_Map) sigma
-	       { typeMap = tarTypeMap, assumps = Map.empty }
+               { typeMap = tarTypeMap, assumps = Map.empty }
                               $ assumps sigma
   -- return assembled morphism
   Result (envDiags sigma') $ Just ()
   return $ (mkMorphism sigma (diffEnv sigma' preEnv))
-	     { typeIdMap = myTypeIdMap
-	     , funMap = op_Map }
+             { typeIdMap = myTypeIdMap
+             , funMap = op_Map }
 
 mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo 
 mapTypeInfo im ti = 
@@ -95,11 +95,11 @@ mapTypeDefn :: IdMap -> TypeDefn -> TypeDefn
 mapTypeDefn im td = 
     case td of 
     DatatypeDefn (DataEntry tm i k args alts) -> 
-	DatatypeDefn (DataEntry (compIdMap tm im) i k args alts)
+        DatatypeDefn (DataEntry (compIdMap tm im) i k args alts)
     AliasTypeDefn sc -> AliasTypeDefn $ mapTypeScheme im sc
     Supertype vs sc t -> 
-	Supertype vs (mapTypeScheme im sc)
-	      $ mapTerm (id, mapType im) t
+        Supertype vs (mapTypeScheme im sc)
+              $ mapTerm (id, mapType im) t
     _ -> td
 
 -- | compute type mapping
@@ -122,7 +122,7 @@ opFun :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfos
 opFun rmap e type_Map i ots m = 
     -- first consider all directly mapped profiles
     let (ots1,m1) = foldr (directOpMap rmap e type_Map i) 
-		    (Set.empty, m) $ opInfos ots
+                    (Set.empty, m) $ opInfos ots
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
        (Just rsy1, Just rsy2) -> 
@@ -142,8 +142,8 @@ opFun rmap e type_Map i ots m =
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
 directOpMap :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfo 
-	    -> (Set.Set TypeScheme, Result FunMap) 
-	    -> (Set.Set TypeScheme, Result FunMap)
+            -> (Set.Set TypeScheme, Result FunMap) 
+            -> (Set.Set TypeScheme, Result FunMap)
 directOpMap rmap e type_Map i oi (ots,m) = let ot = opType oi in
     case Map.lookup (ASymbol $ idToOpSymbol e i ot) rmap of
         Just rsy -> 
@@ -151,35 +151,35 @@ directOpMap rmap e type_Map i oi (ots,m) = let ot = opType oi in
         Nothing -> (Set.insert (ot) ots, m)
     -- map op symbol (id,ot) to raw symbol rsy
 mapOpSym :: Env -> IdMap -> Id -> TypeScheme -> RawSymbol 
-	     -> Result (Id, TypeScheme)
+             -> Result (Id, TypeScheme)
 mapOpSym e type_Map i ot rsy = 
     let sc = mapTypeScheme type_Map ot 
-	err d = pplain_error (i, sc) 
-			    (text "Operation symbol " 
-			     <+> printText (idToOpSymbol e i sc) 
-			     $$ text "is mapped to" <+> d) nullPos in 
+        err d = pplain_error (i, sc) 
+                            (text "Operation symbol " 
+                             <+> printText (idToOpSymbol e i sc) 
+                             $$ text "is mapped to" <+> d) nullPos in 
       case rsy of
       AnID id' -> return (id', sc)
       AKindedId k id' -> case k of 
-	  SK_op -> return (id', sc)
-	  _ -> err (text "wrongly kinded raw symbol" $$ printText rsy)
+          SK_op -> return (id', sc)
+          _ -> err (text "wrongly kinded raw symbol" $$ printText rsy)
       ASymbol sy -> case symType sy of 
           OpAsItemType ot2 -> if ot2 == expand (typeMap $ symEnv sy) sc 
-			      then return (symName sy, ot2)
-	      else err (text "wrong type" $$ printText ot2)
-	  _ ->  err (text "wrongly kinded symbol" $$ printText sy)
-      _ -> error "mapOpSym"		 
+                              then return (symName sy, ot2)
+              else err (text "wrong type" $$ printText ot2)
+          _ ->  err (text "wrongly kinded symbol" $$ printText sy)
+      _ -> error "mapOpSym"              
 
     -- insert mapping of op symbol (id, ot) to raw symbol rsy into m
 insertmapOpSym :: Env -> IdMap -> Id -> RawSymbol -> TypeScheme
-	       -> Result FunMap -> Result FunMap
+               -> Result FunMap -> Result FunMap
 insertmapOpSym e type_Map i rsy ot m = do  
       m1 <- m        
       (id',kind') <- mapOpSym e type_Map i ot rsy
       return (Map.insert (i, ot) (id',kind') m1)
     -- insert mapping of op symbol (id,ot) to itself into m
 unchangedOpSym :: IdMap -> Id -> TypeScheme -> Result FunMap 
-	       -> Result FunMap
+               -> Result FunMap
 unchangedOpSym im i ot m = do
       m1 <- m
       return (Map.insert (i, ot) (i, mapTypeScheme im ot) m1)
@@ -187,11 +187,11 @@ unchangedOpSym im i ot m = do
 mapOps :: IdMap -> FunMap -> Id -> OpInfos -> Env -> Env
 mapOps type_Map op_Map i ots e = 
     foldr ( \ ot e' ->
-	let sc = opType ot
-	    (id', sc') = Map.findWithDefault (i, mapTypeScheme type_Map sc)
-			 (i, sc) op_Map
-	    in execState (addOpId id' sc' (opAttrs ot) 
-			  (mapOpDefn type_Map $ opDefn ot)) e')
+        let sc = opType ot
+            (id', sc') = Map.findWithDefault (i, mapTypeScheme type_Map sc)
+                         (i, sc) op_Map
+            in execState (addOpId id' sc' (opAttrs ot) 
+                          (mapOpDefn type_Map $ opDefn ot)) e')
                    -- more things in opAttrs and opDefns need renaming
     e $ opInfos ots
  
@@ -199,7 +199,7 @@ mapOpDefn :: IdMap -> OpDefn -> OpDefn
 mapOpDefn im d = case d of
    ConstructData i -> ConstructData $ Map.findWithDefault i i im
    SelectData cs i -> SelectData (map (mapConstrInfo im) cs) 
-		      $ Map.findWithDefault i i im
+                      $ Map.findWithDefault i i im
    _ -> d
 
 mapConstrInfo :: IdMap -> ConstrInfo -> ConstrInfo
@@ -217,24 +217,32 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
   if isSubEnv (mtarget mor1) sigma2 
    -- yes => we are done
    then return $ mor1 { mtarget = sigma2
-		      , funMap = Map.map ( \ (i, sc) -> 
-		          (i, expand (typeMap sigma2) sc)) $ funMap mor1 }
+                      , funMap = Map.map ( \ (i, sc) -> 
+                          (i, expand (typeMap sigma2) sc)) $ funMap mor1 }
    -- no => OK, we've to take the hard way
-   else pfatal_error (text "No symbol mapping found for "
+   else let s1 = symOf sigma1
+            s2 = symOf sigma2
+            Symbol n1 t1 _  = Set.findMin s1
+            Symbol n2 t2 _  = Set.findMin s2
+        in if Set.size s1 == 1 && Set.size s2 == 1 
+              && symbTypeToKind t1 == SK_type 
+              && symbTypeToKind t2 == SK_type then
+          return mor1 { typeIdMap = Map.single n1 n2 } 
+          else pfatal_error (text "No symbol mapping found for "
            $$ printText rmap 
-	   $$ text "sigma1" $$ printText sigma1
-	   $$ text "inducedFromMorphism sigma1" $$ printText (mtarget mor1)
-	   $$ text "to sigma2" $$ printText sigma2
-	   $$ text "difference" $$ printText (diffEnv (mtarget mor1) sigma2))
-	      nullPos
+           $$ text "sigma1" $$ printText sigma1
+           $$ text "inducedFromMorphism sigma1" $$ printText (mtarget mor1)
+           $$ text "to sigma2" $$ printText sigma2
+           $$ text "difference" $$ printText (diffEnv (mtarget mor1) sigma2))
+              nullPos
 --        inducedFromToMorphism2 rmap sigma1 sigma2
 
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism
 generatedSign syms sigma = 
     let signSyms = symOf sigma 
-	closedSyms = closeSymbSet syms
-	subSigma = plainHide (signSyms Set.\\ closedSyms) sigma
+        closedSyms = closeSymbSet syms
+        subSigma = plainHide (signSyms Set.\\ closedSyms) sigma
     in checkSymbols closedSyms signSyms $ 
        return $ embedMorphism subSigma sigma
 
@@ -242,6 +250,6 @@ generatedSign syms sigma =
 cogeneratedSign :: SymbolSet -> Env -> Result Morphism
 cogeneratedSign syms sigma = 
     let signSyms = symOf sigma 
-	subSigma = Set.fold hideRelSymbol sigma syms
-	in checkSymbols syms signSyms $ 
-	   return $ embedMorphism subSigma sigma
+        subSigma = Set.fold hideRelSymbol sigma syms
+        in checkSymbols syms signSyms $ 
+           return $ embedMorphism subSigma sigma
