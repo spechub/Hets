@@ -192,8 +192,9 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
 --   choose :: [[(PredType, [TERM f])]] -> Result (PredType, [TERM f])
         choose ps        = case ps of
             [] -> pplain_error (PredType [],[])
-                   (ptext "No correct typing for " <+> printText ps)
-                   (Id.headPos pos)
+                   (ptext "No correct typing for" 
+		    <+> printText (Predication predicate terms pos))
+                   (Id.posOfId name)
         -- BEWARE! Oversimplified disambiguation!
             --(p:_):[] -> return p
             (_:_):_ -> return $ head $ head ps
@@ -201,7 +202,7 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
                    (ptext "Cannot disambiguate! Term: " 
                     <+> (printText (predicate, terms))
                     $$ ptext "Possible Expansions: " 
-                    <+> (printText ps)) (Id.headPos pos)
+                    <+> (printText ps)) (Id.posOfId name)
         qualify_pred    :: (PredType, [TERM f]) -> FORMULA f
         qualify_pred (pred', terms')
             = (Predication                                      -- :: FORMULA
