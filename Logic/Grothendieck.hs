@@ -34,7 +34,8 @@ Portability :  non-portable (overlapping instances, dynamics, existentials)
    Theoretical Computer Science 286, 2002, p. 367-475
 
    Todo:
-
+   compComorphism: cancellation of id comorphisms if target sublogic is
+                   not increased
 -}
 
 module Logic.Grothendieck where
