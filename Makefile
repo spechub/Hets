@@ -26,7 +26,7 @@ CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
 ## set ghc imports properly for your system
 GHC_IMPORTS =`$(HC) --print-libdir`/imports
 DRIFT_ENV = \
-  DERIVEPATH=.:ghc:hetcats:$(GHC_IMPORTS):$(subst $(space),:,${PFE_PATHS})
+  DERIVEPATH=.:ghc:hetcats:$(GHC_IMPORTS):$(subst $(space),:,$(PFE_PATHS))
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
 empty:=
@@ -544,6 +544,7 @@ hets.hs: hetcats/Version.hs
 
 %.hs: %.der.hs utils/DrIFT
 	$(DRIFT_ENV)
+	export DERIVEPATH
 	$(DRIFT) $(DRIFT_OPTS) $< > $@
 
 ## rules for inlineAxioms
