@@ -109,7 +109,7 @@ instance Unifiable Type where
 					("type '" ++ showId i1 
 					 "' is not unifiable with") i2]
 					Nothing
-    unify tm t1@(TypeName i1 k1 v1) t2@(TypeAppl _ _) =
+    unify tm t1@(TypeName i1 k1 v1) t2 =
 	if v1 > 0 then 
 	   if i1 `occursIn` t2 then 
 	      Result [mkDiag Hint 
@@ -123,7 +123,7 @@ instance Unifiable Type where
 			    [mkDiag Hint 
 			     ("type '" ++ showId i1 
 			      "' is not unifiable with") t2] Nothing
-    unify tm t2@(TypeAppl _ _) t1@(TypeName _ _ _) = unify tm t1 t2
+    unify tm t2 t1@(TypeName _ _ _) = unify tm t1 t2
     unify tm t12@(TypeAppl t1 t2) t34@(TypeAppl t3 t4) = 
 	let (ta, a) = expandAlias tm t12
 	    (tb, b) = expandAlias tm t34 in
