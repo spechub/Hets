@@ -46,6 +46,8 @@ Korrespondenz abstrakt-konkret:
 
 module Sublogics where
 
+import FiniteMap
+import Id
 import AS_Annotation
 import AS_Basic_CASL
 import LocalEnv
@@ -558,10 +560,22 @@ sl_Form (TrueAtom _) = bottom
 sl_Form (AnnFormula f) = sl_Form $ strip_anno f
 
 sl_morphism :: Morphism -> CASL_Sublogics
-sl_morphism (Morphism a b _ f p) = -- sublogics_max
+sl_morphism (Morphism a b _ f p) = sublogics_max
                                    (sublogics_max (sl_sign a) (sl_sign b))
-                                   -- (sublogics_max (sl_fun_map f)
-                                   --                (sl_pred_map p))
+                                   (sublogics_max (sl_fun_map f)
+                                                  (sl_pred_map p))
+
+sl_fun_map_entry :: (OpType, Id, Bool) -> CASL_Sublogics
+sl_fun_map_entry (t,_,_) = sl_optype t
+
+sl_fun_map_entries :: [(OpType, Id, Bool)] -> CASL_Sublogics
+sl_fun_map_entries l = comp_list $ map sl_fun_map_entry l
+
+sl_fun_map :: Fun_map -> CASL_Sublogics
+sl_fun_map fm = comp_list $ map sl_fun_map_entries $ map snd $ fmToList fm
+
+sl_pred_map :: Pred_map -> CASL_Sublogics
+sl_pred_map fm = if (isEmptyFM fm) then bottom else need_pred
 
 sl_symbol :: Symbol -> CASL_Sublogics
 sl_symbol (Symbol _ t) = sl_symbtype t
