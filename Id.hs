@@ -16,11 +16,15 @@ instance Eq Token where
  
 instance Ord Token where
    Token(s1, _) <= Token(s2, _) = s1 <= s2
+
+showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
+showSepList _ _ [] = showString ""
+showSepList _ f [x] = f x
+showSepList s f (x:r) = f x . s . showSepList s f r
  
 instance Show Token where
    showsPrec _ = showString . showTok
-   showList [] = showString ""
-   showList (x:r) = shows x . showList r
+   showList = showSepList (showString "") shows
 
 -- spezial tokens
 type Keyword = Token
@@ -37,9 +41,11 @@ data Id = Id [TokenOrPlace] [Id] deriving (Eq, Ord)
 splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 	      (reverse toks, reverse pls)
 
-instance Show Id where
-    showsPrec _ (Id ts is) = 
+showId (Id ts is) = 
 	let (toks, places) = splitMixToken ts 
             comps = if null is then showString "" else shows is 
 	in
         showList toks . comps . showList places
+
+instance Show Id where
+    showsPrec _ = showId 
