@@ -1,0 +1,210 @@
+module Casl-Lexical
+
+%% written/changed by Bjarke Wedemeijer (January 1998)
+%% adapted by Mark van den Brand (June 1999)
+%% adapted by Mark van den Brand (November 2000)
+
+exports
+  sorts
+    Sort Id Dot-Words QuotedChar
+    Mixfix-Id Simple-Id Digit Digits Number
+    Var Token Signs Words Fraction Floating
+    Token-Id Place-Token-Id Bracket
+    NoBracketToken Place Literal
+    PathWords Path Url NoBracketSigns BracketSigns
+
+  lexical syntax
+    [\ \n\t]                -> LAYOUT
+    "%" ~[\%]               -> C-LETTER
+    ~[\%\n]                 -> C-LETTER
+    "%%" C-LETTER* "\n"     -> COMMENT
+    "%%" C-LETTER+ "%%"     -> COMMENT
+    ~[\ \n\t\)]             -> C-WORD
+%%    "%(" C-WORD* "%)"       -> COMMENT
+    COMMENT                 -> LAYOUT
+
+  lexical syntax
+    [\_] [A-Za-z0-9\']+                       -> UnderScoreWords
+    [A-Za-z0-9\']+ UnderScoreWords*           -> Words
+    [\+\-\*\/\\\&\=\<\>\!\?\:\.\$\@\#\^\~\|\215]  -> NoBracketSign
+    [\[\]\{\}]                                -> Bracket
+    NoBracketSign+                            -> NoBracketSigns
+    "." Words                                 -> Dot-Words
+
+  context-free syntax
+    ":"   -> NoBracketSigns {reject}
+    ":?"  -> NoBracketSigns {reject}
+    "::=" -> NoBracketSigns {reject}
+    "="   -> NoBracketSigns {reject}
+    "=>"  -> NoBracketSigns {reject}
+    "<=>" -> NoBracketSigns {reject}
+    "."   -> NoBracketSigns {reject}
+    "|"   -> NoBracketSigns {reject}
+    "|->" -> NoBracketSigns {reject}
+    "/\\" -> NoBracketSigns {reject}
+    "\\/" -> NoBracketSigns {reject}
+
+  lexical syntax
+    "and"       -> Words {reject}
+    "arch"      -> Words {reject}
+    "as"        -> Words {reject}
+    "assoc"     -> Words {reject}
+    "axiom"     -> Words {reject}
+    "axioms"    -> Words {reject}
+    "closed"    -> Words {reject}
+    "comm"      -> Words {reject}
+    "def"       -> Words {reject}
+    "else"      -> Words {reject}
+    "end"       -> Words {reject}
+    "exists"    -> Words {reject}
+    "false"     -> Words {reject}
+    "fit"       -> Words {reject}
+    "forall"    -> Words {reject}
+    "free"      -> Words {reject}
+    "from"      -> Words {reject}
+    "generated" -> Words {reject}
+    "get"       -> Words {reject}
+    "given"     -> Words {reject}
+    "hide"      -> Words {reject}
+    "idem"      -> Words {reject}
+    "if"        -> Words {reject}
+    "in"        -> Words {reject}
+    "lambda"    -> Words {reject}
+    "library"   -> Words {reject}
+    "local"     -> Words {reject}
+    "not"       -> Words {reject}
+    "op"        -> Words {reject}
+    "ops"       -> Words {reject}
+    "pred"      -> Words {reject}
+    "preds"     -> Words {reject}
+    "result"    -> Words {reject}
+    "reveal"    -> Words {reject}
+    "sort"      -> Words {reject}
+    "sorts"     -> Words {reject}
+    "spec"      -> Words {reject}
+    "then"      -> Words {reject}
+    "to"        -> Words {reject}
+    "true"      -> Words {reject}
+    "type"      -> Words {reject}
+    "types"     -> Words {reject}
+    "unit"      -> Words {reject}
+    "units"     -> Words {reject}
+    "var"       -> Words {reject}
+    "vars"      -> Words {reject}
+    "version"   -> Words {reject}
+    "view"      -> Words {reject}
+    "when"      -> Words {reject}
+    "with"      -> Words {reject}
+    "within"    -> Words {reject}
+    "."         -> Words {reject}
+
+  lexical syntax
+    [0-9]                       -> Digit
+    Digit Digit+                -> Digits
+    Digit                       -> Number
+    Digits                      -> Number
+    Number "." Number           -> Fraction
+    Number "E" [\+\-]? Number   -> Floating
+    Fraction "E" [\+\-]? Number -> Floating
+
+  lexical syntax
+    "'" Char "'" -> QuotedChar
+
+
+    "\\" [01] [0-9] [0-9]      -> DecimalEscChar
+    "\\" "2" [0-4] [0-9]       -> DecimalEscChar
+    "\\" "2" "5" [0-5]         -> DecimalEscChar
+    "\\" "x" [0-9A-F][0-9A-F]  -> HeximalEscChar
+    "\\" "o" [0-3] [0-7] [0-7] -> OctalEscChar
+    "\\" ~[]                   -> Char
+    DecimalEscChar             -> Char
+    HeximalEscChar             -> Char
+    OctalEscChar               -> Char
+    ~[\0-\31\"\\] \/ [\t\n]    -> Char
+
+  lexical syntax
+    [\"] Char* [\"] -> String  
+              
+%% The lexical syntax for libraries.
+  lexical syntax
+    "%" [0-9a-fA-F] [0-9a-fA-F]                       -> PChar
+    [A-Za-z0-9\:\;\=\$\?\+\\\_\@\.\&\!\~\*\"\'\(\)\,] -> PChar
+    [\/] PChar*                                       -> PathWords
+    PChar* PathWords*                                 -> Path {avoid}
+    "http:" Path                                      -> Url {avoid}
+    "ftp:" Path                                       -> Url {avoid}
+    "file:" Path                                      -> Url {avoid}
+
+%% Literal
+  context-free syntax
+    String   -> Literal
+    Digits   -> Literal
+    Fraction -> Literal
+    Floating -> Literal
+
+  context-free syntax
+%% Simple-Id
+    Words -> Simple-Id
+
+%% Id
+    Token-Id  -> Id
+    Mixfix-Id -> Id
+
+%% Token-Id
+    Token -> Token-Id
+
+%% Mixfix-Id
+    Token-Id Place-Token-Id+  -> Mixfix-Id
+    Place-Token-Id+           -> Mixfix-Id
+
+%% Place-Token-Id
+    Place Token-Id -> Place-Token-Id
+    Place          -> Place-Token-Id
+
+%% Place
+    "__" -> Place
+
+%% Token
+    Words      -> Token
+    Signs      -> Token
+    Digit      -> Token
+    QuotedChar -> Token
+    Dot-Words  -> Token
+
+%% NoBracketToken
+    Words          -> NoBracketToken
+    NoBracketSigns -> NoBracketToken
+    Digit          -> NoBracketToken
+    QuotedChar     -> NoBracketToken
+    Dot-Words      -> NoBracketToken
+
+%% Signs
+    NoBracketSigns              -> Signs
+    BracketSigns                -> Signs
+    NoBracketSigns BracketSigns -> Signs
+
+%% BracketSigns
+    Bracket Signs -> BracketSigns
+    Bracket       -> BracketSigns
+
+
+exports
+  context-free restrictions
+    LAYOUT? -/- [\ \t\n]
+    LAYOUT? -/- [[[\%].[\%]]]
+
+  lexical restrictions
+    Words -/- [A-Za-z0-9\']
+    "and" "arch" "as" "assoc" "axiom" "axioms"
+    "closed" "comm" "def" "else" "end" "exists"
+    "false" "fit" "forall" "free" "from"
+    "generated" "get" "given" "hide" "idem" "if" "in"
+    "lambda" "library" "local" "not" "op" "ops"
+    "pred" "preds" "result" "reveal" "sort" "sorts" "spec"
+    "then" "to" "true" "type" "types" "unit" "units" 
+    "var" "vars" "version" "view" "when" "with" "within"
+    -/- [A-Za-z0-9\'\_]
+
+  lexical restrictions
+    NoBracketSigns -/- [\+\-\*\/\\\&\=\<\>\!\?\:\.\$\@\#\^\~\|]
+    

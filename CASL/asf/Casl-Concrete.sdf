@@ -1,0 +1,10 @@
+module Casl-Concrete
+imports Casl-Lib
+exports
+  sorts
+    Specs-Defn
+  context-free syntax
+    Arch-Spec-Defn -> Specs-Defn
+    Unit-Spec-Defn -> Specs-Defn
+    Spec-Defn      -> Specs-Defn
+    Lib-Defn       -> Specs-Defn

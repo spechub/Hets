@@ -1,0 +1,23 @@
+%% written by Mark van den Brand (November 2000)
+
+module Casl-Annotations
+
+exports
+  lexical syntax
+    ~[\n]               -> NotNewLine
+    [\n]                -> NewLine
+    ~[\ \#] NotNewLine+ -> Text
+                        -> Text
+    Text "\n"           -> TextLine {avoid}
+    TextLine* Text      -> TextLines {avoid}
+
+  lexical restrictions
+    Text -/- ~[\n]
+
+  sorts Annote AnnoteLine AnnoteGroup Label Annotes
+  context-free syntax
+    AnnoteLine  -> Annote
+    AnnoteGroup -> Annote
+    Label       -> Annote
+
+    Annote*     -> Annotes

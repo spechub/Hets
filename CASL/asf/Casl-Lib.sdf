@@ -1,0 +1,35 @@
+module Casl-Lib
+imports Casl-Arch
+exports
+  sorts Item-Name Item-Name-Or-Map
+        Lib-Defn Lib-Id Lib-Item Lib-Name Version
+  context-free syntax
+
+%% Lib-Defn
+    "library" Lib-Name Annote* Lib-Item+ -> Lib-Defn
+
+
+%% Lib-Item
+    Spec-Defn                                             -> Lib-Item
+    View-Defn                                             -> Lib-Item
+    Arch-Spec-Defn                                        -> Lib-Item
+    Unit-Spec-Defn                                        -> Lib-Item
+    "from" Lib-Name "get" {Item-Name-Or-Map ","}+ Opt-End -> Lib-Item
+
+%% Item-Name-Or-Map
+    Item-Name                 -> Item-Name-Or-Map
+    Item-Name "|->" Item-Name -> Item-Name-Or-Map
+
+%% Item-Name
+    Simple-Id -> Item-Name
+
+%% Lib-Name
+    Lib-Id         -> Lib-Name
+    Lib-Id Version -> Lib-Name
+
+%% Lib-Id
+    Url  -> Lib-Id
+    Path -> Lib-Id
+
+%% Version
+    "version" {Number "."}+ -> Version
