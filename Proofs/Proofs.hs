@@ -643,6 +643,28 @@ isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
 isDuplicate newEdge dgraph changes = 
   elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
 
+{- -}
+isRedundant :: LEdge DGLinkLab -> DGraph -> [DGChange] -> [LEdge DGLinkLab]
+ -> Bool
+isRedundant newEdge@(src,_,label) dgraph changes otherNewEdges =
+  isDuplicate newEdge dgraph changes 
+  || elem (Just (dgl_morphism label)) morphisms
+
+  where
+    localThmEdgesToOtherSources = 
+      [outEdge|outEdge@(_,tgt,_) <- out dgraph src,
+               elem tgt (map getSourceNode otherNewEdges)
+               && isLocalThm outEdge]
+    paths = concat (map (combine otherNewEdges) localThmEdgesToOtherSources)
+    morphisms = map calculateMorphismOfPath paths
+
+combine ::[LEdge DGLinkLab] ->  LEdge DGLinkLab -> [[LEdge DGLinkLab]]
+combine [] _ = []
+combine ((secondEdge@(src,_,_)):edges) firstEdge@(_,tgt,_) =
+  if tgt == src then [firstEdge,secondEdge]:(combine edges firstEdge)
+   else combine edges firstEdge
+  
+
 
 isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
 isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
