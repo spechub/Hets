@@ -12,7 +12,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ghc:hetcats:../HUnit-1.0
+INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
 CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/inlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
 
@@ -431,11 +431,6 @@ hetdg: GUI/hetdg.hs $(drifted_files) *.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)  -package-conf ../uni/uni-package.conf  -package uni-davinci -package uni-server
 
-
-### HUnit Tests
-runTests: GlobDecompTest.hs $(drifted_files) *.hs 
-	$(RM) $@
-	$(HC) --make -o $@ $< $(HC_OPTS)  -package-conf ../uni/uni-package.conf  -package uni-davinci -package uni-server
 
 ### run tests in other directories
 check: hetcats
