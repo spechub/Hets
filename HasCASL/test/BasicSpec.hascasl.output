@@ -7,7 +7,7 @@ class a, b, c < Type; a < b
 type s : c
 predfun tt : s ->? Unit
 var x : s
-program (op tt : s ->? Unit) = \ (var x : s) . ()
+program (predfun tt : s ->? Unit) = \ (var x : s) . ()
 program __ res __ (x : s, y : t) : s : s = x;
 	fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
 predfun eq : s × s ->? Unit
@@ -119,7 +119,7 @@ tt : s ->? Unit %(Op)% = \ (var x : s) . ()
 *** Warning 11.13, redeclared class 'c'
 *** Warning 11.19, redeclared class 'a'
 *** Error 20.12, unexpected mixfix token: res
-*** Error 20.10, unexpected pattern '__ res __ (x : s, y : t)'
+*** Error 20.10, unexpected term '__ res __ (x : s, y : t)'
 *** Error 20.37, unexpected mixfix token: x
 *** Hint 21.1, no type match for: fst
   with type: '_var_4 ->? s' (21.20)
@@ -151,7 +151,7 @@ tt : s ->? Unit %(Op)% = \ (var x : s) . ()
 *** Error 30.9, no typing for 'And(((var x : _var_7), (var y : ? Unit))) : ? Unit'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
-*** Error 34.10, unexpected pattern '__ or __ (x, y : (? Unit))'
+*** Error 34.10, unexpected term '__ or __ (x, y : (? Unit))'
 *** Error 35.19, unexpected mixfix token: x
 *** Error 34.44, unexpected mixfix token: all
 *** Hint 37.3, no type match for: ex
@@ -162,7 +162,7 @@ tt : s ->? Unit %(Op)% = \ (var x : s) . ()
   for application 'ex (var p : ? s)'
 *** Error 37.3, no typing for 'ex((var p : ? s)) : ? Unit'
 *** Error 40.7, unexpected mixfix token: )
-*** Error 40.3, unexpected pattern 'ff ()'
+*** Error 40.3, unexpected term 'ff ()'
 *** Error 40.20, unexpected mixfix token: all
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e

@@ -96,9 +96,9 @@ class instance Flatcpo < Cpo
 var c : Cpo; d : Cpo
 type instance __*__ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
-program (op __<<=__ : forall c : Cpo .  c ×
-					c ->? Unit) (((var x1 : _var_69), (var y1 : _var_70)),
-						     ((var x2 : _var_71), (var y2 : _var_72)))
+program (predfun __<<=__ : forall c : Cpo .  c ×
+					     c ->? Unit) (((var x1 : _var_69), (var y1 : _var_70)),
+							  ((var x2 : _var_71), (var y2 : _var_72)))
 	= (x1 <<= x2) und (y1 <<= y2)
 type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
@@ -111,8 +111,8 @@ program f <<= [c -->? d] g =
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 type __-->__(c : Cpo)(d : Cpo) < c -->? d
 var f : c --> d; g : c --> d
-program (op __<<=__ : forall c : Cpo .  c ×
-					c ->? Unit) ((var f : _var_83), (var g : _var_84))
+program (predfun __<<=__ : forall c : Cpo .  c ×
+					     c ->? Unit) ((var f : _var_83), (var g : _var_84))
 	= f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op Y : (p -->? p) --> p
@@ -205,7 +205,7 @@ tt : forall s : Type .  Pred s %(Op)% = \ (var x : s) . ()
 *** Hint 27.8, redeclared type '__->?__'
 *** FatalError 31.6, illegal type pattern: __ * __ * __
 *** Error 46.11, unexpected mixfix token: und
-*** Error 46.9, unexpected pattern '__ und __ (x, y : Unit)'
+*** Error 46.9, unexpected term '__ und __ (x, y : Unit)'
 *** Error 46.9, illegal toplevel pattern '__ und __ (x, y : Unit)'
 *** Hint 50.8, redeclared type '__->__'
 *** Error 52.8, incompatible kind of: __->__
@@ -256,10 +256,10 @@ tt : forall s : Type .  Pred s %(Op)% = \ (var x : s) . ()
   for application 'And ((var x : _var_56), (var y : Pred Unit))'
 *** Error 90.9, no typing for 'And(((var x : _var_56), (var y : Pred Unit))) : Pred Unit'
 *** Error 93.11, unexpected mixfix token: impl
-*** Error 93.9, unexpected pattern '__ impl __ (x, y : Pred Unit)'
+*** Error 93.9, unexpected term '__ impl __ (x, y : Pred Unit)'
 *** Error 93.53, unexpected mixfix token: x
 *** Error 95.11, unexpected mixfix token: or
-*** Error 95.9, unexpected pattern '__ or __ (x, y : Pred Unit)'
+*** Error 95.9, unexpected term '__ or __ (x, y : Pred Unit)'
 *** Error 96.19, unexpected mixfix token: x
 *** Error 95.48, unexpected mixfix token: all
 *** Hint 98.9, no type match for: ex
@@ -270,7 +270,7 @@ tt : forall s : Type .  Pred s %(Op)% = \ (var x : s) . ()
   for application 'ex (var p : Pred s)'
 *** Error 98.9, no typing for 'ex((var p : Pred s)) : Pred Unit'
 *** Error 101.13, unexpected mixfix token: )
-*** Error 101.9, unexpected pattern 'ff ()'
+*** Error 101.9, unexpected term 'ff ()'
 *** Error 101.29, unexpected mixfix token: all
 *** Hint 103.9, no type match for: neg
   with type: '_var_62 ->? Pred Unit' (103.30)

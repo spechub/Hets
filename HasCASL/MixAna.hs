@@ -57,15 +57,8 @@ initTermRules (pm@(_, _, m), ps) is =
 
 addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps 
+addType (TypedTerm _ q ty ps) p = TypedTerm p q ty ps 
 addType _ _ = error "addType"
-
-toMixTerm :: Id -> Int -> [Term] -> [Pos] -> Term
-toMixTerm ide _ ar qs = 
-    if ide == applId then assert (length ar == 2) $
-       let [op, arg] = ar in ApplTerm op arg qs
-    else if ide == tupleId || ide == unitId then
-	 mkTupleTerm ar qs
-    else ResolvedMixTerm ide ar qs
 
 type TermChart = Chart Term Int
 
@@ -89,6 +82,11 @@ iterateCharts ga terms chart =
 		          oneStep (trm, exprTok {tokPos = posOfTerm trm})
              case t of
 		    MixfixTerm ts -> self (ts ++ tt) chart
+ 		    TypedTerm hd q typ ps -> do  
+		        mp <- resolvePattern ga hd 
+		        let np = case mp of Just pt -> pt
+					    _ -> t
+			recurse $ TypedTerm np q typ ps
 		    MixTypeTerm q typ ps -> do 
 		       mTyp <- anaStarType typ
 		       case mTyp of 
@@ -281,7 +279,7 @@ resolveConstrPattern ga pat =
 initPatternRules :: (PrecMap, Set.Set Id) -> [Id] -> [Rule]
 initPatternRules (pm, ps) is = 
     map ( \ i -> mixRule (getIdPrec pm ps i) i) 
-	    ([parenId, tupleId, exprId, unknownId, applId] 
+	    ([parenId, tupleId, unknownId, exprId, typeId, applId] 
 	     ++ is) ++
     map ( \ i -> (protect i, getIdPrec pm ps i,
 		  getPlainTokenList i )) (filter isMixfix is)
@@ -296,47 +294,18 @@ mkPatAppl op arg qs =
     case op of
 	    QualVar i (MixfixType []) _  -> 
 		ResolvedMixTerm i [arg] qs
-	    TypedTerm p q ty ps -> 
-		TypedTerm (mkPatAppl p arg qs) q ty ps
 	    _ -> ApplTerm op arg qs
 
-toPat :: Id -> Int -> [Pattern] -> [Pos] -> Pattern
-toPat i _ ar qs = 
+toMixTerm :: Id -> Int -> [Pattern] -> [Pos] -> Pattern
+toMixTerm i _ ar qs = 
     if i == applId then assert (length ar == 2) $
 	   let [op, arg] = ar in mkPatAppl op arg qs
-    else if i == tupleId then
+    else if i == tupleId || i == unitId then
          mkTupleTerm ar qs
     else if isUnknownId i then
          QualVar (simpleIdToId $ unToken i) 
 		     (MixfixType []) qs
-    else ResolvedMixTerm i 
-	     (if null ar then [] 
-	     else if isSingle ar then [head ar] 
-	     else [mkTupleTerm ar qs]) qs
-
-type PatChart = Chart Pattern Int
-
-iterPatCharts :: GlobalAnnos -> [Pattern] -> PatChart -> State Env PatChart
-iterPatCharts ga pats chart= 
-    let self = iterPatCharts ga
-	oneStep = nextChart addPatternType opKindFilter
-		  toPat ga chart
-    in if null pats then return chart
-       else 
-       do let p:pp = pats
-	      recurse pt = self pp $ 
-			   oneStep (pt, exprTok {tokPos = posOfTerm pt})
-          case p of
-		 MixfixTerm ps -> self (ps ++ pp) chart
-		 BracketTerm b ps qs -> self 
-		   (expandPos TermToken (getBrackets b) ps qs ++ pp) chart
-		 TypedTerm hd q typ ps -> do  
-		   mp <- resolvePattern ga hd 
-		   let np = case mp of Just pt -> pt
-				       _ -> p
-		   recurse $ TypedTerm np q typ ps
-		 TermToken tok -> self pp $ oneStep (p, tok)
-		 _ -> error ("iterPatCharts: " ++ show p) 
+    else ResolvedMixTerm i ar qs
 
 getKnowns :: Id -> Knowns
 getKnowns (Id ts cs _) = Set.union (Set.fromList (map tokStr ts)) $ 
@@ -350,8 +319,9 @@ resolvePattern ga pat =
 	   ks = Set.union (Set.fromList (tokStr exprTok: inS : 
 					 map (:[]) "{}[](),"))
 		    $ Set.unions $ map getKnowns ids
-       chart <- iterPatCharts ga [pat] $ initChart (initPatternRules ps ids) ks
-       let Result ds mp =  getResolved showPretty (posOfTerm pat) toPat chart
+       chart <- iterateCharts ga [pat] $ initChart (initPatternRules ps ids) ks
+       let Result ds mp =  getResolved showPretty (posOfTerm pat) 
+			   toMixTerm chart
        addDiags ds
        return mp
 
