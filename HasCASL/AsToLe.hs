@@ -63,9 +63,9 @@ addToCE ce cid sups defn = addToFM ce cid
 -- assumptions
 -----------------------------------------------------------------------------
 
-type Assumps = FiniteMap Id [Scheme]
+type Assumps = FiniteMap Id [TypeScheme]
 
-type TypeKinds = FiniteMap TypeId [Le.Kind]
+type TypeKinds = FiniteMap TypeName [Kind]
 
 
 -----------------------------------------------------------------------------
@@ -76,20 +76,9 @@ data Env = Env { classEnv :: ClassEnv
                , typeKinds :: TypeKinds
 	       , assumps :: Assumps
 	       , envDiags :: [Diagnosis]
-	       } 
+	       } deriving Show
 
 initialEnv = Env emptyFM emptyFM emptyFM []
-
-
-showEnv e = showMap ((++) . tokStr) showClassItem (classEnv e) .
-	    showString "\nType Constructors\n" .
-	    showMap showId (showSepList (showString ", ") showKind)
-		    (typeKinds e) .
-	    showString "\nAssumptions\n" .
-	    showMap showId (showSepList (showString ", ") showScheme) 
-		    (assumps e) .
-	    showChar '\n' .
-	    showList (reverse $ envDiags e)
 
 appendDiags ds =
     if null ds then return () else
@@ -99,8 +88,6 @@ appendDiags ds =
 ----------------------------------------------------------------------------
 -- analysis
 -----------------------------------------------------------------------------
-
-writeMsg e s = put $ e {envDiags = s : envDiags e}
 
 anaBasicSpec (BasicSpec l) = mapM_ anaAnnotedBasicItem l
 
@@ -147,9 +134,9 @@ anaClassDecls (ClassDefn ci syncl ps) =
 	 case mc of 
 	   Nothing -> put $ e { classEnv = addToCE ce ci [] scls }
 	   Just info -> 
-	     do writeMsg e (Warning ("redeclared class '"
+	     do appendDiags [Warning ("redeclared class '"
 				    ++ tokStr ci ++ "'") 
-			  $ tokPos ci)
+			  $ tokPos ci]
 	        let supers = zip (map (allSuperClasses ce) icls) icls 
 		    (cycles, nocycles) = partition ((ci `elem`) . fst) supers 
 		    Intersection iClasses qs = classDefn info in
@@ -208,11 +195,12 @@ anaClassDecl scls ci =
 	    Nothing -> put $ e { classEnv = addToCE ce ci 
 				 scls (Intersection [] []) }
 	    Just info -> 
-		do writeMsg e (Warning ("redeclared class '"
+		do appendDiags [Warning ("redeclared class '"
 					++ tokStr ci ++ "'") 
-			      $ tokPos ci)
+			      $ tokPos ci]
 		   if null scls then return ()
-		      else let supers = zip (map (allSuperClasses ce) scls) scls 
+		      else let supers = zip (map (allSuperClasses ce) scls)
+					scls 
 			       (cycles, nocycles) = 
 				   partition ((ci `elem`) . fst) supers
 			       sups = superClasses info in
@@ -244,9 +232,9 @@ anaTypePattern inst kind (TypePatternToken t) =
     in do k <- anaKind kind ty 
 	  addTypeKind ty k
 
-anaKind (Kind [] c _) t = 
+anaKind (Kind [] c p) t = 
     do ca <- anaClassAppl c
-       return $ Star $ ExtClass ca InVar nullPos
+       return $ Kind [] ca p
 
 
 
@@ -255,9 +243,9 @@ anaKind (Kind [] c _) t =
 	  let ce = classEnv e 
 	      mc = lookupFM ce ci 
 	    in case mc of 
-	       Nothing -> do writeMsg e (Error ("undeclared class '"
+	       Nothing -> do appendDiags [Error ("undeclared class '"
 					     ++ tokStr c ++ "'")
-				     $ tokPos c)
+				     $ tokPos c]
 			     return star
 	       Just info -> do put $ e { classEnv =
 				      addToFM ce ci info 
@@ -280,7 +268,7 @@ addTypeKind t k =
        let tk = typeKinds e 
            l = lookUp tk t in
 	 if k `elem` l then
-	    writeMsg e (Warning ("redeclared type '" 
+	    appendDiags [Warning ("redeclared type '" 
 					       ++ showId t "'")
-				     $ posOfId t)
+				     $ posOfId t]
 		       else put $ e { typeKinds = addToFM tk t (k:l) }
