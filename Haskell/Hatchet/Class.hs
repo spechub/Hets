@@ -44,7 +44,7 @@ module Haskell.Hatchet.Class
                        topDefaults
                        ) where
 
-import List     (union,
+import List     (
                                 (\\), 
                                 partition)
 
@@ -84,8 +84,6 @@ import Haskell.Hatchet.KindInference
                                 (KindEnv,
                                  kindOf)
 
-import Haskell.Hatchet.TypeSynonyms (oneTypeReplace)
-
 import Haskell.Hatchet.TypeUtils (aHsAsstToPred,
                                  flattenLeftTypeApplication,
                                  aHsTypeSigToAssumps) 
@@ -115,9 +113,6 @@ import Haskell.Hatchet.PPrint   (pretty,
                                  (<+>),
                                  nest,
                                  ($$))
-
-import Haskell.Hatchet.HsPretty (ppHsDecl,
-                                 renderWithMode)
 
 import Haskell.Hatchet.FiniteMaps (listToFM)
 

@@ -47,7 +47,7 @@ import Haskell.Hatchet.FiniteMaps       (listToFM,
 import Char             (isUpper, 
                          isSpace)
 
-import Haskell.Hatchet.HsPretty        (PPHsMode (..),
+import Haskell.Hatchet.Docs        (PPHsMode (..),
                         PPLayout (..),
                         render
                        )
