@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
-{-| Module      :  Map
+{-| Module      :  Common.Lib.Map
     Copyright   :  (c) Daan Leijen 2002
     License     :  BSD-style
 
@@ -56,7 +56,7 @@
       * It sticks to portable Haskell, avoiding @#ifdef@'s and other magic.
 -}
 ----------------------------------------------------------------------------------
-module Map  ( 
+module Common.Lib.Map  ( 
             -- * Map type
               Map          -- instance Eq,Show
 

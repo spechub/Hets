@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
-{-| Module      :  Set
+{-| Module      :  Common.Lib.Set
     Copyright   :  (c) Daan Leijen 2002
     License     :  BSD-style
 
@@ -62,7 +62,7 @@
       * It is implemented directly, instead of using a seperate finite map implementation. 
 -}
 ---------------------------------------------------------------------------------
-module Set  ( 
+module Common.Lib.Set  ( 
             -- * Set type
               Set          -- instance Eq,Show
 
