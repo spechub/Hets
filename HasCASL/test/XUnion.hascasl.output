@@ -1,28 +1,30 @@
 var S : Type; N : Type; E : Type
-type Set : Type -> Type := \ S : Type . S ->? Unit
+type Set : Type -> Type := \ S : Type . S_v1 ->? Unit
 type Graph : Type -> Type -> Type := \ (N : Type)
-                                       (E : Type) . Set N * (E ->? N) * (E ->? N)
+                                       (E : Type) . Set N_v2 * (E_v3 ->? N_v2) * (E_v3 ->? N_v2)
 op __union__ : forall E : Type; N : Type .
-                 Graph N E * Graph N E -> Graph N E;
+                 Graph N_v2 E_v3 * Graph N_v2 E_v3 -> Graph N_v2 E_v3;
    __union__, __intersection__, __\\__ : forall S : Type .
-                                           Set S * Set S -> Set S
+                                           Set S_v1 * Set S_v1 -> Set S_v1
 forall g : Graph N E; g' : Graph N E
 . (fun __=__[Set N * (E ->? N) * (E ->? N)]
-   : forall a : Type . a * a ->? Unit)
+   : forall a : Type . a_v-1 * a_v-1 ->? Unit)
     ((op __union__[E; N]
-      : forall E : Type; N : Type . Graph N E * Graph N E -> Graph N E)
+      : forall E : Type; N : Type .
+          Graph N_v2 E_v3 * Graph N_v2 E_v3 -> Graph N_v2 E_v3)
        (var g : Graph N E, var g' : Graph N E),
      var g : Graph N E)
 %% Type Constructors -----------------------------------------------------
-E : Type %(var)%
+E : Type %(var_3)%
 Graph
   : Type -> Type -> Type
-    := \ (N : Type)(E : Type) . Set N * (E ->? N) * (E ->? N)
+    := \ (N : Type)(E : Type) . Set N_v2 * (E_v3 ->? N_v2) *
+                                (E_v3 ->? N_v2)
 Logical : Type := Unit ->? Unit
-N : Type %(var)%
-Pred : Type -> Type := \ a : Type . a ->? Unit
-S : Type %(var)%
-Set : Type -> Type := \ S : Type . S ->? Unit
+N : Type %(var_2)%
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+S : Type %(var_1)%
+Set : Type -> Type := \ S : Type . S_v1 ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
@@ -32,29 +34,33 @@ __->?__ : Type- -> Type+ -> Type
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __=>__ : Unit * Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
-__\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
+__\\__ : forall S : Type . Set S_v1 * Set S_v1 -> Set S_v1 %(op)%
 __if__ : Unit * Unit ->? Unit %(fun)%
-__intersection__ : forall S : Type . Set S * Set S -> Set S %(op)%
+__intersection__
+  : forall S : Type . Set S_v1 * Set S_v1 -> Set S_v1 %(op)%
 __union__
-  : forall S : Type . Set S * Set S -> Set S %(op)%
-  : forall E : Type; N : Type . Graph N E * Graph N E -> Graph N E
+  : forall S : Type . Set S_v1 * Set S_v1 -> Set S_v1 %(op)%
+  : forall E : Type; N : Type .
+      Graph N_v2 E_v3 * Graph N_v2 E_v3 -> Graph N_v2 E_v3
     %(op)%
-__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
-bottom : forall a : Type . a %(fun)%
-def__ : forall a : Type . a ->? Unit %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__[Set N * (E ->? N) * (E ->? N)]
- : forall a : Type . a * a ->? Unit)
+ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   ((op __union__[E; N]
-    : forall E : Type; N : Type . Graph N E * Graph N E -> Graph N E)
+    : forall E : Type; N : Type .
+        Graph N_v2 E_v3 * Graph N_v2 E_v3 -> Graph N_v2 E_v3)
      (var g : Graph N E, var g' : Graph N E),
    var g : Graph N E)
 %% Diagnostics -----------------------------------------------------------
@@ -62,6 +68,6 @@ true : Unit %(fun)%
 *** Hint 1.9, is type variable 'N'
 *** Hint 1.11, is type variable 'E'
 *** Hint 9.6, no type match for: g
-  with type: '_var_6 ->? Unit' (6.51)
+  with type: '_var_9_v9 ->? Unit' (6.51)
   known types:
     'Graph N E'

@@ -13,7 +13,7 @@ op b : bool
 op b : bool -> bool = \ (var x : bool) . (var x : bool)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a ->? Unit
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
@@ -30,12 +30,13 @@ False : bool %(construct bool)%
 True : bool %(construct bool)%
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __=>__ : Unit * Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
-__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
 a : bool %(op)% = (op True : bool)
 b : bool -> bool %(op)% = \ (var x : bool) . (var x : bool)
   : bool
@@ -44,8 +45,8 @@ b : bool -> bool %(op)% = \ (var x : bool) . (var x : bool)
             (var y : bool) = (op False : bool);
             (var z : bool) = (var x : bool)
         in (op True : bool)
-bottom : forall a : Type . a %(fun)%
-def__ : forall a : Type . a ->? Unit %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : Unit ->? Unit %(fun)%
 notA
@@ -60,18 +61,18 @@ true : Unit %(fun)%
 type bool
   ::= True : bool
       False : bool %(ga_bool)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op a : bool, op True : bool) %(def_a)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op notA : bool,
    case (op a : bool) of
        (op True : bool) -> (op False : bool) | 
        (op False : bool) -> (op True : bool)) %(def_notA)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op b : bool,
    let (var x : bool) = (op True : bool);
        (var y : bool) = (op False : bool);
        (var z : bool) = (var x : bool)
    in (op True : bool)) %(def_b)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op b : bool -> bool, \ (var x : bool) . (var x : bool)) %(def_b)%

@@ -35,7 +35,7 @@ op z : s
 . (op x : s) in t
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a ->? Unit
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
@@ -49,18 +49,19 @@ __+__ : t * t -> t %(op)%
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=__<=__ : s * s * s -> s %(op)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __=>__ : Unit * Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
-__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
 a : t %(op)%
 b : t %(op)%
-bottom : forall a : Type . a %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
 c : s %(op)% = (op __+__ : t * t -> t)(op a : t, op b : t)
 d : s %(op)% = (op __+__ : t * t -> t)(op a : t, op a : t)
-def__ : forall a : Type . a ->? Unit %(fun)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 e : s * s -> s %(op)% = (op __+__ : t * t -> t)
 f : s * s -> s %(op)% = (op __+__ : t * t -> t)
 false : Unit %(fun)%
@@ -98,48 +99,48 @@ z : s
       = (op __+__ : t * t -> t)((op x : s) as s, (op x : s) as t as s)
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op c : s, (op __+__ : t * t -> t)(op a : t, op b : t)) %(def_c)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op d : s, (op __+__ : t * t -> t)(op a : t, op a : t)) %(def_d)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op e : s * s -> s, op __+__ : t * t -> t) %(def_e)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op f : s * s -> s, op __+__ : t * t -> t) %(def_f)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op g : s * s, (op a : t, op b : t)) %(def_g)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op h : s, (op __+__ : t * t -> t)(op a : t, op b : t)) %(def_h)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op i : s,
    (op __+__ : t * t -> t)((op a : t) : s, (op b : t) : s)) %(def_i)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op i1 : s, (op incr : s -> s)(op a : t)) %(def_i1)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op i2 : s, (op incr : s -> s)(op a : t)) %(def_i2)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op i3 : s, (op incr : s -> s)(op a : t)) %(def_i3)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op l1 : s,
    (op __<=__<=__ : s * s * s -> s)
      (op a : t, op b : t, op c : s)) %(def_l1)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op l2 : s * s * s -> s, op __<=__<=__ : s * s * s -> s) %(def_l2)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op l3 : s,
    (op __<=__<=__ : s * s * s -> s)
      (op a : t, op b : t, op c : s)) %(def_l3)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op l4 : s,
    (op __<=__<=__ : s * s * s -> s)
      (op a : t, op b : t, op c : s)) %(def_l4)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op l5 : s * s * s, (op a : t, op b : t, op c : s)) %(def_l5)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op y : s,
    (op __<=__<=__ : s * s * s -> s)
      (op a : s, var x : s, (op a : t) : s)) %(def_y)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op z : s,
    (op __+__ : t * t -> t)
      ((op x : s) as s, (op x : s) as t as s)) %(def_z)%

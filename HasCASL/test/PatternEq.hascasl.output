@@ -19,7 +19,7 @@ op x : s; y : t
 op c : t = (op snd : s * t -> t)((op x : s) : s, (op y : t) : t)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a ->? Unit
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
@@ -31,18 +31,19 @@ t : Type
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __=>__ : Unit * Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
-__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
 a : s %(op)%
 b : s %(op)%
-bottom : forall a : Type . a %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
 c : t
     %(op)% = (op snd : s * t -> t)((op x : s) : s, (op y : t) : t)
-def__ : forall a : Type . a ->? Unit %(fun)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : Unit ->? Unit %(fun)%
 snd : s * t -> t %(op)%
@@ -65,7 +66,7 @@ program (op snd : s * t -> t)(var x : s, var y : t) : t =
             (var y : t) %(pe_snd)%
 program (var b : s) = (op a : s) %(pe_b)%
 program (op b : s) : s = (op a : s) %(pe_b)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op c : t,
    (op snd : s * t -> t)((op x : s) : s, (op y : t) : t)) %(def_c)%
 %% Diagnostics -----------------------------------------------------------

@@ -1,6 +1,6 @@
 class Type < Type
 var t : Type
-class TYPE < {x . x < t}
+class TYPE < {x . x < t_v1}
 type  : Type- -> Type; Unit : TYPE
 class a, b, c < Type
 class a, b, c < Type; a < b
@@ -22,7 +22,7 @@ program __ or __ (x, y : (? Unit)) : (? Unit) =
         ff () : (? Unit) = all (\ r : (? Unit) . r ())
 forall x : t; y : t
 . %(..)%
-  (fun __=__[t] : forall a : Type . a * a ->? Unit)
+  (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
     (var x : t, var y : t)
 type s
 op a : ? s
@@ -40,7 +40,7 @@ type Data4 ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? |
 forall x : s
 forall x : s
 %% Classes ---------------------------------------------------------------
-TYPE < {x . x < t}
+TYPE < {x . x < t_v1}
 a < b
 b < Type
 c < Type
@@ -68,7 +68,7 @@ Data4
          ::= Cons41 : Data1 * Data2 ->? Data4 (sel1 :? Data1; sel2 :? Data2)
              Cons42 : Data2 * Data1 ->? Data4 (sel2 :? Data2; sel1 :? Data1)]%
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a ->? Unit
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : TYPE := Unit
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
@@ -76,7 +76,7 @@ __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 s : c < ? s
-t : Type %(var)%
+t : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 Cons21 : Data1 * Data2 -> Data2 %(construct Data2)%
 Cons22 : Data2 * Data1 -> Data2 %(construct Data2)%
@@ -86,18 +86,19 @@ Cons41 : Data1 * Data2 ->? Data4 %(construct Data4)%
 Cons42 : Data2 * Data1 ->? Data4 %(construct Data4)%
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __=>__ : Unit * Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
-__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
 a : Data1 %(construct Data1)%
   : ? s %(op)%
 b : Data1 %(construct Data1)%
-bottom : forall a : Type . a %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
 c : Data1 %(construct Data1)%
-def__ : forall a : Type . a ->? Unit %(fun)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 eq : s * s ->? Unit %(pred)%
 false : Unit %(fun)%
 not__ : Unit ->? Unit %(fun)%
@@ -125,7 +126,7 @@ x : s %(var)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 program (pred tt : s) = \ (var x : s) : s . () %(pe_tt)%
-(fun __=__[t] : forall a : Type . a * a ->? Unit)
+(fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (var x : t, var y : t)
 type Data1
   ::= a : Data1
@@ -136,25 +137,25 @@ type Data2
       Cons22 : Data2 * Data1 -> Data2 (Data2; Data1)
       types Data1 %(ga_Data2)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op sel1 : Data3 ->? Data1)
          ((op Cons31 : Data1 * Data2 -> Data3)
             (var x_1_1 : Data1, var x_1_2 : Data2)),
        var x_1_1 : Data1) %(ga_select_sel1)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op sel2 : Data3 ->? Data2)
          ((op Cons31 : Data1 * Data2 -> Data3)
             (var x_1_1 : Data1, var x_1_2 : Data2)),
        var x_1_2 : Data2) %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op sel2 : Data3 ->? Data2)
          ((op Cons32 : Data2 * Data1 -> Data3)
             (var x_1_1 : Data2, var x_1_2 : Data1)),
        var x_1_1 : Data2) %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op sel1 : Data3 ->? Data1)
          ((op Cons32 : Data2 * Data1 -> Data3)
             (var x_1_1 : Data2, var x_1_2 : Data1)),
@@ -164,25 +165,25 @@ type Data3
       Cons32 : Data2 * Data1 -> Data3
         (sel2 :? Data2; sel1 :? Data1) %(ga_Data3)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op sel1 : Data4 ->? Data1)
          ((op Cons41 : Data1 * Data2 ->? Data4)
             (var x_1_1 : Data1, var x_1_2 : Data2)),
        var x_1_1 : Data1) %(ga_select_sel1)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op sel2 : Data4 ->? Data2)
          ((op Cons41 : Data1 * Data2 ->? Data4)
             (var x_1_1 : Data1, var x_1_2 : Data2)),
        var x_1_2 : Data2) %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op sel2 : Data4 ->? Data2)
          ((op Cons42 : Data2 * Data1 ->? Data4)
             (var x_1_1 : Data2, var x_1_2 : Data1)),
        var x_1_1 : Data2) %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op sel1 : Data4 ->? Data1)
          ((op Cons42 : Data2 * Data1 ->? Data4)
             (var x_1_1 : Data2, var x_1_2 : Data1)),
@@ -203,28 +204,28 @@ type Data4
 *** Warning 11.19, redeclared class 'a'
 *** Error 20.12, unexpected mixfix token: res
 *** Hint 21.1, no type match for: fst
-  with type: '_var_3 ->? s' (21.6)
+  with type: '_var_4_v4 ->? s' (21.6)
   known types:
     
 *** Hint 21.1, wrong result type 's' (21.20)
-  for application 'fst(x : s, var y : t)'
-*** Error 21.1, no typing for 'fst(x : s, var y : t) : s'
+  for application 'fst(x : s, var y : t_v1)'
+*** Error 21.1, no typing for 'fst(x : s, var y : t_v1) : s'
 *** Hint 22.1, no type match for: snd
-  with type: '_var_4 ->? t' (22.6)
+  with type: '_var_5_v5 ->? t_v1' (22.6)
   known types:
     
-*** Hint 22.1, wrong result type 't' (22.20)
-  for application 'snd(x : s, var y : t)'
-*** Error 22.1, no typing for 'snd(x : s, var y : t) : t'
+*** Hint 22.1, wrong result type 't_v1' (22.20)
+  for application 'snd(x : s, var y : t_v1)'
+*** Error 22.1, no typing for 'snd(x : s, var y : t_v1) : t_v1'
 *** Hint 28.9, no type match for: all
-  with type: '_var_5 ->? ? Unit' (28.14)
+  with type: '_var_6_v6 ->? ? Unit' (28.14)
   known types:
     
 *** Hint 28.9, wrong result type '? Unit' (28.26)
   for application 'all(var p : ? s)'
 *** Error 28.9, no typing for 'all(var p : ? s) : ? Unit'
 *** Hint 30.9, no type match for: And
-  with type: '_var_6 ->? ? Unit' (30.14)
+  with type: '_var_7_v7 ->? ? Unit' (30.14)
   known types:
     
 *** Hint 30.9, wrong result type '? Unit' (30.31)
@@ -233,14 +234,14 @@ type Data4
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 *** Hint 37.3, no type match for: ex
-  with type: '_var_7 ->? ? Unit' (37.7)
+  with type: '_var_8_v8 ->? ? Unit' (37.7)
   known types:
     
 *** Hint 37.3, wrong result type '? Unit' (37.18)
   for application 'ex(var p : ? s)'
 *** Error 37.3, no typing for 'ex(var p : ? s) : ? Unit'
 *** Hint 40.3, no type match for: ff
-  with type: '_var_8 ->? ? Unit' (40.11)
+  with type: '_var_9_v9 ->? ? Unit' (40.11)
   known types:
     
 *** Hint 40.3, wrong result type '? Unit' (40.11)

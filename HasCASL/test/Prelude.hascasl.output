@@ -12,7 +12,7 @@ type ? __ := \ t : Type . Unit ->? t
 pred true, false : Unit
 pred __/\__, __\/__, __=>__, __if__, __<=>__ : Unit * Unit
 pred not : Unit
-pred __=__ : forall s : Type . s * s
+pred __=__ : forall s : Type . s_v1 * s_v1
      %% =e=
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      %% (builtin) type (constructors)
@@ -24,48 +24,54 @@ type  : Type+ -> Type+ -> Type+ -> Type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"  
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
-op def, tt : forall s : Type . Pred s
+op def, tt : forall s : Type . Pred s_v1
 var x : s
-program (op def[_var_1] : forall s : Type . Pred s) =
-            \ (var x : s) : s . ()
+program (op def[_var_3_v3] : forall s : Type . Pred s_v1) =
+            \ (var x : s) : s_v1 . ()
         %% def is also total (identical to tt) 
-program (op tt[_var_4] : forall s : Type . Pred s) =
-            \ (var x : s) : s . ()
+program (op tt[_var_6_v6] : forall s : Type . Pred s_v1) =
+            \ (var x : s) : s_v1 . ()
         %% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
 type __->__ : Type- -> Type+ -> Type
-type __->__(s : Type)(t : Type) < s ->? t
+type __->__(s : Type)(t : Type) < s_v1 ->? t_v2
 %% total functions
-op __res__ : s * t ->? s = \ (var x : s, var y : t) .! (var x : s)
-op fst : s * t ->? s = \ (var x : s, var y : t) .! (var x : s)
+op __res__ : s_v1 * t_v2 ->? s_v1
+     = \ (var x : s, var y : t) .! (var x : s)
+op fst : s_v1 * t_v2 ->? s_v1
+     = \ (var x : s, var y : t) .! (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
-. (fun __=__[s * t ->? s] : forall s : Type . s * s ->? Unit)
-    (op fst : s * t ->? s, op __res__ : s * t ->? s)
+. (fun __=__[s_v1 * t_v2 ->? s_v1]
+   : forall s : Type . s_v1 * s_v1 ->? Unit)
+    (op fst : s_v1 * t_v2 ->? s_v1, op __res__ : s_v1 * t_v2 ->? s_v1)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
-pred eq : forall s : Type . s * s
-. (fun __=__[_var_22 ->? Unit] : forall s : Type . s * s ->? Unit)
-    (\ (var x : _var_22) : _var_22
-       . (pred eq[_var_22] : forall s : Type . s * s)
-           (var x : _var_22, var x : _var_22),
-     op tt[_var_22] : forall s : Type . Pred s)
-. (fun __=__[s * s ->? s] : forall s : Type . s * s ->? Unit)
+pred eq : forall s : Type . s_v1 * s_v1
+. (fun __=__[_var_24_v24 ->? Unit]
+   : forall s : Type . s_v1 * s_v1 ->? Unit)
+    (\ (var x : s) : _var_24_v24
+       . (pred eq[s] : forall s : Type . s_v1 * s_v1)
+           (var x : s, var x : s),
+     op tt[_var_24_v24] : forall s : Type . Pred s_v1)
+. (fun __=__[s * s ->? s] : forall s : Type . s_v1 * s_v1 ->? Unit)
     (\ (var x : s, var y : s)
-       . (op __res__ : s * t ->? s)
+       . (op __res__ : s_v1 * t_v2 ->? s_v1)
            (var x : s,
-            (pred eq[s] : forall s : Type . s * s)(var x : s, var y : s)),
+            (pred eq[s] : forall s : Type . s_v1 * s_v1)
+              (var x : s, var y : s)),
      \ (var x : s, var y : s)
-       . (op __res__ : s * t ->? s)
+       . (op __res__ : s_v1 * t_v2 ->? s_v1)
            (var y : s,
-            (pred eq[s] : forall s : Type . s * s)(var x : s, var y : s)))
+            (pred eq[s] : forall s : Type . s_v1 * s_v1)
+              (var x : s, var y : s)))
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit." 
 %% where "bla" is never used, but only "()" instead
 %% for type inference 
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
-type s < ? s
+type s < ? s_v1
 program all (p : Pred (s)) : Pred Unit = eq (p, tt)
 %% the cast from ?s to s is still done manually here (for the strict "und")
 program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
@@ -83,39 +89,39 @@ program neg (r : Pred Unit) : Pred Unit = r impl ff
 %% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"  
 type nat
 class Cpo < Type
-      {var c : Cpo; pred __<<=__ : forall c : Cpo . c * c; ;
-       pred isChain(s : nat -> c) :? Unit
+      {var c : Cpo; pred __<<=__ : forall c : Cpo . c_v58 * c_v58; ;
+       pred isChain(s : nat -> c_v58) :? Unit
               = all (\ n : nat . s (n) <<= s (Suc (n)));
-       pred isBound(x : c; s : nat -> c) :? Unit
+       pred isBound(x : c_v58; s : nat -> c_v58) :? Unit
               = all (\ n : nat . s (n) <<= x);
-       op sup : forall c : Cpo . (nat -> c) ->? c;}
+       op sup : forall c : Cpo . (nat -> c_v58) ->? c_v58;}
 class Pcpo < Cpo
-      {var p : Pcpo; op bottom : forall p : Pcpo . p;}
+      {var p : Pcpo; op bottom : forall p : Pcpo . p_v61;}
 class instance Flatcpo < Cpo
                {var f : Flatcpo; program __ <<= [f] __ = eq}
 var c : Cpo; d : Cpo
 type instance __*__ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
-program (pred __<<=__[c * d] : forall c : Cpo . c * c)
+program (pred __<<=__[c * d] : forall c : Cpo . c_v58 * c_v58)
           ((var x1 : c, var y1 : d), (var x2 : c, var y2 : d))
           = (x1 <<= x2) und (y1 <<= y2)
 type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
 %% Pcont
 type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
-type __-->?__(c : Cpo)(d : Cpo) < c ->? d
+type __-->?__(c : Cpo)(d : Cpo) < c_v58 ->? d_v63
 program f <<= [c -->? d] g =
             all (\ x : c . def (f x) impl f (x) <<= g (x))
 %% Tcont
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
-type __-->__(c : Cpo)(d : Cpo) < c -->? d
+type __-->__(c : Cpo)(d : Cpo) < c_v58 -->? d_v63
 var f : c --> d; g : c --> d
-program (pred __<<=__[c --> d] : forall c : Cpo . c * c)
+program (pred __<<=__[c --> d] : forall c : Cpo . c_v58 * c_v58)
           (var f : c --> d, var g : c --> d)
           = f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op Y : (p -->? p) --> p
-op undefined : c -->? p = Y (\ x : c -->? p .! x)
+op undefined : c_v58 -->? p_v61 = Y (\ x : c -->? p .! x)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | 
@@ -128,60 +134,65 @@ Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a ->? Unit
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Pcpo := Unit
 __*__
   : (Cpo+ -> Cpo+ -> Cpo, Pcpo+ -> Pcpo+ -> Pcpo,
      Type+ -> Type+ -> Type)
 __-->__
   : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Pcpo+ -> Pcpo,
-     Type- -> Type+ -> Type) < c -->? d
-__-->?__ : (Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type) < c ->? d
-__->__ : Type- -> Type+ -> Type < s ->? t
+     Type- -> Type+ -> Type) < c_v58 -->? d_v63
+__-->?__
+  : (Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type) < c_v58 ->? d_v63
+__->__ : Type- -> Type+ -> Type < s_v1 ->? t_v2
 __->?__ : Type- -> Type+ -> Type
 bool
   : Flatcpo
      %[free type bool
          ::= true : bool
              false : bool]%
-c : Cpo %(var)%
-d : Cpo %(var)%
-f : Flatcpo %(var)%
+c : Cpo %(var_58)%
+d : Cpo %(var_63)%
+f : Flatcpo %(var_62)%
 nat : Flatcpo
-p : Pcpo %(var)%
-s : Type %(var)%
-t : Type %(var)%
+p : Pcpo %(var_61)%
+s : Type %(var_1)%
+t : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit * Unit ->? Unit %(fun)%
-__<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
+__<<=__ : forall c : Cpo . c_v58 * c_v58 ->? Unit %(pred)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
-__=__ : forall s : Type . s * s ->? Unit %(fun)%
+__=__ : forall s : Type . s_v1 * s_v1 ->? Unit %(fun)%
 __=>__ : Unit * Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __res__
-  : s * t ->? s %(op)% = \ (var x : s, var y : t) .! (var x : s)
-__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
-bottom : forall p : Pcpo . p %(fun)%
-def : forall s : Type . Pred s %(op)%
-def__ : forall a : Type . a ->? Unit %(fun)%
-eq : forall s : Type . s * s ->? Unit %(pred)%
+  : s_v1 * t_v2 ->? s_v1
+    %(op)% = \ (var x : s, var y : t) .! (var x : s)
+__when__else__
+  : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
+bottom : forall p : Pcpo . p_v61 %(fun)%
+def : forall s : Type . Pred s_v1 %(op)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
+eq : forall s : Type . s_v1 * s_v1 ->? Unit %(pred)%
 f : c --> d %(var)%
 false
   : bool %(construct bool)%
   : Unit ->? Unit %(pred)%
   : Unit %(fun)%
-fst : s * t ->? s %(op)% = \ (var x : s, var y : t) .! (var x : s)
+fst
+  : s_v1 * t_v2 ->? s_v1
+    %(op)% = \ (var x : s, var y : t) .! (var x : s)
 g : c --> d %(var)%
 not : Unit ->? Unit %(pred)%
 not__ : Unit ->? Unit %(fun)%
-sup : forall c : Cpo . (nat -> c) ->? c %(op)%
+sup : forall c : Cpo . (nat -> c_v58) ->? c_v58 %(op)%
 true
   : bool %(construct bool)%
   : Unit ->? Unit %(pred)%
   : Unit %(fun)%
-tt : forall s : Type . Pred s %(op)%
+tt : forall s : Type . Pred s_v1 %(op)%
 x : s %(var)%
 x1 : c %(var)%
 x2 : c %(var)%
@@ -189,34 +200,38 @@ y1 : d %(var)%
 y2 : d %(var)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (op def[_var_1] : forall s : Type . Pred s) =
-            \ (var x : s) : s . () %(pe_def)%
-program (op tt[_var_4] : forall s : Type . Pred s) =
-            \ (var x : s) : s . () %(pe_tt)%
+program (op def[_var_3_v3] : forall s : Type . Pred s_v1) =
+            \ (var x : s) : s_v1 . () %(pe_def)%
+program (op tt[_var_6_v6] : forall s : Type . Pred s_v1) =
+            \ (var x : s) : s_v1 . () %(pe_tt)%
 forall x : s; y : t
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op __res__ : s * t ->? s)(var x : s, var y : t),
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+      ((op __res__ : s_v1 * t_v2 ->? s_v1)(var x : s, var y : t),
        var x : s) %(def___res__)%
 forall x : s; y : t
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op fst : s * t ->? s)(var x : s, var y : t),
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+      ((op fst : s_v1 * t_v2 ->? s_v1)(var x : s, var y : t),
        var x : s) %(def_fst)%
-(fun __=__[s * t ->? s] : forall s : Type . s * s ->? Unit)
-  (op fst : s * t ->? s, op __res__ : s * t ->? s)
-(fun __=__[_var_22 ->? Unit] : forall s : Type . s * s ->? Unit)
-  (\ (var x : _var_22) : _var_22
-     . (pred eq[_var_22] : forall s : Type . s * s)
-         (var x : _var_22, var x : _var_22),
-   op tt[_var_22] : forall s : Type . Pred s)
-(fun __=__[s * s ->? s] : forall s : Type . s * s ->? Unit)
+(fun __=__[s_v1 * t_v2 ->? s_v1]
+ : forall s : Type . s_v1 * s_v1 ->? Unit)
+  (op fst : s_v1 * t_v2 ->? s_v1, op __res__ : s_v1 * t_v2 ->? s_v1)
+(fun __=__[_var_24_v24 ->? Unit]
+ : forall s : Type . s_v1 * s_v1 ->? Unit)
+  (\ (var x : s) : _var_24_v24
+     . (pred eq[s] : forall s : Type . s_v1 * s_v1)
+         (var x : s, var x : s),
+   op tt[_var_24_v24] : forall s : Type . Pred s_v1)
+(fun __=__[s * s ->? s] : forall s : Type . s_v1 * s_v1 ->? Unit)
   (\ (var x : s, var y : s)
-     . (op __res__ : s * t ->? s)
+     . (op __res__ : s_v1 * t_v2 ->? s_v1)
          (var x : s,
-          (pred eq[s] : forall s : Type . s * s)(var x : s, var y : s)),
+          (pred eq[s] : forall s : Type . s_v1 * s_v1)
+            (var x : s, var y : s)),
    \ (var x : s, var y : s)
-     . (op __res__ : s * t ->? s)
+     . (op __res__ : s_v1 * t_v2 ->? s_v1)
          (var y : s,
-          (pred eq[s] : forall s : Type . s * s)(var x : s, var y : s)))
+          (pred eq[s] : forall s : Type . s_v1 * s_v1)
+            (var x : s, var y : s)))
 free type bool
   ::= true : bool
       false : bool %(ga_bool)%
@@ -250,12 +265,12 @@ free type bool
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.6, unexpected mixfix token: :
 *** Hint 60.9, no type match for: snd
-  with type: '_var_7 ->? t' (60.14)
+  with type: '_var_9_v9 ->? t_v2' (60.14)
   known types:
     
-*** Hint 60.9, wrong result type 't' (60.28)
-  for application 'snd(x : s, var y : t)'
-*** Error 60.9, no typing for 'snd(x : s, var y : t) : t'
+*** Hint 60.9, wrong result type 't_v2' (60.28)
+  for application 'snd(x : s_v1, var y : t_v2)'
+*** Error 60.9, no typing for 'snd(x : s_v1, var y : t_v2) : t_v2'
 *** Error 65.18, ambiguous mixfix term
 	def(__res__(x, y))
 	def__(__res__(x, y))
@@ -263,16 +278,16 @@ free type bool
 *** Hint 85.6, redeclared type 's'
 *** Error 85.6, merge: TypeVarDefn of 's'
 
-*** Error 85.11, illegal supertype for variable '? s'
+*** Error 85.11, illegal supertype for variable '? s_v1'
 *** Hint 87.9, no type match for: all
-  with type: '_var_49 ->? Unit ->? Unit' (87.14)
+  with type: '_var_51_v51 ->? Unit ->? Unit' (87.14)
   known types:
     
 *** Hint 87.9, wrong result type 'Unit ->? Unit'
-  for application 'all(var p : s ->? Unit)'
-*** Error 87.9, no typing for 'all(var p : s ->? Unit) : Unit ->? Unit'
+  for application 'all(var p : s_v1 ->? Unit)'
+*** Error 87.9, no typing for 'all(var p : s_v1 ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
-  with type: '_var_50 ->? Unit ->? Unit' (90.14)
+  with type: '_var_52_v52 ->? Unit ->? Unit' (90.14)
   known types:
     
 *** Hint 90.9, wrong result type 'Unit ->? Unit'
@@ -281,21 +296,21 @@ free type bool
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 *** Hint 98.9, no type match for: ex
-  with type: '_var_51 ->? Unit ->? Unit' (98.13)
+  with type: '_var_53_v53 ->? Unit ->? Unit' (98.13)
   known types:
     
 *** Hint 98.9, wrong result type 'Unit ->? Unit'
-  for application 'ex(var p : s ->? Unit)'
-*** Error 98.9, no typing for 'ex(var p : s ->? Unit) : Unit ->? Unit'
+  for application 'ex(var p : s_v1 ->? Unit)'
+*** Error 98.9, no typing for 'ex(var p : s_v1 ->? Unit) : Unit ->? Unit'
 *** Hint 101.9, no type match for: ff
-  with type: '_var_52 ->? Unit ->? Unit'
+  with type: '_var_54_v54 ->? Unit ->? Unit'
   known types:
     
 *** Hint 101.9, wrong result type 'Unit ->? Unit'
   for application 'ff()'
 *** Error 101.9, no typing for 'ff() : Unit ->? Unit'
 *** Hint 103.9, no type match for: neg
-  with type: '_var_53 ->? Unit ->? Unit' (103.14)
+  with type: '_var_55_v55 ->? Unit ->? Unit' (103.14)
   known types:
     
 *** Hint 103.9, wrong result type 'Unit ->? Unit'
@@ -338,20 +353,21 @@ free type bool
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
 *** Hint 10.18, no type match for: __::__
-  with type: '_var_77 ->? _var_76 ->? _var_67' (176.17)
+  with type: '_var_83_v83 ->? _var_82_v82 ->? _var_73_v73' (176.17)
   known types:
     
-*** Hint 10.18, wrong result type '_var_76 ->? _var_67' (176.27)
-  for application '__::__(c(var -->? : _var_68)(var d : _var_69), [])'
-*** Hint 10.18, wrong result type '_var_67' (176.11)
-  for application '__::__(c(var -->? : _var_68)(var d : _var_69), [])(var g : _var_70)'
+*** Hint 10.18, wrong result type '_var_82_v82 ->? _var_73_v73' (176.27)
+  for application '__::__(c(var -->? : _var_74_v74)(var d : _var_75_v75), [])'
+*** Hint 10.18, wrong result type '_var_73_v73' (176.11)
+  for application '__::__(c(var -->? : _var_74_v74)(var d : _var_75_v75), [])
+  (var g : _var_76_v76)'
 *** Error 176.13, wrongly typed application '__<<=__
-  (var f : _var_67,
-   __::__(c(var -->? : _var_68)(var d : _var_69), [])
-     (var g : _var_70))'
-*** Error 176.13, no typing for '__<<=__(var f : _var_67,
-        __::__(c(var -->? : _var_68)(var d : _var_69), [])
-          (var g : _var_70))'
+  (var f : _var_73_v73,
+   __::__(c(var -->? : _var_74_v74)(var d : _var_75_v75), [])
+     (var g : _var_76_v76))'
+*** Error 176.13, no typing for '__<<=__(var f : _var_73_v73,
+        __::__(c(var -->? : _var_74_v74)(var d : _var_75_v75), [])
+          (var g : _var_76_v76))'
 *** Error 181.9, incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
@@ -362,7 +378,7 @@ free type bool
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
 *** Error 186.26, unexpected mixfix token: c
-*** Error 190.9, incompatible kind of: p -->? p
+*** Error 190.9, incompatible kind of: p_v61 -->? p_v61
   expected: Cpo-
      found: Type
 
