@@ -93,13 +93,13 @@ symbKind = try(
 	   return (SK_op, q)
         <|>
         do q <- pluralKeyword predS 
-	   return (SK_pred, q)
+	   return (SK_op, q)
         <|>
         do q <- pluralKeyword typeS 
 	   return (SK_type, q)
         <|>
         do q <- pluralKeyword sortS 
-	   return (SK_sort, q)
+	   return (SK_type, q)
         <|>
         do q <- asKey (classS ++ "es") <|> asKey classS
 	   return (SK_class, q))

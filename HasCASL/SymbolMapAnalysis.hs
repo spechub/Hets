@@ -6,15 +6,19 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports Morphsim)
     
 The symbol map analysis for the HasCASL logic
 (adapted from CASL version r1.8 of 24.1.2004)
 
 -}
-module HasCASL.SymbolMapAnalysis where
+module HasCASL.SymbolMapAnalysis
+    ( inducedFromMorphism
+    , inducedFromToMorphism
+    , cogeneratedSign
+    , finalUnion
+    )  where
 
-import HasCASL.AsToLe
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.Symbol
@@ -26,7 +30,6 @@ import Common.Result
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Control.Monad
@@ -37,7 +40,6 @@ type SymbolSet = Set.Set Symbol
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap sigma = do
-  -- ??? Missing: check preservation of overloading relation
   -- first check: do all source raw symbols match with source signature?
   let syms = symOf sigma
       incorrectRsyms = Map.foldWithKey
@@ -62,26 +64,30 @@ inducedFromMorphism rmap sigma = do
         $$ printText sigma) 
        nullPos)
   -- compute the sort map (as a Map)
-  type_Map <- Set.fold
-              (\s v m -> do s' <- typeFun s
-                            m1 <- m
-                            return $ Map.insert s s' m1) 
-              (return Map.empty) $ Map.keys $ typeMap sigma
+  myTypeIdMap <- foldr
+              (\ (s, ti) m -> 
+	       do s' <- typeFun s (typeKind ti)
+                  m1 <- m
+                  return $ Map.insert s s' m1) 
+              (return Map.empty) $ Map.toList $ typeMap sigma
   -- compute the op map (as a Map)
-  op_Map <- Map.foldWithKey (opFun type_Map)
+  op_Map <- Map.foldWithKey (opFun myTypeIdMap)
               (return Map.empty) (assumps sigma)
   -- compute target signature
   let sigma' = sigma 
-            { typeMap = Map.foldWithKey (mapType type_Map) 
+            { typeMap = Map.foldWithKey ( \ i k m -> 
+			       Map.insert (Map.findWithDefault i i myTypeIdMap)
+					  k m)
 	                    Map.empty $ typeMap sigma
-            , assumps =  Map.foldWithKey (mapOps type_Map op_Map) 
-                              Map.empty (funMap sigma) }
+            , assumps =  Map.foldWithKey (mapOps myTypeIdMap op_Map) 
+                              Map.empty (assumps sigma) }
   -- return assembled morphism
   return $ (mkMorphism sigma sigma') 
-	     { typeIdMap = type_Map
+	     { typeIdMap = myTypeIdMap
 	     , funMap = op_Map }
   where
-  typeFun s = 
+  typeFun :: Id -> Kind -> Result Id
+  typeFun s k = 
     -- rsys contains the raw symbols to which s is mapped to
     case Set.size rsys of
           0 -> return s  -- use default = identity mapping
@@ -93,75 +99,79 @@ inducedFromMorphism rmap sigma = do
     where
     -- get all raw symbols to which s is mapped to
     rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
-               [AnID s, AKindedId SK_type s]
+               [ASymbol $ idToTypeSymbol s k, AnID s, AKindedId SK_type s]
 
-  -- to a Fun_map, add evering resulting from mapping (id,ots) according to rmap
-  opFun :: IdMap -> Id -> Set.Set TypeScheme -> Result FunMap -> Result FunMap
-  opFun type_Map id ots m = 
+ -- to a Fun_map, add evering resulting from mapping (id,ots) according to rmap
+  opFun :: IdMap -> Id -> OpInfos -> Result FunMap -> Result FunMap
+  opFun type_Map i ots m = 
     -- first consider all directly mapped profiles
-    let (ots1,m1) = Set.fold (directOpMap id) (Set.empty,m) ots
+    let (ots1,m1) = foldr (directOpMap type_Map i) (Set.empty,m) $ opInfos ots
     -- now try the remaining ones with (un)kinded raw symbol
-    in case (Map.lookup (AKindedId SK_op id) rmap,Map.lookup (AnID id) rmap) of
+    in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
        (Just rsy1, Just rsy2) -> 
           do m' <- m
              pplain_error m'
-               (ptext "Operation" <+> printText id
+               (ptext "Operation" <+> printText i
                 <+> ptext "is mapped twice:"
                 <+> printText rsy1 <+> ptext "," <+> printText rsy2
                )
                nullPos
        (Just rsy, Nothing) -> 
-          Set.fold (insertmapOpSym id rsy) m1 ots1
+          Set.fold (insertmapOpSym type_Map i rsy) m1 ots1
        (Nothing, Just rsy) -> 
-          Set.fold (insertmapOpSym id rsy) m1 ots1
+          Set.fold (insertmapOpSym type_Map i rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
-       (Nothing,Nothing) -> Set.fold (unchangedOpSym id) m1 ots1
-    where
+       (Nothing,Nothing) -> Set.fold (unchangedOpSym type_Map i) m1 ots1
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
-    directOpMap :: Id -> TypeScheme -> (Set.Set TypeScheme, Result FunMap)
+  directOpMap :: IdMap -> Id -> OpInfo -> (Set.Set TypeScheme, Result FunMap)
                      -> (Set.Set TypeScheme, Result FunMap)
-    directOpMap id ot (ots,m) =
-      case Map.lookup (ASymbol (idToOpSymbol id ot)) rmap of
+  directOpMap type_Map i oi (ots,m) = let ot = opType oi in
+      case Map.lookup (ASymbol (idToOpSymbol i ot)) rmap of
         Just rsy -> 
-          (ots,insertmapOpSym id rsy ot m)
+          (ots,insertmapOpSym type_Map i rsy ot m)
         Nothing -> (Set.insert ot ots,m)
     -- map op symbol (id,ot) to raw symbol rsy
-    mapOpSym :: Id -> TypeScheme -> RawSymbol -> Result (Id, TypeScheme)
-    mapOpSym id ot rsy = case rsy of
+  mapOpSym :: IdMap -> Id -> TypeScheme -> RawSymbol 
+	     -> Result (Id, TypeScheme)
+  mapOpSym type_Map i ot rsy = let sc = mapTypeScheme type_Map ot in 
+      case rsy of
       ASymbol (Symbol id' (OpAsItemType ot')) ->
-        if compatibleOpTypes (mapTypeScheme type_Map ot) ot'
+        if compatibleOpTypes sc ot'
            then return (id', ot')
-           else pplain_error (id, ot)
-             (ptext "Operation symbol " <+> printText (idToOpSymbol id ot) 
+           else pplain_error (i, sc)
+             (ptext "Operation symbol " <+> printText (idToOpSymbol i sc) 
               <+> ptext "is mapped to type" <+>  printText ot'
               <+> ptext "but should be mapped to type" <+>  
-              printText (mapTypeScheme type_Map ot) 
+              printText sc 
              )
              nullPos
-      AnID id' -> return (id', ot)
-      AKindedId FunKind id' -> return (id', ot)
-      rsy -> pplain_error (id, ot)
-               (ptext "Operation symbol " <+> printText (idToOpSymbol id ot)
+      AnID id' -> return (id', sc)
+      AKindedId SK_op id' -> return (id', sc)
+      _ -> pplain_error (i, sc)
+               (ptext "Operation symbol " <+> printText (idToOpSymbol i sc)
                 <+> ptext" is mapped to symbol of wrong kind:" 
                 <+> printText rsy) 
                nullPos
     -- insert mapping of op symbol (id,ot) to raw symbol rsy into m
-    insertmapOpSym id rsy ot m = do  
+  insertmapOpSym type_Map i rsy ot m = do  
       m1 <- m        
-      (id',kind') <- mapOpSym id ot rsy
-      return (Map.insert (id,ot) (id',kind') m1)
+      (id',kind') <- mapOpSym type_Map i ot rsy
+      return (Map.insert (i, ot) (id',kind') m1)
     -- insert mapping of op symbol (id,ot) to itself into m
-    unchangedOpSym id ot m = do
+  unchangedOpSym type_Map i ot m = do
       m1 <- m
-      return (Map.insert (id, ot) (id, ot) m1)
+      return (Map.insert (i, ot) (i, mapTypeScheme type_Map ot) m1)
   -- map the ops in the source signature
-  mapOps type_Map op_Map id ots m = 
-    Set.fold mapOp m ots 
+  mapOps type_Map op_Map i ots m = 
+    foldr mapOp m (opInfos ots) 
     where
     mapOp ot m1 = 
-      let (id',ot') = fromMaybe (id,ot) $ mapFunSym type_Map op_Map (id,ot)
-      in Map.setInsert id' ot' m1
+	let sc = opType ot
+	    (id', sc') = Map.findWithDefault (i, mapTypeScheme type_Map sc)
+			 (i, opType ot) op_Map
+	    e = initialEnv {assumps = m1}
+	    in assumps (execState (addOpId id' sc' [] (NoOpDefn Op)) e)
 
 -- Some auxiliary functions for inducedFromToMorphism
 testMatch :: RawSymbolMap -> Symbol -> Symbol -> Bool
@@ -171,11 +181,11 @@ testMatch rmap sym1 sym2 =
   match1 rsy1 rsy2 b = b && ((sym1 `matchSymb` rsy1) <= (sym2 `matchSymb`rsy2))
 
 canBeMapped :: RawSymbolMap -> Symbol -> Symbol -> Bool
-canBeMapped rmap sym1@(Symbol {symbType = TypeAsItemType k1}) 
-                 sym2@(Symbol {symbType = TypeAsItemType k2}) = 
+canBeMapped rmap sym1@(Symbol {symbType = TypeAsItemType _k1}) 
+                 sym2@(Symbol {symbType = TypeAsItemType _k2}) = 
    testMatch rmap sym1 sym2
-canBeMapped rmap sym1@(Symbol {symbType = OpAsItemType ot1}) 
-                 sym2@(Symbol {symbType = OpAsItemType ot2}) = 
+canBeMapped rmap sym1@(Symbol {symbType = OpAsItemType _ot1}) 
+                 sym2@(Symbol {symbType = OpAsItemType _ot2}) = 
    testMatch rmap sym1 sym2
 canBeMapped _ _ _ = False
 
@@ -190,7 +200,7 @@ preservesName sym1 sym2 = symName sym1 == symName sym2
 extendSymbMap :: SymbolMap -> Symbol -> Symbol -> Maybe SymbolMap
 extendSymbMap akmap sym1 sym2 =
   if case symbType sym1 of 
-    TypeAsItemType k1 -> case symbType of 
+    TypeAsItemType k1 -> case symbType sym2 of 
        TypeAsItemType k2 -> rawKind k1 == rawKind k2
        _ -> False 
     OpAsItemType ot1 -> case symbType sym2 of
@@ -261,7 +271,7 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
   -- 1.1 ... is the renamed source signature contained in the target signature?
   --debug 3 ("mtarget mor1",mtarget mor1)
   --debug 3 ("sigma2",sigma2)
-  if isSubSig (mtarget mor1) sigma2 
+  if isSubEnv (mtarget mor1) sigma2 
    -- yes => we are done
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
@@ -275,13 +285,6 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
          ins2 sym1 (symset,card) = Map.listInsert card (sym1,symset)
          posmap2 = Map.foldWithKey ins2 Map.empty posmap1
          posmap = (posmap1,posmap2)
-     -- Are there symbols that cannot be mapped at all?
-     -- Then generate an error immediately
-     --debug 9 ("symdiff1",symset1 `Set.difference` symset2)
-     --debug 10 ("symdiff2",symset2 `Set.difference` symset1)
-     --debug 1 ("sigma1",sigma1)
-     --debug 2 ("sigma2",sigma2)
-     --debug 4 ("posmap",posmap)
      case Map.lookup (True,0) posmap2 of
        Nothing -> return ()
        Just syms -> pfatal_error
@@ -324,10 +327,7 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
        akmap' <- case extendSymbMap akmap sym1 sym2 of
          Nothing -> return Nothing
          -- constraint propagation
-         Just akmap1 ->
-           case posmap of
-             Nothing -> return Nothing
-             Just posmap2 -> tryToInduce sigma1 sigma2 akmap1 posmap2
+         Just akmap1 -> tryToInduce sigma1 sigma2 akmap1 posmap
        -- 6./7. uniqueness check
        case (akmap',akmapSoFar1) of
          (Nothing,Nothing) -> return Nothing
@@ -339,34 +339,6 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
               ptext "Map1" <+> printText smap1 $$
               ptext "Map2" <+> printText smap2) 
             ""
-
-{-
-Computing signature generated by a symbol set.
-
-Algorithm adapted from Bartek Klin's algorithm for CATS.
-
-Input:  symbol set "Syms"
-        signature "Sigma"
-Output: signature "Sigma1"<=Sigma.
-
-1. get a set "Sigma_symbols" of symbols in Sigma.
-2. if Syms is not a subset of Sigma_symbols, return error.
-3. let Sigma1 be an empty signature.
-4. for each symbol "Sym" in Syms do:
-        4.1. if Sym is a:
-                4.1.1. sort "S": add sort S to Sigma1.
-                4.1.2. total function "F" with profile "Fargs,Fres":
-                        4.1.2.1. add all sorts from Fargs to Sigma1.
-                        4.1.2.2. add sort Fres to Sigma1.
-                        4.1.2.3. add F with the needed profile to Sigma1.
-                4.1.3. partial function: as in 4.1.2.
-                4.1.4. predicate: as in 4.1.2., except that Fres is omitted.
-5. get a list "Sig_sub" of subsort relations in Sigma.
-6. for each pair "S1,S2" in Sig_sub do:
-        6.1. if S1,S2 are sorts in Sigma1, add "S1,S2" to sort relations in
-                Sigma1.
-7. return the inclusion of sigma1 into sigma.
--}
 
 generatedSign :: SymbolSet -> Env -> Result Morphism
 generatedSign sys sigma = do
@@ -384,7 +356,7 @@ generatedSign sys sigma = do
       sigma1 {typeMap = Map.insert (symName sy) (TypeInfo k [] [] 
 						NoTypeDefn) $ typeMap sigma1}
     OpAsItemType ot ->     -- 4.1.2./4.1.3.
-      execState (addOpId (symName sy) ot [] NoOpDefn) sigma1
+      execState (addOpId (symName sy) ot [] (NoOpDefn Op)) sigma1
     _ -> sigma1 
 
 cogeneratedSign :: SymbolSet -> Env -> Result Morphism
@@ -401,5 +373,5 @@ cogeneratedSign symset sigma = do
   revealSym sy symset1 = Set.delete sy symset1
 
 finalUnion :: Env -> Env -> Result Env
-finalUnion sigma1 sigma2 = return $ addSig sigma1 sigma2 
+finalUnion sigma1 sigma2 = merge sigma1 sigma2 
   -- ???  Finality check not yet implemented

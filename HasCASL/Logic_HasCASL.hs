@@ -35,6 +35,7 @@ import Common.Lib.State
 import HasCASL.Morphism
 import Common.PrettyPrint
 import HasCASL.ATC_HasCASL
+import HasCASL.SymbolMapAnalysis
 
 type HasCASL_Sublogics = ()
 
@@ -84,12 +85,13 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     basic_analysis HasCASL = Just basicAnalysis 
     signature_union HasCASL = merge
     empty_signature HasCASL = initialEnv
-    induced_from_to_morphism HasCASL _ e1 e2 = return $ mkMorphism e1 e2
-    induced_from_morphism HasCASL _ e = return $ ideMor e
+    induced_from_to_morphism HasCASL = inducedFromToMorphism
+    induced_from_morphism HasCASL = inducedFromMorphism
     morphism_union HasCASL m1 m2 = morphismUnion m1 m2
     inclusion HasCASL = inclusionMor
 
-    cogenerated_sign HasCASL _ e = return $ ideMor e
+    cogenerated_sign HasCASL = cogeneratedSign
+--    generated_sign HasCASL = generatedSign
 
     stat_symb_map_items HasCASL = statSymbMapItems
     stat_symb_items HasCASL = statSymbItems
@@ -100,7 +102,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     sym_of HasCASL = symOf -- \ _ -> Set.empty
     symmap_of HasCASL = morphismToSymbMap
 
-    final_union HasCASL e1 e2 = merge e1 e2
+    final_union HasCASL = finalUnion
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Term SymbItems SymbMapItems

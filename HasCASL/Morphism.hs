@@ -15,7 +15,9 @@ module HasCASL.Morphism where
 import HasCASL.Le
 import HasCASL.HToken
 import HasCASL.As
+import HasCASL.AsToLe
 import HasCASL.PrintAs
+import HasCASL.PrintLe
 import HasCASL.Unify
 import HasCASL.Merge
 import HasCASL.Symbol
@@ -119,9 +121,13 @@ symbKindToRaw Implicit     idt = AnID idt
 symbKindToRaw sk idt = AKindedId sk idt
 
 matchSymb :: Symbol -> RawSymbol -> Bool
-matchSymb x                            (ASymbol y)              =  x==y
-matchSymb (Symbol idt _)                (AnID di)               = idt==di
-matchSymb (Symbol idt _)        (AKindedId _ di)                = idt==di
+matchSymb x                               (ASymbol y)            =  x==y
+matchSymb (Symbol idt _)                  (AnID di)              = idt==di
+matchSymb (Symbol idt (TypeAsItemType _)) (AKindedId SK_type di) = idt==di
+matchSymb (Symbol idt (TypeAsItemType _)) (AKindedId SK_sort di) = idt==di
+matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_op di)   = idt==di
+matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_pred di) = idt==di
+matchSymb _                               _                      = False
 
 rawSymName :: RawSymbol -> Id
 rawSymName (ASymbol sym) = symName sym
@@ -199,9 +205,18 @@ compMor m1 m2 =
       }
    else Nothing
 
+isSubEnv :: Env -> Env -> Bool
+isSubEnv e1 e2 = diffEnv e1 e2 == initialEnv
 
 inclusionMor :: Env -> Env -> Result Morphism
-inclusionMor e1 e2 = return (mkMorphism e1 e2)
+inclusionMor e1 e2 =
+  if isSubEnv e1 e2
+     then return (embedMorphism e1 e2)
+     else pplain_error (embedMorphism initialEnv initialEnv)
+          (ptext "Attempt to construct inclusion between non-subsignatures:"
+           $$ ptext "Singature 1:" $$ printText e1
+           $$ ptext "Singature 2:" $$ printText e2)
+           nullPos
 
 embedMorphism :: Env -> Env -> Morphism
 embedMorphism a b =
@@ -263,9 +278,12 @@ legalMor m = let s = msource m
 		(Map.elems fs)
 
 morphismUnion :: Morphism -> Morphism -> Result Morphism
-morphismUnion m1 m2 = do s <- merge (msource m1) $ msource m2
-			 t <- merge (mtarget m1) $ mtarget m2
-			 return $ mkMorphism s t
+morphismUnion m1 m2 = 
+    do s <- merge (msource m1) $ msource m2
+       t <- merge (mtarget m1) $ mtarget m2
+       return (mkMorphism s t) 
+		  { typeIdMap = Map.union (typeIdMap m1) $ typeIdMap m2
+		  , funMap = Map.union (funMap m1) $ funMap m2 }
 
 morphismToSymbMap :: Morphism -> Map.Map Symbol Symbol
 morphismToSymbMap mor = 
