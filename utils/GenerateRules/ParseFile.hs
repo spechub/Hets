@@ -20,6 +20,7 @@ import DataP
 import CommandP
 import ParseLib2
 import Debug.Trace
+import Data.List
 
 type Import = String
 
@@ -35,14 +36,17 @@ parseInputFile fp inp = case (ds,is) of
 			xs -> case filter (\ (_,(_,rs)) -> null rs) xs of
 			      [] ->Left (fp++": Ambigous parse (data); no end")
 			      ((x,(_,"")):xs) -> 
-				  traceERR xs $ Right $ transformD x
+				   Right $ transformD x
 		--	_            -> Left (fp++": Ambigous parse (data)")
-	  dat = parse . skipUntilOff $ datadecl
+	  dat = parse . skipUntilOff $ (datadecl +++ newtypedecl)
 	  traceERR xxs = trace (concatMap (\ (xx,(_,rs)) -> concat (transformD xx)++","++rs++";") xxs)
 	  is = case papply (parse header2) (0,-1) ((0,0),inp) of
 	       []           -> Left (fp++": No parse (imports)")
 	       [(x,_)] -> Right x
 	       _            -> Left (fp++": Ambigous parse (imports)")
+
+transformD :: [Data] -> [String]
+transformD = map name 
 
 header2 = 
     do symbol "module"
@@ -50,10 +54,17 @@ header2 =
        opt (do skipNest (symbol "(") (symbol ")")
                return [])
        symbol "where"
-       is <- many imports
+       many (fmap (\_->()) command +++ comment)
+       is <- many imports2
        return (m:is)
-
-
-transformD :: [Data] -> [String]
-transformD = map name 
     
+imports2 = do symbol "import"
+	      q <- fmap (\x->if null x then x else x++" ") 
+		        (opt (symbol "qualified"))
+	      i <- cap
+	      asM <- opt (symbol "as" >> cap)
+	      h <- opt (symbol "hiding")
+	      hs <- opt (do skipNest (symbol "(") (symbol ")")
+			    return [])
+	      let asM' = if null asM then "" else (" as " ++ asM)
+	      return (q++i++asM')

@@ -101,8 +101,9 @@ parseHeader hs = case (parse header "" hs) of
 
 checkImports :: String -> [Import] -> IO [Import]  
 checkImports fn xs = do let imports = nub xs
-                        importsATC <- return $ map (\x-> "ATC."
-				       ++ (cutModuleName x)) imports
+                            importsATC = 
+				map (\x-> "ATC."
+				          ++ (cutModuleName x)) imports
                         bools <- mapM doesFileExist (map (\x->"ATC/"
 				 ++cutModuleName x++".der.hs") importsATC) 
                         return $ checkSpecialImports fn 
@@ -172,6 +173,3 @@ cutSuffix f = cutS "" f
               where 
 	      cutS s ('.':_) = s
 	      cutS s (x:xs)  = cutS (s++ [x]) xs
-
-
-

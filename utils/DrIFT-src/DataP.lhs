@@ -15,7 +15,7 @@ needs to be fixed.
 
 >data Statement = DataStmt | NewTypeStmt deriving (Eq,Show)
 >data Data = D {	name :: Name,		-- type name
->			constraints :: [(Class,Var)], 
+>			constraints :: [(Class,[Var])], 
 >			vars :: [Var],		-- Parameters
 >			body :: [Body],
 >			derives :: [Class],		-- derived classes
@@ -97,7 +97,7 @@ needs to be fixed.
 >	where
 >	constrs = fmap (\x -> [x]) one +++ 
 >		  bracket (symbol "(") (one `sepby` symbol ",") (symbol ")")
->	one = do{c <- constructorP; v <- variable; return (c,v)}
+>	one = do{c <- constructorP; vs <- many1 variable; return (c,vs)}
 
 >deriveP = do{symbol "deriving"; one +++ more}
 >	where

@@ -55,7 +55,7 @@ simpleInstance s d = hsep [text "instance"
 		, text s
 		, opt1 (texts (name d : vars d)) parenSpace id]
    where
-   constr = map (\(c,v) -> text c <+> text v) (constraints d) ++
+   constr = map (\(c,vs) -> text c <+> sep (map text vs)) (constraints d) ++
 		      map (\x -> text s <+> text x) (vars d)	
    parenSpace = parens . hcat . sepWith space
 
