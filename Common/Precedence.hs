@@ -42,9 +42,10 @@ comparePrecs ga isInfixOp ass arg op =
     rel -> case (begPlace arg, endPlace arg, isInfixOp) of
 	   (True, True, True) -> case rel of -- arg and op are infixes
 				 Lower -> True
-				 NoDirection -> arg == op && 
+				 NoDirection -> if arg == op then 
 					  isAssoc ass (assoc_annos ga) op
-				 _ -> False
+						  else True
+				 _ -> False 
 	   (True, True, False) -> False 
             -- infix arg binds weaker than non-infix op
 	   (False, True, False) -> ARight == ass

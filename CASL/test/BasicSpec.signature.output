@@ -1238,4 +1238,8 @@ Error (line 268, column 6) wrong number of places '__a'
 Error (line 268, column 9) unknown sort 'b'
 Error (line 266, column 20) unknown sort 'a'
 Error (line 266, column 16) unknown sort 'a'
-Error (line 261, column 21) expected further mixfix token: ["*","+",":","!","-"]
+Error (line 261, column 9) ambiguous mixfix term
+	__*__(i,__-__(q,__*__(j,p)))
+	__-__(__*__(i,q),__*__(j,p))
+	__*__(__*__(i,__-__(q,j)),p)
+	__*__(__-__(__*__(i,q),j),p)
