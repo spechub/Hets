@@ -225,7 +225,7 @@ then %def
       let s = s2 coproduct s3;
           %[ r is the PER identifying those elements of s coming from
    elements of s1 ]%
-          r = \x,y:S . exists z:S . z isIn s1 /\ inl (f z) =x /\ inr (g z) = y
+          r = \(x,y:S) . exists z:S . z isIn s1 /\ inl (f z) =x /\ inr (g z) = y
               as PER S
           %[ ... and then the coequalizer ]%
           q = coeq r
@@ -235,7 +235,7 @@ then %def
       (factor r,q o inl,q o inr,
       %[ the mediator first takes the coproduct mediator [h!k]
       %% and then the coequalizer mediator (mediate r [h!k]) ]%
-       \d,h,k:Med (Set S) (S->?S) . 
+       \(d,h,k:Med) (Set S) (S->?S) . 
          if h :: s2 --> d /\ k :: s3 --> d /\
             h o f || s1 = k o g || s1
             then mediate r [h!k] else undef())
@@ -448,7 +448,7 @@ then
     in    
     ((cod h1,ninl,einl,pgraph) as HomHom N E,
      (cod h2,ninr,einr,pgraph) as HomHom N E,
-     \g:Graph N E; h:HomHom N E; k:HomHom N E .
+     \(g:Graph N E, h:HomHom N E, k:HomHom N E) .
       (pgraph,
        nmed (nodeMap h,nodeMap k),
        emed (edgeMap h,edgemap k),
