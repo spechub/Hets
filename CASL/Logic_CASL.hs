@@ -11,8 +11,7 @@ Portability :  portable
    Also the instances for Syntax an Category.
 -}
 
-module CASL.Logic_CASL(CASL(CASL), CASLFORMULA, CASLSign, CASLMor, 
-		       CASLBasicSpec) where
+module CASL.Logic_CASL(module CASL.Logic_CASL, CASLSign, CASLMor) where
 
 import CASL.AS_Basic_CASL
 import CASL.LaTeX_CASL
@@ -52,27 +51,38 @@ tc_BASIC_SPEC, tc_SYMB_ITEMS, tc_SYMB_MAP_ITEMS, casl_SublocigsTc,
 	     sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc :: TyCon
 
 casl_SublocigsTc  = mkTyCon "CASL.Sublogics.CASL_Sublogics"
-tc_BASIC_SPEC     = mkTyCon "CASL.AS_Basic_CASL.Morphism.BASIC_SPEC"
-tc_SYMB_ITEMS     = mkTyCon "CASL.AS_Basic_CASL.Morphism.SYMB_ITEMS"  
-tc_SYMB_MAP_ITEMS = mkTyCon "CASL.AS_Basic_CASL.Morphism.SYMB_MAP_ITEMS" 
+tc_BASIC_SPEC     = mkTyCon "CASL.AS_Basic_CASL.BASIC_SPEC"
+tc_SYMB_ITEMS     = mkTyCon "CASL.AS_Basic_CASL.SYMB_ITEMS"  
+tc_SYMB_MAP_ITEMS = mkTyCon "CASL.AS_Basic_CASL.SYMB_MAP_ITEMS" 
 sentenceTc       = mkTyCon "CASL.AS_Basic_CASL.FORMULA"
 signTc           = mkTyCon "CASL.Morphism.Sign"
 morphismTc       = mkTyCon "CASL.Morphism.Morphism"
 symbolTc         = mkTyCon "CASL.Morphism.Symbol"
 rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
 
-instance Typeable (CASLBasicSpec) where
-  typeOf _ = mkAppTy tc_BASIC_SPEC []
+instance (Typeable b, Typeable s, Typeable f) 
+    => Typeable (BASIC_SPEC b s f) where
+  typeOf b = mkAppTy tc_BASIC_SPEC 
+	     [typeOf $ (undefined :: BASIC_SPEC b s f -> b) b,
+              typeOf $ (undefined :: BASIC_SPEC b s f -> s) b,
+              typeOf $ (undefined :: BASIC_SPEC b s f -> f) b]
 instance Typeable SYMB_ITEMS where
   typeOf _ = mkAppTy tc_SYMB_ITEMS []
 instance Typeable SYMB_MAP_ITEMS where
   typeOf _ = mkAppTy tc_SYMB_MAP_ITEMS []
-instance Typeable (CASLFORMULA) where
-  typeOf _ = mkAppTy sentenceTc []
-instance Typeable (CASLSign) where
-  typeOf _ = mkAppTy signTc []
-instance Typeable (CASLMor) where
-  typeOf _ = mkAppTy morphismTc []
+instance Typeable f => Typeable (FORMULA f) where
+  typeOf f = mkAppTy sentenceTc 
+	     [typeOf $ (undefined :: FORMULA f -> f) f]
+instance (Typeable f, Typeable e) => Typeable (Sign f e) where
+  typeOf s = mkAppTy signTc 
+	     [typeOf $ (undefined :: Sign f e -> f) s,
+              typeOf $ (undefined :: Sign f e -> e) s]
+instance (Typeable e, Typeable f, Typeable m) => 
+    Typeable (Morphism f e m) where
+  typeOf m = mkAppTy morphismTc
+	     [typeOf $ (undefined :: Morphism f e m -> f) m,
+              typeOf $ (undefined :: Morphism f e m -> e) m,
+              typeOf $ (undefined :: Morphism f e m -> m) m]
 instance Typeable Symbol where
   typeOf _ = mkAppTy symbolTc []
 instance Typeable RawSymbol where
