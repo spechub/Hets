@@ -63,12 +63,12 @@ ops 1: Pos = suc(0); %(Nat_1_as_Pos_def)%
 %% then %implies
 ops min, max : Nat * Nat -> Nat, comm, assoc
 forall x, m, n, r, s, t:Nat; p:Pos
-. (def m -? n) <=> m >= n %(Nat_sub_dom)%
-. (def m /? n) <=> m mod n = 0 %(Nat_divide_dom)%
-. (def m div n) <=> not n = 0 %(Nat_div_dom)%
-. (def m mod n) <=> not n = 0 %(Nat_mod_dom)%
-. (def m quot n) <=> not n = 0 %(Nat_quot_dom)%
-. (def m rem n) <=> not n = 0 %(Nat_rem_dom)%
+. def m -? n <=> m >= n %(Nat_sub_dom)%
+. def m /? n <=> m mod n = 0 %(Nat_divide_dom)%
+. def m div n <=> not n = 0 %(Nat_div_dom)%
+. def m mod n <=> not n = 0 %(Nat_mod_dom)%
+. def m quot n <=> not n = 0 %(Nat_quot_dom)%
+. def m rem n <=> not n = 0 %(Nat_rem_dom)%
 . (r + s) * t = r * t + s * t %(Nat_distr)%
 . max(m, 0) = m %(Nat_max_unit)%
 . min(m, 0) = 0 %(Nat_min_0)%
@@ -94,9 +94,9 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . (a - b) + (c - d) = (a + c) - (b + d) %(Int_add_def)%
 . (a - b) * (c - d) = (a * c + b * d) - (b * c + a * d)
 %(Int_mult_def)%
-. m - n = m + (- n) %(Int_sub_def)%
+. m - n = m + - n %(Int_sub_def)%
 . + m = m %(Int_pos_def)%
-. - a - b = b - a %(Int_neg_def)%
+. - (a - b) = b - a %(Int_neg_def)%
 . sign(m) = 0 when m = 0 else 1 when m > 0 else - 1
 %(Int_sign_def)%
 . m <= n <=> (n - m in Nat) %(Int_leq_def)%
@@ -106,7 +106,7 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . min(m, n) = m when m <= n else n %(Int_min_def)%
 . max(m, n) = n when m <= n else m %(Int_max_def)%
 . m < 0 => abs(m) = - m %(Int_abs_def)%
-. (- 1) ^ a = 1 when even(a) else - 1 %(Int_neg1_power_def)%
+. - 1 ^ a = 1 when even(a) else - 1 %(Int_neg1_power_def)%
 . m ^ a = sign(m) ^ a * abs(m) ^ a %(Int_power_def)%
 . even(m) <=> even(abs(m)) %(Int_even_def)%
 . odd(m) <=> not even(m) %(Int_odd_def)%
@@ -120,16 +120,16 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . m rem n = sign(m) * sign(n) * (abs(m) rem abs(n)) %(Int_rem_def)%
 %% then %implies
 forall m, n, r:Int; a, b:Nat
-. (def a -? b) => a -? b = a - b %(Int_Nat_sub_compat)%
+. def a -? b => a -? b = a - b %(Int_Nat_sub_compat)%
 . m = sign(m) * abs(m) %(Int_abs_decomp)%
 . odd(m) <=> odd(abs(m)) %(Int_odd_alt)%
 . m /? n = r <=> not n = 0 /\ n * r = n %(Int_divide_dom1)%
-. (def m /? n) <=> m mod n = 0 %(Int_divide_dom2)%
-. (def m mod n) <=> not n = 0 %(Int_mod_dom)%
+. def m /? n <=> m mod n = 0 %(Int_divide_dom2)%
+. def m mod n <=> not n = 0 %(Int_mod_dom)%
 . m mod n = m mod abs(n) %(Int_mod_abs)%
-. (def m div n) <=> not n = 0 %(Int_div_dom)%
-. (def m quot n) <=> not n = 0 %(Int_quot_dom)%
-. (def m rem n) <=> not n = 0 %(Int_rem_dom)%
+. def m div n <=> not n = 0 %(Int_div_dom)%
+. def m quot n <=> not n = 0 %(Int_quot_dom)%
+. def m rem n <=> not n = 0 %(Int_rem_dom)%
 . not n = 0 => m = (m quot n) * n + (m rem n) %(Int_quot_rem)%
 %% end
 generated type Rat ::= __/__(Int; Pos)
@@ -152,16 +152,16 @@ forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
 . x < y <=> x <= y /\ not x = y %(Rat_less_def)%
 . x > y <=> y < x %(Rat_greater_def)%
 . (i / p) + (j / q) = (i * q + j * p) / (p * q) %(Rat_add_def)%
-. x - y = x + (- y) %(Rat_sub_def)%
+. x - y = x + - y %(Rat_sub_def)%
 . (i / p) * (j / q) = (i * j) / (p * q) %(Rat_mult_def)%
 . not def x / 0 %(Rat_divide_def1)%
 . not y = 0 => (x / y = z <=> z = x * y) %(Rat_divide_def2)%
 . + x = x %(Rat_plus_def)%
-. - i / p = (- i) / p %(Rat_minus_def)%
+. - (i / p) = - i / p %(Rat_minus_def)%
 . abs(i / p) = abs(i) / p %(Rat_abs_def)%
 . x ^ 0 = 1 %(Rat_power_0)%
 . x ^ suc(n) = x * x ^ n %(Rat_power_suc)%
-. x ^ (- p) = 1 / (x ^ p) %(Rat_power_neg)%
+. x ^ - p = 1 / (x ^ p) %(Rat_power_neg)%
 . min(x, y) = x when x <= y else y %(Rat_min_def)%
 . max(x, y) = y when x <= y else x %(Rat_max_def)%
 %% then %implies
@@ -222,12 +222,13 @@ sorts s, abcdefghijlklmnopqrstuvwxyz, ABCDEFGHIJKLMONOPQRSTUVWXYZ,
       x0123456789,
       ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ, abc,
       a_b_c, ab2, ab_2_3_a, a', a'b''2
-op __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__
-       : s * s -> s %% NO-BRACKET-SIGNs
+op __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__ : s * s -> s
+   %% NO-BRACKET-SIGNs
 ops 'a', '\"', '\\', '\n', '\000', '\255', '\x00', '\xFF', '\o000',
     '\o377', '^', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
     'ß', '!', '§', '$', '&', '/', '(', ')', '=', '?', '\\'
-	: s %%characters
+	: s
+    %%characters
 ops 1, 2, 3, 4 : s;
     - : s -> s;
     __@@__, __exp__, __frac__ : s * s -> s
@@ -339,12 +340,12 @@ forall x, y, z:Boolean
 . False And True = False %(And_def2)%
 . True And False = False %(And_def3)%
 . True And True = True %(And_def4)%
-. x Or y = Not (Not x) And (Not y) %(Or_def)%
+. x Or y = Not (Not x And Not y) %(Or_def)%
 sort Char
 ops chr : Nat ->? Char;
     ord : Char -> Nat
 forall n:Nat; c:Char
-. (def chr(n)) <=> n <= 255 %(chr_dom)%
+. def chr(n) <=> n <= 255 %(chr_dom)%
 . chr(ord(c)) = c %(chr_def)%
 . n <= 255 => ord(chr(n)) = n %(ord_def)%
 %% definition of individual characters:
@@ -798,11 +799,13 @@ ops ' ': Char = '\032'; %(printable_32)%
     'ÿ': Char = '\255' %(printable_255)%
 preds isLetter(c :Char) <=> (ord('A') <= ord(c)
 			     /\ ord(c) <= ord('Z'))
-			    \/ (ord('a') <= ord(c) /\ ord(c) <= ord('z')); %(isLetter_def)%
-      isDigit(c :Char) <=> ord('0') <= ord(c)
-			   /\ ord(c) <= ord('9'); %(isDigit_def)%
+			    \/ (ord('a') <= ord(c) /\ ord(c) <= ord('z'));
+      %(isLetter_def)%
+      isDigit(c :Char) <=> ord('0') <= ord(c) /\ ord(c) <= ord('9');
+      %(isDigit_def)%
       isPrintable(c :Char) <=> (ord(' ') <= ord(c) /\ ord(c) <= ord('~'))
-			       \/ (ord(' ') <= ord(c) /\ ord(c) <= ord('ÿ')) %(isPrintable_def)%
+			       \/ (ord(' ') <= ord(c) /\ ord(c) <= ord('ÿ'))
+      %(isPrintable_def)%
 %% alternative definition of characters as '\o ppp',
 %% where p in {0,1,...,7} :
 ops '\o000': Char = '\000'; %(slash_o000)%

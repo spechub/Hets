@@ -1,5 +1,5 @@
-%prec( {a} < {b})%
-%prec( {b} < {c})%
-%prec( {c} < {a})%
-%left_assoc( a, b, c)%
-%right_assoc( b, a, d, d)%
+%prec({a} < {b})%
+%prec({b} < {c})%
+%prec({c} < {a})%
+%left_assoc(a, b, c)%
+%right_assoc(b, a, d, d)%

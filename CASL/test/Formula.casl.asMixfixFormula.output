@@ -30,5 +30,5 @@ a = b
 a => b => c => d
 d => c => b => a
 a <=> b
-(def d) => not c => b \/ c => a /\ b
+def d => not c => b \/ c => a /\ b
 m div n = r <=> exists s:Nat . m = n * r + s /\ s < n

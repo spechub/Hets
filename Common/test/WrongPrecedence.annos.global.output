@@ -1,8 +1,8 @@
-%prec( {a} < {b})%
-%prec( {a} < {c})%
-%prec( {b} < {c})%
-%left_assoc( a, b, c)%
-%right_assoc( d)%
+%prec({a} < {b})%
+%prec({a} < {c})%
+%prec({b} < {c})%
+%left_assoc(a, b, c)%
+%right_assoc(d)%
 Error (line 3, column 16) prec_anno conflict: c < a
 a,b
 b,c 'a'

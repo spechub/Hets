@@ -54,7 +54,7 @@ parse error at (line 17, column 1):
 unexpected end of input
 expecting "%%", "%{", "%(" or "%"
 
-%prec( {a__, __**__} < {p, 'e', 6})%
+%prec({a__, __**__} < {p, 'e', 6})%
 parse error at (line 19, column 7):
 unexpected end of input
 expecting ")%"
@@ -95,7 +95,7 @@ parse error at (line 31, column 1):
 unexpected end of input
 expecting "%%", "%{", "%(" or "%"
 
-%left_assoc( 'a', b, __<__)%
+%left_assoc('a', b, __<__)%
 parse error at (line 33, column 26):
 unexpected end of input
 expecting ")%"
