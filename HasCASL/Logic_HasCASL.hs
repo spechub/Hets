@@ -18,8 +18,6 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.AsToLe
 import CASL.AS_Basic_CASL(SYMB_ITEMS, SYMB_MAP_ITEMS)
-import HasCASL.PrintAs
-import CASL.Print_AS_Basic
 import HasCASL.ParseItem
 import HasCASL.Merge
 import CASL.SymbolParser
@@ -28,14 +26,17 @@ import Logic.Logic
 import Common.AnnoState(emptyAnnos)
 import Data.Dynamic
 import Control.Monad.State
-import Common.Lib.Map as Map
 import HasCASL.Morphism
+import qualified CASL.Sign
+import qualified CASL.Static
+import qualified CASL.Sublogics
+import qualified CASL.Logic_CASL
 
 type Sign = Env
-type HasCASL_Sublogics = ()
+type HasCASL_Sublogics = CASL.Sublogics.CASL_Sublogics
 type Sentence = Formula
-type Symbol = ()
-type RawSymbol = ()
+type Symbol = CASL.Sign.Symbol
+type RawSymbol = CASL.Sign.RawSymbol
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -85,9 +86,15 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
     basic_analysis HasCASL = Just ( \ (b, e, _) ->
 		let ne = snd $ (runState (anaBasicSpec b)) e 
 		    in return (ne, initialEnv, [])) 
+    stat_symb_map_items HasCASL = CASL.Static.statSymbMapItems
+    stat_symb_items HasCASL = CASL.Static.statSymbItems
+    symbol_to_raw HasCASL = CASL.Static.symbolToRaw
+    id_to_raw HasCASL = CASL.Static.idToRaw
+    matches HasCASL = CASL.Static.matches
+    sym_name HasCASL = CASL.Static.symName
+  
     signature_union HasCASL = merge
     empty_signature HasCASL = initialEnv
-    stat_symb_map_items HasCASL _ = return $ Map.single () ()
     induced_from_to_morphism HasCASL _ e1 e2 = return $ mkMorphism e1 e2
     induced_from_morphism HasCASL _ e = return $ ideMor e
     morphism_union HasCASL m1 m2 = morphismUnion m1 m2
@@ -96,4 +103,18 @@ instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism
-               Symbol RawSymbol ()
+               Symbol RawSymbol () where
+         sublogic_names HasCASL = CASL.Sublogics.sublogics_name
+         all_sublogics HasCASL = CASL.Sublogics.sublogics_all
+         is_in_symb_items HasCASL = CASL.Sublogics.in_symb_items
+         is_in_symb_map_items HasCASL = CASL.Sublogics.in_symb_map_items
+         is_in_symbol HasCASL = CASL.Sublogics.in_symbol
+
+         min_sublogic_symb_items HasCASL = CASL.Sublogics.sl_symb_items
+         min_sublogic_symb_map_items HasCASL = CASL.Sublogics.sl_symb_map_items
+         min_sublogic_symbol HasCASL = CASL.Sublogics.sl_symbol
+
+         proj_sublogic_symb_items HasCASL = CASL.Sublogics.pr_symb_items
+         proj_sublogic_symb_map_items HasCASL = CASL.Sublogics.pr_symb_map_items
+         proj_sublogic_symbol HasCASL = CASL.Sublogics.pr_symbol
+
