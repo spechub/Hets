@@ -108,7 +108,7 @@ tt : s ->? Unit %(op)% = \ (var x : s) . ()
 %% Sentences -------------------------------------------------------------
 program (pred tt : s) = \ (var x : s) . () %(pe_tt)%
 (fun __=__[t] : forall a : Type . a * a ->? Unit)
-  (var x : t, var y : t) %()%
+  (var x : t, var y : t)
 type Data1 (|-> Data1) ::=
                        a : -> __
                        b : -> __
@@ -124,7 +124,7 @@ type Data4 (|-> Data4) ::=
                        Cons41 : Data1 * Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
                        Cons42 : Data2 *
                                 Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1) %(ga_Data4)%
-(fun true : Unit) %()%
+(fun true : Unit)
 %% Diagnostics -----------------------------------------------------------
 *** Error 1.7, illegal universe class declaration 'Type'
 *** Hint 3.5, is type variable 't'

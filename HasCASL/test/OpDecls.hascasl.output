@@ -87,6 +87,6 @@ z : s %(op)% = (op __+__ : s * s -> s)
                  ((op x : s) as s, (op x : s) as t as s)
 %% Sentences -------------------------------------------------------------
 (op x : s) in s %(bla_label)%
-(op x : s) in t %()%
+(op x : s) in t
 %% Diagnostics -----------------------------------------------------------
 *** Error 9.7, expected tuple argument for '__+__'

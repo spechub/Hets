@@ -30,4 +30,4 @@ not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (op __=[s]__[s] : forall a : Type . a * a -> Unit)
-  (op a : s, op a : s) %()%
+  (op a : s, op a : s)

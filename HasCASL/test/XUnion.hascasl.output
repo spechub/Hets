@@ -52,7 +52,7 @@ true : Unit %(fun)%
   ((op __union__[E; N]
     : forall E : Type; N : Type . Graph N E * Graph N E -> Graph N E)
      (var g : Graph N E, var g' : Graph N E),
-   var g : Graph N E) %()%
+   var g : Graph N E)
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.7, is type variable 'S'
 *** Hint 1.9, is type variable 'N'

@@ -1,7 +1,7 @@
 [ (op __||__ : a * a -> a)((op __||__ : a *
                                         a -> a)((var b : a) : a, (var b : a) : a) : a,
                            (var b : a) : a) : a =
-      (var b : a) : a %()%,
+      (var b : a) : a,
   forall x:a; y:a; z:a
       . (op __||__ : a * a -> a)((var x : a) : a,
                                  (op __||__ : a * a -> a)((var y : a) : a,
@@ -2866,7 +2866,7 @@
                           op True : Boolean} %(ga_generated_Boolean)%,
   not (op True : Boolean) : Boolean =
           (op False : Boolean) : Boolean %(ga_disjoint_True_False)%,
-  true %()%,
+  true,
   forall x:s
       . not (pred p : ())
         /\ not (pred q : s)((var x : s) : s)
@@ -2878,21 +2878,21 @@
                       exists! x:s
                           . not (pred p : ())
                             /\ not (pred q : s)((var x : s) : s)
-                            /\ (pred q : s)((var x : s) : s) %()%,
-  forall x:s . def (op f : s ->? s)((var x : s) : s) : s %()%,
+                            /\ (pred q : s)((var x : s) : s),
+  forall x:s . def (op f : s ->? s)((var x : s) : s) : s,
   forall x:s
       . (op f : s ->? s)((var x : s) : s) : s =e=
-            (op g : s -> t)((var x : s) : s) : t %()%,
+            (op g : s -> t)((var x : s) : s) : t,
   forall x:s
       . (op f : s ->? s)((var x : s) : s) : s =
-            (op g : s -> t)((var x : s) : s) : t %()%,
-  forall x:s . (var r1 : t) : t in s %()%,
-  forall x:s . def (op g : s -> t)((var x : s) : s) : t : t %()%,
-  forall x:s . def (op g : s -> t)((var x : s) : s) : t : s %()%,
-  forall x:s . def (op f : s ->? s)((var x : s) : s) : s %()%,
-  forall x:s . def (op g : s -> t)((var x : s) : s) : t %()%,
-  forall x:s . (pred p : ()) %()%,
-  forall x:s . (pred q : s)((var x : s) : s) %()%,
+            (op g : s -> t)((var x : s) : s) : t,
+  forall x:s . (var r1 : t) : t in s,
+  forall x:s . def (op g : s -> t)((var x : s) : s) : t : t,
+  forall x:s . def (op g : s -> t)((var x : s) : s) : t : s,
+  forall x:s . def (op f : s ->? s)((var x : s) : s) : s,
+  forall x:s . def (op g : s -> t)((var x : s) : s) : t,
+  forall x:s . (pred p : ()),
+  forall x:s . (pred q : s)((var x : s) : s),
   forall x:s
       . def (op __+__ : s * s -> s)((op __*__ : s *
                                                 s -> s)((op __*__ : s * s -> s)((var x : s) : s,
@@ -2900,16 +2900,15 @@
                                                         (var z : s) : s) : s,
                                     (op __*__ : s * s -> s)((op __*__ : s * s -> s)((var z : s) : s,
                                                                                     (var y : s) : s) : s,
-                                                            (var x : s) : s) : s) : s %()%,
-  forall x:s . def (op {} : s) : s %()%,
-  forall x:s . def (op {__} : s -> s)((var x : s) : s) : s %()%,
-  true %()%,
+                                                            (var x : s) : s) : s) : s,
+  forall x:s . def (op {} : s) : s,
+  forall x:s . def (op {__} : s -> s)((var x : s) : s) : s, true,
   not (pred p : ())
   /\ not (pred q : s)((var x : s) : s)
-  /\ (pred q : s)((var x : s) : s) %()%,
+  /\ (pred q : s)((var x : s) : s),
   not (pred p : ())
   \/ not (pred q : s)((var x : s) : s)
-  \/ (pred q : s)((var x : s) : s) %()%,
+  \/ (pred q : s)((var x : s) : s),
   not (pred p : ())
   /\ not (pred q : s)((var x : s) : s)
   /\ (pred q : s)((var x : s) : s) =>
@@ -2918,7 +2917,7 @@
       \/ (pred q : s)((var x : s) : s) =>
           not (pred p : ())
           /\ not (pred q : s)((var x : s) : s)
-          /\ (pred q : s)((var x : s) : s) %()%,
+          /\ (pred q : s)((var x : s) : s),
   not (pred p : ())
   /\ not (pred q : s)((var x : s) : s)
   /\ (pred q : s)((var x : s) : s) if
@@ -2927,8 +2926,8 @@
       \/ (pred q : s)((var x : s) : s) if
       not (pred p : ())
       /\ not (pred q : s)((var x : s) : s)
-      /\ (pred q : s)((var x : s) : s) %()%,
-  false %()%,
+      /\ (pred q : s)((var x : s) : s),
+  false,
   generated{sort nat; op 0 : nat;
                       op succ : nat -> nat} %(ga_generated_nat)%,
   generated{sort Set; op Add : Data1 * Set -> Set;
@@ -2992,17 +2991,17 @@
   forall x, y:s; z:t
       . (pred c : s * s * s)((var x : s) : s, (var y : s) : s,
                              (var z : t) : t) <=>
-            false %()%,
+            false,
   forall x, y:s; z:t
       . (op c : s * s * s -> s)((var x : s) : s, (var y : s) : s,
                                 (var z : t) : t) : s =
-            (var a : s) : s %()%,
-  (op a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+            (var a : s) : s,
+  (op a : Data1) : Data1 = (var a : Data1) : Data1,
   forall x, y:s; z:t
       . (op c : s * s * s -> s)((var x : s) : s, (var y : s) : s,
                                 (var z : t) : t) : s =
-            (var a : s) : s %()%,
-  (op a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+            (var a : s) : s,
+  (op a : Data1) : Data1 = (var a : Data1) : Data1,
   forall x:s
       . (op c : s * s -> s)((var a : s) : s, (var x : s) : s) : s =
             (var x : s) : s %(ga_left_unit_c)%,
@@ -3041,12 +3040,11 @@
             (op c : s * s -> s)((op c : s * s -> s)((var x : s) : s,
                                                     (var y : s) : s) : s,
                                 (var z : s) : s) : s %(ga_assoc_c)%,
-  forall x:b . ((var x : b) : b in a) <=> true %()%,
+  forall x:b . ((var x : b) : b in a) <=> true,
   def (op __@@__ : Nat * Nat -> Nat)((var 1 : Nat) : Nat,
-                                     (var 2 : Nat) : Nat) : Nat %()%,
-  def <error> %()%, def <error> %()%, def <error> %()%,
-  def <error> %()%, def <error> %()%, def <error> %()%,
-  true %(The true formula)%, true %(and this)%,
+                                     (var 2 : Nat) : Nat) : Nat,
+  def <error>, def <error>, def <error>, def <error>, def <error>,
+  def <error>, true %(The true formula)%, true %(and this)%,
   (var a : Data1) : Data1 = (var a : Data1) : Data1 %(f1)%,
   (var a : Data1) : Data1 = (var a : Data1) : Data1 %(f1)%,
   (var a : Data1) : Data1 = (var a : Data1) : Data1 %(a1)%,
@@ -3174,16 +3172,16 @@
                                                         (var X4 : t) : t,
                                                         (var X5 : t) : t) : s) : t =
             (var X5 : t) : t %(ga_selector_d)%,
-  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
-  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
-  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
-  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1,
   forall a:t; a, b:s
-      . (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+      . (var a : Data1) : Data1 = (var a : Data1) : Data1,
   forall a:t; a, b:s
-      . (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
-  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
-  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+      . (var a : Data1) : Data1 = (var a : Data1) : Data1,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1,
   forall i, j:Int; p, q:Pos
       . (op __/__ : Rat * Rat ->? Rat)((op __/__ : Int *
                                                    Pos -> Rat)((var i : Int) : Int,
@@ -3638,8 +3636,7 @@
       (op suc : Nat -> Nat)((var 0 : Nat) : Nat) : Nat %(Nat_1_as_Pos_def)%,
   forall p:Nat
       . ((var p : Nat) : Nat in Pos) <=>
-            (pred __>__ : Int * Int)((var p : Nat) : Nat,
-                                     (var 0 : Int) : Int) %()%,
+            (pred __>__ : Int * Int)((var p : Nat) : Nat, (var 0 : Int) : Int),
   forall m, n, r, s:Nat
       . (pred __<=__ : Int * Int)((var 0 : Int) : Int,
                                   (var n : Nat) : Nat) %(Nat_leq_def1)%,
