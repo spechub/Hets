@@ -38,16 +38,20 @@ import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
 import Haskell.Logic_Haskell
 import CspCASL.Logic_CspCASL
+import Isabelle.Logic_Isabelle
 import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2Haskell
+import Comorphisms.CASL2IsabelleHOL
 import qualified Common.Lib.Map as Map
 import CASL.ATC_CASL
 
 logicList :: [AnyLogic]
-logicList = [Logic CASL, Logic HasCASL, Logic Haskell, Logic CspCASL]
+logicList = [Logic CASL, Logic HasCASL, Logic Haskell, Logic CspCASL,
+             Logic Isabelle]
 
 inclusionList :: [AnyComorphism]
-inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2Haskell]
+inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2Haskell,
+                 Comorphism CASL2IsabelleHOL]
 
 comorphismList :: [AnyComorphism]
 comorphismList = inclusionList ++ []

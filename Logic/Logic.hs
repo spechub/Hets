@@ -172,7 +172,7 @@ class (Category lid sign morphism, Eq sentence, Show sentence, Ord sentence,
          -- sentence translation
       map_sen :: lid -> morphism -> sentence -> Result sentence
          -- parsing of sentences
-      parse_sentence :: lid -> sign -> String -> Result sentence
+      parse_sentence :: lid -> Maybe (sign -> String -> Result sentence)
            -- is a term parser needed as well?
       sym_of :: lid -> sign -> Set symbol
       symmap_of :: lid -> morphism -> EndoMap symbol
@@ -219,6 +219,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                            -- the first output sign united with the input sign
                            -- should yield the second output sign
                            -- the second output sign is the accumulated sign
+         -- Shouldn't the following deliver Maybes???
          sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
          stat_symb_map_items :: 
 	     lid -> [symb_map_items] -> Result (EndoMap raw_symbol)

@@ -11,11 +11,6 @@ Portability :  portable
    Also the instances for Syntax an Category.
 -}
 
-{-   todo:
-     - writing real functions
-
--}
-
 module CASL.Logic_CASL(CASL(CASL)) where
 
 import CASL.AS_Basic_CASL
@@ -81,10 +76,11 @@ instance LatticeWithTop CASL_Sublogics where
 
 instance Sentences CASL FORMULA () Sign Morphism Symbol where
       map_sen CASL _morphism s = return s -- ???
-      parse_sentence CASL _sign str = 
+      parse_sentence CASL = Just
+        ( \ _sign str ->
 	  case runParser (aFormula << eof) emptyAnnos "" str of
 	  Right x -> return $ item x
-	  Left err -> fail $ show err
+	  Left err -> fail $ show err )
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName

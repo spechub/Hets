@@ -96,6 +96,9 @@ instance Sentences HasCASL Term () Env Morphism Symbol where
     sym_name HasCASL = symName
     sym_of HasCASL = symOf -- \ _ -> Set.empty
     symmap_of HasCASL = morphismToSymbMap
+    parse_sentence HasCASL = Nothing
+    provers HasCASL = [] 
+    cons_checkers HasCASL = []
 
 instance StaticAnalysis HasCASL BasicSpec Term ()
                SymbItems SymbMapItems

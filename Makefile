@@ -100,14 +100,16 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 Haskell/Hatchet/HsSyn.hs \
                 Haskell/Hatchet/Representation.hs\
                 Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
-                Haskell/Hatchet/Env.hs 
+                Haskell/Hatchet/Env.hs \
+                Isabelle/IsaSign.hs
 
 gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
                    ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
                    ATC/AS_Structured.hs ATC/AS_Architecture.hs \
                    ATC/DevGraph.hs \
                    CASL/ATC_CASL.hs Haskell/ATC_Haskell.hs \
-                   HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs 
+                   HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs \
+                   ATC/IsaSign.hs
 
 generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
 
