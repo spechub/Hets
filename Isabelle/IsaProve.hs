@@ -124,8 +124,7 @@ isaProve checkCons thName (sig,axs) goals = do
       showGoals = concat $ map showGoal disGoals
       getFN = reverse . fst . break (=='/') . reverse
       showGoal goal = (("theorem "++) .  (++"\noops\n") . showSen) goal
-      showTheory = "theory " ++ getFN thName ++ " = " 
-                   ++ thyPath
+      showTheory = thyPath ++ "theory " ++ getFN thName ++ " = " 
                    ++ showPretty sig "\n\naxioms\n" 
                    ++ showAxs ++ "\n" ++ showLemma ++ "\n\n" ++ showGoals
                    ++ "\nend\n"
