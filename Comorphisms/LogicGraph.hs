@@ -52,9 +52,7 @@ import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
 #ifdef PROGRAMATICA
 import Comorphisms.HasCASL2Haskell
-{-
 import Comorphisms.Haskell2IsabelleHOLCF
--}
 #endif
 
 
@@ -83,11 +81,8 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
 		 Comorphism CASL2Modal, 
 #ifdef PROGRAMATICA
 		 Comorphism HasCASL2Haskell,
-{-
 		 Comorphism Haskell2IsabelleHOLCF,
--}
 #endif
-
                  Comorphism Modal2CASL, 
                  Comorphism CASL2CoCASL, Comorphism CoCASL2IsabelleHOL, 
                  Comorphism HasCASL2IsabelleHOL,
