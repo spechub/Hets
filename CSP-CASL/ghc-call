@@ -1,2 +1,2 @@
-ghc --make -fglasgow-exts -Wall -i..:../CASL:../fgl:../parsec:../pretty -package data Main.hs
+ghc --make -fglasgow-exts -Wall -o c3po -i..:../CASL:../fgl:../parsec:../pretty -package data Main.hs
 #MixfixParser.hs 
