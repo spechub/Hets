@@ -80,6 +80,8 @@ instance Logic lid sublogics
           basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree 
          where
+           sourceLogic (IdComorphism lid) = lid
+           targetLogic (IdComorphism lid) = lid
            source_sublogic _ = top
            target_sublogic _ = top
            map_sign _ = \sigma -> Just(sigma,[])
