@@ -1,66 +1,97 @@
 {-| 
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Sonja Groening, Uni Bremen 2002-2004
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  portable
-
-   todo:
-     - write difference function for ModuleInfos
-     - include Prelude (or undefined) during type inference
+Portability :  non-portable 
 
 -}
 
 module Haskell.HatAna where
 
 import Common.AS_Annotation 
-import PropPosSyntax
+import Common.Result 
+import Common.GlobalAnnotations
+import PropPosSyntax hiding (ModuleName, Id)
+import TiModule
+import HsName hiding (HsName)
+import Names
+import SourceNames
+import Relations
+import WorkModule
+import ScopeModule
+import OrigTiMonad -- changed to export TiEnv!
+import TiTypes
+import TiInstanceDB
+import TiClasses
+import PPfeInstances
+import PNT
+import Lift
+import qualified NewPrettyPrint as HatPretty
+import Haskell.HatParser
+import Common.PrettyPrint
+import Common.Lib.Pretty
+import Common.ATerm.Lib
+import Data.Dynamic
 
-hatAna :: HsDecls -> ModuleInfo -> (ModuleInfo, [Named AHsDecl])
-hatAna = hatAna2 preludeModInfo 
+type Sign = TiEnv PNT
 
-hatAna2 :: ModuleInfo -> [HsDecl] -> ModuleInfo 
-	-> (ModuleInfo, [Named AHsDecl])
-hatAna2 prelude hs sig = 
-    let ahs = map toAHsDecl $ fixFunBinds $ cvrtHsDeclList hs
-        aMod = AHsModule (moduleName sig) Nothing [] ahs
-        (moduleEnv,
-   	 dataConEnv,
-   	 newClassHierarchy,
-   	 newKindInfoTable,
-   	 moduleRenamed,
-   	 moduleSynonyms) = tiModule aMod (joinModuleInfo sig prelude)
-  	modInfo = sig {     varAssumps = moduleEnv, 
-    			    dconsAssumps = dataConEnv, 
-    			    classHierarchy = newClassHierarchy,
-    			    kinds = newKindInfoTable,
-    			    tyconsMembers = getTyconsMembers moduleRenamed,
-    			    infixDecls = getInfixDecls moduleRenamed,
-    			    synonyms = moduleSynonyms }
-	in (diffModInfo modInfo prelude, extractSentences moduleRenamed)
+type Sentence = HsDeclI PNT
 
-instance Eq ModuleInfo where
-  m1 == m2 = 
-      (varAssumps m1, dconsAssumps m1, 
-       classHierarchy m1, tyconsMembers m1, infixDecls m1,
-       synonyms m1) == (varAssumps m2, dconsAssumps m2, 
-       classHierarchy m2, tyconsMembers m2, infixDecls m2,
-       synonyms m2)
+instance ATermConvertible (TiEnv PNT)
+instance ATermConvertible (HsDeclI PNT)
+instance Typeable (TiEnv PNT)
+instance Typeable (HsDeclI PNT)
 
-diffModInfo :: ModuleInfo -> ModuleInfo -> ModuleInfo
-diffModInfo mod1 mod2
-    = ModuleInfo {
-            moduleName = AModule mn,
-            varAssumps = comb varAssumps minusFM,
-            dconsAssumps = comb dconsAssumps minusFM,
-            kinds = comb kinds minusFM,
-            tyconsMembers = comb tyconsMembers (\\),
-            classHierarchy = comb classHierarchy minusFM,
-            synonyms = comb synonyms (\\),
-            infixDecls = comb infixDecls (\\)
-    }
-    where comb field joiningMethod = joiningMethod (field mod1) (field mod2)
-          mn = (\(AModule x) -> x) (moduleName mod1)
+instance Eq (TiEnv PNT) where
+    _ == _ = False
+
+instance Ord (HsDeclI PNT) where
+    s1 <= s2 = s1 == s2
+
+instance PrettyPrint (HsDeclI PNT) where
+     printText0 _ = text . HatPretty.pp
+
+instance PrintLaTeX (HsDeclI PNT) where
+     printLatex0 = printText0
+
+instance Show (TiEnv PNT) where
+    show _ = ""
+
+instance PrettyPrint (TiEnv PNT) where
+    printText0 _ _ = text ""
+
+instance PrintLaTeX (TiEnv PNT) where
+     printLatex0 = printText0
+
+extendTiEnv :: TiEnv PNT -> [TiInstanceDB.Instance PNT]
+            -> [TiClasses.TAssump PNT] 
+            -> [TiTypes.Assump PNT] -> TiEnv PNT
+extendTiEnv e is ts vs = 
+      case lift $ extendts vs $
+           extendIEnv is $ 
+           extendkts ts $ inEnv e $ getEnv of
+      Just x -> x
+      _ -> error "extendTiEnv"
+
+emptyEnv :: TiEnv PNT
+emptyEnv = case lift getEnv of 
+                            Just e -> e
+                            _ -> error "emptyEnv"
+
+hatAna :: (HsDecls, TiEnv PNT, GlobalAnnos) -> 
+          Result (HsDecls, TiEnv PNT, TiEnv PNT, [Named (HsDeclI PNT)])
+hatAna (hs@(HsDecls ds), e, _) = 
+   case scopeModule (mkWM (emptyRel, emptyRel)
+                                :: WorkModuleI QName (SN Id), 
+                              [] :: [(ModuleName, Rel (SN Id) (Ent (SN Id)))])
+                 $ HsModule loc0 (SN (MainModule "") loc0)
+                   Nothing [] ds
+   of (sm, _) -> do 
+        (HsModule _ _ _ _  fs :>: (is, (ts, vs))) <- lift $ inEnv e $ tcModule 
+                      (sm :: HsModuleI (SN ModuleName) PNT [HsDeclI PNT])
+        return (hs, extendTiEnv emptyEnv is ts vs, 
+                              extendTiEnv e is ts vs, map emptyName fs)
 

@@ -27,16 +27,9 @@ import Common.AS_Annotation
 import Common.ATerm.Conversion
 
 -- import Haskell.ATC_Haskell      -- generated ATerm conversions
--- import Haskell.PrintModuleInfo
 import Haskell.HatParser                 (HsDecls,
                                           hatParser)
-{- import Haskell.HatAna
-import Haskell.Hatchet.MultiModuleBasics (ModuleInfo,
-                                          emptyModuleInfo,
-					  joinModuleInfo)
-import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl)
-import Haskell.Hatchet.HsSyn    (HsDecl)
--}
+import Haskell.HatAna
 
 import Logic.Logic             
 
@@ -61,7 +54,6 @@ instance Language Haskell where
   \featuring static typing, higher-order functions, polymorphism, type classes and monadic effects\ 
   \See http://www.haskell.org"
 
-type Sign = ()
 type Morphism = ()
 
 instance Category Haskell Sign Morphism where
@@ -81,8 +73,6 @@ instance Syntax Haskell HsDecls
 
 type Haskell_Sublogics = ()
 
-type Sentence = ()
-
 type Symbol = ()
 type RawSymbol = ()
 
@@ -99,7 +89,10 @@ instance StaticAnalysis Haskell HsDecls
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism 
-               Symbol RawSymbol 
+               Symbol RawSymbol where
+    basic_analysis Haskell = Just hatAna 
+    empty_signature Haskell = emptyEnv
+    final_union Haskell = signature_union Haskell
 
 instance Logic Haskell Haskell_Sublogics
                HsDecls Sentence SYMB_ITEMS SYMB_MAP_ITEMS
