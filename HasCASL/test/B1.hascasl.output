@@ -1,0 +1,42 @@
+a -> < (e,g) = b
+b -> = (c,e)
+c ->
+d -> < a = Type
+e ->
+f ->
+g ->
+h -> = (a,b)
+j -> = {_ < t}
+Type Constructors
+[__] -> a ->b
+a__b -> a ->b
+t -> a
+x -> ({_ < t},b,a)
+y -> Type
+Type Variables x
+Assumptions
+x -> (s,y)
+Warning (3,14) redundant universe class
+Error (3,7) illegal universe class declaration
+Error (4,7) illegal universe class declaration
+Error (6,7) illegal universe class declaration
+Warning (8,11) implicit declaration of superclass 'a'
+Warning (8,7) redeclared class 'd'
+Error (10,24) undeclared class 'h'
+Warning (10,7) redeclared class 'a'
+Error (10,12) cyclic class relation via 'd'
+Warning (12,7) redeclared class 'a'
+Error (12,11) cyclic class relation via 'd'
+Warning (15,7) redeclared class 'a'
+Error (15,11) cyclic class relation via 'a'
+Warning (17,7) redeclared class 'a'
+Warning (18,7) redeclared class 'b'
+Error (18,14) cyclic class relation via 'd'
+Warning (20,7) redeclared class 'd'
+Error (20,11) cyclic class relation via 'd'
+Warning (25,7) redeclared class 'h'
+Error (25,7) inconsistent redefinition of 'h'
+Error (33,9) unidentified type 's'
+Warning (35,5) shadowing type 'x'
+Warning (37,5) shadowing type 'x'
+Error (39,6) non-matching kind arity
