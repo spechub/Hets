@@ -112,7 +112,7 @@ generateAxioms sig =
         indentity=mkId [mkSimpleId "_indentity"]
         membership=mkId[mkSimpleId "_membership"]
         rel2Map=Rel.toMap(sortRel sig)
-        mapOp=Set.toList(opMap sig)
+        --mapOp=Set.toList(opMap sig)
         rel2List=Rel.toList(sortRel sig)
 
 

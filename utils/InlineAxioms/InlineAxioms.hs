@@ -67,6 +67,10 @@ deletePos s = reverse (deletePos1 s "")
   deletePos1 "" acc = acc
   deletePos1 ('[':'i':'n':'l':'i':'n':'e':'A':'x':'i':'o':'m':'s':s1) acc =
     deletePos1 (skipBra s1) (']':'[':acc)
+  deletePos1 ('[':'"':'i':'n':'l':'i':'n':'e':'A':'x':'i':'o':'m':'s':s1) acc =
+    deletePos1 (skipBra s1) (']':'[':acc)
+  deletePos1 ('[':'(':'l':'i':'n':'e':' ':s1) acc =
+    deletePos1 (skipBra s1) (']':'[':acc)
   deletePos1 (c:s1) acc = deletePos1 s1 (c:acc)
   skipBra "" = ""
   skipBra (']':s2) = s2
