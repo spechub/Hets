@@ -9,6 +9,9 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  non-portable (does -cpp on __GLASGOW_HASKELL__)
 
+A wrapper module that gives "Data.FiniteMap" the same interface as
+"Common.Lib.Map"; but some functions from Common.Lib.Map are not
+implemented.  
 -}
 
 module Common.DFiniteMap (
