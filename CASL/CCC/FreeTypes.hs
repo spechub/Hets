@@ -295,7 +295,7 @@ checkFreeType (osig,osens) m fsn
                                                          (map leading_Term_Predication)) $ map snd sym_fs)
                                 Nothing -> error "axiom group"
          leadingPatterns1 = snd $ unzip leadingSymPatterns
-    --     leadingPatterns = trace (showPretty leadingPatterns1 (tmp1 ++ "\n" ++ tmp2 ++ "\n" ++ tmp ++ "\n")) leadingPatterns1    --leading Patterns
+   --      leadingPatterns = trace (showPretty leadingPatterns1 (tmp ++ "\n" ++ tmp1 ++ "\n" ++ tmp2 ++ "\n")) leadingPatterns1    --leading Patterns
          leadingPatterns = trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1    --leading Patterns
          isApp t = case t of
                      Application _ _ _->True
@@ -457,6 +457,10 @@ elemF(x,Nil) -> False;
 elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
 
 -}      
+         idStrT id = map (\s-> case s of
+                                 '[' -> '|'
+                                 ']' -> '|'
+                                 _ -> s) $ idStr id
          oldfs1 = map sentence (filter is_user_or_sort_gen osens)
          oldfs = trace (showPretty oldfs1 "old formulas") oldfs1               -- old formulas
          old_axioms = filter (\f->case f of                      
@@ -483,34 +487,34 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
          --  OP_SYMB -> Signature of CiME
          opStr o_s = case o_s of                -- kontext analyse
                        Qual_op_name op_n (Total_op_type a_sorts _ _) _ -> case (length a_sorts) of 
-                                                                            0 -> (idStr op_n) ++ " : constant"
-                                                                            1 -> (idStr op_n) ++ " : unary"
-                                                                            2 -> (idStr op_n) ++ " : binary"
-                                                                            3 -> (idStr op_n) ++ " : 3"
-                                                                            4 -> (idStr op_n) ++ " : 4"
-                                                                            5 -> (idStr op_n) ++ " : 5"
-                                                                            6 -> (idStr op_n) ++ " : 6"
+                                                                            0 -> (idStrT op_n) ++ " : constant"
+                                                                            1 -> (idStrT op_n) ++ " : unary"
+                                                                            2 -> (idStrT op_n) ++ " : binary"
+                                                                            3 -> (idStrT op_n) ++ " : 3"
+                                                                            4 -> (idStrT op_n) ++ " : 4"
+                                                                            5 -> (idStrT op_n) ++ " : 5"
+                                                                            6 -> (idStrT op_n) ++ " : 6"
                                                                             _ -> error "Termination_Signature_OpS"
                        Qual_op_name op_n (Partial_op_type a_sorts _ _) _ -> case (length a_sorts) of 
-                                                                            0 -> (idStr op_n) ++ " : constant"
-                                                                            1 -> (idStr op_n) ++ " : unary"
-                                                                            2 -> (idStr op_n) ++ " : binary"
-                                                                            3 -> (idStr op_n) ++ " : 3"
-                                                                            4 -> (idStr op_n) ++ " : 4"
-                                                                            5 -> (idStr op_n) ++ " : 5"
-                                                                            6 -> (idStr op_n) ++ " : 6"
+                                                                            0 -> (idStrT op_n) ++ " : constant"
+                                                                            1 -> (idStrT op_n) ++ " : unary"
+                                                                            2 -> (idStrT op_n) ++ " : binary"
+                                                                            3 -> (idStrT op_n) ++ " : 3"
+                                                                            4 -> (idStrT op_n) ++ " : 4"
+                                                                            5 -> (idStrT op_n) ++ " : 5"
+                                                                            6 -> (idStrT op_n) ++ " : 6"
                                                                             _ -> error "Termination_Signature_OpS"
                        _ -> error "Termination_Signature_OpS"
          --  PRED_SYMB -> Signature of CiME
          predStr p_s = case p_s of
                        Qual_pred_name pred_n (Pred_type sts _) _ -> case (length sts) of
-                                                                      0 -> (idStr pred_n) ++ " : constant"
-                                                                      1 -> (idStr pred_n) ++ " : unary"
-                                                                      2 -> (idStr pred_n) ++ " : binary"
-                                                                      3 -> (idStr pred_n) ++ " : 3"
-                                                                      4 -> (idStr pred_n) ++ " : 4"
-                                                                      5 -> (idStr pred_n) ++ " : 5"
-                                                                      6 -> (idStr pred_n) ++ " : 6"
+                                                                      0 -> (idStrT pred_n) ++ " : constant"
+                                                                      1 -> (idStrT pred_n) ++ " : unary"
+                                                                      2 -> (idStrT pred_n) ++ " : binary"
+                                                                      3 -> (idStrT pred_n) ++ " : 3"
+                                                                      4 -> (idStrT pred_n) ++ " : 4"
+                                                                      5 -> (idStrT pred_n) ++ " : 5"
+                                                                      6 -> (idStrT pred_n) ++ " : 6"
                                                                       _ -> error "Termination_Signature_PredS"
                        _ -> error "Termination_Signature_PredS"
          noDouble [] = []
@@ -578,8 +582,8 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
          --  transform a term to string
          termStr t = case (term t) of
                        (Qual_var var _ _) -> tokStr var
-                       (Application (Qual_op_name opn _ _) ts _) -> if null ts then (idStr opn)
-                                                                    else ((idStr opn) ++ "(" ++ 
+                       (Application (Qual_op_name opn _ _) ts _) -> if null ts then (idStrT opn)
+                                                                    else ((idStrT opn) ++ "(" ++ 
                                                                          (tail $ concat $ map (\s->"," ++ s) $ map termStr ts) ++ ")")
                        (Conditional t1 f t2 _) -> ("when_else(" ++ (termStr t1) ++ "," ++ (t_f_str f) ++  "," ++ (termStr t2)  ++
                                                   ")")
@@ -589,8 +593,8 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                  | null axioms = str
                  | otherwise = axiomStr (tail axioms) (str ++ (f_str $ (head axioms)) ++ "; ")                    
          proof = unsafePerformIO (do
-              --   cim <- newChildProcess "/home/xinga/bin/cime" []
-                 cim <- newChildProcess "cime" []
+                 cim <- newChildProcess "/home/xinga/bin/cime" []
+            --     cim <- newChildProcess "cime" []
                  sendMsg cim ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
                               (opSignStr (noDouble (o_constructors ++ constructors ++ o_op_Syms ++ op_Syms)) "") ++
                               (predSignStr (noDouble (o_pred_Syms ++ pred_Syms)) "") ++ "\";")
@@ -605,16 +609,17 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                  sendMsg cim "#quit;"
                  res <-rP cim
                  return res)
-{-       --  print infomation 
-         tmp = ("let axioms = TRS F X \"eq(t1,t1) -> True; " ++ 
-                                       "eq(t1,t2) -> False; " ++ 
-                                       "when_else(t1,True,t2) -> t1; " ++ 
-                                       "when_else(t1,False,t2) -> t2; " ++ 
-                                (axiomStr (old_axioms ++ axioms) "") ++"\";")
-         tmp1 = ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " 
-                 ++ (signStr (sigComb (o_constructors ++ constructors) (o_l_Syms ++ l_Syms)) "") ++ "\";")
-         tmp2 = ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_axioms ++ axioms) "") ++ "\";")
--}                              
+       --  print infomation 
+         tmp  = ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
+                              (opSignStr (noDouble (o_constructors ++ constructors ++ o_op_Syms ++ op_Syms)) "") ++
+                              (predSignStr (noDouble (o_pred_Syms ++ pred_Syms)) "") ++ "\";") 
+         tmp1 = ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_axioms ++ axioms) "") ++ "\";")        
+         tmp2 = ("let axioms = TRS F X \"eq(t1,t1) -> True; " ++ 
+                                                     "eq(t1,t2) -> False; " ++ 
+                                                     "when_else(t1,True,t2) -> t1; " ++ 
+                                                     "when_else(t1,False,t2) -> t2; " ++
+                                (axiomStr (old_axioms ++ axioms) "") ++"\";")    
+                              
 #endif
 
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
