@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats:fgl
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm:fgl/Data/Graph:fgl/Data/Graph/Inductive:fgl/Data/Graph/Inductive/Aux:fgl/Data/Graph/Inductive/Monad:fgl/Data/Graph/Inductive/Query
-CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet:$(PFE_PATHS)
+CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet:Taxonomy:$(PFE_PATHS)
 
 ## set ghc imports properly for your system
 LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
