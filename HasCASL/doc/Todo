@@ -23,7 +23,10 @@ sentences that imply the usual equations.
 The selector positions can not be reconstructed from the AltDefn
 (Le.hs) entries, thus equations should be generated!
 
-Maybe the whole morphism (or the typeIdMap) should be stored with datatypes
+Maybe the whole morphism (or the typeIdMap) should be stored with
+datatypes, because (illegal) renaming of other components to a
+generated type will change the type (even if the generated types are
+renamed as well!)
 
 
 
@@ -62,7 +65,7 @@ misc:
 hiding of sub- or supertypes is a problem, with respect to dependent
 operations. (SymbolMapAnalysis.hs)
 
-non-empty maps for id morphisms don't work yet
+empty maps for id morphisms don't work yet
 
 
 
