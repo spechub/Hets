@@ -97,8 +97,9 @@ endif
 
 objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
 
-drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
+drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
+    Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs \
     $(gendrifted_files)
 
 genrule_header_files = $(wildcard ATC/*.header.hs)
