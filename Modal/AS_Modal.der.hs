@@ -15,7 +15,6 @@ module Modal.AS_Modal where
 
 import Common.Id
 import Common.AS_Annotation 
-import Common.GlobalAnnotations
 import CASL.AS_Basic_CASL
 import CASL.Print_AS_Basic
 import Common.Keywords
@@ -55,11 +54,16 @@ data M_FORMULA =
                -- pos: "<>"
              deriving (Eq, Show)
 
-modalityS, flexibleS, rigidS, termS :: String 
+modalityS, modalitiesS, flexibleS, rigidS, termS, emptyS :: String 
 modalityS = "modality"
+modalitiesS = init modalityS ++ "ies"
 flexibleS = "flexible"
 rigidS = "rigid"
 termS = "term"
+emptyS = "empty" 
+
+modal_reserved_words :: [String]
+modal_reserved_words = termS:rigidS:flexibleS:modalityS:[modalitiesS]
 
 instance PrettyPrint M_BASIC_ITEM where
     printText0 ga (Simple_mod_decl is _) = 
@@ -87,6 +91,6 @@ instance PrettyPrint M_FORMULA where
 
 instance PrettyPrint MODALITY where
     printText0 ga (Simple_mod ident) = 
-	if tokStr ident == "empty" then empty
+	if tokStr ident == emptyS then empty
 	   else printText0 ga ident
     printText0 ga (Term_mod t) = printText0 ga t

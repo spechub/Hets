@@ -1,6 +1,6 @@
 {-
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Wiebke Herding and Uni Bremen 2003
+Copyright   :  (c) Till Mossakowski, Wiebke Herding, C. Maeder, Uni Bremen 2004
 Licence     :  All rights reserved.
 
 Maintainer  :  hets@tzi.de
@@ -10,36 +10,71 @@ Portability :  portable
   Parser for modal logic extension of CASL
 -}
 
-
 module Modal.Parse_AS where
+
 import Common.AnnoState
 import Common.Id
-import Common.Token
 import Common.Keywords
 import Common.Lexer
+import Common.Token
 import Modal.AS_Modal
-import Common.AS_Annotation
 import Common.Lib.Parsec
+import CASL.Formula
+import CASL.AS_Basic_CASL
+import CASL.OpItem
 
-
-boxKey, diamondKey :: AParser Token
-boxKey = asKey boxS
-diamondKey = asKey diamondS
-
-modalFormula :: [String] -> AParser M_FORMULA
-modalFormula k = 
-	      do c <- boxKey
-	         f <- primFormula k
-		 return (Box None f [tokPos c])
+modalFormula :: AParser M_FORMULA
+modalFormula = 
+	      do o <- oBracketT
+	         m <- modality
+		 c <- cBracketT
+		 f <- formula
+		 return (Box m f $ toPos o [] c)
               <|> 
-	      do c <- diamondKey
-		 f <- primFormula k
-		 return (Diamond None f [tokPos c])
+	      do o <- asSeparator "<"
+	         m <- modality
+		 c <- asSeparator ">"
+		 f <- formula 
+		 return (Diamond m f $ toPos o [] c)
 
-instance Parsable M_FORMULA where
+modality :: AParser MODALITY
+modality = do t <- term 
+	      let r = return $ Term_mod t
+	      case t of 
+		     Mixfix_token tm -> 
+			 if head (tokStr tm) `elem` caslLetters
+			    then return $ Simple_mod tm
+			    else r
+		     _ -> r
+           <|> return (Simple_mod $ mkSimpleId emptyS)
+ 
+instance AParsable M_FORMULA where
   aparser = modalFormula
 
+rigor :: AParser RIGOR
+rigor = (asKey rigidS >> return Rigid) 
+	<|> (asKey flexibleS >> return Flexible)
 
+rigidSigItems :: AParser M_SIG_ITEM
+rigidSigItems = 
+    do r <- rigor
+       do itemList opS opItem (Rigid_op_items r)
+	 <|> itemList predS predItem (Rigid_pred_items r)
 
+instance AParsable M_SIG_ITEM where
+  aparser = rigidSigItems
 
+mKey :: AParser Token
+mKey = asKey modalityS <|> asKey modalityS
 
+mBasic :: AParser M_BASIC_ITEM
+mBasic = 
+    do c <- mKey
+       auxItemList startKeyword [c] simpleId Simple_mod_decl
+    <|>
+    do t <- asKey termS
+       c <- mKey
+       auxItemList startKeyword [t, c] sortId Term_mod_decl
+		
+instance AParsable M_BASIC_ITEM where
+  aparser = mBasic
