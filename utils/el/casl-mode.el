@@ -90,14 +90,14 @@
    '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\(\\sw\\|,\\)+\\]\\s-*\\)?\\(,\\|$\\|<\\|;\\|=\\)\\(\\sw\\|=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
      (2 casl-other-name-face keep t))
    ;; Basic signature: op ,pred and var name
-   '("\\(^\\|\\bops?\\|\\bpreds?\\|\\bvars?\\)\\s-+\\([^.]\\(\\w\\|\\s_\\)*\\)\\s-*\\(\(.*\)\\s-*\\)?\\(:\\??\\|<=>\\)[^:]*"
+   '("\\(^\\|\\bops?\\|\\bpreds?\\|\\bvars?\\)\\s-+\\([^.]\\(\\sw\\|\\s_\\|\\s(\\|\\s)\\)*\\)\\s-*\\(\(.*\)\\)?\\s-*\\(:\\??\\|<=>\\)[^:\n]*;?[ \t]*$"
      (2 casl-other-name-face keep t))
    ;; type name
-   '("\\s-+\\(\\sw+\\)[ \t\n]*::=.*"
-     (1 casl-other-name-face keep t))
+   '("\\s-+\\(\\sw+\\)[ \t\n]*::?=\\s-*\\(\\sw*\\).*"
+     (1 casl-other-name-face keep t) (2 casl-other-name-face keep t)  )
    ;; constructor
-   '("|\\s-*\\(\\sw+\\)[ \t\n|(]*"
-     (1 casl-other-name-face keep t))
+   '("\\(\\sw+\\)?\\s-*|\\s-*\\(\\sw+\\)\\s-*[|(]?\\([ \t]*\\|$\\)"
+     (1 casl-other-name-face keep t) (2 casl-other-name-face keep t))
    ;; in ()1
    '("\(\\(\\(\\sw\\|,\\)*\\)\\s-*:\\??[^)]*\)"
      (1 casl-other-name-face keep t))
@@ -109,7 +109,7 @@
      (1 casl-other-name-face keep t) (3 casl-other-name-face keep t) 
      (4 casl-other-name-face keep t) (6 casl-other-name-face keep t)) 
    ;; reserved keyword
-   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|if\\|local\\|not\\|reveal\\|spec\\|then\\|to\\|unit\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
+   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
      (2 casl-keyword-face keep t))
    '("[,;]" (0 casl-black-komma-face t t))
   )	
@@ -122,17 +122,9 @@
 	  ))
   "Syntax highlighting of String and Char") 
 
- ;; Comment
-(defconst casl-font-lock-specialcomment
-  (append casl-font-lock-string
-	  (list '("\\(%%.*$\\)" (0 casl-comment-face t t))
-		'("%{[^}]*}%[ \t\n]*" (0 casl-comment-face t t))
-		))
-  "Special Comment")
-
 ;; Alternativ for Annotation
 (defconst casl-font-lock-annotations
-  (append casl-font-lock-specialcomment
+  (append casl-font-lock-string
 	  (list 
 	   ;; %word(...)\n
 	   '("%\\sw+\([^%\n]+\)$" (0 casl-annotation-face t t))
@@ -145,9 +137,17 @@
 	   ))
   "Annotation")
 
+ ;; Comment
+(defconst casl-font-lock-specialcomment
+  (append casl-font-lock-annotations
+	  (list '("\\(%%.*$\\)" (0 casl-comment-face t t))
+		'("\\(%{[^}%]*}%\\)[ \t\n]*" (1 casl-comment-face t t))
+		))
+  "Special Comment")
+
 ;; Define default highlighting level
 ;; (defvar casl-font-lock-syntax-highligthing casl-font-lock-keywords
-(defvar casl-font-lock-syntax-highligthing casl-font-lock-annotations
+(defvar casl-font-lock-syntax-highligthing casl-font-lock-specialcomment
   "Default syntax highlighting level in CASL mode")
 
 ;; ====================== S Y N T A X   T A B L E ==================
@@ -179,7 +179,7 @@
     (mapcar (lambda (x)
 	      (modify-syntax-entry x "_" table))
 	    ;; Some of these are actually OK by default.
-	    "!#$&*+.,/:<=>?@^|~")
+	    "!#$&*+.,/\\\\:<=>?@^|~")
     (setq casl-mode-syntax-table table))
   )
 
@@ -267,9 +267,26 @@
     (buffer-enable-undo (current-buffer))
     (pop-to-buffer outbuf)
     (insert casl-hets-program " " casl-hets-file-name "\n")
-    (call-process shell-file-name nil t nil "-c" 
-			 (concat casl-hets-program " -g " casl-hets-file-name))
-      ))
+    (let ((status 
+	   (call-process shell-file-name nil t nil "-c" 
+			 (concat casl-hets-program " -g " casl-hets-file-name))))
+      (cond ((numberp status)
+	     (compilation-handle-exit 'exit status
+				      (if (zerop status)
+					  "finished\n"
+					(format "exited abnormally with code %d\n" status))))
+	    ((stringp status)
+	     (compilation-handle-exit 'signal status
+				      (concat status "\n")))
+	    (t
+	     (compilation-handle-exit 'bizarre status status)))
+      (if (zerop status)
+	  (setq casl-error-list nil)
+	(setq casl-error-list nil)
+	(casl-parse-error)
+	(message "%s errors have been found." (length casl-error-list)))
+      (pop-to-buffer old-buffer)
+      )))
 
 
 ;; also functions with old hets-program?
