@@ -26,8 +26,6 @@ introduce symbol functor (additionally to signature symbol functor)
 
 module CASL.SymbolMapAnalysis where
 
-import Debug.Trace
-
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
@@ -108,8 +106,8 @@ Output: morphims "Mrph": Sigma1 -> "Sigma2".
 -}
 
 inducedFromMorphism :: (PrettyPrint e, PrettyPrint f) =>
-           RawSymbolMap -> Sign f e -> Result (Morphism f e m)
-inducedFromMorphism rmap (sigma::Sign f e) = do
+           Ext f e m -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
+inducedFromMorphism extEm rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
   -- first check: do all source raw symbols match with source signature?
   let syms = symOf sigma
@@ -164,7 +162,8 @@ inducedFromMorphism rmap (sigma::Sign f e) = do
                    mtarget = sigma',
                    sort_map = sort_Map,
                    fun_map = op_Map,
-                   pred_map = pred_Map})
+                   pred_map = pred_Map,
+		   extended_map = extEm sigma sigma' })
   where
   -- the sorts of the source signature 
   sortsSigma = sortSet sigma
@@ -564,10 +563,11 @@ restrictOps sym1 sym2 posmap =
 
 -- the main function
 inducedFromToMorphism :: (PrettyPrint f, PrettyPrint e) =>
-                RawSymbolMap -> Sign f e -> Sign f e -> Result (Morphism f e m)
-inducedFromToMorphism rmap sigma1 sigma2 = do
+			 Ext f e m -> RawSymbolMap -> Sign f e -> Sign f e 
+		      -> Result (Morphism f e m)
+inducedFromToMorphism extEm rmap sigma1 sigma2 = do
   -- 1. use rmap to get a renaming...
-  mor1 <- inducedFromMorphism rmap sigma1
+  mor1 <- inducedFromMorphism extEm rmap sigma1
   -- 1.1 ... is the renamed source signature contained in the target signature?
   if isSubSig (mtarget mor1) sigma2 
    -- yes => we are done
@@ -597,7 +597,7 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
                  Nothing -> fail "No signature morphism for symbol map\n(try with option -v3 to get some hints)"
                  Just x -> return x
      -- 9./10. compute and return the resulting morphism
-     symbMapToMorphism sigma1 sigma2 smap1
+     symbMapToMorphism extEm sigma1 sigma2 smap1
      where
      -- 4. recursive depth first function
      -- ambiguous map leads to fatal error (similar to exception)
@@ -701,15 +701,14 @@ Output: signature "Sigma1"<=Sigma.
 7. return the inclusion of sigma1 into sigma.
 -}
 
-generatedSign :: 
-                SymbolSet -> Sign f e -> Result (Morphism f e m)
-generatedSign sys sigma = do
+generatedSign :: Ext f e m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
+generatedSign extEm sys sigma = do
   if not (sys `Set.subset` symset)   -- 2.
    then pfatal_error 
          (ptext "Revealing: The following symbols" 
           <+> printText(sys Set.\\ symset)
           <+> ptext "are not in the signature") nullPos
-   else return $ embedMorphism sigma2 sigma    -- 7.
+   else return $ embedMorphism extEm sigma2 sigma    -- 7.
   where
   symset = symOf sigma   -- 1. 
   sigma1 = Set.fold revealSym (sigma { sortSet = Set.empty
@@ -749,15 +748,15 @@ Output: signature "Sigma1"<=Sigma.
 5. return the inclusion of sigma1 into sigma.
 -}
 
-cogeneratedSign :: 
-                SymbolSet -> Sign f e -> Result (Morphism f e m)
-cogeneratedSign symset sigma = do
+cogeneratedSign :: Ext f e m -> SymbolSet -> Sign f e 
+		-> Result (Morphism f e m)
+cogeneratedSign extEm symset sigma = do
   if not (symset `Set.subset` symset0)   -- 2.
    then pfatal_error 
          (ptext "Hiding: The following symbols" 
           <+> printText(symset Set.\\ symset0)
           <+> ptext "are not in the signature") nullPos
-   else generatedSign symset1 sigma -- 4./5.
+   else generatedSign extEm symset1 sigma -- 4./5.
   where
   symset0 = symOf sigma   -- 1. 
   symset1 = Set.fold revealSym symset0 symset  -- 3. 

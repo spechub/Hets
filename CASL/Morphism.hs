@@ -26,7 +26,6 @@ import Common.Result
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
-import Data.Dynamic
 import Control.Monad
 import Common.PrettyPrint
 import Common.Lib.Pretty
@@ -111,9 +110,11 @@ mapPredSym sMap fMap (i,pt) = do
   id' <- Map.lookup (i,pt) fMap
   return (id',mapPredType sMap pt)
 
-embedMorphism ::  
-                 Sign f e -> Sign f e -> Morphism f e m
-embedMorphism a b =
+
+type Ext f e m = Sign f e -> Sign f e -> m
+
+embedMorphism :: Ext f e m -> Sign f e -> Sign f e -> Morphism f e m
+embedMorphism extEm a b =
     Morphism 
     { msource = a 
     , mtarget = b
@@ -129,36 +130,8 @@ embedMorphism a b =
                       (\t -> Map.insert (i,t) i) m ts)
                  Map.empty
                  (predMap a)
+    , extended_map = extEm a b
     }
-
--- Typeable instance
-tc_BASIC_SPEC, tc_SYMB_ITEMS, tc_SYMB_MAP_ITEMS,
-	     sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc :: TyCon
-tc_BASIC_SPEC     = mkTyCon "CASL.AS_Basic_CASL.Morphism.BASIC_SPEC"
-tc_SYMB_ITEMS     = mkTyCon "CASL.AS_Basic_CASL.Morphism.SYMB_ITEMS"  
-tc_SYMB_MAP_ITEMS = mkTyCon "CASL.AS_Basic_CASL.Morphism.SYMB_MAP_ITEMS" 
-sentenceTc       = mkTyCon "CASL.AS_Basic_CASL.FORMULA"
-signTc           = mkTyCon "CASL.Morphism.Sign"
-morphismTc       = mkTyCon "CASL.Morphism.Morphism"
-symbolTc         = mkTyCon "CASL.Morphism.Symbol"
-rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
-
-instance Typeable (BASIC_SPEC b s f) where
-  typeOf _ = mkAppTy tc_BASIC_SPEC []
-instance Typeable SYMB_ITEMS where
-  typeOf _ = mkAppTy tc_SYMB_ITEMS []
-instance Typeable SYMB_MAP_ITEMS where
-  typeOf _ = mkAppTy tc_SYMB_MAP_ITEMS []
-instance Typeable (FORMULA f) where
-  typeOf _ = mkAppTy sentenceTc []
-instance Typeable (Sign f e) where
-  typeOf _ = mkAppTy signTc []
-instance Typeable (Morphism f e m) where
-  typeOf _ = mkAppTy morphismTc []
-instance Typeable Symbol where
-  typeOf _ = mkAppTy symbolTc []
-instance Typeable RawSymbol where
-  typeOf _ = mkAppTy rawSymbolTc []
 
 
 idToSortSymbol :: Id -> Symbol
@@ -264,8 +237,9 @@ typedSymbKindToRaw k idt t =
      (showPretty idt ":" ++ showPretty t 
       "does not have kind" ++showPretty k "") nullPos
 
-symbMapToMorphism ::  Sign f e -> Sign f e -> SymbolMap -> Result (Morphism f e m)
-symbMapToMorphism sigma1 sigma2 smap = do
+symbMapToMorphism :: Ext f e m -> Sign f e -> Sign f e 
+		  -> SymbolMap -> Result (Morphism f e m)
+symbMapToMorphism extEm sigma1 sigma2 smap = do
   sort_map1 <- Set.fold mapMSort (return Map.empty) (sortSet sigma1)
   fun_map1 <- Map.foldWithKey mapFun (return Map.empty)  (opMap sigma1)
   pred_map1 <- Map.foldWithKey mapPred (return Map.empty) (predMap sigma1)
@@ -273,7 +247,8 @@ symbMapToMorphism sigma1 sigma2 smap = do
              mtarget = sigma2,
              sort_map = sort_map1,
              fun_map = fun_map1,
-             pred_map = pred_map1})
+             pred_map = pred_map1,
+	     extended_map = extEm sigma1 sigma2})
   where
   mapMSort s m = do
     m1 <- m 
@@ -347,32 +322,20 @@ matches (Symbol idt (PredAsItemType _))     (AKindedId PredKind di) = idt==di
 matches _                            _                        = False
 
 
-idMor ::  Sign f e -> Morphism f e m
-idMor sigma =
-  Morphism { 
-    msource = sigma,
-    mtarget = sigma,
-    sort_map = Set.fold (\s -> Map.insert s s) Map.empty (sortSet sigma),
-    fun_map =
-      Map.foldWithKey 
-        (\i ts m -> Set.fold (\t -> Map.insert (i, t) (i, opKind t)) m ts) 
-        Map.empty (opMap sigma),
-    pred_map = 
-      Map.foldWithKey
-        (\i ts m -> Set.fold (\t -> Map.insert (i, t) i) m ts) 
-        Map.empty (predMap sigma)
-            }
+idMor :: Ext f e m -> Sign f e -> Morphism f e m
+idMor extEm sigma = embedMorphism extEm sigma sigma
 
-compose :: (Eq e, Eq f) => 
-	   Morphism f e m -> Morphism f e m -> Maybe (Morphism f e m)
-compose mor1 mor2 = 
+compose :: (Eq e, Eq f) => (m -> m -> m)
+	-> Morphism f e m -> Morphism f e m -> Maybe (Morphism f e m)
+compose comp mor1 mor2 = 
   if mtarget mor1 == msource mor2 
     then Just $ Morphism {
       msource = msource mor1,
       mtarget = mtarget mor2,
       sort_map = Map.map (mapSort (sort_map mor2)) (sort_map mor1),
       fun_map = Map.mapWithKey mapOpId (fun_map mor1),
-      pred_map = Map.mapWithKey mapPredId (pred_map mor1)
+      pred_map = Map.mapWithKey mapPredId (pred_map mor1),
+      extended_map = comp (extended_map mor1) (extended_map mor2)
       }
     else Nothing
   where
@@ -434,19 +397,19 @@ legalMor mor =
         smap = sort_map mor
 
 sigInclusion :: (PrettyPrint e, PrettyPrint f) => 
-                Sign f e -> Sign f e -> Result (Morphism f e m)
-sigInclusion sigma1 sigma2 = 
+                Ext f e m -> Sign f e -> Sign f e -> Result (Morphism f e m)
+sigInclusion extEm sigma1 sigma2 = 
   if isSubSig sigma1 sigma2 
-     then return (embedMorphism sigma1 sigma2)
+     then return (embedMorphism extEm sigma1 sigma2)
      else pfatal_error 
           (ptext "Attempt to construct inclusion between non-subsignatures:"
            $$ ptext "Singature 1:" $$ printText sigma1
            $$ ptext "Singature 2:" $$ printText sigma2)
            nullPos
 
-morphismUnion ::  
-                 Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
-morphismUnion mor1 mor2 = do
+morphismUnion :: (m -> m -> m)  
+              -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
+morphismUnion uniteM mor1 mor2 = do
   let src = msource mor1 `addSig` msource mor2
       tar = mtarget mor1 `addSig` mtarget mor2
       smap = sort_map mor1 `Map.union` sort_map mor2
@@ -479,7 +442,9 @@ morphismUnion mor1 mor2 = do
                       mtarget = tar,
                       sort_map = smap, 
                       fun_map = omap, 
-                      pred_map = pmap }
+                      pred_map = pmap,
+		      extended_map = uniteM (extended_map mor1) $
+				     extended_map mor2}
 
 instance PrettyPrint Symbol where
   printText0 ga sy = 

@@ -31,6 +31,7 @@ import CASL.Sign
 import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
+import Data.Dynamic
 
 data CASL = CASL deriving Show
 
@@ -41,12 +42,48 @@ type CASLSign = Sign () ()
 type CASLMor = Morphism () () ()
 type CASLFORMULA = FORMULA ()
 
+dummy :: a -> b -> ()
+dummy _ _ = ()
+
+-- Typeable instance
+tc_BASIC_SPEC, tc_SYMB_ITEMS, tc_SYMB_MAP_ITEMS, casl_SublocigsTc,
+	     sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc :: TyCon
+
+casl_SublocigsTc  = mkTyCon "CASL.Sublogics.CASL_Sublogics"
+tc_BASIC_SPEC     = mkTyCon "CASL.AS_Basic_CASL.Morphism.BASIC_SPEC"
+tc_SYMB_ITEMS     = mkTyCon "CASL.AS_Basic_CASL.Morphism.SYMB_ITEMS"  
+tc_SYMB_MAP_ITEMS = mkTyCon "CASL.AS_Basic_CASL.Morphism.SYMB_MAP_ITEMS" 
+sentenceTc       = mkTyCon "CASL.AS_Basic_CASL.FORMULA"
+signTc           = mkTyCon "CASL.Morphism.Sign"
+morphismTc       = mkTyCon "CASL.Morphism.Morphism"
+symbolTc         = mkTyCon "CASL.Morphism.Symbol"
+rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
+
+instance Typeable (CASLBasicSpec) where
+  typeOf _ = mkAppTy tc_BASIC_SPEC []
+instance Typeable SYMB_ITEMS where
+  typeOf _ = mkAppTy tc_SYMB_ITEMS []
+instance Typeable SYMB_MAP_ITEMS where
+  typeOf _ = mkAppTy tc_SYMB_MAP_ITEMS []
+instance Typeable (CASLFORMULA) where
+  typeOf _ = mkAppTy sentenceTc []
+instance Typeable (CASLSign) where
+  typeOf _ = mkAppTy signTc []
+instance Typeable (CASLMor) where
+  typeOf _ = mkAppTy morphismTc []
+instance Typeable Symbol where
+  typeOf _ = mkAppTy symbolTc []
+instance Typeable RawSymbol where
+  typeOf _ = mkAppTy rawSymbolTc []
+instance Typeable CASL_Sublogics where
+  typeOf _ = mkAppTy casl_SublocigsTc []
+
 instance Category CASL CASLSign CASLMor  
     where
          -- ide :: id -> object -> morphism
-	 ide CASL = idMor
+	 ide CASL = idMor dummy
          -- comp :: id -> morphism -> morphism -> Maybe morphism
-	 comp CASL = compose
+	 comp CASL = compose (const id)
          -- dom, cod :: id -> morphism -> object
 	 dom CASL = msource
 	 cod CASL = mtarget
@@ -54,7 +91,6 @@ instance Category CASL CASLSign CASLMor
 	 legal_obj CASL = legalSign
          -- legal_mor :: id -> morphism -> Bool
 	 legal_mor CASL = legalMor
-
 
 -- abstract syntax, parsing (and printing)
 
@@ -112,14 +148,14 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          empty_signature CASL = emptySign ()
          signature_union CASL sigma1 sigma2 = 
            return $ addSig sigma1 sigma2
-         morphism_union CASL = morphismUnion
+         morphism_union CASL = morphismUnion (const id)
 	 final_union CASL = finalUnion
          is_subsig CASL = isSubSig
-         inclusion CASL = sigInclusion
-         cogenerated_sign CASL = cogeneratedSign
-         generated_sign CASL = generatedSign
-         induced_from_morphism CASL = inducedFromMorphism
-         induced_from_to_morphism CASL = inducedFromToMorphism
+         inclusion CASL = sigInclusion dummy
+         cogenerated_sign CASL = cogeneratedSign dummy
+         generated_sign CASL = generatedSign dummy
+         induced_from_morphism CASL = inducedFromMorphism dummy
+         induced_from_to_morphism CASL = inducedFromToMorphism dummy
 
 instance Logic CASL CASL.Sublogic.CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
@@ -152,5 +188,5 @@ instance Logic CASL CASL.Sublogic.CASL_Sublogics
          proj_sublogic_symb_map_items CASL = CASL.Sublogic.pr_symb_map_items
          proj_sublogic_sign CASL = CASL.Sublogic.pr_sign
          proj_sublogic_morphism CASL = CASL.Sublogic.pr_morphism
-         proj_sublogic_epsilon CASL = CASL.Sublogic.pr_epsilon
+         proj_sublogic_epsilon CASL = CASL.Sublogic.pr_epsilon dummy
          proj_sublogic_symbol CASL = CASL.Sublogic.pr_symbol

@@ -965,16 +965,9 @@ pr_fun_map_entry l (_,t) (_,b) =
 -- compute a morphism that consists of the original signature
 -- and the projected signature
 --
-pr_epsilon :: CASL_Sublogics -> Sign f e -> Morphism f e m
-pr_epsilon l1 s = let
+pr_epsilon :: Ext f e m -> CASL_Sublogics -> Sign f e -> Morphism f e m
+pr_epsilon extEm l1 s = let
                     l = adjust_logic l1
                     new = pr_sign l s
                   in
-                    embedMorphism new s
-
--- Typeable instance
-casl_SublocigsTc :: TyCon
-casl_SublocigsTc = mkTyCon "CASL.Sublogics.CASL_Sublogics"
-
-instance Typeable CASL_Sublogics where
-  typeOf _ = mkAppTy casl_SublocigsTc []
+                    embedMorphism extEm new s
