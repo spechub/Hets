@@ -156,3 +156,6 @@ Data1)
   . def x*y*z+z*y*x   
   . def {} 
   . def {x}
+
+axioms true ;exists! x:s.e;
+forall x:s.e

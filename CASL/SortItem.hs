@@ -24,6 +24,7 @@ import Maybe
 import Parsec
 import Token
 import Formula
+import List(delete)
 
 pluralKeyword s = makeToken (keyWord (string s <++> option "" (string "s")))
 
@@ -49,8 +50,10 @@ optSemi = bind (,) (option Nothing (fmap Just semiT)) lineAnnos
 -- skip to leading annotation and read it
 annos = skip >> many (anno << skip)
 
--- remove quantifier exist from casl_reserved_word!
-isStartKeyword s = s `elem` "}":"]":dotS:cDot:casl_reserved_words
+-- remove quantifier exists from casl_reserved_word 
+-- because it may start a formula in "axiom/axioms ... \;"
+isStartKeyword s = s `elem` "}":"]":dotS:cDot:
+		   (delete existsS casl_reserved_words)
 
 lookAheadItemKeyword :: GenParser Char st ()
 lookAheadItemKeyword = 
