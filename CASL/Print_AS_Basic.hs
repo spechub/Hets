@@ -396,14 +396,13 @@ condPrint_Mixfix pTok pId pTrm parens_fun
 		 beside_fun fsep_fun comma_doc mpt_fun mdf
 		 ga i l =
     if isMixfix i then
-       if length (filter isPlace tops) == length l then
+       if placeCount i == length l then
 	  print_mixfix_appl pTok pId pTrm parens_fun 
 			    beside_fun fsep_fun mpt_fun mdf ga i l 
        else 
           print_prefix_appl pTrm parens_fun fsep_fun comma_doc o' l
     else print_prefix_appl pTrm parens_fun fsep_fun comma_doc o' l
-    where tops = case i of Id tp _ _ -> tp 
-	  o' = pId i
+    where o' = pId i
 {- TODO: consider string-, number-, list- and floating-annotations -}
 
 condPrint_Mixfix_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
