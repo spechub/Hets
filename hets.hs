@@ -37,16 +37,21 @@ processFile opt file =
        ld <- read_LIB_DEFN opt file
        -- (env,ld') <- analyse_LIB_DEFN opt
        (ld',env) <- 
-           if (analysis opt)
-               then do 
-                   putIfVerbose opt 2 ("Analyzing file: " ++ file)
-                   Result diags res <- ioresToIO 
-                     (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)
-                   sequence (map (putStrLn . show) diags)
-                   return (ld, res)
-               else do putIfVerbose opt 2
+            case (analysis opt) of
+                Skip        -> do
+                    putIfVerbose opt 2
                         ("Skipping static analysis on file: " ++ file)
-                       return (ld, Nothing)
+                    return (ld, Nothing)
+                Structured  -> do
+                    putIfVerbose opt 2
+                        ("Skipping static analysis on file: " ++ file)
+                    return (ld, Nothing)
+                Basic       -> do
+                    putIfVerbose opt 2 ("Analyzing file: " ++ file)
+                    Result diags res <- ioresToIO 
+                      (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)
+                    sequence (map (putStrLn . show) diags)
+                    return (ld, res)
        let odir = if null (outdir opt) then dirname file else outdir opt
        putIfVerbose opt 3 ("Current OutDir: " ++ odir)
        write_LIB_DEFN file (opt { outdir = odir }) ld'
