@@ -124,7 +124,10 @@ expecting "(", "{", "[", id/literal or "]"
 
 __ < [bla] __ < __
 aa ==
-a []
+parse error at 39.6:
+unexpected "%"
+expecting "(", "{", "[", id/literal, "%%", "%{", "%(", "%", ":", "as", "when" or end of input
+
 ""
 < [[__]] >
 < [__] >
