@@ -13,6 +13,7 @@ import HasCASL.As
 import Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Data.List
+import HasCASL.Reader
 import Common.Lib.State
 import Common.Result
 import Common.GlobalAnnotations
@@ -109,13 +110,6 @@ appendDiags ds =
 addDiag :: Diagnosis -> State Env ()
 addDiag d = appendDiags [d]
 
-indent :: Int -> ShowS -> ShowS
-indent i s = showString $ concat $ 
-	     intersperse ('\n' : replicate i ' ') (lines $ s "")
-
--- ---------------------------------------------------------------------
-
-
 putCounter :: Int -> State Env ()
 putCounter i = do { e <- get; put e { counter = i } }
 
@@ -127,3 +121,23 @@ putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 
 putAssumps :: Assumps -> State Env ()
 putAssumps as =  do { e <- get; put e { assumps = as } }
+
+-- ---------------------------------------------------------------------
+
+toMaybeState :: (Env -> r) -> ReadR r a -> State Env (Maybe a) 
+toMaybeState f r = do Result ds m <- toResultState f r 
+		      appendDiags ds 
+		      return m
+
+toState :: a -> (Env -> r) -> ReadR r a -> State Env a
+toState d f r = do m <- toMaybeState f r
+		   return $ case m of Nothing -> d
+				      Just a -> a
+
+-- ---------------------------------------------------------------------
+indent :: Int -> ShowS -> ShowS
+indent i s = showString $ concat $ 
+	     intersperse ('\n' : replicate i ' ') (lines $ s "")
+
+-- ---------------------------------------------------------------------
+

@@ -43,11 +43,48 @@ local f m = ReadR $ \r -> readR m (f r)
 lift :: Result a -> ReadR r a
 lift m = ReadR $ \_ -> m
 
-mapReadR :: (Result a -> Result b) -> ReadR w a -> ReadR w b
+mapReadR :: (Result a -> Result b) -> ReadR r a -> ReadR r b
 mapReadR f m = ReadR $ f . readR m
+
+foldReadR :: (a -> ReadR r b) -> [a] -> ReadR r [b]
+foldReadR _ [] = return []
+foldReadR m (h:t) = ReadR $ \ r ->
+    let Result ds am = readR (m h) r 
+	Result rs (Just ls) = readR (foldReadR m t) r  
+	in Result (ds ++ rs) $ Just $
+	   case am of 
+		   Nothing -> ls
+		   Just x -> x:ls
 
 withReadR :: (r' -> r) -> ReadR r a -> ReadR r' a
 withReadR f m = ReadR $ readR m . f
 
-toState :: (s -> r) -> ReadR r a -> State s (Result a) 
-toState f m = State $ \s -> (readR m $ f s, s)
+toResultState :: (s -> r) -> ReadR r a -> State s (Result a) 
+toResultState f m = State $ \s -> (readR m $ f s, s)
+
+
+{- 
+
+-- not quite an instance of StateT
+-- but different binding compared to: State s (Maybe a)
+newtype StateS s a = StateS { stateS :: s -> (Maybe a, s) }
+
+instance Functor (StateS s) where
+        fmap f m = StateS $ \s -> let 
+                (x, s') = stateS m s in 
+                (fmap f x, s')
+
+bindStateS :: StateS s a -> (a -> StateS s b) -> StateS s b
+m `bindStateS` k = StateS $ \s -> let
+                (x, s') = stateS m s in
+                case x of Nothing -> (Nothing, s')
+			  Just a -> stateS (k a) s'
+
+toStateS :: State s a -> StateS s a
+toStateS m = StateS $ \s -> let 
+	   (x, s') = runState m s in (Just x, s')
+
+fromStateS :: StateS s a -> State s (Maybe a)
+fromStateS m = State $ \s -> stateS m s
+
+-}

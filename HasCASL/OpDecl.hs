@@ -11,6 +11,7 @@ module HasCASL.OpDecl where
 
 import HasCASL.As
 import HasCASL.ClassAna
+import HasCASL.ClassDecl
 import HasCASL.TypeAna
 import HasCASL.TypeDecl
 import Common.Id
@@ -46,11 +47,8 @@ getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
     do let newArgs = args ++ tvs
            sc = TypeScheme newArgs q ps
        appendDiags $ checkDifferentTypeArgs newArgs
-       (mk, newSc) <- anaTypeScheme sc
-       case mk of 
-	       Nothing -> return () -- induced error
-	       Just k -> do cMap <- gets classMap 
-			    appendDiags $ checkKinds cMap (posOfId i) k star
+       (k, newSc) <- anaTypeScheme sc
+       checkKindsS (posOfId i) k star
        return (i, newSc)
 
 
@@ -59,11 +57,11 @@ anaOpId sc attrs o =
     do (i, newSc) <- getUninstOpId sc o
        addOpId i newSc attrs NoOpDefn
 
-anaTypeScheme :: TypeScheme -> State Env (Maybe Kind, TypeScheme)
+anaTypeScheme :: TypeScheme -> State Env (Kind, TypeScheme)
 anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
     do tm <- gets typeMap    -- save global variables  
        mapM_ anaTypeVarDecl tArgs
-       (ik, newTy) <- anaType ty
+       (ik, newTy) <- anaTypeS (star, ty)
        let newPty = TypeScheme tArgs (q :=> newTy) p
        putTypeMap tm       -- forget local variables 
        return (ik, newPty)

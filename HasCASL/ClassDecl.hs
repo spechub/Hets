@@ -21,21 +21,32 @@ import Common.Result
 import HasCASL.ClassAna
 import HasCASL.Reader
 
-addDiags :: (Env -> b) ->  ReadR b a -> State Env (Maybe a) 
-addDiags f r = do Result ds m <- toState f r 
-		  appendDiags ds
-		  return m
-		  
+-- ---------------------------------------------------------------------------
+-- analyse classes as state
+-- ---------------------------------------------------------------------------
+
+anaKindS :: Kind -> State Env Kind
+anaKindS k = toState k classMap $ anaKind k 
+
+anaClassS :: (Kind, Class) -> State Env (Kind, Class)
+anaClassS c = toState c classMap $ anaClass $ snd c
+
+checkKindsS :: Pos -> Kind -> Kind -> State Env ()
+checkKindsS p k1 k2 = do toMaybeState classMap $ checkKinds  p k1 k2
+			 return ()
+
+-- ---------------------------------------------------------------------------
+-- analyse class decls
+-- ---------------------------------------------------------------------------
 
 anaClassDecls :: ClassDecl -> State Env ()
 anaClassDecls (ClassDecl cls k _) = 
-    do Just ak <- addDiags classMap $ anaKind k
+    do ak <- anaKindS k
        mapM_ (anaClassDecl ak Set.empty Nothing) cls
 
 anaClassDecls (SubclassDecl _ _ (Downset _) _) = error "anaClassDecl"
 anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
-    do Just ak <- addDiags classMap $ anaKind k
-       cMap <- gets classMap 
+    do ak <- anaKindS k
        if Set.isEmpty supcls then 
 	  do addDiag $ Diag Warning
 			  "redundant universe class" 
@@ -43,22 +54,21 @@ anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
 	     mapM_ (anaClassDecl ak supcls Nothing) cls
           else let (hd, tl) = Set.deleteFindMin supcls in 
 	      if Set.isEmpty tl then
-		 do if isJust $ anaClassId cMap hd then
+		 do Result _ mr <- toResultState classMap $ anaClassId hd
+		    if isJust mr then
 		       return () else do  
 			  anaClassDecl ak tl Nothing hd
 			  addDiag $ mkDiag Warning 
 				      "implicit declaration of superclass" hd
 		    mapM_ (anaClassDecl ak (Set.single hd) Nothing) cls
-		  else do Just (sk, Intersection newSups _) <- 
-			      addDiags classMap $ anaClass sc
-			  appendDiags $ checkKinds cMap (posOfId hd) sk ak
+		  else do (sk, Intersection newSups _) <- anaClassS (ak, sc)
+			  checkKindsS (posOfId hd) sk ak
 			  mapM_ (anaClassDecl ak newSups Nothing) cls
 
 anaClassDecls (ClassDefn ci k ic _) =
-    do Just ak <- addDiags classMap $ anaKind k
-       Just (dk, newIc) <- addDiags classMap $ anaClass ic
-       cMap <- gets classMap
-       appendDiags $ checkKinds cMap (posOfId ci) dk ak
+    do ak <- anaKindS k
+       (dk, newIc) <- anaClassS (ak, ic)
+       checkKindsS (posOfId ci) dk ak
        anaClassDecl ak Set.empty (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
@@ -83,7 +93,7 @@ anaClassDecl kind sups defn ci =
 		let oldDefn = classDefn info
 		    oldSups = superClasses info
 		    oldKind = classKind info
-		appendDiags $ checkKinds cMap (posOfId ci) kind oldKind
+		checkKindsS (posOfId ci) kind oldKind
 		if isJust defn then
 		   if isJust oldDefn then
 		      appendDiags $ mergeDefns ci 

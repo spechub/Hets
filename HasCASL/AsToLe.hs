@@ -27,6 +27,7 @@ import HasCASL.PrintAs
 import HasCASL.TypeAna
 import HasCASL.TypeDecl
 import HasCASL.MixAna
+import HasCASL.Reader
 
 ----------------------------------------------------------------------------
 -- analysis
@@ -75,67 +76,62 @@ isSimpleId :: Id -> Bool
 isSimpleId (Id ts _ _) = null (tail ts) && head (tokStr (head ts)) 
 			 `elem` caslLetters
 
-convertTypeToClass :: ClassMap -> Type -> Result Class
-convertTypeToClass cMap (TypeToken t) = 
-       if tokStr t == "Type" then Result [] (Just $ universe) else 
+convertTypeToClass :: Type -> ReadR ClassMap Class
+convertTypeToClass (TypeToken t) = 
+       if tokStr t == "Type" then return universe else do
           let ci = simpleIdToId t
-              ds = anaClassId cMap ci
-              in case ds of 
-			 Just _ -> Result [] (Just $ Intersection 
+          mapReadR ( \ (Result _ m) -> 
+              case m of 
+		     Just _ -> Result [] (Just $ Intersection 
 					      (Set.single ci) [])
-                         Nothing -> Result 
-				    [mkDiag Hint "not a class" ci] Nothing
+                     Nothing -> Result 
+				    [mkDiag Hint "not a class" ci] Nothing )
+	      $ anaClassId ci
 
-convertTypeToClass cMap (BracketType Parens ts ps) = 
-       do cs <- mapM (convertTypeToClass cMap) ts
+convertTypeToClass (BracketType Parens ts ps) = 
+       do cs <- mapM convertTypeToClass ts
 	  return $ Intersection (Set.unions $ map iclass cs) ps
 
-convertTypeToClass _ t = Result [mkDiag Hint "not a class" t] Nothing
+convertTypeToClass t = lift $ Result [mkDiag Hint "not a class" t] Nothing
 
-convertTypeToKind :: ClassMap -> Type -> Result Kind
+convertTypeToKind :: Type -> ReadR ClassMap Kind
 
-convertTypeToKind cMap (FunType t1 FunArr t2 ps) = 
-    do k1 <- convertTypeToKind cMap t1
-       k2 <- convertTypeToKind cMap t2
+convertTypeToKind (FunType t1 FunArr t2 ps) = 
+    do k1 <- convertTypeToKind t1
+       k2 <- convertTypeToKind t2
        return $ KindAppl k1 k2 ps
 
-convertTypeToKind cMap (BracketType Parens [t] _) = 
-    do k <- convertTypeToKind cMap t
+convertTypeToKind (BracketType Parens [t] _) = 
+    do k <- convertTypeToKind t
        return $ k
 
-convertTypeToKind cMap (MixfixType [t1, TypeToken t]) = 
+convertTypeToKind (MixfixType [t1, TypeToken t]) = 
     let s = tokStr t 
 	v = case s of 
 		   "+" -> CoVar 
 		   "-" -> ContraVar 
 		   _ -> InVar
     in case v of 
-	      InVar -> Result [] Nothing
-	      _ -> do k1 <- convertTypeToClass cMap t1
+	      InVar -> lift $ Result [] Nothing
+	      _ -> do k1 <- convertTypeToClass t1
 		      return $ ExtClass k1 v [tokPos t]
 
-convertTypeToKind cMap t = 
-    do c <-  convertTypeToClass cMap t
+convertTypeToKind t = 
+    do c <-  convertTypeToClass t
        return $ ExtClass c InVar []
 
 optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
 optAnaVarDecl vd@(VarDecl v t s q) = 
     if isSimpleId v then
-       do cMap <- gets classMap 
-	  let Result ds mc = convertTypeToKind cMap t 
+       do mc <- toMaybeState classMap $ convertTypeToKind t 
 	  case mc of
 	       Just c -> anaTypeVarDecl(TypeArg v c s q)
 	       Nothing -> anaVarDecl vd
-	  appendDiags ds
     else anaVarDecl vd
 
 anaVarDecl(VarDecl v oldT _ _) = 
-		   do (mk, t) <- anaType oldT
-		      case mk of 
-			      Nothing -> return ()
-			      Just k -> do cMap <- gets classMap 
-					   appendDiags $ checkKinds cMap 
-							   (posOfId v) k star
+		   do (k, t) <- anaTypeS (star, oldT)
+		      checkKindsS (posOfId v) k star
 		      addOpId v (simpleTypeScheme t) [] VarDefn
 
 -- ----------------------------------------------------------------------------

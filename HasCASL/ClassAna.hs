@@ -39,42 +39,36 @@ allSuperClasses ce ci =
                  `Set.union` recurse (Set.toList $ superClasses info)
     Nothing -> error "allSuperClasses"
 
-anaClassId :: ClassMap -> ClassId -> Maybe Kind
-anaClassId cMap ci = 
+anaClassId :: ClassId -> ReadR ClassMap Kind
+anaClassId ci = 
+    do cMap <- ask
        case Map.lookup ci cMap of
-       Nothing -> Nothing
-       Just i -> Just $ classKind i
+	    Nothing -> lift $ Result [mkDiag Error "undeclared class" ci]
+		       Nothing
+	    Just i -> return $ classKind i
 
-expandKind :: ClassMap -> Kind -> Kind
-expandKind cMap (ExtClass c _ _) = 
+expandKind :: Kind -> ReadR ClassMap Kind
+expandKind (ExtClass c _ _) = 
     case c of
     Intersection s _ ->
-	if Set.isEmpty s then star else 
-	case anaClassId cMap $ Set.findMin s of
-	    Just k -> expandKind cMap k
-	    _ -> error "expandKind"
-    _ -> star
+	if Set.isEmpty s then return star else 
+	   anaClassId $ Set.findMin s
+    _ -> return star
 
-expandKind cMap (KindAppl k1 k2 ps) = 
-    KindAppl (expandKind cMap k1) (expandKind cMap k2) ps
+expandKind (KindAppl k1 k2 ps) = 
+    do k3 <- expandKind k1
+       k4 <- expandKind k2
+       return $ KindAppl k3 k4 ps
     
 anaClass :: Class -> ReadR ClassMap (Kind, Class)
 anaClass (Intersection s ps) =
-    do cMap <- ask
-       let cs = Set.toList s
-	   l = zip (map (anaClassId cMap) cs) cs
-	   (js, ns) = partition (isJust . fst) l
-	   ds = map (mkDiag Error "undeclared class" . snd) ns
-	   restCs = Set.fromList $ map snd js
-	   ks = map (fromJust. fst) js
-	   k = if null ks then star else expandKind cMap $ 
-	       fromJust $ fst $ head js
-	   es = filter (not . eqKind k . expandKind cMap . 
-			fromJust . fst) js
-	   fs =	map (\ (Just wk, i) -> mkDiag Error 
-		     ("wrong kind '" ++ showPretty wk "' of")
-		     i) es
-       lift $ Result (ds ++ fs) $ Just (k, Intersection restCs ps) 
+    do l <- foldReadR ( \ ci -> fmap ( \ ki -> (ki, ci) ) 
+			$ anaClassId ci) $ Set.toList s
+       let (ks, restCs) = unzip l
+	   k = if null ks then star else head ks
+       foldReadR ( \ (ki, ci) -> 
+			 checkKinds (posOfId ci) k ki) l
+       return (k, Intersection (Set.fromList restCs) ps)
 
 anaClass (Downset t) = 
     lift $ Result [downsetWarning t] $ Just (star, Downset t)
@@ -99,10 +93,11 @@ anaKind (ExtClass k v p) =
 -- comparing kinds 
 -- ---------------------------------------------------------------------
 
-checkKinds :: ClassMap -> Pos -> Kind -> Kind -> [Diagnosis]
-checkKinds cMap p k1 k2 =
-       eqKindDiag p (expandKind cMap k1) 
-		   $ expandKind cMap k2
+checkKinds :: Pos -> Kind -> Kind -> ReadR ClassMap ()
+checkKinds p k1 k2 =
+    do k3 <- expandKind k1
+       k4 <- expandKind k2
+       lift $ Result (eqKindDiag p k3 k4) $ Just ()
 
 eqKindDiag :: Pos -> Kind -> Kind -> [Diagnosis]
 eqKindDiag p k1 k2 = 

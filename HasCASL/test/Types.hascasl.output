@@ -31,23 +31,24 @@ v : (m)(List) %(var)%
   : ({__})(s) %(var)%
 x : (((tuple3)(r))(s))(t) %(var)%
 y : ((tuple3)(r))(s) %(var)%
-z : (m)(([__])(__)) %(var)%
+z : m [__] %(var)%
 %% Diagnostics -----------------------------------------------------------
 Hint "Types.hascasl" (line 7, column 9) not a class '[r]'
 Hint "Types.hascasl" (line 7, column 16) not a class '{s}'
 Hint "Types.hascasl" (line 11, column 9) not a class 'tuple3 r s t'
+Hint "Types.hascasl" (line 12, column 9) not a class 'tuple3 r s'
 Error "Types.hascasl" (line 12, column 5) incompatible kinds
 Type ->Type
   Type
-Hint "Types.hascasl" (line 12, column 9) not a class 'tuple3 r s'
-Error "Types.hascasl" (line 18, column 14) undeclared type '__'
-Error "Types.hascasl" (line 18, column 11) incompatible kind of type '([__])(__)'
 Hint "Types.hascasl" (line 18, column 9) not a class 'm [__]'
+Error "Types.hascasl" (line 18, column 12) undeclared type '__'
 Hint "Types.hascasl" (line 7, column 15) type 'm' is not unifiable with '{__}'
+Hint "Types.hascasl" (line 24, column 10) not a class 'm'
 Error "Types.hascasl" (line 24, column 5) incompatible kinds
 (Type ->Type) ->Type
   Type
-Hint "Types.hascasl" (line 24, column 10) not a class 'm'
-Error "Types.hascasl" (line 28, column 12) incompatible kind of type 'tuple3'
+Error "Types.hascasl" (line 28, column 12) incompatible kinds
+Type ->Type
+  Type ->Type ->Type ->Type
 Hint "Types.hascasl" (line 32, column 10) not a class 'nt r List s'
 Warning "Types.hascasl" (line 38, column 12) unchecked formula 'x = x'
