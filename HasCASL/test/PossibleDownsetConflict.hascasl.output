@@ -27,6 +27,7 @@ d
 e = a
 h < (a, b, e)
 %% Type Constructors -----------------------------------------------------
+Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type
 s : Type %(var)%
 t : Type %(var)%
@@ -41,6 +42,8 @@ def__ : forall a : Type .  a ->? Unit
 if__then__else__ : forall a : Type .  Unit × a × a ->? a
 not__ : Unit ->? Unit
 %% Diagnostics -----------------------------------------------------------
+Hint (line 1, column 5) is type variable 's'
+Hint (line 1, column 7) is type variable 't'
 Warning (line 7, column 7) redeclared class 'a'
 Error (line 7, column 7) alias class cannot become a real class 'a'
 Warning (line 9, column 7) redeclared class 'a'

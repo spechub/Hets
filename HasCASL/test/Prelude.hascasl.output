@@ -7,7 +7,7 @@ var s : Type; t : Type
 type Unit
      %% flat cpo with bottom
      %% type aliases
-type Pred__ : Type- -> Type := \ t : Type- . t ->? Unit
+type Pred__ : Type- -> Type := \ (t : Type)(t : Type-) . t ->? Unit
 type ?__ : Type -> Type := \ t : Type . Unit ->? t
 op true, false : Unit ->? Unit
 op __/\__, __\/__, __=>__, __if__, __<=>__ : Unit × Unit ->? Unit
@@ -24,7 +24,7 @@ type __*__*__ : Type+ -> Type+ -> Type+ -> Type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"  
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
-op def, tt : forall t : Type .  t ->? Unit
+op def, tt : forall s : Type .  s ->? Unit
 var x : s
 program def = \ x : s . ()
 	%% def is also total (identical to tt) 
@@ -52,7 +52,7 @@ program snd(x : s, y : t) : t = (var y : t)
 op eq : forall s : Type .  s × s ->? Unit
 . (op __=__ : forall a : Type .  a × a ->? Unit) (\ x : s . eq (x,
 								x),
-						  (op tt : forall t : Type .  t ->? Unit))
+						  (op tt : forall s : Type .  s ->? Unit))
 . (op __=__ : forall a : Type .  a × a ->? Unit) (\ (x, y : s) . x
 								 res eq (x, y),
 						  \ (x, y : s) . y res eq (x, y))
@@ -62,22 +62,23 @@ op eq : forall s : Type .  s × s ->? Unit
 %% for type inference 
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
 type s < ? s
-program all(p : t ->? Unit) : t ->? Unit =
-	(op eq : forall s : Type .  s × s ->? Unit) ((var p : t ->? Unit),
-						     (op tt : forall t : Type .  t ->? Unit))
+program all(p : s ->? Unit) : Unit ->? Unit =
+	(op eq : forall s : Type .  s × s ->? Unit) ((var p : s ->? Unit),
+						     (op tt : forall s : Type .  s ->? Unit))
 %% the cast from ?s to s is still done manually here (for the strict "und")
-program And(x : _var_37, y : t ->? Unit) : t ->? Unit =
+program And(x : _var_37, y : Unit ->? Unit) : Unit ->? Unit =
 	t1 () und t2 ()
 %% use "And" instead of "und" to avoid cast from "?unit" to "unit"
-program __ impl __ (x, y : Pred Unit) : t ->? Unit : t ->? Unit =
-	eq (x, x And y)
-program __ or __ (x, y : Pred Unit) : t ->? Unit : t ->? Unit =
-	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
-program ex(p : t ->? Unit) : t ->? Unit =
+program __ impl __
+	(x, y : Pred Unit) : Unit ->? Unit : Unit ->? Unit
+	= eq (x, x And y)
+program __ or __ (x, y : Pred Unit) : Unit ->? Unit : Unit ->? Unit
+	= all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
+program ex(p : s ->? Unit) : Unit ->? Unit =
 	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
-program ff () : t ->? Unit : t ->? Unit =
+program ff () : Unit ->? Unit : Unit ->? Unit =
 	all (\ r : Pred Unit . r ())
-program neg(r : t ->? Unit) : t ->? Unit = r impl ff
+program neg(r : Unit ->? Unit) : Unit ->? Unit = r impl ff
 %% the type instance for the first "eq" should be "?t" 
 %% this is explicitely enforced by "\ .f(x)"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,8 +156,8 @@ Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
 ? : Type -> Type := \ t : Type . Unit ->? t
 ?__ : Type -> Type := \ t : Type . Unit ->? t
-Pred : Type- -> Type := \ t : Type- . t ->? Unit
-Pred__ : Type- -> Type := \ t : Type- . t ->? Unit
+Pred : (Type -> Type, Type- -> Type) := \ a : Type . a ->? Unit
+Pred__ : Type- -> Type := \ (t : Type)(t : Type-) . t ->? Unit
 Unit : (Type, Pcpo)
 __*__ : (Type+ -> Type+ -> Type, Pcpo+ -> Pcpo+ -> Pcpo,
 	 Cpo+ -> Cpo+ -> Cpo)
@@ -190,7 +191,7 @@ __\/__ : Unit × Unit ->? Unit
 __if__ : Unit × Unit ->? Unit
 __res__ : s × t ->? s = \ (x : s, y : t) .! (var x : s)
 bottom : forall p : Pcpo .  p
-def : forall t : Type .  t ->? Unit
+def : forall s : Type .  s ->? Unit
 def__ : forall a : Type .  a ->? Unit
 eq : forall s : Type .  s × s ->? Unit
 f : c --> d %(var)%
@@ -204,7 +205,7 @@ not__ : Unit ->? Unit
 sup : forall c : Cpo .  (nat -> c) ->? c
 true : bool %(construct bool)%
      : Unit ->? Unit
-tt : forall t : Type .  t ->? Unit
+tt : forall s : Type .  s ->? Unit
 undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! x)
 %% Sentences -------------------------------------------------------------
 (op __=__ : forall a : Type .  a × a ->? Unit) (__ in s -> t,
@@ -217,7 +218,7 @@ undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->
 						(op __res__ : s × t ->? s)) %()%
 (op __=__ : forall a : Type .  a × a ->? Unit) (\ x : s . eq (x,
 							      x),
-						(op tt : forall t : Type .  t ->? Unit)) %()%
+						(op tt : forall s : Type .  s ->? Unit)) %()%
 (op __=__ : forall a : Type .  a × a ->? Unit) (\ (x, y : s) . x
 							       res eq (x, y),
 						\ (x, y : s) . y res eq (x, y)) %()%
@@ -248,6 +249,8 @@ undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->
 						\ f : c -->? d . all (\ x : c . def f (x))) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 4, column 7) illegal universe class declaration 'Type'
+Hint (line 6, column 5) is type variable 's'
+Hint (line 6, column 7) is type variable 't'
 Warning (line 11, column 6) redeclared type 'Unit'
 Error (line 14, column 44) incompatible kind of: t ->? Unit
   expected: Type
@@ -258,7 +261,6 @@ Error (line 22, column 8) wrong type scheme of '__=__'
   expected: forall a : Type .  a × a ->? Unit
      found: forall s : Type .  s × s ->? Unit
 
-Hint (line 40, column 9) not a class 's'
 Error (line 46, column 11) unexpected mixfix token: und
 Error (line 46, column 9) no toplevel pattern '__ und __ (x, y : Unit) : Unit : Unit'
 Error (line 54, column 3) expected further mixfix token: ["/\\","<=>","=","=>","=e="]
@@ -293,6 +295,7 @@ Error (line 108, column 51) unexpected mixfix token: impl
 Error (line 108, column 22) unexpected mixfix token: all
 Error (line 108, column 3) unexpected mixfix token: all
 Warning (line 115, column 13) redundant universe class
+Hint (line 117, column 5) is type variable 'c'
 Error (line 121, column 3) unexpected mixfix token: all
 Error (line 122, column 31) unexpected mixfix token: und
 Error (line 122, column 3) unexpected mixfix token: all
@@ -309,13 +312,13 @@ Error (line 130, column 32) unexpected mixfix token: impl
 Error (line 130, column 3) unexpected mixfix token: all
 Error (line 134, column 20) unexpected mixfix token: isChain
 Error (line 134, column 3) unexpected mixfix token: all
+Hint (line 139, column 5) is type variable 'p'
 Error (line 143, column 3) unexpected mixfix token: all
+Hint (line 148, column 6) is type variable 'f'
 Error (line 150, column 15) unexpected mixfix token: [
+Hint (line 153, column 5) is type variable 'c'
 Warning (line 153, column 5) redeclared type 'c'
-Hint (line 157, column 13) not a class 'c'
-Hint (line 157, column 13) not a class 'c'
-Hint (line 157, column 25) not a class 'd'
-Hint (line 157, column 25) not a class 'd'
+Hint (line 153, column 8) is type variable 'd'
 Error (line 159, column 45) unexpected mixfix token: und
 Error (line 170, column 4) expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 Error (line 171, column 35) unexpected mixfix token: und
@@ -329,8 +332,6 @@ Error (line 182, column 46) ambiguous mixfix term
 	def f x
 	(def__)(f) x
 Error (line 182, column 36) unexpected mixfix token: all
-Hint (line 184, column 13) not a class 'c --> d'
-Hint (line 184, column 13) not a class 'c --> d'
 Error (line 186, column 25) unexpected mixfix token: [
 Error (line 193, column 32) unexpected mixfix token: impl
 Error (line 192, column 40) unexpected mixfix token: und

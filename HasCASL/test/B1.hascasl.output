@@ -30,6 +30,7 @@ g
 h = (a, b)
 j = {_ < t}
 %% Type Constructors -----------------------------------------------------
+Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type
 [__] : a -> b
 a__b : a -> b
@@ -70,8 +71,9 @@ Error (line 20, column 7) class cannot become an alias class 'd'
 Warning (line 25, column 7) redeclared class 'h'
 Error (line 25, column 7) inconsistent intersection class of 'h'
 
-Hint (line 31, column 26) not a class 'y'
-Hint (line 33, column 9) not a class 's'
+Hint (line 31, column 5) is type variable 'x'
+Hint (line 31, column 12) is type variable 'y'
 Error (line 33, column 9) unknown type 's'
+Hint (line 35, column 5) is type variable 'x'
 Warning (line 37, column 9) unchecked type 't'
 Error (line 39, column 6) wrong arity of 'a__'

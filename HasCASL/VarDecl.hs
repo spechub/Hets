@@ -153,7 +153,6 @@ convertTypeToClass (TypeToken t) =
 	  mk <- anaClassId ci
 	  case mk of 
 		  Nothing -> do put e
-				addDiags [mkDiag Hint "not a class" ci]
 				return Nothing
 		  _ -> return $ Just $ Intersection  (Set.single ci) []
 convertTypeToClass (BracketType Parens ts ps) = 
@@ -164,8 +163,7 @@ convertTypeToClass (BracketType Parens ts ps) =
 	     else return Nothing
 
 convertTypeToClass t = 
-    do addDiags [mkDiag Hint "not a class" t]
-       return Nothing
+    do return Nothing
 
 convertTypeToKind :: Type -> State Env (Maybe Kind)
 convertTypeToKind (FunType t1 FunArr t2 ps) = 
@@ -185,8 +183,7 @@ convertTypeToKind ty@(MixfixType [t1, TypeToken t]) =
 		   "-" -> ContraVar 
 		   _ -> InVar
     in case v of 
-	      InVar -> do addDiags [mkDiag Hint "no kind" ty]
-			  return Nothing
+	      InVar -> do return Nothing
 	      _ -> do mk1 <- convertTypeToClass t1
 		      case mk1 of 
 			  Just k1 -> return $ Just $ ExtClass k1 v [tokPos t]
@@ -201,8 +198,9 @@ optAnaVarDecl vd@(VarDecl v t s q) =
     if isSimpleId v then
     do mk <- convertTypeToKind t
        case mk of 
-	   Just k -> anaTypeVarDecl(TypeArg v k s q) >>= 
-		     (return . fmap GenTypeVarDecl)
+	   Just k -> do addDiags [mkDiag Hint "is type variable" v]
+			tv <- anaTypeVarDecl $ TypeArg v k s q
+			return $ fmap GenTypeVarDecl tv 
            _ -> varDecl
     else varDecl
 

@@ -55,11 +55,15 @@ bList = (defId, defType) : (notId, notType) : (ifThenElse, ifType) :
         map ( \ e -> (e, eqType)) [eqId, exEq] ++
 	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId]
 	    
-
 addUnit :: TypeMap -> TypeMap
-addUnit = let TypeName i k _ = logicalType in 
+addUnit tm = let TypeName ui uk _ = logicalType in
+	      foldr ( \ (i, k, d) m -> 
 		 Map.insertWith ( \ _ old -> old) i
-			 (TypeInfo k [] [] NoTypeDefn)
+			 (TypeInfo k [] [] d) m) tm
+	      [(ui, uk, NoTypeDefn), 
+	       (simpleIdToId $ mkSimpleId "Pred", 
+		KindAppl star star [],
+		AliasTypeDefn defType)]
 
 addOps :: Assumps -> Assumps
 addOps as = foldr ( \ (i, sc) m -> 

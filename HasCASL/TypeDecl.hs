@@ -14,15 +14,17 @@ analyse type decls
 module HasCASL.TypeDecl where
 
 import HasCASL.As
+import HasCASL.Le
 import HasCASL.AsUtils
-import Common.AS_Annotation
 import HasCASL.ClassAna
+import HasCASL.Unify
 import qualified Common.Lib.Map as Map
 import Common.Id
-import HasCASL.Le
+import Common.AS_Annotation
+import Common.Lib.State
 import Data.Maybe
 import Data.List
-import Common.Lib.State
+
 
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Error
@@ -138,8 +140,9 @@ anaTypeItem _ _ inst (AliasType pat mk sc ps) =
        case m of 
 	      Just i -> case mt of 
 		  Nothing -> return $ TypeDecl [] star ps
-		  Just newPty -> do addTypeId (AliasTypeDefn newPty) inst ik i 
-				    return $ AliasType (TypePattern i [] [])
+		  Just nsc -> do let newPty = generalize nsc
+				 addTypeId (AliasTypeDefn newPty) inst ik i 
+				 return $ AliasType (TypePattern i [] [])
 					   (Just ik) newPty ps
 	      _ -> return $ TypeDecl [] star ps
 

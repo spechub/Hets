@@ -8,6 +8,7 @@ op b : bool = let x : _var_2 = true;
 		  z : _var_4 = x in true
 op b : bool -> bool = \ x : _var_6 . x
 %% Type Constructors -----------------------------------------------------
+Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type
 bool : Type %[type __ ::=
 	      true : -> __

@@ -57,7 +57,7 @@ Data3 : Type %[type __ ::=
 Data4 : Type %[type __ ::=
 	       Cons41 : Data1 × Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
 	       Cons42 : Data2 × Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
-Pred : Type- -> Type
+Pred : (Type -> Type, Type- -> Type) := \ a : Type . a ->? Unit
 Pred__ : Type- -> Type
 Unit : (Type, TYPE)
 s : (c, Type) < ? s
@@ -99,6 +99,7 @@ tt : s ->? Unit
 						(var y : t)) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration 'Type'
+Hint (line 3, column 5) is type variable 't'
 Warning (line 5, column 20) redeclared class 'TYPE'
 Error (line 5, column 20) inconsistent class redefinition of 'TYPE'
 
@@ -108,7 +109,6 @@ Warning (line 11, column 10) redeclared class 'b'
 Warning (line 11, column 13) redeclared class 'c'
 Warning (line 11, column 19) redeclared class 'a'
 Error (line 11, column 19) class cannot become an alias class 'a'
-Hint (line 16, column 9) not a class 's'
 Error (line 20, column 12) unexpected mixfix token: res
 Error (line 20, column 37) unexpected mixfix token: x
 Hint (line 15, column 11) type 's' is not unifiable with 's ->? Unit'
@@ -125,14 +125,10 @@ Error (line 38, column 17) unexpected mixfix token: all
 Error (line 37, column 27) unexpected mixfix token: all
 Error (line 40, column 7) unexpected mixfix token: )
 Error (line 40, column 20) unexpected mixfix token: all
-Hint (line 45, column 11) not a class 't'
-Hint (line 45, column 18) not a class 't'
 Warning (line 57, column 11) redeclared type 's'
 Error (line 61, column 36) unknown type 'Data2'
 Error (line 61, column 52) unknown type 'Data2'
 Warning (line 61, column 73) data subtype ignored
 Error (line 66, column 8) unexpected mixfix token: true
-Hint (line 66, column 23) not a class 's'
 Error (line 66, column 25) unexpected mixfix token: e
-Hint (line 67, column 10) not a class 's'
 Error (line 67, column 12) unexpected mixfix token: e

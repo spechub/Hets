@@ -25,6 +25,7 @@ f
 g < h
 h
 %% Type Constructors -----------------------------------------------------
+Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit × Unit ->? Unit
