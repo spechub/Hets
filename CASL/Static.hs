@@ -29,6 +29,7 @@ module Static ( basicAnalysis, statSymbMapItems, statSymbItems,
 ------------------------------------------------------------------------------
 
 import Maybe
+import Monad(foldM) -- instead of foldResult
 import FiniteMap
 import Set
 import Id
@@ -325,7 +326,7 @@ extendList def a b = if ((length b) < (length a)) then
                      else b
 
 foldTwo :: a -> c -> (a -> b -> c -> Result a) -> [b] -> [c] -> Result a
-foldTwo state def f a b = foldResult state (\st (x, y) -> f st x y)
+foldTwo state def f a b = foldM (\st (x, y) -> f st x y) state
                                      (zip a (extendList def a b))
 
 foldlTwo :: c -> (a -> b -> c -> a) -> a -> [b] -> [c] -> a
@@ -1109,7 +1110,7 @@ ana_BASIC_ITEMS sigma _itm =
 ------------------------------------------------------------------------------
 
 ana_BASIC_SPEC :: LocalEnv -> BASIC_SPEC -> Result LocalEnv
-ana_BASIC_SPEC sigma (Basic_spec _l) = foldResult sigma ana_BASIC_ITEMS _l
+ana_BASIC_SPEC sigma (Basic_spec l) = foldM ana_BASIC_ITEMS sigma l
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                  -> Result (Sign,Sign,[(String,Sentence)])
