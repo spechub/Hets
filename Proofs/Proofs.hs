@@ -1068,19 +1068,19 @@ computeTheory :: LibEnv -> DGraph -> Node -> Result G_theory
 computeTheory libEnv dg n = do
   let  paths = reverse $ getAllLocGlobDefPathsTo dg n []
          -- reverse needed to have a "bottom up" ordering
-  mors <- maybeToResult nullPos "Could not calculate morphism of path"
+  mors <- maybeToMonad "Could not calculate morphism of path"
             $ mapM (calculateMorphismOfPathWithStart dg libEnv) paths
-  sens <- maybeToResult nullPos "Could not calculate sentence list of node"
+  sens <- maybeToMonad "Could not calculate sentence list of node"
             $ mapM (getSentenceList libEnv dg . fst) paths
   sens' <- mapM (uncurry translateG_l_sentence_list) 
             $ zip mors sens
   G_l_sentence_list lid1 sens'' <- 
-        maybeToResult nullPos "Logic mismatch for sentences"
+        maybeToMonad "Logic mismatch for sentences"
               $ flatG_l_sentence_list sens'
   G_sign lid2 sig <- 
-        maybeToResult nullPos "Could not calculate signature of node"
+        maybeToMonad "Could not calculate signature of node"
               $ getSignature libEnv dg n
-  sens''' <- rcoerce lid1 lid2 nullPos sens''
+  sens''' <- coerce lid1 lid2 sens''
   return $ G_theory lid2 sig (nub sens''')
 
 -- ---------------
@@ -1089,7 +1089,7 @@ computeTheory libEnv dg n = do
 
 getGoals :: LibEnv -> DGraph -> LEdge DGLinkLab -> Result G_l_sentence_list
 getGoals libEnv dg (n,_,edge) = do
-  sens <- maybeToResult nullPos ("Could node find node "++show n)
+  sens <- maybeToMonad ("Could node find node "++show n)
               $  getSentenceList libEnv dg n
   let mor = dgl_morphism edge
   translateG_l_sentence_list mor sens
@@ -1131,7 +1131,7 @@ basicInferenceNode checkCons lg (ln,node)
     G_theory lid1 sign axs <- 
          resToIORes $ computeTheory libEnv dGraph node
     ctx <- resToIORes 
-                $ maybeToResult nullPos ("Could node find node "++show node)
+                $ maybeToMonad ("Could node find node "++show node)
                 $ fst $ match node dGraph
     let nlab = lab' ctx  
         nodeName = case nlab of
@@ -1146,10 +1146,10 @@ basicInferenceNode checkCons lg (ln,node)
                   else resToIORes $ mapM (getGoals libEnv dGraph) localEdges
     G_l_sentence_list lid3 goals <- 
       if null goalslist then return $ G_l_sentence_list lid1 [] 
-        else resToIORes (maybeToResult nullPos 
+        else resToIORes (maybeToMonad 
                                   "Logic mismatch for proof goals" 
                                    (flatG_l_sentence_list goalslist))
-    goals1 <- resToIORes $ rcoerce lid1 lid3 nullPos goals
+    goals1 <- coerce lid1 lid3 goals
     -- select a suitable translation and prover
     let provers = getProvers checkCons lg $ sublogicOfTh $ 
                             (G_theory lid1 sign (axs++goals1))
@@ -1157,18 +1157,16 @@ basicInferenceNode checkCons lg (ln,node)
     -- Borrowing: translate theory
     let lidS = sourceLogic cid
         lidT = targetLogic cid
-    sign' <- resToIORes $ rcoerce lidS lid1 nullPos sign
-    axs' <- resToIORes $ rcoerce lidS lid1 nullPos axs
-    (sign'',sens'') <- resToIORes  
-                        $ maybeToResult nullPos "Could not map signature"
-                        $ map_theory cid (sign',axs')
+    sign' <- coerce lidS lid1 sign
+    axs' <- coerce lidS lid1 axs
+    (sign'',sens'') <- resToIORes $ map_theory cid (sign',axs')
     case prover of
      G_prover lid4 p -> do
        -- Borrowing: translate goal
-       goals' <- resToIORes $ rcoerce lidS lid3 nullPos goals
-       let goals'' = mapMaybe (mapNamedM (map_sentence cid sign')) goals'
+       goals' <- coerce lidS lid3 goals
+       goals'' <- resToIORes $ mapM (mapNamedM $ map_sentence cid sign') goals'
        -- call the prover
-       p' <- resToIORes $ rcoerce lidT lid4 nullPos p
+       p' <- coerce lidT lid4 p
        ps <- ioToIORes $ prove p' thName (sign'',sens'') goals'' 
        -- update the development graph
        let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
@@ -1178,7 +1176,7 @@ basicInferenceNode checkCons lg (ln,node)
        let mor = TheoryMorphism { t_source = empty_theory lidT, 
                                   t_target = (sign'',sens''),
                                   t_morphism = incl } 
-       p' <- resToIORes $ rcoerce lidT lid4 nullPos p
+       p' <- coerce lidT lid4 p
        ps <- ioToIORes $ cons_check p' thName mor
        let nextHistoryElem = ([LocalInference],[])
          -- ??? to be implemented

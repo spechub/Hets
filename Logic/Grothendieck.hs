@@ -48,7 +48,6 @@ import Common.Lib.Graph
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
-import Common.Id
 import Common.AS_Annotation
 import Common.ListUtils
 import Data.Dynamic
@@ -528,7 +527,7 @@ instance Category Grothendieck G_sign GMorphism where
   legal_obj _ (G_sign lid sigma) = legal_obj lid sigma 
   legal_mor _ (GMorphism r sigma mor) =
     legal_mor lid2 mor && 
-    case map_sign r sigma of
+    case maybeResult $ map_sign r sigma of
       Just (sigma',_) -> sigma' == cod lid2 mor
       Nothing -> False
     where lid2 = targetLogic r
@@ -543,8 +542,7 @@ gEmbed (G_morphism lid mor) =
 gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
 gEmbedComorphism (Comorphism cid) (G_sign lid sig) = do
   sig' <- mcoerce (sourceLogic cid) lid "gEmbedComorphism: logic mismatch" sig
-  (sigTar,_) <- maybeToMonad "gEmbedComorphism: map_sign failed"
-             (map_sign cid sig')
+  (sigTar,_) <- map_sign cid sig'
   let lidTar = targetLogic cid
   return (GMorphism cid sig' (ide lidTar sigTar))
 
@@ -561,10 +559,8 @@ gsigUnion lg gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
           lidT2 = targetLogic cid2
       sigma1' <- mcoerce lid1 lidS1 "Union of signaturesa" sigma1
       sigma2' <- mcoerce lid2 lidS2 "Union of signaturesb" sigma2
-      (sigma1'',_) <- maybeToMonad "gsigUnion: signature mapping failed" 
-                       (map_sign cid1 sigma1')  -- where to put axioms???
-      (sigma2'',_) <- maybeToMonad "gsigUnion: signature mapping failed" 
-                       (map_sign cid2 sigma2')  -- where to put axioms???
+      (sigma1'',_) <- map_sign cid1 sigma1'  -- where to put axioms???
+      (sigma2'',_) <- map_sign cid2 sigma2'  -- where to put axioms???
       sigma2''' <- mcoerce lidT1 lidT2 "Union of signaturesc" sigma2''
       sigma3 <- signature_union lidT1 sigma1'' sigma2'''
       return (G_sign lidT1 sigma3)
@@ -616,9 +612,7 @@ ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
 ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
     Comorphism i <- logicInclusion logicGraph (Logic lid1) (Logic lid2)
     sigma1' <- mcoerce lid1 (sourceLogic i) "Inclusion of signatures" sigma1
-    (sigma1'',_) <- maybeToResult (newPos "w" 0 0) 
-                    "ginclusion: signature map failed" 
-                    (map_sign i sigma1')
+    (sigma1'',_) <- map_sign i sigma1'
     sigma2' <- mcoerce lid2 (targetLogic i) "Inclusion of signatures" sigma2
     mor <- inclusion (targetLogic i) sigma1'' sigma2'
     return (GMorphism i sigma1' mor)
@@ -628,11 +622,8 @@ ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
 compInclusion lg mor1 mor2 = do
   incl <- ginclusion lg (cod Grothendieck mor1) (dom Grothendieck mor2)
-  mor <- maybeToResult nullPos
-           "compInclusion: composition falied" $ comp Grothendieck mor1 incl
-  maybeToResult nullPos
-           "compInclusion: composition falied" $ comp Grothendieck mor mor2
-
+  mor <- comp Grothendieck mor1 incl
+  comp Grothendieck mor mor2
 
 -- | Composition of two Grothendieck signature morphisms 
 -- | with itermediate homogeneous inclusion
@@ -647,8 +638,8 @@ translateG_l_sentence_list (GMorphism cid sign1 morphism2)
   let tlid = targetLogic cid
   --(sigma2,_) <- map_sign cid sign1
   sens' <- mcoerce lid (sourceLogic cid) "Translation of sentence list" sens
-  let sens'' = mapMaybe (mapNamedM (map_sentence cid sign1)) $ sens'
-  sens''' <- sequence $ map (mapNamedM (map_sen tlid morphism2)) $ sens''
+  sens'' <- mapM (mapNamedM $ map_sentence cid sign1) sens'
+  sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return (G_l_sentence_list tlid sens''')
 
 -- | Join two G_l_sentence_list's

@@ -41,16 +41,14 @@ import GraphConfigure
 import TextDisplay
 import Configuration
 import qualified HTk
-import Core
 
-import qualified Common.Lib.Map as Map hiding (isEmpty)
+import qualified Common.Lib.Map as Map
 import Common.Lib.Graph
 import Common.Id
 import Common.Lib.Pretty as Pretty hiding (isEmpty)
 import Common.PrettyPrint
 import qualified Common.Result as Res
 import Syntax.AS_Library
-import Common.AS_Annotation
 import Common.GlobalAnnotations
 
 import Options
@@ -66,8 +64,6 @@ import List(nub)
 import Control.Monad
 
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
-
-import Debug.Trace
 
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
@@ -733,13 +729,11 @@ translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
          -- adjust lid's
          let lidS = sourceLogic cid
              lidT = targetLogic cid
-         sign' <- Res.resToIORes $ rcoerce lidS lid nullPos sign
-         sens' <- Res.resToIORes $ rcoerce lidS lid nullPos sens
+         sign' <- coerce lidS lid sign
+         sens' <- coerce lidS lid sens
          -- translate theory along chosen comorphism
          (sign'',sens1) <- 
-             Res.resToIORes $ Res.maybeToResult 
-                                nullPos "Could not map theory"
-                        $ map_theory cid (sign',sens')
+             Res.resToIORes $ map_theory cid (sign',sens')
          Res.ioToIORes $ displayTheory "Translated theory" node dgraph 
             (G_theory lidT sign'' sens1)
      )
@@ -865,7 +859,7 @@ getProofStatusOfThm (_,_,label) =
     (GlobalThm proofStatus _ _) -> proofStatus
     (HidingThm _ proofStatus) -> proofStatus -- richtig?
 --  (FreeThm GMorphism Bool) - keinen proofStatus?
-    otherwise -> error "the given edge is not a theorem"
+    _ -> error "the given edge is not a theorem"
 
 {- converts the nodes of the development graph, if it has any,
 and returns the resulting conversion maps
@@ -990,7 +984,7 @@ convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edgelab)):lEdges)
 		                     (abstr2dgEdge convMaps)}
                                          descr graphInfo lEdges libname)
         return newConvMaps
-      otherwise -> error "Cannot find nodes"
+      _ -> error "Cannot find nodes"
 
 
 showReferencedLibrary :: IORef GraphMem -> Descr -> Descr -> GraphInfo 
@@ -1124,7 +1118,7 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 -- Momentane Lösung: ignorieren...
 	           applyChangesAux gid libname graphInfo eventDescr
 			         convMaps changes
-           otherwise -> 
+           _ -> 
 -- -- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
 -- Momentane Lösung: ignorieren...
 	     applyChangesAux gid libname graphInfo eventDescr

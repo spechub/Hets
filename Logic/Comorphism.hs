@@ -28,6 +28,7 @@ module Logic.Comorphism where
 
 import Logic.Logic
 import Common.Lib.Set
+import Common.Result
 import Data.Maybe
 import Data.Dynamic
 import Common.DynamicUtils 
@@ -61,19 +62,19 @@ class (Language cid,
     mapSublogic cid _ = targetSublogic cid
     -- the translation functions are partial 
     -- because the target may be a sublanguage
-    -- map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
+    -- map_basic_spec :: cid -> basic_spec1 -> Result basic_spec2
     -- cover theoroidal comorphisms as well
-    map_sign :: cid -> sign1 -> Maybe (sign2,[Named sentence2])
+    map_sign :: cid -> sign1 -> Result (sign2,[Named sentence2])
     map_theory :: cid -> (sign1,[Named sentence1])
-                      -> Maybe (sign2,[Named sentence2])
+                      -> Result (sign2,[Named sentence2])
     --default implementations
     map_sign cid sign = map_theory cid (sign,[])
     map_theory cid (sign,sens) = do
        (sign',sens') <- map_sign cid sign
-       let sens'' = mapMaybe (mapNamedM (map_sentence cid sign)) sens
+       sens'' <- mapM (mapNamedM $ map_sentence cid sign) sens
        return (sign',sens'++sens'')
-    map_morphism :: cid -> morphism1 -> Maybe morphism2
-    map_sentence :: cid -> sign1 -> sentence1 -> Maybe sentence2
+    map_morphism :: cid -> morphism1 -> Result morphism2
+    map_sentence :: cid -> sign1 -> sentence1 -> Result sentence2
           -- also covers semi-comorphisms
           -- with no sentence translation
           -- - but these are spans!
@@ -115,9 +116,9 @@ instance Logic lid sublogics
            targetLogic (IdComorphism lid _sub) = lid
            sourceSublogic (IdComorphism _lid sub) = sub
            targetSublogic (IdComorphism _lid sub) = sub
-           map_sign _ = \sigma -> Just(sigma,[])
-           map_morphism _ = Just
-           map_sentence _ = \_ -> Just
+           map_sign _ = \sigma -> return (sigma,[])
+           map_morphism _ = return
+           map_sentence _ = \_ -> return
            map_symbol _ = single
            constituents _ = []
 
@@ -181,8 +182,8 @@ instance (Comorphism cid1
             (si2', se2s') <- mcoerce (targetLogic cid1) (sourceLogic cid2) 
 			     "Mapping signature along comorphism"(si2, se2s)
             (si3, se3s) <- map_sign cid2 si2' 
-            return (si3, se3s ++ catMaybes
-                          (map (mapNamedM (map_sentence cid2 si2')) se2s'))
+            se3s' <- mapM (mapNamedM $ map_sentence cid2 si2') se2s'
+            return (si3, se3s ++ se3s')
 
    map_theory (CompComorphism cid1 cid2) = 
        \ti1 -> 

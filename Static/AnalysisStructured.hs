@@ -107,8 +107,6 @@ module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY,
                                   extendMorphism)
 where
 
-import Common.Trace
-
 import Options
 import Data.Maybe
 import Logic.Logic
@@ -144,7 +142,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        (bspec', _sigma_local, sigma_complete, ax) <- 
           if isStructured opts
            then return (bspec,empty_signature lid, empty_signature lid,[])
-           else do b <- maybeToResult nullPos
+           else do b <- maybeToMonad
                           ("no basic analysis for logic "
                                          ++language_name lid) 
                           (basic_analysis lid)
@@ -172,7 +170,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Translation asp ren ->
    do let sp1 = item asp
       (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
-      n' <- maybeToResult nullPos
+      n' <- maybeToMonad
               "Internal error: Translation of empty spec" (getNode nsig')
       let gsigma = getSig nsig'
       mor <- ana_RENAMING lg gsigma opts ren
@@ -200,7 +198,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
-      n' <- maybeToResult nullPos
+      n' <- maybeToMonad
              "Internal error: Reduction of empty spec" (getNode nsig')
       (hmor,tmor) <- ana_RESTRICTION dg gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
@@ -346,7 +344,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Free_spec asp poss ->
    do let sp1 = item asp
       (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
-      n' <- maybeToResult nullPos
+      n' <- maybeToMonad
             "Internal error: Free spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
           pos = headPos poss
@@ -370,7 +368,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Cofree_spec asp poss ->
    do let sp1 = item asp
       (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
-      n' <- maybeToResult nullPos
+      n' <- maybeToMonad
             "Internal error: Cofree spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
           pos = headPos poss
@@ -396,7 +394,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
           sp1' = item asp'
       (sp2,nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
       (sp2',nsig'',dg'') <- ana_SPEC lg (gannos,genv,dg') nsig' Nothing opts sp1'
-      n'' <- maybeToResult nullPos
+      n'' <- maybeToMonad
             "Internal error: Local spec over empty spec" (getNode nsig'')
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
@@ -446,7 +444,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
           l = getLogic nsig
       -- analyse spec with empty local env
       (sp',nsig',dg') <- ana_SPEC lg gctx (EmptyNode l) Nothing opts sp1
-      n' <- maybeToResult nullPos
+      n' <- maybeToMonad
             "Internal error: Closed spec over empty spec" (getNode nsig')
       -- construct union with local env
       let gsigma = getSig nsig
@@ -481,11 +479,11 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 
 
   Qualified_spec (Logic_name ln sublog) asp pos -> do
-      l@(Logic lid) <- lookupLogic "Static analysis: " (tokStr ln) lg
+      l <- lookupLogic "Static analysis: " (tokStr ln) lg
       -- analyse spec with empty local env
       (sp',nsig',dg') <- ana_SPEC lg gctx (EmptyNode l) 
                                  Nothing opts (item asp)
-      n' <- maybeToResult nullPos
+      n' <- maybeToMonad
             "Internal error: Qualified spec over empty spec" (getNode nsig')
       -- construct union with local env
       let gsigma = getSig nsig
@@ -668,19 +666,18 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Data (Logic lidD) (Logic lidP) asp1 asp2 pos ->
    do let sp1 = item asp1
           sp2 = item asp2
-      Comorphism cid <- logicInclusion lg (Logic lidD) (Logic lidP)
+          adj = adjustPos $ headPos pos
+      Comorphism cid <- adj $ logicInclusion lg (Logic lidD) (Logic lidP)
       let lidD' = sourceLogic cid
           lidP' = targetLogic cid
       (sp1',nsig1,dg1) <- 
          ana_SPEC lg gctx (EmptyNode (Logic lidD)) Nothing opts sp1
-      n' <- maybeToResult nullPos
+      n' <- adj $ maybeToMonad
             "Internal error: Data spec over empty spec" (getNode nsig1)
       let gsigma' = getSig nsig1
       G_sign lid' sigma' <- return gsigma'
-      sigmaD <- mcoerce lid' lidD' "Analysis of data spec" sigma' 
-      (sigmaD',sensD') <- maybeToResult (headPos pos) 
-                          "Could not map signature along data logic inclusion"
-                          (map_sign cid sigmaD)
+      sigmaD <- adj $ mcoerce lid' lidD' "Analysis of data spec" sigma' 
+      (sigmaD',sensD') <- adj $ map_sign cid sigmaD
       let gsigmaD' = G_sign lidP' sigmaD'
           node_contents = DGNode {
             dgn_name = Nothing,
@@ -715,14 +712,13 @@ ana_ren1 _ (GMorphism r sigma mor)
   sis1 <- adj $ mcoerce lid2 lid "Analysis of renaming" sis
   rmap <- adj $ stat_symb_map_items lid2 sis1
   mor1 <- adj $ induced_from_morphism lid2 rmap (cod lid2 mor)
-  mor2 <- adj $ maybeToMonad
-                        "renaming: signature morphism composition failed" 
-                        (comp lid2 mor mor1)
-  return (GMorphism r sigma mor2)
+  mor2 <- adj $ comp lid2 mor mor1
+  return $ GMorphism r sigma mor2
  
 ana_ren1 lg mor (G_logic_translation (Logic_code tok src tar pos1),pos2) = do
+  let adj = adjustPos $ headPos $ pos1 ++ [pos2]
   G_sign srcLid srcSig <- return (cod Grothendieck mor)
-  c <- case tok of
+  c <- adj $ case tok of
             Just ctok -> do 
                Comorphism cid <- lookupComorphism (tokStr ctok) lg
                when (isJust src && getLogicStr (fromJust src) /=
@@ -739,9 +735,8 @@ ana_ren1 lg mor (G_logic_translation (Logic_code tok src tar pos1),pos2) = do
                  tarL <- lookupLogic "with logic: " (tokStr l) lg
                  logicInclusion lg (Logic srcLid) tarL
                Nothing -> fail "with logic: cannot determine comorphism"
-  mor1 <- gEmbedComorphism c (G_sign srcLid srcSig)
-  maybeToMonad "with logic: cannot compose morphisms" 
-               (comp Grothendieck mor mor1)
+  mor1 <- adj $ gEmbedComorphism c (G_sign srcLid srcSig)
+  adj $ comp Grothendieck mor mor1
   where getLogicStr (Logic_name l _) = tokStr l 
 
 ana_ren :: LogicGraph -> Result GMorphism -> (G_mapping,Pos) -> Result GMorphism
@@ -766,25 +761,22 @@ ana_restr1 _ (G_sign _lid _sigma) (GMorphism cid sigma1 mor)
            (G_symb_list (G_symb_items_list lid' sis'),pos) = do
   let lid1 = sourceLogic cid
       lid2 = targetLogic cid
-  sis1 <- mrcoerce lid1 lid' pos "Analysis of restriction" sis'
-  rsys <- stat_symb_items lid1 sis1
+      adj = adjustPos pos 
+  sis1 <- adj $ mcoerce lid1 lid' "Analysis of restriction" sis'
+  rsys <- adj $ stat_symb_items lid1 sis1
   let sys = sym_of lid1 sigma1
   let sys' = Set.filter (\sy -> any (\rsy -> matches lid1 sy rsy) rsys)
                         sys
 --     if sys' `disjoint` () then return ()
 --      else plain_error () "attempt to hide symbols from the local environment" pos
-  mor1 <- adjustPos pos $ cogenerated_sign lid1 sys' sigma1
-  mor1' <- maybeToResult pos 
-             ("restriction: could not map morphism along" ++ language_name cid)
-             (map_morphism cid mor1)
-  mor2 <- maybeToResult pos 
-                        "restriction: signature morphism composition failed" 
-                        (comp lid2 mor1' mor)
-  return (GMorphism cid (dom lid1 mor1) mor2)
+  mor1 <- adj $ cogenerated_sign lid1 sys' sigma1
+  mor1' <- adj $ map_morphism cid mor1
+  mor2 <- adj $ comp lid2 mor1' mor
+  return $ GMorphism cid (dom lid1 mor1) mor2
  
-ana_restr1 dg gSigma mor 
-           (G_logic_projection (Logic_code tok src tar pos1),pos2) =
-  fatal_error "no analysis of logic projections yet" pos2
+ana_restr1 _dg _gSigma _mor 
+           (G_logic_projection (Logic_code _tok _src _tar pos1),pos2) =
+  fatal_error "no analysis of logic projections yet" $ headPos $ pos1 ++ [pos2]
 
 ana_restr :: DGraph -> G_sign -> Result GMorphism -> (G_hiding,Pos) 
                -> Result GMorphism
@@ -845,23 +837,24 @@ ana_FIT_ARG lg gctx spname nsigI nsigP opts
          "Internal error: empty argument spec" (getNode nsigA)
    let gsigmaP = getSig nsigP
        gsigmaA = getSig nsigA
-       gsigmaI = getSig nsigI
+--       gsigmaI = getSig nsigI
    G_sign lidP sigmaP <- return gsigmaP
    G_sign lidA sigmaA <- return gsigmaA
-   G_sign lidI sigmaI <- return gsigmaI
+--   G_sign lidI sigmaI <- return gsigmaI
    G_symb_map_items_list lid sis <- return gsis
    sigmaA' <- adj $ mcoerce lidA lidP "Analysis of fitting argument" sigmaA
-   sigmaI' <- adj $ mcoerce lidI lidP "Analysis of fitting argument" sigmaI
+--   sigmaI' <- adj $ mcoerce lidI lidP "Analysis of fitting argument" sigmaI
    mor <- adj $ if isStructured opts then return (ide lidP sigmaP)
            else do
              rmap <- stat_symb_map_items lid sis
              rmap' <- if null sis then return Map.empty 
                        else mcoerce lid lidP "Analysis of fitting argument" rmap
              induced_from_to_morphism lidP rmap' sigmaP sigmaA'
+   {-
    let symI = sym_of lidP sigmaI'
        symmap_mor = symmap_of lidP mor
    -- are symbols of the imports left untouched?
-  {- if Set.all (\sy -> lookupFM symmap_mor sy == Just sy) symI
+   if Set.all (\sy -> lookupFM symmap_mor sy == Just sy) symI
     then return ()
     else plain_error () "Fitting morphism must not affect import" (headPos pos)
    -} -- ??? does not work
@@ -994,17 +987,9 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
        let gmor_f = gEmbed mor_f
        gsigmaRes <- adj $ gsigUnion lg gsigmaI gsigmaA
        G_sign lidRes _ <- return gsigmaRes
-       mor1 <- adj $ maybeToMonad
-                (show (ptext "Morphism composition failed when instantiating generic fitting view" 
-                       $$ ptext "Morphism 1" $$ printText mor
-                       $$ ptext "Morphism 2" $$ printText gmor_f))
-                $ comp Grothendieck mor gmor_f
+       mor1 <- adj $ comp Grothendieck mor gmor_f
        incl1 <- adj $ ginclusion lg gsigmaA gsigmaRes
-       mor' <- adj $ maybeToMonad 
-                (show (ptext "Morphism composition with inclusion failed in fitting view" 
-                       $$ ptext "Morphism 1" $$ printText gmor_f
-                       $$ ptext "Morphism 2" $$ printText incl1))
-                $ comp Grothendieck gmor_f incl1
+       mor' <- adj $ comp Grothendieck gmor_f incl1
        GMorphism cid1 _ mor1Hom <- return mor1
        let lid1 = targetLogic cid1
        when (not (language_name (sourceLogic cid1) == language_name lid1))
@@ -1178,10 +1163,7 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
      "Fitting morphism leads to forbidden identifications"
      $$ printText newIdentifications) nullPos)
   incl <- inclusion lid sigmaAD sigma
-  mor1 <- maybeToMonad
-            ("extendMorphism: composition of two morphisms failed:" 
-             ++showPretty mor "\n" ++ showPretty incl "") 
-            $ comp lid mor incl
+  mor1 <- comp lid mor incl
   return (G_sign lid sigma, G_morphism lid mor1)
 
 

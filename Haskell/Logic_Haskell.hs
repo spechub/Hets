@@ -87,7 +87,9 @@ instance Category Haskell Sign HaskellMorphism where
   dom Haskell = fst
   cod Haskell = snd
   ide Haskell sig = (sig,sig)
-  comp Haskell (sig1,_) (_,sig3) = Just (sig1,sig3)
+  comp Haskell (sig1,sig) (sig2,sig3) = if sig == sig2 then 
+    return (sig1,sig3) else 
+    fail "target of first and source of second Haskell morphism are different"
 
 -- abstract syntax, parsing (and printing)
 

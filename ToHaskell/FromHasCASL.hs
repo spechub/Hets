@@ -16,7 +16,6 @@ module ToHaskell.FromHasCASL where
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
-import qualified Common.Lib.Map as Map 
 
 import HasCASL.Le
 
@@ -34,48 +33,27 @@ import Haskell.HatParser
 import ToHaskell.TranslateAna
 import Data.List ((\\))
 
-mapSingleSentence :: Env -> Sentence -> Maybe (HsDeclI PNT)
-mapSingleSentence sign sen = 
-    case mapTheory $ moveDataEntries (sign, [NamedSen "" sen]) of 
-    Nothing -> Nothing
-    Just (_, l) -> case l of 
-      [] -> Nothing
-      [s] -> Just $ sentence s
-      _ -> case mapTheory (sign, []) of
-           Nothing -> Nothing
-           Just (_, o) -> case l \\ o of
-             [] -> Nothing
-             [s] -> Just $ sentence s
-             _ -> Nothing
+mapSingleSentence :: Env -> Sentence -> Result (HsDeclI PNT)
+mapSingleSentence sign sen = do
+    (_, l) <- mapTheory (sign, [NamedSen "" sen])
+    case l of 
+      [] -> fail "sentence was not translated"
+      [s] -> return $ sentence s
+      _ -> do (_, o) <- mapTheory (sign, [])
+              case l \\ o of
+                [] -> fail "not a new sentence"
+                [s] -> return $ sentence s
+                _ -> fail "several sentences resulted"
 
-moveDataEntries :: (Env, [Named Sentence]) -> (Env, [Named Sentence])
-moveDataEntries (e, l) = case l of 
-  [] -> (e, l)
-  NamedSen n (DatatypeSen s) : r -> case s of
-     [] -> moveDataEntries (e, r)
-     d@(DataEntry im i _ _ _) : t -> let 
-       j = Map.findWithDefault i i im 
-       tm = typeMap e
-       m = Map.lookup j tm in
-       case m of 
-        Nothing -> error "moveDataEntries"
-        Just ti -> moveDataEntries (e { typeMap = Map.insert j 
-                                  ti { typeDefn = DatatypeDefn d } tm },
-                    NamedSen n (DatatypeSen t) : r)
-  s : r -> let (e2, r2) = moveDataEntries (e , r) in (e2, s : r2)
-
-mapTheory :: (Env, [Named Sentence]) -> Maybe (Sign, [Named (HsDeclI PNT)])
-mapTheory (sig, csens) =
+mapTheory :: (Env, [Named Sentence]) -> Result (Sign, [Named (HsDeclI PNT)])
+mapTheory (sig, csens) = do
     let hs = translateSig sig
 	ps = concatMap (translateSentence sig) csens
 	cs = cleanSig hs ps
-        res@(Result _ m) = 
+    (_, _, hsig, sens) <- 
             hatAna (HsDecls (preludeDecls ++ cs ++ map sentence ps),
                             emptySign, emptyGlobalAnnos)
-    in case m of 
-    Nothing -> error $ show res
-    Just (_, _, hsig, sens) -> Just (diffSign hsig preludeSign, 
-                  filter noInstance sens \\ preludeSens) 
+    return (diffSign hsig preludeSign, filter noInstance sens \\ preludeSens) 
 
 noInstance :: Named (HsDeclI PNT) -> Bool
 noInstance s = case basestruct $ struct $ sentence s of

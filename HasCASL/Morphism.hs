@@ -109,12 +109,12 @@ compIdMap im1 im2 = Map.foldWithKey ( \ i j ->
                        Map.insert i $ Map.findWithDefault j j im2)
                              im2 $ im1
 
-compMor :: Morphism -> Morphism -> Maybe Morphism
+compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 = 
   if isSubEnv (mtarget m1) (msource m2) && 
      isSubEnv (msource m2) (mtarget m1) then 
       let tm2 = typeIdMap m2 
-          fm2 = funMap m2 in Just 
+          fm2 = funMap m2 in return
       (mkMorphism (msource m1) (mtarget m2))
       { classIdMap = compIdMap (classIdMap m1) $ classIdMap m2
       , typeIdMap = compIdMap (typeIdMap m1) tm2
@@ -122,7 +122,7 @@ compMor m1 m2 =
                        Map.insert p1
                        $ mapFunSym tm2 fm2 p2) fm2 $ funMap m1
       }
-   else Nothing
+   else fail "intermediate signatures of morphisms do not match"
 
 inclusionMor :: Env -> Env -> Result Morphism
 inclusionMor e1 e2 =

@@ -56,7 +56,7 @@ instance Category Isabelle Sign ()
          -- ide :: id -> object -> morphism
 	 ide Isabelle _ = ()
          -- comp :: id -> morphism -> morphism -> Maybe morphism
-	 comp Isabelle _ _ = Just ()
+	 comp Isabelle _ _ = return ()
          -- dom, cod :: id -> morphism -> object
 	 dom Isabelle _ = emptySign
 	 cod Isabelle _ = emptySign

@@ -96,7 +96,7 @@ instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 class (Language lid, Eq sign, Eq morphism)
     => Category lid sign morphism | lid -> sign, lid -> morphism where
          ide :: lid -> sign -> morphism
-         comp :: lid -> morphism -> morphism -> Maybe morphism
+         comp :: lid -> morphism -> morphism -> Result morphism
            -- diagrammatic order
          dom, cod :: lid -> morphism -> sign
          legal_obj :: lid -> sign -> Bool
