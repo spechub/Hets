@@ -55,6 +55,8 @@ data SORT_ITEM = Sort_decl [SORT] [Pos]
 		 -- pos: commas, <
 	       | Subsort_defn SORT VAR SORT (Annoted FORMULA) [Pos]
 		 -- pos: "=", "{", ":", ".", "}"
+		 -- the left anno list stored in Annoted Formula is 
+		 -- parsed after the equal sign
 	       | Iso_decl [SORT] [Pos]
 	         -- pos: "="s
 		 deriving (Show,Eq)
