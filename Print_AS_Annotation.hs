@@ -244,9 +244,9 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
         in las' $+$ (hang_latex i' 0 la) $$ ras'
 
 spAnnotedPrint :: (PrettyPrint a) => 
-		    (forall b .PrettyPrint b => GlobalAnnos -> b -> Doc) ->
-		    (Doc -> Doc -> Doc) -> -- ^ a function like <+> or <\+>
-		    GlobalAnnos -> Doc -> Annoted a -> Doc
+		    (forall b .PrettyPrint b => GlobalAnnos -> b -> Doc) 
+		    -> (Doc -> Doc -> Doc) -- ^ a function like <+> or <\+>
+		    -> GlobalAnnos -> Doc -> Annoted a -> Doc
 spAnnotedPrint pf beside_ ga keyw ai = 
     case ai of 
     Annoted i _ las _ ->

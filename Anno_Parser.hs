@@ -31,7 +31,7 @@ newlineOrEof = charOrEof '\n'
 
 commentLine :: GenParser Char st Annotation
 commentLine = do try (string "%%")
-		 line <- manyTill anyChar newlineOrEof
+                 line <- manyTill anyChar newlineOrEof
 		 return (Comment_line line [])
 
 commentGroup :: GenParser Char st Annotation 
