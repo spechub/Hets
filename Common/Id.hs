@@ -23,7 +23,6 @@ A simple identifier is a lexical token given by a string and a start position.
 
 module Common.Id where
 
-import Data.Char
 import Common.Lib.Parsec.Pos 
 
 -- * positions from "Common.Lib.Parsec.Pos" starting at (1,1)
