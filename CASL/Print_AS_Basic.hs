@@ -568,7 +568,7 @@ instance PrettyPrint TERM where
     printLatex0 ga (Mixfix_sorted_term s _) = colon
 					     <> printLatex0 ga s
     printLatex0 ga (Mixfix_cast s _) = text asS
-				     <+> printLatex0 ga s
+				     <\+> printLatex0 ga s
     printLatex0 ga (Mixfix_parenthesized l _) = 
 	parens_latex (commaT_latex ga l)
     printLatex0 ga (Mixfix_bracketed l _) =   
