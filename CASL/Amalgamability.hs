@@ -136,7 +136,7 @@ equivClassesToTaggedVals rel =
 	eqClToList eqcl@(fst : _) = map (\x -> (x, fst)) eqcl
     in foldl (\vtl -> \eqcl -> vtl ++ (eqClToList eqcl)) [] rel
 
-
+{- the old, n^3 version of mergeEquivClassesBy:
 -- | Merge the equivalence classes for elements fulfilling given condition.
 mergeEquivClassesBy :: Eq b 
 		    => (a -> a -> Bool)   -- ^ the condition stating when two elements are in relation
@@ -167,6 +167,77 @@ mergeEquivClassesBy cond rel =
 		rel' = mergeWith (cmpl ++ [vtp]) vtp vtps
 	    in merge rel' (pos + 1)
     in merge rel 0
+-}
+
+data TagEqcl a b = Eqcl [a] | TagRef b
+		   deriving Show
+
+-- | Merge the equivalence classes for elements fulfilling given condition.
+mergeEquivClassesBy :: (Ord b)
+		    => (a -> a -> Bool)   -- ^ the condition stating when two elements are in relation
+	            -> EquivRelTagged a b -- ^ the input relation
+		    -> EquivRelTagged a b
+-- ^ returns the input relation with equivalence classes merged according to
+-- the condition.
+mergeEquivClassesBy cond rel =
+    -- Starting with the first element in the list an element (elem, tag) is taken
+    -- and cond is subsequently applied to it and all the elements
+    -- following it in the list. Whenever an element (elem', tag') 
+    -- that is in relation with the chosen one is found, the equivalence classes
+    -- in tagMap for tag and tag' are merged: tag in tagMap points to the merged
+    -- equivalence class and tag' in tagMap is a reference to tag.
+
+    let -- create the initial map mapping tags to equivalence classes        
+        initialTagMap = 
+	    let insEl tagMap (val, tag) =
+		    case Map.member tag tagMap of
+					       True -> Map.update (\(Eqcl eqcl) -> Just (Eqcl (val : eqcl))) tag tagMap
+					       False -> Map.insert tag (Eqcl [val]) tagMap
+	    in foldl insEl Map.empty rel
+
+        -- merge equivalence classes tagged with t1 and t2
+        mergeInMap tagMap t1 t2 = 
+	    let -- find the tag and equivalence class that corresponds to the given tag
+		-- performing path compression while traversing the referneces.
+	        findEqcl t tagMap = 
+		    case Map.find t tagMap of 
+					   Eqcl eqcl -> (t, eqcl, tagMap)
+					   TagRef t' -> 
+					       let (rt, eqcl, tagMap') = findEqcl t' tagMap
+						   tagMap'' = if rt == t' then tagMap'
+							 else Map.update (\_ -> Just (TagRef rt)) t tagMap'
+					       in (rt, eqcl, tagMap'')
+
+		(rt1, eqcl1, tagMap') = findEqcl t1 tagMap
+		(rt2, eqcl2, tagMap'') = findEqcl t2 tagMap'
+	    in if rt1 == rt2 then tagMap''
+	          else let (nrt1, nrt2) = if rt1 > rt2 then (rt2, rt1) else (rt1, rt2)
+			   tagMap3 = Map.update (\_ -> Just (Eqcl (eqcl1 ++ eqcl2))) rt1 tagMap''
+			   tagMap4 = Map.update (\_ -> Just (TagRef rt1)) rt2 tagMap3
+		       in tagMap4
+
+        -- iterate through the relation merging equivalence classes of appropriate elements
+        merge tagMap rel pos | pos >= length rel = tagMap
+	merge tagMap rel pos | otherwise = 
+	    let mergeWith tagMap _ [] = tagMap
+		mergeWith tagMap vtp@(elem, ec) toCmpl@((elem', ec') : _) =
+		    let tagMap' = if ec /= ec' && (cond elem elem') 
+			             then mergeInMap tagMap ec ec'
+				     else tagMap
+		    in mergeWith tagMap' vtp (tail toCmpl)
+		(_, (vtp : vtps)) = splitAt pos rel
+		tagMap' = mergeWith tagMap vtp vtps
+	    in merge tagMap' rel (pos + 1)
+
+        -- append given equivalence class to the list of (value, tag) pairs
+        tagMapToRel rel (_, TagRef _) = rel
+	tagMapToRel rel (tag, Eqcl eqcl) =
+	    foldl (\l -> \v -> (v, tag) : l) rel eqcl
+
+	tagMap = merge initialTagMap rel 0
+
+    in foldl tagMapToRel [] (Map.toAscList tagMap)
+
 
 
 -- | Merge the equivalence classes for given tags.
@@ -942,7 +1013,11 @@ ensuresAmalgamability opts diag sink desc =
 			                                          " in\n\n" ++ formatSig (fst np2) ++ "\n\n"
 						   in do return (No ("\npredicates " ++ pString1 ++ "and " ++ pString2 ++ "might be different"))
 			        Nothing ->
-                                  do let ct = cong_tau diag sink st
+				 if not (any (\o->o==Options.Cell || o==Options.ColimitThinness) (Options.caslAmalg opts))
+				  then return defaultDontKnow
+                                  else
+                                   do 
+				     let ct = cong_tau diag sink st
 				         -- As we will be using a finite representation of \cong_0
 					 -- that may not contain some of the equivalence classes with
 					 -- only one element it's sufficient to check that the subrelation
