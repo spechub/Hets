@@ -203,7 +203,7 @@ data Term =
       | Paren Term
       | Wildcard
       | Fix Term 
-      | Bottom Term
+      | Bottom 
       deriving (Eq, Ord, Show)
 
 data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show) 
