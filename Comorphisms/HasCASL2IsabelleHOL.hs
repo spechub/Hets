@@ -135,8 +135,9 @@ transSentence e s = case s of
 
 transTerm :: Env -> As.Term -> IsaSign.Term
 transTerm _ (QualVar var typ _) = 
-    Const("Some",((transType typ) --> (mkOptionType (transType typ)))) 
-      `App`  IsaSign.Free((transVar var,(transType typ)))
+    let tp = transType typ 
+	otp = tp --> mkOptionType tp
+	in  Const("Some", otp) `App` IsaSign.Free(transVar var, tp)
 transTerm _ (QualOp _ opId _ _) =
        let op = getOp opId
        in
