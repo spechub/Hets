@@ -41,10 +41,10 @@ instance PrettyPrint Annotation where
 			    Comment_start -> (ptext "%{",  ptext "}%")
 			    Annote_word w -> (ptext ("%" ++ w ++ "("), 
 					      ptext ")%")
-			in if null docs then empty
-			   else if isSingle docs then o <> head docs <> c
-			   else vcat ((o <> head docs):
-				      tail(init docs) ++ [last docs <> c])
+			in case docs of 
+                           [] -> empty
+                           [h] ->  o <> h <> c
+                           h : t -> vcat ((o <> h) : init t ++ [last t <> c])
     printText0 ga (Display_anno aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = fcat $ punctuate space $ map printPair $ filter nullSnd ab
