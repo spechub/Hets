@@ -10,7 +10,6 @@ Portability :  portable
    parse and call static analysis
 -}
 
-
 module HasCASL.RunStaticAna where
 
 import HasCASL.Le
@@ -28,10 +27,9 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.AnnoState
 
-
 bParser :: GlobalAnnos -> AParser (BasicSpec, Env)
 bParser ga = do b <- basicSpec
-		return $ runState (anaBasicSpec ga b) initialEnv
+                return $ runState (anaBasicSpec ga b) initialEnv
 
 anaParser :: StringParser
 anaParser ga = do (a, e) <- bParser ga
@@ -40,13 +38,11 @@ anaParser ga = do (a, e) <- bParser ga
 type SenParser = GlobalAnnos -> AParser [Named Sentence]
 
 senParser :: SenParser
-senParser = fmap (sentences . snd) . bParser
+senParser = fmap (reverse . sentences . snd) . bParser
 
 transParser :: SenParser
-transParser = fmap ( ( \ e -> map (mapNamed (translateSen e)) $ 
-		       sentences e) . snd) . bParser
+transParser = fmap ( ( \ e -> map (mapNamed (translateSen e)) $ reverse $
+                       sentences e) . snd) . bParser
 
 printSen :: SenParser -> StringParser
 printSen p ga = fmap (show . vcat . map (printText0 ga)) $ p ga
-
-

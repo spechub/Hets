@@ -37,13 +37,13 @@ import HasCASL.Builtin
 addDiags :: [Diagnosis] -> State Env ()
 addDiags ds =
     do e <- get
-       put $ e {envDiags = ds ++ envDiags e}
+       put $ e {envDiags = reverse ds ++ envDiags e}
 
 -- | add sentences
 appendSentences :: [Named Sentence] -> State Env ()
 appendSentences fs =
     do e <- get
-       put $ e {sentences = sentences e ++ fs}
+       put $ e {sentences = reverse fs ++ sentences e}
 
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = do mp <- fromResult (anaType (Just star, t) . typeMap)

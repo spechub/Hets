@@ -122,7 +122,7 @@ instance PrettyPrint Env where
 	$$ noPrint (Map.isEmpty as) (header "Assumptions")
         $$ printMap0 ga as
 	$$ noPrint (null se) (header "Sentences")
-        $$ vcat (map (printText0 ga) se)
+        $$ vcat (map (printText0 ga) $ reverse se)
 	$$ noPrint (null ds) (header "Diagnostics")
 	$$ vcat (map (printText0 ga) $ reverse ds)
 	where header s =  text "%%" <+> text s 
