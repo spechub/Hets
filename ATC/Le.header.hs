@@ -1,3 +1,4 @@
+-- begin header
  
 instance ATermConvertible Env where
      toShATerm att0 (Env cm tm as sen env cou) = 
@@ -20,3 +21,15 @@ instance ATermConvertible Env where
                 in (Env i1' i2' i3' i4' i5' i6')
          where
          aterm = getATerm att
+
+
+instance ATermConvertible OpInfos where
+   toShATerm att0 (OpInfos lop) = 
+                     let (att1,i1) = toShATerm att0 lop
+                     in addATerm (ShAAppl "OpInfos" [i1] []) att1
+   fromShATerm att = case aterm of
+                      (ShAAppl "OpInfos" [i1] []) -> let lop = fromShATerm $ getATermByIndex1 i1 att
+                                                     in (OpInfos lop)
+                     where aterm = getATerm att
+
+-- end header
