@@ -73,6 +73,12 @@ cspCaslCSpec = do { d <- dataDefn
                   ; return  (Csp_casl_c_spec d c p)
                   }
 
+basicCspCaslCSpec :: AParser Basic_CSP_CASL_C_SPEC
+basicCspCaslCSpec = do { c <- channelDecl
+                  ; p <- processDefn
+                  ; return  (Basic_csp_casl_c_spec c p)
+                  }
+
 ----------------------------------------------------------------------------
 -- Parsers for the rest
 ----------------------------------------------------------------------------

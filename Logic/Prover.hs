@@ -46,7 +46,7 @@ data Prover sen proof_tree symbol =
               prove :: sen -> IO([Proof_status sen proof_tree]), -- proof status for goal and lemmas
               add_termination_info :: [symbol] -> [(symbol,[symbol])] -> IO(Bool), -- returns True if succeeded
               remove_termination_info :: [symbol] -> [(symbol,[symbol])] -> IO(Bool), -- returns True if succeeded
-              replay :: proof_tree -> Maybe sen
+              replay :: proof_tree -> Maybe sen -- what about the theory???
             }
 
 data Cons_checker morphism = 

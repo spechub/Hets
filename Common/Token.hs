@@ -201,6 +201,14 @@ sortId = do s <- varId
 		      (comps (casl_reserved_fops, casl_reserved_fwords))
 	    return (Id [s] c p)
 
+------------------------------------------------------------------------
+-- simpleIds for spec- and view-name 
+------------------------------------------------------------------------
+
+logicS = "logic" -- new keyword
+
+simpleId = pToken (reserved (logicS:casl_reserved_words) scanAnyWords)
+
 -- ----------------------------------------------
 -- Tokens 
 -- ----------------------------------------------

@@ -61,13 +61,6 @@ annoParser2 parser = bind (\x (Annoted y pos l r) -> Annoted y pos (x++l) r) ann
 emptyAnno :: a -> Annoted a
 emptyAnno x = Annoted x [] [] []
 
-------------------------------------------------------------------------
--- simpleIds for spec- and view-name 
-------------------------------------------------------------------------
-
-logicS = "logic" -- new keyword
-
-simpleId = pToken (reserved (logicS:casl_reserved_words) scanAnyWords)
 
 ------------------------------------------------------------------------
 -- logic and encoding names
@@ -230,9 +223,22 @@ specB l = do p1 <- asKey localS
                  return (item sp) -- ??? what to do with anno?
 
 specC :: LogicGraph -> GenParser Char AnyLogic (Annoted SPEC)
-specC l = do sp <- annoParser (specD l)
-             translation_list l sp
-             
+specC l =     do p1 <- asKey "data"
+                 Logic lid <- getState
+                 case data_logic lid of
+                   Nothing -> fail ("No data logic for " ++ language_name lid)
+                   Just (Logic dlid) -> do
+                     setState (Logic dlid)
+                     sp1 <- groupSpec l
+                     setState (Logic lid)
+                     sp2 <- specD l
+                     return (emptyAnno (Data (Logic dlid) 
+                                             (emptyAnno sp1) 
+                                             (emptyAnno sp2) 
+                                             [tokPos p1]))
+          <|> do sp <- annoParser (specD l)
+                 translation_list l sp
+          
 translation_list l sp =
      do sp' <- translation l sp
         translation_list l sp'

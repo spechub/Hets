@@ -1,9 +1,14 @@
-ccspec hugo =
+library test3
+
+logic CspCASL
+
+spec hugo =
   data 
 
-      sort s 
-      op c:s
-
+  {    sort s 
+   then
+      op c:s     
+  }
   channel
  
       n,m: s; 
@@ -12,6 +17,6 @@ ccspec hugo =
   process 
 
    P\s;
-   P[[c]];
-   -- Q ; P(c) ; Q ; P(c)
+   P[[c]]
+   %% Q ; P(c) ; Q ; P(c)
 end    

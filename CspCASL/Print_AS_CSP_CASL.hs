@@ -20,3 +20,7 @@ instance PrettyPrint CSP_CASL_C_SPEC where
     printText0 ga (Csp_casl_c_spec dd _cd _pd) =
 	ptext "data" $$
 	nest 2 (printText0 ga dd)
+
+instance PrettyPrint Basic_CSP_CASL_C_SPEC where
+    printText0 ga (Basic_csp_casl_c_spec _cd _pd) =
+	ptext "<not printable yet>"

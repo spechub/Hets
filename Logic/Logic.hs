@@ -253,6 +253,9 @@ class (StaticAnalysis lid
           lid -> symb_map_items, lid -> proof_tree,
           lid -> sign, lid -> morphism, lid ->symbol, lid -> raw_symbol
 	  where
+
+         data_logic :: lid -> Maybe AnyLogic
+
          sublogic_names :: lid -> sublogics -> [String] 
              -- the first name is the principal name
          all_sublogics :: lid -> [sublogics]
@@ -281,6 +284,24 @@ class (StaticAnalysis lid
          proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
          proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
 
+----------------------------------------------------------------
+-- Existential type covering any logic
+----------------------------------------------------------------
+
+data AnyLogic = forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree =>
+        Logic lid
+
+instance Show AnyLogic where
+  show (Logic lid) = language_name lid
+
+----------------------------------------------------------------
+-- Typeable instances
+----------------------------------------------------------------
 
 setTc :: TyCon
 setTc = mkTyCon "Common.Lib.Set.Set"

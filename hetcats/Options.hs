@@ -39,10 +39,13 @@ Usage: hetcats [OPTION...] file ... file
             |(graph.(dot|ps|davinci))
             (default: dg.taf)
 ?  -l id     --output-logic=id     select output logic and optional logic coding
+                mit Parsec (Token.simpleId) parsen
   -L DIR    --casl-libdir=DIR     CASL library directory
   -r RAW    --raw=RAW             raw options passed to the pretty-printer
 	    RAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer
 
+  -s        --just-structure      skip basic analysis - just do structured analysis
+  -g        --gui                 use graphical user interface
 -}
 
 module Options where

@@ -37,23 +37,24 @@ import qualified Common.Lib.Map as Map
 import Common.Result
 
 
--- for testing
-ana_file1 :: LogicGraph -> AnyLogic -> String 
-              -> IO (Maybe  (LIB_NAME,DGraph,LibEnv))
-ana_file1 logicGraph defaultLogic fname = do
+-- top level analysis for files
+anaFile :: LogicGraph -> AnyLogic -> String -> Bool
+              -> IO (LIB_DEFN, Maybe (LIB_NAME,DGraph,LibEnv))
+anaFile logicGraph defaultLogic fname just_parse = do
   putStrLn ("Reading " ++ fname)
   input <- readFile fname
   let ast = case runParser (library logicGraph) defaultLogic fname input of
               Left err -> error (show err)
               Right ast -> ast
-  Result diags res <- ioresToIO (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv ast)
-  sequence (map (putStrLn . show) diags)
-  
-  return res
+  if just_parse then return (ast,Nothing)
+   else do
+     Result diags res <- ioresToIO (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv ast)
+     sequence (map (putStrLn . show) diags)
+     return (ast,res)
 
 
-ana_file :: LogicGraph -> AnyLogic -> LibEnv -> LIB_NAME -> IO LibEnv
-ana_file logicGraph defaultLogic libenv libname = do
+ana_file1 :: LogicGraph -> AnyLogic -> LibEnv -> LIB_NAME -> IO LibEnv
+ana_file1 logicGraph defaultLogic libenv libname = do
   case Map.lookup libname libenv of
    Just _ -> return libenv
    Nothing -> do
@@ -97,7 +98,7 @@ ana_LIB_ITEM_with_download lgraph defl libenv
   -- we take as the default logic for imported libs 
   -- the global default logic
   let items' = zip items (drop 2 (pos ++ repeat nullPos))
-  libenv' <- ioToIORes (ana_file lgraph defl libenv ln)
+  libenv' <- ioToIORes (ana_file1 lgraph defl libenv ln)
   case Map.lookup ln libenv' of
     Nothing -> do
        ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available:"++show (Map.keys libenv')))

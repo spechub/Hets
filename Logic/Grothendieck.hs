@@ -205,13 +205,6 @@ instance Show G_morphism where
 -- Existential types for the logic graph
 ----------------------------------------------------------------
 
-data AnyLogic = forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree =>
-        Logic lid
 
 data AnyRepresentation = forall lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1

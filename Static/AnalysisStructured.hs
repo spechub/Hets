@@ -12,6 +12,8 @@
    To appear in the CASL book.
 
    Todo:
+   Option: only the structure is analysed
+
    Check that translations and reductions do not effect local env
 
    Unions (already in the parser) need unions of logics  
@@ -47,7 +49,7 @@
    Pushouts: only admissible within one logic?
 
    Optimizations:
-   Union nodes can be extended by a basic spec directly no new node needed)
+   Union nodes can be extended by a basic spec directly (no new node needed)
    Also: free, cofree nodes
 -}
 
@@ -478,6 +480,33 @@ ana_SPEC gannos genv dg nsig name sp =
 
   Qualified_spec logname asp pos ->
    ana_err "logic qualified specs"
+
+{-
+  Data (Logic lid1) asp1 asp2 pos ->
+   do let sp1 = item asp1
+          sp2 = item asp2
+          l = getLogic nsig
+      (nsig1,dg1) <- ana_SPEC gannos genv dg (EmptyNode lid1) Nothing sp1
+      (nsig2,dg2) <- ana_SPEC gannos genv dg nsig1 Nothing sp1
+      n' <- maybeToResult nullPos 
+            "Internal error: Free spec over empty spec" (getNode nsig')
+      let gsigma' = getSig nsig'
+      G_sign lid' sigma' <- return gsigma'
+      let node_contents = DGNode {
+            dgn_name = name,
+            dgn_sign = G_sign lid' (empty_signature lid'), -- delta is empty
+            dgn_sens = G_l_sentence lid' [],
+            dgn_origin = DGFree }
+          [node] = newNodes 0 dg'
+          link = (n',node,DGLink {
+            dgl_morphism = undefined, -- ??? inclusion
+            dgl_type = FreeDef nsig,
+            dgl_origin = DGFree })
+      return (NodeSig(node,gsigma'),
+              insEdge link $
+              insNode (node,node_contents) dg')
+
+-}
 
 -- analysis of renamings
 

@@ -18,5 +18,14 @@ import Syntax.AS_Library
 
 read_LIB_DEFN :: HetcatsOpts -> IO LIB_DEFN
 read_LIB_DEFN opt = read_sml_ATerm (infile opt)
-
-
+{-
+  putStrLn ("Reading " ++ fname)
+  case intype opt of
+    ATermIn _ -> do read_sml_ATerm (infile opt)
+                              
+    HetCASLIn -> do
+     input <- readFile fname
+     let ast = case runParser (library logicGraph) defaultLogic fname input of
+                 Left err -> error (show err)
+                 Right ast -> ast
+-}
