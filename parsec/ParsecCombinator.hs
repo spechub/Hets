@@ -138,8 +138,8 @@ manyTill p end      = scan
 
 
 lookAhead :: GenParser tok st a -> GenParser tok st a
-lookAhead p         = do{ state <- getState
+lookAhead p         = do{ state <- getParserState
                         ; x <- p
-                        ; setState state
+                        ; setParserState state
                         ; return x
                         }
