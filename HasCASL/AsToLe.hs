@@ -19,6 +19,7 @@ import FiniteMap
 import Result
 import List
 import Maybe
+import ParseTerm(isSimpleId)
 
 ----------------------------------------------------------------------------
 -- FiniteMap stuff
@@ -66,7 +67,7 @@ defCEntry ce cid sups defn = addToFM ce cid
 
 type Assumps = FiniteMap Id [TypeScheme]
 
-type TypeKinds = FiniteMap TypeName [Kind]
+type TypeKinds = FiniteMap TypeName Kind
 
 -----------------------------------------------------------------------------
 -- local env
@@ -91,18 +92,26 @@ appendDiags ds =
 getClassEnv :: State Env ClassEnv
 getClassEnv = gets classEnv
 
+putClassEnv :: ClassEnv -> State Env ()
+putClassEnv ce = do { e <- get; put e { classEnv = ce } }
+
 getTypeKinds :: State Env TypeKinds
 getTypeKinds = gets typeKinds
 
 putTypeKinds :: TypeKinds -> State Env ()
 putTypeKinds tk =  do { e <- get; put e { typeKinds = tk } }
 
-putClassEnv :: ClassEnv -> State Env ()
-putClassEnv ce = do { e <- get; put e { classEnv = ce } }
+getAssumps :: State Env Assumps
+getAssumps = gets assumps
+
+putAssumps :: Assumps -> State Env ()
+putAssumps as =  do { e <- get; put e { assumps = as } }
+
 
 ----------------------------------------------------------------------------
 -- analysis
 -----------------------------------------------------------------------------
+
 anaBasicSpec :: BasicSpec -> State Env ()
 anaBasicSpec (BasicSpec l) = mapM_ anaAnnotedBasicItem l
 
@@ -117,23 +126,60 @@ anaBasicItem (GenVarItems l _) = mapM_ anaGenVarDecl l
 anaSigItems :: SigItems -> State Env ()
 anaSigItems(TypeItems inst l _) = mapM_ (anaAnnotedTypeItem inst) l
 
+----------------------------------------------------------------------------
+-- GenVarDecl
+-----------------------------------------------------------------------------
+
 anaGenVarDecl :: GenVarDecl -> State Env ()
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 
-optAnaVarDecl :: VarDecl -> State Env ()
-optAnaVarDecl =		 error "nyi"
+convertTypeToClass :: Type -> State Env (Result Class)
+convertTypeToClass (TypeToken t) = 
+    do Result ds (Just cs) <- anaClassName False t 
+       if null cs then return $ Result ds Nothing
+	  else return $ Result ds (Just $ Intersection cs [])  
 
-{-
-optAnaVarDecl(VarDecl v t _ _) = 
-    let mc = TypeToClass t in 
-	     if isSimpleId v && isJust mc then
-		ana
+convertTypeToClass (BracketType Parens ts ps) = 
+    convertTypeListToClass ts ps
 
--}
+convertTypeToClass (TupleType ts ps) = convertTypeListToClass ts ps
+
+convertTypeToClass _ = return $ Result [] Nothing
+
+convertTypeListToClass :: [Type] -> [Pos] -> State Env (Result Class)
+convertTypeListToClass ts ps =
+    do is <- mapM convertTypeToClass ts
+       let mis = map maybeResult is
+	   ds = concatMap diags is
+	   in if all isJust mis then return $ Result ds 
+	      (Just $ Intersection (concatMap (iclass . fromJust) mis) ps)
+	      else return $ Result ds Nothing
+
+optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
+optAnaVarDecl vd@(VarDecl v t _ _) = 
+    if isSimpleId v then
+       do Result ds mc <- convertTypeToClass t
+	  case mc of
+	       Just c -> addTypeKind v (Kind [] c [])
+	       Nothing -> anaVarDecl vd
+    else anaVarDecl vd
+
+anaVarDecl(VarDecl v t _ p) = 
+		   do as <- getAssumps
+		      let l = lookUp as v 
+			  ts = SimpleTypeScheme t in 
+			  if ts `elem` l then 
+			     appendDiags 
+				     [Warning 
+				      ("repeated variable '" 
+				       ++ showId v "'") p ]
+			     else  putAssumps $ addToFM as v (ts:l)
 
 anaTypeVarDecl :: TypeVarDecl -> State Env ()
-anaTypeVarDecl = error "nyi"
+anaTypeVarDecl(TypeVarDecl t k _ _) = 
+    do nk <- anaKind k
+       addTypeKind t k
 
 -- ----------------------------------------------------------------------------
 -- As.ClassItem
@@ -162,6 +208,7 @@ anaClassDecls (DownsetDefn ci tv _ _) =
        appendDiags [Warning "definition currently ignored" (tokPos tv)]
 	       
 anaClassName :: Bool -> ClassName -> State Env (Result [ClassName])
+-- True: declare the class
 anaClassName b ci = 
     do ce <- getClassEnv
        if isJust $ lookupFM ce ci then return $ return [ci]
@@ -184,7 +231,7 @@ anaClass b c@(As.Intersection cs ps) =
 		  (Just $ Intersection 
 		   (nub $ concatMap (fromJust . maybeResult) newCs) ps)
 
-anaClass _ (Downset _) = error "must not happen"
+anaClass _ (Downset _) = error "anaClass for Downset"
 
 anaSuperClass :: Class -> State Env Class
 anaSuperClass c =
@@ -222,7 +269,7 @@ anaClassDecl cs cdef@(Intersection is ps) ci =
 		    newIs = Intersection (nub $ defIs ++ oldIs) 
 			       (ps ++ qs)
 		    cycles = map snd $ scycs ++ icycs
-		in do appendDiags [Warning ("redeclared class '"
+		in do appendDiags [Warning ("repeated class '"
 					++ tokStr ci ++ "'") 
 			      $ tokPos ci]
 		      if not $ null cycles then
@@ -239,7 +286,7 @@ anaClassDecl cs cdef@(Intersection is ps) ci =
 			    if null ds then return ()
 			       else appendDiags 
 					[Warning 
-					 ("repeated superclass declaration '"
+					 ("repeated superclass '"
 					  ++ showClassList ds "'")
 					$ tokPos (head ds)]
 		      if null oldIs then return ()
@@ -248,6 +295,8 @@ anaClassDecl cs cdef@(Intersection is ps) ci =
 					 ("merged definition '"
 					  ++ showClassList defIs "'")
 					$ tokPos (head defIs)]
+
+anaClassDecl _ (Downset _) _ = error "anaClassDecl for Downset"
 
 -- ----------------------------------------------------------------------------
 -- TypeItem
@@ -258,22 +307,68 @@ anaAnnotedTypeItem inst i = anaTypeItem inst $ item i
 
 anaTypeItem :: Instance -> As.TypeItem -> State Env ()
 anaTypeItem inst (TypeDecl pats kind _) = 
-    mapM_ (anaTypePattern inst kind) pats 
+    do k <- anaKind kind
+       mapM_ (anaTypePattern inst k) pats 
 
 anaTypePattern :: Instance -> Kind -> TypePattern -> State Env ()
 anaTypePattern _ kind (TypePatternToken t) = 
-    do k <- anaKind kind
-       addTypeKind (simpleIdToId t) k
+       addTypeKind (simpleIdToId t) kind
+
+convertTypePattern :: TypePattern -> Result TypePattern
+convertTypePattern t@(TypePattern _ _ _) = return t
+convertTypePattern(TypePatternToken t) = 
+    if isPlace t then fatal_error ("illegal type '__'") (tokPos t)
+       else return $ TypePattern (simpleIdToId t) [] []
+
+convertTypePattern t =
+    if hasPlaces t && hasTypeArgs t then
+       fatal_error ( "illegal mix of '__' and '(...)'" ) 
+                   (posOfTypePattern t)
+    else error "nyi" -- makeMixTypeId t
+
+posOfTypePattern :: TypePattern -> Pos
+posOfTypePattern (TypePattern t _ _) = posOfId t
+posOfTypePattern (TypePatternToken t) = tokPos t
+posOfTypePattern (MixfixTypePattern ts) = 
+    if null ts then nullPos else posOfTypePattern $ head ts
+posOfTypePattern (BracketTypePattern _ ts ps) = 
+    if null ps then 
+       if null ts then nullPos
+       else posOfTypePattern $ head ts
+    else head ps
+posOfTypePattern (TypePatternArgs as) = 
+    if null as then nullPos else 
+       let TypeArg t _ _ _ = head as in tokPos t
+		    
+hasPlaces, hasTypeArgs :: TypePattern -> Bool
+hasPlaces (TypePattern _ _ _) = False
+hasPlaces (TypePatternToken t) = isPlace t
+hasPlaces (MixfixTypePattern ts) = any hasPlaces ts
+hasPlaces (BracketTypePattern Parens _ _) = False
+hasPlaces (BracketTypePattern _ ts _) = any hasPlaces ts
+hasPlaces (TypePatternArgs _) = False
+
+hasTypeArgs (TypePattern _ _ _) = True
+hasTypeArgs (TypePatternToken _) = False
+hasTypeArgs (MixfixTypePattern ts) = any hasTypeArgs ts
+hasTypeArgs (BracketTypePattern Parens _ _) = True
+hasTypeArgs (BracketTypePattern _ ts _) = any hasTypeArgs ts
+hasTypeArgs (TypePatternArgs _) = True
+
+-- ----------------------------------------------------------------------------
+-- addTypeKind
+-- ----------------------------------------------------------------------------
 
 addTypeKind :: Id -> Kind -> State Env ()
 addTypeKind t k = 
     do tk <- getTypeKinds
-       let l = lookUp tk t in
-	 if k `elem` l then
-	    appendDiags [Warning ("redeclared type '" 
-					       ++ showId t "'")
-				     $ posOfId t]
-		       else putTypeKinds $ addToFM tk t (k:l)
+       case lookupFM tk t of
+            Just _ -> appendDiags [Warning 
+				   ("shadowing type '" 
+				    ++ showId t "'") 
+				  $ posOfId t]
+	    _ -> return ()
+       putTypeKinds $ addToFM tk t k
 
 {- 
 -- add instances later on
