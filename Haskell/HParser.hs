@@ -4,6 +4,10 @@
    Authors: C. Maeder
    Year:    2003
 
+   Wrapper for Haskell parsing
+   Parses Haskell declarations (not a whole module), for use
+     in heterogeneous specifications
+
    toDo: maybe change Language.Haskell.Parser 
    and export the parser for HsDecl
 

@@ -1,10 +1,17 @@
 - Named AHsDecls?
+Sentence = 1 decl
+Name = Funktionsname + Nr.
 
 - Was macht newNodes?
+zum Hinzufügen eines Knotens in einen Graphen
 
 - Hauptmodul als ersten Knoten? 
   Importierte als folgende Knoten? 
   Woher sign und sen fuer importierte?
+in Main.hs:
+     importedModInfo <- readModuleInfo annotatedSyntax
+in MultiModule.hs:
+readModuleInfo :: AHsModule -> IO ModuleInfo
 
 - in hasEnv2DG: ModuleInfo nur unvollstaendig
 

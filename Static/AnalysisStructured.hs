@@ -59,6 +59,7 @@
    Optimizations:
    Union nodes can be extended by a basic spec directly (no new node needed)
    no new nodes for trivial translations
+   use foldM
    Also: free, cofree nodes
 -}
 
