@@ -140,7 +140,7 @@ isaProve thName (sig,axs) goals = do
 
 -- translate special characters in sentence names
 transSens :: [Named a] -> [Named a]
-transSens = map (\ax -> ax{senName = transString $ senName ax})
+transSens = map (\ax -> ax{senName = concatMap replaceChar $ senName ax})
 
 -- disambiguate sentence names
 disambiguateSens :: [Named a] -> [Named a] -> [Named a]

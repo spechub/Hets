@@ -11,7 +11,7 @@ Portability :  portable
    translate 'Id' to Isabelle strings
 -}
 
-module Isabelle.Translate (showIsa, showIsaSid, showIsaI, transString) where
+module Isabelle.Translate (showIsa, showIsaSid, showIsaI, replaceChar) where
 
 import Common.Id 
 import qualified Common.Lib.Map as Map
@@ -55,7 +55,8 @@ cut = reverse . tail . tail . reverse . tail . tail
 -- Replacement of special characters
 
 replaceChar :: Char -> String
-replaceChar c = Map.findWithDefault "_" c $ Map.fromList 
+replaceChar c = if isIsaChar c then [c] else 
+                Map.findWithDefault "_" c $ Map.fromList 
  [('!' , "Exclam"),
   ('#' , "Sharp"),
   ('$' , "Dollar"),
