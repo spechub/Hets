@@ -62,15 +62,15 @@ instance Category CspCASL CSPSign CSPMorphism
          -- ide :: id -> object -> morphism
 	 ide CspCASL sigma = 
            let idAdd =
-                CSPAddMorphism { channelMap = Map.empty -- ???
-                               , processMap = Map.empty -- ???
+                CSPAddMorphism { channelMap = Map.empty -- ??? too simplistic!
+                               , processMap = Map.empty -- ??? too simplistic!
                                }
             in idMor (\ _ _ -> idAdd) sigma
          -- o :: id -> morphism -> morphism -> Maybe morphism
-	 comp CspCASL sigma1 _sigma2 = fun_err "comp"
+	 comp CspCASL = compose (const id) -- ??? too simplistic!
          -- dom, cod :: id -> morphism -> object
-	 dom CspCASL _ = fun_err "dom"
-	 cod CspCASL _ = fun_err "cod"
+	 dom CspCASL = msource
+	 cod CspCASL = mtarget
          -- legal_obj :: id -> object -> Bool
 	 legal_obj CspCASL _ = fun_err "legall_obj"
          -- legal_mor :: id -> morphism -> Bool
