@@ -1,0 +1,18 @@
+4*x^4+3*x^3+2*x^2+1*x^1+0*x^0
+"ab\"'\n\\"
+12
+12.1
+1E1
+1.0E2
+12+34*"afa"
+""+""
+(op x: a)(a,b)
+(a)
+(a,b)
+a:s + b:s
+a as s : s as s 
+a:s:s as s as s
+[]
++a
+__+__(a,b)
+a when a < b else b

@@ -120,15 +120,19 @@ getListBrackets (Id b _ _) =
     in (b1, b2)
 
 listStates :: GlobalAnnos -> Int -> Set State
+-- no empty list (can be written down directly)
 listStates g i = 
     let listState toks = State listId [] [] toks i
     in case list_lit (literal_annos g) of
 		Nothing -> emptySet
-		Just (bs, _, _) -> 
+		Just (bs, c, _) -> 
 		    let (b1, b2) = getListBrackets bs
-		    in mkSet [ listState (b1 ++ b2)
-			     , listState (b1 ++ [termTok] ++ b2)
+			el = b1++b2
+		        ls = mkSet [ listState (b1 ++ [termTok] ++ b2) 
 			     , listState (b1 ++ [termTok, commaTok] ++ b2)]
+		     in if c == Id el [] [] then ls 
+		        -- don't put in empty list twice
+			else ls `addToSet` listState el 
 
 -- these are the possible matches for the nonterminal TERM
 -- the same states are used for the predictions  
@@ -368,7 +372,7 @@ nextState g is trm (i, ds, m) =
     let m1 = complete g (i+1) $
 		 scan trm i $
 		 predict g is i m
-    in if isEmptySet $ lookUp m1 (i+1) 
+    in if isEmptySet (lookUp m1 (i+1)) && null ds
 		    then (i+1, Error ("unexpected term or token: " 
 				      ++ show (printText0 g trm))
 			       (posOfTerm trm) : ds, m)
@@ -401,7 +405,11 @@ iterateStates g ops preds terms c@(i, ds, m) =
                     tNew = case v of Nothing -> head terms
 				     Just x -> x
 		in self (tail terms) (nextState g ops tNew (i, ds++mds, m)) 
-            t -> self (tail terms) (nextState g ops t c)
+            Mixfix_token t -> let (ds1, trm) = 
+				      convertMixfixToken (literal_annos g) t
+			      in self (tail terms) 
+				     (nextState g ops trm (i, ds1++ds, m))
+	    t ->  self (tail terms) (nextState g ops t c)
   where expand = expandPos Mixfix_token 
 
 posOfId :: Id -> Pos
@@ -435,8 +443,6 @@ getAppls g i m =
 
 resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
 resolveMixfix g ops preds mayBeFormula trm =
-    if isStringOrFloat trm then convertToTerm trm
-    else 
     let (i, ds, m) = iterateStates g ops preds [trm] 
 		     (0, [], unitFM 0 $ initialState g 
 		      (if mayBeFormula then ops `union` preds else ops) 0)
@@ -446,17 +452,12 @@ resolveMixfix g ops preds mayBeFormula trm =
 					     ++ show (printText0 g trm))
 					    (posOfTerm trm)
 		       else Result ds (Just trm)
-       else if null $ tail ts then return $ head ts
-	    else non_fatal_error trm ("ambiguous mixfix term\n\t" ++ 
+       else if null $ tail ts then Result ds (Just (head ts))
+	    else Result (Error ("ambiguous mixfix term\n\t" ++ 
 			 (concat  
 			 $ intersperse "\n\t" 
 			 $ map (show . printText0 g) 
-			 $ take 5 ts)) (posOfTerm trm)
-    where isStringOrFloat (Mixfix_token t) = isString t || isNumber t
-	  isStringOrFloat _ = False
-          convertToTerm (Mixfix_token t) = 
-	      convertMixfixToken (literal_annos g) t
-	  convertToTerm _ = error "convertToTerm"
+			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
 
 resolveFormula :: GlobalAnnos -> Set Id -> Set Id -> FORMULA -> Result FORMULA
 resolveFormula g ops preds frm =
@@ -514,15 +515,16 @@ resolveFormula g ops preds frm =
 		     if ide `elementOf` preds then return p
 		     else non_fatal_error p 
 		          ("not a predicate: " ++ showId ide "")
-			  (posOfId ide)
+			  (posOfTerm t)
 		 Mixfix_qual_pred qide ->
 		  return $ Predication qide [] []
 		 Mixfix_term [Mixfix_qual_pred qide, 
 			      Mixfix_parenthesized ts ps] ->
 		  return $ Predication qide ts ps
+                 Mixfix_term _ -> return $ Mixfix_formula t -- still wrong
 		 _ -> non_fatal_error (Mixfix_formula t)
-	                ("unresolved formula: " ++ show (printText0 g tOld))
-			(posOfTerm tOld)
+	                ("not a formula: " ++ show (printText0 g t))
+			(posOfTerm t)
        f -> return f
 
 
@@ -560,11 +562,13 @@ makeStringTerm c f tok =
   str = init (tail (tokStr tok))
   makeStrTerm p@(lin, col) l = 
     if null l then asAppl c [] p
-    else let (hd, tl) = split caslChar l
-	     real = if hd == "'" then "'\\''" else "'" ++ hd ++ "'"
+    else let (real, len, rest) = if head l == '\'' 
+                        then ("'\\''", 1, tail l) 
+			else let (hd, tl) = split caslChar l
+	                     in ("'" ++ hd ++ "'", length hd, tl)
              -- convert "'" to "\'" and lookup character '\''
          in asAppl f [asAppl (Id [Token real p] [] []) [] p, 
-		      makeStrTerm (lin, col + length hd) tl] p
+		      makeStrTerm (lin, col + len) rest] p
 
 makeNumberTerm :: Id -> Token -> TERM
 makeNumberTerm f t@(Token n p@(lin, col)) =
@@ -607,24 +611,23 @@ asAppl f args p = let pos = if null args then [] else [p]
 		  in Application (Op_name f) args pos
 
 -- analyse Mixfix_token
-convertMixfixToken::  LiteralAnnos -> Token  -> Result TERM 
+convertMixfixToken::  LiteralAnnos -> Token  -> ([Diagnosis], TERM) 
 convertMixfixToken ga t = 
      if isString t then 
 	case string_lit ga of
 	Nothing -> err "string"
-        Just (c, f) -> return $ makeStringTerm c f t
-     else if isNumber t then 
+        Just (c, f) -> ([], makeStringTerm c f t)
+     else if isNumber t then
 	  case number_lit ga of
 	  Nothing -> err "number"
 	  Just f -> if isFloating t then
 		        case float_lit ga of
 			Nothing -> err "floating"
-			Just (d, e) -> return $ makeFloatTerm f d e t
-		    else return $ makeNumberTerm f t
-     else return te
+			Just (d, e) -> ([], makeFloatTerm f d e t)
+		    else ([], makeNumberTerm f t)
+     else ([], te)
     where te =  Mixfix_token t
-          err s = non_fatal_error te
-		  ("missing %" ++ s ++ " annotation") (tokPos t)
+          err s = ([Error ("missing %" ++ s ++ " annotation") (tokPos t)], te)
 
 
 

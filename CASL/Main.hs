@@ -16,6 +16,7 @@ import Parse_AS_Basic
 import SortItem
 import OpItem
 import RunParsers
+import RunMixfixParser
 
 main :: IO ()
 main = exec lineParser fileParser
@@ -27,6 +28,9 @@ lineParser = [
  ("Formula", HetParser formula),
  ("SortItem", HetParser sortItems),
  ("OpItem", HetParser opItems),
- ("PredItem", HetParser predItems)]
+ ("PredItem", HetParser predItems),
+ ("MixfixTerms", HetParser resolveTerm),
+ ("MixfixFormula", HetParser resolveForm),
+ ("VarIds", HetParser varId)]
 
 fileParser = [("BasicSpec", HetParser basicSpec)]
