@@ -1,0 +1,12 @@
+%% Example for testing the translation from HasCASL to haskell.
+
+type Bool ::= True | False
+
+op not : Bool -> Bool = \a. case a of True -> False | False -> True
+%%program not2 (true) = false 
+%%program not2 (false) = true
+
+op and2 : Bool * Bool -> Bool
+
+op ident : Bool -> Bool = \x. x
+
