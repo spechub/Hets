@@ -151,13 +151,20 @@ applyRule = error "Proofs.hs:applyRule"
 
 
 automatic :: ProofStatus -> IO ProofStatus
-automatic proofStatus = do
+automatic = automaticRecursive 0
+
+{- applies the rules recursively until no further changes can be made -}
+automaticRecursive :: Int -> ProofStatus -> IO ProofStatus
+automaticRecursive cnt proofStatus = do
   (globalContext, libEnv, history, dgraph) <- automaticAux proofStatus
-  let (newHistoryPart, oldHistory) = splitAt 5 history
-      (rules, changes) = concatHistoryElems (reverse newHistoryPart)
-      newHistoryElem = (rules, removeContraryChanges changes)
-      newHistory = newHistoryElem:oldHistory
-  return (globalContext, libEnv, newHistory, dgraph)
+  let (newHistoryPart, oldHistory) = splitAt (5+cnt) history
+  if (null (concat (map snd (take 5 newHistoryPart)))) && (cnt == 1) then
+     return proofStatus
+   else do
+    let (rules, changes) = concatHistoryElems (reverse newHistoryPart)
+	newHistoryElem = (rules, removeContraryChanges changes)
+	newHistory = newHistoryElem:oldHistory
+    automaticRecursive 1 (globalContext, libEnv, newHistory, dgraph)
 
 
 removeContraryChanges :: [DGChange] -> [DGChange]
