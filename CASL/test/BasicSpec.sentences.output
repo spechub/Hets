@@ -747,8 +747,8 @@
   not def (op d : s -> t)((op c : s) : s) : t %(ga_selector_undef_d_c)%,
   forall X1:a
       . not def (op d : s -> t)((op c : a -> s)((var X1 : a) : a) : s) : t %(ga_selector_undef_d_c)%,
-  generated{sort s; op c : s; op c : a ->? s;
-                    op c : a * t * t * t -> s} %(ga_generated_s)%,
+  generated{sort s; op _inj : s1 -> s; op _inj : s2 -> s; op c : s;
+                    op c : a ->? s; op c : a * t * t * t -> s} %(ga_generated_s)%,
   forall X1:a; X2:t; X3:t; X4:t
       . (op a : s -> t)((op c : a * t * t * t -> s)((var X1 : a) : a,
                                                     (var X2 : t) : t, (var X3 : t) : t,
@@ -764,8 +764,8 @@
                                                     (var X2 : t) : t, (var X3 : t) : t,
                                                     (var X4 : t) : t) : s) : t =
             (var X4 : t) : t %(ga_selector_d)%,
-  generated{sort s; op c : s; op c : a ->? s;
-                    op c : a * t * t * t -> s} %(ga_generated_s)%,
+  generated{sort s; op _inj : s1 -> s; op _inj : s2 -> s; op c : s;
+                    op c : a ->? s; op c : a * t * t * t -> s} %(ga_generated_s)%,
   forall X1:a; X2:t; X3:t; X4:t
       . (op a : s -> t)((op c : a * t * t * t -> s)((var X1 : a) : a,
                                                     (var X2 : t) : t, (var X3 : t) : t,
@@ -781,7 +781,8 @@
                                                     (var X2 : t) : t, (var X3 : t) : t,
                                                     (var X4 : t) : t) : s) : t =
             (var X4 : t) : t %(ga_selector_d)%,
-  generated{sort s, t; op c : s; op c : a ->? s;
+  generated{sort s, t; op _inj : s1 -> s; op _inj : s2 -> s;
+                       op c : s; op c : a ->? s;
                        op c : a * t * t * t -> s} %(ga_generated_s_t)%,
   (op a : Data1) : Data1 = (op a : Data1) : Data1 %(a1)%,
   (op a : Data1) : Data1 = (op a : Data1) : Data1 %(a2)%,
