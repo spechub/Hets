@@ -101,11 +101,12 @@ writeShATermFileSDoc fp atcon =
    writeFileSDoc fp $ writeSharedATermSDoc (versionedATermTable atcon)
 
 versionedATermTable :: (ATermConvertible a) => a -> ATermTable
-versionedATermTable atcon =     
-    let (att0,versionnr) = 
-            {-# SCC "att0" #-} toShATerm emptyATermTable hetcats_version
-	(att1,aterm) = {-# SCC "att1" #-} toShATerm att0 atcon
-    in {-# SCC "att3" #-} fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
+versionedATermTable atcon =      
+    case  {-# SCC "att0" #-} toShATerm emptyATermTable hetcats_version of
+    (att0,versionnr) -> 
+	case {-# SCC "att1" #-} toShATerm att0 atcon of
+	(att1,aterm) ->  {-# SCC "att3" #-} 
+	    fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
                            
 toShATermString :: (ATermConvertible a) => a -> String
 toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
@@ -114,9 +115,6 @@ toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
 globalContexttoShATerm :: FilePath -> GlobalContext -> IO ()
 globalContexttoShATerm fp gc = writeShATermFileSDoc fp gc
 
-rmSuffix :: String -> String
-rmSuffix = reverse . tail . snd . break (=='.') . reverse
-
 writeFileInfo :: HetcatsOpts -> String -> LIB_NAME -> LibEnv -> IO()
 writeFileInfo opts file ln lenv = 
   case Map.lookup ln lenv of
@@ -124,3 +122,4 @@ writeFileInfo opts file ln lenv =
     Just gctx -> do
       let envFile = rmSuffix file ++ ".env"
       putIfVerbose opts 1 ("Writing "++envFile); globalContexttoShATerm envFile gctx
+

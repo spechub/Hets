@@ -23,6 +23,8 @@ import Common.Lib.Parsec
 import Comorphisms.LogicGraph
 import Common.ATerm.Lib
 import Common.AnnoState
+import Common.Id
+import Common.Result
 import Version
 
 import Static.DevGraph
@@ -49,23 +51,27 @@ read_LIB_DEFN opt file =
                _         -> error "Unknown InType wanted in read_LIB_DEFN"
        return ld
 
-readLIB_DEFN_from_file :: FilePath -> IO LIB_DEFN
+readLIB_DEFN_from_file :: FilePath -> IO (Result LIB_DEFN)
 readLIB_DEFN_from_file = readShATermFile
 
-readShATermFile :: (ATermConvertible a) => FilePath -> IO a 
+readShATermFile :: (ATermConvertible a) => FilePath -> IO (Result a)
 readShATermFile fp = do str <- readFile fp
-                        return $ fromShATermString str
+                        return (fromShATermString str) 
                         
-fromShATermString :: (ATermConvertible a) => String -> a
-fromShATermString str = case getATerm att of
-                         ShAAppl "hets" [versionnr,aterm] [] -> 
-                          if hetcats_version == (fromShATerm $ getATermByIndex1 versionnr att)
-			     then fromShATerm $ getATermByIndex1 aterm att
-                             else error "Wrong version number!"
-                         _                                   -> error "Couldn't convert ShATerm back from file"
-    where att = readATerm str
+fromShATermString :: (ATermConvertible a) => String -> Result a
+fromShATermString str = 
+    case getATerm att of
+    ShAAppl "hets" [versionnr,aterm] [] -> 
+        if hetcats_version == (fromShATerm $ getATermByIndex1 versionnr att)
+	then Result [] (Just $ fromShATerm $ getATermByIndex1 aterm att)
+        else Result [dia1] Nothing
+    _                                   ->  Result [dia2] Nothing
+    where att  = readATerm str
+	  dia1 = Diag Warning "Wrong version number!" nullPos
+	  dia2 = Diag Warning "Couldn't convert ShATerm back from file" 
+		      nullPos
 
-globalContextfromShATerm :: FilePath -> IO GlobalContext 
+globalContextfromShATerm :: FilePath -> IO (Result GlobalContext)
 globalContextfromShATerm = readShATermFile
 {-do str <- readFile fp
                                  att <- return $ readATerm str

@@ -264,6 +264,32 @@ inTypes = [("casl",(CASLIn,True)),
 downloadExtensions :: [String]
 downloadExtensions = map fst $ filter (\(_,(_,b)) -> b) inTypes
 
+-- |
+-- checks if a source file for the given base  exists
+existsAnSource :: FilePath -> IO (Maybe FilePath)
+existsAnSource base2 = 
+       do
+       let names = map (base2++) ("":(map ("."++) downloadExtensions))
+       -- look for the first existing file
+       existFlags <- sequence (map doesFileExist names)
+       return (find fst (zip existFlags names) >>= (return . snd))
+
+-- | 
+-- gets two Paths and checks if the first file is more recent than the
+-- second one
+checkRecentEnv :: FilePath -> FilePath -> IO Bool
+checkRecentEnv fp1 base2 = 
+   do fp1_exists <- doesFileExist fp1
+      if not fp1_exists then return False 
+       else do
+      maybe_source_file <- existsAnSource base2
+      maybe (return False) 
+	     (\ fp2 ->     do fp1_time <- getModificationTime fp1
+	                      fp2_time <- getModificationTime fp2
+		              return (fp1_time > fp2_time))
+	     maybe_source_file
+
+
 -- | 'parseInType' parses an 'InType' Flag from user input
 parseInType :: String -> Flag
 parseInType = InType . parseInType1
