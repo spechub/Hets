@@ -73,7 +73,6 @@ import Static.DevGraph
 import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions
 import Common.Result
 import Common.Id
 import Common.Lib.Set hiding (filter)
