@@ -5,24 +5,35 @@ imports
   $Id$
   Authors: Pascal Schmidt
   Year:    2002
------------------------------------------------------------------------------
-  TODO
-
 -------------------------------------------------------------------------- -}
+
 import Id
 import Sign
-import AS_Basic_CASL
 import FiniteMap
 import Graph
 
+-- lots of dummy functions
+
 addSort :: Sign -> SORT -> Sign
 addSort a b = a
+
+addSubSort :: Sign -> SORT -> SORT -> Sign
+addSubSort sigma super sub = sigma
+
+addSubSorts :: Sign -> SORT -> [SORT] -> Sign
+addSubSorts sigma super subs = sigma
 
 emptySign :: Sign
 emptySign = SignAsMap emptyFM empty
 
 unifySign :: Sign -> Sign -> Sign
 unifySign a b = a
+
+inSignSort :: Sign -> Sort -> Bool
+inSignSort sigma s = True
+
+allDiff :: SORT -> [SORT] -> Bool
+allDiff s l = [ x | x<-l, x==s ]==[]
 
 }
 
@@ -31,9 +42,23 @@ DATA SORT_ITEM | Sort_decl sorts:{[SORT]} pos:{[Pos]}
                | Subsort_defn sort:SORT var:VAR oldsort:SORT form:{Annoted FORMULA} pos:{[Pos]}
                | Iso_decl sorts:{[SORT]} pos:{[Pos]}
 
-ATTR SORT_ITEM [ | sigma:Sign err:{[String]} | delta:Sign ]
+ATTR SORT_ITEM [ | sigma:Sign err:{[String]} | delta:Sign eps::{[Sentence]}]
 
 SEM SORT_ITEM
   | Sort_decl    loc.temp  = foldl addSort emptySign @sorts
                  lhs.delta = @temp
                     .sigma = unifySign @lhs.sigma @temp
+                    .eps   = []
+  | Subsort_decl loc.temp  = if (allDiff @sort @sorts) then
+                               addSubSorts emptySign @sort @sorts
+                             else
+                               emptySign
+                 lhs.delta = @temp
+                    .err   = if (@temp==emptySign) then
+                               "Subsorts not unique from sort\n" ++ @lhs.err
+                             else
+                               @lhs.err
+                    .sigma = unifySign @lhs.sigma @temp
+  | Subsort_defn loc.cond  = (inSignSort @lhs.sigma @oldsort) -- &&
+                             (-- more conditions here --)
+        
