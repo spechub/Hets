@@ -1,5 +1,13 @@
 {- |
+<<<<<<< Haskell2IsabelleHOLCF.hs
+<<<<<<< Haskell2IsabelleHOLCF.hs
 Module      :  $Header$
+=======
+Module      :  $Header$
+>>>>>>> 1.24
+=======
+Module      :  $Header$
+>>>>>>> 1.25
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2003
 Licence     :  All rights reserved.
 
@@ -129,65 +137,37 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
     map_theory Haskell2IsabelleHOLCF = 
         mkTheoryMapping transSignature transSentence
 
------------------------------- Isa auxiliaries ----------------------------------
-
--- multiCApp :: Term [IsaTerm] -> IsaTerm 
--- multiCApp t ls = case ls of 
---                 [] -> t
---                 x:xs -> multiCApp (App t x IsCont) xs 
 
 ------------------------------ Theory translation -------------------------------
 
 transSentence :: HatAna.Sign -> TiPropDecorate.TiDecl PNT -> Result IsaSign.Sentence
 transSentence sign (TiPropDecorate.Dec d) = case d of
              PropSyntaxStruct.Base p -> case p of
-                HsDeclStruct.HsFunBind _ ls -> Result [] (Just (Sentence $ transMatchList ls)) 
+                HsDeclStruct.HsFunBind _ ls -> do ts <- transMatchList ls
+                                                  return (Sentence ts)    
+--                                                Result [] (Just (Sentence $ transMatchList ls)) 
 --                HsDeclStruct.HsTypeSig _ ls c t -> Result [] (Just (Sentence (functionDeclList ls c t)))
---                _ -> Result [(Diag Hint "problem" (Id.SourcePos "Haskell2IsabelleHOLCF.transSentence" 137 1))] (Nothing)
                 _ -> warning (Sentence true) "Haskell2IsabelleHOLCF.transSentence 2, not yet supported"  nullPos
---             _ -> Result [(Diag Hint "problem" (Id.SourcePos "Haskell2IsabelleHOLCF.transSentence" 136 1))] (Nothing)
              _ -> warning (Sentence true) "Haskell2IsabelleHOLCF.transSentence 1, case not yet supported" nullPos
 
 -- fuctionDecl :: PNT -> [HsTypeI PNT] -> HsTypeI PNT -> IsaTerm
 -- functionDecl n c t = 
 
 transMatch :: 
-  HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds -> IsaTerm 
+  HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds -> Result IsaTerm 
 transMatch t = case t of 
   (HsDeclStruct.HsMatch _ nm _ (HsGuardsStruct.HsBody x) _) -> 
-          App (App (Const "IsaEq" noType) (Const (showIsaS nm) noType) IsCont) (transExp x) IsCont
-  _ -> error "Haskell2IsabelleHOLCF.transMatch, case not yet supported"
+         let tx = transExp x
+         in return $ App (App (Const "IsaEq" noType) (Const (showIsaPNT nm) noType) IsCont) tx IsCont
+  _ -> warning (Bottom) "Haskell2IsabelleHOLCF.transMatch, case not yet supported" nullPos
 
-transMatchList ::  [HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds] -> IsaTerm
+transMatchList ::  [HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds] -> Result IsaTerm
 transMatchList ls = case ls of
-   [] -> Bottom
-   x:xs -> Fix (IsaConsts.mkIsaOr (transMatch x) (transMatchList xs)) 
+   [] -> return Bottom
+   x:xs -> do t <- transMatch x
+              ts <- transMatchList xs
+              return $ Fix (IsaConsts.mkIsaOr t ts) 
 
--- transTheory :: (HatAna.Sign, [TiPropDecorate.TiDecls PNT] -> 
---                      Result (IsaSign.Sign, [Named IsaSign.Sentence])  
---transTheory (sign, decls) = do x <- transSignature sign
---                               y <- maybeResult x
---                            return [] (y, transDeclsL decls)
-{-
-transDeclsL ::  [TiPropDecorate.TiDecls PNT] -> [Named IsaSign.Sentence]
-transDeclsL ds = concat (map transDecl ds)
-
-transDecls ::  TiPropDecorate.TiDecls PNT -> [Named IsaSign.Sentence]
-transDecls ds = case Decs x _ -> transDecl x
-
-transDecl ::  TiPropDecorate.TiDecl PNT -> Named IsaSign.Sentence
-transDecl (Dec d) = case d of
-             Base p -> case p of
-                HsFunBind _ ls -> NamedSen [] (map transMatch ls) 
-
-transMatch :: 
-  HsMatch PNT (HsRhs (PropSyntaxRec.HsExpI PNT)) p ds ->IsaSign.Definition 
-transMatch (HsMatch _ nm _ x _) -> transDef nm x
---           Prop p ->
-
-transDef :: PNT -> HsRhs (PropSyntaxRec.HsExpI PNT) -> IsaSign.Definition
-transDef l r = case r of HsBody e -> (showIsaS l, transExp r)
--}
 
 ------------------------------ Signature translation -----------------------------
 
@@ -217,9 +197,11 @@ transSignature sign = Result []
 
 -- Translating to strings compatible with Isabelle-HOLCF
 
-showIsaS :: Show i => i -> IsaSign.IName
+--showIsaS :: Show i => i -> IsaSign.IName
 -- showIsaS x = (Translate.transString) (show x)
-showIsaS x = (show x)
+--showIsaS x = (show x)
+showIsaS :: String -> IsaSign.IName
+showIsaS x = Translate.transString x
 
 
 showIsaPNT :: PNT -> IsaSign.IName
@@ -245,12 +227,6 @@ idTrans t = case t of
                  HsCon x -> Const (showIsaPNT x) noType
 
 ------------------------------- Kind translation ------------------------------
-
-simpleKind :: TiKinds.Kind -> Bool
-simpleKind x = case x of 
-                 K HsKindStruct.Kstar -> True
-                 K (HsKindStruct.Kfun a b) -> (simpleKind a) && (simpleKind b)
-                 _ -> False 
 
 kindTrans :: TiKinds.Kind -> IsaSign.IsaKind
 kindTrans x = case x of 
@@ -339,7 +315,7 @@ transFromScheme s = case s of
 
 getClassrel ::  TyMap -> IsaSign.Classrel
 getClassrel f = 
-     liftMapByList Map.toList Map.fromList (mkIsaClass . showIsaS) transClassInfo f
+     liftMapByList Map.toList Map.fromList (mkIsaClass . showIsaH) transClassInfo f
 
 transClassInfo :: (Kind, TiTypes.TypeInfo PNT) -> [IsaClass]
 transClassInfo p = map transClass (extClassInfo $ snd p)
@@ -347,13 +323,13 @@ transClassInfo p = map transClass (extClassInfo $ snd p)
 extClassInfo :: TiTypes.TypeInfo PNT -> [HsClass]
 extClassInfo p = case p of 
         TiTypes.Class a _ _ _ -> map getInstType a -- ?? error ???
-        _ -> error "Haskell2IsabelleHOLCF.extClassInfo"     
+        _ -> error "error Haskell2IsabelleHOLCF.extClassInfo"     
  
 ---------------------------- getting Abbrs (from KEnv) -----------------------------
  
 getAbbrs ::  TyMap -> IsaSign.Abbrs
 getAbbrs f = 
-    liftMapByList Map.toList Map.fromList showIsaS transAbbrsInfo f
+    liftMapByList Map.toList Map.fromList showIsaH transAbbrsInfo f
 
 transAbbrsInfo :: (Kind, TiTypes.TypeInfo PNT) -> ([IsaSign.TName], IsaType)
 transAbbrsInfo p = let x = extAbbrsInfo (snd p) in (map showIsaPNT (fst x), transType (snd x))
@@ -377,7 +353,7 @@ getTypeInsts db =
                     | t <- remove_duplicates (map getMainInstType db)]
 
 transTypeInsts :: (HsType, HsInstances) -> IsaTypeInsts
-transTypeInsts (a,b) = (showIsaS a, map transInst b)
+transTypeInsts (a,b) = (typeId $ transType a, map transInst b)
 
 {-
 getArities :: TiInstanceDB.IDB PNT -> IsaSign.Arities
@@ -403,6 +379,7 @@ getMainInstClass i = case i of (Typ (HsTyApp c _), _) -> c
 
 getInstType :: HsIClause -> HsType
 getInstType i = case i of (Typ (HsTyApp _ t)) -> t
+                          _ -> error "error, getInstType"
  
 getInstClass :: HsIClause -> HsType
 getInstClass i = case i of (Typ (HsTyApp c _)) -> c
@@ -423,45 +400,6 @@ prepInst1 :: HsInstance -> [(HsType, [HsClass])]
 prepInst1 i = [(x, [getInstClass y | y <- getInstPrems i, getInstType y == x]) 
               | x <- map getInstType (getInstPrems i)] 
 
--- prepInst1 :: HsInstance -> [(HsType, [HsClass])]
--- prepInst1 i = [(transType x, [transClass $ getInstClass y | y <- getInstPrems i, getInstType y == x]) 
---              | x <- map getInstType (getInstPrems i)] 
-
-{------ old version 
-
-transInst :: HsInstance -> (IsaClass, [[IsaClass]])
-transInst i = let x = prepInst i in 
-         (transClass $ fst x, map (map transClass) (snd x))
-
-prepInst :: HsInstance -> (HsClass, [[HsClass]])
-prepInst i = 
-  (getMainInstClass i, map snd (prepInst1 i))
-
-prepInst1 :: HsInstance -> [(HsType, [HsClass])]
-prepInst1 i = prepInst2 (getTypeVars $ getMainInstType i) (getInstPrems i)
-
-prepInst2 :: [HsType] -> [HsIClause] -> [(HsType, [HsClass])]
-prepInst2 vs cs = (prepInstR (reverse vs) cs []) 
-
-prepInstR :: [HsType] -> [HsIClause] -> [(HsType, [HsClass])]
-prepInstR vs ca cb = case vs of 
- [] -> cb
- x:xs -> prepInstR xs 
-                   [y | <- ca, getInstType y \= x]  
-                   (x, [getInstClass y | y <- ca, getInstType y = x]):cb
-
-getTypeVars :: HsType -> [HsType]
-getTypeVars t = remove_duplicates (getTypeVarsR [t] [])
-
-getTypeVarsR :: [HsType] -> [HsType] -> [HsType]
-getTypeVarsR as ls = case as of 
-      [] -> ls
-      x:xs ->  case x of 
-               (_ t1 t2) -> getTypeVarsR t1:t2:xs ls
-               HsTyVar v -> getTypeVarsR xs (append ls [v])
-               HsTyCon c -> getTypevarsR xs ls
-
--}
 
 ------------------------------- getting Type Constructors ---------------------
 
@@ -475,11 +413,6 @@ checkTyCons f n = case Map.lookup n f of
                       _ -> error "Haskell2IsabelleHOLCF.checkTyCons"
 
 ---------------------------- checking mutual dependencies -----------------------
-
--- type DomainTab = [DomainTabEntry]
--- type DomainTabEntry = [DomainEntry] -- (type,[value cons])
--- type DomainEntry = (Typ,[DomainAlt])
--- type DomainAlt = (VName,[Typ])
 
 getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
 getDepDoms ls = checkDep (abCheckDep mutDep) (tail ls) [head ls] []
@@ -552,9 +485,6 @@ argTypes a = case a of
     _ -> [] 
 
 ----------------------------------- Expressions -------------------------------
-
--- id :: i -> i
--- id x = x
 
 mapEI5 :: (i1 -> i2) -> 
           (e1 -> e2) ->
