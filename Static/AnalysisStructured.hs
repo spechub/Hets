@@ -93,7 +93,8 @@ end
 -}
 
 
-module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY, ana_VIEW_TYPE, ana_err)
+module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY, ana_VIEW_TYPE, ana_err, 
+				  ana_RENAMING, ana_RESTRICTION)
 where
 
 import Data.Maybe
