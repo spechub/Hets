@@ -1,0 +1,1 @@
+ghc --make -fglasgow-exts -Wall -i..:../ghc hapa.lhs -o hapa
