@@ -21,8 +21,7 @@ Portability :  portable
 
 module ATC.Sml_cats (from_sml_ATerm,read_sml_ATerm) where
 
-import Data.List (isPrefixOf)
-import List (mapAccumL)
+import Data.List (isPrefixOf, mapAccumL)
 
 import Common.Lib.Map hiding (map)
 -- better recompilation checking without 'import Common.ATerm.Lib'
