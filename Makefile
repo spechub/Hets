@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
-CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
+CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/inlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
 ## set ghc imports properly for your system
 LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}'
@@ -68,7 +68,7 @@ ifneq ($(MAKECMDGOALS),utils/genRules)
 ifneq ($(MAKECMDGOALS),hets-opt)
 ifneq ($(MAKECMDGOALS),hets-optimized)
 ifneq ($(MAKECMDGOALS),derivedSources)
-ifneq ($(MAKECMDGOALS),utils/outlineAxioms)
+ifneq ($(MAKECMDGOALS),$(INLINEAXIOMS))
 ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),check)
 ifneq ($(MAKECMDGOALS),apache_doc)
@@ -226,10 +226,10 @@ utils/genRules: $(GENERATERULES_deps)
          $(HC) --make '-i../..:../DrIFT-src' -package text GenerateRules.hs -o ../genRules && \
          strip ../genRules)
 
-utils/outlineAxioms: $(INLINEAXIOMS_deps)
+$(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs \
-                          $(HC_OPTS) -o utils/outlineAxioms
-	strip utils/outlineAxioms
+                          $(HC_OPTS) -o $(INLINEAXIOMS)
+	strip $(INLINEAXIOMS)
 
 release: 
 	$(RM) -r HetCATS
@@ -332,8 +332,8 @@ real_clean: bin_clean lib_clean
 ### additionally removes files not in CVS tree
 distclean: real_clean clean_genRules d_clean
 	$(RM) hetcats/Version.hs
-	$(RM) $(drifted_files)
-	$(RM) utils/DrIFT utils/genRules
+	$(RM) $(drifted_file) $(inline_axiom_files)
+	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 #	$(RM) $(happy_files)
 
 ####################################################################
@@ -425,7 +425,7 @@ hets.hs: hetcats/Version.hs
 	$(DRIFT) $(DRIFT_OPTS) $< > $@
 
 ## rules for inlineAxioms
-%.hs: %.inline.hs utils/outlineAxioms
+%.hs: %.inline.hs $(INLINEAXIOMS)
 	$(INLINEAXIOMS) $< > $@
 
 ## compiling rules for object and interface files
