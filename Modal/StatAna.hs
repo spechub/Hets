@@ -131,15 +131,19 @@ addRigidPred ty i m = return
        m { rigidPreds = Map.setInsert i ty $ rigidPreds m }
 
 ana_M_BASIC_ITEM :: Ana M_BASIC_ITEM M_FORMULA ModalSign
-ana_M_BASIC_ITEM _ bi = do
+ana_M_BASIC_ITEM ga bi = do
     e <- get
+    ops <- gets allOpIds
+    preds <- gets allPredIds 
+    newGa <- gets $ addAssocs ga
+    let is = mkIdSet ops preds
     case bi of
         Simple_mod_decl al fs ps -> do
-            newFs <- mapAnM (resultToState (ana_M_FORMULA False)) fs 
+            newFs <- mapAnM (resultToState (ana_FORMULA False newGa is)) fs 
             mapM_ ((updateExtInfo . addModId newFs) . item) al
             return $ Simple_mod_decl al newFs ps
         Term_mod_decl al fs ps -> do
-            newFs <- mapAnM (resultToState (ana_M_FORMULA True)) fs 
+            newFs <- mapAnM (resultToState (ana_FORMULA True newGa is)) fs 
             mapM_ ((updateExtInfo . addModSort newFs e) . item) al
             return $ Term_mod_decl al newFs ps
 
@@ -183,6 +187,11 @@ map_M_FORMULA mor frm =
                newM <- mapMod m 
                return $ Diamond newM newF ps 
 
+ana_FORMULA :: Bool -> MixResolve (FORMULA M_FORMULA)
+ana_FORMULA b ga is phi = do 
+   f <- ana_M_FORMULA b phi
+   resolveMixFrm resolveM_FORMULA ga is f
+
 ana_M_FORMULA :: Bool -> FORMULA M_FORMULA -> Result (FORMULA M_FORMULA)
 ana_M_FORMULA b (Conjunction phis pos) = do
   phis' <- mapM (ana_M_FORMULA b) phis
@@ -213,11 +222,12 @@ ana_M_FORMULA b (ExtFORMULA (Box m phi pos)) = do
 ana_M_FORMULA b (ExtFORMULA (Diamond m phi pos)) = do
   phi' <- ana_M_FORMULA b phi
   return(ExtFORMULA (Diamond m phi' pos))
-ana_M_FORMULA b phi@(Quantification _ _ phi1 pos) = 
-  if b then ana_M_FORMULA b phi1
+ana_M_FORMULA b phi@(Quantification q vs phi1 pos) = 
+  if b then do phi2 <- ana_M_FORMULA b phi1
+               return $ Quantification q vs phi2 pos
     else anaError phi pos
 ana_M_FORMULA _ phi@(Predication _ _ _pos) =
-  return phi -- should lookup predicate!
+  return phi 
 ana_M_FORMULA _ phi@(Definedness _ pos) =
   anaError phi pos
 ana_M_FORMULA _ phi@(Existl_equation _ _ pos) =
@@ -227,8 +237,7 @@ ana_M_FORMULA _ phi@(Strong_equation _ _ pos) =
 ana_M_FORMULA _ phi@(Membership _ _ pos) =
   anaError phi pos
 ana_M_FORMULA _ phi@(Mixfix_formula _) =
-  return phi -- should do mixfix analysis and lookup predicate!
-  -- anaError phi [nullPos]
+  return phi 
 ana_M_FORMULA _ phi@(Unparsed_formula _ pos) =
   anaError phi pos
 ana_M_FORMULA _ phi@(Sort_gen_ax _ _) =
