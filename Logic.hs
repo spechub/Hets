@@ -54,6 +54,7 @@ module Logic where
 
 import Id
 import Error
+import Dynamic
 
 -- maps and sets, just a quick thing
 
@@ -108,8 +109,8 @@ class (Show basic_spec, Show sentence, Show symb_items,
          -- parsing
          parse_basic_spec :: id -> String -> Result basic_spec
          parse_sentence :: id -> String -> Result sentence
-         parse_symb_items :: id -> String -> Result symb_items
-         parse_symb_map_items :: id -> String -> Result symb_map_items
+         parse_symb_items :: id -> String -> Result [symb_items]
+         parse_symb_map_items :: id -> String -> Result [symb_map_items]
          parse_anno :: id -> String -> Result anno
 
 
@@ -176,7 +177,8 @@ data Cons_checker morphism =
 class (Syntax basic_spec sentence symb_items symb_map_items anno,
        Show sign, Show morphism, Show symbol, Show raw_symbol,
        Ord symbol, --  needed for efficient symbol tables
-       Category id sign morphism) =>
+       Category id sign morphism,
+       Typeable symb_items) =>
       Logic id
         basic_spec sentence symb_items symb_map_items anno
         local_env sign morphism symbol raw_symbol 
