@@ -99,11 +99,17 @@ semiAnno :: (PrettyPrint a) =>
 semiAnno pf ga l = if null l then 
 		   empty 
 		else 
-		   vcat $ map (\x -> pf ga (l_annos x) 
-			       $$ pf ga (item x) <> semi 
-			       <+> pf ga (r_annos x)) 
-		              (init l) ++ [pf ga (last l)]
-
+		   vcat $ map (pf' True)
+		              (init l) ++ [pf' False (last l)]
+    where pf' printSemi a_item =
+	      if printSemi 
+	      then
+	         pf ga (l_annos a_item)
+			$$ pf ga (item a_item) <> semi 
+			       <+>pf ga (r_annos a_item)
+	      else 
+	         pf ga (l_annos a_item) 
+			$$ pf ga (item a_item) <+> pf ga (r_annos a_item) 
 --------------------------------------------------------------------
 
 -- | 
@@ -126,10 +132,17 @@ semiAnno_latex :: (PrettyPrint a) =>
 semiAnno_latex pf ga l = if null l then 
 		   empty 
 		else 
-		   vcat $ map (\x -> pf ga (l_annos x) 
-			       $$ pf ga (item x) <> semi_latex 
-			       <\+> pf ga (r_annos x)) 
-		              (init l) ++ [pf ga (last l)]
+		   vcat $ map (pf' True)
+		              (init l) ++ [pf' False (last l)]
+    where pf' printSemi a_item =
+	      if printSemi 
+	      then
+	         pf ga (l_annos a_item)
+			$$ pf ga (item a_item) <> semi_latex
+			       <\+> pf ga (r_annos a_item)
+	      else 
+	         pf ga (l_annos a_item) 
+			$$ pf ga (item a_item) <\+> pf ga (r_annos a_item) 
 
 hc_sty_casl_keyword :: String -> Doc
 hc_sty_casl_keyword = hc_sty_keyword (Just "preds")
