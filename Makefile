@@ -398,7 +398,7 @@ hets.hs: hetcats/Version.hs
 
 ## rules for inlineAxioms
 %.hs: %.inline.hs utils/inlineAxioms
-	$(INLINEAXIOMS) $< > $@
+	$(INLINEAXIOMS) $<
 
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
