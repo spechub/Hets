@@ -32,6 +32,11 @@ import GUI.ConvertDevToAbstractGraph
 import GUI.AbstractGraphView
 import Options
 
+import Data.Char
+import DaVinciGraph
+import GraphDisp
+import Data.IORef
+
 proceed fname showdg = do
   res <- anaFile logicGraph defaultLogic defaultHetcatsOpts fname 
   case res of
