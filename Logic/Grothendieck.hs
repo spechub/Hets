@@ -44,6 +44,7 @@ import Logic.Prover
 import Logic.Comorphism
 import Common.PrettyPrint
 import Common.Lib.Pretty
+import Common.Lib.Graph
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result

@@ -70,14 +70,14 @@ processFile opt file =
        case guess file (intype opt) of
              WebIn -> do
                  case web opt of
-                   Yes  -> do
+                   WebType -> do
                            str <- readFile file
 #ifdef UNI_PACKAGE
                            webInterface str opt 
 #else
                            fail "No web interface; UNI_PACKAGE option has been disabled during compilation of Hets"
 #endif
-                   No   -> return () 
+                   NoWeb   -> return () 
 {-
 #ifdef PROGRAMATICA
              HaskellIn -> do  

@@ -33,17 +33,15 @@ import CASL.AS_Basic_CASL
 import Common.Id
 import Common.Lib.Graph
 import qualified Common.Lib.Map as Map
-import Common.Lib.Pretty
-import Common.Lib.Rel
+import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
+import Common.Lib.Pretty
 import Common.Result
-import Logic.Logic
+import Common.Amalgamate
 import CASL.Sign
 import CASL.Morphism
-import List
-import qualified Options
--- import Debug.Trace
+import Data.List
 
 -- Exported types
 type CASLSign = Sign () ()
@@ -77,7 +75,7 @@ instance PrettyPrint CASLDiag where
 sorts :: CASLDiag        -- ^ the diagram to get the sorts from
       -> [DiagSort]
 sorts diag = 
-    let mkNodeSortPair n sort = (n, sort)
+    let mkNodeSortPair n srt = (n, srt)
         appendSorts sl (n, Sign { sortSet = s }) =
             sl ++ (map (mkNodeSortPair n) (Set.toList s))
     in foldl appendSorts [] (labNodes diag)
@@ -432,7 +430,7 @@ embs :: CASLDiag
 embs diag =
     let embs' [] = []
         embs' ((n, Sign {sortRel = sr}) : lNodes) = 
-            (map (\(s1, s2) -> (n, s1, s2)) (toList sr)) ++ (embs' lNodes)
+            (map (\(s1, s2) -> (n, s1, s2)) (Rel.toList sr)) ++ (embs' lNodes)
     in embs' (labNodes diag)
 
 
@@ -444,7 +442,8 @@ sinkEmbs :: CASLDiag          -- ^ the diagram
 sinkEmbs _ [] = []
 sinkEmbs diag ((srcNode, _) : edges) = 
     let (_, _, Sign {sortRel = sr}, _) = context srcNode diag
-    in (map (\(s1, s2) -> (srcNode, s1, s2)) (toList sr)) ++ (sinkEmbs diag edges)
+    in (map (\(s1, s2) -> (srcNode, s1, s2)) (Rel.toList sr)) 
+           ++ (sinkEmbs diag edges)
     
 
 -- | Check if the two given elements are in the given relation.
@@ -963,24 +962,24 @@ wordToEmbPath ((_, s1, s2) : embs) =
     in (rest embs) ++ [s1, s2]
 
 
-hasCellCaslAmalgOpt :: Options.HetcatsOpts -> Bool
+hasCellCaslAmalgOpt :: [CASLAmalgOpt] -> Bool
 hasCellCaslAmalgOpt = any ( \ o -> case o of
-                            Options.Cell -> True
-                            _ -> False) . Options.caslAmalg
+                            Cell -> True
+                            _ -> False)
 
-hasColimitThinnessOpt :: Options.HetcatsOpts -> Bool
+hasColimitThinnessOpt :: [CASLAmalgOpt] -> Bool
 hasColimitThinnessOpt = any ( \ o -> case o of
-                            Options.ColimitThinness -> True
-                            _ -> False) . Options.caslAmalg
+                            ColimitThinness -> True
+                            _ -> False)
     
 -- | The amalgamability checking function for CASL. 
-ensuresAmalgamability :: Options.HetcatsOpts   -- ^ program options
+ensuresAmalgamability :: [CASLAmalgOpt]        -- ^ program options
                       -> CASLDiag              -- ^ the diagram to be checked
                       -> [(Node, CASLMor)]     -- ^ the sink
                       -> Diagram String String -- ^ the diagram containing descriptions of nodes and edges
                       -> Result Amalgamates
 ensuresAmalgamability opts diag sink desc = 
-    do if null $ Options.caslAmalg opts 
+    do if null opts 
          then return (DontKnow "Skipping amalgamability check")
          else       
           do let -- aux. functions that help printing out diagnostics
@@ -1002,7 +1001,7 @@ ensuresAmalgamability opts diag sink desc =
                                              " in\n\n" ++ formatSig (fst ns1) ++ "\n\n"
                                      sortString2 = renderText Nothing (printText (snd ns2)) ++
                                              " in\n\n" ++ formatSig (fst ns2) ++ "\n\n"
-                                 in do return (No ("\nsorts " ++ sortString1 ++ "and " ++ sortString2 ++ "might be different"))
+                                 in do return (NoAmalgamation ("\nsorts " ++ sortString1 ++ "and " ++ sortString2 ++ "might be different"))
               Nothing -> 
                do let sop = simeqOp diag
                       sopt = simeqOp_tau sink
@@ -1013,7 +1012,7 @@ ensuresAmalgamability opts diag sink desc =
                                                            " in\n\n" ++ formatSig (fst nop1) ++ "\n\n"
                                                opString2 = formatOp (snd nop2) ++
                                                            " in\n\n" ++ formatSig (fst nop2) ++ "\n\n"
-                               in do return (No ("\noperations " ++ opString1 ++ "and " ++ opString2 ++ "might be different"))
+                               in do return (NoAmalgamation ("\noperations " ++ opString1 ++ "and " ++ opString2 ++ "might be different"))
                       Nothing ->
                         do let spred = simeqPred diag
                                spredt = simeqPred_tau sink
@@ -1024,7 +1023,7 @@ ensuresAmalgamability opts diag sink desc =
                                                                   " in\n\n" ++ formatSig (fst np1) ++ "\n\n"
                                                        pString2 = formatPred (snd np2) ++
                                                                   " in\n\n" ++ formatSig (fst np2) ++ "\n\n"
-                                                   in do return (No ("\npredicates " ++ pString1 ++ "and " ++ pString2 ++ "might be different"))
+                                                   in do return (NoAmalgamation ("\npredicates " ++ pString1 ++ "and " ++ pString2 ++ "might be different"))
                                 Nothing ->
                                  if not (hasCellCaslAmalgOpt opts || hasColimitThinnessOpt opts)
                                   then return defaultDontKnow
@@ -1041,7 +1040,7 @@ ensuresAmalgamability opts diag sink desc =
                                      -- 2. Check the simple case: \cong_0 \in \cong, so if \cong_\tau \in \cong_0 the
                                      -- specification is correct.
                                      case subRelation ct0 c0 of
-                                          Nothing -> do return Yes
+                                          Nothing -> do return Amalgamates
                                           Just _ -> 
                                             do let em = embs diag
                                                    cem = canonicalEmbs si
@@ -1054,7 +1053,7 @@ ensuresAmalgamability opts diag sink desc =
                                                       do -- 4. check the colimit thinness. If the colimit is thing then
                                                          -- the specification is correct.
                                                          if hasColimitThinnessOpt opts && 
-                                                            colimitIsThin s em c0 then return Yes
+                                                            colimitIsThin s em c0 then return Amalgamates
                                                             else do let c = cong diag cas s si
                                                                         --c = cong diag as s
                                                                     -- 5. Check the cell condition in its full generality.
@@ -1066,9 +1065,9 @@ ensuresAmalgamability opts diag sink desc =
                                                                                                               (renderText Nothing (printText h)) w
                                                                                                     word1 = rendEmbPath (wordToEmbPath w1)
                                                                                                     word2 = rendEmbPath (wordToEmbPath w2)
-                                                                                                in do return (No ("embedding paths \n    " ++ word1 ++
+                                                                                                in do return (NoAmalgamation ("embedding paths \n    " ++ word1 ++
                                                                                                                   "\nand\n    " ++ word2 ++ "\nmight be different"))
-                                                                               Nothing -> do return Yes 
+                                                                               Nothing -> do return Amalgamates 
                                                                        else return defaultDontKnow
                                                     Nothing -> do let cR = congR diag s si
                                                                -- 6. Check the restricted cell condition. If it holds then the
@@ -1077,6 +1076,6 @@ ensuresAmalgamability opts diag sink desc =
                                                                   if hasCellCaslAmalgOpt opts
                                                                      then case subRelation cct cR of 
                                                                             Just _ -> do return defaultDontKnow -- TODO: generate proof obligations
-                                                                            Nothing -> do return Yes
+                                                                            Nothing -> do return Amalgamates
                                                                      else return defaultDontKnow
 

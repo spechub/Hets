@@ -78,26 +78,11 @@ import UnsafeCoerce
 -- for Conversion to ATerms 
 import Common.ATerm.Lib -- (ATermConvertible)
 
--- for HetcatsOpts passed to ensures_amalgamability
-import Options
+-- passed to ensures_amalgamability
+import Common.Amalgamate
 
 import Common.Taxonomy
 import Taxonomy.MMiSSOntology (MMiSSOntology)
-
-
-
--- diagrams are just graphs
-type Diagram object morphism = Graph object morphism
-
--- | Amalgamability analysis might be undecidable, so we need
--- a special type for the result of ensures_amalgamability
-data Amalgamates = Yes
-                 | No String       -- ^ failure description
-                 | DontKnow String -- ^ the reason for unknown status
--- | The default value for 'DontKnow' amalgamability result
-defaultDontKnow :: Amalgamates
-defaultDontKnow = DontKnow "Unable to assert that amalgamability is ensured"
-
 
 -- languages, define like "data CASL = CASL deriving Show" 
 
@@ -229,7 +214,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          stat_symb_items l _ = statErr l "stat_symb_items" 
          -- architectural sharing analysis
          ensures_amalgamability :: lid ->
-              (HetcatsOpts,            -- the program options
+              ([CASLAmalgOpt],        -- the program options
                Diagram sign morphism, -- the diagram to be analyzed
                [(Node, morphism)],    -- the sink
                Diagram String String) -- the descriptions of nodes and edges

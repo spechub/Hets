@@ -29,9 +29,9 @@ import Syntax.AS_Architecture
 import Syntax.AS_Structured
 import Static.AnalysisStructured
 import Common.AS_Annotation
-import Common.Id (Token)
-import Common.Result
 import Common.Id
+import Common.Result
+import Common.Amalgamate
 import Common.Lib.Graph
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
@@ -506,8 +506,9 @@ assertAmalgamability :: HetcatsOpts          -- ^ the program options
 assertAmalgamability opts pos diag sink =
     do ensAmalg <- homogeneousEnsuresAmalgamability opts pos diag sink
        case ensAmalg of
-                     Logic.Logic.Yes -> return ()
-                     Logic.Logic.No msg -> plain_error () ("Amalgamability is not ensured: " ++ msg) pos
+                     Amalgamates -> return ()
+                     NoAmalgamation msg -> plain_error () 
+                             ("Amalgamability is not ensured: " ++ msg) pos
                      DontKnow msg -> warning () msg pos
 
 
@@ -519,13 +520,15 @@ homogeneousEnsuresAmalgamability :: HetcatsOpts         -- ^ the program options
                                  -> Result Amalgamates
 homogeneousEnsuresAmalgamability opts pos diag sink =
     do case sink of  
-                 [] -> plain_error defaultDontKnow "homogeneousEnsuresAmalgamability: Empty sink" pos
+                 [] -> plain_error defaultDontKnow 
+                       "homogeneousEnsuresAmalgamability: Empty sink" pos
                  lab:_ -> do let (_, mor) = lab
                                  sig = cod Grothendieck mor
                              G_sign lid _ <- return sig
                              hDiag <- homogeniseDiagram lid diag
                              hSink <- homogeniseSink lid sink
-                             ensures_amalgamability lid (opts, hDiag, hSink, (diagDesc diag))
+                             ensures_amalgamability lid (caslAmalg opts, 
+                                        hDiag, hSink, (diagDesc diag))
 
 
 -- | Get a position within the source file of a UNIT-TERM

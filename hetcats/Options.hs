@@ -29,7 +29,6 @@ module Options ( defaultHetcatsOpts
                , GuiType(..)
                , InType(..)
                , AnaType(..)
-               , CASLAmalgOpt(..)
                , RawOpt(..)
                , OutType(..)
                , WebType(..)
@@ -41,6 +40,7 @@ module Options ( defaultHetcatsOpts
 import Version
 import Common.Utils
 import Common.Result
+import Common.Amalgamate(CASLAmalgOpt(..))
 
 import System.Directory
 import System.Exit
@@ -157,7 +157,7 @@ defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
     HcOpt { analysis = Basic
           , gui      = Not
-	  , web      = No
+	  , web      = NoWeb
           , infiles  = []
           , intype   = GuessIn
           , libdir   = ""
@@ -355,12 +355,12 @@ graphList :: [GraphType]
 graphList = [Dot, PostScript, Davinci]
 
 -- | 'WebType'
-data WebType = Yes | No
+data WebType = WebType | NoWeb  -- compare with WebIn?!
 
 instance Show WebType where
     show w = case w of
-             Yes -> showOpt webS
-             No -> ""
+             WebType -> showOpt webS
+             NoWeb -> ""
 
 -- | 'RawOpt' describes the options we want to be passed to the Pretty-Printer
 data RawOpt = RawAscii String | RawLatex String
@@ -370,13 +370,6 @@ instance Show RawOpt where
              RawAscii s -> showRawOpt asciiS s
              RawLatex s -> showRawOpt latexS s
              where showRawOpt f = showEqOpt (rawS ++ "=" ++ f)
-
-{- | 'CASLAmalgOpt' describes the options for CASL amalgamability analysis 
-     algorithms -}
-data CASLAmalgOpt = Sharing         -- ^ perform the sharing checks
-    | ColimitThinness -- ^ perform colimit thinness check (implies Sharing)
-    | Cell            -- ^ perform cell condition check (implies Sharing)
-    | NoAnalysis      -- ^ dummy option to indicate empty option string
 
 instance Show CASLAmalgOpt where
     show o = case o of 
@@ -393,7 +386,6 @@ readShow l s = case find ( \ o -> isPrefixOf (show o) s) l of
                Nothing -> []
                Just t -> [(t, drop (length $ show t) s)]
              
-
 -- | possible CASL amalgamability options
 caslAmalgOpts :: [CASLAmalgOpt]
 caslAmalgOpts = [NoAnalysis, Sharing, Cell, ColimitThinness]
@@ -414,7 +406,7 @@ options =
       "show graphical output in a GUI window"
     , Option ['G'] [onlyGuiS] (NoArg $ Gui Only)
       "like -g but write no output files"
-    , Option ['w'] [webS] (NoArg (Web Yes))
+    , Option ['w'] [webS] (NoArg (Web WebType))
       "show web interface"
     , Option ['p'] [skipS]  (NoArg $ Analysis Skip)
       "skip static analysis, just parse"
