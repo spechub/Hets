@@ -89,7 +89,7 @@ objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
-    $(gendrifted_files)
+    Modal/AS_Modal.hs $(gendrifted_files)
 
 genrule_header_files = $(wildcard ATC/*.header.hs)
 
@@ -109,7 +109,7 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 Haskell/Hatchet/Representation.hs\
                 Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
                 Haskell/Hatchet/Env.hs \
-                Isabelle/IsaSign.hs
+                Isabelle/IsaSign.hs 
 
 gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
                    ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
