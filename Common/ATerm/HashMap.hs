@@ -12,9 +12,9 @@ Portability :  portable
 
 module Common.ATerm.HashMap where
 
-import qualified IntMap as IntMap
+import qualified Common.DFiniteMap as IntMap
 
-data Map a b = Map (a -> Int) (IntMap.IntMap [(a, b)])
+data Map a b = Map (a -> Int) (IntMap.Map Int [(a, b)])
 
 empty :: (k -> Int) -> Map k a
 empty f = Map f IntMap.empty

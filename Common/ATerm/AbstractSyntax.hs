@@ -38,7 +38,7 @@ module Common.ATerm.AbstractSyntax
     where
 
 import qualified Common.ATerm.HashMap as Map
-import qualified IntMap as DMap
+import qualified Common.DFiniteMap as DMap
 import Data.Char(ord)
 
 data ATerm = AAppl String [ATerm] [ATerm]
@@ -51,7 +51,7 @@ data ShATerm = ShAAppl String [Int]  [Int]
 	     | ShAInt  Integer       [Int]  
 	       deriving (Eq,Ord)
 
-data ATermTable = ATT (Map.Map ShATerm Int) (DMap.IntMap ShATerm) Int
+data ATermTable = ATT (Map.Map ShATerm Int) (DMap.Map Int ShATerm) Int
 
 lookupInsert :: Ord k => k -> v -> Map.Map k v -> (Maybe v, Map.Map k v)
 lookupInsert k v m = case Map.lookup k m of 
