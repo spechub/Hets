@@ -1,6 +1,5 @@
 general:
 haddockify code
-adapt language summary (C.1.1, A-2, C-3 - C-8)
 
 checking legality of internal and external terms is missing
 
@@ -40,9 +39,6 @@ checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).
 
 Overloading is forbidden for builtin functions
-
-"__ __" has highest precedence and ":" has (strong) postfix precedence
-(adapt language summary C.2.1)
 
 shorter printing of terms
 
