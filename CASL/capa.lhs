@@ -1,11 +1,13 @@
+#!/home/maeder/bin/runhugs
 
-{- HetCATS/CASL/Main.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
+HetCATS/CASL/capa.lhs
+$Id$
+Authors: Christian Maeder
+Year:    2002
    
-   test some parsers (and printers)
--}
+test some parsers (and printers)
+
+\begin{code}
 
 module Main where
 
@@ -34,3 +36,5 @@ lineParser = [
  ("VarIds", HetParser varId)]
 
 fileParser = [("BasicSpec", HetParser basicSpec)]
+
+\end{code}

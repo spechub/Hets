@@ -1,22 +1,25 @@
 #!/usr/local/bin/bash
 
-#first parameter resets ouput files
+#first parameter is executable
+#second parameter resets ouput files
+
+PA=$1
+SET=$2
 
 . checkFunctions.sh
 
-
 #extra test
-runcheck capa Terms MixIds.casl MixIds.casl.output $1
-runcheck capa Terms WrongMixIds.casl WrongMixIds.casl.asTerms.output $1
-runcheck capa MixfixTerms Terms.casl Terms.casl.asMixfixTerms.output $1
-runcheck capa MixfixFormula Formula.casl Formula.casl.asMixfixFormula.output $1
+runchecker Terms MixIds.casl MixIds.casl.output
+runchecker Terms WrongMixIds.casl WrongMixIds.casl.asTerms.output
+runchecker MixfixTerms Terms.casl Terms.casl.asMixfixTerms.output
+runchecker MixfixFormula Formula.casl Formula.casl.asMixfixFormula.output
 
 #don't take files starting with "Wrong"
 for j in [A-V]*.casl; 
 do
     i=`basename $j .casl`
-    runmycheck capa $i casl $1
-    runwrongcheck capa $i casl $1
+    runmycheck $i casl
+    runwrongcheck $i casl
 done
 
 

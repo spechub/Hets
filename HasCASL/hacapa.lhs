@@ -1,3 +1,13 @@
+#!/home/maeder/bin/runhugs
+
+HetCATS/HasCASL/hacapa.lhs
+$Id$
+Authors: Christian Maeder
+Year:    2002
+   
+test some parsers (and printers)
+
+\begin{code}
 module Main where
 
 import ParseItem
@@ -21,3 +31,4 @@ lineParser = [
  ("Items", HetParser basicSpec)]
 
 fileParser = [("BasicSpec", HetParser basicSpec)]
+\end{code}

@@ -3,7 +3,8 @@
 .PHONY: check
 
 check: capa 
-	./runcheck.sh
+	./runcheck.sh capa
 
-capa: Main.hs RunParsers.hs RunMixfixParser.hs
-	./ghc-call
+%: 
+	(cd ../hetcats; $(MAKE) $@)
+

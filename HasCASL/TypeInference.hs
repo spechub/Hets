@@ -156,21 +156,6 @@ liftToPred m (IsIn i t) (IsIn i' t')
          | i == i'   = m t t'
          | otherwise = fail "classes differ"
 
-type ClassInst    = ([Id], [Inst]) -- super classes and instances
-type Inst     = Qual Pred
-
------------------------------------------------------------------------------
-
-type ClassEnv = FiniteMap Id ClassInst
-
-super     :: ClassEnv -> Id -> [Id]
-super ce i = case lookupFM ce i of Just (is, _) -> is
-				   Nothing -> []
-
-insts     :: ClassEnv -> Id -> [Inst]
-insts ce i = case lookupFM ce i of Just (_, its) -> its
-				   Nothing -> []
-
 defined :: Maybe a -> Bool
 defined (Just _) = True
 defined Nothing  = False

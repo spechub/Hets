@@ -38,14 +38,19 @@ runcheck ()
     fi
 }
 
-#parameters: progr option extension set?
+runchecker ()
+{
+   runcheck $PA $1 $2 $3 $SET
+}
+
+#parameters: option extension
 runmycheck ()
 {
-   runcheck $1 $2 $2.$3 $2.$3.output $4
+   runchecker $1 $1.$2 $1.$2.output $SET
 } 
 
 runwrongcheck ()
 {
-   runcheck $1 $2 Wrong$2.$3 Wrong$2.$3.output $4
+   runchecker $1 Wrong$1.$2 Wrong$1.$2.output $SET
 } 
 

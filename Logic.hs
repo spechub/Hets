@@ -63,7 +63,8 @@ import Prover -- for one half of class Sentences
 import PrettyPrint
 
 -- for coercion used in LogicGraph.hs and Grothendieck.hs
-import GlaExts(unsafeCoerce#)
+
+import UnsafeCoerce
 
 -- maps
 
@@ -82,7 +83,7 @@ class Show id => Language id where
 -- (a bit unsafe) coercion using the language name
 coerce :: (Language id1, Language id2) => id1 -> id2 -> a -> Maybe b
 coerce i1 i2 a = if language_name i1 == language_name i2 then 
-		 (Just $ unsafeCoerce# a) else Nothing
+		 (Just $ unsafeCoerce a) else Nothing
 
 -- Categories are given by a quotient,
 -- i.e. we need equality

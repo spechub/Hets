@@ -13,14 +13,14 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCASL:../aterm_conv
+INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCASL:../aterm_conv:../ghc
 
 HC         = ghc
 PERL       = perl
 DRIFT      = $(PERL) ../utils/DrIFT
 AG         = $(PERL) ../utils/ag
 
-HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances
+HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package data
 
@@ -70,7 +70,7 @@ hetcats: $(objects)
 	$(RM) $@
 	$(HC) -o $@ $(HC_OPTS) $(objects)
 
-hetcats-make: hetcats.hs ../utils/create_sources.pl $(drifted_files)
+hetcats-make: hetcats.lhs ../utils/create_sources.pl $(drifted_files)
 	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hetcats $< $(HC_OPTS) 2>&1 | tee hetcats-make && \
          $(PERL) ../utils/create_sources.pl hetcats-make sources_hetcats.mk
@@ -119,16 +119,14 @@ ghci:
 
 ### christian's target
 ### CASL parser
-capa: ../CASL/Main.hs $(drifted_files)
+capa: ../CASL/capa.lhs $(drifted_files)
 	$(RM) $@
-	$(HC) --make -Wall -o $@ $< $(HC_OPTS)
-	\cp -p $@ ../CASL/$@ 
+	$(HC) --make -o ../CASL/$@ $< $(HC_OPTS)
 
 ### HasCASL parser
-hacapa: ../HasCASL/Main.hs $(drifted_files)
+hacapa: ../HasCASL/hacapa.lhs $(drifted_files)
 	$(RM) $@
-	$(HC) --make -Wall -o $@ $< $(HC_OPTS)
-	\cp -p $@ ../HasCASL/$@ 
+	$(HC) --make -o ../HasCASL/$@ $< $(HC_OPTS)
 
 ### run tests in other directories
 check: hetcats
@@ -141,7 +139,7 @@ Version.hs: Version.in version_nr
 
 ## two hardcoded dependencies for a correct generation of Version.hs
 Options.hs: Version.hs
-hetcats.hs: Version.hs
+hetcats.lhs: Version.hs
 ####################################################################
 ## rules for DrIFT
 
