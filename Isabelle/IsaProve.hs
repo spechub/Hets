@@ -55,6 +55,8 @@ import System
 
 import HTk
 
+import Debug.Trace
+
 isabelleProver :: Prover Sign Sentence () ()
 isabelleProver =
      Prover { prover_name = "Isabelle",
@@ -77,7 +79,7 @@ isaProve checkCons thName (sig,axs) goals = do
       fileName = thName'++".thy"
       origName = thName'++".orig.thy"
       patchName = thName'++".patch"
-      provedName = thName'++".proved.thy"
+      provedName = thName'++"_proved.thy"
       theory = if checkCons then showConsTheory else showTheory
   ex <- doesFileExist fileName
   exorig <- doesFileExist origName
@@ -109,7 +111,10 @@ isaProve checkCons thName (sig,axs) goals = do
   sync (clickedb >>> destroy t)
   closeChildProcessFds isa
   provedThy <- readFile fileName
-  let newThy = withoutThms theory ++ onlyThms provedThy ++ checkThm ++ concat (map checkThms disGoals)
+  let newThy = withoutThms theory ++ onlyThms provedThy 
+                                  ++ checkThm 
+                                  ++ concat (map checkThms disGoals)
+
   writeFile provedName newThy
 --   system (isabelle ++ "/isabelle -e "++newThy++" -q HOL" ++ " heap.isa")
   return [] -- ??? to be implemented
@@ -128,8 +133,17 @@ isaProve checkCons thName (sig,axs) goals = do
                    ++ showPretty sig "\n\naxioms\n" 
                    ++ showAxs ++ "\n" ++ showLemma ++ "\n\n" ++ showGoals
                    ++ "\nend\n"
-      withoutThms thy = (unlines . takeWhile (isNotPrefixOf "theorem")) (lines thy)
-      onlyThms thy = (unlines . dropWhile (isNotPrefixOf "theorem")) (lines thy)
+      withoutThms thy = 
+        let thy' = takeWhile (isNotPrefixOf "theorem") (lines thy)
+            sub = map subThyName thy'
+            subThyName s | "theory" `isPrefixOf` s = 
+                              unwords (map subTN (words s))
+                         | otherwise = s
+            subTN s | s == (getFN thName) = (getFN thName)++"_proved"
+                    | otherwise = s
+        in (unlines . dropWhile (isNotPrefixOf "theory")) sub
+      onlyThms thy = (unlines . 
+                        dropWhile (isNotPrefixOf "theorem")) (lines thy)
       isNotPrefixOf t s = (not . (isPrefixOf t)) s
       checkThm = "\n\nML  \"fun check_theorem name thm thy = "
                  ++ "aconv(#prop(rep_thm(Drule.freeze_all(get_thm thy name))),"
@@ -137,7 +151,7 @@ isaProve checkCons thName (sig,axs) goals = do
       checkThms thm = "ML \"check_theorem \\\"" 
                       ++ senName thm ++ "\\\" " 
                       ++ "\\\""++showPretty (sentence thm) "\\\" " 
-                      ++ thName ++ ".thy \"\n"
+                      ++ provedName ++ "\"\n"
       thyPath = "ML \"val hetsLib = (OS.Process.getEnv \\\"HETS_LIB\\\"); \n"
                    ++ "case hetsLib of NONE => add_path \\\".\\\" \n"
                    ++ "| SOME s => add_path (s ^ \\\"/Isabelle\\\")\"\n\n"
