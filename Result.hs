@@ -14,6 +14,8 @@
 module Result where
 
 import Id
+import PrettyPrint
+import Pretty
 
 data Diagnosis = Error String Pos
 	       | FatalError String Pos
@@ -57,3 +59,13 @@ instance Show Diagnosis where
     showList [] = showString ""
     showList [d] = showsPrec 0 d
     showList (d:ds) = showsPrec 0 d . showString "\n" . showList ds
+
+instance PrettyPrint Diagnosis where
+    printText0 _ = ptext . show
+
+instance PrettyPrint a => PrettyPrint (Result a) where
+    printText0 g (Result ds m) = vcat ((case m of 
+				       Nothing -> empty
+				       Just x -> printText0 g x) :
+					    (map (printText0 g) ds))
+							
