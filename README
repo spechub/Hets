@@ -62,6 +62,8 @@ hets.hs                     Top-level Haskell module for hets (Till Mossakowski)
 version_nr                  Current version (Till Mossakowski)
 ATC/                        Conversion from and to ATerms (Klaus Luettich)
 CASL/                       Instance of Logic: CASL (Till Mossakowski/Christian Maeder/Martin Kuehl)
+CoCASL/                     Instance of Logic: CoCASL (Till Mossakowski)
+CoL/                        Instance of Logic: COL (Till Mossakowski)
 Common/                     Modules common to all logics
 Common/ATerm/                 Conversion from and to ATerms (Christian Maeder)
 Common/Lib/                   Set, Map, Graph, Rel modules (Christian Maeder)
