@@ -970,8 +970,7 @@ pr_fun_map_entry l (t,i,b) =
       Just (t,i,b) else Nothing
 
 -- FIXME
--- function embedMorphism needs to be implemented in Logic.hs
--- or elsewhere
+-- function embedMorphism needs to be implemented in LocalEnv.hs
 pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
 pr_epsilon l1 s = let
                     l = adjust_logic l1
