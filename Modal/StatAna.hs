@@ -23,6 +23,7 @@ import CASL.Utils
 import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
 import CASL.Overload
+import CASL.Inject
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -39,9 +40,14 @@ basicModalAnalysis :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
 			      Sign M_FORMULA ModalSign,
 			      Sign M_FORMULA ModalSign,
 			      [Named (FORMULA M_FORMULA)])
-basicModalAnalysis = basicAnalysis mapM_FORMULA 
-                     resolveM_FORMULA noExtMixfixM minExpForm
-                     ana_M_BASIC_ITEM ana_M_SIG_ITEM diffModalSign
+basicModalAnalysis = 
+    basicAnalysis minExpForm ana_M_BASIC_ITEM ana_M_SIG_ITEM diffModalSign
+
+instance Resolver M_FORMULA where
+    putParen = mapM_FORMULA
+    mixResolve = resolveM_FORMULA
+    checkMix = noExtMixfixM
+    putInj = injM_FORMULA
 
 mapMODALITY :: MODALITY -> MODALITY
 mapMODALITY m = case m of 
@@ -51,6 +57,15 @@ mapMODALITY m = case m of
 mapM_FORMULA :: M_FORMULA -> M_FORMULA
 mapM_FORMULA (BoxOrDiamond b m f ps) = 
     BoxOrDiamond b (mapMODALITY m) (mapFormula mapM_FORMULA f) ps
+
+injMODALITY :: MODALITY -> MODALITY
+injMODALITY m = case m of 
+    Term_mod t -> Term_mod $ injTerm injM_FORMULA t
+    _ -> m
+
+injM_FORMULA :: M_FORMULA -> M_FORMULA
+injM_FORMULA (BoxOrDiamond b m f ps) = 
+    BoxOrDiamond b (injMODALITY m) (injFormula injM_FORMULA f) ps
 
 resolveMODALITY :: MixResolve MODALITY
 resolveMODALITY ga ids m = case m of 

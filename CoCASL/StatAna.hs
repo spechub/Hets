@@ -32,6 +32,7 @@ import CASL.ShowMixfix
 import CASL.StaticAna
 import CASL.AS_Basic_CASL
 import CASL.Overload
+import CASL.Inject
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -51,9 +52,14 @@ basicCoCASLAnalysis :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
 			      Sign C_FORMULA CoCASLSign,
 			      Sign C_FORMULA CoCASLSign,
 			      [Named (FORMULA C_FORMULA)])
-basicCoCASLAnalysis = basicAnalysis mapC_FORMULA resolveC_FORMULA 
-                                 noExtMixfixCo minExpForm
-                               ana_C_BASIC_ITEM ana_C_SIG_ITEM diffCoCASLSign
+basicCoCASLAnalysis = 
+    basicAnalysis minExpForm ana_C_BASIC_ITEM ana_C_SIG_ITEM diffCoCASLSign
+
+instance Resolver C_FORMULA where
+    putParen = mapC_FORMULA
+    mixResolve = resolveC_FORMULA
+    checkMix = noExtMixfixCo
+    putInj = injC_FORMULA
 
 mapMODALITY :: MODALITY -> MODALITY
 mapMODALITY m = case m of 
@@ -65,6 +71,19 @@ mapC_FORMULA cf =  case cf of
    BoxOrDiamond b m f ps -> let
        nm = mapMODALITY m
        nf = mapFormula mapC_FORMULA f
+       in BoxOrDiamond b nm nf ps
+   _ -> cf
+
+injMODALITY :: MODALITY -> MODALITY
+injMODALITY m = case m of 
+    Term_mod t -> Term_mod $ injTerm injC_FORMULA t
+    _ -> m
+
+injC_FORMULA :: C_FORMULA -> C_FORMULA
+injC_FORMULA cf =  case cf of 
+   BoxOrDiamond b m f ps -> let
+       nm = injMODALITY m
+       nf = injFormula injC_FORMULA f
        in BoxOrDiamond b nm nf ps
    _ -> cf
 

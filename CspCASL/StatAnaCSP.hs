@@ -57,8 +57,7 @@ statAna (C3po sp) =
 
 statBasicSpec :: CSP_CASL_C_SPEC -> Result CSPSign
 statBasicSpec (Csp_casl_c_spec sp ch p) =
-  do (sp',sig,_,_) <- basicAnalysis id (const $ const return) 
-                               (const True)
+  do (sp',sig,_,_) <- basicAnalysis 
                                (const $ const return) 
 			       (const return)
 			       (const return) 

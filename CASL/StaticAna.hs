@@ -23,6 +23,7 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.MixfixParser
 import CASL.Overload
+import CASL.Inject
 import CASL.Utils
 import Common.Lib.State
 import Common.PrettyPrint
@@ -35,7 +36,6 @@ import Common.GlobalAnnotations
 import Common.Result
 import Data.Maybe
 import Data.List
--- import Debug.Trace
 
 import Control.Exception (assert)
 
@@ -691,26 +691,31 @@ resultToState f a = do
 
 type Ana b f e = GlobalAnnos -> b -> State (Sign f e) b
 
-basicAnalysis :: (Eq f, PrettyPrint f) 
-              => (f -> f)  -- ^ put parenthesis around mixfix terms
-              -> MixResolve f -- ^ resolve mixfix terms 
-              -> (f -> Bool) -- ^ check if a formula extension has been 
-                             -- analysed completely by mixfix resolution 
-              -> Min f e -- ^ type analysis of f  
+class PrettyPrint f => Resolver f where
+   putParen :: f -> f -- ^ put parenthesis around mixfix terms
+   mixResolve :: MixResolve f -- ^ resolve mixfix terms 
+   checkMix :: (f -> Bool) -- ^ check if a formula extension has been 
+                             -- analysed completely by mixfix resolution
+   putInj :: f -> f -- ^ insert injections 
+
+basicAnalysis :: Resolver f
+              => Min f e -- ^ type analysis of f
               -> Ana b f e  -- ^ static analysis of basic item b
               -> Ana s f e  -- ^ static analysis of signature item s  
               -> (e -> e -> e) -- ^ difference of signature extension e
               -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
          -> Result (BASIC_SPEC b s f, Sign f e, Sign f e, [Named (FORMULA f)])
-basicAnalysis par extR extC mef ab as dif (bs, inSig, ga) = do 
-    let (newBs, accSig) = runState (ana_BASIC_SPEC par extR extC ab as ga bs) 
+basicAnalysis mef anab anas dif (bs, inSig, ga) = do 
+    let (newBs, accSig) = runState (ana_BASIC_SPEC putParen 
+                                    mixResolve checkMix anab anas ga bs) 
                           inSig
         ds = reverse $ envDiags accSig
         sents = reverse $ sentences accSig
         cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
         diff = diffSig cleanSig inSig 
             { extendedInfo = dif (extendedInfo accSig) $ extendedInfo inSig }
-        msents = map (mapNamed $ minExpFORMULA mef ga accSig) sents
+        msents = map (mapNamed $ fmap (injFormula putInj) . 
+                               minExpFORMULA mef ga accSig) sents
         es = concatMap (diags . sentence) msents
         csents = map (mapNamed $ fromJust . maybeResult) 
                  $ filter (isJust . maybeResult . sentence) msents
@@ -723,5 +728,11 @@ basicAnalysis par extR extC mef ab as dif (bs, inSig, ga) = do
 basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
                   -> Result (BASIC_SPEC () () (), Sign () (), 
                              Sign () (), [Named (FORMULA ())])
-basicCASLAnalysis = basicAnalysis id (const $ const return)(const True)
-    (const $ const return) (const return) (const return) const
+basicCASLAnalysis = 
+    basicAnalysis (const $ const return) (const return) (const return) const
+
+instance Resolver () where
+    putParen = id
+    mixResolve = const $ const return
+    checkMix = const True
+    putInj = id

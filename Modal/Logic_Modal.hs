@@ -109,27 +109,17 @@ instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
       sym_name Modal = symName
       provers Modal = [] 
       cons_checkers Modal = []
-      simplify_sen Modal = simplifySen minExpForm simModal rmTypesMod
-
--- remove type information in ExtFORMULA
-rmTypesMod :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA
-rmTypesMod sign (BoxOrDiamond b md form pos) =
-    let mod' = case md of
-                     Term_mod term -> Term_mod $ rmTypesT minExpForm 
-                                      rmTypesExt sign term
-                     t -> t
-    in BoxOrDiamond b mod' (rmTypesF minExpForm rmTypesExt sign form) pos
-
+      simplify_sen Modal = simplifySen minExpForm simModal
 
 -- simplifySen for ExtFORMULA   
 simModal :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA
 simModal sign (BoxOrDiamond b md form pos) =
     let mod' = case md of
                         Term_mod term -> Term_mod $ rmTypesT minExpForm 
-                                         rmTypesExt sign term
+                                         simModal sign term
                         t -> t
     in BoxOrDiamond b mod' 
-                 (simplifySen minExpForm simModal rmTypesExt sign form) pos
+                 (simplifySen minExpForm simModal sign form) pos
 
 rmTypesExt :: a -> b -> b
 rmTypesExt _ f = f

@@ -12,29 +12,34 @@
   generated{sort Nat; op 0 : Nat;
                       op suc : Nat -> Nat} %(ga_generated_Nat)%,
    . forall m, n, r, s:Nat
-         . (pred __<=__ : Int * Int)((op 0 : Nat),
-                                     (var n : Nat)) %(Nat_leq_def1)%,
+         . (pred __<=__ : Int * Int)((op inj : Nat -> Int)((op 0 : Nat)),
+                                     (op inj : Nat -> Int)((var n : Nat))) %(Nat_leq_def1)%,
    . forall m, n, r, s:Nat
          . not (pred __<=__ : Int *
-                              Int)((op suc : Nat -> Pos)((var n : Nat)),
-                                   (op 0 : Nat)) %(Nat_leq_def2)%,
+                              Int)((op inj : Pos -> Int)((op suc : Nat -> Pos)((var n : Nat))),
+                                   (op inj : Nat -> Int)((op 0 : Nat))) %(Nat_leq_def2)%,
    . forall m, n, r, s:Nat
-         . (pred __<=__ : Int * Int)((op suc : Nat -> Pos)((var m : Nat)),
-                                     (op suc : Nat -> Pos)((var n : Nat))) <=>
-               (pred __<=__ : Int * Int)((var m : Nat),
-                                         (var n : Nat)) %(Nat_leq_def3)%,
+         . (pred __<=__ : Int *
+                          Int)((op inj : Pos -> Int)((op suc : Nat -> Pos)((var m : Nat))),
+                               (op inj : Pos -> Int)((op suc : Nat -> Pos)((var n : Nat)))) <=>
+               (pred __<=__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
+                                         (op inj : Nat -> Int)((var n : Nat))) %(Nat_leq_def3)%,
    . forall m, n, r, s:Nat
-         . (pred __>=__ : Int * Int)((var m : Nat), (var n : Nat)) <=>
-               (pred __<=__ : Int * Int)((var n : Nat),
-                                         (var m : Nat)) %(Nat_geq_def)%,
+         . (pred __>=__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
+                                     (op inj : Nat -> Int)((var n : Nat))) <=>
+               (pred __<=__ : Int * Int)((op inj : Nat -> Int)((var n : Nat)),
+                                         (op inj : Nat -> Int)((var m : Nat))) %(Nat_geq_def)%,
    . forall m, n, r, s:Nat
-         . (pred __<__ : Int * Int)((var m : Nat), (var n : Nat)) <=>
-               (pred __<=__ : Int * Int)((var m : Nat), (var n : Nat))
+         . (pred __<__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
+                                    (op inj : Nat -> Int)((var n : Nat))) <=>
+               (pred __<=__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
+                                         (op inj : Nat -> Int)((var n : Nat)))
                /\ not (var m : Nat) = (var n : Nat) %(Nat_less_def)%,
    . forall m, n, r, s:Nat
-         . (pred __>__ : Int * Int)((var m : Nat), (var n : Nat)) <=>
-               (pred __<__ : Int * Int)((var m : Nat),
-                                        (var n : Nat)) %(Nat_greater_def)%,
+         . (pred __>__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
+                                    (op inj : Nat -> Int)((var n : Nat))) <=>
+               (pred __<__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
+                                        (op inj : Nat -> Int)((var n : Nat))) %(Nat_greater_def)%,
    . forall m, n, r, s:Nat
          . (op __+__ : Nat * Nat -> Nat)((op 0 : Nat), (var m : Nat)) =
                (var m : Nat) %(Nat_add_0)%,
@@ -48,49 +53,56 @@
                (op 0 : Nat) %(Nat_mult_0)%,
    . forall m, n, r, s:Nat
          . (op __*__ : Nat *
-                       Nat -> Nat)((op suc : Nat -> Pos)((var n : Nat)), (var m : Nat)) =
+                       Nat -> Nat)((op inj : Pos -> Nat)((op suc : Nat -> Pos)((var n : Nat))),
+                                   (var m : Nat)) =
                (op __+__ : Nat * Nat -> Nat)((op __*__ : Nat *
                                                          Nat -> Nat)((var n : Nat), (var m : Nat)),
                                              (var m : Nat)) %(Nat_mult_suc)%,
    . forall m, n, r, s:Nat
          . (op __^__ : Nat * Nat -> Nat)((var m : Nat), (op 0 : Nat)) =
-               (op 1 : Pos) : Nat %(Nat_power_0)%,
+               (op inj : Pos -> Nat)((op 1 : Pos)) %(Nat_power_0)%,
    . forall m, n, r, s:Nat
          . (op __^__ : Nat * Nat -> Nat)((var m : Nat),
-                                         (op suc : Nat -> Pos)((var n : Nat))) =
+                                         (op inj : Pos -> Nat)((op suc : Nat -> Pos)((var n : Nat)))) =
                (op __*__ : Nat * Nat -> Nat)((var m : Nat),
                                              (op __^__ : Nat * Nat -> Nat)((var m : Nat),
                                                                            (var n : Nat))) %(Nat_power_suc)%,
    . forall m, n, r, s:Nat
          . (op min : Nat * Nat -> Nat)((var m : Nat), (var n : Nat)) =
                (var m : Nat)
-                   when (pred __<=__ : Int * Int)((var m : Nat), (var n : Nat))
+                   when (pred __<=__ : Int *
+                                       Int)((op inj : Nat -> Int)((var m : Nat)),
+                                            (op inj : Nat -> Int)((var n : Nat)))
                    else (var n : Nat) %(Nat_min_def)%,
    . forall m, n, r, s:Nat
          . (op max : Nat * Nat -> Nat)((var m : Nat), (var n : Nat)) =
                (var n : Nat)
-                   when (pred __<=__ : Int * Int)((var m : Nat), (var n : Nat))
+                   when (pred __<=__ : Int *
+                                       Int)((op inj : Nat -> Int)((var m : Nat)),
+                                            (op inj : Nat -> Int)((var n : Nat)))
                    else (var m : Nat) %(Nat_max_def)%,
    . forall m, n, r, s:Nat
          . (op +__ : Nat -> Nat)((var m : Nat)) =
                (var m : Nat) %(plus_def)%,
    . forall m, n, r, s:Nat
-         . (op abs : Int -> Nat)((var n : Nat)) = (var n : Nat) %(Nat_abs)%,
+         . (op abs : Int -> Nat)((op inj : Nat -> Int)((var n : Nat))) =
+               (var n : Nat) %(Nat_abs)%,
    . forall m, n, r, s:Nat
-         . (pred odd : Int)((var m : Nat)) <=>
-               not (pred even : Int)((var m : Nat)) %(Nat_odd_def)%,
+         . (pred odd : Int)((op inj : Nat -> Int)((var m : Nat))) <=>
+               not (pred even : Int)((op inj : Nat -> Int)((var m : Nat))) %(Nat_odd_def)%,
    . forall m, n, r, s:Nat
-         . (pred even : Int)((op 0 : Nat)) %(Nat_even_0)%,
+         . (pred even : Int)((op inj : Nat -> Int)((op 0 : Nat))) %(Nat_even_0)%,
    . forall m, n, r, s:Nat
-         . (pred even : Int)((op suc : Nat -> Pos)((var m : Nat))) <=>
-               (pred odd : Int)((var m : Nat)) %(Nat_even_suc)%,
+         . (pred even : Int)((op inj : Pos -> Int)((op suc : Nat -> Pos)((var m : Nat)))) <=>
+               (pred odd : Int)((op inj : Nat -> Int)((var m : Nat))) %(Nat_even_suc)%,
    . forall m, n, r, s:Nat
          . (op __! : Nat -> Nat)((op 0 : Nat)) =
-               (op 1 : Pos) : Nat %(Nat_factorial_0)%,
+               (op inj : Pos -> Nat)((op 1 : Pos)) %(Nat_factorial_0)%,
    . forall m, n, r, s:Nat
-         . (op __! : Nat -> Nat)((op suc : Nat -> Pos)((var n : Nat))) =
-               (op __*__ : Nat * Nat -> Nat)((op suc : Nat -> Pos)((var n : Nat)),
-                                             (op __! : Nat -> Nat)((var n : Nat))) %(Nat_factorial_suc)%,
+         . (op __! : Nat -> Nat)((op inj : Pos -> Nat)((op suc : Nat -> Pos)((var n : Nat)))) =
+               (op __*__ : Nat *
+                           Nat -> Nat)((op inj : Pos -> Nat)((op suc : Nat -> Pos)((var n : Nat))),
+                                       (op __! : Nat -> Nat)((var n : Nat))) %(Nat_factorial_suc)%,
    . forall m, n, r, s:Nat
          . (op __-?__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
                (var r : Nat) <=>
@@ -105,8 +117,8 @@
                 (var r : Nat) <=>
                 (var m : Nat) =
                     (op __*__ : Nat * Nat -> Nat)((var r : Nat), (var n : Nat))) if
-               (pred __>__ : Int * Int)((var n : Nat),
-                                        (op 0 : Nat)) %(Nat_divide_Pos)%,
+               (pred __>__ : Int * Int)((op inj : Nat -> Int)((var n : Nat)),
+                                        (op inj : Nat -> Int)((op 0 : Nat))) %(Nat_divide_Pos)%,
    . forall m, n, r, s:Nat
          . (op __div__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
                (var r : Nat) <=>
@@ -116,10 +128,12 @@
                                                                     Nat -> Nat)((var n : Nat),
                                                                                 (var r : Nat)),
                                                         (var s : Nat))
-                      /\ (pred __<__ : Int * Int)((var s : Nat),
-                                                  (var n : Nat))) %(Nat_div)%,
+                      /\ (pred __<__ : Int * Int)((op inj : Nat -> Int)((var s : Nat)),
+                                                  (op inj : Nat -> Int)((var n : Nat)))) %(Nat_div)%,
    . forall m, n, r, s:Nat
-         . (op __mod__ : Int * Int ->? Nat)((var m : Nat), (var n : Nat)) =
+         . (op __mod__ : Int *
+                         Int ->? Nat)((op inj : Nat -> Int)((var m : Nat)),
+                                      (op inj : Nat -> Int)((var n : Nat))) =
                (var s : Nat) <=>
                (exists r:Nat
                     . (var m : Nat) =
@@ -127,51 +141,53 @@
                                                                     Nat -> Nat)((var n : Nat),
                                                                                 (var r : Nat)),
                                                         (var s : Nat))
-                      /\ (pred __<__ : Int * Int)((var s : Nat),
-                                                  (var n : Nat))) %(Nat_mod)%,
+                      /\ (pred __<__ : Int * Int)((op inj : Nat -> Int)((var s : Nat)),
+                                                  (op inj : Nat -> Int)((var n : Nat)))) %(Nat_mod)%,
    . forall m, n, r, s:Nat
          . (op __quot__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
                (op __div__ : Nat * Nat ->? Nat)((var m : Nat),
                                                 (var n : Nat)) %(Nat_quot)%,
    . forall m, n, r, s:Nat
          . (op __rem__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
-               (op __mod__ : Int * Int ->? Nat)((var m : Nat),
-                                                (var n : Nat)) %(Nat_rem)%,
+               (op __mod__ : Int *
+                             Int ->? Nat)((op inj : Nat -> Int)((var m : Nat)),
+                                          (op inj : Nat -> Int)((var n : Nat))) %(Nat_rem)%,
    . forall m, n, r, s:Nat
          . (op 1 : Pos) = (op suc : Nat -> Pos)((op 0 : Nat)) %(Nat_1_def)%,
    . forall m, n, r, s:Nat
          . (op 2 : Nat) =
-               (op suc : Nat -> Pos)((op 1 : Pos)) : Nat %(Nat_2_def)%,
+               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op inj : Pos -> Nat)((op 1 : Pos)))) %(Nat_2_def)%,
    . forall m, n, r, s:Nat
          . (op 3 : Nat) =
-               (op suc : Nat -> Pos)((op 2 : Nat)) : Nat %(Nat_3_def)%,
+               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 2 : Nat))) %(Nat_3_def)%,
    . forall m, n, r, s:Nat
          . (op 4 : Nat) =
-               (op suc : Nat -> Pos)((op 3 : Nat)) : Nat %(Nat_4_def)%,
+               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 3 : Nat))) %(Nat_4_def)%,
    . forall m, n, r, s:Nat
          . (op 5 : Nat) =
-               (op suc : Nat -> Pos)((op 4 : Nat)) : Nat %(Nat_5_def)%,
+               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 4 : Nat))) %(Nat_5_def)%,
    . forall m, n, r, s:Nat
          . (op 6 : Nat) =
-               (op suc : Nat -> Pos)((op 5 : Nat)) : Nat %(Nat_6_def)%,
+               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 5 : Nat))) %(Nat_6_def)%,
    . forall m, n, r, s:Nat
          . (op 7 : Nat) =
-               (op suc : Nat -> Pos)((op 6 : Nat)) : Nat %(Nat_7_def)%,
+               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 6 : Nat))) %(Nat_7_def)%,
    . forall m, n, r, s:Nat
          . (op 8 : Nat) =
-               (op suc : Nat -> Pos)((op 7 : Nat)) : Nat %(Nat_8_def)%,
+               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 7 : Nat))) %(Nat_8_def)%,
    . forall m, n, r, s:Nat
          . (op 9 : Nat) =
-               (op suc : Nat -> Pos)((op 8 : Nat)) : Nat %(Nat_9_def)%,
+               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 8 : Nat))) %(Nat_9_def)%,
    . forall m, n, r, s:Nat
          . (op __@@__ : Nat * Nat -> Nat)((var m : Nat), (var n : Nat)) =
                (op __+__ : Nat * Nat -> Nat)((op __*__ : Nat *
                                                          Nat -> Nat)((var m : Nat),
-                                                                     (op suc : Nat -> Pos)((op 9 : Nat))),
+                                                                     (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 9 : Nat)))),
                                              (var n : Nat)) %(Nat_decimal_def)%,
    . forall p:Nat
          . (var p : Nat) in Pos <=>
-               (pred __>__ : Int * Int)((var p : Nat), (op 0 : Nat)),
+               (pred __>__ : Int * Int)((op inj : Nat -> Int)((var p : Nat)),
+                                        (op inj : Nat -> Int)((op 0 : Nat))),
    . (op 1 : Pos) =
          (op suc : Nat -> Pos)((op 0 : Nat)) %(Nat_1_as_Pos_def)%,
    . forall x:Nat; y:Nat
@@ -197,20 +213,23 @@
    . forall x, m, n, r, s, t:Nat; p:Pos
          . def (op __-?__ : Nat * Nat ->? Nat)((var m : Nat),
                                                (var n : Nat)) <=>
-               (pred __>=__ : Int * Int)((var m : Nat),
-                                         (var n : Nat)) %(Nat_sub_dom)%,
+               (pred __>=__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
+                                         (op inj : Nat -> Int)((var n : Nat))) %(Nat_sub_dom)%,
    . forall x, m, n, r, s, t:Nat; p:Pos
          . def (op __/?__ : Nat * Nat ->? Nat)((var m : Nat),
                                                (var n : Nat)) <=>
-               (op __mod__ : Int * Int ->? Nat)((var m : Nat), (var n : Nat)) =
+               (op __mod__ : Int *
+                             Int ->? Nat)((op inj : Nat -> Int)((var m : Nat)),
+                                          (op inj : Nat -> Int)((var n : Nat))) =
                    (op 0 : Nat) %(Nat_divide_dom)%,
    . forall x, m, n, r, s, t:Nat; p:Pos
          . def (op __div__ : Nat * Nat ->? Nat)((var m : Nat),
                                                 (var n : Nat)) <=>
                not (var n : Nat) = (op 0 : Nat) %(Nat_div_dom)%,
    . forall x, m, n, r, s, t:Nat; p:Pos
-         . def (op __mod__ : Int * Int ->? Nat)((var m : Nat),
-                                                (var n : Nat)) <=>
+         . def (op __mod__ : Int *
+                             Int ->? Nat)((op inj : Nat -> Int)((var m : Nat)),
+                                          (op inj : Nat -> Int)((var n : Nat))) <=>
                not (var n : Nat) = (op 0 : Nat) %(Nat_mod_dom)%,
    . forall x, m, n, r, s, t:Nat; p:Pos
          . def (op __quot__ : Nat * Nat ->? Nat)((var m : Nat),
@@ -237,9 +256,9 @@
   generated{sort Int; op __-__ : Nat *
                                  Nat -> Int} %(ga_generated_Int)%,
    . forall a:Nat
-         . (var a : Nat) : Int =
-               (op __-__ : Int * Int -> Int)((var a : Nat),
-                                             (op 0 : Nat)) %(Int_Nat_embedding)%,
+         . (op inj : Nat -> Int)((var a : Nat)) =
+               (op __-__ : Int * Int -> Int)((op inj : Nat -> Int)((var a : Nat)),
+                                             (op inj : Nat -> Int)((op 0 : Nat))) %(Int_Nat_embedding)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (op __-__ : Int * Int -> Int)((var m : Int), (var n : Int)) =
                (op __+__ : Int * Int -> Int)((var m : Int),
@@ -249,16 +268,18 @@
                (var m : Int) %(Int_pos_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (op -__ : Int -> Int)((op __-__ : Int *
-                                             Int -> Int)((var a : Nat), (var b : Nat))) =
-               (op __-__ : Int * Int -> Int)((var b : Nat),
-                                             (var a : Nat)) %(Int_neg_def)%,
+                                             Int -> Int)((op inj : Nat -> Int)((var a : Nat)),
+                                                         (op inj : Nat -> Int)((var b : Nat)))) =
+               (op __-__ : Int * Int -> Int)((op inj : Nat -> Int)((var b : Nat)),
+                                             (op inj : Nat -> Int)((var a : Nat))) %(Int_neg_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (op sign : Int -> Int)((var m : Int)) =
-               (op 0 : Nat) : Int
-                   when (var m : Int) = (op 0 : Nat) : Int
-                   else (op 1 : Pos) : Int
-                            when (pred __>__ : Int * Int)((var m : Int), (op 0 : Nat))
-                            else (op -__ : Int -> Int)((op 1 : Pos)) %(Int_sign_def)%,
+               (op inj : Nat -> Int)((op 0 : Nat))
+                   when (var m : Int) = (op inj : Nat -> Int)((op 0 : Nat))
+                   else (op inj : Pos -> Int)((op 1 : Pos))
+                            when (pred __>__ : Int * Int)((var m : Int),
+                                                          (op inj : Nat -> Int)((op 0 : Nat)))
+                            else (op -__ : Int -> Int)((op inj : Pos -> Int)((op 1 : Pos))) %(Int_sign_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (pred __<=__ : Int * Int)((var m : Int), (var n : Int)) <=>
                (op __-__ : Int * Int -> Int)((var n : Int),
@@ -286,27 +307,28 @@
                    when (pred __<=__ : Int * Int)((var m : Int), (var n : Int))
                    else (var m : Int) %(Int_max_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
-         . (op abs : Int -> Nat)((var m : Int)) : Int =
+         . (op inj : Nat -> Int)((op abs : Int -> Nat)((var m : Int))) =
                (op -__ : Int -> Int)((var m : Int)) if
                (pred __<__ : Int * Int)((var m : Int),
-                                        (op 0 : Nat)) %(Int_abs_def)%,
+                                        (op inj : Nat -> Int)((op 0 : Nat))) %(Int_abs_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (op __^__ : Int *
-                       Nat -> Int)((op -__ : Int -> Int)((op 1 : Pos)), (var a : Nat)) =
-               (op 1 : Pos) : Int
-                   when (pred even : Int)((var a : Nat))
-                   else (op -__ : Int -> Int)((op 1 : Pos)) %(Int_neg1_power_def)%,
+                       Nat -> Int)((op -__ : Int -> Int)((op inj : Pos -> Int)((op 1 : Pos))),
+                                   (var a : Nat)) =
+               (op inj : Pos -> Int)((op 1 : Pos))
+                   when (pred even : Int)((op inj : Nat -> Int)((var a : Nat)))
+                   else (op -__ : Int -> Int)((op inj : Pos -> Int)((op 1 : Pos))) %(Int_neg1_power_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (op __^__ : Int * Nat -> Int)((var m : Int), (var a : Nat)) =
                (op __*__ : Int * Int -> Int)((op __^__ : Int *
                                                          Nat -> Int)((op sign : Int -> Int)((var m : Int)),
                                                                      (var a : Nat)),
-                                             (op __^__ : Nat *
-                                                         Nat -> Nat)((op abs : Int -> Nat)((var m : Int)),
-                                                                     (var a : Nat))) %(Int_power_def)%,
+                                             (op inj : Nat -> Int)((op __^__ : Nat *
+                                                                               Nat -> Nat)((op abs : Int -> Nat)((var m : Int)),
+                                                                                           (var a : Nat)))) %(Int_power_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (pred even : Int)((var m : Int)) <=>
-               (pred even : Int)((op abs : Int -> Nat)((var m : Int))) %(Int_even_def)%,
+               (pred even : Int)((op inj : Nat -> Int)((op abs : Int -> Nat)((var m : Int)))) %(Int_even_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (pred odd : Int)((var m : Int)) <=>
                not (pred even : Int)((var m : Int)) %(Int_odd_def)%,
@@ -315,14 +337,17 @@
                (op __*__ : Int * Int -> Int)((op __*__ : Int *
                                                          Int -> Int)((op sign : Int -> Int)((var m : Int)),
                                                                      (op sign : Int -> Int)((var n : Int))),
-                                             (op __/?__ : Nat *
-                                                          Nat ->? Nat)((op abs : Int -> Nat)((var m : Int)),
-                                                                       (op abs : Int -> Nat)((var n : Int)))) %(Int_divide)%,
+                                             (op inj : Nat -> Int)((op __/?__ : Nat *
+                                                                                Nat ->? Nat)((op abs : Int -> Nat)((var m : Int)),
+                                                                                             (op abs : Int -> Nat)((var n : Int))))) %(Int_divide)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
-         . (pred __<__ : Int * Int)((op __mod__ : Int *
-                                                  Int ->? Nat)((var m : Int), (var n : Int)),
-                                    (op abs : Int -> Nat)((var n : Int))) if
-               not (var n : Int) = (op 0 : Nat) : Int %(Int_mod_range)%,
+         . (pred __<__ : Int *
+                         Int)((op inj : Nat -> Int)((op __mod__ : Int *
+                                                                  Int ->? Nat)((var m : Int),
+                                                                               (var n : Int))),
+                              (op inj : Nat -> Int)((op abs : Int -> Nat)((var n : Int)))) if
+               not (var n : Int) =
+                       (op inj : Nat -> Int)((op 0 : Nat)) %(Int_mod_range)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (var m : Int) =
                (op __+__ : Int * Int -> Int)((op __*__ : Int *
@@ -330,50 +355,52 @@
                                                                                    Int ->? Int)((var m : Int),
                                                                                                 (var n : Int)),
                                                                      (var n : Int)),
-                                             (op __mod__ : Int * Int ->? Nat)((var m : Int),
-                                                                              (var n : Int))) if
-               not (var n : Int) = (op 0 : Nat) : Int %(Int_mod__div_def)%,
+                                             (op inj : Nat -> Int)((op __mod__ : Int *
+                                                                                 Int ->? Nat)((var m : Int),
+                                                                                              (var n : Int)))) if
+               not (var n : Int) =
+                       (op inj : Nat -> Int)((op 0 : Nat)) %(Int_mod__div_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . not def (op __mod__ : Int * Int ->? Nat)((var m : Int),
-                                                    (op 0 : Nat)) %(Int_mod_zero)%,
+                                                    (op inj : Nat -> Int)((op 0 : Nat))) %(Int_mod_zero)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . not def (op __div__ : Int * Int ->? Int)((var m : Int),
-                                                    (op 0 : Nat)) %(Int_div_zero)%,
+                                                    (op inj : Nat -> Int)((op 0 : Nat))) %(Int_div_zero)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (op __quot__ : Int * Int ->? Int)((var m : Int), (var n : Int)) =
                (op __*__ : Int * Int -> Int)((op __*__ : Int *
                                                          Int -> Int)((op sign : Int -> Int)((var m : Int)),
                                                                      (op sign : Int -> Int)((var n : Int))),
-                                             (op __quot__ : Nat *
-                                                            Nat ->? Nat)((op abs : Int -> Nat)((var m : Int)),
-                                                                         (op abs : Int -> Nat)((var n : Int)))) %(Int_quot_def)%,
+                                             (op inj : Nat -> Int)((op __quot__ : Nat *
+                                                                                  Nat ->? Nat)((op abs : Int -> Nat)((var m : Int)),
+                                                                                               (op abs : Int -> Nat)((var n : Int))))) %(Int_quot_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (op __rem__ : Int * Int ->? Int)((var m : Int), (var n : Int)) =
                (op __*__ : Int * Int -> Int)((op __*__ : Int *
                                                          Int -> Int)((op sign : Int -> Int)((var m : Int)),
                                                                      (op sign : Int -> Int)((var n : Int))),
-                                             (op __rem__ : Nat *
-                                                           Nat ->? Nat)((op abs : Int -> Nat)((var m : Int)),
-                                                                        (op abs : Int -> Nat)((var n : Int)))) %(Int_rem_def)%,
+                                             (op inj : Nat -> Int)((op __rem__ : Nat *
+                                                                                 Nat ->? Nat)((op abs : Int -> Nat)((var m : Int)),
+                                                                                              (op abs : Int -> Nat)((var n : Int))))) %(Int_rem_def)%,
    . forall m, n, r:Int; a, b:Nat
          . def (op __-?__ : Nat * Nat ->? Nat)((var a : Nat),
                                                (var b : Nat)) =>
-               (op __-?__ : Nat * Nat ->? Nat)((var a : Nat),
-                                               (var b : Nat)) : Int =
-                   (op __-__ : Int * Int -> Int)((var a : Nat),
-                                                 (var b : Nat)) %(Int_Nat_sub_compat)%,
+               (op inj : Nat -> Int)((op __-?__ : Nat *
+                                                  Nat ->? Nat)((var a : Nat), (var b : Nat))) =
+                   (op __-__ : Int * Int -> Int)((op inj : Nat -> Int)((var a : Nat)),
+                                                 (op inj : Nat -> Int)((var b : Nat))) %(Int_Nat_sub_compat)%,
    . forall m, n, r:Int; a, b:Nat
          . (var m : Int) =
                (op __*__ : Int *
                            Int -> Int)((op sign : Int -> Int)((var m : Int)),
-                                       (op abs : Int -> Nat)((var m : Int))) %(Int_abs_decomp)%,
+                                       (op inj : Nat -> Int)((op abs : Int -> Nat)((var m : Int)))) %(Int_abs_decomp)%,
    . forall m, n, r:Int; a, b:Nat
          . (pred odd : Int)((var m : Int)) <=>
-               (pred odd : Int)((op abs : Int -> Nat)((var m : Int))) %(Int_odd_alt)%,
+               (pred odd : Int)((op inj : Nat -> Int)((op abs : Int -> Nat)((var m : Int)))) %(Int_odd_alt)%,
    . forall m, n, r:Int; a, b:Nat
          . (op __/?__ : Int * Int ->? Int)((var m : Int), (var n : Int)) =
                (var r : Int) <=>
-               not (var n : Int) = (op 0 : Nat) : Int
+               not (var n : Int) = (op inj : Nat -> Int)((op 0 : Nat))
                /\ (op __*__ : Int * Int -> Int)((var n : Int), (var r : Int)) =
                       (var n : Int) %(Int_divide_dom1)%,
    . forall m, n, r:Int; a, b:Nat
@@ -384,23 +411,27 @@
    . forall m, n, r:Int; a, b:Nat
          . def (op __mod__ : Int * Int ->? Nat)((var m : Int),
                                                 (var n : Int)) <=>
-               not (var n : Int) = (op 0 : Nat) : Int %(Int_mod_dom)%,
+               not (var n : Int) =
+                       (op inj : Nat -> Int)((op 0 : Nat)) %(Int_mod_dom)%,
    . forall m, n, r:Int; a, b:Nat
          . (op __mod__ : Int * Int ->? Nat)((var m : Int), (var n : Int)) =
                (op __mod__ : Int * Int ->? Nat)((var m : Int),
-                                                (op abs : Int -> Nat)((var n : Int))) %(Int_mod_abs)%,
+                                                (op inj : Nat -> Int)((op abs : Int -> Nat)((var n : Int)))) %(Int_mod_abs)%,
    . forall m, n, r:Int; a, b:Nat
          . def (op __div__ : Int * Int ->? Int)((var m : Int),
                                                 (var n : Int)) <=>
-               not (var n : Int) = (op 0 : Nat) : Int %(Int_div_dom)%,
+               not (var n : Int) =
+                       (op inj : Nat -> Int)((op 0 : Nat)) %(Int_div_dom)%,
    . forall m, n, r:Int; a, b:Nat
          . def (op __quot__ : Int * Int ->? Int)((var m : Int),
                                                  (var n : Int)) <=>
-               not (var n : Int) = (op 0 : Nat) : Int %(Int_quot_dom)%,
+               not (var n : Int) =
+                       (op inj : Nat -> Int)((op 0 : Nat)) %(Int_quot_dom)%,
    . forall m, n, r:Int; a, b:Nat
          . def (op __rem__ : Int * Int ->? Int)((var m : Int),
                                                 (var n : Int)) <=>
-               not (var n : Int) = (op 0 : Nat) : Int %(Int_rem_dom)%,
+               not (var n : Int) =
+                       (op inj : Nat -> Int)((op 0 : Nat)) %(Int_rem_dom)%,
    . forall m, n, r:Int; a, b:Nat
          . (var m : Int) =
                (op __+__ : Int * Int -> Int)((op __*__ : Int *
@@ -410,27 +441,30 @@
                                                                      (var n : Int)),
                                              (op __rem__ : Int * Int ->? Int)((var m : Int),
                                                                               (var n : Int))) if
-               not (var n : Int) = (op 0 : Nat) : Int %(Int_quot_rem)%,
+               not (var n : Int) =
+                       (op inj : Nat -> Int)((op 0 : Nat)) %(Int_quot_rem)%,
   generated{sort Rat; op __/__ : Int *
                                  Pos -> Rat} %(ga_generated_Rat)%,
    . forall i, j:Int; p, q:Pos
          . (op __/__ : Int * Pos -> Rat)((var i : Int), (var p : Pos)) =
                (op __/__ : Int * Pos -> Rat)((var j : Int), (var q : Pos)) <=>
-               (op __*__ : Int * Int -> Int)((var i : Int), (var q : Pos)) =
+               (op __*__ : Int * Int -> Int)((var i : Int),
+                                             (op inj : Pos -> Int)((var q : Pos))) =
                    (op __*__ : Int * Int -> Int)((var j : Int),
-                                                 (var p : Pos)) %(Rat_equality)%,
+                                                 (op inj : Pos -> Int)((var p : Pos))) %(Rat_equality)%,
    . forall i:Int
          . (op __/__ : Int * Pos -> Rat)((var i : Int), (op 1 : Pos)) =
-               (var i : Int) : Rat %(embeddingIntToRat)%,
+               (op inj : Int -> Rat)((var i : Int)) %(embeddingIntToRat)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . (pred __<=__ : Rat * Rat)((op __/__ : Int *
                                                  Pos -> Rat)((var i : Int), (var p : Pos)),
                                      (op __/__ : Int * Pos -> Rat)((var j : Int),
                                                                    (var q : Pos))) <=>
                (pred __<=__ : Int * Int)((op __*__ : Int *
-                                                     Int -> Int)((var i : Int), (var q : Pos)),
+                                                     Int -> Int)((var i : Int),
+                                                                 (op inj : Pos -> Int)((var q : Pos))),
                                          (op __*__ : Int * Int -> Int)((var j : Int),
-                                                                       (var p : Pos))) %(Rat_leq_def)%,
+                                                                       (op inj : Pos -> Int)((var p : Pos)))) %(Rat_leq_def)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . (pred __>=__ : Rat * Rat)((var x : Rat), (var y : Rat)) <=>
                (pred __<=__ : Rat * Rat)((var y : Rat),
@@ -447,10 +481,10 @@
                (op __/__ : Int * Pos -> Rat)((op __+__ : Int *
                                                          Int -> Int)((op __*__ : Int *
                                                                                  Int -> Int)((var i : Int),
-                                                                                             (var q : Pos)),
+                                                                                             (op inj : Pos -> Int)((var q : Pos))),
                                                                      (op __*__ : Int *
                                                                                  Int -> Int)((var j : Int),
-                                                                                             (var p : Pos))),
+                                                                                             (op inj : Pos -> Int)((var p : Pos)))),
                                              (op __*__ : Pos * Pos -> Pos)((var p : Pos),
                                                                            (var q : Pos))) %(Rat_add_def)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
@@ -468,7 +502,7 @@
                                                                            (var q : Pos))) %(Rat_mult_def)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . not def (op __/__ : Rat * Rat ->? Rat)((var x : Rat),
-                                                  (op 0 : Nat)) %(Rat_divide_def1)%,
+                                                  (op inj : Nat -> Rat)((op 0 : Nat))) %(Rat_divide_def1)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . (op +__ : Rat -> Rat)((var x : Rat)) =
                (var x : Rat) %(Rat_plus_def)%,
@@ -480,23 +514,25 @@
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . (op abs : Rat -> Rat)((op __/__ : Int *
                                              Pos -> Rat)((var i : Int), (var p : Pos))) =
-               (op __/__ : Int * Pos -> Rat)((op abs : Int -> Nat)((var i : Int)),
-                                             (var p : Pos)) %(Rat_abs_def)%,
-   . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
-         . (op __^__ : Rat * Int -> Rat)((var x : Rat), (op 0 : Nat)) =
-               (op 1 : Pos) : Rat %(Rat_power_0)%,
+               (op __/__ : Int *
+                           Pos -> Rat)((op inj : Nat -> Int)((op abs : Int -> Nat)((var i : Int))),
+                                       (var p : Pos)) %(Rat_abs_def)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . (op __^__ : Rat * Int -> Rat)((var x : Rat),
-                                         (op suc : Nat -> Pos)((var n : Nat))) =
+                                         (op inj : Nat -> Int)((op 0 : Nat))) =
+               (op inj : Pos -> Rat)((op 1 : Pos)) %(Rat_power_0)%,
+   . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+         . (op __^__ : Rat * Int -> Rat)((var x : Rat),
+                                         (op inj : Pos -> Int)((op suc : Nat -> Pos)((var n : Nat)))) =
                (op __*__ : Rat * Rat -> Rat)((var x : Rat),
                                              (op __^__ : Rat * Int -> Rat)((var x : Rat),
-                                                                           (var n : Nat))) %(Rat_power_suc)%,
+                                                                           (op inj : Nat -> Int)((var n : Nat)))) %(Rat_power_suc)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . (op __^__ : Rat * Int -> Rat)((var x : Rat),
-                                         (op -__ : Int -> Int)((var p : Pos))) =
-               (op __/__ : Rat * Rat ->? Rat)((op 1 : Pos),
+                                         (op -__ : Int -> Int)((op inj : Pos -> Int)((var p : Pos)))) =
+               (op __/__ : Rat * Rat ->? Rat)((op inj : Pos -> Rat)((op 1 : Pos)),
                                               (op __^__ : Rat * Int -> Rat)((var x : Rat),
-                                                                            (var p : Pos))) %(Rat_power_neg)%,
+                                                                            (op inj : Pos -> Int)((var p : Pos)))) %(Rat_power_neg)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . (op min : Rat * Rat -> Rat)((var x : Rat), (var y : Rat)) =
                (var x : Rat)
@@ -514,9 +550,11 @@
                                                                         (var q : Pos))) =
                (op __*__ : Rat * Rat -> Rat)((op __/__ : Int *
                                                          Pos -> Rat)((var i : Int), (var p : Pos)),
-                                             (op __/__ : Rat * Rat ->? Rat)((var q : Pos),
-                                                                            (var j : Int))) if
-               not (var j : Int) = (op 0 : Nat) : Int %(Rat_divide_rule)%,
+                                             (op __/__ : Rat *
+                                                         Rat ->? Rat)((op inj : Pos -> Rat)((var q : Pos)),
+                                                                      (op inj : Int -> Rat)((var j : Int)))) if
+               not (var j : Int) =
+                       (op inj : Nat -> Int)((op 0 : Nat)) %(Rat_divide_rule)%,
    . forall X1:a; X2:t; X3:t; X4:t; X5:t
          . (op a : s -> t)((op c : a * t * t * t * t -> s)((var X1 : a),
                                                            (var X2 : t), (var X3 : t), (var X4 : t),
@@ -756,11 +794,12 @@
    . forall x:s . def (op f : s ->? s)((var x : s)),
    . forall x:s
          . (op f : s ->? s)((var x : s)) =e=
-               (op g : s -> t)((var x : s)) : s,
+               (op inj : t -> s)((op g : s -> t)((var x : s))),
    . forall x:s
-         . (op f : s ->? s)((var x : s)) = (op g : s -> t)((var x : s)) : s,
+         . (op f : s ->? s)((var x : s)) =
+               (op inj : t -> s)((op g : s -> t)((var x : s))),
    . forall x:s . (var r1 : t) in s,
-   . forall x:s . def (op g : s -> t)((var x : s)) : t,
+   . forall x:s . def (op g : s -> t)((var x : s)),
    . forall x:s . def (op g : s -> t)((var x : s)) as s,
    . forall x:s . def (op f : s ->? s)((var x : s)),
    . forall x:s . def (op g : s -> t)((var x : s)),
@@ -810,26 +849,28 @@
                                                                                  (op Not__ : Boolean -> Boolean)((var y : Boolean)))) %(Or_def)%,
    . forall n:Nat; c:Char
          . def (op chr : Nat ->? Char)((var n : Nat)) <=>
-               (pred __<=__ : Int * Int)((var n : Nat),
-                                         (op __@@__ : Nat * Nat -> Nat)((op 2 : Nat),
-                                                                        (op __@@__ : Nat *
-                                                                                     Nat -> Nat)((op 5 : Nat),
-                                                                                                 (op 5 : Nat)))) %(chr_dom)%,
+               (pred __<=__ : Int * Int)((op inj : Nat -> Int)((var n : Nat)),
+                                         (op inj : Nat -> Int)((op __@@__ : Nat *
+                                                                            Nat -> Nat)((op 2 : Nat),
+                                                                                        (op __@@__ : Nat *
+                                                                                                     Nat -> Nat)((op 5 : Nat),
+                                                                                                                 (op 5 : Nat))))) %(chr_dom)%,
    . forall n:Nat; c:Char
          . (op chr : Nat ->? Char)((op ord : Char -> Nat)((var c : Char))) =
                (var c : Char) %(chr_def)%,
    . forall n:Nat; c:Char
          . (op ord : Char -> Nat)((op chr : Nat ->? Char)((var n : Nat))) =
                (var n : Nat) if
-               (pred __<=__ : Int * Int)((var n : Nat),
-                                         (op __@@__ : Nat * Nat -> Nat)((op 2 : Nat),
-                                                                        (op __@@__ : Nat *
-                                                                                     Nat -> Nat)((op 5 : Nat),
-                                                                                                 (op 5 : Nat)))) %(ord_def)%,
+               (pred __<=__ : Int * Int)((op inj : Nat -> Int)((var n : Nat)),
+                                         (op inj : Nat -> Int)((op __@@__ : Nat *
+                                                                            Nat -> Nat)((op 2 : Nat),
+                                                                                        (op __@@__ : Nat *
+                                                                                                     Nat -> Nat)((op 5 : Nat),
+                                                                                                                 (op 5 : Nat))))) %(ord_def)%,
    . (op '\000' : Char) =
          (op chr : Nat ->? Char)((op 0 : Nat)) %(slash_000)%,
    . (op '\001' : Char) =
-         (op chr : Nat ->? Char)((op 1 : Pos)) %(slash_001)%,
+         (op chr : Nat ->? Char)((op inj : Pos -> Nat)((op 1 : Pos))) %(slash_001)%,
    . (op '\002' : Char) =
          (op chr : Nat ->? Char)((op 2 : Nat)) %(slash_002)%,
    . (op '\003' : Char) =
@@ -848,43 +889,43 @@
          (op chr : Nat ->? Char)((op 9 : Nat)) %(slash_009)%,
    . (op '\010' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op 0 : Nat))) %(slash_010)%,
    . (op '\011' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
-                                                          (op 1 : Pos))) %(slash_011)%,
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
+                                                          (op inj : Pos -> Nat)((op 1 : Pos)))) %(slash_011)%,
    . (op '\012' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op 2 : Nat))) %(slash_012)%,
    . (op '\013' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op 3 : Nat))) %(slash_013)%,
    . (op '\014' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op 4 : Nat))) %(slash_014)%,
    . (op '\015' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op 5 : Nat))) %(slash_015)%,
    . (op '\016' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op 6 : Nat))) %(slash_016)%,
    . (op '\017' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op 7 : Nat))) %(slash_017)%,
    . (op '\018' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op 8 : Nat))) %(slash_018)%,
    . (op '\019' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op 9 : Nat))) %(slash_019)%,
    . (op '\020' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
@@ -893,7 +934,7 @@
    . (op '\021' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
-                                                          (op 1 : Pos))) %(slash_021)%,
+                                                          (op inj : Pos -> Nat)((op 1 : Pos)))) %(slash_021)%,
    . (op '\022' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
@@ -933,7 +974,7 @@
    . (op '\031' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 3 : Nat),
-                                                          (op 1 : Pos))) %(slash_031)%,
+                                                          (op inj : Pos -> Nat)((op 1 : Pos)))) %(slash_031)%,
    . (op '\032' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 3 : Nat),
@@ -973,7 +1014,7 @@
    . (op '\041' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 4 : Nat),
-                                                          (op 1 : Pos))) %(slash_041)%,
+                                                          (op inj : Pos -> Nat)((op 1 : Pos)))) %(slash_041)%,
    . (op '\042' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 4 : Nat),
@@ -1013,7 +1054,7 @@
    . (op '\051' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 5 : Nat),
-                                                          (op 1 : Pos))) %(slash_051)%,
+                                                          (op inj : Pos -> Nat)((op 1 : Pos)))) %(slash_051)%,
    . (op '\052' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 5 : Nat),
@@ -1053,7 +1094,7 @@
    . (op '\061' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 6 : Nat),
-                                                          (op 1 : Pos))) %(slash_061)%,
+                                                          (op inj : Pos -> Nat)((op 1 : Pos)))) %(slash_061)%,
    . (op '\062' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 6 : Nat),
@@ -1093,7 +1134,7 @@
    . (op '\071' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 7 : Nat),
-                                                          (op 1 : Pos))) %(slash_071)%,
+                                                          (op inj : Pos -> Nat)((op 1 : Pos)))) %(slash_071)%,
    . (op '\072' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 7 : Nat),
@@ -1133,7 +1174,7 @@
    . (op '\081' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 8 : Nat),
-                                                          (op 1 : Pos))) %(slash_081)%,
+                                                          (op inj : Pos -> Nat)((op 1 : Pos)))) %(slash_081)%,
    . (op '\082' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 8 : Nat),
@@ -1173,7 +1214,7 @@
    . (op '\091' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 9 : Nat),
-                                                          (op 1 : Pos))) %(slash_091)%,
+                                                          (op inj : Pos -> Nat)((op 1 : Pos)))) %(slash_091)%,
    . (op '\092' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 9 : Nat),
@@ -1208,601 +1249,601 @@
                                                           (op 9 : Nat))) %(slash_099)%,
    . (op '\100' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
                                                                                    (op 0 : Nat)))) %(slash_100)%,
    . (op '\101' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_101)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_101)%,
    . (op '\102' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
                                                                                    (op 2 : Nat)))) %(slash_102)%,
    . (op '\103' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
                                                                                    (op 3 : Nat)))) %(slash_103)%,
    . (op '\104' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
                                                                                    (op 4 : Nat)))) %(slash_104)%,
    . (op '\105' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
                                                                                    (op 5 : Nat)))) %(slash_105)%,
    . (op '\106' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
                                                                                    (op 6 : Nat)))) %(slash_106)%,
    . (op '\107' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
                                                                                    (op 7 : Nat)))) %(slash_107)%,
    . (op '\108' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
                                                                                    (op 8 : Nat)))) %(slash_108)%,
    . (op '\109' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
                                                                                    (op 9 : Nat)))) %(slash_109)%,
    . (op '\110' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 0 : Nat)))) %(slash_110)%,
    . (op '\111' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
-                                                                                   (op 1 : Pos)))) %(slash_111)%,
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_111)%,
    . (op '\112' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 2 : Nat)))) %(slash_112)%,
    . (op '\113' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 3 : Nat)))) %(slash_113)%,
    . (op '\114' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 4 : Nat)))) %(slash_114)%,
    . (op '\115' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 5 : Nat)))) %(slash_115)%,
    . (op '\116' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 6 : Nat)))) %(slash_116)%,
    . (op '\117' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 7 : Nat)))) %(slash_117)%,
    . (op '\118' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 8 : Nat)))) %(slash_118)%,
    . (op '\119' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 9 : Nat)))) %(slash_119)%,
    . (op '\120' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
                                                                                    (op 0 : Nat)))) %(slash_120)%,
    . (op '\121' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_121)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_121)%,
    . (op '\122' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
                                                                                    (op 2 : Nat)))) %(slash_122)%,
    . (op '\123' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
                                                                                    (op 3 : Nat)))) %(slash_123)%,
    . (op '\124' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
                                                                                    (op 4 : Nat)))) %(slash_124)%,
    . (op '\125' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
                                                                                    (op 5 : Nat)))) %(slash_125)%,
    . (op '\126' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
                                                                                    (op 6 : Nat)))) %(slash_126)%,
    . (op '\127' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
                                                                                    (op 7 : Nat)))) %(slash_127)%,
    . (op '\128' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
                                                                                    (op 8 : Nat)))) %(slash_128)%,
    . (op '\129' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
                                                                                    (op 9 : Nat)))) %(slash_129)%,
    . (op '\130' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
                                                                                    (op 0 : Nat)))) %(slash_130)%,
    . (op '\131' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_131)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_131)%,
    . (op '\132' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
                                                                                    (op 2 : Nat)))) %(slash_132)%,
    . (op '\133' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
                                                                                    (op 3 : Nat)))) %(slash_133)%,
    . (op '\134' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
                                                                                    (op 4 : Nat)))) %(slash_134)%,
    . (op '\135' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
                                                                                    (op 5 : Nat)))) %(slash_135)%,
    . (op '\136' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
                                                                                    (op 6 : Nat)))) %(slash_136)%,
    . (op '\137' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
                                                                                    (op 7 : Nat)))) %(slash_137)%,
    . (op '\138' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
                                                                                    (op 8 : Nat)))) %(slash_138)%,
    . (op '\139' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
                                                                                    (op 9 : Nat)))) %(slash_139)%,
    . (op '\140' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
                                                                                    (op 0 : Nat)))) %(slash_140)%,
    . (op '\141' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_141)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_141)%,
    . (op '\142' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
                                                                                    (op 2 : Nat)))) %(slash_142)%,
    . (op '\143' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
                                                                                    (op 3 : Nat)))) %(slash_143)%,
    . (op '\144' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
                                                                                    (op 4 : Nat)))) %(slash_144)%,
    . (op '\145' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
                                                                                    (op 5 : Nat)))) %(slash_145)%,
    . (op '\146' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
                                                                                    (op 6 : Nat)))) %(slash_146)%,
    . (op '\147' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
                                                                                    (op 7 : Nat)))) %(slash_147)%,
    . (op '\148' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
                                                                                    (op 8 : Nat)))) %(slash_148)%,
    . (op '\149' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
                                                                                    (op 9 : Nat)))) %(slash_149)%,
    . (op '\150' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
                                                                                    (op 0 : Nat)))) %(slash_150)%,
    . (op '\151' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_151)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_151)%,
    . (op '\152' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
                                                                                    (op 2 : Nat)))) %(slash_152)%,
    . (op '\153' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
                                                                                    (op 3 : Nat)))) %(slash_153)%,
    . (op '\154' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
                                                                                    (op 4 : Nat)))) %(slash_154)%,
    . (op '\155' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
                                                                                    (op 5 : Nat)))) %(slash_155)%,
    . (op '\156' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
                                                                                    (op 6 : Nat)))) %(slash_156)%,
    . (op '\157' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
                                                                                    (op 7 : Nat)))) %(slash_157)%,
    . (op '\158' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
                                                                                    (op 8 : Nat)))) %(slash_158)%,
    . (op '\159' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
                                                                                    (op 9 : Nat)))) %(slash_159)%,
    . (op '\160' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
                                                                                    (op 0 : Nat)))) %(slash_160)%,
    . (op '\161' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_161)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_161)%,
    . (op '\162' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
                                                                                    (op 2 : Nat)))) %(slash_162)%,
    . (op '\163' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
                                                                                    (op 3 : Nat)))) %(slash_163)%,
    . (op '\164' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
                                                                                    (op 4 : Nat)))) %(slash_164)%,
    . (op '\165' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
                                                                                    (op 5 : Nat)))) %(slash_165)%,
    . (op '\166' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
                                                                                    (op 6 : Nat)))) %(slash_166)%,
    . (op '\167' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
                                                                                    (op 7 : Nat)))) %(slash_167)%,
    . (op '\168' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
                                                                                    (op 8 : Nat)))) %(slash_168)%,
    . (op '\169' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 6 : Nat),
                                                                                    (op 9 : Nat)))) %(slash_169)%,
    . (op '\170' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
                                                                                    (op 0 : Nat)))) %(slash_170)%,
    . (op '\171' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_171)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_171)%,
    . (op '\172' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
                                                                                    (op 2 : Nat)))) %(slash_172)%,
    . (op '\173' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
                                                                                    (op 3 : Nat)))) %(slash_173)%,
    . (op '\174' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
                                                                                    (op 4 : Nat)))) %(slash_174)%,
    . (op '\175' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
                                                                                    (op 5 : Nat)))) %(slash_175)%,
    . (op '\176' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
                                                                                    (op 6 : Nat)))) %(slash_176)%,
    . (op '\177' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
                                                                                    (op 7 : Nat)))) %(slash_177)%,
    . (op '\178' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
                                                                                    (op 8 : Nat)))) %(slash_178)%,
    . (op '\179' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 7 : Nat),
                                                                                    (op 9 : Nat)))) %(slash_179)%,
    . (op '\180' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
                                                                                    (op 0 : Nat)))) %(slash_180)%,
    . (op '\181' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_181)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_181)%,
    . (op '\182' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
                                                                                    (op 2 : Nat)))) %(slash_182)%,
    . (op '\183' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
                                                                                    (op 3 : Nat)))) %(slash_183)%,
    . (op '\184' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
                                                                                    (op 4 : Nat)))) %(slash_184)%,
    . (op '\185' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
                                                                                    (op 5 : Nat)))) %(slash_185)%,
    . (op '\186' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
                                                                                    (op 6 : Nat)))) %(slash_186)%,
    . (op '\187' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
                                                                                    (op 7 : Nat)))) %(slash_187)%,
    . (op '\188' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
                                                                                    (op 8 : Nat)))) %(slash_188)%,
    . (op '\189' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 8 : Nat),
                                                                                    (op 9 : Nat)))) %(slash_189)%,
    . (op '\190' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
                                                                                    (op 0 : Nat)))) %(slash_190)%,
    . (op '\191' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_191)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_191)%,
    . (op '\192' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
                                                                                    (op 2 : Nat)))) %(slash_192)%,
    . (op '\193' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
                                                                                    (op 3 : Nat)))) %(slash_193)%,
    . (op '\194' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
                                                                                    (op 4 : Nat)))) %(slash_194)%,
    . (op '\195' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
                                                                                    (op 5 : Nat)))) %(slash_195)%,
    . (op '\196' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
                                                                                    (op 6 : Nat)))) %(slash_196)%,
    . (op '\197' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
                                                                                    (op 7 : Nat)))) %(slash_197)%,
    . (op '\198' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
                                                                                    (op 8 : Nat)))) %(slash_198)%,
    . (op '\199' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
-                                              Nat -> Nat)((op 1 : Pos),
+                                              Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 9 : Nat),
                                                                                    (op 9 : Nat)))) %(slash_199)%,
@@ -1817,7 +1858,7 @@
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 0 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_201)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_201)%,
    . (op '\202' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
@@ -1870,61 +1911,61 @@
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 0 : Nat)))) %(slash_210)%,
    . (op '\211' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
-                                                                                   (op 1 : Pos)))) %(slash_211)%,
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_211)%,
    . (op '\212' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 2 : Nat)))) %(slash_212)%,
    . (op '\213' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 3 : Nat)))) %(slash_213)%,
    . (op '\214' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 4 : Nat)))) %(slash_214)%,
    . (op '\215' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 5 : Nat)))) %(slash_215)%,
    . (op '\216' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 6 : Nat)))) %(slash_216)%,
    . (op '\217' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 7 : Nat)))) %(slash_217)%,
    . (op '\218' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 8 : Nat)))) %(slash_218)%,
    . (op '\219' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
-                                                                       Nat -> Nat)((op 1 : Pos),
+                                                                       Nat -> Nat)((op inj : Pos -> Nat)((op 1 : Pos)),
                                                                                    (op 9 : Nat)))) %(slash_219)%,
    . (op '\220' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
@@ -1937,7 +1978,7 @@
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 2 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_221)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_221)%,
    . (op '\222' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
@@ -1997,7 +2038,7 @@
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 3 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_231)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_231)%,
    . (op '\232' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
@@ -2057,7 +2098,7 @@
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 4 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_241)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_241)%,
    . (op '\242' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
@@ -2117,7 +2158,7 @@
                                               Nat -> Nat)((op 2 : Nat),
                                                           (op __@@__ : Nat *
                                                                        Nat -> Nat)((op 5 : Nat),
-                                                                                   (op 1 : Pos)))) %(slash_251)%,
+                                                                                   (op inj : Pos -> Nat)((op 1 : Pos))))) %(slash_251)%,
    . (op '\252' : Char) =
          (op chr : Nat ->? Char)((op __@@__ : Nat *
                                               Nat -> Nat)((op 2 : Nat),
@@ -2335,37 +2376,40 @@
    . (op 'ÿ' : Char) = (op '\255' : Char) %(printable_255)%,
    . forall c:Char
          . (pred isLetter : Char)((var c : Char)) <=>
-               ((pred __<=__ : Int * Int)((op ord : Char -> Nat)((op 'A' : Char)),
-                                          (op ord : Char -> Nat)((var c : Char)))
+               ((pred __<=__ : Int *
+                               Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((op 'A' : Char))),
+                                    (op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))))
                 /\ (pred __<=__ : Int *
-                                  Int)((op ord : Char -> Nat)((var c : Char)),
-                                       (op ord : Char -> Nat)((op 'Z' : Char))))
+                                  Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))),
+                                       (op inj : Nat -> Int)((op ord : Char -> Nat)((op 'Z' : Char)))))
                \/ ((pred __<=__ : Int *
-                                  Int)((op ord : Char -> Nat)((op 'a' : Char)),
-                                       (op ord : Char -> Nat)((var c : Char)))
+                                  Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((op 'a' : Char))),
+                                       (op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))))
                    /\ (pred __<=__ : Int *
-                                     Int)((op ord : Char -> Nat)((var c : Char)),
-                                          (op ord : Char -> Nat)((op 'z' : Char)))) %(isLetter_def)%,
+                                     Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))),
+                                          (op inj : Nat -> Int)((op ord : Char -> Nat)((op 'z' : Char))))) %(isLetter_def)%,
    . forall c:Char
          . (pred isDigit : Char)((var c : Char)) <=>
-               (pred __<=__ : Int * Int)((op ord : Char -> Nat)((op '0' : Char)),
-                                         (op ord : Char -> Nat)((var c : Char)))
+               (pred __<=__ : Int *
+                              Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((op '0' : Char))),
+                                   (op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))))
                /\ (pred __<=__ : Int *
-                                 Int)((op ord : Char -> Nat)((var c : Char)),
-                                      (op ord : Char -> Nat)((op '9' : Char))) %(isDigit_def)%,
+                                 Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))),
+                                      (op inj : Nat -> Int)((op ord : Char -> Nat)((op '9' : Char)))) %(isDigit_def)%,
    . forall c:Char
          . (pred isPrintable : Char)((var c : Char)) <=>
-               ((pred __<=__ : Int * Int)((op ord : Char -> Nat)((op ' ' : Char)),
-                                          (op ord : Char -> Nat)((var c : Char)))
+               ((pred __<=__ : Int *
+                               Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((op ' ' : Char))),
+                                    (op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))))
                 /\ (pred __<=__ : Int *
-                                  Int)((op ord : Char -> Nat)((var c : Char)),
-                                       (op ord : Char -> Nat)((op '~' : Char))))
+                                  Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))),
+                                       (op inj : Nat -> Int)((op ord : Char -> Nat)((op '~' : Char)))))
                \/ ((pred __<=__ : Int *
-                                  Int)((op ord : Char -> Nat)((op ' ' : Char)),
-                                       (op ord : Char -> Nat)((var c : Char)))
+                                  Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((op ' ' : Char))),
+                                       (op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))))
                    /\ (pred __<=__ : Int *
-                                     Int)((op ord : Char -> Nat)((var c : Char)),
-                                          (op ord : Char -> Nat)((op 'ÿ' : Char)))) %(isPrintable_def)%,
+                                     Int)((op inj : Nat -> Int)((op ord : Char -> Nat)((var c : Char))),
+                                          (op inj : Nat -> Int)((op ord : Char -> Nat)((op 'ÿ' : Char))))) %(isPrintable_def)%,
    . (op '\o000' : Char) = (op '\000' : Char) %(slash_o000)%,
    . (op '\o001' : Char) = (op '\001' : Char) %(slash_o001)%,
    . (op '\o002' : Char) = (op '\002' : Char) %(slash_o002)%,

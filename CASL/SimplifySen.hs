@@ -11,28 +11,29 @@ Portability :  portable
    Also the instances for Syntax an Category.
 -}
 
-module CASL.SimplifySen(simplifySen, rmTypesT, rmTypesF) where
+module CASL.SimplifySen(simplifySen, rmTypesT) where
 
 import Common.GlobalAnnotations
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
+import Common.Lib.State
 import CASL.Sign
 import CASL.AS_Basic_CASL 
 import CASL.Overload
 
 {- | simplifies formula\/term informations for 'show theory' of
    HETS-graph representation.  -}
-simplifySen :: (PrettyPrint f, Eq f) =>
+simplifySen :: PrettyPrint f =>
 	       (Min f e) -- ^ extension type analysis
 	    -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA 
-	    -> (Sign f e -> f -> f) -- ^ remove type information in ExtFORMULA
-	    -> Sign f e -> FORMULA f -> 
-	       FORMULA f
-simplifySen min_func e_func rmTypE_func sign formula = 
+	    -> Sign f e -> FORMULA f -> FORMULA f
+simplifySen minF simpF sign formula = 
     case formula of
     Quantification q vars f pos -> 
-        Quantification q vars (simplifySenCall f) pos 
+            -- add 'vars' to signature
+           let (_, sign') = runState (mapM_ addVars vars) sign
+           in Quantification q vars (simplifySen minF simpF sign' f) pos 
     Conjunction fs pos -> Conjunction (map simplifySenCall fs) pos 
     Disjunction fs pos -> Disjunction (map simplifySenCall fs) pos
     Implication f1 f2 bool pos -> 
@@ -47,53 +48,52 @@ simplifySen min_func e_func rmTypE_func sign formula =
     f@(Existl_equation _ _ _) -> anaFormulaCall f
     f@(Strong_equation _ _ _) -> anaFormulaCall f
     f@(Membership _ _ _) -> anaFormulaCall f
-    ExtFORMULA f -> ExtFORMULA $ e_func sign f
+    ExtFORMULA f -> ExtFORMULA $ simpF sign f
     f@(Sort_gen_ax _ _) -> f
     f -> error ("Error in simplifySen " ++ show f)
     where
-        simplifySenCall = simplifySen min_func e_func rmTypE_func sign
-	anaFormulaCall = anaFormula min_func rmTypE_func sign
+        simplifySenCall = simplifySen minF simpF sign
+	anaFormulaCall = anaFormula minF simpF sign
 
 {- |
    simplifies the TERM such that there are no type-information in it.
 -}
-rmTypesT :: (PrettyPrint f, Eq f) => 
-	    Min f e -- for 'anaFormula' in case of 'Conditional'
-	 ->(Sign f e -> f -> f) -- ^ remove type information in ExtFORMULA
+rmTypesT :: PrettyPrint f => 
+            Min f e -- for 'anaFormula' in case of 'Conditional'
+	 -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA
 	 -> Sign f e -> TERM f -> TERM f
-rmTypesT minT rmTypE_func signT termT = 
+rmTypesT minF simpF signT termT = 
     case termT of
          Qual_var v _ _ -> Simple_id v
 	 Sorted_term (Application (Qual_op_name name _ _) terms pos2) _ _ ->
 	       let -- opmap = opMap signT -- =  Map Id (Set OpType)
 		   -- maybeOpset = Map.lookup name opmap
-		   terms' = map rmTypesTCall terms
+		   terms' = map anaTermC terms
 	       in  -- case maybeOpset of
 	           -- Just otSet -> Application (Op_name name) terms' pos2
 		   -- Nothing -> error "Set of OP_NAME not found."
                    Application (Op_name name) terms' pos2
-         Sorted_term t _ _ -> rmTypesTCall t 
+         Sorted_term t _ _ -> anaTermC t 
 	 Cast term sort pos -> Cast (anaTermC term) sort pos
 	 Application opSymb@(Op_name _) ts pos -> 
-             Application opSymb (map rmTypesTCall ts) pos
+             Application opSymb (map anaTermC ts) pos
 	                  -- Application opSymb (map anaTermC terms) pos
 	 Application (Qual_op_name oName _ _) ts ps -> 
-             Application (Op_name oName) (map rmTypesTCall ts) ps
+             Application (Op_name oName) (map anaTermC ts) ps
 	 Conditional term1 formula term2 pos -> 
              Conditional (anaTermC term1) 
-               (rmTypesF minT rmTypE_func signT formula) 
+               (simplifySen minF simpF signT formula) 
                (anaTermC term2) pos
 	 t -> error ("Error in rmTypesT " ++ show t)
 
-   where  rmTypesTCall = rmTypesT minT rmTypE_func signT
-	  anaTermC = anaTerm minT rmTypE_func signT
+   where anaTermC = anaTerm minF simpF signT
 
 {- |
    analyzes the TERM if it is the Minimal Expansions of a TERM
 -}
-anaTerm :: (PrettyPrint f, Eq f) => Min f e -> (Sign f e -> f -> f) 
+anaTerm :: PrettyPrint f => Min f e -> (Sign f e -> f -> f) 
         -> Sign f e -> TERM f -> TERM f
-anaTerm minA rmtFunc signA term = 
+anaTerm minF simpF signA term = 
     let s = term_sort term
         ps = case term of 
 		        Sorted_term _ _ p -> p
@@ -102,8 +102,8 @@ anaTerm minA rmtFunc signA term =
                         Conditional _ _ _ p -> p
                         Simple_id tok -> filter (/=nullPos) [tokPos tok]
                         _ -> error ("Error in anaTerm " ++ show term)
-        rtc = rmTypesT minA rmtFunc signA term
-    in case maybeResult $ minExpTerm minA emptyGlobalAnnos signA rtc of
+        rtc = rmTypesT minF simpF signA term
+    in case maybeResult $ minExpTerm minF emptyGlobalAnnos signA rtc of
          Just _  -> rtc
 	 Nothing -> case rtc of
                     Simple_id v -> Qual_var v s ps
@@ -112,10 +112,10 @@ anaTerm minA rmtFunc signA term =
 {- |
     simplifies the FORMULA such that there are no type-information in it.
 -}
-rmTypesF ::(PrettyPrint f, Eq f) => Min f e 
-	 -> (Sign f e ->f -> f) -- ^ remove type information in ExtFORMULA
+rmTypesF :: PrettyPrint f => Min f e 
+	 -> (Sign f e ->f -> f) -- ^ simplifySen for ExtFORMULA 
 	 -> Sign f e -> FORMULA f -> FORMULA f
-rmTypesF minF rmTypesFunc signF form = 
+rmTypesF minF simpF signF form = 
     case form of
          Predication pS@(Pred_name _) tl pos -> 
              Predication pS (map anaTermCall tl) pos 
@@ -127,34 +127,17 @@ rmTypesF minF rmTypesFunc signF form =
 	 Strong_equation t1 t2 pos -> 
              Strong_equation (anaTermCall t1) (anaTermCall t2) pos  
 	 Membership t sort pos -> Membership (anaTermCall t) sort pos
-	 Quantification q vars formula pos -> 
-             Quantification q vars (rmTypesFCall formula) pos 
-	 Conjunction formulas pos -> 
-             Conjunction (map rmTypesFCall formulas) pos 
-	 Disjunction formulas pos -> 
-             Disjunction (map rmTypesFCall formulas) pos
-	 Implication f1 f2 bool pos -> 
-             Implication (rmTypesFCall f1) (rmTypesFCall f2) bool pos
-	 Equivalence f1 f2 pos -> 
-             Equivalence (rmTypesFCall f1) (rmTypesFCall f2) pos
-	 True_atom x  -> True_atom x
-	 False_atom x -> False_atom x
-	 Negation f pos ->  Negation (rmTypesFCall f) pos
-	 f@(Sort_gen_ax _ _) -> f			   
-	 -- Mixfix_formula t	->  Mixfix_formula (anaTerm t) 	
-	 ExtFORMULA f -> ExtFORMULA $ rmTypesFunc signF f
 	 f -> error ("Error in rmTypesF " ++  show f) 
-      where rmTypesFCall = rmTypesF minF rmTypesFunc signF 
-	    anaTermCall = anaTerm minF rmTypesFunc signF
+      where anaTermCall = anaTerm minF simpF signF
 
 {- |
     analyzes the Formula if it is the Minimal Expansions of a FORMULA.
 -}
-anaFormula :: (PrettyPrint f, Eq f) => Min f e -> (Sign f e ->f -> f) 
+anaFormula :: PrettyPrint f => Min f e -> (Sign f e -> f -> f) 
            -> Sign f e -> FORMULA f -> FORMULA f
-anaFormula minF rmTypeE_func sign' form1 = 
-    let rmf = rmTypesF minF rmTypeE_func sign' form1 
-	atc = anaTerm minF rmTypeE_func sign'
+anaFormula minF simpF sign' form1 = 
+    let rmf = rmTypesF minF simpF sign' form1 
+	atc = anaTerm minF simpF sign'
     in  case maybeResult $ minExpFORMULA minF emptyGlobalAnnos sign' rmf of
              Just _ -> rmf
 	     Nothing -> case form1 of
