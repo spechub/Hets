@@ -1,7 +1,7 @@
 {-
 Module      :  $Header$
 Copyright   :  (c) T. Mossakowski, Uni Bremen 2004
-Licence     :  All rights reserved.
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
 Stability   :  provisional
