@@ -6,7 +6,7 @@
    Copyright   :  
    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
    Stability   :  provisional
-   Portability :  needs ghc -fglasgow-exts -fallow-overlapping-instances -package data
+   Portability :  non-portable (via imports)
 
    Parsing the architectural part of heterogenous specifications.
    www.cofi.info
