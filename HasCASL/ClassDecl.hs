@@ -85,7 +85,7 @@ anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
        if Set.isEmpty supcls then 
 	  do addDiag $ Diag Warning
 			  "redundant universe class" 
-			 $ getPos (ps ++ qs)
+			 $ headPos (ps ++ qs)
 	     mapM_ (addClassDecl ak supcls Nothing) cls
           else let (hd, tl) = Set.deleteFindMin supcls in 
 	      if Set.isEmpty tl then

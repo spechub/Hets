@@ -13,25 +13,6 @@ import HasCASL.As
 import Common.Id
 import Common.Lib.Set
 
-posOf :: PosItem a => [a] -> Pos
-posOf l = if null l then nullPos else 
-	  let q = case get_pos_l $ head l of
-		     Nothing -> posOf $ tail l
-		     Just ps -> let p = getPos ps in 
-					if p == nullPos 
-					   then posOf $ tail l else p in
-	  case get_pos $ head l of 
-	  Nothing -> q
-	  Just p -> if p == nullPos then q else p
-
-firstPos :: PosItem a => [a] -> [Pos] -> Pos
-firstPos l ps = let p = posOf l in 
-			if p == nullPos then getPos ps else p
-
-getPos :: [Pos] -> Pos
-getPos [] = nullPos
-getPos (a:r) = if a == nullPos then getPos r else a  
-
 instance PosItem Kind where
     get_pos = Just . posOfKind
 
