@@ -146,8 +146,8 @@ post_doc4apache:
             'Common.Lib.Map.html:Common.Lib._Map.html'
 	mv docs/* a-docs/
 
-##########################
-### DrIFT-rule generation
+#############################
+### ATC DrIFT-rule generation
 
 genRules: $(generated_rule_files)
 
@@ -161,7 +161,7 @@ $(generated_rule_files): $(genrule_files)
 
 rule = ShATermConvertible
 
-gen_atc_files = if [ -e ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; then \
+gen_atc_files = if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; then \
                    utils/genRules -r $(rule) -o ATC -h ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
                 else \
                    utils/genRules -r $(rule) -o ATC $(file); \
