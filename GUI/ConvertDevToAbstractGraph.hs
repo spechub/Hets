@@ -990,4 +990,4 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 			      ++ " of type " ++ (show (dgl_type edgelab))
 			      ++ " and origin " ++ (show (dgl_origin edgelab))
 			      ++ " of development "
-                         ++ "graph does not exist in abstraction graph" ++ (showPretty convMaps "\n"))
+                         ++ "graph does not exist in abstraction graph" {- ++ (showPretty convMaps "\n") -})
