@@ -196,6 +196,14 @@ HasCASL hat auch noch keine Mixfix- und Latex Ausgabe.
 Christian
 ************************************************
 
+
+- group the axioms according to their leading operation/predicate symbol,
+  i.e. the f resp. the p in
+  forall x_1:s_n .... x_n:s_n .       phi =>      f(t_1,...,t_m)=t
+  forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
+  if there are axioms not being of this form, output error
+
+
 Missing points for heterogeneous WADT 04 example:
 - improve display of HasCASL sigs + mors 
 
