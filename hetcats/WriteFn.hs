@@ -65,9 +65,18 @@ casl_latex_filename opt =
     in (outdir opt) ++ "/" ++ base ++ ".pp.tex"
       -- maybe an optin out-file is better
 
+debug_latex_filename :: FilePath -> FilePath
+debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") . 
+		       fileparse [".pp.tex"]
+
 write_casl_latex :: Int -> FilePath -> LIB_DEFN -> IO ()
 write_casl_latex verb oup ld =
     do hout <- openFile oup WriteMode
        if verb > 3 then putStrLn $ show (initGlobalAnnos ld)
         else return ()
        hPutStr hout $ printLIB_DEFN_latex ld
+       if verb > 5 then do dout <- openFile 
+				       (debug_latex_filename oup) WriteMode
+			   hPutStr dout $ printLIB_DEFN_debugLatex ld
+			   hClose dout
+        else return () 
