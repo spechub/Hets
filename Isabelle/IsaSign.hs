@@ -96,7 +96,9 @@ typeAppl t ts =
 binTypeAppl :: Typ -> Typ -> Typ
 binTypeAppl t1 t2 = case t1 of
     Type n s [] -> Type n s []
-    Type n s ((TVar _ _):ts) -> Type n s (t2:ts)                 
+    Type n s ((TVar _ _):ts) -> Type n s (t2:ts) 
+ --   Type _ _ (t2:_) -> t1
+    _ -> error "IsaSign.binTypeAppl, unsupported type application"                
 
 -- mkContAppl :: Typ -> Typ -> Typ 
 -- mkContAppl t1 t2 = Type "domAppl" dom [t1,t2]
@@ -198,6 +200,9 @@ data Term =
 
 data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show) 
 
+-- type Definition = (IName, Term)
+-- type Sentence = [Definition]
+
 
 -------------------- from src/Pure/sorts.ML ------------------------
 
@@ -289,6 +294,9 @@ emptySign = Sign { baseSig = "Pure",
                    dataTypeTab = [],
                    domainTab = [],
                    showLemmas = False }
+
+------------------------ Sentence -------------------------------------
+
 
 {- Instances in Haskell have form:
 
