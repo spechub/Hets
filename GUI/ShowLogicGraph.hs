@@ -42,6 +42,7 @@ showLogicGraph
     do 
        let graphParms = GraphTitle "Logic Graph" $$
                         OptimiseLayout True $$
+                        AllowClose (return True) $$ 
                         emptyGraphParms
            disp s tD = debug (s ++ (show tD))
        logicG <- newGraph displaySort graphParms
