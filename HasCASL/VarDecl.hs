@@ -14,7 +14,7 @@ analyse generic var (or type var) decls
 module HasCASL.VarDecl where
 
 import Data.Maybe
-import Data.List
+import Data.List as List
 import Control.Monad
 
 import qualified Common.Lib.Map as Map
@@ -67,7 +67,22 @@ anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
        putTypeMap tm       -- forget local variables 
        case mt of 
            Nothing -> return Nothing
-	   Just newTy -> return $ Just $ TypeScheme newArgs (q :=> newTy) p
+	   Just newTy -> do 
+	       let fvs = varsOf newTy
+		   ts = zipWith ( \ (TypeArg i k _ _) n -> 
+				  TypeName i k n) fvs [-1, -2..]
+		   m = Map.fromList $ zip fvs ts
+		   qTy = q :=> repl m newTy
+		   restVars = fvs List.\\ newArgs
+	       if null restVars then
+	          return $ Just $ TypeScheme newArgs qTy p
+	          else if null newArgs then 
+		       return $ Just $ TypeScheme fvs qTy p
+		  else do addDiags [mkDiag Error 
+				    ("unbound type variable(s)\n\t"
+				     ++ showSepList ("," ++) showPretty 
+				     restVars " in") newTy]
+                          return Nothing
 
 anaKind :: Kind -> State Env Kind
 anaKind k = toState star $ anaKindM k
@@ -305,9 +320,9 @@ optAnaVarDecl vd@(VarDecl v t s q) =
 
 makeMonomorph :: VarDecl -> VarDecl
 makeMonomorph (VarDecl v t sk ps) =
-    let s = Map.fromAscList $ map ( \ a@(TypeArg i k _ _) -> 
+    let s = Map.fromList $ map ( \ a@(TypeArg i k _ _) -> 
 				    (a, TypeName i k 0)) $ 
-	    Set.toList $ varsOf t
+	    varsOf t
 	in VarDecl v (repl s t) sk ps
 
 -- | analyse 

@@ -27,8 +27,13 @@ are also not renamed in DatatypeSens, because they are not used)
 
 
 
-terms: 
+types:
+indicate bound variables with negative indices also in datatypes and
+pseudotypes (later optimize instantiation)
 
+
+
+terms: 
 polymorphic (and constrained) let bindings are not supported
 yet, because variables are monomorph
 
@@ -49,8 +54,6 @@ over global variables
 misc:
 hiding of sub- or supertypes is a problem, with respect to dependent
 operations. (SymbolMapAnalysis.hs)
-TypeSchemes must be uniquely represented (numbered type vars and
-expanded aliases)
 
 Try to get rid of expandAlias in Unify.hs (only needed for SymbolMapAnalysis)
 

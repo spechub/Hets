@@ -2,16 +2,16 @@ var S : Type; N : Type; E : Type
 type Set : Type -> Type := \ S : Type . S_v1 ->? Unit
 type Graph : Type -> Type -> Type := \ (N : Type)
                                        (E : Type) . Set N_v2 * (E_v3 ->? N_v2) * (E_v3 ->? N_v2)
-op __union__ : forall E : Type; N : Type .
-                 Graph N_v2 E_v3 * Graph N_v2 E_v3 -> Graph N_v2 E_v3;
+op __union__ : forall N : Type; E : Type .
+                 Graph N_v-1 E_v-2 * Graph N_v-1 E_v-2 -> Graph N_v-1 E_v-2;
    __union__, __intersection__, __\\__ : forall S : Type .
-                                           Set S_v1 * Set S_v1 -> Set S_v1
+                                           Set S_v-1 * Set S_v-1 -> Set S_v-1
 forall g : Graph N E; g' : Graph N E
 . (fun __=__[Set N * (E ->? N) * (E ->? N)]
    : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-    ((op __union__[E; N]
-      : forall E : Type; N : Type .
-          Graph N_v2 E_v3 * Graph N_v2 E_v3 -> Graph N_v2 E_v3)
+    ((op __union__[N; E]
+      : forall N : Type; E : Type .
+          Graph N_v-1 E_v-2 * Graph N_v-1 E_v-2 -> Graph N_v-1 E_v-2)
        (var g : Graph N E, var g' : Graph N E),
      var g : Graph N E)
 %% Type Constructors -----------------------------------------------------
@@ -38,14 +38,15 @@ __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __=>__ : Unit * Unit ->? Unit %(fun)%
 __=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
-__\\__ : forall S : Type . Set S_v1 * Set S_v1 -> Set S_v1 %(op)%
+__\\__
+  : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1 %(op)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __intersection__
-  : forall S : Type . Set S_v1 * Set S_v1 -> Set S_v1 %(op)%
+  : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1 %(op)%
 __union__
-  : forall S : Type . Set S_v1 * Set S_v1 -> Set S_v1 %(op)%
-  : forall E : Type; N : Type .
-      Graph N_v2 E_v3 * Graph N_v2 E_v3 -> Graph N_v2 E_v3
+  : forall S : Type . Set S_v-1 * Set S_v-1 -> Set S_v-1 %(op)%
+  : forall N : Type; E : Type .
+      Graph N_v-1 E_v-2 * Graph N_v-1 E_v-2 -> Graph N_v-1 E_v-2
     %(op)%
 __when__else__
   : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
@@ -58,9 +59,9 @@ true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__[Set N * (E ->? N) * (E ->? N)]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  ((op __union__[E; N]
-    : forall E : Type; N : Type .
-        Graph N_v2 E_v3 * Graph N_v2 E_v3 -> Graph N_v2 E_v3)
+  ((op __union__[N; E]
+    : forall N : Type; E : Type .
+        Graph N_v-1 E_v-2 * Graph N_v-1 E_v-2 -> Graph N_v-1 E_v-2)
      (var g : Graph N E, var g' : Graph N E),
    var g : Graph N E)
 %% Diagnostics -----------------------------------------------------------

@@ -74,8 +74,7 @@ anaOpItem ga br ods@(OpDecl is sc attr ps) =
     do mSc <- anaTypeScheme sc
        case mSc of 
            Nothing -> return ods
-	   Just s -> do 
-	       let nSc = generalize s
+	   Just nSc -> do 
 	       mAttrs <- mapM (anaAttr ga nSc) attr
 	       us <- mapM (anaOpId br nSc attr) is
 	       return $ OpDecl (catMaybes us) nSc (catMaybes mAttrs) ps

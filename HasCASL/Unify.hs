@@ -21,31 +21,27 @@ import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
-import Data.List
+import Data.List as List
 import Data.Maybe
 
 -- | vars
-varsOf :: Type -> Set.Set TypeArg
+varsOf :: Type -> [TypeArg]
 varsOf = leaves (/=0)
 
 -- | vars or other ids 
-leaves :: (Int -> Bool) -> Type -> Set.Set TypeArg
+leaves :: (Int -> Bool) -> Type -> [TypeArg]
 leaves b t = 
     case t of 
 	   TypeName j k i -> if b(i)
-			     then Set.single $ TypeArg j k Other [] 
-			     else Set.empty
-	   TypeAppl t1 t2 -> leaves b t1 `Set.union` leaves b t2
+			     then [TypeArg j k Other []]
+			     else []
+	   TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
 	   ExpandedType _ t2 -> leaves b t2
 	   KindedType tk _ _ -> leaves b tk
 	   LazyType tl _ -> leaves b tl
-	   ProductType l _ -> Set.unions $ map (leaves b) l
-	   FunType t1 _ t2 _ -> leaves b t1 `Set.union` leaves b t2
+	   ProductType l _ -> foldl List.union [] $ map (leaves b) l
+	   FunType t1 _ t2 _ -> leaves b t1 `List.union` leaves b t2
 	   _ -> error ("leaves: " ++ show t)
-
-generalize :: TypeScheme -> TypeScheme
-generalize (TypeScheme _ q@(_ :=> ty) ps) =
-    TypeScheme (Set.toList $ varsOf ty) q ps
 
 -- | composition (reversed: first substitution first!)
 compSubst :: Subst -> Subst -> Subst
@@ -125,7 +121,7 @@ getTypeVar :: TypeArg -> Id
 getTypeVar(TypeArg v _ _ _) = v
 
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
-idsOf b = Set.image getTypeVar . leaves b
+idsOf b = Set.fromList . map getTypeVar . leaves b
 
 occursIn :: TypeMap -> TypeId -> Type -> Bool
 occursIn tm i =  Set.any (relatedTypeIds tm i) . idsOf (const True)

@@ -1,7 +1,7 @@
 type s
 op a : s
-op __=[s]__ : forall a : Type . a_v1 * a_v1 -> Unit
-. (op __=[s]__[s] : forall a : Type . a_v2 * a_v2 -> Unit)
+op __=[s]__ : forall a : Type . a_v-1 * a_v-1 -> Unit
+. (op __=[s]__[s] : forall a : Type . a_v-1 * a_v-1 -> Unit)
     (op a : s, op a : s)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
@@ -17,7 +17,7 @@ s : Type
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
 __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
-__=[s]__ : forall a : Type . a_v1 * a_v1 -> Unit %(op)%
+__=[s]__ : forall a : Type . a_v-1 * a_v-1 -> Unit %(op)%
 __=>__ : Unit * Unit ->? Unit %(fun)%
 __=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
@@ -32,5 +32,5 @@ not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(op __=[s]__[s] : forall a : Type . a_v2 * a_v2 -> Unit)
+(op __=[s]__[s] : forall a : Type . a_v-1 * a_v-1 -> Unit)
   (op a : s, op a : s)

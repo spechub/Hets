@@ -14,11 +14,11 @@ analyse alternatives of data types
 module HasCASL.DataAna where
 
 import Data.Maybe
+import Data.List as List
 
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
-import qualified Common.Lib.Set as Set
 
 import HasCASL.As
 import HasCASL.Le
@@ -133,10 +133,10 @@ checkMonomorphRecursion t tm (i, rt) =
 				 ++ expected rt t) $ getMyPos t] Nothing
     else return ()
 
-unboundTypevars :: Set.Set TypeArg -> Type -> Result Type
+unboundTypevars :: [TypeArg] -> Type -> Result Type
 unboundTypevars args ct = 
-    let restVars = varsOf ct Set.\\ args in
-    if Set.isEmpty restVars then return ct
+    let restVars = varsOf ct List.\\ args in
+    if null restVars then return ct
        else Result [mkDiag Error ("unbound type variable(s)\n\t"
 				  ++ showSepList ("," ++) showPretty 
-				  (Set.toList restVars) " in") ct] Nothing
+				  restVars " in") ct] Nothing
