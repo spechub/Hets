@@ -15,7 +15,7 @@ runcheck ()
         declare -i a=`fgrep -c -i "error" temp`
         if [ -f $4 ]
 	then
-	    if diff -w temp $4 >& /dev/null 
+	    if diff temp $4 >& /dev/null 
 	    then echo " passed"
             else 
 		echo " failed diff with $4"

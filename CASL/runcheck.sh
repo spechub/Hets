@@ -9,7 +9,7 @@ SET=$2
 . checkFunctions.sh
 
 #extra test
-runchecker Terms MixIds.casl MixIds.casl.output
+runchecker Terms MixIds.casl MixIds.casl.asTerms.output
 runchecker Terms WrongMixIds.casl WrongMixIds.casl.asTerms.output
 runchecker MixfixTerms Terms.casl Terms.casl.asMixfixTerms.output
 runchecker MixfixFormula Formula.casl Formula.casl.asMixfixFormula.output
