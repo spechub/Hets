@@ -1,14 +1,6 @@
 {- |
-<<<<<<< Haskell2IsabelleHOLCF.hs
-<<<<<<< Haskell2IsabelleHOLCF.hs
 Module      :  $Header$
-=======
-Module      :  $Header$
->>>>>>> 1.24
-=======
-Module      :  $Header$
->>>>>>> 1.25
-Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2003
+Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
 Licence     :  All rights reserved.
 
 Maintainer  :  hets@tzi.de
