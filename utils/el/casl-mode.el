@@ -89,7 +89,7 @@
    '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\sw+\\]\\s-*\\)?\\(,\\|$\\|<\\|;\\|=\\)[ \t]*\\)+\\)" 
      (2 casl-other-name-face keep t))
    ;; Basic signature: op ,pred and var name
-   '("\\(^\\|\\bops?\\|\\bpreds?\\|\\bvars?\\)\\s-+\\([^.]\\(\\w\\|\\s_\\)*\\)\\s-*\\(\(.*\)\\s-*\\)?\\(:\\??\\|<=>\\).*"
+   '("\\(^\\|\\bops?\\|\\bpreds?\\|\\bvars?\\)\\s-+\\([^.]\\(\\w\\|\\s_\\)*\\)\\s-*\\(\(.*\)\\s-*\\)?\\(:\\??\\|<=>\\)[^:]*"
      (2 casl-other-name-face keep t))
    ;; type name
    '("\\s-+\\(\\sw+\\)[ \t\n]*::=.*"
@@ -101,7 +101,7 @@
    ;; reserved keyword
    '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|if\\|local\\|not\\|reveal\\|spec\\|then\\|to\\|unit\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
      (2 casl-keyword-face keep t))
-   '("," (0 casl-black-komma-face t t))
+   '("[,;]" (0 casl-black-komma-face t t))
   )	
   "Reserved keywords highlighting")
 
@@ -158,9 +158,9 @@
 	((modify-syntax-entry ?% ". 58" table)
 	 (modify-syntax-entry ?\[ "(] 6" table)
 	 (modify-syntax-entry ?\] ")[ 7" table))
-      (modify-syntax-entry ?% ". 14b" table)
-      (modify-syntax-entry ?\[ "(] 2" table)
-      (modify-syntax-entry ?\] ")[ 3" table))
+      (modify-syntax-entry ?% ". 14nb" table)
+      (modify-syntax-entry ?\[ "(] 2n" table)
+      (modify-syntax-entry ?\] ")[ 3n" table))
     ;; commenting-out plus including other kinds of comment
     (modify-syntax-entry ?\( "()" table)
     (modify-syntax-entry ?\) ")(" table)
