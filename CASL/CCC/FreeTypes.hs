@@ -87,9 +87,9 @@ checkFreeType (osig,osens) m fsn
                        sname = concat $ map tokStr ts 
                    in warning (Just False) (sname ++ " is not inhabited") pos
        | elem Nothing l_Syms =
-                   let (Quantification _ _ _ ps) = head $ filter (\f->(leadingSym f) == Nothing) op_preds
+                   let (Quantification _ _ f ps) = head $ filter (\f'->(leadingSym f') == Nothing) op_preds
                        pos = headPos ps
-                   in warning Nothing "formula f is illegal" pos
+                   in warning Nothing ("formula: " ++ (show f) ++" is illegal") pos
        | any id $ map find_ot id_ots ++ map find_pt id_pts =    
                    let pos = if any id $ map find_ot id_ots then headPos old_op_ps
                              else headPos old_pred_ps
