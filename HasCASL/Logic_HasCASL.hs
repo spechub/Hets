@@ -106,6 +106,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     induced_from_to_morphism HasCASL = inducedFromToMorphism
     induced_from_morphism HasCASL = inducedFromMorphism
     morphism_union HasCASL m1 m2 = morphismUnion m1 m2
+    is_subsig HasCASL = isSubEnv
     inclusion HasCASL = inclusionMor
 
     cogenerated_sign HasCASL = cogeneratedSign
@@ -123,5 +124,13 @@ instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Term SymbItems SymbMapItems
                Env 
                Morphism
-               Symbol RawSymbol () 
+               Symbol RawSymbol () where
+         min_sublogic_basic_spec HasCASL _basic_spec = ()
+         min_sublogic_sentence HasCASL _sentence = ()
+         min_sublogic_symb_items HasCASL _symb_items = ()
+         min_sublogic_symb_map_items HasCASL _symb_map_items = ()
+         min_sublogic_sign HasCASL _sign = ()
+         min_sublogic_morphism HasCASL _morphism = ()
+         min_sublogic_symbol HasCASL _symbol = ()
+
 
