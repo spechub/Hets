@@ -51,8 +51,8 @@ instance PrettyPrint Alternative where
          printText0 ga (Subsort sId _) = printText0 ga sId
 
 instance PrettyPrint GenKind where
-         printText0 ga Free      = ptext freeS
-         printText0 ga Generated = ptext generatedS
+         printText0 ga Free      = ptext freeS <> space
+         printText0 ga Generated = ptext generatedS <> space
          printText0 ga Loose     = empty
         
 instance PrettyPrint VarDecl where
@@ -62,13 +62,9 @@ instance PrettyPrint VarDecl where
 instance PrettyPrint SortDefn where
          printText0 ga (SubsortDefn vd form _) 
              = braces $ printText0 ga vd <+> ptext "." <+> printText0 ga form 
-         printText0 ga (Datatype annAltLs genK genIt _) 
-             = noPrint (null annAltLs) $
-	       printText0 ga genK 
-		    <+> commaT_text ga genIt 
-		    <+> text defnS 
-		    <>  vcat (punctuate (text (barS++" ")) 
-                               (map (printText0 ga) annAltLs))
+         printText0 ga (Datatype annAltLs _ genIt _) 
+             = printList0 ga (space <> ptext barS <> space) annAltLs 
+	       $$ printText0 ga (GenItems genIt []) 
 
 instance PrettyPrint SortItem where
          printText0 ga (SortItem{sortId=sI,sortRels=sR,sortDef=mSD}) 
@@ -77,14 +73,21 @@ instance PrettyPrint SortItem where
                $$ printSI (subsorts sR) (char '>')
 	       $$ printSI (allsupersrts sR) (text $ "<*") 
                $$ printSI (allsubsrts sR)   (text $ ">*") 
-	       $$ (case mSD of
-		       Just sorDef -> printText0 ga sI <+> text "="
-			              <+> printText0 ga sorDef
-		       _           -> empty)
+	       $$ case mSD of
+		       Just sorDef -> 
+		            case sorDef of
+		               SubsortDefn _ _ _ -> 
+		                   ptext sortS <+> printText0 ga sI 
+		                   <+> ptext equalS <+> printText0 ga sorDef
+		               Datatype _ genK _ _ ->
+		                   printText0 ga genK <> ptext typeS 
+                                   <+> printText0 ga sI <+> ptext defnS
+                                   <+> printText0 ga sorDef
+		       _ -> empty
                where
                printSI xs doc 
-                   = noPrint (null xs) (ptext sortS <+> doc 
-                                        <+> commaT_text ga xs <> semi)
+                   = noPrint (null xs) (ptext sortS <+> printText0 ga sI <+> 
+					doc <+> commaT_text ga xs)
 
 instance PrettyPrint BinOpAttr where
 	 printText0 ga Assoc = ptext assocS
@@ -226,4 +229,4 @@ instance PrettyPrint Sentence where
 -- | Makes a Doc from Lists; intersperses a Seperator;
 printList0::PrettyPrint a=>GlobalAnnos->Doc->[a]->Doc
 printList0 ga s l  
-    = noPrint (null l) $ fsep (punctuate s (map (printText0 ga) l))
+    = listSep_text s ga l

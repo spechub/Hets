@@ -10,7 +10,7 @@ import CASL.PrintSign
 
 instance PrettyPrint LocalEnv where
     printText0 ga l = (printText0 ga $ getSign l)
-		     $$ ( vcat $ map (printText0 ga) $ getPsi l)
+--		     $$ ( vcat $ map (printText0 ga) $ getPsi l)
 
 runAna :: AParser (Result LocalEnv)
 runAna = 
