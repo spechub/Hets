@@ -263,14 +263,15 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
         in leftASF ( rightASF (if isEmpty la then i' else fcat [i',la'])) 
 
 -- | function to split the annotation to the right of an item
--- * fst contains printed label and implied annotion if any at the begining of the list of annotations
+-- * fst contains printed label and implied annotion 
+--   if any at the begining of the list of annotations
 -- * snd contains the remaining annos
 splitAndPrintRAnnos :: (GlobalAnnos -> Annotation -> Doc)
 		       -> (GlobalAnnos -> [Annotation] -> Doc)
 		       -> (Doc -> Doc -> Doc)    -- ^ a beside with space 
 						 -- like <+> or <\+>
 		       -> Doc -- ^ for Latex something to move the label 
-			      -- and/or implied annotation to the right 
+			      -- and \/ or implied annotation to the right 
 			      -- margin                       
 		       -> GlobalAnnos -> [Annotation] -> (Doc,Doc)
 splitAndPrintRAnnos pf pf_list sepF move ga ras =

@@ -46,7 +46,7 @@ printLIB_DEFN_mode m ld =
 		 PMdebugLatex -> debugRenderLatex default_latex_line_length)
 	(if null ds then doc 
 	 else trace (show $ vcat $ map (printText0 ga) ds) doc 
-	 {-$$ printText0 ga r -})
+	 {- -- $$ printText0 ga r -})
   -- print the whole result in this way causes LaTeX problems:
   -- not every line break gets an comment out (%) for LaTeX !!!
 
