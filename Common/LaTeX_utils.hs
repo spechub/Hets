@@ -76,9 +76,20 @@ tabList_latex l = let h' = startTab_latex <> head l
 			    else init $ tail l 
 		  in h':rema++[l']
 
-
+-- Heng: case Anweisung einführen, wie in hc_sty_hetcasl_keyword
 hc_sty_casl_keyword :: String -> Doc
-hc_sty_casl_keyword = hc_sty_keyword (Just "preds")
+hc_sty_casl_keyword str
+      case str of 
+      "sort" -> sp_t "\\SORT"
+      "sorts" -> sp_t "\\SORTS"
+      "op" -> sp_t "\\OP"
+      "ops" -> sp_t "\\OPS"
+      "pred" -> sp_t "\\PRED"
+      "preds" -> sp_t "\\PREDS"
+      "type" -> sp_t "\\TYPE"
+      "types" -> sp_t "\\TYPES"
+      str' -> hc_sty_keyword (Just "preds") str'      
+      where sp_t s = sp_text (keyword_width "preds") s
 
 sp_hang_latex :: Doc -> Int -> Doc -> Doc
 sp_hang_latex d1 n d2 = cat [d1, nest_latex n d2]

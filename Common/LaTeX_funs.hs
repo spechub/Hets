@@ -362,16 +362,51 @@ hc_sty_keyword mfkw kw =
 	      Nothing  -> (empty,casl_keyword_latex kw)
 	 
 hc_sty_plain_keyword :: String -> Doc
-hc_sty_plain_keyword = hc_sty_keyword Nothing
-
+hc_sty_plain_keyword str = 
+    case str of
+    "library" -> sp_t "\\LIBRARY"
+    "to" -> sp_t "\\TO"
+    "get" -> sp_t "\\GET"
+    "version" -> sp_t "\\VERSION"
+    "end" -> sp_t "\\END"
+    "and" -> sp_t "\\AND"
+    "arch spec" -> sp_t "\\ARCHSPEC"
+    "unit spec" -> sp_t "\\UNITSPEC"
+    "free" -> sp_t "\\FREE"
+    "local" -> sp_t "\\LOCAL"
+    "within" -> sp_t "\\WITHIN"
+    "closed" -> sp_t "\\CLOSED"
+    "with" -> sp_t "\\WITH"
+    "logic" -> sp_t "\\LOGIC"
+    "hide" -> sp_t "\\HIDE"
+    "reveal" -> sp_t "\\REVEAL"
+    "given" -> sp_t "\\GIVEN"
+    "fit" -> sp_t "\\FIT"
+    "view" -> sp_t "\\VIEW"
+    "generated" -> sp_t "\\GENERATED"
+    "vars" -> sp_t "\\VARS"
+    "sort" -> sp_t "\\SORTS[KW]"
+    "sorts" -> sp_t "\\SORTS[KW]"
+    "op" -> sp_t "\\OP[KW]"
+    "ops" -> sp_t "\\OPS[KW]"
+    "type" -> sp_t "\\TYPE[KW]"
+    "types" -> sp_t "\\TYPES[KW]"
+    "pred" -> sp_t "\\PRED[KW]"
+    "preds" -> sp_t "\\PREDS[KW]"
+    str' -> hc_sty_keyword Nothing str'
+    where sp_t s = sp_text (keyword_width "") s
+        
+-- Heng Todo: case Anweisung fortführen und für hc_sty_plain_keyword
 hc_sty_hetcasl_keyword :: String -> Doc
 hc_sty_hetcasl_keyword str = 
     case str of
     "then" -> sp_t "\\THEN"
+    "spec" -> sp_t "\\SPEC"
+    "view" -> sp_t "\\VIEW"
+    "from" -> sp_t "\\FROM"
     str'   -> hc_sty_keyword (Just "view") str'
-    where sp_t s = sp_text (keyword_width str) s
-
-
+    where sp_t s = sp_text (keyword_width "view") s
+    
 hc_sty_small_keyword :: String -> Doc
 hc_sty_small_keyword kw = 
     latex_macro "\\KW{" <> casl_annotationbf_latex kw <> latex_macro "}"
