@@ -19,3 +19,12 @@ op e : s * s -> s = __ + __
 op f : s * s -> s = (__ + __)  
 
 op g : s * s = (a, b)
+
+op h : s = (__ + __) (a, b)
+
+
+op incr : s -> s
+
+op i1 : s = incr a
+op i2 : s = incr (a)
+op i3 : s = (incr) (a)

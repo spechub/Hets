@@ -63,7 +63,6 @@ Error (line 4, column 7) illegal universe class declaration
 Warning (line 13, column 4) repeated value 'true'
 Warning (line 13, column 10) repeated value 'false'
 Warning (line 27, column 11) redeclared type 'Unit'
-Error (line 29, column 7) wrong tuple '()'
 Warning (line 39, column 16) redeclared type 't'
 Hint (line 46, column 9) not a class 's'
 FatalError (line 48, column 1) no analysis yet for: program def = \ x : s . ()
@@ -73,7 +72,6 @@ FatalError (line 50, column 1) no analysis yet for: program tt = \ x : s . ()
 FatalError (line 52, column 1) no analysis yet for: program __ und __ (x, y : Unit) : Unit = ()
 FatalError (line 66, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
 FatalError (line 78, column 1) no analysis yet for: pred eq : s × s
-FatalError (line 80, column 11) no resolution for term: (\ x : s . eq (x, x)) = tt
 Warning (line 91, column 6) redeclared type 's'
 FatalError (line 93, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
 FatalError (line 96, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()

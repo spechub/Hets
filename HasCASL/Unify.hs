@@ -48,15 +48,10 @@ freshVar =
        put (c + 1)
        return $ simpleIdToId $ mkSimpleId ("_var_" ++ show c)
 
-freshType :: Kind -> State Int Type
-freshType k = 
-    do tId <- freshVar
-       return $ TypeName tId k 1
-
 mkSingleSubst :: TypeArg -> State Int Subst
 mkSingleSubst tv@(TypeArg _ k _ _) =
-    do ty <- freshType k
-       return $ Map.single tv ty
+    do ty <- freshVar
+       return $ Map.single tv $ TypeName ty k 1
 
 mkSubst :: [TypeArg] -> State Int Subst
 mkSubst tas = do ms <- mapM mkSingleSubst tas

@@ -13,10 +13,20 @@ c : s = (op __+__ : s × s -> s) ((op a : s), (op b : s))
 d : s = (op __+__ : s × s -> s) ((op a : s), (op a : s))
 e : s × s -> s = (op __+__ : s × s -> s)
 f : s × s -> s = (op __+__ : s × s -> s)
-g : s × s = ((op a : s), (op b : s))
+i1 : s = (op incr : s -> s) (op a : s)
+i2 : s = (op incr : s -> s) (op a : s)
+i3 : s = (op incr : s -> s) (op a : s)
+incr : s -> s
 %% Diagnostics -----------------------------------------------------------
 Hint (line 7, column 14) type 't' is not unifiable with 's'
 Hint (line 8, column 14) type 't' is not unifiable with 't × t'
 Hint (line 7, column 14) type 't' is not unifiable with 's × s'
 Hint (line 3, column 12) type 't' is not unifiable with 's'
 Hint (line 3, column 12) type 't' is not unifiable with 's'
+Error (line 21, column 17) ambiguous mixfix term: (a, b)
+	((op a : t), (op b : t))
+	((op a : s), (op b : t))
+	((op a : t), (op b : s))
+	((op a : s), (op b : s))
+	
+FatalError (line 23, column 13) no resolution for term: (__ + __) (a, b)

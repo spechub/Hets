@@ -22,7 +22,6 @@ import Common.GlobalAnnotations
 import Common.GlobalAnnotationsFunctions
 import Common.Result
 import Common.Id
-import Common.Lexer
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -33,7 +32,6 @@ import HasCASL.Unify
 -- import Debug.Trace
 
 -- Earley Algorithm
-
 
 -- avoid confusion with the variable counter Int
 newtype Index = Index Int deriving (Eq, Ord, Show)
@@ -81,13 +79,15 @@ instance Show PState where
 
 
 termStr :: String
-termStr = "(T)"
-commaTok, parenTok, termTok :: Token
+termStr = "_"
+commaTok, termTok, oParenTok, cParenTok, placeTok :: Token
 commaTok = mkSimpleId "," -- for list elements 
 termTok = mkSimpleId termStr
-parenTok = mkSimpleId "(..)" 
+placeTok = mkSimpleId place
+oParenTok = mkSimpleId "(" 
+cParenTok = mkSimpleId ")" 
 
-colonTok, asTok, varTok, opTok, predTok, inTok, caseTok, litTok :: Token
+colonTok, asTok, varTok, opTok, predTok, inTok, caseTok :: Token
 colonTok = mkSimpleId ":"
 asTok = mkSimpleId "as"
 inTok = mkSimpleId "in"
@@ -95,19 +95,19 @@ caseTok = mkSimpleId "case"
 varTok = mkSimpleId "(v)"
 opTok = mkSimpleId "(o)"
 predTok = mkSimpleId "(p)"
-litTok = mkSimpleId "\""
 
 mkRuleId :: [Token] -> Id
 mkRuleId toks = Id toks [] []
-applId, parenId, colonId, asId, inId, varId, opId, litId :: Id
-applId       = mkRuleId [termTok, termTok]
-parenId      = mkRuleId [parenTok]
-colonId      = mkRuleId [termTok, colonTok]
-asId         = mkRuleId [termTok, asTok]
-inId  	     = mkRuleId [termTok, inTok]
+applId, parenId, colonId, asId, inId, varId, opId, tupleId, unitId :: Id
+applId       = mkRuleId [placeTok, placeTok]
+parenId      = mkRuleId [oParenTok, placeTok, cParenTok]
+tupleId      = mkRuleId [oParenTok, placeTok, commaTok, cParenTok]
+unitId       = mkRuleId [oParenTok, cParenTok]
+colonId      = mkRuleId [placeTok, colonTok]
+asId         = mkRuleId [placeTok, asTok]
+inId  	     = mkRuleId [placeTok, inTok]
 varId	     = mkRuleId [varTok]
 opId	     = mkRuleId [opTok]
-litId	     = mkRuleId [litTok]
 
 mkPState :: Index -> Id -> TypeScheme -> Type -> [Token] -> PState
 mkPState ind ide sc ty toks = 
@@ -119,8 +119,8 @@ mkPState ind ide sc ty toks =
 	   , restRule = toks
 	   , stateNo = ind }
 
-mkState :: Index -> (Id, OpInfo) -> State Int PState 
-mkState i (ide, info) = 
+mkMixfixState :: Index -> (Id, OpInfo) -> State Int PState 
+mkMixfixState i (ide, info) = 
     do let sc = opType info
        t <- freshInst sc
        let stripped = case t of 
@@ -131,8 +131,8 @@ mkState i (ide, info) =
 			     _ -> stripFinalPlaces ide
        return $ mkPState i stripped sc t $ getTokenList termStr stripped
 
-mkApplState :: Index -> (Id, OpInfo) -> State Int PState 
-mkApplState i (ide, info) =     
+mkPlainApplState :: Index -> (Id, OpInfo) -> State Int PState 
+mkPlainApplState i (ide, info) =     
     do let sc = opType info
        t <- freshInst sc
        return $ mkPState i ide sc t $ getTokenList place ide
@@ -149,8 +149,9 @@ isListId (Id ts cs _) = not (null ts) && head ts == listToken && length cs == 1
 listStates :: GlobalAnnos -> Index -> State Int [PState]
 -- no empty list (can be written down directly)
 listStates g i = 
-    do ty <- freshType star
-       let lists = list_lit $ literal_annos g
+    do tvar <- freshVar
+       let ty = TypeName tvar star 1
+	   lists = list_lit $ literal_annos g
 	   listState co toks = mkPState i (listId co) (simpleTypeScheme $ 
 					   BracketType Squares [] []) 
 			       ty toks
@@ -166,32 +167,49 @@ listStates g i =
 -- these are the possible matches for the nonterminal (T)
 -- the same states are used for the predictions  
 
-freshTypeVar :: State Int Type
-freshTypeVar = 
-    do v <- freshVar 
-       return $ TypeName v star 1 
 
 mkTokState :: Index -> Id -> State Int PState 
 mkTokState i r = 
-    do ty <- freshTypeVar
-       let sc = simpleTypeScheme ty
-       return $ mkPState i r sc ty $ getTokenList place r
+    do tvar <- freshVar
+       let ty = TypeName tvar star 1
+           sc = simpleTypeScheme ty
+       return $ mkPState i r sc ty $ getTokenList termStr r
+
+mkApplTokState :: Index -> Id -> State Int PState 
+mkApplTokState i r = 
+    do tv1 <- freshVar
+       tv2 <- freshVar
+       let ty1 = TypeName tv1 star 1
+	   ty2 = TypeName tv2 star 1
+	   tappl = FunType ty1 PFunArr ty2 []
+	   t2appl = FunType tappl PFunArr tappl []
+           sc = simpleTypeScheme t2appl
+       return $ mkPState i r sc t2appl $ getTokenList termStr r
+
+mkParenTokState :: Index -> Id -> State Int PState 
+mkParenTokState i r = 
+    do tv1 <- freshVar
+       let ty1 = TypeName tv1 star 1
+	   tappl = FunType ty1 PFunArr ty1 []
+           sc = simpleTypeScheme tappl
+       return $ mkPState i r sc tappl $ getTokenList termStr r
 
 initialState :: GlobalAnnos -> [(Id, OpInfo)] -> Index -> State Int [PState]
 initialState g ids i = 
     do ls <- listStates g i
-       l1 <- mapM (mkState i) ids
-       l2 <- mapM (mkApplState i) $ filter (isMixfix . fst) ids   
+       l1 <- mapM (mkMixfixState i) ids
+       l2 <- mapM (mkPlainApplState i) $ filter (isMixfix . fst) ids
+       a  <- mkApplTokState i applId
+       p  <- mkParenTokState i parenId
        l3 <- mapM (mkTokState i)
-              [parenId, 
+              [tupleId,
+               unitId,
 	       colonId,
 	       asId,
 	       inId,
 	       varId,
-	       opId,
-	       litId,
-	       applId]
-       return (ls ++ l1 ++ l2 ++ l3)
+	       opId]
+       return (a:p:ls ++ l1 ++ l2 ++ l3)
 
 lookUp :: (Ord a) => Map.Map a [b] -> a -> [b]
 lookUp ce k = Map.findWithDefault [] k ce
@@ -224,14 +242,12 @@ addArgument tm ty arg opState =
 
 -- match (and shift) a token (or partially finished term)
 scan :: Type -> Term -> ParseMap -> ParseMap
-scan ty trm pm =
+scan _ trm pm =
   let m = parseMap pm
-      tm = typeAliases pm
       i = lastIndex pm
       t = case trm of 
-	  TermToken x -> if isLitToken x then litTok else
-			 x 
-	  _ -> litTok
+	  TermToken x -> x 
+	  _ -> opTok
       incI = incrIndex i
   in
     pm { lastIndex = incI
@@ -244,17 +260,12 @@ scan ty trm pm =
 	      -- list elements separator
 	             p { restRule = termTok : commaTok : tail ts }
 	             : p { restRule = termTok : tail ts } : l
-              else if t == parenTok || t == litTok then
-	           let q =  addArgument tm ty trm p in
-	           q ++ l 
               else if t == varTok || t == opTok || t == predTok then
                      p { restRule = tail ts, ruleArgs = [trm] } : l 
-	      else if t == colonTok || t == asTok then
-	             p { restRule = [], ruleArgs = [mkTerm $ head a] } : l
+	      else if t == colonTok || t == asTok || t == inTok then
+	             p { restRule = [], ruleArgs = [head a] } : l
 	      else p { restRule = tail ts, posList = tokPos t : posList p } : l
 	     ) [] (lookUp m i)) m }
-     where mkTerm t1 = case trm of 
-			  _ -> t1
 	      
 -- construct resulting term from PState 
 
@@ -266,13 +277,13 @@ stateToAppl p =
     in if r == colonId 
 	   || r == asId 
 	   || r == inId 
-	   || r == litId 
 	   || r == parenId 
 	   || r == varId 
 	   || r == opId 
        then head ar
        else if r == applId then
 	    ApplTerm (head ar) (head (tail ar)) qs 
+       else if r == tupleId || r == unitId then TupleTerm ar qs
        else foldr (\ (a, q) t -> ApplTerm t a [q]) 
 		(QualOp (InstOpId (ruleId p) [] []) (ruleScheme p) qs) 
 		$ zip ar (posList p ++ repeat (if null qs then nullPos
@@ -336,7 +347,7 @@ filterByPrec g PState { ruleId = argIde }
 		 PState { ruleId = opIde, ruleArgs = args, restRule = ts } =
     if null ts then False else
        if head ts == termTok then 
-	  if isListId opIde || isListId argIde then True
+	  if isListId opIde || isListId argIde || opIde == applId then True
 	  else let n = length args in
 		    if isLeftArg opIde n then 
 		       if isPostfix opIde && (isPrefix argIde
@@ -382,10 +393,7 @@ filterByType :: ParseMap -> PState -> PState -> Maybe PState
 filterByType cm argState opState =
     let tm = typeAliases cm 
 	prevArgs = ruleArgs opState in
-    if ruleId opState == applId && null prevArgs then 
-       Just (addArgState argState opState) { ruleType = ruleType argState }
-    else 
-    case expandType tm $ ruleType opState of
+	case expandType tm $ ruleType opState of
 		(FunType t1 _ t2 _) -> 
 		    case expandType tm t1 of 
 		    ProductType ts _ -> 
@@ -459,36 +467,9 @@ iterStates :: GlobalAnnos -> [(Id, OpInfo)] -> Type -> [Term]
 	   -> ParseMap -> ParseMap
 iterStates g ops ty terms pm = 
     let self = iterStates g ops ty
-        resolveInternal = resolve g ops (typeAliases pm)
     in if null terms then pm
        else case head terms of
             MixfixTerm ts -> self (ts ++ tail terms) pm
-            BracketTerm Parens ts ps -> 
-		case ty of 
-		ProductType tys _ -> 
-		       let (rtsNew, c2) = runState (mapM resolveInternal 
-						   $ zip tys ts) $ varCount pm 
-		           Result mds v = do ttsNew <- sequence rtsNew
-					     let tsNew = map snd ttsNew
-					     return $ TupleTerm tsNew ps
-			   tNew = case v of Nothing -> head terms
-					    Just x -> x
-			   in self (tail terms) $ nextState g ops ty tNew 
-			      pm { varCount = c2
-				 , failDiags = mds ++ failDiags pm }
-		_ -> if length ts == 1 then 
-		       let (rtsNew, c2) = runState (resolveInternal 
-						    (ty, head ts)) 
-					  $ varCount pm 
-		           Result mds v = do ttsNew <- rtsNew
-					     return $ snd ttsNew
-			   tNew = case v of Nothing -> head terms
-					    Just x -> x
-			   in self (tail terms) $ nextState g ops ty tNew 
-			      pm { varCount = c2
-				 , failDiags = mds ++ failDiags pm }
-		      else pm { failDiags = mkDiag Error "wrong tuple" 
-				(head terms) : failDiags pm }
             BracketTerm b ts ps -> self 
 	       (expandPos TermToken (getBrackets b) ts ps ++ tail terms) pm
 	    t ->  self (tail terms) (nextState g ops ty t pm)

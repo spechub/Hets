@@ -16,7 +16,6 @@ import HasCASL.ClassDecl
 import Common.Id
 import qualified Common.Lib.Set as Set
 import HasCASL.Le
-import Common.Lexer 
 import Data.Maybe
 import Control.Monad
 import Common.Lib.State
