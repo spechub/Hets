@@ -1,7 +1,12 @@
-HatParser
-
- - Zeilennummern in Hatchet-Parser einbauen (neue Version angucken)
-
 Haskell2DG
+ - adapt to Programatica
+ - possibly recover a version for hatchet (and read imports only once)
 
- - umstellen, so dass Importe nur einmal eingelesen werden
+Logical.hs is unused
+
+Nothing in Haskell should refer to the subdirectory Hatchet. For this
+purpose a new toplevel directory Hatchet exists.
+
+In Hatchet imports (List, Monad, Char, IO, CPUTime) should be all qualified. 
+Hatchet depends (weakly) on Common.Lib.Pretty, Common.DFiniteMap.
+Digraph is not used (but Data.Graph and Data.Tree instead).
