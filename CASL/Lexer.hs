@@ -16,13 +16,12 @@
 -}
 
 module Lexer ( bind, (<<), (<:>), (<++>), 
-	     , begDoEnd, flat, single, separatedBy, caslLetters
+	     , begDoEnd, flat, single, separatedBy, caslLetters, scanLPD
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
 	     , reserved, placeS, placeT, pToken, asKey
 	     , oBraceT, cBraceT, oBracketT, cBracketT, oParenT, cParenT
-	     , commaT, semiT, pluralKeyword
-	     , annos, lineAnnos, optSemi, tryItemEnd
+	     , commaT, semiT, skip, pluralKeyword
 	     ) where
 
 import Char (digitToInt)
@@ -34,9 +33,6 @@ import ParsecCombinator (count, option, lookAhead, many1, notFollowedBy)
 import ParsecChar (char, digit, hexDigit, octDigit
 		  , oneOf, noneOf, satisfy, string)
 import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
-
-import AS_Annotation
-import Anno_Parser (comment, annote)
 
 -- ----------------------------------------------
 -- no-bracket-signs
@@ -224,33 +220,6 @@ skipSmart = do {p <- getPosition
 		<|> return ()
 	       }
 
-
--- ----------------------------------------------
--- annotations
--- ----------------------------------------------
-
-anno :: GenParser Char st Annotation
-anno = 	comment <|> annote  --  (imported) position not included yet
-
--- skip to leading annotation and read many
-annos :: GenParser Char st [Annotation]
-annos = skip >> many (anno << skip)
-
--- annotations on one line
-lineAnnos :: GenParser Char st [Annotation]
-lineAnnos = do { p <- getPosition
-	       ; do { a <- anno  
-		    ; skip
-		    ; q <- getPosition
-		    ; if sourceLine q == sourceLine p then
-		      do { l <- lineAnnos
-			 ; return (a:l)
-			 }
-		      else return [a]
-		    }
-		 <|> return []
-	       }
-
 -- ----------------------------------------------
 -- keywords WORDS or NO-BRACKET-SIGNS 
 -- ----------------------------------------------
@@ -299,17 +268,3 @@ cParenT = asKey ")"
 placeS = string place
 placeT = pToken (try (placeS) <?> place)
 
--- optional semicolon followed by annotations on the same line
-optSemi :: GenParser Char st (Maybe Token, [Annotation])
-optSemi = bind (,) (option Nothing (fmap Just semiT)) lineAnnos
-
--- succeeds if an item is not continued after a semicolon
-tryItemEnd :: [String] -> GenParser Char st ()
-tryItemEnd l = 
-    try (do { c <- lookAhead (annos >> 
-			      (single (oneOf "\"([{")
-			       <|> placeS
-			       <|> scanAnySigns
-			       <|> many scanLPD))
-	    ; if null c || c `elem` l then return () else unexpected c
-	    })

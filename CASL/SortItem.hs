@@ -19,11 +19,50 @@ import Keywords
 import Lexer
 import AS_Basic_CASL
 import AS_Annotation
+import Anno_Parser(annotationL)
 import Maybe
 import Parsec
 import Token
 import Formula
 import List(delete)
+
+-- ----------------------------------------------
+-- annotations
+-- ----------------------------------------------
+
+-- skip to leading annotation and read many
+annos :: GenParser Char st [Annotation]
+annos = skip >> many (annotationL << skip)
+
+-- annotations on one line
+lineAnnos :: GenParser Char st [Annotation]
+lineAnnos = do { p <- getPosition
+	       ; do { a <- annotationL  
+		    ; skip
+		    ; q <- getPosition
+		    ; if sourceLine q == sourceLine p then
+		      do { l <- lineAnnos
+			 ; return (a:l)
+			 }
+		      else return [a]
+		    }
+		 <|> return []
+	       }
+
+-- optional semicolon followed by annotations on the same line
+optSemi :: GenParser Char st (Maybe Token, [Annotation])
+optSemi = bind (,) (option Nothing (fmap Just semiT)) lineAnnos
+
+-- succeeds if an item is not continued after a semicolon
+tryItemEnd :: [String] -> GenParser Char st ()
+tryItemEnd l = 
+    try (do { c <- lookAhead (annos >> 
+			      (single (oneOf "\"([{")
+			       <|> placeS
+			       <|> scanAnySigns
+			       <|> many scanLPD))
+	    ; if null c || c `elem` l then return () else unexpected c
+	    })
 
 
 -- remove quantifier exists from casl_reserved_word 
