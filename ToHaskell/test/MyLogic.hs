@@ -14,6 +14,9 @@ module MyLogic where
 
 type Pred a = a -> Bool
 
+bottom ::a
+bottom = undefined
+
 _2_S_B_2 :: (Bool, Bool) -> Bool
 _2_S_B_2 = uncurry (&&)
  

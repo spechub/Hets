@@ -44,10 +44,11 @@ isOp o = case opDefn o of
 isOpKind :: (OpInfo -> Bool) -> Env -> Term -> Bool
 isOpKind f e t = case t of
     TypedTerm trm OfType _ _ -> isOpKind f e trm
-    QualOp _ (InstOpId i _ _) sc _ -> let
-	mi = findOpId e i sc in case mi of
-	    Nothing -> False
-	    Just oi -> f oi
+    QualOp _ (InstOpId i _ _) sc _ -> 
+	if i `elem` map fst bList then False else 
+	   let mi = findOpId e i sc in case mi of
+		    Nothing -> False
+		    Just oi -> f oi
     _ -> False
 
 isVar, isConstrAppl, isPat, isLHS, isExecutable :: Env -> Term -> Bool
@@ -120,8 +121,8 @@ mkConstTrueEq e t =
 	   Just $ ProgEq t (mkQualOp trueId unitType []) $ posOfTerm t
 	   else Nothing
 
--- undef :: Term
--- undef = mkQualOp (mkId [mkSimpleId "undef"]) (bindA aType) []
+bottom :: Term
+bottom = mkQualOp botId botType []
 
 mkCondEq e t = case getTupleAp t of
     Just (i, [p, r]) -> 
@@ -138,8 +139,7 @@ mkCondEq e t = case getTupleAp t of
 	     Set.fromList fvs `Set.subset` Set.fromList pvs then
 	     Just (ProgEq lhs 
 		   (mkTerm whenElse whenType [] 
-		    $ TupleTerm [rhs, f, lhs] []) ps)
-	            -- use undef for lhs
+		    $ TupleTerm [rhs, f, bottom] []) ps)
 	     else Nothing
       Nothing -> Nothing
 

@@ -31,11 +31,7 @@ data Nat = A_0
 _2_L_E_2 (A_0, x) = true
 _2_L_E_2 ((Succ x), A_0) = false
 _2_L_E_2 ((Succ x), (Succ y)) = _2_L_E_2 (x, y)
-_2_E_2 (x, y)
-  = _2when_2else_2
-      (true, _2_S_B_2 (_2_L_E_2 (x, y), _2_L_E_2 (y, x)), _2_E_2 (x, y))
-_2_L_E_2 (x, y)
-  = _2when_2else_2 (true, _2_E_2 (x, y), _2_L_E_2 (x, y))
+_2_L_E_2 (x, y) = _2when_2else_2 (true, _2_E_2 (x, y), bottom)
 head (Cons (x_11_11, x_11_12)) = x_11_11
 tail (Cons (x_11_11, x_11_12)) = x_11_12
  

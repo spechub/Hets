@@ -19,7 +19,7 @@ for i in [A-Z]*.hascasl;
 do
     ../../HasCASL/hacapa analysis < $i > $i.output
     runtranslate $i
-    ghc -c $i.hs > $i.out 2>&1
+    ghc -c -w $i.hs > $i.out 2>&1
     if [ -s $i.out ]; then echo "error when translating $i"; fi 
 done
 rm -f *.o *.hi

@@ -136,8 +136,14 @@ whenType = bindA $
 	  PFunArr aType []
 unitType = simpleTypeScheme logicalType
 
+botId :: Id
+botId = mkId [mkSimpleId "bottom"]
+
+botType :: TypeScheme
+botType = bindA aType
+
 bList :: [(Id, TypeScheme)]
-bList = (defId, defType) : (notId, notType) : 
+bList = (botId, botType) : (defId, defType) : (notId, notType) : 
 	(ifThenElse, ifType) : (whenElse, whenType) :
         (trueId, unitType) : (falseId, unitType) :
         map ( \ e -> (e, eqType)) [eqId, exEq] ++
