@@ -17,6 +17,11 @@ import HasCASL.PrintLe
 import HasCASL.HToken
 import CASL.RunParsers
 import HasCASL.RunStaticAna
+import Common.Lib.Parsec
+import Common.AnnoState
+import Common.PrettyPrint
+import Common.GlobalAnnotations
+
 
 main :: IO ()
 main = exec lineParser fileParser
