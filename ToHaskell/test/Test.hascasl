@@ -1,4 +1,6 @@
-type B,C,Int
-free type AT ::= A (f1 : Int; f2 : B)
-ops + : AT * B -> C
+type B%%,C,Int
+%%free type AT ::= A (s1 : Int; s2 : B)
+%%op  + : AT * B -> C
+%%op  f : B -> B
+%%op  f : C -> C
 type s < B

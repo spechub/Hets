@@ -1,7 +1,7 @@
 type s, t
 
-op __ + __ : s * s -> t
+op __ + __ : s * s -> s
 
-op x:s
+op x1,x2:s
 
-op y:t = (op x:s) + (op x:s)
+op y:s = (op x2:s) + (op x2:s)
