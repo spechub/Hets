@@ -19,7 +19,8 @@ isNothing m    =   (isJust m)
 
 then
 
- {fromJust               :: Maybe a -> a
+ {
+fromJust               :: Maybe a -> a
 fromJust (Just a)      =  a
 fromJust Nothing       =  undefined
 
