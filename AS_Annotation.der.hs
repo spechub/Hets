@@ -48,6 +48,7 @@ data Annotation = Comment_line String [Pos]
 		| Implies [Pos] 
 		| Definitional [Pos]
 		| Conservative [Pos]
+		| Monomorph [Pos]
 		-- position information for annotations is now provided 
 		-- by every annotation
 		-- | Pos_anno Region Annotation 
