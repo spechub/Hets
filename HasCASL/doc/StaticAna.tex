@@ -50,7 +50,7 @@ class names only. The universe class \texttt{Type} is simply an empty
 intersection. Nested intersection classes are flattened already by the
 parser. A trivial intersection class is a single class name.
 
-\subsubsection*{Kinds of declarations}
+\subsubsection*{Class declarations}
 \begin{itemize}
 \item A class name can be declared as a subclass of an intersection class. If
   this intersection class is trivial then the superclass name is also regarded
@@ -58,9 +58,8 @@ parser. A trivial intersection class is a single class name.
   
   A cyclic subclass relation is prohibited, although it may make sense
   that all classes are regarded as equal.
-\item A class name may be defined as an intersection class. This means that
-  all class names of the intersection class are super classes. Only a trivial
-  intersection class introduces a proper class synonym.
+\item A class name may be defined as a synonym for an intersection class. 
+  When comparing classes synonyms are expanded.
 \item A class name may be defined as a downset of a type, comprising all
   subtypes of the given type. (The variable name for the subtype is ignored.)
   
@@ -82,11 +81,10 @@ ambiguous for two instances.
 Class declarations may be repeated, sub- and superclass declarations are
 accumulated as long as they are non-cyclic.
 
-Class definitions may be repeated, if they remain equal. (Currently, different
-intersection definitions are merged together which is wrong for class
-synonyms.) 
+Class definitions may be repeated, if they remain equal, otherwise it is an
+error.
 
-All redeclarations issue a warning.
+All redeclarations issue a warning. 
 
 The optional list of basic-items and the ``\texttt{instance}''-tag for a class
 are currently ignored. These basic-items will be simply treated recursively.
@@ -98,7 +96,7 @@ control the notation of type constructor applications, for mixfix type ids
 only the overall arity of the kind matters. 
 
 The arguments of a kind may be again kinds (to support constructor classes
-later on) or classes with a co-/contra-variance inducing further subtype
+later on) or classes with a co/contra variance inducing further subtype
 (not subclass) relations. 
 
 \subsection{Types}
@@ -117,8 +115,8 @@ simple. Instead the parser resolves types as follows:
 \item next comes lazy type construction
 \end{itemize}
 
-Everything to the left of $?$ until another $?$, $\times$ or arrow is regarded
-as mixfix type. Simple cases of such types are the following:
+Everything else to the left of a $?$ is regarded as mixfix type. Simple cases
+of such types are the following:
 
 \begin{itemize}
 \item A single token is taken as nullary type constructor name
@@ -127,7 +125,8 @@ as mixfix type. Simple cases of such types are the following:
   constructor $\{\_\_\}$ or $[\_\_]$.
 \item braces or brackets with more arguments are considered illegal.
 \item parenthesis are taken as product types or as parenthesizing of a single
-  type. The empty product is the builtin type alias \texttt{Unit}.
+  type (for one argument). The empty product is the builtin type alias
+  \texttt{Unit}.
 \end{itemize}
 
 Mixfix type expressions with several components are simply regarded as
@@ -146,6 +145,16 @@ parsing of types could be simplified.)
 
 Overloaded type names should have different/incompatible kinds. 
 
+\subsubsection*{Type declarations}
+
+Generally, there are two flavors of declarations for type constructors and
+operations: value and function notation. In a value declaration a mixfix id is
+separated from its kind or type by a colon whereas in a function declaration
+arguments and mixfix components are intermingled and only the (optional)
+result (class, kind or type) is written to the left of a colon. 
+
+
+   
 \end{document}
 %%% Local Variables: 
 %%% mode: latex
