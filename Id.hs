@@ -93,6 +93,9 @@ type SIMPLE_ID = Token
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullPos
 
+simpleIdToId :: SIMPLE_ID -> Id
+simpleIdToId sid = Id [sid] [] []
+
 ---- some useful predicates for Ids -------------------------------------
 isOrdAppl :: Id -> Bool
 isOrdAppl = not . isMixfix

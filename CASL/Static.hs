@@ -524,9 +524,6 @@ posStrArgDecls :: [Pos] -> [String]
 posStrArgDecls [] = []
 posStrArgDecls l  = "(" : (genSemi $ tail $ init l) ++ [")"]
 
-simpleIdToId :: SIMPLE_ID -> Id
-simpleIdToId sid = Id [sid] [] []
-
 varDeclToVarId :: VarDecl -> Term
 varDeclToVarId v = VarId (simpleIdToId $ varId v) (varSort v) Inferred []
 
