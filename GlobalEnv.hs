@@ -40,7 +40,6 @@ module GlobalEnv where
 import Id
 import AS_Annotation
 import Grothendieck
-import Logic
 import AS_Structured
 import AS_Architecture
 import AS_Library
@@ -71,8 +70,8 @@ data SpecEnv = Basic_specEnv G_sign G_l_sentence_list
 -- Add flattened Env and sublogic at the outer level
 -- for purposes of a quick static analysis
 data SpecLenv = SpecLenv {
-                    flattenedEnv :: G_local_env,
-                    hiddenEnv :: G_local_env,
+                    flattenedEnv :: G_sign,
+                    hiddenEnv :: G_sign,
                     structuredEnv :: SpecEnv,
                     sublogic :: G_sublogics
                   }
@@ -80,7 +79,7 @@ data SpecLenv = SpecLenv {
 data GenericityEnv = GenericityEnv {
                        allImports :: SpecLenv, 
                        formalParams :: [SpecLenv], 
-                       flattenedParams :: G_local_env
+                       flattenedParams :: G_sign
                   }
 
 -- Follows the semantic domains of the architectural semantics
@@ -106,7 +105,7 @@ emptyGlobalEnv = GlobalEnv emptyFM []
 
 -- Flattened global environment
 data FSign = FSign {
-        fFlattenedEnv, fHiddenEnv :: G_local_env,
+        fFlattenedEnv, fHiddenEnv :: G_sign,
         fAxioms :: G_l_sentence_list
       }
 data FGenericityEnv  = FGenericityEnv {
