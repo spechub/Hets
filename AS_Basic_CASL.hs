@@ -1,13 +1,14 @@
-module AS_Basic where
+module AS_Basic_CASL where
 
 import Id
 import AS_Annotation 
 
-data BASIC_SPEC = Basic_spec [BASIC_ITEMS]
+data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEMS]
 		  deriving (Show,Eq)
 
-data BASIC_ITEMS = Sig_items (Annoted SIG_ITEMS) 
-                   -- this Annotation followed the keyword
+data BASIC_ITEMS = Sig_items SIG_ITEMS 
+                   -- the Annotation following the keyword is dropped
+		   -- but preceding the keyword is now an Annotation allowed
 		 | Free_datatype [DATATYPE_DECL] [Pos]
 		   -- pos: free, type, semi colons
 		 | Sort_gen [Annoted SIG_ITEMS] [Pos] 
@@ -24,7 +25,7 @@ data SIG_ITEMS = Sort_items [Annoted SORT_ITEM] [Pos]
 	         -- pos: sort, semi colons
 	       | Op_items [Annoted OP_ITEM] [Pos]
 		 -- pos: op, semi colons
-	       | Pred_items [Annoted OP_ITEM] [Pos]
+	       | Pred_items [Annoted PRED_ITEM] [Pos]
 		 -- pos: pred, semi colons
 	       | Datatype_items [DATATYPE_DECL]
 		 -- type, semi colons
@@ -125,35 +126,58 @@ data FORMULA = Quantfication QUANTIFIER [VAR_DECL] FORMULA [Pos]
 	     | False_atom [Pos]
                -- pos: false
 	     | Predication PRED_SYMB [TERM] [Pos]
-               -- pos: 
+               -- pos: opt. "(",commas,")"
 	     | Definednes TERM [Pos]
+	       -- pos: def
 	     | Existl_equation TERM TERM [Pos]
+               -- pos: =e=
 	     | Strong_equation TERM TERM [Pos]
+	       -- pos: =
 	     | Membership TERM SORT [Pos]
+               -- pos: in
+
 	     -- a formula left original for mixfix analysis
 	     | Unparsed_formula String [Pos]
+	       -- pos: first Char in String
 	       deriving (Show,Eq)
 
 data QUANTIFIER = Universal | Existential | Unique_existential
 		  deriving (Show,Eq)
 
 data PRED_SYMB = Pred_name PRED_NAME 
-	       | Qual_pred_name PRED_NAME PRED_TYPE
+	       | Qual_pred_name PRED_NAME PRED_TYPE [Pos]
+		 -- pos: "(", pred, colon, ")"
 		 deriving (Show,Eq)
 
 {- Position and kind of brackets is provided by the list of Tokens -}
 
 data TERM = Simple_id SIMPLE_ID [Token]-- "Var" might be a better constructor
 	  | Qual_var VAR SORT [Pos] [Token]
+	    -- pos: "(", var, colon, ")"
 	  | Application OP_SYMB [TERM] [Pos] [Token]
+	    -- pos: parens around [TERM] if any and seperating commas
 	  | Sorted_term TERM SORT [Pos] [Token]
+	    -- pos: colon
 	  | Cast TERM SORT [Pos] [Token]
+	    -- pos: 
 	  | Conditional TERM FORMULA TERM [Pos] [Token]
+
 	  | Unparsed_term String [Pos]
+
+	  -- A new intermediate state
+          | Mixfix_term  [TERM]
+	  | Mixfix_token Token -- all kind of brackets are included
+	  | Mixfix_sorted_term [TERM] [Token]
+	    -- [Token] contains: colon and sort
+	  | Mixfix_cast [TERM] [Token]
+	    -- [Token] contains: "as" and sort
+	  | Mixfix_cond [TERM] FORMULA [TERM] [Pos]
+	    -- pos: when, else
 	    deriving (Show,Eq)
 
 data OP_SYMB = Op_name OP_NAME
 	     | Qual_op_name OP_NAME OP_TYPE
+		 -- pos: "(", op, colon, ")"
 	       deriving (Show,Eq)
 
 type OP_NAME = Id
@@ -165,10 +189,12 @@ type SORT = Token
 type VAR = SIMPLE_ID
 
 ----- 
-data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] 
+data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] [Pos] 
+		  -- pos: SYMB_KIND, commas
 		  deriving (Show,Eq)
 
-data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] 
+data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] [Pos]
+		      -- pos: SYMB_KIND, commas
 		      deriving (Show,Eq)
 
 data SYMB_KIND = Implicit | Sorts_kind 
@@ -176,7 +202,8 @@ data SYMB_KIND = Implicit | Sorts_kind
 		 deriving (Show,Eq)
 
 data SYMB = Symb_id Id
-	  | Qual_id Id TYPE 
+	  | Qual_id Id TYPE [Pos] 
+	    -- pos: colon
 	    deriving (Show,Eq)
 
 data TYPE = O_type OP_TYPE
@@ -184,5 +211,6 @@ data TYPE = O_type OP_TYPE
 	    deriving (Show,Eq)
 
 data SYMB_OR_MAP = Symb SYMB
-		 | Symb_map SYMB SYMB
+		 | Symb_map SYMB SYMB [Pos]
+		   -- pos: "|->"
 		   deriving (Show,Eq)
