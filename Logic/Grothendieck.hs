@@ -282,7 +282,7 @@ data GMorphism = forall cid lid1 sublogics1
                  lid2 sublogics2 basic_spec2 sentence2 
                  symb_items2 symb_map_items2
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
-  GMorphism lid1 lid2 cid sign1 morphism2 
+  GMorphism cid sign1 morphism2 
 {-
   | forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -296,13 +296,13 @@ data GMorphism = forall cid lid1 sublogics1
 
 
 instance Eq GMorphism where
-  (GMorphism lid1 lid2 cid1 sigma1 mor1) == 
-   (GMorphism lid3 lid4 cid2 sigma2 mor2)
+  (GMorphism cid1 sigma1 mor1) == 
+   (GMorphism cid2 sigma2 mor2)
      = maybe False id
        (do s <- coerce cid1 cid2 "x"
            return (s==Just "x")
-           sigma2' <- coerce lid1 lid3 sigma2
-           mor2' <- coerce lid2 lid4 mor2
+           sigma2' <- coerce (sourceLogic cid1) (sourceLogic cid2) sigma2
+           mor2' <- coerce (targetLogic cid1) (targetLogic cid2) mor2
            return (sigma1 == sigma2' && mor1==mor2'))
 
 
@@ -312,7 +312,7 @@ instance Language Grothendieck
 
 
 instance Show GMorphism where
-    show (GMorphism _ _ cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
+    show (GMorphism cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
  
 {-
 instance Category Grothendieck G_sign GMorphism where
@@ -338,10 +338,11 @@ instance Category Grothendieck G_sign GMorphism where
 -}
 
 ideGrothendieck (G_sign lid sigma) = 
-    GMorphism lid lid (IdComorphism lid) sigma (ide lid sigma)
-domGrothendieck  (GMorphism lid1 _lid2 _r sigma _mor) = G_sign lid1 sigma
-codGrothendieck (GMorphism _lid1 lid2 _r _sigma mor) = 
-   G_sign lid2 (cod lid2 mor)
+    GMorphism (IdComorphism lid) sigma (ide lid sigma)
+domGrothendieck  (GMorphism cid sigma _mor) = G_sign (sourceLogic cid) sigma
+codGrothendieck (GMorphism cid _sigma mor) = 
+   G_sign lid (cod lid mor)
+   where lid = targetLogic cid
 
 gEmbed :: G_morphism -> GMorphism
 gEmbed _ = error "gEmbed"

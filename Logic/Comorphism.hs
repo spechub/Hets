@@ -41,7 +41,9 @@ class (Language cid,
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
              | cid -> lid1, cid -> lid2
   where
+    sourceLogic :: cid -> lid1
     source_sublogic :: cid -> sublogics1
+    targetLogic :: cid -> lid2
     target_sublogic :: cid -> sublogics2
     -- the translation functions are partial 
     -- because the target may be a sublanguage

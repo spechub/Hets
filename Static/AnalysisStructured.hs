@@ -558,15 +558,17 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
 
 -- analysis of renamings
 
-ana_ren1 dg (GMorphism lid1 lid2 r sigma mor) 
+ana_ren1 dg (GMorphism r sigma mor) 
            (G_symb_map (G_symb_map_items_list lid sis),pos) = do
+  let lid1 = sourceLogic r
+      lid2 = targetLogic r
   sis1 <- rcoerce lid2 lid pos sis
   rmap <- stat_symb_map_items lid2 sis1
   mor1 <- induced_from_morphism lid2 rmap (cod lid2 mor)
   mor2 <- maybeToResult pos 
                         "renaming: signature morphism composition failed" 
                         (comp lid2 mor mor1)
-  return (GMorphism lid1 lid2 r sigma mor2)
+  return (GMorphism r sigma mor2)
  
 ana_ren1 dg mor (G_logic_translation (Logic_code tok src tar pos1),pos2) =
   fatal_error "no analysis of logic translations yet" pos2
@@ -585,8 +587,10 @@ ana_RENAMING dg gSigma (Renaming ren pos) =
 
 -- analysis of restrictions
 
-ana_restr1 dg (G_sign lid sigma) (GMorphism lid1 lid2 cid sigma1 mor) 
+ana_restr1 dg (G_sign lid sigma) (GMorphism cid sigma1 mor) 
            (G_symb_list (G_symb_items_list lid' sis'),pos) = do
+  let lid1 = sourceLogic cid
+      lid2 = targetLogic cid
   sis1 <- rcoerce lid1 lid' pos sis'
   rsys <- stat_symb_items lid1 sis1
   let sys = sym_of lid1 sigma1
@@ -601,7 +605,7 @@ ana_restr1 dg (G_sign lid sigma) (GMorphism lid1 lid2 cid sigma1 mor)
   mor2 <- maybeToResult pos 
                         "restriction: signature morphism composition failed" 
                         (comp lid2 mor1' mor)
-  return (GMorphism lid1 lid2 cid (dom lid1 mor1) mor2)
+  return (GMorphism cid (dom lid1 mor1) mor2)
  
 ana_restr1 dg gSigma mor 
            (G_logic_projection (Logic_code tok src tar pos1),pos2) =
