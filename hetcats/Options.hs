@@ -25,23 +25,22 @@
 
 Usage: hetcats [OPTION...] file ... file
   -v[Int]   --verbose[=Int]       chatty output on stderr
-  -V        --version             show version number
-  -h        --help                show usage information
-  -i ITYPE  --input-type=ITYPE    ITYPE of input file: casl|het|tree.gen_trm
-  -p        --just-parse          just parse -- skip analysis
-  -O DIR    --output-dir=DIR      output DIR
-  -o OTYPES --output-types=OTYPES select OTYPES of output files
-  -l id     --output-logic=id     select output logic and optional logic coding
+  -V        --version             print version number and exit
+  -h        --help, --usage       print usage information and exit
+  -i ITYPE  --input-type=ITYPE    ITYPE of input file: 
+	    (tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?
+  -p        --just-parse          skip analysis - just parse
+  -O DIR    --output-dir=DIR      destination directory for output files
+  -o OTYPES --output-types=OTYPES OTYPES of output files, a comma seperated list of OTYPE
+	    OTYPE is (pp.(het|tex|html))
+            |(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)
+            |(graph.(dot|ps|davinci))
+            (default: dg.taf)
+?  -l id     --output-logic=id     select output logic and optional logic coding
   -L DIR    --casl-libdir=DIR     CASL library directory
-  -r STRING --raw=STRING          raw options for the pretty-printer
-  -w        --width tex=10cm het=75 
- -- or something else for width/papersize etc?
+  -r RAW    --raw=RAW             raw options passed to the pretty-printer
+	    RAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer
 
-OTYPES is a comma separated list of OTYPE
-OTYPE is (pp.(het|tex|html))
-         |(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)
-         |(graph.(dot|ps|davinci))
-         (default: dg.taf)
 -}
 
 module Options where
@@ -52,9 +51,7 @@ import Common.Utils
 import System.Directory
 import System.Exit
 
--- import Data.Char (isSpace)
 import Data.List
-
 import Control.Monad (filterM)
 
 import System.Console.GetOpt
@@ -67,55 +64,67 @@ import System.Console.GetOpt
 data HetcatsOpts = 
     HcOpt { verbose  :: Int       -- greater than null to turn verbosity on
 	  , intype   :: InType    -- type of the file to be read
-	  , infile   :: FilePath  -- file to be read
-	  , outdir   :: FilePath  -- output directory
+	  , infiles  :: [FilePath]  -- files to be read
 	  , outtypes :: [OutType] -- list of output types to be generated
+	  , outdir   :: FilePath  -- output directory
 	  , analysis :: Bool      -- False if analysis should be skipped
 	  , libdir   :: FilePath  -- CASL library directory
-	  , rawoptions :: [RawOpt] -- raw options for the pretty printer
+	  , rawopts  :: [RawOpt] -- raw options for the pretty printer
 	  }
     deriving (Eq)
 
 instance Show HetcatsOpts where
     show opts =    " --verbose="      ++ show (verbose opts)
-		++ " --input-type="   ++ showInType
-		++ " --output-types=" ++ showOutType
+		++ " --input-type="   ++ show (intype opts)
+		++ " --output-types=" ++ showOutTypes
 		++ " --output-dir="   ++ (outdir opts)
 		++ showAnalysis
 		++ " --casl-libdir="  ++ (libdir opts)
-		++ showRaw (rawoptions opts)
+		++ showRaw (rawopts opts)
 		++ " " ++ showInFiles
 	where
-	showInType = show (intype opts)
-	showOutType = joinWith ',' $ map show (outtypes opts)
+	showOutTypes = joinWith ',' $ map show (outtypes opts)
+	showInFiles  = joinWith ' ' (infiles opts)
 	showAnalysis
 	    | analysis opts = ""
 	    | otherwise     = " --just-parse"
-	showInFiles  = infile opts
 	showRaw = joinWith ' ' . (map showRaw')
 	showRaw' (RawAscii s) = " --raw=ascii=" ++ s
 	showRaw' (RawLatex s) = " --raw=latex=" ++ s
--- these might be used when multiple infiles are implemented
---	showInType = joinWith ' ' (map show (intype opts))
---	showInFiles  = joinWith ' ' (infile opts)
 
+{- | incorporates a Flag into a setof HetcatsOpts -}
+makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
+makeOpts opts (Version)    = opts
+makeOpts opts (Help)       = opts
+makeOpts opts (Verbose x)  = opts { verbose = x }
+makeOpts opts (InType x)   = opts { intype = x }
+makeOpts opts (OutTypes x) = opts { outtypes = x }
+makeOpts opts (OutDir x)   = opts { outdir = x }
+makeOpts opts (Analysis x) = opts { analysis = x }
+makeOpts opts (LibDir x)   = opts { libdir = x }
+makeOpts opts (Raw x)      = opts { rawopts = x }
+makeOpts _     x           = hetsError Intern ("unrecognized Flag: " ++ (show x))
+
+-- just a quick hack to make WriteFn and ReadFn happy with a single infile
+infile :: HetcatsOpts -> FilePath
+infile = head . infiles
 
 {- | the default HetcatsOpts, used when nothing else is specified -}
 defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
-    HcOpt { verbose = 0
-	  , infile = ""
+    HcOpt { verbose  = 0
 	  , intype   = Guess -- ATerm NonBAF
-	  , outdir = ""
+	  , infiles  = []
 	  , outtypes = [HetCASLOut OutASTree Ascii]
+	  , outdir   = ""
             {- better default options, but 
 	    the underlying functions are not yet implemented:
 	  , intype   = HetCASLIn
 	  , outtypes = [Global_Env [XML]]
 	    -}
 	  , analysis = True
-	  , libdir  = ""
-	  , rawoptions = []
+	  , libdir   = ""
+	  , rawopts  = []
 	  }
 
 {- | 'Flag' describes the raw options -}
@@ -315,73 +324,42 @@ hetcatsOpts :: [String] -> IO HetcatsOpts
 hetcatsOpts argv =
     case (getOpt Permute options argv) of
         (opts,non_opts,[]) ->
-	    do useOpts  <- formOpts opts
-	       ourOpts  <- return (useOpts defaultHetcatsOpts)
-	       ourIns   <- formInFiles non_opts
-	       optsWithIns <- return $
-			      map (makeOpts ourOpts) ourIns
-	       guessedOpts <- return $
-			      map (guessIT . guessOD) optsWithIns
-	       return (head guessedOpts)
+	    do flags <- checkFlags opts
+	       infs  <- checkInFiles non_opts
+	       hcOpts <- return $ foldr (flip makeOpts) defaultHetcatsOpts flags
+	       return $ hcOpts { infiles = infs }
         (_,_,errs) -> fail (concat errs ++ hetsUsage)
 
-formOpts :: [Flag] -> IO (HetcatsOpts -> HetcatsOpts)
-formOpts fs = do if (hasHelp fs)
-		    then do putStrLn hetsUsage
-			    exitWith ExitSuccess
-		    else return () -- fall through
-		 if (hasVersion fs)
-		    then do putStrLn ("version of hets: " 
-				      ++ hetcats_version)
-			    exitWith ExitSuccess
-		    else return () -- fall through
-		 fs' <- (collectOutDirs
-			 . collectOutTypes
-			 . collectVerbosity
-			 . collectRawOpts
-			 -- collect some more here
-			) fs
-		 return $ extractOpts fs'
+checkFlags :: [Flag] -> IO [Flag]
+checkFlags fs = do if (hasHelp fs)
+		      then do putStrLn hetsUsage
+			      exitWith ExitSuccess
+		      else return [] -- fall through
+		   if (hasVersion fs)
+		      then do putStrLn ("version of hets: "
+					++ hetcats_version)
+			      exitWith ExitSuccess
+		      else return [] -- fall through
+		   fs' <- (collectOutDirs
+			   . collectOutTypes
+			   . collectVerbosity
+			   . collectRawOpts
+			   -- collect some more here?
+			  ) fs
+		   return fs'
     where
     hasVersion xs = Version `elem` xs
     hasHelp xs = Help `elem` xs
 
-extractOpts :: [Flag] -> HetcatsOpts -> HetcatsOpts
-extractOpts ((Version):xs)    opts = extractOpts xs opts
-extractOpts ((Help):xs)       opts = extractOpts xs opts
-extractOpts ((Verbose x):xs)  opts = extractOpts xs opts { verbose = x }
-extractOpts ((InType x):xs)   opts = extractOpts xs opts { intype = x }
-extractOpts ((OutDir x):xs)   opts = extractOpts xs opts { outdir = x }
-extractOpts ((OutTypes x):xs) opts = extractOpts xs opts { outtypes = x }
-extractOpts ((Analysis x):xs) opts = extractOpts xs opts { analysis = x }
-extractOpts ((LibDir x):xs)   opts = extractOpts xs opts { libdir = x }
-extractOpts ((Raw x):xs)      opts = extractOpts xs opts { rawoptions = x }
-extractOpts [] opts = opts
-extractOpts _ _ = hetsError Intern "Unknown Error in extractOpts"
-
-formInFiles :: [String] -> IO [FilePath]
-formInFiles fs = do ifs <- checkInFiles fs
-		    case ifs of
-			     []  -> return (hetsError User 
-					    "No valid input file specified")
-			     xs  -> return xs
-
-guessIT :: HetcatsOpts -> HetcatsOpts
-guessIT opts 
-    | (intype opts) == Guess = opts { intype = guessInType (infile opts) }
-    | otherwise              = opts
-
-guessOD :: HetcatsOpts -> HetcatsOpts
-guessOD opts 
-    | null (outdir opts) = opts { outdir = dirname (infile opts) }
-    | otherwise          = opts
+checkInFiles :: [String] -> IO [FilePath]
+checkInFiles fs = do ifs <- filterM checkInFile fs
+		     case ifs of
+			      []  -> return (hetsError User 
+					     "No valid input file specified")
+			      xs  -> return xs
 
 
 -- auxiliary functions: FileSystem interaction --
-
--- sanity check for all input files
-checkInFiles :: [FilePath] -> IO [FilePath]
-checkInFiles = filterM checkInFile
 
 -- sanity check for a single input file
 checkInFile :: FilePath -> IO Bool
@@ -425,25 +403,23 @@ noPerms = Permissions { readable = False
 collectVerbosity :: [Flag] -> [Flag]
 collectVerbosity fs =
     let (vs,fs') = partition isVerb fs
-	verbosity = sum $ map extractVerbosity vs
+	verbosity = (sum . map extractVerbosity) vs
+	isVerb (Verbose _) = True
+	isVerb _           = False
+	extractVerbosity (Verbose x) = x
+	extractVerbosity _ = hetsError Intern "Unknown Error in collectVerbosity"
     in (Verbose verbosity):fs'
-    where
-    isVerb (Verbose _) = True
-    isVerb _           = False
-    extractVerbosity (Verbose x) = x
-    extractVerbosity _ = hetsError Intern "Unknown Error in collectVerbosity"
 
 collectOutTypes :: [Flag] -> [Flag]
 collectOutTypes fs =
     let (ots,fs') = partition isOType fs
+	isOType (OutTypes _) = True
+	isOType _            = False
 	otypes = foldl concatOTypes [] ots
+	concatOTypes os (OutTypes ot) = os ++ ot
+	concatOTypes _ _ = hetsError Intern "Unknown Error in collectOutTypes"
 	otypes' = if (null otypes) then [] else [(OutTypes otypes)]
     in otypes' ++ fs'
-    where
-    isOType (OutTypes _) = True
-    isOType _            = False
-    concatOTypes os (OutTypes ot) = os ++ ot
-    concatOTypes _ _ = hetsError Intern "Unknown Error in collectOutTypes"
 
 -- TODO: if there were OutDirs specified, and none of them are sane,
 -- we should warn the user instead of sticking to our defaults!
@@ -459,20 +435,13 @@ collectOutDirs fs =
 collectRawOpts :: [Flag] -> [Flag]
 collectRawOpts fs =
     let (rfs,fs') = partition isRawOpt fs
+	isRawOpt (Raw _) = True
+	isRawOpt _       = False
 	raws = foldl concatRawOpts [] rfs
+	concatRawOpts os (Raw ot) = os ++ ot
+	concatRawOpts _ _ = hetsError Intern "Unknown Error in collectRawOpts"
 	raws' = if (null raws) then [] else [(Raw raws)]
     in raws' ++ fs'
-    where
-    isRawOpt (Raw _) = True
-    isRawOpt _       = False
-    concatRawOpts os (Raw ot) = os ++ ot
-    concatRawOpts _ _ = hetsError Intern "Unknown Error in collectRawOpts"
-
-makeOpts :: HetcatsOpts -> FilePath -> HetcatsOpts
-makeOpts opts file = opts { infile = file }
-
-guessInType :: FilePath -> InType
-guessInType _ = ATerm NonBAF
 
 
 -- auxiliary functions: error messages --
@@ -481,17 +450,10 @@ guessInType _ = ATerm NonBAF
 -- user errors also print our usage information, 
 -- as presumably something went wrong while parsing the input flags
 hetsError :: forall a. ErrorSource -> String -> a
-hetsError User errorString = error (errorString ++ "\n" ++ hetsUsage)
+hetsError User   errorString = error (errorString ++ "\n" ++ hetsUsage)
 hetsError Intern errorString = error ("Internal Error: " ++ errorString)
 
 -- generates usage information for the commandline
 hetsUsage :: String
 hetsUsage = usageInfo header options
     where header = "Usage: hetcats [OPTION...] file"
-
--- prints a list of all recognized options passed to the command line
--- non really an error Message, but anyway...
-printOpts :: HetcatsOpts -> IO ()
-printOpts opts = 
-    let optString = "Options: " ++ (show opts)
-    in putStrLn optString
