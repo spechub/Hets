@@ -331,7 +331,7 @@ data AnyComorphism = forall cid lid1 sublogics1
 
 instance Eq AnyComorphism where
   Comorphism cid1 == Comorphism cid2 =
-     language_name cid1 == language_name cid2  
+     constituents cid1 == constituents cid2  
   -- need to be refined, using comorphism translations !!! 
 
 instance Show AnyComorphism where
@@ -349,9 +349,7 @@ instance Typeable AnyComorphism where
 -- | Test whether a comporphism is the identity
 isIdComorphism :: AnyComorphism -> Bool
 isIdComorphism (Comorphism cid) =
-  case language_name cid of
-    'i':'d':'_':_ -> True
-    _ -> False
+  constituents cid == []
 
 -- | Compose comorphisms
 compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
@@ -466,7 +464,8 @@ data GMorphism = forall cid lid1 sublogics1
 
 instance Eq GMorphism where
   GMorphism cid1 sigma1 mor1 == GMorphism cid2 sigma2 mor2
-     = coerce cid1 cid2 (sigma1, mor1) == Just (sigma2, mor2)
+     = Comorphism cid1 == Comorphism cid2 &&
+       coerce cid1 cid1 (sigma1, mor1) == Just (sigma2, mor2)
 
 data Grothendieck = Grothendieck deriving Show
 

@@ -78,6 +78,9 @@ class (Language cid,
           -- with no sentence translation
           -- - but these are spans!
     map_symbol :: cid -> symbol1 -> Set symbol2
+    constituents :: cid -> [String]
+    -- default implementation
+    constituents cid = [language_name cid]
 
 data IdComorphism lid sublogics = 
      IdComorphism lid sublogics deriving Show
@@ -112,7 +115,7 @@ instance Logic lid sublogics
            map_morphism _ = Just
            map_sentence _ = \_ -> Just
            map_symbol _ = single
-
+           constituents _ = []
 
 data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show
 
@@ -192,3 +195,5 @@ instance (Comorphism cid1
 	 in unions
 		(map (map_symbol cid2 . mycast) 
                  (toList (map_symbol cid1 s1)))
+   constituents (CompComorphism cid1 cid2) = 
+      constituents cid1 ++ constituents cid2
