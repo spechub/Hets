@@ -92,8 +92,9 @@ mapSentence m s = return $ case s of
 
 mapFunSym :: IdMap -> FunMap -> (Id, TypeScheme) -> (Id, TypeScheme)
 mapFunSym im fm (i, sc) = 
-    let (j, sc2) = Map.findWithDefault (i, mapTypeScheme im sc) 
-                   (i, sc) fm in
+    let msc = mapTypeScheme im sc
+        (j, sc2) = Map.findWithDefault (i, msc) 
+                   (i, msc) fm in
         (j , sc2)
 
 mkMorphism :: Env -> Env -> Morphism

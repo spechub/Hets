@@ -130,7 +130,8 @@ opFun rmap e type_Map i ots m =
        (Nothing, Just rsy) -> 
           Set.fold (insertmapOpSym e type_Map i rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
-       (Nothing,Nothing) -> Set.fold (unchangedOpSym type_Map i) m1 ots1
+       (Nothing,Nothing) -> m1
+
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
 directOpMap :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfo 
@@ -141,6 +142,7 @@ directOpMap rmap e type_Map i oi (ots,m) = let ot = opType oi in
         Just rsy -> 
           (ots, insertmapOpSym e type_Map i rsy ot m)
         Nothing -> (Set.insert ot ots, m)
+
     -- map op symbol (id,ot) to raw symbol rsy
 mapOpSym :: Env -> IdMap -> Id -> TypeScheme -> RawSymbol 
              -> Result (Id, TypeScheme)
@@ -155,7 +157,7 @@ mapOpSym e type_Map i ot rsy =
           SK_op -> return (id', sc)
           _ -> err "wrongly kinded raw symbol"
       ASymbol sy -> case symType sy of 
-          OpAsItemType ot2 -> if ot2 == expand (typeMap $ symEnv sy) sc 
+          OpAsItemType ot2 -> if ot2 == sc
                               then return (symName sy, ot2)
               else err "wrongly typed symbol"
           _ ->  err "wrongly kinded symbol"
@@ -167,19 +169,15 @@ insertmapOpSym :: Env -> IdMap -> Id -> RawSymbol -> TypeScheme
 insertmapOpSym e type_Map i rsy ot m = do  
       m1 <- m        
       (id',kind') <- mapOpSym e type_Map i ot rsy
-      return (Map.insert (i, ot) (id',kind') m1)
+      return (Map.insert (i, mapTypeScheme type_Map ot) (id',kind') m1)
     -- insert mapping of op symbol (id,ot) to itself into m
-unchangedOpSym :: IdMap -> Id -> TypeScheme -> Result FunMap 
-               -> Result FunMap
-unchangedOpSym im i ot m = do
-      m1 <- m
-      return (Map.insert (i, ot) (i, mapTypeScheme im ot) m1)
+
   -- map the ops in the source signature
 mapOps :: IdMap -> FunMap -> Id -> OpInfos -> Env -> Env
 mapOps type_Map op_Map i ots e = 
     foldr ( \ ot e' ->
-        let sc = opType ot
-            (id', sc') = Map.findWithDefault (i, mapTypeScheme type_Map sc)
+        let sc = mapTypeScheme type_Map $ opType ot
+            (id', sc') = Map.findWithDefault (i, sc)
                          (i, sc) op_Map
             in execState (addOpId id' sc' (opAttrs ot) 
                           (mapOpDefn type_Map $ opDefn ot)) e')
@@ -208,9 +206,7 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
   --debug 3 ("sigma2",sigma2)
   if isSubEnv (mtarget mor1) sigma2 
    -- yes => we are done
-   then return $ mor1 { mtarget = sigma2
-                      , funMap = Map.map ( \ (i, sc) -> 
-                          (i, expand (typeMap sigma2) sc)) $ funMap mor1 }
+   then return $ mor1 { mtarget = sigma2 }
    -- no => OK, we've to take the hard way
    else let s1 = symOf sigma1
             s2 = symOf sigma2
