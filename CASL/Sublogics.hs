@@ -6,12 +6,36 @@
 ------------------------------------------------------------------------------
 {- todo:
 
-   sublogic_names :: id -> sublogics -> [String] 
-             -- the first name is the principal name
-         all_sublogics :: id -> [sublogics]
-  <=
-  meet, join :: l -> l -> l  -- meet = "Durschnitt"
-  top :: l
+  all_sublogics :: id -> [sublogics]
+  morphisms
+  projections
+    proj_sublogic_basic_spec: annehmen, dass Formeln und Terme voll getypt sind
+       Subsorten-Decls/Defns: ggf. zu normalen Sorten-Decls reduzieren
+       Formeln mit unbekannten Features weglassen
+       Operations + Prädikate: jeweils pro Typ weglassen, wenn Typ nicht in Sublogic
+   Sublogic ggf. hochsetzen (für subsorted atomic logic)
+
+  in eignem File:
+  Hochziehen auf strukturierte Ebene
+    Maybe(existentiellen Typ G_sublogics aus Grothendieck.hs) verwenden
+    AS_Structured.hs, AS_Arch.hs, AS_Library.hs
+    Funktionen aus Logic_CASL.hs bzw. Logic.hs verwenden
+    Nur für homogene Specs das jeweilige Maximum berechnen
+      (Vergleich von Logic-ids mit language_name), ansonsten Nothing
+
+  Testen mit hetcats/hetcats.hs (Klaus kontakten)
+
+Korrespondenz abstrakt-konkret:
+  class Logic id sublogics
+        basic_spec sentence symb_items symb_map_items
+        local_env sign morphism symbol raw_symbol 
+
+  instance Logic CASL Sublogics.CASL_Sublogics
+               BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
+	       LocalEnv Sign 
+	       String -- morphism 
+	       Symbol RawSymbol 
+
 
   Weitere Instanzen mit HasCASL, CASL-LTL etc.
     (nur sich selbst als Sublogic)
