@@ -1,7 +1,7 @@
 For the graphical output with daVinci hets depends on "uni" the
 central part of the UniForm workbench.
 
-The library uni is maintained by George Russel (ger@tzi.de) and
+The library uni is maintained by George Russell (ger@tzi.de) and
 depends on the Glagow Haskell Compiler (GHC Version 6.0.1 or higher) from
 "haskell.org/ghc".
 
