@@ -58,7 +58,7 @@ setToksPos ts ps = (ts, ps)
 -- | update positions in 'Id'.
 -- return remaining positions 
 setPlainIdePos :: Id -> [Pos] -> (Id, [Pos]) 
-setPlainIdePos i@(Id ts cs _) ps =
+setPlainIdePos (Id ts cs _) ps =
     if null cs then 
        let (newTs, restPs) = setToksPos ts ps
 	   in (Id newTs cs [], restPs)
