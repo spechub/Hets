@@ -42,16 +42,26 @@ data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 data Env = Env { sortSet :: Set.Set SORT
 	       , sortRel :: Rel.Rel SORT	 
                , opMap :: Map.Map Id (Set.Set OpType)
+	       , assocOps :: Map.Map Id (Set.Set OpType)
 	       , predMap :: Map.Map Id (Set.Set PredType)
                , varMap :: Map.Map SIMPLE_ID (Set.Set SORT)
 	       , sentences :: [Named FORMULA]	 
 	       , envDiags :: [Diagnosis]
-	       } deriving (Show, Eq)
+	       } deriving (Show)
+
+-- better ignore assoc flags for equality
+instance Eq Env where
+    e1 == e2 = 
+	sortSet e1 == sortSet e1 &&
+	sortRel e1 == sortRel e2 &&
+	opMap e1 == opMap e2 &&
+	predMap e1 == predMap e2
 
 emptyEnv :: Env
 emptyEnv = Env { sortSet = Set.empty
 	       , sortRel = Rel.empty
 	       , opMap = Map.empty
+	       , assocOps = Map.empty
 	       , predMap = Map.empty
 	       , varMap = Map.empty
 	       , sentences = []
@@ -133,6 +143,14 @@ addOp ty i =
 			 addDiags [mkDiag Hint "redeclared as total" i] 
 			 else check
 
+addAssocOp :: OpType -> Id -> State Env ()
+addAssocOp ty i = do
+       e <- get
+       let m = assocOps e
+	   pty = ty { opKind = Partial } -- ignore FunKind
+           l = Map.findWithDefault Set.empty i m
+       put e { assocOps = Map.insert i (Set.insert pty l) m }
+
 addPred :: PredType -> Id -> State Env ()
 addPred ty i = 
     do mapM_ checkSort $ predArgs ty
@@ -144,16 +162,30 @@ addPred ty i =
 	  else do put e { predMap = Map.insert i (Set.insert ty l) m }
 		  addDiags $ checkPlaces (predArgs ty) i
 
-allOpIds :: Env -> Set.Set Id
-allOpIds = Set.fromDistinctAscList . Map.keys . opMap 
+allOpIds :: State Env (Set.Set Id)
+allOpIds = do 
+    e <- get
+    return $ Set.fromDistinctAscList $ Map.keys $ opMap e 
 
-formulaIds :: Env -> Set.Set Id
-formulaIds e = 
-    Set.fromDistinctAscList (map simpleIdToId $ Map.keys $ varMap e) 
-	   `Set.union` allOpIds e
+addAssocs :: GlobalAnnos -> State Env GlobalAnnos
+addAssocs ga = do 
+    e <- get
+    return ga { assoc_annos =  
+		foldr ( \ i m -> case Map.lookup i m of
+			Nothing -> Map.insert i ALeft m
+			_ -> m ) (assoc_annos ga) (Map.keys $ assocOps e) } 
 
-allPredIds :: Env -> Set.Set Id
-allPredIds = Set.fromDistinctAscList . Map.keys . predMap 
+formulaIds :: State Env (Set.Set Id)
+formulaIds = do
+    e <- get
+    ops <- allOpIds
+    return (Set.fromDistinctAscList (map simpleIdToId $ Map.keys $ varMap e) 
+	       `Set.union` ops)
+
+allPredIds :: State Env (Set.Set Id)
+allPredIds = do
+    e <- get
+    return $ Set.fromDistinctAscList $ Map.keys $ predMap e
 
 addDiags :: [Diagnosis] -> State Env ()
 addDiags ds = 
@@ -193,10 +225,11 @@ ana_BASIC_ITEMS ga bi =
     Local_var_axioms il afs ps -> 
 	do e <- get -- save
 	   mapM_ addVars il
-	   ops <- gets formulaIds
+	   ops <- formulaIds
 	   put e -- restore 
-	   preds <- gets allPredIds
-	   let rfs = map (resolveFormula ga ops preds . item) afs 
+	   preds <- allPredIds
+	   newGa <- addAssocs ga
+	   let rfs = map (resolveFormula newGa ops preds . item) afs 
 	       ds = concatMap diags rfs
 	       arfs = zipWith ( \ a m -> case maybeResult m of 
 				Nothing -> Nothing
@@ -209,9 +242,10 @@ ana_BASIC_ITEMS ga bi =
            addSentences sens			    
            return $ Local_var_axioms il ufs ps
     Axiom_items afs ps -> 		    
-	do ops <- gets formulaIds
-	   preds <- gets allPredIds
-	   let rfs = map (resolveFormula ga ops preds . item) afs 
+	do ops <- formulaIds
+	   preds <- allPredIds
+	   newGa <- addAssocs ga
+	   let rfs = map (resolveFormula newGa ops preds . item) afs 
 	       ds = concatMap diags rfs
 	       arfs = zipWith ( \ a m -> case maybeResult m of 
 				Nothing -> Nothing
@@ -253,9 +287,10 @@ ana_SORT_ITEM ga si =
 	   mapM_ (addSubsort i) il
 	   return si
     Subsort_defn sub v super af ps -> 
-	do ops <- gets allOpIds 
-	   preds <- gets allPredIds
-           let Result ds mf = resolveFormula ga 
+	do ops <- allOpIds 
+	   preds <- allPredIds
+	   newGa <- addAssocs ga
+           let Result ds mf = resolveFormula newGa
 			      (Set.insert (simpleIdToId v) ops) preds $ item af
            addDiags ds 
 	   addSort sub
@@ -278,16 +313,20 @@ ana_OP_ITEM ga oi =
     Op_decl ops ty il ps -> 
 	do mapM_ (addOp $ toOpType ty) ops
 	   ul <- mapM (ana_OP_ATTR ga) il
+	   if Assoc_op_attr `elem` il then
+	      mapM_ (addAssocOp $ toOpType ty) ops
+	      else return ()
 	   return $ Op_decl ops ty (catMaybes ul) ps
     Op_defn i par at ps -> 
 	do let ty = headToType par
            addOp (toOpType ty) i
-	   ops <- gets allOpIds
-	   preds <- gets allPredIds 
-	   let vars = headToVars par
+	   ops <- allOpIds
+	   preds <- allPredIds 
+	   newGa <- addAssocs ga
+ 	   let vars = headToVars par
 	       allOps = foldr ( \ v s -> Set.insert (simpleIdToId v) s) 
 			ops vars 
-	       Result ds mt = resolveMixfix ga allOps preds False $ item at
+	       Result ds mt = resolveMixfix newGa allOps preds False $ item at
 	   addDiags ds
 	   return $ case mt of 
 	            Nothing -> Op_decl [i] ty [] ps
@@ -312,9 +351,10 @@ ana_OP_ATTR :: GlobalAnnos -> OP_ATTR -> State Env (Maybe OP_ATTR)
 ana_OP_ATTR ga oa = 
     case oa of 
     Unit_op_attr t ->
-	do ops <- gets allOpIds
-	   preds <- gets allPredIds 
-	   let Result ds mt = resolveMixfix ga ops preds False t
+	do ops <- allOpIds
+	   preds <- allPredIds 
+	   newGa <- addAssocs ga
+	   let Result ds mt = resolveMixfix newGa ops preds False t
 	   addDiags ds
 	   return $ fmap Unit_op_attr mt
     _ -> return $ Just oa
@@ -331,12 +371,13 @@ ana_PRED_ITEM ga p =
     Pred_defn i par at ps ->
 	do let ty = predHeadToType par
            addPred (toPredType ty) i
-	   ops <- gets allOpIds
-	   preds <- gets allPredIds 
+	   ops <- allOpIds
+	   preds <- allPredIds 
+	   newGa <- addAssocs ga
 	   let vars = predHeadToVars par
 	       allOps = foldr ( \ v s -> Set.insert (simpleIdToId v) s) 
 			ops vars 
-	       Result ds mt = resolveFormula ga allOps preds $ item at
+	       Result ds mt = resolveFormula newGa allOps preds $ item at
 	   addDiags ds
 	   return $ case mt of 
 	            Nothing -> Pred_decl [i] ty ps
@@ -452,7 +493,8 @@ diffSig a b =
     a { sortSet = sortSet a `Set.difference` sortSet b
       , sortRel = Rel.transClosure $ Rel.fromSet $ Set.difference
 	(Rel.toSet $ sortRel a) $ Rel.toSet $ sortRel b
-      , opMap = opMap a `diffMapSet` opMap b	
+      , opMap = opMap a `diffMapSet` opMap b
+      , assocOps = assocOps a `diffMapSet` assocOps b	
       , predMap = predMap a `diffMapSet` predMap b	
       }
   -- transClosure needed:  {a < b < c} - {a < c; b} 
@@ -471,6 +513,7 @@ addSig a b =
       , sortRel = Rel.transClosure $ Rel.fromSet $ Set.union
 	(Rel.toSet $ sortRel a) $ Rel.toSet $ sortRel b
       , opMap = remPartOpsM $ Map.unionWith Set.union (opMap a) $ opMap b
+      , assocOps = Map.unionWith Set.union (assocOps a) $ assocOps b
       , predMap = Map.unionWith Set.union (predMap a) $ predMap b	
       }
 

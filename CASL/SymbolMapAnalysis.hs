@@ -260,6 +260,8 @@ inducedFromMorphism rmap sigma = do
                          Rel.image (mapSort sort_Map) (sortRel sigma),
              opMap = Map.foldWithKey (mapOps sort_Map op_Map) 
                        Map.empty (opMap sigma),
+ 	     assocOps = Map.foldWithKey (mapOps sort_Map op_Map)
+	               Map.empty (assocOps sigma),
              predMap = Map.foldWithKey (mapPreds sort_Map pred_Map) 
                        Map.empty (predMap sigma),
              varMap = Map.empty,
