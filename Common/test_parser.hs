@@ -10,7 +10,7 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.AS_Annotation
 import Common.Print_AS_Annotation
-import Common.GlobalAnnotationsFunctions
+import Common.AnalyseAnnos
 
 import Common.Id
 

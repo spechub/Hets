@@ -5,7 +5,7 @@ import Common.RunParsers
 import Common.Anno_Parser
 import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.GlobalAnnotationsFunctions
+import Common.AnalyseAnnos
 import Common.Print_AS_Annotation
 import Common.ConvertGlobalAnnos
 

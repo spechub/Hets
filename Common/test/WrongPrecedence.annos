@@ -1,8 +1,6 @@
 %prec   {a} < {b}
 %prec   {b} < {c}
-
 %prec   {c} < {a}
+%left_assoc a,b,c
+%right_assoc b,a,d,d
 
-
-%left_assoc a
-%right_assoc a
