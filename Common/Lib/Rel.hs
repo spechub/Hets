@@ -13,7 +13,7 @@ supply a simple data type for (precedence or subsort) relations. A
 relation is conceptually a set of (ordered) pairs (see 'toList' and
 'fromList'). But the hidden implementation is based on a map of sets.
 
-'Rel a' replaces a directed graph with unique node labels (Ord a) and
+'Rel' replaces a directed graph with unique node labels (Ord a) and
 unlabelled edges (without multiplicity higher than one).
 
 Usage: start with an 'empty' relation, 'insert' edges, and test for
@@ -48,44 +48,52 @@ import qualified Common.Lib.Set as Set
 
 newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
 
+-- | the empty relation
 empty :: Rel a
 empty = Rel Map.empty
 
+-- | test for 'empty'
 isEmpty :: Rel a -> Bool
 isEmpty = Map.isEmpty . toMap 
 
+-- | insert an ordered pair
 insert :: Ord a => a -> a -> Rel a -> Rel a
--- order matters!
 insert a b =
     let update m = Map.insert a ((b `Set.insert`) $ 
 				 Map.findWithDefault Set.empty a m) m
     in 
     Rel . update .toMap
 
+-- | test for an (previously inserted) ordered pair
 member :: Ord a => a -> a -> Rel a -> Bool
 member a b r = Set.member b $ getDAdjs r a
 
+-- | get direct right neighbours   
 getDAdjs :: Ord a => Rel a -> a -> Set.Set a
--- direct neighbours
 getDAdjs r a = Map.findWithDefault Set.empty a $ toMap r
 
+-- | get right neighbours and right neighbours of right neighbours
 getTAdjs :: Ord a => Rel a -> Set.Set a -> Set.Set a -> Set.Set a
--- transitive neighbours
+-- transitive right neighbours
 -- initial call 'getTAdjs succs r Set.empty $ Set.single a'
 getTAdjs r given new =
     if Set.isEmpty new then given else 
     let ds = Set.unions $ map (getDAdjs r) $ Set.toList new in 
     getTAdjs r (ds `Set.union` given) (ds Set.\\ new Set.\\ given)
 
+-- | test for 'member' or transitive membership
 transMember :: Ord a => a -> a -> Rel a -> Bool
 transMember a b r = Set.member b $ getTAdjs r Set.empty $ Set.single a
 
+-- | compute transitive closure (make all transitive members direct members)
 transClosure ::  Ord a => Rel a -> Rel a
 transClosure r = Rel $ Map.map ( \ s -> getTAdjs r s s) $ toMap r
 
+-- | convert a list of ordered pairs to a relation 
 fromList :: Ord a => [(a, a)] -> Rel a
 fromList = foldr (\ (a, b) r -> insert a b r ) empty
 
+-- | convert a relation to a list of ordered pairs
 toList ::  Ord a => Rel a -> [(a, a)]
 toList = concatMap (\ (a , bs) -> map ( \ b -> (a, b) ) (Set.toList bs)) 
 	 . Map.toList . toMap
