@@ -212,20 +212,19 @@ specB l = do p1 <- asKey localS
           <|> specC l
 
 specC :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
-specC l@(Logic lid, lG) =     
-                  do p1 <- asKey "data" `followedWith` groupSpecLookhead
-                     case data_logic lid of
-                       Nothing -> fail ("No data logic for " 
-					++ language_name lid)
-                       Just (Logic dlid) -> do
-                         sp1 <- groupSpec (Logic dlid, lG)
+specC l@(Logic lid, lG) = 
+        let rest = annoParser (specD l) >>= translation_list l
+        in case data_logic lid of
+	  Nothing -> rest
+	  Just (Logic dlid) -> do
+                         p1 <- asKey "data"
+			 sp1 <- groupSpec (Logic dlid, lG)
                          sp2 <- specD l
                          return (emptyAnno (Data (Logic dlid) 
                                                  (emptyAnno sp1) 
                                                  (emptyAnno sp2) 
                                                  [tokPos p1]))
-          <|> do sp <- annoParser (specD l)
-                 translation_list l sp
+		  <|> rest
           
 translation_list :: (AnyLogic, LogicGraph) -> Annoted SPEC 
 		 -> AParser (Annoted SPEC)
