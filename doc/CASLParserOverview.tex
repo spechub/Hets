@@ -17,11 +17,11 @@ Make sure a new version (currently 5.04.1) of \texttt{ghc}
 
 Read \texttt{http://www.informatik.uni-bremen.de/\~{}ger/cvs/CVS.html}
 and send the encrypted password and your (or another) username to
-George Russell (\texttt{ger@tzi.de}). Under solaris you can use
+George Russell (\texttt{ger@tzi.de}). Under Solaris you can use
 \texttt{/home/till/bin/encrypt} to get the password. After George's
 reply you can log in. 
 
-For \texttt{cvs login} the evironment variable \texttt{CVSROOT} must be set:
+For \texttt{cvs login} the environment variable \texttt{CVSROOT} must be set:
 
 \begin{verbatim}
 CVSROOT=:pserver:$USER@cvs-agbkb.informatik.uni-bremen.de:/repository
@@ -144,9 +144,9 @@ by \texttt{./runcheck.sh ./capa.lhs}.
 \texttt{Wrong*.casl} files contain wrong CASL code and should produce
 error messages. Apart from extra tests, correct (\texttt{Bla.casl})
 and wrong files (\texttt{WrongBla.casl}) are tested. The number e of
-``\texttt{error}'' occurrences (in the produced ouput) is compared to the
+``\texttt{error}'' occurrences (in the produced output) is compared to the
 number of input lines. If e is zero or is equal to the number of lines
-then the test is silently regarded as ok, otherwise an additional message
+then the test is silently regarded as OK, otherwise an additional message
 is produced that can be ignored provided the internal call to
 \texttt{diff} succeeded and ``\texttt{passed}'' was emitted.
 
@@ -228,7 +228,7 @@ The actually parser combinators come from
 \texttt{www.cs.uu.nl/\~{}daan/parsec.html} that are part of the
 Haskell library but also have been slightly extended (by
 \texttt{consumeNothing}) and included in the \texttt{parsec/}
-subdirectory. \texttt{Parsec.hs} simply reexports parts from
+subdirectory. \texttt{Parsec.hs} simply re-exports parts from
 \texttt{ParsecPrim.hs}, \texttt{ParsecCombinator.hs},
 \texttt{ParsecChar.hs}, \texttt{ParsecError.hs} and
 \texttt{ParsecPos.hs}
@@ -252,7 +252,7 @@ and \texttt{Utils.hs}.
 \texttt{TERM} from \texttt{AS\_Basic\_CASL.der.hs} and not on
 \texttt{Sign.hs}. 
 
-Typechecking (considering subtypes and overloading) of terms and
+Type checking (considering subtypes and overloading) of terms and
 formulae (plus their conversions to the types in \texttt{Sign.hs}) is
 still missing.
 
@@ -265,7 +265,7 @@ the most recent cvs version.
 
 \subsection{Top-level directory \texttt{HetCATS}}
 
-The subdirectories \texttt{utils} (for DriFT), \texttt{hetcats} (for
+The subdirectories \texttt{utils} (for DrIFT), \texttt{hetcats} (for
 the final application), \texttt{pretty}, \texttt{parsec}, \texttt{fgl}
 have been mentioned above.
 
@@ -286,7 +286,7 @@ have been mentioned above.
 The directories \texttt{hugs} and \texttt{ghc} currently only implement the function \texttt{unsafeCoerce} differently. 
 
 The top-level directory contains the abstract syntax trees for
-heterogeneous specifications: \texttt{AS\_Atructured}, \texttt{AS\_Architecture} and \texttt{AS\_Library}
+heterogeneous specifications: \texttt{AS\_Structured}, \texttt{AS\_Architecture} and \texttt{AS\_Library}
 
 For the above \texttt{AS\_*.der.hs} files corresponding pretty
 printers \texttt{Print\_AS\_*.hs} are given. 
