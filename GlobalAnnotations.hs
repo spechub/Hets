@@ -26,10 +26,6 @@ data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
 		      , literal_map    :: LiteralMap
 		      } deriving (Show)
 
-emptyGlobalAnnos :: GlobalAnnos
-emptyGlobalAnnos =
-  GA (emptyFM,empty) emptyFM emptyFM emptyLiteralAnnos emptyFM
-
 type PrecedenceGraph = (FiniteMap Id Node,Graph Id Int)
 
 data PrecRel = Higher | Lower | ExplGroup Direct
@@ -57,9 +53,6 @@ data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
 		       , number_lit :: Maybe Id
 		       , float_lit  :: Maybe (Id,Id)
 		       } deriving (Show)
-
-emptyLiteralAnnos :: LiteralAnnos
-emptyLiteralAnnos = LA Nothing Nothing Nothing Nothing
 
 instance (Show a,Show b) => Show (FiniteMap a b) where
     show = show . fmToList
