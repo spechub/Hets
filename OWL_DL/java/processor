@@ -5,9 +5,9 @@
 # Class path
 SEPARATOR=":"
 CLASSPATH=
-for x in lib/*.jar 
+for x in jlib/*.jar 
 do
   CLASSPATH=$CLASSPATH$SEPARATOR$x
 done
-java -cp $CLASSPATH OWLToATerm $*
+java -cp $CLASSPATH OWL2ATerm $*
       
