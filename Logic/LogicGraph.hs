@@ -28,24 +28,24 @@
 module Logic.LogicGraph
 where
 
+import Logic.Logic 
 import Logic.Grothendieck
-import Logic.Logic -- (language_name)
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
 import Haskell.Logic_Haskell
 import CspCASL.Logic_CspCASL
 import qualified Common.Lib.Map as Map
 
-logicList :: ([AnyLogic],[AnyRepresentation])
-logicList = ([Logic CASL, Logic HasCASL, Logic Haskell,Logic CspCASL],[])
+logicList :: ([AnyLogic],[AnyComorphism])
+logicList = ([Logic CASL, Logic HasCASL, Logic Haskell, Logic CspCASL],[])
 
 logicGraph :: LogicGraph
-logicGraph = (Map.fromList logicTupel, Map.fromList representationTupel)
-    where logicTupel = 
+logicGraph = (Map.fromList logicTuple, Map.fromList representationTuple)
+    where logicTuple = 
 	      map (\(Logic lid) -> (language_name lid, 
 				    Logic lid)) 
 		      (fst logicList)
-	  representationTupel = 
+	  representationTuple = 
 	      map (\rep -> ("",rep)) (snd logicList)
 
 defaultLogic :: AnyLogic

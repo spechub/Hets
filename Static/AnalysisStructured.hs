@@ -66,7 +66,7 @@ where
 
 import Data.Maybe
 import Logic.Logic
-import Logic.LogicRepr
+import Logic.Comorphism
 import Logic.Grothendieck
 import Common.Lib.Graph hiding (empty)
 import Static.DevGraph
@@ -138,7 +138,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
               "Internal error: Translation of empty spec" (getNode nsig')
       mor <- ana_RENAMING dg (getSig nsig') ren
       -- ??? check that mor is identity on local env
-      let gsigma' = cod Grothendieck mor 
+      let gsigma' = codGrothendieck mor 
            -- ??? too simplistic for non-comorphism inter-logic translations 
       G_sign lid' sigma' <- return gsigma'
       let node_contents = DGNode {
@@ -168,7 +168,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
       -- in order to keep the dg as simple as possible
       case tmor of
        Nothing ->
-        do let gsigma' = dom Grothendieck hmor
+        do let gsigma' = domGrothendieck hmor
            -- ??? too simplistic for non-comorphism inter-logic reductions 
            G_sign lid' sigma' <- return gsigma'
            let node_contents = DGNode {
@@ -186,8 +186,8 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
                    insEdge link $
                    insNode (node,node_contents) dg')
        Just tmor' ->
-        do let gsigma1 = dom Grothendieck tmor'
-               gsigma'' = cod Grothendieck tmor'
+        do let gsigma1 = domGrothendieck tmor'
+               gsigma'' = codGrothendieck tmor'
            -- ??? too simplistic for non-comorphism inter-logic reductions 
            G_sign lid1 sigma1 <- return gsigma1
            G_sign lid'' sigma'' <- return gsigma''
@@ -578,14 +578,14 @@ ana_ren dg mor_res ren =
 
 ana_RENAMING :: DGraph -> G_sign -> RENAMING -> Result GMorphism
 ana_RENAMING dg gSigma (Renaming ren pos) = 
-  foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
+  foldl (ana_ren dg) (return (ideGrothendieck gSigma)) ren'
   where
   ren' = zip ren (tail (pos ++ repeat nullPos))
 
 
 -- analysis of restrictions
 
-ana_restr1 dg (G_sign lid sigma) (GMorphism lid1 lid2 r sigma1 mor) 
+ana_restr1 dg (G_sign lid sigma) (GMorphism lid1 lid2 cid sigma1 mor) 
            (G_symb_list (G_symb_items_list lid' sis'),pos) = do
   sis1 <- rcoerce lid1 lid' pos sis'
   rsys <- stat_symb_items lid1 sis1
@@ -596,12 +596,12 @@ ana_restr1 dg (G_sign lid sigma) (GMorphism lid1 lid2 r sigma1 mor)
 --      else plain_error () "attempt to hide symbols from the local environment" pos
   mor1 <- cogenerated_sign lid1 sys' sigma1
   mor1' <- maybeToResult pos 
-             ("restriction: could not map morphism along" ++ repr_name r)
-             (map_morphism r mor1)
+             ("restriction: could not map morphism along" ++ language_name cid)
+             (map_morphism cid mor1)
   mor2 <- maybeToResult pos 
                         "restriction: signature morphism composition failed" 
                         (comp lid2 mor1' mor)
-  return (GMorphism lid1 lid2 r (dom lid1 mor1) mor2)
+  return (GMorphism lid1 lid2 cid (dom lid1 mor1) mor2)
  
 ana_restr1 dg gSigma mor 
            (G_logic_projection (Logic_code tok src tar pos1),pos2) =
@@ -617,7 +617,7 @@ ana_RESTRICTION :: DGraph -> G_sign -> G_sign -> RESTRICTION
        -> Result (GMorphism, Maybe GMorphism)
 ana_RESTRICTION dg gSigma gSigma' (Hidden restr pos) = 
   do mor <- foldl (ana_restr dg gSigma) 
-                  (return (ide Grothendieck gSigma'))
+                  (return (ideGrothendieck gSigma'))
                   restr'
      return (mor,Nothing)
   where

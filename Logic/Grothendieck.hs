@@ -35,7 +35,7 @@
 module Logic.Grothendieck where
 
 import Logic.Logic
-import Logic.LogicRepr
+import Logic.Comorphism
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
@@ -206,27 +206,23 @@ instance Show G_morphism where
 ----------------------------------------------------------------
 
 
-data AnyRepresentation = forall lid1 sublogics1
+data AnyComorphism = forall cid lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1
         lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
-      (Logic lid1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
-      Logic lid2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2 
-        sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
-  Repr(LogicRepr lid1 sublogics1 basic_spec1 sentence1 
+      Comorphism cid 
+                 lid1 sublogics1 basic_spec1 sentence1 
                  symb_items1 symb_map_items1
                  sign1 morphism1 symbol1 raw_symbol1 proof_tree1
                  lid2 sublogics2 basic_spec2 sentence2 
                  symb_items2 symb_map_items2
-                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
+                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
+      Comorphism cid
 
 
-type LogicGraph = (Map.Map String AnyLogic,Map.Map String AnyRepresentation)
+type LogicGraph = (Map.Map String AnyLogic,Map.Map String AnyComorphism)
 
 lookupLogic :: String -> String -> LogicGraph -> AnyLogic
 lookupLogic error_prefix logname (logics,_) =
@@ -250,47 +246,43 @@ instance Monad Set where
 ------------------------------------------------------------------
 
 -- composition in diagrammatic order
-comp_anyrepr :: AnyRepresentation -> AnyRepresentation -> Maybe AnyRepresentation
-comp_anyrepr 
-  (Repr (r1 :: LogicRepr lid1 sublogics1 basic_spec1 sentence1 
+compAnyComorphism :: AnyComorphism -> AnyComorphism -> Maybe AnyComorphism
+compAnyComorphism = undefined
+{-
+  (Comorphism (r1 :: Comorphism lid1 sublogics1 basic_spec1 sentence1 
                 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)) 
-  (Repr (r2 :: LogicRepr lid3 sublogics3 basic_spec3 sentence3 
+  (Comorphism (r2 :: Comorphism lid3 sublogics3 basic_spec3 sentence3 
 	        symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3
             lid4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
                 sign4 morphism4 symbol4 raw_symbol4 proof_tree4)) =
   do r3 <- coerce (target r1) (source r2) r2 :: Maybe(
-	  LogicRepr lid2 sublogics2 basic_spec2 sentence2 
+	  Comorphism lid2 sublogics2 basic_spec2 sentence2 
                 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
             lid4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
                 sign4 morphism4 symbol4 raw_symbol4 proof_tree4)
-     r4 <- comp_repr r1 r3 
-     return (Repr r4)
+     r4 <- comp_Comorphism r1 r3 
+     return (Comorphism r4)
+-}
  
-data GMorphism = forall lid1 sublogics1
+data GMorphism = forall cid lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1
         lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
-      (Logic lid1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
-       Logic lid2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2 
-        sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
-  GMorphism lid1 lid2 
-   (LogicRepr lid1 sublogics1 basic_spec1 sentence1 
-              symb_items1 symb_map_items1
-              sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-              lid2 sublogics2 basic_spec2 sentence2 
-              symb_items2 symb_map_items2
-              sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
-   sign1 morphism2 
+      Comorphism cid 
+                 lid1 sublogics1 basic_spec1 sentence1 
+                 symb_items1 symb_map_items1
+                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+                 lid2 sublogics2 basic_spec2 sentence2 
+                 symb_items2 symb_map_items2
+                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
+  GMorphism lid1 lid2 cid sign1 morphism2 
 {-
   | forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -302,30 +294,36 @@ data GMorphism = forall lid1 sublogics1
   | GMHetInclusion G_sign G_sign
 -}
 
+
 instance Eq GMorphism where
-  (GMorphism lid1 lid2 r1 sigma1 mor1) == (GMorphism lid3 lid4 r2 sigma2 mor2)
+  (GMorphism lid1 lid2 cid1 sigma1 mor1) == 
+   (GMorphism lid3 lid4 cid2 sigma2 mor2)
      = maybe False id
-       (do r2' <- coerce lid1 lid3 r2
+       (do s <- coerce cid1 cid2 "x"
+           return (s==Just "x")
            sigma2' <- coerce lid1 lid3 sigma2
            mor2' <- coerce lid2 lid4 mor2
-           return (r1 == r2' && sigma1 == sigma2' && mor1==mor2'))
+           return (sigma1 == sigma2' && mor1==mor2'))
 
 
 data Grothendieck = Grothendieck deriving Show
 
 instance Language Grothendieck
 
+
 instance Show GMorphism where
-    show (GMorphism _ _ r s m) = show r ++ "(" ++ show s ++ ")" ++ show m
+    show (GMorphism _ _ cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
  
+{-
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma) = 
-    GMorphism lid lid (id_repr lid) sigma (ide lid sigma)
+    GMorphism lid lid (IdComorphism lid) sigma (ide lid sigma)
   comp _ 
       (GMorphism lid1 lid2 r1 sigma1 mor1) 
       (GMorphism lid3 lid4 r2 _sigma2 mor2) =
-    do r2' <- coerce lid2 lid3 r2 
-       r3 <- comp_repr r1 r2'
+    do s <- coerce lid2 lid3 "x"
+       return (s=="x")
+       let r3 = CompComorphism r1 r2
        mor1' <- coerce lid2 lid3 mor1
        mor1'' <- map_morphism r2 mor1' 
        mor <- comp lid4 mor2 mor1''
@@ -337,24 +335,34 @@ instance Category Grothendieck G_sign GMorphism where
      legal_mor lid2 mor && case map_sign r sigma of
         Just (sigma',_) -> sigma' == cod lid2 mor
         Nothing -> False
+-}
+
+ideGrothendieck (G_sign lid sigma) = 
+    GMorphism lid lid (IdComorphism lid) sigma (ide lid sigma)
+domGrothendieck  (GMorphism lid1 _lid2 _r sigma _mor) = G_sign lid1 sigma
+codGrothendieck (GMorphism _lid1 lid2 _r _sigma mor) = 
+   G_sign lid2 (cod lid2 mor)
 
 gEmbed :: G_morphism -> GMorphism
-gEmbed (G_morphism lid mor) =
-  GMorphism lid lid (id_repr lid) (dom lid mor) mor
+gEmbed _ = error "gEmbed"
+--gEmbed (G_morphism lid mor) =
+--  GMorphism lid lid (id_Comorphism lid) (dom lid mor) mor
 
 -- homogeneous Union of two Grothendieck signatures
 homogeneousGsigUnion :: Pos -> G_sign -> G_sign -> Result G_sign
-homogeneousGsigUnion pos (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
-  sigma2' <- rcoerce lid2 lid1 pos sigma2
-  sigma3 <- signature_union lid1 sigma1 sigma2'
-  return (G_sign lid1 sigma3)
+homogeneousGsigUnion _ _ _ = error "homogeneousGsigUnion"
+--homogeneousGsigUnion pos (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
+--  sigma2' <- rcoerce lid2 lid1 pos sigma2
+--  sigma3 <- signature_union lid1 sigma1 sigma2'
+--  return (G_sign lid1 sigma3)
 
 -- homogeneous Union of a list of Grothendieck signatures
 homogeneousGsigManyUnion :: Pos -> [G_sign] -> Result G_sign
+homogeneousGsigManyUnion _ _  = error "homogeneousGsigManyUnion"
+{-
 homogeneousGsigManyUnion pos [] =
   fatal_error "homogeneous union of emtpy list of signatures" pos
 homogeneousGsigManyUnion pos (G_sign lid sigma : gsigmas) = do
-
   sigmas <- let coerce_lid (G_sign lid1 sigma1) = 
                     rcoerce lid lid1 pos sigma1
              in sequence (map coerce_lid gsigmas)
@@ -363,10 +371,12 @@ homogeneousGsigManyUnion pos (G_sign lid sigma : gsigmas) = do
                        signature_union lid s1' s2
                 in foldl sig_union (return sigma) sigmas
   return (G_sign lid bigSigma)
-
+-}
 
 -- homogeneous Union of a list of morphisms
 homogeneousMorManyUnion :: Pos -> [G_morphism] -> Result G_morphism
+homogeneousMorManyUnion _ _ = error "homogeneousMorManyUnion"
+{-
 homogeneousMorManyUnion pos [] =
   fatal_error "homogeneous union of emtpy list of morphisms" pos
 homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
@@ -378,6 +388,7 @@ homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
                        morphism_union lid s1' s2
                 in foldl mor_union (return mor) mors
   return (G_morphism lid bigMor)
+-}
 
 inclusion :: G_sign -> G_sign -> GMorphism
 inclusion (G_sign _lid1 _sigma1) (G_sign _lid2 _sigma2) = error "inclusion"

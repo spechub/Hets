@@ -11,7 +11,7 @@
    data. All the functions in the type class take the
    identity as first argument in order to determine the logic.
 
-   For logic representations see LogicRepr.hs
+   For logic (co)morphisms see Comorphism.hs
 
    References:
 
