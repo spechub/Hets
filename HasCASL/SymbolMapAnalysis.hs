@@ -72,15 +72,15 @@ inducedFromMorphism rmap sigma = do
                   return $ Map.insert s s' m1) 
               (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
-  op_Map <- Map.foldWithKey (opFun rmap sigma myTypeIdMap)
-              (return Map.empty) (assumps sigma)
-  -- compute target signature
-  let tarTypeMap = Map.foldWithKey ( \ i k m -> 
+  let tarTypeMap = addUnit $ Map.foldWithKey ( \ i k m -> 
 			       Map.insert (Map.findWithDefault i i myTypeIdMap)
 					  (mapTypeDefn myTypeIdMap k) m)
 	                    Map.empty srcTypeMap
-      sigma' = Map.foldWithKey (mapOps myTypeIdMap op_Map) sigma
-	       { typeMap = addUnit tarTypeMap, assumps = Map.empty }
+  op_Map <- Map.foldWithKey (opFun rmap sigma tarTypeMap myTypeIdMap)
+              (return Map.empty) (assumps sigma)
+  -- compute target signature
+  let sigma' = Map.foldWithKey (mapOps myTypeIdMap op_Map) sigma
+	       { typeMap = tarTypeMap, assumps = Map.empty }
                               $ assumps sigma
   -- return assembled morphism
   Result (envDiags sigma') $ Just ()
@@ -107,11 +107,11 @@ typeFun rmap s k = do
                  nullPos
 
 -- | compute mapping of functions
-opFun :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfos 
+opFun :: RawSymbolMap -> Env -> TypeMap -> IdMap -> Id -> OpInfos 
       -> Result FunMap -> Result FunMap
-opFun rmap e type_Map i ots m = 
+opFun rmap e tm type_Map i ots m = 
     -- first consider all directly mapped profiles
-    let (ots1,m1) = foldr (directOpMap rmap e type_Map i) 
+    let (ots1,m1) = foldr (directOpMap rmap e tm type_Map i) 
 		    (Set.empty, m) $ opInfos ots
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
@@ -124,30 +124,30 @@ opFun rmap e type_Map i ots m =
                )
                nullPos
        (Just rsy, Nothing) -> 
-          Set.fold (insertmapOpSym e type_Map i rsy) m1 ots1
+          Set.fold (insertmapOpSym e tm type_Map i rsy) m1 ots1
        (Nothing, Just rsy) -> 
-          Set.fold (insertmapOpSym e type_Map i rsy) m1 ots1
+          Set.fold (insertmapOpSym e tm type_Map i rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
        (Nothing,Nothing) -> Set.fold (unchangedOpSym type_Map i) m1 ots1
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
-directOpMap :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfo 
+directOpMap :: RawSymbolMap -> Env -> TypeMap -> IdMap -> Id -> OpInfo 
 	    -> (Set.Set TySc, Result FunMap) -> (Set.Set TySc, Result FunMap)
-directOpMap rmap e type_Map i oi (ots,m) = let ot = opType oi in
+directOpMap rmap e tm type_Map i oi (ots,m) = let ot = opType oi in
     case Map.lookup (AQualId i $ OpAsItemType ot) rmap of
         Just rsy -> 
-          (ots, insertmapOpSym e type_Map i rsy (TySc ot) m)
+          (ots, insertmapOpSym e tm type_Map i rsy (TySc ot) m)
         Nothing -> (Set.insert (TySc ot) ots, m)
     -- map op symbol (id,ot) to raw symbol rsy
-mapOpSym :: Env -> IdMap -> Id -> TySc -> RawSymbol 
+mapOpSym :: Env -> TypeMap -> IdMap -> Id -> TySc -> RawSymbol 
 	     -> Result (Id, TySc)
-mapOpSym e type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
+mapOpSym e tm type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
       case rsy of
       AnID id' -> return (id', sc1)
       AKindedId SK_op id' -> return (id', sc1)
       AQualId id' (OpAsItemType ot') ->
         let (mt, ds) = runState (anaTypeScheme ot') e 
-		 {typeMap = addUnit $ typeMap e} 
+		 {typeMap = tm} 
         in case mt of 
            Nothing -> Result (envDiags ds) $ Just (i, sc1)
 	   Just nt -> if isUnifiable (typeMap ds) 0 sc nt
@@ -165,11 +165,11 @@ mapOpSym e type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in
                 <+> printText rsy) 
                nullPos
     -- insert mapping of op symbol (id, ot) to raw symbol rsy into m
-insertmapOpSym :: Env -> IdMap -> Id -> RawSymbol -> TySc
+insertmapOpSym :: Env -> TypeMap -> IdMap -> Id -> RawSymbol -> TySc
 	       -> Result FunMap -> Result FunMap
-insertmapOpSym e type_Map i rsy ot m = do  
+insertmapOpSym e tm type_Map i rsy ot m = do  
       m1 <- m        
-      (id',kind') <- mapOpSym e type_Map i ot rsy
+      (id',kind') <- mapOpSym e tm type_Map i ot rsy
       return (Map.insert (i, ot) (id',kind') m1)
     -- insert mapping of op symbol (id,ot) to itself into m
 unchangedOpSym :: IdMap -> Id -> TySc -> Result FunMap -> Result FunMap
