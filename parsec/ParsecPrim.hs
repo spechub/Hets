@@ -320,7 +320,7 @@ labels (Parser p) msgs
 
 updateParserState :: (State tok st -> State tok st) -> GenParser tok st (State tok st)
 updateParserState f 
-    = Parser (\state -> Empty (Ok state (f state) (unknownError state)))
+    = Parser (\state -> Empty (Ok (f state) (f state) (unknownError (f state))))
     
     
 unexpected :: String -> GenParser tok st a
