@@ -11,7 +11,7 @@ header = do (d,e) <- instances [] []
 
 instances :: [Data] -> [Exclude] -> Parser ([Data],[Exclude])
 instances ds ex = do ex' <- try excludeRule
-                     instances ds (ex':ex) 
+                     instances ds (ex'++ex) 
 		  <|>
                   do try comment
                      instances ds ex
@@ -25,15 +25,18 @@ instances ds ex = do ex' <- try excludeRule
                   do eof
                      return (ds,ex)
 
-excludeRule :: Parser Exclude
+excludeRule :: Parser [Exclude]
 excludeRule = do string "{-|"
                  spaces
                  string "Exclude:"
                  spaces
-                 i <- identifier
+                 is <- sepBy1 identifier (try comma')
                  spaces
 	         string "|-}"
-                 return i
+                 return is
+    where comma' = do spaces 
+		      char ','
+		      spaces
 
 instances' :: Parser Data
 instances' = do string "instance"
@@ -67,7 +70,7 @@ dataConstructor = (try identifier) <|> do char '('
 
 identifier :: Parser String
 identifier = do x <- upper
-                xs <- many (alphaNum <|> oneOf "_-.,")
+                xs <- many (alphaNum <|> oneOf "_.")
 		return (x:xs)
 
 comment :: Parser ()
