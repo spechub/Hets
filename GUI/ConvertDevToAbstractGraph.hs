@@ -174,10 +174,10 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                                           ioRefSubtreeEvents ioRefVisibleNodes
                                           actGraphInfo ioRefGraphMem gInfo),
                 ("internal", 
-		 createLocalMenuNodeTypeInternal "Grey" convRef dGraph
+		 createLocalMenuNodeTypeInternal "Grey" convRef dGraph gInfo
                 ),
 		("locallyEmpty_internal", 
-		 createLocalMenuNodeTypeInternal "LightGrey" convRef dGraph),
+		 createLocalMenuNodeTypeInternal "LightGrey" convRef dGraph gInfo),
                 ("dg_ref", 
 		 createLocalMenuNodeTypeDgRef "SteelBlue" convRef actGraphInfo 
 					      ioRefGraphMem graphMem
@@ -285,13 +285,15 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
 -- local menu for the nodetypes internal and locallyEmpty_internal
-createLocalMenuNodeTypeInternal color convRef dGraph =
+createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
                  Ellipse $$$ Color color
 		 $$$ ValueTitle (\ (s,_,_) -> return "")
                  $$$ LocalMenu (Menu (Just "node menu")
                     [--createLocalMenuButtonShowSpec convRef dGraph,
 		     createLocalMenuButtonShowSignature convRef dGraph,
+ 		     createLocalMenuButtonShowTheory convRef dGraph,
  		     createLocalMenuButtonShowSublogic convRef dGraph,
+                     createLocalMenuButtonProveAtNode gInfo convRef dGraph,
                      createLocalMenuButtonShowNodeOrigin convRef dGraph])
                  $$$ emptyNodeTypeParms
                      :: DaVinciNodeTypeParms (String,Int,Int)

@@ -312,11 +312,26 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                      pos,
            nsig1,dg1)
    where
-   namedSps = zip (map (\_ -> Nothing) (tail asps) ++ [name]) (map item asps)
-   ana res (name',sp') = do
+   namedSps = zip3 (map (\_ -> Nothing) (tail asps) ++ [name]) 
+                   asps 
+                   (nullPos:pos)
+   ana res (name',asp',pos') = do
      (sps',nsig',dg') <- res
-     (sp1',nsig1,dg1) <- ana_SPEC lg (gannos,genv,dg') nsig' name' just_struct sp'
-     return (sp1':sps',nsig1,dg1)
+     (sp1',nsig1,dg1) <- 
+         ana_SPEC lg (gannos,genv,dg') nsig' name' just_struct (item asp')
+     dg2 <- case (any isImplies $ l_annos asp',getNode nsig',getNode nsig1) of
+       (True,Just n',Just n1) -> do
+           let sig1 = getSig nsig1
+               sig' = getSig nsig'
+           when (not (sig1==sig')) (pplain_error () 
+             (ptext "Signature must not be extended in presence of %implies") 
+             pos')
+           return $ insEdge (n1,n',DGLink {
+             dgl_morphism = ide Grothendieck sig1,
+             dgl_type = LocalThm Open None Open,
+             dgl_origin = DGExtension }) dg1
+       _ -> return dg1
+     return (sp1':sps',nsig1,dg2)
 
   Free_spec asp pos ->
    do let sp1 = item asp

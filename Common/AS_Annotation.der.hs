@@ -138,11 +138,17 @@ isLabel :: Annotation -> Bool
 isLabel a = case a of
 	    Label _ _ -> True
 	    _         -> False
+isImplies :: Annotation -> Bool
+isImplies a =
+    case  a of
+    Semantic_anno SA_implies _  -> True
+    _ -> False
+
 isImplied :: Annotation -> Bool
 isImplied a =
     case  a of
     Semantic_anno SA_implied _  -> True
-    Semantic_anno _ _  -> False
+    -- Semantic_anno _ _  -> False
     _ -> False
 
 -- | 
@@ -161,7 +167,7 @@ isComment c = case c of
 	      _ -> False
 
 -- |
--- 'isAnnote' is the invers function to 'isComment'
+-- 'isAnnote' is the negation of 'isComment'
 isAnnote :: Annotation -> Bool
 isAnnote = not . isComment
 
@@ -179,6 +185,10 @@ data Annoted a = Annoted { item :: a
 data Named s = NamedSen { senName  :: String,
                           sentence :: s }
 	       deriving (Eq, Show)
+
+-- | equip a sentence with an empty name
+emptyName :: s -> Named s
+emptyName x = NamedSen { senName = "", sentence = x}
 
 -- | extending sentence maps to maps on labelled sentences
 mapNamed :: (s->t) -> Named s -> Named t
