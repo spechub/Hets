@@ -21,6 +21,7 @@ import Common.Token
 import HasCASL.HToken
 import HasCASL.As
 import Common.Lib.Parsec
+import Data.List
 
 -- * key sign tokens
 
@@ -202,7 +203,7 @@ typePatternArg =
     do (a, ps) <- parenTypeArg
        return $ TypePatternArg a $ map tokPos ps
 
--- * parse special tokens
+-- * parse special identifier tokens
 
 type TokenMode = [String]   
 
@@ -395,12 +396,14 @@ genVarDecls = do (vs, ps) <- var `separatedBy` anComma
 			       (typeDownset (map toExtTypeVar vs) ps)
 			  where toExtTypeVar v@(Id ts cs qs) = 
 				    let s = last ts 
-					n = Id (init ts) cs qs
+					r = init ts    
+					n = Id r cs qs
 					p = tokPos s in
-				    if tokStr s == plusS then
-				       (n, CoVar, p)
+				    if null r then (v, InVar, nullPos)
+				    else if tokStr s == plusS then
+					     (n, CoVar, p)
 				    else if tokStr s == minusS then
-					 (n, ContraVar, p)
+					     (n, ContraVar, p)
 				    else (v, InVar, nullPos)
 
 -- * patterns
@@ -476,21 +479,21 @@ instOpId = do i@(Id is cs ps) <- uninstOpId
 
 -- | 'Token's that may occur in 'Term's including literals 
 -- ('scanFloat', 'scanString') excluding 'ifS' and 'barS'
-tToken :: AParser Token
-tToken = pToken(scanFloat <|> scanString 
+tToken :: TokenMode -> AParser Token
+tToken b = pToken(scanFloat <|> scanString 
 		<|> scanQuotedChar <|> scanDotWords 
 		<|> reserved [ifS] scanHCWords 
-		<|> reserved [barS] scanHCSigns 
+		<|> reserved b scanHCSigns 
 		<|> placeS <?> "id/literal" )
 
 
 -- | 'tToken' as 'Term' plus 'exEqual' and 'equalS'
-termToken :: AParser Term
-termToken = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken)
+termToken :: TokenMode -> AParser Term
+termToken b = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken b)
 
 -- | 'termToken' plus 'BracketTerm's or 'parenTerm'
-primTerm :: AParser Term
-primTerm = termToken
+primTerm :: TokenMode -> AParser Term
+primTerm b = termToken b
 	   <|> mkBraces term (BracketTerm Braces)
 	   <|> mkBrackets term (BracketTerm Squares)
  	   <|> parenTerm
@@ -500,7 +503,7 @@ data InMode = NoIn   -- ^ next 'inS' belongs to 'letS'
             | WithIn -- ^ 'inS' is the element test 
 
 -- | all 'Term's that start with a unique keyword
-baseTerm :: InMode -> AParser Term
+baseTerm :: (InMode, TokenMode) -> AParser Term
 baseTerm b = ifTerm b
            <|> forallTerm b 
 	   <|> exTerm b 
@@ -510,7 +513,7 @@ baseTerm b = ifTerm b
 
 -- | 'ifS' possibly followed by 'thenS' (for if-then-else) 
 -- yielding a 'MixfixTerm'.
-ifTerm :: InMode -> AParser Term
+ifTerm :: (InMode, TokenMode) -> AParser Term
 ifTerm b = 
     do i <- asKey ifS
        c <- mixTerm b
@@ -584,28 +587,43 @@ typeQual m =
 			    return (InType, q)
 
 -- | a possibly type qualified ('typeQual') 'primTerm' or a 'baseTerm' 
-typedTerm :: InMode -> AParser Term
-typedTerm b = 
-    do t <- primTerm
-       do (q, p) <- typeQual b
+typedTerm :: (InMode, TokenMode) -> AParser Term
+typedTerm (i, b) = 
+    do t <- primTerm b
+       do (q, p) <- typeQual i
 	  ty <- parseType
 	  return (TypedTerm t q ty [tokPos p])
         <|> return t
-      <|> baseTerm b
+      <|> baseTerm (i, b)
 
 -- | several 'typedTerm's yielding a 'MixfixTerm'
-mixTerm :: InMode -> AParser Term
+mixTerm :: (InMode, TokenMode) -> AParser Term
 mixTerm b = 
     do ts <- many1 $ typedTerm b
        return $ if isSingle ts then head ts else MixfixTerm ts
 
--- | a 'mixTerm' called with 'WithIn' 
+-- | keywords that start a new item 
+hasCaslStartKeywords :: [String]
+hasCaslStartKeywords = 
+    dotS:cDot: (hascasl_reserved_words \\ [existsS, letS, caseS])
+
+-- | a 'mixTerm' followed by 'whereS' and equations separated by 'optSemi'
+whereTerm :: (InMode, TokenMode) -> AParser Term
+whereTerm b = 
+    do t <- mixTerm b 
+       do p <- asKey whereS
+	  (es, ps, ans) <- itemAux hasCaslStartKeywords $
+			   patternTermPair ([equalS]) b equalS 
+          setState (AnnoState (concat ans)) -- store back collected annotations
+	  return (LetTerm Where es t (map tokPos (p:ps)))
+        <|> return t
+
+-- | a 'whereTerm' called with ('WithIn', [])
 term :: AParser Term
-term = mixTerm WithIn
-       
+term = whereTerm (WithIn, [])
 
 -- | a 'Universal' 'QuantifiedTerm'
-forallTerm :: InMode -> AParser Term
+forallTerm :: (InMode, TokenMode) -> AParser Term
 forallTerm b = 
     do f <- forallT
        (vs, ps) <- genVarDecls `separatedBy` anSemi
@@ -621,7 +639,7 @@ exQuant =
              <|> bind (,) (asKey existsS) (return Existential)
 
 -- | a (possibly unique) existential 'QuantifiedTerm'
-exTerm :: InMode -> AParser Term
+exTerm :: (InMode, TokenMode) -> AParser Term
 exTerm b = 
     do (p, q) <- exQuant
        (vs, ps) <- varDecls `separatedBy` anSemi
@@ -631,7 +649,7 @@ exTerm b =
 
 
 -- | a 'LambdaTerm'
-lambdaTerm :: InMode -> AParser Term
+lambdaTerm :: (InMode, TokenMode) -> AParser Term
 lambdaTerm b = 
              do l <- asKey lamS
 		pl <- lamPattern
@@ -640,29 +658,29 @@ lambdaTerm b =
 		return (LambdaTerm pl k t (toPos l [] d))
 
 -- | a 'CaseTerm' with 'funS' excluded in 'patternTermPair'
-caseTerm :: InMode -> AParser Term
-caseTerm b = 
+caseTerm :: (InMode, TokenMode) -> AParser Term
+caseTerm (i, _) = 
            do c <- asKey caseS
 	      t <- term
 	      o <- asKey ofS
-	      (ts, ps) <- patternTermPair ([funS]) b funS 
+	      (ts, ps) <- patternTermPair [funS] (i, [barS]) funS 
 			  `separatedBy` barT
 	      return (CaseTerm t ts (map tokPos (c:o:ps)))
 
 -- | a 'LetTerm' with 'equalS' excluded in 'patternTermPair' 
 -- (called with 'NoIn')
-letTerm :: InMode -> AParser Term
+letTerm :: (InMode, TokenMode) -> AParser Term
 letTerm b = 
           do l <- asKey letS
-	     (es, ps) <- patternTermPair ([equalS]) NoIn equalS 
+	     (es, ps) <- patternTermPair [equalS] (NoIn, []) equalS 
 			 `separatedBy` anSemi 
 	     i <- asKey inS
 	     t <- mixTerm b
-	     return (LetTerm es t (toPos l ps i))
+	     return (LetTerm Let es t (toPos l ps i))
 
 -- | a customizable pattern equation 
-patternTermPair :: TokenMode -> InMode -> String -> AParser ProgEq
-patternTermPair b1 b2  sep = 
+patternTermPair :: TokenMode -> (InMode, TokenMode) -> String -> AParser ProgEq
+patternTermPair b1 b2 sep = 
     do p <- asPattern b1
        s <- asKey sep
        t <- mixTerm b2

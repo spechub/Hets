@@ -291,14 +291,14 @@ infer mt trm = do
 				(compSubst s1 s2, ty, 
 				 CaseTerm otrm nes ps)) es) ts
 	    return $ concat rs
-        LetTerm eqs inTrm ps -> do 
+        LetTerm b eqs inTrm ps -> do 
 	    vs <- freshVars eqs
 	    es <- checkList inferLetEq vs eqs
 	    rs <- mapM ( \ (s1, _, nes) -> do 
 	       ts <- infer mt inTrm 
 	       return $ map ( \ (s2, ty, nt) -> 
  			      (compSubst s1 s2, ty, 
-			       LetTerm nes nt ps)) ts) es
+			       LetTerm b nes nt ps)) ts) es
 	    putAssumps as
 	    return $ concat rs
     	_ -> do ty <- freshTypeVar

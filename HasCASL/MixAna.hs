@@ -192,13 +192,13 @@ iterateCharts ga terms chart =
 					     _ -> hd
 		       newEs <- resolveCaseEqs ga eqs
 		       recurse $ CaseTerm newT newEs ps 
-		    LetTerm eqs hd ps -> do 
+		    LetTerm b eqs hd ps -> do 
 		       newEs <- resolveLetEqs ga eqs 
 		       mt <- resolve ga hd 
 		       let newT = case mt of Just trm -> trm
 					     _ -> hd
 		       putAssumps as
-		       recurse $ LetTerm newEs newT ps
+		       recurse $ LetTerm b newEs newT ps
 		    TermToken tok -> self tt $ oneStep (t, tok)
 		    _ -> error ("iterCharts: " ++ show t)
 

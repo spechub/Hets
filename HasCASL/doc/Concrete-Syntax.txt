@@ -55,8 +55,11 @@ TYPE-ITEM       ::= SORT-ITEM
 SYNONYM-TYPE    ::= TYPE 
                   | \ TYPE-ARGS "." SYNONYM-TYPE
 
-TYPE-PATTERN    ::= TYPE-NAME             
-                  | TYPE-NAME TYPE-ARGS
+TYPE-PATTERN    ::= TYPE-NAME                   %% mixid with places
+                  | TYPE-NAME TYPE-ARGS         %% simple prefix id
+		  | TYPE-ARG TYPE-NAME TYPE-ARG %% simple sinfix symbol  
+		  | [ TYPE-ARG ]                %% outfix typename [__]
+		  | { TYPE-ARG }                %% outfix typename {__}
 
 TYPE-ARGS       ::= TYPE-ARG...TYPE-ARG
 TYPE-ARG        ::= EXT-TYPE-VAR

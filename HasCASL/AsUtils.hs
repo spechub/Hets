@@ -99,7 +99,7 @@ posOfTerm trm =
     QuantifiedTerm _ _ t ps -> firstPos [t] ps 
     LambdaTerm _ _ t ps -> firstPos [t] ps 
     CaseTerm t _ ps -> firstPos [t] ps 
-    LetTerm _ t ps -> firstPos [t] ps
+    LetTerm _ _ t ps -> firstPos [t] ps
     TermToken t -> tokPos t
     MixfixTerm ts -> posOf ts
     BracketTerm _ ts ps -> firstPos ts ps 

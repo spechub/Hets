@@ -210,11 +210,13 @@ instance PrettyPrint Term where
 				   <+> text ofS
 				   <+> vcat (punctuate (text " | ")
 					     (map (printEq0 ga funS) es))
-    printText0 ga (LetTerm es t _) =  text letS
-				   <+> vcat (punctuate semi
-					     (map (printEq0 ga equalS) es))
-				   <+> text inS
-				   <+> printText0 ga t
+    printText0 ga (LetTerm b es t _) = 
+	let dt = printText0 ga t
+	    des = vcat $ punctuate semi $
+		  map (printEq0 ga equalS) es
+        in case b of 
+		  Let -> text letS <+> des <+> text inS <+> dt
+		  Where -> dt <+> text whereS <+> des 
     printText0 ga (TermToken t) = printText0 ga t
     printText0 ga (MixfixTerm ts) = fsep $ map (printText0 ga) ts
     printText0 ga (BracketTerm k l _) = bracket k $ commaT_text ga l

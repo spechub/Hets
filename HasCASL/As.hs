@@ -178,7 +178,7 @@ predTypeScheme (TypeScheme vs (qs :=> t) ps) =
 predType :: Type -> Type
 predType t = FunType t PFunArr logicalType []
 
-data Partiality = Partial | Total deriving (Show, Eq, Ord)
+data Partiality = Partial | Total deriving (Show, Eq)
 
 data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
@@ -186,7 +186,7 @@ data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos "("s, ")"s, ":" or ":?", "="
               deriving (Show, Eq)
 
-data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq, Ord)
+data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq)
 
 data OpAttr = BinOpAttr BinOpAttr [Pos] 
 	    | UnitOpAttr Term [Pos] deriving (Show)
@@ -214,9 +214,11 @@ data Components = Selector UninstOpId Partiality Type SeparatorKind Pos
 		  deriving (Show)
 
 data Quantifier = Universal | Existential | Unique
-		  deriving (Show, Eq, Ord)
+		  deriving (Show, Eq)
 
-data TypeQual = OfType | AsType | InType deriving (Show, Eq, Ord)
+data TypeQual = OfType | AsType | InType deriving (Show, Eq)
+
+data LetBrand = Let | Where deriving (Show, Eq)
 
 data BracketKind = Parens | Squares | Braces deriving (Show, Eq, Ord)
 
@@ -247,7 +249,7 @@ data Term = QualVar Var Type [Pos]
           -- pos "\", dot (plus "!") 
 	  | CaseTerm Term [ProgEq] [Pos]
 	  -- pos "case", "of", "|"s 
-	  | LetTerm [ProgEq] Term [Pos]
+	  | LetTerm LetBrand [ProgEq] Term [Pos]
 	  -- pos "where", ";"s
 	  | TermToken Token
           | MixfixTerm [Term]
@@ -396,7 +398,7 @@ instance Eq VarDecl where
 
 instance Eq Term where
     QualVar v1 t1 _ == QualVar v2 t2 _ = (v1, t1) == (v2, t2) 
-    QualOp _ i1 s1 _ == QualOp _ i2 s2 _ = (i1, s1) == (i2, s2) 
+    QualOp b1 i1 s1 _ == QualOp b2 i2 s2 _ = (b1, i1, s1) == (b2, i2, s2) 
     ResolvedMixTerm i1 t1 _ == ResolvedMixTerm i2 t2 _ = (i1, t1) == (i2, t2) 
     ApplTerm s1 t1 _ == ApplTerm s2 t2 _ = (s1, t1) == (s2, t2) 
     TupleTerm l1 _ == TupleTerm l2 _ = l1 == l2
@@ -406,7 +408,7 @@ instance Eq Term where
     LambdaTerm v1 p1 t1 _ == LambdaTerm v2 p2 t2 _ = 
 	(p1, v1, t1) == (p2, v2, t2)
     CaseTerm t1 e1 _ ==  CaseTerm t2 e2 _ = (t1, e1) == (t2, e2)
-    LetTerm e1 t1 _ == LetTerm e2 t2 _  = (t1, e1) == (t2, e2)
+    LetTerm b1 e1 t1 _ == LetTerm b2 e2 t2 _  = (b1, t1, e1) == (b2, t2, e2)
     TermToken t1 == TermToken t2 = t1 == t2
     MixfixTerm l1 == MixfixTerm l2 = l1 == l2
     BracketTerm b1 l1 _ == BracketTerm b2 l2 _ = (b1, l1) == (b2, l2) 

@@ -44,6 +44,8 @@ ofS = "of"
 letS = "let"
 derivingS = "deriving"
 internalS = "internal"
+whereS :: String
+whereS = "where"
 
 -- | the new keyword fun ('funS' is already defined differently) 
 functS :: String
@@ -60,7 +62,7 @@ hascasl_type_ops = [funS, pFun, contFun, pContFun, prodS, timesS, quMark]
 hascasl_reserved_words :: [String]
 hascasl_reserved_words = 
     [functS, functS ++ sS, classS, classS ++ "es", instanceS, instanceS ++ sS,
-     programS, programS ++ sS, caseS, ofS, letS, derivingS, internalS] 
+     programS, programS ++ sS, caseS, ofS, letS, derivingS, internalS, whereS] 
 			 ++ casl_reserved_words
 
 -- | HasCASL identifier words ('scanAnyWords')

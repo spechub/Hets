@@ -25,8 +25,7 @@ import Common.Lib.Parsec
 import Common.AS_Annotation
 import HasCASL.ParseTerm
 
-hasCaslStartKeywords :: [String]
-hasCaslStartKeywords = dotS:cDot: hascasl_reserved_words
+-- * adapted item list parser (using 'itemAux')
 
 hasCaslItemList :: String -> AParser b
 		-> ([Annoted b] -> [Pos] -> a) -> AParser a
@@ -36,9 +35,7 @@ hasCaslItemAux :: AParser a
 	       -> AParser ([a], [Token], [[Annotation]])
 hasCaslItemAux = itemAux hasCaslStartKeywords
 
--- ------------------------------------------------------------------------
--- sortItem
--- ------------------------------------------------------------------------
+-- * parsing type items
 
 commaTypeDecl :: TypePattern -> AParser TypeItem
 commaTypeDecl s = do c <- anComma 
@@ -134,17 +131,6 @@ typeItems = do p <- pluralKeyword typeS
 		     typeItemList [p, q] Instance
 	         <|> typeItemList [p] Plain
 
------------------------------------------------------------------------------
--- pseudotype
------------------------------------------------------------------------------
-typeArgParen :: AParser TypeArg
-typeArgParen = 
-    do o <- oParenT
-       TypeArg i k s ps <- singleTypeArg
-       p <- cParenT
-       return $ TypeArg i k s (tokPos o: ps ++ [tokPos p])
-
-
 pseudoType :: AParser TypeScheme
 pseudoType = do l <- asKey lamS
 		(ts, pps) <- typeArgs
@@ -163,9 +149,7 @@ pseudoTypeDef t k l =
        p <- pseudoType
        return (AliasType t k p (map tokPos (l++[c])))
 			
------------------------------------------------------------------------------
--- datatype
------------------------------------------------------------------------------
+-- * parsing datatypes 
 
 component :: AParser [Components]
 component = 
@@ -253,9 +237,7 @@ dataItem = do t <- typePattern
 dataItems :: AParser BasicItem
 dataItems = hasCaslItemList typeS dataItem FreeDatatype
 
------------------------------------------------------------------------------
--- classItem
------------------------------------------------------------------------------
+-- * parse class items
 
 classDecl :: AParser ClassDecl
 classDecl = 
@@ -284,9 +266,7 @@ classItems = do p <- asKey (classS ++ "es") <|> asKey classS
 		     classItemList [p, q] Instance
 	         <|> classItemList [p] Plain
 
------------------------------------------------------------------------------
--- opItem
------------------------------------------------------------------------------
+-- * parse op items
 
 typeVarDeclSeq :: AParser ([TypeArg], [Pos])
 typeVarDeclSeq = 
@@ -374,9 +354,7 @@ opItems :: AParser SigItems
 opItems = hasCaslItemList opS opItem (OpItems Op)
 	  <|> hasCaslItemList functS opItem (OpItems Fun)
 
------------------------------------------------------------------------------
--- predItem
------------------------------------------------------------------------------
+-- * parse pred items as op items
 
 predDecl :: [OpId] -> [Token] -> AParser OpItem
 predDecl os ps = do c <- colT
@@ -402,16 +380,11 @@ predItem = do (os, ps) <- opId `separatedBy` anComma
 predItems :: AParser SigItems
 predItems = hasCaslItemList predS predItem (OpItems Pred)
 
------------------------------------------------------------------------------
--- sigItem
------------------------------------------------------------------------------
+
+-- * other items
 
 sigItems :: AParser SigItems
 sigItems = sortItems <|> opItems <|> predItems <|> typeItems
-
------------------------------------------------------------------------------
--- generated sigItems
------------------------------------------------------------------------------
 
 generatedItems :: AParser BasicItem
 generatedItems = do g <- asKey generatedS
@@ -429,10 +402,6 @@ generatedItems = do g <- asKey generatedS
                          return (GenItems is
                                    (toPos g [o] c)) 
 
------------------------------------------------------------------------------
--- generic var decls (after "vars")
------------------------------------------------------------------------------
-
 genVarItems :: AParser ([GenVarDecl], [Token])
 genVarItems = 
            do vs <- genVarDecls
@@ -445,9 +414,6 @@ genVarItems =
                 <|>
                 return (vs, [])
 
------------------------------------------------------------------------------
--- basicItem
------------------------------------------------------------------------------
 
 freeDatatype, progItems, axiomItems, forallItem, genVarItem, dotFormulae, 
   basicItems, internalItems :: AParser BasicItem
@@ -456,8 +422,8 @@ freeDatatype =   do f <- asKey freeS
                     FreeDatatype ds ps <- dataItems
                     return (FreeDatatype ds (tokPos f : ps))
 
-progItems = hasCaslItemList programS (patternTermPair ([equalS]) 
-				      WithIn equalS) ProgItems
+progItems = hasCaslItemList programS (patternTermPair [equalS] 
+				      (WithIn, []) equalS) ProgItems
 
 axiomItems =     do a <- pluralKeyword axiomS
                     (fs, ps, ans) <- hasCaslItemAux term

@@ -115,3 +115,5 @@ if a then b else c
 \ (a#(b,c) : S * S) . a
 \ (a#(b,c)# : S * S) . a
 \ (a) . a
+y where x= y; z=y;
+y where x= y; z=y in t
