@@ -35,19 +35,20 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 CPPP       = cpp 
 
-HC_FLAGS   = -Wall -fglasgow-exts -cpp  
+HC_FLAGS   = -Wall -fglasgow-exts   
 # -fglasgow-exts comes in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
 
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
-             -package uni-server
+             -package uni-server -DUNI_PACKAGE
 
-### Profiling and Warnings (only for debugging)
+### Profiling (only for debugging)
 ### Attention every module must be compiled with profiling or the linker
 ### cannot link the various .o files properly. So after switching on
-### Profiling, do an 'gmake clean; gmake'
-### If you need Profiling comment out the following line 
+### Profiling, do an 'gmake real_clean; gmake'
+### and comment out HC_PACKAGE variable definition above.
+### Comment in the following line for switching on profiling. 
 #HC_PROF    = -prof -auto-all 
 
 HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
@@ -450,14 +451,14 @@ hets.hs: hetcats/Version.hs
 
 ## rule for cpp and haddock
 %.hspp: %.hs
-	$(HC) -E -cpp -optP -P $<
+	$(HC) -E -cpp -DUNI_PACKAGE -optP -P $<
 
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
-	$(HC) -c $< $(HC_OPTS) -O
+	$(HC) -c $< $(HC_OPTS)
 
 %.o %.hi: %.lhs
-	$(HC) -c $< $(HC_OPTS) -O
+	$(HC) -c $< $(HC_OPTS)
 
 ## compiling rules for dependencies
 %.d : %.hs

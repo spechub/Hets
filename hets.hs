@@ -1,3 +1,5 @@
+{-# OPTIONS -cpp #-}
+
 {- |
 Module      :  $Header$
 Copyright   :  (c) Uni Bremen 2003
@@ -14,8 +16,6 @@ Portability :  non-portable (imports Logic.Logic)
 
 {- todo: option for omitting writing of env
 -}
-
-#include <uni.hs>
 
 module Main where
 

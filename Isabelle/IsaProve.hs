@@ -1,3 +1,5 @@
+{-# OPTIONS -cpp #-}
+
 {- |
 Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
@@ -13,8 +15,6 @@ Portability :  portable
 {-
   todo: thy files in subdir
 -}
-
-#include <uni.hs>
 
 module Isabelle.IsaProve where
 

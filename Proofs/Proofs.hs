@@ -1,3 +1,5 @@
+{-# OPTIONS -cpp #-}
+
 {-| 
    
 Module      :  $Header$
@@ -48,8 +50,6 @@ todo for Jorina:
      der normale Morphismus (wie bei jedem anderen Link)
      siehe auch Seite 302 des CASL Reference Manual
 -}
-
-#include <uni.hs>
 
 module Proofs.Proofs where
 
