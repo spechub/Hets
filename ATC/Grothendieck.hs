@@ -16,6 +16,7 @@ import Common.ATerm.Lib
 import Common.Result
 import Comorphisms.LogicGraph
 import Logic.Logic
+import ATC.Graph
 import qualified Common.Lib.Set as Set
 
 atermErr :: String -> String -> a
@@ -322,9 +323,3 @@ instance ATermConvertible AnyLogic where
          aterm = getATerm att
      fromATerm _ = fromATermErr "AnyLogic"
      toATerm _ = toATermErr "AnyLogic"
-
-
-
-
-
-
