@@ -11,20 +11,19 @@ import Token
 import Term
 import Type
 
-sigItems ast = do {s <- sortItems
-		  ; return (s:ast)
-		  } 
+sigItems = sortItems
 
 basicItem = sigItems
 
--- basicItem :: Ast -> Parser Ast
-basicItems ast = do { ast' <- basicItem ast;
-		      option (ast') (basicItems ast')
-		    }
+basicItems = do { b <- basicItem
+		; option ([b]) (do { l <- basicItems
+				   ; return (b:l)
+				   })
+		}
 
-basicSpec ast = do { ann;
-		     basicItems ast
-		   }
+basicSpec = do { ann;
+		 basicItems
+	       }
 
 
 

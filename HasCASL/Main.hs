@@ -37,7 +37,7 @@ parseLine p line n = let pos = setSourceLine (initialPos "") n
 		     in result (parse parser "" line)
 
 
-parseSpec fileName =  do { r <- parseFromFile (basicSpec []) fileName
+parseSpec fileName =  do { r <- parseFromFile basicSpec fileName
 			 ; putStrLn (result r)
 			 }
 	

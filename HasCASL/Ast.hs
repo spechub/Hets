@@ -57,7 +57,7 @@ showSortItem (SubsortDecl l t _) =
 showSortItem (IsoDecl l _) = 
     showSepList (showSignStr equalStr) showSign l 
 
-showSortItem (AnnotatedSortItem s _) = shows s
+showSortItem (AnnotatedSortItem s a) = shows s . shows a
 showSortItem (SubsortDefn s d e _) = 
     shows s. showSignStr equalStr . showBracket Braces 
 	      (showSign d . showSignStr middleDotStr. shows e)

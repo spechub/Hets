@@ -35,8 +35,6 @@ simpleTok s = Token s nullPos
 simpleId :: String -> Id
 simpleId(s) = Id [simpleTok s] [] 
 
-internalBoolRep = simpleId("!BOOL!") -- invisible
-
 isSign c = c `elem` signChars
 isAlpha c = c `elem` ['0'..'9'] ++ "'" ++ caslLetters
 
@@ -67,7 +65,7 @@ showType b t@(Type i (x:r)) = showParen b
 asType s = Type s []
 -- ----------------------------------------------
 -- builtin type
-internalBool = asType internalBoolRep
+internalBool = crossProduct [] -- unit 
 
 -- function types, product type and the internal bool for predicates
 totalFun  :: (Type, Type) -> Type 
