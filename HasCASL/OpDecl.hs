@@ -99,13 +99,14 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 			      Just lastTrm -> do 
 			          let lastSc = TypeScheme tArgs 
 					  (qu :=> patternsToType pats ty) qs
-				  addOpId i lastSc [] $ Definition br
-				         $ case (pats, partial) of 
+				      lamTrm = case (pats, partial) of 
 					       ([], Total) -> lastTrm
 					       _ -> LambdaTerm pats partial 
 						    lastTrm ps
+				  addOpId i lastSc [] $ Definition br lamTrm
+
 				  return $ OpDefn op [] lastSc
-					   partial lastTrm ps
+					   Total lamTrm ps
 		Nothing -> do 
 		    mt <- resolveTerm ga Nothing trm
 		    putAssumps as

@@ -37,8 +37,8 @@ program __ und __ (x, y : Unit) : Unit = ()
 type __->__ : Type- -> Type+ -> Type
 type __->__(s : Type)(t : Type) < s ->? t
 %% total functions
-op __res__ : s * t ->? s = (var x : s)
-op fst : s * t ->? s = (var x : s)
+op __res__ : s * t ->? s = \ (var x : s, var y : t) .! (var x : s)
+op fst : s * t ->? s = \ (var x : s, var y : t) .! (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
 . (pred __=__[s * t ->? _var_18] : forall a : Type . a * a)
