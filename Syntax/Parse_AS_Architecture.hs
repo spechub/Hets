@@ -12,7 +12,7 @@
    www.cofi.info
    from 25 March 2001
 
-   C.2.3 Structured Specifications
+   C.2.3 Architectural Specifications
 
    TODO:
    - make sure the precedence is OK
@@ -59,9 +59,30 @@ annotedArchSpec l@(log, lG) = annoParser2 (archSpec l)
 -- @
 -- ARCH-SPEC ::= BASIC-ARCH-SPEC | GROUP-ARCH-SPEC
 -- @
--- TODO: groupArchSpec
 archSpec :: (AnyLogic, LogicGraph) -> AParser (Annoted ARCH_SPEC)
-archSpec l = basicArchSpec l
+archSpec l = 
+    do asp <- basicArchSpec l 
+       return asp
+    <|>
+    do asp <- groupArchSpec l
+       return asp
+
+
+-- | Parse group architectural specification
+-- @
+-- GROUP-ARCH-SPEC ::= { ARCH-SPEC } | ARCH-SPEC-NAME
+-- @
+groupArchSpec :: (AnyLogic, LogicGraph) -> AParser (Annoted ARCH_SPEC)
+groupArchSpec l =
+    do kOpBr <- asKey "{"
+       asp <- archSpec l
+       kClBr <- asKey "}"
+       return (Annoted (Syntax.AS_Architecture.Group_arch_spec asp (map tokPos [kOpBr, kClBr]))
+	               [] [] [])
+    <|>  
+    do name <- simpleId
+       return (Annoted (Syntax.AS_Architecture.Arch_spec_name name)
+	               [] [] [])
 
 
 -- | Parse basic architectural specification
@@ -104,8 +125,8 @@ unitDeclDefns l =
 unitDeclDefn :: (AnyLogic, LogicGraph) -> AParser UNIT_DECL_DEFN
 unitDeclDefn l = 
         -- unit declaration 
-    do decl <- unitDecl l
-       return decl
+    try (do decl <- unitDecl l
+            return decl)
     <|> -- unit definition
     do defn <- unitDefn l
        return defn
@@ -133,41 +154,60 @@ unitDecl l =
 -- | Parse unit specification
 -- @
 -- UNIT-SPEC ::= SPEC-NAME
---             | GROUP-SPECS( * ... * GROUP-SPEC) -> GROUP-SPEC
+--             | UNIT-ARGS GROUP-SPEC
 --             | arch spec GROUP-ARCH-SPEC
 --             | closed UNIT-SPEC
 -- @
 -- TODO: is the grammar OK? (differs from one in the CASL docs)
--- TODO: other cases
+-- TODO: closed
 unitSpec :: (AnyLogic, LogicGraph) -> AParser UNIT_SPEC
 unitSpec l =
-        -- specification name 
+        -- unit type
+    try (do (gss, poss) <- unitArgs l
+	    gs <- groupSpec l
+	    return (Syntax.AS_Architecture.Unit_type gss (emptyAnno gs) poss))
+    <|> -- architectural spec
+    do kArch <- asKey archS
+       kSpec <- asKey specS
+       asp <- groupArchSpec l
+       return (Syntax.AS_Architecture.Arch_unit_spec asp (map tokPos [kArch, kSpec]))
+    <|> -- specification name 
     do name <- simpleId
        return (Syntax.AS_Architecture.Spec_name name)
-    <|> -- specification type
-    do (gss, poss) <- groupSpecs l
-       gs <- groupSpec l
-       return (Syntax.AS_Architecture.Unit_type gss (emptyAnno gs) poss)
 
 
 -- | Parse a (possibly empty) list of group specs separated by "*"
 -- and ending with "->".
 -- @
--- GROUP-SPECS ::= GROUP-SPEC * ... * GROUP-SPEC ->
+-- UNIT-ARGS ::= GROUP-SPEC * ... * GROUP-SPEC ->
 -- @
-groupSpecs :: (AnyLogic, LogicGraph) -> AParser ([Annoted SPEC], [Pos])
+unitArgs :: (AnyLogic, LogicGraph) -> AParser ([Annoted SPEC], [Pos])
 -- ^ returns the list of (annotated) group specs and a list of "*" and 
 -- "->" positions
-groupSpecs l = 
-    do return ([], [])
-    <|> 
-    do kFun <- asKey funS
-       return ([], map tokPos [kFun])
+unitArgs l = 
+    try (do (specs, poss) <- nonemptyUnitArgs l
+ 	    return (specs, poss))
     <|>
+    do return ([], [])
+
+
+-- | Parse a nonempty list of group specs separated by "*"
+-- and ending with "->".
+-- @
+-- UNIT-ARGS ::= GROUP-SPEC * ... * GROUP-SPEC ->
+-- @
+nonemptyUnitArgs :: (AnyLogic, LogicGraph) -> AParser ([Annoted SPEC], [Pos])
+-- ^ returns the list of (annotated) group specs and a list of "*" and 
+-- "->" positions
+nonemptyUnitArgs l = 
+    try (do gs <- groupSpec l
+	    kAst <- asKey prodS
+	    (gss, poss) <- nonemptyUnitArgs l
+	    return ((emptyAnno gs) : gss, (tokPos kAst) : poss))
+    <|> 
     do gs <- groupSpec l
-       kAst <- asKey prodS
-       (gss, poss) <- groupSpecs l
-       return ((emptyAnno gs) : gss, (tokPos kAst) : poss)
+       kFun <- asKey funS
+       return ([emptyAnno gs], map tokPos [kFun])
 
 
 -- | Parse a nonempty list of group unit terms separated by commas.
