@@ -143,6 +143,7 @@ instance Syntax Haskell HsDecls
 type Haskell_Sublogics = ()
 
 type Sentence = AHsDecl
+instance Ord AHsDecl where
 
 type Symbol = ()
 type RawSymbol = ()

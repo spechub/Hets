@@ -38,7 +38,7 @@ dgToSpec dg node = do
   let apredSps = map emptyAnno predSps
       pos = map (\_ -> nullPos) predSps
   case n of
-    (DGNode _ (G_sign lid1 sigma) (G_l_sentence lid2 sen) DGBasic) -> 
+    (DGNode _ (G_sign lid1 sigma) (G_l_sentence_list lid2 sen) DGBasic) -> 
       do sen' <- rcoerce lid1 lid2 nullPos sen
          let b = Basic_spec (G_basic_spec lid1 (sign_to_basic_spec lid1 sigma sen'))
          if null apredSps

@@ -51,7 +51,7 @@ data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
                  deriving (Show, Eq)
 
 -- | indicator for predicate, operation or function
-data OpBrand = Pred | Op | Fun deriving (Show, Eq) 
+data OpBrand = Pred | Op | Fun deriving (Show, Eq, Ord) 
 
 -- | indicator in 'ClassItems' and 'TypeItems'
 data Instance = Instance | Plain deriving (Show, Eq)
@@ -156,16 +156,16 @@ productId :: Id
 productId = Id (map mkSimpleId [place, timesS, place]) [] []
 
 data Pred = IsIn ClassId [Type]
-              deriving (Show, Eq)
+              deriving (Show, Eq, Ord)
 
 data Qual t = [Pred] :=> t
-              deriving (Show, Eq)
+              deriving (Show, Eq, Ord)
 
 -- no curried notation for bound variables 
 data TypeScheme = TypeScheme [TypeArg] (Qual Type) [Pos]
                 -- pos "forall", ";"s,  dot (singleton list)
                 -- pos "\" "("s, ")"s, dot for type aliases
-                  deriving (Show)
+                  deriving (Show, Ord)
 
 simpleTypeScheme :: Type -> TypeScheme
 simpleTypeScheme t = TypeScheme [] ([] :=> t) []
@@ -181,7 +181,7 @@ predTypeScheme (TypeScheme vs (qs :=> t) ps) =
 predType :: Type -> Type
 predType t = FunType t PFunArr logicalType []
 
-data Partiality = Partial | Total deriving (Show, Eq)
+data Partiality = Partial | Total deriving (Show, Eq, Ord)
 
 data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
@@ -215,11 +215,11 @@ data Component = Selector UninstOpId Partiality Type SeparatorKind Pos
 		  deriving (Show)
 
 data Quantifier = Universal | Existential | Unique
-		  deriving (Show, Eq)
+		  deriving (Show, Eq, Ord)
 
-data TypeQual = OfType | AsType | InType deriving (Show, Eq)
+data TypeQual = OfType | AsType | InType deriving (Show, Eq, Ord)
 
-data LetBrand = Let | Where deriving (Show, Eq)
+data LetBrand = Let | Where deriving (Show, Eq, Ord)
 
 data BracketKind = Parens | Squares | Braces deriving (Show, Eq, Ord)
 
@@ -257,7 +257,7 @@ data Term = QualVar Var Type [Pos]
           | MixfixTerm [Term]
 	  | BracketTerm BracketKind [Term] [Pos]
 	  -- pos brackets, ","s 
-	    deriving (Show)
+	    deriving (Show,Ord)
 
 mkTupleTerm :: [Term] -> [Pos] -> Term
 mkTupleTerm ts ps = if isSingle ts then head ts else TupleTerm ts ps
@@ -277,38 +277,42 @@ data Pattern = PatternVar VarDecl
 	     | BracketPattern BracketKind [Pattern] [Pos]
 	     -- pos brackets, ","s
 	     | MixfixPattern [Pattern] 
-	       deriving (Show)
+	       deriving (Show, Ord)
 
 mkTuplePattern :: [Pattern] -> [Pos] -> Pattern
 mkTuplePattern ps qs = if isSingle ps then head ps else TuplePattern ps qs
 
-data ProgEq = ProgEq Pattern Term Pos deriving (Show)
+data ProgEq = ProgEq Pattern Term Pos deriving (Show, Ord)
 	    -- pos "=" (or "->" following case-of)
 -- ----------------------------------------------------------------------------
 -- (type) var decls
 -- ----------------------------------------------------------------------------
 
-data SeparatorKind = Comma | Other deriving (Show)
+data SeparatorKind = Comma | Other deriving (Show, Eq, Ord)
 
-data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show)
+data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show, Ord)
 	       -- pos "," or ":" 
 
 data TypeArg = TypeArg TypeId Kind SeparatorKind [Pos]
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
 	       deriving (Show)
 
+instance Ord TypeArg where
+    TypeArg v1 _ _ _ <= TypeArg v2 _ _ _
+	= v1 <= v2
+
 data GenVarDecl = GenVarDecl VarDecl
 		| GenTypeVarDecl TypeArg
-		  deriving (Show, Eq)
+		  deriving (Show, Eq, Ord)
 
 
 -- ----------------------------------------------------------------------------
 -- op names
 -- ----------------------------------------------------------------------------
 
-data OpId = OpId UninstOpId [TypeArg] [Pos] deriving (Show, Eq)
+data OpId = OpId UninstOpId [TypeArg] [Pos] deriving (Show, Eq, Ord)
      -- pos "[", ";"s, "]" 
-data InstOpId = InstOpId UninstOpId [Type] [Pos] deriving (Show, Eq)
+data InstOpId = InstOpId UninstOpId [Type] [Pos] deriving (Show, Eq, Ord)
 
 -- ----------------------------------------------------------------------------
 -- ids

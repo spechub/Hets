@@ -62,23 +62,23 @@ instance ATermConvertible G_sentence where
      toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_sentence\""
 
 instance ATermConvertible G_l_sentence_list where
-     toShATerm att0 (G_l_sentence lid n_sentence) = 
+     toShATerm att0 (G_l_sentence_list lid n_sentence) = 
 	 case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 n_sentence of { (att2,i2) ->
-            addATerm (ShAAppl "G_l_sentence" [i1,i2] []) att2}}
+            addATerm (ShAAppl "G_l_sentence_list" [i1,i2] []) att2}}
      fromShATerm att = 
          case aterm of
-	    (ShAAppl "G_l_sentence" [i1,i2] _) ->
+	    (ShAAppl "G_l_sentence_list" [i1,i2] _) ->
 	       case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
                case getATermByIndex1 i2 att of { att' ->
                case lookupLogic_in_LG 
                         ("ATermConvertible G_l_sentence_list") i1'  of {
-                    Logic lid -> (G_l_sentence lid (fromShATerm_l_sentence_list lid att'))}}}
-	    u     -> fromShATermError "G_l_sentence" u
+                    Logic lid -> (G_l_sentence_list lid (fromShATerm_l_sentence_list lid att'))}}}
+	    u     -> fromShATermError "G_l_sentence_list" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_l_sentence\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_l_sentence\""
+     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_l_sentence_list\""
+     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_l_sentence_list\""
 
 instance ATermConvertible G_sign where
      toShATerm att0 (G_sign lid sign) = 

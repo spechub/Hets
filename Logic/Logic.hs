@@ -162,8 +162,9 @@ class (Language lid, PrintLaTeX basic_spec,
 	 				      
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
-class (Category lid sign morphism, Eq sentence, Show sentence, PrintLaTeX sign,
-       PrintLaTeX morphism, Ord symbol, Show symbol, PrintLaTeX symbol,
+class (Category lid sign morphism, Eq sentence, Show sentence, Ord sentence,
+       PrintLaTeX sign, PrintLaTeX morphism, 
+       Ord symbol, Show symbol, PrintLaTeX symbol,
        ATermConvertible sentence, ATermConvertible symbol,
        ATermConvertible sign, ATermConvertible morphism,
        ATermConvertible proof_tree)

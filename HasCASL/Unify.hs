@@ -98,10 +98,6 @@ type Subst = Map.Map TypeArg Type
 eps :: Subst
 eps = Map.empty
 
-instance Ord TypeArg where
-    TypeArg v1 _ _ _ <= TypeArg v2 _ _ _
-	= v1 <= v2
-
 class Unifiable a where
     subst :: Subst -> a -> a
     match :: TypeMap -> (Bool, a) -> (Bool, a) -> Result Subst

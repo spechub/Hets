@@ -91,14 +91,20 @@ data G_l_sentence_list = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
-  G_l_sentence lid [Named sentence] 
+  G_l_sentence_list lid [Named sentence] 
 
 instance Show G_l_sentence_list where
-    show (G_l_sentence _ s) = show s
+    show (G_l_sentence_list _ s) = show s
 
 instance Eq G_l_sentence_list where
-    (G_l_sentence i1 nl1) == (G_l_sentence i2 nl2) =
-     coerce i1 i2 nl1 == Just nl2
+    (G_l_sentence_list i1 nl1) == (G_l_sentence_list i2 nl2) =
+      coerce i1 i2 nl1 == Just nl2
+
+eq_G_l_sentence_set :: G_l_sentence_list -> G_l_sentence_list -> Bool
+eq_G_l_sentence_set (G_l_sentence_list i1 nl1) (G_l_sentence_list i2 nl2) =
+     case coerce i1 i2 nl1 of
+       Just nl1' -> Set.fromList nl1' == Set.fromList nl2
+       Nothing -> False
 
 -- | Grothendieck signatures
 data G_sign = forall lid sublogics
@@ -508,3 +514,17 @@ ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
 	   Nothing -> Result [Diag FatalError 
 			 ("No inclusion from "++ln1++" to "++ln2++" found")
                          (newPos "t" 0 0)] Nothing 
+
+-- | Translation of a G_l_sentence_list along a GMorphism
+translateG_l_sentence_list :: GMorphism -> G_l_sentence_list 
+                                 -> Result G_l_sentence_list
+translateG_l_sentence_list (GMorphism cid sign1 morphism2)
+                           (G_l_sentence_list lid sens) = do
+  let tlid = targetLogic cid
+  --(sigma2,_) <- map_sign cid sign1
+  sens' <- rcoerce lid (sourceLogic cid) nullPos sens
+  sens'' <- maybeToResult nullPos "Could not map sentences" 
+              $ sequence $ map (mapNamedM (map_sentence cid sign1)) $ sens'
+  sens''' <- sequence $ map (mapNamedM (map_sen tlid morphism2)) $ sens''
+  return (G_l_sentence_list tlid sens''')
+

@@ -44,12 +44,12 @@ Jorina
       bis DGNode erreicht ist, dann 
         lokale Axiome mit dgn_sens die lokalen Axiome berechnen
     Abbilden der Axiome entlang eines Signaturmorphismus: mit
-      map_sen aus Logic/Logic.hs. Vorher die G_l_sentence_list auspacken:
-         case dgn_sens_rekursiv node of
-           G_l_sentence_list lid sens -> do
-               sens1 <- sequence (map (map_sen lid mor1) sens)
-               sens2 <- sequence (map (map_sen lid mor2) sens)
-               return (Set.fromList sens1) == (Set.fromList sens2)
+   do
+      let sens = dgn_sens_rekursiv node
+      sens1 <- translateG_l_sentence_list mor1 sens
+      sens2 <- translateG_l_sentence_list mor2 sens
+      return $ eq_G_l_sentence_set sens1 sens2
+
        Result: siehe Common/Result.hs
     Vergleichen: Abbildung des Axiome mit Morphismus1 + Morphismus2
     aus resultierenden Listen Mengen machen (Set.fromList aus Common.Lib.set) 

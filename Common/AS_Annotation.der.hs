@@ -180,6 +180,19 @@ data Named s = NamedSen { senName  :: String,
                           sentence :: s }
 	       deriving (Eq, Show)
 
+-- | extending sentence maps to maps on labelled sentences
+mapNamed :: (s->t) -> Named s -> Named t
+mapNamed f x = x{sentence = f $ sentence x}
+
+-- | extending sentence maybe-maps to maps on labelled sentences
+mapNamedM :: Monad m => (s-> m t) -> Named s -> m (Named t)
+mapNamedM f x = do
+  y <- f $ sentence x 
+  return x{sentence = y}
+
+instance Ord s => Ord (Named s) where
+  compare (NamedSen n1 s1) (NamedSen n2 s2) = compare (n1,s1) (n2,s2)
+
 -- | process all items and wrap matching annotations around the results 
 mapAnM :: (Monad m) => (a -> m b) -> [Annoted a] -> m [Annoted b]
 mapAnM f al = 

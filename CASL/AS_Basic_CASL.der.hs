@@ -70,7 +70,7 @@ data OP_TYPE = Total_op_type [SORT] SORT [Pos]
 	       -- pos: "*"s, "->" ; if null [SORT] then [Pos] = [] 
 	     | Partial_op_type [SORT] SORT [Pos]
 	       -- pos: "*"s, "->?"; if null [SORT] then pos: "?"
-	       deriving (Show,Eq)
+	       deriving (Show,Eq,Ord)
 
 data OP_HEAD = Total_op_head [ARG_DECL] SORT [Pos]
 	       -- pos: "(", semicolons, ")", colon
@@ -93,7 +93,7 @@ data PRED_ITEM = Pred_decl [PRED_NAME] PRED_TYPE [Pos]
 
 data PRED_TYPE = Pred_type [SORT] [Pos]
 	         -- pos: if null [SORT] then "(",")" else "*"s
-		 deriving (Show,Eq)
+		 deriving (Show,Eq,Ord)
 
 data PRED_HEAD = Pred_head [ARG_DECL] [Pos]
 	         -- pos: "(",semi colons , ")"
@@ -120,7 +120,7 @@ data COMPONENTS = Total_select [OP_NAME] SORT [Pos]
 
 data VAR_DECL = Var_decl [VAR] SORT [Pos]
 	        -- pos: commas, colon
-		deriving (Show,Eq)
+		deriving (Show,Eq,Ord)
 
 {- Position definition for FORMULA: 
    Information on parens are also encoded in [Pos].  If there
@@ -158,15 +158,15 @@ data FORMULA = Quantification QUANTIFIER [VAR_DECL] FORMULA [Pos]
 	     -- a formula left original for mixfix analysis
 	     | Unparsed_formula String [Pos]
 	       -- pos: first Char in String
-	       deriving (Show,Eq)
+	       deriving (Show,Eq,Ord)
 
 data QUANTIFIER = Universal | Existential | Unique_existential
-		  deriving (Show,Eq)
+		  deriving (Show,Eq,Ord)
 
 data PRED_SYMB = Pred_name PRED_NAME 
 	       | Qual_pred_name PRED_NAME PRED_TYPE [Pos]
 		 -- pos: "(", pred, colon, ")"
-		 deriving (Show,Eq)
+		 deriving (Show,Eq,Ord)
 
 data TERM = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
 	  | Qual_var VAR SORT [Pos]
@@ -195,12 +195,12 @@ data TERM = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
 	    -- pos: "[", commas, "]" 
           | Mixfix_braced [TERM] [Pos]         -- also for list-notation 
 	    -- pos: "{", "}" 
-	    deriving (Show,Eq)
+	    deriving (Show,Eq,Ord)
 
 data OP_SYMB = Op_name OP_NAME
 	     | Qual_op_name OP_NAME OP_TYPE [Pos]
 		 -- pos: "(", op, colon, ")"
-	       deriving (Show,Eq)
+	       deriving (Show,Eq,Ord)
 
 type OP_NAME = Id
 

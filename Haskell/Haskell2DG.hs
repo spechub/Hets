@@ -253,7 +253,7 @@ addNode dg (AHsModule name exps imps decls) modInfo =
                 DGNode {
                   dgn_name = aHsMod2SimpleId name,
                   dgn_sign = G_sign Haskell modInfo,
-                  dgn_sens = G_l_sentence Haskell 
+                  dgn_sens = G_l_sentence_list Haskell 
                               (extractSentences (AHsModule name 
                                               exps imps decls)),
                   dgn_origin = DGBasic }
@@ -261,7 +261,7 @@ addNode dg (AHsModule name exps imps decls) modInfo =
                 DGNode {
                   dgn_name = aHsMod2SimpleId name,
                   dgn_sign = G_sign Haskell modInfo,
-                  dgn_sens = G_l_sentence Haskell
+                  dgn_sens = G_l_sentence_list Haskell
                               (extractSentences (AHsModule name
                                               exps imps decls)),
                   dgn_origin = DGExtension }
