@@ -46,14 +46,14 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import Common.Result            -- Result
 
-evaluateOnePoint :: Morphism -> [FORMULA] -> Bool
+evaluateOnePoint :: Morphism f e m-> [FORMULA f] -> Bool
 evaluateOnePoint m fs = all (\x->x==True) [evaluateOnePointFORMULA m f|f<-fs] 
 
 
-evaluateOnePointFORMULA :: Morphism -> FORMULA -> Bool
+evaluateOnePointFORMULA :: Morphism f e m -> FORMULA f -> Bool
 
-evaluateOnePointFORMULA m (Quantification _ _ (FORMULA f) _) = 
-                    evaluateOnePointFORMULA m (FORMULA f)
+evaluateOnePointFORMULA m (Quantification _ _ f  _) = 
+                    evaluateOnePointFORMULA m f
 
 evaluateOnePointFORMULA m (Conjunction fs _)=
          all id [evaluateOnePointFORMULA m f|f<-fs]         
@@ -65,9 +65,9 @@ evaluateOnePointFORMULA m (Implication f1 f2 _ _)
          |evaluateOnePointFORMULA m f1 = evaluateOnePointFORMULA m f2
          |otherwise = True
           
-evaluateOnePointFORMULA m (Equivalence f1 f2 _) =
-         evaluateOnePointFORMULA m (Implication f1 f2 False _)&&
-         evaluateOnePointFORMULA m (Implication f2 f1 False _) 
+evaluateOnePointFORMULA m (Equivalence f1 f2 pos) =
+         evaluateOnePointFORMULA m (Implication f1 f2 False pos)&&
+         evaluateOnePointFORMULA m (Implication f2 f1 False pos) 
       
 evaluateOnePointFORMULA m (Negation f _)= not (evaluateOnePointFORMULA m f) 
 
