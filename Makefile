@@ -79,7 +79,8 @@ PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
 PFE_PATHS = $(subst $(space),:,$(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS)))
 pfe_sources = $(wildcard $(subst :,/*hs , $(PFE_PATHS)))
 PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
-happy_files = $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
+happy_files = $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
+  $(PFE_TOOLDIR)/base/parse2/Lexer/HsLex.hs
 endif
 
 
