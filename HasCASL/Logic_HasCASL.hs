@@ -78,7 +78,7 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
     basic_analysis HasCASL = Just ( \ (b, e, a) ->
 		let ne = snd $ (runState (anaBasicSpec b)) e 
 		    in return (ne, initialEnv, [])) 
-    signature_union = merge
+    signature_union HasCASL = merge
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
