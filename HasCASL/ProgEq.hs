@@ -31,7 +31,7 @@ isOp o = case opDefn o of
 
 isOpKind :: (OpInfo -> Bool) -> Env -> Term -> Bool
 isOpKind f e t = case t of
-    TypedTerm trm OfType _ _ -> isOpKind f e trm
+    TypedTerm trm q _ _ -> isOfType q && isOpKind f e trm
     QualOp _ (InstOpId i _ _) sc _ -> 
         if i `elem` map fst bList then False else 
            let mi = findOpId e i sc in case mi of
@@ -41,24 +41,31 @@ isOpKind f e t = case t of
 
 isVar, isConstrAppl, isPat, isLHS, isExecutable :: Env -> Term -> Bool
 
+isOfType :: TypeQual -> Bool
+isOfType q = case q of
+             OfType -> True
+             Inferred -> True
+             AsType -> False
+             InType -> False
+
 isVar e t = case t of 
-    TypedTerm trm OfType _ _  -> isVar e trm
+    TypedTerm trm q _ _  -> isOfType q && isVar e trm
     QualVar _ -> True
     _ -> False
 
 isConstrAppl e t = case t of
-    TypedTerm trm OfType _ _ -> isConstrAppl e trm
+    TypedTerm trm q _ _ -> isOfType q && isConstrAppl e trm
     ApplTerm t1 t2 _ -> isConstrAppl e t1 && isPat e t2
     _ -> isOpKind isConstructor e t
 
 isPat e t = case t of 
-    TypedTerm trm OfType _ _ -> isPat e trm
+    TypedTerm trm q _ _ -> isOfType q && isPat e trm
     TupleTerm ts _ -> all (isPat e) ts
     AsPattern _ p _ -> isPat e p
     _ -> isVar e t || isConstrAppl e t
 
 isLHS e t = case t of
-    TypedTerm trm OfType _ _ -> isLHS e trm
+    TypedTerm trm q _ _ -> isOfType q && isLHS e trm
     ApplTerm t1 t2 _ -> isLHS e t1 && isPat e t2
     _ -> isOpKind isOp e t
 
