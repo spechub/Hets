@@ -169,7 +169,8 @@ TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell
 #include sources_hetcats.mk
 #else
 
-non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs Logic/Morphism.hs
+non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs Logic/Morphism.hs \
+              Static/LogicStructured.hs ./Test.hs
 SOURCE_PATHS = $(COMMONLIB_PATH) $(CLEAN_PATH)
 sources = hets.hs $(filter-out $(non_sources), \
           $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
@@ -240,7 +241,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
           $(cpp_sources) $(pfe_sources) $(gen_inline_axiom_files) \
 	  $(genrule_header_files) $(generated_rule_files) \
           Haskell/PreludeString.append.hs \
-          Haskell/ProgramaticaPrelude.hs hxt/HXT.hs \
+          Haskell/ProgramaticaPrelude.hs hxt/HXT.hs hxt/Net.hs \
 	  $(patsubst %.hs,%.der.hs,$(drifted_files))
 
 # this variable holds the modules that should be documented
