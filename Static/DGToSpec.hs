@@ -126,11 +126,8 @@ calculateMorphismOfPath ((_src,_tgt,edgeLab):furtherPath) =
   case maybeMorphismOfFurtherPath of
     Nothing -> if null furtherPath then Just morphism else Nothing
     Just morphismOfFurtherPath ->
-      case resultToMaybe $ compHomInclusion morphism morphismOfFurtherPath of
-        Just m -> Just m
-        Nothing -> error ("morph: "++(show morphism)++
-                          "\n\nmorphOfFurtherPath: "++
-                          (show morphismOfFurtherPath))
+      resultToMaybe $ compHomInclusion morphism morphismOfFurtherPath
+
   where
     morphism = dgl_morphism edgeLab
     maybeMorphismOfFurtherPath = calculateMorphismOfPath furtherPath
