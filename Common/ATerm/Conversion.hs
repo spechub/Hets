@@ -166,7 +166,7 @@ instance (ATermConvertible a,Integral a) => ATermConvertible (Ratio a) where
                           in AAppl "Ratio" [at1,at2] []
    fromATerm at = case at of
                    (AAppl "Ratio" [at1,at2] _) -> let i1 = fromATerm at1
-						       i2 = fromATerm at2
+						      i2 = fromATerm at2
 						   in (i1 % i2)
 		   _ -> fromATermError "Ratio" at
    toShATerm att0 i = let (i1, i2) = (numerator i, denominator i) in
