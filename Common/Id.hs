@@ -130,10 +130,12 @@ expandPos f (o, c) ts ps =
               diff = n - length ps
 	      ps1 = if diff > 0 then ps ++ replicate diff nullPos
 		    -- pad with nullPos
-		    else take n $ drop (- diff `div` 2) ps
+		    else if diff == 0 then ps
+			 else take n $ drop (- diff `div` 2) ps
 		    -- cut off longer lists on both ends
+	      commas j = if n == 2 then [c] else "," : commas (j - 1)
 	      seps = map f
-		(zipWith Token (o : replicate (n - 2) "," ++ [c]) ps1)
+		(zipWith Token (o : commas n) ps1)
 	  in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
 	    		    
 -- | reconstruct the token list of an 'Id'
@@ -146,9 +148,9 @@ getTokenList placeStr (Id ts cs ps) =
         cts = if null cs then [] else concat 
 	      $ expandPos (:[]) ("[", "]") (map (getTokenList place) cs) ps
 	      -- although positions will be replaced (by scan)
-        convert = if placeStr == place then id else -- optimized for place
-		  map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
-    in convert toks ++ cts ++ convert pls
+        convert =  map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
+    in if placeStr == place then toks ++ cts ++ pls -- optimized for place
+       else convert toks ++ cts ++ convert pls
 
 -- | compute a meaningful single position from an 'Id' for diagnostics 
 posOfId :: Id -> Pos
