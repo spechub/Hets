@@ -17,9 +17,8 @@ import Common.Token(casl_reserved_ops, casl_reserved_words
 	    , start, comps, mixId)
 import Common.Lib.Parsec
 
--- ----------------------------------------------
--- further hascasl keyword
--- ----------------------------------------------
+
+-- * further HasCASL key signs
 
 assignS, minusS, plusS, pFun, contFun, pContFun, lamS, asP :: String
 assignS = ":="
@@ -31,6 +30,8 @@ pContFun = minusS ++ pFun
 lamS = "\\"
 asP = "@"
 
+-- * further HasCASL keywords
+
 internalS, classS, programS, instanceS, caseS, ofS, letS, derivingS :: String
 classS = "class"
 programS = "program"
@@ -41,12 +42,12 @@ letS = "let"
 derivingS = "deriving"
 internalS = "internal"
 
-functS :: String -- funS is already defined 
+-- | the new keyword fun ('funS' is already defined differently) 
+functS :: String
 functS = "fun"
 
--- ----------------------------------------------
--- hascasl keyword handling
--- ----------------------------------------------
+-- * HasCASL keyword handling
+
 hascasl_reserved_ops, hascasl_type_ops :: [String]
 hascasl_reserved_ops = [dotS++exMark, cDot++exMark, asP, assignS, lamS] 
 		       ++ casl_reserved_ops
@@ -63,61 +64,41 @@ scanWords, scanSigns :: GenParser Char st String
 scanWords = reserved hascasl_reserved_words scanAnyWords 
 scanSigns = reserved hascasl_reserved_ops scanAnySigns 
 
--- ----------------------------------------------
--- non-compound mixfix ids (variables)
--- ----------------------------------------------
+-- * HasCASL 'Id' parsers
 
-restrictedVar :: [String] -> GenParser Char st Id
-restrictedVar ops = fmap (\l -> Id l [] []) 
-				 (start (ops ++ hascasl_reserved_ops, 
-					 hascasl_reserved_words))
+-- | non-type variables ('lessS' additionally excluded)
 var :: GenParser Char st Id
-var = restrictedVar []
+var = fmap (\l -> Id l [] []) (start (lessS : hascasl_reserved_ops, 
+				      hascasl_reserved_words))
 
--- ----------------------------------------------
--- bracketed lists
--- ----------------------------------------------
-
-bracketParser :: GenParser Char st a -> GenParser Char st Token 
-	 -> GenParser Char st Token -> GenParser Char st Token
-	 -> ([a] -> [Pos] -> b) -> GenParser Char st b
-
-bracketParser parser op cl sep k = 
-    do o <- op
-       (ts, ps) <- option ([], []) 
-		   (parser `separatedBy` sep)
-       c <- cl
-       return (k ts (toPos o ps c))
-
-mkBrackets :: GenParser Char st a -> ([a] -> [Pos] -> b) -> GenParser Char st b
-mkBrackets parser k = bracketParser parser oBracketT cBracketT commaT k
-
--- ----------------------------------------------
--- mixIds
--- ----------------------------------------------
-
+-- | the HasCASL keys for 'mixId'
 hcKeys :: ([String], [String])
 hcKeys = (hascasl_reserved_ops, hascasl_reserved_words)
 
-uninstOpId, hconsId, typeId :: GenParser Char st Id
+-- | operation 'Id' (reserved stuff excluded)
+uninstOpId :: GenParser Char st Id
 uninstOpId = mixId hcKeys hcKeys
+
+-- | constructor 'Id' ('barS' additionally excluded)
+hconsId :: GenParser Char st Id
 hconsId = mixId (barS:hascasl_reserved_ops, hascasl_reserved_words) 
 	  hcKeys
 
-typeId = mixId (quMark:lessS:equalS:barS:hascasl_reserved_ops, 
+-- | mixfix and compound type 'Id' (more signs excluded) 
+typeId :: GenParser Char st Id
+typeId = mixId (lessS:equalS:barS:hascasl_type_ops++hascasl_reserved_ops, 
 		hascasl_reserved_words) hcKeys
 
--- ----------------------------------------------
--- TYPE-VAR Ids
--- ----------------------------------------------
-
--- no compound ids 
+-- | simple 'Id' without compound list (only a words)
 typeVar :: GenParser Char st Id
-typeVar = restrictedVar [lessS]
-
--- simple id with compound list
+typeVar = do s <- pToken scanWords
+	     return $ Id [s] [] [] 
+	     
+-- | simple 'Id' possibly with compound list
 classId :: GenParser Char st Id
 classId = 
     do s <- pToken scanWords
        (c, p) <- option ([], []) $ comps hcKeys 
-       return (Id [s] c p)
+       return $ Id [s] c p
+
+

@@ -18,32 +18,54 @@ import HasCASL.HToken
 import HasCASL.As
 import Common.Lib.Parsec
 
+-- * keyword tokens
+
+-- | keywords for the variance of kinds  
+plusT, minusT :: AParser Token
+plusT = asKey plusS
+minusT = asKey minusS
+
+-- | a keyword string not followed by a question mark
 noQuMark :: String -> AParser Token
 noQuMark s = try $ asKey s << notFollowedBy (char '?')
 
-colT, plusT, minusT, qColonT :: AParser Token
-
+-- | a colon not followed by a question mark
+colT :: AParser Token
 colT = noQuMark colonS
-plusT = asKey plusS
-minusT = asKey minusS
+
+-- | a colon immediately followed by a question mark
+qColonT :: AParser Token
 qColonT = asKey (colonS++quMark)
 
-quColon :: AParser (Partiality, Token)
-quColon = do c <- colT
-	     return (Total, c)
-	  <|> 
-	  do c <- qColonT
-	     return (Partial, c) 
+-- * parser for bracketed lists
 
------------------------------------------------------------------------------
--- kind
------------------------------------------------------------------------------
--- universe is just a special classId ("Type")
+-- | a generic bracket parser 
+bracketParser :: GenParser Char st a -> GenParser Char st Token 
+	 -> GenParser Char st Token -> GenParser Char st Token
+	 -> ([a] -> [Pos] -> b) -> GenParser Char st b
+bracketParser parser op cl sep k = 
+    do o <- op
+       (ts, ps) <- option ([], []) (parser `separatedBy` sep)
+       c <- cl
+       return (k ts (toPos o ps c))
+
+-- | parser for square brackets
+mkBrackets :: AParser a -> ([a] -> [Pos] -> b) -> AParser b
+mkBrackets p c = bracketParser p oBracketT cBracketT anComma c
+
+-- | parser for braces
+mkBraces :: AParser a -> ([a] -> [Pos] -> b) -> AParser b
+mkBraces p c = bracketParser p oBraceT cBraceT anComma c
+
+-- * kinds
+
+-- | parse a simple class name or the type universe as kind
 parseClassId :: AParser Kind
 parseClassId = fmap (\c -> if showId c "" == "Type" 
 		   then Universe [posOfId c]
 		   else ClassKind c MissingKind) classId
 
+-- | do 'parseClassId' or a downset or an intersection kind 
 parseSimpleKind :: AParser Kind
 parseSimpleKind = parseClassId
              <|> 
@@ -63,6 +85,7 @@ parseSimpleKind = parseClassId
 		return (Downset (Just i) t MissingKind 
 			(map tokPos [o,d,j,l,p])) 
 
+-- | do 'parseSimpleKind' and check for an optional 'Variance'
 parseExtKind :: AParser Kind
 parseExtKind = do k <- parseSimpleKind
 	          do s <- plusT
@@ -72,41 +95,39 @@ parseExtKind = do k <- parseSimpleKind
 		      return (ExtKind k ContraVar [tokPos m])
                    <|> return k
 
-kind :: AParser Kind
-kind = 
-    do k1 <- parseExtKind
+-- | parse a (right associative) function kind for a given argument kind
+arrowKind :: Kind -> AParser Kind
+arrowKind k1 =
        do a <- asKey funS
 	  k2 <- kind
 	  return (FunKind k1 k2 $ [tokPos a])
-        <|> case k1 of
+
+-- | parse a function kind but reject an extended kind
+kind :: AParser Kind
+kind = 
+    do k1 <- parseExtKind
+       arrowKind k1 <|> case k1 of
 	    ExtKind _ CoVar _ -> unexpected "co-variance of kind"
 	    ExtKind _ ContraVar _ -> unexpected "contra-variance of kind"
 	    ExtKind k InVar _  -> return k
 	    _ -> return k1
 
+-- | parse a function kind but accept an extended kind
 extKind :: AParser Kind
 extKind = 
     do k1 <- parseExtKind
-       do a <- asKey funS
-	  k2 <- kind
-	  return (FunKind k1 k2 $ [tokPos a])
-        <|> return k1
+       arrowKind k1 <|> return k1
 
------------------------------------------------------------------------------
--- type
------------------------------------------------------------------------------
+-- * types 
 -- a parsed type may also be interpreted as a kind (by the mixfix analysis)
 
+-- | type tokens with some symbols removed
 typeToken :: AParser Type
 typeToken = fmap TypeToken (pToken (scanWords <|> placeS <|> 
 				    reserved (lessS : equalS : barS :
 					      hascasl_type_ops 
 					      ++ hascasl_reserved_ops)
 				    scanSigns))
-
-mkBraces :: AParser a -> ([a] -> [Pos] -> b) 
-       -> AParser b
-mkBraces p c = bracketParser p oBraceT cBraceT anComma c
 
 type TokenMode = [String]   
 
@@ -224,7 +245,7 @@ makeTypeVarDecls vs ps cl q =
 		++ [TypeArg (last vs) cl Other [q]]
 
 genVarDecls:: AParser [GenVarDecl]
-genVarDecls = do (vs, ps) <- typeVar `separatedBy` anComma
+genVarDecls = do (vs, ps) <- var `separatedBy` anComma
 		 fmap (map GenVarDecl) (varDeclType vs ps)
 		      <|> fmap (map GenTypeVarDecl)
 			       (varDeclDownSet vs ps)
@@ -234,7 +255,7 @@ genVarDecls = do (vs, ps) <- typeVar `separatedBy` anComma
 -----------------------------------------------------------------------------
 
 extTypeVar :: AParser (TypeId, Variance, Pos) 
-extTypeVar = do t <- restrictedVar [lessS, plusS, minusS]
+extTypeVar = do t <- typeVar
 		do   a <- plusT
 		     return (t, CoVar, tokPos a)
 	 	  <|>

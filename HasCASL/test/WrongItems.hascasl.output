@@ -28,9 +28,9 @@ expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", "{", ";", "sor
 
 parse error at (line 8, column 17):
 unexpected list of type arguments
-expecting "{", __, "%%", "%{", "%(", "%", "+", "-", ",", ":" or "<"
+expecting "%%", "%{", "%(", "%", "+", "-", ",", ":" or "<"
 
 parse error at (line 9, column 12):
 unexpected list of type arguments
-expecting casl char, underline word, "{", __, "%%", "%{", "%(", "%", "+", "-", ",", ":" or "<"
+expecting casl char, underline word, "%%", "%{", "%(", "%", "+", "-", ",", ":" or "<"
 

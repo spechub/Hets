@@ -78,9 +78,9 @@ parse error at (line 20, column 15):
 unexpected ")"
 expecting __, [<id>,...,<id>], "[", "%%", "%{", "%(", "%", ":?" or ":"
 
-parse error at (line 21, column 12):
-unexpected "?"
-expecting __, "%%", "%{", "%(" or "%"
+parse error at (line 21, column 8):
+unexpected "<"
+expecting simple-id, "{", "[" or __
 
 parse error at (line 22, column 13):
 unexpected "?"

@@ -327,6 +327,14 @@ opArgs = many1 (bracketParser varDecls oParenT cParenT anSemi
 		      (\ l p -> TuplePattern
 		       (map PatternVar $ concat l) p)) 
 
+-- | a 'Total' or a 'Partial' function definition
+quColon :: AParser (Partiality, Token)
+quColon = do c <- colT
+	     return (Total, c)
+	  <|> 
+	  do c <- qColonT
+	     return (Partial, c) 
+
 opDeclOrDefn :: OpId -> AParser OpItem
 opDeclOrDefn o = 
     do c <- colT
