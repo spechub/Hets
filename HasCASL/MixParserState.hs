@@ -39,8 +39,9 @@ startIndex = Index 0
 isStartIndex :: Index -> Bool
 isStartIndex = (== startIndex)
 
-incrIndex :: Index -> Index
+incrIndex, decrIndex :: Index -> Index
 incrIndex (Index i) = Index (i + 1)
+decrIndex (Index i) = Index (i - 1)
 
 data PState a = PState { ruleId :: Id        -- the rule to match
 		     , ruleScheme :: TypeScheme -- to make id unique
