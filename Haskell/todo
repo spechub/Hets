@@ -1,44 +1,15 @@
+Hatchet/HsSyn
+
+- gepunktete Modulnamen (export/import/dekl.)
+  * mit einem Punkt: geht
+  * mit mehreren: Lexer veraendern, so dass er z.B. import A.B.C.D als
+    QConId(A.B.C.,D) einliest
+  * Fehler (???) beim Parsen von hets.hs beheben
+
 In Logic_Haskell.hs: 
-- importierte Module müssen nicht eingelesenw werden, 
-    stattdessen übergebene sig benutzen
 
-- Funktion(Konstante) für Prelude-Signatur bereitstellen
-
-- in instance StaticAnalysis Funktion basic_analysis hinzufügen   
-  berechnet aus abstraktem Syntaxbaum die Typen der Funktionen
-    und guckt ob alle benutzten Identifier auch deklariert wurden
-  basic_analysis ist also ein Wrapper um eine Hatchet-Funktion
 - Für basic_analysis muss Hatchet-Funktion tiModule reduizert werden
-  auf Analyse des Moduls (d.h. keine Analyse der Importe)
-
-   basic_analysis :: lid -> -- ignorieren
-                           Maybe((basic_spec,  -- abstract syntax tree
-                            sign,   -- was von importierten Modulen reinkommt
-                            GlobalAnnos) ->   -- global annotations
-                           Result (basic_spec,  -- renamed module
-                                  sign,sign, -- (gesamt, delta)
-                                  -- delta = Deklarationen im Modul
-                                  -- gesamt = importiert + delta 
-                                            (mittels Vereinigungsfunktion)
-                                  [Named sentence] -- Programmdefinitionen))
-
-tiModule :: [String]                    -- dump flags
-         -> AHsModule                   -- syntax of module after parsing
-                                            das ist basic_spec
-         -> ModuleInfo                  -- info about imported entities
-                                            das ist sign
-         -> IO (Timing,              -- timing values for each stage
-                Env Scheme,          -- output variable assumptions (may be local, and pattern variables)
-                Env Scheme,          -- output data cons assumptions
-                ClassHierarchy,      -- output class Hierarchy
-                KindEnv,             -- output kinds
-                IdentTable,          -- info about identifiers in the module
-                AHsModule,           -- renamed module (als basic_spec
-                                         zurückgeben + sentences extrahieren)
-                [AHsDecl])           -- synonyms defined in this module
-
-sign = ModuleInfo, aus der tiModule-Ausgabe konstruieren wie in Main.hs
-
+  auf Analyse des Moduls (d.h. keine Analyse der Importe) (So schon ok???)
 
 type AxiomName = String
 
