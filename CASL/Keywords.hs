@@ -14,7 +14,8 @@
 
 module Keywords where
 
-import Prelude(String)
+import qualified Prelude ()
+
 -- ----------------------------------------------
 -- casl special strings 
 -- ----------------------------------------------
