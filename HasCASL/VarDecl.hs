@@ -131,18 +131,29 @@ addOpId i sc attrs defn =
     do as <- gets assumps
        tm <- gets typeMap
        c <- gets counter
-       let (l,r) = partitionOpId as tm c i sc
+       let (TypeScheme _ (_ :=> ty) _) = sc 
+           ds = if placeCount i > 1 then case ty of 
+		   FunType (ProductType ts _) _ _ _ ->
+		     if placeCount i /= length ts then 
+			    [mkDiag Error "wrong number of places in" i]
+                     else []
+		   _ -> [mkDiag Error "expected tuple argument for" i]
+		 else []
+           (l,r) = partitionOpId as tm c i sc
 	   oInfo = OpInfo sc attrs defn 
-       if null l then do putAssumps $ Map.insert i 
+       if null ds then 
+          if null l then do putAssumps $ Map.insert i 
 					(OpInfos (oInfo : r )) as
-			 return $ Just i
-	  else do let Result ds mo = merge (head l) oInfo
-		  addDiags $ map (improveDiag i) ds
+			    return $ Just i
+	  else do let Result es mo = merge (head l) oInfo
+		  addDiags $ map (improveDiag i) es
 		  case mo of 
 		      Nothing -> return Nothing
 		      Just oi -> do putAssumps $ Map.insert i 
 						   (OpInfos (oi : r )) as
 				    return $ Just i
+	  else do addDiags ds
+		  return Nothing
 
 ----------------------------------------------------------------------------
 -- GenVarDecl

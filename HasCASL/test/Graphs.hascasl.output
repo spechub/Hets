@@ -7,14 +7,13 @@ op emptySet : forall S : Type .  S ->? Unit;
    __isIn__ : forall S : Type .  S × (S ->? Unit) ->? Unit;
    __subset__ : forall S : Type .  (S ->? Unit) ×
 				   (S ->? Unit) ->? Unit;
-   __union__, __intersection__,
-   __\\__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit;
+   : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit;
    __disjoint__ : forall S : Type .  (S ->? Unit) ×
 				     (S ->? Unit) ->? Unit;
-   __*__ : forall S : Type;
-		  T : Type .  (S ->? Unit) -> (T ->? Unit) -> S × T ->? Unit;
-   __disjointUnion__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ×
-									  Bool ->? Unit;
+   : forall S : Type; T : Type .  (S ->? Unit) -> (T ->? Unit) -> S ×
+								  T ->? Unit;
+   : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ×
+							Bool ->? Unit;
    inl, inr : forall S : Type .  S -> S × Bool
 forall x : S; x' : S; y : T; s : S ->? Unit; s' : S ->? Unit;
        t : T ->? Unit
@@ -58,24 +57,17 @@ __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
 %% Assumptions -----------------------------------------------------------
-__*__ : forall S : Type;
-	       T : Type .  (S ->? Unit) -> (T ->? Unit) -> S × T ->? Unit %(Op)%
 __/\__ : Unit × Unit ->? Unit %(Fun)%
 __<=>__ : Unit × Unit ->? Unit %(Fun)%
 __=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
-__\\__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit %(Op)%
 __disjoint__ : forall S : Type .  (S ->? Unit) ×
 				  (S ->? Unit) ->? Unit %(Op)%
-__disjointUnion__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ×
-								       Bool ->? Unit %(Op)%
-__intersection__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit %(Op)%
 __isIn__ : forall S : Type .  S × (S ->? Unit) ->? Unit %(Op)%
 __subset__ : forall S : Type .  (S ->? Unit) ×
 				(S ->? Unit) ->? Unit %(Op)%
-__union__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit %(Op)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
 emptySet : forall S : Type .  S ->? Unit %(Op)%
 false : Bool %(Op)%
@@ -123,75 +115,20 @@ Warning (line 3, column 8) redeclared type 'Pred'
 Error (line 3, column 8) merge: TypeDefn of 'Pred'
 
 Warning (line 4, column 17) redeclared type 'S'
+Error (line 11, column 9) expected tuple argument for '__union__'
+Error (line 11, column 20) expected tuple argument for '__intersection__'
+Error (line 11, column 38) expected tuple argument for '__\\__'
+Error (line 13, column 9) expected tuple argument for '__*__'
+Error (line 14, column 9) expected tuple argument for '__disjointUnion__'
 Error (line 20, column 39) ambiguous mixfix term
 	(__isIn__)(x, (__=>__)(s, (__isIn__)(x, s')))
 	(__=>__)((__isIn__)(x, s), (__isIn__)(x, s'))
 	(__isIn__)((__=>__)((__isIn__)(x, s), x), s')
 Error (line 20, column 37) unexpected term 'x isIn s => x isIn s''
-Error (line 21, column 7) ambiguous mixfix term
-	(__isIn__)(x,
-	   (__<=>__)((__union__)(s, s'),
-		     (__isIn__)(x, (__\/__)(s, (__isIn__)(x, s')))))
-	(__<=>__)((__isIn__)(x, (__union__)(s, s')),
-	  (__isIn__)(x, (__\/__)(s, (__isIn__)(x, s'))))
-	(__isIn__)((__<=>__)((__isIn__)(x, (__union__)(s, s')), x),
-	   (__\/__)(s, (__isIn__)(x, s')))
-	(__\/__)((__isIn__)(x,
-		    (__<=>__)((__union__)(s, s'), (__isIn__)(x, s))),
-	 (__isIn__)(x, s'))
-	(__isIn__)((__<=>__)((__isIn__)(x, (__union__)(s, s')),
-		     (__isIn__)(x, (__\/__)(s, x))),
-	   s')
-Error (line 22, column 7) ambiguous mixfix term
-	(__isIn__)(x,
-	   (__<=>__)((__intersection__)(s, s'),
-		     (__isIn__)(x, (__/\__)(s, (__isIn__)(x, s')))))
-	(__<=>__)((__isIn__)(x, (__intersection__)(s, s')),
-	  (__isIn__)(x, (__/\__)(s, (__isIn__)(x, s'))))
-	(__isIn__)((__<=>__)((__isIn__)(x, (__intersection__)(s, s')), x),
-	   (__/\__)(s, (__isIn__)(x, s')))
-	(__/\__)((__isIn__)(x,
-		    (__<=>__)((__intersection__)(s, s'), (__isIn__)(x, s))),
-	 (__isIn__)(x, s'))
-	(__isIn__)((__<=>__)((__isIn__)(x, (__intersection__)(s, s')),
-		     (__isIn__)(x, (__/\__)(s, x))),
-	   s')
-Error (line 23, column 7) ambiguous mixfix term
-	(__isIn__)(x,
-	   (__<=>__)((__\\__)(s, s'),
-		     (__isIn__)(x, (__/\__)(s, (__isIn__)((not__)(x), s')))))
-	(__<=>__)((__isIn__)(x, (__\\__)(s, s')),
-	  (__isIn__)(x, (__/\__)(s, (__isIn__)((not__)(x), s'))))
-	(__isIn__)((__<=>__)((__isIn__)(x, (__\\__)(s, s')), x),
-	   (__/\__)(s, (__isIn__)((not__)(x), s')))
-	(__/\__)((__isIn__)(x,
-		    (__<=>__)((__\\__)(s, s'), (__isIn__)(x, s))),
-	 (__isIn__)((not__)(x), s'))
-	(__isIn__)((__<=>__)((__isIn__)(x, (__\\__)(s, s')),
-		     (__isIn__)(x, (__/\__)(s, (not__)(x)))),
-	   s')
-Error (line 24, column 7) ambiguous mixfix term
-	(__disjoint__)(s,
-	       (__<=>__)(s', (__intersection__)(s, (__=__)(s', emptySet))))
-	(__<=>__)((__disjoint__)(s, s'),
-	  (__intersection__)(s, (__=__)(s', emptySet)))
-	(__intersection__)((__disjoint__)(s, (__<=>__)(s', s)),
-		   (__=__)(s', emptySet))
-	(__=__)((__disjoint__)(s,
-		       (__<=>__)(s', (__intersection__)(s, s'))),
-	emptySet)
-Error (line 25, column 11) ambiguous mixfix term
-	(__isIn__)((x, y),
-	   (__*__)(s,
-		   (__isIn__)((__<=>__)(t, x), (__/\__)(s, (__isIn__)(y, t)))))
-	(__*__)((__isIn__)((x, y), s),
-	(__isIn__)((__<=>__)(t, x), (__/\__)(s, (__isIn__)(y, t))))
-	(__<=>__)((__isIn__)((x, y), (__*__)(s, t)),
-	  (__isIn__)(x, (__/\__)(s, (__isIn__)(y, t))))
-	(__isIn__)((__<=>__)((__isIn__)((x, y), (__*__)(s, t)), x),
-	   (__/\__)(s, (__isIn__)(y, t)))
-	(__/\__)((__isIn__)((x, y),
-		    (__*__)(s, (__isIn__)((__<=>__)(t, x), s))),
-	 (__isIn__)(y, t))
+Error (line 21, column 15) unexpected mixfix token: union
+Error (line 22, column 15) unexpected mixfix token: intersection
+Error (line 23, column 15) unexpected mixfix token: \\
+Error (line 24, column 25) unexpected mixfix token: intersection
+Error (line 25, column 18) unexpected mixfix token: *
 Hint (line 0, column 0) type 'Bool' is not unifiable with 'Unit'
 Hint (line 0, column 0) type 'Bool' is not unifiable with 'Unit'

@@ -3,7 +3,7 @@ op a, b : s
 %% op __ + __ : s  -> s -> s, idem, assoc, comm;
 op __+__ : s × s -> s
 op __+__ : t × t -> t
-op __+__ : t -> t -> t
+op : t -> t -> t
 op a, b : t
 op c : s = (op __+__ : s × s -> s) ((op a : s), (op b : s))
 op d : s = (op __+__ : s × s -> s) ((op a : s), (op a : s))
@@ -43,8 +43,7 @@ __×__ : Type+ -> Type+ -> Type
 s : Type < t
 t : Type < t
 %% Assumptions -----------------------------------------------------------
-__+__ : t -> t -> t %(Op)%
-      : t × t -> t %(Op)%
+__+__ : t × t -> t %(Op)%
       : s × s -> s %(Op)%
 __/\__ : Unit × Unit ->? Unit %(Fun)%
 __<=__<=__ : s × s × s -> s %(Op)%
@@ -91,25 +90,20 @@ z : s %(Op)% = (op __+__ : s × s -> s) ((op x : s) as s,
 (op x : s) in s %(bla_label)%
 (op x : s) in t %()%
 %% Diagnostics -----------------------------------------------------------
-Hint (line 9, column 19) type 's' is not unifiable with 't -> t'
+Error (line 9, column 7) expected tuple argument for '__+__'
 Hint (line 8, column 23) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
-Hint (line 9, column 19) type 's' is not unifiable with 't -> t'
 Hint (line 8, column 23) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
-Hint (line 17, column 8) type 't' is not unifiable with 's × s'
 Hint (line 8, column 14) type 's' is not unifiable with 't'
-Hint (line 19, column 8) type 't' is not unifiable with 's × s'
 Hint (line 8, column 14) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
-Hint (line 9, column 19) type 's' is not unifiable with 't -> t'
 Hint (line 8, column 23) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
-Hint (line 9, column 19) type 's' is not unifiable with 't -> t'
 Hint (line 8, column 23) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
@@ -125,5 +119,4 @@ Hint (line 11, column 10) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
 Hint (line 11, column 10) type 's' is not unifiable with 't'
-Hint (line 9, column 19) type 's' is not unifiable with 't -> t'
 Hint (line 8, column 23) type 's' is not unifiable with 't'
