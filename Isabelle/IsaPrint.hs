@@ -354,7 +354,7 @@ instance PrettyPrint Sign where
       else text("consts") $$ Map.foldWithKey showConst empty tab
     showConst c t rest = text (show c ++ " :: " ++ "\"" ++ showTyp 1000 t 
                                 ++ "\"" ++ showDecl c) $$ rest
-    showDecl c = sp ++ sp ++ sp ++ "( \"" ++ c ++ "\" )"
+    showDecl c = sp ++ sp ++ sp ++ "( \"" ++ quote_underscores c ++ "\" )"
     showDataTypeDefs dtDefs = vcat $ map (text . showDataTypeDef) dtDefs
     showDataTypeDef [] = ""
     showDataTypeDef (dt:dts) = 
@@ -405,6 +405,11 @@ instance PrettyPrint Sign where
                 ++ "=\n" ++ "Some" ++ sp ++ lb ++ cs ++ cl ++ rb ++ "\"\n"
                 ++ proof
 
+quote_underscores :: String -> String
+quote_underscores [] = []
+quote_underscores ('_':'_':rest) = '_':quote_underscores rest
+quote_underscores ('_':rest) = '\'':'_':quote_underscores rest
+quote_underscores (c:rest) = c:quote_underscores rest
 
 -- datatype Bool = True | False
 
