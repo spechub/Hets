@@ -1,4 +1,4 @@
-module Main
+module Test
 
 where
 
@@ -15,6 +15,7 @@ import Logic.Logic
 import Logic.Grothendieck
 import Common.Result
 import Common.Id
+import Common.AS_Annotation
 
 --proceed :: String -> IO()
 proceed fname = do

@@ -42,7 +42,10 @@ isNullPos p =
 -- | tokens as supplied by the scanner
 data Token = Token { tokStr :: String
 		   , tokPos :: Pos
-		   } deriving (Show)
+		   } --deriving (Show)
+
+instance Show Token where
+  show (Token t _) = t
 
 -- | simple ids are just tokens 
 type SIMPLE_ID = Token
@@ -82,7 +85,12 @@ isPlace (Token t _) = t == place
 -- | mixfix and compound identifiers
 data Id = Id [Token] [Id] [Pos] 
           -- pos of square brackets and commas of a compound list
-	  deriving Show
+	  --deriving Show
+
+instance Show Id where
+  show (Id toks ids _) = 
+     concat (map show1 toks) ++ concat (map show ids)
+     where show1 (Token t _) = t
 
 -- | construct an 'Id' from a token list
 mkId :: [Token] -> Id

@@ -24,21 +24,24 @@ Portability :  portable
 
 module Comorphisms.CASL2PCFOL where
 
+import Test
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
+import Common.AS_Annotation
 
 -- CASL
 import CASL.Logic_CASL 
-import qualified CASL.AS_Basic_CASL
+import CASL.AS_Basic_CASL
 import CASL.Sign
-import qualified CASL.Morphism 
+import CASL.Morphism 
 
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Sign f e -> Sign f e
-encodeSig sig = ...
+encodeSig sig = error "encodeSig not yet implemented"
 {- todo
    setRel sig angucken
    Liste von Paaren (s,s') daraus generieren (siehe toList aus Common/Lib/Rel.hs)
@@ -50,19 +53,63 @@ encodeSig sig = ...
 
 -}
 
-generateAxioms :: Sign f e -> [FORMULA f]
-generateAxioms sig = ...
+generateAxioms :: Sign f e -> [Named (FORMULA f)]
+generateAxioms sig = 
+  [NamedSen {senName = "ga_embedding_injectivity", sentence =
+  Implication (Strong_equation (Sorted_term (Application (Qual_op_name
+  inj (Total_op_type [s] s' []) []) [Sorted_term (Qual_var x s []) s []]
+  []) s' []) (Sorted_term (Application (Qual_op_name inj (Total_op_type
+  [s] s' []) []) [Sorted_term (Qual_var y s []) s []] []) s' [])
+  []) (Strong_equation (Sorted_term
+  (Qual_var x s []) s []) (Sorted_term (Qual_var y s []) s [])
+  []) True []} 
+    | (s,s') <- Rel.toList (sortRel sig)]
+  where x = mkSimpleId "x"
+        y = mkSimpleId "y"
+        inj = mkId [mkSimpleId "_inj"]
+
 {- todo
   Axiome auf S. 407, oder RefMan S. 173
-  z.B. embedding-injectivity
-  Implication (ExistlEquation (Application (QualOpName ...) [QualVar "x" s] []) ()) (ExistlEquation (QualVar "x" s) (QualVar "y" s))
+
   einfacher evtl.: mit Hets erzeugen
-    spec sp =
+
+library encode
+
+spec sp =
        sorts s < s'
+       op inj : s->s'
+       op proj : s'->?s
+       pred in_s : s'
        var x,y:s
-       . inj(x)=inj(y) => x=y
-    end
+       . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)%
+end
+
+und dann
+
+sens <- getCASLSens "../CASL-lib/encode.casl"
+
+
+
+*Main> sig <- getCASLSig "../CASL-lib/encode.casl"
+
+<interactive>:1: Warning: Defined but not used: sig
+Reading ../CASL-lib/encode.casl
+Analyzing spec sp
+Writing ../CASL-lib/encode.env
+*Main> sig
+Sign {sortSet = {s,s'}, sortRel = {(s,s')}, opMap = {inj:={OpType {opKind = Total, opArgs = [s], opRes = s'}}}, assocOps = {}, predMap = {}, varMap = {}, sentences = [], envDiags = [], extendedInfo = ()}
+*Main> sens <- getCASLSens "../CASL-lib/encode.casl"
+
+<interactive>:1: Warning: Defined but not used: sens
+Reading ../CASL-lib/encode.casl
+Analyzing spec sp
+Writing ../CASL-lib/encode.env
+*Main> sens
+[NamedSen {senName = "ga_embedding_injectivity", sentence = Implication (Strong_equation (Sorted_term (Application (Qual_op_name inj (Total_op_type [s] s' []) []) [Sorted_term (Qual_var x s []) s []] []) s' []) (Sorted_term (Application (Qual_op_name inj (Total_op_type [s] s' []) []) [Sorted_term (Qual_var y s []) s []] []) s' []) [../CASL-lib/encode.casl:7.16]) (Strong_equation (Sorted_term (Qual_var x s []) s []) (Sorted_term (Qual_var y s []) s []) [../CASL-lib/encode.casl:7.28]) True [../CASL-lib/encode.casl:7.24]}]
+*Main>
+
 -}
 
 
-encodeFORMULA :: 
+encodeFORMULA :: Named (FORMULA f) -> Named (FORMULA f)
+encodeFORMULA phi = error "encodeFORMULA not yet implemented"
