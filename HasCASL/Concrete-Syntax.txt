@@ -47,6 +47,8 @@ TYPE-PATTERN      ::= TYPE-DEFN-PATTERN
 
 PRIM-TYPE-PATTERN ::= [ ID , ... , ID ]      %% compound list
 		    | NO-BRACKET-TOKEN       %% TYPE-NAME or TYPE-VAR
+		    | { PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN } | { }
+		    | [ PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN ] | [ ]
                     | TYPE-EXT-VAR
 		    | TYPE-PATTERN-ARG
 		    | (TYPE-PATTERN-ARG)
@@ -211,6 +213,8 @@ TYPE-SCHEME   ::= TYPE
 
 PRIM-TYPE     ::= NO-BRACKET-TOKEN    %% TYPE-VAR or TYPE-NAME
 	        | [ ID , ... , ID ]   %% compound list 
+		| { TYPE } | { }
+		| [ TYPE ] | [ ]
 	        | ( TYPE )
 		| ( )                 %% unit
 
