@@ -56,6 +56,9 @@ import Common.GlobalAnnotations
 import Options
 import WriteFn
 import ReadFn
+import FileDialog
+import Events
+import System.Directory
 
 import Data.IORef
 import Data.Maybe
@@ -177,12 +180,29 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
          -- action on "open"
-             (do openProofStatus "./proofStatus.log" ioRefProofStatus convRef)
+             (do currentPath <- getCurrentDirectory
+	         event <- fileDialogStr "Open..." currentPath
+	         maybeFilePath <- sync event
+                 case maybeFilePath of
+	           Just filePath ->
+	             do openProofStatus filePath ioRefProofStatus convRef
+                   Nothing ->
+	             do error ("Could not open file.")
+              )
          -- action on "save"
              (do proofStatus <- readIORef ioRefProofStatus
-                 writeShATermFile "./proofStatus.log" proofStatus)
+                 writeShATermFile ("./" ++ (show ln) ++ ".log") proofStatus)
          -- action on "save as...:"
-             (do return())
+             (do currentPath <- getCurrentDirectory
+	         event <- newFileDialogStr "Save as..." currentPath
+                 maybeFilePath <- sync event
+                 case maybeFilePath of
+	           Just filePath -> do
+                     proofStatus <- readIORef ioRefProofStatus
+                     writeShATermFile filePath proofStatus
+	           Nothing ->
+                     do error ("Could not save file.")
+              )
          -- the global menu
              [GlobalMenu (Menu Nothing
                [Menu (Just "Unnamed nodes")
