@@ -20,27 +20,28 @@ import HasCASL.Le
 import Common.Lib.State
 import Common.Lib.Parsec
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Result
 import Data.List
 import Data.Maybe
 
-varsOf :: Type -> [TypeArg]
+varsOf :: Type -> Set.Set TypeArg
 varsOf t = 
     case t of 
-	   TypeName j k i -> if i > 0 then [TypeArg j k Other []] else []
-	   TypeAppl t1 t2 -> varsOf t1 ++ varsOf t2
-	   TypeToken _ -> []
-	   BracketType _ l _ -> concatMap varsOf l
+	   TypeName j k i -> if i > 0 then Set.single $ TypeArg j k Other [] 
+			     else Set.empty
+	   TypeAppl t1 t2 -> varsOf t1 `Set.union` varsOf t2
+	   TypeToken _ -> Set.empty
+	   BracketType _ l _ -> Set.unions $ map varsOf l
 	   KindedType tk _ _ -> varsOf tk
-	   MixfixType l -> concatMap varsOf l
+	   MixfixType l -> Set.unions $ map varsOf l
 	   LazyType tl _ -> varsOf tl
-	   ProductType l _ -> concatMap varsOf l
-	   FunType t1 _ t2 _ -> varsOf t1 ++ varsOf t2
-
+	   ProductType l _ -> Set.unions $ map varsOf l
+	   FunType t1 _ t2 _ -> varsOf t1 `Set.union` varsOf t2
 
 generalize :: TypeScheme -> TypeScheme
-generalize (TypeScheme vs q@(_ :=> ty) ps) =
-    TypeScheme (nub (varsOf ty)) q ps
+generalize (TypeScheme _ q@(_ :=> ty) ps) =
+    TypeScheme (Set.toList $ varsOf ty) q ps
 
 -- | composition (reversed: first substitution first!)
 compSubst :: Subst -> Subst -> Subst

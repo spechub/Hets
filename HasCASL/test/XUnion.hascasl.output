@@ -2,7 +2,7 @@ var S : Type; N : Type; E : Type
 type Set : Type -> Type := \ S : Type . S ->? Unit
 type Graph : Type -> Type -> Type := \ (N : Type)
 				       (E : Type) . (N ->? Unit) × (E ->? N) × (E ->? N)
-op __union__ : forall N : Type; E : Type .  ((N ->? Unit) ×
+op __union__ : forall E : Type; N : Type .  ((N ->? Unit) ×
 					     (E ->? N) × (E ->? N)) ×
 					    ((N ->? Unit) × (E ->? N) × (E ->? N)) -> (N ->? Unit) ×
 										      (E ->? N) ×
@@ -13,8 +13,8 @@ op __union__ : forall N : Type; E : Type .  ((N ->? Unit) ×
 forall g : (N ->? Unit) × (E ->? N) × (E ->? N);
        g' : (N ->? Unit) × (E ->? N) × (E ->? N)
 . (fun __=__ : forall a : Type .  a ×
-				  a ->? Unit) ((op __union__ : forall N : Type;
-								      E : Type .  ((N ->? Unit) ×
+				  a ->? Unit) ((op __union__ : forall E : Type;
+								      N : Type .  ((N ->? Unit) ×
 										   (E ->? N) ×
 										   (E ->? N)) ×
 										  ((N ->? Unit) ×
@@ -56,7 +56,7 @@ __intersection__ : forall S : Type .  (S ->? Unit) ×
 				      (S ->? Unit) -> S ->? Unit %(Op)%
 __union__ : forall S : Type .  (S ->? Unit) ×
 			       (S ->? Unit) -> S ->? Unit %(Op)%
-	  : forall N : Type; E : Type .  ((N ->? Unit) × (E ->? N) ×
+	  : forall E : Type; N : Type .  ((N ->? Unit) × (E ->? N) ×
 					  (E ->? N)) ×
 					 ((N ->? Unit) × (E ->? N) × (E ->? N)) -> (N ->? Unit) ×
 										   (E ->? N) ×
@@ -69,8 +69,8 @@ not__ : Unit ->? Unit %(Fun)%
 true : Unit %(Fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__ : forall a : Type .  a ×
-				a ->? Unit) ((op __union__ : forall N : Type;
-								    E : Type .  ((N ->? Unit) ×
+				a ->? Unit) ((op __union__ : forall E : Type;
+								    N : Type .  ((N ->? Unit) ×
 										 (E ->? N) ×
 										 (E ->? N)) ×
 										((N ->? Unit) ×

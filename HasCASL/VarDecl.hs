@@ -16,6 +16,7 @@ module HasCASL.VarDecl where
 import HasCASL.As
 import HasCASL.ClassAna
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Id
 import HasCASL.Le
 import Data.Maybe
@@ -236,9 +237,10 @@ anaVarDecl(VarDecl v oldT sk ps) =
     do mt <- anaStarType oldT
        case mt of 
 	       Nothing -> return Nothing
-	       Just t -> let s = Map.fromList $ 
+	       Just t -> let s = Map.fromAscList $ 
 				 map ( \ a@(TypeArg i k _ _) -> 
-				       (a, TypeName i k 0)) $ varsOf t
+				       (a, TypeName i k 0)) $ 
+				 Set.toList $ varsOf t
 	                 -- make type monomorph
 	                 in  addVarDecl (VarDecl v (subst s t) sk ps)
 

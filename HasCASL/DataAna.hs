@@ -139,12 +139,11 @@ checkMonomorphRecursion t (i, rt) = do
 	       return False
        else return True
 
-unboundTypevars :: [TypeArg] -> Type -> State Env (Maybe Type)
+unboundTypevars :: Set.Set TypeArg -> Type -> State Env (Maybe Type)
 unboundTypevars args ct = do 
-    let restVars = Set.toList 
-		   (Set.fromList (varsOf ct) Set.\\ (Set.fromList args))
-    if null restVars then do return $ Just ct
-       else do addDiags [Diag Error ("unbound type variable(s)\n\t"
+    let restVars = varsOf ct Set.\\ args
+    if Set.isEmpty restVars then do return $ Just ct
+       else do addDiags [mkDiag Error ("unbound type variable(s)\n\t"
 				     ++ showSepList ("," ++) showPretty 
-				     restVars "") $ posOf restVars]
+				     (Set.toList restVars) " in") ct]
 	       return Nothing

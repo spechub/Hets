@@ -67,8 +67,8 @@ diffAss :: TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos
 diffAss tm (OpInfos l1) (OpInfos l2) = 
     let l3 = diffOps l1 l2 in
 	if null l3 then Nothing else Just (OpInfos l3)
-    where diffOps [] l = []
-	  diffOps (o:os) (ps) = 
+    where diffOps [] _ = []
+	  diffOps (o:os) ps = 
 	      let rs = diffOps os ps in
 	      if any (\ p -> isUnifiable tm 0 (opType o) (opType p)) ps
 		 then rs else o:rs

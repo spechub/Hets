@@ -104,12 +104,12 @@ true : Unit %(Fun)%
 *** Hint 1.5, is type variable 'b'
 *** Hint 2.5, is type variable 'a'
 *** Warning 4.11, redeclared type 'List'
-*** Error 5.55, unbound type variable(s)
-	b : Type
+*** Error 5.50, unbound type variable(s)
+	b : Type in 'List b'
 *** Warning 5.11, redeclared type 'List'
 *** Error 6.57, unexpected type argument 'b'
-*** Error 6.57, unbound type variable(s)
-	b : Type
+*** Error 6.50, unbound type variable(s)
+	b : Type in 'List a b'
 *** Warning 6.11, redeclared type 'List'
 *** Error 7.50, illegal polymorphic recursion
   expected: List a
