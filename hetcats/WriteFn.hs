@@ -12,12 +12,16 @@
 module WriteFn where
 
 import Options
-import List
+-- import List
+import Utils
 
 import IO 
 import IOExts (trace)
 import Print_HetCASL
 import AS_Library (LIB_DEFN()) 
+
+-- for debugging
+import GlobalAnnotationsFunctions
 
 {---
   Write the given LIB_DEFN in every format that HetcatsOpts includes.
@@ -30,7 +34,8 @@ write_LIB_DEFN opt ld = sequence_ $ map write_type $ outtypes opt
     where write_type :: OutType -> IO ()
 	  write_type t = 
 	      case t of 
-	      CASLOut -> write_casl_asc (casl_asc_filename opt) ld
+	      HetCASLOut Ascii -> 
+		  write_casl_asc (verbose opt) (casl_asc_filename opt) ld
 	      _ -> trace ( "the outtype \"" ++ 
 		           show t ++ "\" is not implemented")
 		         (return ())
@@ -41,30 +46,14 @@ write_LIB_DEFN opt ld = sequence_ $ map write_type $ outtypes opt
 -}
 casl_asc_filename :: HetcatsOpts -> FilePath
 casl_asc_filename opt =
-    (outdir opt) ++ "/" ++ basename (infile opt) ++ ".pp.casl"
+    let (base,_,_) = fileparse [".casl",".tree.gen_trm"] (infile opt)
+    in (outdir opt) ++ "/" ++ base ++ ".pp.casl"
       -- maybe an optin out-file is better
 
-basename :: FilePath -> FilePath
-basename fp | ".tree.gen_trm" `isSuffixOf` fp = stripOf ".tree.gen_trm" fp 
-	    | ".casl"         `isSuffixOf` fp = stripOf ".casl" fp
-	    | otherwise = fp
-
-stripOf :: (Show a, Eq a) => [a] -> [a] -> [a]
-stripOf suf inp = reverse $ stripOf' (reverse suf) (reverse inp)
-    where stripOf' []     i  = i
-	  stripOf' (x:xs) [] = error $ 
-			       concat ["suffix is longer than input string\n"
-				      ,"input was: ", show suf, " ",show inp ]
-	  stripOf' (x:xs) (y:ys) | x == y    = stripOf' xs ys
-				 | otherwise = 
-				     error $ concat ["suffix don't match input"
-						    ," at "
-						    ,show $ reverse (x:xs)
-						    ," ",show $ reverse (y:ys)]
-
--- stripOfx suf = reverse . drop (length suf) . reverse
-
-write_casl_asc :: FilePath -> LIB_DEFN -> IO ()
-write_casl_asc oup ld =
+write_casl_asc :: Int -> FilePath -> LIB_DEFN -> IO ()
+write_casl_asc verb oup ld =
     do hout <- openFile oup WriteMode
+       if verb > 3 then putStrLn $ show (initGlobalAnnos ld)
+        else return ()
        hPutStr hout $ printLIB_DEFN_text ld
+
