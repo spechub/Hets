@@ -1,8 +1,11 @@
 module Id where
 
+{-! global : UpPos !-}
+
 import Char
 import Pretty
 import PrettyPrint
+
 -- identifiers, fixed for all logics
 
 type Pos = (Int, Int) -- line, column
@@ -15,7 +18,7 @@ type Region = (Pos,Pos)
 -- tokens as supplied by the scanner
 data Token = Token { tokStr :: String
 		   , tokPos :: Pos
-		   } deriving (Show)
+		   } {-! ==> token(..) !-} deriving (Show)
 
 showTok :: Token -> ShowS
 showTok = showString . tokStr
@@ -25,6 +28,10 @@ instance Eq Token where
  
 instance Ord Token where
    Token s1 _  <= Token s2 _ = s1 <= s2
+
+instance PosItem Token where
+    up_pos f i = case i of
+		 (Token x1 p) -> (Token x1 (f p))
 
 showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
 showSepList _ _ [] = showString ""
@@ -44,8 +51,10 @@ isPlace(Token t _) = t == place
  
 -- an identifier may be mixfix (though not for a sort) and compound
 -- TokenOrPlace list must be non-empty!
-data Id = Id [TokenOrPlace] [Id] [Pos] deriving (Eq, Ord, Show)
+data Id = Id [TokenOrPlace] [Id] [Pos] {-! ==> compound-id(..) !-}
                                  -- pos of "[", commas, "]" 
+	  deriving (Eq, Ord, Show)
+
 
 showId (Id ts is _) = 
 	let (toks, places) = splitMixToken ts 
@@ -65,3 +74,22 @@ instance PrettyPrint Id where
 
 type SIMPLE_ID = Token
 
+---- helper class ----------------------------
+
+{- This class is derivable with DrIFT in HetCATS/utils ! 
+   
+   It's main purpose is to have an function that "works" on every
+   constructor with a Pos or [Pos] field. During parsing, mixfix
+   analysis and ATermConversion this function might be very useful.
+
+-}
+class PosItem a where
+    up_pos   :: (Pos -> Pos)    -> a -> a
+    up_pos_l :: ([Pos] -> [Pos]) -> a -> a
+    up_pos_err :: String -> a
+    up_pos_err fn = 
+	error ("function \"" ++ fn ++ "\" is not implemented")
+    up_pos _ _   = up_pos_err "up_pos"
+    up_pos_l _ _ = up_pos_err "up_pos_l"
+    
+----------------------------------------------
