@@ -109,67 +109,70 @@ myShowList (h:t) = "'" ++ (show h) ++ "', " ++ (myShowList t)
 cloneAnnos :: Annoted a -> b -> Annoted b
 cloneAnnos a b = a { item = b }
 
+annoFilter :: Annotation -> Maybe Annotation
+annoFilter x = case x of Label _ _ -> Just x;
+                                 _ -> Nothing
+
+cloneAnnoFormula :: Annoted a -> b -> Annoted b
+cloneAnnoFormula a b = Annoted b [] (mapMaybe annoFilter $ l_annos a)
+                                    (mapMaybe annoFilter $ r_annos a)
+
 mergeAnnos :: Annoted a -> Annoted b -> Annoted b
-mergeAnnos a b = b { opt_pos = (opt_pos a) ++ (opt_pos b),
-                     l_annos = (l_annos a) ++ (l_annos b),
-                     r_annos = (r_annos a) ++ (r_annos b) }
+mergeAnnos a b = b { opt_pos = setAdd (opt_pos a) (opt_pos b),
+                     l_annos = setAdd (l_annos a) (l_annos b),
+                     r_annos = setAdd (r_annos a) (r_annos b) }
 
 ------------------------------------------------------------------------------
 -- special functions to generate token lists from Pos lists
 ------------------------------------------------------------------------------
 
-toSemi :: Int -> [TokenKind]
-toSemi i = replicate i Semi
+toExtPos :: Maybe ExtPos -> [Pos] -> ([Pos] -> [TokenKind]) -> [ExtPos]
+toExtPos pre p f = let
+                     tokens = (zip p (f p))
+                   in
+                     case pre of Nothing -> tokens;
+                                 Just ep -> ep:tokens
 
-toComma :: Int -> [TokenKind]
-toComma i = replicate i Comma
+tokPos_sort_decl :: [Pos] -> [TokenKind]
+tokPos_sort_decl l = replicate (length l) Comma
 
-toColon :: Int -> [TokenKind]
-toColon i = replicate i Colon
+tokPos_subsort_decl :: [Pos] -> [TokenKind]
+tokPos_subsort_decl []    = []
+tokPos_subsort_decl (h:t) = (replicate (length t) Comma) ++ [Less]
 
-strPosSortDecl :: [Pos] -> [TokenKind]
-strPosSortDecl l = toComma (length l)
+tokPos_subsort_defn :: [Pos] -> [TokenKind]
+tokPos_subsort_defn _ = [Equal,Key,Colon,Comma,Key]
 
-strPosSubsortDecl :: [Pos] -> [TokenKind]
-strPosSubsortDecl []    = []
-strPosSubsortDecl (h:t) = (toComma $ length t) ++ [Less]
+tokPos_iso_decl :: [Pos] -> [TokenKind]
+tokPos_iso_decl l = replicate (length l) Colon
 
-strPosSubsortDefn :: [Pos] -> [TokenKind]
-strPosSubsortDefn _ = [Equal,Key,Colon,Comma,Key]
+tokPos_SORT_ITEM :: [Pos] -> [TokenKind]
+tokPos_SORT_ITEM []    = []
+tokPos_SORT_ITEM (h:t) = Key:(replicate (length t) Semi)
 
-strPosIsoDecl :: [Pos] -> [TokenKind]
-strPosIsoDecl l = toColon (length l)
+tokPos_pred_decl :: [Pos] -> [TokenKind]
+tokPos_pred_decl []    = []
+tokPos_pred_decl (h:t) = (replicate (length t) Comma) ++ [Colon]
 
-strPosSORT_ITEM :: [Pos] -> [TokenKind]
-strPosSORT_ITEM []    = []
-strPosSORT_ITEM (h:t) = Key:(toSemi $ length t)
+tokPos_VAR_DECL :: [Pos] -> [TokenKind]
+tokPos_VAR_DECL = tokPos_pred_decl
 
-strPosPredDecl :: [Pos] -> [TokenKind]
-strPosPredDecl []    = []
-strPosPredDecl (h:t) = (toComma $ length t) ++ [Colon]
+tokPos_pred_defn :: [Pos] -> [TokenKind]
+tokPos_pred_defn _ = [Key]
 
-strPosVarDecl :: [Pos] -> [TokenKind]
-strPosVarDecl = strPosPredDecl
+tokPos_ARG_DECL :: [Pos] -> [TokenKind]
+tokPos_ARG_DECL = tokPos_pred_decl
 
-strPosPredDefn :: [Pos] -> [TokenKind]
-strPosPredDefn _ = [Key]
+tokPos_ARG_DECL_list :: [Pos] -> [TokenKind]
+tokPos_ARG_DECL_list []        = []
+tokPos_ARG_DECL_list [h]       = []
+tokPos_ARG_DECL_list (_:(_:t)) = (Key:(replicate (length t) Semi)) ++ [Key]
 
-strPosArgDecl :: [Pos] -> [TokenKind]
-strPosArgDecl = strPosPredDecl
+tokPos_PRED_ITEM :: [Pos] -> [TokenKind]
+tokPos_PRED_ITEM = tokPos_SORT_ITEM
 
-strPosArgDecls :: [Pos] -> [TokenKind]
-strPosArgDecls []        = []
-strPosArgDecls [h]       = []
-strPosArgDecls (_:(_:t)) = (Key:(toSemi $ length t)) ++ [Key]
-
-strPosPRED_ITEM :: [Pos] -> [TokenKind]
-strPosPRED_ITEM = strPosSORT_ITEM
-
-strPosVAR_ITEM :: [Pos] -> [TokenKind]
-strPosVAR_ITEM = strPosSORT_ITEM
-
-strPosVAR_DECL :: [Pos] -> [TokenKind]
-strPosVAR_DECL = strPosPredDecl
+tokPos_VAR_ITEM :: [Pos] -> [TokenKind]
+tokPos_VAR_ITEM = tokPos_SORT_ITEM
 
 ------------------------------------------------------------------------------
 -- functions to generate labels
@@ -403,9 +406,9 @@ addIsoSubsorting all sigma sort =
   in
     updateSigItem sigma sort (ASortItem (res { item = ext }))
 
-addSortItem :: Filename -> Annoted a -> Maybe SortDefn -> Sign -> SortId
-               -> ExtPos -> Sign
-addSortItem name ann defn sigma id kwpos =
+updateSortItem :: Filename -> Annoted a -> Maybe SortDefn -> Sign -> SortId
+                  -> ExtPos -> Sign
+updateSortItem name ann defn sigma id kwpos =
   let
     res = lookupSort sigma id
     pos = toItemPos name kwpos
@@ -428,9 +431,9 @@ addSortItem name ann defn sigma id kwpos =
 -- PredItem generation
 ------------------------------------------------------------------------------
 
-addPredItem :: Filename -> Annoted PRED_ITEM -> PredType -> Maybe PredDefn
-               -> Sign -> Id -> ExtPos -> Sign
-addPredItem name ann typ defn sigma id pos =
+updatePredItem :: Filename -> Annoted PRED_ITEM -> PredType -> Maybe PredDefn
+                  -> Sign -> Id -> ExtPos -> Sign
+updatePredItem name ann typ defn sigma id pos =
   let
     res  = lookupPred sigma id
     ppos = toItemPos name pos
@@ -461,21 +464,21 @@ addPredItem name ann typ defn sigma id pos =
 -- FIXME, dummy implementation
 ------------------------------------------------------------------------------
 
-toFormula :: LocalEnv -> Annoted FORMULA -> Formula
-toFormula env f = TrueAtom []
+ana_FORMULA :: LocalEnv -> Annoted FORMULA -> Result (Annoted Formula)
+ana_FORMULA sigma f = return (cloneAnnoFormula f (TrueAtom []))
 
-toAnnotedFormula :: LocalEnv -> Annoted FORMULA -> Annoted Formula
-toAnnotedFormula env f = cloneAnnos f (toFormula env f)
+ana_no_anno_FORMULA :: LocalEnv -> Annoted FORMULA -> Result Formula
+ana_no_anno_FORMULA sigma f = ana_FORMULA sigma f >>= (return . item)
 
 ------------------------------------------------------------------------------
 -- SORT-DECL
 ------------------------------------------------------------------------------
 
-addSortDecl :: LocalEnv -> Annoted SORT_ITEM -> [SortId] -> [ExtPos]
-               -> Result LocalEnv
-addSortDecl sigma _itm s _pos =
-  return sigma { getSign = foldPos (addSortItem (getName sigma) _itm Nothing)
-                           (getSign sigma) s _pos }
+ana_sort_decl :: LocalEnv -> Annoted SORT_ITEM -> [SortId] -> [ExtPos]
+                 -> Result LocalEnv
+ana_sort_decl sigma _itm s _pos =
+  return sigma { getSign = foldPos (updateSortItem (getName sigma) _itm
+                                    Nothing) (getSign sigma) s _pos }
 
 ------------------------------------------------------------------------------
 -- SUBSORT-DECL
@@ -488,11 +491,11 @@ checkSubsDistinctSuper _pos s_n s =
   else
     fatal_error "subsort not distinct from supersort" _pos
 
-addSubsortDecl :: LocalEnv -> Annoted SORT_ITEM -> Maybe SortDefn -> [SortId]
-                  -> SortId -> [ExtPos] -> Result LocalEnv
-addSubsortDecl sigma _itm _defn s_n s _pos =
+ana_subsort_decl :: LocalEnv -> Annoted SORT_ITEM -> Maybe SortDefn -> [SortId]
+                    -> SortId -> [ExtPos] -> Result LocalEnv
+ana_subsort_decl sigma _itm _defn s_n s _pos =
   do checkSubsDistinctSuper (fst $ head _pos) s_n s
-     let _delta = foldPos (addSortItem (getName sigma) _itm _defn)
+     let _delta = foldPos (updateSortItem (getName sigma) _itm _defn)
                            (getSign sigma) (s:s_n) _pos
      let embed  = foldl (addSubsort s) _delta s_n
      return sigma { getSign = embed }
@@ -512,21 +515,22 @@ checkSortExists sigma _pos s' =
   else
     fatal_error ("sort '"++(show s')++"' is not declared") _pos
 
-addSubsortDefn :: LocalEnv -> Annoted SORT_ITEM -> SortId -> VAR -> SortId
-                  -> Annoted FORMULA -> [ExtPos] -> Result LocalEnv
-addSubsortDefn sigma _itm s v s' f _pos =
+ana_subsort_defn :: LocalEnv -> Annoted SORT_ITEM -> SortId -> VAR -> SortId
+                    -> Annoted FORMULA -> [ExtPos] -> Result LocalEnv
+ana_subsort_defn sigma _itm s v s' f _pos =
   let
     _colpos = head $ drop 3 _pos
-    _defn   = SubsortDefn (toVarDecl s' _colpos v)
-                          (toFormula sigma f) (map fst $ tail _pos)
-    f'      = cloneAnnos f (Quantification Universal [(Var_decl [v] s'
+    f'      = cloneAnnoFormula f (Quantification Universal [(Var_decl [v] s'
                             [fst _colpos])] (Equivalence (item f) (Membership
                             (Simple_id v) s []) []) [])
   in
     do checkSortExists sigma (fst $ head _pos) s'
-       delta <- addSubsortDecl sigma _itm (Just _defn) [s] s' _pos
-       let phi = toNamedSentence [] (someLabel (subsortLabel s s') f)
-                 (toAnnotedFormula delta { getGlobal = emptyGlobal } f')
+       _f       <- ana_no_anno_FORMULA sigma f
+       let _defn = SubsortDefn (toVarDecl s' _colpos v) _f
+                               (map fst $ tail _pos)
+       delta    <- ana_subsort_decl sigma _itm (Just _defn) [s] s' _pos
+       _f'      <- ana_FORMULA delta { getGlobal = emptyGlobal } f'
+       let phi   = toNamedSentence [] (someLabel (subsortLabel s s') f) _f'
        return delta { getPsi = Sentences
                                ((sentences $ getPsi delta) ++ [phi]) }
 
@@ -549,12 +553,12 @@ checkGreaterOrEqualTwo _pos s_n =
   else
     fatal_error "single sort in isomorphism decl" _pos
 
-addIsoDecl :: LocalEnv -> Annoted SORT_ITEM -> [SortId] -> [ExtPos]
-              -> Result LocalEnv
-addIsoDecl sigma _itm s_n _pos =
+ana_iso_decl :: LocalEnv -> Annoted SORT_ITEM -> [SortId] -> [ExtPos]
+                -> Result LocalEnv
+ana_iso_decl sigma _itm s_n _pos =
   do checkAllUnique (fst $ head _pos) s_n
      checkGreaterOrEqualTwo (fst $ head _pos) s_n
-     let _delta = foldPos (addSortItem (getName sigma) _itm Nothing)
+     let _delta = foldPos (updateSortItem (getName sigma) _itm Nothing)
                           (getSign sigma) s_n _pos
      let embed  = foldl (addIsoSubsorting s_n) _delta s_n
      return sigma { getSign = embed }
@@ -563,40 +567,48 @@ addIsoDecl sigma _itm s_n _pos =
 -- SORT-ITEM
 ------------------------------------------------------------------------------
 
-addSORT_ITEM :: LocalEnv -> Annoted SORT_ITEM -> ExtPos -> Result LocalEnv
-addSORT_ITEM sigma _itm _pos =
+ana_SORT_ITEM :: LocalEnv -> Annoted SORT_ITEM -> ExtPos -> Result LocalEnv
+ana_SORT_ITEM sigma _itm _pos =
   case (item _itm) of
-    (Sort_decl s_n _p)         -> addSortDecl sigma _itm s_n
-                                  (_pos:(zip _p (strPosSortDecl _p)));
-    (Subsort_decl s_n s _p)    -> addSubsortDecl sigma _itm Nothing s_n s
-                                  (_pos:(zip _p (strPosSubsortDecl _p)));
-    (Subsort_defn s v s' f _p) -> addSubsortDefn sigma _itm s v s' f
-                                  (_pos:(zip _p (strPosSubsortDefn _p)));
-    (Iso_decl s_n _p)          -> addIsoDecl sigma _itm s_n
-                                  (_pos:(zip _p (strPosIsoDecl _p)))
+    (Sort_decl s_n _p)
+      -> ana_sort_decl sigma _itm s_n
+                       (toExtPos (Just _pos) _p tokPos_sort_decl);
+    (Subsort_decl s_n s _p)
+      -> ana_subsort_decl sigma _itm Nothing s_n s
+                          (toExtPos (Just _pos) _p tokPos_subsort_decl);
+    (Subsort_defn s v s' f _p)
+      -> ana_subsort_defn sigma _itm s v s' f
+                          (toExtPos (Just _pos) _p tokPos_subsort_defn);
+    (Iso_decl s_n _p)
+      -> ana_iso_decl sigma _itm s_n
+                      (toExtPos (Just _pos) _p tokPos_iso_decl)
 
 ------------------------------------------------------------------------------
 -- PRED-DECL
 ------------------------------------------------------------------------------
 
-addPRED_TYPE :: LocalEnv -> PredType -> PRED_TYPE -> ExtPos 
-                -> Result PredType
-addPRED_TYPE sigma w (Pred_type [] _) _pos = return w
-addPRED_TYPE sigma w (Pred_type (s_n:_t) _) _pos =
+ana_PRED_TYPE :: LocalEnv -> PredType -> PRED_TYPE -> ExtPos 
+                 -> Result PredType
+ana_PRED_TYPE sigma w (Pred_type [] _) _pos = return w
+ana_PRED_TYPE sigma w (Pred_type (s_n:_t) _) _pos =
   do checkSortExists sigma (fst _pos) s_n
-     addPRED_TYPE sigma (w++[s_n]) (Pred_type _t []) _pos
+     ana_PRED_TYPE sigma (w++[s_n]) (Pred_type _t []) _pos
 
-addPredDecl :: LocalEnv -> Annoted PRED_ITEM -> [PRED_NAME] -> PRED_TYPE
-               -> [ExtPos] -> Result LocalEnv
-addPredDecl sigma _itm p_n _t _pos =
-  do w <- addPRED_TYPE sigma [] _t (head _pos)
-     let delta = foldPos (addPredItem (getName sigma) _itm w Nothing)
+ana_pred_decl :: LocalEnv -> Annoted PRED_ITEM -> [PRED_NAME] -> PRED_TYPE
+                 -> [ExtPos] -> Result LocalEnv
+ana_pred_decl sigma _itm p_n _t _pos =
+  do w <- ana_PRED_TYPE sigma [] _t (head _pos)
+     let delta = foldPos (updatePredItem (getName sigma) _itm w Nothing)
                          (getSign sigma) p_n _pos
      return sigma { getSign = delta }
 
 ------------------------------------------------------------------------------
 -- PRED-DEFN
 ------------------------------------------------------------------------------
+
+predDefnLabel :: PRED_NAME -> [VarDecl] -> String
+predDefnLabel n v = "ga_pred_defn_" ++ (toLabel n) ++ "_" ++
+                     (concat $ map (\x -> toLabel (varId x) ++ "_") v)
 
 checkVarsUnique :: [VAR] -> Pos -> Result ()
 checkVarsUnique x_n _pos =
@@ -606,8 +618,9 @@ checkVarsUnique x_n _pos =
     fatal_error ("variables not unique in arg-decl: (" ++
                   (myShowList $ notUnique x_n) ++ ")") _pos
 
-addARG_DECL :: LocalEnv -> [VAR] -> SortId -> [ExtPos] -> Result ([VAR],SortId)
-addARG_DECL sigma x_n s _pos =
+ana_ARG_DECL :: LocalEnv -> [VAR] -> SortId -> [ExtPos]
+                -> Result ([VAR],SortId)
+ana_ARG_DECL sigma x_n s _pos =
   do checkSortExists sigma (fst $ last _pos) s
      checkVarsUnique x_n (fst $ head _pos)
      return (x_n,s)
@@ -619,31 +632,32 @@ checkQualVarsUnique _pos a b =
   else
     fatal_error "overlapping variable names" _pos
 
-addArgDecls :: LocalEnv -> ([VarDecl],[SortId]) -> [ARG_DECL]
+ana_ARG_DECL_list :: LocalEnv -> ([VarDecl],[SortId]) -> [ARG_DECL]
                -> Result ([VarDecl],[SortId])
-addArgDecls sigma (x_s_n,w) [] = return (x_s_n,w)
-addArgDecls sigma (x_s_n,w) ((Arg_decl _v _s _pos):_t) =
-  do let _extPos = zip _pos (strPosArgDecl _pos)
-     (x_n,s) <- addARG_DECL sigma _v _s _extPos
+ana_ARG_DECL_list sigma (x_s_n,w) [] = return (x_s_n,w)
+ana_ARG_DECL_list sigma (x_s_n,w) ((Arg_decl _v _s _pos):_t) =
+  do let _extPos = zip _pos (tokPos_ARG_DECL _pos)
+     (x_n,s) <- ana_ARG_DECL sigma _v _s _extPos
      let _qual = toVarDecls s _extPos x_n
      checkQualVarsUnique (head _pos) x_s_n _qual
-     addArgDecls sigma (x_s_n ++ _qual,w ++ [s]) _t
+     ana_ARG_DECL_list sigma (x_s_n ++ _qual,w ++ [s]) _t
 
-addPredDefn :: LocalEnv -> Annoted PRED_ITEM -> PRED_NAME -> PRED_HEAD
-               -> Annoted FORMULA -> [ExtPos] -> Result LocalEnv
-addPredDefn sigma _ann p (Pred_head _ad _pos') _f _pos =
-  do (_x_s_n,w) <- addArgDecls sigma ([],[]) _ad
-     let _delta' = addPredItem (getName sigma) _ann w Nothing (getSign sigma)
-                             p (head _pos)
-     let phi     = toFormula (sigma { getSign = _delta', getGlobal =
-                                      Global _x_s_n }) _f
+ana_pred_defn :: LocalEnv -> Annoted PRED_ITEM -> PRED_NAME -> PRED_HEAD
+                 -> Annoted FORMULA -> [ExtPos] -> Result LocalEnv
+ana_pred_defn sigma _ann p (Pred_head _ad _pos') _f _pos =
+  do (_x_s_n,w) <- ana_ARG_DECL_list sigma ([],[]) _ad
+     let _delta' = updatePredItem (getName sigma) _ann w Nothing
+                                  (getSign sigma) p (head _pos)
+     phi        <- ana_no_anno_FORMULA (sigma { getSign = _delta',
+                                        getGlobal = Global _x_s_n }) _f
      let _defn   = PredDef _x_s_n phi (_pos' ++ [(fst $ last _pos)])
-     let delta   = addPredItem (getName sigma) _ann w (Just _defn)
-                               _delta' p (head _pos)
+     let delta   = updatePredItem (getName sigma) _ann w (Just _defn)
+                                  _delta' p (head _pos)
      return sigma { getSign = delta,
                     getPsi   = Sentences ((sentences $ getPsi sigma) ++
-                               [toNamedSentence [] "" 
-                               (cloneAnnos _ann (Quantified Forall _x_s_n
+                               [toNamedSentence [] (someLabel
+                               (predDefnLabel p (_x_s_n)) _f)
+                               (cloneAnnos _f (Quantified Forall _x_s_n
                                (Connect EquivOp [PredAppl p w
                                (map toVarId _x_s_n) Inferred [],phi]
                                [])[]))]) }
@@ -652,34 +666,34 @@ addPredDefn sigma _ann p (Pred_head _ad _pos') _f _pos =
 -- PRED-ITEM
 ------------------------------------------------------------------------------
 
-addPRED_ITEM :: LocalEnv -> Annoted PRED_ITEM -> ExtPos -> Result LocalEnv
-addPRED_ITEM sigma _itm _pos =
+ana_PRED_ITEM :: LocalEnv -> Annoted PRED_ITEM -> ExtPos -> Result LocalEnv
+ana_PRED_ITEM sigma _itm _pos =
   case (item _itm) of
-    (Pred_decl p_n _t _p)  -> addPredDecl sigma _itm p_n _t
-                              (_pos:(zip _p (strPosPredDecl _p)));
-    (Pred_defn p _h _f _p) -> addPredDefn sigma _itm p _h _f
-                              (_pos:(zip _p (strPosPredDefn _p)))
+    (Pred_decl p_n _t _p)  -> ana_pred_decl sigma _itm p_n _t
+                              (toExtPos (Just _pos) _p tokPos_pred_decl);
+    (Pred_defn p _h _f _p) -> ana_pred_defn sigma _itm p _h _f
+                              (toExtPos (Just _pos) _p tokPos_pred_defn)
 
 ------------------------------------------------------------------------------
 -- SIG-ITEMS
 ------------------------------------------------------------------------------
 
-addSIG_ITEMS :: LocalEnv -> SIG_ITEMS -> Result LocalEnv
-addSIG_ITEMS sigma (Sort_items _l _p)    = chainPos sigma addSORT_ITEM _l
-                                                    [] _p strPosSORT_ITEM
-addSIG_ITEMS sigma (Op_items _ _p)       = return sigma
-addSIG_ITEMS sigma (Pred_items _l _p)    = chainPos sigma addPRED_ITEM _l
-                                                    [] _p strPosPRED_ITEM
-addSIG_ITEMS sigma (Datatype_items _ _p) = return sigma
+ana_SIG_ITEMS :: LocalEnv -> SIG_ITEMS -> Result LocalEnv
+ana_SIG_ITEMS sigma (Sort_items _l _p)    = chainPos sigma ana_SORT_ITEM _l
+                                                     [] _p tokPos_SORT_ITEM
+ana_SIG_ITEMS sigma (Op_items _ _p)       = return sigma
+ana_SIG_ITEMS sigma (Pred_items _l _p)    = chainPos sigma ana_PRED_ITEM _l
+                                                     [] _p tokPos_PRED_ITEM
+ana_SIG_ITEMS sigma (Datatype_items _ _p) = return sigma
 
 ------------------------------------------------------------------------------
 -- VAR-DECL
 ------------------------------------------------------------------------------
 
-addVAR_DECL :: LocalEnv -> VAR_DECL -> ExtPos -> Result LocalEnv
-addVAR_DECL sigma (Var_decl x_n s _pos') _pos =
+ana_VAR_DECL :: LocalEnv -> VAR_DECL -> ExtPos -> Result LocalEnv
+ana_VAR_DECL sigma (Var_decl x_n s _pos') _pos =
   do checkSortExists sigma (fst _pos) s
-     let _extPos = zip _pos' (strPosVarDecl _pos')
+     let _extPos = toExtPos Nothing _pos' tokPos_VAR_DECL
      let _decls  = toVarDecls s _extPos x_n
      return sigma { getGlobal = Global (setAdd (global $ getGlobal sigma)
                                                 _decls) }
@@ -688,21 +702,21 @@ addVAR_DECL sigma (Var_decl x_n s _pos') _pos =
 -- VAR-ITEMS
 ------------------------------------------------------------------------------
 
-addVAR_ITEMS :: LocalEnv -> [VAR_DECL] -> [Pos] -> Result LocalEnv
-addVAR_ITEMS sigma _v _pos =
-  chainPos sigma addVAR_DECL _v [] _pos strPosVAR_ITEM
+ana_VAR_ITEMS :: LocalEnv -> [VAR_DECL] -> [Pos] -> Result LocalEnv
+ana_VAR_ITEMS sigma _v _pos =
+  chainPos sigma ana_VAR_DECL _v [] _pos tokPos_VAR_ITEM
 
 ------------------------------------------------------------------------------
 -- BASIC-ITEMS
 ------------------------------------------------------------------------------
 
-addBASIC_ITEMS :: LocalEnv -> Annoted BASIC_ITEMS -> Result LocalEnv
-addBASIC_ITEMS sigma _itm =
+ana_BASIC_ITEMS :: LocalEnv -> Annoted BASIC_ITEMS -> Result LocalEnv
+ana_BASIC_ITEMS sigma _itm =
   case (item _itm) of
-    (Sig_items _s)              -> addSIG_ITEMS sigma _s;
+    (Sig_items _s)              -> ana_SIG_ITEMS sigma _s;
     (Free_datatype _l _p)       -> return sigma;
     (Sort_gen _s _p)            -> return sigma;
-    (Var_items _v _p)           -> addVAR_ITEMS sigma _v _p;
+    (Var_items _v _p)           -> ana_VAR_ITEMS sigma _v _p;
     (Local_var_axioms _v _f _p) -> return sigma;
     (Axiom_items _f _p)         -> return sigma
 
@@ -710,13 +724,13 @@ addBASIC_ITEMS sigma _itm =
 -- BASIC-SPEC
 ------------------------------------------------------------------------------
 
-addBASIC_SPEC :: LocalEnv -> BASIC_SPEC -> Result LocalEnv
-addBASIC_SPEC sigma (Basic_spec _l) = foldResult sigma addBASIC_ITEMS _l
+ana_BASIC_SPEC :: LocalEnv -> BASIC_SPEC -> Result LocalEnv
+ana_BASIC_SPEC sigma (Basic_spec _l) = foldResult sigma ana_BASIC_ITEMS _l
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                  -> Result (Sign,Sign,[(String,Sentence)])
 basicAnalysis (spec,sigma,ga) =
-  do env <- addBASIC_SPEC
+  do env <- ana_BASIC_SPEC
             (Env "unknown" ga sigma emptySentences emptyGlobal) spec
      let sigma' = getSign env
      let delta  = signDiff sigma sigma'
