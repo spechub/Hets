@@ -70,7 +70,6 @@ ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),genRules)
 ifneq ($(MAKECMDGOALS),utils/genRules)
 ifneq ($(MAKECMDGOALS),hets-opt)
-ifneq ($(MAKECMDGOALS),prob_objs)
 ifneq ($(MAKECMDGOALS),hets-optimized)
 ifneq ($(MAKECMDGOALS),derivedSources)
 ifneq ($(MAKECMDGOALS),$(INLINEAXIOMS))
@@ -81,7 +80,6 @@ ifneq ($(MAKECMDGOALS),clean_genRules)
 ifneq ($(MAKECMDGOALS),atctest2)
 ifneq ($(MAKECMDGOALS),hetana)
 include sources_hetcats.mk
-endif
 endif
 endif
 endif
@@ -170,16 +168,7 @@ hets-opt: hetcats/Version.hs
 	$(MAKE) distclean
 	$(MAKE) derivedSources
 	$(MAKE) real_clean
-	$(MAKE) prob_objs
 	$(MAKE) hets-optimized
-
-problematic_objs = Common/Lib/Rel.o Common/Id.o Common/Lexer.o Common/Lib/Pretty.o Common/GlobalAnnotations.o Common/PPUtils.o 
-
-ifeq ($(MAKECMDGOALS),prob_objs)
-include $(problematic_objs:%.o=%.d)
-endif
-
-prob_objs: $(problematic_objs)
 
 hets-optimized:  
 	$(HC) --make -O -o hets hets.hs $(HC_OPTS) -w 2>&1 | tee hetcats-make

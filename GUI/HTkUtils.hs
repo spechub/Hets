@@ -15,11 +15,9 @@ module GUI.HTkUtils where
 import HTk
 import Core
 import ScrollBox
-import MarkupText 
-
 import TextDisplay
-
-import System.Posix.IO
+ -- only to avoid problematic ghc 6.2.1 compilation order
+import Common.Lib.Rel()
 
 -- | create a window with title and list of options, return selected option
 listBox :: String -> [String] -> IO (Maybe Int)
