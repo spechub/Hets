@@ -8,7 +8,6 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)
  
-   
    Provides data structures for logics (with symbols). Logics are
    a type class with an "identitiy" type (usually interpreted
    by a singleton set) which serves to treat logics as 
@@ -52,7 +51,6 @@ Portability :  non-portable (various -fglasgow-exts extensions)
    Metavars
    raw symbols are now symbols, symbols are now signature symbols
    provide both signature symbol set and symbol set of a signature
-   
 -}
 
 module Logic.Logic where
@@ -89,8 +87,8 @@ type Diagram object morphism = Graph object morphism
 -- | Amalgamability analysis might be undecidable, so we need
 -- a special type for the result of ensures_amalgamability
 data Amalgamates = Yes
-		 | No String       -- ^ failure description
-		 | DontKnow String -- ^ the reason for unknown status
+                 | No String       -- ^ failure description
+                 | DontKnow String -- ^ the reason for unknown status
 -- | The default value for 'DontKnow' amalgamability result
 defaultDontKnow :: Amalgamates
 defaultDontKnow = DontKnow "Unable to assert that amalgamability is ensured"
@@ -160,7 +158,8 @@ class (Category lid sign morphism, Ord sentence,
        Ord symbol, 
        PrintTypeConv sign, PrintTypeConv morphism,
        PrintTypeConv sentence, PrintTypeConv symbol,
-       Eq proof_tree, Show proof_tree, ATermConvertible proof_tree, Typeable proof_tree)
+       Eq proof_tree, Show proof_tree, ATermConvertible proof_tree, 
+       Typeable proof_tree)
     => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence, lid -> sign, lid -> morphism,
           lid -> symbol, lid -> proof_tree
@@ -180,7 +179,7 @@ class (Category lid sign morphism, Ord sentence,
       sym_name :: lid -> symbol -> Id 
       provers :: lid -> [Prover sign sentence proof_tree symbol]
       cons_checkers :: lid -> [Cons_checker 
-			      (TheoryMorphism sign sentence morphism)] 
+                              (TheoryMorphism sign sentence morphism)] 
       consCheck :: lid -> (sign,[Named sentence]) -> 
                        morphism -> [Named sentence] -> Result (Maybe Bool)
       -- default implementations
@@ -190,6 +189,8 @@ class (Category lid sign morphism, Ord sentence,
       cons_checkers _ = []
 
 -- static analysis
+statErr :: (Language lid, Monad m) => lid -> String -> m a
+statErr lid str = fail ("Logic." ++ str ++ " nyi for: " ++ language_name lid)
 
 class ( Syntax lid basic_spec symb_items symb_map_items
       , Sentences lid sentence proof_tree sign morphism symbol
@@ -218,16 +219,18 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- Shouldn't the following deliver Maybes???
          sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
          stat_symb_map_items :: 
-	     lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
+             lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
+         stat_symb_map_items _ _ = fail "Logic.stat_symb_map_items"     
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol] 
+         stat_symb_items l _ = statErr l "stat_symb_items" 
          -- architectural sharing analysis
          ensures_amalgamability :: lid ->
               (HetcatsOpts,            -- the program options
-	       Diagram sign morphism, -- the diagram to be analyzed
-	       [(Node, morphism)],    -- the sink
-	       Diagram String String) -- the descriptions of nodes and edges
-		  -> Result Amalgamates
-
+               Diagram sign morphism, -- the diagram to be analyzed
+               [(Node, morphism)],    -- the sink
+               Diagram String String) -- the descriptions of nodes and edges
+                  -> Result Amalgamates
+         ensures_amalgamability l _ = statErr l "ensures_amalgamability"
          -- symbols and symbol maps
          symbol_to_raw :: lid -> symbol -> raw_symbol
          id_to_raw :: lid -> Id -> raw_symbol 
@@ -236,17 +239,26 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- operations on signatures and morphisms
          empty_signature :: lid -> sign
          signature_union :: lid -> sign -> sign -> Result sign
+         signature_union l _ _ = statErr l "signature_union"
          morphism_union :: lid -> morphism -> morphism -> Result morphism
+         morphism_union l _ _ = statErr l "morphism_union"
          final_union :: lid -> sign -> sign -> Result sign
+         final_union l _ _ = statErr l "final_union"
            -- see CASL reference manual, III.4.1.2
          is_subsig :: lid -> sign -> sign -> Bool
          inclusion :: lid -> sign -> sign -> Result morphism
+         inclusion l _ _ = statErr l "inclusion"
          generated_sign, cogenerated_sign :: 
-	     lid -> Set symbol -> sign -> Result morphism
+             lid -> Set symbol -> sign -> Result morphism
+         generated_sign l _ _ = statErr l "generated_sign"
+         cogenerated_sign l _ _ = statErr l "cogenerated_sign"
          induced_from_morphism :: 
-	     lid -> EndoMap raw_symbol -> sign -> Result morphism
+             lid -> EndoMap raw_symbol -> sign -> Result morphism
+         induced_from_morphism l _ _ = statErr l "induced_from_morphism"
          induced_from_to_morphism :: 
-	     lid -> EndoMap raw_symbol -> sign -> sign -> Result morphism 
+             lid -> EndoMap raw_symbol -> sign -> sign -> Result morphism
+         induced_from_to_morphism l _ _ _ = 
+             statErr l "induced_from_to_morphism"
 
 -- sublogics
 
@@ -273,17 +285,17 @@ class (StaticAnalysis lid
         | lid -> sublogics, lid -> basic_spec, lid -> sentence, 
           lid -> symb_items, lid -> symb_map_items, lid -> proof_tree,
           lid -> sign, lid -> morphism, lid ->symbol, lid -> raw_symbol
-	  where
+          where
 
          -- for a process logic, return its data logic
          data_logic :: lid -> Maybe AnyLogic
-	 data_logic _ = Nothing
+         data_logic _ = Nothing
 
          sublogic_names :: lid -> sublogics -> [String] 
-	 sublogic_names lid _ = [language_name lid]
+         sublogic_names lid _ = [language_name lid]
              -- the first name is the principal name
          all_sublogics :: lid -> [sublogics]
-	 all_sublogics _ = []
+         all_sublogics _ = []
 
          is_in_basic_spec :: lid -> sublogics -> basic_spec -> Bool
          is_in_basic_spec _ _ _ = False
@@ -291,14 +303,14 @@ class (StaticAnalysis lid
          is_in_sentence _ _ _ = False
          is_in_symb_items :: lid -> sublogics -> symb_items -> Bool
          is_in_symb_items _ _ _ = False
-	 is_in_symb_map_items :: lid -> sublogics -> symb_map_items -> Bool
+         is_in_symb_map_items :: lid -> sublogics -> symb_map_items -> Bool
          is_in_symb_map_items _ _ _ = False
          is_in_sign :: lid -> sublogics -> sign -> Bool
          is_in_sign _ _ _ = False
-	 is_in_morphism :: lid -> sublogics -> morphism -> Bool
+         is_in_morphism :: lid -> sublogics -> morphism -> Bool
          is_in_morphism _ _ _ = False
          is_in_symbol :: lid -> sublogics -> symbol -> Bool
-	 is_in_symbol _ _ _ = False
+         is_in_symbol _ _ _ = False
  
          min_sublogic_basic_spec :: lid -> basic_spec -> sublogics
          min_sublogic_sentence :: lid -> sentence -> sublogics
@@ -309,22 +321,22 @@ class (StaticAnalysis lid
          min_sublogic_symbol :: lid -> symbol -> sublogics
 
          proj_sublogic_basic_spec :: lid -> sublogics 
-				  -> basic_spec -> basic_spec
-	 proj_sublogic_basic_spec _ _ b = b			     
+                                  -> basic_spec -> basic_spec
+         proj_sublogic_basic_spec _ _ b = b                          
          proj_sublogic_symb_items :: lid -> sublogics 
-				  -> symb_items -> Maybe symb_items
-	 proj_sublogic_symb_items _ _ _ = Nothing
+                                  -> symb_items -> Maybe symb_items
+         proj_sublogic_symb_items _ _ _ = Nothing
          proj_sublogic_symb_map_items :: lid -> sublogics 
-				      -> symb_map_items -> Maybe symb_map_items
-	 proj_sublogic_symb_map_items _ _ _ = Nothing
+                                      -> symb_map_items -> Maybe symb_map_items
+         proj_sublogic_symb_map_items _ _ _ = Nothing
          proj_sublogic_sign :: lid -> sublogics -> sign -> sign 
          proj_sublogic_sign _ _ s = s
-	 proj_sublogic_morphism :: lid -> sublogics -> morphism -> morphism
+         proj_sublogic_morphism :: lid -> sublogics -> morphism -> morphism
          proj_sublogic_morphism _ _ m = m
-	 proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
-	 proj_sublogic_epsilon li _ s = ide li s
+         proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
+         proj_sublogic_epsilon li _ s = ide li s
          proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
-	 proj_sublogic_symbol _ _ _ = Nothing
+         proj_sublogic_symbol _ _ _ = Nothing
 
          top_sublogic :: lid -> sublogics
          top_sublogic _ = top
