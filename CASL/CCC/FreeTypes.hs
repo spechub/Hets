@@ -593,8 +593,8 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                  | null axioms = str
                  | otherwise = axiomStr (tail axioms) (str ++ (f_str $ (head axioms)) ++ "; ")                    
          proof = unsafePerformIO (do
-                 cim <- newChildProcess "/home/xinga/bin/cime" []
-            --     cim <- newChildProcess "cime" []
+            --     cim <- newChildProcess "/home/xinga/bin/cime" []
+                 cim <- newChildProcess "cime" []
                  sendMsg cim ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
                               (opSignStr (noDouble (o_constructors ++ constructors ++ o_op_Syms ++ op_Syms)) "") ++
                               (predSignStr (noDouble (o_pred_Syms ++ pred_Syms)) "") ++ "\";")
