@@ -17,6 +17,8 @@
 module Options where
 
 import Version
+import Utils
+
 import Directory
 import System
 
@@ -54,7 +56,7 @@ default_HetcatsOpts = HcOpt { verbose = 0
 			                   -- that of the input file	     
 			    , infile = ""
 			    , intype   = SML_Gen_ATerm NonBAF
-			    , outtypes = [CASLOut]
+			    , outtypes = [HetCASLOut Ascii]
                            {- better default options, but 
 			      the unlying functions are not jet implemented :
 			    , intype   = HetCASLIn
@@ -68,10 +70,10 @@ data InType = SML_Gen_ATerm ATFlag | CASLIn | HetCASLIn
 data ATFlag = BAF | NonBAF
 	       deriving (Show,Eq)
 
-data OutType = LaTeX | CASLOut | Casl0 | Global_Env [GE_Type]
+data OutType = HetCASLOut OutFormat | Global_Env OutFormat
 	       deriving (Show,Eq)
 
-data GE_Type = ATerm_TAF | ATerm_TRM | XML
+data OutFormat = XML | Ascii | Latex
 	       deriving (Show,Eq)
 
 data AnaFlag = Static
@@ -131,7 +133,7 @@ check_out_dir flags in_file =
     let ods = filter (\f -> case f of
 		            OutDir _ -> True
 		            _ -> False) flags
-	default_dir = joinWith '/' $ init $ splitOn '/' in_file
+	default_dir = dirname in_file
 	od = if null ods then 
 	        if    null default_dir 
 		   || all isSpace default_dir
@@ -174,7 +176,7 @@ options =
  , Option ['O'] ["output-dir"]  (ReqArg (\x -> OutDir x) "DIR")  
             "output DIR"
  , Option ['o'] ["output-types"] (ReqArg out_types "TYPE") 
-            "select TYPE of output files: latex | casl | global-env"
+            "select TYPE of output files: hetcasl-latex | hetcasl-ascii | global-env"
  , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR") 
             "CASL library directory"
  ]
@@ -203,9 +205,9 @@ out_types :: String -> Flag
 out_types s | ',' `elem` s = case merge_out_types $ split_types s of
 			     [x] -> x
 			     _ -> error "another thing went wrong!!"
-	    | s == "latex"      = OutTypes [LaTeX]
-	    | s == "casl"       = OutTypes [CASLOut]
-	    | s == "global-env" = OutTypes [Global_Env [XML]]
+	    | s == "casl-latex"    = OutTypes  [HetCASLOut Latex]
+	    | s == "hetcasl-ascii" = OutTypes  [HetCASLOut Ascii]
+	    | s == "global-env-xml" = OutTypes [Global_Env XML]
 	    | otherwise = error ("unknown output type: " ++ s ++ "\n" ++
 				 hetcats_usage)
     where split_types = map out_types . splitOn ',' 
@@ -223,13 +225,4 @@ merge_out_types flags =
 	ots' = foldl concatTypes [] ots
     in if null ots' then flags' else (OutTypes ots'):flags'  
 
-
-joinWith :: a -> [[a]] -> [a]
-joinWith sep = concat . intersperse (sep:[])
-
-splitOn :: Eq a => a -> [a] -> [[a]]
-splitOn sep = (\(f,r) -> f : case r of 
-	                     [] -> []
-			     _  -> (splitOn sep $ tail r)
-	      ) . break ((==) sep)
 
