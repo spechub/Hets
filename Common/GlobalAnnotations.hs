@@ -29,7 +29,7 @@ data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph -- ^ precedences
 			-- representation of the previous literal annotations
 		      , print_conf     :: PrintConfig -- ^ gives the 
 			-- possibility to print things upon position in AST
-		      } deriving (Show)
+		      } deriving (Show,Eq)
 
 -- | empty (or initial) global annotations
 emptyGlobalAnnos :: GlobalAnnos
@@ -46,7 +46,7 @@ data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
                        , list_lit :: Map.Map Id (Id, Id)
 		       , number_lit :: Maybe Id
 		       , float_lit  :: Maybe (Id,Id)
-		       } deriving (Show)
+		       } deriving (Show,Eq)
 
 -- | empty literal annotations
 emptyLiteralAnnos :: LiteralAnnos
@@ -70,7 +70,7 @@ data PrintConfig = PrC { prc_inside_gen_arg :: Bool -- ^ set to True
 			 -- ^ True if printLatex0 is invoked
 			 -- used in functions that decide on the same things 
 			 -- but do different things
-		       } deriving (Show)
+		       } deriving (Show,Eq)
 
 default_print_conf :: PrintConfig
 default_print_conf = PrC { prc_inside_gen_arg = False 

@@ -37,7 +37,7 @@ module Common.Lib.Graph (
 
 import Common.Lib.SimpleMap
 import Data.Maybe (fromJust)
-
+import List
 
 ----------------------------------------------------------------------
 -- TYPES
@@ -53,10 +53,17 @@ type  Edge     = (Node,Node)
 type LEdge b   = (Node,Node,b)
 type UEdge     = LEdge ()
 
-data Graph a b = Graph (GraphRep a b)
+data Graph a b = Graph (GraphRep a b) 
 type UGraph    = Graph () ()
 -- type NGraph a  = Graph a () 
 -- type EGraph b  = Graph () b 
+
+-- added for checking consistent ATerm files
+instance (Eq a, Eq b) => Eq (Graph a b) where
+    x == y = sortBy nodeOrd (labNodes x) == sortBy nodeOrd (labNodes y)
+	     && sortBy edgeOrd (labEdges x) == sortBy edgeOrd (labEdges y)
+	where nodeOrd (n1,_) (n2,_) = n1 `compare` n2
+	      edgeOrd (s1,t1,_) (s2,t2,_) = (s1,t1) `compare` (s2,t2)
 
 type Path      = [Node]
 type LPath a   = [LNode a]

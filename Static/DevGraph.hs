@@ -49,7 +49,7 @@ data DGNodeLab = DGNode {
                 dgn_renamed :: Maybe SIMPLE_ID,
                 dgn_libname :: LIB_NAME, 
                 dgn_node :: Node
-              }
+              } deriving (Show,Eq)
 
 isDGRef :: DGNodeLab -> Bool
 isDGRef (DGNode _ _ _ _) = False
@@ -129,7 +129,7 @@ type UnitSig = () -- to be done
 data GlobalEntry = SpecEntry ExtGenSig 
                  | ViewEntry ExtViewSig
                  | ArchEntry ArchSig
-                 | UnitEntry UnitSig
+                 | UnitEntry UnitSig deriving (Show,Eq)
 
 type GlobalEnv = Map SIMPLE_ID GlobalEntry
 
