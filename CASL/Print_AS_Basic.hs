@@ -217,34 +217,33 @@ instance PrettyPrint VAR_DECL where
 				<> colon 
 				<> printText0 ga s 
 
-instance PrettyPrint f => PrettyPrint (FORMULA f) where
-    printText0 ga (Quantification q l f _) = 
+printFORMULA ga (Quantification q l f _) = 
 	hang (printText0 ga q <+> semiT_text ga l) 4 $ 
-	     char '.' <+> printText0 ga f
-    printText0 ga (Conjunction l _) = 
+	     char '.' <+> printFORMULA ga f
+printFORMULA ga (Conjunction l _) = 
 	sep $ prepPunctuate (ptext lAnd <> space) $ 
-	    map (condParensXjunction printText0 parens ga) l
-    printText0 ga (Disjunction  l _) = 
+	    map (condParensXjunction printFORMULA parens ga) l
+printFORMULA ga (Disjunction  l _) = 
 	sep $ prepPunctuate (ptext lOr <> space) $ 
-	    map (condParensXjunction printText0 parens ga) l
-    printText0 ga i@(Implication f g b _) = 
+	    map (condParensXjunction printFORMULA parens ga) l
+printFORMULA ga i@(Implication f g b _) = 
 	if b
 	then (
-              hang (condParensImplEquiv printText0 parens ga i f 
+              hang (condParensImplEquiv printFORMULA parens ga i f 
 		    <+> ptext implS) 4 $ 
-	      condParensImplEquiv printText0 parens ga i g)
+	      condParensImplEquiv printFORMULA parens ga i g)
 	else (
-              hang (condParensImplEquiv printText0 parens ga i g 
+              hang (condParensImplEquiv printFORMULA parens ga i g 
 		    <+> ptext "if") 4 $ 
-	      condParensImplEquiv printText0 parens ga i f)
-    printText0 ga e@(Equivalence  f g _) = 
-	hang (condParensImplEquiv printText0 parens ga e f 
+	      condParensImplEquiv printFORMULA parens ga i f)
+printFORMULA ga e@(Equivalence  f g _) = 
+	hang (condParensImplEquiv printFORMULA parens ga e f 
 	      <+> ptext equivS) 4 $
-	     condParensImplEquiv printText0 parens ga e g
-    printText0 ga (Negation f _) = ptext "not" <+> printText0 ga f
-    printText0 _ (True_atom _)  = ptext trueS
-    printText0 _ (False_atom _) = ptext falseS
-    printText0 ga (Predication p l _) = 
+	     condParensImplEquiv printFORMULA parens ga e g
+printFORMULA ga (Negation f _) = ptext "not" <+> printFORMULA ga f
+printFORMULA _ (True_atom _)  = ptext trueS
+printFORMULA _ (False_atom _) = ptext falseS
+printFORMULA ga (Predication p l _) = 
 	let (p_id,isQual) = 
 		case p of
 		       Pred_name i          -> (i,False)
@@ -253,19 +252,19 @@ instance PrettyPrint f => PrettyPrint (FORMULA f) where
 	in if isQual then 
 	     print_prefix_appl_text ga p' l  
 	   else condPrint_Mixfix_text ga p_id l
-    printText0 ga (Definedness f _) = text defS <+> printText0 ga f
-    printText0 ga (Existl_equation f g _) = 
+printFORMULA ga (Definedness f _) = text defS <+> printText0 ga f
+printFORMULA ga (Existl_equation f g _) = 
 	hang (printText0 ga f <+> ptext exEqual) 4 $ printText0 ga g
-    printText0 ga (Strong_equation f g _) = 
+printFORMULA ga (Strong_equation f g _) = 
 	hang (printText0 ga f <+> ptext equalS) 4 $ printText0 ga g 
-    printText0 ga (Membership f g _) = 
+printFORMULA ga (Membership f g _) = 
 	printText0 ga f <+> ptext inS <+> printText0 ga g
-    printText0 ga (Mixfix_formula t) = assert 
+printFORMULA ga (Mixfix_formula t) = assert 
 				        (trace ("Mixfix_formula found: "++
 						showPretty t "") True) 
 					(printText0 ga t)
-    printText0 _ (Unparsed_formula s _) = text s 
-    printText0 ga (Sort_gen_ax constrs _) = 
+printFORMULA _ (Unparsed_formula s _) = text s 
+printFORMULA ga (Sort_gen_ax constrs _) = 
         text generatedS <> 
         braces (text sortS <+> commaT_text ga sorts 
                 <> semi <+> semiT_text ga ops)
@@ -275,7 +274,12 @@ instance PrettyPrint f => PrettyPrint (FORMULA f) where
         where (sorts,ops,sortMap) = recover_Sort_gen_ax constrs
               printSortMap (s1,s2) =
                 printText0 ga s1 <+> ptext "|->" <+> printText0 ga s2
-    printText0 ga (ExtFORMULA f) = printText0 ga f
+printFORMULA ga (ExtFORMULA f) = printText0 ga f
+
+instance PrettyPrint f => PrettyPrint (FORMULA f) where
+    printText0 ga f@(Sort_gen_ax _ _) = printFORMULA ga f
+    printText0 ga f = ptext " . " <> printFORMULA ga f
+
 
 instance PrettyPrint QUANTIFIER where
     printText0 _ (Universal) = ptext forallS
@@ -312,7 +316,7 @@ instance PrettyPrint f => PrettyPrint (TERM f) where
 	printText0 ga t <+> text asS <+> printText0 ga s
     printText0 ga(Conditional u f v _) = 
 	hang (printText0 ga u) 4 $ 
-	     sep ((text whenS <+> printText0 ga f):
+	     sep ((text whenS <+> printFORMULA ga f):
 		     [text elseS <+> printText0 ga v])
     printText0 _ (Unparsed_term s _) = text s
     printText0 ga (Mixfix_qual_pred p) = printText0 ga p

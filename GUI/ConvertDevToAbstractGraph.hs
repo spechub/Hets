@@ -582,10 +582,11 @@ displayTheory ext node dgraph gth =
     let dgnode = lab' (context node dgraph)
         str = printTheory gth in case dgnode of
            (DGNode name (G_sign _ _) _ _) ->
-              let title = case name of
-                   Nothing -> ext
-                   Just n -> ext ++ " of " ++ showPretty n ""
-               in createTextDisplay title str [size(100,50)]
+              let thname = case name of
+                   Nothing -> "InternalNode"++show node
+                   Just n -> showPretty n ""
+                  title = ext ++ " of " ++ thname
+               in createTextSaveDisplay title (thname++".het") str [size(100,50)]
               --putStrLn ((showPretty sig) "\n")
            (DGRef _ _ _) -> error 
 			    "nodes of type dg_ref do not have a theory"
