@@ -183,7 +183,7 @@ evaluateOnePointFORMULA _ (Mixfix_formula _)= error "Fehler Mixfix_formula"
 
 evaluateOnePointFORMULA _ (Unparsed_formula _ _)= error "Fehler Unparsed_formula"
 
-evaluateOnePointFORMULA sig (Sort_gen_ax constrs)=
+evaluateOnePointFORMULA sig (Sort_gen_ax constrs _)=
       let (srts,ops,_)=recover_Sort_gen_ax constrs
           sorts = sortSet sig
           argsAndres=concat $ map (\os-> case os of
