@@ -21,7 +21,6 @@ Portability :  portable
 
     * Umkehrfuntion zu getATermFull programmieren, Signatur und Name 
       siehe toATermTable
-
 -}
 
 module Common.ATerm.AbstractSyntax 
@@ -44,19 +43,14 @@ import Data.Char(ord)
 data ATerm = AAppl String [ATerm] [ATerm]
            | AList [ATerm]        [ATerm]
            | AInt  Integer        [ATerm]
-	     deriving (Eq,Ord)
+             deriving (Eq,Ord)
 
-data ShATerm = ShAAppl String [Int]  [Int]
-	     | ShAList [Int]         [Int]
-	     | ShAInt  Integer       [Int]  
-	       deriving (Eq,Ord)
+data ShATerm = ShAAppl String [Int] [Int]
+             | ShAList [Int]        [Int]
+             | ShAInt  Integer      [Int]  
+               deriving (Eq,Ord)
 
 data ATermTable = ATT (Map.Map ShATerm Int) (DMap.Map Int ShATerm) Int
-
-lookupInsert :: Ord k => k -> v -> Map.Map k v -> (Maybe v, Map.Map k v)
-lookupInsert k v m = case Map.lookup k m of 
-		     Nothing -> (Nothing, Map.insert k v m)
-		     mv -> (mv, m) 
 
 emptyATermTable :: ATermTable
 emptyATermTable =  ATT (Map.empty hash) DMap.empty (-1)
@@ -74,23 +68,19 @@ hashString = foldl f 0
 
 hash :: ShATerm -> Int
 hash st = case st of
-	  ShAAppl s is _ -> hashString s + hashIntList is
-	  ShAList is _ -> hashIntList is
-	  ShAInt i _ -> fromInteger (i `rem` toInteger prime)
+          ShAAppl s is _ -> hashString s + hashIntList is
+          ShAList is _ -> hashIntList is
+          ShAInt i _ -> fromInteger (i `rem` toInteger prime)
 
 addATermNoFullSharing :: ShATerm -> ATermTable -> (ATermTable,Int)
-addATermNoFullSharing t (ATT a_iDFM i_aDFM i1) = 
-    let j = i1 + 1 in 
-  (ATT (Map.insert t j a_iDFM) (DMap.insert j t i_aDFM) j, j)
+addATermNoFullSharing t (ATT a_iDFM i_aDFM i1) = let j = i1 + 1 in
+    (ATT (Map.insert t j a_iDFM) (DMap.insert j t i_aDFM) j, j)
 
 addATerm :: ShATerm -> ATermTable -> (ATermTable,Int)
-addATerm t (ATT a_iDFM i_aDFM i1) = let j = i1+1 in 
-  case lookupInsert t j a_iDFM of
-    (mayInd,dfm1) -> case maybe (j, j) (\old_ind->(i1,old_ind)) mayInd of
-	(newATT_ind,return_ind) ->
- 	     (ATT dfm1 (maybe (DMap.insert j t i_aDFM) 
-			(const i_aDFM) mayInd)
-	           newATT_ind,return_ind)
+addATerm t at@(ATT a_iDFM _ _) = 
+  case Map.lookup t a_iDFM of
+    Nothing -> addATermNoFullSharing t at
+    Just i -> (at, i)  
 
 getATerm :: ATermTable -> ShATerm
 getATerm (ATT _ i_aFM i) = 
@@ -113,20 +103,20 @@ toATermTable at = fst $ addToTable at emptyATermTable
     where
     addToTable :: ATerm -> ATermTable -> (ATermTable,Int) 
     addToTable (AAppl s ats anns) att = 
-	let (att1,ats')  = addToTableList ats att
-	    (att2,anns') = addToTableList anns att1
-	in addATerm (ShAAppl s ats' anns') att2
+        let (att1,ats')  = addToTableList ats att
+            (att2,anns') = addToTableList anns att1
+        in addATerm (ShAAppl s ats' anns') att2
     addToTable (AList ats anns)   att = 
-	let (att1,ats')  = addToTableList ats att
-	    (att2,anns') = addToTableList anns att1
+        let (att1,ats')  = addToTableList ats att
+            (att2,anns') = addToTableList anns att1
         in addATerm (ShAList ats' anns') att2
     addToTable (AInt i anns)      att = 
-	let (att1,anns') = addToTableList anns att
+        let (att1,anns') = addToTableList anns att
         in addATerm (ShAInt i anns') att1
     addToTableList :: [ATerm] -> ATermTable -> (ATermTable,[Int])
     addToTableList []       att = (att,[])
     addToTableList (at1:ats) att = 
-	let (att1,i)  = addToTable at1 att
+        let (att1,i)  = addToTable at1 att
             (att2,is) = addToTableList ats att1
         in (att2,i:is)
 
