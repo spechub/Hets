@@ -34,15 +34,12 @@ expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", cross, "->?", 
 (__when__else__)(a, (__<__)(a, b), b)
 (__when__else__)(a, (predfun a : b ->? Unit), b)
 ({____})(a, b)
-*** Error 22.1, ambiguous mixfix term
-	a ((__p)(b))
-	a b p
-	(____p)(a, b)
+(____p)(a, b)
 *** Error 23.1, ambiguous mixfix term
 	q a b
 	(q____)(a, b)
 *** Error 24.1, ambiguous mixfix term
-	B (([__])(b))
+	B ((__::__)(b, ([])))
 	(__[__])(B, b)
 *** Error 25.1, ambiguous mixfix term
 	B ((__::__)(a ((__::__)(c, (__::__)(d, ([])))), (__::__)(b, ([]))))
@@ -57,22 +54,22 @@ expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", cross, "->?", 
 (while__do__od)((while__do__od)(a, b), c)
 (while__do__od)((while__do__od)(a, b), (while__do__od)(c, d))
 ({____})(a, ({____})(b, c))
-(__::__)(a, (__::__)(A 0 B, ([])))
-*** Error 32.5, ambiguous mixfix term
-	A 0 B
-	(A__)(0) B
+(__::__)(a, (__::__)((A__)(0 B), ([])))
+*** Error 10.18, ambiguous mixfix term
+	(__::__)(a, (__::__)((A__)(0 B), ([])))
+	(__::__)(a, (__::__)((A__B)(0), ([])))
 *** Error 33.1, ambiguous mixfix term
-	A ((A__B)(0 B))
-	(A__)((A__B)(0 B))
-	A ((A__B)(0)) B
-	(A__B)(A 0 B)
-(__+__)((__+__)(b, A 0 B), b)
-*** Error 34.5, ambiguous mixfix term
-	A 0 B
-	(A__)(0) B
+	(A__)((A__)(0 B B))
+	(A__B)((A__)(0)) B
+	(A__B)((A__)(0 B))
+(__+__)((__+__)(b, (A__)(0 B)), b)
+*** Error 34.11, ambiguous mixfix term
+	(__+__)((__+__)(b, (A__)(0 B)), b)
+	(__+__)((__+__)(b, (A__B)(0)), b)
+(-__)((A__)(0 B))
 *** Error 35.1, ambiguous mixfix term
+	(-__)((A__)(0 B))
 	(-__)((A__B)(0))
-	(-__)((A__)(0)) B
 (__!)((__!)((__!)(a)))
 (__-->__)((__-->__)((__{__}--__-->{__}__)(Pl7, nicht_wenden,
 					  folge_dem_Gang, nicht_wenden, Pl3),
@@ -83,4 +80,4 @@ expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", cross, "->?", 
 (__*__)(c, (__+__)(a, b))
 (__*__)((__*__)(a, b), c)
 (__*__)(s n, c)
-(-__) ((__!)(a))
+(__!)((-__) a)

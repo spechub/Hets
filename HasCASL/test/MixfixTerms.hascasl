@@ -19,3 +19,5 @@ f a none a but f a
 f a one a done
 f a --> f a
 s(a) <= 0 
+m # #
+D A b

@@ -135,9 +135,9 @@ mkPrecIntMap r =
 	in (m, Map.find eqId m, l)
 
 getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
-getIdPrec (pm, r, m) ps i = Map.findWithDefault 
-    (if Set.member i ps then if begPlace i || endPlace i then r else m
-     else m) i pm
+getIdPrec (pm, r, m) ps i =  Map.findWithDefault 
+    (if begPlace i || endPlace i then if Set.member i ps then r else m - 1
+     else m + 1) i pm
 					 
 initTermRules ::  (PrecMap, Set.Set Id) -> Set.Set Id -> [Rule]
 initTermRules (pm@(_, _, m), ps) is = 
