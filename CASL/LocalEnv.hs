@@ -131,9 +131,14 @@ data SigItem = ASortItem (Annoted SortItem)
 -- lost are unused global vars
 -- and annotations for several ITEMS 
 
-data Sign = SignAsList [SigItem] deriving (Show, Eq)
+-- data Sign = SignAsList [SigItem] deriving (Show, Eq)
 
-data LocalEnv = SignAsMap (FiniteMap Id [SigItem]) (Graph SortId ())
+data Sign = SignAsMap (FiniteMap Id [SigItem]) (Graph SortId ())
+
+instance Eq Sign where
+  (==) (SignAsMap m _) (SignAsMap n _) = n==m
+
+type LocalEnv = Sign
 
 instance Show LocalEnv where
     show = error "show for type LocalEnv not defined"
@@ -169,19 +174,16 @@ type Fun_map =  FiniteMap Id [(OpType, Id, Bool)]
                            total -}
 type Pred_map = FiniteMap Id [(PredType,Id)]
 
---instance (Show a,Show b,Ord a) => Show (FiniteMap a b) where
---  showsPrec _ = shows . fmToList
-
 data Morphism = Morphism {msource,mtarget :: Sign,
                           sort_map :: Sort_map, 
                           fun_map :: Fun_map, 
                           pred_map :: Pred_map}
-                         deriving Eq -- (Eq,Show)
+                         deriving (Eq)
 
 embedMorphism :: Sign -> Sign -> Morphism
 embedMorphism a b =
   let
-    l     = case a of (SignAsList x) -> x
+    l     = case a of (SignAsMap x _) -> concat $ map snd $ fmToList x
     slist = map (\x -> (x,x)) $ map sortId $ map item $
             mapMaybe (\x -> case x of (ASortItem s) -> Just s;
                                                   _ -> Nothing) l
