@@ -41,6 +41,10 @@ instance PrettyPrint WrapString where
 class ListCheck a where
     innerListGT :: a -> Int -> Bool
 
+
+instance ListCheck Token where
+    _ `innerListGT` _ = False
+
 -- |
 -- an instance of ListCheck for Annoted stuff 
 instance ListCheck a => ListCheck (Annoted a) where
