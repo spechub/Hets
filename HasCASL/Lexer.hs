@@ -273,9 +273,11 @@ mixId = do {  b <- many placeToken <?> "id";
 			l <- many placeToken;
 			return (Id (b ++ t : l) c)
 		      }
-	      <|>  do { p <- placeToken;
-			Id s c <- mixId;
-			return (Id (b ++ [t, p] ++ s) c)
+	      <|>  do { p <- many1 placeToken;
+			option (Id (b ++ (t:p)) [])
+			    (do { Id s c <- mixId;
+				  return (Id (b ++ (t:p) ++ s) c)
+				})
 		      }
 	      <|> return (Id (b ++ [t]) [])
 	   }
