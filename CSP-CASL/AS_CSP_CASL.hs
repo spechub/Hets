@@ -15,14 +15,23 @@ import AS_Basic_CASL
 import Id
 
 ----------------------------------------------------------------------------
--- DATA, CHANNEL & PROCESS Def.
+-- Specifications
 ----------------------------------------------------------------------------
+data C3PO = Named_c3po NAMED_CSP_CASL_C_SPEC 
+          | C3po CSP_CASL_C_SPEC
+		   deriving (Show,Eq)
 
---data NAMED_CSP_CASL_C_SPEC =  Named_csp_casl_spec SPEC_NAME CSP_CASL_C_SPEC
---		   deriving (Show,Eq)
+data NAMED_CSP_CASL_C_SPEC =  Named_csp_casl_spec SPEC_NAME CSP_CASL_C_SPEC
+		   deriving (Show,Eq)
+
+type SPEC_NAME = SIMPLE_ID
 
 data CSP_CASL_C_SPEC = Csp_casl_c_spec DATA_DEFN CHANNEL_DECL PROCESS_DEFN
 		   deriving (Show,Eq)
+
+----------------------------------------------------------------------------
+-- DATA, CHANNEL & PROCESS Def.
+----------------------------------------------------------------------------
 
 type DATA_DEFN = BASIC_SPEC           -- will become a structured spec later
 
@@ -37,47 +46,49 @@ type CHANNEL_NAME = SIMPLE_ID
 type PROCESS_NAME = SIMPLE_ID
 
 data PROCESS_DEFN = Basic PROCESS
-                  | Recursive [PROCESS_EQN] NAMED_PROCESS
-                  | Gen_recursive [PROCESS_EQN] GEN_NAMED_PROCESS
-		   deriving (Show,Eq)
-
-data PROCESS      = Named_process NAMED_PROCESS 
-                  | Gen_named_process GEN_NAMED_PROCESS
-                  | Skip
-                  | Stop
-                  | Prefix EVENT PROCESS
-                  | Multiple_prefix VAR EVENT_SET PROCESS
-                  | Sequential [PROCESS]
-                  | External_choice [PROCESS]
-                  | Internal_choice [PROCESS]
-                  | Alphabet_parallel PROCESS EVENT_SET PROCESS
-                  | General_parallel PROCESS EVENT_SET EVENT_SET PROCESS
-                  | Synchronous_parallel [PROCESS]
-                  | Interleaving_parallel [PROCESS]
-                  | Hiding PROCESS EVENT_SET
-                  | Csp_sort_renaming PROCESS SORT_RENAMING
-                  | Csp_channel_renaming PROCESS CHANNEL_RENAMING
-                  | Conditional_process FORMULA PROCESS 
-                  | Conditional_choice FORMULA PROCESS PROCESS                              
-		              | Guarded_command FORMULA PROCESS
-                  | Channel_parallel PROCESS CHANNEL_NAME CHANNEL_NAME PROCESS
+                  | Recursive [PROCESS_EQUATION] NAMED_PROCESS
+                  | Generic_recursive [PROCESS_EQUATION] GEN_NAMED_PROCESS
 		   deriving (Show,Eq)
 
 
-data NAMED_PROCESS = Named_proc PROCESS_NAME 
+data NAMED_PROCESS = Named PROCESS_NAME 
 		   deriving (Show,Eq)
 
-data GEN_NAMED_PROCESS = Gen_named_proc PROCESS_NAME TERM
+data GEN_NAMED_PROCESS = Generic_named PROCESS_NAME TERM
 		   deriving (Show,Eq)
 
-data GEN_PROCESS = Gen_proc PROCESS_NAME VAR EVENT_SET
+data GENERIC_EQUATION = Generic PROCESS_NAME VAR EVENT_SET
 		   deriving (Show,Eq)
 
-data PROCESS_EQN = Eqn     NAMED_PROCESS PROCESS
-                 | Gen_eqn GEN_PROCESS PROCESS
+data PROCESS_EQUATION = Equation NAMED_PROCESS PROCESS
+                      | Generic_equation GENERIC_EQUATION PROCESS
 		   deriving (Show,Eq)
 
-data EVENT_SET = ESort SORT
+
+data PROCESS = Named_process NAMED_PROCESS 
+             | Generic_named_process GEN_NAMED_PROCESS
+             | Skip
+             | Stop
+             | Prefix EVENT PROCESS
+             | Multiple_prefix VAR EVENT_SET PROCESS
+             | Sequential [PROCESS]
+             | External_choice [PROCESS]
+             | Internal_choice [PROCESS]
+             | Alphabet_parallel PROCESS EVENT_SET PROCESS
+             | General_parallel PROCESS EVENT_SET EVENT_SET PROCESS
+             | Synchronous_parallel [PROCESS]
+             | Interleaving_parallel [PROCESS]
+             | Hiding PROCESS EVENT_SET
+             | Csp_sort_renaming PROCESS SORT_RENAMING
+             | Csp_channel_renaming PROCESS CHANNEL_RENAMING
+             | Conditional_process FORMULA PROCESS 
+             | Conditional_choice FORMULA PROCESS PROCESS                              
+		         | Guarded_command FORMULA PROCESS
+             | Channel_parallel PROCESS CHANNEL_NAME CHANNEL_NAME PROCESS
+		   deriving (Show,Eq)
+
+
+data EVENT_SET = Event_set SORT
 		   deriving (Show,Eq)
 
 data SORT_RENAMING = Op_list [OP_NAME]

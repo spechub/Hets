@@ -21,15 +21,25 @@ import Id (Token(..))
 import ItemList (asKey)
 import AnnoState
 
-dataT, endT, channelT, processT, skipT, stopT, ifT, thenT, elseT, whenT, varT,
-  multiPreT, prefixT, oRBracketT, cRBracketT, sendT, receiveT, extChoiceT, commaT,
-  intChoiceT, synParaT, interParaT, oAlPaT, cAlPaT, oGenPaT, mGenPaT, semicolonT,
-  cGenPaT, hidingT, oRenamingT, cRenamingT, colonT, chanRenT :: AParser Token
+----------------------------------------------------------------------------
+-- Parser for csp-casl-keywords
+----------------------------------------------------------------------------
+ 
+ccspecT, dataT, endT, channelT, processT, equalT, letT, inT, skipT, stopT, 
+  ifT, thenT, elseT, whenT, varT, multiPreT, prefixT, oRBracketT, 
+  cRBracketT, oSBracketT, cSBracketT, sendT, receiveT, extChoiceT, commaT, 
+  intChoiceT, synParaT, interParaT, oAlPaT, cAlPaT, oGenPaT, mGenPaT, 
+  semicolonT, cGenPaT, hidingT, oRenamingT, cRenamingT, colonT, chanRenT 
+            :: AParser Token
 
+ccspecT     = asKey ccspecS
 dataT       = asKey dataS
 endT        = asKey endS
 channelT    = asKey channelS
 processT    = asKey processS
+equalT      = asKey equalS
+letT        = asKey letS 
+inT         = asKey inS  
 skipT       = asKey skipS
 stopT       = asKey stopS
 ifT         = asKey ifS
@@ -41,6 +51,8 @@ prefixT     = asKey prefixS
 multiPreT   = asKey multiPreS
 oRBracketT  = asKey oRBracketS
 cRBracketT  = asKey cRBracketS
+oSBracketT  = asKey oSBracketS
+cSBracketT  = asKey cSBracketS
 extChoiceT  = asKey extChoiceS
 intChoiceT  = asKey intChoiceS
 synParaT    = asKey synParaS

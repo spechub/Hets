@@ -31,18 +31,57 @@ import Formula
 import AnnoState
 --import AS_Basic_CASL
 
+----------------------------------------------------------------------------
+-- Parsers for CSP-CASL-specifications
+----------------------------------------------------------------------------
+interim :: AParser C3PO
+interim = try ( do { nc <- namedCspCaslCSpec
+                   ; return (Named_c3po nc)
+                   }
+              )  
+      <|>       do { c  <- cspCaslCSpec
+                   ; return (C3po c)
+                   } 
+
+namedCspCaslCSpec :: AParser NAMED_CSP_CASL_C_SPEC
+namedCspCaslCSpec = try ( do { ccspecT
+                             ; oRBracketT
+                             ; n <- specName
+                             ; cRBracketT
+                             ; equalT
+                             ; c <- cspCaslCSpec
+                             ; return (Named_csp_casl_spec n c)
+                             }
+                        )
+                <|>       do { ccspecT
+                             ; oRBracketT
+                             ; n <- specName
+                             ; cRBracketT
+                             ; equalT
+                             ; c <- cspCaslCSpec
+                             ; endT
+                             ; return (Named_csp_casl_spec n c)
+                             }                       
+
+specName :: AParser SPEC_NAME
+specName = varId                     
+
 cspCaslCSpec :: AParser CSP_CASL_C_SPEC
-cspCaslCSpec =    do { d <- dataDefn
-                     ; c <- channelDecl
-                     ; p <- processDefn
-                     ; return  (Csp_casl_c_spec d c p)
-                     }
-              <|> do { d <- dataDefn
-                     ; c <- channelDecl
-                     ; p <- processDefn
-                     ; endT
-                     ; return  (Csp_casl_c_spec d c p)
-                     }
+cspCaslCSpec = do { d <- dataDefn
+                  ; c <- channelDecl
+                  ; p <- processDefn
+                  ; return  (Csp_casl_c_spec d c p)
+                  }
+           <|> do { d <- dataDefn
+                  ; c <- channelDecl
+                  ; p <- processDefn
+                  ; endT
+                  ; return  (Csp_casl_c_spec d c p)
+                  }
+
+----------------------------------------------------------------------------
+-- Parsers for the rest
+----------------------------------------------------------------------------
                      
 dataDefn :: AParser DATA_DEFN
 dataDefn = do { dataT
@@ -65,11 +104,66 @@ channelItem = do { (ns, ps) <- channelName `separatedBy` commaT
 
               
 processDefn :: AParser PROCESS_DEFN
-processDefn = do { processT
-                 ; p  <- process
-                 ; return (Basic p)
-                 }
+processDefn = try ( do { processT
+                       ; letT
+                       ; oSBracketT
+                       ; (pe, ps) <- processEquation `separatedBy` semicolonT
+                       ; cSBracketT
+                       ; inT
+                       ; np       <- namedProcess
+                       ; return (Recursive pe np)
+                       }
+                  )
+          <|> try ( do { processT
+                       ; letT
+                       ; oSBracketT                       
+                       ; (pe, ps) <- processEquation `separatedBy` semicolonT
+                       ; cSBracketT                       
+                       ; inT
+                       ; gnp      <- genericNamedProcess
+                       ; return (Generic_recursive pe gnp)
+                       }
+                  )                  
+          <|>       do { processT
+                       ; p  <- process
+                       ; return (Basic p)
+                       }
 
+processEquation :: AParser PROCESS_EQUATION
+processEquation = try ( do { np <- namedProcess
+                           ; equalT
+                           ; p  <- process
+                           ; return (Equation np p)
+                           }
+                      )
+              <|>       do { ge <- genericEquation
+                           ; equalT
+                           ; p <- process
+                           ; return (Generic_equation ge p)
+                           } 
+
+genericEquation :: AParser GENERIC_EQUATION
+genericEquation = do { pn <- processName
+     	               ; oRBracketT
+	                   ; vi <- varId
+	                   ; colonT
+	                   ; es <- eventSet             
+	                   ; return (Generic pn vi es)
+	                   }
+
+
+genericNamedProcess :: AParser GEN_NAMED_PROCESS
+genericNamedProcess = do { pn <- processName
+                         ; oRBracketT
+	                       ; t  <- term
+	                       ; cRBracketT
+	                       ; return (Generic_named pn t)
+	                       }
+	                
+namedProcess :: AParser NAMED_PROCESS
+namedProcess = do { pn <- processName
+                  ; return (Named pn)
+                  }
 
 -- MiniParser via Umbennung; eventuell Passenderes wählen
 
@@ -127,15 +221,12 @@ primProcess =      do { skipT
                        ; cRBracketT
                        ; return p
                        } 
-	        <|> try ( do { i <- processName
-                       ; oRBracketT
-	                     ; t <- term
-	                     ; cRBracketT
-	                     ; return (Gen_named_process (Gen_named_proc i t))
+	        <|> try ( do { gnp <- genericNamedProcess 
+	                     ; return (Generic_named_process gnp)
 	                     }
 	                )
-          <|>       do { i <- processName
-                       ; return (Named_process (Named_proc i))
+          <|>       do { np <- namedProcess
+                       ; return (Named_process np)
                        }
                        
                        
@@ -313,7 +404,7 @@ opList = do { pid <- parseId
 
 eventSet :: AParser EVENT_SET
 eventSet = do { si <- sortId
-	            ; return (ESort si)
+	            ; return (Event_set si)
 	            }
 	            
 event :: AParser EVENT

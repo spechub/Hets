@@ -29,8 +29,16 @@ run p input
                            }
             Right x -> print x                        
 
+fi :: [String] -> IO()
+fi (l:es) = do { c <- readFile l
+               ; run interim c
+               ; fi es
+               }
+fi []     = do putStr ""           
+
 main :: IO ()
-main = do { l <- getArgs
-          ; c <- readFile (head l)
-          ; run cspCaslCSpec c
+main = do { les <- getArgs
+          ; fi les
+--          ; c <- readFile (head les)
+--          ; run cspCaslCSpec c
           }
