@@ -630,11 +630,11 @@ checkSubsDistinctSuper pos s_n s =
 
 ana_subsort_decl :: LocalEnv -> Annoted SORT_ITEM -> Maybe SortDefn -> [SortId]
                     -> SortId -> [ExtPos] -> Result LocalEnv
-ana_subsort_decl sigma _itm _defn s_n s pos =
+ana_subsort_decl sigma itm defn s_n s pos =
   do checkSubsDistinctSuper (getPos $ head pos) s_n s
-     let _delta   = foldPos (updateSortItem _itm _defn)
+     let delta   = foldPos (updateSortItem itm defn)
                             (getSign sigma) (s:s_n) pos
-     let embedRel = foldl (addSubsort s) _delta s_n
+     let embedRel = foldl (addSubsort s) delta s_n
      return sigma { getSign = embedRel }
 
 ------------------------------------------------------------------------------
@@ -656,18 +656,18 @@ ana_subsort_defn :: LocalEnv -> Annoted SORT_ITEM -> SortId -> VAR -> SortId
                     -> Annoted FORMULA -> [ExtPos] -> Result LocalEnv
 ana_subsort_defn sigma _itm s v s' f pos =
   let
-    _colpos = head $ drop 3 pos
+    colpos = head $ drop 3 pos
     f'      = cloneAnnoFormula f (Quantification Universal [(Var_decl [v] s'
-			[getPos _colpos])] (Equivalence (item f) (Membership
+			[getPos colpos])] (Equivalence (item f) (Membership
                             (Simple_id v) s []) []) [])
   in
     do checkSortExists sigma (getPos $ head pos) s'
        _f       <- ana_no_anno_FORMULA sigma f
-       let _defn = SubsortDefn (toVarDecl s' _colpos v) _f
+       let defn = SubsortDefn (toVarDecl s' colpos v) _f
                                (map getPos $ tail pos)
-       delta    <- ana_subsort_decl sigma _itm (Just _defn) [s] s' pos
-       _f'      <- ana_FORMULA delta { getGlobal = [] } f'
-       let phi   = toNamedSentence [] (someLabel (subsortLabel s s') f) _f'
+       delta    <- ana_subsort_decl sigma _itm (Just defn) [s] s' pos
+       f1'       <- ana_FORMULA delta { getGlobal = [] } f'
+       let phi   = toNamedSentence [] (someLabel (subsortLabel s s') f) f1'
        return delta { getPsi = addNamedSentences (getPsi delta) [phi] }
 
 ------------------------------------------------------------------------------
@@ -691,12 +691,12 @@ checkGreaterOrEqualTwo pos s_n =
 
 ana_iso_decl :: LocalEnv -> Annoted SORT_ITEM -> [SortId] -> [ExtPos]
                 -> Result LocalEnv
-ana_iso_decl sigma _itm s_n pos =
+ana_iso_decl sigma itm s_n pos =
   do checkAllUnique (getPos $ head pos) s_n
      checkGreaterOrEqualTwo (getPos $ head pos) s_n
-     let _delta   = foldPos (updateSortItem  _itm Nothing)
+     let delta   = foldPos (updateSortItem  itm Nothing)
                             (getSign sigma) s_n pos
-     let embedRel = foldl (addIsoSubsorting s_n) _delta s_n
+     let embedRel = foldl (addIsoSubsorting s_n) delta s_n
      return sigma { getSign = embedRel }
 
 ------------------------------------------------------------------------------
@@ -706,18 +706,18 @@ ana_iso_decl sigma _itm s_n pos =
 ana_SORT_ITEM :: LocalEnv -> Annoted SORT_ITEM -> ExtPos -> Result LocalEnv
 ana_SORT_ITEM sigma _itm pos =
   case (item _itm) of
-    (Sort_decl s_n _p)
+    (Sort_decl s_n p)
       -> ana_sort_decl sigma _itm s_n
-                       (toExtPos (Just pos) _p tokPos_sort_decl)
-    (Subsort_decl s_n s _p)
+                       (toExtPos (Just pos) p tokPos_sort_decl)
+    (Subsort_decl s_n s p)
       -> ana_subsort_decl sigma _itm Nothing s_n s
-                          (toExtPos (Just pos) _p tokPos_subsort_decl)
-    (Subsort_defn s v s' f _p)
+                          (toExtPos (Just pos) p tokPos_subsort_decl)
+    (Subsort_defn s v s' f p)
       -> ana_subsort_defn sigma _itm s v s' f
-                          (toExtPos (Just pos) _p tokPos_subsort_defn)
-    (Iso_decl s_n _p)
+                          (toExtPos (Just pos) p tokPos_subsort_defn)
+    (Iso_decl s_n p)
       -> ana_iso_decl sigma _itm s_n
-                      (toExtPos (Just pos) _p tokPos_iso_decl)
+                      (toExtPos (Just pos) p tokPos_iso_decl)
 
 ------------------------------------------------------------------------------
 -- PRED-DECL
@@ -726,17 +726,17 @@ ana_SORT_ITEM sigma _itm pos =
 ana_PRED_TYPE' :: LocalEnv -> PredType -> PRED_TYPE -> ExtPos 
                  -> Result PredType
 ana_PRED_TYPE' _ w' (Pred_type [] _) _ = return w'
-ana_PRED_TYPE' sigma w' (Pred_type (s_n:_t) _) pos =
+ana_PRED_TYPE' sigma w' (Pred_type (s_n:t) _) pos =
   do checkSortExists sigma (getPos pos) s_n
-     ana_PRED_TYPE' sigma (w'++[s_n]) (Pred_type _t []) pos
+     ana_PRED_TYPE' sigma (w'++[s_n]) (Pred_type t []) pos
 
 ana_PRED_TYPE :: LocalEnv -> PRED_TYPE -> ExtPos -> Result PredType
-ana_PRED_TYPE sigma _t pos = ana_PRED_TYPE' sigma [] _t pos
+ana_PRED_TYPE sigma t pos = ana_PRED_TYPE' sigma [] t pos
 
 ana_pred_decl :: LocalEnv -> Annoted PRED_ITEM -> [PRED_NAME] -> PRED_TYPE
                  -> [ExtPos] -> Result LocalEnv
-ana_pred_decl sigma _itm p_n _t pos =
-  do w' <- ana_PRED_TYPE sigma _t (head pos)
+ana_pred_decl sigma _itm p_n t pos =
+  do w' <- ana_PRED_TYPE sigma t (head pos)
      let delta = foldPos (updatePredItem _itm w' Nothing)
                          (getSign sigma) p_n pos
      return sigma { getSign = delta }
@@ -774,12 +774,12 @@ checkQualVarsUnique pos a b =
 ana_ARG_DECL_list' :: LocalEnv -> ([VarDecl],[SortId]) -> [ARG_DECL]
                -> Result ([VarDecl],[SortId])
 ana_ARG_DECL_list' _ (x_s_n,w') [] = return (x_s_n,w')
-ana_ARG_DECL_list' sigma (x_s_n,w') ((Arg_decl _v _s pos):_t) =
+ana_ARG_DECL_list' sigma (x_s_n,w') ((Arg_decl _v _s pos):t) =
   do let _extPos = zipWith ExtPos (tokPos_ARG_DECL pos) pos
      (x_n,s) <- ana_ARG_DECL sigma _v _s _extPos
      let _qual = toVarDecls s _extPos x_n
      checkQualVarsUnique (head pos) x_s_n _qual
-     ana_ARG_DECL_list' sigma (x_s_n ++ _qual,w' ++ [s]) _t
+     ana_ARG_DECL_list' sigma (x_s_n ++ _qual,w' ++ [s]) t
 
 ana_ARG_DECL_list :: LocalEnv -> [ARG_DECL] -> Result ([VarDecl],[SortId])
 ana_ARG_DECL_list sigma _ad = ana_ARG_DECL_list' sigma ([],[]) _ad
@@ -808,12 +808,12 @@ ana_pred_defn sigma _ann p (Pred_head _ad pos') _f pos =
 ------------------------------------------------------------------------------
 
 ana_PRED_ITEM :: LocalEnv -> Annoted PRED_ITEM -> ExtPos -> Result LocalEnv
-ana_PRED_ITEM sigma _itm pos =
-  case (item _itm) of
-    (Pred_decl p_n _t _p)  -> ana_pred_decl sigma _itm p_n _t
-                              (toExtPos (Just pos) _p tokPos_pred_decl)
-    (Pred_defn p _h _f _p) -> ana_pred_defn sigma _itm p _h _f
-                              (toExtPos (Just pos) _p tokPos_pred_defn)
+ana_PRED_ITEM sigma itm pos =
+  case (item itm) of
+    (Pred_decl p_n t p)  -> ana_pred_decl sigma itm p_n t
+                              (toExtPos (Just pos) p tokPos_pred_decl)
+    (Pred_defn pn h f p) -> ana_pred_defn sigma itm pn h f
+                              (toExtPos (Just pos) p tokPos_pred_defn)
 
 ------------------------------------------------------------------------------
 -- OP-ITEMS
@@ -995,18 +995,18 @@ ana_SIG_ITEMS sigma (Datatype_items datatype_items loc_pos) =
 ana_VAR_DECL :: LocalEnv -> VAR_DECL -> ExtPos -> Result LocalEnv
 ana_VAR_DECL sigma (Var_decl x_n s pos') pos =
   do checkSortExists sigma (getPos pos) s
-     let _extPos = toExtPos Nothing pos' tokPos_VAR_DECL
-     let _decls  = toVarDecls s _extPos x_n
+     let extPos = toExtPos Nothing pos' tokPos_VAR_DECL
+     let decls  = toVarDecls s extPos x_n
      return sigma { getGlobal = setAdd (getGlobal sigma)
-                                                _decls }
+                                                decls }
 
 ------------------------------------------------------------------------------
 -- VAR-ITEMS
 ------------------------------------------------------------------------------
 
 ana_VAR_ITEMS :: LocalEnv -> [VAR_DECL] -> [Pos] -> Result LocalEnv
-ana_VAR_ITEMS sigma _v pos =
-  chainPos sigma ana_VAR_DECL _v [] pos tokPos_VAR_ITEM
+ana_VAR_ITEMS sigma v pos =
+  chainPos sigma ana_VAR_DECL v [] pos tokPos_VAR_ITEM
 
 ------------------------------------------------------------------------------
 -- LOCAL-VAR-AXIOMS
@@ -1015,24 +1015,24 @@ ana_VAR_ITEMS sigma _v pos =
 ana_local_var_axioms' :: LocalEnv -> Annoted FORMULA -> ExtPos ->
                          Result LocalEnv
 ana_local_var_axioms' sigma _f _pos =
-  do _phi     <- ana_FORMULA sigma _f
-     let _phi' = toNamedSentence (getGlobal sigma)
-                                 (someLabel "" _phi) _phi
-     return sigma { getPsi = addNamedSentences (getPsi sigma) [_phi'] }
+  do phi     <- ana_FORMULA sigma _f
+     let phi' = toNamedSentence (getGlobal sigma)
+                                 (someLabel "" phi) phi
+     return sigma { getPsi = addNamedSentences (getPsi sigma) [phi'] }
 
 ana_local_var_axioms :: LocalEnv -> [VAR_DECL] -> [Pos] ->
                         [Annoted FORMULA] -> [Pos] -> Result LocalEnv
-ana_local_var_axioms sigma _v _vpos _f _apos =
-  do _delta <- ana_VAR_ITEMS sigma _v _vpos
-     chainPos _delta ana_local_var_axioms' _f [] _apos tokPos_local_var_axioms
+ana_local_var_axioms sigma v vpos f apos =
+  do delta <- ana_VAR_ITEMS sigma v vpos
+     chainPos delta ana_local_var_axioms' f [] apos tokPos_local_var_axioms
 
 ------------------------------------------------------------------------------
 -- AXIOM-ITEMS
 ------------------------------------------------------------------------------
 
 ana_axiom_items :: LocalEnv -> [Annoted FORMULA] -> [Pos] -> Result LocalEnv
-ana_axiom_items sigma _f pos =
-  chainPos sigma ana_local_var_axioms' _f [] pos tokPos_axiom_items
+ana_axiom_items sigma f pos =
+  chainPos sigma ana_local_var_axioms' f [] pos tokPos_axiom_items
 
 ------------------------------------------------------------------------------
 -- SORT-GEN
@@ -1088,7 +1088,7 @@ ana_BASIC_SPEC sigma (Basic_spec l) = foldM ana_BASIC_ITEMS sigma l
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                  -> Result (Sign,Sign,[Named Sentence])
-basicAnalysis (spec,sigma,ga) = return(emptySign,emptySign,[])
+basicAnalysis (_spec,_sigma,_ga) = return(emptySign,emptySign,[])
 {-
   do env <- ana_BASIC_SPEC
             (Env "unknown" ga sigma emptySentences emptyGlobal) spec
@@ -1152,7 +1152,7 @@ sigItemToSymbol (AnOpItem  o) = Symbol (opId $ item o)
                                        (OpAsItemType (opType $ item o))
 sigItemToSymbol (APredItem p) = Symbol (predId $ item p)
                                        (PredType (predType $ item p))
-
+				       
 symOf :: Sign -> Set.Set Symbol
 symOf sigma = Set.fromList $ map sigItemToSymbol 
 	      $ concat $ elems $ getMap sigma
