@@ -1,0 +1,1 @@
+ghci -i..:../parsec Main.hs

@@ -1,0 +1,1 @@
+ghc --make -i..:../parsec Main.hs -o main
