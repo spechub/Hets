@@ -354,7 +354,7 @@ typedPattern p = do { c <- colT
 asPattern :: TokenMode -> GenParser Char st Pattern
 asPattern b = 
     do v <- mixPattern b
-       do   c <- asT 
+       do   c <- asKey asP 
 	    t <- mixPattern b 
 	    return (AsPattern v t [tokPos c])
          <|> return v
