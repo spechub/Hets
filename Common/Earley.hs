@@ -26,8 +26,8 @@ module Common.Earley (
 
 import Common.Id
 import Common.Result
-import Common.Precedence
 import Common.GlobalAnnotations
+import Common.AS_Annotation
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.List
@@ -86,6 +86,8 @@ incrIndex (Index i) = Index (i + 1)
 data Item a b = Item 
     { rule :: Id        -- the rule to match
     , info :: b         -- additional info for 'rule'
+    , lWeight :: Id     -- weights for lower precedence pre- and postfixes
+    , rWeight :: Id     -- given by the 'Id's itself 
     , posList :: [Pos]  -- positions of Id tokens
     , args :: [a]       -- currently collected arguments 
       -- both in reverse order
@@ -193,10 +195,13 @@ unToken :: Id -> Token
 unToken (Id [_,t] _ _) = t
 unToken _ = error "unToken"
 
+-- make unitId the Id with the higest priority
 mkItem :: Index -> (Id, b, [Token]) -> Item a b
 mkItem ind (ide, inf, toks) = 
     Item { rule = ide
 	 , info = inf
+	 , lWeight = unitId
+	 , rWeight = unitId
 	 , posList = []
 	 , args = []
 	 , ambigArgs = []
@@ -291,48 +296,118 @@ mkAmbigs toExpr p =
 	  p { args = take (length l - length as) l ++ as
 	    } ) $ ambigArgs p
 
-addArg :: ToExpr a b -> Item a b -> Item a b -> Item a b
-addArg toExpr argItem p = 
+addArg :: GlobalAnnos -> ToExpr a b -> Item a b -> Item a b -> Item a b
+addArg ga toExpr argItem p = 
     let (arg, q) = mkExpr toExpr argItem 
 	ams = ambigs argItem
 	newAms = mkAmbigs toExpr argItem
 	in assert (not $ null $ rest p) $
                p { rest = tail $ rest p
+		 , lWeight = getLWeight ga argItem p
+		 , rWeight = getRWeight ga argItem p
 		 , posList = q : posList p
 		 , args = arg : args p 
 		 , ambigs = (if null newAms then ams else newAms : ams)
 		   ++ ambigs p }
 
+getLWeight :: GlobalAnnos -> Item a b -> Item a b -> Id 
+getLWeight ga argItem opItem = 
+    let op = rule opItem
+	arg = rule argItem
+	num = length $ args opItem in
+    if isLeftArg op num then 
+       case precRel (prec_annos ga) op arg of
+            Higher -> arg 
+	    _ -> op 
+    else op
+
+getRWeight :: GlobalAnnos -> Item a b -> Item a b -> Id 
+getRWeight ga argItem opItem = 
+    let op = rule opItem
+	arg = rule argItem
+	num = length $ args opItem in 
+    if isRightArg op num then 
+       case precRel (prec_annos ga) op arg of
+            Higher -> arg 
+	    _ -> op 
+    else op
+
 -- | shortcut for a function that constructs an expression
 type ToExpr a b = Id -> b -> [a] -> [Pos] -> a 
 
 mkExpr :: ToExpr a b -> Item a b -> (a, Pos)
-mkExpr toExpr item = 
-    let orig = rule item
-	ps = posList item
+mkExpr toExpr itm = 
+    let orig = rule itm
+	ps = posList itm
 	rs = reverse ps
 	(ide, qs) = if isListId orig then (orig, rs) else
 		    setPlainIdePos orig rs
-	inf =  info item
-	as = reverse $ args item
+	inf =  info itm
+	as = reverse $ args itm
 	in (asListAppl toExpr ide inf as qs, 
 	    if null ps then nullPos else head ps)
 
 reduce :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
        -> ToExpr a b -> Item a b -> [Item a b]
-reduce ga table filt toExpr item = 
-    let ide = rule item
-	inf = info item
-    in map (addArg toExpr item)
+reduce ga table filt toExpr itm = 
+    map (addArg ga toExpr itm)
 	$ filter ( \ oi ->  let ts = rest oi in
 		   if null ts then False
 		   else if head ts == termTok
-		   then case filt inf $ info oi of 
-		   Nothing -> checkPrecs ga ide (rule oi) 
-		              $ length $ args oi
+		   then case filt (info itm) $ info oi of 
+		   Nothing -> checkPrecs ga itm oi 
 		   Just b -> b 
 		   else False )
-	$ lookUp table $ index item
+	$ lookUp table $ index itm
+
+-- | 'Id' starts with a 'Place'
+begPlace :: Id -> Bool
+begPlace (Id toks _ _) = not (null toks) && isPlace (head toks)
+-- | 'Id' ends with a 'Place'
+endPlace :: Id -> Bool
+endPlace (Id toks _ _) = not (null toks) && isPlace (last toks)
+
+-- | check if a left argument will be added.
+-- (The 'Int' is the number of current arguments.)
+isLeftArg :: Id -> Int -> Bool
+isLeftArg op num = begPlace op && num == 0
+-- | check if a right argument will be added.
+isRightArg :: Id -> Int -> Bool
+isRightArg op num = endPlace op && num + 1 == placeCount op
+
+-- | compare precedences of a left or right argument and a top-level operator.
+-- (The 'Bool' indicates if the operator is any infix .)
+comparePrecs :: GlobalAnnos -> Bool -> AssocEither -> Id -> Id -> Bool
+comparePrecs ga isInfixOp ass arg op = 
+    case (begPlace arg, endPlace arg, isInfixOp) of
+	   (True, True, True) -> case precRel (prec_annos ga) op arg of 
+	   -- arg and op are infixes
+				 Lower -> True
+				 NoDirection -> if arg == op then 
+					  isAssoc ass (assoc_annos ga) op
+						  else True
+				 _ -> False 
+	   (True, True, False) -> False 
+            -- infix arg binds weaker than non-infix op
+	   (False, True, False) -> ARight == ass
+            -- prefix arg binds weaker than postfix op
+            -- (not possible on the right side)
+	   _ -> True
+
+-- | check precedences of an argument and a top-level operator.
+-- (The 'Int' is the number of current arguments of the operator.)
+checkPrecs :: GlobalAnnos -> Item a b -> Item a b -> Bool
+checkPrecs ga argItem opItem =
+    let op = rule opItem
+	arg = rule argItem 
+	num = length $ args opItem in
+    case precRel (prec_annos ga) op arg of
+    BothDirections -> False
+    _ -> if isLeftArg op num 
+	 then comparePrecs ga (endPlace op) ALeft (rWeight argItem) op
+	 else if isRightArg op num 
+	 then comparePrecs ga (begPlace op) ARight (lWeight argItem) op
+	 else True 
 
 reduceCompleted :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
 		-> ToExpr a b -> [Item a b] -> [Item a b]
