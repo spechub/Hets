@@ -4,16 +4,15 @@
 instance (ATermConvertible a,
 	  ATermConvertible b) => ATermConvertible (Graph a b) where
     toShATerm att0 graph =
-	let (att1,aa') = toShATerm att0 $ labNodes graph
-            (att2,bb') = toShATerm att1 $ labEdges graph
-	    lat = [ aa' , bb' ]
-	in addATerm (ShAAppl "Graph" lat []) att2
+       case toShATerm att0 (labNodes graph) of { (att1,aa') ->
+       case toShATerm att1 (labEdges graph) of { (att2,bb') ->
+	  addATerm (ShAAppl "Graph"  [ aa' , bb' ] []) att2}}
     fromShATerm att =
 	case aterm of
 	    (ShAAppl "Graph" [ aa , bb ] _) ->
-		let aa' = fromShATerm (getATermByIndex1 aa att)
-                    bb' = fromShATerm (getATermByIndex1 bb att)
-		    in (mkGraph aa' bb')
+		case fromShATerm (getATermByIndex1 aa att) of { aa' ->
+                case fromShATerm (getATermByIndex1 bb att) of { bb' ->
+		    mkGraph aa' bb' }}
 	    u -> fromShATermError "Graph" u
 	where
 	    aterm = getATerm att

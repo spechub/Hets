@@ -10,16 +10,15 @@ import Haskell.Hatchet.FiniteMaps
 
 instance ATermConvertible Assump where
     toShATerm att0 (an :>: s) =
-	let (att1,an') = toShATerm att0 an
-	    (att2,s') = toShATerm att1 s 
-	    lat = [an',s']
-	in addATerm (ShAAppl "Assump_"  lat []) att2
+       case toShATerm att0 an of { (att1,an') ->
+       case toShATerm att1 s  of {  (att2,s') ->
+	 addATerm (ShAAppl "Assump_"   [an',s'] []) att2 }}
     fromShATerm att =
 	case aterm of
 	    (ShAAppl "Assump_" [an',s' ] _) ->
-		let an = fromShATerm (getATermByIndex1 an' att)
-		    s  = fromShATerm (getATermByIndex1 s' att)
-	        in (an :>: s)
+	       case fromShATerm (getATermByIndex1 an' att) of { an ->
+	       case fromShATerm (getATermByIndex1 s' att)  of { s  ->
+	        (an :>: s) }}
 	    u -> fromShATermError "Assump" u
 	where
 	    aterm = getATerm att
@@ -28,16 +27,15 @@ instance ATermConvertible Assump where
 
 instance (ATermConvertible a) => ATermConvertible (Qual a) where
     toShATerm att0 (p :=> t) =
-	let (att1,p') = toShATerm att0 p
-	    (att2,t') = toShATerm att1 t 
-	    lat = [p',t']
-	in addATerm (ShAAppl "Qual_"  lat []) att2
+	case toShATerm att0 p of { (att1,p') ->
+	case toShATerm att1 t of { (att2,t') ->	 
+	 addATerm (ShAAppl "Qual_"   [p',t'] []) att2}}
     fromShATerm att =
 	case aterm of
 	    (ShAAppl "Qual_" [an',s' ] _) ->
-		let an = fromShATerm (getATermByIndex1 an' att)
-		    s  = fromShATerm (getATermByIndex1 s' att)
-	        in (an :=> s)
+		case fromShATerm (getATermByIndex1 an' att) of { an ->
+		case fromShATerm (getATermByIndex1 s' att)  of { s  ->
+	         (an :=> s) }}
 	    u -> fromShATermError "Qual" u
 	where
 	    aterm = getATerm att

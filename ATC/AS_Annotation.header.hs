@@ -3,20 +3,19 @@
 
 instance (ATermConvertible a) => ATermConvertible (Annoted a) where
     toShATerm att0 (Annoted aa bb cc dd) =
-	let (att1,aa') = toShATerm att0 aa
-            (att2,bb') = toShATerm att1 bb
-            (att3,cc') = toShATerm att2 cc
-            (att4,dd') = toShATerm att3 dd
-            lat = [aa',bb',cc',dd']
-	in addATerm (ShAAppl "Annoted"  lat []) att4
+       case toShATerm att0 aa of { (att1,aa') ->
+       case toShATerm att1 bb of { (att2,bb') ->
+       case toShATerm att2 cc of { (att3,cc') ->
+       case toShATerm att3 dd of { (att4,dd') ->
+	 addATerm (ShAAppl "Annoted"  [aa',bb',cc',dd'] []) att4}}}}
     fromShATerm att =
 	case aterm of
 	    (ShAAppl "Annoted" [ aa, bb, cc, dd ] _) ->
-		let aa' = fromShATerm (getATermByIndex1 aa att)
-		    bb' = fromShATerm (getATermByIndex1 bb att)
-		    cc' = fromShATerm (getATermByIndex1 cc att)
-		    dd' = fromShATerm (getATermByIndex1 dd att)
-                in (Annoted aa' bb' cc' dd')
+	        case fromShATerm (getATermByIndex1 aa att) of { aa' ->
+	        case fromShATerm (getATermByIndex1 bb att) of { bb' ->
+	        case fromShATerm (getATermByIndex1 cc att) of { cc' ->
+	        case fromShATerm (getATermByIndex1 dd att) of { dd' ->
+                   Annoted aa' bb' cc' dd' }}}}
             _ -> fromShATermError "Annoted" aterm
 	where
 	    aterm = getATerm att
