@@ -344,10 +344,7 @@ translateSentence env sen =
     DatatypeSen dt -> map translateDt dt
     ProgEqSen _ _ pe -> [NamedSen (senName sen) 
 			$ translateProgEq as tm pe]
-    Formula t -> case mkQuantEq env t of
-		 Nothing -> []
-		 Just pe -> [NamedSen (senName sen) 
-			$ translateProgEq as tm pe]
+    _ -> []
 
 -------------------------------------------------------------------------
 -- some stuff
