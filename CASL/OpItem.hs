@@ -13,7 +13,7 @@
    C.2.1 Basic Specifications with Subsorts
 -}
 
-module CASL.OpItem where
+module CASL.OpItem (opItem, predItem) where
 
 import Common.AnnoState
 import Common.Id
@@ -24,8 +24,7 @@ import Common.AS_Annotation
 import Common.Lib.Parsec
 import Common.Token
 import CASL.Formula
-import CASL.ItemList
-import Data.List
+import Data.List(sort)
 
 -- stupid cast
 argDecl :: AParser ARG_DECL
@@ -101,8 +100,6 @@ opAttrs os t c = do q <- anComma
                  <|> return (Op_decl os t [] (map tokPos c)) 
 
 -- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"  		
-opItems :: AParser SIG_ITEMS
-opItems = itemList opS opItem Op_items
 
 -- ----------------------------------------------------------------------
 -- predicates
@@ -130,5 +127,3 @@ predTypeCont ps cs = do c <- colonT
 			t <- predType
 			return (Pred_decl ps t (map tokPos (cs++[c])))
 
-predItems :: AParser SIG_ITEMS
-predItems = itemList predS predItem Pred_items

@@ -25,12 +25,22 @@ import Common.Lib.Parsec
 import CASL.Formula
 import CASL.SortItem
 import CASL.OpItem
-import CASL.TypeItem
-import CASL.ItemList
 
 -- ------------------------------------------------------------------------
 -- sigItems
 -- ------------------------------------------------------------------------
+
+sortItems :: AParser SIG_ITEMS
+sortItems = itemList sortS sortItem Sort_items
+
+typeItems :: AParser SIG_ITEMS
+typeItems = itemList typeS datatype Datatype_items
+
+opItems :: AParser SIG_ITEMS
+opItems = itemList opS opItem Op_items
+
+predItems :: AParser SIG_ITEMS
+predItems = itemList predS predItem Pred_items
 
 sigItems :: AParser SIG_ITEMS
 sigItems = sortItems <|> opItems <|> predItems <|> typeItems
@@ -100,7 +110,5 @@ aFormula = bind appendAnno (annoParser formula) lineAnnos
 -- ------------------------------------------------------------------------
 
 basicSpec :: AParser BASIC_SPEC
-basicSpec = (fmap Basic_spec $ many1 $ 
-	    try $ annoParser basicItems)
-            <|> try (oBraceT >> cBraceT >> return (Basic_spec []))
-
+basicSpec = (fmap Basic_spec $ annosParser basicItems)
+            <|> (oBraceT >> cBraceT >> return (Basic_spec []))

@@ -15,8 +15,6 @@ import Common.Token
 import CASL.Formula
 import CASL.Print_AS_Basic
 import CASL.Parse_AS_Basic
-import CASL.SortItem
-import CASL.OpItem
 import Common.RunParsers
 import CASL.RunMixfixParser
 import CASL.RunStaticAna
