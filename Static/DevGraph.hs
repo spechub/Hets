@@ -305,7 +305,7 @@ instance PrettyPrint DGOrigin where
      DGClosedLenv -> ptext "closed specification (inclusion of local environment)"
      DGFormalParams -> ptext "formal parameters of a generic specification"
      DGImports -> ptext "imports of a generic specification"
-     DGSpecInst n -> ptext ("instantiation of"++showPretty n "")
+     DGSpecInst n -> ptext ("instantiation of "++showPretty n "")
      DGFitSpec -> ptext "fittig specification"
      DGView n -> ptext ("view "++showPretty n "")
      DGFitView n -> ptext ("fitting view "++showPretty n "")
