@@ -2,6 +2,7 @@
 module UserRules where
 
 import List (nub,intersperse,mapAccumL)
+import Char (isUpper)
 import StandardRules(Rule,Tag) -- gives some examples 
 import RuleUtils -- useful to have a look at this too
 
@@ -245,6 +246,8 @@ updateposfn dat =
        instanceSkeleton "PosItem"
 	       [ ((makeUpPosFn "up_pos"   pos   oneHas_p) , empty)
 	       , ((makeUpPosFn "up_pos_l" pos_l oneHas_pl), empty)
+	       , ((makeGetPosFn "get_pos"   pos   oneHas_p) , empty)
+	       , ((makeGetPosFn "get_pos_l" pos_l oneHas_pl), empty)
 	       ]
                dat
     else
@@ -271,6 +274,27 @@ makeUpPosFn fname tp hasPos body =
 		 parens (fn <+> var) 
 	      else 
 	         var
+
+makeGetPosFn fname tp hasPos body =
+    if hasPos then
+       let 
+           cvs  = head (mknss [body] namesupply)
+	   (vs,cvs') = mapAccumL (var_or_ tp) [] (zip cvs (types body))
+       in hang (text fname <+> ppCons cvs' body <+> text "=") 
+	       4
+	       (case vs of 
+		  []        -> text "Nothing"
+		  [v]       -> text "Just" <+> v
+		  otherwise -> 
+		     error ("*** something strange occured:" ++ fname)
+	       )
+    else
+       empty
+    where var_or_ appt accum (var,t) = 
+	      if t == appt then 
+		 (var:accum,var)
+	      else 
+	         (accum,text "_")
 
 -- end of PosItem derivation 
 
@@ -304,7 +328,6 @@ makeToATerm name body
 	text " lat)" <+> c_parens body <+> 
 	text ("att"++(show (length cvs))))
 
-
 defaultToATerm
   = empty
 
@@ -326,19 +349,40 @@ makeFromATermFn dat =
 	   [block (fnstart:(block cases):[whereblock])])
 	where 
 	fnstart     = text "case" <+> text "aterm" <+> text "of"
-        cases       = map (makeFromATerm (name dat)) (body dat)
+        cases       = map makeFromATerm (body dat)
 	whereblock  =
 	    text "where" $$
             block [text "aterm =" <+>
-		   text "findATerm (map (getATermSp att) pat_list)"
+		   text "findATerm (map (getATermSp" <+> 
+		   choose_att <> 
+		   text ") pat_list)"
 		  ,text "pat_list =" <+> 
 		   bracketList (map makeFromATermPat (body dat))
-		  ] 
-		   
+		  ,pos_const is_upper_d_const dat
+		  ]
+	choose_att = text (if is_upper_d_const then "att'" else "att")
+	is_upper_d_const = and (map isUpper_ (name dat))
+	    where isUpper_ x = x == '_' || isUpper x 
+	
+pos_const False _ = empty
+pos_const True  dat = 
+    parenList [text "pos_l",text "att'"] <+> text "=" $$ 
+    block [text "case getATerm att of"
+	  ,parens (text "AAppl" <+> doubleQuotes pos_name <+> 
+		   bracketList [text "reg_i",text "item_i"]) <+>
+	   text "->" $$
+	   nest 4 (parenList [text "(fromATerm_reg reg_i att"
+			     ,text "getATermByIndexSp1 item_i att"])
+	  ,text "otherwise -> ([],att)"
+	  ]
+    where
+       pos_name = text ("pos-" ++ (map (\x -> if x == '_' then '-'
+				           else x) (name dat)))
+
 makeFromATermPat body = 
     text "(AAppl" <+> con body <+> text "[ ])" <+> c_parens body
 
-makeFromATerm name body
+makeFromATerm body
   = let cvs = head (mknss [body] namesupply)
     in text "(AAppl" <+> con body <+>
        text "[" <+> 
@@ -354,15 +398,23 @@ makeFromATerm name body
                                      cvs)
  		 in ks
 
-defaultFromATerm name = empty
+{-defaultFromATerm name = empty-}
 {-  = hsep $ texts ["fromATerm", "u", "=", "fromATermError", (doublequote name), "u"] -}
 childFromATerm atn (t:ts) v
-    = (ts,(addPrime v) <+> text "=" <+> text ("fromATerm") <+> 
-       parens (text "getATermByIndexSp1" <+> v <+> atn))
-{-    where str = case t of
-		Con "String" -> "Str"
-		otherwise    -> ""
--}
+    = ( ts
+      , (addPrime v) <+> text "=" <+> 
+	if is_pos then  -- is Pos field
+	   text "head pos_l" 
+	else
+	   if is_pos_l then -- is [Pos] field
+	      text "pos_l"
+	   else
+	      (text ("fromATerm") <+> 
+	       parens (text "getATermByIndexSp1" <+> v <+> atn))
+      )
+    where is_pos   = t == Con "Pos"
+	  is_pos_l = t == List (Con "Pos")
+
 con body = let atc       = aterm_constructor body
 	       (fc,atc') = case atc of
 				    Const c ac -> (c,ac)
