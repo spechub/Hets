@@ -27,8 +27,6 @@ anaHaskellFile :: HetcatsOpts -> String -- filename
 ATerm-Instanzen: Klaus fragen
 
 In Logic_Haskell.hs: 
-- Sign durch Datentyp für Ergebnis des Typcheck ersetzen ("Interface-Files")
-- Sentence durch Datentyp für Programmdefinitionen ersetzen
 - in instance StaticAnalysis Funktion basic_analysis hinzufügen   
   berechnet aus abstraktem Syntaxbaum die Typen der Funktionen
     und guckt ob alle benutzten Identifier auch deklariert wurden
