@@ -24,7 +24,7 @@ Portability :  portable
 
 module Comorphisms.CASL2PCFOL where
 
-import Test
+--import Test
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
@@ -53,6 +53,30 @@ encodeSig sig = error "encodeSig not yet implemented"
 
 -}
 
+test1 :: [Named (FORMULA f)]
+test1 = 
+  inlineAxioms CASL
+     "  sorts s_i, s', s'' \
+      \ op inj:s_i -> s_i \
+      \ op f:s_i->s' \
+      \ op inj:s'->s'' \
+      \ forall x_i:s_i . def inj((op f:s_i->s')(inj(x_i))) \
+      \ forall x_i:s_i . def x_i /\\ def x_i"
+   where x = [mkSimpleId "x",mkSimpleId "y"]
+         s = [mkId [mkSimpleId "s_1"],mkId [mkSimpleId "s_2"]]
+         s' = [mkId [mkSimpleId "s'"]]
+
+
+test2 :: [Named (FORMULA f)]
+test2  = 
+  inlineAxioms CASL
+     "  sorts s < s' \
+      \ op inj : s->s' \
+      \ forall x,y:s . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)% "
+  where x = mkSimpleId "x"
+        y = mkSimpleId "y"
+        inj = mkId [mkSimpleId "_inj"]
+
 generateAxioms :: Sign f e -> [Named (FORMULA f)]
 generateAxioms sig = 
   concat 
@@ -64,6 +88,14 @@ generateAxioms sig =
   where x = mkSimpleId "x"
         y = mkSimpleId "y"
         inj = mkId [mkSimpleId "_inj"]
+
+{-
+inj((op f:s_1*...*s_n->s)(inj(x_1),...,inj(x_n))) = 
+inj((op f:s'_1*...*s'_n->s')(inj(x_1),...,inj(x_n))) 
+
+forall x[i]:s[i] . inj((op f:s[i]->s)(inj(x[i]))) = 
+
+-}
 
 {- todo
   Axiome auf S. 407, oder RefMan S. 173

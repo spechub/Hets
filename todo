@@ -24,7 +24,9 @@ Martin (Till)
 
 type check for CASL
 
-if a subterm is not typeable at all, output it
+documentation
+
+*** Error encode.casl:8.30, No correct typing for
 
 
 ************************************************
