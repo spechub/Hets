@@ -5,6 +5,7 @@ module Common.ATerm.ReadWrite (
 	writeATerm,      -- :: ATermTable -> String
 	writeSharedATerm,-- :: ATermTable -> String
 	writeSharedATermSDoc -- :: ATermTable -> SDoc  
+--	,module Common.ATerm.ReadWrite
 ) where
 
 {-
@@ -35,6 +36,7 @@ import List
 import Array
 import Data.FiniteMap
 import Common.SimpPretty
+--import Debug.Trace
 -- import Numeric don't use showInt: can't show negative numbers
 
 --- From String to ATerm ------------------------------------------------------
@@ -42,7 +44,12 @@ import Common.SimpPretty
 
 readATerm :: String -> ATermTable 
 readATerm ('!':str)	= 
-    let ((at,_),_,_,_) = readTAF emptyATermTable str emptyRTable 0 in at
+    let ((at,_),_,_rt,_l) = readTAF emptyATermTable str emptyRTable 0 
+{-	ab = case rt of
+	     RTab _ i -> ("Read: next_abbrev="++show i
+			  ++" ATT-TopIndex="++show (getTopIndex at)
+			  ++" length-of-aterm="++show l)-}
+    in at
 readATerm str		= 
     let ((at,_),_)     = readAT  emptyATermTable (dropSpaces str)      in at
 
@@ -106,8 +113,8 @@ readTAF at ('[':str) tbl l =
     let ((at',kids), str',tbl',l') = readTAFs at ']' (dropSpaces str) tbl 1
         ((at'',ann),str'',tbl'',l'') = readAnnTAF at' (dropSpaces str') tbl' 0 
 	t            = ShAList kids ann      
-	tbl'''       = condAddElement (addRAbbrev at_fin) (l''+l') tbl''
-	at_t@(at_fin,_) = addATerm t at''
+	at_t@(_,ai) = addATerm t at''
+	tbl'''       = condAddElement (addRAbbrev ai) (l''+l') tbl''
 	in (at_t, str'',tbl''',l+l'+l'')
 readTAF at str@(x:xs) tbl l 
   | isIntHead x =  
@@ -115,8 +122,8 @@ readTAF at str@(x:xs) tbl l
           l'         = length (x:i)
           ((at',ann),str'',tbl',l'') = readAnnTAF at str' tbl 0
 	  t          = ShAInt (read (x:i)) ann 
-	  tbl''      = condAddElement (addRAbbrev at_fin) (l'+l'') tbl'
-	  at_t@(at_fin,_) = addATerm t at'
+	  tbl''      = condAddElement (addRAbbrev ai) (l'+l'') tbl'
+	  at_t@(_,ai) = addATerm t at'
       in (at_t,str'',tbl'', l+l'+l'')
   |isAFunChar x || x=='"' || x=='(' = 
       let (c,str')           = readAFun str
@@ -126,8 +133,8 @@ readTAF at str@(x:xs) tbl l
 		readAnnTAF at' (dropSpaces str'') tbl' 0
 	  t                  = ShAAppl c kids ann
 	  l'''   = (length c) + l'+l''
-	  tbl''' = condAddElement (addRAbbrev at_fin) l''' tbl''
-	  at_t@(at_fin,_) = addATerm t at''
+	  tbl''' = condAddElement (addRAbbrev ai) l''' tbl''
+	  at_t@(_,ai) = addATerm t at''
  	  in (at_t, str''',tbl''',l''')
   | otherwise             = error $ error_saterm (take 5 str)
 
@@ -147,7 +154,7 @@ readTAFs1 at par str tbl l =
     let ((at',t),str',tbl',l')= readTAF at (dropSpaces str) tbl l
 	((at'',ts),str'',tbl'',l'') = 
 	    readTAFs' at' par (dropSpaces str') tbl' l'
-    in ((at'',t:ts),str'',tbl'',l'')
+    in ((at'',t:ts),str'',tbl'',l'') 
 
 readTAFs' :: ATermTable -> Char -> String -> ReadTable -> Int 
 			-> ((ATermTable,[Int]),String,ReadTable,Int)
@@ -204,7 +211,7 @@ span p xs@(x:xs')
 condAddElement ::(Next_Abb tab) => (tab -> tab) -> Int -> tab -> tab
 condAddElement add l tbl = 
     -- length $ abbrev (maxBound::Int) == 7, so every ATerm with a
-    -- string size greater than 7 need to be added
+    -- string size greater than 7 must be added
     if l>7 || (next_abbrev_len tbl) < l then
        add tbl
     else
@@ -239,8 +246,13 @@ writeATerm at           = writeAT at $ ""
 writeSharedATermSDoc :: ATermTable -> SDoc
 writeSharedATermSDoc at =     
     case writeTAF at emptyWTable of
-    (WS _ (Doc_len doc _)) -> (char '!'<>doc) 
-    _ -> fatal_error "writeSharedATermSDoc"
+    (WS _ (Doc_len doc l)) 
+--    (WS (WTab _ ((Doc_len d _),i)) (Doc_len doc _)) -> 
+	| isEmpty doc || l == 0 -> fatal_error "writeSharedATermSDoc"
+	| otherwise ->
+{-	trace ("Write: "++show d++" "
+	       ++show (deAbbrev (tail . show $ d))++" "++show i) -}
+		  (char '!'<>doc)
 
 writeSharedATerm :: ATermTable -> String 
 writeSharedATerm = render . writeSharedATermSDoc
@@ -274,7 +286,10 @@ writeTAF :: ATermTable -> WriteTable -> Write_struct
 writeTAF at tbl =  
     case indexOf at tbl of
     (Just s) -> WS tbl s 
-    Nothing  -> WS (condAddElement (addWAbbrev at) len tbl') d_len
+    Nothing  -> WS (condAddElement 
+                         (addWAbbrev (getTopIndex at)) 
+		         len tbl') 
+		   d_len
     where (WS tbl' d_len@(Doc_len _ len)) = writeTAF' at tbl
 	  -- risking a faulty writeTAF' implementation
 
@@ -305,9 +320,10 @@ dlConcat :: Doc_len -> Doc_len -> Doc_len
 showSConcat ShowS_len_empty showS_len = showS_len
 showSConcat showS_len ShowS_len_empty = showS_len-}
 dlConcat s1@(Doc_len sf1 sl1) s2@(Doc_len sf2 sl2) 
-    | sl1 == 0 && sl2 == 0 = fatal_error "showSConcat"
-    | sl1 == 0  = s2 
-    | sl2 == 0  = s1
+    | (sl1 == 0 || isEmpty sf1) 
+      && (sl2 == 0 || isEmpty sf2) = fatal_error "showSConcat"
+    | sl1 == 0 || isEmpty sf1 = s2 
+    | sl2 == 0 || isEmpty sf2 = s1
     | otherwise = Doc_len (sf1 <> sf2) (sl1 + sl2)
 
 {-# INLINE dlConcat #-}
@@ -320,9 +336,10 @@ showSConcat_comma ShowS_len_empty (ShowS_len sf sl) =
 showSConcat_comma (ShowS_len sf sl) ShowS_len_empty = 
     ShowS_len (sf . showChar ',') (sl + 1)-}
 dlConcat_comma (Doc_len sf1 sl1) (Doc_len sf2 sl2) 
-    | sl1 == 0 && sl2 == 0 = fatal_error "showSConcat"
-    | sl1 == 0  = Doc_len (sf2 <>comma) (sl2 + 1)
-    | sl2 == 0  = Doc_len (sf1 <>comma) (sl1 + 1)
+    | (sl1 == 0 || isEmpty sf1) 
+      && (sl2 == 0 || isEmpty sf2) = fatal_error "showSConcat"
+    | sl1 == 0 || isEmpty sf1 = Doc_len (sf2 <>comma) (sl2 + 1)
+    | sl2 == 0 || isEmpty sf2 = Doc_len (sf1 <>comma) (sl1 + 1)
     | otherwise = Doc_len (sf1 <> sf2 <> comma) (sl1 + sl2 + 1)
 
 
@@ -381,8 +398,8 @@ writeATermAux c ts = showString c . parenthesise (commaSep ts)
 writeATermAuxS :: String -> Doc_len -> Doc_len
 {-writeATermAuxS c ShowS_len_empty = 
     ShowS_len (showString c) (length c)-}
-writeATermAuxS c doc_len@(Doc_len _ l)	 
-    | l == 0 = Doc_len (text c) (length c)
+writeATermAuxS c doc_len@(Doc_len d l)	 
+    | l == 0 && isEmpty d = Doc_len (text c) (length c)
     | l >  0 = Doc_len (text c <> pf) (length c + pl)
     | otherwise = error "writeATermAuxS: negative length"
     where (Doc_len pf pl) = parenthesiseS doc_len
@@ -419,15 +436,15 @@ bracketS, parenthesiseS, parenthesiseAnnS :: Doc_len -> Doc_len
 --bracketS         ShowS_len_empty   = 
 --    ShowS_len (showChar '[' . showChar ']') 2
 bracketS         (Doc_len d dl) 
-    | dl == 0   = Doc_len (brackets empty) 2
+    | dl == 0 && isEmpty d = Doc_len (brackets empty) 2
     | otherwise = Doc_len (brackets d) (dl+2)
 -- parenthesiseS    ShowS_len_empty   = ShowS_len_empty
 parenthesiseS    s@(Doc_len d dl) 
-    | dl == 0   = s
+    | dl == 0 && isEmpty d  = s
     | otherwise = Doc_len (parens d) (dl+2)
 --parenthesiseAnnS ShowS_len_empty   = ShowS_len_empty
 parenthesiseAnnS s@(Doc_len d dl) 
-    | dl == 0   = s
+    | dl == 0 && isEmpty d = s
     | otherwise = Doc_len (braces d) (dl+2)
 
 --- Tables of ATerms ----------------------------------------------------------
@@ -437,7 +454,7 @@ parenthesiseAnnS s@(Doc_len d dl)
 -- ATermIndex is the Index that is given by getATermIndex.
 
 -- Map: Abbrev     -> ATermIndex
-data ReadTable  = RTab (FiniteMap Int Int) !Int
+data ReadTable  = RTab (FiniteMap Int Int) {-# UNPACK #-} !Int
 
 instance Next_Abb ReadTable where
     next_abbrev_len = next_abbrev_R_len 
@@ -470,27 +487,33 @@ lengthOfShATermInd ai (WTab _ lmap _) = IntMap.lookup ai lmap
 -}
 
 -- top-level / selected ATerm gets next abbrev and a length
-addWAbbrev :: ATermTable -> WriteTable -> WriteTable
-addWAbbrev at (WTab ai_abb_map (da,i)) =  
-    let ai = getTopIndex at
-    in if ai == -1 
-       then error (show (getATerm at) ++ " not found")
-       else let new_map = (addToFM ai_abb_map ai da) 
-	    in seq new_map $ WTab new_map (abbrevD (i+1),i+1)
+addWAbbrev :: Int -> WriteTable -> WriteTable
+addWAbbrev ai (WTab ai_abb_map (da,i)) 
+    | ai < 0    = error "addWAbbrev: negative index" 
+    | otherwise = 
+	let new_map = (addToFM ai_abb_map ai da) 
+	in seq new_map (
+		  maybe (WTab new_map (abbrevD (i+1),i+1))
+		        (error ("destructive update in WriteTable "
+				++show i++" "
+				++show ai))
+		        (lookupFM ai_abb_map ai))
 
 -- the String Argument is not used and serves as dummy for ease of code change
-addRAbbrev :: ATermTable -> ReadTable -> ReadTable
-addRAbbrev at (RTab abb_ai_map i) =  
-    let ai = getTopIndex at
-    in if ai == -1 
-       then error (show (getATerm at) ++ " not found")
-       else RTab (addToFM abb_ai_map i ai) (i+1)
+addRAbbrev :: Int -> ReadTable -> ReadTable
+addRAbbrev ai (RTab abb_ai_map i) 
+    | ai < 0    = error "addRAbbrev: negative index" 
+    | otherwise = 
+	maybe (RTab (addToFM abb_ai_map i ai) (i+1)) 
+	      (error ("destructive update in ReadTable "++show i++" "
+		      ++show ai))
+	      (lookupFM abb_ai_map i)
 
 getAbbrevTerm :: Int -> ATermTable -> ReadTable -> ShATerm
 getAbbrevTerm i at (RTab abb_ai_map _) =  
-    let i'    = lookupWithDefaultFM abb_ai_map (err) i
-	err   = error ("Index "++show i++"not found")
-    in snd $  getATermByIndex i' at 
+    let ai    = lookupWithDefaultFM abb_ai_map (err) i
+	err   = error ("Index "++show i++" not found")
+    in snd $  getATermByIndex ai at 
 
 {-
 (!!!)              :: [b] -> Integer -> b
@@ -549,7 +572,7 @@ abbrev :: Int -> [Char]
 abbrev i = '#' : (mkAbbrev i)
 
 next_abbrev_W_len :: WriteTable -> Int
-next_abbrev_W_len (WTab _ (_,len)) = len
+next_abbrev_W_len (WTab _ (Doc_len _ len,_)) = len
 
 next_abbrev_R_len :: ReadTable -> Int
 next_abbrev_R_len (RTab _ siz) = length $ abbrev (siz+1)
