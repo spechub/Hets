@@ -195,8 +195,6 @@ Christian
 
 simplification of HasCASL sentences (omit types)
 
-hets-daily for Linux 2.6
-
 analyse the ghc-6.4 difference in Logic/Comorphism.hs
 
 "free type Pair[S,T] ::= pair(first :S; second: T)" cannot be
@@ -206,8 +204,6 @@ become identical positions and are not distinguished by programmatica
 
 check for superfluous quantifications in HasCASL's function types
 (sonja's bug)
-
-One assertion in TypeCheck fails for the Secd example
 
 Logic COL is a ruin (with wrongly qualified module names)
 
