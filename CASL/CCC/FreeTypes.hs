@@ -41,6 +41,7 @@ import qualified Common.Lib.Rel as Rel
 import CASL.CCC.SignFuns
 import Common.AS_Annotation
 import Common.PrettyPrint
+import Common.Lib.Pretty
 
 checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
 checkFreeType m fsn 
@@ -71,8 +72,8 @@ checkFreeType m fsn
                                  Quantification Universal _ _ _ -> True
                                  _ -> False) fs
          op_preds= trace (showPretty op_preds1 "leading") op_preds1
-         l_Syms=map leadingSymb op_preds
-        -- l_Syms=trace (showPretty l_Syms1 "leading_Symbol") l_Syms1
+         l_Syms1=map leadingSymb op_preds
+         l_Syms=trace (showPretty l_Syms1 "leading_Symbol") l_Syms1
          filterOp symb= case symb of
                          Just (Left (Qual_op_name _ op _))->[res_OP_TYPE op]
                          _ ->[]
@@ -194,3 +195,11 @@ groupAxioms phis = do
                                   symb'= if not $ (elem fp symb) then fp:symb
                                          else symb
                               in p'++(filterA ps symb')
+
+instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (Either a b) where
+  printText0 ga (Left x) = printText0 ga x
+  printText0 ga (Right x) = printText0 ga x
+
+instance PrettyPrint a => PrettyPrint (Maybe a) where
+  printText0 ga (Just x) = printText0 ga x
+  printText0 ga Nothing = ptext "Nothing"
