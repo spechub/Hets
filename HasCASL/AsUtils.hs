@@ -232,7 +232,7 @@ instance PosItem VarDecl where
 
 instance PosItem a => PosItem [a] where
     get_pos l = let p = posOf l in 
-                 if p == nullPos then Nothing else Just p
+                 if isNullPos p then Nothing else Just p
 
 instance PosItem a => PosItem (a, b) where
     get_pos (a, _) = get_pos [a]

@@ -1,5 +1,4 @@
 {-| 
-   
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Till Mossakowski, Christian Maeder, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
@@ -10,7 +9,6 @@ Portability :  portable
 
    This module provides a 'Result' type and some monadic functions
    for accumulating 'Diagnosis' messages during analysis phases.
-
 -}
 
 module Common.Result(module Common.Result, Common.PrettyPrint.showPretty) where
@@ -19,8 +17,8 @@ import Common.Id
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Data.List
-import Common.Lib.Parsec.Pos
 import Common.Lib.Parsec.Error
+import Common.Lexer (fromSourcePos)
 
 -- | severness of diagnostic messages
 data DiagKind = Error | Warning | Hint | Debug 
@@ -51,7 +49,7 @@ hasErrors = any isErrorDiag
 -- | adjust a null position of a diagnosis
 adjustDiagPos :: Pos -> Diagnosis -> Diagnosis
 adjustDiagPos p d = let o = diagPos d in 
-   d {diagPos = if o == nullPos then p else o}
+   d {diagPos = if isNullPos o then p else o}
  
 -- | A uniqueness check yields errors for duplicates in a given list.
 checkUniqueness :: (PrettyPrint a, PosItem a, Ord a) => [a] -> [Diagnosis]
@@ -185,7 +183,7 @@ propagateErrors r =
 -- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String
 showErr err
-    = showPos (errorPos err) ":" ++ 
+    = showPos (fromSourcePos $ errorPos err) ":" ++ 
       showErrorMessages "or" "unknown parse error" 
                         "expecting" "unexpected" "end of input"
                        (errorMessages err)

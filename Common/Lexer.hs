@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
@@ -13,14 +12,16 @@ Portability :  portable
    <http://www.cofi.info/Documents/CASL/Summary/>
    from 25 March 2001
    C.4 Lexical Syntax
-
 -}
 
 module Common.Lexer where
 
 import Data.Char (digitToInt, isDigit)
-import Common.Id (Token(..), place)
+import Common.Id -- (Token(..), place)
 import Common.Lib.Parsec
+import qualified Common.Lib.Parsec.Pos as Pos
+
+-- * positions from "Common.Lib.Parsec.Pos" starting at (1,1)
 
 
 -- | no-bracket-signs
@@ -36,7 +37,7 @@ scanAnySigns = many1 (oneOf signChars <?> "casl sign") <?> "signs"
 -- | casl letters
 caslLetters :: String
 caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++ 
-	      "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïñòóôõöøùúûüıÿ"
+              "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïñòóôõöøùúûüıÿ"
 
 -- see <http://www.htmlhelp.com/reference/charset/> starting from \192
 -- \208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn
@@ -93,15 +94,15 @@ enclosedBy :: (Monad f, Functor f) => f [a] -> f a -> f [a]
 p `enclosedBy` q = begDoEnd q p q
 
 checkWith :: (Show a) => GenParser tok st a -> (a -> Bool) 
-	  -> GenParser tok st a
+          -> GenParser tok st a
 p `checkWith` f = do x <- p
-		     if f x then return x else unexpected (show x)
+                     if f x then return x else unexpected (show x)
 
 separatedBy :: GenParser tok st a -> GenParser tok st b 
-	    -> GenParser tok st ([a], [b])
+            -> GenParser tok st ([a], [b])
 p `separatedBy`  s = do r <- p
-			option ([r], []) 
-			  (do t <- s
+                        option ([r], []) 
+                          (do t <- s
                               (es, ts) <- separatedBy p s
                               return (r:es, t:ts))
 
@@ -147,11 +148,11 @@ hexEscape = char 'x' <:> count 2 hexDigit -- cannot be too big
 
 octEscape :: GenParser Char st String
 octEscape = char 'o' <:> 
-	    count 3 octDigit `checkWith` \s -> value 8 s <= 255
+            count 3 octDigit `checkWith` \s -> value 8 s <= 255
 
 escapeChar :: GenParser Char st String
 escapeChar = char '\\' <:> 
-	     (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)
+             (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)
 
 -- ----------------------------------------------
 -- * chars for quoted chars and literal strings
@@ -159,35 +160,35 @@ escapeChar = char '\\' <:>
 
 printable :: GenParser Char st String
 printable = single (satisfy (\c -> (c /= '\'')  && (c /= '"') 
-			      && (c /= '\\') && (c > '\026')))
+                              && (c /= '\\') && (c > '\026')))
 
 caslChar :: GenParser Char st String
 caslChar = escapeChar <|> printable
 
 scanQuotedChar :: GenParser Char st String
 scanQuotedChar = (caslChar <|> (char '"' >> return "\\\"")) 
-		 `enclosedBy` prime <?> "quoted char"
+                 `enclosedBy` prime <?> "quoted char"
 
 -- convert '"' to '\"' and "'" to "\'" (no support for ''')
 
 scanString :: GenParser Char st String
 scanString = flat (many (caslChar <|> (char '\'' >> return "\\\'"))) 
-	     `enclosedBy` char '"' <?> "literal string"
+             `enclosedBy` char '"' <?> "literal string"
 
 isString :: Token -> Bool
 isString t = take 1 (tokStr t) == "\""
 
 parseString :: Parser a -> String -> a
 parseString p s = case parse p "" s of
-		  Left _ -> error "parseString"
-		  Right x -> x
+                  Left _ -> error "parseString"
+                  Right x -> x
 
 splitString :: Parser a -> String -> (a, String)
 splitString p s = 
     let ph = do hd <- p;
-		tl <- getInput;
-		return (hd, tl) 
-	in parseString ph s
+                tl <- getInput;
+                return (hd, tl) 
+        in parseString ph s
 
 -- ----------------------------------------------
 -- * digit, number, fraction, float
@@ -198,18 +199,18 @@ getNumber = many1 digit
 
 scanFloat :: GenParser Char st String
 scanFloat = getNumber <++> (option "" 
-	     (char '.' <:> getNumber)
-	      <++> option "" 
-	      (char 'E' <:> option "" (single (oneOf "+-"))
-	       <++> getNumber))
+             (char '.' <:> getNumber)
+              <++> option "" 
+              (char 'E' <:> option "" (single (oneOf "+-"))
+               <++> getNumber))
 
 scanDigit :: GenParser Char st String
 scanDigit = single digit
 
 isNumber :: Token -> Bool
 isNumber t = case tokStr t of 
-			   c:_:_ -> isDigit c
-			   _     -> False
+                           c:_:_ -> isDigit c
+                           _     -> False
 
 isFloating :: Token -> Bool
 -- precondition: isNumber
@@ -217,8 +218,8 @@ isFloating t = any (\c -> c == '.' || c == 'E') (tokStr t)
 
 isLitToken :: Token -> Bool
 isLitToken t = case tokStr t of 
-	       c:_ -> c == '\"' || c == '\'' || isDigit c
-	       _ -> False
+               c:_ -> c == '\"' || c == '\'' || isDigit c
+               _ -> False
 
 -- ----------------------------------------------
 -- * nested comment outs
@@ -229,11 +230,11 @@ notEndText c = try (char c << notFollowedBy (char '%'))
 
 nestCommentOut :: GenParser Char st Char
 nestCommentOut = try (string "%[") >> 
-		 many (noneOf "]%" 
-		       <|> notEndText ']'
-			  <|> nestCommentOut 
-			  <|> char '%')
-		 >> char ']' >> char '%'
+                 many (noneOf "]%" 
+                       <|> notEndText ']'
+                          <|> nestCommentOut 
+                          <|> char '%')
+                 >> char ']' >> char '%'
 
 -- ----------------------------------------------
 -- * skip whitespaces and nested comment out
@@ -244,17 +245,25 @@ whiteChars = "\n\r\t\v\f \160" -- non breaking space
 
 skip :: GenParser Char st ()
 skip = skipMany(oneOf (whiteChars) 
-		       <|> nestCommentOut <?> "") >> return () 
+                       <|> nestCommentOut <?> "") >> return () 
+
+fromSourcePos :: Pos.SourcePos -> Pos
+fromSourcePos p = 
+    newPos (Pos.sourceName p) (Pos.sourceLine p) (Pos.sourceColumn p)
+
+getPos :: GenParser tok st Pos
+getPos = fmap fromSourcePos getPosition
 
 -- only skip to an annotation if it's on the same or next line
 skipSmart :: GenParser Char st ()
 skipSmart = do p <- getPosition
-	       try (do skip
-		       q <- getPosition
-		       if sourceLine q <= sourceLine p + 1 then return ()
-			   else notFollowedBy (char '%') >> return ()
-		   )
-		<|> return ()
+               try (do skip
+                       q <- getPosition
+                       if Pos.sourceLine q <= Pos.sourceLine p + 1 
+                           then return ()
+                           else notFollowedBy (char '%') >> return ()
+                   )
+                <|> return ()
 
 -- ----------------------------------------------
 -- * keywords WORDS or NO-BRACKET-SIGNS 
@@ -275,7 +284,7 @@ reserved l p = try (p `checkWith` \r -> r `notElem` l)
 -- ----------------------------------------------
 
 pToken :: GenParser Char st String -> GenParser Char st Token
-pToken parser = bind (flip Token) getPosition (parser << skipSmart)
+pToken parser = bind (flip Token) getPos (parser << skipSmart)
 
 pluralKeyword :: String -> GenParser Char st Token
 pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
@@ -283,9 +292,9 @@ pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
 -- | check for keywords (depending on lexem class)
 toKey :: String -> GenParser Char st String
 toKey s = let p = string s in 
-	      if last s `elem` "[]{}(),;" then p 
-		 else if last s `elem` signChars then keySign p 
-		      else keyWord p
+              if last s `elem` "[]{}(),;" then p 
+                 else if last s `elem` signChars then keySign p 
+                      else keyWord p
 
 -- * some separator parsers
 

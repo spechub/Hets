@@ -69,7 +69,7 @@ libName = do libid <- libId
 -- | Parse the library version
 version :: AParser VERSION_NUMBER
 version = do s <- asKey versionS
-             pos <- getPosition
+             pos <- getPos
              n <- many1 digit `sepBy1` (string ".")
              skip
              return (Version_number n ([tokPos s, pos]))
@@ -77,7 +77,7 @@ version = do s <- asKey versionS
 
 -- | Parse library ID
 libId :: AParser LIB_ID
-libId = do pos <- getPosition
+libId = do pos <- getPos
            path <- scanAnyWords `sepBy1` (string "/")
            skip
            return (Indirect_link (concat (intersperse "/" path)) [pos])

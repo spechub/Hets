@@ -55,8 +55,6 @@ import qualified Data.List as List
 import Data.Maybe
 import Control.Monad
 
-import Common.Lib.Parsec.Pos -- for testing purposes
-
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
 ------------------------------------------------------------------

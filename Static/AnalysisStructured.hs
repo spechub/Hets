@@ -125,8 +125,6 @@ import Common.PrettyPrint
 import Common.Lib.Pretty
 import Control.Monad 
 
-import Common.Lib.Parsec.Pos -- for testing purposes
-
 -- | analyze a SPEC
 -- Parameters: global context, local environment,
 -- the SIMPLE_ID may be a name if the specification shall be named,

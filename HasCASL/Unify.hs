@@ -178,7 +178,7 @@ instance Unifiable Type where
 showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
 showPrettyWithPos a =  let p = getMyPos a in
         showChar '\'' . showPretty a . showChar '\'' 
-           . noShow (nullPos == p) (showChar ' ' . 
+           . noShow (isNullPos p) (showChar ' ' . 
                                      showParen True (showPos p))
 
 uniResult :: (PrettyPrint a, PosItem a, PrettyPrint b, PosItem b) =>

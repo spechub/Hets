@@ -267,7 +267,7 @@ install: hets-opt install-hets
 
 genRules: $(generated_rule_files) utils/genRules
 
-$(generated_rule_files): $(genrule_files) utils/genRules #$(genrule_header_files)
+$(generated_rule_files): $(genrule_files) utils/genRules $(genrule_header_files)
 	$(MAKE) clean_genRules
 	$(foreach file,$(atc_files),$(gen_atc_files))
 	utils/genRules -r $(rule) -o CASL $(casl_files)
