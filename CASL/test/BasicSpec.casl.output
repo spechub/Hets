@@ -189,15 +189,15 @@ forall a:t; a, b:s
 . a = a
 . a = a
 . a = a
-type s ::= sort s2, s1 | c | c(a; a, b:t; a, d:t) | c(a)?
-free type s ::= sort s2, s1 | c | c(a; a, b:t; d:t) | c(a)?
-generated type s ::= sort s2, s1 | c | c(a; a, b:t; d:t) | c(a)?
+type s ::= sorts s2, s1 | c | c(a; a, b:t; a, d:t) | c(a)?
+free type s ::= sorts s2, s1 | c | c(a; a, b:t; d:t) | c(a)?
+generated type s ::= sorts s2, s1 | c | c(a; a, b:t; d:t) | c(a)?
 generated
     {pred __<__ : a * a
      ops a : b;
          c : b
      sorts s, t < s
-     type s ::= sort s2, s1
+     type s ::= sorts s2, s1
               | c
               | c(a)
               | c(a; a, b:t; d:t)

@@ -40,13 +40,29 @@ import Common.Lib.State
 import Common.Id
 import Common.Result
 
+resolveMODALITY :: MixResolve MODALITY
+resolveMODALITY ga ids m = case m of 
+    Term_mod t -> fmap Term_mod $ resolveMixTrm resolveM_FORMULA ga ids t
+    _ -> return m
+
+resolveM_FORMULA :: MixResolve M_FORMULA
+resolveM_FORMULA ga ids cf = case cf of 
+   Box m f ps -> do 
+       nm <- resolveMODALITY ga ids m
+       nf <- resolveMixFrm resolveM_FORMULA ga ids f
+       return $ Box nm nf ps
+   Diamond m f ps -> do 
+       nm <- resolveMODALITY ga ids m
+       nf <- resolveMixFrm resolveM_FORMULA ga ids f
+       return $ Diamond nm nf ps
+   _ -> error "resolveC_FORMULA"
 
 noExtMixfixM :: M_FORMULA -> Bool
 noExtMixfixM mf =
     let noInner = noMixfixF noExtMixfixM in
     (const $ 
      trace "Modal.StatAna.noExtMixfixM: implementation \
-	   \is commented out, until MixfixParser is fixed" True) mf
+           \is commented out, until MixfixParser is fixed" True) mf
 {-
     case mf of
     Box _ f _     -> noInner f
@@ -54,16 +70,12 @@ noExtMixfixM mf =
 -}
 minExpForm :: Min M_FORMULA ModalSign
 minExpForm ga s form = 
-    let newGa = addAssocs ga s
-        ops = formulaIds s
-        preds = allPredIds s
-        res = resolveFormula newGa ops preds
+    let ops = formulaIds s
         minMod md ps = case md of
                   Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
                   Term_mod t -> let
                     r = do
-                      t1 <- resolveMixfix newGa (allOpIds s) preds t
-                      ts <- minExpTerm minExpForm ga s t1
+                      ts <- minExpTerm minExpForm ga s t
                       t2 <- is_unambiguous t ts ps
                       let srt = term_sort t2
                           trm = Term_mod t2
@@ -86,20 +98,18 @@ minExpForm ga s form =
     in case form of
         Box m f ps -> 
             do nm <- minMod m ps
-               f1 <- res f
-               f2 <- minExpFORMULA minExpForm ga s f1
+               f2 <- minExpFORMULA minExpForm ga s f
                return $ Box nm f2 ps
         Diamond m f ps -> 
             do nm <- minMod m ps
-               f1 <- res f
-               f2 <- minExpFORMULA minExpForm ga s f1
+               f2 <- minExpFORMULA minExpForm ga s f
                return $ Diamond nm f2 ps
 
 ana_M_SIG_ITEM :: Ana M_SIG_ITEM M_FORMULA ModalSign
 ana_M_SIG_ITEM ga mi = 
     case mi of 
     Rigid_op_items r al ps -> 
-        do ul <- mapM (ana_OP_ITEM ga noExtMixfixM) al 
+        do ul <- mapM (ana_OP_ITEM resolveM_FORMULA noExtMixfixM ga) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Op_decl ops ty _ _ -> 
@@ -110,7 +120,7 @@ ana_M_SIG_ITEM ga mi =
                _ -> return ()
            return $ Rigid_op_items r ul ps
     Rigid_pred_items r al ps -> 
-        do ul <- mapM (ana_PRED_ITEM ga noExtMixfixM) al 
+        do ul <- mapM (ana_PRED_ITEM resolveM_FORMULA noExtMixfixM ga) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Pred_decl ops ty _ -> 

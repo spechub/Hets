@@ -3,19 +3,10 @@ sorts ABCDEFGHIJKLMONOPQRSTUVWXYZ, Boolean, Char, Data1, Data2,
       a'b''2, a_b_c, ab2, ab_2_3_a, abc, abcdefghijlklmnopqrstuvwxyz, b,
       c, d, e, nat, s, t, x0123456789,
       ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝ‗אבגדהוזחטיךכלםמןסעףפץצרשתûü‎ÿ
-sorts Data1 < Data2
-      Int < Rat
-      Nat < Int, Rat
-      Pos < Int, Nat, Rat
-      a < a, b, c, d, e
-      b < a, b, c, d, e
-      c < a, b, c, d, e
-      d < a, b, c, d, e
-      e < a, b, c, d, e
-      s < s, t
-      s1 < s, t
-      s2 < s, t
-      t < s, t
+sorts Data1 < Data2; Int < Rat; Nat < Int, Rat;
+      Pos < Int, Nat, Rat; a < a, b, c, d, e; b < a, b, c, d, e;
+      c < a, b, c, d, e; d < a, b, c, d, e; e < a, b, c, d, e; s < s, t;
+      s1 < s, t; s2 < s, t; t < s, t
 op ' ' : Char
 op '!' : Char
 op '!' : s
@@ -1209,14 +1200,6 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
-*** Error 343.36, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E -(3 @@ 4)
-*** Error 343.20, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E +(3 @@ 4)
-*** Error 343.5, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E (3 @@ 4)
-*** Error 342.39, No correct typing for  (1 @@ 2) ::: (3 @@ 4)
-*** Error 342.26, No correct typing for  (1 @@ 2) E -(3 @@ 4)
-*** Error 342.14, No correct typing for  (1 @@ 2) E (3 @@ 4)
-*** Error , No correct typing for 
-*** Error , No correct typing for 
 *** Error 261.9, ambiguous mixfix term
 	__*__(i,__-__(q,__*__(j,p)))
 	__-__(__*__(i,q),__*__(j,p))
@@ -1263,3 +1246,11 @@ pred q : s
 *** Error 304.6, unknown sort 'b'
 *** Error 305.6, unknown sort 'd'
 *** Error 351.11, wrong number of places '__and'__'
+*** Error 342.14, No correct typing for  (1 @@ 2) E (3 @@ 4)
+*** Error 342.26, No correct typing for  (1 @@ 2) E -(3 @@ 4)
+*** Error 342.39, No correct typing for  (1 @@ 2) ::: (3 @@ 4)
+*** Error 343.5, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E (3 @@ 4)
+*** Error 343.20, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E +(3 @@ 4)
+*** Error 343.36, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E -(3 @@ 4)
+*** Error 426.26, No correct typing for e
+*** Error 427.12, No correct typing for e

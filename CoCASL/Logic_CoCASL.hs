@@ -97,9 +97,9 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA ()
                CSign 
                CoCASLMor 
                Symbol RawSymbol where
-         basic_analysis CoCASL = Just $ basicAnalysis minExpForm
+         basic_analysis CoCASL = Just $ basicAnalysis resolveC_FORMULA 
+                                 noExtMixfixCo minExpForm
                                ana_C_BASIC_ITEM ana_C_SIG_ITEM diffCoCASLSign
-			       noExtMixfixCo
          stat_symb_map_items CoCASL = statSymbMapItems
          stat_symb_items CoCASL = statSymbItems
          ensures_amalgamability CoCASL _ = 

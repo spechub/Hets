@@ -15,7 +15,8 @@ Portability :  portable
      is not changed within applications (and might be misleading)
 -}
 
-module CASL.MixfixParser ( resolveFormula, resolveMixfix)
+module CASL.MixfixParser (resolveFormula, resolveMixfix, MixResolve
+                         ,resolveMixTrm, resolveMixFrm)
     where 
 import CASL.AS_Basic_CASL 
 import Common.GlobalAnnotations
@@ -39,19 +40,19 @@ mkSingleOpArgRule b ide = (protect ide, b, getPlainTokenList ide ++ [exprTok])
 
 mkArgsRule :: Int -> Id -> Rule
 mkArgsRule b ide = (protect ide, b, getPlainTokenList ide 
-		      ++ getTokenPlaceList tupleId)
+                      ++ getTokenPlaceList tupleId)
 
 singleArgId, singleOpArgId, multiArgsId :: Id
 singleArgId = mkId (getPlainTokenList exprId ++ [varTok])
 singleOpArgId = mkId (getPlainTokenList exprId ++ [exprTok])
 
 multiArgsId = mkId (getPlainTokenList exprId ++
-				 getPlainTokenList tupleId)
+                                 getPlainTokenList tupleId)
 
 initRules ::  GlobalAnnos -> IdSet -> [Rule]
 initRules ga (opS, predS) = 
     let ops = Set.toList opS
-	preds = Set.toList predS
+        preds = Set.toList predS
     in concat [ mkRule typeId :
        mkRule exprId :
        mkRule varId :
@@ -72,24 +73,24 @@ initRules ga (opS, predS) =
 posOfTerm :: TERM f -> Pos
 posOfTerm trm =
     case trm of
-	      Mixfix_token t -> tokPos t
-	      Mixfix_term ts -> headPos $ map posOfTerm ts
-	      Simple_id i -> tokPos i
-	      Mixfix_qual_pred p -> 
-		  case p of 
-		  Pred_name i -> posOfId i
-		  Qual_pred_name i _ _ -> posOfId i
+              Mixfix_token t -> tokPos t
+              Mixfix_term ts -> headPos $ map posOfTerm ts
+              Simple_id i -> tokPos i
+              Mixfix_qual_pred p -> 
+                  case p of 
+                  Pred_name i -> posOfId i
+                  Qual_pred_name i _ _ -> posOfId i
               Application o _ _ -> 
-		  case o of 
-		  Op_name i ->  posOfId i
-		  Qual_op_name i _ _ -> posOfId i
-	      Qual_var v _ _ -> tokPos v
-	      Sorted_term t _ _ -> posOfTerm t
-	      Cast  t _ _ -> posOfTerm t
-	      Conditional t _ _ _ -> posOfTerm t
-	      Unparsed_term _ ps -> headPos ps
-	      Mixfix_sorted_term _ ps -> headPos ps
-	      Mixfix_cast _ ps -> headPos ps
+                  case o of 
+                  Op_name i ->  posOfId i
+                  Qual_op_name i _ _ -> posOfId i
+              Qual_var v _ _ -> tokPos v
+              Sorted_term t _ _ -> posOfTerm t
+              Cast  t _ _ -> posOfTerm t
+              Conditional t _ _ _ -> posOfTerm t
+              Unparsed_term _ ps -> headPos ps
+              Mixfix_sorted_term _ ps -> headPos ps
+              Mixfix_cast _ ps -> headPos ps
               Mixfix_parenthesized _ ps -> headPos ps
               Mixfix_bracketed _ ps -> headPos ps
               Mixfix_braced _ ps -> headPos ps
@@ -102,16 +103,16 @@ asAppl f as ps = Application (Op_name f) as ps
 toAppl :: Id -> [TERM f] -> [Pos] -> TERM f
 toAppl ide ar qs = 
        if ide == singleArgId || ide == multiArgsId
-	    then assert (length ar > 1) $ 
-		 let har:tar = ar
-		     ps = posOfTerm har : qs 
-		     in case har of
-		 Application q ts _ -> assert (null ts) $ 
-					Application q tar ps
-		 Mixfix_qual_pred _ -> Mixfix_term [har,
-				   Mixfix_parenthesized tar ps]
-		 _ -> error "stateToAppl"
-	    else asAppl ide ar qs
+            then assert (length ar > 1) $ 
+                 let har:tar = ar
+                     ps = posOfTerm har : qs 
+                     in case har of
+                 Application q ts _ -> assert (null ts) $ 
+                                        Application q tar ps
+                 Mixfix_qual_pred _ -> Mixfix_term [har,
+                                   Mixfix_parenthesized tar ps]
+                 _ -> error "stateToAppl"
+            else asAppl ide ar qs
 
 type IdSet = (Set.Set Id, Set.Set Id)
 
@@ -130,143 +131,148 @@ filterByPredicate bArg bOp =
 
 type TermChart f = Chart (TERM f)
 
-iterateCharts :: GlobalAnnos -> IdSet -> [TERM f] -> TermChart f 
-	      -> TermChart f
-iterateCharts g ids terms c = 
-    let self = iterateCharts g ids
-	expand = expandPos Mixfix_token 
-	oneStep = nextChart addType filterByPredicate toAppl g c
-	resolveTerm = resolveMixTrm g ids
+type MixResolve f = GlobalAnnos -> IdSet -> f -> Result f 
+
+iterateCharts :: MixResolve f -> GlobalAnnos -> IdSet -> [TERM f] 
+              -> TermChart f -> TermChart f
+iterateCharts extR g ids terms c = 
+    let self = iterateCharts extR g ids
+        expand = expandPos Mixfix_token 
+        oneStep = nextChart addType filterByPredicate toAppl g c
+        resolveTerm = resolveMixTrm extR g ids
     in if null terms then c
        else case head terms of
             Mixfix_term ts -> self (ts ++ tail terms) c
             Mixfix_bracketed ts ps -> 
-		self (expand ("[", "]") ts ps ++ tail terms) c
-	    Mixfix_braced ts ps -> 
-		self (expand ("{", "}") ts ps ++ tail terms) c
-	    Mixfix_parenthesized ts ps -> 
-		if isSingle ts then 
-		   let Result mds v = resolveMixTrm g ids
-				      $ head ts
-		       tNew = case v of Nothing -> head ts
-					Just x -> x
-		       c2 = self (tail terms) (oneStep (tNew, varTok))
-		   in mixDiags mds c2
-		else self (expand ("(", ")") ts ps ++ tail terms) c
-	    Conditional t1 f2 t3 ps -> 
+                self (expand ("[", "]") ts ps ++ tail terms) c
+            Mixfix_braced ts ps -> 
+                self (expand ("{", "}") ts ps ++ tail terms) c
+            Mixfix_parenthesized ts ps -> 
+                if isSingle ts then 
+                   let Result mds v = resolveTerm
+                                      $ head ts
+                       tNew = case v of Nothing -> head ts
+                                        Just x -> x
+                       c2 = self (tail terms) (oneStep (tNew, varTok))
+                   in mixDiags mds c2
+                else self (expand ("(", ")") ts ps ++ tail terms) c
+            Conditional t1 f2 t3 ps -> 
                 let Result mds v = 
-			do t4 <- resolveTerm t1
-			   f5 <- resolveMixFrm g ids f2 		 
-			   t6 <- resolveTerm t3 
-			   return (Conditional t4 f5 t6 ps)
+                        do t4 <- resolveTerm t1
+                           f5 <- resolveMixFrm extR g ids f2             
+                           t6 <- resolveTerm t3 
+                           return (Conditional t4 f5 t6 ps)
                     tNew = case v of Nothing -> head terms
-				     Just x -> x
-		    c2 = self (tail terms) 
-			 (oneStep (tNew, varTok {tokPos = posOfTerm tNew}))
-		in mixDiags mds c2
+                                     Just x -> x
+                    c2 = self (tail terms) 
+                         (oneStep (tNew, varTok {tokPos = posOfTerm tNew}))
+                in mixDiags mds c2
             Mixfix_token t -> let (ds1, trm) = convertMixfixToken 
-				     (literal_annos g) asAppl Mixfix_token t
-			          c2 = self (tail terms) $ oneStep $ 
-				       case trm of 
-						Mixfix_token tok -> (trm, tok)
-						_ -> (trm, varTok 
-						      {tokPos = tokPos t})
-				  in mixDiags ds1 c2
-	    t@(Mixfix_sorted_term _ (p:_)) -> self (tail terms) 
-			    (oneStep (t, typeTok {tokPos = p}))
-	    t@(Mixfix_cast _ (p:_)) -> self (tail terms) 
-			    (oneStep (t, typeTok {tokPos = p}))
-	    t@(Qual_var _ _ (p:_)) -> self (tail terms) 
-			    (oneStep (t, varTok {tokPos = p}))
-	    t@(Application (Qual_op_name _ _ (p:_)) _ _) -> 
-		self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
-	    t@(Mixfix_qual_pred (Qual_pred_name _ _ (p:_))) -> 
-		self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
-	    _ -> error "iterateCharts"
+                                     (literal_annos g) asAppl Mixfix_token t
+                                  c2 = self (tail terms) $ oneStep $ 
+                                       case trm of 
+                                                Mixfix_token tok -> (trm, tok)
+                                                _ -> (trm, varTok 
+                                                      {tokPos = tokPos t})
+                                  in mixDiags ds1 c2
+            t@(Mixfix_sorted_term _ (p:_)) -> self (tail terms) 
+                            (oneStep (t, typeTok {tokPos = p}))
+            t@(Mixfix_cast _ (p:_)) -> self (tail terms) 
+                            (oneStep (t, typeTok {tokPos = p}))
+            t@(Qual_var _ _ (p:_)) -> self (tail terms) 
+                            (oneStep (t, varTok {tokPos = p}))
+            t@(Application (Qual_op_name _ _ (p:_)) _ _) -> 
+                self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
+            t@(Mixfix_qual_pred (Qual_pred_name _ _ (p:_))) -> 
+                self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
+            _ -> error "iterateCharts"
 
 mkIdSet :: Set.Set Id -> Set.Set Id -> IdSet
 mkIdSet ops preds = 
     let both = Set.intersection ops preds in
-	(ops, Set.difference preds both)
+        (ops, Set.difference preds both)
 
-resolveMixfix :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> TERM f 
-	      -> Result (TERM f)
-resolveMixfix g ops preds t = 
-    let r@(Result ds _) = resolveMixTrm g (mkIdSet ops preds) t 
-	in if null ds then r else Result ds Nothing
+resolveMixfix :: MixResolve f -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
+               -> (TERM f) -> Result (TERM f)
+resolveMixfix extR g ops preds t = 
+    let r@(Result ds _) = resolveMixTrm extR g (mkIdSet ops preds) t 
+        in if null ds then r else Result ds Nothing
 
-resolveMixTrm :: GlobalAnnos -> IdSet -> TERM f -> Result (TERM f)
-resolveMixTrm ga ids trm =
-	getResolved showTerm (posOfTerm trm) toAppl
-	   $ iterateCharts ga ids [trm] $ 
-	    initChart (initRules ga ids) Set.empty
+resolveMixTrm :: MixResolve f -> MixResolve (TERM f)
+resolveMixTrm extR ga ids trm =
+        getResolved showTerm (posOfTerm trm) toAppl
+           $ iterateCharts extR ga ids [trm] $ 
+            initChart (initRules ga ids) Set.empty
 
-resolveFormula :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> (FORMULA f)
-	       -> Result (FORMULA f)
-resolveFormula g ops preds f =     
-    let r@(Result ds _) = resolveMixFrm g (mkIdSet ops preds) f 
-	in if null ds then r else Result ds Nothing
+resolveFormula :: MixResolve f -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
+               -> (FORMULA f) -> Result (FORMULA f)
+resolveFormula extR g ops preds f =     
+    let r@(Result ds _) = resolveMixFrm extR g (mkIdSet ops preds) f 
+        in if null ds then r else Result ds Nothing
 
-resolveMixFrm :: GlobalAnnos -> IdSet-> FORMULA f -> Result (FORMULA f)
-resolveMixFrm g ids@(ops, onlyPreds) frm =
-    let self = resolveMixFrm g ids 
-	resolveTerm = resolveMixTrm g ids in
+resolveMixFrm :: MixResolve f -> MixResolve (FORMULA f)
+resolveMixFrm extR g ids@(ops, onlyPreds) frm =
+    let self = resolveMixFrm extR g ids 
+        resolveTerm = resolveMixTrm extR g ids in
     case frm of 
        Quantification q vs fOld ps -> 
-	   let varIds = Set.fromList $ concatMap (\ (Var_decl va _ _) -> 
-			       map simpleIdToId va) vs
-	       newIds = (Set.union ops varIds,
-			 (Set.\\) onlyPreds varIds)
+           let varIds = Set.fromList $ concatMap (\ (Var_decl va _ _) -> 
+                               map simpleIdToId va) vs
+               newIds = (Set.union ops varIds,
+                         (Set.\\) onlyPreds varIds)
            in   
-	   do fNew <- resolveMixFrm g newIds fOld 
-	      return $ Quantification q vs fNew ps
+           do fNew <- resolveMixFrm extR g newIds fOld 
+              return $ Quantification q vs fNew ps
        Conjunction fsOld ps -> 
-	   do fsNew <- mapM self fsOld  
-	      return $ Conjunction fsNew ps
+           do fsNew <- mapM self fsOld  
+              return $ Conjunction fsNew ps
        Disjunction fsOld ps -> 
-	   do fsNew <- mapM self fsOld  
-	      return $ Disjunction fsNew ps
+           do fsNew <- mapM self fsOld  
+              return $ Disjunction fsNew ps
        Implication f1 f2 b ps -> 
-	   do f3 <- self f1 
-	      f4 <- self f2
-	      return $ Implication f3 f4 b ps
+           do f3 <- self f1 
+              f4 <- self f2
+              return $ Implication f3 f4 b ps
        Equivalence f1 f2 ps -> 
-	   do f3 <- self f1 
-	      f4 <- self f2
-	      return $ Equivalence f3 f4 ps
+           do f3 <- self f1 
+              f4 <- self f2
+              return $ Equivalence f3 f4 ps
        Negation fOld ps -> 
-	   do fNew <- self fOld  
-	      return $ Negation fNew ps
+           do fNew <- self fOld  
+              return $ Negation fNew ps
        Predication sym tsOld ps -> 
-	   do tsNew <- mapM resolveTerm tsOld  
-	      return $ Predication sym tsNew ps
+           do tsNew <- mapM resolveTerm tsOld  
+              return $ Predication sym tsNew ps
        Definedness tOld ps -> 
-	   do tNew <- resolveTerm tOld  
-	      return $ Definedness tNew ps
+           do tNew <- resolveTerm tOld  
+              return $ Definedness tNew ps
        Existl_equation t1 t2 ps -> 
-	   do t3 <- resolveTerm t1 
-	      t4 <- resolveTerm t2
-	      return $ Existl_equation t3 t4 ps
+           do t3 <- resolveTerm t1 
+              t4 <- resolveTerm t2
+              return $ Existl_equation t3 t4 ps
        Strong_equation t1 t2 ps -> 
-	   do t3 <- resolveTerm t1 
-	      t4 <- resolveTerm t2
-	      return $ Strong_equation t3 t4 ps
+           do t3 <- resolveTerm t1 
+              t4 <- resolveTerm t2
+              return $ Strong_equation t3 t4 ps
        Membership tOld s ps -> 
-	   do tNew <- resolveTerm tOld  
-	      return $ Membership tNew s ps
+           do tNew <- resolveTerm tOld  
+              return $ Membership tNew s ps
        Mixfix_formula tOld -> 
-	   do tNew <- resolveMixTrm g ids tOld
-	      mkPredication tNew
+           do tNew <- resolveTerm tOld
+              mkPredication tNew
          where mkPredication t = 
-	         case t of 
-		 Application (Op_name ide) as ps -> 
-		     return $ Predication (Pred_name ide) as ps
-		 Mixfix_qual_pred qide ->
-		  return $ Predication qide [] []
-		 Mixfix_term [Mixfix_qual_pred qide, 
-			      Mixfix_parenthesized ts ps] ->
-		  return $ Predication qide ts ps
-		 _ -> plain_error (Mixfix_formula t)
-	                ("not a formula: " ++ showTerm t "")
-			(posOfTerm t)
+                 case t of 
+                 Application (Op_name ide) as ps -> 
+                     return $ Predication (Pred_name ide) as ps
+                 Mixfix_qual_pred qide ->
+                  return $ Predication qide [] []
+                 Mixfix_term [Mixfix_qual_pred qide, 
+                              Mixfix_parenthesized ts ps] ->
+                  return $ Predication qide ts ps
+                 _ -> plain_error (Mixfix_formula t)
+                        ("not a formula: " ++ showTerm t "")
+                        (posOfTerm t)
+       ExtFORMULA f -> 
+           do newF <- extR g ids f
+              return $ ExtFORMULA newF
        f -> return f
