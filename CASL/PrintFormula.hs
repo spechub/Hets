@@ -150,8 +150,8 @@ instance PrettyPrint VAR_DECL where
 
 instance PrettyPrint FORMULA where
     printText0(Quantification q l f _) = printText0 q
-			     <+> semiT l
-			     <+> text cDot
+			     <+> (semiT l
+				  <> text cDot)
 			     <+> printText0 f
     printText0(Conjunction l _) = parens(
 		 cat(punctuate (space <> text lAnd <> space) (map printText0 l)))
@@ -213,6 +213,7 @@ instance PrettyPrint TERM where
 			  <+> text elseS
 			  <+> printText0 v)
     printText0(Unparsed_term s _) = text s
+    printText0(Mixfix_qual_pred p) = printText0 p
     printText0(Mixfix_term l) = cat(punctuate space (map printText0 l))
     printText0(Mixfix_token t) = printText0 t
     printText0(Mixfix_sorted_term s _) = colon

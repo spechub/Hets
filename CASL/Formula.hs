@@ -125,6 +125,7 @@ opType = do { (ts, ps) <- sortId `separatedBy` crossT
 parenTerm = do { o <- oParenT
                ; qualVarName (tokPos o) 
 		 <|> qualOpName (tokPos o)
+		 <|> qualPredName (tokPos o)
 		 <|> do { (ts, ps) <- terms
 		        ; c <- cParenT
 		        ; return (Mixfix_parenthesized ts 
@@ -187,17 +188,19 @@ qualPredName o = do { v <- asKey predS
 		    ; c <- colonT 
 		    ; s <- predType
 		    ; p <- cParenT
-		    ; return (Predication 
+		    ; return (Mixfix_qual_pred
 			      (Qual_pred_name i s 
-			       [o, tokPos v, tokPos c, tokPos p]) [] [])
+			       [o, tokPos v, tokPos c, tokPos p]))
 		    }
 
 parenFormula = do { o <- oParenT
-		  ; qualPredName (tokPos o) 
-		    <|> 
-		    do { l <- (qualVarName (tokPos o) <|> qualOpName (tokPos o)) 
-		         <:> many1 restTerm
-		       ;  return (Mixfix_formula (Mixfix_term l))
+		  ; let po = tokPos o in
+		    do { q <- (qualVarName po
+			       <|> qualOpName po
+			       <|> qualPredName po) 
+		       ; l <- many restTerm
+		       ; if null l then return (Mixfix_formula q)
+			 else return (Mixfix_formula (Mixfix_term (q:l)))
 		       }
 		    <|>
 		    do { f <- formula

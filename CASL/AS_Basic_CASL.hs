@@ -181,6 +181,7 @@ data TERM = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
 	  | Unparsed_term String [Pos]        -- SML-CATS
 
 	  -- A new intermediate state
+          | Mixfix_qual_pred PRED_SYMB -- as part of a mixfix formula
           | Mixfix_term  [TERM]  -- not starting with Mixfix_sorted_term/cast
 	  | Mixfix_token Token   -- NO-BRACKET-TOKEN, LITERAL, PLACE
 	  | Mixfix_sorted_term SORT [Pos]
