@@ -44,7 +44,7 @@ spec Set = Bool and InternalLogic and Extensionality then
       __disjoint__ : Pred( Set(S) * Set(S) );
       __*__ : Set S -> Set T -> Set (S*T);
       __disjointUnion__ :  Set S -> Set S -> Set (S*Bool);
-      inl,inr : S -> S*Bool;
+      injl,injr : S -> S*Bool;
   forall x,x':S; y:T; s,s':Set S; t:Set(T) 
   . not (x isIn emptySet)
   . x isIn {x'} <=> x=x'
@@ -55,8 +55,8 @@ spec Set = Bool and InternalLogic and Extensionality then
   . x isIn s \\ s' <=> x isIn s /\ not (x isIn s')
   . (s disjoint s') <=> ((s intersection s') = emptySet)
   %% . ((x,y) isIn (s * t)) <=> ((x isIn s) /\ (y isIn t))
-  . (inl x) = (x,false)
-  . (inr x) = (x,true)
+  . (injl x) = (x,false)
+  . (injr x) = (x,true)
   %%. (s disjointUnion s') = ((s * {false}) union (s' * {true}))
 end
 
@@ -81,7 +81,7 @@ end
 spec Map =
   Set then
   var S,T,U : Type
-  type Map S = S->?S
+  type Map := \S . S->?S
   ops dom : (S->?T) -> Set S;
       range : (S->?T) -> Set T; 
       image : (S->?T) -> Set S -> Set T;
@@ -122,7 +122,7 @@ end
    The following specification states the abstract requirement that
    such representations exists for a given type S. }%
 spec SetRepresentation =
-  Map
+  Map and Relation
 then
   type S;
   ops pair : S*S->S;   %% represent S*S in S
@@ -133,7 +133,7 @@ then
   . injective pair
   . injective inl
   . injective inr
-  . (range inl) disjoint (range inr)
+  . (range inl) disjoint (range inr);
   forall r:PER S
   . ker (coeq r) = r 
 end
