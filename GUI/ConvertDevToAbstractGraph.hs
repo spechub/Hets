@@ -601,13 +601,15 @@ translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
          (sign'',sens1) <- 
              Res.resToIORes $ Res.maybeToResult 
                                 nullPos "Could not map signature"
-                        $ map_sign cid sign'
+                        $ map_theory cid (sign',sens')
+{-
          sens'' <- Res.resToIORes
                  $ Res.maybePlainError [] nullPos "Could not map sentences"
                  $ mapM (mapNamedM (map_sentence cid sign')) sens'
+-}
          let dgnode = lab' (context node dgraph)
              shownsens = concat $ map ((++"\n") . flip showPretty "") 
-                                      (sens1++sens'')
+                                      sens1
              str = showPretty sign'' "\n\naxioms\n" ++ shownsens
 	 case dgnode of
            (DGNode name (G_sign _ sig) _ _) ->
