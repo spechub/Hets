@@ -370,7 +370,7 @@ typeOrTypeScheme = do q <- qColonT
 toPartialTypeScheme :: [Pos] -> TypeOrTypeScheme -> TypeScheme
 toPartialTypeScheme qs ts = case ts of 
             PartialType t -> simpleTypeScheme 
-                           (FunType (ProductType [] qs) 
+                           (FunType logicalType
                             PFunArr t qs)
             TotalTypeScheme s -> s
 
