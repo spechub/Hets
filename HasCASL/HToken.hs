@@ -104,7 +104,7 @@ ite =
 
 -- | operation 'Id' (reserved stuff excluded)
 uninstOpId :: GenParser Char st Id
-uninstOpId = try ite <|> mixId hcKeys hcKeys
+uninstOpId = (try ite <|> mixId hcKeys hcKeys) <?> "id"
 
 -- | constructor 'Id' ('barS' additionally excluded)
 hconsId :: GenParser Char st Id
