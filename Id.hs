@@ -5,13 +5,15 @@ import Char
 
 type Pos = (Int, Int) -- line, column
 
-nullPos :: Pos = (0,0)
+nullPos :: Pos 
+nullPos = (0,0)
  
 type Region = (Pos,Pos)
  
 -- tokens as supplied by the scanner
-data Token = Token String Pos -- deriving (Show, Eq, Ord)
-showTok (Token t _) = t
+data Token = Token { showTok :: String
+		   , tokPos :: Pos
+		   } -- not deriving (Show, Eq, Ord)!
 
 instance Eq Token where
    Token s1 _ == Token s2 _ = s1 == s2
@@ -19,17 +21,18 @@ instance Eq Token where
 instance Ord Token where
    Token s1 _  <= Token s2 _ = s1 <= s2
 
+instance Show Token where
+   showsPrec _ = showString . showTok
+   showList = showPlainList
+
+
+showPlainList :: Show a => [a] -> ShowS
+showPlainList = showSepList (showString "") shows
+
 showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
 showSepList _ _ [] = showString ""
 showSepList _ f [x] = f x
 showSepList s f (x:r) = f x . s . showSepList s f r
-
-showPlainList :: Show a => [a] -> ShowS
-showPlainList = showSepList (showString "") shows
- 
-instance Show Token where
-   showsPrec _ = showString . showTok
-   showList = showPlainList
 
 -- spezial tokens
 type Keyword = Token
@@ -43,19 +46,19 @@ isPlace(Token t _) = t == place
 -- TokenOrPlace list must be non-empty!
 data Id = Id [TokenOrPlace] [Id] deriving (Eq, Ord)
  
-splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
-	      (reverse toks, reverse pls)
+instance Show Id where
+    showsPrec _ = showId 
 
 showId (Id ts is) = 
 	let (toks, places) = splitMixToken ts 
             comps = if null is then showString "" else shows is 
 	in
-        showList toks . comps . showList places
+        shows toks . comps . shows places
 
-instance Show Id where
-    showsPrec _ = showId 
-
+splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
+	      (reverse toks, reverse pls)
 
 -- Simple Ids
 
-data SIMPLE_ID = SimpleId String Pos deriving (Eq, Show)
+type SIMPLE_ID = Token
+
