@@ -1,5 +1,7 @@
-*** Error 1.9, expected further mixfix token: ["/\\","<=>","=>","\\/","if"]
-*** Error 2.21, ambiguous mixfix term
+*** Error 1.13, expected further mixfix token: ["/\\","<=>","=>","\\/","if"]
+*** Error 2.9, expected further mixfix token: ["/\\","<=>","=>","\\/","if"]
+*** Error 3.9, expected further mixfix token: ["/\\","<=>","=>","\\/","if"]
+*** Error 4.21, ambiguous mixfix term
 	(__<=>__)((__<=__)((__div__)(i, p), (__div__)(j, q)),
 	  (__<=__)((__*__)(i, q), (__*__)(j, p)))
 	(__<=__<=__)((__div__)(i, p),

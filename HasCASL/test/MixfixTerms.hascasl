@@ -9,8 +9,6 @@ not a => b
 not s a => s b
 a + def a
 def a = b
-def not a = a 
-a = not a
 10 * b(n div 10)
 10 when n < 10 else 10 * b(n div 10)
 m(m,n) = m when m <= n else n
