@@ -1,4 +1,3 @@
-
 {- |
 
 Module      :  $Header$
@@ -116,6 +115,15 @@ splitMixToken (h:l) =
 stripFinalPlaces :: Id -> Id
 stripFinalPlaces (Id ts cs ps) =
     Id (fst $ splitMixToken ts) cs ps 
+
+-- | return open and closing list bracket and a compound list
+-- from a bracket 'Id'  (parsed by 'caslListBrackets')
+getListBrackets :: Id -> ([Token], [Token], [Id])
+getListBrackets (Id b cs _) = 
+    let (b1, rest) = break isPlace b
+	b2 = if null rest then [] 
+	     else filter (not . isPlace) rest
+    in (b1, b2, cs)
 
 -- | reconstruct a list with surrounding strings and interspersed commas 
 -- with proper position information 
