@@ -34,4 +34,4 @@ proceed fname showdg = do
 
 main = do
   args <- getArgs
-  proceed (head args) (null (tail args))
+  proceed (head args) (not ((tail args)==["-dot"]))
