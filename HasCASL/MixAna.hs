@@ -119,8 +119,8 @@ addBuiltins ga =
     in ga { assoc_annos = newAss
 	  , prec_annos = Rel.transClosure newPrecs }
 
-opKindFilter :: Int -> Int -> Int -> Maybe Bool
-opKindFilter relPrec arg op = 
+opKindFilter :: Int -> Int -> Maybe Bool
+opKindFilter arg op = 
     if op < arg then Just True
        else if arg < op then Just False 
 	    else Nothing
@@ -136,7 +136,7 @@ mkPrecIntMap r =
 
 getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
 getIdPrec (pm, r, m) ps i = Map.findWithDefault 
-    (if Set.member i ps then if isMixfix i then r else m
+    (if Set.member i ps then if begPlace i || endPlace i then r else m
      else m) i pm
 					 
 initTermRules ::  (PrecMap, Set.Set Id) -> Set.Set Id -> [Rule]
@@ -173,9 +173,8 @@ iterateCharts :: GlobalAnnos -> [Term] -> TermChart
 	      -> State Env TermChart
 iterateCharts ga terms chart = 
     do e <- get
-       let ((_, relId, _), _) = preIds e
-           self = iterateCharts ga  
-	   oneStep = nextChart addType (opKindFilter relId)
+       let self = iterateCharts ga  
+	   oneStep = nextChart addType opKindFilter
 		     toMixTerm ga chart
 	   as = assumps e
 	   tm = typeMap e
@@ -427,7 +426,7 @@ type PatChart = Chart Pattern Int
 iterPatCharts :: GlobalAnnos -> [Pattern] -> PatChart -> State Env PatChart
 iterPatCharts ga pats chart= 
     let self = iterPatCharts ga
-	oneStep = nextChart addPatternType (opKindFilter 0)
+	oneStep = nextChart addPatternType opKindFilter
 		  toPat ga chart
     in if null pats then return chart
        else 
