@@ -33,10 +33,10 @@ import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.CCC.FreeTypes
 import Data.Dynamic
-import Common.DynamicUtils 
-
+import Common.DynamicUtils
+import CASL.SimplifySen
+import Common.Result
 import CASL.CCC.OnePoint
-
 import Options
 
 data CASL = CASL deriving Show
@@ -58,15 +58,12 @@ type CASLFORMULA = FORMULA ()
 dummy :: a -> b -> ()
 dummy _ _ = ()
 
+-- dummy of "Min f e"
+dummyMin :: a -> b -> c -> Result ()
+dummyMin _ _ _ = Result {diags = [], maybeResult = Just ()}
+
 trueC :: a -> b -> Bool
 trueC _ _ = True
-
---     simplify_sen :: lid -> sign -> sentence -> sentence
-simplifySen :: (Sign f e -> a -> a) -> Sign f e -> FORMULA a -> FORMULA a
-simplifySen e_func sign form = 
-    case form of
-    ExtFORMULA f -> ExtFORMULA $ e_func sign f
-    _ -> form
 
 -- Typeable instance
 tc_BASIC_SPEC, tc_SYMB_ITEMS, tc_SYMB_MAP_ITEMS, casl_SublocigsTc,
@@ -157,7 +154,7 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
       consCheck CASL = checkFreeType
-      simplify_sen CASL = simplifySen dummy
+      simplify_sen CASL = simplifySen dummyMin dummy id
 
 instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
