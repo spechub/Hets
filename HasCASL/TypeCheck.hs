@@ -28,58 +28,6 @@ import Common.Lib.State
 import Common.PrettyPrint
 import Data.Maybe
 
-
-aVar :: Id
-aVar = simpleIdToId $ mkSimpleId "a"
-aType :: Type
-aType = TypeName aVar star 1
-
-bindA :: Type -> TypeScheme
-bindA ty = TypeScheme [TypeArg aVar star Other []] ([] :=> ty) []
-
-eqType, logType, defType, notType, ifType, whenType :: TypeScheme
-eqType = bindA $ 
-	  FunType (ProductType [aType, aType] [])
-	  PFunArr logicalType []
-logType = simpleTypeScheme $ 
-	  FunType (ProductType [logicalType, logicalType] [])
-	  PFunArr logicalType []
-defType = bindA $ FunType aType PFunArr logicalType []
-notType = simpleTypeScheme $ FunType logicalType PFunArr logicalType []
-
-ifType = bindA $ 
-	  FunType (ProductType [logicalType, aType, aType] [])
-	  PFunArr aType []
-whenType = bindA $ 
-	  FunType (ProductType [aType, logicalType, aType] [])
-	  PFunArr aType []
-
-bList :: [(Id, TypeScheme)]
-bList = (defId, defType) : (notId, notType) : 
-	(ifThenElse, ifType) : (whenElse, whenType) :
-        (trueId, simpleTypeScheme logicalType) : 
-	(falseId, simpleTypeScheme logicalType)	:
-        map ( \ e -> (e, eqType)) [eqId, exEq] ++
-	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
-
-addUnit :: TypeMap -> TypeMap
-addUnit tm = foldr ( \ (i, k, d) m -> 
-		 Map.insertWith ( \ _ old -> old) i
-			 (TypeInfo k [k] [] d) m) tm $
-	      (simpleIdToId $ mkSimpleId "Unit",
-	        star, AliasTypeDefn $ simpleTypeScheme logicalType)
-	      : (simpleIdToId $ mkSimpleId "Pred", 
-		FunKind star star [],
-		AliasTypeDefn defType)
-	      : (productId, prodKind, NoTypeDefn)
-	      : map ( \ a -> (arrowId a, funKind, NoTypeDefn)) 
-		[FunArr, PFunArr, ContFunArr, PContFunArr]
-
-addOps :: Assumps -> Assumps
-addOps as = foldr ( \ (i, sc) m -> 
-		 Map.insertWith ( \ _ old -> old) i
-		 (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
-
 resolveTerm :: GlobalAnnos -> Maybe Type -> Term -> State Env (Maybe Term)
 resolveTerm ga mt trm = do
     mtrm <- resolve ga trm
@@ -352,18 +300,6 @@ inferLetEq _ (ProgEq pat trm ps) = do
                mapM_ addVarDecl nbs
 	       return (compSubst s2 s3, tyt, ProgEq pp nt ps)) pps) ts
     return $ concat nps
-
-                
-{-
-Quantifier [GenVarDecl] Term [Pos]
-          -- pos quantifier, ";"s, dot
-	  -- only "forall" may have a TypeVarDecl
-	  | LambdaTerm [Pattern] Partiality Term [Pos]
-          -- pos "\", dot (plus "!") 
-	  | CaseTerm Term [ProgEq] [Pos]
-	  -- pos "case", "of", "|"s 
-	  | LetTerm [ProgEq] Term [Pos]
--}
 
 -- | type check patterns
 inferPat :: Maybe Type -> Pattern -> State Env [(Subst, Type, Pattern)]

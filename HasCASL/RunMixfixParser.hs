@@ -15,6 +15,7 @@ module HasCASL.RunMixfixParser where
 
 import Common.AnnoState
 import Common.Earley
+import HasCASL.Builtin
 import HasCASL.MixAna
 import HasCASL.As
 import HasCASL.AsUtils

@@ -27,8 +27,7 @@ import HasCASL.VarDecl
 import HasCASL.Unify
 import HasCASL.OpDecl
 import HasCASL.TypeDecl
-import HasCASL.TypeCheck
-import HasCASL.MixAna
+import HasCASL.Builtin
 import Data.Maybe
 import Data.List
 

@@ -8,21 +8,18 @@ Maintainer  :  hets@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-Mixfix analysis of terms and patterns, types annotations are also analysed
+Mixfix analysis of terms and patterns, type annotations are also analysed
 
 -}
 
 module HasCASL.MixAna where 
 
 import Common.GlobalAnnotations
-import Common.AS_Annotation
 import Common.Result
 import Common.Id
-import Common.PrettyPrint
 import Common.Keywords
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
 import Common.Earley
 import Common.ConvertLiteral
 import Common.Lib.State
@@ -33,106 +30,15 @@ import HasCASL.Le
 import HasCASL.Unify 
 import HasCASL.TypeAna
 import Data.Maybe
-
--- import Debug.Trace
--- import Control.Exception(assert)
-assert :: Bool -> a -> a
-assert b a = if b then a else error ("assert")
+import Control.Exception(assert)
 
 type Rule = (Id, Int, [Token])
-
-trueId :: Id
-trueId = mkId [mkSimpleId trueS]
-
-falseId :: Id
-falseId = mkId [mkSimpleId falseS]
-
-ifThenElse :: Id
-ifThenElse = mkId (map mkSimpleId [ifS, place, thenS, place, elseS, place])
-
-whenElse :: Id
-whenElse = mkId (map mkSimpleId [place, whenS, place, elseS, place])
-
-mkInfix :: String -> Id
-mkInfix s = mkId $ map mkSimpleId [place, s, place]
-
-infixIf :: Id 
-infixIf = mkInfix ifS
-
-exEq :: Id 
-exEq = mkInfix exEqual
-
-eqId :: Id 
-eqId = mkInfix equalS
-
-andId :: Id 
-andId = mkInfix lAnd
-
-orId :: Id 
-orId = mkInfix lOr
-
-implId :: Id 
-implId = mkInfix implS
-
-eqvId :: Id 
-eqvId = mkInfix equivS
-
-defId :: Id 
-defId = mkId $ map mkSimpleId [defS, place]
-
-notId :: Id 
-notId = mkId $ map mkSimpleId [notS, place]
-
-builtinRelIds :: Set.Set Id 
-builtinRelIds = Set.fromDistinctAscList [typeId, eqId, exEq, defId]
-
-builtinLogIds :: Set.Set Id 
-builtinLogIds = Set.fromDistinctAscList 
-		 [andId, eqvId, implId, orId, infixIf, notId] 
-
-addBuiltins :: GlobalAnnos -> GlobalAnnos
-addBuiltins ga = 
-    let ass = assoc_annos ga
-	newAss = Map.union ass $ Map.fromList 
-		 [(applId, ALeft), (andId, ALeft), (orId, ALeft), 
-		  (implId, ARight), (infixIf, ALeft), 
-		  (whenElse, ARight)]
-	precs = prec_annos ga
-        pMap = Rel.toMap precs		
-        opIds = Set.unions (Set.fromDistinctAscList (Map.keys pMap)
-			    :Map.elems pMap)
-	opIs = Set.toList ((((Set.filter isInfix opIds)
-		Set.\\ builtinRelIds) Set.\\ builtinLogIds) 
-	        Set.\\ Set.fromDistinctAscList [applId, whenElse])
-
-	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
-		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
-		 (andId, notId), (orId, notId)]
-
-        rels1 = map ( \ i -> (notId, i)) $ Set.toList builtinRelIds
-	rels2 = map ( \ i -> (i, whenElse)) $ Set.toList builtinRelIds
-	ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
-	ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
-	newPrecs = foldr (\ (a, b) p -> if Rel.member b a p then p else 
-			 Rel.insert a b p) precs $  
-		  concat [logs, rels1, rels2, ops1, ops2]
-    in ga { assoc_annos = newAss
-	  , prec_annos = Rel.transClosure newPrecs }
 
 opKindFilter :: Int -> Int -> Maybe Bool
 opKindFilter arg op = 
     if op < arg then Just True
        else if arg < op then Just False 
 	    else Nothing
-
-mkPrecIntMap :: Rel.Rel Id -> PrecMap
-mkPrecIntMap r = 
-    let t = Rel.topSort r
-	l = length t
-	m = foldr ( \ (n, s) m1 -> 
-		    Set.fold ( \ i m2 ->Map.insert i n m2)  m1 s)
-		 Map.empty $ zip [1..l] t
-	in (m, Map.find eqId m, l)
 
 getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
 getIdPrec (pm, r, m) ps i =  Map.findWithDefault 
@@ -341,7 +247,6 @@ extractBindings pat =
 		         let vd = VarDecl v ty sk ps
 			 return (PatternVar vd, [vd]) 
 		     _ -> return (pat, [l])
---    PatternConstr _ _ _ -> return (pat, [])
     ResolvedMixPattern i pats ps -> do 
          l <- mapM extractBindings pats
 	 return (ResolvedMixPattern i (map fst l) ps, concatMap snd l)
@@ -367,8 +272,6 @@ extractBindings pat =
          (p4, l2) <- extractBindings p2
 	 return (AsPattern p3 p4 ps, l1 ++ l2) 
     _ -> return (pat, [])
---     _ -> error ("extractBindings: " ++ show pat)
-
 
 resolveConstrPattern :: GlobalAnnos -> Pattern
 		     -> State Env (Maybe Pattern)

@@ -1,0 +1,162 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable
+
+   HasCASL's builtin types and functions
+-}
+
+module HasCASL.Builtin where
+
+import Common.GlobalAnnotations
+import Common.AS_Annotation
+import Common.Id
+import Common.Keywords
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
+import Common.Earley
+import HasCASL.As
+import HasCASL.Le
+
+trueId :: Id
+trueId = mkId [mkSimpleId trueS]
+
+falseId :: Id
+falseId = mkId [mkSimpleId falseS]
+
+ifThenElse :: Id
+ifThenElse = mkId (map mkSimpleId [ifS, place, thenS, place, elseS, place])
+
+whenElse :: Id
+whenElse = mkId (map mkSimpleId [place, whenS, place, elseS, place])
+
+mkInfix :: String -> Id
+mkInfix s = mkId $ map mkSimpleId [place, s, place]
+
+infixIf :: Id 
+infixIf = mkInfix ifS
+
+exEq :: Id 
+exEq = mkInfix exEqual
+
+eqId :: Id 
+eqId = mkInfix equalS
+
+andId :: Id 
+andId = mkInfix lAnd
+
+orId :: Id 
+orId = mkInfix lOr
+
+implId :: Id 
+implId = mkInfix implS
+
+eqvId :: Id 
+eqvId = mkInfix equivS
+
+defId :: Id 
+defId = mkId $ map mkSimpleId [defS, place]
+
+notId :: Id 
+notId = mkId $ map mkSimpleId [notS, place]
+
+builtinRelIds :: Set.Set Id 
+builtinRelIds = Set.fromDistinctAscList [typeId, eqId, exEq, defId]
+
+builtinLogIds :: Set.Set Id 
+builtinLogIds = Set.fromDistinctAscList 
+		 [andId, eqvId, implId, orId, infixIf, notId] 
+
+addBuiltins :: GlobalAnnos -> GlobalAnnos
+addBuiltins ga = 
+    let ass = assoc_annos ga
+	newAss = Map.union ass $ Map.fromList 
+		 [(applId, ALeft), (andId, ALeft), (orId, ALeft), 
+		  (implId, ARight), (infixIf, ALeft), 
+		  (whenElse, ARight)]
+	precs = prec_annos ga
+        pMap = Rel.toMap precs		
+        opIds = Set.unions (Set.fromDistinctAscList (Map.keys pMap)
+			    :Map.elems pMap)
+	opIs = Set.toList ((((Set.filter isInfix opIds)
+		Set.\\ builtinRelIds) Set.\\ builtinLogIds) 
+	        Set.\\ Set.fromDistinctAscList [applId, whenElse])
+
+	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
+		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
+		 (andId, notId), (orId, notId)]
+
+        rels1 = map ( \ i -> (notId, i)) $ Set.toList builtinRelIds
+	rels2 = map ( \ i -> (i, whenElse)) $ Set.toList builtinRelIds
+	ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
+	ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
+	newPrecs = foldr (\ (a, b) p -> if Rel.member b a p then p else 
+			 Rel.insert a b p) precs $  
+		  concat [logs, rels1, rels2, ops1, ops2]
+    in ga { assoc_annos = newAss
+	  , prec_annos = Rel.transClosure newPrecs }
+
+mkPrecIntMap :: Rel.Rel Id -> PrecMap
+mkPrecIntMap r = 
+    let t = Rel.topSort r
+	l = length t
+	m = foldr ( \ (n, s) m1 -> 
+		    Set.fold ( \ i m2 ->Map.insert i n m2)  m1 s)
+		 Map.empty $ zip [1..l] t
+	in (m, Map.find eqId m, l)
+
+aVar :: Id
+aVar = simpleIdToId $ mkSimpleId "a"
+aType :: Type
+aType = TypeName aVar star 1
+
+bindA :: Type -> TypeScheme
+bindA ty = TypeScheme [TypeArg aVar star Other []] ([] :=> ty) []
+
+eqType, logType, defType, notType, ifType, whenType :: TypeScheme
+eqType = bindA $ 
+	  FunType (ProductType [aType, aType] [])
+	  PFunArr logicalType []
+logType = simpleTypeScheme $ 
+	  FunType (ProductType [logicalType, logicalType] [])
+	  PFunArr logicalType []
+defType = bindA $ FunType aType PFunArr logicalType []
+notType = simpleTypeScheme $ FunType logicalType PFunArr logicalType []
+
+ifType = bindA $ 
+	  FunType (ProductType [logicalType, aType, aType] [])
+	  PFunArr aType []
+whenType = bindA $ 
+	  FunType (ProductType [aType, logicalType, aType] [])
+	  PFunArr aType []
+
+bList :: [(Id, TypeScheme)]
+bList = (defId, defType) : (notId, notType) : 
+	(ifThenElse, ifType) : (whenElse, whenType) :
+        (trueId, simpleTypeScheme logicalType) : 
+	(falseId, simpleTypeScheme logicalType)	:
+        map ( \ e -> (e, eqType)) [eqId, exEq] ++
+	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
+
+addUnit :: TypeMap -> TypeMap
+addUnit tm = foldr ( \ (i, k, d) m -> 
+		 Map.insertWith ( \ _ old -> old) i
+			 (TypeInfo k [k] [] d) m) tm $
+	      (simpleIdToId $ mkSimpleId "Unit",
+	        star, AliasTypeDefn $ simpleTypeScheme logicalType)
+	      : (simpleIdToId $ mkSimpleId "Pred", 
+		FunKind star star [],
+		AliasTypeDefn defType)
+	      : (productId, prodKind, NoTypeDefn)
+	      : map ( \ a -> (arrowId a, funKind, NoTypeDefn)) 
+		[FunArr, PFunArr, ContFunArr, PContFunArr]
+
+addOps :: Assumps -> Assumps
+addOps as = foldr ( \ (i, sc) m -> 
+		 Map.insertWith ( \ _ old -> old) i
+		 (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
