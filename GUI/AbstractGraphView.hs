@@ -22,6 +22,7 @@ module GUI.AbstractGraphView where
 import DaVinciGraph
 import Static.DevGraph (DGLinkLab)
 import Common.Lib.Graph (LEdge)
+import Logic.Logic --mkTyConApp
 
 import GraphDisp
 import GraphConfigure
@@ -31,12 +32,13 @@ import Destructible
 import Data.List(nub)
 
 import Data.IORef
-import Dynamics
+import Data.Dynamic
 
-dglinklab_tyRep = mkTyRep "DevGraph" "DGLinkLab"
+tyconDGLinkLab :: TyCon
+tyconDGLinkLab = mkTyCon "Static.DevGraph.DGLinkLab"
 
-instance HasTyRep DGLinkLab where
-   tyRep _ = dglinklab_tyRep 
+instance Typeable DGLinkLab where
+   typeOf _ = mkTyConApp tyconDGLinkLab []
 
 {- methods using fetch_graph return a quadruple containing the modified graph, a descriptor of the last modification (e.g. a new node), the descriptor that can be used for the next modification and a possible error message-}
 
