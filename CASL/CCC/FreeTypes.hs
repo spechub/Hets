@@ -12,18 +12,14 @@
 {- todo
   automatic termination proof
   look at
-  http://www.dsic.upv.es/~slucas/csr/termination/muterm/
+http://cime.lri.fr/
+http://elan.loria.fr/    http://www1.elsevier.com/gej-ng/31/29/23/71/22/73/entcs36006.pdf
   topic: prove termination of rewriting
 
-  write interface to mu-term system 
+  write interface to cime system, using newChildProcess (see Isabelle/IsaProves.hs)
+  and pipes
+  transform CASL signature to Cime signature, CASL formulas to Cime rewrite rules
 
-
-  extend function checkFreeType by
-  for each axiom, let f be the function/predicate application of the
-  leading symbol on the left hand-side (lhs), and f(t_1,...,t_n) the lhs. 
-  Check that in the right hand-side, each occurence of f is applied
-  only to subterms of f(t_1,...,t_n).
-  for example, f(Cons(x,y)) = f(y)
 -} 
 
 module CASL.CCC.FreeTypes where
