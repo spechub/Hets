@@ -40,15 +40,15 @@ import HasCASL.Logic_HasCASL
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
 #endif
+import Hatchet.Logic_Hatchet
 import CspCASL.Logic_CspCASL
 import Isabelle.Logic_Isabelle
 import Modal.Logic_Modal
 import CoCASL.Logic_CoCASL
 import qualified Common.Lib.Map as Map
-import CASL.ATC_CASL
 
 logicList :: [AnyLogic]
-logicList = [Logic CASL, Logic HasCASL, 
+logicList = [Logic CASL, Logic HasCASL, Logic Hatchet,
 #ifdef PROGRAMATICA
              Logic Haskell, 
 #endif
@@ -62,11 +62,7 @@ defaultLogic = Logic CASL
 
 preLogicGraph :: LogicGraph
 preLogicGraph = 
-  LogicGraph {
-    logics =      Map.fromList $ map addLogicName logicList,
-    comorphisms = Map.empty,
-    inclusions =  Map.empty
-             }
+  emptyLogicGraph { logics = Map.fromList $ map addLogicName logicList }
 
 -- currently only used in ATC/Grothendieck.hs
 lookupLogic_in_LG :: String -> String -> AnyLogic

@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats:fgl:hxt
 COMMONLIB_PATH = Common/Lib:Common/ATerm:fgl/Data/Graph:fgl/Data/Graph/Inductive:fgl/Data/Graph/Inductive/Aux:fgl/Data/Graph/Inductive/Monad:fgl/Data/Graph/Inductive/Query
-CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet:Taxonomy:$(PFE_PATHS)
+CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet:Hatchet:Taxonomy:$(PFE_PATHS)
 
 ## set ghc imports properly for your system
 LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
@@ -83,7 +83,7 @@ PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
 happy_files = $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
   $(PFE_TOOLDIR)/base/parse2/Lexer/HsLex.hs
 endif
-
+happy_files += Haskell/Hatchet/HsParser.hs
 
 ### Profiling (only for debugging)
 ### Attention every module must be compiled with profiling or the linker
@@ -98,7 +98,7 @@ HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 DRIFT_OPTS  = +RTS -K10m -RTS
 
 ### list of directories to run checks in
-TESTDIRS    = Common CASL HasCASL ToHaskell
+TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell
 
 
 ####################################################################
@@ -144,7 +144,14 @@ CoCASL_files := CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files := COL/AS_COL.hs COL/COLSign.hs
 CspCASL_files := CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
 
-logics := CASL HasCASL Modal CoCASL COL CspCASL
+Hatchet_files := Haskell/Hatchet/AnnotatedHsSyn.hs \
+                Haskell/Hatchet/MultiModuleBasics.hs \
+                Haskell/Hatchet/HsSyn.hs \
+                Haskell/Hatchet/Representation.hs\
+                Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
+                Haskell/Hatchet/Env.hs \
+
+logics := CASL HasCASL Modal CoCASL COL CspCASL Hatchet
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
@@ -321,6 +328,10 @@ COL/ATC_COL.der.hs: $(COL_files) utils/genRules
 
 CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) utils/genRules
 	utils/genRules -r $(rule) -o CspCASL $(CspCASL_files)
+
+Hatchet/ATC_Hatchet.der.hs: $(Hatchet_files) utils/genRules
+	utils/genRules -r $(rule) -o Hatchet -h ATC/Hatchet.header.hs \
+             $(Hatchet_files)
 
 rule:= ShATermConvertible
 
