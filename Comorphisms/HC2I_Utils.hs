@@ -20,7 +20,7 @@ import HasCASL.As
 import HasCASL.Le as Le
 
 import Isabelle.IsaSign as IsaSign
-import Isabelle.IsaPrint
+import Isabelle.Translate
 
 
 getNameOfOpId :: Id -> String

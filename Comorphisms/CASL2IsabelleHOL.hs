@@ -37,7 +37,7 @@ import CASL.Quantification
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
-import Isabelle.IsaPrint
+import Isabelle.Translate
 
 -- | The identity of the comorphism
 data CASL2IsabelleHOL = CASL2IsabelleHOL deriving (Show)

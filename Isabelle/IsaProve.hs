@@ -39,6 +39,7 @@ module Isabelle.IsaProve where
 import Logic.Prover
 import Isabelle.IsaSign
 import Isabelle.IsaPrint
+import Isabelle.Translate
 
 import Common.AS_Annotation
 import Common.PrettyPrint

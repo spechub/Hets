@@ -34,7 +34,7 @@ import HasCASL.Morphism
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
-import Isabelle.IsaPrint
+import Isabelle.Translate
 
 -- import Comorphisms.HC2I_Case
 import Comorphisms.HC2I_Utils
