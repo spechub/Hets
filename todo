@@ -1,10 +1,37 @@
 Plan and priority list for CoFI tool activities
 
+************************************************
+Tina (Till)
+************************************************
 
+in Comorphisms/CASL2IsabelleHOL.hs:
+remove typedecls and op decls generated for datatypes
+
+set up default simplifier
+set up default tactics using axioms
 
 ************************************************
 Sonja (Till)
 ************************************************
+
+in Isabelle/IsaPrint.hs:
+rename variables that conflict with operation syntax
+   (or restrict mixfix decls for consts)
+
+die Mixfix-Deklarationen führen noch zu Problemen.
+Z.B.
+
+consts
+  c::t     ("c")
+
+führt dazu, dass c nicht mehr als Variable verwendet werden kann.
+Könntest du diese Mixfix-Deklarationen auf die notwendigen Fälle
+beschränken, und ggf. die Variablen umbenennen?
+
+Zudem müssen Underscores escaped werden:
+
+consts
+  C_1::t    ("C'_1")
 
 Diplom: Encoding for HasCASL in Isabelle/HOL(CF)
 
