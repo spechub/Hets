@@ -54,6 +54,8 @@ ifneq ($(strip $(UNI_PACKAGE_CONF)),)
 HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
              -package uni-server -DUNI_PACKAGE
 
+logics = CASL HasCASL Modal CoCASL COL CspCASL Hatchet
+
 # some modules from uni for haddock
 # if uni/server is included also HaXml sources are needed
 uni_sources = $(wildcard ../uni/davinci/haddock/*.hs) \
@@ -83,6 +85,7 @@ pfe_sources = $(wildcard $(subst :,/*hs , $(PFE_PATHS)))
 PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
 happy_files = $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
   $(PFE_TOOLDIR)/base/parse2/Lexer/HsLex.hs
+logics += Haskell
 endif
 happy_files += Haskell/Hatchet/HsParser.hs
 
@@ -165,8 +168,6 @@ Other_PFE_files := property/AST/HsPropStruct base/defs/PNT \
 Haskell_files = $(addsuffix .hs, \
 	$(addprefix $(PFE_TOOLDIR)/base/AST/, $(Ast_Haskell_files)) \
 	$(addprefix $(PFE_TOOLDIR)/, $(Other_PFE_files)))
-
-logics := CASL HasCASL Modal CoCASL COL CspCASL Hatchet Haskell
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
