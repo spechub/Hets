@@ -1209,47 +1209,12 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
-*** Error 285.36, No correct typing for  (op b : s -> t)((op c : a * t * t * t *
-					       t -> s)((var X1 : a), (var X2 : t), (var X3 : t),
-						       (var X4 : t), (var X5 : t))) =
-			   (var X3 : t)
-*** Error 286.41, No correct typing for  (op b : s -> t)((op c : a * t * t *
-					       t -> s)((var X1 : a), (var X2 : t), (var X3 : t),
-						       (var X4 : t))) =
-			   (var X3 : t)
-*** Error 286.25, No correct typing for 
-*** Error 286.22, No correct typing for 
-*** Error 286.30, No correct typing for  (op c : s) = (op c : a ->? s)((var Y1 : a))
-*** Error 286.30, No correct typing for  (op c : s) =
-			   (op c : a * t * t * t -> s)((var Y1 : a), (var Y2 : t),
-						       (var Y3 : t), (var Y4 : t))
-*** Error 286.46, No correct typing for 
-*** Error 286.41, Cannot disambiguate!
-Possible Expansions:  [ ]
-*** Error 286.41, No correct typing for 
-*** Error 286.39, No correct typing for 
-*** Error 287.46, No correct typing for  (op b : s -> t)((op c : a * t * t *
-					       t -> s)((var X1 : a), (var X2 : t), (var X3 : t),
-						       (var X4 : t))) =
-			   (var X3 : t)
-*** Error 294.43, No correct typing for  (op b : s -> t)((op c : a * t * t *
-					       t -> s)((var X1 : a), (var X2 : t), (var X3 : t),
-						       (var X4 : t))) =
-			   (var X3 : t)
 *** Error 343.36, No correct typing for 
 *** Error 343.20, No correct typing for 
 *** Error 343.5, No correct typing for 
 *** Error 342.39, No correct typing for 
 *** Error 342.26, No correct typing for 
 *** Error 342.14, No correct typing for 
-*** Error 419.5, Cannot disambiguate!
-Possible Expansions:  [ ]
-*** Error 417.5, Cannot disambiguate!
-Possible Expansions:  [ ]
-*** Error 416.5, Cannot disambiguate!
-Possible Expansions:  [ ]
-*** Error 414.10, No correct typing for  f(x) = g(x)
-*** Error 413.10, No correct typing for  f(x) =e= g(x)
 *** Error 261.9, ambiguous mixfix term
 	__*__(i,__-__(q,__*__(j,p)))
 	__-__(__*__(i,q),__*__(j,p))
