@@ -23,7 +23,6 @@ module Common.Lib.Parsec.Prim
                    -- primitive parsers:
                    -- instance Functor Parser     : fmap
                    -- instance Monad Parser       : return, >>=, fail
-                   -- instance MonadPlus Parser   : mzero (pzero), mplus (<|>)
                    , token, tokens, tokenPrim
                    , try, label, labels, unexpected, pzero
 
@@ -42,13 +41,11 @@ module Common.Lib.Parsec.Prim
 import Prelude
 import Common.Lib.Parsec.Pos
 import Common.Lib.Parsec.Error
-import Control.Monad
+-- import Control.Monad
 
 {-# INLINE parsecMap    #-}
 {-# INLINE parsecReturn #-}
 {-# INLINE parsecBind   #-}
-{-# INLINE parsecZero   #-}
-{-# INLINE parsecPlus   #-}
 {-# INLINE token        #-}
 {-# INLINE tokenPrim    #-}
 
@@ -64,7 +61,7 @@ infixr 1 <|>
 p <?> msg           = label p msg
 
 (<|>) :: GenParser tok st a -> GenParser tok st a -> GenParser tok st a
-p1 <|> p2           = mplus p1 p2
+p1 <|> p2           = parsecPlus p1 p2
 
 
 -----------------------------------------------------------
@@ -270,10 +267,6 @@ parsecFail msg
 -----------------------------------------------------------
 -- MonadPlus: alternative (mplus) and mzero
 -----------------------------------------------------------
-instance MonadPlus (GenParser tok st) where
-  mzero         = parsecZero
-  mplus p1 p2   = parsecPlus p1 p2
-      
 
 pzero :: GenParser tok st a
 pzero = parsecZero

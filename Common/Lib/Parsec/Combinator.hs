@@ -30,7 +30,7 @@ module Common.Lib.Parsec.Combinator
                         , manyTill, lookAhead, anyToken
                         ) where
 
-import Control.Monad
+-- import Control.Monad
 import Common.Lib.Parsec.Prim
 
 
@@ -38,7 +38,7 @@ import Common.Lib.Parsec.Prim
 --
 ----------------------------------------------------------------
 choice :: [GenParser tok st a] -> GenParser tok st a
-choice ps           = foldr (<|>) mzero ps
+choice ps           = foldr (<|>) pzero ps
 
 option :: a -> GenParser tok st a -> GenParser tok st a
 option x p          = p <|> return x
