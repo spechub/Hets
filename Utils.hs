@@ -17,7 +17,6 @@ module Utils where
 import List
 
 import AS_Annotation
-import PrettyPrint
 
 {- | 
   A function inspired by perls join function. It joins a list of
