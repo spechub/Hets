@@ -461,7 +461,12 @@ genOr f ys = case ys of
                            else (genOr f xs)
 
 subTypForm :: Typ -> Typ -> Bool
-subTypForm x y = undefined
+subTypForm t1 t2 = case t2 of 
+      IsaSign.Type a b cs -> 
+                  if a == IsaSign.typeId t1 &&
+                     b == IsaSign.typeSort t1 then True 
+                  else genOr (subTypForm t1) cs
+      _ -> False   
 
 singList :: [a] -> [[a]]
 singList list = [[a] | a <- list]
