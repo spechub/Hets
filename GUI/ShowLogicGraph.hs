@@ -46,7 +46,7 @@ showLogicGraph
            disp s tD = debug (s ++ (show tD))
        logicG <- newGraph displaySort graphParms
        
- --    (killChannel :: Channel ()) <- newChannel   
+ --      (killChannel :: Channel ()) <- newChannel   
 
        let logicNodeMenu = LocalMenu(Menu (Just "Info") 
                [Button "Tools" (\lg -> createTextDisplay ("Parsers, Provers and Cons_Checker of " ++ showTitle lg) (showTools lg) [size(80,25)]),
@@ -90,15 +90,17 @@ showLogicGraph
                               tsid = G_sublogics (targetLogic cid) (targetSublogic cid)
                           in  createTextDisplay (show c) (showComoDescription c ++ "\n\n" ++
 			      "source logic:     " ++ (language_name $ sourceLogic cid) ++
-			      "\n" ++
+			      "\n\n" ++
                               "target logic:     " ++ (language_name $ targetLogic cid) ++ 
 			      "\n" ++
                               "source sublogic:  " ++ showSubTitle ssid ++ "\n" ++
 			      "target sublogic:  " ++ showSubTitle tsid)
-                              [size(83,25)]))
+                              [size(80,25)]))
            normalArcTypeParms = logicArcMenu $$$         -- normal comorphism
                                 Color "black" $$$
-				ValueTitle (\c -> return $ show c) $$$
+				ValueTitle (\c -> case c of
+                                                  Comorphism cid -> 
+					            return $ language_name cid) $$$
                                 nullArcTypeParms
                             
            inclArcTypeParms = logicArcMenu $$$           -- inclusion
@@ -128,7 +130,15 @@ showLogicGraph
                   --(drop (length arcList1) (Map.elems (comorphisms logicGraph)))
        
        redraw logicG
-
+{-       sync(
+            (receive killChannel) >>> 
+               do
+                  putStrLn "Destroy graph"
+                  destroy logicG
+               
+         +> (destroyed logicG)
+         )
+-}
     where 		
         (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms
 	(nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
