@@ -9,7 +9,7 @@ output: annos
 	bash runcheck.sh ../annos set
 
 annos:
-	if ! [ -x ../annos ]; then (cd ..; ./ghc-call); fi
+	if test ! -x ../annos; then (cd ..; ./ghc-call); fi
 
 %: 
 	(cd ../..; $(MAKE) $@)
