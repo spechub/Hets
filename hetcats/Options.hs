@@ -93,7 +93,7 @@ instance Show HetcatsOpts where
     show opts =    " --verbose="      ++ show (verbose opts)
                 ++ showGui (gui opts)
                 ++ showAnalysis (analysis opts)
-                ++ " --logice="  ++ defLogic opts
+                ++ " --logic="  ++ defLogic opts
                 ++ " --input-type="   ++ show (intype opts)
                 ++ " --output-types=" ++ showOutTypes (outtypes opts)
                 ++ " " ++ showRaw (rawopts opts)
