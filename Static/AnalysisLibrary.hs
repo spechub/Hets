@@ -25,7 +25,6 @@ import Logic.Grothendieck
 import Common.Lib.Graph
 import Static.DevGraph
 import Syntax.AS_Structured hiding (View_defn, Spec_defn)
-import Syntax.Parse_AS_Structured (lookupLogicName)
 import Syntax.AS_Library
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
@@ -375,8 +374,8 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l
 
 -- logic declaration
 ana_LIB_ITEM lgraph _defl opts libenv gctx _l 
-             (Logic_decl ln pos) = do
-  logNm <- lookupLogicName ln lgraph
+             (Logic_decl ln@(Logic_name logTok _) pos) = do
+  logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
   let  analyseMessage = "logic " ++ show logNm
   ioToIORes (putIfVerbose opts 1  analyseMessage)
   if outputToStdout opts then
