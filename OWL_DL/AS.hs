@@ -42,7 +42,7 @@ data Value = ValueID    IndividualvaluedPropertyID IndividualID
            | ValueIndiv IndividualvaluedPropertyID Individual
            | ValueDL    DatavaluedPropertyID DataLiteral
              deriving (Show, Eq)
-type Type = Restriction
+type Type = Description
 
 -- Axiom (Class Axioms, Descriptions, Restrictions, Property Axioms)
 data Axiom = Class ClassID (Maybe Deprecated) Modality [Annotation] [Description]
@@ -52,7 +52,16 @@ data Axiom = Class ClassID (Maybe Deprecated) Modality [Annotation] [Description
            | SubClassOf Description Description
            | Datatype DatatypeID (Maybe Deprecated) [Annotation]
            | DatatypeProperty DatavaluedPropertyID (Maybe Deprecated) [Annotation] [Super DatavaluedPropertyID] (Maybe Func) [Domain Description] [Range DataRange]          -- ??
-           | ObjectProperty IndividualvaluedPropertyID (Maybe Deprecated) [Annotation] [Super IndividualvaluedPropertyID] (Maybe IndividualvaluedPropertyID) (Maybe Symm) (Maybe Func) [Domain Description] [Range Description]
+           | ObjectProperty IndividualvaluedPropertyID 
+                    Bool -- ^ True == deprecated 
+                    [Annotation] 
+                    [IndividualvaluedPropertyID] -- ^ super properties 
+                    (Maybe IndividualvaluedPropertyID)
+                       -- ^ inverse of property 
+                    Bool -- ^ True == symmetric
+                    (Maybe Func) 
+                    [Description] -- ^ Domain 
+                    [Description] -- ^ Range
            | AnnotationProperty AnnotationPropertyID [Annotation]
            | OntologyProperty OntologyPropertyID [Annotation]
            | DEquivalentProperties DatavaluedPropertyID DatavaluedPropertyID [DatavaluedPropertyID]
@@ -78,7 +87,7 @@ data Description = DC ClassID
                  | UnionOf [Description]
                  | IntersectionOf [Description]
                  | ComplementOf Description
-                 | OneOfDes [Description]
+                 | OneOfDes [IndividualID]
                    deriving (Show, Eq)
 
 data Restriction = DataRestriction DatavaluedPropertyID Drcomponent [Drcomponent]
