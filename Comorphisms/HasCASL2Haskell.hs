@@ -43,13 +43,16 @@ instance Comorphism HasCASL2Haskell
                Haskell ()
                HsDecls (HsDeclI PNT) () ()
                Sign
-               ()
+               HaskellMorphism
                () () () where
     sourceLogic _ = HasCASL
     sourceSublogic _ = top
     targetLogic _ = Haskell
     targetSublogic _ = ()
-    --map_morphism _ morphism1 -> Maybe morphism2
+    map_morphism _ mor = do
+       (sig1,_) <- map_sign HasCASL2Haskell (dom HasCASL mor)
+       (sig2,_) <- map_sign HasCASL2Haskell (cod HasCASL mor)
+       return (sig1,sig2)
     map_sentence _ = mapSingleSentence
     --map_symbol :: cid -> symbol1 -> Set symbol2
     map_theory _ = mapTheory

@@ -15,7 +15,7 @@ Portability :  non-portable(Logic)
 
 -}
 
-module Haskell.Logic_Haskell (Haskell(..)) where
+module Haskell.Logic_Haskell (Haskell(..), HaskellMorphism) where
 
 import Data.Dynamic            
 import Common.DynamicUtils 
@@ -81,12 +81,13 @@ instance Language Haskell where
   \ type classes and monadic effects.\ 
   \ See http://www.haskell.org"
 
-type Morphism = ()
+type HaskellMorphism = (Sign,Sign)
 
-instance Category Haskell Sign Morphism where
-  dom Haskell _ = empty_signature Haskell
-  ide Haskell _ = ()
-  comp Haskell _ _ = Just ()
+instance Category Haskell Sign HaskellMorphism where
+  dom Haskell = fst
+  cod Haskell = snd
+  ide Haskell sig = (sig,sig)
+  comp Haskell (sig1,_) (_,sig3) = Just (sig1,sig3)
 
 -- abstract syntax, parsing (and printing)
 
@@ -105,7 +106,7 @@ type Haskell_Sublogics = ()
 type Symbol = ()
 type RawSymbol = ()
 
-instance Sentences Haskell (HsDeclI PNT) () Sign Morphism Symbol where
+instance Sentences Haskell (HsDeclI PNT) () Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
     print_named Haskell ga (NamedSen lab sen) = printText0 ga sen <>
 	if null lab then empty 
@@ -113,21 +114,29 @@ instance Sentences Haskell (HsDeclI PNT) () Sign Morphism Symbol where
     provers Haskell = [] 
     cons_checkers Haskell = []
 
+instance PrettyPrint HaskellMorphism where
+  printText0 ga (sig1,sig2) =
+    printText0 ga sig1 $$ ptext "->" $$ printText0 ga sig1
+
+instance PrintLaTeX HaskellMorphism where
+  printLatex0 ga (sig1,sig2) =
+    printLatex0 ga sig1 $$ ptext "\\rightarrow" $$ printLatex0 ga sig1
+
 instance StaticAnalysis Haskell HsDecls
                (HsDeclI PNT) () 
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
-               Morphism 
+               HaskellMorphism 
                Symbol RawSymbol where
     basic_analysis Haskell = Just hatAna 
     empty_signature Haskell = emptySign
     signature_union Haskell s = return . addSign s
     final_union Haskell = signature_union Haskell
-    inclusion Haskell _ _ = return ()
+    inclusion Haskell sig1 sig2 = return (sig1,sig2)
     is_subsig Haskell = isSubSign
 
 instance Logic Haskell Haskell_Sublogics
                HsDecls (HsDeclI PNT) SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
-               Morphism
+               HaskellMorphism
                Symbol RawSymbol ()
