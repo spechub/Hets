@@ -159,7 +159,7 @@ hets-old: $(objects)
 	$(RM) $@
 	$(HC) -o hets $(HC_OPTS) $(objects)
 
-hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files)
+hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files) $(inline_axiom_files)
 	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hets $< $(HC_OPTS) 2>&1 | tee hetcats-make 
 
