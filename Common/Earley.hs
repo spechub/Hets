@@ -409,7 +409,7 @@ checkPrecs filt ga rs argItem opItem =
 	       NoDirection -> 
 		   case (begPlace arg, endPlace op) of 
 		        (True, True) -> if arg == op 
-					then isAssoc ALeft assocs op
+					then not $ isAssoc ARight assocs op
 					else True
 			(False, True) -> True
 			(_, False) -> False
@@ -427,7 +427,7 @@ checkPrecs filt ga rs argItem opItem =
 		   NoDirection ->
 		     case (begPlace op, endPlace arg) of
 		        (True, True) -> if arg == op 
-					then isAssoc ARight assocs op
+					then not $ isAssoc ALeft assocs op
 					else True
 			(False, True) -> False
 			(_, False) -> True
