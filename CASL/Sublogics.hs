@@ -118,5 +118,30 @@ strip_anno :: Annoted a -> a
 strip_anno (Annoted i _ _ _) = i
 
 ------------------------------------------------------------------------------
+-- functions to compute minimal sublogic for a given element
+------------------------------------------------------------------------------
+
+sl_basic_spec :: basic_spec -> CASL_Sublogics
+sl_basic_spec _ = top
+
+sl_sentence :: sentence -> CASL_Sublogics
+sl_sentence _ = top
+
+sl_symb_items :: symb_items -> CASL_Sublogics
+sl_symb_items _ = top
+
+sl_symb_map_items :: symb_map_items -> CASL_Sublogics
+sl_symb_map_items _ = top
+
+sl_sign :: sign -> CASL_Sublogics
+sl_sign _ = top
+
+sl_morphism :: morphism -> CASL_Sublogics
+sl_morphism _ = top
+
+sl_symbol :: symbol -> CASL_Sublogics
+sl_symbol _ = top
+
+------------------------------------------------------------------------------
 -- the end
 ------------------------------------------------------------------------------
