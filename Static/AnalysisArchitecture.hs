@@ -198,12 +198,27 @@ ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, _) curl opts
 				                                     curl opts (buc', diag'') (item ut)
        -- check amalgamability conditions
        let pos = getPos_UNIT_EXPRESSION exp
-       sink <- inclusionSink lgraph (p : pardnsigs) pnsig
-       () <- assertAmalgamability opts pos diag''' sink
-       -- add new node to the diagram
-       (z, diag4) <- extendDiagramIncl lgraph diag''' [] (EmptyNode curl) (renderText Nothing (printText exp))
-       return (z, Par_unit_sig (map snd args, getSigFromDiag p), diag4, dg''', 
-	       Unit_expression ubs' (replaceAnnoted ut' ut) poss)
+           checkSubSign [] _ = True
+	   checkSubSign (dnsub : dnsigs) nsup =
+	       if is_subgsign (getSig (getSigFromDiag dnsub)) (getSig nsup) 
+		  then checkSubSign dnsigs nsup
+		  else False
+       -- check that signatures in pardnsigs are subsignatures of pnsig
+       if checkSubSign pardnsigs pnsig 
+	  then 
+	    do sink <- inclusionSink lgraph (p : pardnsigs) pnsig
+	       () <- assertAmalgamability opts pos diag''' sink
+	       -- add new node to the diagram
+	       (z, diag4) <- extendDiagramIncl lgraph diag''' [] (EmptyNode curl) (renderText Nothing (printText exp))
+	       return (z, Par_unit_sig (map snd args, getSigFromDiag p), diag4, dg''', 
+		       Unit_expression ubs' (replaceAnnoted ut' ut) poss)
+	  else -- report an error
+	    do (z, diag4) <- extendDiagramIncl lgraph diag''' [] (EmptyNode curl) (renderText Nothing (printText exp))
+	       plain_error (z, Par_unit_sig (map snd args, getSigFromDiag p), diag4, dg''', 
+			    Unit_expression ubs' (replaceAnnoted ut' ut) poss)
+			    ("The body signature does not extend the parameter signatures in\n" ++ (showPretty exp ""))
+			    pos
+
 
 
 -- | Analyse a list of unit bindings. Ensures that the unit names are not present
