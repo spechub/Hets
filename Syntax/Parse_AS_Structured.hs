@@ -213,7 +213,7 @@ specB l = do p1 <- asKey localS
 
 specC :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
 specC l@(Logic lid, lG) =     
-              try(do p1 <- asKey "data"
+                  do p1 <- asKey "data" `followedWith` groupSpecLookhead
                      case data_logic lid of
                        Nothing -> fail ("No data logic for " 
 					++ language_name lid)
@@ -224,7 +224,6 @@ specC l@(Logic lid, lG) =
                                                  (emptyAnno sp1) 
                                                  (emptyAnno sp2) 
                                                  [tokPos p1]))
-                 )
           <|> do sp <- annoParser (specD l)
                  translation_list l sp
           
@@ -248,17 +247,28 @@ translation l sp =
         (m, ps) <- parseItemsMap $ fst l
         return (emptyAnno (Reduction sp (Revealed m (map tokPos (p:ps)))))
 
+groupSpecLookhead :: AParser Token
+groupSpecLookhead = oBraceT <|> ((simpleId << annos) 
+				 `followedWith`
+				 (asKey withS <|> asKey hideS
+				  <|> asKey revealS <|> asKey andS
+				  <|> asKey thenS <|> cBraceT
+				  <|> asKey fitS <|> asKey viewS
+				  <|> asKey specS <|> asKey archS
+				  <|> asKey unitS
+				  <|> asKey withinS <|> asKey endS
+				  <|> oBracketT <|> cBracketT
+				  <|> (eof >> return (Token "" nullPos))))
+
 specD :: (AnyLogic, LogicGraph) -> AParser SPEC
            -- do some lookahead for free spec, to avoid clash with free type
-specD l = do (p,sp) <- try (do p <- asKey freeS
-                               sp <- groupSpec l
-                               return (p,sp))
+specD l = do p <- asKey freeS `followedWith` groupSpecLookhead
+             sp <- groupSpec l
 	     return (Free_spec (emptyAnno sp) [tokPos p])
-      <|> do (p,sp) <- try (do p <- asKey cofreeS
-                               sp <- groupSpec l
-                               return (p,sp))
+      <|> do p <- asKey cofreeS `followedWith` groupSpecLookhead
+             sp <- groupSpec l
              return (Cofree_spec (emptyAnno sp) [tokPos p])
-      <|> do p <- asKey closedS
+      <|> do p <- asKey closedS `followedWith` groupSpecLookhead
              sp <- groupSpec l
              return (Closed_spec (emptyAnno sp) [tokPos p])
       <|> specE l
@@ -268,19 +278,7 @@ specE l = do lookAhead (try (oBraceT >> cBraceT))
                        -- avoid overlap with group spec
              basicSpec l        
       <|> logicSpec l
-      <|> do lookAhead (oBraceT <|> ((simpleId << annos) 
-				     `followedWith`
-				     (asKey withS <|> asKey hideS
-				      <|> asKey revealS <|> asKey andS
-				      <|> asKey thenS <|> cBraceT
-				      <|> asKey fitS <|> asKey viewS
-				      <|> asKey specS <|> asKey archS
-				      <|> asKey unitS
-				      <|> asKey withinS <|> asKey endS
-				      <|> oBracketT <|> cBracketT
-				      <|> (eof >> return (Token "" nullPos)))
-				    ))
-	     groupSpec l
+      <|> (lookAhead groupSpecLookhead >> groupSpec l)
       <|> basicSpec l
 
 
