@@ -78,8 +78,9 @@ instance Comorphism CASL2TopSort
                         has_pred = True,
                         which_logic = FOL
                       }
-    mapSublogic CASL2TopSort = 
-        sublogics_max (sublogics_max need_horn need_pred)
+    mapSublogic CASL2TopSort sub = 
+        sublogics_max (sublogics_max need_horn need_pred) sub
+                      { has_sub = False } -- subsorting is coded out
     map_sign CASL2TopSort = transSig
     map_morphism CASL2TopSort mor = 
         let rsigSour = trSig $ msource mor

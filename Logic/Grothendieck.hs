@@ -39,6 +39,8 @@ Portability :  non-portable (overlapping instances, dynamics, existentials)
 
 module Logic.Grothendieck where
 
+--import Debug.Trace
+
 import Logic.Logic
 import Logic.Prover
 import Logic.Comorphism
@@ -374,10 +376,10 @@ compComorphism cm1@(Comorphism cid1) cm2@(Comorphism cid2) =
    case coerce (targetLogic cid1) (sourceLogic cid2) (targetSublogic cid1) of
     Just sl1 -> 
       if sl1 <= sourceSublogic cid2
-       then case (isIdComorphism cm1,isIdComorphism cm2) of
+       then {- case (isIdComorphism cm1,isIdComorphism cm2) of
          (True,_) -> return cm2
          (_,True) -> return cm1
-         _ ->  return $ Comorphism (CompComorphism cid1 cid2)
+         _ ->  -} return $ Comorphism (CompComorphism cid1 cid2)
        else fail ("Sublogic mismatch in composition of "++language_name cid1++
 		  " and "++language_name cid2)
     Nothing -> fail ("Logic mismatch in composition of "++language_name cid1++
@@ -721,9 +723,9 @@ findComorphismPaths lg (G_sublogics lid sub) =
   where
   idc = Comorphism (IdComorphism lid sub)
   coMors = Map.elems $ comorphisms lg
-  -- compute possible compositions, but only up to depth 5
+  -- compute possible compositions, but only up to depth 4
   iterateComp n l = -- (l::[(AnyComorphism,[AnyComorphism])]) =
-    if n>5 || l==newL then newL else iterateComp (n+1) newL
+    if n>4 || l==newL then newL else iterateComp (n+1) newL
     where 
     newL = List.nub (l ++ (concat (map extend l)))
     -- extend comorphism list in all directions, but no cylces

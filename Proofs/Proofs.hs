@@ -53,6 +53,8 @@ todo for Jorina:
 
 module Proofs.Proofs where
 
+--import Debug.Trace
+
 import Data.Dynamic
 import Data.List(nub)
 import Logic.Logic

@@ -17,11 +17,10 @@ module Logic.Languages where
 
 import UnsafeCoerce
 import Data.Dynamic
-import Common.DynamicUtils 
 
 import Common.Id
 import Common.Result
-
+import Data.Maybe
 
 
 class Show lid => Language lid where
@@ -44,6 +43,10 @@ mcoerce i1 i2 err a =
 coerce :: (Typeable a, Typeable b, Language lid1, Language lid2,
           Monad m) => lid1 -> lid2 -> a -> m b
 coerce i1 i2 a = mcoerce i1 i2 "" a 
+
+idcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2)
+               => lid1 -> lid2 -> a -> b
+idcoerce i1 i2 a = fromJust $ coerce i1 i2 a 
 
 rcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2) => 
            lid1 -> lid2 -> Pos -> a -> Result b

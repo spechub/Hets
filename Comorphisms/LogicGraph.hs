@@ -50,6 +50,7 @@ import Comorphisms.CASL2CoCASL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
+import Comorphisms.CASL2TopSort
 #ifdef PROGRAMATICA
 import Comorphisms.HasCASL2Haskell
 import Comorphisms.Haskell2IsabelleHOLCF
@@ -90,7 +91,7 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
                  Comorphism CspCASL2Modal]
 
 comorphismList :: [AnyComorphism]
-comorphismList = inclusionList ++ [Comorphism CASL2PCFOL, Comorphism PCFOL2FOL]
+comorphismList = inclusionList ++ [Comorphism CASL2PCFOL, Comorphism PCFOL2FOL, Comorphism CASL2TopSort]
 
 unionList :: [(AnyComorphism,AnyComorphism)]
 unionList = []

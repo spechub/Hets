@@ -51,6 +51,7 @@ Portability :  non-portable (various -fglasgow-exts extensions)
    Metavars
    raw symbols are now symbols, symbols are now signature symbols
    provide both signature symbol set and symbol set of a signature
+   introduce coercion safer functions (separately for each type)
 -}
 
 module Logic.Logic (module Logic.Logic, module Logic.Languages) where

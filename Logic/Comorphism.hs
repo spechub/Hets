@@ -123,6 +123,7 @@ instance Logic lid sublogics
            targetLogic (IdComorphism lid _sub) = lid
            sourceSublogic (IdComorphism _lid sub) = sub
            targetSublogic (IdComorphism _lid sub) = sub
+           mapSublogic _ = id
            map_sign _ = \sigma -> return (sigma,[])
            map_morphism _ = return
            map_sentence _ = \_ -> return
@@ -174,8 +175,14 @@ instance (Comorphism cid1
      targetLogic cid2
    sourceSublogic (CompComorphism cid1 _) = 
      sourceSublogic cid1
-   targetSublogic (CompComorphism _ cid2) = 
-     targetSublogic cid2
+   targetSublogic (CompComorphism cid1 cid2) = 
+     mapSublogic cid2 
+      (idcoerce (targetLogic cid1) (sourceLogic cid2) 
+        (targetSublogic cid1))
+   mapSublogic (CompComorphism cid1 cid2) = 
+     mapSublogic cid2 
+     . idcoerce (targetLogic cid1) (sourceLogic cid2) 
+     . mapSublogic cid1
    map_sentence (CompComorphism cid1 cid2) = 
        \si1 se1 -> 
          do (si2,_) <- map_sign cid1 si1
