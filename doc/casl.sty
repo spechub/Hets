@@ -1,0 +1,434 @@
+% CASL package for LaTeX formatting of CASL specifications
+% Version 2.1
+
+% Required files:
+%   none
+
+% Intended to be compatible with:
+%   amsmath
+%   cofidoc
+%   hyperlatex
+%   hyperref
+%   llncs
+%   pdflatex
+%   prosper
+%   pstricks
+%   seminar
+%   svmono
+%   svmult
+
+% Last updated: 18 June 2003 by Peter D. Mosses, pdmosses@brics.dk
+% - Major revision, see CoFI Note C-2
+% - \usepackage{oldcasl} should allow formatting of documents
+%   (more or less) as with version 1.3 (November 1998)
+
+
+\ProvidesPackage{casl}[2003/06/18 v2.1
+ LaTeX Package for CASL v1.0.1]
+
+\NeedsTeXFormat{LaTeX2e}
+
+\newif\ifcolor\colorfalse
+\DeclareOption{color}{\colortrue}
+
+\ProcessOptions
+
+
+% DEFAULT COLORS:
+
+\newcommand{\KEYCOLOR}{\color{blue}}
+\newcommand{\MATHCOLOR}{\color{black}}
+\newcommand{\NAMECOLOR}{\color{black}}
+\newcommand{\DEFNCOLOR}{\color{magenta}}
+\newcommand{\COMMENTCOLOR}{\MONOCHROME\color{cyan}}
+\newcommand{\ANNOTECOLOR}{\MONOCHROME\color{red}}
+
+\newcommand{\MONOCHROME}
+ {\renewcommand{\KEYCOLOR}{}%
+  \renewcommand{\MATHCOLOR}{}%
+  \renewcommand{\NAMECOLOR}{}%
+  \renewcommand{\DEFNCOLOR}{}%
+  \renewcommand{\COMMENTCOLOR}{}%
+  \renewcommand{\ANNOTECOLOR}{}}
+
+
+% PROBLEM WITH PSTCOL:
+% Experimental work-around to allow use of \color command
+% together with pstricks (loaded by prosper and semcol).
+% This allows the use of both \color and \newrgbcolor (etc.)
+% independently of whether pstricks is loaded or not.
+% Documents to be formatted both with and without pstricks
+% should not use color commands other than those defined below:
+
+\@ifundefined{PSTricksLoaded}{%
+\RequirePackage{graphicx}
+\ifcolor\RequirePackage{color}
+\else\MONOCHROME\PassOptionsToPackage{monochrome}{color}\fi
+\def\newgray#1{%
+  \definecolor{#1}{gray}}
+\def\newrgbcolor#1#2{%
+  \newrgbcolorx{#1}#2\@@}
+\def\newrgbcolorx#1#2 #3 #4\@@{%
+  \definecolor{#1}{rgb}{#2,#3,#4}}
+\def\newcmykcolor#1#2{%
+  \newcmykcolorx{#1}#2\@@}
+\def\newcmykcolorx#1#2 #3 #4 #5\@@{%
+  \definecolor{#1}{cmyk}{#2,#3,#4,#5}}
+}{%
+\newcommand{\color}[1]{\emph{}\csname #1\endcsname\selectfont}
+}
+
+% REQUIRED STANDARD PACKAGES:
+
+\RequirePackage{xspace}
+\RequirePackage{array}
+
+% DEFAULT LINK COMMANDS:
+
+% IN CASE HYPERREF NOT LOADED:
+\providecommand{\href}[2]{{#2}}
+\providecommand{\label@hyperref}[2][]{{#2}}
+\providecommand{\phantomsection}{}
+
+% FOR COMPATIBILITY WITH HYPERLATEX AND COFIDOC:
+
+\providecommand{\link}[2]{{#1}}
+\providecommand{\xlink}[2]{{#1}}
+\renewcommand{\link}[2]{\gdef\Hlx@label{#2}\label@hyperref[{#2}]{#1}}
+\renewcommand{\xlink}[2]{\href{#2}{#1}}
+
+% PAGE-BREAKING IN SPECS:
+
+\newif\ifsamepage               
+\samepagefalse
+
+% \samepagetrue allows breaks only at skips
+
+% THE FOLLOWING COMMANDS MIGHT BE ALREADY DEFINED BY AMS-LATEX OR HYPERLATEX:
+
+\providecommand{\text}[1]{\)#1\(}
+\providecommand{\math}[2][]{\(#2\)}
+
+\providecommand{\CoFI}{CoFI\xspace }
+\providecommand{\CASL}{{C\scriptsize ASL}\xspace }
+%%\providecommand{\CoFI}{\textmd{\textsc{CoFI}}\xspace }
+%%\providecommand{\CASL}{\textmd{\textsc{Casl}}\xspace }
+
+% \begin{casl} (OR \casl) REDEFINES SOME STANDARD COMMANDS:
+
+\newif\ifcasl   \caslfalse
+
+\newenvironment{casl}
+ {\ifcasl\else\casltrue
+  \ifmmode\MATHCOLOR\else\KEYCOLOR\fi
+  \MATHTEXT
+  \renewcommand{\[}
+   {\begingroup
+    \ifmmode
+      \renewcommand{\]}{\end{ARRAY}\endgroup}%
+      \begin{ARRAY}%
+    \else
+      \renewcommand{\]}{\end{TABULAR}\endgroup}%
+      \begin{TABULAR}%
+    \fi}%
+  \renewcommand{\.}{\BULLET}%
+  \renewcommand{\*}{\times}%
+  \renewcommand{\|}{\mid}\fi}
+ {}
+
+% Using \casl as a command provides the above declarations thereafter.
+% Using \begin{casl}...\end{casl} restricts the scope of the declarations, 
+
+\newcommand{\MATHTEXT}
+{\everymath{\MATHCOLOR\it}%
+ \providecommand{\0}{\mathrm{0}}%
+ \providecommand{\1}{\mathrm{1}}%
+ \providecommand{\2}{\mathrm{2}}%
+ \providecommand{\3}{\mathrm{3}}%
+ \providecommand{\4}{\mathrm{4}}%
+ \providecommand{\5}{\mathrm{5}}%
+ \providecommand{\6}{\mathrm{6}}%
+ \providecommand{\7}{\mathrm{7}}%
+ \providecommand{\8}{\mathrm{8}}%
+ \providecommand{\9}{\mathrm{9}}}
+
+% Set up ";" to add a thick math space after it when active in math mode:
+\let\@semicolon=;
+\catcode`\;=12\relax
+\mathcode`\;="8000 % Makes ; active in math mode
+{\catcode`\;=\active \gdef;{\ifmmode\semicolon\;\else\@semicolon\fi}}
+\mathchardef\semicolon="603B
+
+% INDENTATION:
+
+\newcommand{\MTEXT}{\SPEC}
+% \renewcommand{\MTEXT}{...} 
+% changes default indentation to width of ...
+
+\newcommand{\M}{\phantom{\MONOCHROME\MTEXT}}
+% \renewcommand{\M}{~~~~}
+% changes default indentation to a fixed number of spaces
+% (also when using Hyperlatex to generate HTML)
+
+% NAMES AND URLS:
+
+\newcommand{\LIBNAME}{} 
+% set by \LIBRARYDEFN, prefixed to labels of specs
+
+\newcommand{\LIBRARYDEFN}[1]
+ {\renewcommand{\LIBNAME}{#1\_}
+  \LIBRARY \LIBNAMEDEFN{#1}}
+
+\newcommand{\LIBNAMEDEFN}[1]
+ {\EXPANDARG\label{#1}\NAME{\DEFNCOLOR #1}}
+
+\newcommand{\LIBRARYREF}[2][] 
+% local: \LIBRARYREF{NAME}
+% remote: \LIBRARYREF[URL]{NAME}
+ {{\def\_{\string_}\def\@tmp{#1}\ifx\@tmp\@empty
+  \link{\NAME{#2}}{#2}\else
+  \xlink{\NAME{#2}}{#1}\fi}}
+
+\newcommand{\NAME}[1]
+ {{\def\_{\textunderscore}\textmd{\textsc{\NAMECOLOR #1}}}}
+
+\newcommand{\PRIME}{$'$}
+
+\newcommand{\NAMEDEFN}[1]
+ {{\def\_{\string_}\phantomsection
+   \EXPANDARG\label{\LIBNAME#1}\NAME{\DEFNCOLOR #1}}}
+
+\newcommand{\NAMEREF}[1]
+ {{\def\_{\string_}\link{\NAME{#1}}{\LIBNAME#1}}}
+
+\newcommand{\EXPANDARG}[2]
+ {{\edef\tmp{\noexpand#1{#2}}\tmp}}
+
+% \url MIGHT BE ALREADY DEFINED BY THE URL OR LLNCS PACKAGES
+
+\providecommand{\url}[1]{\texttt{#1}}
+\newcommand{\URL}[1]{\url{\NAMECOLOR #1}}
+\newcommand{\PATH}[1]{\url{\NAMECOLOR #1}}
+
+% ENUMERATIONS:
+
+\newcounter{NUM}
+\newcommand{\ZERONUM}{\setcounter{NUM}{0}}
+\newcommand{\NUM}{\addtocounter{NUM}{1}\LABEL{\arabic{NUM}}}
+
+% ITEMS:
+
+\newenvironment{TABULAR}
+ {\begin{tabular}[t]{lllll}}
+ {\end{tabular}}
+
+\newenvironment{ITEMS}[1][\M]
+ {\casl\begin{list}{}
+  {\renewcommand{\makelabel}[1]{##1\hfil}
+   \settowidth{\labelwidth}{#1{}}
+   \setlength{\leftmargin}{\labelwidth}
+   \addtolength{\leftmargin}{\labelsep}
+   \setlength{\topsep}{0pt}
+   \setlength{\itemsep}{0pt}
+   \setlength{\parsep}{0pt}
+   \setlength{\parskip}{0pt}}
+   \ifsamepage\samepage\fi}
+ {\end{list}\pagebreak[1]\vskip-\parskip} % to avoid superfluous space
+
+% To ensure appropriate HTML formatting, do NOT use \\ in items!
+% Instead, lines in items can be split using \par or blank lines.
+  
+\providecommand{\I}{Defined by svmono, svmult}
+\renewcommand{\I}[1]{\item[{#1{}}]}
+
+\newcommand{\RIGHT}[1]{\hfill\M#1}
+
+% USE ARRAY FOR MULTILINE FORMULAE OR TYPES:
+
+\newenvironment{ARRAY}
+ {\begin{array}[t]
+  {@{}l<{{}}@{}>{{}}l<{{}}@{}>{{}}l<{{}}@{}>{{}}l<{{}}@{}>{{}}l@{}}}
+ {\end{array}}
+
+\newenvironment{AXIOMARRAY} % \. & ... & \NUM \\
+ {\begin{array}[t]
+  {@{}>{{}}l<{{}}@{}>{{}}c<{{}}@{}>{{}}r<{{}}@{}}}
+ {\end{array}}
+
+% \HIDEWIDTH{...} or \multicolumn{n}{l}{...} may be used to span columns
+
+\newcommand{\HIDEWIDTH}[1]{\makebox[0pt][l]{\({}#1{}\)}}
+
+% \FLUSHRIGHT{...} ALLOWS ALIGNMENT OF LABELS IN SEPARATE ARRAYS:
+
+\newcommand{\FLUSHRIGHT}[1]
+ {\\\noalign{\vskip-\dp\strutbox}%
+  \noalign{\hsize=\linewidth% to avoid overfull box warnings
+    \makebox[\linewidth][r]{\smash{\M#1}}}%
+  \noalign{\vskip-\ht\strutbox}\\[-2.85ex]}
+
+\newcommand{\AXIOMNUM}{\FLUSHRIGHT{\NUM}}
+
+% COMMENTS:
+
+\newcommand{\COMMENTSIZE}{\footnotesize}
+
+\newcommand{\COMMENTLINE}[1]
+ {{\parindent=0pt\par
+  \mbox{\COMMENTSIZE\COMMENTCOLOR\textbf{\%\%}~#1}%
+  \par}}
+
+\newcommand{\COMMENTINLINE}[1]
+ {\mbox{\COMMENTSIZE\COMMENTCOLOR\textbf{\%\{}~#1~\textbf{\}\%}}}
+
+\newcommand{\COMMENTENDLINE}[1]
+ {\mbox{\COMMENTSIZE\COMMENTCOLOR\textbf{\%\%}~#1}}
+
+\newenvironment{COMMENT}
+ {\parindent=0pt\par\COMMENTSIZE\COMMENTCOLOR
+  \everymath{}% seems that {tabular} uses math...
+  \textbf{\%\{}~\begin{tabular}[t]
+  {@{\everymath{\MATHCOLOR\it}}l@{}}}
+ {\textbf{\}\%}\end{tabular}\par}
+
+% ANNOTATIONS:
+
+\newcommand{\ANNOTESIZE}{\footnotesize}
+
+\newcommand{\LABEL}[1]
+ {\mbox{\ANNOTESIZE\ANNOTECOLOR\%(#1)\%}}
+
+\newcommand{\ANNOTELINE}[2]
+ {{\parindent=0pt\par
+  \mbox{\ANNOTESIZE\ANNOTECOLOR\textbf{\%#1}~#2}}}
+
+\newcommand{\ANNOTEWORD}[1]
+ {\mbox{\ANNOTESIZE\ANNOTECOLOR\textbf{\%#1}}}
+
+\newenvironment{ANNOTE}[1]
+ {\parindent=0pt\par\ANNOTESIZE\ANNOTECOLOR
+  \everymath{}% seems that {tabular} uses math...
+  \textbf{\%#1(}~\begin{tabular}[t]
+   {@{}llllllll}}
+ {& \textbf{)\%}\end{tabular}\par}
+
+\newenvironment{ANNOTELINES}[1]
+ {\parindent=0pt\par\ANNOTESIZE\ANNOTECOLOR
+  \everymath{}% seems that {tabular} uses math...
+  \begin{tabular}[t]
+   {@{}>{\textbf{\%#1~}}llllllll}}
+ {\end{tabular}\par}
+
+\newcommand{\DISPLAY}          {display}
+\newcommand{\HTML}             {\%HTML\xspace}
+\newcommand{\LATEX}            {\%LATEX\xspace}
+\newcommand{\RTF}              {\%RTF\xspace}
+
+\newcommand{\PREC}             {prec}
+\newcommand{\LEFTASSOC}        {left\_assoc}
+\newcommand{\RIGHTASSOC}       {right\_assoc}
+\newcommand{\NUMBER}           {number}
+\newcommand{\FLOATING}         {floating}
+\newcommand{\STRING}           {string}
+\newcommand{\LIST}             {list}
+
+% SYMBOLS AND KEYWORDS FOR USE OUTSIDE FORMULAE:
+
+\newcommand{\TEXTKEY}[1]{\textbf{\KEYCOLOR#1}\ifmmode~\fi\xspace}
+
+\newcommand{\LBRACE}            {\TEXTKEY{\{}}
+\newcommand{\RBRACE}            {\TEXTKEY{\}}}
+\newcommand{\FREE}              {\TEXTKEY{free}}
+\newcommand{\FREELBRACE}        {\FREE~\LBRACE}
+\newcommand{\GENERATED}         {\TEXTKEY{generated}}
+\newcommand{\TYPE}              {\TEXTKEY{type}}
+\newcommand{\TYPES}             {\TEXTKEY{types}}
+\newcommand{\FREETYPE}          {\FREE~\TYPE}
+\newcommand{\FREETYPES}         {\FREE~\TYPES}
+\newcommand{\GENERATEDTYPE}     {\GENERATED~\TYPE}
+\newcommand{\GENERATEDTYPES}    {\GENERATED~\TYPES}
+
+\newcommand{\VARS}              {\TEXTKEY{vars}}
+\newcommand{\AXIOM}             {\TEXTKEY{axiom}}
+\newcommand{\AXIOMS}            {\TEXTKEY{axioms}}
+
+\newcommand{\HIDE}              {\TEXTKEY{hide}}
+\newcommand{\REVEAL}            {\TEXTKEY{reveal}}
+\newcommand{\WITH}              {\TEXTKEY{with}}
+\newcommand{\THEN}              {\TEXTKEY{then}}
+\newcommand{\THENCONS}          {\TEXTKEY{then}~\ANNOTEWORD{cons}}
+\newcommand{\THENDEF}           {\TEXTKEY{then}~\ANNOTEWORD{def}}
+\newcommand{\THENIMPLIES}       {\TEXTKEY{then}~\ANNOTEWORD{implies}}
+\newcommand{\AND}               {\TEXTKEY{and}}
+\newcommand{\LOCAL}             {\TEXTKEY{local}}
+\newcommand{\THENLOCAL}         {\THEN~\LOCAL}
+\newcommand{\WITHIN}            {\TEXTKEY{within}}
+\newcommand{\CLOSED}            {\TEXTKEY{closed}}
+\newcommand{\FIT}               {\TEXTKEY{fit}}
+\newcommand{\TO}                {\TEXTKEY{to}}
+
+\newcommand{\SPEC}              {\TEXTKEY{spec}}
+\newcommand{\VIEW}              {\TEXTKEY{view}}
+\newcommand{\END}               {\TEXTKEY{end}}
+
+\newcommand{\ARCH}              {\TEXTKEY{arch}}
+\newcommand{\ARCHSPEC}          {\ARCH~\SPEC}
+\newcommand{\UNITS}             {\TEXTKEY{units}}
+\newcommand{\GIVEN}             {\TEXTKEY{given}}
+\newcommand{\RESULT}            {\TEXTKEY{result}}
+
+\newcommand{\LIBRARY}           {\TEXTKEY{library}}
+\newcommand{\FROM}              {\TEXTKEY{from}}
+\newcommand{\GET}               {\TEXTKEY{get}}
+\newcommand{\VERSION}           {\TEXTKEY{version}}
+
+% SYMBOLS AND KEYWORDS FOR USE IN TYPES, FORMULAE, AND SYMBOL MAPS:
+
+\newcommand{\MATHKEY}[1]{\mathit{#1}}
+
+\newcommand{\PROD}              {\mathbin{\times}}
+\newcommand{\TOTAL}             {\mathrel{\rightarrow}}
+\newcommand{\PARTIAL}           {\mathrel{\rightarrow?}}
+\newcommand{\MAPSTO}            {\mathrel{\mapsto}}
+
+\newcommand{\ASSOC}             {\MATHKEY{assoc}}
+\newcommand{\COMM}              {\MATHKEY{comm}}
+\newcommand{\IDEM}              {\MATHKEY{idem}}
+
+\newcommand{\EXISTS}            {\exists}
+\newcommand{\EXISTSUNIQUE}      {\exists!}
+\newcommand{\IMPLIES}           {\mathrel{\Rightarrow}}
+\newcommand{\IFF}               {\mathrel{\Leftrightarrow}}
+\newcommand{\EEQ}               {\mathrel{\stackrel{e}{=}}}
+\newcommand{\A}                 {\mathrel{\wedge}}
+\newcommand{\V}                 {\mathrel{\vee}}
+\newcommand{\IN}                {\mathrel{\in}}
+\newcommand{\NOT}               {\mathop{\neg}}
+
+\newcommand{\IF}                {\mathrel{\MATHKEY{if}}}
+\newcommand{\WHEN}              {\mathrel{\MATHKEY{when}}}
+\newcommand{\ELSE}              {\mathrel{\MATHKEY{else}}}
+\newcommand{\DEF}               {\mathop{\MATHKEY{def}}}
+\newcommand{\AS}                {\mathop{\MATHKEY{as}}}
+\newcommand{\TRUE}              {\MATHKEY{true}}
+\newcommand{\FALSE}             {\MATHKEY{false}}
+
+% SYMBOLS AND KEYWORDS FOR USE BOTH INSIDE AND OUTSIDE TYPES AND FORMULAE:
+
+\newcommand{\TEXTMATHOPKEY}[1]
+ {\relax\ifmmode\mathop{\MATHKEY{#1}}\else\TEXTKEY{#1}{}\fi\xspace}
+
+\newcommand{\SORT}              {\TEXTMATHOPKEY{sort}}
+\newcommand{\SORTS}             {\TEXTMATHOPKEY{sorts}}
+\newcommand{\PRED}              {\TEXTMATHOPKEY{pred}}
+\newcommand{\PREDS}             {\TEXTMATHOPKEY{preds}}
+\newcommand{\OP}                {\TEXTMATHOPKEY{op}}
+\newcommand{\OPS}               {\TEXTMATHOPKEY{ops}}
+\newcommand{\VAR}               {\TEXTMATHOPKEY{var}}
+\newcommand{\UNIT}              {\TEXTMATHOPKEY{unit}}
+
+\newcommand{\BULLET}            {\ensuremath{\mathrel{\;\bullet\;}}}
+%\newcommand{\BULLET}            {\ensuremath{\mathrel{\scriptstyle\bullet}}}
+\newcommand{\FORALL}            {\ensuremath{\forall}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
