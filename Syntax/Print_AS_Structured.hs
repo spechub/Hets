@@ -273,7 +273,7 @@ instance PrettyPrint FIT_ARG where
     printText0 ga (Fit_view aa ab _ ad) =
 	let aa' = printText0 ga aa
 	    ab' = print_fit_arg_list printText0 sp_brackets sep ga ab
-	    ad' = printText0 ga ad
+	    ad' = vcat $ map (printText0 ga) ad
 	in ad' $$ hang (ptext "view" <+> aa') 4 ab'
 
     printLatex0 ga (Fit_spec aa ab _) =
@@ -289,7 +289,7 @@ instance PrettyPrint FIT_ARG where
 	                             sp_brackets_latex 
 				     sep_latex
 				     ga ab
-	    ad' = printLatex0 ga ad
+	    ad' = vcat $ map (printLatex0 ga) ad
 	in ad' $$ hang_latex (hc_sty_plain_keyword "view" <\+> aa') 8 ab'
 
 {- This can be found in Print_AS_Library
@@ -421,3 +421,22 @@ skip_Group sp =
     case sp of
 	    Group as _ -> skip_Group $ item as
 	    _          -> sp
+
+-- moved from Print_AS_Annotation
+spAnnotedPrint :: (PrettyPrint a) => 
+		    (forall b .PrettyPrint b => GlobalAnnos -> b -> Doc) 
+		    -> (Doc -> Doc -> Doc) -- ^ a function like <+> or <\+>
+		    -> GlobalAnnos -> Doc -> Annoted a -> Doc
+spAnnotedPrint pf beside_ ga keyw ai = 
+    case ai of 
+    Annoted i _ las _ ->
+	let i'   = pf ga i
+            (msa,as) = case las of
+		       []     -> (Nothing,[]) 
+		       (x:xs) | isSemanticAnno x -> (Just x,xs)
+		       xs     -> (Nothing,xs)
+	    san      = case msa of
+		       Nothing -> empty
+		       Just a  -> pf ga a 
+	    as' = if null as then empty else vcat $ map (pf ga) as
+        in keyw `beside_` san $+$ as' $+$ i'

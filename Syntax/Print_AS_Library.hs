@@ -33,13 +33,13 @@ instance PrettyPrint LIB_DEFN where
     printText0 ga (Lib_defn aa ab _ ad) =
 	let aa' = printText0 ga aa              -- lib name
 	    ab' = vcat $ map (printText0 ga) ab -- LIB_ITEMs
-	    ad' = printText0 ga ad              -- global ANNOTATIONs
+	    ad' = vcat $ map (printText0 ga) ad -- global ANNOTATIONs
 	in ptext "library" <+> aa' $$ ad' $$ ptext "\n" $$ ab'
 
     printLatex0 ga (Lib_defn aa ab _ ad) =
 	let aa' = printLatex0 ga aa              -- lib name
 	    ab' = vcat $ map (printLatex0 ga) ab -- LIB_ITEMs
-	    ad' = printLatex0 ga ad              -- global ANNOTATIONs
+	    ad' = vcat $ map (printLatex0 ga) ad -- global ANNOTATIONs
 	in hc_sty_plain_keyword "library" <\+> aa' $$ ad' 
 	       $$ latex_macro "\n" $$ ab'
 
@@ -220,8 +220,8 @@ instance PrettyPrint LIB_ID where
 	hc_sty_structid aa
 
 instance PrettyPrint VERSION_NUMBER where
-    printText0 ga (Version_number aa _) =
-	hcat $ punctuate (char '.') $ map (printText0 ga) aa
+    printText0 _ (Version_number aa _) =
+	hcat $ punctuate (char '.') $ map ptext aa
     printLatex0 _ (Version_number aa _) =
 	hcat $ punctuate (casl_normal_latex ".") $ map casl_normal_latex aa
 

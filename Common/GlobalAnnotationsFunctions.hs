@@ -316,5 +316,5 @@ listBrackets g =
 annotationConflict :: String -> [Annotation] -> a
 annotationConflict tp ans = 
     error $ ("*** conflicting %"++ tp ++ " annotations:\n"
-	      ++  show (printText0 emptyGlobalAnnos ans))
+	      ++  unlines (map (show . printText0 emptyGlobalAnnos) ans))
 

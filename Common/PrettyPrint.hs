@@ -32,7 +32,7 @@ module Common.PrettyPrint
     where
 
 import Data.Char (isSpace,isAlphaNum,isDigit)
-import Control.Monad.State (State(..),evalState,get,put)
+import Common.Lib.State (State(..),evalState,get,put)
 import Data.List (isPrefixOf)
 
 import Common.Id
@@ -138,7 +138,7 @@ debug_latex_txt (Chr c)   cont
 		     endOfLine
 		     indent <- getIndent
 		     s <- cont
-		     return ("\\\\%"++show state++c:(indent s))
+		     return ("\\\\%"++show (state::LRState)++c:(indent s))
     | otherwise = do s <- cont
 		     return (c:s)
 debug_latex_txt (Str s1)  cont
@@ -167,7 +167,8 @@ debug_latex_txt (PStr s1) cont
 			  endOfLine
 			  indent <- getIndent
 			  s2 <- cont
-			  return ("\\\\%"++show state++s1++indent s2)
+			  return ("\\\\%"++show (state::LRState)
+				  ++s1++indent s2)
     | otherwise      = do setOnlyTabs False
 			  s2 <- cont
 			  return (s1 ++ s2)
@@ -409,7 +410,8 @@ printId pf comma_fun brackets_fun ga (Id tops ids _) =
 
 -- some useful instances ---------------------------------------------
 
-
+{-
 instance PrettyPrint String where
     printText0  _ = ptext 
     printLatex0  _ = error "use a function from module LaTeX_funs" 
+-}

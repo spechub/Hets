@@ -33,8 +33,8 @@ instance PrettyPrint Annotation where
 	in ptext "%{" <> aa' <> ptext "}%"
     printText0 _ (Annote_line aa ab _) =
 	printLine (ptext aa) $ if all isSpace ab then empty else ptext ab
-    printText0 ga (Annote_group aa ab _) =
-	let aa' = printText0 ga aa
+    printText0 _ (Annote_group aa ab _) =
+	let aa' = ptext aa
 	    ab' = vcat $ map ptext ab
 	in printGroup aa' ab'
     printText0 ga (Display_anno aa ab _) =
@@ -215,48 +215,32 @@ printLatexLine kw line =
     hc_sty_annotation (if isEmpty line then kw_d else kw_d <\+> line)
     where kw_d = hc_sty_small_keyword ("\\%"++kw)
 
+{-
 instance PrettyPrint [Annotation] where
     printText0 ga l = (vcat $ map (printText0 ga) l) -- <> ptext "\n"
 
     printLatex0 ga l = (vcat $ map (printLatex0 ga) l) -- <> ptext "\n"
+-}
 
 instance (PrettyPrint a) => PrettyPrint (Annoted a) where
     printText0 ga (Annoted i _ las ras) =
 	let i'   = printText0 ga i
-	    las' = printText0 ga las
+	    las' = vcat $ map (printText0 ga) las
 	    (la,rras) = case ras of
 			[]     -> (empty,[])
 			r@(l:xs)
 			    | isLabel l -> (printText0 ga l,xs)
 			    | otherwise -> (empty,r)
-	    ras' = printText0 ga rras
+	    ras' = vcat $ map (printText0 ga) rras
         in las' $+$ (hang i' 0 la) $$ ras'
 
     printLatex0 ga (Annoted i _ las ras) =
 	let i'   = printLatex0 ga i
-	    las' = printLatex0 ga las
+	    las' = vcat $ map (printLatex0 ga) las
 	    (la,rras) = case ras of
 			[]     -> (empty,[])
 			r@(l:xs)
 			    | isLabel l -> (printLatex0 ga l,xs)
 			    | otherwise -> (empty,r)
-	    ras' = printLatex0 ga rras
+	    ras' = vcat $ map (printLatex0 ga) rras
         in las' $+$ (hang_latex i' 0 la) $$ ras'
-
-spAnnotedPrint :: (PrettyPrint a) => 
-		    (forall b .PrettyPrint b => GlobalAnnos -> b -> Doc) 
-		    -> (Doc -> Doc -> Doc) -- ^ a function like <+> or <\+>
-		    -> GlobalAnnos -> Doc -> Annoted a -> Doc
-spAnnotedPrint pf beside_ ga keyw ai = 
-    case ai of 
-    Annoted i _ las _ ->
-	let i'   = pf ga i
-            (msa,as) = case las of
-		       []     -> (Nothing,[]) 
-		       (x:xs) | isSemanticAnno x -> (Just x,xs)
-		       xs     -> (Nothing,xs)
-	    san      = case msa of
-		       Nothing -> empty
-		       Just a  -> pf ga a 
-	    as' = if null as then empty else pf ga as
-        in keyw `beside_` san $+$ as' $+$ i'

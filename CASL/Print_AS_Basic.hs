@@ -45,7 +45,7 @@ instance PrettyPrint BASIC_ITEMS where
     printText0 ga (Sig_items s) = printText0 ga s
     printText0 ga (Free_datatype l _) = 
 	hang (ptext freeS <+> ptext typeS<>pluralS_doc l) 4 $ 
-	     semiAnno printText0 ga l
+	     semiAnno_text ga l
     printText0 ga (Sort_gen l _) = 
 	hang (ptext generatedS <+> condTypeS) 4 $ 
 	     condBraces (vcat (map (printText0 ga) l))
@@ -57,7 +57,8 @@ instance PrettyPrint BASIC_ITEMS where
 		     case l of
 		     [x] -> case x of
 			    Annoted (Datatype_items l' _) _ lans _ -> 
-				printText0 ga lans $$ semiAnno printText0 ga l'
+				vcat (map (printText0 ga) lans) 
+					 $$ semiAnno_text ga l'
 			    _ -> error "wrong implementation of isOnlyDatatype"
                      _ -> error "wrong implementation of isOnlyDatatype"
 		  else braces d
@@ -80,7 +81,7 @@ instance PrettyPrint BASIC_ITEMS where
 	hang_latex (hc_sty_plain_keyword "free"
 		    <~> setTab_latex
 		    <> hc_sty_plain_keyword ("type"++ pluralS l)) 9 $
-	           tabbed_nest_latex $ semiAnno_latex printLatex0 ga l
+	           tabbed_nest_latex $ semiAnno_latex ga l
     printLatex0 ga (Sort_gen l _) = 
 	hang_latex (hc_sty_plain_keyword generatedS 
 		    <~> setTab_latex<> condTypeS) 9 $ 
@@ -95,8 +96,8 @@ instance PrettyPrint BASIC_ITEMS where
 		     case l of
 		     [x] -> case x of
 			    Annoted (Datatype_items l' _) _ lans _ -> 
-				printLatex0 ga lans $$ 
-					    semiAnno_latex printLatex0 ga l'
+				vcat (map (printLatex0 ga) lans) 
+					 $$ semiAnno_latex ga l'
 			    _ -> error "wrong implementation of isOnlyDatatype"
                      _ -> error "wrong implementation of isOnlyDatatype"
 		  else braces_latex d
@@ -117,26 +118,26 @@ instance PrettyPrint BASIC_ITEMS where
 
 instance PrettyPrint SIG_ITEMS where
     printText0 ga (Sort_items l _) =  
-	text sortS<>pluralS_doc l <+> semiAnno printText0 ga l
+	text sortS<>pluralS_doc l <+> semiAnno_text ga l
     printText0 ga (Op_items l _) =  
-	text opS<>pluralS_doc l <+> semiAnno printText0 ga l 
+	text opS<>pluralS_doc l <+> semiAnno_text ga l 
     printText0 ga (Pred_items l _) =  
-	text predS<>pluralS_doc l <+> semiAnno printText0 ga l 
+	text predS<>pluralS_doc l <+> semiAnno_text ga l 
     printText0 ga (Datatype_items l _) = 
-	text typeS<>pluralS_doc l <+> semiAnno printText0 ga l 
+	text typeS<>pluralS_doc l <+> semiAnno_text ga l 
 
     printLatex0 ga (Sort_items l _) =  
 	hc_sty_casl_keyword (sortS++pluralS l) <\+>
-	set_tabbed_nest_latex (semiAnno_latex printLatex0 ga l)
+	set_tabbed_nest_latex (semiAnno_latex ga l)
     printLatex0 ga (Op_items l _) =  
 	hc_sty_casl_keyword (opS++pluralS l)   <\+> 
-	set_tabbed_nest_latex (semiAnno_latex printLatex0 ga l) 
+	set_tabbed_nest_latex (semiAnno_latex ga l) 
     printLatex0 ga (Pred_items l _) =  
 	hc_sty_casl_keyword (predS++pluralS l) <\+> 
-	set_tabbed_nest_latex (semiAnno_latex printLatex0 ga l) 
+	set_tabbed_nest_latex (semiAnno_latex ga l) 
     printLatex0 ga (Datatype_items l _) = 
 	hc_sty_casl_keyword (typeS++pluralS l) <\+> 
-	set_tabbed_nest_latex (semiAnno_latex printLatex0 ga l) 
+	set_tabbed_nest_latex (semiAnno_latex ga l) 
 
 instance PrettyPrint SORT_ITEM where
     printText0 ga (Sort_decl l _) = commaT printText0 ga l
@@ -739,7 +740,7 @@ print_Literal pf parens_fun
 			      (openL, closeL) = listBrackets ga
 			  in hcat(map (pf ga) openL) <+> list_body 
 			     <+> hcat(map (pf ga) closeL)
-    | isString ga li ts = pf ga $ 
+    | isString ga li ts = ptext $ 
 			  (\s -> let r = '"':(s ++ "\"") in seq r r) $ 
 			  concatMap convCASLChar $ toksString li
 {- -> condPrint_Mixfix pf parens_fun

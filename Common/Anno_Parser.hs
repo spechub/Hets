@@ -14,7 +14,7 @@ module Common.Anno_Parser where
 import Common.Lib.Parsec hiding (label)
 import Common.Lib.Parsec.Error
 import Common.Lib.Parsec.Pos
-import Common.Lib.Parsec.Perm
+-- import Common.Lib.Parsec.Perm
 
 import Common.Lexer
 import Common.Token
@@ -196,15 +196,15 @@ literal_anno con cnt conStr =
 
 display_anno :: GenParser Char st Annotation
 display_anno = do ident <- casl_id
-		  tls <- permute ( mklst <$?> (disp_symb "HTML")
+		  tls <- {- permute ( mklst <$?> (disp_symb "HTML")
 				         <|?> (disp_symb "LATEX")
-				         <|?> (disp_symb "RTF") )
-		         {- many (disp_symb "HTML"
+				         <|?> (disp_symb "RTF") ) -}
+		         many (disp_symb "HTML"
 			       <|> disp_symb "LATEX"
-			       <|> disp_symb "RTF")   -}
+			       <|> disp_symb "RTF")   
 		  return (Display_anno ident tls [])
     where mklst a b c = [a,b,c] 
-	  disp_symb sym = ((ready_symb,""), -- default for optional ParsecPerm
+	  disp_symb sym = ( -- (ready_symb,""), default for optional ParsecPerm
 				 do symb <- lexeme (try (string 
 							   ready_symb))
 				    str <- manyTill anyChar $ charOrEof '%'

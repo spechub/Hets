@@ -93,23 +93,18 @@ semiT pf ga l = fsep $ punctuate semi $ map (pf ga) l
 
 crossT pf ga l = fsep $ punctuate (space<>char '*') $ map (pf ga) l
 
-semiAnno :: (PrettyPrint a) => 
-	    (forall b .PrettyPrint b => GlobalAnnos -> b -> Doc) ->  
-	    GlobalAnnos -> [Annoted a] -> Doc
-semiAnno pf ga l = if null l then 
-		   empty 
-		else 
-		   vcat $ map (pf' True)
-		              (init l) ++ [pf' False (last l)]
-    where pf' printSemi a_item =
-	      if printSemi 
-	      then
-	         pf ga (l_annos a_item)
-			$$ pf ga (item a_item) <> semi 
-			       <+>pf ga (r_annos a_item)
-	      else 
-	         pf ga (l_annos a_item) 
-			$$ pf ga (item a_item) <+> pf ga (r_annos a_item) 
+semiAnno_text :: (PrettyPrint a) => 
+		 GlobalAnnos -> [Annoted a] -> Doc
+semiAnno_text ga l = noPrint (null l)
+		     (vcat $ map (pf' True)
+		      (init l) ++ [pf' False (last l)])
+    where pfga as = vcat $ map (printText0 ga) as
+	  pf' printSemi a_item =
+	         pfga (l_annos a_item)
+			$$ printText0 ga (item a_item)
+			       <> noPrint (not printSemi) semi
+			       <+> pfga (r_annos a_item)
+
 --------------------------------------------------------------------
 
 -- | 
@@ -127,22 +122,16 @@ crossT_latex pf ga l =
 	       map (pf ga) l
 
 semiAnno_latex :: (PrettyPrint a) => 
-		  (forall b .PrettyPrint b => GlobalAnnos -> b -> Doc) ->  
 		  GlobalAnnos -> [Annoted a] -> Doc
-semiAnno_latex pf ga l = if null l then 
-		   empty 
-		else 
-		   vcat $ map (pf' True)
-		              (init l) ++ [pf' False (last l)]
-    where pf' printSemi a_item =
-	      if printSemi 
-	      then
-	         pf ga (l_annos a_item)
-			$$ pf ga (item a_item) <> semi_latex
-			       <\+> pf ga (r_annos a_item)
-	      else 
-	         pf ga (l_annos a_item) 
-			$$ pf ga (item a_item) <\+> pf ga (r_annos a_item) 
+semiAnno_latex ga l = noPrint (null l)
+		   (vcat $ map (pf' True)
+		              (init l) ++ [pf' False (last l)])
+    where pfga as = vcat $ map (printLatex0 ga) as
+	  pf' printSemi a_item =
+	         pfga (l_annos a_item)
+			$$ printLatex0 ga (item a_item)
+			   <> noPrint (not printSemi) semi_latex 
+			       <\+> pfga (r_annos a_item)
 
 hc_sty_casl_keyword :: String -> Doc
 hc_sty_casl_keyword = hc_sty_keyword (Just "preds")
