@@ -5,10 +5,13 @@ version 0.9
 %% date: 17.09.02
 
 %left_assoc __intersection__  %[ Should go to StructuredDatatypes ]%
+%left_assoc __+__
 
 %prec({__isIn__, __subset__, __disjoint__,__ :: __ --> __} 
 		 < {__union__, __intersection__, __\\__, __*__, 
 		    __disjointUnion__} )%
+
+%prec {__+__} < {__*__,__div__}
 
 %%from Basic/StructuredDatatypes get List
 %%from Basic/Numbers get Nat
@@ -20,7 +23,13 @@ spec Bool =
   ops false, true : Bool;
 end
 
-spec Nat = {}
+spec Nat = 
+  sort Nat
+  ops __+__,__*__,__div__ : Nat*Nat->Nat;
+      0,1,2 : Nat
+  pred __<__ : Nat*Nat;
+end
+
 spec List = {}
 spec InternalLogic = {}
 
@@ -137,7 +146,7 @@ end
 
 %{ Some sample set representation for the natural numbers ... }%
 spec Nat_SetRepresentation =
-  Map and Nat
+  Map and Nat and Relation
 then
   ops pair : Nat*Nat->Nat;   
       inl,inr : Nat->Nat; 

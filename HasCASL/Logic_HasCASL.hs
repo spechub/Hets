@@ -85,6 +85,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     induced_from_to_morphism HasCASL _ e1 e2 = return $ mkMorphism e1 e2
     induced_from_morphism HasCASL _ e = return $ ideMor e
     morphism_union HasCASL m1 m2 = morphismUnion m1 m2
+    inclusion HasCASL = inclusionMor
 
     cogenerated_sign HasCASL _ e = return $ ideMor e
 

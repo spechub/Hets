@@ -85,6 +85,9 @@ ideMor e = mkMorphism e e  -- plus identity functions
 compMor :: Morphism -> Morphism -> Morphism
 compMor m1 m2 = Morphism (msource m1) (mtarget m2) -- plus composed functions
 
+inclusionMor :: Env -> Env -> Result Morphism
+inclusionMor e1 e2 = return (mkMorphism e1 e2)
+
 legalEnv :: Env -> Bool
 legalEnv _ = True -- maybe a closure test?
 legalMor :: Morphism -> Bool

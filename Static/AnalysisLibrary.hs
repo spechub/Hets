@@ -221,10 +221,12 @@ ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
   G_sign lidT sigmaT <- return gsigmaT
   gsis1 <- homogenize (Logic lidS) gsis
   G_symb_map_items_list lid sis <- return gsis1
-  rmap <- stat_symb_map_items lid sis
   sigmaS' <- rcoerce lid lidS (headPos pos) sigmaS
   sigmaT' <- rcoerce lid lidT (headPos pos) sigmaT
-  mor <- induced_from_to_morphism lid rmap sigmaS' sigmaT'
+  mor <- if just_struct then return (ide lid sigmaS')
+           else do
+             rmap <- stat_symb_map_items lid sis
+             induced_from_to_morphism lid rmap sigmaS' sigmaT'
   nodeS <- maybeToResult nullPos 
          "Internal error: empty source spec of view" (getNode src)
   nodeT <- maybeToResult nullPos 

@@ -53,9 +53,12 @@
    Revealings wihout translations: just one arrow
 
    Pushouts: only admissible within one logic?
+   Instantiations with formal parameter: add no new internal nodes
+    call extend_morphism
 
    Optimizations:
    Union nodes can be extended by a basic spec directly (no new node needed)
+   no new nodes for trivial translations
    Also: free, cofree nodes
 -}
 
@@ -126,7 +129,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
       (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp
       n' <- maybeToResult nullPos 
               "Internal error: Translation of empty spec" (getNode nsig')
-      mor <- ana_RENAMING dg (getSig nsig') ren
+      let gsigma = getSig nsig'
+      mor <- ana_RENAMING dg gsigma just_struct ren
       -- ??? check that mor is identity on local env
       let gsigma' = cod Grothendieck mor 
            -- ??? too simplistic for non-comorphism inter-logic translations 
@@ -153,7 +157,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
           gsigma' = getSig nsig'
       n' <- maybeToResult nullPos 
              "Internal error: Reduction of empty spec" (getNode nsig')
-      (hmor,tmor) <- ana_RESTRICTION dg gsigma gsigma' restr
+      (hmor,tmor) <- ana_RESTRICTION dg gsigma gsigma' just_struct restr
       -- we treat hiding and revealing differently
       -- in order to keep the dg as simple as possible
       case tmor of
@@ -322,12 +326,15 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
       let sys = sym_of lid sigma
           sys1 = sym_of lid sigma1
           sys2 = sym_of lid sigma2
-      mor3 <- cogenerated_sign lid (Set.toList (sys1 `Set.difference` sys)) sigma2
+      mor3 <- if just_struct then return (ide lid sigma2)
+               else cogenerated_sign lid 
+                      (Set.toList (sys1 `Set.difference` sys)) sigma2
       let sigma3 = dom lid mor3
           gsigma2 = G_sign lid sigma2
           gsigma3 = G_sign lid sigma3
           sys3 = sym_of lid sigma3
-      if sys2 `Set.difference` sys1 `Set.subset` sys3 then return ()
+      if just_struct || sys2 `Set.difference` sys1 `Set.subset` sys3 
+        then return ()
         else plain_error () 
          "attempt to hide symbols from the local environment" (headPos pos)
       let node_contents = DGNode {
@@ -582,9 +589,11 @@ ana_ren dg mor_res ren =
   do mor <- mor_res
      ana_ren1 dg mor ren
 
-ana_RENAMING :: DGraph -> G_sign -> RENAMING -> Result GMorphism
-ana_RENAMING dg gSigma (Renaming ren pos) = 
-  foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
+ana_RENAMING :: DGraph -> G_sign -> Bool -> RENAMING -> Result GMorphism
+ana_RENAMING dg gSigma just_struct (Renaming ren pos) = 
+  if just_struct 
+     then return (ide Grothendieck gSigma)
+     else foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
   where
   ren' = zip ren (tail (pos ++ repeat nullPos))
 
@@ -621,9 +630,11 @@ ana_restr dg gSigma mor_res restr =
   do mor <- mor_res
      ana_restr1 dg gSigma mor restr
 
-ana_RESTRICTION :: DGraph -> G_sign -> G_sign -> RESTRICTION 
+ana_RESTRICTION :: DGraph -> G_sign -> G_sign -> Bool -> RESTRICTION 
        -> Result (GMorphism, Maybe GMorphism)
-ana_RESTRICTION dg gSigma gSigma' (Hidden restr pos) = 
+ana_RESTRICTION _ _ gSigma True _ =
+  return (ide Grothendieck gSigma,Nothing)
+ana_RESTRICTION dg gSigma gSigma' False (Hidden restr pos) = 
   do mor <- foldl (ana_restr dg gSigma) 
                   (return (ide Grothendieck gSigma'))
                   restr'
@@ -631,7 +642,7 @@ ana_RESTRICTION dg gSigma gSigma' (Hidden restr pos) =
   where
   restr' = zip restr (tail (pos ++ repeat nullPos))
 ana_RESTRICTION dg gSigma@(G_sign lid sigma) gSigma'@(G_sign lid' sigma') 
-     (Revealed (G_symb_map_items_list lid1 sis) pos) = 
+     False (Revealed (G_symb_map_items_list lid1 sis) pos) = 
   do let sys = sym_of lid sigma
          sys' = sym_of lid' sigma'
      sis' <- rcoerce lid1 lid' (headPos pos) sis
@@ -665,11 +676,13 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
    G_sign lidA sigmaA <- return gsigmaA
    G_sign lidI sigmaI <- return gsigmaI
    G_symb_map_items_list lid sis <- return gsis
-   rmap <- stat_symb_map_items lid sis
    sigmaA' <- rcoerce lidA lidP (headPos pos) sigmaA
    sigmaI' <- rcoerce lidI lidP (headPos pos) sigmaI
-   rmap' <- rcoerce lid lidP (headPos pos) rmap
-   mor <- induced_from_to_morphism lidP rmap' sigmaP sigmaA'
+   mor <- if just_struct then return (ide lidP sigmaP)
+           else do
+             rmap <- stat_symb_map_items lid sis
+             rmap' <- rcoerce lid lidP (headPos pos) rmap
+             induced_from_to_morphism lidP rmap' sigmaP sigmaA'
    let symI = sym_of lidP sigmaI'
        symmap_mor = symmap_of lidP mor
    -- are symbols of the imports left untouched?
