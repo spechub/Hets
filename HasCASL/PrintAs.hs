@@ -48,10 +48,10 @@ printKind ga kind = case kind of
 			      _ -> space <> colon <> printText0 ga kind
 
 instance PrettyPrint Type where 
-    printText0 ga (TypeName name _k i) = printText0 ga name 
+    printText0 ga (TypeName name _k _i) = printText0 ga name 
 --					<> printKind ga k
-    					<> if i == 0 then empty 
-					   else parens (int i)
+--    					<> if i == 0 then empty 
+--					   else parens (int i)
     printText0 ga (TypeAppl t1 t2) = parens (printText0 ga t1) 
     			  <> parens (printText0 ga t2) 
     printText0 ga (TypeToken t) = printText0 ga t
