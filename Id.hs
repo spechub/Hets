@@ -123,23 +123,28 @@ isMixfix :: Id -> Bool
 isMixfix (Id tops _ _) = any isPlace tops 
 
 isPrefix :: Id -> Bool
-isPrefix (Id tops _ _) = (not . isPlace . head) tops 
-			 && (isPlace . last) tops 
+isPrefix (Id tops _ _) =    (not . isPlace . head) tops 
+			 && (isPlace . last)       tops 
 
 isPostfix :: Id -> Bool
-isPostfix (Id tops _ _) = (isPlace . head) tops 
+isPostfix (Id tops _ _) =    (isPlace . head)       tops 
 			  && (not . isPlace . last) tops 
 
 isInfix2 :: Id -> Bool
 isInfix2 (Id tops _ _)
-    | length tops == 3 = (isPlace . head) tops 
+    | length tops == 3 =    (isPlace . head) tops 
 			 && (isPlace . last) tops
 			 && (not . isPlace . head . tail) tops
     | otherwise = False
 
 isInfix :: Id -> Bool
-isInfix (Id tops _ _) = (isPlace . head) tops 
+isInfix (Id tops _ _) =    (isPlace . head) tops 
 			&& (isPlace . last) tops
+
+isSurround :: Id -> Bool
+isSurround i@(Id tops _ _) =    (not . isPlace . head) tops 
+			     && (not . isPlace . last) tops
+			     && (isMixfix i)
 
 isCompound :: Id -> Bool
 isCompound (Id _ cs _) = not $ null cs
