@@ -198,8 +198,8 @@ translateType t = case t of
   MixfixType _ -> error ("unexpected type (MixfixType): " ++ show t)
   KindedType kt _kind _poslist -> translateType kt
   BracketType _ _ _ -> error ("unexpected type (BracketType): " ++ show t)
-  TypeToken ttok -> HsTyCon (UnQual (HsIdent (tokStr ttok)))
-  --TypeToken _ -> error ("unexpected type (TypeToken): " ++ show t)
+  -- TypeToken ttok -> HsTyCon (UnQual (HsIdent (tokStr ttok)))
+  TypeToken _ -> error ("unexpected type (TypeToken): " ++ show t)
   TypeAppl t1 t2 -> HsTyApp (translateType t1) (translateType t2)
   TypeName tid _kind n -> 
       if n > 0 then
