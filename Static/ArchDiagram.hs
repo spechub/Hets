@@ -16,7 +16,6 @@
 module Static.ArchDiagram 
 where
 
-import Maybe 
 import Logic.Comorphism
 import Logic.Logic
 import Logic.Grothendieck
@@ -24,12 +23,11 @@ import Common.PrettyPrint
 import Common.Lib.Graph
 import Common.Lib.Pretty
 import Static.DevGraph
-import Static.AnalysisStructured
+--import Static.AnalysisStructured
 import Common.Result
 import Common.Id
 import qualified Common.Lib.Graph as Graph
 import qualified Common.Lib.Map as Map
-
 
 -- * Types
 -- (as defined for extended static semantics in Chap. III:5.6.1)

@@ -19,7 +19,6 @@ module Static.AnalysisArchitecture (ana_ARCH_SPEC, ana_UNIT_SPEC)
 where
 
 import Options
-import Maybe 
 import Logic.Logic
 import Logic.Grothendieck
 import Common.Lib.Graph
@@ -36,9 +35,6 @@ import Common.Lib.Graph
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Syntax.Print_AS_Architecture
-import List
--- import Debug.Trace
-
 
 -- | Analyse an architectural specification
 -- @
