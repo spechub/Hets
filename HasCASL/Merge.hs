@@ -21,9 +21,6 @@ import Common.Result
 
 -- for Logic.signature_union
 
-class Mergeable a where
-    merge :: a -> a -> Result a 
-
 instance Mergeable Env where
     merge e1 e2 =
 	do cMap <- merge (classMap e1) $ classMap e2

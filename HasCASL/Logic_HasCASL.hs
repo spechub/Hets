@@ -20,6 +20,7 @@ import HasCASL.AsToLe
 import CASL.AS_Basic_CASL(SYMB_ITEMS, SYMB_MAP_ITEMS)
 import HasCASL.ParseItem
 import HasCASL.Merge
+import Common.Result
 import CASL.SymbolParser
 import Logic.ParsecInterface
 import Logic.Logic

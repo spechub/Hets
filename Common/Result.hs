@@ -42,6 +42,10 @@ instance Monad Result where
      where Result errs2 y = f x
   fail s = fatal_error s nullPos
 
+-- for instance for Logic.signature_union
+class Mergeable a where
+    merge :: a -> a -> Result a 
+
 ioBind :: IO(Result a) -> (a -> IO(Result b)) -> IO(Result b)
 x `ioBind` f = do
   res <- x
