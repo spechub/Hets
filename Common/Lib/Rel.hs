@@ -10,12 +10,13 @@ Portability :  portable
     
 
 supply a simple data type for (precedence or subsort) relations. A
-relation is conceptually a set of (ordered) pairs. 
-But the hidden implementation is based on a map of sets. 
-An alternative view is that of a directed Graph without isolated nodes.
+relation is conceptually a set of (ordered) pairs,
+but the hidden implementation is based on a map of sets. 
+An alternative view is that of a directed Graph 
+viewing (possibly isolated) nodes separately.
 
-'Rel' replaces a directed graph with unique node labels (Ord a) and
-unlabelled edges (without multiplicity higher than one).
+'Rel' is a directed graph with elements (Ord a) as (uniquely labelled) nodes 
+and (unlabelled) edges (with a multiplicity of at most one).
 
 Usage: start with an 'empty' relation, 'insert' edges, and test for
 an edge 'member' (before or after calling 'transClosure'). 
@@ -23,21 +24,24 @@ an edge 'member' (before or after calling 'transClosure').
 It is possible to insert self edges or bigger cycles.
 
 Checking for a 'path' corresponds to checking for a member in the 
-transitive closure. A further 'insert', however,
+transitive (possibly non-reflexive) closure. A further 'insert', however,
 may destroy the closedness property of a relation.
 
+Some parts are adapted from D. King, J. Launchbury 95: 
+   Structuring depth-first search algorithms in Haskell.
 -}
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
                        union , subset, difference, path,
                        transClosure, fromList, toList, image,
                        restrict, toSet, fromSet, topSort, 
-                       transpose, connComp) where
+                       transpose, connComp, collaps) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Data.List(groupBy)
 
-data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
+data Rel a = Rel (Map.Map a (Set.Set a)) deriving Eq
 
 -- | the empty relation
 empty :: Rel a
@@ -45,45 +49,47 @@ empty = Rel Map.empty
 
 -- | test for 'empty'
 isEmpty :: Rel a -> Bool
-isEmpty = Map.isEmpty . toMap 
+isEmpty (Rel m) = Map.isEmpty m
 
--- | difference of two relations as set of pairs
+-- | map without emoty successors
+toMap :: Ord a => Rel a -> Map.Map a (Set.Set a)
+toMap (Rel m) = Map.filter (not . Set.isEmpty) m
+
+-- | difference of two relations
 difference :: Ord a => Rel a -> Rel a -> Rel a
-difference a b = fromSet $ Set.difference  (toSet a) $ toSet b
+difference a b = Set.fold insertNode 
+                 (fromSet $ Set.difference  (toSet a) $ toSet b)
+                 $ Set.difference (nodeSet a) $ nodeSet b
 
--- | union of two relations as set of pairs
+-- | union of two relations
 union :: Ord a => Rel a -> Rel a -> Rel a
-union a b = fromSet $ Set.union (toSet a) $ toSet b
+union a b = Set.fold insertNode (fromSet $ Set.union (toSet a) $ toSet b)
+            $ Set.union (nodeSet a) $ nodeSet b
 
--- | is the first relation a subset of the second (viewed as set of pairs)
+-- | is the first relation a subset of the second
 subset :: Ord a => Rel a -> Rel a -> Bool
-subset a b = Set.subset (toSet a) $ toSet b
+subset a b = Set.subset (nodeSet a) (nodeSet b) 
+             && Set.subset (toSet a) (toSet b)
 
 -- | insert an ordered pair
 insert :: Ord a => a -> a -> Rel a -> Rel a
-insert a b = let update = Map.setInsert a b in Rel . update . toMap
+insert a b (Rel m) = insertNode b $ Rel $ Map.setInsert a b m 
 
 -- | test for an (previously inserted) ordered pair
 member :: Ord a => a -> a -> Rel a -> Bool
 member a b r = Set.member b $ getDAdjs r a
 
--- | get direct right neighbours   
+-- | get direct successors
 getDAdjs :: Ord a => Rel a -> a -> Set.Set a
-getDAdjs r a = Map.findWithDefault Set.empty a $ toMap r
+getDAdjs (Rel m) a = Map.findWithDefault Set.empty a m
 
--- | test for 'member' or transitive membership
+-- | test for 'member' or transitive membership (non-empty path)
 path :: Ord a => a -> a -> Rel a -> Bool
 path a b r = Set.member b $ reachable r a
 
 -- | compute transitive closure (make all transitive members direct members)
 transClosure :: Ord a => Rel a -> Rel a
-transClosure r = Rel $ Map.mapWithKey ( \ k _ ->  reachable r k) $ toMap r
-
-{- adapted from D. King, J. Launchbury 95: 
-   Structuring depth-first search algorithms in Haskell.
-   (using Common.Lib.State and foldM makes it longer
-
--}
+transClosure r@(Rel m) = Rel $ Map.mapWithKey ( \ k _ ->  reachable r k) m
 
 data Tree a = Node a [Tree a] deriving Show
 
@@ -106,11 +112,12 @@ dfs r = snd . dfsF r Set.empty
 
 -- | get dfs forest of a relation 
 dff :: Ord a => Rel a -> [Tree a]
-dff r = dfs r $ Map.keys $ toMap r
+dff r@(Rel m) = dfs r $ Map.keys m
 
 -- | get reverse relation
 transpose :: Ord a => Rel a -> Rel a 
-transpose = fromList . map (\ (a, b) -> (b, a)) . toList 
+transpose r = let (ns, es) = toGraph r in 
+    fromGraph (ns, map (\ (a, b) -> (b, a)) $ es)
 
 flatT :: Ord a => Tree a -> Set.Set a
 flatT (Node v ts) = Set.insert v $ flatF ts
@@ -141,6 +148,14 @@ connComp r = Rel $ foldr (\ t m ->
                     let s = flatT t in 
                     Map.insert (Set.findMin s) s m) Map.empty $ scc r
 
+-- | collaps strongly connected components to its minimal representative
+collaps :: Ord a => Rel a -> Rel a
+collaps r@(Rel m) = 
+    let Rel rs = transpose $ connComp r
+        f e = Map.findWithDefault e e $ Map.map Set.findMin rs
+        in Rel $ Map.map (Set.image f) $ 
+           Map.foldWithKey (Map.insertWith Set.union . f) Map.empty m
+
 {-
 -- | transitive reduction (minimal relation with the same transitive closure)
 transReduce :: Ord a => Rel a -> Rel a
@@ -151,38 +166,64 @@ fromList :: Ord a => [(a, a)] -> Rel a
 fromList = foldr (\ (a, b) -> insert a b) empty
 
 -- | convert a relation to a list of ordered pairs
-toList ::  Ord a => Rel a -> [(a, a)]
-toList = concatMap (\ (a , bs) -> map ( \ b -> (a, b) ) (Set.toList bs)) 
-         . Map.toList . toMap
+toList :: Rel a -> [(a, a)]
+toList (Rel m) = concatMap (\ (a , bs) -> map ( \ b -> (a, b) ) 
+                            (Set.toList bs)) $ Map.toList m
+
+-- | nodes of a graph (including isolated ones)
+nodes :: Rel a -> [a]
+nodes (Rel m) = Map.keys m
+
+-- | all nodes of a graph as a set
+nodeSet :: Rel a -> Set.Set a
+nodeSet = Set.fromDistinctAscList . nodes
+
+-- | nodes without successors
+leaves :: Ord a => Rel a -> [a]
+leaves (Rel m) = Map.keys $ Map.filter Set.isEmpty m
+
+-- | isolated Nodes
+isolated :: Ord a => Rel a -> Set.Set a
+isolated r@(Rel m) = Set.difference 
+    (Set.fromDistinctAscList $ leaves r) $ Set.unions $ Map.elems m
+
+-- | the list of nodes and edges
+toGraph :: Rel a -> ([a], [(a, a)])
+toGraph r = (nodes r, toList r) 
+
+-- | insert a node without successors (no change if node is known)
+insertNode :: Ord a => a -> Rel a -> Rel a
+insertNode n r@(Rel m) = 
+    if Map.member n m then r else Rel $ Map.insert n Set.empty m
+
+-- | construct a graph from edges and add further isolated nodes
+fromGraph :: Ord a => ([a], [(a, a)]) -> Rel a
+fromGraph (ns, es) = foldr insertNode (fromList es) ns
 
 instance (Show a, Ord a) => Show (Rel a) where
-    show = show . Set.fromList . toList
+    showsPrec _ r = let is = isolated r in 
+        (shows $ Set.fromDistinctAscList $ toList r)
+            . if Set.isEmpty is then id else shows is
 
 {--------------------------------------------------------------------
   Image (Added by T.M.) (implementation changed by C.M.)
 --------------------------------------------------------------------}
 -- | Image of a relation under a function
 image :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
-image f = fromSet . Set.image ( \ (a, b) -> (f a, f b)) . toSet
+image f r = let (ns, es) = toGraph r in 
+    fromGraph (map f ns, map ( \ (a, b) -> (f a, f b)) es)
+
 
 {--------------------------------------------------------------------
   Restriction (Added by T.M.)
 --------------------------------------------------------------------}
 -- | Restriction of a relation under a set
 restrict :: Ord a => Rel a -> Set.Set a -> Rel a
-restrict r s = 
-  Rel
-  $
-  Map.foldWithKey
-  (\a ra -> if a `Set.member` s 
-             then case ra `Set.intersection` s of 
-                    ra_s -> if Set.isEmpty ra_s 
-                             then id
-                             else Map.insert a ra_s
-             else id)
-  Map.empty
-  $
-  toMap r
+restrict (Rel m) s = Rel $ Map.foldWithKey
+                     (\a ra -> if a `Set.member` s 
+                      then Map.insert a $ Set.intersection ra s
+                      else id) Map.empty m
+
 
 {--------------------------------------------------------------------
  Conversion from/to sets (Added by T.M.)(implementation changed by C.M.)
@@ -193,7 +234,15 @@ toSet = Set.fromDistinctAscList . toList
 
 -- | convert a set of ordered pairs to a relation 
 fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
-fromSet = Set.fold (\ (a, b) -> insert a b) empty
+fromSet s = let r@(Rel m) = fromAscList  $ Set.toList s
+                ns = Set.unions $ Map.elems m
+                -- | convert a sorted list of ordered pairs to a relation 
+                fromAscList :: (Ord a) => [(a, a)] -> Rel a
+                fromAscList = Rel . Map.fromDistinctAscList 
+                    . map ( \ l -> (fst (head l), 
+                                    Set.fromDistinctAscList $ map snd l))
+                          . groupBy ( \ (a, _) (b, _) -> a == b)
+                in Set.fold insertNode r ns
 
 -- | topological sort a relation (more efficient for a closed relation)
 topSort :: Ord a => Rel a -> [Set.Set a]
