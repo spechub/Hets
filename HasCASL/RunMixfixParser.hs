@@ -72,7 +72,8 @@ resolveTerm ga = do
 	   prec@(_, _, m) = mkPrecIntMap $ prec_annos newGa
            chart = evalState (iterateCharts newGa [trm] $ 
 			      initChart (listRules m newGa ++
-					 initTermRules (prec, stdPreds) ids)
+					 initRules (prec, stdPreds) 
+					 builtinIds (Set.toList ids))
 			      Set.empty) 
 		   initialEnv { preIds = (prec, stdPreds) }
        return $ getResolved showPretty (posOfTerm trm) 

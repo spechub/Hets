@@ -19,7 +19,7 @@ program __ or __ (x, y : (? Unit)) : ? Unit : ? Unit =
 	all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
 	ex (p : (? s)) : (? Unit) =
 	all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
-	ff () : ? Unit : ? Unit = all (\ r : (? Unit) . r ())
+	ff () : (? Unit) = all (\ r : (? Unit) . r ())
 forall x : t; y : t
 . %(..)%
   (fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
@@ -161,8 +161,12 @@ tt : s ->? Unit %(Op)% = \ (var x : s) . ()
 *** Hint 37.3, wrong result type '? Unit' (37.19)
   for application 'ex (var p : ? s)'
 *** Error 37.3, no typing for 'ex((var p : ? s)) : ? Unit'
-*** Error 40.7, unexpected mixfix token: )
-*** Error 40.3, unexpected term 'ff ()'
-*** Error 40.20, unexpected mixfix token: all
+*** Hint 40.3, no type match for: ff
+  with type: '_var_11 ->? ? Unit' (40.12)
+  known types:
+    
+*** Hint 40.3, wrong result type '? Unit' (40.12)
+  for application 'ff ()'
+*** Error 40.3, no typing for 'ff(()) : ? Unit'
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e

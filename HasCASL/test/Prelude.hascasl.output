@@ -74,8 +74,7 @@ program __ or __ (x, y : Pred Unit) : Pred Unit : Pred Unit =
 	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
 program ex (p : Pred (s)) : Pred Unit =
 	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
-program ff () : Pred Unit : Pred Unit =
-	all (\ r : Pred Unit . r ())
+program ff () : Pred Unit = all (\ r : Pred Unit . r ())
 program neg (r : Pred Unit) : Pred Unit = r impl ff
 %% the type instance for the first "eq" should be "?t" 
 %% this is explicitely enforced by "\ .f(x)"
@@ -112,7 +111,7 @@ type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 type __-->__(c : Cpo)(d : Cpo) < c -->? d
 var f : c --> d; g : c --> d
 program (predfun __<<=__ : forall c : Cpo .  c ×
-					     c ->? Unit) ((var f : _var_83), (var g : _var_84))
+					     c ->? Unit) ((var f : _var_94), (var g : _var_95))
 	= f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op Y : (p -->? p) --> p
@@ -269,9 +268,13 @@ tt : forall s : Type .  Pred s %(Op)% = \ (var x : s) . ()
 *** Hint 98.9, wrong result type 'Pred Unit' (98.27)
   for application 'ex (var p : Pred s)'
 *** Error 98.9, no typing for 'ex((var p : Pred s)) : Pred Unit'
-*** Error 101.13, unexpected mixfix token: )
-*** Error 101.9, unexpected term 'ff ()'
-*** Error 101.29, unexpected mixfix token: all
+*** Hint 101.9, no type match for: ff
+  with type: '_var_61 ->? Pred Unit' (101.17)
+  known types:
+    
+*** Hint 101.9, wrong result type 'Pred Unit' (101.17)
+  for application 'ff ()'
+*** Error 101.9, no typing for 'ff(()) : Pred Unit'
 *** Hint 103.9, no type match for: neg
   with type: '_var_62 ->? Pred Unit' (103.30)
   known types:
@@ -318,15 +321,29 @@ tt : forall s : Type .  Pred s %(Op)% = \ (var x : s) . ()
 *** Error 172.28, unexpected mixfix token: isChain
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
-*** Error 176.16, unexpected mixfix token: [
+*** Hint 10.18, no type match for: __::__
+  with type: '_var_93 ->? _var_92 ->? _var_83'
+  known types:
+    
+*** Hint 10.18, wrong result type '_var_92 ->? _var_83'
+  for application '(__::__) (c((var -->? : _var_84)) (var d : _var_85), ([]))'
+*** Hint 10.18, wrong result type '_var_83'
+  for application '(__::__)(c((var -->? : _var_84)) (var d : _var_85),
+	 ([])) (var g : _var_86)'
+*** Error 176.13, wrongly typed application '(__<<=__) ((var f : _var_83),
+	   (__::__)(c((var -->? : _var_84)) (var d : _var_85),
+		    ([])) (var g : _var_86))'
+*** Error 176.13, no typing for '(__<<=__)((var f : _var_83),
+	  (__::__)(c((var -->? : _var_84)) (var d : _var_85),
+		   ([])) (var g : _var_86))'
 *** Error 181.9, incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
 
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
-*** Error , unknown type '_var_83'
-*** Error , unknown type '_var_84'
+*** Error , unknown type '_var_94'
+*** Error , unknown type '_var_95'
 *** Error 186.20, unexpected mixfix token: f
 *** Error 190.9, incompatible kind of: p -->? p
   expected: Cpo-

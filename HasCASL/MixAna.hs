@@ -45,16 +45,6 @@ getIdPrec (pm, r, m) ps i =  Map.findWithDefault
     (if begPlace i || endPlace i then if Set.member i ps then r else m - 1
      else m + 1) i pm
 					 
-initTermRules ::  (PrecMap, Set.Set Id) -> Set.Set Id -> [Rule]
-initTermRules (pm@(_, _, m), ps) is = 
-    (map ( \ i -> mixRule (getIdPrec pm ps i) i) 
-	    (Set.toList
-	     (Set.fromDistinctAscList 
-	      [unitId, parenId, tupleId, exprId, typeId, applId] 
-	      `Set.union` is))) ++
-    (map ( \ i -> (protect i, m, getPlainTokenList i)) 
-	    (filter isMixfix $ Set.toList is))
-
 addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps 
 addType (TypedTerm _ q ty ps) p = TypedTerm p q ty ps 
@@ -129,7 +119,7 @@ iterateCharts ga terms chart =
 					     _ -> hd
 		       recurse $ QuantifiedTerm quant (catMaybes newDs) newT ps
 		    LambdaTerm decls part hd ps -> do
-		       mDecls <- mapM (resolveConstrPattern ga) decls
+		       mDecls <- mapM (resolvePattern ga) decls
 		       let newDecls = catMaybes mDecls
 		       l <- mapM extractBindings newDecls
 		       let bs = concatMap snd l
@@ -165,23 +155,10 @@ iterateCharts ga terms chart =
 						      {tokPos = tokPos tok})
 		    _ -> error ("iterCharts: " ++ show t)
 
-resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
-resolve ga trm =
-    do as <- gets assumps
-       ps@((_, _, m), _) <- gets preIds
-       chart<- iterateCharts ga [trm] $ 
-	       initChart (listRules m ga ++ 
-			  (initTermRules ps $ Set.fromDistinctAscList 
-			  $ Map.keys as)) Set.empty
-       let Result ds mr = getResolved showPretty (posOfTerm trm) 
-			  toMixTerm chart
-       addDiags ds
-       return mr
-
 -- * equation stuff 
 resolveCaseEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq) 
 resolveCaseEq ga (ProgEq p t ps) = 
-    do mp <- resolveConstrPattern ga p
+    do mp <- resolvePattern ga p
        case mp of 
            Nothing -> return Nothing
 	   Just np -> do 
@@ -207,7 +184,7 @@ resolveCaseEqs ga (eq:rt) =
 resolveLetEqs :: GlobalAnnos -> [ProgEq] -> State Env [ProgEq]
 resolveLetEqs _ [] = return []
 resolveLetEqs ga (ProgEq pat trm ps : rt) = 
-    do mPat <- resolveConstrPattern ga pat
+    do mPat <- resolvePattern ga pat
        case mPat of 
 	   Nothing -> do resolve ga trm
 			 resolveLetEqs ga rt
@@ -263,31 +240,6 @@ extractBindings pat =
 	 return (AsPattern p3 p4 ps, l1 ++ l2) 
     _ -> return (pat, [])
 
-resolveConstrPattern :: GlobalAnnos -> Pattern
-		     -> State Env (Maybe Pattern)
-resolveConstrPattern ga pat = 
-    do as <- gets assumps
-       let newAs = filterAssumps ( \ o -> case opDefn o of
-					      ConstructData _ -> True
-					      VarDefn -> True
-					      _ -> False) as
-       putAssumps newAs
-       mp <- resolvePattern ga pat
-       putAssumps as
-       return mp
-
-initPatternRules :: (PrecMap, Set.Set Id) -> [Id] -> [Rule]
-initPatternRules (pm, ps) is = 
-    map ( \ i -> mixRule (getIdPrec pm ps i) i) 
-	    ([parenId, tupleId, unknownId, exprId, typeId, applId] 
-	     ++ is) ++
-    map ( \ i -> (protect i, getIdPrec pm ps i,
-		  getPlainTokenList i )) (filter isMixfix is)
-
-addPatternType :: Pattern -> Pattern -> Pattern
-addPatternType (TypedTerm _ q ty ps) p = TypedTerm p q ty ps 
-addPatternType _ _ = error "addPatternType"
-
 
 mkPatAppl :: Pattern -> Pattern -> [Pos] -> Pattern
 mkPatAppl op arg qs = 
@@ -312,16 +264,35 @@ getKnowns (Id ts cs _) = Set.union (Set.fromList (map tokStr ts)) $
 			 Set.unions (map getKnowns cs) 
 
 resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
-resolvePattern ga pat =
+resolvePattern ga = resolver ga (unknownId : builtinIds)
+
+resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
+resolve ga = resolver ga builtinIds
+
+resolver :: GlobalAnnos -> [Id] -> Term 
+	 -> State Env (Maybe Term)
+resolver ga bs trm =
     do as <- gets assumps
-       ps <- gets preIds
-       let ids = Map.keys as 
-	   ks = Set.union (Set.fromList (tokStr exprTok: inS : 
+       ps@((_, _, m), _) <- gets preIds
+       let ids = Map.keys as
+           ks = Set.union (Set.fromList (tokStr exprTok: inS : 
 					 map (:[]) "{}[](),"))
 		    $ Set.unions $ map getKnowns ids
-       chart <- iterateCharts ga [pat] $ initChart (initPatternRules ps ids) ks
-       let Result ds mp =  getResolved showPretty (posOfTerm pat) 
-			   toMixTerm chart
+       chart<- iterateCharts ga [trm] $ 
+	       initChart (listRules (m+2) ga ++ 
+			  (initRules ps bs 
+			  ids)) (if unknownId `elem` bs then ks else Set.empty)
+       let Result ds mr = getResolved showPretty (posOfTerm trm) 
+			  toMixTerm chart
        addDiags ds
-       return mp
+       return mr
 
+builtinIds :: [Id]
+builtinIds = [unitId, parenId, tupleId, exprId, typeId, applId]
+
+initRules ::  (PrecMap, Set.Set Id) -> [Id] -> [Id] -> [Rule]
+initRules (pm@(_, _, m), ps) bs is = 
+    map ( \ i -> mixRule (getIdPrec pm ps i) i) 
+	    (bs ++ is) ++
+    map ( \ i -> (protect i, m + 2, getPlainTokenList i)) 
+	    (filter isMixfix is)
