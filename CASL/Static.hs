@@ -1118,13 +1118,14 @@ ana_BASIC_SPEC sigma (Basic_spec l) = foldM ana_BASIC_ITEMS sigma l
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                  -> Result (Sign,Sign,[(String,Sentence)])
-basicAnalysis (spec,sigma,ga) = -- return(emptySign,emptySign,[])
+basicAnalysis (spec,sigma,ga) = return(emptySign,emptySign,[])
+{-
   do env <- ana_BASIC_SPEC
             (Env "unknown" ga sigma emptySentences emptyGlobal) spec
      let sigma' = getSign env
      let delta  = signDiff sigma' sigma
-     return (sigma', delta,flattenSentences $ getPsi env)
-
+     return (delta, sigma', flattenSentences $ getPsi env)
+-}
 ------------------------------------------------------------------------------
 --
 --                             Static Analysis
@@ -1135,7 +1136,7 @@ basicAnalysis (spec,sigma,ga) = -- return(emptySign,emptySign,[])
 -- FIXME
 --
 signDiff :: Sign -> Sign -> Sign
-signDiff a b = emptySign {getMap = difference (getMap a) (getMap b)}
+signDiff a b = emptySign {getMap = getMap a `difference` getMap b }
 
 checkItem :: Sign -> (Id,SigItem) -> Bool
 checkItem sigma (idt,si) =
