@@ -37,7 +37,7 @@ Jorina
 - Local Subsumption-Regel ausbauen zu Loc-Decomposition (I+II)
     zu einem lokalen Theoremlink alle parallelen "locally reachable" Links (Thm+Def)
     Signaturmorphismen dürfen verschieden sein
-    Ringbeweis-Check, + sich selbst darf er auch nicht nehmen
+  (X)  Ringbeweis-Check, + sich selbst darf er auch nicht nehmen
     prüfen, ob beide die lokalen Axiome des Startknotens gleich abbilden
     Funktion dgn_sens_rekursiv: steigt bei DGRef rekrusiv ab
       (über dgn_libname und dgn_node in anderer Library nachgucken)

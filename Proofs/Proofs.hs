@@ -42,6 +42,8 @@ import Logic.Comorphism
 import Static.DevGraph
 import Common.Result
 import Common.Lib.Graph
+-- neu:
+import Common.Lib.Set (fromList)
 import qualified Common.Lib.Map as Map
 import List(nub)
 import Common.Id
@@ -137,9 +139,7 @@ globDecompAux dgraph (edge:edges) historyElem =
 
   where
     (newDGraph, newChanges) = globDecompForOneEdge dgraph edge
-    newHistoryElem = 
-      if null newChanges then historyElem
-       else (((GlobDecomp edge):(fst historyElem)),
+    newHistoryElem = (((GlobDecomp edge):(fst historyElem)),
 			(newChanges++(snd historyElem)))
 
 -- applies global decomposition to a single edge
@@ -274,8 +274,10 @@ locDecompAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 
   where
     morphism = dgl_morphism edgeLab
-    allPaths = getAllThmDefPathsOfMorphismBetween dgraph morphism src tgt 
-    filteredPaths = [path|path <- allPaths, notElem ledge path]
+    allPaths = getAllLocGlobPathsBetween dgraph src tgt
+    sens = dgn_sens (getNodeLab src dgraph)
+    pathsWithoutEdgeItself = [path|path <- allPaths, notElem ledge path]
+    filteredPaths = filterByTranslation sens morphism pathsWithoutEdgeItself
     proofBasis = selectProofBasis edgeLab filteredPaths
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
@@ -291,6 +293,43 @@ locDecompAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newRules = (LocDecomp ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
+
+{- returns the DGNodeLab of the given node -}
+getNodeLab :: Node -> DGraph -> DGNodeLab
+getNodeLab node dgraph =
+  case nodeLab of
+-- wie bekomme ich mit dem libname den zugehoerigen dgraph??
+  --  (DGRef _ _ _) -> getNodeLab (dgn_node nodeLab) (dgn_libname nodeLab)
+    (DGNode _ _ _ _) -> nodeLab
+
+    where nodeLab = lab' (context node dgraph)
+
+{- removes all paths from the given list of paths whose morphism does not translate the given sentence list to the same resulting sentence list as the given morphism-}
+filterByTranslation :: G_l_sentence_list -> GMorphism -> [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
+filterByTranslation sens morphism paths =
+  [path| path <- paths, isSameTranslation sens morphism path]
+--     isSameTranslation sens morphism (calculateMorphismOfPath path)]
+
+{- checks if the given morphism and the morphism of the given path translate the given sentence list to the same resulting sentence list -}
+isSameTranslation :: G_l_sentence_list -> GMorphism -> [LEdge DGLinkLab] -> Bool
+isSameTranslation sens morphism path =
+  case calculateMorphismOfPath path of
+      Just morphismOfPath -> isSameTranslationAux sens morphism morphismOfPath
+      Nothing -> False
+
+{- checks if the two given morphisms translate the given sentence list to the same resulting sentence list
+if the calculation of one of the resulting sentence lists fails, False is returned -}
+isSameTranslationAux :: G_l_sentence_list -> GMorphism -> GMorphism -> Bool
+isSameTranslationAux sens mor1 mor2 =
+  case maybeResult maybeSens1 of
+    Nothing -> False
+    Just sens1 ->
+      case maybeResult maybeSens2 of
+        Nothing -> False
+        Just sens2 -> eq_G_l_sentence_set sens1 sens2
+  where
+    maybeSens1 = translateG_l_sentence_list mor1 sens
+    maybeSens2 = translateG_l_sentence_list mor2 sens
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
@@ -344,35 +383,23 @@ getAllLocGlobDefPathsTo dgraph node path =
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     locGlobPaths = [(getSourceNode edge, (edge:path))| edge <- localEdges]
 
-{- Benutzung dieser Methode derzeit auskommentiert - wird wahrscheinlich weggeschmissen -}
-{- returns all paths consisting of globalDef and proven global thm edges only
-   or
-   of one localDef or proven local thm followed by any number of globalDef or
-   proven global thm edges-}
-{- getAllProvenLocGlobPathsBetween :: DGraph -> Node -> Node 
-				     -> [[LEdge DGLinkLab]]
-getAllProvenLocGlobPathsBetween dgraph src tgt =
-  getAllLocGlobPathsOfTypesBetween dgraph src tgt 
-    [isLocalDef,isProvenLocalThm] [isGlobalDef,isProvenGlobalThm] -}
 
-{- Benutzung dieser Methode derzeit auskommentiert - wird wahrscheinlich weggeschmissen -}
-{- returns all paths consisting only of edges of the types in the snd list
+{- returns all paths consisting of global edges only
    or
-   of one edge of one of the types of the fst list followed by any number
-   of edges of the types of the snd list -}
-{- getAllLocGlobPathsOfTypesBetween :: DGraph -> Node -> Node -> [LEdge DGLinkLab -> Bool] -> [LEdge DGLinkLab -> Bool] -> [[LEdge DGLinkLab]]
-getAllLocGlobPathsOfTypesBetween dgraph src tgt locTypes globTypes =
+   of one local edge followed by any number of global edges-}
+getAllLocGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
+getAllLocGlobPathsBetween dgraph src tgt =
   locGlobPaths ++ globPaths
 
   where
     outEdges = out dgraph src
-    locEdges = [(edge,getTargetNode edge)|edge <- 
-		(filterByTypes locTypes outEdges)]
+    locEdges = [(edge,target)|edge@(_,target,_) <- 
+		(filterByTypes [isLocalEdge] outEdges)]
     locGlobPaths = (concat [map ([edge]++) 
-		      (getAllPathsOfTypesBetween dgraph globTypes node tgt [])|
+		      (getAllPathsOfTypesBetween dgraph [isGlobalEdge] node tgt [])|
 			 (edge,node) <- locEdges])
-    globPaths = getAllProvenGlobPathsBetween dgraph src tgt
-    -}
+    globPaths = getAllPathsOfTypesBetween dgraph [isGlobalEdge] src tgt []
+
 
 {- returns all paths of globalDef edges or globalThm edges 
    between the given source and target node -}
@@ -477,8 +504,17 @@ isProven :: LEdge DGLinkLab -> Bool
 isProven edge = isGlobalDef edge || isLocalDef edge 
 		|| isProvenGlobalThm edge || isProvenLocalThm edge
 
+isGlobalEdge :: LEdge DGLinkLab -> Bool
+isGlobalEdge edge = isGlobalDef edge || isGlobalThm edge
+
+isLocalEdge :: LEdge DGLinkLab -> Bool
+isLocalEdge edge = isLocalDef edge || isLocalThm edge
+
 isGlobalThm :: LEdge DGLinkLab -> Bool
 isGlobalThm edge = isProvenGlobalThm edge || isUnprovenGlobalThm edge
+
+isLocalThm :: LEdge DGLinkLab -> Bool
+isLocalThm edge = isProvenLocalThm edge || isUnprovenLocalThm edge
 
 isProvenGlobalThm :: LEdge DGLinkLab -> Bool
 isProvenGlobalThm (_,_,edgeLab) =
