@@ -184,6 +184,12 @@ Static analysis of architectural specs
 Till
 ************************************************
 
+CCC interface
+
+comp(id,x)=x fpr comorphism names
+
+Generalie CASL2Modal
+
 - List[Dec] wird List[Pos]
 - George wg. Schlieﬂen von Fenstern
 - node numbers do not match
