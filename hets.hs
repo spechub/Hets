@@ -9,8 +9,8 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   The Main module of the hetcats system. It provides the main function
-   to call.
+   The Main module of the Heterogeneous Tool Set. 
+   It provides the main function to call.
 
 -}
 
@@ -73,7 +73,7 @@ processFile opt file =
 #ifdef UNI_PACKAGE
 			   webInterface str opt 
 #else
-                           fail "No web interface; UNI_PACKAGE option has been disabled"
+                           fail "No web interface; UNI_PACKAGE option has been disabled during compilation of Hets"
 #endif
 		   No   -> return () 
              HaskellIn -> do  
@@ -185,6 +185,8 @@ showGraph file opt env =
             sync(destroyed graph)
             InfoBus.shutdown
             exitImmediately ExitSuccess 
+#else
+            fail "No graph display interface; UNI_PACKAGE option has been disabled during compilation of Hets"
 #endif
         Nothing -> putIfVerbose opt 1
             ("Error: Basic Analysis is neccessary to display "
