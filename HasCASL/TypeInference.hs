@@ -309,36 +309,20 @@ instance Instantiate t => Instantiate (Qual t) where
 instance Instantiate Pred where
   inst ts (IsIn c t) = IsIn c (inst ts t)
 
-newTVars :: Scheme -> TIL [Le.Type]
-newTVars (Scheme ks _) = 
-    TIL (\ (s, n) ->
-    let m = n + length(ks)
-    in [((s, m), 
-	 zipWith (\ k i -> (TVar (Tyvar (enumId i) k))) ks [n .. m - 1])])
-
 type Assumps = FiniteMap Id [Scheme]
 
 lookUp :: Ord a => FiniteMap a [b] -> a -> [b]
 lookUp ce = lookupWithDefaultFM ce [] 
 
--- <type Til = StateT (Subst, Int) []
-
-newtype TIL a = TIL {til :: (Subst, Int) -> [((Subst, Int), a)]}
-
-returnL :: [a] -> TIL a
-returnL l = TIL (\ s -> map (\ x -> (s, x)) l)
-
-instance Monad TIL where
-  return x = returnL [x]
-  f >>= g = TIL $ concatMap (\ (s, x) -> (til $ g x) s) . til f 
-  fail _ = TIL $ const []
+type TIL = StateT (Subst, Int) []
 
 newTVar    :: Le.Kind -> TIL Le.Type
-newTVar k   = TIL (\ (s, n) -> let v = Tyvar (enumId n) k
-                          in  [((s, n+1), TVar v)])
+newTVar k   = do (s, n) <- get
+		 put (s, n + 1)
+		 return $ TVar (Tyvar (enumId n) k)
 
 getSubst   :: TIL Subst
-getSubst    = TIL (\ s -> [(s, fst s)])
+getSubst    = gets fst
 
 unify      :: Le.Type -> Le.Type -> TIL ()
 unify t1 t2 = do s <- getSubst
@@ -346,12 +330,12 @@ unify t1 t2 = do s <- getSubst
                  extSubst u
 
 extSubst   :: Subst -> TIL ()
-extSubst s' = TIL (\ (s, n) -> [((s'@@s, n), ())])
+extSubst s' = modify (\ (s, n) -> (s'@@s, n))
 
 tiTerm :: ClassEnv -> Assumps -> As.Term -> TIL (Qual Le.Type, Le.Term)
 tiTerm _ as (TermToken t) = let i = simpleIdToId t
 			    in 
-			    do sc@(Scheme ks qs) <- returnL (lookUp as i)
+			    do sc@(Scheme ks qs) <- lift (lookUp as i)
 			       ts <- mapM newTVar ks
                                return (inst ts qs, BaseName i sc ts) 
 
