@@ -16,6 +16,5 @@ done
 
 runmycheck MixIds casl
 runwrongcheck MixIds casl
-
 runchecker SortIds MixIds.casl MixIds.casl.asSortIds.output
 runchecker VarIds MixIds.casl MixIds.casl.asVarIds.output 
