@@ -125,11 +125,11 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: (Show f) => MixResolve f -> (f -> Bool) 
+ana_BASIC_SPEC :: PrettyPrint f => (f -> f) -> MixResolve f -> (f -> Bool) 
                -> Ana b f e -> Ana s f e -> GlobalAnnos
                -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
-ana_BASIC_SPEC extR extC ab as ga (Basic_spec al) = fmap Basic_spec $
-      mapAnM (ana_BASIC_ITEMS extR extC ab as ga) al
+ana_BASIC_SPEC par extR extC ab as ga (Basic_spec al) = fmap Basic_spec $
+      mapAnM (ana_BASIC_ITEMS par extR extC ab as ga) al
 
 -- looseness of a datatype
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
@@ -138,13 +138,13 @@ mkForall :: [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
 mkForall vl f ps = if null vl then f else 
                    Quantification Universal vl f ps
 
-ana_BASIC_ITEMS :: Show f => MixResolve f -> (f -> Bool)  
+ana_BASIC_ITEMS :: PrettyPrint f => (f -> f) -> MixResolve f -> (f -> Bool)  
                 -> Ana b f e -> Ana s f e -> GlobalAnnos 
                 -> BASIC_ITEMS b s f -> State (Sign f e) (BASIC_ITEMS b s f)
-ana_BASIC_ITEMS extR extC ab as ga bi = 
+ana_BASIC_ITEMS par extR extC ab as ga bi = 
     case bi of 
     Sig_items sis -> fmap Sig_items $ 
-                     ana_SIG_ITEMS extR extC as ga Loose sis 
+                     ana_SIG_ITEMS par extR extC as ga Loose sis 
     Free_datatype al ps -> 
         do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
            mapM_ addSort sorts
@@ -153,7 +153,7 @@ ana_BASIC_ITEMS extR extC ab as ga bi =
            closeSubsortRel 
            return bi
     Sort_gen al ps ->
-        do (gs,ul) <- ana_Generated extR extC as ga al
+        do (gs,ul) <- ana_Generated par extR extC as ga al
            toSortGenAx ps False 
                 (Set.unions $ map fst gs, Set.unions $ map snd gs)
            return $ Sort_gen ul ps
@@ -167,7 +167,7 @@ ana_BASIC_ITEMS extR extC ab as ga bi =
            put e -- restore 
            let preds = allPredIds e
                newGa = addAssocs ga e
-               rfs = map (resolveFormula extR newGa ops preds . item) afs 
+               rfs = map (resolveFormula par extR newGa ops preds . item) afs 
                ds = concatMap diags rfs
                arfs = zipWith ( \ a m -> case maybeResult m of 
                                 Nothing -> Nothing
@@ -184,7 +184,7 @@ ana_BASIC_ITEMS extR extC ab as ga bi =
         do ops <- gets formulaIds
            preds <- gets allPredIds
            newGa <- gets $ addAssocs ga
-           let rfs = map (resolveFormula extR newGa ops preds . item) afs 
+           let rfs = map (resolveFormula par extR newGa ops preds . item) afs 
                ds = concatMap diags rfs
                arfs = zipWith ( \ a m -> case maybeResult m of 
                                 Nothing -> Nothing
@@ -220,20 +220,20 @@ toSortGenAx ps isFree (sorts, ops) = do
     addSentences [NamedSen ("ga_generated_" ++ 
                          showSepList (showString "_") showId sortList "") f]
 
-ana_SIG_ITEMS :: Show f => MixResolve f -> (f -> Bool)  
+ana_SIG_ITEMS :: PrettyPrint f => (f -> f) -> MixResolve f -> (f -> Bool)  
                 -> Ana s f e -> GlobalAnnos -> GenKind 
                 -> SIG_ITEMS s f -> State (Sign f e) (SIG_ITEMS s f)
-ana_SIG_ITEMS extR extC as ga gk si = 
+ana_SIG_ITEMS par extR extC as ga gk si = 
     case si of 
     Sort_items al ps -> 
-        do ul <- mapM (ana_SORT_ITEM extR extC ga) al 
+        do ul <- mapM (ana_SORT_ITEM par extR extC ga) al 
            closeSubsortRel
            return $ Sort_items ul ps
     Op_items al ps -> 
-        do ul <- mapM (ana_OP_ITEM extR extC ga) al 
+        do ul <- mapM (ana_OP_ITEM par extR extC ga) al 
            return $ Op_items ul ps
     Pred_items al ps -> 
-        do ul <- mapM (ana_PRED_ITEM extR extC ga) al 
+        do ul <- mapM (ana_PRED_ITEM par extR extC ga) al 
            return $ Pred_items ul ps
     Datatype_items al _ -> 
         do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
@@ -244,12 +244,12 @@ ana_SIG_ITEMS extR extC as ga gk si =
     Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ as ga s
 
 -- helper
-ana_Generated :: Show f => MixResolve f -> (f -> Bool) 
+ana_Generated :: PrettyPrint f => (f -> f) -> MixResolve f -> (f -> Bool) 
               -> Ana s f e -> GlobalAnnos -> [Annoted (SIG_ITEMS s f)]     
               -> State (Sign f e) 
                  ([(Set.Set Id, Set.Set Component)],[Annoted (SIG_ITEMS s f)])
-ana_Generated extR extC as ga  al = do
-   ul <- mapAnM (ana_SIG_ITEMS extR extC as ga Generated) al
+ana_Generated par extR extC as ga  al = do
+   ul <- mapAnM (ana_SIG_ITEMS par extR extC as ga Generated) al
    return (map (getGenSig . item) ul, ul)
    
 getGenSig :: SIG_ITEMS s f -> (Set.Set Id, Set.Set Component)
@@ -283,10 +283,10 @@ getOps oi = case oi of
         Set.fromList $ map ( \ i -> Component i $ toOpType ty) is
     Op_defn i par _ _ -> Set.single $ Component i $ toOpType $ headToType par
 
-ana_SORT_ITEM :: Show f => MixResolve f -> (f -> Bool) 
+ana_SORT_ITEM :: PrettyPrint f => (f -> f) -> MixResolve f -> (f -> Bool) 
               -> GlobalAnnos -> Annoted (SORT_ITEM  f) 
               -> State (Sign f e) (Annoted (SORT_ITEM f))
-ana_SORT_ITEM extR extC ga asi =
+ana_SORT_ITEM par extR extC ga asi =
     case item asi of 
     Sort_decl il _ ->
         do mapM_ addSort il
@@ -299,7 +299,7 @@ ana_SORT_ITEM extR extC ga asi =
         do ops <- gets allOpIds 
            preds <- gets allPredIds
            newGa <- gets $ addAssocs ga
-           let Result ds mf = resolveFormula extR newGa
+           let Result ds mf = resolveFormula par extR newGa
                               (Set.insert (simpleIdToId v) ops) preds $ item af
                lb = getRLabel af
                lab = if null lb then getRLabel asi else lb
@@ -322,26 +322,26 @@ ana_SORT_ITEM extR extC ga asi =
            mapM_ ( \ i -> mapM_ (addSubsort i) il) il
            return asi
 
-ana_OP_ITEM :: Show f => MixResolve f -> (f -> Bool) 
+ana_OP_ITEM :: PrettyPrint f => (f -> f) -> MixResolve f -> (f -> Bool) 
             -> GlobalAnnos -> Annoted (OP_ITEM f) 
             -> State (Sign f e) (Annoted (OP_ITEM f))
-ana_OP_ITEM extR extC ga aoi = 
+ana_OP_ITEM par extR extC ga aoi = 
     case item aoi of 
     Op_decl ops ty il ps -> 
         do let oty = toOpType ty
            mapM_ (addOp oty) ops
-           ul <- mapM (ana_OP_ATTR extR ga oty ops) il
+           ul <- mapM (ana_OP_ATTR par extR ga oty ops) il
            if null $ filter ( \ i -> case i of 
                                    Assoc_op_attr -> True
                                    _ -> False) il 
               then return ()
               else mapM_ (addAssocOp oty) ops
            return aoi {item = Op_decl ops ty (catMaybes ul) ps}
-    Op_defn i par at ps -> 
-        do let ty = headToType par
+    Op_defn i ohd at ps -> 
+        do let ty = headToType ohd
                lb = getRLabel at
                lab = if null lb then getRLabel aoi else lb
-               args = case par of 
+               args = case ohd of 
                       Op_head _ as _ _ -> as
                vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
                arg = concatMap ( \ (Var_decl v s qs) ->
@@ -353,7 +353,8 @@ ana_OP_ITEM extR extC ga aoi =
            let vars =  concatMap ( \ (Arg_decl v _ _) -> v) args
                allOps = foldr ( \ v s -> Set.insert (simpleIdToId v) s) 
                         ops vars 
-               Result ds mt = resolveMixfix extR newGa allOps preds $ item at
+               Result ds mt = resolveMixfix par extR newGa allOps preds 
+                              $ item at
            addDiags ds
            case mt of 
              Nothing -> return aoi { item = Op_decl [i] ty [] ps }
@@ -364,7 +365,7 @@ ana_OP_ITEM extR extC ga aoi =
                              (Strong_equation 
                               (Application (Qual_op_name i ty p) arg ps)
                               t p) ps]
-                          return aoi {item = Op_defn i par at { item = t } ps }
+                          return aoi {item = Op_defn i ohd at { item = t } ps }
 
 headToType :: OP_HEAD -> OP_TYPE
 headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
@@ -372,9 +373,10 @@ headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
-ana_OP_ATTR :: MixResolve f -> GlobalAnnos -> OpType -> [Id] -> (OP_ATTR f)
+ana_OP_ATTR :: PrettyPrint f => (f -> f) -> MixResolve f -> GlobalAnnos 
+            -> OpType -> [Id] -> (OP_ATTR f)
             -> State (Sign f e) (Maybe (OP_ATTR f))
-ana_OP_ATTR extR ga ty ois oa = 
+ana_OP_ATTR par extR ga ty ois oa = 
     let sty = toOP_TYPE ty
         rty = opRes ty 
         q = [posOfId rty] in
@@ -383,7 +385,7 @@ ana_OP_ATTR extR ga ty ois oa =
         do ops <- gets allOpIds
            preds <- gets allPredIds 
            newGa <- gets $ addAssocs ga
-           let Result ds mt = resolveMixfix extR newGa ops preds t
+           let Result ds mt = resolveMixfix par extR newGa ops preds t
            addDiags ds
            case mt of 
              Nothing -> return Nothing
@@ -450,15 +452,15 @@ makeUnit b t ty i =
                       (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
                       qv p) p
 
-ana_PRED_ITEM ::  Show f => MixResolve f -> (f -> Bool) 
+ana_PRED_ITEM :: PrettyPrint f => (f -> f) -> MixResolve f -> (f -> Bool) 
               -> GlobalAnnos -> Annoted (PRED_ITEM f)
               -> State (Sign f e) (Annoted (PRED_ITEM f))
-ana_PRED_ITEM extR extC ga ap = 
+ana_PRED_ITEM par extR extC ga ap = 
     case item ap of 
     Pred_decl preds ty _ -> 
         do mapM (addPred $ toPredType ty) preds
            return ap
-    Pred_defn i par@(Pred_head args rs) at ps ->
+    Pred_defn i phd@(Pred_head args rs) at ps ->
         do let lb = getRLabel at
                lab = if null lb then getRLabel ap else lb
                ty = Pred_type (sortsOfArgs args) rs
@@ -472,7 +474,8 @@ ana_PRED_ITEM extR extC ga ap =
            let vars = concatMap ( \ (Arg_decl v _ _) -> v) args 
                allOps = foldr ( \ v s -> Set.insert (simpleIdToId v) s) 
                         ops vars 
-               Result ds mt = resolveFormula extR newGa allOps preds $ item at
+               Result ds mt = resolveFormula par extR newGa allOps preds 
+                              $ item at
            addDiags ds
            case mt of 
              Nothing -> return ap {item = Pred_decl [i] ty ps}
@@ -482,7 +485,7 @@ ana_PRED_ITEM extR extC ga ap =
                              mkForall vs 
                              (Equivalence (Predication (Qual_pred_name i ty p)
                                            arg p) t p) p]
-               return ap {item = Pred_defn i par at { item = t } ps}
+               return ap {item = Pred_defn i phd at { item = t } ps}
 
 -- full function type of a selector (result sort is component sort)
 data Component = Component { compId :: Id, compType :: OpType }
@@ -688,7 +691,9 @@ resultToState f a = do
 
 type Ana b f e = GlobalAnnos -> b -> State (Sign f e) b
 
-basicAnalysis :: (Eq f, PrettyPrint f) => MixResolve f
+basicAnalysis :: (Eq f, PrettyPrint f) 
+              => (f -> f)  -- ^ put parenthesis around mixfix terms
+              -> MixResolve f -- ^ resolve mixfix terms 
               -> (f -> Bool) -- ^ check if a formula extension has been 
                              -- analysed completely by mixfix resolution 
               -> Min f e -- ^ type analysis of f  
@@ -697,8 +702,9 @@ basicAnalysis :: (Eq f, PrettyPrint f) => MixResolve f
               -> (e -> e -> e) -- ^ difference of signature extension e
               -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
          -> Result (BASIC_SPEC b s f, Sign f e, Sign f e, [Named (FORMULA f)])
-basicAnalysis extR extC mef ab as dif (bs, inSig, ga) = do 
-    let (newBs, accSig) = runState (ana_BASIC_SPEC extR extC ab as ga bs) inSig
+basicAnalysis par extR extC mef ab as dif (bs, inSig, ga) = do 
+    let (newBs, accSig) = runState (ana_BASIC_SPEC par extR extC ab as ga bs) 
+                          inSig
         ds = reverse $ envDiags accSig
         sents = reverse $ sentences accSig
         cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
@@ -714,5 +720,5 @@ basicAnalysis extR extC mef ab as dif (bs, inSig, ga) = do
 basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
                   -> Result (BASIC_SPEC () () (), Sign () (), 
                              Sign () (), [Named (FORMULA ())])
-basicCASLAnalysis = basicAnalysis (const $ const return)(const True)
+basicCASLAnalysis = basicAnalysis id (const $ const return)(const True)
     (const $ const return) (const return) (const return) const

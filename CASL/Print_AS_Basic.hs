@@ -312,6 +312,8 @@ instance PrettyPrint f => PrettyPrint (TERM f) where
 		     [text elseS <+> printText0 ga v])
     printText0 _ (Unparsed_term s _) = text s
     printText0 ga (Mixfix_qual_pred p) = printText0 ga p
+    printText0 ga (Mixfix_term [o, a@(Mixfix_parenthesized _ _)]) =
+        printText0 ga o <> printText0 ga a 
     printText0 ga (Mixfix_term l) = 
 	cat(punctuate space (map (printText0 ga) l))
     printText0 ga (Mixfix_token t) = printText0 ga t

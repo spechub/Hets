@@ -26,7 +26,7 @@ import CASL.AS_Basic_CASL
 localAnalysis :: GlobalAnnos -> BASIC_SPEC () () () 
               -> Result (BASIC_SPEC () () ())
 localAnalysis ga bs = 
-    let (newBs, sig) = runState (ana_BASIC_SPEC 
+    let (newBs, sig) = runState (ana_BASIC_SPEC id
                                  (const $ const return)
                                  (const True)
                                  (const return) 

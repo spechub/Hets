@@ -1,10 +1,10 @@
  . (pred y : bb)
  . (pred y : bb * bb)
- . (pred y : bb * bb) (a, b)
+ . (pred y : bb * bb)(a, b)
  . (pred y : bb * bb) a b
  . a =e= < b
  . a #= e = b
- . exists1 (predy :: bb)
+ . exists1(predy :: bb)
  . exists predy:bb . a
  . exists! a:v . x
  . exists! a:v . x

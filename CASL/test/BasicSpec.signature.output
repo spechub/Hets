@@ -1201,9 +1201,9 @@ pred odd : Nat
 pred p : ()
 pred q : s
 *** Error 261.9, ambiguous mixfix term
-  __*__(i,__-__(q,__*__(j,p)))
-  __-__(__*__(i,q),__*__(j,p))
-  __*__(__*__(i,__-__(q,j)),p)
+  __*__(i, __-__(q, __*__(j, p)))
+  __-__(__*__(i, q), __*__(j, p))
+  __*__(__*__(i, __-__(q, j)), p)
 *** Error 266.16, unknown sort 'a'
 *** Error 266.20, unknown sort 'a'
 *** Error 268.9, unknown sort 'b'

@@ -25,7 +25,9 @@ import Common.Id
 import qualified Common.Lib.Set as Set
 import Common.Earley
 import Common.ConvertLiteral
+import Common.PrettyPrint
 import CASL.ShowMixfix 
+import CASL.Print_AS_Basic
 import Control.Exception (assert)
 
 -- > 0 means predicate
@@ -133,13 +135,14 @@ type TermChart f = Chart (TERM f)
 
 type MixResolve f = GlobalAnnos -> IdSet -> f -> Result f 
 
-iterateCharts :: MixResolve f -> GlobalAnnos -> IdSet -> [TERM f] 
+iterateCharts :: PrettyPrint f => (f -> f) 
+              -> MixResolve f -> GlobalAnnos -> IdSet -> [TERM f] 
               -> TermChart f -> TermChart f
-iterateCharts extR g ids terms c = 
-    let self = iterateCharts extR g ids
+iterateCharts par extR g ids terms c = 
+    let self = iterateCharts par extR g ids
         expand = expandPos Mixfix_token 
         oneStep = nextChart addType filterByPredicate toAppl g c
-        resolveTerm = resolveMixTrm extR g ids
+        resolveTerm = resolveMixTrm par extR g ids
     in if null terms then c
        else case head terms of
             Mixfix_term ts -> self (ts ++ tail terms) c
@@ -159,7 +162,7 @@ iterateCharts extR g ids terms c =
             Conditional t1 f2 t3 ps -> 
                 let Result mds v = 
                         do t4 <- resolveTerm t1
-                           f5 <- resolveMixFrm extR g ids f2             
+                           f5 <- resolveMixFrm par extR g ids f2             
                            t6 <- resolveTerm t3 
                            return (Conditional t4 f5 t6 ps)
                     tNew = case v of Nothing -> head terms
@@ -192,28 +195,35 @@ mkIdSet ops preds =
     let both = Set.intersection ops preds in
         (ops, Set.difference preds both)
 
-resolveMixfix :: MixResolve f -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
-               -> (TERM f) -> Result (TERM f)
-resolveMixfix extR g ops preds t = 
-    let r@(Result ds _) = resolveMixTrm extR g (mkIdSet ops preds) t 
+resolveMixfix :: PrettyPrint f => (f -> f) 
+              -> MixResolve f -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
+              -> (TERM f) -> Result (TERM f)
+resolveMixfix par extR g ops preds t = 
+    let r@(Result ds _) = resolveMixTrm par extR g (mkIdSet ops preds) t 
         in if null ds then r else Result ds Nothing
 
-resolveMixTrm :: MixResolve f -> MixResolve (TERM f)
-resolveMixTrm extR ga ids trm =
-        getResolved showTerm (posOfTerm trm) toAppl
-           $ iterateCharts extR ga ids [trm] $ 
+resolveMixTrm :: PrettyPrint f => (f -> f) 
+              -> MixResolve f -> MixResolve (TERM f)
+resolveMixTrm par extR ga ids trm =
+        getResolved (showTerm par ga) (posOfTerm trm) toAppl
+           $ iterateCharts par extR ga ids [trm] $ 
             initChart (initRules ga ids) Set.empty
 
-resolveFormula :: MixResolve f -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
+showTerm :: PrettyPrint f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
+showTerm par ga = shows . printText0 ga . mapTerm par 
+
+resolveFormula :: PrettyPrint f => (f -> f) 
+               -> MixResolve f -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
                -> (FORMULA f) -> Result (FORMULA f)
-resolveFormula extR g ops preds f =     
-    let r@(Result ds _) = resolveMixFrm extR g (mkIdSet ops preds) f 
+resolveFormula par extR g ops preds f =     
+    let r@(Result ds _) = resolveMixFrm par extR g (mkIdSet ops preds) f 
         in if null ds then r else Result ds Nothing
 
-resolveMixFrm :: MixResolve f -> MixResolve (FORMULA f)
-resolveMixFrm extR g ids@(ops, onlyPreds) frm =
-    let self = resolveMixFrm extR g ids 
-        resolveTerm = resolveMixTrm extR g ids in
+resolveMixFrm :: PrettyPrint f => (f -> f) 
+              -> MixResolve f -> MixResolve (FORMULA f)
+resolveMixFrm par extR g ids@(ops, onlyPreds) frm =
+    let self = resolveMixFrm par extR g ids 
+        resolveTerm = resolveMixTrm par extR g ids in
     case frm of 
        Quantification q vs fOld ps -> 
            let varIds = Set.fromList $ concatMap (\ (Var_decl va _ _) -> 
@@ -221,7 +231,7 @@ resolveMixFrm extR g ids@(ops, onlyPreds) frm =
                newIds = (Set.union ops varIds,
                          (Set.\\) onlyPreds varIds)
            in   
-           do fNew <- resolveMixFrm extR g newIds fOld 
+           do fNew <- resolveMixFrm par extR g newIds fOld 
               return $ Quantification q vs fNew ps
        Conjunction fsOld ps -> 
            do fsNew <- mapM self fsOld  
@@ -270,7 +280,7 @@ resolveMixFrm extR g ids@(ops, onlyPreds) frm =
                               Mixfix_parenthesized ts ps] ->
                   return $ Predication qide ts ps
                  _ -> plain_error (Mixfix_formula t)
-                        ("not a formula: " ++ showTerm t "")
+                        ("not a formula: " ++ showTerm par g t "")
                         (posOfTerm t)
        ExtFORMULA f -> 
            do newF <- extR g ids f

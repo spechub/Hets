@@ -22,10 +22,11 @@ import Common.Id
 import Common.Result
 import Common.Lexer
 import Common.PPUtils
+import Common.PrettyPrint
 
 import Common.Token
 import CASL.Formula
-import CASL.ShowMixfix -- (showTerm, showFormula)
+import CASL.ShowMixfix
 
 -- start testing
 stdOpsL, stdPredsL :: [String]
@@ -58,29 +59,31 @@ stdPreds = mkIds stdPredsL
 
 resolveForm :: GlobalAnnos -> AParser () (Result (FORMULA ()))
 resolveForm ga = 
-      resolveFormula (const $ const return) 
+      resolveFormula id (const $ const return) 
                      ga stdOps stdPreds `fmap` formula []
 
 resolveTerm :: GlobalAnnos -> AParser () (Result (TERM ()))
 resolveTerm ga = 
-      resolveMixfix (const $ const return) ga stdOps stdPreds `fmap` term []
+      resolveMixfix id (const $ const return) ga stdOps stdPreds `fmap` term []
 
 testTerm ::  AParser () WrapString
 testTerm = do t <- term [] :: AParser () (TERM ())
-              return $ WrapString $ showTerm t ""
+              return $ WrapString $ showPretty (mapTerm id t) ""
 
 testTermMix :: GlobalAnnos -> AParser () WrapString
 testTermMix ga = do Result ds mt <- resolveTerm ga
                     return $ WrapString $ 
-                        case mt of Just t -> showTerm t ""
-                                   _ -> show ds
+                        case mt of 
+                        Just t -> show $ printText0 ga (mapTerm id t)
+                        _ -> show ds
 
 testFormula :: AParser () WrapString
 testFormula = do f <- formula [] :: AParser () (FORMULA ())
-                 return $ WrapString $ showFormula f ""
+                 return $ WrapString $ showPretty (mapFormula id  f) ""
 
 testFormulaMix :: GlobalAnnos -> AParser () WrapString
 testFormulaMix ga = do Result ds m <- resolveForm ga
                        return $ WrapString $ 
-                           case m of Just f -> showFormula f ""
-                                     _ -> show ds
+                           case m of 
+                           Just f -> show $ printText0 ga (mapFormula id f)
+                           _ -> show ds
