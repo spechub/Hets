@@ -423,8 +423,6 @@ locDecompAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newRules = (LocDecomp ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
-
-
 {- returns the sentence list of the given node -}
 getSignature :: LibEnv -> DGraph -> Node -> Maybe G_sign
 getSignature libEnv dgraph node =
@@ -523,38 +521,41 @@ hideTheoremShiftAux :: LibEnv -> DGraph -> ([DGRule],[DGChange])
 		    -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
 hideTheoremShiftAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 hideTheoremShiftAux
-           libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) = 
+           libEnv dgraph history ((ledge@(src,tgt,edgeLab)):list) = 
   case (findProofBasisForHideTheoremShift dgraph ledge) of
-    Nothing -> hideTheoremShiftAux libEnv dgraph (rules,changes) list
-    Just (fstEdge,sndEdge) ->
-      hideTheoremShiftAux libEnv dgraph
+    Nothing -> hideTheoremShiftAux libEnv dgraph history list
+    Just proofBasis ->
+      hideTheoremShiftAuxHandleNextStep libEnv dgraph history proofBasis ledge list
+{-      hideTheoremShiftAux libEnv dgraph
 	  (newRules,((InsertEdge fstEdge):
-		     ((InsertEdge sndEdge):changes))) list
+		     ((InsertEdge sndEdge):changes))) list-}
 
-  where
-    morphism = dgl_morphism edgeLab
+hideTheoremShiftAuxHandleNextStep :: LibEnv -> DGraph -> ([DGRule],[DGChange])
+		    -> (LEdge DGLinkLab,LEdge DGLinkLab) -> LEdge DGLinkLab-> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
+hideTheoremShiftAuxHandleNextStep libEnv dgraph (rules,changes) (fstEdge, sndEdge) ledge list =
+  hideTheoremShiftAux libEnv newDGraph (newRules,newChanges) list
+  where 
     auxGraph = delLEdge ledge dgraph
-    (HidingThm hidingMorphism _) = (dgl_type edgeLab)
+    newEdge = makeProvenHidingThmEdge (fstEdge,sndEdge) ledge
+    newDGraph = insEdge sndEdge (insEdge fstEdge (insEdge newEdge auxGraph))
     newRules = (HideTheoremShift ledge):rules
---    (newDgraph,newEdge) = changeDGraph (fstEdge, sndEdge) ledge
- --   newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+    newChanges = (InsertEdge fstEdge):
+		 ((InsertEdge sndEdge):
+		  ((DeleteEdge ledge):
+		   ((InsertEdge newEdge):changes)))
 
-
-changeDGraph :: DGraph -> (LEdge DGLinkLab, LEdge DGLinkLab) -> LEdge DGLinkLab
-	     -> (DGraph, LEdge DGLinkLab)
-changeDGraph dgraph (fstEdge@(_,_,fstLab), sndEdge@(_,_,sndLab)) ledge@(src,tgt,edgeLab) =
-      (newDgraph, newEdge)
+makeProvenHidingThmEdge :: (LEdge DGLinkLab, LEdge DGLinkLab) -> LEdge DGLinkLab -> LEdge DGLinkLab
+makeProvenHidingThmEdge ((_,_,fstLab),(_,_,sndLab)) (src,tgt,edgeLab) =
+  (src,
+   tgt,
+   DGLink {dgl_morphism = morphism,
+	   dgl_type = (HidingThm hidingMorphism (Proven [fstLab,sndLab])),
+	   dgl_origin = DGProof}
+  )
   where
-    morphism = dgl_morphism edgeLab
-    auxGraph = delLEdge ledge dgraph
+    morphism = dgl_morphism edgeLab      
     (HidingThm hidingMorphism _) = (dgl_type edgeLab)
-    newEdge = (src,
-	       tgt,
-	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (HidingThm hidingMorphism (Proven [fstLab,sndLab])),
-		       dgl_origin = DGProof}
-               )
-    newDgraph = insEdge sndEdge (insEdge fstEdge (insEdge newEdge auxGraph))
+
 
 {- selects a proof basis for 'hide theorem shift' if there is one-}
 findProofBasisForHideTheoremShift :: DGraph -> LEdge DGLinkLab
