@@ -28,6 +28,7 @@ module Common.LaTeX_funs (
 		   space_latex_width,
 
 		   calc_line_length,
+		   pt_length,
 		   -- calc_word_width,
 		   -- Word_type(..),
 		   keyword_width, structid_width, axiom_width, 
@@ -35,6 +36,7 @@ module Common.LaTeX_funs (
 		   normal_width,
 
 		   escape_latex,
+		   escape_comment_latex,
 		   (<\+>),
 		   (<~>),
 		   latex_macro,
@@ -74,7 +76,11 @@ module Common.LaTeX_funs (
 
                    hc_sty_axiom,
                    hc_sty_structid,
-                   hc_sty_id
+                   hc_sty_structid_indexed,
+                   hc_sty_id,
+
+                   startAnno,
+                   endAnno
 ) where
 
 import Common.Lib.Map hiding (isEmpty, empty, map)
@@ -82,6 +88,7 @@ import Data.Char
 import Data.Maybe (isJust,fromJust)
 import Data.List (isPrefixOf)
 import Prelude hiding (lookup)
+import Numeric
 
 -- for the debug hack
 import Debug.Trace
@@ -114,6 +121,11 @@ calc_line_length s =
 	len :: Double
 	len = read $ map (\c -> case c of ',' -> '.';_ -> c) r_number
     in truncate (len * unit * 1000)
+
+pt_length :: Int -> String
+pt_length i = showFFloat (Just 3) pt "pt"
+    where pt :: Float
+	  pt = fromRational (toRational i /351) 
 
 -- a hack to have some debug prints
 condTrace :: String -> a -> a
@@ -302,8 +314,9 @@ parens_latex d   = casl_normal_latex "("<>d<>casl_normal_latex ")"
 brackets_latex d = casl_normal_latex "["<>d<>casl_normal_latex "]"
 quotes_latex d = q <> d <> q
     where q = casl_normal_latex "{\\tt{}\\textquotedblright}"
+
 -- nest and hang that do the obvious thing except that they use
--- multiple spaces for indentation
+-- multiple spaces for indentation and set tabs with spaces
 nest_latex :: Int -> Doc -> Doc
 nest_latex k = nest (k * space_latex_width)
      
@@ -356,11 +369,15 @@ hc_sty_small_keyword kw =
     latex_macro "\\KW{" <> casl_annotationbf_latex kw <> latex_macro "}"
 
 hc_sty_comment, hc_sty_annotation :: Doc -> Doc
-hc_sty_comment cm = latex_macro "{\\small{}" <> cm <> latex_macro "}"
+hc_sty_comment cm = latex_macro startAnno <> cm <> latex_macro endAnno
 hc_sty_annotation = hc_sty_comment
 
-hc_sty_axiom, hc_sty_structid, hc_sty_id :: String -> Doc
+hc_sty_axiom, hc_sty_structid, hc_sty_id,hc_sty_structid_indexed 
+    :: String -> Doc
 hc_sty_structid sid = latex_macro "\\SId{"<>sid_doc<>latex_macro "}"
+    where sid_doc = casl_structid_latex (escape_latex sid)
+hc_sty_structid_indexed sid = 
+    latex_macro "\\SIdIndex{"<>sid_doc<>latex_macro "}"
     where sid_doc = casl_structid_latex (escape_latex sid)
 hc_sty_id i        = latex_macro "\\Id{"<>id_doc<>latex_macro "}"
     where id_doc = casl_axiom_latex i
@@ -373,6 +390,16 @@ cond_punctuate p (doc:docs) = go doc docs
     where go d []     = [d]
           go d (e:es) = cond_predicate : go e es
 	      where cond_predicate = if isEmpty d then d else d<>p
+
+-- |
+-- a constant String for the start of annotations
+startAnno :: String
+startAnno = "{\\small{}"
+
+-- |
+-- a constant string ending an annotation
+endAnno :: String
+endAnno = "%@%small@}"
 
 -- moved from PPUtils (used for String instance of PrettyPrint and
 -- various other functions that print Strings with special stuff
@@ -391,3 +418,14 @@ escape_latex (x:xs)
     | x `elem` "~^"   = '\\':x:("{}"++escape_latex xs)
     | otherwise       =      x:escape_latex xs
     where default_quotes = ('\'':) . ('\'':)
+
+escape_comment_latex :: String -> String
+escape_comment_latex s
+    |  or $ map (`elem` s) "<>" = ecl s'
+    | otherwise = s'
+    where s' = escape_latex s
+	  ecl "" = ""
+	  ecl (x:xs)
+	      | x == '<' 
+		|| x == '>' = "\\Ax{"++x:"}"++ecl xs
+	      | otherwise   = x: ecl xs
