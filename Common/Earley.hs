@@ -544,8 +544,7 @@ getResolved pp p toExpr st =
 		          let expected = if null rest2 
 					 then filter (not . null . rest) rest1 
 					 else rest2 
-			      withpos = assert (not $ null expected) $ 
-					filter (not . null . posList) expected
+			      withpos = filter (not . null . posList) expected
 			      (pos, errs) = if null withpos then (p, expected) 
 					    else (last $ sort $ map 
 						  (head . posList) withpos
