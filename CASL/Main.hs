@@ -22,11 +22,11 @@ main = exec lineParser fileParser
 
 lineParser, fileParser :: [(String, HetParser)]
 lineParser = [
- ("id", HetParser parseId),
- ("term", HetParser term),
- ("formula", HetParser formula),
- ("sorts", HetParser sortItems),
- ("ops", HetParser opItem),
- ("preds", HetParser predItems)]
+ ("MixIds", HetParser parseId),
+ ("Terms", HetParser term),
+ ("Formula", HetParser formula),
+ ("SortItem", HetParser sortItems),
+ ("OpItem", HetParser opItems),
+ ("PredItem", HetParser predItems)]
 
-fileParser = [("items", HetParser basicSpec)]
+fileParser = [("BasicSpec", HetParser basicSpec)]
