@@ -121,7 +121,7 @@ data BasicProof =
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree =>
-        BasicProof lid (Proof_status sentence proof_tree)
+        BasicProof lid (Proof_status proof_tree)
      |  Guessed
      |  Conjectured
      |  Handwritten
@@ -1097,6 +1097,12 @@ basicInferenceNode lg (ln,node)
           DGRef _ _ _ -> dgn_renamed nlab
         thName = showPretty (getLIB_ID ln) "_"
                  ++ maybe (show node) (flip showPretty "") nodeName
+{-
+    ioToIORes (putStrLn ("Calling logic-specific prover for "++thName++"\n" 
+                ++ "Signature:\n" ++ showPretty sign'' "\n"
+                ++ "Sentences:\n" ++ showPretty sens'' "\n"
+                ++ "Goals:\n" ++ showPretty goals'' "" ))
+-}
     ps <- ioToIORes $ prove p' thName (sign'',sens'') goals'' 
     let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
 --    let nextDGraph = dGraph -- ??? to be implemented

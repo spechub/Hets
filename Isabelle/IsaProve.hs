@@ -65,7 +65,7 @@ isabelleProver =
                  -- input: theory name, theory, goals
                  -- output: proof status for goals and lemmas
 isaProve :: String -> (Sign,[Named Sentence]) -> [Named Sentence] 
-              -> IO([Proof_status Sentence ()])
+              -> IO([Proof_status ()])
 isaProve thName (sig,axs) goals = do
   let fileName = thName++".thy"
       origName = thName++".orig.thy"
@@ -95,13 +95,11 @@ isaProve thName (sig,axs) goals = do
              return ()
   isabelle <- getEnv "HETS_ISABELLE"
   isa <- newChildProcess (isabelle ++ "/bin/Isabelle") [arguments [fileName]]
-  htk <- initHTk [withdrawMainWin]
   t <- createToplevel [text "Proof confirmation window"]
   b <- newButton t [text "Please press me when current theory is proofed!",size(50,10)]
   pack b []
   clickedb <- clicked b
-  spawnEvent (clickedb >>> destroy htk)
-  finishHTk
+  sync (clickedb >>> destroy t)
   closeChildProcessFds isa
   proofedThy <- readFile fileName
   let newThy = withoutThms theory ++ onlyThms proofedThy ++ checkThm ++ concat (map checkThms disGoals)

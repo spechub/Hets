@@ -217,6 +217,9 @@ IsaWin: support CASL-libraries
 Till
 ************************************************
 
+basicProofs: use info about used axioms
+             ensure that axiom/thm names are unique
+
 Overload / inlineAxioms: injections
 
 GUI: use daVinci close button; 
