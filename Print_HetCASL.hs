@@ -16,6 +16,7 @@ module Print_HetCASL where
 
 import Pretty
 import PrettyPrint
+import PPUtils (calc_line_length)
 import GlobalAnnotationsFunctions(emptyGlobalAnnos)
 import GlobalLibraryAnnotations
 
@@ -26,12 +27,18 @@ printLIB_DEFN_text :: LIB_DEFN -> String
 printLIB_DEFN_text ld = renderText Nothing $ printText ga ld
     where ga = initGlobalAnnos ld
 
+default_latex_line_length :: Maybe Int
+default_latex_line_length = -- Nothing
+   Just $ calc_line_length "396.0pt"
+
 printLIB_DEFN_latex :: LIB_DEFN -> String
-printLIB_DEFN_latex ld = renderLatex Nothing $ printLatex ga ld
+printLIB_DEFN_latex ld = 
+    renderLatex default_latex_line_length $ printLatex ga ld
     where ga = initGlobalAnnos ld
 
 printLIB_DEFN_debugLatex :: LIB_DEFN -> String
-printLIB_DEFN_debugLatex ld = debugRenderLatex Nothing $ printLatex ga ld
+printLIB_DEFN_debugLatex ld = 
+    debugRenderLatex default_latex_line_length $ printLatex ga ld
     where ga = initGlobalAnnos ld
 
 
