@@ -11,6 +11,10 @@ HsPatBind (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 16}) (HsPVar x) 
 
 ]
 
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"X\") Nothing [] [HsPatBind (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 16}) (HsPVar HsIdent x) (HsUnGuardedRhs (HsVar UnQual HsIdent y)) []]
+
+
 --*********************************************************************
 --HsTypeSig
 
@@ -19,6 +23,16 @@ f :: a -> b -> c
 HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"Main\") (Just [HsEVar main]) [] [
 
 HsTypeSig (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) [f] (HsQualType [] (HsTyFun (HsTyVar a) (HsTyFun (HsTyVar b) (HsTyVar c))))
+
+]
+
+--*********************************************************************
+-- HsFunBind
+module X where f x = y
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"X\") Nothing [] [
+
+HsFunBind [HsMatch (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 16}) f [HsPVar x] (HsUnGuardedRhs (HsVar y)) []]
 
 ]
 
