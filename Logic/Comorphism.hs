@@ -84,7 +84,14 @@ class (Language cid,
     constituents cid = [language_name cid]
 
 data IdComorphism lid sublogics = 
-     IdComorphism lid sublogics deriving Show
+     IdComorphism lid sublogics 
+
+instance Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree =>
+   Show (IdComorphism lid sublogics)
+   where 
+   show = language_name
 
 idComorphismTc :: TyCon
 idComorphismTc = mkTyCon "Logic.Comorphism.IdComorphism"

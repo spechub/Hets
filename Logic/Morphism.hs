@@ -70,9 +70,7 @@ class (Language cid,
           -- with no sentence translation
           -- - but these are spans!
     morMap_symbol :: cid -> symbol1 -> Set symbol2
-    morConstituents :: cid -> [String]
-    -- default implementation
-    morConstituents cid = [language_name cid]
+    -- morConstituents not needed, because composition only via lax triangles
 
 
 -- identity morphisms      
@@ -125,7 +123,7 @@ class Comorphism cid
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
-      MorphismInducing cid
+      InducingComorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
@@ -135,3 +133,33 @@ class Comorphism cid
     indMorMap_morphism :: cid -> morphism2 -> Maybe morphism1
     epsilon :: cid -> sign2 -> Maybe morphism2
 
+instance InducingComorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2 => 
+   Morphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
+   where
+    morSourceLogic cid = targetLogic cid
+    morSourceSublogic cid = targetSublogic cid
+    morTargetLogic cid = sourceSublogic cid
+    morTargetSublogic cid = sourceSublogic cid
+    morMapSublogic :: cid -> sublogics1 -> sublogics2
+    -- the translation functions are partial 
+    -- because the target may be a sublanguage
+    -- map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
+    -- we do not cover theoroidal morphisms, 
+    --   since there are no relevant examples and they do not compose nicely
+    -- no mapping of theories, since signatrures and sentences are mapped
+    --   contravariantly
+    morMap_sign :: cid -> sign1 -> Maybe sign2
+    morMap_morphism :: cid -> morphism1 -> Maybe morphism2
+    morMap_sentence :: cid -> sign1 -> sentence2 -> Maybe sentence1
+          -- also covers semi-morphisms ??
+          -- with no sentence translation
+          -- - but these are spans!
+    morMap_symbol :: cid -> symbol1 -> Set symbol2

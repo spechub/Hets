@@ -56,9 +56,8 @@ import Common.Lib.Pretty
 -- what about open theorems of a node???
 data DGNodeLab = DGNode {
                 dgn_name :: Maybe SIMPLE_ID,
-                dgn_sign :: G_sign, -- only the delta
+                dgn_sign :: G_sign, 
                 dgn_sens :: G_l_sentence_list, 
-                                -- or better [(String,G_sentence)] ???
                 dgn_origin :: DGOrigin
               }   
             | DGRef { 

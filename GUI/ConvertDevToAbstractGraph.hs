@@ -759,7 +759,9 @@ getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
                      Nothing -> "Sublogic"
                      Just n -> "Sublogic of "++showPretty n ""
                  in createTextDisplay title logstr [size(30,10)]
-        _ -> error "illegal node type in sublogic computation"
+        Res.Result diags _ -> 
+          error ("Could not compute theory for sublogic computation: "++
+                concatMap show diags)
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
@@ -819,7 +821,8 @@ showOriginOfEdge descr Nothing =
 {- prints the proof base of the edge -}
 showProofStatusOfThm :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showProofStatusOfThm _ (Just ledge) =
-    putStrLn (show (getProofStatusOfThm ledge))
+    createTextDisplay "Proof Status" 
+         (show (getProofStatusOfThm ledge)) [size(30,10)]
 showProofStatusOfThm descr Nothing =
     putStrLn ("edge "++(show descr)++" has no corresponding edge"
 		++ "in the development graph")

@@ -406,9 +406,9 @@ locDecompAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
-    sens = getSentenceList libEnv dgraph src
+    th = computeLocalTheory libEnv dgraph src
     pathsWithoutEdgeItself = [path|path <- allPaths, notElem ledge path]
-    filteredPaths = filterByTranslation sens morphism pathsWithoutEdgeItself
+    filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofBasis = selectProofBasis edgeLab filteredPaths
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
@@ -425,14 +425,15 @@ locDecompAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
 
-{- returns the sentence list of the given node -}
-getSentenceList :: LibEnv -> DGraph -> Node -> Maybe G_l_sentence_list
-getSentenceList libEnv dgraph node =
+{- compute the theory of a given node. 
+   If this node is a DGRef, the referenced node is looked up first. -}
+computeLocalTheory :: LibEnv -> DGraph -> Node -> Maybe G_theory
+computeLocalTheory libEnv dgraph node =
   if isDGRef nodeLab
     then case Map.lookup (dgn_libname nodeLab) libEnv of
-      Just (_,_,refDgraph) -> getSentenceList libEnv refDgraph (dgn_node nodeLab)
+      Just (_,_,refDgraph) -> computeLocalTheory libEnv refDgraph (dgn_node nodeLab)
       Nothing -> Nothing
-    else Just (dgn_sens nodeLab)
+    else toG_theory (dgn_sign nodeLab) (dgn_sens nodeLab)
     where nodeLab = lab' (context node dgraph)
 
 
@@ -448,33 +449,20 @@ getSignature libEnv dgraph node =
     where nodeLab = lab' (context node dgraph)
 
 {- removes all paths from the given list of paths whose morphism does not translate the given sentence list to the same resulting sentence list as the given morphism-}
-filterByTranslation :: Maybe G_l_sentence_list -> GMorphism -> [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
-filterByTranslation maybeSens morphism paths =
-  case maybeSens of
-    Just sens -> [path| path <- paths, isSameTranslation sens morphism path]
+filterByTranslation :: Maybe G_theory -> GMorphism -> [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
+filterByTranslation maybeTh morphism paths =
+  case maybeTh of
+    Just th -> [path| path <- paths, isSameTranslation th morphism path]
     Nothing -> []
---     isSameTranslation sens morphism (calculateMorphismOfPath path)]
+--     isSameTranslation th morphism (calculateMorphismOfPath path)]
 
 {- checks if the given morphism and the morphism of the given path translate the given sentence list to the same resulting sentence list -}
-isSameTranslation :: G_l_sentence_list -> GMorphism -> [LEdge DGLinkLab] -> Bool
-isSameTranslation sens morphism path =
+isSameTranslation :: G_theory -> GMorphism -> [LEdge DGLinkLab] -> Bool
+isSameTranslation th morphism path =
   case calculateMorphismOfPath path of
-      Just morphismOfPath -> isSameTranslationAux sens morphism morphismOfPath
+      Just morphismOfPath -> 
+         translateG_theory morphism th == translateG_theory morphismOfPath th
       Nothing -> False
-
-{- checks if the two given morphisms translate the given sentence list to the same resulting sentence list
-if the calculation of one of the resulting sentence lists fails, False is returned -}
-isSameTranslationAux :: G_l_sentence_list -> GMorphism -> GMorphism -> Bool
-isSameTranslationAux sens mor1 mor2 =
-  case maybeResult maybeSens1 of
-    Nothing -> False
-    Just sens1 ->
-      case maybeResult maybeSens2 of
-        Nothing -> False
-        Just sens2 -> eq_G_l_sentence_set sens1 sens2
-  where
-    maybeSens1 = translateG_l_sentence_list mor1 sens
-    maybeSens2 = translateG_l_sentence_list mor2 sens
 
 -- ----------------------------------------------
 -- local subsumption
@@ -496,10 +484,10 @@ locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locSubsumeAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
-  case (getDGNode libEnv dgraph tgt, maybeAxiomsSrc) of
-    (Just (target,_), Just axiomsSrc) ->
-      case (maybeResult (computeTheory libEnv dgraph target), maybeResult (translateG_l_sentence_list morphism axiomsSrc)) of
-        (Just theoryTgt, Just (G_l_sentence_list lidSrc sensSrc)) ->
+  case (getDGNode libEnv dgraph tgt, maybeThSrc) of
+    (Just (target,_), Just thSrc) ->
+      case (maybeResult (computeTheory libEnv dgraph target), maybeResult (translateG_theory morphism thSrc)) of
+        (Just theoryTgt, Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceTheory lidSrc theoryTgt) of
             Nothing -> locSubsumeAux libEnv dgraph (rules,changes) list
 	    Just (_,sentencesTgt) ->
@@ -512,7 +500,7 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 
   where
     morphism = dgl_morphism edgeLab
-    maybeAxiomsSrc = getLocalAxioms libEnv dgraph src
+    maybeThSrc = computeLocalTheory libEnv dgraph src
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (src,
@@ -527,13 +515,6 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newRules = (LocSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
-
-{- gets the local axioms of the given node. If this node is a DGRef the referenced node is looked up first.-}
-getLocalAxioms :: LibEnv -> DGraph -> Node -> Maybe G_l_sentence_list
-getLocalAxioms libEnv dgraph node =
-  case getDGNode libEnv dgraph node of
-    Just dgNode -> Just (dgn_sens (snd dgNode))
-    Nothing -> Nothing
 
 {- if the given node is a DGRef, the referenced node is returned (as a labeled node). Otherwise the node itself is returned (as a labeled node).-}
 getDGNode :: LibEnv -> DGraph -> Node -> Maybe (LNode DGNodeLab)
@@ -1070,18 +1051,11 @@ computeTheory libEnv dg n = do
          -- reverse needed to have a "bottom up" ordering
   mors <- maybeToMonad "Could not calculate morphism of path"
             $ mapM (calculateMorphismOfPathWithStart dg libEnv) paths
-  sens <- maybeToMonad "Could not calculate sentence list of node"
-            $ mapM (getSentenceList libEnv dg . fst) paths
-  sens' <- mapM (uncurry translateG_l_sentence_list) 
-            $ zip mors sens
-  G_l_sentence_list lid1 sens'' <- 
-        maybeToMonad "Logic mismatch for sentences"
-              $ flatG_l_sentence_list sens'
-  G_sign lid2 sig <- 
-        maybeToMonad "Could not calculate signature of node"
-              $ getSignature libEnv dg n
-  sens''' <- coerce lid1 lid2 sens''
-  return $ G_theory lid2 sig (nub sens''')
+  ths <- maybeToMonad "Could not calculate sentence list of node"
+            $ mapM (computeLocalTheory libEnv dg . fst) paths
+  ths' <- mapM (uncurry translateG_theory) $ zip mors ths
+  th'' <- maybeToMonad "Logic mismatch for theories" $ flatG_theories ths'
+  return (nubG_theory th'')
 
 -- ---------------
 -- basic inference
@@ -1089,10 +1063,10 @@ computeTheory libEnv dg n = do
 
 getGoals :: LibEnv -> DGraph -> LEdge DGLinkLab -> Result G_l_sentence_list
 getGoals libEnv dg (n,_,edge) = do
-  sens <- maybeToMonad ("Could node find node "++show n)
-              $  getSentenceList libEnv dg n
+  th <- maybeToMonad ("Could node find node "++show n)
+              $  computeLocalTheory libEnv dg n
   let mor = dgl_morphism edge
-  translateG_l_sentence_list mor sens
+  fmap sensOf $ translateG_theory mor th
 
 getProvers :: Bool -> LogicGraph -> G_sublogics -> [(G_prover,AnyComorphism)]
 getProvers consCheck lg gsub =

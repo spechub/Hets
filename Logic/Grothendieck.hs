@@ -187,6 +187,10 @@ data G_theory = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
   G_theory lid sign [Named sentence]
 
+instance Eq G_theory where
+  th1 == th2 = signOf th1 == signOf th2 && 
+               eq_G_l_sentence_set (sensOf th1) (sensOf th2)
+
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
 sublogicOfTh (G_theory lid sigma sens) =
@@ -630,8 +634,20 @@ compInclusion lg mor1 mor2 = do
 compHomInclusion :: GMorphism -> GMorphism -> Result GMorphism
 compHomInclusion mor1 mor2 = compInclusion emptyLogicGraph mor1 mor2
 
+-- | Translation of a G_theory along a GMorphism
+translateG_theory :: GMorphism -> G_theory -> Result G_theory
+translateG_theory (GMorphism cid sign1 morphism2)
+                           (G_theory lid sign sens) = do
+  let tlid = targetLogic cid
+  --(sigma2,_) <- map_sign cid sign1
+  sens' <- mcoerce lid (sourceLogic cid) "translateG_theory" sens
+  sign' <- mcoerce lid (sourceLogic cid) "translateG_theory" sign
+  (sign'',sens'') <- map_theory cid (sign',sens')
+  sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
+  return (G_theory tlid (cod tlid morphism2) sens''')
+
 -- | Translation of a G_l_sentence_list along a GMorphism
-translateG_l_sentence_list :: GMorphism -> G_l_sentence_list 
+translateG_l_sentence_list :: GMorphism -> G_l_sentence_list
                                  -> Result G_l_sentence_list
 translateG_l_sentence_list (GMorphism cid sign1 morphism2)
                            (G_l_sentence_list lid sens) = do
@@ -642,7 +658,38 @@ translateG_l_sentence_list (GMorphism cid sign1 morphism2)
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return (G_l_sentence_list tlid sens''')
 
--- | Join two G_l_sentence_list's
+-- | Join two G_theories
+joinG_theories :: G_theory -> G_theory -> Maybe G_theory
+joinG_theories (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
+  sens2' <- mcoerce lid1 lid2 "joinG_theories" sens2
+  sig2' <- mcoerce lid1 lid2 "joinG_theories" sig2
+  when (sig1 /= sig2') (fail "joinG_theories: incompatible signatures")
+  return (G_theory lid1 sig1 (sens1++sens2'))
+
+-- | Flatten a list of G_theories
+flatG_theories :: [G_theory] -> Maybe G_theory
+flatG_theories [] = Nothing
+flatG_theories (th:ths) = foldM joinG_theories th ths
+
+-- | Remove duplicate sentences from a G_theory
+nubG_theory :: G_theory -> G_theory
+nubG_theory (G_theory lid sig sens) = G_theory lid sig (List.nub sens)
+
+-- | Get signature of a theory
+signOf :: G_theory -> G_sign
+signOf (G_theory lid sign _) = G_sign lid sign
+
+-- | Get sentences of a theory
+sensOf :: G_theory -> G_l_sentence_list
+sensOf (G_theory lid _ sens) = G_l_sentence_list lid sens
+
+-- | Join signature and sentence list into a theory
+toG_theory :: G_sign -> G_l_sentence_list -> Maybe G_theory
+toG_theory (G_sign lid1 sign1) (G_l_sentence_list lid2 sens2) = do
+  sens2' <- mcoerce lid1 lid2 "toG_theory" sens2
+  return (G_theory lid1 sign1 sens2')
+
+-- | Join two G_l_sentence_lists
 joinG_l_sentence_list :: G_l_sentence_list -> G_l_sentence_list
                             -> Maybe G_l_sentence_list
 joinG_l_sentence_list (G_l_sentence_list lid1 sens1)
