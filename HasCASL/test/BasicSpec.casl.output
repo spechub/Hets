@@ -160,7 +160,9 @@ forall p : Pos; q : Pos; n : Nat; i : Int; j : Int; x : Rat;
 . x ^ suc (n) = x * x ^ n %(Rat_power_suc)%
 . x ^ (- p) = 1 / (x ^ p) %(Rat_power_neg)%
 . min (x, y) = x when x <= y else y %(Rat_min_def)%
-. max (x, y) = y when x <= y else x
+. max (x, y) = y
+  when x <= y else
+  x
   forall i : Int; j : Int; p : Pos; q : Pos . (i / p) - (j / q) =
 					      (i * q - j * p) / (p * q)
   %(Rat_max_def)%

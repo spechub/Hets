@@ -486,12 +486,13 @@ instOpId = do i@(Id is cs ps) <- uninstOpId
 			   u <- many placeT
 			   return (InstOpId (Id (is++u) cs ps) ts qs)
 
--- | 'Token's that may occur in 'Term's including literals 
--- ('scanFloat', 'scanString') excluding 'ifS' and 'barS'
+{- | 'Token's that may occur in 'Term's including literals 
+   ('scanFloat', 'scanString') excluding 'ifS', 'whenS' and 'elseS' 
+    to allow a quantifier after 'whenS'. -}
 tToken :: TokenMode -> AParser Token
 tToken b = pToken(scanFloat <|> scanString 
 		<|> scanQuotedChar <|> scanDotWords 
-		<|> reserved [ifS] scanHCWords 
+		<|> reserved [ifS, whenS, elseS] scanHCWords 
 		<|> reserved b scanHCSigns 
 		<|> placeS <?> "id/literal" )
 
@@ -514,21 +515,36 @@ data InMode = NoIn   -- ^ next 'inS' belongs to 'letS'
 -- | all 'Term's that start with a unique keyword
 baseTerm :: (InMode, TokenMode) -> AParser Term
 baseTerm b = ifTerm b
+	   <|> whenTerm b   
            <|> forallTerm b 
 	   <|> exTerm b 
 	   <|> lambdaTerm b 
 	   <|> caseTerm b
 	   <|> letTerm b
 
--- | 'ifS' possibly followed by 'thenS' (for if-then-else) 
--- yielding a 'MixfixTerm'.
+-- | 'whenS' possibly followed by an 'elseS'
+whenTerm :: (InMode, TokenMode) -> AParser Term
+whenTerm b = 
+    do i <- asKey whenS
+       c <- mixTerm b
+       do t <- asKey elseS
+	  e <- mixTerm b
+	  return (MixfixTerm [TermToken i, c, TermToken t, e])
+	<|> return (MixfixTerm [TermToken i, c])
+
+-- | 'ifS' possibly followed by 'thenS' and 'elseS'
+-- yielding a 'MixfixTerm'
 ifTerm :: (InMode, TokenMode) -> AParser Term
 ifTerm b = 
     do i <- asKey ifS
        c <- mixTerm b
        do t <- asKey thenS
 	  e <- mixTerm b
-	  return (MixfixTerm [TermToken i, c, TermToken t, e])
+	  do s <- asKey elseS 
+	     f <- mixTerm b
+	     return (MixfixTerm [TermToken i, c, TermToken t, e, 
+				 TermToken s, f])
+	   <|> return (MixfixTerm [TermToken i, c, TermToken t, e]) 
 	<|> return (MixfixTerm [TermToken i, c])
 
 -- | a 'Term' in parentheses, may be a qualified name or a tuple 

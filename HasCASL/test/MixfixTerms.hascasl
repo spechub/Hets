@@ -21,3 +21,5 @@ f a --> f a
 s(a) <= 0 
 m # #
 D A b
+not if if a then b else c then b else c
+a when exists a:T. true else b
