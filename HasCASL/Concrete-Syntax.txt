@@ -32,10 +32,12 @@ SORT-ITEM       ::= TYPE-NAME , ... , TYPE-NAME
 TYPE-ITEM       ::= TYPE-NAME , ... , TYPE-NAME  %% same as SORT-ITEM
                   | TYPE-DEFN-PATTERN , .... , TYPE-DEFN-PATTERN : KIND
                   | TYPE-DEFN-PATTERN = PSEUDOTYPE
-                  | TYPE , ... , TYPE < TYPE      %% with global TYPE-VARs
+                  | TYPE < TYPE      %% with global TYPE-VARs
                   | TYPE = { VAR : TYPE "." FORMULA }   %% "" 
                   | TYPE = ... = TYPE                   %% ""
 		  | DATATYPE-DECL        %% TYPE-DEFN-PATTERN ::= ALTERNATIVES
+
+%% TYPE , ... , TYPE clashes with intersection class without parenthesis
 
 TYPE-DEFN-PATTERN ::= TYPE-NAME 
 		    | TYPE-NAME (TYPE-ARG) ... (TYPE-ARG)
@@ -57,7 +59,7 @@ CLASS-ITEMS     ::= class/classes CLASS-ITEM ; ... ; CLASS-ITEM ;/
 
 CLASS-ITEM      ::= CLASS-DECL
 		  | CLASS-DECL {BASIC-ITEMS ... BASIC-ITEMS}  
-%% without "class" and without "type instance"
+%% without "class" and without "type instance" inside
 
 CLASS-DECL      ::= CLASS-NAME , ... , CLASS-NAME
                   | CLASS-NAME , ... , CLASS-NAME < CLASS
@@ -68,12 +70,13 @@ CLASS-DECL      ::= CLASS-NAME , ... , CLASS-NAME
 
 OP-ITEM         ::= OP-NAME , ... , OP-NAME : TYPE-SCHEME
                   | OP-NAME , ... , OP-NAME : TYPE-SCHEME, OP-ATTR ,..., OP-ATTR 
-                  | OP-NAME : TYPE = TERM    %% real constant (no shortcut)  
+                  | OP-NAME : TYPE-SCHEME = TERM %% real constant (no shortcut)  
                   | OP-NAME OP-ARGS : TYPE = TERM    %% This form is 
                   | OP-NAME OP-ARGS :? TYPE = TERM   %% not encouraged
                   | OP-NAME :? TYPE = TERM   %% shortcut for OP-NAME () :? ...
 				             %% strongly discouraged
 
+%% either INST-LIST or real TYPE-SCHEME
 %% OP-ARGS instead of OP-HEAD 
 
 OP-NAME        ::= ID | ID [TYPE-INST-DECL; ... ; TYPE-INST-DECL]
@@ -126,8 +129,9 @@ PROG-EQ         ::= MIXFIX-PATTERN = TERM        %% TERM without formulae
 DATATYPE-DECL   ::= SIMPLE-DATATYPE-DECL | DERIVING-DATATYPE-DECL
 
 SIMPLE-DATATYPE-DECL   
-                ::= TYPE-DEFN-PATTERN "::=" 
-                                ALTERNATIVE "|" ... "|" ALTERNATIVE
+                ::= TYPE-DEFN-PATTERN "::=" ALTERNATIVE "|" ... "|" ALTERNATIVE
+                ::= TYPE-DEFN-PATTERN : KIND "::=" 
+					    ALTERNATIVE "|" ... "|" ALTERNATIVE
 DERIVING-DATATYPE-DECL
                 ::= SIMPLE-DATATYPE-DECL deriving CLASS
 
@@ -160,9 +164,10 @@ KIND          ::= CLASS
 
 EXT-CLASS     ::= CLASS | CLASS + | CLASS -
 
-CLASS         ::= SIMPLE-CLASS , ... , SIMPLE-CLASS
+%% intersection class must be put in parenthesis
+CLASS         ::= SIMPLE-CLASS | (CLASS , ... , CLASS)
 
-SIMPLE-CLASS  ::= type | CLASS-NAME | ( CLASS )
+SIMPLE-CLASS  ::= type | CLASS-NAME 
 		| { SIMPLE-ID . SIMPLE-ID < TYPE } 
 		| { SIMPLE-ID . SIMPLE-ID > TYPE } 
 		
@@ -170,14 +175,10 @@ TYPE-SCHEME   ::= TYPE | forall TYPE-VAR-DECL ; ... ; TYPE-VAR-DECL . TYPE
 
 PRIM-TYPE     ::= NO-BRACKET-TOKEN   %% TYPE-VAR or TYPE-NAME
 	        | ( TYPE )
-	        | ( TYPE : KIND )
 		| ( )                 %% unit
 
 MIXFIX-TYPE   ::= PRIM-TYPE ... PRIM-TYPE
-                | PRIM-TYPE ... PRIM-TYPE : SIMPLE-CLASS
-                | PRIM-TYPE ... PRIM-TYPE : ( KIND )
-%% avoid "," at the end of a type 
-%% ambiguity: " , CLASS-NAME " and  " , TYPE-NAME " within TYPE-ITEMS 
+                | PRIM-TYPE ... PRIM-TYPE : KIND 
 
 PRODUCT-TYPE  ::= MIXFIX-TYPE * ... * MIXFIX-TYPE
 
