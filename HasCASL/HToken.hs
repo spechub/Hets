@@ -54,7 +54,7 @@ functS = "fun"
 -- * HasCASL keyword handling
 
 hascasl_reserved_ops, hascasl_type_ops :: [String]
-hascasl_reserved_ops = [dotS++exMark, cDot++exMark, asP, assignS, lamS] 
+hascasl_reserved_ops = [dotS++exMark, cDot++exMark, asP, lamS] 
 		       ++ casl_reserved_ops
 
 hascasl_type_ops = [funS, pFun, contFun, pContFun, prodS, timesS, quMark] 
@@ -95,7 +95,8 @@ hconsId = mixId (barS:hascasl_reserved_ops, hascasl_reserved_words)
 
 -- | mixfix and compound type 'Id' (more signs excluded) 
 typeId :: GenParser Char st Id
-typeId = mixId (lessS:equalS:barS:hascasl_type_ops++hascasl_reserved_ops, 
+typeId = mixId (assignS:lessS:equalS:barS:hascasl_type_ops
+		++hascasl_reserved_ops, 
 		hascasl_reserved_words) hcKeys
 
 -- | simple 'Id' without compound list (only a words)

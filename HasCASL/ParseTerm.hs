@@ -239,7 +239,7 @@ typePatternOrId = do ts <- many1 primTypePatternOrId
 -- that may appear in 'TypePattern's as 'TypePatternToken'.
 typePatternToken :: AParser TypePattern
 typePatternToken = fmap TypePatternToken (pToken (scanHCWords <|> placeS <|> 
-				    reserved [lessS, equalS] scanHCSigns))
+			  reserved [assignS, lessS, equalS] scanHCSigns))
 
 -- | a 'typePatternToken' or something in braces (a 'typePattern'),
 -- in square brackets (a 'typePatternOrId' covering compound lists) 
@@ -264,7 +264,7 @@ typePattern = do ts <- many1 primTypePattern
 -- | type tokens with some symbols removed
 typeToken :: AParser Type
 typeToken = fmap TypeToken (pToken (scanHCWords <|> placeS <|> 
-				    reserved (lessS : equalS : barS :
+				    reserved (assignS : lessS : equalS : barS :
 					      hascasl_type_ops 
 					      ++ hascasl_reserved_ops)
 				    scanHCSigns))

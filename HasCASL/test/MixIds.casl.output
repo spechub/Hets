@@ -100,10 +100,7 @@ __<__<__[bla]
 [__]
 [{__}]
 __[__]
-parse error at 103.7:
-unexpected ":=" or ":"
-expecting "{", "[", simple-id, __, [<id>,...,<id>] or end of input
-
+__[__]:=__
 __[__]==__
 __<__[__>__]
 []
@@ -126,10 +123,7 @@ a{b}
 a{>}
 <{b}
 a[b[c]]
-parse error at 126.1:
-unexpected ":="
-expecting id
-
+:=
 parse error at 127.1:
 unexpected "@"
 expecting id
