@@ -17,8 +17,9 @@
 see the documentation for HetCATS and CASL
 
 \section{HasCASL Parser}
-The HasCASL parser reuses the token parser from CASL \texttt{(HToken.hs)} as
-well as ids and annotations from the top-level HetCATS directory.
+The HasCASL parser reuses the token (in \texttt{HToken.hs}) and
+\texttt{itemList} parser (in \texttt{ParseItem.hs}) from CASL as well as ids
+and annotations from the top-level HetCATS directory.
 
 The concrete syntax of HasCASL is given as plain text in
 \texttt{Concrete-Syntax.txt}. The abstract syntax is given in
@@ -35,7 +36,7 @@ depends on a global environment. Parsing alone only depends on its input
 
 HasCASL entities are -- in hierarchical
 order -- kinds, types and terms, where predicate types and formulae are
-special cases of types respectively. terms.
+special cases of types and terms respectively.
 
 Kinds are constructed from classes, types from type
 constructors and terms from values, i.e. operations or predicates.
@@ -64,21 +65,24 @@ parser. A trivial intersection class is a single class name.
   as a new or repeated declaration.
   
   A cyclic subclass relation is prohibited.
-\item A class name may be defined as a synonym for an intersection class. For
-  the purpose of comparing classes, synonyms are expanded.
-\item A class name may be defined as the downset of a type, comprising all
-  subtypes of the given type. (The variable name for the subtype is ignored.)
+\item An undeclared class name may be defined as a synonym (or alias) for an
+  intersection class. For the purpose of comparing classes, synonyms are
+  expanded.
+\item An undeclared class name may be defined as the downset of a type,
+  comprising all subtypes of the given type. (The variable name for the
+  subtype is ignored.)
   
   The downset of a type is a subclass of the downset of a
   supertype.
+\item No superclasses can be declared for downsets or intersection classes
+
 \end{itemize}
 
 \subsubsection*{Remarks}
 
-Anonymous downsets (from variable declarations) and intersection
-classes are incomparable and cannot be combined. (However a unique class name
-could be generated from the type or an existing class name could be looked up
-via comparing types.)
+The class name of a downsets within an intersection class is not further
+expanded, although one may have different classe names for the same downset.
+Furthermore, type variables may be declared with an anonymous downset.
 
 Class names are token ids, that is, simple ids with an optional compound list,
 because types within downsets may also be compound ids.
@@ -87,13 +91,14 @@ Class declarations may be repeated, sub- and superclass declarations are
 accumulated as long as they are non-cyclic.
 
 Class definitions may be repeated, if they remain equal, otherwise it is an
-error. Two downsets are equal if the corresponding types are equal. For type
-equality type aliases are expanded.
+error. Two downsets should be equal if the corresponding types are equal. (For
+type equality type aliases must be expanded.) Currently class equality for
+downsets is ignored.
 
 All redeclarations issue a warning. 
 
 The optional list of basic-items and the ``\texttt{instance}''-tag for a class
-are currently ignored. These basic-items will be simply treated recursively.
+are not handled yet.
 
 \subsection{Kinds}
 
@@ -190,7 +195,7 @@ simple ids.)
 \item There are simple value and pattern declarations. 
 \item Type patterns (with the implicit kind \texttt{Universe})
   may be declared to be subtypes of a given type. Only a simple type name as
-  super type is regarded to be an additional declaration (for compatibility
+  supertype is regarded to be an additional declaration (for compatibility
   with CASL)
   
   This does (confusingly) not mean that the result class is an anonymous
@@ -215,6 +220,20 @@ class names can also refer to a downset).
 A wrongly spelled (or non-existing) class name causes the analysis to assume
 that not a type but value variable is declared (most likely causing a type
 error). Keeping class and type names disjoint is not furhter enforced.
+
+
+\section{Test}
+
+The subdirectory \texttt{test} contains \texttt{*.hascasl} files with basic
+HasCASL specifications. The binary \texttt{../hacapa} called with the option
+\texttt{analysis} and an input file produces an environment and diagnostic
+messages on standard output. 
+
+The test script can be called by \texttt{make check}. It compares results with
+corresponding \texttt{*.output} files. The message ``passed'' indicates a
+successful comparison. Initial \texttt{*.output} files are created when they
+don't exist, but non-matching \texttt{*.output} files may also be overwritten
+by \texttt{make output}.
 
 \end{document}
 
