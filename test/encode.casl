@@ -1,0 +1,8 @@
+library encode
+
+spec sp =
+       sorts s < s'
+       op inj : s->s'
+       var x,y:s
+       . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)%
+end
