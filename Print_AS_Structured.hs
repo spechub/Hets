@@ -35,13 +35,17 @@ instance PrettyPrint SPEC where
     printText0 ga (Translation aa ab) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in nest 4 (aa' $$ ab')
+	in hang aa' 0 ab'
     printText0 ga (Reduction aa ab) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in nest 4 (aa' $$ ab')
-    printText0 ga (Union aa _) =
-	fsep $ map (\x -> ptext "and" $$ printText0 ga x) aa
+	in hang aa' 0 ab'
+    printText0 ga (Union aa _) = 
+	fsep $ intersperse' aa 
+	where intersperse' [] = [] 
+	      intersperse' (x:xs) =
+		  (printText0 ga x):
+		  map (\y -> ptext "and" $$ printText0 ga y) xs
     printText0 ga (Extension aa _) =
 	fsep $ printList aa
 	       -- intersperse (ptext "then") $ map (printText0 ga) aa
@@ -54,7 +58,7 @@ instance PrettyPrint SPEC where
 			  las' = printText0 ga las
 		      in ptext "then" <+> las' $$ i'
     printText0 ga (Free_spec aa _) =
-	hang (ptext "free") 4 $ printText0 ga aa
+	hang (ptext "free") 5 $ printText0 ga aa
     printText0 ga (Local_spec aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
@@ -63,7 +67,7 @@ instance PrettyPrint SPEC where
     printText0 ga (Closed_spec aa _) =
 	hang (ptext "closed") 4 $ printText0 ga aa
     printText0 ga (Group aa _) =
-	braces $ printText0 ga aa
+	lbrace $+$ printText0 ga aa $$ rbrace
     printText0 ga (Spec_inst aa ab) =
 	let aa' = printText0 ga aa
 	    ab' = printText0_fit_arg_list ga ab
