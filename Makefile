@@ -13,8 +13,9 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = Common/ATerm:ghc:hetcats
-CLEAN_PATH = Common/Lib:Common/Lib/Parsec:Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CSP-CASL:$(INCLUDE_PATH)
+INCLUDE_PATH = ghc:hetcats
+COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
+CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CSP-CASL:$(INCLUDE_PATH)
 
 HC         = ghc
 PERL       = perl
@@ -104,13 +105,12 @@ docs/index.html: $(doc_sources)
 ### clean up
 
 ### removes *.hi and *.o in all include directories
-clean:
+clean: bin_clean
 	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
-	(cd $$p ; $(RM) *.hi *.hi.bak *.o) ; done
-	$(RM) AS_*.hs
+	(cd $$p ; $(RM) *.hi *.o) ; done
 
-### additionally removes binaries
-bin_clean: clean
+### remove binaries
+bin_clean: 
 	$(RM) hets
 	$(RM) test_parser
 	$(RM) CASL/capa
@@ -131,9 +131,15 @@ d_clean: clean
 	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
 	(cd $$p ; $(RM) *.d *.d.bak) ; done
 
+### remove files also in own libraries
+lib_clean: 
+	for p in $(subst :, ,$(COMMONLIB_PATH):$(CLEANPATH)) . ; do \
+	(cd $$p ; $(RM) *.hi *.d *.o) ; done
+
 ### additionally removes the files that define the sources-variable
-real_clean: d_clean bin_clean
+real_clean: bin_clean lib_clean
 	$(RM) hetcats-make sources_hetcats.mk
+	$(RM) AS_*.hs
 
 ### additionally removes files not in CVS tree
 distclean: real_clean
