@@ -39,6 +39,8 @@ import qualified Common.Lib.Map as Map hiding (map)
 import qualified Common.Lib.Set as Set 
 import qualified Common.Lib.Rel as Rel
 import Data.Maybe
+import GHC.Real
+
 class ATermConvertible t where
   -- ATerm  
     -- conversion functions known from Joost Visser
@@ -148,8 +150,25 @@ mi :: (Num a) => Integer -> Maybe a
 mi x = if toInteger ((fromInteger::Integer->Int) x) == x 
                   then Just (fromInteger x) 
 	          else Nothing       	           
-          
-instance ATermConvertible Char where
+
+instance (ATermConvertible a,Integral a) => ATermConvertible (Ratio a) where
+   toATerm ((:%) i1 i2) = let at1 = toATerm i1
+                              at2 = toATerm i2
+                          in AAppl "Ratio" [at1,at2] []
+   fromATerm at = case at of
+                   (AAppl "Ration" [at1,at2] _) -> let i1 = fromATerm at1
+						       i2 = fromATerm at2
+						   in (i1 % i2)
+   toShATerm att0 ((:%) i1 i2) = let (att1,i1') = toShATerm att0 i1
+                                     (att2,i2') = toShATerm att1 i2
+                                 in addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
+   fromShATerm att = case aterm of
+                      (ShAAppl "Ration" [i1',i2'] _) -> let i1 = fromShATerm (getATermByIndex1 i1' att)
+							    i2 = fromShATerm (getATermByIndex1 i2' att)
+							in (i1 % i2)
+                     where aterm = getATerm att 
+
+instance ATermConvertible Char where                   
    toATerm c = AAppl s [] []
                where 
                s = show (c:[]) 
