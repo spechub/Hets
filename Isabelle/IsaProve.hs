@@ -97,7 +97,7 @@ isaProve thName (sig,axs) goals = do
              system ("cp "++fileName++" "++origName)
              return ()
   isabelle <- getEnv "HETS_ISABELLE"
-  isa <- newChildProcess (isabelle ++ "/Isabelle") [arguments [fileName]]
+  isa <- newChildProcess (isabelle ++ "/bin/Isabelle") [arguments [fileName]]
   htk <- initHTk [withdrawMainWin]
   t <- createToplevel [text "Proof confirmation window"]
   b <- newButton t [text "Please press me when current theory is proofed!",size(50,10)]
