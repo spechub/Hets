@@ -27,16 +27,17 @@ exec lps fps = do l <- getArgs
                              lps' = filter (\(s, _) -> s == opt) lps
                              fps' = filter (\(s, _) -> s == opt) fps
 		         in if null lps' && null fps' then
-			    print ("unknown option: " ++ opt) 
+			    putStrLn ("unknown option: " ++ opt) 
 			    else if null lps' then 
 				 case snd $ head $ fps' of 
 					  HetParser p -> parseSpec file p 
 				 else case snd $ head $ lps' of
 				      HetParser p -> checkLines p file
 			 else do p <- getProgName
-                                 print ("Usage: " ++ p ++ " [OPTIONS] <file>\n"
-                                   ++ "where OPTIONS is one of\n"
-                                   ++ unwords (map fst lps ++ map fst fps)) 
+                                 putStrLn("Usage: "++p++" [OPTIONS] <file>")
+                                 putStrLn"where OPTIONS is one of:"
+                                 putStrLn $ unwords
+					      (map fst lps ++ map fst fps) 
 
 checkLines :: (PrettyPrint a) => Parser a -> FilePath -> IO ()
 checkLines p fileName = do s <- readFile fileName
