@@ -1,6 +1,7 @@
 module Le where
 
 import Id
+import Set
 
 type TypeId = Id
 
@@ -12,10 +13,8 @@ data Type = Type { typeId :: TypeId, typeArgs :: [Type] }
 type ClassId = Id
 
 data Class = Universe 
-	   | Downset Type 
-	   | Upset Type
 	   | ClassName ClassId
-	   | Intersection [Class] -- non-recursive, but nested
+	   | Intersection (Set ClassId)
 
 data TypeVarDecl = TypeVarDecl { typeVarId :: Id, typeClass :: Class }
 
