@@ -450,13 +450,13 @@ morphismUnion uniteM addSigExt mor1 mor2 = do
   omap <- foldr ( \ (isc@(i, _), jsc@(j, t)) rm -> do
                      m <- rm
                      case Map.lookup isc m of
-                       Nothing -> if memberOpMap isc uo then do
+                       Nothing -> {- if memberOpMap isc uo then do
                             Result [Diag Error 
                               ("incompatible mapping of op: " ++ 
                                showId i " to: " ++ showId j " and: " 
                                ++ showId i "") $ posOfId i] $ Just ()
                             return m
-                          else return $ Map.insert isc jsc m
+                          else -} return $ Map.insert isc jsc m
                        Just (k, p) -> if j == k then
                             if p == t then return m
                             else return $ Map.insert isc (j, Total) m
@@ -470,13 +470,13 @@ morphismUnion uniteM addSigExt mor1 mor2 = do
   pmap <- foldr ( \ (isc@(i, _), j) rm -> do
                      m <- rm
                      case Map.lookup isc m of
-                       Nothing -> if memberMapSet isc up then do
+                       Nothing -> {- if memberMapSet isc up then do
                             Result [Diag Error 
                               ("incompatible mapping of pred: " ++ 
                                showId i " to: " ++ showId j " and: " 
                                ++ showId i "") $ posOfId i] $ Just ()
                             return m 
-                         else return $ Map.insert isc j m
+                         else -} return $ Map.insert isc j m
                        Just k -> if j == k then return m
                           else do 
                             Result [Diag Error 
