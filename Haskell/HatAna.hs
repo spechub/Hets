@@ -14,7 +14,7 @@ module Haskell.HatAna (module Haskell.HatAna, PNT, HsDeclI) where
 import Common.AS_Annotation 
 import Common.Result 
 import Common.GlobalAnnotations
-import PropPosSyntax hiding (ModuleName, Id)
+import PropPosSyntax hiding (ModuleName, Id, HsName)
 import TiModule
 import Modules
 import MUtils
@@ -43,11 +43,13 @@ import Data.List((\\))
 import Data.Set
 import qualified Common.Lib.Map as Map
 
+type Scope = Rel (SN HsName) (Ent (SN Id))
+
 data Sign = Sign 
     { instances :: [TiInstanceDB.Instance PNT]
     , types :: Map.Map (HsIdentI PNT) (Kind, TypeInfo PNT)
     , values :: Map.Map (HsIdentI PNT) (Scheme PNT) 
-    , scope :: Rel QName Ents.Entity
+    , scope :: Scope
     , fixities :: Map.Map (HsIdentI (SN Id)) HsFixity
     } deriving (Show, Eq)
 
@@ -56,7 +58,7 @@ diffSign e1 e2 = emptySign
     { instances = instances e1 \\ instances e2
     , types = types e1 `Map.difference` types e2
     , values = values e1 `Map.difference` values e2 
-    , scope = scope e1 `minusSet` scope e2 
+    , scope = scope e1 `minusRel` scope e2 
     , fixities = fixities e1 `Map.difference` fixities e2
     }
 
@@ -83,7 +85,7 @@ instance PrettyPrint (HsDeclI PNT) where
 
 instance PrettyPrint Sign where
     printText0 _ Sign { instances = is, types = ts, 
-                        values = vs, fixities = fs }
+                        values = vs, fixities = fs, scope = sc }
         = text "{-" $$ (if null is then empty else
               text "instances:" $$ 
                    vcat (map (text . HatPretty.pp) is)) $$ 
@@ -99,12 +101,14 @@ instance PrettyPrint Sign where
               text "\nfixities:" $$ 
                    vcat [ text (HatPretty.pp b) <+> text (HatPretty.pp a) 
                               | (a, b) <- Map.toList fs ]) $$
+          text "\nscope:" $$ 
+          text (HatPretty.pp sc) $$
           text "-}"
 
 extendSign :: Sign -> [TiInstanceDB.Instance PNT]
             -> [TiClasses.TAssump PNT] 
             -> [TiTypes.Assump PNT] 
-            -> Rel QName Ents.Entity
+            -> Scope
             -> [(HsIdentI (SN Id), HsFixity)]
             -> Sign
 extendSign e is ts vs s fs = addSign e emptySign 
@@ -127,20 +131,23 @@ emptySign = Sign
 hatAna :: (HsDecls, Sign, GlobalAnnos) -> 
           Result (HsDecls, Sign, Sign, [Named (HsDeclI PNT)])
 hatAna (hs@(HsDecls ds), e, _) = do
-   let mn = MainModule ""
-       pmod = HsModule loc0 (SN mn loc0) Nothing [] ds
-       insc = inscope (toMod pmod) (const emptyRel)
+   let mn = PlainModule "Prelude"
+       parsedMod = HsModule loc0 (SN mn loc0) Nothing [] ds
+       astMod = toMod parsedMod
+       insc = inscope astMod (const emptyRel)
        osc = scope e `union` insc
+       expScope :: Rel (SN Id) (Ent (SN Id))
+       expScope = mapDom (fmap hsUnQual) osc
        wm :: WorkModuleI QName (SN Id)
-       wm = mkWM (osc, emptyRel)
-       fixs = mapFst getQualified $ getInfixes pmod
+       wm = mkWM (osc, expScope)
+       fixs = mapFst getQualified $ getInfixes parsedMod
        fixMap = Map.fromList fixs `Map.union` fixities e
-       rm = reAssocModule wm [(mn, Map.toList fixMap)] pmod
-       (sm, _) = scopeModule (wm, 
-                              [] :: [(ModuleName, Rel (SN Id) (Ent (SN Id)))])
-                 rm
-   (HsModule _ _ _ _  fs :>: (is, (ts, vs))) <- 
-            lift $ inMyEnv $ tcModule sm
+       rm = reAssocModule wm [(mn, Map.toList fixMap)] parsedMod
+       (sm, _) = scopeModule (wm, [(mn, expScope)]) rm
+   (HsModule _ _ _ _  fs : _) :>: (is, (ts, vs)) <- 
+        lift $ inMyEnv $ tcModuleGroup 
+            (const $ const $ Left "Bla")  -- new argument in newer version
+            id [sm]
    let accSign = extendSign e is ts vs insc fixs
    return (hs, diffSign accSign e, accSign, map emptyName fs)
    where
