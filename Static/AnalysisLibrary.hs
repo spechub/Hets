@@ -24,7 +24,7 @@ import Logic.Grothendieck
 import Common.Lib.Graph
 import Static.DevGraph
 import qualified Syntax.AS_Structured
-import Syntax.Parse_AS_Structured (lookupLogic, library)
+import Syntax.Parse_AS_Structured (lookupLogicName,library)
 import Common.Lib.Parsec
 import Syntax.AS_Library
 import Static.AnalysisStructured
@@ -220,7 +220,7 @@ ana_LIB_ITEM lgraph defl libenv gannos genv dg l (Download_items ln items pos) =
   ana_err "download"
 
 ana_LIB_ITEM lgraph defl libenv gannos genv dg l (Logic_decl ln pos) = do
-  let log = lookupLogic ln lgraph
+  let log = lookupLogicName ln lgraph
   return (gannos,genv,dg,log,libenv)
 
 homogenize1 res 
