@@ -33,7 +33,10 @@ import CASL.MapSentence
 import CASL.SymbolParser
 import Logic.Logic
 import Data.Dynamic
-import Common.DynamicUtils 
+import Common.DynamicUtils
+ 
+import CASL.SimplifySen
+import Common.Result
 
 data Modal = Modal deriving Show
 
@@ -97,6 +100,41 @@ instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
       sym_name Modal = symName
       provers Modal = [] 
       cons_checkers Modal = []
+      simplify_sen Modal = simplifySen simModalMin simModal mid
+
+-- Min f e
+simModalMin :: a -> b -> M_FORMULA -> Result M_FORMULA
+simModalMin _ _ m =Result {diags = [], maybeResult = Just m}
+
+-- dummy
+simModal :: Sign M_FORMULA e -> M_FORMULA -> M_FORMULA
+simModal sign mFormula =
+    case mFormula of
+      Box mod form pos -> 
+	  let mod' = case mod of
+	             Term_mod term -> Term_mod $ rmTypesT simModalMin mid sign term
+		     t -> t
+	  in Box mod' (simplifySen simModalMin simModal mid sign form) pos
+      Diamond mod form pos ->
+	  let mod' = case mod of
+	             Term_mod term -> Term_mod $ rmTypesT simModalMin mid sign term
+		     t -> t
+	  in Diamond mod' (simplifySen simModalMin simModal mid sign form) pos
+
+-- id			
+mid :: M_FORMULA -> M_FORMULA
+mid mFormula = 
+    case mFormula of
+      Box mod form pos -> 
+	  let mod' = case mod of
+	             Term_mod term -> Term_mod $ rmTypesT simModalMin mid (emptySign "") term
+		     t -> t
+	  in Box mod' (rmTypesF simModalMin id (emptySign "") form) pos
+      Diamond mod form pos ->
+	  let mod' = case mod of
+		     Term_mod term -> Term_mod $ rmTypesT simModalMin mid (emptySign "") term
+		     t -> t
+	  in Diamond mod' (rmTypesF simModalMin id (emptySign "") form) pos
 
 instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
