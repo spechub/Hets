@@ -23,6 +23,7 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.MixfixParser
 import CASL.Overload
+import CASL.Utils
 import Common.Lib.State
 import Common.PrettyPrint
 import Common.Lib.Pretty
@@ -34,7 +35,9 @@ import Common.GlobalAnnotations
 import Common.Result
 import Data.Maybe
 import Data.List
+-- import Debug.Trace
 
+import Control.Exception (assert)
 
 checkPlaces :: [SORT] -> Id -> [Diagnosis]
 checkPlaces args i = 
@@ -122,10 +125,11 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: Ana b f e -> Ana s f e ->
-        GlobalAnnos -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
-ana_BASIC_SPEC ab as ga (Basic_spec al) = fmap Basic_spec $
-                               mapAnM (ana_BASIC_ITEMS ab as ga) al
+ana_BASIC_SPEC :: (Show f) => Ana b f e -> Ana s f e -> 
+        GlobalAnnos -> (f -> Bool) -> 
+	BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
+ana_BASIC_SPEC ab as ga noExtMixfix (Basic_spec al) = fmap Basic_spec $
+      mapAnM (ana_BASIC_ITEMS ab as ga noExtMixfix) al
 
 -- looseness of a datatype
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
@@ -134,12 +138,13 @@ mkForall :: [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
 mkForall vl f ps = if null vl then f else 
                    Quantification Universal vl f ps
 
-ana_BASIC_ITEMS :: Ana b f e -> Ana s f e -> 
-                GlobalAnnos -> (BASIC_ITEMS b s f) 
+ana_BASIC_ITEMS :: (Show f) => Ana b f e -> Ana s f e -> 
+                GlobalAnnos -> (f -> Bool) -> (BASIC_ITEMS b s f) 
                 -> State (Sign f e) (BASIC_ITEMS b s f)
-ana_BASIC_ITEMS ab as ga bi = 
+ana_BASIC_ITEMS ab as ga noExtMixfix bi = 
     case bi of 
-    Sig_items sis -> fmap Sig_items $ ana_SIG_ITEMS as ga Loose sis 
+    Sig_items sis -> fmap Sig_items $ 
+		     ana_SIG_ITEMS as ga noExtMixfix Loose sis 
     Free_datatype al ps -> 
         do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
            mapM_ addSort sorts
@@ -148,7 +153,7 @@ ana_BASIC_ITEMS ab as ga bi =
            closeSubsortRel 
            return bi
     Sort_gen al ps ->
-        do (gs,ul) <- ana_Generated as ga al
+        do (gs,ul) <- ana_Generated as ga noExtMixfix al
            toSortGenAx ps False 
                 (Set.unions $ map fst gs, Set.unions $ map snd gs)
            return $ Sort_gen ul ps
@@ -166,7 +171,8 @@ ana_BASIC_ITEMS ab as ga bi =
                ds = concatMap diags rfs
                arfs = zipWith ( \ a m -> case maybeResult m of 
                                 Nothing -> Nothing
-                                Just f -> Just a { item = f }) afs rfs
+                                Just f -> assert (noMixfixF noExtMixfix f) 
+				          (Just a { item = f })) afs rfs
                ufs = catMaybes arfs
                fufs = map ( \ a -> a { item = mkForall il 
                                      (item a) ps } ) ufs
@@ -182,7 +188,8 @@ ana_BASIC_ITEMS ab as ga bi =
                ds = concatMap diags rfs
                arfs = zipWith ( \ a m -> case maybeResult m of 
                                 Nothing -> Nothing
-                                Just f -> Just a { item = f }) afs rfs
+                                Just f -> assert (noMixfixF noExtMixfix f)
+				                 (Just a { item = f })) afs rfs
                ufs = catMaybes arfs
                sens = map ( \ a -> NamedSen (getRLabel a) $ item a) ufs
            addDiags ds
@@ -213,19 +220,20 @@ toSortGenAx ps isFree (sorts, ops) = do
     addSentences [NamedSen ("ga_generated_" ++ 
                          showSepList (showString "_") showId sortList "") f]
 
-ana_SIG_ITEMS :: Ana s f e -> GlobalAnnos -> GenKind -> SIG_ITEMS s f 
+ana_SIG_ITEMS :: (Show f) => Ana s f e -> GlobalAnnos -> (f -> Bool) 
+	      -> GenKind -> SIG_ITEMS s f 
               -> State (Sign f e) (SIG_ITEMS s f)
-ana_SIG_ITEMS as ga gk si = 
+ana_SIG_ITEMS as ga noExtMixfix gk si = 
     case si of 
     Sort_items al ps -> 
-        do ul <- mapM (ana_SORT_ITEM ga) al 
+        do ul <- mapM (ana_SORT_ITEM ga noExtMixfix) al 
            closeSubsortRel
            return $ Sort_items ul ps
     Op_items al ps -> 
-        do ul <- mapM (ana_OP_ITEM ga) al 
+        do ul <- mapM (ana_OP_ITEM ga noExtMixfix) al 
            return $ Op_items ul ps
     Pred_items al ps -> 
-        do ul <- mapM (ana_PRED_ITEM ga) al 
+        do ul <- mapM (ana_PRED_ITEM ga noExtMixfix) al 
            return $ Pred_items ul ps
     Datatype_items al _ -> 
         do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
@@ -236,11 +244,12 @@ ana_SIG_ITEMS as ga gk si =
     Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ as ga s
 
 -- helper
-ana_Generated :: Ana s f e -> GlobalAnnos -> [Annoted (SIG_ITEMS s f)] 
+ana_Generated :: (Show f) => Ana s f e -> GlobalAnnos 
+	      -> (f -> Bool) -> [Annoted (SIG_ITEMS s f)] 
               -> State (Sign f e)
               ([(Set.Set Id, Set.Set Component)],[Annoted (SIG_ITEMS s f)])
-ana_Generated as ga al = do
-   ul <- mapAnM (ana_SIG_ITEMS as ga Generated) al
+ana_Generated as ga noExtMixfix al = do
+   ul <- mapAnM (ana_SIG_ITEMS as ga noExtMixfix Generated) al
    return (map (getGenSig . item) ul,ul)
    
 getGenSig :: SIG_ITEMS s f -> (Set.Set Id, Set.Set Component)
@@ -278,9 +287,10 @@ getOps oi = case oi of
         Set.fromList $ map ( \ i -> Component i $ toOpType ty) is
     Op_defn i par _ _ -> Set.single $ Component i $ toOpType $ headToType par
 
-ana_SORT_ITEM :: GlobalAnnos -> Annoted (SORT_ITEM  f)
+ana_SORT_ITEM :: (Show f) => GlobalAnnos -> (f -> Bool) 
+	      -> Annoted (SORT_ITEM  f)
               -> State (Sign f e) (Annoted (SORT_ITEM f))
-ana_SORT_ITEM ga asi =
+ana_SORT_ITEM ga noExtMixfix asi =
     case item asi of 
     Sort_decl il _ ->
         do mapM_ addSort il
@@ -302,7 +312,7 @@ ana_SORT_ITEM ga asi =
            addSubsort super sub
            case mf of 
              Nothing -> return asi { item = Subsort_decl [sub] super ps}
-             Just f -> do 
+             Just f -> assert (noMixfixF noExtMixfix f) $ do 
                let p = [posOfId sub]
                    pv = [tokPos v]
                addSentences[NamedSen lab $
@@ -316,9 +326,10 @@ ana_SORT_ITEM ga asi =
            mapM_ ( \ i -> mapM_ (addSubsort i) il) il
            return asi
 
-ana_OP_ITEM :: GlobalAnnos -> Annoted (OP_ITEM f) 
+ana_OP_ITEM :: (Show f) => GlobalAnnos -> (f -> Bool) 
+	    ->  Annoted (OP_ITEM f) 
             -> State (Sign f e) (Annoted (OP_ITEM f))
-ana_OP_ITEM ga aoi = 
+ana_OP_ITEM ga noExtMixfix aoi = 
     case item aoi of 
     Op_decl ops ty il ps -> 
         do let oty = toOpType ty
@@ -351,7 +362,8 @@ ana_OP_ITEM ga aoi =
            addDiags ds
            case mt of 
              Nothing -> return aoi { item = Op_decl [i] ty [] ps }
-             Just t -> do let p = [posOfId i]
+             Just t -> assert (noMixfixT noExtMixfix t) $
+                       do let p = [posOfId i]
                           addSentences [NamedSen lab $
                              mkForall vs 
                              (Strong_equation 
@@ -446,9 +458,10 @@ makeUnit b t ty i =
                       (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
                       qv p) p
 
-ana_PRED_ITEM :: GlobalAnnos -> Annoted (PRED_ITEM f)
+ana_PRED_ITEM :: (Show f) => GlobalAnnos -> (f -> Bool) 
+	      -> Annoted (PRED_ITEM f)
               -> State (Sign f e) (Annoted (PRED_ITEM f))
-ana_PRED_ITEM ga ap = 
+ana_PRED_ITEM ga noExtMixfix ap = 
     case item ap of 
     Pred_decl preds ty _ -> 
         do mapM (addPred $ toPredType ty) preds
@@ -471,7 +484,7 @@ ana_PRED_ITEM ga ap =
            addDiags ds
            case mt of 
              Nothing -> return ap {item = Pred_decl [i] ty ps}
-             Just t -> do 
+             Just t -> assert (noMixfixF noExtMixfix t) $ do 
                let p = [posOfId i]
                addSentences [NamedSen lab $
                              mkForall vs 
@@ -678,11 +691,13 @@ type Ana b f e = GlobalAnnos -> b -> State (Sign f e) b
 basicAnalysis :: (Eq f, PrettyPrint f) => Min f e -- ^ type analysis of f  
               -> Ana b f e  -- ^ static analysis of basic item b
               -> Ana s f e  -- ^ static analysis of signature item s  
-              -> (e -> e -> e) -- ^ difference of signature extension e 
+              -> (e -> e -> e) -- ^ difference of signature extension e
+	      -> (f -> Bool) -- ^ check if a formula extension has been 
+			     -- analysed completely by mixfix resolution 
               -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
      -> Result (BASIC_SPEC b s f, Sign f e, Sign f e, [Named (FORMULA f)])
-basicAnalysis mef ab as dif (bs, inSig, ga) = do 
-    let (newBs, accSig) = runState (ana_BASIC_SPEC ab as ga bs) inSig
+basicAnalysis mef ab as dif checkExtMixfix (bs, inSig, ga) = do 
+    let (newBs, accSig) = runState (ana_BASIC_SPEC ab as ga checkExtMixfix bs) inSig
         ds = reverse $ envDiags accSig
         sents = sentences accSig
         cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }

@@ -105,6 +105,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
                Symbol RawSymbol where
          basic_analysis Modal = Just $ basicAnalysis minExpForm
                                ana_M_BASIC_ITEM ana_M_SIG_ITEM diffModalSign
+			       noExtMixfixM
          stat_symb_map_items Modal = statSymbMapItems
          stat_symb_items Modal = statSymbItems
          ensures_amalgamability Modal _ = 

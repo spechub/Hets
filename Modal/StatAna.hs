@@ -12,11 +12,14 @@ Portability :  portable
 
 {- todo:
    check quantifiers (sorts, variables in body) in ana_M_FORMULA
+   * MixfixAnalysis must be done in resolveMixfix not in minExpFormula,
+     for correct generation of AS after analysis!!
+
 -}
 
 module Modal.StatAna where
 
---import Debug.Trace
+import Debug.Trace
 
 import Modal.AS_Modal
 import Modal.Print_AS
@@ -25,6 +28,7 @@ import Modal.ModalSign
 import CASL.Sign
 import CASL.MixfixParser
 import CASL.StaticAna
+import CASL.Utils
 import CASL.AS_Basic_CASL
 import CASL.Overload
 import CASL.MapSentence
@@ -36,6 +40,18 @@ import Common.Lib.State
 import Common.Id
 import Common.Result
 
+
+noExtMixfixM :: M_FORMULA -> Bool
+noExtMixfixM mf =
+    let noInner = noMixfixF noExtMixfixM in
+    (const $ 
+     trace "Modal.StatAna.noExtMixfixM: implementation \
+	   \is commented out, until MixfixParser is fixed" True) mf
+{-
+    case mf of
+    Box _ f _     -> noInner f
+    Diamond _ f _ -> noInner f
+-}
 minExpForm :: Min M_FORMULA ModalSign
 minExpForm ga s form = 
     let newGa = addAssocs ga s
@@ -45,7 +61,7 @@ minExpForm ga s form =
         minMod md ps = case md of
                   Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
                   Term_mod t -> let
-                    r = do 
+                    r = do
                       t1 <- resolveMixfix newGa (allOpIds s) preds t
                       ts <- minExpTerm minExpForm ga s t1
                       t2 <- is_unambiguous t ts ps
@@ -83,7 +99,7 @@ ana_M_SIG_ITEM :: Ana M_SIG_ITEM M_FORMULA ModalSign
 ana_M_SIG_ITEM ga mi = 
     case mi of 
     Rigid_op_items r al ps -> 
-        do ul <- mapM (ana_OP_ITEM ga) al 
+        do ul <- mapM (ana_OP_ITEM ga noExtMixfixM) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Op_decl ops ty _ _ -> 
@@ -94,7 +110,7 @@ ana_M_SIG_ITEM ga mi =
                _ -> return ()
            return $ Rigid_op_items r ul ps
     Rigid_pred_items r al ps -> 
-        do ul <- mapM (ana_PRED_ITEM ga) al 
+        do ul <- mapM (ana_PRED_ITEM ga noExtMixfixM) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Pred_decl ops ty _ -> 

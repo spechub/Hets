@@ -21,7 +21,7 @@ Portability :  portable
 
 module CoCASL.StatAna where
 
---import Debug.Trace
+import Debug.Trace
 
 import CoCASL.AS_CoCASL
 import CoCASL.Print_AS
@@ -45,6 +45,11 @@ import Data.List
 
 
 type CSign = Sign C_FORMULA CoCASLSign
+
+noExtMixfixCo :: C_FORMULA -> Bool
+noExtMixfixCo = 
+    (const $ 
+     trace "CoCASL.StatAna: noExtMixfixCo is not yet implemented" True)
 
 minExpForm :: Min C_FORMULA CoCASLSign
 minExpForm ga s form = 
@@ -274,7 +279,7 @@ toCoSortGenAx ps isFree (sorts, ops) = do
  			 showSepList (showString "_") showId sortList "") f]
 
 ana_CoGenerated as ga al = do
-   ul <- mapAnM (ana_SIG_ITEMS as ga Generated) al
+   ul <- mapAnM (ana_SIG_ITEMS as ga noExtMixfixCo Generated) al
    return (map (getCoGenSig . item) ul,ul)
    
 getCoGenSig :: SIG_ITEMS C_SIG_ITEM C_FORMULA 

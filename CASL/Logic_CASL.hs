@@ -167,7 +167,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          basic_analysis CASL = Just $ basicAnalysis 
                                (const $ const return) 
                                (const return)
-                               (const return) const
+                               (const return) const (const True)
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          -- ensures_amalgamability :: id
