@@ -26,8 +26,6 @@ import Print_AS_Structured
 
 import List
 
-import Logic
-import LogicGraph
 import Grothendieck
 
 {-
@@ -71,7 +69,8 @@ instance PrettyPrint UNIT_SPEC_DEFN where
 -}
 instance PrettyPrint UNIT_SPEC where
     printText0 ga (Unit_type aa ab _) =
-	let aa' = fsep $ punctuate (ptext "*") $ map (printText0 ga) aa
+	let aa' = fsep $ punctuate (ptext " * ") $ 
+			 map (condBracesGroupSpec ga) aa
 	    ab' = printText0 ga ab
 	in if null aa then ab' else aa' <+> ptext "->" <+> ab'
     printText0 ga (Spec_name aa) =
