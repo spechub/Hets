@@ -6,13 +6,13 @@ a_a
 Error: in line 3 at char 1: unexpected mixfix token: a_a
 __
 Error: in line 4 at char 1: no resolution for term: __
-1 @@%[Infix]% (2 @@3)
-1 :::2
+1 @@ (2 @@ 3)
+1 ::: 2
 1
-(1 :::2) E3
-0 E1
-((1 @@2) :::(2 @@3)) E(3 @@4)
-'b' ::%[Infix]% ('l' ::%[Infix]% ('a' ::[]))
+(1 ::: 2) E 3
+0 E 1
+((1 @@ 2) ::: (2 @@ 3)) E (3 @@ 4)
+'b' :: ('l' :: ('a' :: []))
 []
 <
 Error: in line 13 at char 1: unexpected mixfix token: <

@@ -1,35 +1,36 @@
-%[Infix]% (%[Infix]% (%[Infix]% ((4 *(x ^4)) +(3 *(x ^3))) +(2 *(x ^2))) +(1 *(x ^1))) +(0 *(x ^0))
-'a' ::%[Infix]% ('b' ::%[Infix]% ('\"' ::%[Infix]% ('\'' ::%[Infix]% ('\n' ::%[Infix]% ('\\' ::[])))))
-1 @@2
-(1 @@2) :::1
-1 E1
-(1 :::0) E2
-(1 @@2) +((3 @@4) *('a' ::%[Infix]% ('f' ::%[Infix]% ('a' ::[]))))
-[] +[]
+((((4 * (x ^ 4)) + (3 * (x ^ 3))) + (2 * (x ^ 2))) + (1 * (x ^ 1)))
++ (0 * (x ^ 0))
+'a' :: ('b' :: ('\"' :: ('\'' :: ('\n' :: ('\\' :: [])))))
+1 @@ 2
+(1 @@ 2) ::: 1
+1 E 1
+(1 ::: 0) E 2
+(1 @@ 2) + ((3 @@ 4) * ('a' :: ('f' :: ('a' :: []))))
+[] + []
 (op x : a)(a, b)
 (a)
 (a, b)
-(a : s) +(b : s)
+(a : s) + (b : s)
 a as s : s as s
 a : s : s as s as s
 []
-+a
-a +b
-a when a <b else b
++ a
+a + b
+a when a < b else b
 a when (pred a : b) else b
 { a b }
 a b p
-qa b
+q a b
 B [ b ]
 B[a[c,d],b]
-a ::%[Infix]% (%[Infix]% (c ::%[Infix]% (d ::[])) ::%[Infix]% (b ::[]))
-a[c,d] ::%[Infix]% (b ::[])
-a B[a[c,d], b] b
+a :: ((c :: (d :: [])) :: (b :: []))
+a[c,d] :: (b :: [])
+a B[a[c,d],b] b
 while (while a do b od) do c od
 while (while a do b od) do (while c do d od) od
 { a ({ b c }) }
-a ::%[Infix]% ((A 0 B) ::[])
+a :: ((A 0 B) :: [])
 A (A 0 B) B
-%[Infix]% (b +(A 0 B)) +b
--(A 0 B)
-%[MixWithPost]% %[MixWithPost]% a ! ! !
+(b + (A 0 B)) + b
+- (A 0 B)
+a ! ! !

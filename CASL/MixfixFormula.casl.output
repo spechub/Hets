@@ -1,1 +1,1 @@
-forall aa, ab:s . aa <=ab => p
+forall aa, ab:s . aa <= ab => p
