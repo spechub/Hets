@@ -259,7 +259,7 @@ homogeniseDiagram targetLid diag =
 		  return (n, sig')
            convertEdge (n1, n2, DiagLink { dl_morphism = GMorphism cid _ mor }) =
 	       let srcLid = sourceLogic cid
-	       in if language_name cid == "id_" ++ language_name srcLid then
+	       in if isIdComorphism (Comorphism cid) then
 		     do mor' <- rcoerce targetLid srcLid nullPos mor
 			return (n1, n2, mor')
 		     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
@@ -295,7 +295,7 @@ homogeniseEdges targetLid edges =
     -- See homogeniseDiagram for comments on implementation.
     do let convertEdge (n1, n2, DiagLink { dl_morphism = GMorphism cid _ mor }) =
 	       let srcLid = sourceLogic cid
-	       in if language_name cid == "id_" ++ language_name srcLid then
+	       in if isIdComorphism (Comorphism cid) then
 		     do mor' <- rcoerce targetLid srcLid nullPos mor
 			return (n1, n2, mor')
 		     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
