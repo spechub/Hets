@@ -3,6 +3,11 @@
    $Id$
    Author: Klaus Lüttich
    Year:   2002
+-}
+{- |
+   Maintainer  :  hets@tzi.de
+   Stability   :  provisional
+   Portability :  non-portable (import Common.PrettyPrint)
 
    Some functions for building and accessing the datastructures 
    of GlobalAnnotations. This module should avoid further cyclic
@@ -11,7 +16,6 @@
    todo:
 
 -}
-
 
 module Common.GlobalAnnotationsFunctions 
     ( emptyGlobalAnnos, addGlobalAnnos
@@ -35,15 +39,6 @@ import Prelude hiding (lookup)
 import Data.List (nub,mapAccumL)
 import Data.Maybe (fromJust)
 
-emptyGlobalAnnos :: GlobalAnnos
-emptyGlobalAnnos = GA { prec_annos    = (Common.Lib.Map.empty, 
-					 Common.Lib.Graph.empty)
-		      , assoc_annos   = Common.Lib.Map.empty
-		      , display_annos = Common.Lib.Map.empty
-		      , literal_annos = emptyLiteralAnnos
-		      , literal_map   = Common.Lib.Map.empty
-		      } 
- 
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> GlobalAnnos
 addGlobalAnnos ga annos = 
     let ga'= ga { prec_annos    = store_prec_annos    (prec_annos  ga)   annos
@@ -191,12 +186,6 @@ getLiteralType lmap i =
     case lookup i lmap of
     Just t  -> t
     Nothing -> error $ show i ++ " is not a literal id"
-emptyLiteralAnnos :: LiteralAnnos
-emptyLiteralAnnos = LA { string_lit  = Nothing
-			, list_lit   = Nothing 
-			, number_lit = Nothing
-			, float_lit  = Nothing
-			}
 
 store_literal_annos :: LiteralAnnos -> [Annotation] -> LiteralAnnos
 store_literal_annos la ans = 
@@ -311,10 +300,10 @@ bracketList ga = case list_lit $ literal_annos ga of
 
 -------------------------------------------------------------------------
 
--- |
--- an error function for Annotations
+-- | an error function for Annotations
 
 annotationConflict :: String -> [Annotation] -> a
 annotationConflict tp ans = 
-    error $ "*** conflicting %"++ tp ++ " annotations:\n"
-	      ++ (show $ printText0 emptyGlobalAnnos ans)
+    error $ ("*** conflicting %"++ tp ++ " annotations:\n"
+	      ++ showPretty ans "")
+

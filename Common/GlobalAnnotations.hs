@@ -3,13 +3,14 @@
    $Id$
    Author: Klaus Lüttich
    Year:   2002
+-}
 
-   Some datastructures for fast access of GlobalAnnotations
-
-   todo:
-   did: 12.7.02
-   removed PrettyPrint from Id to avoid cyclic imports
-
+{- |
+   Maintainer  :  hets@tzi.de
+   Stability   :  provisional
+   Portability :  portable
+    
+   Data structures for global annotations
 -}
 
 module Common.GlobalAnnotations where
@@ -25,6 +26,22 @@ data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
 		      , literal_annos  :: LiteralAnnos
 		      , literal_map    :: LiteralMap
 		      } deriving (Show)
+
+emptyGlobalAnnos :: GlobalAnnos
+emptyGlobalAnnos = GA { prec_annos    = (Common.Lib.Map.empty, 
+					 Common.Lib.Graph.empty)
+		      , assoc_annos   = Common.Lib.Map.empty
+		      , display_annos = Common.Lib.Map.empty
+		      , literal_annos = emptyLiteralAnnos
+		      , literal_map   = Common.Lib.Map.empty
+		      } 
+
+emptyLiteralAnnos :: LiteralAnnos
+emptyLiteralAnnos = LA { string_lit  = Nothing
+			, list_lit   = Nothing 
+			, number_lit = Nothing
+			, float_lit  = Nothing
+			}
 
 type PrecedenceGraph = (Map Id Node,Graph Id Int)
 
