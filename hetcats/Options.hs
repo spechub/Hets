@@ -286,8 +286,12 @@ hetcatsOpts argv =
     case (getOpt Permute options argv) of
         (opts,non_opts,[]) -> do withOpts <- formOpts opts
 				 withIns  <- formInFiles non_opts
-				 return $ (withOpts . withIns) 
-					defaultHetcatsOpts
+				 let ourOpts = (withOpts . withIns) 
+					       defaultHetcatsOpts
+				 if (verbose ourOpts > 2)
+				    then printOpts ourOpts
+				    else return ()
+				 return ourOpts
         (_,_,errs) -> fail (concat errs ++ hetsUsage)
 
 -- TODO: implement some kind of sequence...
@@ -312,15 +316,15 @@ formOpts fs = do if (hasHelp fs)
     hasHelp xs = Help `elem` xs
 
 extractOpts :: [Flag] -> HetcatsOpts -> HetcatsOpts
-extractOpts ((Verbose x):xs)  opts = opts
-extractOpts ((Version):xs)    opts = opts
-extractOpts ((Help):xs)       opts = opts
-extractOpts ((InType x):xs)   opts = opts { intype = x }
-extractOpts ((OutDir x):xs)   opts = opts { outdir = x }
-extractOpts ((OutTypes x):xs) opts = opts { outtypes = x }
-extractOpts ((Analysis x):xs) opts = opts { analysis = x }
+extractOpts ((Verbose _):xs)  opts = extractOpts xs opts
+extractOpts ((Version):xs)    opts = extractOpts xs opts
+extractOpts ((Help):xs)       opts = extractOpts xs opts
+extractOpts ((InType x):xs)   opts = extractOpts xs opts { intype = x }
+extractOpts ((OutDir x):xs)   opts = extractOpts xs opts { outdir = x }
+extractOpts ((OutTypes x):xs) opts = extractOpts xs opts { outtypes = x }
+extractOpts ((Analysis x):xs) opts = extractOpts xs opts { analysis = x }
 --extractOpts ((Pretty x):xs)   opts = ... ?
-extractOpts ((LibDir x):xs)   opts = opts { libdir = x }
+extractOpts ((LibDir x):xs)   opts = extractOpts xs opts { libdir = x }
 extractOpts [] opts = opts
 extractOpts _ _ = hetsError Intern "Unknown Error in extractOpts"
 
@@ -386,10 +390,27 @@ checkOutDir file = do exists <- doesDirectoryExist file
 -- should work kinda like sorting -- TODO!
 
 collectVerbosity :: [Flag] -> [Flag]
-collectVerbosity fs = fs
+collectVerbosity fs =
+    let (vs,fs') = partition isVerb fs
+	verbosity = sum $ map extractVerbosity vs
+    in (Verbose verbosity):fs'
+    where
+    isVerb (Verbose _) = True
+    isVerb _           = False
+    extractVerbosity (Verbose x) = x
+    extractVerbosity _ = hetsError Intern "Unknown Error in collectVerbosity"
 
 collectOutTypes :: [Flag] -> [Flag]
-collectOutTypes fs = fs
+collectOutTypes fs =
+    let (ots,fs') = partition isOType fs
+	otypes = foldl concatOTypes [] ots
+    in (OutTypes otypes):fs'
+    where
+    isOType (OutTypes _) = True
+    isOType _            = False
+    concatOTypes os (OutTypes ot) = os ++ ot
+    concatOTypes _ _ = hetsError Intern "Unknown Error in collectOutTypes"
+
 
 -- auxiliary functions: error messages --
 
@@ -405,6 +426,9 @@ hetsUsage :: String
 hetsUsage = usageInfo header options
     where header = "Usage: hetcats [OPTION...] file"
 
+-- 
+printOpts :: hetcatsOpts -> IO ()
+printOpts opts = return ()
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 {-
