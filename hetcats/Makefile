@@ -132,6 +132,11 @@ hacapa: ../HasCASL/hacapa
 	$(RM) $@
 	$(HC) --make -o ../HasCASL/$@ $< $(HC_OPTS)
 
+### HetCASL parser
+hetpa: ../hetpa.hs $(drifted_files) ../*.hs 
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
 ### run tests in other directories
 check: hetcats
 	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done

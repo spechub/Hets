@@ -459,11 +459,11 @@ library l = do skip
 -- Testing
 -------------------------------------------------------------
 
-logicGraph = ([Logic CASL],[])
+mylogicGraph = ([Logic CASL],[])
 
 parseSPEC fname =
   do input <- readFile fname
-     case runParser (do x <- spec logicGraph
+     case runParser (do x <- spec mylogicGraph
                         s1<-getInput
                         return (x,s1))
                (Logic CASL) fname input of
@@ -472,7 +472,7 @@ parseSPEC fname =
 
 parseLib fname =
   do input <- readFile fname
-     case runParser (do x <- library logicGraph
+     case runParser (do x <- library mylogicGraph
                         s1<-getInput
                         return (x,s1))
                (Logic CASL) fname input of
