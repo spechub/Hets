@@ -12,6 +12,7 @@ Portability :  portable
 
 {- todo:
   correct map_C_FORMULA, getCoDataGenSig
+  analysis of modal formulas
 -}
 
 module CoCASL.StatAna where
@@ -74,15 +75,15 @@ minExpForm ga s form =
 		       _ -> r
     in case form of
         Box m f ps -> 
-	    do nm <- minMod m ps
-               f1 <- res f
-	       f2 <- minExpFORMULA minExpForm ga s f1
-	       return $ Box nm f2 ps
+	    do --nm <- minMod m ps
+               --f1 <- res f
+	       --f2 <- minExpFORMULA minExpForm ga s f1
+	       return $ Box m f ps
 	Diamond m f ps -> 
-	    do nm <- minMod m ps
-               f1 <- res f
-	       f2 <- minExpFORMULA minExpForm ga s f1
-	       return $ Diamond nm f2 ps
+	    do --nm <- minMod m ps
+               --f1 <- res f
+	       --f2 <- minExpFORMULA minExpForm ga s f1
+	       return $ Diamond m f ps
         phi -> return phi
 
 ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
@@ -117,18 +118,19 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
 			       _ -> True) allts
 	       sbs = concatMap ( \ (CoSubsorts ss _) -> ss) subs
 	       comps = map (getCoConsType s) alts
-	       ttrips = map ( \ (a, vs, t, ses) -> (a, vs, t, catSels ses))
-			    $ catMaybes $ map (coselForms1 "X") $ comps 
-	       sels = concatMap ( \ (_, _, _, ses) -> ses) ttrips
+	       ttrips = map ( \ (a, vs, ses) -> (a, vs, catSels ses))
+			    $ map (coselForms1 "X") $ comps 
+	       sels = concatMap ( \ (_, _, ses) -> ses) ttrips
 	   addSentences $ catMaybes $ map comakeInjective 
 			    $ filter ( \ (_, _, ces) -> not $ null ces) 
 			      comps
 	   addSentences $ catMaybes $ concatMap ( \ as -> map (comakeDisjToSort as) sbs)
 			comps 
 	   addSentences $ comakeDisjoint comps 
+           let ttrips' = [(a,vs,t,ses) | (Just(a,t),vs,ses) <- ttrips]
 	   addSentences $ catMaybes $ concatMap 
 			     ( \ ses -> 
-			       map (makeUndefForm ses) ttrips) sels
+			       map (makeUndefForm ses) ttrips') sels
 	 _ -> return ()
        return cs
 
@@ -150,31 +152,37 @@ getCoCompType s (CoPartial_select l cs _) =
 coselForms :: (Maybe Id, OpType, [COCOMPONENTS]) -> [Named (FORMULA f)]
 coselForms x = 
   case coselForms1 "X" x of
-    Nothing -> []
-    Just y -> makeSelForms 1 y
+    (Just (i,f),vs,cs) -> makeSelForms 1 (i,vs,f,cs)
+    _ -> []
 
 coselForms1 :: String -> (Maybe Id, OpType, [COCOMPONENTS]) 
-	  -> Maybe (Id, [VAR_DECL], TERM f, [(Maybe Id, OpType)])
-coselForms1 str (Nothing, ty, il) = Nothing
-coselForms1 str (Just i, ty, il) =
+	  -> (Maybe (Id, TERM f), [VAR_DECL], [(Maybe Id, OpType)])
+coselForms1 str (i, ty, il) = 
     let cs = concatMap (getCoCompType $ opRes ty) il
 	vs = genSelVars str 1 cs 
-    in Just $ (i, vs, Application (Qual_op_name i (toOP_TYPE ty) [])
-	    (map toQualVar vs) [], cs)
+        it = case i of
+               Nothing -> Nothing
+               Just i' -> Just (i',Application (Qual_op_name i' 
+                                                 (toOP_TYPE ty) [])
+	                                      (map toQualVar vs) [])
+     in (it, vs, cs)
 
 comakeDisjToSort :: (Maybe Id, OpType, [COCOMPONENTS]) -> SORT 
                      -> Maybe (Named (FORMULA f))
 comakeDisjToSort a s = do
-    (c, v, t, _) <- coselForms1 "X" a 
-    let p = [posOfId s] 
+    let (i, v, _) = coselForms1 "X" a 
+        p = [posOfId s]
+    (c,t) <- i 
     return $ NamedSen ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "") $
 	mkForall v (Negation (Membership t s p) p) p
 
 comakeInjective :: (Maybe Id, OpType, [COCOMPONENTS]) 
                      -> Maybe (Named (FORMULA f))
 comakeInjective a = do
-    (c, v1, t1, _) <- coselForms1 "X" a
-    (_, v2, t2, _) <- coselForms1 "Y" a
+    let (i1, v1, _) = coselForms1 "X" a
+        (i2, v2, _) = coselForms1 "Y" a
+    (c,t1) <- i1
+    (_,t2) <- i2
     let p = [posOfId c]
     return $ NamedSen ("ga_injective_" ++ showId c "") $
        mkForall (v1 ++ v2) 
@@ -191,8 +199,10 @@ comakeDisj :: (Maybe Id, OpType, [COCOMPONENTS])
                            -> (Maybe Id, OpType, [COCOMPONENTS])
                            -> Maybe (Named (FORMULA f))
 comakeDisj a1 a2 = do
-    (c1, v1, t1, _) <- coselForms1 "X" a1
-    (c2, v2, t2, _) <- coselForms1 "Y" a2
+    let (i1, v1, _) = coselForms1 "X" a1
+        (i2, v2, _) = coselForms1 "Y" a2
+    (c1,t1) <- i1
+    (c2,t2) <- i2
     let p = [posOfId c1, posOfId c2]
     return $ NamedSen ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "") $
        mkForall (v1 ++ v2) 
@@ -207,14 +217,14 @@ ana_COALTERNATIVE s c =
 	do mapM_ (addSubsort s) ss
 	   return Nothing
     _ -> do let cons@(i, ty, il) = getCoConsType s c
+            ul <- mapM (ana_COCOMPONENTS s) il
+            let ts = concatMap fst ul
+            addDiags $ checkUniqueness (ts ++ concatMap snd ul)
+	    addSentences $ coselForms cons
 	    case i of 
               Nothing -> return Nothing
               Just i' -> do
                 addOp ty i'
-	        ul <- mapM (ana_COCOMPONENTS s) il
-                let ts = concatMap fst ul
-                addDiags $ checkUniqueness (ts ++ concatMap snd ul)
-	        addSentences $ coselForms cons
 	        return $ Just (Component i' ty, Set.fromList ts) 
 
  

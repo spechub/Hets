@@ -41,6 +41,7 @@ cocaslFormula =
 modality :: [String] -> AParser MODALITY
 modality ks = 
     do t <- term (ks ++ cocasl_reserved_words)
+       ((do asKey "*"; return ()) <|> return ())
        return $ Term_mod t
 
 instance AParsable C_FORMULA where
