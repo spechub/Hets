@@ -73,7 +73,7 @@ import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.AS_Annotation
 import CASL.AS_Basic_CASL
-import CASL.StaticAna
+import CASL.Sign
 import CASL.Morphism
 import Data.Dynamic
 
@@ -567,7 +567,7 @@ sl_sign s =
 		  $ Set.unions $ Map.elems $ opMap s then need_part else bottom
 	in sublogics_max subs (sublogics_max preds partial)
 
-sl_sentence :: Sentence -> CASL_Sublogics
+sl_sentence :: FORMULA -> CASL_Sublogics
 sl_sentence = sl_formula
 
 sl_morphism :: Morphism -> CASL_Sublogics
@@ -616,7 +616,7 @@ in_x l x f = sl_in l (f x)
 in_basic_spec :: CASL_Sublogics -> BASIC_SPEC -> Bool
 in_basic_spec l x = in_x l x sl_basic_spec
 
-in_sentence :: CASL_Sublogics -> Sentence -> Bool
+in_sentence :: CASL_Sublogics -> FORMULA -> Bool
 in_sentence l x = in_x l x sl_sentence
 
 in_symb_items :: CASL_Sublogics -> SYMB_ITEMS -> Bool

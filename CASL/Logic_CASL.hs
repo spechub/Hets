@@ -30,6 +30,7 @@ import Common.Id
 import CASL.ATC_CASL
 
 import CASL.Sublogic
+import CASL.Sign
 import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
@@ -74,7 +75,7 @@ instance LatticeWithTop CASL_Sublogics where
 
 -- CASL logic
 
-instance Sentences CASL Sentence () Sign Morphism Symbol where
+instance Sentences CASL FORMULA () Sign Morphism Symbol where
       map_sen CASL _morphism s = return s -- ???
       parse_sentence CASL _sign str = 
 	  case runParser (aFormula << eof) emptyAnnos "" str of
@@ -83,7 +84,7 @@ instance Sentences CASL Sentence () Sign Morphism Symbol where
       provers CASL = [] 
       cons_checkers CASL = []
 
-instance StaticAnalysis CASL BASIC_SPEC Sentence ()
+instance StaticAnalysis CASL BASIC_SPEC FORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism 
@@ -118,7 +119,7 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          induced_from_to_morphism CASL = inducedFromToMorphism
 
 instance Logic CASL CASL.Sublogic.CASL_Sublogics
-               BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
+               BASIC_SPEC FORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism
                Symbol RawSymbol () where

@@ -137,7 +137,7 @@ yet (see above). Hence, it coincides with the intuitive semantics.
 
 module CASL.SymbolMapAnalysis where
 
-import CASL.StaticAna
+import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
 import Common.Id
@@ -255,7 +255,7 @@ inducedFromMorphism rmap sigma = do
               (return Map.empty) (predMap sigma)
   -- compute target signature
   let sigma' = 
-        Env {sortSet = Set.image (mapSort sort_Map) sortsSigma,
+        emptySign {sortSet = Set.image (mapSort sort_Map) sortsSigma,
              sortRel = Rel.transClosure $ 
                          Rel.image (mapSort sort_Map) (sortRel sigma),
              opMap = Map.foldWithKey (mapOps sort_Map op_Map) 
@@ -264,9 +264,7 @@ inducedFromMorphism rmap sigma = do
 	               Map.empty (assocOps sigma),
              predMap = Map.foldWithKey (mapPreds sort_Map pred_Map) 
                        Map.empty (predMap sigma),
-             varMap = Map.empty,
-             sentences = [],
-             envDiags = [] }
+             varMap = Map.empty}
   -- return assembled morphism
   return (Morphism { msource = sigma,
                    mtarget = sigma',

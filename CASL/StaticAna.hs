@@ -8,19 +8,18 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-CASL signatures and static analysis for basic specifications
+CASL static analysis for basic specifications
     
 -}
 
 module CASL.StaticAna where
 
 import CASL.AS_Basic_CASL
+import CASL.Sign
 import CASL.MixfixParser
 import Common.Lib.State
 import Common.PrettyPrint
-import Common.PPUtils
 import Common.Lib.Pretty
-import CASL.Print_AS_Basic
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -31,58 +30,7 @@ import Common.Named
 import Common.Result
 import Data.Maybe
 
-data FunKind = Total | Partial deriving (Show, Eq, Ord)
-
--- constants have empty argument lists 
-data OpType = OpType {opKind :: FunKind, opArgs :: [SORT], opRes :: SORT} 
-	      deriving (Show, Eq, Ord)
-
-data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
-
-data Env = Env { sortSet :: Set.Set SORT
-	       , sortRel :: Rel.Rel SORT	 
-               , opMap :: Map.Map Id (Set.Set OpType)
-	       , assocOps :: Map.Map Id (Set.Set OpType)
-	       , predMap :: Map.Map Id (Set.Set PredType)
-               , varMap :: Map.Map SIMPLE_ID (Set.Set SORT)
-	       , sentences :: [Named FORMULA]	 
-	       , envDiags :: [Diagnosis]
-	       } deriving (Show)
-
--- better ignore assoc flags for equality
-instance Eq Env where
-    e1 == e2 = 
-	sortSet e1 == sortSet e1 &&
-	sortRel e1 == sortRel e2 &&
-	opMap e1 == opMap e2 &&
-	predMap e1 == predMap e2
-
-emptyEnv :: Env
-emptyEnv = Env { sortSet = Set.empty
-	       , sortRel = Rel.empty
-	       , opMap = Map.empty
-	       , assocOps = Map.empty
-	       , predMap = Map.empty
-	       , varMap = Map.empty
-	       , sentences = []
-	       , envDiags = [] }
-
-subsortsOf :: SORT -> Env -> Set.Set SORT
-subsortsOf s e =
-  Set.insert s $
-    Map.foldWithKey addSubs (Set.empty) (Rel.toMap $ sortRel e)
-  where addSubs sub supers =
-         if s `Set.member` supers 
-            then Set.insert sub
-            else id
-
-supersortsOf :: SORT -> Env -> Set.Set SORT
-supersortsOf s e =
-  case Map.lookup s $ Rel.toMap $ sortRel e of
-    Nothing -> Set.single s
-    Just supers -> Set.insert s supers
-
-addSort :: SORT -> State Env ()
+addSort :: SORT -> State Sign ()
 addSort s = 
     do e <- get
        let m = sortSet e
@@ -90,27 +38,27 @@ addSort s =
 	  addDiags [mkDiag Hint "redeclared sort" s] 
 	  else put e { sortSet = Set.insert s m }
 
-checkSort :: SORT -> State Env ()
+checkSort :: SORT -> State Sign ()
 checkSort s = 
     do m <- gets sortSet
        addDiags $ if Set.member s m then [] else 
 		    [mkDiag Error "unknown sort" s]
 
-addSubsort :: SORT -> SORT -> State Env ()
+addSubsort :: SORT -> SORT -> State Sign ()
 addSubsort super sub = 
     do e <- get
        mapM_ checkSort [super, sub] 
        put e { sortRel = Rel.insert sub super $ sortRel e }
 
-closeSubsortRel :: State Env ()
+closeSubsortRel :: State Sign ()
 closeSubsortRel= 
     do e <- get
        put e { sortRel = Rel.transClosure $ sortRel e }
 
-addVars :: VAR_DECL -> State Env ()
+addVars :: VAR_DECL -> State Sign ()
 addVars (Var_decl vs s _) = mapM_ (addVar s) vs
 
-addVar :: SORT -> SIMPLE_ID -> State Env ()
+addVar :: SORT -> SIMPLE_ID -> State Sign ()
 addVar s v = 
     do e <- get
        let m = varMap e
@@ -124,7 +72,7 @@ checkPlaces args i =
     if let n = placeCount i in n == 0 || n == length args then []
 	   else [mkDiag Error "wrong number of places" i]
 
-addOp :: OpType -> Id -> State Env ()
+addOp :: OpType -> Id -> State Sign ()
 addOp ty i = 
     do mapM_ checkSort (opRes ty : opArgs ty)
        e <- get
@@ -143,7 +91,7 @@ addOp ty i =
 			 addDiags [mkDiag Hint "redeclared as total" i] 
 			 else check
 
-addAssocOp :: OpType -> Id -> State Env ()
+addAssocOp :: OpType -> Id -> State Sign ()
 addAssocOp ty i = do
        e <- get
        let m = assocOps e
@@ -151,7 +99,7 @@ addAssocOp ty i = do
            l = Map.findWithDefault Set.empty i m
        put e { assocOps = Map.insert i (Set.insert pty l) m }
 
-addPred :: PredType -> Id -> State Env ()
+addPred :: PredType -> Id -> State Sign ()
 addPred ty i = 
     do mapM_ checkSort $ predArgs ty
        e <- get
@@ -162,12 +110,12 @@ addPred ty i =
 	  else do put e { predMap = Map.insert i (Set.insert ty l) m }
 		  addDiags $ checkPlaces (predArgs ty) i
 
-allOpIds :: State Env (Set.Set Id)
+allOpIds :: State Sign (Set.Set Id)
 allOpIds = do 
     e <- get
     return $ Set.fromDistinctAscList $ Map.keys $ opMap e 
 
-addAssocs :: GlobalAnnos -> State Env GlobalAnnos
+addAssocs :: GlobalAnnos -> State Sign GlobalAnnos
 addAssocs ga = do 
     e <- get
     return ga { assoc_annos =  
@@ -175,38 +123,38 @@ addAssocs ga = do
 			Nothing -> Map.insert i ALeft m
 			_ -> m ) (assoc_annos ga) (Map.keys $ assocOps e) } 
 
-formulaIds :: State Env (Set.Set Id)
+formulaIds :: State Sign (Set.Set Id)
 formulaIds = do
     e <- get
     ops <- allOpIds
     return (Set.fromDistinctAscList (map simpleIdToId $ Map.keys $ varMap e) 
 	       `Set.union` ops)
 
-allPredIds :: State Env (Set.Set Id)
+allPredIds :: State Sign (Set.Set Id)
 allPredIds = do
     e <- get
     return $ Set.fromDistinctAscList $ Map.keys $ predMap e
 
-addDiags :: [Diagnosis] -> State Env ()
+addDiags :: [Diagnosis] -> State Sign ()
 addDiags ds = 
     do e <- get
        put e { envDiags = ds ++ envDiags e }
 
-addSentences :: [Named FORMULA] -> State Env ()
+addSentences :: [Named FORMULA] -> State Sign ()
 addSentences ds = 
     do e <- get
        put e { sentences = ds ++ sentences e }
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: GlobalAnnos -> BASIC_SPEC -> State Env BASIC_SPEC
+ana_BASIC_SPEC :: GlobalAnnos -> BASIC_SPEC -> State Sign BASIC_SPEC
 ana_BASIC_SPEC ga (Basic_spec al) = fmap Basic_spec $
 			       mapAnM (ana_BASIC_ITEMS ga) al
 
 -- looseness of a datatype
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
 
-ana_BASIC_ITEMS :: GlobalAnnos -> BASIC_ITEMS -> State Env BASIC_ITEMS
+ana_BASIC_ITEMS :: GlobalAnnos -> BASIC_ITEMS -> State Sign BASIC_ITEMS
 ana_BASIC_ITEMS ga bi = 
     case bi of 
     Sig_items sis -> fmap Sig_items $ ana_SIG_ITEMS ga Loose sis 
@@ -256,7 +204,7 @@ ana_BASIC_ITEMS ga bi =
            addSentences sens			    
            return $ Axiom_items ufs ps
 
-ana_SIG_ITEMS :: GlobalAnnos -> GenKind -> SIG_ITEMS -> State Env SIG_ITEMS
+ana_SIG_ITEMS :: GlobalAnnos -> GenKind -> SIG_ITEMS -> State Sign SIG_ITEMS
 ana_SIG_ITEMS ga gk si = 
     case si of 
     Sort_items al ps -> 
@@ -276,7 +224,7 @@ ana_SIG_ITEMS ga gk si =
            closeSubsortRel
 	   return si
 
-ana_SORT_ITEM :: GlobalAnnos -> SORT_ITEM -> State Env SORT_ITEM
+ana_SORT_ITEM :: GlobalAnnos -> SORT_ITEM -> State Sign SORT_ITEM
 ana_SORT_ITEM ga si = 
     case si of 
     Sort_decl il _ ->
@@ -307,7 +255,7 @@ toOpType :: OP_TYPE -> OpType
 toOpType (Total_op_type args r _) = OpType Total args r
 toOpType (Partial_op_type args r _) = OpType Partial args r
 
-ana_OP_ITEM :: GlobalAnnos -> OP_ITEM -> State Env OP_ITEM
+ana_OP_ITEM :: GlobalAnnos -> OP_ITEM -> State Sign OP_ITEM
 ana_OP_ITEM ga oi = 
     case oi of 
     Op_decl ops ty il ps -> 
@@ -347,7 +295,7 @@ ana_OP_ITEM ga oi =
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
-ana_OP_ATTR :: GlobalAnnos -> OP_ATTR -> State Env (Maybe OP_ATTR)
+ana_OP_ATTR :: GlobalAnnos -> OP_ATTR -> State Sign (Maybe OP_ATTR)
 ana_OP_ATTR ga oa = 
     case oa of 
     Unit_op_attr t ->
@@ -362,7 +310,7 @@ ana_OP_ATTR ga oa =
 toPredType :: PRED_TYPE -> PredType
 toPredType (Pred_type args _) = PredType args
 
-ana_PRED_ITEM :: GlobalAnnos -> PRED_ITEM -> State Env PRED_ITEM
+ana_PRED_ITEM :: GlobalAnnos -> PRED_ITEM -> State Sign PRED_ITEM
 ana_PRED_ITEM ga p = 
     case p of 
     Pred_decl preds ty _ -> 
@@ -413,7 +361,7 @@ instance PosItem Component where
 data Alternative = Construct Id OpType [Component]
 		   deriving (Show, Eq) 
 
-ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State Env ()
+ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State Sign ()
 ana_DATATYPE_DECL _gk (Datatype_decl s al _) = 
 -- GenKind currently unused 
     do ul <- mapM (ana_ALTERNATIVE s . item) al
@@ -428,7 +376,7 @@ ana_DATATYPE_DECL _gk (Datatype_decl s al _) =
 		       "'\n\tmust appear in alternative") c) wrongConstr
 
 ana_ALTERNATIVE :: SORT -> ALTERNATIVE 
-		-> State Env (Maybe (Component, Set.Set Component))
+		-> State Sign (Maybe (Component, Set.Set Component))
 ana_ALTERNATIVE s c = 
     case c of 
     Subsorts ss _ ->
@@ -449,7 +397,7 @@ ana_ALTERNATIVE s c =
 	  compSort (Partial_select l cs _) = map (const cs) l
 	  compSort (Sort cs) = [cs]
  
-ana_COMPONENTS :: SORT -> COMPONENTS -> State Env ([Component], [Component])
+ana_COMPONENTS :: SORT -> COMPONENTS -> State Sign ([Component], [Component])
 ana_COMPONENTS s c = 
     case c of 
     Sort _ -> return ([], [])
@@ -466,15 +414,8 @@ ana_COMPONENTS s c =
 
 -- wrap it all up for a logic
 
-type Sign = Env  -- ignoring vars, sentences and diags
-
-type Sentence = FORMULA
-
-emptySign :: Sign
-emptySign = emptyEnv 
-
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
-                 -> Result (BASIC_SPEC,Sign,Sign,[Named Sentence])
+                 -> Result (BASIC_SPEC, Sign, Sign, [Named FORMULA])
 
 basicAnalysis (bs, inSig, ga) = 
     let (newBs, accSig) = runState (ana_BASIC_SPEC ga bs) inSig
@@ -488,102 +429,3 @@ basicAnalysis (bs, inSig, ga) =
 			    , remPartOpsS cleanSig
 			    , sents ) 
 
-diffSig :: Sign -> Sign -> Sign
-diffSig a b = 
-    a { sortSet = sortSet a `Set.difference` sortSet b
-      , sortRel = Rel.transClosure $ Rel.fromSet $ Set.difference
-	(Rel.toSet $ sortRel a) $ Rel.toSet $ sortRel b
-      , opMap = opMap a `diffMapSet` opMap b
-      , assocOps = assocOps a `diffMapSet` assocOps b	
-      , predMap = predMap a `diffMapSet` predMap b	
-      }
-  -- transClosure needed:  {a < b < c} - {a < c; b} 
-  -- is not transitive!
-
-diffMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) 
-	   -> Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
-diffMapSet =
-    Map.differenceWith ( \ s t -> let d = Set.difference s t in
-			 if Set.isEmpty d then Nothing 
-			 else Just d )
-
-addSig :: Sign -> Sign -> Sign
-addSig a b = 
-    a { sortSet = sortSet a `Set.union` sortSet b
-      , sortRel = Rel.transClosure $ Rel.fromSet $ Set.union
-	(Rel.toSet $ sortRel a) $ Rel.toSet $ sortRel b
-      , opMap = remPartOpsM $ Map.unionWith Set.union (opMap a) $ opMap b
-      , assocOps = Map.unionWith Set.union (assocOps a) $ assocOps b
-      , predMap = Map.unionWith Set.union (predMap a) $ predMap b	
-      }
-
-isEmptySig :: Sign -> Bool 
-isEmptySig s = 
-    Set.isEmpty (sortSet s) && 
-    Rel.isEmpty (sortRel s) && 
-    Map.isEmpty (opMap s) &&
-    Map.isEmpty (predMap s)
-
-isSubSig :: Sign -> Sign -> Bool
-isSubSig sub super = isEmptySig $ diffSig sub 
-                      (super 
-		       { opMap = addPartOpsM $ opMap super })
-
-partOps :: Set.Set OpType -> Set.Set OpType
-partOps s = Set.fromDistinctAscList $ map ( \ t -> t { opKind = Partial } ) 
-	 $ Set.toList $ Set.filter ((==Total) . opKind) s
-
-remPartOps :: Set.Set OpType -> Set.Set OpType 
-remPartOps s = s Set.\\ partOps s
-
-remPartOpsM :: Ord a => Map.Map a (Set.Set OpType) 
-	    -> Map.Map a (Set.Set OpType) 
-remPartOpsM = Map.map remPartOps
-
-addPartOps :: Set.Set OpType -> Set.Set OpType 
-addPartOps s = Set.union s $ partOps s
-
-addPartOpsM :: Ord a => Map.Map a (Set.Set OpType) 
-	    -> Map.Map a (Set.Set OpType) 
-addPartOpsM = Map.map addPartOps
-
-toOP_TYPE :: OpType -> OP_TYPE
-toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =
-    (case k of 
-     Total -> Total_op_type 
-     Partial -> Partial_op_type) args res []
-
-toPRED_TYPE :: PredType -> PRED_TYPE
-toPRED_TYPE PredType { predArgs = args } = Pred_type args []
-
-instance PrettyPrint OpType where
-  printText0 ga ot = printText0 ga $ toOP_TYPE ot
-
-instance PrettyPrint PredType where
-  printText0 ga pt = printText0 ga $ toPRED_TYPE pt
-
-instance PrettyPrint Sign where
-    printText0 ga s = 
-	ptext "sorts" <+> commaT_text ga (Set.toList $ sortSet s) 
-	$$ 
-        (if Rel.isEmpty (sortRel s) then empty
-            else ptext "sorts" <+> 
-             (vcat $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
-	$$ 
-	vcat (map (\ (i, t) -> 
-		   ptext "op" <+>
-		   printText0 ga i <+> colon <>
-		   printText0 ga t) 
-	      $ concatMap (\ (o, ts) ->
-			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
-	       $ Map.toList $ opMap s)
-	$$ 
-	vcat (map (\ (i, t) -> 
-		   ptext "pred" <+>
-		   printText0 ga i <+> colon <+>
-		   printText0 ga (toPRED_TYPE t)) 
-	     $ concatMap (\ (o, ts) ->
-			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
-	     $ Map.toList $ predMap s)
-     where printRel (subs, supersorts) =
-             printText0 ga subs <+> ptext "<" <+> printSet ga supersorts

@@ -14,6 +14,7 @@ make static analysis checkable by RunParsers
 module CASL.RunStaticAna where
 
 import CASL.StaticAna
+import CASL.Sign
 import Common.AnnoState
 import Common.GlobalAnnotations
 import Common.Result

@@ -20,6 +20,7 @@ the qualification only applies to __+__ !
 module CASL.Morphism where
 
 import CASL.StaticAna
+import CASL.Sign
 import CASL.AS_Basic_CASL
 import Common.Id
 import Common.Result
@@ -131,13 +132,13 @@ embedMorphism a b =
 -- Typeable instance
 sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc 
     :: TyCon
-sentenceTc       = mkTyCon "CASL.Morphism.Sentence"
+sentenceTc       = mkTyCon "CASL.Morphism.FORMULA"
 signTc           = mkTyCon "CASL.Morphism.Sign"
 morphismTc       = mkTyCon "CASL.Morphism.Morphism"
 symbolTc         = mkTyCon "CASL.Morphism.Symbol"
 rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
 
-instance Typeable Sentence where
+instance Typeable FORMULA where
   typeOf _ = mkAppTy sentenceTc []
 instance Typeable Sign where
   typeOf _ = mkAppTy signTc []
