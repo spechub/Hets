@@ -52,7 +52,7 @@ spec Set = Bool and InternalLogic and Extensionality then
   . s subset s' <=> forall x:S . (x isIn s) => (x isIn s')
   . (x isIn (s union s')) <=> ((x isIn s) \/ (x isIn s'))
   . (x isIn (s intersection s')) <=> ((x isIn s) /\ (x isIn s'))
-  . (x isIn (s \\ s')) <=> ((x isIn s) /\ (not x isIn s'))
+  . x isIn s \\ s' <=> x isIn s /\ not (x isIn s')
   . (s disjoint s') <=> ((s intersection s') = emptySet)
   %% . ((x,y) isIn (s * t)) <=> ((x isIn s) /\ (y isIn t))
   . (inl x) = (x,false)
@@ -90,8 +90,8 @@ spec Map =
       __ [__/__] : (S->?T) * S * T -> (S->?T);
       __ - __ : (S->?T) * S -> (S->?T);
       __o__ : (T->?U) * (S->?T) -> (S->?U);
-      __||__ : (S->?T) -> Set S -> (S->?T);
-      undef : S ->? Unit;
+      __||__ : (S->?T) * Set S -> (S->?T);
+      undef__ : S ->?T;
       ker : (S->?T) -> Pred (S*S);
       injective : Pred(S->?T)
   forall f,g:S->?T; h:T->?U; s,s':Set S; t:Set T; x,x':S; y:T
@@ -102,15 +102,15 @@ spec Map =
   . f :: s --> t <=> (forall x:S . x isIn s => f x isIn t) 
   . f[x/y] x' = if x=x' then y else (f x)
   . (f - x) x' = if x=x' then undef() else (f x)
-  . f intersection g x = if f x = g x then f x else (undef())
-  . def f union g <=> (forall x:S. def f x /\ def g x => f x = g x)
-  . def f union g => f union g x = if def f x  then f x else g x
+  . (s intersection s') x = if s x = s' x then s x else undef()
+  . def (s union s') <=> (forall x:S. def (s x) /\ def (s' x) => s x = s' x)
+  . def (s union s') => (s union s') x = if def (s x) then s x else (s' x)
   . (h o g) x = h(g(x))
   . (f || s) x = if x isIn s then f x else undef()
   %% the kernel is a PER with same domain as the function, hence the existential equation
   . (x,x') isIn ker f <=> f x =e= f x'
   %% injectivity only for values in the domain, hence the existential equation
-  . injective f <=> (forall x,y:s . f x =e= f y => x=y)
+  . injective f <=> (forall x,y:S . f x =e= f y => x=y)
 end
 
 %{ If we want to iterate the constructions product, disjoint union
