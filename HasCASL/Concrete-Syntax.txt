@@ -176,7 +176,6 @@ TYPE-VAR-DECL   ::= TYPE-VAR , ... , TYPE-VAR: CLASS-NAME
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 KIND          ::= EXT-CLASS
-		  KIND * ... * KIND
 		  KIND -> KIND                   %% right associative
 
 EXT-CLASS     ::= CLASS | CLASS + | CLASS -
