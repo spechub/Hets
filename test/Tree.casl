@@ -1,0 +1,10 @@
+library Tree
+
+spec Tree =
+  free type Colour ::= a | b | c
+  free type Tree ::= Node(Colour) | Tree(Tree;Tree)
+  op swap : Tree -> Tree
+  forall c:Colour; t,t1,t2:Tree
+  . swap (Node(c))=Node(c)
+  . swap (Tree(t1,t2)) = Tree(swap(t2),swap(t1))
+end
