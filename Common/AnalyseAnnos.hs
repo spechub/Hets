@@ -22,7 +22,7 @@ import Common.GlobalAnnotations
 import Common.Print_AS_Annotation
 import Common.PrettyPrint
 import Common.Result
-import Control.Monad
+import Control.Monad(foldM)
 
 import Common.Lib.Parsec
 import Common.Id (Token(..),nullPos,place)
