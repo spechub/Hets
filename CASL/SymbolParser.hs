@@ -71,8 +71,10 @@ symbItemsList = do (is, ps) <- symbItems `separatedBy` commaT
 		   return (Symb_items_list is (map tokPos ps))
 
 symbItems :: GenParser Char st SYMB_ITEMS
-symbItems = do s <- symb
-	       return (Symb_items Implicit [s] [])
+symbItems = do -- s <- symb
+	       (is, ps) <- symbs
+	       return (Symb_items Implicit is (map tokPos (ps)))
+--	       return (Symb_items Implicit [s] [])
 	    <|> 
 	    do (k, p) <- symbKind
                (is, ps) <- symbs
