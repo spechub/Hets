@@ -1,10 +1,10 @@
-{- HetCATS/Static/AnalysisStructured.hs
-   $Id$
-   Till Mossakowski
--}
 
 {- | 
    
+   Module      :  $Header$
+   Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
+   Licence     :  All rights reserved.
+
    Maintainer  :  hets@tzi.de
    Stability   :  provisional
    Portability :  non-portable (import Control.Monad.State)
@@ -15,7 +15,7 @@
 
    T. Mossakowski, S. Autexier, D. Hutter, P. Hoffman:
    CASL Proof calculus.
-   Available from http://www.informatik.uni-bremen.de/~till/calculus.ps
+   Available from <http://www.informatik.uni-bremen.de/~till/calculus.ps>
    To appear in the CASL book.
 
    Todo:
