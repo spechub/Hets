@@ -175,25 +175,56 @@ getPattern :: Term -> [HsPat]
 getPattern _t = []
 
 getRhs :: Term -> HsRhs
-getRhs t = HsUnGuardedRhs (head $ translateTerm t) 
+getRhs t = HsUnGuardedRhs (translateTerm t) 
 
 -- liefert nur eine Expression, keine Liste
-translateTerm :: Term -> [HsExp] --HsFunBind
+translateTerm :: Term -> HsExp --HsFunBind
 translateTerm t = case t of
-  CondTerm _t1 _form _t2 _pos -> [] -- -> HsIf
-  QualVar _v _ty _pos -> [] -- -> HsVar
-  QualOp _opid _ts _pos -> [] -- -> HsInfixApp??
-  ApplTerm _t1 _t2 _pos -> [] -- -> HsApp
-  TupleTerm _ts _pos -> [] -- -> HsTuple
-  TypedTerm _t1 _tqual _ty _pos -> [] 
-  QuantifiedTerm _quant _vars _t1 _pos -> [] -- forall ...
-  LambdaTerm _pats _part _t1 _pos -> [] -- -> HsLambda
-  CaseTerm _t1 _progeqs _pos -> [] -- -> HsCase
-  LetTerm _progeqs _t1 _pos -> [] -- -> HsLet
+  --CondTerm _t1 _form _t2 _pos -> [] -- -> HsIf
+  --HsIf HsExp HsExp HsExp, wie passt das zusammen?
+
+  QualVar v _ty _pos -> 
+      HsVar (UnQual (HsIdent (translateIdWithType LowerId v)))
+      -- Was wird mit dem Typ gemacht?
+      -- HsVar kann mit Modul qualifiziert sein, woher?
+
+  --QualOp _opid _ts _pos -> [] -- -> ??
+
+  ApplTerm t1 t2 _pos -> HsApp (translateTerm t1) (translateTerm t2)
+
+  TupleTerm ts _pos -> HsTuple (map translateTerm ts)
+
+  --TypedTerm _t1 _tqual _ty _pos -> [] -- -> ??
+
+  --QuantifiedTerm _quant _vars _t1 _pos -> [] -- forall ... kommt das vor??
+
+  LambdaTerm pats _part t1 _pos -> 
+      HsLambda (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+               (translatePattern pats)
+	       (translateTerm t1)
+
+  CaseTerm t1 progeqs _pos -> 
+      HsCase (translateTerm t1) (translateCaseProgEqs progeqs)
+
+  LetTerm progeqs t1 _pos -> 
+      HsLet (translateProgEqs progeqs) (translateTerm t1)
+
   TermToken _ttok -> error ("unexpected term (TermToken): " ++ show t)
   MixfixTerm _ts -> error ("unexpected term (MixfixTerm): " ++ show t)
   BracketTerm _ _ _ -> error ("unexpected term (BracketTerm): " ++ show t)
+  _ -> error ("translateTerm not finished; Term: " ++ show t)
 
+--Uebersetzung der Liste von Pattern aus HasCASL-Lambdaterm
+translatePattern :: [Pattern] -> [HsPat]
+translatePattern _pats = []
+
+-- Uebersetzung der ProgEqs fuer einen HasCASL-Caseterm
+translateCaseProgEqs :: [ProgEq] -> [HsAlt]
+translateCaseProgEqs _progeqs = []
+
+--Uebersetzung der ProgEqs fuer einen HasCASL-Letterm
+translateProgEqs :: [ProgEq] -> [HsDecl]
+translateProgEqs _progeqs = []
 ------------------------------------------------------------------------
 -- Translation of Id's
 ------------------------------------------------------------------------
