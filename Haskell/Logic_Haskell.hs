@@ -24,6 +24,8 @@ import CASL.SymbolParser
 import Logic.ParsecInterface
 import Logic.Logic
 import Data.Dynamic
+import Haskell.ATC_Haskell
+import CASL.ATC_CASL
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances

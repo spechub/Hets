@@ -55,6 +55,8 @@ import Data.Dynamic
 
 import Common.PrettyPrint
 
+import CspCASL.ATC_CspCASL
+
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data CspCASL = CspCASL deriving (Show)

@@ -31,6 +31,8 @@ import Data.Dynamic
 import Common.Lib.State
 import HasCASL.Morphism
 import Common.PrettyPrint
+import CASL.ATC_CASL
+import HasCASL.ATC_HasCASL
 
 type HasCASL_Sublogics = ()
 

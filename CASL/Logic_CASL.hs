@@ -25,6 +25,7 @@ import Common.Lib.Parsec
 import Common.Lib.Map
 import Logic.Logic
 import Common.Lexer((<<))
+import CASL.ATC_CASL
 
 import CASL.Sublogic
 import CASL.StaticAna
