@@ -22,7 +22,6 @@ import HasCASL.ClassDecl
 import HasCASL.VarDecl
 import HasCASL.OpDecl
 import HasCASL.TypeDecl
-import HasCASL.MixAna
 import Data.Maybe
 
 ----------------------------------------------------------------------------
@@ -54,12 +53,13 @@ anaBasicItem ga (AxiomItems decls fs ps) =
     do tm <- gets typeMap -- save type map
        as <- gets assumps -- save vars
        ds <- mapM anaGenVarDecl decls
-       ts <- mapAnM (anaFormula ga) fs
+       ts <- mapM (anaFormula ga) fs
        putTypeMap tm -- restore 
        putAssumps as -- restore
-       let sens = map ( \ f -> NamedSen (getRLabel f) $ item f) ts 
+       let newFs = catMaybes ts
+           sens = map ( \ f -> NamedSen (getRLabel f) $ item f) newFs 
        appendSentences sens
-       return $ AxiomItems (catMaybes ds) ts ps
+       return $ AxiomItems (catMaybes ds) newFs ps
 
 appendSentences :: [Named Term] -> State Env ()
 appendSentences fs =
@@ -67,8 +67,8 @@ appendSentences fs =
        put $ e {sentences = sentences e ++ fs}
 
 anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems
-anaSigItems _ gk (TypeItems inst l ps) = 
-    do ul <- mapAnM (anaTypeItem gk inst) l
+anaSigItems ga gk (TypeItems inst l ps) = 
+    do ul <- mapAnM (anaTypeItem ga gk inst) l
        return $ TypeItems inst ul ps
 anaSigItems ga _ (OpItems l ps) = 
     do ul <- mapAnM (anaOpItem ga) l

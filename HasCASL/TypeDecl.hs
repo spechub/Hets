@@ -28,11 +28,12 @@ import Common.Lib.Parsec
 import Common.Lib.Parsec.Error
 
 import Common.Result
-import Common.PrettyPrint
+import Common.GlobalAnnotations
 import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
+import HasCASL.MixAna
 
 -- | add a supertype to a given type id
 addSuperType :: Type -> Id -> State Env ()
@@ -45,78 +46,120 @@ addSuperType t i =
 					      (TypeInfo ok ks (t:sups) defn)
 					      tk
 
+idsToTypePatterns :: [Maybe Id] -> [TypePattern]
+idsToTypePatterns mis = map ( \ i -> TypePattern i [] [] ) 
+			 $ catMaybes mis
+
+anaFormula :: GlobalAnnos -> Annoted Term -> State Env (Maybe (Annoted Term))
+anaFormula ga at = 
+    do mt <- resolveTerm ga logicalType $ item at 
+       return $ case mt of Nothing -> Nothing
+			   Just e -> Just at { item = e }
+
+anaVars :: Vars -> Type -> Result [VarDecl]
+anaVars (Var v) t = return [VarDecl v t Other []]
+anaVars (VarTuple vs _) t = 
+    case t of 
+	   ProductType ts _ -> 
+	       if length ts == length vs then 
+		  let lrs = zipWith anaVars vs ts 
+		      lms = map maybeResult lrs in
+		      if all isJust lms then 
+			 return $ concatMap fromJust lms
+			 else Result (concatMap diags lrs) Nothing 
+	       else Result [mkDiag Error "wrong arity" t] Nothing
+	   _ -> Result [mkDiag Error "product type expected instead" t] Nothing
+
 -- | analyse a 'TypeItem'
-anaTypeItem :: GenKind -> Instance -> TypeItem -> State Env TypeItem
-anaTypeItem _ inst ti@(TypeDecl pats kind _) = 
-    do anaKind kind
+anaTypeItem :: GlobalAnnos -> GenKind -> Instance -> TypeItem 
+	    -> State Env TypeItem
+anaTypeItem _ _ inst (TypeDecl pats kind ps) = 
+    do ak <- anaKind kind
        let Result ds (Just is) = convertTypePatterns pats
        addDiags ds
-       mapM_ (addTypeId NoTypeDefn inst kind) is
-       return ti
+       mis <- mapM (addTypeId NoTypeDefn inst ak) is
+       return $ TypeDecl (idsToTypePatterns mis) ak ps
 
-anaTypeItem _ inst ti@(SubtypeDecl pats t _) = 
+anaTypeItem _ _ inst (SubtypeDecl pats t ps) = 
     do let Result ds (Just is) = convertTypePatterns pats
        addDiags ds  
-       mapM_ (addTypeId NoTypeDefn inst star) is   
+       mis <- mapM (addTypeId NoTypeDefn inst star) is 
+       let newPats = idsToTypePatterns mis 
        mt <- anaStarType t
        case mt of
-           Nothing -> return ()
-           Just newT -> mapM_ (addSuperType newT) is
-       return ti
+           Nothing -> return $ TypeDecl newPats star ps
+           Just newT -> do mapM_ (addSuperType newT) is
+			   return $ SubtypeDecl newPats newT ps
 
-anaTypeItem _ inst ti@(IsoDecl pats _) = 
+anaTypeItem _ _ inst (IsoDecl pats ps) = 
     do let Result ds (Just is) = convertTypePatterns pats
        addDiags ds
-       mapM_ (addTypeId NoTypeDefn inst star) is
+       mis <- mapM (addTypeId NoTypeDefn inst star) is
        mapM_ ( \ i -> mapM_ (addSuperType (TypeName i star 0)) is) is 
-       return ti
+       return $ IsoDecl (idsToTypePatterns mis) ps
 
-anaTypeItem _ inst ti@(SubtypeDefn pat v t f ps) = 
-    do addDiags [Diag Warning ("unchecked formula '" ++ showPretty f "'")
-		$ firstPos [v] ps]
-       let Result ds m = convertTypePattern pat
+anaTypeItem ga _ inst (SubtypeDefn pat v t f ps) = 
+    do let Result ds m = convertTypePattern pat
        addDiags ds
-       mt <- anaStarType t
+       mty <- anaStarType t
+       let Result es mvds = case mty of 
+				     Nothing -> Result [] Nothing
+				     Just ty -> anaVars v ty 
+       addDiags es
+       as <- gets assumps
+       mv <- case mvds of 
+		       Nothing -> return Nothing
+		       Just vds -> do mvs <- mapM addVarDecl vds
+				      if all id mvs then 
+					 return $ Just v
+					 else return Nothing
+       mt <- anaFormula ga f
+       putAssumps as
        case m of 
-	      Nothing -> return ()
-	      Just i -> case mt of 
-		  Nothing -> return ()
-		  Just newT -> do 		  
-		      addTypeId (Supertype v newT $ item f) inst star i
+	      Nothing -> return $ TypeDecl [] star ps
+	      Just i -> case (mt, mv) of 
+		  (Just newF, Just _) -> do 
+		      let newT = fromJust mty	       
+		      mi <- addTypeId (Supertype v newT $ item newF) 
+			    inst star i
 		      addSuperType newT i
-       addDiags [Diag Warning ("unchecked formula '" ++ showPretty f "'")
-		   $ firstPos [v] ps]
-       return ti
+		      case mi of 
+			      Nothing -> return $ TypeDecl [] star ps
+			      Just _ -> return $ SubtypeDefn
+					(TypePattern i [] []) v newT newF ps 
+		  _ -> do mi <- addTypeId NoTypeDefn inst star i
+			  return $ TypeDecl (idsToTypePatterns [mi]) star ps
 	   
-anaTypeItem _ inst ti@(AliasType pat mk sc _) = 
+anaTypeItem _ _ inst (AliasType pat mk sc ps) = 
     do let Result ds m = convertTypePattern pat
        addDiags ds
        (ik, mt) <- anaPseudoType mk sc
        case m of 
 	      Just i -> case mt of 
-		  Nothing -> return ()
+		  Nothing -> return $ TypeDecl [] star ps
 		  Just newPty -> do addTypeId (AliasTypeDefn newPty) inst ik i 
-				    return ()
-	      _ -> return ()
-       return ti
+				    return $ AliasType (TypePattern i [] [])
+					   (Just ik) newPty ps
+	      _ -> return $ TypeDecl [] star ps
 
-anaTypeItem gk inst (Datatype d) = 
-    do anaDatatype gk inst d 
-       return $ Datatype d
+anaTypeItem _ gk inst (Datatype d) = 
+    do newD <- anaDatatype gk inst d 
+       return $ Datatype newD
 		   
 -- | analyse a 'DatatypeDecl'
 anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env DatatypeDecl
-anaDatatype genKind inst dd@(DatatypeDecl pat kind alts derivs _) =
+anaDatatype genKind inst (DatatypeDecl pat kind alts derivs ps) =
     do k <- anaKind kind
        checkKinds pat star k
-       case derivs of 
-		   Just c -> do (dk, _) <- anaClass c
-				checkKinds c star dk
-		   Nothing -> return ()
+       newDerivs <- case derivs of 
+		   Just c -> do (dk, newC) <- anaClass c
+				checkKinds newC star dk
+				return $ Just newC
+		   Nothing -> return Nothing
        let Result ds m = convertTypePattern pat
        addDiags ds
        case m of 
-	      Nothing -> return ()
+	      Nothing -> return $ DatatypeDecl pat k [] newDerivs ps
 	      Just i -> 
 		  do let dt = TypeName i k 0
                      newAlts <- anaAlts dt 
@@ -130,9 +173,12 @@ anaDatatype genKind inst dd@(DatatypeDecl pat kind alts derivs _) =
 						getSelType dt pa ts) 
 				     [] (SelectData [ConstrInfo c ty] i)
 			           ) sels) newAlts
-		     addTypeId (DatatypeDefn genKind [] newAlts) inst k i
-		     return ()
-       return dd
+		     mi <- addTypeId (DatatypeDefn genKind [] newAlts) inst k i
+		     return $ DatatypeDecl (TypePattern i [] []) k 
+			    (case mi of Nothing -> [] 
+			                Just _ -> alts)
+			    newDerivs ps
+
 
 -- | analyse a pseudo type (represented as a 'TypeScheme')
 anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, Maybe TypeScheme)

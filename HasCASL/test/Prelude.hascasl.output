@@ -57,42 +57,7 @@ x2 : c %(var)%
 y1 : d %(var)%
 y2 : d %(var)%
 %% Sentences -------------------------------------------------------------
-__ in s -> t = \ f : s ->? t . all (\ x : s . def f (x)) %()%
-(\ (x : s, y : t) . def (x res y)) =
-(\ (x : s, y : t) . (def y) und (def x)) %()%
 (op __=__ : s × s ->? Unit) ((op fst : s), (op __res__ : s)) %()%
-(\ x : s . eq (x, x)) = tt %()%
-(\ (x, y : s) . x res eq (x, y)) =
-(\ (x, y : s) . y res eq (x, y)) %()%
-all
-(\ (f, g) : s ->? t . all
-		      (\ x : s . eq (\ . f (x), g (x)) impl eq (f, g))) %()%
-all (\ x : c . x <<= x) %(reflexive)%
-all
-(\ (x, y, z : c) . ((x <<= y) und (y <<= z)) impl x <<=
-		   z) %(transitive)%
-all
-(\ (x, y, z : c) . ((x <<= y) und (y <<= x)) impl eq
-		   (x, y)) %(antisymmetric)%
-all
-(\ s : nat -> c . def (sup s) impl
-		  (isBound (sup s, s) und all
-		   (\ x : c . isBound (x, s) impl sup (s) <<=
-			      x))) %(sup is minimally bound)%
-all
-(\ s : nat -> c . isChain (s) impl def (sup (s))) %(sup exists)%
-all (\ x : p . bottom <<= x) %()%
-__ in c -->? d =
-\ f : c ->? d . all
-		(\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
-		(\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
-				  (\ m : nat . def f (s (m)) und eq
-					       (sup (\ n : nat .! f (s (n + m))),
-						f (sup (s))))) %()%
-__ in c --> d = \ f : c -->? d . all (\ x : c . def f (x)) %()%
-all
-(\ f : p -->? p . eq (f (Y (f)), Y (f)) und all
-		  (\ x : p . eq (f (x), x) impl Y (f) <<= x)) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 4, column 7) illegal universe class declaration 'Type'
 Error (line 14, column 44) incompatible kind of: t ->? Unit

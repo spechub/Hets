@@ -13,10 +13,13 @@ Warning (line 7, column 7) redeclared class 'a'
 Error (line 7, column 7) alias class cannot become a real class 'a'
 Warning (line 9, column 7) redeclared class 'a'
 Warning (line 11, column 7) redeclared class 'a'
-Error (line 11, column 7) inconsistent redefinition of 'a'
+Error (line 11, column 7) inconsistent downset of 'a'
+
 Warning (line 15, column 7) redeclared class 'a'
-Error (line 15, column 7) inconsistent redefinition of 'a'
+Error (line 15, column 7) inconsistent class redefinition of 'a'
+
 Warning (line 21, column 7) redeclared class 'h'
 Warning (line 21, column 12) already known as super class 'a'
 Warning (line 23, column 7) redeclared class 'e'
-Error (line 23, column 7) inconsistent redefinition of 'e'
+Error (line 23, column 7) inconsistent class redefinition of 'e'
+

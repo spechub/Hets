@@ -45,15 +45,11 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
 		       Cons32 : Data2 × Data1 -> Data3))%
 tt : s ->? Unit = \ x : s . ()
 x : s %(var)%
-%% Sentences -------------------------------------------------------------
-x = y %()%
-true %()%
-e %()%
-e %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration 'Type'
 Warning (line 5, column 20) redeclared class 'TYPE'
-Error (line 5, column 20) inconsistent redefinition of 'TYPE'
+Error (line 5, column 20) inconsistent class redefinition of 'TYPE'
+
 Warning (line 11, column 16) implicit declaration of superclass 'd'
 Warning (line 11, column 7) redeclared class 'a'
 Warning (line 11, column 10) redeclared class 'b'

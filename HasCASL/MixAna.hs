@@ -315,12 +315,6 @@ resolveAny ga trm =
     do tvar <- toEnvState freshVar
        resolve ga (TypeName tvar star 1, trm)
 
-anaFormula :: GlobalAnnos -> Term -> State Env Term
-anaFormula ga t = 
-    do mt <- resolveTerm ga logicalType t 
-       case mt of Nothing -> return t
-		  Just e -> return e
-
 -- ---------------------------------
 -- patterns
 -- ---------------------------------

@@ -85,11 +85,11 @@ instance Mergeable Kind where
 instance Mergeable Class where
     merge c1@(Downset t1) (Downset t2) =
 	if t1 == t2 then return c1
-	   else fail "merge: non-equal downset"
+	   else fail "inconsistent downset"
     merge c1@(Intersection i1 _) (Intersection i2 _) =
        if i1 == i2 then return c1
-	  else fail "merge: non-equal intersection class" 
-    merge _ _ = fail "merge: class"
+	  else fail "inconsistent intersection class" 
+    merge _ _ = fail "inconsistent class redefinition"
 
 mergeList :: Eq a => [a] -> [a] -> Result [a]
 mergeList l1 l2 = return $ nub (l1 ++ l2)

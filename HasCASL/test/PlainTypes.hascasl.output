@@ -14,7 +14,7 @@ r2 : Type < (t2, r2, s2)
 s : Type
 s1 : Type < t
 s2 : Type < (t2, r2, s2)
-s3 : Type < t = {x : t . x = x}
+s3 : Type
 t : Type
 t1 : Type < t
 t2 : Type < (t2, r2, s2)
@@ -55,5 +55,4 @@ Error (line 28, column 12) incompatible kind of: tuple3
      found: Type -> Type -> Type -> Type
 
 Hint (line 32, column 10) not a class 'nt r List s'
-Warning (line 38, column 12) unchecked formula 'x = x'
-Warning (line 38, column 12) unchecked formula 'x = x'
+Error (line 38, column 19) unexpected mixfix token '='

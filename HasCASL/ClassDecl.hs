@@ -23,25 +23,27 @@ import Common.Lib.State
 import Common.Result
 import HasCASL.ClassAna
 import HasCASL.TypeAna
+import HasCASL.Merge
 
 -- ---------------------------------------------------------------------------
 -- analyse class decls
 -- ---------------------------------------------------------------------------
 
 anaClassDecls :: ClassDecl -> State Env ClassDecl
-anaClassDecls cd@(ClassDecl cls k _) = 
+anaClassDecls (ClassDecl cls k ps) = 
     do ak <- anaKind k
        mapM_ (addClassDecl ak Set.empty Nothing) cls
-       return cd
+       return $ ClassDecl cls ak ps
 
 anaClassDecls (SubclassDecl _ _ (Downset _) _) = error "anaClassDecl"
-anaClassDecls cd@(SubclassDecl cls k sc@(Intersection supcls ps) qs) =
+anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
     do ak <- anaKind k
        if Set.isEmpty supcls then 
 	  do addDiags [Diag Warning
 			  "redundant universe class" 
 			 $ headPos (ps ++ qs)]
 	     mapM_ (addClassDecl ak supcls Nothing) cls
+	     return $ SubclassDecl cls ak sc qs
           else let (hd, tl) = Set.deleteFindMin supcls in 
 	      if Set.isEmpty tl then
 		 do e <- get 
@@ -54,22 +56,30 @@ anaClassDecls cd@(SubclassDecl cls k sc@(Intersection supcls ps) qs) =
 				      "implicit declaration of superclass" hd]
 			Just sk -> checkKinds hd sk ak
 		    mapM_ (addClassDecl ak (Set.single hd) Nothing) cls
-		  else do (sk, Intersection newSups _) <- anaClass sc
+		    return $ SubclassDecl cls ak sc qs
+		  else do (sk, newSc@(Intersection newSups _)) <- anaClass sc
 			  checkKinds hd sk ak
 			  mapM_ (addClassDecl ak newSups Nothing) cls
-       return cd
+			  return $ SubclassDecl cls ak newSc qs
 
-anaClassDecls cd@(ClassDefn ci k ic _) =
+
+anaClassDecls (ClassDefn ci k ic ps) =
     do ak <- anaKind k
        (dk, newIc) <- anaClass ic
        checkKinds ci dk ak
-       addClassDecl ak Set.empty (Just newIc) ci 
-       return cd
+       (newKind, _, mDefn) <- addClassDecl ak Set.empty (Just newIc) ci 
+       return $ case mDefn of 
+           Nothing -> ClassDecl [ci] newKind ps 
+	   Just newDefn -> ClassDefn ci newKind newDefn ps
 
-anaClassDecls cd@(DownsetDefn ci _ t _) = 
+anaClassDecls (DownsetDefn ci v t ps) = 
     do mt <- anaStarType t 
-       addClassDecl star Set.empty (fmap Downset mt) ci
-       return cd 
+       (newKind, _, mDefn) <- addClassDecl star Set.empty (fmap Downset mt) ci
+       return $ case mDefn of 
+           Nothing -> ClassDecl [ci] newKind ps 
+	   Just newDefn -> case newDefn of
+	       Downset newT -> DownsetDefn ci v newT ps
+	       _ -> ClassDefn ci newKind newDefn ps
 
 -- ---------------------------------------------------------------------------
 -- store class decls
@@ -81,42 +91,53 @@ putClassMap ce = do { e <- get; put e { classMap = ce } }
 
 -- | store a class 
 addClassDecl :: Kind -> Set.Set ClassId -> Maybe Class 
-	     -> ClassId -> State Env ()
+	     -> ClassId -> State Env (Kind, Set.Set ClassId, Maybe Class)
 -- check with merge
 addClassDecl kind sups defn ci = 
     if showId ci "" == "Type" then 
-       addDiags [mkDiag Error 
+       do addDiags [mkDiag Error 
 		    "illegal universe class declaration" ci]
+          return (kind, Set.empty, Nothing)
     else do
        cMap <- gets classMap
        case Map.lookup ci cMap of
-            Nothing -> putClassMap $ Map.insert ci  
-		       newClassInfo { superClasses = sups,
-				      classKind = kind,
-					   classDefn = defn } cMap
+            Nothing -> do putClassMap $ Map.insert ci  
+				      newClassInfo { classKind = kind
+						   , superClasses = sups
+						   , classDefn = defn } cMap
+			  return (kind, sups, defn)
 	    Just info -> do 
 	        addDiags [mkDiag Warning "redeclared class" ci]
 		let oldDefn = classDefn info
 		    oldSups = superClasses info
 		    oldKind = classKind info
+                    (ds, newDefn) = case (oldDefn, defn) of 
+			 (Nothing, Nothing) -> ([], Nothing)
+			 (Just _, Nothing) -> 
+			     ([mkDiag Error 
+			       "alias class cannot become a real class" ci]
+			      , oldDefn)
+			 (Nothing, Just _) -> 
+			     ([mkDiag Error 
+			       "class cannot become an alias class" ci]
+			      , Nothing)
+			 (Just d1, Just d2) -> 
+			     let Result es _ = merge d1 d2 in
+				 (map (improveDiag ci) es, oldDefn)
 		checkKinds ci kind oldKind
-		if isJust defn then
-		   if isJust oldDefn then
-		      addDiags $ mergeDefns ci 
-				      (fromJust oldDefn) (fromJust defn)
-		      else addDiags [mkDiag Error
-			     "class cannot become an alias class" ci]
-		      else if isJust oldDefn then
-			   addDiags [mkDiag Error 
-			     "alias class cannot become a real class" ci]
-		      else do
-		      newSups <- getLegalSuperClasses cMap ci oldSups sups
-		      putClassMap $ Map.insert ci info 
-				      { superClasses = newSups } cMap
+		addDiags ds 
+		possSups <- getLegalSuperClasses ci oldSups sups
+		let newSups = case newDefn of Just _ -> Set.empty
+					      Nothing -> possSups
+		putClassMap $ Map.insert ci info 
+				      { superClasses = newSups
+				      , classDefn = newDefn } cMap
+		return (oldKind, newSups, newDefn)
 
-getLegalSuperClasses :: ClassMap -> ClassId -> Set.Set ClassId
+getLegalSuperClasses :: ClassId -> Set.Set ClassId
 		     -> Set.Set ClassId -> State Env (Set.Set ClassId)
-getLegalSuperClasses ce ci oldCs ses =
+getLegalSuperClasses ci oldCs ses =
+    do ce <- gets classMap
        let cs = Set.toList ses
 	   scs = zip (map (allSuperClasses ce) cs) cs
 	   (scycs, sOk) = partition ((ci `Set.member`) . fst) scs

@@ -37,15 +37,15 @@ putTypeMap :: TypeMap -> State Env ()
 putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 
 -- | store type id and check the kind
-addTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env Bool
+addTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env (Maybe Id)
 -- type args not yet considered for kind construction 
 addTypeId defn _ kind i = 
     do nk <- expandKind kind
        if placeCount i <= kindArity TopLevel nk then
 	  do addTypeKind defn i kind
-	     return True
+	     return $ Just i 
 	  else do addDiags [mkDiag Error "wrong arity of" i]
-                  return False
+                  return Nothing
 
 -- | store prefix type ids both with and without following places 
 addTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
@@ -75,14 +75,13 @@ addSingleTypeKind d i k =
 anaTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
 anaTypeVarDecl(TypeArg t k s ps) = 
     do nk <- anaKind k
-       b <- addTypeVarDecl $ TypeArg t nk s ps
-       return $ if b then Just $ TypeArg t nk s ps
-	      else Nothing
+       addTypeVarDecl $ TypeArg t nk s ps
 
 -- | add an analysed type argument
-addTypeVarDecl :: TypeArg -> State Env Bool
-addTypeVarDecl(TypeArg t k _ _) = 
-       addTypeId TypeVarDefn Plain k t
+addTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
+addTypeVarDecl ta@(TypeArg t k s ps) = 
+    do mi <- addTypeId TypeVarDefn Plain k t
+       return $ fmap (const ta) mi
 
 -- | compute arity from a 'Kind'
 kindArity :: ApplMode -> Kind -> Int
