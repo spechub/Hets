@@ -458,7 +458,10 @@ parseCASLAmalg str =
 -- | 'hetcatsOpts' parses sensible HetcatsOpts from ARGV
 hetcatsOpts :: [String] -> IO HetcatsOpts
 hetcatsOpts argv =
-    case (getOpt Permute options argv) of
+  let argv' = filter (not . isUni) argv
+      isUni ('-':'-':'u':'n':'i':_) = True
+      isUni _ = False
+   in case (getOpt Permute options argv') of
         (opts,non_opts,[]) ->
             do flags <- checkFlags opts
                infs  <- checkInFiles non_opts
