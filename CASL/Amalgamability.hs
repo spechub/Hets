@@ -40,6 +40,7 @@ import Logic.Logic
 import CASL.Sign
 import CASL.Morphism
 import List
+import qualified Options
 -- import Debug.Trace
 
 -- Exported types
@@ -890,13 +891,12 @@ wordToEmbPath ((_, s1, s2) : embs) =
 
     
 -- | The amalgamability checking function for CASL. 
-ensuresAmalgamability :: CASLDiag          -- ^ the diagram to be checked;
-					   -- must already be extended with the node
-					   -- that is the target of the sink.
-		      -> [(Node, CASLMor)] -- ^ the sink
+ensuresAmalgamability :: Options.HetcatsOpts   -- ^ program options
+		      -> CASLDiag              -- ^ the diagram to be checked
+		      -> [(Node, CASLMor)]     -- ^ the sink
 		      -> Diagram String String -- ^ the diagram containing descriptions of nodes and edges
 		      -> Result Amalgamates
-ensuresAmalgamability diag sink desc = 
+ensuresAmalgamability opts diag sink desc = 
     do let -- aux. functions that help printing out diagnostics
            getNodeSig _ [] = emptySign () -- this should never be the case
 	   getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
@@ -963,12 +963,13 @@ ensuresAmalgamability diag sink desc =
 						    Just cas -> 
 						      do -- 4. check the colimit thinness. If the colimit is thing then
 							 -- the specification is correct.
-                                                               if colimitIsThin s em c0 then return Yes
-                                                                  else do let c = cong diag cas s si
-									      --c = cong diag as s
-									      
-								          -- 5. Check the cell condition in its full generality.
-                                                                          case subRelation cct c of
+                                                         if any (== Options.ColimitThinness) (Options.caslAmalg opts) && 
+							    colimitIsThin s em c0 then return Yes
+                                                            else do let c = cong diag cas s si
+							                --c = cong diag as s
+							            -- 5. Check the cell condition in its full generality.
+								    if any (== Options.Cell) (Options.caslAmalg opts)
+                                                                       then case subRelation cct c of
                                                                                Just (w1, w2) -> let rendEmbPath [] = []
                                                                                                     rendEmbPath (h : w) = 
                                                                                                         foldl (\t -> \s -> t ++ " < " ++ renderText Nothing (printText s)) 
@@ -978,11 +979,14 @@ ensuresAmalgamability diag sink desc =
                                                                                                 in do return (No ("embedding paths \n    " ++ word1 ++
 										  		                  "\nand\n    " ++ word2 ++ "\nmight be different"))
 							                       Nothing -> do return Yes 
+								       else return DontKnow
 						    Nothing -> do let cR = congR diag s si
 							       -- 6. Check the restricted cell condition. If it holds then the
 							       -- specification is correct. Otherwise proof obligations need to 
 							       -- be generated.
-							          case subRelation cct cR of 
-								    Just _ -> do return DontKnow -- TODO: generate proof obligations
-								    Nothing -> do return Yes
+								  if any (== Options.Cell) (Options.caslAmalg opts)
+								     then case subRelation cct cR of 
+								            Just _ -> do return DontKnow -- TODO: generate proof obligations
+								            Nothing -> do return Yes
+								     else return DontKnow
 
