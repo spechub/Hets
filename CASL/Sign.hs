@@ -42,6 +42,9 @@ data ExtPos = ExtPos { tokenKind :: TokenKind
 		     , getPos :: Pos } deriving (Show, Eq)
 -- position of "," or ":"
 
+data Posed a = Posed { posedItem :: a 
+		     , extPos :: ExtPos } deriving (Show, Eq)
+
 -- full function type of a selector (result sort is component sort)
 data Component = Component (Maybe Id) OpType (Maybe ExtPos)
                  -- pos of "," or ":" (as Key)
