@@ -98,3 +98,20 @@ noMixfixT cef term =
     Unparsed_term _ _ -> error ("CASL.Utils.noMixfixT: should not occur: "
 				   ++show term)
     _ -> False
+
+-- |
+-- isMixfixTerm checks the 'TERM' f for Mixfix_*, 
+-- but performs no recusive lookup
+isMixfixTerm :: Show f => TERM f -> Bool
+isMixfixTerm term =
+    case term of
+    Simple_id _ -> False
+    Qual_var _ _ _ -> False
+    Application _ _ _ -> False
+    Sorted_term _ _ _  -> False
+    Cast _ _ _ -> False
+    Conditional _ _ _ _ -> False
+    Unparsed_term _ _ -> 
+        error ("CASL.Utils.isMixfixTerm: should not occur: "
+	       ++show term)
+    _ -> True
