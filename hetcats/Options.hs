@@ -66,8 +66,8 @@ import System.Console.GetOpt
 -- TODO: pretty-printer Options
 data HetcatsOpts = 
     HcOpt { verbose  :: Int       -- greater than null to turn verbosity on
-	  , infile   :: FilePath  -- file to be read
 	  , intype   :: InType    -- type of the file to be read
+	  , infile   :: FilePath  -- file to be read
 	  , outdir   :: FilePath  -- output directory
 	  , outtypes :: [OutType] -- list of output types to be generated
 	  , analysis :: Bool      -- False if analysis should be skipped
@@ -77,7 +77,7 @@ data HetcatsOpts =
     deriving (Eq)
 
 instance Show HetcatsOpts where
-    show opts =    "--verbose="       ++ show (verbose opts)
+    show opts =    " --verbose="      ++ show (verbose opts)
 		++ " --input-type="   ++ showInType
 		++ " --output-types=" ++ showOutType
 		++ " --output-dir="   ++ (outdir opts)
@@ -105,7 +105,7 @@ defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
     HcOpt { verbose = 0
 	  , infile = ""
-	  , intype   = ATerm NonBAF
+	  , intype   = Guess -- ATerm NonBAF
 	  , outdir = ""
 	  , outtypes = [HetCASLOut OutASTree Ascii]
             {- better default options, but 
@@ -150,8 +150,8 @@ options =
       "skip static analysis - just parse"
     , Option ['L'] ["casl-libdir"]  (ReqArg parseLibDir "DIR")
       "CASL library directory"
-    , Option ['r'] ["raw"] (ReqArg parseRawOpts "String")
-      "raw options passed on to the pretty-printer\n\tprepend with (ascii|text|(la)?tex)= to specify the target pretty-printer"
+    , Option ['r'] ["raw"] (ReqArg parseRawOpts "RAW")
+      "raw options passed to the pretty-printer \n\tRAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer"
     ]
 
 
@@ -162,7 +162,7 @@ data ErrorSource = User | Intern
 		   deriving (Show, Eq)
 
 -- valid types of input
-data InType = ATerm ATType | ASTree ATType | CASLIn | HetCASLIn
+data InType = ATerm ATType | ASTree ATType | CASLIn | HetCASLIn | Guess
 	      deriving (Show, Eq)
 -- ATerm was: SML_Gen_ATerm
 
@@ -199,7 +199,6 @@ data GraphType = Dot | PostScript | Davinci
 -- valid types of Raw Options
 data RawOpt = RawAscii String | RawLatex String
 	      deriving (Show, Eq)
--- raw options for Html|Xml Parser?
 
 
 -- parser functions returning Flags --
@@ -210,9 +209,7 @@ parseVerbosity Nothing = Verbose 1
 parseVerbosity (Just s)
     = case reads s of
 		   [(i,"")] -> Verbose i
-		   _        -> error'
-    where
-    error' = hetsError User (s ++ " is not a valid INT")
+		   _        -> hetsError User (s ++ " is not a valid INT")
 
 -- parse the input type 
 -- TODO: maybe this can be implemented via 'instance Read InType'?
@@ -234,41 +231,41 @@ parseInputType str                = error' str
 parseOutputTypes :: String -> Flag
 parseOutputTypes str
     | ',' `elem` str = OutTypes $ 
-		       (map maybeOType . map parseOType . splitOn ',') str
-    | otherwise = case (parseOType str) of
-					(Just ts) -> OutTypes [ts]
-					Nothing   -> error' str
+		       (map maybeOType . map parseOutType . splitOn ',') str
+    | otherwise = case (parseOutType str) of
+					  (Just ts) -> OutTypes [ts]
+					  Nothing   -> error' str
     where
-    error' s = hetsError User (s ++ " is not a valid OTYPE")
     maybeOType (Just t) = t
     maybeOType Nothing  = error' str
+    error' s = hetsError User (s ++ " is not a valid OTYPE")
 
 -- parse a single output type from a string
-parseOType :: String -> Maybe OutType
-parseOType s
+parseOutType :: String -> Maybe OutType
+parseOutType s
     | "pp."    `isPrefixOf` s =
-	parseOType' (getPrettyType $ drop 3 s) PrettyPrint
+	parseOutType' (getPrettyType $ drop 3 s) PrettyPrint
     | "graph." `isPrefixOf` s =
-	parseOType' (getGraphType $ drop 6 s) Graph
+	parseOutType' (getGraphType $ drop 6 s) Graph
     | "ast."   `isPrefixOf` s =
-	parseOType' (getOutFormat $ drop 4 s) (HetCASLOut OutASTree)
+	parseOutType' (getOutFormat $ drop 4 s) (HetCASLOut OutASTree)
     | "fdg.nax."   `isPrefixOf` s =
-	parseOType' (getOutFormat $ drop 8 s) 
+	parseOutType' (getOutFormat $ drop 8 s) 
 		      (HetCASLOut $ OutDGraph Flattened True)
     | "fdg."   `isPrefixOf` s =
-	parseOType' (getOutFormat $ drop 4 s)
+	parseOutType' (getOutFormat $ drop 4 s)
 		      (HetCASLOut $ OutDGraph Flattened False)
     | "hdg.nax."   `isPrefixOf` s =
-	parseOType' (getOutFormat $ drop 8 s) 
+	parseOutType' (getOutFormat $ drop 8 s) 
 		      (HetCASLOut $ OutDGraph HidingOutside True)
     | "hdg."   `isPrefixOf` s =
-	parseOType' (getOutFormat $ drop 4 s)
+	parseOutType' (getOutFormat $ drop 4 s)
 		      (HetCASLOut $ OutDGraph HidingOutside False)
     | "dg.nax."    `isPrefixOf` s =
-	parseOType' (getOutFormat $ drop 7 s)
+	parseOutType' (getOutFormat $ drop 7 s)
 		      (HetCASLOut $ OutDGraph Full True)
     | "dg."    `isPrefixOf` s =
-	parseOType' (getOutFormat $ drop 3 s)
+	parseOutType' (getOutFormat $ drop 3 s)
 		      (HetCASLOut $ OutDGraph Full False)
     | otherwise               = Nothing
     where
@@ -286,7 +283,7 @@ parseOType s
     getOutFormat "html" = Just Html
     getOutFormat "xml"  = Just Xml
     getOutFormat _      = Nothing
-    parseOType' getter typ =
+    parseOutType' getter typ =
 	case getter of
 		    (Just t) -> Just (typ t)
 		    Nothing  -> Nothing
@@ -300,7 +297,7 @@ parseRawOpts s
     | "tex="   `isPrefixOf` s = Raw $ [RawLatex (drop 4 s)]
     | otherwise = error'
     where
-    error' = hetsError User "raw options must be prepended with \"ascii=\" or \"latex=\" to identify the target pretty-printer"
+    error' = hetsError User "RAW is (ascii|text|(la)?tex)=STRING"
 
 -- parse the output directory 
 parseOutputDir :: String -> Flag
@@ -318,22 +315,16 @@ hetcatsOpts :: [String] -> IO HetcatsOpts
 hetcatsOpts argv =
     case (getOpt Permute options argv) of
         (opts,non_opts,[]) ->
-	    do withOpts <- formOpts opts
-	       withIns  <- formInFiles non_opts
-	       ourOpts  <- return $
-			   (withOpts . withIns) 
-			   defaultHetcatsOpts
-{-	       if (verbose ourOpts > 2)
-		  then printOpts ourOpts
-		  else return () --fall through -}
-	       ourOpts' <- if (null $ outdir ourOpts)
-		      then return $ ourOpts { outdir = dirname 
-					      (infile ourOpts) }
-		      else return ourOpts
-	       return ourOpts'
+	    do useOpts  <- formOpts opts
+	       ourOpts  <- return (useOpts defaultHetcatsOpts)
+	       ourIns   <- formInFiles non_opts
+	       optsWithIns <- return $
+			      map (makeOpts ourOpts) ourIns
+	       guessedOpts <- return $
+			      map (guessIT . guessOD) optsWithIns
+	       return (head guessedOpts)
         (_,_,errs) -> fail (concat errs ++ hetsUsage)
 
--- TODO: implement some kind of sequence...
 formOpts :: [Flag] -> IO (HetcatsOpts -> HetcatsOpts)
 formOpts fs = do if (hasHelp fs)
 		    then do putStrLn hetsUsage
@@ -344,13 +335,13 @@ formOpts fs = do if (hasHelp fs)
 				      ++ hetcats_version)
 			    exitWith ExitSuccess
 		    else return () -- fall through
-		 fs' <- return $ (collectOutTypes
-				  . collectVerbosity
-				  . collectRawOpts
-				  -- collect some more here?
-				 ) fs
-		 fs'' <- collectOutDirs fs'
-		 return $ extractOpts fs''
+		 fs' <- (collectOutDirs
+			 . collectOutTypes
+			 . collectVerbosity
+			 . collectRawOpts
+			 -- collect some more here
+			) fs
+		 return $ extractOpts fs'
     where
     hasVersion xs = Version `elem` xs
     hasHelp xs = Help `elem` xs
@@ -368,17 +359,22 @@ extractOpts ((Raw x):xs)      opts = extractOpts xs opts { rawoptions = x }
 extractOpts [] opts = opts
 extractOpts _ _ = hetsError Intern "Unknown Error in extractOpts"
 
-formInFiles :: [String] -> IO (HetcatsOpts -> HetcatsOpts)
+formInFiles :: [String] -> IO [FilePath]
 formInFiles fs = do ifs <- checkInFiles fs
 		    case ifs of
-			     [x] -> return $ inFile x
-			     []  -> return $ 
-				    error' "No valid input file specified"
-			     _   -> return $ error'
-			      "Only one input file may be specified at a time"
-    where
-    inFile x opts = opts { infile = x }
-    error' e = (\_ -> hetsError User e)
+			     []  -> return (hetsError User 
+					    "No valid input file specified")
+			     xs  -> return xs
+
+guessIT :: HetcatsOpts -> HetcatsOpts
+guessIT opts 
+    | (intype opts) == Guess = opts { intype = guessInType (infile opts) }
+    | otherwise              = opts
+
+guessOD :: HetcatsOpts -> HetcatsOpts
+guessOD opts 
+    | null (outdir opts) = opts { outdir = dirname (infile opts) }
+    | otherwise          = opts
 
 
 -- auxiliary functions: FileSystem interaction --
@@ -399,13 +395,13 @@ checkInFile file = do exists <- doesFileExist file
 -- sanity check for all output directories
 checkOutDirs :: [Flag] -> IO [Flag]
 checkOutDirs fs = 
-    do ods <- ((filterM checkOutDir) . (map extrOutDir)) fs
+    do ods <- ((filterM checkOutDir) . (map unOutDir)) fs
        if null ods
 	  then return []
 	  else return $ [OutDir $ head ods]
     where
-    extrOutDir (OutDir x) = x
-    extrOutDir _          = hetsError Intern "Unknown error in checkOutDirs"
+    unOutDir (OutDir x) = x
+    unOutDir _          = hetsError Intern "Unknown error in checkOutDirs"
 
 -- sanity check for a single output directory
 checkOutDir :: String -> IO Bool
@@ -472,6 +468,11 @@ collectRawOpts fs =
     concatRawOpts os (Raw ot) = os ++ ot
     concatRawOpts _ _ = hetsError Intern "Unknown Error in collectRawOpts"
 
+makeOpts :: HetcatsOpts -> FilePath -> HetcatsOpts
+makeOpts opts file = opts { infile = file }
+
+guessInType :: FilePath -> InType
+guessInType _ = ATerm NonBAF
 
 
 -- auxiliary functions: error messages --
@@ -494,119 +495,3 @@ printOpts :: HetcatsOpts -> IO ()
 printOpts opts = 
     let optString = "Options: " ++ (show opts)
     in putStrLn optString
-
-
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-{-
--- sets the corect output type(s)
-out_types :: String -> Flag
-out_types s | ',' `elem` s = case merge_out_types $ split_types s of
-			     [x] -> x
-			     _ -> error "internal error after merging OutTypes"
-	    | s == "hetcasl-latex"  = OutTypes [HetCASLOut Latex]
-	    | s == "hetcasl-ascii"  = OutTypes [HetCASLOut Ascii]
-	    | s == "global-env-xml" = OutTypes [Global_Env XML]
-	    | otherwise = error $ hetcats_error ("unknown output type: " ++ s)
-    where split_types = map out_types . splitOn ',' 
--}
-{-
--- merges [OutTypes[a]] into OutTypes[a]
-merge_out_types :: [Flag] -> [Flag]
-merge_out_types flags = 
-    let (ots,flags') = partition is_out_type flags 
-	is_out_type f = case f of
-			OutTypes _ -> True
-			_          -> False
-	concatTypes l ot = case ot of
-			   OutTypes l' -> l++l'
-			   _ -> error "internal error in merging OutTypes"
-	ots' = foldl concatTypes [] ots
-    in if null ots' then flags' else (OutTypes ots'):flags'  
--}
-{-
--- This function parses all options
-hetcatsOpts :: [String] -> IO HetcatsOpts
-hetcatsOpts argv =
-   case (getOpt Permute options argv) of
-      (opts,non_opts,[]  ) -> form_opt_rec (merge_out_types opts) non_opts
-      (_,_,errs) -> fail (concat errs ++ hetcats_usage)
--}
-{-
-form_opt_rec :: [Flag] -> [String] -> IO HetcatsOpts
-form_opt_rec flags inp_files = 
-    let req_in_file = case inp_files of
-		      [] -> error $ "one input filename is required\n" ++
-				    hetcats_usage
-		      [x] -> x
-		      _   -> error $ "Only one input filename allowed\n" ++ 
-				     hetcats_usage
-	verb' = foldl collect_verb 0 flags
-	    where collect_verb v f = case f of 
-				     Verbose i -> i + v
-				     _       -> v
-	outTypes = if null flags then
-		      defaultOt
-		   else case head flags of
-		          OutTypes ot -> ot
-			  _           -> defaultOt
-	    where defaultOt = outtypes default_HetcatsOpts
-    in do if Help `elem` flags -- called with --help
-	     then do putStrLn $ "\n" ++ hetcats_usage
-		     exitWith ExitSuccess
-	     else if Version `elem` flags -- called with --version
-		  then do putStrLn $ "version of hetcats: " ++ hetcats_version
-		          exitWith ExitSuccess
-	          else return () -- called w/o --help or --version
-	  in_file <- check_in_file req_in_file
-	  od <- check_out_dir flags in_file
-	  return $ default_HetcatsOpts { infile  = in_file 
-				       , outdir  = od 
-				       , verbose = verb'
-				       , rawoptions = flags
-				       , outtypes = outTypes
-				       }
--}
-{-
--- some suffixes to try in turn 
--- TODO: implement perm_in_file
-perm_in_file :: FilePath -> [FilePath]
-perm_in_file f = [f]
-
--- check if one of the possible files exists and is readable
--- TODO: implement check_in_file
-check_in_file :: FilePath -> IO FilePath
-check_in_file = return . head . perm_in_file
--}
-
--- check the output directory and choose a default one if none is specified
--- TODO: implement the checking of the out_dir
-{-
-check_out_dir :: [Flag] -> FilePath -> IO FilePath
-check_out_dir flags in_file = 
-    let ods = filter (\f -> case f of
-		            OutDir _ -> True
-		            _ -> False) flags
-	default_dir = dirname in_file
-	od = if null ods then 
-	        if    null default_dir 
-		   || all isSpace default_dir
-		then 
-		   "."
-		else
-		   default_dir
-	     else 
-	        ( \ (OutDir fp) -> fp) $ last ods
-    in do od' <- if od == "." then
-                    getCurrentDirectory
-	         else
-		    return od
-	  existsDir <- doesDirectoryExist od'
-          perms <- if existsDir then getPermissions od'
-		   else error $ "requested nonexistent output directory \"" ++ 
-			       od' ++ "\"\n" ++ hetcats_usage
-	  if existsDir && writable perms then 
-	     return od'
-	   else
-	     fail $ "no writeable output directory available\n" ++
-		    hetcats_usage
--}
