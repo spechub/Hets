@@ -23,6 +23,7 @@ import CASL.AS_Basic_CASL
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import CASL.LiteralFuns
+import CASL.Utils
 
 import Common.Print_AS_Annotation
 
@@ -303,9 +304,10 @@ instance PrettyPrint f => PrettyPrint (TERM f) where
 	     else
 	       condPrint_Mixfix_text ga o_id l
     printText0 ga (Sorted_term t s _) = 
-	printText0 ga t	<+> colon <+> printText0 ga s
-    printText0 ga (Cast  t s _) = 
-	printText0 ga t <+> text asS <+> printText0 ga s
+        condParensSorted_term parens t (printText0 ga t) <+> 
+        colon <+> printText0 ga s
+    printText0 ga (Cast t s _) = 
+        printText0 ga t <+> text asS <+> printText0 ga s
     printText0 ga(Conditional u f v _) = 
 	hang (printText0 ga u) 4 $ 
 	     sep ((text whenS <+> printFORMULA ga f):
@@ -656,6 +658,21 @@ condParensAppl pf parens_fun ga o_i t mdir =
     Cast _ _ _ -> t'
     _ -> parens_fun t'
     where t' = pf t
+
+condParensSorted_term :: Show f => 
+                         (Doc -> Doc) 
+                         -- ^ a function that surrounds 
+			 -- the given Doc with appropiate 
+			 -- parens
+                      -> TERM f -> Doc -> Doc
+condParensSorted_term  parens_fun t =
+    case t of
+    Application _ l _ 
+        | null l    -> id
+        | otherwise -> parens_fun
+    _ 
+        | isMixfixTerm t -> parens_fun
+        | otherwise      -> id
 
 is_atomic_FORMULA :: FORMULA f -> Bool
 is_atomic_FORMULA f =
