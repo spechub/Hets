@@ -29,33 +29,18 @@ import Common.Lib.Pretty
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-
 import Data.List(partition)
-import Control.Monad(foldM)
 
-data SymbolType = OpAsItemType TypeScheme 
+data SymbolType = OpAsItemType TySc
 		| TypeAsItemType Kind
 		| ClassAsItemType Kind
 		  deriving (Show, Eq, Ord)
 
 instance PrettyPrint SymbolType where
     printText0 ga t = case t of 
-      OpAsItemType sc -> printText0 ga sc
+      OpAsItemType (TySc sc) -> printText0 ga sc
       TypeAsItemType k -> printText0 ga k
       ClassAsItemType k -> printText0 ga k
-
-instance Ord TypeScheme where
--- this does not match with Eq TypeScheme!
-    sc1 <= sc2 = let (t1, c) = runState (freshInst sc1) 1
-		     t2 = evalState (freshInst sc2) c
-		     v1 = varsOf t1
-		     v2 = varsOf t2
-                 in case compare (length v1) $ length v2 of 
-			LT -> True
-			EQ -> t1 <= subst (Map.fromList $
-			    zipWith (\ v (TypeArg i k _ _) ->
-				     (v, TypeName i k 1)) v1 v2) t2
-			GT -> False 		   
 
 data Symbol = Symbol {symName :: Id, symbType :: SymbolType} 
 	      deriving (Show, Eq, Ord)
@@ -68,7 +53,7 @@ type SymbolMap = Map.Map Symbol Symbol
 idToTypeSymbol :: Id -> Kind -> Symbol
 idToTypeSymbol idt k = Symbol idt $ TypeAsItemType k
 
-idToOpSymbol :: Id -> TypeScheme -> Symbol
+idToOpSymbol :: Id -> TySc -> Symbol
 idToOpSymbol idt typ = Symbol idt $ OpAsItemType typ
 
 idToRaw :: Id -> RawSymbol
@@ -95,7 +80,7 @@ symOf sigma =
 		classes $ typeMap sigma
         ops = Map.foldWithKey ( \ i ts s0 ->
 		      foldr ( \ t s1 -> 
-			  Set.insert (Symbol i $ OpAsItemType $ 
+			  Set.insert (Symbol i $ OpAsItemType $ TySc $
 				      opType t) s1) s0 $ opInfos ts)
 	      types $ assumps sigma
 	in ops
@@ -163,22 +148,55 @@ mapTypeScheme :: IdMap -> TypeScheme -> TypeScheme
 mapTypeScheme m (TypeScheme args (q :=> t) ps) =
     TypeScheme args (q :=> mapType m t) ps
 
-type FunMap = Map.Map (Id, TypeScheme) (Id, TypeScheme)
+mapTySc :: IdMap -> TySc -> TySc
+mapTySc m (TySc s1) = TySc (mapTypeScheme m s1)
 
-mapFunSym :: IdMap -> FunMap -> (Id, TypeScheme) -> Maybe (Id, TypeScheme)
+-- new type to defined a different Eq and Ord instance
+data TySc = TySc TypeScheme deriving Show
+
+instance Eq TySc where
+    TySc sc1 == TySc sc2 = 
+	let Result _ ms = mergeScheme Map.empty 0 sc1 sc2 
+	    in maybe False (const True) ms
+
+instance Ord TySc where
+-- this does not match with Eq TypeScheme!
+    TySc sc1 <= TySc sc2 = 
+	TySc sc1 == TySc sc2 || 
+	         let (t1, c) = runState (freshInst sc1) 1
+		     t2 = evalState (freshInst sc2) c
+		     v1 = varsOf t1
+		     v2 = varsOf t2
+                 in case compare (length v1) $ length v2 of 
+			LT -> True
+			EQ -> t1 <= subst (Map.fromList $
+			    zipWith (\ v (TypeArg i k _ _) ->
+				     (v, TypeName i k 1)) v1 v2) t2
+			GT -> False 		   
+
+type FunMap = Map.Map (Id, TySc) (Id, TySc)
+
+mapFunSym :: IdMap -> FunMap -> (Id, TySc) -> Maybe (Id, TySc)
 mapFunSym tm fm (i, sc) = do
   (newI, _sc1) <- Map.lookup (i, sc) fm
-  let sc2 = mapTypeScheme tm sc
+  let sc2 = mapTySc tm sc
       -- unify sc2 with sc1 later
   return (newI, sc2)
 
 mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
-mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = fmap OpInfos $  
-    foldM ( \ l o -> 
-	   let (es, us) = partition (isUnifiable tm c (opType o) . opType) l
-	   in if null es then return (o:l)
-	      else do r <- mergeOpInfo tm c (head es) o
-	              return (r : us)) l1 l2 
+mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = 
+    do l <- mergeOps tm c l1 l2
+       return $ OpInfos l
+-- trace (showPretty l1 "\n+ " ++ showPretty l2 "\n 0" ++ showPretty l "") l
+
+mergeOps :: TypeMap -> Int -> [OpInfo] -> [OpInfo] -> Result [OpInfo]
+mergeOps _ _ [] l = return l
+mergeOps tm c (o:os) l2 = do 
+    let (es, us) = partition (isUnifiable tm c (opType o) . opType) l2
+    l1 <- mergeOps tm c os us 
+    if null es then return (o : l1)
+       else do r <- mergeOpInfo tm c o $ head es
+	       return (r : l1)
 
 mergeEnv :: Env -> Env -> Result Env
 mergeEnv e1 e2 =
@@ -207,7 +225,7 @@ ideMor e = (mkMorphism e e)
 	   { typeIdMap = Map.foldWithKey ( \ i _ m -> 
 				Map.insert i i m) Map.empty $ typeMap e
 	   , funMap = Map.foldWithKey ( \ i ts m ->
-			  foldr ( \ t m2 -> let v = (i, opType t) in
+			  foldr ( \ t m2 -> let v = (i, TySc (opType t)) in
 				  Map.insert v v m2) m
 					$ opInfos ts) Map.empty
 	                                    $ assumps e
@@ -246,7 +264,7 @@ embedMorphism a b =
                 $ Map.keys $ typeMap a
     , funMap = Map.foldWithKey 
                  ( \ i (OpInfos ts) m -> foldr 
-                      (\ oi -> let t = opType oi in 
+                      (\ oi -> let t = TySc $ opType oi in 
 		           Map.insert (i,t) (i, t)) m ts)
                  Map.empty $ assumps a
     }
@@ -269,17 +287,18 @@ symbMapToMorphism sigma1 sigma2 smap = do
     return (Map.insert i (symName sym) m1)
   myAsMap i (OpInfos ots) m = foldr (insFun i) m ots
   insFun i ot m = do
+    let osc = TySc $ opType ot
     m1 <- m
     sym <- maybeToResult nullPos 
              ("symbMapToMorphism - Could not map op "++showId i "")
              $ Map.lookup (Symbol { symName = i
-				  , symbType = OpAsItemType $ opType ot}) smap
+				  , symbType = OpAsItemType osc}) smap
     k <- case symbType sym of
         OpAsItemType sc -> return sc
-        _ -> plain_error (opType ot)
+        _ -> plain_error osc
               ("symbMapToMorphism - Wrong result symbol type for op"
                ++showId i "") nullPos 
-    return (Map.insert (i, opType ot) (symName sym,k) m1)
+    return (Map.insert (i, osc) (symName sym,k) m1)
 
 legalEnv :: Env -> Bool
 legalEnv _ = True -- maybe a closure test?
