@@ -621,6 +621,7 @@ computeTheory dg n = do
               $ fst $ match n dg
   let  nlab = lab' ctx
        paths = getAllLocGlobDefPathsTo dg n []
+  --debug 1 ("paths",paths)
   mors <- maybeToResult nullPos "Could not calculate morphism of path"
             $ sequence $ map (calculateMorphismOfPathWithStart dg) paths
   ctxs <- maybeToResult nullPos "Could not find start node of path"

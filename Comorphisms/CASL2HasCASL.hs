@@ -17,6 +17,7 @@ module Comorphisms.CASL2HasCASL where
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
+import Common.AS_Annotation (Named)
 import qualified Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Data.Dynamic
@@ -107,7 +108,7 @@ trPredType pt = OpInfo { opType = simpleTypeScheme t,
                      arg = if isSingle args then head args else 
 			   ProductType args []
 
-mapSignature :: CASL.Sign.Sign -> Maybe(HasCASL.Le.Env,[Term]) 
+mapSignature :: CASL.Sign.Sign -> Maybe(HasCASL.Le.Env,[Named Term]) 
 mapSignature sign = Just (initialEnv { 
     classMap = Map.empty,
     typeMap = Map.fromList $ map (\s -> (s,sortTypeinfo)) 

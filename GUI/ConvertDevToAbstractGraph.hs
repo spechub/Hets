@@ -522,15 +522,6 @@ getSignatureOfNode descr ab2dgNode dgraph =
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
 
-showSen :: PrettyPrint a => Named a -> String
-showSen x =  (senName x) ++ ": \""++showPretty (sentence x) "\""
-
-nameSens :: [Named a] -> [Named a]
-nameSens sens = 
-  map nameSen (zip sens [1..length sens])
-  where nameSen (sen,no) = if senName sen == "" 
-                              then sen{senName = "Ax"++show no}
-                              else sen
 
 {- outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
@@ -541,15 +532,8 @@ getTheoryOfNode descr ab2dgNode dgraph = case (do
                        $ Map.lookup descr ab2dgNode 
   (G_sign lid sign,G_l_sentence_list lid' sens) <- 
                    computeTheory dgraph node
-  sens1 <- rcoerce lid' CASL nullPos sens 
-  sign1 <- rcoerce lid CASL nullPos sign 
-  (sign',sens') <- Res.maybeToResult nullPos "Could not map signature"
-                        $ map_sign CASL2IsabelleHOL sign1
-  sens'' <- Res.maybeToResult nullPos "Could not map sentences"
-              $ sequence 
-              $ map (mapNamedM (map_sentence CASL2IsabelleHOL sign1)) sens1
-  let shownsens = concat $ map ((++"\n") . showSen) (nameSens (sens'++sens''))
-  return (node,showPretty sign' "\n\naxioms\n" ++ shownsens)
+  let shownsens = concat $ map ((++"\n") . flip showPretty "") sens
+  return (node,showPretty sign "\n\naxioms\n" ++ shownsens)
     ) of
   Res.Result [] (Just (node,str)) ->  
       do let dgnode = lab' (context node dgraph)
@@ -561,7 +545,7 @@ getTheoryOfNode descr ab2dgNode dgraph = case (do
                in createTextDisplay title str [size(100,50)]
               --putStrLn ((showPretty sig) "\n")
            (DGRef _ _ _) -> error 
-			    "nodes of type dg_ref do not have a signature"
+			    "nodes of type dg_ref do not have a theory"
   Res.Result diags _ -> do
      sequence $ map (putStrLn . show) diags
      return ()

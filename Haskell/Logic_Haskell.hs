@@ -146,6 +146,9 @@ type Sentence = AHsDecl
 instance Ord AHsDecl where
   compare x y = undefined
 
+instance PrettyPrint Sentence where
+  printText0 _ = ptext . show
+
 type Symbol = ()
 type RawSymbol = ()
 
