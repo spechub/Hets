@@ -16,11 +16,20 @@ module Isabelle.Translate (showIsa, showIsaSid, showIsaI, replaceChar) where
 import Common.Id 
 import qualified Common.Lib.Map as Map
 import Data.Char
+import Data.Maybe
 
 ------------------- Id translation functions -------------------
 
+isaPrelude = ["Some","defOp","Not","All","Ex","Ex1","True","False",
+              "pair","Pair","inj"]
+
 showIsa :: Id -> String
-showIsa = transString . show
+showIsa ident = 
+  if stripUnderscores sident `elem` isaPrelude then sident++"X" else sident
+  where sident = transString $ show ident
+
+stripUnderscores :: String -> String
+stripUnderscores = catMaybes . map (\c -> if c=='_' then Nothing else Just c)
 
 showIsaSid :: SIMPLE_ID -> String
 showIsaSid = transString . show
@@ -33,7 +42,7 @@ isIsaChar c = (isAlphaNum c && isAscii c) || c `elem` "_'"
 
 replaceChar1 :: Char -> String
 replaceChar1 c | isIsaChar c = [c] 
-               | otherwise = replaceChar c++"__"
+               | otherwise = replaceChar c++"X"
 
 transString :: String -> String
 transString "" = "X"
