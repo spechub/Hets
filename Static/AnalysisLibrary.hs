@@ -44,6 +44,9 @@ import System
 import List
 import Directory
 
+--import ReadFn
+import WriteFn (writeFileInfo)
+
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
 anaFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
@@ -70,6 +73,10 @@ anaFile logicGraph defaultLogic opts libenv fname = do
                                     libenv ast)
           -- no diags expected here, since these are handled in ana_LIB_DEFN
           -- sequence (map (putStrLn . show) diags)
+          case res of 
+            Nothing -> return()
+            Just (ln,_,_,lenv) ->
+              writeFileInfo opts fname'' ln lenv
           return res
 
 -- lookup/read a library
@@ -223,7 +230,7 @@ ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
       gsigmaT = getSig tar
   G_sign lidS sigmaS <- return gsigmaS
   G_sign lidT sigmaT <- return gsigmaT
-  gsis1 <- adj $ homogenize (Logic lidS) gsis
+  gsis1 <- adj $ Syntax.AS_Structured.homogenizeGM (Logic lidS) gsis
   G_symb_map_items_list lid sis <- return gsis1
   sigmaS' <- rcoerce lid lidS (headPos pos) sigmaS
   sigmaT' <- rcoerce lid lidT (headPos pos) sigmaT
@@ -306,12 +313,4 @@ refViewsig ln dg (src,mor,extsig) =
   (dg1,[src1]) = refNodesigs ln dg [(Nothing,src)]
   (dg2,extsig1) = refExtsig ln dg Nothing extsig
 
-homogenize1 res 
-     (Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
-  (G_symb_map_items_list lid sis) <- res
-  sis1' <- rcoerce lid1 lid nullPos sis1
-  return (G_symb_map_items_list lid (sis++sis1'))
-homogenize1 res _ = res 
 
-homogenize (Logic lid) gsis = 
-  foldl homogenize1 (return (G_symb_map_items_list lid [])) gsis 

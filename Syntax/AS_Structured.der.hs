@@ -22,8 +22,9 @@ module Syntax.AS_Structured where
 import Common.Id
 import Common.AS_Annotation
 
-import Logic.Logic (AnyLogic)
+import Logic.Logic (AnyLogic(Logic), rcoerce)
 import Logic.Grothendieck
+import Common.Result
 
 data SPEC = Basic_spec G_basic_spec 
 	  | Translation (Annoted SPEC) RENAMING 
@@ -125,3 +126,14 @@ data Logic_code = Logic_code (Maybe Token)
 data Logic_name = Logic_name Token (Maybe Token)
 		  deriving (Show,Eq)
 
+homogenizeGM :: AnyLogic
+              -> [Syntax.AS_Structured.G_mapping] -> Result G_symb_map_items_list
+homogenizeGM (Logic lid) gsis = 
+  foldl homogenize1 (return (G_symb_map_items_list lid [])) gsis 
+  where
+  homogenize1 res 
+       (Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
+    (G_symb_map_items_list lid sis) <- res
+    sis1' <- rcoerce lid1 lid nullPos sis1
+    return (G_symb_map_items_list lid (sis++sis1'))
+  homogenize1 res _ = res 

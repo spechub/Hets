@@ -38,7 +38,7 @@ AG_FLAGS   = -mdcfs
 ### If you need Profiling comment out the following line 
 #HC_PROF    = -prof -auto-all -Wall 
 
-HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE) 
+HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 DRIFT_OPTS  = +RTS -K10 -RTS
 

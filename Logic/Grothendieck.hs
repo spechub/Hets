@@ -454,3 +454,4 @@ ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
                        (map_sign i sigma1')
        mor <- inclusion (targetLogic i) sigma1'' sigma2'
        return (GMorphism i sigma1' mor)
+

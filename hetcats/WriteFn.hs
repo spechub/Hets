@@ -17,11 +17,12 @@ import Common.Utils
 
 import System.IO
 import Syntax.Print_HetCASL
-import Syntax.AS_Library (LIB_DEFN()) 
+import Syntax.AS_Library (LIB_DEFN(), LIB_NAME()) 
 import Syntax.GlobalLibraryAnnotations
 import Version
 import Common.ConvertGlobalAnnos
 import Common.ATerm.Lib
+import qualified Common.Lib.Map as Map
 
 import Static.DevGraph
 import ATC.DevGraph
@@ -101,4 +102,14 @@ toShATermString atcon = let (att0,versionnr) = toShATerm emptyATermTable hetcats
 globalContexttoShATerm :: FilePath -> GlobalContext -> IO ()
 globalContexttoShATerm fp gc = writeShATermFile fp gc
 
+rmSuffix :: String -> String
+rmSuffix = reverse . tail . snd . break (=='.') . reverse
 
+writeFileInfo :: HetcatsOpts -> String -> LIB_NAME -> LibEnv -> IO()
+writeFileInfo opts file ln lenv = 
+  case Map.lookup ln lenv of
+    Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
+    Just gctx -> do
+      let envFile = rmSuffix file ++ ".env"
+      return ()
+      --putIfVerbose opts 1 ("Writing "++envFile); globalContexttoShATerm envFile gctx
