@@ -104,7 +104,7 @@ data DGRule =
  | LocSubsumption (LEdge DGLinkLab)
  | GlobSubsumption (LEdge DGLinkLab)
  | LocalInference
- | BasicInference Edge BasicProof
+ | BasicInferendge BasicProof
  | BasicConsInference Edge BasicConsProof
    deriving (Eq, Show)
 

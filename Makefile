@@ -143,12 +143,14 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 COL/AS_COL.hs COL/COLSign.hs \
                 CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs \
                 Static/DevGraph.hs \
+		Proofs/Proofs.hs \
                 Isabelle/IsaSign.hs 
 
 gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
                    ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
                    ATC/AS_Structured.hs ATC/AS_Architecture.hs \
                    ATC/DevGraph.hs \
+		   ATC/Proofs.hs \
                    CASL/ATC_CASL.hs \
                    HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs \
                    Modal/ATC_Modal.hs CoCASL/ATC_CoCASL.hs COL/ATC_COL.hs \

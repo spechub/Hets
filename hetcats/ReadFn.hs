@@ -24,6 +24,7 @@ import Static.DevGraph
 
 import ATC.AS_Library
 import ATC.DevGraph
+import ATC.Proofs
 import ATC.Sml_cats
 
 import Common.ATerm.Lib
@@ -31,6 +32,8 @@ import Common.AnnoState
 import Common.Id
 import Common.Result
 import Common.Lib.Parsec
+
+import Proofs.Proofs
 
 import Options
 import Version
@@ -90,3 +93,6 @@ fromShATermString str = if null str then Result [dia3] Nothing else
 
 globalContextfromShATerm :: FilePath -> IO (Result GlobalContext)
 globalContextfromShATerm = readShATermFile
+
+proofStatusFromShATerm :: FilePath -> IO (Result ProofStatus)
+proofStatusFromShATerm = readShATermFile

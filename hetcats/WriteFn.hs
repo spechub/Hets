@@ -20,7 +20,6 @@ import Options
 import Common.Utils
 import Common.Result
 
-
 import System.IO
 import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN(), LIB_NAME()) 
@@ -30,6 +29,9 @@ import Version
 import Common.ConvertGlobalAnnos
 import Common.ATerm.Lib
 import qualified Common.Lib.Map as Map
+
+import ATC.Proofs
+import Proofs.Proofs
 
 import Static.DevGraph
 import ATC.DevGraph
@@ -154,3 +156,7 @@ write_casl_latex_stdout opt ga ld =
             hPutStr dout $ printLIB_DEFN_debugLatex ga ld
             hClose dout)
        -}
+
+proofStatusToShATerm :: FilePath -> ProofStatus -> IO()
+proofStatusToShATerm filepath proofStatus =
+  writeShATermFileSDoc filepath proofStatus
