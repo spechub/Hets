@@ -23,7 +23,6 @@ import Modal.Parse_AS
 import Modal.StatAna
 import Modal.LaTeX_Modal
 import CASL.Sign
-import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.Logic_CASL
@@ -38,7 +37,6 @@ import Data.Dynamic
 import Common.DynamicUtils
  
 import CASL.SimplifySen
-import Common.Result
 
 data Modal = Modal deriving Show
 
@@ -108,32 +106,38 @@ instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
 rmTypesMod :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA
 rmTypesMod sign mFormula =
     case mFormula of
-      Box mod form pos -> 
-	  let mod' = case mod of
-	             Term_mod term -> Term_mod $ rmTypesT minExpForm rmTypesExt sign term
-		     t -> t
-	  in Box mod' (rmTypesF minExpForm rmTypesExt sign form) pos
-      Diamond mod form pos ->
-	  let mod' = case mod of
-	             Term_mod term -> Term_mod $ rmTypesT minExpForm rmTypesExt sign term
-		     t -> t
-	  in Diamond mod' (rmTypesF minExpForm rmTypesExt sign form) pos
+      Box md form pos -> 
+          let mod' = case md of
+                     Term_mod term -> Term_mod $ rmTypesT minExpForm 
+                                      rmTypesExt sign term
+                     t -> t
+          in Box mod' (rmTypesF minExpForm rmTypesExt sign form) pos
+      Diamond md form pos ->
+          let mod' = case md of
+                     Term_mod term -> Term_mod $ rmTypesT minExpForm 
+                                      rmTypesExt sign term
+                     t -> t
+          in Diamond mod' (rmTypesF minExpForm rmTypesExt sign form) pos
 
 
--- simplifySen for ExtFORMULA	
+-- simplifySen for ExtFORMULA   
 simModal :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA
 simModal sign mFormula =
     case mFormula of
-      Box mod form pos -> 
-	  let mod' = case mod of
-		        Term_mod term -> Term_mod $ rmTypesT minExpForm rmTypesExt sign term
-			t -> t
-	  in Box mod' (simplifySen minExpForm simModal rmTypesExt sign form) pos
-      Diamond mod form pos ->
-	  let mod' = case mod of
-	             Term_mod term -> Term_mod $ rmTypesT minExpForm rmTypesExt sign term
-		     t -> t
-	  in Diamond mod' (simplifySen minExpForm simModal rmTypesExt sign form) pos
+      Box md form pos -> 
+          let mod' = case md of
+                        Term_mod term -> Term_mod $ rmTypesT minExpForm 
+                                         rmTypesExt sign term
+                        t -> t
+          in Box mod' 
+             (simplifySen minExpForm simModal rmTypesExt sign form) pos
+      Diamond md form pos ->
+          let mod' = case md of
+                     Term_mod term -> Term_mod $ rmTypesT minExpForm 
+                                      rmTypesExt sign term
+                     t -> t
+          in Diamond mod' 
+             (simplifySen minExpForm simModal rmTypesExt sign form) pos
 
 -- such as id
 rmTypesExt _ f = f
@@ -143,9 +147,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
                MSign 
                ModalMor 
                Symbol RawSymbol where
-         basic_analysis Modal = Just $ basicAnalysis resolveM_FORMULA 
-                                noExtMixfixM minExpForm
-                                ana_M_BASIC_ITEM ana_M_SIG_ITEM diffModalSign
+         basic_analysis Modal = Just $ basicModalAnalysis
          stat_symb_map_items Modal = statSymbMapItems
          stat_symb_items Modal = statSymbItems
          ensures_amalgamability Modal _ = 
@@ -169,7 +171,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
          induced_from_morphism Modal = inducedFromMorphism dummy
          induced_from_to_morphism Modal = 
              inducedFromToMorphism dummy isSubModalSign
-	 theory_to_taxonomy Modal = convTaxo
+         theory_to_taxonomy Modal = convTaxo
 
 instance Logic Modal ()
                M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
@@ -185,5 +187,3 @@ instance Logic Modal ()
          min_sublogic_symbol Modal _symbol = ()
 --         sublogic_names Modal _ = ["Modal"]
 --         all_sublogics Modal = [()]
-
-

@@ -25,11 +25,21 @@ import CASL.Overload
 import CASL.MapSentence
 
 import Common.AS_Annotation
+import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import Common.Id
 import Common.Result
+
+basicModalAnalysis :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
+		       Sign M_FORMULA ModalSign, GlobalAnnos)
+		   -> Result (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
+			      Sign M_FORMULA ModalSign,
+			      Sign M_FORMULA ModalSign,
+			      [Named (FORMULA M_FORMULA)])
+basicModalAnalysis = basicAnalysis resolveM_FORMULA noExtMixfixM minExpForm
+                     ana_M_BASIC_ITEM ana_M_SIG_ITEM diffModalSign
 
 resolveMODALITY :: MixResolve MODALITY
 resolveMODALITY ga ids m = case m of 
