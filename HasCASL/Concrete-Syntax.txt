@@ -2,8 +2,7 @@
 BASIC-SPEC      ::= BASIC-ITEMS ... BASIC-ITEMS  |  { }
 
 BASIC-ITEMS     ::= SIG-ITEMS  
-                  | class/classes CLASS-ITEM { CLASS-SPEC } ;/
-                  | class instance/instances CLASS-ITEM { CLASS-SPEC } ;/
+		  | CLASS-ITEMS
                   | free      type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
                   | generated type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
                   | generated { SIG-ITEMS ... SIG-ITEMS } ;/
@@ -21,7 +20,6 @@ SIG-ITEMS       ::= sort/sorts SORT-ITEM ; ... ; SORT-ITEM ;/
                   | op/ops OP-ITEM ; ... ; OP-ITEM ;/
                   | program/programs PROG-EQ ; ... ; PROG-EQ ;/
                   | pred/preds PRED-ITEM ; ... ; PRED-ITEM ;/      %% old style
-                  | type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
 
 %% for backwards compatibility with CASL
 SORT-ITEM       ::= TYPE-NAME , ... , TYPE-NAME 
@@ -37,6 +35,7 @@ TYPE-ITEM       ::= TYPE-NAME , ... , TYPE-NAME  %% same as SORT-ITEM
                   | TYPE , ... , TYPE < TYPE      %% with global TYPE-VARs
                   | TYPE = { VAR : TYPE "." FORMULA }   %% "" 
                   | TYPE = ... = TYPE                   %% ""
+		  | DATATYPE-DECL        %% TYPE-DEFN-PATTERN ::= ALTERNATIVES
 
 TYPE-DEFN-PATTERN ::= TYPE-NAME 
 		    | TYPE-NAME (TYPE-ARG) ... (TYPE-ARG)
@@ -53,13 +52,17 @@ PSEUDOTYPE      ::= TYPE
                   | \ TYPE-ARG "." PSEUDOTYPE
                   | \ (TYPE-ARG) ... (TYPE-ARG) "." PSEUDOTYPE
 
-CLASS-ITEM      ::= CLASS-NAME 
+CLASS-ITEMS     ::= class/classes CLASS-ITEM ; ... ; CLASS-ITEM ;/
+                  | class instance/instances CLASS-ITEM ; ... ; CLASS-ITEM ;/
+
+CLASS-ITEM      ::= CLASS-DECL
+		  | CLASS-DECL {BASIC-ITEMS ... BASIC-ITEMS}  
+%% without "class" and without "type instance"
+
+CLASS-DECL      ::= CLASS-NAME , ... , CLASS-NAME
                   | CLASS-NAME , ... , CLASS-NAME < CLASS
                   | CLASS-NAME = CLASS
                   | CLASS-NAME = ... = CLASS-NMAE
-
-CLASS-SPEC      ::= BASIC-ITEMS ... BASIC-ITEMS  
-%% without "class" and without "type instance"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -94,13 +97,17 @@ PRED-ITEM       ::= OP-NAME, ..., OP-NAME: PRODUCT-TYPE  %% no currying!
 OP-ARGS         ::= ARG-DECLS ... ARG-DECLS
 ARG-DECLS       ::= ( PATTERN ; ... ; PATTERN ) | ()
 
-%% can this be recognized? (VARs are IDs!)
+%% unknown IDs will become new variables
 PATTERN         ::= VAR , ... , VAR        % globally declared 
 		  | VAR-DECL
 		  | MIXFIX-PATTERN , ... , MIXFIX-PATTERN
 
-MIXFIX-PATTERN  ::= INST-PATTERN ... INST-PATTERN
-                  | INST-PATTERN ... INST-PATTERN : TYPE
+MIXFIX-PATTERN  ::= AS-PATTERN ... AS-PATTERN
+                  | AS-PATTERN ... AS-PATTERN : TYPE
+
+AS-PATTERN      ::= INST-PATTERN
+		  | VAR @ INST-PATTERN 
+		  | VAR : TYPE @ INST-PATTERN 
 
 INST-PATTERN    ::= SIMPLE-PATTERN 
 		  | SIMPLE-PATTERN [TYPE, ... , TYPE]
@@ -122,7 +129,7 @@ SIMPLE-DATATYPE-DECL
                 ::= TYPE-DEFN-PATTERN "::=" 
                                 ALTERNATIVE "|" ... "|" ALTERNATIVE
 DERIVING-DATATYPE-DECL
-                ::= SIMPLE-DATATYPE-DECL deriving CLASS , ... , CLASS
+                ::= SIMPLE-DATATYPE-DECL deriving CLASS
 
 UNINST-OP-NAME  :: = ID
 
@@ -148,31 +155,35 @@ TYPE-VAR-DECL   ::= TYPE-VAR , ... , TYPE-VAR: CLASS
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-KIND            ::= CLASS
+KIND          ::= CLASS
 		  | EXT-CLASS -> ... -> EXT-CLASS -> CLASS
 
-EXT-CLASS       ::= CLASS | CLASS + | CLASS -
+EXT-CLASS     ::= CLASS | CLASS + | CLASS -
 
 CLASS         ::= SIMPLE-CLASS , ... , SIMPLE-CLASS
 
 SIMPLE-CLASS  ::= type | CLASS-NAME | ( CLASS )
-		| { SIMPLE-ID . SIMPLE-ID < TYPE} 
-		| { SIMPLE-ID . SIMPLE-ID > TYPE} 
+		| { SIMPLE-ID . SIMPLE-ID < TYPE } 
+		| { SIMPLE-ID . SIMPLE-ID > TYPE } 
 		
-TYPE-SCHEME     ::= TYPE | forall TYPE-VAR-DECL ; ... ; TYPE-VAR-DECL . TYPE
+TYPE-SCHEME   ::= TYPE | forall TYPE-VAR-DECL ; ... ; TYPE-VAR-DECL . TYPE
 
-PRIM-TYPE      ::= NO-BRACKET-TOKEN   %% TYPE-VAR or TYPE-NAME
-	         | (TYPE)
-		 | ()                 %% unit
+PRIM-TYPE     ::= NO-BRACKET-TOKEN   %% TYPE-VAR or TYPE-NAME
+	        | ( TYPE )
+	        | ( TYPE : KIND )
+		| ( )                 %% unit
 
-MIXFIX-TYPE      ::= PRIM-TYPE ... PRIM-TYPE
-                   | PRIM-TYPE ... PRIM-TYPE : KIND
+MIXFIX-TYPE   ::= PRIM-TYPE ... PRIM-TYPE
+                | PRIM-TYPE ... PRIM-TYPE : SIMPLE-CLASS
+                | PRIM-TYPE ... PRIM-TYPE : ( KIND )
+%% avoid "," at the end of a type 
+%% ambiguity: " , CLASS-NAME " and  " , TYPE-NAME " within TYPE-ITEMS 
 
-PRODUCT-TYPE     ::= MIXFIX-TYPE * ... * MIXFIX-TYPE
+PRODUCT-TYPE  ::= MIXFIX-TYPE * ... * MIXFIX-TYPE
 
-TYPE             ::= PRODUCT-TYPE ARR ... ARR PRODUCT-TYPE
+TYPE          ::= PRODUCT-TYPE ARROW ... ARROW PRODUCT-TYPE
 
-ARR              ::= ->? | -> | -->? | -->
+ARROW         ::= ->? | -> | -->? | -->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -189,10 +200,14 @@ TERM            ::= MIXFIX-TERM
 		  | QUANT-TERM
 		  | MIXFIX-TERM CASE-TERM
 		  | CASE-TERM
+		  | MIXFIX-TERM LET-TERM
+		  | LET-TERM
 
 MIXFIX-TERM     ::= INST-TERM ... INST-TERM
 
 TYPE-OP         ::= ":" | as | in
+
+LET-TERM        ::= let PROG-EQ ; ... ; PROG-EQ in TERM
 
 %% ";" is already used as item-separator
 CASE-TERM       ::= case TERM of PATTERN -> TERM | ... | PATTERN -> TERM
