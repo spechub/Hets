@@ -1,11 +1,16 @@
---
---  Graph.hs -- Inductive Graphs  (c) 2000 by Martin Erwig
---
---  The implementation is based on extensible finite maps.
---  For fixed size graphs, see StaticGraph.hs
---
---  Example Graphs:      GraphData.hs
---
+
+{- |
+Module      :  $Header$
+Copyright   :  (c) 2000 by Martin Erwig
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+    
+    Inductive Graphs. The implementation is based on extensible finite maps.
+-}
+
 module Common.Lib.Graph (
 -- types
    Node,LNode,UNode,                  -- plain, labeled, and unit-labeled node
@@ -37,7 +42,7 @@ module Common.Lib.Graph (
 
 import Common.Lib.SimpleMap
 import Data.Maybe (fromJust)
-import List(sortBy)
+import Data.List(sortBy)
 
 ----------------------------------------------------------------------
 -- TYPES
@@ -73,7 +78,8 @@ type UPath     = [UNode]
 -- types supporting inductive graph view
 --
 type Adj b        = [(b,Node)]
-type Context a b  = (Adj b,Node,a,Adj b) -- Context a b "=" Context' a b "+" Node
+type Context a b  = (Adj b,Node,a,Adj b) 
+              -- Context a b "=" Context' a b "+" Node
 type MContext a b = Maybe (Context a b)
 type Decomp a b   = (MContext a b,Graph a b)
 type GDecomp a b  = (Context a b,Graph a b)
@@ -97,9 +103,9 @@ type GraphRep a b = FiniteMap Node (Context' a b)
 --
 showsGraph :: (Show a,Show b) => GraphRep a b -> ShowS
 showsGraph m = case minFM m of 
-                 Just (v, (_,lab,suc)) -> 
+                 Just (v, (_,lab,s)) -> 
                   ('\n':) . shows v . (':':) . 
-                          shows lab . ("->"++) . shows suc .    
+                          shows lab . ("->"++) . shows s .    
                           showsGraph (delFromFM m v)
                  Nothing -> id
                 
@@ -109,33 +115,33 @@ instance (Show a,Show b) => Show (Graph a b) where
 
 -- other
 --
-addSucc v l (pre,lab,suc) = (pre,lab,(l,v):suc)
-addPred v l (pre,lab,suc) = ((l,v):pre,lab,suc)
+addSucc, addPred, clearSucc, clearPred 
+    :: Node -> b -> Context' a b -> Context' a b 
+addSucc v l (p,lab,s) = (p, lab, (l,v) : s)
+addPred v l (p,lab,s) = ((l,v) : p, lab, s)
+clearSucc v _l (p,lab,s) = (p,lab,filter ((/=v).snd) s)
+clearPred v _l (p,lab,s) = (filter ((/=v).snd) p,lab,s)
 
-clearSucc v l (pre,lab,suc) = (pre,lab,filter ((/=v).snd) suc)
-clearPred v l (pre,lab,suc) = (filter ((/=v).snd) pre,lab,suc)
-
-updAdj :: GraphRep a b -> Adj b -> (b -> Context' a b -> Context' a b) -> GraphRep a b
-updAdj g []         f              = g
+updAdj :: GraphRep a b -> Adj b -> (b -> Context' a b -> Context' a b) 
+       -> GraphRep a b
+updAdj g []         _f             = g
 updAdj g ((l,v):vs) f | elemFM g v = updAdj (updFM g v (f l)) vs f
                       | otherwise  = error ("Edge Exception, Node: "++show v)
 
--- pairL x ys = map ((,) x) ys
--- pairR x ys = map (flip (,) x) ys
-fst4 (x,_,_,_) = x
-snd4 (_,x,_,_) = x
-thd4 (_,_,x,_) = x
-fth4 (_,_,_,x) = x
-
 -- some (un)labeling functions
 -- 
+labUEdges :: [(a, b)] -> [(a, b, ())]
 labUEdges = map (\(v,w)->(v,w,()))
+labUNodes :: [a] -> [(a, ())]
 labUNodes = map (\v->(v,()))
-labUAdj   = map (\v->((),v))
+labUAdj    :: [a] -> [((), a)]
+labUAdj    = map (\v->((),v))
+unlabEdges :: [(a, b, c)] -> [(a, b)]
 unlabEdges = map (\(v,w,_)->(v,w))
+unlabNodes :: [(a, b)] -> [a]
 unlabNodes = map fst
+unlabAdj   :: [(a, b)] -> [b]
 unlabAdj   = map snd
-
 
 ----------------------------------------------------------------------
 -- MAIN FUNCTIONS
@@ -151,13 +157,15 @@ isEmpty :: Graph a b -> Bool
 isEmpty (Graph g) = isEmptyFM g
 
 embed :: Context a b -> Graph a b -> Graph a b 
-embed (pre,v,l,suc) (Graph g) | elemFM g v = error ("Node Exception, Node: "++show v)
-                              | otherwise  = Graph g3
-      where g1 = addToFM g v (pre,l,suc)
-            g2 = updAdj g1 pre (addSucc v)
-            g3 = updAdj g2 suc (addPred v)         
+embed (p,v,l,s) (Graph g) | elemFM g v = error 
+                                         ("Node Exception, Node: "++show v)
+                          | otherwise  = Graph g3
+      where g1 = addToFM g v (p,l,s)
+            g2 = updAdj g1 p (addSucc v)
+            g3 = updAdj g2 s (addPred v)         
 
 infixr &
+(&) :: Context a b -> Graph a b -> Graph a b 
 c & g = embed c g
 
 
@@ -167,11 +175,11 @@ match :: Node -> Graph a b -> Decomp a b
 match v (Graph g) = 
       case splitFM g v of 
            Nothing -> (Nothing,Graph g)
-           Just (g,(_,(pre,lab,suc))) -> (Just (pre',v,lab,suc),Graph g2)
-                where suc' = filter ((/=v).snd) suc
-                      pre' = filter ((/=v).snd) pre
-                      g1   = updAdj g  suc' (clearPred v)
-                      g2   = updAdj g1 pre' (clearSucc v)
+           Just (g',(_,(p,lab,s))) -> (Just (p',v,lab,s),Graph g2)
+                where s' = filter ((/=v).snd) s
+                      p' = filter ((/=v).snd) p
+                      g1   = updAdj g' s' (clearPred v)
+                      g2   = updAdj g1 p' (clearSucc v)
 
 -- the same for unlabeled graphs
 --
@@ -184,7 +192,7 @@ embedU (p,v,s) = embed (labUAdj p,v,(),labUAdj s)
 matchU :: Node -> UGraph -> UDecomp
 matchU v g = case match v g of
                (Nothing,g')        -> (Nothing,g')
-               (Just (p,v,_,s),g') -> (Just (unlabAdj p,v,unlabAdj s),g')
+               (Just (p,v',_,s),g') -> (Just (unlabAdj p,v',unlabAdj s),g')
 
 matchAnyU :: UGraph -> (UContext,UGraph)
 matchAnyU g = ((unlabAdj p,v,unlabAdj s),g') where ((p,v,_,s),g') = matchAny g
@@ -211,17 +219,17 @@ gid v = membed . match v
 -- matchP     matches a specified node (regards loops as predecessors)
 -- matchAny   matches an arbitrary node
 -- matchSome  matches any node with a specified property
--- matchThe   matches a node if it is uniquely characterized by the given property
+-- matchThe   matches a node if it uniquely has the given property
 --
 matchP :: Node -> Graph a b -> Decomp a b
 matchP v (Graph g) = 
        case splitFM g v of 
             Nothing -> (Nothing,Graph g)
-            Just (g,(_,(pre,lab,suc))) -> (Just (pre,v,lab,suc'),Graph g2)
-                 where suc' = filter ((/=v).snd) suc
-                       pre' = filter ((/=v).snd) pre
-                       g1   = updAdj g  suc' (clearPred v)
-                       g2   = updAdj g1 pre' (clearSucc v)
+            Just (g',(_,(p,lab,s))) -> (Just (p,v,lab,s'),Graph g2)
+                 where s' = filter ((/=v).snd) s
+                       p' = filter ((/=v).snd) p
+                       g1   = updAdj g'  s' (clearPred v)
+                       g2   = updAdj g1 p' (clearSucc v)
 
 matchAny :: Graph a b -> GDecomp a b
 matchAny g@(Graph m) = case minFM m of 
@@ -233,7 +241,7 @@ matchAny g@(Graph m) = case minFM m of
 matchSome :: (Graph a b -> Node -> Bool) -> Graph a b -> GDecomp a b
 matchSome p g = case filter (p g) (nodes g) of
                   []      ->  error "Match Exception, no such node found"
-                  (v:vs)  ->  (c,g') where (Just c,g') = match v g
+                  (v:_)   ->  (c,g') where (Just c,g') = match v g
 
 matchThe :: (Graph a b -> Node -> Bool) -> Graph a b -> GDecomp a b
 matchThe p g = case filter (p g) (nodes g) of
@@ -248,52 +256,13 @@ context :: Node -> Graph a b -> Context a b
 context v (Graph g) = 
         case lookupFM g v of 
              Nothing            -> error ("Match Exception, Node: "++show v)
-             Just (pre,lab,suc) -> (filter ((/=v).snd) pre,v,lab,suc)
+             Just (p,lab,s)     -> (filter ((/=v).snd) p,v,lab,s)
 
 contextP :: Node -> Graph a b -> Context a b
 contextP v (Graph g) = 
          case lookupFM g v of 
               Nothing            -> error ("Match Exception, Node: "++show v)
-              Just (pre,lab,suc) -> (pre,v,lab,filter ((/=v).snd) suc)
-
-
-----------------------------------------------------------------------
--- TYPE CLASSES
-----------------------------------------------------------------------
-
--- newtype XNode a = X (LNode a)
--- type LNodes a = [LNode a]
--- 
--- class Label a l b where
---   label   :: a -> l -> b
---   unlabel :: l -> a
--- 
--- instance Lab Node (LNode b) b where
---   label   v l   = (v,l)
---   unlabel (v,_) = v
--- 
--- instance Lab [Node] LNodes where
---   label vs l = zip vs (repeat l)
---   unlabel    = map fst
--- 
--- instance Lab Edge LEdge where
---   label (v,w) l   = (v,w,l)
---   unlabel (v,w,_) = (v,w)
--- 
--- instance Lab Node LNode where
---   label v l     = (v,l)
---   unlabel (v,_) = v
-
-
--- class Insert a b c where
---   ins :: c -> Graph a b -> Graph a b
--- 
--- instance Insert () b Node      where ins g v = insNode g (v,())
--- instance Insert a  b (LNode a) where ins = insNode
--- instance Insert a  b [LNode a] where ins = insNodes
--- instance Insert a  b (LEdge b) where ins = insEdge
--- instance Insert a  b [LEdge b] where ins = insEdges
-
+              Just (p,lab,s) -> (p,v,lab,filter ((/=v).snd) s)
 
 -- decompositions ignoring contexts
 --
@@ -306,13 +275,13 @@ delNodes (v:vs) g = delNodes vs (snd (match v g))
 
 delEdge :: Edge -> Graph a b -> Graph a b
 delEdge (v,w) g = case match v g of
-                    (Nothing,_)        -> g
-                    (Just (p,v,l,s),g) -> embed (p,v,l,filter ((/=w).snd) s) g
+    (Nothing,_)          -> g
+    (Just (p,v',l,s),g') -> embed (p,v',l,filter ((/=w).snd) s) g'
 
 delLEdge :: Eq b => LEdge b -> Graph a b -> Graph a b
 delLEdge (v,w,lab) g = case match v g of
-                    (Nothing,_)        -> error "delLEdge did not work"
-                    (Just (p,v,l,s),g) -> embed (p,v,l,filter ((/=(lab,w))) s) g
+    (Nothing,_)          -> error "delLEdge did not work"
+    (Just (p,v',l,s),g') -> embed (p,v',l,filter((/=(lab,w))) s) g'
 
 
 delEdges :: [Edge] -> Graph a b -> Graph a b
@@ -321,11 +290,9 @@ delEdges es g = foldr delEdge g es
 
 -- projecting on context elements
 --
-context1 v g = fst4 (contextP v g)
-context2 v g = snd4 (context v g)
-context3 v g = thd4 (context v g)
-context4 v g = fth4 (context v g)
-
+context1, context4 :: Node -> Graph a b -> Adj b
+context1 v g = fst4 (contextP v g) where fst4 (x,_,_,_) = x
+context4 v g = fth4 (context v g) where fth4 (_,_,_,x) = x
 
 -- informations derived from specific contexts
 --
@@ -409,7 +376,8 @@ edges :: Graph a b -> [Edge]
 edges (Graph g) = concatMap (\(v,(_,_,s))->map (\(_,w)->(v,w)) s) (fmToList g)
 
 labEdges :: Graph a b -> [LEdge b]
-labEdges (Graph g) = concatMap (\(v,(_,_,s))->map (\(l,w)->(v,w,l)) s) (fmToList g)
+labEdges (Graph g) = 
+    concatMap (\(v,(_,_,s))->map (\(l,w)->(v,w,l)) s) (fmToList g)
             
 
 -- some utilities to build graphs
@@ -424,8 +392,8 @@ insNodes :: [LNode a] -> Graph a b -> Graph a b
 insNodes vs g = foldr insNode g vs 
 
 insEdge :: LEdge b -> Graph a b -> Graph a b
-insEdge (v,w,l) g = embed (pre,v,lab,(l,w):suc) g'
-                    where (Just (pre,_,lab,suc),g') = match v g
+insEdge (v,w,l) g = embed (p,v,lab,(l,w):s) g'
+                    where (Just (p,_,lab,s),g') = match v g
 
 insEdges :: [LEdge b] -> Graph a b -> Graph a b
 insEdges es g = foldr insEdge g es
@@ -433,9 +401,9 @@ insEdges es g = foldr insEdge g es
 -- | insert edge only if not already present
 insEdgeNub :: Eq b => LEdge b -> Graph a b -> Graph a b
 insEdgeNub (v,w,l) g = 
-   if (l,w) `elem` suc then g
-      else embed (pre,v,lab,(l,w):suc) g'
-   where (Just (pre,_,lab,suc),g') = match v g
+   if (l,w) `elem` s then g
+      else embed (p,v,lab,(l,w):s) g'
+   where (Just (p,_,lab,s),g') = match v g
 
  
 mkGraph :: [LNode a] -> [LEdge b] -> Graph a b
@@ -446,5 +414,3 @@ mkUGraph vs es = mkGraph (labUNodes vs) (labUEdges es)
 
 buildGr :: [Context a b] -> Graph a b
 buildGr = foldr embed empty
-
-
