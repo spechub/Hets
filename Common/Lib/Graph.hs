@@ -37,7 +37,7 @@ module Common.Lib.Graph (
 
 import Common.Lib.SimpleMap
 import Data.Maybe (fromJust)
-import List
+import List(sortBy)
 
 ----------------------------------------------------------------------
 -- TYPES
@@ -96,9 +96,12 @@ type GraphRep a b = FiniteMap Node (Context' a b)
 -- pretty printing
 --
 showsGraph :: (Show a,Show b) => GraphRep a b -> ShowS
-showsGraph Empty = id
-showsGraph (Node l (v,(_,lab,suc)) r) = showsGraph l . ('\n':) . 
-     shows v . (':':) . shows lab . ("->"++) . shows suc . showsGraph r
+showsGraph m = case minFM m of 
+                 Just (v, (_,lab,suc)) -> 
+                  ('\n':) . shows v . (':':) . 
+                          shows lab . ("->"++) . shows suc .    
+                          showsGraph (delFromFM m v)
+                 Nothing -> id
                 
 instance (Show a,Show b) => Show (Graph a b) where
   showsPrec _ (Graph g) = showsGraph g
@@ -145,7 +148,7 @@ empty :: Graph a b
 empty =  Graph emptyFM
 
 isEmpty :: Graph a b -> Bool
-isEmpty (Graph g) = case g of {Empty -> True; _ -> False}
+isEmpty (Graph g) = isEmptyFM g
 
 embed :: Context a b -> Graph a b -> Graph a b 
 embed (pre,v,l,suc) (Graph g) | elemFM g v = error ("Node Exception, Node: "++show v)
@@ -221,17 +224,18 @@ matchP v (Graph g) =
                        g2   = updAdj g1 pre' (clearSucc v)
 
 matchAny :: Graph a b -> GDecomp a b
-matchAny (Graph Empty)              = error "Match Exception, Empty Graph"
-matchAny g@(Graph (Node _ (v,_) _)) = (c,g') where (Just c,g') = match v g
+matchAny g@(Graph m) = case minFM m of 
+    Nothing -> error "Match Exception, Empty Graph"
+    Just (v, _) -> case match v g of 
+        (Just c, g') -> (c, g')
+        _ -> error "matchAny"
 
 matchSome :: (Graph a b -> Node -> Bool) -> Graph a b -> GDecomp a b
-matchSome _ (Graph Empty) = error "Match Exception, Empty Graph"
 matchSome p g = case filter (p g) (nodes g) of
                   []      ->  error "Match Exception, no such node found"
                   (v:vs)  ->  (c,g') where (Just c,g') = match v g
 
 matchThe :: (Graph a b -> Node -> Bool) -> Graph a b -> GDecomp a b
-matchThe _ (Graph Empty) = error "Match Exception, Empty Graph"
 matchThe p g = case filter (p g) (nodes g) of
                   []   ->  error "Match Exception, no such node found"
                   [v]  ->  (c,g') where (Just c,g') = match v g
@@ -392,8 +396,8 @@ noNodes :: Graph a b -> Int
 noNodes (Graph g) = sizeFM g
 
 nodeRange :: Graph a b -> (Node,Node)
-nodeRange (Graph Empty) = (0,-1)
-nodeRange (Graph g)     = (ix (minFM g),ix (maxFM g)) where ix = fst.fromJust
+nodeRange (Graph g)     = if isEmptyFM g then (0, -1) else 
+                          (ix (minFM g),ix (maxFM g)) where ix = fst.fromJust
 
 nodes :: Graph a b -> [Node]
 nodes (Graph g) = (map fst (fmToList g))
