@@ -25,7 +25,7 @@ import Common.Lexer
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Control.Monad
-import Control.Monad.State
+import Common.Lib.State
 import qualified Char as C
 import Data.Maybe(mapMaybe)
 import HasCASL.Unify
@@ -410,10 +410,10 @@ resolve g ops p trm =
 
 resolveTerm ::  Term -> State Env (Result Term)
 resolveTerm t = 
-    do tm <- getTypeMap
-       as <- getAssumps
-       c <- getCounter
-       ga <- getGlobalAnnos
+    do tm <- gets typeMap
+       as <- gets assumps
+       c <- gets counter
+       ga <- gets globalAnnos
        let ops = concatMap (\ (i, l) -> map ( \ e -> (i, e)) l) 
 		 $ Map.toList as  
        return $ resolve ga ops (ParseMap c tm Map.empty) t  		  

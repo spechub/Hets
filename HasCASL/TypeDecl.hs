@@ -16,8 +16,9 @@ import HasCASL.ClassAna
 import qualified Common.Lib.Map as Map
 import Common.Id
 import HasCASL.Le
+import HasCASL.Reader
 import Data.Maybe
-import Control.Monad.State
+import Common.Lib.State
 
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Error
@@ -43,12 +44,13 @@ addTypeKind d i k =
 
 addSingleTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
 addSingleTypeKind d i k = 
-    do tk <- getTypeMap
+    do tk <- gets typeMap
        case Map.lookup i tk of
 	      Nothing -> putTypeMap $ Map.insert i 
 			 (TypeInfo k [] [] d) tk
 	      Just (TypeInfo ok ks sups defn) -> 
-		  do checkKinds (posOfId i) k ok
+		  do cMap <- gets classMap
+		     appendDiags $ checkKinds cMap (posOfId i) k ok
 		     if any (==k) (ok:ks)
 			then addDiag $ mkDiag Warning 
 				 "redeclared type" i
@@ -58,7 +60,7 @@ addSingleTypeKind d i k =
 
 addSuperType :: Type -> Id -> State Env ()
 addSuperType t i =
-    do tk <- getTypeMap
+    do tk <- gets typeMap
        case Map.lookup i tk of
 	      Nothing -> return () -- previous error
 	      Just (TypeInfo ok ks sups defn) -> 
@@ -68,9 +70,9 @@ addSuperType t i =
 
 anaTypeItem :: GenKind -> Instance -> TypeItem -> State Env ()
 anaTypeItem _ inst (TypeDecl pats kind _) = 
-    do k <- anaKind kind
+    do Result es (Just k) <- toState classMap $ anaKind kind
        let Result ds (Just is) = convertTypePatterns pats
-       appendDiags ds
+       appendDiags (es++ds)
        mapM_ (anaTypeId NoTypeDefn inst kind) is   
 anaTypeItem _ inst (SubtypeDecl pats t _) = 
     do sup <- anaType t
@@ -89,7 +91,8 @@ anaTypeItem _ inst (SubtypeDefn pat v t f ps) =
     do (mk, newT) <- anaType t
        k <- case mk of 
 	      Nothing -> return star
-	      Just k -> do checkKinds (posOfType t) k star 
+	      Just k -> do cMap <- gets classMap
+			   appendDiags $ checkKinds cMap (posOfType t) k star 
 			   return k
        addDiag $ Diag Warning ("unchecked formula '" ++ showPretty f "'")
 		   $ firstPos [v] ps
@@ -113,19 +116,23 @@ anaTypeItem gk inst (Datatype d) = anaDatatype gk inst d
 
 anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env ()
 anaDatatype genKind inst (DatatypeDecl pat kind _alts derivs ps) =
-    do k <- anaKind kind
-       checkKinds (firstPos [pat] ps) k star
+    do Result es (Just k) <- toState classMap $ anaKind kind
+       cMap <- gets classMap
+       appendDiags $ checkKinds cMap (firstPos [pat] ps) k star
        case derivs of 
-		   Just c -> do (dk, _) <- anaClass c
-				checkKinds (posOfClass c) dk star
+		   Just c -> 
+		       do Result cs (Just (dk, _)) <- toState classMap 
+						      $ anaClass c
+			  appendDiags (cs ++ checkKinds cMap 
+						(posOfClass c) dk star)
 		   Nothing -> return ()
        let Result ds m = convertTypePattern pat
-       appendDiags ds
+       appendDiags (es++ds)
        case m of 
 	      Nothing -> return ()
 	      Just i -> 
 		  do -- newAlts <- anaAlts i alts 
-		     anaTypeId (DatatypeDefn genKind) inst k i 
+		     anaTypeId (DatatypeDefn genKind []) inst k i 
 
 -- TO DO analyse alternatives and add them to Datatype Defn
 -- anaAlts :: Id -> 
@@ -134,8 +141,8 @@ anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Maybe Kind, TypeScheme)
 anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
     do k <- case mk of 
 	    Nothing -> return Nothing
-	    Just j -> fmap Just $ anaKind j
-       tm <- getTypeMap    -- save global variables  
+	    Just j -> fmap maybeResult $ toState classMap $ anaKind j
+       tm <- gets typeMap    -- save global variables  
        mapM_ anaTypeVarDecl tArgs
        (ik, newTy) <- anaType ty
        let newPty = TypeScheme tArgs (q :=> newTy) p
@@ -144,7 +151,9 @@ anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
 	      Just sk -> do let newK = typeArgsListToKind tArgs sk
 			    case k of 
 			        Nothing -> return ()
-			        Just ki -> checkKinds (posOfType ty) ki newK
+			        Just ki -> do cMap <- gets classMap 
+					      appendDiags $ checkKinds cMap 
+						      (posOfType ty) ki newK
 			    return $ Just newK
        putTypeMap tm       -- forget local variables 
        return (sik, newPty)
@@ -160,7 +169,7 @@ typeArgToKind (TypeArg _ k _ _) = k
 
 anaTypeVarDecl :: TypeArg -> State Env ()
 anaTypeVarDecl(TypeArg t k _ _) = 
-    do nk <- anaKind k
+    do Result ds (Just nk) <- toState classMap $ anaKind k
        addTypeKind TypeVarDefn t nk
 
 kindArity :: ApplMode -> Kind -> Int
@@ -176,7 +185,7 @@ kindArity m (ExtClass _ _ _) = case m of
 anaTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env ()
 -- type args not yet considered for kind construction 
 anaTypeId defn _ kind i@(Id ts _ _)  = 
-    do cMap <- getClassMap
+    do cMap <- gets classMap
        let n = length $ filter isPlace ts 
            nk = expandKind cMap kind
        if n <= kindArity TopLevel nk then

@@ -43,7 +43,7 @@ instance PrettyPrint TypeDefn where
 					   <+> printText0 ga t 
 					   <+> text dotS
 					   <+> printText0 ga f)
-    printText0 _ (DatatypeDefn k)  = ptext " %%" <>
+    printText0 _ (DatatypeDefn k _)  = ptext " %%" <>
 	let om = ptext " type definition omitted"
 					 in case k of
 				     Loose -> om

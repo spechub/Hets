@@ -14,7 +14,7 @@ import HasCASL.PrintAs
 import Common.PrettyPrint
 import Common.Id
 import HasCASL.Le
-import Control.Monad.State
+import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import Common.Result
 import Data.List
@@ -22,8 +22,8 @@ import Data.Maybe
 
 unifiable :: TypeScheme -> TypeScheme -> State Env Bool
 unifiable sc1 sc2 =
-    do tm <- getTypeMap
-       c <- getCounter
+    do tm <- gets typeMap
+       c <- gets counter
        let Result ds mm = evalState (unifIable tm sc1 sc2) c
        appendDiags ds
        return $ isJust mm

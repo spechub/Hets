@@ -19,7 +19,7 @@ import HasCASL.Le
 import Common.Lexer 
 import Data.Maybe
 import Control.Monad
-import Control.Monad.State
+import Common.Lib.State
 import HasCASL.OpDecl
 import Common.Result
 import Common.PrettyPrint
@@ -49,8 +49,8 @@ anaBasicItem t@(ProgItems _ p) = missingAna t p
 anaBasicItem (FreeDatatype l _) = mapM_ (anaDatatype Free Plain) $ map item l
 anaBasicItem (GenItems l _) = mapM_ (anaSigItems Generated) $ map item l
 anaBasicItem (AxiomItems decls fs _) = 
-    do tm <- getTypeMap -- save type map
-       as <- getAssumps -- save vars
+    do tm <- gets typeMap -- save type map
+       as <- gets assumps -- save vars
        mapM_ anaGenVarDecl decls
        ds <- mapM (( \ (TermFormula t) -> resolveTerm t ) . item) fs
        appendDiags $ concatMap diags ds
@@ -121,7 +121,7 @@ convertTypeToKind cMap t =
 optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
 optAnaVarDecl vd@(VarDecl v t s q) = 
     if isSimpleId v then
-       do cMap <- getClassMap 
+       do cMap <- gets classMap 
 	  let Result ds mc = convertTypeToKind cMap t 
 	  case mc of
 	       Just c -> anaTypeVarDecl(TypeArg v c s q)
@@ -133,7 +133,9 @@ anaVarDecl(VarDecl v oldT _ _) =
 		   do (mk, t) <- anaType oldT
 		      case mk of 
 			      Nothing -> return ()
-			      Just k -> checkKinds (posOfId v) k star
+			      Just k -> do cMap <- gets classMap 
+					   appendDiags $ checkKinds cMap 
+							   (posOfId v) k star
 		      addOpId v (simpleTypeScheme t) [] VarDefn
 
 -- ----------------------------------------------------------------------------

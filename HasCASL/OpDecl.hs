@@ -12,13 +12,13 @@ module HasCASL.OpDecl where
 import HasCASL.As
 import HasCASL.ClassAna
 import HasCASL.TypeAna
+import HasCASL.TypeDecl
 import Common.Id
 import HasCASL.Le
-import Control.Monad.State
+import Common.Lib.State
 import Common.Lib.Parsec.Pos
 import qualified Common.Lib.Map as Map
 import Common.Result
-import HasCASL.TypeDecl
 import Data.List
 import Data.Maybe
 import HasCASL.Unify
@@ -49,7 +49,8 @@ getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
        (mk, newSc) <- anaTypeScheme sc
        case mk of 
 	       Nothing -> return () -- induced error
-	       Just k -> checkKinds (posOfId i) k star
+	       Just k -> do cMap <- gets classMap 
+			    appendDiags $ checkKinds cMap (posOfId i) k star
        return (i, newSc)
 
 
@@ -60,7 +61,7 @@ anaOpId sc attrs o =
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe Kind, TypeScheme)
 anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
-    do tm <- getTypeMap    -- save global variables  
+    do tm <- gets typeMap    -- save global variables  
        mapM_ anaTypeVarDecl tArgs
        (ik, newTy) <- anaType ty
        let newPty = TypeScheme tArgs (q :=> newTy) p
@@ -82,7 +83,7 @@ shortPosShow p = showParen True (shows (sourceLine p) . showString "," .
 
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env () 
 addOpId i sc attrs defn = 
-    do as <- getAssumps
+    do as <- gets assumps
        let l = Map.findWithDefault [] i as
        if sc `elem` map opType l then 
 	  addDiag $ mkDiag Warning 

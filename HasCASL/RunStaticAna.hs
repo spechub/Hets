@@ -14,7 +14,7 @@ import Common.AnnoState
 import HasCASL.Le
 import HasCASL.AsToLe(anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
-import Control.Monad.State
+import Common.Lib.State
 
 anaParser :: AParser Env
 anaParser = do b <- basicSpec

@@ -15,13 +15,12 @@ import Common.Id
 import HasCASL.Le
 import Data.List
 import Data.Maybe
-import Control.Monad.State
 import HasCASL.PrintAs()
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
-
+import HasCASL.Reader
 
 -- ---------------------------------------------------------------------------
 -- analyse class
@@ -59,9 +58,9 @@ expandKind cMap (ExtClass c _ _) =
 expandKind cMap (KindAppl k1 k2 ps) = 
     KindAppl (expandKind cMap k1) (expandKind cMap k2) ps
     
-anaClass :: Class -> State Env (Kind, Class)
-anaClass (Intersection s ps) =  
-    do cMap <- getClassMap
+anaClass :: Class -> ReadR ClassMap (Kind, Class)
+anaClass (Intersection s ps) =
+    do cMap <- ask
        let cs = Set.toList s
 	   l = zip (map (anaClassId cMap) cs) cs
 	   (js, ns) = partition (isJust . fst) l
@@ -75,24 +74,21 @@ anaClass (Intersection s ps) =
 	   fs =	map (\ (Just wk, i) -> mkDiag Error 
 		     ("wrong kind '" ++ showPretty wk "' of")
 		     i) es
-       appendDiags (ds ++ fs) 
-       return (k, Intersection restCs ps) 
+       lift $ Result (ds ++ fs) $ Just (k, Intersection restCs ps) 
 
 anaClass (Downset t) = 
-    do downsetWarning t
-       return $ (star, Downset t)
+    lift $ Result [downsetWarning t] $ Just (star, Downset t)
 
-downsetWarning :: Type -> State Env ()
-downsetWarning t = 
-    addDiag $ mkDiag Warning "unchecked type" t
+downsetWarning :: Type -> Diagnosis
+downsetWarning t = mkDiag Warning "unchecked type" t
 
 -- ----------------------------------------------------------------------------
 -- analyse kind
 -- ----------------------------------------------------------------------------
 
-anaKind :: Kind -> State Env Kind
+anaKind :: Kind -> ReadR ClassMap Kind
 anaKind (KindAppl k1 k2 p) = 
-    do k1e <- anaKind k1
+    do k1e <- anaKind k1 
        k2e <- anaKind k2
        return $ KindAppl k1e k2e p
 anaKind (ExtClass k v p) = 
@@ -103,10 +99,9 @@ anaKind (ExtClass k v p) =
 -- comparing kinds 
 -- ---------------------------------------------------------------------
 
-checkKinds :: Pos -> Kind -> Kind -> State Env ()
-checkKinds p k1 k2 =
-    do cMap <- getClassMap
-       appendDiags $ eqKindDiag p (expandKind cMap k1) 
+checkKinds :: ClassMap -> Pos -> Kind -> Kind -> [Diagnosis]
+checkKinds cMap p k1 k2 =
+       eqKindDiag p (expandKind cMap k1) 
 		   $ expandKind cMap k2
 
 eqKindDiag :: Pos -> Kind -> Kind -> [Diagnosis]

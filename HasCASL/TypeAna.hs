@@ -16,7 +16,7 @@ import Common.Id
 import HasCASL.Le
 import Data.List
 import Data.Maybe
-import Control.Monad.State
+import Common.Lib.State
 import HasCASL.PrintAs()
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -36,7 +36,7 @@ mkTypeConstrAppls m (TypeAppl t1 t2) =
 
 mkTypeConstrAppls _ (TypeToken t) = 
     do let i = simpleIdToId t
-       tk <- getTypeMap
+       tk <- gets typeMap
        let m = getKind tk i
 	   c = if isTypeVar tk i then 1 else 0
        case m of 
@@ -48,7 +48,7 @@ mkTypeConstrAppls m t@(BracketType b ts ps) =
        let toks@[o,c] = mkBracketToken b ps 
 	   i = if null ts then Id toks [] [] 
 	       else Id [o, Token place $ posOfType $ head ts, c] [] []
-       tk <- getTypeMap 
+       tk <- gets typeMap 
        let mk = getKind tk i
 	   n = case mk of Just k -> TypeName i k 0
 			  _ -> t
@@ -114,7 +114,7 @@ inferKind (TypeAppl t1 t2) =
 		       KindAppl k1 k2 _ -> do checkKind t2 k1
 					      return $ Just k2
 		       ExtClass c _ _ -> 
-			   do cMap <- getClassMap 
+			   do cMap <- gets classMap 
 			      case expandApplKind cMap c of
 			            KindAppl k1 k2 _ -> do checkKind t2 k1
 							   return $ Just k2
@@ -152,7 +152,7 @@ checkKind t j = do
 	m <- inferKind t 
 	case m of 
 	       Nothing -> return ()
-	       Just k -> do cMap <- getClassMap
+	       Just k -> do cMap <- gets classMap
 			    if eqKind (expandKind cMap k) $ expandKind cMap j
 			       then return ()
 			       else addDiag $ wrongKind t
@@ -165,7 +165,7 @@ unresolvedType = addDiag . mkDiag Error "unresolved type"
 
 getIdKind :: Id -> State Env (Maybe Kind)
 getIdKind i = 
-    do tk <- getTypeMap
+    do tk <- gets typeMap
        let m = getKind tk i
        case m of
 	    Nothing -> do addDiag $ mkDiag Error "undeclared type" i

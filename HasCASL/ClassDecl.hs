@@ -16,18 +16,26 @@ import Common.Id
 import HasCASL.Le
 import Data.List
 import Data.Maybe
-import Control.Monad.State
+import Common.Lib.State
 import Common.Result
 import HasCASL.ClassAna
+import HasCASL.Reader
+
+addDiags :: (Env -> b) ->  ReadR b a -> State Env (Maybe a) 
+addDiags f r = do Result ds m <- toState f r 
+		  appendDiags ds
+		  return m
+		  
 
 anaClassDecls :: ClassDecl -> State Env ()
 anaClassDecls (ClassDecl cls k _) = 
-    do ak <- anaKind k
+    do Just ak <- addDiags classMap $ anaKind k
        mapM_ (anaClassDecl ak Set.empty Nothing) cls
 
 anaClassDecls (SubclassDecl _ _ (Downset _) _) = error "anaClassDecl"
 anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
-    do ak <- anaKind k
+    do Just ak <- addDiags classMap $ anaKind k
+       cMap <- gets classMap 
        if Set.isEmpty supcls then 
 	  do addDiag $ Diag Warning
 			  "redundant universe class" 
@@ -35,25 +43,26 @@ anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
 	     mapM_ (anaClassDecl ak supcls Nothing) cls
           else let (hd, tl) = Set.deleteFindMin supcls in 
 	      if Set.isEmpty tl then
-		 do cMap <- getClassMap 
-		    if isJust $ anaClassId cMap hd then
+		 do if isJust $ anaClassId cMap hd then
 		       return () else do  
 			  anaClassDecl ak tl Nothing hd
 			  addDiag $ mkDiag Warning 
 				      "implicit declaration of superclass" hd
 		    mapM_ (anaClassDecl ak (Set.single hd) Nothing) cls
-		  else do (sk, Intersection newSups _) <- anaClass sc
-			  checkKinds (posOfId hd) sk ak
+		  else do Just (sk, Intersection newSups _) <- 
+			      addDiags classMap $ anaClass sc
+			  appendDiags $ checkKinds cMap (posOfId hd) sk ak
 			  mapM_ (anaClassDecl ak newSups Nothing) cls
 
 anaClassDecls (ClassDefn ci k ic _) =
-    do ak <- anaKind k
-       (dk, newIc) <- anaClass ic
-       checkKinds (posOfId ci) dk ak
+    do Just ak <- addDiags classMap $ anaKind k
+       Just (dk, newIc) <- addDiags classMap $ anaClass ic
+       cMap <- gets classMap
+       appendDiags $ checkKinds cMap (posOfId ci) dk ak
        anaClassDecl ak Set.empty (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
-    do downsetWarning t
+    do addDiag $ downsetWarning t
        anaClassDecl star Set.empty (Just $ Downset t) ci
 
 anaClassDecl :: Kind -> Set.Set ClassId -> Maybe Class 
@@ -63,7 +72,7 @@ anaClassDecl kind sups defn ci =
        addDiag $ Diag Error 
 		    "illegal universe class declaration" $ posOfId ci
     else do
-       cMap <- getClassMap
+       cMap <- gets classMap
        case Map.lookup ci cMap of
             Nothing -> putClassMap $ Map.insert ci  
 		       newClassInfo { superClasses = sups,
@@ -74,7 +83,7 @@ anaClassDecl kind sups defn ci =
 		let oldDefn = classDefn info
 		    oldSups = superClasses info
 		    oldKind = classKind info
-		checkKinds (posOfId ci) kind oldKind
+		appendDiags $ checkKinds cMap (posOfId ci) kind oldKind
 		if isJust defn then
 		   if isJust oldDefn then
 		      appendDiags $ mergeDefns ci 
