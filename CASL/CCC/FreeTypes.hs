@@ -69,28 +69,31 @@ checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)]
 checkFreeType m fsn 
        | Set.any (\s->not $ elem s srts) newSorts =
                    let (Id _ _ ps) = head $ filter (\s->not $ elem s srts) newL
-                       pos = head ps
+                       pos = headPos ps
                    in warning Nothing "sort s is not in srts" pos
        | Set.any (\s->not $ elem s f_Inhabited) newSorts =
                    let (Id _ _ ps) = head $ filter (\s->not $ elem s f_Inhabited) newL
-                       pos = head ps
+                       pos = headPos ps
                    in warning (Just False) "sort s is not inhabited" pos
        | elem Nothing l_Syms =
                    let (Quantification _ _ _ ps) = head $ filter (\f->(leadingSym f) == Nothing) op_preds
-                       pos = head ps
+                       pos = headPos ps
                    in warning Nothing "formula f is illegal" pos
-       | any id $ map find_ot id_ots ++ map find_pt id_pts = return Nothing
-                   --   warning Nothing "leading symbol ist not new" pos
+       | any id $ map find_ot id_ots ++ map find_pt id_pts =    -- return Nothing
+                   let pos = if any id $ map find_ot id_ots then headPos old_op_ps
+                             else headPos old_pred_ps
+                   in warning Nothing "leading symbol ist not new" pos
        | not $ and $ map checkTerm leadingTerms =
                    let (Application _ _ ps) = head $ filter (\t->not $ checkTerm t) leadingTerms
-                       pos = head ps
+                       pos = headPos ps
                    in warning Nothing "the leading term consist of not only variables and constructors" pos              
        | not $ and $ map checkVar leadingTerms =
                    let (Application _ _ ps) = head $ filter (\t->not $ checkVar t) leadingTerms
-                       pos = head ps
+                       pos = headPos ps
                    in warning Nothing "a variable occurs twice in a leading term" pos
-       | not $ checkPatterns leadingPatterns = return Nothing
-                   --   warning Nothing "patterns overlap" pos            
+       | not $ checkPatterns leadingPatterns =
+                   let pos = headPos $ pattern_Pos leadingPatterns
+                   in warning Nothing "patterns overlap" pos            
        | otherwise = return (Just True)
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
          fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
@@ -121,6 +124,12 @@ checkFreeType m fsn
          op_preds = trace (showPretty op_preds1 "leading") op_preds1         --  leading
          l_Syms1 = map leadingSym op_preds
          l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1         -- leading_Symbol
+         op_fs = filter (\f-> case leadingSym f of
+                                Just (Left _) -> True
+                                _ -> False) op_preds 
+         pred_fs = filter (\f-> case leadingSym f of
+                                  Just (Right _) -> True
+                                  _ -> False) op_preds 
          filterOp symb = case symb of
                            Just (Left (Qual_op_name ident (Total_op_type as rs _) _))->
                                 [(ident, OpType {opKind=Total, opArgs=as, opRes=rs})]
@@ -133,6 +142,14 @@ checkFreeType m fsn
                                _ -> [] 
          id_ots = concat $ map filterOp $ l_Syms 
          id_pts = concat $ map filterPred $ l_Syms
+         old_op_ps = case head $ map leading_Term_Predication $ 
+                          filter (\f->find_ot $ head $ filterOp $ leadingSym f) op_fs of
+                       Just (Left (Application _ _ p)) -> p
+                       _ -> []
+         old_pred_ps = case head $ map leading_Term_Predication $ 
+                            filter (\f->find_pt $ head $ filterPred $ leadingSym f) pred_fs of
+                         Just (Right (Predication _ _ p)) -> p
+                         _ -> []
          find_ot (ident,ot) = case Map.lookup ident oldOpMap of
                                   Nothing -> False
                                   Just ots -> Set.member ot ots
@@ -200,6 +217,31 @@ checkFreeType m fsn
          group [] = []
          group ps = (filter (\p1-> sameOps (head p1) (head (head ps))) ps):
                       (group $ filter (\p2-> not $ sameOps (head p2) (head (head ps))) ps)
+         checkPatterns ps 
+                | length ps <=1 = True
+                | allIdentic ps = False
+                | all isVar $ map head ps = if allIdentic $ map head ps then checkPatterns $ map tail ps
+                                            else False
+                | all (\p-> sameOps p (head (head ps))) $ map head ps = 
+                                            checkPatterns $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps 
+                | all isApp $ map head ps = all id $ map checkPatterns $ group ps
+                | otherwise = False
+         term_Pos t = case term t of
+                        Application _ _ p -> p                                                                                    
+                        Qual_var _ _ p -> p                                                                                       
+                        _ -> []      
+         pattern_Pos pas
+                | length pas <=1 = []
+                | allIdentic pas = term_Pos $ head $ head pas
+                | not $ all isApp $ map head pas = term_Pos $ head $ filter (\t-> isVar t) $ map head pas
+                | all isVar $ map head pas = if allIdentic $ map head pas then pattern_Pos $ map tail pas
+                                            else term_Pos $ head $ map head pas 
+                | all (\p-> sameOps p (head (head pas))) $ map head pas =
+                                            pattern_Pos $ map (\p'->(patternsOfTerm $ head p')++(tail p')) pas
+        --        | all isApp $ map head pas = concat $ map pattern_Pos $ group ps
+                | otherwise = concat $ map pattern_Pos $ group pas
+                  
+{-
          checkMatrix ps 
                 | length ps <=1 = True
                 | allIdentic ps = False
@@ -208,13 +250,15 @@ checkFreeType m fsn
                 | all (\p-> sameOps p (head (head ps))) $ map head ps = 
                                             checkMatrix $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps 
                 | all isApp $ map head ps = all id $ map checkMatrix $ group ps
-                | otherwise = False     
+                | otherwise = False
+     
          checkPatterns [] = True
          checkPatterns ps
                 | (length ps) == 1 = overlap $ filter (\t->case (term t) of
                                                              Qual_var _ _ _ ->True
                                                              _ -> False) $ head ps
                 | otherwise = checkMatrix ps
+-}
          term t = case t of
                     Sorted_term t' _ _ ->term t'
                     _ -> t                   
