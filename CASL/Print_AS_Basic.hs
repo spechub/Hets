@@ -32,7 +32,7 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 
--- import Debug.Trace
+import Debug.Trace
 -- trace :: String -> a -> a
 -- trace _ a = a
 
@@ -705,13 +705,21 @@ left_most_pos f =
     Sort_gen_ax sorts _ -> firstPos sorts []
 
 if_detect :: FORMULA -> [Pos] -> Bool
-if_detect _ []    = False
-if_detect f (p_impl:_) = 
+if_detect _ []  = False
+if_detect f ps  = trace (concatMap (\x->x++"; ") [show f,
+							 show p_impl,
+							 show p_form])
         (line p_impl, column p_impl) < (line p_form, column p_form)
     where p_form = left_most_pos f
+	  p_impl = reduce ps
           line   = sourceLine
 	  column = sourceColumn
-
+	  reduce [] = error "reduce in if_detect is broken"
+	  reduce [x] = x
+	  reduce (_:xs)
+	      | length xs >= 2 = reduce $ init xs
+	      | otherwise  = 
+		  error "if_detect found unbalanced positions of parenthesis"
 ---- instances of ListCheck for various data types of AS_Basic_CASL ---
 instance ListCheck SIG_ITEMS where
     (Sort_items l _)     `innerListGT` i = length l > i
