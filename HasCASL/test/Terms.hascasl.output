@@ -48,14 +48,14 @@ b [a __ b] a
 (op __<__ : bb)
 (op __<__ : Unit ->? bb)
 (op __<__ : Unit ->? ##)
-(predfun y : bb ->? Unit)
-(predfun y : bb × bb ->? Unit)
+(pred y : bb)
+(pred y : bb * bb)
 (var y : bb -> bb)
 a = e =< b
 ys as b
-(predfun y : bb ->? Unit)
-(predfun y : bb ->? Unit)
-(predfun y : Unit)
+(pred y : bb)
+(pred y : bb)
+(pred y : Unit)
 (predy y : bb)
 (predy : bb)
 (predy : bb)
@@ -98,31 +98,36 @@ a \ a : v .! ! x
 =e= e =e=
 = e =e= e =
 (op __<__ : Unit ->? ## -> bb)
-(op __<__ : Unit ->? aa × bb)
+(op __<__ : Unit ->? aa * bb)
 let x = y in z
 let x = y;
     x = y;
-    x = y in z
+    x = y
+in z
 let x = y;
     x = y;
-    x = y in z in t
+    x = y
+in z in t
 let x = (y in z) in x
 let x = \ y : t . y in x (x)
 let x = case x in t of y -> z;
-    x = y in x
+    x = y
+in x
 ()
 if a then b
 a if b
 if a then b else c
 (a, b) as t
 ((a, b) as t)
-\ (a @ (b, c) : S × S) . a
-\ (a # (b, c) : S × S) . a
-\ (a # (b, c) # : S × S) . a
+\ (a @ (b, c) : S * S) . a
+\ (a # (b, c) : S * S) . a
+\ (a # (b, c) # : S * S) . a
 \ (a) . a
-y where x = y;
-	z = y
-y where x = y;
-	z = y in t
+y where
+      x = y;
+      z = y
+y where
+      x = y;
+      z = y in t
 (op __<__ : ?##)
 (op __<__ : ? ##)

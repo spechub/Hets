@@ -1,12 +1,12 @@
 a
 a -> b
 a ->? b
-a × b
-a × b
+a * b
+a * b
 a -> b
 a ->? b
-a × b
-a × b
+a * b
+a * b
 ?->?
 ?? ->? ??
 *->*
@@ -27,22 +27,22 @@ a -> (b -> (c -> d))
 (a -> (b -> (c -> d)))
 ((a -> (b -> c)) -> d)
 (((a -> b) -> c) -> d)
-(a × b)
-(a × b × c)
-a × b × c
-a × (b × c)
-(a × b) × c
-(a × (b × c))
-((a × b) × c)
-a × b × c × d
-a × ((b × c) × d)
-a × (b × (c × d))
-(a × (b × c)) × d
-((a × b) × c) × d
-(a × ((b × c) × d))
-(a × (b × (c × d)))
-((a × (b × c)) × d)
-(((a × b) × c) × d)
+(a * b)
+(a * b * c)
+a * b * c
+a * (b * c)
+(a * b) * c
+(a * (b * c))
+((a * b) * c)
+a * b * c * d
+a * ((b * c) * d)
+a * (b * (c * d))
+(a * (b * c)) * d
+((a * b) * c) * d
+(a * ((b * c) * d))
+(a * (b * (c * d)))
+((a * (b * c)) * d)
+(((a * b) * c) * d)
 (a ->? b)
 (a ->? b ->? c)
 a ->? b ->? c
@@ -59,58 +59,58 @@ a ->? (b ->? (c ->? d))
 (a ->? (b ->? (c ->? d)))
 ((a ->? (b ->? c)) ->? d)
 (((a ->? b) ->? c) ->? d)
-(a × b)
-(a × b × c)
-a × b × c
-a × (b × c)
-(a × b) × c
-(a × (b × c))
-((a × b) × c)
-a × b × c × d
-a × ((b × c) × d)
-a × (b × (c × d))
-(a × (b × c)) × d
-((a × b) × c) × d
-(a × ((b × c) × d))
-(a × (b × (c × d)))
-((a × (b × c)) × d)
-(((a × b) × c) × d)
-a × b × c × d
-a × b × c × d
-a × b × c × d
-a × b × c × d
+(a * b)
+(a * b * c)
+a * b * c
+a * (b * c)
+(a * b) * c
+(a * (b * c))
+((a * b) * c)
+a * b * c * d
+a * ((b * c) * d)
+a * (b * (c * d))
+(a * (b * c)) * d
+((a * b) * c) * d
+(a * ((b * c) * d))
+(a * (b * (c * d)))
+((a * (b * c)) * d)
+(((a * b) * c) * d)
+a * b * c * d
+a * b * c * d
+a * b * c * d
+a * b * c * d
 a -> b ->? c -> d
 a ->? b ->? c -> d
 a -> b ->? c ->? d
 a -> b -> c ->? d
 a ->? b -> c ->? d
 a ->? b -> c -> d
-a -> b × c -> d
-a × b × c -> d
-a -> b × c × d
-a -> b -> c × d
-a × b -> c × d
-a × b -> c -> d
-(a -> b) × (c -> d)
-a × b × (c -> d)
-(a -> b) × c × d
-a -> (b -> c) × d
-(a -> b -> c) × d
-a × (b -> c) × d
-a × (b -> c) -> d
-a × (b -> c -> d)
+a -> b * c -> d
+a * b * c -> d
+a -> b * c * d
+a -> b -> c * d
+a * b -> c * d
+a * b -> c -> d
+(a -> b) * (c -> d)
+a * b * (c -> d)
+(a -> b) * c * d
+a -> (b -> c) * d
+(a -> b -> c) * d
+a * (b -> c) * d
+a * (b -> c) -> d
+a * (b -> c -> d)
 ()
 () -> ()
-() × ()
+() * ()
 a --> b
 a -->? b
 __ -> __
 a ** b
 __ ** __
-__ × __
-__ × __ -> __ × __
-__ × __ × __ × __
-__ × __ × __ × __
+__ * __
+__ * __ -> __ * __
+__ * __ * __ * __
+__ * __ * __ * __
 []
 {} -> {}
 a -> ? b

@@ -5,37 +5,37 @@ type  : Type- -> Type; Unit : TYPE
 class a, b, c < Type
 class a, b, c < Type; a < b
 type s : c
-predfun tt : s ->? Unit
+pred tt : s
 var x : s
-program (predfun tt : s ->? Unit) = \ (var x : s) . ()
-program __ res __ (x : s, y : t) : s : s = x;
-	fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
-predfun eq : s × s ->? Unit
+program (pred tt : s) = \ (var x : s) . ()
+program __ res __ (x : s, y : t) : s = x;
+        fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
+pred eq : s * s
 type s < ? s
 program all (p : (? s)) : (? Unit) = eq (p, tt)
 program And (x, y : (? Unit)) : (? Unit) = t1 () res t2 ()
 program __ impl __ (x, y : (? Unit)) = eq (x, x And y)
-program __ or __ (x, y : (? Unit)) : ? Unit : ? Unit =
-	all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
-	ex (p : (? s)) : (? Unit) =
-	all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
-	ff () : (? Unit) = all (\ r : (? Unit) . r ())
+program __ or __ (x, y : (? Unit)) : (? Unit) =
+            all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
+        ex (p : (? s)) : (? Unit) =
+            all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
+        ff () : (? Unit) = all (\ r : (? Unit) . r ())
 forall x : t; y : t
 . %(..)%
-  (fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
-						   (var y : t))
+  (fun __=__ : forall a : Type . a * a ->? Unit)
+    (var x : t, var y : t)
 type s
 op a : ? s
 type Data1 ::= a | 
-	       b | 
-	       c
+               b | 
+               c
 type Data2 ::= Cons21 (Data1; Data2) | 
-	       Cons22 (Data2; Data1) | 
-	       type Data1
-type Data3 ::= Cons31 (sel1:? Data1; sel2:? Data2) | 
-	       Cons32 (sel2:? Data2; sel1:? Data1)
-type Data4 ::= Cons41 (sel1:? Data1; sel2:? Data2) ? | 
-	       Cons42 (sel2:? Data2; sel1:? Data1) ?
+               Cons22 (Data2; Data1) | 
+               type Data1
+type Data3 ::= Cons31 (sel1 :? Data1; sel2 :? Data2) | 
+               Cons32 (sel2 :? Data2; sel1 :? Data1)
+type Data4 ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
+               Cons42 (sel2 :? Data2; sel1 :? Data1)?
 . (fun true : Unit)
 forall x : s
 forall x : s
@@ -46,68 +46,68 @@ b < Type
 c < Type
 %% Type Constructors -----------------------------------------------------
 Data1 : Type < Data2 %[type __ ::=
-		       a : -> __
-		       b : -> __
-		       c : -> __]%
+                       a : -> __
+                       b : -> __
+                       c : -> __]%
 Data2 : Type %[type __ ::=
-	       Cons21 : Data1 × Data2 -> __
-	       Cons22 : Data2 × Data1 -> __]%
+               Cons21 : Data1 * Data2 -> __
+               Cons22 : Data2 * Data1 -> __]%
 Data3 : Type %[type __ ::=
-	       Cons31 : Data1 × Data2 -> __ (sel1 :? Data1)(sel2 :? Data2)
-	       Cons32 : Data2 × Data1 -> __ (sel2 :? Data2)(sel1 :? Data1)]%
+               Cons31 : Data1 * Data2 -> __ (sel1 :? Data1)(sel2 :? Data2)
+               Cons32 : Data2 * Data1 -> __ (sel2 :? Data2)(sel1 :? Data1)]%
 Data4 : Type %[type __ ::=
-	       Cons41 : Data1 × Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
-	       Cons42 : Data2 × Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
+               Cons41 : Data1 * Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
+               Cons42 : Data2 * Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : TYPE := Unit
+__*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
-__×__ : Type+ -> Type+ -> Type
 s : c < ? s
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-Cons21 : Data1 × Data2 -> Data2 %(construct Data2)%
-Cons22 : Data2 × Data1 -> Data2 %(construct Data2)%
-Cons31 : Data1 × Data2 -> Data3 %(construct Data3)%
-Cons32 : Data2 × Data1 -> Data3 %(construct Data3)%
-Cons41 : Data1 × Data2 ->? Data4 %(construct Data4)%
-Cons42 : Data2 × Data1 ->? Data4 %(construct Data4)%
-__/\__ : Unit × Unit ->? Unit %(Fun)%
-__<=>__ : Unit × Unit ->? Unit %(Fun)%
-__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__=>__ : Unit × Unit ->? Unit %(Fun)%
-__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__\/__ : Unit × Unit ->? Unit %(Fun)%
-__if__ : Unit × Unit ->? Unit %(Fun)%
-__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
+Cons21 : Data1 * Data2 -> Data2 %(construct Data2)%
+Cons22 : Data2 * Data1 -> Data2 %(construct Data2)%
+Cons31 : Data1 * Data2 -> Data3 %(construct Data3)%
+Cons32 : Data2 * Data1 -> Data3 %(construct Data3)%
+Cons41 : Data1 * Data2 ->? Data4 %(construct Data4)%
+Cons42 : Data2 * Data1 ->? Data4 %(construct Data4)%
+__/\__ : Unit * Unit ->? Unit %(fun)%
+__<=>__ : Unit * Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=>__ : Unit * Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__\/__ : Unit * Unit ->? Unit %(fun)%
+__if__ : Unit * Unit ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 a : Data1 %(construct Data1)%
-  : ? s %(Op)%
+  : ? s %(op)%
 b : Data1 %(construct Data1)%
 c : Data1 %(construct Data1)%
-def__ : forall a : Type .  a ->? Unit %(Fun)%
-eq : s × s ->? Unit %(Pred)%
-false : Unit %(Fun)%
-if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
-not__ : Unit ->? Unit %(Fun)%
+def__ : forall a : Type . a ->? Unit %(fun)%
+eq : s * s ->? Unit %(pred)%
+false : Unit %(fun)%
+if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
+not__ : Unit ->? Unit %(fun)%
 sel1 : Data4 ->? Data1 %(select from Data4 constructed by
-		      (Cons41 : Data1 × Data2 ->? Data4,
-		       Cons42 : Data2 × Data1 ->? Data4))%
+                      (Cons41 : Data1 * Data2 ->? Data4,
+                       Cons42 : Data2 * Data1 ->? Data4))%
      : Data3 ->? Data1 %(select from Data3 constructed by
-		      (Cons31 : Data1 × Data2 -> Data3,
-		       Cons32 : Data2 × Data1 -> Data3))%
+                      (Cons31 : Data1 * Data2 -> Data3,
+                       Cons32 : Data2 * Data1 -> Data3))%
 sel2 : Data4 ->? Data2 %(select from Data4 constructed by
-		      (Cons41 : Data1 × Data2 ->? Data4,
-		       Cons42 : Data2 × Data1 ->? Data4))%
+                      (Cons41 : Data1 * Data2 ->? Data4,
+                       Cons42 : Data2 * Data1 ->? Data4))%
      : Data3 ->? Data2 %(select from Data3 constructed by
-		      (Cons31 : Data1 × Data2 -> Data3,
-		       Cons32 : Data2 × Data1 -> Data3))%
-true : Unit %(Fun)%
-tt : s ->? Unit %(Op)% = \ (var x : s) . ()
+                      (Cons31 : Data1 * Data2 -> Data3,
+                       Cons32 : Data2 * Data1 -> Data3))%
+true : Unit %(fun)%
+tt : s ->? Unit %(op)% = \ (var x : s) . ()
 %% Sentences -------------------------------------------------------------
-(fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
-						 (var y : t)) %()%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (var x : t, var y : t) %()%
 (fun true : Unit) %()%
 %% Diagnostics -----------------------------------------------------------
 *** Error 1.7, illegal universe class declaration 'Type'
@@ -119,54 +119,49 @@ tt : s ->? Unit %(Op)% = \ (var x : s) . ()
 *** Warning 11.13, redeclared class 'c'
 *** Warning 11.19, redeclared class 'a'
 *** Error 20.12, unexpected mixfix token: res
-*** Error 20.10, unexpected term '__ res __ (x : s, y : t)'
-*** Error 20.37, unexpected mixfix token: x
 *** Hint 21.1, no type match for: fst
-  with type: '_var_4 ->? s' (21.20)
+  with type: '_var_3 ->? s' (21.20)
   known types:
     
 *** Hint 21.1, wrong result type 's' (21.20)
-  for application 'fst ((var x : s), (var y : t))'
-*** Error 21.1, no typing for 'fst(((var x : s), (var y : t))) : s'
+  for application 'fst(var x : s, var y : t)'
+*** Error 21.1, no typing for 'fst(var x : s, var y : t) : s'
 *** Hint 22.1, no type match for: snd
-  with type: '_var_5 ->? t' (22.20)
+  with type: '_var_4 ->? t' (22.20)
   known types:
     
 *** Hint 22.1, wrong result type 't' (22.20)
-  for application 'snd ((var x : s), (var y : t))'
-*** Error 22.1, no typing for 'snd(((var x : s), (var y : t))) : t'
+  for application 'snd(var x : s, var y : t)'
+*** Error 22.1, no typing for 'snd(var x : s, var y : t) : t'
 *** Hint 28.9, no type match for: all
-  with type: '_var_6 ->? ? Unit' (28.27)
+  with type: '_var_5 ->? ? Unit' (28.27)
   known types:
     
 *** Hint 28.9, wrong result type '? Unit' (28.27)
-  for application 'all (var p : ? s)'
-*** Error 28.9, no typing for 'all((var p : ? s)) : ? Unit'
+  for application 'all(var p : ? s)'
+*** Error 28.9, no typing for 'all(var p : ? s) : ? Unit'
 *** Hint 30.9, no type match for: And
-  with type: '_var_8 ->? ? Unit' (30.32)
+  with type: '_var_7 ->? ? Unit' (30.32)
   known types:
     
 *** Hint 30.9, wrong result type '? Unit' (30.32)
-  for application 'And ((var x : _var_7), (var y : ? Unit))'
-*** Error 30.9, no typing for 'And(((var x : _var_7), (var y : ? Unit))) : ? Unit'
+  for application 'And(var x : _var_6, var y : ? Unit)'
+*** Error 30.9, no typing for 'And(var x : _var_6, var y : ? Unit) : ? Unit'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
-*** Error 34.10, unexpected term '__ or __ (x, y : (? Unit))'
-*** Error 35.19, unexpected mixfix token: x
-*** Error 34.44, unexpected mixfix token: all
 *** Hint 37.3, no type match for: ex
-  with type: '_var_10 ->? ? Unit' (37.19)
+  with type: '_var_8 ->? ? Unit' (37.19)
   known types:
     
 *** Hint 37.3, wrong result type '? Unit' (37.19)
-  for application 'ex (var p : ? s)'
-*** Error 37.3, no typing for 'ex((var p : ? s)) : ? Unit'
+  for application 'ex(var p : ? s)'
+*** Error 37.3, no typing for 'ex(var p : ? s) : ? Unit'
 *** Hint 40.3, no type match for: ff
-  with type: '_var_11 ->? ? Unit' (40.12)
+  with type: '_var_9 ->? ? Unit' (40.12)
   known types:
     
 *** Hint 40.3, wrong result type '? Unit' (40.12)
-  for application 'ff ()'
-*** Error 40.3, no typing for 'ff(()) : ? Unit'
+  for application 'ff()'
+*** Error 40.3, no typing for 'ff() : ? Unit'
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e

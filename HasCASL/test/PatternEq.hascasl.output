@@ -1,61 +1,58 @@
 type s, t
-op snd : s × t -> t
-program (op snd : s × t -> t) ((var x : s), (var y : t)) =
-	(var y : t)
-program (op snd : s × t -> t) ((var x : s), (var y : t)) =
-	(var y : t)
-program (op snd : s × t -> t) ((var x : s), (var y : t)) =
-	(var y : t) : t
-program (op snd : s × t -> t) ((var x : s), (var y : t)) : t =
-	(var y : t)
-program (op snd : s × t -> t) ((var x : s), (var y : t)) : t =
-	(var y : t)
-program (op snd : s × t -> t) ((var x : s), (var y : t)) : t =
-	(var y : t)
+op snd : s * t -> t
+program (op snd : s * t -> t)(var x : s, var y : t) = (var y : t)
+program (op snd : s * t -> t)(var x : s, var y : t) = (var y : t)
+program (op snd : s * t -> t)(var x : s, var y : t) =
+            (var y : t) : t
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
+            (var y : t)
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
+            (var y : t)
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
+            (var y : t)
 program (x : s, y : s) = (x : s, y : s)
 op a : s
 program b : s = a
 op b : s
 program (op b : s) : s = (op a : s)
 op x : s; y : t
-op c : t = (op snd : s × t -> t) ((op x : s) : s, (op y : t) : t)
+op c : t = (op snd : s * t -> t)((op x : s) : s, (op y : t) : t)
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
+__*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
-__×__ : Type+ -> Type+ -> Type
 s : Type
 t : Type
 %% Assumptions -----------------------------------------------------------
-__/\__ : Unit × Unit ->? Unit %(Fun)%
-__<=>__ : Unit × Unit ->? Unit %(Fun)%
-__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__=>__ : Unit × Unit ->? Unit %(Fun)%
-__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__\/__ : Unit × Unit ->? Unit %(Fun)%
-__if__ : Unit × Unit ->? Unit %(Fun)%
-__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
-a : s %(Op)%
-b : s %(Op)% = (op a : s)
-c : t %(Op)% = (op snd : s × t -> t) ((op x : s) : s,
-				      (op y : t) : t)
-def__ : forall a : Type .  a ->? Unit %(Fun)%
-false : Unit %(Fun)%
-if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
-not__ : Unit ->? Unit %(Fun)%
-snd : s × t -> t %(Op)% = \ ((var x : s),
-			     (var y : t)) . (var y : t)
-true : Unit %(Fun)%
-x : s %(Op)%
-y : t %(Op)%
+__/\__ : Unit * Unit ->? Unit %(fun)%
+__<=>__ : Unit * Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=>__ : Unit * Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__\/__ : Unit * Unit ->? Unit %(fun)%
+__if__ : Unit * Unit ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+a : s %(op)%
+b : s %(op)% = (op a : s)
+c : t %(op)% = (op snd : s * t -> t)
+                 ((op x : s) : s, (op y : t) : t)
+def__ : forall a : Type . a ->? Unit %(fun)%
+false : Unit %(fun)%
+if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
+not__ : Unit ->? Unit %(fun)%
+snd : s * t -> t %(op)% = \ (var x : s, var y : t) . (var y : t)
+true : Unit %(fun)%
+x : s %(op)%
+y : t %(op)%
 %% Diagnostics -----------------------------------------------------------
 *** Warning 6.10, different terms of 'snd'
-	\ ((var x : s), (var y : t)) . (var y : t)
-	\ ((var x : s), (var y : t)) . (var y : t) : t
+	\ (var x : s, var y : t) . (var y : t)
+	\ (var x : s, var y : t) . (var y : t) : t
 	
 
-*** Error 14.10, illegal toplevel pattern '((var x : s), (var y : s))'
+*** Error 14.10, illegal toplevel pattern '(var x : s, var y : s)'
 *** Error 17.9, illegal toplevel pattern '(var b : s)'

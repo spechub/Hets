@@ -32,26 +32,26 @@ i < ({x . x < t}, b, a, g)
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
+__*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
-__×__ : Type+ -> Type+ -> Type
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-__/\__ : Unit × Unit ->? Unit %(Fun)%
-__<=>__ : Unit × Unit ->? Unit %(Fun)%
-__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__=>__ : Unit × Unit ->? Unit %(Fun)%
-__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__\/__ : Unit × Unit ->? Unit %(Fun)%
-__if__ : Unit × Unit ->? Unit %(Fun)%
-__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
-def__ : forall a : Type .  a ->? Unit %(Fun)%
-false : Unit %(Fun)%
-if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
-not__ : Unit ->? Unit %(Fun)%
-true : Unit %(Fun)%
+__/\__ : Unit * Unit ->? Unit %(fun)%
+__<=>__ : Unit * Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=>__ : Unit * Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__\/__ : Unit * Unit ->? Unit %(fun)%
+__if__ : Unit * Unit ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+def__ : forall a : Type . a ->? Unit %(fun)%
+false : Unit %(fun)%
+if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
+not__ : Unit ->? Unit %(fun)%
+true : Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 1.13, undeclared class 'b'
 *** Error 3.11, undeclared class 'd'

@@ -40,8 +40,8 @@ data BasicItem = SigItems SigItems
                -- or "generated" "type" ";"s
                | AxiomItems [GenVarDecl] [Annoted Term] [Pos]
                -- pos "forall" (if GenVarDecl not empty), dots 
-	       | Internal [Annoted BasicItem] [Pos]
-	       -- pos "internal" "{", ";"s, "}"
+               | Internal [Annoted BasicItem] [Pos]
+               -- pos "internal" "{", ";"s, "}"
                  deriving (Show, Eq)
 
 data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
@@ -51,10 +51,25 @@ data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
                  deriving (Show, Eq)
 
 -- | indicator for predicate, operation or function
-data OpBrand = Pred | Op | Fun deriving (Show, Eq, Ord) 
+data OpBrand = Pred | Op | Fun deriving (Eq, Ord) 
+
+instance Show OpBrand where
+    show b = case b of
+        Pred -> predS
+        Op -> opS
+        Fun -> functS
+
+isPred :: OpBrand -> Bool
+isPred b = case b of Pred -> True
+		     _ -> False
 
 -- | indicator in 'ClassItems' and 'TypeItems'
-data Instance = Instance | Plain deriving (Show, Eq)
+data Instance = Instance | Plain deriving Eq
+
+instance Show Instance where
+    show i = case i of
+        Instance -> instanceS
+        Plain -> ""
 
 data ClassItem = ClassItem ClassDecl [Annoted BasicItem] [Pos] 
                  -- pos "{", ";"s "}"
@@ -64,19 +79,25 @@ data ClassDecl = ClassDecl [ClassId] Kind [Pos]
                -- pos ","s
                  deriving (Show, Eq)
                           
-data Variance = CoVar | ContraVar | InVar deriving (Show, Eq, Ord)
+data Variance = CoVar | ContraVar | InVar deriving (Eq, Ord)
+
+instance Show Variance where
+    show v = case v of 
+        CoVar -> plusS
+	ContraVar -> minusS
+	InVar -> ""
 
 -- | kind or an extended kind
 data Kind = Universe [Pos]
           | MissingKind -- ^ initially missing information
           | Downset (Maybe Token) Type Kind [Pos] -- ^ plus the derived kind
-	  | ClassKind ClassId Kind                -- ^ plus the declared kind
-	  | Intersection [Kind] [Pos]   -- ^ with equal raw kinds
-	  | FunKind Kind Kind [Pos]     -- ^ only argument may be an 'ExtKind' 
-	    -- pos "->" 
-	  | ExtKind Kind Variance [Pos] -- ^ no 'InVar'  
-	     -- pos "+" or "-" 
-	    deriving Show
+          | ClassKind ClassId Kind                -- ^ plus the declared kind
+          | Intersection [Kind] [Pos]   -- ^ with equal raw kinds
+          | FunKind Kind Kind [Pos]     -- ^ only argument may be an 'ExtKind' 
+            -- pos "->" 
+          | ExtKind Kind Variance [Pos] -- ^ no 'InVar'  
+             -- pos "+" or "-" 
+            deriving Show
 
 -- | the 'Universe' raw kind
 star :: Kind
@@ -89,7 +110,7 @@ starPlus = ExtKind star CoVar []
 -- | the 'Kind' of the function type
 funKind :: Kind
 funKind = FunKind (ExtKind star ContraVar [])
-	     (FunKind starPlus star []) []
+             (FunKind starPlus star []) []
 
 -- | the 'Kind' of the pair product type
 prodKind :: Kind
@@ -105,7 +126,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos "=", "{", ":", dot, "}"
                | AliasType TypePattern (Maybe Kind) TypeScheme [Pos]
                -- pos ":="
-	       | Datatype DatatypeDecl
+               | Datatype DatatypeDecl
                  deriving (Show, Eq)
 
 -- | a tuple pattern for 'SubtypeDefn' 
@@ -118,19 +139,19 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  | BracketTypePattern BracketKind [TypePattern] [Pos]
                  -- pos brackets (no parenthesis)
                  | TypePatternArg TypeArg [Pos]
-		 -- pos "(", ")"
+                 -- pos "(", ")"
                    deriving (Show, Eq)
 
 data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor)
-	  | TypeAppl Type Type
+          | TypeAppl Type Type
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
           -- pos "," (between type arguments)
           | KindedType Type Kind [Pos]
           -- pos ":"
           | MixfixType [Type] 
-	  | LazyType Type [Pos]
-	  -- pos "?"
+          | LazyType Type [Pos]
+          -- pos "?"
           | ProductType [Type] [Pos]
           -- pos crosses 
           | FunType Type Arrow Type [Pos]
@@ -144,16 +165,17 @@ data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr
              deriving (Eq, Ord)
 
 instance Show Arrow where
-    show FunArr = funS
-    show PFunArr = pFun
-    show ContFunArr = contFun
-    show PContFunArr = pContFun 
+    show a = case a of 
+        FunArr -> funS
+        PFunArr -> pFun
+        ContFunArr -> contFun
+        PContFunArr -> pContFun 
 
 arrowId :: Arrow -> Id
 arrowId a = Id (map mkSimpleId [place, show a, place]) [] []
 
 productId :: Id
-productId = Id (map mkSimpleId [place, timesS, place]) [] []
+productId = Id (map mkSimpleId [place, prodS, place]) [] []
 
 data Pred = IsIn ClassId [Type]
               deriving (Show, Eq, Ord)
@@ -172,18 +194,26 @@ simpleTypeScheme t = TypeScheme [] ([] :=> t) []
 
 logicalType :: Type 
 logicalType = -- TypeName (simpleIdToId (mkSimpleId "Unit")) star 0
-	      ProductType [] [] 
+              ProductType [] [] 
+
+mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
+mapTypeOfScheme f (TypeScheme args (q :=> t) ps) =
+    TypeScheme args (q :=> f t) ps
 
 predTypeScheme :: TypeScheme -> TypeScheme
-predTypeScheme (TypeScheme vs (qs :=> t) ps) = 
-    TypeScheme vs (qs :=> predType t) ps
+predTypeScheme = mapTypeOfScheme predType
 
 predType :: Type -> Type
 predType t = case t of
-		    BracketType Parens [] _ -> logicalType
-		    _ -> FunType t PFunArr logicalType []
+                    BracketType Parens [] _ -> logicalType
+                    _ -> FunType t PFunArr logicalType []
 
-data Partiality = Partial | Total deriving (Show, Eq, Ord)
+data Partiality = Partial | Total deriving (Eq, Ord)
+
+instance Show Partiality where
+    show p = case p of
+        Partial -> quMark
+        Total -> exMark
 
 data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
@@ -191,35 +221,54 @@ data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos "("s, ";"s, ")"s, ":" or ":?", "="
               deriving (Show, Eq)
 
-data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq)
+data BinOpAttr = Assoc | Comm | Idem deriving Eq
+
+instance Show BinOpAttr where
+    show a = case a of
+        Assoc -> assocS
+        Comm -> commS
+        Idem -> idemS
+
 
 data OpAttr = BinOpAttr BinOpAttr [Pos] 
-	    | UnitOpAttr Term [Pos] deriving (Show)
+            | UnitOpAttr Term [Pos] deriving (Show)
 
 data DatatypeDecl = DatatypeDecl 
                     TypePattern 
-		    Kind
+                    Kind
                     [Annoted Alternative] 
                     [ClassId]
                     [Pos] 
-		     -- pos "::=", "|"s, "deriving"
-		     deriving (Show, Eq)
+                     -- pos "::=", "|"s, "deriving"
+                     deriving (Show, Eq)
 
 data Alternative = Constructor UninstOpId [[Component]] Partiality [Pos]
-		   -- pos: "("s, ";"s, ")"s, "?"
-		 | Subtype [Type] [Pos]
-		   -- pos: "type", ","s
-		   deriving (Show)
+                   -- pos: "("s, ";"s, ")"s, "?"
+                 | Subtype [Type] [Pos]
+                   -- pos: "type", ","s
+                   deriving (Show)
 
 data Component = Selector UninstOpId Partiality Type SeparatorKind Pos 
-		-- pos ",", ":" or ":?"
-		| NoSelector Type
-		  deriving (Show)
+                -- pos ",", ":" or ":?"
+                | NoSelector Type
+                  deriving (Show)
 
 data Quantifier = Universal | Existential | Unique
-		  deriving (Show, Eq, Ord)
+                  deriving (Eq, Ord)
 
-data TypeQual = OfType | AsType | InType deriving (Show, Eq, Ord)
+instance Show Quantifier where
+    show q = case q of
+        Universal -> forallS
+        Existential -> existsS 
+        Unique -> existsS ++ exMark
+
+data TypeQual = OfType | AsType | InType deriving (Eq, Ord)
+
+instance Show TypeQual where
+    show q = case q of
+        OfType -> colonS
+        AsType -> asS
+        InType -> inS
 
 data LetBrand = Let | Where deriving (Show, Eq, Ord)
 
@@ -227,41 +276,41 @@ data BracketKind = Parens | Squares | Braces deriving (Show, Eq, Ord)
 
 getBrackets :: BracketKind -> (String, String)
 getBrackets b = case b of
-		       Parens -> ("(", ")")
-		       Squares -> ("[", "]")
-		       Braces -> ("{", "}")
+                       Parens -> ("(", ")")
+                       Squares -> ("[", "]")
+                       Braces -> ("{", "}")
 
 -- parse quantified formulae as terms first
 -- eases also parsing of formulae in parenthesis
 
 data Term = QualVar Var Type [Pos]
-	  -- pos "(", "var", ":", ")"
-	  | QualOp OpBrand InstOpId TypeScheme [Pos]
-	  -- pos "(", "op", ":", ")" 
-	  | ResolvedMixTerm Id [Term] [Pos]
-	  | ApplTerm Term Term [Pos]  -- analysed
-	  -- pos?
-	  | TupleTerm [Term] [Pos]
-	  -- pos "(", ","s, ")"
-	  | TypedTerm Term TypeQual Type [Pos]
-	  -- pos ":", "as" or "in"
-	  | QuantifiedTerm Quantifier [GenVarDecl] Term [Pos]
+          -- pos "(", "var", ":", ")"
+          | QualOp OpBrand InstOpId TypeScheme [Pos]
+          -- pos "(", "op", ":", ")" 
+          | ResolvedMixTerm Id [Term] [Pos]
+          | ApplTerm Term Term [Pos]  -- analysed
+          -- pos?
+          | TupleTerm [Term] [Pos]
+          -- pos "(", ","s, ")"
+          | TypedTerm Term TypeQual Type [Pos]
+          -- pos ":", "as" or "in"
+          | QuantifiedTerm Quantifier [GenVarDecl] Term [Pos]
           -- pos quantifier, ";"s, dot
-	  -- only "forall" may have a TypeVarDecl
-	  | LambdaTerm [Pattern] Partiality Term [Pos]
+          -- only "forall" may have a TypeVarDecl
+          | LambdaTerm [Pattern] Partiality Term [Pos]
           -- pos "\", dot (plus "!") 
-	  | CaseTerm Term [ProgEq] [Pos]
-	  -- pos "case", "of", "|"s 
-	  | LetTerm LetBrand [ProgEq] Term [Pos]
-	  -- pos "where", ";"s
-	  | TermToken Token
-	  | MixTypeTerm TypeQual Type [Pos]
+          | CaseTerm Term [ProgEq] [Pos]
+          -- pos "case", "of", "|"s 
+          | LetTerm LetBrand [ProgEq] Term [Pos]
+          -- pos "where", ";"s
+          | TermToken Token
+          | MixTypeTerm TypeQual Type [Pos]
           | MixfixTerm [Term]
-	  | BracketTerm BracketKind [Term] [Pos]
-	  -- pos brackets, ","s 
-	  | AsPattern Pattern Pattern [Pos]	     
-	  -- pos "@"
-	    deriving (Show,Ord)
+          | BracketTerm BracketKind [Term] [Pos]
+          -- pos brackets, ","s 
+          | AsPattern Pattern Pattern [Pos]          
+          -- pos "@"
+            deriving (Show,Ord)
 
 type Pattern = Term
 
@@ -269,7 +318,7 @@ mkTupleTerm :: [Term] -> [Pos] -> Term
 mkTupleTerm ts ps = if isSingle ts then head ts else TupleTerm ts ps
 
 data ProgEq = ProgEq Pattern Term Pos deriving (Show, Ord)
-	    -- pos "=" (or "->" following case-of)
+            -- pos "=" (or "->" following case-of)
 -- ----------------------------------------------------------------------------
 -- (type) var decls
 -- ----------------------------------------------------------------------------
@@ -277,19 +326,19 @@ data ProgEq = ProgEq Pattern Term Pos deriving (Show, Ord)
 data SeparatorKind = Comma | Other deriving (Show, Eq, Ord)
 
 data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show, Ord)
-	       -- pos "," or ":" 
+               -- pos "," or ":" 
 
 data TypeArg = TypeArg TypeId Kind SeparatorKind [Pos]
-	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
-	       deriving (Show)
+               -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
+               deriving (Show)
 
 instance Ord TypeArg where
     TypeArg v1 _ _ _ <= TypeArg v2 _ _ _
-	= v1 <= v2
+        = v1 <= v2
 
 data GenVarDecl = GenVarDecl VarDecl
-		| GenTypeVarDecl TypeArg
-		  deriving (Show, Eq, Ord)
+                | GenTypeVarDecl TypeArg
+                  deriving (Show, Eq, Ord)
 
 -- ----------------------------------------------------------------------------
 -- op names
@@ -406,9 +455,9 @@ instance Eq Term where
     TupleTerm l1 _ == TupleTerm l2 _ = l1 == l2
     TypedTerm s1 q1 t1 _ == TypedTerm s2 q2 t2 _ = (q1, t1, s1) == (q2, t2, s2)
     QuantifiedTerm q1 v1 t1 _ == QuantifiedTerm q2 v2 t2 _ =
-	(q1, v1, t1) == (q2, v2, t2)
+        (q1, v1, t1) == (q2, v2, t2)
     LambdaTerm v1 p1 t1 _ == LambdaTerm v2 p2 t2 _ = 
-	(p1, v1, t1) == (p2, v2, t2)
+        (p1, v1, t1) == (p2, v2, t2)
     CaseTerm t1 e1 _ ==  CaseTerm t2 e2 _ = (t1, e1) == (t2, e2)
     LetTerm b1 e1 t1 _ == LetTerm b2 e2 t2 _  = (b1, t1, e1) == (b2, t2, e2)
     TermToken t1 == TermToken t2 = t1 == t2
@@ -427,12 +476,12 @@ instance Eq OpAttr where
 
 instance Eq Alternative where 
     Constructor i1 l1 p1 _ == Constructor i2 l2 p2 _ =
-	(i1, l1, p1) == (i2, l2, p2)
+        (i1, l1, p1) == (i2, l2, p2)
     Subtype t1 _ == Subtype t2 _ = t1 == t2
     _ == _ = False
 
 instance Eq Component where 
     Selector i1 p1 t1 _ _ == Selector i2 p2 t2 _ _ =
-	(i1, t1, p1) == (i2, t2, p2)
+        (i1, t1, p1) == (i2, t2, p2)
     NoSelector t1 == NoSelector t2 = t1 == t2
     _ == _ = False

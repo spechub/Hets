@@ -1,90 +1,90 @@
 type s, t < t
 op a, b : s
 %% op __ + __ : s  -> s -> s, idem, assoc, comm;
-op __+__ : s × s -> s
-op __+__ : t × t -> t
+op __+__ : s * s -> s
+op __+__ : t * t -> t
 op : t -> t -> t
 op a, b : t
-op c : s = (op __+__ : s × s -> s) ((op a : s), (op b : s))
-op d : s = (op __+__ : s × s -> s) ((op a : s), (op a : s))
-op e : s × s -> s = (op __+__ : s × s -> s)
-op f : s × s -> s = (op __+__ : s × s -> s)
-op g : s × s = ((op a : s), (op b : s))
-op h : s = (op __+__ : s × s -> s) ((op a : s), (op b : s))
-op i : s = (op __+__ : s × s -> s) ((op a : s) : s, (op b : s) : s)
+op c : s = (op __+__ : s * s -> s)(op a : s, op b : s)
+op d : s = (op __+__ : s * s -> s)(op a : s, op a : s)
+op e : s * s -> s = (op __+__ : s * s -> s)
+op f : s * s -> s = (op __+__ : s * s -> s)
+op g : s * s = (op a : s, op b : s)
+op h : s = (op __+__ : s * s -> s)(op a : s, op b : s)
+op i : s = (op __+__ : s * s -> s)((op a : s) : s, (op b : s) : s)
 op incr : s -> s
-op i1 : s = (op incr : s -> s) (op a : s)
-op i2 : s = (op incr : s -> s) (op a : s)
-op i3 : s = (op incr : s -> s) (op a : s)
-op __<=__<=__ : s × s × s -> s
-op l1 : s = (op __<=__<=__ : s × s × s -> s) ((op a : s),
-					      (op b : s), (op c : s))
-op l2 : s × s × s -> s = (op __<=__<=__ : s × s × s -> s)
-op l3 : s = (op __<=__<=__ : s × s × s -> s) ((op a : s),
-					      (op b : s), (op c : s))
-op l4 : s = (op __<=__<=__ : s × s × s -> s) ((op a : s),
-					      (op b : s), (op c : s))
-op l5 : s × s × s = ((op a : s), (op b : s), (op c : s))
+op i1 : s = (op incr : s -> s)(op a : s)
+op i2 : s = (op incr : s -> s)(op a : s)
+op i3 : s = (op incr : s -> s)(op a : s)
+op __<=__<=__ : s * s * s -> s
+op l1 : s = (op __<=__<=__ : s * s * s -> s)
+              (op a : s, op b : s, op c : s)
+op l2 : s * s * s -> s = (op __<=__<=__ : s * s * s -> s)
+op l3 : s = (op __<=__<=__ : s * s * s -> s)
+              (op a : s, op b : s, op c : s)
+op l4 : s = (op __<=__<=__ : s * s * s -> s)
+              (op a : s, op b : s, op c : s)
+op l5 : s * s * s = (op a : s, op b : s, op c : s)
 op x : s
-op y : s = (op __<=__<=__ : s × s × s -> s) ((op a : s),
-					     (var x : s), (op a : s) : s)
-op z : s = (op __+__ : s × s -> s) ((op x : s) as s,
-				    (op x : s) as t as s)
+op y : s = (op __<=__<=__ : s * s * s -> s)
+             (op a : s, var x : s, (op a : s) : s)
+op z : s = (op __+__ : s * s -> s)
+             ((op x : s) as s, (op x : s) as t as s)
 . (op x : s) in s %(bla_label)%
 . (op x : s) in t
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
+__*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
-__×__ : Type+ -> Type+ -> Type
 s : Type < t
 t : Type < t
 %% Assumptions -----------------------------------------------------------
-__+__ : s × s -> s %(Op)%
-__/\__ : Unit × Unit ->? Unit %(Fun)%
-__<=__<=__ : s × s × s -> s %(Op)%
-__<=>__ : Unit × Unit ->? Unit %(Fun)%
-__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__=>__ : Unit × Unit ->? Unit %(Fun)%
-__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__\/__ : Unit × Unit ->? Unit %(Fun)%
-__if__ : Unit × Unit ->? Unit %(Fun)%
-__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
-a : s %(Op)%
-b : s %(Op)%
-c : s %(Op)% = (op __+__ : s × s -> s) ((op a : s), (op b : s))
-d : s %(Op)% = (op __+__ : s × s -> s) ((op a : s), (op a : s))
-def__ : forall a : Type .  a ->? Unit %(Fun)%
-e : s × s -> s %(Op)% = (op __+__ : s × s -> s)
-f : s × s -> s %(Op)% = (op __+__ : s × s -> s)
-false : Unit %(Fun)%
-g : s × s %(Op)% = ((op a : s), (op b : s))
-h : s %(Op)% = (op __+__ : s × s -> s) ((op a : s), (op b : s))
-i : s %(Op)% = (op __+__ : s × s -> s) ((op a : s) : s,
-					(op b : s) : s)
-i1 : s %(Op)% = (op incr : s -> s) (op a : s)
-i2 : s %(Op)% = (op incr : s -> s) (op a : s)
-i3 : s %(Op)% = (op incr : s -> s) (op a : s)
-if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
-incr : s -> s %(Op)%
-l1 : s %(Op)% = (op __<=__<=__ : s × s × s -> s) ((op a : s),
-						  (op b : s), (op c : s))
-l2 : s × s × s -> s %(Op)% = (op __<=__<=__ : s × s × s -> s)
-l3 : s %(Op)% = (op __<=__<=__ : s × s × s -> s) ((op a : s),
-						  (op b : s), (op c : s))
-l4 : s %(Op)% = (op __<=__<=__ : s × s × s -> s) ((op a : s),
-						  (op b : s), (op c : s))
-l5 : s × s × s %(Op)% = ((op a : s), (op b : s), (op c : s))
-not__ : Unit ->? Unit %(Fun)%
-true : Unit %(Fun)%
-x : s %(Op)%
-y : s %(Op)% = (op __<=__<=__ : s × s × s -> s) ((op a : s),
-						 (var x : s), (op a : s) : s)
-z : s %(Op)% = (op __+__ : s × s -> s) ((op x : s) as s,
-					(op x : s) as t as s)
+__+__ : s * s -> s %(op)%
+__/\__ : Unit * Unit ->? Unit %(fun)%
+__<=__<=__ : s * s * s -> s %(op)%
+__<=>__ : Unit * Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=>__ : Unit * Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__\/__ : Unit * Unit ->? Unit %(fun)%
+__if__ : Unit * Unit ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+a : s %(op)%
+b : s %(op)%
+c : s %(op)% = (op __+__ : s * s -> s)(op a : s, op b : s)
+d : s %(op)% = (op __+__ : s * s -> s)(op a : s, op a : s)
+def__ : forall a : Type . a ->? Unit %(fun)%
+e : s * s -> s %(op)% = (op __+__ : s * s -> s)
+f : s * s -> s %(op)% = (op __+__ : s * s -> s)
+false : Unit %(fun)%
+g : s * s %(op)% = (op a : s, op b : s)
+h : s %(op)% = (op __+__ : s * s -> s)(op a : s, op b : s)
+i : s %(op)% = (op __+__ : s * s -> s)
+                 ((op a : s) : s, (op b : s) : s)
+i1 : s %(op)% = (op incr : s -> s)(op a : s)
+i2 : s %(op)% = (op incr : s -> s)(op a : s)
+i3 : s %(op)% = (op incr : s -> s)(op a : s)
+if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
+incr : s -> s %(op)%
+l1 : s %(op)% = (op __<=__<=__ : s * s * s -> s)
+                  (op a : s, op b : s, op c : s)
+l2 : s * s * s -> s %(op)% = (op __<=__<=__ : s * s * s -> s)
+l3 : s %(op)% = (op __<=__<=__ : s * s * s -> s)
+                  (op a : s, op b : s, op c : s)
+l4 : s %(op)% = (op __<=__<=__ : s * s * s -> s)
+                  (op a : s, op b : s, op c : s)
+l5 : s * s * s %(op)% = (op a : s, op b : s, op c : s)
+not__ : Unit ->? Unit %(fun)%
+true : Unit %(fun)%
+x : s %(op)%
+y : s %(op)% = (op __<=__<=__ : s * s * s -> s)
+                 (op a : s, var x : s, (op a : s) : s)
+z : s %(op)% = (op __+__ : s * s -> s)
+                 ((op x : s) as s, (op x : s) as t as s)
 %% Sentences -------------------------------------------------------------
 (op x : s) in s %(bla_label)%
 (op x : s) in t %()%

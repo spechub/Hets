@@ -8,15 +8,15 @@ expecting "\\" or "\""
 
 parse error at 3.2:
 unexpected end of input
-expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let" or "}"
+expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "var", "op", "fun", "pred" or "}"
 
 parse error at 4.2:
 unexpected end of input
-expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let" or "]"
+expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "var", "op", "fun", "pred" or "]"
 
 parse error at 5.2:
 unexpected end of input
-expecting "%%", "%{", "%(", "%", "var", "op", "fun", "pred", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let" or ")"
+expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "var", "op", "fun", "pred" or ")"
 
 parse error at 6.1:
 unexpected "}"
@@ -56,11 +56,11 @@ expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "w
 
 parse error at 15.2:
 unexpected ","
-expecting "%%", "%{", "%(", "%", "var", "op", "fun", "pred", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let" or ")"
+expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "var", "op", "fun", "pred" or ")"
 
 parse error at 16.4:
 unexpected ")"
-expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "var", "op", "fun" or "pred"
 
 parse error at 17.1:
 unexpected "as"
@@ -104,11 +104,11 @@ expecting "{", "[", __, "%%", "%{", "%(", "%", "+", "-", ",", ":", "<", ";" or d
 
 parse error at 27.13:
 unexpected ".!" or "!"
-expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
+expecting "?", words, "__", "[", "{", "(", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
 
 parse error at 28.13:
 unexpected ".!" or "!"
-expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
+expecting "?", words, "__", "[", "{", "(", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
 
 parse error at 29.10:
 unexpected "a"
@@ -116,7 +116,7 @@ expecting "{", "[", __, "%%", "%{", "%(", "%", "," or ":"
 
 parse error at 30.14:
 unexpected ".!" or "!"
-expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
+expecting "?", words, "__", "[", "{", "(", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
 
 parse error at 31.1:
 unexpected "pred"
@@ -156,5 +156,5 @@ expecting casl char, "_", "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[
 
 parse error at 40.11:
 unexpected "@"
-expecting quoted char, dot-words, digit, words, "__", "{", "[", "(", "%%", "%{", "%(", "%", ":", "," or ")"
+expecting "%%", "%{", "%(", "%", ":", quoted char, digit, words, "__", "[", "{", "(", "," or ")"
 

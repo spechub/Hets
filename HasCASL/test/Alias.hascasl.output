@@ -2,17 +2,17 @@ var s : Type
 type MyPred : Type -> Type := \ s : Type . s ->? Unit
 type MyAlias : Type -> Type := \ t : Type . t ->? Unit
 type a1 : Type -> Type -> Type := \ (a : Type)
-				    (b : Type) . a -> b -> Unit
+                                    (b : Type) . a -> b -> Unit
 type a1 : Type -> Type -> Type := \ (a : Type)
-				    (b : Type) . a -> b -> Unit
+                                    (b : Type) . a -> b -> Unit
 type a1 : Type -> Type -> Type := \ (a : Type)
-				    (b : Type) . a -> b -> Unit
+                                    (b : Type) . a -> b -> Unit
 type a2 : Type -> Type -> Type := \ (a : Type)
-				    (b : Type) . a -> Unit
+                                    (b : Type) . a -> Unit
 type a3 : Type -> Type -> Type := \ (a : Type)
-				    (a : Type) . a -> Unit
+                                    (a : Type) . a -> Unit
 type a4 : Type -> Type -> Type := \ (a : Type)
-				    (a : Type) . a -> Unit
+                                    (a : Type) . a -> Unit
 type a5(a : Type)
 type a5 : Type -> Type := \ a : Type . a5 a -> Unit
 type a6(a : Type)
@@ -23,13 +23,13 @@ MyAlias : Type -> Type := \ t : Type . t ->? Unit
 MyPred : Type -> Type := \ s : Type . s ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
+__*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
-__×__ : Type+ -> Type+ -> Type
 a1 : Type -> Type -> Type := \ (a : Type)
-			       (b : Type) . a -> b -> Unit
+                               (b : Type) . a -> b -> Unit
 a2 : Type -> Type -> Type := \ (a : Type)(b : Type) . a -> Unit
 a3 : Type -> Type -> Type := \ (a : Type)(a : Type) . a -> Unit
 a4 : Type -> Type -> Type := \ (a : Type)(a : Type) . a -> Unit
@@ -38,19 +38,19 @@ a6 : Type -> Type
 a7 : Type -> Type := \ a : Type . a6 a -> Unit
 s : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-__/\__ : Unit × Unit ->? Unit %(Fun)%
-__<=>__ : Unit × Unit ->? Unit %(Fun)%
-__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__=>__ : Unit × Unit ->? Unit %(Fun)%
-__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__\/__ : Unit × Unit ->? Unit %(Fun)%
-__if__ : Unit × Unit ->? Unit %(Fun)%
-__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
-def__ : forall a : Type .  a ->? Unit %(Fun)%
-false : Unit %(Fun)%
-if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
-not__ : Unit ->? Unit %(Fun)%
-true : Unit %(Fun)%
+__/\__ : Unit * Unit ->? Unit %(fun)%
+__<=>__ : Unit * Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=>__ : Unit * Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__\/__ : Unit * Unit ->? Unit %(fun)%
+__if__ : Unit * Unit ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+def__ : forall a : Type . a ->? Unit %(fun)%
+false : Unit %(fun)%
+if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
+not__ : Unit ->? Unit %(fun)%
+true : Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 's'
 *** Hint 6.6, redeclared type 'a1'

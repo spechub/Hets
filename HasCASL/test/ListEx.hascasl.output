@@ -2,98 +2,101 @@ var b : Type
 var a : Type+
 type List(a : Type+)
 free type List(a : Type+) ::= Nil | 
-			      Cons (head:a; tail:List a)
+                              Cons (head : a; tail : List a)
 free type List(a : Type+) ::= Nil | 
-			      Cons (head:a; tail:List b)
+                              Cons (head : a; tail : List b)
 free type List(a : Type+) ::= Nil | 
-			      Cons (head:a; tail:List a b)
+                              Cons (head : a; tail : List a b)
 free type List(a : Type+) ::= Nil | 
-			      Cons (head:a; tail:List (List a))
+                              Cons (head : a; tail : List (List a))
 free type Tree(a : Type+) ::= Leaf | 
-			      Branch (head:Tree a; tail:Tree a)
+                              Branch (head : Tree a; tail : Tree a)
 generated {type Tree1(a : Type+) ::= Leaf | 
-				     Branch (head:Tree a; tail:Tree1 a)}
+                                     Branch (head : Tree a; tail : Tree1 a)}
 type Tree2(a : Type+) ::= Leaf | 
-			  Branch (head:Tree a; tail:Tree2 a)
+                          Branch (head : Tree a; tail : Tree2 a)
 free type even(a : Type+) ::= rek (odd a);
-	  odd(a : Type+) ::= rek (even a)
+          odd(a : Type+) ::= rek (even a)
 free type even2(a : Type+) ::= rek (odd2 (odd2 a));
-	  odd2(a : Type+) ::= rek (even2 a)
+          odd2(a : Type+) ::= rek (even2 a)
 %% Type Constructors -----------------------------------------------------
 List : Type+ -> Type %[free type __ a : Type+ ::=
-			    Nil : -> __]%
+                            Nil : -> __]%
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Tree : Type+ -> Type %[free type __ a : Type+ ::=
-			    Leaf : -> __
-			    Branch : Tree a × Tree a -> __ (head : Tree a)(tail : Tree a)]%
+                            Leaf : -> __
+                            Branch : Tree a * Tree a -> __ (head : Tree a)(tail : Tree a)]%
 Tree1 : Type+ -> Type %[generated type __ a : Type+ ::=
-				  Leaf : -> __
-				  Branch : Tree a × Tree1 a -> __ (head : Tree a)(tail : Tree1 a)]%
+                                  Leaf : -> __
+                                  Branch : Tree a * Tree1 a -> __ (head : Tree a)(tail : Tree1 a)]%
 Tree2 : Type+ -> Type %[type __ a : Type+ ::=
-			Leaf : -> __
-			Branch : Tree a × Tree2 a -> __ (head : Tree a)(tail : Tree2 a)]%
+                        Leaf : -> __
+                        Branch : Tree a * Tree2 a -> __ (head : Tree a)(tail : Tree2 a)]%
 Unit : Type := Unit
+__*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
-__×__ : Type+ -> Type+ -> Type
 a : Type+ %(var)%
 b : Type %(var)%
 even : Type+ -> Type %[free type __ a : Type+ ::=
-			    rek : odd a -> __]%
+                            rek : odd a -> __]%
 even2 : Type+ -> Type %[free type __ a : Type+ ::=]%
 odd : Type+ -> Type %[free type __ a : Type+ ::=
-			   rek : even a -> __]%
+                           rek : even a -> __]%
 odd2 : Type+ -> Type %[free type __ a : Type+ ::=
-			    rek : even2 a -> __]%
+                            rek : even2 a -> __]%
 %% Assumptions -----------------------------------------------------------
-Branch : forall a : Type+ .  Tree a ×
-			     Tree2 a -> Tree2 a %(construct Tree2)%
-       : forall a : Type+ .  Tree a ×
-			     Tree1 a -> Tree1 a %(construct Tree1)%
-       : forall a : Type+ .  Tree a × Tree a -> Tree a %(construct Tree)%
-Cons : forall a : Type+ .  a × List a -> List a %(construct List)%
-Leaf : forall a : Type+ .  Tree2 a %(construct Tree2)%
-     : forall a : Type+ .  Tree1 a %(construct Tree1)%
-     : forall a : Type+ .  Tree a %(construct Tree)%
-Nil : forall a : Type+ .  List a %(construct List)%
-__/\__ : Unit × Unit ->? Unit %(Fun)%
-__<=>__ : Unit × Unit ->? Unit %(Fun)%
-__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__=>__ : Unit × Unit ->? Unit %(Fun)%
-__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
-__\/__ : Unit × Unit ->? Unit %(Fun)%
-__if__ : Unit × Unit ->? Unit %(Fun)%
-__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
-def__ : forall a : Type .  a ->? Unit %(Fun)%
-false : Unit %(Fun)%
-head : forall a : Type+ .  Tree2 a -> Tree a %(select from Tree2 constructed by
-					    Branch : forall a : Type+ .  Tree a ×
-									 Tree2 a -> Tree2 a)%
-     : forall a : Type+ .  Tree1 a -> Tree a %(select from Tree1 constructed by
-					    Branch : forall a : Type+ .  Tree a ×
-									 Tree1 a -> Tree1 a)%
-     : forall a : Type+ .  Tree a -> Tree a %(select from Tree constructed by
-					   Branch : forall a : Type+ .  Tree a × Tree a -> Tree a)%
-     : forall a : Type+ .  List a -> a %(select from List constructed by
-				      Cons : forall a : Type+ .  a × List a -> List a)%
-if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
-not__ : Unit ->? Unit %(Fun)%
-rek : forall a : Type+ .  even2 a -> odd2 a %(construct odd2)%
-    : forall a : Type+ .  even a -> odd a %(construct odd)%
-    : forall a : Type+ .  odd a -> even a %(construct even)%
-tail : forall a : Type+ .  Tree2 a -> Tree2 a %(select from Tree2 constructed by
-					     Branch : forall a : Type+ .  Tree a ×
-									  Tree2 a -> Tree2 a)%
-     : forall a : Type+ .  Tree1 a -> Tree1 a %(select from Tree1 constructed by
-					     Branch : forall a : Type+ .  Tree a ×
-									  Tree1 a -> Tree1 a)%
-     : forall a : Type+ .  Tree a -> Tree a %(select from Tree constructed by
-					   Branch : forall a : Type+ .  Tree a × Tree a -> Tree a)%
-     : forall a : Type+ .  List a -> List a %(select from List constructed by
-					   Cons : forall a : Type+ .  a × List a -> List a)%
-true : Unit %(Fun)%
+Branch : forall a : Type+ .
+           Tree a * Tree2 a -> Tree2 a %(construct Tree2)%
+       : forall a : Type+ .
+           Tree a * Tree1 a -> Tree1 a %(construct Tree1)%
+       : forall a : Type+ . Tree a * Tree a -> Tree a %(construct Tree)%
+Cons : forall a : Type+ . a * List a -> List a %(construct List)%
+Leaf : forall a : Type+ . Tree2 a %(construct Tree2)%
+     : forall a : Type+ . Tree1 a %(construct Tree1)%
+     : forall a : Type+ . Tree a %(construct Tree)%
+Nil : forall a : Type+ . List a %(construct List)%
+__/\__ : Unit * Unit ->? Unit %(fun)%
+__<=>__ : Unit * Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=>__ : Unit * Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__\/__ : Unit * Unit ->? Unit %(fun)%
+__if__ : Unit * Unit ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+def__ : forall a : Type . a ->? Unit %(fun)%
+false : Unit %(fun)%
+head : forall a : Type+ .
+         Tree2 a -> Tree a %(select from Tree2 constructed by
+                          Branch : forall a : Type+ . Tree a * Tree2 a -> Tree2 a)%
+     : forall a : Type+ .
+         Tree1 a -> Tree a %(select from Tree1 constructed by
+                          Branch : forall a : Type+ . Tree a * Tree1 a -> Tree1 a)%
+     : forall a : Type+ .
+         Tree a -> Tree a %(select from Tree constructed by
+                         Branch : forall a : Type+ . Tree a * Tree a -> Tree a)%
+     : forall a : Type+ . List a -> a %(select from List constructed by
+                                     Cons : forall a : Type+ . a * List a -> List a)%
+if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
+not__ : Unit ->? Unit %(fun)%
+rek : forall a : Type+ . even2 a -> odd2 a %(construct odd2)%
+    : forall a : Type+ . even a -> odd a %(construct odd)%
+    : forall a : Type+ . odd a -> even a %(construct even)%
+tail : forall a : Type+ .
+         Tree2 a -> Tree2 a %(select from Tree2 constructed by
+                           Branch : forall a : Type+ . Tree a * Tree2 a -> Tree2 a)%
+     : forall a : Type+ .
+         Tree1 a -> Tree1 a %(select from Tree1 constructed by
+                           Branch : forall a : Type+ . Tree a * Tree1 a -> Tree1 a)%
+     : forall a : Type+ .
+         Tree a -> Tree a %(select from Tree constructed by
+                         Branch : forall a : Type+ . Tree a * Tree a -> Tree a)%
+     : forall a : Type+ .
+         List a -> List a %(select from List constructed by
+                         Cons : forall a : Type+ . a * List a -> List a)%
+true : Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 'b'
 *** Hint 2.5, is type variable 'a'
