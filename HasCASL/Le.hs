@@ -22,11 +22,10 @@ import Result
 
 data ClassInfo = ClassInfo { superClasses :: [ClassId]
 			   , classDefn :: Maybe Class
-			   , instances :: [Qual Pred]
 			   } deriving (Show, Eq)
 
 newClassInfo :: ClassInfo
-newClassInfo = ClassInfo [] Nothing []
+newClassInfo = ClassInfo [] Nothing
 
 -----------------------------------------------------------------------------
 
@@ -36,11 +35,23 @@ type ClassMap = FiniteMap ClassId ClassInfo
 -- typeInfo
 -----------------------------------------------------------------------------
 
--- data TypeInfo = TypeInfo { 
+data GenKind = Free | Generated | Loose deriving (Show, Eq) 
 
+data TypeDefn = NoTypeDefn
+              | SubTypeDefn TypeId Type Formula 
+	      | DatatypeDefn GenKind -- ...
+	      | AliasTypeDefn TypeScheme
+	      | TypeVarDefn deriving (Show, Eq)
+
+data TypeInfo = TypeInfo { typeKind :: Kind
+			 , otherTypeKinds :: [Kind]
+			 , superTypes :: [Type]
+			 , typeDefn :: TypeDefn
+			 } deriving (Show, Eq)
+ 
 -----------------------------------------------------------------------------
 
-type TypeKinds = FiniteMap TypeId [Kind]
+type TypeKinds = FiniteMap TypeId TypeInfo
 
 -----------------------------------------------------------------------------
 -- assumptions

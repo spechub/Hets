@@ -37,11 +37,14 @@ addTypeKind :: Id -> Kind -> State Env ()
 addTypeKind t k = 
     do tk <- getTypeKinds
        case lookupFM tk t of
-            Just ks -> let ds = eqKindDiag k $ head ks in
+	      Nothing -> putTypeKinds $ addToFM tk t 
+			 $ TypeInfo k [] [] NoTypeDefn
+	      Just (TypeInfo ok ks sups defn) -> 
+		  let ds = eqKindDiag k ok in
 			  if null ds then 
-			     putTypeKinds $ addToFM tk t (k:ks)
+			     putTypeKinds $ addToFM tk t 
+					      $ TypeInfo ok (k:ks) sups defn
 			     else appendDiags ds
-	    _ -> putTypeKinds $ addToFM tk t [k]
 
 anaTypeItem :: Instance -> TypeItem -> State Env ()
 anaTypeItem inst (TypeDecl pats kind _) = 

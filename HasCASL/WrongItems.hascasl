@@ -1,3 +1,6 @@
 class x = y = z
 op a:? b
 op a: ? b
+var a+ : Type
+var <
+var -

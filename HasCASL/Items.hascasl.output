@@ -1,1 +1,3 @@
-type **
+type ** :Type ->Type ->Type
+var a:{_ < c}
+var {a} : c -> d

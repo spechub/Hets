@@ -108,7 +108,9 @@ anaTypeVarDecl(TypeArg t k _ _) =
     do nk <- anaKind k
        addTypeKind t k
        addTypeVar t
--- ------------------------------------------------------------------------------ ClassItem
+
+-- ----------------------------------------------------------------------------
+-- ClassItem
 -- ----------------------------------------------------------------------------
 
 anaAnnotedClassItem :: Instance -> Annoted ClassItem -> State Env ()

@@ -11,7 +11,7 @@ Type Constructors
 [__] :a ->b
 a__b :a ->b
 t :a
-x :({_ < t},b,a)
+x :(a,{_ < t},b)
 y :Type
 Type Variables : (x,y)
 Assumptions
