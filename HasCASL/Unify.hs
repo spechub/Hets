@@ -18,7 +18,6 @@ import Common.PrettyPrint
 import Common.Id
 import HasCASL.Le
 import Common.Lib.State
-import Common.Lib.Parsec
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
@@ -191,14 +190,10 @@ instance Unifiable Type where
 			    "is not unifiable with type" t2
 
 showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
-showPrettyWithPos a = let p = getMyPos a 
-			  s = ("'" ++) . showPretty a . ("'" ++)
-			  n = sourceName p in 
-    if nullPos == p then s else s . (" (" ++) .
-       (if null n then id else (n ++) . (", " ++))
-       . shows (sourceLine p)
-       . ("." ++) . shows (sourceColumn p)
-       .  (")" ++) 
+showPrettyWithPos a =  let p = getMyPos a in
+	showChar '\'' . showPretty a . showChar '\'' 
+           . noShow (nullPos == p) (showChar ' ' . 
+				     showParen True (showPos p))
 
 uniResult :: (PrettyPrint a, PosItem a, PrettyPrint b, PosItem b) =>
 	      String -> a -> String -> b -> Result Subst
