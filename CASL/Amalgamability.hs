@@ -16,7 +16,8 @@ Portability :  portable
 TODO:
 
 * the rest of the algorithm
-
+* optimisations in congruentClosure
+* optimisations in the whole algorithm
 
 -}
 
@@ -263,26 +264,26 @@ admissible simeq (n1, s1, _) (n2, _, s2) =
 
 -- | Compute the set of all the loopless, admissible
 -- words over given set of embeddings.
-embWords :: [DiagEmb]         -- ^ the embeddings
+looplessWords :: [DiagEmb]         -- ^ the embeddings
 	 -> EquivRel DiagSort -- ^ the \simeq relation that defines admissibility
 	 -> [DiagEmbWord]
-embWords embs simeq =
+looplessWords embs simeq =
     let -- generate the list of all loopless words over given alphabet
 	-- with given suffix
-        embWords' suff@(_ : _) embs pos | pos >= length embs = [suff]
-	embWords' suff@(e : _) embs pos | otherwise = 
+        looplessWords' suff@(e : _) embs pos | pos >= length embs = [suff]
+					     | otherwise = 
 	    let emb = embs !! pos
 		embs' = embs \\ [emb]
 		ws = if admissible simeq emb e
-		       then embWords' (emb : suff) embs' 0
+		       then looplessWords' (emb : suff) embs' 0
 		       else []
-	    in ws ++ (embWords' suff embs (pos + 1))
-	embWords' [] embs pos | pos >= length embs = []
-	embWords' [] embs pos | otherwise = 
+	    in ws ++ (looplessWords' suff embs (pos + 1))
+	looplessWords' [] embs pos | pos >= length embs = []
+				   | otherwise = 
 	    let emb = embs !! pos
 		embs' = embs \\ [emb]
-	    in (embWords' [emb] embs' 0) ++ (embWords' [] embs (pos + 1))
-    in embWords' [] embs 0
+	    in (looplessWords' [emb] embs' 0) ++ (looplessWords' [] embs (pos + 1))
+    in looplessWords' [] embs 0
 
 
 -- | Return the codomain of an embedding path.
@@ -395,7 +396,7 @@ cong_tau diag sink st =
 	    inRel st (wordDom w1) (wordDom w2) && inRel st (wordCod w1) (wordCod w2)
 
 	embs = sinkEmbs diag sink
-	words = embWords embs st
+	words = looplessWords embs st
 	rel = map (\w -> (w, w)) words
 	rel' = mergeEquivClassesBy domCodSimeq rel
     in taggedValsToEquivClasses rel'
@@ -478,39 +479,59 @@ finiteAdm_simeq embs simeq =
     in embWords' [] embs 0
 
 
-{-
--- TODO: this code will be used to compute \cong relation
+-- | Compute the \cong relation given its (finite) domain
+cong :: CASLDiag
+     -> [DiagEmbWord]     -- ^ the Adm_\simeq set (the domain of \cong relation)
+     -> EquivRel DiagSort -- ^ the \simeq relation
+     -> EquivRel DiagEmbWord
+cong diag adm simeq =
     let -- domCodEqual: check that domains and codomains of given words are equal
         domCodEqual w1 w2 = 
 	       wordDom w1 == wordDom w2 && wordCod w1 == wordCod w2
 
 	-- diagRule: the Diag rule
 	diagRule [(n1, s11, s12)] [(n2, s21, s22)] =
-	    isMorph diag (n1, s11) (n2, s21) &&
-	    isMorph diag (n1, s12) (n2, s22)
+	    isMorph diag (n1, s11) (n2, s21) && isMorph diag (n1, s12) (n2, s22) ||
+	    isMorph diag (n2, s21) (n1, s11) && isMorph diag (n2, s22) (n1, s12) 
 	diagRule _ _ = False
 
-	-- comp: the Comp rule works for words 1 and 2-letter long
+	-- compRule: the Comp rule works for words 1 and 2-letter long
 	-- with equal domains and codomains
-        comp w1@[_] w2@[_, _] = domCodEqual w1 w2
-	comp w1@[_, _] w2@[_] = domCodEqual w1 w2
-	comp _ _ = False
+        compRule w1@[_] w2@[_, _] = domCodEqual w1 w2
+	compRule w1@[_, _] w2@[_] = domCodEqual w1 w2
+	compRule _ _ = False
 
         -- fixCongLc: apply Cong and Lc rules until a fixpoint is reached
 	fixCongLc rel =
-	    let rel' = (leftCancellableClosure . congruentClosure st) rel
+	    let rel' = (leftCancellableClosure . congruentClosure simeq) rel
 	    in if rel == rel' then rel else fixCongLc rel'
 
 	-- compute the relation
-	em = embs diag
-	words = embWords em simeq
-	rel = map (\w -> (w, w)) words
+	rel = map (\w -> (w, w)) adm
 	rel' = mergeEquivClassesBy diagRule rel
-	rel'' = mergeEquivClassesBy comp rel'
-    in taggedValsToEquivClasses rel''
--}
+	rel'' = mergeEquivClassesBy compRule rel'
+	rel''' = fixCongLc rel''
+    in taggedValsToEquivClasses rel'''
 
 
+-- | Compute the \cong^R relation
+congR :: CASLDiag
+      -> EquivRel DiagSort -- ^ the \simeq relation
+      -> EquivRel DiagEmbWord
+congR diag simeq =
+    cong diag (looplessWords (embs diag) simeq) simeq
+
+
+-- | Convert a word to a list of sorts that are embedded 
+wordToEmbPath :: DiagEmbWord
+	      -> [SORT]
+wordToEmbPath [] = []
+wordToEmbPath ((_, s1, s2) : embs) = 
+    let rest [] = []
+	rest ((_, s, _) : embs) = (rest embs) ++ [s]
+    in (rest embs) ++ [s1, s2]
+
+    
 -- | The amalgamability checking function for CASL. 
 ensuresAmalgamability :: CASLDiag        -- ^ the diagram to be checked;
 					 -- must already be extended with the node
@@ -554,6 +575,32 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) =
 					    -- 3. Check if the set Adm_\simeq is finite.
 					    case mas of 
 						 Just as -> do --warning DontKnow ("Adm_simeq: " ++ (showPretty as "")) nullPos -- test
-							       return DontKnow -- TODO
-						 Nothing -> return DontKnow -- TODO
+							       -- TODO: 4. check the colimit thinness
+                                                               let c = cong diag as s
+                                                               -- 5. Check the cell condition in its full generality.
+							       -- warning DontKnow ("cong: " ++ (showPretty c "")) nullPos -- test
+                                                               case subRelation ct c of
+                                                                    Just (w1, w2) -> let rendEmbPath [] = []
+                                                                                         rendEmbPath (h : w) = 
+                                                                                             foldl (\t -> \s -> t ++ " < " ++ renderText Nothing (printText s)) 
+                                                                                                   (renderText Nothing (printText h)) w
+                                                                                         word1 = rendEmbPath (wordToEmbPath w1)
+                                                                                         word2 = rendEmbPath (wordToEmbPath w2)
+                                                                                     in do return (No ("embedding paths \n    " ++ word1 ++
+										  		       "\nand\n    " ++ word2 ++ "\nmight be different"))
+							            Nothing -> do return Yes 
+						 Nothing -> do {-let e = embs diag
+								   lw = looplessWords e s
+							       warning DontKnow ("Loopless: " ++ (showPretty lw "")) nullPos -- test
+							       return DontKnow-}
+							       let cR = congR diag s
+							       --warning DontKnow ("cong^R: " ++ (showPretty cR "")) nullPos -- test
+							       --warning DontKnow ("#eqcls: " ++ (showPretty (length cR) "")) nullPos -- test
+							       --return DontKnow
+							       -- 6. Check the restricted cell condition. If it holds then the
+							       -- specification is correct. Otherwise proof obligations need to 
+							       -- be generated.
+							       case subRelation ct cR of 
+								    Just _ -> do return DontKnow -- TODO: generate proof obligations
+								    Nothing -> do return Yes
 
