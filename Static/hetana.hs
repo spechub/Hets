@@ -7,11 +7,12 @@ import Comorphisms.LogicGraph
 import Static.AnalysisLibrary
 import System.IO
 import Static.DotGraph
+import Static.DevGraph
 import Options
 
 proceed :: String -> IO()
 proceed fname = do
-  res <- anaFile logicGraph defaultLogic defaultHetcatsOpts fname
+  res <- anaFile logicGraph defaultLogic defaultHetcatsOpts emptyLibEnv fname
   case res of
     Just(_,_,dg,_) -> do
       putStrLn ("Successfully analyzed.")
