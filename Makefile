@@ -109,6 +109,13 @@ all: hets
 hets: $(sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
+hets-opt: $(sources)
+	$(MAKE) distclean
+	$(MAKE) hets-optimized
+
+hets-optimized: $(sources)
+	$(HC) --make -O -o $@ hets.hs $(HC_OPTS)
+
 hets-old: $(objects)
 	$(RM) $@
 	$(HC) -o hets $(HC_OPTS) $(objects)
