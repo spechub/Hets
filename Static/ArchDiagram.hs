@@ -10,6 +10,9 @@
    Portability :  non-portable (Logic)
 
    Data types and functions for architectural diagrams.
+
+   TODO:
+   * add description parameter to extendDiagram* functions
 -}
 
 module Static.ArchDiagram 
@@ -33,10 +36,11 @@ import qualified Common.Lib.Map as Map
 -- * Types
 -- (as defined for extended static semantics in Chap. III:5.6.1)
 
-data DiagNodeLab = DiagNode { dn_sig :: NodeSig } 
+data DiagNodeLab = DiagNode { dn_sig :: NodeSig,
+			      dn_desc :: String } 
 		   deriving Show
 emptyDiagNodeLab :: AnyLogic -> DiagNodeLab
-emptyDiagNodeLab l = DiagNode { dn_sig = EmptyNode l }
+emptyDiagNodeLab l = DiagNode { dn_sig = EmptyNode l, dn_desc = "" }
 
 data DiagLinkLab = DiagLink { dl_morphism :: GMorphism }
 		   deriving (Eq, Show)
@@ -78,7 +82,7 @@ emptyExtStUnitCtx = (emptyStBasedUnitCtx, emptyDiag)
 -- PrettyPrint
 instance PrettyPrint Diag where
     printText0 ga diag = 
-	let gs (n, DiagNode {dn_sig = nsig}) = 
+	let gs (n, DiagNode {dn_sig = nsig, dn_desc = ""}) = 
 		(n, getSig nsig)
         in ptext "nodes: " 
 	   <+> (printText0 ga (map gs (labNodes diag)))
@@ -154,10 +158,11 @@ extendDiagram :: LogicGraph
 	      -> Diag          -- ^ the diagram to be extended
 	      -> [DiagNodeSig] -- ^ the nodes which should be linked to the new node
 	      -> NodeSig       -- ^ the signature with which the new node should be labelled
+	      -> String        -- ^ the node description (for diagnostics)
 	      -> Result (DiagNodeSig, Diag)
 -- ^ returns the new node and the extended diagram
-extendDiagram lgraph diag srcNodes newNodeSig = 
-  do let nodeContents = DiagNode {dn_sig = newNodeSig}
+extendDiagram lgraph diag srcNodes newNodeSig desc = 
+  do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
 	 [node] = newNodes 0 diag
 	 diag' = insNode (node, nodeContents) diag
 	 newDiagNode = Diag_node_sig node newNodeSig
@@ -176,7 +181,7 @@ extendDiagramRev :: LogicGraph
 		 -> Result (DiagNodeSig, Diag)
 -- ^ returns the new node and the extended diagram
 extendDiagramRev lgraph diag targetNodes newNodeSig = 
-  do let nodeContents = DiagNode {dn_sig = newNodeSig}
+  do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = ""}
 	 [node] = newNodes 0 diag
 	 diag' = insNode (node, nodeContents) diag
 	 newDiagNode = Diag_node_sig node newNodeSig
@@ -200,7 +205,7 @@ extendDiagramWithMorphism :: Pos           -- ^ the position (for diagnostics)
 extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) morph =
   if (getSig nsig) == (dom Grothendieck morph) then
      do (targetSig, dg') <- extendDGraph dg nsig morph DGTranslation -- TODO: parameterised origin
-	let nodeContents = DiagNode {dn_sig = targetSig}
+	let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = ""}
 	    [node] = newNodes 0 diag
  	    diag' = insNode (node, nodeContents) diag
 	    diag'' = insEdge (n, node, DiagLink { dl_morphism = morph }) diag'
@@ -225,7 +230,7 @@ extendDiagramWithMorphismRev :: Pos           -- ^ the position (for diagnostics
 extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig) morph =
   if (getSig nsig) == (cod Grothendieck morph) then
      do (sourceSig, dg') <- extendDGraphRev dg nsig morph DGTranslation -- TODO: parameterised origin
-	let nodeContents = DiagNode {dn_sig = sourceSig}
+	let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = ""}
 	    [node] = newNodes 0 diag
  	    diag' = insNode (node, nodeContents) diag
 	    diag'' = insEdge (node, n, DiagLink { dl_morphism = morph }) diag'
@@ -300,3 +305,12 @@ homogeniseEdges targetLid edges =
 				   ces <- convEdges es
 				   return (ce : ces)
        convEdges edges
+
+
+-- | Create a graph containing descriptions of nodes and edges.
+diagDesc :: Diag 
+	 -> Diagram String String
+diagDesc diag =
+    let insNodeDesc g (n, DiagNode { dn_desc = desc }) =
+	    if desc == "" then g else insNode (n, desc) g
+    in foldl insNodeDesc Graph.empty (labNodes diag)
