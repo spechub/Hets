@@ -88,8 +88,12 @@ type Diagram object morphism = Graph object morphism
 -- | Amalgamability analysis might be undecidable, so we need
 -- a special type for the result of ensures_amalgamability
 data Amalgamates = Yes
-		 | No String -- ^ failure description
-		 | DontKnow 
+		 | No String       -- ^ failure description
+		 | DontKnow String -- ^ the reason for unknown status
+-- | The default value for 'DontKnow' amalgamability result
+defaultDontKnow :: Amalgamates
+defaultDontKnow = DontKnow "Unable to assert that amalgamability is ensured"
+
 
 -- languages, define like "data CASL = CASL deriving Show" 
 
