@@ -162,14 +162,19 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs _) =
        case m of 
 	      Nothing -> return ()
 	      Just i -> 
-		  do newAlts <- fromReadR [] $ anaAlts (TypeName i k 0) 
+		  do let dt = TypeName i k 0
+                     newAlts <- fromReadR [] $ anaAlts dt 
 				$ map item alts
-		     mapM_ ( \ (Construct c tc sels) -> do
-			     addOpId c tc [] (ConstructData i)
-			     mapM_ ( \ (Select s ts) -> 
-				     addOpId s ts [] (SelectData [c] i)
+		     mapM_ ( \ (Construct c tc p sels) -> do
+			     addOpId c (simpleTypeScheme $ 
+					getConstrType dt p tc) 
+			                [] (ConstructData i)
+			     mapM_ ( \ (Select s ts pa) -> 
+				     addOpId s (simpleTypeScheme $ 
+						getSelType dt pa ts) 
+				     [] (SelectData [c] i)
 			           ) sels) newAlts
-		     addTypeId (DatatypeDefn genKind newAlts) inst k i 
+		     addTypeId (DatatypeDefn genKind [] newAlts) inst k i 
 
 anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, TypeScheme)
 anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =

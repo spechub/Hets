@@ -43,22 +43,29 @@ instance PrettyPrint TypeDefn where
 					   <+> printText0 ga t 
 					   <+> text dotS
 					   <+> printText0 ga f)
-    printText0 ga (DatatypeDefn k alts)  = ptext " %[" <>
-	let om = ptext typeS <+> ptext place <+> ptext defnS $$ 
+    printText0 ga (DatatypeDefn k args alts)  = ptext " %[" <>
+	let om = ptext typeS <+> ptext place <+> printList0 ga args 
+		 <+> ptext defnS $$ 
 		 vcat (map (printText0 ga) alts)
 	    in (case k of
 		Loose -> empty
 		Free -> ptext freeS <> space
-		Generated -> ptext generatedS<> space) <> om <> ptext "]%"
+		Generated -> ptext generatedS <> space) <> om <> ptext "]%"
 
 instance PrettyPrint AltDefn where
-    printText0 ga (Construct i sc sels) = 
-	printText0 ga i <+> colon <+> printText0 ga sc
+    printText0 ga (Construct i ts p sels) = 
+	printText0 ga i <+> colon 
+	<+> listSep_text (space<>ptext funS<>space) ga ts <+>
+	    ptext (case p of 
+		   Partial -> funS ++ quMark
+		   Total -> funS) <+> ptext place 
 	<+> hcat (map (parens . printText0 ga) sels) 
 
 instance PrettyPrint Selector where
-    printText0 ga (Select i sc) = 
-	printText0 ga i <+> colon <+> printText0 ga sc
+    printText0 ga (Select i t p) = 
+	printText0 ga i <+> (case p of 
+			     Partial -> ptext ":?"
+			     Total -> colon) <+> printText0 ga t
 
 instance PrettyPrint TypeInfo where
     printText0 ga (TypeInfo k ks sups defn) =

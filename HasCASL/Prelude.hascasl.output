@@ -16,16 +16,16 @@ __-->?__ : Cpo- -> Cpo+ -> Pcpo
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 bool : (Type, Flatcpo) %[free type __ ::=
-			      true : bool
-			      false : bool]%
+			      true : -> __
+			      false : -> __]%
 c : Cpo %(var)%
 c-->d : Type < c -->? d
 c-->?d : Type < c ->? d
 d : Cpo %(var)%
 f : Flatcpo %(var)%
 logical : Type %[free type __ ::=
-		      true : logical
-		      false : logical]%
+		      true : -> __
+		      false : -> __]%
 nat : (Type, Flatcpo)
 p : Pcpo %(var)%
 s : Type < ? s %(var)%

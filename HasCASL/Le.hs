@@ -38,15 +38,16 @@ type ClassMap = Map ClassId ClassInfo
 
 data GenKind = Free | Generated | Loose deriving (Show, Eq) 
 
-data AltDefn = Construct UninstOpId TypeScheme [Selector] 
+data AltDefn = Construct UninstOpId [Type] Partiality [Selector] 
+               -- argument types
 	       deriving (Show, Eq) 
 
-data Selector = Select UninstOpId TypeScheme 
+data Selector = Select UninstOpId Type Partiality -- only result type
 		deriving (Show, Eq) 
 
 data TypeDefn = NoTypeDefn
               | Supertype Vars Type Formula 
-	      | DatatypeDefn GenKind [AltDefn]
+	      | DatatypeDefn GenKind [TypeArg] [AltDefn]
 	      | AliasTypeDefn TypeScheme
 	      | TypeVarDefn deriving (Show, Eq)
 
