@@ -4,14 +4,12 @@ import System
 import List
 
 import Parsec
-import ParsecPerm
-import CaslLanguage
+import qualified CaslLanguage as L(casl_id, semi, whiteSpace)
 import Anno_Parser
 
 import Id
 
-import AS_Annotation
-import Token
+import Token(parseId)
 
 import Print_HetCASL
 
@@ -27,7 +25,7 @@ testP p s =  case (parse p "" s) of
 			   }
 	     Right x  -> print x
 
-testPL par inp = testP (do { whiteSpace
+testPL par inp = testP (do { L.whiteSpace
 			   ; res <- par 
 			   ; eof
 			   ; return res
@@ -40,7 +38,7 @@ parseFile par name = do { inp <- readFile name
 					}
 			  Right x  -> print $ printText0_eGA x
 			}
-    where parL p = do { whiteSpace
+    where parL p = do { L.whiteSpace
 		      ; res <- p 
 		      ; eof
 		      ; return res
@@ -61,12 +59,12 @@ testFileC name = do { inp <- readFile name
     where testLine line = do { putStr "** Input was: "
 			     ; putStrLn line
 			     ; putStr "** Result(KL) is: "
-			     ; test_id casl_id line
+			     ; test_id L.casl_id line
 			     ; putStr "** Result(CM) is: "
 			     ; test_id parseId line
 			       }
 
-testData p s = parse (do {whiteSpace ; res <- p; eof ; return res}) "" s
+testData p s = parse (do {L.whiteSpace ; res <- p; eof ; return res}) "" s
 
 test_id p inp = case (testData p inp) of 
 		Left err -> print err
@@ -86,7 +84,7 @@ testFileCS name = do inp <- readFile name
 		                "\nDiffs: " ++ show dif
 		    
     where testLine (ma,dif) line = 
-	      let res1 = testData casl_id line
+	      let res1 = testData L.casl_id line
 		  res2 = testData parseId line
 		  (ma1,dif1,out) = comp res1 res2 line
 	      in ((ma+ma1,dif+dif1),out)
@@ -150,5 +148,5 @@ main = do { as <- getArgs
 			    }
 
 	      
-testId = testPL (sepBy casl_id semi) 
+testId = testPL (sepBy L.casl_id L.semi) 
 	 "__++__ ; __+*[y__,a_l'__,4]__ ; {__}[__] ; __a__b[__z]" 
