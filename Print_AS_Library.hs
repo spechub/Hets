@@ -88,22 +88,25 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
     printText0 ga (Download_items aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = fsep $ punctuate comma $ map (printText0 ga) ab
-	in (hang (ptext "from" <+> aa' <+> ptext "get") 4 ab') <+> ptext "\n"
+	in (hang (ptext "from" <+> aa' <+> ptext "get") 4 ab') <> ptext "\n"
     printText0 ga (AS_Library.Logic aa _) =
 	let aa' = printText0 ga aa
 	in ptext "logic" <+> aa' 
 
     printLatex0 ga (Spec_defn aa ab ac _) =
 	let aa' = simple_id_latex aa
-	    ab' = printLatex0 ga ab
+	    ab' = setTab_latex <> (tabbed_nest_latex $ printLatex0 ga ab)
 	    spec_head = (hang_latex (hc_sty_hetcasl_keyword "spec" 
-				         <\+> aa' <\+> ab') 
+				         <\+> setTab_latex <> aa' <\+> ab') 
 			     2 equals_latex)
 	    ac' = spAnnotedPrint printLatex0 (<\+>) ga (spec_head) ac
 	in ac' $$ latexEnd 
     printLatex0 ga (View_defn aa ab ac ad _) =
 	let aa' = simple_id_latex aa
-	    ab' = printLatex0 ga ab
+	    ab' = case printLatex0 ga ab of
+		  ab_d 
+		      | isEmpty ab_d -> empty
+		      | otherwise    -> setTab_latex <> tabbed_nest_latex ab_d
 	    condGrpSp = condBracesGroupSpec printLatex0 sp_braces_latex ga
 	    (frm,to) = case ac of 
 		       AS_Struct.View_type vaa vab _ -> 
@@ -111,7 +114,28 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 	    ad' = cat $ punctuate (comma_latex<>space_latex) $ 
 	                 map (printLatex0 ga) ad
 	    eq' = if null ad then empty else equals_latex
-	in (hang_latex 
+	    vhead = hc_sty_hetcasl_keyword "view" <\+> 
+		   setTab_latex <> aa' <\+> ab' 
+	    head_with_type = tab_hang_latex 
+			            (tab_hang_latex vhead 8 
+				              (colon_latex <~> setTab_latex 
+					       <> frm 
+					       <\+> hc_sty_plain_keyword "to"))
+		                    8
+		                    to
+	    in (if isEmpty eq' 
+		then head_with_type
+		else (tab_hang_latex
+		        (tab_hang_latex
+		           head_with_type
+		           8 eq')
+		        8
+		        ad')
+	       ) 
+		   $$ latexEnd
+
+
+{- (hang_latex 
 	        (hang_latex 
 		     (hang_latex 
 		          (hang_latex 
@@ -127,7 +151,8 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 		     eq') 
 	        4 
 	        ad') 
-	    $$ latexEnd
+		-}
+
     printLatex0 ga (Arch_spec_defn aa ab _) =
 	let aa' = simple_id_latex aa
 	    ab' = printLatex0 ga ab
@@ -147,9 +172,10 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 	let aa' = printLatex0 ga aa
 	    ab' = fsep_latex $ punctuate comma_latex $ 
 	                       map (printLatex0 ga) ab
-	in (hc_sty_hetcasl_keyword "from" <\+> aa' 
+	in (hang_latex (hc_sty_hetcasl_keyword "from" <\+> setTab_latex <>aa' 
 			<\+> hc_sty_plain_keyword "get") 
-	   $$ hetcasl_nest_latex ab' <> latex_macro "\n"
+	               8 
+	               (tabbed_nest_latex ab')) <> latex_macro "\n"
     printLatex0 ga (AS_Library.Logic aa _) =
 	let aa' = printLatex0 ga aa
 	in hc_sty_plain_keyword "logic" <\+> aa' 

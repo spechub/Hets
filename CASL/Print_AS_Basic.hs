@@ -16,7 +16,7 @@
 module Print_AS_Basic where
 
 -- debugging
--- import IOExts (trace)
+import IOExts (trace)
 
 import List (mapAccumL)
 
@@ -78,11 +78,15 @@ instance PrettyPrint BASIC_ITEMS where
 
     printLatex0 ga (Sig_items s) = printLatex0 ga s 
     printLatex0 ga (Free_datatype l _) = 
-	hang_latex (hc_sty_plain_keyword ("free type"++ pluralS l)) 9 $ 
-	     semiAnno_latex printLatex0 ga l
+	hang_latex (hc_sty_plain_keyword "free"
+		    <~> setTab_latex
+		    <> hc_sty_plain_keyword ("type"++ pluralS l)) 9 $
+	           tabbed_nest_latex $ semiAnno_latex printLatex0 ga l
     printLatex0 ga (Sort_gen l _) = 
-	hang_latex (hc_sty_plain_keyword generatedS <\+> condTypeS) 9 $ 
-	     condBraces (vcat (map (printLatex0 ga) l))
+	hang_latex (hc_sty_plain_keyword generatedS 
+		    <~> setTab_latex<> condTypeS) 9 $ 
+	           tabbed_nest_latex $ condBraces  
+				  (vcat (map (printLatex0 ga) l))
 	where condTypeS = 
 		  if isOnlyDatatype then 
 		     hc_sty_plain_keyword (typeS++pluralS l) 
@@ -123,17 +127,17 @@ instance PrettyPrint SIG_ITEMS where
 	text typeS<>pluralS_doc l <+> semiAnno printText0 ga l 
 
     printLatex0 ga (Sort_items l _) =  
-	hc_sty_casl_keyword (sortS++pluralS l) <\+> 
-	semiAnno_latex printLatex0 ga l
+	hc_sty_casl_keyword (sortS++pluralS l) <\+>
+	set_tabbed_nest_latex (semiAnno_latex printLatex0 ga l)
     printLatex0 ga (Op_items l _) =  
 	hc_sty_casl_keyword (opS++pluralS l)   <\+> 
-	semiAnno_latex printLatex0 ga l 
+	set_tabbed_nest_latex (semiAnno_latex printLatex0 ga l) 
     printLatex0 ga (Pred_items l _) =  
 	hc_sty_casl_keyword (predS++pluralS l) <\+> 
-	semiAnno_latex printLatex0 ga l 
+	set_tabbed_nest_latex (semiAnno_latex printLatex0 ga l) 
     printLatex0 ga (Datatype_items l _) = 
 	hc_sty_casl_keyword (typeS++pluralS l) <\+> 
-	semiAnno_latex printLatex0 ga l 
+	set_tabbed_nest_latex (semiAnno_latex printLatex0 ga l) 
 
 instance PrettyPrint SORT_ITEM where
     printText0 ga (Sort_decl l _) = commaT printText0 ga l
@@ -178,15 +182,24 @@ instance PrettyPrint OP_ITEM where
 				  <+> printText0 ga t
 
     printLatex0 ga (Op_decl l t a _) = 
-	hang_latex (hang_latex (commaT_latex printLatex0 ga l) 
-	            9 
-	            (colon_latex <> printLatex0 ga t <> condComma)) 
-             9 $
-	       if na then empty 
-	       else commaT_latex printLatex0 ga a
-	where na = null a
-	      condComma = if na then empty
-			  else comma_latex
+	{-cat [ cat [commaT_latex printLatex0 ga l
+		  ,colon_latex <> printLatex0 ga t <> condComma] 
+            , if na then empty 
+	      else commaT_latex printLatex0 ga a
+	    ]-}
+        if na then ids_sig
+	else setTabWithSpaces_latex 4 
+		 <> 
+		 (tab_hang_latex ids_sig
+		                 4 $ commaT_latex printLatex0 ga a)
+	where ids_sig = setTabWithSpaces_latex 6 
+			<> tab_hang_latex (commaT_latex printLatex0 ga l) 
+	                                  6 
+	                                  (if na then sig 
+					   else sig <> comma_latex)
+	      sig = colon_latex <> printLatex0 ga t 
+	      na = null a
+
     printLatex0 ga (Op_defn n h t _) = printLatex0 ga n 
 				  <> printLatex0 ga h
                                   <\+> equals_latex
@@ -206,16 +219,16 @@ instance PrettyPrint OP_TYPE where
 
     printLatex0 ga (Total_op_type l s _) = 
 	(if null l then empty
-	 else space_latex 
-	      <> crossT_latex printLatex0 ga l 
-              <\+> hc_sty_axiom "\\rightarrow")
-	<\+> printLatex0 ga s
+	 else space_latex <>
+	      set_tabbed_nest_latex (crossT_latex printLatex0 ga l
+				     <\+> hc_sty_axiom "\\rightarrow"))
+				     <~> printLatex0 ga s
     printLatex0 ga (Partial_op_type l s _) = 
 	(if null l then hc_sty_axiom quMark 
-	 else space 
+	 else space_latex
               <> crossT_latex printLatex0 ga l 
 	      <\+> hc_sty_axiom ("\\rightarrow" ++ quMark))
-	<\+> printLatex0 ga s
+	<~> printLatex0 ga s
 
 instance PrettyPrint OP_HEAD where
     printText0 ga (Total_op_head l s _) = 
@@ -626,10 +639,6 @@ condPrint_Mixfix :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc) ->
 		    (Doc -> Doc) -> -- ^ a function that surrounds 
 				    -- the given Doc with appropiate 
 				    -- parens
-		    (Doc -> Doc) -> -- ^ a function that surrounds
-				    -- the given Doc with brackets 
-				    -- but adds newlines if Doc not fits 
-				    -- on one line like sp_brackets
 		    (Doc -> Doc -> Doc) -> -- ^ a beside with space 
 					   -- like <+> or <\+>
 		    ([Doc] -> Doc) -> -- ^ a list concat with space and 
@@ -641,13 +650,13 @@ condPrint_Mixfix :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc) ->
 			  -- comma seperated list like commaT 
 			  -- or commaT_latex
 		    GlobalAnnos -> Id -> [TERM] -> Doc
-condPrint_Mixfix pf parens_fun sp_brackets_fun 
+condPrint_Mixfix pf parens_fun
 		 beside_fun fsep_fun commaT_fun 
 		 ga i l =
     if isMixfix i then
        if length (filter isPlace tops) == length l then
-	  print_mixfix_appl pf parens_fun sp_brackets_fun 
-			    beside_fun fsep_fun commaT_fun ga i l
+	  print_mixfix_appl pf parens_fun 
+			    beside_fun fsep_fun ga i l
        else 
           print_prefix_appl parens_fun commaT_fun ga o' l
     else print_prefix_appl parens_fun commaT_fun ga o' l
@@ -657,12 +666,12 @@ condPrint_Mixfix pf parens_fun sp_brackets_fun
 
 condPrint_Mixfix_text :: GlobalAnnos -> Id -> [TERM] -> Doc
 condPrint_Mixfix_text =
-    condPrint_Mixfix printText0 parens sp_brackets 
+    condPrint_Mixfix printText0 parens 
 		     (<+>) fsep (commaT printText0)
 
 condPrint_Mixfix_latex :: GlobalAnnos -> Id -> [TERM] -> Doc
 condPrint_Mixfix_latex =
-    condPrint_Mixfix printLatex0 parens_latex sp_brackets_latex 
+    condPrint_Mixfix printLatex0 parens_latex 
 		     (<\+>) fsep_latex (commaT_latex printLatex0)
 
 -- printing consistent prefix application and predication
@@ -691,10 +700,6 @@ print_Literal :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc) ->
 		 (Doc -> Doc) -> -- ^ a function that surrounds 
 				 -- the given Doc with appropiate 
 				 -- parens
-		 (Doc -> Doc) -> -- ^ a function that surrounds
-				 -- the given Doc with brackets 
-				 -- but adds newlines if Doc not fits 
-				 -- on one line like sp_brackets
 		 (Doc -> Doc -> Doc) -> -- ^ a beside with space 
 					-- like <+> or <\+>
 		 ([Doc] -> Doc) -> -- ^ a list concat with space and 
@@ -706,16 +711,15 @@ print_Literal :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc) ->
 			  -- comma seperated list like commaT 
 			  -- or commaT_latex
 		 GlobalAnnos -> Id -> [TERM] -> Doc
-print_Literal pf parens_fun sp_brackets_fun 
+print_Literal pf parens_fun 
 	      beside_fun fsep_fun commaT_fun 
 	      ga li ts 
     | all (isSimple li) ts = case getLiteralType lmap li of
 			     _ -> condPrint_Mixfix pf parens_fun 
-				                   sp_brackets_fun 
 						   beside_fun fsep_fun 
 						   commaT_fun 
 						   ga li ts
-    | otherwise = condPrint_Mixfix pf parens_fun sp_brackets_fun 
+    | otherwise = condPrint_Mixfix pf parens_fun 
 		                   beside_fun fsep_fun commaT_fun 
 				   ga li ts
     where isSimple i t = case t of
@@ -733,11 +737,11 @@ print_Literal pf parens_fun sp_brackets_fun
 
 print_Literal_text :: GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal_text =
-    print_Literal printText0 parens sp_brackets (<+>) fsep (commaT printText0)
+    print_Literal printText0 parens (<+>) fsep (commaT printText0)
 
 print_Literal_latex :: GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal_latex =
-    print_Literal printLatex0 parens_latex sp_brackets_latex 
+    print_Literal printLatex0 parens_latex
 		  (<\+>) fsep_latex (commaT_latex printLatex0)
 
 
@@ -747,55 +751,60 @@ print_mixfix_appl :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc) ->
 		     (Doc -> Doc) -> -- ^ a function that surrounds 
 				     -- the given Doc with appropiate 
 				     -- parens
-		     (Doc -> Doc) -> -- ^ a function that surrounds
-				     -- the given Doc with brackets 
-				     -- but adds newlines if Doc not fits 
-				     -- on one line like sp_brackets
 		     (Doc -> Doc -> Doc) -> -- ^ a beside with space 
 					    -- like <+> or <\+>
 		     ([Doc] -> Doc) -> -- ^ a list concat with space and 
 				       -- fill the line policy  like
 				       -- fsep or fsep_latex
-		     (forall b . PrettyPrint b => 
-		          GlobalAnnos -> [b] -> Doc) -> 
-		          -- ^ a function that prints a nice 
-			  -- comma seperated list like commaT 
-			  -- or commaT_latex
 		     GlobalAnnos -> Id -> [TERM] -> Doc
-print_mixfix_appl pf parens_fun sp_brackets_fun 
-		  beside_fun fsep_fun commaT_fun ga oid l = 
-    ft `beside_fun` fsep_fun nlI 
-    <> c `beside_fun` fsep_fun nlT `beside_fun` lt
+print_mixfix_appl pf parens_fun 
+		  beside_fun fsep_fun 
+		  ga oid terms = 
+		      d_terms_b_comp <> c `beside_fun` d_terms_a_comp
     where (tops,cs) = case oid of Id x1 x2 _ -> (x1,x2)
-	  c = if null cs then empty 
-	      else sp_brackets_fun $ commaT_fun ga cs
-          (topsI,topsT) = splitMixToken tops
-	  lI = take (length $ filter isPlace topsI) l
-	  lT = drop (length $ filter isPlace topsI) l
-	  nlI = fillIn topsI' lI'
-	  nlT = fillIn topsT' lT'
+	  c = if null cs then text "" -- an empty String works for ASCII 
+				      -- and LaTeX ensuring a space after 
+				      -- the last token of the identifier 
+				      -- if the compound is empty
+	      else pf ga (Id [] cs [])
+          (tps_b_comp,places) = splitMixToken tops
+	  nr_places = length $ filter isPlace tps_b_comp
+	  (terms_b_comp,terms_a_comp) = splitAt nr_places terms
+	  d_terms_b_comp = fsep_fun (first_term 
+				     : fillIn tps_b_comp' terms_b_comp')
+	  d_terms_a_comp = fsep_fun (fillIn places' terms_a_comp'
+				     ++ [last_term])
 	  isL3 = length tops >= 3
-	  (topsI',lI',ft) = if isL3 && (isPlace $ head topsI) then
-			      (tail topsI,tail lI,
-			       condParensAppl pf parens_fun 
-			                      ga oid (head lI) (Just ALeft))
-			    else
-			      (topsI,lI,empty)
-	  (topsT',lT',lt) = if isL3 && 
-			       (not $ null topsT) && 
-                               (isPlace $ last topsT) 
-			    then
-			      (init topsT,init lT,
-			       condParensAppl pf parens_fun
-			                      ga oid (last lT) (Just ARight))
-			    else
-			      (topsT,lT,empty)
+	  tps_b_comp' :: [TokenOrPlace]
+	  terms_b_comp' :: [TERM]
+	  first_term    :: Doc
+	  (tps_b_comp',terms_b_comp',first_term) = 
+	      if isL3 && (isPlace $ head tps_b_comp) 
+	      then
+	         (tail tps_b_comp,
+		  tail terms_b_comp,
+		  condParensAppl pf parens_fun 
+		                 ga oid (head terms_b_comp)
+		                 (Just ALeft))
+	      else
+	         (tps_b_comp,terms_b_comp,empty)
+	  (places',terms_a_comp',last_term) = 
+	      if isL3 && (not $ null places)  
+	      then
+	         (init places,init terms_a_comp,
+		  condParensAppl pf parens_fun
+		                 ga oid (last terms_a_comp) 
+		                 (Just ARight))
+	      else
+	         (places,terms_a_comp,empty)
+	  fillIn :: [TokenOrPlace] -> [TERM] -> [Doc]
 	  fillIn tps ts = let (_,nl) = mapAccumL pr ts tps in nl
-	  pr [] top = ([], ptext $ showTok top "")
+	  pr :: [TERM] -> TokenOrPlace -> ([TERM],Doc)
+	  pr [] top = ([], pf ga top)
 	  pr tS@(t:ts) top | isPlace top = (ts,
 					    condParensAppl pf parens_fun
 					                   ga oid t Nothing)
-			   | otherwise   = (tS,ptext $ showTok top "")
+			   | otherwise   = (tS,pf ga top)
 
 condParensAppl :: (GlobalAnnos -> TERM -> Doc) -> 
 		  (Doc -> Doc) -> -- ^ a function that surrounds 
@@ -812,36 +821,33 @@ condParensAppl pf parens_fun ga o_i t mdir =
     Application _ [] _ -> t'
     Application o _ _ 
         -- ordinary appl (no place)
-	| isOrdAppl i_i -> ptext "%[Ord_Appl]%" <+> t' 
+	| isOrdAppl i_i -> t' 
 	-- postfix appl
-	| isOrdAppl o_i && isPostfix i_i -> ptext "%[OrdWithPost]%" <+> t' 
-	| isMixfix  o_i && isPostfix i_i -> ptext "%[MixWithPost]%" <+> t' 
+	| isOrdAppl o_i && isPostfix i_i -> t' 
+	| isMixfix  o_i && isPostfix i_i -> t' 
 	-- prefix appl w/o parens
-	| isOrdAppl o_i && isPrefix i_i  -> ptext "%[OrdWithPre]%" <+> t'
-	| isPostfix o_i && isPrefix i_i  -> parens t'
+	| isOrdAppl o_i && isPrefix i_i  -> t'
+	| isPostfix o_i && isPrefix i_i  -> parens_fun t'
 	-- infix appl (left and right arg/place)
-	| isInfix i_i && o_i == i_i -> ptext "%[Infix]%" <+>
+	| isInfix i_i && o_i == i_i -> 
 	    case mdir of
-		      Nothing -> condParensPrec parens_fun ga o_i i_i t' 
+		      Nothing -> condParensPrec 
 		      Just ALeft | isLAssoc amap o_i -> t'
 				 | otherwise -> parens_fun t'
 		      Just ARight | isRAssoc amap o_i -> t'
 				  | otherwise -> parens_fun t'
-	| otherwise -> condParensPrec parens_fun ga o_i i_i t'
-	where i_i = case o of
+	| otherwise -> condParensPrec 
+    	where i_i = case o of
 			  Op_name i          -> i
 			  Qual_op_name i _ _ -> i
+	      condParensPrec = case precRel (prec_annos ga) o_i i_i of
+			       Higher      -> parens_fun t'
+			       Lower       -> t'
+			       ExplGroup _ -> parens_fun t'
 	      amap = assoc_annos ga
     
     _ -> parens_fun t'
     where t' = pf ga t
-
-
-condParensPrec :: (Doc -> Doc) -> -- ^ a function that surrounds 
-				  -- the given Doc with appropiate 
-				  -- parens
-		  GlobalAnnos -> Id -> Id -> Doc -> Doc
-condParensPrec parens_fun ga o_i i_i t = parens_fun t -- TODO
 
 
 condParensImplEquiv :: (GlobalAnnos -> FORMULA -> Doc) -> 

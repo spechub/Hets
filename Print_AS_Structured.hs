@@ -121,15 +121,15 @@ instance PrettyPrint SPEC where
      
 
     printLatex0 ga (Basic_spec aa) =
-	hetcasl_nest_latex $ printLatex0 ga aa
+        tabbed_nest_latex $ nest_latex 8 $ printLatex0 ga aa
     printLatex0 ga (Translation aa ab) =
 	let aa' = condBracesTransReduct printLatex0 sp_braces_latex ga aa
 	    ab' = printLatex0 ga ab
-	in hang_latex aa' 8 ab'
+	in tab_hang_latex aa' 8 ab'
     printLatex0 ga (Reduction aa ab) =
 	let aa' = condBracesTransReduct printLatex0 sp_braces_latex ga aa
 	    ab' = printLatex0 ga ab
-	in hang_latex aa' 8 ab'
+	in tab_hang_latex aa' 8 ab'
     printLatex0 ga (Union aa _) = fsep_latex $ intersperse' aa 
 	where intersperse' [] = [] 
 	      intersperse' (x:xs) =
@@ -145,25 +145,32 @@ instance PrettyPrint SPEC where
 		    map (spAnnotedPrint printLatex0 (<\+>) ga 
 			        (hc_sty_hetcasl_keyword "then")) xs
     printLatex0 ga (Free_spec aa _) =
-	hang_latex (hc_sty_hetcasl_keyword "free") 8 $ 
-	     condBracesGroupSpec printLatex0 sp_braces_latex ga aa
+	tabbed_nest_latex (setTabWithSpaces_latex 8 <> 
+			   tab_hang_latex (hc_sty_hetcasl_keyword "free") 8  
+			                  (condBracesGroupSpec printLatex0 
+					               sp_braces_latex ga aa))
     printLatex0 ga (Local_spec aa ab _) =
 	let aa' = condBracesWithin printLatex0 sp_braces_latex ga aa
 	    ab' = condBracesWithin printLatex0 sp_braces_latex ga ab
 	in (hang_latex (hc_sty_plain_keyword "local") 8 aa') $$ 
 	   (hang_latex (hc_sty_plain_keyword "within") 8 ab')
     printLatex0 ga (Closed_spec aa _) =
-	hang_latex (ptext "closed") 8 $ 
-	     condBracesGroupSpec printLatex0 sp_braces_latex ga aa
+	tabbed_nest_latex (setTabWithSpaces_latex 8 <>
+			   tab_hang_latex (hc_sty_plain_keyword "closed") 8  
+			                  (condBracesGroupSpec printLatex0 
+                                                       sp_braces_latex ga aa))
     printLatex0 ga (Group aa _) =
 	printLatex0 ga aa
     printLatex0 ga (Spec_inst aa ab) =
-	let aa' = simple_id_latex aa
-	    ab' = print_fit_arg_list printLatex0 
-	                             sp_brackets_latex 
-				     sep_latex
-				     ga ab
-	in hetcasl_nest_latex (hang_latex aa' 8 ab')
+	let aa' = simple_id_latex aa 
+	    ab' = sep_latex (map (sp_brackets_latex.
+				  (\x -> casl_normal_latex "~" <>setTab_latex
+			           <>printLatex0 ga x)) ab)
+	in tabbed_nest_latex $ 
+	   if null ab 
+	   then aa' 
+	   else setTabWithSpaces_latex 8 
+			      <>tab_hang_latex (aa' <~> setTab_latex)  8 ab'
     printLatex0 ga (Qualified_spec ln asp _) =
 	hc_sty_plain_keyword "logic" <\+> 
             (printLatex0 ga ln) <> colon_latex $$ (printLatex0 ga asp)
@@ -240,8 +247,10 @@ instance PrettyPrint PARAMS where
 
     printLatex0 ga (Params aa) =
 	if null aa then empty
-	else sep_latex $ map (sp_brackets_latex.params_nest_latex. 
-			      (nest ((-5) * indent_mult)).(printLatex0 ga)) aa
+	else sep_latex $ 
+	              map (sp_brackets_latex.
+			   (\x -> casl_normal_latex "~" <>setTab_latex
+			          <>printLatex0 ga x)) aa
 
 instance PrettyPrint IMPORTED where
     printText0 ga (Imported aa) =
@@ -252,7 +261,7 @@ instance PrettyPrint IMPORTED where
 
     printLatex0 ga (Imported aa) =
 	if null aa then empty 
-	else hc_sty_plain_keyword "given" <\+> 
+	else hc_sty_plain_keyword "given" <~> setTab_latex <>
 		 (fsep_latex $ punctuate comma_latex $ 
 		             map (condBracesGroupSpec printLatex0 
 				      sp_braces_latex ga) aa)
