@@ -28,8 +28,6 @@ are also not renamed in DatatypeSens, because they are not used)
 
 
 terms: 
-avoid returning unresolved types (via recurse t) and terms
-that will cause runtime errors later on (MixAna.hs)
 
 polymorphic (and constrained) let bindings are not supported
 yet, because variables are monomorph

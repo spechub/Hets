@@ -226,6 +226,7 @@ resolver :: GlobalAnnos -> [Id] -> Term
 	 -> State Env (Maybe Term)
 resolver ga bs trm =
     do as <- gets assumps
+       oldDs <- gets envDiags
        ps@((_, _, m), _) <- gets preIds
        let ids = Map.keys as
            ks = Set.union (Set.fromList (tokStr exprTok: inS :
@@ -238,7 +239,8 @@ resolver ga bs trm =
        let Result ds mr = getResolved showPretty (posOfTerm trm) 
 			  toMixTerm chart
        addDiags ds
-       return mr
+       newDs <- gets envDiags
+       if length newDs > length oldDs then return Nothing else return mr
 
 builtinIds :: [Id]
 builtinIds = [unitId, parenId, tupleId, exprId, typeId, applId]

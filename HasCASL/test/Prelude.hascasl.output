@@ -41,19 +41,16 @@ op __res__ : s * t ->? s = \ (var x : s, var y : t) .! (var x : s)
 op fst : s * t ->? s = \ (var x : s, var y : t) .! (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
-. (fun __=__[s * t ->? _var_18] : forall s : Type . s * s ->? Unit)
-    (\ ((var x : s) : s, var y : t) . def (x res y),
-     \ ((var x : s) : s, var y : t) . (def y) und (def x))
 . (fun __=__[s * t ->? s] : forall s : Type . s * s ->? Unit)
     (op fst : s * t ->? s, op __res__ : s * t ->? s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred eq : forall s : Type . s * s
-. (fun __=__[_var_36 ->? Unit] : forall s : Type . s * s ->? Unit)
-    (\ (var x : _var_36) : _var_36
-       . (pred eq[_var_36] : forall s : Type . s * s)
-           (var x : _var_36, var x : _var_36),
-     op tt[_var_36] : forall s : Type . Pred s)
+. (fun __=__[_var_22 ->? Unit] : forall s : Type . s * s ->? Unit)
+    (\ (var x : _var_22) : _var_22
+       . (pred eq[_var_22] : forall s : Type . s * s)
+           (var x : _var_22, var x : _var_22),
+     op tt[_var_22] : forall s : Type . Pred s)
 . (fun __=__[s * s ->? s] : forall s : Type . s * s ->? Unit)
     (\ (var x : s, var y : s)
        . (op __res__ : s * t ->? s)
@@ -204,16 +201,13 @@ forall x : s; y : t
   . (fun __=__ : forall a : Type . a * a ->? Unit)
       ((op fst : s * t ->? s)(var x : s, var y : t),
        var x : s) %(def_fst)%
-(fun __=__[s * t ->? _var_18] : forall s : Type . s * s ->? Unit)
-  (\ ((var x : s) : s, var y : t) . def (x res y),
-   \ ((var x : s) : s, var y : t) . (def y) und (def x))
 (fun __=__[s * t ->? s] : forall s : Type . s * s ->? Unit)
   (op fst : s * t ->? s, op __res__ : s * t ->? s)
-(fun __=__[_var_36 ->? Unit] : forall s : Type . s * s ->? Unit)
-  (\ (var x : _var_36) : _var_36
-     . (pred eq[_var_36] : forall s : Type . s * s)
-         (var x : _var_36, var x : _var_36),
-   op tt[_var_36] : forall s : Type . Pred s)
+(fun __=__[_var_22 ->? Unit] : forall s : Type . s * s ->? Unit)
+  (\ (var x : _var_22) : _var_22
+     . (pred eq[_var_22] : forall s : Type . s * s)
+         (var x : _var_22, var x : _var_22),
+   op tt[_var_22] : forall s : Type . Pred s)
 (fun __=__[s * s ->? s] : forall s : Type . s * s ->? Unit)
   (\ (var x : s, var y : s)
      . (op __res__ : s * t ->? s)
@@ -266,21 +260,19 @@ free type bool
 	def(__res__(x, y))
 	def__(__res__(x, y))
 *** Error 65.59, unexpected mixfix token: und
-*** Error 65.18, unexpected term 'def (x res y)'
-*** Error 65.52, unexpected term '(def y) und (def x)'
 *** Hint 85.6, redeclared type 's'
 *** Error 85.6, merge: TypeVarDefn of 's'
 
 *** Error 85.11, illegal supertype for variable '? s'
 *** Hint 87.9, no type match for: all
-  with type: '_var_63 ->? Unit ->? Unit' (87.14)
+  with type: '_var_49 ->? Unit ->? Unit' (87.14)
   known types:
     
 *** Hint 87.9, wrong result type 'Unit ->? Unit'
   for application 'all(var p : s ->? Unit)'
 *** Error 87.9, no typing for 'all(var p : s ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
-  with type: '_var_64 ->? Unit ->? Unit' (90.14)
+  with type: '_var_50 ->? Unit ->? Unit' (90.14)
   known types:
     
 *** Hint 90.9, wrong result type 'Unit ->? Unit'
@@ -289,21 +281,21 @@ free type bool
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 *** Hint 98.9, no type match for: ex
-  with type: '_var_65 ->? Unit ->? Unit' (98.13)
+  with type: '_var_51 ->? Unit ->? Unit' (98.13)
   known types:
     
 *** Hint 98.9, wrong result type 'Unit ->? Unit'
   for application 'ex(var p : s ->? Unit)'
 *** Error 98.9, no typing for 'ex(var p : s ->? Unit) : Unit ->? Unit'
 *** Hint 101.9, no type match for: ff
-  with type: '_var_66 ->? Unit ->? Unit'
+  with type: '_var_52 ->? Unit ->? Unit'
   known types:
     
 *** Hint 101.9, wrong result type 'Unit ->? Unit'
   for application 'ff()'
 *** Error 101.9, no typing for 'ff() : Unit ->? Unit'
 *** Hint 103.9, no type match for: neg
-  with type: '_var_67 ->? Unit ->? Unit' (103.14)
+  with type: '_var_53 ->? Unit ->? Unit' (103.14)
   known types:
     
 *** Hint 103.9, wrong result type 'Unit ->? Unit'
@@ -346,20 +338,20 @@ free type bool
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
 *** Hint 10.18, no type match for: __::__
-  with type: '_var_91 ->? _var_90 ->? _var_81' (176.17)
+  with type: '_var_77 ->? _var_76 ->? _var_67' (176.17)
   known types:
     
-*** Hint 10.18, wrong result type '_var_90 ->? _var_81' (176.27)
-  for application '__::__(c(var -->? : _var_82)(var d : _var_83), [])'
-*** Hint 10.18, wrong result type '_var_81' (176.11)
-  for application '__::__(c(var -->? : _var_82)(var d : _var_83), [])(var g : _var_84)'
+*** Hint 10.18, wrong result type '_var_76 ->? _var_67' (176.27)
+  for application '__::__(c(var -->? : _var_68)(var d : _var_69), [])'
+*** Hint 10.18, wrong result type '_var_67' (176.11)
+  for application '__::__(c(var -->? : _var_68)(var d : _var_69), [])(var g : _var_70)'
 *** Error 176.13, wrongly typed application '__<<=__
-  (var f : _var_81,
-   __::__(c(var -->? : _var_82)(var d : _var_83), [])
-     (var g : _var_84))'
-*** Error 176.13, no typing for '__<<=__(var f : _var_81,
-        __::__(c(var -->? : _var_82)(var d : _var_83), [])
-          (var g : _var_84))'
+  (var f : _var_67,
+   __::__(c(var -->? : _var_68)(var d : _var_69), [])
+     (var g : _var_70))'
+*** Error 176.13, no typing for '__<<=__(var f : _var_67,
+        __::__(c(var -->? : _var_68)(var d : _var_69), [])
+          (var g : _var_70))'
 *** Error 181.9, incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
