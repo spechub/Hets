@@ -17,22 +17,19 @@ import Common.Id
 import Common.AS_Annotation 
 import Common.GlobalAnnotations
 import CASL.AS_Basic_CASL
+import CASL.Print_AS_Basic
 import Common.Lib.Pretty
 import Common.PrettyPrint
 
 -- DrIFT command
 {-! global: UpPos !-}
 
-data M_BASIC_SPEC =
-     M_Basic_spec [Annoted ModalBasicItems]
-		  deriving (Show,Eq)
-
-type ModalBasicItems = BASIC_ITEMS M_BASIC_ITEM () M_FORMULA
+type M_BASIC_SPEC = BASIC_SPEC M_BASIC_ITEM () M_FORMULA
 
 data M_BASIC_ITEM =
-	         Flexible_Op_items [Annoted (OP_ITEM M_FORMULA)] [Pos]
+	         Rigid_Op_items [Annoted (OP_ITEM M_FORMULA)] [Pos]
 		 -- pos: op, semi colons
-	       | Flexible_Pred_items [Annoted (PRED_ITEM M_FORMULA)] [Pos]
+	       | Rigid_Pred_items [Annoted (PRED_ITEM M_FORMULA)] [Pos]
 		 -- pos: pred, semi colons
              deriving (Eq, Show)
 
