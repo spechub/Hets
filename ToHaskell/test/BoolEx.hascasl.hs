@@ -34,7 +34,7 @@ vee |-> Prelude.vee, Value
 wedge |-> Prelude.wedge, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord, Bool)
+import Prelude (error, Show, Eq, Ord)
 import MyLogic
 eq :: (Bool, Bool) -> Bool
 le :: (Bool, Bool) -> Bool

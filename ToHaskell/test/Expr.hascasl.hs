@@ -29,7 +29,7 @@ b_02 |-> Prelude.b_02, Value
 notA |-> Prelude.notA, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord, Bool)
+import Prelude (error, Show, Eq, Ord)
 import MyLogic
 a :: A__bool
 b_02 :: A__bool -> A__bool

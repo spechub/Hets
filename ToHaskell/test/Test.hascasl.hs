@@ -49,7 +49,7 @@ s1 |-> Prelude.s1, Value
 s2 |-> Prelude.s2, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord, Bool)
+import Prelude (error, Show, Eq, Ord)
 import MyLogic
 data B = B
 data C = C

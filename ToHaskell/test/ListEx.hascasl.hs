@@ -19,7 +19,7 @@ Nil |-> Prelude.Nil, con of List
 myhead |-> Prelude.myhead, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord, Bool)
+import Prelude (error, Show, Eq, Ord)
 import MyLogic
 myhead :: (List a) -> a
 myhead (Cons (x_11_11, x_11_12)) = x_11_11

@@ -35,7 +35,7 @@ import TiTypes
 import TiInstanceDB
 import TiClasses
 import HsConstants
-import PPfeInstances
+import PPfeInstances()
 import PNT
 import Lift
 import qualified NewPrettyPrint as HatPretty
@@ -49,7 +49,7 @@ import qualified Common.Lib.Map as Map
 type Scope = Rel (SN HsName) (Ent (SN Id))
 
 data Sign = Sign 
-    { instances :: [TiInstanceDB.Instance PNT]
+    { instances :: [Instance PNT]
     , types :: Map.Map (HsIdentI PNT) (Kind, TypeInfo PNT)
     , values :: Map.Map (HsIdentI PNT) (Scheme PNT) 
     , scope :: Scope
@@ -108,7 +108,7 @@ instance PrettyPrint Sign where
           text (HatPretty.pp sc) $$
           text "-}" $$
           text "module Dummy where"
-          $$ text "import Prelude (error, Show, Eq, Ord, Bool)"
+          $$ text "import Prelude (error, Show, Eq, Ord)"
           $$ text "import MyLogic"
 
 

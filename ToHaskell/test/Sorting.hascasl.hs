@@ -57,7 +57,7 @@ sorter |-> Prelude.sorter, Value
 tail |-> Prelude.tail, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord, Bool)
+import Prelude (error, Show, Eq, Ord)
 import MyLogic
 a___2_L_E_2 :: (Nat, Nat) -> Unit
 elem :: (Nat, List_FNat_J) -> Unit

@@ -37,7 +37,7 @@ f |-> Prelude.f, Value
 g |-> Prelude.g, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord, Bool)
+import Prelude (error, Show, Eq, Ord)
 import MyLogic
 data A__a = A__a
 data A__b = A__b

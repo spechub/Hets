@@ -27,7 +27,7 @@ a___b_2_r |-> Prelude.a___b_2_r, Value
 a___b_r |-> Prelude.a___b_r, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord, Bool)
+import Prelude (error, Show, Eq, Ord)
 import MyLogic
 data FiniteSet a1 = FiniteSet
 a___2_P_2

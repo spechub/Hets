@@ -22,7 +22,7 @@ f |-> Prelude.f, Value
 prec |-> Prelude.prec, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord, Bool)
+import Prelude (error, Show, Eq, Ord)
 import MyLogic
 f :: Nat -> Nat
 prec :: Nat -> Nat
