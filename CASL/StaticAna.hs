@@ -663,17 +663,17 @@ ana_COMPONENTS s c = do
 
 -- wrap it all up for a logic
 
-basicAnalysis :: MinExpForm f => (b -> e -> e)
-              -> (s -> e -> e) ->(BASIC_SPEC b s f, Sign f e, GlobalAnnos)
+basicAnalysis :: PrettyPrint f => Min f e -> (b -> e -> e)
+              -> (s -> e -> e) -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
      -> Result (BASIC_SPEC b s f, Sign f e, Sign f e, [Named (FORMULA f)])
-basicAnalysis ab as (bs, inSig, ga) = do 
+basicAnalysis mef ab as (bs, inSig, ga) = do 
     let (newBs, accSig) = runState (ana_BASIC_SPEC ab as ga bs) inSig
 	ds = reverse $ envDiags accSig
 	sents = reverse $ sentences accSig
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
 	diff = diffSig cleanSig inSig
 	remPartOpsS s = s { opMap = remPartOpsM $ opMap s }
-    checked_sents <- overloadResolution accSig sents
+    checked_sents <- overloadResolution mef accSig sents
     Result ds (Just ()) -- insert diags
     return ( newBs
 	   , remPartOpsS diff

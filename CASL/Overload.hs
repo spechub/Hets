@@ -1,7 +1,7 @@
 {- | 
    
     Module      :  $Header$
-    Copyright   :  (c)  Martin Kühl and Till Mossakowski and Uni Bremen 2003
+    Copyright   :  (c) Martin Kühl, T. Mossakowski, C. Maeder, Uni Bremen 2004
     Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
     Maintainer  :  hets@tzi.de
@@ -67,31 +67,26 @@ import Data.List                ( partition )
     Overload Resolution
 -----------------------------------------------------------}
 
-class PrettyPrint f => MinExpForm f where
-    minExpForm :: Sign f e -> f -> Result f
+type Min f e = Sign f e -> f -> Result f
 
-instance MinExpForm () where
-    minExpForm _ = return
-
-overloadResolution      :: MinExpForm f => Sign f e 
+overloadResolution      :: PrettyPrint f => Min f e -> Sign f e 
 			-> [Named.Named (FORMULA f)]
 			-> Result [Named.Named (FORMULA f)]
-overloadResolution sign  = mapM overload
+overloadResolution mef sign  = mapM overload
     where
---        overload :: (Named.Named (FORMULA f)) -> Result (Named.Named (FORMULA f))
         overload sent = do
             let sent' = Named.sentence sent
             --debug 1 ("sent'",sent')
-            exp_sent    <- minExpFORMULA sign sent'
+            exp_sent    <- minExpFORMULA mef sign sent'
             --debug 2 ("exp_sent",exp_sent)
             return sent { Named.sentence = exp_sent }
 
 {-----------------------------------------------------------
     Minimal Expansions of a FORMULA
 -----------------------------------------------------------}
-minExpFORMULA :: MinExpForm f =>
+minExpFORMULA :: PrettyPrint f => Min f e ->
                 Sign f e -> (FORMULA f) -> Result (FORMULA f)
-minExpFORMULA sign formula
+minExpFORMULA mef sign formula
     = case formula of
         -- Trivial Atom         -> Return untouched
         True_atom _     -> return formula                       -- :: FORMULA
@@ -99,48 +94,48 @@ minExpFORMULA sign formula
 	-- Non-Atomic FORMULA   -> Recurse through subFORMULAe
 	Quantification q vars f pos -> do
             let (_, sign') = runState (mapM_ addVars vars) sign
-	    f' <- minExpFORMULA sign' f
+	    f' <- minExpFORMULA mef sign' f
 	    return $ Quantification q vars f' pos
 	Conjunction fs pos -> do
-	    fs' <- mapM (minExpFORMULA sign) fs
+	    fs' <- mapM (minExpFORMULA mef sign) fs
 	    return $ Conjunction fs' pos
 	Disjunction fs pos -> do
-	    fs' <- mapM (minExpFORMULA sign) fs
+	    fs' <- mapM (minExpFORMULA mef sign) fs
 	    return $ Disjunction fs' pos
 	Implication f1 f2 b pos -> do
-	    f1' <- minExpFORMULA sign f1
-	    f2' <- minExpFORMULA sign f2
+	    f1' <- minExpFORMULA mef sign f1
+	    f2' <- minExpFORMULA mef sign f2
 	    return $ Implication f1' f2' b pos
 	Equivalence f1 f2 pos -> do
-	    f1' <- minExpFORMULA sign f1
-	    f2' <- minExpFORMULA sign f2
+	    f1' <- minExpFORMULA mef sign f1
+	    f2' <- minExpFORMULA mef sign f2
 	    return $ Equivalence f1' f2' pos
 	Negation f pos -> do
-	    f' <- minExpFORMULA sign f
+	    f' <- minExpFORMULA mef sign f
 	    return $ Negation f' pos
         -- Atomic FORMULA      -> Check for Ambiguities
         Predication predicate terms pos ->
-            minExpFORMULA_pred sign predicate terms pos         -- :: FORMULA
+            minExpFORMULA_pred mef sign predicate terms pos     -- :: FORMULA
         Definedness term pos            -> do
-            t   <- minExpTerm sign term                         -- :: [[TERM]]
+            t   <- minExpTerm mef sign term                     -- :: [[TERM]]
             --debug 4 ("t", t)
             t'  <- is_unambiguous t pos                         -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
 	Existl_equation term1 term2 pos ->
-            minExpFORMULA_eq sign Existl_equation term1 term2 pos
+            minExpFORMULA_eq mef sign Existl_equation term1 term2 pos
         Strong_equation term1 term2 pos ->
-            minExpFORMULA_eq sign Strong_equation term1 term2 pos
+            minExpFORMULA_eq mef sign Strong_equation term1 term2 pos
         Membership term sort pos        -> do
-            t   <- minExpTerm sign term                         -- :: [[TERM]]
+            t   <- minExpTerm mef sign term                     -- :: [[TERM]]
             t'  <- let leq_term [] = False
                        leq_term (t1:_) =
                         leq_SORT sign sort $ term_sort t1 
-                    in return $ filter leq_term t                   -- :: TERM
+                    in return $ filter leq_term t               -- :: TERM
                 
             t'' <- is_unambiguous t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
 	Sort_gen_ax _ -> return formula
-	ExtFORMULA f -> fmap ExtFORMULA $ minExpForm sign f
+	ExtFORMULA f -> fmap ExtFORMULA $ mef sign f
 	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)
 
@@ -160,12 +155,12 @@ is_unambiguous term pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Predicate Application Formula
 -----------------------------------------------------------}
-minExpFORMULA_pred :: MinExpForm f =>
+minExpFORMULA_pred :: PrettyPrint f => Min f e ->
                 Sign f e -> PRED_SYMB -> [TERM f] -> [Id.Pos] 
                 -> Result (FORMULA f)
-minExpFORMULA_pred sign predicate terms pos = do
+minExpFORMULA_pred mef sign predicate terms pos = do
     expansions          <- mapM
-        (minExpTerm sign) terms                 -- ::        [[[TERM]]]
+        (minExpTerm mef sign) terms             -- ::        [[[TERM]]]
     --debug 5 ("expansions", expansions)
     permuted_exps       <- return
         $ permute expansions                    -- ::        [[[TERM]]]
@@ -235,12 +230,12 @@ minExpFORMULA_pred sign predicate terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Strong/Existl. Equation Formula
 -----------------------------------------------------------}
-minExpFORMULA_eq :: MinExpForm f =>
+minExpFORMULA_eq :: PrettyPrint f => Min f e ->
                 Sign f e -> (TERM f -> TERM f -> [Id.Pos] -> FORMULA f)
                     -> TERM f -> TERM f -> [Id.Pos] -> Result (FORMULA f)
-minExpFORMULA_eq sign eq term1 term2 pos = do
-    exps1       <- minExpTerm sign term1                -- :: [[TERM]]
-    exps2       <- minExpTerm sign term2                -- :: [[TERM]]
+minExpFORMULA_eq mef sign eq term1 term2 pos = do
+    exps1       <- minExpTerm mef sign term1                -- :: [[TERM]]
+    exps2       <- minExpTerm mef sign term2                -- :: [[TERM]]
     --debug 1 ("exps1",exps1)
     --debug 2 ("exps2",exps2)
     pairs       <- return
@@ -270,9 +265,9 @@ minExpFORMULA_eq sign eq term1 term2 pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a TERM
 -----------------------------------------------------------}
-minExpTerm :: MinExpForm f =>
+minExpTerm :: PrettyPrint f => Min f e ->
                 Sign f e -> TERM f -> Result [[TERM f]]
-minExpTerm sign term'
+minExpTerm mef sign term'
  = do -- debug 6 ("term'",term')
       u <- case term' of
         Simple_id var
@@ -280,19 +275,14 @@ minExpTerm sign term'
         Qual_var var sort pos
             -> minExpTerm_qual sign var sort pos
         Application op terms pos
-            -> minExpTerm_op sign op terms pos
+            -> minExpTerm_op mef sign op terms pos
         Sorted_term term sort pos
-            -> minExpTerm_sorted sign term sort pos
+            -> minExpTerm_sorted mef sign term sort pos
         Cast term sort pos
-            -> minExpTerm_cast sign term sort pos
+            -> minExpTerm_cast mef sign term sort pos
         Conditional term1 formula term2 pos
-            -> minExpTerm_cond sign term1 formula term2 pos
-        Unparsed_term string _
-            -> error $ "minExpTerm: Parser Error - Unparsed `Unparsed_term' "
-               ++ string
-        _   -> error $ "minExpTerm: Parser Error - Unparsed `Mixfix' term "
-               ++ (show term')
-      --debug 6 ("u",u)
+            -> minExpTerm_cond mef sign term1 formula term2 pos
+        _   -> error "minExpTerm"
       return u
 
 {-----------------------------------------------------------
@@ -363,10 +353,10 @@ minExpTerm_qual sign var sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Sorted_term Term
 -----------------------------------------------------------}
-minExpTerm_sorted :: MinExpForm f =>
+minExpTerm_sorted :: PrettyPrint f => Min f e ->
                 Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
-minExpTerm_sorted sign term sort pos = do
-    expandedTerm <- minExpTerm sign term        -- :: [[TERM]]
+minExpTerm_sorted mef sign term sort pos = do
+    expandedTerm <- minExpTerm  mef sign term   -- :: [[TERM]]
     --debug 7 ("expandedTerm", expandedTerm)
     return
         $ qualifyTerms pos                      -- :: [[TERM]]
@@ -386,19 +376,19 @@ minExpTerm_sorted sign term sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
-minExpTerm_op :: MinExpForm f =>
+minExpTerm_op :: PrettyPrint f => Min f e ->
               Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
-minExpTerm_op sign (Op_name (Id.Id [tok] [] _)) [] _ = 
+minExpTerm_op _ sign (Op_name (Id.Id [tok] [] _)) [] _ = 
   minExpTerm_simple sign tok
-minExpTerm_op sign op terms pos = minExpTerm_op1 sign op terms pos
+minExpTerm_op mef sign op terms pos = minExpTerm_op1 mef sign op terms pos
 
-minExpTerm_op1 :: MinExpForm f =>
+minExpTerm_op1 :: PrettyPrint f => Min f e ->
                Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
-minExpTerm_op1 sign op terms pos = do
+minExpTerm_op1 mef sign op terms pos = do
     --debug 3 ("op",op)
     --debug 3 ("terms",show terms)
     expansions          <- mapM
-        (minExpTerm sign) terms                 -- ::       [[[TERM]]]
+        (minExpTerm mef sign) terms             -- ::       [[[TERM]]]
     --debug 9 ("expansions", expansions)
     permuted_exps       <- return
         $ permute expansions                    -- ::       [[[TERM]]]
@@ -464,10 +454,10 @@ minExpTerm_op1 sign op terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Cast Term
 -----------------------------------------------------------}
-minExpTerm_cast :: MinExpForm f =>
+minExpTerm_cast :: PrettyPrint f => Min f e ->
                 Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
-minExpTerm_cast sign term sort pos = do
-    expandedTerm        <- minExpTerm sign term         -- :: [[TERM]]
+minExpTerm_cast mef sign term sort pos = do
+    expandedTerm        <- minExpTerm mef sign term         -- :: [[TERM]]
     --debug 1 ("expandedTerm",expandedTerm)
     validExps           <- return
         $ map (filter (leq_SORT sign sort . term_sort)) -- ::  [[TERM]]
@@ -480,16 +470,16 @@ minExpTerm_cast sign term sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Conditional Term
 -----------------------------------------------------------}
-minExpTerm_cond :: MinExpForm f =>
+minExpTerm_cond :: PrettyPrint f => Min f e ->
                 Sign f e -> TERM f -> FORMULA f -> TERM f -> [Id.Pos]
                 -> Result [[TERM f]]
-minExpTerm_cond sign term1 formula term2 pos = do
+minExpTerm_cond  mef sign term1 formula term2 pos = do
     expansions1
-        <- minExpTerm sign term1                -- ::       [[TERM]]
+        <- minExpTerm mef sign term1                -- ::       [[TERM]]
     expansions2
-        <- minExpTerm sign term2                -- ::       [[TERM]]
+        <- minExpTerm mef sign term2                -- ::       [[TERM]]
     expanded_formula
-        <- minExpFORMULA sign formula           -- ::       FORMULA
+        <- minExpFORMULA mef sign formula           -- ::       FORMULA
     permuted_exps       <- return
         $ permute [expansions1, expansions2]    -- ::      [[[TERM]]]
     --debug 7 ("permuted_exps",permuted_exps)
