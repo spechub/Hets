@@ -774,12 +774,12 @@ checkconsistencyOfEdge _ (ref,_,_,_,_,_) (Just (source,target,linklab)) = do
                 Res.Result _ (Just th1) -> th1
                 _ -> error "checkconsistencyOfEdge: computeTheory"
       G_theory lid1 sign1 sens1 <- return th
-      let (sign2,sens2) = case coerce lid1 lid (sign1,sens1) of
-           Just m -> m
+      case coerce lid1 lid (sign1,sens1) of
+           Just (sign2, sens2) -> 
+               case consCheck lid (sign2,sens2) morphism2' sens of
+               res -> createTextDisplay "Result of consistency check" 
+                      (show res) [size(50,50)]
            _ -> error "checkconsistencyOfEdge: wrong logic"   
-      let res = consCheck lid (sign2,sens2) morphism2' sens
-      createTextDisplay "Result of consistency check" 
-           (show res) [size(50,50)]
 
 checkconsistencyOfEdge descr _ Nothing = 
       createTextDisplay "Error" 

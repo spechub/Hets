@@ -417,8 +417,8 @@ instance (ATermConvertibleSML a) => ATermConvertibleSML (Annoted a) where
              (case con of
                -- Basic Items (including sig_items)
                 "pos-BASIC-ITEMS" -> 
-                      let (bi,las) = from_sml_ATermAnnotedBasic_Items att
-                      in Annoted bi [] las []
+                      case from_sml_ATermAnnotedBasic_Items att of 
+                               (bi, las) -> Annoted bi [] las []
                -- L_.* constuctors from SML 
                 ""           -> Annoted (from_sml_ShATerm (getATermByIndex1 
                                                         (head as) 
@@ -1472,9 +1472,9 @@ instance ATermConvertibleSML RENAMING where
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"RENAMING\" not implemented"
     from_sml_ShATerm att =
         case aterm of
-            (ShAAppl "renaming" [ aa ] _)  ->
-                let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
+            (ShAAppl "renaming" [ aa ] _)  -> 
+              case from_sml_ShATerm (getATermByIndex1 aa att) of
+              aa' -> let
                 aa''= if null aa' then [] 
                       else [G_symb_map $ G_symb_map_items_list CASL aa']
                 ab' = pos_l
@@ -1496,9 +1496,9 @@ instance ATermConvertibleSML RESTRICTION where
         case aterm of
             (ShAAppl "hide" [ aa ] _)  ->
                 let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                aa''= if null aa' then [] 
-                      else [G_symb_list $ G_symb_items_list CASL aa']
+                aa''= case from_sml_ShATerm (getATermByIndex1 aa att) of 
+                      [] -> [] 
+                      aa' -> [G_symb_list $ G_symb_items_list CASL aa']
                 ab' = pos_l
                 in (Hidden aa'' ab')
             (ShAAppl "reveal" [ aa ] _)  ->
@@ -2063,9 +2063,9 @@ instance ATermConvertibleSML LIB_ITEM where
                 aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
-                ad' = from_sml_ShATerm (getATermByIndex1 ad att)
-                ad''= if null ad' then [] 
-                      else [G_symb_map $ G_symb_map_items_list CASL ad']
+                ad''= case from_sml_ShATerm (getATermByIndex1 ad att) of 
+                      [] -> []
+                      ad' -> [G_symb_map $ G_symb_map_items_list CASL ad']
 {-              as  = toAnnoList ae att
                 ac''= addLAnnoList as ac'-}
                 ae' = pos_l
