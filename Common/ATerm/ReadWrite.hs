@@ -41,10 +41,23 @@ import Common.SimpPretty
 
 --- From String to ATerm ------------------------------------------------------
 
+data ReadTAFStruct = RTS (ATermTable,Int)
+		         -- ATermTable with Index of read and added ATerm
+		         String 
+			 -- remaing part of the ATerm as String
+			 ReadTable
+			 {-#UNPACK#-}!Int -- length of ATerm as String 
+		   | RTS_list (ATermTable,[Int])
+		              -- ATermTable with Indices 
+			      -- of read and added ATerms
+		     String 
+		     -- remaing part of the ATerm as String
+		     ReadTable
+		     {-#UNPACK#-}!Int -- length of ATerms as String 
 
 readATerm :: String -> ATermTable 
 readATerm ('!':str)	= 
-    let ((at,_),_,_rt,_l) = readTAF emptyATermTable str emptyRTable 0 
+    let (RTS (at,_) _ _rt _l) = readTAF emptyATermTable str emptyRTable 0 
 {-	ab = case rt of
 	     RTab _ i -> ("Read: next_abbrev="++show i
 			  ++" ATT-TopIndex="++show (getTopIndex at)
@@ -103,69 +116,70 @@ readAnn at str       = ((at,[]),str)
 -- shared --
 
 readTAF :: ATermTable -> String 
-	-> ReadTable -> Int -> ((ATermTable,Int),String,ReadTable,Int)
+	-> ReadTable -> Int -> ReadTAFStruct
 readTAF at ('#':str) tbl l =  
     let (i,str') = spanAbbrevChar str
-    in (addATerm (getAbbrevTerm (deAbbrev i) at tbl) at, 
-	str',tbl,
-	l+(length i)+1)    
+    in  RTS (at,getATermIndex (getAbbrevTerm (deAbbrev i) at tbl) at)
+	    str' tbl (l+(length i)+1)    
 readTAF at ('[':str) tbl l =  
-    let ((at',kids), str',tbl',l') = readTAFs at ']' (dropSpaces str) tbl 1
-        ((at'',ann),str'',tbl'',l'') = readAnnTAF at' (dropSpaces str') tbl' 0 
+    let (RTS_list (at' ,kids) str'  tbl'  l')  = 
+	    readTAFs at ']' (dropSpaces str) tbl 1
+        (RTS_list (at'',ann)  str'' tbl'' l'') = 
+	    readAnnTAF at' (dropSpaces str') tbl' 0 
 	t            = ShAList kids ann      
 	at_t@(_,ai) = addATerm t at''
 	tbl'''       = condAddElement (addRAbbrev ai) (l''+l') tbl''
-	in (at_t, str'',tbl''',l+l'+l'')
+	in RTS at_t str'' tbl''' (l+l'+l'')
 readTAF at str@(x:xs) tbl l 
   | isIntHead x =  
       let (i,str')   = span isDigit xs
           l'         = length (x:i)
-          ((at',ann),str'',tbl',l'') = readAnnTAF at str' tbl 0
+          (RTS_list (at',ann) str'' tbl' l'') = readAnnTAF at str' tbl 0
 	  t          = ShAInt (read (x:i)) ann 
-	  tbl''      = condAddElement (addRAbbrev ai) (l'+l'') tbl'
 	  at_t@(_,ai) = addATerm t at'
-      in (at_t,str'',tbl'', l+l'+l'')
+	  tbl''      = condAddElement (addRAbbrev ai) (l'+l'') tbl'
+      in RTS at_t str'' tbl'' (l+l'+l'')
   |isAFunChar x || x=='"' || x=='(' = 
       let (c,str')           = readAFun str
-	  ((at',kids), str'',tbl',l') = 
+	  (RTS_list (at',kids) str'' tbl' l') = 
 		readParenTAFs at (dropSpaces str') tbl 0
-          ((at'',ann),str''',tbl'',l'') = 
+          (RTS_list (at'',ann) str''' tbl'' l'') = 
 		readAnnTAF at' (dropSpaces str'') tbl' 0
 	  t                  = ShAAppl c kids ann
 	  l'''   = (length c) + l'+l''
-	  tbl''' = condAddElement (addRAbbrev ai) l''' tbl''
 	  at_t@(_,ai) = addATerm t at''
- 	  in (at_t, str''',tbl''',l''')
+	  tbl''' = condAddElement (addRAbbrev ai) l''' tbl''
+ 	  in RTS at_t str''' tbl''' l'''
   | otherwise             = error $ error_saterm (take 5 str)
 
 readParenTAFs :: ATermTable -> String -> ReadTable 
-	      -> Int -> ((ATermTable,[Int]),String,ReadTable,Int)
+	      -> Int -> ReadTAFStruct
 readParenTAFs at ('(':str) tbl l  =  readTAFs at ')'(dropSpaces str) tbl (l+1)
-readParenTAFs at str       tbl l  =  ((at,[]),str,tbl,l)
+readParenTAFs at str       tbl l  =  RTS_list (at,[]) str tbl l
 
 readTAFs :: ATermTable -> Char -> String -> ReadTable 
-	 -> Int -> ((ATermTable,[Int]),String,ReadTable,Int)
-readTAFs at par s@(p:str) tbl l | par == p  = ((at,[]),str,tbl,l+1)
+	 -> Int -> ReadTAFStruct
+readTAFs at par s@(p:str) tbl l | par == p  = RTS_list (at,[]) str tbl (l+1)
                                 | otherwise = readTAFs1 at par s tbl l
 
 readTAFs1 :: ATermTable -> Char -> String -> ReadTable -> Int 
-	  -> ((ATermTable,[Int]),String,ReadTable,Int)
+	  -> ReadTAFStruct
 readTAFs1 at par str tbl l = 
-    let ((at',t),str',tbl',l')= readTAF at (dropSpaces str) tbl l
-	((at'',ts),str'',tbl'',l'') = 
+    let (RTS (at' ,t)  str'  tbl'  l') = readTAF at (dropSpaces str) tbl l
+	(RTS_list (at'',ts) str'' tbl'' l'') = 
 	    readTAFs' at' par (dropSpaces str') tbl' l'
-    in ((at'',t:ts),str'',tbl'',l'') 
+    in (RTS_list (at'',t:ts) str'' tbl'' l'') 
 
 readTAFs' :: ATermTable -> Char -> String -> ReadTable -> Int 
-			-> ((ATermTable,[Int]),String,ReadTable,Int)
+			-> ReadTAFStruct
 readTAFs' at par (',':str) tbl l = readTAFs1 at par (dropSpaces str) tbl (l+1)
-readTAFs' at par s@(p:str) tbl l | par == p  = ((at,[]),str,tbl,l+1)
+readTAFs' at par s@(p:str) tbl l | par == p  = RTS_list (at,[]) str tbl (l+1)
                                  | otherwise = error $ error_paren (take 5 s)
 
 readAnnTAF :: ATermTable -> String -> ReadTable -> Int 
-	   -> ((ATermTable,[Int]),String,ReadTable,Int)
+	   -> ReadTAFStruct
 readAnnTAF at ('{':str) tbl l = readTAFs at '}' (dropSpaces str) tbl (l+1) 
-readAnnTAF at str       tbl l = ((at,[]),str,tbl,l)
+readAnnTAF at str       tbl l = (RTS_list (at,[]) str tbl l)
 
 
 -- helpers --
@@ -222,7 +236,7 @@ class Next_Abb a where
 
 --- From ATerm to String  -----------------------------------------------------
 
--- a helper data Type for ShowS functions paired with the associated length
+-- a helper data Type for SDocs paired with the associated length
 data Doc_len = Doc_len SDoc {-# UNPACK #-} !Int
 
 data Write_struct = WS WriteTable {-# UNPACK #-} !Doc_len
@@ -576,7 +590,7 @@ next_abbrev_W_len :: WriteTable -> Int
 next_abbrev_W_len (WTab _ (Doc_len _ len,_)) = len
 
 next_abbrev_R_len :: ReadTable -> Int
-next_abbrev_R_len (RTab _ siz) = length $ abbrev (siz+1)
+next_abbrev_R_len (RTab _ siz) = length $ abbrev (siz)
 
 -- error messages --------------------
 
