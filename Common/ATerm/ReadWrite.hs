@@ -36,6 +36,7 @@ import List
 import Data.Array
 import Data.FiniteMap
 import Common.SimpPretty
+
 --import Debug.Trace
 -- import Numeric don't use showInt: can't show negative numbers
 
@@ -118,38 +119,41 @@ readAnn at str       = ((at,[]),str)
 readTAF :: ATermTable -> String 
 	-> ReadTable -> Int -> ReadTAFStruct
 readTAF at ('#':str) tbl l =  
-    let (i,str') = spanAbbrevChar str
-    in  RTS (at,getATermIndex (getAbbrevTerm (deAbbrev i) at tbl) at)
-	    str' tbl (l+(length i)+1)    
+    let (i,str') = {-# SCC "spanAbbrevChar" #-} spanAbbrevChar str
+    in  {-# SCC "RTS_abb" #-}  RTS (at,getATermIndex (getAbbrevTerm (deAbbrev i) at tbl) at)
+                            str' tbl (l+(length i)+1)    
 readTAF at ('[':str) tbl l =  
     let (RTS_list (at' ,kids) str'  tbl'  l')  = 
-	    readTAFs at ']' (dropSpaces str) tbl 1
+	    {-# SCC "RTAFs_AList" #-} readTAFs at ']' (dropSpaces str) tbl 1
         (RTS_list (at'',ann)  str'' tbl'' l'') = 
 	    readAnnTAF at' (dropSpaces str') tbl' 0 
-	t            = ShAList kids ann      
-	at_t@(_,ai) = addATerm t at''
-	tbl'''       = condAddElement (addRAbbrev ai) (l''+l') tbl''
-	in RTS at_t str'' tbl''' (l+l'+l'')
+	t            =  {-# SCC "Cons_AList" #-} ShAList kids ann 
+	at_t@(_,ai) = {-# SCC "RaddAList" #-} addATerm t at''
+	tbl'''       = {-# SCC "RaddAListAbbr" #-}  seq ai (condAddElement (addRAbbrev ai) (l''+l') tbl'')
+	in  {-# SCC "RTS_AList" #-} RTS at_t str'' tbl''' (l+l'+l'')
 readTAF at str@(x:xs) tbl l 
   | isIntHead x =  
-      let (i,str')   = span isDigit xs
+      let (i,str')   = {-# SCC "RspanDigits" #-} span isDigit xs
           l'         = length (x:i)
           (RTS_list (at',ann) str'' tbl' l'') = readAnnTAF at str' tbl 0
-	  t          = ShAInt (read (x:i)) ann 
-	  at_t@(_,ai) = addATerm t at'
-	  tbl''      = condAddElement (addRAbbrev ai) (l'+l'') tbl'
-      in RTS at_t str'' tbl'' (l+l'+l'')
+	  xi         = {-# SCC "RconIntStr" #-} x:i
+	  integer    :: Integer
+	  integer    = {-# SCC "Rread_integer" #-} readInteger x i
+	  t          =  {-# SCC "Cons_AInt" #-} ShAInt integer ann 
+	  at_t@(_,ai) = {-# SCC "RaddAInt" #-} addATerm t at'
+	  tbl''      = {-# SCC "RaddAIntAbbrev" #-}  seq ai (condAddElement (addRAbbrev ai) (l'+l'') tbl')
+      in  {-# SCC "RTS_AInt" #-} RTS at_t str'' tbl'' (l+l'+l'')
   |isAFunChar x || x=='"' || x=='(' = 
-      let (c,str')           = readAFun str
+      let (c,str')           = {-# SCC "RspanConstructor" #-} readAFun str
 	  (RTS_list (at',kids) str'' tbl' l') = 
-		readParenTAFs at (dropSpaces str') tbl 0
+		{-# SCC "RTAFs_AAppl" #-} readParenTAFs at (dropSpaces str') tbl 0
           (RTS_list (at'',ann) str''' tbl'' l'') = 
 		readAnnTAF at' (dropSpaces str'') tbl' 0
-	  t                  = ShAAppl c kids ann
+	  t                  =  {-# SCC "Cons_AAppl" #-} ShAAppl c kids ann
 	  l'''   = (length c) + l'+l''
-	  at_t@(_,ai) = addATerm t at''
-	  tbl''' = condAddElement (addRAbbrev ai) l''' tbl''
- 	  in RTS at_t str''' tbl''' l'''
+	  at_t@(_,ai) = {-# SCC "RaddAAppl" #-} addATerm t at''
+	  tbl''' = {-# SCC "RaddAApplAbbrev" #-} seq ai (condAddElement (addRAbbrev ai) l''' tbl'')
+ 	  in  {-# SCC "RTS_AAppl" #-} RTS at_t str''' tbl''' l'''
   | otherwise             = error $ error_saterm (take 5 str)
 
 readParenTAFs :: ATermTable -> String -> ReadTable 
@@ -300,9 +304,9 @@ writeTAF :: ATermTable -> WriteTable -> Write_struct
 writeTAF at tbl =  
     case indexOf at tbl of
     (Just s) -> WS tbl s 
-    Nothing  -> WS (condAddElement 
-                         (addWAbbrev (getTopIndex at)) 
-		         len tbl') 
+    Nothing  -> seq tbl' $ WS (condAddElement 
+                                (addWAbbrev (getTopIndex at)) 
+		                len tbl') 
 		   d_len
     where (WS tbl' d_len@(Doc_len _ len)) = writeTAF' at tbl
 	  -- risking a faulty writeTAF' implementation
@@ -536,6 +540,17 @@ getAbbrevTerm i at (RTab abb_ai_map _) =
 (_:_)  !!! _       =  error "!!!: negative index"
 []     !!! _       =  error "!!!: index too large"
 -}
+--- Intger Read ---------------------------------------------------------------
+digArr :: Array Char Integer
+digArr = listArray ('0','9') [0..9]
+
+readInteger :: Char -> String -> Integer
+readInteger hd str = condNeg (conv (reverse str'))
+    where conv []   = 0
+	  conv (x:xs) = (digArr ! x) + (conv xs * 10)
+	  str'    = if hd == '-' then str    else (hd:str)
+	  condNeg = if hd == '-' then negate else id
+
 --- Base 64 encoding ----------------------------------------------------------
 
 mkAbbrev :: Int -> [Char]
@@ -546,7 +561,7 @@ mkAbbrev x
 mkAbbrevAux :: Int -> [Char]
 mkAbbrevAux x
   | x == 0	= []
-  | x > 0	= (revBase64Array ! m:mkAbbrevAux d) 
+  | x > 0	= seq d $ seq m (revBase64Array ! m:mkAbbrevAux d) 
   | otherwise   = error ("mkAbbrevAux: Int "++ show x++" to big")
   where (d,m) = divMod x 64
 
