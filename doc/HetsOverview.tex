@@ -7,7 +7,7 @@
 
 \section{Preliminaries}
 
-Make sure a new version (currently 5.04.2) of \texttt{ghc}
+Make sure a new version (currently 5.04.3) of \texttt{ghc}
 (www.haskell.org) is properly installed.  Also
 \texttt{/usr/local/bin/perl, /usr/local/bin/bash} and \texttt{GNU
   make} are required.
@@ -35,8 +35,10 @@ Go to or make a directory with sufficient space, i.e. under
 cvs checkout HetCATS
 \end{verbatim}
 
+(As user \texttt{cvsread} also \texttt{uni} may be checked out.)
+
 With \texttt{cvs up} you'll always retrieve the latest versions,
-unless you modified a file. A modified file can be put into the
+unless you've modified a file. A modified file can be put into the
 repository by \texttt{cvs commit MyFile}. Before committing something
 you may check differences by \texttt{cvs diff MyFile}. Make sure the
 committed file is usable for others and enter a meaningful log
@@ -120,21 +122,22 @@ instances (of class \texttt{PosItem}) derived by DrIFT (in
 \subsection{Directory structure of \texttt{HetCATS}}
 
 The subdirectories \texttt{utils} (for DrIFT), \texttt{hetcats} (for
-the final application), \texttt{pretty}, \texttt{parsec}, \texttt{fgl}
+the final application), \texttt{pretty} and \texttt{parsec}
 have been mentioned above.
 
 \begin{description}
 \item[CASL] Christian 
 \item[Common] all
-\item[CspCASL] Markus
-\item[GUI] 
+\item[CspCASL] Till
+\item[GUI] Till
 \item[HasCASL] Christian
-\item[Haskell] Christian
-\item[Logic] 
-\item[Lottery] Markus
-\item[Modal] Markus
-\item[Static] 
-\item[Syntax] 
+\item[Haskell] Christian, Sonja
+\item[Logic] Till
+\item[Lottery] ?
+\item[Modal] Wiebke
+\item[Static] Till
+\item[Syntax] Till
+\item[ToHaskell] Katja, convert HasCASL to Haskell
 \item[doc] for documentations like this one
 \item[docs] created by haddock (or \texttt{make doc})
 \item[ghc] include this directory if you use ghc
@@ -143,7 +146,7 @@ have been mentioned above.
 \item[hugs] include this directory if you use hugs
 \item[mini] Till
 \item[test] for test cases (Pascal)
-\item[utils] DrIFT, haddock, ag (attribute grammar system)
+\item[utils] DrIFT (ag, attribute grammar system is not used)
 \end{description}
 
 The directories \texttt{hugs} and \texttt{ghc} currently only implement the function \texttt{unsafeCoerce} differently. 
