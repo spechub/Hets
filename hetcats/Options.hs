@@ -1,11 +1,11 @@
 {-| 
 Module      :  $Header$
-Copyright   :  (c) Martin Kühl, Uni Bremen 2002-2004
+Copyright   :  (c) Martin Kühl, Christian Maeder, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  non-portable(DevGraph)
+Portability :  portable
 
    Datatypes for options, a list of options hets understands.
    Useful functions to parse and check the user-provided functions
@@ -20,7 +20,26 @@ Portability :  non-portable(DevGraph)
        or when the OutDir wasn't approved sane
 -}
 
-module Options where
+module Options ( defaultHetcatsOpts
+               , showDiags
+               , showDiags1
+               , guess
+               , existsAnSource
+               , checkRecentEnv
+               , doIfVerbose
+               , putIfVerbose
+               , hetcatsOpts
+               , HetcatsOpts(..)
+               , GuiType(..)
+               , InType(..)
+               , CASLAmalgOpt(..)
+               , AnaType(..)
+               , OutType(..)
+               , WebType(..)
+               , HetOutFormat(..)
+               , HetOutType(..)
+               , PrettyType(..)
+               ) where
 
 import Version
 import Common.Utils
@@ -60,8 +79,7 @@ latexS = "latex"
 textS = "text"
 texS = "tex"
 
-hetS, genTermS, treeS, bafS, astS :: String
-hetS = "het"
+genTermS, treeS, bafS, astS :: String
 genTermS = "gen_trm"
 treeS = "tree."
 bafS = ".baf"
