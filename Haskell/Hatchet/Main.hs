@@ -18,7 +18,7 @@ import Monad                    (when)
 
 import List                     (null)
 
-import Haskell.Hatchet.MultiModule              (writeModuleInfo, readModuleInfo, toString)
+import Haskell.Hatchet.ModuleIO              (writeModuleInfo, readModuleInfo, toString)
 
 import Haskell.Hatchet.MultiModuleBasics        -- (ModuleInfo(..), joinModuleInfo)
 
