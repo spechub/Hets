@@ -60,7 +60,8 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 CPPP       = cpp 
 
-HC_FLAGS   = -Wall -fglasgow-exts -fno-monomorphism-restriction \
+HC_WARN    = -Wall
+HC_FLAGS   = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
              -fallow-overlapping-instances -fallow-undecidable-instances 
 # -ddump-minimal-imports 
 # flags also come in via  ../uni/uni-package.conf
@@ -344,11 +345,11 @@ utils/DrIFT: $(DRIFT_deps)
 
 utils/genRules: $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
-         $(HC) --make -i../DrIFT-src -i../.. \
+         $(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
               GenerateRules.hs -o ../genRules && strip ../genRules)
 
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
-	$(HC) --make utils/InlineAxioms/InlineAxioms.hs \
+	$(HC) --make utils/InlineAxioms/InlineAxioms.hs $(HC_WARN) \
                           -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
