@@ -31,6 +31,30 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Data.List(partition)
 
+-- new type to defined a different Eq and Ord instance
+data TySc = TySc TypeScheme deriving Show
+
+instance Eq TySc where
+    TySc sc1 == TySc sc2 = 
+	let Result _ ms = mergeScheme Map.empty 0 sc1 sc2 
+	    in maybe False (const True) ms
+
+instance Ord TySc where
+-- this does not match with Eq TypeScheme!
+    TySc sc1 <= TySc sc2 = 
+	TySc sc1 == TySc sc2 || 
+	         let (t1, c) = runState (freshInst sc1) 1
+		     t2 = evalState (freshInst sc2) c
+		     v1 = varsOf t1
+		     v2 = varsOf t2
+                 in case compare (Set.size v1) $ Set.size v2 of 
+			LT -> True
+			EQ -> t1 <= subst (Map.fromAscList $
+			    zipWith (\ v (TypeArg i k _ _) ->
+				     (v, TypeName i k 1)) 
+					   (Set.toList v1) $ Set.toList v2) t2
+			GT -> False 		   
+
 data SymbolType = OpAsItemType TySc
 		| TypeAsItemType Kind
 		| ClassAsItemType Kind
@@ -49,15 +73,25 @@ data RawSymbol = ASymbol Symbol | AnID Id | AKindedId SymbKind Id
     	         deriving (Show, Eq, Ord)
 
 type SymbolMap = Map.Map Symbol Symbol 
+type RawSymbolMap = Map.Map RawSymbol RawSymbol
+type SymbolSet = Set.Set Symbol 
 
 idToTypeSymbol :: Id -> Kind -> Symbol
 idToTypeSymbol idt k = Symbol idt $ TypeAsItemType k
+
+idToClassSymbol :: Id -> Kind -> Symbol
+idToClassSymbol idt k = Symbol idt $ ClassAsItemType k
 
 idToOpSymbol :: Id -> TySc -> Symbol
 idToOpSymbol idt typ = Symbol idt $ OpAsItemType typ
 
 idToRaw :: Id -> RawSymbol
 idToRaw x = AnID x
+
+rawSymName :: RawSymbol -> Id
+rawSymName (ASymbol sym) = symName sym
+rawSymName (AnID i) = i
+rawSymName (AKindedId _ i) = i
 
 symbTypeToKind :: SymbolType -> SymbKind
 symbTypeToKind (OpAsItemType _)    = SK_op
@@ -66,9 +100,8 @@ symbTypeToKind (ClassAsItemType _) = SK_class
 
 symbolToRaw :: Symbol -> RawSymbol
 symbolToRaw sym = ASymbol sym
--- symbolToRaw (Symbol idt typ) = AKindedId (symbTypeToKind typ) idt
 
-symOf :: Env -> Set.Set Symbol
+symOf :: Env -> SymbolSet
 symOf sigma = 
     let classes = Map.foldWithKey ( \ i ks s -> 
 			Set.insert (Symbol i $ ClassAsItemType $
@@ -85,40 +118,101 @@ symOf sigma =
 	      types $ assumps sigma
 	in ops
 
-statSymbMapItems :: [SymbMapItems] -> Result (Map.Map RawSymbol RawSymbol)
-statSymbMapItems sl =  return (Map.fromList $ concat $ map s1 sl)
-  where
-  s1 (SymbMapItems kind l _ _) = map (symbOrMapToRaw kind) l
+statSymbMapItems :: [SymbMapItems] -> Result RawSymbolMap
+statSymbMapItems sl = do 
+    rs <- mapM ( \ (SymbMapItems kind l _ _)
+		 -> mapM (symbOrMapToRaw kind) l) sl
+    foldr ( \ (r1, r2) mm -> do
+	    m <- mm
+	    if Map.member r1 m then do 
+	        Result [Diag Error ("duplicate mapping for: " ++ 
+			  showPretty r1 "\n ignoring: " ++ showPretty r2 "")
+		       $ posOfId $ rawSymName r2] $ Just ()
+	        return m
+	      else return $ Map.insert r1 r2 m) 
+	  (return Map.empty) $ concat rs
  
-symbOrMapToRaw :: SymbKind -> SymbOrMap -> (RawSymbol,RawSymbol)
-symbOrMapToRaw k (SymbOrMap s mt _) = 
-    (symbToRaw k s,
-     symbToRaw k $ case mt of Nothing -> s
-                              Just t -> t)
+symbOrMapToRaw :: SymbKind -> SymbOrMap -> Result (RawSymbol, RawSymbol)
+symbOrMapToRaw k (SymbOrMap s mt _) = do
+    s1 <- symbToRaw k s  
+    s2 <- symbToRaw k $ case mt of Nothing -> s
+				   Just t -> t
+    return (s1, s2)
 
 statSymbItems :: [SymbItems] -> Result [RawSymbol]
-statSymbItems sl = 
-  return (concat (map s1 sl))
-  where s1 (SymbItems kind l _ _) = map (symbToRaw kind) l
+statSymbItems sl = do rs <- mapM (\ (SymbItems kind l _ _) 
+				  -> mapM (symbToRaw kind) l) sl
+		      return $ concat rs
 
-symbToRaw :: SymbKind -> Symb -> RawSymbol
-symbToRaw k (Symb idt _ _)     = symbKindToRaw k idt
+symbToRaw :: SymbKind -> Symb -> Result RawSymbol
+symbToRaw k (Symb idt mt _)     = case mt of 
+    Nothing -> return $ symbKindToRaw k idt
+    Just (SymbType sc@(TypeScheme vs (_ :=> t) _)) -> 
+	let r = return $ ASymbol $ idToOpSymbol idt (TySc sc)
+	    rk = if null vs then Nothing else 
+		 convertTypeToKind t 
+	    rrk = maybeToResult (getMyPos t) 
+	                   ("not a kind: " ++ showPretty t "") rk
+	in case k of 
+	      SK_op -> r
+	      SK_fun -> r
+	      SK_pred -> return $ ASymbol $ idToOpSymbol idt $ 
+			 TySc $ predTypeScheme sc
+	      SK_class -> do ck <- rrk
+			     return $ ASymbol $ idToClassSymbol idt ck
+	      _ -> do ck <- rrk
+		      return $ ASymbol $ idToTypeSymbol idt ck
+
+convertTypeToKind :: Type -> Maybe Kind
+convertTypeToKind (FunType t1 FunArr t2 ps) = 
+    do k1 <- convertTypeToKind t1
+       k2 <- convertTypeToKind t2
+       case k2 of 
+	       ExtKind _ _ _ -> Nothing
+	       _ -> Just $ FunKind k1 k2 ps
+
+convertTypeToKind (BracketType Parens [] _) = 
+    Nothing
+convertTypeToKind (BracketType Parens [t] _) = 
+    convertTypeToKind t
+convertTypeToKind (BracketType Parens ts ps) = 
+       do ks <- mapM convertTypeToKind ts
+	  Just $ Intersection ks ps
+
+convertTypeToKind (MixfixType [t1, TypeToken t]) = 
+    let s = tokStr t 
+	v = case s of 
+		   "+" -> CoVar 
+		   "-" -> ContraVar 
+		   _ -> InVar
+    in case v of 
+	      InVar -> Nothing
+	      _ -> do k1 <- convertTypeToKind t1
+		      Just $ ExtKind k1 v [tokPos t]
+convertTypeToKind(TypeToken t) = 
+       if tokStr t == "Type" then Just $ Universe [tokPos t] else
+          let ci = simpleIdToId t in
+          Just $ ClassKind ci MissingKind
+convertTypeToKind _ = Nothing
 
 symbKindToRaw :: SymbKind -> Id -> RawSymbol
-symbKindToRaw Implicit     idt = AnID idt
-symbKindToRaw sk idt = AKindedId sk idt
+symbKindToRaw Implicit = AnID 
+symbKindToRaw sk = AKindedId $ case sk of 
+		   SK_pred -> SK_op
+		   SK_fun -> SK_op
+		   SK_sort -> SK_type
+		   _ -> sk
 
 matchSymb :: Symbol -> RawSymbol -> Bool
 matchSymb x                               (ASymbol y)            =  x==y
 matchSymb (Symbol idt _)                  (AnID di)              = idt==di
-matchSymb (Symbol idt (TypeAsItemType _)) (AKindedId SK_type di) = idt==di
 matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_op di)   = idt==di
+matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_fun di)  = idt==di
+matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_pred di) = idt==di
+matchSymb (Symbol idt (TypeAsItemType _)) (AKindedId SK_type di) = idt==di
+matchSymb (Symbol idt (TypeAsItemType _)) (AKindedId SK_sort di) = idt==di
+matchSymb (Symbol idt (ClassAsItemType _))(AKindedId SK_class di)= idt==di
 matchSymb _                               _                      = False
-
-rawSymName :: RawSymbol -> Id
-rawSymName (ASymbol sym) = symName sym
-rawSymName (AnID i) = i
-rawSymName (AKindedId _ i) = i
 
 type IdMap = Map.Map Id Id
 
@@ -151,29 +245,6 @@ mapTypeScheme m (TypeScheme args (q :=> t) ps) =
 mapTySc :: IdMap -> TySc -> TySc
 mapTySc m (TySc s1) = TySc (mapTypeScheme m s1)
 
--- new type to defined a different Eq and Ord instance
-data TySc = TySc TypeScheme deriving Show
-
-instance Eq TySc where
-    TySc sc1 == TySc sc2 = 
-	let Result _ ms = mergeScheme Map.empty 0 sc1 sc2 
-	    in maybe False (const True) ms
-
-instance Ord TySc where
--- this does not match with Eq TypeScheme!
-    TySc sc1 <= TySc sc2 = 
-	TySc sc1 == TySc sc2 || 
-	         let (t1, c) = runState (freshInst sc1) 1
-		     t2 = evalState (freshInst sc2) c
-		     v1 = varsOf t1
-		     v2 = varsOf t2
-                 in case compare (Set.size v1) $ Set.size v2 of 
-			LT -> True
-			EQ -> t1 <= subst (Map.fromAscList $
-			    zipWith (\ v (TypeArg i k _ _) ->
-				     (v, TypeName i k 1)) 
-					   (Set.toList v1) $ Set.toList v2) t2
-			GT -> False 		   
 
 type FunMap = Map.Map (Id, TySc) (Id, TySc)
 
@@ -221,20 +292,24 @@ data Morphism = Morphism { msource :: Env
 mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty Map.empty
 
+embedMorphism :: Env -> Env -> Morphism
+embedMorphism a b =
+    (mkMorphism a b) 
+    { typeIdMap = foldr (\x -> Map.insert x x) Map.empty 
+                $ Map.keys $ typeMap a
+    , funMap = Map.foldWithKey 
+                 ( \ i (OpInfos ts) m -> foldr 
+                      (\ oi -> let v = (i, TySc $ opType oi) in 
+		           Map.insert v v) m ts)
+                 Map.empty $ assumps a
+    }
+
 ideMor :: Env -> Morphism
-ideMor e = (mkMorphism e e) 
-	   { typeIdMap = Map.foldWithKey ( \ i _ m -> 
-				Map.insert i i m) Map.empty $ typeMap e
-	   , funMap = Map.foldWithKey ( \ i ts m ->
-			  foldr ( \ t m2 -> let v = (i, TySc (opType t)) in
-				  Map.insert v v m2) m
-					$ opInfos ts) Map.empty
-	                                    $ assumps e
-	   }  
+ideMor e = embedMorphism e e
 
 compMor :: Morphism -> Morphism -> Maybe Morphism
 compMor m1 m2 = 
-  if mtarget m1 == msource m2 then Just 
+  if isSubEnv (mtarget m1) (msource m2) then Just 
       (mkMorphism (msource m1) (mtarget m2))
       { typeIdMap = Map.map ( \ i -> Map.findWithDefault i i $ typeIdMap m2)
 			     $ typeIdMap m1 
@@ -249,23 +324,11 @@ inclusionMor :: Env -> Env -> Result Morphism
 inclusionMor e1 e2 =
   if isSubEnv e1 e2
      then return (embedMorphism e1 e2)
-     else pplain_error (embedMorphism initialEnv initialEnv)
+     else pplain_error (ideMor initialEnv)
           (ptext "Attempt to construct inclusion between non-subsignatures:"
            $$ ptext "Singature 1:" $$ printText e1
            $$ ptext "Singature 2:" $$ printText e2)
            nullPos
-
-embedMorphism :: Env -> Env -> Morphism
-embedMorphism a b =
-    (mkMorphism a b) 
-    { typeIdMap = foldr (\x -> Map.insert x x) Map.empty 
-                $ Map.keys $ typeMap a
-    , funMap = Map.foldWithKey 
-                 ( \ i (OpInfos ts) m -> foldr 
-                      (\ oi -> let t = TySc $ opType oi in 
-		           Map.insert (i,t) (i, t)) m ts)
-                 Map.empty $ assumps a
-    }
 
 symbMapToMorphism :: Env -> Env -> SymbolMap -> Result Morphism
 symbMapToMorphism sigma1 sigma2 smap = do
@@ -319,11 +382,40 @@ morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = 
     do s <- mergeEnv (msource m1) $ msource m2
        t <- mergeEnv (mtarget m1) $ mtarget m2
+       tm <- foldr ( \ (i, j) rm -> 
+		     do m <- rm
+		        case Map.lookup i m of
+		          Nothing -> return $ Map.insert i j m
+		          Just k -> if j == k then return m
+		            else do 
+		            Result [Diag Error 
+			      ("incompatible mapping of type id: " ++ 
+			       showId i " to: " ++ showId j " and: " 
+			       ++ showId k "") $ posOfId i] $ Just ()
+		            return m) 
+	     (return $ typeIdMap m1) $ Map.toList $ typeIdMap m2
+       fm <- foldr ( \ (isc@(i, _), jsc@(j, TySc sc1)) rm -> do
+		     m <- rm
+		     case Map.lookup isc m of
+		       Nothing -> return $ Map.insert isc jsc m
+		       Just ksc@(k, TySc sc2) -> if j == k && 
+		         isUnifiable (typeMap t) 0 sc1 sc2  
+		         then return m
+		            else do 
+		            Result [Diag Error 
+			      ("incompatible mapping of op: " ++ 
+			       showFun isc " to: " ++ showFun jsc " and: " 
+			       ++ showFun ksc "") $ posOfId i] $ Just ()
+		            return m) 
+	     (return $ funMap m1) $ Map.toList $ funMap m2
        return (mkMorphism s t) 
-		  { typeIdMap = Map.union (typeIdMap m1) $ typeIdMap m2
-		  , funMap = Map.union (funMap m1) $ funMap m2 }
+		  { typeIdMap = tm
+		  , funMap = fm }
 
-morphismToSymbMap :: Morphism -> Map.Map Symbol Symbol
+showFun :: (Id, TySc) -> ShowS
+showFun (i, TySc ty) = showId i . (" : " ++) . showPretty ty
+
+morphismToSymbMap :: Morphism -> SymbolMap
 morphismToSymbMap mor = 
   let
     tm = typeMap $ msource mor 
@@ -339,10 +431,6 @@ morphismToSymbMap mor =
              Map.insert (idToOpSymbol id1 t1) 
                         (idToOpSymbol id2 t2) m)
          typeSymMap $ funMap mor 
-
--- | Check if two OpTypes are equal except from totality or partiality
-compatibleOpTypes :: TypeScheme -> TypeScheme -> Bool
-compatibleOpTypes = isUnifiable Map.empty 0 
 
 instance PrettyPrint Morphism where
   printText0 ga m = braces (printText0 ga (msource m)) 
@@ -363,6 +451,9 @@ instance PrettyPrint RawSymbol where
       AnID i -> printText0 ga i
       AKindedId k i -> text (case k of 
            SK_type -> typeS
+           SK_sort -> sortS			     
            SK_op -> opS 
+	   SK_fun -> funS
+	   SK_pred -> predS
            SK_class -> classS
-	   _ -> "") <+> printText0 ga i
+	   Implicit -> "") <+> printText0 ga i

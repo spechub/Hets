@@ -6,7 +6,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  non-portable (imports Morphsim)
+Portability :  portable
     
 The symbol map analysis for the HasCASL logic
 (adapted from CASL version r1.8 of 24.1.2004)
@@ -25,6 +25,7 @@ import HasCASL.AsToLe
 import HasCASL.Symbol
 import HasCASL.Morphism
 import HasCASL.ClassAna
+import HasCASL.Unify
 import HasCASL.VarDecl
 import Common.Id
 import Common.Result
@@ -35,9 +36,6 @@ import Common.PrettyPrint
 import Common.Lib.Pretty
 import Control.Monad
 import Data.Maybe
-
-type RawSymbolMap = Map.Map RawSymbol RawSymbol
-type SymbolSet = Set.Set Symbol 
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap sigma = do
@@ -73,7 +71,7 @@ inducedFromMorphism rmap sigma = do
                   return $ Map.insert s s' m1) 
               (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
-  op_Map <- Map.foldWithKey (opFun myTypeIdMap)
+  op_Map <- Map.foldWithKey (opFun srcTypeMap myTypeIdMap)
               (return Map.empty) (assumps sigma)
   -- compute target signature
   let tarTypeMap = Map.foldWithKey ( \ i k m -> 
@@ -105,10 +103,11 @@ inducedFromMorphism rmap sigma = do
                [ASymbol $ idToTypeSymbol s k, AnID s, AKindedId SK_type s]
 
  -- to a Fun_map, add evering resulting from mapping (id,ots) according to rmap
-  opFun :: IdMap -> Id -> OpInfos -> Result FunMap -> Result FunMap
-  opFun type_Map i ots m = 
+  opFun :: TypeMap -> IdMap -> Id -> OpInfos -> Result FunMap -> Result FunMap
+  opFun tm type_Map i ots m = 
     -- first consider all directly mapped profiles
-    let (ots1,m1) = foldr (directOpMap type_Map i) (Set.empty,m) $ opInfos ots
+    let (ots1,m1) = foldr (directOpMap tm type_Map i) (Set.empty,m) 
+		    $ opInfos ots
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
        (Just rsy1, Just rsy2) -> 
@@ -120,27 +119,28 @@ inducedFromMorphism rmap sigma = do
                )
                nullPos
        (Just rsy, Nothing) -> 
-          Set.fold (insertmapOpSym type_Map i rsy) m1 ots1
+          Set.fold (insertmapOpSym tm type_Map i rsy) m1 ots1
        (Nothing, Just rsy) -> 
-          Set.fold (insertmapOpSym type_Map i rsy) m1 ots1
+          Set.fold (insertmapOpSym tm type_Map i rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
        (Nothing,Nothing) -> Set.fold (unchangedOpSym type_Map i) m1 ots1
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
-  directOpMap :: IdMap -> Id -> OpInfo -> (Set.Set TySc, Result FunMap)
-                     -> (Set.Set TySc, Result FunMap)
-  directOpMap type_Map i oi (ots,m) = let ot = TySc $ opType oi in
+  directOpMap :: TypeMap -> IdMap -> Id -> OpInfo 
+	      -> (Set.Set TySc, Result FunMap)
+              -> (Set.Set TySc, Result FunMap)
+  directOpMap tm type_Map i oi (ots,m) = let ot = TySc $ opType oi in
       case Map.lookup (ASymbol (idToOpSymbol i ot)) rmap of
         Just rsy -> 
-          (ots,insertmapOpSym type_Map i rsy ot m)
+          (ots,insertmapOpSym tm type_Map i rsy ot m)
         Nothing -> (Set.insert ot ots,m)
     -- map op symbol (id,ot) to raw symbol rsy
-  mapOpSym :: IdMap -> Id -> TySc -> RawSymbol 
+  mapOpSym :: TypeMap -> IdMap -> Id -> TySc -> RawSymbol 
 	     -> Result (Id, TySc)
-  mapOpSym type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
+  mapOpSym tm type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
       case rsy of
       ASymbol (Symbol id' (OpAsItemType sc2@(TySc ot'))) ->
-        if compatibleOpTypes sc ot'
+        if isUnifiable tm 0 sc ot'
            then return (id', sc2)
            else pplain_error (i, sc1)
              (ptext "Operation symbol " <+> printText (idToOpSymbol i sc1) 
@@ -157,9 +157,9 @@ inducedFromMorphism rmap sigma = do
                 <+> printText rsy) 
                nullPos
     -- insert mapping of op symbol (id,ot) to raw symbol rsy into m
-  insertmapOpSym type_Map i rsy ot m = do  
+  insertmapOpSym tm type_Map i rsy ot m = do  
       m1 <- m        
-      (id',kind') <- mapOpSym type_Map i ot rsy
+      (id',kind') <- mapOpSym tm type_Map i ot rsy
       return (Map.insert (i, ot) (id',kind') m1)
     -- insert mapping of op symbol (id,ot) to itself into m
   unchangedOpSym type_Map i ot m = do
@@ -197,8 +197,8 @@ preservesName sym1 sym2 = symName sym1 == symName sym2
 
 
 -- try to extend a symbol map with a yet unmapped symbol
-extendSymbMap :: SymbolMap -> Symbol -> Symbol -> Maybe SymbolMap
-extendSymbMap akmap sym1 sym2 =
+extendSymbMap :: TypeMap -> SymbolMap -> Symbol -> Symbol -> Maybe SymbolMap
+extendSymbMap tm akmap sym1 sym2 =
   if case symbType sym1 of 
     TypeAsItemType k1 -> case symbType sym2 of 
        TypeAsItemType k2 -> rawKind k1 == rawKind k2
@@ -209,7 +209,7 @@ extendSymbMap akmap sym1 sym2 =
 		  mapTySc (Map.foldWithKey ( \ s1 s2 m ->
 				Map.insert (symName s1) (symName s2) m)
 			        Map.empty akmap) sc1 
-	      in compatibleOpTypes ot2 sc2
+	      in isUnifiable tm 0 ot2 sc2
       _ -> False
     _ -> False
   then Just $ Map.insert sym1 sym2 akmap
@@ -302,6 +302,7 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
 
      -- 4. recursive depth first function
      -- ambiguous map leads to fatal error (similar to exception)
+tryToInduce :: Env -> Env -> SymbolMap -> PosMap -> Result (Maybe SymbolMap)
 tryToInduce sigma1 sigma2 akmap (posmap1, posmap2) = do
        --debug 5 ("akmap",akmap)
        --debug 6 ("posmap",(posmap1,posmap2))
@@ -316,17 +317,21 @@ tryToInduce sigma1 sigma2 akmap (posmap1, posmap2) = do
             else return akmap1 -- otherwise, use symset1 only
        where
        -- 4b. take symbol with minimal remaining values (MRV)
-       (card,(sym1,symset):symsets) = Map.findMin posmap2
+       (card,(sym1,symset):_symsets) = Map.findMin posmap2
        (symset1,symset2) = Set.partition (preservesName sym1) symset
        posmap' = removeFromPosmap sym1 card (posmap1,posmap2)
      -- 5. to 7.
+tryToInduce1 :: Env -> Env -> SymbolMap -> PosMap -> Symbol 
+	     -> SymbolSet -> Result (Maybe SymbolMap)
 tryToInduce1 sigma1 sigma2 akmap posmap sym1 symset =
        Set.fold (tryToInduce2 sigma1 sigma2 akmap posmap sym1) 
                 (return Nothing) symset
+tryToInduce2 :: Env -> Env -> SymbolMap -> PosMap -> Symbol 
+	     -> Symbol -> Result (Maybe SymbolMap) -> Result (Maybe SymbolMap)
 tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
        -- 5.1. to 5.3. consistency check
        akmapSoFar1 <- akmapSoFar
-       akmap' <- case extendSymbMap akmap sym1 sym2 of
+       akmap' <- case extendSymbMap (typeMap sigma1) akmap sym1 sym2 of
          Nothing -> return Nothing
          -- constraint propagation
          Just akmap1 -> tryToInduce sigma1 sigma2 akmap1 posmap

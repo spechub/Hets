@@ -42,7 +42,8 @@ data SymbMapItems = SymbMapItems SymbKind [SymbOrMap] [Annotation] [Pos]
 		      deriving (Show, Eq)
 
 -- | kind of symbols
-data SymbKind = Implicit | SK_type | SK_op | SK_class
+data SymbKind = Implicit | SK_type | SK_sort | SK_fun | SK_op | SK_pred 
+	      | SK_class
 		 deriving (Show, Eq, Ord)
 
 -- | type annotated symbols
@@ -89,21 +90,20 @@ symbKind = try(
 	   return (SK_op, q)
         <|>
         do q <- pluralKeyword functS 
-	   return (SK_op, q)
+	   return (SK_fun, q)
         <|>
         do q <- pluralKeyword predS 
-	   return (SK_op, q)
+	   return (SK_pred, q)
         <|>
         do q <- pluralKeyword typeS 
 	   return (SK_type, q)
         <|>
         do q <- pluralKeyword sortS 
-	   return (SK_type, q)
+	   return (SK_sort, q)
         <|>
         do q <- asKey (classS ++ "es") <|> asKey classS
 	   return (SK_class, q))
 	<?> "kind"
-
 
 -- | parse symbol items
 symbItems :: AParser SymbItems
