@@ -1,13 +1,13 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Uni Bremen 2003
+Copyright   :  (c) Katja Groeblinghoff, C.Maeder, Uni Bremen 2003 - 2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   Translation of identifiers from HasCASL to haskell.
+   Translation of identifiers to Haskell.
 -}
 
 module ToHaskell.TranslateId where
@@ -15,74 +15,46 @@ module ToHaskell.TranslateId where
 import Common.Id
 import qualified Common.Lib.Map as Map
 import Data.Char
-import Data.List
-------------------------------------------------------------------------
--- Translation of Id's
-------------------------------------------------------------------------
 
--- | Converts an HasCASL identifier to a valid name in haskell 
--- regarding wether it should start with a lower or upper case letter.
+
+-- | Converts an identifier to a valid lower or upper case Haskell name
 translateIdWithType :: IdCase -> Id -> String
-translateIdWithType ty (Id tlist idlist _poslist) = 
-  let s = translateId (Id tlist idlist _poslist)
-  in if ty == UpperId then
-        if (isLower $ head $ tokStr $ head tlist) || (head s == '_') then
-	  "A_" ++ s
-	else firstDigit s
-     else -- if ty == LowerId then
-        if isUpper $ head $ tokStr $ head tlist then
-           "a_" ++ s
-        else firstDigit s
+translateIdWithType ty i = 
+  let s = translateId i ""
+      c = if null s then error "translateIdWithTyper" else head s
+  in case ty of 
+     UpperId -> 
+        if isLower c || c == '_' || isDigit c then  "A_" ++ s
+	else s 
+     LowerId -> if isUpper c || isDigit c then "a_" ++ s
+        else s 
 
--- | To determine, wether an identifier in haskell should start with an 
--- upper case or lower case letter.
-data IdCase = UpperId | LowerId deriving (Eq,Show)
+-- | Letter case indicator
+data IdCase = UpperId | LowerId
 
--- | Converts an HasCASL identifier to a valid name in haskell.
-translateId :: Id -> String
-translateId (Id tlist idlist _poslist) = 
-    (translateTokens tlist) ++ (translateCompound idlist)
+-- | Converts an identifier to a valid Haskell name
+translateId :: Id -> ShowS
+translateId (Id tlist idlist _) = 
+    showSepList id translateToken tlist . translateCompound idlist
 
--- | Translates a list of token according to the 'symbolMapping'.
-translateTokens :: [Token] -> String
-translateTokens [] = ""
-translateTokens (t:ts) = 
-    let str = tokStr t
-        res = translateTokens ts in
-    if isPlace t then
-      subPlace ++ res
-    else (concatMap symbolMapping str) ++ res
+-- | Translate a 'Token' according to the 'symbolMapping'.
+translateToken :: Token -> ShowS
+translateToken t = showString $
+    if isPlace t then "_2"
+    else concatMap symbolMapping $ tokStr t
 
-startsWithDigit :: String -> Bool
-startsWithDigit s = isDigit $ head s
-
-firstDigit :: String -> String
-firstDigit s = if startsWithDigit s then
-	         "_D" ++ s
-	       else s
-
-subPlace :: String
-subPlace = "_2"
-
--- | Converts characters that are not valid for identifiers in haskell 
---   according to the symbol map.
-symbolMapping :: Char -> String
-symbolMapping c = Map.findWithDefault [c] c symbolMap
-
--- | Translation of the compoundlist of an identifier.
-translateCompound :: [Id] -> String
+-- | Translate a compound list
+translateCompound :: [Id] -> ShowS
 --  [      ,      ]
--- _C     _k     _J
-translateCompound [] = ""
-translateCompound ids = "_C" ++
-                        (concat $ intersperse "_k" $ map translateId ids) ++
-                        "_J"
+translateCompound ids = noShow (null ids) $ showString "_F"
+	     . showSepList (showString "_K") translateId ids
+	     . showString "_J"
 
-symbolMap :: Map.Map Char String
-symbolMap = Map.fromList symbolTable
-
-symbolTable :: [(Char,String)]
-symbolTable = 
+-- | Converts characters to parts of Haskell identifiers
+-- thereby translating special ones
+symbolMapping :: Char -> String
+symbolMapping c = Map.findWithDefault [c] c $ Map.fromList 
+-- avoid compound symbols and keep map injective
 -- Special / reserved
    [('_' , "_1"),    -- \95
     ('{' , "_b"),    -- \123
@@ -95,16 +67,16 @@ symbolTable =
     ('+' , "_P"),    -- \43
     ('-' , "_M"),    -- \45
     ('*' , "_T"),    -- \42
-    ('/' , "_D"),    -- \47
+    ('/' , "_S"),    -- \47
     ('\\', "_B"),    -- \92
     ('&' , "_A"),    -- \38
-    ('=' , "_I"),    -- \61
+    ('=' , "_R"),    -- \61
     ('<' , "_L"),    -- \60
     ('>' , "_G"),    -- \62
     ('!' , "_E"),    -- \33
     ('?' , "_Q"),    -- \63
     (':' , "_C"),    -- \58
-    ('$' , "_S"),    -- \36
+    ('$' , "_D"),    -- \36
     ('@' , "_O"),    -- \64
     ('#' , "_H"),    -- \35
     ('^' , "_V"),    -- \94
@@ -124,7 +96,6 @@ symbolTable =
     ('¶' , "_j"),    -- \182
     ('·' , "_i"),    -- \183
     ('¹' , "_o"),    -- \185
-    ('¿' , "_q"),    -- \191
+    ('¿' , "_u"),    -- \191
     ('×' , "_m"),    -- \215
     ('÷' , "_g")]    -- \247
-
