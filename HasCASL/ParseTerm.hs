@@ -415,7 +415,7 @@ termToken = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken)
 
 -- flag if within brackets: True allows "in"-Terms
 primTerm :: TypeMode -> GenParser Char st Term
-primTerm b = termToken
+primTerm b = ifTerm b <|> termToken
 	   <|> braces term (BracketTerm Braces)
 	   <|> brackets term  (BracketTerm Squares)
  	   <|> parenTerm
@@ -424,6 +424,15 @@ primTerm b = termToken
 	   <|> lambdaTerm b 
 	   <|> caseTerm b
 	   <|> letTerm b
+
+ifTerm :: TypeMode -> GenParser Char st Term
+ifTerm b = 
+    do i <- asKey ifS
+       c <- mixTerm b
+       do t <- asKey thenS
+	  e <- mixTerm b
+	  return (MixfixTerm [TermToken i, c, TermToken t, e])
+	<|> return (MixfixTerm [TermToken i, c])
 
 parenTerm :: GenParser Char st Term
 parenTerm = do o <- oParenT
