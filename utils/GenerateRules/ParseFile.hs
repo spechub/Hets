@@ -5,7 +5,13 @@ import ParseHeader
 
 type Modulename = String
 --type Data   = String
+
 type Import = String
+-- data Import = Imp { modulename :: String,
+-- 		    import_list :: [String],
+		    
+
+-- }
 
 inputFile :: Parser ([Data],[Import])
 inputFile = do (ds,is) <- dataOrImport ([],[])
@@ -32,14 +38,14 @@ dataOrImport (ds,is) = do try comment
                
 modulename :: Parser Import
 modulename = do string "module"
-                spaces
+                skipMany1 space
                 m <- identifier
 		manyTill anyChar (try (string "where"))
                 return m
 
 dataType :: Parser Data
 dataType = do try (string "data") <|> (string "newtype")
-	      spaces
+	      skipMany1 space
               d <- identifier
               many (noneOf "=") 
               char '='
@@ -62,12 +68,12 @@ comment = do string "{-"
 -}
 importData :: Parser String
 importData = do string "import"
-                spaces 
+                skipMany1 space
                 qual <- option "" (try (do{string "qualified";spaces;return "qualified "})) 
                 d <- identifier
                 f <- option "" (try (do{spaces;b <- between (char '(') (char ')') (many1 (noneOf "()"));return ("("++b++")")}))
                 as <- option "" (try (do{spaces;string "as";spaces;c<-identifier;return (" as "++c)}))  
-                return (qual++d++f++as)
+                return (qual++d++as) -- orig: qual++d++f++as
   
 
 
