@@ -3,9 +3,9 @@
 %prec({b} < {c})%
 %left_assoc(a, b, c)%
 %right_assoc(d)%
-Error (line 3, column 16) prec_anno conflict: c < a
+*** Error 3.16, prec_anno conflict: c < a
 a,b
 b,c 'a'
-Error (line 5, column 14) identifier has already other associativity 'b'
-Error (line 5, column 16) identifier has already other associativity 'a'
-Hint (line 5, column 20) repeated associative identifier 'd'
+*** Error 5.14, identifier has already other associativity 'b'
+*** Error 5.16, identifier has already other associativity 'a'
+*** Hint 5.20, repeated associative identifier 'd'

@@ -1,45 +1,45 @@
 a
-parse error at (line 2, column 1):
+parse error at 2.1:
 unexpected "1"
 expecting words
 
-parse error at (line 3, column 1):
+parse error at 3.1:
 unexpected "'"
 expecting words
 
-parse error at (line 4, column 1):
+parse error at 4.1:
 unexpected "'"
 expecting words
 
-parse error at (line 5, column 1):
+parse error at 5.1:
 unexpected "'"
 expecting words
 
-parse error at (line 6, column 1):
+parse error at 6.1:
 unexpected "'"
 expecting words
 
-parse error at (line 7, column 1):
+parse error at 7.1:
 unexpected "'"
 expecting words
 
-parse error at (line 8, column 1):
+parse error at 8.1:
 unexpected "'"
 expecting words
 
-parse error at (line 9, column 1):
+parse error at 9.1:
 unexpected "'"
 expecting words
 
-parse error at (line 10, column 1):
+parse error at 10.1:
 unexpected "'"
 expecting words
 
-parse error at (line 11, column 1):
+parse error at 11.1:
 unexpected "'"
 expecting words
 
-parse error at (line 12, column 1):
+parse error at 12.1:
 unexpected "'"
 expecting words
 
@@ -68,179 +68,179 @@ b_f4
 b_f'
 b_fg
 sdafad_fddasfda_dsafsdaf
-parse error at (line 38, column 1):
+parse error at 38.1:
 unexpected "."
 expecting words
 
-parse error at (line 39, column 1):
+parse error at 39.1:
 unexpected "<"
 expecting words
 
-parse error at (line 40, column 1):
+parse error at 40.1:
 unexpected "<"
 expecting words
 
-parse error at (line 41, column 1):
+parse error at 41.1:
 unexpected ">"
 expecting words
 
-parse error at (line 42, column 1):
+parse error at 42.1:
 unexpected "&"
 expecting words
 
-parse error at (line 43, column 1):
+parse error at 43.1:
 unexpected "|"
 expecting words
 
-parse error at (line 44, column 1):
+parse error at 44.1:
 unexpected "+"
 expecting words
 
-parse error at (line 45, column 1):
+parse error at 45.1:
 unexpected "-"
 expecting words
 
-parse error at (line 46, column 1):
+parse error at 46.1:
 unexpected "/"
 expecting words
 
-parse error at (line 47, column 1):
+parse error at 47.1:
 unexpected "~"
 expecting words
 
-parse error at (line 48, column 1):
+parse error at 48.1:
 unexpected "!"
 expecting words
 
-parse error at (line 49, column 1):
+parse error at 49.1:
 unexpected "."
 expecting words
 
-parse error at (line 50, column 1):
+parse error at 50.1:
 unexpected "{"
 expecting words
 
-parse error at (line 51, column 1):
+parse error at 51.1:
 unexpected "["
 expecting words
 
-parse error at (line 52, column 1):
+parse error at 52.1:
 unexpected "{"
 expecting words
 
-parse error at (line 53, column 1):
+parse error at 53.1:
 unexpected "["
 expecting words
 
-parse error at (line 54, column 1):
+parse error at 54.1:
 unexpected "["
 expecting words
 
-parse error at (line 55, column 1):
+parse error at 55.1:
 unexpected "{"
 expecting words
 
-parse error at (line 56, column 1):
+parse error at 56.1:
 unexpected "_"
 expecting words
 
-parse error at (line 57, column 1):
+parse error at 57.1:
 unexpected "_"
 expecting words
 
-parse error at (line 58, column 1):
+parse error at 58.1:
 unexpected "_"
 expecting words
 
-parse error at (line 59, column 1):
+parse error at 59.1:
 unexpected "_"
 expecting words
 
-parse error at (line 60, column 1):
+parse error at 60.1:
 unexpected ">"
 expecting words
 
-parse error at (line 61, column 1):
+parse error at 61.1:
 unexpected ">"
 expecting words
 
-parse error at (line 62, column 1):
+parse error at 62.1:
 unexpected "_"
 expecting words
 
-parse error at (line 63, column 1):
+parse error at 63.1:
 unexpected "_"
 expecting words
 
 a[b]
-parse error at (line 65, column 1):
+parse error at 65.1:
 unexpected "="
 expecting words
 
-parse error at (line 66, column 1):
+parse error at 66.1:
 unexpected "="
 expecting words
 
-parse error at (line 67, column 1):
+parse error at 67.1:
 unexpected "."
 expecting words
 
-parse error at (line 68, column 1):
+parse error at 68.1:
 unexpected "{"
 expecting words
 
-parse error at (line 69, column 1):
+parse error at 69.1:
 unexpected "."
 expecting words
 
-parse error at (line 70, column 1):
+parse error at 70.1:
 unexpected "."
 expecting words
 
 a[b,c,d]
 a[b,c,d]
 a[b,c,d]
-parse error at (line 74, column 1):
+parse error at 74.1:
 unexpected "_"
 expecting words
 
-parse error at (line 75, column 1):
+parse error at 75.1:
 unexpected "_"
 expecting words
 
-parse error at (line 76, column 1):
+parse error at 76.1:
 unexpected "_"
 expecting words
 
-parse error at (line 77, column 1):
+parse error at 77.1:
 unexpected "_"
 expecting words
 
-parse error at (line 78, column 1):
+parse error at 78.1:
 unexpected "_"
 expecting words
 
-parse error at (line 79, column 1):
+parse error at 79.1:
 unexpected "_"
 expecting words
 
-parse error at (line 80, column 1):
+parse error at 80.1:
 unexpected "_"
 expecting words
 
-parse error at (line 81, column 1):
+parse error at 81.1:
 unexpected "_"
 expecting words
 
-parse error at (line 82, column 1):
+parse error at 82.1:
 unexpected "_"
 expecting words
 
-parse error at (line 83, column 2):
+parse error at 83.2:
 unexpected "_"
 expecting casl char, underline word, [<id>,...,<id>] or end of input
 
-parse error at (line 84, column 2):
+parse error at 84.2:
 unexpected "_"
 expecting casl char, underline word, [<id>,...,<id>] or end of input
 
@@ -250,159 +250,159 @@ a[__{}[a]__]
 a[__[__]]
 a[__[__]__]
 a[__<__]
-parse error at (line 91, column 1):
+parse error at 91.1:
 unexpected "_"
 expecting words
 
 order[__<__]
-parse error at (line 93, column 1):
+parse error at 93.1:
 unexpected "_"
 expecting words
 
-parse error at (line 94, column 1):
+parse error at 94.1:
 unexpected "'"
 expecting words
 
-parse error at (line 95, column 1):
+parse error at 95.1:
 unexpected "*"
 expecting words
 
-parse error at (line 96, column 1):
+parse error at 96.1:
 unexpected "_"
 expecting words
 
-parse error at (line 97, column 1):
+parse error at 97.1:
 unexpected "_"
 expecting words
 
-parse error at (line 98, column 1):
+parse error at 98.1:
 unexpected "_"
 expecting words
 
-parse error at (line 99, column 1):
+parse error at 99.1:
 unexpected "_"
 expecting words
 
-parse error at (line 100, column 1):
+parse error at 100.1:
 unexpected "["
 expecting words
 
-parse error at (line 101, column 1):
+parse error at 101.1:
 unexpected "["
 expecting words
 
-parse error at (line 102, column 1):
+parse error at 102.1:
 unexpected "_"
 expecting words
 
-parse error at (line 103, column 1):
+parse error at 103.1:
 unexpected "_"
 expecting words
 
-parse error at (line 104, column 1):
+parse error at 104.1:
 unexpected "_"
 expecting words
 
-parse error at (line 105, column 1):
+parse error at 105.1:
 unexpected "_"
 expecting words
 
-parse error at (line 106, column 1):
+parse error at 106.1:
 unexpected "["
 expecting words
 
-parse error at (line 107, column 1):
+parse error at 107.1:
 unexpected "["
 expecting words
 
-parse error at (line 108, column 1):
+parse error at 108.1:
 unexpected "*"
 expecting words
 
-parse error at (line 109, column 1):
+parse error at 109.1:
 unexpected "*"
 expecting words
 
-parse error at (line 110, column 1):
+parse error at 110.1:
 unexpected "*"
 expecting words
 
-parse error at (line 111, column 1):
+parse error at 111.1:
 unexpected "_"
 expecting words
 
-parse error at (line 112, column 1):
+parse error at 112.1:
 unexpected "_"
 expecting words
 
-parse error at (line 113, column 1):
+parse error at 113.1:
 unexpected "*"
 expecting words
 
-parse error at (line 114, column 1):
+parse error at 114.1:
 unexpected "["
 expecting words
 
-parse error at (line 115, column 1):
+parse error at 115.1:
 unexpected "{"
 expecting words
 
-parse error at (line 116, column 1):
+parse error at 116.1:
 unexpected "{"
 expecting words
 
 a[a]
-parse error at (line 118, column 2):
+parse error at 118.2:
 unexpected "{"
 expecting casl char, underline word, [<id>,...,<id>] or end of input
 
 a[b]
-parse error at (line 120, column 1):
+parse error at 120.1:
 unexpected "<"
 expecting words
 
-parse error at (line 121, column 2):
+parse error at 121.2:
 unexpected "{"
 expecting casl char, underline word, [<id>,...,<id>] or end of input
 
-parse error at (line 122, column 1):
+parse error at 122.1:
 unexpected "<"
 expecting words
 
-parse error at (line 123, column 2):
+parse error at 123.2:
 unexpected "{"
 expecting casl char, underline word, [<id>,...,<id>] or end of input
 
-parse error at (line 124, column 1):
+parse error at 124.1:
 unexpected "<"
 expecting words
 
 a[b[c]]
-parse error at (line 126, column 1):
+parse error at 126.1:
 unexpected ":"
 expecting words
 
-parse error at (line 127, column 1):
+parse error at 127.1:
 unexpected "@"
 expecting words
 
-parse error at (line 128, column 1):
+parse error at 128.1:
 unexpected "\\"
 expecting words
 
-parse error at (line 129, column 1):
+parse error at 129.1:
 unexpected "."
 expecting words
 
-parse error at (line 130, column 1):
+parse error at 130.1:
 unexpected "."
 expecting words
 
-parse error at (line 131, column 1):
+parse error at 131.1:
 unexpected "|"
 expecting words
 
-parse error at (line 132, column 1):
+parse error at 132.1:
 unexpected "["
 expecting words
 
