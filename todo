@@ -217,6 +217,8 @@ IsaWin: support CASL-libraries
 Till
 ************************************************
 
+theorem links between nodes in different libraries
+
 basicProofs: use info about used axioms
              ensure that axiom/thm names are unique
 
