@@ -3,10 +3,10 @@
 .PHONY: check
 
 check: capa 
-	bash ./runcheck.sh ../capa
+	./runcheck.sh ../capa
 
 output: capa 
-	bash ./runcheck.sh ../capa set
+	./runcheck.sh ../capa set
 
 %: 
 	(cd ../..; $(MAKE) $@)

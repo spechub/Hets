@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/sh
 
 #first parameter is executable
 #second parameter resets ouput files

@@ -3,10 +3,10 @@
 .PHONY: check
 
 check: hacapa
-	bash ./runcheck.sh ../hacapa
+	./runcheck.sh ../hacapa
 
 output: 
-	bash ./runcheck.sh ../hacapa set
+	./runcheck.sh ../hacapa set
 
 %: 
 	(cd ../..; $(MAKE) $@)
