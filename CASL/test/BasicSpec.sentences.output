@@ -53,7 +53,8 @@
   (op SYX : Char) : Char = (var '\002' : Char) : Char %(SYX_def)%,
   (op SOH : Char) : Char = (var '\001' : Char) : Char %(SOH_def)%,
   (op NUL : Char) : Char = (var '\000' : Char) : Char %(NUL_def)%,
-  (op '\xFF' : Char) = '\255' %(slash_xFF)%,
+  (op '\xFF' : Char) : Char =
+      (var '\255' : Char) : Char %(slash_xFF)%,
   (op '\xFE' : Char) : Char =
       (var '\254' : Char) : Char %(slash_xFE)%,
   (op '\xFD' : Char) : Char =
@@ -562,8 +563,10 @@
       (var '\002' : Char) : Char %(slash_x02)%,
   (op '\x01' : Char) : Char =
       (var '\001' : Char) : Char %(slash_x01)%,
-  (op '\x00' : Char) = '\000' %(slash_x00)%,
-  (op '\o377' : Char) = '\255' %(slash_o377)%,
+  (op '\x00' : Char) : Char =
+      (var '\000' : Char) : Char %(slash_x00)%,
+  (op '\o377' : Char) : Char =
+      (var '\255' : Char) : Char %(slash_o377)%,
   (op '\o376' : Char) : Char =
       (var '\254' : Char) : Char %(slash_o376)%,
   (op '\o375' : Char) : Char =
@@ -1072,7 +1075,8 @@
       (var '\002' : Char) : Char %(slash_o002)%,
   (op '\o001' : Char) : Char =
       (var '\001' : Char) : Char %(slash_o001)%,
-  (op '\o000' : Char) = '\000' %(slash_o000)%,
+  (op '\o000' : Char) : Char =
+      (var '\000' : Char) : Char %(slash_o000)%,
   forall c:Char
       . (pred isPrintable : Char)((var c : Char) : Char) <=>
 	    ((pred __<=__ : Int *
@@ -2986,12 +2990,12 @@
       . (op c : s * s * s -> s)((var x : s) : s, (var y : s) : s,
 				(var z : t) : t) : s =
 	    (var a : s) : s %()%,
-  (op a :? s) = a %()%,
+  (op a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
   forall x, y:s; z:t
       . (op c : s * s * s -> s)((var x : s) : s, (var y : s) : s,
 				(var z : t) : t) : s =
 	    (var a : s) : s %()%,
-  (op a : s) = a %()%,
+  (op a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
   forall x:s
       . (op c : s * s -> s)((var a : s) : s, (var x : s) : s) : s =
 	    (var x : s) : s %(ga_left_unit_c)%,
@@ -3031,10 +3035,15 @@
 						    (var y : s) : s) : s,
 				(var z : s) : s) : s %(ga_assoc_c)%,
   forall x:b . ((var x : b) : b in a) <=> true %()%,
+  def (op __@@__ : Nat * Nat -> Nat)((var 1 : Nat) : Nat,
+				     (var 2 : Nat) : Nat) : Nat %()%,
   def <error> %()%, def <error> %()%, def <error> %()%,
   def <error> %()%, def <error> %()%, def <error> %()%,
-  def <error> %()%, true %(The true formula)%, true %(and this)%,
-  a = a %(f1)%, a = a %(f1)%, a = a %(a1)%, a = a %(a2)%,
+  true %(The true formula)%, true %(and this)%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %(f1)%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %(f1)%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %(a1)%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %(a2)%,
   generated{sort s, t; op a : b; op c : b; op c : s; op c : a ->? s;
 		       op c : a * t * t * t -> s} %(ga_generated_s_t)%,
   forall X1:a; X2:t; X3:t; X4:t
@@ -3152,9 +3161,16 @@
 							(var X4 : t) : t,
 							(var X5 : t) : t) : s) : t =
 	    (var X5 : t) : t %(ga_selector_d)%,
-  a = a %()%, a = a %()%, a = a %()%, a = a %()%,
-  forall a:t; a, b:s . a = a %()%, forall a:t; a, b:s . a = a %()%,
-  a = a %()%, a = a %()%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+  forall a:t; a, b:s
+      . (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+  forall a:t; a, b:s
+      . (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
+  (var a : Data1) : Data1 = (var a : Data1) : Data1 %()%,
   forall i, j:Int; p, q:Pos
       . (op __/__ : Rat * Rat ->? Rat)((op __/__ : Int *
 						   Pos -> Rat)((var i : Int) : Int,
@@ -3187,7 +3203,7 @@
       . (pred __<__ : Rat * Rat)((var x : Rat) : Rat,
 				 (var y : Rat) : Rat) <=>
 	    (pred __<=__ : Rat * Rat)((var x : Rat) : Rat, (var y : Rat) : Rat)
-	    /\ not x = y %(Rat_less_def)%,
+	    /\ not (var x : Rat) : Rat = (var y : Rat) : Rat %(Rat_less_def)%,
   forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
       . (pred __>__ : Rat * Rat)((var x : Rat) : Rat,
 				 (var y : Rat) : Rat) <=>
@@ -3228,7 +3244,12 @@
       . not def (op __/__ : Rat * Rat ->? Rat)((var x : Rat) : Rat,
 					       (var 0 : Int) : Int) : Rat %(Rat_divide_def1)%,
   forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
-      . (x / y = z <=> z = x * y) if
+      . ((op __/__ : Rat * Rat ->? Rat)((var x : Rat) : Rat,
+					(var y : Rat) : Rat) : Rat =
+	     (var z : Rat) : Rat <=>
+	     (var z : Rat) : Rat =
+		 (op __*__ : Rat * Rat -> Rat)((var x : Rat) : Rat,
+					       (var y : Rat) : Rat) : Rat) if
 	    not (var y : Rat) : Rat = (var 0 : Int) : Int %(Rat_divide_def2)%,
   forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
       . (op +__ : Rat -> Rat)((var x : Rat) : Rat) : Rat =
@@ -3277,7 +3298,10 @@
 		when (pred __<=__ : Rat * Rat)((var x : Rat) : Rat,
 					       (var y : Rat) : Rat)
 		else (var x : Rat) : Rat : Rat %(Rat_max_def)%,
-  forall i:Int . i / 1 = i %(embeddingIntToRat)%,
+  forall i:Int
+      . (op __/__ : Int * Pos -> Rat)((var i : Int) : Int,
+				      (var 1 : Pos) : Pos) : Rat =
+	    (var i : Int) : Int %(embeddingIntToRat)%,
   forall i, j:Int; p, q:Pos
       . (op __/__ : Int * Pos -> Rat)((var i : Int) : Int,
 				      (var p : Pos) : Pos) : Rat =
@@ -3350,10 +3374,35 @@
 									   (var n : Int) : Int) : Int) : Int if
 	    not (var n : Int) : Int = (var 0 : Int) : Int %(Int_quot_rem)%,
   forall m, n, r, s:Int; a, b, c, d:Nat
-      . (a - b) + (c - d) = (a + c) - (b + d) %(Int_add_def)%,
+      . (op __+__ : Int * Int -> Int)((op __-__ : Int *
+						  Int -> Int)((var a : Nat) : Nat,
+							      (var b : Nat) : Nat) : Int,
+				      (op __-__ : Int * Int -> Int)((var c : Nat) : Nat,
+								    (var d : Nat) : Nat) : Int) : Int =
+	    (op __-__ : Int * Int -> Int)((op __+__ : Nat *
+						      Nat -> Nat)((var a : Nat) : Nat,
+								  (var c : Nat) : Nat) : Nat,
+					  (op __+__ : Nat * Nat -> Nat)((var b : Nat) : Nat,
+									(var d : Nat) : Nat) : Nat) : Int %(Int_add_def)%,
   forall m, n, r, s:Int; a, b, c, d:Nat
-      . (a - b) * (c - d) =
-	    (a * c + b * d) - (b * c + a * d) %(Int_mult_def)%,
+      . (op __*__ : Int * Int -> Int)((op __-__ : Int *
+						  Int -> Int)((var a : Nat) : Nat,
+							      (var b : Nat) : Nat) : Int,
+				      (op __-__ : Int * Int -> Int)((var c : Nat) : Nat,
+								    (var d : Nat) : Nat) : Int) : Int =
+	    (op __-__ : Int * Int -> Int)((op __+__ : Nat *
+						      Nat -> Nat)((op __*__ : Nat *
+									      Nat -> Nat)((var a : Nat) : Nat,
+											  (var c : Nat) : Nat) : Nat,
+								  (op __*__ : Nat *
+									      Nat -> Nat)((var b : Nat) : Nat,
+											  (var d : Nat) : Nat) : Nat) : Nat,
+					  (op __+__ : Nat * Nat -> Nat)((op __*__ : Nat *
+										    Nat -> Nat)((var b : Nat) : Nat,
+												(var c : Nat) : Nat) : Nat,
+									(op __*__ : Nat *
+										    Nat -> Nat)((var a : Nat) : Nat,
+												(var d : Nat) : Nat) : Nat) : Nat) : Int %(Int_mult_def)%,
   forall m, n, r, s:Int; a, b, c, d:Nat
       . (op __-__ : Int * Int -> Int)((var m : Int) : Int,
 				      (var n : Int) : Int) : Int =
@@ -3369,8 +3418,13 @@
 	    (op __-__ : Int * Int -> Int)((var b : Nat) : Nat,
 					  (var a : Nat) : Nat) : Int %(Int_neg_def)%,
   forall m, n, r, s:Int; a, b, c, d:Nat
-      . sign(m) =
-	    0 when m = 0 else 1 when m > 0 else - 1 %(Int_sign_def)%,
+      . (op sign : Int -> Int)((var m : Int) : Int) : Int =
+	    (var 0 : Int) : Int
+		when (var m : Int) : Int = (var 0 : Int) : Int
+		else (var 1 : Int) : Int
+			 when (pred __>__ : Int * Int)((var m : Int) : Int,
+						       (var 0 : Int) : Int)
+			 else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int : Int %(Int_sign_def)%,
   forall m, n, r, s:Int; a, b, c, d:Nat
       . (pred __<=__ : Int * Int)((var m : Int) : Int,
 				  (var n : Int) : Int) <=>
@@ -3408,9 +3462,15 @@
   forall m, n, r, s:Int; a, b, c, d:Nat
       . (op abs : Int -> Nat)((var m : Int) : Int) : Nat =
 	    (op -__ : Int -> Int)((var m : Int) : Int) : Int if
-	    (pred __<__ : ())(m, 0) %(Int_abs_def)%,
+	    (pred __<__ : Int * Int)((var m : Int) : Int,
+				     (var 0 : Int) : Int) %(Int_abs_def)%,
   forall m, n, r, s:Int; a, b, c, d:Nat
-      . - 1 ^ a = 1 when even(a) else - 1 %(Int_neg1_power_def)%,
+      . (op __^__ : Int *
+		    Nat -> Int)((op -__ : Int -> Int)((var 1 : Int) : Int) : Int,
+				(var a : Nat) : Nat) : Int =
+	    (var 1 : Int) : Int
+		when (pred even : Int)((var a : Nat) : Nat)
+		else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int %(Int_neg1_power_def)%,
   forall m, n, r, s:Int; a, b, c, d:Nat
       . (op __^__ : Int * Nat -> Int)((var m : Int) : Int,
 				      (var a : Nat) : Nat) : Int =
@@ -3475,9 +3535,19 @@
 					  (op __rem__ : Nat *
 							Nat ->? Nat)((op abs : Int -> Nat)((var m : Int) : Int) : Nat,
 								     (op abs : Int -> Nat)((var n : Int) : Int) : Nat) : Nat) : Int %(Int_rem_def)%,
-  forall a:Nat . a = a - 0 %(Int_Nat_embedding)%,
+  forall a:Nat
+      . (var a : Nat) : Nat =
+	    (op __-__ : Int * Int -> Int)((var a : Nat) : Nat,
+					  (var 0 : Int) : Int) : Int %(Int_Nat_embedding)%,
   forall a, b, c, d:Nat
-      . a - b = c - d <=> a + d = c + b %(Int_equality)%,
+      . (op __-__ : Int * Int -> Int)((var a : Nat) : Nat,
+				      (var b : Nat) : Nat) : Int =
+	    (op __-__ : Int * Int -> Int)((var c : Nat) : Nat,
+					  (var d : Nat) : Nat) : Int <=>
+	    (op __+__ : Nat * Nat -> Nat)((var a : Nat) : Nat,
+					  (var d : Nat) : Nat) : Nat =
+		(op __+__ : Nat * Nat -> Nat)((var c : Nat) : Nat,
+					      (var b : Nat) : Nat) : Nat %(Int_equality)%,
   generated{sort Int; op __-__ : Nat *
 				 Nat -> Int} %(ga_generated_Int)%,
   forall x, m, n, r, s, t:Nat; p:Pos
@@ -3518,8 +3588,13 @@
 					  (op __*__ : Nat * Nat -> Nat)((var s : Nat) : Nat,
 									(var t : Nat) : Nat) : Nat) : Nat %(Nat_distr)%,
   forall x, m, n, r, s, t:Nat; p:Pos
-      . max(m, 0) = m %(Nat_max_unit)%,
-  forall x, m, n, r, s, t:Nat; p:Pos . min(m, 0) = 0 %(Nat_min_0)%,
+      . (op max : Int * Int -> Int)((var m : Nat) : Nat,
+				    (var 0 : Int) : Int) : Int =
+	    (var m : Nat) : Nat %(Nat_max_unit)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . (op min : Int * Int -> Int)((var m : Nat) : Nat,
+				    (var 0 : Int) : Int) : Int =
+	    (var 0 : Int) : Int %(Nat_min_0)%,
   forall x:Nat; y:Nat; z:Nat
       . (op min : Nat * Nat -> Nat)((var x : Nat) : Nat,
 				    (op min : Nat * Nat -> Nat)((var y : Nat) : Nat,
@@ -3549,10 +3624,16 @@
   (op 1 : Pos) : Pos =
       (op suc : Nat -> Pos)((var 0 : Nat) : Nat) : Pos %(Nat_1_as_Pos_def)%,
   forall p:Nat
-      . ((var p : Nat) : Nat in Pos) <=> (pred __>__ : ())(p, 0) %()%,
-  forall m, n, r, s:Nat . (pred __<=__ : ())(0, n) %(Nat_leq_def1)%,
+      . ((var p : Nat) : Nat in Pos) <=>
+	    (pred __>__ : Int * Int)((var p : Nat) : Nat,
+				     (var 0 : Int) : Int) %()%,
   forall m, n, r, s:Nat
-      . not (pred __<=__ : ())(suc(n), 0) %(Nat_leq_def2)%,
+      . (pred __<=__ : Int * Int)((var 0 : Int) : Int,
+				  (var n : Nat) : Nat) %(Nat_leq_def1)%,
+  forall m, n, r, s:Nat
+      . not (pred __<=__ : Int *
+			   Int)((op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos,
+				(var 0 : Int) : Int) %(Nat_leq_def2)%,
   forall m, n, r, s:Nat
       . (pred __<=__ : Int *
 		       Int)((op suc : Nat -> Pos)((var m : Nat) : Nat) : Pos,
@@ -3574,7 +3655,10 @@
 				 (var n : Nat) : Nat) <=>
 	    (pred __<__ : Int * Int)((var m : Nat) : Nat,
 				     (var n : Nat) : Nat) %(Nat_greater_def)%,
-  forall m, n, r, s:Nat . 0 + m = m %(Nat_add_0)%,
+  forall m, n, r, s:Nat
+      . (op __+__ : Int * Int -> Int)((var 0 : Int) : Int,
+				      (var m : Nat) : Nat) : Int =
+	    (var m : Nat) : Nat %(Nat_add_0)%,
   forall m, n, r, s:Nat
       . (op __+__ : Pos *
 		    Nat -> Pos)((op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos,
@@ -3582,7 +3666,10 @@
 	    (op suc : Nat -> Pos)((op __+__ : Nat *
 					      Nat -> Nat)((var n : Nat) : Nat,
 							  (var m : Nat) : Nat) : Nat) : Pos %(Nat_add_suc)%,
-  forall m, n, r, s:Nat . 0 * m = 0 %(Nat_mult_0)%,
+  forall m, n, r, s:Nat
+      . (op __*__ : Int * Int -> Int)((var 0 : Int) : Int,
+				      (var m : Nat) : Nat) : Int =
+	    (var 0 : Int) : Int %(Nat_mult_0)%,
   forall m, n, r, s:Nat
       . (op __*__ : Nat *
 		    Nat -> Nat)((op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos,
@@ -3591,7 +3678,10 @@
 						      Nat -> Nat)((var n : Nat) : Nat,
 								  (var m : Nat) : Nat) : Nat,
 					  (var m : Nat) : Nat) : Nat %(Nat_mult_suc)%,
-  forall m, n, r, s:Nat . m ^ 0 = 1 %(Nat_power_0)%,
+  forall m, n, r, s:Nat
+      . (op __^__ : Nat * Nat -> Nat)((var m : Nat) : Nat,
+				      (var 0 : Nat) : Nat) : Nat =
+	    (var 1 : Int) : Int %(Nat_power_0)%,
   forall m, n, r, s:Nat
       . (op __^__ : Nat * Nat -> Nat)((var m : Nat) : Nat,
 				      (op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos) : Nat =
@@ -3621,7 +3711,8 @@
   forall m, n, r, s:Nat
       . (pred odd : Int)((var m : Nat) : Nat) <=>
 	    not (pred even : Int)((var m : Nat) : Nat) %(Nat_odd_def)%,
-  forall m, n, r, s:Nat . (pred even : ())(0) %(Nat_even_0)%,
+  forall m, n, r, s:Nat
+      . (pred even : Int)((var 0 : Int) : Int) %(Nat_even_0)%,
   forall m, n, r, s:Nat
       . (pred even : Int)((op suc : Nat -> Pos)((var m : Nat) : Nat) : Pos) <=>
 	    (pred odd : Int)((var m : Nat) : Nat) %(Nat_even_suc)%,
@@ -3640,7 +3731,9 @@
 	    (var m : Nat) : Nat =
 		(op __+__ : Nat * Nat -> Nat)((var r : Nat) : Nat,
 					      (var n : Nat) : Nat) : Nat %(Nat_sub_def)%,
-  forall m, n, r, s:Nat . not def <error> %(Nat_divide_0)%,
+  forall m, n, r, s:Nat
+      . not def (op __/?__ : Int * Int ->? Int)((var m : Nat) : Nat,
+						(var 0 : Int) : Int) : Int %(Nat_divide_0)%,
   forall m, n, r, s:Nat
       . ((op __/?__ : Nat * Nat ->? Nat)((var m : Nat) : Nat,
 					 (var n : Nat) : Nat) : Nat =
@@ -3648,7 +3741,8 @@
 	     (var m : Nat) : Nat =
 		 (op __*__ : Nat * Nat -> Nat)((var r : Nat) : Nat,
 					       (var n : Nat) : Nat) : Nat) if
-	    (pred __>__ : ())(n, 0) %(Nat_divide_Pos)%,
+	    (pred __>__ : Int * Int)((var n : Nat) : Nat,
+				     (var 0 : Int) : Int) %(Nat_divide_Pos)%,
   forall m, n, r, s:Nat
       . (op __div__ : Nat * Nat ->? Nat)((var m : Nat) : Nat,
 					 (var n : Nat) : Nat) : Nat =
@@ -3686,7 +3780,9 @@
   forall m, n, r, s:Nat
       . (var 1 : Int) : Int =
 	    (op suc : Nat -> Pos)((var 0 : Nat) : Nat) : Pos %(Nat_1_def)%,
-  forall m, n, r, s:Nat . 2 = suc(1) %(Nat_2_def)%,
+  forall m, n, r, s:Nat
+      . (var 2 : Nat) : Nat =
+	    (op suc : Nat -> Pos)((var 1 : Nat) : Nat) : Pos %(Nat_2_def)%,
   forall m, n, r, s:Nat
       . (var 3 : Nat) : Nat =
 	    (op suc : Nat -> Pos)((var 2 : Nat) : Nat) : Pos %(Nat_3_def)%,
@@ -3728,876 +3824,6 @@
   forall X1:Nat
       . (op pre : Nat ->? Nat)((op suc : Nat -> Pos)((var X1 : Nat) : Nat) : Pos) : Nat =
 	    (var X1 : Nat) : Nat %(ga_selector_pre)% ]
-*** Error 77.10, Cannot disambiguate3! Possible Expansions:  [ [ (var 2 : Nat) : Nat ],
-					      [ (var 2 : s) : s ] ]
-[ [ (op suc : Nat -> Pos)((var 1 : Nat) : Nat) : Pos ],
-  [ (op suc : Nat -> Pos)((var 1 : Pos) : Pos) : Pos ] ]
-*** Error , Cannot disambiguate2! Term:  (__>__,[ n, 0 ])
-Possible Expansions:  [ [ (Int * Int,[ (var n : Nat) : Nat,
-				       (var 0 : Int) : Int ]),
-			  (Int * Int,[ (var n : Nat) : Nat, (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (var n : Nat) : Nat, (var 0 : Int) : Int ]) ],
-			[ (Nat * Nat,[ (var n : Nat) : Nat, (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (var n : Nat) : Nat, (var 0 : Nat) : Nat ]) ],
-			[ (Rat * Rat,[ (var n : Nat) : Nat, (var 0 : Rat) : Rat ]) ] ]
-*** Error 66.12, Cannot disambiguate1!
-Possible Expansions:  [ [ (op __/?__ : Int *
-							     Int ->? Int)((var m : Nat) : Nat,
-									  (var 0 : Int) : Int) : Int,
-						(op __/?__ : Int * Int ->? Int)((var m : Nat) : Nat,
-										(var 0 : Nat) : Nat) : Int ],
-					      [ (op __/?__ : Nat * Nat ->? Nat)((var m : Nat) : Nat,
-										(var 0 : Nat) : Nat) : Nat ] ]
-*** Error , Cannot disambiguate2! Term:  (even,[ 0 ])
-Possible Expansions:  [ [ (Int,[ (var 0 : Int) : Int ]),
-			  (Int,[ (var 0 : Nat) : Nat ]) ],
-			[ (Nat,[ (var 0 : Nat) : Nat ]) ] ]
-*** Error 47.14, Cannot disambiguate3! Possible Expansions:  [ [ (op __^__ : Nat *
-							    Nat -> Nat)((var m : Nat) : Nat,
-									(var 0 : Nat) : Nat) : Nat ],
-					      [ (op __^__ : Rat * Int -> Rat)((var m : Nat) : Nat,
-									      (var 0 : Int) : Int) : Rat ] ]
-[ [ (var 1 : Int) : Int, (var 1 : Nat) : Nat, (var 1 : Pos) : Pos,
-    (var 1 : Rat) : Rat ],
-  [ (var 1 : s) : s ] ]
-*** Error 44.14, Cannot disambiguate3! Possible Expansions:  [ [ (op __*__ : Int *
-							    Int -> Int)((var 0 : Int) : Int,
-									(var m : Nat) : Nat) : Int,
-						(op __*__ : Int * Int -> Int)((var 0 : Nat) : Nat,
-									      (var m : Nat) : Nat) : Int ],
-					      [ (op __*__ : Nat * Nat -> Nat)((var 0 : Nat) : Nat,
-									      (var m : Nat) : Nat) : Nat ],
-					      [ (op __*__ : Rat * Rat -> Rat)((var 0 : Rat) : Rat,
-									      (var m : Nat) : Nat) : Rat ] ]
-[ [ (var 0 : Int) : Int, (var 0 : Nat) : Nat,
-    (var 0 : Rat) : Rat ],
-  [ (var 0 : nat) : nat ] ]
-*** Error 40.14, Cannot disambiguate3! Possible Expansions:  [ [ (op __+__ : Int *
-							    Int -> Int)((var 0 : Int) : Int,
-									(var m : Nat) : Nat) : Int,
-						(op __+__ : Int * Int -> Int)((var 0 : Nat) : Nat,
-									      (var m : Nat) : Nat) : Int ],
-					      [ (op __+__ : Nat * Nat -> Nat)((var 0 : Nat) : Nat,
-									      (var m : Nat) : Nat) : Nat ],
-					      [ (op __+__ : Rat * Rat -> Rat)((var 0 : Rat) : Rat,
-									      (var m : Nat) : Nat) : Rat ] ]
-[ [ (var m : Nat) : Nat ] ]
-*** Error , Cannot disambiguate2! Term:  (__<=__,[ suc(n), 0 ])
-Possible Expansions:  [ [ (Int *
-			   Int,[ (op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos,
-				 (var 0 : Int) : Int ]),
-			  (Int * Int,[ (op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos,
-				       (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos,
-				       (var 0 : Int) : Int ]) ],
-			[ (Nat * Nat,[ (op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos,
-				       (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos,
-				       (var 0 : Nat) : Nat ]) ],
-			[ (Rat * Rat,[ (op suc : Nat -> Pos)((var n : Nat) : Nat) : Pos,
-				       (var 0 : Rat) : Rat ]) ] ]
-*** Error , Cannot disambiguate2! Term:  (__<=__,[ 0, n ])
-Possible Expansions:  [ [ (Int * Int,[ (var 0 : Int) : Int,
-				       (var n : Nat) : Nat ]),
-			  (Int * Int,[ (var 0 : Nat) : Nat, (var n : Nat) : Nat ]),
-			  (Rat * Rat,[ (var 0 : Int) : Int, (var n : Nat) : Nat ]) ],
-			[ (Nat * Nat,[ (var 0 : Nat) : Nat, (var n : Nat) : Nat ]),
-			  (Rat * Rat,[ (var 0 : Nat) : Nat, (var n : Nat) : Nat ]) ],
-			[ (Rat * Rat,[ (var 0 : Rat) : Rat, (var n : Nat) : Nat ]) ] ]
-*** Error , Cannot disambiguate2! Term:  (__>__,[ p, 0 ])
-Possible Expansions:  [ [ (Int * Int,[ (var p : Nat) : Nat,
-				       (var 0 : Int) : Int ]),
-			  (Int * Int,[ (var p : Nat) : Nat, (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (var p : Nat) : Nat, (var 0 : Int) : Int ]) ],
-			[ (Nat * Nat,[ (var p : Nat) : Nat, (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (var p : Nat) : Nat, (var 0 : Nat) : Nat ]) ],
-			[ (Rat * Rat,[ (var p : Nat) : Nat, (var 0 : Rat) : Rat ]) ] ]
-*** Error 109.16, Cannot disambiguate3! Possible Expansions:  [ [ (op min : Int *
-							  Int -> Int)((var m : Nat) : Nat,
-								      (var 0 : Int) : Int) : Int,
-						(op min : Int * Int -> Int)((var m : Nat) : Nat,
-									    (var 0 : Nat) : Nat) : Int ],
-					      [ (op min : Nat * Nat -> Nat)((var m : Nat) : Nat,
-									    (var 0 : Nat) : Nat) : Nat,
-						(op min : Nat * Nat ->? Nat)((var m : Nat) : Nat,
-									     (var 0 : Nat) : Nat) : Nat ],
-					      [ (op min : Rat * Rat -> Rat)((var m : Nat) : Nat,
-									    (var 0 : Rat) : Rat) : Rat ] ]
-[ [ (var 0 : Int) : Int, (var 0 : Nat) : Nat,
-    (var 0 : Rat) : Rat ],
-  [ (var 0 : nat) : nat ] ]
-*** Error 108.16, Cannot disambiguate3! Possible Expansions:  [ [ (op max : Int *
-							  Int -> Int)((var m : Nat) : Nat,
-								      (var 0 : Int) : Int) : Int,
-						(op max : Int * Int -> Int)((var m : Nat) : Nat,
-									    (var 0 : Nat) : Nat) : Int ],
-					      [ (op max : Nat * Nat -> Nat)((var m : Nat) : Nat,
-									    (var 0 : Nat) : Nat) : Nat,
-						(op max : Nat * Nat ->? Nat)((var m : Nat) : Nat,
-									     (var 0 : Nat) : Nat) : Nat ],
-					      [ (op max : Rat * Rat -> Rat)((var m : Nat) : Nat,
-									    (var 0 : Rat) : Rat) : Rat ] ]
-[ [ (var m : Nat) : Nat ] ]
-*** Error 118.15, Cannot disambiguate3! Possible Expansions:  [ [ (op __-__ : Int *
-							    Int -> Int)((var a : Nat) : Nat,
-									(var b : Nat) : Nat) : Int,
-						(op __-__ : Nat * Nat -> Int)((var a : Nat) : Nat,
-									      (var b : Nat) : Nat) : Int ],
-					      [ (op __-__ : s * s -> s)((var a : s) : s,
-									(var b : s) : s) : s,
-						(op __-__ : s * s -> s)((var a : t) : t,
-									(var b : s) : s) : s ] ]
-[ [ (op __-__ : Int * Int -> Int)((var c : Nat) : Nat,
-				  (var d : Nat) : Nat) : Int,
-    (op __-__ : Nat * Nat -> Int)((var c : Nat) : Nat,
-				  (var d : Nat) : Nat) : Int ],
-  [ (op __-__ : s * s -> s)((var c : s) : s, (var d : t) : t) : s,
-    (op __-__ : s * s -> s)((var c : t) : t, (var d : t) : t) : s ] ]
-*** Error 118.33, Cannot disambiguate3! Possible Expansions:  [ [ (op __+__ : Nat *
-							    Nat -> Nat)((var a : Nat) : Nat,
-									(var d : Nat) : Nat) : Nat ],
-					      [ (op __+__ : s * s -> s)((var a : s) : s,
-									(var d : t) : t) : s,
-						(op __+__ : s * s -> s)((var a : t) : t,
-									(var d : t) : t) : s ] ]
-[ [ (op __+__ : Nat * Nat -> Nat)((var c : Nat) : Nat,
-				  (var b : Nat) : Nat) : Nat ],
-  [ (op __+__ : s * s -> s)((var c : s) : s, (var b : s) : s) : s,
-    (op __+__ : s * s -> s)((var c : t) : t, (var b : s) : s) : s ] ]
-*** Error 123.11, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : Nat) : Nat ], [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (op __-__ : Int * Int -> Int)((var a : Nat) : Nat,
-				  (var 0 : Int) : Int) : Int,
-    (op __-__ : Int * Int -> Int)((var a : Nat) : Nat,
-				  (var 0 : Nat) : Nat) : Int ],
-  [ (op __-__ : Nat * Nat -> Int)((var a : Nat) : Nat,
-				  (var 0 : Nat) : Nat) : Int ],
-  [ (op __-__ : Rat * Rat -> Rat)((var a : Nat) : Nat,
-				  (var 0 : Rat) : Rat) : Rat ] ]
-*** Error 161.18, Cannot disambiguate3! Possible Expansions:  [ [ (op __^__ : Int *
-							    Nat -> Int)((op -__ : Int -> Int)((var 1 : Int) : Int) : Int,
-									(var a : Nat) : Nat) : Int,
-						(op __^__ : Int *
-							    Nat -> Int)((op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int,
-									(var a : Nat) : Nat) : Int,
-						(op __^__ : Int *
-							    Nat -> Int)((op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int,
-									(var a : Nat) : Nat) : Int ],
-					      [ (op __^__ : Rat *
-							    Int -> Rat)((op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat,
-									(var a : Nat) : Nat) : Rat,
-						(op __^__ : Rat *
-							    Int -> Rat)((op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat,
-									(var a : Nat) : Nat) : Rat,
-						(op __^__ : Rat *
-							    Int -> Rat)((op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat,
-									(var a : Nat) : Nat) : Rat ] ]
-[ [ (var 1 : Int) : Int
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int,
-    (var 1 : Int) : Int
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int : Int,
-    (var 1 : Int) : Int
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int : Int,
-    (var 1 : Nat) : Nat
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int,
-    (var 1 : Nat) : Nat
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int : Int,
-    (var 1 : Nat) : Nat
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int : Int,
-    (var 1 : Pos) : Pos
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int,
-    (var 1 : Pos) : Pos
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int : Int,
-    (var 1 : Pos) : Pos
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int : Int ],
-  [ (var 1 : Int) : Int
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat,
-    (var 1 : Int) : Int
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat,
-    (var 1 : Int) : Int
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat,
-    (var 1 : Nat) : Nat
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat,
-    (var 1 : Nat) : Nat
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat,
-    (var 1 : Nat) : Nat
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat,
-    (var 1 : Pos) : Pos
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat,
-    (var 1 : Pos) : Pos
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat,
-    (var 1 : Pos) : Pos
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat,
-    (var 1 : Rat) : Rat
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat,
-    (var 1 : Rat) : Rat
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat,
-    (var 1 : Rat) : Rat
-	when (pred even : Int)((var a : Nat) : Nat)
-	else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat ] ]
-*** Error , Cannot disambiguate2! Term:  (__<__,[ m, 0 ])
-Possible Expansions:  [ [ (Int * Int,[ (var m : Int) : Int,
-				       (var 0 : Int) : Int ]),
-			  (Int * Int,[ (var m : Int) : Int, (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (var m : Int) : Int, (var 0 : Int) : Int ]) ],
-			[ (Rat * Rat,[ (var m : Int) : Int, (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (var m : Int) : Int, (var 0 : Rat) : Rat ]) ] ]
-*** Error , Cannot disambiguate2! Term:  (__>__,[ m, 0 ])
-Possible Expansions:  [ [ (Int * Int,[ (var m : Int) : Int,
-				       (var 0 : Int) : Int ]),
-			  (Int * Int,[ (var m : Int) : Int, (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (var m : Int) : Int, (var 0 : Int) : Int ]) ],
-			[ (Rat * Rat,[ (var m : Int) : Int, (var 0 : Nat) : Nat ]),
-			  (Rat * Rat,[ (var m : Int) : Int, (var 0 : Rat) : Rat ]) ] ]
-*** Error 148.16, Cannot disambiguate3! Possible Expansions:  [ [ (op sign : Int -> Int)((var m : Int) : Int) : Int ] ]
-[ [ (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int : Int,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int : Int : Int,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int : Int : Int,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int : Int,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int : Int : Int,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int : Int : Int,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int : Int,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int : Int : Int,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int : Int : Int,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int : Int,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int : Int : Int,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int : Int : Int,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int : Int,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int : Int : Int,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int : Int : Int,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Int) : Int) : Int : Int : Int,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Nat) : Nat) : Int : Int : Int,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Int -> Int)((var 1 : Pos) : Pos) : Int : Int : Int ],
-  [ (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Rat) : Rat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Rat) : Rat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Int) : Int
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Rat) : Rat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Rat) : Rat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Rat) : Rat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Nat) : Nat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Rat) : Rat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Int) : Int
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Nat) : Nat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Pos) : Pos
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Rat) : Rat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Nat) : Nat) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Rat) : Rat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Pos) : Pos) : Rat : Rat : Rat,
-    (var 0 : Rat) : Rat
-	when (var m : Int) : Int = (var 0 : Int) : Int
-	else (var 1 : Rat) : Rat
-		 when (pred __>__ : ())(m, 0)
-		 else (op -__ : Rat -> Rat)((var 1 : Rat) : Rat) : Rat : Rat : Rat ] ]
-*** Error 142.26, Cannot disambiguate3! Possible Expansions:  [ [ (op __*__ : Int *
-							    Int -> Int)((op __-__ : Int *
-										    Int -> Int)((var a : Nat) : Nat,
-												(var b : Nat) : Nat) : Int,
-									(op __-__ : Int *
-										    Int -> Int)((var c : Nat) : Nat,
-												(var d : Nat) : Nat) : Int) : Int,
-						(op __*__ : Int * Int -> Int)((op __-__ : Int *
-											  Int -> Int)((var a : Nat) : Nat,
-												      (var b : Nat) : Nat) : Int,
-									      (op __-__ : Nat *
-											  Nat -> Int)((var c : Nat) : Nat,
-												      (var d : Nat) : Nat) : Int) : Int,
-						(op __*__ : Int * Int -> Int)((op __-__ : Nat *
-											  Nat -> Int)((var a : Nat) : Nat,
-												      (var b : Nat) : Nat) : Int,
-									      (op __-__ : Int *
-											  Int -> Int)((var c : Nat) : Nat,
-												      (var d : Nat) : Nat) : Int) : Int,
-						(op __*__ : Int * Int -> Int)((op __-__ : Nat *
-											  Nat -> Int)((var a : Nat) : Nat,
-												      (var b : Nat) : Nat) : Int,
-									      (op __-__ : Nat *
-											  Nat -> Int)((var c : Nat) : Nat,
-												      (var d : Nat) : Nat) : Int) : Int ],
-					      [ (op __*__ : s * s -> s)((op __-__ : s *
-										    s -> s)((var a : s) : s,
-											    (var b : s) : s) : s,
-									(op __-__ : s *
-										    s -> s)((var c : s) : s,
-											    (var d : t) : t) : s) : s,
-						(op __*__ : s * s -> s)((op __-__ : s *
-										    s -> s)((var a : s) : s,
-											    (var b : s) : s) : s,
-									(op __-__ : s *
-										    s -> s)((var c : t) : t,
-											    (var d : t) : t) : s) : s,
-						(op __*__ : s * s -> s)((op __-__ : s *
-										    s -> s)((var a : t) : t,
-											    (var b : s) : s) : s,
-									(op __-__ : s *
-										    s -> s)((var c : s) : s,
-											    (var d : t) : t) : s) : s,
-						(op __*__ : s * s -> s)((op __-__ : s *
-										    s -> s)((var a : t) : t,
-											    (var b : s) : s) : s,
-									(op __-__ : s *
-										    s -> s)((var c : t) : t,
-											    (var d : t) : t) : s) : s ] ]
-[ [ (op __-__ : Int * Int -> Int)((op __+__ : Nat *
-					      Nat -> Nat)((op __*__ : Nat *
-								      Nat -> Nat)((var a : Nat) : Nat,
-										  (var c : Nat) : Nat) : Nat,
-							  (op __*__ : Nat *
-								      Nat -> Nat)((var b : Nat) : Nat,
-										  (var d : Nat) : Nat) : Nat) : Nat,
-				  (op __+__ : Nat * Nat -> Nat)((op __*__ : Nat *
-									    Nat -> Nat)((var b : Nat) : Nat,
-											(var c : Nat) : Nat) : Nat,
-								(op __*__ : Nat *
-									    Nat -> Nat)((var a : Nat) : Nat,
-											(var d : Nat) : Nat) : Nat) : Nat) : Int,
-    (op __-__ : Nat * Nat -> Int)((op __+__ : Nat *
-					      Nat -> Nat)((op __*__ : Nat *
-								      Nat -> Nat)((var a : Nat) : Nat,
-										  (var c : Nat) : Nat) : Nat,
-							  (op __*__ : Nat *
-								      Nat -> Nat)((var b : Nat) : Nat,
-										  (var d : Nat) : Nat) : Nat) : Nat,
-				  (op __+__ : Nat * Nat -> Nat)((op __*__ : Nat *
-									    Nat -> Nat)((var b : Nat) : Nat,
-											(var c : Nat) : Nat) : Nat,
-								(op __*__ : Nat *
-									    Nat -> Nat)((var a : Nat) : Nat,
-											(var d : Nat) : Nat) : Nat) : Nat) : Int ],
-  [ (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : s) : s,
-									(var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var a : s) : s,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : s) : s,
-									(var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var a : t) : t,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : s) : s,
-									(var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var a : s) : s,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : s) : s,
-									(var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var a : t) : t,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : s) : s,
-									(var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var a : s) : s,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : s) : s,
-									(var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var a : t) : t,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : s) : s,
-									(var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var a : s) : s,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : s) : s,
-									(var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var a : t) : t,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : t) : t,
-									(var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var a : s) : s,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : t) : t,
-									(var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var a : t) : t,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : t) : t,
-									(var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var a : s) : s,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : t) : t,
-									(var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var a : t) : t,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : t) : t,
-									(var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var a : s) : s,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : t) : t,
-									(var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : s) : s) : s,
-						    (op __*__ : s * s -> s)((var a : t) : t,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : t) : t,
-									(var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var a : s) : s,
-									    (var d : t) : t) : s) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-								s -> s)((var a : t) : t,
-									(var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var b : s) : s,
-									    (var d : t) : t) : s) : s,
-			    (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s) : s,
-									    (var c : t) : t) : s,
-						    (op __*__ : s * s -> s)((var a : t) : t,
-									    (var d : t) : t) : s) : s) : s ] ]
-*** Error 141.26, Cannot disambiguate3! Possible Expansions:  [ [ (op __+__ : Int *
-							    Int -> Int)((op __-__ : Int *
-										    Int -> Int)((var a : Nat) : Nat,
-												(var b : Nat) : Nat) : Int,
-									(op __-__ : Int *
-										    Int -> Int)((var c : Nat) : Nat,
-												(var d : Nat) : Nat) : Int) : Int,
-						(op __+__ : Int * Int -> Int)((op __-__ : Int *
-											  Int -> Int)((var a : Nat) : Nat,
-												      (var b : Nat) : Nat) : Int,
-									      (op __-__ : Nat *
-											  Nat -> Int)((var c : Nat) : Nat,
-												      (var d : Nat) : Nat) : Int) : Int,
-						(op __+__ : Int * Int -> Int)((op __-__ : Nat *
-											  Nat -> Int)((var a : Nat) : Nat,
-												      (var b : Nat) : Nat) : Int,
-									      (op __-__ : Int *
-											  Int -> Int)((var c : Nat) : Nat,
-												      (var d : Nat) : Nat) : Int) : Int,
-						(op __+__ : Int * Int -> Int)((op __-__ : Nat *
-											  Nat -> Int)((var a : Nat) : Nat,
-												      (var b : Nat) : Nat) : Int,
-									      (op __-__ : Nat *
-											  Nat -> Int)((var c : Nat) : Nat,
-												      (var d : Nat) : Nat) : Int) : Int ],
-					      [ (op __+__ : s * s -> s)((op __-__ : s *
-										    s -> s)((var a : s) : s,
-											    (var b : s) : s) : s,
-									(op __-__ : s *
-										    s -> s)((var c : s) : s,
-											    (var d : t) : t) : s) : s,
-						(op __+__ : s * s -> s)((op __-__ : s *
-										    s -> s)((var a : s) : s,
-											    (var b : s) : s) : s,
-									(op __-__ : s *
-										    s -> s)((var c : t) : t,
-											    (var d : t) : t) : s) : s,
-						(op __+__ : s * s -> s)((op __-__ : s *
-										    s -> s)((var a : t) : t,
-											    (var b : s) : s) : s,
-									(op __-__ : s *
-										    s -> s)((var c : s) : s,
-											    (var d : t) : t) : s) : s,
-						(op __+__ : s * s -> s)((op __-__ : s *
-										    s -> s)((var a : t) : t,
-											    (var b : s) : s) : s,
-									(op __-__ : s *
-										    s -> s)((var c : t) : t,
-											    (var d : t) : t) : s) : s ] ]
-[ [ (op __-__ : Int * Int -> Int)((op __+__ : Nat *
-					      Nat -> Nat)((var a : Nat) : Nat,
-							  (var c : Nat) : Nat) : Nat,
-				  (op __+__ : Nat * Nat -> Nat)((var b : Nat) : Nat,
-								(var d : Nat) : Nat) : Nat) : Int,
-    (op __-__ : Nat * Nat -> Int)((op __+__ : Nat *
-					      Nat -> Nat)((var a : Nat) : Nat,
-							  (var c : Nat) : Nat) : Nat,
-				  (op __+__ : Nat * Nat -> Nat)((var b : Nat) : Nat,
-								(var d : Nat) : Nat) : Nat) : Int ],
-  [ (op __-__ : s * s -> s)((op __+__ : s * s -> s)((var a : s) : s,
-						    (var c : s) : s) : s,
-			    (op __+__ : s * s -> s)((var b : s) : s, (var d : t) : t) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((var a : s) : s,
-						    (var c : t) : t) : s,
-			    (op __+__ : s * s -> s)((var b : s) : s, (var d : t) : t) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((var a : t) : t,
-						    (var c : s) : s) : s,
-			    (op __+__ : s * s -> s)((var b : s) : s, (var d : t) : t) : s) : s,
-    (op __-__ : s * s -> s)((op __+__ : s * s -> s)((var a : t) : t,
-						    (var c : t) : t) : s,
-			    (op __+__ : s * s -> s)((var b : s) : s,
-						    (var d : t) : t) : s) : s ] ]
-*** Error 212.14, Cannot disambiguate3! Possible Expansions:  [ [ (op __/__ : Int *
-							    Pos -> Rat)((var i : Int) : Int,
-									(var 1 : Pos) : Pos) : Rat,
-						(op __/__ : Rat * Rat ->? Rat)((var i : Int) : Int,
-									       (var 1 : Pos) : Pos) : Rat ],
-					      [ (op __/__ : Rat * Rat ->? Rat)((var i : Int) : Int,
-									       (var 1 : Int) : Int) : Rat,
-						(op __/__ : Rat * Rat ->? Rat)((var i : Int) : Int,
-									       (var 1 : Nat) : Nat) : Rat,
-						(op __/__ : Rat * Rat ->? Rat)((var i : Int) : Int,
-									       (var 1 : Rat) : Rat) : Rat ] ]
-[ [ (var i : Int) : Int ] ]
-*** Error 242.12, Cannot disambiguate3! Possible Expansions:  [ [ (op __/__ : Rat *
-							    Rat ->? Rat)((var x : Rat) : Rat,
-									 (var y : Rat) : Rat) : Rat ],
-					      [ (op __/__ : s * s -> s)((var x : s) : s,
-									(var y : s) : s) : s ] ]
-[ [ (var z : Rat) : Rat ], [ (var z : s) : s ] ]
-*** Error 242.20, Cannot disambiguate3! Possible Expansions:  [ [ (var z : Rat) : Rat ],
-					      [ (var z : s) : s ] ]
-[ [ (op __*__ : Rat * Rat -> Rat)((var x : Rat) : Rat,
-				  (var y : Rat) : Rat) : Rat ],
-  [ (op __*__ : s * s -> s)((var x : s) : s, (var y : s) : s) : s ] ]
-*** Error 230.33, Cannot disambiguate3! Possible Expansions:  [ [ (var x : Rat) : Rat ],
-					      [ (var x : s) : s ] ]
-[ [ (var y : Rat) : Rat ], [ (var y : s) : s ] ]
-*** Error 274.5, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 273.5, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 277.5, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 276.5, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 280.3, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 279.10, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 283.5, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 282.9, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
 *** Error 285.36, No correct typing for  (op b : s -> t)((op c : a * t * t * t *
 					       t -> s)((var X1 : a), (var X2 : t), (var X3 : t),
 						       (var X4 : t), (var X5 : t))) =
@@ -4625,48 +3851,12 @@ Possible Expansions:  [ ]
 					       t -> s)((var X1 : a), (var X2 : t), (var X3 : t),
 						       (var X4 : t))) =
 			   (var X3 : t)
-*** Error 317.3, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 316.3, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 321.5, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 320.5, Cannot disambiguate3! Possible Expansions:  [ [ (var a : Data1) : Data1 ],
-					      [ (var a : b) : b ],
-					      [ (var a : s) : s, (var a : t) : t ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
 *** Error 343.36, No correct typing for 
 *** Error 343.20, No correct typing for 
 *** Error 343.5, No correct typing for 
 *** Error 342.39, No correct typing for 
 *** Error 342.26, No correct typing for 
 *** Error 342.14, No correct typing for 
-*** Error 342.5, Cannot disambiguate1!
-Possible Expansions:  [ [ (op __@@__ : Nat *
-							     Nat -> Nat)((var 1 : Nat) : Nat,
-									 (var 2 : Nat) : Nat) : Nat,
-						(op __@@__ : Nat * Nat -> Nat)((var 1 : Pos) : Pos,
-									       (var 2 : Nat) : Nat) : Nat ],
-					      [ (op __@@__ : s * s -> s)((var 1 : s) : s,
-									 (var 2 : s) : s) : s ] ]
-*** Error 367.9, Cannot disambiguate3! Possible Expansions:  [ [ (op a : Data1) : Data1 ],
-					      [ (op a : b) : b ], [ (op a : s) : s ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
-*** Error 369.9, Cannot disambiguate3! Possible Expansions:  [ [ (op a : Data1) : Data1 ],
-					      [ (op a : b) : b ], [ (op a : s) : s ] ]
-[ [ (var a : Data1) : Data1 ], [ (var a : b) : b ],
-  [ (var a : s) : s, (var a : t) : t ] ]
 *** Error 419.5, Cannot disambiguate1!
 Possible Expansions:  [ ]
 *** Error 417.5, Cannot disambiguate1!
@@ -4675,18 +3865,6 @@ Possible Expansions:  [ ]
 Possible Expansions:  [ ]
 *** Error 414.10, No correct typing for  f(x) = g(x)
 *** Error 413.10, No correct typing for  f(x) =e= g(x)
-*** Error 918.11, Cannot disambiguate3! Possible Expansions:  [ [ (op '\o000' : Char) : Char ],
-					      [ (op '\o000' : s) : s ] ]
-[ [ (var '\000' : Char) : Char ], [ (var '\000' : s) : s ] ]
-*** Error 1173.11, Cannot disambiguate3! Possible Expansions:  [ [ (op '\o377' : Char) : Char ],
-					      [ (op '\o377' : s) : s ] ]
-[ [ (var '\255' : Char) : Char ], [ (var '\255' : s) : s ] ]
-*** Error 1178.11, Cannot disambiguate3! Possible Expansions:  [ [ (op '\x00' : Char) : Char ],
-					      [ (op '\x00' : s) : s ] ]
-[ [ (var '\000' : Char) : Char ], [ (var '\000' : s) : s ] ]
-*** Error 1433.11, Cannot disambiguate3! Possible Expansions:  [ [ (op '\xFF' : Char) : Char ],
-					      [ (op '\xFF' : s) : s ] ]
-[ [ (var '\255' : Char) : Char ], [ (var '\255' : s) : s ] ]
 *** Error 261.9, ambiguous mixfix term
 	__*__(i,__-__(q,__*__(j,p)))
 	__-__(__*__(i,q),__*__(j,p))
