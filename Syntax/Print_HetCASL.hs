@@ -48,7 +48,7 @@ printLIB_DEFN_mode m ga ld =
 
 default_latex_line_length :: Maybe Int
 default_latex_line_length = -- Nothing
-   Just $ calc_line_length "336.0pt"
+   Just $ calc_line_length "345.0pt"
 	-- for svmono you need 336.0pt
 
 printLIB_DEFN_text, printLIB_DEFN_latex, printLIB_DEFN_debugLatex 

@@ -15,7 +15,7 @@ parsefile fname = do
   input <- readFile fname
   case runParser (library (defaultLogic, logicGraph)) emptyAnnos fname input of
             Left err -> error (show err)
-            Right x -> putStrLn (take 200 (show (printText0_eGA x)) ++ "\n...")
+            Right x -> putStrLn $ (show (printText0_eGA x)) ++ "\n..."
 
 
 main = do
