@@ -93,18 +93,18 @@ casl_reserved_fops = formula_ops ++ casl_reserved_ops
 -- | reserved keywords
 casl_basic_reserved_words :: [String]
 casl_basic_reserved_words =
-    [asS, existsS, forallS, freeS, generatedS, 
+    [asS, axiomS, axiomS ++ sS, existsS, forallS, freeS, generatedS, 
      inS, opS, opS ++ sS, predS, predS ++ sS, 
-     sortS, sortS ++ sS, typeS, typeS ++ sS]
+     sortS, sortS ++ sS, typeS, typeS ++ sS, varS, varS ++ sS]
 
 -- | reserved keywords
 casl_structured_reserved_words :: [String]
 casl_structured_reserved_words =
-    [andS, archS,  axiomS, axiomS ++ sS, closedS, cofreeS, "cotype", "cotypes", endS, 
+    [andS, archS,  closedS, cofreeS, endS, 
      fitS, freeS, fromS,  getS, givenS,
      hideS,  lambdaS, libraryS, localS, logicS,
      resultS, revealS, specS, thenS, toS, 
-     unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
+     unitS, unitS ++ sS, versionS, viewS, withS, withinS]
 
 -- | reserved keywords
 casl_reserved_words :: [String]
@@ -247,7 +247,7 @@ varId ks = pToken (reserved (ks++casl_reserved_fwords) scanAnyWords)
 
 -- | like 'varId'.  'SIMPLE_ID' for spec- and view names
 simpleId :: GenParser Char st Token
-simpleId = varId []
+simpleId = pToken (reserved casl_structured_reserved_words scanAnyWords)
 
 -- ----------------------------------------------
 -- * parser for key 'Token's 
