@@ -28,11 +28,11 @@ op def, tt : Pred s
 var x : s
 program (op def[_var_3_v3]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s_v1 . ()
+          = \ (var x : s) : s . ()
         %% def is also total (identical to tt) 
 program (op tt[_var_6_v6]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s_v1 . ()
+          = \ (var x : s) : s . ()
         %% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -54,12 +54,12 @@ program snd (x : s, y : t) : t = y
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred eq : s * s
-. (fun __=__[s_v1 ->? Unit]
+. (fun __=__[s ->? Unit]
    : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-    (\ (var x : s) : s_v1
+    (\ (var x : s) : s
        . (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
            (var x : s, var x : s),
-     op tt[s_v1] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+     op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
 . (fun __=__[s * s ->? s]
    : forall s : Type . s_v-1 * s_v-1 ->? Unit)
     (\ (var x : s, var y : s)
@@ -210,10 +210,10 @@ y2 : d %(var)%
 %% Sentences -------------------------------------------------------------
 program (op def[_var_3_v3]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s_v1 . () %(pe_def)%
+          = \ (var x : s) : s . () %(pe_def)%
 program (op tt[_var_6_v6]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s_v1 . () %(pe_tt)%
+          = \ (var x : s) : s . () %(pe_tt)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
@@ -230,12 +230,11 @@ forall x : s; y : t
    : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1,
    op __res__[_var_12_v12; _var_13_v13]
    : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
-(fun __=__[s_v1 ->? Unit]
- : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-  (\ (var x : s) : s_v1
+(fun __=__[s ->? Unit] : forall s : Type . s_v-1 * s_v-1 ->? Unit)
+  (\ (var x : s) : s
      . (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
          (var x : s, var x : s),
-   op tt[s_v1] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
+   op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
 (fun __=__[s * s ->? s] : forall s : Type . s_v-1 * s_v-1 ->? Unit)
   (\ (var x : s, var y : s)
      . (op __res__[s; Unit]

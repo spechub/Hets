@@ -44,10 +44,10 @@ var x : m a
       : forall m : Monad; a : Type; b : Type .
           m_v-1 a_v-2 * (a_v-2 -> m_v-1 b_v-3) -> m_v-1 b_v-3)
        (var x : m a,
-        \ (var y : a_v1)
+        \ (var y : a)
           . (op return[b; m]
              : forall a : Type; m : Monad . a_v-1 -> m_v-2 a_v-1)
-              ((var g : a -> b)(var y : a_v1))))
+              ((var g : a -> b)(var y : a))))
 %% Classes ---------------------------------------------------------------
 Functor < Type -> Type
 Monad < Functor
@@ -131,10 +131,10 @@ x : m a %(var)%
     : forall m : Monad; a : Type; b : Type .
         m_v-1 a_v-2 * (a_v-2 -> m_v-1 b_v-3) -> m_v-1 b_v-3)
      (var x : m a,
-      \ (var y : a_v1)
+      \ (var y : a)
         . (op return[b; m]
            : forall a : Type; m : Monad . a_v-1 -> m_v-2 a_v-1)
-            ((var g : a -> b)(var y : a_v1))))
+            ((var g : a -> b)(var y : a))))
 %% Diagnostics -----------------------------------------------------------
 *** Hint 7.5, is type variable 'a'
 *** Hint 7.8, is type variable 'b'

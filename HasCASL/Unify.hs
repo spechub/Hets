@@ -200,7 +200,7 @@ instance Unifiable Type where
     match tm rel (b1, KindedType t1 _ _) t2 = match tm rel (b1, t1) t2
     match _ rel (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
       if rawKind k1 == rawKind k2 then
-        if rel i1 i2
+        if rel i1 i2 && v1 == v2
            then return eps
         else if v1 > 0 && b1 then return $ 
                 Map.single v1 t2
@@ -210,12 +210,11 @@ instance Unifiable Type where
                                     "is not unifiable with typename" i2
       else uniResult "typename" i1 
                                     "differs in raw kind of typename" i2
-    match tm _ (b1, TypeName i1 _ v1) (_, t2) =
+    match _tm _ (b1, TypeName i1 _ v1) (_, t2) =
         if v1 > 0 && b1 then 
-           if occursIn tm i1 t2 then 
-              uniResult "var" i1 "occurs in" t2
-           else return $
-                        Map.single v1 t2
+           if null $ leaves (==v1) t2 then 
+              return $ Map.single v1 t2
+           else uniResult "var" i1 "occurs in" t2
         else uniResult "typename" i1  
                             "is not unifiable with type" t2
     match tm rel t2 t1@(_, TypeName _ _ _) = match tm rel t1 t2
@@ -240,6 +239,10 @@ uniResult s1 a s2 b =
       Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
 			 showPrettyWithPos a "\n  " ++ s2 ++ " " ++
 			 showPrettyWithPos b "") nullPos] Nothing
+
+instance PosItem a => PosItem (a, b) where
+    get_pos   = get_pos . fst
+    get_pos_l = get_pos_l . fst
 
 instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
     subst s (t1, t2) = (subst s t1, subst s t2)
