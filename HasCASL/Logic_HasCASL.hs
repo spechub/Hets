@@ -111,6 +111,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     inclusion HasCASL = inclusionMor
 
     cogenerated_sign HasCASL = cogeneratedSign
+    generated_sign HasCASL = generatedSign
 
     stat_symb_map_items HasCASL = statSymbMapItems
     stat_symb_items HasCASL = statSymbItems

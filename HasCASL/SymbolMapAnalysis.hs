@@ -16,6 +16,7 @@ module HasCASL.SymbolMapAnalysis
     ( inducedFromMorphism
     , inducedFromToMorphism
     , cogeneratedSign
+    , generatedSign
     )  where
 
 import HasCASL.As

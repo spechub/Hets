@@ -17,9 +17,11 @@ import HasCASL.As
 import Common.Id
 import Common.Lib.State
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import Common.Result
 import HasCASL.Le
 import HasCASL.TypeAna
+import HasCASL.VarDecl
 import HasCASL.AsUtils
 import HasCASL.Unify
 import Data.Maybe
@@ -31,10 +33,28 @@ anaAlts tys dt alts =
        addDiags (checkUniqueness $ map ( \ (Construct i _ _ _) -> i) l) 
        return l
 
+-- | add a supertype to a given type id
+addSuperType :: Type -> Id -> State Env ()
+addSuperType t i =
+    do tk <- gets typeMap
+       if occursIn tk i t then 
+	  addDiags [mkDiag Error "cyclic super type" t]
+	  else case Map.lookup i tk of
+	      Nothing -> return () -- previous error
+	      Just (TypeInfo ok ks sups defn) -> 
+				putTypeMap $ Map.insert i 
+					      (TypeInfo ok ks (t:sups) defn)
+					      tk
+addDataSubtype :: Type -> Type -> State Env ()
+addDataSubtype dt st = 
+    case st of 
+    TypeName i _ _ -> addSuperType dt i 
+    _ -> addDiags [mkDiag Warning "data subtype ignored" st]
+
 anaAlt :: [(Id, Type)] -> Type -> Alternative -> State Env [AltDefn] 
-anaAlt _ _ (Subtype ts ps) = 
-    do mapM_ anaStarType ts
-       addDiags [Diag Warning "data subtype ignored" $ firstPos ts ps]
+anaAlt _ dt (Subtype ts _) = 
+    do newTs <- mapM anaStarType ts
+       mapM_ (addDataSubtype dt) (catMaybes newTs)
        return []
 
 anaAlt tys dt (Constructor i cs p _) = 

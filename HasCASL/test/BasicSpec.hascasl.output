@@ -175,6 +175,5 @@ tt : s ->? Unit %(Op)% = \ x : s . ()
 *** Error 40.7, unexpected mixfix token: )
 *** Error 40.3, unexpected pattern 'ff ()'
 *** Error 40.20, unexpected mixfix token: all
-*** Warning 61.73, data subtype ignored
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e

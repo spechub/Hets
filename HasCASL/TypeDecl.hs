@@ -17,7 +17,6 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.Unify
-import qualified Common.Lib.Map as Map
 import Common.Lexer
 import Common.Id
 import Common.AS_Annotation
@@ -32,19 +31,6 @@ import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
 import HasCASL.TypeCheck
-
--- | add a supertype to a given type id
-addSuperType :: Type -> Id -> State Env ()
-addSuperType t i =
-    do tk <- gets typeMap
-       if occursIn tk i t then 
-	  addDiags [mkDiag Error "cyclic super type" t]
-	  else case Map.lookup i tk of
-	      Nothing -> return () -- previous error
-	      Just (TypeInfo ok ks sups defn) -> 
-				putTypeMap $ Map.insert i 
-					      (TypeInfo ok ks (t:sups) defn)
-					      tk
 
 idsToTypePatterns :: [Maybe (Id, [TypeArg])] -> [TypePattern]
 idsToTypePatterns mis = map ( \ (i, as) -> TypePattern i as [] ) 
