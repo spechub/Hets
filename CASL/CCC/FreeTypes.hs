@@ -62,39 +62,6 @@ forall x, y:Nat
           (op suc : Nat -> Nat)((op __+__ : Nat *
                                             Nat -> Nat)((var x : Nat) : Nat,
                                                         (var y : Nat) : Nat) : Nat) : Nat
-sorts Nat
-op 0 : Nat
-op __+__ : Nat * Nat -> Nat
-op suc : Nat -> Nat
-
-
-forall X1:Nat; Y1:Nat
-    . (op suc : Nat -> Nat)((var X1 : Nat) : Nat) : Nat =
-          (op suc : Nat -> Nat)((var Y1 : Nat) : Nat) : Nat <=>
-          (var X1 : Nat) : Nat = (var Y1 : Nat) : Nat %(ga_injective_suc)%
-
-forall Y1:Nat
-    . not (op 0 : Nat) : Nat =
-              (op suc : Nat -> Nat)((var Y1 : Nat) : Nat) : Nat %(ga_disjoint_0_suc)%
-
-generated{sort Nat; op 0 : Nat;
-                    op suc : Nat -> Nat} %(ga_generated_Nat)%
-
-forall x, y:Nat
-    . (op __+__ : Nat * Nat -> Nat)((op 0 : Nat) : Nat,
-                                    (var x : Nat) : Nat) : Nat =
-          (var x : Nat) : Nat
-
-forall x, y:Nat
-    . (op __+__ : Nat *
-                  Nat -> Nat)((op suc : Nat -> Nat)((var x : Nat) : Nat) : Nat,
-                              (var y : Nat) : Nat) : Nat =
-          (op suc : Nat -> Nat)((op __+__ : Nat *
-                                            Nat -> Nat)((var x : Nat) : Nat,
-                                                        (var y : Nat) : Nat) : Nat) : Nat
-
-
-
 
 CiME:
 let F = signature "0:constant; suc : unary; + : binary";
@@ -171,7 +138,8 @@ checkFreeType m fsn
                    in warning Nothing "a variable occurs twice in a leading term" pos
        | not $ checkPatterns leadingPatterns =
                    let pos = headPos $ pattern_Pos leadingPatterns
-                   in warning Nothing "patterns overlap" pos            
+                   in warning Nothing "patterns overlap" pos
+       | not $ proof == "3" = warning Nothing "not terminal" nullPos       -- hugs 1+2           
        | otherwise = return (Just True)
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
          fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
@@ -258,18 +226,6 @@ checkFreeType m fsn
                                        _ ->[]) $ 
                             map leading_Term_Predication op_preds
          leadingPatterns = trace (showPretty leadingPatterns1 "leading Pattern") leadingPatterns1    --leading Patterns
-{-
-         isNil t = case t of
-                     Application _ ts _-> if length ts==0 then True
-                                          else False
-                     Sorted_term t' _ _ ->isNil t'
-                     _ -> False
-         isCons t = case t of
-                      Application _ ts _-> if length ts>0 then True
-                                           else False
-                      Sorted_term t' _ _ ->isCons t'
-                      _ -> False
--}
          isApp t = case t of
                      Application _ _ _->True
                      Sorted_term t' _ _ ->isApp t'
@@ -339,7 +295,8 @@ checkFreeType m fsn
 -}
          term t = case t of
                     Sorted_term t' _ _ ->term t'
-                    _ -> t                   
+                    _ -> t
+         proof="34"   -- hugs 1+2                
     
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
