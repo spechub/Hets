@@ -108,9 +108,9 @@ checkList inf (ty : rty) (trm : rt) = do
       fts <- inf (Just ty) trm
       combs <- mapM ( \ (sf, tyf, tf) -> do
 		      rts <- checkList inf (map (subst sf) rty) rt
-		      return $ map ( \ (sr, tys, tts) -> 
-			     (compSubst sf sr,
-				     subst sr tyf : tys,
+		      return $ map ( \ (sr, tys, tts) ->
+				     let s3 = compSubst sf sr in
+			     (s3, subst s3 tyf : tys,
 				     tf : tts)) rts) fts
       return $ concat combs
 checkList _ _ _ = error "checkList"
@@ -153,8 +153,8 @@ inferAppl inf appl mt t1 t2 = do
 	    combs <- mapM ( \ (sf, _, tf) -> do 
 		   args <- inf (Just $ subst sf aty) t2 
 		   return $ map ( \ (sa, _, ta) -> 
-			  (compSubst sf sa, 
-			   subst sa (subst sf rty), 
+				  let s = compSubst sf sa in
+			  (s, subst s rty, 
 			   appl tf ta)) args) ops
 	    let res = concat combs 
 	    if null res then 
@@ -190,12 +190,13 @@ infer mt trm = do
 				  return []
 	          else return $ map ( \ (s, ty, oi) -> 
 			      case opDefn oi of
-			      VarDefn -> (s, ty, QualVar i ty ps)
+			      VarDefn -> (s, subst s ty, QualVar i ty ps)
 			      x -> let br = case x of
 				            NoOpDefn b -> b
 				            Definition b _ -> b
 				            _ -> Op in 
-				      (s, ty, QualOp br (InstOpId i [] [])
+				      (s, subst s ty, 
+				       QualOp br (InstOpId i [] [])
 						  (opType oi) ps)) ls
 	    else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)
 		 (if isSingle ts then head ts else TupleTerm ts ps) ps
@@ -211,7 +212,8 @@ infer mt trm = do
 		     Just s  -> do 
                          ls <- checkList infer (subst s vs) ts 
 			 return $ map ( \ (su, tys, trms) ->
-                                   (compSubst s su, ProductType tys ps, 
+				   let s3 = compSubst s su in	
+                                   (s3 , ProductType (map (subst s3) tys) ps, 
 				    TupleTerm trms ps)) ls
 	TypedTerm t qual ty ps -> do 
 	    case qual of 
@@ -243,7 +245,8 @@ infer mt trm = do
 			Just s -> do 
 			    rs <- infer Nothing t 
 			    return $ map ( \ (s2, _, tr) -> 
-				(compSubst s s2, subst s2 ty, 
+				let s3 = compSubst s s2 in	   
+				(s3, subst s3 ty, 
 				 TypedTerm tr qual ty ps)) rs
 	QuantifiedTerm quant decls t ps -> do
 	    mapM_ addGenVarDecl decls
