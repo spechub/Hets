@@ -2,43 +2,41 @@ module Lexer where
 
 import Char
 import Id
--- import Parsec
--- {-Pos
+import Parsec
+
+{-
 import ParsecPos
 import ParsecPrim
 import ParsecCombinator
 import ParsecChar
--- -}
--- phase 1
+-}
 
-
--- special = "_()[]{};,'\"%";
+-- special = "\"%(),;[]_{}"
 
 newlineChars = "\n\r"
 
-caslLetters = ['a'..'z'] ++ ['A'..'Z'] ++
-              [toEnum(192) .. toEnum(207)] ++
-              [toEnum(209) .. toEnum(214)] ++
-              [toEnum(216) .. toEnum(221)] ++
-              [toEnum(223) .. toEnum(239)] ++ -- icelandic eth
-              [toEnum(241) .. toEnum(246)] ++
-              [toEnum(248) .. toEnum(253)] ++ -- icelandic thorn
-              [toEnum(255)] 
+caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++ 
+              ['\192' .. '\207'] ++ -- \208 ETH 
+              ['\209' .. '\214'] ++ -- \215 times
+              ['\216' .. '\221'] ++ -- \222 THORN
+              ['\223' .. '\239'] ++ -- \240 eth
+              ['\241' .. '\246'] ++ -- \247 divide
+              ['\248' .. '\253'] ++ -- \245 thorn
+              ['\255'] 
 
---    [\192-\207\209-\214\216-\221]             -> Letter  
---    [\223-\239\241-\246\248-\253\255]         -> Letter
+blankChars = "\t\v\f \160" -- non breaking space
 
-blankChars = " \t\f\v\xA0"
+signChars = "!#$&*+-./:<=>?@\\^|~\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
 
-signChars = ".·+-*/|\\&=<>!?:$@#^~¡¿×÷£©±¶§¹²³¢º¬µ"
-
---    [\161-\163\167\169\172\176-\179]          -> No-Bracket-Sign
---    [\181-\183\185\191\215\247]               -> No-Bracket-Sign
+-- see http://www.htmlhelp.com/reference/charset/
+--    \172 neg
+--    \183 middle dot
+--    \215 times 
 
 isWhitespace t = t `elem` (newlineChars ++ blankChars)
 isSign brackets t = t `elem` (brackets ++ signChars)
 
-getDot = oneOf ".·"
+getDot = oneOf ".\183"
 getUnderline = char '_'
 
 prime, caslLetter :: Parser Char
@@ -165,8 +163,6 @@ scToken = scanWords <|> scanDigit <|> scanQuotedChar <|>
 
 setTokPos :: SourcePos -> String -> Token
 setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
--- tak :: Token->Token->Token
--- tak(Token(s,p))(Token(t,_))=Token(s++t,p)
 
 makeToken parser = skip(do { p <- getPosition;
 		             s <- parser;
