@@ -7,10 +7,10 @@ import GraphDisp
 import GraphConfigure
 import FiniteMap
 import AS_Library
-import Graph
+import Common.Lib.Graph
 import PrettyPrint
 import GlobalAnnotationsFunctions
-import IORef
+import Data.IORef
 import Print_HetCASL
 import DGToSpec
 
