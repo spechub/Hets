@@ -1,14 +1,9 @@
-
 {- HetCATS/CASL/Sublogics.hs
    $Id$
    Authors: Pascal Schmidt
    Year:    2002
 
    todo:
-
-aufbauend auf Logic.hs Logik für CASL mit Unterlogiken
-
-data CASL_sublogics = CASL_sublogics { has_sub::Bool ...
 
    sublogic_names :: id -> sublogics -> [String] 
              -- the first name is the principal name
@@ -17,13 +12,11 @@ data CASL_sublogics = CASL_sublogics { has_sub::Bool ...
   meet, join :: l -> l -> l  -- meet = "Durschnitt"
   top :: l
 
-
 Weitere Instanzen mit HasCASL, CASL-LTL etc.
   (nur sich selbst als Sublogic)
 Logic-Representations (Sublogic immer = top)
 
 Alles zusammenfassen in LogicGraph.hs
-
 
 min_sublogic_basic_spec  Analysefunktion: für basic spec Bitmaske berechnen
    (Bits fuer Features setzen und rekursiv verodern)
@@ -37,16 +30,40 @@ import AS_Annotation
 import AS_Basic_CASL
 import LocalEnv
 
+data CASL_Formulas = FOL    -- first-order logic
+                   | GHorn  -- generalized positive conditional logic
+                   | Horn   -- positive conditional logic
+                   | Atom   -- atomic logic
+                   deriving (Show,Ord,Eq)
+
 data CASL_Sublogics = CASL_Sublogics
                       { has_sub::Bool,   -- subsorting
                         has_part::Bool,  -- partiality
                         has_cons::Bool,  -- sort generation contraints
                         has_eq::Bool,    -- equality
                         has_pred::Bool,  -- predicates
-                        is_ghorn::Bool,  -- generalized positive cond. logic
-                        is_horn::Bool,   -- positive conditional logic
-                        is_atom::Bool    -- atomic logic
+                        which_logic::CASL_Formulas
                       } deriving (Show,Eq)
+
+top :: CASL_Sublogics
+top = (CASL_Sublogics True True True True True FOL)
+
+formulas_name :: Bool -> CASL_Formulas -> String
+formulas_name True  FOL   = "FOL"
+formulas_name False FOL   = "FOAlg"
+formulas_name True  GHorn = "GHorn"
+formulas_name False GHorn = "GCond"
+formulas_name True  Horn  = "Horn"
+formulas_name False Horn  = "Cond"
+formulas_name True  Atom  = "Atom"
+formulas_name False Atom  = "Eq"
+
+sublogics_name :: CASL_Sublogics -> String
+sublogics_name x = ( if (has_sub x) then "Sub" else "" ) ++
+                   ( if (has_part x) then "P" else "") ++
+                   ( if (has_cons x) then "C" else "") ++
+                   ( formulas_name (has_pred x) (which_logic x) ) ++
+                   ( if (has_eq x) then "=" else "")
 
 strip_anno :: Annoted a -> a
 strip_anno (Annoted i _ _ _) = i
