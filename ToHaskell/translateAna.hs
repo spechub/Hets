@@ -7,6 +7,7 @@ import Common.AnnoState
 import Common.Lib.Parsec
 import Common.Lib.State
 import Common.AnnoState
+import Common.GlobalAnnotations
 import System.Environment
 import HasCASL.Le
 import HasCASL.AsToLe(anaBasicSpec)
@@ -15,7 +16,7 @@ import HasCASL.ParseItem(basicSpec)
 
 hParser :: AParser HsModule
 hParser = do b <- basicSpec
-	     return $ translateAna $ snd $ (runState (anaBasicSpec b)) initialEnv
+	     return $ translateAna $ snd $ (runState (anaBasicSpec emptyGlobalAnnos b)) initialEnv
 
 	  
 main :: IO ()
