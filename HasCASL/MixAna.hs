@@ -16,7 +16,7 @@ module HasCASL.MixAna where
 import HasCASL.As
 import Common.GlobalAnnotations
 import Common.GlobalAnnotationsFunctions
-import CASL.MixfixParser (expandPos, getTokenList)
+import CASL.MixfixParser
 import Common.Result
 import Common.Id
 import qualified Common.Lib.Map as Map
@@ -27,11 +27,18 @@ import Data.List(intersperse)
 
 -- Earley Algorithm
 
-data State = State Id
+
+data GrSym = Terminal Token 
+	   | NonTerminal Type  -- a term of type Type
+	   deriving (Show, Eq)
+
+type Rule = [GrSym]
+
+data State = State Id     -- the rule to match
                    [Pos]    -- positions of Id tokens
                    [Term]   -- currently collected arguments 
 		                               -- both in reverse order
-		   [Token]  -- only tokens after the "dot" are given 
+		   [Token]     -- part of the rule after the "dot"
 		   Int      -- index into the ParseMap/input string
 
 instance Eq State where
@@ -60,48 +67,41 @@ commaTok = mkSimpleId "," -- for list elements
 termTok = mkSimpleId "(T)"
 parenTok = mkSimpleId "(..)" 
 
-colonTok, asTok, varTok, opTok, predTok, inTok :: Token
+colonTok, asTok, varTok, opTok, predTok, inTok, caseTok, litTok :: Token
 colonTok = mkSimpleId ":"
 asTok = mkSimpleId "as"
 inTok = mkSimpleId "in"
+caseTok = mkSimpleId "case"
 varTok = mkSimpleId "(v)"
 opTok = mkSimpleId "(o)"
 predTok = mkSimpleId "(p)"
+litTok = mkSimpleId "\""
+
+stripFinalPlaces :: Id -> Id
+stripFinalPlaces (Id ts cs ps) =
+    Id (fst $ splitMixToken ts) cs ps 
 
 mkState :: Int -> Id -> State 
-mkState i ide = State ide [] [] (getTokenList False ide) i
+mkState i ide = State ide [] [] (getTokenList False $ stripFinalPlaces ide) i
 
 mkApplState :: Int -> Id -> State
 mkApplState i ide = State ide [] [] 
-		    (getTokenList True ide ++ [parenTok]) i
+		    (getTokenList True ide) i
 
 listId :: Id
 -- unique id (usually "[]" yields two tokens)
 listId = Id [mkSimpleId "[]"] [] []
 
-getListBrackets :: Id -> ([Token], [Token])
-getListBrackets (Id b _ _) = 
-    let (b1, rest) = break isPlace b
-	b2 = if null rest then [] 
-	     else filter (not . isPlace) rest
-    in (b1, b2)
-
 listStates :: GlobalAnnos -> Int -> [State]
 -- no empty list (can be written down directly)
 listStates g i = 
     let listState toks = State listId [] [] toks i
-    in case list_lit (literal_annos g) of
-		Nothing -> []
-		Just (bs, c, _) -> 
-		    let (b1, b2) = getListBrackets bs
-			el = b1++b2
-		        ls = [ listState (b1 ++ [termTok] ++ b2) 
-			     , listState (b1 ++ [termTok, commaTok] ++ b2)]
-		     in if c == Id el [] [] then ls 
-		        -- don't put in empty list twice
-			else listState el : ls
+	(b1, b2) = listBrackets g
+    in if null b1 || null b2 then []
+       else [ listState (b1 ++ [termTok] ++ b2) 
+		     , listState (b1 ++ [termTok, commaTok] ++ b2)]
 
--- these are the possible matches for the nonterminal TERM
+-- these are the possible matches for the nonterminal (T)
 -- the same states are used for the predictions  
 
 initialState :: GlobalAnnos -> Set.Set Id -> Int -> [State]
@@ -114,9 +114,8 @@ initialState g ids i =
        mkTokState [termTok, inTok] :
        mkTokState [varTok] :
        mkTokState [opTok] :
-       mkTokState [opTok, parenTok] :
-       mkTokState [predTok] :
-       mkTokState [predTok, parenTok] :
+       mkTokState [litTok] :
+       mkTokState [termTok, termTok] :
        listStates g i ++
        map (mkState i) is ++ 
        map (mkApplState i) is
@@ -131,7 +130,8 @@ lookUp ce k = Map.findWithDefault mzero k ce
 scan :: Term -> Int -> ParseMap -> ParseMap
 scan trm i m = 
   let t = case trm of 
-	  TermToken x -> x
+	  TermToken x -> if isLitToken x then litTok else
+			 x 
   in
     Map.insert (i+1) ( 
        foldr (\ (State o b a ts k) l ->
@@ -232,8 +232,8 @@ asListAppl g s@(State i bs a _ _) =
     if i == listId then    
        case list_lit $ literal_annos g of
        Nothing -> error "asListAppl" 
-       Just (b, c, f) -> 
-	   let (b1, b2) = getListBrackets b
+       Just (_, c, f) -> 
+	   let (b1, b2) = listBrackets g
                nb1 = length b1
                nb2 = length b2
                ra = reverse a
@@ -299,7 +299,7 @@ nextState g is trm (i, ds, m) =
 iterateStates :: GlobalAnnos -> Set.Set Id -> [Term] -> Chart -> Chart
 iterateStates g ops terms c = 
     let self = iterateStates g ops
-        _resolveTerm = resolveMixfix g ops
+        _resolveTerm = resolve g ops
     in if null terms then c
        else case head terms of
             MixfixTerm ts -> self (ts ++ tail terms) c
@@ -314,8 +314,8 @@ getAppls g i m =
 	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
 	     lookUp m i
 
-resolveMixfix :: GlobalAnnos -> Set.Set Id -> Term -> Result Term
-resolveMixfix g ops trm =
+resolve :: GlobalAnnos -> Set.Set Id -> Term -> Result Term
+resolve g ops trm =
     let (i, ds, m) = iterateStates g ops [trm] 
 		     (0, [], Map.single 0 $ initialState g ops 0) 
         ts = getAppls g i m
