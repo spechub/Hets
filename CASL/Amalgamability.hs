@@ -478,13 +478,17 @@ leftCancellableClosure rel =
     in {-trace ("leftCancellableClosure " ++ show rel) $-} iterateWord1 rel 0
 
 
--- | Compute the congruence closure of a relation on words with
--- given \simeq relation on letters.
+-- | Compute the congruence closure of an equivalence R: two pairs of elements (1, 3) and 
+-- (2, 4) are chosen such that 1 R 2 and 3 R 4. It is then checked that elements 1, 3 and 
+-- 2, 4 are in relation supplied and if so equivalence classes for (op 1 3) and (op 1 4) 
+-- in R are merged.
 -- This function should be applied to the relation until a fixpoint is reached.
-congruenceClosure :: EquivRel DiagSort          -- ^ the simeq relation
-		  -> EquivRelTagged DiagEmbWord DiagEmbWord
-		  -> EquivRelTagged DiagEmbWord DiagEmbWord
-congruenceClosure simeq rel =
+congruenceClosure :: (Eq a, Eq b)
+		  => (a -> a -> Bool) -- ^ the check to be performed on elements 1, 3 and 2, 4
+		  -> (a -> a -> a)    -- ^ the operation to be performed on elements 1, 3 and 2, 4
+		  -> EquivRelTagged a b
+		  -> EquivRelTagged a b
+congruenceClosure check op rel =
     let -- iterateWord1 
         iterateWord1 rel pos | pos >= length rel = rel
 			     | otherwise =
@@ -498,9 +502,9 @@ congruenceClosure simeq rel =
 			        iterateWord4 wtp1@(w1, _) wtp2@(w2, _) wtp3@(w3, t3) rel pos | pos >= length rel = rel
 											     | otherwise =
 				    let (w4, t4) = rel !! pos
-					rel' = if t3 /= t4 then rel
-					          else let mct1 = findTag rel (w3 ++ w1)
-							   mct2 = findTag rel (w4 ++ w2)
+					rel' = if t3 /= t4 || not (check w2 w4) then rel
+					          else let mct1 = findTag rel (op w1 w3)
+							   mct2 = findTag rel (op w2 w4)
 						       in case (mct1, mct2) of 
 									    (Nothing, _) -> rel -- w3w1 is not in the domain of rel
 									    (_, Nothing) -> rel -- w4w2 is not in the domain of rel
@@ -508,7 +512,7 @@ congruenceClosure simeq rel =
 				    in iterateWord4 wtp1 wtp2 wtp3 rel' (pos + 1)
 
 			        wtp3@(w3, _) = rel !! pos
-				rel' = if inRel simeq (wordCod w1) (wordDom w3)
+				rel' = if check w1 w3
 				          -- inRel here is usually much more efficient 
 					  -- than findTag rel (w3 ++ w1)
 				          then iterateWord4 wtp1 wtp2 wtp3 rel 0
@@ -804,7 +808,9 @@ cong diag adm simeq sim =
 
         -- fixCongLc: apply Cong and Lc rules until a fixpoint is reached
 	fixCongLc rel =
-	    let rel' = (leftCancellableClosure . congruenceClosure simeq) rel
+	    let rel' = (leftCancellableClosure . 
+			congruenceClosure (\w1 -> \w2 -> inRel simeq (wordCod w1) (wordDom w2)) 
+			                  (\w1 -> \w2 -> w2 ++ w1)) rel
 	    in if rel == rel' then rel else fixCongLc rel'
 
 	-- compute the relation
@@ -826,16 +832,31 @@ congR diag simeq sim =
 
 -- | Compute the \sim relation
 sim :: CASLDiag
+    -> [DiagEmb]
     -> EquivRel DiagEmb
-sim diag =
+sim diag embs =
     let -- diagRule: the Diag rule
 	diagRule (n1, s11, s12) (n2, s21, s22) =
 	    isMorphSort diag (n1, s11) (n2, s21) && isMorphSort diag (n1, s12) (n2, s22) ||
 	    isMorphSort diag (n2, s21) (n1, s11) && isMorphSort diag (n2, s22) (n1, s12) 
+
+        -- the check for congruenceClosure
+        check (p, s11, s12) (q, s21, s22) =
+	    if p /= q || s12 /= s21 then False
+	    else any (\(n, s1, s2) -> n == p && s1 == s11 && s2 == s22) embs
+
+        -- the op for congruence closure
+        op (p, s1, _) (_, _, s2) = (p, s1, s2)
+
+        -- fixCong: apply Cong rule until a fixpoint is reached
+	fixCong rel =
+	    let rel' = congruenceClosure check op rel
+	    in if rel == rel' then rel else fixCong rel'
 		       
-        rel = map (\e -> (e, e)) (embs diag)
-	rel' = mergeEquivClassesBy diagRule rel
-    in taggedValsToEquivClasses rel'
+        rel = map (\e -> (e, e)) embs
+	rel' =  fixCong rel
+	rel'' = mergeEquivClassesBy diagRule rel'
+    in taggedValsToEquivClasses rel''
 
 
 -- | Compute the CanonicalEmbs(D) set given \sim relation
@@ -933,18 +954,17 @@ ensuresAmalgamability diag sink desc =
 				          Nothing -> do return Yes
 					  Just _ -> 
 					    do let em = embs diag
-						   mas = finiteAdm_simeq em s
-						   si = sim diag
+						   cem = canonicalEmbs si
+						   mas = finiteAdm_simeq cem s
+						   si = sim diag em
 						   cct = canonicalCong_tau ct si
 					       -- 3. Check if the set Adm_\simeq is finite.
 					       case mas of 
-						    Just as -> 
+						    Just cas -> 
 						      do -- 4. check the colimit thinness. If the colimit is thing then
 							 -- the specification is correct.
                                                                if colimitIsThin s em c0 then return Yes
-                                                                  else do let cem = canonicalEmbs si
-									      Just cas = finiteAdm_simeq cem s
-									      c = cong diag cas s si
+                                                                  else do let c = cong diag cas s si
 									      --c = cong diag as s
 									      
 								          -- 5. Check the cell condition in its full generality.
