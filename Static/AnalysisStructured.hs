@@ -336,7 +336,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
              pos')
            return $ insEdgeNub (n1,n',DGLink {
              dgl_morphism = ide Grothendieck sig1,
-             dgl_type = LocalThm Open None Open,
+             dgl_type = LocalThm Open Cons Open,
              dgl_origin = DGExtension }) dg1
        _ -> return dg1
      return (sp1':sps',nsig1,dg2)

@@ -107,7 +107,7 @@ data DGLinkType = LocalDef
               deriving (Eq,Show)
 
 data Conservativity = None | Cons | Mono | Def
-              deriving (Eq,Show)
+              deriving (Eq,Show,Ord)
 
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
