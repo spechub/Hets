@@ -95,27 +95,49 @@ placeTok = mkSimpleId place
 openParenTok = mkSimpleId "("
 closeParenTok = mkSimpleId ")"
 parenTok = mkSimpleId "()" -- unique indicator
-colonTok, asTok :: Token
+
+colonTok, asTok, varTok, opTok :: Token
 colonTok = mkSimpleId ":"
 asTok = mkSimpleId "as"
+varTok = mkSimpleId "(var)"
+opTok = mkSimpleId "(op)"
 
+parenToks :: [Token]
+parenToks = [openParenTok, closeParenTok]
+
+expandPos :: (Token -> a) -> String -> String -> [a] -> [Pos] -> [a]
+expandPos f o c ts ps =
+          let n = length ts 
+              j = length ps
+              cutOuterPos i l = let k = length l in 
+				if k == i+1 then l
+				else cutOuterPos (i - 2) 
+					      $ init (tail l)
+              ps1 = if j > n  && even (j - (n+1)) then cutOuterPos n ps
+		    else if j > 1 then 
+			 head ps : replicate (n - 1) nullPos 
+			      ++ [last ps]
+		    else replicate (n + 1) nullPos
+	      seps = map f
+		(zipWith Token (o : replicate (n - 1) "," ++ [c]) ps1)
+	  in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
+	    		    
 getTokenList :: Id -> [Token]
-getTokenList (Id ts cs _) = 
+getTokenList (Id ts cs ps) = 
     let (pls, toks) = span isPlace (reverse ts) 
-        cts = if null cs then [] else mkSimpleId "[" :
-	      concat (intersperse [commaTok]
-	      (map getTokenList cs)) ++ [mkSimpleId "]"]
+        cts = if null cs then [] else concat 
+	      $ expandPos (:[]) "[" "]" (map getTokenList cs) ps
     in reverse toks ++ cts ++ reverse pls
 
 mkState :: Int -> Id -> State 
-mkState n ide = State ide True [] (getTokenList ide) n
-
-bracketToks :: [Token]
-bracketToks = [openParenTok, closeParenTok]
+mkState i ide = State ide True [] (getTokenList ide) i
 
 mkApplState :: Int -> Id -> State
-mkApplState n ide = State ide False [] 
-		    (getTokenList ide ++ [parenTok]) n
+mkApplState i ide = State ide False [] 
+		    (getTokenList ide ++ parenToks) i
+
+mkTokState :: Int -> [Token] -> State
+mkTokState i toks = State (Id toks [] []) True [] toks i
 
 type ParseMap = FiniteMap Int (Set State)
 
@@ -127,20 +149,17 @@ initialState g is i =
        mapSet (mkApplState i) is `union` 
        mapSet (mkState i) is `union` 
        listStates g i `addToSet` 
-       bracketTerm i `addToSet`
-       sortedTerm i
+       mkTokState i parenToks `addToSet`
+       mkTokState i [placeTok, colonTok] `addToSet`
+       mkTokState i [placeTok, asTok] `addToSet`
+       mkTokState i [varTok] `addToSet`
+       mkTokState i [opTok] `addToSet`
+       mkTokState i (opTok:parenToks)
 
 -- qualified names not handled yet
-sortedTerm :: Int -> State 
-sortedTerm i = let v = Id [placeTok, colonTok] [] []
-		    in State v True [] (getTokenList v) i
-
-bracketTerm :: Int -> State 
-bracketTerm i = let v = Id [parenTok] [] []
-		    in State v True [] (getTokenList v) i
 
 listId :: Id
--- unique id (usually "[]" yield two tokens)
+-- unique id (usually "[]" yields two tokens)
 listId = Id [mkSimpleId "[]"] [] []
 
 listStates :: GlobalAnnos -> Int -> Set State
@@ -272,27 +291,24 @@ iterateStates g is terms c@(i, ds, m) =
 		iterateStates g is (expand "[" "]" ts ps ++ tail terms) c
 	    Mixfix_braced ts ps -> 
 		iterateStates g is (expand "{" "}" ts ps ++ tail terms) c
+	    Mixfix_parenthesized ts ps -> 
+		iterateStates g is (expand "(" ")" ts ps ++ tail terms) c
             t -> let m1 = nextState g is t i m
                  in if isEmptySet $ lookUp m1 (i + 1) 
 		    then (i+1, Error ("unexpected term: " 
 				      ++ show (printText0 g t))
 			       (posOfTerm t) : ds, m)
                     else iterateStates g is (tail terms) (i+1, ds, m1)
-  where expand o c ts ps = 
-          let ps1 = if length ps == length ts + 1 then ps
-		    else replicate (length ts + 1) nullPos
-	      seps = map Mixfix_token 
-		(zipWith Token (o : replicate (length ts - 1) "," ++ [c]) ps1)
-	  in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
-	    		    
+  where expand = expandPos Mixfix_token 
+
 posOfTerm :: TERM -> Pos
-posOfTerm term =
-    case term of
+posOfTerm trm =
+    case trm of
 	      Mixfix_token t -> tokPos t
 	      Mixfix_term ts -> posOfTerm (head ts)
 	      Simple_id i -> tokPos i
 	      Mixfix_qual_pred _ -> nullPos 
-	      _ -> case get_pos_l term of 
+	      _ -> case get_pos_l trm of 
 		   Nothing -> nullPos
 		   Just l -> if null l then nullPos else head l
 
@@ -314,7 +330,7 @@ parseMixfix g is terms =
 
 -- start testing
 
-testSingleCharTokens l r t = 
+testTokens l r t = 
     let g = addGlobalAnnos emptyGlobalAnnos 
 			 $ map (parseString annotationL) l
 	in map (printText g)
@@ -326,12 +342,13 @@ myAnnos = [ "%prec({__+__} < {__*__})%", "%prec({__*__} < {__^__})%"
 	  , "%left_assoc(__+__)%"
 	  , "%list([__], [], __::__)%"]
 
-myIs = ["__^__", "__*__", "__+__", "[__]",
+myIs = ["__^__", "__*__", "__+__", "[__]", "____p", "q____","____x____",
+        "{____}",
 	"x", "0", "1", "2", "3", "4", "5", "a", "b", "-__", "__!"]
 
 myTokens = "4*x^4+3*x^3+2*x^2+1*x^1+0*x^0"
 
-testAppl = testSingleCharTokens myAnnos myIs myTokens
+testAppl = testTokens myAnnos myIs myTokens
 
 -- --------------------------------------------------------------- 
 -- convert literals 
