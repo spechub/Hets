@@ -21,6 +21,7 @@ import Common.Lexer
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
+import qualified Common.Lib.Set as Set
 import Data.Maybe
 import Data.List
 
@@ -43,13 +44,13 @@ anaFormula ga at =
        return $ case mt of Nothing -> Nothing
 			   Just e -> Just at { item = e }
 
-anaVars :: Vars -> Type -> Result [VarDecl]
-anaVars (Var v) t = return [VarDecl v t Other []]
-anaVars (VarTuple vs _) t = 
-    case t of 
+anaVars :: TypeMap -> Vars -> Type -> Result [VarDecl]
+anaVars _ (Var v) t = return [VarDecl v t Other []]
+anaVars tm (VarTuple vs _) t = 
+    case unalias tm t of 
 	   ProductType ts _ -> 
 	       if length ts == length vs then 
-		  let lrs = zipWith anaVars vs ts 
+		  let lrs = zipWith (anaVars tm) vs ts 
 		      lms = map maybeResult lrs in
 		      if all isJust lms then 
 			 return $ concatMap fromJust lms
@@ -125,11 +126,10 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 			  Just ty -> do
 			      let newPty = TypeScheme nAs ([]:=>ty) []
 				  fullKind = typeArgsListToKind nAs star
-				  uty = unalias tm ty 
-				  Result es mvds = anaVars v uty
+				  Result es mvds = anaVars tm v ty
 			      addDiags es
 			      checkUniqueTypevars nAs
-			      if occursIn tm i uty then do 
+			      if cyclicType tm i ty then do 
 			         addDiags [mkDiag Error 
 				     "illegal recursive subtype definition" ty]
 				 return $ SubtypeDefn newPat v ty f ps
@@ -181,7 +181,7 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
                                   newPty = TypeScheme allArgs qty qs
 				  fullKind = typeArgsListToKind nAs ik
 			      checkUniqueTypevars allArgs
-			      if occursIn tm i $ unalias tm ty then 
+			      if cyclicType tm i ty then 
 			        do addDiags [mkDiag Error 
 				       "illegal recursive type synonym" ty]
 			           return Nothing
@@ -189,11 +189,12 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
 				     inst fullKind i 
 			      return $ AliasType (TypePattern i [] [])
 				     (Just fullKind) newPty ps
-
 anaTypeItem _ gk inst tys (Datatype d) = 
     do newD <- anaDatatype gk inst tys d 
        return $ Datatype newD
-		   
+
+cyclicType :: TypeMap -> Id -> Type -> Bool
+cyclicType tm i ty = Set.member i $ idsOf (==0) (unalias tm ty)
 
 ana1Datatype :: DatatypeDecl -> State Env (Maybe DatatypeDecl)
 ana1Datatype (DatatypeDecl pat kind alts derivs ps) = 
@@ -236,9 +237,6 @@ dataPatToType _ = error "dataPatToType"
 addSuperType :: Type -> Id -> State Env ()
 addSuperType t i =
     do tm <- gets typeMap
-       {- if occursIn tk i $ unalias tk t then 
-	  addDiags [mkDiag Error "cyclic super type" t]
-	  else -} 
        case Map.lookup i tm of
            Nothing -> return () -- previous error
 	   Just ti@(TypeInfo ok ks sups defn) -> 
