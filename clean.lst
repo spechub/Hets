@@ -6,6 +6,7 @@ CASL/RunMixfixParser.hs
 CASL/RunStaticAna.hs
 CASL/capa.lhs
 CASL/ghc-call
+CASL/doc
 CASL/test
 CASL/iterate.sh
 
@@ -14,6 +15,7 @@ CSP-CASL
 Common/LaTeX_maps.svmono.hs
 Common/Makefile
 Common/RunParsers.hs
+Common/doc
 Common/test
 Common/annos.hs
 Common/ghc-call
@@ -42,6 +44,7 @@ GUI/todo
 
 HasCASL/RunMixfixParser.hs
 HasCASL/RunStaticAna.hs
+HasCASL/doc/StaticAna.tex
 HasCASL/ghc-call
 HasCASL/ghci-call
 HasCASL/hacapa.lhs
@@ -82,6 +85,7 @@ haterm-1.0
 hetcats/Algebra_I.tree.gen_trm
 hetcats/README
 
+doc/HetsOverview.tex
 hugs
 mini
 parsec
