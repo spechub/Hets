@@ -20,9 +20,6 @@
 
 module ATC.Sml_cats (from_sml_ATerm,read_sml_ATerm) where
 
--- for debugging only
---import IOExts (trace)
-
 import Data.List (isPrefixOf)
 import List (mapAccumL)
 
@@ -42,6 +39,9 @@ import Logic.Grothendieck
 import Syntax.AS_Structured
 import Syntax.AS_Architecture
 import Syntax.AS_Library
+
+-- for debugging only
+--import IOExts (trace)
 
 -- the following module provides the ability to parse the "unparsed-anno"
 import Common.Lib.Parsec (parse,setPosition)
@@ -98,7 +98,7 @@ to_sml_SharedATermString :: ATermConvertibleSML a => a -> String
 to_sml_SharedATermString t = (writeSharedATerm . fst) (to_sml_ShATerm emptyATermTable t)
 
 from_sml_ATermString :: ATermConvertibleSML a => String -> a
-from_sml_ATermString s 	 = from_sml_ShATerm (readATerm s)
+from_sml_ATermString s 	 = (\ a -> from_sml_ShATerm a) (readATerm s)
 
 from_sml_ATermError :: String -> ATerm -> a
 from_sml_ATermError t u = error ("Cannot convert ATerm to "++t++": "++(err u))
@@ -108,9 +108,9 @@ from_sml_ATermError t u = error ("Cannot convert ATerm to "++t++": "++(err u))
 		  _           -> "!AInt"
 
 from_sml_ShATermError :: String -> ShATerm -> a
-from_sml_ShATermError t u = error ("Cannot convert ShATerm to "++t++": "++(err u))
+from_sml_ShATermError t u = error ("Cannot convert Sml-ShATerm to "++t++": "++(err u))
     where err u = case u of 
-		  ShAAppl s _ _ -> "!ShAAppl "++s
+		  ShAAppl s l _ -> "!ShAAppl "++s++"("++show (length l)++")"
 		  ShAList _ _   -> "!ShAList"
 		  _             -> "!ShAInt"
 
@@ -1738,7 +1738,7 @@ instance ATermConvertibleSML ARCH_SPEC where
 		in (Basic_arch_spec aa'' ab' ac')
 	    (ShAAppl "named-arch-spec" [ aa ] _)  ->
 		let
-		aa' = from_sml_ShATerm (getATermByIndex1 aa att)
+		aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
 		in (Arch_spec_name aa')
 	    _ -> from_sml_ShATermError "ARCH_SPEC" aterm
 	where
