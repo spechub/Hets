@@ -11,9 +11,6 @@
    todo:
      - ATerm conversion
      - Pretty printing
-
-
-   $Header$
 -}
 
 module AS_Basic_CASL where

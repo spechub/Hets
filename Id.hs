@@ -1,3 +1,20 @@
+
+{- HetCATS/Id.hs
+   $Id$
+   Authors: Klaus Lüttich
+            Christian Maeder
+   Year:    2002
+
+   This module supplies simple and mixfix identifiers. 
+   A simple identifier is a lexical token given by a string and a start position.
+   The ordering of tokens ignores position information.
+
+   A place within mixfix identifiers is also a token.
+
+   Mixfix identifiers may also have a compound list. 
+   This compound list follows the last non-place token! 
+-}
+
 module Id where
 
 {-! global : ATermConvertible !-}
