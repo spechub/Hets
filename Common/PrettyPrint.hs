@@ -60,7 +60,7 @@ latexStyle, textStyle :: Style
 textStyle = style {lineLength=80, ribbonsPerLine= 1.19} 
 -- maximum line length 80 with 67 printable chars (up to 13 indentation chars) 
 latexStyle = textStyle { ribbonsPerLine = 1.1
-		       , lineLength = calc_line_length "345.0pt"}
+		       , lineLength = calc_line_length "336.0pt"}
 
 -- a LatexRenderingState
 -- field indentTabs : for the number of tab
@@ -466,3 +466,5 @@ printId pf ga mdf i =
 		      (disp_tops) 
            else print_ i
 
+instance PrettyPrint () where
+   printText0 _ga _s = text "()"

@@ -63,9 +63,6 @@ import CspCASL.ATC_CspCASL
 data CspCASL = CspCASL deriving (Show)
 instance Language CspCASL  -- default definition is okay
 
-instance PrettyPrint () where
-   printText0 ga s = text "()"
-
 instance Category CspCASL () ()
     where
          -- ide :: id -> object -> morphism

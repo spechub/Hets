@@ -85,9 +85,6 @@ instance Language Haskell  -- default definition is okay
 type Sign = ModuleInfo 
 type Morphism = ()
 
-instance PrettyPrint () where
-   printText0 ga s = text "()"
-
 instance Category Haskell Sign Morphism  
 
 -- abstract syntax, parsing (and printing)
