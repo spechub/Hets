@@ -17,7 +17,7 @@ HC_INCLUDE = -i$(INCLUDE_PATH)
 
 # you need the "uni" library!
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
-             -package uni-server
+             -package uni-server -DUNI_PACKAGE
 
 HC_OPTS    = $(HC_PACKAGE) $(HC_INCLUDE)
 
