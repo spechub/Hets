@@ -18,6 +18,9 @@ CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Modal:CspCASL:A
 ## set ghc imports properly for your system
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.2/imports:${GHC_IMPORTS}'
 
+DRIFT_deps = utils/DrIFT-src/*hs
+GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
+
 HC         = ghc
 PERL       = perl
 HAPPY      = happy
@@ -192,13 +195,13 @@ post_doc4apache:
 
 derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
 
-utils/DrIFT:
-	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT; \
+utils/DrIFT: $(DRIFT_deps)
+	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT && \
            strip ../DrIFT)
 
-utils/genRules:
+utils/genRules: $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
-         $(HC) --make '-i../..:../DrIFT-src' -package text GenerateRules.hs -o ../genRules;\
+         $(HC) --make '-i../..:../DrIFT-src' -package text GenerateRules.hs -o ../genRules && \
          strip ../genRules)
 
 release: 
