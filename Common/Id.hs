@@ -185,20 +185,25 @@ isSimpleId (Id ts cs _) = null cs && length ts == 1
 
 ---- some useful predicates for Ids -------------------------------------
 
+-- | number of 'place' in 'Id'
+
+placeCount :: Id -> Int
+placeCount (Id tops _ _) = length $ filter isPlace tops
+
 -- | has no (toplevel) 'place'
 isOrdAppl :: Id -> Bool
 isOrdAppl = not . isMixfix
 
--- | has a place
+-- | has a 'place'
 isMixfix :: Id -> Bool
 isMixfix (Id tops _ _) = any isPlace tops 
 
--- | ends with a place
+-- | ends with a 'place'
 isPrefix :: Id -> Bool
 isPrefix (Id tops _ _) = not (null tops) && not (isPlace (head tops)) 
 			 && isPlace (last tops)
 
--- | starts with a place
+-- | starts with a 'place'
 isPostfix :: Id -> Bool
 isPostfix (Id tops _ _) = not (null tops) &&  isPlace (head  tops) 
 			  && not (isPlace (last tops)) 
@@ -211,12 +216,12 @@ isInfix2 (Id ts _ _) =
 			    && isPlace e3 
 	    _ -> False
 
--- | starts and ends with a place
+-- | starts and ends with a 'place'
 isInfix :: Id -> Bool
 isInfix (Id tops _ _) = not (null tops) &&  isPlace (head tops) 
 			&& isPlace (last tops)
 
--- | has a place but neither starts nor ends with one
+-- | has a 'place' but neither starts nor ends with one
 isSurround :: Id -> Bool
 isSurround i@(Id tops _ _) = not (null tops) && (isMixfix i)
 			     && not (isPlace (head tops)) 
@@ -276,7 +281,7 @@ firstPos l ps = let p = posOf l in
 -- | handcoded instance
 instance PosItem Token where
     up_pos fn1 (Token aa ab) = (Token aa (fn1 ab))
-    get_pos (Token _ ab) = Just ab
+    get_pos (Token _ ab) = if ab == nullPos then Nothing else Just ab
 
 -- | handcoded instance
 instance PosItem Id where
