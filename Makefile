@@ -37,8 +37,20 @@ INSTALLDIR = \
   /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
 
 DRIFT_deps = utils/DrIFT-src/*hs
-GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
-INLINEAXIOMS_deps = utils/InlineAxioms/*hs $(drifted_files)
+GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps) Common/Utils.hs
+INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs Common/ListUtils.hs \
+    Common/Lib/Pretty.hs Common/Keywords.hs Common/Lib/Set.hs \
+    Common/Lib/Map.hs Common/Lib/Rel.hs Common/Lib/State.hs Common/Id.hs \
+    Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs CASL/ShowMixfix.hs \
+    CASL/Utils.hs Common/Lexer.hs Common/Token.hs Common/Anno_Parser.hs \
+    Common/GlobalAnnotations.hs Common/PrettyPrint.hs \
+    Common/Print_AS_Annotation.hs Common/PPUtils.hs CASL/LiteralFuns.hs \
+    CASL/Print_AS_Basic.hs Common/AnnoState.hs CASL/Formula.hs \
+    CASL/OpItem.hs CASL/SortItem.hs Common/Result.hs \
+    Common/ConvertLiteral.hs Common/Earley.hs CASL/MixfixParser.hs \
+    CASL/Parse_AS_Basic.hs CASL/Sign.hs CASL/Overload.hs \
+    CASL/StaticAna.hs Modal/AS_Modal.hs Modal/Parse_AS.hs \
+    Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
 
 HC         = ghc
 PERL       = perl
@@ -582,3 +594,4 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 # hetcats-make is created as side-effect of hets or hets-optimized
 sources_hetcats.mk: hetcats-make utils/create_sources.pl
 	$(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
+
