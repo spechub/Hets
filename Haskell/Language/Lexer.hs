@@ -280,9 +280,7 @@ lexToken = do
 			n <- lexHexadecimal
 			return (IntTok n)
 
-	c:_ ---| c == 'A'
-
-            | isDigit c -> lexDecimalOrFloat
+	c:_ | isDigit c -> lexDecimalOrFloat
 
 	    | isUpper c -> lexConIdOrQual ""
 
