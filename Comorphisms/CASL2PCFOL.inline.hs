@@ -12,14 +12,9 @@ Portability :  portable
 -}
 
 {-
-   testen mit
-     make ghci
-     :l Comorphisms/CASL2PCFOL.hs
-
-   wenn es druch geht, dann in hets.hs einfügen
-     import Comorphisms.CASL2PCFOL
-   und dann einchecken, wenn es durch geht (make hets)
-     cvs commit
+   todo
+   predicate_monotonicity  (wie function_monotonicty)
+   encodeFORMULA
 -}
 
 module Comorphisms.CASL2PCFOL where
@@ -177,13 +172,6 @@ generateAxioms sig =
         findsubsort::Sign f e-> (SORT,SORT)->[SORT]
         findsubsort   sig (x,y) = [s|s<-Set.toList(subsortsOf x sig),s1<-Set.toList(subsortsOf y sig),s1==s]
 
-        findSubSort::Sign f e -> [(SORT,SORT)]->[[SORT]]
-        findSubSort  _ [] = [] 
-        findSubSort  sig (x:xs) = [(findsubsort sig x)]++(findSubSort sig xs)
-
-        findw:: Sign f e-> [(SORT,SORT)]->[[SORT]]
-        findw   sig l = permute (findSubSort sig l)  
-
         ftTL= step1 sig     --[(Id,[OpType])]
         
 
@@ -191,62 +179,14 @@ generateAxioms sig =
         step1::Sign f e ->[(Id,[OpType])]
 	step1  sig =map (\(x,y) -> (x,Set.toList y)) (Map.toList(opMap sig)) 
 
-        step2::[(Id,[OpType])]->[(Id,(OpType,OpType))]
-        step2  [ ] = [ ] 
-        step2  x = concat(map step2' x) 
+{- recursively go through the formula
+   similar to CASL2Modal.hs
+   replace Membership by:    Predication of "_elem_s"
+   replace Cast by:          Application of "_pr"
+-}
+encodeFORMULA :: [Named (FORMULA f)] -> [Named (FORMULA f)]
+encodeFORMULA = error "encodeFORMULA not yet implemented"
 
-        step2'::(Id,[OpType]) -> [(Id,(OpType,OpType))]
-        step2'  (x,y) =[(f,(t1,t2)) | let f=x,t1<-y,t2<-y,not (t1==t2),t1<t2,length(opArgs t1)==length(opArgs t2) ]   
-
-        step3::[(Id,(OpType,OpType))]-> [(Id,( ([SORT],SORT),([SORT],SORT) ) )]
-        step3  [ ] = [ ]
-        step3   l = map step31 l 
- 
-        step31:: (Id,(OpType,OpType)) -> (Id,(([SORT],SORT),([SORT],SORT)))
-        step31  (f,(t1,t2)) = ( f, ( (opArgs t1,opRes t1) , (opArgs t2, opRes t2) ) ) 
-
-
-        step4::Sign f e -> [(Id,( ([SORT],SORT),([SORT],SORT) ) )]-> [(Id, ([[SORT]],[SORT]))]
-        step4 _ [ ] =  []
-        step4 sig x =  step46 (sig)  (step43 sig x)
-
-        step41 :: Sign f e -> SORT -> SORT -> [SORT]
-        step41    sig s' s'' = [s|s<-Set.toList(supersortsOf s' sig),s1<-Set.toList(supersortsOf s'' sig),s1==s]
-
-        step42:: Sign f e->(Id,(([SORT],SORT),([SORT],SORT)))->(Id,([(SORT,SORT)],[SORT]))
-        step42   sig (f,((t1a,t1r),(t2a,t2r))) = (f,( ((zip t1a t2a),(step41 sig t1r t2r)) ))
-
-        step43:: Sign f e -> [(Id,(([SORT],SORT),([SORT],SORT)))] -> [( Id,([(SORT,SORT)],[SORT]) ) ]
-        step43   _  [ ]  = [ ]
-        step43   sig l = map (step42 sig) (l)
-
-        step44:: Sign f e -> (SORT,SORT)-> [SORT]
-        step44   sig (w', w'') = [w|w<-Set.toList(subsortsOf w' sig),w1<-Set.toList(subsortsOf w'' sig),w1==w]
-
-        step45:: Sign f e -> [(SORT,SORT)] -> [[SORT]]
-        step45   _ [ ] = [ ] 
-        step45   sig l = map (step44 sig) l
-
-        step46:: Sign f e -> [( Id,([(SORT,SORT)],[SORT]) ) ]  -> [(Id, ([[SORT]],[SORT]))]
-        step46   _ [] = [] 
-        step46  sig ((f,(wl,sl)):xs ) = (f,((step45 sig wl),sl)):(step46 sig xs)
-
-        step5:: [(Id, ([[SORT]],[SORT]))]-> [(Id, ([[SORT]],[SORT]))]
-        step5   [ ] =   [ ]
-        step5   l  = map step51 l   
-
-        step51::(Id, ([[SORT]],[SORT]))->(Id,([[SORT]],[SORT]))
-        step51  (f,(x,y)) = (f,((permute x),y) )
-
-        step13::Sign f e-> [(Id,( ([SORT],SORT),([SORT],SORT) ) )]
-        step13  sig = step3(step2 (step1 sig))
-
-        step15::Sign f e ->  [(Id, ([[SORT]],[SORT]))]
-        step15  sig = step5 (step4 sig (step13 sig))      
-   
-        result=step15 sig  --[(Id, ([[SORT]],[SORT]))]
-
- 
 
  
 
