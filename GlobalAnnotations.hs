@@ -23,21 +23,36 @@ data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
 		      , assoc_annos    :: AssocMap
 		      , display_annos  :: DisplayMap
 		      , literal_annos  :: LiteralAnnos
+		      , literal_map    :: LiteralMap
 		      } deriving (Show)
 
 type PrecedenceGraph = (FiniteMap Id Node,Graph Id Int)
 
+data PrecRel = Higher | Lower | ExplGroup Direct
+	       deriving (Show)
+
+data Direct = BothDirections | NoDirection
+	      deriving (Show)
+
 type AssocMap = FiniteMap Id AssocEither
+
+data AssocEither = ALeft | ARight deriving (Show,Eq)
 
 type DisplayMap = FiniteMap Id [(String,String)]
 
-data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
-			, list_lit   :: Maybe (Id,Id,Id)
-			, number_lit :: Maybe Id
-			, float_lit  :: Maybe (Id,Id)
-			} deriving (Show)
+type LiteralMap = FiniteMap Id LiteralType
 
-data AssocEither = ALeft | ARight deriving (Show)
+data LiteralType = StringCons | StringNull
+		 | ListBrackets | ListCons | ListNull
+		 | Number
+		 | Fraction | Floating
+		   deriving (Show,Eq)
+
+data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
+		       , list_lit   :: Maybe (Id,Id,Id)
+		       , number_lit :: Maybe Id
+		       , float_lit  :: Maybe (Id,Id)
+		       } deriving (Show)
 
 instance (Show a,Show b) => Show (FiniteMap a b) where
     show = show . fmToList
