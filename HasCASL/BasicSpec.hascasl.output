@@ -361,8 +361,11 @@ var x : s
 . not p \/ not q (x) \/ q (x)
 . not p /\ not q (x) /\ q (x) => not p \/ not q (x) \/ q (x) => not
   p /\ not q (x) /\ q (x)
-. not p /\ not q (x) /\ q (x) if not p \/ not q (x) \/ q (x) if not
-  p /\ not q (x) /\ q (x)
+. not p /\ not q (x) /\ q (x)
+  if
+  not p \/ not q (x) \/ q (x)
+  if
+  not p /\ not q (x) /\ q (x)
   forall x : s . not p /\ not q (x) /\ q (x) <=>
 		 exists x : s . not p \/ not q (x) \/ q (x) <=>
 				exists! x : s . not p /\ not q (x) /\ q (x)

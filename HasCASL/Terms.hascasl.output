@@ -111,3 +111,6 @@ let x = \ y : t . y in x (x)
 let x = case x in t of y -> z;
     x = y in x
 ()
+if a then b
+a if b
+if a then b else c

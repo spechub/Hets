@@ -46,3 +46,11 @@ parse error at (line 12, column 7):
 unexpected variance of result kind
 expecting cross or "->"
 
+parse error at (line 13, column 5):
+unexpected "-"
+expecting casl char, underline word, "[", "," or ")"
+
+parse error at (line 14, column 4):
+unexpected ","
+expecting cross, "->" or ")"
+

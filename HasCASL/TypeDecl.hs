@@ -15,6 +15,7 @@ import ClassAna
 import FiniteMap
 import Id
 import Le
+import Maybe
 import MonadState
 
 import MixfixParser(getTokenList, expandPos)
@@ -25,6 +26,7 @@ import ParsecError
 import PrettyPrint
 import PrintAs(showPretty)
 import Result
+import TypeAna
 
 missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
 missingAna t ps = appendDiags [Diag FatalError 
@@ -45,14 +47,18 @@ anaTypeItem :: Instance -> TypeItem -> State Env ()
 anaTypeItem inst (TypeDecl pats kind _) = 
     do k <- anaKind kind
        mapM_ (anaTypePattern inst k) pats 
+anaTypeItem inst (SubtypeDecl pats t _) = 
+    do sup <- anaType t
+       mapM_ (anaTypePattern inst nullKind) pats
+       let rs = map (fromJust . maybeResult) $ 
+		filter (isJust . maybeResult) $ 
+		map convertTypePattern pats
+       return ()
 
-anaTypeItem _ (SubtypeDecl _ t p) = missingAna t p
 anaTypeItem _ t@(IsoDecl _ p) = missingAna t p
 anaTypeItem _ (SubtypeDefn t _ _ _ p) = missingAna t p
 anaTypeItem _ (Datatype (DatatypeDecl t _ _ _ p)) = missingAna t p
 anaTypeItem _ (AliasType t _ _ p) = missingAna t p
-
-data ApplMode = OnlyArg | TopLevel 
 
 kindArity :: ApplMode -> Kind -> Int
 kindArity m (KindAppl k1 k2 _) =
