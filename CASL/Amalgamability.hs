@@ -40,7 +40,7 @@ import Logic.Logic
 import CASL.Sign
 import CASL.Morphism
 import List
-import Debug.Trace
+-- import Debug.Trace
 
 -- Exported types
 type CASLSign = Sign () ()
@@ -734,7 +734,7 @@ colimitIsThin simeq embs c0 =
     in {-trace ("\\simeq: " ++ (show simeq) ++ "\nEmbs: " ++ (show embs) ++ "\n\\cong_0: " ++ show c0)-} 
          checkAllSorts ordMap
 
-
+{- the old, unoptimised version of cong:
 -- | Compute the \cong relation given its (finite) domain
 cong :: CASLDiag
      -> [DiagEmbWord]     -- ^ the Adm_\simeq set (the domain of \cong relation)
@@ -768,14 +768,94 @@ cong diag adm simeq =
 	rel'' = mergeEquivClassesBy compRule rel'
 	rel''' = fixCongLc rel''
     in taggedValsToEquivClasses rel'''
+-}
+
+-- | Compute the (optimised) \cong relation given its (finite) domain and \sim relation.
+-- Optimised \cong is supposed to contain only words composed of canonical embeddings; 
+-- we also use a (CompDiag) rule instead of (Comp) and (Diag) rules.
+cong :: CASLDiag
+     -> [DiagEmbWord]     -- ^ the Adm_\simeq set (the domain of \cong relation)
+     -> EquivRel DiagSort -- ^ the \simeq relation
+     -> EquivRel DiagEmb  -- ^ the \sim relation
+     -> EquivRel DiagEmbWord
+cong diag adm simeq sim =
+    let -- domCodEqual: check that domains and codomains of given words are equal
+        domCodEqual w1 w2 = 
+	       wordDom w1 == wordDom w2 && wordCod w1 == wordCod w2
+
+	-- diagRule: the Diag rule
+	diagRule [(n1, s11, s12)] [(n2, s21, s22)] =
+	    isMorphSort diag (n1, s11) (n2, s21) && isMorphSort diag (n1, s12) (n2, s22) ||
+	    isMorphSort diag (n2, s21) (n1, s11) && isMorphSort diag (n2, s22) (n1, s12) 
+	diagRule _ _ = False
+
+	-- compDiagRule: the combination of Comp and Diag rules
+        compDiagRule w1@[_] w2@[_, _] = compDiagRule w2 w1
+	compDiagRule [e1, e2] [d] = 
+	    let [ec1] = filter (\(e : _) -> e == e1) sim
+		[ec2] = filter (\(e : _) -> e == e2) sim
+		matches [] = False
+		matches (((n1, _, s12), (n2, s21, _)) : eps) = 
+		    if n1 == n2 && inRel sim d (n1, s21, s12)
+		       then True
+		       else matches eps
+	    in matches [(me1, me2) | me1 <- ec1, me2 <- ec2]
+	compDiagRule _ _ = False
+
+        -- fixCongLc: apply Cong and Lc rules until a fixpoint is reached
+	fixCongLc rel =
+	    let rel' = (leftCancellableClosure . congruenceClosure simeq) rel
+	    in if rel == rel' then rel else fixCongLc rel'
+
+	-- compute the relation
+	rel = map (\w -> (w, w)) adm
+	rel' = mergeEquivClassesBy compDiagRule rel
+	rel'' = fixCongLc rel'
+    in taggedValsToEquivClasses rel''
 
 
 -- | Compute the \cong^R relation
 congR :: CASLDiag
       -> EquivRel DiagSort -- ^ the \simeq relation
+      -> EquivRel DiagEmb  -- ^ the \sim relation
       -> EquivRel DiagEmbWord
-congR diag simeq =
-    cong diag (looplessWords (embs diag) simeq) simeq
+congR diag simeq sim =
+    --cong diag (looplessWords (embs diag) simeq) simeq
+    cong diag (looplessWords (canonicalEmbs sim) simeq) simeq sim
+
+
+-- | Compute the \sim relation
+sim :: CASLDiag
+    -> EquivRel DiagEmb
+sim diag =
+    let -- diagRule: the Diag rule
+	diagRule (n1, s11, s12) (n2, s21, s22) =
+	    isMorphSort diag (n1, s11) (n2, s21) && isMorphSort diag (n1, s12) (n2, s22) ||
+	    isMorphSort diag (n2, s21) (n1, s11) && isMorphSort diag (n2, s22) (n1, s12) 
+		       
+        rel = map (\e -> (e, e)) (embs diag)
+	rel' = mergeEquivClassesBy diagRule rel
+    in taggedValsToEquivClasses rel'
+
+
+-- | Compute the CanonicalEmbs(D) set given \sim relation
+canonicalEmbs :: EquivRel DiagEmb
+	      -> [DiagEmb]
+canonicalEmbs sim =
+    foldl (\l -> \(e : _) -> (e : l)) [] sim
+
+
+-- | Convert given \cong_\tau relation to the canonical form
+-- w.r.t. given \sim relation
+canonicalCong_tau :: EquivRel DiagEmbWord
+		  -> EquivRel DiagEmb
+		  -> EquivRel DiagEmbWord
+canonicalCong_tau ct sim =
+    let mapEmb e = let Just (ce : _) = find (elem e) sim
+		   in ce
+	mapWord w = map mapEmb w
+	mapEqcl ec = map mapWord ec
+    in map mapEqcl ct
 
 
 -- | Convert a word to a list of sorts that are embedded 
@@ -855,15 +935,21 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
 					  Just _ -> 
 					    do let em = embs diag
 						   mas = finiteAdm_simeq em s
+						   si = sim diag
+						   cct = canonicalCong_tau ct si
 					       -- 3. Check if the set Adm_\simeq is finite.
 					       case mas of 
 						    Just as -> 
 						      do -- 4. check the colimit thinness. If the colimit is thing then
 							 -- the specification is correct.
                                                                if colimitIsThin s em c0 then return Yes
-                                                                  else do let c = cong diag as s
+                                                                  else do let cem = canonicalEmbs si
+									      Just cas = finiteAdm_simeq cem s
+									      c = cong diag cas s si
+									      --c = cong diag as s
+									      
 								          -- 5. Check the cell condition in its full generality.
-                                                                          case subRelation ct c of
+                                                                          case subRelation cct c of
                                                                                Just (w1, w2) -> let rendEmbPath [] = []
                                                                                                     rendEmbPath (h : w) = 
                                                                                                         foldl (\t -> \s -> t ++ " < " ++ renderText Nothing (printText s)) 
@@ -873,11 +959,11 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
                                                                                                 in do return (No ("embedding paths \n    " ++ word1 ++
 										  		                  "\nand\n    " ++ word2 ++ "\nmight be different"))
 							                       Nothing -> do return Yes 
-						    Nothing -> do let cR = congR diag s
+						    Nothing -> do let cR = congR diag s si
 							       -- 6. Check the restricted cell condition. If it holds then the
 							       -- specification is correct. Otherwise proof obligations need to 
 							       -- be generated.
-							          case subRelation ct cR of 
+							          case subRelation cct cR of 
 								    Just _ -> do return DontKnow -- TODO: generate proof obligations
 								    Nothing -> do return Yes
 
