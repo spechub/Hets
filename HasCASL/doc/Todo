@@ -63,9 +63,6 @@ Test shadowing in MixAna with warning.
 
 
 CASL:
-Overload.hs should generate Applications for constants rather than
-Var_decls (partially implemented)
-
 Maybe in CASL.Morphism.compose the target(m1) only needs to be a
 subsignature of the source(m2) (as for HasCASL)
 
