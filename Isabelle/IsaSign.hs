@@ -84,8 +84,8 @@ prodType t1 t2 = Type prodS ho_ho holType [t1,t2]
 typeApplS :: String 
 typeApplS = "typeAppl" -- maybe this should be " " for printing
 
-mkTypeAppl :: Typ -> Typ -> Typ
-mkTypeAppl t1 t2 = Type typeApplS ho_ho holType [t1,t2]
+mkTypeAppl :: String -> [Typ] -> Typ
+mkTypeAppl s t = Type s ho_ho holType t
 
 funS :: String 
 funS = "fun"  -- may be this should be "=>" for printing

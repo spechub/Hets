@@ -40,22 +40,14 @@ instance PrettyPrint Typ where
 
 showTyp :: Integer -> Typ -> String
 showTyp pri (Type str _ _ [s,t]) 
-  | str == typeApplS = 
-     if withTFrees t then showTyp pri t ++ sp ++ showTyp pri s
-        else showTyp pri s ++ sp ++ showTyp pri t
   | str == funS =
-       bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 11 t)
+       bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 10 t)
   | str == prodS = 
        lb ++ showTyp pri s ++ " * " ++ showTyp pri t ++ rb
-            where withTFrees tv =
-                      case tv of
-                              TFree _ _ -> True
-                              Type _ _ _ ts -> and (map withTFrees ts)
-                              _      -> False
 showTyp _ (Type name _ _ args) = 
   case args of
     []     -> name
-    arg:[] -> show arg ++ sp ++ name
+    arg:[] -> showTyp 100 arg ++ sp ++ name
     _      -> let (tyVars,types) = foldl split ([],[]) args
               in  
                 lb ++ concat (map ((sp++) . show) tyVars) ++
@@ -381,7 +373,7 @@ instance PrettyPrint Sign where
     showCaseLemmata1 dts = concat $ map showCaseLemma dts
     showCaseLemma (_, []) = ""
     showCaseLemma (tyCons, (c:cons)) = 
-      let cs = "case a of" ++ sp
+      let cs = "case caseVar of" ++ sp
           sc b = showCons b c ++ (concat $ map (("   | " ++) . (showCons b)) cons)
           clSome = sc True
           cl = sc False
