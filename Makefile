@@ -325,7 +325,7 @@ docs/index.html: $(doc_sources)
 # sources are not copied here
 apache_doc:
 	$(RM) docs/*.*
-	cvs up -d
+	cvs up -d ; echo "CVS exited with: " $$?
 	$(MAKE) hets-opt
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
