@@ -17,7 +17,7 @@
 
    References:
 
-   The FLIRTS home page: http://www.tzi.de/flirts
+   The FLIRTS home page: <http://www.tzi.de/flirts>
 
    T. Mossakowski:
    Relating CASL with Other Specification Languages:
