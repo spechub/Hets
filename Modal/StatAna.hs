@@ -212,7 +212,7 @@ ana_M_FORMULA _ phi@(Mixfix_formula _) =
   -- anaError phi [nullPos]
 ana_M_FORMULA _ phi@(Unparsed_formula _ pos) =
   anaError phi pos
-ana_M_FORMULA _ phi@(Sort_gen_ax _) =
+ana_M_FORMULA _ phi@(Sort_gen_ax _ _) =
   anaError phi [nullPos]
 
 anaError :: a -> [Pos] -> Result a

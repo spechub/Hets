@@ -134,12 +134,13 @@ ana_BASIC_ITEMS ab as ga bi =
 	do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
            mapM_ addSort sorts
            mapAnM (ana_DATATYPE_DECL Free) al 
-	   toSortGenAx ps $ getDataGenSig al
+	   toSortGenAx ps True $ getDataGenSig al
            closeSubsortRel 
 	   return bi
     Sort_gen al ps ->
 	do (gs,ul) <- ana_Generated as ga al
-	   toSortGenAx ps (Set.unions $ map fst gs, Set.unions $ map snd gs)
+	   toSortGenAx ps False 
+                (Set.unions $ map fst gs, Set.unions $ map snd gs)
 	   return $ Sort_gen ul ps
     Var_items il _ -> 
 	do mapM_ addVars il
@@ -179,8 +180,9 @@ ana_BASIC_ITEMS ab as ga bi =
            return $ Axiom_items ufs ps
     Ext_BASIC_ITEMS b -> fmap Ext_BASIC_ITEMS $ ab ga b
 
-toSortGenAx :: [Pos] -> (Set.Set Id, Set.Set Component) -> State (Sign f e) ()
-toSortGenAx ps (sorts, ops) = do
+toSortGenAx :: [Pos] -> Bool ->
+               (Set.Set Id, Set.Set Component) -> State (Sign f e) ()
+toSortGenAx ps isFree (sorts, ops) = do
     let sortList = Set.toList sorts
         opSyms = map ( \ c ->  Qual_op_name (compId c)  
 		      (toOP_TYPE $ compType c) []) $ Set.toList ops
@@ -194,7 +196,7 @@ toSortGenAx ps (sorts, ops) = do
         collectOps s = 
           Constraint s (map addIndices $ filter (resType s) opSyms) s
         constrs = map collectOps sortList
-        f =  Sort_gen_ax constrs
+        f =  Sort_gen_ax constrs isFree
     if null sortList then 
        addDiags[Diag Error "missing generated sort" (headPos ps)]
        else return ()

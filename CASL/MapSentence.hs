@@ -110,9 +110,9 @@ mapSen mf m f = case f of
    Membership t s ps -> do 
        newT <- mapTerm mf m t
        return $ Membership newT (mapSrt m s) ps
-   Sort_gen_ax constrs -> do
+   Sort_gen_ax constrs isFree -> do
        newConstrs <- mapM (mapConstr m) constrs
-       return $ Sort_gen_ax newConstrs
+       return $ Sort_gen_ax newConstrs isFree
    ExtFORMULA ef -> do 
        newF <- mf m ef 
        return $ ExtFORMULA newF	       

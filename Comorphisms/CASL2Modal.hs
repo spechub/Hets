@@ -110,7 +110,7 @@ mapSen f = case f of
         Predication pn (map mapTERM as) qs
     Definedness t ps -> Definedness (mapTERM t) ps
     Membership t ty ps -> Membership (mapTERM t) ty ps
-    Sort_gen_ax constrs -> Sort_gen_ax constrs
+    Sort_gen_ax constrs isFree -> Sort_gen_ax constrs isFree
     _ -> error "CASL2Modal.mapSen"
 
 mapTERM :: TERM () -> TERM M_FORMULA

@@ -262,7 +262,7 @@ instance PrettyPrint f => PrettyPrint (FORMULA f) where
 	printText0 ga f <+> ptext inS <+> printText0 ga g
     printText0 ga (Mixfix_formula t) = printText0 ga t
     printText0 _ (Unparsed_formula s _) = text s 
-    printText0 ga (Sort_gen_ax constrs) = 
+    printText0 ga (Sort_gen_ax constrs _) = 
         text generatedS <> 
         braces (text sortS <+> commaT_text ga sorts 
                 <> semi <+> semiT_text ga ops)

@@ -73,7 +73,7 @@ fromShATermString str =
         else Result [dia1] Nothing
     _                                   ->  Result [dia2] Nothing
     where att  = readATerm str
-	  dia1 = Diag Warning "Wrong version number!" nullPos
+	  dia1 = Diag Warning "Wrong version number ... re-analyzing" nullPos
 	  dia2 = Diag Warning "Couldn't convert ShATerm back from file" 
 		      nullPos
 

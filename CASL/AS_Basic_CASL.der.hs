@@ -169,7 +169,7 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) [Pos]
 	     -- a formula left original for mixfix analysis
 	     | Unparsed_formula String [Pos]
 	       -- pos: first Char in String
-	     | Sort_gen_ax [Constraint] 
+	     | Sort_gen_ax [Constraint] Bool -- flag: belongs to a free type?
 	     | ExtFORMULA f
              -- needed for CASL extensions
 	       deriving (Show,Eq,Ord)

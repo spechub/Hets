@@ -135,7 +135,7 @@ minExpFORMULA mef ga sign formula
                 
             t'' <- is_unambiguous term t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
-	Sort_gen_ax _ -> return formula
+	Sort_gen_ax _ _ -> return formula
 	ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
 	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)

@@ -43,7 +43,8 @@ isaProve thName (sig,axs) goals = do
       showGoals = concat 
          $ map (("theorem "++) . (++"\noops\n\n") . showSen) 
                   $ disambiguateSens disAxs $ nameSens $ transSens goals
-      showTheory = "theory " ++ thName ++ " = " 
+      getFileName = reverse . fst . break (=='/') . reverse
+      showTheory = "theory " ++ getFileName thName ++ " = " 
                    ++ showPretty sig "\n\naxioms\n" 
                    ++ showAxs ++ "\n\n" ++ showGoals
                    ++ "\nend\n"

@@ -168,7 +168,7 @@ toTerm s f = case f of
 	       (mkTupleTerm (map (fromTERM s) as) qs) qs 
     Cas.Definedness t ps -> mkTerm defId defType ps $ fromTERM s t 
     Cas.Membership t ty ps -> TypedTerm (fromTERM s t) InType (toType ty) ps
-    Cas.Sort_gen_ax _ -> unitTerm trueId [] -- missing
+    Cas.Sort_gen_ax _ _ -> unitTerm trueId [] -- missing
     _ -> error "fromTERM"
 
 fromOP_TYPE :: Cas.OP_TYPE -> TypeScheme

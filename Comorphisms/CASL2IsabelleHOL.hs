@@ -180,7 +180,7 @@ transFORMULA sign (Strong_equation t1 t2 _) =
 transFORMULA sign (Membership t1 s _) =
   trace "WARNING: ignoring membership formula" $ Const ("True",dummyT)
   --error "No translation for membership"
-transFORMULA sign (Sort_gen_ax constrs) =
+transFORMULA sign (Sort_gen_ax constrs _) =
    trace "WARNING: ignoring sort generation constraints" 
           $ Const ("True",dummyT)
   --error "No translation for sort generation constraints"
