@@ -19,6 +19,7 @@ import LocalEnv
 import Logic
 import Error
 import Dynamic
+import qualified Sublogics
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
