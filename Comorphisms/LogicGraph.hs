@@ -39,6 +39,7 @@ import HasCASL.Logic_HasCASL
 import Haskell.Logic_Haskell
 import CspCASL.Logic_CspCASL
 import Comorphisms.CASL2HasCASL
+import Comorphisms.HasCASL2Haskell
 import qualified Common.Lib.Map as Map
 import CASL.ATC_CASL
 
@@ -46,7 +47,7 @@ logicList :: [AnyLogic]
 logicList = [Logic CASL, Logic HasCASL, Logic Haskell, Logic CspCASL]
 
 inclusionList :: [AnyComorphism]
-inclusionList = [Comorphism CASL2HasCASL]
+inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2Haskell]
 
 comorphismList :: [AnyComorphism]
 comorphismList = inclusionList ++ []

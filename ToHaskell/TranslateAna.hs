@@ -35,7 +35,7 @@ module ToHaskell.TranslateAna (
 
 import HasCASL.As
 import HasCASL.Le
-import Haskell.Language.Syntax
+import Haskell.Hatchet.HsSyn
 import Common.Id
 import qualified Common.Lib.Map as Map hiding (map)
 import Common.Token
@@ -51,19 +51,11 @@ import ToHaskell.UniqueId
 -------------------------------------------------------------------------
 
 -- | Converts an abstract syntax of HasCASL (after the static analysis) 
--- to the top datatype of the asbtract syntax of haskell.
+-- to the top datatype of the abstract syntax of haskell.
 -- Calls 'translateTypeMap' and 'translateAssumps'.
-translateAna :: Env -> HsModule
+translateAna :: Env -> [HsDecl]
 --translateAna env = error (show env)
 translateAna env = 
-    HsModule nullLoc (Module "HasCASLModul") 
-	     Nothing -- Maybe[HsExportSpec]
-	     [(HsImportDecl nullLoc
-	                    (Module "Prelude") 
-                            False 
-	                    Nothing 
-		            (Just (False, [HsIVar (HsIdent "undefined"),
-					   HsIVar (HsIdent "Show")])))]
              ((translateTypeMap (typeMap env)) ++ 
              (translateAssumps (assumps env) (typeMap env)))   -- [HsDecl]
 
@@ -109,6 +101,7 @@ translateData (tid,info) =
 	               (getAliasType ts)
 	   )]
        TypeVarDefn -> [] -- are ignored in haskell
+       PreDatatype -> error "translateData: unexpected PreDatatype"
 
 isSameId :: TypeId -> Type -> Bool
 isSameId tid (TypeName tid2 _ _) = tid == tid2
@@ -216,7 +209,7 @@ translateFunDef as tm i ts term =
              [(HsIdent fname)] 
               (translateTypeScheme ts)] ++
      [HsFunBind [HsMatch nullLoc
-	             (HsIdent fname) --HsName
+	             (UnQual (HsIdent fname)) --HsName
 	             (getPattern term) -- [HsPat]
 	             (getRhs as tm term) -- HsRhs
 	             [] -- {-where-} [HsDecl]
@@ -350,7 +343,7 @@ translateLetProgEq as tm (ProgEq pat t _pos) =
 -- The positions in the source code are not necessary during the translation,
 -- therefore the same SrcLoc is used everywhere.
 nullLoc :: SrcLoc
-nullLoc = SrcLoc "" 1 1
+nullLoc = SrcLoc 1 0
 
 -- For the definition of an undefined function.
 -- Takes the name of the function as argument.

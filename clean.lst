@@ -75,7 +75,6 @@ ToHaskell/runcheck.sh
 ToHaskell/translate.hs
 ToHaskell/translateAna.hs
 ToHaskell/test
-ToHaskell
 aterm_conv
 distribution
 
