@@ -151,8 +151,8 @@ hetcats_usage = usageInfo header options
     where header = "Usage: hetcats [OPTION...] file"
 
 -- custom error-message prepended to our usage info
-hetcats_error :: String -> IO String
-hetcats_error s = error (s ++ "\n" ++ hetcats_usage)
+hetcats_error :: String -> String
+hetcats_error s = s ++ "\n" ++ hetcats_usage
 
 -- parses the optional Argument to --verbose
 parse_verb :: Maybe String -- optional Argument to --verbose
@@ -163,7 +163,7 @@ parse_verb (Just s) = Verbose $
 				   []   -> error'
 				   [(i,"")] -> i
 				   _    -> error'
-    where error' = hetcats_error ("\""++ s ++"\" is not a valid Int")
+    where error' = error $ hetcats_error ("\""++ s ++"\" is not a valid Int")
 
 -- sets the correct input-type
 inp_type :: String -> Flag
@@ -173,7 +173,7 @@ inp_type s
     | s == "het"                    = InType HetCASLIn
     | "gen_trm"      `isPrefixOf` s = InType $ trm_type s
     | "tree.gen_trm" `isPrefixOf` s = InType $ trm_type s
-    | otherwise      = hetcats_error ("unknown input type: " ++ s)
+    | otherwise      = error $ hetcats_error ("unknown input type: " ++ s)
     where trm_type trm 
 	      | "baf" `isSuffixOf` trm = SML_Gen_ATerm BAF 
 	      | otherwise              = SML_Gen_ATerm NonBAF
@@ -187,7 +187,7 @@ out_types s | ',' `elem` s = case merge_out_types $ split_types s of
 	    | s == "hetcasl-latex"  = OutTypes [HetCASLOut Latex]
 	    | s == "hetcasl-ascii"  = OutTypes [HetCASLOut Ascii]
 	    | s == "global-env-xml" = OutTypes [Global_Env XML]
-	    | otherwise = hetcats_error ("unknown output type: " ++ s)
+	    | otherwise = error $ hetcats_error ("unknown output type: " ++ s)
     where split_types = map out_types . splitOn ',' 
 
 -- merges [OutTypes[a]] into OutTypes[a]
