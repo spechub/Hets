@@ -142,7 +142,10 @@ parse error at 38.4:
 unexpected "="
 expecting "{", "[", __, [<id>,...,<id>] or end of input
 
-a[]
+parse error at 39.6:
+unexpected "%"
+expecting __ or end of input
+
 parse error at 40.1:
 unexpected "\""
 expecting id
