@@ -79,11 +79,13 @@ __union__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit %(Op)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
 emptySet : forall S : Type .  S ->? Unit %(Op)%
 false : Bool %(Op)%
+      : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 inl : forall S : Type .  S -> S × Bool %(Op)%
 inr : forall S : Type .  S -> S × Bool %(Op)%
 not__ : Unit ->? Unit %(Fun)%
 true : Bool %(Op)%
+     : Unit %(Fun)%
 {__} : forall S : Type .  S -> S ->? Unit %(Op)%
 %% Sentences -------------------------------------------------------------
 (fun not__ : Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
@@ -191,3 +193,5 @@ Error (line 25, column 11) ambiguous mixfix term
 	(__/\__)((__isIn__)((x, y),
 		    (__*__)(s, (__isIn__)((__<=>__)(t, x), s))),
 	 (__isIn__)(y, t))
+Hint (line 0, column 0) type 'Bool' is not unifiable with 'Unit'
+Hint (line 0, column 0) type 'Bool' is not unifiable with 'Unit'

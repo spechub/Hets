@@ -19,10 +19,12 @@ __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
+false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not__ : Unit ->? Unit %(Fun)%
 o : s -> t %(Fun)%
 q : s -> t %(Fun)%
+true : Unit %(Fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__ : forall a : Type .  a × a ->? Unit) ((fun o : s -> t),
 						 (fun q : s -> t)) %()%

@@ -52,6 +52,8 @@ ifType = bindA $
 
 bList :: [(Id, TypeScheme)]
 bList = (defId, defType) : (notId, notType) : (ifThenElse, ifType) :
+        (trueId, simpleTypeScheme logicalType) : 
+	(falseId, simpleTypeScheme logicalType)	:
         map ( \ e -> (e, eqType)) [eqId, exEq] ++
 	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId]
 

@@ -35,9 +35,11 @@ b : s %(Op)% = (op a : s)
 c : t %(Op)% = (op snd : s × t -> t) ((op x : s) : s,
 				      (op y : t) : t)
 def__ : forall a : Type .  a ->? Unit %(Fun)%
+false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not__ : Unit ->? Unit %(Fun)%
 snd : s × t -> t %(Op)% = \ (x : s, y : t) . (var y : t)
+true : Unit %(Fun)%
 x : s %(Op)%
 y : t %(Op)%
 %% Diagnostics -----------------------------------------------------------

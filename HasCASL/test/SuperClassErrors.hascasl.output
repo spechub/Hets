@@ -46,8 +46,10 @@ __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
+false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not__ : Unit ->? Unit %(Fun)%
+true : Unit %(Fun)%
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 13) undeclared class 'b'
 Error (line 3, column 11) undeclared class 'd'

@@ -41,6 +41,12 @@ assert b a = if b then a else error ("assert")
 
 type Rule = (Id, (), [Token])
 
+trueId :: Id
+trueId = mkId [mkSimpleId trueS]
+
+falseId :: Id
+falseId = mkId [mkSimpleId falseS]
+
 ifThenElse :: Id
 ifThenElse = mkId (map mkSimpleId [ifS, place, thenS, place, elseS, place])
 

@@ -36,6 +36,7 @@ type Data3 ::= Cons31 (sel1:? Data1; sel2:? Data2) |
 	       Cons32 (sel2:? Data2; sel1:? Data1)
 type Data4 ::= Cons41 (sel1:? Data1; sel2:? Data2) ? | 
 	       Cons42 (sel2:? Data2; sel1:? Data1) ?
+. (fun true : Unit)
 forall x : s
 forall x : s
 %% Classes ---------------------------------------------------------------
@@ -95,6 +96,7 @@ b : Data1 %(construct Data1)%
 c : Data1 %(construct Data1)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
 eq : s × s ->? Unit %(Pred)%
+false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not__ : Unit ->? Unit %(Fun)%
 sel1 : Data4 ->? Data1 %(select from Data4 constructed by
@@ -109,10 +111,12 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
      : Data3 ->? Data2 %(select from Data3 constructed by
 		      (Cons31 : Data1 × Data2 -> Data3,
 		       Cons32 : Data2 × Data1 -> Data3))%
+true : Unit %(Fun)%
 tt : s ->? Unit %(Op)% = \ x : s . ()
 %% Sentences -------------------------------------------------------------
 (fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
 						 (var y : t)) %()%
+(fun true : Unit) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration 'Type'
 Hint (line 3, column 5) is type variable 't'
@@ -149,6 +153,5 @@ Error (line 40, column 7) unexpected mixfix token: )
 Error (line 40, column 3) unexpected pattern 'ff ()'
 Error (line 40, column 20) unexpected mixfix token: all
 Warning (line 61, column 73) data subtype ignored
-Error (line 66, column 8) unexpected mixfix token: true
 Error (line 66, column 25) unexpected mixfix token: e
 Error (line 67, column 12) unexpected mixfix token: e

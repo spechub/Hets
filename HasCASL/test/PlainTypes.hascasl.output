@@ -56,12 +56,14 @@ __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
+false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not__ : Unit ->? Unit %(Fun)%
 o1 : m %(var)%
 o2 : m tuple1 %(var)%
 o3 : m tuple3 %(var)%
 o4 : nt r List s %(var)%
+true : Unit %(Fun)%
 u : [r] %(var)%
 v : m List %(var)%
   : {s} %(var)%

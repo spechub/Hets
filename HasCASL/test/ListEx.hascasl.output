@@ -72,6 +72,7 @@ __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
+false : Unit %(Fun)%
 head : forall a : Type+ .  Tree2 a -> Tree a %(select from Tree2 constructed by
 					    Branch : forall a : Type+ .  Tree a ×
 									 Tree2 a -> Tree2 a)%
@@ -97,6 +98,7 @@ tail : forall a : Type+ .  Tree2 a -> Tree2 a %(select from Tree2 constructed by
 					   Branch : forall a : Type+ .  Tree a × Tree a -> Tree a)%
      : forall a : Type+ .  List a -> List a %(select from List constructed by
 					   Cons : forall a : Type+ .  a × List a -> List a)%
+true : Unit %(Fun)%
 %% Diagnostics -----------------------------------------------------------
 Hint (line 1, column 5) is type variable 'b'
 Hint (line 2, column 5) is type variable 'a'

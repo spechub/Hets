@@ -40,8 +40,10 @@ __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
+false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not__ : Unit ->? Unit %(Fun)%
+true : Unit %(Fun)%
 %% Diagnostics -----------------------------------------------------------
 Hint (line 1, column 5) is type variable 's'
 Hint (line 1, column 7) is type variable 't'

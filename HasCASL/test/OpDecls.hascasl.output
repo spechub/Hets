@@ -62,6 +62,7 @@ d : s %(Op)% = (op __+__ : s × s -> s) ((op a : s), (op a : s))
 def__ : forall a : Type .  a ->? Unit %(Fun)%
 e : s × s -> s %(Op)% = (op __+__ : s × s -> s)
 f : s × s -> s %(Op)% = (op __+__ : s × s -> s)
+false : Unit %(Fun)%
 g : s × s %(Op)% = ((op a : s), (op b : s))
 h : s %(Op)% = (op __+__ : s × s -> s) ((op a : s), (op b : s))
 i : s %(Op)% = (op __+__ : s × s -> s) ((op a : s) : s,
@@ -80,6 +81,7 @@ l4 : s %(Op)% = (op __<=__<=__ : s × s × s -> s) ((op a : s),
 						  (op b : s), (op c : s))
 l5 : s × s × s %(Op)% = ((op a : s), (op b : s), (op c : s))
 not__ : Unit ->? Unit %(Fun)%
+true : Unit %(Fun)%
 x : s %(Op)%
 y : s %(Op)% = (op __<=__<=__ : s × s × s -> s) ((op a : s),
 						 (var x : s), (op a : s) : s)

@@ -1,12 +1,12 @@
-type bool ::= true | 
-	      false
-op a : bool = (op true : bool)
-op notA : bool = case (op a : bool) of true : bool ->
-				       (op false : bool) | 
-				       false : bool -> (op true : bool)
-op b : bool = let x : bool = (op true : bool);
-		  y : bool = (op false : bool);
-		  z : bool = (var x : bool) in (op true : bool)
+type bool ::= True | 
+	      False
+op a : bool = (op True : bool)
+op notA : bool = case (op a : bool) of True : bool ->
+				       (op False : bool) | 
+				       False : bool -> (op True : bool)
+op b : bool = let x : bool = (op True : bool);
+		  y : bool = (op False : bool);
+		  z : bool = (var x : bool) in (op True : bool)
 op b : bool -> bool = \ x : bool . (var x : bool)
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
@@ -17,25 +17,27 @@ __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
 bool : Type %[type __ ::=
-	      true : -> __
-	      false : -> __]%
+	      True : -> __
+	      False : -> __]%
 %% Assumptions -----------------------------------------------------------
+False : bool %(construct bool)%
+True : bool %(construct bool)%
 __/\__ : Unit × Unit ->? Unit %(Fun)%
 __<=>__ : Unit × Unit ->? Unit %(Fun)%
 __=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
-a : bool %(Op)% = (op true : bool)
+a : bool %(Op)% = (op True : bool)
 b : bool -> bool %(Op)% = \ x : bool . (var x : bool)
-  : bool %(Op)% = let x : bool = (op true : bool);
-		      y : bool = (op false : bool);
-		      z : bool = (var x : bool) in (op true : bool)
+  : bool %(Op)% = let x : bool = (op True : bool);
+		      y : bool = (op False : bool);
+		      z : bool = (var x : bool) in (op True : bool)
 def__ : forall a : Type .  a ->? Unit %(Fun)%
-false : bool %(construct bool)%
+false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not__ : Unit ->? Unit %(Fun)%
-notA : bool %(Op)% = case (op a : bool) of true : bool ->
-					   (op false : bool) | 
-					   false : bool -> (op true : bool)
-true : bool %(construct bool)%
+notA : bool %(Op)% = case (op a : bool) of True : bool ->
+					   (op False : bool) | 
+					   False : bool -> (op True : bool)
+true : Unit %(Fun)%

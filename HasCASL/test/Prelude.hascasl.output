@@ -166,6 +166,7 @@ eq : forall s : Type .  s × s ->? Unit %(Pred)%
 f : c --> d %(var)%
 false : bool %(construct bool)%
       : Unit ->? Unit %(Pred)%
+      : Unit %(Fun)%
 fst : s × t ->? s %(Op)% = \ (x : s, y : t) .! (var x : s)
 g : c --> d %(var)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
@@ -174,6 +175,7 @@ not__ : Unit ->? Unit %(Fun)%
 sup : forall c : Cpo .  (nat -> c) ->? c %(Op)%
 true : bool %(construct bool)%
      : Unit ->? Unit %(Pred)%
+     : Unit %(Fun)%
 tt : forall s : Type .  s ->? Unit %(Op)% = \ x : s . ()
 undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! (var x : c -->? p))
 %% Sentences -------------------------------------------------------------
