@@ -187,6 +187,7 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
            addSentences $ catMaybes $ map comakeInjective 
                             $ filter ( \ (_, _, ces) -> not $ null ces) 
                               comps
+           addSentences $ makeDisjSubsorts s sbs
            addSentences $ catMaybes $ concatMap 
                             ( \ c -> map (comakeDisjToSort c) sbs)
                         comps 
