@@ -426,9 +426,27 @@ hetsUsage :: String
 hetsUsage = usageInfo header options
     where header = "Usage: hetcats [OPTION...] file"
 
--- 
-printOpts :: hetcatsOpts -> IO ()
-printOpts opts = return ()
+-- prints all recognized Options
+-- non really an error Message, but anyway...
+printOpts :: HetcatsOpts -> IO ()
+printOpts opts = 
+    let optString = "user called: hets"
+		    ++ " --verbose="      ++ show (verbose opts)
+		    ++ " --input-type="   ++ showInType
+		    ++ " --output-types=" ++ showOutType
+		    ++ " --output-dir="   ++ (outdir opts)
+		    ++ showAnalysis
+		    ++ " --casl-libdir="  ++ (libdir opts)
+		    ++ " " ++ showInFiles
+	showInType = show (intype opts)
+	showOutType = joinWith ',' (map show (outtypes opts))
+	showAnalysis
+	    | analysis opts = ""
+	    | otherwise     = " --just-parse"
+	showInFiles  = infile opts -- there's only one infile yet
+--	showInType = joinWith ' ' (map show (intype opts))
+--	showInFiles  = joinWith ' ' (infile opts)
+    in putStrLn optString
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 {-
