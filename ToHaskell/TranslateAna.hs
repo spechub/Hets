@@ -18,6 +18,10 @@ module ToHaskell.TranslateAna (
        , translateAssumps
        , distinctOpIds
        , newName
+       -- ** Translation of terms
+       , translateTerm
+       -- ** Translation of pattern
+       , translatePattern
        -- * Translation of a map of types
        , translateTypeMap
        , translateData
@@ -78,10 +82,10 @@ translateAna env =
     HsModule nullLoc (Module "HasCASLModul") 
 	     Nothing -- Maybe[HsExportSpec]
 	     [(HsImportDecl nullLoc
-	                    (Module "Prelude") 
+	                    (Module "ToHaskell.SpecialPrelude") 
                             False 
 	                    Nothing 
-		            (Just (False,[HsIVar (HsIdent "undefined")])))]
+		            Nothing)]
              ((translateTypeMap (typeMap env)) ++ 
              (translateAssumps (assumps env) (typeMap env)))   -- [HsDecl]
 -- Achtung: env enthält noch andere zu übersetzende Argumente 
@@ -110,7 +114,14 @@ translateData (tid,info) =
 		       [(HsConDecl nullLoc hsname [])]
 		       [] -- [HsQName]  (für deriving) woher?
 	   )]
-       Supertype _ _ _ -> [] -- Was wird daraus in Haskell? -> ignorieren
+       Supertype vars ty _form -> --evtl so noch nicht richtig
+	   [(HsTypeDecl nullLoc
+                        hsname
+                        (getVars vars)
+	                (translateType ty)
+	   )]
+       --Vars: eine var (= Id) oder Liste von Vars
+       -- Was wird daraus in Haskell? -> ignorieren
        DatatypeDefn _ typeargs altDefns -> 
  	  [(HsDataDecl nullLoc
 	               [] -- empty HsContext
@@ -126,6 +137,10 @@ translateData (tid,info) =
 	               (getAliasType ts)
 	   )]
        TypeVarDefn -> [] -- werden in Haskell ignoriert
+
+getVars :: Vars -> [HsName]
+getVars (Var var) = [HsIdent (translateIdWithType LowerId var)]
+getVars (VarTuple varlist _) = concatMap getVars varlist
 
 translateAltDefn :: AltDefn -> HsConDecl
 translateAltDefn (Construct uid ts _ []) = 
@@ -203,6 +218,10 @@ newName (Id tlist idlist poslist) len =
 -- uebersetzt eindeutig benannte Funktionen 
 -- (d.h. OpInfos enthält nur ein Element)
 -- (Funktionsdeklarationen und -definitionen)
+-- | Converts one distinct named function in HasCASL to the corresponding
+-- haskell declaration.
+-- Generates a definition (Prelude.undefined) for functions that are not 
+-- defined in HasCASL.
 translateAssump :: Assumps -> TypeMap -> (DistinctOpId,OpInfos) -> [HsDecl]
 translateAssump as tm (i, opinf) = 
   let fname = translateIdWithType LowerId i
@@ -226,22 +245,22 @@ translateTypeScheme (TypeScheme _arglist (_plist :=> t) _poslist) =
 --                   evtl. Signatur zu Type -> HsQualType ändern??)
 
 translateType :: Type -> HsType
-translateType t = case t of
+translateType t = 
+ let err = error ("unexpected type: " ++ show t) in 
+  case t of
   FunType t1 _arr t2 _poslist -> HsTyFun (translateType t1) (translateType t2)
   ProductType tlist _poslist -> HsTyTuple (map translateType tlist)
   LazyType lt _poslist -> translateType lt
-  MixfixType _ -> error ("unexpected type (MixfixType): " ++ show t)
+  MixfixType _ -> err
   KindedType kt _kind _poslist -> translateType kt
-  BracketType _ _ _ -> error ("unexpected type (BracketType): " ++ show t)
-  -- TypeToken ttok -> HsTyCon (UnQual (HsIdent (tokStr ttok)))
-  TypeToken _ -> error ("unexpected type (TypeToken): " ++ show t)
+  BracketType _ _ _ -> err
+  TypeToken _ -> err
   TypeAppl t1 t2 -> HsTyApp (translateType t1) (translateType t2)
   TypeName tid _kind n -> 
       if n > 0 then
 	 HsTyVar (HsIdent (translateIdWithType LowerId tid)) -- Upper/LowerId?
       else
-         HsTyCon (UnQual (HsIdent (translateIdWithType UpperId tid)))
---Missing: Übersetzung der Kind's    
+         HsTyCon (UnQual (HsIdent (translateIdWithType UpperId tid)))   
 
 -- translateFunDef liefert idealerweise eine HsTypSig und ein HsFunBind
 translateFunDef :: Assumps -> TypeMap -> Id -> TypeScheme -> Term -> [HsDecl]
@@ -266,6 +285,8 @@ getPattern _t = []
 getRhs :: Assumps -> TypeMap -> Term -> HsRhs
 getRhs as tm t = HsUnGuardedRhs (translateTerm as tm t) 
 
+
+-- |Converts a term in HasCASL to an expression in haskell
 translateTerm :: Assumps -> TypeMap -> Term -> HsExp --HsFunBind
 translateTerm as tm t = case t of
   --CondTerm _t1 _form _t2 _pos -> [] -- -> HsIf
@@ -282,7 +303,7 @@ translateTerm as tm t = case t of
   -- geprueft werden; hierzu benoetigt man die Assumps und die TypeMap;
   QualOp (InstOpId uid types _) ts _pos -> 
   -- zunaechst alle TypeSchemes aus den Assumps mit dem gegebenen vergleichen,
-  -- bei passendem TupeScheme die id (also den Schluessel) als HsVar verwenden
+  -- bei passendem TypeScheme die id (also den Schluessel) als HsVar verwenden
     let fittingAs = Map.filter (canUnify tm ts) as 
     in if Map.size fittingAs == 1 then
          -- gut, eine Uebereinstimmung
@@ -305,15 +326,23 @@ translateTerm as tm t = case t of
       OfType -> (HsExpTypeSig nullLoc 
 	                     (translateTerm as tm t1)
                              (HsQualType [] $ translateType ty))
-      --AsType ->
+      --AsType -> (HsFunBind [HsMatch nullLoc (HsIdent "unsafeCoerce") ....
+      --hier koennen nur HsExp berechnet werden, evtl. muss an einer "hoeheren"
+      --Stelle der Funktionsaufruf der Cast-funktion gebastelt werden
+      --bei AsType koennte t1::ty reichen, da Subtypen als Typsynonyme
+      --uebersetzt werden
+      AsType -> (HsExpTypeSig nullLoc 
+	                     (translateTerm as tm t1)
+                             (HsQualType [] $ translateType ty))
       --InType ->
+      --Funktionsaufruf einer Testfunktion, evtl. an "hoeherer" Stelle
       _ -> error "TypedTerm not yet finished"
 
   --QuantifiedTerm _quant _vars _t1 _pos -> [] -- forall ... ?
 
   LambdaTerm pats _part t1 _pos -> 
       HsLambda nullLoc
-               (translatePattern pats)
+               (map translatePattern pats)
 	       (translateTerm as tm t1)
 
   CaseTerm t1 progeqs _pos -> 
@@ -351,8 +380,22 @@ canUnify tm ts (OpInfos infos) =
     or $ map (isUnifiable tm 0 ts) (map opType infos)
 
 --Uebersetzung der Liste von Pattern aus HasCASL-Lambdaterm
-translatePattern :: [Pattern] -> [HsPat]
-translatePattern _pats = []
+-- | Conversion of patterns form HasCASL to haskell.
+translatePattern :: Pattern -> HsPat
+translatePattern pat = 
+  let err = error ("unexpected pattern: " ++ show pat) in
+    case pat of
+    PatternVar (VarDecl v _ty _sepki _pos) 
+	-> HsPVar $ HsIdent $ translateIdWithType LowerId v
+    --PatternConstr .... -> HsPRec HsQname [HsPatField]
+    PatternConstr _ioid _ts _pats _pos -> error "PatternConstr nyi"
+    PatternToken _ -> err
+    BracketPattern _ _ _ -> err
+    TuplePattern pats _pos -> HsPTuple $ map translatePattern pats
+    MixfixPattern _ -> err
+    TypedPattern p _ty _pos -> translatePattern p --Typ evtl implizit
+    --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
+    AsPattern _p1 _p2 _pos -> error "AsPattern nyi"
 
 -- Uebersetzung der ProgEqs fuer einen HasCASL-Caseterm
 translateCaseProgEqs :: [ProgEq] -> [HsAlt]
@@ -413,55 +456,6 @@ subPlace = "_2"
 symbolMapping :: Char -> String
 symbolMapping c = Map.findWithDefault [c] c symbolMap
 
-{-symbolMapping :: Char -> String
-symbolMapping c = case c of 
--- Special / reserviert
-    '_'  -> "_1"    -- \95
-    '{'  -> "_b"    -- \123
-    '}'  -> "_r"    -- \125
-    '['  -> "_s"    -- \91
-    ']'  -> "_q"    -- \93
-    '.'  -> "_d"    -- \46
-    '\'' -> "_p"
--- Symbole
-    '+'  -> "_P"    -- \43
-    '-'  -> "_M"    -- \45
-    '*'  -> "_T"    -- \42
-    '/'  -> "_D"    -- \47
-    '\\' -> "_B"    -- \92
-    '&'  -> "_A"    -- \38
-    '='  -> "_I"    -- \61
-    '<'  -> "_L"    -- \60
-    '>'  -> "_G"    -- \62
-    '!'  -> "_E"    -- \33
-    '?'  -> "_Q"    -- \63
-    ':'  -> "_C"    -- \58
-    '$'  -> "_S"    -- \36
-    '@'  -> "_O"    -- \64
-    '#'  -> "_H"    -- \35
-    '^'  -> "_V"    -- \94
-    '|'  -> "_I"    -- \124
-    '~'  -> "_N"    -- \126
-    '¡'  -> "_e"    -- \161
-    '¢'  -> "_c"    -- \162   
-    '£'  -> "_l"    -- \163
-    '§'  -> "_f"    -- \167
-    '©'  -> "_a"    -- \169
-    '¬'  -> "_n"    -- \172
-    '°'  -> "_h"    -- \176
-    '±'  -> "_k"    -- \177
-    '²'  -> "_w"    -- \178
-    '³'  -> "_t"    -- \179
-    'µ'  -> "_y"    -- \181
-    '¶'  -> "_j"    -- \182
-    '·'  -> "_i"    -- \183
-    '¹'  -> "_o"    -- \185
-    '¿'  -> "_q"    -- \191
-    '×'  -> "_m"    -- \215
-    '÷'  -> "_g"    -- \247
-    _    -> [c]
--}
-
 translateCompound :: [Id] -> String
 --  [      ,      ]
 -- _C     _k     _J
@@ -475,7 +469,7 @@ symbolMap = Map.fromList symbolTable
 
 symbolTable :: [(Char,String)]
 symbolTable = 
--- Special / reserviert
+-- Special / reserved
    [('_' , "_1"),    -- \95
     ('{' , "_b"),    -- \123
     ('}' , "_r"),    -- \125
@@ -483,7 +477,7 @@ symbolTable =
     (']' , "_q"),    -- \93
     ('.' , "_d"),    -- \46
     ('\'', "_p"),
--- Symbole
+-- Symbols
     ('+' , "_P"),    -- \43
     ('-' , "_M"),    -- \45
     ('*' , "_T"),    -- \42
