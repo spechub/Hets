@@ -20,16 +20,13 @@ import CASL.OpItem
 import Common.RunParsers
 import CASL.RunMixfixParser
 import CASL.RunStaticAna
-import ToHaskell.TranslateAna
 
 main :: IO ()
 main = exec lineParser fileParser
-    where _just_avoid_unused_import_warning = pluralS_symb_list
 
 lineParser, fileParser :: [(String, StringParser)]
 lineParser = [
  ("MixIds", fromAParser parseId),
- ("TranslateIds", fromAParser idToHaskell),
  ("Terms", fromAParser term),
  ("Formula", fromAParser formula),
  ("SortItem", fromAParser sortItems),
