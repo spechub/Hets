@@ -43,12 +43,14 @@ import Logic.Logic
 import Logic.Prover
 import Logic.Comorphism
 import Common.PrettyPrint
+import Common.PPUtils
 import Common.Lib.Pretty
 import Common.Lib.Graph
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
 import Common.AS_Annotation
+import Common.Print_AS_Annotation
 import Common.ListUtils
 import Data.Dynamic
 import Common.DynamicUtils 
@@ -190,6 +192,14 @@ data G_theory = forall lid sublogics
 instance Eq G_theory where
   th1 == th2 = signOf th1 == signOf th2 && 
                eq_G_l_sentence_set (sensOf th1) (sensOf th2)
+
+instance Show G_theory where
+  show (G_theory _ sign sens) =
+     show sign ++ "\n" ++ show sens
+
+instance PrettyPrint G_theory where
+  printText0 ga (G_theory _ sign sens) =
+     printText0 ga sign $$ printText0 ga sens
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
@@ -659,16 +669,17 @@ translateG_l_sentence_list (GMorphism cid sign1 morphism2)
   return (G_l_sentence_list tlid sens''')
 
 -- | Join two G_theories
-joinG_theories :: G_theory -> G_theory -> Maybe G_theory
+
+joinG_theories :: G_theory -> G_theory -> Result G_theory
 joinG_theories (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
   sens2' <- mcoerce lid1 lid2 "joinG_theories" sens2
   sig2' <- mcoerce lid1 lid2 "joinG_theories" sig2
-  when (sig1 /= sig2') (fail "joinG_theories: incompatible signatures")
+  when (sig1 /= sig2') (fail ("joinG_theories: incompatible signatures: \nsig1:\n"++showPretty sig1 "\nsig2\n" ++ showPretty sig2' ""))
   return (G_theory lid1 sig1 (sens1++sens2'))
 
 -- | Flatten a list of G_theories
-flatG_theories :: [G_theory] -> Maybe G_theory
-flatG_theories [] = Nothing
+flatG_theories :: [G_theory] -> Result G_theory
+flatG_theories [] = fail "Empty list of theories"
 flatG_theories (th:ths) = foldM joinG_theories th ths
 
 -- | Remove duplicate sentences from a G_theory

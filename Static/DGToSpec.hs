@@ -16,6 +16,7 @@ Portability :  non-portable(Logic)
 module Static.DGToSpec
 where
 
+import Debug.Trace
 import Logic.Logic
 import Logic.Grothendieck
 import Static.DevGraph
@@ -189,5 +190,5 @@ computeTheory libEnv dg n = do
   ths <- maybeToMonad "Could not calculate sentence list of node"
             $ mapM (computeLocalTheory libEnv dg . fst) paths
   ths' <- mapM (uncurry translateG_theory) $ zip mors ths
-  th'' <- maybeToMonad "Logic mismatch for theories" $ flatG_theories ths'
+  th'' <- flatG_theories ths'
   return (nubG_theory th'')
