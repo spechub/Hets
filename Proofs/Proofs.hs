@@ -233,9 +233,9 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 getLabelOfEdge :: (LEdge b) -> b
 getLabelOfEdge (_,_,label) = label
 
--- ------------------
--- local subsumption
--- ------------------
+-- --------------------
+-- local decomposition
+-- --------------------
 
 {- a merge of the rules local subsumption, local decomposition I and 
    local decomposition II -}
@@ -256,22 +256,29 @@ locDecompAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locDecompAux dgraph historyElement [] = (dgraph, historyElement)
 locDecompAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
-  if existsProvenLocGlobPathOfMorphismBetween dgraph morphism source target
+  if null allPaths
      then
-       globSubsumeAux newGraph (newRules,newChanges) list
+       globSubsumeAux dgraph (rules,changes) list     
      else
-       globSubsumeAux dgraph (rules,changes) list
+       globSubsumeAux newGraph (newRules,newChanges) list
+
 
   where
     morphism = dgl_morphism edgeLab
+    allPaths =
+	getAllProvenLocGlobPathsPfMorphismBetween dgraph morphism source target
+    proofBasis = -- nur eine der Kanten?
+      case allPaths of
+        [] -> []
+        (path:paths) -> map getLabelOfEdge path
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (source,
 	       target,
 	       DGLink {dgl_morphism = morphism,
 		       dgl_type = 
-		         (LocalThm (Proven []) conservativity conservStatus),
-		       -- Kante(n?) bei "Proven" einfügen
+		         (LocalThm (Proven proofBasis)
+			  conservativity conservStatus),
 		       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge auxGraph
@@ -305,6 +312,16 @@ getAllProvenGlobPathsOfMorphismBetween dgraph morphism src tgt =
   where 
       allPaths = getAllProvenGlobPathsBetween dgraph src tgt
 
+
+{- returns a list of all proven loc-glob paths of the given morphism between
+   the given source and target node -}
+getAllProvenLocGlobPathsPfMorphismBetween :: DGraph -> GMorphism -> Node 
+					  -> Node -> [[LEdge DGLinkLab]]
+getAllProvenLocGlobPathsPfMorphismBetween dgraph morphism src tgt =
+  filterPathsByMorphism morphism allPaths
+
+  where
+      allPaths = getAllProvenLocGlobPathsBetween dgraph src tgt
 
 {- returns all paths from the given list whose morphism is equal to the
    given one-}

@@ -140,7 +140,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                               return ()    )],
 
 	        Menu (Just "proofs")
-                  [		  Button "TEMP - Global Subsumption"
+                  [		  Button "Global Subsumption"
 			  (do proofStatus <- readIORef ioRefProofStatus
 			      let newProofStatus@(_,history,_) =
 			            globSubsume proofStatus
@@ -154,7 +154,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		              writeIORef convRef newConvMaps
 		              redisplay gid actGraphInfo
 		              return ()    ), 
-		  Button "TEMP - Local Subsumption"
+		  Button "Local Decomposition (merge of rules)"
 			  (do proofStatus <- readIORef ioRefProofStatus
 			      let newProofStatus@(_,history,_) =
 			            locDecomp proofStatus
@@ -168,7 +168,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		              writeIORef convRef newConvMaps
 		              redisplay gid actGraphInfo
 		              return ()    ),
-		  Button "TEMP - Global Decomposition"
+		  Button "Global Decomposition"
 			  (do proofStatus <- readIORef ioRefProofStatus
 			      let newProofStatus@(_,history,_) =
 			            globDecomp proofStatus
