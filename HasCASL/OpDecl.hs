@@ -23,6 +23,7 @@ import Common.GlobalAnnotations
 import HasCASL.As
 import HasCASL.VarDecl
 import HasCASL.Le
+import HasCASL.Builtin
 import HasCASL.Unify
 import HasCASL.TypeCheck
 import HasCASL.ProgEq
@@ -67,6 +68,10 @@ patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr
 tuplePatternToType :: [VarDecl] -> Type
 tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds) []
 
+mkApplTerm :: Term -> [Term] -> Term
+mkApplTerm trm args = if null args then trm
+       else mkApplTerm (ApplTerm trm (head args) []) $ tail args
+
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env OpItem
 anaOpItem ga br ods@(OpDecl is sc attr ps) = 
     do mSc <- anaTypeScheme sc
@@ -105,8 +110,14 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 					       ([], Total) -> lastTrm
 					       _ -> LambdaTerm pats partial 
 						    lastTrm ps
+				      ot = QualOp br (InstOpId i [] []) 
+					  lastSc []
+				      lhs = mkApplTerm ot pats
+				      f = mkEqTerm eqId ps lhs lastTrm
 				  addOpId i lastSc [] $ Definition br lamTrm
-
+				  appendSentences [NamedSen 
+						   ("def_" ++ showId i "")
+						   $ Formula f] 
 				  return $ OpDefn op [] lastSc
 					   Total lamTrm ps
 		Nothing -> do 
