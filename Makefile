@@ -79,7 +79,7 @@ genrule_header_files = $(wildcard ATC/*.header.hs)
 genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs Common/AS_Annotation.der.hs Common/Named.hs \
                 Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
                 CASL/Morphism.hs CASL/StaticAna.hs CASL/AS_Basic_CASL.der.hs \
-                HasCASL/Le.hs HasCASL/As.hs HasCASL/Symbol.hs HasCASL/Morphism.hs \
+                HasCASL/Le.hs HasCASL/As.hs HasCASL/Symbol.hs HasCASL/Morphism.hs HasCASL/AsToIds.hs\
                 CspCASL/AS_CSP_CASL.hs \
                 Static/DevGraph.hs \
                 Haskell/Hatchet/AnnotatedHsSyn.hs Haskell/Hatchet/MultiModuleBasics.hs \
