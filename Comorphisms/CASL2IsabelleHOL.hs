@@ -35,6 +35,9 @@ import CASL.Morphism
 import CASL.Quantification 
 
 -- Isabelle
+import Isabelle.IsaPrint as IsaPrint
+
+
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
@@ -111,7 +114,7 @@ transTheory trSig trForm (sign,sens) =
                                    Map.empty
                                    (predMap sign))
                   (opMap sign),
-    dataTypeTab = dtDefs },
+    dataTypeTab = dtDefs },      
      map (mapNamed (mapSen trForm sign)) sens)  -- for now, no new sentences
   where 
     dtDefs = makeDtDefs sign $ sens
@@ -119,9 +122,9 @@ transTheory trSig trForm (sign,sens) =
     insertOps op ts m = 
      if Set.size ts == 1 
       then Map.insert (showIsa op) (transOpType (Set.findMin ts)) m
-      else
+      else 
       foldl (\m1 (t,i) -> Map.insert (showIsaI op i) (transOpType t) m1) m 
-            (zip (Set.toList ts) [1..size ts])
+            (zip (Set.toList (Set.deleteMin ts)) [2..size ts])
     insertPreds pre ts m =
      if Set.size ts == 1 
       then Map.insert (showIsa pre) (transPredType (Set.findMin ts)) m
@@ -131,12 +134,23 @@ transTheory trSig trForm (sign,sens) =
  
 makeDtDefs :: CASL.Sign.Sign f e -> [Named (FORMULA f)] 
                -> [[(Typ,[(String,[Typ])])]]
-makeDtDefs sign = List.nub . (mapMaybe $ makeDtDef sign)
+makeDtDefs sign = delDoubles . (mapMaybe $ makeDtDef sign)
+  where
+  delDoubles xs = delDouble xs []
+  delDouble [] _  = []
+  delDouble (x:xs) sortList = let (Type s a b c) = fst (head x) in
+      if (length sortList) == 
+         (length (addSortList s sortList)) then
+	delDouble xs sortList
+      else
+        (x:(delDouble xs (s:sortList)))
+  addSortList x xs = (List.nub (x :xs))
+
 
 makeDtDef :: CASL.Sign.Sign f e -> Named (FORMULA f) -> 
              Maybe [(Typ,[(String,[Typ])])]
 makeDtDef sign (NamedSen _ (Sort_gen_ax constrs True)) =
-  Just(map makeDt srts)
+  Just(map makeDt srts) 
   where 
   (srts,ops,_maps) = recover_Sort_gen_ax constrs
   makeDt s = (transSort s, map makeOp (List.filter (hasTheSort s) ops))
