@@ -40,6 +40,8 @@ simplifySen min_func e_func rmTypE_func sign formula =
     Implication f1 f2 bool pos -> Implication (simplifySenCall f1) (simplifySenCall f2) bool pos
     Equivalence f1 f2 pos -> Equivalence (simplifySenCall f1) (simplifySenCall f2) pos
     Negation f pos ->  Negation (simplifySenCall f) pos
+    True_atom x -> True_atom x
+    False_atom x -> False_atom x
     f@(Predication _ _ _) -> anaFormulaCall f
     f@(Definedness _ _ ) -> anaFormulaCall f
     f@(Existl_equation _ _ _) -> anaFormulaCall f
@@ -123,7 +125,10 @@ rmTypesF minF rmTypesFunc signF form =
 	 Disjunction formulas pos -> Disjunction (map rmTypesFCall formulas) pos
 	 Implication f1 f2 bool pos -> Implication (rmTypesFCall f1) (rmTypesFCall f2) bool pos
 	 Equivalence f1 f2 pos -> Equivalence (rmTypesFCall f1) (rmTypesFCall f2) pos
+	 True_atom x  -> True_atom x
+	 False_atom x -> False_atom x
 	 Negation f pos ->  Negation (rmTypesFCall f) pos
+	 f@(Sort_gen_ax _ _) -> f			   
 	 -- Mixfix_formula t	->  Mixfix_formula (anaTerm t) 	
 	 ExtFORMULA f -> ExtFORMULA $ rmTypesFunc signF f
 	 f -> error ("Error in rmTypesF " ++  show f) 
