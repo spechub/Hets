@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Till Mossakowski, Klaus Lüttich and Uni Bremen 2003
@@ -26,8 +25,6 @@ Checking for a 'path' corresponds to checking for a member in the
 transitive (possibly non-reflexive) closure. A further 'insert', however,
 may destroy the closedness property of a relation.
 
-Some parts are adapted from D. King, J. Launchbury 95: 
-   Structuring depth-first search algorithms in Haskell.
 -}
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
@@ -36,16 +33,14 @@ module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
                        transClosure, fromList, toList, image,
 		       intransKernel,mostRight,rmSym,symmetricSets,
                        restrict, toSet, fromSet, topSort, nodes,
-                       transpose, connComp, collaps, transReduce) where
-
-import Debug.Trace
+                       transpose, collaps, transReduce) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Data.List(groupBy)
 
 import Data.Maybe (catMaybes)
-import QuickCheck
+import Debug.QuickCheck
 
 data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
 -- the invariant is that set values are never empty
@@ -94,22 +89,14 @@ member a b r = Set.member b $ succs r a
 symMember :: Ord a => a -> a -> Rel a -> Bool
 symMember a b r = member a b r && member b a r
 
--- | get direct right neighbours   
-getDAdjs :: Ord a => Rel a -> a -> Set.Set a
-getDAdjs r a = Map.findWithDefault Set.empty a $ toMap r
-
--- | get right neighbours and right neighbours of right neighbours
-getTAdjs :: Ord a => Rel a -> Set.Set a -> Set.Set a -> Set.Set a
--- transitive right neighbours
--- initial call 'getTAdjs succs r Set.empty $ Set.single a'
-getTAdjs r given new =
-    if Set.isEmpty new then given else 
-    let ds = Set.unions $ map (getDAdjs r) $ Set.toList new in 
-    getTAdjs r (ds `Set.union` given) (ds Set.\\ new Set.\\ given)
-
 -- | get direct successors
 succs :: Ord a => Rel a -> a -> Set.Set a
 succs (Rel m) a = Map.findWithDefault Set.empty a m
+
+reachable :: Ord a => Rel a -> a -> Set.Set a
+reachable r a = Set.fold reach Set.empty $ succs r a where
+    reach e s = if Set.member e s then s 
+                    else Set.fold reach (Set.insert e s) $ succs r e
 
 -- | predecessors in the given set of a node 
 preds :: Ord a => Rel a -> a -> Set.Set a -> Set.Set a
@@ -134,54 +121,9 @@ propTransMember a b r = not (member a b r) && path a b r
 transClosure :: Ord a => Rel a -> Rel a
 transClosure r@(Rel m) = Rel $ Map.mapWithKey ( \ k _ -> reachable r k) m
 
-data Tree a = Node a [Tree a] deriving Show
-
--- | get dfs tree rooted at node
-dfsT :: Ord a => Rel a -> Set.Set a -> a -> (Set.Set a, Tree a)
-dfsT r s v = let (t, ts) = dfsF r (Set.insert v s) $ Set.toList $ succs r v 
-                 in (t, Node v ts)
-
--- | get dfs forest for a list of nodes
-dfsF :: Ord a => Rel a -> Set.Set a -> [a] -> (Set.Set a, [Tree a])
-dfsF r s l = case l of
-    [] -> (s, [])
-    x : xs -> if Set.member x s then dfsF r s xs else
-        let (t, a) = dfsT r s x
-            (u, ts) = dfsF r t xs in (u, a : ts)
-
--- | get dfs forest of a relation 
-dfs :: Ord a => Rel a -> [a] -> [Tree a]
-dfs r = snd . dfsF r Set.empty 
-
--- | get dfs forest of a relation 
-dff :: Ord a => Rel a -> [Tree a]
-dff r@(Rel m) = dfs r $ Map.keys m
-
 -- | get reverse relation
 transpose :: Ord a => Rel a -> Rel a 
 transpose = fromList . map ( \ (a, b) -> (b, a)) . toList
-
-flatT :: Ord a => Tree a -> Set.Set a
-flatT (Node v ts) = Set.insert v $ flatF ts
-
-flatF :: Ord a => [Tree a] -> Set.Set a
-flatF = Set.unions . map flatT
-
-postOrdT :: Tree a -> [a] -> [a]
-postOrdT (Node v ts) = postOrdF ts . (v:) 
-
-postOrdF :: [Tree a] -> [a] -> [a]
-postOrdF = foldr (.) id . map postOrdT
-
-postOrd :: Ord a => Rel a -> [a]
-postOrd r = postOrdF (dff r) []
-
-scc :: Ord a => Rel a -> [Tree a]
-scc r = dfs r $ reverse $ postOrd $ transpose r
-
--- | reachable nodes excluding the start node if there is no cycle
-reachable :: Ord a => Rel a -> a -> Set.Set a 
-reachable r = flatF . dfs r . Set.toList . succs r
 
 -- | make relation irreflexive 
 irreflex :: Ord a => Rel a -> Rel a
@@ -189,16 +131,6 @@ irreflex (Rel m) = Rel $ Map.foldWithKey ( \ k s ->
            let r = Set.delete k s in 
            if Set.isEmpty r then id else
               Map.insert k r) Map.empty m 
-
-{- | Connected components as a mapping to a minimal representative 
-   and the reverse mapping -} 
-connComp :: Ord a => Rel a -> (Map.Map a a, Map.Map a (Set.Set a))
-connComp r = foldr (\ t (m1, m2) -> 
-                    let s = flatT t 
-                        m = Set.findMin s 
-                    in (Set.fold (flip Map.insert m) m1 s,
-                        Map.insert m s m2))
-                    (Map.empty, Map.empty) $ scc r
 
 -- | compute strongly connected components for a transitively closed relation 
 sccOfClosure :: Ord a => Rel a -> Map.Map a (Set.Set a)
@@ -383,23 +315,6 @@ symmetricMap = Set.fold (\s mp ->
 					   Map.insert k s mp1) mp s)
 		            Map.empty . symmetricSets
 		  
-
-{-
--- slower version of symmetricSets fold over pairs
-symmetricSetsFP :: (Ord a) => Rel a -> Set.Set (Set.Set a)
-symmetricSetsFP rel = 
-    let rl =  Map.keys $ toMap rel
-	tr_rel = transClosure rel
-	sym (x,y) m = if symMember x y tr_rel 
-		       then Map.setInsert y x $ 
-			    Map.setInsert x y m
-		       else m
-    in Map.foldWithKey (\k e -> Set.insert (Set.insert k e)) 
-                       Set.empty $ 
-       foldr sym Map.empty [(x,y) | x <- rl, y <- rl, x<y]    
--}
-
-
 {--------------------------------------------------------------------
   remove reflexive (Added by K.L.)
 --------------------------------------------------------------------}
@@ -475,35 +390,6 @@ haveCommonLeftElem t1 t2 =
     Map.foldWithKey (\ k e rs -> rs || 
 		                (t1 `Set.member` e && 
 				 t2 `Set.member` e)) False . toMap
-
-{- slower variant of rmSym
-rmSymMF :: (Show a, Ord a) => Rel a -> Rel a
-rmSymMF rel = 
-   Map.foldWithKey  
-	   (\k e r ->  Set.fold (\ e1 r1 -> 
-				     if k < e1
-				     then delete e1 k r1
-				     else r1) r e) 
-	  rel $ toMap $ rel 
--}
-
-{-
-    Map.mapAccumWithKey  
-	   (\ (seen,del) k e -> 
-	      if k `Set.member` seen 
-	      then ((seen,del),e) 
-	      else let sym = Set.fold (\ e1 s1 -> 
-					      if e1 < k
-					      then Set.delete e1 s1
-					      else s1) Set.empty  e 
-		       seen' = Set.insert k seen `Set.union` e
-		    in if Set.isEmpty sym 
-		       then ((seen',k:del),sym) 
-		       else ((seen',del),sym)
-		   )
-	   (Set.empty,[])  $ 
-		      toMap $ transClosure $ rel 
--}
 
 instance Arbitrary (Rel Int) where
     arbitrary = do l <- arbitrary
