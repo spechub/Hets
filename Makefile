@@ -242,6 +242,7 @@ apache_doc:
 	$(MAKE) hets-opt
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
+	$(MAKE) clean
 	$(MAKE) hets.cgi
 
 post_doc4apache:
