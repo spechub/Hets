@@ -1,6 +1,11 @@
-module GUI.AbstractGraphView where
 
-{- Interface for graph viewing and abstraction.
+-- needs ghc
+
+{- GUI/AbstractGraphView.hs
+   $Id$
+   Jorina Freya Gerken, Till Mossakowski
+
+   Interface for graph viewing and abstraction.
    It is possible to hide sets of nodes and edges.
    Using a composition table for edge types,
    paths through hidden nodes can be displayed.
@@ -9,6 +14,8 @@ module GUI.AbstractGraphView where
    edge types are handled by user-supplied strings.
    
 -}
+
+module GUI.AbstractGraphView where
 
 import DaVinciGraph
 

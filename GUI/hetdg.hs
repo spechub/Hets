@@ -1,3 +1,16 @@
+
+-- needs ghc
+
+{- GUI/hetdg.hs
+   $Id$
+   Till Mossakowski
+
+   Temporary interface for displaying development graphs.
+   Should be replaced with hets in the future.
+   
+-}
+
+
 module Main
 
 where
