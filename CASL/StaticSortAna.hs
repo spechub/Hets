@@ -13,7 +13,7 @@ ana_SORT_ITEM env paItem =
 		ss (ps ++ repeat nullPos) :: [Posed SortId]
 	    in do al <- mapM (ana_single_SORT env emptySortRels Nothing) l
 		  mapM update_ann_SORT_ITEM env $  
-		       map (\ a -> mapAnnoted (Const a) $ 
+		       map (\ a -> mapAnnoted (const a) $ 
 			    posedItem paItem) al
 		  
 ana_single_SORT :: SigLocalEnv -> SortRels -> Maybe SortDefn 
