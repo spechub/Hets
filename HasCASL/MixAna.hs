@@ -31,8 +31,6 @@ import HasCASL.Unify
 import Data.Maybe
 import Control.Exception(assert)
 
-type Rule = (Id, Int, [Token])
-
 opKindFilter :: Int -> Int -> Maybe Bool
 opKindFilter arg op = 
     if op < arg then Just True
@@ -48,7 +46,7 @@ addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps 
 addType _ _ = error "addType"
 
-type TermChart = Chart Term Int
+type TermChart = Chart Term
 
 -- | find information for qualified operation
 findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> Type -> Maybe OpInfo
@@ -241,8 +239,8 @@ mkPatAppl op arg qs =
 		ResolvedMixTerm i [arg] qs
 	    _ -> ApplTerm op arg qs
 
-toMixTerm :: Id -> Int -> [Pattern] -> [Pos] -> Pattern
-toMixTerm i _ ar qs = 
+toMixTerm :: Id -> [Pattern] -> [Pos] -> Pattern
+toMixTerm i ar qs = 
     if i == applId then assert (length ar == 2) $
 	   let [op, arg] = ar in mkPatAppl op arg qs
     else if i == tupleId || i == unitId then

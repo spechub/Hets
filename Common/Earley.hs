@@ -12,9 +12,9 @@ Portability :  portable
 
 -}
 
-module Common.Earley (
+module Common.Earley (Rule
                      -- * special tokens for special ids
-                     varTok, exprTok, typeTok
+                     , varTok, exprTok, typeTok
 		     , applId, parenId, typeId, exprId, varId
 		     , tupleId, unitId, unknownId, isUnknownId, unToken
 		     , Knowns, protect, listRules, mixRule
@@ -80,9 +80,9 @@ startIndex = Index 0
 incrIndex :: Index -> Index
 incrIndex (Index i) = Index (i + 1)
 
-data Item a b = Item 
+data Item a = Item 
     { rule :: Id        -- the rule to match
-    , info :: b         -- additional info for 'rule'
+    , info :: Int       -- additional precedence info for 'rule'
     , lWeight :: Id     -- weights for lower precedence pre- and postfixes
     , rWeight :: Id     -- given by the 'Id's itself 
     , posList :: [Pos]  -- positions of Id tokens
@@ -94,7 +94,7 @@ data Item a b = Item
     , index :: Index    -- index into the Table/input string
     }
 
-instance Show (Item a b) where
+instance Show (Item a) where
     showsPrec _ p = 
 	let d = rest p
 	    v = getPlainTokenList (rule p)
@@ -189,7 +189,9 @@ unToken :: Id -> Token
 unToken (Id [_,t] _ _) = t
 unToken _ = error "unToken"
 
-mkItem :: Index -> (Id, b, [Token]) -> Item a b
+type Rule = (Id, Int, [Token])
+
+mkItem :: Index -> Rule -> Item a
 mkItem ind (ide, inf, toks) = 
     Item { rule = ide
 	 , info = inf
@@ -210,19 +212,19 @@ getTokenPlaceList = getTokenList termStr
 mixRule :: b -> Id -> (Id, b, [Token])
 mixRule b i = (i, b, getTokenPlaceList i)
 
-asListAppl :: ToExpr a b -> Id -> b -> [a] -> [Pos] -> a
-asListAppl toExpr i b ra br =
+asListAppl :: ToExpr a -> Id -> [a] -> [Pos] -> a
+asListAppl toExpr i ra br =
     if isListId i then    
            let Id _ [f, c] _ = i
-	       mkList [] ps = toExpr c b [] ps
-	       mkList (hd:tl) ps = toExpr f b [hd, mkList tl ps] ps
+	       mkList [] ps = toExpr c [] ps
+	       mkList (hd:tl) ps = toExpr f [hd, mkList tl ps] ps
 	   in mkList ra br
     else if i == typeId
 	     || i == exprId 
 	     || i == parenId
 	     || i == varId
 	     then assert (isSingle ra) $ head ra
-    else toExpr i b ra br
+    else toExpr i ra br
 
 -- | construct the list rules
 listRules :: b -> GlobalAnnos -> [(Id, b, [Token])]
@@ -238,17 +240,17 @@ listRules inf g =
 	       listRule (c, n) (b1 ++ [termTok, commaTok, termTok] ++ b2)]
 		 ) $ Map.toList lists
 
-type Table a b = Map.Map Index [Item a b]
+type Table a = Map.Map Index [Item a]
 
-lookUp :: Table a b -> Index -> [Item a b]
+lookUp :: Table a -> Index -> [Item a]
 lookUp ce k = Map.findWithDefault [] k ce
 
 -- | a set of strings that do not match a 'unknownTok'
 type Knowns = Set.Set String
 
 -- | recognize next token (possible introduce new tuple variable)
-scanItem :: (a -> a -> a) -> Knowns -> (a, Token) -> Item a b
-	  -> [Item a b] 
+scanItem :: (a -> a -> a) -> Knowns -> (a, Token) -> Item a
+	  -> [Item a] 
 scanItem addType ks (trm, t) p =
     let ts = rest p
 	as = args p
@@ -277,11 +279,11 @@ scanItem addType ks (trm, t) p =
 	       [r { rule = mkId [unknownTok, t]}]
 	       else []
 
-scan :: (a -> a -> a) -> Knowns -> (a, Token) -> [Item a b]
-     -> [Item a b] 
+scan :: (a -> a -> a) -> Knowns -> (a, Token) -> [Item a]
+     -> [Item a] 
 scan f ks term = concatMap (scanItem f ks term)
 
-mkAmbigs :: ToExpr a b -> Item a b -> [a]
+mkAmbigs :: ToExpr a -> Item a -> [a]
 mkAmbigs toExpr p = 
     let l = args p in
     map ( \ as -> fst $ 
@@ -289,7 +291,7 @@ mkAmbigs toExpr p =
 	  p { args = take (length l - length as) l ++ as
 	    } ) $ ambigArgs p
 
-addArg :: GlobalAnnos -> ToExpr a b -> Item a b -> Item a b -> Item a b
+addArg :: GlobalAnnos -> ToExpr a -> Item a -> Item a -> Item a
 addArg ga toExpr argItem p = 
     let (arg, q) = mkExpr toExpr argItem 
 	ams = ambigs argItem
@@ -303,7 +305,7 @@ addArg ga toExpr argItem p =
 		 , ambigs = (if null newAms then ams else newAms : ams)
 		   ++ ambigs p }
 
-getLWeight :: GlobalAnnos -> Item a b -> Item a b -> Id 
+getLWeight :: GlobalAnnos -> Item a -> Item a -> Id 
 getLWeight ga argItem opItem = 
     let op = rule opItem
 	arg = lWeight argItem
@@ -316,7 +318,7 @@ getLWeight ga argItem opItem =
        else op
     else lWeight opItem
 
-getRWeight :: GlobalAnnos -> Item a b -> Item a b -> Id 
+getRWeight :: GlobalAnnos -> Item a -> Item a -> Id 
 getRWeight ga argItem opItem = 
     let op = rule opItem
 	arg = rWeight argItem
@@ -330,9 +332,9 @@ getRWeight ga argItem opItem =
     else rWeight opItem
 
 -- | shortcut for a function that constructs an expression
-type ToExpr a b = Id -> b -> [a] -> [Pos] -> a 
+type ToExpr a = Id -> [a] -> [Pos] -> a 
 
-mkExpr :: ToExpr a b -> Item a b -> (a, Pos)
+mkExpr :: ToExpr a -> Item a -> (a, Pos)
 mkExpr toExpr itm = 
     let orig = rule itm
 	ps = posList itm
@@ -341,13 +343,14 @@ mkExpr toExpr itm =
 		     if isProtected orig then 
 		       setPlainIdePos (unProtect orig) rs
 		    else setPlainIdePos orig rs
-	inf =  info itm
 	as = reverse $ args itm
-	in (asListAppl toExpr ide inf as qs, 
+	in (asListAppl toExpr ide as qs, 
 	    if null ps then nullPos else head ps)
 
-reduce :: GlobalAnnos -> Table a b -> [Id] -> (b -> b -> Maybe Bool) 
-       -> ToExpr a b -> Item a b -> [Item a b]
+type Filt = Int -> Int -> Maybe Bool
+
+reduce :: GlobalAnnos -> Table a -> [Id] -> Filt 
+       -> ToExpr a -> Item a -> [Item a]
 reduce ga table rs filt toExpr itm = 
     map (addArg ga toExpr itm)
 	$ filter ( \ oi ->  let ts = rest oi in
@@ -379,8 +382,8 @@ joinLIds (Id ts1 _ _) (Id ts2 cs ps) = Id (ts1 ++ tail ts2) cs ps
 
 -- | check precedences of an argument and a top-level operator.
 -- (The 'Int' is the number of current arguments of the operator.)
-checkPrecs :: (b -> b -> Maybe Bool) -> GlobalAnnos 
-	   -> [Id] -> Item a b -> Item a b -> Bool
+checkPrecs :: Filt -> GlobalAnnos 
+	   -> [Id] -> Item a -> Item a -> Bool
 checkPrecs filt ga rs argItem opItem =
     let op = rule opItem
 	opPrec = info opItem
@@ -428,46 +431,46 @@ checkPrecs filt ga rs argItem opItem =
 		 else True
 	 else True
 
-reduceCompleted :: GlobalAnnos -> Table a b -> [Id] 
-		-> (b -> b -> Maybe Bool) -> ToExpr a b 
-		-> [Item a b] -> [Item a b]
+reduceCompleted :: GlobalAnnos -> Table a -> [Id] 
+		-> Filt -> ToExpr a 
+		-> [Item a] -> [Item a]
 reduceCompleted ga table rs filt toExpr = 
     foldr mergeItems [] . map (reduce ga table rs filt toExpr) . 
 	  filter (null . rest)
 
-recReduce :: GlobalAnnos -> Table a b -> [Id] -> (b -> b -> Maybe Bool) 
-	  -> ToExpr a b	-> [Item a b] -> [Item a b]
+recReduce :: GlobalAnnos -> Table a -> [Id] -> Filt 
+	  -> ToExpr a	-> [Item a] -> [Item a]
 recReduce ga table rs filt toExpr items = 
     let reduced = reduceCompleted ga table rs filt toExpr items 
 	in if null reduced then items
 	   else recReduce ga table rs filt toExpr reduced `mergeItems` items
 
-complete :: (b -> b -> Maybe Bool) -> ToExpr a b -> GlobalAnnos 
-	 -> Table a b -> [Id] -> [Item a b] -> [Item a b]
+complete :: Filt -> ToExpr a -> GlobalAnnos 
+	 -> Table a -> [Id] -> [Item a] -> [Item a]
 complete filt toExpr ga table rs items = 
     let reducedItems = recReduce ga table rs filt toExpr $ 
 		       reduceCompleted ga table rs filt toExpr items 
 	in reducedItems
 	   ++ items
 
-predict :: [Item a b] -> [Item a b] -> [Item a b]
+predict :: [Item a] -> [Item a] -> [Item a]
 predict rs items =
     if any ( \ p -> let ts = rest p in
 	    not (null ts) && head ts == termTok) items 
     then rs ++ items
     else items
 
-ordItem :: Item a b -> Item a b -> Ordering
+ordItem :: Item a -> Item a -> Ordering
 ordItem i1 i2 = 
     compare (index i1, rest i1, rule i1)
 		(index i2, rest i2, rule i2)
 
-ambigItems :: Item a b -> Item a b -> Item a b
+ambigItems :: Item a -> Item a -> Item a
 ambigItems i1 i2 = let as = ambigArgs i1 ++ ambigArgs i2 in
 		       i1 { ambigArgs = if null as then 
 			    [args i1, args i2] else as }
 
-mergeItems :: [Item a b] -> [Item a b] -> [Item a b]
+mergeItems :: [Item a] -> [Item a] -> [Item a]
 mergeItems [] i2 = i2
 mergeItems i1 [] = i1
 mergeItems (i1:r1) (i2:r2) = 
@@ -478,10 +481,10 @@ mergeItems (i1:r1) (i2:r2) =
 
 
 -- | the whole state for mixfix resolution 
-data Chart a b = Chart { prevTable :: Table a b
+data Chart a = Chart { prevTable :: Table a
 		       , currIndex :: Index
-		       , currItems :: [Item a b]
-		       , rules :: [(Id, b, [Token])]
+		       , currItems :: [Item a]
+		       , rules :: [Rule]
 		       , knowns :: Knowns
 		       , solveDiags :: [Diagnosis] }
 	       deriving Show
@@ -490,8 +493,8 @@ data Chart a b = Chart { prevTable :: Table a b
 -- The first function adds a type to the result.
 -- The second function filters based on argument and operator info.
 -- If filtering yields 'Nothing' further filtering by precedence is applied. 
-nextChart :: (a -> a -> a) -> (b -> b -> Maybe Bool) -> ToExpr a b 
-	  -> GlobalAnnos -> Chart a b -> (a, Token) -> Chart a b
+nextChart :: (a -> a -> a) -> Filt -> ToExpr a 
+	  -> GlobalAnnos -> Chart a -> (a, Token) -> Chart a
 nextChart addType filt toExpr ga st term@(_, tok) = 
     let table = prevTable st
 	idx = currIndex st
@@ -512,21 +515,21 @@ nextChart addType filt toExpr ga st term@(_, tok) =
 		      else []) ++ solveDiags st }
 
 -- | add intermediate diagnostic messages
-mixDiags :: [Diagnosis] -> Chart a b -> Chart a b
+mixDiags :: [Diagnosis] -> Chart a -> Chart a
 mixDiags ds st = st { solveDiags = ds ++ solveDiags st }
 
 -- | create the initial chart
-initChart :: [(Id, b, [Token])] -> Knowns -> Chart a b
-initChart ruleS knownS= Chart { prevTable = Map.empty
-			, currIndex = startIndex
-			, currItems = map (mkItem startIndex) ruleS
-			, rules = ruleS
-			, knowns = knownS 
-			, solveDiags = [] }
+initChart :: [Rule] -> Knowns -> Chart a
+initChart ruleS knownS = 
+    Chart { prevTable = Map.empty
+	  , currIndex = startIndex
+	  , currItems = map (mkItem startIndex) ruleS
+	  , rules = ruleS
+	  , knowns = knownS 
+	  , solveDiags = [] }
 
 -- | extract resolved result
-getResolved :: (a -> ShowS) -> Pos -> ToExpr a b -> Chart a b 
-	    -> Result a
+getResolved :: (a -> ShowS) -> Pos -> ToExpr a -> Chart a -> Result a
 getResolved pp p toExpr st = 
     let items = filter ((currIndex st/=) . index) $ currItems st 
 	ds = solveDiags st
