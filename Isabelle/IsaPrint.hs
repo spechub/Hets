@@ -19,8 +19,8 @@ module Isabelle.IsaPrint where
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
-import Common.PrettyPrint
 import Common.Lib.Pretty
+import Common.PrettyPrint
 import Data.Char
 import qualified Common.Lib.Map as Map
 
@@ -42,16 +42,20 @@ showTyp :: Integer -> Typ -> String
 showTyp pri (Type str _ [s,t]) 
   | str == funS =
        bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 10 t)
+  | str == "dFun" =
+       bracketize (pri<=10) (showTyp 10 s ++ " -> " ++ showTyp 10 t)
   | str == prodS = 
        lb ++ showTyp pri s ++ " * " ++ showTyp pri t ++ rb
+  | str == "**" = 
+       lb ++ showTyp pri s ++ " ** " ++ showTyp pri t ++ rb
 showTyp _ (Type name _ args) = 
   case args of
     []     -> name
     arg:[] -> showTyp 10 arg ++ sp ++ name
     _      -> let (tyVars,types) = foldl split ([],[]) args
               in  
-                lb ++ concat (map ((sp++) . show) tyVars) ++
-                      concat (map ((sp++) . show) types) ++ rb ++ name
+                lb ++ concat (map ((sp ++ ) . show) tyVars) ++
+                      concat (map ((sp ++ ) . show) types) ++ rb ++ name
               where split (tv,ty) t = case t of 
                                         TFree _ _ -> (tv++[t],ty)
                                         _       -> (tv,ty++[t])
@@ -120,6 +124,7 @@ showTerm (Let pts t) = lb ++ "let" ++ sp ++ showPat False (head pts)
                                 ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
 -- showTerm t = showPTree (toPrecTree t)     NO GOOD - it loops
 showTerm t = "(IsaPrint.showTerm, error: unsupported term)"
+-- showTerm t = "(IsaPrint.showTerm, error: "++(show t)++" unsupported term)"
 
 
 showPat :: Bool -> (Term, Term) -> String
@@ -368,8 +373,10 @@ instance PrettyPrint Sign where
     (baseSig sig) <> colon $$
     printText0 ga (tsig sig) $$
     showDataTypeDefs (dataTypeTab sig) $$
+    showDomainDefs (domainTab sig) $$    --
     showsConstTab (constTab sig) $$
-    showCaseLemmata (dataTypeTab sig)
+--    showCaseLemmata (dataTypeTab sig)
+    showCaseLemmata (domainTab sig)      --
     where
     showsConstTab tab =
      if Map.isEmpty tab then empty
@@ -386,6 +393,15 @@ instance PrettyPrint Sign where
     showDataType (t,op:ops) =
        showTyp 1000 t ++ " = " ++ showOp op 
        ++ (concat $ map ((" | "++) . showOp) ops)
+    showDomainDefs dtDefs = vcat $ map (text . showDomainDef) dtDefs   -- 
+    showDomainDef [] = ""                                                --
+    showDomainDef (dt:dts) =                                             --
+       "domain " ++ showDomain dt                                      --
+       ++ (concat $ map (("and "++) . showDomain) dts) ++ "\n"           --
+    showDomain (_,[]) = error "IsaPrint.showDomain"                    --
+    showDomain (t,op:ops) =                                              --
+       showTyp 1000 t ++ " = " ++ showOp op                                --
+       ++ (concat $ map ((" | "++) . showOp) ops)                          --
     showOp (opname,args) =
        opname ++ (concat $ map ((sp ++) . showArg) args)
     showArg arg = case arg of
