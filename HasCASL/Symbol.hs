@@ -30,9 +30,8 @@ checkSymbols s1 s2 r =
                  Set.filter (not . matchSymb e2 . ASymbol) d)
                   s1 $ Set.toList s2 in
     if Set.isEmpty s then r else
-       pfatal_error 
-       (text "unknown symbols: " 
-          <+> printText s) $ posOfId $ symName $ Set.findMin s
+       Result [Diag Error ("unknown symbols: " ++  showPretty s "") 
+              $ posOfId $ symName $ Set.findMin s] Nothing
 
 dependentSyms :: Symbol -> Env -> SymbolSet
 dependentSyms sym sig = 
