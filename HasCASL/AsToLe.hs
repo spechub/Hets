@@ -20,6 +20,10 @@ import Result
 import List
 import Maybe
 import ParseTerm(isSimpleId)
+import MixfixParser(getTokenList, expandPos)
+import Parsec
+import ParsecPos
+import ParsecError
 
 ----------------------------------------------------------------------------
 -- FiniteMap stuff
@@ -311,20 +315,58 @@ anaTypeItem inst (TypeDecl pats kind _) =
        mapM_ (anaTypePattern inst k) pats 
 
 anaTypePattern :: Instance -> Kind -> TypePattern -> State Env ()
-anaTypePattern _ kind (TypePatternToken t) = 
-       addTypeKind (simpleIdToId t) kind
+anaTypePattern _ kind t = 
+    let Result ds mi = convertTypePattern t
+    in case mi of 
+	       Just ti -> addTypeKind ti kind
+	       Nothing -> appendDiags ds
 
-convertTypePattern :: TypePattern -> Result TypePattern
-convertTypePattern t@(TypePattern _ _ _) = return t
+convertTypePattern, makeMixTypeId :: TypePattern -> Result Id
+convertTypePattern (TypePattern t _ _) = return t
 convertTypePattern(TypePatternToken t) = 
     if isPlace t then fatal_error ("illegal type '__'") (tokPos t)
-       else return $ TypePattern (simpleIdToId t) [] []
+       else return $ (simpleIdToId t)
 
 convertTypePattern t =
     if hasPlaces t && hasTypeArgs t then
        fatal_error ( "illegal mix of '__' and '(...)'" ) 
                    (posOfTypePattern t)
-    else error "nyi" -- makeMixTypeId t
+    else makeMixTypeId t
+
+typePatternToTokens :: TypePattern -> [Token]
+typePatternToTokens (TypePattern ti _ _) = getTokenList True ti
+typePatternToTokens (TypePatternToken t) = [t]
+typePatternToTokens (MixfixTypePattern ts) = concatMap typePatternToTokens ts
+typePatternToTokens (BracketTypePattern pk ts ps) =
+    let tts = map typePatternToTokens ts 
+	expand = expandPos (:[]) in
+	case pk of 
+		Parens -> if length tts == 1 && 
+			  length (head tts) == 1 then head tts
+			  else concat $ expand "(" ")" tts ps
+		Squares -> concat $ expand "[" "]" tts ps 
+		Braces ->  concat $ expand "{" "}" tts ps
+typePatternToTokens (TypePatternArgs as) =
+    map ( \ (TypeArg v _ _ _) -> Token "__" (tokPos v)) as
+
+-- compound Ids not supported yet
+getToken :: GenParser Token st Token
+getToken = token tokStr (( \ (l, c) -> newPos "" l c) . tokPos) Just
+parseTypePatternId :: GenParser Token st Id
+parseTypePatternId =
+    do ts <- many1 getToken 
+       return $ Id ts [] []
+
+makeMixTypeId t = 
+    case parse parseTypePatternId "" (typePatternToTokens t) of
+    Left err -> fatal_error (showErrorMessages "or" "unknown parse error" 
+                             "expecting" "unexpected" "end of input"
+			     (errorMessages err)) 
+		(let p = errorPos err in (sourceLine p, sourceColumn p))
+    Right x -> return x
+
+
+
 
 posOfTypePattern :: TypePattern -> Pos
 posOfTypePattern (TypePattern t _ _) = posOfId t
