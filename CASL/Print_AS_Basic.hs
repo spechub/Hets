@@ -911,9 +911,8 @@ condParensAppl pf parens_fun ga o_i t mdir =
 			  Op_name i          -> i
 			  Qual_op_name i _ _ -> i
 	      condParensPrec = case precRel (prec_annos ga) o_i i_i of
-			       Higher      -> parens_fun t'
 			       Lower       -> t'
-			       ExplGroup _ -> parens_fun t'
+			       _ -> parens_fun t'
 	      amap = assoc_annos ga
     Sorted_term _ _ _ -> t'
     Cast _ _ _ -> t'
