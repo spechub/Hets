@@ -112,6 +112,10 @@ parse_anno anno sp = case anno of
 			  "right_assoc" -> parse_internal 
 			                           (rassoc assoc_anno) 
 			                           nsp inp
+			  "number"   -> parse_internal number_anno   nsp inp
+			  "string"   -> parse_internal string_anno   nsp inp
+			  "list"     -> parse_internal list_anno     nsp inp
+			  "floating" -> parse_internal floating_anno nsp inp
 			  otherwise -> Left(newErrorMessage 
 					    (UnExpect ("kind of annotation or this kind is not allowed as group: " ++ kw))
 					    sp)
@@ -144,13 +148,34 @@ prec_anno = do left_ids <- braces (sepBy1 casl_id comma)
 			          []
 		      )
 
+number_anno   = literal_anno f 1 "number"
+    where f [x] = Number_anno x
+	  f _   = error "wrong_number of ids"
+string_anno   = literal_anno f 2 "string"
+    where f [x1,x2] = String_anno x1 x2
+	  f _       = error "wrong_number of ids"
+floating_anno = literal_anno f 2 "floating"
+    where f [x1,x2] = Float_anno x1 x2
+	  f _       = error "wrong_number of ids"
+list_anno     = literal_anno f 3 "list"
+    where f [x1,x2,x3] = List_anno x1 x2 x3
+	  f _          = error "wrong_number of ids"
+
+literal_anno con count conStr = 
+    do ids <- sepBy1 casl_id comma
+       if length ids == count then return $ con ids $ []
+	else unexpected $ "Annotation \"" ++ conStr ++ 
+		          "\" malformed: wrong number of ids, " ++ 
+		          show count ++ " id(s) expected!" 
+
+
 display_anno = do ident <- casl_id
 		  tls <- permute ( mklst <$?> (disp_symb ident "HTML")
 				         <|?> (disp_symb ident "LATEX")
 				         <|?> (disp_symb ident "RTF") )
 		  return (Display_anno ident tls [])
     where mklst a b c = [a,b,c] 
-	  disp_symb ident sym = ((ready_symb,show ident),
+	  disp_symb ident sym = ((ready_symb,""),
 				 do { symb <- lexeme (try (string 
 							   ready_symb))
 				    ; str <- manyTill anyChar 
