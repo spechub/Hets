@@ -194,7 +194,7 @@ addnode gid nodetype name gv =
           Just nt ->
 	    do existingNodesOfSameType <- sequence [(getNodeValue (theGraph g) davinciNode)|(descr,(tp,davinciNode)) <- (nodes g), tp == nodetype]
                case elem name [existingName| (existingName, _,_) <- existingNodesOfSameType] of
-	         False -> do node <- newNode (theGraph g) nt (name,ev_cnt,gid)
+	         _ ->     do node <- newNode (theGraph g) nt (name,ev_cnt,gid)
 		             return (g{nodes = (ev_cnt,(nodetype,node)):nodes g},ev_cnt,ev_cnt+1,Nothing)
 	         True -> do return (g,0,ev_cnt, Just("addnode: node \"" ++ name ++ "\" of type " ++ nodetype ++ " already exists in graph " ++ (show gid)))
    )
@@ -222,7 +222,7 @@ addlink gid edgetype name src tar gv =
     (Just et, Just src_node, Just tar_node) -> 
       do existingEdgesOfSameTypeAndPosition <- sequence [(getArcValue (theGraph g) davinciArc)|(descr,(srcId, tgtId, tp, davinciArc)) <- (edges g), tp == edgetype && srcId == src && tgtId == tar]
          case lookup name existingEdgesOfSameTypeAndPosition of
-	   Nothing ->
+	   _ ->
 	     do edge <- newArc (theGraph g) et (name,ev_cnt) (snd src_node) (snd tar_node)
                 return (g{edges = (ev_cnt,(src,tar,edgetype,edge)):edges g},ev_cnt,ev_cnt+1,Nothing)
 	   Just _ -> do srcToString <- getNodeNameAndTypeAsString g src

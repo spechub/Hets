@@ -69,7 +69,7 @@ instance PrettyPrint SPEC where
 	     condBracesGroupSpec printText0 sp_braces ga aa
     printText0 ga (Group aa _) =
 	printText0 ga aa
-    printText0 ga (Spec_inst aa ab) =
+    printText0 ga (Spec_inst aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = print_fit_arg_list printText0 sp_brackets sep ga ab
 	in nest 4 (hang aa' 4 ab')
@@ -111,7 +111,7 @@ instance PrettyPrint SPEC where
 	hang (ptext "closed") 4 $ printText ga aa
     printText ga (Group aa _) =
 	lbrace $+$ printText ga aa $$ rbrace
-    printText ga (Spec_inst aa ab) =
+    printText ga (Spec_inst aa ab _) =
 	let aa' = printText ga aa
 	    ab' = print_fit_arg_list printText sp_brackets sep ga ab
 	in nest 4 (hang aa' 4 ab')
@@ -161,7 +161,7 @@ instance PrettyPrint SPEC where
                                                        sp_braces_latex ga aa))
     printLatex0 ga (Group aa _) =
 	printLatex0 ga aa
-    printLatex0 ga (Spec_inst aa ab) =
+    printLatex0 ga (Spec_inst aa ab _) =
 	let aa' = simple_id_latex aa 
 	    ab' = sep_latex (map (sp_brackets_latex.
 				  (\x -> casl_normal_latex "~" <>setTab_latex
@@ -382,7 +382,7 @@ condBracesGroupSpec :: (GlobalAnnos -> (Annoted SPEC) -> Doc) ->
 		       GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesGroupSpec pf b_fun ga as =
     case skip_Group $ item as of
-		 Spec_inst _ _ -> as'
+		 Spec_inst _ _ _ -> as'
 		 _             -> b_fun as'
     where as' = pf ga as
 

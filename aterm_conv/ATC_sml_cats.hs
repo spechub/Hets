@@ -1262,7 +1262,7 @@ instance ATermConvertible SPEC where
 		let
 		aa' = fromATermSIMPLE_ID (getATermByIndexSp1 aa att)
 		ab' = fromATerm (getATermByIndexSp1 ab att)
-		in (Spec_inst aa' ab')
+		in (Spec_inst aa' ab' [nullPos])
 	    _ -> fromATermError "SPEC" aterm
 	where
 	    aterm = findATerm att' (map (getATermSp att') pat_list)

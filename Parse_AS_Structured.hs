@@ -266,7 +266,7 @@ specD l = do (p,sp) <- try (do p <- asKey freeS
 specE :: LogicGraph -> GenParser Char AnyLogic SPEC
 specE l = do lookAhead (try (oBraceT >> cBraceT)) -- avoid overlap with group spec
              basicSpec l        
-      <|> do lookAhead (oBraceT <|> ((simpleId << annos) 
+      <|> {-do lookAhead (oBraceT <|> ((simpleId << annos) 
 				     `followedWith`
 				     (asKey withS <|> asKey hideS
 				      <|> asKey revealS <|> asKey andS
@@ -274,7 +274,7 @@ specE l = do lookAhead (try (oBraceT >> cBraceT)) -- avoid overlap with group sp
 				      <|> asKey withinS <|> asKey endS
 				      <|> oBracketT <|> cBracketT
 				      <|> (eof >> return (Token "" nullPos)))
-				    ))
+				    ))-}
 	     groupSpec l
       <|> logicSpec l
       <|> basicSpec l
@@ -348,8 +348,7 @@ groupSpec l = do b <- oBraceT
 	      <|>
 	      do n <- simpleId
 		 (f,ps) <- fitArgs l
-		 return (Spec_inst n f)
-            -- ??? What to do with ps? Spec_inst is not consistent here!
+		 return (Spec_inst n f ps)
 
 fitArgs :: LogicGraph -> GenParser Char AnyLogic ([Annoted FIT_ARG],[Pos])
 fitArgs l = do fas <- many (fitArg l)

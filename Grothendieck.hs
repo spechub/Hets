@@ -321,12 +321,41 @@ gEmbed :: G_morphism -> GMorphism
 gEmbed (G_morphism lid mor) =
   GMorphism lid lid (id_repr lid) (dom lid mor) mor
 
--- Union of Grothendieck signatures: also allow different logics???
-gsigUnion :: G_sign -> G_sign -> Result G_sign
-gsigUnion (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
-  sigma2' <- rcoerce lid2 lid1 nullPos sigma2
+-- homogeneous Union of two Grothendieck signatures
+homogeneousGsigUnion :: Pos -> G_sign -> G_sign -> Result G_sign
+homogeneousGsigUnion pos (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
+  sigma2' <- rcoerce lid2 lid1 pos sigma2
   sigma3 <- signature_union lid1 sigma1 sigma2'
   return (G_sign lid1 sigma3)
+
+-- homogeneous Union of a list of Grothendieck signatures
+homogeneousGsigManyUnion :: Pos -> [G_sign] -> Result G_sign
+homogeneousGsigManyUnion pos [] =
+  fatal_error "homogeneous union of emtpy list of signatures" pos
+homogeneousGsigManyUnion pos (G_sign lid sigma : gsigmas) = do
+  sigmas <- let coerce_lid (G_sign lid1 sigma1) = 
+                    rcoerce lid lid1 pos sigma1
+             in sequence (map coerce_lid gsigmas)
+  bigSigma <- let sig_union s1 s2 = do
+                       s1' <- s1
+                       signature_union lid s1' s2
+                in foldl sig_union (return sigma) sigmas
+  return (G_sign lid bigSigma)
+
+
+-- homogeneous Union of a list of morphisms
+homogeneousMorManyUnion :: Pos -> [G_morphism] -> Result G_morphism
+homogeneousMorManyUnion pos [] =
+  fatal_error "homogeneous union of emtpy list of morphisms" pos
+homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
+  mors <- let coerce_lid (G_morphism lid1 mor1) = 
+                    rcoerce lid lid1 pos mor1
+             in sequence (map coerce_lid gmors)
+  bigMor <- let mor_union s1 s2 = do
+                       s1' <- s1
+                       morphism_union lid s1' s2
+                in foldl mor_union (return mor) mors
+  return (G_morphism lid bigMor)
 
 inclusion :: G_sign -> G_sign -> GMorphism
 inclusion (G_sign lid1 sigma1) (G_sign lid2 sigma2) = undefined

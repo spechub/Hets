@@ -14,7 +14,7 @@ import AS_Library
 import Graph
 import DotGraph
 
---import ConvertDevToAbstractGraph
+import ConvertDevToAbstractGraph
 
 import Char
 import DaVinciGraph
@@ -26,19 +26,21 @@ import IORef
 import FiniteMap
 
 
-proceed fname = do
-  dg <- ana_file1 logicGraph defaultLogic fname
-  -- g <- toGraph dg  
-  -- gv <- initgraphs
-  {- Result gid err <- AbstractGraphView.makegraph "Heterogeneous development graph"  
-                     [] [] [] []
-                     gv
-  AbstractGraphView.redisplay gid gv
-  return () -}
-  h <- openFile (fname++".dot") WriteMode
-  sequence (map (hPutStrLn h) (dot dg))
-  hClose h
+proceed fname showdg = do
+  res <- ana_file1 logicGraph defaultLogic fname
+  case res of
+    Nothing -> return ()
+    Just (ln,dg,libenv) -> 
+      if showdg then do
+       (gid,gv,cmaps) <- convertGraph ln libenv
+       AbstractGraphView.redisplay gid gv
+       getLine
+       return () 
+      else do
+        h <- openFile (fname++".dot") WriteMode
+        sequence (map (hPutStrLn h) (dot dg))
+        hClose h
 
 main = do
-  [file] <- getArgs
-  proceed file
+  args <- getArgs
+  proceed (head args) (null (tail args))

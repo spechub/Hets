@@ -41,7 +41,7 @@ data SPEC = Basic_spec G_basic_spec
 	    -- pos: "closed"
           | Group (Annoted SPEC) [Pos]
 	    -- pos: "{","}"
-          | Spec_inst SPEC_NAME [Annoted FIT_ARG]
+          | Spec_inst SPEC_NAME [Annoted FIT_ARG] [Pos]
 	    -- pos: many of "[","]"; one balanced pair per FIT_ARG
 	  | Qualified_spec Logic_name (Annoted SPEC) [Pos]
 	    -- pos: "logic", Logic_name,":"

@@ -160,6 +160,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                            -- the first output sign is the accumulated sign
                            -- the second output sign united with the input sing
                            -- should yield the first output sign
+         sign_to_basic_spec :: lid -> sign -> [(String,sentence)] -> basic_spec
          stat_symb_map_items :: 
 	     lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol] 
@@ -181,6 +182,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          add_sign :: lid -> sign -> sign -> sign
          empty_signature :: lid -> sign
          signature_union :: lid -> sign -> sign -> Result sign
+         morphism_union :: lid -> morphism -> morphism -> Result morphism
          final_union :: lid -> sign -> sign -> Result sign
          is_subsig :: lid -> sign -> sign -> Bool
          generated_sign, cogenerated_sign :: 

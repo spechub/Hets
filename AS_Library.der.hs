@@ -70,19 +70,13 @@ type ITEM_NAME = SIMPLE_ID
 
 data LIB_NAME = Lib_version LIB_ID VERSION_NUMBER
 	      | Lib_id LIB_ID
-		deriving (Show,Eq)
 
 data LIB_ID = Direct_link URL [Pos]
 	      -- pos: start of URL
 	    | Indirect_link PATH [Pos]
 	      -- pos: start of PATH
-	      deriving (Show)
 
-instance Eq LIB_ID where
-  Direct_link s1 _ == Direct_link s2 _ = s1==s2
-  Direct_link s1 _ == Indirect_link s2 _ = False
-  Indirect_link s1 _ == Direct_link s2 _ = False
-  Indirect_link s1 _ == Indirect_link s2 _ = s1==s2
+
 
 data VERSION_NUMBER = Version_number [String] [Pos]
 		      -- pos: "version", start of first string
@@ -90,6 +84,21 @@ data VERSION_NUMBER = Version_number [String] [Pos]
 
 type URL = String
 type PATH = String
+
+
+instance Show LIB_ID where
+  show (Direct_link s1 _) = s1
+  show (Indirect_link s1 _) = s1
+
+instance Show LIB_NAME where
+  show (Lib_version libid _) = show libid
+  show (Lib_id libid) = show libid
+
+instance Eq LIB_ID where
+  Direct_link s1 _ == Direct_link s2 _ = s1==s2
+  Direct_link s1 _ == Indirect_link s2 _ = False
+  Indirect_link s1 _ == Direct_link s2 _ = False
+  Indirect_link s1 _ == Indirect_link s2 _ = s1==s2
 
 instance Ord LIB_ID where
   Direct_link s1 _ <= Direct_link s2 _ = s1<=s2
@@ -101,6 +110,9 @@ getLIB_ID :: LIB_NAME -> LIB_ID
 getLIB_ID (Lib_version libid _) = libid
 getLIB_ID (Lib_id libid) = libid
 
+instance Eq LIB_NAME where
+  ln1 == ln2 = getLIB_ID ln1 == getLIB_ID ln2
+  
 instance Ord LIB_NAME where
   ln1 <= ln2 = getLIB_ID ln1 <= getLIB_ID ln2
 

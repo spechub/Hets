@@ -83,7 +83,9 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
          -- ensures_amalgamability :: id
          --   -> (Diagram Sign Morphism, Node, Sign, LEdge Morphism, Morphism)
          --   -> Result (Diagram Sign Morphism)
-         
+
+         sign_to_basic_spec CASL sigma sens = Basic_spec []
+
          symbol_to_raw CASL = Static.symbolToRaw
          id_to_raw CASL = Static.idToRaw
          sym_of CASL = Static.symOf
@@ -94,6 +96,7 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
          -- add_sign :: id -> Sign -> Sign -> Sign      
          empty_signature CASL = emptySign
          signature_union CASL sigma1 sigma2 = return sigma1 -- ??? incorrect
+         morphism_union CASL mor1 mor2 = return mor1 -- ??? incorrect
          -- final_union :: id -> Sign -> Sign -> Result Sign
          is_subsig CASL = Static.isSubSig
          cogenerated_sign CASL rsys sigma = return (ide CASL sigma)
@@ -101,7 +104,9 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
          -- generated_sign, cogenerated_sign :: id -> [RawSymbol]
          --                -> Sign -> Result Morphism
          induced_from_morphism CASL rmap sigma = return (ide CASL sigma) -- ???
-         -- induced_from_to_morphism :: id -> EndoMap RawSymbol
+         induced_from_to_morphism CASL rmap sigmaS sigmaT =
+           return (ide CASL sigmaS) -- ???
+         --induced_from_to_morphism :: id -> EndoMap RawSymbol
          --               -> Sign -> Sign -> Result Morphism
          -- extend_morphism :: id -> Sign -> Morphism -> Sign -> Sign
          --               -> Result Morphism                  

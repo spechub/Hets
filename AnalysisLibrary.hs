@@ -39,7 +39,8 @@ import Result
 
 
 -- for testing
-ana_file1 :: LogicGraph -> AnyLogic -> String -> IO DGraph
+ana_file1 :: LogicGraph -> AnyLogic -> String 
+              -> IO (Maybe  (LIB_NAME,DGraph,LibEnv))
 ana_file1 logicGraph defaultLogic fname = do
   putStrLn ("Reading " ++ fname)
   input <- readFile fname
@@ -49,9 +50,7 @@ ana_file1 logicGraph defaultLogic fname = do
   Result diags res <- ioresToIO (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv ast)
   sequence (map (putStrLn . show) diags)
   
-  return (case res of 
-             Just (ln,dg,libenv) -> dg
-             Nothing -> empty) 
+  return res
 
 
 ana_file :: LogicGraph -> AnyLogic -> LibEnv -> LIB_NAME -> IO LibEnv
@@ -98,7 +97,7 @@ ana_LIB_ITEM_with_download lgraph defl libenv
   libenv' <- ioToIORes (ana_file lgraph defl libenv ln)
   case lookupFM libenv' ln of
     Nothing -> do
-       ioToIORes (putStrLn "Internal error: did not find library")
+       ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available:"++show (keysFM libenv')))
        return (gannos,genv,dg,l,libenv')
     Just (genv',dg',gannos') -> do
                     -- ??? what to do with gannos' ?
@@ -146,8 +145,8 @@ refNodesigs ln dg nodes =
   (dg',reverse nodes')
   where (dg', nodes') = foldl (refNodesig ln) (dg,[]) nodes
 
-refExtsig ln dg name (imps,params,body) =
-  (dg1,(imps1,params1,body1))
+refExtsig ln dg name (imps,params,gsigmaP,body) =
+  (dg1,(imps1,params1,gsigmaP,body1))
   where
   params' = map (\x -> (Nothing,x)) params
   (dg1,imps1:body1:params1) =  
@@ -160,16 +159,53 @@ ana_LIB_ITEM :: LogicGraph -> AnyLogic -> LibEnv -> GlobalAnnos
                  -> Result (GlobalAnnos,GlobalEnv,DGraph,AnyLogic,LibEnv)
 
 ana_LIB_ITEM lgraph defl libenv gannos genv dg l (Spec_defn spn gen asp pos) = do
-  ((imp,params,allparams),dg') <- ana_GENERICITY gannos genv dg l gen
+  ((imp,params,parsig,allparams),dg') <- ana_GENERICITY gannos genv dg l gen
   (body,dg'') <- ana_SPEC gannos genv dg' allparams (Just spn) (item asp)
   if elemFM spn genv 
    then plain_error (gannos,genv,dg,l,libenv)
                     ("Name "++pretty spn++" already defined")
                     (head (pos++nullPosList))
-   else return (gannos,addToFM genv spn (SpecEntry (imp,params,body)),dg'',l,libenv)
+   else return (gannos,
+                addToFM genv spn (SpecEntry (imp,params,parsig,body)),
+                dg'',
+                l,
+                libenv)
 
-ana_LIB_ITEM lgraph defl libenv gannos genv dg l (View_defn vn gen vt symmap pos) =
-  ana_err "views"
+-- ??? Needs to be generalized to views between different logics
+ana_LIB_ITEM lgraph defl libenv gannos genv dg l 
+             (View_defn vn gen vt gsis pos) = do
+  ((imp,params,parsig,allparams),dg') <- ana_GENERICITY gannos genv dg l gen
+  ((src,tar),dg'') <- ana_VIEW_TYPE gannos genv dg' l allparams vt
+  let gsigmaS = getSig src
+      gsigmaT = getSig tar
+  G_sign lidS sigmaS <- return gsigmaS
+  G_sign lidT sigmaT <- return gsigmaT
+  gsis1 <- homogenize (Logic lidS) gsis
+  G_symb_map_items_list lid sis <- return gsis1
+  rmap <- stat_symb_map_items lid sis
+  sigmaS' <- rcoerce lid lidS (headPos pos) sigmaS
+  sigmaT' <- rcoerce lid lidT (headPos pos) sigmaT
+  mor <- induced_from_to_morphism lid rmap sigmaS' sigmaT'
+  nodeS <- maybeToResult nullPos 
+         "Internal error: empty source spec of view" (getNode src)
+  nodeT <- maybeToResult nullPos 
+         "Internal error: empty source spec of view" (getNode tar)
+  let gmor = gEmbed (G_morphism lid mor)
+      link = (nodeS,nodeT,DGLink {
+               dgl_morphism = gmor,
+               dgl_type = GlobalThm False,
+               dgl_origin = DGView vn})
+      vsig = (src,gmor,(imp,params,parsig,tar))
+  if elemFM vn genv 
+   then plain_error (gannos,genv,dg,l,libenv)
+                    ("Name "++pretty vn++" already defined")
+                    (head (pos++nullPosList))
+   else return (gannos,
+                addToFM genv vn (ViewEntry vsig),
+                insEdge link dg'',
+                l,
+                libenv)
+
 
 ana_LIB_ITEM lgraph defl libenv gannos genv dg l (Arch_spec_defn asn asp pos) = 
   ana_err "arch spec"
@@ -183,3 +219,13 @@ ana_LIB_ITEM lgraph defl libenv gannos genv dg l (Download_items ln items pos) =
 ana_LIB_ITEM lgraph defl libenv gannos genv dg l (Logic_decl ln pos) = do
   let log = lookupLogic ln lgraph
   return (gannos,genv,dg,log,libenv)
+
+homogenize1 res 
+     (AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
+  (G_symb_map_items_list lid sis) <- res
+  sis1' <- rcoerce lid1 lid nullPos sis1
+  return (G_symb_map_items_list lid (sis++sis1'))
+homogenize1 res _ = res 
+
+homogenize (Logic lid) gsis = 
+  foldl homogenize1 (return (G_symb_map_items_list lid [])) gsis 

@@ -78,6 +78,7 @@ lookupNode n dg = lab' $ context n dg
 
 setFilter p s = fromList (List.filter p (toList s))
 setAny p s = any p (toList s)
+setAll p s = all p (toList s)
 s1 `disjoint` s2 = s1 `intersection` s2 == FiniteSet.empty
 
 domFM m = fromList (keysFM m)
@@ -205,16 +206,10 @@ ana_SPEC gannos genv dg nsig name sp =
                           (nsig,dg1) <- ana_SPEC gannos genv dg nsig Nothing sp
                           return (nsig:nsigs,dg1)
                     in foldl ana (return ([],dg)) sps
-      G_sign lid' sigma' <- return (getSig (head nsigs))
       let nsigs' = reverse nsigs
           nodes = catMaybes (map getNode nsigs')
-      sigmas <- let coerce_lid (G_sign lid1 sigma1) = 
-                        rcoerce lid' lid1 (headPos pos) sigma1
-                 in sequence (map (coerce_lid . getSig) (tail nsigs'))
-      big_sigma <- let sig_union s1 s2 = do
-                           s1' <- s1
-                           signature_union lid' s1' s2
-                    in foldl sig_union (return sigma') sigmas
+      G_sign lid' bigSigma <- 
+           homogeneousGsigManyUnion (headPos pos) (map getSig nsigs')
       let node_contents = DGNode {
             dgn_name = name,
             dgn_sign = G_sign lid' (empty_signature lid'), 
@@ -226,7 +221,7 @@ ana_SPEC gannos genv dg nsig name sp =
              dgl_type = GlobalDef,
              dgl_origin = DGUnion }
       return (let insE dg n = insEdge (n,node,link) dg -- link should vary
-              in (NodeSig(node,G_sign lid' big_sigma),
+              in (NodeSig(node,G_sign lid' bigSigma),
                   foldl insE (insNode (node,node_contents) dg') nodes))
 
 
@@ -312,7 +307,7 @@ ana_SPEC gannos genv dg nsig name sp =
             dgn_sign = G_sign lid (empty_signature lid), -- delta is empty
             dgn_sens = G_l_sentence lid [],
             dgn_origin = DGLocal }
-          [node] = newNodes 0 dg'
+          [node] = newNodes 0 dg''
           link = (n'',node,DGLink {
             dgl_morphism = gEmbed (G_morphism lid mor3),
             dgl_type = HidingDef,
@@ -330,7 +325,8 @@ ana_SPEC gannos genv dg nsig name sp =
             "Internal error: Closed spec over empty spec" (getNode nsig')
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
-      gsigma'' <- gsigUnion gsigma gsigma'
+      gsigma'' <- homogeneousGsigUnion (headPos pos) gsigma gsigma' 
+                -- also allow different logics???
       G_sign lid'' sigma'' <- return gsigma''
       let [node] = newNodes 0 dg'
           node_contents = DGNode {
@@ -358,35 +354,83 @@ ana_SPEC gannos genv dg nsig name sp =
    ana_SPEC gannos genv dg nsig name (item asp)
 
 
-  Spec_inst spname afitargs ->
+  Spec_inst spname afitargs pos ->
    case lookupFM genv spname of
     Nothing -> plain_error (nsig,dg) 
-                 ("Specification "++pretty spname++" not found") nullPos
+                 ("Specification "++pretty spname++" not found") (headPos pos)
     Just (ViewEntry _) -> 
      plain_error (nsig,dg) 
-      (pretty spname++" is a view, not a specification") nullPos
+      (pretty spname++" is a view, not a specification") (headPos pos)
     Just (ArchEntry _) -> 
      plain_error (nsig,dg) 
       (pretty spname++
-       " is an architectural, not a structured specification") nullPos
+       " is an architectural, not a structured specification") (headPos pos)
     Just (UnitEntry _) -> 
      plain_error (nsig,dg) 
       (pretty spname++
-       " is a unit specification, not a structured specification") nullPos
-    Just (SpecEntry gs@(imps,params,body)) -> 
-     if not (length afitargs == length params)
-      then plain_error (nsig,dg) 
-       (pretty spname++" expects "++show (length params)++" arguments"
-        ++" but was given "++show (length afitargs)) nullPos
-      else do
+       " is a unit specification, not a structured specification") (headPos pos)
+    Just (SpecEntry gs@(imps,params,gSigmaP,body)) -> 
+     case (\x y -> (x,x-y)) (length afitargs) (length params) of
+
+      -- the case without parameters leads to a simpler dg
+      (0,0) -> do
+       let gsigmaB = getSig body
+       gsigma <- homogeneousGsigUnion (headPos pos) (getSig nsig) gsigmaB
+       G_sign lid sigma <- return gsigma
+       nB <- maybeToResult (headPos pos) 
+             "Internal error: empty body spec" (getNode body)
+       case (getNode nsig) of
+         -- the case with empty local env leads to an even simpler dg
+         Nothing -> case name of
+            -- if the node shall not be named, just return the body
+           Nothing -> return (body,dg)
+            -- if the node shall be named, we need to create a new one
+           Just _ ->
+            let [node] = newNodes 0 dg
+                node_contents = DGNode {
+                  dgn_name = name,
+                  dgn_sign = G_sign lid (empty_signature lid),
+                  dgn_sens = G_l_sentence lid [],
+                  dgn_origin = DGSpecInst spname}
+                link = (nB,node,DGLink {
+                  dgl_morphism = inclusion gsigmaB gsigma,
+                  dgl_type = GlobalDef,
+                  dgl_origin = DGSpecInst spname})
+             in return (NodeSig(node,gsigma),
+                        insEdge link $
+                        insNode (node,node_contents) dg)
+              
+         -- the case with nonempty local env 
+         Just n ->
+          let [node] = newNodes 0 dg
+              node_contents = DGNode {
+                dgn_name = name,
+                dgn_sign = G_sign lid (empty_signature lid),
+                dgn_sens = G_l_sentence lid [],
+                dgn_origin = DGSpecInst spname}
+              link1 = (n,node,DGLink {
+                dgl_morphism = inclusion (getSig nsig) gsigma,
+                dgl_type = GlobalDef,
+                dgl_origin = DGSpecInst spname})
+              link2 = (nB,node,DGLink {
+                dgl_morphism = inclusion gsigmaB gsigma,
+                dgl_type = GlobalDef,
+                dgl_origin = DGSpecInst spname})
+           in return (NodeSig(node,gsigma),
+                      insEdge link1 $
+                      insEdge link2 $
+                      insNode (node,node_contents) dg)
+       
+      -- now the general case: with parameters
+      (_,0) -> do
        let fitargs = map item afitargs
        (dg',args) <- foldl ana (return (dg,[])) (zip params fitargs)
        let actualargs = reverse args
-       (gsigma',mor_f) <- apply_GS gs actualargs
+       (gsigma',mor_f) <- apply_GS (headPos pos) gs actualargs
        G_sign lid' sigma' <- return gsigma'
-       gsigmaRes <- gsigUnion (getSig nsig) gsigma'
-       nB <- maybeToResult nullPos 
-             "Internal error: empty parameter spec" (getNode body)
+       gsigmaRes <- homogeneousGsigUnion (headPos pos) (getSig nsig) gsigma'
+       nB <- maybeToResult (headPos pos) 
+             "Internal error: empty body spec" (getNode body)
        let [node] = newNodes 0 dg'
            node_contents = DGNode {
              dgn_name = name,
@@ -423,6 +467,12 @@ ana_SPEC gannos genv dg nsig name sp =
              dgl_type = GlobalDef,
              dgl_origin = DGClosed }
         return (nA_i,node,link)
+
+      -- finally the case with conflicting numbers of formal and actual parameters
+      otherwise -> 
+        plain_error (nsig,dg) 
+          (pretty spname++" expects "++show (length params)++" arguments"
+           ++" but was given "++show (length afitargs)) (headPos pos)
 
 
 
@@ -537,9 +587,10 @@ ana_FIT_ARG gannos genv dg spname nsigI nsigP (Fit_spec asp gsis pos) = do
    let symI = sym_of lidP sigmaI'
        symmap_mor = symmap_of lidP mor
    -- are symbols of the imports left untouched?
-   if setAny (\sy -> lookupFM symmap_mor sy == Just sy) symI
+  {- if setAll (\sy -> lookupFM symmap_mor sy == Just sy) symI
     then return ()
     else plain_error () "Fitting morphism must not affect import" (headPos pos)
+   -} -- ??? does not work
       -- ??? also output some symbol that is affected
    let link = (nP,nA,DGLink {
          dgl_morphism = gEmbed (G_morphism lidP mor),
@@ -549,24 +600,93 @@ ana_FIT_ARG gannos genv dg spname nsigI nsigP (Fit_spec asp gsis pos) = do
            (G_morphism lidP mor,nsigA)
            )
 
-ana_FIT_ARG gannos genv dg spname nsigI nsigP  (Fit_view vn fas pos ans) =
-  undefined
+ana_FIT_ARG gannos genv dg spname nsigI nsigP (Fit_view vn fas pos ans) = do
+  G_sign lid sigma <- return (getSig nsigP)
+  return (dg,(G_morphism lid (ide lid sigma),nsigP))
+  -- ??? Needs to be implemented
 
+extendMorphism :: Pos -> G_sign -> G_sign -> G_sign -> G_morphism
+                  -> Result(G_sign,G_morphism)
+extendMorphism pos gsigma gsigma' gsigmaA mor = 
+  return (gsigmaA,mor) -- ??? needs to be implemented
 
-apply_GS gs args = undefined
+apply_GS :: Pos -> ExtGenSig -> [(G_morphism,NodeSig)] -> Result(G_sign,G_morphism)
+apply_GS pos (nsigI,params,gsigmaP,nsigB) args = do
+  let mor_i = map fst args
+      gsigmaA_i = map (getSig . snd) args
+      gsigmaB = getSig nsigB
+      gsigmaI = getSig nsigI
+  G_sign lidI sigmaI <- return gsigmaI
+  let idI = ide lidI sigmaI
+  gsigmaA <- homogeneousGsigManyUnion pos gsigmaA_i
+  mor_f <- homogeneousMorManyUnion pos (G_morphism lidI idI:mor_i)
+  extendMorphism pos gsigmaP gsigmaB gsigmaA mor_f
 
 ana_GENERICITY :: GlobalAnnos -> GlobalEnv -> DGraph -> AnyLogic -> GENERICITY
               -> Result (ExtGenSig,DGraph)
-ana_GENERICITY gannos genv dg l 
+ana_GENERICITY gannos genv dg l@(Logic lid) 
                (Genericity (Params []) (Imported []) pos) = 
-  return ((EmptyNode l,[],EmptyNode l),dg)
+  return ((EmptyNode l,[],G_sign lid (empty_signature lid),EmptyNode l),dg)
 
-ana_GENERICITY gannos genv dg l (Genericity params imps pos) = 
-  ana_err "parameterized specs"
+ana_GENERICITY gannos genv dg l (Genericity (Params [asp]) imps pos) = do
+  (nsigI,dg') <- ana_IMPORTS gannos genv dg l imps
+  (nsigP,dg'') <- ana_SPEC gannos genv dg' nsigI Nothing (item asp)
+  return ((nsigI,[nsigP],getSig nsigP,nsigP),
+          dg'')
+
+ana_GENERICITY gannos genv dg l (Genericity params imps pos) = do
+  (nsigI,dg') <- ana_IMPORTS gannos genv dg l imps
+  (nsigPs,dg'') <- ana_PARAMS gannos genv dg' l nsigI params
+  gsigmaP <- homogeneousGsigManyUnion (headPos pos) (map getSig nsigPs)
+  G_sign lidP sigmaP <- return gsigmaP
+  let node_contents = DGNode {
+        dgn_name = Nothing,
+        dgn_sign = G_sign lidP (empty_signature lidP),
+        dgn_sens = G_l_sentence lidP [],
+        dgn_origin = DGFormalParams }
+      [node] = newNodes 0 dg''
+      dg''' = insNode (node,node_contents) dg''
+      inslink dg nsig = 
+        case getNode nsig of
+         Nothing -> dg
+         Just n -> insEdge (n,node,DGLink {
+                     dgl_morphism = inclusion (getSig nsig) gsigmaP,
+                     dgl_type = GlobalDef,
+                     dgl_origin = DGFormalParams }) dg
+  return ((nsigI,nsigPs,gsigmaP,NodeSig(node,gsigmaP)),
+          foldl inslink dg''' nsigPs)
+
+ana_PARAMS :: GlobalAnnos -> GlobalEnv -> DGraph -> AnyLogic -> NodeSig -> PARAMS
+              -> Result ([NodeSig],DGraph)
+ana_PARAMS gannos genv dg l nsigI (Params asps) = do
+  (pars,dg') <- foldl ana (return ([],dg)) (map item asps)
+  return (reverse pars,dg')
+  where
+  ana res sp = do
+    (pars,dg) <- res
+    (par,dg') <- ana_SPEC gannos genv dg nsigI Nothing sp
+    return (par:pars,dg')
+
+ana_IMPORTS :: GlobalAnnos -> GlobalEnv -> DGraph -> AnyLogic -> IMPORTED
+              -> Result (NodeSig,DGraph)
+ana_IMPORTS gannos genv dg l (Imported asps) = do
+  let sp = Union asps (map (\_ -> nullPos) asps)
+  ana_SPEC gannos genv dg (EmptyNode l) Nothing sp
+   -- ??? emptyExplicit stuff needs to be added here
+
+ana_VIEW_TYPE:: GlobalAnnos -> GlobalEnv -> DGraph -> AnyLogic 
+                -> NodeSig -> VIEW_TYPE
+                -> Result ((NodeSig,NodeSig),DGraph)
+ana_VIEW_TYPE gannos genv dg l parSig 
+              (View_type aspSrc aspTar pos) = do
+  (srcNsig,dg') <- ana_SPEC gannos genv dg (EmptyNode l) Nothing (item aspSrc)
+  (tarNsig,dg'') <- ana_SPEC gannos genv dg parSig Nothing (item aspTar)
+  return ((srcNsig,tarNsig),dg'')
+
 
 ---- helpers ---------------------------------
 ana_err :: String -> a
 ana_err fname = 
-    error ("*** Analysis of \"" ++ fname ++ "\" is not yet implemented!")
+    error ("*** Analysis of " ++ fname ++ " is not yet implemented!")
 
 ----------------------------------------------
