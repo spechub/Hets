@@ -1,4 +1,4 @@
-{- Version 0.9a, 05,06,2004 -}
+{- Version 0.9b, 10,06,2004 -}
 
 module GUI.ShowLogicGraph
 where
@@ -46,11 +46,11 @@ showLogicGraph
            disp s tD = debug (s ++ (show tD))
        logicG <- newGraph displaySort graphParms
        
---       (killChannel :: Channel ()) <- newChannel   
+       (killChannel :: Channel ()) <- newChannel   
 
        let logicNodeMenu = LocalMenu(Menu (Just "Info") 
-               [Button "Tools" (\lg -> createTextDisplay ("Parsers, Provers and Cons_Checker of " ++ showTitle lg) (showPPC lg) [size(80,25)]),
-                Button "Sublogic" (\lg -> createTextDisplay ("Sublogics of " ++ showTitle lg) (showSubLogic lg) [size(80,25)]),
+               [Button "Tools" (\lg -> createTextDisplay ("Parsers, Provers and Cons_Checker of " ++ showTitle lg) (showTools lg) [size(80,25)]),
+                Button "Sublogic" (\lg -> createTextDisplay ("Sublogics of " ++ showTitle lg) (showSublogic lg) [size(80,25)]),
                 Button "Sublogic Graph" (\lg -> showSubLogicGraph displaySort lg),
                 Button "Description" (\lg -> createTextDisplay ("Description of " ++ showTitle lg) (showDescription lg) [size(83,25)])
 	       ])
@@ -79,13 +79,18 @@ showLogicGraph
        
            lookupLogic(Logic lid) = fromJust (Map.lookup (language_name lid) namesAndNodes)
            -- eath edge can also show the informations 
-           -- (name of the logics and the description)
-           logicArcMenu = LocalMenu(Button "Info" 
-                            (\c -> case c of
-                                    Comorphism cid ->
-                                       let sid = Logic (sourceLogic cid)
-                                           tid = Logic (targetLogic cid)
-                                       in  createTextDisplay (show c) (showDescription sid ++ "\n\n" ++ (showDescription tid)) [size(83,25)]))
+           -- (the description of comorphism and names of source/target-Logic as well as
+	   -- the sublogics.)
+           logicArcMenu = 
+	       LocalMenu(Button "Info" 
+                 (\c -> case c of
+                         Comorphism cid ->
+			  let sid = Logic (sourceLogic cid)
+                              tid = Logic (targetLogic cid)
+                          in  createTextDisplay (show c) (showComoDescription c ++ "\n\n" ++
+			      "Sublogic of " ++ showTitle sid ++ ":\n" ++ showSublogic sid ++ 
+			      "\nSublogic of " ++ showTitle tid ++ ":\n" ++ showSublogic tid )
+                              [size(83,50)]))
            normalArcTypeParms = logicArcMenu $$$         -- normal comorphism
                                 Color "black" $$$
                                 nullArcTypeParms
@@ -117,7 +122,7 @@ showLogicGraph
                   --(drop (length arcList1) (Map.elems (comorphisms logicGraph)))
        
        redraw logicG
-{-       sync(
+       sync(
             (receive killChannel) >>> 
                do
                   putStrLn "Destroy graph"
@@ -125,7 +130,7 @@ showLogicGraph
                
          +> (destroyed logicG)
 	)
-  -}     
+       
 
      where 		
         (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms
@@ -133,7 +138,7 @@ showLogicGraph
 	(nullSubNodeParms :: nodeTypeParms G_sublogics) = emptyNodeTypeParms
 	(nullSubArcTypeParms:: arcTypeParms [Char]) = emptyArcTypeParms
 	 
-        showSubLogic l = 
+        showSublogic l = 
             case l of
               Logic lid -> unlines (map unwords $ 
                                 map (sublogic_names lid) (all_sublogics lid))
@@ -145,7 +150,12 @@ showLogicGraph
 	    case l of
               Logic lid -> description lid
 
-        showPPC lg = 
+
+        showComoDescription c =
+	    case c of
+              Comorphism cid -> description cid
+
+        showTools lg = 
            case lg of
                 Logic lid -> showParse lid ++ "\n" ++ showProver lid ++ "\n" ++ showConsChecker lid
 	   where
