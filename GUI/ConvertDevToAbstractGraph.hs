@@ -540,7 +540,7 @@ getSignatureOfNode descr ab2dgNode dgraph =
               let title = case name of
                    Nothing -> "Signature"
                    Just n -> "Signature of "++showPretty n ""
-               in createTextDisplay title (showPretty sig "") [size(50,50)]
+               in createTextDisplay title (showPretty sig "") [size(80,50)]
               --putStrLn ((showPretty sig) "\n")
            (DGRef _ _ _) -> error 
 			    "nodes of type dg_ref do not have a signature"
