@@ -292,7 +292,7 @@ typePatternToken = fmap TypePatternToken (pToken (scanWords <|> placeS <|>
 primTypePatternOrId = fmap TypePatternToken idToken 
 	       <|> mkBraces typePatternOrId (BracketTypePattern Braces)
 	       <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
-	       <|> bracketParser typePatternArgs oParenT cParenT semiT
+	       <|> bracketParser typePatternArgs oParenT cParenT anSemi
 		       (BracketTypePattern Parens)
 
 typePatternOrId = do ts <- many1 primTypePatternOrId
@@ -303,7 +303,7 @@ typePatternArgs, primTypePattern, typePattern :: AParser TypePattern
 typePatternArgs = fmap TypePatternArgs typeArgs
 
 primTypePattern = typePatternToken 
-	   <|> bracketParser typePatternArgs oParenT cParenT semiT 
+	   <|> bracketParser typePatternArgs oParenT cParenT anSemi 
 		   (BracketTypePattern Parens)
 	   <|> mkBraces typePattern (BracketTypePattern Braces)
            <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
@@ -332,7 +332,7 @@ primPattern :: TokenMode -> AParser Pattern
 primPattern b = tokenPattern b 
 		<|> mkBraces pattern (BracketPattern Braces) 
 		<|> mkBrackets pattern (BracketPattern Squares)
-		<|> bracketParser patterns oParenT cParenT semiT 
+		<|> bracketParser patterns oParenT cParenT anSemi 
 			(BracketPattern Parens)
 
 patterns :: AParser Pattern
@@ -382,7 +382,7 @@ instOpId = do i@(Id is cs ps) <- uninstOpId
 
 typeScheme :: AParser TypeScheme
 typeScheme = do f <- forallT
-		(ts, cs) <- typeVarDecls `separatedBy` semiT
+		(ts, cs) <- typeVarDecls `separatedBy` anSemi
 		d <- dotT
 		t <- typeScheme
                 return $ case t of 
@@ -527,7 +527,7 @@ term = mixTerm WithIn
 forallTerm :: TypeMode -> AParser Term
 forallTerm b = 
              do f <- forallT
-		(vs, ps) <- genVarDecls `separatedBy` semiT
+		(vs, ps) <- genVarDecls `separatedBy` anSemi
 		addAnnos
 		d <- dotT
 		t <- mixTerm b
@@ -547,7 +547,7 @@ exQuant =
 exTerm :: TypeMode -> AParser Term
 exTerm b = 
          do { (q, p) <- exQuant
-	    ; (vs, ps) <- varDecls `separatedBy` semiT
+	    ; (vs, ps) <- varDecls `separatedBy` anSemi
 	    ; d <- dotT
 	    ; f <- mixTerm b
 	    ; return (QuantifiedTerm q (map GenVarDecl (concat vs)) f
@@ -570,10 +570,10 @@ lambdaTerm b =
 		return (LambdaTerm pl k t (toPos l [] d))
 
 lamPattern :: AParser [Pattern]
-lamPattern = do (vs, ps) <- varDecls `separatedBy` semiT
+lamPattern = do (vs, ps) <- varDecls `separatedBy` anSemi
 		return [PatternVars (concat vs) (map tokPos ps)]
 	     <|> 
-	     many (bracketParser patterns oParenT cParenT semiT 
+	     many (bracketParser patterns oParenT cParenT anSemi 
 		      (BracketPattern Parens)) 
 
 -----------------------------------------------------------------------------
@@ -605,7 +605,7 @@ letTerm :: TypeMode -> AParser Term
 letTerm b = 
           do l <- asKey letS
 	     (es, ps) <- patternTermPair (NoToken equalS) NoIn equalS 
-			 `separatedBy` semiT 
+			 `separatedBy` anSemi 
 	     i <- asKey inS
 	     t <- mixTerm b
 	     return (LetTerm es t (toPos l ps i))

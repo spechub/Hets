@@ -141,13 +141,13 @@ typeItems = do p <- pluralKeyword typeS
 typeArgParen :: AParser TypeArgs
 typeArgParen = 
     do o <- oParenT
-       (ts, ps) <- typeArgs `separatedBy` semiT       
+       (ts, ps) <- typeArgs `separatedBy` anSemi       
        c <- cParenT	   
        return (TypeArgs (concat ts) (map tokPos (o:ps++[c])))
 
 typeArgSeq :: AParser [TypeArgs]
 typeArgSeq =    
-    do (ts, ps) <- typeArgs `separatedBy` semiT 
+    do (ts, ps) <- typeArgs `separatedBy` anSemi 
        return [TypeArgs (concat ts) (map tokPos ps)]
 
 pseudoType :: AParser PseudoType
@@ -187,7 +187,7 @@ component = do { (is, cs) <- uninstOpId `separatedBy` anComma
 tupleComponent :: AParser Components
 tupleComponent = 
     do o <- oParenT
-       do (cs, ps) <- component `separatedBy` semiT 
+       do (cs, ps) <- component `separatedBy` anSemi 
 	  c <- cParenT
 	  return (NestedComponents (concat cs) (toPos o ps c))
         <|> 
@@ -322,7 +322,7 @@ classItems = do p <- pluralKeyword classS
 typeVarDeclSeq :: AParser TypeVarDecls
 typeVarDeclSeq = 
     do o <- oBracketT
-       (ts, cs) <- typeVarDecls `separatedBy` semiT
+       (ts, cs) <- typeVarDecls `separatedBy` anSemi
        c <- cBracketT
        return (TypeVarDecls (concat ts) (toPos o cs c))
 
@@ -368,7 +368,7 @@ opDeclOrDefn o =
 		return (OpDefn o [] t Total f (toPos c [] e))  
          <|> return (OpDecl [o] t [] (map tokPos [c]))
     <|> 
-    do ps <- many1 (bracketParser patterns oParenT cParenT semiT 
+    do ps <- many1 (bracketParser patterns oParenT cParenT anSemi 
 		      (BracketPattern Parens)) 
        do    (p, c) <- quColon
 	     t <- parseType 
@@ -401,7 +401,7 @@ predDecl os ps = do c <- colT
 		    return (PredDecl os t (map tokPos (ps++[c])))
 
 predDefn :: OpId -> AParser PredItem
-predDefn o = do ps <- many (bracketParser patterns oParenT cParenT semiT 
+predDefn o = do ps <- many (bracketParser patterns oParenT cParenT anSemi 
 		      (BracketPattern Parens)) 
 		e <- asKey equivS
 		f <- term
@@ -457,7 +457,7 @@ generatedItems = do { g <- asKey generatedS
 genVarItems :: AParser ([GenVarDecl], [Token])
 genVarItems = 
            do { vs <- genVarDecls
-              ; do { s <- semiT
+              ; do { s <- try (addAnnos >> Lexer.semiT << addLineAnnos)
                    ; do { tryItemEnd hasCaslStartKeywords
                         ; return (vs, [s])
                         }
@@ -493,7 +493,7 @@ axiomItems =     do { a <- pluralKeyword axiomS
                     }
 
 forallItem =     do f <- forallT
-                    (vs, ps) <- genVarDecls `separatedBy` semiT 
+                    (vs, ps) <- genVarDecls `separatedBy` anSemi 
 		    a <- annos
 		    AxiomItems _ ((Annoted ft qs as rs):fs) ds <- dotFormulae
 		    let aft = Annoted ft qs (a++as) rs
