@@ -4,7 +4,7 @@
   pred __ >= __, __<=__, __>__ : Nat * Nat
   free type Boolean ::= True | False
 
-  var S,T : Type
+  var S,V : Type
   type Set S := S ->? Unit;
   ops emptySet : Set S;
       {__} : S -> Set S;
@@ -12,7 +12,7 @@
       __subset__ :Pred( Set(S) * Set(S) );
       __union__, __intersection__, __\\__  : Set S * Set S -> Set S;
       __disjoint__ : Pred( Set(S) * Set(S) );
-      __*__ : Set S * Set T -> Set (S*T);
+      __*__ : Set S * Set V -> Set (S*V);
       __disjointUnion__ :  Set S * Set S -> Set (S*Boolean);
       injl,injr : S -> S*Boolean;
 
@@ -42,33 +42,33 @@
       sumSet : Set Nat ->? Nat;
       sum : (a->?Nat) -> Pred a ->? Nat
 
-  var S,T,U : Type
+  var S,V,U : Type
   type Map S := S->?S
-  ops dom : (S->?T) -> Set S;
-      range : (S->?T) -> Set T; 
-      image : (S->?T) -> Set S -> Set T;
-      emptyMap : (S->?T);
-      __ :: __ --> __ : Pred ( (S->?T) * Pred(S) * Pred(T) );
-      __ [__/__] : (S->?T) * S * T -> (S->?T);
-      __ - __ : (S->?T) * S -> (S->?T);
-      __o__ : (T->?U) * (S->?T) -> (S->?U);
-      __||__ : (S->?T) * Set S -> (S->?T);
-      undef__ : S ->?T;
-      ker : (S->?T) -> Pred (S*S);
-      injective : Pred(S->?T);
-      __intersectionMap__, __unionMap__ : (S->?T) * (S->?T) -> (S->?T);
-      __restrict__ : (S->?T) * Set S -> (S->?T)
+  ops dom : (S->?V) -> Set S;
+      range : (S->?V) -> Set V; 
+      image : (S->?V) -> Set S -> Set V;
+      emptyMap : (S->?V);
+      __ :: __ --> __ : Pred ( (S->?V) * Pred(S) * Pred(V) );
+      __ [__/__] : (S->?V) * S * V -> (S->?V);
+      __ - __ : (S->?V) * S -> (S->?V);
+      __o__ : (V->?U) * (S->?V) -> (S->?U);
+      __||__ : (S->?V) * Set S -> (S->?V);
+      undef__ : S ->?V;
+      ker : (S->?V) -> Pred (S*S);
+      injective : Pred(S->?V);
+      __intersectionMap__, __unionMap__ : (S->?V) * (S->?V) -> (S->?V);
+      __restrict__ : (S->?V) * Set S -> (S->?V)
 
-  var S, T : Type
-  ops __ :: __ --> __ : Pred ( (S->? MultiSet T) * Set S * Set T);
+  var S, V : Type
+  ops __ :: __ --> __ : Pred ( (S->? MultiSet V) * Set S * Set V);
       freeMap : Map S -> MapMultiSet S;
-      linMap : (S->? MultiSet T) -> (MultiSet S->? MultiSet T)
+      linMap : (S->? MultiSet V) -> (MultiSet S->? MultiSet V)
 
   ops __ intersection __: MultiSet Elem * MultiSet Elem -> MultiSet Elem,
                           assoc, comm, idem
 
-  sorts P
-  type Net = {(p,pre,post) : Set P  *  (T ->? MultiSet P) * (T ->? MultiSet P)                                . dom pre=dom post /\
+  sorts P, T
+  type Net = {(p,pre,post) : Set P  *  (V ->? MultiSet P) * (V ->? MultiSet P)                                . dom pre=dom post /\
             (forall p1:MultiSet P . p1 isIn range pre => MultiSetToSet p1 subset p)
             /\ (forall p1:MultiSet P . p1 isIn range pre => MultiSetToSet p1 subset p) }
   ops places : Net  -> Set P;
@@ -98,16 +98,6 @@
        empty     : Marking;
        __|<__>   : System * T -> System; 
        __|<__>   : System * MultiSet T ->? System;
-  forall sys,sys1,sys2:System; n:Net; m:Marking; t:T; v: MultiSet T 
-  . empty = {}
-  . net sys = let (n,m) = sys in n
-  . marking sys = let (n,m) = sys in m
-  . def sys|<t> <=> t isIn (dom (preMap(net(sys)))) /\  preMap(net(sys))  t <= marking(sys)
-  . def sys|<t> => sys|<t> = (net(sys), (marking(sys) -  preMap(net(sys)) t) + postMap(net(sys)) t)
-  . def sys|<v> <=> forall t:T . t isIn v /\ t isIn (dom (preMap(net(sys)))) /\ linMap (preMap(net(sys))) v <= marking(sys)
-  . def sys|<v> => 
-    sys|<v> = (net(sys), (marking(sys) - linMap (preMap(net(sys))) v) + linMap (postMap(net(sys))) v )
-
 
   type HomSys  = {(sys1,hp,ht,sys2) : System  * (P->?P) * (T->?T) * System .  
                   ((net(sys1), hp, ht, net(sys2)) in HomNet )
@@ -119,14 +109,8 @@
        id : System ->? HomSys;
        __o__ : HomSys  * HomSys  ->? HomSys 
   pred injective : HomSys
-  forall sys,sys1,sys2:System; n:Net; x:P; m:Marking; t:T; hp:P->?P; ht:T->?T; h, h1, h2:HomSys; v: MultiSet T 
-  . let h=(sys1,hp,ht,sys2) in dom (h) = sys1
-  . let h=(sys1,hp,ht,sys2) in cod (h) = sys2
-  . let h=(sys1,hp,ht,sys2) in placesMap (h) = hp
-  . let h=(sys1,hp,ht,sys2) in transitionsMap (h) = ht
-  . def (h2 o h1) <=> cod h1 = dom h2
+  forall h1, h2:HomSys
   . def (h2 o h1) => h2 o h1 = 
      (dom h1, placesMap h2 o placesMap h1, transitionsMap h2 o transitionsMap h1,cod h2)
       as HomSys
-  . injective h <=> injective(placesMap h) /\ injective(transitionsMap h)
-  sort M = {h:HomSys . injective h}
+
