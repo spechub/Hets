@@ -796,7 +796,7 @@ convertToNf dgraph node = do
   let dgnodelab = lab' (context node dgraph)
       sign = dgn_sign dgnodelab
       [newNode] = newNodes 0 dgraph
-  let newDgnode = (newNode, 
+      newDgnode = (newNode, 
 		   DGNode {dgn_name = makeName (mkSimpleId "Hallo"), --dgn_name dgnodelab,
 			   dgn_sign = sign,
 			   dgn_sens = dgn_sens dgnodelab,
@@ -806,7 +806,6 @@ convertToNf dgraph node = do
 			  })
       auxGraph = insNode newDgnode dgraph
   (finalGraph,changes) <- adoptEdges auxGraph node newNode
-  putStrLn ("convertToNf changes: <" ++ (concat (map show changes)) ++ ">")
   return (delNode node finalGraph,
 	  [InsertNode newDgnode] ++ changes ++ [DeleteNode (node,dgnodelab)])
 
@@ -833,7 +832,7 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
   where
     newEdge = if areIngoingEdges then (src,node,edgelab)
 	        else (node,tgt,edgelab)
-    auxGraph = insEdge newEdge (delLEdge oldEdge auxGraph)
+    auxGraph = insEdge newEdge (delLEdge oldEdge dgraph)
     (finalGraph,furtherChanges) 
 	= adoptEdgesAux auxGraph list node areIngoingEdges
 

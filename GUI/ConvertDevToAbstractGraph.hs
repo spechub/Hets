@@ -406,8 +406,11 @@ proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _, _) proofF
       descr <- readIORef event
       convMaps <- readIORef convRef
       --putStrLn (showPretty convMaps "")
-      (newDescr,newConvMaps)
+      (newDescr,convMapsAux)
          <- applyChanges gid ln actGraphInfo descr convMaps history
+      let newConvMaps = 
+	      convMapsAux {libname2dg =
+			Map.insert ln newGlobContext (libname2dg convMapsAux)}
       writeIORef event newDescr
       writeIORef convRef newConvMaps
       redisplay gid actGraphInfo
@@ -431,14 +434,14 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
                  $$$ LocalMenu (Menu (Just "node menu")
                    [--createLocalMenuButtonShowSpec convRef dGraph,
 		    createLocalMenuButtonShowNumberOfNode,
-		    createLocalMenuButtonShowSignature convRef dGraph,
-		    createLocalMenuButtonShowTheory gInfo convRef dGraph,
-		    createLocalMenuButtonTranslateTheory gInfo convRef dGraph,
+		    createLocalMenuButtonShowSignature gInfo,
+		    createLocalMenuButtonShowTheory gInfo,
+		    createLocalMenuButtonTranslateTheory gInfo,
 		    createLocalMenuTaxonomy gInfo convRef dGraph,
-		    createLocalMenuButtonShowSublogic gInfo convRef dGraph,
-                    createLocalMenuButtonShowNodeOrigin convRef dGraph,
-                    createLocalMenuButtonProveAtNode gInfo convRef dGraph,
-                    createLocalMenuButtonCCCAtNode gInfo convRef dGraph,
+		    createLocalMenuButtonShowSublogic gInfo,
+                    createLocalMenuButtonShowNodeOrigin gInfo,
+                    createLocalMenuButtonProveAtNode gInfo,
+                    createLocalMenuButtonCCCAtNode gInfo,
 		    createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents 
 		                     convRef ioRefVisibleNodes ioRefGraphMem
 		                                         actGraphInfo,
@@ -462,14 +465,14 @@ createLocalMenuNodeTypeInternal color convRef dGraph
                  $$$ LocalMenu (Menu (Just "node menu")
                     [--createLocalMenuButtonShowSpec convRef dGraph,
 		     createLocalMenuButtonShowNumberOfNode,
-		     createLocalMenuButtonShowSignature convRef dGraph,
- 		     createLocalMenuButtonShowTheory gInfo convRef dGraph,
-		     createLocalMenuButtonTranslateTheory gInfo convRef dGraph,
+		     createLocalMenuButtonShowSignature gInfo,
+ 		     createLocalMenuButtonShowTheory gInfo,
+		     createLocalMenuButtonTranslateTheory gInfo,
 		     createLocalMenuTaxonomy gInfo convRef dGraph,
- 		     createLocalMenuButtonShowSublogic gInfo convRef dGraph,
-                     createLocalMenuButtonProveAtNode gInfo convRef dGraph,
-                     createLocalMenuButtonCCCAtNode gInfo convRef dGraph,
-                     createLocalMenuButtonShowNodeOrigin convRef dGraph])
+ 		     createLocalMenuButtonShowSublogic gInfo,
+                     createLocalMenuButtonProveAtNode gInfo,
+                     createLocalMenuButtonCCCAtNode gInfo,
+                     createLocalMenuButtonShowNodeOrigin gInfo])
                  $$$ emptyNodeTypeParms
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
@@ -501,6 +504,18 @@ createLocalMenuNodeTypeDgRef color convRef actGraphInfo
 
 
 -- menu button for local menus
+createMenuButtonGInfo title menuFun ginfo@(ioProofStatus,_,convRef,_,_,_,_,_) =
+                    (Button title 
+                      (\ (name,descr,gid) ->
+                        do convMaps <- readIORef convRef
+		           (_,_,_,dGraph) <- readIORef ioProofStatus
+                           menuFun descr
+		                   (abstr2dgNode convMaps)
+		                   dGraph
+		           return ()
+                       )
+	            )
+
 createMenuButton title menuFun convRef dGraph =
                     (Button title 
                       (\ (name,descr,gid) ->
@@ -514,11 +529,11 @@ createMenuButton title menuFun convRef dGraph =
 
 createLocalMenuButtonShowSpec = createMenuButton "Show spec" showSpec
 createLocalMenuButtonShowSignature = 
-  createMenuButton "Show signature" getSignatureOfNode
+  createMenuButtonGInfo "Show signature" getSignatureOfNode
 createLocalMenuButtonShowTheory gInfo = 
-  createMenuButton "Show theory" (getTheoryOfNode gInfo)
+  createMenuButtonGInfo "Show theory" (getTheoryOfNode gInfo) gInfo
 createLocalMenuButtonTranslateTheory gInfo = 
-  createMenuButton "Translate theory" (translateTheoryOfNode gInfo)
+  createMenuButtonGInfo "Translate theory" (translateTheoryOfNode gInfo) gInfo
 
 
 {- | 
@@ -544,14 +559,15 @@ createLocalMenuTaxonomy (proofStatus,_,_,_,_,_,_,_) convRef dGraph =
  
 
 
-createLocalMenuButtonShowSublogic (proofStatus,_,_,_,_,_,_,_) = 
-  createMenuButton "Show sublogic" (getSublogicOfNode proofStatus)
+createLocalMenuButtonShowSublogic gInfo@(proofStatus,_,_,_,_,_,_,_) = 
+  createMenuButtonGInfo "Show sublogic" (getSublogicOfNode proofStatus) gInfo
 createLocalMenuButtonShowNodeOrigin  = 
-  createMenuButton "Show origin" showOriginOfNode 
+  createMenuButtonGInfo "Show origin" showOriginOfNode 
 createLocalMenuButtonProveAtNode gInfo =
-  createMenuButton "Prove" (proveAtNode False gInfo)
+  createMenuButtonGInfo "Prove" (proveAtNode False gInfo) gInfo
 createLocalMenuButtonCCCAtNode gInfo =
-  createMenuButton "Check consistency" (proveAtNode True gInfo)
+  createMenuButtonGInfo "Check consistency" (proveAtNode True gInfo) gInfo
+
 
 createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef 
     ioRefVisibleNodes ioRefGraphMem actGraphInfo = 
