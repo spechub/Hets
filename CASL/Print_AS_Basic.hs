@@ -433,6 +433,7 @@ condParensPrefixAppl :: GlobalAnnos -> TERM -> Doc
 condParensPrefixAppl ga t = 
     case t of
     Simple_id _ -> t'
+    Application o [] _ -> t'
     _ -> parens t'
     {- TODO: Consider prec-, lassoc- and rassoc-annotations -}
     where t' = printText0 ga t
