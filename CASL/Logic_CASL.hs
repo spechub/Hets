@@ -19,7 +19,7 @@ Portability :  portable
 module CASL.Logic_CASL(CASL(CASL)) where
 
 import CASL.AS_Basic_CASL
-import CASL.Print_AS_Basic
+import CASL.LaTeX_CASL
 import CASL.Parse_AS_Basic
 import CASL.SymbolParser
 import Logic.ParsecInterface

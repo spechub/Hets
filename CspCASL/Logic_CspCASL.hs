@@ -34,7 +34,7 @@ module CspCASL.Logic_CspCASL(CspCASL(CspCASL)) where
 
 import CspCASL.AS_CSP_CASL
 import CspCASL.Parse_hugo
-import CspCASL.Print_AS_CSP_CASL
+import CspCASL.LaTeX_AS_CSP_CASL
 
 import CASL.AS_Basic_CASL
 
@@ -54,6 +54,7 @@ import CASL.Logic_CASL(CASL(CASL))
 import Data.Dynamic
 
 import Common.PrettyPrint
+import Common.PrintLaTeX
 import Common.Lib.Pretty
 
 import CspCASL.ATC_CspCASL

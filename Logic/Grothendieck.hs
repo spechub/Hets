@@ -44,10 +44,9 @@ import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Common.PPUtils 
 import Common.Result
 import Common.Id
-import Common.Named
+import Common.AS_Annotation
 import Common.ListUtils
 import Data.Dynamic
 import Control.Monad
@@ -72,8 +71,6 @@ instance Show G_basic_spec where
 
 instance PrettyPrint G_basic_spec where
     printText0 ga (G_basic_spec _ s) = printText0 ga s
-
-    printLatex0 ga (G_basic_spec _ s) = printLatex0 ga s
 
 -- | Grothendieck sentences
 data G_sentence = forall lid sublogics
@@ -199,9 +196,6 @@ instance PrettyPrint G_symb_items_list where
     printText0 ga (G_symb_items_list _ l) = 
         fsep $ punctuate comma $ map (printText0 ga) l
 
-    printLatex0 ga (G_symb_items_list _ l) = 
-        commaT_latex ga l
-
 instance Eq G_symb_items_list where
   (G_symb_items_list i1 s1) == (G_symb_items_list i2 s2) =
      coerce i1 i2 s1 == Just s2
@@ -221,9 +215,6 @@ instance Show G_symb_map_items_list where
 instance PrettyPrint G_symb_map_items_list where
     printText0 ga (G_symb_map_items_list _ l) = 
         fsep $ punctuate comma $ map (printText0 ga) l
-
-    printLatex0 ga (G_symb_map_items_list _ l) = 
-        commaT_latex ga l
 
 instance Eq G_symb_map_items_list where
   (G_symb_map_items_list i1 s1) == (G_symb_map_items_list i2 s2) =
@@ -433,6 +424,7 @@ instance Category Grothendieck G_sign GMorphism where
       Just (sigma',_) -> sigma' == cod lid2 mor
       Nothing -> False
     where lid2 = targetLogic r
+
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed :: G_morphism -> GMorphism

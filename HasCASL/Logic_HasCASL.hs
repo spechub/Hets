@@ -35,6 +35,7 @@ import Common.Lib.State
 import HasCASL.Morphism
 import Common.PrettyPrint
 import HasCASL.ATC_HasCASL
+import HasCASL.LaTeX_HasCASL
 import HasCASL.SymbolMapAnalysis
 
 type HasCASL_Sublogics = ()

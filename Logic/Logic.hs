@@ -62,10 +62,10 @@ import Common.Lib.Set
 import Common.Lib.Map
 import Common.Lib.Graph
 import Common.Result
-import Common.Named
+import Common.AS_Annotation
 import Logic.Prover -- for one half of class Sentences
 
-import Common.PrettyPrint
+import Common.PrintLaTeX
 import Data.Dynamic
 
 -- for coercion used in Grothendieck.hs and Analysis modules
@@ -74,9 +74,8 @@ import UnsafeCoerce
 
 -- for Conversion to ATerms 
 import Common.ATerm.Lib -- (ATermConvertible)
-import ATC.Named
 import ATC.Graph
-
+import ATC.AS_Annotation
 
 -- diagrams are just graphs
 type Diagram object morphism = Graph object morphism
@@ -134,9 +133,9 @@ type ParseFun a = Pos -> String -> (a,String, Pos)
                   -- args: start pos (including file name), input text
                   -- result: value, remaining text, end pos
 
-class (Language lid, PrettyPrint basic_spec, 
-       PrettyPrint symb_items, Eq symb_items,
-       PrettyPrint symb_map_items, Eq symb_map_items ,
+class (Language lid, PrintLaTeX basic_spec, 
+       PrintLaTeX symb_items, Eq symb_items,
+       PrintLaTeX symb_map_items, Eq symb_map_items ,
        ATermConvertible basic_spec, 
        ATermConvertible symb_items, 
        ATermConvertible symb_map_items ) =>
@@ -162,8 +161,8 @@ class (Language lid, PrettyPrint basic_spec,
 	 				      
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
-class (Category lid sign morphism, Eq sentence, Show sentence, PrettyPrint sign,
-       PrettyPrint morphism, Ord symbol, Show symbol, PrettyPrint symbol,
+class (Category lid sign morphism, Eq sentence, Show sentence, PrintLaTeX sign,
+       PrintLaTeX morphism, Ord symbol, Show symbol, PrintLaTeX symbol,
        ATermConvertible sentence, ATermConvertible symbol,
        ATermConvertible sign, ATermConvertible morphism,
        ATermConvertible proof_tree)
@@ -203,7 +202,7 @@ class (Category lid sign morphism, Eq sentence, Show sentence, PrettyPrint sign,
 
 class ( Syntax lid basic_spec symb_items symb_map_items
       , Sentences lid sentence proof_tree sign morphism symbol
-      , Show raw_symbol, Eq raw_symbol, Ord raw_symbol, PrettyPrint raw_symbol)
+      , Show raw_symbol, Eq raw_symbol, Ord raw_symbol, PrintLaTeX raw_symbol)
     => StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol 

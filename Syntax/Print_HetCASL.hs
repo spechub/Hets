@@ -20,15 +20,13 @@ module Syntax.Print_HetCASL where
 
 import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.PPUtils (calc_line_length)
+import Common.PrintLaTeX
+import Common.LaTeX_utils (calc_line_length)
 import Common.GlobalAnnotations(emptyGlobalAnnos,GlobalAnnos)
-import Common.ConvertGlobalAnnos
-import Common.Result
-import Syntax.GlobalLibraryAnnotations
 
 import Syntax.AS_Library
 import Syntax.Print_AS_Library
-import Debug.Trace
+import Syntax.LaTeX_AS_Library
 
 data PrintMode = PMtext | PMlatex | PMdebugLatex
 
