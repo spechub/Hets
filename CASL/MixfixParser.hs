@@ -14,12 +14,11 @@ import GlobalAnnotations
 import Result
 import Id
 import FiniteMap
-import Graph (empty)
 import Set
 import Lexer (caslChar)
 import ParsecPrim
 import qualified Char as C
-import List(intersperse, partition)
+import List(intersperse)
 
 -- for testing
 import Token
@@ -32,7 +31,7 @@ import Anno_Parser
 
 precAnnos = [ "%prec({__+__} < {__*__})%", "%prec({__*__} < {__^__})%" ]
 assocAnnos = ["%left_assoc(__+__)%"]
-listAnnos = "%list([__], [], ::)%"
+listAnnos = "%list([__], [], __::__)%"
 -- don't put in list ids twice! (no danger!)
 
 testAnnos = addGlobalAnnos emptyGlobalAnnos 
@@ -63,24 +62,32 @@ checkAnyArg g op arg =
 
 data State = State { rule :: Id
                    , matchTerm ::Bool  -- false (literally match place) 
-		                        -- or false (treat as non-terminal)
-                   , arglist :: [State]       -- currently collected arguments 
-		                              -- in reverse order
+		                       -- or false (treat as non-terminal)
+                   , arglist :: [TERM]   -- currently collected arguments 
+		                          -- in reverse order
 		   , dotPos :: [Token]
 		   , rulePos :: Int
-		   } deriving (Eq, Ord)
+		   }
 
+instance Eq State where
+    State r1 b1 _ t1 p1 == State r2 b2 _ t2 p2 =
+	r1 == r2 && t1 == t2 && p1 == p2 && b1 == b2
 
-shortShowState:: State -> ShowS
-shortShowState s = showId $ rule s 
+instance Ord State where
+    State r1 b1 _ t1 p1 <= State r2 b2 _ t2 p2 =
+	if r1 == r2 then
+	       if t1 == t2 then
+		      if p1 == p2 then b1 <= b2
+		      else p1 <= p2
+	       else t1 <= t2
+	else r1 <= r2
 
 instance Show State where
-    showsPrec _ (State r b a d p) = showChar '{' 
+    showsPrec _ (State r b _ d p) = showChar '{' 
 				 . showSepList (showString "") showTok first
 				 . showChar '.' 
 				 . showSepList (showString "") showTok d
                                  . showParen True (showMatch b)
-                                 . showSepList (showChar ',') shortShowState a
 				 . shows p . showChar '}'
 	where first = take (length v - length d) v
 	      v = getTokenList r
@@ -173,7 +180,8 @@ collectArg :: GlobalAnnos -> Chart -> State -> [State]
 -- pre: finished rule 
 collectArg g m s@(State _ _ _ _ k) = 
     map (\ (State o _ a ts k1) ->
-	      State o True (s:a) (tail ts) k1)
+	 State o True (asListAppl g s : a) 
+	 (tail ts) k1)
     $ filter (filterByPrec g s)
     $ setToList $ lookUp m k
 
@@ -232,15 +240,24 @@ sucChart m = any (\ (State _ _ _ ts k) -> null ts && k == 0) $
 	     setToList $ lookUp m $ sizeFM m - 1
 
 
-getAppls :: Chart -> [TERM]
-getAppls m = 
-    map stateToAppl $ 
+getAppls :: GlobalAnnos -> Chart -> [TERM]
+getAppls g m = 
+    map (asListAppl g) $ 
 	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
 	     setToList $ lookUp m $ sizeFM m - 1
 
 stateToAppl :: State -> TERM
-stateToAppl (State i _ a _ _) = Application (Op_name i) 
-				  (reverse (map stateToAppl a)) []
+stateToAppl (State i _ a _ _) = asAppl i (reverse a) nullPos
+
+asListAppl :: GlobalAnnos -> State -> TERM
+asListAppl g s@(State i _ a _ _) =
+    case list_lit $ literal_annos g of
+    Nothing -> stateToAppl s 
+    Just (_, c, f) -> 
+	if i == listId then mkList (reverse a)
+	   else stateToAppl s
+        where mkList [] = asAppl c [] nullPos
+	      mkList (hd:tl) = asAppl f [hd, mkList tl] nullPos
 
 -- start testing
 
@@ -255,7 +272,7 @@ myChart g r t = mkChart (mkSet $ map (parseString parseId) r) g
 			else [c]) t)
 
 myAppls g r t = map (printText g)
-	      $ getAppls (myChart g r t)
+	      $ getAppls g (myChart g r t)
 
 testAppls = myAppls testAnnos myRules myTokens
 
