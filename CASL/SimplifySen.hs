@@ -1,14 +1,14 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Heng Jiang, Uni Bremen 2004
+Copyright   :  (c) Heng Jiang, C. Maeder, Uni Bremen 2004-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Here is the place where the class Logic is instantiated for CASL.
-   Also the instances for Syntax an Category.
+   simplification of formulas and terms for output after analysis
+
 -}
 
 module CASL.SimplifySen(simplifySen, rmTypesT) where
@@ -44,16 +44,22 @@ simplifySen minF simpF sign formula =
     True_atom x -> True_atom x
     False_atom x -> False_atom x
     f@(Predication _ _ _) -> anaFormulaCall f
-    f@(Definedness _ _ ) -> anaFormulaCall f
+    Definedness t pos -> Definedness (simplifyTermCall t) pos 
     f@(Existl_equation _ _ _) -> anaFormulaCall f
     f@(Strong_equation _ _ _) -> anaFormulaCall f
-    f@(Membership _ _ _) -> anaFormulaCall f
+    Membership t sort pos -> Membership (simplifyTermCall t) sort pos
     ExtFORMULA f -> ExtFORMULA $ simpF sign f
     f@(Sort_gen_ax _ _) -> f
     f -> error ("Error in simplifySen " ++ show f)
     where
         simplifySenCall = simplifySen minF simpF sign
+        simplifyTermCall = simplifyTerm minF simpF sign
 	anaFormulaCall = anaFormula minF simpF sign
+
+rmSort :: TERM f -> TERM f
+rmSort term = case term of
+         Sorted_term t _ _ -> t
+         _ -> term
 
 {- |
    simplifies the TERM such that there are no type-information in it.
@@ -62,92 +68,118 @@ rmTypesT :: PrettyPrint f =>
             Min f e -- for 'anaFormula' in case of 'Conditional'
 	 -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA
 	 -> Sign f e -> TERM f -> TERM f
-rmTypesT minF simpF signT termT = 
-    case termT of
-         Qual_var v _ _ -> Simple_id v
-	 Sorted_term (Application (Qual_op_name name _ _) terms pos2) _ _ ->
-	       let -- opmap = opMap signT -- =  Map Id (Set OpType)
-		   -- maybeOpset = Map.lookup name opmap
-		   terms' = map anaTermC terms
-	       in  -- case maybeOpset of
-	           -- Just otSet -> Application (Op_name name) terms' pos2
-		   -- Nothing -> error "Set of OP_NAME not found."
-                   Application (Op_name name) terms' pos2
-         Sorted_term t _ _ -> anaTermC t 
-	 Cast term sort pos -> Cast (anaTermC term) sort pos
-	 Application opSymb@(Op_name _) ts pos -> 
-             Application opSymb (map anaTermC ts) pos
-	                  -- Application opSymb (map anaTermC terms) pos
-	 Application (Qual_op_name oName _ _) ts ps -> 
-             Application (Op_name oName) (map anaTermC ts) ps
-	 Conditional term1 formula term2 pos -> 
-             Conditional (anaTermC term1) 
-               (simplifySen minF simpF signT formula) 
-               (anaTermC term2) pos
-	 t -> error ("Error in rmTypesT " ++ show t)
+rmTypesT minF simpF sign term = 
+    let simTerm = simplifyTerm minF simpF sign term
+        minTerm = rmSort simTerm
+    in case maybeResult $ oneExpTerm minF sign minTerm of
+       Just _ -> minTerm
+       _ -> simTerm
 
-   where anaTermC = anaTerm minF simpF signT
+oneExpTerm :: PrettyPrint f => Min f e -> Sign f e -> TERM f -> Result (TERM f)
+oneExpTerm minF sign term = do 
+    ts <- minExpTerm minF emptyGlobalAnnos sign term
+    is_unambiguous term ts []
+
 
 {- |
-   analyzes the TERM if it is the Minimal Expansions of a TERM
+   simplify the TERM and keep its typing information if it had one
 -}
-anaTerm :: PrettyPrint f => Min f e -> (Sign f e -> f -> f) 
+simplifyTerm :: PrettyPrint f => Min f e -> (Sign f e -> f -> f) 
         -> Sign f e -> TERM f -> TERM f
-anaTerm minF simpF signA term = 
-    let s = term_sort term
-        ps = case term of 
-		        Sorted_term _ _ p -> p
-		        Application _ _ p -> p
-                        Cast _ _ p -> p
-                        Conditional _ _ _ p -> p
-                        Simple_id tok -> filter (/=nullPos) [tokPos tok]
-                        Qual_var _ _ p -> p
-                        _ -> error ("Error in anaTerm " ++ show term)
-        rtc = rmTypesT minF simpF signA term
-    in case maybeResult $ minExpTerm minF emptyGlobalAnnos signA rtc of
-         Just _  -> rtc
-	 Nothing -> case rtc of
-                    Simple_id v -> Qual_var v s ps
-                    _ -> Sorted_term rtc s ps
-
-{- |
-    simplifies the FORMULA such that there are no type-information in it.
--}
-rmTypesF :: PrettyPrint f => Min f e 
-	 -> (Sign f e ->f -> f) -- ^ simplifySen for ExtFORMULA 
-	 -> Sign f e -> FORMULA f -> FORMULA f
-rmTypesF minF simpF signF form = 
-    case form of
-         Predication pS@(Pred_name _) tl pos -> 
-             Predication pS (map anaTermCall tl) pos 
-	 Predication (Qual_pred_name pName _ _) tl pos -> 
-             Predication (Pred_name pName) (map anaTermCall tl) pos 
-	 Definedness t pos -> Definedness (anaTermCall t) pos                
-	 Existl_equation t1 t2 pos -> 
-             Existl_equation (anaTermCall t1) (anaTermCall t2) pos  	
-	 Strong_equation t1 t2 pos -> 
-             Strong_equation (anaTermCall t1) (anaTermCall t2) pos  
-	 Membership t sort pos -> Membership (anaTermCall t) sort pos
-	 f -> error ("Error in rmTypesF " ++  show f) 
-      where anaTermCall = anaTerm minF simpF signF
+simplifyTerm minF simpF sign term = 
+    let simplifyTermC = simplifyTerm minF simpF sign
+        minT = maybeResult . oneExpTerm minF sign
+    in case term of
+       Qual_var v sort pos -> 
+           let minTerm = Application (Op_name $ simpleIdToId v) [] []
+               simT = Sorted_term minTerm sort pos
+           in case minT minTerm of
+              Just _ -> minTerm
+              Nothing -> case minT simT of
+                  Just _ -> simT
+                  _ -> term
+       Sorted_term t sort pos ->     
+           let simT = simplifyTermC t
+               minTerm = rmSort simT
+           in case minT minTerm of
+              Just _ -> minTerm
+              _ -> case minT simT of 
+                   Just _ -> simT
+                   Nothing -> Sorted_term minTerm sort pos
+       Conditional term1 formula term2 pos -> 
+           let t1 = simplifyTermC term1
+               t2 = simplifyTermC term2
+               f = simplifySen minF simpF sign formula
+               minCond = Conditional (rmSort t1) f (rmSort t2) pos
+           in case minT minCond of
+              Just _ -> minCond
+              Nothing -> Conditional t1 f t2 pos
+       Cast t sort pos -> 
+           let simT = simplifyTermC t 
+               minCast = Cast (rmSort simT) sort pos
+           in case minT minCast of
+              Just _ -> minCast
+              _ -> Cast simT sort pos
+       Application opSymb@(Op_name _) ts pos -> 
+           let args = map simplifyTermC ts
+               minOp = Application opSymb (map rmSort args) pos
+           in case minT minOp of 
+              Just _ -> minOp
+              Nothing -> Application opSymb args pos
+       Application q@(Qual_op_name ide ty ps) tl pos -> 
+           let args = zipWith (\ t s -> simplifyTermC $ Sorted_term t s ps)
+                      tl $ args_OP_TYPE ty
+               minArgs = map rmSort args
+               res = res_OP_TYPE ty
+               opSymb = Op_name ide
+               unqualOp = Sorted_term (Application opSymb args pos) res ps
+               minOp = Sorted_term (Application opSymb minArgs pos) res ps
+           in case minT minOp of
+              Just _ -> minOp
+              Nothing -> case minT unqualOp of
+                  Just _ -> unqualOp
+                  Nothing -> Application q minArgs pos
+       _ -> term
 
 {- |
     analyzes the Formula if it is the Minimal Expansions of a FORMULA.
 -}
 anaFormula :: PrettyPrint f => Min f e -> (Sign f e -> f -> f) 
            -> Sign f e -> FORMULA f -> FORMULA f
-anaFormula minF simpF sign' form1 = 
-    let rmf = rmTypesF minF simpF sign' form1 
-	atc = anaTerm minF simpF sign'
-    in  case maybeResult $ minExpFORMULA minF emptyGlobalAnnos sign' rmf of
-             Just _ -> rmf
-	     Nothing -> case form1 of
-			Predication predSymb tl pos -> 
-                            Predication predSymb (map atc tl) pos  
-			Definedness t pos -> Definedness (atc t) pos 
-			Existl_equation t1 t2 pos -> 
-                            Existl_equation (atc t1) (atc t2) pos  	
-			Strong_equation t1 t2 pos -> 
-                            Strong_equation (atc t1) (atc t2) pos  
-			Membership t sort pos -> Membership (atc t) sort pos
-			f -> error ("Error in anaFormula " ++ show f)
+anaFormula minF simpF sign form1 = 
+    let minForm = maybeResult . minExpFORMULA minF emptyGlobalAnnos sign      
+	simplifyTermCall = simplifyTerm minF simpF sign
+        simpForm = case form1 of
+	    Existl_equation t1 t2 pos -> Existl_equation 
+              (simplifyTermCall t1) (simplifyTermCall t2) pos  	
+	    Strong_equation t1 t2 pos -> Strong_equation 
+              (simplifyTermCall t1) (simplifyTermCall t2) pos  
+	    f -> error ("Error in anaFormula1 " ++ show f)
+        rmForm = case simpForm of 
+	    Existl_equation t1 t2 pos -> Existl_equation 
+              (rmSort t1) (rmSort t2) pos  	
+	    Strong_equation t1 t2 pos -> Strong_equation 
+              (rmSort t1) (rmSort t2) pos  
+	    f -> error ("Error in anaFormula2 " ++ show f)
+     in case form1 of 
+        Predication predSymb@(Pred_name _) tl pos -> 
+           let args = map simplifyTermCall tl
+               minPred = Predication predSymb (map rmSort args) pos
+           in case minForm minPred of 
+              Just _ -> minPred
+              Nothing -> Predication predSymb args pos
+        Predication p@(Qual_pred_name pName (Pred_type sl ps) _) tl pos -> 
+           let args = zipWith (\ t s -> simplifyTermCall $ Sorted_term t s ps)
+                      tl sl 
+               minArgs = map rmSort args
+               predSymb = Pred_name pName
+               unqualPred = Predication predSymb args pos
+               minPred = Predication predSymb minArgs pos
+           in case minForm minPred of
+              Just _ -> minPred
+              Nothing -> case minForm unqualPred of
+                  Just _ -> unqualPred
+                  Nothing -> Predication p minArgs pos
+        _ -> case minForm rmForm of 
+             Just _ -> rmForm
+             _ -> simpForm
