@@ -76,7 +76,7 @@ qualVarName o = do { v <- asKey varS
 
 qualOpName o = do { v <- asKey opS
 		  ; i <- parseId
-		  ; c <- colonT 
+		  ; c <- makeToken (string colonS) 
 		  ; do { q <- quMarkT
 		       ; s <- sortId
 		       ; p <- cParenT
@@ -217,7 +217,7 @@ primFormula = do { c <- asKey trueS
 		 ; return (Definedness t [tokPos c])
 		 }
               <|>
-	      do { c <- asKey notS <|> asKey negS
+	      do { c <- try(asKey notS <|> asKey negS) <?> "\"not\""
 		 ; f <- primFormula 
 		 ; return (Negation f [tokPos c])
 		 }
