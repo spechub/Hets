@@ -407,18 +407,23 @@ typeScheme = do f <- forallT
 
 tToken :: AParser Token
 tToken = pToken(scanFloat <|> scanString 
-		       <|> scanQuotedChar <|> scanDotWords <|> scanWords 
+		       <|> scanQuotedChar <|> scanDotWords 
+		       <|> reserved [ifS] scanWords 
 		       <|> scanSigns <|> placeS <?> "id/literal" )
 
 termToken :: AParser Term
 termToken = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken)
 
--- flag if within brackets: True allows "in"-Terms
-primTerm :: TypeMode -> AParser Term
-primTerm b = ifTerm b <|> termToken
+-- flag WithIn allows "in"-Terms
+primTerm :: AParser Term
+primTerm = termToken
 	   <|> mkBraces term (BracketTerm Braces)
-	   <|> mkBrackets term  (BracketTerm Squares)
+	   <|> mkBrackets term (BracketTerm Squares)
  	   <|> parenTerm
+
+-- flag if within brackets: True allows "in"-Terms
+baseTerm :: TypeMode -> AParser Term
+baseTerm b = ifTerm b
            <|> forallTerm b 
 	   <|> exTerm b 
 	   <|> lambdaTerm b 
@@ -502,16 +507,16 @@ typedTerm f b =
        t <- parseType
        return (TypedTerm f q t [tokPos p])
 
-typedMixTerm :: TypeMode -> AParser Term
-typedMixTerm b = 
-    do ts <- many1 $ primTerm b
-       let t = if length ts == 1 then head ts else MixfixTerm ts
-	   in typedTerm t b <|> return t
+typedPrimTerm :: TypeMode -> AParser Term
+typedPrimTerm b = 
+    do t <- primTerm
+       typedTerm t b <|> return t
+      <|> baseTerm b
 
 -- typedMixTerm may be separated by "=" or other non-type tokens
 mixTerm :: TypeMode -> AParser Term
 mixTerm b = 
-    do ts <- many1 $ typedMixTerm b
+    do ts <- many1 $ typedPrimTerm b
        return $ if length ts == 1 then head ts else MixfixTerm ts
 
 term :: AParser Term
