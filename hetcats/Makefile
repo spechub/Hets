@@ -33,7 +33,7 @@ HC_PACKAGE = -package util -package data
 # HC_PROF    = -prof -auto-all -Wall
 
 HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE) 
-HC_OPTS     = $(HCI_OPTS) $(HC_PROF) 
+HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
 ifneq ($(MAKECMDGOALS),clean)
@@ -121,7 +121,13 @@ hacapa: ../HasCASL/Main.hs $(drifted_files)
 	\cp -p $@ ../HasCASL/$@ 
 
 ####################################################################
+## Preparing the version of HetCATS
+Version.hs: Version.in version_nr
+	$(PERL) ../utils/build_version.pl version_nr < Version.in > $@
+
+####################################################################
 ## rules for DrIFT
+
 %.hs: %.der.hs
 	$(DRIFT) $< > $@
 
@@ -136,30 +142,25 @@ hacapa: ../HasCASL/Main.hs $(drifted_files)
 %.o %.hi: %.lhs
 	$(HC) -c $< $(HC_OPTS)
 
-# ## compiling rules for dependencies
-#%.d : %.hs
-#	$(HC) -M $< $(HC_OPTS) 
-#	[ -s $@ ] || rm -f $@
-
-#%.d : %.lhs
-#	$(HC) -M $< $(HC_OPTS) 
-#	[ -s $@ ] || rm -f $@
-
+## compiling rules for dependencies
 %.d : %.hs
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
 
 %.d : %.lhs
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
 
-
 ####################################################################
 ## Setting a global search path (for dependency files)
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),real_clean)
+ifneq ($(MAKECMDGOALS),d_clean)
+ifneq ($(MAKECMDGOALS),real_clean)
 ## include every .d file in INCLUDE_PATH
 -include $(objects:.o=.d)
 
-sources_hetcats.mk: hetcats-make
+sources_hetcats.mk: hetcats-make Version.hs
+endif
+endif
 endif
 endif
