@@ -58,12 +58,13 @@ data AssocEither = ALeft | ARight deriving (Show,Eq)
 
 -- | semantic (line) annotations without further information. 
 -- Use the same drop-3-trick as for the 'Display_format'.
-data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono
+data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono | SA_implied
 		     deriving (Show, Eq)
 
 -- | a lookup table for the textual representation of semantic annos
 semantic_anno_table :: [(Semantic_anno, String)]
-semantic_anno_table = toTable [SA_cons, SA_def, SA_implies, SA_mono]
+semantic_anno_table = toTable [SA_cons, SA_def, 
+			       SA_implies, SA_mono, SA_implied]
 
 
 -- | all possible annotations (without comment-outs)
@@ -124,6 +125,13 @@ isLabel :: Annotation -> Bool
 isLabel a = case a of
 	    Label _ _ -> True
 	    _         -> False
+isImplied :: Annotation -> Bool
+isImplied a =
+    case  a of
+    Semantic_anno SA_implied _  -> True
+    Semantic_anno _ _  -> False
+    _ -> False
+
 -- | 
 -- 'isSemanticAnno' tests if the given 'Annotation' is a semantic one
 isSemanticAnno :: Annotation -> Bool
