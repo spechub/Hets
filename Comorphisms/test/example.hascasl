@@ -21,6 +21,8 @@ spec Example =
     . forall b4:B . true
     . exists b4:B . true
     . exists! b4:B . true
+    . (true => false) /\ (false => true)
+    . not (h b1 \/ g(a1,b2))
     . a a1 = b a2 /\ b a2 = b a3 /\ a a1 = b a3
     . a a1 = b a2 \/ b a2 = b a3
     . a a1 = b a2 => b a2 = b a3
