@@ -269,10 +269,6 @@ ana_SORT_ITEM ga asi =
 	   mapM_ ( \ i -> mapM_ (addSubsort i) il) il
 	   return asi
 
-toOpType :: OP_TYPE -> OpType
-toOpType (Total_op_type args r _) = OpType Total args r
-toOpType (Partial_op_type args r _) = OpType Partial args r
-
 ana_OP_ITEM :: GlobalAnnos -> Annoted OP_ITEM -> State Sign (Annoted OP_ITEM)
 ana_OP_ITEM ga aoi = 
     case item aoi of 
@@ -331,9 +327,6 @@ ana_OP_ATTR ga oa =
 	   addDiags ds
 	   return $ fmap Unit_op_attr mt
     _ -> return $ Just oa
-
-toPredType :: PRED_TYPE -> PredType
-toPredType (Pred_type args _) = PredType args
 
 ana_PRED_ITEM :: GlobalAnnos -> Annoted PRED_ITEM 
 	      -> State Sign (Annoted PRED_ITEM)
@@ -487,8 +480,8 @@ basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
 
 basicAnalysis (bs, inSig, ga) = do 
     let (newBs, accSig) = runState (ana_BASIC_SPEC ga bs) inSig
-	ds = envDiags accSig
-	sents = sentences accSig
+	ds = reverse $ envDiags accSig
+	sents = reverse $ sentences accSig
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
 	diff = diffSig cleanSig inSig
 	remPartOpsS s = s { opMap = remPartOpsM $ opMap s }
