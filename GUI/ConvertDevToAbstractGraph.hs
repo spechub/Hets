@@ -126,7 +126,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
-  ioRefProofStatus <- newIORef (globContext,
+  ioRefProofStatus <- newIORef (globContext, libname2dg convMaps,
 		                [([]::[DGRule], []::[DGChange])],
 				dGraph)
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
@@ -244,7 +244,7 @@ proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo) proofFun
   case res of
     Nothing -> do sequence $ map (putStrLn . show) diags
                   return ()
-    Just newProofStatus@(_,history,_) -> do
+    Just newProofStatus@(_,_,history,_) -> do
       writeIORef ioRefProofStatus newProofStatus
       descr <- readIORef event
       convMaps <- readIORef convRef

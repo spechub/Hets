@@ -58,7 +58,7 @@ import Syntax.Print_AS_Library
    With the list of intermediate proof states, one can easily implement
     an undo operation
 -}
-type ProofStatus = (GlobalContext,[([DGRule],[DGChange])],DGraph)
+type ProofStatus = (GlobalContext,LibEnv,[([DGRule],[DGChange])],DGraph)
 
 data DGRule = 
    TheoremHideShift
@@ -122,8 +122,8 @@ applyRule = error "Proofs.hs:applyRule"
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
 globDecomp :: ProofStatus -> ProofStatus
-globDecomp proofStatus@(globalContext,history,dgraph) =
-  (globalContext, ((newHistoryElem):history), newDgraph)
+globDecomp proofStatus@(globalContext,libEnv,history,dgraph) =
+  (globalContext, libEnv, ((newHistoryElem):history), newDgraph)
 
   where
     globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
@@ -200,26 +200,26 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
 
 -- applies global subsumption to all unproven global theorem edges if possible
 globSubsume ::  ProofStatus -> ProofStatus
-globSubsume proofStatus@(globalContext,history,dGraph) =
-  (globalContext, nextHistoryElem:history, nextDGraph)
+globSubsume proofStatus@(globalContext,libEnv,history,dGraph) =
+  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
 
   where
     globalThmEdges = filter isUnprovenGlobalThm (labEdges dGraph)
-    result = globSubsumeAux dGraph ([],[]) globalThmEdges
+    result = globSubsumeAux libEnv dGraph ([],[]) globalThmEdges
     nextDGraph = fst result
     nextHistoryElem = snd result
 
 {- auxiliary function for globSubsume (above)
    the actual implementation -}
-globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
-	            -> (DGraph,([DGRule],[DGChange]))
-globSubsumeAux dgraph historyElement [] = (dgraph, historyElement)
-globSubsumeAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
-  if not (null proofBasis) || isIdentityEdge ledge dgraph
+globSubsumeAux :: LibEnv ->  DGraph -> ([DGRule],[DGChange]) ->
+		  [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
+globSubsumeAux _ dgraph historyElement [] = (dgraph, historyElement)
+globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+  if not (null proofBasis) || isIdentityEdge ledge libEnv dgraph
    then
-     globSubsumeAux (insEdge newEdge (delLEdge ledge dgraph)) (newRules,newChanges) list
+     globSubsumeAux libEnv (insEdge newEdge (delLEdge ledge dgraph)) (newRules,newChanges) list
    else 
-     globSubsumeAux dgraph (rules,changes) list
+     globSubsumeAux libEnv dgraph (rules,changes) list
 
   where
     morphism = dgl_morphism edgeLab
@@ -237,9 +237,12 @@ globSubsumeAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newRules = (GlobSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
-isIdentityEdge :: LEdge DGLinkLab -> DGraph -> Bool
-isIdentityEdge (src,tgt,edgeLab) dgraph =
-  if isDGRef nodeLab then undefined --isIdentityEdge ...
+isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
+isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
+  if isDGRef nodeLab then 
+    case Map.lookup (dgn_libname nodeLab) libEnv of
+      Just globContext@(_,_,refDgraph) -> isIdentityEdge (dgn_node nodeLab,tgt,edgeLab) libEnv refDgraph
+      Nothing -> False
    else if src == tgt && (dgl_morphism edgeLab) == (ide Grothendieck (dgn_sign nodeLab)) then True else False
 
   where nodeLab = lab' (context src dgraph)
@@ -257,32 +260,31 @@ getLabelOfEdge (_,_,label) = label
    local decomposition II -}
 -- applies this merge of rules to all unproven localThm edges if possible
 locDecomp ::  ProofStatus -> ProofStatus
-locDecomp proofStatus@(globalContext,history,dGraph) =
-  (globalContext, nextHistoryElem:history, nextDGraph)
+locDecomp proofStatus@(globalContext,libEnv,history,dGraph) =
+  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
 
   where
     localThmEdges = filter isUnprovenLocalThm (labEdges dGraph)
-    result = locDecompAux dGraph ([],[]) localThmEdges
+    result = locDecompAux libEnv dGraph ([],[]) localThmEdges
     nextDGraph = fst result
     nextHistoryElem = snd result
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
-locDecompAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
+locDecompAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
-locDecompAux dgraph historyElement [] = (dgraph, historyElement)
-locDecompAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+locDecompAux libEnv dgraph historyElement [] = (dgraph, historyElement)
+locDecompAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   if null proofBasis
      then
-       globSubsumeAux dgraph (rules,changes) list     
+       locDecompAux libEnv dgraph (rules,changes) list
      else
-       globSubsumeAux newGraph (newRules,newChanges) list
-
+       locDecompAux libEnv newGraph (newRules,newChanges) list
 
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
-    sens = dgn_sens (getNodeLab src dgraph)
+    sens = getSentenceList libEnv dgraph src
     pathsWithoutEdgeItself = [path|path <- allPaths, notElem ledge path]
     filteredPaths = filterByTranslation sens morphism pathsWithoutEdgeItself
     proofBasis = selectProofBasis edgeLab filteredPaths
@@ -301,20 +303,23 @@ locDecompAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
 
-{- returns the DGNodeLab of the given node -}
-getNodeLab :: Node -> DGraph -> DGNodeLab
-getNodeLab node dgraph =
-  case nodeLab of
--- wie bekomme ich mit dem libname den zugehoerigen dgraph??
-  --  (DGRef _ _ _) -> getNodeLab (dgn_node nodeLab) (dgn_libname nodeLab)
-    (DGNode _ _ _ _) -> nodeLab
+{- returns the sentence list of the given node -}
+getSentenceList :: LibEnv -> DGraph -> Node -> Maybe G_l_sentence_list
+getSentenceList libEnv dgraph node =
+  if isDGRef nodeLab
+    then case Map.lookup (dgn_libname nodeLab) libEnv of
+      Just (_,_,refDgraph) -> getSentenceList libEnv refDgraph (dgn_node nodeLab)
+      Nothing -> Nothing
+    else Just (dgn_sens nodeLab)
 
     where nodeLab = lab' (context node dgraph)
 
 {- removes all paths from the given list of paths whose morphism does not translate the given sentence list to the same resulting sentence list as the given morphism-}
-filterByTranslation :: G_l_sentence_list -> GMorphism -> [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
-filterByTranslation sens morphism paths =
-  [path| path <- paths, isSameTranslation sens morphism path]
+filterByTranslation :: Maybe G_l_sentence_list -> GMorphism -> [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
+filterByTranslation maybeSens morphism paths =
+  case maybeSens of
+    Just sens -> [path| path <- paths, isSameTranslation sens morphism path]
+    Nothing -> []
 --     isSameTranslation sens morphism (calculateMorphismOfPath path)]
 
 {- checks if the given morphism and the morphism of the given path translate the given sentence list to the same resulting sentence list -}
@@ -718,7 +723,7 @@ selectProver (p:_) = return p -- ??? to simplistic
 -- applies basic inference to a given node
 basicInferenceNode ::  LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
-basicInferenceNode lg (ln,node) proofStatus@(globalContext,history,dGraph) =
+basicInferenceNode lg (ln,node) proofStatus@(globalContext,libEnv,history,dGraph) =
   ioresToIO (do 
     (G_sign lid1 sign,G_l_sentence_list lid2 axs) <- 
          resToIORes $ computeTheory dGraph node
@@ -762,5 +767,5 @@ basicInferenceNode lg (ln,node) proofStatus@(globalContext,history,dGraph) =
     ps <- ioToIORes $ prove p' thName (sign'',sens''++axs'') goals'' 
     let nextDGraph = dGraph -- ??? to be implemented
         nextHistoryElem = undefined -- ??? to be implemented
-    return (globalContext, {- nextHistoryElem: -} history, nextDGraph)
+    return (globalContext, libEnv, {- nextHistoryElem: -} history, nextDGraph)
    )
