@@ -599,7 +599,7 @@ instance ATermConvertibleSML (BASIC_ITEMS () () ()) where
 		    (posFromRegion reg_i att,getATermByIndex1 item_i att)
 		_  -> ([],att)
 
-instance ATermConvertibleSML (SIG_ITEMS () () ()) where
+instance ATermConvertibleSML (SIG_ITEMS () ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"SIG_ITEMS\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"SIG_ITEMS\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SIG_ITEMS\" not implemented"
