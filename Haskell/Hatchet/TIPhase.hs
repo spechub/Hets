@@ -104,7 +104,7 @@ parseFile srcFile =
 -- | call the haskell parser and check for errors
 parseHsSource :: String -> HsModule
 parseHsSource s = case parse s (SrcLoc 1 1) 0 [] of
-                      Ok state e -> e
+                      Ok _ e -> e
                       Failed err -> error err
 
 -- | prelude module

@@ -15,82 +15,18 @@ the TIModule analysis without timings and dumps
 module Haskell.Hatchet.TIHetsModule (tiModule) where
 
 import Haskell.Hatchet.AnnotatedHsSyn
-                                (ASrcLoc (..),
-                                 bogusASrcLoc,
-                                 AHsDecl,
-                                 AHsName (..),
-                                 AModule (..),
+                                (AHsDecl,
                                  AHsModule)
-
-
-import qualified Haskell.Hatchet.PPrint as PPrint         (render)
-
-import Haskell.Hatchet.Desugar  (desugarTidyModule)
-
-import Haskell.Hatchet.TIMain   (getFunDeclsBg, TypeEnv,
-                                 makeProgram,
-                                 tiProgram)
-
-import Haskell.Hatchet.Rename   (renameTidyModule,
-                                 IdentTable,
-                                 printIdentTable)
-
+import Haskell.Hatchet.TIMain   (TypeEnv,
+                                 makeProgram)
 import Haskell.Hatchet.KindInference
-                                (KindEnv,
-                                 kiModule)
-
-import Haskell.Hatchet.Representation
-                                (Kind,
-                                 Scheme,
-                                 Assump (..))
-
-
-import Haskell.Hatchet.DataConsAssump    (dataConsEnv)
-
-import Haskell.Hatchet.Utils    (maybeGetDeclName,
-                                 rJustify,
-                                 lJustify,
-                                 Binding (..),
-                                 getAModuleName,
-                                 getDeclName,
-                                 fromAHsName,
-                                 doDump)
-
-import Haskell.Hatchet.FiniteMaps (toListFM,
-                                 zeroFM,
-                                 addToFM)
-
+                                (KindEnv)
 import Haskell.Hatchet.TidyModule (tidyModule, 
                                  TidyModule (..),
                                  tidyModuleToAHsModule)
-
-
-import Haskell.Hatchet.TypeSigs (collectSigs,
-                                 listSigsToSigEnv)
-
-
-import Haskell.Hatchet.Class    ( --addInstancesToHierarchy,
-                                 printClassHierarchy,
-                                 -- instanceToTopDecls,
-                                 addClassToHierarchy,
-                                 ClassHierarchy,
-                                 classMethodAssumps)
-
-import Maybe    (mapMaybe)
-
-import Haskell.Hatchet.Env      (listToEnv,
-                                 getNamesFromEnv,
-                                 Env,
-                                 envToList,
-                                 pprintEnv,
-                                 joinEnv,
-                                 showEnv)
-
-import Haskell.Hatchet.Type     (assumpId)
-
+import Haskell.Hatchet.TypeSigs (listSigsToSigEnv)
+import Haskell.Hatchet.Class    (ClassHierarchy)
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo(..))
-
-import Haskell.Hatchet.DependAnalysis (getBindGroups)
 
 import Haskell.Hatchet.TIPhase
 

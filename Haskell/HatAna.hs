@@ -23,25 +23,15 @@ import Haskell.HaskellUtils              (extractSentences)
 import Haskell.ExtHaskellCvrt            
 
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
-                                          joinModuleInfo,
                                           getTyconsMembers,
                                           getInfixDecls)
 import Haskell.Hatchet.TIHetsModule      (tiModule)
 import Haskell.Hatchet.AnnotatedHsSyn    
-import Haskell.Hatchet.Env               (listToEnv,
-                                          emptyEnv)
-import Haskell.Hatchet.HaskellPrelude    (preludeDefs,
-                                          tyconsMembersHaskellPrelude,
-                                          preludeDataCons,
-                                          preludeClasses,
-                                          preludeTyconAndClassKinds,
-                                          preludeInfixDecls,
-                                          preludeSynonyms)
+import Haskell.Hatchet.Env               (emptyEnv)
 import Haskell.Hatchet.SynConvert        
 import Haskell.Hatchet.HsParsePostProcess
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl)
 import Haskell.Hatchet.HsSyn             (HsDecl)
-import Haskell.Hatchet.Type              (assumpToPair)
 
 emptySign :: ModuleInfo
 emptySign = ModuleInfo { varAssumps = emptyEnv,
