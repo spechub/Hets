@@ -190,9 +190,9 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
 		    setFileMode latexFile fileMode
 		    appendFile latexFile ("\\input{"++ pptexFile ++"}\n" ++ "\\end{document}\n")
                     
-                    system ("/usr/local/share/teTeX/2.0/bin/ix86-linux2/pdflatex " ++
+                    system ("cd /home/www/cofi/hets-tmp; /usr/local/share/teTeX/2.0/bin/ix86-linux2/pdflatex " ++
 			   latexFile ++ " > " ++ tmpFile)
-                    system "mv result* /home/www/cofi/hets-tmp/"
+                    -- system "mv result* /home/www/cofi/hets-tmp/"
 		    setFileMode pdfFile fileMode
 		    return()
 			       
