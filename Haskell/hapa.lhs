@@ -18,18 +18,10 @@ import System.Environment
 
 main :: IO ()
 main = do
-    l <- getArgs
-    if length l == 1 
-       then do
-	    let f = head l
-	    s <- readFile f
-	    let r = parseModuleWithMode (ParseMode f) s
+	    s <- getContents
+	    let r = parseModuleWithMode (ParseMode "") s
 	    putStrLn $ case r of
 			 ParseOk x -> prettyPrint x
 			 ParseFailed loc msg ->
 			     show loc ++ ": " ++ msg
-	else do 
-	     p <- getProgName
-             putStrLn("Usage: "++p++" <file>")
-
 \end{code}
