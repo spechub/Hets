@@ -1,4 +1,4 @@
-
+{-# OPTIONS -fno-warn-missing-methods #-}
 {- HetCATS/CASL/Logic_CASL.hs
    $Id$
    Authors: Klaus Lüttich
@@ -21,8 +21,6 @@ import Parse_AS_Basic
 import Sign
 import Logic
 
-import Result
-import Dynamic
 import qualified Sublogics
 
 -- a dummy datatype for the LogicGraph and for identifying the right
