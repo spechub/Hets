@@ -26,17 +26,14 @@ import qualified AS_Library
 import AS_Annotation
 import Logic
 import Grothendieck
-import Dynamic
 
-coerce1 :: (Typeable a, Typeable b) => a -> Maybe b
-coerce1 = fromDynamic . toDyn
 
 top_logics :: Maybe G_sublogics -> Maybe G_sublogics -> Maybe G_sublogics
 top_logics Nothing _ = Nothing
 top_logics _ Nothing = Nothing
 top_logics (Just (G_sublogics a (al::sublogics))) (Just (G_sublogics b bl)) =
   if ((language_name a)==(language_name b)) then
-    case coerce1 bl::Maybe sublogics of
+    case coerce a b bl::Maybe sublogics of
       Just bl1 -> Just (G_sublogics a (meet al bl1))
       Nothing -> Nothing
   else
