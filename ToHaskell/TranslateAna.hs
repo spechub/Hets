@@ -43,7 +43,7 @@ import Common.AS_Annotation
 
 import HasCASL.As
 import HasCASL.Le
--- import HasCASL.OpDecl
+import HasCASL.Morphism
 import HasCASL.ProgEq
 
 import Haskell.Hatchet.HsSyn
@@ -97,7 +97,7 @@ translateTypeInfo (tid,info) =
        DatatypeDefn _ args alts -> 
 	   [HsDataDecl nullLoc [] hsname
 		       (map getArg args) -- type arguments
-		       (map translateAltDefn alts) derives]
+		       (map (translateAltDefn Map.empty) alts) derives]
        _ -> [] -- ignore others
 
 
@@ -123,11 +123,11 @@ kindToTypeArgs i k = case k of
 
 -- | Translation of an alternative constructor for a datatype definition.
 --   Uses 'translateRecord'.
-translateAltDefn :: AltDefn -> HsConDecl
-translateAltDefn (Construct uid ts _ _) = 
+translateAltDefn :: IdMap -> AltDefn -> HsConDecl
+translateAltDefn tm (Construct uid ts _ _) = 
     HsConDecl nullLoc
 	      (HsIdent (translateIdWithType UpperId uid))
-	      (map getType ts)
+	      (map getType $ map (mapType tm) ts)
 
 getType :: Type -> HsBangType
 getType t = HsBangedTy (translateType t)
@@ -327,15 +327,15 @@ translateProgEq as tm (ProgEq pat t _) =
 	  _ -> error ("translateLetProgEq: non-unique id: " ++ show pat)
     Nothing -> error ("translateLetProgEq: no toplevel id: " ++ show pat)
 
-translateDt :: DatatypeDefn -> Named HsDecl
-translateDt (DatatypeConstr i _ _ args alts) = 
-   	 let hsname = HsIdent $ translateIdWithType UpperId i in
-         NamedSen ("ga_" ++ showId i "") $
+translateDt :: IdMap -> DatatypeDefn -> Named HsDecl
+translateDt tm (DatatypeConstr _ j _ args alts) = 
+   	 let hsname = HsIdent $ translateIdWithType UpperId j in
+         NamedSen ("ga_" ++ showId j "") $
          HsDataDecl nullLoc
 	               [] -- empty HsContext
 	               hsname
 		       (map getArg args) -- type arguments
-		       (map translateAltDefn alts) -- [HsConDecl] 
+		       (map (translateAltDefn tm) alts) -- [HsConDecl] 
 		       derives
 
 translateSentence ::  Env -> Named Sentence -> [Named HsDecl] 
@@ -343,7 +343,7 @@ translateSentence env sen =
     let as = assumps env
 	tm = typeMap env
     in case sentence sen of
-    DatatypeSen dt -> map translateDt dt
+    DatatypeSen dt -> map (translateDt $ getDTMap dt) dt
     ProgEqSen _ _ pe -> [NamedSen (senName sen) 
 			$ translateProgEq as tm pe]
     _ -> []

@@ -15,10 +15,11 @@ module HasCASL.Morphism where
 import HasCASL.Le
 import HasCASL.As
 import HasCASL.AsToLe
-import HasCASL.PrintLe
 import HasCASL.Unify
 import HasCASL.Symbol
 import HasCASL.MapTerm
+import HasCASL.TypeDecl
+import HasCASL.DataAna
 import Common.Id
 import Common.Keywords
 import Common.Result
@@ -38,19 +39,33 @@ data Morphism = Morphism { msource :: Env
                          deriving (Eq, Show)
 
 instance PrettyPrint Morphism where
-  printText0 ga m = braces (printText0 ga (msource m)) 
-		    $$ text mapsTo
+  printText0 ga m = 
+      let tm = typeIdMap m 
+	  fm = funMap m
+	  ds = Map.foldWithKey ( \ (i, TySc s) (j, TySc t) l -> 
+		(printText0 ga i <+> colon <+> printText0 ga s
+		<+> text mapsTo	<+>	 
+		printText0 ga j <+> colon <+> printText0 ga t) : l)
+	       [] fm 
+      in (if Map.isEmpty tm then empty
+	 else text (typeS ++ sS) <+> printText0 ga tm)
+         $$ (if Map.isEmpty fm then empty 
+	     else text (opS ++ sS) <+> fsep (punctuate comma ds))
+	 $$ nest 1 colon <+> braces (printText0 ga (msource m)) 
+		    $$ nest 1 (text mapsTo)
 		    <+> braces (printText0 ga (mtarget m))
+      
 
 mapType :: IdMap -> Type -> Type
 -- include classIdMap later
-mapType m = rename ( \ i k n ->
+mapType m ty = if Map.isEmpty m then ty else 
+	      rename ( \ i k n ->
 	       let t = TypeName i k n in
 	       if n == 0 then 
 		  case Map.lookup i m of
 		  Just j -> TypeName j k 0
 		  _ -> t
-	       else t)
+	       else t) ty
 
 mapTypeScheme :: IdMap -> TypeScheme -> TypeScheme
 -- rename clashing type arguments later
@@ -59,31 +74,50 @@ mapTypeScheme = mapTypeOfScheme . mapType
 mapTySc :: IdMap -> TySc -> TySc
 mapTySc m (TySc s1) = TySc $ mapTypeScheme m s1
 
-mapSen :: Morphism -> Term -> Result Term
+mapSen :: Morphism -> Term -> Term
 mapSen m = let tm = typeIdMap m in 
-       return . mapTerm (mapFunSym tm (funMap m), mapType tm)
+       mapTerm (mapFunSym tm (funMap m), mapType tm)
 
--- mapAlt :: Morphism -> AltDefn -> AltDefn
--- mapAlt m c@(Construct _i _ts _p _sels) = c -- missing
---      (Map.findWithDefault t t $ typeIdMap m) k args $ map (mapAlt m) alts
+mapDatatypeDefn :: Morphism -> IdMap -> DatatypeDefn -> DatatypeDefn
+mapDatatypeDefn m tm (DatatypeConstr i j k args alts) = 
+    let tim = typeIdMap m
+	rtm = Map.difference tim tm
+	-- do not rename the types in the data type mapping
+    in DatatypeConstr i (Map.findWithDefault j j tim)
+		   k args $ map (mapAlt m tm rtm args $ TypeName j
+				 (typeArgsListToKind args star) 0) alts
+
+mapAlt :: Morphism -> IdMap -> IdMap -> [TypeArg] -> Type -> AltDefn -> AltDefn
+mapAlt m tm rtm args dt (Construct i ts p sels) = 
+    let sc = TypeScheme args 
+	     ([] :=> getConstrType dt p (map (mapType tm) ts)) []
+	(j, _) = mapFunSym (typeIdMap m) (funMap m) (i, sc)
+    in Construct j (map (mapType rtm) ts) p sels
+       -- not change (unused) selectors and (alas) partiality 
+
+getDTMap :: [DatatypeDefn] -> IdMap 
+getDTMap = foldr ( \ (DatatypeConstr i j _ _ _) m -> 
+		   if i == j then m else
+		   Map.insert i j m) Map.empty 
 
 mapSentence :: Morphism -> Sentence -> Result Sentence
-mapSentence m s = case s of 
-   Formula t -> fmap Formula $ mapSen m t 
-   DatatypeSen td -> return $ DatatypeSen td
+mapSentence m s = return $ case s of 
+   Formula t -> Formula $ mapSen m t 
+   DatatypeSen td -> DatatypeSen $ map (mapDatatypeDefn m $ getDTMap td) td
    ProgEqSen i sc pe ->
        let tm = typeIdMap m 
 	   fm = funMap m 
 	   f = mapFunSym tm fm
 	   (ni, nsc) = f (i, sc) 
-	   in return $ ProgEqSen ni sc $ mapEq (f,  mapType tm) pe
+	   in ProgEqSen ni nsc $ mapEq (f,  mapType tm) pe
 
 mapFunSym :: IdMap -> FunMap -> (Id, TypeScheme) -> (Id, TypeScheme)
-mapFunSym tm fm (i, sc) =  
-    let (i2, TySc sc2) = Map.findWithDefault 
-			 (i, TySc $ mapTypeScheme tm sc)
-			 (i, TySc sc) fm
-	in (i2, sc2)
+mapFunSym tm fm (i, sc) = 
+    let (j, TySc s) = mapFunEntry tm fm (i, TySc sc) in (j, s)
+
+mapFunEntry :: IdMap -> FunMap -> (Id, TySc) -> (Id, TySc)
+mapFunEntry tm fm p@(i, sc) = if Map.isEmpty tm && Map.isEmpty fm then p else 
+    Map.findWithDefault (i, mapTySc tm sc) (i, sc) fm
 
 mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty Map.empty
@@ -96,7 +130,7 @@ embedMorphism a b =
     , funMap = Map.foldWithKey 
                  ( \ i (OpInfos ts) m -> foldr 
                       (\ oi -> let v = (i, TySc $ opType oi) in 
-		           Map.insert v v) m ts)
+                         Map.insert v v) m ts)
                  Map.empty $ assumps a
     }
 
@@ -105,14 +139,14 @@ ideMor e = embedMorphism e e
 
 compMor :: Morphism -> Morphism -> Maybe Morphism
 compMor m1 m2 = 
-  if isSubEnv (mtarget m1) (msource m2) then Just 
+  if isSubEnv (mtarget m1) (msource m2) then 
+      let tm2 = typeIdMap m2 in Just 
       (mkMorphism (msource m1) (mtarget m2))
-      { typeIdMap = Map.map ( \ i -> Map.findWithDefault i i $ typeIdMap m2)
-			     $ typeIdMap m1 
-      , funMap = Map.foldWithKey ( \ (i1, sc1) (i2, sc2) m -> 
-		       Map.insert (i1, sc1) 
-		       (Map.findWithDefault (i2, sc2) (i2, sc2) $ 
-			funMap m2) m) Map.empty $ funMap m1
+      { typeIdMap = Map.map ( \ i -> Map.findWithDefault i i tm2)
+			     $ typeIdMap m1
+      , funMap = Map.foldWithKey ( \ p1 p2 -> 
+		       Map.insert p1
+		       $ mapFunEntry tm2 (funMap m2) p2) Map.empty $ funMap m1
       }
    else Nothing
 
@@ -197,7 +231,7 @@ morphismUnion m1 m2 =
 		     case Map.lookup isc m of
 		       Nothing -> return $ Map.insert isc jsc m
 		       Just ksc@(k, TySc sc2) -> if j == k && 
-		         isUnifiable (typeMap t) 0 sc1 sc2  
+		         asSchemes 0 (equalSubs $ typeMap t) sc1 sc2  
 		         then return m
 		            else do 
 		            Result [Diag Error 
@@ -218,16 +252,17 @@ morphismToSymbMap mor =
   let
     src = msource mor
     tar = mtarget mor
-    tm = typeMap src
-    typeSymMap = 
-      Map.foldWithKey
-         ( \ s1 s2 m -> let k = typeKind $ 
-	                        Map.findWithDefault starTypeInfo s1 tm 
-	   in Map.insert (idToTypeSymbol src s1 k) (idToTypeSymbol tar s2 k) m)
-         Map.empty $ 
-         typeIdMap mor
+    tm = typeIdMap mor
+    typeSymMap = Map.foldWithKey ( \ i ti -> 
+       let j = Map.findWithDefault i i tm
+	   k = typeKind ti
+	   in Map.insert (idToTypeSymbol src i k)
+               $ idToTypeSymbol tar j k) Map.empty $ typeMap src
    in Map.foldWithKey
-         ( \ (id1, TySc t1) (id2, TySc t2) m -> 
-             Map.insert (idToOpSymbol src id1 t1) 
-                        (idToOpSymbol tar id2 t2) m)
-         typeSymMap $ funMap mor 
+         ( \ i (OpInfos l) m ->
+	     foldr ( \ oi -> 
+	     let ty = opType oi 
+                 (j, TySc t2) = mapFunEntry tm (funMap mor) (i, TySc ty)
+             in	Map.insert (idToOpSymbol src i ty) 
+                        (idToOpSymbol tar j t2)) m l) 
+         typeSymMap $ assumps src
