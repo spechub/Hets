@@ -1,6 +1,7 @@
 free type Nat ::= 0 | suc(pre:?Nat)
 preds __<=__, __<__, __>=__, __>__ : Nat * Nat;
       odd, even : Nat
+ops min, max : Nat * Nat ->? Nat
 ops __+__, __*__ : Nat * Nat -> Nat;
     __^__ : Nat * Nat -> Nat;
     min, max : Nat * Nat -> Nat;
@@ -188,7 +189,7 @@ forall a:t; a, b:s
 . a = a
 . a = a
 . a = a
-type s ::= sort s2, s1 | c | c(a; a, b:t; d:t) | c(a)?
+type s ::= sort s2, s1 | c | c(a; a, b:t; a, d:t) | c(a)?
 free type s ::= sort s2, s1 | c | c(a; a, b:t; d:t) | c(a)?
 generated type s ::= sort s2, s1 | c | c(a; a, b:t; d:t) | c(a)?
 generated
@@ -196,7 +197,11 @@ generated
      ops a : b;
 	 c : b
      sorts s, t < s
-     type s ::= sort s2, s1 | c | c(a; a, b:t; d:t) | c(a)? %(bla1)%}
+     type s ::= sort s2, s1
+	      | c
+	      | c(a)
+	      | c(a; a, b:t; d:t)
+	      | c(a)? %(bla1)%}
 %(sort)%
 sorts %(after-sort)%
       s; %(bla2)%

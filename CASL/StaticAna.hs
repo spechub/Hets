@@ -33,8 +33,6 @@ import Common.Named
 import Common.Result
 import Data.Maybe
 
--- * data types for the environment 
-
 data FunKind = Total | Partial deriving (Show, Eq, Ord)
 
 -- constants have empty argument lists 
@@ -66,7 +64,7 @@ addSort s =
     do e <- get
        let m = sortSet e
        if Set.member s m then 
-	  addDiags [mkDiag Hint "known sort" s] 
+	  addDiags [mkDiag Hint "redeclared sort" s] 
 	  else put e { sortSet = Set.insert s m }
 
 checkSort :: SORT -> State Env ()
@@ -89,9 +87,14 @@ addVar s v =
     do e <- get
        let m = varMap e
            l = Map.findWithDefault Set.empty v m
-       if s `Set.member` l then 
-	  addDiags [mkDiag Hint "known var" v] 
-	  else put e { varMap = Map.insert v (s `Set.insert` l) m }
+       if Set.member s l then 
+	  addDiags [mkDiag Hint "redeclared var" v] 
+	  else put e { varMap = Map.insert v (Set.insert s l) m }
+
+checkPlaces :: [SORT] -> Id -> [Diagnosis]
+checkPlaces args i = 
+    if let n = placeCount i in n == 0 || n == length args then []
+	   else [mkDiag Error "wrong number of places" i]
 
 addOp :: OpType -> Id -> State Env ()
 addOp ty i = 
@@ -99,9 +102,18 @@ addOp ty i =
        e <- get
        let m = opMap e
            l = Map.findWithDefault Set.empty i m
-       if ty `Set.member` l then 
-	  addDiags [mkDiag Hint "known op" i] 
-	  else put e { opMap = Map.insert i (ty `Set.insert` l) m }
+	   check = addDiags $ checkPlaces (opArgs ty) i
+	   store = do put e { opMap = Map.insert i (Set.insert ty l) m }
+       if Set.member ty l then 
+	     addDiags [mkDiag Hint "redeclared op" i] 
+          else case opKind ty of 
+	  Partial -> if Set.member ty {opKind = Total} l then
+		     addDiags [mkDiag Warning "partially redeclared" i] 
+		     else store >> check
+	  Total -> do store
+		      if Set.member ty {opKind = Partial} l then
+			 addDiags [mkDiag Hint "redeclared as total" i] 
+			 else check
 
 addPred :: PredType -> Id -> State Env ()
 addPred ty i = 
@@ -109,9 +121,10 @@ addPred ty i =
        e <- get
        let m = predMap e
            l = Map.findWithDefault Set.empty i m
-       if ty `Set.member` l then 
-	  addDiags [mkDiag Hint "known pred" i] 
-	  else put e { predMap = Map.insert i (ty `Set.insert` l) m }
+       if Set.member ty l then 
+	  addDiags [mkDiag Hint "redeclared pred" i] 
+	  else do put e { predMap = Map.insert i (Set.insert ty l) m }
+		  addDiags $ checkPlaces (predArgs ty) i
 
 allOpIds :: Env -> Set.Set Id
 allOpIds = Set.fromAscList . Map.keys . opMap 
@@ -276,7 +289,7 @@ ana_OP_ITEM ga oi =
 	    in concatMap ( \ (Arg_decl v _ _) -> v) as 
 
 sortsOfArgs :: [ARG_DECL] -> [SORT]
-sortsOfArgs = map ( \ (Arg_decl _ s _) -> s)
+sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
 ana_OP_ATTR :: GlobalAnnos -> OP_ATTR -> State Env (Maybe OP_ATTR)
 ana_OP_ATTR ga oa = 
@@ -318,40 +331,79 @@ ana_PRED_ITEM ga p =
     predHeadToVars (Pred_head args _) = 
 	concatMap ( \ (Arg_decl v _ _) -> v) args 
 
+-- full function type of a selector (result sort is component sort)
+data Component = Component { compId :: Id, compType :: OpType }
+		 deriving (Show)
+
+instance Eq Component where
+    Component i1 t1 == Component i2 t2 = 
+	(i1, opArgs t1, opRes t1) == (i2, opArgs t2, opRes t2)
+
+instance Ord Component where
+    Component i1 t1 <=  Component i2 t2 = 
+	(i1, opArgs t1, opRes t1) <= (i2, opArgs t2, opRes t2)
+
+instance PrettyPrint Component where
+    printText0 ga (Component i ty) =
+	printText0 ga i <+> colon <> printText0 ga (toOP_TYPE ty)
+
+instance PosItem Component where
+    get_pos = Just . posOfId . compId
+
+-- full function type of constructor (result sort is the data type)
+data Alternative = Construct Id OpType [Component]
+		   deriving (Show, Eq) 
+
 ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State Env ()
 ana_DATATYPE_DECL _gk (Datatype_decl s al _) = 
 -- GenKind currently unused 
-    do mapAnM (ana_ALTERNATIVE s) al
-       return ()
+    do ul <- mapM (ana_ALTERNATIVE s . item) al
+       let constr = mapMaybe id ul
+       if null constr then return ()
+	  else do addDiags $ checkUniqueness $ map fst constr
+		  let totalSels = Set.unions $ map snd constr
+		      wrongConstr = filter ((totalSels /=) . snd) constr
+		  addDiags $ map ( \ (c, _) -> mkDiag Error 
+		      ("total selectors '" ++ showSepList (showString ",")
+		       showPretty (Set.toList totalSels) 
+		       "'\n\tmust appear in alternative") c) wrongConstr
 
-ana_ALTERNATIVE :: SORT -> ALTERNATIVE -> State Env ()
+ana_ALTERNATIVE :: SORT -> ALTERNATIVE 
+		-> State Env (Maybe (Component, Set.Set Component))
 ana_ALTERNATIVE s c = 
     case c of 
-    Total_construct i il _ -> 
-	do ul <- mapM (ana_COMPONENTS s) il
-	   let ty = OpType Total (concatMap compSort il) s
-           addOp ty i
-    Partial_construct i il _ -> 
-	do ul <- mapM (ana_COMPONENTS s) il
-	   let ty = OpType Partial (concatMap compSort il) s
-           addOp ty i
     Subsorts ss _ ->
 	do mapM_ (addSubsort s) ss
+	   return Nothing
+    _ -> do let (part, i, il) = case c of 
+			     Total_construct a l _ -> (Total, a, l)
+			     Partial_construct a l _ -> (Partial, a, l)
+			     _ -> error "ana_ALTERNATIVE"
+		ty = OpType part (concatMap compSort il) s
+	    addOp ty i
+	    ul <- mapM (ana_COMPONENTS s) il
+            let ts = concatMap fst ul
+            addDiags $ checkUniqueness (ts ++ concatMap snd ul)
+	    return $ Just (Component i ty, Set.fromList ts) 
     where compSort :: COMPONENTS -> [SORT]
 	  compSort (Total_select l cs _) = map (const cs) l
 	  compSort (Partial_select l cs _) = map (const cs) l
 	  compSort (Sort cs) = [cs]
  
-ana_COMPONENTS :: SORT -> COMPONENTS -> State Env ()
+ana_COMPONENTS :: SORT -> COMPONENTS -> State Env ([Component], [Component])
 ana_COMPONENTS s c = 
     case c of 
-    Total_select is cs _ ->
-	do let ty = OpType Total [s] cs
-	   mapM_ (addOp ty) is
-    Partial_select is cs _ ->
-	do let ty = OpType Partial [s] cs
-	   mapM_ (addOp ty) is
-    _ -> return ()
+    Sort _ -> return ([], [])
+    _ -> do let (part, is, cs) = case c of 
+				 Total_select as bs _ -> (Total, as, bs) 
+				 Partial_select as bs _ -> (Partial, as, bs) 
+				 _ -> error "ana_COMPONENTS"
+		ty = OpType part [s] cs
+		ts = map ( \ i -> Component i ty) is
+	    mapM_ (addOp ty) is
+	    return $ case part of 
+			       Total -> (ts, [])
+			       Partial -> ([], ts)
 
 -- wrap it all up for a logic
 
@@ -366,11 +418,11 @@ basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                  -> Result (BASIC_SPEC,Sign,Sign,[Named Sentence])
 
 basicAnalysis (bs, inSig, ga) = 
-    let (bs', accSig) = runState (ana_BASIC_SPEC ga bs) inSig
+    let (newBs, accSig) = runState (ana_BASIC_SPEC ga bs) inSig
 	ds = envDiags accSig
 	sents = sentences accSig
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
-	in Result ds $ Just (bs',cleanSig `diffSig` inSig, cleanSig, sents) 
+	in Result ds $ Just (newBs, diffSig cleanSig inSig, cleanSig, sents) 
 
 diffSig :: Sign -> Sign -> Sign
 diffSig a b = 

@@ -10,6 +10,7 @@
   preds   __ <= __, __ < __,
           __ >= __, __ > __: Nat * Nat;
           odd, even: Nat
+  ops  min, max: Nat * Nat ->?  Nat;
 
   ops   __ + __, __ * __: Nat * Nat -> Nat;
         __ ^ __: Nat * Nat -> Nat;
@@ -281,7 +282,7 @@ a = a ;
 axiom a = a
 ; a = a
 
-type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
+type s ::= sort s2,s1 | c | c(a; a,b:t; a,d:t) | c(a)?
 free type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
 generated type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
 
@@ -290,7 +291,7 @@ pred __ < __ : a * a
 
 op a: b; c: b
 sort s, t < s ;
-type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
+type s ::= sort s2,s1 | c | c(a) | c(a; a,b:t; d:t) | c(a)?
 %(bla1)%
 }
 

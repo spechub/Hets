@@ -1125,27 +1125,24 @@ op a : Data1
 op a : b
 op a : s
 op a : s -> t
-op a :? s
 op abs : Int -> Nat
 op abs : Nat -> Nat
 op abs : Rat -> Rat
 op b : Data1
 op b : s -> s
 op b : s -> t
-op b : s ->? s
 op c : Data1
 op c : b
 op c : d
 op c : s
 op c : t
+op c : a -> s
 op c : a * t * t * t -> s
+op c : a * t * t * t * t -> s
 op c : s * s -> s
 op c : s * s * s -> s
-op c : s * t -> s
+op c : s * s * t -> s
 op c : a ->? s
-op c : s * s ->? s
-op c : s * s * s ->? s
-op c : s * t ->? s
 op chr : Nat ->? Char
 op d : t
 op d : s -> t
@@ -1156,9 +1153,11 @@ op g : s ->? s
 op max : Int * Int -> Int
 op max : Nat * Nat -> Nat
 op max : Rat * Rat -> Rat
+op max : Nat * Nat ->? Nat
 op min : Int * Int -> Int
 op min : Nat * Nat -> Nat
 op min : Rat * Rat -> Rat
+op min : Nat * Nat ->? Nat
 op ord : Char -> Nat
 op pre : Nat ->? Nat
 op sel1 : Data3 ->? Data1
@@ -1188,7 +1187,7 @@ pred a : ()
 pred b : s
 pred c : s * s
 pred c : s * s * s
-pred c : s * t
+pred c : s * s * t
 pred even : Int
 pred even : Nat
 pred isDigit : Char
@@ -1198,26 +1197,49 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
-Error (line 426, column 12) not a predicate: e
-Error (line 425, column 26) not a predicate: e
-Error (line 304, column 6) unknown sort 'd'
-Error (line 303, column 6) unknown sort 'b'
-Error (line 293, column 50) unknown sort 'a'
-Error (line 293, column 31) unknown sort 'a'
-Error (line 291, column 13) unknown sort 'b'
-Error (line 291, column 7) unknown sort 'b'
-Error (line 289, column 20) unknown sort 'a'
-Error (line 289, column 16) unknown sort 'a'
-Error (line 286, column 60) unknown sort 'a'
-Error (line 286, column 41) unknown sort 'a'
-Error (line 285, column 55) unknown sort 'a'
-Error (line 285, column 36) unknown sort 'a'
-Error (line 284, column 50) unknown sort 'a'
-Error (line 284, column 31) unknown sort 'a'
-Error (line 269, column 3) unexpected mixfix token: a
-Error (line 269, column 7) unexpected mixfix token: a
-Error (line 267, column 15) unknown sort 'b'
-Error (line 267, column 9) unknown sort 'b'
-Error (line 265, column 20) unknown sort 'a'
-Error (line 265, column 16) unknown sort 'a'
-Error (line 260, column 9) no resolution for term: i * q - j * p
+Error (line 427, column 12) not a predicate: e
+Error (line 426, column 26) not a predicate: e
+Error (line 351, column 11) wrong number of places '__and'__'
+Error (line 305, column 6) unknown sort 'd'
+Error (line 304, column 6) unknown sort 'b'
+Error (line 294, column 25) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : s'
+Error (line 294, column 29) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a -> s'
+Error (line 294, column 55) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a ->? s'
+Error (line 294, column 29) duplicates at '(294,55)' for 'c : a -> s'
+Error (line 294, column 57) unknown sort 'a'
+Error (line 294, column 38) unknown sort 'a'
+Error (line 294, column 31) unknown sort 'a'
+Error (line 292, column 13) unknown sort 'b'
+Error (line 292, column 7) unknown sort 'b'
+Error (line 290, column 20) unknown sort 'a'
+Error (line 290, column 16) unknown sort 'a'
+Error (line 287, column 35) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : s'
+Error (line 287, column 58) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a ->? s'
+Error (line 287, column 60) unknown sort 'a'
+Error (line 287, column 41) unknown sort 'a'
+Error (line 286, column 30) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : s'
+Error (line 286, column 53) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a ->? s'
+Error (line 286, column 55) unknown sort 'a'
+Error (line 286, column 36) unknown sort 'a'
+Error (line 285, column 25) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : s'
+Error (line 285, column 50) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a ->? s'
+Error (line 285, column 52) unknown sort 'a'
+Error (line 285, column 34) duplicates at '(285,41)' for 'a : s -> t'
+Error (line 285, column 31) unknown sort 'a'
+Error (line 270, column 3) unexpected mixfix token: a
+Error (line 270, column 7) unexpected mixfix token: a
+Error (line 268, column 15) unknown sort 'b'
+Error (line 268, column 6) wrong number of places '__a'
+Error (line 268, column 9) unknown sort 'b'
+Error (line 266, column 20) unknown sort 'a'
+Error (line 266, column 16) unknown sort 'a'
+Error (line 261, column 9) no resolution for term: i * q - j * p
