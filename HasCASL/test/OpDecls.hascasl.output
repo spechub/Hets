@@ -35,8 +35,11 @@ op y : s
      = (op __<=__<=__ : s * s * s -> s)
          (op a : s, var x : s, (op a : s) : s) as
            s
-op z : s = (x as s) + ((x as t) as s)
+op z : s
+     = (op __+__ : s * s -> s)((op x : s) as s, (op x : s) as t as s) as
+           s
 . (op x : s) in s %(bla_label)%
+. (op x : s) in t
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
@@ -109,6 +112,10 @@ y : s
       = (op __<=__<=__ : s * s * s -> s)
           (op a : s, var x : s, (op a : s) : s) as
             s
+z : s
+    %(op)%
+      = (op __+__ : s * s -> s)((op x : s) as s, (op x : s) as t as s) as
+            s
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
@@ -161,71 +168,11 @@ y : s
    (op __<=__<=__ : s * s * s -> s)
      (op a : s, var x : s, (op a : s) : s) as
        s) %(def_y)%
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+  (op z : s,
+   (op __+__ : s * s -> s)((op x : s) as s, (op x : s) as t as s) as
+       s) %(def_z)%
 (op x : s) in s %(bla_label)%
+(op x : s) in t
 %% Diagnostics -----------------------------------------------------------
 *** Error 9.7, expected tuple argument for '__+__'
-*** Hint 13.14, rejected 't < s' of '(op __+__ : s * s -> s)(op a : t, op b : t) as s'
-
-*** Hint 13.14, rejected 't < s' of '(op __+__ : s * s -> s)(op a : t, op b : s) as s'
-
-*** Hint 13.14, rejected 't < s' of '(op __+__ : s * s -> s)(op a : s, op b : t) as s'
-
-*** Hint 15.17, rejected 't < s' of '(op __+__ : s * s -> s)(op a : t, op a : t) as s'
-
-*** Hint 15.17, rejected 't < s' of '(op __+__ : s * s -> s)(op a : t, op a : s) as s'
-
-*** Hint 15.17, rejected 't < s' of '(op __+__ : s * s -> s)(op a : s, op a : t) as s'
-
-*** Hint 17.24, rejected 't < s' of '(op __+__ : t * t -> t) as s * s -> s'
-
-*** Hint 19.25, rejected 't < s' of '(op __+__ : t * t -> t) as s * s -> s'
-
-*** Hint 23.16, rejected 't < s' of '(op __+__ : s * s -> s)(op a : t, op b : t) as s'
-
-*** Hint 23.16, rejected 't < s' of '(op __+__ : s * s -> s)(op a : t, op b : s) as s'
-
-*** Hint 23.16, rejected 't < s' of '(op __+__ : s * s -> s)(op a : s, op b : t) as s'
-
-*** Hint 25.23, rejected 't < s' of '(op a : t) : s'
-
-*** Hint 25.30, rejected 't < s' of '(op b : t) : s'
-
-*** Hint 25.23, rejected 't < s' of '(op a : t) : s'
-
-*** Hint 25.30, rejected 't < s' of '(op b : t) : s'
-
-*** Hint 30.13, rejected 't < s' of '(op incr : s -> s)(op a : t) as s'
-
-*** Hint 31.13, rejected 't < s' of '(op incr : s -> s)(op a : t) as s'
-
-*** Hint 32.14, rejected 't < s' of '(op incr : s -> s)(op a : t) as s'
-
-*** Hint 36.14, rejected 't < s' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s) as s'
-
-*** Hint 36.14, rejected 't < s' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : s, op c : s) as s'
-
-*** Hint 36.14, rejected 't < s' of '(op __<=__<=__ : s * s * s -> s)(op a : s, op b : t, op c : s) as s'
-
-*** Hint 38.16, rejected 't < s' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s) as s'
-
-*** Hint 38.16, rejected 't < s' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : s, op c : s) as s'
-
-*** Hint 38.16, rejected 't < s' of '(op __<=__<=__ : s * s * s -> s)(op a : s, op b : t, op c : s) as s'
-
-*** Hint 39.17, rejected 't < s' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s) as s'
-
-*** Hint 39.17, rejected 't < s' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : s, op c : s) as s'
-
-*** Hint 39.17, rejected 't < s' of '(op __<=__<=__ : s * s * s -> s)(op a : s, op b : t, op c : s) as s'
-
-*** Hint 44.42, rejected 't < s' of '(op a : t) : s'
-
-*** Hint 46.26, rejected 't < s' of '(op x : s) as t as s'
-
-*** Hint 46.26, rejected 't < s' of '(op x : s) as t as s'
-
-*** Error 46.22, untypable application '__+__(x as s, x as t as s)'
-*** Error 46.22, no typing for '__+__(x as s, x as t as s) as s'
-*** Hint 50.3, rejected 't < s' of '(op x : s) in t'
-
-*** Error 50.3, no typing for 'x in t'

@@ -386,14 +386,27 @@ monoSubst tm r t =
           if null monos then 
              if null resta then
                 if null restb then eps else
-                Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
-                (i, Set.findMin $ Rel.predecessors r $ TypeName n k i)) restb
-             else Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
-                (i, Set.findMin $ Rel.succs r $ TypeName n k i)) resta
+                    let (i, TypeArg n k _ _) = head restb
+                        tn = TypeName n k i
+                        s = Rel.predecessors r tn
+                        sl = Set.delete tn $ foldl1 Set.intersection 
+                                      $ map (Rel.succs r)
+                                      $ Set.toList s
+                    in Map.single i $ Set.findMin $ if Set.isEmpty sl then s
+                       else sl
+             else   let (i, TypeArg n k _ _) = head resta
+                        tn = TypeName n k i
+                        s = Rel.succs r tn
+                        sl = Set.delete tn $ foldl1 Set.intersection 
+                                        $ map (Rel.predecessors r)
+                                        $ Set.toList s
+                    in Map.single i $ Set.findMin $ if Set.isEmpty sl then s
+                       else sl
           else Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
                 (i, Set.findMin $ Rel.predecessors r $ TypeName n k i)) monos
        else Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
                 (i, Set.findMin $ Rel.succs r $ TypeName n k i)) antis
+       
 
 monoSubsts :: TypeMap -> Rel.Rel Type -> Type -> Subst
 monoSubsts tm r t = 

@@ -235,7 +235,7 @@ infer mt trm = do
                                (posOfId i) ]
                             else return ()
                          return rs
-               return $ {- typeNub tm q2p $ -} map ( \ (s, ty, is, cs, oi) -> 
+               return $ typeNub tm q2p $ map ( \ (s, ty, is, cs, oi) -> 
                               case opDefn oi of
                               VarDefn -> (s, cs, ty, QualVar $ 
                                           VarDecl i ty Other ps)
@@ -275,20 +275,26 @@ infer mt trm = do
                                                       $ subst s jTy) cs,
                                  sTy, TypedTerm tr qual sTy ps)) rs
                 InType -> do 
+                    vTy <- freshTypeVar $ headPos ps
                     rs <- infer Nothing t
                     return $ map ( \ (s, cs, typ, tr) -> 
                            let sTy = subst s ty in
-                               (s, insertC (Subtyping sTy typ) $ case mt of
+                               (s,  insertC (Subtyping sTy vTy) 
+                               $ insertC (Subtyping typ vTy) 
+                               $ case mt of
                                  Nothing -> cs
                                  Just jTy -> insertC (Subtyping (subst s jTy)
                                                       logicalType) cs,
                                  logicalType, 
                                  TypedTerm tr qual sTy ps)) rs
                 AsType -> do
+                    vTy <- freshTypeVar $ headPos ps
                     rs <- infer Nothing t
                     return $ map ( \ (s, cs, typ, tr) -> 
                         let sTy = subst s ty in
-                                (s, insertC (Subtyping sTy typ) $ case mt of
+                                (s, insertC (Subtyping sTy vTy) 
+                                $ insertC (Subtyping typ vTy) 
+                                $ case mt of
                                  Nothing -> cs
                                  Just jTy -> insertC (Subtyping (subst s jTy)
                                                       sTy) cs,

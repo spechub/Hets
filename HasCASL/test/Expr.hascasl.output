@@ -12,8 +12,7 @@ op b : bool
            (var z : bool) = (var x : bool)
        in (op True : bool) as
            bool
-op b : bool -> bool
-     = \ (var x : bool) . (var x : bool) as bool -> bool
+op b : bool -> bool = \ x . x
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
@@ -41,9 +40,7 @@ __if__ : ? Unit * ? Unit ->? Unit %(fun)%
 __when__else__
   : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
 a : bool %(op)% = (op True : bool) as bool
-b : bool -> bool
-    %(op)% = \ (var x : bool) . (var x : bool) as bool -> bool
-  : bool
+b : bool
     %(op)%
       = let (var x : bool) = (op True : bool);
             (var y : bool) = (op False : bool);
@@ -82,6 +79,7 @@ type bool
        (var z : bool) = (var x : bool)
    in (op True : bool) as
        bool) %(def_b)%
-(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op b : bool -> bool,
-   \ (var x : bool) . (var x : bool) as bool -> bool) %(def_b)%
+%% Diagnostics -----------------------------------------------------------
+*** Hint 9.28, rejected '__->?__ < __->__' of '\ (var x : _var_8_v8) . (var x : _var_8_v8) as bool -> bool'
+
+*** Error 9.28, no typing for '\ (var x : _var_8_v8) . x as bool -> bool'
