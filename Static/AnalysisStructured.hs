@@ -61,6 +61,8 @@
    no new nodes for trivial translations
    use foldM
    Also: free, cofree nodes
+   Basic specs: if local env node is otherwise unused, overwrite it with 
+                local sig+axioms
 -}
 
 
@@ -81,7 +83,9 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.List hiding (union)
 import Common.PrettyPrint
+import Control.Monad 
 
+import Common.Lib.Parsec.Pos -- for testing purposes
 
 -- | analyze a SPEC
 -- Parameters: global context, local environment,
@@ -96,11 +100,11 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
 
   Basic_spec (G_basic_spec lid bspec) ->
     do G_sign lid' sigma' <- return (getSig nsig)
-       sigma <- rcoerce lid' lid nullPos sigma'
+       sigma <- rcoerce lid' lid (newPos "a" 0 0) sigma'
        (bspec',sigma_local, sigma_complete, ax) <- 
           if just_struct 
            then return (bspec,empty_signature lid, empty_signature lid,[])
-           else do b <- maybeToResult nullPos 
+           else do b <- maybeToResult (newPos "b" 0 0) 
                           ("no basic analysis for logic "
                                          ++language_name lid) 
                           (basic_analysis lid)
@@ -126,16 +130,16 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                dg'')
 
   Translation asp ren ->
-   do let sp = item asp
-      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp
-      n' <- maybeToResult nullPos 
+   do let sp1 = item asp
+      (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
+      n' <- maybeToResult (newPos "c" 0 0) 
               "Internal error: Translation of empty spec" (getNode nsig')
       let gsigma = getSig nsig'
       mor <- ana_RENAMING dg gsigma just_struct ren
       -- ??? check that mor is identity on local env
       let gsigma' = cod Grothendieck mor 
            -- ??? too simplistic for non-comorphism inter-logic translations 
-      G_sign lid' sigma' <- return gsigma'
+      G_sign lid' _ <- return gsigma'
       let node_contents = DGNode {
             dgn_name = name,
             dgn_sign = gsigma',
@@ -146,26 +150,26 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
             dgl_morphism = mor,
             dgl_type = GlobalDef,
             dgl_origin = DGTranslation })
-      return (Translation (replaceAnnoted sp' asp) ren,
+      return (Translation (replaceAnnoted sp1' asp) ren,
               NodeSig(node,gsigma'),
               insEdge link $
               insNode (node,node_contents) dg')
       
   Reduction asp restr ->
-   do let sp = item asp
-      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp
+   do let sp1 = item asp
+      (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
-      n' <- maybeToResult nullPos 
+      n' <- maybeToResult (newPos "d" 0 0) 
              "Internal error: Reduction of empty spec" (getNode nsig')
       (hmor,tmor) <- ana_RESTRICTION dg gsigma gsigma' just_struct restr
       -- we treat hiding and revealing differently
       -- in order to keep the dg as simple as possible
       case tmor of
        Nothing ->
-        do let gsigma' = dom Grothendieck hmor
+        do let gsigma'' = dom Grothendieck hmor
            -- ??? too simplistic for non-comorphism inter-logic reductions 
-           G_sign lid' sigma' <- return gsigma'
+           G_sign lid' _ <- return gsigma''
            let node_contents = DGNode {
                  dgn_name = name,
                  dgn_sign = G_sign lid' (empty_signature lid'), 
@@ -176,16 +180,16 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                   dgl_morphism = hmor,
                   dgl_type = HidingDef,
                   dgl_origin = DGHiding })
-           return (Reduction (replaceAnnoted sp' asp) restr,
-                   NodeSig(node,gsigma'),
+           return (Reduction (replaceAnnoted sp1' asp) restr,
+                   NodeSig(node,gsigma''),
                    insEdge link $
                    insNode (node,node_contents) dg')
        Just tmor' ->
         do let gsigma1 = dom Grothendieck tmor'
                gsigma'' = cod Grothendieck tmor'
            -- ??? too simplistic for non-comorphism inter-logic reductions 
-           G_sign lid1 sigma1 <- return gsigma1
-           G_sign lid'' sigma'' <- return gsigma''
+           G_sign lid1 _ <- return gsigma1
+           G_sign lid'' _ <- return gsigma''
            let [node1,node''] = newNodes 1 dg'
                node_contents1 = DGNode {
                  dgn_name = Nothing,
@@ -205,7 +209,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                  dgl_morphism = tmor',
                  dgl_type = GlobalDef,
                  dgl_origin = DGRevealTranslation })
-           return (Reduction (replaceAnnoted sp' asp) restr,
+           return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig(node'',gsigma''),
                    insEdge link'' $
                    insNode (node'',node_contents'') $
@@ -213,18 +217,19 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                    insNode (node1,node_contents1) dg')
 
 
-  Union [] pos -> return (sp,nsig,dg)
+  Union [] _ -> return (sp,nsig,dg)
   Union asps pos ->
    do let sps = map item asps
       (sps',nsigs,dg') <- 
-          let ana r sp = do
-                (sps1,nsigs,dg) <- r
-                (sp1,nsig',dg1) <- ana_SPEC lg (gannos,genv,dg) nsig Nothing just_struct sp
+          let ana r sp' = do
+                (sps1,nsigs,dg') <- r
+                (sp1,nsig',dg1) <- ana_SPEC lg (gannos,genv,dg') 
+                                            nsig Nothing just_struct sp'
                 return (sp1:sps1,nsig':nsigs,dg1)
            in foldl ana (return ([],[],dg)) sps
       let nsigs' = reverse nsigs
       gbigSigma <- homogeneousGsigManyUnion (headPos pos) (map getSig nsigs')
-      G_sign lid' bigSigma <- return gbigSigma
+      G_sign lid' _ <- return gbigSigma
       let node_contents = DGNode {
             dgn_name = name,
             dgn_sign = G_sign lid' (empty_signature lid'), 
@@ -232,13 +237,13 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
             dgn_origin = DGUnion }
           [node] = newNodes 0 dg'
           insE dgres (n,gsigma) = do
-            dg <- dgres
+            dg1 <- dgres
             incl <- ginclusion lg gsigma gbigSigma
             let link = DGLink {
               dgl_morphism = incl,
               dgl_type = GlobalDef,
               dgl_origin = DGUnion }
-            return (insEdge (n,node,link) dg)
+            return (insEdge (n,node,link) dg1)
       dg'' <- foldl insE (return (insNode (node,node_contents) dg'))
                          (catMaybes (map getNodeAndSig nsigs'))
       return (Union (map (uncurry replaceAnnoted)
@@ -249,7 +254,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
 
 
 
-  Extension [] pos -> return (sp,nsig,dg)
+  --Extension [] pos -> return (sp,nsig,dg)
   Extension asps pos -> do
    (sps',nsig1,dg1) <- foldl ana (return ([],nsig,dg)) namedSps
    return (Extension (map (uncurry replaceAnnoted)
@@ -258,18 +263,18 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
            nsig1,dg1)
    where
    namedSps = zip (map (\_ -> Nothing) (tail asps) ++ [name]) (map item asps)
-   ana res (name,sp) = do
-     (sps',nsig,dg) <- res
-     (sp1',nsig1,dg1) <- ana_SPEC lg (gannos,genv,dg) nsig name just_struct sp
+   ana res (name',sp') = do
+     (sps',nsig',dg') <- res
+     (sp1',nsig1,dg1) <- ana_SPEC lg (gannos,genv,dg') nsig' name' just_struct sp'
      return (sp1':sps',nsig1,dg1)
 
   Free_spec asp pos ->
-   do let sp = item asp
-      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp
-      n' <- maybeToResult nullPos 
+   do let sp1 = item asp
+      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
+      n' <- maybeToResult (newPos "e" 0 0) 
             "Internal error: Free spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
-      G_sign lid' sigma' <- return gsigma'
+      G_sign lid' _ <- return gsigma'
       incl <- ginclusion lg (getSig nsig) gsigma'
       let node_contents = DGNode {
             dgn_name = name,
@@ -287,12 +292,12 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
               insNode (node,node_contents) dg')
 
   Cofree_spec asp pos ->
-   do let sp = item asp
-      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp
-      n' <- maybeToResult nullPos 
+   do let sp1 = item asp
+      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
+      n' <- maybeToResult (newPos "f" 0 0) 
             "Internal error: Cofree spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
-      G_sign lid' sigma' <- return gsigma'
+      G_sign lid' _ <- return gsigma'
       incl <- ginclusion lg (getSig nsig) gsigma'
       let node_contents = DGNode {
             dgn_name = name,
@@ -310,11 +315,11 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
               insNode (node,node_contents) dg')
 
   Local_spec asp asp' pos ->
-   do let sp = item asp
-          sp' = item asp'
-      (sp1,nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp
-      (sp1',nsig'',dg'') <- ana_SPEC lg (gannos,genv,dg') nsig' Nothing just_struct sp'
-      n'' <- maybeToResult nullPos 
+   do let sp1 = item asp
+          sp1' = item asp'
+      (sp2,nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
+      (sp2',nsig'',dg'') <- ana_SPEC lg (gannos,genv,dg') nsig' Nothing just_struct sp1'
+      n'' <- maybeToResult (newPos "g" 0 0) 
             "Internal error: Local spec over empty spec" (getNode nsig'')
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
@@ -322,8 +327,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
       G_sign lid sigma <- return gsigma
       G_sign lid' sigma' <- return gsigma'
       G_sign lid'' sigma'' <- return gsigma''
-      sigma1 <- rcoerce lid' lid nullPos sigma'
-      sigma2 <- rcoerce lid'' lid nullPos sigma''
+      sigma1 <- rcoerce lid' lid (newPos "h" 0 0) sigma'
+      sigma2 <- rcoerce lid'' lid (newPos "i" 0 0) sigma''
       let sys = sym_of lid sigma
           sys1 = sym_of lid sigma1
           sys2 = sym_of lid sigma2
@@ -331,7 +336,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                else cogenerated_sign lid 
                       (Set.toList (sys1 `Set.difference` sys)) sigma2
       let sigma3 = dom lid mor3
-          gsigma2 = G_sign lid sigma2
+          -- gsigma2 = G_sign lid sigma2
           gsigma3 = G_sign lid sigma3
           sys3 = sym_of lid sigma3
       if just_struct || sys2 `Set.difference` sys1 `Set.subset` sys3 
@@ -348,8 +353,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
             dgl_morphism = gEmbed (G_morphism lid mor3),
             dgl_type = HidingDef,
             dgl_origin = DGLocal })
-      return (Local_spec (replaceAnnoted sp1 asp)
-                         (replaceAnnoted sp1' asp')
+      return (Local_spec (replaceAnnoted sp2 asp)
+                         (replaceAnnoted sp2' asp')
                          pos,
               NodeSig(node,gsigma3),
               insEdge link $
@@ -357,16 +362,16 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
         
 
   Closed_spec asp pos ->
-   do let sp = item asp
+   do let sp1 = item asp
           l = getLogic nsig
-      (sp',nsig',dg') <- ana_SPEC lg gctx (EmptyNode l) Nothing just_struct sp
-      n' <- maybeToResult nullPos 
+      (sp',nsig',dg') <- ana_SPEC lg gctx (EmptyNode l) Nothing just_struct sp1
+      n' <- maybeToResult (newPos "j" 0 0) 
             "Internal error: Closed spec over empty spec" (getNode nsig')
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
       gsigma'' <- homogeneousGsigUnion (headPos pos) gsigma gsigma' 
                 -- also allow different logics???
-      G_sign lid'' sigma'' <- return gsigma''
+      G_sign lid'' _ <- return gsigma''
       incl1 <- ginclusion lg gsigma' gsigma''
       incl2 <- ginclusion lg gsigma' gsigma''
       let [node] = newNodes 0 dg'
@@ -412,23 +417,24 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
      plain_error (sp,nsig,dg) 
       (showPretty spname
        " is a unit specification, not a structured specification") (headPos pos)
-    Just (SpecEntry gs@(imps,params,gSigmaP,body)) -> 
+    Just (SpecEntry gs@(imps,params,_,body)) -> 
      case (\x y -> (x,x-y)) (length afitargs) (length params) of
 
       -- the case without parameters leads to a simpler dg
       (0,0) -> do
        let gsigmaB = getSig body
-       gsigma <- homogeneousGsigUnion (headPos pos) (getSig nsig) gsigmaB
-       G_sign lid sigma <- return gsigma
+       gsigma <- gsigLeftUnion lg (headPos pos) (getSig nsig) gsigmaB
+       G_sign lid _ <- return gsigma
        nB <- maybeToResult (headPos pos) 
              "Internal error: empty body spec" (getNode body)
        case (getNode nsig) of
          -- the case with empty local env leads to an even simpler dg
-         Nothing -> case name of
-            -- if the node shall not be named, just return the body
-           Nothing -> return (sp,body,dg)
-            -- if the node shall be named, we need to create a new one
-           Just _ -> do
+         Nothing -> case (name,langNameSig gsigma==langNameSig gsigmaB) of
+            -- if the node shall not be named and the logic does not change, 
+            -- just return the body
+           (Nothing,True) -> return (sp,body,dg)
+            -- otherwise, we need to create a new one
+           _ -> do
              incl <- ginclusion lg gsigmaB gsigma
              let [node] = newNodes 0 dg
                  node_contents = DGNode {
@@ -475,9 +481,9 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
        (fitargs',dg',args) <- 
           foldl ana (return ([],dg,[])) (zip params fitargs)
        let actualargs = reverse args
-       (gsigma',mor_f) <- apply_GS (headPos pos) gs actualargs
-       G_sign lid' sigma' <- return gsigma'
-       gsigmaRes <- homogeneousGsigUnion (headPos pos) (getSig nsig) gsigma'
+       (gsigma',_) <- apply_GS (headPos pos) gs actualargs
+       G_sign lid' _ <- return gsigma'
+       --gsigmaRes <- homogeneousGsigUnion (headPos pos) (getSig nsig) gsigma'
        nB <- maybeToResult (headPos pos) 
              "Internal error: empty body spec" (getNode body)
        incl1 <- ginclusion lg (getSig nsig) gsigma'
@@ -511,10 +517,10 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                    insNode (node,node_contents) dg')
                 parLinks)
        where
-       ana res (nsig,fa) = do
-         (fas',dg,args) <- res
-         (fa',dg',arg) <- ana_FIT_ARG lg (gannos,genv,dg) 
-                                  spname imps nsig just_struct fa
+       ana res (nsig',fa) = do
+         (fas',dg1,args) <- res
+         (fa',dg',arg) <- ana_FIT_ARG lg (gannos,genv,dg1) 
+                                  spname imps nsig' just_struct fa
          return (fa':fas',dg',arg:args)
        parLink node (mor_i,nsigA_i) = do
         nA_i <- getNode nsigA_i
@@ -525,7 +531,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
         return (nA_i,node,link)
 
       -- finally the case with conflicting numbers of formal and actual parameters
-      otherwise -> 
+      _ -> 
         plain_error (sp,nsig,dg) 
           (showPretty spname " expects "++show (length params)++" arguments"
            ++" but was given "++show (length afitargs)) (headPos pos)
@@ -544,7 +550,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
          ana_SPEC lg gctx (EmptyNode lid1) Nothing just_struct sp1
       (sp2',nsig2,dg2) <- 
          ana_SPEC lg (gannos,genv,dg1) nsig1 Nothing just_struct sp2
-      n' <- maybeToResult nullPos 
+      n' <- maybeToResult (newPos "k" 0 0) 
             "Internal error: Data spec over empty spec" (getNode nsig1)
       let gsigma' = getSig nsig1
       G_sign lid' sigma' <- return gsigma'
@@ -569,10 +575,10 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
 
 -- analysis of renamings
 
-ana_ren1 dg (GMorphism r sigma mor) 
+ana_ren1 :: DGraph -> GMorphism -> (G_mapping,Pos) -> Result GMorphism
+ana_ren1 _ (GMorphism r sigma mor) 
            (G_symb_map (G_symb_map_items_list lid sis),pos) = do
-  let lid1 = sourceLogic r
-      lid2 = targetLogic r
+  let lid2 = targetLogic r
   sis1 <- rcoerce lid2 lid pos sis
   rmap <- stat_symb_map_items lid2 sis1
   mor1 <- induced_from_morphism lid2 rmap (cod lid2 mor)
@@ -581,7 +587,7 @@ ana_ren1 dg (GMorphism r sigma mor)
                         (comp lid2 mor mor1)
   return (GMorphism r sigma mor2)
  
-ana_ren1 dg mor (G_logic_translation (Logic_code tok src tar pos1),pos2) =
+ana_ren1 _ mor (G_logic_translation (Logic_code tok src tar pos1),pos2) =
   fatal_error "no analysis of logic translations yet" pos2
 
 ana_ren :: DGraph -> Result GMorphism -> (G_mapping,Pos) -> Result GMorphism
@@ -595,12 +601,13 @@ ana_RENAMING dg gSigma just_struct (Renaming ren pos) =
      then return (ide Grothendieck gSigma)
      else foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
   where
-  ren' = zip ren (tail (pos ++ repeat nullPos))
+  ren' = zip ren (tail (pos ++ repeat (newPos "l" 0 0)))
 
 
 -- analysis of restrictions
 
-ana_restr1 dg (G_sign lid sigma) (GMorphism cid sigma1 mor) 
+ana_restr1 :: DGraph -> G_sign -> GMorphism -> (G_hiding,Pos) -> Result GMorphism
+ana_restr1 _ (G_sign lid sigma) (GMorphism cid sigma1 mor) 
            (G_symb_list (G_symb_items_list lid' sis'),pos) = do
   let lid1 = sourceLogic cid
       lid2 = targetLogic cid
@@ -640,8 +647,9 @@ ana_RESTRICTION dg gSigma gSigma' False (Hidden restr pos) =
                   restr'
      return (mor,Nothing)
   where
-  restr' = zip restr (tail (pos ++ repeat nullPos))
-ana_RESTRICTION dg gSigma@(G_sign lid sigma) gSigma'@(G_sign lid' sigma') 
+  restr' = zip restr (tail (pos ++ repeat (newPos "m" 0 0)))
+  -- ??? Need to check that local env is not affected !
+ana_RESTRICTION _ (G_sign lid sigma) (G_sign lid' sigma') 
      False (Revealed (G_symb_map_items_list lid1 sis) pos) = 
   do let sys = sym_of lid sigma
          sys' = sym_of lid' sigma'
@@ -661,13 +669,16 @@ ana_RESTRICTION dg gSigma@(G_sign lid sigma) gSigma'@(G_sign lid' sigma')
              Just (gEmbed (G_morphism lid' mor2)))
 
 
-
-ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct 
+ana_FIT_ARG :: LogicGraph -> GlobalContext -> SPEC_NAME -> NodeSig -> NodeSig 
+               -> Bool 
+               -> FIT_ARG
+               -> Result (FIT_ARG, DGraph, (G_morphism,NodeSig))
+ana_FIT_ARG lg gctx spname nsigI nsigP just_struct 
             (Fit_spec asp gsis pos) = do
-   nP <- maybeToResult nullPos 
+   nP <- maybeToResult (newPos "n" 0 0) 
          "Internal error: empty parameter spec" (getNode nsigP)
    (sp',nsigA,dg') <- ana_SPEC lg gctx nsigI Nothing just_struct (item asp)
-   nA <- maybeToResult nullPos 
+   nA <- maybeToResult (newPos "o" 0 0) 
          "Internal error: empty argument spec" (getNode nsigA)
    let gsigmaP = getSig nsigP
        gsigmaA = getSig nsigA
@@ -733,8 +744,11 @@ ana_GENERICITY :: LogicGraph -> GlobalContext -> AnyLogic -> Bool
                     -> Result (GENERICITY,ExtGenSig,DGraph)
 
 -- zero parameters,
-ana_GENERICITY lg (_,_,dg) l@(Logic lid) _
-               gen@(Genericity (Params []) (Imported []) pos) = 
+ana_GENERICITY _ (_,_,dg) l@(Logic lid) _
+               gen@(Genericity (Params []) (Imported imps) pos) = do
+  when (not (null imps)) 
+   (plain_error () "Parameterless specifications must not have imports" 
+     (headPos pos))
   return (gen,(EmptyNode l,[],G_sign lid (empty_signature lid),EmptyNode l),dg)
 
 -- one parameter ...
@@ -753,7 +767,7 @@ ana_GENERICITY lg gctx@(gannos,genv,_) l just_struct
   (params',nsigPs,dg'') <- 
       ana_PARAMS lg (gannos,genv,dg') l nsigI just_struct params
   gsigmaP <- homogeneousGsigManyUnion (headPos pos) (map getSig nsigPs)
-  G_sign lidP sigmaP <- return gsigmaP
+  G_sign lidP _ <- return gsigmaP
   let node_contents = DGNode {
         dgn_name = Nothing,
         dgn_sign = G_sign lidP (empty_signature lidP),
@@ -779,7 +793,7 @@ ana_GENERICITY lg gctx@(gannos,genv,_) l just_struct
 ana_PARAMS :: LogicGraph -> GlobalContext -> AnyLogic -> NodeSig -> Bool 
                 -> PARAMS
                 -> Result (PARAMS,[NodeSig],DGraph)
-ana_PARAMS lg gctx@(gannos,genv,dg) l nsigI just_struct (Params asps) = do
+ana_PARAMS lg (gannos,genv,dg) _ nsigI just_struct (Params asps) = do
   (sps',pars,dg') <- foldl ana (return ([],[],dg)) (map item asps)
   return (Params (map (uncurry replaceAnnoted)
                       (zip (reverse sps') asps)),
@@ -787,14 +801,14 @@ ana_PARAMS lg gctx@(gannos,genv,dg) l nsigI just_struct (Params asps) = do
           dg')
   where
   ana res sp = do
-    (sps',pars,dg) <- res
-    (sp',par,dg') <- ana_SPEC lg (gannos,genv,dg) nsigI Nothing just_struct sp
+    (sps',pars,dg1) <- res
+    (sp',par,dg') <- ana_SPEC lg (gannos,genv,dg1) nsigI Nothing just_struct sp
     return (sp':sps',par:pars,dg')
 
 ana_IMPORTS ::  LogicGraph -> GlobalContext -> AnyLogic -> Bool -> IMPORTED
                 -> Result (IMPORTED,NodeSig,DGraph)
 ana_IMPORTS lg gctx l just_struct (Imported asps) = do
-  let sp = Union asps (map (\_ -> nullPos) asps)
+  let sp = Union asps (map (\_ -> (newPos "p" 0 0)) asps)
   (Union asps' _,nsig',dg') <- 
        ana_SPEC lg gctx (EmptyNode l) Nothing just_struct sp
   return (Imported asps',nsig',dg')

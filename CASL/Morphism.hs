@@ -290,13 +290,13 @@ instance PrettyPrint Morphism where
   printText0 ga mor = 
    (if null sorts then empty
        else ptext "sorts" <+> (fsep $ punctuate comma sorts))
-   $$ 
+   <+> 
    (if null ops then empty
        else ptext "ops" <+> (fsep $ punctuate comma ops))
-   $$ 
+   <+>
    (if null preds then empty
        else ptext "preds" <+> (fsep $ punctuate comma preds))
-   $$ 
+   <+>
    ptext " : " <+> 
    ptext "{" <+>  printText0 ga (msource mor) <+> ptext "}" <+> 
    ptext "->" <+> 

@@ -45,6 +45,8 @@ import Common.Id
 import Common.Named
 import Data.Dynamic
 
+import Common.Lib.Parsec.Pos -- for testing purposes
+
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
 ------------------------------------------------------------------
@@ -107,6 +109,9 @@ instance Eq G_sign where
 
 instance Show G_sign where
     show (G_sign _ s) = show s
+
+langNameSig :: G_sign -> String
+langNameSig (G_sign lid _) = language_name lid
 
 -- | Grothendieck signature lists
 data G_sign_list = forall lid sublogics
@@ -332,7 +337,8 @@ instance Show GMorphism where
  
 instance PrettyPrint GMorphism where
     printText0 ga (GMorphism cid s m) = 
-      ptext (show cid) <+> 
+      ptext (show cid) <+> ptext ":" <+> ptext (show (sourceLogic cid)) <+>
+      ptext "->" <+> ptext (show (targetLogic cid)) <+>
       ptext "(" <+> printText0 ga s <+> ptext ")" 
       $$
       printText0 ga m
@@ -369,6 +375,24 @@ instance Category Grothendieck G_sign GMorphism where
 gEmbed :: G_morphism -> GMorphism
 gEmbed (G_morphism lid mor) =
   GMorphism (IdComorphism lid) (dom lid mor) mor
+
+-- | heterogeneous union of two Grothendieck signatures
+--   the left signature determines the result logic
+gsigLeftUnion :: LogicGraph -> Pos -> G_sign -> G_sign -> Result G_sign
+gsigLeftUnion lg pos gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
+  if language_name lid1 == language_name lid2 
+     then homogeneousGsigUnion pos gsig1 gsig2
+     else do
+      GMorphism incl _ _ <- ginclusion lg gsig2 gsig1
+      let lid1' = targetLogic incl
+          lid2' = sourceLogic incl
+      sigma1' <- rcoerce lid1 lid1' (newPos "q" 0 0) sigma1
+      sigma2' <- rcoerce lid2 lid2' (newPos "r" 0 0) sigma2
+      (sigma2'',_) <- maybeToResult pos "gsigLeftUnion: signature mapping failed" 
+                       (map_sign incl sigma2')  -- where to put axioms???
+      sigma3 <- signature_union lid1' sigma1' sigma2''
+      return (G_sign lid1' sigma3)
+
 
 -- | homogeneous Union of two Grothendieck signatures
 homogeneousGsigUnion :: Pos -> G_sign -> G_sign -> Result G_sign
@@ -412,18 +436,18 @@ ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
   do let ln1 = language_name lid1
          ln2 = language_name lid2
      if ln1==ln2 then do
-       sigma2' <- rcoerce lid1 lid2 nullPos sigma2
+       sigma2' <- rcoerce lid1 lid2 (newPos "s" 0 0) sigma2
        mor <- inclusion lid1 sigma1 sigma2'
        return (GMorphism (IdComorphism lid1) sigma1 mor)
       else do
        Comorphism i <- 
-         maybeToResult nullPos 
+         maybeToResult (newPos "t" 0 0) 
                        ("No inclusion from "++ln1++" to "++ln2++" found")  
                        (Map.lookup (ln1,ln2) (inclusions logicGraph))
-       sigma1' <- rcoerce lid1 (sourceLogic i) nullPos sigma1
-       sigma2' <- rcoerce lid2 (targetLogic i) nullPos sigma2
+       sigma1' <- rcoerce lid1 (sourceLogic i) (newPos "u" 0 0) sigma1
+       sigma2' <- rcoerce lid2 (targetLogic i) (newPos "v" 0 0) sigma2
        (sigma1'',_) <- 
-         maybeToResult nullPos "ginclusion: signature map failed" 
+         maybeToResult (newPos "w" 0 0) "ginclusion: signature map failed" 
                        (map_sign i sigma1')
        mor <- inclusion (targetLogic i) sigma1'' sigma2'
        return (GMorphism i sigma1' mor)
