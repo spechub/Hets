@@ -60,22 +60,30 @@ minExpSentence sign sentence
         Predication predicate terms _ ->
             minExpSentence_pred sign predicate terms            -- :: Sentence
         Definedness term pos            -> do
-            t <- choose_unambiguous term                        -- :: TERM
-            return $ Definedness t pos                          -- :: Sentence
+            t   <- minExpTerm sign term                         -- :: [[TERM]]
+            t'  <- is_unambiguous t                             -- :: TERM
+            return $ Definedness t' pos                         -- :: Sentence
         Existl_equation term1 term2 pos -> do
-            t1 <- choose_unambiguous term1                      -- :: TERM
-            t2 <- choose_unambiguous term2                      -- :: TERM
-            return $ Existl_equation t1 t2 pos                  -- :: Sentence
+            t1  <- minExpTerm sign term1                        -- :: [[TERM]]
+            t2  <- minExpTerm sign term2                        -- :: [[TERM]]
+            -- find common supersort for each combination of equivs
+            return $ Existl_equation term1 term2 pos                  -- :: Sentence
         -- FIXME: check whether sorts of terms match
         Strong_equation term1 term2 pos -> do
-            t1 <- choose_unambiguous term1                      -- :: TERM
-            t2 <- choose_unambiguous term2                      -- :: TERM
-            return $ Strong_equation t1 t2 pos                  -- :: Sentence
+            t1  <- minExpTerm sign term1                        -- :: [[TERM]]
+            t2  <- minExpTerm sign term2                        -- :: [[TERM]]
+            -- find common supersort for each combination of equivs
+            return $ Strong_equation term1 term2 pos                  -- :: Sentence
         -- FIXME: check whether sorts of terms match
         Membership term sort pos        -> do
-            t <- choose_unambiguous term                        -- :: TERM
-            return $ Membership t sort pos                      -- :: Sentence
-        -- FIXME: check whether term matches sort
+            t   <- minExpTerm sign term                         -- :: [[TERM]]
+            t'  <- return
+                $ filter (                                      -- :: [[TERM]]
+                    (geq_SORT sign sort)                        -- :: Bool
+                    . term_sort                                 -- :: SORT
+                    . head) t                                   -- :: TERM
+            t'' <- is_unambiguous t'                            -- :: [[TERM]]
+            return $ Membership t'' sort pos                    -- :: Sentence
         -- Unparsed Sentence    -> Error in Parser, Bail out!
         Mixfix_formula term             -> error
             $ "Parser Error: Unparsed `Mixfix_formula' received: "
@@ -88,14 +96,13 @@ minExpSentence sign sentence
             $ "Internal Error: Unknown type of Sentence received: "
             ++ (show sentence)
     where
-        choose_unambiguous      :: TERM -> Result TERM
-        choose_unambiguous term  = do
-            expansions  <- minExpTerm sign term                 -- :: [[TERM]]
-            case expansions of
-                [_]     -> return $ head $ head expansions      -- ::   TERM
+        is_unambiguous          :: [[TERM]] -> Result TERM
+        is_unambiguous term      = do
+            case term of
+                [_]     -> return $ head $ head term            -- :: TERM
                 _       -> error
-                    $ "Cannot disambiguate! Term: " ++ (show term)
-                    ++ "\n  Possible Expansions: " ++ (show expansions)
+                    $ "Cannot disambiguate! Possible Expansions: "
+                    ++ (show term)
 
 {-----------------------------------------------------------
     Minimal Expansions of a Predicate Application Term
@@ -124,11 +131,6 @@ minExpSentence_pred sign predicate terms = do
         pred_name pred'  = case pred' of
             (Pred_name name')           -> name'
             (Qual_pred_name name' _ _)  -> name'
-        term_sort       :: TERM -> SORT
-        term_sort term'  = case term' of
-            (Sorted_term _ sort _ )     -> sort
-            _                           -> error                -- unlikely
-                "minExpTerm: unsorted TERM after expansion"
         choose          :: [[(PredType, [TERM])]] -> (PredType, [TERM])
         choose ps        = case ps of
             [_] -> head $ head ps
@@ -297,11 +299,6 @@ minExpTerm_op sign op terms = do
         op_name op'      = case op' of
             (Op_name name')             -> name'
             (Qual_op_name name' _ _)    -> name'
-        term_sort       :: TERM -> SORT
-        term_sort term'  = case term' of
-            (Sorted_term _ sort _ )     -> sort
-            _                           -> error                -- unlikely
-                "minExpTerm: unsorted TERM after expansion"
         qualifyOps      :: [[(OpType, [TERM])]] -> [[(TERM, SORT)]]
         qualifyOps       = map (map qualify_op)
         qualify_op      :: (OpType, [TERM]) -> (TERM, SORT)
@@ -344,12 +341,6 @@ minExpTerm_cast sign term sort = do
     return
         $ qualifyTerms                                  -- :: [[TERM]]
         $ [map (\ t -> (t, sort)) validExps]            -- :: [[(TERM, SORT)]]
-    where
-        term_sort       :: TERM -> SORT
-        term_sort term'  = case term' of
-            (Sorted_term _ sort' _ )    -> sort'
-            _                           -> error        -- unlikely
-                "minExpTerm: unsorted TERM after expansion"
 
 {-----------------------------------------------------------
     Divide a Set (list) into equivalence classes w.r. to eq
@@ -409,6 +400,12 @@ minimize sign ops_n_terms
         reduce         :: (OpType, [TERM]) -> [(OpType, [TERM])]
         reduce x@(op,_) = if (leastSort (opRes op)) then [x] else []
 
+term_sort       :: TERM -> SORT
+term_sort term'  = case term' of
+    (Sorted_term _ sort _ )     -> sort
+    _                           -> error                -- unlikely
+        "minExpTerm: unsorted TERM after expansion"
+
 {-----------------------------------------------------------
     Return True if s1 <= s2
 -----------------------------------------------------------}
@@ -416,7 +413,13 @@ leq_SORT :: Sign -> SORT -> SORT -> Bool
 leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
 -- leq_SORT = (flip Set.member) . (flip supersortsOf)
 
+{-----------------------------------------------------------
+    Return True if s1 >= s2
+-----------------------------------------------------------}
+geq_SORT :: Sign -> SORT -> SORT -> Bool
+geq_SORT sign s1 s2 = Set.member s2 (subsortsOf s1 sign)
 
+{- Die hier fehlen noch - sind aber essentiell :) -}
 leqF :: a -> a -> Bool -- Funktionsgleichheit
 leqF _ _ = True
 
