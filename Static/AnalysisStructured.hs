@@ -97,7 +97,7 @@ end
 
 
 module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY, ana_VIEW_TYPE, ana_err, 
-				  ana_RENAMING, ana_RESTRICTION)
+				  ana_RENAMING, ana_RESTRICTION, extendMorphism)
 where
 
 import Data.Maybe
@@ -1039,8 +1039,12 @@ extID pos ids idmap =
   Set.fold (extID1 pos idmap) (return Map.empty) ids
 
 
-extendMorphism :: Pos -> G_sign -> G_sign -> G_sign -> G_morphism
-                      -> Result(G_sign,G_morphism)
+extendMorphism :: Pos 
+	       -> G_sign      -- ^ formal parameter
+	       -> G_sign      -- ^ body
+	       -> G_sign      -- ^ actual parameter
+	       -> G_morphism  -- ^ fitting morphism
+               -> Result(G_sign,G_morphism)
 extendMorphism pos (G_sign lid sigmaP) (G_sign lidB sigmaB1)
                    (G_sign lidA sigmaA1) (G_morphism lidM fittingMor1) = do
   -- for now, only homogeneous instantiations....
