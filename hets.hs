@@ -19,16 +19,16 @@ Portability :  non-portable (imports Logic.Logic)
 
 module Main where
 
-import Monad (when)
+import Control.Monad (when)
 
 import Common.Utils
 import Common.Result
 import Common.GlobalAnnotations (emptyGlobalAnnos)
 import Syntax.GlobalLibraryAnnotations (initGlobalAnnos)
 import Options
-import System.Environment
-import System.Posix
-import System
+import System.Environment (getArgs)
+-- import System.Posix.Process (exitImmediately)
+import System.Exit (ExitCode(ExitSuccess), exitWith)
 
 import Comorphisms.LogicGraph
 import Logic.Grothendieck
@@ -184,7 +184,7 @@ showGraph file opt env =
             graph <- get_graphid gid gv
             sync(destroyed graph)
             InfoBus.shutdown
-            exitImmediately ExitSuccess 
+            exitWith ExitSuccess 
 #else
             fail "No graph display interface; UNI_PACKAGE option has been disabled during compilation of Hets"
 #endif
