@@ -7,13 +7,12 @@
 {- |
    Maintainer  :  hets@tzi.de
    Stability   :  provisional
-   Portability :  non-portable (import Common.PrettyPrint)
+   Portability :  portable
 
    Some functions for building and accessing the datastructures 
-   of GlobalAnnotations. This module should avoid further cyclic
-   dependencies.
+   of GlobalAnnotations. 
 
-   todo:
+   todo: yield a proper result instead of runtime errors for conflicts
 
 -}
 
