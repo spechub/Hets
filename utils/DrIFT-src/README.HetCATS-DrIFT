@@ -1,0 +1,9 @@
+These source files ar adapted for the special purposes of HetCATS!
+
+See README-v1.0 for Copyright!
+
+INSTALL
+-------
+
+ghc --make DrIFT.lhs -o DrIFT
+cp DrIFT ..
