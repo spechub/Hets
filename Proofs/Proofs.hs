@@ -290,6 +290,17 @@ existsProvenGlobPathOfMorphismBetween dgraph morphism src tgt =
       filteredMorphismsOfProvenPaths = getFilteredMorphisms morphismsOfPaths 
 
 
+existsUnprovenGlobPathToBaseOn :: DGraph -> GMorphism -> LEdge DGLinkLab
+					   -> Bool
+existsUnprovenGlobPathToBaseOn dgraph morphism ledge@(src,tgt,_) =
+  elem morphism filteredMorphismsOfPathsToBaseOn
+
+    where
+      allPaths = getAllUnprovenGlobPathsBetween dgraph src tgt
+      allPathsToBaseOn = getPathsToBaseOn allPaths ledge
+      morphismsOfPaths = map calculateMorphismOfPath allPathsToBaseOn
+      filteredMorphismsOfPathsToBaseOn = getFilteredMorphisms morphismsOfPaths
+
 {- checks if a path consisting of globalDef edges only
    or consisting of a localDef edge followed by any number of globalDef edges
    exists between the given nodes -}
@@ -404,6 +415,12 @@ getAllGlobDefPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
 getAllGlobDefPathsBetween dgraph src tgt =
   getAllPathsOfTypeBetween dgraph isGlobalDef src tgt
 
+
+{- returns all paths of unproven local or global thm edges between the given
+   source and target node -}
+getAllUnprovenGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
+getAllUnprovenGlobPathsBetween dgraph src tgt =
+  getAllPathsOfTypeBetween dgraph isUnprovenGlobalThm src tgt
 
 {- returns all paths consiting of edges of the given type between the
    given node -}
@@ -543,3 +560,41 @@ isLocalDef (_,_,edgeLab) =
   case dgl_type edgeLab of
     LocalDef -> True
     otherwise -> False
+
+-- ---------------------------------------------------------------
+-- methods to determine whether a proof is based on the given edge
+-- ----------------------------------------------------------------
+
+getPathsToBaseOn :: [[LEdge DGLinkLab]] -> LEdge DGLinkLab 
+		 -> [[LEdge DGLinkLab]]
+getPathsToBaseOn [] _ = []
+getPathsToBaseOn (path:list) ledge =
+  case (and [isNotBasedOn status ledge| status <- statusList]) of
+    True -> path:(getPathsToBaseOn list ledge)
+    False -> getPathsToBaseOn list ledge
+  where 
+    labelList = [dgl_type label|(_,_,label) <- path]
+    statusList = getThmLinkStatus labelList
+
+
+isNotBasedOn :: ThmLinkStatus -> LEdge DGLinkLab -> Bool
+isNotBasedOn status ledge = not (isBasedOn status ledge)
+
+isBasedOn :: ThmLinkStatus -> LEdge DGLinkLab -> Bool
+isBasedOn Static.DevGraph.Open _ = False
+isBasedOn (Proven []) _ = False
+isBasedOn (Proven list) ledge@(_,_,edgelab) =
+    (elem edgelab list)
+    || or [isBasedOn status ledge|status <- statusList]
+  where 
+    labelList = map dgl_type list
+    statusList = getThmLinkStatus labelList
+
+getThmLinkStatus :: [DGLinkType] -> [ThmLinkStatus]
+getThmLinkStatus [] = []
+getThmLinkStatus (edgeType:list) =
+  case edgeType of
+    GlobalThm status _ _ -> status:(getThmLinkStatus list)
+    LocalThm status _ _ -> status:(getThmLinkStatus list)
+    otherwise -> error ("getThmLinkStatus not yet implemented for "
+		       ++(show edgeType))

@@ -2,11 +2,11 @@
 Jorina
 ************************************************
 
-  George fragen wg. proofs-Menü
+(X)  George fragen wg. proofs-Menü
 
 (X) Warum werden bei import_test-1.casl nicht alle internen Knoten versteckt?
 
-  Ausgaben (show spec etc.) in eigenes Fenster, mittels htk
+- Ausgaben (show spec etc.) in eigenes Fenster, mittels htk
     (George oder Christoph fragen)
 
 (X)  lokale Links anders darstellen (gepunktet?)
@@ -18,8 +18,8 @@ Jorina
 
 (X)  Kantenmenü zum Anzeigen des Signaturmorphismus (mittels show anzeigen)
 
-  (Global) Subsumption optimieren: auch globale Theorem-Links zulassen
-    dazu muss in DevGraph.hs der Bool-Wert in den Theorem-Links durch
+- (Global) Subsumption optimieren: auch globale Theorem-Links zulassen
+(X) dazu muss in DevGraph.hs der Bool-Wert in den Theorem-Links durch
       data ThmLinkStatus =  Open | Proved [DGLinkLab]
     ersetzt werden
     Gleichzeitig hier auch noch einen ThmLinkStatus für die
@@ -29,12 +29,12 @@ Jorina
  GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
  HidingThm GMorphism ThmLinkStatus 
 
-  es muss geprüft werden, ob die benutzten theorem links solche
+- es muss geprüft werden, ob die benutzten theorem links solche
   sind, die nicht in ihrer DGLinkLab-Liste den aktuell zu beweisenden
   Theorem-Link enthalten
 
 
-  Local Subsumption-Regel ausbauen zu Loc-Decomposition (I+II)
+- Local Subsumption-Regel ausbauen zu Loc-Decomposition (I+II)
     Signaturmorphismen dürfen verschieden sein
     prüfen, ob beide die lokalen Axiome des Startknotens gleich abbilden
     lokale Axiome mit dgn_sens (für DGNode) bzw. für DGRef
