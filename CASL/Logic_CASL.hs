@@ -30,7 +30,7 @@ import qualified Sublogics
 data CASL = CASL deriving (Show)
 instance Language CASL where  -- default definition is okay
 
-instance Category CASL Sign String -- morphism 
+instance Category CASL Sign Morphism  
     where
          -- ide :: id -> object -> morphism
 	 ide CASL _ = fun_err "ide"
@@ -65,20 +65,20 @@ instance LatticeWithTop Sublogics.CASL_Sublogics where
 
 -- CASL logic
 
-instance Sentences CASL Sentence LocalEnv Sign String Symbol where
+instance Sentences CASL Sentence LocalEnv Sign Morphism Symbol where
 -- missing
 
 instance StaticAnalysis CASL BASIC_SPEC Sentence 
                SYMB_ITEMS SYMB_MAP_ITEMS
                LocalEnv Sign 
-               String -- morphism 
+               Morphism 
                Symbol RawSymbol where
 -- missing
 
 instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                LocalEnv Sign 
-               String -- Morphism 
+               Morphism
                Symbol RawSymbol where
          sublogic_names CASL = Sublogics.sublogics_name
          all_sublogics CASL = Sublogics.sublogics_all
@@ -88,7 +88,7 @@ instance Logic CASL Sublogics.CASL_Sublogics
          is_in_symb_items CASL = Sublogics.in_symb_items
          is_in_symb_map_items CASL = Sublogics.in_symb_map_items
          is_in_sign CASL = Sublogics.in_sign
---         is_in_morphism CASL = Sublogics.in_morphism
+         is_in_morphism CASL = Sublogics.in_morphism
          is_in_symbol CASL = Sublogics.in_symbol
 
          min_sublogic_basic_spec CASL = Sublogics.sl_basic_spec
@@ -96,15 +96,15 @@ instance Logic CASL Sublogics.CASL_Sublogics
          min_sublogic_symb_items CASL = Sublogics.sl_symb_items
          min_sublogic_symb_map_items CASL = Sublogics.sl_symb_map_items
          min_sublogic_sign CASL = Sublogics.sl_sign
---         min_sublogic_morphism CASL = Sublogics.sl_morphism
+         min_sublogic_morphism CASL = Sublogics.sl_morphism
          min_sublogic_symbol CASL = Sublogics.sl_symbol
 
          proj_sublogic_basic_spec CASL = Sublogics.pr_basic_spec
          proj_sublogic_symb_items CASL = Sublogics.pr_symb_items
          proj_sublogic_symb_map_items CASL = Sublogics.pr_symb_map_items
          proj_sublogic_sign CASL = Sublogics.pr_sign
---         proj_sublogic_morphism CASL = Sublogics.pr_morphism
---         proj_sublogic_epsilon CASL = Sublogics.pr_epsilon
+         proj_sublogic_morphism CASL = Sublogics.pr_morphism
+         proj_sublogic_epsilon CASL = Sublogics.pr_epsilon
          proj_sublogic_symbol CASL = Sublogics.pr_symbol
 
 ---- helpers ---------------------------------
