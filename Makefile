@@ -42,7 +42,7 @@ HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 #DRIFT_OPTS  = +RTS -K10 -RTS
 
 ### list of directories to run checks in
-TESTDIRS    = CASL HasCASL test
+TESTDIRS    = Common CASL HasCASL
 
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
@@ -129,7 +129,7 @@ doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
 all: hets
 
 hets: $(sources)
-	$(HC) --make -o $@ hets.hs $(HC_OPTS)
+	$(HC) --make -o $@ hets.hs $(HC_OPTS) 2>&1 | tee hetcats-make 
 
 hets-opt: hetcats/Version.hs
 	$(MAKE) distclean
@@ -137,7 +137,8 @@ hets-opt: hetcats/Version.hs
 	$(MAKE) hets-optimized
 
 hets-optimized:
-	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
+	$(HC) --make -O -o hets hets.hs $(HC_OPTS) 2>&1 | tee hetcats-make
+	strip hets 
 
 hets-old: $(objects)
 	$(RM) $@
