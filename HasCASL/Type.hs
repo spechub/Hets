@@ -9,36 +9,45 @@ nullPos = (0, 0)
 simpleId :: String -> Id
 simpleId(s) = Id [Token(s, nullPos)] [] 
 
--- same predefined type constructors
-totalFunArrow = "->"
+colonChar = ':'
+
 partialSuffix = "?"
+totalSuffix = "!"
+
+-- same predefined type constructors
+
+totalFunArrow = "->"
 partialFunArrow = totalFunArrow ++ partialSuffix
 productSign = "*"
 altProductSign = "\215"
 
-internalBoolRep = simpleId("") -- invisible
+internalBoolRep = simpleId("!BOOL!") -- invisible
 
 -- ----------------------------------------------
 -- we want to have (at least some builtin) type constructors 
 -- for uniformity/generalization sorts get type "Sort"
 -- "Sort -> Sort" would be the type/kind of a type constructor
 -- ----------------------------------------------
+-- an Unknown Type only occurs before static analysis
 data Type = Type Id [Type]
           | Sort
+	  | Unknown
+	  | PartialType Id -- for partial constants
 	    deriving (Eq, Ord)
 
 showType :: Bool -> Type -> ShowS
+showType _ (PartialType i) = showString partialSuffix . showId i
+showType _ Unknown = showString "!UNKNOWN!"
 showType _ Sort = showString "!SORT!"
-showType _ t@(Type i []) = if isProduct t then showString "()" else shows i
+showType _ t@(Type i []) = if isProduct t then showString "()" else showId i
 showType b t@(Type i (x:r)) = showParen b 
  (if isFunType t 
-  then showType (isFunType x) x . shows i . showType False (head r)
+  then if isPredicate t then showType False x
+       else showType (isFunType x) x . showId i . showType False (head r)
   else if isProduct t 
-       then let showl [] = showString ""
-                showl (y:t) = shows i . showType 
-                              (isFunType y || isProduct y) y . showl t
-            in showType (isFunType x || isProduct x) x . showl r
-       else shows i . showList (x:r)
+       then let f x = showType (isFunType x || isProduct x) x 
+            in showSepList (showId i) f (x:r)
+       else showId i . showList (x:r)
  )
 
 instance Show Type where
@@ -58,6 +67,9 @@ predicate t = totalFun(t, internalBool)
 
 isFunType(Type s  [_, _]) = show s == totalFunArrow || show s == partialFunArrow
 isFunType _  = False
+
+isPartialType(Type s  [_, _]) = show s == partialFunArrow
+isPartialType _  = False
 
 argType(Type _ [t, _]) = t
 resType(Type _ [_, t]) = t

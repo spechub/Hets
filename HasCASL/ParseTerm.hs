@@ -37,8 +37,6 @@ varDecls t = fmap (concat . map snd) (separatedBy varDecl semi t)
 -- ----------------------------------------------
 exEqual = string "=e="
 
-asStr = "as"
-inStr = "in"
 asTok = makeToken (keyStr asStr)
 inTok = makeToken (keyStr inStr)
 
@@ -54,12 +52,9 @@ startTerm = parenTerm <|> braceTerm <|> brktTerm <|> simpleTerm
 restTerm :: Parser Term
 restTerm = startTerm <|> typedTerm
 
-mix :: Term
-mix = BaseName (QualId (Symb (simpleId "%%MIX\n") unknown) 0 Inferred)
-
 mixTerm = do { l <- startTerm <:> many restTerm 
 	     ; if length l == 1 then return (head l) 
-	       else return (Application mix l [])
+	       else return (Application MixTerm l [])
 	     } <|> quantTerm  
 
 typeOfPrefix t = if [colonChar] == show t then OfType
@@ -70,23 +65,16 @@ typeOfPrefix t = if [colonChar] == show t then OfType
 typedTerm :: Parser Term
 typedTerm = do { c <- try (colon <|> asTok <|> inTok)
 	       ; t <- funType c
-	       ; return (Typed (toQualId c) (typeOfPrefix c) t) 
+	       ; return (Typed MixTerm (typeOfPrefix c) t) 
 	       }
 
-unknown :: Type
-unknown = Type (simpleId "%%UNKNOWN\n") []
-
 toQualId :: Token -> Term
-toQualId t = BaseName (QualId (Symb (toId t) unknown) 0 Inferred)
+toQualId t = BaseName (QualId (Symb (toId t) Unknown) 0 Inferred)
 
 terms :: Token -> Parser [Term]
 terms t = do { l <- separatedBy (const mixTerm) comma t
 	     ; return (map snd l)
 	     }
- 
-varStr = "var"
-opStr = "op"
-predStr = "pred"
 
 qualName = do { w <- try (makeToken 
 			  (keyStr varStr <|> keyStr opStr <|> keyStr predStr))
@@ -100,22 +88,19 @@ qualName = do { w <- try (makeToken
 parenTerm = do { o <- oParen
                ; l <- single qualName <|> terms o
 	       ; c <- cParen 
-	       ; return (Application (toQualId o) l [c]) 
+	       ; if length l == 1 && isBaseName (head l) 
+		 then return (head l) 
+		 else return (Application MixTerm l [o,c]) 
 	       }
 
 braTerm op cl = do { o <- op
 		   ; l <- option [] (terms o)
 		   ; c <- cl
-		   ; return (Application (toQualId o) l [c]) 
+		   ; return (Application MixTerm l [o,c]) 
 		   }
 
 braceTerm = braTerm oBrace cBrace
 brktTerm = braTerm opBrkt clBrkt
-
-totalSuffix = "!"
-exStr = "exists"
-allStr = "forall"
-lamStr = "lambda" 
 
 quant = keyStr allStr
 	<|> (keyStr exStr <|> keyStr lamStr) 
@@ -141,7 +126,7 @@ quantTerm = do { q <- try (makeToken quant)
 	       ; let b = binder q
 		     c = if isLambda b && [last (show d)] == totalSuffix
 		         then Lambda Total else b
-		 in return (Binding c v t [])
+		 in return (Binding c v t)
 	       }
 
-
+parseTerm = mixTerm

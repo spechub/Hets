@@ -16,11 +16,9 @@ separatedBy p s t = do { r <- p t
 		       ; return ((t, r) : l) 
 		       }
 
-colonChar = ':'
-
 typeId c = do { i <- parseId
 	      ; if show c == colonChar : partialSuffix then 
-		return (Type (Id [c] []) [Type i []]) 
+		return (PartialType i) 
 		else return (Type i [])
 	      }
 

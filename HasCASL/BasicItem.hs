@@ -81,7 +81,7 @@ subSortDefn key s = do { o <- oBrace
 		       ; bar	 
 		       ; e <- mixTerm
 		       ; cBrace
-		       ; let f = Binding SupersortVar [Decl (Symb v t) o []] e []
+		       ; let f = Binding SupersortVar [Decl (Symb v t) o []] e
 			 in return (SubType (key, s) t f)
 		       }
 
