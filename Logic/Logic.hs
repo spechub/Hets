@@ -83,12 +83,9 @@ type Diagram object morphism = Graph object morphism
 
 -- | Amalgamability analysis might be undecidable, so we need
 -- a special type for the result of ensures_amalgamability
-
--- TODO: add parameters (e.g. nodes) to "No" so that the error 
--- messages are more helpful
 data Amalgamates = Yes
-		 | No 
-		 | DontKnow
+		 | No String -- ^ the String contains the description of failure
+		 | DontKnow 
 
 -- languages, define like "data CASL = CASL deriving Show" 
 
