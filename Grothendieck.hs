@@ -167,3 +167,11 @@ data G_sublogics = forall id sublogics
           sign morphism symbol raw_symbol =>
         G_sublogics id sublogics 
 
+data G_morphism = forall id sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol .
+        Logic id sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol =>
+        G_morphism id morphism
+
