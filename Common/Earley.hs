@@ -396,8 +396,8 @@ checkPrecs filt ga rs argItem opItem =
         assocs = assoc_annos ga
 	num = length $ args opItem in
     if isLeftArg op num then 
-       if isNonCompound arg && joinLIds arg op `elem` rs then False
-	  else case filt argPrec opPrec of 
+          if isNonCompound arg && joinLIds arg op `elem` rs then False else 
+	  case filt argPrec opPrec of 
 	   Just b -> b     
            Nothing ->
 	    let rarg = rWeight argItem in 
@@ -408,14 +408,15 @@ checkPrecs filt ga rs argItem opItem =
 	       BothDirections -> False
 	       NoDirection -> 
 		   case (begPlace arg, endPlace op) of 
-		        (True, True) -> arg == applId || 
-					arg == op && isAssoc ALeft assocs op
+		        (True, True) -> if arg == op 
+					then isAssoc ALeft assocs op
+					else True
 			(False, True) -> True
 			(_, False) -> False
 	    else True
 	 else if isRightArg op num then
-	      if isNonCompound op && joinRIds op arg `elem` rs then False
-	      else case filt argPrec opPrec of 
+	      if isNonCompound op && joinRIds op arg `elem` rs then False else
+	      case filt argPrec opPrec of 
 	        Just b -> b     
                 Nothing -> let larg = lWeight argItem in 
 		 if begPlace arg then 
@@ -425,8 +426,9 @@ checkPrecs filt ga rs argItem opItem =
 		   BothDirections -> False
 		   NoDirection ->
 		     case (begPlace op, endPlace arg) of
-		        (True, True) -> arg == applId && op /= applId ||
-					arg == op && isAssoc ARight assocs op
+		        (True, True) -> if arg == op 
+					then isAssoc ARight assocs op
+					else True
 			(False, True) -> False
 			(_, False) -> True
 		 else True
