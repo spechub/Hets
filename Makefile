@@ -140,13 +140,15 @@ apache_doc:
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
 
+a_docs_base:
+	$(RM) -r a-docs/base
+	cp -r /home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/base a-docs
+
 post_doc4apache:
 	$(PERL) utils/post_process_docs.pl docs \
             'Common.Lib.Map.html:Common.Lib._Map.html' \
             '/home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/:'
 	mv docs/* a-docs/
-	$(RM) a-docs/base
-	cp -r /home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/base a-docs
 
 #############################
 ### ATC DrIFT-rule generation
