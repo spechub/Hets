@@ -55,9 +55,7 @@ anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) =
 anaAttr _ _ b = return $ Just b
 
 filterVars :: Assumps -> Assumps
-filterVars = filterAssumps ( \ o -> case opDefn o of
-			    VarDefn -> False
-			    _ -> True)
+filterVars = filterAssumps (not . isVarDefn)
 
 patternsToType :: [Pattern] -> Type -> Type
 patternsToType [] t = t

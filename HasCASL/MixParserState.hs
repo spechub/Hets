@@ -112,9 +112,6 @@ mkPState ind ide var sc ty toks =
 mkMixfixState :: Index -> (Id, OpInfo) -> State Int (PState a)
 mkMixfixState i (ide, info) = 
     do let sc = opType info
-	   var = case opDefn info of 
-				  VarDefn -> True
-				  _ -> False
        t <- freshInst sc
        let stripped = case t of 
 			     FunType t1 _ _ _ -> 
@@ -122,16 +119,14 @@ mkMixfixState i (ide, info) =
 					 ProductType _ _ -> ide
 					 _ -> stripFinalPlaces ide
 			     _ -> stripFinalPlaces ide
-       return $ mkPState i stripped var sc t $ getTokenList termStr stripped
+       return $ mkPState i stripped (isVarDefn info) sc t 
+		  $ getTokenList termStr stripped
 
 mkPlainApplState :: Index -> (Id, OpInfo) -> State Int (PState a) 
 mkPlainApplState i (ide, info) =     
     do let sc = opType info
-	   var = case opDefn info of 
-				  VarDefn -> True
-				  _ -> False
        t <- freshInst sc
-       return $ mkPState i ide var sc t $ getPlainTokenList ide
+       return $ mkPState i ide (isVarDefn info) sc t $ getPlainTokenList ide
 
 listToken :: Token 
 listToken = mkSimpleId "[]"

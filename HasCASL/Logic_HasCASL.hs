@@ -93,11 +93,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
                Env 
                Morphism 
                Symbol RawSymbol where
-    basic_analysis HasCASL = Just ( \ (b, e, ga) ->
-		let (nb, ne) = runState (anaBasicSpec ga b) e 
-		    in Result (reverse (envDiags ne)) $ 
-				    Just (nb, ne, ne, sentences ne)) 
-  
+    basic_analysis HasCASL = Just basicAnalysis 
     signature_union HasCASL = merge
     empty_signature HasCASL = initialEnv
     induced_from_to_morphism HasCASL _ e1 e2 = return $ mkMorphism e1 e2

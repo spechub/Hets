@@ -192,7 +192,7 @@ expandAliases tm t@(TypeName i _ _) =
 				     (l, [], ts, True)
 	    _ -> ([], [], t, False)
 
-expandAliases tm t@(TypeAppl t1 t2) =
+expandAliases tm (TypeAppl t1 t2) =
     let (ps, as, ta, b) = expandAliases tm t1 
 	(t3, b2) = expandAlias tm t2
 	in if b then 

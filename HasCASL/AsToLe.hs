@@ -15,7 +15,10 @@ module HasCASL.AsToLe where
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Lib.State
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Named
+import Common.Result
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassDecl
@@ -24,14 +27,51 @@ import HasCASL.OpDecl
 import HasCASL.TypeDecl
 import Data.Maybe
 
-----------------------------------------------------------------------------
--- analysis
------------------------------------------------------------------------------
+-- | basic analysis
+basicAnalysis :: (BasicSpec, Env, GlobalAnnos) -> 
+                 Result (BasicSpec, Env, Env, [Named Term])
+basicAnalysis (b, e, ga) = 
+    let (nb, ne) = runState (anaBasicSpec ga b) e 
+	ce = cleanEnv ne
+        in Result (reverse $ envDiags ne) $ 
+           Just (nb, diffEnv ce e, ce, reverse $ sentences ne) 
 
+-- | compute difference of signatures 
+diffEnv :: Env -> Env -> Env
+diffEnv e1 e2 = 
+    e1 { classMap = Map.differenceWith diffClass (classMap e1) (classMap e2)
+       , typeMap = Map.differenceWith diffType (typeMap e1) (typeMap e2)
+       , assumps = Map.differenceWith diffAss (assumps e1) (assumps e2)
+       }
+
+-- | compute difference of class infos
+diffClass :: ClassInfo -> ClassInfo -> Maybe ClassInfo
+diffClass c1 c2 = 
+    let diff = Set.difference (superClasses c1) (superClasses c2)
+    in if Set.isEmpty diff
+       then Nothing
+       else Just c1 { superClasses = diff }
+
+-- | compute difference of type infos
+diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
+diffType t1 _t2 = Just t1
+
+-- | compute difference of overloaded operations
+diffAss :: OpInfos -> OpInfos -> Maybe OpInfos
+diffAss a1 _a2 = Just a1
+
+-- | clean up finally accumulated environment
+cleanEnv :: Env -> Env
+cleanEnv e = e { envDiags = [], sentences = [], counter = 1,
+                 assumps = filterAssumps (not . isVarDefn) (assumps e), 
+                 typeMap = Map.filter (not . isTypeVarDefn) (typeMap e) }
+
+-- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
 anaBasicSpec ga (BasicSpec l) = fmap BasicSpec $ 
 				mapAnM (anaBasicItem ga) l
 
+-- | analyse basic item
 anaBasicItem :: GlobalAnnos -> BasicItem -> State Env BasicItem
 anaBasicItem ga (SigItems i) = fmap SigItems $ anaSigItems ga Loose i
 anaBasicItem ga (ClassItems inst l ps) = 
@@ -61,11 +101,13 @@ anaBasicItem ga (AxiomItems decls fs ps) =
        appendSentences sens
        return $ AxiomItems (catMaybes ds) newFs ps
 
+-- | add sentences
 appendSentences :: [Named Term] -> State Env ()
 appendSentences fs =
     do e <- get
        put $ e {sentences = sentences e ++ fs}
 
+-- | analyse sig items
 anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems
 anaSigItems ga gk (TypeItems inst l ps) = 
     do ul <- mapAnM (anaTypeItem ga gk inst) l
@@ -74,13 +116,13 @@ anaSigItems ga _ (OpItems l ps) =
     do ul <- mapAnM (anaOpItem ga) l
        return $ OpItems ul ps
 
--- ----------------------------------------------------------------------------
--- ClassItem
--- ----------------------------------------------------------------------------
-
+-- | analyse a class item
 anaClassItem :: GlobalAnnos -> Instance -> ClassItem 
 		    -> State Env ClassItem
 anaClassItem ga _ (ClassItem d l ps) = 
     do cd <- anaClassDecls d 
        ul <- mapAnM (anaBasicItem ga) l
        return $ ClassItem cd ul ps
+
+
+

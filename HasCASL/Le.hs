@@ -58,6 +58,11 @@ data TypeInfo = TypeInfo { typeKind :: Kind
 			 , superTypes :: [Type]
 			 , typeDefn :: TypeDefn
 			 } deriving (Show, Eq)
+
+isTypeVarDefn :: TypeInfo -> Bool
+isTypeVarDefn t = case typeDefn t of
+		  TypeVarDefn -> True
+		  _           -> False
  
 -----------------------------------------------------------------------------
 
@@ -82,6 +87,10 @@ data OpDefn = NoOpDefn
 	    | Definition Term            
 	    | VarDefn deriving (Show, Eq)
 
+isVarDefn :: OpInfo -> Bool
+isVarDefn o = case opDefn o of 
+	      VarDefn -> True
+	      _       -> False 
 
 newtype OpInfos = OpInfos { opInfos :: [OpInfo] } deriving (Show, Eq)
 

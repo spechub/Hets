@@ -26,9 +26,9 @@ type __*__*__ : Type+ -> Type+ -> Type+ -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : (Pred)(s)
 var x : s
-program def : (Pred)(s) = \ x : _var_34 . ()
+program def : t ->? Unit = \ x : _var_34 . ()
 	%% def is also total (identical to tt) 
-program tt : (Pred)(s) = \ x : _var_88 . ()
+program tt : t ->? Unit = \ x : _var_88 . ()
 	%% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -141,7 +141,7 @@ __\/__ : Unit × Unit ->? Unit
 __if__ : Unit × Unit ->? Unit
 __res__ : s × t ->? s = \ (x : s, y : t) .! (var x : s)
 bottom : p
-def : (Pred)(s) = \ x : _var_34 . ()
+def : t ->? Unit = \ x : _var_34 . ()
 eq : s × s ->? Unit
 f : c --> d %(var)%
 false : bool %(construct bool)%
@@ -152,7 +152,7 @@ not : Unit ->? Unit
 sup : (nat -> c) ->? c
 true : bool %(construct bool)%
      : Unit ->? Unit
-tt : (Pred)(s) = \ x : _var_88 . ()
+tt : t ->? Unit = \ x : _var_88 . ()
 x : s %(var)%
 x1 : c %(var)%
 x2 : c %(var)%
@@ -170,7 +170,7 @@ Error (line 46, column 11) unexpected mixfix token 'und'
 FatalError (line 54, column 3) no resolution for '__'
 Error (line 60, column 13) unexpected mixfix token '('
 Error (line 60, column 32) unexpected mixfix token 'y'
-Error (line 65, column 22) unexpected mixfix token '('
+Error (line 65, column 25) unexpected mixfix token 'res'
 FatalError (line 65, column 18) no resolution for '(\ (x : s, y : t) . def (x res y)) =
 (\ (x : s, y : t) . (def y) und (def x))'
 Error (line 66, column 7) unexpected mixfix token '='
@@ -193,7 +193,6 @@ Error (line 99, column 17) unexpected mixfix token 'all'
 Error (line 99, column 27) unexpected mixfix token 'p'
 Error (line 101, column 12) unexpected mixfix token '('
 Error (line 101, column 29) unexpected mixfix token 'all'
-Error (line 101, column 50) unexpected mixfix token '('
 Error (line 103, column 13) unexpected mixfix token '('
 Error (line 103, column 42) unexpected mixfix token 'r'
 Error (line 108, column 3) unexpected mixfix token 'all'
@@ -213,7 +212,7 @@ Error (line 125, column 55) unexpected mixfix token 'Suc'
 Error (line 126, column 38) unexpected mixfix token 'all'
 FatalError (line 126, column 50) no resolution for 's (n) <<= x'
 Error (line 130, column 3) unexpected mixfix token 'all'
-Error (line 130, column 24) unexpected mixfix token '('
+Error (line 130, column 32) unexpected mixfix token 'impl'
 Error (line 131, column 42) unexpected mixfix token 'isBound'
 Error (line 134, column 3) unexpected mixfix token 'all'
 Error (line 134, column 20) unexpected mixfix token 'isChain'
@@ -230,7 +229,7 @@ Error (line 159, column 34) unexpected mixfix token 'x1'
 FatalError (line 170, column 4) no resolution for '__'
 Error (line 176, column 16) unexpected mixfix token '['
 Error (line 176, column 31) unexpected mixfix token 'all'
-Error (line 176, column 45) unexpected mixfix token '('
+Error (line 176, column 46) unexpected mixfix token 'f'
 FatalError (line 182, column 4) no resolution for '__'
 Hint (line 184, column 13) not a class 'c --> d'
 Hint (line 184, column 13) not a class 'c --> d'
