@@ -386,14 +386,10 @@ typeScheme = do f <- forallT
 		d <- dotT
 		t <- typeScheme
                 return $ case t of 
-			 SimpleTypeScheme ty ->
-			     TypeScheme (concat ts) 
-					    ([] :=> ty) 
-					    (toPos f cs d)
 			 TypeScheme ots q ps ->
 			     TypeScheme (concat ts ++ ots) q
 					(ps ++ toPos f cs d)
-	     <|> fmap SimpleTypeScheme parseType
+	     <|> fmap simpleTypeScheme parseType
 
 -----------------------------------------------------------------------------
 -- term
@@ -443,7 +439,7 @@ parenTerm = do o <- oParenT
 partialTypeScheme :: AParser (Token, TypeScheme)
 partialTypeScheme = do q <- qColonT
 		       t <- parseType 
-		       return (q, SimpleTypeScheme 
+		       return (q, simpleTypeScheme 
 			       (FunType (BracketType Parens [] [tokPos q]) 
 				PFunArr t [tokPos q]))
 		    <|> bind (,) colT typeScheme
@@ -465,7 +461,6 @@ qualOpName o = do { v <- asKey opS
 		  }
 
 predTypeScheme :: Pos -> TypeScheme -> TypeScheme
-predTypeScheme p (SimpleTypeScheme t) = SimpleTypeScheme (predType p t)
 predTypeScheme p (TypeScheme vs (qs :=> t) ps) = 
     TypeScheme vs (qs :=> predType p t) ps
 

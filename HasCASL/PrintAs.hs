@@ -7,7 +7,7 @@
    printing As data types
 -}
 
-module PrintAs (showPretty, commas) where
+module PrintAs where
 
 import As
 import Keywords
@@ -17,6 +17,9 @@ import PrettyPrint
 import GlobalAnnotations(GlobalAnnos)
 import GlobalAnnotationsFunctions(emptyGlobalAnnos)
 import Print_AS_Annotation
+
+noPrint :: Bool -> Doc -> Doc
+noPrint b d = if b then empty else d
 
 showPretty :: PrettyPrint a => a -> ShowS
 showPretty = showString . render . printText0 emptyGlobalAnnos 
@@ -80,11 +83,10 @@ instance PrettyPrint t => PrettyPrint (Qual t) where
 
 -- no curried notation for bound variables 
 instance PrettyPrint TypeScheme where
-    printText0 ga (SimpleTypeScheme t) = printText0 ga t
-    printText0 ga (TypeScheme vs t _) = text forallS
+    printText0 ga (TypeScheme vs t _) = noPrint (null vs) (text forallS
 				   <+> semis ga vs 
-				   <+> text dotS
-				   <+> printText0 ga t
+				   <+> text dotS <+> space)
+				   <> printText0 ga t
 
 instance PrettyPrint Partiality where
     printText0 _ Partial = text quMark
@@ -259,10 +261,9 @@ instance PrettyPrint InstOpId where
 -- item stuff
 ------------------------------------------------------------------------
 instance PrettyPrint PseudoType where 
-    printText0 ga (SimplePseudoType t) = printText0 ga t
-    printText0 ga (PseudoType l t _) = text lamS 
+    printText0 ga (PseudoType l t _) = noPrint (null l) (text lamS 
 				<+> fcat(map (printText0 ga) l)
-				<+> text dotS <+> printText0 ga t
+				<+> text dotS <+> space) <> printText0 ga t
 
 instance PrettyPrint TypeArgs where
     printText0 ga (TypeArgs l _) = semis ga l

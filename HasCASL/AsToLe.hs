@@ -95,7 +95,7 @@ anaVarDecl(VarDecl v oldT _ _) =
 		   do t <- anaType oldT
 		      as <- getAssumps
 		      let l = lookupWithDefaultFM as [] v 
-			  ts = SimpleTypeScheme t in 
+			  ts = simpleTypeScheme t in 
 			  if ts `elem` l then 
 			     addDiag $ mkDiag Warning 
 				      "repeated variable '" v

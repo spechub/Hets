@@ -155,8 +155,12 @@ pseudoType = do l <- asKey lamS
 		ts <- many1 typeArgParen <|> typeArgSeq
 		d <- dotT
 		t <- pseudoType
-                return (PseudoType ts t (map tokPos [l,d]))
-	     <|> fmap SimplePseudoType parseType	       
+		let qs = map tokPos [l,d]
+		case t of 
+		       PseudoType ts1 gt ps -> 
+			   return $ PseudoType (ts1++ts) gt (ps++qs)
+	     <|> do st <- parseType
+		    return $ PseudoType [] st []
 
 pseudoTypeDef :: TypePattern -> Kind -> [Token] -> AParser TypeItem
 pseudoTypeDef t k l = 
@@ -374,13 +378,13 @@ opDeclOrDefn o =
 	     t <- parseType 
 	     e <- equalT
 	     f <- term 
-	     return (OpDefn o ps (SimpleTypeScheme t) p f (toPos c [] e))
+	     return (OpDefn o ps (simpleTypeScheme t) p f (toPos c [] e))
     <|> 
     do c <- qColonT 
        t <- parseType 
        e <- equalT
        f <- term 
-       return (OpDefn o [] (SimpleTypeScheme t) Partial f (toPos c [] e))
+       return (OpDefn o [] (simpleTypeScheme t) Partial f (toPos c [] e))
 
 opItem :: AParser OpItem
 opItem = do (os, ps) <- opId `separatedBy` anComma

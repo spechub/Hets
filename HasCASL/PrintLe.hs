@@ -20,9 +20,6 @@ import FiniteMap
 import Keywords
 import GlobalAnnotations
 
-noPrint :: Bool -> Doc -> Doc
-noPrint b d = if b then empty else d
-
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
 printList0 ga l = noPrint (null l)
 		      (if null $ tail l then printText0 ga $ head l

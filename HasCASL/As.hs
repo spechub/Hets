@@ -80,8 +80,7 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  | TypePatternArgs [TypeArg]
                    deriving (Show, Eq)
 
-data PseudoType = SimplePseudoType Type 
-                | PseudoType [TypeArgs] PseudoType [Pos]
+data PseudoType = PseudoType [TypeArgs] Type [Pos]
                 -- pos "\" "("s, ")"s, dot 
                   deriving (Show, Eq)
 
@@ -112,10 +111,13 @@ data Qual t = [Pred] :=> t
               deriving (Show, Eq)
 
 -- no curried notation for bound variables 
-data TypeScheme = SimpleTypeScheme Type
-                | TypeScheme [TypeArg] (Qual Type) [Pos]
+data TypeScheme = TypeScheme [TypeArg] (Qual Type) [Pos]
                 -- pos "forall", ";"s,  dot 
                   deriving (Show, Eq)
+
+simpleTypeScheme :: Type -> TypeScheme
+simpleTypeScheme t = TypeScheme [] ([] :=> t) []
+
 
 data Partiality = Partial | Total deriving (Show, Eq)
 
