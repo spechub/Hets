@@ -29,7 +29,7 @@ import Common.Result            -- Result
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Id      as Id
-import qualified Common.Named   as Named
+import qualified Common.AS_Annotation   as Named
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Lib.State

@@ -28,7 +28,6 @@ import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.Named
 import Common.Result
 import Data.Maybe
 

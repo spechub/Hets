@@ -12,7 +12,7 @@ Portability :  portable
 module Haskell.HaskellUtils where
 
 import Haskell.Hatchet.AnnotatedHsSyn
-import Common.Named
+import Common.AS_Annotation
 
 type AHsDecls = [AHsDecl]
 type NamedSentences = [Named AHsDecl]

@@ -17,8 +17,8 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
 import Common.Lib.State
-import Common.Named
 import Common.Id
+import Common.AS_Annotation
 
 -----------------------------------------------------------------------------
 -- classInfo

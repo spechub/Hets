@@ -24,8 +24,8 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Id
-import Common.Named
 import Common.Result
+import Common.AS_Annotation
 
 data FunKind = Total | Partial deriving (Show, Eq, Ord)
 
