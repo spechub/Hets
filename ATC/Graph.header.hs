@@ -1,4 +1,7 @@
 
+{-| Exclude: Graph |-}
+
+
 instance (ATermConvertible a,
 	  ATermConvertible b) => ATermConvertible (Graph a b) where
     toShATerm att0 graph =
