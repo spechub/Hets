@@ -117,6 +117,46 @@
 		      op Mt : Set} %(ga_generated_Set)%,
   generated{sort List; op Cons : Data1 * List -> List;
 		       op Nil : List} %(ga_generated_List)%,
+  forall X1:Data2; X2:Data1
+      . (op sel2 : Data4 ->? Data2)((op Cons42 : Data2 *
+						 Data1 ->? Data4)(X1 : Data2,
+								  X2 : Data1) : Data4) : Data2 =
+	    X1 : Data2 %(ga_selector_sel2)%,
+  forall X1:Data2; X2:Data1
+      . (op sel1 : Data4 ->? Data1)((op Cons42 : Data2 *
+						 Data1 ->? Data4)(X1 : Data2,
+								  X2 : Data1) : Data4) : Data1 =
+	    X2 : Data1 %(ga_selector_sel1)%,
+  forall X1:Data1; X2:Data2
+      . (op sel1 : Data4 ->? Data1)((op Cons41 : Data1 *
+						 Data2 ->? Data4)(X1 : Data1,
+								  X2 : Data2) : Data4) : Data1 =
+	    X1 : Data1 %(ga_selector_sel1)%,
+  forall X1:Data1; X2:Data2
+      . (op sel2 : Data4 ->? Data2)((op Cons41 : Data1 *
+						 Data2 ->? Data4)(X1 : Data1,
+								  X2 : Data2) : Data4) : Data2 =
+	    X2 : Data2 %(ga_selector_sel2)%,
+  forall X1:Data2; X2:Data1
+      . (op sel2 : Data3 ->? Data2)((op Cons32 : Data2 *
+						 Data1 -> Data3)(X1 : Data2,
+								 X2 : Data1) : Data3) : Data2 =
+	    X1 : Data2 %(ga_selector_sel2)%,
+  forall X1:Data2; X2:Data1
+      . (op sel1 : Data3 ->? Data1)((op Cons32 : Data2 *
+						 Data1 -> Data3)(X1 : Data2,
+								 X2 : Data1) : Data3) : Data1 =
+	    X2 : Data1 %(ga_selector_sel1)%,
+  forall X1:Data1; X2:Data2
+      . (op sel1 : Data3 ->? Data1)((op Cons31 : Data1 *
+						 Data2 -> Data3)(X1 : Data1,
+								 X2 : Data2) : Data3) : Data1 =
+	    X1 : Data1 %(ga_selector_sel1)%,
+  forall X1:Data1; X2:Data2
+      . (op sel2 : Data3 ->? Data2)((op Cons31 : Data1 *
+						 Data2 -> Data3)(X1 : Data1,
+								 X2 : Data2) : Data3) : Data2 =
+	    X2 : Data2 %(ga_selector_sel2)%,
   def (op __@@__ : Nat * Nat -> Nat)(1 : Nat, 2 : Nat) : Nat %()%,
   def <error> %()%, def <error> %()%, def <error> %()%,
   def <error> %()%, def <error> %()%, def <error> %()%,
@@ -125,10 +165,62 @@
   a : Data1 = a : Data1 %(a1)%, a : Data1 = a : Data1 %(a2)%,
   generated{sort s, t; op a : b; op c : b; op c : s; op c : a ->? s;
 		       op c : a * t * t * t -> s} %(ga_generated_s_t)%,
+  forall X1:a; X2:t; X3:t; X4:t
+      . (op a : s -> t)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
+						    X3 : t, X4 : t) : s) : t =
+	    X2 : t %(ga_selector_a)%,
+  forall X1:a; X2:t; X3:t; X4:t
+      . (op b : s -> s)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
+						    X3 : t, X4 : t) : s) : s =
+	    X3 : t %(ga_selector_b)%,
+  forall X1:a; X2:t; X3:t; X4:t
+      . (op d : s -> t)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
+						    X3 : t, X4 : t) : s) : t =
+	    X4 : t %(ga_selector_d)%,
   generated{sort s; op c : s; op c : a ->? s;
 		    op c : a * t * t * t -> s} %(ga_generated_s)%,
+  forall X1:a; X2:t; X3:t; X4:t
+      . (op a : s -> t)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
+						    X3 : t, X4 : t) : s) : t =
+	    X2 : t %(ga_selector_a)%,
+  forall X1:a; X2:t; X3:t; X4:t
+      . (op b : s -> s)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
+						    X3 : t, X4 : t) : s) : s =
+	    X3 : t %(ga_selector_b)%,
+  forall X1:a; X2:t; X3:t; X4:t
+      . (op d : s -> t)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
+						    X3 : t, X4 : t) : s) : t =
+	    X4 : t %(ga_selector_d)%,
   generated{sort s; op c : s; op c : a ->? s;
 		    op c : a * t * t * t -> s} %(ga_generated_s)%,
+  forall X1:a; X2:t; X3:t; X4:t
+      . (op a : s -> t)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
+						    X3 : t, X4 : t) : s) : t =
+	    X2 : t %(ga_selector_a)%,
+  forall X1:a; X2:t; X3:t; X4:t
+      . (op b : s -> s)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
+						    X3 : t, X4 : t) : s) : s =
+	    X3 : t %(ga_selector_b)%,
+  forall X1:a; X2:t; X3:t; X4:t
+      . (op d : s -> t)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
+						    X3 : t, X4 : t) : s) : t =
+	    X4 : t %(ga_selector_d)%,
+  forall X1:a; X2:t; X3:t; X4:t; X5:t
+      . (op a : s -> t)((op c : a * t * t * t * t -> s)(X1 : a, X2 : t,
+							X3 : t, X4 : t, X5 : t) : s) : t =
+	    X2 : t %(ga_selector_a)%,
+  forall X1:a; X2:t; X3:t; X4:t; X5:t
+      . (op b : s -> s)((op c : a * t * t * t * t -> s)(X1 : a, X2 : t,
+							X3 : t, X4 : t, X5 : t) : s) : s =
+	    X3 : t %(ga_selector_b)%,
+  forall X1:a; X2:t; X3:t; X4:t; X5:t
+      . (op a : s -> t)((op c : a * t * t * t * t -> s)(X1 : a, X2 : t,
+							X3 : t, X4 : t, X5 : t) : s) : t =
+	    X4 : t %(ga_selector_a)%,
+  forall X1:a; X2:t; X3:t; X4:t; X5:t
+      . (op d : s -> t)((op c : a * t * t * t * t -> s)(X1 : a, X2 : t,
+							X3 : t, X4 : t, X5 : t) : s) : t =
+	    X5 : t %(ga_selector_d)%,
   a : Data1 = a : Data1 %()%, a : Data1 = a : Data1 %()%,
   a : Data1 = a : Data1 %()%, a : Data1 = a : Data1 %()%,
   forall a:t; a, b:s . a : Data1 = a : Data1 %()%,
@@ -612,7 +704,10 @@
 								  (op suc : Nat -> Nat)(9 : Nat) : Nat) : Int,
 					  n : Nat) : Int %(Nat_decimal_def)%,
   generated{sort Nat; op 0 : Nat;
-		      op suc : Nat -> Nat} %(ga_generated_Nat)% ]
+		      op suc : Nat -> Nat} %(ga_generated_Nat)%,
+  forall X1:Nat
+      . (op pre : Nat ->? Nat)((op suc : Nat -> Nat)(X1 : Nat) : Nat) : Nat =
+	    X1 : Nat %(ga_selector_pre)% ]
 *** Error 342.14, No correct typing for 
 *** Error 342.26, No correct typing for 
 *** Error 342.39, No correct typing for 

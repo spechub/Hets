@@ -29,6 +29,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
 import Data.Maybe
+import Data.List
 
 checkPlaces :: [SORT] -> Id -> [Diagnosis]
 checkPlaces args i = 
@@ -384,14 +385,52 @@ ana_DATATYPE_DECL _gk (Datatype_decl s al _) =
        return cs
 
 
-getConsType :: Id -> ALTERNATIVE -> (Id, OpType, [COMPONENTS])
+getConsType :: SORT -> ALTERNATIVE -> (Id, OpType, [COMPONENTS])
 getConsType s c = 
     let (part, i, il) = case c of 
 			Subsorts _ _ ->  error "getConsType"
 			Total_construct a l _ -> (Total, a, l)
 			Partial_construct a l _ -> (Partial, a, l)
-	in (i, OpType part (concatMap compSort il) s, il)
+	in (i, OpType part (concatMap 
+			    (map (opRes . snd) . getCompType s) il) s, il)
 
+getCompType :: SORT -> COMPONENTS -> [(Maybe Id, OpType)]
+getCompType s (Total_select l cs _) = 
+    map (\ i -> (Just i, OpType Total [s] cs)) l
+getCompType s (Partial_select l cs _) = 
+    map (\ i -> (Just i, OpType Partial [s] cs)) l
+getCompType s (Sort cs) = [(Nothing, OpType Partial [s] cs)]
+
+genSelVars :: Int -> [(Maybe Id, OpType)] -> [VAR_DECL]
+genSelVars _ [] = []
+genSelVars n ((_, ty):rs)  = 
+    Var_decl [mkSelVar n] (opRes ty) [] : genSelVars (n+1) rs
+
+mkSelVar :: Int -> Token
+mkSelVar n = mkSimpleId ("X" ++ show n)
+
+makeSelForms :: [VAR_DECL] -> TERM 
+	     -> Int -> [(Maybe Id, OpType)] -> [Named FORMULA]
+makeSelForms _ _ _ [] = []
+makeSelForms vs t n ((mi, ty):rs) =
+    (case mi of 
+	    Nothing -> []
+	    Just i -> [NamedSen ("ga_selector_" ++ showId i "")
+	             $ Quantification Universal vs 
+		      (Strong_equation 
+		       (Application (Qual_op_name i (toOP_TYPE ty) []) [t] [])
+		       (Qual_var (mkSelVar n) (opRes ty) []) []) []]
+    )  ++ makeSelForms vs t (n+1) rs
+
+
+selForms :: (Id, OpType, [COMPONENTS]) -> [Named FORMULA]
+selForms (i, ty, il) =
+    let cs = concatMap (getCompType $ opRes ty) il
+	vs = genSelVars 1 cs
+	t = Application (Qual_op_name i (toOP_TYPE ty) [])
+	    (map ( \ (Var_decl v s _) -> Qual_var (head v) s []) vs) []
+    in makeSelForms vs t 1 cs 
+ 
 -- | return the constructor and the set of total selectors 
 ana_ALTERNATIVE :: SORT -> ALTERNATIVE 
 		-> State Sign (Maybe (Component, Set.Set Component))
@@ -400,32 +439,25 @@ ana_ALTERNATIVE s c =
     Subsorts ss _ ->
 	do mapM_ (addSubsort s) ss
 	   return Nothing
-    _ -> do let (i, ty, il) = getConsType s c
+    _ -> do let cons@(i, ty, il) = getConsType s c
 	    addOp ty i
 	    ul <- mapM (ana_COMPONENTS s) il
             let ts = concatMap fst ul
             addDiags $ checkUniqueness (ts ++ concatMap snd ul)
+	    addSentences $ selForms cons
 	    return $ Just (Component i ty, Set.fromList ts) 
 
-compSort :: COMPONENTS -> [SORT]
-compSort (Total_select l cs _) = map (const cs) l
-compSort (Partial_select l cs _) = map (const cs) l
-compSort (Sort cs) = [cs]
  
+-- | return total and partial selectors
 ana_COMPONENTS :: SORT -> COMPONENTS -> State Sign ([Component], [Component])
-ana_COMPONENTS s c = 
-    case c of 
-    Sort _ -> return ([], [])
-    _ -> do let (part, is, cs) = case c of 
-				 Total_select as bs _ -> (Total, as, bs) 
-				 Partial_select as bs _ -> (Partial, as, bs) 
-				 _ -> error "ana_COMPONENTS"
-		ty = OpType part [s] cs
-		ts = map ( \ i -> Component i ty) is
-	    mapM_ (addOp ty) is
-	    return $ case part of 
-			       Total -> (ts, [])
-			       Partial -> ([], ts)
+ana_COMPONENTS s c = do
+    let cs = getCompType s c
+    sels <- mapM ( \ (mi, ty) -> 
+	    case mi of 
+	    Nothing -> return Nothing
+	    Just i -> do addOp ty i
+		         return $ Just $ Component i ty) cs 
+    return $ partition ((==Total) . opKind . compType) $ catMaybes sels 
 
 -- wrap it all up for a logic
 
