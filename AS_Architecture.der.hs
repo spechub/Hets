@@ -8,7 +8,8 @@
    architectural specifications in HetCASL.
 
    todo:
-     - ATermConversion SML-CATS
+     - ATermConversion SML-CATS has now his own module 
+       (s. HetCATS/aterm_conv/)
      - LaTeX Pretty Printing
 -}
 
@@ -20,6 +21,7 @@ import AS_Annotation
 import AS_Structured
 import Grothendieck
 
+{-! global : UpPos !-}
 
 data ARCH_SPEC_DEFN = Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) [Pos]
 		      -- pos: "arch","spec","=",opt "end"
