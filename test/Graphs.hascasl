@@ -1,0 +1,542 @@
+library Basic/Graphs
+version 0.9
+%% authors: M.Roggenbach, T.Mossakowski, L.Schröder
+%% Corresponding author: Till Mossakowski, till@tzi.de
+%% date: 17.09.02
+
+%left_assoc __intersection__  %[ Should go to StructuredDatatypes ]%
+
+from Basic/StructuredDatatypes get List
+
+logic HasCASL
+
+%{ Typed sets are represented by predicates over the type.
+   Set membership is just holding of the predicate: x isIn s <=> s x
+   Note that for disjoint unions and products, the type changes.  }%
+
+spec Set = InternalLogic and Extensionality then
+  var S,T : Type
+  type Set S = Pred S
+  ops emptySet : Set S;
+      {__} : S -> Set S;
+      __isIn__ : Pred (S * Set(S));
+      __subset__ :Pred( Set(S) * Set(S) );
+      __union__, __intersection__, __\\__  : Set S -> Set S -> Set S;
+      __disjoint__ : Pred( Set(S) * Set(S) );
+      __*__ : Set S -> Set T -> Set (S*T);
+      __disjointUnion__ :  Set S -> Set S -> Set (S*Bool);
+      inl,inr : S -> S*Bool;
+  forall x,x':S; y:T; s,s:Set(S); t:Set(T) 
+  . not x isIn emptySet
+  . x isIn {x'} <=> x=x'
+  . x isIn s <=> s x
+  . s subset s' <=> (forall x:S . x isIn s => x isIn s')
+  . x isIn (s union s') <=> x isIn s \/ x isIn s'
+  . x isIn (s intersection s') <=> x isIn s /\ x isIn s'
+  . x isIn (s \\ s') <=> x isIn s /\ not x isIn s'
+  . s disjoint s' <=> s intersection s' = emptySet
+  . (x,y) isIn s * t <=> x isIn s /\ y isIn t
+  . inl x = (x,false)
+  . inr x = (x,true)
+  . s disjointUnion s' = (s * {false}) union (s' * {true})
+end
+
+%{ Relations and partial equivalence relations (PERs) }%
+spec Relation =
+  Set
+then
+  var S : Type
+  ops reflexive, symmetric, transitive : Pred(Set(S*S))
+  forall r:Set(S*S)
+  . reflexive r <=> forall x:S . r(x,x)
+  . symmetric r <=> forall x,y:S . r(x,y) => r(y,x)
+  . transitive r <=> forall x,y,z:S . r(x,y) /\ r(y,z) => r(x,y)
+  type PER S = { r : Set(S*S) . symmetric r /\ transitive r }
+  op dom : PER S -> S
+  forall x:S; r: PER S
+  . x isIn dom r <=> (x,x) isIn r  
+end
+
+%{ Partial maps and endomaps }%  
+spec Map =
+  Set then
+  var S,T,U : Type
+  type Map S = S->?S
+  ops dom : (S->?T) -> Set S;
+      range : (S->?T) -> Set T; 
+      image : (S->?T) -> Set S -> Set T;
+      emptyMap : (S->?T);
+      __ :: __ --> __ : Pred ( S->?T * Pred(S) * Pred(T) );
+      __ [__/__] : (S->?T) * S * T -> (S->?T);
+      __ - __ : (S->?T) * S -> (S->?T);
+      __ intersection __, __union__ : (S->?T) * (S->?T) -> (S->?T);
+      __o__ : (T->?U) * (S->?T) -> (S->?U);
+      __||__ : (S->?T) -> Set S -> (S->?T);
+      ker : (S->?T) -> Pred (S*S);
+      injective : Pred(S->?T)
+  forall f,g:S->?T; h:T->?U; s,s':Set S; t:Set T; x,x':S; y:T
+  . x isIn dom f <=> def f x
+  . y isIn range f <=> exists x:S . f x = y
+  . y isIn image f s <=> exists x:S . x isIn s /\ f x = y
+  . not def emptyMap x
+  . f :: s --> t <=> (forall x:S . x isIn s => f x isIn t) 
+  . f[x/y] x' = if x=x' then y else f x
+  . (f - x) x' = if x=x' then undef() else f x
+  . f intersection g x = if f x = g x then f x else undef()
+  . def f union g <=> (forall x:S. def f x /\ def g x => f x = g x)
+  . def f union g => f union g x = if def f x  then f x else g x
+  . (h o g) x = h(g(x))
+  . (f || s) x = if x isIn s then f x else undef()
+  %% the kernel is a PER with same domain as the function, hence the existential equation
+  . (x,x') isIn ker f <=> f x =e= f x'
+  %% injectivity only for values in the domain, hence the existential equation
+  . injective f <=> (forall x,y:s . f x =e= f y => x=y)
+end
+
+%{ If we want to iterate the constructions product, disjoint union
+   and quotients on sets, we need to circumvent the problem that
+   the type of the sets changes with each construction.
+   This means that we need a specific type S which comes with
+   the possibility to represent the result of the above mentioned
+   operations again in S.
+   The following specification states the abstract requirement that
+   such representations exists for a given type S. }%
+spec SetRepresentation =
+  Map
+then
+  type S;
+  ops pair : S*S->S;   %% represent S*S in S
+      inl,inr : S->S;  %% represent S disjointUnion S in S, with left and right injection
+      %% represent quotient by a PER, yields the quotient map
+      %% the quotient is then the image of the quotient map
+      coeq: PER S -> Map S; 
+  . injective pair
+  . injective inl
+  . injective inr
+  . (range inl) disjoint (range inr)
+  forall r:PER S
+  . ker (coeq r) = r 
+end
+
+%{ Some sample set representation for the natural numbers ... }%
+spec Nat_SetRepresentation =
+  Map and Nat
+then
+  ops pair : Nat*Nat->Nat;   
+      inl,inr : Nat->Nat; 
+      coeq: PER Nat -> Map Nat; 
+      min : Pred Nat ->? Nat
+  forall r:PER Nat; m,n:Nat
+  %% Use Cantor's diagonalization for pairs of natural numbers
+  . pair(m,n) = ((m+n)*(m+n+1)+2*m) div 2
+  %% Use even and odd numbers as two copies of the natural numbers
+  . inl m = 2*m
+  . inr m = 2*m+1
+  %% choose the minimal element as representative of an equivalence class
+  . min p = n <=> (p n /\ forall m:Nat . m<n => not p m) 
+  . coeq r n = min (\ m:Nat . (m,n) isIn r) 
+end
+
+%{ ... and the statement that this is indeed a set representation }%
+view v : SetRepresentation to Nat_SetRepresentation = S |-> Nat
+end
+
+%{ Given a set representation, we now can define products, coproducts,
+   coequalizers and pushouts, while staying within the same type of sets.
+   Note that __*__ is now overloaded: for two given S-sets,
+   it delivers either an (S*S)-set, as defined in the specification
+   Set above, or an S-Set, as defined here.
+   We also specify the mediating morphisms that exist by the
+   respective (co)universal properties of the constructions. }%
+spec AbstractSetConstructions[SetRepresentation] given Map = %def
+  ops __*__,__coproduct__ : Set S * Set S -> Set S;
+      %% the mediating morphisms for (co)products depend on two morphisms
+      %% going into the factors (out of the summands)
+      <__! __>, [__! __] : Map S -> Map S -> Map S;
+      %% the product projections (coproduct injections already come from SetRepresentation)
+      pi1,pi2 : S ->? S;
+      %% partial inverses of the coproduct injections
+      left, rigt : S ->? S;
+      %% given a PER, yield the resulting quotient set (=coequalizer)
+      %% then we have coeq r :: dom r --> factor r
+      factor : PER S -> Set S;
+      %% the mediating morphism for coequalizers
+      %% if we have another h :: dom r --> A, it factors through coeq r via the mediating morphism
+      mediate : PER S -> Map S ->? Map S
+  forall x,y:S; s,s1,s2,t:Set S; f,g,h : Map S; r:PER S
+  . pi1 (pair (x,y)) = x
+  . pi2 (pair (x,y)) = y
+  . s1 * s2 = image pair (s1*s2)
+  . <f!g> x = pair(f x, g x)
+  . s1 coproduct s2 = (image inl s1) union (image inr s2)
+  . [f!g] (inl x) = f x
+  . [f!g] (inr x) = g x
+  . def left x <=> x isIn range inl
+  . def right x <=> x isIn range inr
+  . left (inl x) = x
+  . right (inr x) = x
+  . factor r = range (coeq r)
+  . f :: dom r --> t /\ ker f subset r => mediate r f (coeq x) = f x 
+then %implies
+  . pi1 :: s1 * s2 --> s1 
+  . pi2 :: s1 * s2 --> s2  
+  . inl :: s1 --> s1 coproduct s2  
+  . inr :: s2 --> s1 coproduct s2  
+  . f :: s --> s1 /\ g :: s --> s2 => 
+    <f!g> : s --> s1*s2 /\ 
+    pi1 o <f!g> || s = f || s /\ 
+    pi2 o <f!g> || s = g || s
+  . f :: s1 --> s /\ g :: s2 --> s =>
+    [f!g] :: s1 coproduct s2 --> s /\
+    [f!g] o inl || s1 coproduct s2 = f || s1 coproduct s2 /\
+    [f!g] o inr || s1 coproduct s2 = g || s1 coproduct s2
+  . coeq r :: dom r --> factor r
+  . f :: dom r --> t /\ ker f subset r => 
+    mediate r f :: (factor r) --> t /\ 
+    mediate r f o coeq r || dom r = f || dom r
+then %def
+  var S : Type
+  %% pushout mediators
+  %% the mediating morphism for pushouts depends on a cocone,
+  %% which is given by an object and two morphisms (ending in that object) 
+  type Med Ob Mor = Ob * Mor * Mor ->? Mor
+  %% (co)product of maps
+  ops __*__,__coproduct__ : Map S * Map S -> Map S;
+  %% the pushout operation takes a diagram (three objects and two morphisms)
+  %% and yields a colimiting cocone (an object and two morphisms)
+  %% plus a mediator
+      pushout : Set S * Map S * Set S * Map S * Set S -> 
+                (Set S * Map S * Map S * Med (Set S) (S->?S))
+  forall x,y:S; s,s1,s2,s3,t:Set S; f,g,h : Map S; r:Pred(S*S)
+  . f*g = <f o pi1 ! g o pi2>
+  . f copoduct g = [inl o f ! inr o g]
+  . def pushout (s1,f,s2,g,s3) <=> f :: s1 --> s2 /\ g :: s1 --> s3
+  %% pushouts are coequalizers of coproducts
+  . def pushout (s1,f,s2,g,s3) =>
+    pushout (s1,f,s2,g,s3) = 
+          %[ first take the coproduct ... ]%
+      let s = s2 coproduct s3;
+          %[ r is the PER identifying those elements of s coming from
+   elements of s1 ]%
+          r = \x,y:S . exists z:S . z isIn s1 /\ inl (f z) =x /\ inr (g z) = y
+              as PER S
+          %[ ... and then the coequalizer ]%
+          q = coeq r
+      in
+      %[ the pushout object is the quotient, the cocone is the
+   composition of the cocones ]%
+      (factor r,q o inl,q o inr,
+      %[ the mediator first takes the coproduct mediator [h!k]
+      %% and then the coequalizer mediator (mediate r [h!k]) ]%
+       \d,h,k:Med (Set S) (S->?S) . 
+         if h :: s2 --> d /\ k :: s3 --> d /\
+            h o f || s1 = k o g || s1
+            then mediate r [h!k] else undef())
+then %implies
+  %% pushout properties
+ {}
+end
+
+
+%{ Directed graphs over some arbitrary but fixed node and edge types,
+   given by node set and source and target maps.
+   Note that the node set may be larger than the range of these maps
+   in case that there are isolated nodes. }%
+spec DirectedGraph =
+  Set
+then
+  var N,E : Type
+  type Graph N E = { g : Set N * E->?N * E->?N  .
+                      dom source=dom target 
+                      /\ (source : dom source --> n)
+                      /\ (target : dom target --> n) }
+end
+
+%{ Some useful operations on directed graphs. }%
+
+spec RichDirectedGraph =
+  DirectedGraph
+then %def
+  var N,E : Type
+  ops emptyGraph : Graph N E;
+      nodes : Graph N E -> Set N;
+      edges : Graph N E -> Set E;
+      sourceMap, targetMap : Graph N E -> (E->?N);
+      addNode,removeNode : N -> Graph N E -> Graph N E;
+      addEdge : E * N * N -> Graph N E -> Graph N E;
+      removeEdge : E -> Graph N E -> Graph N E;
+      symmetric, transitive, loopFree, complete : Graph N E;
+      __subgraph__, __cliqueOf__, __maxCliqueOf__ : Pred(Graph N E * Graph N E);
+      __union__, __intersection__ : Graph N E * Graph N E -> Graph N E
+
+  forall n,n1,n2:N; e,e1,e2:E; g,g':Graph N E;
+         nn : Set N
+  . emtpyGraph = (emptySet,emptyMap,emptyMap) as Graph N E %(emtpyGraph)%
+
+  . nodes (nn,s,t) = nn
+
+  . edges (nn,source,target) = dom source                    %(edges)%
+
+  . sourceMap (nn,source,target) = source
+
+  . targetMap (nn,source,target) = target
+
+  . addNode n (nn,source,target) =
+    (nn union {n}, source, target) as Graph N E            %(addNode)%
+
+  . removeNode n (nn,source,target) =
+    (nn \\ {n}, source, target) as Graph N E             %(removeNode)%
+
+  . addEdge (e,n1,n2) (nn,source,target) =
+    (nn union {n1} union {n2},
+     source[e/n1], target[e/n2])                              %(addEdge)%
+
+  . removeEdge e (nn,source,target) =
+    (nn, source-e, target-e)                            %(removeEdge)%
+
+  . symmetric g <=> 
+    forall e:E .
+        e isIn edges g => 
+        exists e':E . e' isIn edges g 
+                      /\ sourceMapMap g e = targetMap g e'
+                      /\ targetMap g e' = targetMap g e      %(symmetric_def)%
+
+  . transitive g <=>
+    forall e1,e2:E .
+      e1 isIn egdes g /\ e2 isIn edges g /\
+      targetMap g e1 = sourceMap g e2 =>
+      exists e3:E . e3 isIn edges g
+                    /\ sourceMap e3 g = sourceMap e1 g
+                    /\ targetMap e3 g = targetMap e2 g      %(transitive_def)%
+
+  . loopFree g <=>
+    not (exists e:E . e isIn edges g /\ sourceMap e g = targetMap e g)
+                                                              %(loopFree_def)%
+
+  . g1 subgraph g2 <=>
+    (forall n:N . n isIn nodes g1 => n isIn nodes g2) /\
+    (forall e:E . e isIn edges g1 => e isIn edges g2) /\
+    sourceMap g1 = sourceMap g1 intersection sourceMap g2
+    targetMap g1 = targetMap g1 intersection targetMap g2
+                                                              %(subgraph_def)%
+
+  . complete (nn,source,target) <=>
+    forall n1,n2:N . n1 isIn nn /\ n2 isIn nn =>
+      exists e:E . source e = n /\ target e = n                   %(complete)%
+
+  . g1 cliqueOf g2 <=>
+    g1 subgraph g2 /\ complete(g1)                            %(cliqueOf_def)%
+
+  . g1 maxCliqueOf g2 <=>
+    g1 cliqueOf g2
+    /\ forall g3:Graph N E . 
+        g1 subgraph g3 /\ g3 cliqueOf g2 => g1=g3         %(max_cliqueOf_def)%
+
+  . g union g' = 
+    (nodes g union nodes g',
+     sourceMap g union sourceMap g',
+     targetMap g union targetMap g') as Graph N E
+
+  . g intersection g' = 
+    (nodes g intersection nodes g',
+     sourceMap g intersection sourceMap g',
+     targetMap g intersection targetMap g') as Graph N E
+end
+
+
+spec SimpleGraph =
+  RichDirectedGraph
+then
+  type SimpleGraph N E = {g:Graph N E .
+                          forall e1,e2:E . source e1 = source e2
+                                          /\ target e1 = target e2 => e1=e2 }
+  type LoopFreeGraph N E = {g:Graph N E . loopFree g}
+end
+
+
+spec GraphHomomorphism =
+  DirectedGraph
+then
+  var N1, E1, N2, E2, N3, E3 : Type
+  type Hom N1 E1 N2 E2 = 
+     {h : Graph N1 E1 * (N1->?N2) * (E1->?E2) * Graph N2 E2 .
+       hn :: nodes g1 --> nodes g2 /\ he :: edges g1 --> edges g2 
+       /\ forall e:E1 . e isIn edges e =>
+          (   hn(source g1 e) = source g2 (he e)
+           /\ hn(target g1 e) = target g2 (he e) ) } 
+  type HomHom E N = Hom E N E N
+  ops dom : Hom N1 E1 N2 E2 -> Graph N1 E1;
+      cod : Hom N1 E1 N2 E2 -> Graph N2 E2;
+      nodeMap : Hom N1 E1 N2 E2 -> (N1->?N2);
+      edgeMap : Hom N1 E1 N2 E2 -> (E1->?E2);
+      __o__ : Hom N2 E2 N3 E3 * Hom N1 E1 N2 E2 ->? Hom N1 E1 N3 E3
+  forall g1:Graph N1 E1; hn:N1->?N2; he:E1->?E2; g2:Graph N2 E2; 
+         h1:Hom N1 E1 N2 E2; h2:Hom N2 E2 N3 E3
+  . dom ((g1,hn,he,g2) as Hom N1 E1 N2 E2) = g1
+  . cod ((g1,hn,he,g2) as Hom N1 E1 N2 E2) = g2
+  . nodeMap ((g1,hn,he,g2) as Hom N1 E1 N2 E2) = hn
+  . edgeMap ((g1,hn,he,g2) as Hom N1 E1 N2 E2) = he
+  . def h2 o h1 <=> cod h1 = dom h2
+  . def h2 o h1 => 
+    h2 o h1 = 
+     (dom h1, nodemap h2 o nodemap h1, edgemap h2 o edgemap h1,cod h2)
+      as Hom N1 E1 N2 E2
+end
+
+%{ Constructions on directed graphs, defined in terms of the corresponding
+   operations on sets, usually acting component wise.
+   Note that we have to fix N and E here, since we need set representations for them
+   in order to get the needed constructions on sets. }%
+spec DirectedGraphConstructions [SetRepresentation with S |-> N] [SetRepresentation with S |-> E] =
+  AbstractSetConstructions[SetRepresentation with S |-> N]
+and
+  AbstractSetConstructions[SetRepresentation with S |-> E]
+and GraphHomomorphism
+then
+  type Congruence = {gp : Graph N E * PER N * PER E
+                          . nodes g = dom rn /\ edges g = dom re /\
+                            forall e1,e2:E . (e1,e2) isIn re =>
+                               (sourceMap g e1,sourceMap g e2) isIn rn /\
+                               (targetMap g e1,targetMap g e2) isIn rn }
+  ops graph : Congruence -> Graph N E;
+      nodeRel : Congruence -> PER N;
+      edgeRel : Congruence -> PER E;
+      factor : Congruence ->? Graph N E;
+      __coproduct__ : Graph N E * Graph N E -> Graph N E;
+      pushout : HomHom N E -> HomHom N E ->? 
+                HomHom N E * HomHom N E * Med (Graph N E) (HomHom N E)
+                
+
+  forall g,g1,g2: Graph N E; h1,h2:HomHom N E; r:Relation N E
+
+  . ((g,rn,re) in Congruence)
+    => graph ((g,rn,re) as Congruence) = g
+  . ((g,rn,re) in Congruence)
+    => nodeRel ((g,rn,re) as Congruence) = rn
+  . ((g,rn,re) in Congruence)
+    => edgeRel ((g,rn,re) as Congruence) = re
+
+  . factor c =
+    (factor (graph c) (nodeRel c),
+     mediate (edgeRel c) (coeq (nodeRel c) o sourceMap (graph c)),
+     mediate (edgeRel c) (coeq (nodeRel c) o targetMap (graph c)) )
+
+  . g1 coproduct g2 = 
+    (nodes g1 coproduct nodes g2,
+     sourceMap g1 coproduct sourceMap g2,
+     targetMap g1 coproduct targetMap g2)
+
+  . def pushout h1 h2 <=> dom h1 = dom h2
+  . def pushout h1 h2 => 
+    pushout h1 h2 =
+    let nm1 = nodeMap h1
+        nm2 = nodeMap h2
+        (np,ninl,ninr,nmed) = pushout(dom nm1,nm1,cod nm1,nm2,cod nm2)
+        em1 = edgeMap h1
+        em2 = edgeMap h2
+        (ep,einl,einr,emed) = pushout(dom em1,em1,cod em1,em2,cod em2)
+        s = nmed (ninl o (sourceMap (cod h1)),ninr o (sourceMap (cod h2)))
+        t = nmed (ninl o (targetMap (cod h1)),ninr o (targetMap (cod h2)))
+        pgraph = (np,s,t)
+    in    
+    ((cod h1,ninl,einl,pgraph) as HomHom N E,
+     (cod h2,ninr,einr,pgraph) as HomHom N E,
+     \g:Graph N E; h:HomHom N E; k:HomHom N E .
+      (pgraph,
+       nmed (nodeMap h,nodeMap k),
+       emed (edgeMap h,edgemap k),
+       g  ) as HomHom N E  )
+end
+  
+
+
+%% still first order !!!!!
+
+spec SymmetricClosure[sort NodeLabel][sort EdgeLabel] =
+  RichAbstractGraph[sort NodeLabel][sort EdgeLabel]
+then
+  op sc : Graph -> Graph
+  forall n,n1,n2:NodeLabel; e:EdgeLabel; g:Graph
+  . n isIn sc(g) <=> n isIn g                            %(sc_def_1)%
+  . e::n1-->n2 isIn sc(g) <=> 
+      (e::n1-->n2 isIn g \/ e::n2-->n1 isIn g)           %(sc_def_2)%
+end
+
+spec TransitiveClosure[sort NodeLabel][sort EdgeLabel] =
+  RichAbstractGraph[sort NodeLabel][sort EdgeLabel]
+and
+  List[sort EdgeLabel fit Elem |-> EdgeLabel]
+and
+  SymmetricClosure[sort NodeLabel][sort List[EdgeLabel]]
+  with Graph |-> PathGraph
+then
+  ops tc,stc : Graph -> PathGraph
+  preds __pathSubgraphOf__ : Graph * PathGraph;
+        pathTransitive : PathGraph
+  forall n,n1,n2:NodeLabel; e:EdgeLabel; g:Graph; g':PathGraph
+  . g pathSubgraphOf g' <=>
+      (forall n:NodeLabel . n isIn g <=> n isIn g') /\
+      (forall n1,n2:NodeLabel; e:EdgeLabel .
+          e::n1-->n2 isIn g <=> (e::[])::n1-->n2 isIn g') 
+                                                %(pathSubgraphOf_def)%
+  . pathTransitive(g') <=>
+      forall n1,n2,n3:NodeLabel; e1,e2:List[EdgeLabel] . 
+        e1::n1-->n2 isIn g' /\ e2::n2-->n3 isIn g' =>
+           (e1++e2)::n1-->n3 isIn g'            %(pathTransitive_def)%
+
+  . pathTransitive(tc(g))                                  %(tc_def1)%
+  . g pathSubgraphOf tc(g)                                 %(tc_def2)%
+  . g pathSubgraphOf g' /\ pathTransitive(g') =>
+      tc(g) subgraphOf g'                                  %(tc_def3)%
+
+  . stc(g) = sc(tc(g))                                     %(stc_def)%
+end
+
+spec Minor[sort N1][sort E1][sort N2][sort E2] =
+  TransitiveClosure[sort N2][sort E2] with Graph |-> Graph2
+and
+  GraphHomomorphism[sort N1][sort E1][sort N2][sort List[E2]]
+  with Graph2 |-> PathGraph 
+then
+  pred __minorOf__(g1:Graph1; g2:Graph2) <=>           
+    exists h:Hom . source(h)=g1 /\ target(h)=stc(g2)     %(minorOf_def)%
+end
+
+spec K5 =
+  free type Five ::= 1 | 2 | 3 | 4 | 5
+then
+  SimpleAbstractGraph[sort Five] with Graph |-> K5
+then
+  op k5 : K5
+  forall n,n1,n2 : Five
+  . n isIn k5                                             %(k5_def_1)%
+  . n1 --> n2 isIn k5                                     %(k5_def_2)%
+end
+
+spec K3_3 =
+  free type Three ::= 1 | 2 | 3
+  free type Three2 ::= left(Three) | right(Three)
+then
+  SimpleAbstractGraph[sort Three2] with Graph |-> K3_3
+then
+  op k3_3 : K3_3
+  forall n,n1,n2 : Three
+  . left(n) isIn k3_3                                   %(k3_3_def_1)%
+  . right(n) isIn k3_3                                  %(k3_3_def_2)%
+  . left(n1) --> right(n2) isIn k3_3                    %(k3_3_def_3)%
+end
+
+%% planar graphs defined using the Kuratowski characterization
+spec Planar[sort NodeLabel][sort EdgeLabel] =
+  K5 and K3_3
+and
+  Minor[sort Five][sort Unit][sort NodeLabel][sort EdgeLabel]
+  with Graph1 |-> K5, Graph2 |-> Graph
+and
+  Minor[sort Three2][sort Unit][sort NodeLabel][sort EdgeLabel]
+  with Graph1 |-> K3_3, Graph2 |-> Graph
+then
+  pred planar(g:Graph) <=> not k5 minorOf g /\ not k3_3 minorOf g
+                                                        %(planar_def)%
+end
+
