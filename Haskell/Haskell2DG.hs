@@ -2,7 +2,7 @@ module Haskell.Haskell2DG where
 
 import Options
 import Haskell.Hatchet.MultiModuleBasics
-import Haskell.Hatchet.MultiModule              (readModuleInfo)
+import Haskell.Hatchet.MultiModule              (readModuleInfo, readOneImportSpec)
 import Haskell.Hatchet.HsParseMonad             (ParseResult (..))
 import Haskell.Hatchet.SynConvert               (toAHsModule)
 import Haskell.Hatchet.HsParsePostProcess       (fixFunBindsInModule)
@@ -33,6 +33,7 @@ import Common.Lib.Graph
 import Common.Id
 import Haskell.Logic_Haskell
 import Haskell.HaskellUtils
+import GHC.IOBase
 
 -- - Datentyp anlegen für HaskellEnv (Resultat von tiModule)
 data HaskellEnv = HasEnv Timing              -- timing values for each stage
@@ -100,7 +101,8 @@ anaHaskellFile _ srcFile =
                          moduleRenamed
                          moduleSynonyms
      --in 
-     return (Just(Lib_id(Indirect_link srcFile []), moduleSyntax, hasEnv2DG hasEnv, hasEnv2LG hasEnv))
+     return (Just(Lib_id(Indirect_link srcFile []), moduleSyntax, hasEnv2DG hasEnv, 
+             hasEnv2LG hasEnv))
 
 hasEnv2DG :: HaskellEnv -> DGraph
 hasEnv2DG (HasEnv 
@@ -126,52 +128,73 @@ hasEnv2DG (HasEnv
                in
                    hsMod2DG aMod modInfo
 
+-- main Module and main ModuleInfo
 hsMod2DG :: AHsModule -> ModuleInfo -> DGraph
 hsMod2DG (AHsModule name exps imps decls) modInfo = 
-       let node_contents  | imps == [] =
+           -- create the first node, representing the main Module
+       let node_contents  | imps == [] =       -- no imports
                              DGNode {
                                dgn_name = aHsMod2SimpleId name,
                                dgn_sign = G_sign Haskell modInfo,
                                dgn_sens = G_l_sentence Haskell (extractSentences 
                                            (AHsModule name exps imps decls)),
                                dgn_origin = DGBasic }
-                          | otherwise =
+                          | otherwise =       -- imports
                              DGNode {
                                dgn_name = aHsMod2SimpleId name,
                                dgn_sign = G_sign Haskell modInfo,
                                dgn_sens = G_l_sentence Haskell (extractSentences
                                            (AHsModule name exps imps decls)),
                                dgn_origin = DGExtension }
-           dg = buildGr []
+           dg = empty
            [node] = newNodes 0 dg
            dg' = insNode (node,node_contents) dg
-           link = createDGLink imps
-           dg'' = insEdge (node,node,link) dg'
         in
-           buildGr []
+           case imps of
+             [] -> dg                       -- no imports, no other nodes and edges
+             _  -> insImports dg node imps  -- imports -> add imported Modules
 
-createDGLink :: [AHsImportDecl] -> DGLinkLab
-createDGLink _ = DGLink  {
-                  dgl_morphism = gEmbed (G_morphism Haskell ()),
-                  dgl_type = GlobalDef,
-                  dgl_origin = DGExtension }
+-- DGraph consisting in one node (the main Module), this node and ModuleInfo 
+-- about imported Modules
+insImports :: DGraph ->  Node -> [AHsImportDecl] -> DGraph
+insImports dg _ [] = dg
+insImports dg n ((AHsImportDecl src name b mbm mayBeHiding):idecls) = 
+        let idecl = AHsImportDecl src name b mbm mayBeHiding
+            node_contents = DGNode {
+                               dgn_name = aHsMod2SimpleId name,
+                               dgn_sign = G_sign Haskell (unsafePerformIO 
+                                                          (readOneImportSpec idecl)),
+                               dgn_sens = G_l_sentence Haskell [],
+                               dgn_origin = DGBasic }
+            [node] = newNodes 0 dg
+            dg' = insNode(node,node_contents) dg
+            link = createDGLinkLabel idecl
+            dg'' = insEdge (node,n,link) dg'
+        in
+           insImports dg'' n idecls
+
+createDGLinkLabel :: AHsImportDecl -> DGLinkLab
+createDGLinkLabel idecl = 
+        case idecl of
+          AHsImportDecl _ _ _ _ Nothing ->              -- no hiding
+                     DGLink  {
+                       dgl_morphism = gEmbed (G_morphism Haskell ()),
+                       dgl_type = GlobalDef,
+                       dgl_origin = DGExtension }
+          AHsImportDecl _ _ _ _ (Just(False,_)) ->      -- no hiding
+                     DGLink  {
+                       dgl_morphism = gEmbed (G_morphism Haskell ()),
+                       dgl_type = GlobalDef,
+                       dgl_origin = DGExtension }
+          AHsImportDecl _ _ _ _ (Just(True,_)) ->       -- hiding 
+                     DGLink  {
+                       dgl_morphism = gEmbed (G_morphism Haskell ()),
+                       dgl_type = HidingDef,
+                       dgl_origin = DGExtension }
 
 aHsMod2SimpleId :: AModule -> Maybe SIMPLE_ID
 aHsMod2SimpleId (AModule name) = Just (Token { tokStr = name, tokPos = nullPos })
                               
-
--- newtype AModule = AModule String
---   deriving (Eq,Ord,Show)
-
--- data AHsModule = AHsModule AModule (Maybe [AHsExportSpec])
---                          [AHsImportDecl] [AHsDecl]
---   deriving Show
-
--- data AHsImportDecl
--- 	 = AHsImportDecl ASrcLoc AModule Bool (Maybe AModule)
--- 	                (Maybe (Bool,[AHsImportSpec]))
---   deriving (Eq,Show)
-
 hasEnv2LG :: HaskellEnv -> LibEnv
 hasEnv2LG _ = emptyLibEnv
 
