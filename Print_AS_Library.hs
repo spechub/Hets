@@ -89,7 +89,7 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 	let aa' = printText0 ga aa
 	    ab' = fsep $ punctuate comma $ map (printText0 ga) ab
 	in (hang (ptext "from" <+> aa' <+> ptext "get") 4 ab') <> ptext "\n"
-    printText0 ga (AS_Library.Logic aa _) =
+    printText0 ga (AS_Library.Logic_decl aa _) =
 	let aa' = printText0 ga aa
 	in ptext "logic" <+> aa' 
 
@@ -176,7 +176,7 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 			<\+> hc_sty_plain_keyword "get") 
 	               8 
 	               (tabbed_nest_latex ab')) <> latex_macro "\n"
-    printLatex0 ga (AS_Library.Logic aa _) =
+    printLatex0 ga (AS_Library.Logic_decl aa _) =
 	let aa' = printLatex0 ga aa
 	in hc_sty_plain_keyword "logic" <\+> aa' 
 
