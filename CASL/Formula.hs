@@ -315,6 +315,7 @@ impFormula = do { f <- andOrFormula
 		    where makeImpl [f,g] p = Implication f g p
 		          makeImpl (f:r) (c:p) = 
 			             Implication f (makeImpl r p) [c]
+		          makeImpl _ _ = error "makeImpl got illegal argument"
 			  makeIf l p = makeImpl (reverse l) (reverse p)
 
 formula :: GenParser Char st FORMULA

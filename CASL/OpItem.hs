@@ -63,6 +63,7 @@ isConstant _ = False
 
 toHead c (Total_op_type [] s _) = Total_op_head [] s [c] 
 toHead c (Partial_op_type [] s _) = Partial_op_head [] s [c] 
+toHead _ _ = error "toHead got non-empty argument type"
 
 opItem :: GenParser Char st OP_ITEM 
 opItem = do { (os, cs)  <- parseId `separatedBy` commaT

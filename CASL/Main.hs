@@ -57,5 +57,5 @@ parseSpec fileName =  do { r <- parseFromFile basicSpec fileName
 			 }
    
 result r = case r of Left err -> "parse error at " ++ show err ++ "\n"
-		     Right x  -> render (printText0 x) 
+		     Right x  -> renderText (printText0 x) 
 
