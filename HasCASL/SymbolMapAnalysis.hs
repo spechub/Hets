@@ -34,7 +34,6 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Control.Monad
 import Data.Maybe
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
@@ -56,57 +55,43 @@ inducedFromMorphism rmap sigma = do
           -- that is not directly mapped
           _ -> Map.lookup (ASymbol sy) rmap == Nothing
   -- ... if not, generate an error
-  when (not (Set.isEmpty incorrectRsyms))
-    (pplain_error ()
+  if Set.isEmpty incorrectRsyms then return () else
+    pplain_error ()
        (ptext "the following symbols:"
         <+> printText incorrectRsyms 
         $$ ptext "are already mapped directly or do not match with signature"
         $$ printText sigma) 
-       nullPos)
+       $ posOfId $ rawSymName $ Set.findMin incorrectRsyms
   -- compute the sort map (as a Map)
   myTypeIdMap <- foldr
               (\ (s, ti) m -> 
-	       do s' <- typeFun s (typeKind ti)
+	       do s' <- typeFun rmap s (typeKind ti)
                   m1 <- m
                   return $ Map.insert s s' m1) 
               (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
-  op_Map <- Map.foldWithKey (opFun srcTypeMap myTypeIdMap)
+  op_Map <- Map.foldWithKey (opFun rmap srcTypeMap myTypeIdMap)
               (return Map.empty) (assumps sigma)
   -- compute target signature
   let tarTypeMap = Map.foldWithKey ( \ i k m -> 
 			       Map.insert (Map.findWithDefault i i myTypeIdMap)
 					  k m)
 	                    Map.empty srcTypeMap
-      sigma' = sigma 
-            { typeMap = tarTypeMap
-            , assumps =  Map.foldWithKey (mapOps myTypeIdMap op_Map)
-                              Map.empty (assumps sigma) }
+      sigma' = Map.foldWithKey (mapOps myTypeIdMap op_Map) sigma
+				 { typeMap = tarTypeMap, assumps = Map.empty }
+                              $ assumps sigma
   -- return assembled morphism
-  return $ (mkMorphism sigma sigma') 
+  Result (envDiags sigma') $ Just ()
+  return $ (mkMorphism sigma sigma' {envDiags = []}) 
 	     { typeIdMap = myTypeIdMap
 	     , funMap = op_Map }
-  where
-  typeFun :: Id -> Kind -> Result Id
-  typeFun s k = 
-    -- rsys contains the raw symbols to which s is mapped to
-    case Set.size rsys of
-          0 -> return s  -- use default = identity mapping
-          1 -> return $ rawSymName $ Set.findMin rsys -- take the unique rsy
-          _ -> pplain_error s  -- ambiguity! generate an error 
-                 (ptext "Sort" <+> printText s 
-                  <+> ptext "mapped ambiguously:" <+> printText rsys)
-                 nullPos
-    where
-    -- get all raw symbols to which s is mapped to
-    rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
-               [ASymbol $ idToTypeSymbol s k, AnID s, AKindedId SK_type s]
 
  -- to a Fun_map, add evering resulting from mapping (id,ots) according to rmap
-  opFun :: TypeMap -> IdMap -> Id -> OpInfos -> Result FunMap -> Result FunMap
-  opFun tm type_Map i ots m = 
+opFun :: RawSymbolMap -> TypeMap -> IdMap -> Id -> OpInfos 
+      -> Result FunMap -> Result FunMap
+opFun rmap tm type_Map i ots m = 
     -- first consider all directly mapped profiles
-    let (ots1,m1) = foldr (directOpMap tm type_Map i) (Set.empty,m) 
+    let (ots1,m1) = foldr (directOpMap rmap tm type_Map i) (Set.empty,m) 
 		    $ opInfos ots
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
@@ -126,18 +111,17 @@ inducedFromMorphism rmap sigma = do
        (Nothing,Nothing) -> Set.fold (unchangedOpSym type_Map i) m1 ots1
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
-  directOpMap :: TypeMap -> IdMap -> Id -> OpInfo 
-	      -> (Set.Set TySc, Result FunMap)
-              -> (Set.Set TySc, Result FunMap)
-  directOpMap tm type_Map i oi (ots,m) = let ot = TySc $ opType oi in
+directOpMap :: RawSymbolMap -> TypeMap -> IdMap -> Id -> OpInfo 
+	    -> (Set.Set TySc, Result FunMap) -> (Set.Set TySc, Result FunMap)
+directOpMap rmap tm type_Map i oi (ots,m) = let ot = TySc $ opType oi in
       case Map.lookup (ASymbol (idToOpSymbol i ot)) rmap of
         Just rsy -> 
           (ots,insertmapOpSym tm type_Map i rsy ot m)
         Nothing -> (Set.insert ot ots,m)
     -- map op symbol (id,ot) to raw symbol rsy
-  mapOpSym :: TypeMap -> IdMap -> Id -> TySc -> RawSymbol 
+mapOpSym :: TypeMap -> IdMap -> Id -> TySc -> RawSymbol 
 	     -> Result (Id, TySc)
-  mapOpSym tm type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
+mapOpSym tm type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
       case rsy of
       ASymbol (Symbol id' (OpAsItemType sc2@(TySc ot'))) ->
         if isUnifiable tm 0 sc ot'
@@ -156,25 +140,41 @@ inducedFromMorphism rmap sigma = do
                 <+> ptext" is mapped to symbol of wrong kind:" 
                 <+> printText rsy) 
                nullPos
-    -- insert mapping of op symbol (id,ot) to raw symbol rsy into m
-  insertmapOpSym tm type_Map i rsy ot m = do  
+    -- insert mapping of op symbol (id, ot) to raw symbol rsy into m
+insertmapOpSym :: TypeMap -> IdMap -> Id -> RawSymbol -> TySc
+	       -> Result FunMap -> Result FunMap
+insertmapOpSym tm type_Map i rsy ot m = do  
       m1 <- m        
       (id',kind') <- mapOpSym tm type_Map i ot rsy
       return (Map.insert (i, ot) (id',kind') m1)
     -- insert mapping of op symbol (id,ot) to itself into m
-  unchangedOpSym type_Map i ot m = do
+unchangedOpSym :: IdMap -> Id -> TySc -> Result FunMap -> Result FunMap
+unchangedOpSym type_Map i ot m = do
       m1 <- m
       return (Map.insert (i, ot) (i, mapTySc type_Map ot) m1)
   -- map the ops in the source signature
-  mapOps type_Map op_Map i ots m = 
-    foldr mapOp m (opInfos ots) 
-    where
-    mapOp ot m1 = 
+mapOps :: IdMap -> FunMap -> Id -> OpInfos -> Env -> Env
+mapOps type_Map op_Map i ots e = 
+    foldr ( \ ot e' ->
 	let sc = TySc $ opType ot
 	    (id', TySc sc') = Map.findWithDefault (i, mapTySc type_Map sc)
 			 (i, sc) op_Map
-	    e = initialEnv {assumps = m1}
-	    in assumps (execState (addOpId id' sc' [] (NoOpDefn Op)) e)
+	    in execState (addOpId id' sc' [] (NoOpDefn Op)) e')
+    e $ opInfos ots
+ 
+-- | compute type mapping
+typeFun :: RawSymbolMap -> Id -> Kind -> Result Id
+typeFun rmap s k = do
+    let rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
+               [ASymbol $ idToTypeSymbol s k, AnID s, AKindedId SK_type s]
+    -- rsys contains the raw symbols to which s is mapped to
+    case Set.size rsys of
+          0 -> return s  -- use default = identity mapping
+          1 -> return $ rawSymName $ Set.findMin rsys -- take the unique rsy
+          _ -> pplain_error s  -- ambiguity! generate an error 
+                 (ptext "type: " <+> printText s 
+                  <+> ptext "mapped ambiguously:" <+> printText rsys)
+                 nullPos
 
 -- Some auxiliary functions for inducedFromToMorphism
 testMatch :: RawSymbolMap -> Symbol -> Symbol -> Bool
