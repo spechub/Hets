@@ -160,6 +160,8 @@ toAHsDecl  (HsPatBind sloc pat rhs wheres)
                 (toAHsPat pat)
                 (toAHsRhs  rhs)
                 (map (toAHsDecl ) wheres)
+toAHsDecl (HsAxiomBind axbind)
+   = AHsAxiomBind (toAAxBind axbind)
  
 toAHsMatch :: HsMatch -> AHsMatch
 toAHsMatch  (HsMatch sloc name pats rhs wheres)
@@ -306,7 +308,37 @@ toAHsGuardedAlt  (HsGuardedAlt sloc e1 e2)
    = AHsGuardedAlt (toASrcLoc sloc) (toAHsExp e1) (toAHsExp e2)
 
 --------------------------------------------------------------------------------
+----------- Extended Haskell -----------
 
+toAAxBind :: AxBinding -> AAxBinding
+toAAxBind (AndBindings axBind axBind')
+   = AAndBindings (toAAxBind axBind) (toAAxBind axBind')
+toAAxBind (AxiomDecl name formula)
+   = AAxiomDecl name (toAFormula formula)
+
+toAFormula :: Formula -> AFormula
+toAFormula (AxQuant quant formula)
+   = AAxQuant (toAQuantifier quant) (toAFormula formula)
+toAFormula (AxEq formula exp sloc)
+   = AAxEq (toAFormula formula) (toAHsExp exp) (toASrcLoc sloc)
+toAFormula (AxExp exp)
+   = AAxExp (toAHsExp exp)
+
+toAQuantifier :: Quantifier -> AQuantifier
+toAQuantifier (AxForall axBndrs)
+   = AAxForall $ map toAAxiomBndr axBndrs
+toAQuantifier (AxExists axBndrs)
+   = AAxExists $ map toAAxiomBndr axBndrs
+toAQuantifier (AxExistsOne axBndrs)
+   = AAxExistsOne $ map toAAxiomBndr axBndrs
+
+toAAxiomBndr :: AxiomBndr -> AAxiomBndr
+toAAxiomBndr (AxiomBndr name)
+   = AAxiomBndr (toAHsName name)
+toAAxiomBndr (AxiomBndrSig name qtype)
+   = AAxiomBndrSig (toAHsName name) (toAHsQualType qtype)
+
+--------------------------------------------------------------------------------
 -- map to HsSyn from AnnotatedHsSyn
 
 fromASrcLoc :: ASrcLoc -> SrcLoc
