@@ -116,7 +116,7 @@ minExpFORMULA (sign :: Sign lid b s f e) formula
             minExpFORMULA_pred sign predicate terms pos         -- :: FORMULA
         Definedness term pos            -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
-            --debug 4 ("t",t)
+            --debug 4 ("t", t)
             t'  <- is_unambiguous t pos                         -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
 	Existl_equation term1 term2 pos ->
@@ -142,10 +142,11 @@ minExpFORMULA (sign :: Sign lid b s f e) formula
                 [] -> pplain_error (Unparsed_term "<error>" [])
                    (ptext "No correct typing for " <+> printText term)
                    (Id.headPos pos)
+                (t:_):[]   -> return t                          -- :: TERM
         -- BEWARE! Oversimplified disambiguation!
-                (_:_):_   -> return $ head $ head term            -- :: TERM
+                --(_:_):[]   -> return head $ head term           -- :: TERM
                 _       -> pplain_error (Unparsed_term "<error>" [])
-                    (ptext "Cannot disambiguate1! Possible Expansions: "
+                    (ptext "Cannot disambiguate1!\nPossible Expansions: "
                      <+> (printText term)) (Id.headPos pos)
 
 {-----------------------------------------------------------
@@ -157,14 +158,17 @@ minExpFORMULA_pred :: Analyzable lid b s f e =>
 minExpFORMULA_pred (sign :: Sign lid b s f e) predicate terms pos = do
     expansions          <- mapM
         (minExpTerm sign) terms                 -- ::        [[[TERM]]]
+    --debug 5 ("expansions", expansions)
     permuted_exps       <- return
         $ permute expansions                    -- ::        [[[TERM]]]
     profiles            <- return
         $ map get_profile permuted_exps         -- ::  [[(PredType, [TERM])]]
+    --debug 6 ("profiles", profiles)
     p                   <- return
         $ concat                                -- ::  [[(PredType, [TERM])]]
         $ map (equivalence_Classes pred_eq)     -- :: [[[(PredType, [TERM])]]]
           profiles                              -- ::  [[(PredType, [TERM])]]
+    --debug 7 ("p", p)
     p'                  <- choose p             -- ::    (PredType, [TERM])
     return $ qualify_pred p'
     where
@@ -184,7 +188,8 @@ minExpFORMULA_pred (sign :: Sign lid b s f e) predicate terms pos = do
                    (ptext "No correct typing for " <+> printText ps)
                    (Id.headPos pos)
         -- BEWARE! Oversimplified disambiguation!
-            (_:_):_ -> return $ head $ head ps
+            (p:_):[] -> return p
+            --(_:_):_ -> return $ head $ head ps
             _   -> pplain_error (PredType [], terms)
                    (ptext "Cannot disambiguate2! Term: " 
                     <+> (printText (predicate, terms))
@@ -214,8 +219,10 @@ minExpFORMULA_pred (sign :: Sign lid b s f e) predicate terms pos = do
                     b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
                     preds_equal = (pred1 == pred2)              -- ::  Bool
                     preds_equiv = leqP sign pred1 pred2         -- ::  Bool
-                    types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
-                in  b1 && b2 && (preds_equal || (preds_equiv && types_equal))
+                    types_equal = and (zipWith (==) s1 s2)      -- ::  Bool
+                in  b1 && b2 && (preds_equal
+                                 || (preds_equiv
+                                     && types_equal))
 
 {-----------------------------------------------------------
     Minimal Expansions of a Strong/Existl. Equation Formula
@@ -231,7 +238,7 @@ minExpFORMULA_eq (sign :: Sign lid b s f e) eq term1 term2 pos = do
     pairs       <- return
         $ permute [catMaybes (map maybeHead exps1), 
                    catMaybes (map maybeHead exps2)]  -- :: [[TERM]]
-    --debug 3 ("paris",pairs)
+    --debug 3 ("pairs",pairs)
     candidates  <- return
         $ filter fit pairs                              -- :: [[TERM]]
     --debug 3 ("candidates",candidates)
@@ -240,7 +247,8 @@ minExpFORMULA_eq (sign :: Sign lid b s f e) eq term1 term2 pos = do
                (ptext "No correct typing for " <+> printText (eq term1 term2 pos))
                (Id.headPos pos)
         -- BEWARE! Oversimplified disambiguation!
-        ([t1,t2]:_)       -> return $ eq t1 t2 pos
+        --([t1,t2]:_)       -> return $ eq t1 t2 pos
+        ([t1,t2]:[])       -> return $ eq t1 t2 pos
         _               -> pplain_error (eq term1 term2 pos)
             (ptext "Cannot disambiguate3! Possible Expansions: "
              <+> (printText exps1) $$ (printText exps2)) (Id.headPos pos)
@@ -257,7 +265,7 @@ minExpFORMULA_eq (sign :: Sign lid b s f e) eq term1 term2 pos = do
 minExpTerm :: Analyzable lid b s f e => 
                 Sign lid b s f e -> TERM f -> Result [[TERM f]]
 minExpTerm (sign :: Sign lid b s f e) term'
- = do -- debug 66 ("term'",term')
+ = do -- debug 6 ("term'",term')
       u <- case term' of
         Simple_id var
             -> minExpTerm_simple sign var
@@ -276,8 +284,9 @@ minExpTerm (sign :: Sign lid b s f e) term'
                ++ string
         _   -> error $ "minExpTerm: Parser Error - Unparsed `Mixfix' term "
                ++ (show term')
-      -- debug 6 ("u",u)
+      --debug 6 ("u",u)
       return u
+
 {-----------------------------------------------------------
     Minimal Expansions of a Simple_id Term
 -----------------------------------------------------------}
@@ -382,12 +391,12 @@ minExpTerm_op1 (sign :: Sign lid b s f e) op terms pos = do
     --debug 3 ("terms",show terms)
     expansions          <- mapM
         (minExpTerm sign) terms                 -- ::       [[[TERM]]]
-    --debug 3 ("expansions",show expansions)
+    --debug 9 ("expansions", expansions)
     permuted_exps       <- return
         $ permute expansions                    -- ::       [[[TERM]]]
-    --debug 3 ("permuted_exps",show permuted_exps)
     profiles            <- return
         $ map get_profile permuted_exps         -- ::  [[(OpType, [TERM])]]
+    --debug 10 ("profiles", profiles)
     p                   <- return
         $ concat                                -- ::  [[(OpType, [TERM])]]
         $ map (equivalence_Classes op_eq)       -- :: [[[(OpType, [TERM])]]]
@@ -439,8 +448,10 @@ minExpTerm_op1 (sign :: Sign lid b s f e) op terms pos = do
                     b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
                     ops_equal = (op1 == op2)                    -- ::  Bool
                     ops_equiv = leqF sign op1 op2               -- ::  Bool
-                    types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
-                in b1 && b2 && (ops_equal || (ops_equiv && types_equal))
+                    types_equal = and (zipWith (==) s1 s2)      -- ::  Bool
+                in  b1 && b2 && (ops_equal
+                                || (ops_equiv
+                                    && types_equal))
 
 {-----------------------------------------------------------
     Minimal Expansions of a Cast Term
@@ -597,9 +608,10 @@ term_sort term'  = case term' of
 -----------------------------------------------------------}
 common_subsorts :: Analyzable lid b s f e => 
                 Sign lid b s f e -> [SORT] -> Set.Set SORT
-common_subsorts (sign :: Sign lid b s f e) = let
+common_subsorts (sign :: Sign lid b s f e) srts = let
     get_subsorts = flip subsortsOf sign
-    in (foldr Set.intersection Set.empty) . (map get_subsorts)
+    in foldr1 Set.intersection $ map get_subsorts $ srts
+    -- in (foldr Set.intersection Set.empty) . (map get_subsorts)
 
 {-----------------------------------------------------------
     Set of SuperSORTs common to all given SORTs
