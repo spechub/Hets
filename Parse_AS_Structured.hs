@@ -23,6 +23,7 @@ import Anno_Parser
 import Id(tokPos)
 import Keywords
 import Lexer
+import Token
 import Parsec
 import Id
 import List
