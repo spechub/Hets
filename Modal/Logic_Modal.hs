@@ -100,16 +100,32 @@ instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
       sym_name Modal = symName
       provers Modal = [] 
       cons_checkers Modal = []
-      simplify_sen Modal = simplifySen minExpForm simModal simModal -- rmTypesMod
+      simplify_sen Modal = simplifySen minExpForm rmTypesMod rmTypesMod
 
--- dummy
+-- reTypesMod
+rmTypesMod :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA
+rmTypesMod sign mFormula =
+    case mFormula of
+      Box mod form pos -> 
+	  let mod' = case mod of
+	             Term_mod term -> Term_mod $ rmTypesT minExpForm rmTypesMod sign term
+		     t -> t
+	  in Box mod' (simplifySen minExpForm rmTypesMod rmTypesMod sign form) pos
+      Diamond mod form pos ->
+	  let mod' = case mod of
+	             Term_mod term -> Term_mod $ rmTypesT minExpForm rmTypesMod sign term
+		     t -> t
+	  in Diamond mod' (simplifySen minExpForm rmTypesMod rmTypesMod sign form) pos
+
+
+-- dummy	
 simModal :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA
 simModal sign mFormula =
     case mFormula of
       Box mod form pos -> 
 	  let mod' = case mod of
-	             Term_mod term -> Term_mod $ rmTypesT minExpForm simModal sign term
-		     t -> t
+		        Term_mod term -> Term_mod $ rmTypesT minExpForm simModal sign term
+			t -> t
 	  in Box mod' (simplifySen minExpForm simModal simModal sign form) pos
       Diamond mod form pos ->
 	  let mod' = case mod of
@@ -117,22 +133,6 @@ simModal sign mFormula =
 		     t -> t
 	  in Diamond mod' (simplifySen minExpForm simModal simModal sign form) pos
 
-{-
--- rmTypesMod	
-rmTypesMod :: M_FORMULA -> M_FORMULA
-rmTypesMod mFormula = 
-    case mFormula of
-      Box mod form pos -> 
-	  let mod' = case mod of
-	             Term_mod term -> Term_mod $ rmTypesT minExpForm rmTypesMod (emptySign emptyModalSign) term
-		     t -> t
-	  in Box mod' (rmTypesF minExpForm id (emptySign emptyModalSign) form) pos
-      Diamond mod form pos ->
-	  let mod' = case mod of
-		     Term_mod term -> Term_mod $ rmTypesT minExpForm rmTypesMod (emptySign emptyModalSign) term
-		     t -> t
-	  in Diamond mod' (rmTypesF minExpForm id (emptySign emptyModalSign) form) pos
--}
 
 instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
