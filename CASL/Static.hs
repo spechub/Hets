@@ -32,6 +32,8 @@ import Id
 import AS_Annotation
 import AS_Basic_CASL
 import Sign
+import Result
+import Graph
 
 ------------------------------------------------------------------------------
 -- types
@@ -39,35 +41,27 @@ import Sign
 
 type Err = ([String],Bool)
 
+type Sentences = [(String,Sentence)]
+
+type LocalEnv = (Sign, Sentences)
+
 ------------------------------------------------------------------------------
 -- Functions on signature element
 ------------------------------------------------------------------------------
 
+emptySign :: Sign
+emptySign = SignAsMap emptyFM empty
+
+emptyLocalEnv :: LocalEnv
+emptyLocalEnv = (emptySign,[])
+
 newRels :: SortRels
 newRels = SortRels [] [] [] []
 
-isUnique :: Eq a => [a] -> Bool
-isUnique [] = False
-isUnique [h] = True
-isUnique (h:t) = ([ x | x<-t, x == h ]==[]) && isUnique t
-
-illArg :: Pos -> String -> String -> Maybe Err
-illArg p s c = mkErr True p ("illegal argument passed to function " ++ s
-                             ++ " (constructor " ++ c ++ ")")
-
-mkErr :: Bool -> Pos -> String -> Maybe Err
-mkErr fatal (l,c) s = Just ([  (if fatal then "error" else "warning") ++
-                              "(" ++ (show l) ++ "," ++ (show c) ++ "): "
-                              ++ s ], fatal )
-
--- add error strings in chronological order
--- propagate fatal errors
---
-addFromMaybe :: Maybe Err -> Maybe Err -> Maybe Err
-addFromMaybe Nothing  Nothing          = Nothing
-addFromMaybe Nothing  e                = e
-addFromMaybe e        Nothing          = e
-addFromMaybe (Just (a,x)) (Just (b,y)) = Just (a ++ b, x || y)
+allUnique :: Eq a => [a] -> Bool
+allUnique [] = False
+allUnique [h] = True
+allUnique (h:t) = ([ x | x<-t, x == h ]==[]) && allUnique t
 
 getTokenKind :: String -> TokenKind
 getTokenKind s =      if (s==",") then Comma
@@ -188,15 +182,14 @@ addSubSort :: Bool -> SortId -> Sign -> SortId -> Sign
 addSubSort direct sub sigma super =
   let
     res = fromJust $ fromSigSortItem $ getSort sigma super
-    ol  = item res
-    old = sortRels ol
+    old = sortRels $ item res
     new = if (direct) then
             old { subsorts = relAdd (subsorts old) [sub],
                   allsubsrts = relAdd (allsubsrts old) [sub] }
           else
             old { allsubsrts = relAdd (allsubsrts old) [sub] }
-    ne  = ol { sortRels = new }
-    s'  = updateSigItem sigma super (ASortItem (res { item = ne }))
+    ext  = (item res) { sortRels = new }
+    s'  = updateSigItem sigma super (ASortItem (res { item = ext }))
     s'' = chain s' (addSubSort False sub) (allsupersrts old)
   in
     chain s'' (addSuperSorts (allsupersrts old)) (allsubsrts old)
@@ -205,26 +198,19 @@ addSuperSorts :: [SortId] -> Sign -> SortId -> Sign
 addSuperSorts supers sigma sub =
   let
     res = fromJust $ fromSigSortItem $ getSort sigma sub
-    ol  = item res
-    old = sortRels ol
+    old = sortRels $ item res
     new = old { allsupersrts = relAdd (allsupersrts old) supers }
-    ne  = ol { sortRels = new }
+    ext = (item res) { sortRels = new }
   in
-    updateSigItem sigma sub (ASortItem (res { item = ne }))
+    updateSigItem sigma sub (ASortItem (res { item = ext }))
 
-chainPos' :: Sign -> (Sign -> a -> (Pos, String) -> (Maybe Sign, Maybe Err))
-            -> [a] -> [(Pos,String)] -> Maybe Err -> (Maybe Sign, Maybe Err)
-chainPos' sigma f [] [] e = (Just sigma, e)
-chainPos' sigma f [] (h::t) e = (Just sigma, e) 
-chainPos' sigma f (a:as) ((p,tok):ps) e =
-  let
-    (res,err) = f sigma a (p,tok)
-    err_sum   = addFromMaybe err e
-  in
-    if (isJust res) then
-      chainPos' (fromJust res) f as ps err_sum
-    else
-      (Nothing, err_sum)
+chainPos' :: LocalEnv -> (LocalEnv -> a -> (Pos, String) -> Result LocalEnv)
+             -> [a] -> [(Pos,String)] -> Result LocalEnv
+chainPos' env f [] [] = return env
+chainPos' env f [] (h:t) = return env
+chainPos' env f (a:as) (p:ps) =
+  do env' <- f env a p
+     chainPos' env' f as ps
 
 -- given a signature, chain through a list of items taking care of
 --   passing positions and tokens to subfunctions
@@ -236,11 +222,11 @@ chainPos' sigma f (a:as) ((p,tok):ps) e =
 --    pos: position list that comes with itm
 --     pf: function that can turn the position into tokens
 --
-chainPos :: Sign -> (Sign -> a -> (Pos, String) -> (Maybe Sign, Maybe Err))
-            -> [a] -> [(Pos, String)] -> [Pos] -> ([Pos] -> [String])
-            -> (Maybe Sign, Maybe Err)
-chainPos sigma f itm ps pos pf =
-  chainPos' sigma f itm (ps ++ (zip pos (pf pos))) Nothing
+chainPos :: LocalEnv -> (LocalEnv -> a -> (Pos, String) -> Result LocalEnv)
+            -> [a] -> [(Pos,String)] -> [Pos] -> ([Pos] -> [String])
+            -> Result LocalEnv
+chainPos env f itm ps pos pf =
+  chainPos' env f itm (ps ++ (zip pos (pf pos)))
 
 chain :: Sign -> (Sign -> a -> Sign) -> [a] -> Sign
 chain sigma f l = foldl f sigma l
@@ -257,76 +243,38 @@ genColon :: [Pos] -> [String]
 genColon [] = []
 genColon (h:t) = ":":(genColon t)
 
-str_pos_SORT_ITEM :: [Pos] -> [String]
-str_pos_SORT_ITEM [] = []
-str_pos_SORT_ITEM (h:t) = "sorts":(genSemi t)
+strPosSORT_ITEM :: [Pos] -> [String]
+strPosSORT_ITEM [] = []
+strPosSORT_ITEM (h:t) = "sorts":(genSemi t)
 
-str_pos_Sort_decl :: [Pos] -> [String]
-str_pos_Sort_decl = genComma
+strPosSortDecl :: [Pos] -> [String]
+strPosSortDecl = genComma
 
-str_pos_Subsort_decl :: [Pos] -> [String]
-str_pos_Subsort_decl l = (genComma $ init l) ++ ["<"]
+strPosSubsortDecl :: [Pos] -> [String]
+strPosSubsortDecl l = (genComma $ init l) ++ ["<"]
 
-str_pos_Subsort_defn :: [Pos] -> [String]
-str_pos_Subsort_defn _ = ["=","{",":",".","}"]
+strPosSubsortDefn :: [Pos] -> [String]
+strPosSubsortDefn _ = ["=","{",":",".","}"]
 
-add_Sort_items :: Sign -> SIG_ITEMS -> (Maybe Sign, Maybe Err)
-add_Sort_items sigma (Sort_items l p) = chainPos sigma add_SORT_ITEM l 
-                                              [] p str_pos_SORT_ITEM
-add_Sort_items _ (Op_items _ p) = (Nothing, illArg (head p) "add_Sort_items" "Op_items")
-add_Sort_items _ (Pred_items _ p) = (Nothing, illArg (head p) "add_Sort_items" "Pred_items")
-add_Sort_items _ (Datatype_items _ p) = (Nothing, illArg (head p) "add_Sort_items" "Datatype_items")
+addSortDecl :: Annoted SORT_ITEM -> LocalEnv -> SORT -> (Pos, String)
+               -> Result LocalEnv
+addSortDecl itm (sigma,psi) sort (pos,token) =
+  return (addSortItem itm sigma sort Nothing Nothing pos token,psi)
 
-val_Sort_decl :: Sign -> SORT -> (Pos, String) -> Maybe Err
-val_Sort_decl sigma s _ = Nothing
-
-addf_Sort_decl :: Annoted SORT_ITEM -> Sign -> SORT -> (Pos, String) -> (Maybe Sign, Maybe Err)
-addf_Sort_decl ann sigma id (pos,tok) =
-    (Just (addSortItem ann sigma id Nothing Nothing pos tok), Nothing)
-
-add_decl :: Sign -> a -> (Pos, String)
-            -> (Sign -> a -> (Pos, String) -> (Maybe Sign, Maybe Err))
-            -> (Sign -> a -> (Pos, String) -> Maybe Err)
-            -> (Maybe Sign, Maybe Err)
-add_decl sigma itm startpos addf valf =
-  let
-    val   = valf sigma itm startpos
-    fatal = if (isJust val) then
-              let (_,e) = (fromJust val) in e
-                else
-              False
-    (res,err2) = if fatal then (Nothing, Nothing) else
-                               addf sigma itm startpos
-  in
-    if fatal then
-      (Nothing, val)
-    else
-      (res,addFromMaybe val err2)
-
-add_Sort_decl :: Annoted SORT_ITEM -> Sign -> SORT -> (Pos, String) -> (Maybe Sign, Maybe Err)
-add_Sort_decl ann sigma itm pos = add_decl sigma itm pos
-                                  (addf_Sort_decl ann) val_Sort_decl
-
-addf_Subsort_decl :: Annoted SORT_ITEM -> SORT -> Sign -> SORT -> (Pos, String)
-                     -> (Maybe Sign, Maybe Err)
-addf_Subsort_decl ann super sigma sub (pos,tok) =
-  let
-    res = addSortItem ann sigma sub (Just super) Nothing pos tok
-  in
-    (Just (addSubSort True sub res super), Nothing)
-
-val_Subsort_decl :: SORT -> Sign -> SORT -> (Pos, String) -> Maybe Err
-val_Subsort_decl super _ sub (pos,tok) =
-  if (super==sub) then
-    mkErr True pos ("subsort not distinct from supersort ("++(show sub)++")")
+checkSubDistinctSuper :: LocalEnv -> Pos -> SORT -> SORT -> Result LocalEnv
+checkSubDistinctSuper env pos sub super =
+  if (super /= sub) then
+    return env
   else
-    Nothing
+    fatal_error "subsort not distinct from supersort in subsort declaration"
+                pos
 
-add_Subsort_decl :: Annoted SORT_ITEM -> SORT -> Sign -> SORT
-                    -> (Pos, String) -> (Maybe Sign, Maybe Err)
-add_Subsort_decl elem s sigma itm pos = add_decl sigma itm pos 
-                                         (addf_Subsort_decl elem s)
-                                         (val_Subsort_decl s)
+addSubsortDecl :: Annoted SORT_ITEM -> Maybe SortDefn -> SORT -> LocalEnv
+                  -> SORT -> (Pos, String) -> Result LocalEnv
+addSubsortDecl itm defn super env sub (pos,tok) =
+  do (sigma,psi) <- checkSubDistinctSuper env pos super sub
+     return (addSubSort True sub
+             (addSortItem itm sigma sub (Just super) defn pos tok) super,psi)
 
 toVarDecl :: VAR -> SortId -> Pos -> VarDecl
 toVarDecl var id pos = VarDecl var id (ListPos Colon pos)
@@ -336,48 +284,47 @@ toVarDecl var id pos = VarDecl var id (ListPos Colon pos)
 toFormula :: Annoted FORMULA -> Formula
 toFormula _ = TrueAtom []
 
-addf_Subsort_defn :: Annoted SORT_ITEM -> SORT -> VAR -> [Pos] ->
-                     Annoted FORMULA -> Sign -> SORT -> (Pos, String)
-                     -> (Maybe Sign, Maybe Err)
-addf_Subsort_defn ann sub var p f sigma super (pos,tok) =
-  let
-    colpos = head $ drop 2 p
-    defn   = SubsortDefn (toVarDecl var super colpos) (toFormula f) p
-    res    = addSortItem ann sigma sub (Just super) (Just defn) pos tok
-  in
-    (Just (addSubSort True sub res super), Nothing)
-
 varFreeInFormula :: Sign -> VAR -> FORMULA -> Bool
 varFreeInFormula sigma var f = True
 
-val_Subsort_defn :: SORT -> VAR -> Annoted FORMULA -> Sign ->
-                    SORT -> (Pos, String) -> (Maybe Err)
-val_Subsort_defn super var f sigma sub (pos,tok) =
-  let 
-    super_ex = hasSort sigma super
-    distinct = sub/=super
-    var_free = varFreeInFormula sigma var (item f)
-    err1     = if super_ex then Nothing else mkErr True pos
-               ("supersort not in environment ("++(show super)++")")
-    err2     = if distinct then Nothing else mkErr True pos
-               ("subsort not distinct from supersort ("++(show sub)++")")
-    err3     = if var_free then Nothing else mkErr False pos
-               ("variable "++(show var)++" not free in formula")
-  in
-    addFromMaybe err1 $ addFromMaybe err2 err3
+toSentence :: String -> Formula -> (String, Sentence)
+toSentence str f = (str, Axiom (Annoted (AxiomDecl [] f []) [] [] []))
 
-add_Subsort_defn :: Annoted SORT_ITEM -> Sign -> SORT -> VAR -> SORT ->
-                    (Annoted FORMULA) -> (Pos, String) -> [Pos]
-                    -> (Maybe Sign, Maybe Err)
-add_Subsort_defn itm sigma sub var super f pos p =
-    add_decl sigma sub pos (addf_Subsort_defn itm super var p f)
-                            (val_Subsort_defn super var f)
+checkSuperExists :: LocalEnv -> Pos -> SORT -> Result LocalEnv
+checkSuperExists (sigma,psi) pos super =
+  if (hasSort sigma super) then
+    return (sigma,psi)
+  else
+    fatal_error "supersort does not exist in subsort definition" pos
+
+addSubsortFormula :: LocalEnv -> Pos -> VAR -> SORT -> SORT -> Annoted FORMULA
+                     -> Result LocalEnv
+addSubsortFormula (sigma,psi) colpos var sub super f =
+  let
+    f' = copyAnnoted f (Quantification Universal [(Var_decl [var] super
+                        [colpos])] (Equivalence (item f) (Membership
+                        (Simple_id var) sub []) []) [])
+  in
+    return (sigma,psi ++ [(toSentence "") $ toFormula f'])
+
+addSubsortDefn :: Annoted SORT_ITEM -> LocalEnv -> SORT -> VAR -> SORT
+                  -> Annoted FORMULA -> (Pos, String) -> [Pos]
+                  -> Result LocalEnv
+addSubsortDefn itm env sub var super f (pos,token) p =
+  let
+    colpos = head $ drop 2 p
+    defn   = SubsortDefn (toVarDecl var super colpos) (toFormula f) p
+  in
+    do env'   <- checkSuperExists env pos super
+       env''  <- checkSubDistinctSuper env' pos sub super
+       env''' <- addSubsortDecl itm (Just defn) super env sub (pos,token)
+       addSubsortFormula env''' colpos var sub super f
 
 relAdd :: [SortId] -> [SortId] -> [SortId]
 relAdd x y = x ++ [ z | z<-y, not $ elem z x ]
 
-addIsos :: [SORT] -> Sign -> SORT -> Sign
-addIsos isos sigma iso =
+addIsoSubsorting :: [SORT] -> Sign -> SORT -> Sign
+addIsoSubsorting isos sigma iso =
   let
     others = [ x | x<-isos, x/=iso ]
     res    = fromJust $ fromSigSortItem $ getSort sigma iso
@@ -391,35 +338,49 @@ addIsos isos sigma iso =
   in
     updateSigItem sigma iso (ASortItem (res { item = ne }))
 
-add_Iso_decl :: Annoted SORT_ITEM -> Sign -> [SORT] -> (Pos, String)
-                -> [Pos] -> (Maybe Sign, Maybe Err)
-add_Iso_decl ann sigma isos pos p =
-  let
-    (res, err) = chainPos sigma (add_Sort_decl ann) isos [pos] p
-                          str_pos_Iso_decl
-  in
-    if (isJust res) then
-      let
-        all = foldl (addIsos isos) (fromJust res) isos
-      in
-        (Just all, err)
-    else
-      (res, err)
+checkAllUnique :: LocalEnv -> Pos -> [SORT] -> Result LocalEnv
+checkAllUnique env pos sorts =
+  if (allUnique sorts) then
+    return env
+  else
+    fatal_error "sort occurs more than once in isomorphism declaration" pos
 
-str_pos_Iso_decl :: [Pos] -> [String]
-str_pos_Iso_decl = genColon
+checkMoreThanOne :: LocalEnv -> Pos -> [SORT] -> Result LocalEnv
+checkMoreThanOne env pos sorts =
+  if ((length sorts)>=2) then
+    return env
+  else
+    fatal_error "only one sort in isomorphism declaration" pos
 
-add_SORT_ITEM :: Sign -> Annoted SORT_ITEM -> (Pos, String)
-                 -> (Maybe Sign, Maybe Err)
-add_SORT_ITEM sigma itm pos =
+addIsoDecl :: Annoted SORT_ITEM -> LocalEnv -> [SORT] -> (Pos, String)
+                -> [Pos] -> Result LocalEnv
+addIsoDecl itm env sorts pos p =
+  do env'        <- checkAllUnique env (fst pos) sorts
+     env''       <- checkMoreThanOne env (fst pos) sorts
+     (sigma,psi) <- chainPos env'' (addSortDecl itm) sorts [pos]
+                             p strPosIsoDecl
+     return (foldl (addIsoSubsorting sorts) sigma sorts,psi)
+
+strPosIsoDecl :: [Pos] -> [String]
+strPosIsoDecl = genColon
+
+addSORT_ITEM :: LocalEnv -> Annoted SORT_ITEM -> (Pos, String)
+                 -> Result LocalEnv
+addSORT_ITEM env itm pos =
     case (item itm) of
-             (Sort_decl l p) -> chainPos sigma (add_Sort_decl itm) l [pos] p
-                                           str_pos_Sort_decl;
-             (Subsort_decl l s p) -> chainPos sigma (add_Subsort_decl itm s) l
-                                              [pos] p str_pos_Subsort_decl;
-             (Subsort_defn s v t f p) -> add_Subsort_defn itm sigma s v t f
-                                 pos p;
-             (Iso_decl l p) -> add_Iso_decl itm sigma l pos p
+      (Sort_decl l p)          -> chainPos env (addSortDecl itm) l [pos] p
+                                           strPosSortDecl;
+      (Subsort_decl l s p)     -> chainPos env (addSubsortDecl itm Nothing s)
+                                           l [pos] p strPosSubsortDecl;
+      (Subsort_defn s v t f p) -> addSubsortDefn itm env s v t f pos p;
+      (Iso_decl l p)           -> addIsoDecl itm env l pos p
+
+addSIG_ITEMS :: LocalEnv -> SIG_ITEMS -> Result LocalEnv
+addSIG_ITEMS env (Sort_items l p) = chainPos env addSORT_ITEM l 
+                                              [] p strPosSORT_ITEM
+addSIG_ITEMS env (Op_items _ p) = return env
+addSIG_ITEMS env (Pred_items _ p) = return env
+addSIG_ITEMS env (Datatype_items _ p) = return env
 
 ------------------------------------------------------------------------------
 -- THE END
