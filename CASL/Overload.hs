@@ -70,7 +70,7 @@ import Data.List                ( partition )
 
 type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
 
-overloadResolution      :: PrettyPrint f => Min f e -> GlobalAnnos -> Sign f e 
+overloadResolution      :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos -> Sign f e 
 			-> [Named.Named (FORMULA f)]
 			-> Result [Named.Named (FORMULA f)]
 overloadResolution mef ga sign  = mapM overload
@@ -85,7 +85,7 @@ overloadResolution mef ga sign  = mapM overload
 {-----------------------------------------------------------
     Minimal Expansions of a FORMULA
 -----------------------------------------------------------}
-minExpFORMULA :: PrettyPrint f => Min f e -> GlobalAnnos ->
+minExpFORMULA :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
                 Sign f e -> (FORMULA f) -> Result (FORMULA f)
 minExpFORMULA mef ga sign formula
     = case formula of
@@ -140,7 +140,7 @@ minExpFORMULA mef ga sign formula
 	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)
 
-is_unambiguous :: PrettyPrint f => [[TERM f]] -> [Id.Pos] -> Result (TERM f)
+is_unambiguous :: (Eq f, PrettyPrint f) => [[TERM f]] -> [Id.Pos] -> Result (TERM f)
 is_unambiguous term pos = do
             case term of
                 [] -> pplain_error (Unparsed_term "<error>" [])
@@ -156,7 +156,7 @@ is_unambiguous term pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Predicate Application Formula
 -----------------------------------------------------------}
-minExpFORMULA_pred :: PrettyPrint f => Min f e -> GlobalAnnos ->
+minExpFORMULA_pred :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
                 Sign f e -> PRED_SYMB -> [TERM f] -> [Id.Pos] 
                 -> Result (FORMULA f)
 minExpFORMULA_pred mef ga sign predicate terms pos = do
@@ -192,8 +192,8 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
                    (ptext "No correct typing for " <+> printText ps)
                    (Id.headPos pos)
         -- BEWARE! Oversimplified disambiguation!
-            --(p:_):[] -> return p
-            (_:_):_ -> return $ head $ head ps
+            (p:_):[] -> return p
+            --(_:_):_ -> return $ head $ head ps
             _   -> pplain_error (PredType [], terms)
                    (ptext "Cannot disambiguate! Term: " 
                     <+> (printText (predicate, terms))
@@ -214,6 +214,16 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
                     (map term_sort ts)                          -- ::  [SORT]
                     (predArgs pred') ]                          -- ::  [SORT]
         pred_eq         :: (PredType, [TERM f]) -> (PredType, [TERM f]) -> Bool
+{- todo
+   Doku
+
+   neuer Algorithmus:
+   checken, ob Prädikatsymbole und Argument-Terme äquivalent sind.
+   Für letzteres pro Argument-Position in expansions nachgucken.
+   Dto. für Operationen.
+
+   Injektionen: op:w->s(t_i) : s'   ---->  "_inj":s->s'(op:w->s(t_i)) : s'
+-}
         pred_eq (pred1,ts1) (pred2,ts2)
             = let   w1 = predArgs pred1                         -- :: [SORT]
                     w2 = predArgs pred2                         -- :: [SORT]
@@ -231,7 +241,7 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Strong/Existl. Equation Formula
 -----------------------------------------------------------}
-minExpFORMULA_eq :: PrettyPrint f => Min f e -> GlobalAnnos ->
+minExpFORMULA_eq :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
                 Sign f e -> (TERM f -> TERM f -> [Id.Pos] -> FORMULA f)
                     -> TERM f -> TERM f -> [Id.Pos] -> Result (FORMULA f)
 minExpFORMULA_eq mef ga sign eq term1 term2 pos = do
@@ -267,7 +277,7 @@ minExpFORMULA_eq mef ga sign eq term1 term2 pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a TERM
 -----------------------------------------------------------}
-minExpTerm :: PrettyPrint f => Min f e -> GlobalAnnos ->
+minExpTerm :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
                 Sign f e -> TERM f -> Result [[TERM f]]
 minExpTerm mef ga sign term'
  = do -- debug 6 ("term'",term')
@@ -355,7 +365,7 @@ minExpTerm_qual sign var sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Sorted_term Term
 -----------------------------------------------------------}
-minExpTerm_sorted :: PrettyPrint f => Min f e -> GlobalAnnos ->
+minExpTerm_sorted :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
                 Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_sorted mef ga sign term sort pos = do
     expandedTerm <- minExpTerm mef ga sign term   -- :: [[TERM]]
@@ -373,14 +383,14 @@ minExpTerm_sorted mef ga sign term sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
-minExpTerm_op :: PrettyPrint f => Min f e -> GlobalAnnos ->
+minExpTerm_op :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
               Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_op _ _ sign (Op_name (Id.Id [tok] [] _)) [] _ = 
   minExpTerm_simple sign tok
 minExpTerm_op mef ga sign op terms pos = 
     minExpTerm_op1 mef ga sign op terms pos
 
-minExpTerm_op1 :: PrettyPrint f => Min f e -> GlobalAnnos ->
+minExpTerm_op1 :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
                Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_op1 mef ga sign op terms pos = do
     --debug 3 ("op",op)
@@ -454,7 +464,7 @@ minExpTerm_op1 mef ga sign op terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Cast Term
 -----------------------------------------------------------}
-minExpTerm_cast :: PrettyPrint f => Min f e -> GlobalAnnos ->
+minExpTerm_cast :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
                 Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_cast mef ga sign term sort pos = do
     expandedTerm <- minExpTerm mef ga sign term         -- :: [[TERM]]
@@ -470,7 +480,7 @@ minExpTerm_cast mef ga sign term sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Conditional Term
 -----------------------------------------------------------}
-minExpTerm_cond :: PrettyPrint f => Min f e -> GlobalAnnos ->
+minExpTerm_cond :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
                 Sign f e -> TERM f -> FORMULA f -> TERM f -> [Id.Pos]
                 -> Result [[TERM f]]
 minExpTerm_cond  mef ga sign term1 formula term2 pos = do

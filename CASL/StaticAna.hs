@@ -663,7 +663,7 @@ ana_COMPONENTS s c = do
 
 type Ana a f e = GlobalAnnos -> a -> State (Sign f e) a  
 
-basicAnalysis :: PrettyPrint f => Min f e -> Ana b f e
+basicAnalysis :: (Eq f, PrettyPrint f) => Min f e -> Ana b f e
               -> Ana s f e -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
      -> Result (BASIC_SPEC b s f, Sign f e, Sign f e, [Named (FORMULA f)])
 basicAnalysis mef ab as (bs, inSig, ga) = do 
