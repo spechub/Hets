@@ -67,19 +67,19 @@ processFile opt file =
     do putIfVerbose opt 2 ("Processing file: " ++ file)
        case guess file (intype opt) of
              WebIn -> do
-		 case web opt of
-		   Yes  -> do
-			   str <- readFile file
+                 case web opt of
+                   Yes  -> do
+                           str <- readFile file
 #ifdef UNI_PACKAGE
-			   webInterface str opt 
+                           webInterface str opt 
 #else
                            fail "No web interface; UNI_PACKAGE option has been disabled during compilation of Hets"
 #endif
-		   No   -> return () 
+                   No   -> return () 
              HaskellIn -> do  
-	         r <- anaHaskellFile opt file
+                 r <- anaHaskellFile opt file
                  case gui opt of
-		     Not -> return ()
+                     Not -> return ()
                      _ -> showGraph file opt r
              _ -> do
                   ld <- read_LIB_DEFN opt file
@@ -92,49 +92,49 @@ processFile opt file =
                                 return (ld, Nothing)
                              _       -> do
                                 putIfVerbose opt 2 ("Analyzing file: " ++ file)
-				defl <- lookupLogic 
-					"logic from command line: " 
-					(defLogic opt) logicGraph
+                                defl <- lookupLogic 
+                                        "logic from command line: " 
+                                        (defLogic opt) logicGraph
                                 Common.Result.Result ds res <- ioresToIO 
                                      (ana_LIB_DEFN logicGraph defl opt 
-				      emptyLibEnv ld)
+                                      emptyLibEnv ld)
                                 showDiags opt ds
                                 case res of
                                  Just (ln,ld1,_,lenv) -> do
-                                   when (EnvOut `elem` outtypes opt)
-				        (writeFileInfo opt ds file ln lenv)
-				   --checkFile opt file ln lenv
+                                   when (hasEnvOut opt)
+                                        (writeFileInfo opt ds file ln lenv)
+                                   --checkFile opt file ln lenv
                                    return (ld1,res)
                                  Nothing -> return (ld, res)
                   let odir = if null (outdir opt) then dirname file else outdir opt
                   putIfVerbose opt 3 ("Current OutDir: " ++ odir)
-		  let (globalAnnos,notTrans) = 
-			  maybe (maybe emptyGlobalAnnos
-				       id
-				       ((\ (Common.Result.Result _ m) -> m) 
-					  (initGlobalAnnos ld')),True)
-			        (\ (_,_,_,libEnv) ->
-			           maybe (error ("Library "
-					     ++ show libname
-					     ++ " not found after analysis"))
-				         (\ (ga,_,_) -> (ga,False))
-				         (Map.lookup libname libEnv))
-			        env
-		  when notTrans (putIfVerbose opt 2 
-				  ("Warning: Printing without "
-				   ++"transitive imported Global Annotations"))
+                  let (globalAnnos,notTrans) = 
+                          maybe (maybe emptyGlobalAnnos
+                                       id
+                                       ((\ (Common.Result.Result _ m) -> m) 
+                                          (initGlobalAnnos ld')),True)
+                                (\ (_,_,_,libEnv) ->
+                                   maybe (error ("Library "
+                                             ++ show libname
+                                             ++ " not found after analysis"))
+                                         (\ (ga,_,_) -> (ga,False))
+                                         (Map.lookup libname libEnv))
+                                env
+                  when notTrans (putIfVerbose opt 2 
+                                  ("Warning: Printing without "
+                                   ++"transitive imported Global Annotations"))
                   case gui opt of
                       Only    -> showGraph file opt env
                       Also    -> do showGraph file opt env
                                     write_LIB_DEFN globalAnnos 
-						   file 
-						   (opt { outdir = odir }) 
-						   ld'
+                                                   file 
+                                                   (opt { outdir = odir }) 
+                                                   ld'
                                     -- write_GLOBAL_ENV env
                       Not     -> write_LIB_DEFN globalAnnos 
                                                         file     
-							(opt { outdir = odir }) 
-							ld'
+                                                        (opt { outdir = odir }) 
+                                                        ld'
 
 checkFile ::  HetcatsOpts -> FilePath -> LIB_NAME -> LibEnv -> IO ()
 checkFile opts fp ln lenv =
@@ -144,28 +144,28 @@ checkFile opts fp ln lenv =
       let envFile = rmSuffix fp ++ ".env"
       putStrLn "reading in..."
       (Common.Result.Result dias mread_gctx) <- 
-	  globalContextfromShATerm envFile
+          globalContextfromShATerm envFile
       maybe (showDiags opts dias)
           (\ read_gctx  -> do
         putStrLn ("read " ++ show (show ln) 
-		  ++ " from env-file " ++ show envFile
-		  ++ ": status: " 
-		  ++ (case read_gctx of
-		      (r_globalAnnos, r_globalEnv, r_dGraph) ->
-		       case gctx of
-		       (globalAnnos, globalEnv, dGraph) ->
-		         concat $ 
-		          zipWith (\label status ->
-				     label ++ ": " ++ status ++ ";")
+                  ++ " from env-file " ++ show envFile
+                  ++ ": status: " 
+                  ++ (case read_gctx of
+                      (r_globalAnnos, r_globalEnv, r_dGraph) ->
+                       case gctx of
+                       (globalAnnos, globalEnv, dGraph) ->
+                         concat $ 
+                          zipWith (\label status ->
+                                     label ++ ": " ++ status ++ ";")
                              ["GlobalAnnos", " GlobalEnv", " DGraph"]
-		             (map (\b -> if b then "ok" else "DIFF!!") 
+                             (map (\b -> if b then "ok" else "DIFF!!") 
                                  [r_globalAnnos == globalAnnos,
-			          r_globalEnv   == globalEnv,
-			          r_dGraph      == dGraph]))))
+                                  r_globalEnv   == globalEnv,
+                                  r_dGraph      == dGraph]))))
            mread_gctx
-		         
+                         
 showGraph :: FilePath -> HetcatsOpts -> 
-	     Maybe (LIB_NAME, -- filename
+             Maybe (LIB_NAME, -- filename
                     a,   -- as tree
                     b,   -- development graph
                     LibEnv    -- DGraphs for imported modules 
@@ -191,3 +191,7 @@ showGraph file opt env =
         Nothing -> putIfVerbose opt 1
             ("Error: Basic Analysis is neccessary to display "
              ++ "graphs in a graphical window")
+
+hasEnvOut :: HetcatsOpts -> Bool
+hasEnvOut = any ( \ o -> case o of EnvOut -> True
+                                   _ -> False) . outtypes
