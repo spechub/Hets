@@ -40,7 +40,7 @@ swapTable = map swap
 
 -- | drop the first 3 characters from the show result
 toTable :: (Show a) => [a] -> [(a, String)]
-toTable l = zip l $ map (drop 3 . show) l 
+toTable = map ( \ a -> (a, drop 3 $ show a))
 
 -- | a lookup table for the textual representation of display formats
 display_format_table :: [(Display_format, String)]
@@ -95,7 +95,9 @@ data Annotation = -- | constructor for comments or unparsed annotes
 
 
 -- | an item wrapped in preceeding (left 'l_annos') 
--- and following (right 'r_annos') annotations
+-- and following (right 'r_annos') annotations.
+-- 'opt_pos' should carry the position of an optional semicolon
+-- following a formula (but is currently unused).
 data Annoted a = Annoted { item::a, opt_pos :: [Pos]
 			 , l_annos, r_annos::[Annotation]}
 		 deriving (Show, Eq) 
