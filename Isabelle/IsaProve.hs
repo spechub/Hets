@@ -101,7 +101,7 @@ isaProve checkCons thName (sig,axs) goals = do
              system ("cp "++fileName++" "++origName)
              return ()
   isabelle <- getEnv "HETS_ISABELLE"
-  isa <- newChildProcess (isabelle ++ "/bin/Isabelle") [arguments [fileName]]
+  isa <- newChildProcess isabelle [arguments [fileName]]
   t <- createToplevel [text "Proof confirmation window"]
   b <- newButton t [text "Please press me when current theory is proved!",size(50,10)]
   pack b []
