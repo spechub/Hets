@@ -13,18 +13,19 @@ use diagnostics;
 &usage if @ARGV < 2;
 
 my $dir = shift @ARGV;
-my @rules = map {[(split /:/o, $_)[0,1]]} @ARGV;
+my @rules = map {my @tmp = (split /:/o, $_)[0,1];$tmp[1] = "" unless defined $tmp[1];[@tmp]} @ARGV;
 
-# print join("\n", map { join("->",@$_); } @rules),"\n";
+#print join("\n", map { join("->",@$_); } @rules),"\n";
 
 my @html_files = &read_dir($dir);
 
-# print join(" ", @html_files),"\n";
+#print join(" ", @html_files),"\n";
 
 &move_files;
 
 # reread directory to reflect the movement of files
 @html_files = &read_dir($dir);
+#print join(" ", @html_files),"\n";
 
 &rename_links;
 
