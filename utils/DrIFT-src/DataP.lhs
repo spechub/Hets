@@ -104,10 +104,11 @@ needs to be fixed.
 >       return $ Body x [] ts (choose acs x)
 >
 >choose acs x = case acs of 
->	       []   -> Const x Args
+>	       []   -> Const x' Args
 >	       [ac] -> ac
 >	       _    -> error ("something with the constructor "++
 >		               x ++ " went wrong")
+>    where x' = map (toLower . (\y -> if y == '_' then '-' else y)) x
 
 >conrecdecl = do
 >	x <- constructorP
