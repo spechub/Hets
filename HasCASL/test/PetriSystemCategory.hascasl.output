@@ -919,7 +919,7 @@ System
                                                                   Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
                                                                (var x : P, var p : P ->? Unit))}
 T : Type
-U : Type %(var_55)%
+U : Type %(var_35)%
 Unit : Type
 V : Type %(var_2)%
 __*__ : Type+ -> Type+ -> Type
@@ -927,7 +927,7 @@ __-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
 __-->?__ : Type- -> Type+ -> Type < __->?__
 __->__ : Type- -> Type+ -> Type < __->?__
 __->?__ : Type- -> Type+ -> Type
-a : Type %(var_54)%
+a : Type %(var_34)%
 %% Assumptions -----------------------------------------------------------
 0 : Nat %(op)%
 1 : Nat %(op)%
@@ -1541,6 +1541,12 @@ in forall x : Elem
 *** Hint 31.6, redeclared type 'Elem'
 *** Warning 34.12, variable shadows global name(s) 'S'
 *** Warning 34.12, variable shadows global name(s) 'S'
+*** Hint 35.27, unable to prove 'Unit < Nat' of '(op __isIn__[_var_13_v13]
+ : forall Elem : Type .
+     Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
+                                          MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit))
+  (var x : Elem, var S : Set Elem@(Elem ->? Unit))'
+
 *** Hint 37.7, is type variable 'S'
 *** Hint 37.7, redeclared type 'S'
 *** Hint 40.7, is type variable 'a'
@@ -1553,39 +1559,120 @@ in forall x : Elem
 *** Hint 62.7, redeclared type 'S'
 *** Hint 62.10, is type variable 'V'
 *** Hint 62.10, redeclared type 'V'
-*** Hint 80.8, in type of '(var hp : P ->? P)'
+*** Hint 72.40, unable to prove 'Unit < Nat' of '(op __isIn__[_var_83_v83]
+ : forall Elem : Type .
+     Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
+                                          MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit))
+  (var p1 : MultiSet P@(P ->? Nat),
+   (op range[_var_95_v95; _var_103_v103 ->? _var_104_v104]
+    : forall S : Type; V : Type .
+        (S_v-1 ->? V_v-2) -> Set V_v-2@(V_v-2 ->? Unit))
+     (var pre : T ->? MultiSet P@(P ->? Nat)))'
+
+*** Hint 73.43, unable to prove 'Unit < Nat' of '(op __isIn__[_var_154_v154]
+ : forall Elem : Type .
+     Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
+                                          MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit))
+  (var p1 : MultiSet P@(P ->? Nat),
+   (op range[_var_166_v166; _var_174_v174 ->? _var_175_v175]
+    : forall S : Type; V : Type .
+        (S_v-1 ->? V_v-2) -> Set V_v-2@(V_v-2 ->? Unit))
+     (var pre : T ->? MultiSet P@(P ->? Nat)))'
+
+*** Hint 80.8, in type of '(var hp : P ->? P,
+ (op places
+  : Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+         (T ->? MultiSet P@(P ->? Nat))) -> Set P@(P ->? Unit))
+   (var n1 : Net@(Set P@(P ->? Unit) *
+                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat)))),
+ (op places
+  : Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+         (T ->? MultiSet P@(P ->? Nat))) -> Set P@(P ->? Unit))
+   (var n2 : Net@(Set P@(P ->? Unit) *
+                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat)))))'
   typename 'P' (79.35)
-  is not unifiable with type '_var_350_v350 ->? _var_351_v351' (63.47)
+  is not unifiable with type '_var_238_v238 ->? _var_239_v239' (63.47)
 
-*** Hint 80.41, in type of '(var ht : T ->? T)'
+*** Hint 80.41, in type of '(var ht : T ->? T,
+ (op transitions
+  : Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+         (T ->? MultiSet P@(P ->? Nat))) -> Set T@(T ->? Unit))
+   (var n1 : Net@(Set P@(P ->? Unit) *
+                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat)))),
+ (op transitions
+  : Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+         (T ->? MultiSet P@(P ->? Nat))) -> Set T@(T ->? Unit))
+   (var n2 : Net@(Set P@(P ->? Unit) *
+                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat)))))'
   typename 'T' (79.45)
-  is not unifiable with type '_var_409_v409 ->? _var_410_v410' (63.47)
+  is not unifiable with type '_var_332_v332 ->? _var_333_v333' (63.47)
 
-*** Hint 95.52, contradicting type inclusions for 'Nat' and 'Unit' of 'let (var p : _var_719_v719 ->? _var_720_v720,
-     var pre1 : _var_721_v721 ->? _var_723_v723 ->? _var_724_v724,
-     var post1 : _var_725_v725 ->? _var_727_v727 ->? _var_728_v728)
+*** Hint 81.26, unable to prove 'Unit < Nat' of '(op __isIn__[_var_420_v420]
+ : forall Elem : Type .
+     Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
+                                          MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit))
+  (var t : T,
+   (op transitions
+    : Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+           (T ->? MultiSet P@(P ->? Nat))) -> Set T@(T ->? Unit))
+     (var n1 : Net@(Set P@(P ->? Unit) *
+                    (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat)))))'
+
+*** Hint 95.45, unable to prove 'Nat < Unit' of '(op __isIn__[_var_597_v597]
+ : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
+  (var x : P, var m : Marking@(MultiSet P@(P ->? Nat)))'
+
+*** Hint 95.52, unable to prove 'Unit < Nat' of 'let (var p : _var_581_v581 ->? _var_582_v582,
+     var pre1 : _var_583_v583 ->? _var_585_v585 ->? _var_586_v586,
+     var post1 : _var_587_v587 ->? _var_589_v589 ->? _var_590_v590)
       = (var n : Net@(Set P@(P ->? Unit) *
                       (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))))
 in forall x : P
      . (fun __=>__ : ? Unit * ? Unit ->? Unit)
          ((op __isIn__[P]
-           : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit)
-            (var x : P, var m : Marking@(MultiSet P@(P ->? Nat))),
-          (op __isIn__[_var_765_v765]
            : forall Elem : Type .
                Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
                                                     MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit))
-            (var x : P, var p : _var_719_v719 ->? _var_720_v720))'
+            (var x : P, var m : Marking@(MultiSet P@(P ->? Nat))),
+          (op __isIn__[_var_608_v608]
+           : forall Elem : Type .
+               Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
+                                                    MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit))
+            (var x : P, var p : _var_581_v581 ->? _var_582_v582))'
 
-*** Hint 104.24, in type of '(op freq[_var_861_v861]
- : forall Elem : Type .
-     Elem_v-1 * MultiSet Elem_v-1@(Elem_v-1 ->? Nat) -> Nat)'
-  typename 'Nat' (28.38)
-  is not unifiable with type '_var_852_v852 ->? _var_853_v853' (23.33)
+*** Hint 104.24, in type of '((op freq[P]
+  : forall Elem : Type .
+      Elem_v-1 * MultiSet Elem_v-1@(Elem_v-1 ->? Nat) -> Nat)
+   (var p : P,
+    (op marking
+     : System@(Net@(Set P@(P ->? Unit) *
+                    (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+               Marking@(MultiSet P@(P ->? Nat))) -> Marking@(MultiSet P@(P ->? Nat)))
+      (var sys1 : System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))))),
+ (op freq[P]
+  : forall Elem : Type .
+      Elem_v-1 * MultiSet Elem_v-1@(Elem_v-1 ->? Nat) -> Nat)
+   ((var hp : P ->? P)(var p : P),
+    (op marking
+     : System@(Net@(Set P@(P ->? Unit) *
+                    (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+               Marking@(MultiSet P@(P ->? Nat))) -> Marking@(MultiSet P@(P ->? Nat)))
+      (var sys2 : System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))))))'
+  typename 'Nat' (20.35)
+  is not unifiable with type '_var_689_v689 ->? _var_690_v690' (23.33)
 
-*** Hint 104.24, untypable application (with result type: _var_852_v852 ->? _var_853_v853)
- 'freq(p, marking(sys1))'
 *** Hint 113.10, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))),
+ var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat))) *
                   (P ->? P) * (T ->? T) *
@@ -1594,9 +1681,16 @@ in forall x : P
                           Marking@(MultiSet P@(P ->? Nat)))))'
   type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 (T ->? MultiSet P@(P ->? Nat))' (71.30)
-  is not unifiable with type '_var_1065_v1065 ->? _var_1066_v1066' (71.34)
+  is not unifiable with type '_var_958_v958 ->? _var_959_v959' (71.34)
 
 *** Hint 113.10, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))),
+ var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat))) *
                   (P ->? P) * (T ->? T) *
@@ -1610,9 +1704,16 @@ in forall x : P
 System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
              (T ->? MultiSet P@(P ->? Nat))) *
         Marking@(MultiSet P@(P ->? Nat)))' (102.39)
-  is not unifiable with type '_var_1162_v1162 ->? _var_1163_v1163' (54.16)
+  is not unifiable with type '_var_1055_v1055 ->? _var_1056_v1056' (54.16)
 
 *** Hint 113.22, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))),
+ var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat))) *
                   (P ->? P) * (T ->? T) *
@@ -1621,9 +1722,16 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
   type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 (T ->? MultiSet P@(P ->? Nat))' (71.30)
-  is not unifiable with type '_var_1363_v1363 ->? _var_1364_v1364' (71.34)
+  is not unifiable with type '_var_1250_v1250 ->? _var_1251_v1251' (71.34)
 
 *** Hint 113.22, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))),
+ var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat))) *
                   (P ->? P) * (T ->? T) *
@@ -1637,7 +1745,7 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
              (T ->? MultiSet P@(P ->? Nat))) *
         Marking@(MultiSet P@(P ->? Nat)))' (102.39)
-  is not unifiable with type '_var_1460_v1460 ->? _var_1461_v1461' (54.16)
+  is not unifiable with type '_var_1347_v1347 ->? _var_1348_v1348' (54.16)
 
 *** Hint 114.11, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -1648,7 +1756,7 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
   type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 (T ->? MultiSet P@(P ->? Nat))' (71.30)
-  is not unifiable with type '_var_1542_v1542 ->? _var_1543_v1543' (71.34)
+  is not unifiable with type '_var_1423_v1423 ->? _var_1424_v1424' (71.34)
 
 *** Hint 114.11, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -1664,100 +1772,8 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
              (T ->? MultiSet P@(P ->? Nat))) *
         Marking@(MultiSet P@(P ->? Nat)))' (102.39)
-  is not unifiable with type '_var_1582_v1582 ->? _var_1583_v1583' (47.14)
+  is not unifiable with type '_var_1463_v1463 ->? _var_1464_v1464' (47.14)
 
-*** Hint 114.15, in type of '(op placesMap
- : HomSys@(System@(Net@(Set P@(P ->? Unit) *
-                        (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-                   Marking@(MultiSet P@(P ->? Nat))) *
-           (P ->? P) * (T ->? T) *
-           System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-                        (T ->? MultiSet P@(P ->? Nat))) *
-                   Marking@(MultiSet P@(P ->? Nat)))) -> P ->? P)'
-  type 'P ->? P' (107.32)
-  is not unifiable with type '(((_var_1602_v1602 ->? _var_1603_v1603) *
-  (_var_1604_v1604 ->? _var_1606_v1606 ->? _var_1607_v1607) *
-  (_var_1608_v1608 ->? _var_1610_v1610 ->? _var_1611_v1611)) *
- (_var_1612_v1612 ->? _var_1613_v1613)) *
-(_var_1614_v1614 ->? _var_1615_v1615) *
-(_var_1616_v1616 ->? _var_1617_v1617) *
-(((_var_1623_v1623 ->? _var_1624_v1624) *
-  (_var_1625_v1625 ->? _var_1627_v1627 ->? _var_1628_v1628) *
-  (_var_1629_v1629 ->? _var_1631_v1631 ->? _var_1632_v1632)) *
- (_var_1633_v1633 ->? _var_1634_v1634))' (71.34)
-
-*** Hint 114.15, in type of '(op placesMap
- : HomNet@(Net@(Set P@(P ->? Unit) *
-                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-           (P ->? P) * (T ->? T) *
-           Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-                (T ->? MultiSet P@(P ->? Nat)))) -> P ->? P)'
-  type 'P ->? P' (86.31)
-  is not unifiable with type '(((_var_1602_v1602 ->? _var_1603_v1603) *
-  (_var_1604_v1604 ->? _var_1606_v1606 ->? _var_1607_v1607) *
-  (_var_1608_v1608 ->? _var_1610_v1610 ->? _var_1611_v1611)) *
- (_var_1612_v1612 ->? _var_1613_v1613)) *
-(_var_1614_v1614 ->? _var_1615_v1615) *
-(_var_1616_v1616 ->? _var_1617_v1617) *
-(((_var_1623_v1623 ->? _var_1624_v1624) *
-  (_var_1625_v1625 ->? _var_1627_v1627 ->? _var_1628_v1628) *
-  (_var_1629_v1629 ->? _var_1631_v1631 ->? _var_1632_v1632)) *
- (_var_1633_v1633 ->? _var_1634_v1634))' (71.34)
-
-*** Hint 114.15, untypable application (with result type: (((_var_1602_v1602 ->? _var_1603_v1603) *
-  (_var_1604_v1604 ->? _var_1606_v1606 ->? _var_1607_v1607) *
-  (_var_1608_v1608 ->? _var_1610_v1610 ->? _var_1611_v1611)) *
- (_var_1612_v1612 ->? _var_1613_v1613)) *
-(_var_1614_v1614 ->? _var_1615_v1615) *
-(_var_1616_v1616 ->? _var_1617_v1617) *
-(((_var_1623_v1623 ->? _var_1624_v1624) *
-  (_var_1625_v1625 ->? _var_1627_v1627 ->? _var_1628_v1628) *
-  (_var_1629_v1629 ->? _var_1631_v1631 ->? _var_1632_v1632)) *
- (_var_1633_v1633 ->? _var_1634_v1634)))
- 'placesMap(h2)'
-*** Hint 114.15, in type of '(op placesMap
- : HomSys@(System@(Net@(Set P@(P ->? Unit) *
-                        (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-                   Marking@(MultiSet P@(P ->? Nat))) *
-           (P ->? P) * (T ->? T) *
-           System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-                        (T ->? MultiSet P@(P ->? Nat))) *
-                   Marking@(MultiSet P@(P ->? Nat)))) -> P ->? P)'
-  type 'P ->? P' (107.32)
-  is not unifiable with type '((_var_1728_v1728 ->? _var_1729_v1729) *
- (_var_1730_v1730 ->? _var_1732_v1732 ->? _var_1733_v1733) *
- (_var_1734_v1734 ->? _var_1736_v1736 ->? _var_1737_v1737)) *
-(_var_1738_v1738 ->? _var_1739_v1739) *
-(_var_1740_v1740 ->? _var_1741_v1741) *
-((_var_1745_v1745 ->? _var_1746_v1746) *
- (_var_1747_v1747 ->? _var_1749_v1749 ->? _var_1750_v1750) *
- (_var_1751_v1751 ->? _var_1753_v1753 ->? _var_1754_v1754))' (71.34)
-
-*** Hint 114.15, in type of '(op placesMap
- : HomNet@(Net@(Set P@(P ->? Unit) *
-                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-           (P ->? P) * (T ->? T) *
-           Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-                (T ->? MultiSet P@(P ->? Nat)))) -> P ->? P)'
-  type 'P ->? P' (86.31)
-  is not unifiable with type '((_var_1728_v1728 ->? _var_1729_v1729) *
- (_var_1730_v1730 ->? _var_1732_v1732 ->? _var_1733_v1733) *
- (_var_1734_v1734 ->? _var_1736_v1736 ->? _var_1737_v1737)) *
-(_var_1738_v1738 ->? _var_1739_v1739) *
-(_var_1740_v1740 ->? _var_1741_v1741) *
-((_var_1745_v1745 ->? _var_1746_v1746) *
- (_var_1747_v1747 ->? _var_1749_v1749 ->? _var_1750_v1750) *
- (_var_1751_v1751 ->? _var_1753_v1753 ->? _var_1754_v1754))' (71.34)
-
-*** Hint 114.15, untypable application (with result type: ((_var_1728_v1728 ->? _var_1729_v1729) *
- (_var_1730_v1730 ->? _var_1732_v1732 ->? _var_1733_v1733) *
- (_var_1734_v1734 ->? _var_1736_v1736 ->? _var_1737_v1737)) *
-(_var_1738_v1738 ->? _var_1739_v1739) *
-(_var_1740_v1740 ->? _var_1741_v1741) *
-((_var_1745_v1745 ->? _var_1746_v1746) *
- (_var_1747_v1747 ->? _var_1749_v1749 ->? _var_1750_v1750) *
- (_var_1751_v1751 ->? _var_1753_v1753 ->? _var_1754_v1754)))
- 'placesMap(h2)'
 *** Hint 114.25, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat))) *
@@ -1767,7 +1783,7 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
   type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 (T ->? MultiSet P@(P ->? Nat))' (71.30)
-  is not unifiable with type '_var_1889_v1889 ->? _var_1890_v1890' (71.34)
+  is not unifiable with type '_var_1765_v1765 ->? _var_1766_v1766' (71.34)
 
 *** Hint 114.40, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -1778,100 +1794,134 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
   type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 (T ->? MultiSet P@(P ->? Nat))' (71.30)
-  is not unifiable with type '_var_1966_v1966 ->? _var_1967_v1967' (71.34)
+  is not unifiable with type '_var_1847_v1847 ->? _var_1848_v1848' (71.34)
 
-*** Hint 114.44, in type of '(op transitionsMap
- : HomSys@(System@(Net@(Set P@(P ->? Unit) *
-                        (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-                   Marking@(MultiSet P@(P ->? Nat))) *
-           (P ->? P) * (T ->? T) *
-           System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-                        (T ->? MultiSet P@(P ->? Nat))) *
-                   Marking@(MultiSet P@(P ->? Nat)))) -> T ->? T)'
-  type 'T ->? T' (108.37)
-  is not unifiable with type '(((_var_2009_v2009 ->? _var_2010_v2010) *
-  (_var_2011_v2011 ->? _var_2013_v2013 ->? _var_2014_v2014) *
-  (_var_2015_v2015 ->? _var_2017_v2017 ->? _var_2018_v2018)) *
- (_var_2019_v2019 ->? _var_2020_v2020)) *
-(_var_2021_v2021 ->? _var_2022_v2022) *
-(_var_2023_v2023 ->? _var_2024_v2024) *
-(((_var_2030_v2030 ->? _var_2031_v2031) *
-  (_var_2032_v2032 ->? _var_2034_v2034 ->? _var_2035_v2035) *
-  (_var_2036_v2036 ->? _var_2038_v2038 ->? _var_2039_v2039)) *
- (_var_2040_v2040 ->? _var_2041_v2041))' (71.34)
+*** Hint 114.15, in type of '((op placesMap
+  : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                         (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat))) *
+            (P ->? P) * (T ->? T) *
+            System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                         (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat)))) -> P ->? P)
+   (var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))) *
+                     (P ->? P) * (T ->? T) *
+                     System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                                  (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))))),
+ (op placesMap
+  : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                         (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat))) *
+            (P ->? P) * (T ->? T) *
+            System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                         (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat)))) -> P ->? P)
+   (var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))) *
+                     (P ->? P) * (T ->? T) *
+                     System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                                  (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))))))'
+  type 'P ->? P' (107.32)
+  is not unifiable with type '(((_var_1483_v1483 ->? _var_1484_v1484) *
+  (_var_1485_v1485 ->? _var_1487_v1487 ->? _var_1488_v1488) *
+  (_var_1489_v1489 ->? _var_1491_v1491 ->? _var_1492_v1492)) *
+ (_var_1493_v1493 ->? _var_1494_v1494)) *
+(_var_1495_v1495 ->? _var_1496_v1496) *
+(_var_1497_v1497 ->? _var_1498_v1498) *
+(((_var_1504_v1504 ->? _var_1505_v1505) *
+  (_var_1506_v1506 ->? _var_1508_v1508 ->? _var_1509_v1509) *
+  (_var_1510_v1510 ->? _var_1512_v1512 ->? _var_1513_v1513)) *
+ (_var_1514_v1514 ->? _var_1515_v1515))' (71.34)
 
-*** Hint 114.44, in type of '(op transitionsMap
- : HomNet@(Net@(Set P@(P ->? Unit) *
-                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-           (P ->? P) * (T ->? T) *
-           Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-                (T ->? MultiSet P@(P ->? Nat)))) -> T ->? T)'
-  type 'T ->? T' (87.36)
-  is not unifiable with type '(((_var_2009_v2009 ->? _var_2010_v2010) *
-  (_var_2011_v2011 ->? _var_2013_v2013 ->? _var_2014_v2014) *
-  (_var_2015_v2015 ->? _var_2017_v2017 ->? _var_2018_v2018)) *
- (_var_2019_v2019 ->? _var_2020_v2020)) *
-(_var_2021_v2021 ->? _var_2022_v2022) *
-(_var_2023_v2023 ->? _var_2024_v2024) *
-(((_var_2030_v2030 ->? _var_2031_v2031) *
-  (_var_2032_v2032 ->? _var_2034_v2034 ->? _var_2035_v2035) *
-  (_var_2036_v2036 ->? _var_2038_v2038 ->? _var_2039_v2039)) *
- (_var_2040_v2040 ->? _var_2041_v2041))' (71.34)
+*** Hint 114.25, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))))'
+  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+(T ->? MultiSet P@(P ->? Nat))' (71.30)
+  is not unifiable with type '_var_1929_v1929 ->? _var_1930_v1930' (71.34)
 
-*** Hint 114.44, untypable application (with result type: (((_var_2009_v2009 ->? _var_2010_v2010) *
-  (_var_2011_v2011 ->? _var_2013_v2013 ->? _var_2014_v2014) *
-  (_var_2015_v2015 ->? _var_2017_v2017 ->? _var_2018_v2018)) *
- (_var_2019_v2019 ->? _var_2020_v2020)) *
-(_var_2021_v2021 ->? _var_2022_v2022) *
-(_var_2023_v2023 ->? _var_2024_v2024) *
-(((_var_2030_v2030 ->? _var_2031_v2031) *
-  (_var_2032_v2032 ->? _var_2034_v2034 ->? _var_2035_v2035) *
-  (_var_2036_v2036 ->? _var_2038_v2038 ->? _var_2039_v2039)) *
- (_var_2040_v2040 ->? _var_2041_v2041)))
- 'transitionsMap(h2)'
-*** Hint 114.44, in type of '(op transitionsMap
- : HomSys@(System@(Net@(Set P@(P ->? Unit) *
-                        (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-                   Marking@(MultiSet P@(P ->? Nat))) *
-           (P ->? P) * (T ->? T) *
-           System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-                        (T ->? MultiSet P@(P ->? Nat))) *
-                   Marking@(MultiSet P@(P ->? Nat)))) -> T ->? T)'
-  type 'T ->? T' (108.37)
-  is not unifiable with type '((_var_2135_v2135 ->? _var_2136_v2136) *
- (_var_2137_v2137 ->? _var_2139_v2139 ->? _var_2140_v2140) *
- (_var_2141_v2141 ->? _var_2143_v2143 ->? _var_2144_v2144)) *
-(_var_2145_v2145 ->? _var_2146_v2146) *
-(_var_2147_v2147 ->? _var_2148_v2148) *
-((_var_2152_v2152 ->? _var_2153_v2153) *
- (_var_2154_v2154 ->? _var_2156_v2156 ->? _var_2157_v2157) *
- (_var_2158_v2158 ->? _var_2160_v2160 ->? _var_2161_v2161))' (71.34)
+*** Hint 114.40, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))))'
+  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+(T ->? MultiSet P@(P ->? Nat))' (71.30)
+  is not unifiable with type '_var_2011_v2011 ->? _var_2012_v2012' (71.34)
 
-*** Hint 114.44, in type of '(op transitionsMap
- : HomNet@(Net@(Set P@(P ->? Unit) *
-                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-           (P ->? P) * (T ->? T) *
-           Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-                (T ->? MultiSet P@(P ->? Nat)))) -> T ->? T)'
-  type 'T ->? T' (87.36)
-  is not unifiable with type '((_var_2135_v2135 ->? _var_2136_v2136) *
- (_var_2137_v2137 ->? _var_2139_v2139 ->? _var_2140_v2140) *
- (_var_2141_v2141 ->? _var_2143_v2143 ->? _var_2144_v2144)) *
-(_var_2145_v2145 ->? _var_2146_v2146) *
-(_var_2147_v2147 ->? _var_2148_v2148) *
-((_var_2152_v2152 ->? _var_2153_v2153) *
- (_var_2154_v2154 ->? _var_2156_v2156 ->? _var_2157_v2157) *
- (_var_2158_v2158 ->? _var_2160_v2160 ->? _var_2161_v2161))' (71.34)
+*** Hint 114.15, in type of '((op placesMap
+  : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                         (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat))) *
+            (P ->? P) * (T ->? T) *
+            System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                         (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat)))) -> P ->? P)
+   (var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))) *
+                     (P ->? P) * (T ->? T) *
+                     System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                                  (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))))),
+ (op placesMap
+  : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                         (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat))) *
+            (P ->? P) * (T ->? T) *
+            System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                         (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat)))) -> P ->? P)
+   (var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))) *
+                     (P ->? P) * (T ->? T) *
+                     System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                                  (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))))))'
+  type 'P ->? P' (107.32)
+  is not unifiable with type '((_var_1609_v1609 ->? _var_1610_v1610) *
+ (_var_1611_v1611 ->? _var_1613_v1613 ->? _var_1614_v1614) *
+ (_var_1615_v1615 ->? _var_1617_v1617 ->? _var_1618_v1618)) *
+(_var_1619_v1619 ->? _var_1620_v1620) *
+(_var_1621_v1621 ->? _var_1622_v1622) *
+((_var_1626_v1626 ->? _var_1627_v1627) *
+ (_var_1628_v1628 ->? _var_1630_v1630 ->? _var_1631_v1631) *
+ (_var_1632_v1632 ->? _var_1634_v1634 ->? _var_1635_v1635))' (71.34)
 
-*** Hint 114.44, untypable application (with result type: ((_var_2135_v2135 ->? _var_2136_v2136) *
- (_var_2137_v2137 ->? _var_2139_v2139 ->? _var_2140_v2140) *
- (_var_2141_v2141 ->? _var_2143_v2143 ->? _var_2144_v2144)) *
-(_var_2145_v2145 ->? _var_2146_v2146) *
-(_var_2147_v2147 ->? _var_2148_v2148) *
-((_var_2152_v2152 ->? _var_2153_v2153) *
- (_var_2154_v2154 ->? _var_2156_v2156 ->? _var_2157_v2157) *
- (_var_2158_v2158 ->? _var_2160_v2160 ->? _var_2161_v2161)))
- 'transitionsMap(h2)'
+*** Hint 114.25, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))))'
+  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+(T ->? MultiSet P@(P ->? Nat))' (71.30)
+  is not unifiable with type '_var_2093_v2093 ->? _var_2094_v2094' (71.34)
+
+*** Hint 114.40, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))))'
+  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+(T ->? MultiSet P@(P ->? Nat))' (71.30)
+  is not unifiable with type '_var_2175_v2175 ->? _var_2176_v2176' (71.34)
+
 *** Hint 114.59, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat))) *
@@ -1881,7 +1931,7 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
   type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 (T ->? MultiSet P@(P ->? Nat))' (71.30)
-  is not unifiable with type '_var_2296_v2296 ->? _var_2297_v2297' (71.34)
+  is not unifiable with type '_var_2502_v2502 ->? _var_2503_v2503' (71.34)
 
 *** Hint 114.79, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -1892,7 +1942,133 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
   type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 (T ->? MultiSet P@(P ->? Nat))' (71.30)
-  is not unifiable with type '_var_2373_v2373 ->? _var_2374_v2374' (71.34)
+  is not unifiable with type '_var_2584_v2584 ->? _var_2585_v2585' (71.34)
+
+*** Hint 114.44, in type of '((op transitionsMap
+  : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                         (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat))) *
+            (P ->? P) * (T ->? T) *
+            System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                         (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat)))) -> T ->? T)
+   (var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))) *
+                     (P ->? P) * (T ->? T) *
+                     System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                                  (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))))),
+ (op transitionsMap
+  : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                         (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat))) *
+            (P ->? P) * (T ->? T) *
+            System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                         (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat)))) -> T ->? T)
+   (var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))) *
+                     (P ->? P) * (T ->? T) *
+                     System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                                  (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))))))'
+  type 'T ->? T' (108.37)
+  is not unifiable with type '(((_var_2220_v2220 ->? _var_2221_v2221) *
+  (_var_2222_v2222 ->? _var_2224_v2224 ->? _var_2225_v2225) *
+  (_var_2226_v2226 ->? _var_2228_v2228 ->? _var_2229_v2229)) *
+ (_var_2230_v2230 ->? _var_2231_v2231)) *
+(_var_2232_v2232 ->? _var_2233_v2233) *
+(_var_2234_v2234 ->? _var_2235_v2235) *
+(((_var_2241_v2241 ->? _var_2242_v2242) *
+  (_var_2243_v2243 ->? _var_2245_v2245 ->? _var_2246_v2246) *
+  (_var_2247_v2247 ->? _var_2249_v2249 ->? _var_2250_v2250)) *
+ (_var_2251_v2251 ->? _var_2252_v2252))' (71.34)
+
+*** Hint 114.59, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))))'
+  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+(T ->? MultiSet P@(P ->? Nat))' (71.30)
+  is not unifiable with type '_var_2666_v2666 ->? _var_2667_v2667' (71.34)
+
+*** Hint 114.79, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))))'
+  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+(T ->? MultiSet P@(P ->? Nat))' (71.30)
+  is not unifiable with type '_var_2748_v2748 ->? _var_2749_v2749' (71.34)
+
+*** Hint 114.44, in type of '((op transitionsMap
+  : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                         (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat))) *
+            (P ->? P) * (T ->? T) *
+            System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                         (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat)))) -> T ->? T)
+   (var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))) *
+                     (P ->? P) * (T ->? T) *
+                     System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                                  (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))))),
+ (op transitionsMap
+  : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                         (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat))) *
+            (P ->? P) * (T ->? T) *
+            System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                         (T ->? MultiSet P@(P ->? Nat))) *
+                    Marking@(MultiSet P@(P ->? Nat)))) -> T ->? T)
+   (var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                                  (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))) *
+                     (P ->? P) * (T ->? T) *
+                     System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                                  (T ->? MultiSet P@(P ->? Nat))) *
+                             Marking@(MultiSet P@(P ->? Nat))))))'
+  type 'T ->? T' (108.37)
+  is not unifiable with type '((_var_2346_v2346 ->? _var_2347_v2347) *
+ (_var_2348_v2348 ->? _var_2350_v2350 ->? _var_2351_v2351) *
+ (_var_2352_v2352 ->? _var_2354_v2354 ->? _var_2355_v2355)) *
+(_var_2356_v2356 ->? _var_2357_v2357) *
+(_var_2358_v2358 ->? _var_2359_v2359) *
+((_var_2363_v2363 ->? _var_2364_v2364) *
+ (_var_2365_v2365 ->? _var_2367_v2367 ->? _var_2368_v2368) *
+ (_var_2369_v2369 ->? _var_2371_v2371 ->? _var_2372_v2372))' (71.34)
+
+*** Hint 114.59, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))))'
+  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+(T ->? MultiSet P@(P ->? Nat))' (71.30)
+  is not unifiable with type '_var_2830_v2830 ->? _var_2831_v2831' (71.34)
+
+*** Hint 114.79, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
+                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat))) *
+                  (P ->? P) * (T ->? T) *
+                  System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+                               (T ->? MultiSet P@(P ->? Nat))) *
+                          Marking@(MultiSet P@(P ->? Nat)))))'
+  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
+(T ->? MultiSet P@(P ->? Nat))' (71.30)
+  is not unifiable with type '_var_2912_v2912 ->? _var_2913_v2913' (71.34)
 
 *** Hint 114.86, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -1903,5 +2079,5 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
   type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
 (T ->? MultiSet P@(P ->? Nat))' (71.30)
-  is not unifiable with type '_var_2468_v2468 ->? _var_2469_v2469' (71.34)
+  is not unifiable with type '_var_3009_v3009 ->? _var_3010_v3010' (71.34)
 

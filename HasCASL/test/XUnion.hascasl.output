@@ -94,7 +94,8 @@ true : Unit %(fun)%
 *** Hint 1.7, is type variable 'S'
 *** Hint 1.9, is type variable 'N'
 *** Hint 1.11, is type variable 'E'
-*** Hint 9.6, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
+*** Hint 9.6, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
+ var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
   type 'Set N@(N ->? Unit) * (E ->? N) * (E ->? N)' (3.21)
-  is not unifiable with type '_var_16_v16 ->? _var_17_v17' (6.51)
+  is not unifiable with type '_var_15_v15 ->? _var_16_v16' (6.51)
 

@@ -7,9 +7,10 @@ haddockify code
 
 checking legality of internal and external terms is missing
 
-subtypes are treated like type synonyms. Function and product types
-are builtin. Subtypes relations of these builtin types and user
-defined types are problematic. The unit type is a separat type!
+proper type terms as supertypes are treated like type
+synonyms. Function and product types are builtin. Subtypes relations
+of these builtin types and user defined types are problematic. The
+unit type is a separat type!
 
 class names are not considered for mapping (Morphism.hs)
 
@@ -31,9 +32,6 @@ are also not renamed in DatatypeSens, because they are not used)
 
 
 types:
-(Add known function subtypings '__->__ < __->?__', does not seem to be
-necessary, though.)
-
 Lazy typings are not handled yet
 
 
@@ -54,10 +52,9 @@ over global variables
 
 
 
-misc:
-hiding of sub- or supertypes is a problem, with respect to dependent
-operations. (SymbolMapAnalysis.hs)
-
+Symbols: 
+raw symbol maps must be preprocessed to find matching symbols in
+SymbolMapAnalysis.directOpMap
 
 
 

@@ -40,8 +40,6 @@ true : Unit %(fun)%
   typename 't' (3.8)
   is not unifiable with type 'Unit ->? t' (6.8)
 
-*** Hint 8.9, untypable application (with result type: _var_6_v6)
- 'g(c)'
 *** Hint 8.7, untypable application (with result type: Unit)
  '__=__(f(a), g(c))'
 *** Error 8.7, no typing for '__=__(f(a), g(c))'

@@ -168,9 +168,9 @@ y : s
 
 *** Hint 19.25, contradicting type inclusions for 's' and 't' of '(op __+__ : t * t -> t) as s * s -> s'
 
-*** Hint 46.26, contradicting type inclusions for 's' and 't' of '(op x : s) as t'
+*** Hint 46.26, contradicting type inclusions for 's' and 't' of '(op x : s) as t as s'
 
-*** Hint 46.26, contradicting type inclusions for 's' and 't' of '(op x : s) as t'
+*** Hint 46.26, contradicting type inclusions for 's' and 't' of '(op x : s) as t as s'
 
 *** Error 46.22, untypable application '__+__(x as s, x as t as s)'
 *** Error 46.22, no typing for '__+__(x as s, x as t as s) as s'
