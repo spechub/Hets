@@ -317,7 +317,7 @@ opDeclOrDefn o =
        (c, st) <- typeOrTotalType
        opTerm o as ps c st 
 
- -- | a 'Total' or a 'Partial' function definition type
+-- | a 'Total' or a 'Partial' function definition type
 typeOrTotalType :: AParser (Token, TypeOrTypeScheme)
 typeOrTotalType = 
     do c <- colT
