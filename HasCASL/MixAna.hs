@@ -137,10 +137,7 @@ mkPrecIntMap r =
 getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
 getIdPrec (pm, r, m) ps i = Map.findWithDefault 
     (if Set.member i ps then r
-     else if begPlace i || endPlace i then 
-             if i == applId then m + 1
-             else m
-          else m + 2) i pm 
+     else m) i pm
 					 
 initTermRules ::  (PrecMap, Set.Set Id) -> Set.Set Id -> [Rule]
 initTermRules (pm, ps) is = 
