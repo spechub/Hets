@@ -175,7 +175,7 @@ stateToAppl p =
            || vs == [predTok]
            || vs == [parenTok]
        then head ar
-       else head ar
+       else if null ar then error "stateToAppl" else head ar
 
 toAppl :: GlobalAnnos -> PState -> Term
 toAppl g s =
