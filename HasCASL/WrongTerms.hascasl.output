@@ -8,31 +8,31 @@ expecting "\\" or "\""
 
 parse error at (line 3, column 2):
 unexpected end of input
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let" or "}"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let" or "}"
 
 parse error at (line 4, column 2):
 unexpected end of input
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let" or "]"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let" or "]"
 
 parse error at (line 5, column 2):
 unexpected end of input
-expecting "var", "op", "pred", "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let" or ")"
+expecting "var", "op", "pred", "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let" or ")"
 
 parse error at (line 6, column 1):
 unexpected "}"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 7, column 1):
 unexpected "]"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 8, column 1):
 unexpected ")"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 9, column 1):
 unexpected "."
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 10, column 1):
 unexpected end of input
@@ -40,47 +40,47 @@ expecting "__"
 
 parse error at (line 11, column 1):
 unexpected ":"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 12, column 1):
 unexpected ":?"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 13, column 1):
 unexpected ","
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 14, column 1):
 unexpected ";"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 15, column 2):
 unexpected ","
-expecting "var", "op", "pred", "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let" or ")"
+expecting "var", "op", "pred", "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let" or ")"
 
 parse error at (line 16, column 4):
 unexpected ")"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 17, column 1):
 unexpected "as"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 18, column 1):
 unexpected ":"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 19, column 1):
 unexpected "in"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 20, column 15):
 unexpected ")"
 expecting __, [<id>,...,<id>], "[", ":?" or ":"
 
-parse error at (line 21, column 15):
-unexpected "b"
-expecting __ or ":"
+parse error at (line 21, column 12):
+unexpected "?"
+expecting __
 
 parse error at (line 22, column 13):
 unexpected "?"
@@ -120,15 +120,15 @@ expecting "?", words, "__", "(", "{", "[", ":", cross, "->", "->?", "-->", "-->?
 
 parse error at (line 31, column 1):
 unexpected "pred"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 32, column 1):
 unexpected "var"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 33, column 1):
 unexpected "op"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at (line 34, column 11):
 unexpected "?"
@@ -140,9 +140,9 @@ expecting __ or ":?"
 
 parse error at (line 36, column 13):
 unexpected ";"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let", ":", "as", "in" or end of input
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let", ":", "as", "in" or end of input
 
 parse error at (line 37, column 13):
 unexpected ";"
-expecting "=e=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let", ":", "as", "in" or end of input
+expecting "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case", "let", ":", "as", "in" or end of input
 
