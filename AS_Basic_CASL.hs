@@ -111,7 +111,7 @@ data VAR_DECL = Var_decl [VAR] SORT [Pos]
    other Pos informations which encode the brackets of every kind
 -}
 
-data FORMULA = Quantfication QUANTIFIER [VAR_DECL] FORMULA [Pos]
+data FORMULA = Quantification QUANTIFIER [VAR_DECL] FORMULA [Pos]
 	       -- pos: QUANTIFIER, semi colons, dot
 	     | Conjunction [FORMULA] [Pos]
 	       -- pos: "/\"s
@@ -129,7 +129,7 @@ data FORMULA = Quantfication QUANTIFIER [VAR_DECL] FORMULA [Pos]
                -- pos: false
 	     | Predication PRED_SYMB [TERM] [Pos]
                -- pos: opt. "(",commas,")"
-	     | Definednes TERM [Pos]
+	     | Definedness TERM [Pos]
 	       -- pos: def
 	     | Existl_equation TERM TERM [Pos]
                -- pos: =e=
