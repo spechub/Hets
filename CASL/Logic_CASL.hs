@@ -73,15 +73,33 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
                Sign 
                Morphism 
                Symbol RawSymbol where
+         basic_analysis CASL = Just Static.basic_analysis
+         stat_symb_map_items CASL = Static.statSymbMapItems
+         stat_symb_items CASL = Static.statSymbItems
+         -- ensures_amalgamability :: id
+         --   -> (Diagram Sign Morphism, Node, Sign, LEdge Morphism, Morphism)
+         --   -> Result (Diagram Sign Morphism)
+         
          symbol_to_raw CASL = Static.symbolToRaw
          id_to_raw CASL = Static.idToRaw
          sym_of CASL = Static.symOf
          symmap_of CASL = Static.symmapOf
          matches CASL = Static.matches
          sym_name CASL = Static.symName
-               
-         basic_analysis CASL = Just Static.basic_analysis
+         
+         -- add_sign :: id -> Sign -> Sign -> Sign      
          empty_signature CASL = emptySign
+         -- signature_union :: id -> Sign -> Sign -> Result Sign
+         -- final_union :: id -> Sign -> Sign -> Result Sign
+         is_subsig CASL = Static.isSubSig
+         -- generated_sign, cogenerated_sign :: id -> [RawSymbol]
+         --                -> Sign -> Result Morphism
+         -- induced_from_morphism :: id -> EndoMap RawSymbol -> Sign
+         --               -> Result Morphism
+         -- induced_from_to_morphism :: id -> EndoMap RawSymbol
+         --               -> Sign -> Sign -> Result Morphism
+         -- extend_morphism :: id -> Sign -> Morphism -> Sign -> Sign
+         --               -> Result Morphism                  
 
 instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
