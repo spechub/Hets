@@ -613,7 +613,7 @@ filterPairsByConservativityOfSecondPath ::
 filterPairsByConservativityOfSecondPath [] = []
 filterPairsByConservativityOfSecondPath (([],_):list) = 
   filterPairsByConservativityOfSecondPath list
-filterPairsByConservativityOfSecondPath (([],_):list) = 
+filterPairsByConservativityOfSecondPath ((_,[]):list) = 
   filterPairsByConservativityOfSecondPath list
 filterPairsByConservativityOfSecondPath (pair:list) =
   if (and [cons >= Cons | cons <- map getConservativity (snd pair)]) 
@@ -757,30 +757,69 @@ getConservativity edge@(_,_,edgeLab) =
 -- ----------------------------------------------
 
 theoremHideShift :: ProofStatus -> IO ProofStatus
-theoremHideShift proofStatus@(globalContext,libEnv,history,dgraph) =
---  error 
---  (concat (map (prettyPrintPath dgraph) 
-  -- (map snd 
-   -- (concat 
-     --[getAllPathsBeginningWithHidingDefTo dgraph node ([]::[LEdge DGLinkLab])|
-      --node <- map getTargetNode hidingEdges]))))
-  if (null (snd (theoremHideShiftInsertNodes dgraph hidingEdges))) then error "kam durch"
-    else error "kam durch zweiter zweig"
+theoremHideShift proofStatus@(globalContext,libEnv,history,dgraph) = do
+  let nodePathsList = 
+	  [(node,
+	    getAllPathsBeginningWithHidingDefTo
+	    dgraph 
+	    node 
+	    ([]::[LEdge DGLinkLab]))|
+	   node <- nodes dgraph]
+  let (newDgraph,newChanges) = theoremHideShiftAux dgraph nodePathsList
+  putStrLn "d o n e"
+  return (globalContext,
+	 libEnv,
+	 ([TheoremHideShift],newChanges):history,
+	 newDgraph)
+
+
+theoremHideShiftAux :: DGraph -> [(Node,[(Node,[LEdge DGLinkLab])])]
+		    -> (DGraph,[DGChange])
+theoremHideShiftAux dgraph [] = (dgraph,[])
+theoremHideShiftAux dgraph ((node, []):list) = 
+  replaceNode dgraph oldNode newNode
+  where
+   nodeContext = (context node dgraph)
+   oldNode = labNode' nodeContext
+   oldNodeLab = lab' nodeContext
+   newNode = (node, DGNode {dgn_name = dgn_name oldNodeLab,
+			   dgn_sign = dgn_sign oldNodeLab,
+			   dgn_sens = dgn_sens oldNodeLab,
+			   dgn_nf = Just node,
+			   dgn_sigma = Nothing, --Just ID,
+			   dgn_origin = dgn_origin oldNodeLab})
+
+theoremHideShiftAux dgraph ((node,pathsToNode):list) =
+  error ("theoremHideShiftAux: not yet implemented")
+
+replaceNode :: DGraph -> LNode DGNodeLab -> LNode DGNodeLab
+	    -> (DGraph,[DGChange])
+replaceNode dgraph oldNode@(on,_) newNode@(nn,_) =
+  (newDGraph,
+   [DeleteEdge edge|edge <- (oldInEdges ++ oldOutEdges)]
+   ++ [DeleteNode oldNode, InsertNode newNode]
+   ++ [InsertEdge edge| edge <- (newEdges)])
 
   where
-    hidingEdges = filter isHidingEdge (labEdges dgraph)
+    oldInEdges = inn dgraph on
+    oldOutEdges = out dgraph on
+    oldInEdges' = removeDuplicatesFromFstList oldInEdges oldOutEdges
+    newInEdges = [(src,nn,edgelab)|(src,_,edgelab) <- oldInEdges']
+    newOutEdges = [(nn,tgt,edgelab)|(_,tgt,edgelab) <- oldOutEdges]
+    newEdges = newInEdges ++ newOutEdges
+    auxGraph = delNode on (removeEdges (oldInEdges'++oldOutEdges) dgraph)
+    newDGraph = insEdges newEdges (insNode newNode dgraph)
 
-theoremHideShiftInsertNodes :: DGraph -> [LEdge DGLinkLab]
-			    -> (DGraph,[DGChange])
-theoremHideShiftInsertNodes dgraph [] = (dgraph, [])
-theoremHideShiftInsertNodes dgraph ((_,tgt,edgelab):list) =
-  case inGoingHidingDefs of
-    [] -> error (show nodeLab)
-    _ -> error (show nodeLab)
-  where 
-    inGoingHidingDefs = getAllPathsBeginningWithHidingDefTo dgraph tgt []
-    nodeLab = lab' (context tgt dgraph)
-    
+
+removeDuplicatesFromFstList :: Eq a => [a] -> [a] -> [a]
+removeDuplicatesFromFstList fstList sndList =
+  [e | e <- fstList, notElem e sndList]
+
+
+removeEdges :: [LEdge DGLinkLab] -> DGraph -> DGraph
+removeEdges [] dgraph = dgraph
+removeEdges (edge:list) dgraph = removeEdges list (delLEdge edge dgraph)
+
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
