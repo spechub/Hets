@@ -254,32 +254,32 @@ instance (ATermConvertible a) => ATermConvertible (Maybe a) where
                       where aterm = getATerm att
 
 instance (Ord a, ATermConvertible a, ATermConvertible b) => ATermConvertible (Map.Map a b) where
-    toATerm fm       = let ml = toATerm (Map.toList fm)
+    toATerm fm       = let ml = toATerm (Map.toAscList fm)
 		       in (AAppl "Map" [ml] [])
     fromATerm at     = case at of
-		       (AAppl "Map" [ml] []) -> Map.fromList $ fromATerm ml
+		       (AAppl "Map" [ml] []) -> Map.fromDistinctAscList $ fromATerm ml
 		       _ -> fromATermError "Map" at
-    toShATerm att fm = let (att1,i) = toShATerm att $ Map.toList fm 
+    toShATerm att fm = let (att1,i) = toShATerm att $ Map.toAscList fm 
                        in seq att1 $ addATerm (ShAAppl "Map" [i] []) att1
     fromShATerm att  = case aterm of
 		       (ShAAppl "Map" [i] []) -> 
 			   let l = fromShATerm (getATermByIndex1 i att)
-		           in Map.fromList l
+		           in Map.fromDistinctAscList l
 		       u     -> fromShATermError "Map" u
 		       where aterm = getATerm att
 
 instance (Ord a,ATermConvertible a) => ATermConvertible (Set.Set a) where
-    toATerm set       = let ml = toATerm (Set.toList set)
+    toATerm set       = let ml = toATerm (Set.toAscList set)
 		        in (AAppl "Set" [ml] [])
     fromATerm at     = case at of
-		       (AAppl "Set" [ml] []) -> Set.fromList $ fromATerm ml
+		       (AAppl "Set" [ml] []) -> Set.fromDistinctAscList $ fromATerm ml
 		       _ -> fromATermError "Set" at
-    toShATerm att set = let (att1,i) = toShATerm att $ Set.toList set
+    toShATerm att set = let (att1,i) = toShATerm att $ Set.toAscList set
                         in seq att1 $ addATerm (ShAAppl "Set" [i] []) att1
     fromShATerm att  = case aterm of
 		       (ShAAppl "Set" [i] []) -> 
 			   let l = fromShATerm (getATermByIndex1 i att)
-		           in Set.fromList l
+		           in Set.fromDistinctAscList l
 		       u     -> fromShATermError "Set" u
 		       where aterm = getATerm att
 
