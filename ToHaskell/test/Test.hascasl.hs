@@ -1,8 +1,6 @@
 module HasCASLModul where
 import Prelude (undefined)
  
-data AT = A !(Int, B)
- 
 data B = B
  
 data C = C
@@ -72,3 +70,5 @@ not_2 = undefined
  
 true :: ()
 true = undefined
+ 
+data AT = A !(Int, B)

@@ -1,8 +1,6 @@
 module HasCASLModul where
 import Prelude (undefined)
  
-data Pair = Pair !(A_a, A_b)
- 
 type Pred a = a -> ()
  
 type Unit = ()
@@ -48,14 +46,8 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
-f :: (A_a, A_b) -> Pair
-f = \ (a, b) -> Pair (a, b)
- 
 false :: ()
 false = undefined
- 
-g :: Pair -> A_a
-g = \ (Pair (a, b)) -> a
  
 if_2then_2else_2 :: ((), a, a) -> a
 if_2then_2else_2 = undefined
@@ -65,3 +57,6 @@ not_2 = undefined
  
 true :: ()
 true = undefined
+ 
+data Pair = Pair !(A_a, A_b)
+g (Pair (a, b)) = a

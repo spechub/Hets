@@ -1,9 +1,6 @@
 module HasCASLModul where
 import Prelude (undefined)
  
-data Bool = True
-          | False
- 
 type Pred a = a -> ()
  
 type Unit = ()
@@ -45,27 +42,11 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
-eq :: (Bool, Bool) -> Bool
-eq = \ (x, y) -> wedge (le (x, y), le (y, x))
- 
 false :: ()
 false = undefined
  
 if_2then_2else_2 :: ((), a, a) -> a
 if_2then_2else_2 = undefined
- 
-le :: (Bool, Bool) -> Bool
-le = \ (x, y) -> vee (neg x, y)
- 
-ne :: (Bool, Bool) -> Bool
-ne = \ (x, y) -> wedge (vee (x, y), neg (wedge (x, y)))
- 
-neg :: Bool -> Bool
-neg
-  = \ x ->
-      case x of
-          False -> True
-          True -> False
  
 not_2 :: () -> ()
 not_2 = undefined
@@ -73,14 +54,19 @@ not_2 = undefined
 true :: ()
 true = undefined
  
-vee :: (Bool, Bool) -> Bool
-vee = \ (x, y) -> neg (wedge (neg x, neg y))
- 
-wedge :: (Bool, Bool) -> Bool
-wedge
-  = \ (x, y) ->
-      case (x, y) of
-          (False, False) -> False
-          (True, False) -> False
-          (False, True) -> False
-          (True, True) -> True
+data Bool = True
+          | False
+neg x
+  = case x of
+        False -> True
+        True -> False
+wedge (x, y)
+  = case (x, y) of
+        (False, False) -> False
+        (True, False) -> False
+        (False, True) -> False
+        (True, True) -> True
+vee (x, y) = neg (wedge (neg x, neg y))
+le (x, y) = vee (neg x, y)
+eq (x, y) = wedge (le (x, y), le (y, x))
+ne (x, y) = wedge (vee (x, y), neg (wedge (x, y)))

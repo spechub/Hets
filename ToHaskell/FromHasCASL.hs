@@ -14,42 +14,31 @@ Portability :  portable
 module ToHaskell.FromHasCASL where
 
 import Common.AS_Annotation
-import Common.Id
 
 import HasCASL.Le
 
 import ToHaskell.TranslateAna
-import ToHaskell.TranslateId
 
 import Haskell.Hatchet.MultiModuleBasics 
 import Haskell.Hatchet.AnnotatedHsSyn
-import Haskell.Hatchet.HsSyn
 import Haskell.Hatchet.SynConvert
 import Haskell.HatAna
 
-mapSignature :: Env -> Maybe(ModuleInfo, [Named AHsDecl]) 
+mapSignature :: Env -> (ModuleInfo, [Named AHsDecl]) 
 mapSignature sign = 
-    let hs = translateAna sign
-    in	Just(hatAna hs emptyModuleInfo) 
+    let hs = translateSig True sign
+    in	hatAna hs emptyModuleInfo
 
-mapSentence :: Named Sentence -> [Named AHsDecl] 
-mapSentence sen = case sentence sen of
-    DatatypeSen dt -> map translateDt dt 
-    _ -> []
-
-translateDt :: DatatypeDefn -> Named AHsDecl
-translateDt (DatatypeConstr i _ _ args alts) = 
-   	 let hsname = HsIdent $ translateIdWithType UpperId i in
-         NamedSen ("ga_" ++ showId i "") $
-         toAHsDecl $ HsDataDecl (SrcLoc 0 0)
-	               [] -- empty HsContext
-	               hsname
-		       (map getArg args) -- type arguments
-		       (map translateAltDefn alts) -- [HsConDecl] 
-		       [(UnQual $ HsIdent "Show")]
+mapSingleSentence :: Env -> Sentence -> Maybe AHsDecl
+mapSingleSentence sign sen = 
+    case translateSentence sign $ NamedSen "" sen of
+    [s] -> Just $ toAHsDecl $ sentence s
+    _ -> Nothing
 
 mapTheory :: (Env, [Named Sentence]) -> (ModuleInfo, [Named AHsDecl])
 mapTheory (sign, csens) =
-    let hs = translateAna sign
-	(mi, hsens) = hatAna hs emptyModuleInfo
-	in (mi, hsens ++ concatMap mapSentence csens)
+    let hs = translateSig False sign
+	ps = concatMap (translateSentence sign) csens
+        (mi, _) = hatAna (hs ++ map sentence ps) emptyModuleInfo
+	in (mi, map (mapNamed toAHsDecl) ps)
+

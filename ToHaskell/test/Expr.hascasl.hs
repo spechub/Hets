@@ -15,9 +15,6 @@ data A__2_M_G_2 a1 a2 = A__2_M_G_2
  
 data A__2_M_G_Q_2 a1 a2 = A__2_M_G_Q_2
  
-data A_bool = True
-            | False
- 
 _2_S_B_2 :: ((), ()) -> ()
 _2_S_B_2 = undefined
  
@@ -42,18 +39,6 @@ _2if_2 = undefined
 _2when_2else_2 :: (a, (), a) -> a
 _2when_2else_2 = undefined
  
-a :: A_bool
-a = True
- 
-b2 :: A_bool -> A_bool
-b2 = \ x -> x
- 
-b :: A_bool
-b = let x = True
-        y = False
-        z = x
-      in True
- 
 def_2 :: a -> ()
 def_2 = undefined
  
@@ -66,11 +51,8 @@ if_2then_2else_2 = undefined
 not_2 :: () -> ()
 not_2 = undefined
  
-notA :: A_bool
-notA
-  = case a of
-        True -> False
-        False -> True
- 
 true :: ()
 true = undefined
+ 
+data A_bool = True
+            | False

@@ -1,9 +1,6 @@
 module HasCASLModul where
 import Prelude (undefined)
  
-data Nat = Zero
-         | Suc !Nat
- 
 type Pred a = a -> ()
  
 type Unit = ()
@@ -45,9 +42,6 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
-f :: Nat -> Nat
-f = \ x -> Suc x
- 
 false :: ()
 false = undefined
  
@@ -59,3 +53,6 @@ not_2 = undefined
  
 true :: ()
 true = undefined
+ 
+data Nat = Zero
+         | Suc !Nat

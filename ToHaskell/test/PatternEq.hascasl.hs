@@ -46,12 +46,6 @@ _2when_2else_2 = undefined
 a :: A_s
 a = undefined
  
-b :: A_s
-b = a
- 
-c :: A_t
-c = snd (x, y)
- 
 def_2 :: a -> ()
 def_2 = undefined
  
@@ -64,9 +58,6 @@ if_2then_2else_2 = undefined
 not_2 :: () -> ()
 not_2 = undefined
  
-snd :: (A_s, A_t) -> A_t
-snd = \ (x, y) -> y
- 
 true :: ()
 true = undefined
  
@@ -75,3 +66,5 @@ x = undefined
  
 y :: A_t
 y = undefined
+snd (x, y) = y
+b = a
