@@ -188,8 +188,28 @@ ana_M_FORMULA (ExtFORMULA (Box m phi pos)) = do
 ana_M_FORMULA (ExtFORMULA (Diamond m phi pos)) = do
   phi' <- ana_M_FORMULA phi
   return(ExtFORMULA (Diamond m phi' pos))
-ana_M_FORMULA phi = 
-  plain_error phi 
+ana_M_FORMULA phi@(Quantification _ _ _ pos) = 
+  anaError phi pos
+ana_M_FORMULA phi@(Predication _ _ pos) =
+  anaError phi pos
+ana_M_FORMULA phi@(Definedness _ pos) =
+  anaError phi pos
+ana_M_FORMULA phi@(Existl_equation _ _ pos) =
+  anaError phi pos
+ana_M_FORMULA phi@(Strong_equation _ _ pos) =
+  anaError phi pos
+ana_M_FORMULA phi@(Membership _ _ pos) =
+  anaError phi pos
+ana_M_FORMULA phi@(Mixfix_formula _) =
+  anaError phi [nullPos]
+ana_M_FORMULA phi@(Unparsed_formula _ pos) =
+  anaError phi pos
+ana_M_FORMULA phi@(Sort_gen_ax _) =
+  anaError phi [nullPos]
+
+anaError :: a -> [Pos] -> Result a
+anaError phi pos = 
+   plain_error phi 
      "Modality declarations may only contain propositional axioms"
-     nullPos
+     (headPos pos)
 
