@@ -8,9 +8,6 @@ Hatchet/HsSyn
 
 In Logic_Haskell.hs: 
 
-- Für basic_analysis muss Hatchet-Funktion tiModule reduizert werden
-  auf Analyse des Moduls (d.h. keine Analyse der Importe) (So schon ok???)
-
 type AxiomName = String
 
 data Binding
@@ -32,7 +29,7 @@ data Quantifier
 
 data Formula
   = AxQuant   Quantifier Formula
-  | AxEq      Formula HsExp SrcLoc
+  | AxEq      Formula HsExp SrcLoc   -- müssten zwei HsExp's sein!
   | AxExp     HsExp
   deriving (Eq,Show)
 
@@ -43,6 +40,7 @@ unter Benutzung von tiExpr
 
 Analyse von "AxQuant   Quantifier Formula" ähnlich wie 
   tiExpr env expr@(AHsLambda sloc pats e)
+  allerdings wird body wieder mit tiFormula analysiert, nicht mit tiExpr
 
 tiFormula an geeigneter Stelle in tiProgram (oder Unterfunktion davon)
 einbinden
