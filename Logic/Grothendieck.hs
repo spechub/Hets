@@ -583,33 +583,21 @@ logicInclusion logicGraph (Logic lid1) (Logic lid2) =
        return (Comorphism (IdComorphism lid1 (top_sublogic lid1)))
       else case Map.lookup (ln1,ln2) (inclusions logicGraph) of 
            Just (Comorphism i) -> 
-              return (Comorphism i)
-	   Nothing -> Result [Diag FatalError 
-			 ("No inclusion from "++ln1++" to "++ln2++" found")
-                         nullPos] Nothing 
-
+               return (Comorphism i)
+	   Nothing -> 
+               fail ("No inclusion from "++ln1++" to "++ln2++" found")
 
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
-ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
-     let ln1 = language_name lid1
-         ln2 = language_name lid2 in
-     if ln1==ln2 then do
-       sigma2' <- rcoerce lid1 lid2 (newPos "s" 0 0) sigma2
-       mor <- inclusion lid1 sigma1 sigma2'
-       return (GMorphism (IdComorphism lid1 (top_sublogic lid1)) sigma1 mor)
-      else case Map.lookup (ln1,ln2) (inclusions logicGraph) of 
-           Just (Comorphism i) -> do
-	      sigma1' <- rcoerce lid1 (sourceLogic i) (newPos "u" 0 0) sigma1
-              (sigma1'',_) <- maybeToResult (newPos "w" 0 0) 
+ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
+    Comorphism i <- logicInclusion logicGraph (Logic lid1) (Logic lid2)
+    sigma1' <- rcoerce lid1 (sourceLogic i) (newPos "u" 0 0) sigma1
+    (sigma1'',_) <- maybeToResult (newPos "w" 0 0) 
                     "ginclusion: signature map failed" 
-                       (map_sign i sigma1')
-              sigma2' <- rcoerce lid2 (targetLogic i) (newPos "v" 0 0) sigma2
-              mor <- inclusion (targetLogic i) sigma1'' sigma2'
-              return (GMorphism i sigma1' mor)
-	   Nothing -> Result [Diag FatalError 
-			 ("No inclusion from "++ln1++" to "++ln2++" found")
-                         (newPos "t" 0 0)] Nothing 
+                    (map_sign i sigma1')
+    sigma2' <- rcoerce lid2 (targetLogic i) (newPos "v" 0 0) sigma2
+    mor <- inclusion (targetLogic i) sigma1'' sigma2'
+    return (GMorphism i sigma1' mor)
 
 -- | Composition of two Grothendieck signature morphisms 
 -- | with itermediate inclusion
