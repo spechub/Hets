@@ -15,8 +15,9 @@ type Region = (Pos,Pos)
 
  
 -- tokens as supplied by the scanner
-data Token = Token(String, Pos)
- 
+data Token = Token(String, Pos) -- deriving (Show, Eq, Ord)
+showTok (Token(t, _)) = t
+
 instance Eq Token where
    Token(s1, _) == Token(s2, _) = s1 == s2
  
@@ -24,8 +25,8 @@ instance Ord Token where
    Token(s1, _) <= Token(s2, _) = s1 <= s2
  
 instance Show Token where
-   showsPrec _ (Token(t, _)) = showString t
- 
+   showsPrec _ = showString.showTok
+
 -- spezial tokens
 type Keyword = Token
 type TokenOrPlace = Token
@@ -47,4 +48,5 @@ instance Show Id where
 -- simple Id
 simpleId :: String -> Id
 simpleId(s) = Id([Token(s, nullPos)],[]) 
+
 
