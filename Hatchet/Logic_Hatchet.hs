@@ -27,7 +27,7 @@ import Common.AS_Annotation
 
 import Hatchet.ATC_Hatchet      -- generated ATerm conversions
 import Hatchet.PrintModuleInfo
-import Hatchet.HatParser (HsDecls, hatParser)
+import Hatchet.HatParser (HsDecls(..), hatParser)
 import Hatchet.HatAna
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo,
                                           emptyModuleInfo,
@@ -39,12 +39,12 @@ import Logic.Logic
 
 moduleInfoTc, hsDeclTc, aHsDeclTc :: TyCon
 moduleInfoTc   = mkTyCon "Haskell.Hatchet.MultiModuleBasics.ModuleInfo"
-hsDeclTc       = mkTyCon "Haskell.Hatchet.HsSyn.HsDecl"
+hsDeclTc       = mkTyCon "Hatchet.HatParser.HsDecls"
 aHsDeclTc      = mkTyCon "Haskell.Hatchet.AnnotatedHsSyn.AHsDecl"
 
 instance Typeable ModuleInfo where
     typeOf _ = mkTyConApp moduleInfoTc []
-instance Typeable HsDecl where
+instance Typeable HsDecls where
     typeOf _ = mkTyConApp hsDeclTc []
 instance Typeable AHsDecl where
     typeOf _ = mkTyConApp aHsDeclTc []
@@ -117,9 +117,9 @@ instance StaticAnalysis Hatchet HsDecls
     signature_union Hatchet sig1 sig2 = return (joinModuleInfo sig1 sig2)
     inclusion Hatchet _ _ = return ()
     basic_analysis Hatchet = Just(basicAnalysis)
-      where basicAnalysis (basicSpec, sig, _) = 	            
+      where basicAnalysis (b@(HsDecls basicSpec), sig, _) = 	            
              let (modInfo, sens) = hatAna basicSpec sig
-             in Result [] $ Just (basicSpec, diffModInfo modInfo sig, 
+             in Result [] $ Just (b, diffModInfo modInfo sig, 
 				  modInfo, sens)
     is_subsig Hatchet s1 s2 = joinModuleInfo s1 s2 == s2
 

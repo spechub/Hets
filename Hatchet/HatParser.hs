@@ -23,23 +23,20 @@ import Haskell.Hatchet.HsParseMonad
 import Text.ParserCombinators.Parsec
 import Common.PrettyPrint
 import Common.Lib.Pretty
--- import Debug.Trace
 
 instance PrettyPrint HsDecls where
-     printText0 _ hsDecls = 
+     printText0 _ (HsDecls hsDecls) = 
          vcat (map (text . ((++) "\n") . HatPretty.render . ppHsDecl) hsDecls)
 
-type HsDecls = [HsDecl]
+data HsDecls = HsDecls [HsDecl] deriving (Eq, Show)
 
 hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
                s <- hStuff
---               trace ("@"++s++"@") (return ())
 	       let (l, c) = (sourceLine p, sourceColumn p)
                    r = HatParser.parse s 
                           (SrcLoc l 0) c []
                case r of
 		           Ok _ (HsModule _ _ _ hsDecls) -> 
---			       trace (showPretty hsDecls " OK!") $ 
-				     return hsDecls
+				     return (HsDecls hsDecls)
 			   Failed msg -> unexpected msg
