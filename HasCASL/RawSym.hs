@@ -108,9 +108,8 @@ matchSymb sy rsy = let ty = symType sy in
        (case rsy of 
 		AnID _ -> True
 		AKindedId k _ -> symbTypeToKind ty == k
-		AQualId _ _t -> error "matchSymb" 
-	              -- matchSymbType (symEnv sy) ty t
-                ASymbol s -> s == sy)
+		AQualId _ t -> matchSymbType (symEnv sy) ty t
+                ASymbol s -> compSymbType (typeMap $ symEnv sy) ty $ symType s)
 
 anaSymbolType :: SymbolType -> State Env (Maybe SymbolType)
 anaSymbolType t = 
@@ -134,5 +133,5 @@ compSymbType tm t1 t2 =
     case (t1, t2) of 
     (ClassAsItemType k1, ClassAsItemType k2) -> k1 == k2
     (TypeAsItemType k1, TypeAsItemType k2) -> k1 == k2
-    (OpAsItemType s1, OpAsItemType s2) -> isUnifiable tm 0 s1 s2
+    (OpAsItemType s1, OpAsItemType s2) -> isUnifiable tm 1 s1 s2
     _ -> False

@@ -17,6 +17,7 @@ import HasCASL.Le
 import HasCASL.PrintLe
 import HasCASL.As
 import HasCASL.Unify
+import HasCASL.RawSym
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
@@ -26,7 +27,9 @@ import qualified Common.Lib.Set as Set
 
 checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a 
 checkSymbols s1 s2 r = 
-    let s = s1 Set.\\ s2 in
+    let s = foldr ( \ e2 d -> 
+                 Set.filter (not . matchSymb e2 . ASymbol) d)
+                  s1 $ Set.toList s2 in
     if Set.isEmpty s then r else
        pfatal_error 
        (text "unknown symbols: " 
@@ -60,7 +63,7 @@ hideSymbol sym sig =
 			      Map.delete i tm }
     OpAsItemType ot -> 
 	let OpInfos os = Map.findWithDefault (OpInfos []) i as
-	    rs = filter (not . isUnifiable tm 0 ot . opType) os
+	    rs = filter (not . isUnifiable tm 1 ot . opType) os
         in sig { assumps = if null rs then Map.delete i as
 		          else Map.insert i (OpInfos rs) as }
 
