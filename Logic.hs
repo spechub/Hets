@@ -1,17 +1,17 @@
--- needs ghc -fglasgow-exts -package data
+
+-- needs ghc -fglasgow-exts -fallow-overlapping-instances -package data
 
 {- HetCATS/Logic.hs
    $Id$
-   Till Mossakowski
+   Till Mossakowski, Christian Maeder
    
-   Provides data structures for logics (with symbols)
-   and logic representations. Logics are
+   Provides data structures for logics (with symbols). Logics are
    a type class with an "identitiy" type (usually interpreted
    by a singleton set) which serves to treat logics as 
    data. All the functions in the type class take the
    identity as first argument in order to determine the logic.
-   Logic representations are just collections of
-   functions between (some of) the types of logics.
+
+   For logic representations see LogicRepr.hs
 
    References:
 
@@ -44,167 +44,116 @@
 
    Todo:
    ATerm, XML
-   Weak amalgamability, also for reprs
+   Weak amalgamability
    Metavars
-   repr maps
-   reprs out of sublogic relationships
+   
 -}
 
 module Logic where
 
 import Id
 import AS_Annotation
-import GlobalAnnotations
 
 import Set
 import FiniteMap
 import Graph
 import Error
-import Dynamic
 import Parsec
+import Prover -- for one half of class Sentences
 
-import Pretty (Doc)
 import PrettyPrint
 
--- debugging 
--- import IOExts (trace)
+-- for coercion used in LogicGraph.hs and Grothendieck.hs
+import GlaExts(unsafeCoerce#)
 
 -- maps
 
 type EndoMap a = FiniteMap a a
 
-
 -- diagrams are just graphs
 
 data Diagram object morphism = Graph object morphism
+
+-- languages, define like "data CASL = CASL deriving Show" 
+
+class Show id => Language id where
+    logic_name :: id -> String
+    logic_name i = show i
+
+instance Show a => Language a where
+
+-- (a bit unsafe) coercion using the language name
+coerce :: (Language id1, Language id2) => id1 -> id2 -> a -> Maybe b
+coerce i1 i2 a = if logic_name i1 == logic_name i2 then 
+		 (Just $ unsafeCoerce# a) else Nothing
 
 -- Categories are given by a quotient,
 -- i.e. we need equality
 -- Should we allow arbitrary composition graphs and build paths?
 
-class (Eq object, Eq morphism) => 
-      Category id object morphism | id -> object, id -> morphism where
-         ide :: id -> object -> morphism
+class (Language id, Eq sign, Show sign, Eq morphism) => 
+      Category id sign morphism | id -> sign, id -> morphism where
+         ide :: id -> sign -> morphism
          o :: id -> morphism -> morphism -> Maybe morphism
-         dom, cod :: id -> morphism -> object
-         legal_obj :: id -> object -> Bool
+         dom, cod :: id -> morphism -> sign
+         legal_obj :: id -> sign -> Bool
          legal_mor :: id -> morphism -> Bool
-
 
 -- abstract syntax, parsing and printing
 
-class (PrettyPrint basic_spec, Eq basic_spec, Show basic_spec,
-       Show sentence, PrettyPrint symb_items, Show symb_items,
-       Show symb_map_items,
-       PrettyPrint symb_map_items, Eq symb_items, 
-       Eq symb_map_items) =>
-      Syntax id basic_spec sentence symb_items symb_map_items
-        | id -> basic_spec, id -> sentence, id -> symb_items,
+class (Language id, PrettyPrint basic_spec, Eq basic_spec,
+       PrettyPrint symb_items, Eq symb_items,
+       PrettyPrint symb_map_items, Eq symb_map_items) =>
+      Syntax id basic_spec symb_items symb_map_items
+        | id -> basic_spec, id -> symb_items,
           id -> symb_map_items
       where 
          -- parsing
-         parse_basic_spec :: id -> GenParser Char st basic_spec
+         parse_basic_spec :: id -> Maybe(GenParser Char st basic_spec)
          parse_symb_items :: id -> GenParser Char st symb_items
          parse_symb_map_items :: id -> GenParser Char st symb_map_items
 
--- lattices (for sublogics)
+-- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
-class Ord l => LatticeWithTop l where
-  meet, join :: l -> l -> l
-  top :: l
+class (Category id sign morphism, Show sentence, 
+       Show local_env, Ord symbol, Show symbol)
+    => Sentences id sentence local_env sign morphism symbol
+        | id -> sentence, id -> local_env, id -> sign, id -> morphism,
+          id -> symbol
+      where
+         -- sentence translation
+      map_sen :: id -> morphism -> sentence -> Result sentence
+         -- parsing of sentences
+      parse_sentence :: id -> local_env -> String -> Result sentence
+           -- is a term parser needed as well?
+      provers :: id -> [Prover sentence symbol]
+      cons_checkers :: id -> [Cons_checker 
+			      (TheoryMorphism sign sentence morphism)] 
+-- static analysis
 
-
--- theories and theory morphisms
-
-data Theory sign sen = 
-     Theory {sign_of :: sign, 
-             ax_of :: [(String,sen)]
-            }
-
-data TheoryMorphism sign sen mor = 
-     TheoryMorphism {t_source, t_target :: Theory sign sen,
-                     t_morphism :: mor
-                    } 
-
-
--- proofs and provers
-
-type Rule = String
-
-data Proof_tree sen = Axiom sen
-                    | Branch (sen,Rule,[Proof_tree sen])  -- add substitutions here?
-
-type Tactic_script = String  -- the file name
-
-data Proof_status sen = Open sen
-                      | Disproved sen 
-                      | Proved(sen,
-                               [sen], -- used axioms
-                               Proof_tree sen,
-                               Tactic_script)
-
-data Prover sen symbol = 
-     Prover { prover_name :: String,
-              prover_sublogic :: String,
-              add_sym :: symbol -> IO(Bool),  -- returns True if succeeded
-              remove_sym :: symbol -> IO(Bool), -- returns True if succeeded
-              add_sen :: sen -> IO(Bool),  -- returns True if succeeded
-              remove_sen :: sen -> IO(Bool), -- returns True if succeeded
-              prove :: sen -> IO([Proof_status sen]) -- proof status for goal and lemmas
-            }
-
-data Cons_checker morphism = 
-     Cons_checker {cons_checker_name :: String,
-                   cons_checker_sublogic :: String,
-                   cons_check :: morphism -> IO(Bool, Tactic_script)
-                  }
-
-
--- logics
-
-class (Syntax id basic_spec sentence symb_items symb_map_items,
-       Show sign, Show morphism, Show symbol, Show raw_symbol,
-       Ord symbol, --  needed for efficient symbol tables
-       Eq raw_symbol,
-       Category id sign morphism,
-       LatticeWithTop sublogics,
-       -- needed for heterogeneous coercions:
-       Typeable id, Typeable sublogics, Typeable sign, Typeable morphism, Typeable symbol, Typeable raw_symbol,
-       Typeable basic_spec, Typeable sentence, Typeable symb_items, Typeable symb_map_items) =>
-      Logic id sublogics
+class ( Syntax id basic_spec symb_items symb_map_items
+      , Sentences id sentence local_env sign morphism symbol
+      , Show raw_symbol, Eq raw_symbol)
+    => StaticAnalysis id 
         basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol 
-        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
+        | id -> basic_spec, id -> sentence, id -> symb_items,
           id -> symb_map_items, id -> local_env,
-          id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
-       where
-         logic_name :: id -> String
-         has_parser :: id -> Bool
-         has_printer :: id -> Bool
-         has_analysis :: id -> Bool
-
-         -- sentence translation
-         map_sen :: id -> morphism -> sentence -> Result sentence
-         map_sen = error("map_sen")
-         -- parsing of sentences
-         parse_sentence :: id -> local_env -> String -> Result sentence
-           -- is a term parser needed as well?
-
+          id -> sign, id -> morphism, id -> symbol, id -> raw_symbol
+      where
          -- static analysis of basic specifications and symbol maps
          basic_analysis :: id -> 
-                           (basic_spec,  -- abstract syntax tree
+                           Maybe((basic_spec,  -- abstract syntax tree
                             local_env,   -- efficient table for env signature
                             [Annotation]) ->   -- global annotations
-                           Result (local_env,sign,[(String,sentence)])
+                           Result (local_env,sign,[(String,sentence)]))
                               -- the output local env is expected to be
                               -- just the input local env, united with the sign.
                               -- We have both just for efficiency reasons.
                               -- These include any new annotations
          stat_symb_map_items :: 
 	     id -> symb_map_items -> Result (EndoMap raw_symbol)
-	 stat_symb_map_items = error("stat_symb_map_items")
          stat_symb_items :: id -> symb_items -> Result [raw_symbol] 
-	 stat_symb_items = error("stat_symb_items")
          -- architectural sharing analysis for one morphism
          ensures_amalgamability :: id ->
               (Diagram sign morphism, Node, sign, LEdge morphism, morphism) -> 
@@ -215,24 +164,41 @@ class (Syntax id basic_spec sentence symb_items symb_map_items,
          symbol_to_raw :: id -> symbol -> raw_symbol
          id_to_raw :: id -> Id -> raw_symbol 
          sym_of :: id -> sign -> Set symbol
-         sym_of = error("sym_of")
          symmap_of :: id -> morphism -> EndoMap symbol
          matches :: id -> symbol -> raw_symbol -> Bool
          sym_name :: id -> symbol -> Id 
    
          -- operations on local envs, signatures and morphisms
-         empty_local_env :: local_env
-         add_sign :: sign -> local_env -> local_env
+         empty_local_env :: id -> local_env
+         add_sign :: id -> sign -> local_env -> local_env
          empty_signature :: id -> sign
          signature_union :: id -> sign -> sign -> Result sign
          final_union :: id -> sign -> sign -> Result sign
          is_subsig :: id -> sign -> sign -> Bool
-         generated_sign, cogenerated_sign :: id -> [raw_symbol] -> sign -> Result morphism
-         induced_from_morphism :: id -> EndoMap raw_symbol -> sign -> Result morphism
-         induced_from_to_morphism :: id -> EndoMap raw_symbol -> sign -> sign -> Result morphism 
-         extend_morphism :: Id -> sign -> morphism -> sign -> sign -> Result morphism
+         generated_sign, cogenerated_sign :: 
+	     id -> [raw_symbol] -> sign -> Result morphism
+         induced_from_morphism :: 
+	     id -> EndoMap raw_symbol -> sign -> Result morphism
+         induced_from_to_morphism :: 
+	     id -> EndoMap raw_symbol -> sign -> sign -> Result morphism 
+         extend_morphism :: 
+	     id -> sign -> morphism -> sign -> sign -> Result morphism
 
-         -- sublogics
+-- sublogics
+
+class Ord l => LatticeWithTop l where
+  meet, join :: l -> l -> l
+  top :: l
+
+class (Language id, LatticeWithTop sublogics)
+    => 
+      Sublogics id sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol
+        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
+          id -> symb_map_items, 
+          id -> sign, id -> morphism, id ->symbol
+       where
          sublogic_names :: id -> sublogics -> [String] 
              -- the first name is the principal name
          all_sublogics :: id -> [sublogics]
@@ -246,9 +212,7 @@ class (Syntax id basic_spec sentence symb_items symb_map_items,
          is_in_symbol :: id -> sublogics -> symbol -> Bool
 
          min_sublogic_basic_spec :: id -> basic_spec -> sublogics
-         min_sublogic_basic_spec = error("min_sublogic_basic_spec")
          min_sublogic_sentence :: id -> sentence -> sublogics
-         min_sublogic_sentence = error("min_sublogic_sentence")
          min_sublogic_symb_items :: id -> symb_items -> sublogics
          min_sublogic_symb_map_items :: id -> symb_map_items -> sublogics
          min_sublogic_sign :: id -> sign -> sublogics
@@ -263,41 +227,44 @@ class (Syntax id basic_spec sentence symb_items symb_map_items,
          proj_sublogic_epsilon :: id -> sublogics -> sign -> morphism
          proj_sublogic_symbol :: id -> sublogics -> symbol -> Maybe symbol
 
-         -- provers
-         provers :: [Prover sentence symbol]
-         cons_checkers :: [Cons_checker (TheoryMorphism sign sentence morphism)] 
 
--- Simple logic representations (possibly also morphisms via adjointness)
+-- logics
 
-data (Logic id1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
-        local_env1 sign1 morphism1 symbol1 raw_symbol1,
-      Logic id2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2 
-        local_env2 sign2 morphism2 symbol2 raw_symbol2) =>
-  LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                local_env1 sign1 morphism1 symbol1 raw_symbol1
-            id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                local_env2 sign2 morphism2 symbol2 raw_symbol2
-     =
-     LogicRepr {repr_name :: String,
-                source :: id1, source_sublogic :: sublogics1,
-                target :: id2, target_sublogic :: sublogics2,
-                -- the translation functions are partial 
-                -- because the target may be a sublanguage
-                -- map_basic_spec :: basic_spec1 -> Maybe basic_spec2,
-                map_sign :: sign1 -> Maybe (sign2,[sentence2]),
-                projection:: Maybe (-- the right adjoint functor Psi
-                                    sign2 -> sign1, morphism2 -> morphism1,
-                                    -- the counit 
-                                    sign2 -> morphism2,
-                                    -- basic_spec2 -> basic_spec1,
-                                    -- corresponding symbol translation
-                                    symbol2 -> Maybe symbol1),  
-                map_morphism :: morphism1 -> Maybe morphism2,
-                map_sentence :: sign1 -> sentence1 -> Maybe sentence2,
-                      -- also covers semi-representations
-                      -- with no sentence translation
-                map_symbol :: symbol1 -> Set symbol2
-                  -- codings may be more complex
-               }
+class (StaticAnalysis id 
+        basic_spec sentence symb_items symb_map_items
+        local_env sign morphism symbol raw_symbol,
+       Sublogics id sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol) =>
+      Logic id sublogics
+        basic_spec sentence symb_items symb_map_items
+        local_env sign morphism symbol raw_symbol 
+        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
+          id -> symb_map_items, id -> local_env,
+          id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
+	  where
+
+-- instance to define
+instance (StaticAnalysis  id 
+        basic_spec sentence symb_items symb_map_items
+        local_env sign morphism symbol raw_symbol,
+	  Sublogics id sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol) => 
+    Logic id sublogics
+        basic_spec sentence symb_items symb_map_items
+        local_env sign morphism symbol raw_symbol where
+
+{- class hierarchy:
+                                     Language
+               __________/     
+   Category
+      |                   ______/       |
+   Sentences      Syntax
+      \            /
+      StaticAnalysis (no sublogics)  Sublogics (no local_env, raw_symbol) 
+            \                         /
+             \                       /       
+                      Logic
+
+-}
