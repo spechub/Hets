@@ -9,6 +9,8 @@
 # !!! Note: This makefile is written for GNU make !!!
 #           (gmake on solaris ; make on linux)
 
+all: hets
+
 ####################################################################
 ## Some varibles, which control the compilation
 
@@ -85,6 +87,11 @@ PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
 happy_files = $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
   $(PFE_TOOLDIR)/base/parse2/Lexer/HsLex.hs
 logics += Haskell
+derived_sources += Haskell/PreludeString.hs
+
+Haskell/ATC_Haskell.der.hs: $(Haskell_files) utils/genRules
+	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
+             $(Haskell_files)
 endif
 happy_files += Haskell/Hatchet/HsParser.hs
 
@@ -180,8 +187,7 @@ inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
 derived_sources = $(drifted_files) hetcats/Version.hs $(happy_files) \
-                  $(inline_axiom_files) Modal/ModalSystems.hs \
-                  Haskell/PreludeString.hs
+                  $(inline_axiom_files) Modal/ModalSystems.hs 
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = ./Isabelle/Logic_Isabelle.hs \
@@ -207,8 +213,6 @@ tax_objects = $(patsubst %.hs,%.o,$(tax_sources))
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 #.PRECIOUS: sources_hetcats.mk
-
-all: hets
 
 hets: $(sources) $(derived_sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS) 2>&1 | tee hetcats-make 
@@ -348,10 +352,6 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) utils/genRules
 Hatchet/ATC_Hatchet.der.hs: $(Hatchet_files) utils/genRules
 	utils/genRules -r $(rule) -o Hatchet -h ATC/Hatchet.header.hs \
              $(Hatchet_files)
-
-Haskell/ATC_Haskell.der.hs: $(Haskell_files) utils/genRules
-	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
-             $(Haskell_files)
 
 rule:= ShATermConvertible
 
