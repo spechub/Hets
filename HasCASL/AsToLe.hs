@@ -56,7 +56,7 @@ anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 convertTypeToClass :: Type -> State Env (Result Class)
 convertTypeToClass (TypeToken t) = 
     do if tokStr t == "Type" then return $ Result [] (Just $ universe) else 
-	  do Result ds (Just cs) <- anaClassName False t 
+	  do Result ds (Just cs) <- anaClassName False (simpleIdToId t) 
 	     if null cs then return $ Result ds Nothing
 		else return $ Result ds (Just $ Intersection cs [])  
 
@@ -127,9 +127,9 @@ anaSuperClass c =
 
 anaClassDecl :: [ClassName] -> Class -> ClassName -> State Env ()
 anaClassDecl cs cdef ci = 
-    if tokStr ci == "Type" then 
+    if showId ci "" == "Type" then 
        appendDiags [Diag Error 
-		    "illegal universe class declaration" (tokPos ci)]
+		    "illegal universe class declaration" (posOfId ci)]
     else 
     do ce <- getClassEnv
        case lookupFM ce ci of 
@@ -137,8 +137,8 @@ anaClassDecl cs cdef ci =
 				 cs cdef
 	    Just info -> do 
 	      appendDiags [Diag Warning ("redeclared class '"
-					 ++ tokStr ci ++ "'") 
-			  $ tokPos ci]
+					 ++ showId ci "'") 
+			  $ posOfId ci]
 	      let oldCs = superClasses info
 		  oldDefn = classDefn info in
 		if null cs then 
@@ -150,6 +150,8 @@ anaClassDecl cs cdef ci =
 		      putClassEnv $ addToFM ce ci 
 				  info { superClasses = newCs }
  
+getLegalSuperClasses :: ClassEnv -> ClassName -> [ClassName] 
+		     -> [ClassName] -> State Env [ClassName]
 getLegalSuperClasses ce ci oldCs cs =
     let scs = zip (map (allSuperClasses ce) cs) cs
 	(scycs, sOk) = partition ((ci `elem`) . fst) scs
@@ -162,15 +164,17 @@ getLegalSuperClasses ce ci oldCs cs =
 		      [Diag Error 
 		       ("cyclic class relation via '"
 			++ showClassList cycles "'")
-		      $ tokPos (head cycles)]
+		      $ posOfId (head cycles)]
 	  if null dubs then return ()
 	     else appendDiags 
 		      [Diag Warning 
 		       ("repeated class '"
 			++ showClassList dubs "'")
-		      $ tokPos (head dubs)]
+		      $ posOfId (head dubs)]
 	  return newCs
 
+
+mergeDefn :: ClassEnv -> ClassName -> Class -> Class -> State Env Class 
 mergeDefn _ ci (Downset oldT) c@(Downset t) =
     do if eqType oldT t then return () 
 	  else incompatibleClassRedeclaration ci
@@ -184,10 +188,11 @@ mergeDefn _ ci _ c =
     do incompatibleClassRedeclaration ci
        return c
 
+incompatibleClassRedeclaration :: ClassName -> State Env ()
 incompatibleClassRedeclaration ci =
     appendDiags [Diag Warning 
-		 ("incompatible redeclaration of '" ++ tokStr ci ++ "'")
-		 $ tokPos ci]
+		 ("incompatible redeclaration of '" ++ showId ci "'")
+		 $ posOfId ci]
 
 -- ----------------------------------------------------------------------------
 -- TypeItem

@@ -107,7 +107,11 @@ typeName = mixId (hascasl_type_ops ++ hascasl_reserved_fops,
 -- ----------------------------------------------
 
 -- no compound ids (just a word) 
-typeVar, className :: GenParser Char st Token
+typeVar :: GenParser Char st Token
 typeVar = pToken scanWords
 
-className = typeVar
+className :: GenParser Char st Id
+className = 
+    do s <- typeVar
+       (c, p) <- option ([], []) $ brackets typeName (,) 
+       return (Id [s] c p)

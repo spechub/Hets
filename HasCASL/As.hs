@@ -326,4 +326,4 @@ type UninstOpName = Id
 
 type Var = Id
 type TypeVar = Token
-type ClassName = Token
+type ClassName = Id -- TOKEN-ID (one token with compound list, like CASL sorts)

@@ -41,8 +41,8 @@ quColon = do c <- colT
 -----------------------------------------------------------------------------
 -- universe is just a special className ("Type")
 parseClass :: GenParser Char st Class
-parseClass = fmap (\c -> if tokStr c == "Type" 
-		   then Intersection [] [tokPos c]
+parseClass = fmap (\c -> if showId c "" == "Type" 
+		   then Intersection [] [posOfId c]
 		   else Intersection [c] []) className
              <|> 
 	     do o <- oParenT

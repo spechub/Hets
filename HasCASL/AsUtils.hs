@@ -66,7 +66,7 @@ posOfTypePattern (TypePatternArgs as) =
 -- ---------------------------------------------------------------------
 showClassList :: [ClassName] -> ShowS
 showClassList is = showParen (length is > 1)
-		   $ showSepList ("," ++) ((++) . tokStr) is
+		   $ showSepList ("," ++) showId is
 
 
 ----------------------------------------------------------------------------

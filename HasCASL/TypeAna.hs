@@ -37,8 +37,8 @@ anaClassName b ci =
                    return $ return [ci]
 	      else 	  
 		return $ plain_error [] 
-		    ("undeclared class '" ++ tokStr ci ++  "'")
-		    (tokPos ci)
+		    ("undeclared class '" ++ showId ci "'")
+		    (posOfId ci)
 
 anaClass :: Bool -> Class -> State Env Class
 anaClass b c@(As.Intersection cs ps) = 
@@ -221,7 +221,7 @@ posOfExtClass (KindArg k) = posOfKind k
 posOfClass :: Class -> Pos 
 posOfClass (Downset t) = posOfType t
 posOfClass (Intersection is ps) = 
-    if null ps then if null is then nullPos else tokPos $ head is
+    if null ps then if null is then nullPos else posOfId $ head is
        else head ps
 
 eqKind :: Kind -> Kind -> Bool
