@@ -258,7 +258,8 @@ printTerm ga b trm =
                       map (printEq0 ga equalS) es
                 in case br of 
                 Let -> sep [hc_sty_axiom letS <+> des, hc_sty_axiom inS <+> dt]
-                Where -> hang (sep [dt, hc_sty_axiom whereS]) 6 des 
+                Where -> hang (sep [dt, hc_sty_axiom whereS]) 6 des
+                Program -> des
         TermToken t -> printLatex0 ga t
         MixTypeTerm q t _ -> printLatex0 ga q <+> printLatex0 ga t
         MixfixTerm ts -> fsep_latex $ map (printLatex0 ga) ts
