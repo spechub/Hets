@@ -38,6 +38,7 @@ module Common.ATerm.AbstractSyntax
 
 import qualified Common.DFiniteMap as Map
 import qualified Common.DFiniteMap as DMap
+-- import UnsafeCoerce(unsafePtrEq)
 
 data ATerm = AAppl String [ATerm] [ATerm]
            | AList [ATerm]        [ATerm]
@@ -46,8 +47,24 @@ data ATerm = AAppl String [ATerm] [ATerm]
 
 data ShATerm = ShAAppl String [Int] [Int]
              | ShAList [Int]        [Int]
-             | ShAInt  Integer      [Int]  
-               deriving (Eq,Ord)
+             | ShAInt  Integer      [Int] 
+--               deriving (Eq,Ord)
+
+compareShATerm :: ShATerm -> ShATerm -> Ordering
+compareShATerm a b = -- if unsafePtrEq a b then EQ else 
+    case (a, b) of
+    (ShAAppl s1 i1 j1, ShAAppl s2 i2 j2) -> compare (s1, i1, j1) (s2, i2, j2)
+    (ShAAppl _ _ _, _) -> LT
+    (ShAList i1 j1, ShAList i2 j2) -> compare (i1, j1) (i2, j2)
+    (ShAList _ _, ShAInt _ _) -> LT
+    (ShAInt i1 j1, ShAInt i2 j2) -> compare (i1, j1) (i2, j2)
+    _ -> GT
+
+instance Eq ShATerm where
+  a == b = compareShATerm a b == EQ
+
+instance Ord ShATerm where
+  compare a b = compareShATerm a b
 
 data ATermTable = ATT !(Map.Map ShATerm Int) !(DMap.Map Int ShATerm) Int
 
