@@ -38,8 +38,9 @@ import Common.Lib.Pretty
 import Data.Maybe
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
-inducedFromMorphism rmap sigma = do
+inducedFromMorphism rmap1 sigma = do
   -- first check: do all source raw symbols match with source signature?
+  rmap <- anaRawMap sigma sigma rmap1
   let syms = symOf sigma
       srcTypeMap = typeMap sigma
       incorrectRsyms = Map.foldWithKey
@@ -207,7 +208,8 @@ mapConstrInfo im ci = ci { constrType = mapTypeScheme im $ constrType ci}
 
 -- the main function
 inducedFromToMorphism :: RawSymbolMap -> Env -> Env -> Result Morphism
-inducedFromToMorphism rmap sigma1 sigma2 = do
+inducedFromToMorphism rmap1 sigma1 sigma2 = do
+  rmap <- anaRawMap sigma1 sigma2 rmap1
   --debug 3 ("rmap",rmap)
   -- 1. use rmap to get a renaming...
   mor1 <- inducedFromMorphism rmap sigma1

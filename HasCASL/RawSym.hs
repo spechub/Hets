@@ -17,7 +17,6 @@ import HasCASL.Le
 import HasCASL.PrintLe
 import HasCASL.TypeAna
 import HasCASL.VarDecl
-import HasCASL.Unify
 import HasCASL.Builtin
 import Common.Id
 import Common.Result
@@ -96,7 +95,7 @@ convTypeToKind (MixfixType [t1, TypeToken t]) =
 	      Nothing -> Nothing
 	      Just v -> do k1 <- convTypeToKind t1
 			   Just $ ExtKind k1 v [tokPos t]
-convTypeToKind(TypeToken t) = 
+convTypeToKind (TypeToken t) = 
        if tokStr t == "Type" then Just $ Intersection [] [tokPos t] else
           let ci = simpleIdToId t in
           Just $ ClassKind ci MissingKind
@@ -104,12 +103,13 @@ convTypeToKind _ = Nothing
 
 matchSymb :: Symbol -> RawSymbol -> Bool
 matchSymb sy rsy = let ty = symType sy in 
-    symName sy == rawSymName rsy && 
-       (case rsy of 
+    (&&) (symName sy == rawSymName rsy) $ 
+       case rsy of 
 		AnID _ -> True
 		AKindedId k _ -> symbTypeToKind ty == k
-		AQualId _ t -> matchSymbType (symEnv sy) ty t
-                ASymbol s -> compSymbType (typeMap $ symEnv sy) ty $ symType s)
+		AQualId _ _ -> maybe False (matchSymb sy) $ 
+                               maybeResult $ matchQualId (symEnv sy) rsy
+                ASymbol s -> ty == symType s
 
 anaSymbolType :: SymbolType -> State Env (Maybe SymbolType)
 anaSymbolType t = 
@@ -121,17 +121,31 @@ anaSymbolType t =
     OpAsItemType sc -> do as <- anaTypeScheme sc
 			  return $ fmap OpAsItemType as	
 
-matchSymbType :: Env -> SymbolType -> SymbolType -> Bool
-matchSymbType e t1 t2 = 
-    let mt = evalState (anaSymbolType t2) e {typeMap = addUnit $ typeMap e}
-	in case mt of 
-    Nothing -> False
-    Just t -> compSymbType (typeMap e) t1 t
+instance PosItem RawSymbol where
+    get_pos rsy = Just $ posOfId $ rawSymName rsy
 
-compSymbType :: TypeMap -> SymbolType -> SymbolType -> Bool
-compSymbType tm t1 t2 = 
-    case (t1, t2) of 
-    (ClassAsItemType k1, ClassAsItemType k2) -> k1 == k2
-    (TypeAsItemType k1, TypeAsItemType k2) -> k1 == k2
-    (OpAsItemType s1, OpAsItemType s2) -> isUnifiable tm 1 s1 s2
-    _ -> False
+matchQualId :: Env -> RawSymbol -> Result RawSymbol
+matchQualId e rsy = 
+       case rsy of 
+       AQualId i t -> 
+           let mt = evalState (anaSymbolType t) e 
+                    {typeMap = addUnit $ typeMap e}
+           in case mt of 
+              Nothing -> Result 
+                  [mkDiag Error "non-matching qualified symbol" rsy] Nothing
+              Just ty -> return $ ASymbol $ Symbol i ty e
+       _ -> return rsy
+
+anaRawMap :: Env -> Env -> RawSymbolMap -> Result RawSymbolMap
+anaRawMap s1 s2 = 
+    Map.foldWithKey ( \ i v rm -> do
+            m <- rm
+            j <- matchQualId s1 i
+            w <- matchQualId s2 v
+            case Map.lookup j m of 
+                Nothing -> return $ Map.insert j w m
+                Just x -> Result [mkDiag Error "duplicate mapping for" i,
+                                 mkDiag Hint ("mapped to '" 
+                                  ++ showPretty x "' and '" 
+                                  ++ showPretty w "' from") j] Nothing)
+                      $ return Map.empty
