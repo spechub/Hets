@@ -12,8 +12,9 @@ import AnalysisLibrary
 import IO
 import AS_Library
 import Graph
+import DotGraph
 
-import ConvertDevToAbstractGraph
+--import ConvertDevToAbstractGraph
 
 import Char
 import DaVinciGraph
@@ -25,22 +26,18 @@ import IORef
 import FiniteMap
 
 
-type DGraphToAGraphNode = FiniteMap (LIB_NAME,Node) Descr
-type DGraphToAGraphEdge = FiniteMap (LIB_NAME,Edge) Descr
-type AGraphToDGraphNode = FiniteMap Descr (LIB_NAME,Node) 
-type AGraphToDGraphEdge = FiniteMap Descr (LIB_NAME,Node) 
-
-
 proceed fname = do
-  putStrLn ("Reading "++fname)
-  dg <- ana_file logicGraph defaultLogic fname
+  dg <- ana_file1 logicGraph defaultLogic fname
   -- g <- toGraph dg  
-  gv <- initgraphs
-  Result gid err <- AbstractGraphView.makegraph "Heterogeneous development graph"  
+  -- gv <- initgraphs
+  {- Result gid err <- AbstractGraphView.makegraph "Heterogeneous development graph"  
                      [] [] [] []
                      gv
   AbstractGraphView.redisplay gid gv
-  return ()
+  return () -}
+  h <- openFile (fname++".dot") WriteMode
+  sequence (map (hPutStrLn h) (dot dg))
+  hClose h
 
 main = do
   [file] <- getArgs

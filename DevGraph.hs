@@ -41,7 +41,7 @@ data DGNode = DGNode {
                 dgn_origin :: DGOrigin
               }   
             | DGRef { 
-                dgn_renamed :: SIMPLE_ID,
+                dgn_renamed :: Maybe SIMPLE_ID,
                 dgn_libname :: LIB_NAME, 
                 dgn_node :: Node
               }
@@ -61,7 +61,8 @@ data DGLink = DGLink {
 data DGLinkType = LocalDef 
             | GlobalDef
             | HidingDef
-            | FreeDef
+            | FreeDef NodeSig -- the "parameter" node
+            | CofreeDef NodeSig -- the "parameter" node
             | LocalThm Bool  -- is_proved
             | GlobalThm Bool  -- is_proved
             | HidingThm G_morphism Bool  -- reduction mor, is_proved
@@ -73,7 +74,7 @@ data DGLinkType = LocalDef
 
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
-              | DGLocal | DGClosed 
+              | DGLocal | DGClosed | DGClosedLenv 
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
               | DGView | DGFitView | DGFitViewImp | DGFitViewA | DGFitViewAImp
               deriving (Eq,Show)
@@ -112,5 +113,5 @@ emptyLibEnv = emptyFM
 
 get_dgn_name :: DGNode -> Maybe SIMPLE_ID
 get_dgn_name (DGNode (Just name) _ _ _) = Just name
-get_dgn_name (DGRef name _ _) = Just name
+get_dgn_name (DGRef (Just name) _ _) = Just name
 get_dgn_name _ = Nothing

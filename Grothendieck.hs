@@ -39,6 +39,8 @@ import LogicRepr
 import PrettyPrint
 import Pretty
 import PPUtils (fsep_latex, comma_latex)
+import Result
+import Id
 
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
@@ -318,3 +320,13 @@ instance Category Grothendieck G_sign GMorphism where
 gEmbed :: G_morphism -> GMorphism
 gEmbed (G_morphism lid mor) =
   GMorphism lid lid (id_repr lid) (dom lid mor) mor
+
+-- Union of Grothendieck signatures: also allow different logics???
+gsigUnion :: G_sign -> G_sign -> Result G_sign
+gsigUnion (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
+  sigma2' <- rcoerce lid2 lid1 nullPos sigma2
+  sigma3 <- signature_union lid1 sigma1 sigma2'
+  return (G_sign lid1 sigma3)
+
+inclusion :: G_sign -> G_sign -> GMorphism
+inclusion (G_sign lid1 sigma1) (G_sign lid2 sigma2) = undefined

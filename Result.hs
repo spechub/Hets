@@ -45,6 +45,19 @@ x `ioBind` f = do
       Result errs2 y <- f x
       return (Result (errs1++errs2) y)
 
+newtype IOResult a = IOResult (IO(Result a))
+instance Monad IOResult where
+  return x = IOResult (return (return x))
+  IOResult x >>= f = IOResult (x `ioBind` (\y -> let IOResult z = f y in z))
+
+ioresToIO :: IOResult a -> IO(Result a)
+ioresToIO (IOResult x) = x
+
+ioToIORes :: IO a -> IOResult a
+ioToIORes = IOResult . (fmap return)
+
+resToIORes :: Result a -> IOResult a
+resToIORes = IOResult . return
 
 fatal_error :: String -> Pos -> Result a
 fatal_error s p = Result [Diag FatalError s p] Nothing  
