@@ -45,7 +45,7 @@ The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (maeder@tzi.de) and Till Mossakowski
 (till@tzi.de). The mailing list is hets@tzi.de.
 
-Files in the Tools/Hets/src directory, with maintainers:
+Sources with maintainers:
 --------------------------------------------------------
 
 LICENCE.txt                 Licence information (english) (Till Mossakowski)
@@ -59,7 +59,7 @@ ATC/                        Conversion from and to ATerms (Klaus Luettich)
 CASL/                       Instance of Logic: CASL (Till Mossakowski/Christian Maeder/Martin Kuehl)
 Common/                     Modules common to all logics
 Common/ATerm/                 Conversion from and to ATerms (Klaus Luettich)
-Common/Lib/                   Third-party modules
+Common/Lib/                   Set, Map, Graph, Rel modules (Christian Maeder)
 Common/Lib/Parsec/              Parsec combinator parser (Christian Maeder)
 Common/PrettyPrint.hs       pretty printing (Klaus Luettich)
                                pretty printing should get an own directory
@@ -67,23 +67,21 @@ Comorphisms/                Comorphisms of the logic graph (Till Mossakowski)
 CspCASL/                    Instance of Logic: CspCASL (Markus Roggenbach)
 doc/                        Documentation (Till Mossakowski)
 docs/                       Haddock generated documentation (Klaus Luettich)
-ghc/                        Some ghc-specific stuff (Christian Maeder)
+ghc/                        ghc-specific "coerce" (Christian Maeder)
 GUI/                        GUI for displaying development graphs  (Till Mossakowski/Jorina Gerken)
 HasCASL/                    Instance of Logic: HasCASL (Christian Maeder)
 Haskell/                    Instance of Logic: Haskell (Christian Maeder)
-Haskell/Hatchet/              Static anaylsis of Haskell
-Haskell/Language/             Haskell syntax in Haskell
-haterm-1.0                  ATerm library (Klaus Luettich)
+Haskell/Hatchet/              parsing, printing, analysis of Haskell
 hetcats/                    Command line interface (Klaus Luettich)
-hugs/                       Some hugs-specific stuff (Christian Maeder)
+hugs/                       hugs-specific "coerce" (Christian Maeder)
 Isabelle/                   Instance of Logic: Isabelle
 Logic/                      Infrastructure for logic independence (Till Mossakowski)
 Modal/                      Instance of Logic: ModalCASL (Till Mossakowski)
 Proofs/                     Heterogeneous proof engine (Till Mossakowski/Jorina Gerken)
 Static/                     Heterogeneous development graphs and static analysis  (Till Mossakowski/Maciek Makowski)
-Syntax/                     Heterogeneous syntax and parsing (Christian Maeder)
+Syntax/                     Heterogeneous syntax and parsing (Till Mossakowski, Christian Maeder)
 ToHaskell/                  translation to Haskell (Christian Maeder)
-                             should be moved to Comorpisms
+                             should be moved to Comorphisms
 utils/                      Utilities
 utils/DrIFT-src/              DrIFT (for polytpyic conversion functions) (Klaus Luettich)
 utils/GenerateRules/          generate files to be DRIFTed (Klaus Luettich)
