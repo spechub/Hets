@@ -76,8 +76,8 @@ instance Show Term where
 showTerm :: Term -> String
 showTerm (Const (c,_)) = c
 showTerm (Free (v,_)) = v
-showTerm (Abs (v,_,t)) = "% "++showTerm v++" . "++showTerm t
-showTerm (Abs (v,_,t)) = "% "++showTerm v++" . "++showTerm t
+showTerm (Abs (v,_,t)) = "(% "++showTerm v++" . "++showTerm t++")"
+showTerm (Abs (v,_,t)) = "(% "++showTerm v++" . "++showTerm t++")"
 showTerm (Const ("All",_) `App` Abs (v,ty,t)) = 
    ("! "++showTerm v++" :: "++show ty++" . "++showTerm t)
 showTerm (Const ("Ex",_) `App` Abs (v,_,t)) = 
@@ -96,6 +96,9 @@ pseudoPrec t = PrecTerm t 0
 
 appPrec :: Term -> PrecTerm
 appPrec t = PrecTerm t 5
+
+eqvPrec :: Term -> PrecTerm
+eqvPrec t = PrecTerm t 7
 
 eqPrec :: Term -> PrecTerm
 eqPrec t = PrecTerm t 10
@@ -118,6 +121,7 @@ toPrecTree t =
   case t of
     (t1 `App` t2) ->
       case t1 of 
+        Const ("op <=>",typ) `App` t3 -> Node (eqvPrec (Const ("op =",typ))) [toPrecTree t3, toPrecTree t2] 
         Const ("op =",typ) `App` t3 -> Node (eqPrec (Const ("op =",typ))) [toPrecTree t3, toPrecTree t2] 
         Const ("op &",typ) `App` t3 -> Node (andPrec (Const ("op &",typ))) [toPrecTree t3, toPrecTree t2] 
         Const ("op |",typ) `App` t3 -> Node (orPrec (Const ("op |",typ))) [toPrecTree t3, toPrecTree t2] 
