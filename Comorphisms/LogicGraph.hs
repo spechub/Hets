@@ -50,12 +50,13 @@ import Comorphisms.CASL2CoCASL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
-{-
 #ifdef PROGRAMATICA
 import Comorphisms.HasCASL2Haskell
+{-
 import Comorphisms.Haskell2IsabelleHOLCF
-#endif
 -}
+#endif
+
 
 import qualified Common.Lib.Map as Map
 
@@ -80,12 +81,13 @@ inclusionList :: [AnyComorphism]
 inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL, 
                  Comorphism CASL2IsabelleHOL, 
 		 Comorphism CASL2Modal, 
-{-
 #ifdef PROGRAMATICA
 		 Comorphism HasCASL2Haskell,
+{-
 		 Comorphism Haskell2IsabelleHOLCF,
-#endif
 -}
+#endif
+
                  Comorphism Modal2CASL, 
                  Comorphism CASL2CoCASL, Comorphism CoCASL2IsabelleHOL, 
                  Comorphism HasCASL2IsabelleHOL,
