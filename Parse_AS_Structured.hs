@@ -266,15 +266,16 @@ specD l = do (p,sp) <- try (do p <- asKey freeS
 specE :: LogicGraph -> GenParser Char AnyLogic SPEC
 specE l = do lookAhead (try (oBraceT >> cBraceT)) -- avoid overlap with group spec
              basicSpec l        
-      <|> {-do lookAhead (oBraceT <|> ((simpleId << annos) 
+      <|> do lookAhead (oBraceT <|> ((simpleId << annos) 
 				     `followedWith`
 				     (asKey withS <|> asKey hideS
 				      <|> asKey revealS <|> asKey andS
 				      <|> asKey thenS <|> cBraceT
+				      <|> asKey fitS
 				      <|> asKey withinS <|> asKey endS
 				      <|> oBracketT <|> cBracketT
 				      <|> (eof >> return (Token "" nullPos)))
-				    ))-}
+				    ))
 	     groupSpec l
       <|> logicSpec l
       <|> basicSpec l
