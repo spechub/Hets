@@ -21,6 +21,7 @@ import Isabelle.IsaSign
 import Isabelle.IsaConsts
 import Common.PrettyPrint
 import Common.Lib.Pretty
+import Data.Char
 import qualified Common.Lib.Map as Map
 
 ------------------- Printing functions -------------------
@@ -29,7 +30,7 @@ instance PrettyPrint IsaClass where
      printText0 _ (IsaClass c _) = parens $ text c
 
 instance PrintLaTeX Sentence where
-    printLatex0 = printText0
+  printLatex0 = printText0
 
 instance PrettyPrint Sentence where
     printText0 _ = text . showTerm . senTerm
@@ -366,7 +367,8 @@ instance PrettyPrint Sign where
     (baseSig sig) <> colon $$
     printText0 ga (tsig sig) $$
     showDataTypeDefs (dataTypeTab sig) $$
-    showsConstTab (constTab sig)
+    showsConstTab (constTab sig) $$
+    showCaseLemmata (dataTypeTab sig)
     where
     showsConstTab tab =
      if Map.isEmpty tab then empty
@@ -386,13 +388,65 @@ instance PrettyPrint Sign where
     showOp (opname,args) =
        opname ++ (concat $ map ((sp ++) . showArg) args)
     showArg arg = case arg of
-                    TFree _ _-> show arg
-                    _      -> "\"" ++ show arg ++ "\""
+                    TFree _ _ -> showTyp 1000 arg
+                    _         -> "\"" ++ showTyp 1000 arg ++ "\""
+    showCaseLemmata dtDefs = text (concat $ map showCaseLemmata1 dtDefs)
+    showCaseLemmata1 dts = concat $ map showCaseLemma dts
+    showCaseLemma (_, []) = ""
+    showCaseLemma (tyCons, (c:cons)) = 
+      let cs = "case a of" ++ sp
+          sc b = showCons b c ++ (concat $ map (("   | " ++) . (showCons b)) cons)
+          clSome = sc True
+          cl = sc False
+          showCons b (cName, args) =
+            let pat = cName ++ (concat $ map ((sp ++) . showArg) args) 
+                            ++ sp ++ "=>" ++ sp 
+                term = showCaseTerm cName args
+            in
+               if b then pat ++ "Some" ++ sp ++ lb ++ term ++ rb ++ "\n"
+                 else pat ++ term ++ "\n"
+          showCaseTerm name args = if null name then sa 
+                                     else [toLower (head name)] ++ sa
+            where sa = (concat $ map ((sp ++) . showArg) args)
+          showArg (TFree [] _) = "varName"
+          showArg (TFree (n:ns) _) = [toLower n] ++ ns
+          showArg (TVar ([], _) _) = "varName"
+          showArg (TVar ((n:ns), _) _) = [toLower n] ++ ns
+          showArg (Type [] _ _ _) = "varName"
+          showArg (Type m@(n:ns) _ _ s) = 
+            if m == "typeAppl" || m == "fun" || m == "*"  then concat $ map showArg s
+              else [toLower n] ++ ns
+          showName (TFree v _) = v
+          showName (TVar (v, _) _)  = v
+          showName (Type n _ _ _) = n
+          proof = "apply (case_tac a)\napply (auto)\ndone\n"
+      in
+        "lemma" ++ sp ++ "case_" ++ showName tyCons ++ "_SomeProm" ++ sp
+                ++ "[simp]:\"" ++ sp ++ lb ++ cs ++ clSome ++ rb ++ sp
+                ++ "=\n" ++ "Some" ++ sp ++ lb ++ cs ++ cl ++ rb ++ "\"\n"
+                ++ proof
+
+
+-- datatype Bool = True | False
+
+-- lemma case_Type {typeId = "Bool", typeArgKind = [], typeResultKind = [], typeArgs = []}_SomeProm [simp]:"(case a ofTrue  => Some( true
+-- )   |False  => Some( false
+-- )) =
+-- Some (case a ofTrue  => true
+--    |False  => false
+-- )"
+
+-- type DataTypeTab = [DataTypeTabEntry]
+-- type DataTypeTabEntry = [(Typ,[DataTypeAlt])] -- (type,[constructors])
+-- type DataTypeAlt = (String,[Typ])
+
+
+
+-- instance PrettyPrint Sign where
+--     printText0 _ = ptext . show
 
 instance PrintLaTeX Sign where
     printLatex0 = printText0
-
-
 
 sp :: String
 sp = " "
