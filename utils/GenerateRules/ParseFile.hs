@@ -66,7 +66,15 @@ imports2 = do symbol "import"
 	      i <- cap
 	      asM <- opt (symbol "as" >> cap)
 	      h <- opt (symbol "hiding")
-	      hs <- opt (do skipNest (symbol "(") (symbol ")")
-			    return [])
+	      hs <- opt $ importList (symbol "(") (symbol ")")
 	      let asM' = if null asM then "" else (" as " ++ asM)
-	      return (q++i++asM')
+	      return (q++i++asM' ++ (if null h then "" else " " ++ h) ++ hs)
+
+importList :: Parser String -> Parser String -> Parser String
+importList start finish  = let 
+    x = finish
+	+++ do{l <- importList start finish; 
+               s <- x; 
+               return (l ++ s)} 
+        +++ do{ c <- item; s <- x; return (c : s) } 
+    in do{ s1 <- start; s2 <-x; return (s1 ++ s2)}
