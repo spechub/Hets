@@ -24,6 +24,8 @@ HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package data
 
+AG_FLAGS   = -mdcfs
+
 ### Profiling and Warnings (only for debugging)
 ### Attention every module must be compiled with profiling or the linker
 ### cannot link the various .o files properly. So after switching on
@@ -150,7 +152,7 @@ hetcats.hs: Version.hs
 	$(DRIFT) $< > $@
 
 %.hs: %.ag
-	$(AG) $<
+	$(AG) $< -o $@
 
 %.lhs: %.der.lhs
 	$(DRIFT) $< > $@
