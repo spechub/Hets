@@ -1,4 +1,31 @@
 Hatchet einbinden
+
+In neuem Modul (Haskell2DG):
+- top level Funktion wie die aus Static/AnalysisLibrary.hs
+anaHaskellFile :: HetcatsOpts -> String -- filename
+              -> IO (Maybe (LIB_NAME, -- filename
+                            HsModule, -- as tree
+                            DGraph, -- development graph
+                            LibEnv -- DGraphs für importierte Module
+                           ))
+- Datentyp anlegen für HaskellEnv (Resultat von tiModule)
+- anaHaskellFile benötigt Funktion, die ein HaskellEnv in einen
+  DGraph konvertiert (siehe Statc/DevGaph.hs)
+  Graph-Bibliothek (functional graph library, fgl): Common/Lib/Graph
+  Knoten: sind die Haskell-Module
+    dgn_name = Modulname
+    dgn_sign = Signatur (HsDecls)
+    dgn_sens = Programmdefs
+    dgn_origin = DGBasic (bei keinen Importen)
+               = DGExtension (bei Importen)
+  Kanten: entlang der Modul-Importe (d.h. vom importierten zum Importeur)
+   dgl_morphism = ()  (siehe Logic_Haskell.hs)
+   dgl_type = GlobalDef, wenn nichts versteckt wird
+            = HidingDef, wenn etwas versteckt wird
+   dgl_origin = DGExtension
+
+ATerm-Instanzen: Klaus fragen
+
 In Logic_Haskell.hs: 
 - Sign durch Datentyp für Ergebnis des Typcheck ersetzen ("Interface-Files")
 - Sentence durch Datentyp für Programmdefinitionen ersetzen
@@ -6,6 +33,8 @@ In Logic_Haskell.hs:
   berechnet aus abstraktem Syntaxbaum die Typen der Funktionen
     und guckt ob alle benutzten Identifier auch deklariert wurden
   basic_analysis ist also ein Wrapper um eine Hatchet-Funktion
+- Für basic_analysis muss Hatchet-Funktion tiModule reduizert werden
+  auf Analyse des Moduls (d.h. keine Analyse der Importe)
 
    basic_analysis :: lid -> -- ignorieren
                            Maybe((basic_spec,  -- abstract syntax tree
