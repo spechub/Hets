@@ -24,7 +24,7 @@ newtype Result a = Result ([Diagnosis],Maybe a)
 
 instance Monad Result where
   return x = Result ([],Just x)
-  Result (errs, Nothing) >>= f = Result (errs,Nothing)
+  Result (errs, Nothing) >>= _ = Result (errs,Nothing)
   Result (errs1, Just x) >>= f = Result (errs1++errs2,y)
      where Result (errs2,y) = f x
   fail s = Result ([FatalError s nullPos],Nothing) -- better use fatal_error
