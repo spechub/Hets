@@ -5,12 +5,13 @@ where
 import Syntax.Parse_AS_Structured
 import System.Environment
 import Common.Lib.Parsec
+import Common.AnnoState
 import Comorphisms.LogicGraph
 import Syntax.Print_HetCASL
 
 parsefile fname = do
   input <- readFile fname
-  case runParser (library logicGraph) defaultLogic fname input of
+  case runParser (library (defaultLogic, logicGraph)) emptyAnnos fname input of
             Left err -> error (show err)
             Right x -> putStrLn (take 200 (show (printText0_eGA x)) ++ "\n...")
 

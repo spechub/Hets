@@ -36,6 +36,7 @@ import Common.Id
 import qualified Common.Lib.Map as Map
 import Common.Result
 import Common.PrettyPrint
+import Common.AnnoState
 import Options
 import System
 import List
@@ -57,7 +58,8 @@ anaFile logicGraph defaultLogic opts fname = do
       return Nothing
     Just fname'' -> do
       input <- readFile fname''
-      case runParser (library logicGraph) defaultLogic fname'' input of
+      case runParser (library (defaultLogic,logicGraph)) emptyAnnos
+	   fname'' input of
         Left err -> do putStrLn (show err)
                        return Nothing
         Right ast -> do
