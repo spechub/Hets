@@ -75,7 +75,7 @@ updateExtInfo upd = do
     case maybeResult re of
          Nothing -> return ()
          Just e -> put s { extendedInfo = e }
-    addDiags $ reverse $ diags re
+    addDiags $ diags re
 
 addOpTo :: Id -> OpType -> OpMap -> OpMap 
 addOpTo k v m = 
@@ -121,7 +121,7 @@ allPredIds = Set.fromDistinctAscList . Map.keys . predMap
 addSentences :: [Named (FORMULA f)] -> State (Sign f e) ()
 addSentences ds = 
     do e <- get
-       put e { sentences = sentences e ++ ds }
+       put e { sentences = reverse ds ++ sentences e }
 
 -- * traversing all data types of the abstract syntax
 
@@ -698,7 +698,7 @@ basicAnalysis :: (Eq f, PrettyPrint f) => MixResolve f
 basicAnalysis extR extC mef ab as dif (bs, inSig, ga) = do 
     let (newBs, accSig) = runState (ana_BASIC_SPEC extR extC ab as ga bs) inSig
         ds = reverse $ envDiags accSig
-        sents = sentences accSig
+        sents = reverse $ sentences accSig
         cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
         diff = diffSig cleanSig inSig 
             { extendedInfo = dif (extendedInfo accSig) $ extendedInfo inSig } 
@@ -707,5 +707,5 @@ basicAnalysis extR extC mef ab as dif (bs, inSig, ga) = do
     return ( newBs
            , diff
            , cleanSig
-           ,  checked_sents ) 
+           , checked_sents ) 
 

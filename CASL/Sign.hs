@@ -219,7 +219,7 @@ addPartOpsM = Map.map addPartOps
 addDiags :: [Diagnosis] -> State (Sign f e) ()
 addDiags ds = 
     do e <- get
-       put e { envDiags = ds ++ envDiags e }
+       put e { envDiags = reverse ds ++ envDiags e }
 
 addSort :: SORT -> State (Sign f e) ()
 addSort s = 
@@ -236,7 +236,7 @@ hasSort e s = if Set.member s $ sortSet e then []
 checkSorts :: [SORT] -> State (Sign f e) ()
 checkSorts s = 
     do e <- get
-       addDiags $ concatMap (hasSort e) $ reverse s
+       addDiags $ concatMap (hasSort e) s
 
 addSubsort :: SORT -> SORT -> State (Sign f e) ()
 addSubsort super sub = 
