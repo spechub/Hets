@@ -22,15 +22,21 @@ import GUI.AbstractGraphView
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
+
 import qualified Common.Lib.Map as Map hiding (isEmpty)
 import Syntax.AS_Library
+import Syntax.Print_HetCASL
+
 import Common.Lib.Graph
 import Common.PrettyPrint
 import Common.GlobalAnnotationsFunctions
 import Data.IORef
-import Syntax.Print_HetCASL
 import Static.DGToSpec
 import List(nub)
+
+import Logic.Grothendieck
+import Logic.Logic
+
 
 pretty x = show $ printText0 emptyGlobalAnnos x
 
@@ -188,6 +194,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents ioRefVisible
                  $$$ LocalMenu (Menu (Just "node menu")
                    [createLocalMenuButtonShowSpec convRef dGraph,
 		    createLocalMenuButtonShowSignature convRef dGraph,
+		    createLocalMenuButtonShowSublogic convRef dGraph,
 		    createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef
 		                                         ioRefVisibleNodes ioRefGraphMem
 		                                         actGraphInfo,
@@ -203,7 +210,8 @@ createLocalMenuNodeTypeInternal color convRef dGraph =
 		 $$$ ValueTitle (\ (s,_,_) -> return "")
                  $$$ LocalMenu (Menu (Just "node menu")
                     [createLocalMenuButtonShowSpec convRef dGraph,
-		     createLocalMenuButtonShowSignature convRef dGraph])
+		     createLocalMenuButtonShowSignature convRef dGraph,
+ 		     createLocalMenuButtonShowSublogic convRef dGraph])
                  $$$ emptyNodeTypeParms
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
@@ -255,6 +263,17 @@ createLocalMenuButtonShowSignature convRef dgraph =
                        )
 	            )
 
+
+createLocalMenuButtonShowSublogic convRef dgraph =
+                    (Button "Show sublogic" 
+                      (\ (name,descr,gid) ->
+                        do convMaps <- readIORef convRef
+                           getSublogicOfNode descr
+		                             (abstr2dgNode convMaps)
+		                             dgraph
+		           return ()
+                       )
+	            )
 
 
 createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef ioRefVisibleNodes ioRefGraphMem actGraphInfo = 
@@ -329,12 +348,9 @@ getSignatureOfNode descr ab2dgNode dgraph =
                         ++ " has no corresponding node in the development graph")
 
 
--- ###########################################
--- ############ noch nicht fertig ############
--- ###########################################
 {- outputs the sublogic of a node in the bash;
 used by the node menu defined in initializeGraph-}
-{-getSublogicOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
+getSublogicOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
 getSublogicOfNode descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
     Just (libname, node) -> 
@@ -349,7 +365,7 @@ getSublogicOfNode descr ab2dgNode dgraph =
            otherwise -> error ( "unknown type of node")
     Nothing -> error ("node with descriptor "
                        ++ (show descr) 
-                        ++ " has no corresponding node in the development graph")-}
+                        ++ " has no corresponding node in the development graph")
 
 
 {- converts the nodes of the development graph, if it has any,
