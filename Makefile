@@ -194,7 +194,7 @@ hets-old: $(objects)
 	$(HC) -o hets $(HC_OPTS) $(objects)
 
 hets.cgi: $(sources) GUI/hets_cgi.hs
-	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_OPTS) -O
+	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_INCLUDE) $(HC_FLAGS) -O
 
 taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
 	$(HC) --make -o Taxonomy/taxonomyTool $< -ifgl $(HC_OPTS)
@@ -230,6 +230,7 @@ apache_doc:
 	$(MAKE) hets-opt
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
+	$(MAKE) hets.cgi
 
 post_doc4apache:
 	$(PERL) utils/post_process_docs.pl docs \
