@@ -18,6 +18,33 @@
 
    Todo:
    Add many many logics.
+
+  Jorina:
+   aufbauend auf Logic.hs Logik für CASL mit Unterlogiken
+
+   data CASL = CASL
+   data CASL_sublogics = CASL_sublogics { has_sub::Bool ...
+   instance Logic CASL CASL_sublogics () () () () () () () () where
+     logic_name _ = "CASL"
+     has_parser _ = False
+     has_printer _ = False
+     has_analysis _ = False
+     map_sen = undefined
+   
+    Rest alles undefined, bis auf
+
+     sublogic_names :: id -> sublogics -> [String] 
+                -- the first name is the principal name
+           all_sublogics :: id -> [sublogics]
+     <=
+      meet, join :: l -> l -> l  -- meet = "Durschnitt"
+      top :: l
+
+
+   Weitere Instanzen mit HasCASL, CASL-LTL etc.
+    (nur sich selbst als Sublogic)
+   Logic-Representations (Sublogic immer = top)
+
 -}
 
 module LogicGraph where
