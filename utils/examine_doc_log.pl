@@ -13,13 +13,15 @@
 #
 #
 #
-# Usage: examine_doc_log.pl /path/to/log_file 'luettich@tzi.de'
+# Usage: examine_doc_log.pl /path/to/log_file 'luettich@tzi.de'...
 
 use strict;
 
 exit 5 if @ARGV < 2;
 
-my ($logfile,$email_address) = @ARGV;
+my $logfile = shift @ARGV;
+my $email_address = join " ", @ARGV;
+
 print STDERR "read: $logfile\nmailto: $email_address\n";
 my ($report,$fail) = ('',0);
 
