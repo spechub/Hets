@@ -6,6 +6,9 @@
 ------------------------------------------------------------------------------
 {- todo:
 
+  Frage wg. Fun_map: im OpType gibt es schon total/partial, warum der
+                     Boolean?
+
   all_sublogics :: id -> [sublogics]
   morphisms
   projections
