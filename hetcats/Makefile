@@ -18,6 +18,7 @@ INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCAS
 HC         = ghc
 PERL       = perl
 DRIFT      = $(PERL) ../utils/DrIFT
+AG         = $(PERL) ../utils/ag
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances 
 HC_INCLUDE = -i$(INCLUDE_PATH)
@@ -142,8 +143,14 @@ hetcats.hs: Version.hs
 ####################################################################
 ## rules for DrIFT
 
+%.hs: %.ag.hs
+	$(AG) $<
+
 %.hs: %.der.hs
 	$(DRIFT) $< > $@
+
+%.hs: %.ag
+	$(AG) $<
 
 %.lhs: %.der.lhs
 	$(DRIFT) $< > $@
