@@ -1,6 +1,6 @@
 # $Id$
 
-check: hetcats
+hetpa: hetcats
 
 %: 
 	(cd hetcats; $(MAKE) $@)
