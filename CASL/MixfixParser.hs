@@ -14,22 +14,54 @@ import GlobalAnnotations
 import Result
 import Id
 import FiniteMap
+import Graph (empty)
 import Set
 import Lexer (caslChar)
 import ParsecPrim
 import qualified Char as C
 import List(intersperse)
 
+-- for testing
+import Token
+import PrettyPrint
+import Print_AS_Basic
+import GlobalAnnotationsFunctions
+
 
 -- Earley Algorithm
 
 -- after matching one place literally all places must match literally
+-- and arguments must follow in parenthesis
 
 data State = State { rule :: Id
-                   , matchPlace :: Maybe Bool -- still open, true or false
+                   , matchPlace :: Maybe Bool -- no "__" encountered yet,
+		                              -- or true (literal match of place) 
+		                              -- or false (treat as non-terminal)
+                   , arglist :: [State]       -- currently collected arguments 
+		                              -- in reverse order
 		   , dotPos :: [Token]
 		   , rulePos :: Int
 		   } deriving (Eq, Ord)
+
+
+shortShowState:: State -> ShowS
+shortShowState s = showId $ rule s 
+
+instance Show State where
+    showsPrec _ (State r b a d p) = showChar '{' 
+				 . showSepList (showString "") showTok first
+				 . showChar '.' 
+				 . showSepList (showString "") showTok d
+                                 . showParen True (showMatch b)
+                                 . showSepList (showChar ',') shortShowState a
+				 . shows p . showChar '}'
+	where first = take (length v - length d) v
+	      v = getTokenList r
+	      showMatch Nothing = showString "" 
+	      showMatch (Just x) = showString $ if x then place else "TERM" 
+
+instance (Show a) => Show (Set a) where
+    showsPrec _ = shows . setToList
 
 prefix :: Id -> Bool
 prefix (Id ts _ _) = if null ts then False else not $ isPlace $ head ts
@@ -37,43 +69,105 @@ prefix (Id ts _ _) = if null ts then False else not $ isPlace $ head ts
 getTokenList :: Id -> [Token]
 getTokenList (Id ts cs _) = 
     let (pls, toks) = span isPlace (reverse ts) 
-        cts = if null cs then [] else (Token "[" nullPos) :
-	      concat (intersperse [Token "," nullPos]
-	      (map getTokenList cs)) ++ [Token "]" nullPos]
+        cts = if null cs then [] else mkSimpleId "[" :
+	      concat (intersperse [mkSimpleId ","]
+	      (map getTokenList cs)) ++ [mkSimpleId "]"]
     in reverse toks ++ cts ++ reverse pls
 
-initialState :: Set Id -> FiniteMap Int (Set State)
-initialState is = let ms = filter (not . prefix) $ setToList is
-                      states = map (\i -> State i Nothing (getTokenList i) 0) ms
-		  in unitFM 0 (mkSet states)
+mkState :: Int -> Id -> State 
+mkState n ide = State ide Nothing [] (getTokenList ide) n
 
-dontMatchPlace, mayMatchNT :: Maybe Bool -> Bool
+type Chart = FiniteMap Int (Set State)
+
+initialState :: Set Id -> Chart
+initialState is = unitFM 0 (mapSet (mkState 0) is)
+
+dontMatchPlace, doMatchPlace, mayMatchNT :: Maybe Bool -> Bool
 dontMatchPlace Nothing = False
 dontMatchPlace (Just x) = not x 
-mayMatchNT Nothing = True
-mayMatchNT (Just x) = not x 
+doMatchPlace Nothing = False
+doMatchPlace (Just x) = x 
+mayMatchNT = not . doMatchPlace
 
-scan :: Token -> Int -> FiniteMap Int (Set State) -> FiniteMap Int (Set State)
+scan :: Token -> Int -> Chart -> Chart
 scan t i m = 
     addToFM m (i+1) (mkSet $ 
-       foldr (\ (State o b ts k) l ->
+       foldr (\ (State o b a ts k) l ->
 	      if null ts || head ts /= t || isPlace t && dontMatchPlace b then l 
 	      else (State o (if isPlace t then Just True else b) 
-		    (tail ts) k) : l) [] 
+		    a (tail ts) k) : l) [] 
 	      (setToList $ lookUp m i))
 
 lookUp :: (Ord key) => FiniteMap key (Set a) -> key -> Set a
 lookUp m i = lookupWithDefaultFM m emptySet i
 
-complete :: PrecedenceGraph -> FiniteMap Int (Set State) -> [State] -> [State]
-complete g m l = 
-  let
-    l1 = filter (\ (State _ _ ts _) -> null ts) l
-    ll2 = map (\ (State _ _ _ k) -> setToList $ lookUp m k) l1
-    ll3 = map (filter (\ (State _ b ts _) -> not (null ts) 
-		       && isPlace (head ts) && mayMatchNT b)) ll2
-    ll4 = map (map (\ (State o _ ts k) -> State o (Just False) (tail ts) k)) ll3
-  in concat ll4
+compl :: PrecedenceGraph -> Chart -> [State] -> [State]
+compl g m l = 
+  concat $ map (collectArg g m) $ filter (\ (State _ _ _ ts _) -> null ts) l
+
+collectArg :: PrecedenceGraph -> Chart -> State -> [State]
+-- pre: finished rule 
+collectArg g m s@(State _ _ _ _ k) = 
+-- insert filter by precedence (if all arguments are given)
+    map (\ (State o _ a ts k1) ->
+	      State o (Just False) (s:a) (tail ts) k1)
+    $ filter (\ (State _ b _ ts _) -> not (null ts) 
+		       && isPlace (head ts) && mayMatchNT b)
+    $ setToList $ lookUp m k
+
+complRec :: PrecedenceGraph -> Chart -> [State] -> [State]
+complRec g m l = let l1 = compl g m l in 
+    if null l1 then l else complRec g m l1 ++ l
+
+complete :: PrecedenceGraph -> Int  -> Chart -> Chart
+complete g i m = addToFM m i $ mkSet $ complRec g m $ setToList $ lookUp m i 
+
+predict :: Set Id -> Int -> Chart -> Chart
+predict ms i m = if any (\ (State _ b _ ts _) -> not (null ts) 
+			 && isPlace (head ts) && mayMatchNT b) 
+		 (setToList $ lookUp m i)
+		 then addToFM_C union m i (mapSet (mkState i) ms)
+		 else m 
+
+nextState :: Set Id -> PrecedenceGraph -> [Token] -> Int -> Chart -> Chart
+nextState rules pG toks pos chart = 
+    if null toks then chart
+    else let c1 = predict rules pos chart
+             c2 = scan (head toks) pos c1
+	 in if isEmptySet $ lookUp c2 (pos + 1) then c2
+	    else nextState rules pG (tail toks) (pos + 1) 
+		     (complete pG (pos + 1) c2)
+
+mkChart :: Set Id -> [Token] -> Chart
+mkChart rules toks = nextState rules (emptyFM, empty) toks 0 (initialState rules)
+
+sucChart :: Chart -> Bool
+sucChart m = any (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
+	     setToList $ lookUp m $ sizeFM m - 1
+
+
+getAppls :: Chart -> [TERM]
+getAppls m = 
+    map stateToAppl $ 
+	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
+	     setToList $ lookUp m $ sizeFM m - 1
+
+stateToAppl :: State -> TERM
+stateToAppl (State i _ a _ _) = Application (Op_name i) 
+				(reverse (map stateToAppl a)) []
+
+-- start testing
+
+myRules = ["__*__", "__+__", "a", "b"]
+
+myTokens = ["a", "*", "a", "+", "b", "*", "a"]
+
+testChart = myChart myRules myTokens
+
+myChart r t = mkChart (mkSet $ map (parseString parseId) r)
+		  (map mkSimpleId t)
+
+testAppls = map (printText0  emptyGlobalAnnos) $ getAppls testChart
 
 -- --------------------------------------------------------------- 
 -- convert literals 
@@ -90,13 +184,16 @@ isFloating :: Token -> Bool
 -- precondition: isNumber
 isFloating t = any (\c -> c == '.' || c == 'E') (tokStr t)
 
-split ::  GenParser Char () String -> String -> (String, String)
+parseString :: Parser a -> String -> a
+parseString p s = case parse p "" s of
+		  Left _ -> error "parseString"
+		  Right x -> x
+
+split :: Parser a -> String -> (a, String)
 split p s = let ph = do hd <- p;
 		        tl <- getInput;
                         return (hd, tl) 
-            in case parse ph "" s of
-               Left _ -> error"split" 
-	       Right x -> x
+            in parseString ph s
 
 makeStringTerm :: Id -> Id -> Token -> TERM
 makeStringTerm c f tok = 
