@@ -74,9 +74,9 @@ not def pre(0) %(ga_selector_undef_pre_0)%
 generated{sort Nat; op 0 : Nat;
                     op suc : Nat -> Nat} %(ga_generated_Nat)%
 
-(op 1 : Nat) = suc(0) %(1_def_Nat)%
+1 = suc(0) %(1_def_Nat)%
 
-2 = suc((op 1 : Nat)) %(2_def_Nat)%
+2 = suc(1) %(2_def_Nat)%
 
 3 = suc(2) %(3_def_Nat)%
 
@@ -108,9 +108,9 @@ forall x:Nat; y:Nat . x * y = y * x %(ga_comm___*__)%
 forall x:Nat; y:Nat; z:Nat
     . x * (y * z) = (x * y) * z %(ga_assoc___*__)%
 
-forall x:Nat . x * (op 1 : Nat) = x %(ga_right_unit___*__)%
+forall x:Nat . x * 1 = x %(ga_right_unit___*__)%
 
-forall x:Nat . (op 1 : Nat) * x = x %(ga_left_unit___*__)%
+forall x:Nat . 1 * x = x %(ga_left_unit___*__)%
 
 forall x:Nat; y:Nat . min(x, y) = min(y, x) %(ga_comm_min)%
 
@@ -146,7 +146,7 @@ forall m, n, r, s, t:Nat . even(suc(m)) <=> odd(m) %(even_suc_Nat)%
 
 forall m, n, r, s, t:Nat . odd(m) <=> not even(m) %(odd_def_Nat)%
 
-forall m, n, r, s, t:Nat . 0 ! = (op 1 : Nat) %(factorial_0)%
+forall m, n, r, s, t:Nat . 0 ! = 1 %(factorial_0)%
 
 forall m, n, r, s, t:Nat
     . suc(n) ! = suc(n) * n ! %(factorial_suc)%
@@ -160,7 +160,7 @@ forall m, n, r, s, t:Nat . 0 * m = 0 %(mult_0_Nat)%
 forall m, n, r, s, t:Nat
     . suc(n) * m = (n * m) + m %(mult_suc_Nat)%
 
-forall m, n, r, s, t:Nat . m ^ 0 = (op 1 : Nat) %(power_0_Nat)%
+forall m, n, r, s, t:Nat . m ^ 0 = 1 %(power_0_Nat)%
 
 forall m, n, r, s, t:Nat
     . m ^ suc(n) = m * (m ^ n) %(power_suc_Nat)%
@@ -211,7 +211,7 @@ forall m, n, r, s, t:Nat
 
 forall p:Nat . (p in Pos) <=> p > 0
 
-(op 1 : Nat) = suc(0) %(1_as_Pos_def)%
+1 = suc(0) %(1_as_Pos_def)%
 
 forall m, n, r, s:Nat . min(m, 0) = 0 %(min_0)%
 
