@@ -181,7 +181,9 @@ translateType :: Type -> HsType
 translateType t = 
   case t of
   FunType t1 _arr t2 _poslist -> HsTyFun (translateType t1) (translateType t2)
-  ProductType tlist _poslist -> HsTyTuple (map translateType tlist)
+  ProductType tlist _poslist -> if null tlist 
+               then HsTyCon (UnQual (HsIdent "Bool"))
+	       else HsTyTuple (map translateType tlist)
   LazyType lt _poslist -> translateType lt
   KindedType kt _kind _poslist -> translateType kt
   TypeAppl t1 t2 -> HsTyApp (translateType t1) (translateType t2)
@@ -380,4 +382,5 @@ cleanSig ds sens =
        ds 
 
 derives :: [HsQName]
-derives = [(UnQual $ HsIdent "Show")] 
+derives = [(UnQual $ HsIdent "Show"), (UnQual $ HsIdent "Eq"),
+	   (UnQual $ HsIdent "Ord")] 

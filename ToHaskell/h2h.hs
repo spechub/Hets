@@ -20,20 +20,23 @@ import Common.Lib.State
 import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.PrettyPrint
 
+import Haskell.Hatchet.MultiModuleBasics
 import Haskell.Hatchet.HsPretty
 import Haskell.Hatchet.HsSyn
 
 import ToHaskell.TranslateAna
 
 import HasCASL.Le
-import HasCASL.AsToLe(anaBasicSpec)
+import HasCASL.AsToLe(cleanEnv, anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
+import Haskell.PrintModuleInfo
 
 hParser :: AParser [HsDecl]
 hParser = do b <- basicSpec
-	     let env = snd $ (runState (anaBasicSpec emptyGlobalAnnos b)) 
-		       initialEnv
+	     let env = cleanEnv $ snd $ runState 
+		       (anaBasicSpec emptyGlobalAnnos b) initialEnv
 		 hs = translateSig env
 		 nhs = concatMap (translateSentence env) $ sentences env
 	     return (cleanSig hs nhs ++ map sentence nhs)
@@ -45,8 +48,7 @@ main = do l <- getArgs
 		let r = runParser hParser emptyAnnos (head l) s 
 	        case r of 
 		       Right hs -> do
-		           putStrLn "module HasCASLModul where"
-		           putStrLn "import Prelude (undefined, Show)"
+		           putStrLn $ showPretty emptyModuleInfo ""
 			   mapM_ (putStrLn . render . ppHsDecl) hs
 		       Left err -> putStrLn $ show err
 	     else putStrLn "missing argument"

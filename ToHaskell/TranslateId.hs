@@ -10,10 +10,11 @@ Portability :  portable
    Translation of identifiers to Haskell.
 -}
 
-module ToHaskell.TranslateId where
+module ToHaskell.TranslateId (IdCase(..), translateIdWithType) where
 
 import Common.Id
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Data.Char
 
 
@@ -24,10 +25,22 @@ translateIdWithType ty i =
       c = if null s then error "translateIdWithTyper" else head s
   in case ty of 
      UpperId -> 
-        if isLower c || c == '_' || isDigit c then  "A_" ++ s
-	else s 
-     LowerId -> if isUpper c || isDigit c then "a_" ++ s
-        else s 
+	 if isLower c || c == '_' || isDigit c || s `Set.member` upperCaseList 
+	    then  "A_" ++ s else s  
+     LowerId -> if isUpper c || isDigit c || s `Set.member` lowerCaseList
+		then "a_" ++ s  else s 
+
+-- reserved Haskell keywords
+lowerCaseList, upperCaseList :: Set.Set String
+lowerCaseList = Set.fromList ["undefined", "error", "seq", "fst", "snd",
+		 "curry", "uncurry", "and",
+                 "or", "const", "id", "flip", "not",
+		 "case", "class", "data", "default", "deriving", "do", "else",
+	         "if", "import", "in", "infix", "infixl", "infixr", "instance",
+	         "let", "module", "newtype", "of", "then", "type", "where"]
+upperCaseList = Set.fromList ["True", "False", "Bool", "Int", "Num", 
+			 "Char", "String", "Read", "Show", "IO",
+			 "Eq", "Ord", "Enum", "Bounded"]
 
 -- | Letter case indicator
 data IdCase = UpperId | LowerId
