@@ -27,8 +27,8 @@ import qualified Sublogics
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
-data CASL = CASL 
-	    deriving (Show)
+data CASL = CASL deriving (Show)
+instance Language CASL where  -- default definition is okay
 
 instance Category CASL Sign String -- morphism 
     where
@@ -75,11 +75,11 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
                Symbol RawSymbol where
 -- missing
 
-instance Sublogics CASL Sublogics.CASL_Sublogics
+instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
-               Sign 
+               LocalEnv Sign 
                String -- Morphism 
-               Symbol where
+               Symbol RawSymbol where
          sublogic_names CASL = Sublogics.sublogics_name
 
          is_in_basic_spec CASL = Sublogics.in_basic_spec
