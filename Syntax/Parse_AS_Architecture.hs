@@ -29,7 +29,7 @@ import CASL.Logic_CASL  -- we need the default logic
 
 import Syntax.AS_Structured
 import Syntax.AS_Architecture
-import Syntax.AS_Library
+-- import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
@@ -38,8 +38,8 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import Common.Lib.Parsec
-import Common.Lib.Parsec.Char (digit)
-import qualified Common.Lib.Map as Map
+-- import Common.Lib.Parsec.Char (digit)
+-- import qualified Common.Lib.Map as Map
 import Common.Id
 import Data.List
 
@@ -52,7 +52,7 @@ import Data.Maybe(maybeToList)
 
 -- | Parse annotated architectural specification
 annotedArchSpec :: (AnyLogic, LogicGraph) -> AParser (Annoted ARCH_SPEC)
-annotedArchSpec l@(log, lG) = annoParser2 (archSpec l)
+annotedArchSpec l = annoParser2 (archSpec l)
 
 
 -- | Parse architectural specification
@@ -75,10 +75,11 @@ archSpec l =
 groupArchSpec :: (AnyLogic, LogicGraph) -> AParser (Annoted ARCH_SPEC)
 groupArchSpec l =
     do kOpBr <- asKey "{"
+       anno <- annos
        asp <- archSpec l
        kClBr <- asKey "}"
        return (Annoted (Syntax.AS_Architecture.Group_arch_spec asp (map tokPos [kOpBr, kClBr]))
-	               [] [] [])
+	               [] anno [])
     <|>  
     do name <- simpleId
        return (Annoted (Syntax.AS_Architecture.Arch_spec_name name)
@@ -112,7 +113,7 @@ unitDeclDefns l =
     do dd <- unitDeclDefn l
        ann <- annos
        dds <- option []
-	      (do sc <- asKey ";"
+	      (do _ <- asKey ";"
 		  dds <- option [] (unitDeclDefns l)
 	          return dds)
        return ((Annoted dd [] [] ann) : dds)
@@ -142,12 +143,12 @@ unitDecl :: (AnyLogic, LogicGraph) -> AParser UNIT_DECL_DEFN
 unitDecl l = 
         do name <- simpleId
 	   sep1 <- asKey ":"
-	   spec <- unitSpec l
+	   usp <- unitSpec l
 	   (kGiven, guts) <- option (Nothing, [])
 			     (do kGiven <- fmap Just (asKey givenS)
 				 guts <- groupUnitTerms l
 				 return (kGiven, guts))
-	   return (Syntax.AS_Architecture.Unit_decl name spec guts
+	   return (Syntax.AS_Architecture.Unit_decl name usp guts
 		       (map tokPos (sep1 : maybeToList kGiven)))
 
 
@@ -158,19 +159,22 @@ unitDecl l =
 --             | arch spec GROUP-ARCH-SPEC
 --             | closed UNIT-SPEC
 -- @
--- TODO: is the grammar OK? (differs from one in the CASL docs)
--- TODO: closed
+-- TODO: check the precedence
 unitSpec :: (AnyLogic, LogicGraph) -> AParser UNIT_SPEC
 unitSpec l =
-        -- unit type
-    try (do (gss, poss) <- unitArgs l
-	    gs <- groupSpec l
-	    return (Syntax.AS_Architecture.Unit_type gss (emptyAnno gs) poss))
+       -- closed unit spec
+    do kClosed <- asKey closedS
+       uSpec <- unitSpec l
+       return (Syntax.AS_Architecture.Closed_unit_spec uSpec (map tokPos [kClosed]))
     <|> -- architectural spec
     do kArch <- asKey archS
        kSpec <- asKey specS
        asp <- groupArchSpec l
        return (Syntax.AS_Architecture.Arch_unit_spec asp (map tokPos [kArch, kSpec]))
+    <|> -- unit type
+    try (do (gss, poss) <- unitArgs l
+	    gs <- groupSpec l
+	    return (Syntax.AS_Architecture.Unit_type gss (emptyAnno gs) poss))
     <|> -- specification name 
     do name <- simpleId
        return (Syntax.AS_Architecture.Spec_name name)
@@ -215,8 +219,6 @@ nonemptyUnitArgs l =
 -- @
 -- GROUP-UNIT-TERMS ::= GROUP-UNIT-TERM ,..., GROUP-UNIT-TERM
 -- @
--- TODO: remember comma positions in [Pos] one level higher,
---       not in annotations (?)
 groupUnitTerms :: (AnyLogic, LogicGraph) -> AParser [Annoted UNIT_TERM]
 groupUnitTerms l =
     do gut <- groupUnitTerm l
@@ -268,7 +270,6 @@ fitArgUnits l =
 --                | UNIT-TERM fit SYMB-MAP-ITEMS-LIST
 -- @
 -- The SYMB-MAP-ITEMS-LIST is parsed using parseItemsMap.
--- TODO: use current logic (fst l) instead of CASL in empty map
 fitArgUnit :: (AnyLogic, LogicGraph) -> AParser FIT_ARG_UNIT
 fitArgUnit l = 
     do ut <- unitTerm l
@@ -303,7 +304,7 @@ unitTermAmalgamation l =
     do (uts, toks) <- annoParser2 (unitTermLocal l) `separatedBy` (asKey andS)
        return (case uts of
 	       [ut] -> ut
-	       otherwise -> emptyAnno (Amalgamation uts (map tokPos toks)))
+	       _ -> emptyAnno (Amalgamation uts (map tokPos toks)))
 
 
 -- | Parse local unit term
@@ -433,8 +434,8 @@ unitBinding :: (AnyLogic, LogicGraph) -> AParser UNIT_BINDING
 unitBinding l =
     do name <- simpleId
        kCol <- asKey colonS
-       spec <- unitSpec l
-       return (Syntax.AS_Architecture.Unit_binding name spec [tokPos kCol])
+       usp <- unitSpec l
+       return (Syntax.AS_Architecture.Unit_binding name usp [tokPos kCol])
 
 
 -- | Parse a nonempty list of unit definitions separated by
@@ -447,7 +448,7 @@ unitDefns l =
     do ud <- unitDefn l
        ann <- annos
        uds <- option []
-	      (do sc <- asKey ";"
+	      (do _ <- asKey ";"
 		  uds <- option [] (unitDefns l)
 	          return uds)
        return ((Annoted ud [] [] ann) : uds)
