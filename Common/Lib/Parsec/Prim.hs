@@ -127,11 +127,12 @@ runP (Parser p)            = p
 data Consumed a         = Consumed a                --input is consumed
                         | Empty !a                  --no input is consumed
                     
-data Reply tok st a     = Ok a (State tok st) ParseError      --parsing succeeded with "a"
+data Reply tok st a     = Ok !a !(State tok st) ParseError      
+                                         --parsing succeeded with "a"
                         | Error ParseError                    --parsing failed
 
 data State tok st       = State { stateInput :: [tok]
-                                , statePos   :: SourcePos
+                                , statePos   :: !SourcePos
                                 , stateUser  :: !st
                                 }
 
@@ -330,7 +331,7 @@ tokenPrim show nextpos test
           (c:cs) -> case test c of
                       Just x  -> let newpos   = nextpos pos c cs
                                      newstate = State cs newpos user
-                                 in seq newpos $ seq newstate $ 
+                                 in seq newpos $ 
                                     Consumed (Ok x newstate (newErrorUnknown newpos))
                       Nothing -> Empty (sysUnExpectError (show c) pos)
           []     -> Empty (sysUnExpectError "" pos)
@@ -357,8 +358,7 @@ labels (Parser p) msgs
 updateParserState :: (State tok st -> State tok st) -> GenParser tok st (State tok st)
 updateParserState f 
     = Parser (\state -> let newstate = f state
-                        in seq newstate $
-                           Empty (Ok state newstate (unknownError newstate)))
+                        in Empty (Ok state newstate (unknownError newstate)))
     
     
 unexpected :: String -> GenParser tok st a
@@ -430,7 +430,7 @@ tokens shows nextposs s
        let
         ok cs             = let newpos   = nextposs pos s
                                 newstate = State cs newpos user
-                            in seq newpos $ seq newstate $ 
+                            in seq newpos $ 
                                (Ok s newstate (newErrorUnknown newpos))
                                
         errEof            = Error (setErrorMessage (Expect (shows s))
