@@ -2,10 +2,9 @@
 s : Type
 t : Type
 %% Assumptions -----------------------------------------------------------
-snd : s × t -> t = \ (x : _var_26, y : _var_36) . (op y : _var_36)
+a : s
+b : s = (op a : s)
+snd : s × t -> t = \ (x : s, y : t) . (op y : t)
 %% Diagnostics -----------------------------------------------------------
-Error (line 5, column 9) different terms of 'snd'
-	\ (x : _var_26, y : _var_36) . (op y : _var_36)
-	\ (x : s : s, y : t : t) . (op y : t)
-	
-
+Error (line 7, column 10) no toplevel pattern '(x : s, y : s)'
+Error (line 10, column 9) no toplevel pattern 'b : s'

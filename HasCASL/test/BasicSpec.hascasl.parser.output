@@ -4,7 +4,7 @@ class TYPE = Type; TYPE={x.x< t}
 type Pred __ : Type- -> Type; Unit : TYPE
 class a, b, c
 class a, b, c < d; a = b
-var s : c
+type s : c
 op tt : s ->? Unit
 var x : s
 program tt = \ x : s . ()
@@ -12,14 +12,14 @@ program __ res __ (x : s, y : t) : s = x;
 	fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
 op eq : s × s ->? Unit
 type s < ? s
-program all (p : (? s)) : (? ()) = eq (p, tt)
-program And (x, y : (? ())) : (? ()) = t1 () res t2 ()
-program __ impl __ (x, y : (? ())) = eq (x, x And y)
-program __ or __ (x, y : (? ())) : (? ()) =
-	all (\ r : (? ()) . ((x impl r) res (y impl r)) impl r);
-	ex (p : (? s)) : (? ()) =
-	all (\ r : (? ()) . all (\ x : s . p (x) impl r) impl r);
-	ff () : (? ()) = all (\ r : (? ()) . r ())
+program all (p : (? s)) : (? Unit) = eq (p, tt)
+program And (x, y : (? Unit)) : (? Unit) = t1 () res t2 ()
+program __ impl __ (x, y : (? Unit)) = eq (x, x And y)
+program __ or __ (x, y : (? Unit)) : (? Unit) =
+	all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
+	ex (p : (? s)) : (? Unit) =
+	all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
+	ff () : (? Unit) = all (\ r : (? Unit) . r ())
 forall x : t; y : t
 . %(..)%
   x = y

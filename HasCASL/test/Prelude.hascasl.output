@@ -39,7 +39,7 @@ __\/__ : Unit × Unit ->? Unit
 __if__ : Unit × Unit ->? Unit
 __res__ : s = \ (x : s, y : t) .! (op x : s)
 bottom : p
-def : (Pred)(s)
+def : (Pred)(s) = \ x : s . ()
 eq : s × s ->? Unit
 f : c --> d %(var)%
 false : bool %(construct bool)%
@@ -50,7 +50,7 @@ not : Unit ->? Unit
 sup : (nat -> c) ->? c
 true : bool %(construct bool)%
      : Unit ->? Unit
-tt : (Pred)(s)
+tt : (Pred)(s) = \ x : s . ()
 x : s %(var)%
 x1 : c %(var)%
 x2 : c %(var)%
@@ -62,20 +62,9 @@ y2 : d %(var)%
 Error (line 4, column 7) illegal universe class declaration
 Warning (line 15, column 16) redeclared type 't'
 Hint (line 40, column 9) not a class 's'
-Error (line 42, column 9) ambiguous applications:
-	def : (Pred)(s)
-	def : _var_8
-	for 'def'
-Error (line 44, column 9) ambiguous applications:
-	tt : (Pred)(s)
-	tt : _var_9
-	for 'tt'
 Error (line 46, column 21) unexpected mixfix token 'y : Unit : Unit'
 FatalError (line 54, column 3) no resolution for '__'
-Error (line 60, column 14) ambiguous applications:
-	x : s
-	x : _var_29
-	for 'x'
+Error (line 60, column 20) unexpected mixfix token 'y : _var_56 : t'
 Error (line 65, column 22) unexpected mixfix token '('
 Error (line 75, column 26) unexpected mixfix token 'y'
 FatalError (line 74, column 11) no resolution for '(\ x : s . eq (x, x)) = tt'
@@ -109,9 +98,6 @@ Error (line 176, column 16) unexpected mixfix token '['
 FatalError (line 182, column 4) no resolution for '__'
 Hint (line 184, column 13) not a class 'c --> d'
 Hint (line 184, column 13) not a class 'c --> d'
-Error (line 186, column 10) ambiguous applications:
-	f : c --> d (<<= : _var_31)(g : c --> d)
-	f : c --> d (<<= : _var_31)(g : _var_40)
-	for 'f <<= g'
+Error (line 186, column 12) unexpected mixfix token '<<='
 Error (line 193, column 32) unexpected mixfix token 'impl'
 FatalError (line 195, column 27) no resolution for 'Y (\ x : c -->? p .! x)'

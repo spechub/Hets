@@ -158,7 +158,7 @@ anaAnnotedClassItem ga _ aci =
 
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env ()
 anaProgEq ga (ProgEq pat trm _) =
-    do Result es mp <- resolvePattern ga pat
+    do Result es mp <- toRResultState $ resolvePattern ga pat
        appendDiags es
        case mp of 
 	   Nothing -> return ()

@@ -214,10 +214,12 @@ initialState g as i =
 	       opId]
        return (a:p:t:ls ++ l1 ++ l2 ++ l3)
 
+type Knowns = Set.Set String -- cannot be unknown variables
+
 -- recognize next token (possible introduce new tuple variable)
-scanState :: TypeMap -> (Maybe Type, a) -> Token -> PState a
+scanState :: TypeMap -> Knowns -> (Maybe Type, a) -> Token -> PState a
 	  -> State Int [PState a]
-scanState tm (mty, trm) t p =
+scanState tm knowns (mty, trm) t p =
     do let ts = restRule p
        if null ts then return [] else 
 	  if head ts == t then 
@@ -248,7 +250,7 @@ scanState tm (mty, trm) t p =
 			   return q { ruleType = ty, restRule = tail ts
                                     , posList = tokPos t : posList q })
 	  else return $ if ruleId p == unknownId 
-	         && tokStr t `notElem` tokStr inTok : map (:[]) "{}[]()," then
+	         && not (tokStr t `Set.member` knowns) then
 	       [p { restRule = tail ts, posList = tokPos t : posList p
 		  , ruleId = mkRuleId [unknownTok, t]
 		  , ruleType = case mty of 

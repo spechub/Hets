@@ -23,7 +23,7 @@ Data4 : Type %[type __ ::=
 Pred : Type- -> Type
 Pred__ : Type- -> Type
 Unit : TYPE
-s : (c, Type) < ? s %(var)%
+s : (c, Type) < ? s
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 %(Data2.Cons21.sel_[1,1])% : Data2 ->? Data1 %(select from Data2 constructed by
@@ -57,7 +57,7 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
      : Data3 ->? Data2 %(select from Data3 constructed by
 		      (Cons31 : Data1 × Data2 -> Data3,
 		       Cons32 : Data2 × Data1 -> Data3))%
-tt : s ->? Unit
+tt : s ->? Unit = \ x : s . ()
 x : s %(var)%
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration
@@ -71,33 +71,15 @@ Warning (line 11, column 13) redeclared class 'c'
 Warning (line 11, column 19) redeclared class 'a'
 Error (line 11, column 19) class cannot become an alias class 'a'
 Hint (line 16, column 9) not a class 's'
-Error (line 18, column 9) ambiguous applications:
-	tt : s ->? Unit
-	tt : _var_8
-	for 'tt'
-Error (line 20, column 19) ambiguous applications:
-	x : s
-	x : _var_27
-	for 'x'
-Error (line 21, column 6) ambiguous applications:
-	x : s
-	x : _var_28
-	for 'x'
-Error (line 22, column 6) ambiguous applications:
-	x : s
-	x : _var_29
-	for 'x'
-Error (line 28, column 14) unexpected mixfix token 'p : ? s : ? s'
-Error (line 28, column 27) unresolved type '()'
-Error (line 30, column 22) unresolved type '()'
-Error (line 30, column 30) unresolved type '()'
-Error (line 32, column 28) unresolved type '()'
-Error (line 34, column 26) unresolved type '()'
-Error (line 34, column 34) unresolved type '()'
-Error (line 37, column 7) unexpected mixfix token 'p : ? s : ? s'
-Error (line 37, column 19) unresolved type '()'
+Error (line 20, column 25) unexpected mixfix token 'y : _var_45 : t'
+Error (line 21, column 12) unexpected mixfix token 'y : _var_46 : t'
+Error (line 22, column 12) unexpected mixfix token 'y : _var_47 : t'
+Error (line 28, column 14) unexpected mixfix token 'p : s : ? s'
+Error (line 30, column 17) unexpected mixfix token 'y : Unit : ? Unit'
+Error (line 32, column 23) unexpected mixfix token 'y : Unit : ? Unit'
+Error (line 34, column 21) unexpected mixfix token 'y : Unit : ? Unit'
+Error (line 37, column 7) unexpected mixfix token 'p : s : ? s'
 Error (line 40, column 6) unexpected mixfix token '('
-Error (line 40, column 12) unresolved type '()'
 Hint (line 45, column 11) not a class 't'
 Error (line 45, column 8) wrong type scheme of 'x'
   expected: s

@@ -126,6 +126,10 @@ instance Unifiable Type where
 	   ProductType l ps -> ProductType (map (subst m) l) ps
            FunType t1 a t2 ps -> FunType (subst m t1) a (subst m t2) ps
 			-- lookup type aliases
+    unify tm t1 (LazyType t2 _) = unify tm t1 t2
+    unify tm (LazyType t1 _) t2 = unify tm t1 t2
+    unify tm t1 (KindedType t2 _ _) = unify tm t1 t2
+    unify tm (KindedType t1 _ _) t2 = unify tm t1 t2
     unify tm t1@(TypeName i1 k1 v1) t2@(TypeName i2 k2 v2) =
 	if i1 == i2 then return $ Map.empty
 	else if v1 > 0 then return $ 
@@ -162,10 +166,6 @@ instance Unifiable Type where
     unify tm (ProductType p1 _) (ProductType p2 _) = unify tm p1 p2
     unify tm (FunType t1 _ t2 _) (FunType t3 _ t4 _) = 
 	unify tm (t1, t2) (t3, t4)
-    unify tm t1 (LazyType t2 _) = unify tm t1 t2
-    unify tm (LazyType t1 _) t2 = unify tm t1 t2
-    unify tm t1 (KindedType t2 _ _) = unify tm t1 t2
-    unify tm (KindedType t1 _ _) t2 = unify tm t1 t2
     unify _ t1 t2 = Result [mkDiag Hint 
 			    ("type '" ++ showPretty t1 
 			     "' is not unifiable with") t2] Nothing

@@ -19,6 +19,7 @@ import Common.Result
 import Common.Id
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import HasCASL.As
 import HasCASL.AsUtils
@@ -53,12 +54,13 @@ termToToken trm =
           _ -> opTok
 
 -- match (and shift) a token (or partially finished term)
-scan :: TypeMap -> (Maybe Type, a) -> (a -> Token) -> ParseMap a -> ParseMap a
-scan tm (ty, trm) f pm =
+scan :: TypeMap -> Knowns -> (Maybe Type, a) -> (a -> Token) 
+     -> ParseMap a -> ParseMap a
+scan tm knowns (ty, trm) f pm =
   let m = parseMap pm
       i = lastIndex pm
       incI = incrIndex i
-      (ps, c2) = runState (mapM (scanState tm (ty, trm) $ f trm) 
+      (ps, c2) = runState (mapM (scanState tm knowns (ty, trm) $ f trm) 
 			     $ lookUp m i) $ varCount pm
   in
     pm { lastIndex = incI
@@ -113,24 +115,25 @@ predict f pm =
 		 else pm
 
 completeScanPredict :: (PrettyPrint a, PosItem a) 
-		    => GlobalAnnos -> TypeMap 
+		    => GlobalAnnos -> TypeMap -> Knowns
 		    -> (Maybe Type, a) -> (PState a -> a) -> (a -> Token)
                     -> (Index -> State Int [PState a])
 		    -> ParseMap a -> ParseMap a
-completeScanPredict ga tm (ty, a) fromState toToken initStates pm =
+completeScanPredict ga tm knowns (ty, a) fromState toToken initStates pm =
     let pm3 = complete ga tm fromState
-	      $ scan tm (ty, a) toToken
+	      $ scan tm knowns (ty, a) toToken
 	      $ predict initStates pm
     in if (null $ lookUp (parseMap pm3) $ lastIndex pm3) 
 	   && null (failDiags pm3)
-       then  pm3 { failDiags = [mkDiag Error "unexpected mixfix token" a] }
+       then  pm3 { failDiags = [mkDiag Error 
+				("unexpected mixfix token") a] }
        else pm3
 
 nextState :: GlobalAnnos -> Assumps -> TypeMap -> (Maybe Type, Term) 
 	  -> ParseMap Term -> ParseMap Term
-nextState ga is tm (ty, trm) = 
-    completeScanPredict ga tm (ty, trm) stateToAppl termToToken $
-			initialState ga is 
+nextState ga as tm (ty, trm) = 
+    completeScanPredict ga tm Set.empty (ty, trm) stateToAppl termToToken $
+			initialState ga as 
 
 -- | find information for qualified operation
 findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> Type -> Maybe OpInfo
@@ -374,66 +377,134 @@ initialPatState as i =
 	       opId]
        return (a:p:t:l1 ++ l2 ++ l3)
 
-nextPatState :: GlobalAnnos -> Assumps -> TypeMap -> (Maybe Type, Pattern) 
-	      -> ParseMap Pattern -> ParseMap Pattern
-nextPatState ga is tm (ty, trm) = 
-    completeScanPredict ga tm (ty, trm) patFromState patToToken
-			$ initialPatState is
+nextPatState :: GlobalAnnos -> Assumps -> TypeMap -> Knowns 
+	     -> (Maybe Type, Pattern) -> ParseMap Pattern -> ParseMap Pattern
+nextPatState ga as tm knowns (ty, trm) = 
+    completeScanPredict ga tm knowns (ty, trm) patFromState patToToken
+			$ initialPatState as
 
-iterPatStates :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Type 
-	   -> [Pattern] -> ParseMap Pattern -> ParseMap Pattern
-iterPatStates ga as tm cm ty pats pm = 
-    let self = iterPatStates ga as tm cm ty
+iterPatStates :: GlobalAnnos -> Assumps -> TypeMap -> Knowns -> ClassMap 
+	      -> Type -> [Pattern] -> ParseMap Pattern -> ParseMap Pattern
+iterPatStates ga as tm knowns cm ty pats pm = 
+    let self = iterPatStates ga as tm knowns cm ty
     in if null pats then pm
        else case head pats of
             MixfixPattern ts -> self (ts ++ tail pats) pm
             BracketPattern b ts ps -> self 
 	       (expandPos PatternToken (getBrackets b) ts ps ++ tail pats) pm
-            TuplePattern ts ps -> self 
-	       (expandPos PatternToken ("(", ")") ts ps ++ tail pats) pm
 	    TypedPattern hd tyq ps -> 
 		let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) in
 	        case mt of 
 		Just (_, typq) -> 
-		    let (Result ds mtt, c2) = runState
+		    let (Result ds mtt, c2) = runRState
  			   (resolvePat ga as tm cm (typq, hd)) $ varCount pm
 			pm2 = pm { varCount = c2, failDiags = es++ds }
 			in case mtt of  
 			Just (_, ttt) -> self (tail pats) 
-				   $ nextPatState ga as tm 
+				   $ nextPatState ga as tm knowns
 				   (Just typq, TypedPattern ttt typq ps) pm2
 			Nothing -> pm2
 		Nothing -> pm { failDiags = es }
-	    t@(PatternToken _) -> self (tail pats) $ nextPatState ga as tm 
-		   (Nothing, t) pm
-	    t -> error ("iterPatState: " ++ show t)
+	    t@(PatternToken _) -> self (tail pats)
+				  $ nextPatState ga as tm knowns
+				 (Nothing, t) pm
+	    t -> error ("iterPatStates: " ++ show t)
+
+getKnowns :: Id -> Knowns
+getKnowns (Id ts cs _) = Set.union (Set.fromList (map tokStr ts)) $ 
+			 Set.unions (map getKnowns cs) 
 
 resolvePatToParseMap :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Int 
 		     -> Type -> Pattern -> ParseMap Pattern
 resolvePatToParseMap ga as tm cm c ty trm = 
-    let (initStates, c2) = runState (initialPatState as startIndex) c in
-    iterPatStates ga as tm cm ty [trm] 
+    let (initStates, c2) = runState (initialPatState as startIndex) c 
+	ids = Map.keys as 
+	knowns = Set.union (Set.fromList (tokStr inTok : map (:[]) "{}[](),"))
+		 $ Set.unions $ map getKnowns ids
+    in
+    iterPatStates ga as tm knowns cm ty [trm] 
 	       ParseMap { lastIndex = startIndex
 			, failDiags = []  
 			, varCount = c2
 			, parseMap = Map.single startIndex initStates }
 
 resolveAnyPat :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
-	-> Pattern -> State Int (Result (Type, Pattern))
+	-> Pattern -> RState Int (Type, Pattern)
 resolveAnyPat ga as tm cm trm =
-    do tvar <- freshVar
+    do tvar <- liftS $ freshVar
        resolvePat ga as tm cm (TypeName tvar star 1, trm)
 
 resolvePat :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
-	-> (Type, Pattern) -> State Int (Result (Type, Pattern))
+	-> (Type, Pattern) -> RState Int (Type, Pattern)
 resolvePat ga as tm cm (ty, trm) =
-    do c <- get
-       return $ resolveFromParseMap patFromState tm (ty, trm) $ 
-	      resolvePatToParseMap ga as tm cm c ty trm
+    do c <- liftS $ get
+       let pm = resolvePatToParseMap ga as tm cm c ty trm
+	   c2 = varCount pm
+       (newTy, pat) <- liftR $ resolveFromParseMap patFromState tm (ty, trm) pm
+       let (r, (c3, _)) = runRState (specializePatVars tm 
+				  (newTy, pat)) (c2, Map.empty)
+       liftS $ put c3
+       liftR r 
+       
 
-resolvePattern :: GlobalAnnos -> Pattern -> State Env (Result (Type, Pattern))
+resolvePattern :: GlobalAnnos -> Pattern -> RState Env (Type, Pattern)
 resolvePattern ga pat = 
-    do s <- get
-       toEnvState $ resolveAnyPat ga
+    do s <- liftS $ get
+       toEnvRState $ resolveAnyPat ga
 		      (assumps s) (typeMap s) (classMap s) pat
 
+-- ---------------------------------------------------------------------------
+-- specialize 
+-- ---------------------------------------------------------------------------
+
+getArgsRes :: Type -> [a] -> ([Type], Type)
+getArgsRes t [] = ([], t)
+getArgsRes (FunType t1 _ t2 _) (_:r) = 
+    let (as, res) = getArgsRes t2 r in
+		    (t1:as, res)
+getArgsRes _ _ = error "getArgsRes"
+
+specializePatVars :: TypeMap -> (Type, Pattern) 
+		  -> RState (Int, Subst) (Type, Pattern)
+specializePatVars tm (ty, pat) = 
+    case pat of 
+    PatternVar (VarDecl v vty k ps) 
+        -> do (c, oldSubst) <- liftS get
+	      newSubst <- liftR $ unify tm (subst oldSubst ty) 
+			  $ subst oldSubst vty 
+	      liftS $ put (c, newSubst)
+	      return (subst newSubst ty, 
+		      PatternVar $ VarDecl v (subst newSubst vty) k ps)
+    PatternConstr i sc args ps
+        -> do (c, oldSubst) <- liftS get
+	      let (ity, c2) = runState (freshInst sc) c
+		  (ats, res) = getArgsRes ity args
+	      newSubst <- liftR $ unify tm (subst oldSubst ty) 
+			  $ subst oldSubst res 
+	      liftS $ put (c2, newSubst) 	      
+	      largs <- mapM (specializePatVars tm) $ zip ats args
+	      (_, lastSubst) <- liftS get
+              return (subst lastSubst res, 
+		      PatternConstr i sc (map snd largs) ps)
+    TuplePattern args ps ->
+	case ty of 
+		ProductType ats qs -> 
+		    if length ats == length args then 
+		    do largs <- mapM (specializePatVars tm) $ zip ats args
+		       (_, lastSubst) <- liftS get
+		       return (subst lastSubst $ ProductType (map fst largs) qs
+			      , TuplePattern (map snd largs) ps)
+		    else error "wrong TuplePattern in specializePatVars"
+		_ -> error "TuplePattern in specializePatVars"
+    TypedPattern tpat vty ps ->
+        do (c, oldSubst) <- liftS get
+	   newSubst <- liftR $ unify tm (subst oldSubst ty) 
+		       $ subst oldSubst vty 
+	   liftS $ put (c, newSubst)
+           (newTy, newPat) <- specializePatVars tm 
+			      (subst newSubst vty, tpat) 
+	   return (newTy, case newPat of 
+		   PatternVar _ -> newPat 
+		   TypedPattern _ _ _ -> newPat
+		   _ -> TypedPattern newPat newTy ps)
+    _ -> error "specializePatVars"
