@@ -94,9 +94,10 @@ addBuiltins ga =
         lows = map fst $ filter ((==eqId) . snd) precs
 	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
 		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
-		 (andId, eqId), (orId, eqId), (andId, exEq), (orId, exEq)]
-	eqs = concatMap ( \ i -> [(eqId, i), (exEq, i)]) (whenElse : 
-	      (filter (`notElem` (eqId : lows)) $ filter isInfix 
+		 (andId, notId), (orId, notId), (notId, eqId), (notId, exEq),
+	         (eqId, defId), (exEq, defId)]
+	eqs = map ( \ i -> (defId, i)) (whenElse : 
+	      (filter (`notElem` (defId : lows)) $ filter isInfix 
 	      $ map fst precs))
 	appls = map ( \ i -> (i, applId)) (whenElse : 
 		(filter (/=applId) $ filter isInfix $ map snd precs))
