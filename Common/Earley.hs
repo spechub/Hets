@@ -383,33 +383,45 @@ joinIds (Id ts1 _ _) (Id ts2 cs ps) = Id (init ts1 ++ ts2) cs ps
 checkPrecs :: GlobalAnnos -> [Id] -> Item a b -> Item a b -> Bool
 checkPrecs ga rs argItem opItem =
     let op = rule opItem
-	arg = rule argItem 
+	arg = rule argItem
 	precs = prec_annos ga
         assocs = assoc_annos ga
 	num = length $ args opItem in
     case precRel precs op arg of
     BothDirections -> False
-    _ -> if isLeftArg op num then
+    x -> if isLeftArg op num then
+	    let rarg = rWeight argItem in 
 	    if endPlace arg then
-	       case precRel precs op (rWeight argItem) of
+	       if rarg == unitId then True else
+	       case precRel precs op rarg of
 	       Lower -> True
 	       Higher -> False
 	       BothDirections -> False
-	       NoDirection -> case (begPlace arg, endPlace op) of 
+	       NoDirection -> case x of
+	           Lower -> True
+		   Higher -> False
+		   _ -> case (begPlace arg, endPlace op) of 
 		        (True, True) -> arg == op && isAssoc ALeft assocs op
+					|| not (isInfix rarg)
 			(False, True) -> True
-			(_, False) -> rWeight argItem == unitId
+			(_, False) -> False
 	    else not (begPlace arg && isNonCompound arg 
 		      && joinIds arg op `elem` rs)
 	 else if isRightArg op num then
+	         let larg = lWeight argItem in 
 		 if begPlace arg then 
-		   case precRel precs op (lWeight argItem) of
+		   if larg == unitId then True else
+		   case precRel precs op larg of
 		   Lower -> True
 		   Higher -> False
 		   BothDirections -> False
-		   NoDirection -> case (begPlace op, endPlace arg) of
+		   NoDirection -> case x of
+	             Lower -> True
+		     Higher -> False
+		     _ -> case (begPlace op, endPlace arg) of
 		        (True, True) -> arg == op && isAssoc ARight assocs op
-			(False, True) -> lWeight argItem == unitId
+					|| not (isInfix larg)
+			(False, True) -> False
 			(_, False) -> True
 		 else not (endPlace arg && isNonCompound op 
 			  && joinIds op arg `elem` rs)
