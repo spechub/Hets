@@ -16,26 +16,9 @@ Portability :  portable
 module Haskell.HatAna where
 
 import Common.AS_Annotation 
+import PropPosSyntax
 
-import Haskell.HaskellUtils              (extractSentences)
-import Haskell.ExtHaskellCvrt            
-
-import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
-					  joinModuleInfo,
-                                          getTyconsMembers,
-                                          getInfixDecls)
-import Haskell.Hatchet.TIHetsModule      (tiModule)
-import Haskell.Hatchet.AnnotatedHsSyn    
-import Haskell.Hatchet.SynConvert        
-import Haskell.Hatchet.HsParsePostProcess
-import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl)
-import Haskell.Hatchet.HsSyn             (HsDecl)
-import Haskell.Hatchet.TIPhase
-
-import Data.List ((\\))
-import Data.FiniteMap (minusFM)
-
-hatAna :: [HsDecl] -> ModuleInfo -> (ModuleInfo, [Named AHsDecl])
+hatAna :: HsDecls -> ModuleInfo -> (ModuleInfo, [Named AHsDecl])
 hatAna = hatAna2 preludeModInfo 
 
 hatAna2 :: ModuleInfo -> [HsDecl] -> ModuleInfo 
