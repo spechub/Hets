@@ -1,11 +1,8 @@
 
-{- HetCATS/CASL/Logic_CASL.hs
+{- HetCATS/CASL/Sublogics.hs
    $Id$
-   Authors: Klaus Lüttich
+   Authors: Pascal Schmidt
    Year:    2002
-
-   Here is the place where the class Logic is instantiated for CASL.
-   Also the instances for Syntax an Category.
 
    todo:
 
@@ -36,5 +33,10 @@ is_in_basic_spec  Testfunktion: pruefen, ob errechnete Bitmaske <= vorgegebene
 
 -}
 
+module Sublogics_CASL where
+
 import AS_Basic_CASL
 import LocalEnv
+
+strip_anno :: Annoted a -> a
+strip_anno (Annoted i _ _ _) = i
