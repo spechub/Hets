@@ -1,11 +1,11 @@
 {-| 
 Module      :  $Header$
-Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2002-2004
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable(multiple parameter class, functional dependency)
 
    Wrapper for Haskell parsing.
    Parses Haskell declarations (not a whole module), for use
@@ -19,21 +19,21 @@ import HsModule
 import LexerOptions
 import PropLexer
 import PropParser as HsParser
-import PropPosSyntax
+import HsName
+import SourceNames 
+import PropPosSyntax hiding (HsName)
 import qualified NewPrettyPrint as HatPretty
 import ParseMonad
 import Text.ParserCombinators.Parsec
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Result
--- import Debug.Trace
 
 instance PrettyPrint HsDecls where
      printText0 _ ds = 
          vcat (map (text . ((++) "\n") . HatPretty.pp) $ hsDecls ds)
 
-
-data HsDecls = HsDecls { hsDecls :: [HsDecl] } deriving (Show, Eq)
+data HsDecls = HsDecls { hsDecls :: [HsDeclI (SN HsName)] } deriving (Show, Eq)
 
 hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
@@ -48,5 +48,3 @@ hatParser = do p <- getPosition
 			   Result ds Nothing -> unexpected 
                                ('\n' : unlines (map diagString ds)
                                  ++ "(in Haskell code after " ++ shows p ")")
-                                                       
- 
