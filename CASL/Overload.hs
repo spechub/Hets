@@ -213,7 +213,7 @@ minExpFORMULA_pred sign predicate terms pos = do
                     preds_equal = (pred1 == pred2)              -- ::  Bool
                     preds_equiv = leqP sign pred1 pred2         -- ::  Bool
                     types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
-                in True -- b1 && b2 && (preds_equal || (preds_equiv && types_equal))
+                in b1 && b2 && (preds_equal || (preds_equiv && types_equal))
 
 {-----------------------------------------------------------
     Minimal Expansions of a Strong/Existl. Equation Formula
