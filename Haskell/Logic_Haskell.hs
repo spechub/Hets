@@ -121,6 +121,7 @@ instance StaticAnalysis Haskell HsDecls
              let (modInfo, sens) = hatAna basicSpec sig
              in Result [] $ Just (basicSpec, diffModInfo modInfo sig, 
 				  modInfo, sens)
+    is_subsig Haskell s1 s2 = joinModuleInfo s1 s2 == s2
 
 instance Logic Haskell Haskell_Sublogics
                HsDecls Sentence SYMB_ITEMS SYMB_MAP_ITEMS
