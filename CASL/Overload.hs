@@ -441,7 +441,7 @@ minExpTerm_op1 mef ga sign op terms pos = do
         qualifyOps       = map (map qualify_op)
         qualify_op      :: (OpType, [TERM f]) -> (TERM f, SORT)
         qualify_op (op', terms')
-            | result == (opRes op')
+            | True -- result == (opRes op')
                 = ((Application                                 -- ::  TERM
                     (Qual_op_name name (toOP_TYPE op') [])      -- :: OP_SYMB
                     terms'                                      -- :: [TERM]
