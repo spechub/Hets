@@ -176,7 +176,7 @@ printId pf ga mdf f i =
 	     $ lookupDisplay ga df i) mdf
 
 instance PrettyPrint () where
-   printText0 _ga _s = text "()"
+   printText0 _ga _s = empty
 
 instance PrintLaTeX () where
-   printLatex0 _ga _s = text ""
+   printLatex0 _ga _s = empty
