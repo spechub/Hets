@@ -21,6 +21,8 @@ showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
 showSepList _ _ [] = showString ""
 showSepList _ f [x] = f x
 showSepList s f (x:r) = f x . s . showSepList s f r
+
+showPlainList :: Show a => [a] -> ShowS
 showPlainList = showSepList (showString "") shows
  
 instance Show Token where
