@@ -231,7 +231,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		   Button "Local Decomposition (merge of rules)"
 			  (proofMenuSef gInfo locDecomp),
 		   Button "Hide Theorem Shift"
-		          (return ()) --(proofMenuSef gInfo hideTheoremShift)
+		          (proofMenu gInfo (fmap return . hideTheoremShift))
                     ]])]
       -- the node types
                [("spec", 
@@ -370,8 +370,9 @@ openProofStatus filename ioRefProofStatus convRef =
 		      return ()
               _ -> error "Could not determine libname of the saved development graph"
                                   
-
---proofMenu :: (ProofStatus -> IO ProofStatus) -> IO ()
+proofMenu :: GInfo
+             -> (ProofStatus -> IO (Res.Result ProofStatus))
+             -> IO ()
 proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo) proofFun 
   = do
   proofStatus <- readIORef ioRefProofStatus
@@ -393,6 +394,9 @@ proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo) proofFun
       redisplay gid actGraphInfo
       return ()
 
+proofMenuSef :: GInfo
+             -> (ProofStatus -> ProofStatus)
+             -> IO ()
 proofMenuSef gInfo proofFun =
   proofMenu gInfo (return . return . proofFun)
 
