@@ -177,7 +177,6 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
 	       DGLink {dgl_morphism = morphism,
 		       dgl_type = (LocalThm (Static.DevGraph.Open)
 				   None (Static.DevGraph.Open)),
-		       -- @@@ 2. "Open" korrekt?
 		       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge dgraph
@@ -207,12 +206,12 @@ globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
 globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsProvenGlobPathOfMorphismBetween dGraph morphism source target
      then
-       globSubsumeAux newGraph (newRules,newChanges) list
+       globSubsumeAux (insEdge newEdge (delLEdge ledge dGraph)) (newRules,newChanges) list
      else
        globSubsumeAux dGraph (rules,changes) list
   where
     morphism = dgl_morphism edgeLab
-    auxGraph = delLEdge ledge dGraph
+  --  auxGraph = delLEdge ledge dGraph
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (source,
 	       target,
@@ -221,7 +220,7 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
 				   conservativity conservStatus),
 		       dgl_origin = DGProof}
                )
-    newGraph = insEdge newEdge auxGraph
+    --newGraph = insEdge newEdge auxGraph
     newRules = (GlobSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
@@ -289,18 +288,23 @@ existsProvenGlobPathOfMorphismBetween dgraph morphism src tgt =
       morphismsOfPaths = map calculateMorphismOfPath allPaths
       filteredMorphismsOfProvenPaths = getFilteredMorphisms morphismsOfPaths 
 
-
-existsUnprovenGlobPathToBaseOn :: DGraph -> GMorphism -> LEdge DGLinkLab
-					   -> Bool
-existsUnprovenGlobPathToBaseOn dgraph morphism ledge@(src,tgt,_) =
-  elem morphism filteredMorphismsOfPathsToBaseOn
+{- @@@ hier weiter machen @@@ -}
+{- returns a Maybe path the proof of the given edge can be based on -}
+{-getUnprovenGlobPathToBaseOn :: DGraph -> GMorphism -> LEdge DGLinkLab
+					   -> Maybe [LEdge DGLinkLab]
+getUnprovenGlobPathToBaseOn dgraph morphism ledge@(src,tgt,_) =
+  if null filteredPathsToBaseOn then Nothing
+   else Just (head filteredPathsToBaseOn)
 
     where
       allPaths = getAllUnprovenGlobPathsBetween dgraph src tgt
-      allPathsToBaseOn = getPathsToBaseOn allPaths ledge
-      morphismsOfPaths = map calculateMorphismOfPath allPathsToBaseOn
-      filteredMorphismsOfPathsToBaseOn = getFilteredMorphisms morphismsOfPaths
-
+      allPathsToBaseOn = filterPathsToBaseOn allPaths ledge
+      pathsWithMorphisms = [(calculateMorphismOfPath path,path)|
+			    path <- allPathsToBaseOn]
+      filteredPathsWithMorphisms = filterMorphisms pathsWithMorphisms
+      filteredPathsToBaseOn = [path|(morph,path) <- filteredPathsWithMorphisms,
+			       morph == morphism]
+-}
 {- checks if a path consisting of globalDef edges only
    or consisting of a localDef edge followed by any number of globalDef edges
    exists between the given nodes -}
@@ -374,7 +378,7 @@ getAllLocGlobDefPathsTo dgraph node path =
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     locGlobPaths = [(getSourceNode edge, (edge:path))| edge <- localEdges]
 
-{- returns all paths consisting of globalDef and proven gloabl thm edges only
+{- returns all paths consisting of globalDef and proven global thm edges only
    or
    of one localDef or proven local thm followed by any number of globalDef or
    proven global thm edges-}
@@ -416,7 +420,7 @@ getAllGlobDefPathsBetween dgraph src tgt =
   getAllPathsOfTypeBetween dgraph isGlobalDef src tgt
 
 
-{- returns all paths of unproven local or global thm edges between the given
+{- returns all paths of unproven global thm edges between the given
    source and target node -}
 getAllUnprovenGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
 getAllUnprovenGlobPathsBetween dgraph src tgt =
@@ -565,21 +569,24 @@ isLocalDef (_,_,edgeLab) =
 -- methods to determine whether a proof is based on the given edge
 -- ----------------------------------------------------------------
 
-getPathsToBaseOn :: [[LEdge DGLinkLab]] -> LEdge DGLinkLab 
+{- filters all paths out of the given list whose proof is not based
+   on the given edge -}
+filterPathsToBaseOn :: [[LEdge DGLinkLab]] -> LEdge DGLinkLab 
 		 -> [[LEdge DGLinkLab]]
-getPathsToBaseOn [] _ = []
-getPathsToBaseOn (path:list) ledge =
+filterPathsToBaseOn [] _ = []
+filterPathsToBaseOn (path:list) ledge =
   case (and [isNotBasedOn status ledge| status <- statusList]) of
-    True -> path:(getPathsToBaseOn list ledge)
-    False -> getPathsToBaseOn list ledge
+    True -> path:(filterPathsToBaseOn list ledge)
+    False -> filterPathsToBaseOn list ledge
   where 
     labelList = [dgl_type label|(_,_,label) <- path]
     statusList = getThmLinkStatus labelList
 
-
+{- checks if the given proof is NOT based on the given edge -}
 isNotBasedOn :: ThmLinkStatus -> LEdge DGLinkLab -> Bool
 isNotBasedOn status ledge = not (isBasedOn status ledge)
 
+{- checks if the given proof is based on the given edge -}
 isBasedOn :: ThmLinkStatus -> LEdge DGLinkLab -> Bool
 isBasedOn Static.DevGraph.Open _ = False
 isBasedOn (Proven []) _ = False
@@ -590,6 +597,7 @@ isBasedOn (Proven list) ledge@(_,_,edgelab) =
     labelList = map dgl_type list
     statusList = getThmLinkStatus labelList
 
+{- returns the status of proof of a list of edges -}
 getThmLinkStatus :: [DGLinkType] -> [ThmLinkStatus]
 getThmLinkStatus [] = []
 getThmLinkStatus (edgeType:list) =

@@ -395,15 +395,24 @@ createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes ioRefSubtreeEvents ac
 -- -------------------------------------------------------------
 createLocalEdgeMenu = 
     LocalMenu (Menu (Just "edge menu")
-	       createLocalMenuButtonShowMorphismOfEdge
+	       [createLocalMenuButtonShowMorphismOfEdge,
+		createLocalMenuButtonShowOriginOfEdge]
 	      )
 
 createLocalMenuButtonShowMorphismOfEdge = 
-  [(Button "Show morphism" 
+  (Button "Show morphism" 
                       (\ (_,descr,maybeLEdge)  -> 
 		        do showMorphismOfEdge descr maybeLEdge
 		           return ()
-                       ))]
+                       ))
+
+createLocalMenuButtonShowOriginOfEdge =
+    (Button "Show origin"
+         (\ (_,descr,maybeLEdge) ->
+	   do showOriginOfEdge descr maybeLEdge
+	      return ()
+	  ))
+  
 -- ------------------------------
 -- end of local menu definitions
 -- ------------------------------
@@ -459,6 +468,14 @@ showMorphismOfEdge descr Nothing =
       putStrLn ("edge "++(show descr)++" has no corresponding edge"
 		++ "in the development graph")
 
+
+{- prints the origin of the edge -}
+showOriginOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
+showOriginOfEdge _ (Just (_,_,linklab)) =
+    putStrLn (show (dgl_origin linklab))
+showOriginOfEdge descr Nothing =
+    putStrLn ("edge "++(show descr)++" has no corresponding edge"
+		++ "in the development graph")
 
 {- converts the nodes of the development graph, if it has any,
 and returns the resulting conversion maps
@@ -674,10 +691,10 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 	      Map.lookup (libname,tgt) dg2abstrNodeMap) of
           (Just abstrSrc, Just abstrTgt) ->
             do let dgEdge = (libname, (src,tgt,show edgelab))
-	       (Result descr error) <- 
+	       (Result descr err) <- 
                   addlink gid (getDGLinkType (dgl_type edgelab))
 			      "" (Just ledge) abstrSrc abstrTgt graphInfo
-	       case error of
+	       case err of
 	         Nothing ->
 	           do let newConvMaps = convMaps 
                               {dg2abstrEdge =
@@ -703,14 +720,26 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
              dg2abstrEdgeMap = dg2abstrEdge convMaps 
          case Map.lookup dgEdge dg2abstrEdgeMap of
             Just abstrEdge ->
-              do dellink gid abstrEdge graphInfo
-	         let newConvMaps = convMaps 
-		       {dg2abstrEdge = Map.delete dgEdge dg2abstrEdgeMap,
-		        abstr2dgEdge = 
-			  Map.delete abstrEdge (abstr2dgEdge convMaps)}
- 	         applyChangesAux gid libname graphInfo eventDescr
+              do (Result descr err) <- dellink gid abstrEdge graphInfo
+		 case err of
+	           Nothing -> 
+		     do let newConvMaps = convMaps 
+		                {dg2abstrEdge =
+				     Map.delete dgEdge dg2abstrEdgeMap,
+				 abstr2dgEdge = 
+				     Map.delete abstrEdge (abstr2dgEdge convMaps)}
+ 		        applyChangesAux gid libname graphInfo (descr+1)
 				 newConvMaps changes
-	    Nothing -> error ("applyChangesAux: deleted edge of development "
+-- -- @@@ was machen, wenn Entfernen nicht erfolgreich?! @@@
+-- Momentane Lösung: abbrechen...
+ 		   Just _ -> error ("applyChangesAux: could not delete edge "
+			         ++ (show abstrEdge))
+
+	    Nothing -> error ("applyChangesAux: deleted edge from " 
+			      ++ (show src) ++ " to " ++ (show tgt) 
+			      ++ " of type " ++ (show (dgl_type edgelab))
+			      ++ " and origin " ++ (show (dgl_origin edgelab))
+			      ++ " of development "
                          ++ "graph does not exist in abstraction graph")
 
 
