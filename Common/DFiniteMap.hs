@@ -17,7 +17,7 @@ module Common.DFiniteMap (
             , EndoMap
 
             -- * Operators
-            , (!), (\\)
+            , (!) -- , (\\)
 
             -- * Query
             , isEmpty
@@ -101,7 +101,7 @@ import Data.List(foldl')
 import Prelude hiding (lookup,map,filter)
 import qualified Common.Lib.Set as Set
 
-infixl 9 !,\\ 
+infixl 9 ! -- ,\\ 
 
 type Map a b = FiniteMap a b
 type EndoMap a = FiniteMap a a
@@ -110,8 +110,8 @@ type EndoMap a = FiniteMap a a
 (!) :: Ord k => Map k a -> k -> a -- find
 fm ! k = find k fm
 
-(\\) :: Ord k => Map k a -> Map k a -> Map k a -- difference
-m1 \\ m2 = difference m1 m2
+--(\\) :: Ord k => Map k a -> Map k a -> Map k a -- difference
+--m1 \\ m2 = difference m1 m2
 
 isEmpty :: Map k a -> Bool
 isEmpty = isEmptyFM
