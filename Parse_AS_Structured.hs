@@ -264,7 +264,10 @@ specD l = do (p,sp) <- try (do p <- asKey freeS
 specE :: LogicGraph -> GenParser Char AnyLogic SPEC
 specE l = do lookAhead (try (oBraceT >> cBraceT)) -- avoid overlap with group spec
              basicSpec l        
-      <|> groupSpec l
+      <|> try (groupSpec l `followedWith` 
+	       (asKey withS <|> asKey hideS
+		<|> asKey revealS <|> asKey andS
+		<|> asKey thenS <|> cBraceT))
       <|> logicSpec l
       <|> basicSpec l
 
