@@ -205,11 +205,11 @@ instance PrettyPrint TERM where
     printText0(Cast  t s _) = printText0 t
 			  <+> text asS
 			  <+> printText0 s
-    printText0(Conditional u f v _) = parens(printText0 u
+    printText0(Conditional u f v _) = printText0 u
 			  <+> text whenS
 			  <+> printText0 f
 			  <+> text elseS
-			  <+> printText0 v)
+			  <+> printText0 v
     printText0(Unparsed_term s _) = text s
     printText0(Mixfix_qual_pred p) = printText0 p
     printText0(Mixfix_term l) = cat(punctuate space (map printText0 l))
