@@ -61,6 +61,10 @@ data LIB_ITEM = Spec_defn Syntax.AS_Structured.SPEC_NAME
 		               Syntax.AS_Architecture.UNIT_SPEC 
 			       [Pos]
 
+	      | Ref_spec_defn Syntax.AS_Structured.SPEC_NAME 
+		               Syntax.AS_Architecture.REF_SPEC 
+			       [Pos]
+
 	      | Download_items  LIB_NAME [ITEM_NAME_OR_MAP] [Pos] 
 		-- pos: "from","get",commas, opt "end"
 	      | Logic_decl Syntax.AS_Structured.Logic_name [Pos]

@@ -8,52 +8,42 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-   These data structures describe the abstract syntax tree for heterogenous 
-   libraries in HetCASL.
--}
-
-{-
-   todo:
-     - ATermConversion SML-CATS has now his own module 
-       (s. HetCATS/aterm_conv/)
-     - LaTeX Pretty Printing
+   pretty printing for heterogenous libraries in HetCASL.
 -}
 
 module Syntax.Print_AS_Library where
 
--- debugging
--- import IOExts (trace)
-
 import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.PPUtils
 import Common.GlobalAnnotations
+import Common.Keywords
 
-import Common.Id
 import qualified Syntax.AS_Structured as AS_Struct 
 import Syntax.AS_Library
 import Common.AS_Annotation
 
-import Common.Print_AS_Annotation
 import Syntax.Print_AS_Architecture
 import Syntax.Print_AS_Structured
+
+nl :: Doc
+nl = char '\n' -- isn't this uncool?
 
 instance PrettyPrint LIB_DEFN where
     printText0 ga (Lib_defn aa ab _ ad) =
 	let aa' = printText0 ga aa              -- lib name
 	    ab' = vcat $ map (printText0 ga) ab -- LIB_ITEMs
 	    ad' = vcat $ map (printText0 ga) ad -- global ANNOTATIONs
-	in ptext "library" <+> aa' <> ptext "\n" $$ ad' $$ ptext "\n" $$ ab'
+	in text libraryS <+> aa' <> nl $$ ad' $$ nl $$ ab'
 
 instance PrettyPrint LIB_ITEM where
     printText0 ga (Spec_defn aa ab ac _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	    spec_head = ptext "spec" <+> aa' <+> ab' <+> equals
+	    spec_head = text specS <+> aa' <+> ab' <+> equals
 	    ac' = spAnnotedPrint (printText0 ga) (printText0 ga) (<+>) 
 		  (spec_head) ac
          -- nesting is done by the instance for SPEC now
-	in ac' $$ ptext "end\n"
+	in ac' $$ text endS <> nl
 	   
     printText0 ga (View_defn aa ab ac ad _) =
 	let aa' = printText0 ga aa
@@ -67,16 +57,16 @@ instance PrettyPrint LIB_ITEM where
 			        Nothing ga vab)
 	    ad' = sep $ punctuate comma $ map (printText0 ga) ad
 	    eq' = if null ad then empty else equals
-	in (hang (hang (hang (hang (ptext "view" <+> aa' <+> ab') 
+	in (hang (hang (hang (hang (text viewS <+> aa' <+> ab') 
 			           6 
-			           (colon <+> frm <+> ptext "to")) 
+			           (colon <+> frm <+> text toS)) 
 			     4 
                              to) 
 		       2 
 		       eq') 
 	         4 
 	         ad') 
-	   $$ ptext "end\n"
+	   $$ text endS <> nl
 {-
 data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 			   [G_mapping] [Pos]
@@ -85,18 +75,25 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
     printText0 ga (Arch_spec_defn aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in (hang (ptext "arch spec" <+> aa' <+> equals) 4 ab') $$ ptext "end\n"
+	in (hang (text archS <+> text specS <+> aa' <+> equals) 4 ab') 
+               $$ text endS <> nl
     printText0 ga (Unit_spec_defn aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in (hang (ptext "unit spec" <+> aa' <+> equals) 4 ab') $$ ptext "end\n"
+	in (hang (text unitS <+> text specS <+> aa' <+> equals) 4 ab') 
+               $$ text endS <> nl
+    printText0 ga (Ref_spec_defn aa ab _) =
+	let aa' = printText0 ga aa
+	    ab' = printText0 ga ab
+	in (hang (text refinementS <+> aa' <+> equals) 4 ab') 
+               $$ text endS <> nl
     printText0 ga (Download_items aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = fsep $ punctuate comma $ map (printText0 ga) ab
-	in (hang (ptext "from" <+> aa' <+> ptext "get") 4 ab') <> ptext "\n"
+	in (hang (text fromS <+> aa' <+> text getS) 4 ab') <> nl
     printText0 ga (Syntax.AS_Library.Logic_decl aa _) =
 	let aa' = printText0 ga aa
-	in ptext "logic" <+> aa' 
+	in text logicS <+> aa' 
 
 condBracesGroupSpec4View_defn :: 
     (GlobalAnnos -> (Annoted AS_Struct.SPEC) -> Doc)
@@ -120,22 +117,22 @@ instance PrettyPrint ITEM_NAME_OR_MAP where
     printText0 ga (Item_name_map aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in aa' <+> ptext "|->" <+> ab'
+	in aa' <+> text mapsTo <+> ab'
 
 instance PrettyPrint LIB_NAME where
     printText0 ga (Lib_version aa ab) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in aa' <+> ptext "version" <+> ab'
+	in aa' <+> text versionS <+> ab'
     printText0 ga (Lib_id aa) =
 	printText0 ga aa
 
 instance PrettyPrint LIB_ID where
     printText0 _ (Direct_link aa _) =
-	ptext aa
+	text aa
     printText0 _ (Indirect_link aa _) =
-	ptext aa
+	text aa
 
 instance PrettyPrint VERSION_NUMBER where
     printText0 _ (Version_number aa _) =
-	hcat $ punctuate (char '.') $ map ptext aa
+	hcat $ punctuate (char '.') $ map text aa

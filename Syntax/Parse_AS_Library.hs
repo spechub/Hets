@@ -130,6 +130,15 @@ libItem l =
        return (Syntax.AS_Library.Unit_spec_defn name usp
 	           (map tokPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd))
 	       )
+  <|> -- ref spec
+    do kRef <- asKey refinementS
+       name <- simpleId
+       kEqu <- asKey equalS
+       rsp <- refSpec l
+       kEnd <- optEnd
+       return (Syntax.AS_Library.Ref_spec_defn name rsp
+	           (map tokPos ([kRef, kEqu] ++ maybeToList kEnd))
+	       )
   <|> -- arch spec
     do kArch <- asKey archS
        kSpec <- asKey specS
