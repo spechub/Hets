@@ -11,7 +11,7 @@ Portability :  portable
 -}
 
 
-module CASL.LiteralFuns ( CASL.LiteralFuns.isLiteral
+module CASL.LiteralFuns ( isLiteral
 			, isNumber
 			, isSignedNumber
 			, isString
