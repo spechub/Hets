@@ -112,7 +112,7 @@ preludeString =
  \\n\
  \data  (a,b,c, d)\n\
  \   =  (,,,) a b c d\n\
- \type Unit = Unit\n\
+ \data Unit = Unit\n\
  \type Pred a = a -> Unit\n\
  \\n\
  \bottom :: a\n\
@@ -128,7 +128,7 @@ preludeString =
  \a___2_E_2 = bottom\n\
  \ \n\
  \a___2_E_G_2 :: (Unit, Unit) -> Unit\n\
- \a___2_E_G_2 (a, b) = if a then b else true\n\
+ \a___2_E_G_2 (a, b) = bottom\n\
  \ \n\
  \a___2_Ee_E_2 :: (a, a) -> Unit\n\
  \a___2_Ee_E_2 = bottom\n\
@@ -137,10 +137,10 @@ preludeString =
  \a___2_B_S_2 = bottom\n\
  \\n\
  \a___2if_2 :: (Unit, Unit) -> Unit\n\
- \a___2if_2 (a, b) = if b then a else true\n\
+ \a___2if_2 (a, b) = bottom\n\
  \\n\
  \a___2when_2else_2 :: (a, Unit, a) -> a\n\
- \a___2when_2else_2 (a, b, c) = if b then a else c \n\
+ \a___2when_2else_2 (a, b, c) = bottom\n\
  \\n\
  \not_2 :: Unit -> Unit\n\
  \not_2 = bottom\n\
