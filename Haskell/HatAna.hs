@@ -17,6 +17,7 @@ import Common.GlobalAnnotations
 import PropPosSyntax hiding (Id, HsName)
 import Modules
 import MUtils
+import SimpFieldLabels
 import ReAssocModule
 import AST4ModSys
 import HsName
@@ -36,6 +37,8 @@ import TiInstanceDB
 import TiClasses
 import HsConstants
 import PPfeInstances()
+import UniqueNames
+import TypedIds
 import PNT
 import Lift
 import qualified NewPrettyPrint as HatPretty
@@ -50,7 +53,7 @@ type Scope = Rel (SN HsName) (Ent (SN Id))
 
 data Sign = Sign 
     { instances :: [Instance PNT]
-    , types :: Map.Map (HsIdentI PNT) (Kind, TypeInfo PNT)
+    , types :: Map.Map (HsIdentI PNT) (Kind, TiTypes.TypeInfo PNT)
     , values :: Map.Map (HsIdentI PNT) (Scheme PNT) 
     , scope :: Scope
     , fixities :: Map.Map (HsIdentI (SN Id)) HsFixity
@@ -77,7 +80,7 @@ addSign e1 e2 = emptySign
 isSubSign :: Sign -> Sign -> Bool
 isSubSign e1 e2 = diffSign e1 e2 == emptySign
 
-instance Eq (TypeInfo i) where
+instance Eq (TiTypes.TypeInfo i) where
     _ == _ = True
 
 instance Ord (HsDeclI PNT) where
@@ -163,13 +166,17 @@ hatAna (hs@(HsDecls ds), e, _) = do
            case filter ((==ns) . namespace) $ applyRel expScope (fakeSN n) of
            [v] -> Right (ent2pnt v)
            _ -> Left ("'" ++ n ++ "' unknown or ambiguous")
+       prelError = HsVar $ PNT (PN (UnQual "error") 
+                                       (G mod_Prelude "error" noSrcLoc))
+                   Value noSrcLoc
+       nsds = simpFieldLabels prelError sds :: [HsDeclI PNT]
        inMyEnv =  withStdNames findPredef
                . inModule (const mod_Prelude) []
                . extendts [ a :>: b | (a, b) <- Map.toList $ values e ] 
                . extendkts [ a :>: b | (a, b) <- Map.toList $ types e ] 
                . extendIEnv (instances e)
    fs :>: (is, (ts, vs)) <- 
-        lift $ inMyEnv $ tcTopDecls id sds
+        lift $ inMyEnv $ tcTopDecls id nsds
    let accSign = extendSign e is ts vs insc fixs
    return (hs, diffSign accSign e, accSign, map emptyName fs)
 
