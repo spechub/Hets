@@ -15,7 +15,8 @@
                that stores the local ambiguity
 -}
 
-module MixfixParser (parseString, resolveFormula, resolveMixfix)
+module MixfixParser ( parseString, resolveFormula, resolveMixfix
+		    , getTokenList, expandPos )
     where 
 import AS_Basic_CASL 
 import GlobalAnnotations
