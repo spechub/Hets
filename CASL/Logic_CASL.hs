@@ -47,8 +47,8 @@ instance Language CASL where
   "CASL - the Common algebraic specification language\n\ 
   \This logic is subsorted partial first-order logic \ 
   \with sort generation constraints\n\ 
-  \See the CASL User Manual, LNCS 2900\n\ 
-  \and the CASL Reference Manual, LNCS 2960\n\ 
+  \See the CASL User Manual, LNCS 2900, Springer Verlag\n\ 
+  \and the CASL Reference Manual, LNCS 2960, Springer Verlag\n\ 
   \See also http://www.cofi.info/CASL.html"
 
 type CASLBasicSpec = BASIC_SPEC () () ()
