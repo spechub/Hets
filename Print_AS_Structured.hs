@@ -273,14 +273,14 @@ instance PrettyPrint Logic_name where
 
 condBracesGroupSpec :: GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesGroupSpec ga as =
-    case item as of
+    case skip_Group $ item as of
 		 Spec_inst _ _ -> as'
 		 _             -> sp_braces as'
     where as' = printText0 ga as
 
 condBracesTransReduct :: GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesTransReduct ga as =
-    case item as of
+    case skip_Group $ item as of
 		 Extension _ _    -> sp_braces as'
 		 Union _ _        -> sp_braces as'
 		 Local_spec _ _ _ -> sp_braces as'
@@ -289,7 +289,7 @@ condBracesTransReduct ga as =
 
 condBracesWithin :: GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesWithin ga as =
-    case item as of
+    case skip_Group $ item as of
 		 Extension _ _    -> sp_braces as'
 		 Union _ _        -> sp_braces as'
 		 _                -> as'
@@ -297,8 +297,13 @@ condBracesWithin ga as =
 
 condBracesAnd :: GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesAnd ga as =
-    case item as of
+    case skip_Group $ item as of
 		 Extension _ _    -> sp_braces as'
 		 _                -> as'
     where as' = printText0 ga as
 
+skip_Group :: SPEC -> SPEC
+skip_Group sp = 
+    case sp of
+	    Group as _ -> skip_Group $ item as
+	    _          -> sp
