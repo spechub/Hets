@@ -1,0 +1,40 @@
+-- Beispiele für abstrakte Syntax in HasCASL
+
+--********************************************************
+
+program a = b
+
+
+BasicSpec [Annoted {item = ProgItems [Annoted {item = ProgEq (PatternToken (Token {tokStr = "a", tokPos = "test/Test.hascasl" (line 1, column 9)})) (TermToken (Token {tokStr = "b", tokPos = "test/Test.hascasl" (line 1, column 13)})) "test/Test.hascasl" (line 1, column 11), opt_pos = [], l_annos = [], r_annos = []}] ["test/Test.hascasl" (line 1, column 1)], opt_pos = [], l_annos = [], r_annos = []}]
+
+
+--********************************************************
+
+program f a = b
+
+BasicSpec [Annoted {item = ProgItems [Annoted {item = ProgEq (MixfixPattern [PatternToken (Token {tokStr = "f", tokPos = "test/Test.hascasl" (line 1, column 9)}),PatternToken (Token {tokStr = "a", tokPos = "test/Test.hascasl" (line 1, column 11)})]) (TermToken (Token {tokStr = "b", tokPos = "test/Test.hascasl" (line 1, column 15)})) "test/Test.hascasl" (line 1, column 13), opt_pos = [], l_annos = [], r_annos = []}] ["test/Test.hascasl" (line 1, column 1)], opt_pos = [], l_annos = [], r_annos = []}]
+
+--********************************************************
+program f a b = a + b;
+
+BasicSpec 
+  [Annoted {item = ProgItems 
+    [Annoted {item = ProgEq 
+      (MixfixPattern 
+        [PatternToken (Token {tokStr = "f", tokPos = "test/Test.hascasl"
+            (line 1, column 9)}),
+        PatternToken (Token {tokStr = "a", tokPos = "test/Test.hascasl"
+            (line 1, column 11)}),
+        PatternToken (Token {tokStr = "b", tokPos = "test/Test.hascasl"
+            (line 1, column 13)})]) 
+      (MixfixTerm 
+        [TermToken (Token {tokStr = "a", tokPos = "test/Test.hascasl"
+            (line 1, column 17)}),
+        TermToken (Token {tokStr = "+", tokPos = "test/Test.hascasl"
+            (line 1, column 19)}),
+        TermToken (Token {tokStr = "b", tokPos = "test/Test.hascasl"
+            (line 1, column 21)})]) 
+   "test/Test.hascasl" (line 1, column 15), 
+   opt_pos = [], l_annos = [], r_annos = []}] 
+   ["test/Test.hascasl" (line 1, column 1),"test/Test.hascasl" 
+      (line 1, column 22)], opt_pos = [], l_annos = [], r_annos = []}]
