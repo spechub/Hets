@@ -15,7 +15,7 @@
 
 -}
 
-module Lexer ( bind, (<<), (<:>), (<++>), signChars,
+module Lexer ( bind, (<<), (<:>), (<++>), signChars
 	     , begDoEnd, flat, single, separatedBy, caslLetters, scanLPD
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat
