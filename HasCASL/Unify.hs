@@ -138,11 +138,13 @@ instance Unifiable Type where
 	   ProductType l ps -> ProductType (map (subst m) l) ps
            FunType t1 a t2 ps -> FunType (subst m t1) a (subst m t2) ps
 			-- lookup type aliases
-    match tm t1 (b2, LazyType t2 _) = match tm t1 (b2, t2)
-    match tm (b1, LazyType t1 _) t2 = match tm (b1, t1) t2
-    match tm t1 (b2, KindedType t2 _ _) = match tm t1 (b2, t2)
-    match tm (b1, KindedType t1 _ _) t2 = match tm (b1, t1) t2
-    match tm (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
+    match m (a, s) (b, t) = mm m (a, unalias m s) (b, unalias m t)
+      where 
+      mm tm t1 (b2, LazyType t2 _) = mm tm t1 (b2, t2)
+      mm tm (b1, LazyType t1 _) t2 = mm tm (b1, t1) t2
+      mm tm t1 (b2, KindedType t2 _ _) = mm tm t1 (b2, t2)
+      mm tm (b1, KindedType t1 _ _) t2 = mm tm (b1, t1) t2
+      mm tm (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
 	if i1 == i2 ||
 	   (any (occursIn tm i1) $ superTypes $ 
 	       Map.findWithDefault starTypeInfo i2 tm)
@@ -153,32 +155,24 @@ instance Unifiable Type where
 	        Map.single (TypeArg i1 k1 Other []) t2
 		else if v2 > 0 && b2 then return $
 		     Map.single (TypeArg i2 k2 Other []) t1
-			else let (a1, e1) = expandAlias tm t1 
-				 (a2, e2) = expandAlias tm t2 in
-			if e1 || e2 then match tm (b1, a1) (b2, a2)
-			   else uniResult "typename" i1 
+			else uniResult "typename" i1 
 				    "is not unifiable with typename" i2
-    match tm (b1, t1@(TypeName i1 k1 v1)) (b2, t2) =
+      mm tm (b1, TypeName i1 k1 v1) (_, t2) =
 	if v1 > 0 && b1 then 
 	   if occursIn tm i1 t2 then 
 	      uniResult "var" i1 "occurs in" t2
 	   else return $
 			Map.single (TypeArg i1 k1 Other []) t2
-	else let (a1, e1) = expandAlias tm t1 in
-		 if e1 then match tm (b1, a1) (b2, t2)
-		   else uniResult "typename" i1  
+	else uniResult "typename" i1  
 			    "is not unifiable with type" t2
-    match tm t2 t1@(_, TypeName _ _ _) = match tm t1 t2
-    match tm (b1, t12@(TypeAppl t1 t2)) (b2, t34@(TypeAppl t3 t4)) = 
-	let (ta, a) = expandAlias tm t12
-	    (tb, b) = expandAlias tm t34 in
-	   if a || b then match tm (b1, ta) (b2, tb)
-	      else match tm (b1, (t1, t2)) (b2, (t3, t4))
-    match tm (b1, ProductType p1 _) (b2, ProductType p2 _) = 
-	match tm (b1, p1) (b2, p2)
-    match tm (b1, FunType t1 _ t2 _) (b2, FunType t3 _ t4 _) = 
+      mm tm t2 t1@(_, TypeName _ _ _) = mm tm t1 t2
+      mm tm (b1, TypeAppl t1 t2) (b2, TypeAppl t3 t4) = 
 	match tm (b1, (t1, t2)) (b2, (t3, t4))
-    match _ (_,t1) (_,t2) = uniResult "type" t1  
+      mm tm (b1, ProductType p1 _) (b2, ProductType p2 _) = 
+	match tm (b1, p1) (b2, p2)
+      mm tm (b1, FunType t1 _ t2 _) (b2, FunType t3 _ t4 _) = 
+	match tm (b1, (t1, t2)) (b2, (t3, t4))
+      mm _ (_,t1) (_,t2) = uniResult "type" t1  
 			    "is not unifiable with type" t2
 
 showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
@@ -187,8 +181,8 @@ showPrettyWithPos a = let p = getMyPos a
 			  n = sourceName p in 
     if nullPos == p then s else s . (" (" ++) .
        (if null n then id else (n ++) . (", " ++))
-       . ("line " ++) . shows (sourceLine p)
-       . (", column " ++) . shows (sourceColumn p)
+       . shows (sourceLine p)
+       . ("." ++) . shows (sourceColumn p)
        .  (")" ++) 
 
 uniResult :: (PrettyPrint a, PosItem a, PrettyPrint b, PosItem b) =>
@@ -241,6 +235,9 @@ occursIn tm i t =
 	   ProductType l _ -> any (occursIn tm i) l
 	   FunType t1 _ t2 _ -> occursIn tm i t1 || occursIn tm i t2
 
+unalias :: TypeMap -> Type -> Type
+unalias tm = fst . expandAlias tm
+
 expandAlias :: TypeMap -> Type -> (Type, Bool)
 expandAlias tm t = 
     let (ps, as, ta, b) = expandAliases tm t in
@@ -253,10 +250,10 @@ expandAliases tm t@(TypeName i _ _) =
        case Map.lookup i tm of 
             Just (TypeInfo _ _ _ 
 		  (AliasTypeDefn (TypeScheme l (_ :=> ts) _))) ->
-		     (l, [], ts, True)
+		     (l, [], unalias tm ts, True)
 	    Just (TypeInfo _ _ _
 		  (Supertype _ (TypeScheme l (_ :=> ts) _) _)) ->
-		     (l, [], ts, True)
+		     (l, [], unalias tm ts, True)
 	    _ -> ([], [], t, False)
 
 expandAliases tm (TypeAppl t1 t2) =

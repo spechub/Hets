@@ -134,7 +134,7 @@ addOpId i sc attrs defn =
        tm <- gets typeMap
        c <- gets counter
        let (TypeScheme _ (_ :=> ty) _) = sc 
-           ds = if placeCount i > 1 then case ty of 
+           ds = if placeCount i > 1 then case unalias tm ty of 
 		   FunType (ProductType ts _) _ _ _ ->
 		     if placeCount i /= length ts then 
 			    [mkDiag Error "wrong number of places in" i]

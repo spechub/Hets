@@ -124,10 +124,11 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 			  Just ty -> do
 			      let newPty = TypeScheme nAs ([]:=>ty) []
 				  fullKind = typeArgsListToKind nAs star
-				  Result es mvds = anaVars v ty 
+				  uty = unalias tm ty 
+				  Result es mvds = anaVars v uty
 			      addDiags es
 			      checkUniqueTypevars nAs
-			      if occursIn tm i ty then do 
+			      if occursIn tm i uty then do 
 			         addDiags [mkDiag Error 
 				     "illegal recursive subtype definition" ty]
 				 return $ SubtypeDefn newPat v ty f ps
@@ -179,12 +180,12 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
                                   newPty = TypeScheme allArgs qty qs
 				  fullKind = typeArgsListToKind nAs ik
 			      checkUniqueTypevars allArgs
-			      if occursIn tm i ty then do 
-			         addDiags [mkDiag Error 
-					   "illegal recursive type synonym" ty]
-				 return Nothing
-				 else addTypeId True (AliasTypeDefn newPty) 
-				      inst fullKind i 
+			      if occursIn tm i $ unalias tm ty then 
+			        do addDiags [mkDiag Error 
+				       "illegal recursive type synonym" ty]
+			           return Nothing
+			        else addTypeId True (AliasTypeDefn newPty) 
+				     inst fullKind i 
 			      return $ AliasType (TypePattern i [] [])
 				     (Just fullKind) newPty ps
 

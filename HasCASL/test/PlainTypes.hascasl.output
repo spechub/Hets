@@ -102,6 +102,6 @@ y : tuple3 r s %(var)%
 *** Error 36.12, cyclic super type 't2'
 *** Error 38.19, ambiguous typings 
   '(fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
-						 (var x : t))' (line 38, column 19)
+						 (var x : t))' (38.19)
   '(fun __=__ : forall a : Type .  a ×
-				a ->? Unit) ((var x : tuple3 r s t), (var x : tuple3 r s t))' (line 38, column 19)
+				a ->? Unit) ((var x : tuple3 r s t), (var x : tuple3 r s t))' (38.19)

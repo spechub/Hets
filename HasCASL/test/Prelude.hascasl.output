@@ -25,11 +25,11 @@ type  : Type+ -> Type+ -> Type+ -> Type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"  
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
-op def, tt : forall s : Type .  s ->? Unit
+op def, tt : forall s : Type .  Pred s
 var x : s
-program def : forall s : Type .  s ->? Unit = \ x : s . ()
+program def : forall s : Type .  Pred s = \ x : s . ()
 	%% def is also total (identical to tt) 
-program tt : forall s : Type .  s ->? Unit = \ x : s . ()
+program tt : forall s : Type .  Pred s = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -55,7 +55,7 @@ predfun eq : forall s : Type .  s × s ->? Unit
 				      a ->? Unit) (\ x : s . (predfun eq : forall s : Type .  s ×
 											      s ->? Unit) ((var x : s),
 													   (var x : s)),
-						   (op tt : forall s : Type .  s ->? Unit))
+						   (op tt : forall s : Type .  Pred s))
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit." 
 %% where "bla" is never used, but only "()" instead
@@ -66,14 +66,13 @@ program all (p : Pred (s)) : Pred Unit = eq (p, tt)
 %% the cast from ?s to s is still done manually here (for the strict "und")
 program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
 %% use "And" instead of "und" to avoid cast from "?unit" to "unit"
-program __ impl __
-	(x, y : Pred Unit) : Unit ->? Unit : Unit ->? Unit
-	= eq (x, x And y)
-program __ or __ (x, y : Pred Unit) : Unit ->? Unit : Unit ->? Unit
-	= all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
+program __ impl __ (x, y : Pred Unit) : Pred Unit : Pred Unit =
+	eq (x, x And y)
+program __ or __ (x, y : Pred Unit) : Pred Unit : Pred Unit =
+	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
 program ex (p : Pred (s)) : Pred Unit =
 	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
-program ff () : Unit ->? Unit : Unit ->? Unit =
+program ff () : Pred Unit : Pred Unit =
 	all (\ r : Pred Unit . r ())
 program neg (r : Pred Unit) : Pred Unit = r impl ff
 %% the type instance for the first "eq" should be "?t" 
@@ -160,7 +159,7 @@ __if__ : Unit × Unit ->? Unit %(Pred)%
 __res__ : s × t ->? s %(Op)% = \ (x : s, y : t) .! (var x : s)
 __when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
 bottom : forall p : Pcpo .  p %(Op)%
-def : forall s : Type .  s ->? Unit %(Op)% = \ x : s . ()
+def : forall s : Type .  Pred s %(Op)% = \ x : s . ()
 def__ : forall a : Type .  a ->? Unit %(Fun)%
 eq : forall s : Type .  s × s ->? Unit %(Pred)%
 f : c --> d %(var)%
@@ -176,7 +175,7 @@ sup : forall c : Cpo .  (nat -> c) ->? c %(Op)%
 true : bool %(construct bool)%
      : Unit ->? Unit %(Pred)%
      : Unit %(Fun)%
-tt : forall s : Type .  s ->? Unit %(Op)% = \ x : s . ()
+tt : forall s : Type .  Pred s %(Op)% = \ x : s . ()
 undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! (var x : c -->? p))
 %% Sentences -------------------------------------------------------------
 (predfun __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
@@ -191,7 +190,7 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 				    a ->? Unit) (\ x : s . (predfun eq : forall s : Type .  s ×
 											    s ->? Unit) ((var x : s),
 													 (var x : s)),
-						 (op tt : forall s : Type .  s ->? Unit)) %()%
+						 (op tt : forall s : Type .  Pred s)) %()%
 %% Diagnostics -----------------------------------------------------------
 *** Error 4.7, illegal universe class declaration 'Type'
 *** Hint 6.5, is type variable 's'
@@ -212,20 +211,20 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.6, unexpected mixfix token: :
 *** Hint 60.9, no type match for: snd
-  with type: '_var_8 ->? t' (line 60, column 28)
+  with type: '_var_8 ->? t' (60.28)
   known types:
     
-*** Hint 60.9, wrong result type 't' (line 60, column 28)
+*** Hint 60.9, wrong result type 't' (60.28)
   for application 'snd (x : s, y : t)'
 *** Error 60.9, no typing for 'snd(x : s, y : t) : t'
 *** Error 65.59, unexpected mixfix token: und
 *** Error 65.52, unexpected term '(def y) und (def x)'
 *** Error , undeclared type '_var_42'
 *** Hint 75.21, no type match for: eq
-  with type: '_var_55 ->? t' (line 58, column 22)
+  with type: '_var_55 ->? t' (58.22)
   known types:
-    'forall s : Type .  s × s ->? Unit' (line 72, column 11)
-*** Hint 75.21, wrong result type 't' (line 58, column 22)
+    'forall s : Type .  s × s ->? Unit' (72.11)
+*** Hint 75.21, wrong result type 't' (58.22)
   for application 'eq (x, y)'
 *** Hint 75.17, wrong result type '_var_49'
   for application '(__res__) (x, eq (x, y))'
@@ -239,19 +238,19 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 
 *** Error 85.11, cyclic super type '? s'
 *** Hint 87.9, no type match for: all
-  with type: '_var_57 ->? Unit ->? Unit'
+  with type: '_var_57 ->? Pred Unit' (87.28)
   known types:
     
-*** Hint 87.9, wrong result type 'Unit ->? Unit'
-  for application 'all (p : s ->? Unit)'
-*** Error 87.9, no typing for 'all(p : s ->? Unit) : Unit ->? Unit'
+*** Hint 87.9, wrong result type 'Pred Unit' (87.28)
+  for application 'all (p : Pred s)'
+*** Error 87.9, no typing for 'all(p : Pred s) : Pred Unit'
 *** Hint 90.9, no type match for: And
-  with type: '_var_59 ->? Unit ->? Unit'
+  with type: '_var_59 ->? Pred Unit' (90.33)
   known types:
     
-*** Hint 90.9, wrong result type 'Unit ->? Unit'
-  for application 'And (x : _var_58, y : Unit ->? Unit)'
-*** Error 90.9, no typing for 'And(x : _var_58, y : Unit ->? Unit) : Unit ->? Unit'
+*** Hint 90.9, wrong result type 'Pred Unit' (90.33)
+  for application 'And (x : _var_58, y : Pred Unit)'
+*** Error 90.9, no typing for 'And(x : _var_58, y : Pred Unit) : Pred Unit'
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 93.9, unexpected pattern '__ impl __ (x, y : Pred Unit)'
 *** Error 93.53, unexpected mixfix token: x
@@ -260,22 +259,22 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Error 96.19, unexpected mixfix token: x
 *** Error 95.48, unexpected mixfix token: all
 *** Hint 98.9, no type match for: ex
-  with type: '_var_62 ->? Unit ->? Unit'
+  with type: '_var_62 ->? Pred Unit' (98.27)
   known types:
     
-*** Hint 98.9, wrong result type 'Unit ->? Unit'
-  for application 'ex (p : s ->? Unit)'
-*** Error 98.9, no typing for 'ex(p : s ->? Unit) : Unit ->? Unit'
+*** Hint 98.9, wrong result type 'Pred Unit' (98.27)
+  for application 'ex (p : Pred s)'
+*** Error 98.9, no typing for 'ex(p : Pred s) : Pred Unit'
 *** Error 101.13, unexpected mixfix token: )
 *** Error 101.9, unexpected pattern 'ff ()'
 *** Error 101.29, unexpected mixfix token: all
 *** Hint 103.9, no type match for: neg
-  with type: '_var_64 ->? Unit ->? Unit'
+  with type: '_var_64 ->? Pred Unit' (103.30)
   known types:
     
-*** Hint 103.9, wrong result type 'Unit ->? Unit'
-  for application 'neg (r : Unit ->? Unit)'
-*** Error 103.9, no typing for 'neg(r : Unit ->? Unit) : Unit ->? Unit'
+*** Hint 103.9, wrong result type 'Pred Unit' (103.30)
+  for application 'neg (r : Pred Unit)'
+*** Error 103.9, no typing for 'neg(r : Pred Unit) : Pred Unit'
 *** Error 108.51, unexpected mixfix token: impl
 *** Error 108.22, unexpected mixfix token: all
 *** Error 108.3, unexpected mixfix token: all

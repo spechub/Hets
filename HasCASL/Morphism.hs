@@ -167,11 +167,12 @@ instance Ord TySc where
 		     t2 = evalState (freshInst sc2) c
 		     v1 = varsOf t1
 		     v2 = varsOf t2
-                 in case compare (length v1) $ length v2 of 
+                 in case compare (Set.size v1) $ Set.size v2 of 
 			LT -> True
-			EQ -> t1 <= subst (Map.fromList $
+			EQ -> t1 <= subst (Map.fromAscList $
 			    zipWith (\ v (TypeArg i k _ _) ->
-				     (v, TypeName i k 1)) v1 v2) t2
+				     (v, TypeName i k 1)) 
+					   (Set.toList v1) $ Set.toList v2) t2
 			GT -> False 		   
 
 type FunMap = Map.Map (Id, TySc) (Id, TySc)
