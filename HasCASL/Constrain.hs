@@ -61,16 +61,18 @@ joinC :: Constraints -> Constraints -> Constraints
 joinC = Set.union
 
 insertC :: Constrain -> Constraints -> Constraints
-insertC = Set.insert
+insertC c = case c of 
+            Subtyping t1 t2 -> if t1 == t2 then id else Set.insert c
+            _ -> Set.insert c
 
 substC :: Subst -> Constraints -> Constraints
-substC s = Set.image (\ c -> case c of
+substC s = Set.fold (insertC . ( \ c -> case c of
     Kinding ty k -> Kinding (subst s ty) k
-    Subtyping t1 t2 -> Subtyping (subst s t1) $ subst s t2)
+    Subtyping t1 t2 -> Subtyping (subst s t1) $ subst s t2)) noC
 
 simplify :: TypeMap -> Constraints -> ([Diagnosis], Constraints)
 simplify tm rs = 
-    if Set.isEmpty rs then ([], Set.empty)
+    if Set.isEmpty rs then ([], noC)
     else let (r, rt) = Set.deleteFindMin rs 
 	     Result ds m = entail tm r
              (es, cs) = simplify tm rt
@@ -253,9 +255,9 @@ zipC k p = let q = swap p in case k of
 shapeUnify :: TypeMap -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
 shapeUnify tm l = do 
     c <- get 
-    let (as, (n, t)) = runState (shapeMgu tm l) (c, eps) 
+    let (r, (n, s)) = runState (shapeMgu tm l) (c, eps) 
     put n
-    return (t, as)
+    return (s, r)
 
 getRawKindAppl :: Kind -> [a] -> (Kind, [Kind])
 getRawKindAppl k args = if null args then (k, []) else
@@ -266,10 +268,9 @@ getRawKindAppl k args = if null args then (k, []) else
     _ -> error ("getRawKindAppl " ++ show k)
 
 -- input an atomized constraint list 
-collapser :: TypeMap -> [(Type, Type)] -> Result Subst
-collapser tm l = 
-    let (_, t) = Rel.connComp $ foldr (uncurry Rel.insert) 
-                 (fromTypeMap tm) l
+collapser :: Rel.Rel Type -> Result Subst
+collapser r = 
+    let t = Rel.sccOfClosure r
         t2 = Map.map (Set.partition ( \ e -> case e of 
                                       TypeName _ _ n -> n==0
                                       _ -> error "collapser")) t
@@ -319,19 +320,24 @@ shapeRel tm cs =
     in case shapeMatch tm (map fst subL) $ map snd subL of
        Result ds Nothing -> return $ Result ds Nothing
        _ -> do (s1, atoms) <- shapeUnify tm subL
-               return $ case collapser tm atoms of
+               let r = Rel.transClosure $ Rel.fromList $ subst s1 atoms
+                   es = Map.foldWithKey ( \ t1 st l1 -> 
+                             case t1 of
+                             TypeName _ _ 0 -> Set.fold ( \ t2 l2 -> 
+                                 case t2 of
+                                 TypeName _ _ 0 -> if lesserType tm t1 t2 
+                                     then l2 else (t1, t2) : l2
+                                 _ -> l2) l1 st
+                             _ -> l1) [] $ Rel.toMap r 
+               return $ if null es then 
+                 case collapser r of
                    Result ds Nothing -> Result ds Nothing
                    Result _ (Just s2) -> 
                        let s = compSubst s1 s2 
-                           r = Rel.fromList $ subst s2 atoms
-                           nonvs = filter ( \ c -> case c of
-                             (TypeName _ _ 0, TypeName _ _ 0) -> True
-                             _ -> False) $ Rel.toList $ Rel.transClosure r
-                           es = filter (not . uncurry (lesserType tm)) nonvs
-                       in if null es then
-                          return (s, substC s qs, r)
-                          else Result (map ( \ (t1, t2) ->
-                                 mkDiag Hint "unable to prove" $ 
+                           r2 = Rel.fromList $ subst s2 atoms
+                       in return (s, substC s qs, r2)
+                 else Result (map ( \ (t1, t2) ->
+                                 mkDiag Hint "rejected" $ 
                                              Subtyping t1 t2) es) Nothing
 
 -- | compute monotonicity of a type variable

@@ -122,7 +122,7 @@ x : m a %(var)%
    : forall m : Monad; a : Type . m_v-1 a_v-2,
    op emptySet[_var_10_v10] : forall a : Type . Set a_v-1)' of type 'Unit'
  unresolved constraints '{ Set : Monad }'
-*** Hint 37.14, contradicting type inclusions for '__->__' and '__->?__' of '(var x : m a,
+*** Hint 37.14, rejected '__->?__ < __->__' of '(var x : m a,
  \ (var y : a_v1)
    . (op return[_var_91_v91; _var_92_v92]
       : forall a : Type; m : Monad . a_v-1 -> m_v-2 a_v-1)

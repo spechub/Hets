@@ -56,8 +56,10 @@ checkPattern ga pat = do
 instantiate :: TypeScheme -> State Env (Type, [Type], Constraints)
 instantiate sc = do
      (typ, inst) <- toEnvState $ freshInstList sc
-     return (typ, inst, Set.fromList $ map ( \ ty@(TypeName _ k _)
-                                     -> Kinding ty k) inst)
+     return (typ, inst, Set.fromList $ foldr ( \ ty@(TypeName _ k _) l
+                                     -> case k of 
+                                        Intersection [] _ -> l
+                                        _ -> Kinding ty k : l) [] inst)
 
 instOpInfo :: OpInfo -> State Env (Type, [Type], Constraints, OpInfo)
 instOpInfo oi = do
@@ -276,8 +278,7 @@ infer mt trm = do
                     rs <- infer Nothing t
                     return $ map ( \ (s, cs, typ, tr) -> 
                            let sTy = subst s ty in
-                               (s, insertC (Subtyping sTy typ) $ 
-                                 case mt of
+                               (s, insertC (Subtyping sTy typ) $ case mt of
                                  Nothing -> cs
                                  Just jTy -> insertC (Subtyping (subst s jTy)
                                                       logicalType) cs,
@@ -287,8 +288,7 @@ infer mt trm = do
                     rs <- infer Nothing t
                     return $ map ( \ (s, cs, typ, tr) -> 
                         let sTy = subst s ty in
-                                (s, insertC (Subtyping sTy typ) $
-                                 case mt of
+                                (s, insertC (Subtyping sTy typ) $ case mt of
                                  Nothing -> cs
                                  Just jTy -> insertC (Subtyping (subst s jTy)
                                                       sTy) cs,
