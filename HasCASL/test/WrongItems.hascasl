@@ -1,0 +1,9 @@
+class x = y = z
+op a:? b
+op a: ? b
+var a+ : Type
+var <
+var -
+class a : Type = {x . x < t}
+type t := \ s,r . s -> r
+type n (r,s)

@@ -1,0 +1,117 @@
+*
+**
+a_a
+__
+123
+1.2
+1
+1.2E3
+12.23E34
+"bla"
+""
+=
+<
+<=
+.a
+'a'
+=[a,b]
+< [a,b]
+<=[a,b]
+.a[a,b]
+'a'[a,b]
+__*__
+a =e= b 
+a = e= b
+a =e = b
+a = e= __ b __ 
+(a = b)
+(a __ b)
+(a __ b) a
+b(a __ b)
+b(a __ b) a
+{a __ b}
+{a __ b} a
+b{a __ b}
+b{a __ b} a
+[a __ b]
+[a __ b] a
+b[a __ b]
+b[a __ b] a
+(a, =, b) 
+({}, [], {[]{}}) 
+{{}, [], {[]{}}}
+[{}, [], {[]{}}]
+(var y : bb)
+(op y : bb) 
+(op __<__ : ##) 
+(op __<__ : ## -> --) 
+(op __<__ : bb) 
+(op __<__ :? bb) 
+(op __<__ :? ##) 
+(pred y : bb)
+(pred y : bb*bb)
+(var y : bb->bb)
+a =e=< b
+ys as b
+(pred y : bb)
+(pred y:bb)
+(pred y:())
+(predy y : bb)
+(predy : bb)
+(predy : bb)
+exists1 (predy :: bb) 
+exists predy : bb . a 
+exists! a: v . x
+exists!a:v.x
+exists! # :v.x
+forall a: v . x
+\a:v.x
+\ a:v.x
+\ a:v.!x
+\a:v.!x
+\ a:v. !x
+\a:v. !x
+a if b
+a when b else c
+def x
+def#
+{}when[]else{}
+a/\b/\c
+a\/b\/c
+a=>b
+a<=>b
+true
+false
+#as b
+b in#
+a \a:v.! !x
+=e =
+=e<
+= e <
+=ea
+=e a
+=a=
+= a =
+==e=
+== e=
+=e=e=e=
+=e= e =e=
+=e =e= e=
+(op __<__ :? ## -> bb) 
+(op __<__ :? aa*bb) 
+let x = y in z
+let x = y; x = y;x = y in z
+let x = y; x = y;x = y in z in t
+let x = (y in z) in x
+let x = \y:t.y in x(x)
+let x = case x in t of y -> z; x=y in x  
+()
+if a then b
+a if b
+if a then b else c
+(a,b) as t
+((a,b) as t)
+\ (a@(b,c) : S * S) . a
+\ (a#(b,c) : S * S) . a
+\ (a#(b,c)# : S * S) . a
+\ (a) . a

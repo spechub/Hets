@@ -2,14 +2,11 @@
 
 .PHONY: check
 
-check: ../hacapa
-	bash runcheck.sh ../hacapa
-
-../hacapa: ../*.hs
-	(cd ..; ghc-call)
-
-hacapa:
-	$(MAKE) ../hacapa
+check: hacapa
+	bash ./runcheck.sh ../hacapa
 
 output: 
-	bash runcheck.sh ../hacapa set
+	bash ./runcheck.sh ../hacapa set
+
+%: 
+	(cd ../..; $(MAKE) $@)

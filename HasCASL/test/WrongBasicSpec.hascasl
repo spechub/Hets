@@ -1,0 +1,5 @@
+. f = g
+
+forall x:s
+%()%
+. x = x

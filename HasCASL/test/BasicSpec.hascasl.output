@@ -1,0 +1,104 @@
+%% Classes ---------------------------------------------------------------
+TYPE = Type
+a < d
+b < d
+c < d
+d
+%% Type Constructors -----------------------------------------------------
+Data1 : Type %[type __ ::=
+	       a : -> __
+	       b : -> __
+	       c : -> __]%
+Data2 : Type %[type __ ::=
+	       Cons21 : Data1 ×
+			Data2 -> __ (%(Data2.Cons21.sel_[1,1])% :? Data1)(%(Data2.Cons21.sel_[2,1])% :? Data2)
+	       Cons22 : Data2 ×
+			Data1 -> __ (%(Data2.Cons22.sel_[1,1])% :? Data2)(%(Data2.Cons22.sel_[2,1])% :? Data1)]%
+Data3 : Type %[type __ ::=
+	       Cons31 : Data1 × Data2 -> __ (sel1 :? Data1)(sel2 :? Data2)
+	       Cons32 : Data2 × Data1 -> __ (sel2 :? Data2)(sel1 :? Data1)]%
+Data4 : Type %[type __ ::=
+	       Cons41 : Data1 × Data2 -> 
+			? -> __ (sel1 :? Data1)(sel2 :? Data2)(%(Data4.Cons41.sel_[2])% :? ?)
+	       Cons42 : Data2 × Data1 -> 
+			? -> __ (sel2 :? Data2)(sel1 :? Data1)(%(Data4.Cons42.sel_[2])% :? ?)]%
+Pred : Type- -> Type
+Pred__ : Type- -> Type
+Unit : TYPE
+s : (c, Type) < ? s %(var)%
+t : Type %(var)%
+%% Assumptions -----------------------------------------------------------
+%(Data2.Cons21.sel_[1,1])% : Data2 ->? Data1 %(select from Data2 constructed by Cons21)%
+%(Data2.Cons21.sel_[2,1])% : Data2 ->? Data2 %(select from Data2 constructed by Cons21)%
+%(Data2.Cons22.sel_[1,1])% : Data2 ->? Data2 %(select from Data2 constructed by Cons22)%
+%(Data2.Cons22.sel_[2,1])% : Data2 ->? Data1 %(select from Data2 constructed by Cons22)%
+%(Data4.Cons41.sel_[2])% : Data4 ->? ? %(select from Data4 constructed by Cons41)%
+%(Data4.Cons42.sel_[2])% : Data4 ->? ? %(select from Data4 constructed by Cons42)%
+Cons21 : Data1 × Data2 -> Data2 %(construct Data2)%
+Cons22 : Data2 × Data1 -> Data2 %(construct Data2)%
+Cons31 : Data1 × Data2 -> Data3 %(construct Data3)%
+Cons32 : Data2 × Data1 -> Data3 %(construct Data3)%
+Cons41 : Data1 × Data2 -> ? -> Data4 %(construct Data4)%
+Cons42 : Data2 × Data1 -> ? -> Data4 %(construct Data4)%
+a : Data1 %(construct Data1)%
+  : ? s
+b : Data1 %(construct Data1)%
+c : Data1 %(construct Data1)%
+sel1 : Data4 ->? Data1 %(select from Data4 constructed by Cons41)%
+     : Data3 ->? Data1 %(select from Data3 constructed by Cons31)%
+sel2 : Data4 ->? Data2 %(select from Data4 constructed by Cons41)%
+     : Data3 ->? Data2 %(select from Data3 constructed by Cons31)%
+x : s %(var)%
+%% Diagnostics -----------------------------------------------------------
+Error (line 1, column 7) illegal universe class declaration
+Warning (line 5, column 32) unchecked type 't'
+Warning (line 5, column 20) redeclared class 'TYPE'
+Error (line 5, column 20) inconsistent redefinition of 'TYPE'
+Warning (line 11, column 16) implicit declaration of superclass 'd'
+Warning (line 11, column 7) redeclared class 'a'
+Warning (line 11, column 10) redeclared class 'b'
+Warning (line 11, column 13) redeclared class 'c'
+Warning (line 11, column 19) redeclared class 'a'
+Error (line 11, column 19) class cannot become an alias class 'a'
+FatalError (line 15, column 1) no analysis yet for: pred tt : s
+Hint (line 16, column 9) not a class 's'
+FatalError (line 18, column 1) no analysis yet for: program tt = \ x : s . ()
+FatalError (line 20, column 1) no analysis yet for: program __ res __ (x : s; y : t) : s = x;
+	fst (x : s; y : t) : s = x; snd (x : s; y : t) : t = y
+Error (line 27, column 3) unexpected mixfix token 'fst'
+Error (line 26, column 30) unexpected mixfix token '='
+FatalError (line 31, column 1) no analysis yet for: pred eq : s × s
+Error (line 34, column 28) unexpected mixfix token '='
+Error (line 33, column 21) unexpected mixfix token '='
+FatalError (line 39, column 1) no analysis yet for: program all (p : (? s)) : (? ()) = eq (p, tt)
+FatalError (line 41, column 1) no analysis yet for: program And (x, y : (? ())) : (? ()) = t1 () res t2 ()
+FatalError (line 43, column 1) no analysis yet for: program __ impl __ (x, y : (? ())) = eq (x, x And y)
+FatalError (line 45, column 1) no analysis yet for: program __ or __ (x, y : (? ())) : (? ()) =
+	all (\ r : (? ()) . ((x impl r) res (y impl r)) impl r);
+	ex (p : (? s)) : (? ()) =
+	all (\ r : (? ()) . all (\ x : s . p (x) impl r) impl r);
+	ff () : (? ()) = all (\ r : (? ()) . r ())
+Hint (line 56, column 11) not a class 't'
+Error (line 56, column 8) illegal overloading of 'x'
+Hint (line 56, column 18) not a class 't'
+Error (line 58, column 5) unexpected mixfix token '='
+Warning (line 68, column 11) redeclared type 's'
+Hint (line 69, column 14) type 'Data1' is not unifiable with '? s'
+Warning (line 72, column 73) data subtype ignored
+Error (line 72, column 52) undeclared type 'Data2'
+Error (line 72, column 36) undeclared type 'Data2'
+Warning (line 73, column 64) repeated value 'sel2'
+Warning (line 73, column 77) repeated value 'sel1'
+Error (line 75, column 90) undeclared type '?'
+Error (line 75, column 54) undeclared type '?'
+Hint (line 73, column 11) type 'Data4' is not unifiable with 'Data3'
+Hint (line 73, column 11) type 'Data4' is not unifiable with 'Data3'
+Warning (line 75, column 65) repeated value 'sel2'
+Warning (line 75, column 78) repeated value 'sel1'
+Error (line 77, column 8) unexpected mixfix token 'true'
+Hint (line 77, column 23) not a class 's'
+Warning (line 77, column 21) repeated value 'x'
+Error (line 77, column 25) unexpected mixfix token 'e'
+Hint (line 78, column 10) not a class 's'
+Warning (line 78, column 8) repeated value 'x'
+Error (line 78, column 12) unexpected mixfix token 'e'
