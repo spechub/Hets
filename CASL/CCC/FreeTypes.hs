@@ -354,7 +354,7 @@ checkFreeType m fsn
                  | null axioms = str
                  | otherwise = axiomStr (tail axioms) (str ++ (f_str $ (head axioms)) ++ "; ")                    
          proof = unsafePerformIO (do
-                 cim <- newChildProcess "/home/xinga/bin/cime" []
+                 cim <- newChildProcess "/home/xinga/bin/cime" []
    --              sendMsg cim "let F = signature \"0 : constant;suc : unary;+ : binary\";"
                  sendMsg cim ("let F = signature \"" ++ (signStr (sigComb constructors l_Syms) "") ++ "\";")     
    --              sendMsg cim "let X = vars \"x y\";"
