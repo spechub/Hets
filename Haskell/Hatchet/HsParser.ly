@@ -784,6 +784,7 @@ Miscellaneous (mostly renamings)
 
 > modid :: { Module }
 >	: CONID			{ Module $1 }
+>       | QCONID                { Module (fst $1 ++ '.':snd $1) }
 
 > tyconorcls :: { HsName }
 >	: conid			{ $1 }
