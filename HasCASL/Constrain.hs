@@ -19,7 +19,11 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.TypeAna
+import HasCASL.ClassAna
+
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
+import Common.Lib.State
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Keywords
@@ -28,6 +32,7 @@ import Common.Result
 
 import Data.List
 import Data.Maybe
+import Control.Exception(assert)
 
 data Constrain = Kinding Type Kind
                | Subtyping Type Type 
@@ -127,4 +132,108 @@ dom tm k ks =
 	      Just args -> if any ((args ==) . snd) fks then return args
 			   else fail "dom: not coregular"
 
+freshTypeVarT :: TypeMap -> Type -> State Int Type             
+freshTypeVarT tm t = 
+    do (var, c) <- freshVar $ posOfType t
+       let mp = maybeResult $ anaType (Nothing, t) tm
+           k = assert (isJust mp) $ fst $ fromJust mp
+       return $ TypeName var k c
+
+freshVarsT :: TypeMap -> [Type] -> State Int [Type]
+freshVarsT tm l = mapM (freshTypeVarT tm) l
+
+toPairState :: State Int a -> State (Int, b) a 
+toPairState p = 
+    do (a, b) <- get
+       let (r, c) = runState p a
+       put (c, b)
+       return r 
+
+addSubst :: Subst -> State (Int, Subst) ()
+addSubst s = do 
+    (c, o) <- get
+    put (c, compSubst s o)
+
+-- pre: shapeMatch succeeds
+shapeMgu :: TypeMap -> (Type, Type) -> State (Int, Subst) ()
+shapeMgu tm (t1, t2) = 
+    case (t1, t2) of 
+    (ExpandedType _ t, _) -> shapeMgu tm (t, t2)
+    (_, ExpandedType _ t) -> shapeMgu tm (t1, t)
+    (LazyType t _, _) -> shapeMgu tm (t, t2)
+    (_, LazyType t _) -> shapeMgu tm (t1, t)
+    (KindedType t _ _, _) -> shapeMgu tm (t, t2)
+    (_, KindedType t _ _) -> shapeMgu tm (t1, t)
+    (TypeName _ _ _, TypeName _ _ _) -> return ()
+    (TypeName _ _ v1, _) -> assert (v1 > 0) $
+         case t2 of
+         ProductType ts ps -> do 
+             nts <- toPairState $ freshVarsT tm ts
+             addSubst $ Map.single v1 $ ProductType nts ps
+             mapM_ (shapeMgu tm) $ zip nts ts
+         FunType t3 ar t4 ps -> do
+             v3 <- toPairState $ freshTypeVarT tm t3
+             v4 <- toPairState $ freshTypeVarT tm  t4
+             addSubst $ Map.single v1 $ FunType v3 ar v4 ps
+             shapeMgu tm (v3, t3)
+             shapeMgu tm (v4, t4)
+         TypeAppl _ _ -> do 
+             let (topTy, args) = getTypeAppl tm t2 
+             vs <- toPairState $ freshVarsT tm args
+             addSubst $ Map.single v1 $ mkTypeAppl topTy vs
+             mapM_ (shapeMgu tm) $ zip vs args
+         _ -> error "shapeMgu"
+    (_, TypeName _ _ _) -> shapeMgu tm (t2, t1)
+    (TypeAppl t3 t4, TypeAppl t5 t6) -> do
+        shapeMgu tm (t3, t5)
+        shapeMgu tm (t4, t6)
+    (ProductType s1 _, ProductType s2 _) -> mapM_ (shapeMgu tm) $ zip s1 s2
+    (FunType t3 _ t4 _, FunType t5 _ t6 _) -> do
+        shapeMgu tm (t3, t5)
+        shapeMgu tm (t4, t6)
+    _ -> error "shapeMgu (invalid precondition)"
+
+shapeUnify :: TypeMap -> Subst -> [(Type, Type)] -> State Int Subst
+shapeUnify tm s l = do 
+    c <- get 
+    let (_, (n, t)) = runState (mapM_ (shapeMgu tm) l) (c, s) 
+    put n
+    return t
+
+-- pre: same shape (after applying shapeMgu)
+atomize :: TypeMap -> (Type, Type) -> [(Type, Type)]
+atomize tm (t1, t2) = 
+    case (t1, t2) of 
+    (ExpandedType _ t, _) -> atomize tm (t, t2)
+    (_, ExpandedType _ t) -> atomize tm (t1, t)
+    (LazyType t _, _) -> atomize tm (t, t2)
+    (_, LazyType t _) -> atomize tm (t1, t)
+    (KindedType t _ _, _) -> atomize tm (t, t2)
+    (_, KindedType t _ _) -> atomize tm (t1, t)
+    (TypeName _ _ _, TypeName _ _ _) -> [(t1, t2)]
+    _ -> 
+       let (top1, as1) = getTypeAppl tm t1
+           (top2, as2) = getTypeAppl tm t2
+       in case (top1, top2) of 
+          (TypeName _ k1 _, TypeName _ k2 _) -> 
+              let r1 = rawKind k1 
+                  r2 = rawKind k2 
+                  (_, ks) = getRawKindAppl r1 as1 
+              in assert (r1 == r2 && length as1 == length as2) $
+                 (top1, top2) : (concat $ zipWith ( \ k (a1, a2) -> 
+                      case k of
+                      ExtKind _ CoVar _ -> [(a1, a2)]
+                      ExtKind _ ContraVar _ -> [(a2,a1)]
+                      _ -> [(a1, a2), (a2, a1)]) ks $ zip as1 as2)
+          _ -> error "atomize"
+
+getRawKindAppl :: Kind -> [a] -> (Kind, [Kind])
+getRawKindAppl k args = if null args then (k, []) else
+    case k of 
+    FunKind k1 k2 _ -> let (rk, ks) = getRawKindAppl k2 (tail args)
+                       in (rk, k1 : ks)
+    ExtKind ek _ _ -> getRawKindAppl ek args
+    _ -> error ("getRawKindAppl " ++ show k)
+          
+        
 

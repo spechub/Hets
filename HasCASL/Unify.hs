@@ -14,13 +14,16 @@ module HasCASL.Unify where
 
 import HasCASL.As
 import HasCASL.AsUtils
-import Common.PrettyPrint
-import Common.Id
 import HasCASL.Le
-import Common.Lib.State
+import HasCASL.ClassAna
+
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Common.PrettyPrint
+import Common.Id
+import Common.Lib.State
 import Common.Result
+
 import Data.List as List
 import Data.Maybe
 
@@ -121,18 +124,23 @@ eps = Map.empty
 
 class Unifiable a where
     subst :: Subst -> a -> a
-    match :: TypeMap -> (Bool, a) -> (Bool, a) -> Result Subst
+    match :: TypeMap -> (TypeId -> TypeId -> Bool) 
+          -> (Bool, a) -> (Bool, a) -> Result Subst
 
 -- | most general unifier via 'match' 
 -- where both sides may contribute substitutions
 mgu :: Unifiable a => TypeMap -> a -> a -> Result Subst
-mgu tm a b = match tm (True, a) (True, b)
+mgu tm a b = match tm (relatedTypeIds tm) (True, a) (True, b)
+
+shapeMatch :: Unifiable a => TypeMap -> a -> a -> Result Subst
+shapeMatch tm a b = match tm (const $ const True) (True, a) (True, b)
 
 unify :: Unifiable a => TypeMap -> a -> a -> Bool
 unify tm a b = isJust $ maybeResult $ mgu tm a b 
 
 subsume :: Unifiable a => TypeMap -> a -> a -> Bool
-subsume tm a b = isJust $ maybeResult $ match tm (False, a) (True, b)
+subsume tm a b = 
+    isJust $ maybeResult $ match tm (relatedTypeIds tm) (False, a) (True, b)
 
 equalSubs :: Unifiable a => TypeMap -> a -> a -> Bool
 equalSubs tm a b = subsume tm a b && subsume tm b a
@@ -148,7 +156,7 @@ occursIn :: TypeMap -> TypeId -> Type -> Bool
 occursIn tm i =  Set.any (relatedTypeIds tm i) . idsOf (const True)
 
 relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
-relatedTypeIds tm i1 i2 =  
+relatedTypeIds tm i1 i2 = -- i1 == i2 
     not $ Set.disjoint (allRelIds tm i1) $ allRelIds tm i2
 
 allRelIds :: TypeMap -> TypeId -> Set.Set TypeId
@@ -184,15 +192,15 @@ instance Unifiable Type where
 	       case Map.lookup n m of
 	       Just s -> s
 	       _ -> TypeName i k n)
-    match = mm where 
-      mm tm t1 (b2, ExpandedType _ t2) = mm tm t1 (b2, t2)
-      mm tm (b1, ExpandedType _ t1) t2 = mm tm (b1, t1) t2
-      mm tm t1 (b2, LazyType t2 _) = mm tm t1 (b2, t2)
-      mm tm (b1, LazyType t1 _) t2 = mm tm (b1, t1) t2
-      mm tm t1 (b2, KindedType t2 _ _) = mm tm t1 (b2, t2)
-      mm tm (b1, KindedType t1 _ _) t2 = mm tm (b1, t1) t2
-      mm tm (b1, t1@(TypeName i1 _ v1)) (b2, t2@(TypeName i2 _ v2)) =
-        if relatedTypeIds tm i1 i2
+    match tm rel t1 (b2, ExpandedType _ t2) = match tm rel t1 (b2, t2)
+    match tm rel (b1, ExpandedType _ t1) t2 = match tm rel (b1, t1) t2
+    match tm rel t1 (b2, LazyType t2 _) = match tm rel t1 (b2, t2)
+    match tm rel (b1, LazyType t1 _) t2 = match tm rel (b1, t1) t2
+    match tm rel t1 (b2, KindedType t2 _ _) = match tm rel t1 (b2, t2)
+    match tm rel (b1, KindedType t1 _ _) t2 = match tm rel (b1, t1) t2
+    match _ rel (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
+      if rawKind k1 == rawKind k2 then
+        if rel i1 i2
            then return eps
         else if v1 > 0 && b1 then return $ 
                 Map.single v1 t2
@@ -200,7 +208,9 @@ instance Unifiable Type where
                      Map.single v2 t1
                         else uniResult "typename" i1 
                                     "is not unifiable with typename" i2
-      mm tm (b1, TypeName i1 _ v1) (_, t2) =
+      else uniResult "typename" i1 
+                                    "differs in raw kind of typename" i2
+    match tm _ (b1, TypeName i1 _ v1) (_, t2) =
         if v1 > 0 && b1 then 
            if occursIn tm i1 t2 then 
               uniResult "var" i1 "occurs in" t2
@@ -208,14 +218,14 @@ instance Unifiable Type where
                         Map.single v1 t2
         else uniResult "typename" i1  
                             "is not unifiable with type" t2
-      mm tm t2 t1@(_, TypeName _ _ _) = mm tm t1 t2
-      mm tm (b1, TypeAppl t1 t2) (b2, TypeAppl t3 t4) = 
-        match tm (b1, (t1, t2)) (b2, (t3, t4))
-      mm tm (b1, ProductType p1 _) (b2, ProductType p2 _) = 
-        match tm (b1, p1) (b2, p2)
-      mm tm (b1, FunType t1 _ t2 _) (b2, FunType t3 _ t4 _) = 
-        match tm (b1, (t1, t2)) (b2, (t3, t4))
-      mm _ (_,t1) (_,t2) = uniResult "type" t1  
+    match tm rel t2 t1@(_, TypeName _ _ _) = match tm rel t1 t2
+    match tm rel (b1, TypeAppl t1 t2) (b2, TypeAppl t3 t4) = 
+        match tm rel (b1, (t1, t2)) (b2, (t3, t4))
+    match tm rel (b1, ProductType p1 _) (b2, ProductType p2 _) = 
+        match tm rel (b1, p1) (b2, p2)
+    match tm rel (b1, FunType t1 _ t2 _) (b2, FunType t3 _ t4 _) = 
+        match tm rel (b1, (t1, t2)) (b2, (t3, t4))
+    match _ _ (_,t1) (_,t2) = uniResult "type" t1  
                             "is not unifiable with type" t2
 
 showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
@@ -233,31 +243,32 @@ uniResult s1 a s2 b =
 
 instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
     subst s (t1, t2) = (subst s t1, subst s t2)
-    match tm (b1, (t1, t2)) (b2, (t3, t4)) =
-	let r1@(Result _ m1) = match tm (b1, t1) (b2, t3) in
+    match tm rel (b1, (t1, t2)) (b2, (t3, t4)) =
+	let r1@(Result _ m1) = match tm rel (b1, t1) (b2, t3) in
 	   case m1 of
 	       Nothing -> r1
-	       Just s1 -> let r2@(Result _ m2) =
-				 match tm (b1, if b1 then subst s1 t2 else t2) 
-					  (b2, if b2 then subst s1 t4 else t4)
+	       Just s1 -> let r2@(Result _ m2) = match tm rel 
+                                   (b1, if b1 then subst s1 t2 else t2)
+				   (b2, if b2 then subst s1 t4 else t4)
 			      in case m2 of 
 				     Nothing -> r2
 				     Just s2 -> return $ compSubst s1 s2
 
 instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
     subst s = map (subst s) 
-    match _ (_, []) (_, []) = return eps
-    match tm (b1, a1:r1) (b2, a2:r2) = match tm (b1, (a1, r1)) (b2, (a2, r2))
-    match tm (b1, []) l = match tm l (b1, [])
-    match _ (_, (a:_)) (_, []) = uniResult "type component" a 
+    match _ _ (_, []) (_, []) = return eps
+    match tm rel (b1, a1:r1) (b2, a2:r2) = 
+        match tm rel (b1, (a1, r1)) (b2, (a2, r2))
+    match tm rel (b1, []) l = match tm rel l (b1, [])
+    match _ _ (_, (a:_)) (_, []) = uniResult "type component" a 
 		       "is not unifiable with the empty list" 
 		       (mkSimpleId "[]")
 
 instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     subst s = fmap (subst s) 
-    match _ (_, Nothing) _ = return eps
-    match _ _ (_, Nothing) = return eps
-    match tm (b1, Just a1) (b2, Just a2) = match tm (b1, a1) (b2, a2)
+    match _ _ (_, Nothing) _ = return eps
+    match _ _ _ (_, Nothing) = return eps
+    match tm rel (b1, Just a1) (b2, Just a2) = match tm rel (b1, a1) (b2, a2)
 
 repl :: Map.Map TypeArg Type -> Type -> Type
 repl m = rename ( \ i k n -> 

@@ -1,4 +1,8 @@
 general:
+pToken, oBraceT, etc. do not allow to be followed by (a line-comment)
+annotations. Call wrapAnnos if needed.
+
+
 haddockify code
 
 checking legality of internal and external terms is missing
