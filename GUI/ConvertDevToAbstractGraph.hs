@@ -17,6 +17,9 @@
 
 module GUI.ConvertDevToAbstractGraph where
 
+import Proofs.Proofs
+import Common.GlobalAnnotations
+
 import Static.DevGraph
 import GUI.AbstractGraphView
 import DaVinciGraph
@@ -78,17 +81,22 @@ convertGraph graphMem libname libEnv =
             libname2dg = libEnv}
 
      case Map.lookup libname libEnv of
-       Just (_,_,dgraph) -> if (isEmpty dgraph) then 
-                                  do (abstractGraph,graphInfo,convRef) <- initializeGraph graphMem libname
-									  dgraph convMaps
-                                     return (abstractGraph, graphInfo,convMaps)
-                             else do (abstractGraph,graphInfo,convRef) <- initializeGraph graphMem libname
-									  dgraph convMaps
-                                     newConvMaps <- convertNodes convMaps abstractGraph graphInfo dgraph libname
-		                     finalConvMaps <- convertEdges newConvMaps abstractGraph graphInfo dgraph libname
-                                     writeIORef convRef finalConvMaps
-                                     return (abstractGraph, graphInfo, finalConvMaps)
 
+       Just (_,_,dgraph) -> 
+	 if (isEmpty dgraph) then 
+	   do (abstractGraph,graphInfo,convRef) <-
+	          initializeGraph graphMem libname dgraph convMaps
+              return (abstractGraph, graphInfo,convMaps)
+          else 
+	    do (abstractGraph,graphInfo,convRef) <-
+		   initializeGraph graphMem libname dgraph convMaps
+               newConvMaps <- convertNodes convMaps abstractGraph
+			      graphInfo dgraph libname
+	       finalConvMaps <- convertEdges newConvMaps abstractGraph 
+				graphInfo dgraph libname
+               writeIORef convRef finalConvMaps
+               return (abstractGraph, graphInfo, finalConvMaps)
+                     
        Nothing -> error ("development graph with libname "
                           ++ (show libname)
                            ++ "does not exist")
@@ -102,6 +110,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
+-- ### noch ueberarbeiten...
+  ioRefProofStatus <- newIORef ((emptyGlobalAnnos, Map.empty::(Map.Map SIMPLE_ID GlobalEntry), dGraph),[([]::[DGRule], []::[DGChange])], dGraph)
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   ioRefVisibleNodes <- newIORef [(Common.Lib.Graph.nodes dGraph)]
   let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
@@ -123,7 +133,20 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
 			      descr <- readIORef event
                               showIt gid descr actGraphInfo
                               redisplay gid actGraphInfo
-                              return ()    )])]
+                              return ()    ),
+		  Button "Proof"
+		          (do proofStatus <- readIORef ioRefProofStatus
+			      let newProofStatus@(_,history,_) =
+			            globSubsume proofStatus
+			      writeIORef ioRefProofStatus newProofStatus
+			      convMaps <- readIORef convRef
+			      (descr,newConvMaps)
+			         <- applyChanges gid actGraphInfo 
+			              convMaps history
+			      writeIORef event descr
+			      writeIORef convRef newConvMaps
+			      redisplay gid actGraphInfo
+			      return ()    )])]
                [("spec", 
 		 createLocalMenuNodeTypeSpec "Magenta" convRef dGraph
                               ioRefSubtreeEvents ioRefVisibleNodes
@@ -548,3 +571,26 @@ elemR list element = elem element list
 
 notElemR :: Eq a => [a] -> a -> Bool
 notElemR list element = notElem element list
+
+
+
+-- ################ einbindung von proofs.hs ############
+doGlobSubsume :: ConversionMaps -> Descr -> GraphInfo -> IO ()
+doGlobSubsume convMaps gid actGraphInfo = undefined
+{- den DGraph aus den convMaps holen, globSubsume drauf aufrufen
+anhand der History den AbstrGraph anpassen -}
+
+applyChanges :: Descr -> GraphInfo -> ConversionMaps -> [([DGRule],[DGChange])]
+		  -> IO (Descr, ConversionMaps)
+applyChanges gid graphInfoRef convMaps history =
+  do graphInfo <- readIORef graphInfoRef
+     case history of
+       [] -> return (snd graphInfo, convMaps)
+       (historyElem:list) ->
+          case snd historyElem of
+	    [] -> return (snd graphInfo, convMaps)
+	    changes@(x:xs) -> applyChangesAux gid (snd graphInfo) convMaps changes
+
+applyChangesAux :: Descr -> Descr -> ConversionMaps -> [DGChange]
+	          -> IO (Descr, ConversionMaps)
+applyChangesAux gid event convMaps changes = undefined
