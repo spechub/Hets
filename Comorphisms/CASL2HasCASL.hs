@@ -133,7 +133,7 @@ mapMor m = let tm = CasM.sort_map m
 		    $ Map.toList $ CasM.fun_map m
 	       f2 = map ( \ ((i, pt), j) -> 
 			  let sc = TySc $ fromPredType pt
-			  in ((i, sc), (j, mapTySc tm sc))) 
+			  in ((i, sc), (j, mapTySc Map.empty tm sc))) 
 		    $ Map.toList $ CasM.pred_map m
 	    in (mkMorphism (mapSig $ CasM.msource m) (mapSig $ CasM.mtarget m))
 	   { typeIdMap = tm , funMap = Map.fromList (f2 ++ f1) }

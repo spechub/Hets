@@ -22,6 +22,7 @@ import HasCASL.HToken
 import HasCASL.As
 import Common.Lib.Parsec
 import Data.List
+import Data.Maybe
 
 -- * key sign tokens
 
@@ -62,7 +63,7 @@ mkBraces p c = bracketParser p oBraceT cBraceT anComma c
 -- | parse a simple class name or the type universe as kind
 parseClassId :: AParser Kind
 parseClassId = fmap (\c -> if showId c "" == "Type" 
-		   then Universe [posOfId c]
+		   then Intersection [] [posOfId c]
 		   else ClassKind c MissingKind) classId
 
 -- | do 'parseClassId' or a downset or an intersection kind 
@@ -107,9 +108,7 @@ kind :: AParser Kind
 kind = 
     do k1 <- parseExtKind
        arrowKind k1 <|> case k1 of
-	    ExtKind _ CoVar _ -> unexpected "co-variance of kind"
-	    ExtKind _ ContraVar _ -> unexpected "contra-variance of kind"
-	    ExtKind k InVar _  -> return k
+	    ExtKind _ _ _ -> unexpected "variance of kind"
 	    _ -> return k1
 
 -- | parse a function kind but accept an extended kind
@@ -122,27 +121,27 @@ extKind =
 -- * type variables
 
 -- a (simple) type variable with a 'Variance'
-extVar :: AParser Id -> AParser (Id, Variance, Pos) 
+extVar :: AParser Id -> AParser (Id, Maybe Variance, Pos) 
 extVar vp = 
     do t <- vp
        do   a <- plusT
-	    return (t, CoVar, tokPos a)
+	    return (t, Just CoVar, tokPos a)
           <|>
 	  do a <- minusT
-	     return (t, ContraVar, tokPos a)
-          <|> return (t, InVar, nullPos)
+	     return (t, Just ContraVar, tokPos a)
+          <|> return (t, Nothing, nullPos)
 
 -- several 'extTypeVar' with a 'Kind'
 typeVars :: AParser [TypeArg]
 typeVars = do (ts, ps) <- extVar typeVar `separatedBy` anComma
 	      typeKind ts ps
 
-allIsInVar :: [(TypeId, Variance, Pos)] -> Bool
-allIsInVar = all ( \ (_, v, _) -> case v of InVar -> True 
-		                            _ -> False)   
+allIsInVar :: [(TypeId, Maybe Variance, Pos)] -> Bool
+allIsInVar = all ( \ (_, v, _) -> isNothing v)
+
 
 -- 'parseType' a 'Downset' starting with 'lessT'
-typeKind :: [(TypeId, Variance, Pos)] -> [Token] -> AParser [TypeArg]
+typeKind :: [(TypeId, Maybe Variance, Pos)] -> [Token] -> AParser [TypeArg]
 typeKind vs ps = 
     do c <- colT
        if allIsInVar vs then 
@@ -158,15 +157,15 @@ typeKind vs ps =
     <|> return (makeTypeArgs vs ps [] star)
 
 -- | add the 'Kind' to all 'extTypeVar' and yield a 'TypeArg'
-makeTypeArgs :: [(TypeId, Variance, Pos)] -> [Token] 
+makeTypeArgs :: [(TypeId, Maybe Variance, Pos)] -> [Token] 
 	     -> [Pos] -> Kind -> [TypeArg]
 makeTypeArgs ts ps qs k = 
     zipWith (mergeVariance Comma k) (init ts) 
 		(map ((:[]). tokPos) ps)
 		++ [mergeVariance Other k (last ts) qs]
-		where mergeVariance c e (t, InVar, _) q =
+		where mergeVariance c e (t, Nothing, _) q =
 			  TypeArg t e c q
-		      mergeVariance c e (t, v, p) q = 
+		      mergeVariance c e (t, Just v, p) q = 
 			  TypeArg t (ExtKind e v [p]) c q 
 
 -- | a single 'TypeArg' (parsed by 'typeVars')

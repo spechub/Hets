@@ -44,20 +44,19 @@ anaFormula ga at =
        return $ case mt of Nothing -> Nothing
 			   Just e -> Just at { item = e }
 
-anaVars :: TypeMap -> Vars -> Type -> Result [VarDecl]
-anaVars _ (Var v) t = return [VarDecl v t Other []]
-anaVars tm (VarTuple vs _) t = 
-    case unalias tm t of 
+anaVars :: Vars -> Type -> Result [VarDecl]
+anaVars (Var v) t = return [VarDecl v t Other []]
+anaVars (VarTuple vs _) t = 
+    case unalias t of 
 	   ProductType ts _ -> 
 	       if length ts == length vs then 
-		  let lrs = zipWith (anaVars tm) vs ts 
+		  let lrs = zipWith anaVars vs ts 
 		      lms = map maybeResult lrs in
 		      if all isJust lms then 
 			 return $ concatMap fromJust lms
 			 else Result (concatMap diags lrs) Nothing 
 	       else Result [mkDiag Error "wrong arity" t] Nothing
 	   _ -> Result [mkDiag Error "product type expected" t] Nothing
-
 
 mapAnMaybe :: (Monad m) => (a -> m (Maybe b)) -> [Annoted a] -> m [Annoted b]
 mapAnMaybe f al = 
@@ -141,10 +140,10 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 			  Just ty -> do
 			      let newPty = TypeScheme nAs ([]:=>ty) []
 				  fullKind = typeArgsListToKind nAs star
-				  Result es mvds = anaVars tm v ty
+				  Result es mvds = anaVars v ty
 			      addDiags es
 			      checkUniqueTypevars nAs
-			      if cyclicType tm i ty then do 
+			      if cyclicType i ty then do 
 			         addDiags [mkDiag Error 
 				     "illegal recursive subtype definition" ty]
 				 return $ SubtypeDefn newPat v ty f ps
@@ -196,7 +195,7 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
                                   newPty = TypeScheme allArgs qty qs
 				  fullKind = typeArgsListToKind nAs ik
 			      checkUniqueTypevars allArgs
-			      if cyclicType tm i ty then 
+			      if cyclicType i ty then 
 			        do addDiags [mkDiag Error 
 				       "illegal recursive type synonym" ty]
 			           return Nothing
@@ -208,8 +207,8 @@ anaTypeItem _ gk inst tys (Datatype d) =
     do newD <- anaDatatype gk inst tys d 
        return $ Datatype newD
 
-cyclicType :: TypeMap -> Id -> Type -> Bool
-cyclicType tm i ty = Set.member i $ idsOf (==0) (unalias tm ty)
+cyclicType :: Id -> Type -> Bool
+cyclicType i ty = Set.member i $ idsOf (==0) ty
 
 ana1Datatype :: DatatypeDecl -> State Env (Maybe DatatypeDecl)
 ana1Datatype (DatatypeDecl pat kind alts derivs ps) = 

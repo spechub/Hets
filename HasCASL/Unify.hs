@@ -36,6 +36,7 @@ leaves b t =
 			     then Set.single $ TypeArg j k Other [] 
 			     else Set.empty
 	   TypeAppl t1 t2 -> leaves b t1 `Set.union` leaves b t2
+	   ExpandedType _ t2 -> leaves b t2
 	   KindedType tk _ _ -> leaves b tk
 	   LazyType tl _ -> leaves b tl
 	   ProductType l _ -> Set.unions $ map (leaves b) l
@@ -149,8 +150,8 @@ mapType m ty = if Map.isEmpty m then ty else
 rename :: (TypeId -> Kind -> Int -> Type) -> Type -> Type
 rename m t = case t of
 	   TypeName i k n -> m i k n
-	   TypeAppl t1 t2 ->
-	       TypeAppl (rename m t1) (rename m t2)
+	   TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
+	   ExpandedType t1 t2 -> ExpandedType (rename m t1) (rename m t2)
 	   TypeToken _ -> t
 	   BracketType b l ps ->
 	       BracketType b (map (rename m) l) ps
@@ -166,38 +167,41 @@ instance Unifiable Type where
 	       case Map.lookup (TypeArg i k Other []) m of
 	       Just s -> s
 	       _ -> TypeName i k n)
-    match m (a, s) (b, t) = mm m (a, unalias m s) (b, unalias m t)
+    match m (a, s) (b, t) = mm m (a, expandAlias m s) 
+			    (b, expandAlias m t)
       where 
+      mm tm t1 (b2, ExpandedType _ t2) = mm tm t1 (b2, t2)
+      mm tm (b1, ExpandedType _ t1) t2 = mm tm (b1, t1) t2
       mm tm t1 (b2, LazyType t2 _) = mm tm t1 (b2, t2)
       mm tm (b1, LazyType t1 _) t2 = mm tm (b1, t1) t2
       mm tm t1 (b2, KindedType t2 _ _) = mm tm t1 (b2, t2)
       mm tm (b1, KindedType t1 _ _) t2 = mm tm (b1, t1) t2
       mm tm (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
-	if relatedTypeIds tm i1 i2
-	   then return eps
-	else if v1 > 0 && b1 then return $ 
-	        Map.single (TypeArg i1 k1 Other []) t2
-		else if v2 > 0 && b2 then return $
-		     Map.single (TypeArg i2 k2 Other []) t1
-			else uniResult "typename" i1 
-				    "is not unifiable with typename" i2
+        if relatedTypeIds tm i1 i2
+           then return eps
+        else if v1 > 0 && b1 then return $ 
+                Map.single (TypeArg i1 k1 Other []) t2
+                else if v2 > 0 && b2 then return $
+                     Map.single (TypeArg i2 k2 Other []) t1
+                        else uniResult "typename" i1 
+                                    "is not unifiable with typename" i2
       mm tm (b1, TypeName i1 k1 v1) (_, t2) =
-	if v1 > 0 && b1 then 
-	   if occursIn tm i1 t2 then 
-	      uniResult "var" i1 "occurs in" t2
-	   else return $
-			Map.single (TypeArg i1 k1 Other []) t2
-	else uniResult "typename" i1  
-			    "is not unifiable with type" t2
+        if v1 > 0 && b1 then 
+           if occursIn tm i1 t2 then 
+              uniResult "var" i1 "occurs in" t2
+           else return $
+                        Map.single (TypeArg i1 k1 Other []) t2
+        else uniResult "typename" i1  
+                            "is not unifiable with type" t2
       mm tm t2 t1@(_, TypeName _ _ _) = mm tm t1 t2
       mm tm (b1, TypeAppl t1 t2) (b2, TypeAppl t3 t4) = 
-	match tm (b1, (t1, t2)) (b2, (t3, t4))
+        match tm (b1, (t1, t2)) (b2, (t3, t4))
       mm tm (b1, ProductType p1 _) (b2, ProductType p2 _) = 
-	match tm (b1, p1) (b2, p2)
+        match tm (b1, p1) (b2, p2)
       mm tm (b1, FunType t1 _ t2 _) (b2, FunType t3 _ t4 _) = 
-	match tm (b1, (t1, t2)) (b2, (t3, t4))
+        match tm (b1, (t1, t2)) (b2, (t3, t4))
       mm _ (_,t1) (_,t2) = uniResult "type" t1  
-			    "is not unifiable with type" t2
+                            "is not unifiable with type" t2
 
 showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
 showPrettyWithPos a =  let p = getMyPos a in
@@ -234,59 +238,43 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
 		       "is not unifiable with the empty list" 
 		       (mkSimpleId "[]")
 
-
 instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     subst s = fmap (subst s) 
     match _ (_, Nothing) _ = return eps
     match _ _ (_, Nothing) = return eps
     match tm (b1, Just a1) (b2, Just a2) = match tm (b1, a1) (b2, a2)
 
-unalias :: TypeMap -> Type -> Type
-unalias tm = fst . expandAlias tm
-
-expandAlias :: TypeMap -> Type -> (Type, Bool)
+expandAlias :: TypeMap -> Type -> Type
 expandAlias tm t = 
     let (ps, as, ta, b) = expandAliases tm t in
        if b && length ps == length as then
-	  (subst (Map.fromList (zip ps $ reverse as)) ta, b)
-	  else (ta, b)
+	  ExpandedType t $ subst (Map.fromList (zip ps $ reverse as)) ta
+	  else ta
 
 expandAliases :: TypeMap -> Type -> ([TypeArg], [Type], Type, Bool)
-expandAliases tm t@(TypeName i _ _) =
-       case Map.lookup i tm of 
+expandAliases tm t = case t of 
+    TypeName i _ _ -> case Map.lookup i tm of 
             Just (TypeInfo _ _ _ 
 		  (AliasTypeDefn (TypeScheme l (_ :=> ts) _))) ->
-		     (l, [], unalias tm ts, True)
+		     (l, [], ts, True)
 	    Just (TypeInfo _ _ _
 		  (Supertype _ (TypeScheme l (_ :=> ts) _) _)) ->
-		     (l, [], unalias tm ts, True)
-	    _ -> ([], [], t, False)
-
-expandAliases tm (TypeAppl t1 t2) =
-    let (ps, as, ta, b) = expandAliases tm t1 
-	(t3, b2) = expandAlias tm t2
+		     (l, [], ts, True)
+	    _ -> wrap t
+    TypeAppl t1 t2 -> 
+	let (ps, as, ta, b) = expandAliases tm t1 
+	    t3 = expandAlias tm t2
 	in if b then 
 	  (ps, t3:as, ta, b)  -- reverse later on
-	  else ([], [], TypeAppl t1 t3, b2)
-
-expandAliases tm (FunType  t1 a t2 ps) =
-    let (t3, b1) = expandAlias tm t1 
-	(t4, b2) = expandAlias tm t2
-	in ([], [], FunType  t3 a t4 ps, b1 || b2)
-
-expandAliases tm (ProductType ts ps) =
-    let tls = map (expandAlias tm) ts 
-	in ([], [], ProductType (map fst tls) ps, any snd tls)
-
-expandAliases tm (LazyType t ps) =
-    let (newT, b) = expandAlias tm t 
-	in ([], [], LazyType newT ps, b)
-
-expandAliases tm (KindedType t k ps) =
-    let (newT, b) = expandAlias tm t 
-	in ([], [], KindedType newT k ps, b)
-
-expandAliases _ t = ([], [], t, False)
+	  else wrap $ TypeAppl t1 t3
+    FunType t1 a t2 ps -> 
+	wrap $ FunType (expandAlias tm t1) a (expandAlias tm t2) ps
+    ProductType ts ps -> wrap $ ProductType (map (expandAlias tm) ts) ps
+    LazyType ty ps -> wrap $ LazyType (expandAlias tm ty) ps
+    ExpandedType t1 t2 -> wrap $ ExpandedType t1 $ expandAlias tm t2
+    KindedType ty k ps -> wrap $ KindedType (expandAlias tm ty) k ps
+    _ -> wrap t
+    where wrap ty = ([], [], ty, False)
 
 -- | super type ids
 superIds :: TypeMap -> Id -> Set.Set Id

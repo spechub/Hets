@@ -31,7 +31,7 @@ instance PrettyPrint Variance where
 
 instance PrettyPrint Kind where
     printText0 ga knd = case knd of
-        Universe _ -> text "Type"
+        Intersection [] _ -> text "Type"
         MissingKind -> space
         ClassKind ci _ -> printText0 ga ci
         Downset mt t _ _ -> 
@@ -43,14 +43,11 @@ instance PrettyPrint Kind where
         Intersection ks _ -> printList0 ga ks
         FunKind k1 k2 _ -> 
 			  (case k1 of 
-				  ExtKind (FunKind _ _ _) InVar _ -> parens
 				  FunKind _ _ _ -> parens
 				  _ -> id) (printText0 ga k1)
 			  <+> text funS 
 			  <+> printText0 ga k2
-        ExtKind k v _ -> (case v of
-	       InVar -> id 
-	       _ -> case k of
+        ExtKind k v _ -> (case k of
 		    FunKind _ _ _ -> parens
 		    _ -> id) (printText0 ga k) <> printText0 ga v
 
@@ -70,7 +67,7 @@ bracket b t = let (o,c) = getBrackets b in ptext o <> t <> ptext c
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 printKind :: GlobalAnnos -> Kind -> Doc
 printKind ga kind = case kind of 
-		    Universe _ -> empty
+		    Intersection [] _ -> empty
 		    Downset Nothing t _ _ -> 
 			space <> text lessS <+> printText0 ga t
 		    _ -> space <> colon <+> printText0 ga kind
@@ -95,6 +92,7 @@ instance PrettyPrint Type where
 	          TypeToken _ -> id
 		  BracketType _ _ _ -> id
 		  _ -> parens) (printText0 ga t2) 
+	ExpandedType t1 _ -> printText0 ga t1
         TypeToken t -> printText0 ga t
         BracketType k l _ -> bracket k $ commaT_text ga l
         KindedType t kind _ -> (case t of 

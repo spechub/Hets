@@ -103,7 +103,6 @@ mapTypeDefn im td =
 	      $ mapTerm (id, mapType im) t
     _ -> td
 
-
 -- | compute type mapping
 typeFun :: RawSymbolMap -> Id -> Kind -> Result Id
 typeFun rmap s k = do
@@ -140,7 +139,7 @@ opFun rmap e tm type_Map i ots m =
        (Nothing, Just rsy) -> 
           Set.fold (insertmapOpSym e tm type_Map i rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
-       (Nothing,Nothing) -> Set.fold (unchangedOpSym type_Map i) m1 ots1
+       (Nothing,Nothing) -> Set.fold (unchangedOpSym tm type_Map i) m1 ots1
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
 directOpMap :: RawSymbolMap -> Env -> TypeMap -> IdMap -> Id -> OpInfo 
@@ -153,7 +152,8 @@ directOpMap rmap e tm type_Map i oi (ots,m) = let ot = opType oi in
     -- map op symbol (id,ot) to raw symbol rsy
 mapOpSym :: Env -> TypeMap -> IdMap -> Id -> TySc -> RawSymbol 
 	     -> Result (Id, TySc)
-mapOpSym e tm type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
+mapOpSym e tm type_Map i ot rsy = 
+    let sc1@(TySc sc) = mapTySc tm type_Map ot in 
       case rsy of
       AnID id' -> return (id', sc1)
       AKindedId SK_op id' -> return (id', sc1)
@@ -184,16 +184,18 @@ insertmapOpSym e tm type_Map i rsy ot m = do
       (id',kind') <- mapOpSym e tm type_Map i ot rsy
       return (Map.insert (i, ot) (id',kind') m1)
     -- insert mapping of op symbol (id,ot) to itself into m
-unchangedOpSym :: IdMap -> Id -> TySc -> Result FunMap -> Result FunMap
-unchangedOpSym type_Map i ot m = do
+unchangedOpSym :: TypeMap -> IdMap -> Id -> TySc -> Result FunMap 
+	       -> Result FunMap
+unchangedOpSym tm im i ot m = do
       m1 <- m
-      return (Map.insert (i, ot) (i, mapTySc type_Map ot) m1)
+      return (Map.insert (i, ot) (i, mapTySc tm im ot) m1)
   -- map the ops in the source signature
 mapOps :: IdMap -> FunMap -> Id -> OpInfos -> Env -> Env
 mapOps type_Map op_Map i ots e = 
+    let tm = typeMap e in
     foldr ( \ ot e' ->
 	let sc = TySc $ opType ot
-	    (id', TySc sc') = Map.findWithDefault (i, mapTySc type_Map sc)
+	    (id', TySc sc') = Map.findWithDefault (i, mapTySc tm type_Map sc)
 			 (i, sc) op_Map
 	    in execState (addOpId id' sc' (opAttrs ot) 
 			  (mapOpDefn type_Map $ opDefn ot)) e')
@@ -241,10 +243,10 @@ extendSymbMap tm akmap sym1 sym2 =
     (TypeAsItemType k1, TypeAsItemType k2) ->  rawKind k1 == rawKind k2
     (OpAsItemType ot1, OpAsItemType ot2) ->
 	  let TySc sc2 = 
-		  mapTySc (Map.foldWithKey ( \ s1 s2 m ->
+		  mapTySc tm (Map.foldWithKey ( \ s1 s2 m ->
 				Map.insert (symName s1) (symName s2) m)
 			        Map.empty akmap) $ TySc ot1 
-	      in isUnifiable tm 0 ot2 sc2
+	      in isUnifiable tm 0 (mapTypeOfScheme (expandAlias tm) ot2) sc2
     _ -> False
   then Just $ Map.insert sym1 sym2 akmap
   else Nothing

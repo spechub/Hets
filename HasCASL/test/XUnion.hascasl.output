@@ -7,7 +7,7 @@ op __union__ : forall E : Type; N : Type .
    __union__, __intersection__, __\\__ : forall S : Type .
                                            Set S * Set S -> Set S
 forall g : Graph N E; g' : Graph N E
-. (fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
+. (fun __=__[Set N * (E ->? N) * (E ->? N)]
    : forall a : Type . a * a ->? Unit)
     ((op __union__[E; N]
       : forall E : Type; N : Type . Graph N E * Graph N E -> Graph N E)
@@ -51,7 +51,7 @@ not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
+(fun __=__[Set N * (E ->? N) * (E ->? N)]
  : forall a : Type . a * a ->? Unit)
   ((op __union__[E; N]
     : forall E : Type; N : Type . Graph N E * Graph N E -> Graph N E)

@@ -16,7 +16,7 @@ class h < (a, b)
       %% ok 
 class e < {x . x < t}
 %% Classes ---------------------------------------------------------------
-a < (c, d, {y . y < s}, b, {x . x < t})
+a < ({y . y < s}, {x . x < t}, b, c, d)
 b < {x . x < s}
 c < Type
 d < Type

@@ -38,7 +38,7 @@ instance PrintLaTeX Variance where
 
 instance PrintLaTeX Kind where
     printLatex0 ga knd = case knd of
-        Universe _ -> text "Type"
+        Intersection [] _ -> text "Type"
         MissingKind -> space
         ClassKind ci _ -> printLatex0 ga ci
         Downset mt t _ _ -> 
@@ -50,14 +50,11 @@ instance PrintLaTeX Kind where
         Intersection ks _ -> printList0 ga ks
         FunKind k1 k2 _ -> 
 			  (case k1 of 
-				  ExtKind (FunKind _ _ _) InVar _ -> parens
 				  FunKind _ _ _ -> parens
 				  _ -> id) (printLatex0 ga k1)
 			  <+> hc_sty_axiom "\\rightarrow" 
 			  <+> printLatex0 ga k2
-        ExtKind k v _ -> (case v of
-	       InVar -> id 
-	       _ -> case k of
+        ExtKind k v _ -> (case k of
 		    FunKind _ _ _ -> parens
 		    _ -> id) (printLatex0 ga k) <> printLatex0 ga v
 
@@ -72,12 +69,15 @@ instance PrintLaTeX TypePattern where
 
 -- | put proper brackets around a document
 bracket :: BracketKind -> Doc -> Doc
-bracket b t = let (o,c) = getBrackets b in ptext o <> t <> ptext c
+bracket b = case b of
+       Parens -> parens_latex
+       Squares -> brackets_latex
+       Braces -> braces_latex
 
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 printKind :: GlobalAnnos -> Kind -> Doc
 printKind ga kind = case kind of 
-		    Universe _ -> empty
+		    Intersection [] _ -> empty
 		    Downset Nothing t _ _ -> 
 			space <> hc_sty_axiom lessS <+> printLatex0 ga t
 		    _ -> space <> colon <+> printLatex0 ga kind
@@ -102,6 +102,7 @@ instance PrintLaTeX Type where
 	          TypeToken _ -> id
 		  BracketType _ _ _ -> id
 		  _ -> parens) (printLatex0 ga t2) 
+	ExpandedType t1 _ -> printLatex0 ga t1     
         TypeToken t -> printLatex0 ga t
         BracketType k l _ -> bracket k $ commaT_latex ga l
         KindedType t kind _ -> (case t of 

@@ -17,7 +17,6 @@ import HasCASL.Le
 import HasCASL.PrintLe
 import HasCASL.TypeAna
 import HasCASL.VarDecl
-import HasCASL.OpDecl
 import HasCASL.Unify
 import HasCASL.Builtin
 import Common.Id
@@ -89,16 +88,16 @@ convTypeToKind (BracketType Parens ts ps) =
 
 convTypeToKind (MixfixType [t1, TypeToken t]) = 
     let s = tokStr t 
-	v = case s of 
-		   "+" -> CoVar 
-		   "-" -> ContraVar 
-		   _ -> InVar
-    in case v of 
-	      InVar -> Nothing
-	      _ -> do k1 <- convTypeToKind t1
-		      Just $ ExtKind k1 v [tokPos t]
+	mv = case s of 
+		   "+" -> Just CoVar 
+		   "-" -> Just ContraVar 
+		   _ -> Nothing
+    in case mv of 
+	      Nothing -> Nothing
+	      Just v -> do k1 <- convTypeToKind t1
+			   Just $ ExtKind k1 v [tokPos t]
 convTypeToKind(TypeToken t) = 
-       if tokStr t == "Type" then Just $ Universe [tokPos t] else
+       if tokStr t == "Type" then Just $ Intersection [] [tokPos t] else
           let ci = simpleIdToId t in
           Just $ ClassKind ci MissingKind
 convTypeToKind _ = Nothing

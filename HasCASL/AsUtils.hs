@@ -105,7 +105,6 @@ instance PosItem Kind where
 posOfKind :: Kind -> Pos
 posOfKind k = 
     case k of 
-    Universe ps -> if null ps then nullPos else head ps
     MissingKind -> nullPos
     ClassKind c _ -> posOfId c
     Downset _ t _ ps -> firstPos [t] ps 
@@ -154,6 +153,7 @@ posOfType ty =
     case ty of
     TypeName i _ _ -> posOfId i
     TypeAppl t1 t2 -> posOf [t1, t2]
+    ExpandedType t1 t2 -> posOf [t1, t2]
     TypeToken t -> tokPos t
     BracketType _ ts ps -> firstPos ts ps
     KindedType t _ ps -> firstPos [t] ps

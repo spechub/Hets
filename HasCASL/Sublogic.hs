@@ -514,16 +514,18 @@ sl_typePattern _ = bottom
 
 
 sl_type :: Type -> HasCASL_Sublogics
-sl_type (TypeName _ _ 0) = need_type_constructors
-sl_type (TypeAppl t1 t2) = sublogics_max (sl_type t1) (sl_type t2)
+sl_type (TypeName _ _ v) = if v /= 0 then need_polymorphism else bottom
+sl_type (TypeAppl t1 t2) = comp_list [need_type_constructors,
+			   (sl_type t1), (sl_type t2)]
 sl_type (BracketType _ l _) = comp_list $ map sl_type l
 sl_type (KindedType t _ _) = sl_type t
+sl_type (ExpandedType _ t) = sl_type t
 sl_type (MixfixType l) = comp_list $ map sl_type l
 sl_type (LazyType t _) = sl_type t
 sl_type (ProductType l _) = comp_list $ map sl_type l
 sl_type (FunType t1 a t2 _) = 
-  comp_list [(sl_type t1), (sl_arrow a), (sl_type t2)]
-sl_type _ = bottom
+  comp_list [need_ho, (sl_type t1), (sl_arrow a), (sl_type t2)]
+sl_type (TypeToken _) = bottom
 
 {- FOL:
   no higher types (i.e. all types are basic, tuples, or tuple -> basic)
@@ -538,10 +540,11 @@ sl_arrow _ = bottom
 
 sl_typeScheme :: TypeScheme -> HasCASL_Sublogics
 sl_typeScheme (TypeScheme l (p :=> t) _) = 
-  comp_list [(comp_list $ map sl_typeArg l), 
-             (sl_type t), 
-             (comp_list $ map sl_pred p)]
-
+  comp_list ((comp_list $ map sl_typeArg l) :  
+             (comp_list $ map sl_pred p) : 
+	     case unalias t of 
+	     FunType t1 a t2 _ -> [(sl_type t1), (sl_arrow a), (sl_type t2)]
+	     _ -> [sl_type t])
 
 sl_pred :: Pred -> HasCASL_Sublogics
 sl_pred (IsIn _ l) = sublogics_max need_type_classes 

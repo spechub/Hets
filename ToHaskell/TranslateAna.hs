@@ -87,12 +87,11 @@ typeSynonym hsname ty =
 
 kindToTypeArgs :: Int -> Kind -> [HsName]
 kindToTypeArgs i k = case k of
-    Universe _ -> []
     MissingKind -> []
     ClassKind _ rk -> kindToTypeArgs i rk
     Downset _ _ rk _ -> kindToTypeArgs i rk
     FunKind _ kr _ -> HsIdent ("a" ++ show i) : kindToTypeArgs (i+1) kr
-    Intersection l _ -> if null l then error "kindToTypeArgs"
+    Intersection l _ -> if null l then []
 			 else kindToTypeArgs i $ head l
     ExtKind ek _ _ -> kindToTypeArgs i ek
 

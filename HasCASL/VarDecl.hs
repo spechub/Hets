@@ -117,7 +117,7 @@ addTypeKind warn d i k =
 		  if rk == ok
 		     then do let isKnownInst = k `elem` ks
 				 insts = if isKnownInst then ks else
-					mkIntersection (k:ks)
+					Set.toList $ mkIntersection (k:ks)
 				 Result ds mDef = mergeTypeDefn tk c defn d
 			     if warn && isKnownInst && case (defn, d) of 
 			         (PreDatatype, DatatypeDefn _) -> False
@@ -159,7 +159,7 @@ kindArity m k =
 		       TopLevel -> kindArity OnlyArg k1 + 
 				   kindArity TopLevel k2
 		       OnlyArg -> 1
-    Universe _ -> case m of
+    Intersection [] _ -> case m of
 		  TopLevel -> 0
 		  OnlyArg -> 1
     ClassKind _ ck -> kindArity m ck
@@ -196,12 +196,13 @@ addOpId i sc attrs defn =
 	   as = assumps e
 	   c = counter e
            (TypeScheme _ (_ :=> ty) _) = sc 
-           ds = if placeCount i > 1 then case unalias tm ty of 
-		   FunType (ProductType ts _) _ _ _ ->
-		     if placeCount i /= length ts then 
+           ds = if placeCount i > 1 then case unalias ty of 
+		   FunType arg _ _ _ -> case unalias arg of
+		       ProductType ts _ -> if placeCount i /= length ts then 
 			    [mkDiag Error "wrong number of places in" i]
-                     else []
-		   _ -> [mkDiag Error "expected tuple argument for" i]
+		            else [] 
+		       _ -> [mkDiag Error "expected tuple argument for" i]
+		   _ -> [mkDiag Error "expected function type for" i]
 		 else []
            (l,r) = partitionOpId e i sc
 	   oInfo = OpInfo sc attrs defn 
@@ -259,18 +260,20 @@ convertTypeToKind (BracketType Parens ts ps) =
 	     else return Nothing
 convertTypeToKind (MixfixType [t1, TypeToken t]) = 
     let s = tokStr t 
-	v = case s of 
-		   "+" -> CoVar 
-		   "-" -> ContraVar 
-		   _ -> InVar
-    in case v of 
-	      InVar -> do return Nothing
-	      _ -> do mk1 <- convertTypeToKind t1
-		      case mk1 of 
+	mv = case s of 
+		   "+" -> Just CoVar 
+		   "-" -> Just ContraVar 
+		   _ -> Nothing
+    in case mv of 
+	      Nothing -> do return Nothing
+	      Just v -> do 
+		  mk1 <- convertTypeToKind t1
+		  case mk1 of 
 			  Just k1 -> return $ Just $ ExtKind k1 v [tokPos t]
 			  _ -> return Nothing
 convertTypeToKind(TypeToken t) = 
-       if tokStr t == "Type" then return $ Just $ Universe [tokPos t] else do
+       if tokStr t == "Type" then return $ Just $ Intersection [] [tokPos t] 
+	  else do
           let ci = simpleIdToId t
 	  cm <- gets classMap					       
 	  let rm = anaClassId ci cm

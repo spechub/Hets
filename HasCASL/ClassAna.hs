@@ -20,6 +20,7 @@ import Data.List
 import Data.Maybe
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Result
 
 mkError :: (PosItem a, PrettyPrint a) => String -> a -> Result b
@@ -29,31 +30,28 @@ anaClassId :: ClassId -> ClassMap -> Result Kind
 anaClassId ci cMap = 
        case Map.lookup ci cMap of
 	    Nothing -> mkError "undeclared class" ci
-	    Just (ClassInfo l) -> return $ ClassKind ci $ toIntersection l
+	    Just (ClassInfo l) -> return $ ClassKind ci $ toIntersection l []
 
-toIntersection :: [Kind] -> Kind
-toIntersection l = case mkIntersection l of
-			  [] -> star
+toIntersection :: [Kind] -> [Pos] -> Kind
+toIntersection l ps = case Set.toList $ mkIntersection l of
+			  [] -> Intersection [] ps
 			  [h] -> h
-			  is -> Intersection is []
+			  is -> Intersection is ps
 
-mkIntersection :: [Kind] -> [Kind]
-mkIntersection = delete star . nub .
-		     concatMap ( \ k -> case k of
+mkIntersection :: [Kind] -> Set.Set Kind
+mkIntersection = Set.unions . map ( \ k -> case k of
 				 Intersection lk _ -> mkIntersection lk
-			         _ -> [k]) 
+			         _ -> Set.single k) 
 
 rawKind :: Kind -> Kind
 rawKind c = 
     case c of
-    Universe _ -> c
-    MissingKind -> error "rawKind1"
+    MissingKind -> error "rawKind"
     ClassKind _ rk -> rawKind rk
     Downset _ _ rk _ -> rawKind rk
-    Intersection l _ -> if null l then error "rawKind2"
-					      else rawKind $ head l
+    Intersection l _ -> if null l then c
+			else rawKind $ head l
     FunKind e k ps  -> FunKind (rawKind e) (rawKind k) ps
-    ExtKind k InVar _ -> rawKind k
     ExtKind k v ps -> ExtKind (rawKind k) v ps 
 
 checkIntersection :: Kind -> [Kind] -> [Diagnosis]
@@ -72,36 +70,6 @@ diffKindDiag a k1 k2 =
            [ Diag Error
 	      ("incompatible kind of: " ++ showPretty a "" ++ expected k1 k2)
 	    $ posOf [a] ]
-
-minKind :: Bool -> Kind -> Kind -> Maybe Kind
-minKind b k1 k2 = 
-    case k1 of 
-	    FunKind ek1 k3 ps -> 
-		case k2 of
-			FunKind ek2 k4 qs ->
-			    do ek <- minKind (not b) ek1 ek2
-			       k <- minKind b k3 k4 
-			       return $ FunKind ek k (ps++qs)
-		        ExtKind _ _ _ -> minKind b (ExtKind k1 InVar []) k2
-			_ -> Nothing
-	    Universe ps -> case k2 of
-			 Universe qs -> Just $ Universe (ps ++ qs)
-		         ExtKind _ _ _ -> minKind b (ExtKind k1 InVar []) k2
-			 _ -> Nothing
-	    ExtKind k3 v1 ps -> case k2 of
-	         ExtKind k4 v2 qs -> do 
-		       k <- minKind b k3 k4
-		       v <- (if b then minVar else maxVar) v1 v2
-		       return $ ExtKind k v (ps ++ qs)
-		 _ -> minKind b k1 (ExtKind k2 InVar [])
-	    _ -> error "minKind"
-
-maxVar, minVar :: Variance -> Variance -> Maybe Variance
-maxVar v InVar = Just v
-maxVar InVar v = Just v
-maxVar v1 v2 = if v1 == v2 then Just v1 else Nothing
-
-minVar v1 v2 = if v1 == v2 then Just v1 else Just InVar
 
 checkKinds :: (PosItem a, PrettyPrint a) => 
               a -> Kind -> Kind -> [Diagnosis]

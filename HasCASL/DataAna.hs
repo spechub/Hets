@@ -127,7 +127,7 @@ anaCompType tys dt t tm = do
  
 checkMonomorphRecursion :: Type	-> TypeMap -> (Id, Type) -> Result ()
 checkMonomorphRecursion t tm (i, rt) = 
-    if occursIn tm i $ unalias tm t then 
+    if occursIn tm i t then 
        if equalSubs tm t rt then return ()
        else Result [Diag Error  ("illegal polymorphic recursion" 
 				 ++ expected rt t) $ getMyPos t] Nothing

@@ -31,13 +31,12 @@ import Common.PrettyPrint
 anaKindM :: Kind -> Env -> Result Kind
 anaKindM k env = 
     case k of
-    Universe _  -> return k
     MissingKind -> mkError "missing kind" k
     Downset v t _ ps -> do (rk, newT) <- anaType (Nothing, t) (typeMap env)
 			   return $ Downset v newT rk ps
     ClassKind ci _ -> anaClassId ci (classMap env)
     Intersection ks ps -> do newKs <- mapM ( \ ek -> anaKindM ek env) ks
-                             if null newKs then mkError "empty intersection" k
+                             if null newKs then return k
 			        else let ds = checkIntersection 
 						 (rawKind $ head newKs)
 						 $ tail newKs
@@ -105,6 +104,7 @@ mkTypeConstrAppls m ty tm = case ty of
        newT1 <- mkTypeConstrAppls TopLevel t1 tm
        newT2 <- mkTypeConstrAppls TopLevel t2 tm
        return $ FunType newT1 a newT2 ps
+    ExpandedType _ t2 -> mkTypeConstrAppls m t2 tm
 
 mkTypeCompId :: Type -> Result Id
 mkTypeCompId ty = case ty of 
@@ -161,14 +161,14 @@ lesserKind k1 k2 =
     case (k1, k2) of 
     (MissingKind, _) -> error "lesserKind1"
     (_, MissingKind) -> error "lesserKind2"
-    (_, Intersection l2 _) -> and $ map (lesserKind k1) l2
-    (Intersection l1 _, _) -> or $ map ( \ k -> lesserKind k k2) l1
+    (_, Intersection l2@(_:_) _) -> and $ map (lesserKind k1) l2
+    (Intersection l1@(_:_) _, _) -> or $ map (flip lesserKind k2) l1
     (ExtKind ek1 v1 _, ExtKind ek2 v2 _) -> 
-	(v1 == InVar || v1 == v2) && lesserKind ek1 ek2
+	(v1 == v2) && lesserKind ek1 ek2
     (_, ExtKind ek2 _ _) -> lesserKind k1 ek2
-    (ExtKind ek1 v1 _, _) -> v1 == InVar && lesserKind ek1 k2
-    (Universe _, Universe _) -> True
-    (Universe _, _) -> False
+    (ExtKind _ _ _, _) -> False
+    (Intersection [] _, Intersection [] _) -> True
+    (Intersection [] _, _) -> False
     (Downset _ t1 k _,  Downset _ t2 _ _) -> t1 == t2 || lesserKind k k2
     (Downset _ _ k _, _) -> lesserKind k k2
     (ClassKind c1 k,  ClassKind c2 _) -> c1 == c2 || lesserKind k k2
@@ -177,46 +177,6 @@ lesserKind k1 k2 =
 	lesserKind rk rk2 && lesserKind ek2 ek
     (FunKind _ _ _, _) -> False
 
--- ---------------------------------------------------------------------------
--- infer raw kind
--- ---------------------------------------------------------------------------
-
-inferRawKind :: Type -> TypeMap -> Result Kind
-inferRawKind ty tm = case ty of 
-    TypeName i _ _ -> getRawKind i tm
-    TypeAppl t1 t2 -> do
-       k1 <- inferRawKind t1 tm
-       case k1 of
-	       FunKind fk ak _ -> do checkTypeRawKind t2 fk tm
-				     return ak
-	       _ -> mkError "incompatible kind of type" t1
-    FunType t1 _ t2 _ -> do
-       checkTypeRawKind t1 star tm
-       checkTypeRawKind t2 star tm
-       return star 
-    ProductType ts _ -> do
-       mapM_ ( \ t -> checkTypeRawKind t star tm) ts 
-       return star
-    LazyType t _ -> do 
-       checkTypeRawKind t star tm
-       return star 
-    KindedType t k _ -> do 
-       checkTypeRawKind t k tm
-       return k
-    _ -> mkError "unresolved type" ty
-
-checkTypeRawKind :: Type -> Kind -> TypeMap -> Result ()
-checkTypeRawKind t j tm = 
-    case j of 
-    ExtKind ek _ _ -> checkTypeRawKind t ek tm
-    _ -> do k <- inferRawKind t tm
-	    if k == j then return () else Result (diffKindDiag t j k) Nothing
-
-getRawKind :: Id -> TypeMap -> Result Kind
-getRawKind i tm = 
-       case Map.lookup i tm of
-       Nothing -> mkError "undeclared type" i
-       Just (TypeInfo k _ _ _) -> return k
 
 -- ---------------------------------------------------------------------------
 -- infer kind
@@ -237,12 +197,9 @@ checkFunKind mk t1 t2 k1 tm =
 	FunKind fk ak _ -> do 
 	    inferKind (Just fk) t2 tm
 	    checkMaybeKinds (TypeAppl t1 t2) mk ak 
-	Intersection l ps -> do
+	Intersection l@(_:_) ps -> do
 	    ml <- mapM ( \ k -> checkFunKind mk t1 t2 k tm) l
-	    let ks = mkIntersection ml
-	    if null ks then mkError "empty Intersection" k1
-	       else return $ if isSingle ks then
-			head ks else Intersection ks ps
+	    return $ toIntersection ml ps
 	ClassKind _ k -> checkFunKind mk t1 t2 k tm
 	Downset _ _ k _ -> checkFunKind mk t1 t2 k tm
 	ExtKind k _ _ -> checkFunKind mk t1 t2 k tm
@@ -256,6 +213,7 @@ inferKind mk ty tm = case ty of
     TypeAppl t1 t2 -> do 
        k1 <- inferKind Nothing t1 tm
        checkFunKind mk t1 t2 k1 tm
+    ExpandedType _ t1 -> inferKind mk t1 tm
     FunType t1 a t2 _ -> do
        let i = arrowId a
        fk <- getIdKind tm i
@@ -277,16 +235,17 @@ inferKind mk ty tm = case ty of
 getIdKind :: TypeMap -> Id -> Result Kind
 getIdKind tm i = case Map.lookup i tm of
        Nothing -> mkError "unknown type" i
-       Just (TypeInfo _ l _ _) -> return $  
-	   if null l then Universe [] else 
+       Just (TypeInfo rk l _ _) -> return $  
+	   if null l then rk else 
 	      if isSingle l then head l else Intersection l []
 
 -- ---------------------------------------------------------------------------
 anaType :: (Maybe Kind, Type) -> TypeMap -> Result (Kind, Type)
 anaType (mk, t) tm = 
     do nt <- mkTypeConstrAppls TopLevel t tm
-       newk <- inferKind mk (unalias tm nt) tm
-       return (newk, nt)
+       let newTy = expandAlias tm nt
+       newk <- inferKind mk newTy tm
+       return (newk, newTy)
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 

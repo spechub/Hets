@@ -121,6 +121,7 @@ subSyms e t = case t of
 	       if n == 0 then Set.single $ idToTypeSymbol e i k
 	       else Set.empty
 	   TypeAppl t1 t2 -> Set.union (subSyms e t1) (subSyms e t2)
+	   ExpandedType _ t1 -> subSyms e t1
 	   KindedType tk _ _ -> subSyms e tk
 	   LazyType tl _ -> subSyms e tl
 	   ProductType l _ -> Set.unions $ map (subSyms e) l

@@ -219,14 +219,14 @@ type Data4
   with type: '_var_5 ->? ? Unit' (28.14)
   known types:
     
-*** Hint 28.9, wrong result type '? Unit' (28.27)
+*** Hint 28.9, wrong result type '? Unit' (28.26)
   for application 'all(var p : ? s)'
 *** Error 28.9, no typing for 'all(var p : ? s) : ? Unit'
 *** Hint 30.9, no type match for: And
   with type: '_var_7 ->? ? Unit' (30.14)
   known types:
     
-*** Hint 30.9, wrong result type '? Unit' (30.32)
+*** Hint 30.9, wrong result type '? Unit' (30.31)
   for application 'And(var x : _var_6, var y : ? Unit)'
 *** Error 30.9, no typing for 'And(var x : _var_6, var y : ? Unit) : ? Unit'
 *** Error 32.12, unexpected mixfix token: impl
@@ -235,14 +235,14 @@ type Data4
   with type: '_var_8 ->? ? Unit' (37.7)
   known types:
     
-*** Hint 37.3, wrong result type '? Unit' (37.19)
+*** Hint 37.3, wrong result type '? Unit' (37.18)
   for application 'ex(var p : ? s)'
 *** Error 37.3, no typing for 'ex(var p : ? s) : ? Unit'
 *** Hint 40.3, no type match for: ff
-  with type: '_var_9 ->? ? Unit' (40.12)
+  with type: '_var_9 ->? ? Unit' (40.11)
   known types:
     
-*** Hint 40.3, wrong result type '? Unit' (40.12)
+*** Hint 40.3, wrong result type '? Unit' (40.11)
   for application 'ff()'
 *** Error 40.3, no typing for 'ff() : ? Unit'
 *** Error 66.25, unexpected mixfix token: e

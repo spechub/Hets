@@ -135,10 +135,10 @@ Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Pcpo := Unit
 __*__
-  : (Pcpo+ -> Pcpo+ -> Pcpo, Cpo+ -> Cpo+ -> Cpo,
+  : (Cpo+ -> Cpo+ -> Cpo, Pcpo+ -> Pcpo+ -> Pcpo,
      Type+ -> Type+ -> Type)
 __-->__
-  : (Cpo- -> Pcpo+ -> Pcpo, Cpo- -> Cpo+ -> Cpo,
+  : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Pcpo+ -> Pcpo,
      Type- -> Type+ -> Type) < c -->? d
 __-->?__ : (Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type) < c ->? d
 __->__ : Type- -> Type+ -> Type < s ->? t
@@ -269,42 +269,42 @@ free type bool
 
 *** Error 85.11, illegal supertype for variable '? s'
 *** Hint 87.9, no type match for: all
-  with type: '_var_65 ->? Pred Unit' (87.14)
+  with type: '_var_65 ->? Unit ->? Unit' (87.14)
   known types:
     
-*** Hint 87.9, wrong result type 'Pred Unit' (87.28)
-  for application 'all(var p : Pred s)'
-*** Error 87.9, no typing for 'all(var p : Pred s) : Pred Unit'
+*** Hint 87.9, wrong result type 'Unit ->? Unit'
+  for application 'all(var p : s ->? Unit)'
+*** Error 87.9, no typing for 'all(var p : s ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
-  with type: '_var_67 ->? Pred Unit' (90.14)
+  with type: '_var_67 ->? Unit ->? Unit' (90.14)
   known types:
     
-*** Hint 90.9, wrong result type 'Pred Unit' (90.33)
-  for application 'And(var x : _var_66, var y : Pred Unit)'
-*** Error 90.9, no typing for 'And(var x : _var_66, var y : Pred Unit) : Pred Unit'
+*** Hint 90.9, wrong result type 'Unit ->? Unit'
+  for application 'And(var x : _var_66, var y : Unit ->? Unit)'
+*** Error 90.9, no typing for 'And(var x : _var_66, var y : Unit ->? Unit) : Unit ->? Unit'
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 *** Hint 98.9, no type match for: ex
-  with type: '_var_68 ->? Pred Unit' (98.13)
+  with type: '_var_68 ->? Unit ->? Unit' (98.13)
   known types:
     
-*** Hint 98.9, wrong result type 'Pred Unit' (98.27)
-  for application 'ex(var p : Pred s)'
-*** Error 98.9, no typing for 'ex(var p : Pred s) : Pred Unit'
+*** Hint 98.9, wrong result type 'Unit ->? Unit'
+  for application 'ex(var p : s ->? Unit)'
+*** Error 98.9, no typing for 'ex(var p : s ->? Unit) : Unit ->? Unit'
 *** Hint 101.9, no type match for: ff
-  with type: '_var_69 ->? Pred Unit' (101.17)
+  with type: '_var_69 ->? Unit ->? Unit'
   known types:
     
-*** Hint 101.9, wrong result type 'Pred Unit' (101.17)
+*** Hint 101.9, wrong result type 'Unit ->? Unit'
   for application 'ff()'
-*** Error 101.9, no typing for 'ff() : Pred Unit'
+*** Error 101.9, no typing for 'ff() : Unit ->? Unit'
 *** Hint 103.9, no type match for: neg
-  with type: '_var_70 ->? Pred Unit' (103.14)
+  with type: '_var_70 ->? Unit ->? Unit' (103.14)
   known types:
     
-*** Hint 103.9, wrong result type 'Pred Unit' (103.30)
-  for application 'neg(var r : Pred Unit)'
-*** Error 103.9, no typing for 'neg(var r : Pred Unit) : Pred Unit'
+*** Hint 103.9, wrong result type 'Unit ->? Unit'
+  for application 'neg(var r : Unit ->? Unit)'
+*** Error 103.9, no typing for 'neg(var r : Unit ->? Unit) : Unit ->? Unit'
 *** Error 108.51, unexpected mixfix token: impl
 *** Error 108.22, unexpected mixfix token: all
 *** Error 108.3, unexpected mixfix token: all

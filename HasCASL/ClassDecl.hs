@@ -17,6 +17,7 @@ import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.VarDecl
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Lib.State
 import Common.Result
@@ -63,7 +64,8 @@ addClassDecl kind ci =
 		   else if cyclicClassId ci kind then
 		   addDiags [mkDiag Error "cyclic class" ci]
 		   else putClassMap $ Map.insert ci info 
-				      { classKinds = mkIntersection 
+				      { classKinds = Set.toList $
+					mkIntersection 
 					(kind:superClasses) } cMap
 
 -- cycle check missing

@@ -27,7 +27,7 @@ d < Type
 e < Type
 f < Type
 g < Type
-h < (c, a, b)
+h < (a, b, c)
 j < {v . v < t}
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
@@ -40,7 +40,7 @@ __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 t : a
-x : ({_ < t}, b, a) %(var)%
+x : ({_ < t}, a, b) %(var)%
 y : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit * Unit ->? Unit %(fun)%

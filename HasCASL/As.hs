@@ -79,17 +79,15 @@ data ClassDecl = ClassDecl [ClassId] Kind [Pos]
                -- pos ","s
                  deriving (Show, Eq)
                           
-data Variance = CoVar | ContraVar | InVar deriving (Eq, Ord)
+data Variance = CoVar | ContraVar deriving (Eq, Ord)
 
 instance Show Variance where
     show v = case v of 
         CoVar -> plusS
 	ContraVar -> minusS
-	InVar -> ""
 
 -- | kind or an extended kind
-data Kind = Universe [Pos]
-          | MissingKind -- ^ initially missing information
+data Kind = MissingKind -- ^ initially missing information
           | Downset (Maybe Token) Type Kind [Pos] -- ^ plus the derived kind
           | ClassKind ClassId Kind                -- ^ plus the declared kind
           | Intersection [Kind] [Pos]   -- ^ with equal raw kinds
@@ -99,9 +97,9 @@ data Kind = Universe [Pos]
              -- pos "+" or "-" 
             deriving Show
 
--- | the 'Universe' raw kind
+-- | the type universe
 star :: Kind
-star = Universe []
+star = Intersection [] []
 
 -- | the 'ExtKind' 'star' 'CoVar' (Type+)
 starPlus :: Kind
@@ -144,6 +142,7 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
 
 data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor)
           | TypeAppl Type Type
+          | ExpandedType Type Type
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
           -- pos "," (between type arguments)
@@ -157,6 +156,11 @@ data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor)
           | FunType Type Arrow Type [Pos]
           -- pos arrow
             deriving (Show)
+
+unalias :: Type -> Type
+unalias ty = case ty of 
+    ExpandedType _ t -> unalias t 
+    _ -> ty
 
 mkProductType :: [Type] -> [Pos] -> Type
 mkProductType ts ps = if isSingle ts then head ts else ProductType ts ps
@@ -393,7 +397,6 @@ data SymbOrMap = SymbOrMap Symb (Maybe Symb) [Pos]
 -- ----------------------------------------------------------------------------
 
 instance Eq Kind where
-    Universe _ == Universe _= True
     MissingKind == MissingKind = True
     Downset _ t1 _ _ == Downset _ t2 _ _ = t1 == t2
     ClassKind i1 _ == ClassKind i2 _ = i1 == i2
@@ -403,14 +406,12 @@ instance Eq Kind where
     _ == _ = False
 
 instance Ord Kind where
-    Universe _ <= _ = True
     MissingKind <= MissingKind = True
     Downset _ t1 _ _ <= Downset _ t2 _ _ = t1 <= t2
     ClassKind i1 _ <= ClassKind i2 _ = i1 <= i2
     Intersection ks1 _ <= Intersection ks2 _ = ks1 <= ks2
     FunKind p1 c1 _ <= FunKind p2 c2 _ = (p1, c1) <= (p2, c2)
     ExtKind c1 v1 _ <= ExtKind c2 v2 _ = (c1, v1) <= (c2, v2)
-    _ <= Universe _ = False 
     MissingKind <= _ = True
     _ <= MissingKind = False
     Downset _ _ _ _ <= _ = True
@@ -432,6 +433,8 @@ instance Eq Type where
     LazyType t1 _ == LazyType t2 _ = t1 == t2 
     ProductType l1 _ == ProductType l2 _ = l1 == l2
     FunType f1 a1 g1 _ == FunType f2 a2 g2 _ = (f1, a1, g1) == (f2, a2, g2)
+    ExpandedType _ t1 == t2 = t1 == t2
+    t1 == ExpandedType _ t2 = t1 == t2
     _ == _ = False
 
 instance Ord Type where
@@ -444,6 +447,8 @@ instance Ord Type where
     LazyType t1 _ <= LazyType t2 _ = t1 <= t2 
     ProductType l1 _ <= ProductType l2 _ = l1 <= l2
     FunType f1 a1 g1 _ <= FunType f2 a2 g2 _ = (f1, a1, g1) <= (f2, a2, g2)
+    ExpandedType _ t1 <= t2 = t1 <= t2
+    t1 <= ExpandedType _ t2 = t1 <= t2
     TypeName _ _ _ <= _ = True
     _ <= TypeName _ _ _ = False
     TypeAppl _ _ <= _ = True 

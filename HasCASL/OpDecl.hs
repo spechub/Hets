@@ -31,11 +31,11 @@ import HasCASL.ProgEq
 
 anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
 anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) = 
-    do let mTy = case ty of 
-		      FunType (ProductType [t1, t2] _) _ t3 _ -> 
-			  Just (t1,t2,t3)
-		      FunType t1 _ (FunType t2 _ t3 _) _ -> 
-			  Just (t1,t2,t3)
+    do let mTy = case unalias ty of 
+		      FunType arg _ t3 _ -> 
+			  case unalias arg of 
+			  ProductType [t1, t2] _ -> Just (t1,t2,t3)
+			  _ -> Nothing
 		      _ -> Nothing
        tm <- gets typeMap
        mapM_ (addTypeVarDecl False) tvs
@@ -51,7 +51,7 @@ anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) =
 		 do if t1 == t2 && t2 == t3 then
 		       return ()
 		       else addDiags [mkDiag Error 
-				     "unexpected type of operation" ty]
+				 "unexpected type components of operation" ty]
                     mt <- resolveTerm ga (Just t3) trm
 		    putTypeMap tm
 		    case mt of Nothing -> return Nothing
