@@ -70,7 +70,7 @@ iterateCharts ga terms chart =
 		       case mTyp of 
 			   Nothing -> recurse t
 			   Just nTyp -> self tt $ oneStep 
-					(MixTypeTerm q nTyp ps, 
+					(MixTypeTerm q (monoType nTyp) ps, 
 					 typeTok {tokPos = headPos ps})
 		    BracketTerm b ts ps -> self 
 		      (expandPos TermToken (getBrackets b) ts ps ++ tt) chart
@@ -78,8 +78,9 @@ iterateCharts ga terms chart =
 		       mTyp <- anaStarType typ
 		       case mTyp of 
 			   Nothing -> recurse t
-			   Just nTyp -> do 
-			       let mi = findOpId e v $ simpleTypeScheme nTyp
+			   Just nType -> do 
+                               let nTyp = monoType nType
+			           mi = findOpId e v $ simpleTypeScheme nTyp
 			       case mi of     
 			            Nothing -> addDiags [mkDiag Error 
 						  "value not found" v]
