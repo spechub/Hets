@@ -15,7 +15,7 @@
 module Common.Utils where
 
 import Data.List
-
+import System.Directory
 {- | 
   A function inspired by perls join function. It joins a list of
   lists of elements by seperating them with a seperator element. 
@@ -70,6 +70,9 @@ stripDir :: FilePath -> (FilePath,FilePath)
 stripDir fp =
     (\(x,y) -> (if not (null y) then reverse y else "./", reverse x))
     (break (== '/') (reverse fp))
+
+rmSuffix :: String -> String
+rmSuffix = reverse . tail . snd . break (=='.') . reverse
 
 stripSuffix :: [String] -> FilePath -> (FilePath,Maybe String)
 stripSuffix suf fp = case filter justs $ map (stripSuf fp) suf of
