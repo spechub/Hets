@@ -11,8 +11,8 @@ module AsToLe where
 
 import AS_Annotation
 import As
-import Id
 import Le
+import Id
 import Monad
 import MonadState
 import FiniteMap
@@ -41,16 +41,17 @@ indent i s = showString $ concat $
 
 -----------------------------------------------------------------------------
 
-type ClassEnv = FiniteMap ClassId Le.ClassItem
+type ClassEnv = FiniteMap ClassName Le.ClassItem
 
 -- transitiv super classes 
 -- PRE: all superclasses and defns must be defined in ClassEnv
 -- and there must be no cycle!
-allSuperClasses :: ClassEnv -> ClassId -> [ClassId]
+allSuperClasses :: ClassEnv -> ClassName -> [ClassName]
 allSuperClasses ce ci = 
     case lookupFM ce ci of 
     Just info -> nub $
-		      ci: concatMap (allSuperClasses ce) (classDefn info) 
+		      ci: concatMap (allSuperClasses ce) (iclass $ 
+							  classDefn info) 
 		      ++  concatMap (allSuperClasses ce) (superClasses info)
     Nothing -> error "allSuperClasses"
 
@@ -80,7 +81,7 @@ data Env = Env { classEnv :: ClassEnv
 initialEnv = Env emptyFM emptyFM emptyFM []
 
 
-showEnv e = showMap showId showClassItem (classEnv e) .
+showEnv e = showMap ((++) . tokStr) showClassItem (classEnv e) .
 	    showString "\nType Constructors\n" .
 	    showMap showId (showSepList (showString ", ") showKind)
 		    (typeKinds e) .
@@ -134,71 +135,82 @@ anaAnnotedClassItem inst aci =
 
 anaClassDecls (ClassDecl cls _) = mapM_ (anaClassDecl []) cls
 anaClassDecls (SubclassDecl cls supcl _) =
-    do Result ds (Just scls) <- anaClass True supcl
-       appendDiags ds
+    do Intersection scls _ <- anaSuperClass supcl
        mapM_ (anaClassDecl scls) cls
 
 
-anaClassDecls (ClassDefn c syncl _) =
-    do Result ds (Just scls) <- anaClass False syncl
-       appendDiags ds
+anaClassDecls (ClassDefn ci syncl ps) =
+    do scls@(Intersection icls _) <- anaClassAppl syncl
        e <- get
-       let ci = simpleIdToId c
-           ce = classEnv e
+       let ce = classEnv e
            mc = lookupFM ce ci in 
 	 case mc of 
 	   Nothing -> put $ e { classEnv = addToCE ce ci [] scls }
 	   Just info -> 
 	     do writeMsg e (Warning ("redeclared class '"
-				    ++ showId ci "'") 
-			  $ posOfId ci)
-	        let supers = zip (map (allSuperClasses ce) scls) scls 
-		    (cycles, nocycles) = partition ((ci `elem`) . fst) supers in 
+				    ++ tokStr ci ++ "'") 
+			  $ tokPos ci)
+	        let supers = zip (map (allSuperClasses ce) icls) icls 
+		    (cycles, nocycles) = partition ((ci `elem`) . fst) supers 
+		    Intersection iClasses qs = classDefn info in
 		  do if not $ null cycles then
 		       appendDiags [Error 
 				    ("cyclic class definition via '"
 				     ++ showClassList (map snd cycles) "'")
-				   $ posOfId (snd $ head cycles)]
+				   $ tokPos (snd $ head cycles)]
 		       else return ()  
 		     e1 <- get
 		     put $ e1 { classEnv = addToFM ce ci 
-				info { classDefn = nub $ map snd nocycles 
-							 ++ classDefn info }
-			      }
+				info { classDefn = Intersection ( 
+				       nub $ map snd nocycles 
+				       ++ iClasses) (ps ++ qs) } }
 	       
-anaClass b (As.ClassName c) = 
+anaClassName b ci = 
     do e <- get
-       let ci = simpleIdToId c
-           ce = classEnv e
+       let ce = classEnv e
            mc = lookupFM ce ci in 
 	 if isJust mc then return $ return [ci]
 	 else if b then 
-		do put $ e { classEnv = addToCE ce ci [] [] }
+		do put $ e { classEnv = addToCE ce ci [] (Intersection [] []) }
                    return $ return [ci]
 	      else 	  
 		return $ non_fatal_error [] 
-		    ("undeclared class '" ++ tokStr c ++  "'")
-		    (tokPos c)
+		    ("undeclared class '" ++ tokStr ci ++  "'")
+		    (tokPos ci)
 
-anaClass b (As.Intersection cs _) = 
-    do cs <- mapM (anaClass False) cs
+anaClass b c@(As.Intersection cs ps) = 
+    if null cs && not (null ps) 
+       then return $ warning c "redundant universe class" (head ps)
+       else
+    do cs <- mapM (anaClassName False) cs
        return $ Result (concatMap diags cs) 
-		  (Just $ nub $ concatMap (fromJust . maybeResult) cs)
+		  (Just $ Intersection 
+		   (nub $ concatMap (fromJust . maybeResult) cs) ps)
 
-anaClass _ (As.Universe p) =
-    return $ warning [] "redundant universe class" p
+anaSuperClass c =
+    do Result ds (Just ca) <- anaClass True c 
+       appendDiags ds
+       return ca
 
-anaClassDecl scls c = 
+anaClassAppl c =
+    do Result ds (Just ca) <- anaClass False c
+       appendDiags ds
+       return ca
+
+anaClassDecl scls ci = 
+    if tokStr ci == "Type" then 
+       appendDiags [Error "illegal universe class declaration" (tokPos ci)]
+    else 
     do e <- get
-       let ci = simpleIdToId c
-           ce = classEnv e
+       let ce = classEnv e
            mc = lookupFM ce ci in 
 	 case mc of 
-	    Nothing -> put $ e { classEnv = addToCE ce ci scls [] }
+	    Nothing -> put $ e { classEnv = addToCE ce ci 
+				 scls (Intersection [] []) }
 	    Just info -> 
 		do writeMsg e (Warning ("redeclared class '"
-					++ showId ci "'") 
-			      $ posOfId ci)
+					++ tokStr ci ++ "'") 
+			      $ tokPos ci)
 		   if null scls then return ()
 		      else let supers = zip (map (allSuperClasses ce) scls) scls 
 			       (cycles, nocycles) = 
@@ -209,7 +221,7 @@ anaClassDecl scls c =
 			      [Error 
 			       ("cyclic class relation via '"
 				      ++ showClassList (map snd cycles) "'")
-			      $ posOfId (snd $ head cycles)]
+			      $ tokPos (snd $ head cycles)]
 			   else return ()  
 			 e1 <- get
 			 put $ e1 { classEnv = addToFM ce ci 
@@ -220,7 +232,7 @@ anaClassDecl scls c =
 				else appendDiags [Warning 
 						  ("repeated superclass '"
 						   ++ showClassList ds "'")
-						 $ posOfId (head ds)]
+						 $ tokPos (head ds)]
 
 anaAnnotedTypeItem inst i = anaTypeItem inst $ item i
 
@@ -232,11 +244,14 @@ anaTypePattern inst kind (TypePatternToken t) =
     in do k <- anaKind kind ty 
 	  addTypeKind ty k
 
-anaKind (Kind [] (As.Universe _) _) _ = return star
-anaKind (Kind [] (As.ClassName c) _) t = 
-    let ci = simpleIdToId c 
-	k = Star $ ExtClass (Le.ClassName ci) InVar
-    in do e <- get
+anaKind (Kind [] c _) t = 
+    do ca <- anaClassAppl c
+       return $ Star $ ExtClass ca InVar nullPos
+
+
+
+{- 
+-- add instances later on
 	  let ce = classEnv e 
 	      mc = lookupFM ce ci 
 	    in case mc of 
@@ -250,6 +265,15 @@ anaKind (Kind [] (As.ClassName c) _) t =
 					[] :=> (ci `IsIn` TCon (Tycon t k))
 					: instances info } }
 			       return k
+-}
+
+anaExtClass (ExtClass c v p) = 
+    do ca <- anaClassAppl c
+       return $ ExtClass ca v p
+
+anaProdClass (ProdClass l p) =
+    do cs <- mapM anaExtClass l
+       return $ ProdClass cs p
 
 addTypeKind t k = 
     do e <- get 

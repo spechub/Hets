@@ -12,6 +12,7 @@ module Le where
 import Id
 import Keywords
 import HToken
+import As(ExtClass(..), Class(..), Variance(..), ClassName)
 
 type TypeId = Id
 
@@ -47,19 +48,8 @@ instance Ord Kind where
     Star _ <= Kfun _ _ = True
     Kfun _ _ <= Star _ = False
 
-type ClassId = Id
-
-data Class = Universe 
-	   | ClassName ClassId
-	   | Intersection [ClassId]
-	     deriving Show
-
-data Variance = CoVar | ContraVar | InVar deriving Show
-
-data ExtClass = ExtClass Class Variance deriving Show
-
 star :: Kind
-star = Star $ ExtClass Universe InVar
+star = Star $ ExtClass (Intersection [] []) InVar nullPos
 
 -----------------------------------------------------------------------------
 -- Types
@@ -163,19 +153,19 @@ data Alternative = Construct Id Type [Component]
 -- full function type of a selector (result sort is component sort)
 data Component = Component (Maybe Id) Type 
 
-data ClassItem = ClassItem { classId :: ClassId
-			   , superClasses :: [ClassId]
-			   , classDefn :: [ClassId]
+data ClassItem = ClassItem { classId :: ClassName
+			   , superClasses :: [ClassName]
+			   , classDefn :: Class
 			   , instances :: [Qual Pred]
                            , classBody :: [SigItem]
 			   }
 
-newClassItem :: ClassId -> ClassItem
-newClassItem cid = ClassItem cid [] [] [] []
+newClassItem :: ClassName -> ClassItem
+newClassItem cid = ClassItem cid [] (Intersection [] []) [] []
 
 showClassItem :: ClassItem -> ShowS
 showClassItem info =
-    let syns = classDefn info
+    let Intersection syns _ = classDefn info
 	sups = superClasses info
         insts = instances info
     in noShow (null syns) (showString equalS . showClassList syns)
@@ -183,9 +173,9 @@ showClassItem info =
     . noShow (null insts) (showString "\ninstances: " .
 			showSepList (showString ",") (showQual showPred) insts)
 
-showClassList :: [Id] -> ShowS
+showClassList :: [ClassName] -> ShowS
 showClassList is = showParen (length is > 1)
-		   $ showSepList (showString ",") showId is
+		   $ showSepList ("," ++) ((++) . tokStr) is
 
 
 data TypeRel = TypeRel [Tyvar] Type Type
