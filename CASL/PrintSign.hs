@@ -1,9 +1,6 @@
 module CASL.PrintSign where
 
--- debugging
---import Data.List (mapAccumL)
---import Data.Char (isDigit)
-import Data.Maybe (isJust,fromJust)
+--import Data.Maybe (isJust,fromJust)
 
 import Common.Keywords
 import Common.Lib.Pretty
@@ -23,39 +20,35 @@ instance PrettyPrint OpType where
 			    <>  printPartial
 			    <+> printText0 ga oR
 	      where
-              printPartial = if oK==Partial 
-			     then text quMark
-			     else empty
+              printPartial = noPrint (oK==Partial) (text quMark) 
 
 instance PrettyPrint SymbType where
 	 printText0 ga (OpAsItemType ot) = printText0 ga ot
-	 printText0 ga (PredType pt) = if null pt then empty
-				       else crossT_text ga pt
-         printText0 ga Sort          = text sortS
+	 printText0 ga (PredType pt)     = printList0 ga (space<>text timesS) pt
+         printText0 ga Sort              = text sortS
 
 instance PrettyPrint Symbol where
          printText0 ga (Symbol{symbId = sI, symbType = sT}) 
-             = printText0 ga sI <> colon <> printText0 ga sT
+             = printText0 ga sI <+> colon <+> printText0 ga sT
 
 instance PrettyPrint Component where
 	 printText0 ga (Component mId opT _) 
              = (case mId of
 		Just i -> printText0 ga i <+> colon
-		_ -> empty)
+		_      -> empty)
                <+> printText0 ga opT
 
 -- noch einmal Christian fragen.
 -- er hat was aufgeschrieben: type s = c:tc (comp;..;comp)
 instance PrettyPrint Alternative where
-         printText0 ga (Construct id ot compLs _) 
-	     = ptext typeS <> printText0 ga id <+> ptext equalS 
+         printText0 ga (Construct i ot compLs _) 
+	     = ptext typeS <> printText0 ga i <+> ptext equalS 
 	       <+> printText0 ga ot
 	       <+> if null compLs then empty 
                    else parens $ semiT_text ga compLs 
 	                <> if (opKind ot == Partial) then space<>ptext quMark
 	                   else empty 
-         printText0 ga (Subsort sId _) 
-	     = printText0 ga sId
+         printText0 ga (Subsort sId _) = printText0 ga sId
 
 instance PrettyPrint GenKind where
          printText0 ga Free      = ptext freeS
@@ -77,23 +70,21 @@ instance PrettyPrint SortDefn where
 		    <>  vcat (punctuate (text (barS++" ")) 
                                (map (printText0 ga) annAltLs))
 
--- sortPos und altSorts habe ich noch nicht eingebaut!!
 instance PrettyPrint SortItem where
          printText0 ga (SortItem{sortId=sI,sortRels=sR,sortDef=mSD}) 
              = ptext sortS <+> printText0 ga sI 
 	       $$ printSI (supersorts sR)  (char '<')
                $$ printSI (subsorts sR) (char '>')
-	       $$ printSI (allsupersrts sR) (text $ "<"++timesS) 
-               $$ printSI (allsubsrts sR)   (text $ ">"++timesS) 
-	       $$ if isJust mSD 
-		  then printText0 ga sI 
-			   <+> printText0 ga (fromJust mSD) 
-		  else empty
+	       $$ printSI (allsupersrts sR) (text $ "<*") 
+               $$ printSI (allsubsrts sR)   (text $ ">*") 
+	       $$ (case mSD of
+		       Just sorDef -> printText0 ga sI <+> text "="
+			              <+> printText0 ga sorDef
+		       _           -> empty)
                where
-               printSI xs doc = if null xs then empty 
-                                else printText0 ga sI <+> doc 
-                                     <+> commaT_text  ga xs 
-                                     <> comma
+               printSI xs doc 
+                   = noPrint (null xs) (ptext sortS <+> doc 
+                                        <+> commaT_text ga xs <> semi)
 
 instance PrettyPrint BinOpAttr where
 	 printText0 ga Assoc = ptext assocS
@@ -101,17 +92,27 @@ instance PrettyPrint BinOpAttr where
 	 printText0 ga Idem  = ptext idemS
 
 instance PrettyPrint OpAttr where
-         printText0 ga (BinOpAttr binOp) = empty -- ???
-         printText0 ga (UnitOpAttr term) = printText0 ga term 
+         printText0 ga (BinOpAttr binOp) = printText0 ga binOp
+         printText0 ga (UnitOpAttr term) = ptext unitS <+> printText0 ga term 
 
 instance PrettyPrint OpDefn where
          printText0 ga (OpDef vDecLs anTerm _) 
              = parens (semiT_text ga vDecLs) <> colon
-	      <+> printText0 ga anTerm 
+       	       <+> printText0 ga anTerm 
          printText0 ga (Constr symbol) = printText0 ga symbol
-         printText0 ga (Select symboLs symbol) = printText0 ga symbol
-	   <> parens (commaT_text ga symboLs)
- 
+         printText0 ga (Select symboLs symbol)
+		    -- ist diese Ausgabe so richtig?
+	     = printText0 ga symbol <+> parens (commaT_text ga symboLs)
+
+instance PrettyPrint OpItem where
+         printText0 ga (OpItem{opId=i,opType=oT,opAttrs=oAtLs,opDefn=mODef}) 
+	     = ptext opS <+> printText0 ga i <+>
+	       (case mODef of
+		  Nothing     -> colon <+> printText0 ga oT
+		                 <+> noPrint (null oAtLs) comma
+	                         <+> printList0 ga comma oAtLs
+		  Just opDefn -> printText0 ga opDefn)
+
 -- ist die Ausgabe richtig?
 instance PrettyPrint PredDefn where
          printText0 ga (PredDef vDecLs form _) 
@@ -123,25 +124,27 @@ instance PrettyPrint PredItem where
 				 predDefn=mPrDef}) 
 			= printText0 ga pI<+>colon
                           <+> crossT_text ga pType
-			  $$ if isJust mPrDef 
-			     then printText0 ga pI 
-				  <+> printText0 ga (fromJust mPrDef)
-			     else empty
+			  $$ (case mPrDef of
+				Just preDef -> printText0 ga pI 
+					       <+> printText0 ga preDef
+				Nothing     -> empty)
 
 instance PrettyPrint TypeQualifier where
          printText0 ga OfType = colon
          printText0 ga AsType = ptext asS
 
 instance PrettyPrint Term where
-         printText0 ga (VarId id sId qual _) 
-             = parens ((case qual of 
-			Explicit -> ptext varS 
-			_        -> ptext ("%" ++ varS))
-	                            <+> printText0 ga id <> colon 
-		                    <> printText0 ga sId)
+         printText0 ga (VarId i sId qual _) 
+             = parens (
+		       (case qual of 
+			 Explicit -> ptext varS 
+			 _        -> ptext ("%" ++ varS))
+	       <+> printText0 ga i <+> colon 
+	       <+> printText0 ga sId
+		      )
 
-         printText0 ga (OpAppl id opType termLs qual _) 
-             = parens (text opS <+> printText0 ga opType) 
+         printText0 ga (OpAppl id opT termLs qual _) 
+             = parens (text opS <+> printText0 ga opT) 
                <> parens (commaT_text ga termLs) 
          printText0 ga (Typed term tQual sId _) 
              = printText0 ga term <+> printText0 ga tQual 
@@ -175,16 +178,12 @@ instance PrettyPrint Formula where
  	             <+> semiT_text ga vdLs) 4 (char '.') 
                 <+> printText0 ga form
  	 printText0 ga (Connect logOp formLs _) 
-              = sep $ punctuate (printText0 ga logOp<>space) 
-                      (makeDocList ga formLs) 
-                -- klammern?
- 	 printText0 ga (TermTest polyOp termLs _) 
-              = sep $ punctuate (printText0 ga polyOp<>space) 
- 	             (makeDocList ga termLs) 
-                -- klammern?
-         printText0 ga (PredAppl id pT termLs qual _)
-              = parens (text predS <+> printText0 ga id <> colon 
-                                             <> crossT_text ga pT)
+              = printList0 ga (printText0 ga logOp<>space) formLs 
+	 printText0 ga (TermTest polyOp termLs _)
+	     = printList0 ga (printText0 ga polyOp<>space) termLs
+         printText0 ga (PredAppl i pT termLs qual _)
+              = parens (text predS <+> printText0 ga i <+> colon 
+                        <+> crossT_text ga pT)
                 <+> parens (commaT_text ga termLs)
          printText0 ga (ElemTest term sId _) 
  	     = printText0 ga term <+> text inS <+> printText0 ga sId
@@ -192,23 +191,11 @@ instance PrettyPrint Formula where
          printText0 ga (FalseAtom _) = ptext falseS
          printText0 ga (AnnFormula anForm) = printText0 ga anForm
 
--- -- Hilffunktion
-makeDocList::PrettyPrint a=>GlobalAnnos->[a]->[Doc]
-makeDocList ga l = map (printText0 ga) l
-
-
-
 instance PrettyPrint SigItem where
-         printText0 ga (ASortItem annSoIt) = printText0 ga annSoIt -- ???
+         printText0 ga (ASortItem annSoIt)  = printText0 ga annSoIt -- ???
          printText0 ga (AnOpItem annOpIt)   = printText0 ga annOpIt -- ???
          printText0 ga (APredItem annPrIt)  = printText0 ga annPrIt -- ???
 
-instance PrettyPrint OpItem where
-    printText0 ga o = printText0 ga (opId o) <+> colon <+>
-		      printText0 ga (opType o) -- ...
-
--- hier muss ich irgendwie mit einer Liste als zweitem Argument umgehen,
--- geht das ueberhaupt??
 instance PrettyPrint Sign where
          printText0 ga sAsMap 
              = let l = Map.toList (getMap sAsMap) in
@@ -216,9 +203,9 @@ instance PrettyPrint Sign where
 
 instance PrettyPrint RawSymbol where
          printText0 ga (ASymbol symbol)    = printText0 ga symbol
-         printText0 ga (AnID id)           = printText0 ga id
-         printText0 ga (AKindedId kind id) 
-	     = printText0 ga kind <> colon <> printText0 ga id
+         printText0 ga (AnID i)            = printText0 ga i
+         printText0 ga (AKindedId kind i) 
+	     = printText0 ga kind <+> colon <+> printText0 ga i
 
 instance PrettyPrint Kind where
          printText0 ga SortKind = ptext sortS -- ???
@@ -230,10 +217,13 @@ instance PrettyPrint Axiom where
              = text forallS <+> parens (semiT_text ga vDecLs) 
 	       <+> char '.' <+> printText0 ga form
 
-
 instance PrettyPrint Sentence where
          printText0 ga (Axiom annAx) = printText0 ga annAx
          printText0 ga (GenItems genIt _ ) 
-	     = braces $ commaT_text ga genIt
-               -- generate/free ???
+	     = text generatedS <+> braces (commaT_text ga genIt)
 
+-- Helpfunctions
+-- | Makes a Doc from Lists; intersperses a Seperator;
+printList0::PrettyPrint a=>GlobalAnnos->Doc->[a]->Doc
+printList0 ga s l  
+    = noPrint (null l) $ fsep (punctuate s (map (printText0 ga) l))
