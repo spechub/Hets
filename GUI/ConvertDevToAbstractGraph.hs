@@ -46,6 +46,7 @@ import Common.PrettyPrint
 import qualified Common.Result as Res
 import Syntax.AS_Library
 import Common.AS_Annotation
+import Common.GlobalAnnotations
 
 import Options
 
@@ -530,27 +531,36 @@ getTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode ->
 getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
  (_,libEnv,_,_) <- readIORef proofStatusRef
  case (do
-  (libname, node) <- 
+  (_libname, node) <- 
         Res.maybeToResult nullPos ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
-  (G_sign lid sign,G_l_sentence_list lid' sens) <- 
-                   computeTheory libEnv dgraph node
-  let shownsens = concat $ map ((++"\n") . flip showPretty "") sens
-  return (node,showPretty sign "\n\naxioms\n" ++ shownsens)
+  gPair <- computeTheory libEnv dgraph node
+  return (node, gPair)
     ) of
-  Res.Result [] (Just (node,str)) ->  
-      do let dgnode = lab' (context node dgraph)
-	 case dgnode of
-           (DGNode name (G_sign _ sig) _ _) ->
+  Res.Result [] (Just (n, gp)) ->  
+    displayTheory "Theory" n dgraph gp
+  Res.Result diags _ -> showDiags defaultHetcatsOpts diags
+
+printTheory :: (G_sign, G_l_sentence_list) -> String
+printTheory (G_sign _lid sign, G_l_sentence_list lid' sens) =
+   let shownsens = concatMap ((flip shows "\n\n") . 
+		    print_named lid' emptyGlobalAnnos) sens
+    in showPretty sign "\n\n\n" ++ shownsens
+
+displayTheory :: String -> Node -> DGraph -> (G_sign, G_l_sentence_list) 
+	      -> IO ()
+displayTheory ext node dgraph gPair =
+    let dgnode = lab' (context node dgraph)
+        str = printTheory gPair in case dgnode of
+           (DGNode name (G_sign _ _) _ _) ->
               let title = case name of
-                   Nothing -> "Theory"
-                   Just n -> "Theory of "++showPretty n ""
+                   Nothing -> ext
+                   Just n -> ext ++ " of " ++ showPretty n ""
                in createTextDisplay title str [size(100,50)]
               --putStrLn ((showPretty sig) "\n")
            (DGRef _ _ _) -> error 
 			    "nodes of type dg_ref do not have a theory"
-  Res.Result diags _ -> showDiags defaultHetcatsOpts diags
-
+     
 
 listBox :: String -> [String] -> IO (Maybe Int)
 listBox title entries =
@@ -578,7 +588,7 @@ translateTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode ->
 translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
  (_,libEnv,_,_) <- readIORef proofStatusRef
  case (do
-   (libname, node) <- 
+   (_libname, node) <- 
         Res.maybeToResult nullPos ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
    th <- computeTheory libEnv dgraph node
@@ -605,23 +615,9 @@ translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
              Res.resToIORes $ Res.maybeToResult 
                                 nullPos "Could not map signature"
                         $ map_theory cid (sign',sens')
-{-
-         sens'' <- Res.resToIORes
-                 $ Res.maybePlainError [] nullPos "Could not map sentences"
-                 $ mapM (mapNamedM (map_sentence cid sign')) sens'
--}
-         let dgnode = lab' (context node dgraph)
-             shownsens = concat $ map ((++"\n") . flip showPretty "") 
-                                      sens1
-             str = showPretty sign'' "\n\naxioms\n" ++ shownsens
-	 case dgnode of
-           (DGNode name (G_sign _ sig) _ _) ->
-              let title = case name of
-                   Nothing -> "Translated heory"
-                   Just n -> "Translated theory of "++showPretty n ""
-               in Res.ioToIORes $ createTextDisplay title str [size(100,50)]
-           (DGRef _ _ _) -> error 
-			    "nodes of type dg_ref do not have a theory"
+         let tlog = targetLogic cid
+         Res.ioToIORes $ displayTheory "Translated theory" node dgraph 
+            (G_sign tlog sign'', G_l_sentence_list tlog sens1)
      )
     showDiags defaultHetcatsOpts diags
     return ()
