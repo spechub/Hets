@@ -98,6 +98,13 @@ instance Logic CASL Sublogics.CASL_Sublogics
 --         min_sublogic_morphism CASL = Sublogics.sl_morphism
          min_sublogic_symbol CASL = Sublogics.sl_symbol
 
+         proj_sublogic_basic_spec CASL = Sublogics.pr_basic_spec
+         proj_sublogic_symb_items CASL = Sublogics.pr_symb_items
+         proj_sublogic_symb_map_items CASL = Sublogics.pr_symb_map_items
+         proj_sublogic_sign CASL = Sublogics.pr_sign
+--         proj_sublogic_morphism CASL = Sublogics.pr_morphism
+         proj_sublogic_symbol CASL = Sublogics.pr_symbol
+
 ---- helpers ---------------------------------
 fun_err fname = 
     error ("*** Function \"" ++ fname ++ "\" is not yet implemented!")

@@ -49,6 +49,7 @@ Korrespondenz abstrakt-konkret:
 
 module Sublogics where
 
+import Maybe
 import FiniteMap
 import Id
 import AS_Annotation
@@ -172,6 +173,13 @@ and_list (h:t) = h && (and_list t)
 mb :: (a -> CASL_Sublogics) -> Maybe a -> CASL_Sublogics
 mb f Nothing = bottom
 mb f (Just x) = f x
+
+-- adjust illegal combination "subsorting with atomic logic"
+adjust_logic :: CASL_Sublogics -> CASL_Sublogics
+adjust_logic x = if ((has_sub x) && (which_logic x == Atomic)) then
+                   sublogics_max need_horn x
+                 else
+                   x
 
 ------------------------------------------------------------------------------
 -- functions to analyse formulae
@@ -634,6 +642,90 @@ in_morphism l x = in_x l x sl_morphism
 
 in_symbol :: CASL_Sublogics -> Symbol -> Bool
 in_symbol l x = in_x l x sl_symbol
+
+------------------------------------------------------------------------------
+-- projection functions
+------------------------------------------------------------------------------
+
+pr_annoted :: CASL_Sublogics -> (CASL_Sublogics -> a -> Maybe a) -> Annoted a -> Maybe (Annoted a)
+pr_annoted sl f (Annoted e p l r) =
+           let
+             res = f sl e
+           in
+             if (isNothing res) then Nothing else
+             Just (Annoted (fromJust res) p l r)
+
+pr_check :: CASL_Sublogics -> (a -> CASL_Sublogics) -> a -> Maybe a
+pr_check l f e = if (in_x l e f) then (Just e) else Nothing
+
+pr_formula :: CASL_Sublogics -> FORMULA -> Maybe FORMULA
+pr_formula l f = pr_check l sl_formula f
+
+pr_basic_spec :: CASL_Sublogics -> BASIC_SPEC -> BASIC_SPEC
+pr_basic_spec l (Basic_spec s) =
+              Basic_spec ((mapMaybe (pr_annoted l pr_basic_items)) s)
+
+pr_basic_items :: CASL_Sublogics -> BASIC_ITEMS -> Maybe BASIC_ITEMS
+pr_basic_items l (Sig_items s) =
+               let
+                 res = pr_sig_items l s
+               in
+                 if (isNothing res) then Nothing else
+                 Just (Sig_items (fromJust res))
+pr_basic_items l (Free_datatype d p) =
+               let
+                 res = (mapMaybe (pr_annoted l pr_datatype_decl)) d
+               in
+                 if (res==[]) then Nothing else
+                 Just (Free_datatype res p)
+pr_basic_items l (Sort_gen s p) =
+               if (has_cons l) then
+                 let
+                   res = (mapMaybe (pr_annoted l pr_sig_items)) s
+                 in
+                   if (res==[]) then Nothing else
+                   Just (Sort_gen res p)
+               else
+                 Nothing
+pr_basic_items l (Var_items v p) = Just (Var_items v p)
+pr_basic_items l (Local_var_axioms v f p) =
+               let
+                 res = (mapMaybe (pr_annoted l pr_formula)) f
+               in
+                 if (res==[]) then Nothing else
+                 Just (Local_var_axioms v res p)
+pr_basic_items l (Axiom_items f p) =
+               let
+                 res = (mapMaybe (pr_annoted l pr_formula)) f
+               in
+                 if (res==[]) then Nothing else
+                 Just (Axiom_items res p)
+
+pr_datatype_decl :: CASL_Sublogics -> DATATYPE_DECL -> Maybe DATATYPE_DECL
+pr_datatype_decl l d = pr_check l sl_datatype_decl d
+
+pr_symbol :: CASL_Sublogics -> Symbol -> Maybe Symbol
+pr_symbol l s = pr_check l sl_symbol s
+
+-- FIXME:
+
+pr_sig_items :: CASL_Sublogics -> SIG_ITEMS -> Maybe SIG_ITEMS
+pr_sig_items l i = Nothing
+
+pr_symb_items :: CASL_Sublogics -> SYMB_ITEMS -> Maybe SYMB_ITEMS
+pr_symb_items l i = Just i
+
+pr_symb_map_items :: CASL_Sublogics -> SYMB_MAP_ITEMS -> Maybe SYMB_MAP_ITEMS
+pr_symb_map_items l i = Just i
+
+pr_sign :: CASL_Sublogics -> Sign -> Sign
+pr_sign l s = s
+
+-- pr_morphism :: CASL_Sublogics -> Morphism -> Morphism
+-- pr_morphism l m = m
+
+-- pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
+-- pr_epsilon l s = 
 
 ------------------------------------------------------------------------------
 -- the end
