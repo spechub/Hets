@@ -76,9 +76,6 @@ emptySign e = Sign { sortSet = Set.empty
                , envDiags = []
                , extendedInfo = e }
 
-isSubsortOf :: Sign f e -> SORT -> SORT -> Bool
-isSubsortOf sig s1 s2 = Set.member s1 $ supersortsOf s2 sig 
-
 subsortsOf :: SORT -> Sign f e -> Set.Set SORT
 subsortsOf s e =
   Set.insert s $
