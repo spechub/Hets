@@ -53,6 +53,7 @@ todo for Jorina:
 
 module Proofs.Proofs where
 
+import Options
 import Data.Dynamic
 import Logic.Logic
 import Logic.Prover
@@ -451,22 +452,17 @@ locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locSubsumeAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
-  case errSrc of
-    Nothing ->
-      case errTgt of
-        Nothing -> -- -------------------------------------------------------
-                   -- hier weitermachen: das Ergebnis des coerce auswerten...
-                   -- -------------------------------------------------------
-	   case Nothing of --maybeResult ( coerceTheories theorySrc theoryTgt) of
-             Nothing -> locSubsumeAux libEnv dgraph (rules,changes) list
-	     Just _ -> locSubsumeAux libEnv newGraph (newRules,newChanges) list
-        Just _ -> locSubsumeAux libEnv dgraph (rules,changes) list
-    Just _ -> locSubsumeAux libEnv dgraph (rules,changes) list
+  case (maybeTheorySrc,maybeTheoryTgt) of
+    (Just (G_theory lidSrc _ _),Just theoryTgt)  ->
+      case maybeResult ( coerceTheories lidSrc theoryTgt) of
+        Nothing -> locSubsumeAux libEnv dgraph (rules,changes) list
+	Just _ -> locSubsumeAux libEnv newGraph (newRules,newChanges) list
+    otherwise -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
+		 locSubsumeAux libEnv dgraph (rules,changes) list
 
   where
-    (Result theorySrc errSrc)--(G_theory lidSrc signSrc sensSrc) errSrc)
-        = computeTheory libEnv dgraph src
-    (Result theoryTgt errTgt) = computeTheory libEnv dgraph tgt
+    (Result errSrc maybeTheorySrc) = computeTheory libEnv dgraph src
+    (Result errTgt maybeTheoryTgt) = computeTheory libEnv dgraph tgt
     morphism = dgl_morphism edgeLab
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
@@ -481,11 +477,6 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newGraph = insEdge newEdge auxGraph
     newRules = (LocSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
-
-
-coerceTheories :: (Typeable b) => G_theory -> G_theory -> (Result b)
-coerceTheories (G_theory lid1 sign1 sens1) (G_theory lid2 sign2 sens2)
-    = rcoerce lid1 lid2 nullPos sign2
 
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
