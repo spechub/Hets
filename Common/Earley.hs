@@ -394,9 +394,7 @@ checkPrecs filt ga rs argItem opItem =
 	precs = prec_annos ga
         assocs = assoc_annos ga
 	num = length $ args opItem in
-    case precRel precs op arg of
-    BothDirections -> False
-    x -> if isLeftArg op num then case filt argPrec opPrec of 
+    if isLeftArg op num then case filt argPrec opPrec of 
 	   Just b -> b     
            Nothing ->
 	    let rarg = rWeight argItem in 
@@ -406,10 +404,8 @@ checkPrecs filt ga rs argItem opItem =
 	       Lower -> True
 	       Higher -> False
 	       BothDirections -> False
-	       NoDirection -> case x of
-	           Lower -> True
-		   Higher -> False
-		   _ -> case (begPlace arg, endPlace op) of 
+	       NoDirection -> 
+		   case (begPlace arg, endPlace op) of 
 		        (True, True) -> arg == op && isAssoc ALeft assocs op
 			(False, True) -> True
 			(_, False) -> False
@@ -425,10 +421,8 @@ checkPrecs filt ga rs argItem opItem =
 		   Lower -> True
 		   Higher -> False
 		   BothDirections -> False
-		   NoDirection -> case x of
-	             Lower -> True
-		     Higher -> False
-		     _ -> case (begPlace op, endPlace arg) of
+		   NoDirection ->
+		     case (begPlace op, endPlace arg) of
 		        (True, True) -> arg == op && isAssoc ARight assocs op
 			(False, True) -> False
 			(_, False) -> True
