@@ -38,6 +38,7 @@ import Logic.Logic
 import Logic.LogicRepr
 import Common.PrettyPrint
 import Common.Lib.Pretty
+import qualified Common.Lib.Map as Map
 import Common.PPUtils (fsep_latex, comma_latex)
 import Common.Result
 import Common.Id
@@ -231,7 +232,14 @@ data AnyRepresentation = forall lid1 sublogics1
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
 
 
-type LogicGraph = ([AnyLogic],[AnyRepresentation])
+type LogicGraph = (Map.Map String AnyLogic,Map.Map String AnyRepresentation)
+
+lookupLogic :: String -> String -> LogicGraph -> AnyLogic
+lookupLogic error_prefix logname (logics,_) =
+    case Map.lookup logname  logics of
+    Nothing -> error (error_prefix++"logic "++logname++" unknown")
+    Just lid -> lid
+
 
 {- This does not work due to needed ordering:
 instance Functor Set where

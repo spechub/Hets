@@ -35,6 +35,7 @@ import Common.Lexer
 import Common.Token
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Char (digit)
+import qualified Common.Lib.Map as Map
 import Common.Id
 import Data.List
 
@@ -308,7 +309,7 @@ logicSpec l = do
    let Logic_name t _ = log
    s2 <- asKey ":"
    oldlog <- getState
-   let newlog = lookupLogic log l
+   let newlog = lookupLogicName log l
        logtrans = coercelog newlog oldlog
    setState newlog
    sp <- annoParser (specE l)
@@ -316,11 +317,11 @@ logicSpec l = do
    let sp1 = Qualified_spec log sp (map tokPos [s1,t,s2])
    return (logtrans sp1)
 
+lookupLogicName :: Logic_name -> LogicGraph -> AnyLogic
+lookupLogicName (Logic_name log sublog) lg = 
+    lookupLogic "Parser: " (tokStr log) lg
 
-lookupLogic (Logic_name log sublog) (logics,_) =
-  case find (\(Logic lid) -> language_name lid == tokStr log) logics of
-    Nothing -> error ("logic "++tokStr log++" unknown")
-    Just (Logic lid) -> 
+{- a code snippit to lookup the sublogic:
       case sublog of
         Nothing -> Logic lid
         Just s ->
@@ -329,7 +330,7 @@ lookupLogic (Logic_name log sublog) (logics,_) =
             Nothing -> error ("sublogic "++tokStr s++
                               " in logic "++tokStr log++" unknown")
             Just sub -> Logic lid  -- ??? can we throw away sublogic?
-
+-}
 coercelog (Logic newlid) (Logic oldlid) =
   if newlang == oldlang then id
    else error ("Cannot coerce from "++newlang++" to "++oldlang)
@@ -432,7 +433,7 @@ libItem l = -- spec defn
     do s1 <- asKey logicS
        log <- logicName
        let Logic_name t _ = log
-       setState (lookupLogic log l) 
+       setState (lookupLogicName log l) 
        return (Logic_decl log (map tokPos [s1,t]))
 
 viewType l = do sp1 <- annoParser (groupSpec l)
@@ -480,7 +481,8 @@ library l = do skip
 -- Testing
 -------------------------------------------------------------
 
-mylogicGraph = ([Logic CASL],[])
+mylogicGraph = (Map.fromList [(language_name CASL,Logic CASL)],
+		Map.fromList [])
 
 parseSPEC fname =
   do input <- readFile fname

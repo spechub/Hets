@@ -66,13 +66,15 @@ import Data.Dynamic
 
 import UnsafeCoerce
 
+-- for Conversion to ATerms 
+import Common.ATerm.Lib (ATermConvertible)
+
 -- maps
 
 type EndoMap a = Map a a
 
 -- diagrams are just graphs
-
-data Diagram object morphism = Graph object morphism
+type Diagram object morphism = Graph object morphism
 
 -- languages, define like "data CASL = CASL deriving Show" 
 
@@ -129,7 +131,10 @@ type ParseFun a = Pos -> String -> (a,String, Pos)
 
 class (Language lid, PrettyPrint basic_spec,
        PrettyPrint symb_items, Eq symb_items,
-       PrettyPrint symb_map_items, Eq symb_map_items) =>
+       PrettyPrint symb_map_items, Eq symb_map_items
+{-       ATermConvertible basic_spec, 
+       ATermConvertible symb_items, 
+       ATermConvertible symb_map_items -}) =>
       Syntax lid basic_spec symb_items symb_map_items
         | lid -> basic_spec, lid -> symb_items,
           lid -> symb_map_items
@@ -139,10 +144,14 @@ class (Language lid, PrettyPrint basic_spec,
          parse_symb_items :: lid -> Maybe(ParseFun symb_items)
          parse_symb_map_items :: lid -> Maybe(ParseFun symb_map_items)
 
+
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
 class (Category lid sign morphism, Show sentence, 
-       Ord symbol, Show symbol)
+       Ord symbol, Show symbol
+       {-ATermConvertible sentence, ATermConvertible symbol,
+       ATermConvertible sign, ATermConvertible morphism,
+       ATermConvertible proof_tree-})
     => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence, lid -> sign, lid -> morphism,
           lid -> symbol, lid -> proof_tree
@@ -155,6 +164,7 @@ class (Category lid sign morphism, Show sentence,
       provers :: lid -> [Prover sentence proof_tree symbol]
       cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
+
 -- static analysis
 
 class ( Syntax lid basic_spec symb_items symb_map_items
