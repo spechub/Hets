@@ -131,8 +131,9 @@ data Sign = SignAsList [SigItem]
 data LocalEnv = SignAsMap (FiniteMap Id [SigItem]) (Graph SortId ())
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
+	       deriving (Show)
 data Kind = SortKind | FunKind | PredKind
-
+	       deriving (Show)
 data Axiom = AxiomDecl [VarDecl] Formula [[Pos]] -- ,,,;,,,;
 
 data Sentence = Axiom (Annoted Axiom) 

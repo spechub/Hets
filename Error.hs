@@ -6,8 +6,10 @@ import Id
 
 data Diagnosis = Error String Pos
                | Warning String Pos
+		 deriving (Show)
 
 newtype Result a = Result ([Diagnosis],Maybe a)
+    deriving (Show)
 
 instance Monad Result where
   return x = Result ([],Just x)
