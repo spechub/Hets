@@ -38,8 +38,8 @@
                   . not def d(c) %(ga_selector_undef_d_c)%,
                   . forall X1:a . not def d(c(X1)) %(ga_selector_undef_d_c)%,
                  generated{sort s; op c : s; op c : a ->? s;
-                                   op c : a * t * t * t -> s; op inj : s1 -> s;
-                                   op inj : s2 -> s} %(ga_generated_s)%,
+                                   op c : a * t * t * t -> s; op g__inj : s1 -> s;
+                                   op g__inj : s2 -> s} %(ga_generated_s)%,
                   . forall X1:a; X2:t; X3:t; X4:t
                         . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
                   . forall X1:a; X2:t; X3:t; X4:t
@@ -47,8 +47,8 @@
                   . forall X1:a; X2:t; X3:t; X4:t
                         . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
                  generated{sort s; op c : s; op c : a ->? s;
-                                   op c : a * t * t * t -> s; op inj : s1 -> s;
-                                   op inj : s2 -> s} %(ga_generated_s)% ])
+                                   op c : a * t * t * t -> s; op g__inj : s1 -> s;
+                                   op g__inj : s2 -> s} %(ga_generated_s)% ])
 *** Error 3.30, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : s'
 *** Error 3.53, total selectors 'a : s -> t,b : s -> t,d : s -> t'
