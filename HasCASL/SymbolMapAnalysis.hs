@@ -41,6 +41,7 @@ inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap sigma = do
   -- first check: do all source raw symbols match with source signature?
   let syms = symOf sigma
+      srcTypeMap = typeMap sigma
       incorrectRsyms = Map.foldWithKey
         (\rsy _ -> if Set.any (matchesND rsy) syms
                     then id
@@ -68,17 +69,18 @@ inducedFromMorphism rmap sigma = do
 	       do s' <- typeFun s (typeKind ti)
                   m1 <- m
                   return $ Map.insert s s' m1) 
-              (return Map.empty) $ Map.toList $ typeMap sigma
+              (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
   op_Map <- Map.foldWithKey (opFun myTypeIdMap)
               (return Map.empty) (assumps sigma)
   -- compute target signature
-  let sigma' = sigma 
-            { typeMap = Map.foldWithKey ( \ i k m -> 
+  let tarTypeMap = Map.foldWithKey ( \ i k m -> 
 			       Map.insert (Map.findWithDefault i i myTypeIdMap)
 					  k m)
-	                    Map.empty $ typeMap sigma
-            , assumps =  Map.foldWithKey (mapOps myTypeIdMap op_Map) 
+	                    Map.empty srcTypeMap
+      sigma' = sigma 
+            { typeMap = tarTypeMap
+            , assumps =  Map.foldWithKey (mapOps myTypeIdMap op_Map)
                               Map.empty (assumps sigma) }
   -- return assembled morphism
   return $ (mkMorphism sigma sigma') 
