@@ -1,6 +1,7 @@
 module Type where
 
 import Id
+import Lexer (signChars)
 
 -- simple Id
 nullPos :: Pos
@@ -23,6 +24,13 @@ altProductSign = "\215"
 
 internalBoolRep = simpleId("!BOOL!") -- invisible
 
+isSign c = c `elem` "{}[]" ++ signChars
+
+showSign i "" = show i
+showSign i s = let r = show i in 
+		     if not (null r) && isSign (last r) && isSign (head s) 
+			then r ++ " " ++ s else r ++ s
+
 -- ----------------------------------------------
 -- we want to have (at least some builtin) type constructors 
 -- for uniformity/generalization sorts get type "Sort"
@@ -36,18 +44,19 @@ data Type = Type Id [Type]
 	    deriving (Eq, Ord)
 
 showType :: Bool -> Type -> ShowS
-showType _ (PartialType i) = showString partialSuffix . showId i
+showType _ (PartialType i) = showString partialSuffix . shows i
 showType _ Unknown = showString "!UNKNOWN!"
 showType _ Sort = showString "!SORT!"
-showType _ t@(Type i []) = if isProduct t then showString "()" else showId i
+showType _ t@(Type i []) = if isProduct t then showString "()" else showSign i
 showType b t@(Type i (x:r)) = showParen b 
  (if isFunType t 
   then if isPredicate t then showType False x
-       else showType (isFunType x) x . showId i . showType False (head r)
+       else showType (isFunType x) x . showSign i . shows (head r)
   else if isProduct t 
        then let f x = showType (isFunType x || isProduct x) x 
-            in showSepList (showId i) f (x:r)
-       else showId i . showList (x:r)
+            in showSepList (showSign i) f (x:r)
+       else shows i . shows (x:r)
+--  showParen True (showSepList (showChar ',') shows (x:r))
  )
 
 instance Show Type where

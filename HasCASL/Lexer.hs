@@ -1,7 +1,7 @@
 module Lexer ( bind, (<<), (<:>), (<++>), begDoEnd, flat, single
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
-	     , skip, ann, keyStr, keySign
+	     , skip, ann, keyWord, keySign, toKey, signChars
 	     ) where
 
 import Char (digitToInt)
@@ -83,7 +83,8 @@ p `enclosedBy` q = begDoEnd q p q
 
 checkWith :: (Show a) => GenParser tok st a -> (a -> Bool) -> GenParser tok st a
 p `checkWith` f = do { x <- p
-		     ; if f x then return x else unexpected (show x)
+		     ; if f x then return x else 
+		       consumeNothing >> unexpected (show x)
 		     }
 
 -- ----------------------------------------------
@@ -196,6 +197,8 @@ annote = try(char '%' <:> scanAnyWords) <++>
 ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
       <?> "annotation"
 
-keyStr s = string s << notFollowedBy scanLPD
-keySign p = p << notFollowedBy (oneOf signChars)
-
+keyWord p = try(p << notFollowedBy scanLPD)
+keySign p = try(p << notFollowedBy (oneOf signChars))
+toKey s = let p = string s in 
+		  if all (\c -> c `elem` signChars) s then keySign p 
+		     else keyWord p

@@ -2,7 +2,7 @@ module ParseTerm where
 
 import Id (Token(Token), Id(Id))
 import Lexer ((<:>), (<++>), flat, scanFloat, scanString
-	     , single, keyStr, keySign)
+	     , single, toKey)
 import Parsec
 import ParseType
 import Token
@@ -15,7 +15,7 @@ import Type
 
 varId = parseId
 
-colon = makeToken (keySign (string [colonChar]))
+colon = makeToken (toKey [colonChar])
 partialColon = makeToken (char colonChar <:> option "" (string partialSuffix))
 
 makeDecl t []  = []
@@ -37,8 +37,8 @@ varDecls t = fmap (concat . map snd) (separatedBy varDecl semi t)
 -- ----------------------------------------------
 exEqual = string "=e="
 
-asTok = makeToken (keyStr asStr)
-inTok = makeToken (keyStr inStr)
+asTok = makeToken (toKey asStr)
+inTok = makeToken (toKey inStr)
 
 simpleTerm :: Parser Term
 simpleTerm = fmap toQualId (makeToken(scanFloat <|> scanString <|>
@@ -63,7 +63,7 @@ typeOfPrefix t = if [colonChar] == show t then OfType
 			   else error ("typeOfPrefix: " ++ show t)
 
 typedTerm :: Parser Term
-typedTerm = do { c <- try (colon <|> asTok <|> inTok)
+typedTerm = do { c <- colon <|> asTok <|> inTok
 	       ; t <- funType c
 	       ; return (Typed MixTerm (typeOfPrefix c) t) 
 	       }
@@ -76,8 +76,8 @@ terms t = do { l <- separatedBy (const mixTerm) comma t
 	     ; return (map snd l)
 	     }
 
-qualName = do { w <- try (makeToken 
-			  (keyStr varStr <|> keyStr opStr <|> keyStr predStr))
+qualName = do { w <- makeToken 
+		     (toKey varStr <|> toKey opStr <|> toKey predStr)
 	      ; i <- parseId
 	      ; t <- colon >>= funType
 	      ; let ty = if show w == predStr then predicate t else t 
@@ -102,8 +102,8 @@ braTerm op cl = do { o <- op
 braceTerm = braTerm oBrace cBrace
 brktTerm = braTerm opBrkt clBrkt
 
-quant = keyStr allStr
-	<|> (keyStr exStr <|> keyStr lamStr) 
+quant = toKey allStr
+	<|> (toKey exStr <|> toKey lamStr) 
 		<++> option "" (string totalSuffix)
 
 getDot = oneOf ".\183" <:> option "" (string totalSuffix)

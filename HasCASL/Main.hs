@@ -5,18 +5,19 @@ import BasicItem
 import LocalEnv
 import Parsec
 import ParsecPos
+import ParseType
 import ParseTerm
 import System
 
 main = do {l <- getArgs;
-	   if null l then print "missing argument"
--- 	   else parseSpec (head l)
---         else checkLines parseId (head l)
-           else checkLines parseTerm (head l)
+	   if length l < 2 then print "usage: main {id,type,term} <filename>"
+	   else let option = head l 
+	            file = head (tail l)
+	   in if option == "id" then checkLines parseId file
+	   else if option == "type" then checkLines parseType file
+	   else if option == "term" then checkLines parseTerm file
+	   else print ("unknown option: " ++ option) 
 	  }
-
-
-
 
 checkLines p fileName = do { s <- readFile fileName
 			   ; putStr (unlines (scanLines p (lines s) 1))
