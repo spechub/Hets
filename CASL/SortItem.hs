@@ -15,7 +15,7 @@
 module SortItem where
 
 import Id
-import Keywords (lessS, sortS)
+import Keywords
 import Lexer
 import AS_Basic_CASL
 import AS_Annotation
@@ -24,7 +24,39 @@ import Maybe
 import Parsec
 import Token
 import Formula
-import ItemAux
+
+pluralKeyword s = makeToken (keyWord (string s <++> option "" (string "s")))
+
+optSemi :: GenParser Char st (Maybe Token, [Annotation])
+optSemi = bind (,) (option Nothing (fmap Just semiT)) annotations
+
+isStartKeyword s = s `elem` "":dotS:cDot:casl_reserved_words
+
+lookAheadItemKeyword :: GenParser Char st ()
+lookAheadItemKeyword = 
+    do { c <- lookAhead (many1 scanLPD <|> many (oneOf signChars))
+       ; if isStartKeyword c then return () else unexpected c
+       }
+
+itemAux :: GenParser Char st a 
+	-> GenParser Char st ([a], [Token], [[Annotation]])
+itemAux itemParser = 
+    do { a <- itemParser
+       ; (m, an) <- optSemi
+       ; case m of { Nothing -> return ([a], [], [an])
+                   ; Just t -> do { try lookAheadItemKeyword
+				  ; return ([a], [t], [an])
+				  }
+	                        <|> 
+	                        do { (as, ts, ans) <- itemAux itemParser
+				   ; return (a:as, t:ts, an:ans)
+				   }
+		   }
+       }
+
+-- ------------------------------------------------------------------------
+-- sortItem
+-- ------------------------------------------------------------------------
 
 lessT = asKey lessS
 
@@ -77,11 +109,13 @@ sortItem = do { s <- sortId ;
 		    return (Sort_decl [s] [])
 		  } 		
 
+appendAnno x y =  Annoted x [] [] y
+
 sortItems = do { p <- pluralKeyword sortS
 	       ; a <- annotations
 	       ; (v:vs, ts, b:ans) <- itemAux sortItem
 	       ; let s = Annoted v [] a b
-		     r = zipWith (\ x y -> Annoted x [] [] y) vs ans 
+		     r = zipWith appendAnno vs ans 
 		 in return (Sort_items (s:r) (map tokPos (p:ts)))
 	       }
 

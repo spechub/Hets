@@ -1,0 +1,57 @@
+pred __ < __ : a * a
+
+op a: b; c: b
+sort s, t < s ;
+. a = a
+vars a:t; a,b:s 
+vars a:t; a,b:s ;
+. a = a
+. a = a
+forall a:t; a,b:s
+. a = a
+. a = a
+
+axioms a = a ; 
+a = a ;
+
+axiom a = a
+; a = a
+
+type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
+free type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
+generated type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
+
+generated {
+pred __ < __ : a * a
+
+op a: b; c: b
+sort s, t < s ;
+type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
+}
+
+%(sort)%
+sort %(after-sort)% 
+     s;  %(bla2)% 
+     t 
+
+%(op)%
+op a:b;  %(bla4)%
+   c:d %(bla5)%
+
+%(bla6)%
+vars a:t; %(bla7-ignored)%
+	a,b:s ; %(bla8-ignored)%
+
+%(type)%
+type t ::= %(c)% c  %(c)% | e  %(e)% | d %(9)%
+
+%(axiom)%
+axioms
+a = a; %(a1)% 
+a = a; %(a2)% 
+
+%(formula)%
+. a = a %(f1)%
+. a = a ;  %(f1)%
+
+sort s

@@ -26,7 +26,8 @@ instance PrettyPrint BASIC_ITEMS where
     printText0 (Sig_items s) = printText0 s
     printText0 (Free_datatype l _) = text freeS <+> text typeS
 				 <+> vcat(map (\x -> printText0 x <> semi) l)
-    printText0(Sort_gen l _) = text generatedS <+> vcat (map printText0 l)
+    printText0(Sort_gen l _) = text generatedS 
+			       <+> braces (vcat (map printText0 l))
     printText0(Var_items l _) = text varS 
 				<+> semiT l
     printText0(Local_var_axioms l f _) = text forallS 
@@ -42,20 +43,19 @@ instance PrettyPrint SIG_ITEMS where
     printText0(Datatype_items l _) = text typeS <+> semiT l 
 
 commaT l = cat(punctuate comma (map printText0 l))
-equalT = space <> text equalS <> space
 
 instance PrettyPrint SORT_ITEM where
     printText0(Sort_decl l _) = commaT l
-    printText0(Subsort_decl l t _) = commaT l <+> text lessS 
-			       <+> printText0 t
+    printText0(Subsort_decl l t _) = commaT l <> text lessS 
+			       <> printText0 t
     printText0(Subsort_defn s v t f _) = printText0 s 
-			       <+> text equalS 
-			       <+> braces(printText0 s 
+			       <> text equalS 
+			       <> braces(printText0 s 
 					  <> colon
 					  <> printText0 t
 					  <> (text cDot
 					  <+> printText0 f))
-    printText0(Iso_decl l _) = hcat(punctuate equalT (map printText0 l))
+    printText0(Iso_decl l _) = hcat(punctuate  (text equalS) (map printText0 l))
 
 instance PrettyPrint OP_ITEM where
     printText0(Op_decl l t a _) = commaT l 
@@ -100,8 +100,8 @@ instance PrettyPrint OP_ATTR where
 
 instance PrettyPrint PRED_ITEM where
     printText0(Pred_decl l t _) = commaT l 
-				  <> colon
-				  <> printText0 t
+				  <+> (colon
+				       <> printText0 t)
     printText0(Pred_defn n h f _) = printText0 n 
 				  <+> printText0 h
                                   <+> text equivS
@@ -123,7 +123,7 @@ instance PrettyPrint DATATYPE_DECL where
 
 instance PrettyPrint ALTERNATIVE where
     printText0(Total_construct n l _) = printText0 n 
-				 <> parens(semiT l)
+				 <> if null l then empty else parens(semiT l)
     printText0(Partial_construct n l _) = printText0 n 
 				 <> parens(semiT l)
 				 <> text quMark

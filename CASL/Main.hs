@@ -18,12 +18,13 @@ import Pretty
 import PrettyPrint
 import System
 import Print_AS_Basic
+import Parse_AS_Basic
 import SortItem
 import OpItem
 
 main = do {l <- getArgs;
 	   if length l < 2 then print 
-	   "usage: main {id,term,formula,sorts,ops,preds} <filename>"
+	   "usage: main {id,term,formula,sorts,ops,preds,items} <filename>"
 	   else let option = head l 
 	            file = head (tail l)
 	   in if option == "id" then checkLines parseId file
@@ -32,7 +33,7 @@ main = do {l <- getArgs;
 	   else if option == "sorts" then checkLines sortItems file
 	   else if option == "ops" then checkLines opItems file
 	   else if option == "preds" then checkLines predItems file
---	   else if option == "items" then parseSpec file
+	   else if option == "items" then parseSpec file
 	   else print ("unknown option: " ++ option) 
 	  }
 
@@ -51,12 +52,11 @@ parseLine p line n = let pos = setSourceLine (initialPos "") n
 				     }
 		       in result (parse parser "" line)
 
-{-
+
 parseSpec fileName =  do { r <- parseFromFile basicSpec fileName
 			 ; putStrLn (result r)
 			 }
-	
--}   
+   
 result r = case r of Left err -> "parse error at " ++ show err ++ "\n"
 		     Right x  -> render (printText0 x) 
 

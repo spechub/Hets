@@ -7,6 +7,7 @@
    scanner for CASL tokens and extensions to parsec
    
    http://www.cs.uu.nl/~daan/parsec.html)
+   -- extended with "consumeNothing" 
    
    http://www.cofi.info/Documents/CASL/Summary/
    from 25 March 2001
@@ -15,7 +16,7 @@
 -}
 
 module Lexer ( bind, (<<), (<:>), (<++>), signChars, scanLPD
-	     , begDoEnd, flat, single, separatedBy
+	     , caslLetters, begDoEnd, flat, single, separatedBy
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
 	     , skip, ann, keyWord, keySign, toKey

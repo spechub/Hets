@@ -48,6 +48,7 @@ import Parsec
 
 equalT = asKey equalS
 colonT = asKey colonS
+colonST = makeToken (string colonS) -- if "?" may immediately follow as in ":?" 
 oParenT = asKey oParenS
 cParenT = asKey cParenS
 quMarkT = asKey quMark
@@ -67,8 +68,7 @@ restTerm :: GenParser Char st TERM
 restTerm = startTerm <|> typedTerm <|> castedTerm
 
 mixTerm = do { l <- startTerm <:> many restTerm
-             ; if length l == 1 then return (head l) 
-               else return (Mixfix_term l)
+             ; return (if length l == 1 then head l else Mixfix_term l)
              } 
 
 whenTerm = do { t <- mixTerm 
@@ -110,7 +110,7 @@ qualVarName o = do { v <- asKey varS
 
 qualOpName o = do { v <- asKey opS
 		  ; i <- parseId
-		  ; c <- makeToken (string colonS) 
+		  ; c <- colonST 
 		  ; t <- opType 
 		  ; p <- cParenT
 		  ; return (Application 
@@ -127,8 +127,8 @@ opSort = fmap (\s -> (False, s, nullPos)) sortId
 opFunSort ts ps = do { a <- makeToken (string funS)
 		     ; (b, s, _) <- opSort
 		     ; let qs = map tokPos ps ++[tokPos a] in 
-		       if b then return (Partial_op_type ts s qs)
-		       else return (Total_op_type ts s qs)
+		       return (if b then Partial_op_type ts s qs
+			       else Total_op_type ts s qs)
 		     }
 
 opType = do { (b, s, p) <- opSort
@@ -217,8 +217,8 @@ parenFormula = do { o <- oParenT
 		    do { q <- qualPredName po 
 			 <|> qualVarName po <|> qualOpName po
 		       ; l <- many restTerm   -- optional arguments
-		       ; if null l then return (Mixfix_formula q)
-			 else return (Mixfix_formula (Mixfix_term (q:l)))
+		       ; return (if null l then Mixfix_formula q
+				 else Mixfix_formula (Mixfix_term (q:l)))
 		       }
 		    <|>
 		    do { f <- formula

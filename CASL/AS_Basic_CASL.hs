@@ -31,7 +31,7 @@ data BASIC_ITEMS = Sig_items SIG_ITEMS
 		 | Var_items [VAR_DECL] [Pos]
 		   -- pos: var, semi colons
 		 | Local_var_axioms [VAR_DECL] [Annoted FORMULA] [Pos]
-		   -- pos: forall, dots
+		   -- pos: forall, semi colons, dots
 		 | Axiom_items [Annoted FORMULA] [Pos]
 		   -- pos: dots
 		   deriving (Show,Eq)

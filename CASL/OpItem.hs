@@ -25,7 +25,7 @@ import Maybe
 import Parsec
 import Token
 import Formula
-import ItemAux
+import SortItem
 import List
 
 -- stupid cast
@@ -39,11 +39,11 @@ predHead = do { o <- oParenT
 	      }
 
 opHead = do { Pred_head vs ps <- predHead
-	    ; c <- makeToken (string colonS) 
+	    ; c <- colonST
 	    ; (b, s, _) <- opSort
-	    ; let qs = ps ++ [tokPos c]
-	      in if b then return (Partial_op_head vs s qs)
-	         else return (Total_op_head vs s qs)
+	    ; let qs = ps ++ [tokPos c] in 
+	      return (if b then Partial_op_head vs s qs
+	         else Total_op_head vs s qs)
 	    }
 
 opAttr =    do p <- asKey assocS
@@ -69,7 +69,7 @@ toHead c (Partial_op_type [] s _) = Partial_op_head [] s [c]
 opItem :: GenParser Char st OP_ITEM 
 opItem = do { (os, cs)  <- parseId `separatedBy` commaT
 	    ; if length os == 1 then 
-	      do { c <- makeToken (string colonS)
+	      do { c <- colonST
 		 ; t <- opType
 		 ; if isConstant t then 
 		   opBody (head os) (toHead (tokPos c) t)
@@ -81,7 +81,7 @@ opItem = do { (os, cs)  <- parseId `separatedBy` commaT
 		 ; opBody (head os) h
 		 }
 	      else
-	      do { c <- makeToken (string colonS)
+	      do { c <- colonST
 		 ; t <- opType
 		 ; opAttrs os t (cs++[c])
 		 }
@@ -107,7 +107,7 @@ opItems =   do { p <- pluralKeyword opS
 	       ; a <- annotations
 	       ; (v:vs, ts, b:ans) <- itemAux opItem
 	       ; let s = Annoted v [] a b
-		     r = zipWith (\ x y -> Annoted x [] [] y) vs ans 
+		     r = zipWith appendAnno vs ans 
 		 in return (Op_items (s:r) (map tokPos (p:ts)))
 	       }
 
@@ -145,6 +145,6 @@ predItems =   do { p <- pluralKeyword predS
 		 ; a <- annotations
 		 ; (v:vs, ts, b:ans) <- itemAux predItem
 		 ; let s = Annoted v [] a b
-		       r = zipWith (\ x y -> Annoted x [] [] y) vs ans 
+		       r = zipWith appendAnno vs ans 
 		   in return (Pred_items (s:r) (map tokPos (p:ts)))
-	       }
+		 }
