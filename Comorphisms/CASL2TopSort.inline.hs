@@ -19,7 +19,7 @@ Portability :  portable
 module Comorphisms.CASL2TopSort where
 
 import Control.Exception (assert)
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
 import Maybe
 import Data.List
 
@@ -40,9 +40,6 @@ import CASL.Morphism
 import CASL.Sublogic
 import CASL.Utils
 import CASL.Overload (injName)
--- import List (nub,delete)
--- import Common.ListUtils
--- import Data.List
 
 -- | The identity of the comorphism
 data CASL2TopSort = CASL2TopSort deriving (Show)
@@ -159,7 +156,10 @@ generateSubSortMap sorSet sortRels pMap =
 -- one element of the top-sort.
 
 transSig :: Sign f e -> Result (Sign f e,[Named (FORMULA f)])
-transSig sig = 
+transSig sig 
+    | Rel.isEmpty (sortRel sig) = 
+        Result [Diag Warning ("CASL2TopSort.transSig: Signature is unchanged (no subsorting present)") nullPos] (Just (sig,[]))
+    | otherwise = 
     case generateSubSortMap (sortSet sig) (sortRel sig) (predMap sig) of
     Result dias m_subSortMap ->
       maybe (Result dias Nothing)
@@ -492,7 +492,10 @@ combineTypes subSortMap =
 
 
 transSen :: (Show f) => Sign f e -> FORMULA f -> Result (FORMULA f)
-transSen sig f = 
+transSen sig f 
+    | Rel.isEmpty (sortRel sig) = 
+        Result [Diag Warning ("CASL2TopSort.transSen: Sentence is unchanged (no subsorting present)") nullPos] (Just f)
+    | otherwise = 
     case (generateSubSortMap (sortSet sig) 
 	                     (sortRel sig) 
 			     (predMap sig)) of
@@ -641,8 +644,3 @@ genEitherAxiom ssMap =
                                        [lTop (resultSort qon)]
                                        [mkVarTerm qon]
 
--- \x -> trace (show $ recover_Sort_gen_ax x) (True_atom [])
-{- map genImplication
-    where genImplication cons =
-              Implication prop dis True [] -}
-    
