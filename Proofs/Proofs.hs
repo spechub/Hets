@@ -454,7 +454,7 @@ locSubsumeAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   case (maybeTheorySrc,maybeTheoryTgt) of
     (Just (G_theory lidSrc _ _),Just theoryTgt)  ->
-      case maybeResult ( coerceTheories lidSrc theoryTgt) of
+      case maybeResult ( coerceTheory lidSrc theoryTgt) of
         Nothing -> locSubsumeAux libEnv dgraph (rules,changes) list
 	Just _ -> locSubsumeAux libEnv newGraph (newRules,newChanges) list
     otherwise -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
