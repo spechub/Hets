@@ -419,21 +419,21 @@ genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
 
 -- | different legal 'PatternToken's (in- or excluding 'funS')
 tokenPattern :: TokenMode -> AParser Pattern
-tokenPattern b = fmap PatternToken (aToken b)
+tokenPattern b = fmap TermToken (aToken b)
 					  
 -- | 'tokenPattern' or 'BracketPattern'
 primPattern :: TokenMode -> AParser Pattern
 primPattern b = tokenPattern b 
-		<|> mkBraces pattern (BracketPattern Braces) 
-		<|> mkBrackets pattern (BracketPattern Squares)
+		<|> mkBraces pattern (BracketTerm Braces) 
+		<|> mkBrackets pattern (BracketTerm Squares)
 		<|> bracketParser pattern oParenT cParenT anComma
-			(BracketPattern Parens)
+			(BracketTerm Parens)
 
 -- | several 'primPattern' possibly with a 'typeAnno'
 mixPattern :: TokenMode -> AParser Pattern
 mixPattern b = 
     do l <- many1 $ primPattern b
-       let p = if isSingle l then head l else MixfixPattern l
+       let p = if isSingle l then head l else MixfixTerm l
 	   in typeAnno p <|> return p
 
 -- | a type ('parseType') preceded by 'colT'
@@ -441,7 +441,7 @@ typeAnno :: Pattern -> AParser Pattern
 typeAnno p = 
     do c <- colT
        t <- parseType
-       return $ TypedPattern p t [tokPos c]
+       return $ TypedTerm p OfType t [tokPos c]
 
 -- | top-level pattern (possibly 'AsPattern')
 asPattern :: TokenMode -> AParser Pattern
@@ -449,7 +449,7 @@ asPattern b =
     do v <- mixPattern b
        do   c <- asKey asP 
 	    t <- mixPattern b 
-	    case v of PatternToken _ -> return (AsPattern v t [tokPos c])
+	    case v of TermToken _ -> return (AsPattern v t [tokPos c])
 		      _ -> unexpected "complex pattern before '@'"    
          <|> return v
 

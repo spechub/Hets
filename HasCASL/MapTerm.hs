@@ -40,11 +40,12 @@ mapTerm m t = case t of
    QuantifiedTerm q vs te ps -> 
        QuantifiedTerm q (map (mapGenVar m) vs) (mapTerm m te) ps
    LambdaTerm ps p te qs ->     
-       LambdaTerm (map (mapPat m) ps) p (mapTerm m te) qs
+       LambdaTerm (map (mapTerm m) ps) p (mapTerm m te) qs
    CaseTerm te es ps -> 
        CaseTerm (mapTerm m te) (map (mapEq m) es) ps
    LetTerm b es te ps ->
        LetTerm b (map (mapEq m) es) (mapTerm m te) ps
+   AsPattern v pa ps -> AsPattern v (mapTerm m pa) ps
    _ -> error "mapTerm"
 
 mapGenVar :: Morphism -> GenVarDecl -> GenVarDecl
@@ -55,18 +56,4 @@ mapVar :: Morphism -> VarDecl -> VarDecl
 mapVar m (VarDecl v ty q ps) = VarDecl v (mapTp m ty) q ps
 
 mapEq :: Morphism -> ProgEq -> ProgEq
-mapEq m (ProgEq p t ps) = ProgEq (mapPat m p) (mapTerm m t) ps
-
-mapPat ::  Morphism -> Pattern -> Pattern
-mapPat m p = case p of
-   PatternVar vd -> PatternVar $ mapVar m vd
-   PatternConstr (InstOpId i ts ps) sc qs ->
-       let (i2, TySc sc2) = Map.findWithDefault 
-			    (i, TySc $ mapTypeScheme (typeIdMap m) sc) 
-			    (i, TySc sc) $ funMap m
-	    in PatternConstr (InstOpId i2 (map (mapTp m) ts) ps) sc2 qs
-   ApplPattern p1 p2 ps -> ApplPattern (mapPat m p1) (mapPat m p2) ps
-   TuplePattern ps qs -> TuplePattern (map (mapPat m) ps) qs
-   TypedPattern pa ty ps -> TypedPattern (mapPat m pa) (mapTp m ty) ps
-   AsPattern v pa ps -> AsPattern v (mapPat m pa) ps
-   _ -> error "mapPat"
+mapEq m (ProgEq p t ps) = ProgEq (mapTerm m p) (mapTerm m t) ps

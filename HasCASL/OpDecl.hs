@@ -63,8 +63,8 @@ patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr
 			  (patternsToType ps t) []
 
 tuplePatternToType :: Pattern -> Type
-tuplePatternToType (PatternVar (VarDecl _ t _ _)) = t
-tuplePatternToType (TuplePattern ps qs) = 
+tuplePatternToType (QualVar _ t _) = t
+tuplePatternToType (TupleTerm ps qs) = 
     mkProductType (map tuplePatternToType ps) qs
 tuplePatternToType _ = error "tuplePatternToType"
 
@@ -87,7 +87,8 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        putAssumps $ filterVars as
        mPats <- mapM (mapM anaVarDecl) oldPats
        let newPats = map catMaybes mPats
-	   pats = map (\ l -> mkTuplePattern (map PatternVar l) []) newPats
+	   toQualVar (VarDecl v t _ qs) = QualVar v t qs
+	   pats = map (\ l -> mkTupleTerm (map toQualVar l) []) newPats
        case mSc of 
 		Just newSc@(TypeScheme tArgs (qu :=> _) qs) -> do 
 		    ty <- toEnvState $ freshInst newSc
@@ -160,7 +161,7 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 					else LambdaTerm (reverse args) 
 					     Partial newTerm []	
 		       in case topPat of 
-		       PatternConstr (InstOpId i _tys _) sc _ -> do
+		       QualOp _ (InstOpId i _tys _) sc _ -> do
 			   addOpId i sc [] $ Definition Op defTrm
 			   return $ ProgEq newPat newTerm qs
 		       _ -> do addDiags $ [mkDiag Error 
@@ -173,9 +174,9 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 getApplConstr :: Pattern -> (Pattern, [Pattern])
 getApplConstr pat = 
     case pat of 
-    ApplPattern p1 p2 _ -> 
+    ApplTerm p1 p2 _ -> 
 	let (tp, args) = getApplConstr p1 in (tp, p2:args)
-    TypedPattern tp _ _ -> getApplConstr tp
+    TypedTerm tp _ _ _ -> getApplConstr tp
     _ -> (pat, [])
 			   
 

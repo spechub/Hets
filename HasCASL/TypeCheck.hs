@@ -309,21 +309,21 @@ inferPat mt pat = do
 	uniDiags = addDiags . map (improveDiag pat)
     as <- gets assumps
     case pat of
-	PatternVar (VarDecl v t sk ps) -> do  
+	QualVar v t ps -> do  
 	    let Result ds ms = mUnify t
 	    uniDiags ds 
 	    case ms of 
 		Nothing -> return []
 		Just s -> do let ty = (subst s t) 
-			     return [(s, ty, PatternVar (VarDecl v ty sk ps))]
-	PatternConstr io sc qs -> do
+			     return [(s, ty, QualVar v ty ps)]
+	QualOp b io sc qs -> do
 	    ty <- toEnvState $ freshInst sc
 	    let Result ds ms = mUnify ty
 	    uniDiags ds 
 	    case ms of 
 		Nothing -> return []
-		Just s -> return [(s, subst s ty, PatternConstr io sc qs)]
-	ResolvedMixPattern i ts ps ->
+		Just s -> return [(s, subst s ty, QualOp b io sc qs)]
+	ResolvedMixTerm i ts ps ->
 	    if null ts then do 
 	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
 	       insts <- mapM instantiate ois 
@@ -345,20 +345,20 @@ inferPat mt pat = do
 	       return $ map ( \ (s, ty, oi) -> 
 			      case opDefn oi of
 			      VarDefn -> (s, ty, 
-					  PatternVar $ VarDecl i ty Other ps)
-			      _ -> (s, ty, PatternConstr (InstOpId i [] [])
+					  QualVar i ty ps)
+			      _ -> (s, ty, QualOp Op (InstOpId i [] [])
 						  (opType oi) ps)) ls
-	    else inferPat mt $ ApplPattern (ResolvedMixPattern i [] ps)
-		 (mkTuplePattern ts ps) ps
-	ApplPattern p1 p2 ps -> inferAppl inferPat 
-				( \ x y -> ApplPattern x y ps) mt p1 p2
-	TuplePattern ts ps -> 
+	    else inferPat mt $ ApplTerm (ResolvedMixTerm i [] ps)
+		 (mkTupleTerm ts ps) ps
+	ApplTerm p1 p2 ps -> inferAppl inferPat 
+				( \ x y -> ApplTerm x y ps) mt p1 p2
+	TupleTerm ts ps -> 
 	    case mt of 
 	    Nothing -> do 	    
                 ls <- checkList inferPat (map (const Nothing) ts) ts 
 		return $ map ( \ (su, tys, trms) ->
                                      (su, mkProductType tys ps, 
-				    mkTuplePattern trms ps)) ls
+				    mkTupleTerm trms ps)) ls
 	    Just ty -> do
 	        vs <- freshVars ts
 	        let pt = mkProductType vs []
@@ -370,8 +370,8 @@ inferPat mt pat = do
                          ls <- checkList inferPat (map (Just . subst s) vs) ts 
 			 return $ map ( \ (su, tys, trms) ->
                                    (compSubst s su, mkProductType tys ps, 
-				    mkTuplePattern trms ps)) ls
-	TypedPattern p ty ps -> do 
+				    mkTupleTerm trms ps)) ls
+	TypedTerm p q ty ps -> do 
 		    let Result ds ms = mUnify ty
 		    uniDiags ds
 		    case ms of 
@@ -380,7 +380,7 @@ inferPat mt pat = do
 			    rs <- inferPat (Just $ subst s ty) p
 			    return $ map ( \ (s2, typ, tr) -> 
 				(compSubst s s2, typ, 
-				 TypedPattern tr ty ps)) rs
+				 TypedTerm tr q ty ps)) rs
 	_ -> do ty <- freshTypeVar
 		addDiags [mkDiag Error "unexpected pattern" pat]
 		return [(eps, ty, pat)] 

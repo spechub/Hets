@@ -230,38 +230,35 @@ resolveLetEqs ga (ProgEq pat trm ps : rt) =
 extractBindings :: Pattern -> State Env (Pattern, [VarDecl])
 extractBindings pat = 
     case pat of
-    PatternVar l@(VarDecl v t sk ps) -> case t of 
+    QualVar v t ps -> case t of 
          MixfixType [] -> 
 	     do tvar <- toEnvState freshVar
 		let ty = TypeName tvar star 1
-		    vd = VarDecl v ty sk ps
-		return (PatternVar vd, [vd]) 
+		return (QualVar v ty ps, [VarDecl v ty Other ps]) 
 	 _ -> do mt <- anaStarType t 
 		 case mt of 
-		     Just ty -> do 
-		         let vd = VarDecl v ty sk ps
-			 return (PatternVar vd, [vd]) 
-		     _ -> return (pat, [l])
-    ResolvedMixPattern i pats ps -> do 
+		     Just ty -> 
+			 return (QualVar v ty ps, [VarDecl v ty Other ps]) 
+		     _ -> return (pat, [])
+    ResolvedMixTerm i pats ps -> do 
          l <- mapM extractBindings pats
-	 return (ResolvedMixPattern i (map fst l) ps, concatMap snd l)
-    ApplPattern p1 p2 ps -> do
+	 return (ResolvedMixTerm i (map fst l) ps, concatMap snd l)
+    ApplTerm p1 p2 ps -> do
          (p3, l1) <- extractBindings p1
          (p4, l2) <- extractBindings p2
-	 return (ApplPattern p3 p4 ps, l1 ++ l2) 
-    TuplePattern pats ps -> do 
+	 return (ApplTerm p3 p4 ps, l1 ++ l2) 
+    TupleTerm pats ps -> do 
          l <- mapM extractBindings pats
-	 return (mkTuplePattern (map fst l) ps, concatMap snd l)
-    TypedPattern p ty ps -> do 
+	 return (TupleTerm (map fst l) ps, concatMap snd l)
+    TypedTerm p q ty ps -> do 
          mt <- anaStarType ty 
 	 let newT = case mt of Just t -> t
 			       _ -> ty
          case p of 
-	     PatternVar (VarDecl v (MixfixType []) sk _) -> do 
-	         let vd = VarDecl v newT sk ps
-		 return (PatternVar vd, [vd])
+	     QualVar v (MixfixType []) _ ->
+		 return (QualVar v newT ps, [VarDecl v newT Other ps])
 	     _ -> do (newP, bs) <- extractBindings p
-		     return (TypedPattern newP newT ps, bs)
+		     return (TypedTerm newP q newT ps, bs)
     AsPattern p1 p2 ps -> do
          (p3, l1) <- extractBindings p1
          (p4, l2) <- extractBindings p2
@@ -290,32 +287,32 @@ initPatternRules (pm, ps) is =
 		  getPlainTokenList i )) (filter isMixfix is)
 
 addPatternType :: Pattern -> Pattern -> Pattern
-addPatternType (TypedPattern _ ty ps) p = TypedPattern p ty ps 
+addPatternType (TypedTerm _ q ty ps) p = TypedTerm p q ty ps 
 addPatternType _ _ = error "addPatternType"
 
 
 mkPatAppl :: Pattern -> Pattern -> [Pos] -> Pattern
 mkPatAppl op arg qs = 
     case op of
-	    PatternVar (VarDecl i (MixfixType []) _ _) -> 
-		ResolvedMixPattern i [arg] qs
-	    TypedPattern p ty ps -> 
-		TypedPattern (mkPatAppl p arg qs) ty ps
-	    _ -> ApplPattern op arg qs
+	    QualVar i (MixfixType []) _  -> 
+		ResolvedMixTerm i [arg] qs
+	    TypedTerm p q ty ps -> 
+		TypedTerm (mkPatAppl p arg qs) q ty ps
+	    _ -> ApplTerm op arg qs
 
 toPat :: Id -> Int -> [Pattern] -> [Pos] -> Pattern
 toPat i _ ar qs = 
     if i == applId then assert (length ar == 2) $
 	   let [op, arg] = ar in mkPatAppl op arg qs
     else if i == tupleId then
-         mkTuplePattern ar qs
+         mkTupleTerm ar qs
     else if isUnknownId i then
-         PatternVar (VarDecl (simpleIdToId $ unToken i) 
-		     (MixfixType []) Other qs)
-    else ResolvedMixPattern i 
+         QualVar (simpleIdToId $ unToken i) 
+		     (MixfixType []) qs
+    else ResolvedMixTerm i 
 	     (if null ar then [] 
 	     else if isSingle ar then [head ar] 
-	     else [mkTuplePattern ar qs]) qs
+	     else [mkTupleTerm ar qs]) qs
 
 type PatChart = Chart Pattern Int
 
@@ -328,17 +325,17 @@ iterPatCharts ga pats chart=
        else 
        do let p:pp = pats
 	      recurse pt = self pp $ 
-			   oneStep (pt, exprTok {tokPos = posOfPat pt})
+			   oneStep (pt, exprTok {tokPos = posOfTerm pt})
           case p of
-		 MixfixPattern ps -> self (ps ++ pp) chart
-		 BracketPattern b ps qs -> self 
-		   (expandPos PatternToken (getBrackets b) ps qs ++ pp) chart
-		 TypedPattern hd typ ps -> do  
+		 MixfixTerm ps -> self (ps ++ pp) chart
+		 BracketTerm b ps qs -> self 
+		   (expandPos TermToken (getBrackets b) ps qs ++ pp) chart
+		 TypedTerm hd q typ ps -> do  
 		   mp <- resolvePattern ga hd 
 		   let np = case mp of Just pt -> pt
 				       _ -> p
-		   recurse $ TypedPattern np typ ps
-		 PatternToken tok -> self pp $ oneStep (p, tok)
+		   recurse $ TypedTerm np q typ ps
+		 TermToken tok -> self pp $ oneStep (p, tok)
 		 _ -> error ("iterPatCharts: " ++ show p) 
 
 getKnowns :: Id -> Knowns
@@ -354,7 +351,7 @@ resolvePattern ga pat =
 					 map (:[]) "{}[](),"))
 		    $ Set.unions $ map getKnowns ids
        chart <- iterPatCharts ga [pat] $ initChart (initPatternRules ps ids) ks
-       let Result ds mp =  getResolved showPretty (posOfPat pat) toPat chart
+       let Result ds mp =  getResolved showPretty (posOfTerm pat) toPat chart
        addDiags ds
        return mp
 

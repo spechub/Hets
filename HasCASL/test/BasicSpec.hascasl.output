@@ -7,7 +7,7 @@ class a, b, c < Type; a < b
 type s : c
 predfun tt : s ->? Unit
 var x : s
-program tt : s ->? Unit = \ x : s . ()
+program (op tt : s ->? Unit) = \ (var x : s) . ()
 program __ res __ (x : s, y : t) : s : s = x;
 	fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
 predfun eq : s × s ->? Unit
@@ -104,7 +104,7 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
 		      (Cons31 : Data1 × Data2 -> Data3,
 		       Cons32 : Data2 × Data1 -> Data3))%
 true : Unit %(Fun)%
-tt : s ->? Unit %(Op)% = \ x : s . ()
+tt : s ->? Unit %(Op)% = \ (var x : s) . ()
 %% Sentences -------------------------------------------------------------
 (fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
 						 (var y : t)) %()%
@@ -126,29 +126,29 @@ tt : s ->? Unit %(Op)% = \ x : s . ()
   known types:
     
 *** Hint 21.1, wrong result type 's' (21.20)
-  for application 'fst (x : s, y : t)'
-*** Error 21.1, no typing for 'fst(x : s, y : t) : s'
+  for application 'fst ((var x : s), (var y : t))'
+*** Error 21.1, no typing for 'fst(((var x : s), (var y : t))) : s'
 *** Hint 22.1, no type match for: snd
   with type: '_var_5 ->? t' (22.20)
   known types:
     
 *** Hint 22.1, wrong result type 't' (22.20)
-  for application 'snd (x : s, y : t)'
-*** Error 22.1, no typing for 'snd(x : s, y : t) : t'
+  for application 'snd ((var x : s), (var y : t))'
+*** Error 22.1, no typing for 'snd(((var x : s), (var y : t))) : t'
 *** Hint 28.9, no type match for: all
   with type: '_var_6 ->? ? Unit' (28.27)
   known types:
     
 *** Hint 28.9, wrong result type '? Unit' (28.27)
-  for application 'all (p : ? s)'
-*** Error 28.9, no typing for 'all(p : ? s) : ? Unit'
+  for application 'all (var p : ? s)'
+*** Error 28.9, no typing for 'all((var p : ? s)) : ? Unit'
 *** Hint 30.9, no type match for: And
   with type: '_var_8 ->? ? Unit' (30.32)
   known types:
     
 *** Hint 30.9, wrong result type '? Unit' (30.32)
-  for application 'And (x : _var_7, y : ? Unit)'
-*** Error 30.9, no typing for 'And(x : _var_7, y : ? Unit) : ? Unit'
+  for application 'And ((var x : _var_7), (var y : ? Unit))'
+*** Error 30.9, no typing for 'And(((var x : _var_7), (var y : ? Unit))) : ? Unit'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 *** Error 34.10, unexpected pattern '__ or __ (x, y : (? Unit))'
@@ -159,8 +159,8 @@ tt : s ->? Unit %(Op)% = \ x : s . ()
   known types:
     
 *** Hint 37.3, wrong result type '? Unit' (37.19)
-  for application 'ex (p : ? s)'
-*** Error 37.3, no typing for 'ex(p : ? s) : ? Unit'
+  for application 'ex (var p : ? s)'
+*** Error 37.3, no typing for 'ex((var p : ? s)) : ? Unit'
 *** Error 40.7, unexpected mixfix token: )
 *** Error 40.3, unexpected pattern 'ff ()'
 *** Error 40.20, unexpected mixfix token: all

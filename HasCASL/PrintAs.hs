@@ -221,36 +221,9 @@ instance PrettyPrint Term where
     printText0 ga (MixTypeTerm q t _) = printText0 ga q <+> printText0 ga t
     printText0 ga (MixfixTerm ts) = fsep $ map (printText0 ga) ts
     printText0 ga (BracketTerm k l _) = bracket k $ commaT_text ga l
-
-instance PrettyPrint Pattern where 
-    printText0 ga (PatternVar v) = printText0 ga v
-    printText0 ga (PatternConstr n t _) = printText0 ga n 
-			  <+> colon
-			  <+> printText0 ga t 
-    printText0 ga (ResolvedMixPattern n args _) = 
-	(if isSimpleId n then id else parens) (printText0 ga n) 
-			     <> (case args of 
-				 [] -> empty
-				 [t@(TuplePattern _ _)] -> 
-				           printText0 ga t
-				 _ -> parens $ commaT_text ga args)
-    printText0 ga (ApplPattern p1 p2 _) =  printText0 ga p1
-			<+> (case p2 of 
-			     TuplePattern _ _ -> id
-			     BracketPattern Parens _ _ -> id
-			     ResolvedMixPattern _ [] _ -> id
-			     PatternToken _ -> id
-			     _ -> parens) (printText0 ga p2)
-    printText0 ga (TuplePattern ps _) = parens $ commaT_text ga ps
-    printText0 ga (TypedPattern p t _) = printText0 ga p 
-			  <+> colon
-			  <+> printText0 ga t 
     printText0 ga (AsPattern v p _) = printText0 ga v
 			  <+> text asP
 			  <+> printText0 ga p
-    printText0 ga (PatternToken t) = printText0 ga t
-    printText0 ga (BracketPattern k l _) = bracket k $ commaT_text ga l
-    printText0 ga (MixfixPattern ps) = fsep (map (printText0 ga) ps)
 
 -- | print an equation with different symbols between 'Pattern' and 'Term'
 printEq0 :: GlobalAnnos -> String -> ProgEq -> Doc

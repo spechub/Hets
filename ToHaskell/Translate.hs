@@ -42,11 +42,11 @@ translateProgEqs eqs = map translateProgEq eqs
 translateProgEq :: Annoted ProgEq -> HsDecl
 translateProgEq (Annoted (ProgEq pat term pos) _ _ _) = 
   case pat of
-    PatternToken _ptok -> case term of
+    TermToken _ptok -> case term of
                            TermToken _ttok -> patBind pat term pos
 			   _ -> error ("translateProgEq " ++ show term)
-    MixfixPattern (p:_ps) -> case p of
-                              PatternToken ptok -> 
+    MixfixTerm (p:_ps) -> case p of
+                              TermToken ptok -> 
                               -- erstes PatternToken klein deutet auf HsFunBind
                                  if isLower $ head $ tokStr ptok then
                                    funBind pat term pos
@@ -58,7 +58,7 @@ translateProgEq (Annoted (ProgEq pat term pos) _ _ _) =
 -------------------------------------------------------------
 patBind :: Pattern -> Term -> Pos -> HsDecl
 -- x = y
-patBind (PatternToken ptok) (TermToken ttok) pos = 
+patBind (TermToken ptok) (TermToken ttok) pos = 
   HsPatBind (SrcLoc (sourceLine pos) $ sourceColumn pos) 
             (HsPVar (HsIdent (tokStr ptok))) 
             (HsUnGuardedRhs (HsVar (UnQual (HsIdent (tokStr ttok))))) 
@@ -71,9 +71,9 @@ patBind _ _ _ = error "not yet implemented"
 -------------------------------------------------------------
 funBind :: Pattern -> Term -> Pos -> HsDecl
 -- f a b ...  = y
-funBind (MixfixPattern (p:ps)) term pos = 
+funBind (MixfixTerm (p:ps)) term pos = 
   case p of 
-    PatternToken ptok -> 
+    TermToken ptok -> 
       HsFunBind [HsMatch (SrcLoc (sourceLine pos)
 			  $ sourceColumn pos)
                          (UnQual $ HsIdent $ tokStr ptok)
@@ -90,7 +90,7 @@ hsPats pats = map hsPat pats
 
 hsPat :: Pattern -> HsPat
 hsPat p = case p of 
-	    PatternToken ptok ->
+	    TermToken ptok ->
               if isLower $ head $ tokStr ptok then
 		HsPVar (HsIdent (tokStr ptok))
 	      else 

@@ -288,9 +288,9 @@ translatePattern :: Assumps -> TypeMap -> Pattern -> HsPat
 translatePattern as tm pat = 
   let err = error ("unexpected pattern: " ++ show pat) in
     case pat of
-      PatternVar (VarDecl v _ty _sepki _pos) 
+      QualVar v _ty _pos
 	  -> HsPVar $ HsIdent $ translateIdWithType LowerId v
-      PatternConstr (InstOpId uid _t _p) ts _pos -> 
+      QualOp _ (InstOpId uid _t _p) ts _pos -> 
         let oid = findUniqueId uid ts tm as
 	in case oid of
 	  Just i ->
@@ -298,15 +298,15 @@ translatePattern as tm pat =
 	        HsPApp (UnQual $ HsIdent $ translateIdWithType UpperId i) []
 	      else HsPApp (UnQual $ HsIdent $ translateIdWithType LowerId i) []
 	  _ -> error ("Proplem with finding of unique id: " ++ show pat)
-      ApplPattern p1 p2 _pos -> 
+      ApplTerm p1 p2 _pos -> 
 	  let tp = translatePattern as tm p1
 	      a = translatePattern as tm p2
 	      in case tp of
                  HsPApp u os -> HsPApp u (os ++ [a])
 		 _ -> error ("problematic application pattern " ++ show pat)
-      TuplePattern pats _pos -> 
+      TupleTerm pats _pos -> 
 	  HsPTuple $ map (translatePattern as tm) pats
-      TypedPattern p _ty _pos -> translatePattern as tm p 
+      TypedTerm p OfType _ty _pos -> translatePattern as tm p 
                                  --the type is implicit
       --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
       AsPattern _p1 _p2 _pos -> error "AsPattern nyi"

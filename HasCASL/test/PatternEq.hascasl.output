@@ -1,16 +1,22 @@
 type s, t
 op snd : s × t -> t
-program snd : s × t -> t (x : s, y : t) = (var y : t)
-program snd : s × t -> t (x : s, y : t) = (var y : t)
-program snd : s × t -> t (x : s, y : t) = (var y : t) : t
-program snd : s × t -> t (x : s, y : t) : t = (var y : t)
-program snd : s × t -> t (x : s, y : t) : t = (var y : t)
-program snd : s × t -> t (x : s, y : t) : t = (var y : t)
+program (op snd : s × t -> t) ((var x : s), (var y : t)) =
+	(var y : t)
+program (op snd : s × t -> t) ((var x : s), (var y : t)) =
+	(var y : t)
+program (op snd : s × t -> t) ((var x : s), (var y : t)) =
+	(var y : t) : t
+program (op snd : s × t -> t) ((var x : s), (var y : t)) : t =
+	(var y : t)
+program (op snd : s × t -> t) ((var x : s), (var y : t)) : t =
+	(var y : t)
+program (op snd : s × t -> t) ((var x : s), (var y : t)) : t =
+	(var y : t)
 program (x : s, y : s) = (x : s, y : s)
 op a : s
 program b : s = a
 op b : s
-program b : s : s = (op a : s)
+program (op b : s) : s = (op a : s)
 op x : s; y : t
 op c : t = (op snd : s × t -> t) ((op x : s) : s, (op y : t) : t)
 %% Type Constructors -----------------------------------------------------
@@ -40,15 +46,16 @@ def__ : forall a : Type .  a ->? Unit %(Fun)%
 false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not__ : Unit ->? Unit %(Fun)%
-snd : s × t -> t %(Op)% = \ (x : s, y : t) . (var y : t)
+snd : s × t -> t %(Op)% = \ ((var x : s),
+			     (var y : t)) . (var y : t)
 true : Unit %(Fun)%
 x : s %(Op)%
 y : t %(Op)%
 %% Diagnostics -----------------------------------------------------------
 *** Warning 6.10, different terms of 'snd'
-	\ (x : s, y : t) . (var y : t)
-	\ (x : s, y : t) . (var y : t) : t
+	\ ((var x : s), (var y : t)) . (var y : t)
+	\ ((var x : s), (var y : t)) . (var y : t) : t
 	
 
-*** Error 14.10, illegal toplevel pattern '(x : s, y : s)'
-*** Error 17.9, illegal toplevel pattern 'b : s'
+*** Error 14.10, illegal toplevel pattern '((var x : s), (var y : s))'
+*** Error 17.9, illegal toplevel pattern '(var b : s)'

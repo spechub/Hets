@@ -104,24 +104,9 @@ posOfTerm trm =
     MixTypeTerm q t ps -> firstPos [t] ps
     MixfixTerm ts -> posOf ts
     BracketTerm _ ts ps -> firstPos ts ps 
+    AsPattern p1 p2 ps -> firstPos [p1, p2] ps
 
 -- ---------------------------------------------------------------------
-instance PosItem Pattern where
-    get_pos = Just . posOfPat
-
-posOfPat :: Pattern -> Pos
-posOfPat pat =
-    case pat of
-    PatternVar vs -> getMyPos vs
-    PatternConstr (InstOpId i _ _) _ qs -> firstPos [i] qs
-    ResolvedMixPattern i _ _ -> posOfId i
-    ApplPattern p1 p2 ps -> firstPos [p1, p2] ps
-    TuplePattern ps qs -> firstPos ps qs
-    TypedPattern p _ ps -> firstPos [p] ps
-    AsPattern p1 p2 ps -> firstPos [p1, p2] ps
-    PatternToken t -> tokPos t
-    MixfixPattern ps -> posOf ps
-    BracketPattern _ ps qs -> firstPos ps qs
 
 instance PosItem VarDecl where
     get_pos (VarDecl v _ _ ps) = Just $ firstPos [v] ps
