@@ -371,7 +371,7 @@ instance PrintLaTeX f => PrintLaTeX (TERM f) where
 	     else
 	       condPrint_Mixfix_latex ga o_id l
     printLatex0 ga (Sorted_term t s _) = 
-	condParensSorted_term parens_latex t (printLatex0 ga t) <\+> 
+	condParensSorted_term parens_latex t (printLatex0 ga t) <> 
         colon_latex <\+> printLatex0 ga s
     printLatex0 ga (Cast  t s _) = 
 	printLatex0 ga t <\+> hc_sty_id asS <\+> printLatex0 ga s

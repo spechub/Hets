@@ -22,6 +22,8 @@ module CASL.LiteralFuns ( isLiteral
                         , basicTerm
                         , convCASLChar
                         , splitAppl
+                        , op_id
+                        , isQualOpSy
                         ) where
 
 import Data.Char (isDigit)
@@ -203,3 +205,7 @@ op_id op = case op of
                error "cannot literally Print Qual_id" 
            Op_name x          -> x
 
+isQualOpSy :: OP_SYMB -> Bool
+isQualOpSy o = case o of
+	   Op_name _          -> False
+	   Qual_op_name _ _ _ -> True

@@ -207,7 +207,7 @@ instance PrettyPrint COMPONENTS where
 instance PrettyPrint VAR_DECL where
     printText0 ga (Var_decl l s _) = commaT_text ga l 
 				<> colon 
-				<> printText0 ga s 
+				<+> printText0 ga s 
 
 printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
 printFORMULA ga (Quantification q l f _) = 
@@ -304,7 +304,7 @@ instance PrettyPrint f => PrettyPrint (TERM f) where
 	     else
 	       condPrint_Mixfix_text ga o_id l
     printText0 ga (Sorted_term t s _) = 
-        condParensSorted_term parens t (printText0 ga t) <+> 
+        condParensSorted_term parens t (printText0 ga t) <> 
         colon <+> printText0 ga s
     printText0 ga (Cast t s _) = 
         printText0 ga t <+> text asS <+> printText0 ga s
@@ -642,9 +642,7 @@ condParensAppl pf parens_fun ga o_i t mdir =
 		      Just ass | isAssoc ass amap o_i -> t'
 			       | otherwise -> parens_fun t'
 	| otherwise -> condParensPrec 
-    	where i_i = case o of
-			  Op_name i          -> i
-			  Qual_op_name i _ _ -> i
+    	where i_i = op_id o
 	      condParensPrec = case precRel (prec_annos ga) o_i i_i of
 			       Lower -> t'
 			       _     -> parens_fun t'
@@ -665,10 +663,12 @@ condParensSorted_term :: Show f =>
 			 -- the given Doc with appropiate 
 			 -- parens
                       -> TERM f -> Doc -> Doc
-condParensSorted_term  parens_fun t =
+condParensSorted_term  parens_fun t = 
     case t of
-    Application _ l _ 
-        | null l    -> id
+    Application osy l _ 
+        | null l     -> id
+        | isQualOpSy osy -> id
+        | not (isMixfix (op_id osy)) -> id
         | otherwise -> parens_fun
     _ 
         | isMixfixTerm t -> parens_fun
