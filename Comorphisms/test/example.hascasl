@@ -6,6 +6,7 @@ spec Example =
 
   sorts A,B
   ops a,b : A ->? B;
+      aa,bb: A -> B;
       c : A * B * B ->? B;
       c : A * B;
       cc : A * A * A ->? B;
@@ -17,14 +18,19 @@ spec Example =
         g : A * B;
         gg : A * A * B;
         h : B;
+        j : A;
   
-  forall a1,a2,a3:A; b1,b2,b3:B
-    . forall b4:B . true
+  forall a1,a2,a3:A; b1,b2,b3:B; z:A->?B
+    . aa a1 = bb a2
+    . z a1 = z a2
+    . forall b4,b5,b6:B . true
     . exists b4:B . true
+    . exists b4:B . forall a8:A . true
     . exists! b4:B . true
+    . true => forall a3:A . false
     . true /\ false
     . (true => false) /\ (false => true)
-%%    . not (h b1 \/ g(a1,b2))
+    . not (h b1 \/ j a1) 
     . a a1 = b a2 /\ b a2 = b a3 /\ a a1 = b a3
     . a a1 = b a2 \/ b a2 = b a3
     . a a1 = b a2 => b a2 = b a3
@@ -34,9 +40,8 @@ spec Example =
     . true
     . false
     . def e
-%%    . a1 abc b1 = a2 abc b2
+    . a1 abc b1 = a2 abc b2
     . a a1 = b a2
     . (\ x:A . a1 = a2) = (\ x:A . b1 = b2)
     . (\ x:A . a x) = (\ y:A . b y)
-%%    . let a4 = \  (x:A,y:A) . x = y in h b1
-%%    . let a4 = a1;  a6 = a a2 in a6 = d
+    . b3 = let b4 = a a1 in b4
