@@ -59,11 +59,11 @@ diffClass c1 c2 =
 
 -- | compute difference of type infos
 diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
-diffType t1 _t2 = Nothing -- Just t1
+diffType _t1 _t2 = Nothing -- Just t1
 
 -- | compute difference of overloaded operations
 diffAss :: OpInfos -> OpInfos -> Maybe OpInfos
-diffAss a1 _a2 = Nothing -- Just a1
+diffAss _a1 _a2 = Nothing -- Just a1
 
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
@@ -78,7 +78,7 @@ preEnv :: Env
 preEnv = initialEnv { typeMap = addUnit Map.empty
 		    , assumps = addOps Map.empty }
 
-addPreIds :: Set.Set Id -> State Env ()
+addPreIds :: (PrecMap, Set.Set Id) -> State Env ()
 addPreIds r = do e <- get
 		 put e { preIds = r }
 
@@ -90,17 +90,17 @@ anaBasicSpec ga b@(BasicSpec l) = do
     putTypeMap $ addUnit tm
     putAssumps $ addOps as
     newAs <- gets assumps
-    let ids = Set.fromDistinctAscList $ Map.keys newAs 
-	preds = Set.fromDistinctAscList 
+    let preds = Set.fromDistinctAscList 
 		   $ Map.keys $ Map.filter (any ( \ oi -> 
 				 case opDefn oi of
 				 NoOpDefn Pred -> True
 				 Definition Pred _ -> True
 				 _ -> False) . opInfos) newAs
-	Ids newPreds newOps = idsOfBasicSpec b 
-	newGa = addBuiltins ga (Set.union ids newOps) 
-		(Set.union preds newPreds) 
-    addPreIds $ Set.union preds newPreds
+	newPreds = idsOfBasicSpec b 
+	rels = Set.union preds newPreds
+	newGa = addBuiltins ga
+	precs = mkPrecIntMap $ prec_annos newGa
+    addPreIds (precs, rels)
     ul <- mapAnM (anaBasicItem newGa) l
     return $ BasicSpec ul
 

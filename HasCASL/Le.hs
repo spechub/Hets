@@ -13,7 +13,6 @@ Portability :  portable
 module HasCASL.Le where
 
 import HasCASL.As
-import HasCASL.AsToIds
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
@@ -99,17 +98,20 @@ type Assumps = Map.Map UninstOpId OpInfos
 -- local env
 -----------------------------------------------------------------------------
 
+type PrecMap = (Map.Map Id Int, Int, Int)
+
 data Env = Env { classMap :: ClassMap
                , typeMap :: TypeMap
 	       , assumps :: Assumps
 	       , sentences :: [Named Term]	 
 	       , envDiags :: [Diagnosis]
-	       , preIds :: Set.Set Id
+	       , preIds :: (PrecMap, Set.Set Id)
 	       , counter :: Int
 	       } deriving (Show, Eq)
 
 initialEnv :: Env
-initialEnv = Env Map.empty Map.empty Map.empty [] [] Set.empty 1
+initialEnv = Env Map.empty Map.empty Map.empty [] [] 
+	     ((Map.empty, 0, 0), Set.empty) 1
 
 -- | add diagnostic messages 
 addDiags :: [Diagnosis] -> State Env ()
