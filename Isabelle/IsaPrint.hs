@@ -57,13 +57,17 @@ instance Show Typ where
 
 showTyp :: Integer -> Typ -> String
 showTyp _ (Type (t,[])) = t
+showTyp pri (Type ("appl",[s,t])) =
+  showTyp pri s ++ " " ++ showTyp pri t
 showTyp pri (Type ("fun",[s,t])) = 
   bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 11 t)
 showTyp pri (Type ("*",[s,t])) =
   showTyp pri s ++ " * " ++ showTyp pri t
-showTyp _ (Type (t,(arg:args))) = rb++show arg++
-                                      concat (map ((sp++).show) args)++lb++t
+showTyp _ (Type (t,(arg:[]))) = show arg ++ sp ++ t
+showTyp _ (Type (t,(arg:args))) = rb ++ show arg ++
+                                      concat (map ((sp++).show) args)++ lb ++ t
 showTyp _ (TFree (v,_)) = v
+showTyp _ (TVar ((v,_),_)) = "\'" ++ v
 
 instance Show TypeSig where
   show tysig =
@@ -89,7 +93,7 @@ showTerm (Const ("Ex",_) `App` Abs (v,ty,t)) =
   showQuant "?" v ty t
 showTerm (Const ("Ex1",_) `App` Abs (v,ty,t)) = 
   showQuant "?!" v ty t
--- just t1 `App` t2 is left
+-- At this point is just t1 `App` t2 left
 showTerm t = show(toPrecTree t)
 
 showQuant :: String -> Term -> Typ -> Term -> String
@@ -144,28 +148,36 @@ toPrecTree :: Term -> Tree PrecTerm
 toPrecTree t =
 -- trace ("[sT] "++st t++"\n") (
   case t of
-    (Const("All",t1) `App` Abs(v,ty,t2)) -> Node (isaAppPrec (Const ("QUANT", dummyT))) 
-               [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
-    (Const("Ex",t1) `App` Abs(v,ty,t2)) -> Node (isaAppPrec (Const ("QUANT", dummyT))) 
-               [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
-    (Const("Ex1",t1) `App` Abs(v,ty,t2)) -> Node (isaAppPrec (Const ("QUANT", dummyT))) 
-               [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]    
+    (Const("All",t1) `App` Abs(v,ty,t2)) -> 
+       Node (isaAppPrec (Const ("QUANT", dummyT))) 
+            [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
+    (Const("Ex",t1) `App` Abs(v,ty,t2)) -> 
+       Node (isaAppPrec (Const ("QUANT", dummyT))) 
+            [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
+    (Const("Ex1",t1) `App` Abs(v,ty,t2)) -> 
+       Node (isaAppPrec (Const ("QUANT", dummyT))) 
+            [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]    
     (t1 `App` t2) -> 
       case t1 of 
         Const ("op <=>", typ) `App` t3 
-          -> Node (eqvPrec (Const ("op =",typ))) [toPrecTree t3, toPrecTree t2] 
+          -> Node (eqvPrec (Const ("op =",typ))) 
+                  [toPrecTree t3, toPrecTree t2] 
         Const ("op =", typ) `App` t3 
-          -> Node (eqPrec (Const ("op =",typ))) [toPrecTree t3, toPrecTree t2] 
+          -> Node (eqPrec (Const ("op =",typ))) 
+                  [toPrecTree t3, toPrecTree t2] 
         Const ("op &", typ) `App` t3 
-          -> Node (andPrec (Const ("op &",typ))) [toPrecTree t3, toPrecTree t2] 
+          -> Node (andPrec (Const ("op &",typ))) 
+                  [toPrecTree t3, toPrecTree t2] 
         Const ("op |", typ) `App` t3 
-          -> Node (orPrec (Const ("op |",typ))) [toPrecTree t3, toPrecTree t2] 
+          -> Node (orPrec (Const ("op |",typ))) 
+                  [toPrecTree t3, toPrecTree t2] 
         Const ("op -->", typ) `App` t3 
           -> Node (implPrec (Const ("op -->",typ)))
-               [toPrecTree t3, toPrecTree t2] 
+                  [toPrecTree t3, toPrecTree t2] 
         Const (c, typ) `App` t3 
-          -> Node (appPrec (Const (c, typ))) [toPrecTree t3, toPrecTree t2] 
-        _ -> Node (isaAppPrec (Const ("dummy", dummyT))) 
+          -> Node (appPrec (Const (c, typ))) 
+                  [toPrecTree t3, toPrecTree t2] 
+        _ -> Node (isaAppPrec (Const ("DUMMY", dummyT))) 
                [toPrecTree t1, toPrecTree t2] 
     _ -> Node (noPrec t) []
 -- )
@@ -185,7 +197,7 @@ showPTree (Node (PrecTerm term pre) annos) =
       Const ("op &", _)   -> infixP pre "&" leftChild rightChild
       Const ("op |", _)   -> infixP pre "|" leftChild rightChild
       Const ("op -->", _) -> infixP pre "-->" leftChild rightChild
-      Const ("dummy", _)  -> simpleInfix pre leftChild rightChild
+      Const ("DUMMY", _)  -> simpleInfix pre leftChild rightChild
       Const ("Pair", _)   -> pair leftChild rightChild
       Const ("QUANT",_)   -> quant leftChild rightChild
       Const (c, _)        -> prefixP pre c leftChild rightChild
@@ -197,7 +209,6 @@ showPTree (Node (PrecTerm term pre) annos) =
    If the precedence of one side is weaker (here: higher number) than the 
    connector's one it is bracketed. Otherwise not. 
 -}
-
 infixP :: Precedence -> String -> Tree PrecTerm -> Tree PrecTerm -> String
 infixP pAdult stAdult leftChild rightChild 
     | (pAdult < prLeftCld) && (pAdult < prRightCld) = 
@@ -221,6 +232,9 @@ infixP pAdult stAdult leftChild rightChild
         stRightCld = showPTree rightChild
 
 
+{- Application of (HasCASL-)operations with two arguments. 
+   Both arguments are usually bracketed, except single ones.
+-}
 prefixP :: Precedence -> String -> Tree PrecTerm -> Tree PrecTerm -> String
 prefixP pAdult stAdult leftChild rightChild 
     | (pAdult <= prLeftCld) && (pAdult <= prRightCld) =
@@ -243,7 +257,9 @@ prefixP pAdult stAdult leftChild rightChild
         stLeftCld = showPTree leftChild
         stRightCld = showPTree rightChild
 
-
+{- Isabelle application: An operation/a datatype-constructor is applied 
+   to one argument. The whole expression is always bracketed.
+-}
 simpleInfix :: Precedence -> Tree PrecTerm -> Tree PrecTerm -> String
 simpleInfix pAdult leftChild rightChild 
     | (pAdult < prLeftCld) && (pAdult < prRightCld) = 
@@ -263,6 +279,8 @@ simpleInfix pAdult leftChild rightChild
         stRightCld = showPTree rightChild
 
 
+{- Quantification _in_ Formulas
+-}
 quant :: Tree PrecTerm -> Tree PrecTerm -> String
 quant (Node (PrecTerm (Const("All",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) []) = 
   rb++showQuant "!"  v ty t++lb
@@ -276,6 +294,7 @@ quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 pr :: Tree PrecTerm -> Precedence
 pr (Node (PrecTerm _ p) _) = p
 
+-- Prints: (p1, p2)
 pair :: Tree PrecTerm -> Tree PrecTerm -> String
 pair leftChild rightChild = rb++showPTree leftChild++", "++
                                 showPTree rightChild++lb
@@ -310,7 +329,7 @@ instance Show Sign where
     showDataTypeDef [] = ""
     showDataTypeDef (dt:dts) = 
        "datatype " ++ showDataType dt
-       ++ (concat $ map (("and "++) . showDataType) dts)
+       ++ (concat $ map (("and "++) . showDataType) dts) ++ "\n"
     showDataType (t,op:ops) =
        show t ++ " = " ++ showOp op 
        ++ (concat $ map ((" | "++) . showOp) ops)
@@ -324,23 +343,6 @@ instance PrettyPrint Sign where
 instance PrintLaTeX Sign where
     printLatex0 = printText0
 
-
-bracketize :: Bool -> String -> String
-bracketize b s = if b then rb++s++lb else s
-
-isIsaChar :: Char -> Bool
-isIsaChar c = (isAlphaNum c && isAscii c) || c `elem` "_'"
-
-
-replaceChar1 :: Char -> String
-replaceChar1 c | isIsaChar c = [c] 
-               | otherwise = replaceChar c++"__"
-
-transString :: String -> String
-transString "" = "X"
-transString (c:s) = 
-   ((if isAlpha c && isAscii c then [c] 
-       else 'X':replaceChar1 c) ++ (concat $ map replaceChar1 s))
 
 
 em :: String
@@ -360,6 +362,33 @@ lb = ")"
 
 lbb :: String
 lbb = lb++lb
+
+bracketize :: Bool -> String -> String
+bracketize b s = if b then rb++s++lb else s
+
+isIsaChar :: Char -> Bool
+isIsaChar c = (isAlphaNum c && isAscii c) || c `elem` "_'"
+
+replaceChar1 :: Char -> String
+replaceChar1 c | isIsaChar c = [c] 
+               | otherwise = replaceChar c++"__"
+
+transString :: String -> String
+transString "" = "X"
+transString (c:s) = 
+   if isInf (c:s) then (concat $ map replaceChar1 (cut (c:s)))
+   else ((if isAlpha c && isAscii c then [c] 
+          else 'X':replaceChar1 c) ++ (concat $ map replaceChar1 s))
+
+isInf :: String -> Bool
+isInf s = has2Under s && has2Under (reverse s)
+
+has2Under :: String -> Bool
+has2Under (fst:snd:_) = fst == '_' && snd == '_'
+has2Under _ = False
+
+cut :: String -> String
+cut = reverse . tail . tail . reverse . tail . tail
 
 -- Replacement of special characters
 
