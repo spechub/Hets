@@ -14,54 +14,53 @@
 -}
 {-
    todo:
-   1. evaluateOnePointFORMULA durch rekursiven Abstieg
-      erstmal das Morphism-Argument ignorieren
-      für Qauntoren: rekursiv
-      für Konjunktion: Funktion all benutzen
-      für Disjunktion: Funktion any benutzen
-      usw.
-      Predication, Gleichungen sind immer wahr
-      Sort_gen_ax erstmal weglassen
-      Mixfix_formula, Unparsed_formula: Fehler ausgeben (mit error)
+   3. addsNewSupersorts (see below)
+
+   4. Extend evaluateOnePointFORMULA for formulas 
+      Sort_gen_ax constrs
+      
+         compute recover_Sort_gen_ax constr, get (srts,ops,maps)
+         check whether all srts are "new" (not in the image of the morphism)
+         check whether for all s in srts, there is a term, 
+           using variables of sorts outside srts
+           using operation symbols from ops
+         Algorithm:
+         construct a list of "inhabited" sorts
+         initially, the list is empty
+         iteration step:
+           for each operation symbol in ops, such that
+              all argument sorts (opArgs) 
+                 are either inhabited or are outside srts
+              add the results sort (opRes) to the list of inhabited sorts
+         start with initial list, and iterate until iteration is stable
+         check whether srts is a sublist of the list resulting from the iteration 
+ 
    
-   2. den 1. Schritt testen.
-      Dazu vorübergehend in hets.hs einfügen
-         import CASL.CCC.OnePoint
-      mit "make hets" übersetzen
-      oder den import nicht einfügen, und
-         gmake ghci
-         :l CASL/CCC/OnePoint.hs
+-}
 
-   3. do-Notation wieder rauswerfen, statt do x<- ... 
-       let x= .. in
-      imageOfMorphism komplettieren (pred wie op)
-      in evaluateOnePointFORMULA die lookup-Aufrufe korrigieren
-      (Typchecker benutzen!)
+module CASL.CCC.OnePoint where
+
+import CASL.Sign                -- Sign, OpType
+import CASL.Morphism              
+import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
+import Common.Result            -- Result
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
 
 
-      One-point-Modell nur für das Bild des Signatur-Morphismus m
-      Das heißt:
-      bei Gleichungen: die Sorte s der Terme feststellen
-         (die Terme sind immer Sorted_Term)
-         falls die Sorte s im Bild von m ist
-          d..h. falls es ein t in der Source-Signatur gibt
-                mit m(t)=s
-                Die Menge der in Frage kommenden t's erfährt man mit msource m
-                m(t) berechnet man mit Map.lookup (sort_map m) t
-           ... falls es also ein t gibt, dann "unklar"
-           ... es kein solches t gibt: dann True
-         analog bei Definedness (gucke die Sorte des Terms an)
-         analog bei Predication (gucke Prädikatsymbol)
-
-      Vorschlag: Maybe Bool
-         Nothing       *, unklar
+{-
+We use a three valued logic to evaluate a formula in a one-point expansion
+of an unknown arbitrary model. This means that for new sorts and new predicates,
+every equation and predicate application holds, but for the old sorts and
+predicates, we do not know anything. The three valued logic is represented
+with Maybe Bool. It has the following meaning:
+     
+         Nothing      * = unknown
          Just True    True
          Jast False   False
 
-
-use three-valued logic {true, false, *}, * means "don't know"
-equations between new sorts are true, otherwise *
-new predicates are true, otherwise *
+The connectives are as follows:
 
 and t f *
 t   t f *
@@ -87,28 +86,7 @@ not t f *
     f t *
 
 (this is just Kleene's strong three-valued logic)
-
-Implement it using Maybe Bool and monads
-
-   4. Sort_gen_ax [SORT] [OP_SYMB]
-      nachgucken, ob zu jeder Sorte in [SORT] ein Term mit
-      Operationssymbolen in [OP_SYMB] existiert.
-      Dazu Tabelle aufbauen, welche Sorten sind "bewohnt"?
-        Anfangs ist die Tabelle leer; dann für jedes totale OP_SYMB
-        neue Einträge erzeugen: wenn Argumenten bewohnt sind,
-        so ist auch die Zielsorte bewohnt
-   
 -}
-
-module CASL.CCC.OnePoint where
-
-import CASL.Sign                -- Sign, OpType
-import CASL.Morphism              
-import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
-import Common.Result            -- Result
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
 
 evaluateOnePoint :: Morphism f e m -> [FORMULA f] -> Maybe Bool
 evaluateOnePoint m fs = 
@@ -209,7 +187,7 @@ evaluateOnePointFORMULA sig (ExtFORMULA _)=error "Fehler ExtFORMULA"
 
 evaluateOnePointFORMULA _ _=error "Fehler" -- False?    
 
-
+-- | Compute the image of a signature morphism
 imageOfMorphism :: Morphism f e m  -> Sign f e
 imageOfMorphism m = 
         sig {sortSet = Map.image sortMap (sortSet src),
@@ -242,3 +220,18 @@ imageOfMorphism m =
           case Map.lookup ident predM of
             Nothing -> Map.insert ident (Set.single pt) predM
             Just pts -> Map.insert ident (Set.insert pt pts) predM
+
+-- | Test whether a signature morphism adds new supersorts
+addsNewSupersorts :: Morphism f e m -> Bool
+addsNewSupersorts = error "addsNewSupersorts not yet implemented"
+{-
+check: is there a sort not in the image of the morphism, that is
+simultaneously s supersort of a sort that  is in the image.
+
+e.g.
+go through all sorts in the image
+for each such sort s, comupte supersortsOf s
+test whether a supersort is not in the image
+if there is such a sort (i.e. supersort not in the image), then return True
+otherwise, return False
+-}
