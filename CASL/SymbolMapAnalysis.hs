@@ -576,6 +576,12 @@ type PosMap = (Map.Map Symbol (SymbolSet,(Bool,Int)),
                Map.Map (Bool,Int) [(Symbol,SymbolSet)])
 
 -- Some basic operations on PosMap
+
+-- postpone entries with no default mapping and size > 1
+postponeEntry :: Symbol -> SymbolSet -> Bool
+postponeEntry sym symset = 
+  not $ Set.any (preservesName sym) symset && Set.size symset > 1
+
 removeFromPosmap :: Symbol -> (Bool,Int) -> PosMap -> PosMap
 removeFromPosmap sym card (posmap1,posmap2) =
   (Map.delete sym posmap1,
@@ -591,7 +597,7 @@ addToPosmap :: Symbol -> SymbolSet -> PosMap -> PosMap
 addToPosmap sym symset (posmap1,posmap2) =
   (Map.insert sym (symset,card) posmap1,
    Map.listInsert card (sym,symset) posmap2)
-  where card = (not $ Set.any (preservesName sym) symset,Set.size symset)
+  where card = (postponeEntry sym symset,Set.size symset)
 
 -- restrict posmap such that each symbol from symset1 is only mapped
 -- to symbols from symset2
@@ -661,14 +667,16 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
   -- 1. use rmap to get a renaming...
   mor1 <- inducedFromMorphism rmap sigma1
   -- 1.1 ... is the renamed source signature contained in the target signature?
+  --debug 3 ("mtarget mor1",mtarget mor1)
+  --debug 3 ("sigma2",sigma2)
   if isSubSig (mtarget mor1) sigma2 
    -- yes => we are done
-   then do {-debug 0 ("easy",1::Int);-} return (mor1 {mtarget = sigma2})
+   then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
    else do  -- 2. Compute initial posmap, using all possible mappings of symbols
      let symset1 = symOf sigma1
          symset2 = symOf sigma2
-         addCard sym s = (s,(not $ Set.any (preservesName sym) s,Set.size s))
+         addCard sym s = (s,(postponeEntry sym s,Set.size s))
          ins1 sym = Map.insert sym
                        (addCard sym $ Set.filter (canBeMapped rmap sym) symset2)
          posmap1 = Set.fold ins1 Map.empty symset1
