@@ -1,5 +1,5 @@
-sort b
-free type A ::= A b
-%%ops f,g : A * B -> C
+sort A,B,C
+%%free type A ::= A b
+ops f : A * B -> C
 
 
