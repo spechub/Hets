@@ -1,9 +1,10 @@
-{- HetCATS/CASL/Sublogics.hs
-   $Id$
-   Authors: Pascal Schmidt
-   Year:    2002
-
-   todo:
+------------------------------------------------------------------------------
+-- HetCATS/CASL/Sublogics.hs
+-- $Id$
+-- Authors: Pascal Schmidt
+-- Year:    2002
+------------------------------------------------------------------------------
+{- todo:
 
    sublogic_names :: id -> sublogics -> [String] 
              -- the first name is the principal name
@@ -12,15 +13,11 @@
   meet, join :: l -> l -> l  -- meet = "Durschnitt"
   top :: l
 
-Weitere Instanzen mit HasCASL, CASL-LTL etc.
-  (nur sich selbst als Sublogic)
-Logic-Representations (Sublogic immer = top)
+  Weitere Instanzen mit HasCASL, CASL-LTL etc.
+    (nur sich selbst als Sublogic)
+  Logic-Representations (Sublogic immer = top)
 
-Alles zusammenfassen in LogicGraph.hs
-
-min_sublogic_basic_spec  Analysefunktion: für basic spec Bitmaske berechnen
-   (Bits fuer Features setzen und rekursiv verodern)
-is_in_basic_spec  Testfunktion: pruefen, ob errechnete Bitmaske <= vorgegebene
+  Alles zusammenfassen in LogicGraph.hs
 
 -}
 
