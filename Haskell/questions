@@ -3,26 +3,9 @@
 
  - wie Dateinamen fuer anaHaskellFile rausbekommen?
 
- - wie NodeLab aus DG bekommen (anhand eines Node), match ok?
 
- - join DGraphs selbst schreiben?
-   lieber anaHaskellFileAux mit DGraph-Argument, anaHaskellFile = anaHaskellFileAux emptyDG
-   und so den DG durchschleifen/inkrementell vergößern => kein Join nötig
 
- - erhalten des Knoten aufwaendig/krude: name in GlobalEnv nicht bekannt
 
- - folgendes anders gemacht, richtig so?
-  insImports mit Resultat IO DGraph, oder besser: IO (LIB_NAME,LibEnv)
-  importierte Module mit anaHaskellFile behandeln (rekursiv)
-  Für jedes importierte Modul erhält man (libname,lenv) => mit lookup (ln,lenv)
-   erhält man einen GlobalContext = (GlobalAnnos,GlobalEnv,DGraph)
-  DGraphen der importierten Module vereinigen zu großem DGraph G
-  Knoten aus den GlobalEnvs sind die Hauptknoten der importierten
-  Module. Von da aus Links zu Knoten für Hauptmodul legen (als Erweiterung von G).
-
-- Für basic_analysis muss Hatchet-Funktion tiModule reduizert werden
-  auf Analyse des Moduls (d.h. keine Analyse der Importe) -> Komplett
-  raus, was bedeutet das fuer tiModule?
 
 
 
