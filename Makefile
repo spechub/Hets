@@ -535,7 +535,11 @@ atctest2: ATC/ATCTest2.hs Common/SimpPretty.hs Common/ATerm/*.hs \
 ### ATerm.Lib test system
 atermlibtest: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs \
     Common/ATerm/*.hs Common/Lib/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
+	$(HC) --make -o $@ $< $(HC_OPTS) $(EXTRA_HC_OPTS)
+
+hatermdiff: Common/ATerm/ATermDiffMain.hs Common/SimpPretty.hs \
+    Common/ATerm/*.hs Common/Lib/*.hs
+	$(HC) --make -o $@ $< $(HC_OPTS) $(EXTRA_HC_OPTS)
 
 ### HetCASL with dev graph
 hetdg: GUI/hetdg.hs $(drifted_files) *.hs 
