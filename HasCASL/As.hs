@@ -1,12 +1,17 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/As.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable
+
    
    abstract syntax for HasCASL
-   more liberal than HetCATS/HasCASL/Concrete-Syntax.txt
-   annotations almost as in HetCATS/CASL/AS_Basic_CASL.hs v 1.8 
+   more liberal than Concrete-Syntax.txt
+   annotations are almost as for CASL
+
 -}
 
 module HasCASL.As where
