@@ -85,8 +85,16 @@ asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 -- -------------------------------------------------------------------------
 freshInstList :: TypeScheme -> State Int (Type, [Type])
 freshInstList (TypeScheme tArgs (_ :=> t) _) = 
-    do ts <- mkSubst tArgs
-       return (repl(Map.fromList $ zip tArgs ts) t, ts)
+    do let vs = leaves (< 0) t
+       ts <- mkSubst vs  
+       return (rename ( \ i k n -> if n < 0 then 
+			ts !! (-1-n) else TypeName i k n) t, 
+	       map (mapArg $ zip vs ts) tArgs)
+
+mapArg :: [(TypeArg, Type)] -> TypeArg -> Type
+mapArg ts (TypeArg i k _ _) = 
+    maybe (error "mapArg") snd $ 
+            find (\ (TypeArg j l _ _, _) -> i == j && k == l) ts
 
 freshInst :: TypeScheme -> State Int Type
 freshInst = fmap fst . freshInstList 
