@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
-CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
+CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
 ## set ghc imports properly for your system
 LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}'
@@ -89,7 +89,7 @@ objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
-    Modal/AS_Modal.hs $(gendrifted_files)
+    $(gendrifted_files)
 
 genrule_header_files = $(wildcard ATC/*.header.hs)
 
@@ -101,6 +101,7 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 CASL/Morphism.hs CASL/Sign.hs CASL/AS_Basic_CASL.der.hs \
                 HasCASL/As.hs HasCASL/Le.hs HasCASL/SymbItem.hs \
                 HasCASL/Symbol.hs HasCASL/Morphism.hs \
+                Modal/AS_Modal.hs Modal/ModalSign.hs \
                 CspCASL/AS_CSP_CASL.hs \
                 Static/DevGraph.hs \
                 Haskell/Hatchet/AnnotatedHsSyn.hs \
@@ -117,7 +118,7 @@ gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
                    ATC/DevGraph.hs \
                    CASL/ATC_CASL.hs Haskell/ATC_Haskell.hs \
                    HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs \
-                   ATC/IsaSign.hs
+                   Modal/ATC_Modal.hs ATC/IsaSign.hs
 
 generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
 
@@ -225,12 +226,11 @@ genRules: $(generated_rule_files) utils/genRules
 $(generated_rule_files): $(genrule_files) utils/genRules #$(genrule_header_files)
 	$(MAKE) clean_genRules
 	$(foreach file,$(atc_files),$(gen_atc_files))
-	utils/genRules -r $(rule) -o CASL    -h ATC/CASL.header.hs \
-            $(casl_files)
+	utils/genRules -r $(rule) -o CASL $(casl_files)
 	utils/genRules -r $(rule) -o HasCASL -h ATC/HasCASL.header.hs \
             $(hascasl_files)
-	utils/genRules -r $(rule) -o CspCASL -h ATC/CspCASL.header.hs \
-            $(cspcasl_files)
+	utils/genRules -r $(rule) -o Modal $(modal_files)
+	utils/genRules -r $(rule) -o CspCASL $(cspcasl_files)
 	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
             $(haskell_files)
 
@@ -242,9 +242,10 @@ gen_atc_files = if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs 
                    utils/genRules -r $(rule) -o ATC $(file); \
                 fi ;
 
-atc_files := $(filter-out CASL/% HasCASL/% CspCASL/% Haskell/% ,$(genrule_files))
+atc_files := $(filter-out CASL/% HasCASL/% Modal/% CspCASL/% Haskell/% ,$(genrule_files))
 casl_files := $(filter CASL/% ,$(genrule_files))
 hascasl_files := $(filter HasCASL/% ,$(genrule_files))
+modal_files := $(filter Modal/% ,$(genrule_files))
 cspcasl_files := $(filter CspCASL/% ,$(genrule_files))
 haskell_files := $(filter Haskell/%,$(genrule_files))
 
@@ -294,6 +295,7 @@ real_clean: bin_clean lib_clean
 distclean: real_clean clean_genRules d_clean
 	$(RM) hetcats/Version.hs
 	$(RM) $(drifted_files)
+	$(RM) utils/DrIFT utils/genRules
 #	$(RM) $(happy_files)
 
 ####################################################################
