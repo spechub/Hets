@@ -276,25 +276,29 @@ ana_OP_ITEM ga oi =
 	   return $ Op_decl ops ty (catMaybes ul) ps
     Op_defn i par at ps -> 
 	do let ty = headToType par
+	       args = case par of 
+		      Total_op_head as _ _ -> as
+		      Partial_op_head as _ _ -> as
+	       vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
+	       arg = concatMap ( \ (Var_decl v s qs) ->
+				 map ( \ j -> Qual_var j s qs) v) vs
            addOp (toOpType ty) i
 	   ops <- allOpIds
 	   preds <- allPredIds 
 	   newGa <- addAssocs ga
- 	   let vars = headToVars par
+ 	   let vars =  concatMap ( \ (Arg_decl v _ _) -> v) args
 	       allOps = foldr ( \ v s -> Set.insert (simpleIdToId v) s) 
 			ops vars 
 	       Result ds mt = resolveMixfix newGa allOps preds False $ item at
 	   addDiags ds
-	   return $ case mt of 
-	            Nothing -> Op_decl [i] ty [] ps
-		    Just t -> Op_defn i par at { item = t } ps
-    where 
-    headToVars :: OP_HEAD -> [VAR]
-    headToVars h = 
-	let as = case h of 
-		 Total_op_head args _ _ -> args
-		 Partial_op_head args _ _ -> args
-	    in concatMap ( \ (Arg_decl v _ _) -> v) as 
+	   case mt of 
+	     Nothing -> return $ Op_decl [i] ty [] ps
+	     Just t -> do addSentences [NamedSen (getRLabel at) $
+			     Quantification Universal vs 
+			     (Strong_equation 
+			      (Application (Qual_op_name i ty []) arg [])
+			      t []) []]
+			  return $ Op_defn i par at { item = t } ps
 
 headToType :: OP_HEAD -> OP_TYPE
 headToType (Total_op_head args r ps) = 
@@ -327,26 +331,29 @@ ana_PRED_ITEM ga p =
 	do mapM (addPred $ toPredType ty) preds
 	   return p
     Pred_defn i par at ps ->
-	do let ty = predHeadToType par
+	do let Pred_head args rs = par
+	       ty = Pred_type (sortsOfArgs args) rs
+	       vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
+	       arg = concatMap ( \ (Var_decl v s qs) ->
+				 map ( \ j -> Qual_var j s qs) v) vs
            addPred (toPredType ty) i
 	   ops <- allOpIds
 	   preds <- allPredIds 
 	   newGa <- addAssocs ga
-	   let vars = predHeadToVars par
+	   let vars = concatMap ( \ (Arg_decl v _ _) -> v) args 
 	       allOps = foldr ( \ v s -> Set.insert (simpleIdToId v) s) 
 			ops vars 
 	       Result ds mt = resolveFormula newGa allOps preds $ item at
 	   addDiags ds
-	   return $ case mt of 
-	            Nothing -> Pred_decl [i] ty ps
-		    Just t -> Pred_defn i par at { item = t } ps
-    where 
-    predHeadToType :: PRED_HEAD -> PRED_TYPE
-    predHeadToType (Pred_head args ps) = 
-	Pred_type (sortsOfArgs args) ps
-    predHeadToVars :: PRED_HEAD -> [VAR]
-    predHeadToVars (Pred_head args _) = 
-	concatMap ( \ (Arg_decl v _ _) -> v) args 
+	   case mt of 
+	     Nothing -> return $ Pred_decl [i] ty ps 
+	     Just t -> do 
+               addSentences [NamedSen (getRLabel at) $
+			     Quantification Universal vs 
+			     (Equivalence (Predication (Qual_pred_name i ty [])
+					   arg [])
+			      t []) []]
+	       return $ Pred_defn i par at { item = t } ps
 
 -- full function type of a selector (result sort is component sort)
 data Component = Component { compId :: Id, compType :: OpType }
