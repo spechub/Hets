@@ -1,15 +1,16 @@
 {-| 
-Module      :  $Header$
-Author      :  Maciek Makowski
-Copyright   :  (c) Maciek Makowski, Warsaw University 2004
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
-Maintainer  :  hets@tzi.de
-Stability   :  provisional
-Portability :  non-portable (Logic)
+  Module      :  $Header$
+  Author      :  Maciek Makowski
+  Maintainer  :  hets@tzi.de
+  Year        :  2004
+  Copyright   :  (c) Maciek Makowski, Warsaw University 2004
+  Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+  Stability   :  provisional
+  Portability :  non-portable (via imports)
 
-   Analysis of architectural specifications
-   Follows the extended static semantics sketched in Chap. III:5.6
-   of the CASL Reference Manual.
+  Analysis of architectural specifications.
+  Follows the extended static semantics sketched in Chap. III:5.6
+  of the CASL Reference Manual.
 -}
 
 module Static.AnalysisArchitecture (ana_ARCH_SPEC, ana_UNIT_SPEC)
@@ -73,7 +74,7 @@ ana_ARCH_SPEC lgraph defl gctx@(gannos, genv, dg) l just_struct asp@(Arch_spec_n
 			     pos)
 
 
--- | Analyse a list of unit declarations/definitions
+-- | Analyse a list of unit declarations and definitions
 ana_UNIT_DECL_DEFNS :: AnyLogic -> GlobalContext -> [Annoted UNIT_DECL_DEFN] -> IOResult ExtStUnitCtx
 ana_UNIT_DECL_DEFNS defl gctx udds = ana_UNIT_DECL_DEFNS' defl gctx emptyExtStUnitCtx udds
 
@@ -87,7 +88,7 @@ ana_UNIT_DECL_DEFNS' defl gctx uctx (udd : udds) =
        return uctx''
 
 
--- | Analyse unit declaration/definition
+-- | Analyse unit declaration or definition
 ana_UNIT_DECL_DEFN :: AnyLogic -> GlobalContext -> ExtStUnitCtx -> UNIT_DECL_DEFN -> IOResult ExtStUnitCtx
 ana_UNIT_DECL_DEFN defl gctx@(gannos, genv, dg) uctx ud@(Unit_decl un usp uts pos) =
     -- TODO
