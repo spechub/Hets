@@ -37,6 +37,10 @@ unboundTypevars args ct =
 varsOf :: Type -> [TypeArg]
 varsOf = leaves (/=0)
 
+-- | bound vars
+genVarsOf :: Type -> [TypeArg]
+genVarsOf = leaves (<0)
+
 -- | vars or other ids 
 leaves :: (Int -> Bool) -> Type -> [TypeArg]
 leaves b t = 
@@ -75,8 +79,8 @@ toEnvState p =
 
 toSchemes :: (Type -> Type -> a) -> TypeScheme -> TypeScheme -> State Int a
 toSchemes f sc1 sc2 =
-    do t1 <- freshInst sc1
-       t2 <- freshInst sc2
+    do (t1, _) <- freshInstList sc1
+       (t2, _) <- freshInstList sc2
        return $ f t1 t2
 
 asSchemes :: Int -> (Type -> Type -> a) -> TypeScheme -> TypeScheme -> a
@@ -85,19 +89,16 @@ asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 -- -------------------------------------------------------------------------
 freshInstList :: TypeScheme -> State Int (Type, [Type])
 freshInstList (TypeScheme tArgs (_ :=> t) _) = 
-    do let vs = leaves (< 0) t
+    do let vs = genVarsOf t
        ts <- mkSubst vs  
        return (rename ( \ i k n -> if n < 0 then 
 			ts !! (-1-n) else TypeName i k n) t, 
 	       map (mapArg $ zip vs ts) tArgs)
 
-mapArg :: [(TypeArg, Type)] -> TypeArg -> Type
+mapArg :: [(TypeArg, a)] -> TypeArg -> a
 mapArg ts (TypeArg i k _ _) = 
     maybe (error "mapArg") snd $ 
             find (\ (TypeArg j l _ _, _) -> i == j && k == l) ts
-
-freshInst :: TypeScheme -> State Int Type
-freshInst = fmap fst . freshInstList 
 
 freshVar :: Pos -> State Int (Id, Int) 
 freshVar p = 
