@@ -20,7 +20,7 @@
 module ATC_sml_cats (from_sml_ATerm,read_sml_ATerm) where
 
 -- for debugging only
---import IOExts (trace)
+import IOExts (trace)
 
 import List (isPrefixOf)
 
@@ -41,7 +41,7 @@ import AS_Library
 -- the following module provides the ability to parse the "unparsed-anno"
 import Parsec (parse,setPosition)
 import ParsecPos (newPos)
-import Anno_Parser (annotations)
+import qualified Anno_Parser (annotations,parse_anno)
 import CaslLanguage
 
 from_sml_ATerm :: ATermTable -> LIB_DEFN
@@ -193,6 +193,8 @@ instance ATermConvertible Annotation where
                 let
                 aa' = pos_l
                 in (Conservative aa')
+	    (AAppl "mono" []) ->
+		Monomorph pos_l
 	    _ -> fromATermError "Annotation" aterm
         where
             aterm = findATerm att' (map (getATermSp att') pat_list)
@@ -212,7 +214,8 @@ instance ATermConvertible Annotation where
 		       ,(AAppl "label-anno" [ ])
                        ,(AAppl "implies" [ ]) 
 		       ,(AAppl "definitional" [ ]) 
-                       ,(AAppl "conservative" [ ]) ]
+                       ,(AAppl "conservative" [ ]) 
+		       ,(AAppl "mono" []) ]
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-ANNO" [reg_i,item_i]) ->
@@ -309,7 +312,7 @@ toAnnoList ai att = fromATerm $ getATermByIndexSp1 ai att
 
 parse_anno :: [Pos] -> String -> Annotation
 parse_anno pos_l inp =
-    case (parse (set_pos annotations) "" inp) of
+    case (parse (set_pos Anno_Parser.annotations) "" inp) of
        Left err   -> error ("internal parse error at " ++ (show err))
        Right [x]  -> x
     where set_pos p = do setPosition sp
@@ -320,13 +323,12 @@ parse_anno pos_l inp =
 
 parse_disp_anno :: Id -> [Pos] -> String -> Annotation
 parse_disp_anno i pos_l inp =
-    case (parse (set_pos annotations) "" inp') of
+    case (Anno_Parser.parse_anno (Annote_group "display" [inp'] pos_l) sp) of
        Left err   -> error ("internal parse error at " ++ (show err))
-       Right [x]  -> x
-    where set_pos p = do setPosition sp
-			 whiteSpace
-			 p
-	  sp = newPos "ATermConversion from SML" (fst pos) (snd pos)
+       --Right [] -> error $ "No displayanno: " ++ inp' 
+       Right x  -> x -- trace ("parsed display anno:" ++ show x) x
+       --Right xs   -> error $ "More than one displayanno" ++ show xs
+    where sp = newPos "ATermConversion from SML" (fst pos) (snd pos)
 	  pos = head pos_l
 	  inp' = (showId i "") ++ (' ':inp)
 
@@ -1288,7 +1290,8 @@ instance ATermConvertible RENAMING where
 	    (AAppl "renaming" [ aa ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
-		aa''= G_symb_map_items_list CASL aa'
+		aa''= if null aa' then [] 
+		      else [G_symb_map $ G_symb_map_items_list CASL aa']
 		ab' = pos_l
 		in (Renaming aa'' ab')
 	    _ -> fromATermError "RENAMING" aterm
@@ -1307,7 +1310,8 @@ instance ATermConvertible RESTRICTION where
 	    (AAppl "hide" [ aa ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
-		aa''= G_symb_items_list CASL aa'
+		aa''= if null aa' then [] 
+		      else [G_symb_list $ G_symb_items_list CASL aa']
 		ab' = pos_l
 		in (Hidden aa'' ab')
 	    (AAppl "reveal" [ aa ])  ->
@@ -1523,7 +1527,7 @@ instance ATermConvertible ARCH_SPEC where
 	    (AAppl "basic-arch-spec" [ aa,ab,ac ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
-		ab' = fromATerm (getATermByIndexSp1 ab att)
+		ab' = fromATermRESULT_UNIT (getATermByIndexSp1 ab att)
 		as  = toAnnoList ac att
 		aa''= (addLAnnoList as $ head aa'):tail aa'
 		ac' = pos_l
@@ -1543,6 +1547,28 @@ instance ATermConvertible ARCH_SPEC where
 		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
+--------------------------------------------------------------------------
+fromATermRESULT_UNIT :: ATermTable -> (Annoted UNIT_EXPRESSION)
+fromATermRESULT_UNIT att = 
+	case aterm of
+	    (AAppl "result-unit" [ aa,ab ])  ->
+		let
+--		aa' :: UNIT_EXPRESSION
+		aa' = fromATerm (getATermByIndexSp1 aa att)
+		as  = toAnnoList ab att
+		in (Annoted aa' [] as [])
+	    _ -> fromATermError "RESULT-UNIT" aterm
+	where
+	    Just aterm = getATermSp att' $ AAppl "result-unit" [ ]
+	    att' =
+		case getATerm att of
+		(AAppl "pos-RESULT-UNIT" [_,item_i]) ->
+		    getATermByIndexSp1 item_i att
+		_  -> att
+
+--------------------------------------------------------------------------
+
+
 instance ATermConvertible UNIT_DECL_DEFN where
     toATerm _ _ = error "*** toATerm for \"UNIT_DECL_DEFN\" not implemented"
     fromATerm att =
@@ -1557,7 +1583,7 @@ instance ATermConvertible UNIT_DECL_DEFN where
 		    aterm2 = getATerm att2
 		in case aterm2 of
 		   AAppl "unit-decl" [aa,ab,ac] -> 
-		      let aa'  = fromATerm (getATermByIndexSp1 aa att)
+		      let aa'  = fromATermSIMPLE_ID (getATermByIndexSp1 aa att)
 			  ab'  = fromATerm (getATermByIndexSp1 ab att)
 			  ac'  = fromATermUNIT_IMPORTS $ 
 			                 getATermByIndexSp1 ac att
@@ -1565,25 +1591,18 @@ instance ATermConvertible UNIT_DECL_DEFN where
 		      in (Unit_decl aa' ab' ac' ad')
 		   _ -> fromATermError "UNIT_DECL" aterm2
 	    (AAppl "unit-defn-case" [ udn ])  ->
-		let att1 = getATermByIndexSp1 udn att
-		    (ps,att2) = case getATerm att1 of
-				  (AAppl "pos-UNIT-DEFN" [reg_i,item_i]) ->
-				      (fromATerm_reg reg_i att,
-				       getATermByIndexSp1 item_i att1)
-				  _  -> ([],att1)
-		    aterm2 = getATerm att2
-		in case aterm2 of
-		   AAppl "unit-defn" [aa,ab] -> 
-		      let aa' = fromATerm (getATermByIndexSp1 aa att)
-			  ab' = fromATerm (getATermByIndexSp1 ab att)
-			  ac' = ps
-		      in (Unit_defn aa' ab' ac')
-		   _ -> fromATermError "UNIT_DEFN" aterm2
+		fromATermUNIT_DEFN $ getATermByIndexSp1 udn att
+	    (AAppl "pos-UNIT-DEFN" _) ->
+		fromATermUNIT_DEFN att
+	    (AAppl "unit-defn" _) ->
+		fromATermUNIT_DEFN att
 	    _ -> fromATermError "UNIT-DECL-DEFN" aterm
 	where
 	    aterm = findATerm att' (map (getATermSp att') pat_list)
 	    pat_list = [AAppl "unit-decl-case" [],
-			AAppl "unit-defn-case" []]
+			AAppl "unit-defn-case" [],
+		        AAppl "pos-UNIT-DEFN" [],
+		        AAppl "unit-defn" []]
 	    att' =
 		case getATerm att of
 		(AAppl "pos-UNIT-DECL-DEFN" [_,item_i]) ->
@@ -1606,7 +1625,22 @@ fromATermUNIT_IMPORTS att =
 	      _  -> att
 
 -------------------------------------------------------------------------
-
+fromATermUNIT_DEFN :: ATermTable -> UNIT_DECL_DEFN
+fromATermUNIT_DEFN att =
+    case aterm of
+    AAppl "unit-defn" [aa,ab] -> 
+	let aa' = fromATermSIMPLE_ID (getATermByIndexSp1 aa att)
+	    ab' = fromATerm (getATermByIndexSp1 ab att)
+	    ac' = ps
+        in (Unit_defn aa' ab' ac')
+    _ -> fromATermError "UNIT_DEFN" aterm
+    where aterm = getATerm att'
+	  (ps,att') =
+	      case getATerm att of
+	      (AAppl "pos-UNIT-DEFN" [reg_i,item_i]) ->
+		  (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+	      _  -> ([],att)
+-------------------------------------------------------------------------
 
 {- !!! This conversion is covered by the instance of LIB_ITEM !!!
 
@@ -1650,11 +1684,15 @@ instance ATermConvertible UNIT_SPEC where
 		in (Spec_name aa')
 	    (AAppl "arch-spec-case" [ aa,ab ])  ->
 		let
-		aa' = fromATerm (getATermByIndexSp1 aa att)
-		ps  = toAnnoList ab att
-		aa''= addLAnnoList ps aa'
-		ab' = pos_l
-		in (Arch_unit_spec aa'' ab')
+		aa'   = fromATerm (getATermByIndexSp1 aa att)
+		ps    = toAnnoList ab att
+		aa''  = addLAnnoList ps aa'
+		ab'   = pos_l
+		aa''' = case aa'' of
+		        (Annoted (Basic_arch_spec _ _ _) _ _ _) ->
+			    Annoted (Group_arch_spec aa'' ab') [] [][] 
+			_ -> aa''
+		in (Arch_unit_spec aa''' ab')
 	    (AAppl "closed" [ aa ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
@@ -1675,7 +1713,7 @@ instance ATermConvertible UNIT_SPEC where
 
 ---- a helper for the SML-datatype UNIT_TYPE ----------------------------
 
-fromATermUNIT_TYPE :: ATermTable -> ([SPEC],SPEC)
+fromATermUNIT_TYPE :: ATermTable -> ([Annoted SPEC],(Annoted SPEC))
 fromATermUNIT_TYPE att = 
     case aterm of
 	     (AAppl "unit-type" [ aa,ab ])  ->
@@ -1771,13 +1809,7 @@ instance ATermConvertible UNIT_TERM where
 			(AAppl "unit-appl" [ ]) ]
 	    group ut gf = if gf then (Group_unit_term ut' pos_l) else ut
 		where ut' = Annoted ut [] [] []
-	    (pos_l,group_flag,att') =
-		case getATerm att of
-		(AAppl "pos-UNIT-TERM" [reg_i,b_i,item_i]) ->
-		    (fromATerm_reg reg_i att,
-		     fromATerm $ getATermByIndexSp1 b_i att,
-		     getATermByIndexSp1 item_i att)
-		_  -> ([],False,att)
+	    (pos_l,group_flag,att') = skipPosFlag "pos-UNIT-TERM" att
 
 instance ATermConvertible FIT_ARG_UNIT where
     toATerm _ _ = error "*** toATerm for \"FIT_ARG_UNIT\" not implemented"
@@ -1840,7 +1872,8 @@ instance ATermConvertible LIB_ITEM where
 		ab' = fromATerm (getATermByIndexSp1 ab att)
 		ac' = fromATerm (getATermByIndexSp1 ac att)
 		ad' = fromATerm (getATermByIndexSp1 ad att)
-		ad''= G_symb_map_items_list CASL ad'
+		ad''= if null ad' then [] 
+		      else [G_symb_map $ G_symb_map_items_list CASL ad']
 {-		as  = toAnnoList ae att
 		ac''= addLAnnoList as ac'-}
 		ae' = pos_l
