@@ -1,5 +1,5 @@
 -- parser for derive commands
-module CommandP (local,command,header) where
+module CommandP (local,command,header,cap,imports) where
 
 import ParseLib2
 import DataP
