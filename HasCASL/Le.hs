@@ -1,3 +1,12 @@
+
+{- HetCATS/HasCASL/Le.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+   
+   abstract syntax after/during static analysis
+-}
+
 module Le where
 
 import Id
@@ -7,8 +16,26 @@ type TypeId = Id
 
 -- "*", "->", etc. are predefined type constructors
 -- the unit type is the empty product
-data Type = Type { typeId :: TypeId, typeArgs :: [Type] } 
-	  | TypeVar Id         -- simple id
+
+-----------------------------------------------------------------------------
+-- Kinds
+-----------------------------------------------------------------------------
+
+data Kind  = Star ExtClass | Kfun Kind Kind
+
+instance Eq Kind where
+    Star _ == Star _ = True
+    Kfun f1 a1 == Kfun f2 a2 = f1 == f2 && a1 == a2
+    _ == _ = False
+
+instance Ord Kind where
+    Star _ <= Star _ = True
+    Kfun f1 a1 <= Kfun f2 a2 = if f1 <= f2 then 
+			       if f2 <= f1 then a1 <= a2
+				  else True
+			       else False
+    Star _ <= Kfun _ _ = True
+    Kfun _ _ <= Star _ = False
 
 type ClassId = Id
 
@@ -16,26 +43,49 @@ data Class = Universe
 	   | ClassName ClassId
 	   | Intersection (Set ClassId)
 
-data TypeVarDecl = TypeVarDecl { typeVarId :: Id, typeClass :: Class }
-
-data TypeScheme = TypeScheme [TypeVarDecl] [Type] 
-
-data SymbType = OpType TypeScheme
-	      | TypeKind Kind
-	      | Class
-
--- the list of items which are part of a "sort-gen" (or free type)
-type GenItems = [Symbol] 
-
-data Symbol = Symbol {symbId :: Id, sumbType :: SymbType}
-
 data Variance = CoVar | ContraVar | InVar 
 
 data ExtClass = ExtClass Class Variance
 
-data Kind = Kind { kindArgs :: [ExtClass], kindRes :: Class } 
+star :: Kind
+star = Star $ ExtClass Universe InVar
 
-sort = Kind [] Universe
+-----------------------------------------------------------------------------
+-- Types
+-----------------------------------------------------------------------------
+
+data Tyvar = Tyvar { typeVarId :: TypeId, typeKind :: Kind } deriving (Eq, Ord)
+
+data Tycon = Tycon TypeId Kind
+             deriving Eq
+
+data Type  = TVar Tyvar | TCon Tycon | TAp  Type Type | TGen Int
+             deriving Eq
+
+data Qual t = [Pred] :=> t
+              deriving Eq
+
+data Pred   = IsIn Id Type
+              deriving Eq
+
+data Scheme = Scheme [Kind] (Qual Type)
+              deriving Eq
+
+-----------------------------------------------------------------------------
+-- Symbols
+-----------------------------------------------------------------------------
+
+data SymbType = OpType Scheme
+	      | TypeKind Kind
+	      | Class
+
+data Symbol = Symbol {symbId :: Id, sumbType :: SymbType}
+-- the list of items which are part of a "sort-gen" (or free type)
+type GenItems = [Symbol] 
+
+-----------------------------------------------------------------------------
+-- Items
+-----------------------------------------------------------------------------
 
 data GenKind = Free | Generated | Loose deriving (Show,Eq)      
 
@@ -46,7 +96,7 @@ data TypeBody = Alias Type -- non-recursive
 	      | SubtypeDefn VarDecl Type Term -- a formula
 
 -- type variables correspond to the kind
-data TypeDefn = TypeDefn [TypeVarDecl] TypeBody
+data TypeDefn = TypeDefn [Tyvar] TypeBody
 
 -- full function type of constructor (result sort is the data type)
 data Alternative = Construct Id Type [Component] 
@@ -62,10 +112,10 @@ data ClassItem = ClassItem { classId :: Id
                            , classBody :: [SigItem]
 			   }
 
-data TypeRel = TypeRel [TypeVarDecl] Type Type
+data TypeRel = TypeRel [Tyvar] Type Type
 
 data TypeItem = TypeItem{ typeConstrId :: Id
-			, kind :: Kind
+			, itemKind :: Kind
 			, subtypes :: [TypeRel]
 			, supertypes :: [TypeRel]
 			, typeDefn :: Maybe TypeDefn
@@ -83,7 +133,7 @@ data BinOpAttr = Assoc | Comm | Idem deriving (Show)
 data OpAttr = BinOpAttr BinOpAttr | UnitOpAttr Term
 
 data OpItem = OpItem { opId :: Id
-		     , opType :: TypeScheme
+		     , opType :: Scheme
 		     , opAttrs :: [OpAttr]
 		     , opDefn :: Maybe OpDefn
 		     }		      
@@ -95,7 +145,7 @@ data Binder = LambdaTotal | LambdaPartial
             | Exists | ExistsUnique 
 	    deriving (Eq)
 
-data Term = BaseName Id TypeScheme [Type]  -- instance
+data Term = BaseName Id Scheme [Type]  -- instance
 	  | VarId Id Type Class
           | Application Term [Term] 
 	  | Binding Binder [VarDecl] Term

@@ -1,3 +1,3 @@
-ghc --make -fglasgow-exts -Wall -i..:../fgl:../parsec:../pretty:../CASL -package data Main.hs -o hacapa
+ghc --make -fglasgow-exts -Wall -i..:../fgl:../parsec:../pretty:../CASL -package data TypeInference.hs Main.hs -o hacapa 
 
 

@@ -38,7 +38,7 @@
 module TypeInference where
 
 import Id
--- import Le
+import Le
 import FiniteMap
 import List(nub, (\\), intersect, union, partition)
 import Monad(msum)
@@ -46,28 +46,9 @@ import Monad(msum)
 enumId  :: Int -> Id
 enumId n = Id[Token "v" nullPos, Token (show n) nullPos][][]
 
------------------------------------------------------------------------------
--- Kind:		Kinds
------------------------------------------------------------------------------
-
-data Kind  = Star | Kfun Kind Kind
-             deriving Eq
-
------------------------------------------------------------------------------
--- Type:		Types
------------------------------------------------------------------------------
-
-data Type  = TVar Tyvar | TCon Tycon | TAp  Type Type | TGen Int
-             deriving Eq
-
-data Tyvar = Tyvar Id Kind
-             deriving Eq
-
-data Tycon = Tycon Id Kind
-             deriving Eq
-
-tArrow   = TCon (Tycon (Id [Token "->" nullPos][][]) 
-		 (Kfun Star (Kfun Star Star)))
+tArrow :: Type
+tArrow   = TCon (Tycon (Id [Token "->?" nullPos][][]) 
+		 (Kfun star (Kfun star star)))
 
 infixr      4 `fn`
 fn         :: Type -> Type -> Type
@@ -76,9 +57,9 @@ a `fn` b    = TAp (TAp tArrow a) b
 class HasKind t where
   kind :: t -> Kind
 instance HasKind Tyvar where
-  kind (Tyvar v k) = k
+  kind (Tyvar _ k) = k
 instance HasKind Tycon where
-  kind (Tycon v k) = k
+  kind (Tycon _ k) = k
 instance HasKind Type where
   kind (TCon tc) = kind tc
   kind (TVar u)  = kind u
@@ -89,28 +70,28 @@ instance HasKind Type where
 -- Subst:	Substitutions
 -----------------------------------------------------------------------------
 
-type Subst  = [(Tyvar, Type)]
+type Subst  = FiniteMap Tyvar Type
 
 nullSubst  :: Subst
-nullSubst   = []
+nullSubst   = emptyFM
 
 (+->)      :: Tyvar -> Type -> Subst
-u +-> t     = [(u, t)]
+u +-> t     = unitFM u t
 
 class Types t where
   apply :: Subst -> t -> t
   tv    :: t -> [Tyvar]
 
 instance Types Type where
-  apply s (TVar u)  = case lookup u s of
+  apply s (TVar u)  = case lookupFM s u of
                        Just t  -> t
                        Nothing -> TVar u
   apply s (TAp l r) = TAp (apply s l) (apply s r)
-  apply s t         = t
+  apply _ t         = t
 
   tv (TVar u)  = [u]
   tv (TAp l r) = tv l `union` tv r
-  tv t         = []
+  tv _         = []
 
 instance Types a => Types [a] where
   apply s = map (apply s)
@@ -118,53 +99,39 @@ instance Types a => Types [a] where
 
 infixr 4 @@
 (@@)       :: Subst -> Subst -> Subst
-s1 @@ s2    = [ (u, apply s1 t) | (u,t) <- s2 ] ++ s1
-
-merge      :: Monad m => Subst -> Subst -> m Subst
-merge s1 s2 = if agree then return (s1++s2) else fail "merge fails"
- where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v))
-                   (map fst s1 `intersect` map fst s2)
+s1 @@ s2    = plusFM (mapFM (const $ apply s1) s2) s1
 
 -----------------------------------------------------------------------------
 -- Unify:	Unification
 -----------------------------------------------------------------------------
 
-mgu     :: Monad m => Type -> Type -> m Subst
-varBind :: Monad m => Tyvar -> Type -> m Subst
+mgu, match :: Monad m => Type -> Type -> m Subst
+mgum :: Monad m => Bool -> Type -> Type -> m Subst
 
-mgu (TAp l r) (TAp l' r') = do s1 <- mgu l l'
-                               s2 <- mgu (apply s1 r) (apply s1 r')
-                               return (s2 @@ s1)
-mgu (TVar u) t        = varBind u t
-mgu t (TVar u)        = varBind u t
-mgu (TCon tc1) (TCon tc2)
+mgu = mgum False
+match = mgum True
+
+mgum b (TAp l r) (TAp l' r') = do s1 <- mgum b l l'
+				  s2 <- mgum b (apply s1 r) 
+					(if b then r' else apply s1 r')
+				  return (s2 @@ s1)
+mgum _ (TVar u) t        = varBind u t
+mgum b t (TVar u)        = if b then fail 
+			   "a non-variable does not match a variable" 
+			   else varBind u t
+mgum _ (TCon tc1) (TCon tc2)
            | tc1==tc2 = return nullSubst
-mgu t1 t2             = fail "types do not unify"
+mgum b _ _   = fail ("types do not " ++ if b then "match" else "unify")
 
+varBind :: Monad m => Tyvar -> Type -> m Subst
 varBind u t | t == TVar u      = return nullSubst
             | u `elem` tv t    = fail "occurs check fails"
             | kind u /= kind t = fail "kinds do not match"
             | otherwise        = return (u +-> t)
 
-match :: Monad m => Type -> Type -> m Subst
-
-match (TAp l r) (TAp l' r') = do sl <- match l l'
-                                 sr <- match r r'
-                                 merge sl sr
-match (TVar u)   t | kind u == kind t = return (u +-> t)
-match (TCon tc1) (TCon tc2)
-         | tc1==tc2         = return nullSubst
-match t1 t2                 = fail "types do not match"
-
 -----------------------------------------------------------------------------
 -- Pred:		Predicates
 -----------------------------------------------------------------------------
-
-data Qual t = [Pred] :=> t
-              deriving Eq
-
-data Pred   = IsIn Id Type
-              deriving Eq
 
 instance Types t => Types (Qual t) where
   apply s (ps :=> t) = apply s ps :=> apply s t
@@ -172,22 +139,23 @@ instance Types t => Types (Qual t) where
 
 instance Types Pred where
   apply s (IsIn i t) = IsIn i (apply s t)
-  tv (IsIn i t)      = tv t
+  tv (IsIn _ t)      = tv t
 
 mguPred, matchPred :: Pred -> Pred -> Maybe Subst
 mguPred             = lift mgu
 matchPred           = lift match
 
+lift :: Monad m => (Type -> Type -> m Subst) -> Pred -> Pred -> m Subst
 lift m (IsIn i t) (IsIn i' t')
          | i == i'   = m t t'
          | otherwise = fail "classes differ"
 
-type Class    = ([Id], [Inst])
+type ClassInst    = ([Id], [Inst]) -- super classes and instances
 type Inst     = Qual Pred
 
 -----------------------------------------------------------------------------
 
-data ClassEnv = ClassEnv { classes  :: Id -> Maybe Class }
+data ClassEnv = ClassEnv { classes  :: Id -> Maybe ClassInst }
 
 super     :: ClassEnv -> Id -> [Id]
 super ce i = case classes ce i of Just (is, its) -> is
@@ -199,7 +167,7 @@ defined :: Maybe a -> Bool
 defined (Just x) = True
 defined Nothing  = False
 
-modify       :: ClassEnv -> Id -> Class -> ClassEnv
+modify       :: ClassEnv -> Id -> ClassInst -> ClassEnv
 modify ce i c = ce{classes = \j -> if i==j then Just c
                                            else classes ce j}
 
@@ -293,21 +261,18 @@ scEntail ce ps p = any (p `elem`) (map (bySuper ce) ps)
 -- Scheme:	Type schemes
 -----------------------------------------------------------------------------
 
-data Scheme = Forall [Kind] (Qual Type)
-              deriving Eq
-
 instance Types Scheme where
-  apply s (Forall ks qt) = Forall ks (apply s qt)
-  tv (Forall ks qt)      = tv qt
+  apply s (Scheme ks qt) = Scheme ks (apply s qt)
+  tv (Scheme ks qt)      = tv qt
 
 quantify      :: [Tyvar] -> Qual Type -> Scheme
-quantify vs qt = Forall ks (apply s qt)
+quantify vs qt = Scheme ks (apply (listToFM s) qt)
  where vs' = [ v | v <- tv qt, v `elem` vs ]
        ks  = map kind vs'
        s   = zip vs' (map TGen [0..])
 
 toScheme      :: Type -> Scheme
-toScheme t     = Forall [] ([] :=> t)
+toScheme t     = Scheme [] ([] :=> t)
 
 -----------------------------------------------------------------------------
 -- Assump:	Assumptions
@@ -354,7 +319,7 @@ newTVar k   = TI (\s n -> let v = Tyvar (enumId n) k
                           in  (s, n+1, TVar v))
 
 freshInst               :: Scheme -> TI (Qual Type)
-freshInst (Forall ks qt) = do ts <- mapM newTVar ks
+freshInst (Scheme ks qt) = do ts <- mapM newTVar ks
                               return (inst ts qt)
 
 class Instantiate t where
@@ -389,17 +354,17 @@ data Pat        = PVar Id
 
 tiPat :: Pat -> TI ([Pred], [Assump], Type)
 
-tiPat (PVar i) = do v <- newTVar Star
+tiPat (PVar i) = do v <- newTVar star
                     return ([], [i :>: toScheme v], v)
 
-tiPat PWildcard   = do v <- newTVar Star
+tiPat PWildcard   = do v <- newTVar star
                        return ([], [], v)
 
 tiPat (PAs i pat) = do (ps, as, t) <- tiPat pat
                        return (ps, (i:>:toScheme t):as, t)
 
 tiPat (PCon (i:>:sc) pats) = do (ps,as,ts) <- tiPats pats
-                                t'         <- newTVar Star
+                                t'         <- newTVar star
                                 (qs :=> t) <- freshInst sc
                                 unify t (foldr fn t' ts)
                                 return (ps++qs, as, t')
@@ -426,7 +391,7 @@ tiExpr ce as (Const (i:>:sc)) = do (ps :=> t) <- freshInst sc
                                    return (ps, t)
 tiExpr ce as (Ap e f)         = do (ps,te) <- tiExpr ce as e
                                    (qs,tf) <- tiExpr ce as f
-                                   t       <- newTVar Star
+                                   t       <- newTVar star
                                    unify (tf `fn` t) te
                                    return (ps++qs, t)
 tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
@@ -481,9 +446,6 @@ withDefaults f ce vs ps
 defaultedPreds :: Monad m => ClassEnv -> [Tyvar] -> [Pred] -> m [Pred]
 defaultedPreds  = withDefaults (\vps ts -> concat (map snd vps))
 
-defaultSubst   :: Monad m => ClassEnv -> [Tyvar] -> [Pred] -> m Subst
-defaultSubst    = withDefaults (\vps ts -> zip (map fst vps) ts)
-
 -----------------------------------------------------------------------------
 
 type Expl = (Id, Scheme, [Alt])
@@ -516,7 +478,7 @@ restricted bs = any simple bs
  where simple (i,alts) = any (null . fst) alts
 
 tiImpls         :: Infer [Impl] [Assump]
-tiImpls ce as bs = do ts <- mapM (\_ -> newTVar Star) bs
+tiImpls ce as bs = do ts <- mapM (\_ -> newTVar star) bs
                       let is    = map fst bs
                           scs   = map toScheme ts
                           as'   = zipWith (:>:) is scs ++ as
@@ -565,8 +527,7 @@ tiProgram ce as bgs = runTI $
                       do (ps, as') <- tiSeq tiBindGroup ce as bgs
                          s         <- getSubst
                          rs        <- reduce ce (apply s ps)
-                         s'        <- defaultSubst ce [] rs
-                         return (apply (s'@@s) as')
+                         return (apply s as')
 
 -----------------------------------------------------------------------------
 
