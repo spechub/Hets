@@ -19,13 +19,13 @@ pretty x = show $ printText0 emptyGlobalAnnos x
 
 {- Maps used to track which node resp edge of the abstract graph correspondes with which of the development graph and vice versa
 and one Map to store which libname belongs to which development graph-}
+
 data ConversionMaps = ConversionMaps {
 		        dg2abstrNode :: DGraphToAGraphNode,
                         dg2abstrEdge :: DGraphToAGraphEdge,
                         abstr2dgNode :: AGraphToDGraphNode,
 		        abstr2dgEdge :: AGraphToDGraphEdge,
-                        libname2dg :: LibEnv
-                      }
+                        libname2dg :: LibEnv }
 
 -- types of the Maps above
 type DGraphToAGraphNode = Map.Map (LIB_NAME,Node) Descr
@@ -34,7 +34,8 @@ type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node)
 type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,Edge)
 
 {- converts the development graph given by its libname into an abstract graph
-and returns the descriptor of the latter, the graphInfo it is contained in and the conversion maps (see above)-}
+and returns the descriptor of the latter, the graphInfo it is contained in
+and the conversion maps (see above)-}
 convertGraph :: LIB_NAME -> LibEnv -> IO (Descr, GraphInfo, ConversionMaps)
 convertGraph libname libEnv =
   do let convMaps = ConversionMaps
@@ -57,62 +58,110 @@ convertGraph libname libEnv =
                           ++ (show libname)
                            ++ "does not exist")
 
+
 {- initializes an empty abstract graph with the needed node and edge types,
 return type equals the one of convertGraph -}
-initializeGraph :: LIB_NAME -> DGraph -> ConversionMaps -> IO (Descr,GraphInfo,IORef ConversionMaps)
+initializeGraph :: LIB_NAME -> DGraph -> ConversionMaps
+                     -> IO (Descr,GraphInfo,IORef ConversionMaps)
 initializeGraph ln dGraph convMaps = do 
   graphInfo <- initgraphs
   event <- newIORef 0
   convRef <- newIORef convMaps
+  graphId <- newIORef 0
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
                [GlobalMenu(Menu (Just "internal nodes")
                  [Button "Hide" 
-                          (do Result descr _ <- hidenodetype 0 "internal" graphInfo
+                          (do gid <- readIORef graphId
+                              Result descr _ <- hidenodetype gid
+			                            "internal"
+			                            graphInfo
                               writeIORef event descr
-                              redisplay 0 graphInfo
+                              redisplay gid graphInfo
                               return ()    ),
                   Button "Show" 
-                          (do descr <- readIORef event
-                              showIt 0 descr graphInfo
-                              redisplay 0 graphInfo
+                          (do gid <- readIORef graphId
+			      descr <- readIORef event
+                              showIt gid descr graphInfo
+                              redisplay gid graphInfo
                               return ()    )])]
                [("spec",
-                 Ellipse $$$ Color "Magenta" $$$ ValueTitle (\ (s,_,_) -> return s) 
+                 Ellipse $$$ Color "Magenta"
+		 $$$ ValueTitle (\ (s,_,_) -> return s) 
                  $$$ LocalMenu 
                     (Button "Show spec" 
-                      (\ (name,descr,gid) -> do convMaps <- readIORef convRef
-                                                showSpec descr (abstr2dgNode convMaps) dGraph
-                                                return ()
+                      (\ (name,descr,gid) ->
+                        do convMaps <- readIORef convRef
+                           showSpec descr
+		                    (abstr2dgNode convMaps)
+		                    dGraph
+		           return ()
                       ))
-                     $$$ emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)),
+                 $$$ emptyNodeTypeParms 
+                     :: DaVinciNodeTypeParms (String,Int,Int)),
                 ("internal",
-                 Ellipse $$$ Color "Grey" $$$ ValueTitle (\ (s,_,_) -> return "")
+                 Ellipse $$$ Color "Grey"
+		 $$$ ValueTitle (\ (s,_,_) -> return "")
                  $$$ LocalMenu 
                     (Button "Show spec" 
-                      (\ (name,descr,gid) -> do convMaps <- readIORef convRef
-                                                showSpec descr (abstr2dgNode convMaps) dGraph
-                                                return ()
+                      (\ (name,descr,gid) ->
+                        do convMaps <- readIORef convRef
+                           showSpec descr (abstr2dgNode convMaps) dGraph
+                           return ()
                       ))
-                  $$$ emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)), 
+                 $$$ emptyNodeTypeParms
+                     :: DaVinciNodeTypeParms (String,Int,Int)), 
                 ("dg_ref",
-                  Box $$$ Color "SteelBlue" $$$ ValueTitle (\ (s,_,_) -> return s)
-                    $$$ emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)) ]
-                 [("def",
-                    Solid $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+                 Box $$$ Color "SteelBlue"
+		 $$$ ValueTitle (\ (s,_,_) -> return s)
+		 $$$ LocalMenu
+		     (Button "Show referenced library"
+		     (\ (name,descr,gid) ->
+		        do convMaps <- readIORef convRef
+                           g <- readIORef graphId
+		           newConvMaps <- showReferencedLibrary descr
+		                              g
+		                              graphInfo
+		                              convMaps
+		           writeIORef convRef newConvMaps
+		           return ()
+		     ))
+                 $$$ emptyNodeTypeParms
+                     :: DaVinciNodeTypeParms (String,Int,Int)) ]
+                 [("globaldef",
+                   Solid 
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+		  ("def",
+                   Solid $$$ Color "Steelblue"
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
                   ("proventhm",
-                    Solid $$$ Color "Green" $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+                   Solid $$$ Color "Green" 
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
                   ("unproventhm",
-                    Solid $$$ Color "Red" $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int))]
-                 [("def","def","def"),
+                   Solid $$$ Color "Red" 
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+                  -- ######### welche Farbe fuer reference ##########
+                  ("reference",
+                   Dotted $$$ Color "Grey"
+                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int))]
+                 [("globaldef","globaldef","globaldef"),
+		  ("globaldef","def","def"),
+                  ("globaldef","proventhm","proventhm"),
+                  ("globaldef","unproventhm","unproventhm"),
+		  ("def","globaldef","def"),
+		  ("def","def","def"),
                   ("def","proventhm","proventhm"),
                   ("def","unproventhm","unproventhm"),
+                  ("proventhm","globaldef","proventhm"),
                   ("proventhm","def","proventhm"),
                   ("proventhm","proventhm","proventhm"),
                   ("proventhm","unproventhm","unproventhm"),
+                  ("unproventhm","globaldef","unproventhm"),
                   ("unproventhm","def","unproventhm"),
                   ("unproventhm","proventhm","unproventhm"),
-                  ("unproventhm","unproventhm","unproventhm")] graphInfo
+                  ("unproventhm","unproventhm","unproventhm")] 
+                 graphInfo
+  writeIORef graphId descr
   return (descr,graphInfo,convRef)
 
 showSpec descr convMap dgraph =
@@ -136,20 +185,28 @@ getSignatureOfNode descr ab2dgNode dgraph =
 {- converts the nodes of the development graph, if it has any,
 and returns the resulting conversion maps
 if the graph is empty the conversion maps are returned unchanged-}
-convertNodes :: ConversionMaps -> Descr -> GraphInfo -> DGraph -> LIB_NAME -> IO ConversionMaps
+convertNodes :: ConversionMaps -> Descr -> GraphInfo -> DGraph
+                  -> LIB_NAME -> IO ConversionMaps
 convertNodes convMaps descr graphInfo dgraph libname
   | isEmpty dgraph = do return convMaps
-  | otherwise = convertNodesAux convMaps descr graphInfo (labNodes dgraph) libname
-
+  | otherwise = convertNodesAux convMaps
+		                descr
+				graphInfo
+				(labNodes dgraph)
+				libname
 
 {- auxiliar function for convertNodes
 if the given list of nodes is emtpy, it returns the conversion maps unchanged
 otherwise it adds the converted first node to the abstract graph and to the affected conversion maps
 and afterwards calls itself with the remaining node list -}
-convertNodesAux :: ConversionMaps -> Descr -> GraphInfo -> [LNode DGNode] -> LIB_NAME -> IO ConversionMaps
+convertNodesAux :: ConversionMaps -> Descr -> GraphInfo ->
+		     [LNode DGNode] -> LIB_NAME -> IO ConversionMaps
 convertNodesAux convMaps descr graphInfo [] libname = return convMaps
 convertNodesAux convMaps descr graphInfo ((node,dgnode):lNodes) libname = 
-  do Result newDescr err <- addnode descr (getDGNodeType dgnode) (getDGNodeName dgnode) graphInfo
+  do Result newDescr err <- addnode descr
+			        (getDGNodeType dgnode)
+				(getDGNodeName dgnode)
+				graphInfo
      --putStrLn (maybe "" id err)
      newConvMaps <- (convertNodesAux
                        convMaps {dg2abstrNode = Map.insert (libname, node) newDescr (dg2abstrNode convMaps),
@@ -175,7 +232,7 @@ getDGNodeType dgnode =
     
 getDGLinkType :: DGLinkType -> String
 getDGLinkType LocalDef = "def"
-getDGLinkType GlobalDef = "def"
+getDGLinkType GlobalDef = "globaldef"
 getDGLinkType HidingDef = "def"
 getDGLinkType (FreeDef _) = "def"
 getDGLinkType (CofreeDef _) = "def"
@@ -185,39 +242,117 @@ getDGLinkType (HidingThm _ bool) = getThmType bool
 getDGLinkType (FreeThm _ bool) = getThmType bool
 
 getThmType :: Bool -> String
-getThmType bool = case bool of
-  True -> "proventhm"
-  False -> "unproventhm"
+getThmType bool =
+  case bool of
+    True -> "proventhm"
+    False -> "unproventhm"
 
 {- converts the edges of the development graph
 works the same way as convertNods does-}
-convertEdges :: ConversionMaps -> Descr -> GraphInfo -> DGraph -> LIB_NAME -> IO ConversionMaps
+convertEdges :: ConversionMaps -> Descr -> GraphInfo -> DGraph
+	          -> LIB_NAME -> IO ConversionMaps
 convertEdges convMaps descr graphInfo dgraph libname
   | isEmpty dgraph = do return convMaps
-  | otherwise = convertEdgesAux convMaps descr graphInfo dgraph (labEdges dgraph) libname
+  | otherwise = convertEdgesAux convMaps
+		                descr
+				graphInfo
+				(labEdges dgraph)
+				libname
 
 -- function context from Graph.hs with inverse arguments
 invContext :: DGraph -> Node -> Context DGNode DGLink
 invContext dgraph node = context node dgraph
 
 {- auxiliar function for convertEges --> not yet implemented! -}
-convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo -> DGraph ->
+convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo -> 
                     [LEdge DGLink] -> LIB_NAME -> IO ConversionMaps
-convertEdgesAux convMaps descr graphInfo dgraph [] libname = return convMaps
-convertEdgesAux convMaps descr graphInfo dgraph ((src,tar,edge):lEdges) libname = 
+convertEdgesAux convMaps descr graphInfo [] libname = return convMaps
+convertEdgesAux convMaps descr graphInfo ((src,tar,edge):lEdges) libname = 
   do let srcnode = Map.lookup (libname,src) (dg2abstrNode convMaps)
          tarnode = Map.lookup (libname,tar) (dg2abstrNode convMaps)
      case (srcnode,tarnode) of 
       (Just s, Just t) -> do
-        Result newDescr err <- addlink descr (getDGLinkType (dgl_type edge)) "" s t graphInfo
+        Result newDescr err <- addlink descr (getDGLinkType (dgl_type edge))
+                                   "" s t graphInfo
         --putStrLn (maybe "" id err)
         --putStrLn ("Adding link" ++ show descr)
         newConvMaps <- (convertEdgesAux
-                       convMaps {dg2abstrEdge = Map.insert (libname, (src,tar)) newDescr (dg2abstrEdge convMaps),
-                                 abstr2dgEdge = Map.insert  newDescr (libname, (src,tar))(abstr2dgEdge convMaps)}
-                                       descr graphInfo dgraph lEdges libname)
+                       convMaps {dg2abstrEdge = Map.insert (libname, (src,tar))
+				                     newDescr
+				                     (dg2abstrEdge convMaps),
+                                 abstr2dgEdge = Map.insert newDescr
+				                     (libname, (src,tar))
+				                     (abstr2dgEdge convMaps)}
+                                       descr graphInfo lEdges libname)
         return newConvMaps
       otherwise -> error "Cannot find nodes"
+
+
+{- den aktuellen AbstractGraph um den neuen DevGraph erweitern:
+   - aktuellen AGraph haben wir als Uebergabeparameter
+   - neuen DevGraph holen:
+     - alten DevGraph holen
+     - daraus den DGRef holen
+     - daraus den Libname des referenzierten DevGraphen holen
+     - damit den neuen DevGraph holen
+   - neuen DevGraph an AGraph anhaengen:
+     - DevGraph-Knoten umwandeln und in AGraph (und ConversionMaps) adden
+     - DevGraph-Kanten umwandeln und in AGraph (und ConversionMaps) adden
+     - Verbindungskante zwischen DGRef und referenziertem Knoten einfuegen
+       - referenzierten Knoten aus DGRef holen
+       - Descr des ref. Knoten aus ConversionMaps holen
+       - Kante in AGraph adden
+-}
+showReferencedLibrary :: Descr -> Descr -> GraphInfo -> ConversionMaps -> IO ConversionMaps
+showReferencedLibrary descr abstractGraph graphInfo convMaps =
+  case Map.lookup descr (abstr2dgNode convMaps) of
+    Just (libname,node) -> 
+         case Map.lookup libname libname2dgMap of
+	  Just (_,dgraph,_) -> 
+            do let (_,(DGRef _ refLibname refNode)) = labNode' (context node dgraph)
+	       case Map.lookup refLibname libname2dgMap of
+                 Just (_,refDgraph,_) -> 
+		   if (isEmpty refDgraph) then do return convMaps
+                    else do convMaps' <- convertNodesAux convMaps
+		                             abstractGraph
+				             graphInfo
+				             (labNodes refDgraph)
+				             libname
+                            newConvMaps' <- convertEdgesAux convMaps'
+				                abstractGraph
+					        graphInfo
+					        (labEdges refDgraph)
+					        libname
+                            case Map.lookup (libname,refNode) (dg2abstrNode newConvMaps') of
+                              Just refDescr -> do addlink descr "reference" "" descr refDescr graphInfo
+				  	          return (newConvMaps' {dg2abstrEdge =
+						           Map.insert (libname, (node,refNode))
+							       refDescr
+				                               (dg2abstrEdge convMaps),
+							   abstr2dgEdge = Map.insert refDescr
+				                               (libname, (node,refNode))
+				                               (abstr2dgEdge convMaps)})
+			      Nothing -> error "adding referenced node failed"
+                 Nothing -> error ("The referenced library ("
+				     ++ (show refLibname)
+				     ++ ") is unknown")
+
+	       
+          Nothing ->
+	    error ("Unknown library: " ++ (show libname))
+    Nothing ->
+      error ("there is no node with the descriptor "
+	         ++ show descr)
+
+    where libname2dgMap = libname2dg convMaps
+
+
+
+
+
+
+
+
 
 
 
