@@ -154,6 +154,11 @@ maybeToResult p s m = Result (case m of
 		              Nothing -> [Diag FatalError s p]
 			      Just _ -> []) m
 
+-- | check whether no errors are present, coerce into Maybe
+resultToMaybe :: Result a -> Maybe a
+resultToMaybe (Result diags val) =
+  if hasErrors diags then Nothing else val
+
 adjustPos :: Pos -> Result a -> Result a
 adjustPos p r =
   r {diags = map (\d -> d {diagPos = p}) (diags r)}

@@ -1,7 +1,24 @@
-module Isabelle.Sign where
+{- |
+Module      :  $Header$
+Copyright   :  (c) University of Cambridge, Cambridge, England
+               adaption (c) Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+   Data structures for Isabelle sigantures and theories.
+   Adapted from Isabelle.
+-}
+
+module Isabelle.IsaSign where
 
 import qualified Common.Lib.Map as Map
 import Common.Id
+import Common.PrettyPrint
+import Common.Lib.Pretty
+import Data.Dynamic
 
 bracketize :: Bool -> String -> String
 bracketize b s = if b then "("++s++")" else s
@@ -24,6 +41,7 @@ type Sort  = [Class]
 data Typ = Type (String,[Typ])
              | TFree (String, Sort)
              -- | TVar  (Indexname, Sort)
+           deriving (Eq, Ord)
 
 instance Show Typ where
   show = showTyp 1000
@@ -36,10 +54,16 @@ showTyp pri (TFree (v,_)) = v
 infix -->
 infix --->
 
+dummyT :: Typ
+dummyT = Type("dummy",[])
+
+boolType :: Typ
+boolType = Type("bool",[])
+
 s --> t = Type("fun",[s,t])
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
-(--->) = foldr (-->)
+(--->) = flip $ foldr (-->)
 
 {-Terms.  Bound variables are indicated by depth number.
   Free variables, (scheme) variables and constants have names.
@@ -57,6 +81,7 @@ data Term =
       -- | Bound Int
       | Abs   (String, Typ, Term)
       | App Term  Term
+      deriving (Eq, Ord)
 
 instance Show Term where
   show = showTerm 1000
@@ -71,6 +96,24 @@ showTerm pri (Const ("Ex",_) `App` Abs (v,_,t)) = "?"++v++" . "++show t
 showTerm pri (Const ("Ex1",_) `App` Abs (v,_,t)) = "?!"++v++" . "++show t
 showTerm pri (t1 `App` t2) = 
   bracketize (pri<=10) (showTerm 11 t1 ++ " " ++ showTerm 10 t2)
+
+
+data Sentence = Sentence { senTerm :: Term
+                           }
+instance Eq Sentence where
+  s1 == s2 = senTerm s1 == senTerm s2
+
+instance Ord Sentence where
+  compare s1 s2 = compare (senTerm s1) (senTerm s2)
+
+instance Show Sentence where
+  show s = show (senTerm s)
+
+instance PrettyPrint Sign where
+    printText0 _ sig = ptext (show sig)
+
+instance PrintLaTeX Sign where
+    printLatex0 = printText0
 
 
 -------------------- from src/Pure/sorts.ML ------------------------
@@ -103,8 +146,8 @@ showTerm pri (t1 `App` t2) =
     ars represents the arity t::(Ss)c;
 -}
 
-type Classrel = Map.Map Id [Class]
-type Arities = Map.Map Id [(Class, [Sort])]
+type Classrel = Map.Map String [Class]
+type Arities = Map.Map String [(Class, [Sort])]
 
 
 -------------------- from src/Pure/type.ML ------------------------
@@ -114,11 +157,23 @@ data TypeSig =
     classes:: [Class],
     classrel:: Classrel,
     defaultSort:: Sort,
-    tycons:: Map.Map Id Int,
+    tycons:: Map.Map String Int,
     log_types:: [String],
     univ_witness:: Maybe (Typ,  Sort),
-    abbrs:: Map.Map Id ([String],Typ),
+    abbrs:: Map.Map String ([String],Typ),
     arities:: Arities }
+   deriving (Eq)
+
+emptyTypeSig :: TypeSig
+emptyTypeSig = TySg {
+    classes = [],
+    classrel = Map.empty,
+    defaultSort = [],
+    tycons = Map.empty,
+    log_types = [],
+    univ_witness = Nothing,
+    abbrs = Map.empty,
+    arities = Map.empty }
 
 instance Show TypeSig where
   show tysig =
@@ -135,9 +190,16 @@ instance Show TypeSig where
 
 data Sign = Sign { baseSig :: String, -- like Pure, HOL etc.
                    tsig :: TypeSig,
-                   constTab :: Map.Map Id Typ,
+                   constTab :: Map.Map String Typ,
                    syn :: Syntax
                  }
+             deriving (Eq)
+
+emptySign :: Sign
+emptySign = Sign { baseSig = "Pure",
+                   tsig = emptyTypeSig,
+                   constTab = Map.empty,
+                   syn = () }
 
 instance Show Sign where
   show sig =
@@ -149,3 +211,15 @@ instance Show Sign where
      if Map.isEmpty tab then ""
       else "consts\n" ++ Map.foldWithKey showConst "" tab
     showConst c t rest = show c ++ " :: " ++ "\"" ++ show t ++ "\"" ++ rest
+
+
+
+sentenceTc, signTc :: TyCon
+
+sentenceTc      = mkTyCon "Isabelle.Sign.Sentence"
+signTc          = mkTyCon "Isabelle.Sign.Sign"
+
+instance Typeable Sentence where
+    typeOf _ = mkAppTy sentenceTc []
+instance Typeable Sign where
+    typeOf _ = mkAppTy signTc []

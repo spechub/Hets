@@ -87,6 +87,13 @@ toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =
 toPRED_TYPE :: PredType -> PRED_TYPE
 toPRED_TYPE PredType { predArgs = args } = Pred_type args []
 
+toOpType :: OP_TYPE -> OpType
+toOpType (Total_op_type args r _) = OpType Total args r
+toOpType (Partial_op_type args r _) = OpType Partial args r
+
+toPredType :: PRED_TYPE -> PredType
+toPredType (Pred_type args _) = PredType args
+
 instance PrettyPrint OpType where
   printText0 ga ot = printText0 ga $ toOP_TYPE ot
 

@@ -354,6 +354,16 @@ createLocalMenuButtonShowSignature convRef dgraph =
                        )
 	            )
 
+createLocalMenuButtonShowTheory convRef dgraph =
+                    (Button "Show theory" 
+                      (\ (name,descr,gid) ->
+                        do convMaps <- readIORef convRef
+                           getSignatureOfNode descr
+		                              (abstr2dgNode convMaps)
+		                              dgraph
+		           return ()
+                       )
+	            )
 
 createLocalMenuButtonShowSublogic convRef dgraph =
                     (Button "Show sublogic" 

@@ -260,9 +260,6 @@ ana_SORT_ITEM ga si =
 	   mapM_ ( \ i -> mapM_ (addSubsort i) il) il
 	   return si
 
-toOpType :: OP_TYPE -> OpType
-toOpType (Total_op_type args r _) = OpType Total args r
-toOpType (Partial_op_type args r _) = OpType Partial args r
 
 ana_OP_ITEM :: GlobalAnnos -> OP_ITEM -> State Sign OP_ITEM
 ana_OP_ITEM ga oi = 
@@ -320,9 +317,6 @@ ana_OP_ATTR ga oa =
 	   addDiags ds
 	   return $ fmap Unit_op_attr mt
     _ -> return $ Just oa
-
-toPredType :: PRED_TYPE -> PredType
-toPredType (Pred_type args _) = PredType args
 
 ana_PRED_ITEM :: GlobalAnnos -> PRED_ITEM -> State Sign PRED_ITEM
 ana_PRED_ITEM ga p = 

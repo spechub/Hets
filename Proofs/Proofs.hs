@@ -1,7 +1,7 @@
 {-| 
    
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
@@ -39,6 +39,7 @@ import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
 import Static.DevGraph
+import Common.Result
 import Common.Lib.Graph
 import List(nub)
 
@@ -598,3 +599,23 @@ elemOfProofBasis label (_,_,dglink) =
     (GlobalThm (Proven proofBasis) _ _) -> elem label proofBasis
     (LocalThm (Proven proofBasis) _ _) -> elem label proofBasis
     _ -> False
+
+sensOfNode :: DGraph -> DGNodeLab -> G_l_sentence_list
+sensOfNode dg (DGNode {dgn_sens = sens}) = sens
+sensOfNode dg _ = undefined -- ??? to simplistic
+
+
+-- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
+computeTheory :: DGraph -> Node -> Maybe (G_sign,G_l_sentence_list) 
+computeTheory dg n = do
+  ctx <- fst $ match n dg
+  let  nlab = lab' ctx
+       paths = getAllLocGlobDefPathsTo dg n []
+  mors <- sequence $ map (calculateMorphismOfPath . snd) paths
+  ctxs <- sequence $ map (fst . flip match dg . fst) paths
+  let sens = map (sensOfNode dg . lab') ctxs
+  sens' <- sequence 
+            $ map (resultToMaybe . uncurry translateG_l_sentence_list) 
+            $ zip mors sens
+  sens'' <- flatG_l_sentence_list sens'
+  return (dgn_sign nlab,sens'') -- ??? dgn_sign too simplistic 

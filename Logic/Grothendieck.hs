@@ -528,3 +528,15 @@ translateG_l_sentence_list (GMorphism cid sign1 morphism2)
   sens''' <- sequence $ map (mapNamedM (map_sen tlid morphism2)) $ sens''
   return (G_l_sentence_list tlid sens''')
 
+-- | Join two G_l_sentence_list's
+joinG_l_sentence_list :: G_l_sentence_list -> G_l_sentence_list
+                            -> Maybe G_l_sentence_list
+joinG_l_sentence_list (G_l_sentence_list lid1 sens1)
+                      (G_l_sentence_list lid2 sens2) = do
+  sens2' <- resultToMaybe $ rcoerce lid1 lid2 nullPos sens2
+  return (G_l_sentence_list lid1 (sens1++sens2'))
+
+-- | Flatten a list of G_l_sentence_list's
+flatG_l_sentence_list :: [G_l_sentence_list] -> Maybe G_l_sentence_list
+flatG_l_sentence_list [] = Nothing
+flatG_l_sentence_list (gl:gls) = foldM joinG_l_sentence_list gl gls
