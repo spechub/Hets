@@ -7,71 +7,67 @@ transform :: HsModule -> HsModule
 transform (HsModule src m expr imp rest) = HsModule src m expr ((HsImportDecl 
      (SrcLoc {srcFilename = "dummy", srcLine = (-1), srcColumn = (-1)})
      (Module "Haskell.Logical") False Nothing Nothing):imp) 
-     (convertHsDeclList rest)
+     (cvrtHsDeclList rest)
 
-convertHsDeclList :: [HsDecl] -> [HsDecl]
-convertHsDeclList [] = []
-convertHsDeclList (x:xs) = case x of
+cvrtHsDeclList :: [HsDecl] -> [HsDecl]
+cvrtHsDeclList [] = []
+cvrtHsDeclList (x:xs) = case x of
                              HsAxiomBind b -> 
-                               x:convertBinding b ++ convertHsDeclList xs
-                             _ -> x:convertHsDeclList xs
+                               x:cvrtBinding b ++ cvrtHsDeclList xs
+                             _ -> x:cvrtHsDeclList xs
 
-convertBinding :: Binding -> [HsDecl]
-convertBinding (AxiomDecl name formula) = 
+cvrtBinding :: Binding -> [HsDecl]
+cvrtBinding (AxiomDecl name formula) = 
                  [HsPatBind (SrcLoc {srcFilename = "dummy", srcLine = -1, 
-                 srcColumn = -1}) (convertAxiomName name) 
-                 (convertFormula formula) []]
-convertBinding (AndBindings b1 b2) = convertBinding b1 ++ convertBinding b2
+                 srcColumn = -1}) (cvrtAxiomName name) 
+                 (cvrtFormula formula) []]
+cvrtBinding (AndBindings b1 b2) = cvrtBinding b1 ++ cvrtBinding b2
 
-convertFormula :: Formula -> HsRhs
-convertFormula f = case f of
-                    AxQuant quant form -> HsUnGuardedRhs (convWithQuant 
+cvrtFormula :: Formula -> HsRhs
+cvrtFormula f = case f of
+                    AxQuant quant form -> HsUnGuardedRhs (cvrtWithQuant 
                                                              quant form)
-                    _ -> HsUnGuardedRhs (convWithoutQuant f)
+                    _ -> HsUnGuardedRhs (cvrtWithoutQuant f)
 
-convWithQuant :: Quantifier -> Formula -> HsExp
-convWithQuant (AxForall []) f =  convWithoutQuant f
-convWithQuant (AxForall (a:axbList)) f = HsApp (HsVar (UnQual 
+cvrtWithQuant :: Quantifier -> Formula -> HsExp
+cvrtWithQuant (AxForall []) f =  cvrtWithoutQuant f
+cvrtWithQuant (AxForall (a:axbList)) f = HsApp (HsVar (UnQual 
                                           (HsIdent "allof"))) 
                                           (HsParen (HsLambda (SrcLoc 
                                           {srcFilename = "dummy", srcLine = -1,
                                           srcColumn = -1}) [HsPVar 
-                                          (convertAxiomBndr a)] 
-                                          (convWithQuant (AxForall axbList) 
+                                          (cvrtAxiomBndr a)] 
+                                          (cvrtWithQuant (AxForall axbList) 
                                                                          f)))
-convWithQuant (AxExists []) f =  convWithoutQuant f
-convWithQuant (AxExists (a:axbList)) f = HsApp (HsVar (UnQual 
+cvrtWithQuant (AxExists []) f =  cvrtWithoutQuant f
+cvrtWithQuant (AxExists (a:axbList)) f = HsApp (HsVar (UnQual 
                                           (HsIdent "ex"))) 
                                           (HsParen (HsLambda (SrcLoc 
                                           {srcFilename = "dummy", srcLine = -1,
                                           srcColumn = -1}) [HsPVar 
-                                          (convertAxiomBndr a)] 
-                                          (convWithQuant (AxForall axbList) 
+                                          (cvrtAxiomBndr a)] 
+                                          (cvrtWithQuant (AxForall axbList) 
                                                                          f)))
-convWithQuant (AxExistsOne []) f =  convWithoutQuant f
-convWithQuant (AxExistsOne (a:axbList)) f = HsApp (HsVar (UnQual 
+cvrtWithQuant (AxExistsOne []) f =  cvrtWithoutQuant f
+cvrtWithQuant (AxExistsOne (a:axbList)) f = HsApp (HsVar (UnQual 
                                             (HsIdent "exone"))) 
                                             (HsParen (HsLambda (SrcLoc 
                                             {srcFilename = "dummy", srcLine
                                             = -1, srcColumn = -1}) [HsPVar 
-                                            (convertAxiomBndr a)] 
-                                            (convWithQuant (AxForall axbList) 
+                                            (cvrtAxiomBndr a)] 
+                                            (cvrtWithQuant (AxForall axbList) 
                                                                          f)))
 
-convWithoutQuant :: Formula -> HsExp
-convWithoutQuant (AxExp expr) = expr
-convWithoutQuant (AxEq form expr _) = HsInfixApp 
-                                       (convWithoutQuant form) 
+cvrtWithoutQuant :: Formula -> HsExp
+cvrtWithoutQuant (AxExp expr) = expr
+cvrtWithoutQuant (AxEq form expr _) = HsInfixApp 
+                                       (cvrtWithoutQuant form) 
                                        (HsQConOp (UnQual (HsSymbol "==="))) expr
 
 
-convertAxiomBndr :: AxiomBndr -> HsName
-convertAxiomBndr (AxiomBndr name) = name
-convertAxiomBndr (AxiomBndrSig name _) = name
+cvrtAxiomBndr :: AxiomBndr -> HsName
+cvrtAxiomBndr (AxiomBndr name) = name
+cvrtAxiomBndr (AxiomBndrSig name _) = name
 
-convertAxiomName :: AxiomName -> HsPat
-convertAxiomName (n:ame) = HsPVar (HsIdent ((toLower n):ame))
-
-convertTry :: HsName -> Bool
-convertTry n 
-    | (n == HsIdent "bla") = True
+cvrtAxiomName :: AxiomName -> HsPat
+cvrtAxiomName (n:ame) = HsPVar (HsIdent ((toLower n):ame))
