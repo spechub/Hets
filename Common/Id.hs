@@ -131,9 +131,7 @@ posOfId :: Id -> Pos
 posOfId (Id [] _ _) = error "Id.posOfId"
 posOfId (Id ts _ _) = let l = dropWhile isPlace ts 
 		      in if null l then -- for invisible "__ __" (only places)
-			   let h = head ts 
-			       in incSourceColumn (tokPos h) 
-				      $ length (tokStr h)
+			   tokPos $ last ts
 			 else tokPos $ head l
 
 -- Simple Ids
