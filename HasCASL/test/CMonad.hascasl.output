@@ -10,16 +10,16 @@ op fmap : (a -> b) -> f a -> f b
 op empty : List a
 type Set : Functor
 op emptySet : Set a
-. (fun __=__[Set _var_14_v14]
+. (fun __=__[Set _var_12_v12]
    : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-    (op fail[Set; _var_14_v14]
+    (op fail[Set; _var_12_v12]
      : forall m : Monad; a : Type . m_v-1 a_v-2,
-     op emptySet[_var_14_v14] : forall a : Type . Set a_v-1)
-. (fun __=__[List _var_26_v26]
+     op emptySet[_var_12_v12] : forall a : Type . Set a_v-1)
+. (fun __=__[List _var_24_v24]
    : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-    (op fail[List; _var_26_v26]
+    (op fail[List; _var_24_v24]
      : forall m : Monad; a : Type . m_v-1 a_v-2,
-     op empty[_var_26_v26] : forall a : Type . List a_v-1)
+     op empty[_var_24_v24] : forall a : Type . List a_v-1)
 op map : (a -> b) -> List a -> List b
 op __bind__ : m a * (a -> m b) -> m b
 var g : a -> b
@@ -101,16 +101,16 @@ true : Unit %(fun)%
 x : m a %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(fun __=__[Set _var_14_v14]
+(fun __=__[Set _var_12_v12]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op fail[Set; _var_14_v14]
+  (op fail[Set; _var_12_v12]
    : forall m : Monad; a : Type . m_v-1 a_v-2,
-   op emptySet[_var_14_v14] : forall a : Type . Set a_v-1)
-(fun __=__[List _var_26_v26]
+   op emptySet[_var_12_v12] : forall a : Type . Set a_v-1)
+(fun __=__[List _var_24_v24]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op fail[List; _var_26_v26]
+  (op fail[List; _var_24_v24]
    : forall m : Monad; a : Type . m_v-1 a_v-2,
-   op empty[_var_26_v26] : forall a : Type . List a_v-1)
+   op empty[_var_24_v24] : forall a : Type . List a_v-1)
 (fun __=__[List a -> List b]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   ((op fmap[a; b; List]
@@ -144,9 +144,9 @@ x : m a %(var)%
   expected: Monad
      found: Functor
 
-*** Error 25.8, in term'(fun __=__[Set _var_14_v14]
+*** Error 25.8, in term'(fun __=__[Set _var_12_v12]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op fail[Set; _var_14_v14]
+  (op fail[Set; _var_12_v12]
    : forall m : Monad; a : Type . m_v-1 a_v-2,
-   op emptySet[_var_14_v14] : forall a : Type . Set a_v-1)' of type 'Unit'
+   op emptySet[_var_12_v12] : forall a : Type . Set a_v-1)' of type 'Unit'
  unresolved constraints '{ Set : Monad }'

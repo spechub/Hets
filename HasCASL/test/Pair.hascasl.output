@@ -3,10 +3,10 @@ free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
 op f : forall a : Type; b : Type .
          a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2
      = \ (var a : a, var b : b)
-         .! (op Pair[a; b]
+         .! (op Pair[a_v1; b_v2]
              : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
               (var a : a, var b : b) as
-                Pair _var_9_v9 _var_10_v10
+                Pair a_v1 b_v2
 op g : Pair a b ->? a
 program (op g[_var_13_v13; _var_14_v14]
          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1)
@@ -48,10 +48,10 @@ def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 f : forall a : Type; b : Type . a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2
     %(op)%
       = \ (var a : a, var b : b)
-          .! (op Pair[a; b]
+          .! (op Pair[a_v1; b_v2]
               : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
                (var a : a, var b : b) as
-                 Pair _var_9_v9 _var_10_v10
+                 Pair a_v1 b_v2
 false : Unit %(fun)%
 fst
   : forall a : Type; b : Type . Pair a_v-1 b_v-2 -> a_v-1
@@ -90,21 +90,13 @@ forall a : a; b : b
       ((op f
         : forall a : Type; b : Type . a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2)
          (var a : a, var b : b),
-       (op Pair[a; b]
+       (op Pair[a_v1; b_v2]
         : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
          (var a : a, var b : b) as
-           Pair _var_9_v9 _var_10_v10) %(def_f)%
+           Pair a_v1 b_v2) %(def_f)%
 program (op g[_var_13_v13; _var_14_v14]
          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1)
           ((op Pair[_var_13_v13; _var_14_v14]
             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
              (var a : _var_13_v13, var b : _var_14_v14))
           = (var a : _var_13_v13) %(pe_g)%
-%% Diagnostics -----------------------------------------------------------
-*** Hint 4.33, unable to prove: b < _var_10_v10
-*** Hint 4.33, unable to prove: a < _var_9_v9
-*** Error 4.33, in term'(op Pair[a; b]
- : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-  (var a : a, var b : b) as
-    Pair _var_9_v9 _var_10_v10' of type 'Pair _var_9_v9 _var_10_v10'
- unresolved constraints '{ a < _var_9_v9, b < _var_10_v10 }'

@@ -68,34 +68,16 @@ substC s = Set.image (\ c -> case c of
     Kinding ty k -> Kinding (subst s ty) k
     Subtyping t1 t2 -> Subtyping (subst s t1) $ subst s t2)
 
-
 simplify :: TypeMap -> Constraints -> ([Diagnosis], Constraints)
-simplify = postSimplify
-{-
-   let (ds, c2) = preSimplify tm cs
-       (es, c3) = postSimplify tm c2
-   in (ds ++ es, c3)
--}
-
-postSimplify :: TypeMap -> Constraints -> ([Diagnosis], Constraints)
-postSimplify tm rs = 
+simplify tm rs = 
     if Set.isEmpty rs then ([], Set.empty)
     else let (r, rt) = Set.deleteFindMin rs 
 	     Result ds m = entail tm r
-             (es, cs) = postSimplify tm rt
+             (es, cs) = simplify tm rt
              in (ds ++ es, case m of
                                  Just _ -> cs
 	                         Nothing -> insertC r cs)
 
-preSimplify :: TypeMap -> Constraints -> ([Diagnosis], Constraints)
-preSimplify tm cs = 
-    let subTys = toListC cs
-        Result ds ms = mgu tm (map fst subTys) $ map snd subTys
-    in case ms of 
-    Nothing -> (mkDiag Error "non-unifiable subtyping constraints" subTys
-                : ds, cs)  
-    Just s -> (ds, substC s cs)
-   
 entail :: Monad m => TypeMap -> Constrain -> m ()
 entail tm p = 
     do is <- byInst tm p
@@ -122,7 +104,6 @@ byInst tm c = case c of
 	       _ -> error "byInst: unexpected Type" 
 	   _ -> error "byInst: unexpected Kind" 
     Subtyping t1 t2 -> if lesserType tm t1 t2 then return noC
---                       else if unify tm t1 t2 then return noC -- wrong!
                        else fail ("unable to prove: " ++ showPretty t1 " < " 
                                   ++ showPretty t2 "")
 
@@ -222,9 +203,8 @@ shapeMgu tm cs =
     (_, LazyType t _) -> shapeMgu tm ((t1, t) : rest)
     (KindedType t _ _, _) -> shapeMgu tm ((t, t2) : rest)
     (_, KindedType t _ _) -> shapeMgu tm ((t1, t) : rest)
-    (TypeName _ _ v1, _) -> if (v1 > 0) then
-         case t2 of
-         ProductType ts ps -> do 
+    (TypeName _ _ v1, _) -> if (v1 > 0) then case t2 of
+         ProductType ts ps -> do
              nts <- toPairState $ freshVarsT tm ts
              let s = Map.single v1 $ ProductType nts ps
              addSubst s
@@ -235,22 +215,39 @@ shapeMgu tm cs =
              let s = Map.single v1 $ FunType v3 ar v4 ps
              addSubst s
              shapeMgu tm ((t3, v3) : (v4, t4) : subst s rest)
-         TypeAppl _ _ -> do 
-             let (topTy, args) = getTypeAppl tm t2 
+         _ -> do
+             let (topTy, args) = getTypeAppl tm t2
+                 (_, ks) = getRawKindAppl (rawKind $ kindOfType tm topTy) args
              vs <- toPairState $ freshVarsT tm args
              let s = Map.single v1 $ mkTypeAppl topTy vs
              addSubst s
-             shapeMgu tm (zip vs args ++ subst s rest)
-         _ -> error "shapeMgu"
-         else error ("shapeMgu: " ++ showPretty t1 " < " ++ showPretty t2 "") 
+             shapeMgu tm (concat (zipWith zipC ks $ zip vs args) 
+                          ++ subst s rest)
+       else error ("shapeMgu: " ++ showPretty t1 " < " ++ showPretty t2 "") 
     (_, TypeName _ _ _) -> do ats <- shapeMgu tm ((t2, t1) : map swap rest)
                               return $ map swap ats
-    (TypeAppl t3 t4, TypeAppl t5 t6) ->
-        shapeMgu tm ((t3, t5) : (t4, t6) : rest)
     (ProductType s1 _, ProductType s2 _) -> shapeMgu tm (zip s1 s2 ++ rest)
-    (FunType t3 _ t4 _, FunType t5 _ t6 _) ->
+    (FunType t3 _ t4 _, FunType t5 _ t6 _) -> 
         shapeMgu tm ((t5, t3) : (t4, t6) : rest)
-    _ -> error "shapeMgu (invalid precondition)"
+    _ -> let (top1, as1) = getTypeAppl tm t1
+             (top2, as2) = getTypeAppl tm t2
+             in case (top1, top2) of 
+          (TypeName _ k1 _, TypeName _ k2 _) -> 
+              let r1 = rawKind k1 
+                  r2 = rawKind k2 
+                  (_, ks) = getRawKindAppl r1 as1 
+              in if (r1 == r2 && length as1 == length as2) then
+                 shapeMgu tm ((top1, top2) : 
+                              concat (zipWith zipC ks $ zip as1 as2) 
+                              ++ rest)
+                 else error "shapeMgu"
+          _ -> error ("shapeMgu: " ++ showPretty t1 " < " ++ showPretty t2 "")
+
+zipC :: Kind -> (Type, Type) -> [(Type, Type)] 
+zipC k p = let q = swap p in case k of
+                      ExtKind _ CoVar _ -> [p]
+                      ExtKind _ ContraVar _ -> [q]
+                      _ -> [p,q]
 
 shapeUnify :: TypeMap -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
 shapeUnify tm l = do 
@@ -258,36 +255,6 @@ shapeUnify tm l = do
     let (as, (n, t)) = runState (shapeMgu tm l) (c, eps) 
     put n
     return (t, as)
-
--- must be integrated into shapeMgu
-atomize :: TypeMap -> (Type, Type) -> [(Type, Type)]
-atomize tm (t1, t2) = 
-    case (t1, t2) of 
-    (ExpandedType _ t, _) -> atomize tm (t, t2)
-    (_, ExpandedType _ t) -> atomize tm (t1, t)
-    (LazyType t _, _) -> atomize tm (t, t2)
-    (_, LazyType t _) -> atomize tm (t1, t)
-    (KindedType t _ _, _) -> atomize tm (t, t2)
-    (_, KindedType t _ _) -> atomize tm (t1, t)
-    (TypeName _ _ _, TypeName _ _ _) -> [(t1, t2)]
-    _ -> 
-       let (top1, as1) = getTypeAppl tm t1
-           (top2, as2) = getTypeAppl tm t2
-       in case (top1, top2) of 
-          (TypeName _ k1 _, TypeName _ k2 _) -> 
-              let r1 = rawKind k1 
-                  r2 = rawKind k2 
-                  (_, ks) = getRawKindAppl r1 as1 
-              in if (r1 == r2 && length as1 == length as2) then
-                 (top1, top2) : (concat $ zipWith ( \ k (a1, a2) -> 
-                      let l1 = atomize tm (a1, a2)
-                          l2 = atomize tm (a2, a1)
-                      in case k of
-                      ExtKind _ CoVar _ -> l1
-                      ExtKind _ ContraVar _ -> l2
-                      _ -> l1 ++ l2) ks $ zip as1 as2)
-                 else error "atomize: getTypeAppl"
-          _ -> error "atomize"
 
 getRawKindAppl :: Kind -> [a] -> (Kind, [Kind])
 getRawKindAppl k args = if null args then (k, []) else
@@ -358,8 +325,7 @@ shapeRel tm cs =
                        Rel.transReduce $ Rel.fromList $ subst s2 atoms)
                                                                 
         
--- find monotonicity-based instantiations
-
+-- | compute monotonicity of a type variable
 monotonic :: TypeMap -> Int -> Type -> (Bool, Bool)
 monotonic tm v t = 
      case t of 
@@ -376,10 +342,10 @@ monotonic tm v t =
                                        ExtKind _ CoVar _ -> (b1, b2)
                                        ExtKind _ ContraVar _ -> (b2, b1)
                                        _ -> (b1 && b2, b1 && b2)) ks args
--- assume CoVar
                     in (and bs1, and bs2) 
                 _ -> error "monotonic"
 
+-- | find monotonicity based instantiation
 monoSubst :: TypeMap -> Rel.Rel Type -> Type -> Subst
 monoSubst tm r t = 
     let varSet = Set.fromList . leaves (> 0)
@@ -422,20 +388,6 @@ monoSubsts tm r t =
             monoSubsts tm (Rel.transReduce $ Rel.irreflex $
                            Rel.image (subst s) r) 
                            $ subst s t 
-
-close :: TypeMap -> Constraints -> Type
-         -> State Int (Result (Subst, Constraints))
-close tm cs t = do 
-    Result ds mr <- shapeRel tm cs 
-    return $ Result ds $ case mr of 
-        Nothing -> Nothing
-        Just (s1, qs, r) -> 
-            let s2 = monoSubsts tm r t 
-                s = compSubst s1 s2     
-            in Just (s, foldr ( \ (a, b) -> 
-                             insertC (Subtyping a b)) (substC s2 qs)
-                              $ Rel.toList $ Rel.transReduce 
-                              $ Rel.image (subst s) r) 
 
 fromTypeMap :: TypeMap -> Rel.Rel Type
 fromTypeMap = Map.foldWithKey (\ t ti r ->
