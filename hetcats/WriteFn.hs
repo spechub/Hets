@@ -23,7 +23,8 @@ import Version
 import Common.ConvertGlobalAnnos
 import Common.ATerm.Lib
 
-
+import Static.DevGraph
+import ATC.DevGraph
 -- for debugging
 
 {---
@@ -97,5 +98,7 @@ toShATermString atcon = let (att0,versionnr) = toShATerm emptyATermTable hetcats
                         in writeSharedATerm att2
                         
 
+globalContexttoShATerm :: FilePath -> GlobalContext -> IO ()
+globalContexttoShATerm fp gc = writeShATermFile fp gc
 
 

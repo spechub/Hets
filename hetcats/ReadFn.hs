@@ -15,12 +15,16 @@ import Options
 
 import ATC.Sml_cats
 import Syntax.AS_Library
+import ATC.AS_Library
 
 import Syntax.Parse_AS_Structured
 import Common.Lib.Parsec
 import Logic.LogicGraph
 import Common.ATerm.Lib
 import Version
+
+import Static.DevGraph
+import ATC.DevGraph
 
 read_LIB_DEFN :: HetcatsOpts -> FilePath -> IO LIB_DEFN
 read_LIB_DEFN opt file = 
@@ -44,15 +48,35 @@ read_LIB_DEFN opt file =
     guess GuessIn = guessInType file
     guess itype   = itype
 
+readLIB_DEFN_from_file :: FilePath -> IO LIB_DEFN
+readLIB_DEFN_from_file = readShATermFile
+
 readShATermFile :: (ATermConvertible a) => FilePath -> IO a 
 readShATermFile fp = do str <- readFile fp
-                        att <- return $ readATerm str
-                        case getATerm att of
-                         ShAAppl "hets" [versionnr,aterm] [] -> if hetcats_version == (fromShATerm $ getATermByIndex1 versionnr att)
-								 then return $ fromShATerm $ getATermByIndex1 aterm att
-                                                                 else return $ error "Wrong version number!"
-                         _                                   -> return $ error "Couldn't convert ShATerm back from file"
- 
+                        return $ fromShATermString str
+                        
+fromShATermString :: (ATermConvertible a) => String -> a
+fromShATermString str = case getATerm att of
+                         ShAAppl "hets" [versionnr,aterm] [] -> 
+                          if hetcats_version == (fromShATerm $ getATermByIndex1 versionnr att)
+			     then fromShATerm $ getATermByIndex1 aterm att
+                             else error "Wrong version number!"
+                         _                                   -> error "Couldn't convert ShATerm back from file"
+    where att = readATerm str
+
+globalContextfromShATerm :: FilePath -> IO GlobalContext 
+globalContextfromShATerm = readShATermFile
+{-do str <- readFile fp
+                                 att <- return $ readATerm str
+                                 case getATerm att of
+                                  ShAAppl "globalcontext" [versionnr,aterm] [] -> if hetcats_version == (fromShATerm $ getATermByIndex1 versionnr att)
+					                  			   then return $ fromShATerm $ getATermByIndex1 aterm att
+                                                                                   else return $ error "Wrong version number!"
+                                  _                                            -> return $ error "Couldn't convert ShATerm back from file"-}
+
+
+
+
 
 
 
