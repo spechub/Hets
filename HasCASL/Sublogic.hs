@@ -84,6 +84,7 @@ data HasCASL_Formulas = Atomic  -- atomic logic
                    | Horn    -- positive conditional logic
                    | GHorn   -- generalized positive conditional logic
                    | FOL     -- first-order logic
+                   | HOL     -- higher-order logic
                    deriving (Show,Ord,Eq)
 
 data HasCASL_Sublogics = HasCASL_SL
@@ -94,8 +95,10 @@ data HasCASL_Sublogics = HasCASL_SL
                         has_ho :: Bool,  -- higher order
                         has_type_classes :: Bool,
                         has_polymorphism :: Bool,
+                        has_type_constructors :: Bool,
                         which_logic::HasCASL_Formulas
                       } deriving (Show,Ord,Eq)
+
 
 -----------------------------------------------------------------------------
 -- Special sublogics elements
@@ -154,6 +157,14 @@ need_fol = bottom { which_logic = FOL }
 -- Functions to generate a list of all sublogics for HasCASL
 -----------------------------------------------------------------------------
 
+{-
+[HasCASL_SL {has_sub = sub,
+             has_part = part, 
+             ...}
+ sub <- [False,True],
+ part <- [False,True],
+ .... ]
+-}
 -- conversion from Int in [0..127] range to HasCASL_Sublogics
 
 boolFromInt :: Int -> Bool

@@ -504,12 +504,13 @@ sl_formula :: FORMULA f -> CASL_Sublogics
 sl_formula f = sublogics_max (get_logic f) (sl_form f)
 
 sl_form :: FORMULA f -> CASL_Sublogics
-sl_form (Quantification _ _ f _) = sl_form f
+sl_form (Quantification Universal _ f _) = sl_form f
+sl_form (Quantification _ _ f _) = need_fol
 sl_form (Conjunction l _) = comp_list $ map sl_form l
 sl_form (Disjunction l _) = comp_list $ map sl_form l
 sl_form (Implication f g _ _) = sublogics_max (sl_form f) (sl_form g)
 sl_form (Equivalence f g _) = sublogics_max (sl_form f) (sl_form g)
-sl_form (Negation f _) = sl_form f
+sl_form (Negation f _) = need_fol
 sl_form (True_atom _) = bottom
 sl_form (False_atom _) = bottom
 sl_form (Predication _ l _) = sublogics_max need_pred
