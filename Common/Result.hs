@@ -33,14 +33,14 @@ maxdiags = 20
 
 -- | severness of diagnostic messages
 data DiagKind = FatalError | Error | Warning | Hint | Debug 
-	      | MessageW -- ^ used for collection of messages in the Web interface
-		deriving (Eq, Ord, Show)
+              | MessageW -- ^ used for collection of messages in the Web interface
+                deriving (Eq, Ord, Show)
 
 -- | a diagnostic message with a position
 data Diagnosis = Diag { diagKind :: DiagKind
-		      , diagString :: String
-		      , diagPos :: Pos 
-		      } deriving Eq
+                      , diagString :: String
+                      , diagPos :: Pos 
+                      } deriving Eq
 
 -- | construct a message for a printable item that carries a position
 mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
@@ -60,14 +60,14 @@ checkUniqueness :: (PrettyPrint a, PosItem a, Ord a) => [a] -> [Diagnosis]
 checkUniqueness l = 
     let vd = filter ( not . null . tail) $ group $ sort l
     in map ( \ vs -> mkDiag Error ("duplicates at '" ++
-	                          showSepList (showString " ") shortPosShow
-				  (map getMyPos (tail vs)) "'" 
-				   ++ " for")  (head vs)) vd
+                                  showSepList (showString " ") shortPosShow
+                                  (map getMyPos (tail vs)) "'" 
+                                   ++ " for")  (head vs)) vd
     where shortPosShow :: Pos -> ShowS
-	  shortPosShow p = showParen True 
-			   (shows (sourceLine p) . 
-			    showString "," . 
-			    shows (sourceColumn p))
+          shortPosShow p = showParen True 
+                           (shows (sourceLine p) . 
+                            showString "," . 
+                            shows (sourceColumn p))
 
 -- ---------------------------------------------------------------------
 -- the Result monad
@@ -77,8 +77,8 @@ checkUniqueness l =
 -- A failing 'Result' should include a 'FatalError' message.
 -- Otherwise diagnostics should be non-fatal.
 data Result a = Result { diags :: [Diagnosis]
-	               , maybeResult :: (Maybe a)
-		       } deriving (Show)
+                       , maybeResult :: (Maybe a)
+                       } deriving (Show)
 
 instance Functor Result where
     fmap f (Result errs m) = Result errs $ fmap f m
@@ -170,8 +170,15 @@ message x m = Result [Diag MessageW m nullPos] $ Just x
 -- | add a fatal error message to a failure (Nothing)
 maybeToResult :: Pos -> String -> Maybe a -> Result a
 maybeToResult p s m = Result (case m of 
-		              Nothing -> [Diag FatalError s p]
-			      Just _ -> []) m
+                              Nothing -> [Diag FatalError s p]
+                              Just _ -> []) m
+
+-- | add a failure message in case of Nothing 
+-- (can be used instead of 'maybeResult nullPos' or 'maybeToList')
+maybeToMonad :: Monad m => String -> Maybe a -> m a
+maybeToMonad s m = case m of 
+                        Nothing -> fail s 
+                        Just v -> return v
 
 maybePlainError :: a -> Pos -> String -> Maybe a -> Result a
 maybePlainError def p s m = 
@@ -181,12 +188,12 @@ maybePlainError def p s m =
 
 -- | check whether no errors are present, coerce into Maybe
 resultToMaybe :: Result a -> Maybe a
-resultToMaybe (Result diags val) =
-  if hasErrors diags then Nothing else val
+resultToMaybe (Result ds val) = if hasErrors ds then Nothing else val
 
 adjustPos :: Pos -> Result a -> Result a
 adjustPos p r =
-  r {diags = map (\d -> d {diagPos = p}) (diags r)}
+  r {diags = map (\d -> d {diagPos = let o = diagPos d in 
+                           if o == nullPos then p else o}) (diags r)}
 
 -- | Propagate errors using the error function
 propagateErrors :: Result a -> a
@@ -211,10 +218,10 @@ instance Show Diagnosis where
 
 instance PrettyPrint Diagnosis where
     printText0 _ (Diag k s sp) = 
-	text "***" 
+        text "***" 
         <+> text (show k)
         <+> text (showPos sp ",")
-	<+> text s
+        <+> text s
 
 instance PosItem Diagnosis where
     up_pos fn1 d  = d { diagPos = fn1 $ diagPos d }
@@ -222,9 +229,9 @@ instance PosItem Diagnosis where
 
 instance PrettyPrint a => PrettyPrint (Result a) where
     printText0 g (Result ds m) = vcat ((case m of 
-				       Nothing -> empty
-	 			       Just x -> printText0 g x) :
-					    (map (printText0 g) ds))
+                                       Nothing -> empty
+                                       Just x -> printText0 g x) :
+                                            (map (printText0 g) ds))
 
 -- ---------------------------------------------------------------------
 -- debugging
