@@ -12,6 +12,7 @@ CASL/iterate.sh
 
 CSP-CASL
 
+Common/CaslLanguage.hs
 Common/LaTeX_maps.svmono.hs
 Common/Makefile
 Common/RunParsers.hs
