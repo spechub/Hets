@@ -11,7 +11,7 @@ module Graph (
    Node,LNode,UNode,                  -- plain, labeled, and unit-labeled node
    Edge,LEdge,UEdge,                  -- plain, labeled, and unit-labeled edge
    Graph,UGraph,                      -- plain and unit-labeled graph
-   Adj,Context,MContext(..),Decomp,GDecomp,     -- inductive graph view
+   Adj,Context,MContext,Decomp,GDecomp,     -- inductive graph view
    Path,LPath,UPath,                  -- plain, labeled, and unit-labeled path
 -- main functions
    empty,embed,(&),match,matchP,matchAny,

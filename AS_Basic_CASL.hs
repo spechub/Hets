@@ -1,5 +1,7 @@
 module AS_Basic_CASL where
 
+-- $Haeder$
+
 import Id
 import AS_Annotation 
 
@@ -135,7 +137,7 @@ data FORMULA = Quantfication QUANTIFIER [VAR_DECL] FORMULA [Pos]
 	       -- pos: =
 	     | Membership TERM SORT [Pos]
                -- pos: in
-
+	     | Mixfix_formula [TERM] [Pos]
 	     -- a formula left original for mixfix analysis
 	     | Unparsed_formula String [Pos]
 	       -- pos: first Char in String
@@ -149,30 +151,32 @@ data PRED_SYMB = Pred_name PRED_NAME
 		 -- pos: "(", pred, colon, ")"
 		 deriving (Show,Eq)
 
-{- Position and kind of brackets is provided by the list of Tokens -}
-
-data TERM = Simple_id SIMPLE_ID [Token]-- "Var" might be a better constructor
-	  | Qual_var VAR SORT [Pos] [Token]
+data TERM = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
+	  | Qual_var VAR SORT [Pos]
 	    -- pos: "(", var, colon, ")"
-	  | Application OP_SYMB [TERM] [Pos] [Token]
+	  | Application OP_SYMB [TERM] [Pos]
 	    -- pos: parens around [TERM] if any and seperating commas
-	  | Sorted_term TERM SORT [Pos] [Token]
+	  | Sorted_term TERM SORT [Pos]
 	    -- pos: colon
-	  | Cast TERM SORT [Pos] [Token]
-	    -- pos: 
-	  | Conditional TERM FORMULA TERM [Pos] [Token]
-
-	  | Unparsed_term String [Pos]
+	  | Cast TERM SORT [Pos]
+	    -- pos: "as"
+	  | Conditional TERM FORMULA TERM [Pos]
+	    -- pos: "when", "else"
+	  | Unparsed_term String [Pos]        -- SML-CATS
 
 	  -- A new intermediate state
-          | Mixfix_term  [TERM]
-	  | Mixfix_token Token -- all kind of brackets are included
-	  | Mixfix_sorted_term [TERM] [Token]
-	    -- [Token] contains: colon and sort
-	  | Mixfix_cast [TERM] [Token]
-	    -- [Token] contains: "as" and sort
-	  | Mixfix_cond [TERM] FORMULA [TERM] [Pos]
-	    -- pos: when, else
+          | Mixfix_term  [TERM]  -- not starting with Mixfix_sorted_term/cast
+	  | Mixfix_token Token   -- NO-BRACKET-TOKEN, LITERAL, PLACE
+	  | Mixfix_sorted_term SORT [Pos]
+	    -- pos: colon
+	  | Mixfix_cast SORT [Pos]
+	    -- pos: "as" 
+          | Mixfix_parenthesized [TERM] [Pos]  -- non-emtpy term list
+	    -- pos: "(", commas, ")" 
+          | Mixfix_bracketed [TERM] [Pos]
+	    -- pos: "[", commas, "]" 
+          | Mixfix_braced [TERM] [Pos]         -- also for list-notation 
+	    -- pos: "{", "}" 
 	    deriving (Show,Eq)
 
 data OP_SYMB = Op_name OP_NAME
@@ -184,7 +188,7 @@ type OP_NAME = Id
 
 type PRED_NAME = Id
 
-type SORT = Token 
+type SORT = Id
 
 type VAR = SIMPLE_ID
 
