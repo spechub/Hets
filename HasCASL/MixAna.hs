@@ -399,15 +399,11 @@ addPatternType _ _ = error "addPatternType"
 mkPatAppl :: Pattern -> Pattern -> [Pos] -> Pattern
 mkPatAppl op arg qs = 
     case op of
-	    ResolvedMixPattern i as ps -> 
-		ApplPattern op arg qs
 	    PatternVar (VarDecl i (MixfixType []) _ _) -> 
 		ResolvedMixPattern i [arg] qs
 	    TypedPattern p ty ps -> 
 		TypedPattern (mkPatAppl p arg qs) ty ps
-	    TuplePattern _ _ -> ApplPattern op arg qs
-	    ApplPattern _ _ _ -> ApplPattern op arg qs
-	    _ -> error ("mkPatAppl: " ++ show op)
+	    _ -> ApplPattern op arg qs
 
 toPat :: Id -> Int -> [Pattern] -> [Pos] -> Pattern
 toPat i _ ar qs = 
