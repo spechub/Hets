@@ -1146,8 +1146,48 @@ applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> Descr
 applyChangesAux _ _ _ eventDescr convMaps [] = return (eventDescr+1, convMaps)
 applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
   case change of
-    InsertNode lNode -> error "insert node not yet implemented"
-    DeleteNode node -> error "delete node not yet implemented"
+    InsertNode lnode@(node,nodelab) -> do
+      nodetype <- getDGNodeType nodelab
+      let nodename = getDGNodeName nodelab
+      (Result descr err) <-
+	  addnode gid nodetype nodename graphInfo
+      case err of
+	Nothing ->
+	  do let dgNode = (libname,node)
+		 newConvMaps = 
+		     convMaps {dg2abstrNode = 
+			       Map.insert dgNode descr (dg2abstrNode convMaps),
+			       abstr2dgNode =
+			       Map.insert descr dgNode (abstr2dgNode convMaps)}
+	     applyChangesAux gid libname graphInfo (descr+1) 
+			     newConvMaps changes
+	Just msg ->
+	       error ("applyChangesAux: could not add node " ++ (show node)
+		      ++" with name " ++ (show (nodename)) ++ "\n"
+		      ++ msg)
+    DeleteNode lnode@(node,nodelab) -> do
+      let nodename = getDGNodeName nodelab
+	  dgnode = (libname,node)
+      case Map.lookup dgnode (dg2abstrNode convMaps) of
+        Just abstrNode -> do
+	  (Result descr err) <- delnode gid abstrNode graphInfo
+	  case err of
+	    Nothing -> do
+		let newConvMaps =
+		        convMaps {dg2abstrNode =
+				  Map.delete dgnode (dg2abstrNode convMaps),
+				  abstr2dgNode =
+				  Map.delete abstrNode (abstr2dgNode convMaps)}
+	        applyChangesAux gid libname graphInfo (descr+1)
+			        newConvMaps changes
+	    Just msg -> error ("applyChangesAux: could not delete node "
+			       ++ (show node) ++ " with name " 
+			       ++ (show nodename) ++ "\n"
+			       ++ msg)
+	Nothing -> error ("applyChangesAux: could not delte node " 
+			  ++ (show node) ++ " with name " 
+			  ++ (show nodename) ++": " ++
+			  "node does not exist in abstraction graph")
     InsertEdge ledge@(src,tgt,edgelab) -> 
       do let dg2abstrNodeMap = dg2abstrNode convMaps
          case (Map.lookup (libname,src) dg2abstrNodeMap,
@@ -1167,9 +1207,12 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
                        applyChangesAux gid libname graphInfo (descr+1)
 			 	 newConvMaps changes
 	          Just msg -> 
-                   error ("Could not add link from " ++ (show src) ++ " to " ++ (show tgt) ++ ": " ++ (show msg))
+                   error ("applyChangesAux: could not add link from "
+			  ++ (show src) ++ " to " ++ (show tgt) ++ ":\n"
+			  ++ (show msg))
            _ -> 
-	       error ("Could not add link " ++ (show src) ++ " to " ++ (show tgt) ++ ": illigal end nodes")
+	       error ("applyChangesAux: could not add link " ++ (show src) 
+		      ++ " to " ++ (show tgt) ++ ": illigal end nodes")
    
 
     DeleteEdge (src,tgt,edgelab) -> 
@@ -1189,11 +1232,12 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
  		        applyChangesAux gid libname graphInfo (descr+1)
 				 newConvMaps changes
  		   Just msg -> error ("applyChangesAux: could not delete edge "
-			         ++ (show abstrEdge) ++ ": " ++msg)
+			              ++ (show abstrEdge) ++ ":\n"
+				      ++msg)
 
 	    Nothing -> error ("applyChangesAux: deleted edge from " 
 			      ++ (show src) ++ " to " ++ (show tgt) 
 			      ++ " of type " ++ (show (dgl_type edgelab))
 			      ++ " and origin " ++ (show (dgl_origin edgelab))
 			      ++ " of development "
-                         ++ "graph does not exist in abstraction graph" {- ++ (showPretty convMaps "\n") -})
+                         ++ "graph does not exist in abstraction graph")
