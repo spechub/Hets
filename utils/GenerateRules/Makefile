@@ -8,7 +8,7 @@ ifneq ($(MAKECMDGOALS),install)
 include uname.mk
 endif
 ####################################################################
-## Some varibles, which control the compilation
+## Some variables, which control the compilation
 
 HC         = ghc
 PERL       = perl
