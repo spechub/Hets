@@ -120,7 +120,7 @@ findModule paths modname = let
         let (h,p) = case dropWhile (isLeft) hh of
                    ((Right h):_) -> h
                    _ -> error ("can't find module " ++ modname)
-        putStrLn $ "-- " ++ p
+--        putStrLn $ "-- " ++ p
         return $ fromLit (isLiterate h) h
 
 -- generate filepaths by combining module names with different suffixes.
