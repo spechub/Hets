@@ -15,10 +15,12 @@
 
 -}
 
-module LogicStructured ( -- SPEC -> Maybe G_Sublogics
+module LogicStructured ( -- AS_Structured.SPEC -> Maybe G_Sublogics
                          min_sublogic_spec,
-                         -- LIB_DEFN -> Maybe G_Sublogics
+
+                         -- AS_Library.LIB_DEFN -> Maybe G_Sublogics
                          min_sublogic_lib
+
                        ) where
 
 import Maybe
@@ -183,18 +185,68 @@ sl_lib_defn (AS_Library.Lib_defn _ l _ _) =
   map_logics $ map sl_lib_item $ map item l
 
 -- FIXME
--- what about architectural specs?
--- more important: Download_items, how can we know the logic of
---  imported stuff?
+-- Download_items, how can we know the logic of imported stuff?
 sl_lib_item :: AS_Library.LIB_ITEM -> Maybe G_sublogics
 sl_lib_item (AS_Library.Spec_defn _ g s _) =
   top_logics (sl_genericity g) (sl_spec $ item s)
 sl_lib_item (AS_Library.View_defn _ g t l _) =
   map_logics ((sl_genericity g):(sl_view_type t):((map sl_g_mapping) l))
-sl_lib_item (AS_Library.Arch_spec_defn _ s _) = Nothing
-sl_lib_item (AS_Library.Unit_spec_defn _ s _) = Nothing
+sl_lib_item (AS_Library.Arch_spec_defn _ s _) = sl_arch_spec $ item s
+sl_lib_item (AS_Library.Unit_spec_defn _ s _) = sl_unit_spec s
 sl_lib_item (AS_Library.Download_items _ l _) = Nothing
 sl_lib_item (AS_Library.Logic n _) = sl_logic_name n
+
+-- functions on types from AS_Architecture
+
+sl_arch_spec_defn :: ARCH_SPEC_DEFN -> Maybe G_sublogics
+sl_arch_spec_defn (Arch_spec_defn _ s _) = sl_arch_spec $ item s
+
+-- FIXME
+-- how to handle Arch_spec_name which doesn't have info?
+sl_arch_spec :: ARCH_SPEC -> Maybe G_sublogics
+sl_arch_spec (Basic_arch_spec l e _) =  map_logics
+  ((sl_unit_expression $ item e):(map sl_unit_decl_defn $ map item l))
+sl_arch_spec (Arch_spec_name _) = Nothing
+sl_arch_spec (Group_arch_spec s _) = sl_arch_spec $ item s
+
+sl_unit_decl_defn :: UNIT_DECL_DEFN -> Maybe G_sublogics
+sl_unit_decl_defn (Unit_decl _ s l _) =
+  map_logics ((sl_unit_spec s):(map sl_unit_term $ map item l))
+sl_unit_decl_defn (Unit_defn _ e _) = sl_unit_expression e
+
+sl_unit_spec_defn :: UNIT_SPEC_DEFN -> Maybe G_sublogics
+sl_unit_spec_defn (Unit_spec_defn _ s _) = sl_unit_spec s
+
+-- FIXME
+-- how to handle Spec_name which doesn't have info?
+sl_unit_spec :: UNIT_SPEC -> Maybe G_sublogics
+sl_unit_spec (Unit_type l s _) =
+  map_logics ((sl_spec $ item s):(map sl_spec $ map item l))
+sl_unit_spec (Spec_name _) = Nothing
+sl_unit_spec (Arch_unit_spec s _) = sl_arch_spec $ item s
+sl_unit_spec (Closed_unit_spec s _) = sl_unit_spec s
+
+sl_unit_expression :: UNIT_EXPRESSION -> Maybe G_sublogics
+sl_unit_expression (Unit_expression l t _) =
+  map_logics ((sl_unit_term $ item t):(map sl_unit_binding l))
+
+sl_unit_binding :: UNIT_BINDING -> Maybe G_sublogics
+sl_unit_binding (Unit_binding _ s _) = sl_unit_spec s
+
+sl_unit_term :: UNIT_TERM -> Maybe G_sublogics
+sl_unit_term (Unit_reduction t r) =
+  top_logics (sl_unit_term $ item t) (sl_restriction r)
+sl_unit_term (Unit_translation t r) =
+  top_logics (sl_unit_term $ item t) (sl_renaming r)
+sl_unit_term (Amalgamation l _) = map_logics $ map sl_unit_term $ map item l
+sl_unit_term (Local_unit l t _) =
+  map_logics ((sl_unit_term $ item t):(map sl_unit_decl_defn $ map item l))
+sl_unit_term (Unit_appl _ l _) = map_logics $ map sl_fit_arg_unit l
+sl_unit_term (Group_unit_term t _) = sl_unit_term $ item t
+
+sl_fit_arg_unit :: FIT_ARG_UNIT -> Maybe G_sublogics
+sl_fit_arg_unit (Fit_arg_unit t l _) =
+  top_logics (sl_unit_term $ item t) (sl_g_symb_map_items_list l)
 
 -- top level stuff for this module
 
