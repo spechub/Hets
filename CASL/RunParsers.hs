@@ -15,8 +15,6 @@ import ParsecPos
 import PrettyPrint
 import Pretty
 import System
-import GlobalAnnotationsFunctions
-
 import RunMixfixParser (stdAnnos)
 
 data HetParser = forall a. PrettyPrint a => HetParser (Parser a)
