@@ -16,7 +16,7 @@ ops __+__, __*__ : Nat * Nat -> Nat;
     __@@__ : Nat * Nat -> Nat
 forall m, n, r, s:Nat
 . 0 <= n %(Nat_leq_def1)%
-. not (suc (n) <= 0) %(Nat_leq_def2)%
+. not ((suc (n) <= 0)) %(Nat_leq_def2)%
 . (suc (m) <= suc (n)) <=> (m <= n) %(Nat_leq_def3)%
 . (m >= n) <=> (n <= m) %(Nat_geq_def)%
 . (m < n) <=> (m <= n) /\ not m = n %(Nat_less_def)%
@@ -31,7 +31,7 @@ forall m, n, r, s:Nat
 . max (m, n) = n when m <= n else m %(Nat_max_def)%
 . + m = m %(plus_def)%
 . abs (n) = n %(Nat_abs)%
-. (odd (m)) <=> not even (m) %(Nat_odd_def)%
+. (odd (m)) <=> not (even (m)) %(Nat_odd_def)%
 . even (0) %(Nat_even_0)%
 . (even (suc (m))) <=> (odd (m)) %(Nat_even_suc)%
 . 0 ! = 1 %(Nat_factorial_0)%
@@ -39,9 +39,9 @@ forall m, n, r, s:Nat
 . m -? n = r <=> m = r + n %(Nat_sub_def)%
 . not def (m /? 0) %(Nat_divide_0)%
 . (m /? n = r <=> m = r * n) if (n > 0) %(Nat_divide_Pos)%
-. m div n = r <=> exists s:Nat . m = n * r + s /\ (s < n)
+. m div n = r <=> (exists s:Nat . m = n * r + s /\ (s < n))
 %(Nat_div)%
-. m mod n = s <=> exists r:Nat . m = n * r + s /\ (s < n)
+. m mod n = s <=> (exists r:Nat . m = n * r + s /\ (s < n))
 %(Nat_mod)%
 . m quot n = m div n %(Nat_quot)%
 . m rem n = m mod n %(Nat_rem)%
@@ -101,7 +101,7 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . - (a - b) = b - a %(Int_neg_def)%
 . sign (m) = 0 when m = 0 else (1 when m > 0 else - 1)
 %(Int_sign_def)%
-. (m <= n) <=> (n - m in Nat) %(Int_leq_def)%
+. (m <= n) <=> n - m in Nat %(Int_leq_def)%
 . (m >= n) <=> (n <= m) %(Int_geq_def)%
 . (m < n) <=> (m <= n) /\ not m = n %(Int_less_def)%
 . (m > n) <=> (m < n) %(Int_greater_def)%
@@ -111,7 +111,7 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . (- 1) ^ a = 1 when even (a) else - 1 %(Int_neg1_power_def)%
 . m ^ a = sign (m) ^ a * abs (m) ^ a %(Int_power_def)%
 . (even (m)) <=> (even (abs (m))) %(Int_even_def)%
-. (odd (m)) <=> not (even (m)) %(Int_odd_def)%
+. (odd (m)) <=> not ((even (m))) %(Int_odd_def)%
 . m /? n = sign (m) * sign (n) * (abs (m) /? abs (n))
 %(Int_divide)%
 . (m mod n < abs (n)) if not n = 0 %(Int_mod_range)%
@@ -310,17 +310,19 @@ vars x, y, z:s; r1, r2:t
 . false
 var x:s
 . true
-. not p /\ not q (x) /\ (q (x))
-. not p \/ not q (x) \/ (q (x))
-. not p /\ not q (x) /\ (q (x)) =>
-      not p \/ not q (x) \/ (q (x)) => not p /\ not q (x) /\ (q (x))
-. not p /\ not q (x) /\ (q (x)) if not p \/ not q (x) \/ (q (x)) if
-      not p /\ not q (x) /\ (q (x))
+. not (p) /\ not (q (x)) /\ (q (x))
+. not (p) \/ not (q (x)) \/ (q (x))
+. not (p) /\ not (q (x)) /\ (q (x)) =>
+      not (p) \/ not (q (x)) \/ (q (x)) =>
+          not (p) /\ not (q (x)) /\ (q (x))
+. not (p) /\ not (q (x)) /\ (q (x)) if
+      not (p) \/ not (q (x)) \/ (q (x)) if
+      not (p) /\ not (q (x)) /\ (q (x))
 forall x:s
-. not p /\ not q (x) /\ (q (x)) <=>
-      exists x:s
-          . not p \/ not q (x) \/ (q (x)) <=>
-                exists! x:s . not p /\ not q (x) /\ (q (x))
+. not (p) /\ not (q (x)) /\ (q (x)) <=>
+      (exists x:s
+           . not (p) \/ not (q (x)) \/ (q (x)) <=>
+                 (exists! x:s . not (p) /\ not (q (x)) /\ (q (x))))
 . def f (x)
 . f (x) =e= g (x)
 . f (x) = g (x)

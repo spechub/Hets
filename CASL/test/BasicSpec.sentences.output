@@ -131,26 +131,26 @@
          . (op __div__ : Int * Int ->? Int)((var m : Nat) : Nat,
                                             (var n : Nat) : Nat) : Int =
                (var r : Nat) : Nat <=>
-               exists s:Nat
-                   . (var m : Nat) : Nat =
-                         (op __+__ : Int * Int -> Int)((op __*__ : Int *
-                                                                   Int -> Int)((var n : Nat) : Nat,
-                                                                               (var r : Nat) : Nat) : Int,
-                                                       (var s : Nat) : Nat) : Int
-                     /\ (pred __<__ : Int * Int)((var s : Nat) : Nat,
-                                                 (var n : Nat) : Nat) %(Nat_div)%,
+               (exists s:Nat
+                    . (var m : Nat) : Nat =
+                          (op __+__ : Int * Int -> Int)((op __*__ : Int *
+                                                                    Int -> Int)((var n : Nat) : Nat,
+                                                                                (var r : Nat) : Nat) : Int,
+                                                        (var s : Nat) : Nat) : Int
+                      /\ (pred __<__ : Int * Int)((var s : Nat) : Nat,
+                                                  (var n : Nat) : Nat)) %(Nat_div)%,
    . forall m, n, r, s:Nat
          . (op __mod__ : Int * Int ->? Nat)((var m : Nat) : Nat,
                                             (var n : Nat) : Nat) : Nat =
                (var s : Nat) : Nat <=>
-               exists r:Nat
-                   . (var m : Nat) : Nat =
-                         (op __+__ : Int * Int -> Int)((op __*__ : Int *
-                                                                   Int -> Int)((var n : Nat) : Nat,
-                                                                               (var r : Nat) : Nat) : Int,
-                                                       (var s : Nat) : Nat) : Int
-                     /\ (pred __<__ : Int * Int)((var s : Nat) : Nat,
-                                                 (var n : Nat) : Nat) %(Nat_mod)%,
+               (exists r:Nat
+                    . (var m : Nat) : Nat =
+                          (op __+__ : Int * Int -> Int)((op __*__ : Int *
+                                                                    Int -> Int)((var n : Nat) : Nat,
+                                                                                (var r : Nat) : Nat) : Int,
+                                                        (var s : Nat) : Nat) : Int
+                      /\ (pred __<__ : Int * Int)((var s : Nat) : Nat,
+                                                  (var n : Nat) : Nat)) %(Nat_mod)%,
    . forall m, n, r, s:Nat
          . (op __quot__ : Int * Int ->? Int)((var m : Nat) : Nat,
                                              (var n : Nat) : Nat) : Int =
@@ -196,7 +196,7 @@
                                                                      (op suc : Nat -> Nat)((op 9 : Nat) : Nat) : Nat) : Int,
                                              (var n : Nat) : Nat) : Int %(Nat_decimal_def)%,
    . forall p:Nat
-         . ((var p : Nat) : Nat in Pos) <=>
+         . (var p : Nat) : Nat in Pos <=>
                (pred __>__ : Int * Int)((var p : Nat) : Nat, (op 0 : Int) : Int),
    . (op 1 : Int) : Int =
          (op suc : Nat -> Nat)((op 0 : Nat) : Nat) : Nat %(Nat_1_as_Pos_def)%,
@@ -341,8 +341,8 @@
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (pred __<=__ : Int * Int)((var m : Int) : Int,
                                      (var n : Int) : Int) <=>
-               ((op __-__ : Int * Int -> Int)((var n : Int) : Int,
-                                              (var m : Int) : Int) : Int in Nat) %(Int_leq_def)%,
+               (op __-__ : Int * Int -> Int)((var n : Int) : Int,
+                                             (var m : Int) : Int) : Int in Nat %(Int_leq_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (pred __>=__ : Int * Int)((var m : Int) : Int,
                                      (var n : Int) : Int) <=>
@@ -794,7 +794,7 @@
    . def <error>,  . def <error>,  . def <error>,  . def <error>,
    . def <error>,  . def <error>,  . true %(The true formula)%,
    . true %(and this)%,
-   . forall x:b . ((var x : b) : b in a) <=> true,
+   . forall x:b . (var x : b) : b in a <=> true,
    . forall x:s; y:s; z:s
          . (op c : s * s -> s)((var x : s) : s,
                                (op c : s * s -> s)((var y : s) : s, (var z : s) : s) : s) : s =
@@ -936,14 +936,14 @@
          . not (pred p : ())
            /\ not (pred q : s)((var x : s) : s)
            /\ (pred q : s)((var x : s) : s) <=>
-               exists x:s
-                   . not (pred p : ())
-                     \/ not (pred q : s)((var x : s) : s)
-                     \/ (pred q : s)((var x : s) : s) <=>
-                         exists! x:s
-                             . not (pred p : ())
-                               /\ not (pred q : s)((var x : s) : s)
-                               /\ (pred q : s)((var x : s) : s),
+               (exists x:s
+                    . not (pred p : ())
+                      \/ not (pred q : s)((var x : s) : s)
+                      \/ (pred q : s)((var x : s) : s) <=>
+                          (exists! x:s
+                               . not (pred p : ())
+                                 /\ not (pred q : s)((var x : s) : s)
+                                 /\ (pred q : s)((var x : s) : s))),
    . forall x:s . def (op f : s ->? s)((var x : s) : s) : s,
    . forall x:s
          . (op f : s ->? s)((var x : s) : s) : s =e=

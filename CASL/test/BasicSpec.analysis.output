@@ -39,8 +39,10 @@ forall m, n, r, s:Nat
 . m -? n = r <=> m = r + n %(Nat_sub_def)%
 . not def m /? 0 %(Nat_divide_0)%
 . (m /? n = r <=> m = r * n) if n > 0 %(Nat_divide_Pos)%
-. m div n = r <=> exists s:Nat . m = n * r + s /\ s < n %(Nat_div)%
-. m mod n = s <=> exists r:Nat . m = n * r + s /\ s < n %(Nat_mod)%
+. m div n = r <=> (exists s:Nat . m = n * r + s /\ s < n)
+%(Nat_div)%
+. m mod n = s <=> (exists r:Nat . m = n * r + s /\ s < n)
+%(Nat_mod)%
 . m quot n = m div n %(Nat_quot)%
 . m rem n = m mod n %(Nat_rem)%
 . 1 = suc(0) %(Nat_1_def)%
@@ -99,7 +101,7 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . - (a - b) = b - a %(Int_neg_def)%
 . sign(m) = 0 when m = 0 else 1 when m > 0 else - 1
 %(Int_sign_def)%
-. m <= n <=> (n - m in Nat) %(Int_leq_def)%
+. m <= n <=> n - m in Nat %(Int_leq_def)%
 . m >= n <=> n <= m %(Int_geq_def)%
 . m < n <=> m <= n /\ not m = n %(Int_less_def)%
 . m > n <=> m < n %(Int_greater_def)%
@@ -312,9 +314,9 @@ var x:s
       not p /\ not q(x) /\ q(x)
 forall x:s
 . not p /\ not q(x) /\ q(x) <=>
-      exists x:s
-          . not p \/ not q(x) \/ q(x) <=>
-                exists! x:s . not p /\ not q(x) /\ q(x)
+      (exists x:s
+           . not p \/ not q(x) \/ q(x) <=>
+                 (exists! x:s . not p /\ not q(x) /\ q(x)))
 . def f(x)
 . f(x) =e= g(x)
 . f(x) = g(x)
