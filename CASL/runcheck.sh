@@ -5,13 +5,13 @@
 
 PA=$1
 SET=$2
-ANNOS=../Common/Standard.annos
+ANNOS=../Common/test/Standard.annos
 
-. checkFunctions.sh
+. ../Common/test/checkFunctions.sh
 
 #extra test
-runchecker Terms MixIds.casl MixIds.casl.asTerms.output
-runchecker Terms WrongMixIds.casl WrongMixIds.casl.asTerms.output
+runchecker Terms ../Common/test/MixIds.casl MixIds.casl.asTerms.output
+runchecker Terms ../Common/test/WrongMixIds.casl WrongMixIds.casl.asTerms.output
 runchecker MixfixTerms Terms.casl Terms.casl.asMixfixTerms.output
 runchecker MixfixFormula Formula.casl Formula.casl.asMixfixFormula.output
 

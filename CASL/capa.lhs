@@ -11,7 +11,6 @@ test some parsers (and printers)
 
 module Main where
 
-import Common.Token
 import CASL.Formula
 import CASL.Print_AS_Basic
 import CASL.Parse_AS_Basic
@@ -24,7 +23,6 @@ main = exec lineParser fileParser
 
 lineParser, fileParser :: [(String, StringParser)]
 lineParser = [
- ("MixIds", fromAParser parseId),
  ("Terms", fromAParser term),
  ("Formula", fromAParser formula),
  ("SortItem", fromAParser sortItems),
@@ -32,7 +30,6 @@ lineParser = [
  ("PredItem", fromAParser predItems),
  ("MixfixTerms", toStringParser resolveTerm),
  ("MixfixFormula", toStringParser resolveForm),
- ("VarIds", fromAParser varId),
  ("ShowTerms", fromAParser testTerm),
  ("ShowTermsMix", toStringParser testTermMix),
  ("ShowForm", fromAParser testFormula),
