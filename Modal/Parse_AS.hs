@@ -111,3 +111,51 @@ andOrFormula k =
 implKey, ifKey :: AParser Token
 implKey = asKey implS
 ifKey = asKey ifS
+
+instance PosItem FORMULA where
+-- don't know if up_pos_l must be further defined. Now it's 'id'
+
+updFormulaPos :: Pos -> Pos -> FORMULA -> FORMULA
+updFormulaPos o c = up_pos_l (\l-> o:l++[c])
+
+parenFormula :: [String] -> AParser FORMULA
+parenFormula k = 
+    do o <- oParenT
+       f <- impFormula k
+       c <- cParenT
+       return (updFormulaPos (tokPos o) (tokPos c) f)
+
+boxKey, diamondKey :: AParser Token
+boxKey = asKey boxS
+diamondKey = asKey diamondS
+
+primFormula :: [String] -> AParser FORMULA
+primFormula k = 
+-- Does Modal logic operate on truth values?
+-- No definedness
+-- No quantification
+-- No when...else
+-- Diamond and Box operator
+	      do c <- try(asKey notS <|> asKey negS) <?> "\"not\""
+		 f <- primFormula k 
+		 return (Negation f [tokPos c])
+	      <|> 
+	      do c <- boxKey
+	         f <- primFormula k
+		 return (Box f [tokPos c])
+              <|> 
+	      do c <- diamondKey
+		 f <- primFormula k
+		 return (Diamond f [tokPos c])
+              <|> parenFormula k  
+
+andKey, orKey :: AParser Token
+andKey = asKey lAnd
+orKey = asKey lOr
+
+
+
+
+
+
+
