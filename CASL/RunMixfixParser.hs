@@ -66,18 +66,18 @@ resolveTerm =
 
 testTerm :: AParser String
 testTerm = do t <- term
-	      return $ showTerm t
+	      return $ showTerm t ""
 
 testTermMix :: AParser String
 testTermMix = do Result ds mt <- resolveTerm
-		 return $ case mt of Just t -> showTerm t
+		 return $ case mt of Just t -> showTerm t ""
 				     _ -> show ds
 
 testFormula :: AParser String
 testFormula = do f <- formula
-		 return $ showFormula f
+		 return $ showFormula f ""
 
 testFormulaMix :: AParser String
 testFormulaMix = do Result ds m <- resolveForm
-		    return $ case m of Just f -> showFormula f
+		    return $ case m of Just f -> showFormula f ""
 				       _ -> show ds
