@@ -46,24 +46,33 @@ checkFreeType m fs=if any (\s->not $ elem s srts) sorts then Nothing
        Hilfs-Funktion um 2 Zusatzargumente erweitern
        anfangs sind die Argumente False False
        bei einer Implikation bzw. Äquivalenz wird es für den rekursiven Aufruf auf True gesetzt
--}         
+-}
+
 leadingSym :: FORMULA f -> Maybe(Either OP_SYMB PRED_SYMB)
-leadingSym f= case f of
-                Quantification Universal _ f' _  -> leadingSym f'
-                Implication _ f' _ _ -> leadingSym f'
-                Equivalence f' _ _ -> leadingSym f' 
-                Predication predS _ _ -> return (Right predS)
-                Strong_equation t _ _ -> case t of
-                                           Application opS _ _ -> return (Left opS)                 
-                                           _ -> Nothing
-                Existl_equation t _ _ -> case t of
-                                           Application opS _ _ -> return (Left opS)
-                                           _ -> Nothing
-                _ -> Nothing 
+leadingSym f = leading (f,False,False)
+  where leading (f,b1,b2)= case (f,b1,b2) of
+                            ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)
+                            ((Implication _ f' _ _),False,False) -> leading (f',True,False)
+                            ((Equivalence f' _ _),b,False) -> leading (f',b,True)
+                            ((Predication predS _ _),_,_) -> return (Right predS)
+                            ((Strong_equation t _ _),_,_) -> case t of
+                                                              Application opS _ _ -> return (Left opS)                 
+                                                              _ -> Nothing
+                            ((Existl_equation t _ _),_,_) -> case t of
+                                                              Application opS _ _ -> return (Left opS)
+                                                              _ -> Nothing
+                            _ -> Nothing           
 
 {- group the axioms according to their leading symbol
    output Nothing if there is some axiom in incorrect form -}
 groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB,[FORMULA f])]
 groupAxioms phis = do
   symbs <- mapM leadingSym phis
-  fail "groupAxioms not yet implemented"
+  return (filterA (zip symbs phis) [])
+    where filterA [] _=[]
+          filterA (p:ps) symb=let fp=fst p
+                                  p'= if elem fp symb then []
+                                      else [(fp,snd$unzip$filter (\p'->(fst p')==fp) (p:ps))]
+                                  symb'= if not $ (elem fp symb) then fp:symb
+                                         else symb
+                              in p'++(filterA ps symb')
