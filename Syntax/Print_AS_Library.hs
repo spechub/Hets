@@ -17,7 +17,7 @@ module Print_AS_Library where
 -- debugging
 -- import IOExts (trace)
 
-import Pretty
+import Common.Lib.Pretty
 import PrettyPrint
 import PPUtils
 

@@ -14,7 +14,7 @@
 
 module Print_HetCASL where
 
-import Pretty
+import Common.Lib.Pretty
 import PrettyPrint
 import PPUtils (calc_line_length)
 import GlobalAnnotationsFunctions(emptyGlobalAnnos)

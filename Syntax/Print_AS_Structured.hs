@@ -13,7 +13,7 @@
 
 module Print_AS_Structured where
 
-import Pretty
+import Common.Lib.Pretty
 import PrettyPrint
 import PPUtils
 
@@ -26,7 +26,7 @@ import AS_Structured
 import Print_AS_Annotation
 import AS_Annotation
 import GlobalAnnotations
-import List
+import Data.List
 
 instance PrettyPrint SPEC where
     --- This implementation don't uses the grouping information 

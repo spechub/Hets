@@ -14,7 +14,7 @@
 
 module Print_AS_Architecture where
 
-import Pretty
+import Common.Lib.Pretty
 import PrettyPrint
 import PPUtils
 
@@ -25,7 +25,7 @@ import Print_AS_Annotation
 import Print_AS_Structured
 
 
-import List
+import Data.List
 
 import Grothendieck
 

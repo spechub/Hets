@@ -33,12 +33,12 @@ import Id(tokPos)
 import Keywords
 import Lexer
 import Token
-import Parsec
-import ParsecChar (digit)
+import Common.Lib.Parsec
+import Common.Lib.Parsec.Char (digit)
 import Id
-import List
+import Data.List
 
-import Maybe(maybeToList)
+import Data.Maybe(maybeToList)
 
 import Print_AS_Structured  -- for test purposes
 import Print_HetCASL
@@ -408,7 +408,7 @@ libItem l = -- spec defn
        e <- asKey equalS
        a <- aSpec l
        q <- optEnd
-       return (AS_Library.Spec_defn n g a (map tokPos ([s, e] ++ Maybe.maybeToList q)))
+       return (AS_Library.Spec_defn n g a (map tokPos ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS
        vn <- simpleId
@@ -421,7 +421,7 @@ libItem l = -- spec defn
                             return (m,[s]))          
        q <- optEnd
        return (AS_Library.View_defn vn g vt symbMap 
-                    (map tokPos ([s1,s2] ++ ps ++ Maybe.maybeToList q)))
+                    (map tokPos ([s1,s2] ++ ps ++ maybeToList q)))
   <|> -- download
     do s1 <- asKey fromS
        ln <- libName
@@ -429,7 +429,7 @@ libItem l = -- spec defn
        (il,ps) <- itemNameOrMap `separatedBy` commaT
        q <- optEnd
        return (Download_items ln il 
-                (map tokPos ([s1,s2]++ps++ Maybe.maybeToList q)))
+                (map tokPos ([s1,s2]++ps++ maybeToList q)))
   <|> -- logic
     do s1 <- asKey logicS
        log <- logicName
