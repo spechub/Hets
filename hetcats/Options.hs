@@ -211,18 +211,20 @@ parseVerbosity (Just s)
 
 -- parse the input type 
 parseInType :: String -> Flag
-parseInType "casl"             = InType CASLIn
-parseInType "hetcasl"          = InType HetCASLIn
-parseInType "het"              = InType HetCASLIn
-parseInType "gen_trm"          = InType $ ATermIn NonBAF
-parseInType "tree.gen_trm"     = InType $ ATermIn NonBAF
-parseInType "gen_trm.baf"      = InType $ ATermIn BAF
-parseInType "tree.gen_trm.baf" = InType $ ATermIn BAF
-parseInType "ast"              = InType $ ASTreeIn NonBAF
-parseInType "ast.baf"          = InType $ ASTreeIn BAF
-parseInType str                = error' str
-    where
-    error' s = hetsError User (s ++ " is not a valid ITYPE")
+parseInType = InType . parseInType1
+
+parseInType1 :: String -> InType
+parseInType1 "casl"             = CASLIn
+parseInType1 "hetcasl"          = HetCASLIn
+parseInType1 "het"              = HetCASLIn
+parseInType1 "gen_trm"          = ATermIn NonBAF
+parseInType1 "tree.gen_trm"     = ATermIn NonBAF
+parseInType1 "gen_trm.baf"      = ATermIn BAF
+parseInType1 "tree.gen_trm.baf" = ATermIn BAF
+parseInType1 "ast"              = ASTreeIn NonBAF
+parseInType1 "ast.baf"          = ASTreeIn BAF
+parseInType1 str                = hetsError User
+                                   (str ++ " is not a valid ITYPE")
 
 -- parse the output types 
 parseOutTypes :: String -> Flag
@@ -297,7 +299,14 @@ parseRawOpts s =
     in Raw [(parsePrefix prefix) (drop 1 string)]
 
 guessInType :: FilePath -> InType
-guessInType _ = ATermIn NonBAF
+--guessInType _ = ATermIn NonBAF -- default, needs to be implemented
+guessInType file = 
+    case fileparse ["casl","hetcasl","het","gen_trm","tree.gen_trm",
+		    "gen_trm.baf","tree.gen_trm.baf","ast","ast.baf"]
+	 file of
+      (_,_,Just suf) -> parseInType1 suf
+      (_,_,Nothing)  -> hetsError User $
+			"InType of " ++ file ++ " unclear, please specify"
 
 -- main functions --
 
