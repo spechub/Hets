@@ -23,8 +23,13 @@
       Predication, Gleichungen sind immer wahr
       Sort_gen_ax erstmal weglassen
       Mixfix_formula, Unparsed_formula: Fehler ausgeben (mit error)
+   
+   2. den 1. Schritt testen.
+      Dazu vorübergehend in hets.hs einfügen
+         import CASL.ccc.OnePoint
+      mit "make hets" übersetzen
 
-   2. Sort_gen_ax [SORT] [OP_SYMB]
+   3. Sort_gen_ax [SORT] [OP_SYMB]
       nachgucken, ob zu jeder Sorte in [SORT] ein Term mit
       Operationssymbolen in [OP_SYMB] existiert.
       Dazu Tabelle aufbauen, welche Sorten sind "bewohnt"?
