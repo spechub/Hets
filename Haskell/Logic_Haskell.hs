@@ -28,6 +28,7 @@ import Logic.Logic              (Language,
                                  parse_symb_map_items,
                                  basic_analysis,
                                  empty_signature,
+                                 signature_union,
                                  data_logic,
                                  inclusion)
 import Data.Dynamic             (Typeable)
@@ -157,6 +158,7 @@ instance StaticAnalysis Haskell HsDecls
                                    infixDecls = [],
                                    synonyms = [] }
 --          empty_signature Haskell = emptyModuleInfo
+          signature_union Haskell sig1 sig2 = return sig1
           inclusion Haskell _ _ = return ()
           basic_analysis Haskell = Just(basicAnalysis)
               where basicAnalysis (basicSpec, sig, _) = 	            
