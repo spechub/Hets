@@ -13,6 +13,11 @@ type a3 : Type -> Type -> Type := \ (a : Type)
 				    (a : Type) . a -> Unit
 type a4 : Type -> Type -> Type := \ (a : Type)
 				    (a : Type) . a -> Unit
+type a5(a : Type)
+type a5 : Type -> Type := \ a : Type . a5 a -> Unit
+type a6(a : Type)
+type a7 : Type -> Type := \ a : Type . a6 a -> Unit
+type a6 : Type -> Type := \ a : Type . (a6 a -> Unit) -> Unit
 %% Type Constructors -----------------------------------------------------
 MyAlias : Type -> Type := \ t : Type . t ->? Unit
 MyPred : Type -> Type := \ s : Type . s ->? Unit
@@ -23,15 +28,15 @@ __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
-a : Type %(var)%
 a1 : Type -> Type -> Type := \ (a : Type)
 			       (b : Type) . a -> b -> Unit
 a2 : Type -> Type -> Type := \ (a : Type)(b : Type) . a -> Unit
 a3 : Type -> Type -> Type := \ (a : Type)(a : Type) . a -> Unit
 a4 : Type -> Type -> Type := \ (a : Type)(a : Type) . a -> Unit
-b : Type %(var)%
+a5 : Type -> Type
+a6 : Type -> Type
+a7 : Type -> Type := \ a : Type . a6 a -> Unit
 s : Type %(var)%
-t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit × Unit ->? Unit
 __<=>__ : Unit × Unit ->? Unit
@@ -44,12 +49,10 @@ if__then__else__ : forall a : Type .  Unit × a × a ->? a
 not__ : Unit ->? Unit
 %% Diagnostics -----------------------------------------------------------
 Hint (line 1, column 5) is type variable 's'
-Warning (line 6, column 15) redeclared type 'a'
-Warning (line 6, column 19) redeclared type 'b'
 Warning (line 6, column 6) redeclared type 'a1'
-Warning (line 7, column 16) redeclared type 'b'
 Warning (line 7, column 6) redeclared type 'a1'
-Warning (line 9, column 15) redeclared type 'a'
-Warning (line 9, column 19) redeclared type 'b'
-Warning (line 11, column 15) redeclared type 'a'
 Warning (line 11, column 19) redeclared type 'a'
+Error (line 11, column 15) duplicates at '(11,19)' for 'a'
+Error (line 13, column 9) duplicates at '(13,11)' for 'a'
+Error (line 17, column 14) illegal recursive type synonym 'a5 a -> Unit'
+Error (line 21, column 14) illegal recursive type synonym '(a6 a -> Unit) -> Unit'

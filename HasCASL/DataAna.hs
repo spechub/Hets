@@ -19,19 +19,20 @@ import Common.Lib.State
 import Common.Result
 import HasCASL.Le
 import HasCASL.TypeAna
+import HasCASL.AsUtils
 import HasCASL.Unify
 import Data.Maybe
 import Data.List
 
 
-anaAlts :: [Type] -> Type -> [Alternative] -> State Env [AltDefn]
+anaAlts :: [(Id, Type)] -> Type -> [Alternative] -> State Env [AltDefn]
 anaAlts tys dt alts = 
     do ll <- mapM (anaAlt tys dt) alts
        let l = concat ll
        addDiags (checkUniqueness $ map ( \ (Construct i _ _ _) -> i) l) 
        return l
 
-anaAlt :: [Type] -> Type -> Alternative -> State Env [AltDefn] 
+anaAlt :: [(Id, Type)] -> Type -> Alternative -> State Env [AltDefn] 
 anaAlt _ _ (Subtype ts ps) = 
     do mapM_ anaStarType ts
        addDiags [Diag Warning "data subtype ignored" $ firstPos ts ps]
@@ -66,7 +67,7 @@ makePartial t =
 		       _ -> FunType t1 PFunArr t2 ps
 	   _ -> LazyType t []  
 
-anaComp :: Id -> [Type] -> Type -> (Components, [Int]) 
+anaComp :: Id -> [(Id, Type)] -> Type -> (Components, [Int]) 
 	-> State Env (Maybe Type, [Selector]) 
 anaComp _ tys rt (Selector s p t _ _, _) =
     do mt <- anaCompType tys rt t
@@ -93,12 +94,29 @@ anaComp con tys rt (NestedComponents cs ps, i) =
 getSelType :: Type -> Partiality -> Type -> Type
 getSelType dt p rt = addPartiality p $ FunType dt FunArr rt []
 
-anaCompType :: [Type] -> Type -> Type -> State Env (Maybe Type)
+anaCompType :: [(Id, Type)] -> Type -> Type -> State Env (Maybe Type)
 anaCompType tys dt t = do
     mt <- anaStarType t 
     case mt of 
 	    Nothing -> return Nothing
-	    Just ct -> unboundTypevars (varsOf dt) ct
+	    Just ct -> do mt2 <- unboundTypevars (varsOf dt) ct
+			  case mt2 of 
+				   Nothing -> return Nothing
+				   Just ct2 -> do 
+				       ms <- mapM 
+					     (checkMonomorphRecursion ct2) tys
+				       return $ if and ms then Just ct2
+					  else Nothing
+
+ 
+checkMonomorphRecursion :: Type	-> (Id, Type) -> State Env Bool
+checkMonomorphRecursion t (i, rt) =
+    if i `occursIn` t then 
+       if t == rt then return True
+       else do addDiags [Diag Error  ("illegal polymorphic recursion" 
+				      ++ expected rt t) $ getMyPos t]
+	       return False
+    else return True
 
 unboundTypevars :: [TypeArg] -> Type -> State Env (Maybe Type)
 unboundTypevars args ct = do 

@@ -16,6 +16,7 @@ module HasCASL.TypeDecl where
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassAna
+import HasCASL.Unify
 import qualified Common.Lib.Map as Map
 import Common.Lexer
 import Common.Id
@@ -91,7 +92,7 @@ ana1TypeItem (Datatype d) =
 ana1TypeItem t = return $ Just t 
 
 -- | analyse a 'TypeItem'
-anaTypeItem :: GlobalAnnos -> GenKind -> Instance -> [Type] -> TypeItem 
+anaTypeItem :: GlobalAnnos -> GenKind -> Instance -> [(Id, Type)] -> TypeItem 
 	    -> State Env TypeItem
 anaTypeItem _ _ inst _ (TypeDecl pats kind ps) = 
     do ak <- anaKind kind
@@ -158,18 +159,26 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
        addDiags ds
        case m of 
 	      Nothing -> return $ AliasType pat mk sc ps
-	      Just (i, as) -> do 
+	      Just (i, as) -> do
+	          tm <- gets typeMap
 	          newAs <- mapM anaTypeVarDecl as 
                   (ik, mt) <- anaPseudoType mk sc
+		  putTypeMap tm
 		  let nAs = catMaybes newAs
 		      newPat = TypePattern i nAs []
 		  case mt of 
 			  Nothing -> return $ AliasType newPat mk sc ps
-			  Just (TypeScheme args qty qs) -> do 
-			      let newPty = TypeScheme (nAs++args) qty qs
+			  Just (TypeScheme args qty@(_ :=> ty) qs) -> do 
+			      let allArgs = nAs++args
+                                  newPty = TypeScheme allArgs qty qs
 				  fullKind = typeArgsListToKind nAs ik
-			      addTypeId True (AliasTypeDefn newPty) 
-						inst fullKind i 
+			      checkUniqueTypevars allArgs
+			      if i `occursIn` ty then do 
+			         addDiags [mkDiag Error 
+					   "illegal recursive type synonym" ty]
+				 return Nothing
+				 else addTypeId True (AliasTypeDefn newPty) 
+				      inst fullKind i 
 			      return $ AliasType (TypePattern i [] [])
 				     (Just fullKind) newPty ps
 
@@ -205,22 +214,22 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
 			  Just _ -> Just $ DatatypeDecl (TypePattern i nAs []) 
 				    k alts newDerivs ps
 
-dataPatToType :: DatatypeDecl -> Type
+dataPatToType :: DatatypeDecl -> (Id, Type)
 dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) = let      
     fullKind = typeArgsListToKind nAs k
     ti = TypeName i fullKind 0
     mkType ty [] = ty
     mkType ty ((TypeArg ai ak _ _): rest) =
 	mkType (TypeAppl ty (TypeName ai ak 1)) rest
-    in mkType ti nAs
+    in (i, mkType ti nAs)
 dataPatToType _ = error "dataPatToType"
 
 -- | analyse a 'DatatypeDecl'
-anaDatatype :: GenKind -> Instance -> [Type] 
+anaDatatype :: GenKind -> Instance -> [(Id, Type)] 
 	    -> DatatypeDecl -> State Env DatatypeDecl
 anaDatatype genKind inst tys
        d@(DatatypeDecl (TypePattern i nAs _) k alts _ _) = 
-    do let dt = dataPatToType d
+    do let dt = snd $ dataPatToType d
 	   fullKind = typeArgsListToKind nAs k
        tm <- gets typeMap
        mapM_ (addTypeVarDecl False) nAs
@@ -267,8 +276,8 @@ addTypePattern defn inst kind (i, as) =
        newAs <- mapM anaTypeVarDecl as 
        let nAs = catMaybes newAs
            fullKind = typeArgsListToKind nAs kind
-       checkUniqueTypevars nAs
        putTypeMap tm
+       checkUniqueTypevars nAs
        mId <- addTypeId True defn inst fullKind i
        return $ case mId of 
 		Nothing -> Nothing

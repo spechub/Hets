@@ -164,11 +164,11 @@ pseudoTypeDef t k l =
 -----------------------------------------------------------------------------
 
 component :: AParser [Components]
-component = do (is, cs) <- uninstOpId `separatedBy` anComma
-               if isSingle is then
-                 compType is cs 
-                 <|> return [NoSelector (idToType(head is))]
-                 else compType is cs
+component = 
+    try (do (is, cs) <- uninstOpId `separatedBy` anComma
+            compType is cs)
+	    <|> do t <- parseType  
+		   return [NoSelector t]
 
 idToType :: Id -> Type
 idToType (Id is cs ps) = 
