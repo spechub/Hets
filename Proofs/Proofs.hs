@@ -530,13 +530,13 @@ hideTheoremShiftAux
     hideTheoremShiftAux libEnv newDgraph (newRules,newChanges) list
 
   where
-    globThms = filter isGlobalThm (labEdges dgraph)
-    consGlobThms = [edge| edge <- globThms, (getConservativity edge) <= Cons]
-    consGlobThmsFromTgt = [edge|edge@(source,_,_) <- consGlobThms,
-			  source == tgt]
-    globThmsFromSrc = [edge| edge@(_,target,_) <- globThms, target == src]
+  --  globThms = filter isGlobalThm (labEdges dgraph)
+    --consGlobThms = [edge| edge <- globThms, (getConservativity edge) <= Cons]
+--    consGlobThmsFromTgt = [edge|edge@(source,_,_) <- consGlobThms,
+	--		  source == tgt]
+--    globThmsFromSrc = [edge| edge@(_,target,_) <- globThms, target == src]
     morphism = dgl_morphism edgeLab
-    maybeThSrc = computeLocalTheory libEnv dgraph src
+--    maybeThSrc = computeLocalTheory libEnv dgraph src
     auxGraph = delLEdge ledge dgraph
     (HidingThm hidingMorphism _) = (dgl_type edgeLab)
     newEdge = (src,
@@ -560,12 +560,6 @@ findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
 	 ++(snd (head pathPairsFilteredByMorphism))
 
    where
-    myShow :: [LEdge DGLinkLab] -> String
-    myShow [] = "PATH END\n"
-    myShow ((src,tgt,edgelab):list) = "("++(show src)++", "++(show tgt)++", "++(show (dgl_type edgelab))++")\n"++(myShow list)
-    myShowPairs :: [([LEdge DGLinkLab],[[LEdge DGLinkLab]])] -> String
-    myShowPairs [] = ""
-    myShowPairs ((first,second):list) = "\n- - - - - -\n+++PAIR:\n++++++FST:\n"++(myShow first)++"++++++SND:\n"++(concat (map myShow second))++(myShowPairs list)
     pathsFromSrc = getAllPathsOfTypeFrom dgraph src (ledge /=)
     pathsFromTgt = getAllPathsOfTypeFrom dgraph tgt (ledge /=)
     possiblePathPairs = selectPathPairs pathsFromSrc pathsFromTgt
@@ -661,12 +655,12 @@ filterPairsByResultingMorphisms (pair:pairs) morph1 morph2 =
 
   where
     compMorph1
-	= compMaybeMorphisms (calculateMorphismOfPath (fst pair)) (Just morph1)
+	= compMaybeMorphisms (Just morph1) (calculateMorphismOfPath (fst pair))
     suitingPaths :: [[LEdge DGLinkLab]]
     suitingPaths = if (compMorph1 /= Nothing) then
 		      [path |path <- (snd pair),
-		       (compMaybeMorphisms (calculateMorphismOfPath path)
-		                           (Just morph2))
+		       (compMaybeMorphisms (Just morph2)
+			                   (calculateMorphismOfPath path))
    		       == compMorph1]
 		    else []
 
