@@ -1,0 +1,2 @@
+ghc --make -fglasgow-exts -Wall -o c3po -i Main.hs
+#MixfixParser.hs 
