@@ -11,6 +11,7 @@ a : t
 b : t
   : s
 c : s = a + b
+d : s = (op a : s)
 %% Diagnostics -----------------------------------------------------------
 Hint (line 5, column 14) type 's × s' is not unifiable with 's'
 Hint (line 7, column 14) type 't' is not unifiable with 's'
@@ -23,4 +24,8 @@ Hint (line 3, column 12) type 't' is not unifiable with 's'
 Error (line 13, column 12) ambiguous mixfix term: a + b
 	(op __+ : s -> s -> s) (op a : s) (op b : s)
 	(op __+__ : s × s -> s) ((op a : s), (op b : s))
+	
+Error (line 15, column 13) ambiguous mixfix term: a
+	(op a : t)
+	(op a : s)
 	
