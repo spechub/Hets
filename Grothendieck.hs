@@ -33,15 +33,13 @@ import Logic
 import LogicGraph
 import Dynamic
 
-data Grothendieck = Grothendieck
-
 data G_basic_spec = forall id sublogics
         basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
-        G_basic_spec id basic_spec
+  G_basic_spec id basic_spec
 
 instance Show G_basic_spec where
   show (G_basic_spec id s) = show_basic_spec id s
@@ -55,7 +53,7 @@ data G_sentence = forall id sublogics
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
-        G_sentence id sentence
+  G_sentence id sentence
 
 data G_l_sentence_list = forall id sublogics
         basic_spec sentence symb_items symb_map_items
@@ -63,7 +61,7 @@ data G_l_sentence_list = forall id sublogics
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
-        G_l_sentence id [(String,sentence)]
+  G_l_sentence id [(String,sentence)]
 
 data G_sign = forall id sublogics
         basic_spec sentence symb_items symb_map_items
@@ -71,7 +69,7 @@ data G_sign = forall id sublogics
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
-        G_sign id sign
+  G_sign id sign
 
 data G_sign_list = forall id sublogics
         basic_spec sentence symb_items symb_map_items
@@ -79,7 +77,7 @@ data G_sign_list = forall id sublogics
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
-        G_sign_list id [sign]
+  G_sign_list id [sign]
 
 data G_local_env = forall id sublogics
         basic_spec sentence symb_items symb_map_items
@@ -87,7 +85,7 @@ data G_local_env = forall id sublogics
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
-        G_local_env id local_env
+  G_local_env id local_env
 
 data G_morphism = forall id1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -116,7 +114,7 @@ data G_symbol = forall id sublogics
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
-        G_symbol id symbol
+  G_symbol id symbol
 
 instance Show G_symbol where
   show (G_symbol id s) = show_symbol id s

@@ -46,7 +46,7 @@ import AS_Architecture
 import AS_Library
 import FiniteMap
 import Posix
-
+import Graph
 
 -- Keep structure of specifications, 
 -- while replacing basic specs and symbol maps with their static semantics
@@ -100,7 +100,8 @@ data GlobalEntry =
   | UnitSpecDefnEnv UnitSig
 
 data GlobalEnv = GlobalEnv (FiniteMap SIMPLE_ID GlobalEntry) [Annotation]
-emptyGlobalEnv = emptyFM
+emptyGlobalEnv :: GlobalEnv
+emptyGlobalEnv = GlobalEnv emptyFM []
 
 
 -- Flattened global environment
@@ -121,10 +122,11 @@ data FGlobalEntry =
    | FUnitSpecDefnEnv UnitSig
 			
 data FGlobalEnv = FGlobalEnv (FiniteMap SIMPLE_ID FGlobalEntry) [Annotation]
-emptyFGlobalEnv = emptyFM
+emptyFGlobalEnv :: FGlobalEnv
+emptyFGlobalEnv = FGlobalEnv emptyFM []
 
 
 type LibEnv = FiniteMap String (GlobalEnv, LIB_DEFN, EpochTime)
-
+emptyLibEnv :: LibEnv
 emptyLibEnv = emptyFM
 

@@ -1,4 +1,4 @@
--- needs ghc -fglasgow-exts 
+-- needs ghc -fglasgow-exts -package data
 
 {- HetCATS/Logic.hs
    $Id$
@@ -54,38 +54,21 @@ module Logic where
 
 import Id
 import AS_Annotation
+import Set
+import FiniteMap
+import Graph
 import Error
 import Dynamic
 
--- maps and sets, just a quick thing
+-- maps
 
-type Set a = [a]
-type Map a = [(a,a)]
+type EndoMap a = FiniteMap a a
 
 
--- diagrams, nodes are just integers
+-- diagrams are just graphs
 
-type Node = Int
-type Edge morphism = (Node,morphism,Node)
-data Diagram object morphism = Diagram [(Node,object)] [Edge morphism] 
-empty_diagram :: Diagram o m
-empty_diagram = Diagram [] []
-add_node :: Diagram o m -> o -> (Node,Diagram o m)
-add_node (Diagram nodes edges) obj = 
-         (node,Diagram ((node,obj):nodes) edges) where
-            node = maximum (map fst nodes)
-add_edge :: Diagram o m -> Edge m -> Diagram o m
-add_edge (Diagram nodes edges) edge =
-         Diagram nodes (edge:edges)
-object_at_node :: Node -> Diagram o m -> Maybe (Node,o)
-object_at_node node (Diagram nodes edges) =
-         case lookup node nodes of
-           Just obj -> Just (node,obj)
-           Nothing -> Nothing
-diagram_nodes :: Diagram o m  -> [(Node,o)]
-diagram_nodes (Diagram nodes edges) = nodes
-diagram_edges :: Diagram o m -> [Edge m]
-diagram_edges (Diagram nodes edges) = edges
+data Diagram object morphism = Graph object morphism
+
 
 
 -- Categories are given by a quotient,
@@ -93,7 +76,7 @@ diagram_edges (Diagram nodes edges) = edges
 -- Should we allow arbitrary composition graphs and build paths?
 
 class (Eq object, Eq morphism) => 
-      Category id object morphism | id ->, id -> morphism where
+      Category id object morphism | id -> object, id -> morphism where
          ide :: id -> object -> morphism
          o :: id -> morphism -> morphism -> Maybe morphism
          dom, cod :: id -> morphism -> object
@@ -105,11 +88,10 @@ class (Eq object, Eq morphism) =>
 
 class (Show basic_spec, Eq basic_spec, Show sentence, Show symb_items, 
        Show symb_map_items, Eq symb_items, Eq symb_map_items) =>
-      Syntax basic_spec sentence symb_items symb_map_items
+      Syntax id basic_spec sentence symb_items symb_map_items
       where 
          -- parsing
          parse_basic_spec :: id -> String -> Result basic_spec
-         parse_sentence :: id -> String -> Result sentence
          parse_symb_items :: id -> String -> Result [symb_items]
          parse_symb_map_items :: id -> String -> Result [symb_map_items]
          comment_line :: id -> String
@@ -171,7 +153,7 @@ data Cons_checker morphism =
 
 -- logics
 
-class (Syntax basic_spec sentence symb_items symb_map_items,
+class (Syntax id basic_spec sentence symb_items symb_map_items,
        Show sign, Show morphism, Show symbol, Show raw_symbol,
        Ord symbol, --  needed for efficient symbol tables
        Eq raw_symbol,
@@ -195,19 +177,26 @@ class (Syntax basic_spec sentence symb_items symb_map_items,
          -- sentence translation
          map_sen :: id -> morphism -> sentence -> Result sentence
 
+         -- parsing of sentences
+         parse_sentence :: id -> local_env -> String -> Result sentence
+           -- is a term parser needed as well?
+
          -- static analysis of basic specifications and symbol maps
          basic_analysis :: id -> 
                            (basic_spec,  -- abstract syntax tree
                             local_env,   -- efficient table for env signature
                             [Annotation]) ->   -- global annotations
-                           Result (sign,[(String,sentence)])
-                                   -- these include any new annotations
-         stat_symb_map_items :: id -> [symb_map_items] -> Result (Map raw_symbol)
+                           Result (local_env,sign,[(String,sentence)])
+                              -- the output local env is expected to be
+                              -- just the input local env, united with the sign.
+                              -- We have both just for efficiency reasons.
+                              -- These include any new annotations
+         stat_symb_map_items :: id -> [symb_map_items] -> Result (EndoMap raw_symbol)
          stat_symb_items :: id -> [symb_items] -> Result [raw_symbol] 
 
          -- architectural sharing analysis for one morphism
          ensures_amalgamability :: id ->
-              (Diagram sign morphism, Node, sign, Edge morphism, morphism) -> 
+              (Diagram sign morphism, Node, sign, LEdge morphism, morphism) -> 
                Result (Diagram sign morphism)
          -- do we need it also for sinks consisting of two morphisms?
 
@@ -215,7 +204,7 @@ class (Syntax basic_spec sentence symb_items symb_map_items,
          symbol_to_raw :: id -> symbol -> raw_symbol
          id_to_raw :: id -> Id -> raw_symbol 
          sym_of :: id -> sign -> Set symbol
-         symmap_of :: id -> morphism -> Map symbol
+         symmap_of :: id -> morphism -> EndoMap symbol
          matches :: id -> symbol -> raw_symbol -> Bool
          sym_name :: id -> symbol -> Id 
    
@@ -227,8 +216,8 @@ class (Syntax basic_spec sentence symb_items symb_map_items,
          final_union :: id -> sign -> sign -> Result sign
          is_subsig :: id -> sign -> sign -> Bool
          generated_sign, cogenerated_sign :: id -> [raw_symbol] -> sign -> Result morphism
-         induced_from_morphism :: id -> Map raw_symbol -> sign -> Result morphism
-         induced_from_to_morphism :: id -> Map raw_symbol -> sign -> sign -> Result morphism 
+         induced_from_morphism :: id -> EndoMap raw_symbol -> sign -> Result morphism
+         induced_from_to_morphism :: id -> EndoMap raw_symbol -> sign -> sign -> Result morphism 
          extend_morphism :: Id -> sign -> morphism -> sign -> sign -> Result morphism
 
          -- sublogics

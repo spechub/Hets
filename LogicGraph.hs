@@ -50,7 +50,13 @@
 module LogicGraph where
 
 import Logic
+import Set
 import Dynamic
+
+
+instance Typeable a => Typeable (Set a) where
+  typeOf t = mkAppTy (mkTyCon "Set") [typeOf t]
+  
 
 -- Existential types for logics and representations
 
@@ -86,6 +92,15 @@ coerce :: a -> Maybe b = fromDynamic . toDyn
 the = maybe undefined id
 g `comp` (Just f) = \x -> f x >>= g
 
+{- This does not work due to needed ordering:
+instance Functor Set where
+  fmap = mapSet
+instance Monad Set where
+  return = unitSet
+  m >>= k          = unionManySets (setToList (fmap k m))
+-}
+g `compSet` (Just f) = \x -> unionManySets (map g (setToList (f x)))
+
 id_repr i s = LogicRepr{ 
   repr_name = "id_"++head (sublogic_names i s),
   source = i, target = i,
@@ -100,7 +115,7 @@ id_repr i s = LogicRepr{
                      -- proj_sublogic_basic_spec i s,
                      proj_sublogic_symbol i s),
   map_morphism = Just,
-  map_symbol = \x -> [x]
+  map_symbol = \x -> unitSet x
  }
 
 comp_repr :: AnyRepresentation -> AnyRepresentation -> Maybe AnyRepresentation
@@ -144,7 +159,7 @@ comp_repr (Repr (r1 :: {-Logic id1 sublogics1
                       proj_sublogic_basic_spec i s,
                       proj_sublogic_symbol i s) -} ,
    map_morphism = map_morphism r2 `comp` (coerce (map_morphism r1)::Maybe(morphism1 -> Maybe morphism3)),
-   map_symbol = map_symbol r2 `comp` (coerce (map_symbol r1)::Maybe(symbol1 -> [symbol3]))
+   map_symbol = map_symbol r2 `compSet` (coerce (map_symbol r1)::Maybe(symbol1 -> Set symbol3))
  }))
                 else Nothing
 
