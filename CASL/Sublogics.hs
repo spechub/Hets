@@ -6,6 +6,10 @@
 ------------------------------------------------------------------------------
 {- todo:
 
+  [Pos] in LocalEnv.SortDefn
+  What if Datatype is removed (only situation where a sort can be removed
+  entirely) but preds or Sort_map still exist?
+
   all_sublogics :: id -> [sublogics]
   morphisms
   projections
