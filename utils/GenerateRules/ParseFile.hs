@@ -1,89 +1,59 @@
-{-| 
-   
-Module      :  $Header$
-Copyright   :  (c) Felix Reckers, Uni Bremen 2002-2004
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
-Stability   :  provisional
-Portability :  portable
+{- | 
+
+    Module      :  $Header$
+    Copyright   :  (c) Felix Reckers, Uni Bremen 2002-2004
+    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+ 
+    Maintainer  :  hets@tzi.de
+    Stability   :  provisional
+    Portability :  portable
+
+   very limited Haskell-Parser 
+   based on DrIFT's Haskell-Parser (also very limited)
 
 -}
 
 module ParseFile where
 
-import Parsec
-import ParseHeader
-
-type Modulename = String
+import DataP
+import CommandP
+import ParseLib2
+import Debug.Trace
 
 type Import = String
 
-inputFile :: Parser ([Data],[Import])
-inputFile = do (ds,is) <- dataOrImport ([],[])
-	       return (ds,is)
+-- result: (datas,imports)
+parseInputFile :: FilePath -> String -> Either String ([String],[Import])
+parseInputFile fp inp = case (ds,is) of
+			(Left s, Left s2) -> Left (s++"\n"++s2)
+			(Left s,Right _)  -> Left s
+			(Right _, Left s) -> Left s
+			(Right x, Right y) -> Right (x,y)
+    where ds = case papply dat (0,0) ((0,0),inp) of
+			[]           -> Left (fp++": No parse (data)")
+			xs -> case filter (\ (_,(_,rs)) -> null rs) xs of
+			      [] ->Left (fp++": Ambigous parse (data); no end")
+			      ((x,(_,"")):xs) -> 
+				  traceERR xs $ Right $ transformD x
+		--	_            -> Left (fp++": Ambigous parse (data)")
+	  dat = parse . skipUntilOff $ datadecl
+	  traceERR xxs = trace (concatMap (\ (xx,(_,rs)) -> concat (transformD xx)++","++rs++";") xxs)
+	  is = case papply (parse header2) (0,-1) ((0,0),inp) of
+	       []           -> Left (fp++": No parse (imports)")
+	       [(x,_)] -> Right x
+	       _            -> Left (fp++": Ambigous parse (imports)")
 
-dataOrImport :: ([Data],[Import]) -> Parser ([Data],[Import])
-dataOrImport (ds,is) = do try comment
-                          dataOrImport (ds,is)
-                       <|>
-                       do m <- (try modulename)
-                          dataOrImport (ds,m:is)
-                       <|>
-                       do d <- (try dataType)
-                          dataOrImport (d:ds,is)
-                       <|> 
-		       do i <- (try importData)
-                          dataOrImport (ds,i:is)
-                       <|>
-                       do try anyToken
-                          dataOrImport (ds,is)
-                       <|>
-	               do eof
-                          return (ds,is)
-               
-modulename :: Parser Import
-modulename = do string "module"
-                skipMany1 space
-                m <- identifier
-		manyTill anyChar (try (string "where"))
-                return m
-
-dataType :: Parser Data
-dataType = do try (string "data") <|> (string "newtype")
-	      skipMany1 space
-              d <- identifier
-              many (noneOf "=") 
-              char '='
-              return d 
-	      
-importData :: Parser String
-importData = do string "import"
-                skipMany1 space
-                qual <- option "" (try (do string "qualified"
-					   spaces
-                                           return "qualified ")) 
-                d <- identifier
-                _f <- option "" (try (do spaces
-				         b <- between (char '(') (char ')') 
-				              (many1 (noneOf "()"))
-				         return ("("++b++")")))
-                as <- option "" (try (do
-				      spaces
-				      string "as"
-				      spaces
-				      c<-identifier
-				      return (" as "++c)))  
-                return (qual++d++as)
-  
+header2 = 
+    do symbol "module"
+       m <- cap
+       opt (do skipNest (symbol "(") (symbol ")")
+               return [])
+       symbol "where"
+       is <- many imports
+       return (m:is)
 
 
-
-
-
-
-
-
-
-
-
+transformD :: [Data] -> [String]
+transformD = map name 
+    

@@ -61,18 +61,20 @@ instances' = do string "instance"
 
 
 constraints :: Parser ()
-constraints = do try (between (char '(')  (char ')') (sepBy1 constraint (char ','))) <|> sepBy1 constraint (char ',') 
-                 spaces
-                 string "=>"
-		 spaces
-                 return ()  
+constraints =  do fmap (\x -> [x]) constraint <|> (between (char '(')  (char ')') (sepBy1 constraint (char ',')))
+                  spaces
+                  string "=>"
+		  spaces
+                  return ()  
 
 constraint :: Parser () 
 constraint = do spaces
 	        identifier
-                spaces 
-                many1 lower 
-		spaces
+                spaces1 
+                sepBy1 spaces1 lIdentifier
+		spaces1
+
+spaces1 = skipMany1 space
 
 dataConstructor:: Parser String
 dataConstructor = (try identifier) <|> do char '('
@@ -84,6 +86,11 @@ identifier :: Parser String
 identifier = do x <- upper
                 xs <- many (alphaNum <|> oneOf "_.")
 		return (x:xs)
+
+lIdentifier :: Parser String
+lIdentifier = do x <- lower
+                 xs <- many (alphaNum <|> oneOf "_.")
+		 return (x:xs)
 
 comment :: Parser ()
 comment = do string "{-" 

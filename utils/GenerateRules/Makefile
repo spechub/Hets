@@ -32,7 +32,7 @@ install: genRules.linux genRules.solaris genRules.macintosh
 
 genRules.tmp: $(sources)
 	rm -f genRules.tmp
-	$(HC) --make -package text -i../.. -o $@ $< 
+	$(HC) --make -package text -i../..:../DrIFT-src -o $@ $< 
 	rm -f uname.mk
 
 ### clean up
