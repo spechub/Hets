@@ -79,7 +79,7 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
   -- indices and predicates for all involved sorts
   indices = [0..length sorts - 1]
   predDecls = zip [rvar i | i<-indices] (map binPred sorts)
-  binPred s = let s' = transSort s in [s',s'] ---> boolType
+  binPred s = let s' = transSort s in mkCurryFunType [s',s'] boolType
   -- premises: all relations are bisimulations
   prems = conj (map prem (zip sorts indices))
   {- generate premise for s, where s is the i-th sort

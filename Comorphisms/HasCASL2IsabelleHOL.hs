@@ -147,7 +147,7 @@ transOpType (TypeScheme _ op _) = transType op
 transPredType :: TypeScheme -> Typ
 transPredType  (TypeScheme _ pre _) = 
        case pre of
-         FunType tp _ _ _ -> (transType tp) --> boolType
+         FunType tp _ _ _ -> mkFunType (transType tp) boolType
          _                -> 
            error "[Comorphisms.HasCASL2IsabelleHOL] Wrong predicate type"
 
@@ -160,8 +160,8 @@ transType (ProductType types _)       = foldl1 IsaSign.mkProductType
                                                (map transType types)
 transType (FunType type1 arr type2 _) = 
   case arr of
-    PFunArr -> (transType type1) --> (mkOptionType (transType type2))
-    FunArr  -> (transType type1) --> (transType type2)
+    PFunArr -> mkFunType (transType type1) (mkOptionType (transType type2))
+    FunArr  -> mkFunType (transType type1) (transType type2)
     _       -> 
       error "[Comorphisms.HasCASL2IsabelleHOL] Not supported function type"
 transType (TypeAppl type1 type2)      = 
@@ -219,7 +219,7 @@ transSentence e s = case s of
 transTerm :: Env -> As.Term -> IsaSign.Term
 transTerm _ (QualVar (VarDecl var typ _ _)) = 
   let tp  = transType typ 
-      otp = tp --> mkOptionType tp
+      otp = mkFunType tp $ mkOptionType tp
   in  App (conSomeT otp) (IsaSign.Free (transVar var) tp isaTerm) IsCont
 
 transTerm sign (QualOp _ (InstOpId opId _ _) ts _)

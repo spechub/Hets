@@ -151,7 +151,7 @@ cpp_sources = ./Isabelle/IsaProve.hs ./Isabelle/Logic_Isabelle.hs \
     ./Proofs/Proofs.hs hets.hs ./CASL/CCC/FreeTypes.hs \
     ./Comorphisms/HasCASL2IsabelleHOL.hs
 
-doc_sources = $(filter-out ./Isabelle/IsaSign.hs $(cpp_sources) ,$(sources)) \
+doc_sources = $(filter-out $(cpp_sources) ,$(sources)) \
                $(patsubst %.hs, %.hspp, $(cpp_sources))
 ####################################################################
 ### targets

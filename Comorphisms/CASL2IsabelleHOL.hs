@@ -152,10 +152,11 @@ transSort :: SORT -> Typ
 transSort s = Type (showIsa s) [] []
 
 transOpType :: OpType -> Typ
-transOpType ot = map transSort (opArgs ot) ---> transSort (opRes ot)
+transOpType ot = mkCurryFunType (map transSort $ opArgs ot) 
+                 $ transSort (opRes ot)
 
 transPredType :: PredType -> Typ
-transPredType pt = map transSort (predArgs pt) ---> boolType
+transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 
 
 ------------------------------ Formulas ------------------------------

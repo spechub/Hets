@@ -78,11 +78,8 @@ data Typ = Type  { typeId   :: String,
                    typeSort  :: Sort }
          deriving (Eq, Ord)
 
-infix -->
-infix --->
-
 noType :: Typ
-noType = Type "noType" [] []
+noType = dummyT
 
 dummyT :: Typ
 dummyT = Type "dummy" [holType] []
@@ -100,11 +97,11 @@ mkTypeAppl :: Typ -> Typ -> Typ
 mkTypeAppl t1 t2 = Type "typeAppl" [ho_ho_ho] [t1,t2]
 
 mkFunType :: Typ -> Typ -> Typ
-mkFunType s t = Type "fun" [ho_ho_ho] [s,t]
-(-->) = mkFunType
+mkFunType s t = Type "fun" [ho_ho_ho] [s,t] -- was "-->" before
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
-(--->) = flip $ foldr (-->)
+mkCurryFunType :: [Typ] -> Typ -> Typ
+mkCurryFunType = flip $ foldr mkFunType -- was "--->" before
 
 voidDom :: Typ
 voidDom = Type "void" domain []
