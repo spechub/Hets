@@ -49,13 +49,6 @@ import MonadState
 enumId  :: Int -> Id
 enumId n = Id[Token "v" nullPos, Token (show n) nullPos][][]
 
-tArrow :: Le.Type
-tArrow   = TCon (Tycon (Id [Token "->?" nullPos][][]) 
-		 (Kfun star (Kfun star star)))
-
-infixr      4 `fn`
-fn         :: Le.Type -> Le.Type -> Le.Type
-a `fn` b    = TAp (TAp tArrow a) b
 
 class HasKind t where
   kind :: t -> Le.Kind
