@@ -115,14 +115,6 @@ showLogicGraph
        
        redraw logicG
        
-       sync(
-            (receive killChannel) >>> 
-               do
-                  putStrLn "Destroy graph"
-                  destroy logicG
-               
-         +> (destroyed logicG)
-        )
 
      where 		
         (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms
