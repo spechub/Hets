@@ -3,7 +3,7 @@
    
  > HetCATS/hetcats/Options.hs
  > $Id$
- > Author: Klaus Lüttich
+ > Author: Martin Kühl
  > Year:   2002
 
    Datatypes for options, a list of options hetcats understands.
@@ -17,10 +17,10 @@
      - Posix Spezifikation zu command line interfaces \/
      - Dokumentation zu System.Console.GetOpt vom ghc \/
      - Flag und HetCATSOpts Datentyp anpassen \/
-     - options Liste erweitern
-     - parse funktionen schreiben
-     - form_opt_rec anpassen
-     - perm_infile und check_in_file implemetieren
+     - options Liste erweitern 
+     - parse funktionen schreiben 
+     - form_opt_rec anpassen 
+     - perm_infile und check_in_file implemetieren 
 
    Optionen:
 
@@ -54,21 +54,16 @@ import System.Exit
 
 import Data.Char (isSpace)
 import Data.List
+
+import Control.Monad (filterM)
+
 import System.Console.GetOpt
 
-{- | 'Flag' describes the raw options -}
-data Flag = Verbose Int        -- how verbose shall we be?
-	  | Version            -- print version number
-	  | Help               -- print usage message
-	  | InType   InType    -- type of input file
-	  | OutDir FilePath    -- destination directory for output files
-	  | OutTypes [OutType] -- types of output to generate
-	  | Analysis [AnaFlag] -- to analyse or not to analyse
-	  | Pretty [PrettyOpt] -- options for the pretty-printer
-	  | LibDir FilePath    -- CASL library directory
-	    deriving (Show,Eq)
+
+-- main Datatypes --
 
 {- | 'HetcatsOpts' describes the interpreted options -}
+-- TODO: pretty-printer Options
 data HetcatsOpts = 
     HcOpt { verbose  :: Int       -- greater than null to turn verbosity on
 	  , infile   :: FilePath  -- file to be read
@@ -80,14 +75,15 @@ data HetcatsOpts =
 	  , rawoptions :: [Flag]
 	  } deriving (Show,Eq)
 
-default_HetcatsOpts :: HetcatsOpts
-default_HetcatsOpts = 
+{- | the default HetcatsOpts, used when nothing else is specified -}
+defaultHetcatsOpts :: HetcatsOpts
+defaultHetcatsOpts = 
     HcOpt { verbose = 0
 	  , infile = ""
-	  , intype   = SML_Gen_ATerm NonBAF
+	  , intype   = ATerm NonBAF
 	  , outdir = "."
 	    -- ...or like cats: same as that of the input file
-	  , outtypes = [HetCASLOut Ascii]
+	  , outtypes = [HetCASLOut OutASTree Ascii]
             {- better default options, but 
 	    the underlying functions are not yet implemented:
 	  , intype   = HetCASLIn
@@ -98,87 +94,255 @@ default_HetcatsOpts =
 	  , rawoptions = []
 	  }
 
--- valid input types
-data InType = SML_Gen_ATerm ATFlag | CASLIn | HetCASLIn
-	      deriving (Show,Eq)
+{- | 'Flag' describes the raw options -}
+data Flag = Verbose  Int         -- how verbose shall we be?
+	  | Version              -- print version number
+	  | Help                 -- print usage message
+	  | InType   InType      -- type of input file
+	  | OutDir   FilePath    -- destination directory for output files
+	  | OutTypes [OutType]   -- types of output to generate
+	  | Analysis Bool        -- to analyse or not to analyse
+--	  | Analysis [AnaFlag]   -- might as well be a Bool...
+	  | Pretty   [String]    -- options passed to the pretty-printer
+	  | LibDir   FilePath    -- CASL library directory
+	    deriving (Show,Eq)
 
--- valid types of AT (BAF or not BAF)
-data ATFlag = BAF | NonBAF
-	      deriving (Show,Eq)
-
--- ...differences between HetCASLOut and Global_Env ??
--- TODO:  Pretty, AST, dg, het..., graph
--- valid output types
-data OutType = HetCASLOut OutFormat | Global_Env OutFormat
-	       deriving (Show,Eq)
-
--- valid output formats
-data OutFormat = XML | Ascii | Latex
-		 deriving (Show,Eq)
-
--- valid analysis flags: (static or no analysis)
-data AnaFlag = Static | None
-	       deriving (Show,Eq)
-
--- valid pretty-printing options (width for LateX, Ascii width)
-data PrettyOpt = Tex String | Het Int
-		 deriving (Show, Eq)
-	       
--- this list describes all options and gives usage Information
+{- | 'options' describes all available options and gives usage information -}
 options :: [OptDescr Flag]
 options =
-    [ Option ['v'] ["verbose"] (OptArg parse_verb "Int")       
+    [ Option ['v'] ["verbose"] (OptArg parseVerbosity "Int")
       "chatty output on stderr"
-    , Option ['V'] ["version"] (NoArg Version)       
-      "show version number"
-    , Option ['h'] ["help", "usage"] (NoArg Help) 
-      "show usage information"
-    , Option ['i'] ["input-type"]  (ReqArg inp_type "TYPE")  
+    , Option ['V'] ["version"] (NoArg Version)
+      "print version number and exit"
+    , Option ['h'] ["help", "usage"] (NoArg Help)
+      "print usage information and exit"
+    , Option ['i'] ["input-type"]  (ReqArg parseInputType "TYPE")
       "TYPE of input file: tree.gen_trm(_baf)? | het(casl)? | casl"
-    , Option ['O'] ["output-dir"]  (ReqArg (\x -> OutDir x) "DIR")  
+    , Option ['O'] ["output-dir"]  (ReqArg parseOutputDir "DIR")
       "destination directory for output files"
-    , Option ['o'] ["output-types"] (ReqArg out_types "TYPE") 
+    , Option ['o'] ["output-types"] (ReqArg parseOutputTypes "TYPE")
       "TYPE of output files: hetcasl-latex | hetcasl-ascii | global-env"
-    , Option ['p'] ["just-parse"]  (NoArg (Analysis [None]))
+    , Option ['p'] ["just-parse"]  (NoArg (Analysis False))
       "skip static analysis - just parse"
-    , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR") 
+    , Option ['L'] ["casl-libdir"]  (ReqArg parseLibDir "DIR")
       "CASL library directory"
     ]
 
--- a String describing the Options of hetcats
-hetcats_usage :: String
-hetcats_usage = usageInfo header options
+
+-- auxiliary Datatypes --
+
+-- posible sources of errors: user input or internal errors
+data ErrorSource = User | Intern
+		   deriving (Show, Eq)
+
+-- valid types of input
+data InType = ATerm ATType | ASTree ATType | CASLIn | HetCASLIn
+	      deriving (Show, Eq)
+-- was: SML_Gen_ATerm
+
+-- valid types of ATerms
+data ATType = BAF | NonBAF
+	      deriving (Show, Eq)
+
+-- valid types of output
+data OutType = PrettyPrint PrettyType 
+	     | HetCASLOut HetOutType HetOutFormat
+	     | Graph GraphType
+	       deriving (Show, Eq)
+
+-- valid types of pretty-print
+data PrettyType = PrettyAscii | PrettyLatex | PrettyHtml
+		  deriving (Show, Eq)
+
+data HetOutType = OutASTree | OutGraph
+		  deriving (Show, Eq)
+		  -- f vs. h ? -- nax ?
+
+data HetOutFormat = Ascii | Term | Taf | Html | Xml
+		    deriving (Show, Eq)
+
+-- valid types of graphs
+data GraphType = Dot | PostScript | Davinci
+		 deriving (Show, Eq)
+
+-- parser functions returning Flags --
+
+-- parse the level of verbosity
+parseVerbosity :: (Maybe String) -> Flag
+parseVerbosity Nothing = Verbose 1
+parseVerbosity (Just s)
+    = case reads s of
+		   [(i,"")] -> Verbose i
+		   _        -> error'
+    where
+    error' = hetsError User (s ++ " is not a valid INT")
+
+-- parse the input type 
+-- TODO: this one is _ugly_ ...
+parseInputType :: String -> Flag
+parseInputType "casl"             = InType CASLIn
+parseInputType "hetcasl"          = InType HetCASLIn
+parseInputType "het"              = InType HetCASLIn
+parseInputType "gen_trm"          = InType (ATerm NonBAF)
+parseInputType "tree.gen_trm"     = InType (ATerm NonBAF)
+parseInputType "gen_trm.baf"      = InType (ATerm BAF)
+parseInputType "tree.gen_trm.baf" = InType (ATerm BAF)
+parseInputType "ast"              = InType (ASTree NonBAF)
+parseInputType "ast.baf"          = InType (ASTree BAF)
+parseInputType s                  = error' s
+    where
+    error' s = hetsError User (s ++ " is not a valid ITYPE")
+
+-- parse the output directory 
+parseOutputDir :: String -> Flag
+parseOutputDir s = OutDir s
+
+-- parse the output types 
+-- TODO: implement this function
+parseOutputTypes :: String -> Flag
+parseOutputTypes s = OutTypes []
+{- parseOutputTypes s
+    | "pp."    `isPrefixOf` s = OutType PrettyPrint getPrettyType (drop 3 s)
+    | "graph." `isPrefixOf` s = OutType Graph getGraphType (drop 6 s)
+    | "ast."   `isPrefixOf` s = OutType HetCASLOut OutASTree getOutFormat
+				(drop 4 s)
+    | "fdg."   `isPrefixOf` s = OutType HetCASLOut $ OutGraph $ getOutFormat
+				(drop 4 s)
+    | "hdg."   `isPrefixOf` s = OutType HetCASLOut $ OutGraph $ getOutFormat
+				(drop 4 s)
+    | "dg."    `isPrefixOf` s = OutType HetCASLOut $ OutGraph $ getOutFormat
+				(drop 3 s)
+    | otherwise               = error' s
+    where
+    getPrettyType "het"  = PrettyAscii
+    getPrettyType "tex"  = PrettyLatex
+    getPrettyType "html" = PrettyHtml
+    getPrettyType _      = error' s
+    getGraphType "dot"     = Dot
+    getGraphType "ps"      = PostScript
+    getGraphType "davinci" = Davinci
+    getGraphType _         = error' s
+    getOutFormat s
+	| "nax." `isPrefixOf` s = getOutFormat' (drop 4 s)
+	| otherwise = getOutFormat' s
+    getOutFormat' "het"  = Ascii
+    getOutFormat' "taf"  = Term
+    getOutFormat' "trm"  = Taf
+    getOutFormat' "html" = Html
+    getOutFormat' "xml"  = Xml
+    getOutFormat' _      = error' s
+    error' str = hetsError User (str ++ " is not a valid OTYPE")
+-}
+
+-- parse casl library directory
+parseLibDir :: String -> Flag
+parseLibDir s = LibDir s
+
+
+-- main functions --
+
+-- main function, parses ARGV to our desired HetcatsOpts
+hetcatsOpts :: [String] -> IO HetcatsOpts
+hetcatsOpts argv =
+    case (getOpt Permute options argv) of
+        (opts,non_opts,[]) -> do withOpts <- formOpts opts
+				 withIns  <- formInFiles non_opts
+				 return $ (withIns . withOpts) defaultHetcatsOpts
+        (_,_,errs) -> fail (concat errs ++ hetsUsage)
+
+formInFiles :: [String] -> IO (HetcatsOpts -> HetcatsOpts)
+formInFiles fs = do ifs <- checkInFiles fs
+		    case ifs of
+			     [x] -> return (inFile x)
+			     []  -> return $ 
+				    error' "No valid input file specified"
+			     _   -> return $ error'
+				    "Only one input file may be specified at a time"
+-- at least for now - will be implemented later
+    where
+    inFile x opts = opts { infile = x }
+    error' e = (\x -> hetsError User e)
+
+-- TODO: implement some kind of sequence...
+formOpts :: [Flag] -> IO (HetcatsOpts -> HetcatsOpts)
+formOpts fs = do if (hasHelp fs)
+		    then do putStrLn hetsUsage
+			    exitWith ExitSuccess
+		    else return () -- fall through
+		 if (hasVersion fs)
+		    then do putStrLn ("version of hetcats: " 
+				      ++ hetcats_version)
+			    exitWith ExitSuccess
+		    else return () -- fall through
+		 fs' <- return $ (collectOutTypes . collectVerbosity) fs
+		 checkOutDirs fs'
+		 return (\x -> x) -- TODO!
+    where
+    hasVersion xs = Version `elem` xs
+    hasHelp xs = Help `elem` xs
+
+
+-- auxiliary functions: FileSystem interaction --
+
+checkInFiles :: [FilePath] -> IO [FilePath]
+checkInFiles = filterM checkInFile
+
+checkInFile :: FilePath -> IO Bool
+checkInFile file = do exists <- doesFileExist file
+		      perms  <- catch (getPermissions file)
+				(\_ -> return
+ 				 (Permissions { readable = False
+					      , writable = False
+					      , executable = False
+					      , searchable = False
+					      } ))
+		      if (exists && (readable perms))
+			 then return True
+			 else return False
+
+checkOutDirs :: [Flag] -> IO [FilePath]
+checkOutDirs = (filterM checkOutDir) . (map extrOutDir) . (filter isOutDir)
+    where
+    isOutDir (OutDir _ ) = True
+    isOutDir _           = False
+    extrOutDir (OutDir x) = x
+
+checkOutDir :: String -> IO Bool
+checkOutDir file = do exists <- doesDirectoryExist file
+		      perms  <- catch (getPermissions file)
+				(\_ -> return
+				 (Permissions { readable = False
+					      , writable = False
+					      , executable = False
+					      , searchable = False
+					      } ))
+		      if (exists && (writable perms))
+			 then return True
+			 else return False
+
+
+-- auxiliary functions: collect flags -- 
+-- should work kinda like sorting -- TODO!
+
+collectVerbosity :: [Flag] -> [Flag]
+collectVerbosity fs = fs
+
+collectOutTypes :: [Flag] -> [Flag]
+collectOutTypes fs = fs
+
+-- auxiliary functions: error messages --
+
+hetsError :: forall a. ErrorSource -> String -> a
+hetsError User errorString = error (errorString ++ "\n" ++ hetsUsage)
+hetsError Intern errorString = error ("Internal Error: " ++ errorString)
+
+hetsUsage :: String
+hetsUsage = usageInfo header options
     where header = "Usage: hetcats [OPTION...] file"
 
--- custom error-message prepended to our usage info
-hetcats_error :: String -> String
-hetcats_error s = s ++ "\n" ++ hetcats_usage
 
--- parses the optional Argument to --verbose
-parse_verb :: Maybe String -- optional Argument to --verbose
-	   -> Flag -- Parsed verbose flag 
-parse_verb Nothing  = Verbose 1
-parse_verb (Just s) = Verbose $
-		      case reads s of
-				   []   -> error'
-				   [(i,"")] -> i
-				   _    -> error'
-    where error' = error $ hetcats_error ("\""++ s ++"\" is not a valid Int")
-
--- sets the correct input-type
-inp_type :: String -> Flag
-inp_type s 
-    | s == "casl"                   = InType CASLIn
-    | s == "hetcasl"                = InType HetCASLIn
-    | s == "het"                    = InType HetCASLIn
-    | "gen_trm"      `isPrefixOf` s = InType $ trm_type s
-    | "tree.gen_trm" `isPrefixOf` s = InType $ trm_type s
-    | otherwise      = error $ hetcats_error ("unknown input type: " ++ s)
-    where trm_type trm 
-	      | "baf" `isSuffixOf` trm = SML_Gen_ATerm BAF 
-	      | otherwise              = SML_Gen_ATerm NonBAF
-	      -- ouch: gen_trm_bogus_grrrrr_meep gives SML_Gen_ATerm NonBAF!
-
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+{-
 -- sets the corect output type(s)
 out_types :: String -> Flag
 out_types s | ',' `elem` s = case merge_out_types $ split_types s of
@@ -285,3 +449,4 @@ check_out_dir flags in_file =
 	     fail $ "no writeable output directory available\n" ++
 		    hetcats_usage
 
+-}
