@@ -87,11 +87,6 @@ sl_g_hiding (G_logic_projection c) = sl_logic_code c
 -- if it is given (gives more precise logic than source logic because it
 -- also knows the sublogic involved), then source logic with least
 -- precedence?
--- design question: the assumption that one of the three members of
---                  Logic_code at least is not Nothing - no better
---                  way to code this? may result in longer code, but
---                  maybe the design would be better since the
---                  Haskell type system cannot guarantee the assumption 
 sl_logic_code :: Logic_code -> Maybe G_sublogics
 sl_logic_code (Logic_code t n m _) =
   if (isJust m) then
