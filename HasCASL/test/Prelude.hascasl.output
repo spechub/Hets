@@ -35,7 +35,7 @@ program (op tt[s]
         %% tt is total "op tt(x: s): unit = ()"
 %% total function type
 type __->__ : Type- -> Type+ -> Type
-type __->__(s : Type)(t : Type) < s_v1 ->? t_v2
+type __->__ < __->?__
 %% total functions
 op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
      = \ (var x : s, var y : t) .! (var x : s) as s_v1
@@ -120,10 +120,10 @@ type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
 %% Pcont
 type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
-type __-->?__(c : Cpo)(d : Cpo) < c_v155 ->? d_v160
+type __-->?__ < __->?__
 %% Tcont
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
-type __-->__(c : Cpo)(d : Cpo) < c_v155 -->? d_v160
+type __-->__ < __-->?__
 var f : c --> d; g : c --> d
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op undefined : forall c : Cpo; p : Pcpo . c_v-1 -->? p_v-2
@@ -145,12 +145,11 @@ __*__
   : (Cpo+ -> Cpo+ -> Cpo, Pcpo+ -> Pcpo+ -> Pcpo,
      Type+ -> Type+ -> Type)
 __-->__
-  : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Pcpo+ -> Pcpo,
-     Type- -> Type+ -> Type) < (c_v155 -->? d_v160, __-->?__, __->__)
-__-->?__
-  : (Cpo- -> Cpo+ -> Pcpo,
-     Type- -> Type+ -> Type) < (c_v155 ->? d_v160, __->?__)
-__->__ : Type- -> Type+ -> Type < (s_v1 ->? t_v2, __->?__)
+  : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Cpo+ -> Pcpo,
+     Cpo- -> Pcpo+ -> Pcpo, Type- -> Type+ -> Type) < (__-->?__,
+                                                       __-->?__, __->__)
+__-->?__ : (Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type) < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
 __->?__ : Type- -> Type+ -> Type
 bool
   : Flatcpo
@@ -298,10 +297,8 @@ free type bool
 *** Hint 44.15, variable shadows global name(s) 'x'
 *** Error 46.11, unexpected mixfix token: und
 *** Hint 50.8, redeclared type '__->__'
-*** Error 52.8, incompatible kind of: __->__
-  expected: Type- -> Type+ -> Type
-     found: Type -> Type -> Type
-
+*** Hint 52.8, redeclared type '__->__'
+*** Hint , repeated supertype '__->?__'
 *** Error 54.42, ambiguous mixfix term
   def__(f(x))
   def(f)(x)
@@ -494,10 +491,8 @@ free type bool
 *** Hint 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
 *** Error 159.45, unexpected mixfix token: und
-*** Error 169.9, incompatible kind of: __-->?__
-  expected: Type- -> Type+ -> Type
-     found: Type -> Type -> Type
-
+*** Hint 169.9, redeclared type '__-->?__'
+*** Hint , repeated supertype '__->?__'
 *** Error 171.35, unexpected mixfix token: und
 *** Error 174.45, unexpected mixfix token: +
 *** Error 173.40, unexpected mixfix token: und
@@ -506,10 +501,6 @@ free type bool
 *** Error 170.7, unexpected mixfix token: :
 *** Error 176.51, unexpected mixfix token: impl
 *** Error 176.31, unexpected mixfix token: all
-*** Error 181.9, incompatible kind of: __-->__
-  expected: Type- -> Type+ -> Type
-     found: Type -> Type -> Type
-
 *** Error 182.46, ambiguous mixfix term
   def__(f(x))
   def(f)(x)

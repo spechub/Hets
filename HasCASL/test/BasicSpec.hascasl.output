@@ -214,6 +214,7 @@ type Data4
 *** Hint 22.1, untypable application (with result type: t)
  'snd(x : s, var y : t)'
 *** Error 22.22, no typing for 'program snd(x : s, var y : t) : t = y'
+*** Hint 26.6, redeclared type 's'
 *** Hint 28.9, no type match for: all
   with (maximal) type: _var_6_v6 ->? ? Unit
   known types:

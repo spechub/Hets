@@ -49,7 +49,7 @@ program __und__ (x, y: Unit) : Unit = ()
 %% total function type
 type __->__ : Type- -> Type+ -> Type 
 
-type s -> t < s ->? t
+type __->__ < __ ->? __
 
 . __ in s -> t = \f: s ->? t . all(\x:s. def f(x))
 
@@ -166,7 +166,7 @@ type Unit : Pcpo
 %% Pcont
 type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo 
 
- type c -->? d < c ->? d
+ type __-->?__ < __->?__
  . __ in c -->? d  = \f : c ->? d . 
 	all(\(x,y: c). (def (f x) und x <<= y) impl def (f y)) und
 	all(\s: nat -> c. (isChain(s) und def f(sup(s))) impl 
@@ -178,7 +178,7 @@ type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
 %% Tcont
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 
- type c --> d < c -->? d 
+ type __-->__ < __-->?__ 
  . __ in c --> d = \f : c -->? d . all(\x:c. def f(x))
 
  var f, g : c --> d
