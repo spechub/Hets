@@ -833,7 +833,41 @@ pr_basic_items l (Axiom_items f p) =
                  (Just (Axiom_items res pos),[])
 
 pr_datatype_decl :: CASL_Sublogics -> DATATYPE_DECL -> Maybe DATATYPE_DECL
-pr_datatype_decl l d = pr_check l sl_datatype_decl d
+pr_datatype_decl l (Datatype_decl s a p) = 
+                 let
+                   (res,pos) = mapPos (tln 1 p)
+                               (pr_annoted l pr_alternative) a
+                 in
+                   if (res==[]) then Nothing else
+                   Just (Datatype_decl s res ((topn 1 p) ++ pos))
+
+-- CHECK
+-- does the Subsorts alternative declare the named sorts?
+pr_alternative :: CASL_Sublogics -> ALTERNATIVE -> Maybe ALTERNATIVE
+pr_alternative l (Total_construct n c p) =
+               let
+                 (res,pos) = mapPos (tln 1 p) (pr_components l) c
+               in
+                 if (res==[]) then Nothing else
+                 Just (Total_construct n res ((topn 1 p) ++ pos))
+pr_alternative l (Partial_construct n c p) =
+             if ((has_part l)==True) then
+               Just (Partial_construct n c p)
+             else
+               Nothing
+pr_alternative l (Subsorts s p) =
+               if ((has_sub l)==True) then
+                 Just (Subsorts s p)
+               else
+                 Nothing
+
+pr_components :: CASL_Sublogics -> COMPONENTS -> Maybe COMPONENTS
+pr_components l (Partial_select n s p) =
+              if ((has_part l)==True) then
+                Just (Partial_select n s p)
+              else
+                Nothing
+pr_components l x = Just x
 
 pr_lost_dt :: CASL_Sublogics -> [DATATYPE_DECL] -> [SORT]
 pr_lost_dt l [] = []
