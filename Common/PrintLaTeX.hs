@@ -404,5 +404,3 @@ instance PrintLaTeX Id where
     printLatex0 ga i = printId printLatex0 ga (Just DF_LATEX)
        (hcat . map (printDisplayToken_latex casl_axiom_latex)) i
 
-instance PrintLaTeX () where
-   printLatex0 _ga _s = text ""

@@ -96,3 +96,5 @@ printId pf ga mdf f i =
 instance PrettyPrint () where
    printText0 _ga _s = text "()"
 
+instance PrintLaTeX () where
+   printLatex0 _ga _s = text ""
