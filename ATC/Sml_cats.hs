@@ -89,32 +89,37 @@ class ATermConvertibleSML t where
 	where (at',inds) = mapAccumL to_sml_ShATerm at ts
     from_sml_ShATermList at = 
 	case aterm of 
-	ShAList ats _ ->  map conv ats
+	ShAList ats _ ->  map cnvrt ats
 	_           -> from_sml_ShATermError "[a]" aterm
 	where aterm  = getATerm at
-	      conv i = from_sml_ShATerm (getATermByIndex1 i at)
+	      cnvrt i = from_sml_ShATerm (getATermByIndex1 i at)
 
 
 to_sml_ATermString :: ATermConvertibleSML a => a -> String
-to_sml_ATermString t	 = (writeATerm . fst) (to_sml_ShATerm emptyATermTable t)
+to_sml_ATermString t = 
+    (writeATerm . fst) (to_sml_ShATerm emptyATermTable t)
 
 to_sml_SharedATermString :: ATermConvertibleSML a => a -> String
-to_sml_SharedATermString t = (writeSharedATerm . fst) (to_sml_ShATerm emptyATermTable t)
+to_sml_SharedATermString t = 
+    (writeSharedATerm . fst) (to_sml_ShATerm emptyATermTable t)
 
 from_sml_ATermString :: ATermConvertibleSML a => String -> a
 from_sml_ATermString s 	 = (\ a -> from_sml_ShATerm a) (readATerm s)
 
 from_sml_ATermError :: String -> ATerm -> a
-from_sml_ATermError t u = error ("Cannot convert ATerm to "++t++": "++(err u))
-    where err u = case u of 
-		  AAppl s _ _ -> "!AAppl "++s
+from_sml_ATermError t u = 
+    error ("Cannot convert ATerm to " ++ t ++ ": " ++ err)
+    where err = case u of 
+		  AAppl s _ _ -> "!AAppl " ++ s
 		  AList _ _   -> "!AList"
 		  _           -> "!AInt"
 
 from_sml_ShATermError :: String -> ShATerm -> a
-from_sml_ShATermError t u = error ("Cannot convert Sml-ShATerm to "++t++": "++(err u))
-    where err u = case u of 
-		  ShAAppl s l _ -> "!ShAAppl "++s++"("++show (length l)++")"
+from_sml_ShATermError t u = 
+    error ("Cannot convert Sml-ShATerm to " ++ t ++ ": "++ err)
+    where err = case u of 
+		  ShAAppl s l _ -> "!ShAAppl " ++ s ++ "(" 
+				   ++ show (length l) ++ ")"
 		  ShAList _ _   -> "!ShAList"
 		  _             -> "!ShAInt"
 
@@ -530,7 +535,7 @@ parse_disp_anno i pos_l inp =
 		      | otherwise -> inp
 
 ----- instances of AS_Basic_CASL.hs -------------------------------------
-instance ATermConvertibleSML BASIC_SPEC where
+instance ATermConvertibleSML (BASIC_SPEC () () ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"BASIC_SPEC\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"BASIC_SPEC\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"BASIC_SPEC\" not implemented"
@@ -1033,7 +1038,7 @@ instance ATermConvertibleSML (FORMULA ()) where
 		aa' = from_sml_ShATerm (getATermByIndex1 aa att)
 		ab' = from_sml_ShATerm (getATermByIndex1 ab att)
 		ac' = pos_l
-		in (Implication aa' ab' ac')
+		in (Implication aa' ab' True ac')
 	    (ShAAppl "equivalence" [ aa,ab ] _)  ->
 		let
 		aa' = from_sml_ShATerm (getATermByIndex1 aa att)
