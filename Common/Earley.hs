@@ -223,7 +223,7 @@ asListAppl toExpr i ra br =
              || i == parenId
              || i == varId
              then assert (isSingle ra) $ head ra
-    else toExpr i ra br
+    else toExpr i ra $ filter (/= nullPos) br
 
 -- | construct the list rules
 listRules :: Int -> GlobalAnnos -> [Rule]
