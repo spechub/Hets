@@ -1,3 +1,15 @@
+{-|
+Module       : $Header$
+Copyright    : (c) Heng Jiang, Uni Bremen 2004
+Licence      : similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer   : hets@tzi.de
+Stability    : provisional
+Portability  : non-portable
+
+   Interface for web page with WASH/CGI
+-}
+
 module Main where
 
 import CGI
@@ -6,11 +18,9 @@ import WriteFn
 import Common.Lib.Map as Map
 import Static.AnalysisLibrary
 import Comorphisms.LogicGraph
--- import Logic.Grothendieck
 import Static.DevGraph
 import Syntax.AS_Library
 import Maybe
-import Directory
 import Random
 import IO
 import Time
@@ -41,7 +51,7 @@ page1 title =
       selectTex <- checkboxInputField (attr "valus" "yes")
       text "output pretty print LaTeX"
       selectAchiv <- p ( checkboxInputField(attr "valus" "yes") ##
-			 text "If you select the checkbox, your input will be logged.")
+			 text "If this checkbox is selected, your input will be logged!")
       -- submit/reset botton
       p (submit (F5 input selectTree selectEnv selectTex selectAchiv)
 	         handle (fieldVALUE "Submit") >>
@@ -69,12 +79,13 @@ handle (F5 input box1 box2 box3 box4) =
 	ask $ html ( do CGI.head (title $ text "HETS results")
 			CGI.body $ printR str res tex outputfile)
     where
+      saveLog :: Bool -> String -> IO()
       saveLog will contents 
 	| will = do 
 		    let logFile = "/home/www/cofi/hets-tmp/hets.log"
 		    aktTime <- timeStamp
 		    file <- openFile logFile AppendMode
-		    hPutStr file (aktTime ++ "\n\n" ++ contents)  -- must Synchronized
+		    hPutStr file (aktTime ++ "\n" ++ contents ++ "\n\n")  -- must Synchronized
 		    hClose file
 	| otherwise = return ()
 
@@ -96,9 +107,9 @@ printR str result isTex outputfile =
        printRes result 
        if isTex then
 	 do
-          p $ i(do  text "You can here " 
+          p $ i(do  text "You can here the " 
 	            hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
-				(drop 24 outputfile))) $ text "the LaTeX file" 
+				(drop 24 outputfile))) $ text "LaTeX file" 
 	            text " download. The file will be deleted after 30 minutes.\n" 
 	      )
 	  p $ i( do  text "For compiling the LaTeX output, you need " 
