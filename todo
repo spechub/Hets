@@ -254,6 +254,28 @@ IsaWin: support CASL-libraries
 Till
 ************************************************
 
+Jürgen Zimmer, Saarbrücken+Edinburgh, Beweiserkennung für versch. Logiken im MathWeb
+
+spec VarTestIncorrect =
+     sorts s,t
+     vars x:s; y:t
+     forall x:t; y:s
+     . x = y
+end
+
+spec VarTestCorrect =
+     sorts s,t
+     %% vars x:s; y:t
+     forall x:t; y:s
+     . x = y
+end
+
+Incorrect geht durch, weil die Typanalyse nicht funktioniert und Correct
+wird abgelehnt, weil x und y nicht denselben Typ haben, was das richtige
+Verhalten auch im ersten Fall w\x{00E4}re.
+
+
+
 for CSP-CASL example: with logic
 heterogeneous static ana
 
