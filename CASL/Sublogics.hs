@@ -44,7 +44,7 @@ data CASL_Sublogics = CASL_SL
                         has_eq::Bool,    -- equality
                         has_pred::Bool,  -- predicates
                         which_logic::CASL_Formulas
-                      } deriving (Show,Eq)
+                      } deriving (Show,Ord,Eq)
 
 -- top element
 top :: CASL_Sublogics
@@ -96,12 +96,12 @@ formulas_name False Horn   = "Cond"
 formulas_name True  Atomic = "Atom"
 formulas_name False Atomic = "Eq"
 
-sublogics_name :: CASL_Sublogics -> String
-sublogics_name x = ( if (has_sub x) then "Sub" else "" ) ++
-                   ( if (has_part x) then "P" else "") ++
-                   ( if (has_cons x) then "C" else "") ++
-                   ( formulas_name (has_pred x) (which_logic x) ) ++
-                   ( if (has_eq x) then "=" else "")
+sublogics_name :: CASL_Sublogics -> [String]
+sublogics_name x = [( if (has_sub x) then "Sub" else "" ) ++
+                    ( if (has_part x) then "P" else "") ++
+                    ( if (has_cons x) then "C" else "") ++
+                    ( formulas_name (has_pred x) (which_logic x) ) ++
+                    ( if (has_eq x) then "=" else "")]
 
 ------------------------------------------------------------------------------
 -- min and max functions

@@ -57,19 +57,17 @@ instance Syntax CASL BASIC_SPEC
          comment_line CASL = "%%"
          comment_group CASL =  ("%{","}%")
 
-data CASL_sublogics = CASL_ deriving (Show,Eq,Ord)
-
-instance Typeable CASL_sublogics where
-    typeOf CASL_ = mkAppTy (mkTyCon "CASL_") []
+instance Typeable Sublogics.CASL_Sublogics where
+    typeOf (Sublogics.CASL_SL _ _ _ _ _ _) = mkAppTy (mkTyCon "CASL_SL") []
 
 -- lattices (for sublogics)
 
-instance LatticeWithTop CASL_sublogics where
+instance LatticeWithTop Sublogics.CASL_Sublogics where
     -- meet, join :: l -> l -> l
-    meet _ _ = CASL_
-    join _ _ = CASL_
+    meet = Sublogics.sublogics_min
+    join = Sublogics.sublogics_max
     -- top :: l
-    top = CASL_
+    top = Sublogics.top
 
 -- CASL logic
 
@@ -83,7 +81,7 @@ instance LatticeWithTop CASL_sublogics where
        Typeable id, Typeable sublogics, Typeable sign, Typeable morphism, Typeable symbol, Typeable raw_symbol,
        Typeable basic_spec, Typeable sentence, Typeable symb_items, Typeable symb_map_items) =>
 -}
-instance Logic CASL CASL_sublogics
+instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
 	       LocalEnv Sign 
 	       String -- morphism 
@@ -164,40 +162,40 @@ instance Logic CASL CASL_sublogics
 
          -- sublogics
          -- sublogic_names :: id -> sublogics -> [String] 
-         sublogic_names CASL _ = fun_err "sublogic_names"
+         sublogic_names CASL = Sublogics.sublogics_name
              -- the first name is the principal name
          -- all_sublogics :: id -> [sublogics]
          all_sublogics CASL = fun_err "all_sublogics"
 
          -- is_in_basic_spec :: id -> sublogics -> basic_spec -> Bool
-         is_in_basic_spec CASL _ _ = fun_err "is_in_basic_spec"
+         is_in_basic_spec CASL = Sublogics.in_basic_spec
          -- is_in_sentence :: id -> sublogics -> sentence -> Bool
-         is_in_sentence CASL _ _ = fun_err "is_in_sentence"
+         is_in_sentence CASL = Sublogics.in_sentence
          -- is_in_symb_items :: id -> sublogics -> symb_items -> Bool
-         is_in_symb_items CASL _ _ = fun_err "is_in_symb_items"
+         is_in_symb_items CASL = Sublogics.in_symb_items
          -- is_in_symb_map_items :: id -> sublogics -> symb_map_items -> Bool
-         is_in_symb_map_items CASL _ _ = fun_err "is_in_symb_map_items"
+         is_in_symb_map_items CASL = Sublogics.in_symb_map_items
          -- is_in_sign :: id -> sublogics -> sign -> Bool
-         is_in_sign CASL _ _ = fun_err "is_in_sign"
+         is_in_sign CASL = Sublogics.in_sign
          -- is_in_morphism :: id -> sublogics -> morphism -> Bool
          is_in_morphism CASL _ _ = fun_err "is_in_morphism"
          -- is_in_symbol :: id -> sublogics -> symbol -> Bool
-         is_in_symbol CASL _ _ = fun_err "is_in_symbol"
+         is_in_symbol CASL = Sublogics.in_symbol
 
          -- min_sublogic_basic_spec :: id -> basic_spec -> sublogics
-         min_sublogic_basic_spec CASL _ = fun_err "min_sublogic_basic_spec"
+         min_sublogic_basic_spec CASL = Sublogics.sl_basic_spec
          -- min_sublogic_sentence :: id -> sentence -> sublogics
-         min_sublogic_sentence CASL _ = fun_err "min_sublogic_sentence"
+         min_sublogic_sentence CASL = Sublogics.sl_sentence
          -- min_sublogic_symb_items :: id -> symb_items -> sublogics
-         min_sublogic_symb_items CASL _ = fun_err "min_sublogic_symb_items"
+         min_sublogic_symb_items CASL = Sublogics.sl_symb_items
          -- min_sublogic_symb_map_items :: id -> symb_map_items -> sublogics
-         min_sublogic_symb_map_items CASL _ = fun_err "min_sublogic_symb_map_items"
+         min_sublogic_symb_map_items CASL = Sublogics.sl_symb_map_items
          -- min_sublogic_sign :: id -> sign -> sublogics
-         min_sublogic_sign CASL _ = fun_err "min_sublogic_sign"
+         min_sublogic_sign CASL = Sublogics.sl_sign
          -- min_sublogic_morphism :: id -> morphism -> sublogics
          min_sublogic_morphism CASL _ = fun_err "min_sublogic_morphism"
          -- min_sublogic_symbol :: id -> symbol -> sublogics
-         min_sublogic_symbol CASL _ = fun_err "min_sublogic_symbol"
+         min_sublogic_symbol CASL = Sublogics.sl_symbol
 
          -- proj_sublogic_basic_spec :: id -> sublogics -> basic_spec -> basic_spec
          proj_sublogic_basic_spec CASL _ _ = fun_err "proj_sublogic_basic_spec"
