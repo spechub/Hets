@@ -8,12 +8,12 @@ g < h
 h
 Type Constructors
 Assumptions
-Warning (2,11) implicit declaration of superclass 'b'
-Warning (3,7) redeclared class 'b'
-Warning (4,11) redundant universe class
-Warning (6,7) redeclared class 'd'
-Warning (6,11) already known as super class 'b'
-Warning (7,7) redeclared class 'd'
-Warning (7,11) already known as super class 'a'
-Warning (8,18) implicit declaration of superclass 'f'
-Warning (9,12) implicit declaration of superclass 'h'
+Warning "SuperClassWarnings.hascasl" (line 2, column 11) implicit declaration of superclass 'b'
+Warning "SuperClassWarnings.hascasl" (line 3, column 7) redeclared class 'b'
+Warning "SuperClassWarnings.hascasl" (line 4, column 11) redundant universe class
+Warning "SuperClassWarnings.hascasl" (line 6, column 7) redeclared class 'd'
+Warning "SuperClassWarnings.hascasl" (line 6, column 11) already known as super class 'b'
+Warning "SuperClassWarnings.hascasl" (line 7, column 7) redeclared class 'd'
+Warning "SuperClassWarnings.hascasl" (line 7, column 11) already known as super class 'a'
+Warning "SuperClassWarnings.hascasl" (line 8, column 18) implicit declaration of superclass 'f'
+Warning "SuperClassWarnings.hascasl" (line 9, column 12) implicit declaration of superclass 'h'
