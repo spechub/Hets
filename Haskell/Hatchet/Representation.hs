@@ -133,8 +133,8 @@ instance PPrint Kind where
 instance PPrint Kindvar where
    pprint (Kindvar s) = text s 
 
--- * -> * == [*,*]
--- (*->*->*) -> * -> * == [(*->*->*), *, *]
+-- @* -> * == [*,*]@
+-- @(*->*->*) -> * -> * == [(*->*->*), *, *]@
 unfoldKind :: Kind -> [Kind]
 unfoldKind Star = [Star]
 unfoldKind (KVar v) = [KVar v]
