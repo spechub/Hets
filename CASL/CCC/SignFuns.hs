@@ -108,3 +108,10 @@ inhabitedF f = case f of
                 Sort_gen_ax constrs True-> inhabited constrs
                 _ -> []
 -}
+
+partial_OpSymb :: OP_SYMB -> Maybe Bool
+partial_OpSymb os = case os of
+                      Op_name _ -> Nothing
+	              Qual_op_name _ ot _ -> case ot of
+                                               Total_op_type _ _ _ -> Just False
+	                                       Partial_op_type _ _ _ -> Just True

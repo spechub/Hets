@@ -88,11 +88,17 @@ checkFreeType (osig,osens) m fsn
                        sname = concat $ map tokStr ts 
                    in warning (Just False) (sname ++ " is not inhabited") pos
        | elem Nothing l_Syms =
-                   let f = head $ filter (\f'->(leadingSym f') == Nothing) leading_o_p
-                       pos = case (get_pos_l f) of
-                               Just p -> headPos p
+                   let p = snd $ head $ filter (\f'-> (fst f') == Nothing) $ map leadingSymPos _axioms
+                       pos = case p of
+                               Just p' -> headPos p'
                                Nothing -> nullPos 
-                   in warning Nothing ("/n" ++ (show f) ++"/n axiom is incorrect") pos
+                   in warning Nothing "axiom is incorrect" pos
+       | not $ null $ p_t_axioms = 
+                   let p = get_pos_l $ head p_t_axioms
+                       pos = case p of
+                               Just p' -> headPos p'
+                               Nothing -> nullPos 
+                   in warning Nothing "partial axiom is incorrect" pos
        | any id $ map find_ot id_ots =    
                    let pos = headPos old_op_ps
                    in warning Nothing ("Op: " ++ old_op_id ++ " ist not new") pos
@@ -159,26 +165,37 @@ checkFreeType (osig,osens) m fsn
          srts = trace (showPretty srts1 "srts") srts1      --   srts
          constructors = trace (showPretty constructors1 "constructors") constructors1       -- constructors
          f_Inhabited1 = inhabited (Set.toList oldSorts) fconstrs
-         f_Inhabited = trace (showPretty f_Inhabited1 "f_inhabited" ) f_Inhabited1      --  f_inhabited
-         leading_o_p1 = filter isOp_Pred fs
-         leading_o_p = trace (showPretty leading_o_p1 "leading_o_p") leading_o_p1          -- leading_o_p
+         f_Inhabited = trace (showPretty f_Inhabited1 "f_inhabited" ) f_Inhabited1          --  f_inhabited
+--         leading_o_p1 = filter isOp_Pred fs
+--         leading_o_p = trace (showPretty leading_o_p1 "leading_o_p") leading_o_p1         -- leading_o_p
          axioms1 = filter (\f-> case f of                       
                                     Sort_gen_ax _ _ -> False
                                     _ -> True) fs
          axioms = trace (showPretty axioms1 "axioms") axioms1         --  axioms
-         l_Syms1 = map leadingSym leading_o_p                                    
-         l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1         -- leading_Symbol
+         _axioms = map (\f-> case f of
+                               Quantification _ _ f' _ -> f'
+                               _ -> f) axioms
 
+         l_Syms1 = map leadingSym axioms                                    
+         l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1         -- leading_Symbol
+{-
+  check all partial axiom
+-}
+         p_axioms = filter partialAxiom _axioms
+         t_axioms = filter (not.partialAxiom) _axioms
+         p_t_axioms = filter (\f-> case (opTyp_Axiom f) of
+                                     Just False -> True
+                                     _ -> False) t_axioms
 {- 
   check if leading symbols are new (not in the image of morphism),
         if not, return Nothing
 -}
          op_fs = filter (\f-> case leadingSym f of
                                 Just (Left _) -> True
-                                _ -> False) axioms 
+                                _ -> False) _axioms 
          pred_fs = filter (\f-> case leadingSym f of
                                   Just (Right _) -> True
-                                  _ -> False) axioms 
+                                  _ -> False) _axioms 
          filterOp symb = case symb of
                            Just (Left (Qual_op_name ident (Total_op_type as rs _) _))->
                                 [(ident, OpType {opKind=Total, opArgs=as, opRes=rs})]
@@ -202,11 +219,11 @@ checkFreeType (osig,osens) m fsn
                          Just (Right (Predication _ _ p)) -> p
                          _ -> []
          find_ot (ident,ot) = case Map.lookup ident oldOpMap of
-                                  Nothing -> False
-                                  Just ots -> Set.member ot ots
+                                Nothing -> False
+                                Just ots -> Set.member ot ots
          find_pt (ident,pt) = case Map.lookup ident oldPredMap of
-                                  Nothing -> False
-                                  Just pts -> Set.member pt pts
+                                Nothing -> False
+                                Just pts -> Set.member pt pts
 {-
    the leading terms consist of variables and constructors only, if not, return Nothing
      - split function leading_Symb into 
@@ -215,7 +232,7 @@ checkFreeType (osig,osens) m fsn
        extract_leading_symb :: Either Term (Formula f) -> Either OP_SYMB PRED_SYMB
      - collect all operation symbols from recover_Sort_gen_ax fconstrs (= constructors)
 -}
-         ltp1 = map leading_Term_Predication leading_o_p                 
+         ltp1 = map leading_Term_Predication axioms                 
          ltp = trace (showPretty ltp1 "leading_term_pred") ltp1              --  leading_term_pred
          leadingTerms1 = concat $ map (\tp->case tp of
                                               Just (Left t)->[t]
@@ -249,9 +266,9 @@ checkFreeType (osig,osens) m fsn
 
          leadingPatterns1 = map (\l-> case l of                     
                                        Just (Left (Application _ ts _))->ts
-                                       Just (Right (Predication _ ts _))->ts
+                              --         Just (Right (Predication _ ts _))->ts           -- PRED
                                        _ ->[]) $ 
-                            map leading_Term_Predication leading_o_p
+                            map leading_Term_Predication axioms
     --     leadingPatterns = trace (showPretty leadingPatterns1 (tmp1 ++ "\n" ++ tmp2 ++ "\n" ++ tmp ++ "\n")) leadingPatterns1    --leading Patterns
          leadingPatterns = trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1    --leading Patterns
          isApp t = case t of
@@ -301,9 +318,7 @@ checkFreeType (osig,osens) m fsn
                 | all (\p-> sameOps p (head (head pas))) $ map head pas =
                                             pattern_Pos $ map (\p'->(patternsOfTerm $ head p')++(tail p')) pas
                 | otherwise = concat $ map pattern_Pos $ group pas
---         term t = case t of
---                    Sorted_term t' _ _ ->term t'
---                    _ -> t
+
 {- 
    Automatic termination proof
    using cime, see http://cime.lri.fr/
@@ -458,17 +473,17 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                                                                    _ -> error "Termination_Variable") v_d
                           _ -> [] 
          allVar vs = foldl (\hv tv->hv ++ (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
-         varsStr vars str                          --  transform variable-array to string
+         varsStr vars str                               --  transform variable-array to string
                  | null vars = str
                  | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
                                else varsStr (tail vars) (str ++ " " ++ (tokStr $ head vars))
-         f_str f = case f of                        --  transform a axiom to string
+         f_str f = case f of                           --  transform a axiom to string
                      Quantification Universal _ f' _ -> f_str f' 
                      Implication _ f' _ _ -> f_str f' 
                      Strong_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)                   
                      Existl_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)
                      _ -> error "Termination_Axioms"
-         t_f_str f =case f of                       --  condition of term
+         t_f_str f =case f of                     --  condition of term
                      Strong_equation t1 t2 _ -> ("eq(" ++ (termStr t1) ++ "," ++ (termStr t2) ++ ")")
                      _ -> error "Termination_Term-Formula"
          termStr t = case (term t) of              -- transform a term to string
@@ -514,25 +529,25 @@ leadingSym f = do
        tp<-leading_Term_Predication f
        return (extract_leading_symb tp)
  
-{-
-leadingSymb :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
-leadingSymb f = leading (f,False,False)
+
+leadingSymPos ::(PosItem f)=> FORMULA f -> (Maybe (Either OP_SYMB PRED_SYMB),Maybe [Pos])
+leadingSymPos f = leading (f,False,False)
   where leading (f,b1,b2)= case (f,b1,b2) of
-                            ((Quantification Universal _ f' _),b1',b2')  -> leading (f',b1',b2')
-                            ((Implication _ f' _ _),False,False) -> leading (f',True,False)
-                            ((Equivalence f' _ _),b,False) -> leading (f',b,True)
-                            ((Predication predS _ _),_,_) -> return (Right predS)
-                            ((Strong_equation t _ _),_,_) -> case (term t) of
-                                                              Application opS _ _ -> return (Left opS)                 
-                                                              _ -> Nothing
-                            ((Existl_equation t _ _),_,_) -> case (term t) of
-                                                              Application opS _ _ -> return (Left opS)
-                                                              _ -> Nothing
-                            _ -> Nothing 
-        term t = case t of
-                  Sorted_term t' _ _ ->term t'
-                  _ -> t
--}
+                             ((Quantification _ _ f' _),b1',b2')  -> leading (f',b1',b2')
+                             ((Implication _ f' _ _),False,False) -> leading (f',True,False)
+                             ((Equivalence f' _ _),b,False) -> leading (f',b,True)
+                             ((Definedness t _),_,_) -> case (term t) of
+                                                          Application opS _ p -> (Just (Left opS),Just p)
+                                                          _ -> (Nothing,(get_pos_l f))
+                             ((Predication predS _ _),_,_) -> ((Just (Right predS)),(get_pos_l f))
+                             ((Strong_equation t _ _),_,_) -> case (term t) of
+                                                                Application opS _ p -> (Just (Left opS),Just p)                 
+                                                                _ -> (Nothing,(get_pos_l f))
+                             ((Existl_equation t _ _),_,_) -> case (term t) of
+                                                                Application opS _ p -> (Just (Left opS),Just p)
+                                                                _ -> (Nothing,(get_pos_l f))
+                             _ -> (Nothing,(get_pos_l f)) 
+
 
 term :: TERM f -> TERM f
 term t = case t of
@@ -542,17 +557,21 @@ term t = case t of
 leading_Term_Predication ::  FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
 leading_Term_Predication f = leading (f,False,False)
     where leading (f,b1,b2)= case (f,b1,b2) of
-                            ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)     -- ?
-                            ((Implication _ f' _ _),False,False) -> leading (f',True,False)
-                            ((Equivalence f' _ _),b,False) -> leading (f',b,True)
-                            ((Predication p ts ps),_,_) -> return (Right (Predication p ts ps))
-                            ((Strong_equation t _ _),_,_) -> case (term t) of
-                                                              Application _ _ _ -> return (Left (term t))
-                                                              _ -> Nothing
-                            ((Existl_equation t _ _),_,_) -> case (term t) of
-                                                              Application _ _ _ -> return (Left (term t))
-                                                              _ -> Nothing
-                            _ -> Nothing
+                         --      ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)     -- ?
+                               ((Quantification _ _ f' _),_,_)  -> leading (f',b1,b2)     -- ?
+                               ((Implication _ f' _ _),False,False) -> leading (f',True,False)
+                               ((Equivalence f' _ _),b,False) -> leading (f',b,True)
+                               ((Definedness t _),_,_) -> case (term t) of
+                                                            Application _ _ _ -> return (Left (term t))
+                                                            _ -> Nothing
+                               ((Predication p ts ps),_,_) -> return (Right (Predication p ts ps))
+                               ((Strong_equation t _ _),_,_) -> case (term t) of
+                                                                  Application _ _ _ -> return (Left (term t))
+                                                                  _ -> Nothing
+                               ((Existl_equation t _ _),_,_) -> case (term t) of
+                                                                  Application _ _ _ -> return (Left (term t))
+                                                                  _ -> Nothing
+                               _ -> Nothing
  
 
 
@@ -575,11 +594,15 @@ groupAxioms phis = do
                                          else symb
                               in p'++(filterA ps symb')
 
+
 isOp_Pred :: FORMULA f -> Bool
 isOp_Pred f = case f of
                Quantification _ _ f' _ -> isOp_Pred f'
                Implication _ f' _ _ -> isOp_Pred f'
                Equivalence f' _ _ -> isOp_Pred f'
+               Definedness t _ -> case (term t) of
+                                    (Application _ _ _) -> True
+                                    _ -> False
                Predication _ _ _ -> True
                Existl_equation t _ _ -> case (term t) of 
                                           (Application _ _ _) -> True
@@ -588,3 +611,36 @@ isOp_Pred f = case f of
                                           (Application _ _ _) -> True
                                           _-> False 
                _ -> False
+
+partialAxiom :: FORMULA f -> Bool
+partialAxiom f = case f of
+                    Quantification _ _ f' _ -> partialAxiom f'
+                    Implication f' _ _ _ -> 
+                               case f' of
+                                 Definedness t _ -> 
+                                            case (term t) of
+                                              Application opS _ _ -> case (partial_OpSymb opS) of
+                                                                       Just True -> True
+                                                                       _ -> False
+                                              _ -> False
+                                 _ -> False
+                    Equivalence f' _ _ -> 
+                               case f' of
+                                 Definedness t _ -> 
+                                   case (term t) of
+                                     Application opS _ _ -> case (partial_OpSymb opS) of
+                                                              Just True -> True
+                                                              _ -> False
+                                     _ -> False
+                                 _ -> False
+                    _ -> False                    
+
+-- leadingTerm is total operation : Just True
+-- leadingTerm is partial operation : Just False
+-- others : Nothing
+opTyp_Axiom :: FORMULA f -> Maybe Bool
+opTyp_Axiom f = case (leadingSym f) of
+                  Just (Left (Op_name _)) -> Nothing
+                  Just (Left (Qual_op_name _ (Total_op_type _ _ _) _)) -> Just True 
+                  Just (Left (Qual_op_name _ (Partial_op_type _ _ _) _)) -> Just False  
+                  _ -> Nothing 
