@@ -120,8 +120,12 @@ subsume tm a b = isJust $ maybeResult $ match tm (False, a) (True, b)
 equalSubs :: Unifiable a => TypeMap -> a -> a -> Bool
 equalSubs tm a b = subsume tm a b && subsume tm b a
 
+-- | get the type variable
+getTypeVar :: TypeArg -> Id
+getTypeVar(TypeArg v _ _ _) = v
+
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
-idsOf b = Set.image ( \ (TypeArg j _ _ _) -> j) . leaves b
+idsOf b = Set.image getTypeVar . leaves b
 
 occursIn :: TypeMap -> TypeId -> Type -> Bool
 occursIn tm i =  Set.any (relatedTypeIds tm i) . idsOf (const True)

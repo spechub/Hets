@@ -86,8 +86,8 @@ diffAss tm (OpInfos l1) (OpInfos l2) =
 cleanEnv :: Env -> Env
 cleanEnv e = diffEnv initialEnv 
 	     { classMap = classMap e
-             , typeMap = Map.filter (not . isTypeVarDefn) (typeMap e)
-	     , assumps = filterAssumps (not . isVarDefn) (assumps e) }
+             , typeMap = Map.filter (not . isTypeVarDefn) $ typeMap e
+	     , assumps = filterVars $ assumps e }
 	     preEnv 
 
 -- | environment with predefined types and operations

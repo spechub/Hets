@@ -301,11 +301,7 @@ free type bool (|-> bool) ::=
 *** Hint 153.5, is type variable 'c'
 *** Hint 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
-*** Error , unknown type '_var_64'
-*** Error , unknown type '_var_65'
-*** Error , unknown type '_var_64'
-*** Error , unknown type '_var_65'
-*** Error 159.34, unexpected mixfix token: x1
+*** Error 159.45, unexpected mixfix token: und
 *** Error 169.9, incompatible kind of: __-->?__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
@@ -340,9 +336,7 @@ free type bool (|-> bool) ::=
 	def(f)(x)
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
-*** Error , unknown type '_var_88'
-*** Error , unknown type '_var_88'
-*** Error 186.20, unexpected mixfix token: f
+*** Error 186.26, unexpected mixfix token: c
 *** Error 190.9, incompatible kind of: p -->? p
   expected: Cpo-
      found: Type

@@ -174,21 +174,25 @@ kindArity m k =
 putAssumps :: Assumps -> State Env ()
 putAssumps as =  do { e <- get; put e { assumps = as } }
 
--- | find information for qualified operation
-partitionOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> TypeScheme
-	 -> ([OpInfo], [OpInfo])
-partitionOpId as tm c i sc = 
-    let l = Map.findWithDefault (OpInfos []) i as 
-	in partition (isUnifiable tm c sc . opType) $ opInfos l
+-- | get matching information of uninstantiated identifier
+findOpId :: Env -> UninstOpId -> TypeScheme -> Maybe OpInfo
+findOpId e i sc = listToMaybe $ fst $ partitionOpId e i sc
+
+-- | partition information of an uninstantiated identifier
+partitionOpId :: Env -> UninstOpId -> TypeScheme -> ([OpInfo], [OpInfo])
+partitionOpId e i sc = 
+    let l = Map.findWithDefault (OpInfos []) i $ assumps e
+    in partition (isUnifiable (typeMap e) (counter e) sc . opType) $ opInfos l
 
 -- | storing an operation
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn 
 	-> State Env (Maybe UninstOpId)
 addOpId i sc attrs defn = 
-    do as <- gets assumps
-       tm <- gets typeMap
-       c <- gets counter
-       let (TypeScheme _ (_ :=> ty) _) = sc 
+    do e <- get
+       let tm = typeMap e
+	   as = assumps e
+	   c = counter e
+           (TypeScheme _ (_ :=> ty) _) = sc 
            ds = if placeCount i > 1 then case unalias tm ty of 
 		   FunType (ProductType ts _) _ _ _ ->
 		     if placeCount i /= length ts then 
@@ -196,7 +200,7 @@ addOpId i sc attrs defn =
                      else []
 		   _ -> [mkDiag Error "expected tuple argument for" i]
 		 else []
-           (l,r) = partitionOpId as tm c i sc
+           (l,r) = partitionOpId e i sc
 	   oInfo = OpInfo sc attrs defn 
        if null ds then 
           if null l then do putAssumps $ Map.insert i 
@@ -310,14 +314,18 @@ addVarDecl vd@(VarDecl v t _ _) =
     do newV <- addOpId v (simpleTypeScheme t) [] VarDefn
        return $ fmap (const vd) newV
 
+-- | get the variable
+getVar :: VarDecl -> Id
+getVar(VarDecl v _ _ _) = v
+
 -- | check uniqueness of variables 
 checkUniqueVars :: [VarDecl] -> State Env ()
-checkUniqueVars = addDiags . checkUniqueness . map ( \ (VarDecl v _ _ _) -> v )
+checkUniqueVars = addDiags . checkUniqueness . map getVar
 
 -- | check uniqueness of type variables 
 checkUniqueTypevars :: [TypeArg] -> State Env ()
 checkUniqueTypevars = addDiags . checkUniqueness 
-		      . map ( \ (TypeArg v _ _ _) -> v )
+		      . map getTypeVar
 
 -- | filter out assumption
 filterAssumps  :: (OpInfo -> Bool) -> Assumps -> Assumps

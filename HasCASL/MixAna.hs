@@ -49,11 +49,6 @@ addType _ _ = error "addType"
 
 type TermChart = Chart Term
 
--- | find information for qualified operation
-findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> TypeScheme 
-	 -> Maybe OpInfo
-findOpId as tm c i sc = listToMaybe $ fst $ partitionOpId as tm c i sc
-
 iterateCharts :: GlobalAnnos -> [Term] -> TermChart 
 	      -> State Env TermChart
 iterateCharts ga terms chart = 
@@ -83,8 +78,7 @@ iterateCharts ga terms chart =
 		       case mTyp of 
 			   Nothing -> recurse t
 			   Just nTyp -> do 
-			       let mi = findOpId as tm (counter e) v 
-					$ simpleTypeScheme nTyp
+			       let mi = findOpId e v $ simpleTypeScheme nTyp
 			       case mi of     
 			            Nothing -> addDiags [mkDiag Error 
 						  "value not found" v]
@@ -96,7 +90,7 @@ iterateCharts ga terms chart =
 		       case mSc of 
 			   Nothing -> recurse t
 			   Just nSc -> do 
-		               let mi = findOpId as tm (counter e) v nSc
+		               let mi = findOpId e v nSc
 			       case mi of     
 			            Nothing -> addDiags [mkDiag Error 
 						  "value not found" v]

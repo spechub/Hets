@@ -43,7 +43,9 @@ import Common.AS_Annotation
 
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.OpDecl
+-- import HasCASL.OpDecl
+import HasCASL.ProgEq
+
 import Haskell.Hatchet.HsSyn
 
 import ToHaskell.TranslateId
@@ -220,11 +222,6 @@ isConstructId i ((i1,info1):idInfoList) =
     or $ map isConstructor $ opInfos info1
   else isConstructId i idInfoList
 
-isConstructor :: OpInfo -> Bool
-isConstructor o = case opDefn o of
-		    ConstructData _ -> True
-		    _ -> False
-
 -- | Converts a term in HasCASL to an expression in haskell
 translateTerm :: Assumps -> TypeMap -> Term -> HsExp
 translateTerm as tm t = 
@@ -316,18 +313,17 @@ translateLetProgEq as tm (ProgEq pat t _pos) =
 -- | Translation of a toplevel program equation
 translateProgEq ::Assumps ->  TypeMap -> ProgEq -> HsDecl
 translateProgEq as tm (ProgEq pat t _) = 
-    let (topPat, args) = getApplConstr pat in
-	case topPat of
-      QualOp _ (InstOpId uid _t _p) ts _ -> 
+    case getAppl pat of
+    Just (uid, ts, args) -> 
         let oid = findUniqueId uid ts tm as
 	in case oid of
 	  Just i -> HsFunBind [HsMatch nullLoc
 	             (UnQual $ HsIdent $ translateIdWithType LowerId i)
-	             (map (translatePattern as tm) $ reverse args) -- [HsPat]
+	             (map (translatePattern as tm) args) -- [HsPat]
 	             (HsUnGuardedRhs $ translateTerm as tm t) -- HsRhs
 	             []]
 	  _ -> error ("translateLetProgEq: non-unique id: " ++ show pat)
-      _ -> error ("translateLetProgEq: no toplevel id: " ++ show pat)
+    Nothing -> error ("translateLetProgEq: no toplevel id: " ++ show pat)
 
 translateDt :: DatatypeDefn -> Named HsDecl
 translateDt (DatatypeConstr i _ _ args alts) = 
@@ -341,12 +337,17 @@ translateDt (DatatypeConstr i _ _ args alts) =
 		       []
 
 translateSentence ::  Env -> Named Sentence -> [Named HsDecl] 
-translateSentence env sen = case sentence sen of
+translateSentence env sen = 
+    let as = assumps env
+	tm = typeMap env
+    in case sentence sen of
     DatatypeSen dt -> map translateDt dt
     ProgEqSen _ _ pe -> [NamedSen (senName sen) 
-			$ translateProgEq 
-			 (assumps env) (typeMap env) pe]
-    _ -> []
+			$ translateProgEq as tm pe]
+    Formula t -> case mkQuantEq env t of
+		 Nothing -> []
+		 Just pe -> [NamedSen (senName sen) 
+			$ translateProgEq as tm pe]
 
 -------------------------------------------------------------------------
 -- some stuff

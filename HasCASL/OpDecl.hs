@@ -25,7 +25,7 @@ import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.Unify
 import HasCASL.TypeCheck
-import HasCASL.MixAna
+import HasCASL.ProgEq
 
 anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
 anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) = 
@@ -138,29 +138,32 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
        mp <- checkPattern ga pat
        case mp of 
 	   Nothing -> return pe
-	   Just np -> do 
-	       (newPat, exbs) <- extractBindings np
+	   Just newPat -> do 
+	       let exbs = extractVars newPat
 	       checkUniqueVars exbs
 	       mapM_ addVarDecl exbs
 	       mt <- resolveTerm ga Nothing trm
 	       putAssumps as
 	       case mt of 
-		   Just newTerm  -> 
-		       let (topPat, args) = getApplConstr newPat 
+		   Just newTerm  -> let newPrg = ProgEq newPat newTerm qs in
+		     case getAppl newPat of
+		       Just (i, sc, args) -> let
 			   defTrm = if null args then newTerm
-					else LambdaTerm (reverse args) 
-					     Partial newTerm []
-			   newPrg = ProgEq newPat newTerm qs
-		       in case topPat of 
-		       QualOp _ (InstOpId i _tys _) sc _ -> do
+					else LambdaTerm args 
+					     Partial newTerm [] in do
 			   addOpId i sc [] $ Definition Op defTrm
 			   appendSentences [NamedSen ("pe_" ++ showId i "")
 					    $ ProgEqSen i sc newPrg]
+			   e <- get
+			   if isLHS e newPat then return () 
+			      else addDiags [mkDiag Warning
+					 "illegal lhs pattern"
+					 newPat]
 			   return newPrg
-		       _ -> do addDiags $ [mkDiag Error 
-					   "illegal toplevel pattern"
-					   topPat]
-			       return pe
+		       _ -> do addDiags [mkDiag Error 
+					 "illegal toplevel pattern"
+					 newPat]
+			       return newPrg
 		   _ -> return $ ProgEq newPat trm qs 
 
 

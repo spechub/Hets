@@ -16,13 +16,14 @@ module ToHaskell.FromHasCASL where
 import Common.AS_Annotation
 
 import HasCASL.Le
-
-import ToHaskell.TranslateAna
+import HasCASL.Builtin
 
 import Haskell.Hatchet.MultiModuleBasics 
 import Haskell.Hatchet.AnnotatedHsSyn
 import Haskell.Hatchet.SynConvert
 import Haskell.HatAna
+
+import ToHaskell.TranslateAna
 
 mapSingleSentence :: Env -> Sentence -> Maybe AHsDecl
 mapSingleSentence sign sen = 
@@ -31,9 +32,13 @@ mapSingleSentence sign sen =
     _ -> Nothing
 
 mapTheory :: (Env, [Named Sentence]) -> (ModuleInfo, [Named AHsDecl])
-mapTheory (sign, csens) =
-    let hs = translateSig sign
+mapTheory (sig, csens) =
+    let sign = sig { typeMap = addUnit $ typeMap sig,
+		     assumps = addOps $ assumps sig }
+        hs = translateSig sign
 	ps = concatMap (translateSentence sign) csens
-        (mi, _) = hatAna (cleanSig hs ps ++ map sentence ps) emptyModuleInfo
-	in (mi, map (mapNamed toAHsDecl) ps)
+	cs = cleanSig hs ps
+        (mi, _) = hatAna (cs ++ map sentence ps) emptyModuleInfo
+	in (mi, map ( \ s -> NamedSen "" $ toAHsDecl s) cs
+	        ++ map (mapNamed toAHsDecl) ps)
 
