@@ -12,14 +12,19 @@
 module Main where
 
 import Options
-
-import AS_Library
+import System
+import ATC_sml_cats
 
 -- import ReadFn
 -- import WriteFn
 -- import ProcessFn
 
-main = putStrLn "*** hetcats: Not yet implented"
+main = do as <- getArgs
+	  case as of 
+		  [x] -> read_sml_ATerm x >>= print
+		  _   -> error "give a filename to read"
+
+m = putStrLn "*** hetcats: Not yet implented"
 
 {-
 {-
