@@ -161,16 +161,33 @@ instance PrettyPrint RENAMING where
 
 instance PrettyPrint RESTRICTION where
     printText0 ga (Hidden aa _) =
-	hang (text "hide") 4 $ cat $ map (printText0 ga) aa
+	hang (text "hide") 4 $ fsep $ condPunct comma aa 
+                                                $ map (printText0 ga) aa
     printText0 ga (Revealed aa _) =
 	hang (text "reveal") 4 $ printText0 ga aa
 
     printLatex0 ga (Hidden aa _) =
        hc_sty_plain_keyword "hide"<\+>
-          set_tabbed_nest_latex (fsep_latex (map (printLatex0 ga) aa))
+          set_tabbed_nest_latex 
+                (fsep_latex (condPunct comma_latex 
+                                       aa (map (printLatex0 ga) aa)))
     printLatex0 ga (Revealed aa _) =
 	hc_sty_plain_keyword "reveal"<\+>
 	  set_tabbed_nest_latex (printLatex0 ga aa)
+
+condPunct :: Doc -> [G_hiding] -> [Doc] -> [Doc]
+condPunct _ [] [] = []
+condPunct _ _  [] = 
+    error "something went wrong in printLatex0 of Hidden"
+condPunct _ [] _  = 
+    error "something went wrong in printLatex0 of Hidden"
+condPunct _ [_c] [d] = [d]
+condPunct com (c:cs) (d:ds) = 
+		 (case c of
+			G_symb_list _gsil -> d<>com 
+			G_logic_projection _enc -> d)
+		 : condPunct com cs ds
+
 
 {- hang_latex (hc_sty_plain_keyword "reveal") 8 $ printLatex0 ga aa -}
 
