@@ -57,15 +57,11 @@ operations. (SymbolMapAnalysis.hs)
 
 
 CASL:
-Overload.hs should generated Applications for constants rather than
+Overload.hs should generate Applications for constants rather than
 Var_decls (partially implemented)
 
 convert TERM to Mixfix_bracketed terms and use printText0 rather than
 showTerm from ShowMixfix
-
-assoc ops are partial and may not be found via the fun_map of
-morphisms, but the morphism should also map this partial functions
-correctly, since morphisms should be applicable to subsignatures.
 
 Maybe funKind should be ignored as fun_map key for lookup. (Also the
 FunKind value of the mapping seems to be redundant, as it could also
@@ -85,9 +81,6 @@ Hatchet/Haskell:
 conversion HsSyn and AHsSyn is stupid
 
 AxiomBinds are not renamed 
-
-Axioms result in "tiExpr: could not find type scheme for: Empty.allof"
-(but not if a .hs file is used)
 
 PrintModuleInfo is entirely faked and unusable for showing a Haskell
 theory that was directly read in (form a .het file and Haskell code in
