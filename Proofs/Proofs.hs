@@ -28,10 +28,12 @@ Add proof status information
 
 
 -}
+module Proofs.Proofs where
 
 import Logic.Logic
 import Logic.Prover
 import Static.DevGraph
+import Common.Lib.Graph
 
 {- proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
    DG0 is the development graph resulting from the static analysis
@@ -39,7 +41,7 @@ import Static.DevGraph
    With the list of intermediate proof states, one can easily implement
     an undo operation
 -}
-data ProofStatus = (GlobalContext,[([DGRule],[DGChange])],DGraph)
+type ProofStatus = (GlobalContext,[([DGRule],[DGChange])],DGraph)
 
 data DGRule = 
    TheoremHideShift
@@ -65,10 +67,10 @@ data DGRule =
  | BasicInference Edge BasicProof
  | BasicConsInference Edge BasicConsProof
 
-data DGChange = InsertNode LNode DGNodeLab 
+data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode Node 
-              | InsertEdge LEdge DGLinkLab
-              | DeleteEdge LEdge DGLinkLab
+              | InsertEdge (LEdge DGLinkLab)
+              | DeleteEdge (LEdge DGLinkLab)
 
 data BasicProof =
   forall lid sublogics
@@ -107,7 +109,75 @@ globDecomp = undefined
    if n=0, then just return the original proof status
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 globSubsume ::  ProofStatus -> ProofStatus
-globSubsume = undefined
+globSubsume proofStatus@(globalContext,history,dGraph) =
+  if null (snd nextHistoryElem) then proofStatus  
+   else (globalContext, nextHistoryElem:history, nextDGraph)
+
+  where
+    globalThmEdges = filter isGlobalThm (labEdges dGraph)
+    result = globSubsumeAux dGraph ([],[]) globalThmEdges
+    nextDGraph = fst result
+    nextHistoryElem = snd result
+
+{- alle kanten vom Typ GlobalThm holen, 
+zur "Verarbeitung" an Hilfsfunktion weitergeben
+ -}
+
+
+globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
+	            -> (DGraph,([DGRule],[DGChange]))
+globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
+globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsDefPath dGraph source target
+     then -- kante aus Graph löschen, stattdessen def einfügen
+       globSubsumeAux newGraph (rules,changes) list
+     else
+       globSubsumeAux dGraph (rules,changes) list
+  where
+    auxGraph = delLEdge ledge dGraph
+               -- ### wieder reinnehmen, sobald Eq definiert #####
+	       -- let auxGraph = delLEdge ledge dGraph
+    newEdge = (source,
+	       target,
+	       DGLink {dgl_morphism = dgl_morphism edgeLab,
+		       dgl_type = GlobalDef,
+		       dgl_origin = DGProof}
+               )
+    newGraph = insEdge newEdge auxGraph
+    newRules = (GlobSubsumption ledge):rules
+    newChanges = (InsertEdge newEdge):((DeleteEdge ledge):changes)
+
+{- schauen, ob ein Pfad von GlobalDefs von source nach target geht
+falls ja: kante löschen, stattdessen GlobalDef von source nach target einfügen
+falls nein: nichts tun
+mit den übrigen kanten weitermachen -}
+
+existsDefPath :: DGraph -> Node -> Node -> Bool
+existsDefPath = undefined
+{- -}
+
+existsDefPathAux :: DGraph  -> [Node] -> Node -> Bool
+existsDefPathAuy _ [] _ = False
+existsDefPathAux dGraph sourceNodes target =
+  if elem target sourceNodes then True
+   else existsDefPathAux dGraph sucNodes target
+  where
+    outGoingEdges = concatMap (out dGraph) sourceNodes
+    globalDefEdges = filter isGlobalDef outGoingEdges
+    sucNodes = map getTargetNode globalDefEdges
+
+getTargetNode :: LEdge DGLinkLab -> Node
+getTargetNode (_,target,_) = target
+
+isGlobalThm :: LEdge DGLinkLab -> Bool
+isGlobalThm (_,_,edgeLab) = case dgl_type edgeLab of
+  (GlobalThm _ _) -> True
+  otherwise -> False
+
+isGlobalDef ::LEdge DGLinkLab -> Bool
+isGlobalDef (_,_,edgeLab) =
+  case dgl_type edgeLab of
+    GlobalDef -> True
+    otherwise -> False
 
 {- the same as globSubsume, but for the rule LocSubsumption -}
 locSubsume ::  ProofStatus -> ProofStatus
