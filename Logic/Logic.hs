@@ -159,6 +159,9 @@ class (Category lid sign morphism, Ord sentence,
       where
          -- sentence translation
       map_sen :: lid -> morphism -> sentence -> Result sentence
+         -- simplification of sentences (leave out qualifications)
+      simplify_sen :: lid -> sentence -> sentence
+      simplify_sen _ = id  -- default implementation
          -- parsing of sentences
       parse_sentence :: lid -> Maybe (sign -> String -> Result sentence)
            -- is a term parser needed as well?

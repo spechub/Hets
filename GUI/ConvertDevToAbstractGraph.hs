@@ -566,8 +566,8 @@ getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
   gth <- computeTheory libEnv dgraph node
   return (node, gth)
     ) of
-  Res.Result [] (Just (n, gp)) ->  
-    displayTheory "Theory" n dgraph gp
+  Res.Result [] (Just (n, gth)) ->  
+    displayTheory "Theory" n dgraph (simplifyTh gth)
   Res.Result diags _ -> showDiags defaultHetcatsOpts diags
 
 printTheory :: G_theory -> String

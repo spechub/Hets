@@ -195,6 +195,11 @@ sublogicOfTh (G_theory lid sigma sens) =
                   (map (min_sublogic_sentence lid . sentence) sens)
    in G_sublogics lid sub
 
+-- | simplify a theory (throw away qualifications)
+simplifyTh :: G_theory -> G_theory
+simplifyTh (G_theory lid sigma sens) =
+  G_theory lid sigma (map (mapNamed (simplify_sen lid)) sens)
+
 -- | Grothendieck symbols
 data G_symbol = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -392,8 +397,9 @@ lookupComorphism coname logicGraph = do
   lookupN name = 
     case name of
       'i':'d':'_':logic -> do
-         l <- maybe (fail ("Cannot find logic "++logic)) return
-                 $ Map.lookup logic (logics logicGraph)
+         let mainLogic = takeWhile (/= '.') logic
+         l <- maybe (fail ("Cannot find Logic "++mainLogic)) return
+                 $ Map.lookup mainLogic (logics logicGraph)
          case l of
            Logic lid -> 
             return $ Comorphism $ IdComorphism lid (top_sublogic lid)
