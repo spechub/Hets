@@ -45,8 +45,12 @@ addTypeKind d i k =
 	      Just (TypeInfo ok ks sups defn) -> 
 		  let ds = eqKindDiag k ok in
 			  if null ds then 
-			     putTypeMap $ addToFM tk i 
-					      $ TypeInfo ok (k:ks) sups defn
+			     if any (eqKind SameSyntax k) (ok:ks)
+				then addDiag $ mkDiag Warning 
+				     "redeclared type" i
+				else putTypeMap $ addToFM tk i 
+					 $ TypeInfo ok
+					       (k:ks) sups defn
 			     else appendDiags ds
 
 addSuperType :: Type -> Id -> State Env ()
@@ -58,26 +62,26 @@ addSuperType t i =
 				putTypeMap $ addToFM tk i 
 					      $ TypeInfo ok ks (t:sups) defn
 
-anaTypeItem :: Instance -> TypeItem -> State Env ()
-anaTypeItem inst (TypeDecl pats kind _) = 
+anaTypeItem :: GenKind -> Instance -> TypeItem -> State Env ()
+anaTypeItem _ inst (TypeDecl pats kind _) = 
     do k <- anaKind kind
        let Result ds (Just is) = convertTypePatterns pats
        appendDiags ds
        mapM_ (anaTypeId NoTypeDefn inst kind) is   
-anaTypeItem inst (SubtypeDecl pats t _) = 
+anaTypeItem _ inst (SubtypeDecl pats t _) = 
     do sup <- anaType t
        let Result ds (Just is) = convertTypePatterns pats
        appendDiags ds
        mapM_ (anaTypeId NoTypeDefn inst nullKind) is   
        mapM_ (addSuperType t) is
 
-anaTypeItem inst (IsoDecl pats _) = 
+anaTypeItem _ inst (IsoDecl pats _) = 
     do let Result ds (Just is) = convertTypePatterns pats
        appendDiags ds
        mapM_ (anaTypeId NoTypeDefn inst nullKind) is
        mapM_ ( \ i -> mapM_ (addSuperType (TypeName i 0)) is) is 
 
-anaTypeItem inst (SubtypeDefn pat v t f ps) = 
+anaTypeItem _ inst (SubtypeDefn pat v t f ps) = 
     do newT <- anaType t
        addDiag $ Diag Warning ("unchecked formula '" ++ showPretty f "'")
 		   $ firstPos [v] ps
@@ -89,7 +93,7 @@ anaTypeItem inst (SubtypeDefn pat v t f ps) =
 				     inst nullKind i
 			   addSuperType newT i
 	   
-anaTypeItem inst (AliasType pat kind (TypeScheme tArgs (q :=> ty) p) _) = 
+anaTypeItem _ inst (AliasType pat kind (TypeScheme tArgs (q :=> ty) p) _) = 
     do k <- case kind of 
 		      Nothing -> return Nothing
 		      Just j -> fmap Just $ anaKind j
@@ -105,7 +109,7 @@ anaTypeItem inst (AliasType pat kind (TypeScheme tArgs (q :=> ty) p) _) =
 	      (Just i, Just ki) -> anaTypeId (AliasTypeDefn newPty) inst ki i 
 	      _ -> return ()
 
-anaTypeItem inst (Datatype d) = anaDatatype Loose inst d 
+anaTypeItem gk inst (Datatype d) = anaDatatype gk inst d 
 
 anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env ()
 anaDatatype genKind inst (DatatypeDecl pat kind _alts derivs _) =

@@ -44,7 +44,13 @@ instance PrettyPrint TypeDefn where
 					   <+> printText0 ga t 
 					   <+> text dotS
 					   <+> printText0 ga f)
-    printText0 _ _ = ptext "missing"
+    printText0 _ (DatatypeDefn k)  = ptext " %%" <>
+	let om = ptext " type definition omitted"
+					 in case k of
+				     Loose -> om
+				     Free -> space <> ptext freeS <> om
+				     Generated -> space <> ptext generatedS 
+						  <> om
 
 instance PrettyPrint TypeInfo where
     printText0 ga (TypeInfo k ks sups defn) =

@@ -12,13 +12,14 @@ __-->__ :(Cpo- ->Cpo+ ->Cpo,Cpo- ->Pcpo+ ->Pcpo)
 __-->?__ :Cpo- ->Cpo+ ->Pcpo
 __->__ :Type- ->Type+ ->Type
 __->?__ :Type- ->Type+ ->Type
-bool :Flatcpo
+bool :(Type,Flatcpo) %% free type definition omitted
 c :Cpo %(var)%
 c-->d :Type< c -->? d
 c-->?d :Type< c ->? d
 d :Cpo %(var)%
+logical :Type %% free type definition omitted
 nat :Flatcpo
-s :(Type,Type)< ? s %(var)%
+s :Type< ? s %(var)%
 s->t :Type< s ->? t
 t :Type %(var)%
 Assumptions
@@ -30,14 +31,12 @@ x2 : c
 y1 : d
 y2 : d
 Error (4,7) illegal universe class declaration
-FatalError (11,1) no analysis yet for: free type logical ::= true | 
-		      false
 FatalError (13,4) no analysis yet for: true
 FatalError (15,7) no analysis yet for: __/\__
 FatalError (16,4) no analysis yet for: not
-FatalError (27,1) no analysis yet for: free type Unit ::= 1
-		   %% "()" is illegal as constructor
+Warning (27,11) redeclared type 'Unit'
 FatalError (29,1) no analysis yet for: . 1 = ()
+Warning (39,16) redeclared type 't'
 FatalError (45,4) no analysis yet for: def
 Hint (46,9) not a class 's'
 FatalError (48,1) no analysis yet for: program def = \ x : s . ()
@@ -56,6 +55,7 @@ FatalError (78,1) no analysis yet for: pred eq : s × s
 FatalError (80,1) no analysis yet for: . (\ x : s . eq (x,x)) = tt
 . (\ x : s; y : s . x res eq (x,y)) =
   (\ x : s; y : s . y res eq (x,y))
+Warning (91,6) redeclared type 's'
 FatalError (93,1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p,tt)
 FatalError (96,1) no analysis yet for: program And (x,y : Pred Unit) : Pred Unit = t1 () und t2 ()
 FatalError (99,1) no analysis yet for: program __ impl __ (x,y : Pred Unit) : Pred Unit = eq (x,x And y)
@@ -114,5 +114,3 @@ FatalError (196,1) no analysis yet for: . all
   (\ f : p -->? p . eq (f (Y (f)),Y (f)) und all
 		    (\ x : p . eq (f (x),x) impl Y (f) <<= x))
 FatalError (199,4) no analysis yet for: undefined
-FatalError (204,1) no analysis yet for: free type bool ::= true | 
-		   false

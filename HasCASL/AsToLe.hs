@@ -30,25 +30,22 @@ import TypeDecl
 -----------------------------------------------------------------------------
 
 anaBasicSpec :: BasicSpec -> State Env ()
-anaBasicSpec (BasicSpec l) = mapM_ anaAnnotedBasicItem l
-
-anaAnnotedBasicItem :: Annoted BasicItem -> State Env ()
-anaAnnotedBasicItem i = anaBasicItem $ item i 
+anaBasicSpec (BasicSpec l) = mapM_ anaBasicItem $ map item l
 
 anaBasicItem :: BasicItem -> State Env ()
-anaBasicItem (SigItems i) = anaSigItems i
+anaBasicItem (SigItems i) = anaSigItems Loose i
 anaBasicItem (ClassItems inst l _) = mapM_ (anaAnnotedClassItem inst) l
 anaBasicItem (GenVarItems l _) = mapM_ anaGenVarDecl l
 
 anaBasicItem t@(ProgItems _ p) = missingAna t p
-anaBasicItem t@(FreeDatatype _ p) = missingAna t p 
-anaBasicItem t@(GenItems _ p) = missingAna t p
+anaBasicItem (FreeDatatype l _) = mapM_ (anaDatatype Free Plain) $ map item l
+anaBasicItem (GenItems l _) = mapM_ (anaSigItems Generated) $ map item l
 anaBasicItem t@(AxiomItems _ _ p) = missingAna t p 
 
-anaSigItems :: SigItems -> State Env ()
-anaSigItems (TypeItems inst l _) = mapM_ (anaAnnotedTypeItem inst) l
-anaSigItems (OpItems l _) =  mapM_ anaAnnotedOpItem l
-anaSigItems l@(PredItems _ p) = missingAna l p 
+anaSigItems :: GenKind -> SigItems -> State Env ()
+anaSigItems gk (TypeItems inst l _) = mapM_ (anaTypeItem gk inst) $ map item l
+anaSigItems _ (OpItems l _) =  mapM_ anaOpItem $ map item l
+anaSigItems _ l@(PredItems _ p) = missingAna l p 
 
 ----------------------------------------------------------------------------
 -- GenVarDecl
@@ -134,18 +131,5 @@ anaAnnotedClassItem :: Instance -> Annoted ClassItem -> State Env ()
 anaAnnotedClassItem _ aci = 
     let ClassItem d l _ = item aci in
     do anaClassDecls d 
-       mapM_ anaAnnotedBasicItem l
+       mapM_ anaBasicItem $ map item l
 
--- ----------------------------------------------------------------------------
--- TypeItem
--- ----------------------------------------------------------------------------
-
-anaAnnotedTypeItem :: Instance -> Annoted TypeItem -> State Env ()
-anaAnnotedTypeItem inst i = anaTypeItem inst $ item i
-
--- ----------------------------------------------------------------------------
--- OpItem
--- ----------------------------------------------------------------------------
-
-anaAnnotedOpItem ::  Annoted OpItem -> State Env ()
-anaAnnotedOpItem i = anaOpItem $ item i
