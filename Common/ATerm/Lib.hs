@@ -8,6 +8,6 @@ module Common.ATerm.Lib (
 
 ) where
 
-import Common.ATerm.AbstractSyntax
+import Common.ATerm.AbstractSyntax hiding (addATermNoFullSharing)
 import Common.ATerm.ReadWrite
 import Common.ATerm.Conversion
