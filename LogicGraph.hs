@@ -127,24 +127,24 @@ id_repr i s = LogicRepr{
 
 comp_repr :: AnyRepresentation -> AnyRepresentation -> Maybe AnyRepresentation
 comp_repr (Repr (r1 :: {-Logic id1 sublogics1
-        basic_spec1 sentence1 symb_items_list1 symb_map_items_list1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
         local_env1 sign1 morphism1 symbol1 raw_symbol1,
         Logic id2 sublogics2
-        basic_spec2 sentence2 symb_items_list2 symb_map_items_list2 
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
         local_env2 sign2 morphism2 symbol2 raw_symbol2) => -}
-        LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items_list1 symb_map_items_list1
+        LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 local_env1 sign1 morphism1 symbol1 raw_symbol1
-            id2 sublogics2 basic_spec2 sentence2 symb_items_list2 symb_map_items_list2
+            id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 local_env2 sign2 morphism2 symbol2 raw_symbol2))
   (Repr (r2 :: {-Logic id3 sublogics3
-         basic_spec3 sentence3 symb_items_list3 symb_map_items_list3
+         basic_spec3 sentence3 symb_items3 symb_map_items3
          local_env3 sign3 morphism3 symbol3 raw_symbol3,
          Logic id4 sublogics4
-         basic_spec4 sentence4 symb_items_list4 symb_map_items_list4 
+         basic_spec4 sentence4 symb_items4 symb_map_items4 
          local_env4 sign4 morphism4 symbol4 raw_symbol4) => -}
-         LogicRepr id3 sublogics3 basic_spec3 sentence3 symb_items_list3 symb_map_items_list3
+         LogicRepr id3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 local_env3 sign3 morphism3 symbol3 raw_symbol3
-            id4 sublogics4 basic_spec4 sentence4 symb_items_list4 symb_map_items_list4
+            id4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
                 local_env4 sign4 morphism4 symbol4 raw_symbol4)) = 
   case coerce (source r2)::Maybe id2 of
   Nothing -> Nothing

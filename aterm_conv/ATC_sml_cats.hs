@@ -31,7 +31,6 @@ import AS_Annotation
 
 import AS_Basic_CASL
 
-import LogicGraph
 import Logic_CASL
 import Grothendieck
 
@@ -1289,7 +1288,7 @@ instance ATermConvertible RENAMING where
 	    (AAppl "renaming" [ aa ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
-		aa''= G_symb_map_items_list CASL (Symb_map_items_list aa' ab')
+		aa''= G_symb_map_items_list CASL aa'
 		ab' = pos_l
 		in (Renaming aa'' ab')
 	    _ -> fromATermError "RENAMING" aterm
@@ -1308,13 +1307,13 @@ instance ATermConvertible RESTRICTION where
 	    (AAppl "hide" [ aa ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
-		aa''= G_symb_items_list CASL (Symb_items_list aa' ab')
+		aa''= G_symb_items_list CASL aa'
 		ab' = pos_l
 		in (Hidden aa'' ab')
 	    (AAppl "reveal" [ aa ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
-		aa''= G_symb_map_items_list CASL (Symb_map_items_list aa' ab')
+		aa''= G_symb_map_items_list CASL aa'
 		ab' = pos_l
 		in (Revealed aa'' ab')
 	    _ -> fromATermError "RESTRICTION" aterm
@@ -1417,7 +1416,7 @@ instance ATermConvertible FIT_ARG where
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
 		ab' = fromATerm (getATermByIndexSp1 ab att)
-		ab''= G_symb_map_items_list CASL (Symb_map_items_list ab' ac')
+		ab''= G_symb_map_items_list CASL ab'
 		ac' = pos_l
 		in (Fit_spec aa' ab'' ac')
 	    (AAppl "fit-view" [ aa,ab ])  ->
@@ -1788,7 +1787,7 @@ instance ATermConvertible FIT_ARG_UNIT where
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
 		ab' = fromATerm (getATermByIndexSp1 ab att)
-		ab''= G_symb_map_items_list CASL (Symb_map_items_list ab' ac')
+		ab''= G_symb_map_items_list CASL ab'
 		ac' = pos_l
 		in (Fit_arg_unit aa' ab'' ac')
 	    _ -> fromATermError "FIT_ARG_UNIT" aterm
@@ -1841,7 +1840,7 @@ instance ATermConvertible LIB_ITEM where
 		ab' = fromATerm (getATermByIndexSp1 ab att)
 		ac' = fromATerm (getATermByIndexSp1 ac att)
 		ad' = fromATerm (getATermByIndexSp1 ad att)
-		ad''= G_symb_map_items_list CASL (Symb_map_items_list ad' ae')
+		ad''= G_symb_map_items_list CASL ad'
 {-		as  = toAnnoList ae att
 		ac''= addLAnnoList as ac'-}
 		ae' = pos_l

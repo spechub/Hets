@@ -36,12 +36,18 @@ annoParser parser = bind (\x y -> Annoted y [] x []) annos parser
 simpleId = pToken (reserved casl_reserved_words scanAnyWords)
 
 spec :: [AnyLogic] -> GenParser Char st SPEC
+-- first logic is the current logic!
 
-reSpec p = annoParser (simpleSpec p) >>= (renaming <|> restriction)
+reSpec p = annoParser (simpleSpec p) >>= (renaming p <|> restriction p)
 
-renaming s = do w <- asKey withS
-		(is, cs) <- symbMapItems `separatedBy` commaT
-		return (Translation s (Renaming (map tokPos (w:cs))))
+parseMaps :: [AnyLogic] -> GenParser Char st G_symb_map_items_list
+parseMaps p@(Logic l:: _) = fmap G_symb_map_items_list 
+			    (parse_symb_map_items_list l)
+
+renaming p s = 
+    do w <- asKey withS
+       m <- parseMaps p
+       return (Translation s (Renaming m [tokPos w]))
 
 simpleSpec p = groupSpec p <|> fmap Basic_spec p
 

@@ -49,12 +49,12 @@ instance Category CASL Sign String -- morphism
 
 instance Syntax CASL BASIC_SPEC 
                 Sentence
-		SYMB_ITEMS_LIST SYMB_MAP_ITEMS_LIST
+		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec CASL = basicSpec
-{-	 parse_symb_items_list CASL = fun_err "parse_symb_items_list"
-	 parse_symb_map_items_list CASL = fun_err "parse_symb_map_items_list"
--}
+	 parse_symb_items CASL = symbItems
+	 parse_symb_map_items CASL = symbMapItems
+
 data CASL_sublogics = CASL_ deriving (Show,Eq,Ord)
 
 instance Typeable Sublogics.CASL_Sublogics where
@@ -71,7 +71,7 @@ instance LatticeWithTop Sublogics.CASL_Sublogics where
 
 -- CASL logic
 
-{- class (Syntax id basic_spec sentence symb_items_list symb_map_items_list,
+{- class (Syntax id basic_spec sentence symb_items symb_map_items,
        Show sign, Show morphism, Show symbol, Show raw_symbol,
        Ord symbol, --  needed for efficient symbol tables
        Eq raw_symbol,
@@ -80,11 +80,11 @@ instance LatticeWithTop Sublogics.CASL_Sublogics where
        -- needed for heterogeneous coercions:
        Typeable id, Typeable sublogics, Typeable sign, Typeable morphism, 
        Typeable symbol, Typeable raw_symbol,
-       Typeable basic_spec, Typeable sentence, Typeable symb_items_list, 
-       Typeable symb_map_items_list) =>
+       Typeable basic_spec, Typeable sentence, Typeable symb_items, 
+       Typeable symb_map_items) =>
 -}
 instance Logic CASL Sublogics.CASL_Sublogics
-               BASIC_SPEC Sentence SYMB_ITEMS_LIST SYMB_MAP_ITEMS_LIST
+               BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
 	       LocalEnv Sign 
 	       String -- morphism 
 	       Symbol RawSymbol 
@@ -113,12 +113,12 @@ instance Logic CASL Sublogics.CASL_Sublogics
                               -- We have both just for efficiency reasons.
                               -- These include any new annotations-}
 	 basic_analysis CASL _ = fun_err "basic_analysis"
-         {- stat_symb_map_items_list :: 
-	    id -> [symb_map_items_list] -> Result (EndoMap raw_symbol) -}
-{-	 stat_symb_map_items_list CASL _ = fun_err "stat_symb_map_items_list"
-         {- stat_symb_items_list :: 
-	    id -> [symb_items_list] -> Result [raw_symbol] -}
-	 stat_symb_items_list CASL _ = fun_err "stat_symb_items_list"
+         {- stat_symb_map_items :: 
+	    id -> [symb_map_items] -> Result (EndoMap raw_symbol) -}
+{-	 stat_symb_map_items CASL _ = fun_err "stat_symb_map_items"
+         {- stat_symb_items :: 
+	    id -> [symb_items] -> Result [raw_symbol] -}
+	 stat_symb_items CASL _ = fun_err "stat_symb_items"
 
          -- architectural sharing analysis for one morphism
          -- ensures_amalgamability :: id ->
@@ -175,11 +175,11 @@ instance Logic CASL Sublogics.CASL_Sublogics
          is_in_basic_spec CASL = Sublogics.in_basic_spec
          -- is_in_sentence :: id -> sublogics -> sentence -> Bool
          is_in_sentence CASL = Sublogics.in_sentence
-         -- is_in_symb_items_list :: id -> sublogics -> symb_items_list -> Bool
-         is_in_symb_items_list CASL = Sublogics.in_symb_items_list
-         {- is_in_symb_map_items_list :: 
-	    id -> sublogics -> symb_map_items_list -> Bool -}
-         is_in_symb_map_items_list CASL = Sublogics.in_symb_map_items_list
+         -- is_in_symb_items :: id -> sublogics -> symb_items -> Bool
+         is_in_symb_items CASL = Sublogics.in_symb_items
+         {- is_in_symb_map_items :: 
+	    id -> sublogics -> symb_map_items -> Bool -}
+         is_in_symb_map_items CASL = Sublogics.in_symb_map_items
          -- is_in_sign :: id -> sublogics -> sign -> Bool
          is_in_sign CASL = Sublogics.in_sign
          -- is_in_morphism :: id -> sublogics -> morphism -> Bool
@@ -191,10 +191,10 @@ instance Logic CASL Sublogics.CASL_Sublogics
          min_sublogic_basic_spec CASL = Sublogics.sl_basic_spec
          -- min_sublogic_sentence :: id -> sentence -> sublogics
          min_sublogic_sentence CASL = Sublogics.sl_sentence
-         -- min_sublogic_symb_items_list :: id -> symb_items_list -> sublogics
-         min_sublogic_symb_items_list CASL = Sublogics.sl_symb_items_list
-         -- min_sublogic_symb_map_items_list :: id -> symb_map_items_list -> sublogics
-         min_sublogic_symb_map_items_list CASL = Sublogics.sl_symb_map_items_list
+         -- min_sublogic_symb_items :: id -> symb_items -> sublogics
+         min_sublogic_symb_items CASL = Sublogics.sl_symb_items
+         -- min_sublogic_symb_map_items :: id -> symb_map_items -> sublogics
+         min_sublogic_symb_map_items CASL = Sublogics.sl_symb_map_items
          -- min_sublogic_sign :: id -> sign -> sublogics
          min_sublogic_sign CASL = Sublogics.sl_sign
          -- min_sublogic_morphism :: id -> morphism -> sublogics
@@ -204,14 +204,14 @@ instance Logic CASL Sublogics.CASL_Sublogics
 
          -- proj_sublogic_basic_spec :: id -> sublogics -> basic_spec -> basic_spec
          proj_sublogic_basic_spec CASL _ _ = fun_err "proj_sublogic_basic_spec"
-         {- proj_sublogic_symb_items_list :: 
-	    id -> sublogics -> symb_items_list -> Maybe symb_items_list -}
-         proj_sublogic_symb_items_list CASL _ _ = 
-	     fun_err "proj_sublogic_symb_items_list"
-         {- proj_sublogic_symb_map_items_list :: id -> 
-	    sublogics -> symb_map_items_list -> Maybe symb_map_items_list -}
-         proj_sublogic_symb_map_items_list CASL _ _ = 
-	     fun_err "proj_sublogic_symb_map_items_list"
+         {- proj_sublogic_symb_items :: 
+	    id -> sublogics -> symb_items -> Maybe symb_items -}
+         proj_sublogic_symb_items CASL _ _ = 
+	     fun_err "proj_sublogic_symb_items"
+         {- proj_sublogic_symb_map_items :: id -> 
+	    sublogics -> symb_map_items -> Maybe symb_map_items -}
+         proj_sublogic_symb_map_items CASL _ _ = 
+	     fun_err "proj_sublogic_symb_map_items"
 -}         -- proj_sublogic_sign :: id -> sublogics -> sign -> sign 
          proj_sublogic_sign CASL _ _ = fun_err "proj_sublogic_sign"
          -- proj_sublogic_morphism :: id -> sublogics -> morphism -> morphism
@@ -232,14 +232,14 @@ instance Logic CASL Sublogics.CASL_Sublogics
 {-
 
 data (Logic id1 sublogics1
-        basic_spec1 sentence1 symb_items_list1 symb_map_items_list1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
         local_env1 sign1 morphism1 symbol1 raw_symbol1,
       Logic id2 sublogics2
-        basic_spec2 sentence2 symb_items_list2 symb_map_items_list2 
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
         local_env2 sign2 morphism2 symbol2 raw_symbol2) =>
-  LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items_list1 symb_map_items_list1
+  LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 local_env1 sign1 morphism1 symbol1 raw_symbol1
-            id2 sublogics2 basic_spec2 sentence2 symb_items_list2 symb_map_items_list2
+            id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 local_env2 sign2 morphism2 symbol2 raw_symbol2
      =
      LogicRepr {repr_name :: String,

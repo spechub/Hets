@@ -78,8 +78,6 @@ type EndoMap a = FiniteMap a a
 
 data Diagram object morphism = Graph object morphism
 
-
-
 -- Categories are given by a quotient,
 -- i.e. we need equality
 -- Should we allow arbitrary composition graphs and build paths?
@@ -96,18 +94,18 @@ class (Eq object, Eq morphism) =>
 -- abstract syntax, parsing and printing
 
 class (PrettyPrint basic_spec, Eq basic_spec, Show basic_spec,
-       Show sentence, PrettyPrint symb_items_list, Show symb_items_list,
-       Show symb_map_items_list,
-       PrettyPrint symb_map_items_list, Eq symb_items_list, 
-       Eq symb_map_items_list) =>
-      Syntax id basic_spec sentence symb_items_list symb_map_items_list
-        | id -> basic_spec, id -> sentence, id -> symb_items_list,
-          id -> symb_map_items_list
+       Show sentence, PrettyPrint symb_items, Show symb_items,
+       Show symb_map_items,
+       PrettyPrint symb_map_items, Eq symb_items, 
+       Eq symb_map_items) =>
+      Syntax id basic_spec sentence symb_items symb_map_items
+        | id -> basic_spec, id -> sentence, id -> symb_items,
+          id -> symb_map_items
       where 
          -- parsing
          parse_basic_spec :: id -> GenParser Char st basic_spec
-         parse_symb_items_list :: id -> GenParser Char st symb_items_list
-         parse_symb_map_items_list :: id -> GenParser Char st symb_map_items_list
+         parse_symb_items :: id -> GenParser Char st symb_items
+         parse_symb_map_items :: id -> GenParser Char st symb_map_items
 
 -- lattices (for sublogics)
 
@@ -164,7 +162,7 @@ data Cons_checker morphism =
 
 -- logics
 
-class (Syntax id basic_spec sentence symb_items_list symb_map_items_list,
+class (Syntax id basic_spec sentence symb_items symb_map_items,
        Show sign, Show morphism, Show symbol, Show raw_symbol,
        Ord symbol, --  needed for efficient symbol tables
        Eq raw_symbol,
@@ -172,12 +170,12 @@ class (Syntax id basic_spec sentence symb_items_list symb_map_items_list,
        LatticeWithTop sublogics,
        -- needed for heterogeneous coercions:
        Typeable id, Typeable sublogics, Typeable sign, Typeable morphism, Typeable symbol, Typeable raw_symbol,
-       Typeable basic_spec, Typeable sentence, Typeable symb_items_list, Typeable symb_map_items_list) =>
+       Typeable basic_spec, Typeable sentence, Typeable symb_items, Typeable symb_map_items) =>
       Logic id sublogics
-        basic_spec sentence symb_items_list symb_map_items_list
+        basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol 
-        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items_list,
-          id -> symb_map_items_list, id -> local_env,
+        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
+          id -> symb_map_items, id -> local_env,
           id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
        where
          logic_name :: id -> String
@@ -202,11 +200,11 @@ class (Syntax id basic_spec sentence symb_items_list symb_map_items_list,
                               -- just the input local env, united with the sign.
                               -- We have both just for efficiency reasons.
                               -- These include any new annotations
-         stat_symb_map_items_list :: 
-	     id -> symb_map_items_list -> Result (EndoMap raw_symbol)
-	 stat_symb_map_items_list = error("stat_symb_map_items_list")
-         stat_symb_items_list :: id -> symb_items_list -> Result [raw_symbol] 
-	 stat_symb_items_list = error("stat_symb_items_list")
+         stat_symb_map_items :: 
+	     id -> symb_map_items -> Result (EndoMap raw_symbol)
+	 stat_symb_map_items = error("stat_symb_map_items")
+         stat_symb_items :: id -> symb_items -> Result [raw_symbol] 
+	 stat_symb_items = error("stat_symb_items")
          -- architectural sharing analysis for one morphism
          ensures_amalgamability :: id ->
               (Diagram sign morphism, Node, sign, LEdge morphism, morphism) -> 
@@ -241,8 +239,8 @@ class (Syntax id basic_spec sentence symb_items_list symb_map_items_list,
 
          is_in_basic_spec :: id -> sublogics -> basic_spec -> Bool
          is_in_sentence :: id -> sublogics -> sentence -> Bool
-         is_in_symb_items_list :: id -> sublogics -> symb_items_list -> Bool
-         is_in_symb_map_items_list :: id -> sublogics -> symb_map_items_list -> Bool
+         is_in_symb_items :: id -> sublogics -> symb_items -> Bool
+         is_in_symb_map_items :: id -> sublogics -> symb_map_items -> Bool
          is_in_sign :: id -> sublogics -> sign -> Bool
          is_in_morphism :: id -> sublogics -> morphism -> Bool
          is_in_symbol :: id -> sublogics -> symbol -> Bool
@@ -251,15 +249,15 @@ class (Syntax id basic_spec sentence symb_items_list symb_map_items_list,
          min_sublogic_basic_spec = error("min_sublogic_basic_spec")
          min_sublogic_sentence :: id -> sentence -> sublogics
          min_sublogic_sentence = error("min_sublogic_sentence")
-         min_sublogic_symb_items_list :: id -> symb_items_list -> sublogics
-         min_sublogic_symb_map_items_list :: id -> symb_map_items_list -> sublogics
+         min_sublogic_symb_items :: id -> symb_items -> sublogics
+         min_sublogic_symb_map_items :: id -> symb_map_items -> sublogics
          min_sublogic_sign :: id -> sign -> sublogics
          min_sublogic_morphism :: id -> morphism -> sublogics
          min_sublogic_symbol :: id -> symbol -> sublogics
 
          proj_sublogic_basic_spec :: id -> sublogics -> basic_spec -> basic_spec
-         proj_sublogic_symb_items_list :: id -> sublogics -> symb_items_list -> Maybe symb_items_list
-         proj_sublogic_symb_map_items_list :: id -> sublogics -> symb_map_items_list -> Maybe symb_map_items_list
+         proj_sublogic_symb_items :: id -> sublogics -> symb_items -> Maybe symb_items
+         proj_sublogic_symb_map_items :: id -> sublogics -> symb_map_items -> Maybe symb_map_items
          proj_sublogic_sign :: id -> sublogics -> sign -> sign 
          proj_sublogic_morphism :: id -> sublogics -> morphism -> morphism
          proj_sublogic_epsilon :: id -> sublogics -> sign -> morphism
