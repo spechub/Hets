@@ -262,9 +262,16 @@ instance PrettyPrint f => PrettyPrint (FORMULA f) where
 	printText0 ga f <+> ptext inS <+> printText0 ga g
     printText0 ga (Mixfix_formula t) = printText0 ga t
     printText0 _ (Unparsed_formula s _) = text s 
-    printText0 ga (Sort_gen_ax sorts ops) = 
-	text generatedS <> braces (text sortS <+> commaT_text ga sorts 
-				   <> semi <+> semiT_text ga ops) 
+    printText0 ga (Sort_gen_ax constrs) = 
+        text generatedS <> 
+        braces (text sortS <+> commaT_text ga sorts 
+                <> semi <+> semiT_text ga ops)
+         <+> (if null sortMap then empty
+               else text withS 
+                <+> fsep (punctuate comma (map printSortMap sortMap)))
+        where (sorts,ops,sortMap) = recover_Sort_gen_ax constrs
+              printSortMap (s1,s2) =
+                printText0 ga s1 <+> ptext "|->" <+> printText0 ga s2
     printText0 ga (ExtFORMULA f) = printText0 ga f
 
 instance PrettyPrint QUANTIFIER where

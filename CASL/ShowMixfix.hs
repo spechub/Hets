@@ -89,9 +89,9 @@ showFormula (Membership t s _ ) =
     showTerm t . bl . showString inS . bl . showId s
 showFormula (Mixfix_formula t ) = showTerm t
 showFormula (Unparsed_formula str _ ) = showString str
-showFormula (Sort_gen_ax sorts _) = showString generatedS . 
+showFormula (Sort_gen_ax constrs) = showString generatedS . 
 	 showString "{" . showString sortS .
-	  showFnTs showId sorts "" "" "," .
+	  showFnTs showId (map newSort constrs) "" "" "," .
 	  showString "; ...}"
 showFormula (ExtFORMULA _) = showString "(<extended formula>)"
 

@@ -56,6 +56,18 @@ mapOpSymb _ os = error ("mapOpSymb: unexpected op symb: "++ showPretty os "")
 mapVars :: Morphism f e m -> VAR_DECL -> VAR_DECL
 mapVars m (Var_decl vs s ps) = Var_decl vs (mapSrt m s) ps
 
+mapDecoratedOpSymb :: Morphism f e m -> 
+                        (OP_SYMB,[Int]) -> Result (OP_SYMB,[Int])
+mapDecoratedOpSymb m (os,indices) = do
+   newOs <- mapOpSymb m os
+   return (newOs,indices)
+
+mapConstr :: Morphism f e m -> Constraint -> Result Constraint
+mapConstr m constr = do
+   let newS = mapSrt m (newSort constr)
+   newOps <- mapM (mapDecoratedOpSymb m) (opSymbs constr)
+   return (constr {newSort = newS, opSymbs = newOps})
+
 mapSen :: 
           Morphism f e m -> FORMULA f -> Result (FORMULA f)
 mapSen m f = case f of 
@@ -99,6 +111,9 @@ mapSen m f = case f of
    Membership t s ps -> do 
        newT <- mapTerm m t
        return $ Membership newT (mapSrt m s) ps
+   Sort_gen_ax constrs -> do
+       newConstrs <- mapM (mapConstr m) constrs
+       return $ Sort_gen_ax newConstrs
    _ -> error "mapSen"
 
 mapPrSymb :: 

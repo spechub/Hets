@@ -117,26 +117,26 @@ Till
 
 try out WADT 04 example:
 - coding to Isabelle: translate sort gen constraints
-- translation of sort gen constraints along CASL sig mors
 - translation of sentences CASL->HasCASL (Christian)
 - translation of sentences along HasCASL sig mors (Christian)
 - remove / in thy names
 - problem with Ids starting with __ (look at Isabelle's lexis)
-- correct display of sublogis
+- correct display of CASL sublogis
 - improve display of HasCASL sigs + mors (Christian)
+- correct display of HasCASL sublogis (Christian)
 - correct MAYA: glob decomp: some links are not found (Jorina)
 
 Modal logics: modal logic, temporal logic, mu calculus
 + translations (e.g. modal to FOL)
 
 Isabelle: (ask Christoph)
-correct show theory
-Keep proofs and lemmas in .thy files
-prove local thm link (=> green)
-better interaction between Isabelle instance (for one node)
-  + selection of single goals that are proved
-CASL-like syntax
-CASL annotation for lemmas that should be used in proof
+  correct show theory
+   Keep proofs and lemmas in .thy files (kind of merge)
+   prove local thm link (=> green)
+   better interaction between Isabelle instance (for one node)
+    + selection of single goals that are proved
+   CASL-like syntax
+   CASL annotation for lemmas that should be used in proof
 
 Remove warnings
 

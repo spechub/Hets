@@ -134,7 +134,7 @@ minExpFORMULA sign formula
                 
             t'' <- is_unambiguous t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
-	Sort_gen_ax _ _ -> return formula
+	Sort_gen_ax _ -> return formula
 	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)
     where
@@ -149,7 +149,7 @@ minExpFORMULA sign formula
         -- BEWARE! Oversimplified disambiguation!
                 --(_:_):[]   -> return head $ head term           -- :: TERM
                 _       -> pplain_error (Unparsed_term "<error>" [])
-                    (ptext "Cannot disambiguate1!\nPossible Expansions: "
+                    (ptext "Cannot disambiguate!\nPossible Expansions: "
                      <+> (printText term)) (Id.headPos pos)
 
 {-----------------------------------------------------------
@@ -194,7 +194,7 @@ minExpFORMULA_pred sign predicate terms pos = do
             --(p:_):[] -> return p
             (_:_):_ -> return $ head $ head ps
             _   -> pplain_error (PredType [], terms)
-                   (ptext "Cannot disambiguate2! Term: " 
+                   (ptext "Cannot disambiguate! Term: " 
                     <+> (printText (predicate, terms))
                     $$ ptext "Possible Expansions: " 
                     <+> (printText ps)) (Id.headPos pos)
@@ -253,7 +253,7 @@ minExpFORMULA_eq sign eq term1 term2 pos = do
         ([t1,t2]:_)       -> return $ eq t1 t2 pos
         --([t1,t2]:[])       -> return $ eq t1 t2 pos
         _               -> pplain_error (eq term1 term2 pos)
-            (ptext "Cannot disambiguate3! Possible Expansions: "
+            (ptext "Cannot disambiguate! Possible Expansions: "
              <+> (printText exps1) $$ (printText exps2)) (Id.headPos pos)
     where
         fit     :: [TERM f] -> Bool

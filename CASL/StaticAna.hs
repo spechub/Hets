@@ -179,15 +179,25 @@ ana_BASIC_ITEMS ab as ga bi =
 
 toSortGenAx :: [Pos] -> (Set.Set Id, Set.Set Component) -> State (Sign f e) ()
 toSortGenAx ps (sorts, ops) = do
-    let s = Set.toList sorts
-        f =  Sort_gen_ax s $
-			   map ( \ c ->  Qual_op_name (compId c)  
-				 (toOP_TYPE $ compType c) []) $ Set.toList ops
-    if null s then 
+    let sortList = Set.toList sorts
+        opSymbs = map ( \ c ->  Qual_op_name (compId c)  
+		      (toOP_TYPE $ compType c) []) $ Set.toList ops
+        resType _ (Op_name _) = False
+        resType s (Qual_op_name _ t _) = res_OP_TYPE t ==s
+        getIndex s = fromJust $ findIndex (==s) sortList
+        addIndices (Op_name _) = 
+          error "CASL/StaticAna: Internal error in function addIndices"
+        addIndices os@(Qual_op_name _ t _) = 
+            (os,map getIndex $ args_OP_TYPE t)
+        collectOps s = 
+          Constraint s (map addIndices $ filter (resType s) opSymbs) s
+        constrs = map collectOps sortList
+        f =  Sort_gen_ax constrs
+    if null sortList then 
        addDiags[Diag Error "missing generated sort" (headPos ps)]
        else return ()
     addSentences [NamedSen ("ga_generated_" ++ 
- 			 showSepList (showString "_") showId s "") f]
+ 			 showSepList (showString "_") showId sortList "") f]
 
 ana_SIG_ITEMS :: (s -> e -> e) -> GlobalAnnos -> GenKind -> SIG_ITEMS b s f 
 	      -> State (Sign f e) (SIG_ITEMS b s f)

@@ -325,10 +325,17 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
 	printLatex0 ga f <\+> hc_sty_axiom "\\in" <\+> printLatex0 ga g
     printLatex0 ga (Mixfix_formula t) = printLatex0 ga t
     printLatex0 _ (Unparsed_formula s _) = text s 
-    printLatex0 ga (Sort_gen_ax sorts ops) = 
-	hc_sty_id generatedS <> braces_latex
-		      (hc_sty_id sortS <\+> commaT_latex ga sorts 
-		       <> semi_latex <\+> semiT_latex ga ops) 
+    printLatex0 ga (Sort_gen_ax constrs) = 
+        hc_sty_id generatedS <> 
+        braces_latex (hc_sty_id sortS <+> commaT_latex ga sorts 
+                      <> semi_latex <+> semiT_latex ga ops)
+        <+>(if null sortMap then empty
+             else hc_sty_id withS 
+              <+> fsep_latex (punctuate comma_latex (map printSortMap sortMap)))
+        where 
+        (sorts,ops,sortMap) = recover_Sort_gen_ax constrs
+        printSortMap (s1,s2) = printLatex0 ga s1 <+> hc_sty_axiom "\\mapsto" 
+                               <+> printLatex0 ga s2 
     printLatex0 ga (ExtFORMULA f) = printLatex0 ga f
 
 instance PrintLaTeX QUANTIFIER where

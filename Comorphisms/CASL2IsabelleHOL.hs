@@ -186,7 +186,7 @@ transFORMULA sign (Strong_equation t1 t2 _) =
   Const ("op =",dummyT) `App` (transTERM sign t1) `App` (transTERM sign t2)
 transFORMULA sign (Membership t1 s _) =
   error "No translation for membership"
-transFORMULA sign (Sort_gen_ax sorts ops) =
+transFORMULA sign (Sort_gen_ax constrs) =
   error "No translation for sort generation constraints"
 transFORMULA sign (Mixfix_formula _) = 
   error "No translation for mixfix formulas"

@@ -16,6 +16,7 @@ module CASL.AS_Basic_CASL where
 
 import Common.Id
 import Common.AS_Annotation 
+import Data.List (nub)
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -73,6 +74,14 @@ data OP_TYPE = Total_op_type [SORT] SORT [Pos]
 	     | Partial_op_type [SORT] SORT [Pos]
 	       -- pos: "*"s, "->?"; if null [SORT] then pos: "?"
 	       deriving (Show,Eq,Ord)
+
+args_OP_TYPE :: OP_TYPE -> [SORT]
+args_OP_TYPE (Total_op_type args _ _) = args
+args_OP_TYPE (Partial_op_type args _ _) = args
+
+res_OP_TYPE :: OP_TYPE -> SORT
+res_OP_TYPE (Total_op_type _ res _) = res
+res_OP_TYPE (Partial_op_type _ res _) = res
 
 data OP_HEAD = Total_op_head [ARG_DECL] SORT [Pos]
 	       -- pos: "(", semicolons, ")", colon
@@ -160,10 +169,63 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) [Pos]
 	     -- a formula left original for mixfix analysis
 	     | Unparsed_formula String [Pos]
 	       -- pos: first Char in String
-	     | Sort_gen_ax [SORT] [OP_SYMB]  -- qualified OP_SYMB
-             -- needed for CASL extensions
+	     | Sort_gen_ax [Constraint] 
 	     | ExtFORMULA f
+             -- needed for CASL extensions
 	       deriving (Show,Eq,Ord)
+
+{- In the CASL institution, sort generation constraints have an
+additional signature morphism component (Sect. III:2.1.3, p.134 of the
+CASL Reference Manual).  The extra signature morphism component is
+needed because the naive translation of sort generation constraints
+along signature morphisms may violate the satisfaction condition,
+namely when sorts are identified by the translation, with the effect
+that new terms can be formed. We avoid this extra component here and
+instead use natural numbers to decorate sorts, in this way retaining
+their identity w.r.t. the original signature. The newSort in a
+Constraint is implicitly decorated with its index in the list of
+Constraints. The opSymbs component collects all the operation symbols
+with newSort (with that index!) as a result sort. The argument sorts
+of an operation symbol are decorated explicitly via a list [Int] of
+integers. The origSort in a Constraint is the original sort
+corresponding to the index.  Note that this representation of sort
+generation constraints is efficiently tailored towards both the use in
+the proof calculus (Chap. IV:2, p. 282 of the CASL Reference Manual)
+and the coding into second order logic (p. 429 of Theoret. Comp. Sci. 286). 
+-}
+
+data Constraint = Constraint { newSort :: SORT,
+                               opSymbs :: [(OP_SYMB,[Int])],
+                               origSort :: SORT }
+                  deriving (Show,Eq,Ord)
+
+-- | from a Sort_gex_ax, recover:  
+-- | a traditional sort generation constraint plus a sort mapping
+recover_Sort_gen_ax :: [Constraint] -> 
+                        ([SORT],[OP_SYMB],[(SORT,SORT)])
+recover_Sort_gen_ax constrs = 
+  if length (nub sorts) == length sorts
+     -- no duplicate sorts, i.e. injective sort map? Then we can ignore indices
+     then (sorts,map fst (concat (map opSymbs constrs)),[])
+     -- otherwise, we have to introduce new sorts for the indices
+     -- and afterwards rename them into the sorts they denote
+     else (map indSort indices,map indOp indOps1,map sortMap indSorts)
+  where 
+  sorts = map newSort constrs
+  indices = [0..length sorts-1]
+  indSorts = zip indices sorts
+  indSort i = origSort $ head (drop i constrs)
+  sortMap (i,s) = (indSort i,s) 
+  indOps = zip indices (map opSymbs constrs)
+  indOps1 = concat (map (\(i,ops) -> map ((,) i) ops) indOps)
+  indOp (res,(Qual_op_name on (Total_op_type _ _ pos1) pos,args)) =
+     Qual_op_name on 
+         (Total_op_type (map indSort args) (indSort res) pos1) pos
+  indOp (res,(Qual_op_name on (Partial_op_type _ _ pos1) pos,args)) =
+     Qual_op_name on 
+         (Partial_op_type (map indSort args) (indSort res) pos1) pos
+  indOp _ = error 
+      "CASL/AS_Basic_CASL: Internal error: Unqualified OP_SYMB in Sort_gen_ax"
 
 data QUANTIFIER = Universal | Existential | Unique_existential
 		  deriving (Show,Eq,Ord)
