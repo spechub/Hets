@@ -32,6 +32,7 @@ import Syntax.Parse_AS_Library(library)
 import Common.Lib.Parsec
 import Syntax.AS_Library
 import Static.AnalysisStructured
+import Static.AnalysisArchitecture
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
@@ -223,6 +224,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
                 l,
                 libenv)
 
+
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
   let just_struct = analysis opts == Structured
@@ -230,15 +232,44 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
   resToIORes (ana_VIEW_DEFN lgraph defl libenv gctx l just_struct
                             vn gen vt gsis pos)
 
+-- architectural specification
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l 
              asd@(Arch_spec_defn asn asp pos) = do
-  ioToIORes (putIfVerbose opts 1  ("Analyzing arch spec "++showPretty asn ""))
-  resToIORes (warning (asd,gctx,l,libenv) "Ignoring arch spec" (headPos pos))
-
-ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
+  let just_struct = analysis opts == Structured
+  ioToIORes (putIfVerbose opts 1  ("Analyzing arch spec " ++ showPretty asn ""))
+  archSig <- ana_ARCH_SPEC lgraph defl gctx l just_struct (item asp)
+  if Map.member asn genv 
+     then
+     resToIORes (plain_error (asd, gctx, l, libenv)
+		             ("Name " ++ showPretty asn " already defined")
+		             (headPos pos))
+     else
+     return (asd, 
+	     (gannos,
+	      Map.insert asn (ArchEntry archSig) genv,
+	      dg),
+	     l,
+	     libenv)
+	     
+-- unit specification
+ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
              usd@(Unit_spec_defn usn usp pos) = do
-  ioToIORes (putIfVerbose opts 1  ("Analyzing unit spec "++showPretty usn ""))
-  resToIORes (warning (usd,gctx,l,libenv) "Ignoring unit spec" (headPos pos))
+  let just_struct = analysis opts == Structured
+  ioToIORes (putIfVerbose opts 1 ("Analyzing unit spec " ++ showPretty usn ""))
+  (unitSig, dg', usp') <- ana_UNIT_SPEC lgraph defl gctx l just_struct (EmptyNode defl) usp
+  let usd' = Unit_spec_defn usn usp' pos
+  if Map.member usn genv 
+     then
+     resToIORes (plain_error (usd, (gannos, genv, dg'), l, libenv)
+		             ("Name " ++ showPretty usn " already defined")
+		             (headPos pos))
+     else
+     return (usd', 
+	     (gannos,
+	      Map.insert usn (UnitEntry unitSig) genv,
+	      dg'),
+	     l,
+	     libenv)
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l 
              (Logic_decl ln pos) = do
