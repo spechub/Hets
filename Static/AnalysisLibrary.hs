@@ -45,6 +45,7 @@ import List
 
 import ReadFn
 import WriteFn (writeFileInfo)
+import System.Posix.Files
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
@@ -55,8 +56,10 @@ anaFile logicGraph defaultLogic opts libenv fname = do
   fname' <- existsAnSource fname
   case fname' of
     Nothing -> do
+     if outputToStdout opts then
       putStrLn (fname++" not found.")
-      return Nothing
+      else return ()
+     return Nothing
     Just fname'' -> do
       input <- readFile fname''
       anaString logicGraph defaultLogic opts libenv input (Just fname'')
@@ -103,14 +106,23 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
                               '/' -> p
                               _ -> p++"/"
                   return (path1++file)
-                Direct_link _ _ -> error "No direct links implemented yet"
+                Direct_link _ _ -> 
+		    if outputToStdout opts then
+		       error "No direct links implemented yet"
+		       else return (error "No direct links implemented yet")
      -- check if and env file is there and read it if it is recent
      let env_fname = fname++".env"
 		     -- fname is sufficient here, because anaFile
 		     -- trys all possible suffices with this basename
-     recent_env_file <- checkRecentEnv env_fname fname
-     if recent_env_file 
-	then do 
+     isFileExist <- fileExist env_fname
+     if ((not $ outputToStdout opts) && (not isFileExist)) 
+       then
+	  return libenv
+       else
+	do
+	recent_env_file <- checkRecentEnv env_fname fname
+	if recent_env_file 
+	   then do 
              putIfVerbose opts 1 ("Reading "++env_fname)
 	     (Result dias mgc) <- globalContextfromShATerm env_fname
 	     -- the conversion/reading might yield an error that
@@ -153,7 +165,8 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
 		           (return libEnv') 
 		           newRefLibs )
 		      mgc
-	else anaLibFile' fname
+	   else anaLibFile' fname
+
  where anaLibFile' :: FilePath -> IO LibEnv
        anaLibFile' fname =
          do
@@ -192,8 +205,8 @@ ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
           Map.insert ln gctx libenv')
 
   where
-  ana res libItem = do 
-    (libItems',gctx1,l1,libenv1) <- res
+  ana res1 libItem = do 
+    (libItems',gctx1,l1,libenv1) <- res1
 
     IOResult (do
       Result diags res <-
@@ -206,7 +219,8 @@ ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
 	   else case res of
 		Just (libItem',gctx1',l1',libenv1') ->
 		    ioresToIO $ resToIORes (Result diags (Just ([],gctx1',l1',libenv1)))
-		Nothing -> fail "Stopped."
+		Nothing -> ioresToIO $ resToIORes (Result diags (Just ([],gctx1,l1,libenv1)))
+			   -- return (fail "Ist hier Error?")
 	 else case res of
 		   Just (libItem',gctx1',l1',libenv1') -> 
 			 return (return (libItem':libItems',gctx1',l1',libenv1'))
@@ -307,8 +321,12 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
   libenv' <- ioToIORes (anaLibFile lgraph defl opts libenv ln)
   case Map.lookup ln libenv' of
     Nothing -> do
-       ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available: "++show (Map.keys libenv')))
-       return (libItem,gctx,l,libenv')
+     if outputToStdout opts then
+        do 
+          ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available: "++show (Map.keys libenv')))
+          return (libItem,gctx,l,libenv')
+       else 
+          resToIORes $ (fatal_error ("Internal error: did not find library "++show ln++" available: "++show (Map.keys libenv')) nullPos){maybeResult = Nothing} 
     Just (gannos',genv',dg') -> do
       (genv1,dg1) <- resToIORes (foldl (ana_ITEM_NAME_OR_MAP ln genv') 
                                        (return (genv,dg)) items'
