@@ -111,6 +111,7 @@ clean:
 ### additionally removes binaries
 bin_clean: clean
 	$(RM) hets
+	$(RM) test_parser
 	$(RM) CASL/capa
 	$(RM) HasCASL/hacapa
 	$(RM) Haskell/hapa
@@ -143,7 +144,9 @@ distclean: real_clean
 ####################################################################
 
 ### a parser to test annotation parser and Id parsers
-test_parser: test_parser.hs $(drifted_files)
+test_parser: Common/test_parser
+
+Common/test_parser: Common/test_parser.hs Common/AS_Annotation.der.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS) 
 
@@ -155,7 +158,7 @@ ghci:
 ### CASL parser
 capa: CASL/capa
 
-CASL/capa: CASL/capa.lhs $(drifted_files) CASL/*.hs
+CASL/capa: CASL/capa.lhs Common/*.hs CASL/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 

@@ -1,9 +1,9 @@
-module CaslLanguage where
+module Common.CaslLanguage where
 import Common.Lib.Parsec
 import qualified Common.Lib.Parsec.Token as P
 import Common.Lib.Parsec.Language (emptyDef)
 
-import Id
+import Common.Id
 
 type GParser a = forall st. GenParser Char st a
 
@@ -149,7 +149,7 @@ casl_id :: GParser Id
 casl_id = comp_id
  
 token_id :: GParser Id
-token_id = do tok <- try CaslLanguage.token
+token_id = do tok <- try Common.CaslLanguage.token
 	      return (Id [tok] [] [])
 
 token :: GParser Token
@@ -163,19 +163,19 @@ token = do sp  <- getPosition
 
 place :: GParser Token
 place = (do sp  <- getPosition
-	    try (symbol Id.place)
-	    return (Token Id.place (convToPos sp))
+	    try (symbol Common.Id.place)
+	    return (Token Common.Id.place (convToPos sp))
 	) <?> "place"
 
 place_token :: GParser [Token]
-place_token = do pla <- try CaslLanguage.place
-		 option ([pla]) (do tok <- try CaslLanguage.token
+place_token = do pla <- try Common.CaslLanguage.place
+		 option ([pla]) (do tok <- try Common.CaslLanguage.token
 				    return [pla,tok])
 
 mixfix_id :: [Token] -> GParser Id
-mixfix_id accum = do ts <- (try (fmap (:[]) CaslLanguage.place) 
+mixfix_id accum = do ts <- (try (fmap (:[]) Common.CaslLanguage.place) 
 			    <|>
-			    try (fmap (:[]) CaslLanguage.token) 
+			    try (fmap (:[]) Common.CaslLanguage.token) 
 			    <|>
 			    special_between (symbol "{") (symbol "}") 
 			    (mkTokLst (mixfix_id []))
@@ -190,7 +190,7 @@ mixfix_id accum = do ts <- (try (fmap (:[]) CaslLanguage.place)
 			   )
 		     sqs <- option [] (lookAhead (fmap (:[]) (symbol "[")))
 		     fts <- option [] (lookAhead 
-					 (fmap (:[]) (CaslLanguage.token)))
+					 (fmap (:[]) (Common.CaslLanguage.token)))
 		     Id ats _ _ <- 
 		         let accum_ts = (accum ++ ts)
 			     is_last_op = case (last accum_ts) of 
@@ -250,7 +250,7 @@ comp_id = do Id ts _ _  <- test_mixfix_id (mixfix_id [])
 				       return (Id ts cs [])
 				       )
 	     option (Id ts' cs pos) 
-	              (do ps <- many CaslLanguage.place
+	              (do ps <- many Common.CaslLanguage.place
 		          return (Id (ts'++ps) cs []))
     where test_mixfix_id p = 
 	      do i@(Id ts _ _) <- p

@@ -1,23 +1,17 @@
 module Main where
 
-import System
-import List
+import System.Environment
+import Data.List
 
 import Common.Lib.Parsec
-import qualified CaslLanguage as L(casl_id, semi, whiteSpace)
-import Anno_Parser
-import PrettyPrint
-import GlobalAnnotationsFunctions
+import qualified Common.CaslLanguage as L(casl_id, semi, whiteSpace)
+import Common.Anno_Parser
+import Common.PrettyPrint
+import Common.GlobalAnnotationsFunctions
 
-import Id
+import Common.Id
 
-import Token(parseId)
-
--- import Print_HetCASL
-
--- import Prepositional
-
--- # import LogicGraph
+import Common.Token(parseId)
 
 data TtT = TtT {f_::String , pY:: Pos} deriving Show {-! derive: update !-}
 
