@@ -27,6 +27,7 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.AsUtils
+import HasCASL.Unify
 import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
@@ -141,6 +142,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 				  Result es mvds = anaVars v ty
 			      addDiags es
 			      checkUniqueTypevars nAs
+                              addDiags $ unboundTypevars nAs ty
 			      if cyclicType i ty then do 
 			         addDiags [mkDiag Error 
 				     "illegal recursive subtype definition" ty]
