@@ -169,9 +169,16 @@ isAnnote = not . isComment
 -- and following (right 'r_annos') annotations.
 -- 'opt_pos' should carry the position of an optional semicolon
 -- following a formula (but is currently unused).
-data Annoted a = Annoted { item::a, opt_pos :: [Pos]
-			 , l_annos, r_annos::[Annotation]}
+data Annoted a = Annoted { item :: a
+			 , opt_pos :: [Pos]
+			 , l_annos :: [Annotation]
+                         , r_annos :: [Annotation]}
 		 deriving (Show, Eq) 
+
+-- | naming or labelling sentences
+data Named s = NamedSen { senName  :: String,
+                          sentence :: s }
+	       deriving (Eq, Show)
 
 -- | process all items and wrap matching annotations around the results 
 mapAnM :: (Monad m) => (a -> m b) -> [Annoted a] -> m [Annoted b]
