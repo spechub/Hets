@@ -26,7 +26,7 @@ casl_reserved_words =
     "exists false fit forall free from generated get given " ++
     "hide idem if in lambda library local not op ops pred preds " ++
     "result reveal sort sorts spec then to true type types " ++
-    "unit units var vars version view ehen with within . ·"
+    "unit units var vars version view when with within . ·"
 
 casl_reserved_ops = 
     ": :? ::= = => <=> . · | |-> \\/ /\\ ¬"
