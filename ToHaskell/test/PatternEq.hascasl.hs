@@ -1,13 +1,30 @@
 module HasCASLModul where
-import Prelude (undefined)
+import Prelude (undefined, Show)
  
 type Pred a = a -> ()
  
 type Unit = ()
  
+data A__2_M_M_G_2 = A__2_M_M_G_2
+		  deriving Show
+ 
+data A__2_M_M_G_Q_2 = A__2_M_M_G_Q_2
+		    deriving Show
+ 
+data A__2_M_G_2 = A__2_M_G_2
+		deriving Show
+ 
+data A__2_M_G_Q_2 = A__2_M_G_Q_2
+		  deriving Show
+ 
+data A__2_m_2 = A__2_m_2
+	      deriving Show
+ 
 data A_s = A_s
+	 deriving Show
  
 data A_t = A_t
+	 deriving Show
  
 _2_D_B_2 :: ((), ()) -> ()
 _2_D_B_2 = undefined
@@ -34,7 +51,7 @@ b :: A_s
 b = a
  
 c :: A_t
-c = snd ((x :: A_s), (y :: A_t))
+c = snd (((x :: A_s), (y :: A_t)))
  
 def_2 :: a -> ()
 def_2 = undefined

@@ -1,12 +1,28 @@
 module HasCASLModul where
-import Prelude (undefined)
+import Prelude (undefined, Show)
  
 type Pred a = a -> ()
  
 type Unit = ()
  
+data A__2_M_M_G_2 = A__2_M_M_G_2
+		  deriving Show
+ 
+data A__2_M_M_G_Q_2 = A__2_M_M_G_Q_2
+		    deriving Show
+ 
+data A__2_M_G_2 = A__2_M_G_2
+		deriving Show
+ 
+data A__2_M_G_Q_2 = A__2_M_G_Q_2
+		  deriving Show
+ 
+data A__2_m_2 = A__2_m_2
+	      deriving Show
+ 
 data A_bool = A_true
 	    | A_false
+	    deriving Show
  
 _2_D_B_2 :: ((), ()) -> ()
 _2_D_B_2 = undefined
@@ -27,7 +43,7 @@ _2_B_D_2 :: ((), ()) -> ()
 _2_B_D_2 = undefined
  
 a :: A_bool
-a = true
+a = A_true
  
 b2 :: A_bool -> A_bool
 b2 = \ x -> (x :: A_bool)
@@ -50,5 +66,5 @@ not_2 = undefined
 notA :: A_bool
 notA
   = case a of
-	A_true -> false
-	A_false -> true
+	A_true -> A_false
+	A_false -> A_true
