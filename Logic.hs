@@ -56,7 +56,6 @@ import Id
 
 -- error messages
 
-type Pos = (Int,Int)
 data Diagnosis = Error String Pos
                | Warning String Pos
 
@@ -225,11 +224,11 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
 
          -- symbols and symbol maps
          symbol_to_raw :: id -> symbol -> raw_symbol
-         id_to_raw :: id -> ID -> raw_symbol 
+         id_to_raw :: id -> Id -> raw_symbol 
          sym_of :: id -> sign -> Set symbol
          symmap_of :: id -> morphism -> Map symbol
          matches :: id -> symbol -> raw_symbol -> Bool
-         sym_name :: id -> symbol -> ID 
+         sym_name :: id -> symbol -> Id 
    
          -- operations on local envs, signatures and morphisms
          empty_local_env :: local_env
