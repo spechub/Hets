@@ -25,6 +25,13 @@
   "non-nil if we are running XEmacs, nil otherwise.")
 
 ;; ============= K E Y W O R D   H I G H L I G H T I N G ============
+(defface casl-black-komma-face
+  `((t (:foreground "black")))
+  ""
+  :group 'basic-faces)
+(defvar casl-black-komma-face 'casl-black-komma-face
+  "Face name to use for black komma.")
+
 (defvar  casl-annotation-face 'casl-annotation-face
    "CASL mode face for Annotations")
 (setq casl-annotation-face 'font-lock-constant-face)
@@ -47,16 +54,19 @@
 (defvar casl-other-name-face 'casl-other-name-face)
 (setq casl-other-name-face 'font-lock-function-name-face)
 
+(defvar casl-string-char-face 'casl-string-char-face)
+(setq casl-string-char-face 'font-lock-string-face)
+
 ;; Syntax highlighting of CASL
 (defconst casl-font-lock-keywords
   (list
    ;; Keywords of loading Library 
    '("\\(\\<\\|\\s-+\\)\\(logic\\|from\\|get\\|library\\|version\\)[ :\t\n]+"  
      (2 casl-builtin-face keep t))
-   '("\\(\\<\\|\\s-+\\)\\(%authors\\|%date\\|%display\\|%prec\\|%left_assoc\\|%number\\|%floating\\|%LATEX\\|%implies\\)[ :\t\n]+"
-     (2 casl-annotation-face keep t))
+;;    '("\\(\\<\\|\\s-+\\)\\(%authors\\|%date\\|%display\\|%prec\\|%left_assoc\\|%number\\|%floating\\|%LATEX\\|%implies\\)[ :\t\n]+"
+;;      (2 casl-annotation-face keep t))
    ;; Library and Logic name
-   '("\\(\\<\\|\\s-+\\)\\(library\\|logic\\)\\s-+\\([a-zA-Z0-9/]+\\)[ \t\n]*"  
+   '("\\(\\<\\|\\s-+\\)\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)[ \t\n]*"  
      (3 casl-library-name-face keep t))
    ;; name of from get and given
    '("\\(\\<\\|[ \t]+\\)\\(get\\|given\\)[ \t\n]+\\(\\(\\sw+\\s-*\\(,\\|$\\)[ \t\n]*\\)+\\)"  
@@ -76,14 +86,11 @@
    '("\\<spec.+=\\s-*\\(%\\sw+\\s-*\\)?[ \t\n]*\\([A-Z]\\sw*\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?"
      (2 casl-name-face keep t) (4 casl-name-face keep t))
    ;; Basic signature: sort X, Y, Z  
-   '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\sw+\\]\\s-*\\)?\\(,\\|$\\|<\\|;\\|=\\)[ \t\n]*\\)+\\)" 
+   '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\sw+\\]\\s-*\\)?\\(,\\|$\\|<\\|;\\|=\\)[ \t]*\\)+\\)" 
      (2 casl-other-name-face keep t))
    ;; Basic signature: op ,pred and var name
-   '("\\(^\\|ops?\\|preds?\\|vars?\\)\\s-+\\([a-zA-Z0-9]\\sw*\\|[^.%a-zA-Z0-9][^ \n]*\\)\\s-*\\(\(.*\)\\s-*\\)?\\(:\\??\\|<=>\\).*"
+   '("\\(^\\|\\bops?\\|\\bpreds?\\|\\bvars?\\)\\s-+\\([^.]\\(\\w\\|\\s_\\)*\\)\\s-*\\(\(.*\)\\s-*\\)?\\(:\\??\\|<=>\\).*"
      (2 casl-other-name-face keep t))
-   ;; Basic signatur (pred, op, var) + name
-   ;;;;'("\\(\\<\\|\\s-+\\)\\(op\\|pred\\|var\\)s?[ \t\n]+\\(\\(\\([a-zA-Z0-9][^: \t\n]*\\|\\(_\\|\\s_\\)[^:\n]*\\)\\s-*:[ \t\n]*[^;\n]+;?.*[ \t\n]*\\)+\\)" 
-   ;;;;  (3 casl-other-name-face keep t))
    ;; type name
    '("\\s-+\\(\\sw+\\)[ \t\n]*::=.*"
      (1 casl-other-name-face keep t))
@@ -94,6 +101,7 @@
    ;; reserved keyword
    '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|if\\|local\\|not\\|reveal\\|spec\\|then\\|to\\|unit\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
      (2 casl-keyword-face keep t))
+   '("," (0 casl-black-komma-face t t))
   )	
   "Reserved keywords highlighting")
 
@@ -105,14 +113,21 @@
 		))
   "Special Comment")
 
+;; String and Char
+(defconst casl-font-lock-string
+  (append casl-font-lock-specialcomment
+	  (list '("\\(\\(\"\\|^>[ \t]*\\\\\\)\\([^\"\\\\\n]\\|\\\\.\\)*\\(\"\\|\\\\[ \t]*$\\)\\|'\\([^'\\\\\n]\\|\\\\.[^'\n]*\\)'\\)" (0 casl-string-char-face t t))
+	  ))
+  "Syntax highlighting of String and Char") 
+
 ;; Alternativ for Annotation
 (defconst casl-font-lock-annotations
-  (append casl-font-lock-specialcomment
+  (append casl-font-lock-string
 	  (list 
 	   ;; %word(...)\n
 	   '("%\\sw+\([^%\n]+\)$" (0 casl-annotation-face t t))
-	   ;; %word \n
-	   '("%\\sw+[ \t]*$" (0 casl-annotation-face t t))
+	   ;; %words \n
+	   '("%\\w+[^\n]*$" (0 casl-annotation-face t t))
 	   ;; %( ... )% 
 	   '("%\([^)%]*\)%[ \t\n]*" (0 casl-annotation-face t t))
 	   ;; %word( ... )%
@@ -135,6 +150,9 @@
   (let ((table (make-syntax-table)))
     ;; Indicate that underscore may be part of a word
     (modify-syntax-entry ?_ "w" table)
+    (modify-syntax-entry ?\t " " table)
+    (modify-syntax-entry ?\" "\"" table)
+    (modify-syntax-entry ?\' "\'" table)
     ;; Commnets
     (if casl-running-xemacs
 	((modify-syntax-entry ?% ". 58" table)
