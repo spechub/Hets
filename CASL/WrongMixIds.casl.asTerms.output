@@ -130,3 +130,13 @@ __ < [bla] __ < __
 aa ==
 a []
 ""
+< [[__]] >
+parse error at (line 43, column 2):
+unexpected "|"
+expecting "(", "{", "[", id/literal or "]"
+
+< [__] >
+parse error at (line 45, column 1):
+unexpected "|"
+expecting "(", "{", "[" or id/literal
+
