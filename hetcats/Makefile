@@ -4,8 +4,6 @@
 # Author: Klaus Lüttich
 # Year:   2002
 
-
-
 # This Makefile will compile the new hetcats system and provides also
 # targets for test programs during implementation phases.
 
@@ -34,8 +32,13 @@ HC_PACKAGE = -package util -package data
 
 HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE) 
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
+
+### list of directories to run checks in
+TESTDIRS    = ../test
+
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
+
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),bin_clean)
 ifneq ($(MAKECMDGOALS),d_clean)
@@ -54,6 +57,7 @@ drifted_files = ../AS_Architecture.hs ../AS_Library.hs ../AS_Annotation.hs\
 ####################################################################
 ### targets
 
+.PHONY : clean d_clean real_clean bin_clean check
 .SECONDARY : %.hs %.d 
 #.PRECIOUS: sources_hetcats.mk
 
@@ -65,9 +69,9 @@ hetcats-make: hetcats.hs ../utils/create_sources.pl $(drifted_files)
 	rm -f hetcats-make sources_hetcats.mk
 	$(HC) --make -o hetcats $< $(HC_OPTS) 2>&1 | tee hetcats-make && \
          $(PERL) ../utils/create_sources.pl hetcats-make sources_hetcats.mk
+
 ###############
 ### clean up
-.PHONY : clean d_clean real_clean bin_clean
 
 ### removes *.hi and *.o in all include directories and the binary 'hetcats'
 clean:
@@ -98,6 +102,7 @@ real_clean: d_clean bin_clean
 ####################################################################
 ### test targets
 ####################################################################
+
 ### a parser to test annotation parser and Id parsers
 test_parser: ../test_parser.hs $(drifted_files)
 	rm -f $@
@@ -119,6 +124,10 @@ hacapa: ../HasCASL/Main.hs $(drifted_files)
 	rm -f $@
 	$(HC) --make -Wall -fno-warn-missing-signatures -o $@ $< $(HC_OPTS)
 	\cp -p $@ ../HasCASL/$@ 
+
+### run tests in other directories
+check:
+	for i in $(TESTDIRS); do make -C $$i check; done
 
 ####################################################################
 ## Preparing the version of HetCATS
