@@ -14,32 +14,6 @@
 -}
 {-
    todo:
-   3. addsNewSupersorts (see below)
-
-   4. Extend evaluateOnePointFORMULA for formulas 
-      Sort_gen_ax constrs
-      
-         compute recover_Sort_gen_ax constr, get (srts,ops,maps)
-         check whether all srts are "new" (not in the image of the morphism)
-         check whether for all s in srts, there is a term, 
-           using variables of sorts outside srts
-           using operation symbols from ops
-         Algorithm:
-         construct a list L of "inhabited" sorts
-         initially, the list L is empty
-         iteration step:
-           for each operation symbol in ops, such that
-              all argument sorts (opArgs) 
-                 are either in the list L or are outside srts
-              add the results sort (opRes) to the list L of inhabited sorts
-         start with initial list, and iterate until iteration is stable
-         check whether srts is a sublist of the list resulting from the iteration 
-
-
-    iterateInhabited l =
-    if l==newL then newL else iterateInhabited newL
-    where 
-    newL = 
  
 -}
 
@@ -182,6 +156,24 @@ evaluateOnePointFORMULA sig (Membership (Sorted_term _ sort1 _) sort2 _)=
 evaluateOnePointFORMULA _ (Mixfix_formula _)= error "Fehler Mixfix_formula"
 
 evaluateOnePointFORMULA _ (Unparsed_formula _ _)= error "Fehler Unparsed_formula"
+
+{-
+         compute recover_Sort_gen_ax constr, get (srts,ops,maps)
+         check whether all srts are "new" (not in the image of the morphism)
+         check whether for all s in srts, there is a term, 
+           using variables of sorts outside srts
+           using operation symbols from ops
+         Algorithm:
+         construct a list L of "inhabited" sorts
+         initially, the list L is empty
+         iteration step:
+           for each operation symbol in ops, such that
+              all argument sorts (opArgs) 
+                 are either in the list L or are outside srts
+              add the results sort (opRes) to the list L of inhabited sorts
+         start with initial list, and iterate until iteration is stable
+         check whether srts is a sublist of the list resulting from the iteration 
+-}
 
 evaluateOnePointFORMULA sig (Sort_gen_ax constrs _)=
       let (srts,ops,_)=recover_Sort_gen_ax constrs

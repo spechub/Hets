@@ -830,3 +830,52 @@ proveLocalEdgesAux (rules,changes) dGraph ((edge@(src, tgt, edgelab)):edges) =
 			  conservativity conservStatus),
 		       dgl_origin = DGProof}
                )
+
+
+-- applies consistency checking to a given node
+basicCCC :: LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
+                          -> IO (Result ProofStatus)
+basicCCC = error "basicCCC not yet implemented!"
+
+{-
+basicCCC lg (ln,node) 
+         proofStatus@(globalContext,libEnv,history,dGraph) =
+  ioresToIO (do 
+    (G_sign lid1 sign,G_l_sentence_list lid2 axs) <- 
+         resToIORes $ computeTheory libEnv dGraph node
+    let cccs = getCCCs lg (Logic lid1)
+    (G_prover lid4 p,Comorphism cid) <- selectProver provers
+    let lidS = sourceLogic cid
+        lidT = targetLogic cid
+    sign' <- resToIORes $ rcoerce lidS lid1 nullPos sign
+    axs' <- resToIORes $ rcoerce lidS lid2 nullPos axs
+    goals' <- resToIORes $ rcoerce lidS lid3 nullPos goals
+    p' <- resToIORes $ rcoerce lidT lid4 nullPos p
+    -- Borrowing: translate theory and goal
+    (sign'',sens'') <- resToIORes  
+                        $ maybeToResult nullPos "Could not map signature"
+                        $ map_sign cid sign'
+    axs'' <- resToIORes
+                 $ maybeToResult nullPos "Could not map sentences"
+                 $ mapM (mapNamedM (map_sentence cid sign')) axs'
+    goals'' <- resToIORes
+                 $ maybeToResult nullPos "Could not map sentences"
+                 $ mapM (mapNamedM (map_sentence cid sign')) goals'
+    -- compute name of theory
+    ctx <- resToIORes 
+                $ maybeToResult nullPos ("Could node find node "++show node)
+                $ fst $ match node dGraph
+    let nlab = lab' ctx  
+        nodeName = case nlab of
+          DGNode _ _ _ _-> dgn_name nlab
+          DGRef _ _ _ -> dgn_renamed nlab
+        thName = showPretty (getLIB_ID ln) "_"
+                 ++ maybe (show node) (flip showPretty "") nodeName
+    ps <- ioToIORes $ prove p' thName (sign'',sens''++axs'') goals'' 
+    let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
+--    let nextDGraph = dGraph -- ??? to be implemented
+  --      nextHistoryElem = error "Proofs.Proofs: basic inference"
+                 -- ??? to be implemented
+    return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
+   )
+-}

@@ -298,6 +298,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
 		    createLocalMenuButtonShowSublogic convRef dGraph,
                     createLocalMenuButtonShowNodeOrigin convRef dGraph,
                     createLocalMenuButtonProveAtNode gInfo convRef dGraph,
+                    createLocalMenuButtonCCCAtNode gInfo convRef dGraph,
 		    createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents 
 		                     convRef ioRefVisibleNodes ioRefGraphMem
 		                                         actGraphInfo,
@@ -320,6 +321,7 @@ createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
 		     createLocalMenuButtonTranslateTheory gInfo convRef dGraph,
  		     createLocalMenuButtonShowSublogic convRef dGraph,
                      createLocalMenuButtonProveAtNode gInfo convRef dGraph,
+                     createLocalMenuButtonCCCAtNode gInfo convRef dGraph,
                      createLocalMenuButtonShowNodeOrigin convRef dGraph])
                  $$$ emptyNodeTypeParms
                      :: DaVinciNodeTypeParms (String,Int,Int)
@@ -376,6 +378,8 @@ createLocalMenuButtonShowNodeOrigin  =
   createMenuButton "Show origin" showOriginOfNode 
 createLocalMenuButtonProveAtNode gInfo =
   createMenuButton "Prove" (proveAtNode gInfo)
+createLocalMenuButtonCCCAtNode gInfo =
+  createMenuButton "Check consistency" (cccAtNode gInfo)
 
 createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef 
     ioRefVisibleNodes ioRefGraphMem actGraphInfo = 
@@ -671,6 +675,16 @@ proveAtNode gInfo@(_,_,convRef,_,_,_) descr ab2dgNode dgraph =
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
 
+{- start local consistency checking proving at a node -}
+--proveAtNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
+cccAtNode gInfo@(_,_,convRef,_,_,_) descr ab2dgNode dgraph = 
+  case Map.lookup descr ab2dgNode of
+    Just libNode -> 
+      do convMaps <- readIORef convRef
+         proofMenu gInfo (basicCCC logicGraph libNode)
+    Nothing -> error ("node with descriptor "
+                      ++ (show descr) 
+                      ++ " has no corresponding node in the development graph")
 
 {- prints the morphism of the edge -}
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
