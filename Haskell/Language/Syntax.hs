@@ -56,6 +56,10 @@ module Haskell.Language.Syntax (
 
     -- * Source coordinates
     SrcLoc(..),
+
+    Formula(..),
+    AxiomName, 
+    Binding(..), Quantifier(..), AxiomBndr(..)
   ) where
 
 -- | A position in the source.
@@ -198,6 +202,7 @@ data HsDecl
 	 | HsTypeSig	 SrcLoc [HsName] HsQualType
 	 | HsFunBind     [HsMatch]
 	 | HsPatBind	 SrcLoc HsPat HsRhs {-where-} [HsDecl]
+         | HsAxiomBind   Binding
   deriving (Eq,Show)
 
 data HsMatch
@@ -388,3 +393,47 @@ list_tycon	      = HsTyCon list_tycon_name
 
 tuple_tycon :: Int -> HsType
 tuple_tycon i	      = HsTyCon (tuple_tycon_name i)
+
+type AxiomName = String
+
+data Binding
+  = NullBind
+  | AndBindings    Binding Binding
+  | AxiomDecl      AxiomName Formula
+  deriving (Eq,Show)
+
+data AxiomBndr
+ = AxiomBndr HsName
+ | AxiomBndrSig HsName HsQualType
+  deriving (Eq,Show)
+
+-- data Quantifier = Forall | Exists | ExistsOne deriving (Show, Eq)
+
+-- data QuantVars = QuantVars Quantifier [AxiomBndr] deriving (Show, Eq)
+
+data Quantifier
+  = AxForall [AxiomBndr]
+   | AxExists [AxiomBndr]
+   | AxExistsOne [AxiomBndr]
+  deriving (Eq,Show)
+
+-- data LogOp = AndOp | OrOp | ImplOp | EquivOp deriving (Show, Eq)
+
+-- data Formula
+--   = AxQuant   QuantVars Formula 
+--   | AxLogOp   LogOp Formula Formula
+--   | AxNot     Formula
+--   | AxEq      HsExp HsExp SrcLoc
+--   deriving (Eq,Show)
+
+data Formula
+  = AxQuant   Quantifier Formula
+  | AxAnd     Formula Formula
+  | AxOr      Formula Formula
+  | AxImpl    Formula Formula
+  | AxEquiv   Formula Formula
+  | AxNot     Formula
+  | AxPar     Formula
+  | AxEq      HsExp HsExp SrcLoc
+  | AxPred    HsName
+  deriving (Eq,Show)
