@@ -29,10 +29,8 @@ data BasicItem = SigItems SigItems
                | GenItems [Annoted SigItems] [Pos] 
                -- pos "generated" "{", ";"s, "}"
                -- or "generated" "type" ";"s
-               | LocalVarAxioms [GenVarDecl] [Annoted Formula] [Pos]
-               -- pos "forall" , dots 
-               | AxiomItems [Annoted Formula] [Pos]
-               -- pos dots
+               | AxiomItems [GenVarDecl] [Annoted Formula] [Pos]
+               -- pos "forall" (if GenVarDecl not empty), dots 
                  deriving (Show,Eq)
 
 data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
@@ -268,7 +266,7 @@ data ProdClass = ProdClass [ExtClass] [Pos] deriving (Show,Eq)
 data Kind = Kind [ProdClass] Class [Pos] deriving (Show,Eq)
 	    -- pos "->"s (first order)
 
-data Class = Universe Pos -- pos "type" (or nullPos)
+data Class = Universe Pos -- pos "Type" (or nullPos)
 	   | ClassName ClassName
 	   | Downset Type   -- not parsed directly
 	   | Intersection [Class] [Pos]  

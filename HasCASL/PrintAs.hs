@@ -262,10 +262,9 @@ instance PrettyPrint BasicItem where
     printText0 ga (FreeDatatype l _) = text freeS <+> text typeS 
 				    <+> semis ga l
     printText0 ga (GenItems l _) = text generatedS <+> braces (semis ga l)
-    printText0 ga (LocalVarAxioms vs fs p) = text forallS 
-			       <+> semis ga vs
-			       $$ printText0 ga (AxiomItems fs p)
-    printText0 ga (AxiomItems fs _) = vcat (map 
+    printText0 ga (AxiomItems vs fs _) = (if null vs then empty
+			       else text forallS <+> semis ga vs)
+			       $$ vcat (map 
 					 (\x -> text dotS <+> printText0 ga x) 
 					 fs)
 

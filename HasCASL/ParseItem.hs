@@ -533,15 +533,15 @@ progItems = itemList programS (patternTermPair True True equalS) ProgItems
 
 axiomItems =     do { a <- pluralKeyword axiomS
                     ; (fs, ps, ans) <- itemAux (fmap TermFormula term)
-                    ; return (AxiomItems (zipWith 
+                    ; return (AxiomItems [] (zipWith 
                                            (\ x y -> Annoted x [] [] y) 
                                            fs ans) (map tokPos (a:ps)))
                     }
 
-forallItem =     do { f <- asKey forallS 
+forallItem =     do { f <- forallT
                     ; (vs, ps) <- genVarDecls `separatedBy` semiT 
-                    ; AxiomItems fs ds <- dotFormulae
-                    ; return (LocalVarAxioms (concat vs) fs 
+                    ; AxiomItems [] fs ds <- dotFormulae
+                    ; return (AxiomItems (concat vs) fs 
 			      (map tokPos (f:ps) ++ ds))
                     }
 
@@ -556,13 +556,13 @@ dotFormulae = do { d <- dotT
                    if null (r_annos(last fs)) then  
                    do { (m, an) <- optSemi
                       ; case m of 
-                        { Nothing -> return (AxiomItems fs ps)
-                        ; Just t -> return (AxiomItems 
+                        { Nothing -> return (AxiomItems [] fs ps)
+                        ; Just t -> return (AxiomItems []
                                (init fs ++ [appendAnno (last fs) an])
                                (ps ++ [tokPos t]))
                         }
                       }
-                   else return (AxiomItems fs ps)
+                   else return (AxiomItems [] fs ps)
                  }
     where aFormula = bind appendAnno 
 		     (annoParser (fmap TermFormula term)) lineAnnos

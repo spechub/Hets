@@ -29,7 +29,7 @@ plusT = asKey plusS
 minusT = asKey minusS
 qColonT = asKey (colonS++quMark)
 
-quColon :: GenParser Char st (As.Partiality, Token)
+quColon :: GenParser Char st (Partiality, Token)
 quColon = do c <- colT
 	     return (Total, c)
 	  <|> 
@@ -40,7 +40,7 @@ quColon = do c <- colT
 -- kind
 -----------------------------------------------------------------------------
 -- universe is just a special className ("Type")
-parseClass :: GenParser Char st As.Class
+parseClass :: GenParser Char st Class
 parseClass = fmap ClassName className
              <|> 
 	     do o <- oParenT
@@ -48,7 +48,7 @@ parseClass = fmap ClassName className
 		c <- cParenT
 		return (Intersection cs (toPos o ps c))
 
-extClass :: GenParser Char st As.ExtClass
+extClass :: GenParser Char st ExtClass
 extClass = do c <- parseClass
 	      do s <- plusT
 	         return (ExtClass c CoVar (tokPos s))
@@ -57,14 +57,14 @@ extClass = do c <- parseClass
 	          return (ExtClass c ContraVar (tokPos s))
 	       <|> return (ExtClass c InVar nullPos)
 
-prodClass :: GenParser Char st As.ProdClass
+prodClass :: GenParser Char st ProdClass
 prodClass = do (cs, ps) <- extClass `separatedBy` crossT
 	       return (ProdClass cs (map tokPos ps))
 
-kind :: GenParser Char st As.Kind
+kind :: GenParser Char st Kind
 kind = kindOrClass [] []
 
-kindOrClass, curriedKind :: [ProdClass] -> [Token] -> GenParser Char st As.Kind
+kindOrClass, curriedKind :: [ProdClass] -> [Token] -> GenParser Char st Kind
 kindOrClass os ps = do c@(ProdClass cs _) <- prodClass
 		       if let isClass (ExtClass _ InVar _) = True
 			      isClass _ = False
@@ -102,7 +102,7 @@ idToken b = pToken (scanQuotedChar <|> scanDotWords
 			    ++ hascasl_reserved_ops) 
 		  scanAnySigns)
 
-primTypeOrId, typeOrId :: GenParser Char st As.Type
+primTypeOrId, typeOrId :: GenParser Char st Type
 primTypeOrId = fmap TypeToken (idToken True) 
 	       <|> braces typeOrId (BracketType Braces)
 	       <|> brackets typeOrId (BracketType Squares)
@@ -117,12 +117,12 @@ typeOrId = do ts <- many1 primTypeOrId
  		 <|> 
 		 return(t)
 
-kindAnno :: As.Type -> GenParser Char st As.Type
+kindAnno :: Type -> GenParser Char st Type
 kindAnno t = do c <- colT 
 		k <- kind
 		return (KindedType t k (tokPos c))
 
-primType, lazyType, mixType, prodType, funType :: GenParser Char st As.Type
+primType, lazyType, mixType, prodType, funType :: GenParser Char st Type
 primType = typeToken 
 	   <|> bracketParser parseType oParenT cParenT commaT 
 		   (BracketType Parens)
@@ -150,7 +150,7 @@ funType = do (ts, as) <- prodType `separatedBy` arrowT
 		     makeFun (t:r) (a:b) = makeFun [t, makeFun r b] [a]
 		     makeFun _ _ = error "makeFun got illegal argument"
 
-arrowT :: GenParser Char st (As.Arrow, Pos)
+arrowT :: GenParser Char st (Arrow, Pos)
 arrowT = do a <- noQuMark funS
 	    return (FunArr, tokPos a)
 	 <|>
@@ -174,12 +174,12 @@ varDecls :: GenParser Char st [VarDecl]
 varDecls = do (vs, ps) <- var `separatedBy` commaT
 	      varDeclType vs ps
 
-varDeclType :: [As.Var] -> [Token] -> GenParser Char st [As.VarDecl]
+varDeclType :: [Var] -> [Token] -> GenParser Char st [VarDecl]
 varDeclType vs ps = do c <- colT
 		       t <- parseType
 		       return (makeVarDecls vs ps t (tokPos c))
 
-makeVarDecls :: [As.Var] -> [Token] -> As.Type -> Pos -> [As.VarDecl]
+makeVarDecls :: [Var] -> [Token] -> Type -> Pos -> [VarDecl]
 makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma (tokPos p))
 		     (init vs) ps ++ [VarDecl (last vs) t Other q]
 
@@ -198,13 +198,13 @@ typeVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
 		    <|> return (makeTypeVarDecls vs ps 
 				(Universe nullPos) nullPos)
 
-makeTypeVarDecls :: [TypeVar] -> [Token] -> As.Class -> Pos -> [TypeVarDecl]
+makeTypeVarDecls :: [TypeVar] -> [Token] -> Class -> Pos -> [TypeVarDecl]
 makeTypeVarDecls vs ps cl q = zipWith (\ v p -> 
 				      TypeVarDecl v cl Comma (tokPos p))
 					 (init vs) ps 
 			      ++ [TypeVarDecl (last vs) cl Other q]
 
-genVarDecls:: GenParser Char st [As.GenVarDecl]
+genVarDecls:: GenParser Char st [GenVarDecl]
 genVarDecls = do (vs, ps) <- var `separatedBy` commaT
 		 if all isSimpleId vs then 
 		       fmap (map GenVarDecl) (varDeclType vs ps)
@@ -305,35 +305,35 @@ typePattern = do ts <- many1 primTypePattern
 
 -- flag b allows "->" in patterns 
 
-tokenPattern :: Bool -> GenParser Char st As.Pattern
+tokenPattern :: Bool -> GenParser Char st Pattern
 tokenPattern b = fmap PatternToken (idToken b)
 					  
-primPattern :: Bool -> GenParser Char st As.Pattern
+primPattern :: Bool -> GenParser Char st Pattern
 primPattern b = tokenPattern b 
 		<|> braces pattern (BracketPattern Braces) 
 		<|> brackets pattern (BracketPattern Squares)
 		<|> bracketParser patterns oParenT cParenT semiT 
 			(BracketPattern Parens)
 
-patterns :: GenParser Char st As.Pattern
+patterns :: GenParser Char st Pattern
 patterns = do (ts, ps) <- pattern `separatedBy` commaT
 	      let tp = if length ts == 1 then head ts 
 		       else TuplePattern ts (map tokPos ps)
 		  in return tp
 
-mixPattern :: Bool -> GenParser Char st As.Pattern
+mixPattern :: Bool -> GenParser Char st Pattern
 mixPattern b = 
     do l <- many1 $ primPattern b
        let p = if length l == 1 then head l else MixfixPattern l
 	   in typedPattern p <|> return p
 
-typedPattern :: As.Pattern -> GenParser Char st As.Pattern
+typedPattern :: Pattern -> GenParser Char st Pattern
 typedPattern p = do { c <- colT
 		    ; t <- parseType
 		    ; return (TypedPattern p t [tokPos c])
 		    }
 
-asPattern :: Bool -> GenParser Char st As.Pattern
+asPattern :: Bool -> GenParser Char st Pattern
 asPattern b = 
     do v <- mixPattern b
        do   c <- asT 
@@ -342,7 +342,7 @@ asPattern b =
          <|> return v
 
 -- True allows "->" in patterns
-pattern :: GenParser Char st As.Pattern
+pattern :: GenParser Char st Pattern
 pattern = asPattern True
 
 -----------------------------------------------------------------------------
@@ -350,7 +350,7 @@ pattern = asPattern True
 -----------------------------------------------------------------------------
 -- places may follow instantiation lists
 
-instOpName :: GenParser Char st As.InstOpName
+instOpName :: GenParser Char st InstOpName
 instOpName = do i@(Id is cs ps) <- uninstOpName
 		if isPlace (last is) then return (InstOpName i []) 
 		   else do l <- many (brackets parseType Types)
@@ -361,7 +361,7 @@ instOpName = do i@(Id is cs ps) <- uninstOpName
 -- typeScheme
 -----------------------------------------------------------------------------
 
-typeScheme :: GenParser Char st As.TypeScheme
+typeScheme :: GenParser Char st TypeScheme
 typeScheme = do f <- forallT
 		(ts, cs) <- typeVarDecls `separatedBy` semiT
 		d <- dotT
@@ -379,11 +379,11 @@ tToken = pToken(scanFloat <|> scanString
 		       <|> reserved hascasl_reserved_ops scanAnySigns 
 		       <|> placeS <?> "id/literal" )
 
-termToken :: GenParser Char st As.Term
+termToken :: GenParser Char st Term
 termToken = fmap TermToken (asKey exEqual <|> tToken)
 
 -- flag if within brackets: True allows "in"-Terms
-primTerm :: Bool -> GenParser Char st As.Term
+primTerm :: Bool -> GenParser Char st Term
 primTerm b = termToken
 	   <|> braces term (BracketTerm Braces)
 	   <|> brackets term  (BracketTerm Squares)
@@ -394,7 +394,7 @@ primTerm b = termToken
 	   <|> caseTerm b
 	   <|> letTerm b
 
-parenTerm :: GenParser Char st As.Term
+parenTerm :: GenParser Char st Term
 parenTerm = do o <- oParenT
 	       varTerm o
 	         <|>
@@ -414,7 +414,7 @@ partialTypeScheme = do q <- qColonT
 				PFunArr t [tokPos q]))
 		    <|> bind (,) colT typeScheme
 
-varTerm :: Token -> GenParser Char st As.Term
+varTerm :: Token -> GenParser Char st Term
 varTerm o = do v <- asKey varS
 	       i <- var
 	       c <- colT
@@ -422,7 +422,7 @@ varTerm o = do v <- asKey varS
 	       p <- cParenT
 	       return (QualVar i t (toPos o [v, c] p))
 
-qualOpName :: Token -> GenParser Char st As.Term
+qualOpName :: Token -> GenParser Char st Term
 qualOpName o = do { v <- asKey opS
 		  ; i <- instOpName
  	          ; (c, t) <- partialTypeScheme
@@ -430,14 +430,14 @@ qualOpName o = do { v <- asKey opS
 		  ; return (QualOp i t (toPos o [v, c] p))
 		  }
 
-predTypeScheme :: As.TypeScheme -> As.TypeScheme
+predTypeScheme :: TypeScheme -> TypeScheme
 predTypeScheme (SimpleTypeScheme t) = SimpleTypeScheme (predType t)
 predTypeScheme (TypeScheme vs t ps) = TypeScheme vs (predTypeScheme t) ps
 
-predType :: As.Type -> As.Type
+predType :: Type -> Type
 predType t = FunType t PFunArr (TupleType [] []) []
 
-qualPredName :: Token -> GenParser Char st As.Term
+qualPredName :: Token -> GenParser Char st Term
 qualPredName o = do { v <- asKey predS
 		    ; i <- instOpName
 		    ; c <- colT 
@@ -447,7 +447,7 @@ qualPredName o = do { v <- asKey predS
 			      (toPos o [v, c] p))
 		  }
 
-typeQual :: Bool -> GenParser Char st (As.TypeQual, Token) 
+typeQual :: Bool -> GenParser Char st (TypeQual, Token) 
 typeQual b = 
 	      do q <- colT
 	         return (OfType, q)
@@ -462,26 +462,26 @@ typeQual b =
 	      do q <- asT
 	         return (AsType, q)
 
-typedTerm :: As.Term -> Bool -> GenParser Char st As.Term
+typedTerm :: Term -> Bool -> GenParser Char st Term
 typedTerm f b = 
     do (q, p) <- typeQual b
        t <- parseType
        return (TypedTerm f q t (tokPos p))
 
-mixTerm :: Bool -> GenParser Char st As.Term
+mixTerm :: Bool -> GenParser Char st Term
 mixTerm b = 
     do ts <- many1 $ primTerm b
        let t = if length ts == 1 then head ts else MixfixTerm ts
 	   in typedTerm t b <|> return t
 
-term :: GenParser Char st As.Term
+term :: GenParser Char st Term
 term = mixTerm True
 
 -----------------------------------------------------------------------------
 -- quantified term
 -----------------------------------------------------------------------------
 
-forallTerm :: Bool -> GenParser Char st As.Term
+forallTerm :: Bool -> GenParser Char st Term
 forallTerm b = 
              do f <- forallT
 		(vs, ps) <- genVarDecls `separatedBy` semiT
@@ -490,7 +490,7 @@ forallTerm b =
 		return (QuantifiedTerm Universal (concat vs) t 
 			(toPos f ps d))
 
-exQuant :: GenParser Char st (As.Quantifier, Id.Token)
+exQuant :: GenParser Char st (Quantifier, Id.Token)
 exQuant =
         do { q <- asKey (existsS++exMark)
 	   ; return (Unique, q)
@@ -500,7 +500,7 @@ exQuant =
 	   ; return (Existential, q)
 	   }
 
-exTerm :: Bool -> GenParser Char st As.Term
+exTerm :: Bool -> GenParser Char st Term
 exTerm b = 
          do { (q, p) <- exQuant
 	    ; (vs, ps) <- varDecls `separatedBy` semiT
@@ -510,14 +510,14 @@ exTerm b =
 		      (toPos p ps d))
 	    }
 
-lamDot :: GenParser Char st (As.Partiality, Token)
+lamDot :: GenParser Char st (Partiality, Token)
 lamDot = do d <- asKey (dotS++exMark) <|> asKey (cDot++exMark)
 	    return (Total,d)
 	 <|> 
 	 do d <- dotT
 	    return (Partial,d)
 
-lambdaTerm :: Bool -> GenParser Char st As.Term
+lambdaTerm :: Bool -> GenParser Char st Term
 lambdaTerm b = 
              do l <- asKey lamS
 		pl <- lamPattern
@@ -525,7 +525,7 @@ lambdaTerm b =
 		t <- mixTerm b
 		return (LambdaTerm pl k t (toPos l [] d))
 
-lamPattern :: GenParser Char st [As.Pattern]
+lamPattern :: GenParser Char st [Pattern]
 lamPattern = do (vs, ps) <- varDecls `separatedBy` semiT
 		return [PatternVars (concat vs) (map tokPos ps)]
 	     <|> 
@@ -544,7 +544,7 @@ patternTermPair b1 b2  sep =
        t <- mixTerm b2
        return (ProgEq p t (tokPos s))
 
-caseTerm :: Bool -> GenParser Char st As.Term
+caseTerm :: Bool -> GenParser Char st Term
 caseTerm b = 
            do c <- asKey caseS
 	      t <- term
@@ -578,7 +578,7 @@ startKeyword = dotS:cDot: hascasl_reserved_words
 -- let-term
 -----------------------------------------------------------------------------
 
-letTerm :: Bool -> GenParser Char st As.Term
+letTerm :: Bool -> GenParser Char st Term
 letTerm b = 
           do l <- asKey letS
 	     (es, ps) <- patternTermPair True False equalS `separatedBy` semiT 
