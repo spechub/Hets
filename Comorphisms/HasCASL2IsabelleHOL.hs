@@ -637,10 +637,10 @@ matriArg pat cTerm =
 
 redArgs :: Env -> [CaseMatrix] -> CaseMatrix
 redArgs sign cmxs
-  | and (map (testPatBrand Appl) caMas)  = redAppl cmxs sign
-  | and (map (testPatBrand Tuple) caMas) = redAppl cmxs sign
-  | isSingle caMas                       = head cmxs
-  | otherwise                            = head cmxs
+  | and (map (testPatBrand Appl) cmxs)  = redAppl cmxs sign
+  | and (map (testPatBrand Tuple) cmxs) = redAppl cmxs sign
+  | isSingle cmxs                       = head cmxs
+  | otherwise                           = head cmxs
   where testPatBrand pb cmx = pb == patBrand cmx
 
 -- Input: List of CMs thats leading constructor and arguments except the last one are equal
