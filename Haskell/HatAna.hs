@@ -36,7 +36,11 @@ import Data.List ((\\))
 import Data.FiniteMap (minusFM)
 
 hatAna :: [HsDecl] -> ModuleInfo -> (ModuleInfo, [Named AHsDecl])
-hatAna hs sig = 
+hatAna = hatAna2 preludeModInfo 
+
+hatAna2 :: ModuleInfo -> [HsDecl] -> ModuleInfo 
+	-> (ModuleInfo, [Named AHsDecl])
+hatAna2 prelude hs sig = 
     let ahs = map toAHsDecl $ fixFunBinds $ cvrtHsDeclList hs
         aMod = AHsModule (moduleName sig) Nothing [] ahs
         (moduleEnv,
@@ -44,7 +48,7 @@ hatAna hs sig =
    	 newClassHierarchy,
    	 newKindInfoTable,
    	 moduleRenamed,
-   	 moduleSynonyms) = tiModule aMod (joinModuleInfo sig preludeModInfo)
+   	 moduleSynonyms) = tiModule aMod (joinModuleInfo sig prelude)
   	modInfo = sig {     varAssumps = moduleEnv, 
     			    dconsAssumps = dataConEnv, 
     			    classHierarchy = newClassHierarchy,
@@ -52,7 +56,7 @@ hatAna hs sig =
     			    tyconsMembers = getTyconsMembers moduleRenamed,
     			    infixDecls = getInfixDecls moduleRenamed,
     			    synonyms = moduleSynonyms }
-	in (diffModInfo modInfo preludeModInfo, extractSentences moduleRenamed)
+	in (diffModInfo modInfo prelude, extractSentences moduleRenamed)
 
 instance Eq ModuleInfo where
   m1 == m2 = 
