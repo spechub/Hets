@@ -414,14 +414,13 @@ tToken = pToken(scanFloat <|> scanString
 termToken :: AParser Term
 termToken = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken)
 
--- flag WithIn allows "in"-Terms
 primTerm :: AParser Term
 primTerm = termToken
 	   <|> mkBraces term (BracketTerm Braces)
 	   <|> mkBrackets term (BracketTerm Squares)
  	   <|> parenTerm
 
--- flag if within brackets: True allows "in"-Terms
+-- flag WithIn allows "in"-Terms
 baseTerm :: TypeMode -> AParser Term
 baseTerm b = ifTerm b
            <|> forallTerm b 
@@ -501,28 +500,23 @@ typeQual m =
 			 do q <- asKey inS
 			    return (InType, q)
 
-typedTerm :: Term -> TypeMode -> AParser Term
-typedTerm f b = 
-    do (q, p) <- typeQual b
-       t <- parseType
-       return (TypedTerm f q t [tokPos p])
-
-typedPrimTerm :: TypeMode -> AParser Term
-typedPrimTerm b = 
+typedTerm :: TypeMode -> AParser Term
+typedTerm b = 
     do t <- primTerm
-       typedTerm t b <|> return t
+       do (q, p) <- typeQual b
+	  ty <- parseType
+	  return (TypedTerm t q ty [tokPos p])
+        <|> return t
       <|> baseTerm b
 
--- typedMixTerm may be separated by "=" or other non-type tokens
 mixTerm :: TypeMode -> AParser Term
 mixTerm b = 
-    do ts <- many1 $ typedPrimTerm b
+    do ts <- many1 $ typedTerm b
        return $ if length ts == 1 then head ts else MixfixTerm ts
 
 term :: AParser Term
 term = mixTerm WithIn
        
-
 -----------------------------------------------------------------------------
 -- quantified term
 -----------------------------------------------------------------------------
