@@ -244,18 +244,27 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		  ("globaldef","def","def"),
                   ("globaldef","proventhm","proventhm"),
                   ("globaldef","unproventhm","unproventhm"),
+                  ("globaldef","localunproventhm","localunproventhm"),
 		  ("def","globaldef","def"),
 		  ("def","def","def"),
                   ("def","proventhm","proventhm"),
                   ("def","unproventhm","unproventhm"),
+                  ("def","localunproventhm","localunproventhm"),
                   ("proventhm","globaldef","proventhm"),
                   ("proventhm","def","proventhm"),
                   ("proventhm","proventhm","proventhm"),
                   ("proventhm","unproventhm","unproventhm"),
+                  ("proventhm","localunproventhm","localunproventhm"),
                   ("unproventhm","globaldef","unproventhm"),
                   ("unproventhm","def","unproventhm"),
                   ("unproventhm","proventhm","unproventhm"),
-                  ("unproventhm","unproventhm","unproventhm")] 
+                  ("unproventhm","unproventhm","unproventhm"), 
+                  ("unproventhm","localunproventhm","localunproventhm"), 
+                  ("localunproventhm","globaldef","localunproventhm"),
+                  ("localunproventhm","def","localunproventhm"),
+                  ("localunproventhm","proventhm","localunproventhm"),
+                  ("localunproventhm","unproventhm","localunproventhm"), 
+                  ("localunproventhm","localunproventhm","localunproventhm")] 
                  actGraphInfo
   writeIORef ioRefGraphMem graphMem{nextGraphId = gid+1}
   graphMem'<- readIORef ioRefGraphMem
