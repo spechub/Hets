@@ -85,7 +85,7 @@ data Term =
       | Free  (String, Typ)
       -- | Var   (Indexname, Typ)
       -- | Bound Int
-      | Abs   (String, Typ, Term)
+      | Abs   (Term, Typ, Term)
       | App Term  Term
       deriving (Eq, Ord)
 
@@ -95,14 +95,14 @@ instance Show Term where
 showTerm :: Int -> Term -> String
 showTerm pri (Const (c,_)) = c
 showTerm pri (Free (v,_)) = v
-showTerm pri (Abs (v,_,t)) = "%"++v++" . "++showTerm pri t
-showTerm pri (Abs (v,_,t)) = "%"++v++" . "++showTerm pri t
+showTerm pri (Abs (v,_,t)) = "%"++showTerm pri v++" . "++showTerm pri t
+showTerm pri (Abs (v,_,t)) = "%"++showTerm pri v++" . "++showTerm pri t
 showTerm pri (Const ("All",_) `App` Abs (v,ty,t)) = 
-  bracketize (pri<=10) ("! "++v++" :: "++show ty++" . "++showTerm pri t)
+  bracketize (pri<=10) ("! "++showTerm pri v++" :: "++show ty++" . "++showTerm pri t)
 showTerm pri (Const ("Ex",_) `App` Abs (v,_,t)) = 
-  bracketize (pri<=10) ( "? "++v++" . "++showTerm pri t)
+  bracketize (pri<=10) ( "? "++showTerm pri v++" . "++showTerm pri t)
 showTerm pri (Const ("Ex1",_) `App` Abs (v,_,t)) = 
-  bracketize (pri<=10) ( "?! "++v++" . "++showTerm pri t)
+  bracketize (pri<=10) ( "?! "++showTerm pri v++" . "++showTerm pri t)
 showTerm pri (t1 `App` t2) = 
   bracketize (pri<=10) (showTerm 11 t1 ++ " " ++ showTerm 10 t2)
 
