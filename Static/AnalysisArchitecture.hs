@@ -13,6 +13,11 @@
 
    Follows the extended static semantics sketched in Chap. III:5.6
    of the CASL Reference Manual.
+
+   TODO:
+   - ana_FIT_ARG_UNIT
+   - assertAmalgamability
+   - see specific TODOs in functions
 -}
 
 module Static.AnalysisArchitecture (ana_ARCH_SPEC, ana_UNIT_SPEC)
@@ -125,7 +130,7 @@ ana_UNIT_DECL_DEFN lgraph defl gctx@(gannos, genv, dg) curl justStruct
    		      return ((Map.insert un basedParUSig buc, diag'), dg''', ud')
 	       Unit_sig nsig -> 
 		   do (nsig', dg''') <- resToIORes (nodeSigUnion lgraph dg'' (impSig : [nsig]) DGImports)
-		      (dn', diag'') <- extendDiagram diag' [dns] nsig'
+		      (dn', diag'') <- extendDiagram lgraph diag' [dns] nsig'
 		      return ((Map.insert un (Based_unit_sig dn') buc, diag''), dg''', ud')
 
 -- unit definition
@@ -157,10 +162,12 @@ ana_UNIT_IMPORTED :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
 ana_UNIT_IMPORTED lgraph defl (_, _, dg) curl justStruct uctx@(_, diag) [] =
     do return (Empty_node curl, diag, dg)
 ana_UNIT_IMPORTED lgraph defl gctx curl justStruct uctx@(buc, diag) terms =
-    do (nodes, diag', dg') <- ana_UNIT_IMPORTED' lgraph defl gctx curl justStruct uctx terms 
-       (sig, dg'') <- resToIORes (nodeSigUnion lgraph dg' (map getSigFromDiag nodes) DGImports)
-       -- TODO: check amalgamability conditions
-       (dnsig, diag'') <- extendDiagram diag' nodes sig
+    do (dnsigs, diag', dg') <- ana_UNIT_IMPORTED' lgraph defl gctx curl justStruct uctx terms 
+       (sig, dg'') <- resToIORes (nodeSigUnion lgraph dg' (map getSigFromDiag dnsigs) DGImports)
+       -- check amalgamability conditions
+       let incl s = propagateErrors (ginclusion lgraph (getSig (getSigFromDiag s)) (getSig sig))
+       () <- assertAmalgamability nullPos diag' (map incl dnsigs)
+       (dnsig, diag'') <- extendDiagram lgraph diag' dnsigs sig
        return (dnsig, diag'', dg'')
 
 -- TODO: return updated UNIT_TERMs
@@ -191,20 +198,22 @@ ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, dg) curl justStruct
        -- build the extended diagram and new based unit context
        let insNodes diag [] buc = do return ([], diag, buc)
 	   insNodes diag ((un, nsig) : args) buc = 
-	       do (dnsig, diag') <- extendDiagram diag [] nsig
+	       do (dnsig, diag') <- extendDiagram lgraph diag [] nsig
 		  {- we made sure in ana_UNIT_BINDINGS that there's no mapping for un in buc
 		     so we can just use Map.insert -}
 		  let buc' = Map.insert un (Based_unit_sig dnsig) buc
 		  (dnsigs, diag'', buc'') <- insNodes diag' args buc'
 		  return (dnsig : dnsigs, diag'', buc'')
        (pardnsigs, diag', buc') <- insNodes diag args buc
-       (resdnsig, diag'') <- extendDiagram diag' pardnsigs resnsig
+       (resdnsig, diag'') <- extendDiagram lgraph diag' pardnsigs resnsig
        -- analyse the unit term
        (p, diag''', dg''', ut') <- ana_UNIT_TERM lgraph defl (gannos, genv, dg'') 
 				                 curl justStruct (buc', diag'') (item ut)
        -- add new node to the diagram
-       (z, diag4) <- extendDiagram diag''' [] (EmptyNode curl)
-       -- TODO: check amalgamability conditions
+       (z, diag4) <- extendDiagram lgraph diag''' [] (EmptyNode curl)
+       -- check amalgamability conditions
+       -- TODO: create a list of morphisms
+       () <- assertAmalgamability nullPos diag []
        return (z, Par_unit_sig (map snd args, getSigFromDiag p), diag4, dg''', 
 	       Unit_expression ubs' (replaceAnnoted ut' ut) poss)
 
@@ -240,36 +249,64 @@ ana_UNIT_BINDINGS lgraph defl gctx@(gannos, genv, _) curl justStruct uctx@(buc, 
 			   Nothing -> return (args', dg'', ub' : ubs')
 
 
+-- | Analyse a list of unit terms
+ana_UNIT_TERMS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
+	       -> Bool -> ExtStUnitCtx -> [Annoted UNIT_TERM]
+	       -> IOResult ([DiagNodeSig], Diag, DGraph, [Annoted UNIT_TERM])
+ana_UNIT_TERMS _ _ (_, _, dg) _ _ (_, diag) [] =
+    do return ([], diag, dg, [])
+ana_UNIT_TERMS lgraph defl gctx@(gannos, genv, _) curl justStruct uctx@(buc, _) (ut : uts) =
+    do (dnsig, diag', dg', ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
+       (dnsigs, diag'', dg'', uts') <- ana_UNIT_TERMS lgraph defl (gannos, genv, dg') curl justStruct (buc, diag') uts
+       return (dnsig : dnsigs, diag'', dg'', (replaceAnnoted ut' ut) : uts')
+
+
 -- | Analyse an unit term
 ana_UNIT_TERM :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
 	      -> Bool -> ExtStUnitCtx -> UNIT_TERM 
 	      -> IOResult (DiagNodeSig, Diag, DGraph, UNIT_TERM)
--- TODO
 
 -- UNIT-REDUCTION
-ana_UNIT_TERM lgraph defl gctx@(_, _, dg) curl justStruct uctx@(buc, diag) 
-	      ured@(Unit_reduction ut restr) =
-    do resToIORes (warning (emptyDiagNodeSig defl, diag, ured) "Ignoring unit reduction" nullPos)
-       return (emptyDiagNodeSig defl, diag, dg, ured)
+ana_UNIT_TERM lgraph defl gctx curl@(Logic lid) justStruct uctx (Unit_reduction ut restr) =
+    do (p, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
+       -- TODO: what with the second morphism returned by ana_RESTRICTION?
+       (morph, _) <- resToIORes (ana_RESTRICTION dg (emptyG_sign curl) (getSig (getSigFromDiag p)) justStruct restr)
+       -- TODO: the domain of morph should already be in the dev graph -- find it there
+       -- temporary solution: create new node representing the domain of morph
+       let rsig' = dom Grothendieck morph
+           nodeContents = DGNode {dgn_name = Nothing,
+				  dgn_sign = rsig',
+				  dgn_sens = G_l_sentence_list lid [],
+				  dgn_origin = DGHiding }
+	   [node] = newNodes 0 dg
+	   dg' = insNode (node, nodeContents) dg
+       sig' <- return (NodeSig (node, rsig'))
+       (q, diag') <- extendDiagramRev lgraph diag [p] sig'
+       -- check amalgamability conditions
+       () <- assertAmalgamability nullPos diag [morph]
+       (q', diag'', dg'') <- extendDiagramWithMorphism nullPos lgraph diag' dg' q morph
+       return (q', diag'', dg'', Unit_reduction (replaceAnnoted ut' ut) restr)
 -- UNIT-TRANSLATION
 ana_UNIT_TERM lgraph defl gctx curl justStruct uctx@(buc, diag0) (Unit_translation ut ren) =
     do (dnsig, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
-       --resToIORes (warning () ("buc: " ++ show buc) nullPos)
-       --resToIORes (warning () ("diag: " ++ show diag) nullPos)
-       --resToIORes (warning () (show (getSigFromDiag dnsig)) nullPos)
-       --resToIORes (warning () (show (getSig (getSigFromDiag dnsig))) nullPos)
        gMorph <- resToIORes (ana_RENAMING dg (getSig (getSigFromDiag dnsig)) justStruct ren)
-       -- TODO: check amalamability conditions
-       -- insert the target signature to the DGraph
-       (targetSig, dg') <- resToIORes (extendDGraph dg (getSigFromDiag dnsig) gMorph DGTranslation)
-       -- TODO: label the new edge in diagram with gMorph
-       (dnsig', diag') <- extendDiagram diag [dnsig] targetSig
+       -- check amalamability conditions
+       () <- assertAmalgamability nullPos diag [gMorph]
+       -- create an edge in the diagram that represents gMorph
+       -- TODO: pass a meaningful position
+       (dnsig', diag', dg') <- extendDiagramWithMorphism nullPos lgraph diag dg dnsig gMorph
        return (dnsig', diag', dg', Unit_translation (replaceAnnoted ut' ut) ren)
 -- AMALGAMATION
 ana_UNIT_TERM lgraph defl gctx@(_, _, dg) curl justStruct uctx@(buc, diag) 
 	      ut@(Amalgamation uts poss) =
-    do resToIORes (warning (emptyDiagNodeSig defl, diag, ut) "Ignoring unit amalgamation" nullPos)
-       return (emptyDiagNodeSig defl, diag, dg, ut)
+    do (dnsigs, diag', dg', uts') <- ana_UNIT_TERMS lgraph defl gctx curl justStruct uctx uts
+       -- compute sigma
+       (sig, dg'') <- resToIORes (nodeSigUnion lgraph dg' (map getSigFromDiag dnsigs) DGUnion)
+       -- check amalgamability conditions
+       let incl s = propagateErrors (ginclusion lgraph (getSig (getSigFromDiag s)) (getSig sig))
+       () <- assertAmalgamability nullPos diag (map incl dnsigs)
+       (q, diag'') <- extendDiagram lgraph diag' dnsigs sig
+       return (q, diag'', dg'', Amalgamation uts' poss)
 -- LOCAL-UNIT
 ana_UNIT_TERM lgraph defl gctx curl justStruct uctx
 	      lu@(Local_unit udds ut poss) =
@@ -297,13 +334,20 @@ ana_UNIT_TERM lgraph defl gctx@(gannos, genv, dg) curl justStruct uctx@(buc, dia
 				 	                     ((getSigFromDiag pI) : (map second morphSigs))
 					                     DGFitSpec)
 		   -- TODO: compute delta
+		   -- TODO: compute morphA
+		   -- TODO: compute sigMorExt (morphA(delta))
+		   -- sigMorExt
 		   -- TODO: compute sigR
-		   (qB, diag') <- extendDiagram diagA [pI] resultSig
+		   (qB, diag') <- extendDiagram lgraph diagA [pI] resultSig
 		   -- TODO: insert nodes p^F_i and appropriate edges to the diagram
-		   -- TODO: check amalgamability conditions
+		   -- check amalgamability conditions
+		   -- TODO: create a list of morphisms
+		   () <- assertAmalgamability nullPos diag []
 		   let third (_, _, e) = e
-		   (q, diag'') <- extendDiagram diag' (qB : (map third morphSigs)) resultSig -- TODO: use sigR here
-		   return (q, diag'', dg, uappl)
+		   (q, diag'') <- extendDiagram lgraph diag' (qB : (map third morphSigs)) resultSig
+		   --(q, diag'', dg4) <- extendDiagramWithMorphism unpos lgraph diag' dg''' qB sigMorExt
+		   --diag''' <- insInclusionEdges lgraph diag'' (map third morphSigs) q
+		   return (q, diag'', dg''', uappl)
 	    Nothing -> resToIORes (plain_error (emptyDiagNodeSig defl, diag, dg, uappl) 
 				               ("Undefined unit " ++ showPretty un "")
 				               unpos)
@@ -341,7 +385,6 @@ ana_FIT_ARG_UNITS _ _ (_, _, dg) _ _ (_, diag) appl pos _ [] =
 
 
 -- | Analyse unit argument
--- TODO
 ana_FIT_ARG_UNIT :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
 		 -> Bool -> ExtStUnitCtx -> NodeSig -> FIT_ARG_UNIT 
 		 -> IOResult (GMorphism, NodeSig, DiagNodeSig, DGraph, Diag)
@@ -352,9 +395,11 @@ ana_FIT_ARG_UNIT lgraph defl gctx@(_, _, dg) curl justStruct uctx@(_, diag)
     do resToIORes (warning () 
 		           ("Ignoring unit argument " ++ showPretty fau "")
 		           nullPos)
+       (p, diag', dg', ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
+       -- TODO
        let gMorph = gEmbed (G_morphism lid (ide lid sig))
-       (nsig, dg') <- resToIORes (extendDGraph dg nsig gMorph DGFitSpec)
-       return (gMorph, nsig, emptyDiagNodeSig curl, dg', diag)
+       (nsig, dg'') <- resToIORes (extendDGraph dg' nsig gMorph DGFitSpec)
+       return (gMorph, nsig, p, dg'', diag')
 
 
 -- | Analyse unit specification
@@ -419,21 +464,111 @@ ana_argSpecs lgraph defl gctx@(gannos, genv, dg) justStruct (argSpec : argSpecs)
        return (argSig : argSigs, dg'', (replaceAnnoted argSpec' argSpec) : argSpecs')
 
 
+-- | Insert the edges from given source nodes to given target node
+-- into the given diagram. The edges are labelled with inclusions.
+insInclusionEdges :: LogicGraph
+		  -> Diag          -- ^ the diagram to which the edges should be inserted
+		  -> [DiagNodeSig] -- ^ the source nodes
+		  -> DiagNodeSig   -- ^ the target node
+		  -> IOResult Diag
+-- ^ returns the diagram with edges inserted
+insInclusionEdges lgraph diag srcNodes (Diag_node_sig tn tnsig) =
+    do let inslink diag dns = do d <- diag
+				 case dns of
+			            Empty_node _ -> return d
+				    Diag_node_sig n nsig -> 
+					do incl <- resToIORes (ginclusion lgraph (getSig nsig) (getSig tnsig))
+					   return (insEdge (n, tn, DiagLink { dl_morphism = incl }) d)
+       diag' <- foldl inslink (return diag) srcNodes
+       return diag'
+
+
+-- | Insert the edges from given source node to given target nodes
+-- into the given diagram. The edges are labelled with inclusions.
+insInclusionEdgesRev :: LogicGraph
+		     -> Diag          -- ^ the diagram to which the edges should be inserted
+		     -> DiagNodeSig   -- ^ the source node
+		     -> [DiagNodeSig] -- ^ the target nodes
+		     -> IOResult Diag
+-- ^ returns the diagram with edges inserted
+insInclusionEdgesRev lgraph diag (Diag_node_sig sn snsig) targetNodes =
+    do let inslink diag dns = do d <- diag
+				 case dns of
+			            Empty_node _ -> return d
+				    Diag_node_sig n nsig -> 
+					do incl <- resToIORes (ginclusion lgraph (getSig snsig) (getSig nsig))
+					   return (insEdge (sn, n, DiagLink { dl_morphism = incl }) d)
+       diag' <- foldl inslink (return diag) targetNodes
+       return diag'
+
+
 -- | Build a diagram that extends given diagram with a node containing
 -- given signature and with edges from given set of nodes to the new node.
-extendDiagram :: Diag          -- ^ the diagram to be extended
+-- The new edges are labelled with sigature inclusions.
+extendDiagram :: LogicGraph
+	      -> Diag          -- ^ the diagram to be extended
 	      -> [DiagNodeSig] -- ^ the nodes which should be linked to the new node
 	      -> NodeSig       -- ^ the signature with which the new node should be labelled
 	      -> IOResult (DiagNodeSig, Diag)
 -- ^ returns the new node and the extended diagram
-extendDiagram diag srcNodes newNodeSig = 
+extendDiagram lgraph diag srcNodes newNodeSig = 
   do let nodeContents = DiagNode {dn_sig = newNodeSig}
 	 [node] = newNodes 0 diag
 	 diag' = insNode (node, nodeContents) diag
-	 inslink diag dns = do d <- diag
-			       case dns of
-			            Empty_node _ -> return d
-				    Diag_node_sig n _ -> return (insEdge (n, node, DiagLink) d)
-     diag'' <- foldl inslink (return diag') srcNodes
-     return (Diag_node_sig node newNodeSig, diag'') 
+	 newDiagNode = Diag_node_sig node newNodeSig
+     diag'' <- insInclusionEdges lgraph diag' srcNodes newDiagNode
+     return (newDiagNode, diag'') 
 
+
+-- | Build a diagram that extends given diagram with a node containing
+-- given signature and with edges from the new node to given set of nodes.
+-- The new edges are labelled with sigature inclusions.
+extendDiagramRev :: LogicGraph
+		 -> Diag          -- ^ the diagram to be extended
+		 -> [DiagNodeSig] -- ^ the nodes which should be linked to the new node
+		 -> NodeSig       -- ^ the signature with which the new node should be labelled
+		 -> IOResult (DiagNodeSig, Diag)
+-- ^ returns the new node and the extended diagram
+extendDiagramRev lgraph diag targetNodes newNodeSig = 
+  do let nodeContents = DiagNode {dn_sig = newNodeSig}
+	 [node] = newNodes 0 diag
+	 diag' = insNode (node, nodeContents) diag
+	 newDiagNode = Diag_node_sig node newNodeSig
+     diag'' <- insInclusionEdgesRev lgraph diag' newDiagNode targetNodes
+     return (newDiagNode, diag'') 
+
+
+-- | Build a diagram that extends given diagram with a node and an
+-- edge to that node. The edge is labelled with given signature morphism and
+-- the node contains the target of this morphism. Extends the development graph 
+-- with given morphis as well.
+extendDiagramWithMorphism :: Pos           -- ^ the position (for diagnostics)
+			  -> LogicGraph
+			  -> Diag          -- ^ the diagram to be extended
+			  -> DGraph        -- ^ the development graph
+			  -> DiagNodeSig   -- ^ the node from which the edge should originate
+			  -> GMorphism     -- ^ the morphism with which the new edge should be labelled
+			  -> IOResult (DiagNodeSig, Diag, DGraph)
+-- ^ returns the new, and the extended diagram and extended development graph
+extendDiagramWithMorphism pos lgraph diag dg (Diag_node_sig n nsig) morph =
+  if (getSig nsig) == (dom Grothendieck morph) then
+     do (targetSig, dg') <- resToIORes (extendDGraph dg nsig morph DGTranslation) -- TODO: parameterised origin
+	let nodeContents = DiagNode {dn_sig = targetSig}
+	    [node] = newNodes 0 diag
+ 	    diag' = insNode (node, nodeContents) diag
+	    diag'' = insEdge (n, node, DiagLink { dl_morphism = morph }) diag'
+        return (Diag_node_sig node targetSig, diag'', dg') 
+     else do resToIORes (fatal_error ("Internal error: Static.AnalysisArchitecture.extendDiagramWithMorphism: the morphism domain differs from the signature in given source node")
+				     pos)
+
+
+-- | Check that given diagram ensures amalgamability along given set of morphisms
+assertAmalgamability :: Pos          -- ^ the position (for diagnostics)
+		     -> Diag         -- ^ the diagram to be checked
+		     -> [GMorphism]  -- ^ the set of morphisms
+		     -> IOResult ()
+-- TODO
+assertAmalgamability pos _ _ =
+    do resToIORes (warning ()
+		           "Ignoring amalgamability requirement"
+		           pos)
