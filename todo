@@ -80,17 +80,6 @@ development graph calculus
   for local subsume in RelationsAndOrders
 
 ************************************************
-Martin (Till)
-************************************************
-
-type check for CASL
-
-documentation
-
-*** Error encode.casl:8.30, No correct typing for
-
-
-************************************************
 Mingyi (Till)
 ************************************************
 
@@ -202,8 +191,7 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
-Overload.hs never returns ambiguities thus SimplifySen.hs always
-removes all types.
+Logic COL is a ruin (with wrongly qualified module names)
 
 non-free/generated datatype declarations generate ga-axioms
 (this is indented)
