@@ -144,7 +144,7 @@ anaOpId br sc attrs o =
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env ProgEq
 anaProgEq ga pe@(ProgEq pat trm qs) =
     do as <- gets assumps
-       putAssumps $ filterVars as
+--       putAssumps $ filterVars as -- leave in for constrained variables
        mp <- checkPattern ga pat
        case mp of 
 	   Nothing -> return pe

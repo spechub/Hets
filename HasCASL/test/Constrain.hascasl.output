@@ -52,3 +52,7 @@ true : Unit %(fun)%
   ((op f[t] : forall e : Ord . e -> e)(op b : t), op b : t)
 %% Diagnostics -----------------------------------------------------------
 *** Error 14.8, unresolved constraint 't : Ord'
+*** Hint 16.7, 
+  expected: Ord
+     found: Eq
+

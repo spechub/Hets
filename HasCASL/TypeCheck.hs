@@ -88,15 +88,18 @@ checkList _ _ = error "checkList"
 typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
 typeCheck mt trm = 
     do alts <- infer mt trm
+       let p = getMyPos trm
        if null alts then 
 	  do addDiags [mkDiag Error "no typing for" trm]
 	     return Nothing
 	  else if null $ tail alts then do
 	       tm <- gets typeMap
 	       let (s, cs, _, t) = head alts
-	       addDiags $ map (	\ c -> 
+		   (ds, rcs) = simplify tm noC cs 
+		   es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
+	       addDiags(es ++ map (	\ c -> 
 		      mkDiag Error "unresolved constraint" c)
-	              $ Set.toList $ simplify tm noC cs  
+	              (Set.toList rcs))
 	       return $ Just $ substTerm s t
 	  else do addDiags [Diag Error 
 			 ("ambiguous typings \n  " ++
@@ -104,7 +107,7 @@ typeCheck mt trm =
 			  showPrettyWithPos 
 			  (take 5 $ map ( \ (s,_,_,t) -> 
 					  substTerm s t) alts) "")
-			    $ getMyPos trm]
+			    p]
 	          return Nothing
 
 freshTypeVar :: Pos -> State Env Type		  

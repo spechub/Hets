@@ -7,7 +7,7 @@ class a, b, c < Type; a < b
 type s : c
 pred tt : s
 var x : s
-program (pred tt : s) = \ (var x : s) . ()
+program (pred tt : s) = \ (var x : s) : s . ()
 program __ res __ (x : s, y : t) : s = x;
         fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
 pred eq : s * s
@@ -121,9 +121,10 @@ sel2
      Cons31 : Data1 * Data2 -> Data3))%
 true : Unit %(fun)%
 tt : s ->? Unit %(pred)%
+x : s %(var)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (pred tt : s) = \ (var x : s) . () %(pe_tt)%
+program (pred tt : s) = \ (var x : s) : s . () %(pe_tt)%
 (fun __=__[t] : forall a : Type . a * a ->? Unit)
   (var x : t, var y : t)
 type Data1
@@ -206,15 +207,15 @@ type Data4
   known types:
     
 *** Hint 21.1, wrong result type 's' (21.20)
-  for application 'fst(var x : s, var y : t)'
-*** Error 21.1, no typing for 'fst(var x : s, var y : t) : s'
+  for application 'fst(x : s, var y : t)'
+*** Error 21.1, no typing for 'fst(x : s, var y : t) : s'
 *** Hint 22.1, no type match for: snd
   with type: '_var_4 ->? t' (22.6)
   known types:
     
 *** Hint 22.1, wrong result type 't' (22.20)
-  for application 'snd(var x : s, var y : t)'
-*** Error 22.1, no typing for 'snd(var x : s, var y : t) : t'
+  for application 'snd(x : s, var y : t)'
+*** Error 22.1, no typing for 'snd(x : s, var y : t) : t'
 *** Hint 28.9, no type match for: all
   with type: '_var_5 ->? ? Unit' (28.14)
   known types:
@@ -223,27 +224,31 @@ type Data4
   for application 'all(var p : ? s)'
 *** Error 28.9, no typing for 'all(var p : ? s) : ? Unit'
 *** Hint 30.9, no type match for: And
-  with type: '_var_7 ->? ? Unit' (30.14)
+  with type: '_var_6 ->? ? Unit' (30.14)
   known types:
     
 *** Hint 30.9, wrong result type '? Unit' (30.31)
-  for application 'And(var x : _var_6, var y : ? Unit)'
-*** Error 30.9, no typing for 'And(var x : _var_6, var y : ? Unit) : ? Unit'
+  for application 'And(x, var y : ? Unit)'
+*** Error 30.9, no typing for 'And(x, var y : ? Unit) : ? Unit'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 *** Hint 37.3, no type match for: ex
-  with type: '_var_8 ->? ? Unit' (37.7)
+  with type: '_var_7 ->? ? Unit' (37.7)
   known types:
     
 *** Hint 37.3, wrong result type '? Unit' (37.18)
   for application 'ex(var p : ? s)'
 *** Error 37.3, no typing for 'ex(var p : ? s) : ? Unit'
 *** Hint 40.3, no type match for: ff
-  with type: '_var_9 ->? ? Unit' (40.11)
+  with type: '_var_8 ->? ? Unit' (40.11)
   known types:
     
 *** Hint 40.3, wrong result type '? Unit' (40.11)
   for application 'ff()'
 *** Error 40.3, no typing for 'ff() : ? Unit'
+*** Hint 47.7, no type match for: y
+  with type: 's' (16.9)
+  known types:
+    't'
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e

@@ -27,10 +27,10 @@ type  : Type+ -> Type+ -> Type+ -> Type
 op def, tt : forall s : Type . Pred s
 var x : s
 program (op def[_var_1] : forall s : Type . Pred s) =
-            \ (var x : s) . ()
+            \ (var x : s) : s . ()
         %% def is also total (identical to tt) 
 program (op tt[_var_4] : forall s : Type . Pred s) =
-            \ (var x : s) . ()
+            \ (var x : s) : s . ()
         %% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -42,15 +42,15 @@ op fst : s * t ->? s = \ (var x : s, var y : t) .! (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
 . (fun __=__[s * t ->? _var_18] : forall s : Type . s * s ->? Unit)
-    (\ (var x : s, var y : t) . def (x res y),
-     \ (var x : s, var y : t) . (def y) und (def x))
+    (\ ((var x : s) : s, var y : t) . def (x res y),
+     \ ((var x : s) : s, var y : t) . (def y) und (def x))
 . (fun __=__[s * t ->? s] : forall s : Type . s * s ->? Unit)
     (op fst : s * t ->? s, op __res__ : s * t ->? s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred eq : forall s : Type . s * s
 . (fun __=__[_var_36 ->? Unit] : forall s : Type . s * s ->? Unit)
-    (\ (var x : _var_36)
+    (\ (var x : _var_36) : _var_36
        . (pred eq[_var_36] : forall s : Type . s * s)
            (var x : _var_36, var x : _var_36),
      op tt[_var_36] : forall s : Type . Pred s)
@@ -99,9 +99,8 @@ class instance Flatcpo < Cpo
 var c : Cpo; d : Cpo
 type instance __*__ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
-program (pred __<<=__[_var_79 * _var_80] : forall c : Cpo . c * c)
-          ((var x1 : _var_79, var y1 : _var_80),
-           (var x2 : _var_79, var y2 : _var_80))
+program (pred __<<=__[c * d] : forall c : Cpo . c * c)
+          ((var x1 : c, var y1 : d), (var x2 : c, var y2 : d))
           = (x1 <<= x2) und (y1 <<= y2)
 type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
@@ -114,8 +113,8 @@ program f <<= [c -->? d] g =
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 type __-->__(c : Cpo)(d : Cpo) < c -->? d
 var f : c --> d; g : c --> d
-program (pred __<<=__[_var_103] : forall c : Cpo . c * c)
-          (var f : _var_103, var g : _var_103)
+program (pred __<<=__[c --> d] : forall c : Cpo . c * c)
+          (var f : c --> d, var g : c --> d)
           = f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op Y : (p -->? p) --> p
@@ -186,12 +185,17 @@ true
   : Unit ->? Unit %(pred)%
   : Unit %(fun)%
 tt : forall s : Type . Pred s %(op)%
+x : s %(var)%
+x1 : c %(var)%
+x2 : c %(var)%
+y1 : d %(var)%
+y2 : d %(var)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 program (op def[_var_1] : forall s : Type . Pred s) =
-            \ (var x : s) . () %(pe_def)%
+            \ (var x : s) : s . () %(pe_def)%
 program (op tt[_var_4] : forall s : Type . Pred s) =
-            \ (var x : s) . () %(pe_tt)%
+            \ (var x : s) : s . () %(pe_tt)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a * a ->? Unit)
       ((op __res__ : s * t ->? s)(var x : s, var y : t),
@@ -201,12 +205,12 @@ forall x : s; y : t
       ((op fst : s * t ->? s)(var x : s, var y : t),
        var x : s) %(def_fst)%
 (fun __=__[s * t ->? _var_18] : forall s : Type . s * s ->? Unit)
-  (\ (var x : s, var y : t) . def (x res y),
-   \ (var x : s, var y : t) . (def y) und (def x))
+  (\ ((var x : s) : s, var y : t) . def (x res y),
+   \ ((var x : s) : s, var y : t) . (def y) und (def x))
 (fun __=__[s * t ->? s] : forall s : Type . s * s ->? Unit)
   (op fst : s * t ->? s, op __res__ : s * t ->? s)
 (fun __=__[_var_36 ->? Unit] : forall s : Type . s * s ->? Unit)
-  (\ (var x : _var_36)
+  (\ (var x : _var_36) : _var_36
      . (pred eq[_var_36] : forall s : Type . s * s)
          (var x : _var_36, var x : _var_36),
    op tt[_var_36] : forall s : Type . Pred s)
@@ -256,8 +260,8 @@ free type bool
   known types:
     
 *** Hint 60.9, wrong result type 't' (60.28)
-  for application 'snd(var x : s, var y : t)'
-*** Error 60.9, no typing for 'snd(var x : s, var y : t) : t'
+  for application 'snd(x : s, var y : t)'
+*** Error 60.9, no typing for 'snd(x : s, var y : t) : t'
 *** Error 65.18, ambiguous mixfix term
 	def(__res__(x, y))
 	def__(__res__(x, y))
@@ -269,37 +273,37 @@ free type bool
 
 *** Error 85.11, illegal supertype for variable '? s'
 *** Hint 87.9, no type match for: all
-  with type: '_var_65 ->? Unit ->? Unit' (87.14)
+  with type: '_var_63 ->? Unit ->? Unit' (87.14)
   known types:
     
 *** Hint 87.9, wrong result type 'Unit ->? Unit'
   for application 'all(var p : s ->? Unit)'
 *** Error 87.9, no typing for 'all(var p : s ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
-  with type: '_var_67 ->? Unit ->? Unit' (90.14)
+  with type: '_var_64 ->? Unit ->? Unit' (90.14)
   known types:
     
 *** Hint 90.9, wrong result type 'Unit ->? Unit'
-  for application 'And(var x : _var_66, var y : Unit ->? Unit)'
-*** Error 90.9, no typing for 'And(var x : _var_66, var y : Unit ->? Unit) : Unit ->? Unit'
+  for application 'And(x, var y : Unit ->? Unit)'
+*** Error 90.9, no typing for 'And(x, var y : Unit ->? Unit) : Unit ->? Unit'
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 *** Hint 98.9, no type match for: ex
-  with type: '_var_68 ->? Unit ->? Unit' (98.13)
+  with type: '_var_65 ->? Unit ->? Unit' (98.13)
   known types:
     
 *** Hint 98.9, wrong result type 'Unit ->? Unit'
   for application 'ex(var p : s ->? Unit)'
 *** Error 98.9, no typing for 'ex(var p : s ->? Unit) : Unit ->? Unit'
 *** Hint 101.9, no type match for: ff
-  with type: '_var_69 ->? Unit ->? Unit'
+  with type: '_var_66 ->? Unit ->? Unit'
   known types:
     
 *** Hint 101.9, wrong result type 'Unit ->? Unit'
   for application 'ff()'
 *** Error 101.9, no typing for 'ff() : Unit ->? Unit'
 *** Hint 103.9, no type match for: neg
-  with type: '_var_70 ->? Unit ->? Unit' (103.14)
+  with type: '_var_67 ->? Unit ->? Unit' (103.14)
   known types:
     
 *** Hint 103.9, wrong result type 'Unit ->? Unit'
@@ -330,7 +334,6 @@ free type bool
 *** Hint 153.5, is type variable 'c'
 *** Hint 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
-*** Error 159.23, unresolved constraint '_var_79 * _var_80 : Cpo'
 *** Error 159.45, unexpected mixfix token: und
 *** Error 169.9, incompatible kind of: __-->?__
   expected: Type- -> Type+ -> Type
@@ -343,20 +346,20 @@ free type bool
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
 *** Hint 10.18, no type match for: __::__
-  with type: '_var_101 ->? _var_100 ->? _var_91' (176.17)
+  with type: '_var_91 ->? _var_90 ->? _var_81' (176.17)
   known types:
     
-*** Hint 10.18, wrong result type '_var_100 ->? _var_91' (176.27)
-  for application '__::__(c(var -->? : _var_92)(var d : _var_93), [])'
-*** Hint 10.18, wrong result type '_var_91' (176.11)
-  for application '__::__(c(var -->? : _var_92)(var d : _var_93), [])(var g : _var_94)'
+*** Hint 10.18, wrong result type '_var_90 ->? _var_81' (176.27)
+  for application '__::__(c(var -->? : _var_82)(var d : _var_83), [])'
+*** Hint 10.18, wrong result type '_var_81' (176.11)
+  for application '__::__(c(var -->? : _var_82)(var d : _var_83), [])(var g : _var_84)'
 *** Error 176.13, wrongly typed application '__<<=__
-  (var f : _var_91,
-   __::__(c(var -->? : _var_92)(var d : _var_93), [])
-     (var g : _var_94))'
-*** Error 176.13, no typing for '__<<=__(var f : _var_91,
-        __::__(c(var -->? : _var_92)(var d : _var_93), [])
-          (var g : _var_94))'
+  (var f : _var_81,
+   __::__(c(var -->? : _var_82)(var d : _var_83), [])
+     (var g : _var_84))'
+*** Error 176.13, no typing for '__<<=__(var f : _var_81,
+        __::__(c(var -->? : _var_82)(var d : _var_83), [])
+          (var g : _var_84))'
 *** Error 181.9, incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
@@ -366,7 +369,6 @@ free type bool
 	def(f)(x)
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
-*** Error 186.16, unresolved constraint '_var_103 : Cpo'
 *** Error 186.26, unexpected mixfix token: c
 *** Error 190.9, incompatible kind of: p -->? p
   expected: Cpo-

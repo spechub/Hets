@@ -77,13 +77,15 @@ toHnf e c = case c of
     Subtyping _ _ -> return noC -- ignore
 -}
 
-simplify :: TypeMap -> Constraints -> Constraints -> Constraints
+simplify :: TypeMap -> Constraints -> Constraints -> ([Diagnosis], Constraints)
 simplify tm cs rs = 
-    if Set.isEmpty rs then cs
-    else let (r, rt) = Set.deleteFindMin rs in
-         case entail tm (Set.union cs rt) r of
-         Just _ -> simplify tm cs rt
-	 Nothing -> simplify tm (Set.insert r cs) rt
+    if Set.isEmpty rs then ([], cs)
+    else let (r, rt) = Set.deleteFindMin rs 
+	     Result ds m = entail tm (Set.union cs rt) r
+	     addDs (a, b) = (ds ++ a, b)
+         in case m of
+         Just _ -> addDs $ simplify tm cs rt
+	 Nothing -> addDs $ simplify tm (Set.insert r cs) rt
 
 entail :: Monad m => TypeMap -> Constraints -> Constrain -> m ()
 entail tm ps p = if p `Set.member` ps then return ()
@@ -101,10 +103,10 @@ byInst tm c = case c of
 	   ExtKind ek _ _ -> byInst tm (Kinding ty ek)
 	   ClassKind _ _ -> let (topTy, args) = getTypeAppl tm ty in
 	       case topTy of 
-	       TypeName _ kind _ -> {-if null args then
-		   if kind == k && n == 0 then return noC 
-		         else return $ Set.single (Kinding topTy k)
-		   else -} do 
+	       TypeName _ kind _ -> if null args then
+		   if lesserKind kind k then return noC 
+		         else fail $ expected k kind
+		   else do 
 		       let ks = getKindAppl kind args
 		       newKs <- dom k ks 
 		       return $ Set.fromList $ zipWith Kinding args newKs
@@ -134,7 +136,8 @@ maxKindss l = let margs = map maxKinds $ transpose l in
 dom :: Monad m => Kind -> [(Kind, [Kind])] -> m [Kind]
 dom k ks = let fks = filter ( \ (rk, _) -> lesserKind rk k ) ks 
 	       margs = maxKindss $ map snd fks
-           in if null fks then fail "class not found" else case margs of 
+           in if null fks then fail ("class not found " ++ 
+			  showPretty k "") else case margs of 
 	      Nothing -> fail "dom: maxKind"
 	      Just args -> if any ((args ==) . snd) fks then return args
 			   else fail "dom: not coregular"
