@@ -34,7 +34,7 @@ import Grothendieck
 top_logics :: G_sublogics -> G_sublogics -> Maybe G_sublogics
 top_logics (G_sublogics a al) (G_sublogics b bl) =
   if ((language_name a)==(language_name b)) then
-    Just (G_sublogics a (meet al bl)) 
+    Just (G_sublogics a (meet al bl))
   else
     Nothing
 -}
