@@ -23,26 +23,26 @@
      - parse funktionen schreiben \/
      - form_opt_rec anpassen 
      - perm_infile und check_in_file implemetieren \/
+-}
 
-   Optionen:
+{- Optionen:
 
 Usage: hetcats [OPTION...] file ... file
   -v[Int]  --verbose[=Int]      chatty output on stderr
   -V       --version            show version number
   -h       --help               show usage information
-  -i ITYPE  --input-type=ITYPE    ITYPE of input file: casl | het | tree.gen_trm
-  -p       --just-parse         just parse -- no analysis
+  -i ITYPE  --input-type=ITYPE  ITYPE of input file: casl|het|tree.gen_trm
+  -p       --just-parse         just parse -- skip analysis
   -O DIR   --output-dir=DIR     output DIR
   -o OTYPES  --output-types=OTYPES  select OTYPES of output files
-...?  -l id id? --output-logic=id id?  select output logic and optional logic coding
+  -l id    --output-logic=id    select output logic and optional logic coding
   -L DIR   --casl-libdir=DIR    CASL library directory
-
   -w --width tex=10cm het=75
+
 OTYPES is a comma separated list of OTYPE
 OTYPE is (pp.(het|tex|html))|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)|
          (graph.(dot|ps|davinci))
          (default: dg.taf)
-
 -}
 
 module Options where
@@ -84,6 +84,7 @@ defaultHetcatsOpts =
 	  , intype   = ATerm NonBAF
 	  , outdir = "."
 	    -- ...or like cats: same as that of the input file
+	    -- might be done with an extra constructor
 	  , outtypes = [HetCASLOut OutASTree Ascii]
             {- better default options, but 
 	    the underlying functions are not yet implemented:
@@ -108,7 +109,8 @@ data Flag = Verbose  Int         -- how verbose shall we be?
 	  | LibDir   FilePath    -- CASL library directory
 	    deriving (Show,Eq)
 
-{- | 'options' describes all available options and gives usage information -}
+{- | 'options' describes all available options and generates usage information
+-}
 options :: [OptDescr Flag]
 options =
     [ Option ['v'] ["verbose"] (OptArg parseVerbosity "Int")
@@ -141,11 +143,11 @@ data InType = ATerm ATType | ASTree ATType | CASLIn | HetCASLIn
 	      deriving (Show, Eq)
 -- was: SML_Gen_ATerm
 
--- valid types of ATerms
+-- valid types of ATerms: baf or non-baf ATerms
 data ATType = BAF | NonBAF
 	      deriving (Show, Eq)
 
--- valid types of output
+-- valid types of output: pretty, hetcasl or graph
 data OutType = PrettyPrint PrettyType 
 	     | HetCASLOut HetOutType HetOutFormat
 	     | Graph GraphType
@@ -155,18 +157,22 @@ data OutType = PrettyPrint PrettyType
 data PrettyType = PrettyAscii | PrettyLatex | PrettyHtml
 		  deriving (Show, Eq)
 
+-- valid types of hetcasl output
 data HetOutType = OutASTree | OutDGraph Flattening Bool
 		  deriving (Show, Eq)
 
+-- valid types of DGraph types: flat, hiding or full
 data Flattening = Flattened | HidingOutside | Full
 		  deriving (Show, Eq)
 
+-- valid formats of hetcasl output: ascii, term, taf, html or xml
 data HetOutFormat = Ascii | Term | Taf | Html | Xml
 		    deriving (Show, Eq)
 
 -- valid types of graphs
 data GraphType = Dot | PostScript | Davinci
 		 deriving (Show, Eq)
+
 
 -- parser functions returning Flags --
 
@@ -182,6 +188,7 @@ parseVerbosity (Just s)
 
 -- parse the input type 
 -- TODO: this one is _ugly_ ...
+-- ... but this seems to be the easiest way
 parseInputType :: String -> Flag
 parseInputType "casl"             = InType CASLIn
 parseInputType "hetcasl"          = InType HetCASLIn
@@ -200,8 +207,7 @@ parseInputType str                = error' str
 parseOutputTypes :: String -> Flag
 parseOutputTypes str
     | ',' `elem` str = OutTypes $ 
-		       (map maybeOType . map parseOType . splitOn ',') 
-		       str
+		       (map maybeOType . map parseOType . splitOn ',') str
     | otherwise = case (parseOType str) of
 					(Just ts) -> OutTypes [ts]
 					Nothing   -> error' str
@@ -251,7 +257,7 @@ parseOType s
 	| "nax." `isPrefixOf` s = 
 	    parseOType' (getOutFormat' $ drop 4 s) (True)
 	| otherwise             = 
-	    parseOType' (getOutFormat' s) (False) -}
+	    parseOType' (getOutFormat' s) (False) -} -- too confusing ;)
     getOutFormat "het"  = Just Ascii
     getOutFormat "taf"  = Just Term
     getOutFormat "trm"  = Just Taf
@@ -280,9 +286,11 @@ hetcatsOpts argv =
     case (getOpt Permute options argv) of
         (opts,non_opts,[]) -> do withOpts <- formOpts opts
 				 withIns  <- formInFiles non_opts
-				 return $ (withIns . withOpts) defaultHetcatsOpts
+				 return $ (withIns . withOpts) 
+					defaultHetcatsOpts
         (_,_,errs) -> fail (concat errs ++ hetsUsage)
 
+-- TODO!
 formInFiles :: [String] -> IO (HetcatsOpts -> HetcatsOpts)
 formInFiles fs = do ifs <- checkInFiles fs
 		    case ifs of
@@ -317,9 +325,11 @@ formOpts fs = do if (hasHelp fs)
 
 -- auxiliary functions: FileSystem interaction --
 
+-- sanity check for all input files
 checkInFiles :: [FilePath] -> IO [FilePath]
 checkInFiles = filterM checkInFile
 
+-- sanity check for a single input file
 checkInFile :: FilePath -> IO Bool
 checkInFile file = do exists <- doesFileExist file
 		      perms  <- catch (getPermissions file)
@@ -333,6 +343,7 @@ checkInFile file = do exists <- doesFileExist file
 			 then return True
 			 else return False
 
+-- sanity check for all output directories
 checkOutDirs :: [Flag] -> IO [FilePath]
 checkOutDirs = (filterM checkOutDir) . (map extrOutDir) . (filter isOutDir)
     where
@@ -341,6 +352,7 @@ checkOutDirs = (filterM checkOutDir) . (map extrOutDir) . (filter isOutDir)
     extrOutDir (OutDir x) = x
     extrOutDir _          = hetsError Intern "error in checkOutDirs"
 
+-- sanity check for a single output directory
 checkOutDir :: String -> IO Bool
 checkOutDir file = do exists <- doesDirectoryExist file
 		      perms  <- catch (getPermissions file)
@@ -366,10 +378,14 @@ collectOutTypes fs = fs
 
 -- auxiliary functions: error messages --
 
+-- generic error message function for internal or user errors
+-- user errors also print our usage information, 
+-- as presumably something went wrong while parsing the input flags
 hetsError :: forall a. ErrorSource -> String -> a
 hetsError User errorString = error (errorString ++ "\n" ++ hetsUsage)
 hetsError Intern errorString = error ("Internal Error: " ++ errorString)
 
+-- generates usage information for the commandline
 hetsUsage :: String
 hetsUsage = usageInfo header options
     where header = "Usage: hetcats [OPTION...] file"
@@ -387,7 +403,8 @@ out_types s | ',' `elem` s = case merge_out_types $ split_types s of
 	    | s == "global-env-xml" = OutTypes [Global_Env XML]
 	    | otherwise = error $ hetcats_error ("unknown output type: " ++ s)
     where split_types = map out_types . splitOn ',' 
-
+-}
+{-
 -- merges [OutTypes[a]] into OutTypes[a]
 merge_out_types :: [Flag] -> [Flag]
 merge_out_types flags = 
@@ -400,14 +417,16 @@ merge_out_types flags =
 			   _ -> error "internal error in merging OutTypes"
 	ots' = foldl concatTypes [] ots
     in if null ots' then flags' else (OutTypes ots'):flags'  
-
+-}
+{-
 -- This function parses all options
 hetcatsOpts :: [String] -> IO HetcatsOpts
 hetcatsOpts argv =
    case (getOpt Permute options argv) of
       (opts,non_opts,[]  ) -> form_opt_rec (merge_out_types opts) non_opts
       (_,_,errs) -> fail (concat errs ++ hetcats_usage)
-
+-}
+{-
 form_opt_rec :: [Flag] -> [String] -> IO HetcatsOpts
 form_opt_rec flags inp_files = 
     let req_in_file = case inp_files of
@@ -441,7 +460,8 @@ form_opt_rec flags inp_files =
 				       , rawoptions = flags
 				       , outtypes = outTypes
 				       }
-
+-}
+{-
 -- some suffixes to try in turn 
 -- TODO: implement perm_in_file
 perm_in_file :: FilePath -> [FilePath]
@@ -451,9 +471,11 @@ perm_in_file f = [f]
 -- TODO: implement check_in_file
 check_in_file :: FilePath -> IO FilePath
 check_in_file = return . head . perm_in_file
+-}
 
 -- check the output directory and choose a default one if none is specified
 -- TODO: implement the checking of the out_dir
+{-
 check_out_dir :: [Flag] -> FilePath -> IO FilePath
 check_out_dir flags in_file = 
     let ods = filter (\f -> case f of
@@ -468,7 +490,7 @@ check_out_dir flags in_file =
 		else
 		   default_dir
 	     else 
-	        (\(OutDir fp) -> fp) $ last ods
+	        ( \ (OutDir fp) -> fp) $ last ods
     in do od' <- if od == "." then
                     getCurrentDirectory
 	         else
@@ -482,5 +504,4 @@ check_out_dir flags in_file =
 	   else
 	     fail $ "no writeable output directory available\n" ++
 		    hetcats_usage
-
 -}
