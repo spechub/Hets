@@ -1,6 +1,6 @@
 {-
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Wiebke Herding and Uni Bremen 2003
+Copyright   :  (c) Till Mossakowski, Wiebke Herding, C. Maeder, Uni Bremen 2004
 Licence     :  All rights reserved.
 
 Maintainer  :  hets@tzi.de
@@ -28,11 +28,9 @@ import Common.PPUtils
 
 type M_BASIC_SPEC = BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA
 
-data M_BASIC_ITEM = Mod_decl [Annoted MOD_DECL] [Pos]
-
-data MOD_DECL = Simple_mod_decl SIMPLE_ID
-	      | Term_mod_decl SORT
-		deriving (Eq, Show)
+data M_BASIC_ITEM = Simple_mod_decl [Annoted SIMPLE_ID] [Pos]
+		  | Term_mod_decl [Annoted SORT] [Pos]
+		    deriving (Eq, Show)
 
 data RIGOR = Rigid | Flexible deriving (Eq, Show)
 
@@ -57,18 +55,17 @@ data M_FORMULA =
                -- pos: "<>"
              deriving (Eq, Show)
 
-
 modalityS, flexibleS, rigidS, termS :: String 
 modalityS = "modality"
 flexibleS = "flexible"
 rigidS = "rigid"
 termS = "term"
 
-instance PrettyPrint MOD_DECL where
-    printText0 ga (Simple_mod_decl i) = 
-	ptext modalityS <+> printText0 ga i
-    printText0 ga (Term_mod_decl s) = 
-	ptext termS <+> ptext modalityS <+> printText0 ga s
+instance PrettyPrint M_BASIC_ITEM where
+    printText0 ga (Simple_mod_decl is _) = 
+	ptext modalityS <+> semiAnno_text ga is
+    printText0 ga (Term_mod_decl ss _) = 
+	ptext termS <+> ptext modalityS <+> semiAnno_text ga ss
 
 instance PrettyPrint RIGOR where
     printText0 _ Rigid = ptext rigidS
