@@ -103,6 +103,7 @@ docs/index.html: $(doc_sources)
 
 apache_doc:
 	cvs up -d
+	$(MAKE) distclean
 	$(RM) docs/*.html 
 	$(MAKE) doc
 	$(PERL) utils/post_process_docs.pl docs \
