@@ -9,6 +9,7 @@ Portability :  portable
 
    
    The comorphism functions for HasCASL2Haskell
+
 -}
 
 module ToHaskell.FromHasCASL where
@@ -23,10 +24,9 @@ import ParseMonad
 import LexerOptions
 import PropLexer
 import PropParser as HsParser
-import PNT
-import PropPosSyntax hiding (ModuleName, Id, HsName)
 import qualified NewPrettyPrint as HatPretty
 
+import PropPosSyntax
 import Haskell.HatAna
 import Haskell.HatParser
 
@@ -93,7 +93,7 @@ preludeString =
  \\n\
  \data (->) a b\n\
  \\n\
- \data [a] = [] | (:) { head :: a , tail :: [a] }\n\
+ \data [a] = [] | a : [a]\n\
  \\n\
  \type  String = [Char]\n\
  \\n\
