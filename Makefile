@@ -153,8 +153,7 @@ apache_doc:
 
 post_doc4apache:
 	$(PERL) utils/post_process_docs.pl docs \
-            'Common.Lib.Map.html:Common.Lib._Map.html' \
-            '/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/:'
+            'Common.Lib.Map.html:Common.Lib._Map.html'
 	mv docs/* a-docs/
 
 #############################
