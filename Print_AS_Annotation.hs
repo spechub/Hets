@@ -71,7 +71,7 @@ instance PrettyPrint Annotation where
 					  map (printText0 ga) aa
     printText0 ga (Label aa _) =
 	let aa' = printText0 ga aa
-	in ptext "%(" <+> aa' <+> ptext ")%"
+	in ptext "%(" <> aa' <> ptext ")%"
     printText0 _ (Implies _) =
 	printLine (ptext "implies") empty
     printText0 _ (Definitional _) =
