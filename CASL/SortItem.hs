@@ -30,11 +30,11 @@ pluralKeyword s = makeToken (keyWord (string s <++> option "" (string "s")))
 optSemi :: GenParser Char st (Maybe Token, [Annotation])
 optSemi = bind (,) (option Nothing (fmap Just semiT)) annotations
 
-isStartKeyword s = s `elem` "":dotS:cDot:casl_reserved_words
+isStartKeyword s = s `elem` "}":"]":dotS:cDot:casl_reserved_words
 
 lookAheadItemKeyword :: GenParser Char st ()
 lookAheadItemKeyword = 
-    do { c <- lookAhead (many1 scanLPD <|> many (oneOf signChars))
+    do { c <- lookAhead (many1 scanLPD <|> many (oneOf ("}]"++signChars)))
        ; if isStartKeyword c then return () else unexpected c
        }
 

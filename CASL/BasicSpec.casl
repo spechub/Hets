@@ -1,6 +1,6 @@
 pred __ < __ : a * a
 
-op a: b; c: b
+op __a: b; c: b
 sort s, t < s ;
 . a = a
 vars a:t; a,b:s 
@@ -55,3 +55,104 @@ a = a; %(a2)%
 . a = a ;  %(f1)%
 
 sort s
+
+  sorts s,
+        abcdefghijlklmnopqrstuvwxyz,
+        ABCDEFGHIJKLMONOPQRSTUVWXYZ,
+        x0123456789,
+        ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ, 
+        abc, a_b_c, ab2, ab_2_3_a, a', a'b''2        %[WORDS]%
+        %[.abc, .a_b_c, .ab2, .ab_2_3_a, .a', .a'b''2,  DOT-WORDS]%
+  op    __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__ : s*s->s          %% NO-BRACKET-SIGNs
+  ops 'a','"','\\','\n','\000','\255',
+      '\x00','\xFF','\o000','\o377',
+      '^','1','2','3','4','5','6','7','8','9','0',
+      'ß','!','§','$','&','/','(',')','=','?','\\' : s;    %%characters
+  %[. def "^1234567890ß!§$&/()=?"; ]%
+        %[ strings ´°%\\\" does not work yet!]%
+  ops 1,2,3,4 : s;
+      - : s->s;
+      __@@__,__exp__,__frac__ : s*s->s;
+  . def 12 . def 12E34 . def 12E-34 . def 12.34  %%numbers
+  . def 12.34E34 . def 12.34E+34 . def 12.34E-34 %%fractions
+
+  . true %(The true formula)%
+  . true %(and this
+           also goes
+           along several lines! 
+           and with special stuff: -*/\&=<>BCDEFGHIJKLM!% )% 
+     sort s; 
+     op __and'__:s
+     sort a;
+     sorts a,b,c;
+     sort a<b;
+     sorts a,b,c,d < e;
+     sorts a=b=c=d=e;
+     sort a = {x:b . true}
+     sorts s,t;
+     op a:s;
+     op b:s->s;
+     ops c:s*s->s, assoc, comm, idem, unit a;
+         c:s*s*s->s; 
+     op a: ?s;    %[ Should be:  op a:?s ]%
+     op b:s->?s;
+     op c:s*s->?s, assoc, comm, idem, unit a;
+     op c:s*s*s->?s; 
+     op a:s=a;
+     op c(x,y:s;z:t):s = a;
+     op a:?s=a;
+     op c(x,y:s;z:t):?s = a;
+     %[op a: ?s=a; 
+     op c(x,y:s;z:t): ?s = a; ]%
+     sorts s,t;
+     pred a:();
+     pred b:s;
+     preds c:s*s;
+           c:s*s*s; 
+     %[pred a:()<=> true;
+     pred c(x,y:s;z:t)<=>false;
+     pred a: () <=> true; ]%
+     pred c(x,y:s;z:t) <=> false;
+     type Data1 ::= a | b | c;
+     type Data2 ::= Cons21 (Data1; Data2) | Cons22(Data2; Data1) | sort Data1
+     type Data3 ::= Cons31 (sel1:?Data1; sel2:?Data2) | Cons32(sel2:?Data2; sel1:?
+Data1)
+     type Data4 ::= Cons41 (sel1:?Data1; sel2:?Data2)? | Cons42(sel2:?Data2; sel1:
+?Data1)?
+                    sorts Data1, Data2, Data3
+     types Tree ::= Leaf (Data1) | Forest;
+           Forest ::= Nil | Cons (Tree;Forest)
+     free type List ::= Nil | Cons(Data1; List)
+     generated type Set ::= Mt | Add(Data1; Set)
+     generated {type Set ::= Mt | Add(Data1; Set)}
+     generated {sort nat; ops 0:nat; succ:nat->nat; }
+  sorts s<t
+  ops f,g:s->?s;
+      g:s->t;
+      __+__,__-__,__*__,__/__ : s*s->s;
+      {}:s;
+      {__} : s->s
+  preds p:(); q:s
+  vars x,y,z:s; r1,r2:t
+  . false
+  var x:s . true
+  . not p /\ not q(x) /\ q(x)
+  . not p \/ not q(x) \/ q(x)
+  . not p /\ not q(x) /\ q(x) => not p \/ not q(x) \/ q(x) =>  not p /\ not q(x) /\ q(x)
+  . not p /\ not q(x) /\ q(x) if not p \/ not q(x) \/ q(x) if  not p /\ not q(x) /\ q(x)
+  %[. not p /\ not q(x) /\ q(x) <=> not p \/ not q(x) \/ q(x) <=>  not p /\ not q(x) /\ q(x)]%
+  forall x:s . not p /\ not q(x) /\ q(x)
+    <=> exists x:s . not p \/ not q(x) \/ q(x) <=> exists! x:s . not p /\ not q(x) /\ q(x)
+  . def f(x)
+  . f(x) =e= g(x)
+  . f(x) = g(x)
+  . r1 in s
+  . def g(x):t
+  . def g(x) as s
+  . def (op f:s->?s)(x)  %[ (var x:s)  ]%
+  . def (op g:s->t)(x) 
+  . (pred p:()) 
+  . (pred q:s)(x) 
+  . def x*y*z+z*y*x   
+  . def {} 
+  . def {x}

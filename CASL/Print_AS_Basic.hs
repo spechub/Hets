@@ -19,7 +19,6 @@ import PrettyPrint
 instance PrettyPrint BASIC_SPEC where
     printText0 (Basic_spec l) = vcat (map printText0 l) 
 
-dotT = space $$ (text cDot <> space)
 semiT l = cat(punctuate semi (map printText0 l) )
 
 instance PrettyPrint BASIC_ITEMS where
@@ -30,11 +29,11 @@ instance PrettyPrint BASIC_ITEMS where
 			       <+> braces (vcat (map printText0 l))
     printText0(Var_items l _) = text varS 
 				<+> semiT l
-    printText0(Local_var_axioms l f _) = text forallS 
+    printText0(Local_var_axioms l f p) = text forallS 
 				 <+> semiT l
-				 <+> dotT
-				 <+> hcat(punctuate dotT (map printText0 f))
-    printText0(Axiom_items f _) = dotT <> hcat(punctuate dotT (map printText0 f))
+				 $$ printText0(Axiom_items f p)
+    printText0(Axiom_items f _) = vcat (map (\x -> text cDot  <+> printText0 x)
+					f)
 
 instance PrettyPrint SIG_ITEMS where
     printText0(Sort_items l _) =  text sortS <+> semiT l 
