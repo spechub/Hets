@@ -7,7 +7,7 @@
 
 \section{Preliminaries}
 
-Make sure a new version (currently 5.04.1) of \texttt{ghc}
+Make sure a new version (currently 5.04.2) of \texttt{ghc}
 (www.haskell.org) is properly installed.  Also
 \texttt{/usr/local/bin/perl, /usr/local/bin/bash} and \texttt{GNU
   make} are required.
@@ -330,9 +330,9 @@ purposes in \texttt{Main.hs}). Form the top-level directory also stuff
 for annotations (i.e.\ \texttt{Anno\_Parser.hs}) is used.
 
 \begin{description}
+\item[Concrete-Syntax.txt] concrete syntax
 \item[hacapa.lhs] counterpart to \texttt{CASL/capa.lhs} 
 \item[As.hs] abstract syntax
-\item[Le.hs] local environment
 \item[HToken.hs] extension of \texttt{CASL/Token.hs} for HasCASL
   (further keywords)
 \item[PrintAs.hs] pretty printing the abstract syntax
@@ -341,9 +341,11 @@ for annotations (i.e.\ \texttt{Anno\_Parser.hs}) is used.
 \end{description}
 
 As in \texttt{HetCATS/CASL/} there are some test files (
-\texttt{*.casl}, \texttt{Wrong*.casl} and \texttt{*.output}) and a
+\texttt{*.hascasl}, \texttt{Wrong*.hascasl} and \texttt{*.output}) and a
 script \texttt{runcheck.sh}. The binary produced by \texttt{ghc-call}
 is named \texttt{hacapa}.
+
+For further documentation see \texttt{HasCASL/doc/}. 
 
 \end{document}
 
