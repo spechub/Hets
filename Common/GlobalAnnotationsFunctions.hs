@@ -27,8 +27,6 @@ module Common.GlobalAnnotationsFunctions
 
 import Common.Id
 import Common.AS_Annotation
-import Common.Print_AS_Annotation
-import Common.PrettyPrint
 import Common.GlobalAnnotations
 
 import qualified Common.Lib.Rel as Rel
@@ -49,7 +47,7 @@ addGlobalAnnos ga annos =
 store_prec_annos :: PrecedenceGraph -> [Annotation] -> PrecedenceGraph
 store_prec_annos pgr = Rel.transClosure . 
     foldr ( \ an p0  -> case an of 
-	    Prec_anno less lIds hIds _ -> 
+	    Prec_anno prc lIds hIds _ -> 
 	             foldr ( \ li p1 -> 
 			     foldr ( \ hi p2 -> 
 				     if li == hi then error 
@@ -60,9 +58,13 @@ store_prec_annos pgr = Rel.transClosure .
 					    show li ++ " < " ++ show hi ++
 					    "\n" ++ show p2)
 				     else 
-				     let p3 = Rel.insert li hi p2 in
-				     if less then p3 else
-				     Rel.insert hi li p3) 
+				     case prc of 
+				     Lower -> Rel.insert li hi p2
+				     Higher -> Rel.insert hi li p2
+				     BothDirections -> 
+				           Rel.insert hi li (Rel.insert 
+							     li hi p2)
+				     NoDirection -> p2)
 			     p1 hIds)
 	              p0 lIds
 	    _ -> p0 ) pgr  
@@ -76,22 +78,17 @@ precRel pg out_id in_id =
     case (Rel.member in_id out_id pg, Rel.member out_id in_id pg) of
     (False,True)  -> Lower
     (True,False)  -> Higher
-    (True,True)   -> ExplGroup BothDirections
-    (False,False) -> ExplGroup NoDirection
+    (True,True)   -> BothDirections
+    (False,False) -> NoDirection
 
 ---------------------------------------------------------------------------
 
 store_assoc_annos :: AssocMap ->  [Annotation] -> AssocMap
-store_assoc_annos am ans = am `Map.union` Map.fromList assos
-    where assos = concat $ map conn $ filter assocA ans
-	  conn (Lassoc_anno is _) = map (conn' ALeft)  is
-	  conn (Rassoc_anno is _) = map (conn' ARight) is
-	  conn _ = error "filtering isn't implented correct"
-	  conn' sel i = (i,sel)
-	  assocA an = case an of
-		       Lassoc_anno _ _ -> True
-		       Rassoc_anno _ _ -> True
-		       _               -> False
+store_assoc_annos am = Map.union am . Map.fromList .
+    foldr ( \ an l -> 
+	    case an of 
+	    Assoc_anno as is _ -> map ( \ a -> (a, as)) is ++ l
+	    _ -> l ) []
 
 isLAssoc :: AssocMap -> Id -> Bool
 isLAssoc = isAssoc ALeft
@@ -109,14 +106,11 @@ isAssoc ae amap i =
 ---------------------------------------------------------------------------
 
 store_display_annos :: DisplayMap -> [Annotation] -> DisplayMap
-store_display_annos dm ans = dm `Map.union` Map.fromList disps
-    where disps = map conn $ filter displayA ans
-	  conn (Display_anno i sxs _) = (i,sxs)
-	  conn _ = error "filtering isn't implemented correct"
-	  displayA an = case an of
-		        Display_anno _ _ _ -> True
-		        _                  -> False
-
+store_display_annos dm = Map.union dm . Map.fromList .
+    foldr ( \ an l -> 
+	    case an of 
+	    Display_anno i sxs _ -> (i,sxs) : l
+	    _ -> l) []
 
 ----------------------------------------------------------------------
 
@@ -193,78 +187,58 @@ store_literal_annos la ans =
          error "%string- and %list-annotions use same identifiers"
 
 setStringLit :: Maybe (Id,Id) -> [Annotation] -> Maybe (Id,Id)
-setStringLit mids ans = 
-    case sans of
-	      []     -> mids
-	      [a]    -> Just $ getIds a
-	      (a:as) -> if all (sameIds a) as then
-			   Just $ getIds a
-			else 
-			   annotationConflict "string" sans
-    where sans = filter (\a -> case a of 
-			       String_anno _ _ _ -> True
-			       _    -> False) ans
-	  getIds (String_anno id1 id2 _) = (id1,id2)
-	  getIds _ = error "filtering doesn't worked: GAF.setStringLit"
+setStringLit = 
+    foldr ( \ a m ->
+	    case a of 
+	    String_anno id1 id2 _ ->
+	        case m of 
+	        Nothing -> Just (id1, id2)
+	        Just p -> 
+	            if (id1, id2) == p then m
+	            else error ("conflict %string " ++ showId id1 "," 
+				++ showId id2 " and " ++ show p)
+	    _ -> m )
 
 setFloatLit :: Maybe (Id,Id) -> [Annotation] -> Maybe (Id,Id)
-setFloatLit mids ans = 
-    case sans of
-	      []     -> mids
-	      [a]    -> Just $ getIds a
-	      (a:as) -> if all (sameIds a) as then
-			   Just $ getIds a
-			else 
-			   annotationConflict "floating" sans
-    where sans = filter (\a -> case a of 
-			       Float_anno _ _ _ -> True
-			       _    -> False) ans
-	  getIds (Float_anno id1 id2 _) = (id1,id2)
-	  getIds _ = error "filtering doesn't worked: GAF.setFloatLit"
+setFloatLit = 
+    foldr ( \ a m ->
+	    case a of 
+	    Float_anno id1 id2 _ ->
+	        case m of 
+	        Nothing -> Just (id1, id2)
+	        Just p -> 
+	            if (id1, id2) == p then m
+	            else error ("conflict %floating " ++ showId id1 "," 
+				++ showId id2 " and " ++ show p)
+	    _ -> m )
 
 setNumberLit :: Maybe Id -> [Annotation] -> Maybe Id
-setNumberLit mids ans = 
-    case sans of
-	      []     -> mids
-	      [a]    -> Just $ getId a
-	      (a:as) -> if all (sameIds a) as then
-			   Just $ getId a
-			else 
-			   annotationConflict "number" sans
-    where sans = filter (\a -> case a of 
-			       Number_anno _ _ -> True
-			       _    -> False) ans
-	  getId (Number_anno id1 _) = id1
-	  getId _ = error "filtering doesn't worked: GAF.setNumberLit"
+setNumberLit =
+    foldr ( \ a m -> 
+	    case a of 
+	    Number_anno id1 _ -> 
+	        case m of 
+	        Nothing -> Just id1
+	        Just id2 -> 
+	            if id1 == id2 then m
+	            else error ("conflict %number " ++ showId id1 " and " 
+	                  ++ show id2)
+	    _ -> m )
 
 setListLit :: Maybe (Id,Id,Id) -> [Annotation] -> Maybe (Id,Id,Id)
-setListLit mids ans = 
-    case sans of
-	      []     -> mids
-	      [a]    -> Just $ getIds a
-	      (a:as) -> if all (sameIds a) as then
-			   Just $ getIds a
-			else 
-			   annotationConflict "list" sans
-    where sans = filter (\a -> case a of 
-			       List_anno _ _ _ _ -> True
-			       _    -> False) ans
-	  getIds (List_anno id1 id2 id3 _) = (id1,id2,id3)
-	  getIds _ = error "filtering doesn't worked: GAF.setListLit"
+setListLit = 
+    foldr ( \ a m ->
+	    case a of 
+	    List_anno id1 id2 id3 _ ->
+	        case m of 
+	        Nothing -> Just (id1, id2, id3)
+	        Just p -> 
+	            if (id1, id2, id3) == p then m
+	            else error ("conflict %list " ++ showId id1 "," 
+				++ showId id2 "'" ++ showId id3 " and " 
+				++ show p)
+	    _ -> m )
 
-sameIds :: Annotation -> Annotation -> Bool
-sameIds (List_anno lid1 lid2 lid3 _) (List_anno rid1 rid2 rid3 _) =
-    lid1==rid1 && lid2==rid2 && lid3==rid3
-sameIds (String_anno lid1 lid2 _) (String_anno rid1 rid2 _) =
-    lid1==rid1 && lid2==rid2 
-sameIds (Float_anno lid1 lid2 _) (Float_anno rid1 rid2 _) =
-    lid1==rid1 && lid2==rid2 
-sameIds (Number_anno lid1 _) (Number_anno rid1 _) =
-    lid1==rid1 
-sameIds a1 a2 =
-    error $ "*** wrong annotation combination for GAF.sameIds:\n"
-	  ++ spp a1 ++ "\n" ++ spp a2
-    where spp a = show $ printText0 emptyGlobalAnnos a
 -------------------------------------------------------------------------
 
 nullStr, nullList :: GlobalAnnos -> Id		 
@@ -292,11 +266,4 @@ listBrackets g =
 		Just (bs, _, _) -> getListBrackets bs
 
 -------------------------------------------------------------------------
-
--- | an error function for Annotations
-
-annotationConflict :: String -> [Annotation] -> a
-annotationConflict tp ans = 
-    error $ ("*** conflicting %"++ tp ++ " annotations:\n"
-	      ++  unlines (map (show . printText0 emptyGlobalAnnos) ans))
 
