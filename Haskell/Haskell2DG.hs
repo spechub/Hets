@@ -1,11 +1,15 @@
+{- HetCATS/Haskell/Haskell2DG.hs
+   Authors: S. Groening
+   Year:    2003
+-}
+
 module Haskell.Haskell2DG where
 
 import Options
-import Haskell.Hatchet.MultiModuleBasics
-import Haskell.Hatchet.MultiModule              (readModuleInfo, readOneImportSpec)
-import Haskell.Hatchet.HsParseMonad             (ParseResult (..))
-import Haskell.Hatchet.SynConvert               (toAHsModule)
-import Haskell.Hatchet.HsParsePostProcess       (fixFunBindsInModule)
+import Haskell.Hatchet.MultiModule  (readModuleInfo, readOneImportSpec)
+import Haskell.Hatchet.HsParseMonad (ParseResult (..))
+import Haskell.Hatchet.SynConvert   (toAHsModule)
+import Haskell.Hatchet.HsParsePostProcess (fixFunBindsInModule)
 import Haskell.Hatchet.HaskellPrelude
                                 (tyconsMembersHaskellPrelude, 
                                  preludeDefs, 
@@ -22,18 +26,37 @@ import Haskell.Hatchet.KindInference (KindEnv)
 import Haskell.Hatchet.Representation (Scheme)
 import Haskell.Hatchet.Class    (ClassHierarchy)
 import Haskell.Hatchet.Env      (Env, listToEnv)
-import Haskell.Hatchet.MultiModuleBasics (ModuleInfo(..))
-import Haskell.Hatchet.TIModule
-import Haskell.Hatchet.HsSyn
-import Static.DevGraph
-import Syntax.AS_Library
+import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
+                                          joinModuleInfo)
+import Haskell.Hatchet.TIModule (tiModule, Timing)
+import Haskell.Hatchet.HsSyn    (SrcLoc (..), HsModule (..))
+    
+import Static.DevGraph          (DGNodeLab (..),
+                                 DGLinkLab (..),
+                                 DGLinkType (..),
+                                 DGOrigin (..),
+                                 DGraph,
+                                 LibEnv,
+                                 emptyLibEnv)
+import Syntax.AS_Library        (LIB_NAME (..),
+                                 LIB_ID (..))
 import Haskell.Hatchet.AnnotatedHsSyn
-import Logic.Grothendieck
-import Common.Lib.Graph
-import Common.Id
-import Haskell.Logic_Haskell
-import Haskell.HaskellUtils
-import GHC.IOBase
+import Logic.Grothendieck        (G_sign (..),
+                                  G_l_sentence_list (..),
+                                  G_morphism (..),
+                                  gEmbed)
+import Common.Lib.Graph          (Node,
+                                  empty,
+                                  insNode,
+                                  insEdge,
+                                  newNodes)
+
+import Common.Id                 (Token (..),
+                                  SIMPLE_ID,
+                                  nullPos)
+import Haskell.Logic_Haskell     (Haskell (..))
+import Haskell.HaskellUtils      (extractSentences)
+import GHC.IOBase                (unsafePerformIO)
 
 -- - Datentyp anlegen für HaskellEnv (Resultat von tiModule)
 data HaskellEnv = HasEnv Timing              -- timing values for each stage
