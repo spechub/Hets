@@ -24,6 +24,7 @@ import CASL.Sign
 import CASL.MixfixParser
 import CASL.Overload
 import CASL.Inject
+import CASL.Quantification
 import CASL.Utils
 import Common.Lib.State
 import Common.PrettyPrint
@@ -178,8 +179,12 @@ ana_BASIC_ITEMS mef ab as ga bi =
                              (ds ++ dss, f {item = resF} : ress, 
                                  f {item = anaF} : anas))
                      ([], [], []) afs
-               fufs = map ( \ a -> a { item = mkForall il 
-                                     (item a) ps } ) anaFs
+               fufs = map (mapAn (\ f -> let 
+                                 vs = map ( \ (v, s) -> 
+                                            Var_decl [v] s ps)
+                                      $ Set.toList $ freeVars f 
+                                 in stripQuant $ mkForall (vs ++ il) f ps)) 
+                      anaFs 
                sens = map ( \ a -> NamedSen (getRLabel a) $ item a) fufs
            addDiags es
            addSentences sens                        
@@ -198,13 +203,19 @@ ana_BASIC_ITEMS mef ab as ga bi =
                              (ds ++ dss, f {item = resF} : ress, 
                                  f {item = anaF} : anas))
                      ([], [], []) afs
-               fufs = map ( \ a -> a { item = mkForall [] 
-                                     (item a) ps } ) anaFs
+               fufs = map (mapAn (\ f -> let
+                                 vs = map ( \ (v, s) -> 
+                                            Var_decl [v] s ps)
+                                      $ Set.toList $ freeVars f 
+                                 in stripQuant $ mkForall vs f ps)) anaFs
                sens = map ( \ a -> NamedSen (getRLabel a) $ item a) fufs
            addDiags es
            addSentences sens                        
            return $ Axiom_items resFs ps
     Ext_BASIC_ITEMS b -> fmap Ext_BASIC_ITEMS $ ab ga b
+
+mapAn :: (a -> b) -> Annoted a -> Annoted b
+mapAn f an = replaceAnnoted (f $ item an) an
 
 toSortGenAx :: [Pos] -> Bool ->
                (Set.Set Id, Set.Set Component) -> State (Sign f e) ()

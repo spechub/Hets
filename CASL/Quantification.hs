@@ -20,10 +20,10 @@ import qualified Common.Lib.Set as Set
 flatVAR_DECLs :: [VAR_DECL] -> [(VAR, SORT)]
 flatVAR_DECLs = concatMap (\ (Var_decl vs s _) -> map (\ v -> (v, s)) vs)
 
-freeVars :: FORMULA f -> Set.Set VAR
+freeVars :: FORMULA f -> Set.Set (VAR, SORT)
 freeVars f = case f of 
-    Quantification _ vdecl phi _ -> foldr Set.delete (freeVars phi) $ 
-		    concatMap ( \ (Var_decl vs _ _) -> vs) vdecl
+    Quantification _ vdecl phi _ -> freeVars phi Set.\\
+                    Set.fromList (flatVAR_DECLs vdecl)
     Conjunction phis _ -> Set.unions $ map freeVars  phis
     Disjunction phis _ -> Set.unions $ map freeVars phis
     Implication phi1 phi2 _ _ -> freeVars phi1 `Set.union` freeVars phi2
@@ -37,10 +37,9 @@ freeVars f = case f of
     _ -> Set.empty
 
 
-freeTermVars :: TERM f -> Set.Set VAR
+freeTermVars :: TERM f -> Set.Set (VAR, SORT)
 freeTermVars t = case t of 
-    Simple_id v -> Set.single v
-    Qual_var v _ _ -> Set.single v
+    Qual_var v s _ -> Set.single (v, s)
     Application _ args _ -> Set.unions $ map freeTermVars args
     Sorted_term st _ _ -> freeTermVars st
     Cast st _ _ -> freeTermVars st
@@ -53,7 +52,7 @@ effQuantify :: QUANTIFIER -> [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
 effQuantify q vdecls phi pos =
     let fvs = freeVars phi 
 	filterVAR_DECL (Var_decl vs s ps) =
-	    Var_decl (filter (`Set.member` fvs) vs) s ps
+	    Var_decl (filter (\ v -> Set.member (v,s) fvs) vs) s ps
 	flatVAR_DECL (Var_decl vs s ps) = 
 	    map (\v -> Var_decl [v] s ps) vs
 	newDecls = concatMap (flatVAR_DECL . filterVAR_DECL) vdecls
