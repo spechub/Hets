@@ -38,15 +38,19 @@ place = "__"
 
 isPlace(Token(t, _)) = t == place
  
--- an identifier may be mixfix (though not for a sort) and compound
-data Id = Id([TokenOrPlace], [Id]) deriving (Eq, Ord)
- 
+-- an identifier is a simple token (or place!), 
+-- a compound id (with at least one component) or 
+-- a mixfix id consisting of two or more non-mixfix ids or places
+
+data Id = TokId Token | CompId Id [Id] | MixId [Id] deriving (Eq, Ord) 
+
 instance Show Id where
-    showsPrec _ (Id(ts, is)) = showString ((unwords (map show ts)) ++ 
-	(case is of [] -> "" ;  _:_ -> (show is)))
+    showsPrec _ (TokId t) = showString(showTok t)
+    showsPrec _ (CompId i cs) = showString(show i ++ show cs)
+    showsPrec _ (MixId is) = showString(concat(map show is))
 
 -- simple Id
 simpleId :: String -> Id
-simpleId(s) = Id([Token(s, nullPos)],[]) 
+simpleId(s) = TokId (Token(s, nullPos)) 
 
 
