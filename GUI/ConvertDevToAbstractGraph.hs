@@ -154,7 +154,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		  Button "TEMP - Local Subsumption"
 			  (do proofStatus <- readIORef ioRefProofStatus
 			      let newProofStatus@(_,history,_) =
-			            locSubsume proofStatus
+			            locDecomp proofStatus
 			      writeIORef ioRefProofStatus newProofStatus
 			      descr <- readIORef event
 			      convMaps <- readIORef convRef

@@ -60,10 +60,11 @@ data DGRule =
  | MonoIsFree
  | Composition
  | GlobDecomp (LEdge DGLinkLab)  -- edge in the conclusion
- | LocDecompI
- | LocDecompII
+ | LocDecomp (LEdge DGLinkLab)
+ -- obsolete | LocDecompI
+ -- obsolete | LocDecompII
  | GlobSubsumption (LEdge DGLinkLab)
- | LocSubsumption (LEdge DGLinkLab)
+ -- obsolete  | LocSubsumption (LEdge DGLinkLab)
  | LocalInference
  | BasicInference Edge BasicProof
  | BasicConsInference Edge BasicConsProof
@@ -223,25 +224,26 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
 -- local subsumption
 -- ------------------
 
-{- the same as globSubsume, but for the rule LocSubsumption -}
--- applies local Subsumption to all unproven localThm edges if possible
-locSubsume ::  ProofStatus -> ProofStatus
-locSubsume proofStatus@(globalContext,history,dGraph) =
+{- a merge of the rules local subsumption, local decomposition I and 
+   local decomposition II -}
+-- applies this merge of rules to all unproven localThm edges if possible
+locDecomp ::  ProofStatus -> ProofStatus
+locDecomp proofStatus@(globalContext,history,dGraph) =
   if null (snd nextHistoryElem) then proofStatus  
    else (globalContext, nextHistoryElem:history, nextDGraph)
 
   where
     localThmEdges = filter isUnprovenLocalThm (labEdges dGraph)
-    result = locSubsumeAux dGraph ([],[]) localThmEdges
+    result = locDecompAux dGraph ([],[]) localThmEdges
     nextDGraph = fst result
     nextHistoryElem = snd result
 
-{- auxiliary function for locSubsume (above)
+{- auxiliary function for locDecomp (above)
    actual implementation -}
-locSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
+locDecompAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
-locSubsumeAux dgraph historyElement [] = (dgraph, historyElement)
-locSubsumeAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
+locDecompAux dgraph historyElement [] = (dgraph, historyElement)
+locDecompAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
   if existsProvenLocGlobPathOfMorphismBetween dgraph morphism source target
      then
        globSubsumeAux newGraph (newRules,newChanges) list
@@ -259,7 +261,7 @@ locSubsumeAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
 		       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge auxGraph
-    newRules = (LocSubsumption ledge):rules
+    newRules = (LocDecomp ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
 
