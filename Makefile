@@ -85,7 +85,7 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
                 Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
                 CASL/Sublogic.hs \
-                CASL/Morphism.hs CASL/StaticAna.hs CASL/AS_Basic_CASL.der.hs \
+                CASL/Morphism.hs CASL/Sign.hs CASL/AS_Basic_CASL.der.hs \
                 HasCASL/Le.hs HasCASL/As.hs HasCASL/Symbol.hs \
                 HasCASL/Morphism.hs HasCASL/AsToIds.hs \
                 CspCASL/AS_CSP_CASL.hs \

@@ -25,7 +25,7 @@ import Data.Dynamic
 import CASL.Logic_CASL 
 import CASL.AS_Basic_CASL
 import CASL.Sublogic
-import CASL.StaticAna
+import CASL.Sign
 import CASL.Morphism
 
 import HasCASL.Logic_HasCASL
@@ -47,7 +47,7 @@ instance Typeable CASL2HasCASL where
 
 instance Comorphism CASL2HasCASL
                CASL CASL.Sublogic.CASL_Sublogics
-               BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
+               BASIC_SPEC FORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                CASL.Morphism.Morphism
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
@@ -81,7 +81,7 @@ sortTypeinfo = TypeInfo { typeKind = star,
 makeType :: Id -> HasCASL.As.Type
 makeType i = TypeName i star 0
 
-trOpType :: CASL.StaticAna.OpType -> HasCASL.Le.OpInfo
+trOpType :: CASL.Sign.OpType -> HasCASL.Le.OpInfo
 trOpType ot = OpInfo { opType = simpleTypeScheme t,
 		       opAttrs = [],
 		       opDefn = NoOpDefn Op
@@ -89,14 +89,14 @@ trOpType ot = OpInfo { opType = simpleTypeScheme t,
                where t = if null args then res 
 			 else FunType arg arrow res []
                      arrow = case opKind ot of
-                       CASL.StaticAna.Total -> FunArr 
-                       CASL.StaticAna.Partial -> PFunArr
+                       CASL.Sign.Total -> FunArr 
+                       CASL.Sign.Partial -> PFunArr
 		     args = map makeType $ opArgs ot
                      arg = if isSingle args then head args else 
 			   ProductType args []
                      res = makeType $ opRes ot
 
-trPredType :: CASL.StaticAna.PredType -> HasCASL.Le.OpInfo
+trPredType :: CASL.Sign.PredType -> HasCASL.Le.OpInfo
 trPredType pt = OpInfo { opType = simpleTypeScheme t,
 		         opAttrs = [],
 		         opDefn = NoOpDefn Pred
@@ -107,7 +107,7 @@ trPredType pt = OpInfo { opType = simpleTypeScheme t,
                      arg = if isSingle args then head args else 
 			   ProductType args []
 
-mapSignature :: CASL.StaticAna.Sign -> Maybe(HasCASL.Le.Env,[Term]) 
+mapSignature :: CASL.Sign.Sign -> Maybe(HasCASL.Le.Env,[Term]) 
 mapSignature sign = Just (initialEnv { 
     classMap = Map.empty,
     typeMap = Map.fromList $ map (\s -> (s,sortTypeinfo)) 
