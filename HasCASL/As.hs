@@ -76,8 +76,9 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
 
 data TypePattern = TypePattern TypeName TypeArgs [Pos]
                  -- pos "("s, ")"s 
-                 | TypePatternToken Token       
-                 | BracketTypePattern BracketKind TypePattern [Pos]
+                 | TypePatternToken Token
+                 | MixfixTypePattern [TypePattern]
+                 | BracketTypePattern BracketKind [TypePattern] [Pos]
                  -- pos brackets 
                  | TypePatternArgs TypeArgs
                    deriving (Show,Eq)
@@ -87,26 +88,19 @@ data PseudoType = SimplePseudoType Type
                 -- pos "\" "("s, ")"s, dot 
                   deriving (Show,Eq)
 
-data TypeOrId = TypeOrIdToken Token
-              | BracketTypeOrId BracketKind [TypeOrId] [Pos]
-              -- pos brackets. "," 
-              | KindAnnotation Kind [Pos]
-              -- pos ":"
-              | MixfixTypeOrId [TypeOrId] 
-		deriving (Show,Eq)
-
 data Type = TypeConstrAppl TypeName Kind [Type] [Pos]  -- analysed
           | TypeToken Token
-          | MixCompound [TypeOrId] [Pos]
           | BracketType BracketKind [Type] [Pos]
-          | KindedType Type Kind [Pos]
+          | KindedType Type Kind Pos
           -- pos ":"
           | MixfixType [Type] 
           | TupleType [Type] [Pos]
           -- pos "," (between type arguments)
+	  | LazyType Type Pos
+	  -- pos "?"
           | ProductType [Type] [Pos]
           -- pos crosses 
-          | FunType Type Arrow Type [Pos]
+          | FunType Type Arrow Type Pos
           -- pos arrow
             deriving (Show,Eq)
 
@@ -115,8 +109,8 @@ data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr
 
 -- no curried notation for bound variables 
 data TypeScheme = SimpleTypeScheme Type
-                | TypeScheme TypeVarDecls TypeScheme [Pos]
-                -- pos "forall", dot 
+                | TypeScheme [TypeVarDecl] TypeScheme [Pos]
+                -- pos "forall", ";"s,  dot 
                   deriving (Show,Eq)
 
 data PartialKind = Partial | Total deriving (Show,Eq)
@@ -178,8 +172,8 @@ data Formula = TermFormula Term
 	     -- pos "def"
 	     | QuantifiedFormula Quantifier [VarDecl] Formula [Pos]
              -- pos quantifier, ";"s, dot
-	     | PolyFormula TypeVarDecls Formula [Pos]
-             -- pos "forall", dot
+	     | PolyFormula [TypeVarDecl] Formula [Pos]
+             -- pos "forall", ";"s, dot
 	       deriving (Show,Eq)
 
 data Term = CondTerm Term Formula Term [Pos]
@@ -192,7 +186,7 @@ data Term = CondTerm Term Formula Term [Pos]
 	  -- pos?
 	  | TupleTerm [Term] [Pos]
 	  -- pos "(", ","s, ")"
-	  | TypedTerm Term TypeQual Type [Pos]
+	  | TypedTerm Term TypeQual Type Pos
 	  -- pos ":", "as" or "in"
 	  | LambdaTerm [Pattern] PartialKind Term [Pos]
           -- pos "\", dot (plus "!") 
@@ -238,14 +232,12 @@ data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show,Eq)
 
 data TypeVarDecl = TypeVarDecl TypeVar Class SeparatorKind [Pos] 
                    -- pos "," or ":" 
-		 | DownSetTypeVar TypeVar Type SeparatorKind [Pos] 
-                   -- pos "," or "<" 
 		   deriving (Show,Eq)
 
 data TypeVarDecls = TypeVarDecls [TypeVarDecl] [Pos] deriving (Show,Eq)
-		    -- pos ";"s
+		    -- pos "[", ";"s, "]"
 
-data TypeArg = TypeVars TypeVar ExtClass SeparatorKind [Pos]
+data TypeArg = TypeArg TypeVar ExtClass SeparatorKind [Pos]
 	       -- pos "," or ":" plus "+" or "-" if given with TypeVar  
 	       deriving (Show,Eq)
 
@@ -273,6 +265,7 @@ data Kind = Kind [ProdClass] Class [Pos] deriving (Show,Eq)
 
 data Class = Universe [Pos] -- pos "type" (or missing)
 	   | ClassName ClassName
+	   | Downset Type   -- not parsed directly
 	   | Intersection [Class] [Pos]  
 	   -- pos "(", ","s, ")"
 	     deriving (Show,Eq)
@@ -281,10 +274,10 @@ data Class = Universe [Pos] -- pos "type" (or missing)
 -- op names
 -- ----------------------------------------------------------------------------
 
-data OpName = OpName UninstOpName [TypeVarDecls] [Pos] deriving (Show,Eq)
+data OpName = OpName UninstOpName [TypeVarDecls] deriving (Show,Eq)
 
 data Types = Types [Type] [Pos] deriving (Show,Eq) -- [TYPE, ..., TYPE]
-data InstOpName = InstOpName UninstOpName [Types] Pos deriving (Show,Eq)
+data InstOpName = InstOpName UninstOpName [Types] deriving (Show,Eq)
 
 -- ----------------------------------------------------------------------------
 -- ids

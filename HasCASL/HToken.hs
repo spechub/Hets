@@ -21,7 +21,6 @@ import Parsec
 assignS = ":="
 minusS = "-"
 plusS = "+"
-greaterS = ">"
 pFun = funS ++ quMark
 contFun = minusS ++ funS
 pContFun = minusS ++ pFun
@@ -39,10 +38,11 @@ letS = "let"
 -- hascasl keyword handling
 -- ----------------------------------------------
 
-hascasl_reserved_ops = [asP, assignS, lamS] ++ formula_ops ++ casl_reserved_ops
+
+hascasl_reserved_ops = [asP, assignS, lamS] ++ casl_reserved_ops
 
 hascasl_type_ops = [funS, pFun, contFun, pContFun, prodS, timesS, quMark, 
-		   lessS, greaterS] 
+		   lessS] 
 
 hascasl_reserved_words = [classS, instanceS, programS, caseS, ofS, letS] 
 			 ++ formula_words ++ casl_reserved_words
@@ -93,18 +93,36 @@ tokStart l = afterPlace l <++> flat (many (middle l))
 start l = tokStart l <|> placeT <:> (tokStart l <|> 
 				 many1 placeT <++> option [] (tokStart l))
 				     <?> "id"
+-- ----------------------------------------------
+-- non-compound mixfix ids (variables)
+-- ----------------------------------------------
+var :: GenParser Char st Id
+var = fmap (\l -> Id l [] []) (start hascasl_reserved_ops)
 
 -- ----------------------------------------------
--- Mixfix Ids
+-- compound/bracketed lists
+-- ----------------------------------------------
+bracketParser :: GenParser Char st a -> GenParser Char st Token 
+	 -> GenParser Char st Token -> GenParser Char st Token
+	 -> ([a] -> [Pos] -> b) -> GenParser Char st b
+
+bracketParser parser op cl sep k = 
+    do o <- op
+       (ts, ps) <- option ([], []) 
+		   (parser `separatedBy` sep)
+       c <- cl
+       return (k ts (map tokPos (o:ps++[c])))
+
+brackets parser k = bracketParser parser oBracketT cBracketT commaT k
+
+-- ----------------------------------------------
+-- mixfix and compound ids
 -- ----------------------------------------------
 
 -- a compound list
 comps :: GenParser Char st ([Id], [Pos])
-comps = do { o <- oBracketT 
-	   ; (is, cs) <- varId `separatedBy` commaT
-	   ; c <- cBracketT
-	   ; return (is, tokPos o : map tokPos cs ++ [tokPos c])
-	   } <?> "[<id>,...,<id>]"
+comps = brackets uninstOpName (,) 
+	<?> "[<id>,...,<id>]"
 
 -- a compound list does not follow a place
 -- but after a compound list further places may follow
@@ -117,14 +135,14 @@ mixId keys = do { l <- start keys
 			   })
 		}
 
-varId = mixId hascasl_reserved_ops
-typeId = mixId (hascasl_type_ops ++ hascasl_reserved_ops)
+uninstOpName = mixId hascasl_reserved_ops
+typeName = mixId (hascasl_type_ops ++ hascasl_reserved_ops)
 
 -- ----------------------------------------------
 -- TYPE-VAR Ids
 -- ----------------------------------------------
 -- no compound ids (just a word) 
-typeVarId :: GenParser Char st Token
-typeVarId = pToken scanWords
+typeVar :: GenParser Char st Token
+typeVar = pToken scanWords
 
-classId = typeVarId
+className = typeVar
