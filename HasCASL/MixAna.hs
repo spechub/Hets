@@ -91,12 +91,13 @@ addBuiltins ga opIds predIds =
 		  (implId, ARight), (infixIf, ALeft), 
 		  (whenElse, ARight)]
 	precs = prec_annos ga
-	logIds = Set.fromList [eqvId, implId, infixIf, andId, orId, notId] 
+	logIds = Set.fromDistinctAscList 
+		 [andId, eqvId, implId, orId, infixIf, notId] 
 	relIds = (Set.filter isInfix predIds Set.\\ logIds) `Set.union` 
-		 Set.fromList [exEq, eqId, defId, typeId]
+		 Set.fromDistinctAscList [typeId, eqId, exEq, defId]
 	opIs = Set.toList ((((Set.filter isInfix opIds)
 		Set.\\ relIds) Set.\\ logIds) 
-	        Set.\\ Set.fromList [whenElse, applId])
+	        Set.\\ Set.fromDistinctAscList [applId, whenElse])
 
 	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
 		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
@@ -106,7 +107,7 @@ addBuiltins ga opIds predIds =
 	rels2 = map ( \ i -> (i, whenElse)) $ Set.toList relIds
 	ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
 	ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
-	newPrecs = foldr (\ (a, b) p -> if Rel.transMember b a p then p else 
+	newPrecs = foldr (\ (a, b) p -> if Rel.member b a p then p else 
 			 Rel.insert a b p) precs $  
 		  concat [logs, rels1, rels2, ops1, ops2]
     in ga { assoc_annos = newAss
@@ -114,7 +115,8 @@ addBuiltins ga opIds predIds =
 
 initTermRules :: Set.Set Id -> [Rule]
 initTermRules is = map (mixRule ()) (Set.toList
-    (Set.fromList [typeId, tupleId, parenId, unitId, applId, exprId] 
+    (Set.fromDistinctAscList 
+     [unitId, parenId, tupleId, exprId, typeId, applId] 
      `Set.union` is)) ++
     map ( \ i -> (protect i, (), getPlainTokenList i )) 
 	    (filter isMixfix $ Set.toList is)
