@@ -136,7 +136,7 @@ gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
 
 generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
 
-inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs
+inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs Comorphisms/Modal2CASL.hs
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
 happy_files = Haskell/Hatchet/HsParser.hs
@@ -176,7 +176,7 @@ hets-old: $(objects)
 hets.cgi: $(sources) GUI/hets_cgi.hs
 	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_OPTS)
 
-hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files) $(inline_axiom_files)
+hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files) $(inline_axiom_files) Modal/ModalSystems.hs
 	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hets $< $(HC_OPTS) 2>&1 | tee hetcats-make 
 
@@ -229,6 +229,9 @@ utils/genRules: $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
          $(HC) --make '-i../..:../DrIFT-src' -package text GenerateRules.hs -o ../genRules && \
          strip ../genRules)
+
+Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in utils/genTransMFormFunc.pl
+	$(PERL) utils/genTransMFormFunc.pl $< $@
 
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs \
