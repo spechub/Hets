@@ -18,7 +18,7 @@ as a
 : a
 in a
 (op __<__ :?##) 
-(var __<__ :? bb) 	
+(var __<__ :? bb)       
 (pred __<__ :? bb) 
 (pred __<__ :? ##) 
 (pred __<__ :? bb*BB) 

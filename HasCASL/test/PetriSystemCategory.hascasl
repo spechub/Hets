@@ -24,7 +24,7 @@
       {} : MultiSet Elem;
       {__} : Elem -> MultiSet Elem;
       __ + __, __ - __, __intersection__: 
-		    MultiSet Elem * MultiSet Elem -> MultiSet Elem;
+                    MultiSet Elem * MultiSet Elem -> MultiSet Elem;
       freq : Elem * MultiSet Elem -> Nat;
       setToMultiSet : Set Elem -> MultiSet Elem
 
@@ -92,7 +92,7 @@
   type Marking := MultiSet P
   type System = {(n,m) : Net * Marking 
                           . let (p,pre1,post1) = n 
-		          in forall x:P . x isIn m => x isIn p }
+                          in forall x:P . x isIn m => x isIn p }
   ops  marking   : System -> Marking;
        net       : System -> Net;
        empty     : Marking;
