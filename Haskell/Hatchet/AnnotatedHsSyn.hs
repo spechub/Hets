@@ -24,7 +24,7 @@ module Haskell.Hatchet.AnnotatedHsSyn (bogusASrcLoc,
     AHsGuardedRhs(..), AHsQualType(..), AHsType(..), AHsContext, AHsAsst,
     AHsLiteral(..), AHsExp(..), AHsPat(..), AHsPatField(..), AHsStmt(..),
     AHsFieldUpdate(..), AHsAlt(..), AHsGuardedAlts(..), AHsGuardedAlt(..),
-    AHsIdentifier(..)
+    AHsIdentifier(..), AAxBinding(..), AAxiomBndr(..), AQuantifier(..), AFormula(..)
   ) where
 
 
@@ -87,7 +87,7 @@ data AHsImportDecl
 data AHsImportSpec
 	 = AHsIVar AHsName			-- variable
 	 | AHsIAbs AHsName			-- T
-	 | AHsIThingAll AHsName		-- T(..)
+	 | AHsIThingAll AHsName 		-- T(..)
 	 | AHsIThingWith AHsName [AHsName]	-- T(C_1,...,C_n)
   deriving (Eq,Show)
 
@@ -109,6 +109,7 @@ data AHsDecl
 	 -- | AHsFunBind     ASrcLoc [AHsMatch]
 	 | AHsFunBind     [AHsMatch]
 	 | AHsPatBind	  ASrcLoc AHsPat AHsRhs {-where-} [AHsDecl]
+         | AHsAxiomBind   AAxBinding
   deriving (Eq,Show)
   
   -- WARNING: don't get rid of derive show without checking in MultiModuleBasics
@@ -245,3 +246,32 @@ data AHsGuardedAlt
   deriving (Eq,Show)
 
 -----------------------------------------------------------------------------
+
+----------- Extended Haskell -----------
+
+type AAxiomName = String
+
+data AAxBinding
+--  = NullBind
+  = AAndBindings    AAxBinding AAxBinding
+  | AAxiomDecl      AAxiomName AFormula
+  deriving (Eq,Show)
+
+data AFormula
+  = AAxQuant   AQuantifier AFormula
+  | AAxEq      AFormula AHsExp ASrcLoc
+  | AAxExp     AHsExp
+  deriving (Eq,Show)
+
+data AQuantifier
+  = AAxForall [AAxiomBndr]
+   | AAxExists [AAxiomBndr]
+   | AAxExistsOne [AAxiomBndr]
+  deriving (Eq,Show)
+
+data AAxiomBndr
+ = AAxiomBndr AHsName
+ | AAxiomBndrSig AHsName AHsQualType
+  deriving (Eq,Show)
+
+
