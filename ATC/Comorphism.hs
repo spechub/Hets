@@ -2,7 +2,7 @@ module ATC.Comorphism where
 
 import Logic.Comorphism
 import Logic.Logic
-import Logic.LogicGraph
+import Comorphisms.LogicGraph
 import Common.ATerm.Lib
 import Common.Lib.Set
 import Data.Maybe

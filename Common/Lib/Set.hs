@@ -95,6 +95,7 @@ module Common.Lib.Set  (
 
             -- * Fold
             , fold
+            , image
 
             -- * Min\/Max
             , findMin
@@ -370,6 +371,12 @@ foldR :: (a -> b -> b) -> b -> Set a -> b
 foldR f z Tip           = z
 foldR f z (Bin _ x l r) = foldR f (f x (foldR f z r)) l
 
+{--------------------------------------------------------------------
+  Image (Added by T.M.)
+--------------------------------------------------------------------}
+-- | /n/. Image of a set under a function
+image :: Ord b => (a -> b) -> Set a -> Set b
+image f t = foldR (insert . f) empty t
 
 {--------------------------------------------------------------------
   List variations 

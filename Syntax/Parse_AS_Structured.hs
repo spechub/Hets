@@ -483,33 +483,3 @@ library l = do skip
                eof
                return (Lib_defn ln ls [tokPos s1] an)
                
--------------------------------------------------------------
--- Testing
--------------------------------------------------------------
-
-mylogicGraph = (Map.fromList [(language_name CASL,Logic CASL)],
-		Map.fromList [])
-
-parseSPEC fname =
-  do input <- readFile fname
-     case runParser (do x <- spec mylogicGraph
-                        s1<-getInput
-                        return (x,s1))
-               (Logic CASL) fname input of
-            Left err -> error (show err)
-            Right x -> return x
-
-parseLib fname =
-  do input <- readFile fname
-     case runParser (do x <- library mylogicGraph
-                        s1<-getInput
-                        return (x,s1))
-               (Logic CASL) fname input of
-            Left err -> error (show err)
-            Right x -> return x
-
-test fname = do
-  (x,errs) <- parseLib fname
-  putStrLn (show (printText0_eGA x))
-  if errs == "" then return ()
-   else putStrLn ("\nUnread input:\n"++take 20 errs++" ...")

@@ -22,7 +22,7 @@ module Main
 where
 
 import System.Environment
-import Logic.LogicGraph
+import Comorphisms.LogicGraph
 import Static.AnalysisLibrary
 import System.IO
 import Static.DotGraph

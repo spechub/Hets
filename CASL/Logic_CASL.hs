@@ -25,6 +25,8 @@ import Common.Lib.Parsec
 import Common.Lib.Map
 import Logic.Logic
 import Common.Lexer((<<))
+import Common.Result
+import Common.Id
 import CASL.ATC_CASL
 
 import CASL.Sublogic
@@ -45,11 +47,11 @@ instance Category CASL Sign Morphism
 				     fun_map = empty,
 				     pred_map = empty
                                    }
-         -- o :: id -> morphism -> morphism -> Maybe morphism
+         -- comp :: id -> morphism -> morphism -> Maybe morphism
 	 comp CASL sigma1 _sigma2 = Just sigma1 -- ???
          -- dom, cod :: id -> morphism -> object
-	 dom CASL _ = emptySign
-	 cod CASL _ = emptySign
+	 dom CASL mor = msource mor
+	 cod CASL mor = mtarget mor
          -- legal_obj :: id -> object -> Bool
 	 legal_obj CASL _ = fun_err "legall_obj"
          -- legal_mor :: id -> morphism -> Bool
@@ -107,14 +109,18 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          matches CASL = CASL.Morphism.matches
          sym_name CASL = symName
          
-         -- add_sign :: id -> Sign -> Sign -> Sign
-	 add_sign CASL = addSig
          empty_signature CASL = emptySign
-         signature_union CASL sigma1 _sigma2 = return sigma1 -- ??? incorrect
+         signature_union CASL sigma1 sigma2 = 
+           return $ addSig sigma1 sigma2
          morphism_union CASL mor1 _mor2 = return mor1 -- ??? incorrect
-         -- final_union :: id -> Sign -> Sign -> Result Sign
-	 final_union CASL s1 s2 = return $ addSig s1 s2
+	 final_union CASL s1 s2 = return $ addSig s1 s2 -- ??? incorrect
          is_subsig CASL = isSubSig
+         inclusion CASL sigma1 sigma2 = 
+           if isSubSig sigma1 sigma2 
+              then return (embedMorphism sigma1 sigma2)
+              else plain_error (embedMorphism emptySign emptySign)
+                    "Attempt to construct inclusion between non-subsignatures"
+                    nullPos
          cogenerated_sign CASL _rsys sigma = return (ide CASL sigma)
          generated_sign CASL _rsys sigma = return (ide CASL sigma)
          -- generated_sign, cogenerated_sign :: id -> [RawSymbol]
@@ -126,7 +132,7 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          --               -> Sign -> Sign -> Result Morphism
          -- extend_morphism :: id -> Sign -> Morphism -> Sign -> Sign
          --               -> Result Morphism
-         extend_morphism CASL _s m _s1 _s2 = return m
+         extend_morphism CASL _s m _s1 _s2 = return m -- ???
 
 instance Logic CASL CASL.Sublogic.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS

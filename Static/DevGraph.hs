@@ -105,6 +105,9 @@ getNode (EmptyNode _) = Nothing
 getSig (NodeSig (n,sigma)) = sigma
 getSig (EmptyNode (Logic lid)) = G_sign lid (empty_signature lid)
 
+getNodeAndSig (NodeSig (n,sigma)) = Just (n,sigma)
+getNodeAndSig (EmptyNode _) = Nothing
+
 getLogic (NodeSig (n,G_sign lid _)) = Logic lid
 getLogic (EmptyNode l) = l
 

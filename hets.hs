@@ -15,18 +15,17 @@ module Main where
 
 import Common.Utils
 import Common.Result
-
-import Logic.LogicGraph
 import Options
+import System.Environment
+
+import Comorphisms.LogicGraph
+import ToHaskell.TranslateAna
 import Static.AnalysisLibrary
 import Static.DevGraph
-import System.Environment
-import ToHaskell.TranslateAna
+
 --import Syntax.Print_HetCASL
-import Logic.LogicGraph
 import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
-import Static.AnalysisLibrary
 
 import ReadFn
 import WriteFn
@@ -83,4 +82,3 @@ showGraph file opt env =
         Nothing -> putIfVerbose opt 1
             ("Error: Basic Analysis is neccessary to display "
              ++ "graphs in a graphical window")
-

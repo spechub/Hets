@@ -9,7 +9,7 @@ module ATC.Grothendieck where
 
 import Logic.Grothendieck
 import Common.ATerm.Lib
-import Logic.LogicGraph
+import Comorphisms.LogicGraph
 import Logic.Logic
 import ATC.Comorphism
 import ATC.Named

@@ -951,23 +951,12 @@ pr_pred_map :: CASL_Sublogics -> Pred_map -> Pred_map
 pr_pred_map l x = if (has_pred l) then x else Map.empty
 
 pr_fun_map :: CASL_Sublogics -> Fun_map -> Fun_map
-pr_fun_map l m = Map.fromList $ map (pr_fun_map_entries l) $ Map.toList m
+pr_fun_map l m = Map.filterWithKey (pr_fun_map_entry l) m
 
-pr_fun_map_entries :: CASL_Sublogics -> (Id, Set.Set (OpType,Id,FunKind))
-                      -> (Id, Set.Set (OpType,Id,FunKind))
-pr_fun_map_entries l (i,ll) = (i, Set.fromList $ 
-			       mapMaybe (pr_fun_map_entry l) $ Set.toList ll)
-
-pr_fun_map_entry :: CASL_Sublogics -> (OpType,Id,FunKind)
-                    -> Maybe (OpType,Id,FunKind)
-pr_fun_map_entry l (t,i,b) =
-                 if (has_part l) then
-                   Just (t,i,b)
-                 else
-                   if ((in_x l t sl_optype) && b == Partial) then
-                     Just (t,i,b)
-                   else
-                     Nothing
+pr_fun_map_entry :: CASL_Sublogics -> (Id, OpType) -> (Id,FunKind) -> Bool
+pr_fun_map_entry l (_,t) (_,b) =
+                 if (has_part l) then True
+                 else ((in_x l t sl_optype) && b == Partial) 
 
 -- compute a morphism that consists of the original signature
 -- and the projected signature

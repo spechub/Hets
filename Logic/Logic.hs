@@ -241,12 +241,12 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          sym_name :: lid -> symbol -> Id 
    
          -- operations on signatures and morphisms
-         add_sign :: lid -> sign -> sign -> sign
          empty_signature :: lid -> sign
          signature_union :: lid -> sign -> sign -> Result sign
          morphism_union :: lid -> morphism -> morphism -> Result morphism
          final_union :: lid -> sign -> sign -> Result sign
          is_subsig :: lid -> sign -> sign -> Bool
+         inclusion :: lid -> sign -> sign -> Result morphism
          generated_sign, cogenerated_sign :: 
 	     lid -> [symbol] -> sign -> Result morphism
          induced_from_morphism :: 

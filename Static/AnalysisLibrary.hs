@@ -147,8 +147,11 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
              (Spec_defn spn gen asp pos) = do
   let just_struct = analysis opts == Structured
   ioToIORes (putIfVerbose opts 1  ("Analyzing spec " ++ showPretty spn ""))
-  (gen',(imp,params,parsig,allparams),dg') <- resToIORes (ana_GENERICITY gctx l just_struct gen)
-  (sp',body,dg'') <- resToIORes (ana_SPEC (gannos,genv,dg') allparams (Just spn) just_struct (item asp))
+  (gen',(imp,params,parsig,allparams),dg') <- 
+     resToIORes (ana_GENERICITY lgraph gctx l just_struct gen)
+  (sp',body,dg'') <- 
+     resToIORes (ana_SPEC lgraph (gannos,genv,dg') 
+                          allparams (Just spn) just_struct (item asp))
   let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
   if Map.member spn genv 
    then resToIORes (plain_error (libItem',gctx,l,libenv)
@@ -207,9 +210,9 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
 ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
               vn gen vt gsis pos = do
   (gen',(imp,params,parsig,allparams),dg') <- 
-       ana_GENERICITY gctx l just_struct gen
+       ana_GENERICITY lgraph gctx l just_struct gen
   (vt',(src,tar),dg'') <- 
-       ana_VIEW_TYPE (gannos,genv,dg') l allparams just_struct vt
+       ana_VIEW_TYPE lgraph (gannos,genv,dg') l allparams just_struct vt
   let gsigmaS = getSig src
       gsigmaT = getSig tar
   G_sign lidS sigmaS <- return gsigmaS

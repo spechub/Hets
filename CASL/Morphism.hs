@@ -37,8 +37,8 @@ data Kind = SortKind | FunKind | PredKind
             deriving (Show, Eq, Ord)
 
 type Sort_map = Map.Map SORT SORT
-type Fun_map =  Map.Map Id (Set.Set (OpType, Id, FunKind)) 
-type Pred_map = Map.Map Id (Set.Set (PredType, Id))
+type Fun_map =  Map.Map (Id,OpType) (Id, FunKind)
+type Pred_map = Map.Map (Id,PredType) Id
 
 data Morphism = Morphism {msource,mtarget :: Sign,
                           sort_map :: Sort_map, 
@@ -65,14 +65,18 @@ embedMorphism a b =
     Morphism 
     { msource = a 
     , mtarget = b
-    , sort_map = Map.fromList $ map (\x -> (x,x)) $
-      Set.toList $ sortSet a 
-    , fun_map = Map.mapWithKey ( \ i -> Set.fromList . map 
-				 ( \ e -> (e, i, opKind e)) 
-				 . Set.toList) $ opMap a 
-    , pred_map = Map.mapWithKey ( \ i -> Set.fromList . map 
-				 ( \ e -> (e, i)) 
-				 . Set.toList) $ predMap a 
+    , sort_map = Set.fold (\x -> Map.insert x x) Map.empty
+                  $ sortSet a 
+    , fun_map = Map.foldWithKey 
+                 ( \ i ts m -> Set.fold 
+                      (\t -> Map.insert (i,t) (i, opKind t)) m ts)
+                 Map.empty
+                 (opMap a)
+    , pred_map = Map.foldWithKey 
+                 ( \ i ts m -> Set.fold 
+                      (\t -> Map.insert (i,t) i) m ts)
+                 Map.empty
+                 (predMap a)
     }
 
 -- Typeable instance
@@ -118,8 +122,7 @@ idToRaw x = AnID x
 
 symOf :: Sign -> Set.Set Symbol
 symOf sigma = 
-    let sorts = Set.fromList $ map idToSortSymbol
-		$ Set.toList $ sortSet sigma
+    let sorts = Set.image idToSortSymbol $ sortSet sigma
 	ops = Set.fromList $ 
 	      concatMap (\ (i, ts) -> map ( \ t -> idToOpSymbol i t) 
 			 $ Set.toList ts) $ 
@@ -155,6 +158,9 @@ symbKindToRaw (Ops_kind)   idt = AKindedId FunKind  idt
 symbKindToRaw (Preds_kind) idt = AKindedId PredKind idt
 
 symmapOf :: Morphism -> Map.Map Symbol Symbol
+symmapOf =undefined
+
+{-
 symmapOf (Morphism src _ sorts ops preds) =
   let
     sortSymMap = Map.fromList $ map 
@@ -185,6 +191,7 @@ symmapOf (Morphism src _ sorts ops preds) =
 	$ Map.toList preds 
   in
     foldr Map.union sortSymMap [opSymMap,predSymMap]
+-}
 
 matches :: Symbol -> RawSymbol -> Bool
 matches x                            (ASymbol y)              =  x==y
@@ -193,3 +200,24 @@ matches (Symbol idt SortAsItemType)        (AKindedId SortKind di) = idt==di
 matches (Symbol idt (OpAsItemType _)) (AKindedId FunKind di)  = idt==di
 matches (Symbol idt (PredAsItemType _))     (AKindedId PredKind di) = idt==di
 matches _                            _                        = False
+
+
+compose :: Morphism -> Morphism -> Result Morphism
+compose mor1 mor2 = 
+  if mtarget mor1 == msource mor2 
+    then return $ Morphism {
+      msource = msource mor1,
+      mtarget = mtarget mor2,
+      sort_map = Map.map (mapSort (sort_map mor2)) (sort_map mor1),
+      fun_map = Map.mapWithKey mapOpId (fun_map mor1),
+      pred_map = Map.mapWithKey mapPredId (pred_map mor1)
+      }
+    else plain_error mor1 "Signature morphisms are not composable" nullPos
+  where
+  mapOpId :: (Id, OpType) -> (Id,FunKind) -> (Id,FunKind)
+  mapOpId (id,t) (id1,k1) =
+    Map.find (id1,mapOpType (sort_map mor1) t) (fun_map mor2)
+  mapPredId :: (Id, PredType) -> Id -> Id
+  mapPredId (id,t) id1 =
+    Map.find (id1,mapPredType (sort_map mor1) t) (pred_map mor2)
+  -- ??? dangerous use of Map.find here (may lead to call of error!)

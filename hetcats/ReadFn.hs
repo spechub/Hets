@@ -19,7 +19,7 @@ import ATC.AS_Library
 
 import Syntax.Parse_AS_Structured
 import Common.Lib.Parsec
-import Logic.LogicGraph
+import Comorphisms.LogicGraph
 import Common.ATerm.Lib
 import Version
 

@@ -5,7 +5,7 @@ where
 import Syntax.Parse_AS_Structured
 import System.Environment
 import Common.Lib.Parsec
-import Logic.LogicGraph
+import Comorphisms.LogicGraph
 import Syntax.Print_HetCASL
 
 parsefile fname = do
