@@ -148,7 +148,7 @@ data Alternative = Constructor UninstOpName [Components] Partiality [Pos]
 data Components = Selector UninstOpName Partiality Type SeparatorKind Pos 
 		-- pos ",", ":" or ":?"
 		| NoSelector Type
-		| NestedComponents [Components]  [Pos]
+		| NestedComponents [Components] [Pos]
 		  -- pos : "(", ";"s, ")"
 		  deriving (Show,Eq)
 

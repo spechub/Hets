@@ -115,7 +115,7 @@ bracketParser parser op cl sep k =
        (ts, ps) <- option ([], []) 
 		   (parser `separatedBy` sep)
        c <- cl
-       return (k ts (map tokPos (o:ps++[c])))
+       return (k ts (toPos o ps c))
 
 brackets parser k = bracketParser parser oBracketT cBracketT commaT k
 
@@ -129,7 +129,7 @@ comps =     do { o <- oBracketT
 	       ; (ts, ps) <-  mixId (formula_ops ++ hascasl_reserved_ops)
 		 `separatedBy` commaT
 	       ; c <- cBracketT
-	       ; return (ts, (map tokPos (o:ps++[c])))
+	       ; return (ts, toPos o ps c)
 	       } <?> "[<id>,...,<id>]"
 
 -- a compound list does not follow a place

@@ -416,7 +416,7 @@ qualPredName o = do { v <- asKey predS
 			      (toPos o [v, c] p))
 		  }
 
-typeQual b = try $ 
+typeQual b = 
 	      do q <- colonT
 	         return (OfType, q)
 	      <|> 
@@ -450,21 +450,21 @@ term = wTerm True
 -----------------------------------------------------------------------------
 
 forallTerm b = 
-             do f <- try forallT
+             do f <- forallT
 		(vs, ps) <- genVarDecls `separatedBy` semiT
 		d <- dotT
 		t <- wTerm b
 		return (QuantifiedTerm Universal (concat vs) t 
 			(toPos f ps d))
 
-exQuant = try(
+exQuant =
         do { q <- asKey (existsS++exMark)
 	   ; return (Unique, q)
 	   }
         <|>
         do { q <- asKey existsS
 	   ; return (Existential, q)
-	   })
+	   }
 
 exTerm b = 
          do { (q, p) <- exQuant
