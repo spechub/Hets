@@ -8,7 +8,7 @@ import qualified Common.Lib.Map as Map hiding (map)
 
 -- Funktion, die evtl. überladenen Operationen eindeutige Namen gibt
 -- | Generates distinct names for overloaded function identifiers.
-distinctOpIds :: [(Id,OpInfos)] -> [(DistinctOpId, OpInfos)]
+distinctOpIds :: [(Id,OpInfos)] -> [(Id, OpInfos)]
 distinctOpIds [] = []
 distinctOpIds ((i,OpInfos info):(idInfoList)) = 
   let len = length info in
