@@ -31,7 +31,7 @@ casl_reserved_words =
 casl_reserved_ops = 
     ": :? ::= = => <=> . · | |-> \\/ /\\ ¬"
 
-caslDef = ( emptyDef {P.nestedComments = False
+caslDef = ( emptyDef {P.nestedComments = True
 		     ,P.commentStart   = "%["
 		     ,P.commentEnd     = "]%"
 		     ,P.identStart     = oneOf casl_letter
