@@ -91,6 +91,35 @@ splitMixToken :: [Token] -> ([Token],[Token])
 splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 	      (reverse toks, reverse pls)
 
+-- reconstruct token list 
+-- expandPos f "{" "}" [a,b] [(1,1), (1,3), 1,5)] = 
+-- [ t"{" , a , t"," , b , t"}" ] where t = f . Token (and proper positions)
+expandPos :: (Token -> a) -> String -> String -> [a] -> [Pos] -> [a]
+expandPos f o c ts ps =
+    if null ts then if null ps then map (f . mkSimpleId) [o, c]
+       else map f (zipWith Token [o, c] [head ps , last ps])
+    else  let n = length ts + 1
+              diff = n - length ps
+	      ps1 = if diff > 0 then ps ++ replicate diff nullPos
+		    -- pad with nullPos
+		    else take n $ drop (- diff `div` 2) ps
+		    -- cut off longer lists on both ends
+	      seps = map f
+		(zipWith Token (o : replicate (n - 2) "," ++ [c]) ps1)
+	  in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
+	    		    
+-- all tokens including "," within compound lists as sequence
+-- either generate literal places or the non-terminal termTok
+getTokenList :: String -> Id -> [Token]
+getTokenList placeStr (Id ts cs ps) = 
+    let (toks, pls) = splitMixToken ts 
+        cts = if null cs then [] else concat 
+	      $ expandPos (:[]) "[" "]" (map (getTokenList place) cs) ps
+	      -- although positions will be replaced (by scan)
+        convert = if placeStr == place then id else 
+		  map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
+    in convert toks ++ cts ++ convert pls
+
 -- compute a meaningful single position for diagnostics
 
 posOfId :: Id -> Pos

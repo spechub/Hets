@@ -19,7 +19,6 @@ import HasCASL.Le
 import Data.Maybe
 import Control.Monad.State
 
-import CASL.MixfixParser(getTokenList, expandPos)
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Error
 

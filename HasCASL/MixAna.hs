@@ -14,6 +14,7 @@ Mixfix analysis of terms, adapted from the CASL analysis
 module HasCASL.MixAna where 
 
 import HasCASL.As
+import HasCASL.AsUtils()
 import HasCASL.Le
 import Common.GlobalAnnotations
 import Common.GlobalAnnotationsFunctions
@@ -129,7 +130,6 @@ initialState g ids i =
 	       mkTokState [termTok, termTok] :
 	       ls ++ l1 ++ l2)
 
-type ParseMap = Map.Map Int [PState]
 
 lookUp :: (Ord a, MonadPlus m) => Map.Map a (m b) -> a -> (m b)
 lookUp ce k = Map.findWithDefault mzero k ce
@@ -137,12 +137,13 @@ lookUp ce k = Map.findWithDefault mzero k ce
 -- match (and shift) a token (or partially finished term)
 
 scan :: Term -> Int -> ParseMap -> ParseMap
-scan trm i m = 
+scan trm i cm =
   let t = case trm of 
 	  TermToken x -> if isLitToken x then litTok else
 			 x 
+      m = parseMap cm
   in
-    Map.insert (i+1) ( 
+    cm { parseMap = Map.insert (i+1) ( 
        foldr (\ (PState o ty b a ts k) l ->
 	      if null ts || head ts /= t then l 
 	      else let p = tokPos t : b in 
@@ -158,7 +159,7 @@ scan trm i m =
 	      else if t == colonTok || t == asTok then
 	             (PState o ty b [mkTerm $ head a] [] k) : l
 	           else (PState o ty p a (tail ts) k) : l) [] 
-	      (lookUp m i)) m
+	      (lookUp m i)) m }
      where mkTerm t1 = case trm of 
 			  _ -> t1
 	      
@@ -241,6 +242,9 @@ filterByPrec g (PState argIde _ _ _ _ _) (PState opIde _ _ args (hd:_) _) =
                          else checkAnyArg g opIde argIde
        else False
 
+filterByType :: ParseMap -> PState -> PState -> Bool
+filterByType cm pArg pOp = True 
+
 -- final complete/reduction phase 
 -- when a grammar rule (mixfix Id) has been fully matched
 
@@ -250,8 +254,9 @@ collectArg g m s@(PState _ _ _ _ _ k) =
     foldr (\ (PState o ty b a ts k1) l ->
 	 PState o ty b (toAppl g s : a) 
 	 (tail ts) k1 : l) []
+    $ filter (filterByType m s)
     $ filter (filterByPrec g s)
-    $ lookUp m k
+    $ lookUp (parseMap m) k
 
 compl :: GlobalAnnos -> ParseMap -> [PState] -> [PState]
 compl g m l = 
@@ -263,36 +268,41 @@ complRec g m l = let l1 = compl g m l in
     if null l1 then l else complRec g m l1 ++ l
 
 complete :: GlobalAnnos -> Int  -> ParseMap -> ParseMap
-complete g i m = Map.insert i (complRec g m $ lookUp m i) m
+complete g i cm =
+    let m = parseMap cm in
+    cm { parseMap = Map.insert i (complRec g cm $ lookUp m i) m }
 
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
 
-data CountMap = CountMap { counter :: Int
+data ParseMap = ParseMap { varCount :: Int
+			 , typeAliases :: TypeMap  
 			 , parseMap :: Map.Map Int [PState]
 			 }
 
-predict :: GlobalAnnos -> [(Id, OpInfo)] -> Int -> CountMap -> CountMap
-predict g is i cm@(CountMap c m) = 
+predict :: GlobalAnnos -> [(Id, OpInfo)] -> Int -> ParseMap -> ParseMap
+predict g is i cm = 
+    let m = parseMap cm in 
     if i /= 0 && any (\ (PState _ _ _ _ ts _) -> not (null ts) 
 			 && head ts == termTok) 
 		 (lookUp m i)
-		 then let (ps, c2) = runState (initialState g is i) c
-		      in CountMap c2 $ Map.insertWith (++) i ps m
+		 then let (ps, c2) = runState (initialState g is i) 
+				     (varCount cm)
+		      in cm { varCount = c2
+			    , parseMap = Map.insertWith (++) i ps m }
 		 else cm
 
-type Chart = (Int, [Diagnosis], CountMap)
+type Chart = (Int, [Diagnosis], ParseMap)
 
 nextState :: GlobalAnnos -> [(Id, OpInfo)] -> Term -> Chart -> Chart
 nextState g is trm (i, ds, m) =
-    let CountMap c2 pm = predict g is i m
-        m1 = complete g (i+1) $
-		 scan trm i pm
-    in if null (lookUp m1 (i+1)) && null ds
-		    then (i+1, Diag Error ("unexpected mixfix token: " 
-				      ++ show  trm)
-			       (nullPos) : ds, m)
-       else (i+1, ds, CountMap c2 m1)
+    let cm1 = predict g is i m
+        cm2 = complete g (i+1) $
+		 scan trm i cm1
+    in if null (lookUp (parseMap cm2) (i+1)) && null ds
+		    then (i+1, mkDiag Error "unexpected mixfix token" trm
+			       : ds, m)
+       else (i+1, ds, cm2)
 
 iterateStates :: GlobalAnnos -> [(Id, OpInfo)] -> [Term] -> Chart -> Chart
 iterateStates g ops terms c = 
@@ -310,14 +320,15 @@ getAppls :: GlobalAnnos -> Int -> ParseMap -> [Term]
 getAppls g i m = 
     map (toAppl g) $ 
 	filter (\ (PState _ _ _ _ ts k) -> null ts && k == 0) $ 
-	     lookUp m i
+	     lookUp (parseMap m) i
 
-resolve :: GlobalAnnos -> [(Id, OpInfo)] -> Int -> Term -> Result Term
-resolve g ops c trm =
-    let (ps, c2) = runState (initialState g ops 0) c
+resolve :: GlobalAnnos -> [(Id, OpInfo)] -> ParseMap -> Term -> Result Term
+resolve g ops p trm =
+    let (ps, c2) = runState (initialState g ops 0) (varCount p)
         (i, ds, m) = iterateStates g ops [trm] 
-		     (0, [], CountMap c2 $ Map.single 0 $ ps) 
-        ts = getAppls g i $ parseMap m
+		     (0, [], p { varCount = c2, parseMap =  
+				 Map.single 0 $ ps} ) 
+        ts = getAppls g i m
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
 					     ++ show trm)

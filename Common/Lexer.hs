@@ -17,7 +17,7 @@
 
 module Common.Lexer where
 
-import Data.Char (digitToInt)
+import Data.Char (digitToInt, isDigit)
 import Common.Id (Token(..), place)
 import Control.Monad (MonadPlus (mplus), liftM2)
 import Common.Lib.Parsec
@@ -178,6 +178,21 @@ scanString :: GenParser Char st String
 scanString = flat (many (caslChar <|> (char '\'' >> return "\\\'"))) 
 	     `enclosedBy` char '"' <?> "literal string"
 
+isString :: Token -> Bool
+isString t = head (tokStr t) == '\"'
+
+parseString :: Parser a -> String -> a
+parseString p s = case parse p "" s of
+		  Left _ -> error "parseString"
+		  Right x -> x
+
+splitString :: Parser a -> String -> (a, String)
+splitString p s = 
+    let ph = do hd <- p;
+		tl <- getInput;
+		return (hd, tl) 
+	in parseString ph s
+
 -- ----------------------------------------------
 -- digit, number, fraction, float
 -- ----------------------------------------------
@@ -194,6 +209,17 @@ scanFloat = getNumber <++> (option ""
 
 scanDigit :: GenParser Char st String
 scanDigit = single digit
+
+isNumber :: Token -> Bool
+isNumber t = let s = tokStr t in length s > 1 && isDigit (head s)
+
+isFloating :: Token -> Bool
+-- precondition: isNumber
+isFloating t = any (\c -> c == '.' || c == 'E') (tokStr t)
+
+isLitToken :: Token -> Bool
+isLitToken t = isString t || 
+	       let c = head (tokStr t) in c == '\'' || isDigit c 
 
 -- ----------------------------------------------
 -- nested comment outs

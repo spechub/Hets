@@ -8,6 +8,7 @@ import Common.GlobalAnnotationsFunctions
 import Common.Lib.Set
 import Common.Id
 import Common.Result
+import Common.Lexer
 
 import Common.Token
 import CASL.Formula

@@ -15,17 +15,16 @@
                that stores the local ambiguity
 -}
 
-module CASL.MixfixParser ( parseString, resolveFormula, resolveMixfix
-		    , getTokenList, expandPos, listBrackets, isLitToken )
+module CASL.MixfixParser ( resolveFormula, resolveMixfix
+		    , listBrackets, isLitToken )
     where 
 import CASL.AS_Basic_CASL 
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
-import Common.Lib.Map hiding (member, fromList, toList, 
-			      map, split, filter, union)
-import Common.Lib.Set hiding (filter, split, single, insert)
-import Common.Lexer (caslChar)
+import Common.Lib.Map as Map hiding (filter, split, map)
+import Common.Lib.Set as Set hiding (filter, split, single, insert)
+import Common.Lexer
 import Control.Monad
 import Common.Lib.Parsec
 import qualified Char as C
@@ -66,38 +65,6 @@ varTok = mkSimpleId "(v)"
 opTok = mkSimpleId "(o)"
 predTok = mkSimpleId "(p)"
 
--- reconstruct token list 
--- expandPos f "{" "}" [a,b] [(1,1), (1,3), 1,5)] = 
--- [ t"{" , a , t"," , b , t"}" ] where t = f . Token (and proper positions)
-expandPos :: (Token -> a) -> String -> String -> [a] -> [Pos] -> [a]
-expandPos f o c ts ps =
-          let n = length ts 
-              j = length ps
-              cutOuterPos i l = let k = length l in 
-				if k == i+1 then l
-				else cutOuterPos (i - 2) 
-					      $ init (tail l)
-              ps1 = if j > n  && even (j - (n+1)) then cutOuterPos n ps
-		    else if j > 1 then 
-			 head ps : replicate (n - 1) nullPos 
-			      ++ [last ps]
-		    else replicate (n + 1) nullPos
-	      seps = map f
-		(zipWith Token (o : replicate (n - 1) "," ++ [c]) ps1)
-	  in head seps : if null ts then [last seps] else 
-	     concat (zipWith (\ t s -> [t,s]) ts (tail seps))
-	    		    
--- all tokens including "," within compound lists as sequence
--- either generate literal places or the non-terminal termTok
-getTokenList :: String -> Id -> [Token]
-getTokenList placeStr (Id ts cs ps) = 
-    let (pls, toks) = span isPlace (reverse ts) 
-        cts = if null cs then [] else concat 
-	      $ expandPos (:[]) "[" "]" (map (getTokenList place) cs) ps
-	      -- although positions will be replaced (by scan)
-        convert = map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
-		  . reverse 
-    in convert toks ++ cts ++ convert pls
 
 mkState :: Int -> Id -> State 
 mkState i ide = State ide [] [] (getTokenList termStr ide) i
@@ -139,7 +106,7 @@ listStates g i =
 initialState :: GlobalAnnos -> Set Id -> Int -> [State]
 initialState g ids i = 
     let mkTokState toks = State (Id toks [] []) [] [] toks i
-        is = toList ids
+        is = Set.toList ids
     in mkTokState [parenTok] : 
        mkTokState [termTok, colonTok] :
        mkTokState [termTok, asTok] :
@@ -170,7 +137,7 @@ scan trm i m =
           Mixfix_qual_pred _ -> predTok
           _ -> varTok
   in
-    insert (i+1) ( 
+    Map.insert (i+1) ( 
        foldr (\ (State o b a ts k) l ->
 	      if null ts || head ts /= t then l 
 	      else let p = tokPos t : b in 
@@ -349,7 +316,7 @@ complRec g m l = let l1 = compl g m l in
     if null l1 then l else complRec g m l1 ++ l
 
 complete :: GlobalAnnos -> Int  -> ParseMap -> ParseMap
-complete g i m = insert i (complRec g m $ lookUp m i) m
+complete g i m = Map.insert i (complRec g m $ lookUp m i) m
 
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
@@ -434,8 +401,8 @@ getAppls g i m =
 resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
 resolveMixfix g ops preds mayBeFormula trm =
     let (i, ds, m) = iterateStates g ops preds [trm] 
-		     (0, [], single 0 $ initialState g 
-		      (if mayBeFormula then ops `union` preds else ops) 0)
+		     (0, [], Map.single 0 $ initialState g 
+		      (if mayBeFormula then ops `Set.union` preds else ops) 0)
         ts = getAppls g i m
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
@@ -458,7 +425,7 @@ resolveFormula g ops preds frm =
 	   let varIds = foldl (\ l (Var_decl va _ _) -> 
 			       map (\t->Id[t][][]) va ++ l) [] vs
            in   
-	   do fNew <- resolveFormula g (fromList varIds `union` ops) 
+	   do fNew <- resolveFormula g (Set.fromList varIds `Set.union` ops) 
 	                 preds fOld 
 	      return $ Quantification q vs fNew ps
        Conjunction fsOld ps -> 
@@ -506,7 +473,7 @@ resolveFormula g ops preds frm =
                             else updFormulaPos (head ps) (last ps) p
 		 Application (Op_name ide) args ps -> 
 		     let p = Predication (Pred_name ide) args ps in
-		     if ide `member` preds then return p
+		     if ide `Set.member` preds then return p
 		     else plain_error p 
 		          ("not a predicate: " ++ showId ide "")
 			  (posOfTerm t)
@@ -526,29 +493,6 @@ resolveFormula g ops preds frm =
 -- convert literals 
 -- --------------------------------------------------------------- 
 
-isLitToken :: Token -> Bool
-isLitToken t =  head (tokStr t) == '\'' || isString t || C.isDigit  
-	       (head $ tokStr t)
-
-isString :: Token -> Bool
-isString t = head (tokStr t) == '\"'
-isNumber :: Token -> Bool
-isNumber t = let s = tokStr t in length s > 1 && C.isDigit (head s)
-isFloating :: Token -> Bool
--- precondition: isNumber
-isFloating t = any (\c -> c == '.' || c == 'E') (tokStr t)
-
-parseString :: Parser a -> String -> a
-parseString p s = case parse p "" s of
-		  Left _ -> error "parseString"
-		  Right x -> x
-
-split :: Parser a -> String -> (a, String)
-split p s = let ph = do hd <- p;
-		        tl <- getInput;
-                        return (hd, tl) 
-            in parseString ph s
-
 makeStringTerm :: Id -> Id -> Token -> TERM
 makeStringTerm c f tok = 
   makeStrTerm (incSourceColumn sp 1) str
@@ -557,7 +501,7 @@ makeStringTerm c f tok =
   str = init (tail (tokStr tok))
   makeStrTerm p l = 
     if null l then asAppl c [] p
-    else let (hd, tl) = split caslChar l
+    else let (hd, tl) = splitString caslChar l
          in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p] [] []) [] p, 
 		      makeStrTerm (incSourceColumn p $ length hd) tl] p
 
