@@ -138,7 +138,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
   -- fällt die alte Kante ganz weg oder wird sie durch ein provenThm ersetzt?
    else ((insEdge provenEdge (delLEdge edge dgraph)),
 	    ((DeleteEdge edge):((InsertEdge provenEdge):changes)))
---	  ((DeleteEdge edge):changes))
+
   where
     (GlobalThm _ conservativity) = (dgl_type edgeLab)
     provenEdge = (source,
@@ -240,22 +240,16 @@ locSubsume proofStatus@(globalContext,history,dGraph) =
 
 locSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
+locSubsumeAux dgraph historyElement [] = (dgraph, historyElement)
 locSubsumeAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
   if existsLocDefPathOfMorphismBetween dgraph morphism source target
      then
        globSubsumeAux newGraph (newRules,newChanges) list
      else
        globSubsumeAux dgraph (rules,changes) list
+
   where
     morphism = dgl_morphism edgeLab
-    outGoingEdges = out dgraph source
-    localDefEdges = filter isLocalDef outGoingEdges
-    -- @@@@@ die richtige Variante einkommentieren, sobald decomp 
-    -- implementiert ist @@@@@
-    nextStep = [(morphism, tgt)|
-		   (_,tgt,lab) <- localDefEdges]
-    --nextStep = [(decomp Grothendieck morphism (dgl_morphism lab), tgt)|
-	--	   edge@(_,tgt,lab) <- localDefEdges]
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity) = (dgl_type edgeLab)
     newEdge = (source,
@@ -315,8 +309,28 @@ existsLocDefPathOfMorphismBetween dgraph morphism src tgt =
 	  getFilteredMorphisms morphismsOfLocDefPaths
 
 getAllLocDefPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
-getAllLocDefPathsBetween dgraph src tgt = undefined
+getAllLocDefPathsBetween dgraph src tgt = globDefPaths ++ locGlobDefPaths
 
+  where
+    globDefPaths = getAllDefPathsBetween dgraph src tgt ([]::[LEdge DGLinkLab])
+    outEdges = out dgraph src
+    nextStep = [(edge,getTargetNode edge) | edge <- outEdges]
+    pathEnds =
+	[(edge,getAllDefPathsBetween dgraph node tgt ([]::[LEdge DGLinkLab]))|
+		(edge, node) <- nextStep]
+    locGlobDefPaths =
+	concat [addEdgeToPaths edge paths | (edge, paths) <- pathEnds]
+
+
+addEdgeToPaths :: a -> [[a]] -> [[a]]
+addEdgeToPaths edge [] = []
+addEdgeToPaths edge (path:paths) =
+  (edge:path):(addEdgeToPaths edge paths)
+
+{- alle Nachfolger von src holen, die über eine locDef edge zu erreichen sind,
+   ab jedem Nachfolger alle defPaths zu tgt holen
+   jeweils mit der locDef edge concatinieren
+   diese Menge mit der Menge der defPaths zwischen src und tgt zusammentun-}
 {-  [map (edge++) (getAllDefPathsBetween nextSrc tgt ([]::[LEdge DGLinkLab])
 	     ([]::[[LEdge DGLinkLab]]))|(edge,nextSrc) <- nextStep] 
 
