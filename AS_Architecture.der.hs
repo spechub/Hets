@@ -48,8 +48,10 @@ data UNIT_SPEC_DEFN = Unit_spec_defn SPEC_NAME UNIT_SPEC [Pos]
 data UNIT_SPEC = Unit_type [SPEC] SPEC [Pos]
 	         -- pos: opt "*"s , "->"
 	       | Spec_name SPEC_NAME
-	       | Arch_unit_spec ARCH_SPEC [Pos]
+	       | Arch_unit_spec (Annoted ARCH_SPEC) [Pos] 
 		 -- pos: "arch","spec"
+		 -- The ARCH_SPEC has to be surrounded with braces and
+		 -- after the opening brace is a [Annotation] allowed
 	       | Closed_unit_spec UNIT_SPEC [Pos]
 		 -- pos: "closed"
 		 deriving (Show,Eq)
