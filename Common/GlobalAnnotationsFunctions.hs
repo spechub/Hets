@@ -59,12 +59,11 @@ store_prec_annos pgr = Rel.transClosure .
 					     ++ showRel p2 "")
 				       else Rel.insert li hi p2
 				     BothDirections -> 
-				         let p3 = Rel.transClosure p2 in
-				         case precRel p3 hi li of
-				         NoDirection -> Rel.insert hi li 
-				               (Rel.insert li hi p3)
-				         BothDirections -> p3
-				         _ -> error ("prec_anno conflict: " ++
+				         if Rel.transMember hi li p2 == 
+				            Rel.transMember li hi p2 
+				         then Rel.insert hi li 
+				              (Rel.insert li hi p2)
+				         else error ("prec_anno conflict: " ++
 					    showId li " <> " ++ showId hi "\n" 
 					     ++ showRel p2 "")
 				     _ -> error "prec_anno relation")
