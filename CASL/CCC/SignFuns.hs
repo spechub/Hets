@@ -54,7 +54,7 @@ imageOfMorphism m =
               Nothing -> Map.insert ident (Set.single pt) predM
               Just pts -> Map.insert ident (Set.insert pt pts) predM
 
-inhabited:: [Constraint] -> [SORT]
+inhabited :: [Constraint] -> [SORT]
 inhabited constrs = iterateInhabited []
       where (_,ops,_)=recover_Sort_gen_ax constrs
             argsAndres=concat $ map (\os-> case os of
@@ -71,13 +71,13 @@ inhabited constrs = iterateInhabited []
 					          else l') l argsAndres
 
 --??
-inhabited' :: FORMULA f -> [SORT]
-inhabited' f = case f of
-                Quantification _ _ f' _->inhabited' f'
-                Conjunction fs _->concat [inhabited' f'|f'<-fs]
-                Disjunction fs _->concat [inhabited' f'|f'<-fs]
-                Implication f1 f2 _ _->(inhabited' f1)++(inhabited' f2)
-                Equivalence f1 f2 _->(inhabited' f1)++(inhabited' f2)
-                Negation f' _->inhabited' f'
-                Sort_gen_ax constrs True->inhabited constrs
+inhabitedF :: FORMULA f -> [SORT]
+inhabitedF f = case f of
+                Quantification _ _ f' _-> inhabitedF f'
+                Conjunction fs _-> concat [inhabitedF f'|f'<-fs]
+                Disjunction fs _-> concat [inhabitedF f'|f'<-fs]
+                Implication f1 f2 _ _-> (inhabitedF f1)++(inhabitedF f2)
+                Equivalence f1 f2 _-> (inhabitedF f1)++(inhabitedF f2)
+                Negation f' _-> inhabitedF f'
+                Sort_gen_ax constrs True-> inhabited constrs
                 _ -> []
