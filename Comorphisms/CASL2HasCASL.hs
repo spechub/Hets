@@ -136,7 +136,26 @@ toVarDecl (Cas.Var_decl vs s ps) =
 		 VarDecl (simpleIdToId i) (toType s) Other ps) vs
 
 toSentence :: Sign f e -> Cas.FORMULA f -> Sentence 
-toSentence s = Formula . toTerm s
+toSentence sig f = case f of 
+   Cas.Sort_gen_ax cs b -> let 
+       (sorts, ops, smap) = Cas.recover_Sort_gen_ax cs
+       genKind = if b then Free else Generated
+       getSort s = maybe s id $ lookup s smap
+       mapPart :: FunKind -> Partiality
+       mapPart cp = case cp of
+		CASL.Sign.Total -> HasCASL.As.Total
+                CASL.Sign.Partial -> HasCASL.As.Partial
+       in DatatypeSen 
+          $ map ( \ s -> DatatypeConstr s (getSort s) genKind []
+                          (map ( \ (i, t, ps) -> 
+			       Construct i
+			       [mkProductType
+				(map toType $ opArgs t) ps]
+			       (mapPart $ opKind t) [])
+                          $ filter ( \ (_, t, _) -> opRes t == s) 
+				$ map ( \ (Cas.Qual_op_name i t ps) -> 
+				      (i, toOpType t, ps)) ops)) sorts
+   _ -> Formula $ toTerm sig f
 
 toTerm :: Sign f e -> Cas.FORMULA f -> Term 
 toTerm s f = case f of 
@@ -172,7 +191,6 @@ toTerm s f = case f of
 	       (mkTupleTerm (map (fromTERM s) as) qs) qs 
     Cas.Definedness t ps -> mkTerm defId defType ps $ fromTERM s t 
     Cas.Membership t ty ps -> TypedTerm (fromTERM s t) InType (toType ty) ps
-    Cas.Sort_gen_ax _ _ -> unitTerm trueId [] -- missing
     _ -> error "fromTERM"
 
 fromOP_TYPE :: Cas.OP_TYPE -> TypeScheme
