@@ -596,7 +596,7 @@ notElemR list element = notElem element list
 
 
 
--- ################ einbindung von proofs.hs ############
+-- -- ################ einbindung von proofs.hs ############
 applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> ConversionMaps
 	          -> [([DGRule],[DGChange])]
 		  -> IO (Descr, ConversionMaps)
@@ -631,7 +631,7 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
  	        applyChangesAux gid libname graphInfo (descr+1)
 				 newConvMaps changes
 	   Just _ -> 
--- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
+-- -- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
 -- Momentane Lösung: ignorieren...
 	     applyChangesAux gid libname graphInfo eventDescr
 			         convMaps changes
