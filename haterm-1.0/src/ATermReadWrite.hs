@@ -31,11 +31,12 @@ import ATermAbstractSyntax
 
 -- added by KL
 import Char
+import Memo
 
 --- From String to ATerm ------------------------------------------------------
 
-readATerm ('!':str)	= let (t,_,_) = readTAF str [] in t
-readATerm str		= let (t,_)   = readAT str     in t
+readATerm ('!':str)	= let (t,_,_,_) = readTAF str [] 0 in t
+readATerm str		= let (t,_)   = readAT str       in t
 
                                                                -- non-shared --
 
@@ -70,33 +71,44 @@ readATs' (']':str)	= ([],str)
 
                                                                    -- shared --
 
-readTAF ('#':str) tbl	=  let (i,str') = spanAbbrevChar str
-			   in (getElement (deAbbrev i) tbl, str',tbl)    
-readTAF ('[':str) tbl	=  let (kids, str',tbl') = readTAFs 
-                                                      (dropSpaces str) tbl
-			       t                 = AList kids
- 			   in (t, str',addElement t tbl')
-readTAF str tbl		=  let (c,str')           = readAFun str
-		   	       (kids, str'',tbl') = readParenTAFs 
-                                                      (dropSpaces str') tbl
+readTAF ('#':str) tbl l	=  let (i,str') = spanAbbrevChar str
+			   in (getElement (deAbbrev i) tbl, str',tbl,
+			       l+(length i)+1)    
+readTAF ('[':str) tbl l	=  let (kids, str',tbl',l') = readTAFs 
+                                                      (dropSpaces str) tbl 1
+	                       t     = AList kids	                    
+	                       tbl'' = condAddElement t l' tbl'
+			   in (t, str',tbl'',l+l')
+readTAF str@(x:xs) tbl l 
+  | isIntHead x         =  let (i,str') = span isDigit xs
+                               l'       = length (x:i)
+                               t        = AInt (read (x:i)) 
+	                       tbl'     = condAddElement t l' tbl
+                           in (t,str',tbl', l+l')
+  | otherwise           =  let (c,str')           = readAFun str
+		   	       (kids, str'',tbl',l') = readParenTAFs 
+                                                        (dropSpaces str') tbl 0
 			       t                  = AAppl c kids
- 			   in (t, str'',addElement t tbl')
+                               l1' = if null kids then 0 else l'
+	                       l''    = (length c) + l1'
+	                       tbl''  = condAddElement t l'' tbl'
+ 			   in (t, str'',tbl'',l'')
 
-readParenTAFs ('(':str)	tbl	=  readTAFs (dropSpaces str) tbl
-readParenTAFs str tbl		=  ([],str,tbl)
+readParenTAFs ('(':str)	tbl l	=  readTAFs (dropSpaces str) tbl l
+readParenTAFs str tbl l		=  ([],str,tbl,l)
 
-readTAFs (')':str) tbl	=  ([],str,tbl)
-readTAFs (']':str) tbl	=  ([],str,tbl)
-readTAFs str tbl	=  readTAFs1 str tbl
+readTAFs (')':str) tbl l =  ([],str,tbl,l+1)
+readTAFs (']':str) tbl l =  ([],str,tbl,l+1)
+readTAFs str tbl l       =  readTAFs1 str tbl l
 
-readTAFs1 str tbl	=  let (t,str',tbl')    = readTAF (dropSpaces str) tbl
-			       (ts,str'',tbl'') = readTAFs' 
-                                                    (dropSpaces str') tbl'
-			   in (t:ts,str'',tbl'')
+readTAFs1 str tbl l   =  let (t,str',tbl',l')= readTAF (dropSpaces str) tbl l
+			     (ts,str'',tbl'',l'') = readTAFs' 
+                                                (dropSpaces str') tbl' l'
+			   in (t:ts,str'',tbl'',l'')
 
-readTAFs' (',':str) tbl	= readTAFs1 (dropSpaces str) tbl
-readTAFs' (')':str) tbl	= ([],str,tbl)
-readTAFs' (']':str) tbl	= ([],str,tbl)
+readTAFs' (',':str) tbl	l = readTAFs1 (dropSpaces str) tbl (l+1)
+readTAFs' (')':str) tbl	l = ([],str,tbl,l+1)
+readTAFs' (']':str) tbl	l = ([],str,tbl,l+1)
 
                                                                   -- helpers --
 
@@ -123,10 +135,16 @@ span p xs@(x:xs')
                        where (ys,zs) = span p xs'
 -}
 
+condAddElement t l tbl = 
+    if length (next_abbrev tbl) < l then
+       addElement t tbl
+    else
+       tbl
+
 --- From ATerm to String  -----------------------------------------------------
 
 writeATerm t            = writeAT t
-writeSharedATerm t	= let (s,_) = writeTAF t [] in s
+writeSharedATerm t	= let (s,_) = writeTAF t [] in '!':s
                                                                -- non-shared --
 
 writeAT 		:: ATerm -> String
@@ -137,13 +155,13 @@ writeAT (AInt i)	=  show i
                                                                    -- shared --
 
 writeTAF		:: ATerm -> Table -> (String,Table)
-writeTAF t tbl		=  case indexOf t tbl of
-				(Just i) -> if (length abbrev) < (length str)
-                                            then (abbrev,tbl)
-                                            else (str, addElement t tbl') 
-				              where abbrev = "#"++mkAbbrev i
-				Nothing  -> (str, addElement t tbl')
-                           where (str,tbl') = writeTAF' t tbl
+writeTAF t tbl          =  case indexOf t tbl of
+				(Just i) -> (abbrev i,tbl)
+				Nothing  -> (str, 
+					     condAddElement t 
+					                    (length str) 
+					                    tbl') 
+					    where (str,tbl') = writeTAF' t tbl
 
 writeTAF' (AAppl c ts) tbl	= let (kids,tbl') = writeTAFs ts tbl
            			  in (writeATermAux c kids,tbl')
@@ -210,5 +228,12 @@ toBase64 =
     'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
     'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/' 
   ]
+
+-- helpers --
+
+abbrev = memo abbrev' 
+    where abbrev' i = "#"++mkAbbrev i
+
+next_abbrev tbl = abbrev (toInteger (length tbl)+1)
 
 -------------------------------------------------------------------------------
