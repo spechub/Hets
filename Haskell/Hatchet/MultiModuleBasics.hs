@@ -37,7 +37,7 @@ data ModuleInfo = ModuleInfo {
                     infixDecls :: [AHsDecl], -- infixities
                     tyconsMembers :: [(AHsName, [AHsName])]
                   } 
-   deriving (Eq, Show)
+   deriving Show
 
 
 -- takes a module and figures out what type constructor each 
@@ -59,7 +59,7 @@ getInfixDecls (AHsModule _ _ _ decls)
 emptyModuleInfo :: ModuleInfo
 emptyModuleInfo 
     = ModuleInfo { varAssumps = emptyEnv,
-                   moduleName = error "Unspecified module name",
+                   moduleName = AModule "Empty",
                    dconsAssumps = emptyEnv,
                    classHierarchy = emptyEnv,
                    tyconsMembers = [], 
@@ -74,8 +74,7 @@ concatModuleInfos = foldr joinModuleInfo emptyModuleInfo
 joinModuleInfo :: ModuleInfo -> ModuleInfo -> ModuleInfo
 joinModuleInfo mod1 mod2
     = ModuleInfo {
-            moduleName = AModule ((mn mod1) ++ (mn mod2)), --error ("moduleName not defined since " ++ "merge of " 
---                                 ++ mn mod1 ++ " and " ++ mn mod2),
+            moduleName = AModule mn,
             varAssumps = comb varAssumps joinEnv,
             dconsAssumps = comb dconsAssumps joinEnv,
             kinds = comb kinds joinEnv,
@@ -85,8 +84,7 @@ joinModuleInfo mod1 mod2
             infixDecls = comb infixDecls (++)
     }
     where comb field joiningMethod = joiningMethod (field mod1) (field mod2)
-          mn modInfo = (\(AModule x) -> x) (moduleName modInfo)
-
+          mn = (\(AModule x) -> x) (moduleName mod1)
 
 modToFilePath :: AModule -> FilePath
 modToFilePath (AModule m) = m ++ ".ti"
