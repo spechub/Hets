@@ -21,8 +21,9 @@ data Diagnosis = Error String Pos
 	       | FatalError String Pos
                | Warning String Pos
 
-data Result a = Result [Diagnosis] (Maybe a)
-    deriving (Show)
+data Result a = Result { diags :: [Diagnosis]
+	               , maybeResult :: (Maybe a)
+		       } deriving (Show)
 
 instance Monad Result where
   return x = Result [] $ Just x
