@@ -116,8 +116,8 @@ FatalError (176,2) no analysis yet for: . __ in c -->? d
 FatalError (182,3) no analysis yet for: program f <<= [c -->? d] g =
 	all (\ x : c . def (f x) impl f (x) <<= g (x))
 FatalError (188,2) no analysis yet for: . __ in c --> d = \ f : c -->? d . all (\ x : c . def f (x))
-Hint (190,15) not a class 'c --> d'
-Hint (190,15) not a class 'c --> d'
+Hint (190,13) not a class 'c --> d'
+Hint (190,13) not a class 'c --> d'
 FatalError (192,2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
 FatalError (198,1) no analysis yet for: . all
   (\ f : p -->? p . eq (f (Y (f)),Y (f)) und all

@@ -31,8 +31,8 @@ v : (m)(List) %(var)%
 x : (((tuple3)(r))(s))(t) %(var)%
 y : ((tuple3)(r))(s) %(var)%
 z : (m)(([__])(__)) %(var)%
-Hint (7,8) not a class '[r]'
-Hint (7,15) not a class '{s}'
+Hint (7,9) not a class '[r]'
+Hint (7,16) not a class '{s}'
 Hint (11,9) not a class 'tuple3 r s t'
 Error (12,5) incompatible kinds
 Type ->Type
@@ -48,4 +48,4 @@ Error (24,5) incompatible kinds
 Hint (24,10) not a class 'm'
 Error (28,12) incompatible kind of type 'tuple3'
 Hint (32,10) not a class 'nt r List s'
-Warning (38,9) unchecked formula 'x = x'
+Warning (38,12) unchecked formula 'x = x'
