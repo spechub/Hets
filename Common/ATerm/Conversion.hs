@@ -35,8 +35,10 @@ module Common.ATerm.Conversion(
 import Common.ATerm.AbstractSyntax
 import Common.ATerm.ReadWrite
 import List (find,mapAccumL)
-import Common.Lib.Map hiding (map)
-
+import qualified Common.Lib.Map as Map hiding (map)
+import qualified Common.Lib.Set as Set 
+import qualified Common.Lib.Rel as Rel
+import Data.Maybe
 class ATermConvertible t where
   -- ATerm  
     -- conversion functions known from Joost Visser
@@ -202,18 +204,92 @@ conv ('\"':sr) = case reverse sr of
                                conv' _           = error "String not convertible to char"
                   _         -> error "No matching '\"' found"
 conv _         = error "String doesn't begin with '\"'"
-              
-instance (Ord a, ATermConvertible a, ATermConvertible b) => ATermConvertible (Map a b) where
-    toATerm fm       = toATerm (toList fm)
-    fromATerm at     = fromList $ fromATerm at
-    toShATerm att fm = toShATerm att $ toList fm 
-    fromShATerm att  = fromList $ fromShATerm att
 
+instance (ATermConvertible a) => ATermConvertible (Maybe a) where
+    toATerm maybe = case maybe of
+                     Nothing -> (AAppl "Nothing" [] [])
+                     (Just x)  -> let x' = toATerm x
+                                  in (AAppl "Just" [x'] [])
+    fromATerm at  = case at of
+                     (AAppl "Nothing" [] _) -> Nothing
+                     (AAppl "Just" [x] _) -> let x' = fromATerm x
+					     in (Just x')
+    toShATerm att maybe = case maybe of
+                     Nothing -> addATerm (ShAAppl "Nothing" [] []) att
+                     (Just x)  -> let (att1,x') = toShATerm att x
+                                  in addATerm (ShAAppl "Just" [x'] []) att1
+    fromShATerm att = case aterm of
+                       (ShAAppl "Nothing" [] _) -> Nothing
+                       (ShAAppl "Just" [x] _) -> let x' = fromShATerm (getATermByIndex1 x att)
+                                                 in (Just x')
+                      where aterm = getATerm att
+
+instance (Ord a, ATermConvertible a, ATermConvertible b) => ATermConvertible (Map.Map a b) where
+    toATerm fm       = toATerm (Map.toList fm)
+    fromATerm at     = Map.fromList $ fromATerm at
+    toShATerm att fm = toShATerm att $ Map.toList fm 
+    fromShATerm att  = Map.fromList $ fromShATerm att
+
+instance (Ord a,ATermConvertible a) => ATermConvertible (Set.Set a) where
+    toATerm set = toATerm (Set.toList set)
+    fromATerm at     = Set.fromList $ fromATerm at
+    toShATerm att set = toShATerm att $ Set.toList set 
+    fromShATerm att  = Set.fromList $ fromShATerm att
+
+instance (Ord a,ATermConvertible a) => ATermConvertible (Rel.Rel a) where
+    toATerm set = toATerm (Rel.toList set)
+    fromATerm at     = Rel.fromList $ fromATerm at
+    toShATerm att set = toShATerm att $ Rel.toList set 
+    fromShATerm att  = Rel.fromList $ fromShATerm att
+
+{-    toATerm set = case set of
+                   (Tip) -> AAppl "Tip" [] []
+                   (Bin i a set1 set2) -> let aa = toATerm i
+                                              bb = toATerm a
+					      cc = toATerm set1
+                                              dd = toATerm set2
+                                             in AAppl "Bin" [aa,bb,cc,dd] []
+    fromATerm at = case at of
+                    (AAppl "Tip" [] _) -> Tip
+                    (AAppl "Bin" [aa,bb,cc,dd] _) -> let aa' = fromATerm aa
+                                                         bb' = fromATerm bb
+						         cc' = fromATerm cc
+						     in (Bin aa' bb' cc' dd')
+    toShATerm att at = case at of
+                        (Tip) -> addATerm (ShAAppl "Tip" [] []) att
+                        (Bin i a set1 set2) -> let (att1,i') = toShATerm att i
+                                                   (att2,a') = toShATerm att1 a
+                                                   (att3,set1') = toShATerm att2 set1
+                                                   (att4,set2') = toShATerm att3 set2
+                                               in addATerm (ShAAppl "Bin" [i',a',set1',set2'] []) att4
+                        _                   -> toShATermError "Set" at
+    fromShATerm att = case aterm of
+                       (ShAAppl "Tip" [] _) -> Tip
+                       (ShAAppl "Bin" [aa,bb,cc,dd] _) -> 
+                         let aa' = fromShATerm (getATermByIndex1 aa att)
+		             bb' = fromShATerm (getATermByIndex1 bb att)
+		             cc' = fromShATerm (getATermByIndex1 cc att)
+		             dd' = fromShATerm (getATermByIndex1 dd att) 
+                         in (Bin aa' bb' cc' dd')
+                       _ -> fromShATermError "Set" aterm
+                      where aterm = getATerm att
+-}
 instance ATermConvertible a => ATermConvertible [a] where
     toATerm l        = toATermList l
     fromATerm at     = fromATermList at
     toShATerm att l  = toShATermList att l 
     fromShATerm att  = fromShATermList att
+
+instance ATermConvertible () where
+    toATerm x = AAppl "" [] []
+    fromATerm at = case at of
+                    (AAppl "" [] _) -> ()
+                    _               -> fromATermError "()" at
+    toShATerm att x = addATerm (ShAAppl "" [] []) att
+    fromShATerm att = case at of
+                       (ShAAppl "" [] _) -> ()
+                       _                 -> fromShATermError "()" at
+                      where at = getATerm att
 
 instance (ATermConvertible a,ATermConvertible b) => ATermConvertible (a,b) where
     toATerm (a,b)    = AAppl "" [toATerm a,toATerm b] []
