@@ -422,7 +422,12 @@ basicAnalysis (bs, inSig, ga) =
 	ds = envDiags accSig
 	sents = sentences accSig
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
-	in Result ds $ Just (newBs, diffSig cleanSig inSig, cleanSig, sents) 
+	diff = diffSig cleanSig inSig
+	remPartOpsS s = s { opMap = remPartOpsM $ opMap s }
+	in Result ds $ Just ( newBs
+			    , remPartOpsS diff
+			    , remPartOpsS cleanSig
+			    , sents ) 
 
 diffSig :: Sign -> Sign -> Sign
 diffSig a b = 
@@ -451,7 +456,7 @@ addSig a b =
     a { sortSet = sortSet a `Set.union` sortSet b
       , sortRel = fromSet $ Set.union
 	(toSet $ sortRel a) $ toSet $ sortRel b
-      , opMap = Map.unionWith Set.union (opMap a) $ opMap b	
+      , opMap = remPartOpsM $ Map.unionWith Set.union (opMap a) $ opMap b
       , predMap = Map.unionWith Set.union (predMap a) $ predMap b	
       }
 
@@ -463,7 +468,26 @@ isEmptySig s =
     Map.isEmpty (predMap s)
 
 isSubSig :: Sign -> Sign -> Bool
-isSubSig sub super = isEmptySig $ diffSig sub super
+isSubSig sub super = isEmptySig $ diffSig sub super 
+		     { opMap = addPartOpsM $ opMap super }
+
+partOps :: Set.Set OpType -> Set.Set OpType
+partOps s = Set.fromAscList $ map ( \ t -> t { opKind = Partial } ) 
+	 $ Set.toList $ Set.filter ((==Total) . opKind) s
+
+remPartOps :: Set.Set OpType -> Set.Set OpType 
+remPartOps s = s Set.\\ partOps s
+
+remPartOpsM :: Ord a => Map.Map a (Set.Set OpType) 
+	    -> Map.Map a (Set.Set OpType) 
+remPartOpsM = Map.map remPartOps
+
+addPartOps :: Set.Set OpType -> Set.Set OpType 
+addPartOps s = Set.union s $ partOps s
+
+addPartOpsM :: Ord a => Map.Map a (Set.Set OpType) 
+	    -> Map.Map a (Set.Set OpType) 
+addPartOpsM = Map.map addPartOps
 
 toOP_TYPE :: OpType -> OP_TYPE
 toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =

@@ -10,8 +10,8 @@ import CASL.AS_Basic_CASL
 
 localAnalysis :: GlobalAnnos -> BASIC_SPEC -> Result BASIC_SPEC
 localAnalysis ga bs = 
-    let (newbs, sig) = runState (ana_BASIC_SPEC ga bs) emptyEnv
-	in Result (envDiags sig) $ Just newbs
+    let (newBs, sig) = runState (ana_BASIC_SPEC ga bs) emptyEnv
+	in Result (envDiags sig) $ Just newBs
 
 runAna :: GlobalAnnos -> AParser (Result BASIC_SPEC)
 runAna ga = 
@@ -20,9 +20,10 @@ runAna ga =
 
 localAna :: GlobalAnnos -> BASIC_SPEC -> Result Sign
 localAna ga bs = 
-    let (_, sig) = runState (ana_BASIC_SPEC ga bs) emptyEnv
-	ds = filter ((<= Error)  . diagKind) $ envDiags sig
-	in Result ds $ Just sig
+    let Result ds (Just (_newBs, diffSig, _accSig, _sents)) = 
+	    basicAnalysis (bs, emptyEnv, ga)
+	es = filter ((<= Error)  . diagKind) ds
+	in Result es $ Just diffSig
 
 getSign :: GlobalAnnos -> AParser (Result Sign)
 getSign ga = 
