@@ -9,30 +9,30 @@ expecting "}%"
 
 parse error at 4.1:
 unexpected " "
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 %% } % 
 parse error at 6.1:
 unexpected "}"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 %%line comment starting immidiately after %%containing %{ }% , ending in %%
 parse error at 8.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 9.1:
 unexpected "["
-expecting "%%", "%{", "%(" or words
+expecting "%"
 
 parse error at 10.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 %(one_line_label)%
 parse error at 12.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 13.9:
 unexpected end of input
@@ -40,19 +40,19 @@ expecting ")%"
 
 parse error at 14.1:
 unexpected "l"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 15.1:
 unexpected "l"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 16.1:
 unexpected ")"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 17.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 %prec({a__, __**__} < {p, 'e', 6})%
 parse error at 19.7:
@@ -61,39 +61,39 @@ expecting ")%"
 
 parse error at 20.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 21.1:
 unexpected "{"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 22.1:
 unexpected "<"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 23.1:
 unexpected "{"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 24.1:
 unexpected ")"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 25.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 %% one word annotes 
 %implies
 %def
 parse error at 29.1:
 unexpected " "
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 %mono
 parse error at 31.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 %left_assoc('a', b, __<__)%
 parse error at 33.26:
@@ -102,15 +102,15 @@ expecting ")%"
 
 parse error at 34.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 35.1:
 unexpected "_"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 36.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 37.21:
 unexpected end of input
@@ -120,11 +120,11 @@ expecting ")%"
 %LATEX \sum_{__}^{__}
 parse error at 40.1:
 unexpected ")"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 41.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 %number __@@__
 %floating __frac__, __exp__

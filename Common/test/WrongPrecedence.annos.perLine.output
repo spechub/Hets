@@ -5,5 +5,5 @@
 %right_assoc(b, a, d, d)%
 parse error at 6.1:
 unexpected end of input
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 

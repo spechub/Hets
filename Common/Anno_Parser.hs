@@ -93,7 +93,7 @@ annote_line s =
 
 annotationL :: GenParser Char st Annotation
 annotationL = do start_source_pos <- getPosition
-		 anno <- (comment <|> annote)
+		 anno <- (comment <|> annote) <?> "\"%\""
 		 return (add_pos anno start_source_pos)
     where add_pos an p = up_pos_l (\l -> p:l) an
 
