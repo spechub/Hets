@@ -93,6 +93,8 @@ instance StaticAnalysis Haskell HsDecls
     basic_analysis Haskell = Just hatAna 
     empty_signature Haskell = emptyEnv
     final_union Haskell = signature_union Haskell
+    inclusion Haskell _ _ = return ()
+    is_subsig Haskell = isSubSign
 
 instance Logic Haskell Haskell_Sublogics
                HsDecls Sentence SYMB_ITEMS SYMB_MAP_ITEMS
