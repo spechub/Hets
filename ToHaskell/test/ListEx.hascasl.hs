@@ -22,5 +22,5 @@ module Dummy where
 import Prelude (error, Show, Eq, Ord)
 import MyLogic
 myhead :: (List a) -> a
-myhead (Cons (x_11_11, x_11_12)) = x_11_11
+myhead (Cons{-a-} (x_11_11, x_11_12)) = x_11_11
 data List a = Nil | Cons !(a, List a)

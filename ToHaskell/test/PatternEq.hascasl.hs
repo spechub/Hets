@@ -42,14 +42,14 @@ import MyLogic
 data A__s = A__s
 data A__t = A__t
 a :: A__s
-a = error "a"
+a = error{-A__s-} "a"
 b :: A__s
 c :: A__t
 a__snd :: (A__s, A__t) -> A__t
 x :: A__s
-x = error "x"
+x = error{-A__s-} "x"
 y :: A__t
-y = error "y"
+y = error{-A__t-} "y"
 a__snd (x, y) = y
 b = a
 c = a__snd (x, y)

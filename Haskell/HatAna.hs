@@ -9,7 +9,7 @@ Portability :  non-portable
 
 -}
 
-module Haskell.HatAna (module Haskell.HatAna, PNT, HsDeclI) where
+module Haskell.HatAna (module Haskell.HatAna, PNT, TiDecl) where
 
 import Common.AS_Annotation 
 import Common.Result 
@@ -48,6 +48,7 @@ import Common.Lib.Pretty
 import Data.List((\\))
 import Data.Set
 import qualified Common.Lib.Map as Map
+import TiPropDecorate
 
 type Scope = Rel (SN HsName) (Ent (SN Id))
 
@@ -83,10 +84,13 @@ isSubSign e1 e2 = diffSign e1 e2 == emptySign
 instance Eq (TiTypes.TypeInfo i) where
     _ == _ = True
 
-instance Ord (HsDeclI PNT) where
-    s1 <= s2 = s1 == s2
+instance Eq (TiDecl PNT) where
+    s1 == s2 = show s1 == show s2
 
-instance PrettyPrint (HsDeclI PNT) where
+instance Ord (TiDecl PNT) where
+    s1 <= s2 = show s1 <= show s2
+
+instance PrettyPrint (TiDecl PNT) where
      printText0 _ = text . HatPretty.pp
 
 instance PrettyPrint Sign where
@@ -140,7 +144,7 @@ emptySign = Sign
     }
 
 hatAna :: (HsDecls, Sign, GlobalAnnos) -> 
-          Result (HsDecls, Sign, Sign, [Named (HsDeclI PNT)])
+          Result (HsDecls, Sign, Sign, [Named (TiDecl PNT)])
 hatAna (hs@(HsDecls ds), e, _) = do
    let parsedMod = HsModule loc0 (SN mod_Prelude loc0) Nothing [] ds
        astMod = toMod parsedMod
@@ -169,14 +173,15 @@ hatAna (hs@(HsDecls ds), e, _) = do
        prelError = HsVar $ PNT (PN (UnQual "error") 
                                        (G mod_Prelude "error" noSrcLoc))
                    Value noSrcLoc
-       nsds = simpFieldLabels prelError sds :: [HsDeclI PNT]
+---       nsds = simpFieldLabels prelError sds :: [HsDeclI PNT]
        inMyEnv =  withStdNames findPredef
                . inModule (const mod_Prelude) []
                . extendts [ a :>: b | (a, b) <- Map.toList $ values e ] 
                . extendkts [ a :>: b | (a, b) <- Map.toList $ types e ] 
                . extendIEnv (instances e)
    fs :>: (is, (ts, vs)) <- 
-        lift $ inMyEnv $ tcTopDecls id nsds
+        lift $ inMyEnv $ tcTopDecls id sds
    let accSign = extendSign e is ts vs insc fixs
-   return (hs, diffSign accSign e, accSign, map emptyName fs)
+   return (hs, diffSign accSign e, accSign, map emptyName $ fromDefs 
+             (fs :: TiDecls PNT))
 

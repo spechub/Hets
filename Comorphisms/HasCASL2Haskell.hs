@@ -41,7 +41,7 @@ instance Comorphism HasCASL2Haskell
                Morphism
                Symbol RawSymbol ()
                Haskell ()
-               HsDecls (HsDeclI PNT) () ()
+               HsDecls (TiDecl PNT) () ()
                Sign
                HaskellMorphism
                () () () where

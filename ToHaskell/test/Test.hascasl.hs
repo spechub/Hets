@@ -56,11 +56,11 @@ data C = C
 data A__Int = A__Int
 type A__s = B
 a___P :: (AT, B) -> C
-a___P = error "a___P"
+a___P = error{-((AT, B) -> C)-} "a___P"
 f_02 :: C -> C
-f_02 = error "f_02"
+f_02 = error{-(C -> C)-} "f_02"
 f :: B -> B
-f = error "f"
+f = error{-(B -> B)-} "f"
 s1 :: AT -> A__Int
 s2 :: AT -> B
 s1 (A (x_11_11, x_11_12)) = x_11_11

@@ -35,7 +35,7 @@ import Logic.Logic
 
 instance ATermConvertible HsDecls
 instance ATermConvertible Sign
-instance ATermConvertible (HsDeclI PNT)
+instance ATermConvertible (TiDecl PNT)
 
 hsDeclsTc :: TyCon
 hsDeclsTc = mkTyCon "Haskell.HatParser.HsDecls"
@@ -56,10 +56,10 @@ instance Typeable PNT where
   typeOf _ = mkTyConApp tyconPNT []
 
 hsDeclItc :: TyCon
-hsDeclItc = mkTyCon "Haskell.HatAna.HsDeclI"
+hsDeclItc = mkTyCon "Haskell.HatAna.TiDecl"
 
-instance Typeable i => Typeable (HsDeclI i) where 
-  typeOf s = mkTyConApp hsDeclItc [typeOf $ (undefined :: HsDeclI a -> a) s]
+instance Typeable i => Typeable (TiDecl i) where 
+  typeOf s = mkTyConApp hsDeclItc [typeOf $ (undefined :: TiDecl a -> a) s]
 
 instance PrintLaTeX HsDecls where
   printLatex0 = printText0
@@ -67,7 +67,7 @@ instance PrintLaTeX HsDecls where
 instance PrintLaTeX Sign where
      printLatex0 = printText0
 
-instance PrintLaTeX (HsDeclI PNT) where
+instance PrintLaTeX (TiDecl PNT) where
      printLatex0 = printText0
 
 -- a dummy datatype for the LogicGraph and for identifying the right
@@ -108,7 +108,7 @@ type Haskell_Sublogics = ()
 type Symbol = ()
 type RawSymbol = ()
 
-instance Sentences Haskell (HsDeclI PNT) () Sign HaskellMorphism Symbol where
+instance Sentences Haskell (TiDecl PNT) () Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
     print_named Haskell ga (NamedSen lab sen) = printText0 ga sen <>
 	if null lab then empty 
@@ -125,7 +125,7 @@ instance PrintLaTeX HaskellMorphism where
     printLatex0 ga sig1 $$ ptext "\\rightarrow" $$ printLatex0 ga sig1
 
 instance StaticAnalysis Haskell HsDecls
-               (HsDeclI PNT) () 
+               (TiDecl PNT) () 
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                HaskellMorphism 
@@ -138,7 +138,7 @@ instance StaticAnalysis Haskell HsDecls
     is_subsig Haskell = isSubSign
 
 instance Logic Haskell Haskell_Sublogics
-               HsDecls (HsDeclI PNT) SYMB_ITEMS SYMB_MAP_ITEMS
+               HsDecls (TiDecl PNT) SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                HaskellMorphism
                Symbol RawSymbol ()

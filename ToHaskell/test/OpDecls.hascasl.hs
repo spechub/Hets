@@ -36,10 +36,11 @@ import MyLogic
 data A__s = A__s
 data A__t = A__t
 a___2_P_2 :: (A__s, A__s) -> A__s
-a___2_P_2 = error "a___2_P_2"
+a___2_P_2
+    = error{-((A__s, A__s) -> A__s)-} "a___2_P_2"
 x1 :: A__s
-x1 = error "x1"
+x1 = error{-A__s-} "x1"
 x2 :: A__s
-x2 = error "x2"
+x2 = error{-A__s-} "x2"
 y :: A__s
 y = a___2_P_2 (x2, x2)

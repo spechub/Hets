@@ -33,7 +33,7 @@ import Haskell.HatParser
 import ToHaskell.TranslateAna
 import Data.List ((\\))
 
-mapSingleSentence :: Env -> Sentence -> Result (HsDeclI PNT)
+mapSingleSentence :: Env -> Sentence -> Result (TiDecl PNT)
 mapSingleSentence sign sen = do
     (_, l) <- mapTheory (sign, [NamedSen "" sen])
     case l of 
@@ -45,7 +45,7 @@ mapSingleSentence sign sen = do
                 [s] -> return $ sentence s
                 _ -> fail "several sentences resulted"
 
-mapTheory :: (Env, [Named Sentence]) -> Result (Sign, [Named (HsDeclI PNT)])
+mapTheory :: (Env, [Named Sentence]) -> Result (Sign, [Named (TiDecl PNT)])
 mapTheory (sig, csens) = do
     let hs = translateSig sig
 	ps = concatMap (translateSentence sig) csens
@@ -55,7 +55,7 @@ mapTheory (sig, csens) = do
                             emptySign, emptyGlobalAnnos)
     return (diffSign hsig preludeSign, filter noInstance sens \\ preludeSens) 
 
-noInstance :: Named (HsDeclI PNT) -> Bool
+noInstance :: Named (TiDecl PNT) -> Bool
 noInstance s = case basestruct $ struct $ sentence s of
                Just (HsInstDecl _ _ _ _ _) -> False
                Just (HsFunBind _ ms) -> all (\ m -> case m of
@@ -69,10 +69,10 @@ noInstance s = case basestruct $ struct $ sentence s of
 preludeSign :: Sign
 preludeSign = fst preludeTheory
 
-preludeSens :: [Named (HsDeclI PNT)]
+preludeSens :: [Named (TiDecl PNT)]
 preludeSens = snd preludeTheory
 
-preludeTheory :: (Sign, [Named (HsDeclI PNT)])
+preludeTheory :: (Sign, [Named (TiDecl PNT)])
 preludeTheory = case maybeResult $ hatAna 
                 (HsDecls preludeDecls, emptySign, emptyGlobalAnnos) of
                 Just (_, _, hs, sens) -> (hs, sens) 

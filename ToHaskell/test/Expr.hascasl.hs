@@ -42,9 +42,12 @@ notA
 	    True -> False
 	    False -> True
 b   =   let x = True
-	     
 	    y = False
-	     
 	    z = x
+	    {-
+	    x :: A__bool
+	    y :: A__bool
+	    z :: A__bool
+	    -}
 	in True
 b_02 = \ x -> x

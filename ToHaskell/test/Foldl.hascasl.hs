@@ -25,5 +25,6 @@ import Prelude (error, Show, Eq, Ord)
 import MyLogic
 foldl :: b -> (b -> a -> b) -> (List a) -> b
 data List a = A__nil | A__cons !a !(List a)
-foldl z f A__nil = z
-foldl z f (A__cons x l) = foldl (f z x) f l
+foldl z f A__nil{-a-} = z
+foldl z f (A__cons{-a-} x l)
+    = foldl{-b a-} (f z x) f l

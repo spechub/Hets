@@ -30,7 +30,7 @@ import HasCASL.AsToLe
 import HasCASL.ParseItem(basicSpec)
 import HasCASL.ProgEq
 
-hParser :: AParser () (Sign, [Named (HsDeclI PNT)])
+hParser :: AParser () (Sign, [Named (TiDecl PNT)])
 hParser = do 
    b <- basicSpec
    let res@(Result _ m) = do 
