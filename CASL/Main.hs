@@ -13,7 +13,6 @@ import Token
 import Formula
 import Parsec
 import ParsecPos
-import Pretty
 import PrettyPrint
 import System
 import Print_AS_Basic()
