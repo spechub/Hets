@@ -131,11 +131,11 @@ primProcess =      do { skipT
                        ; oRBracketT
 	                     ; t <- term
 	                     ; cRBracketT
-	                     ; return (Generic_named_process i t)
+	                     ; return (Gen_named_process (Gen_named_proc i t))
 	                     }
 	                )
           <|>       do { i <- processName
-                       ; return (Named_process i)
+                       ; return (Named_process (Named_proc i))
                        }
                        
                        

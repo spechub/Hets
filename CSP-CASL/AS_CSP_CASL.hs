@@ -18,6 +18,9 @@ import Id
 -- DATA, CHANNEL & PROCESS Def.
 ----------------------------------------------------------------------------
 
+data NAMED_CSP_CASL_C_SPEC =  Named_csp_casl_spec SPEC_NAME CSP_CASL_C_SPEC
+		   deriving (Show,Eq)
+
 data CSP_CASL_C_SPEC = Csp_casl_c_spec DATA_DEFN CHANNEL_DECL PROCESS_DEFN
 		   deriving (Show,Eq)
 
@@ -34,10 +37,12 @@ type CHANNEL_NAME = SIMPLE_ID
 type PROCESS_NAME = SIMPLE_ID
 
 data PROCESS_DEFN = Basic PROCESS
+                  | Recursive [PROCESS_EQN] NAMED_PROCESS
+                  | Gen_recursive [PROCESS_EQN] GEN_NAMED_PROCESS
 		   deriving (Show,Eq)
 
-data PROCESS      = Named_process PROCESS_NAME
-                  | Generic_named_process PROCESS_NAME TERM
+data PROCESS      = Named_process NAMED_PROCESS 
+                  | Gen_named_process GEN_NAMED_PROCESS
                   | Skip
                   | Stop
                   | Prefix EVENT PROCESS
@@ -56,6 +61,20 @@ data PROCESS      = Named_process PROCESS_NAME
                   | Conditional_choice FORMULA PROCESS PROCESS                              
 		              | Guarded_command FORMULA PROCESS
                   | Channel_parallel PROCESS CHANNEL_NAME CHANNEL_NAME PROCESS
+		   deriving (Show,Eq)
+
+
+data NAMED_PROCESS = Named_proc PROCESS_NAME 
+		   deriving (Show,Eq)
+
+data GEN_NAMED_PROCESS = Gen_named_proc PROCESS_NAME TERM
+		   deriving (Show,Eq)
+
+data GEN_PROCESS = Gen_proc PROCESS_NAME VAR EVENT_SET
+		   deriving (Show,Eq)
+
+data PROCESS_EQN = Eqn     NAMED_PROCESS PROCESS
+                 | Gen_eqn GEN_PROCESS PROCESS
 		   deriving (Show,Eq)
 
 data EVENT_SET = ESort SORT
