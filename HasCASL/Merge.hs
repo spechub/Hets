@@ -1,10 +1,13 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/Merge.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002/2003
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
    
-   merging (parts of) local env
+   merging parts of local environment
 -}
 
 module HasCASL.Merge where
@@ -19,7 +22,6 @@ import qualified Common.Lib.Map as Map
 import Data.List
 import Control.Monad
 import Common.Result
-import Common.GlobalAnnotations
 
 -- for Logic.signature_union
 
@@ -28,15 +30,10 @@ instance Mergeable Env where
 	do cMap <- merge (classMap e1) $ classMap e2
 	   tMap <- merge (typeMap e1) $ typeMap e2
 	   let m = max (counter e1) $ counter e2
-	   mG <- merge (globalAnnos e1) $ globalAnnos e2    
 	   as <- mergeAssumps tMap m 
 		 (assumps e1) $ assumps e2
 	   return $ Env cMap tMap as (sentences e1 ++ sentences e2) 
-		      mG (envDiags e1 ++ envDiags e2) m
-
-instance Mergeable GlobalAnnos where
-    merge a _ = return a 
-	-- if a == b then return a else fail "merge: GlobalAnnos"
+		      (envDiags e1 ++ envDiags e2) m
 
 instance (Ord a, PosItem a, PrettyPrint a, Mergeable b) 
     => Mergeable (Map.Map a b) where
@@ -182,9 +179,9 @@ instance Mergeable OpDefn where
 	      return $ SelectData c d1
 	else fail ("wrong selector's source type" ++
 		   expected d1 d2)
-    merge d@(Definition d1) (Definition d2) =  
-	if d1 == d2 then return d else 
-	   fail "merge: definition"
+    merge (Definition d1) (Definition d2) =
+	do d <- merge d1 d2
+	   return $ Definition d
     merge _d1 _d2 = fail "illegal redefinition"
 
 mergeConstrInfos :: [ConstrInfo] -> [ConstrInfo] -> Result [ConstrInfo]
@@ -195,3 +192,10 @@ mergeConstrInfos (c : r) c2 =
        if null cs then 
 	   return (c : c3)
 	   else return c3
+
+instance Mergeable Term where
+    merge t1 t2 = if t1 == t2 then return t1 
+		  else fail ("different terms\n\t" 
+			     ++ showPretty t1 "\n\t"
+			     ++ showPretty t2 "\n\t")
+
