@@ -1,6 +1,15 @@
-module CASL.PrintSign where
 
---import Data.Maybe (isJust,fromJust)
+{- HetCATS/CASL/PrintSign.hs
+   $Id$
+   Authors: Christian Maeder
+            Carsten Fischer
+   Year:    2003
+   
+   printing Sign
+
+-}
+
+module CASL.PrintSign where
 
 import Common.Keywords
 import Common.Lib.Pretty
@@ -24,7 +33,7 @@ instance PrettyPrint OpType where
 
 instance PrettyPrint SymbType where
 	 printText0 ga (OpAsItemType ot) = printText0 ga ot
-	 printText0 ga (PredType pt)     = printList0 ga (space<>text timesS) pt
+	 printText0 ga (PredType pt)    = printList0 ga (space<>text timesS) pt
          printText0 _ Sort              = text sortS
 
 instance PrettyPrint Symbol where
@@ -38,15 +47,13 @@ instance PrettyPrint Component where
 		_      -> empty)
                <+> printText0 ga opT
 
--- noch einmal Christian fragen.
--- er hat was aufgeschrieben: type s = c:tc (comp;..;comp)
 instance PrettyPrint Alternative where
          printText0 ga (Construct i ot compLs _) 
 	     = ptext typeS <> printText0 ga i <+> ptext equalS 
 	       <+> printText0 ga ot
 	       <+> if null compLs then empty 
                    else parens $ semiT_text ga compLs 
-	                <> if (opKind ot == Partial) then space<>ptext quMark
+	                <+> if (opKind ot == Partial) then space<>ptext quMark
 	                   else empty 
          printText0 ga (Subsort sId _) = printText0 ga sId
 
@@ -104,7 +111,6 @@ instance PrettyPrint OpDefn where
        	       <+> printText0 ga anTerm 
          printText0 ga (Constr symbol) = printText0 ga symbol
          printText0 ga (Select symboLs symbol)
-		    -- ist diese Ausgabe so richtig?
 	     = printText0 ga symbol <+> parens (commaT_text ga symboLs)
 
 instance PrettyPrint OpItem where
@@ -116,7 +122,6 @@ instance PrettyPrint OpItem where
 	                         <+> printList0 ga comma oAtLs
 		  Just d   -> printText0 ga d)
 
--- ist die Ausgabe richtig?
 instance PrettyPrint PredDefn where
          printText0 ga (PredDef vDecLs form _) 
              = parens $ semiT_text ga vDecLs <+> text equivS 
@@ -127,10 +132,10 @@ instance PrettyPrint PredItem where
 				 predDefn=mPrDef}) 
 			= printText0 ga pI<+>colon
                           <+> crossT_text ga pType
-			  $$ (case mPrDef of
+			  $$ case mPrDef of
 				Just preDef -> printText0 ga pI 
 					       <+> printText0 ga preDef
-				Nothing     -> empty)
+				Nothing     -> empty
 
 instance PrettyPrint TypeQualifier where
          printText0 _ OfType = colon
@@ -138,13 +143,11 @@ instance PrettyPrint TypeQualifier where
 
 instance PrettyPrint Term where
          printText0 ga (VarId i sId qual _) 
-             = parens (
-		       (case qual of 
+             = parens (case qual of 
 			 Explicit -> ptext varS 
-			 _        -> ptext ("%" ++ varS))
+			 _        -> ptext ("%" ++ varS)
 	       <+> printText0 ga i <+> colon 
-	       <+> printText0 ga sId
-		      )
+	       <+> printText0 ga sId)
 
          printText0 ga (OpAppl _i opT termLs _qual _) 
              = parens (text opS <+> printText0 ga opT) 
@@ -195,9 +198,9 @@ instance PrettyPrint Formula where
          printText0 ga (AnnFormula anForm) = printText0 ga anForm
 
 instance PrettyPrint SigItem where
-         printText0 ga (ASortItem annSoIt)  = printText0 ga annSoIt -- ???
-         printText0 ga (AnOpItem annOpIt)   = printText0 ga annOpIt -- ???
-         printText0 ga (APredItem annPrIt)  = printText0 ga annPrIt -- ???
+         printText0 ga (ASortItem annSoIt)  = printText0 ga annSoIt 
+         printText0 ga (AnOpItem annOpIt)   = printText0 ga annOpIt 
+         printText0 ga (APredItem annPrIt)  = printText0 ga annPrIt 
 
 instance PrettyPrint Sign where
          printText0 ga sAsMap 
@@ -211,9 +214,9 @@ instance PrettyPrint RawSymbol where
 	     = printText0 ga kind <+> colon <+> printText0 ga i
 
 instance PrettyPrint Kind where
-         printText0 _ SortKind = ptext sortS -- ???
-         printText0 _ FunKind  = empty -- ???
-         printText0 _ PredKind = ptext predS -- ???
+         printText0 _ SortKind = ptext sortS 
+         printText0 _ FunKind  = empty 
+         printText0 _ PredKind = ptext predS 
         
 instance PrettyPrint Axiom where
          printText0 ga (AxiomDecl vDecLs form _ ) 
