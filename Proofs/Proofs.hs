@@ -63,7 +63,8 @@ import Syntax.Print_AS_Library
     an undo operation
 
    todo:
-   - Stack overflow bei view-test1.casl mit GlobSubsume
+   - verwendung bereits gelöschter Kante bei locDecomp (nach globDecomp) in
+     view-test1.casl
    - Identitäts-Pfeile bei local decomp (ähnlich wir bei GlobSubsume)
    - bei GlobDecomp hinzufügen:
      zusätzlich alle Pfade K<--theta-- M --sigma-->N in den aktuellen 
