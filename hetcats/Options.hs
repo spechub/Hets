@@ -280,7 +280,7 @@ options =
 
 -- | 'parseVerbosity' parses a 'Verbose' Flag from user input
 parseVerbosity :: (Maybe String) -> Flag
-parseVerbosity Nothing = Verbose 1
+parseVerbosity Nothing = Verbose 2
 parseVerbosity (Just s)
     = case reads s of
                    [(i,"")] -> Verbose i
