@@ -1,0 +1,118 @@
+Cpo
+Flatcpo < Cpo
+Pcpo < Cpo
+Type Constructors
+?__ :Type ->Type := \ t:Type .  Unit ->? t
+Pred__ :Type- ->Type := \ t:Type- .  t ->? Unit
+Unit :(Type,Pcpo)
+__*__ :(Type+ ->Type+ ->Type,Pcpo+ ->Pcpo+ ->Pcpo,
+	Cpo+ ->Cpo+ ->Cpo)
+__*__*__ :Type+ ->Type+ ->Type+ ->Type
+__-->__ :(Cpo- ->Cpo+ ->Cpo,Cpo- ->Pcpo+ ->Pcpo)
+__-->?__ :Cpo- ->Cpo+ ->Pcpo
+__->__ :Type- ->Type+ ->Type
+__->?__ :Type- ->Type+ ->Type
+bool :Flatcpo
+c :Cpo %(var)%
+c-->d :Type< c -->? d
+c-->?d :Type< c ->? d
+d :Cpo %(var)%
+nat :Flatcpo
+s :(Type,Type)< ? s %(var)%
+s->t :Type< s ->? t
+t :Type %(var)%
+Assumptions
+f : c --> d
+g : c --> d
+x : s
+x1 : c
+x2 : c
+y1 : d
+y2 : d
+Error (4,7) illegal universe class declaration
+FatalError (11,1) no analysis yet for: free type logical ::= true | 
+		      false
+FatalError (13,4) no analysis yet for: true
+FatalError (15,7) no analysis yet for: __/\__
+FatalError (16,4) no analysis yet for: not
+FatalError (27,1) no analysis yet for: free type Unit ::= 1
+		   %% "()" is illegal as constructor
+FatalError (29,1) no analysis yet for: . 1 = ()
+FatalError (45,4) no analysis yet for: def
+Hint (46,9) not a class 's'
+FatalError (48,1) no analysis yet for: program def = \ x : s . ()
+	%% def is also total (identical to tt) 
+FatalError (50,1) no analysis yet for: program tt = \ x : s . ()
+	%% tt is total "op tt(x: s): unit = ()"
+FatalError (52,1) no analysis yet for: program __ und __ (x,y : Unit) : Unit = ()
+FatalError (60,1) no analysis yet for: . __ in s -> t = \ f : s ->? t . all (\ x : s . def f (x))
+FatalError (64,1) no analysis yet for: program __ res __ (x : s,y : t) : s = x
+FatalError (65,1) no analysis yet for: program fst (x : s,y : t) : s = x
+FatalError (66,1) no analysis yet for: program snd (x : s,y : t) : t = y
+FatalError (71,1) no analysis yet for: . (\ x : s; y : t . def (x res y)) =
+  (\ x : s; y : t . (def y) und (def x))
+. fst = (__ res __)
+FatalError (78,1) no analysis yet for: pred eq : s × s
+FatalError (80,1) no analysis yet for: . (\ x : s . eq (x,x)) = tt
+. (\ x : s; y : s . x res eq (x,y)) =
+  (\ x : s; y : s . y res eq (x,y))
+FatalError (93,1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p,tt)
+FatalError (96,1) no analysis yet for: program And (x,y : Pred Unit) : Pred Unit = t1 () und t2 ()
+FatalError (99,1) no analysis yet for: program __ impl __ (x,y : Pred Unit) : Pred Unit = eq (x,x And y)
+FatalError (101,1) no analysis yet for: program __ or __ (x,y : Pred Unit) : Pred Unit =
+	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
+FatalError (104,1) no analysis yet for: program ex (p : Pred (s)) : Pred Unit =
+	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
+FatalError (107,1) no analysis yet for: program ff () : Pred Unit = all (\ r : Pred Unit . r ())
+FatalError (109,1) no analysis yet for: program neg (r : Pred Unit) : Pred Unit = r impl ff
+FatalError (114,1) no analysis yet for: . all
+  (\ f : s ->? t; g : s ->? t . all
+				(\ x : s . eq (\ . f (x),g (x)) impl eq (f,g)))
+Warning (119,13) redundant universe class
+FatalError (123,1) no analysis yet for: pred __<<=__ : c × c
+FatalError (125,1) no analysis yet for: . all (\ x : c . x <<= x) %(reflexive)%
+. all
+  (\ x : c; y : c; z : c . ((x <<= y) und (y <<= z)) impl x <<= z)
+  %(transitive)%
+. all
+  (\ x : c; y : c; z : c . ((x <<= y) und (y <<= x)) impl eq (x,y))
+  %(antisymmetric)%
+FatalError (129,1) no analysis yet for: pred isChain(s : nat -> c) <=> all
+			       (\ n : nat . s (n) <<= s (Suc (n)))
+FatalError (130,1) no analysis yet for: pred isBound(x : c,s : nat -> c) <=> all (\ n : nat . s (n) <<= x)
+FatalError (132,4) no analysis yet for: sup
+FatalError (134,1) no analysis yet for: . all
+  (\ s : nat -> c . def (sup s) impl
+		    (isBound (sup s,s) und all
+		     (\ x : c . isBound (x,s) impl sup (s) <<= x)))
+  %(sup is minimally bound)%
+. all (\ s : nat -> c . isChain (s) impl def (sup (s)))
+  %(sup exists)%
+FatalError (145,4) no analysis yet for: bottom
+FatalError (147,1) no analysis yet for: . all (\ x : p . bottom <<= x)
+FatalError (154,2) no analysis yet for: program __ <<= [f] __ = eq
+Hint (161,13) not a class 'c'
+Hint (161,13) not a class 'c'
+Hint (161,25) not a class 'd'
+Hint (161,25) not a class 'd'
+FatalError (163,1) no analysis yet for: program (x1,y1) <<= (x2,y2) = (x1 <<= x2) und (y1 <<= y2)
+FatalError (174,2) no analysis yet for: . __ in c -->? d
+  =
+  \ f : c ->? d . all
+		  (\ x : c; y : c . (def (f x) und x <<= y) impl def (f y)) und all
+		  (\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
+				    (\ m : nat . def f (s (m)) und eq
+						 (sup (\ n : nat .! f (s (n + m))),f (sup (s)))))
+FatalError (180,3) no analysis yet for: program f <<= [c -->? d] g =
+	all (\ x : c . def (f x) impl f (x) <<= g (x))
+FatalError (186,2) no analysis yet for: . __ in c --> d = \ f : c -->? d . all (\ x : c . def f (x))
+Hint (188,15) not a class 'c --> d'
+Hint (188,15) not a class 'c --> d'
+FatalError (190,2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
+FatalError (194,4) no analysis yet for: Y
+FatalError (196,1) no analysis yet for: . all
+  (\ f : p -->? p . eq (f (Y (f)),Y (f)) und all
+		    (\ x : p . eq (f (x),x) impl Y (f) <<= x))
+FatalError (199,4) no analysis yet for: undefined
+FatalError (204,1) no analysis yet for: free type bool ::= true | 
+		   false

@@ -61,33 +61,58 @@ anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 isSimpleId :: Id -> Bool
 isSimpleId (Id ts _ _) = null (tail ts) && head (tokStr (head ts)) 
 			 `elem` caslLetters
+
 convertTypeToClass :: ClassMap -> Type -> Result Class
 convertTypeToClass cMap (TypeToken t) = 
        if tokStr t == "Type" then Result [] (Just $ universe) else 
-	  let ci = simpleIdToId t
-	      ds = anaClassId cMap ci
-	      in if null ds then 
-		 Result [] (Just $ Intersection [ci] [])
-		 else Result ds Nothing
+          let ci = simpleIdToId t
+              ds = anaClassId cMap ci
+              in if null ds then 
+                 Result [] (Just $ Intersection [ci] [])
+                 else Result [mkDiag Hint "not a class" ci] Nothing
 
 convertTypeToClass cMap (BracketType Parens ts ps) = 
-       let is = map (convertTypeToClass cMap) ts
-	   mis = map maybeResult is
-	   ds = concatMap diags is
-	   in if all isJust mis then Result ds 
-	      (Just $ Intersection (concatMap (iclass . fromJust) mis) ps)
-	      else Result ds Nothing
+       do cs <- mapM (convertTypeToClass cMap) ts
+	  return $ Intersection (concatMap iclass cs) ps
 
-convertTypeToClass _ _ = Result [] Nothing
+convertTypeToClass _ t = Result [mkDiag Hint "not a class" t] Nothing
+
+convertTypeToKind :: ClassMap -> Type -> Result Kind
+convertTypeToKind cMap (ProductType ts ps) = 
+       do ks <- mapM (convertTypeToKind cMap) ts
+	  return $ ProdClass ks ps
+
+convertTypeToKind cMap (FunType t1 FunArr t2 ps) = 
+    do k1 <- convertTypeToKind cMap t1
+       k2 <- convertTypeToKind cMap t2
+       return $ KindAppl k1 k2 ps
+
+convertTypeToKind cMap (BracketType Parens [t] _) = 
+    do k <- convertTypeToKind cMap t
+       return $ k
+
+convertTypeToKind cMap (MixfixType [t1, TypeToken t]) = 
+    let s = tokStr t 
+	v = case s of 
+		   "+" -> CoVar 
+		   "-" -> ContraVar 
+		   _ -> InVar
+    in case v of 
+	      InVar -> Result [] Nothing
+	      _ -> do k1 <- convertTypeToKind cMap t1
+		      return $ ExtClass k1 v [tokPos t]
+
+convertTypeToKind cMap t = convertTypeToClass cMap t >>= (return . PlainClass)
 
 optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
 optAnaVarDecl vd@(VarDecl v t s q) = 
     if isSimpleId v then
        do cMap <- getClassMap 
-	  let Result _ mc = convertTypeToClass cMap t 
-	      in case mc of
-	       Just c -> anaTypeVarDecl(TypeArg v (PlainClass c) s q)
+	  let Result ds mc = convertTypeToKind cMap t 
+	  case mc of
+	       Just c -> anaTypeVarDecl(TypeArg v c s q)
 	       Nothing -> anaVarDecl vd
+	  appendDiags ds
     else anaVarDecl vd
 
 anaVarDecl(VarDecl v oldT _ _) = 

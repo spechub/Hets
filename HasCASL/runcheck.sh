@@ -11,4 +11,8 @@ do
     runwrongcheck $i hascasl
 done
 
+i=Prelude.hascasl
+echo "processing $i"
+runchecker "analysis" $i $i.output
+
 (cd test; bash runcheck.sh ../$PA $SET)
