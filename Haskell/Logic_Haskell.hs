@@ -16,8 +16,6 @@
 
 module Haskell.Logic_Haskell (Haskell(..), empty_signature) where
 
-import CASL.AS_Basic_CASL       (SYMB_ITEMS, SYMB_MAP_ITEMS)
-import CASL.SymbolParser        (symbItems, symbMapItems)
 import Logic.ParsecInterface    (toParseFun)
 import Logic.Logic              (Language,
                                  Category,
@@ -92,12 +90,15 @@ instance Category Haskell Sign Morphism
 
 -- abstract syntax, parsing (and printing)
 
+type SYMB_ITEMS = ()
+type SYMB_MAP_ITEMS = ()
+
 instance Syntax Haskell HsDecls
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec Haskell = Just(toParseFun hatParser ())
-	 parse_symb_items Haskell = Just(toParseFun symbItems ())
-	 parse_symb_map_items Haskell = Just(toParseFun symbMapItems ())
+	 parse_symb_items Haskell = Nothing
+	 parse_symb_map_items Haskell = Nothing
 
 type Haskell_Sublogics = ()
 
