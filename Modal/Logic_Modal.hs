@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-missing-methods #-}
 {- HetCATS/Modal/Logic_Modal.hs
-   $Id
+   $Id$
    Authors: Wiebke Herding
    Year:    2003
 -}

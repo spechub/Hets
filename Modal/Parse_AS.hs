@@ -20,10 +20,10 @@ import Common.Token
 import Common.Keywords
 import Common.Lexer
 import Modal.AS_Modal
--- import Common.AS_Annotation
+import Common.AS_Annotation
 -- import Data.Maybe
 import Common.Lib.Parsec
---import CASL.Formula
+--import Modal.Formula
 --import CASL.SortItem
 --import CASL.OpItem
 --import CASL.TypeItem
@@ -37,7 +37,7 @@ basicSpec = (fmap Basic_spec $ many1 $
 
 basicItems :: AParser BASIC_ITEMS
 basicItems = fmap Sig_items sigItems
---	    <|> dotFormulae    -- später!
+	    <|> dotFormulae    -- später!
 
 sigItems :: AParser SIG_ITEMS
 sigItems = propItems 
@@ -57,3 +57,57 @@ commaPropDecl s = do c <- anComma
 		     let l = s : is 
 		         p = tokPos c : map tokPos cs in return (Prop_decl l p)
 
+
+dotFormulae :: AParser BASIC_ITEMS
+dotFormulae = do d <- dotT
+		 (fs, ds) <- aFormula `separatedBy` dotT
+		 (m, an) <- optSemi
+		 let ps = map tokPos (d:ds) 
+		     ns = init fs ++ [appendAnno (last fs) an]
+		     in case m of 
+			Nothing -> return (Axiom_items ns ps)
+			Just t -> return (Axiom_items ns
+			       (ps ++ [tokPos t]))
+
+aFormula  :: AParser (Annoted FORMULA)
+aFormula = bind appendAnno (annoParser formula) lineAnnos
+
+formula :: AParser FORMULA
+formula = impFormula []
+
+impFormula :: [String] -> AParser FORMULA
+impFormula k = 
+             do f <- andOrFormula k
+		do c <- implKey
+		   (fs, ps) <- andOrFormula k `separatedBy` implKey
+		   return (makeImpl (f:fs) (map tokPos (c:ps)))
+		  <|>
+		  do c <- ifKey
+		     (fs, ps) <- andOrFormula k `separatedBy` ifKey
+		     return (makeIf (f:fs) (map tokPos (c:ps)))
+		  <|>
+		  do c <- asKey equivS
+		     g <- andOrFormula k
+		     return (Equivalence f g [tokPos c])
+		  <|> return f
+		    where makeImpl [f,g] p = Implication f g p
+		          makeImpl (f:r) (c:p) = 
+			             Implication f (makeImpl r p) [c]
+		          makeImpl _ _ = error "makeImpl got illegal argument"
+			  makeIf l p = makeImpl (reverse l) (reverse p)
+
+andOrFormula :: [String] -> AParser FORMULA
+andOrFormula k = 
+               do f <- primFormula k
+		  do c <- andKey
+		     (fs, ps) <- primFormula k `separatedBy` andKey
+		     return (Conjunction (f:fs) (map tokPos (c:ps)))
+		    <|>
+		    do c <- orKey
+		       (fs, ps) <- primFormula k `separatedBy` orKey
+		       return (Disjunction (f:fs) (map tokPos (c:ps)))
+		    <|> return f
+
+implKey, ifKey :: AParser Token
+implKey = asKey implS
+ifKey = asKey ifS

@@ -1,5 +1,5 @@
 {- HetCATS/Modal/AS_Modal.hs
-   $Id
+   $Id$
    Author: Wiebke Herding
    Year:    2003
 
