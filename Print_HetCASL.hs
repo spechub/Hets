@@ -8,7 +8,7 @@
    Write-Module.
 
    todo:
- 
+     - use optional argument of renderText and renderLatex for line_length.
 
 -}
 
@@ -23,11 +23,11 @@ import AS_Library
 import Print_AS_Library
 
 printLIB_DEFN_text :: LIB_DEFN -> String
-printLIB_DEFN_text ld = renderText $ printText ga ld
+printLIB_DEFN_text ld = renderText Nothing $ printText ga ld
     where ga = initGlobalAnnos ld
 
 printLIB_DEFN_latex :: LIB_DEFN -> String
-printLIB_DEFN_latex ld = renderLatex $ printLatex ga ld
+printLIB_DEFN_latex ld = renderLatex Nothing $ printLatex ga ld
     where ga = initGlobalAnnos ld
 
 printText0_eGA :: forall a . (PrettyPrint a) => a -> Doc
