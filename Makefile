@@ -303,7 +303,8 @@ release:
 	$(RM) -r programatica
 	-mkdir programatica 
 	-ln -s ../../programatica/tools programatica/tools
-	(cd HetCATS; $(MAKE) derivedSources; ./clean.sh; \
+	(cd HetCATS; $(MAKE) derivedSources; \
+           $(MAKE) clean; ./clean.sh; \
            find . -name CVS -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
            $(RM) clean.*; mv Makefile Makefile.orig; \
            mv ReleaseMakefile Makefile)
