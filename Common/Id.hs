@@ -16,6 +16,9 @@ A simple identifier is a lexical token given by a string and a start position.
 
 -  A mixfix identifier may have a compound list. 
    This compound list follows the last non-place token! 
+
+-  Identifiers fixed for all logics
+
 -}
 
 module Common.Id where
@@ -23,22 +26,27 @@ module Common.Id where
 import Data.Char
 import Common.Lib.Parsec.Pos 
 
--- identifiers, fixed for all logics
+-- * positions from "Common.Lib.Parsec.Pos" starting at (1,1)
 
 type Pos = SourcePos
 
--- | unknown position
+-- | unknown position (0, 0)
 nullPos :: Pos 
 nullPos = newPos "" 0 0 
 
--- | first 'Pos' or 'nullPos'
-headPos :: [Pos] -> Pos 
-headPos l = if null l then nullPos else head l
+-- * Tokens as 'String's with positions that are ignored for 'Eq' and 'Ord'
 
 -- | tokens as supplied by the scanner
 data Token = Token { tokStr :: String
 		   , tokPos :: Pos
 		   } deriving (Show)
+
+-- | simple ids are just tokens 
+type SIMPLE_ID = Token
+
+-- | a 'Token' with 'nullPos'
+mkSimpleId :: String -> Token
+mkSimpleId s = Token s nullPos
 
 -- | show the plain string
 showTok :: Token -> ShowS
@@ -56,11 +64,7 @@ instance Ord Token where
 toPos :: Token -> [Token] -> Token -> [Pos]
 toPos o l c = map tokPos (o:l++[c])
 
--- | intersperse seperators
-showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
-showSepList _ _ [] = id
-showSepList _ f [x] = f x
-showSepList s f (x:r) = f x . s . showSepList s f r
+-- * placeholder stuff
 
 -- | the special 'place'
 place :: String
@@ -70,6 +74,8 @@ place = "__"
 isPlace :: Token -> Bool
 isPlace (Token t _) = t == place
  
+-- * identifiers with positions (usually ignored) of compound lists 
+
 -- | mixfix and compound identifiers
 data Id = Id [Token] [Id] [Pos] 
           -- pos of square brackets and commas of a compound list
@@ -77,17 +83,25 @@ data Id = Id [Token] [Id] [Pos]
 
 -- for pretty printing see PrettyPrint.hs
 
--- | ignore positions
+-- ignore positions
 instance Eq Id where
     Id tops1 ids1 _ == Id tops2 ids2 _ = (tops1, ids1) == (tops2, ids2)
 
--- | ignore positions
+-- ignore positions
 instance Ord Id where
     Id tops1 ids1 _ <= Id tops2 ids2 _ = (tops1, ids1) <= (tops2, ids2)
+
+-- ** show stuff 
 
 -- | shortcut to suppress output for input condition
 noShow :: Bool -> ShowS -> ShowS
 noShow b s = if b then id else s
+
+-- | intersperse seperators
+showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
+showSepList _ _ [] = id
+showSepList _ f [x] = f x
+showSepList s f (x:r) = f x . s . showSepList s f r
 
 -- | shows a compound list 
 showIds :: [Id] -> ShowS
@@ -102,6 +116,8 @@ showId (Id ts is _) =
 	    showToks = showSepList id showTok
 	in  showToks toks . showIds is . showToks places
 
+-- ** splitting identifiers
+
 -- | splits off the front and final places 
 splitMixToken :: [Token] -> ([Token],[Token])
 splitMixToken [] = ([], [])
@@ -111,11 +127,6 @@ splitMixToken (h:l) =
 	   then (toks, h:pls) 
 	   else (h:toks, pls)
 
--- | ignores final places in an 'Id' (for HasCASL)
-stripFinalPlaces :: Id -> Id
-stripFinalPlaces (Id ts cs ps) =
-    Id (fst $ splitMixToken ts) cs ps 
-
 -- | return open and closing list bracket and a compound list
 -- from a bracket 'Id'  (parsed by 'caslListBrackets')
 getListBrackets :: Id -> ([Token], [Token], [Id])
@@ -124,6 +135,8 @@ getListBrackets (Id b cs _) =
 	b2 = if null rest then [] 
 	     else filter (not . isPlace) rest
     in (b1, b2, cs)
+
+-- ** reconstructing token lists
 
 -- | reconstruct a list with surrounding strings and interspersed commas 
 -- with proper position information 
@@ -160,19 +173,8 @@ getCompoundTokenList cs ps = concat $ expandPos (:[]) ("[", "]")
 	      -- although positions will be replaced (by scan)
 			     (map getPlainTokenList cs) ps
 
--- | compute a meaningful single position from an 'Id' for diagnostics 
-posOfId :: Id -> Pos
-posOfId (Id ts _ _) = let l = dropWhile isPlace ts 
-		      in if null l then -- for invisible "__ __" (only places)
-			   headPos $ map tokPos ts
-			 else tokPos $ head l
 
--- | simple ids are just tokens 
-type SIMPLE_ID = Token
-
--- | a 'Token' with 'nullPos'
-mkSimpleId :: String -> Token
-mkSimpleId s = Token s nullPos
+-- ** conversion from 'SIMPLE_ID'
 
 -- | a 'SIMPLE_ID' as 'Id'
 simpleIdToId :: SIMPLE_ID -> Id
@@ -187,7 +189,7 @@ isSingle _   = False
 isSimpleId :: Id -> Bool
 isSimpleId (Id ts cs _) = null cs && isSingle ts
 
----- some useful predicates for Ids -------------------------------------
+-- ** fixity stuff 
 
 -- | number of 'place' in 'Id'
 
@@ -212,7 +214,8 @@ isPostfix :: Id -> Bool
 isPostfix (Id tops _ _) = not (null tops) &&  isPlace (head  tops) 
 			  && not (isPlace (last tops)) 
 
--- | is classical infix id with three tokens, the middle one is a non-place 
+-- | is a classical infix 'Id' with three tokens, 
+-- the middle one is a non-'place' 
 isInfix2 :: Id -> Bool
 isInfix2 (Id ts _ _) = 
     case ts of 
@@ -234,6 +237,41 @@ isSurround i@(Id tops _ _) = not (null tops) && (isMixfix i)
 -- | has a compound list
 isCompound :: Id -> Bool
 isCompound (Id _ cs _) = not $ null cs
+
+-- * position stuff
+
+-- | compute a meaningful single position from an 'Id' for diagnostics 
+posOfId :: Id -> Pos
+posOfId (Id ts _ _) = let l = dropWhile isPlace ts 
+		      in if null l then -- for invisible "__ __" (only places)
+			   headPos $ map tokPos ts
+			 else tokPos $ head l
+
+-- | first 'Pos' or 'nullPos'
+headPos :: [Pos] -> Pos 
+headPos l = if null l then nullPos else head l
+
+-- | get a reasonable position
+getMyPos :: PosItem a => a -> Pos
+getMyPos a = 
+    case get_pos a of
+    Just p -> p
+    Nothing -> 
+	case get_pos_l a of 
+	Just l -> headPos l
+	Nothing -> nullPos
+
+-- | get a reasonable position for a list
+posOf :: PosItem a => [a] -> Pos
+posOf l = if null l then nullPos else 
+	  let q = getMyPos $ head l 
+	      in if q == nullPos then posOf $ tail l
+		 else q
+
+-- | get a reasonable position for a list with an additional position list
+firstPos :: PosItem a => [a] -> [Pos] -> Pos
+firstPos l ps = let p = posOf l in 
+			if p == nullPos then headPos ps else p
 
 ---- helper class -------------------------------------------------------
 
@@ -258,36 +296,12 @@ class PosItem a where
 
 -- a Pos list should not contain nullPos
     
--------------------------------------------------------------------------
-
--- | get a reasonable position
-getMyPos :: PosItem a => a -> Pos
-getMyPos a = 
-    case get_pos a of
-    Just p -> p
-    Nothing -> 
-	case get_pos_l a of 
-	Just l -> headPos l
-	Nothing -> nullPos
-
--- | get a reasonable position for a list
-posOf :: PosItem a => [a] -> Pos
-posOf l = if null l then nullPos else 
-	  let q = getMyPos $ head l 
-	      in if q == nullPos then posOf $ tail l
-		 else q
-
--- | get a reasonable position for a list with an additional position list
-firstPos :: PosItem a => [a] -> [Pos] -> Pos
-firstPos l ps = let p = posOf l in 
-			if p == nullPos then headPos ps else p
-
--- | handcoded instance
+-- handcoded instance
 instance PosItem Token where
     up_pos fn1 (Token aa ab) = (Token aa (fn1 ab))
     get_pos (Token _ ab) = Just ab
 
--- | handcoded instance
+-- handcoded instance
 instance PosItem Id where
     up_pos_l fn1 (Id aa ab ac) = (Id aa ab (fn1 ac))
     get_pos_l (Id _ _ ac) = Just ac
