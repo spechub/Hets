@@ -66,6 +66,8 @@ module CASL.Sublogic ( -- * datatypes
                  ) where
 
 
+import Debug.Trace
+
 import Data.Maybe
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -210,7 +212,7 @@ sublogics_name x = [   ( if (has_sub  x) then "Sub" else "")
 ------------------------------------------------------------------------------
 
 formulas_max :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
-formulas_max x y = if (x<y) then y else x
+formulas_max x y = trace ("[formulas_max, x] "++show x++"\n [formulas_max, y] "++show y++"\n") (if (x<y) then y else x)
 
 formulas_min :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
 formulas_min x y = if (x<y) then x else y
@@ -330,7 +332,7 @@ is_horn_f _ = False
 -- P-CONJUNCTION
 --
 is_horn_p_conj :: FORMULA f -> Bool
-is_horn_p_conj (Conjunction l _) = and ((map is_horn_p_a) l)
+is_horn_p_conj (Conjunction l _) = (not (null l)) && and ((map is_horn_p_a) l)
 is_horn_p_conj _ = False
 
 -- ATOM
@@ -374,17 +376,17 @@ is_ghorn_f _ = False
 -- C-CONJUNCTION
 --
 is_ghorn_c_conj :: [FORMULA f] -> Bool
-is_ghorn_c_conj l = and ((map is_ghorn_conc) l)
+is_ghorn_c_conj l = (not( null l)) && (and ((map is_ghorn_conc) l))
 
 -- F-CONJUNCTION
 --
 is_ghorn_f_conj :: [FORMULA f] -> Bool
-is_ghorn_f_conj l = and ((map is_ghorn_f) l)
+is_ghorn_f_conj l = (not( null l)) && (and ((map is_ghorn_f) l))
 
 -- P-CONJUNCTION
 --
 is_ghorn_p_conj :: [FORMULA f] -> Bool
-is_ghorn_p_conj l = and ((map is_ghorn_prem) l)
+is_ghorn_p_conj l = (not( null l)) && (and ((map is_ghorn_prem) l))
 
 -- PREMISE
 --
@@ -454,6 +456,7 @@ sl_sort_item (Subsort_defn _ _ _ f _) = sublogics_max
                                         (get_logic_sd $ item f)
                                         (sublogics_max need_sub
                                         (sl_formula $ item f))
+sl_sort_item (Iso_decl _ _) = need_sub
 sl_sort_item _ = bottom
 
 sl_op_item :: OP_ITEM f -> CASL_Sublogics
@@ -464,6 +467,8 @@ sl_op_item (Op_defn _ h t _) = sublogics_max (sl_op_head h)
 
 sl_op_attr :: OP_ATTR f -> CASL_Sublogics
 sl_op_attr (Unit_op_attr t) = sl_term t
+-- sl_op_attr Assoc_op_attr = need_??
+-- sl_op_attr Comm_op_attr = need_??
 sl_op_attr _ = bottom
 
 sl_op_type :: OP_TYPE -> CASL_Sublogics
@@ -507,12 +512,12 @@ sl_form :: FORMULA f -> CASL_Sublogics
 sl_form (Quantification Universal _ f _) = sl_form f
 sl_form (Quantification _ _ f _) = need_fol
 sl_form (Conjunction l _) = comp_list $ map sl_form l
-sl_form (Disjunction l _) = comp_list $ map sl_form l
+sl_form (Disjunction l _) = need_fol
 sl_form (Implication f g _ _) = sublogics_max (sl_form f) (sl_form g)
 sl_form (Equivalence f g _) = sublogics_max (sl_form f) (sl_form g)
 sl_form (Negation f _) = need_fol
 sl_form (True_atom _) = bottom
-sl_form (False_atom _) = bottom
+sl_form (False_atom _) = need_fol
 sl_form (Predication _ l _) = sublogics_max need_pred
                               (comp_list $ map sl_term l)
 sl_form (Definedness t _) = sl_term t
@@ -561,8 +566,8 @@ sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
 
 sl_sign :: Sign f e -> CASL_Sublogics
 sl_sign s = 
-    let subs = if Rel.isEmpty $ sortRel s then need_sub else bottom
-	preds = if Map.isEmpty $ predMap s then need_pred else bottom
+    let subs = if Rel.isEmpty $ sortRel s then bottom else need_sub
+	preds = if Map.isEmpty $ predMap s then bottom else need_pred
 	partial = if any ( \ t -> opKind t == Partial) $ Set.toList 
 		  $ Set.unions $ Map.elems $ opMap s then need_part else bottom
 	in sublogics_max subs (sublogics_max preds partial)
