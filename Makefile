@@ -199,7 +199,7 @@ release:
 	$(RM) -r uni
 	ln -s ../uni uni
 	(cd HetCATS; $(MAKE) derivedSources; ./clean.sh; \
-           find . -name CVS | xargs -r $(RM) -r; \
+           find . -name CVS -o -name \*.o -o -name \*.hi | xargs -r $(RM) -r; \
            $(RM) clean.*; $(RM) Makefile; mv ReleaseMakefile Makefile)
 	tar zcvf HetCATS.tgz HetCATS
 

@@ -92,23 +92,8 @@ parsec
 pretty
 test
 
-utils/DrIFT
-utils/DrIFT.linux
-utils/DrIFT.macintosh
-utils/DrIFT.solaris
-utils/ag
-utils/ag.linux
-utils/ag.solaris
-utils/base.haddock
 utils/examine_doc_log.pl
-utils/genRules
-utils/genRules.linux
-utils/genRules.macintosh
-utils/genRules.solaris
 utils/haddock
-utils/haddock.linux
 utils/haddock.solaris
-
-
 utils/AG-src
 utils/hd-lib
