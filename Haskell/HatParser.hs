@@ -23,7 +23,7 @@ import PropParser as HsParser
 import PropPosSyntax
 import qualified NewPrettyPrint as HatPretty
 import ParseMonad
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Common.PrettyPrint
 import Common.Lib.Pretty
 -- import Debug.Trace

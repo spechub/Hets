@@ -19,7 +19,7 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import CoCASL.AS_CoCASL
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import CASL.Formula
 import CASL.OpItem
 import CASL.Parse_AS_Basic (sigItems)

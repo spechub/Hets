@@ -24,7 +24,7 @@ import Common.PrettyPrint
 import Common.Result
 import Control.Monad(foldM)
 
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Common.Id (Token(..),nullPos,place)
 import Common.Lexer (bind)
 import Data.List

@@ -44,7 +44,7 @@ import CspCASL.CCToken
 import CspCASL.CCLexer
 import CspCASL.CCKeywords
 
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 
 import Common.Id (Token(..))
 import Common.Token

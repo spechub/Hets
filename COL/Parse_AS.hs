@@ -19,7 +19,7 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import COL.AS_COL
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import CASL.Formula
 import CASL.OpItem
 

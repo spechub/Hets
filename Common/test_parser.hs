@@ -3,7 +3,7 @@ module Main where
 import System.Environment
 import Data.List
 
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import qualified Common.CaslLanguage as L(casl_id, semi, whiteSpace)
 import Common.Anno_Parser
 import Common.Lib.Pretty

@@ -27,7 +27,7 @@ import Common.Keywords
 import Common.Lexer
 import CASL.AS_Basic_CASL
 import Common.AS_Annotation
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Common.Token
 import CASL.Formula
 

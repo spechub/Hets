@@ -17,8 +17,8 @@ module Common.RunParsers (exec, StringParser, toStringParser, fromAParser)
     where 
 
 import Common.Lexer((<<), parseString)
-import Common.Lib.Parsec
-import Common.Lib.Parsec.Pos
+import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Pos
 import Common.Anno_Parser
 import Common.AnnoState
 import Common.PrettyPrint

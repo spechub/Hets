@@ -15,7 +15,7 @@
 module Main where
 
 import CspCASL.Parse_hugo
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import System.IO
 import System.Environment
 import Common.PrettyPrint

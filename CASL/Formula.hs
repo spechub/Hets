@@ -53,7 +53,7 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import CASL.AS_Basic_CASL
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 
 simpleTerm :: [String] -> AParser (TERM f)
 simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString 

@@ -18,10 +18,10 @@ module Common.Lexer where
 
 import Data.Char (digitToInt, isDigit)
 import Common.Id -- (Token(..), place)
-import Common.Lib.Parsec
-import qualified Common.Lib.Parsec.Pos as Pos
+import Text.ParserCombinators.Parsec
+import qualified Text.ParserCombinators.Parsec.Pos as Pos
 
--- * positions from "Common.Lib.Parsec.Pos" starting at (1,1)
+-- * positions from "Text.ParserCombinators.Parsec.Pos" starting at (1,1)
 
 
 -- | no-bracket-signs

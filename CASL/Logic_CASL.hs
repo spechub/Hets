@@ -21,7 +21,7 @@ import CASL.MapSentence
 import CASL.Amalgamability
 import Common.AS_Annotation
 import Common.AnnoState(emptyAnnos)
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Logic.Logic
 import Common.Lexer((<<))
 import CASL.ATC_CASL

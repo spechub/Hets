@@ -20,7 +20,7 @@ import Common.Token
 import Common.AnnoState
 import HasCASL.HToken
 import HasCASL.As
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Common.AS_Annotation
 import HasCASL.ParseTerm
 

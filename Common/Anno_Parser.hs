@@ -16,9 +16,9 @@ Portability :  portable
 
 module Common.Anno_Parser where
 
-import Common.Lib.Parsec
-import Common.Lib.Parsec.Error
-import Common.Lib.Parsec.Pos as Pos
+import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Error
+import Text.ParserCombinators.Parsec.Pos as Pos
 
 import Common.Lexer
 import Common.Token

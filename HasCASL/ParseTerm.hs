@@ -19,7 +19,7 @@ import Common.Lexer
 import Common.Token
 import HasCASL.HToken
 import HasCASL.As
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Data.List
 import Data.Maybe
 

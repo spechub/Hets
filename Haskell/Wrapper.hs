@@ -16,7 +16,7 @@
 
 module Haskell.Wrapper where
 
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Common.Lexer
  
 hStuff, stuff :: GenParser Char st String

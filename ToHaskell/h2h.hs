@@ -15,7 +15,7 @@ module Main where
 import System.Environment
 
 import Common.AnnoState
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Common.Lib.State
 import Common.AnnoState
 import Common.AS_Annotation

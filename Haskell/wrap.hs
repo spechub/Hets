@@ -15,7 +15,7 @@ module Main where
 
 import System.Environment
 import Haskell.Wrapper
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 
 main :: IO ()
 main = do

@@ -31,7 +31,7 @@ import Common.ATerm.Lib
 import Common.AnnoState
 import Common.Id
 import Common.Result
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 
 import Proofs.Proofs
 

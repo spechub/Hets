@@ -26,7 +26,7 @@ import Common.Id
 import Common.Keywords
 import Common.AS_Annotation
 import Common.Anno_Parser
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Data.List(delete)
 
 

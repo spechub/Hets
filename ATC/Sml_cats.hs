@@ -46,7 +46,7 @@ import Syntax.AS_Library
 -- import Debug.Trace (trace)
 
 -- the following module provides the ability to parse the "unparsed-anno"
-import Common.Lib.Parsec (parse)
+import Text.ParserCombinators.Parsec (parse)
 import qualified Common.Anno_Parser (annotations,parse_anno)
 import Common.Lexer(skip)
 

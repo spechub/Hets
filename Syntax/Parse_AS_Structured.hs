@@ -41,7 +41,7 @@ import Common.Id(tokPos)
 import Common.Keywords
 import Common.Lexer
 import Common.Token
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Common.Id
 import Data.List((\\))
 

@@ -43,7 +43,7 @@ import Language.Haskell.Parser
 
 import Common.GlobalAnnotations 
 import Common.AnnoState
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Common.Result
 
 import System.Environment

@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Common.Lib.Parsec
+-- Module      :  Text.ParserCombinators.Parsec
 -- Copyright   :  (c) Daan Leijen 1999-2001
 -- License     :  BSD-style (see the file libraries/base/LICENSE)
 -- 
@@ -27,7 +27,7 @@
 --
 -----------------------------------------------------------------------------
 
-module Common.Lib.Parsec
+module Text.ParserCombinators.Parsec
                ( -- complete modules
                  module Text.ParserCombinators.Parsec) where 
 

@@ -19,7 +19,7 @@ import CspCASL.SignCSP
 import CspCASL.StatAnaCSP
 import CspCASL.AS_CSP_CASL
 
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import System.IO
 import System.Environment
 

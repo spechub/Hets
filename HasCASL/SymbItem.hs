@@ -16,7 +16,7 @@ import Common.Id
 import Common.Keywords
 import Common.Lexer
 import Common.AnnoState
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 
 import HasCASL.HToken
 import HasCASL.ParseTerm

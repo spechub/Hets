@@ -1,7 +1,7 @@
 module Common.CaslLanguage where
-import Common.Lib.Parsec
-import qualified Common.Lib.Parsec.Token as P
-import Common.Lib.Parsec.Language (emptyDef)
+import Text.ParserCombinators.Parsec
+import qualified Text.ParserCombinators.Parsec.Token as P
+import Text.ParserCombinators.Parsec.Language (emptyDef)
 
 import Common.Id
 import Common.Lexer(fromSourcePos)

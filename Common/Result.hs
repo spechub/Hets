@@ -17,7 +17,7 @@ import Common.Id
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Data.List
-import Common.Lib.Parsec.Error
+import Text.ParserCombinators.Parsec.Error
 import Common.Lexer (fromSourcePos)
 
 -- | severness of diagnostic messages

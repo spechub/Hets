@@ -6,7 +6,7 @@ where
 --import Syntax.Parse_AS_Structured
 import Syntax.Parse_AS_Library
 import System.Environment
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 import Common.AnnoState
 import Comorphisms.LogicGraph
 import Syntax.Print_HetCASL

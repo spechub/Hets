@@ -72,7 +72,7 @@ module Common.Token where
 import Common.Keywords
 import Common.Lexer
 import Common.Id (Id(Id), Token(..), Pos, toPos, isPlace)
-import Common.Lib.Parsec
+import Text.ParserCombinators.Parsec
 
 -- ----------------------------------------------
 -- * Casl keyword lists
