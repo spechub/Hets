@@ -90,9 +90,9 @@
    ;; names before and after '|->'
    '("[ \t\n]*\\([^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[ \t\n]+|->[ \t\n]+\\([^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[, \t]*" 
      (1 casl-other-name-face keep t) (3 casl-other-name-face keep t) 
-     (4 casl-other-name-face keep t) (6 casl-other-name-face keep t))
+     (4 casl-other-name-face keep t) (6 casl-other-name-face keep t)) 
    ;; reserved keyword
-   '("\\(\\<\\|\\s-+\\)\\(spec\\|generated\\|free\\|fit\\|and\\|then\\|local\\|within\\|with\\|end\\|forall\\|hide\\|given\\|arch\\|unit\\|view\\|closed\\|reveal\\|to\\|assoc\\|comm\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
+   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|if\\|local\\|not\\|reveal\\|spec\\|then\\|to\\|unit\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
      (2 casl-keyword-face keep t))
   )	
   "Reserved keywords highlighting")
@@ -109,8 +109,10 @@
 (defconst casl-font-lock-annotations
   (append casl-font-lock-specialcomment
 	  (list 
-	   ;; %word ...
-	   '("%\\sw+.*$" (0 casl-annotation-face t t))
+	   ;; %word(...)\n
+	   '("%\\sw+\([^%\n]+\)$" (0 casl-annotation-face t t))
+	   ;; %word \n
+	   '("%\\sw+[ \t]*$" (0 casl-annotation-face t t))
 	   ;; %( ... )% 
 	   '("%\([^)%]*\)%[ \t\n]*" (0 casl-annotation-face t t))
 	   ;; %word( ... )%
