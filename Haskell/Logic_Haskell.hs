@@ -14,7 +14,7 @@
 
 -}
 
-module Haskell.Logic_Haskell where
+module Haskell.Logic_Haskell (Haskell(..), empty_signature) where
 
 import CASL.AS_Basic_CASL       (SYMB_ITEMS, SYMB_MAP_ITEMS)
 -- import CASL.ATC_CASL
@@ -30,7 +30,8 @@ import Logic.Logic              (Language,
                                  parse_basic_spec,
                                  parse_symb_items,
                                  parse_symb_map_items,
-                                 basic_analysis)
+                                 basic_analysis,
+                                 empty_signature)
 import Data.Dynamic             (Typeable)
 import Haskell.ATC_Haskell      -- ???
 
@@ -42,8 +43,9 @@ import Haskell.Hatchet.MultiModule (readModuleInfo)
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
                                           joinModuleInfo,
                                           getTyconsMembers,
-                                          getInfixDecls)
-import Haskell.Hatchet.TIModule          (tiModule)
+                                          getInfixDecls,
+                                          emptyModuleInfo)
+import Haskell.Hatchet.TIHetsModule          (tiModule)
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl (..),
                                           AModule (..))
 import Haskell.Hatchet.Env               (listToEnv)
@@ -67,10 +69,6 @@ import Common.Result                     (Result (..))
 
 instance Typeable ModuleInfo
 instance PrettyPrint ModuleInfo
--- instance ATermConvertible ModuleInfo
--- instance ATermConvertible HsModule
--- instance ATermConvertible AHsDecl
--- instance ATermConvertible HsDecls
 instance Typeable HsDecls
 instance Typeable AHsDecl
 instance PrettyPrint HsDecls
@@ -113,6 +111,7 @@ instance StaticAnalysis Haskell HsDecls
 
 
        where
+          empty_signature Haskell = emptyModuleInfo
           basic_analysis Haskell = Just(basicAnalysis)
               where basicAnalysis (basicSpec, sig, _) = 	            
   			let basicMod = HsModule (Module "Anonymous") Nothing [] basicSpec
@@ -123,32 +122,14 @@ instance StaticAnalysis Haskell HsDecls
           -- map the abstract syntax into the annotated abstract syntax
   			    annotatedSyntax = toAHsModule moduleSyntaxFixedFunBinds;
 
-          -- this is the ModuleInfo that we were passing into tiModule
-          -- earlier (just the Prelude stuff)
-                            preludeModInfo = ModuleInfo {
-                                  moduleName = AModule "Prelude",
-                                  varAssumps = (listToEnv $ map assumpToPair preludeDefs),
-                                  tyconsMembers = tyconsMembersHaskellPrelude, 
-                                  dconsAssumps = (listToEnv $ map assumpToPair preludeDataCons),
-                                  classHierarchy = listToEnv preludeClasses,
-                                  kinds = (listToEnv preludeTyconAndClassKinds),
-                                  infixDecls = preludeInfixDecls,
-                                  synonyms = preludeSynonyms };
-
-  --      -- now we read in the .ti files from the imported
-  --      -- modules to pass in to tiModule
-                            importedModInfo = unsafePerformIO(readModuleInfo annotatedSyntax)
-
-                            initialModInfo = joinModuleInfo preludeModInfo importedModInfo
-  		            (timings,
-  			     moduleEnv,
+  		            (moduleEnv,
    			     dataConEnv,
    			     newClassHierarchy,
    			     newKindInfoTable,
    			     moduleIds,
    			     moduleRenamed,
-   			     moduleSynonyms) = unsafePerformIO (tiModule [] annotatedSyntax sig);
-  			     modInfo = ModuleInfo {varAssumps = moduleEnv, 
+   			     moduleSynonyms) = tiModule [] annotatedSyntax sig
+  			    modInfo = ModuleInfo {varAssumps = moduleEnv, 
     				 		  moduleName = getAModuleName annotatedSyntax,
     						  dconsAssumps = dataConEnv, 
     						  classHierarchy = newClassHierarchy,
@@ -156,10 +137,10 @@ instance StaticAnalysis Haskell HsDecls
     						  tyconsMembers = getTyconsMembers moduleRenamed,
     						  infixDecls = getInfixDecls moduleRenamed,
     						  synonyms = moduleSynonyms }
-  				      in
-				       Result {diags = [],
-					      maybeResult = Just (basicSpec, sig, sig, 
-                                                                  (extractSentences annotatedSyntax)) }
+                        in
+			    Result {diags = [],
+				    maybeResult = Just (basicSpec, modInfo, (joinModuleInfo sig modInfo), 
+                                                       (extractSentences annotatedSyntax)) }
 
 instance Logic Haskell Haskell_Sublogics
                HsDecls Sentence SYMB_ITEMS SYMB_MAP_ITEMS
