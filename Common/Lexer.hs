@@ -242,17 +242,9 @@ nestCommentOut = try (string "%[") >>
 whiteChars :: String
 whiteChars = "\n\r\t\v\f \160" -- non breaking space
 
-skip, whiteSpace :: GenParser Char st ()
+skip :: GenParser Char st ()
 skip = skipMany(oneOf (whiteChars) 
 		       <|> nestCommentOut <?> "") >> return () 
-
-whiteSpace = skip
-
-lexeme :: GenParser Char st a -> GenParser Char st a
-lexeme p = p << skip
-
-symbol :: String -> GenParser Char st String
-symbol s = lexeme (string s)
 
 -- only skip to an annotation if it's on the same or next line
 skipSmart :: GenParser Char st ()

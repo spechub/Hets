@@ -7,7 +7,7 @@ import Common.Lib.Parsec
 import qualified Common.CaslLanguage as L(casl_id, semi, whiteSpace)
 import Common.Anno_Parser
 import Common.Lib.Pretty
-import Common.PrettyPrint
+import Common.PrettyPrint hiding (printId)
 import Common.AS_Annotation
 import Common.Print_AS_Annotation
 import Common.GlobalAnnotations
@@ -60,7 +60,7 @@ testFileC name = do { inp <- readFile name
 			     ; putStr "** Result(KL) is: "
 			     ; test_id L.casl_id line
 			     ; putStr "** Result(CM) is: "
-			     ; test_id parseId line
+			     ; test_id (parseId [])line
 			       }
 
 testData p s = parse (do {L.whiteSpace ; res <- p; eof ; return res}) "" s
@@ -84,7 +84,7 @@ testFileCS name = do inp <- readFile name
 		    
     where testLine (ma,dif) line = 
 	      let res1 = testData L.casl_id line
-		  res2 = testData parseId line
+		  res2 = testData (parseId []) line
 		  (ma1,dif1,out) = comp res1 res2 line
 	      in ((ma+ma1,dif+dif1),out)
 
@@ -113,10 +113,9 @@ showDiff line out1 out2 =
 
 printId id@(Id mix comp _) = do if comp == [] then 
 				   putChar 'M' 
-				 else
-			          do putChar 'C'
-				     putStr ": " 
-				     putStrLn (showId id "")
+				   else putChar 'C'
+				putStr ": " 
+				putStrLn (showId id "")
 
 -- call it with "-p {casl_id, casl_id2} <files>"
 main = do { as <- getArgs

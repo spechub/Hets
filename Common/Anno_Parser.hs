@@ -37,13 +37,13 @@ newlineOrEof :: GenParser Char st ()
 newlineOrEof = charOrEof '\n'
 
 commentLine :: GenParser Char st Annotation
-commentLine = do try (string "%%")
+commentLine = do try $ string "%%"
                  line <- manyTill anyChar newlineOrEof
 		 return $ Unparsed_anno Comment_start (Line_anno line) []
 
 commentGroup :: GenParser Char st Annotation 
-commentGroup = do try (string "%{")
-		  text_lines <- manyTill anyChar (try (string "}%"))
+commentGroup = do try $ string "%{"
+		  text_lines <- manyTill anyChar $ try $ string "}%"
 		  sp <- getPosition
 		  return $ Unparsed_anno Comment_start 
 			   (Group_anno $ lines text_lines) 
@@ -72,8 +72,8 @@ annote = anno_label <|>
 
 anno_label :: GenParser Char st Annotation
 anno_label = 
-    do try(string "%(")
-       label_lines <- manyTill anyChar $ string ")%"
+    do try $ string "%("
+       label_lines <- manyTill anyChar $ try $ string ")%"
        sp <- getPosition
        return (Label (lines label_lines) [incSourceColumn sp (-2)])
 
@@ -97,12 +97,8 @@ annotationL = do start_source_pos <- getPosition
 		 return (add_pos anno start_source_pos)
     where add_pos an p = up_pos_l (\l -> p:l) an
 
-annotation :: GenParser Char st Annotation
-annotation = lexeme annotationL  
-		-- cause all parsers above are not lexeme
-
 annotations :: GenParser Char st [Annotation]
-annotations = many annotation
+annotations = many (annotationL << skip) 
 
 -----------------------------------------
 -- parser for the contents of annotations
@@ -137,7 +133,7 @@ parse_anno anno sp =
 parse_internal :: GenParser Char () a -> SourcePos -> [Char] 
 	       -> Either ParseError a
 parse_internal p sp inp = parse (do setPosition sp
-				    whiteSpace
+				    skip
 				    res <- p
 				    eof
 				    return res
@@ -168,7 +164,7 @@ caslListBrackets =
 prec_anno, number_anno, string_anno, list_anno, floating_anno 
     :: GenParser Char st Annotation
 prec_anno = do left_ids <- braces commaIds
-	       sign <- lexeme (try (string "<>") <|> (string "<"))
+	       sign <- (try (string "<>") <|> (string "<")) << skip
 	       right_ids <- braces commaIds
 	       return $ Prec_anno 
 			  (if sign == "<" then Lower else BothDirections)
@@ -206,7 +202,7 @@ display_anno = do ident <- some_id
 			 display_format_table
 		  return (Display_anno ident tls [])
     where  disp_symb (df_symb, symb) = 
-	       do lexeme $ try $ string $ "%"++symb
+	       do (try $ string $ "%"++symb) << skip
 		  str <- manyTill anyChar $ lookAhead $ charOrEof '%'
 		  return (df_symb, reverse $ dropWhile (`elem` whiteChars)
 			 $ reverse str)
