@@ -42,7 +42,7 @@ isPlace(Token(t, _)) = t == place
 data Id = Id([TokenOrPlace], [Id]) deriving (Eq, Ord)
  
 instance Show Id where
-    showsPrec _ (Id(ts, is)) = showString ((foldl (++) "" (map show ts)) ++ 
+    showsPrec _ (Id(ts, is)) = showString ((unwords (map show ts)) ++ 
 	(case is of [] -> "" ;  _:_ -> (show is)))
 
 -- simple Id
