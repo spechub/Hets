@@ -80,7 +80,7 @@ emptyExtStUnitCtx = (emptyStBasedUnitCtx, emptyDiag)
 -- PrettyPrint
 instance PrettyPrint Diag where
     printText0 ga diag = 
-	let gs (n, DiagNode {dn_sig = nsig, dn_desc = ""}) = 
+	let gs (n, DiagNode {dn_sig = nsig}) = 
 		(n, getSig nsig)
         in ptext "nodes: " 
 	   <+> (printText0 ga (map gs (labNodes diag)))
