@@ -90,6 +90,8 @@ splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 -- Simple Ids
 
 type SIMPLE_ID = Token
+mkSimpleId :: String -> Token
+mkSimpleId s = Token s nullPos
 
 ---- some useful predicates for Ids -------------------------------------
 isOrdAppl :: Id -> Bool
