@@ -24,6 +24,7 @@ module Comorphisms.Haskell2IsabelleHOLCF where
 import Logic.Logic
 import Logic.Comorphism
 import Common.Result as Result
+import Common.Id as Id
 import qualified Common.Lib.Map as Map
 import Data.List
 import Data.Maybe
@@ -37,6 +38,7 @@ import Haskell.HatAna as HatAna
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
+import Isabelle.IsaConsts as IsaConsts
 -- import Isabelle.IsaPrint
 
 -- New imports
@@ -133,21 +135,27 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
 transSentence :: HatAna.Sign -> TiPropDecorate.TiDecl PNT -> Result IsaSign.Sentence
 transSentence sign (TiPropDecorate.Dec d) = case d of
              PropSyntaxStruct.Base p -> case p of
-                HsDeclStruct.HsFunBind _ [l] -> Result [] (Just (Sentence $ transMatch l)) 
-                _ -> error "Haskell2IsabelleHOLCF.transSentence, not yet supported"
-             _ -> error "Haskell2IsabelleHOLCF.transSentence, case not yet supported"
+                HsDeclStruct.HsFunBind _ ls -> Result [] (Just (Sentence $ transMatchList ls)) 
+--                HsDeclStruct.HsTypeSig _ ls c t -> Result [] (Just (Sentence (functionDeclList ls c t)))
+--                _ -> Result [(Diag Hint "problem" (Id.SourcePos "Haskell2IsabelleHOLCF.transSentence" 137 1))] (Nothing)
+                _ -> error "Haskell2IsabelleHOLCF.transSentence 2, not yet supported"
+--             _ -> Result [(Diag Hint "problem" (Id.SourcePos "Haskell2IsabelleHOLCF.transSentence" 136 1))] (Nothing)
+             _ -> error "Haskell2IsabelleHOLCF.transSentence 1, case not yet supported"
+
+-- fuctionDecl :: PNT -> [HsTypeI PNT] -> HsTypeI PNT -> IsaTerm
+-- functionDecl n c t = 
 
 transMatch :: 
   HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds -> IsaTerm 
 transMatch t = case t of 
   (HsDeclStruct.HsMatch _ nm _ (HsGuardsStruct.HsBody x) _) -> 
-       App (App (Const "IsaEq" noType) (Const (showIsaS nm) noType) IsCont) (transExp x) IsCont
+          App (App (Const "IsaEq" noType) (Const (showIsaS nm) noType) IsCont) (transExp x) IsCont
   _ -> error "Haskell2IsabelleHOLCF.transMatch, case not yet supported"
 
---transMatchList ::  [HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds] -> IsaTerm
---transMatchList ls = case ls of
---   [] -> Bottom
---   x:xs -> Fix (transMatch x 'isaOr' transMatchList xs) 
+transMatchList ::  [HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds] -> IsaTerm
+transMatchList ls = case ls of
+   [] -> Bottom
+   x:xs -> Fix (IsaConsts.mkIsaOr (transMatch x) (transMatchList xs)) 
 
 -- transTheory :: (HatAna.Sign, [TiPropDecorate.TiDecls PNT] -> 
 --                      Result (IsaSign.Sign, [Named IsaSign.Sentence])  
