@@ -23,6 +23,7 @@ import HasCASL.ClassAna
 
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.PrettyPrint
 import Common.Lib.Pretty
@@ -193,10 +194,10 @@ shapeMgu tm (t1, t2) =
         shapeMgu tm (t4, t6)
     _ -> error "shapeMgu (invalid precondition)"
 
-shapeUnify :: TypeMap -> Subst -> [(Type, Type)] -> State Int Subst
-shapeUnify tm s l = do 
+shapeUnify :: TypeMap -> [(Type, Type)] -> State Int Subst
+shapeUnify tm l = do 
     c <- get 
-    let (_, (n, t)) = runState (mapM_ (shapeMgu tm) l) (c, s) 
+    let (_, (n, t)) = runState (mapM_ (shapeMgu tm) l) (c, Map.empty) 
     put n
     return t
 
@@ -234,6 +235,53 @@ getRawKindAppl k args = if null args then (k, []) else
                        in (rk, k1 : ks)
     ExtKind ek _ _ -> getRawKindAppl ek args
     _ -> error ("getRawKindAppl " ++ show k)
-          
+
+-- input an atomized constraint list 
+collapser :: [(Type, Type)] -> Result Subst
+collapser l = 
+    let (_, t) = Rel.connComp $ Rel.fromList l
+        t2 = Map.map (Set.partition ( \ e -> case e of 
+                                      TypeName _ _ n -> n==0
+                                      _ -> error "collapser")) t
+        ks = Map.elems t2
+        ws = filter (\ p -> Set.size (fst p) > 1) ks
+    in if null ws then
+       return $ foldr ( \ (cs, vs) s -> 
+               if Set.isEmpty cs then 
+                    extendSubst s $ Set.deleteFindMin vs
+               else extendSubst s (Set.findMin cs, vs)) Map.empty ks
+    else Result 
+         (map ( \ (cs, _) -> 
+                let (c1, rs) = Set.deleteFindMin cs
+                    c2 = Set.deleteFindMin rs
+                in Diag Hint ("contradicting type inclusions for '"
+                         ++ showPretty c1 "' and '" 
+                         ++ showPretty c2 "'") nullPos) ws) Nothing
+
+extendSubst :: Subst -> (Type, Set.Set Type) -> Subst
+extendSubst s (t, vs) = Set.fold ( \ (TypeName _ _ n) -> 
+              Map.insert n t) s vs
+
+preClose :: TypeMap -> Constraints -> State Int (Result (Subst, Constraints))
+preClose tm cs = 
+    let (subS, qs) = Set.partition ( \ c -> case c of
+                                  Subtyping _ _ -> True
+                                  Kinding _ _ -> False) cs
+        subL = [ (t1, t2) | (Subtyping t1 t2) <- Set.toList subS ]
+    in case shapeMatch tm (map fst subL) $ map snd subL of
+       Result ds Nothing -> return $ Result ds Nothing
+       _ -> do s1 <- shapeUnify tm subL
+               let as = concatMap (atomize tm  . subst s1) subL
+               case collapser as of
+                   Result ds Nothing -> return $ Result ds Nothing
+                   Result _ (Just s2) -> let s = compSubst s2 s1 in 
+                     return $ return (s, Set.union (substC s qs) $ 
+                       foldr ( \ (t1, t2) -> Set.insert $ Subtyping t1 t2)
+                       Set.empty $ Rel.toList $ Rel.transReduce 
+                            $ Rel.fromSet $ foldr ( \ p ->
+                                let q@(t1, t2) = subst s2 p in
+                                 if t1 == t2 then id else Set.insert q)
+                             Set.empty as)
+                                                                
         
 
