@@ -115,7 +115,7 @@ place = (do { sp  <- getPosition
 	    }
 	 ) <?> "place"
 
-mixfix_id = do { ids <- many (try CaslLanguage.token <|> 
+mixfix_id = do { ids <- many1 (try CaslLanguage.token <|> 
 			      try CaslLanguage.place)
 	       ; return (Id(ids,[]))
 	       }
