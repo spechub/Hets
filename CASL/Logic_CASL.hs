@@ -78,7 +78,7 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
 instance Sublogics CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
-               Morphism 
+               String -- Morphism 
                Symbol where
          sublogic_names CASL = Sublogics.sublogics_name
 
@@ -87,7 +87,7 @@ instance Sublogics CASL Sublogics.CASL_Sublogics
          is_in_symb_items CASL = Sublogics.in_symb_items
          is_in_symb_map_items CASL = Sublogics.in_symb_map_items
          is_in_sign CASL = Sublogics.in_sign
-         is_in_morphism CASL = Sublogics.in_morphism
+--         is_in_morphism CASL = Sublogics.in_morphism
          is_in_symbol CASL = Sublogics.in_symbol
 
          min_sublogic_basic_spec CASL = Sublogics.sl_basic_spec
@@ -95,7 +95,7 @@ instance Sublogics CASL Sublogics.CASL_Sublogics
          min_sublogic_symb_items CASL = Sublogics.sl_symb_items
          min_sublogic_symb_map_items CASL = Sublogics.sl_symb_map_items
          min_sublogic_sign CASL = Sublogics.sl_sign
-         min_sublogic_morphism CASL = Sublogics.sl_morphism
+--         min_sublogic_morphism CASL = Sublogics.sl_morphism
          min_sublogic_symbol CASL = Sublogics.sl_symbol
 
 ---- helpers ---------------------------------
