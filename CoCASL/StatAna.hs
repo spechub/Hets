@@ -14,6 +14,9 @@ Portability :  portable
   correct map_C_FORMULA
   translation of cogen ax
   analysis of modal formulas
+  Add cofree axioms
+  remove disjointness axioms
+  leave out sorts/profiles for pretty printing
 -}
 
 module CoCASL.StatAna where
