@@ -153,6 +153,7 @@ hets: $(sources)
 hets-opt: hetcats/Version.hs
 	$(MAKE) distclean
 	$(MAKE) derivedSources
+	$(MAKE) real_clean
 	$(MAKE) hets-optimized
 
 hets-optimized:
