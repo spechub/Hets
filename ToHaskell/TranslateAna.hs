@@ -7,7 +7,9 @@ import Haskell.Language.Syntax
 import Common.Id
 --import Common.Lib.Parsec.Pos
 import Common.Lib.Map as Map hiding (map)
+import Common.Lexer
 import Char
+import List
 
 -------------------------------------------------------------------------
 -- Translation of an HasCASL-Environement
@@ -157,9 +159,80 @@ data IdType = TypeId
 
 translateId :: Id -> String
 translateId (Id tlist idlist _poslist) = 
-    (translateTokens TrAny tlist) ++ (translateCompound idlist)
+    (translateTokens tlist) ++ (translateCompound idlist)
 
-translateTokens :: LSS -> [Token] -> String
+translateTokens :: [Token] -> String
+translateTokens [] = ""
+translateTokens (t:ts) = 
+    let str = tokStr t
+        res = translateTokens ts in
+    if isMultiSign str then
+      (multiSignMapping str) ++ res
+    else (concatMap symbolMapping str) ++ res
+
+--isSign :: Char -> Bool
+--isSign c = any (c ==) signChars
+
+isMultiSign :: String -> Bool
+isMultiSign s = any (s ==) multiSigns
+
+multiSigns :: [String]
+multiSigns = ["__","||","==","&&","/\\","\\/","::"]
+-- to be completed
+
+multiSignMapping :: String -> String
+multiSignMapping _ = ""
+
+symbolMapping :: Char -> String
+symbolMapping c = case c of 
+-- Special / reserviert
+    '_' -> "_1"     -- \95
+    '{' -> "_b"     -- \123
+    '}' -> "_r"     -- \125
+    '['  -> "_s"    -- \91
+    ']'  -> "_q"    -- \93
+    '.'  -> "_d"    -- \46
+
+-- Symbole
+    '+'  -> "_P"    -- \43
+    '-'  -> "_M"    -- \45
+    '*'  -> "_T"    -- \42
+    '/'  -> "_D"    -- \47
+    '\\' -> "_B"    -- \92
+    '&'  -> "_A"    -- \38
+    --'='  ->       -- \61
+    '<'  -> "_L"    -- \60
+    '>'  -> "_G"    -- \62
+    '!'  -> "_E"    -- \33
+    '?'  -> "_Q"    -- \63
+    ':'  -> "_C"    -- \58
+    '$'  -> "_S"    -- \36
+    '@'  -> "_O"    -- \64
+    '#'  -> "_H"    -- \35
+    '^'  -> "_V"    -- \94
+    '|'  -> "_I"    -- \124
+    '~'  -> "_N"    -- \126
+    '¡'  -> "_e"    -- \161
+    '¢'  -> "_c"    -- \162   
+    '£'  -> "_l"    -- \163
+    '§'  -> "_p"    -- \167
+    '©'  -> "_a"    -- \169
+    '¬'  -> "_n"    -- \172
+    '°'  -> "_h"    -- \176
+    '±'  -> "_k"    -- \177
+    '²'  -> "_w"    -- \178
+    '³'  -> "_t"    -- \179
+    'µ'  -> "_y"    -- \181
+    '¶'  -> "_j"    -- \182
+    '·'  -> "_i"    -- \183
+    '¹'  -> "_o"    -- \185
+    '¿'  -> "_q"    -- \191
+    '×'  -> "_m"    -- \215
+    '÷'  -> "_g"    -- \247
+    _    -> [c]
+
+
+{-translateTokens :: LSS -> [Token] -> String
 translateTokens _ [] = ""
 translateTokens lss tlist = 
   let t = tokStr (head tlist)
@@ -223,30 +296,30 @@ translateTokens lss tlist =
 	      if (lss == TrLetter || lss == TrAny) then t
 	      else "_A" ++ t
 	    --else error ("Fix me: unexpected token" ++ show t)
-
+-}
 
 data LSS = TrLetter | TrSpecial | TrSymbol | TrAny
 	   deriving (Eq,Show)
 
 translateCompound :: [Id] -> String
--- erstes Zeichen : [
--- danach "Typen" getrennt durch Kommata
--- danach : ]
--- danach evtl. mehrere places 
 --  [      ,      ]
 -- _C     _k     _J
-translateCompound _ = ""
+translateCompound [] = ""
+translateCompound ids = "_C" ++
+                        (concat (intersperse "_k" (map translateId ids)))++
+                        "_J"
 
-{-substituteSpacesInTokens :: [Token] -> [Token]
-substituteSpacesInTokens tlist = map substituteSpacesInToken tlist
+{-substituteUnderlinesInTokens :: [Token] -> [Token]
+substituteUnderlinesInTokens tlist = map substituteUnderlinesInToken tlist
 
-substituteSpacesInToken :: Token -> Token
-substituteSpacesInToken t = Token {tokStr = substituteSpaces (tokStr t),
+substituteUnderlinesInToken :: Token -> Token
+substituteUnderlinesInToken t = Token {tokStr = substituteUnderlines (tokStr t),
                                    tokPos = tokPos t}
 -}
 
-substituteSpaces :: String -> String
-substituteSpaces [] = []
-substituteSpaces (x:xs)
-  | x == '_' = "_1" ++ substituteSpaces xs
-  | otherwise = (x:(substituteSpaces xs))
+substituteUnderlines :: String -> String
+substituteUnderlines [] = []
+substituteUnderlines (x:xs)
+  | x == '_' = "_1" ++ substituteUnderlines xs
+  | otherwise = (x:(substituteUnderlines xs))
+
