@@ -145,7 +145,7 @@ anaProgEq :: GlobalAnnos -> ProgEq -> State Env ProgEq
 anaProgEq ga pe@(ProgEq pat trm qs) =
     do as <- gets assumps
        putAssumps $ filterVars as
-       mp <- resolvePattern ga pat
+       mp <- checkPattern ga pat
        case mp of 
 	   Nothing -> return pe
 	   Just np -> do 
@@ -155,20 +155,30 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 	       mt <- resolveTerm ga Nothing trm
 	       putAssumps as
 	       case mt of 
-		   Just newTerm  -> case removeResultType newPat of
+		   Just newTerm  -> 
+		       let (topPat, args) = getApplConstr newPat 
+			   defTrm = if null args then newTerm
+					else LambdaTerm (reverse args) 
+					     Partial newTerm []	
+		       in case topPat of 
 		       PatternConstr (InstOpId i _tys _) sc _ -> do
-			   addOpId i sc [] $ Definition newTerm
+			   addOpId i sc [] $ Definition defTrm
 			   return $ ProgEq newPat newTerm qs
-		       ApplPattern _ _ _ -> 
-			      return $ ProgEq newPat newTerm qs
-		       ResolvedMixPattern _ _ _  ->
-			      return $ ProgEq newPat newTerm qs
 		       _ -> do addDiags $ [mkDiag Error 
-					   "no toplevel pattern" newPat]
+					   "illegal toplevel pattern"
+					   topPat]
 			       return pe
-		       where removeResultType p = 
-				 case p of 
-				 TypedPattern tp _ _ -> tp
-				 _ -> p
 		   _ -> return $ ProgEq newPat trm qs 
+
+
+getApplConstr :: Pattern -> (Pattern, [Pattern])
+getApplConstr pat = 
+    case pat of 
+    ApplPattern p1 p2 _ -> 
+	let (tp, args) = getApplConstr p1 in (tp, p2:args)
+    TypedPattern tp _ _ -> getApplConstr tp
+    _ -> (pat, [])
+			   
+
+
 

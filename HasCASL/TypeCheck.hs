@@ -77,6 +77,15 @@ resolveTerm ga mt trm = do
 	      Nothing -> return Nothing
 	      Just t -> typeCheck infer mt t 
 
+checkPattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
+checkPattern ga pat = do
+    mPat <- resolvePattern ga pat
+    case mPat of 
+	      Nothing -> return Nothing
+	      Just p -> do 
+		  (np, _) <- extractBindings p 
+		  typeCheck inferPat Nothing np
+
 mUnifySc :: Maybe Type -> OpInfo
 	 -> State Env (Maybe (Subst, Type, OpInfo))
 mUnifySc mt oi = do

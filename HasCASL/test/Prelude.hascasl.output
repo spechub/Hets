@@ -26,9 +26,9 @@ type __ : Type+ -> Type+ -> Type+ -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : forall s : Type .  s ->? Unit
 var x : s
-program def = \ x : s . ()
+program def : forall s : Type .  s ->? Unit = \ x : s . ()
 	%% def is also total (identical to tt) 
-program tt = \ x : s . ()
+program tt : forall s : Type .  s ->? Unit = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -37,11 +37,11 @@ type s < s ->? t
 %% total functions
 op __res__ : s × t ->? s = (var x : s)
 op fst : s × t ->? s = (var x : s)
-program snd(x : s, y : t) : t = (var y : t)
+program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
-. (op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s : s,
+. (op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
 						     y : t) . def (x res y),
-						  \ (x : s : s, y : t) . (def y) und (def x))
+						  \ (x : s, y : t) . (def y) und (def x))
 . (op __=__ : forall a : Type .  a × a ->? Unit) ((op fst : s ×
 							    t ->? s),
 						  (op __res__ : s × t ->? s))
@@ -49,36 +49,33 @@ program snd(x : s, y : t) : t = (var y : t)
 %% Internal Logic
 op eq : forall s : Type .  s × s ->? Unit
 . (op __=__ : forall a : Type .  a ×
-				 a ->? Unit) (\ x : s : s . (op eq : forall s : Type .  s ×
-											s ->? Unit) ((var x : s),
-												     (var x : s)),
+				 a ->? Unit) (\ x : s . (op eq : forall s : Type .  s ×
+										    s ->? Unit) ((var x : s),
+												 (var x : s)),
 					      (op tt : forall s : Type .  s ->? Unit))
-. (op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
+. (op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : _var_45,
 						     y : s) . x res eq (x, y),
-						  \ (x : s, y : s) . y res eq (x, y))
+						  \ (x : _var_46, y : s) . y res eq (x, y))
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit." 
 %% where "bla" is never used, but only "()" instead
 %% for type inference 
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
 type s < ? s
-program all(p : s ->? Unit) : Unit ->? Unit =
-	(op eq : forall s : Type .  s × s ->? Unit) ((var p : s ->? Unit),
-						     (op tt : forall s : Type .  s ->? Unit))
+program all (p : Pred (s)) : Pred Unit = eq (p, tt)
 %% the cast from ?s to s is still done manually here (for the strict "und")
-program And(x : _var_61, y : Unit ->? Unit) : Unit ->? Unit =
-	t1 () und t2 ()
+program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
 %% use "And" instead of "und" to avoid cast from "?unit" to "unit"
 program __ impl __
 	(x, y : Pred Unit) : Unit ->? Unit : Unit ->? Unit
 	= eq (x, x And y)
 program __ or __ (x, y : Pred Unit) : Unit ->? Unit : Unit ->? Unit
 	= all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
-program ex(p : s ->? Unit) : Unit ->? Unit =
+program ex (p : Pred (s)) : Pred Unit =
 	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
 program ff () : Unit ->? Unit : Unit ->? Unit =
 	all (\ r : Pred Unit . r ())
-program neg(r : Unit ->? Unit) : Unit ->? Unit = r impl ff
+program neg (r : Pred Unit) : Pred Unit = r impl ff
 %% the type instance for the first "eq" should be "?t" 
 %% this is explicitely enforced by "\ .f(x)"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,8 +95,9 @@ class instance Flatcpo < Cpo
 var c : Cpo; d : Cpo
 type instance __ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
-program (__<<=__)((x1 : _var_66, y1 : _var_67),
-		  (x2 : _var_68, y2 : _var_69))
+program __<<=__ : forall c : Cpo .  c × c ->? Unit ((x1 : _var_75,
+						     y1 : _var_76),
+						    (x2 : _var_77, y2 : _var_78))
 	= (x1 <<= x2) und (y1 <<= y2)
 type instance __ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
@@ -112,7 +110,9 @@ program f <<= [c -->? d] g =
 type instance __ : Cpo- -> Cpo+ -> Cpo
 type c < c -->? d
 var f : c --> d; g : c --> d
-program (__<<=__)(f : _var_85, g : _var_86) = f <<= [c -->? d] g
+program __<<=__ : forall c : Cpo .  c × c ->? Unit (f : _var_103,
+						    g : _var_104)
+	= f <<= [c -->? d] g
 type instance __ : Cpo- -> Pcpo+ -> Pcpo
 op Y : forall p : Pcpo .  (p -->? p) --> p
 op undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! (var x : c -->? p))
@@ -156,7 +156,7 @@ __\/__ : Unit × Unit ->? Unit
 __if__ : Unit × Unit ->? Unit
 __res__ : s × t ->? s = \ (x : s, y : t) .! (var x : s)
 bottom : forall p : Pcpo .  p
-def : forall s : Type .  s ->? Unit
+def : forall s : Type .  s ->? Unit = \ x : s . ()
 def__ : forall a : Type .  a ->? Unit
 eq : forall s : Type .  s × s ->? Unit
 f : c --> d %(var)%
@@ -170,23 +170,23 @@ not__ : Unit ->? Unit
 sup : forall c : Cpo .  (nat -> c) ->? c
 true : bool %(construct bool)%
      : Unit ->? Unit
-tt : forall s : Type .  s ->? Unit
+tt : forall s : Type .  s ->? Unit = \ x : s . ()
 undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! (var x : c -->? p))
 %% Sentences -------------------------------------------------------------
-(op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s : s,
+(op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
 						   y : t) . def (x res y),
-						\ (x : s : s, y : t) . (def y) und (def x)) %()%
+						\ (x : s, y : t) . (def y) und (def x)) %()%
 (op __=__ : forall a : Type .  a × a ->? Unit) ((op fst : s ×
 							  t ->? s),
 						(op __res__ : s × t ->? s)) %()%
 (op __=__ : forall a : Type .  a ×
-			       a ->? Unit) (\ x : s : s . (op eq : forall s : Type .  s ×
-										      s ->? Unit) ((var x : s),
-												   (var x : s)),
+			       a ->? Unit) (\ x : s . (op eq : forall s : Type .  s ×
+										  s ->? Unit) ((var x : s),
+											       (var x : s)),
 					    (op tt : forall s : Type .  s ->? Unit)) %()%
-(op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
+(op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : _var_45,
 						   y : s) . x res eq (x, y),
-						\ (x : s, y : s) . y res eq (x, y)) %()%
+						\ (x : _var_46, y : s) . y res eq (x, y)) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 4, column 7) illegal universe class declaration 'Type'
 Hint (line 6, column 5) is type variable 's'
@@ -206,7 +206,8 @@ Error (line 31, column 6) incompatible kind of: __
      found: Type -> Type -> Type
 
 Error (line 46, column 11) unexpected mixfix token: und
-Error (line 46, column 9) no toplevel pattern '__ und __ (x, y : Unit) : Unit : Unit'
+Error (line 46, column 9) unexpected pattern '__ und __ (x, y : Unit)'
+Error (line 46, column 9) illegal toplevel pattern '__ und __ (x, y : Unit)'
 Warning (line 50, column 6) redeclared type '__'
 Warning (line 52, column 6) redeclared type 's'
 Error (line 54, column 3) expected further mixfix token: ["/\\","<=>","=","=>","=e="]
@@ -215,9 +216,12 @@ Error (line 54, column 42) ambiguous mixfix term
 	(def__)(f) x
 Error (line 54, column 32) unexpected mixfix token: all
 Error (line 54, column 3) unexpected term '__'
-Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_10 ->? _var_11'
+Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_13 ->? _var_14'
 Error (line 54, column 16) no type match for '(__=__) (__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
 Error (line 54, column 16) no typing for '(__=__)(__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
+Error (line 60, column 9) no match for 'snd'
+Error (line 60, column 9) no type match for 'snd (x : s, y : t)'
+Error (line 60, column 9) no typing for 'snd(x : s, y : t) : t'
 Error (line 65, column 18) ambiguous mixfix term
 	def ((__res__)(x, y))
 	(def__)((__res__)(x, y))
@@ -230,21 +234,33 @@ Error (line 75, column 15) ambiguous mixfix term
 Error (line 75, column 44) ambiguous mixfix term
 	(__res__)(y, eq (x, y))
 	(__res__)(y, eq) (x, y)
+Error (line 0, column 0) undeclared type '_var_45'
 Error (line 75, column 15) unexpected term 'x res eq (x, y)'
+Error (line 0, column 0) undeclared type '_var_46'
 Error (line 75, column 44) unexpected term 'y res eq (x, y)'
 Warning (line 85, column 6) redeclared type 's'
-Error (line 90, column 45) unexpected mixfix token: t1
+Error (line 87, column 9) no match for 'all'
+Error (line 87, column 9) no type match for 'all (p : s ->? Unit)'
+Error (line 87, column 9) no typing for 'all(p : s ->? Unit) : Unit ->? Unit'
+Error (line 90, column 9) no match for 'And'
+Error (line 90, column 9) no type match for 'And (x : _var_62, y : Unit ->? Unit)'
+Error (line 90, column 9) no typing for 'And(x : _var_62, y : Unit ->? Unit) : Unit ->? Unit'
 Error (line 93, column 11) unexpected mixfix token: impl
+Error (line 93, column 9) unexpected pattern '__ impl __ (x, y : Pred Unit)'
 Error (line 93, column 53) unexpected mixfix token: x
 Error (line 95, column 11) unexpected mixfix token: or
+Error (line 95, column 9) unexpected pattern '__ or __ (x, y : Pred Unit)'
 Error (line 96, column 19) unexpected mixfix token: x
 Error (line 95, column 48) unexpected mixfix token: all
-Error (line 99, column 32) unexpected mixfix token: impl
-Error (line 99, column 17) unexpected mixfix token: all
-Error (line 98, column 39) unexpected mixfix token: all
+Error (line 98, column 9) no match for 'ex'
+Error (line 98, column 9) no type match for 'ex (p : s ->? Unit)'
+Error (line 98, column 9) no typing for 'ex(p : s ->? Unit) : Unit ->? Unit'
 Error (line 101, column 13) unexpected mixfix token: )
+Error (line 101, column 9) unexpected pattern 'ff ()'
 Error (line 101, column 29) unexpected mixfix token: all
-Error (line 103, column 44) unexpected mixfix token: impl
+Error (line 103, column 9) no match for 'neg'
+Error (line 103, column 9) no type match for 'neg (r : Unit ->? Unit)'
+Error (line 103, column 9) no typing for 'neg(r : Unit ->? Unit) : Unit ->? Unit'
 Error (line 108, column 51) unexpected mixfix token: impl
 Error (line 108, column 22) unexpected mixfix token: all
 Error (line 108, column 3) unexpected mixfix token: all
@@ -273,6 +289,10 @@ Error (line 150, column 15) unexpected mixfix token: [
 Hint (line 153, column 5) is type variable 'c'
 Warning (line 153, column 5) redeclared type 'c'
 Hint (line 153, column 8) is type variable 'd'
+Error (line 0, column 0) undeclared type '_var_75'
+Error (line 0, column 0) undeclared type '_var_76'
+Error (line 0, column 0) undeclared type '_var_77'
+Error (line 0, column 0) undeclared type '_var_78'
 Error (line 159, column 45) unexpected mixfix token: und
 Error (line 170, column 4) expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 Error (line 171, column 35) unexpected mixfix token: und
@@ -281,7 +301,7 @@ Error (line 173, column 40) unexpected mixfix token: und
 Error (line 172, column 28) unexpected mixfix token: isChain
 Error (line 171, column 9) unexpected mixfix token: all
 Error (line 170, column 4) unexpected term '__'
-Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_76 ->? _var_77'
+Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_94 ->? _var_95'
 Error (line 170, column 20) no type match for '(__=__) (__ in c -->? d,
 	 \ f : c ->? d . all
 			 (\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
@@ -304,9 +324,11 @@ Error (line 182, column 46) ambiguous mixfix term
 	(def__)(f) x
 Error (line 182, column 36) unexpected mixfix token: all
 Error (line 182, column 4) unexpected term '__'
-Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_83 ->? _var_84'
+Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_101 ->? _var_102'
 Error (line 182, column 18) no type match for '(__=__) (__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
 Error (line 182, column 18) no typing for '(__=__)(__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
+Error (line 0, column 0) undeclared type '_var_103'
+Error (line 0, column 0) undeclared type '_var_104'
 Error (line 186, column 25) unexpected mixfix token: [
 Error (line 193, column 32) unexpected mixfix token: impl
 Error (line 192, column 40) unexpected mixfix token: und
