@@ -29,26 +29,7 @@
 
 module Common.Lib.Parsec
                ( -- complete modules
-                 module Common.Lib.Parsec.Prim
-               , module Common.Lib.Parsec.Combinator
-               , module Common.Lib.Parsec.Char
-               
-               -- module Common.Lib.Parsec.Error
-               , ParseError   
-               , errorPos   
-               
-               -- module Common.Lib.Parsec.Pos
-               , SourcePos
-               , SourceName, Line, Column             
-               , sourceName, sourceLine, sourceColumn             
-               , incSourceLine, incSourceColumn
-               , setSourceLine, setSourceColumn, setSourceName
+                 module Text.ParserCombinators.Parsec) where 
 
-             ) where
-
-import Common.Lib.Parsec.Pos            -- textual positions
-import Common.Lib.Parsec.Error          -- parse errors
-import Common.Lib.Parsec.Prim           -- primitive combinators
-import Common.Lib.Parsec.Combinator     -- derived combinators
-import Common.Lib.Parsec.Char           -- character parsers
+import Text.ParserCombinators.Parsec
 
