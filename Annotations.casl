@@ -28,6 +28,7 @@ label
 %implies 
 %def
  %cons 
+%mono
 
 %left_assoc 'a' , b , __<__
 %right_assoc( 5, .ly__ , 
