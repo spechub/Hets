@@ -53,6 +53,8 @@ import Logic
 import Set
 import Dynamic
 
+-- The Logic instances needed for the logic list
+import Logic_CASL
 
 instance Typeable a => Typeable (Set a) where
   typeOf t = mkAppTy (mkTyCon "Set") [typeOf t]
@@ -163,9 +165,8 @@ comp_repr (Repr (r1 :: {-Logic id1 sublogics1
  }))
                 else Nothing
 
-
-
-the_logic_list :: [AnyLogic] = [] -- [Logic CASL, Logic HasCASL, ...]
+the_logic_list :: [AnyLogic] = [Logic CASL]
+		  -- [Logic Prae] -- [Logic CASL, Logic HasCASL, ...]
 the_representation_list :: [AnyRepresentation] = []
 
 
