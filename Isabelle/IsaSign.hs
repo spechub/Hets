@@ -18,7 +18,6 @@ import qualified Common.Lib.Map as Map
 import Common.Id
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Data.Dynamic
 
 bracketize :: Bool -> String -> String
 bracketize b s = if b then "("++s++")" else s
@@ -218,15 +217,3 @@ instance PrettyPrint Sign where
 
 instance PrintLaTeX Sign where
     printLatex0 = printText0
-
-
-
-sentenceTc, signTc :: TyCon
-
-sentenceTc      = mkTyCon "Isabelle.Sign.Sentence"
-signTc          = mkTyCon "Isabelle.Sign.Sign"
-
-instance Typeable Sentence where
-    typeOf _ = mkTyConApp sentenceTc []
-instance Typeable Sign where
-    typeOf _ = mkTyConApp signTc []

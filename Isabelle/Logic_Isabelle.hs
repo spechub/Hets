@@ -13,6 +13,8 @@ Portability :  portable
 
 module Isabelle.Logic_Isabelle where
 
+import Data.Dynamic
+
 import Isabelle.IsaSign
 import Isabelle.IsaProve
 
@@ -25,6 +27,16 @@ import ATC.IsaSign
 -- instances
 data Isabelle = Isabelle deriving (Show)
 instance Language Isabelle  -- default definition is okay
+
+sentenceTc, signTc :: TyCon
+
+sentenceTc      = mkTyCon "Isabelle.Sign.Sentence"
+signTc          = mkTyCon "Isabelle.Sign.Sign"
+
+instance Typeable Sentence where
+    typeOf _ = mkTyConApp sentenceTc []
+instance Typeable Sign where
+    typeOf _ = mkTyConApp signTc []
 
 instance Category Isabelle Sign ()  
     where
