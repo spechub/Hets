@@ -28,10 +28,14 @@ spec Extensionality = {}
 spec Set = InternalLogic and Extensionality and Bool then
   var S,T : Type
   type Pred : Type -> Type;
-       Set : Type -> Type := Pred 
-  ops emptySet : Set S;
+       Set : Type -> Type := Pred;
+       Bool : Type; 
+       Unit : Type
+  ops __=__ : S * S ->? Unit;
+      __<=>__ : Unit * Unit ->? Unit;
+      emptySet : Set S;
       {__} : S -> Set S;
-      __isIn__ : Pred (S * Set(S));
+      __isIn__ : S * Set S ->? Unit;
       __subset__ :Pred( Set(S) * Set(S) );
       __union__, __intersection__, __\\__  : Set S -> Set S -> Set S;
       __disjoint__ : Pred( Set(S) * Set(S) );
