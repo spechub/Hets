@@ -635,6 +635,8 @@ Here, the number of submenus depends on the type of the node:
 \item[Show signature] Shows the signature of the node.
 \item[Show sublogic] Shows the logic and, within that logic, the minimal sublogic
 for the signature and the axioms of the node.
+\item[Show origin] Shows the kind of \CASL structuring construct that
+led to the node.
 \item[Show just subtree] (Only for named nodes) Reduce the complexity
 of the graph by just showing the subtree below the current node.
 \item[Undo show just subtree] (Only for named nodes) Undo the reduction.
@@ -721,7 +723,16 @@ This must be the first option.
 \end{description}
 
 
-\section{Precursors of \Hets}
+\section{Limits of \Hets}
+
+\Hets is still intensively under development. In particular, the
+following points are still missing:
+
+\begin{itemize}
+\item Distributed libraries are always downloaded from the local disk,
+not from the Internet.
+\item Version numbers of libraries are not considered.
+\end{itemize}
 
 \Hets has been built based on experiences with its
 precursors, 

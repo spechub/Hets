@@ -25,7 +25,11 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Id      as Id
 import qualified Common.Named   as Named
+import Common.PrettyPrint
+import Common.Lib.Pretty
+import Common.Lib.State
 
+import Data.Maybe
 import Data.List                ( partition )
 
 {-
@@ -62,8 +66,10 @@ overloadResolution sign  = mapM overload
     where
         overload :: (Named.Named FORMULA) -> Result (Named.Named FORMULA)
         overload sent = do
-            sent'       <- return $ Named.sentence sent
+            let sent' = Named.sentence sent
+            --debug 1 ("sent'",sent')
             exp_sent    <- minExpFORMULA sign sent'
+            --debug 2 ("exp_sent",exp_sent)
             return sent { Named.sentence = exp_sent }
 
 {-----------------------------------------------------------
@@ -77,7 +83,8 @@ minExpFORMULA sign formula
         False_atom _    -> return formula                       -- :: FORMULA
 	-- Non-Atomic FORMULA   -> Recurse through subFORMULAe
 	Quantification q vars f pos -> do
-	    f' <- minExpFORMULA sign f
+            let (_, sign') = runState (mapM_ addVars vars) sign
+	    f' <- minExpFORMULA sign' f
 	    return $ Quantification q vars f' pos
 	Conjunction fs pos -> do
 	    fs' <- mapM (minExpFORMULA sign) fs
@@ -101,7 +108,8 @@ minExpFORMULA sign formula
             minExpFORMULA_pred sign predicate terms pos         -- :: FORMULA
         Definedness term pos            -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
-            t'  <- is_unambiguous t                             -- :: TERM
+            --debug 4 ("t",t)
+            t'  <- is_unambiguous t pos                         -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
 	Existl_equation term1 term2 pos ->
             minExpFORMULA_eq sign Existl_equation term1 term2 pos
@@ -111,10 +119,10 @@ minExpFORMULA sign formula
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- return
                 $ filter (                                      -- :: [[TERM]]
-                    (geq_SORT sign sort)                        -- :: Bool
+                    (leq_SORT sign sort)                        -- :: Bool
                     . term_sort                                 -- :: SORT
                     . head) t                                   -- :: TERM
-            t'' <- is_unambiguous t'                            -- :: [[TERM]]
+            t'' <- is_unambiguous t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
         -- Unparsed FORMULA    -> Error in Parser, Bail out!
         Mixfix_formula term             -> error
@@ -128,13 +136,13 @@ minExpFORMULA sign formula
             $ "Internal Error: Unknown type of FORMULA received: "
             ++ (show formula)
     where
-        is_unambiguous          :: [[TERM]] -> Result TERM
-        is_unambiguous term      = do
+        is_unambiguous          :: [[TERM]] -> [Id.Pos] -> Result TERM
+        is_unambiguous term pos     = do
             case term of
-                [_]     -> return $ head $ head term            -- :: TERM
-                _       -> error
-                    $ "Cannot disambiguate! Possible Expansions: "
-                    ++ (show term)
+                [_]:_   -> return $ head $ head term            -- :: TERM
+                _       -> pplain_error (Unparsed_term "" [])
+                    (ptext "Cannot disambiguate! Possible Expansions: "
+                     <+> (printText term)) (Id.headPos pos)
 
 {-----------------------------------------------------------
     Minimal Expansions of a Predicate Application Formula
@@ -151,7 +159,7 @@ minExpFORMULA_pred sign predicate terms pos = do
         $ concat                                -- ::  [[(PredType, [TERM])]]
         $ map (equivalence_Classes pred_eq)     -- :: [[[(PredType, [TERM])]]]
           profiles                              -- ::  [[(PredType, [TERM])]]
-    p'                  <- return $ choose p    -- ::    (PredType, [TERM])
+    p'                  <- choose p             -- ::    (PredType, [TERM])
     return $ qualify_pred p'
     where
         name            :: PRED_NAME
@@ -164,12 +172,14 @@ minExpFORMULA_pred sign predicate terms pos = do
         pred_name pred'  = case pred' of
             (Pred_name name')           -> name'
             (Qual_pred_name name' _ _)  -> name'
-        choose          :: [[(PredType, [TERM])]] -> (PredType, [TERM])
+        choose          :: [[(PredType, [TERM])]] -> Result (PredType, [TERM])
         choose ps        = case ps of
-            [_] -> head $ head ps
-            _   -> error
-                $ "Cannot disambiguate! Term: " ++ (show (predicate, terms))
-                ++ "\n  Possible Expansions: " ++ (show ps)
+            [_]:_ -> return $ head $ head ps
+            _   -> pplain_error (PredType [], terms)
+                   (ptext "Cannot disambiguate! Term: " 
+                    <+> (printText (predicate, terms))
+                    $$ ptext "Possible Expansions: " 
+                    <+> (printText ps)) (Id.headPos pos)
         qualify_pred    :: (PredType, [TERM]) -> FORMULA
         qualify_pred (pred', terms')
             = (Predication                                      -- :: FORMULA
@@ -205,25 +215,34 @@ minExpFORMULA_eq :: Sign -> (TERM -> TERM -> [Id.Pos] -> FORMULA)
 minExpFORMULA_eq sign eq term1 term2 pos = do
     exps1       <- minExpTerm sign term1                -- :: [[TERM]]
     exps2       <- minExpTerm sign term2                -- :: [[TERM]]
+    --debug 1 ("exps1",exps1)
+    --debug 2 ("exps2",exps2)
     pairs       <- return
-        $ permute [(map head exps1), (map head exps2)]  -- :: [[TERM]]
+        $ permute [catMaybes (map maybeHead exps1), 
+                   catMaybes (map maybeHead exps2)]  -- :: [[TERM]]
+    --debug 3 ("paris",pairs)
     candidates  <- return
         $ filter fit pairs                              -- :: [[TERM]]
+    --debug 3 ("candidates",candidates)
     case candidates of
         [[t1,t2]]       -> return $ eq t1 t2 pos
-        _               -> error
-            $ "Cannot disambiguate! Possible Expansions: "
-            ++ (show exps1) ++ "\n\t" ++ (show exps2)
+        _               -> pplain_error (eq term1 term2 pos)
+            (ptext "Cannot disambiguate! Possible Expansions: "
+             <+> (printText exps1) $$ (printText exps2)) (Id.headPos pos)
     where
         fit     :: [TERM] -> Bool
         fit      = (have_common_supersorts sign) . (map term_sort)
+        maybeHead :: [a] -> Maybe a
+        maybeHead (x:_) = Just x
+        maybeHead _ = Nothing
 
 {-----------------------------------------------------------
     Minimal Expansions of a TERM
 -----------------------------------------------------------}
 minExpTerm :: Sign -> TERM -> Result [[TERM]]
 minExpTerm sign term'
-    = case term' of
+ = do -- debug 66 ("term'",term')
+      u <- case term' of
         Simple_id var
             -> minExpTerm_simple sign var
         Qual_var var sort pos
@@ -241,7 +260,8 @@ minExpTerm sign term'
                ++ string
         _   -> error $ "minExpTerm: Parser Error - Unparsed `Mixfix' term "
                ++ (show term')
-
+      -- debug 6 ("u",u)
+      return u
 {-----------------------------------------------------------
     Minimal Expansions of a Simple_id Term
 -----------------------------------------------------------}
@@ -295,7 +315,7 @@ minExpTerm_qual sign var sort pos = do
         fits term                = case term of
             (Sorted_term (Simple_id var') sort' _)
                 -> (var == var') && (sort == sort')
-            _   -> error "minExpTerm: unsorted TERM after expansion"
+            _   -> error "Internal error: minExpTerm: unsorted TERM after expansion"
         selectExpansions        :: [TERM] -> [(TERM, SORT)]
         selectExpansions c
             = [ ((Simple_id var), sort) |       -- :: (TERM, SORT)
@@ -308,18 +328,19 @@ minExpTerm_qual sign var sort pos = do
 minExpTerm_sorted :: Sign -> TERM -> SORT -> [Id.Pos] -> Result [[TERM]]
 minExpTerm_sorted sign term sort pos = do
     expandedTerm <- minExpTerm sign term        -- :: [[TERM]]
+    --debug 7 ("expandedTerm", expandedTerm)
     return
         $ qualifyTerms pos                      -- :: [[TERM]]
         $ map selectExpansions expandedTerm     -- :: [[(TERM, SORT)]]
     where
         fits                    :: TERM -> Bool
         fits term'               = case term' of
-            (Sorted_term term'' sort' _)
-                -> (term == term'') && (sort == sort')
-            _   -> error "minExpTerm: unsorted TERM after expansion"
+            (Sorted_term _ sort' _)
+                -> sort == sort'
+            _   -> error "Internal error: minExpTerm: unsorted TERM after expansion"
         selectExpansions        :: [TERM] -> [(TERM, SORT)]
         selectExpansions c
-            = [ (term, sort) |                  -- :: (TERM, SORT)
+            = [ (sorted, sort) |                  -- :: (TERM, SORT)
                 sorted <- c,                    -- :: TERM
                 fits sorted ]                   -- :: Bool
 
@@ -327,19 +348,32 @@ minExpTerm_sorted sign term sort pos = do
     Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
 minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> [Id.Pos] -> Result [[TERM]]
-minExpTerm_op sign op terms pos = do
+minExpTerm_op sign (Op_name (Id.Id [tok] [] _)) [] pos = 
+  minExpTerm_simple sign tok
+minExpTerm_op sign op terms pos = minExpTerm_op1 sign op terms pos
+
+minExpTerm_op1 :: Sign -> OP_SYMB -> [TERM] -> [Id.Pos] -> Result [[TERM]]
+minExpTerm_op1 sign op terms pos = do
+    --debug 3 ("op",op)
+    --debug 3 ("terms",show terms)
     expansions          <- mapM
         (minExpTerm sign) terms                 -- ::       [[[TERM]]]
+    --debug 3 ("expansions",show expansions)
     permuted_exps       <- return
         $ permute expansions                    -- ::       [[[TERM]]]
+    --debug 3 ("permuted_exps",show permuted_exps)
     profiles            <- return
         $ map get_profile permuted_exps         -- ::  [[(OpType, [TERM])]]
     p                   <- return
         $ concat                                -- ::  [[(OpType, [TERM])]]
         $ map (equivalence_Classes op_eq)       -- :: [[[(OpType, [TERM])]]]
           profiles                              -- ::  [[(OpType, [TERM])]]
+    --debug 3 ("p",show p)
     p'                  <- return
         $ map (minimize_op sign) p              -- ::  [[(OpType, [TERM])]]
+    --debug 3 ("p'",show p')
+    --debug 3 (" qualifyOps p'",show $  qualifyOps p')
+    --debug 3 ("qualifyTerms pos $ qualifyOps p'",show $ qualifyTerms pos $ qualifyOps p')
     return
         $ qualifyTerms pos                      -- ::        [[TERM]]
         $ qualifyOps p'                         -- ::    [[(TERM, SORT)]]
@@ -411,15 +445,19 @@ minExpTerm_cond sign term1 formula term2 pos = do
         <- minExpFORMULA sign formula           -- ::       FORMULA
     permuted_exps       <- return
         $ permute [expansions1, expansions2]    -- ::      [[[TERM]]]
+    --debug 7 ("permuted_exps",permuted_exps)
     profiles            <- return
         $ map get_profile permuted_exps         -- ::  [[([TERM], SORT)]]
+    --debug 7 ("profiles",profiles)
     p                   <- return
         $ concat                                -- ::  [[([TERM], SORT)]]
         $ map                                   -- :: [[[([TERM], SORT)]]]
           (equivalence_Classes eq)
           profiles                              -- ::  [[([TERM], SORT)]]
+    --debug 7 ("p",p)
     p'                  <- return
         $ map (minimize_cond sign) p            -- ::  [[([TERM], SORT)]]
+    --debug 7 ("p'",p')
     return
         $ qualifyTerms pos                      -- ::       [[TERM]]
         $ qualifyConds expanded_formula p'      -- ::   [[(TERM, SORT)]]
@@ -434,12 +472,12 @@ minExpTerm_cond sign term1 formula term2 pos = do
         qualify_cond            :: FORMULA -> ([TERM], SORT) -> (TERM, SORT)
         qualify_cond f (ts, s)   = case ts of
             [t1, t2]    -> (Conditional t1 f t2 [], s)
-            _           -> error
-                $ "Internal Error: wrong number of TERMs in qualify_cond!"
+            _           -> (Unparsed_term "" [],s) {-error
+                $ "Internal Error: wrong number of TERMs in qualify_cond!"-}
         get_profile             :: [[TERM]] -> [([TERM], SORT)]
         get_profile cs
             = [ (c, s) |                                -- :: ([TERM], SORT)
-                c <- cs,                                -- ::  [TERM]
+                c <- permute cs,                        -- ::  [TERM]
                 have_supersort c,                       -- ::   Bool
                 s <- Set.toList $ supersorts c ]        -- ::   SORT
 
@@ -535,9 +573,10 @@ common_subsorts sign = let
     Set of SuperSORTs common to all given SORTs
 -----------------------------------------------------------}
 common_supersorts :: Sign -> [SORT] -> Set.Set SORT
-common_supersorts sign = let
+common_supersorts sign [] = Set.empty
+common_supersorts sign srts = let
     get_supersorts = flip supersortsOf sign
-    in (foldr Set.intersection Set.empty) . (map get_supersorts)
+    in foldr1 Set.intersection $ map get_supersorts $ srts
 
 {-----------------------------------------------------------
     True if all SORTs have a common subSORT

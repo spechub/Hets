@@ -31,43 +31,6 @@ import Common.Named
 import Common.Result
 import Data.Maybe
 
-addSort :: SORT -> State Sign ()
-addSort s = 
-    do e <- get
-       let m = sortSet e
-       if Set.member s m then 
-	  addDiags [mkDiag Hint "redeclared sort" s] 
-	  else put e { sortSet = Set.insert s m }
-
-checkSort :: SORT -> State Sign ()
-checkSort s = 
-    do m <- gets sortSet
-       addDiags $ if Set.member s m then [] else 
-		    [mkDiag Error "unknown sort" s]
-
-addSubsort :: SORT -> SORT -> State Sign ()
-addSubsort super sub = 
-    do e <- get
-       mapM_ checkSort [super, sub] 
-       put e { sortRel = Rel.insert sub super $ sortRel e }
-
-closeSubsortRel :: State Sign ()
-closeSubsortRel= 
-    do e <- get
-       put e { sortRel = Rel.transClosure $ sortRel e }
-
-addVars :: VAR_DECL -> State Sign ()
-addVars (Var_decl vs s _) = mapM_ (addVar s) vs
-
-addVar :: SORT -> SIMPLE_ID -> State Sign ()
-addVar s v = 
-    do e <- get
-       let m = varMap e
-           l = Map.findWithDefault Set.empty v m
-       if Set.member s l then 
-	  addDiags [mkDiag Hint "redeclared var" v] 
-	  else put e { varMap = Map.insert v (Set.insert s l) m }
-
 checkPlaces :: [SORT] -> Id -> [Diagnosis]
 checkPlaces args i = 
     if let n = placeCount i in n == 0 || n == length args then []
@@ -135,11 +98,6 @@ allPredIds :: State Sign (Set.Set Id)
 allPredIds = do
     e <- get
     return $ Set.fromDistinctAscList $ Map.keys $ predMap e
-
-addDiags :: [Diagnosis] -> State Sign ()
-addDiags ds = 
-    do e <- get
-       put e { envDiags = ds ++ envDiags e }
 
 addSentences :: [Named FORMULA] -> State Sign ()
 addSentences ds = 
@@ -425,7 +383,8 @@ basicAnalysis (bs, inSig, ga) = do
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
 	diff = diffSig cleanSig inSig
 	remPartOpsS s = s { opMap = remPartOpsM $ opMap s }
-    checked_sents <- overloadResolution accSig sents
+    checked_sents <- return sents
+    --checked_sents <- overloadResolution accSig sents
     Result ds (Just ()) -- insert diags
     return ( newBs
 	   , remPartOpsS diff

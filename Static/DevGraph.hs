@@ -169,3 +169,27 @@ get_dgn_name (DGNode (Just name) _ _ _) = Just name
 get_dgn_name (DGRef (Just name) _ _) = Just name
 get_dgn_name _ = Nothing
 
+instance PrettyPrint DGOrigin where
+  printText0 _ origin = case origin of
+     DGBasic -> ptext "basic specification"
+     DGExtension -> ptext "extension"
+     DGTranslation -> ptext "translation"
+     DGUnion -> ptext "union"
+     DGHiding -> ptext "hiding"
+     DGRevealing -> ptext "revealing"
+     DGRevealTranslation -> ptext "translation part of a revealing"
+     DGFree -> ptext "free specification"
+     DGCofree -> ptext "cofree specification"
+     DGLocal -> ptext "local specification"
+     DGClosed -> ptext "closed specification"
+     DGClosedLenv -> ptext "closed specification (inclusion of local environment)"
+     DGFormalParams -> ptext "formal parameters of a generic specification"
+     DGImports -> ptext "imports of a generic specification"
+     DGSpecInst n -> ptext ("instantiation of"++showPretty n "")
+     DGFitSpec -> ptext "fittig specification"
+     DGView n -> ptext ("view "++showPretty n "")
+     DGFitView n -> ptext ("fitting view "++showPretty n "")
+     DGFitViewImp n -> ptext ("fitting view (imports) "++showPretty n "")
+     DGFitViewA n -> ptext ("fitting view (actual parameters) "++showPretty n "")
+     DGFitViewAImp n -> ptext ("fitting view (imports and actual parameters) "++showPretty n "")
+     DGProof -> ptext "constructed within a proof"

@@ -28,6 +28,10 @@ import DaVinciGraph
 import GraphDisp
 import GraphConfigure
 
+import TextDisplay
+import Configuration
+import qualified HTk
+
 import qualified Common.Lib.Map as Map hiding (isEmpty)
 import Syntax.AS_Library
 import Syntax.Print_HetCASL
@@ -67,7 +71,8 @@ type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
 
 initializeConverter :: IO (IORef GraphMem)
 initializeConverter = 
-    do initGraphInfo <- initgraphs
+    do HTk.initHTk [HTk.withdrawMainWin]
+       initGraphInfo <- initgraphs
        graphMem <- (newIORef GraphMem{nextGraphId = 0, 
 				      graphInfo = initGraphInfo})
        return graphMem
@@ -272,9 +277,10 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
                  Ellipse $$$ Color color
 		 $$$ ValueTitle (\ (s,_,_) -> return s) 
                  $$$ LocalMenu (Menu (Just "node menu")
-                   [createLocalMenuButtonShowSpec convRef dGraph,
+                   [--createLocalMenuButtonShowSpec convRef dGraph,
 		    createLocalMenuButtonShowSignature convRef dGraph,
 		    createLocalMenuButtonShowSublogic convRef dGraph,
+                    createLocalMenuButtonShowNodeOrigin convRef dGraph,
 		    createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents 
 		                     convRef ioRefVisibleNodes ioRefGraphMem
 		                                         actGraphInfo,
@@ -289,9 +295,10 @@ createLocalMenuNodeTypeInternal color convRef dGraph =
                  Ellipse $$$ Color color
 		 $$$ ValueTitle (\ (s,_,_) -> return "")
                  $$$ LocalMenu (Menu (Just "node menu")
-                    [createLocalMenuButtonShowSpec convRef dGraph,
+                    [--createLocalMenuButtonShowSpec convRef dGraph,
 		     createLocalMenuButtonShowSignature convRef dGraph,
- 		     createLocalMenuButtonShowSublogic convRef dGraph])
+ 		     createLocalMenuButtonShowSublogic convRef dGraph,
+                     createLocalMenuButtonShowNodeOrigin convRef dGraph])
                  $$$ emptyNodeTypeParms
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
@@ -360,6 +367,16 @@ createLocalMenuButtonShowSublogic convRef dgraph =
 	            )
 
 
+createLocalMenuButtonShowNodeOrigin convRef dgraph =
+                    (Button "Show origin" 
+                      (\ (name,descr,gid) ->
+                        do convMaps <- readIORef convRef
+                           showOriginOfNode descr
+		                             (abstr2dgNode convMaps)
+		                             dgraph
+		           return ()
+                       )
+	            )
 createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef 
     ioRefVisibleNodes ioRefGraphMem actGraphInfo = 
                     (Button "Show just subtree"
@@ -475,7 +492,12 @@ getSignatureOfNode descr ab2dgNode dgraph =
     Just (libname, node) -> 
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
-           (DGNode _ (G_sign _ sig) _ _) -> putStrLn ((showPretty sig) "\n")
+           (DGNode name (G_sign _ sig) _ _) ->
+              let title = case name of
+                   Nothing -> "Signature"
+                   Just n -> "Signature of "++showPretty n ""
+               in createTextDisplay title (showPretty sig "") [size(50,50)]
+              --putStrLn ((showPretty sig) "\n")
            (DGRef _ _ _) -> error 
 			    "nodes of type dg_ref do not have a signature"
     Nothing -> error ("node with descriptor "
@@ -491,33 +513,60 @@ getSublogicOfNode descr ab2dgNode dgraph =
     Just (libname, node) -> 
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
-           (DGNode _ _ _ _) ->
+           (DGNode name _ _ _) ->
 	     case (dgn_sign dgnode) of
 	       G_sign lid sigma ->
-		 do putStrLn (language_name lid ++ "." 
+                let logstr = (language_name lid ++ "." 
 			      ++ head (sublogic_names lid 
 				       (min_sublogic_sign lid sigma)))
+                    title = case name of
+                     Nothing -> "Sublogic"
+                     Just n -> "Sublogic of "++showPretty n ""
+                 in createTextDisplay title logstr [size(30,10)]
            (DGRef _ _ _) -> error "nodes of type dg_ref do not have a sublogic"
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
 
+
+{- prints the origin of the node -}
+showOriginOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
+showOriginOfNode descr ab2dgNode dgraph = 
+  case Map.lookup descr ab2dgNode of
+    Just (libname, node) -> 
+      do let dgnode = lab' (context node dgraph)
+	 case dgnode of
+           (DGNode name _ _ orig) ->    
+              let title = case name of
+                     Nothing -> "Origin of node"
+                     Just n -> "Origin of node "++showPretty n ""
+               in createTextDisplay title 
+                    (showPretty orig "") [size(30,10)]
+    Nothing -> error ("node with descriptor "
+                      ++ (show descr) 
+                      ++ " has no corresponding node in the development graph")
+
+
 {- prints the morphism of the edge -}
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showMorphismOfEdge _ (Just (_,_,linklab)) = 
-      putStrLn (showPretty (dgl_morphism linklab) "")
+      createTextDisplay "Signature morphism" 
+           (showPretty (dgl_morphism linklab) "") [size(50,50)]
 showMorphismOfEdge descr Nothing = 
-      putStrLn ("edge "++(show descr)++" has no corresponding edge"
-		++ "in the development graph")
+      createTextDisplay "Error" 
+          ("edge "++(show descr)++" has no corresponding edge"
+		++ "in the development graph") [size(30,10)]
 
 
 {- prints the origin of the edge -}
 showOriginOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showOriginOfEdge _ (Just (_,_,linklab)) =
-    putStrLn (show (dgl_origin linklab))
+      createTextDisplay "Origin of link" 
+        (showPretty (dgl_origin linklab) "")  [size(30,10)]
 showOriginOfEdge descr Nothing =
-    putStrLn ("edge "++(show descr)++" has no corresponding edge"
-		++ "in the development graph")
+      createTextDisplay "Error" 
+         ("edge "++(show descr)++" has no corresponding edge"
+		++ "in the development graph") [size(30,10)]
 
 {- prints the proof base of the edge -}
 showProofStatusOfThm :: Descr -> Maybe (LEdge DGLinkLab) -> IO()

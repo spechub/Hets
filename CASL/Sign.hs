@@ -18,6 +18,7 @@ import CASL.AS_Basic_CASL
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.Lib.Pretty
+import Common.Lib.State
 import CASL.Print_AS_Basic
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -178,3 +179,46 @@ addPartOps s = Set.union s $ partOps s
 addPartOpsM :: Ord a => Map.Map a (Set.Set OpType) 
 	    -> Map.Map a (Set.Set OpType) 
 addPartOpsM = Map.map addPartOps
+
+addDiags :: [Diagnosis] -> State Sign ()
+addDiags ds = 
+    do e <- get
+       put e { envDiags = ds ++ envDiags e }
+
+addSort :: SORT -> State Sign ()
+addSort s = 
+    do e <- get
+       let m = sortSet e
+       if Set.member s m then 
+	  addDiags [mkDiag Hint "redeclared sort" s] 
+	  else put e { sortSet = Set.insert s m }
+
+checkSort :: SORT -> State Sign ()
+checkSort s = 
+    do m <- gets sortSet
+       addDiags $ if Set.member s m then [] else 
+		    [mkDiag Error "unknown sort" s]
+
+addSubsort :: SORT -> SORT -> State Sign ()
+addSubsort super sub = 
+    do e <- get
+       mapM_ checkSort [super, sub] 
+       put e { sortRel = Rel.insert sub super $ sortRel e }
+
+closeSubsortRel :: State Sign ()
+closeSubsortRel= 
+    do e <- get
+       put e { sortRel = Rel.transClosure $ sortRel e }
+
+addVars :: VAR_DECL -> State Sign ()
+addVars (Var_decl vs s _) = mapM_ (addVar s) vs
+
+addVar :: SORT -> SIMPLE_ID -> State Sign ()
+addVar s v = 
+    do e <- get
+       let m = varMap e
+           l = Map.findWithDefault Set.empty v m
+       if Set.member s l then 
+	  addDiags [mkDiag Hint "redeclared var" v] 
+	  else put e { varMap = Map.insert v (Set.insert s l) m }
+
