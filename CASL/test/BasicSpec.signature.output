@@ -3,6 +3,19 @@ sorts ABCDEFGHIJKLMONOPQRSTUVWXYZ, Boolean, Char, Data1, Data2,
       a'b''2, a_b_c, ab2, ab_2_3_a, abc, abcdefghijlklmnopqrstuvwxyz, b,
       c, d, e, nat, s, t, x0123456789,
       ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïñòóôõöøùúûüıÿ
+sorts Data1 < Data2
+      Int < Rat
+      Nat < Int, Rat
+      Pos < Int, Nat, Rat
+      a < a, b, c, d, e
+      b < a, b, c, d, e
+      c < a, b, c, d, e
+      d < a, b, c, d, e
+      e < a, b, c, d, e
+      s < s, t
+      s1 < s, t
+      s2 < s, t
+      t < s, t
 op ' ' : Char
 op '!' : Char
 op '!' : s
@@ -1194,51 +1207,51 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
-Error (line 427, column 12) not a predicate: e
-Error (line 426, column 26) not a predicate: e
-Error (line 351, column 11) wrong number of places '__and'__'
-Error (line 305, column 6) unknown sort 'd'
-Error (line 304, column 6) unknown sort 'b'
-Error (line 294, column 25) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+*** Error 427.12, not a predicate: e
+*** Error 426.26, not a predicate: e
+*** Error 351.11, wrong number of places '__and'__'
+*** Error 305.6, unknown sort 'd'
+*** Error 304.6, unknown sort 'b'
+*** Error 294.25, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : s'
-Error (line 294, column 29) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+*** Error 294.29, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : a -> s'
-Error (line 294, column 55) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+*** Error 294.55, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : a ->? s'
-Error (line 294, column 29) duplicates at '(294,55)' for 'c : a -> s'
-Error (line 294, column 57) unknown sort 'a'
-Error (line 294, column 38) unknown sort 'a'
-Error (line 294, column 31) unknown sort 'a'
-Error (line 292, column 13) unknown sort 'b'
-Error (line 292, column 7) unknown sort 'b'
-Error (line 290, column 20) unknown sort 'a'
-Error (line 290, column 16) unknown sort 'a'
-Error (line 287, column 35) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+*** Error 294.29, duplicates at '(294,55)' for 'c : a -> s'
+*** Error 294.57, unknown sort 'a'
+*** Error 294.38, unknown sort 'a'
+*** Error 294.31, unknown sort 'a'
+*** Error 292.13, unknown sort 'b'
+*** Error 292.7, unknown sort 'b'
+*** Error 290.20, unknown sort 'a'
+*** Error 290.16, unknown sort 'a'
+*** Error 287.35, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : s'
-Error (line 287, column 58) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+*** Error 287.58, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : a ->? s'
-Error (line 287, column 60) unknown sort 'a'
-Error (line 287, column 41) unknown sort 'a'
-Error (line 286, column 30) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+*** Error 287.60, unknown sort 'a'
+*** Error 287.41, unknown sort 'a'
+*** Error 286.30, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : s'
-Error (line 286, column 53) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+*** Error 286.53, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : a ->? s'
-Error (line 286, column 55) unknown sort 'a'
-Error (line 286, column 36) unknown sort 'a'
-Error (line 285, column 25) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+*** Error 286.55, unknown sort 'a'
+*** Error 286.36, unknown sort 'a'
+*** Error 285.25, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : s'
-Error (line 285, column 50) total selectors 'a : s -> t,b : s -> t,d : s -> t'
+*** Error 285.50, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : a ->? s'
-Error (line 285, column 52) unknown sort 'a'
-Error (line 285, column 34) duplicates at '(285,41)' for 'a : s -> t'
-Error (line 285, column 31) unknown sort 'a'
-Error (line 270, column 3) unexpected mixfix token: a
-Error (line 268, column 15) unknown sort 'b'
-Error (line 268, column 6) wrong number of places '__a'
-Error (line 268, column 9) unknown sort 'b'
-Error (line 266, column 20) unknown sort 'a'
-Error (line 266, column 16) unknown sort 'a'
-Error (line 261, column 9) ambiguous mixfix term
+*** Error 285.52, unknown sort 'a'
+*** Error 285.34, duplicates at '(285,41)' for 'a : s -> t'
+*** Error 285.31, unknown sort 'a'
+*** Error 270.3, unexpected mixfix token: a
+*** Error 268.15, unknown sort 'b'
+*** Error 268.6, wrong number of places '__a'
+*** Error 268.9, unknown sort 'b'
+*** Error 266.20, unknown sort 'a'
+*** Error 266.16, unknown sort 'a'
+*** Error 261.9, ambiguous mixfix term
 	__*__(i,__-__(q,__*__(j,p)))
 	__-__(__*__(i,q),__*__(j,p))
 	__*__(__*__(i,__-__(q,j)),p)

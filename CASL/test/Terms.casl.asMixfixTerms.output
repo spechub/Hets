@@ -1,7 +1,7 @@
-Error (line 1, column 1) unexpected mixfix token: *
-Error (line 2, column 1) unexpected mixfix token: **
-Error (line 3, column 1) unexpected mixfix token: a_a
-Error (line 4, column 1) expected further mixfix token: ["!","*","+","-","-->"]
+*** Error 1.1, unexpected mixfix token: *
+*** Error 2.1, unexpected mixfix token: **
+*** Error 3.1, unexpected mixfix token: a_a
+*** Error 4.1, expected further mixfix token: ["!","*","+","-","-->"]
 123
 1.2
 1
@@ -10,32 +10,32 @@ Error (line 4, column 1) expected further mixfix token: ["!","*","+","-","-->"]
 12.23E34
 "bla"
 ""
-Error (line 13, column 1) unexpected mixfix token: <
-Error (line 14, column 1) unexpected mixfix token: <=
-Error (line 15, column 1) unexpected mixfix token: .a
-Error (line 16, column 1) unexpected mixfix token: 'a'
-Error (line 17, column 1) unexpected mixfix token: <
-Error (line 18, column 1) unexpected mixfix token: <=
-Error (line 19, column 1) unexpected mixfix token: .a
-Error (line 20, column 1) unexpected mixfix token: 'a'
-Error (line 21, column 4) expected further mixfix token: ["(","(op )","(var )"]
-Error (line 22, column 7) unexpected mixfix token: b
-Error (line 23, column 10) expected further mixfix token: ["p","x","["]
-Error (line 23, column 7) unexpected mixfix token: b
-Error (line 24, column 8) unexpected mixfix token: b
-Error (line 25, column 11) expected further mixfix token: ["p","x","["]
-Error (line 25, column 8) unexpected mixfix token: b
-Error (line 26, column 7) unexpected mixfix token: b
-Error (line 27, column 7) unexpected mixfix token: b
-Error (line 28, column 8) unexpected mixfix token: b
-Error (line 29, column 8) unexpected mixfix token: b
-Error (line 30, column 7) unexpected mixfix token: b
-Error (line 31, column 7) unexpected mixfix token: b
-Error (line 32, column 8) unexpected mixfix token: b
-Error (line 33, column 8) unexpected mixfix token: b
-Error (line 34, column 1) unexpected mixfix token: (
-Error (line 35, column 3) unexpected mixfix token: }
-Error (line 36, column 3) unexpected mixfix token: }
+*** Error 13.1, unexpected mixfix token: <
+*** Error 14.1, unexpected mixfix token: <=
+*** Error 15.1, unexpected mixfix token: .a
+*** Error 16.1, unexpected mixfix token: 'a'
+*** Error 17.1, unexpected mixfix token: <
+*** Error 18.1, unexpected mixfix token: <=
+*** Error 19.1, unexpected mixfix token: .a
+*** Error 20.1, unexpected mixfix token: 'a'
+*** Error 21.4, expected further mixfix token: ["(","(op )","(var )"]
+*** Error 22.7, unexpected mixfix token: b
+*** Error 23.10, expected further mixfix token: ["p","x","["]
+*** Error 23.7, unexpected mixfix token: b
+*** Error 24.8, unexpected mixfix token: b
+*** Error 25.11, expected further mixfix token: ["p","x","["]
+*** Error 25.8, unexpected mixfix token: b
+*** Error 26.7, unexpected mixfix token: b
+*** Error 27.7, unexpected mixfix token: b
+*** Error 28.8, unexpected mixfix token: b
+*** Error 29.8, unexpected mixfix token: b
+*** Error 30.7, unexpected mixfix token: b
+*** Error 31.7, unexpected mixfix token: b
+*** Error 32.8, unexpected mixfix token: b
+*** Error 33.8, unexpected mixfix token: b
+*** Error 34.1, unexpected mixfix token: (
+*** Error 35.3, unexpected mixfix token: }
+*** Error 36.3, unexpected mixfix token: }
 (var y : bb)
 (op y : bb)
 (op __<__ : a)
@@ -47,13 +47,13 @@ Error (line 36, column 3) unexpected mixfix token: }
 (op __<__ :? a)
 (op __<__ : a)
 (op __<__ : a)
-Error (line 48, column 1) unexpected mixfix token: ys
-Error (line 49, column 2) unexpected mixfix token: predy
-Error (line 50, column 2) unexpected mixfix token: predy
-Error (line 51, column 2) unexpected mixfix token: predy
+*** Error 48.1, unexpected mixfix token: ys
+*** Error 49.2, unexpected mixfix token: predy
+*** Error 50.2, unexpected mixfix token: predy
+*** Error 51.2, unexpected mixfix token: predy
 a when b else c
-Error (line 53, column 1) unexpected mixfix token: #
-Error (line 54, column 3) expected further mixfix token: ["p","x"]
+*** Error 53.1, unexpected mixfix token: #
+*** Error 54.3, expected further mixfix token: ["p","x"]
 (pred y : bb)
 (pred y : bb)
 (pred y : ())

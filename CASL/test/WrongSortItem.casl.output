@@ -1,8 +1,8 @@
-parse error at (line 1, column 8):
+parse error at 1.8:
 unexpected ">"
 expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "<", ",", "=", ";" or end of input
 
-parse error at (line 2, column 40):
+parse error at 2.40:
 unexpected "o"
 expecting casl char or end of input
 
