@@ -2,9 +2,9 @@ module Dummy where
 import Prelude (undefined, Show, Eq, Ord, Bool)
 import MyLogic
  
-a___2_L_E_2 :: (Nat, Nat) -> Bool
+a___2_L_E_2 :: (Nat, Nat) -> Unit
  
-elem :: (Nat, List_FNat_J) -> Bool
+elem :: (Nat, List_FNat_J) -> Unit
  
 head :: List_FNat_J -> Nat
  
@@ -12,9 +12,9 @@ insert :: (Nat, List_FNat_J) -> List_FNat_J
  
 insert_1sort :: List_FNat_J -> List_FNat_J
  
-is_1ordered :: List_FNat_J -> Bool
+is_1ordered :: List_FNat_J -> Unit
  
-permutation :: (List_FNat_J, List_FNat_J) -> Bool
+permutation :: (List_FNat_J, List_FNat_J) -> Unit
 permutation = undefined
  
 prec :: Nat -> Nat

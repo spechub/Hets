@@ -12,6 +12,7 @@ Portability :  portable
 
 module MyLogic where
 
+type Unit = Bool
 type Pred a = a -> Bool
 
 bottom :: a
