@@ -66,14 +66,7 @@ import Data.Maybe
 type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
 
 {-----------------------------------------------------------
-    - Overload Resolution -
-  Apply the algorithm for overload resolution described in
-    Till Mossakowski, Kolyang, Bernd Krieg-Brueckner:
-    Static semantic analysis and theorem proving for CASL.
-    12th Workshop on Algebraic Development Techniques, Tarquinia 1997,
-    LNCS 1376, p. 333-348
-  to all given formulae/sentences w.r.t. the given annotations and
-  signature.  All real work is done by 'minExpFORMULA', which is
+ All real work is done by 'minExpFORMULA', which is
   applied to any given formula in turn.
 -----------------------------------------------------------}
 overloadResolution :: (Eq f, PrettyPrint f)     =>
