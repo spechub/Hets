@@ -131,7 +131,7 @@ anaTypeScheme mk (TypeScheme tArgs (q :=> ty) p) =
 	    Nothing -> return Nothing
 	    Just j -> fmap Just $ anaKind j
        tm <- getTypeMap    -- save global variables  
-       mapM_ anaTypeArgs tArgs
+       mapM_ anaTypeVarDecl tArgs
        (ik, newTy) <- anaType ty
        let newPty = TypeScheme tArgs (q :=> newTy) p
        sik <- case ik of
@@ -144,16 +144,12 @@ anaTypeScheme mk (TypeScheme tArgs (q :=> ty) p) =
        putTypeMap tm       -- forget local variables 
        return (sik, newPty)
 
-typeArgsListToKind :: [TypeArgs] -> Kind -> Kind
+typeArgsListToKind :: [TypeArg] -> Kind -> Kind
 typeArgsListToKind tArgs k = 
     if null tArgs then k
        else typeArgsListToKind (init tArgs) 
-	    (KindAppl (typeArgsToKind $ last tArgs) k []) 
+	    (KindAppl (typeArgToKind $ last tArgs) k []) 
 
-typeArgsToKind :: TypeArgs -> Kind
-typeArgsToKind (TypeArgs l ps) = 
-    if length l == 1 then typeArgToKind $ head l 
-       else error "ProdClass (map typeArgToKind l) ps"
 typeArgToKind :: TypeArg -> Kind
 typeArgToKind (TypeArg _ k _ _) = k
 
@@ -161,10 +157,6 @@ anaTypeVarDecl :: TypeArg -> State Env ()
 anaTypeVarDecl(TypeArg t k _ _) = 
     do nk <- anaKind k
        addTypeKind TypeVarDefn t k
-
-anaTypeArgs :: TypeArgs -> State Env ()
-anaTypeArgs(TypeArgs l _) = mapM_ anaTypeVarDecl l
-
 
 kindArity :: ApplMode -> Kind -> Int
 kindArity m (KindAppl k1 k2 _) =
@@ -222,8 +214,8 @@ typePatternToTokens (BracketTypePattern pk ts ps) =
 			  else concat $ expand "(" ")" tts ps
 		Squares -> concat $ expand "[" "]" tts ps 
 		Braces ->  concat $ expand "{" "}" tts ps
-typePatternToTokens (TypePatternArgs as) =
-    map ( \ (TypeArg v _ _ _) -> Token "__" (posOfId v)) as
+typePatternToTokens (TypePatternArg (TypeArg v _ _ _) _) =
+    [Token "__" (posOfId v)]
 
 -- compound Ids not supported yet
 getToken :: GenParser Token st Token
@@ -246,13 +238,11 @@ hasPlaces, hasTypeArgs :: TypePattern -> Bool
 hasPlaces (TypePattern _ _ _) = False
 hasPlaces (TypePatternToken t) = isPlace t
 hasPlaces (MixfixTypePattern ts) = any hasPlaces ts
-hasPlaces (BracketTypePattern Parens _ _) = False
 hasPlaces (BracketTypePattern _ ts _) = any hasPlaces ts
-hasPlaces (TypePatternArgs _) = False
+hasPlaces (TypePatternArg _ _) = False
 
 hasTypeArgs (TypePattern _ _ _) = True
 hasTypeArgs (TypePatternToken _) = False
 hasTypeArgs (MixfixTypePattern ts) = any hasTypeArgs ts
-hasTypeArgs (BracketTypePattern Parens _ _) = True
 hasTypeArgs (BracketTypePattern _ ts _) = any hasTypeArgs ts
-hasTypeArgs (TypePatternArgs _) = True
+hasTypeArgs (TypePatternArg _ _) = True

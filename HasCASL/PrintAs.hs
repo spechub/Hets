@@ -35,7 +35,7 @@ instance PrettyPrint TypePattern where
     printText0 ga (TypePatternToken t) = printText0 ga t
     printText0 ga (MixfixTypePattern ts) = fsep (map (printText0 ga) ts)
     printText0 ga (BracketTypePattern k l _) = bracket k $ commas ga l
-    printText0 ga (TypePatternArgs l) = semis ga l
+    printText0 ga (TypePatternArg t _) = parens $ printText0 ga t
 
 bracket :: BracketKind -> Doc -> Doc
 bracket Parens t = parens t
@@ -83,11 +83,9 @@ instance PrettyPrint t => PrettyPrint (Qual t) where
 
 -- no curried notation for bound variables 
 instance PrettyPrint TypeScheme where
-    printText0 ga (TypeScheme vss t _) = hcat (map (\ (TypeArgs vs _) -> 
-						    text forallS
+    printText0 ga (TypeScheme vs t _) = noPrint (null vs) (text forallS
 						    <+> semis ga vs 
 						    <+> text dotS <+> space)
-					       vss) 
 					 <> printText0 ga t
 
 instance PrettyPrint Partiality where
@@ -243,12 +241,10 @@ instance PrettyPrint Class where
 			   else if null $ tail c then printText0 ga $ head c
 			   else parens $ commas ga c 
 
-instance PrettyPrint Types where
-    printText0 ga (Types l _) = brackets $ commas ga l
-
 instance PrettyPrint InstOpId where
-    printText0 ga (InstOpId n l) = printText0 ga n 
-				     <> fcat(map (printText0 ga) l)
+    printText0 ga (InstOpId n l _) = printText0 ga n 
+				     <> noPrint (null l) 
+					(brackets $ semis ga l)
 
 ------------------------------------------------------------------------
 -- item stuff
@@ -259,9 +255,6 @@ printPseudoType ga (TypeScheme l t _) = noPrint (null l) (text lamS
 				     printText0 ga $ head l
 				     else fcat(map (parens . printText0 ga) l))
 				<+> text dotS <+> space) <> printText0 ga t
-
-instance PrettyPrint TypeArgs where
-    printText0 ga (TypeArgs l _) = semis ga l
 
 instance PrettyPrint BasicSpec where 
     printText0 ga (BasicSpec l) = vcat (map (printText0 ga) l)
@@ -300,12 +293,15 @@ instance PrettyPrint ClassItem where
 				      else braces (semis ga l)
 
 instance PrettyPrint ClassDecl where 
-    printText0 ga (ClassDecl l _) = commas ga l
-    printText0 ga (SubclassDecl l s _) = commas ga l <> text lessS 
-					 <> printText0 ga s
-    printText0 ga (ClassDefn n c _) =  printText0 ga n 
-			       <> text equalS 
-			       <> printText0 ga c
+    printText0 ga (ClassDecl l k _) = commas ga l <> printKind ga k
+    printText0 ga (SubclassDecl l k s _) = commas ga l 
+			                   <> printKind ga k
+					   <+> text lessS 
+					   <+> printText0 ga s
+    printText0 ga (ClassDefn n k c _) =  printText0 ga n 
+                               <> printKind ga k
+			       <+> text equalS 
+			       <+> printText0 ga c
     printText0 ga (DownsetDefn c v t _) =
 	let pv = printText0 ga v in 
 			       printText0 ga c
@@ -393,7 +389,7 @@ instance PrettyPrint Components where
     printText0 ga (NestedComponents l _) = parens $ semis ga l
 
 instance PrettyPrint OpId where 
-    printText0 ga (OpId n ts) = printText0 ga n 
-				  <+> fcat(map (brackets . 
-						printText0 ga) ts)
+    printText0 ga (OpId n ts _) = printText0 ga n 
+				  <+> noPrint (null ts) 
+				      (brackets $ commas ga ts)
 

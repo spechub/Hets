@@ -28,7 +28,7 @@ missingAna t ps = appendDiags [Diag FatalError
 			      $ if null ps then nullPos else head ps]
 
 posOfOpId :: OpId -> Pos
-posOfOpId (OpId i _) = posOfId i
+posOfOpId (OpId i _ _) = posOfId i
 
 anaOpItem :: OpItem -> State Env ()
 anaOpItem (OpDecl is sc attr _) = 
@@ -37,7 +37,7 @@ anaOpItem (OpDecl is sc attr _) =
 anaOpItem (OpDefn i _ _ _ _ _) = missingAna i [posOfOpId i]
 
 anaOpId :: TypeScheme -> [OpAttr] -> OpId -> State Env ()
-anaOpId (TypeScheme tvs q ps) attrs (OpId i args) =
+anaOpId (TypeScheme tvs q ps) attrs (OpId i args _) =
     do let newArgs = args ++ tvs
            sc = TypeScheme newArgs q ps
        appendDiags $ checkDifferentTypeArgs newArgs
@@ -50,10 +50,9 @@ anaOpId (TypeScheme tvs q ps) attrs (OpId i args) =
 			      ("wrong kind '" ++ showPretty k
 			       "' of type for operation") i 
 
-checkDifferentTypeArgs :: [TypeArgs] -> [Diagnosis]
+checkDifferentTypeArgs :: [TypeArg] -> [Diagnosis]
 checkDifferentTypeArgs l = 
-    let v = concatMap (\ (TypeArgs tas _) 
-			       -> map (\ (TypeArg i _ _ _) -> i) tas) l
+    let v = map (\ (TypeArg i _ _ _) -> i) l
 	vd = filter ( not . null . tail) $ group $ sort v
     in map ( \ vs -> mkDiag Error ("duplicate ids at '" ++
 	                          showSepList (showString " ") shortPosShow

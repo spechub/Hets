@@ -283,27 +283,38 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` anComma
 -- type pattern
 -----------------------------------------------------------------------------
 
-typePatternToken, primTypePatternOrId, typePatternOrId 
+
+singleTypeArg :: AParser TypeArg
+singleTypeArg = do  as <- typeArgs 
+		    if length as == 1 
+		       then return $ head as 
+		       else unexpected "list of type arguments"
+
+typePatternToken, primTypePatternOrId, typePatternOrId, typePatternArg
     :: AParser TypePattern
+
+typePatternArg = 
+    do o <- oParenT
+       a <- singleTypeArg
+       p <- cParenT
+       return $ TypePatternArg a $ toPos o [] p
+
 typePatternToken = fmap TypePatternToken (pToken (scanWords <|> placeS <|> 
 				    reserved [lessS, equalS] scanSigns))
 
 primTypePatternOrId = fmap TypePatternToken idToken 
 	       <|> mkBraces typePatternOrId (BracketTypePattern Braces)
 	       <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
-	       <|> bracketParser typePatternArgs oParenT cParenT anSemi
-		       (BracketTypePattern Parens)
+	       <|> typePatternArg
 
 typePatternOrId = do ts <- many1 primTypePatternOrId
 		     return( if length ts == 1 then head ts
  			     else MixfixTypePattern ts)
 
-typePatternArgs, primTypePattern, typePattern :: AParser TypePattern
-typePatternArgs = fmap TypePatternArgs typeArgs
+primTypePattern, typePattern :: AParser TypePattern
 
 primTypePattern = typePatternToken 
-	   <|> bracketParser typePatternArgs oParenT cParenT anSemi 
-		   (BracketTypePattern Parens)
+	   <|> typePatternArg
 	   <|> mkBraces typePattern (BracketTypePattern Braces)
            <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
 
@@ -370,10 +381,11 @@ pattern = asPattern AnyToken
 
 instOpId :: AParser InstOpId
 instOpId = do i@(Id is cs ps) <- uninstOpId
-	      if isPlace (last is) then return (InstOpId i []) 
-		   else do l <- many (mkBrackets parseType Types)
+	      if isPlace (last is) then return (InstOpId i [] []) 
+		   else do (ts, qs) <- option ([], [])
+				       (mkBrackets parseType (,))
 			   u <- many placeT
-			   return (InstOpId (Id (is++u) cs ps) l)
+			   return (InstOpId (Id (is++u) cs ps) ts qs)
 
 -----------------------------------------------------------------------------
 -- typeScheme
@@ -386,9 +398,8 @@ typeScheme = do f <- forallT
 		t <- typeScheme
                 return $ case t of 
 			 TypeScheme ots q ps ->
-			     TypeScheme ((TypeArgs (concat ts) 
-					 $ map tokPos cs) : ots) q
-					(tokPos f:tokPos d:ps)
+			     TypeScheme (concat ts ++ ots) q 
+					(toPos f cs d ++ ps)
 	     <|> fmap simpleTypeScheme parseType
 
 -----------------------------------------------------------------------------

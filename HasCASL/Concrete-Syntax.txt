@@ -82,9 +82,7 @@ CLASS-DECL      ::= CLASS-NAME , ... , CLASS-NAME
 UNINST-OP-NAME  :: = ID
 
 OP-NAME        ::= UNINST-OP-NAME 
-                 | UNINST-OP-NAME TYPE-INST-LIST ... TYPE-INST-LIST
-
-TYPE-INST-LIST ::= [ TYPE-INST-DECL; ... ; TYPE-INST-DECL ]
+                 | UNINST-OP-NAME [ TYPE-INST-DECL; ... ; TYPE-INST-DECL ]
 
 TYPE-INST-DECL ::= TYPE-VAR , ... , TYPE-VAR   %% global type vars
                  | TYPE-VAR-DECL
@@ -258,7 +256,7 @@ SIMPLE-TERM     ::= "__"
 
 QUAL-VAR-NAME   ::= ( var VAR : TYPE )
 
-INST-OP-NAME    ::= ID [TYPE, ... , TYPE] ... [TYPE, ... , TYPE]
+INST-OP-NAME    ::= ID [TYPE, ... , TYPE]
 
 QUAL-PRED-NAME  ::= ( pred UNINST-OP-NAME : TYPE-SCHEME )
 		  | ( pred INST-OP-NAME : TYPE)

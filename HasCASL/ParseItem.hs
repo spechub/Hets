@@ -137,22 +137,17 @@ typeItems = do p <- pluralKeyword typeS
 -----------------------------------------------------------------------------
 -- pseudotype
 -----------------------------------------------------------------------------
-
-typeArgParen :: AParser TypeArgs
+typeArgParen :: AParser TypeArg
 typeArgParen = 
     do o <- oParenT
-       (ts, ps) <- typeArgs `separatedBy` anSemi       
-       c <- cParenT	   
-       return (TypeArgs (concat ts) (map tokPos (o:ps++[c])))
+       TypeArg i k s ps <- singleTypeArg
+       p <- cParenT
+       return $ TypeArg i k s (tokPos o: ps ++ [tokPos p])
 
-typeArgSeq :: AParser [TypeArgs]
-typeArgSeq =    
-    do (ts, ps) <- typeArgs `separatedBy` anSemi 
-       return [TypeArgs (concat ts) (map tokPos ps)]
 
 pseudoType :: AParser TypeScheme
 pseudoType = do l <- asKey lamS
-		ts <- many1 typeArgParen <|> typeArgSeq
+		ts <- many1 typeArgParen <|> single singleTypeArg
 		d <- dotT
 		t <- pseudoType
 		let qs = map tokPos [l,d]
@@ -259,41 +254,42 @@ dataItems = hasCaslItemList typeS dataItem FreeDatatype
 -- classItem
 -----------------------------------------------------------------------------
 
-subClassDecl :: ([ClassId], [Token]) -> AParser ClassDecl
-subClassDecl (l, p) = 
-    do { t <- lessT
-       ; s <- parseClass
-       ; return (SubclassDecl l s (map tokPos (p++[t])))
-       }
+subClassDecl :: [ClassId] -> Kind -> [Token] -> AParser ClassDecl
+subClassDecl l k p = 
+    do t <- lessT
+       s <- parseClass
+       return (SubclassDecl l k s (map tokPos (p++[t])))
 
-isoClassDecl :: ClassId -> AParser ClassDecl
-isoClassDecl s = 
-    do { e <- equalT
-       ;     do o <- oBraceT
-		i <- pToken scanWords
-		d <- dotT
-                j <- asKey (tokStr i)
-		l <- lessT
-                t <- parseType
-		p <- cBraceT
-		return (DownsetDefn s i t (map tokPos [e,o,d,j,l,p])) 
-	     <|> 
-	     do c <- parseClass
-	        return (ClassDefn s c [tokPos e])
-       }
+isoClassDecl :: ClassId -> Kind -> [Token] -> AParser ClassDecl
+isoClassDecl s k ps = 
+    do e <- equalT
+       do o <- oBraceT
+	  if null ps && (case k of ExtClass (Intersection [] _) InVar _ -> True
+			           _ -> False)
+	     then do i <- pToken scanWords
+		     d <- dotT
+		     j <- asKey (tokStr i)
+		     l <- lessT
+		     t <- parseType
+		     p <- cBraceT
+		     return (DownsetDefn s i t (map tokPos [e,o,d,j,l,p])) 
+	     else unexpected "kind annotation"
+	 <|> do c <- parseClass
+	        return (ClassDefn s k c $ map tokPos (ps ++[e]))
 
 classDecl :: AParser ClassDecl
 classDecl = do   (is, cs) <- classId `separatedBy` anComma
+		 (ps, k) <- option ([], star) $ bind  (,) (single colT) kind 
 		 if length is == 1 then 
-		    subClassDecl (is, cs)
+		    subClassDecl is k (cs++ps)
 		    <|>
-                    isoClassDecl (head is)
+                    isoClassDecl (head is) k ps
 		    <|>
-		    return (ClassDecl is (map tokPos cs))
+		    return (ClassDecl is k $ map tokPos (cs++ps))
 		   else 
-		    subClassDecl (is, cs)
+		    subClassDecl is k (cs++ps)
 		    <|>
-		    return (ClassDecl is (map tokPos cs))
+		    return (ClassDecl is k $ map tokPos (cs++ps))
 
 classItem :: AParser ClassItem
 classItem = do c <- classDecl
@@ -323,20 +319,21 @@ classItems = do p <- pluralKeyword classS
 -- opItem
 -----------------------------------------------------------------------------
 
-typeVarDeclSeq :: AParser TypeArgs
+typeVarDeclSeq :: AParser ([TypeArg], [Pos])
 typeVarDeclSeq = 
     do o <- oBracketT
        (ts, cs) <- typeVarDecls `separatedBy` anSemi
        c <- cBracketT
-       return (TypeArgs (concat ts) (toPos o cs c))
+       return (concat ts, toPos o cs c)
 
 opId :: AParser OpId
 opId = do i@(Id is cs ps) <- uninstOpId
-	  if isPlace $ last is then return (OpId i [])
+	  if isPlace $ last is then return (OpId i [] [])
 	      else 
-	        do ts <- many typeVarDeclSeq
+	        do (ts, qs) <- option ([], [])
+			       typeVarDeclSeq
 		   u <- many placeT
-		   return (OpId (Id (is++u) cs ps) ts)
+		   return (OpId (Id (is++u) cs ps) ts qs)
 
 opAttr :: AParser OpAttr
 opAttr = do a <- asKey assocS

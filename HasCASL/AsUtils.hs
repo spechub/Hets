@@ -55,11 +55,8 @@ posOfTypePattern pat =
     TypePatternToken t -> tokPos t
     MixfixTypePattern ts -> posOf ts
     BracketTypePattern _ ts ps -> firstPos ts ps
-    TypePatternArgs as -> posOf as
+    TypePatternArg (TypeArg t _ _ _) _ -> posOfId t
 -- ---------------------------------------------------------------------
-
-instance PosItem TypeArgs where
-    get_pos (TypeArgs tArgs ps) = Just $ firstPos tArgs ps
 
 instance PosItem TypeScheme where
     get_pos (TypeScheme tArgs _ ps) = Just $ firstPos tArgs ps

@@ -20,11 +20,11 @@ import Common.Result
 import HasCASL.ClassAna
 
 anaClassDecls :: ClassDecl -> State Env ()
-anaClassDecls (ClassDecl cls _) = 
+anaClassDecls (ClassDecl cls k _) = 
     mapM_ (anaClassDecl [] Nothing) cls
 
-anaClassDecls (SubclassDecl _ (Downset _) _) = error "anaClassDecl"
-anaClassDecls (SubclassDecl cls sc@(Intersection supcls ps) qs) =
+anaClassDecls (SubclassDecl _ _ (Downset _) _) = error "anaClassDecl"
+anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
        if null supcls then 
 	  do addDiag $ Diag Warning
 			  "redundant universe class" 
@@ -42,7 +42,7 @@ anaClassDecls (SubclassDecl cls sc@(Intersection supcls ps) qs) =
 		  else do Intersection newSups _ <- anaClass sc
 			  mapM_ (anaClassDecl newSups Nothing) cls
 
-anaClassDecls (ClassDefn ci ic _) =
+anaClassDecls (ClassDefn ci k ic _) =
     do newIc <- anaClass ic
        anaClassDecl [] (Just newIc) ci 
 

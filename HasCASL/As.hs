@@ -48,11 +48,11 @@ data ClassItem = ClassItem ClassDecl [Annoted BasicItem] [Pos]
                  -- pos "{", ";"s "}"
                  deriving (Show, Eq)
 
-data ClassDecl = ClassDecl [ClassId] [Pos]
+data ClassDecl = ClassDecl [ClassId] Kind [Pos]
                -- pos ","s
-               | SubclassDecl [ClassId] Class [Pos]
+               | SubclassDecl [ClassId] Kind Class [Pos]
                -- pos ","s, "<"
-               | ClassDefn ClassId Class [Pos]
+               | ClassDefn ClassId Kind Class [Pos]
                -- pos "="
                | DownsetDefn ClassId Token Type [Pos] 
 	       -- pos " =" "{", dot, "<", typeVar,  "}"
@@ -76,8 +76,9 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  | TypePatternToken Token
                  | MixfixTypePattern [TypePattern]
                  | BracketTypePattern BracketKind [TypePattern] [Pos]
-                 -- pos brackets 
-                 | TypePatternArgs [TypeArg]
+                 -- pos brackets (no parenthesis)
+                 | TypePatternArg TypeArg [Pos]
+		 -- pos "(", ")"
                    deriving (Show, Eq)
 
 data Type = TypeName TypeId Int  -- analysed
@@ -107,7 +108,7 @@ data Qual t = [Pred] :=> t
               deriving (Show, Eq)
 
 -- no curried notation for bound variables 
-data TypeScheme = TypeScheme [TypeArgs] (Qual Type) [Pos]
+data TypeScheme = TypeScheme [TypeArg] (Qual Type) [Pos]
                 -- pos "forall", ";"s,  dot (singleton list)
                 -- pos "\" "("s, ")"s, dot for type aliases
                   deriving (Show, Eq)
@@ -241,9 +242,6 @@ data TypeArg = TypeArg TypeId Kind SeparatorKind [Pos]
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
 	       deriving (Show, Eq)
 
-data TypeArgs = TypeArgs [TypeArg] [Pos] deriving (Show, Eq)
-	        -- pos ";"s
-
 data GenVarDecl = GenVarDecl VarDecl
 		| GenTypeVarDecl TypeArg
 		  deriving (Show, Eq)
@@ -275,10 +273,9 @@ star = ExtClass universe InVar []
 -- op names
 -- ----------------------------------------------------------------------------
 
-data OpId = OpId UninstOpId [TypeArgs] deriving (Show, Eq)
-
-data Types = Types [Type] [Pos] deriving (Show, Eq) -- [TYPE, ..., TYPE]
-data InstOpId = InstOpId UninstOpId [Types] deriving (Show, Eq)
+data OpId = OpId UninstOpId [TypeArg] [Pos] deriving (Show, Eq)
+     -- pos "[", ";"s, "]" 
+data InstOpId = InstOpId UninstOpId [Type] [Pos] deriving (Show, Eq)
 
 -- ----------------------------------------------------------------------------
 -- ids
