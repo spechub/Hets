@@ -44,6 +44,10 @@ instance Eq Token where
 instance Ord Token where
    Token s1 _  <= Token s2 _ = s1 <= s2
 
+-- shortcut to get [Pos]
+toPos :: Token -> [Token] -> Token -> [Pos]
+toPos o l c = map tokPos (o:l++[c])
+
 showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
 showSepList _ _ [] = showString ""
 showSepList _ f [x] = f x

@@ -41,8 +41,6 @@ data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
               -- pos "op", ";"s
               | PredItems [Annoted PredItem] [Pos]
               -- pos "pred", ";"s
-              | Datatype [Annoted DatatypeDecl] [Pos]
-              -- pos "type", ";"s
                  deriving (Show,Eq)
 
 -- "instance" indicator
@@ -70,8 +68,9 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos "="s
                | SubtypeDefn TypePattern Var Type (Annoted Formula) [Pos]
                -- pos "=", "{", ":", dot, "}"
-               | AliasType TypePattern PseudoType [Pos]
+               | AliasType TypePattern Kind PseudoType [Pos]
                -- pos ":="
+	       | Datatype DatatypeDecl
                  deriving (Show,Eq)
 
 data TypePattern = TypePattern TypeName [TypeArg] [Pos]
@@ -113,7 +112,7 @@ data TypeScheme = SimpleTypeScheme Type
                 -- pos "forall", ";"s,  dot 
                   deriving (Show,Eq)
 
-data PartialKind = Partial | Total deriving (Show,Eq)
+data Partiality = Partial | Total deriving (Show,Eq)
 
 data OpItem = OpDecl [OpName] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
@@ -133,21 +132,22 @@ data OpAttr = BinOpAttr BinOpAttr | UnitOpAttr Term deriving (Show,Eq)
 
 data DatatypeDecl = DatatypeDecl 
                     TypePattern 
+		    Kind
                     [Annoted Alternative] 
                     (Maybe Class) 
                     [Pos] 
 		     -- pos "::=", "|"s, "deriving"
 		     deriving (Show,Eq)
 
-data Alternative = Constructor UninstOpName [Components] PartialKind [Pos]
+data Alternative = Constructor UninstOpName [Components] Partiality [Pos]
 		   -- pos: "?"
-		 | Subtype Type SeparatorKind [Pos]
-		   -- pos: "type", "," or "|"
+		 | Subtype [Type] [Pos]
+		   -- pos: "type", ","s
 		   deriving (Show,Eq)
 
-data Components = Selector UninstOpName PartialKind Type SeparatorKind [Pos] 
+data Components = Selector UninstOpName Partiality Type SeparatorKind Pos 
 		-- pos ",", ":" or ":?"
-		| NoSelector Type 
+		| NoSelector Type
 		| NestedComponents [Components]  [Pos]
 		  -- pos : "(", ";"s, ")"
 		  deriving (Show,Eq)
@@ -195,7 +195,7 @@ data Term = CondTerm Term Formula Term [Pos]
 	  | QuantifiedTerm Quantifier [GenVarDecl] Term [Pos]
           -- pos quantifier, ";"s, dot
 	  -- only "forall" may have a TypeVarDecl
-	  | LambdaTerm [Pattern] PartialKind Term [Pos]
+	  | LambdaTerm [Pattern] Partiality Term [Pos]
           -- pos "\", dot (plus "!") 
 	  | CaseTerm Term [ProgEq] [Pos]
 	  -- pos "case", "of", "|"s 
@@ -246,7 +246,8 @@ data TypeArg = TypeArg TypeVar ExtClass SeparatorKind Pos
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
 	       deriving (Show,Eq)
 
-data TypeArgs = TypeArgs [TypeArg] deriving (Show,Eq)
+data TypeArgs = TypeArgs [TypeArg] [Pos] deriving (Show,Eq)
+	        -- pos ";"s
 
 data GenVarDecl = GenVarDecl VarDecl
 		| GenTypeVarDecl TypeVarDecl

@@ -57,7 +57,7 @@ instance PrettyPrint TypeScheme where
 				   <+> text dotS
 				   <+> printText0 t
 
-instance PrettyPrint PartialKind where
+instance PrettyPrint Partiality where
     printText0 Partial = text quMark
     printText0 Total = text exMark
 

@@ -45,7 +45,7 @@ parseClass = do t <- asKey typeS
 	     do o <- oParenT
 		(cs, ps) <- parseClass `separatedBy` commaT
 		c <- cParenT
-		return (Intersection cs (map tokPos (o:ps++[c])))
+		return (Intersection cs (toPos o ps c))
 
 extClass = do c <- parseClass
 	      do s <- plusT
@@ -135,18 +135,19 @@ funType = do (ts, as) <- prodType `separatedBy` arrowT
 	     return (makeFun ts as)
 	       where makeFun [t] [] = t
 	             makeFun [t,r] [a] = FunType t (fst a) r (snd a)
-		     makeFun (t:r) (a:b) = makeFun [t, makeFun r b] [a] 
+		     makeFun (t:r) (a:b) = makeFun [t, makeFun r b] [a]
+		     makeFun _ _ = error "makeFun got illegal argument"
 
-arrowT = do a <- try(asKey funS) 
+arrowT = do a <- asKey funS
 	    return (FunArr, tokPos a)
 	 <|>
-	 do a <- try(asKey pFun) 
+	 do a <- asKey pFun
 	    return (PFunArr, tokPos a)
 	 <|>
-	 do a <- try(asKey contFun) 
+	 do a <- asKey contFun
 	    return (ContFunArr, tokPos a)
          <|>
-	 do a <- try(asKey pContFun) 
+	 do a <- asKey pContFun 
 	    return (PContFunArr, tokPos a)
 
 parseType :: GenParser Char st Type
@@ -345,7 +346,7 @@ typeScheme = do f <- forallT
 		(ts, cs) <- typeVarDecls `separatedBy` semiT
 		d <- dotT
 		t <- typeScheme
-		return (TypeScheme (concat ts) t (map tokPos (f:cs++[d])))
+		return (TypeScheme (concat ts) t (toPos f cs d))
 	     <|> fmap SimpleTypeScheme parseType
 
 -----------------------------------------------------------------------------
@@ -357,7 +358,7 @@ tToken = pToken(scanFloat <|> scanString
 		       <|> reserved hascasl_reserved_ops scanAnySigns 
 		       <|> placeS <?> "id/literal" )
 
-termToken = fmap TermToken (try (asKey exEqual) <|> tToken)
+termToken = fmap TermToken (asKey exEqual <|> tToken)
 
 -- flag if within brackets: True allows "in"-Terms
 primTerm b = termToken
@@ -380,10 +381,10 @@ parenTerm = do o <- oParenT
 		 <|>
 		 do (ts, ps) <- option ([],[]) (term `separatedBy` commaT)
 		    p <- cParenT
-		    return (BracketTerm Parens ts (map tokPos (o:ps++[p])))
+		    return (BracketTerm Parens ts (toPos o ps p))
 		     		
 partialTypeScheme :: GenParser Char st (Token, TypeScheme)
-partialTypeScheme = do q <- try (qColonT)
+partialTypeScheme = do q <- qColonT
 		       t <- parseType 
 		       return (q, SimpleTypeScheme (LazyType t (tokPos q)))
 		    <|> bind (,) colonT typeScheme
@@ -393,13 +394,13 @@ varTerm o = do v <- asKey varS
 	       c <- colonT
 	       t <- parseType
 	       p <- cParenT
-	       return (QualVar i t (map tokPos [o,v,c,p]))
+	       return (QualVar i t (toPos o [v, c] p))
 
 qualOpName o = do { v <- asKey opS
 		  ; i <- instOpName
  	          ; (c, t) <- partialTypeScheme
 		  ; p <- cParenT
-		  ; return (QualOp i t (map tokPos [o,v,c,p]))
+		  ; return (QualOp i t (toPos o [v, c] p))
 		  }
 
 predType t = FunType t PFunArr (ProductType [] []) nullPos
@@ -412,7 +413,7 @@ qualPredName o = do { v <- asKey predS
 		    ; t <- typeScheme
 		    ; p <- cParenT
 		    ; return (QualOp i (predTypeScheme t) 
-			      (map tokPos [o,v,c,p]))
+			      (toPos o [v, c] p))
 		  }
 
 typeQual b = try $ 
@@ -420,13 +421,13 @@ typeQual b = try $
 	         return (OfType, q)
 	      <|> 
 	   if b then 
-	      do q <- asKey (asS)
+	      do q <- asKey asS
 	         return (AsType, q)
 	      <|> 
-	      do q <- asKey (inS)
+	      do q <- asKey inS
 		 return (InType, q)
 	   else
-	      do q <- asKey (asS)
+	      do q <- asKey asS
 	         return (AsType, q)
 
 typedTerm f b = 
@@ -454,7 +455,7 @@ forallTerm b =
 		d <- dotT
 		t <- wTerm b
 		return (QuantifiedTerm Universal (concat vs) t 
-			(map tokPos (f:ps++[d])))
+			(toPos f ps d))
 
 exQuant = try(
         do { q <- asKey (existsS++exMark)
@@ -471,7 +472,7 @@ exTerm b =
 	    ; d <- dotT
 	    ; f <- wTerm b
 	    ; return (QuantifiedTerm q (map GenVarDecl (concat vs)) f
-		      (map tokPos (p:ps++[d])))
+		      (toPos p ps d))
 	    }
 
 lamDot = do d <- asKey (dotS++exMark) <|> asKey (cDot++exMark)
@@ -481,11 +482,11 @@ lamDot = do d <- asKey (dotS++exMark) <|> asKey (cDot++exMark)
 	    return (Partial,d)
 
 lambdaTerm b = 
-             do l <- try (asKey lamS)
+             do l <- asKey lamS
 		pl <- lamPattern
 		(k, d) <- lamDot      
 		t <- wTerm b
-		return (LambdaTerm pl k t (map tokPos [l,d]))
+		return (LambdaTerm pl k t (toPos l [] d))
 
 lamPattern = do (vs, ps) <- varDecls `separatedBy` semiT
 		return [PatternVars (concat vs) (map tokPos ps)]
@@ -504,7 +505,7 @@ patternTermPair b sep = do p <- pattern
 			   return (ProgEq p t (tokPos s))
 
 caseTerm b = 
-           do c <- try(asKey caseS)
+           do c <- asKey caseS
 	      t <- term
 	      o <- asKey ofS
 	      (ts, ps) <- patternTermPair b funS `separatedBy` barT
@@ -551,13 +552,13 @@ whereEquations b =
 		}
 
 whereTerm b t = 
-              do w <- try $ asKey whereS
+              do w <- asKey whereS
 		 (ts, ps) <- whereEquations b
 		 return (LetTerm ts t (map tokPos (w:ps)))
 
 letTerm b = 
-          do l <- try $ asKey letS
+          do l <- asKey letS
 	     (es, ps) <- patternTermPair False equalS `separatedBy` semiT 
 	     i <- asKey inS
 	     t <- wTerm b
-	     return (LetTerm es t (map tokPos (l:ps ++ [i])))
+	     return (LetTerm es t (toPos l ps i))
