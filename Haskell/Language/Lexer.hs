@@ -23,6 +23,7 @@ import Haskell.Language.ParseMonad
 
 import Data.Char
 import Data.Ratio
+import Debug.Trace
 
 data Token
         = VarId String
@@ -67,7 +68,14 @@ data Token
 	| DoubleArrow
 	| Minus
 	| Exclamation
+	| Dot
 
+-- Reserved operators Extended Haskell
+ 
+        | And
+        | Or
+        | Equiv
+        | Impl
 -- Reserved Ids
 
 	| KW_As
@@ -95,24 +103,45 @@ data Token
 	| KW_Where
 	| KW_Qualified
 
+-- Reserved Ids Extended Haskell
+
+        | KW_Forall
+        | KW_Exists
+        | KW_Existsone
+        | KW_Not
+
+-- Extended Haskell Pragma
+
+        | KW_OpenPrag
+        | KW_AxiomsPrag
+        | KW_ClosePrag
+
         | EOF
         deriving (Eq,Show)
 
 reserved_ops :: [(String,Token)]
 reserved_ops = [
- ( "..", DotDot ),
- ( ":",  Colon ),
- ( "::", DoubleColon ),
- ( "=",  Equals ),
- ( "\\", Backslash ),
- ( "|",  Bar ),
- ( "<-", LeftArrow ),
- ( "->", RightArrow ),
- ( "@",  At ),
- ( "~",  Tilde ),
- ( "=>", DoubleArrow ),
- ( "-",  Minus ),			--ToDo: shouldn't be here
- ( "!",  Exclamation )		--ditto
+ ( "..",  DotDot ),
+ ( ":",   Colon ),
+ ( "::",  DoubleColon ),
+ ( "=",   Equals ),
+ ( "\\",  Backslash ),
+ ( "|",   Bar ),
+ ( "<-",  LeftArrow ),
+ ( "->",  RightArrow ),
+ ( "@",   At ),
+ ( "~",   Tilde ),
+ ( "=>",  DoubleArrow ),
+ ( "-",   Minus ),			--ToDo: shouldn't be here
+ ( "!",   Exclamation ),		--ditto
+ ( "/\\", And ),                        --ExtHas
+ ( "\\/", Or ),
+ ( "<=>", Equiv ),
+ ( "==>", Impl ),
+ ( "{-#", KW_OpenPrag ),
+ ( "#-}", KW_ClosePrag ),
+ ( ".",   Dot),
+ ( "AXIOMS",    KW_AxiomsPrag)
  ]
 
 reserved_ids :: [(String,Token)]
@@ -141,7 +170,11 @@ reserved_ids = [
  ( "where", 	KW_Where ),
  ( "as", 	KW_As ),
  ( "qualified", KW_Qualified ),
- ( "hiding", 	KW_Hiding )
+ ( "hiding", 	KW_Hiding ),
+ ( "forall",    KW_Forall ),                --ExtHas
+ ( "exists",    KW_Exists ),
+ ( "existsone", KW_Existsone),
+ ( "not",       KW_Not)
  ]
 
 isIdent, isSymbol :: Char -> Bool
@@ -168,10 +201,11 @@ lexWhiteSpace :: Bool -> Lex a Bool
 lexWhiteSpace bol = do
 	s <- getInput
 	case s of
-	    '{':'-':_ -> do
-		discard 2
-		bol <- lexNestedComment bol
-		lexWhiteSpace bol
+	    '{':'-':a:_ | a == '#' -> return bol
+                | otherwise -> do
+		  discard 2 
+		  bol <- lexNestedComment bol
+		  lexWhiteSpace bol
 	    '-':'-':rest | all (== '-') (takeWhile isSymbol rest) -> do
 		lexWhile (== '-')
 		lexWhile (/= '\n')
@@ -229,7 +263,14 @@ lexToken = do
     s <- getInput
     case s of
         [] -> return EOF
-
+-- ExtHas
+        '{':c:d:_ | c == '-' && d == '#'-> do
+                        discard 3
+                        return KW_OpenPrag
+        '#':c:d:_ | c == '-' && d == '}' -> do
+                        discard 3
+                        return KW_ClosePrag
+-- ExtHas
 	'0':c:d:_ | toLower c == 'o' && isOctDigit d -> do
 			discard 2
 			n <- lexOctal
@@ -239,7 +280,9 @@ lexToken = do
 			n <- lexHexadecimal
 			return (IntTok n)
 
-	c:_ | isDigit c -> lexDecimalOrFloat
+	c:_ -- | c == 'A'
+
+            | isDigit c -> lexDecimalOrFloat
 
 	    | isUpper c -> lexConIdOrQual ""
 
@@ -326,7 +369,8 @@ lexDecimalOrFloat = do
 lexConIdOrQual :: String -> Lex a Token
 lexConIdOrQual qual = do
 	con <- lexWhile isIdent
-	let conid | null qual = ConId con
+	let conid | (con == "AXIOMS" ) = KW_AxiomsPrag
+                  | null qual = ConId con
 		  | otherwise = QConId (qual,con)
 	    qual' | null qual = con
 		  | otherwise = qual ++ '.':con
