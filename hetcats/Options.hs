@@ -62,14 +62,14 @@ import System.Console.GetOpt
 {- | 'HetcatsOpts' describes the interpreted options -}
 -- TODO: pretty-printer Options
 data HetcatsOpts = 
-    HcOpt { verbose  :: Int       -- greater than null to turn verbosity on
-	  , intype   :: InType    -- type of the file to be read
-	  , infiles  :: [FilePath]  -- files to be read
-	  , outtypes :: [OutType] -- list of output types to be generated
-	  , outdir   :: FilePath  -- output directory
-	  , analysis :: Bool      -- False if analysis should be skipped
-	  , libdir   :: FilePath  -- CASL library directory
-	  , rawopts  :: [RawOpt] -- raw options for the pretty printer
+    HcOpt { verbose  :: Int        -- greater than null to turn verbosity on
+	  , intype   :: InType     -- type of the file to be read
+	  , infiles  :: [FilePath] -- files to be read
+	  , outtypes :: [OutType]  -- list of output types to be generated
+	  , outdir   :: FilePath   -- output directory
+	  , analysis :: Bool       -- False if analysis should be skipped
+	  , libdir   :: FilePath   -- CASL library directory
+	  , rawopts  :: [RawOpt]   -- raw options for the pretty printer
 	  }
     deriving (Eq)
 
@@ -85,9 +85,7 @@ instance Show HetcatsOpts where
 	where
 	showOutTypes = joinWith ',' $ map show (outtypes opts)
 	showInFiles  = joinWith ' ' (infiles opts)
-	showAnalysis
-	    | analysis opts = ""
-	    | otherwise     = " --just-parse"
+	showAnalysis = if (analysis opts) then " --just-parse" else ""
 	showRaw = joinWith ' ' . (map showRaw')
 	showRaw' (RawAscii s) = " --raw=ascii=" ++ s
 	showRaw' (RawLatex s) = " --raw=latex=" ++ s
@@ -170,42 +168,32 @@ options =
 data ErrorSource = User | Intern
 		   deriving (Show, Eq)
 
--- valid types of input
 data InType = ATerm ATType | ASTree ATType | CASLIn | HetCASLIn | Guess
 	      deriving (Show, Eq)
--- ATerm was: SML_Gen_ATerm
 
--- valid types of ATerms: baf or non-baf ATerms
 data ATType = BAF | NonBAF
 	      deriving (Show, Eq)
 
--- valid types of output: pretty, hetcasl or graph
-data OutType = PrettyPrint PrettyType 
+data OutType = PrettyOut PrettyType 
 	     | HetCASLOut HetOutType HetOutFormat
-	     | Graph GraphType
+	     | GraphOut GraphType
 	       deriving (Show, Eq)
 
--- valid types of pretty-print
 data PrettyType = PrettyAscii | PrettyLatex | PrettyHtml
 		  deriving (Show, Eq)
 
--- valid types of hetcasl output
 data HetOutType = OutASTree | OutDGraph Flattening Bool
 		  deriving (Show, Eq)
 
--- valid types of DGraph types: flat, hiding or full
 data Flattening = Flattened | HidingOutside | Full
 		  deriving (Show, Eq)
 
--- valid formats of hetcasl output: ascii, term, taf, html or xml
 data HetOutFormat = Ascii | Term | Taf | Html | Xml
 		    deriving (Show, Eq)
 
--- valid types of graphs
 data GraphType = Dot | PostScript | Davinci
 		 deriving (Show, Eq)
 
--- valid types of Raw Options
 data RawOpt = RawAscii String | RawLatex String
 	      deriving (Show, Eq)
 
@@ -245,17 +233,17 @@ parseOutputTypes str
 					  (Just ts) -> OutTypes [ts]
 					  Nothing   -> error' str
     where
-    maybeOType (Just t) = t
-    maybeOType Nothing  = error' str
+    maybeOType = maybe (error' str) id
     error' s = hetsError User (s ++ " is not a valid OTYPE")
 
+-- TODO: there's got to be a better way ...
 -- parse a single output type from a string
 parseOutType :: String -> Maybe OutType
 parseOutType s
     | "pp."    `isPrefixOf` s =
-	parseOutType' (getPrettyType $ drop 3 s) PrettyPrint
+	parseOutType' (getPrettyType $ drop 3 s) PrettyOut
     | "graph." `isPrefixOf` s =
-	parseOutType' (getGraphType $ drop 6 s) Graph
+	parseOutType' (getGraphType $ drop 6 s) GraphOut
     | "ast."   `isPrefixOf` s =
 	parseOutType' (getOutFormat $ drop 4 s) (HetCASLOut OutASTree)
     | "fdg.nax."   `isPrefixOf` s =
@@ -306,7 +294,7 @@ parseRawOpts s
     | "tex="   `isPrefixOf` s = Raw $ [RawLatex (drop 4 s)]
     | otherwise = error'
     where
-    error' = hetsError User "RAW is (ascii|text|(la)?tex)=STRING"
+    error' = hetsError User (s ++ " ia not a valid RAW String")
 
 -- parse the output directory 
 parseOutputDir :: String -> Flag
@@ -326,70 +314,68 @@ hetcatsOpts argv =
         (opts,non_opts,[]) ->
 	    do flags <- checkFlags opts
 	       infs  <- checkInFiles non_opts
-	       hcOpts <- return $ foldr (flip makeOpts) defaultHetcatsOpts flags
+	       hcOpts <- return $ 
+			 foldr (flip makeOpts) defaultHetcatsOpts flags
 	       return $ hcOpts { infiles = infs }
         (_,_,errs) -> fail (concat errs ++ hetsUsage)
 
 checkFlags :: [Flag] -> IO [Flag]
-checkFlags fs = do if (hasHelp fs)
-		      then do putStrLn hetsUsage
-			      exitWith ExitSuccess
-		      else return [] -- fall through
-		   if (hasVersion fs)
-		      then do putStrLn ("version of hets: "
-					++ hetcats_version)
-			      exitWith ExitSuccess
-		      else return [] -- fall through
-		   fs' <- (collectOutDirs
-			   . collectOutTypes
-			   . collectVerbosity
-			   . collectRawOpts
-			   -- collect some more here?
-			  ) fs
-		   return fs'
+checkFlags fs =
+    do if (hasHelp fs)
+	  then do putStrLn hetsUsage
+		  exitWith ExitSuccess
+	  else return [] -- fall through
+       if (hasVersion fs)
+	  then do putStrLn ("version of hets: " ++ hetcats_version)
+		  exitWith ExitSuccess
+	  else return [] -- fall through
+       fs' <- (collectOutDirs
+	       . collectOutTypes
+	       . collectVerbosity
+	       . collectRawOpts
+	       -- collect some more here?
+	      ) fs
+       return fs'
     where
     hasVersion xs = Version `elem` xs
     hasHelp xs = Help `elem` xs
 
 checkInFiles :: [String] -> IO [FilePath]
-checkInFiles fs = do ifs <- filterM checkInFile fs
-		     case ifs of
-			      []  -> return (hetsError User 
-					     "No valid input file specified")
-			      xs  -> return xs
+checkInFiles fs = 
+    do ifs <- filterM checkInFile fs
+       case ifs of
+		[]  -> return (hetsError User "No valid input file specified")
+		xs  -> return xs
 
 
 -- auxiliary functions: FileSystem interaction --
 
 -- sanity check for a single input file
 checkInFile :: FilePath -> IO Bool
-checkInFile file = do exists <- doesFileExist file
-		      perms  <- catch (getPermissions file)
-				(\_ -> return noPerms)
-		      if (exists && (readable perms))
-			 then return True
-			 else return False
+checkInFile file =
+    do exists <- doesFileExist file
+       perms  <- catch (getPermissions file) (\_ -> return noPerms)
+       return (exists && (readable perms))
 
 -- sanity check for all output directories
 checkOutDirs :: [Flag] -> IO [Flag]
 checkOutDirs fs = 
-    do ods <- ((filterM checkOutDir) . (map unOutDir)) fs
+    do ods <- ((filterM checkOutDir) 
+	       . (map (\(OutDir x) -> x))) fs
        if null ods
 	  then return []
 	  else return $ [OutDir $ head ods]
-    where
-    unOutDir (OutDir x) = x
-    unOutDir _          = hetsError Intern "Unknown error in checkOutDirs"
+-- TODO: Only one OutDir may be specified. If there are more that that,
+--       an Error should be raised
 
 -- sanity check for a single output directory
 checkOutDir :: String -> IO Bool
-checkOutDir file = do exists <- doesDirectoryExist file
-		      perms  <- catch (getPermissions file)
-				(\_ -> return noPerms)
-		      if (exists && (writable perms))
-			 then return True
-			 else return False
+checkOutDir file = 
+    do exists <- doesDirectoryExist file
+       perms  <- catch (getPermissions file) (\_ -> return noPerms)
+       return (exists && (writable perms))
 
+-- Nil Permissions. Returned, if an Error occurred in FS-Interaction
 noPerms :: Permissions
 noPerms = Permissions { readable = False
 		      , writable = False
@@ -400,14 +386,22 @@ noPerms = Permissions { readable = False
 
 -- auxiliary functions: collect flags -- 
 
+-- TODO: if there were OutDirs specified, and none of them are sane,
+-- we should warn the user instead of sticking to our defaults!
+collectOutDirs :: [Flag] -> IO [Flag]
+collectOutDirs fs =
+    let (ods,fs') = partition isOutDir fs
+	isOutDir (OutDir _) = True
+	isOutDir _          = False
+    in do ods' <- checkOutDirs ods
+	  return $ ods' ++ fs'
+
 collectVerbosity :: [Flag] -> [Flag]
 collectVerbosity fs =
     let (vs,fs') = partition isVerb fs
-	verbosity = (sum . map extractVerbosity) vs
+	verbosity = (sum . map (\(Verbose x) -> x)) vs
 	isVerb (Verbose _) = True
 	isVerb _           = False
-	extractVerbosity (Verbose x) = x
-	extractVerbosity _ = hetsError Intern "Unknown Error in collectVerbosity"
     in (Verbose verbosity):fs'
 
 collectOutTypes :: [Flag] -> [Flag]
@@ -420,17 +414,6 @@ collectOutTypes fs =
 	concatOTypes _ _ = hetsError Intern "Unknown Error in collectOutTypes"
 	otypes' = if (null otypes) then [] else [(OutTypes otypes)]
     in otypes' ++ fs'
-
--- TODO: if there were OutDirs specified, and none of them are sane,
--- we should warn the user instead of sticking to our defaults!
-collectOutDirs :: [Flag] -> IO [Flag]
-collectOutDirs fs =
-    do let (ods,fs') = partition isOutDir fs
-       ods' <- checkOutDirs ods
-       return $ ods' ++ fs'
-    where
-    isOutDir (OutDir _) = True
-    isOutDir _          = False
 
 collectRawOpts :: [Flag] -> [Flag]
 collectRawOpts fs =
