@@ -1,16 +1,9 @@
-{- Spickzettel für's Parsen 
-
--- Definition aus Logic.hs
-type ParseFun a = FilePath -> Int -> Int -> String -> (a,String,Int,Int)
-                  -- args: filename, line, column, input text
-                  -- result: value, remaining text, line, column 
-
--- ParsecInterface.hs
-toParseFun :: GenParser Char st a -> st -> ParseFun a           
-
--- Klassenfunktion, die meine Instanz implementiert
-parse_basic_spec :: id -> Maybe(ParseFun basic_spec)
---                                       ^ Rückgabetyp
+{- HetCATS/CASL/Parse_AS_Basic.hs
+   $Id$
+   Authors: Wiebke Herding
+   Year:    2003
+   
+   parse Modal Logic Items
 -}
 
 module Modal.Parse_AS where
@@ -21,12 +14,7 @@ import Common.Keywords
 import Common.Lexer
 import Modal.AS_Modal
 import Common.AS_Annotation
--- import Data.Maybe
 import Common.Lib.Parsec
---import Modal.Formula
---import CASL.SortItem
---import CASL.OpItem
---import CASL.TypeItem
 import CASL.ItemList
 
 -- aus CASL, kann bleiben

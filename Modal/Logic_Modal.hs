@@ -1,4 +1,3 @@
-{-# OPTIONS -fno-warn-missing-methods #-}
 {- HetCATS/Modal/Logic_Modal.hs
    $Id$
    Authors: Wiebke Herding
@@ -10,8 +9,13 @@ import Logic.Logic
 import Common.Id
 import Common.Lib.Map as Map
 import Common.Lib.Set as Set
+import Logic.ParsecInterface
+import Common.AnnoState(emptyAnnos)
+-- import Common.AS_Annotation
 import Data.Maybe
 import Modal.AS_Modal
+import Modal.Parse_AS
+import Modal.Print_AS
 
 data Modal = Modal deriving (Show)
 
@@ -43,11 +47,20 @@ instance Category Modal Sign Morphism
 
 -- abstract syntax, parsing (and printing)
 
--- instance Syntax Modal BASIC_SPEC 
--- 		SYMB_ITEMS SYMB_MAP_ITEMS
---       where 
+instance Syntax Modal BASIC_SPEC 
+ 		SYMB_ITEMS SYMB_MAP_ITEMS
+       where 
 --         parse_basic_spec :: id -> Maybe(ParseFun basic_spec)
 --         parse_symb_items :: id -> Maybe(ParseFun symb_items)
 --         parse_symb_map_items :: id -> Maybe(ParseFun symb_map_items)
+	   parse_basic_spec Modal = Just(toParseFun basicSpec emptyAnnos)
+--	   parse_symb_items Modal = Just(toParseFun symbItems ())
+--	   parse_symb_map_items Modal = Just(toParseFun symbMapItems ())
+
+
+
+
+
+
 
 
