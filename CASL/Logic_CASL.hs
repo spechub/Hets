@@ -36,6 +36,8 @@ import Data.Dynamic
 
 import CASL.CCC.OnePoint
 
+import Options
+
 data CASL = CASL deriving Show
 
 instance Language CASL where
@@ -170,8 +172,8 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          -- ensures_amalgamability :: id
          --   -> (Diagram CASLSign CASLMor, Node, CASLSign, LEdge CASLMor, CASLMor)
          --   -> Result (Diagram CASLSign CASLMor)
-         ensures_amalgamability CASL (diag, sink, desc) = 
-             ensuresAmalgamability diag sink desc
+         ensures_amalgamability CASL (opts, diag, sink, desc) = 
+             ensuresAmalgamability opts diag sink desc
 
          sign_to_basic_spec CASL _sigma _sens = Basic_spec [] -- ???
 

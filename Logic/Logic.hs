@@ -79,6 +79,9 @@ import UnsafeCoerce
 -- for Conversion to ATerms 
 import Common.ATerm.Lib -- (ATermConvertible)
 
+-- for HetcatsOpts passed to ensures_amalgamability
+import Options
+
 -- diagrams are just graphs
 type Diagram object morphism = Graph object morphism
 
@@ -212,7 +215,8 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol] 
          -- architectural sharing analysis
          ensures_amalgamability :: lid ->
-              (Diagram sign morphism, -- the diagram to be analyzed
+              (HetcatsOpts,            -- the program options
+	       Diagram sign morphism, -- the diagram to be analyzed
 	       [(Node, morphism)],    -- the sink
 	       Diagram String String) -- the descriptions of nodes and edges
 		  -> Result Amalgamates
