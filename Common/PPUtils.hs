@@ -99,6 +99,20 @@ prepPunctuate :: Doc -> [Doc] -> [Doc]
 prepPunctuate _ [] = []
 prepPunctuate symb (x:xs) = x:map (\e -> symb <> e) xs
 
+-- | vertical composition with a specified number of blank lines
+aboveWithNLs :: Int -> Doc -> Doc -> Doc
+aboveWithNLs n d1 d2 = if isEmpty d2 then d1 else 
+             if isEmpty d1 then d2 else 
+             d1 $+$ foldr ($+$) d2 (replicate n $ text "")
+
+-- | vertical composition with one blank line
+($++$) :: Doc -> Doc -> Doc
+($++$) = aboveWithNLs 1 
+
+-- | list version of '($++$)'
+vsep :: [Doc] -> Doc
+vsep = foldr ($++$) empty
+
 -- | 
 -- the functions 'commaT', 'semiT', 'crossT' and 'semiAnno' are good
 -- for ASCII pretty printing but don't work well for LaTeX output.
