@@ -12,6 +12,7 @@ module RunParsers (exec, HetParser(HetParser)) where
 import Parsec
 import ParsecPos
 import PrettyPrint
+import Pretty
 import System
 import GlobalAnnotationsFunctions
 
@@ -61,7 +62,11 @@ parseSpec :: (PrettyPrint a) => SourceName -> Parser a -> IO ()
 parseSpec fileName p  =  do r <- parseFromFile p fileName
 			    putStrLn (result r)
 
+instance (Show a, PrettyPrint b) => PrettyPrint (Either a b) where
+    printText0 g r = case r of
+                     Left err -> ptext ("parse error at " ++ show err ++ "\n")
+		     Right x  -> printText0 g x
+ 
 result :: (Show a, PrettyPrint b) => Either a b -> String
-result r = case r of Left err -> "parse error at " ++ show err ++ "\n"
-		     Right x  -> renderText (printText0 emptyGlobalAnnos x) 
+result r = renderText Nothing (printText0 emptyGlobalAnnos r) 
 
