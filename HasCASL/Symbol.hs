@@ -72,7 +72,8 @@ plainHide syms sigma =
 subSyms :: Env -> Type -> SymbolSet
 subSyms e t = case t of
 	   TypeName i k n ->
-	       if n == 0 then Set.single $ idToTypeSymbol e i k
+	       if n == 0 then if i == unitTypeId then Set.empty 
+                  else Set.single $ idToTypeSymbol e i k
 	       else Set.empty
 	   TypeAppl t1 t2 -> Set.union (subSyms e t1) (subSyms e t2)
 	   ExpandedType _ t1 -> subSyms e t1
