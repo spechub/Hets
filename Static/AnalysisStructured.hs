@@ -676,7 +676,7 @@ ana_FIT_ARG gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
       -- ??? also output some symbol that is affected
    let link = (nP,nA,DGLink {
          dgl_morphism = gEmbed (G_morphism lidP mor),
-         dgl_type = GlobalThm False,
+         dgl_type = GlobalThm False None,
          dgl_origin = DGSpecInst spname})
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
            insEdge link dg',

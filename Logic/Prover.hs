@@ -33,6 +33,7 @@ data Proof_status sen proof_tree = Open sen
                       | Disproved sen 
                       | Proved(sen,
                                [sen], -- used axioms
+                               String, -- name of prover
                                proof_tree,
                                Tactic_script)
 

@@ -13,13 +13,12 @@
    Springer-Verlag 2001.
 
    T. Mossakowski, S. Autexier, D. Hutter, P. Hoffman:
-   CASL Proof calculus.
-   Available from http://www.informatik.uni-bremen.de/~till/calculus.ps
+   CASL Proof calculus. In: CASL reference manual, part IV.
+   Available from http://www.cofi.info
 
 todo:
 
 Integrate stuff from Saarbrücken
-Add proof status information
 -}
 
 module Static.DevGraph where
@@ -72,16 +71,17 @@ data DGLinkType = LocalDef
             | HidingDef
             | FreeDef NodeSig -- the "parameter" node
             | CofreeDef NodeSig -- the "parameter" node
-            | LocalThm Bool  -- is_proved
+            | LocalThm Bool Conservativity -- is_proved
                -- ??? Some more proof information is needed here
                -- (proof tree, ...)
-            | GlobalThm Bool  -- is_proved
+            | GlobalThm Bool Conservativity -- is_proved
             | HidingThm G_morphism Bool  -- reduction mor, is_proved
             | FreeThm G_morphism Bool
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
 
+data Conservativity = None | Cons | Mono | Def
 
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 

@@ -426,8 +426,8 @@ getDGLinkType GlobalDef = "globaldef"
 getDGLinkType HidingDef = "def"
 getDGLinkType (FreeDef _) = "def"
 getDGLinkType (CofreeDef _) = "def"
-getDGLinkType (LocalThm bool) = getThmType bool
-getDGLinkType (GlobalThm bool) = getThmType bool
+getDGLinkType (LocalThm bool _) = getThmType bool
+getDGLinkType (GlobalThm bool _) = getThmType bool
 getDGLinkType (HidingThm _ bool) = getThmType bool
 getDGLinkType (FreeThm _ bool) = getThmType bool
 
