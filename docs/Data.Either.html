@@ -1,0 +1,428 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Either</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Either</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The Either type, and associated operations.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AEither"
+		      >Either</A
+		      > a b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3ALeft"
+			    >Left</A
+			    > a</TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ARight"
+			    >Right</A
+			    > b</TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aeither"
+		>either</A
+		> :: (a -&gt; c) -&gt; (b -&gt; c) -&gt; <A HREF = "Data.Either.html#t%3AEither"
+		>Either</A
+		> a b -&gt; c</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AEither"
+	  ></A
+	  ><B
+	  >Either</B
+	  > a b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>The <TT
+		  ><A HREF = "Data.Either.html#t%3AEither"
+		    >Either</A
+		    ></TT
+		  > type represents values with two possibilities: a value of
+type <TT
+		  ><TT
+		    ><A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      ></TT
+		    > a b</TT
+		  > is either <TT
+		  ><TT
+		    ><A HREF = "Data.Either.html#v%3ALeft"
+		      >Left</A
+		      ></TT
+		    > a</TT
+		  > or <TT
+		  ><TT
+		    ><A HREF = "Data.Either.html#v%3ARight"
+		      >Right</A
+		      ></TT
+		    > b</TT
+		  >.
+</P
+		><P
+		>The <TT
+		  ><A HREF = "Data.Either.html#t%3AEither"
+		    >Either</A
+		    ></TT
+		  > type is sometimes used to represent a value which is
+either correct or an error; by convention, the <TT
+		  ><A HREF = "Data.Either.html#v%3ALeft"
+		    >Left</A
+		    ></TT
+		  > constructor is
+used to hold an error value and the <TT
+		  ><A HREF = "Data.Either.html#v%3ARight"
+		    >Right</A
+		    ></TT
+		  > constructor is used to
+hold a correct value (mnemonic: &quot;right&quot; also means &quot;correct&quot;).
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ALeft"
+		      ></A
+		      ><B
+		      >Left</B
+		      > a</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARight"
+		      ></A
+		      ><B
+		      >Right</B
+		      > b</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e =&gt; <A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e =&gt; <A HREF = "Control.Monad.Fix.html#t%3AMonadFix"
+		      >MonadFix</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > a, <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > b) =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > a, <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > b) =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > b) =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > a, <A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > b) =&gt; <A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > a, <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > b) =&gt; <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > a b)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aeither"
+	  ></A
+	  ><B
+	  >either</B
+	  > :: (a -&gt; c) -&gt; (b -&gt; c) -&gt; <A HREF = "Data.Either.html#t%3AEither"
+	  >Either</A
+	  > a b -&gt; c</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Case analysis for the <TT
+	  ><A HREF = "Data.Either.html#t%3AEither"
+	    >Either</A
+	    ></TT
+	  > type.
+If the value is <TT
+	  ><TT
+	    ><A HREF = "Data.Either.html#v%3ALeft"
+	      >Left</A
+	      ></TT
+	    > a</TT
+	  >, apply the first function to <TT
+	  >a</TT
+	  >;
+if it is <TT
+	  ><TT
+	    ><A HREF = "Data.Either.html#v%3ARight"
+	      >Right</A
+	      ></TT
+	    > b</TT
+	  >, apply the second function to <TT
+	  >b</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

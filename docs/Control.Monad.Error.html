@@ -1,0 +1,617 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Monad.Error</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Monad.Error</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (multi-parameter type classes)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The Error monad.
+</P
+	  ><P
+	  >Rendered by Michael Weber <A HREF = "mailto:michael.weber@post.rwth-aachen.de"
+	    >mailto:michael.weber@post.rwth-aachen.de</A
+	    >,
+inspired by the Haskell Monad Template Library from
+Andy Gill (<A HREF = "http://www.cse.ogi.edu/~andy/"
+	    >http://www.cse.ogi.edu/~andy/</A
+	    >)
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A NAME = "t%3AError"
+	  ></A
+	  ><B
+	  >Error</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AnoMsg"
+		      ></A
+		      ><B
+		      >noMsg</B
+		      > :: a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AstrMsg"
+		      ></A
+		      ><B
+		      >strMsg</B
+		      > :: <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      > -&gt; a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > [<A HREF = "Prelude.html#t%3AChar"
+		      >Char</A
+		      >]</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIOError"
+		      >IOError</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A HREF = "GHC.Base.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; <A NAME = "t%3AMonadError"
+	  ></A
+	  ><B
+	  >MonadError</B
+	  > e m | m -&gt; e <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AthrowError"
+		      ></A
+		      ><B
+		      >throwError</B
+		      > :: e -&gt; m a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AcatchError"
+		      ></A
+		      ><B
+		      >catchError</B
+		      > :: m a -&gt; (e -&gt; m a) -&gt; m a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIOError"
+		      >IOError</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Prelude.html#t%3AEither"
+		      >Either</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m, <A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e) =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e m =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Control.Monad.Reader.html#t%3AReaderT"
+		      >ReaderT</A
+		      > r m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e m) =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Control.Monad.Writer.html#t%3AWriterT"
+		      >WriterT</A
+		      > w m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e m =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Control.Monad.State.html#t%3AStateT"
+		      >StateT</A
+		      > s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e m) =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e m =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Control.Monad.List.html#t%3AListT"
+		      >ListT</A
+		      > m)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >newtype</SPAN
+	  > <A NAME = "t%3AErrorT"
+	  ></A
+	  ><B
+	  >ErrorT</B
+	  > e m a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "5" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AErrorT"
+		      ></A
+		      ><B
+		      >ErrorT</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body" COLSPAN = "2"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3ArunErrorT"
+			    ></A
+			    ><B
+			    >runErrorT</B
+			    > :: (m (<A HREF = "Prelude.html#t%3AEither"
+			    >Either</A
+			    > e a))</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "GHC.Base.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m, <A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e) =&gt; <A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m, <A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e) =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Control.Monad.Fix.html#t%3AMonadFix"
+		      >MonadFix</A
+		      > m, <A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e) =&gt; <A HREF = "Control.Monad.Fix.html#t%3AMonadFix"
+		      >MonadFix</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m, <A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e) =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadTrans"
+		      >MonadTrans</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e, <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > m) =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e, <A HREF = "Control.Monad.Reader.html#t%3AMonadReader"
+		      >MonadReader</A
+		      > r m) =&gt; <A HREF = "Control.Monad.Reader.html#t%3AMonadReader"
+		      >MonadReader</A
+		      > r (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e, <A HREF = "Control.Monad.Writer.html#t%3AMonadWriter"
+		      >MonadWriter</A
+		      > w m) =&gt; <A HREF = "Control.Monad.Writer.html#t%3AMonadWriter"
+		      >MonadWriter</A
+		      > w (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e, <A HREF = "Control.Monad.State.html#t%3AMonadState"
+		      >MonadState</A
+		      > s m) =&gt; <A HREF = "Control.Monad.State.html#t%3AMonadState"
+		      >MonadState</A
+		      > s (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e, <A HREF = "Control.Monad.Cont.html#t%3AMonadCont"
+		      >MonadCont</A
+		      > m) =&gt; <A HREF = "Control.Monad.Cont.html#t%3AMonadCont"
+		      >MonadCont</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmapErrorT"
+	  ></A
+	  ><B
+	  >mapErrorT</B
+	  > :: (m (<A HREF = "Prelude.html#t%3AEither"
+	  >Either</A
+	  > e a) -&gt; n (<A HREF = "Prelude.html#t%3AEither"
+	  >Either</A
+	  > e' b)) -&gt; <A HREF = "Control.Monad.Error.html#t%3AErrorT"
+	  >ErrorT</A
+	  > e m a -&gt; <A HREF = "Control.Monad.Error.html#t%3AErrorT"
+	  >ErrorT</A
+	  > e' n b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Monad.html"
+	  >Control.Monad</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Monad.Fix.html"
+	  >Control.Monad.Fix</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Monad.Trans.html"
+	  >Control.Monad.Trans</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,436 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Foreign</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Foreign</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  ffi@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A collection of data types, classes, and functions for interfacing
+with another programming language.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Data.Bits.html"
+		>Data.Bits</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Data.Int.html"
+		>Data.Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Data.Word.html"
+		>Data.Word</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Foreign.Ptr.html"
+		>Foreign.Ptr</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Foreign.ForeignPtr.html"
+		>Foreign.ForeignPtr</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Foreign.StablePtr.html"
+		>Foreign.StablePtr</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Foreign.Storable.html"
+		>Foreign.Storable</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Foreign.Marshal.html"
+		>Foreign.Marshal</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunsafePerformIO"
+		>unsafePerformIO</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Data.Bits.html"
+	  >Data.Bits</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Data.Int.html"
+	  >Data.Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Data.Word.html"
+	  >Data.Word</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Foreign.Ptr.html"
+	  >Foreign.Ptr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Foreign.ForeignPtr.html"
+	  >Foreign.ForeignPtr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Foreign.StablePtr.html"
+	  >Foreign.StablePtr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Foreign.Storable.html"
+	  >Foreign.Storable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Foreign.Marshal.html"
+	  >Foreign.Marshal</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunsafePerformIO"
+	  ></A
+	  ><B
+	  >unsafePerformIO</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >This is the &quot;back door&quot; into the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad, allowing
+<TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation to be performed at any time.  For
+this to be safe, the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation should be
+free of side effects and independent of its environment.
+</P
+	  ><P
+	  >If the I/O computation wrapped in <TT
+	    ><A HREF = "Foreign.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >
+performs side effects, then the relative order in which those side
+effects take place (relative to the main I/O trunk, or other calls to
+<TT
+	    ><A HREF = "Foreign.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >) is indeterminate.  You have to be careful when 
+writing and compiling modules that use <TT
+	    ><A HREF = "Foreign.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >:
+</P
+	  ><UL
+	  ><LI
+	    > Use <TT
+	      >{-# NOINLINE foo #-}</TT
+	      > as a pragma on any function <TT
+	      >foo</TT
+	      >
+that calls <TT
+	      ><A HREF = "Foreign.html#v%3AunsafePerformIO"
+		>unsafePerformIO</A
+		></TT
+	      >.  If the call is inlined,
+the I/O may be performed more than once.
+</LI
+	    ><LI
+	    > Use the compiler flag <TT
+	      >-fno-cse</TT
+	      > to prevent common sub-expression
+elimination being performed on the module, which might combine
+two side effects that were meant to be separate.  A good example
+is using multiple global variables (like <TT
+	      >test</TT
+	      > in the example below).
+</LI
+	    ><LI
+	    > Make sure that the either you switch off let-floating, or that the 
+call to <TT
+	      ><A HREF = "Foreign.html#v%3AunsafePerformIO"
+		>unsafePerformIO</A
+		></TT
+	      > cannot float outside a lambda.  For example, 
+if you say:
+<TT
+	      >
+f x = unsafePerformIO (newIORef [])
+</TT
+	      >
+you may get only one reference cell shared between all calls to <TT
+	      >f</TT
+	      >.
+Better would be
+<TT
+	      >
+f x = unsafePerformIO (newIORef [x])
+</TT
+	      >
+because now it can't float outside the lambda.
+</LI
+	    ></UL
+	  ><P
+	  >It is less well known that
+<TT
+	    ><A HREF = "Foreign.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    > is not type safe.  For example:
+</P
+	  ><PRE
+	  >     test :: IORef [a]
+     test = unsafePerformIO $ newIORef []
+     
+     main = do
+     	      writeIORef test [42]
+     	      bang \&lt;- readIORef test
+     	      print (bang :: [Char])
+</PRE
+	  ><P
+	  >This program will core dump.  This problem with polymorphic references
+is well known in the ML community, and does not arise with normal
+monadic use of references.  There is no easy way to make it impossible
+once you use <TT
+	    ><A HREF = "Foreign.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >.  Indeed, it is
+possible to write <TT
+	    >coerce :: a -&gt; b</TT
+	    > with the
+help of <TT
+	    ><A HREF = "Foreign.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >.  So be careful!
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,2462 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >GHC.Exts</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>GHC.Exts</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (GHC Extensions)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  internal</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  cvs-ghc@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Representations of some basic types</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Primitive operations</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Fusion</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#4"
+		    >Linear implicit parameter support</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>GHC Extensions: this is the Approved Way to get at GHC-specific extensions.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AInt"
+		>Int</A
+		>  = <A HREF = "#v%3AI%23"
+		>I#</A
+		> Int#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AWord"
+		>Word</A
+		>  = <A HREF = "#v%3AW%23"
+		>W#</A
+		> Word#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AFloat"
+		>Float</A
+		>  = <A HREF = "#v%3AF%23"
+		>F#</A
+		> <A HREF = "GHC.Float.html#t%3AFloat%23"
+		>Float#</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3ADouble"
+		>Double</A
+		>  = <A HREF = "#v%3AD%23"
+		>D#</A
+		> <A HREF = "GHC.Float.html#t%3ADouble%23"
+		>Double#</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AInteger"
+		      >Integer</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AS%23"
+			    >S#</A
+			    > Int#</TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AJ%23"
+			    >J#</A
+			    > Int# ByteArray#</TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AChar"
+		>Char</A
+		>  = <A HREF = "#v%3AC%23"
+		>C#</A
+		> Char#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3APtr"
+		>Ptr</A
+		> a = <A HREF = "#v%3APtr"
+		>Ptr</A
+		> Addr#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AFunPtr"
+		>FunPtr</A
+		> a = <A HREF = "#v%3AFunPtr"
+		>FunPtr</A
+		> Addr#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AshiftL%23"
+		>shiftL#</A
+		> :: Word# -&gt; Int# -&gt; Word#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AshiftRL%23"
+		>shiftRL#</A
+		> :: Word# -&gt; Int# -&gt; Word#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AiShiftL%23"
+		>iShiftL#</A
+		> :: Int# -&gt; Int# -&gt; Int#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AiShiftRA%23"
+		>iShiftRA#</A
+		> :: Int# -&gt; Int# -&gt; Int#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AiShiftRL%23"
+		>iShiftRL#</A
+		> :: Int# -&gt; Int# -&gt; Int#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Abuild"
+		>build</A
+		> :: <SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a . (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> b . (a -&gt; b -&gt; b) -&gt; b -&gt; b) -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aaugment"
+		>augment</A
+		> :: <SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a . (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> b . (a -&gt; b -&gt; b) -&gt; b -&gt; b) -&gt; [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "#t%3ASplittable"
+		>Splittable</A
+		> t  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Asplit"
+		      >split</A
+		      > :: t -&gt; (t, t)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Representations of some basic types</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AInt"
+	  ></A
+	  ><B
+	  >Int</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >A fixed-precision integer type with at least the range <TT
+		>[-2^29
+.. 2^29-1]</TT
+		>.  The exact range for a given implementation can be
+determined by using minBound and maxBound from the Bounded
+class.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AI%23"
+		      ></A
+		      ><B
+		      >I#</B
+		      > Int#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      > (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3ADiffUArray"
+		      >DiffUArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      > <A HREF = "Prelude.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ABounded"
+		      >Bounded</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Num.html#t%3ANum"
+		      >Num</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "System.Random.html#t%3ARandom"
+		      >Random</A
+		      > <A HREF = "GHC.Exts.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AWord"
+	  ></A
+	  ><B
+	  >Word</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >A <TT
+		><A HREF = "GHC.Exts.html#t%3AWord"
+		  >Word</A
+		  ></TT
+		> is an unsigned integral type, with the same size as <TT
+		><A HREF = "GHC.Exts.html#t%3AInt"
+		  >Int</A
+		  ></TT
+		>.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AW%23"
+		      ></A
+		      ><B
+		      >W#</B
+		      > Word#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      > (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3ADiffUArray"
+		      >DiffUArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      > <A HREF = "Prelude.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Num.html#t%3ANum"
+		      >Num</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ABounded"
+		      >Bounded</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Exts.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AFloat"
+	  ></A
+	  ><B
+	  >Float</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Single-precision floating point numbers.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AF%23"
+		      ></A
+		      ><B
+		      >F#</B
+		      > <A HREF = "GHC.Float.html#t%3AFloat%23"
+		      >Float#</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      > (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3ADiffUArray"
+		      >DiffUArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      > <A HREF = "Prelude.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Num.html#t%3ANum"
+		      >Num</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AFractional"
+		      >Fractional</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "System.Random.html#t%3ARandom"
+		      >Random</A
+		      > <A HREF = "GHC.Exts.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ADouble"
+	  ></A
+	  ><B
+	  >Double</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Double-precision floating point numbers.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AD%23"
+		      ></A
+		      ><B
+		      >D#</B
+		      > <A HREF = "GHC.Float.html#t%3ADouble%23"
+		      >Double#</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      > (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3ADiffUArray"
+		      >DiffUArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      > <A HREF = "Prelude.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Num.html#t%3ANum"
+		      >Num</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AFractional"
+		      >Fractional</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "System.Random.html#t%3ARandom"
+		      >Random</A
+		      > <A HREF = "GHC.Exts.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AInteger"
+	  ></A
+	  ><B
+	  >Integer</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Arbitrary-precision integers.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AS%23"
+		      ></A
+		      ><B
+		      >S#</B
+		      > Int#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AJ%23"
+		      ></A
+		      ><B
+		      >J#</B
+		      > Int# ByteArray#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Num.html#t%3ANum"
+		      >Num</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "System.Random.html#t%3ARandom"
+		      >Random</A
+		      > <A HREF = "GHC.Exts.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AChar"
+	  ></A
+	  ><B
+	  >Char</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>The character type <TT
+		  ><A HREF = "GHC.Exts.html#t%3AChar"
+		    >Char</A
+		    ></TT
+		  > is an enumeration whose values represent
+Unicode (or equivalently ISO 10646) characters.
+This set extends the ISO 8859-1 (Latin-1) character set
+(the first 256 charachers), which is itself an extension of the ASCII
+character set (the first 128 characters).
+A character literal in Haskell has type <TT
+		  ><A HREF = "GHC.Exts.html#t%3AChar"
+		    >Char</A
+		    ></TT
+		  >.
+</P
+		><P
+		>To convert a <TT
+		  ><A HREF = "GHC.Exts.html#t%3AChar"
+		    >Char</A
+		    ></TT
+		  > to or from the corresponding <TT
+		  ><A HREF = "GHC.Exts.html#t%3AInt"
+		    >Int</A
+		    ></TT
+		  > value defined
+by Unicode, use <TT
+		  ><A HREF = "Prelude.html#v%3AtoEnum"
+		    >toEnum</A
+		    ></TT
+		  > and <TT
+		  ><A HREF = "Prelude.html#v%3AfromEnum"
+		    >fromEnum</A
+		    ></TT
+		  > from the
+<TT
+		  ><A HREF = "Prelude.html#t%3AEnum"
+		    >Enum</A
+		    ></TT
+		  > class respectively (or equivalently <TT
+		  ><A HREF = "GHC.Base.html#v%3Aord"
+		    >ord</A
+		    ></TT
+		  > and <TT
+		  ><A HREF = "GHC.Base.html#v%3Achr"
+		    >chr</A
+		    ></TT
+		  >).
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AC%23"
+		      ></A
+		      ><B
+		      >C#</B
+		      > Char#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > [<A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      >]</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      > (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3ADiffUArray"
+		      >DiffUArray</A
+		      > ix <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      > <A HREF = "Prelude.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ABounded"
+		      >Bounded</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "System.Random.html#t%3ARandom"
+		      >Random</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "GHC.Exts.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3APtr"
+	  ></A
+	  ><B
+	  >Ptr</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>A value of type <TT
+		  ><TT
+		    ><A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      ></TT
+		    > a</TT
+		  > represents a pointer to an object, or an
+array of objects, which may be marshalled to or from Haskell values
+of type <TT
+		  >a</TT
+		  >.
+</P
+		><P
+		>The type <TT
+		  >a</TT
+		  > will normally be an instance of class
+<TT
+		  ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		    >Storable</A
+		    ></TT
+		  > which provides the marshalling operations.</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3APtr"
+		      ></A
+		      ><B
+		      >Ptr</B
+		      > Addr#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a))</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a))</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a) (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a) <A HREF = "Prelude.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "GHC.Exts.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AFunPtr"
+	  ></A
+	  ><B
+	  >FunPtr</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>A value of type <TT
+		  ><TT
+		    ><A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      ></TT
+		    > a</TT
+		  > is a pointer to a piece of code. It
+may be the pointer to a C function or to a Haskell function created
+using <TT
+		  >foreign export dynamic</TT
+		  >.  A <TT
+		  >foreign export
+dynamic</TT
+		  > should normally be declared to produce a
+<TT
+		  ><A HREF = "GHC.Exts.html#t%3AFunPtr"
+		    >FunPtr</A
+		    ></TT
+		  > of the correct type.  For example:
+</P
+		><PRE
+		> type Compare = Int -&gt; Int -&gt; Bool
+ foreign export dynamic mkCompare :: Compare -&gt; IO (FunPtr Compare)</PRE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AFunPtr"
+		      ></A
+		      ><B
+		      >FunPtr</B
+		      > Addr#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a))</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a))</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a) (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a) <A HREF = "Prelude.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "GHC.Exts.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Primitive operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshiftL%23"
+	  ></A
+	  ><B
+	  >shiftL#</B
+	  > :: Word# -&gt; Int# -&gt; Word#</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshiftRL%23"
+	  ></A
+	  ><B
+	  >shiftRL#</B
+	  > :: Word# -&gt; Int# -&gt; Word#</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AiShiftL%23"
+	  ></A
+	  ><B
+	  >iShiftL#</B
+	  > :: Int# -&gt; Int# -&gt; Int#</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AiShiftRA%23"
+	  ></A
+	  ><B
+	  >iShiftRA#</B
+	  > :: Int# -&gt; Int# -&gt; Int#</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AiShiftRL%23"
+	  ></A
+	  ><B
+	  >iShiftRL#</B
+	  > :: Int# -&gt; Int# -&gt; Int#</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Fusion</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abuild"
+	  ></A
+	  ><B
+	  >build</B
+	  > :: <SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a . (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > b . (a -&gt; b -&gt; b) -&gt; b -&gt; b) -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aaugment"
+	  ></A
+	  ><B
+	  >augment</B
+	  > :: <SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a . (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > b . (a -&gt; b -&gt; b) -&gt; b -&gt; b) -&gt; [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >Linear implicit parameter support</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A NAME = "t%3ASplittable"
+	  ></A
+	  ><B
+	  >Splittable</B
+	  > t  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Asplit"
+		      ></A
+		      ><B
+		      >split</B
+		      > :: t -&gt; (t, t)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,4156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >GHC.Float</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>GHC.Float</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (GHC Extensions)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  internal</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  cvs-ghc@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The types <TT
+	  ><A HREF = "GHC.Float.html#t%3AFloat"
+	    >Float</A
+	    ></TT
+	  > and <TT
+	  ><A HREF = "GHC.Float.html#t%3ADouble"
+	    >Double</A
+	    ></TT
+	  >, and the classes <TT
+	  ><A HREF = "GHC.Float.html#t%3AFloating"
+	    >Floating</A
+	    ></TT
+	  > and <TT
+	  ><A HREF = "GHC.Float.html#t%3ARealFloat"
+	    >RealFloat</A
+	    ></TT
+	  >.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "GHC.Real.html#t%3AFractional"
+		>Fractional</A
+		> a =&gt; <A HREF = "#t%3AFloating"
+		>Floating</A
+		> a  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Api"
+		      >pi</A
+		      > :: a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aexp"
+		      >exp</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Alog"
+		      >log</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Asqrt"
+		      >sqrt</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3A**"
+		      >(**)</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AlogBase"
+		      >logBase</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Asin"
+		      >sin</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Acos"
+		      >cos</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Atan"
+		      >tan</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aasin"
+		      >asin</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aacos"
+		      >acos</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aatan"
+		      >atan</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Asinh"
+		      >sinh</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Acosh"
+		      >cosh</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Atanh"
+		      >tanh</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aasinh"
+		      >asinh</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aacosh"
+		      >acosh</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aatanh"
+		      >atanh</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> (<A HREF = "GHC.Real.html#t%3ARealFrac"
+		>RealFrac</A
+		> a, <A HREF = "GHC.Float.html#t%3AFloating"
+		>Floating</A
+		> a) =&gt; <A HREF = "#t%3ARealFloat"
+		>RealFloat</A
+		> a  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AfloatRadix"
+		      >floatRadix</A
+		      > :: a -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AfloatDigits"
+		      >floatDigits</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AfloatRange"
+		      >floatRange</A
+		      > :: a -&gt; (<A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      >, <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AdecodeFloat"
+		      >decodeFloat</A
+		      > :: a -&gt; (<A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      >, <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AencodeFloat"
+		      >encodeFloat</A
+		      > :: <A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aexponent"
+		      >exponent</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Asignificand"
+		      >significand</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AscaleFloat"
+		      >scaleFloat</A
+		      > :: <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AisNaN"
+		      >isNaN</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AisInfinite"
+		      >isInfinite</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AisDenormalized"
+		      >isDenormalized</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AisNegativeZero"
+		      >isNegativeZero</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AisIEEE"
+		      >isIEEE</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aatan2"
+		      >atan2</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AFloat"
+		>Float</A
+		>  = <A HREF = "#v%3AF%23"
+		>F#</A
+		> Float#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3ADouble"
+		>Double</A
+		>  = <A HREF = "#v%3AD%23"
+		>D#</A
+		> Double#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AshowFloat"
+		>showFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+		>RealFloat</A
+		> a =&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+		>ShowS</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AFFFormat"
+		      >FFFormat</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AFFExponent"
+			    >FFExponent</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AFFFixed"
+			    >FFFixed</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AFFGeneric"
+			    >FFGeneric</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AformatRealFloat"
+		>formatRealFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+		>RealFloat</A
+		> a =&gt; <A HREF = "GHC.Float.html#t%3AFFFormat"
+		>FFFormat</A
+		> -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; a -&gt; <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AroundTo"
+		>roundTo</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; [<A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		>] -&gt; (<A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		>, [<A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		>])</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfloatToDigits"
+		>floatToDigits</A
+		> :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+		>RealFloat</A
+		> a =&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		> -&gt; a -&gt; ([<A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		>], <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		>)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfromRat"
+		>fromRat</A
+		> :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+		>RealFloat</A
+		> a =&gt; <A HREF = "GHC.Real.html#t%3ARational"
+		>Rational</A
+		> -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfromRat'"
+		>fromRat'</A
+		> :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+		>RealFloat</A
+		> a =&gt; <A HREF = "GHC.Real.html#t%3ARational"
+		>Rational</A
+		> -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AscaleRat"
+		>scaleRat</A
+		> :: <A HREF = "GHC.Real.html#t%3ARational"
+		>Rational</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Real.html#t%3ARational"
+		>Rational</A
+		> -&gt; <A HREF = "GHC.Real.html#t%3ARational"
+		>Rational</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Real.html#t%3ARational"
+		>Rational</A
+		> -&gt; (<A HREF = "GHC.Real.html#t%3ARational"
+		>Rational</A
+		>, <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		>)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AminExpt"
+		>minExpt</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmaxExpt"
+		>maxExpt</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aexpt"
+		>expt</A
+		> :: <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aexpts"
+		>expts</A
+		> :: <A HREF = "GHC.Arr.html#t%3AArray"
+		>Array</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AintegerLogBase"
+		>integerLogBase</A
+		> :: <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		> -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AplusFloat"
+		>plusFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AminusFloat"
+		>minusFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtimesFloat"
+		>timesFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdivideFloat"
+		>divideFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnegateFloat"
+		>negateFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgtFloat"
+		>gtFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgeFloat"
+		>geFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AeqFloat"
+		>eqFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AneFloat"
+		>neFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AltFloat"
+		>ltFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AleFloat"
+		>leFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afloat2Int"
+		>float2Int</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aint2Float"
+		>int2Float</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AexpFloat"
+		>expFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AlogFloat"
+		>logFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsqrtFloat"
+		>sqrtFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsinFloat"
+		>sinFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcosFloat"
+		>cosFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtanFloat"
+		>tanFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AasinFloat"
+		>asinFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AacosFloat"
+		>acosFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AatanFloat"
+		>atanFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsinhFloat"
+		>sinhFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcoshFloat"
+		>coshFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtanhFloat"
+		>tanhFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApowerFloat"
+		>powerFloat</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AplusDouble"
+		>plusDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AminusDouble"
+		>minusDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtimesDouble"
+		>timesDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdivideDouble"
+		>divideDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnegateDouble"
+		>negateDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgtDouble"
+		>gtDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgeDouble"
+		>geDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AeqDouble"
+		>eqDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AneDouble"
+		>neDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AleDouble"
+		>leDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AltDouble"
+		>ltDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Adouble2Int"
+		>double2Int</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aint2Double"
+		>int2Double</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Adouble2Float"
+		>double2Float</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afloat2Double"
+		>float2Double</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AexpDouble"
+		>expDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AlogDouble"
+		>logDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsqrtDouble"
+		>sqrtDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsinDouble"
+		>sinDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcosDouble"
+		>cosDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtanDouble"
+		>tanDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AasinDouble"
+		>asinDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AacosDouble"
+		>acosDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AatanDouble"
+		>atanDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsinhDouble"
+		>sinhDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcoshDouble"
+		>coshDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtanhDouble"
+		>tanhDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApowerDouble"
+		>powerDouble</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AencodeFloat%23"
+		>encodeFloat#</A
+		> :: Int# -&gt; ByteArray# -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aint_encodeFloat%23"
+		>int_encodeFloat#</A
+		> :: Int# -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisFloatNaN"
+		>isFloatNaN</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisFloatInfinite"
+		>isFloatInfinite</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisFloatDenormalized"
+		>isFloatDenormalized</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisFloatNegativeZero"
+		>isFloatNegativeZero</A
+		> :: <A HREF = "GHC.Float.html#t%3AFloat"
+		>Float</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AencodeDouble%23"
+		>encodeDouble#</A
+		> :: Int# -&gt; ByteArray# -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aint_encodeDouble%23"
+		>int_encodeDouble#</A
+		> :: Int# -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisDoubleNaN"
+		>isDoubleNaN</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisDoubleInfinite"
+		>isDoubleInfinite</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisDoubleDenormalized"
+		>isDoubleDenormalized</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisDoubleNegativeZero"
+		>isDoubleNegativeZero</A
+		> :: <A HREF = "GHC.Float.html#t%3ADouble"
+		>Double</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A HREF = "GHC.Real.html#t%3AFractional"
+	  >Fractional</A
+	  > a =&gt; <A NAME = "t%3AFloating"
+	  ></A
+	  ><B
+	  >Floating</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Api"
+		      ></A
+		      ><B
+		      >pi</B
+		      > :: a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aexp"
+		      ></A
+		      ><B
+		      >exp</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Alog"
+		      ></A
+		      ><B
+		      >log</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Asqrt"
+		      ></A
+		      ><B
+		      >sqrt</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3A**"
+		      ></A
+		      ><B
+		      >(**)</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AlogBase"
+		      ></A
+		      ><B
+		      >logBase</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Asin"
+		      ></A
+		      ><B
+		      >sin</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Acos"
+		      ></A
+		      ><B
+		      >cos</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Atan"
+		      ></A
+		      ><B
+		      >tan</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aasin"
+		      ></A
+		      ><B
+		      >asin</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aacos"
+		      ></A
+		      ><B
+		      >acos</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aatan"
+		      ></A
+		      ><B
+		      >atan</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Asinh"
+		      ></A
+		      ><B
+		      >sinh</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Acosh"
+		      ></A
+		      ><B
+		      >cosh</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Atanh"
+		      ></A
+		      ><B
+		      >tanh</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aasinh"
+		      ></A
+		      ><B
+		      >asinh</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aacosh"
+		      ></A
+		      ><B
+		      >acosh</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aatanh"
+		      ></A
+		      ><B
+		      >atanh</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > a =&gt; <A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > (<A HREF = "Data.Complex.html#t%3AComplex"
+		      >Complex</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACFloat"
+		      >CFloat</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACDouble"
+		      >CDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLDouble"
+		      >CLDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > (<A HREF = "GHC.Real.html#t%3ARealFrac"
+	  >RealFrac</A
+	  > a, <A HREF = "GHC.Float.html#t%3AFloating"
+	  >Floating</A
+	  > a) =&gt; <A NAME = "t%3ARealFloat"
+	  ></A
+	  ><B
+	  >RealFloat</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AfloatRadix"
+		      ></A
+		      ><B
+		      >floatRadix</B
+		      > :: a -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AfloatDigits"
+		      ></A
+		      ><B
+		      >floatDigits</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AfloatRange"
+		      ></A
+		      ><B
+		      >floatRange</B
+		      > :: a -&gt; (<A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      >, <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AdecodeFloat"
+		      ></A
+		      ><B
+		      >decodeFloat</B
+		      > :: a -&gt; (<A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      >, <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AencodeFloat"
+		      ></A
+		      ><B
+		      >encodeFloat</B
+		      > :: <A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aexponent"
+		      ></A
+		      ><B
+		      >exponent</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Asignificand"
+		      ></A
+		      ><B
+		      >significand</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AscaleFloat"
+		      ></A
+		      ><B
+		      >scaleFloat</B
+		      > :: <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AisNaN"
+		      ></A
+		      ><B
+		      >isNaN</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AisInfinite"
+		      ></A
+		      ><B
+		      >isInfinite</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AisDenormalized"
+		      ></A
+		      ><B
+		      >isDenormalized</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AisNegativeZero"
+		      ></A
+		      ><B
+		      >isNegativeZero</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AisIEEE"
+		      ></A
+		      ><B
+		      >isIEEE</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aatan2"
+		      ></A
+		      ><B
+		      >atan2</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACFloat"
+		      >CFloat</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACDouble"
+		      >CDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLDouble"
+		      >CLDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AFloat"
+	  ></A
+	  ><B
+	  >Float</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Single-precision floating point numbers.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AF%23"
+		      ></A
+		      ><B
+		      >F#</B
+		      > Float#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      > (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3ADiffUArray"
+		      >DiffUArray</A
+		      > ix <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Num.html#t%3ANum"
+		      >Num</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Enum.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "System.Random.html#t%3ARandom"
+		      >Random</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ADouble"
+	  ></A
+	  ><B
+	  >Double</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Double-precision floating point numbers.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AD%23"
+		      ></A
+		      ><B
+		      >D#</B
+		      > Double#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      > (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix, <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > ix) =&gt; <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3ADiffUArray"
+		      >DiffUArray</A
+		      > ix <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Num.html#t%3ANum"
+		      >Num</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3AFloating"
+		      >Floating</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Enum.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "System.Random.html#t%3ARandom"
+		      >Random</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowFloat"
+	  ></A
+	  ><B
+	  >showFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AFFFormat"
+	  ></A
+	  ><B
+	  >FFFormat</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AFFExponent"
+		      ></A
+		      ><B
+		      >FFExponent</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AFFFixed"
+		      ></A
+		      ><B
+		      >FFFixed</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AFFGeneric"
+		      ></A
+		      ><B
+		      >FFGeneric</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AformatRealFloat"
+	  ></A
+	  ><B
+	  >formatRealFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; <A HREF = "GHC.Float.html#t%3AFFFormat"
+	  >FFFormat</A
+	  > -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; a -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AroundTo"
+	  ></A
+	  ><B
+	  >roundTo</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; [<A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  >] -&gt; (<A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  >, [<A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  >])</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfloatToDigits"
+	  ></A
+	  ><B
+	  >floatToDigits</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  > -&gt; a -&gt; ([<A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  >], <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  >)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfromRat"
+	  ></A
+	  ><B
+	  >fromRat</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; <A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  > -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfromRat'"
+	  ></A
+	  ><B
+	  >fromRat'</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; <A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  > -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AscaleRat"
+	  ></A
+	  ><B
+	  >scaleRat</B
+	  > :: <A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  > -&gt; <A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  > -&gt; (<A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  >, <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  >)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AminExpt"
+	  ></A
+	  ><B
+	  >minExpt</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmaxExpt"
+	  ></A
+	  ><B
+	  >maxExpt</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aexpt"
+	  ></A
+	  ><B
+	  >expt</B
+	  > :: <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aexpts"
+	  ></A
+	  ><B
+	  >expts</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AArray"
+	  >Array</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AintegerLogBase"
+	  ></A
+	  ><B
+	  >integerLogBase</B
+	  > :: <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  > -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AplusFloat"
+	  ></A
+	  ><B
+	  >plusFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AminusFloat"
+	  ></A
+	  ><B
+	  >minusFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtimesFloat"
+	  ></A
+	  ><B
+	  >timesFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdivideFloat"
+	  ></A
+	  ><B
+	  >divideFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnegateFloat"
+	  ></A
+	  ><B
+	  >negateFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgtFloat"
+	  ></A
+	  ><B
+	  >gtFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgeFloat"
+	  ></A
+	  ><B
+	  >geFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeqFloat"
+	  ></A
+	  ><B
+	  >eqFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AneFloat"
+	  ></A
+	  ><B
+	  >neFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AltFloat"
+	  ></A
+	  ><B
+	  >ltFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AleFloat"
+	  ></A
+	  ><B
+	  >leFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afloat2Int"
+	  ></A
+	  ><B
+	  >float2Int</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aint2Float"
+	  ></A
+	  ><B
+	  >int2Float</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AexpFloat"
+	  ></A
+	  ><B
+	  >expFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlogFloat"
+	  ></A
+	  ><B
+	  >logFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsqrtFloat"
+	  ></A
+	  ><B
+	  >sqrtFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsinFloat"
+	  ></A
+	  ><B
+	  >sinFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcosFloat"
+	  ></A
+	  ><B
+	  >cosFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtanFloat"
+	  ></A
+	  ><B
+	  >tanFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AasinFloat"
+	  ></A
+	  ><B
+	  >asinFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AacosFloat"
+	  ></A
+	  ><B
+	  >acosFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AatanFloat"
+	  ></A
+	  ><B
+	  >atanFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsinhFloat"
+	  ></A
+	  ><B
+	  >sinhFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcoshFloat"
+	  ></A
+	  ><B
+	  >coshFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtanhFloat"
+	  ></A
+	  ><B
+	  >tanhFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApowerFloat"
+	  ></A
+	  ><B
+	  >powerFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AplusDouble"
+	  ></A
+	  ><B
+	  >plusDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AminusDouble"
+	  ></A
+	  ><B
+	  >minusDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtimesDouble"
+	  ></A
+	  ><B
+	  >timesDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdivideDouble"
+	  ></A
+	  ><B
+	  >divideDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnegateDouble"
+	  ></A
+	  ><B
+	  >negateDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgtDouble"
+	  ></A
+	  ><B
+	  >gtDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgeDouble"
+	  ></A
+	  ><B
+	  >geDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeqDouble"
+	  ></A
+	  ><B
+	  >eqDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AneDouble"
+	  ></A
+	  ><B
+	  >neDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AleDouble"
+	  ></A
+	  ><B
+	  >leDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AltDouble"
+	  ></A
+	  ><B
+	  >ltDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Adouble2Int"
+	  ></A
+	  ><B
+	  >double2Int</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aint2Double"
+	  ></A
+	  ><B
+	  >int2Double</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Adouble2Float"
+	  ></A
+	  ><B
+	  >double2Float</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afloat2Double"
+	  ></A
+	  ><B
+	  >float2Double</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AexpDouble"
+	  ></A
+	  ><B
+	  >expDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlogDouble"
+	  ></A
+	  ><B
+	  >logDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsqrtDouble"
+	  ></A
+	  ><B
+	  >sqrtDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsinDouble"
+	  ></A
+	  ><B
+	  >sinDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcosDouble"
+	  ></A
+	  ><B
+	  >cosDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtanDouble"
+	  ></A
+	  ><B
+	  >tanDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AasinDouble"
+	  ></A
+	  ><B
+	  >asinDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AacosDouble"
+	  ></A
+	  ><B
+	  >acosDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AatanDouble"
+	  ></A
+	  ><B
+	  >atanDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsinhDouble"
+	  ></A
+	  ><B
+	  >sinhDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcoshDouble"
+	  ></A
+	  ><B
+	  >coshDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtanhDouble"
+	  ></A
+	  ><B
+	  >tanhDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApowerDouble"
+	  ></A
+	  ><B
+	  >powerDouble</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AencodeFloat%23"
+	  ></A
+	  ><B
+	  >encodeFloat#</B
+	  > :: Int# -&gt; ByteArray# -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aint_encodeFloat%23"
+	  ></A
+	  ><B
+	  >int_encodeFloat#</B
+	  > :: Int# -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisFloatNaN"
+	  ></A
+	  ><B
+	  >isFloatNaN</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisFloatInfinite"
+	  ></A
+	  ><B
+	  >isFloatInfinite</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisFloatDenormalized"
+	  ></A
+	  ><B
+	  >isFloatDenormalized</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisFloatNegativeZero"
+	  ></A
+	  ><B
+	  >isFloatNegativeZero</B
+	  > :: <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AencodeDouble%23"
+	  ></A
+	  ><B
+	  >encodeDouble#</B
+	  > :: Int# -&gt; ByteArray# -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aint_encodeDouble%23"
+	  ></A
+	  ><B
+	  >int_encodeDouble#</B
+	  > :: Int# -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisDoubleNaN"
+	  ></A
+	  ><B
+	  >isDoubleNaN</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisDoubleInfinite"
+	  ></A
+	  ><B
+	  >isDoubleInfinite</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisDoubleDenormalized"
+	  ></A
+	  ><B
+	  >isDoubleDenormalized</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisDoubleNegativeZero"
+	  ></A
+	  ><B
+	  >isDoubleNegativeZero</B
+	  > :: <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

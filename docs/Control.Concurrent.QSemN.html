@@ -1,0 +1,310 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Concurrent.QSemN</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Concurrent.QSemN</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (concurrency)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >General Quantity Semaphores</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Quantity semaphores in which each thread may wait for an arbitrary
+&quot;amount&quot;.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AQSemN"
+		>QSemN</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewQSemN"
+		>newQSemN</A
+		> :: <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Control.Concurrent.QSemN.html#t%3AQSemN"
+		>QSemN</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwaitQSemN"
+		>waitQSemN</A
+		> :: <A HREF = "Control.Concurrent.QSemN.html#t%3AQSemN"
+		>QSemN</A
+		> -&gt; <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsignalQSemN"
+		>signalQSemN</A
+		> :: <A HREF = "Control.Concurrent.QSemN.html#t%3AQSemN"
+		>QSemN</A
+		> -&gt; <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >General Quantity Semaphores</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AQSemN"
+	  ></A
+	  ><B
+	  >QSemN</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >A <TT
+		><A HREF = "Control.Concurrent.QSemN.html#t%3AQSemN"
+		  >QSemN</A
+		  ></TT
+		> is a quantity semaphore, in which the available
+&quot;quantity&quot; may be signalled or waited for in arbitrary amounts.</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewQSemN"
+	  ></A
+	  ><B
+	  >newQSemN</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Control.Concurrent.QSemN.html#t%3AQSemN"
+	  >QSemN</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Build a new <TT
+	  ><A HREF = "Control.Concurrent.QSemN.html#t%3AQSemN"
+	    >QSemN</A
+	    ></TT
+	  > with a supplied initial quantity.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwaitQSemN"
+	  ></A
+	  ><B
+	  >waitQSemN</B
+	  > :: <A HREF = "Control.Concurrent.QSemN.html#t%3AQSemN"
+	  >QSemN</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Wait for the specified quantity to become available</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsignalQSemN"
+	  ></A
+	  ><B
+	  >signalQSemN</B
+	  > :: <A HREF = "Control.Concurrent.QSemN.html#t%3AQSemN"
+	  >QSemN</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Signal that a given quantity is now available from the <TT
+	  ><A HREF = "Control.Concurrent.QSemN.html#t%3AQSemN"
+	    >QSemN</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

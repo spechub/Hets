@@ -1,0 +1,542 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Concurrent.Chan</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Concurrent.Chan</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (concurrency).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >The <TT
+		      ><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+			>Chan</A
+			></TT
+		      > type</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Operations</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Stream interface</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Unbounded channels.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AChan"
+		>Chan</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewChan"
+		>newChan</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		>Chan</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwriteChan"
+		>writeChan</A
+		> :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		>Chan</A
+		> a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadChan"
+		>readChan</A
+		> :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		>Chan</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdupChan"
+		>dupChan</A
+		> :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		>Chan</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		>Chan</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunGetChan"
+		>unGetChan</A
+		> :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		>Chan</A
+		> a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisEmptyChan"
+		>isEmptyChan</A
+		> :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		>Chan</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetChanContents"
+		>getChanContents</A
+		> :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		>Chan</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwriteList2Chan"
+		>writeList2Chan</A
+		> :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		>Chan</A
+		> a -&gt; [a] -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >The <TT
+	    ><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	      >Chan</A
+	      ></TT
+	    > type</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AChan"
+	  ></A
+	  ><B
+	  >Chan</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><TT
+		><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+		  >Chan</A
+		  ></TT
+		> is an abstract type representing an unbounded FIFO channel.</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewChan"
+	  ></A
+	  ><B
+	  >newChan</B
+	  > :: <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	  >Chan</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Build and returns a new instance of <TT
+	  ><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	    >Chan</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteChan"
+	  ></A
+	  ><B
+	  >writeChan</B
+	  > :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	  >Chan</A
+	  > a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write a value to a <TT
+	  ><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	    >Chan</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadChan"
+	  ></A
+	  ><B
+	  >readChan</B
+	  > :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	  >Chan</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Read the next value from the <TT
+	  ><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	    >Chan</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdupChan"
+	  ></A
+	  ><B
+	  >dupChan</B
+	  > :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	  >Chan</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	  >Chan</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Duplicate a <TT
+	  ><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	    >Chan</A
+	    ></TT
+	  >: the duplicate channel begins empty, but data written to
+either channel from then on will be available from both.  Hence this creates
+a kind of broadcast channel, where data written by anyone is seen by
+everyone else.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunGetChan"
+	  ></A
+	  ><B
+	  >unGetChan</B
+	  > :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	  >Chan</A
+	  > a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Put a data item back onto a channel, where it will be the next item read.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisEmptyChan"
+	  ></A
+	  ><B
+	  >isEmptyChan</B
+	  > :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	  >Chan</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns <TT
+	  ><A HREF = "Prelude.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  > if the supplied <TT
+	  ><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	    >Chan</A
+	    ></TT
+	  > is empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Stream interface</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetChanContents"
+	  ></A
+	  ><B
+	  >getChanContents</B
+	  > :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	  >Chan</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Return a lazy list representing the contents of the supplied
+<TT
+	  ><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	    >Chan</A
+	    ></TT
+	  >, much like <TT
+	  ><A HREF = "System.IO.html#v%3AhGetContents"
+	    >hGetContents</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteList2Chan"
+	  ></A
+	  ><B
+	  >writeList2Chan</B
+	  > :: <A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	  >Chan</A
+	  > a -&gt; [a] -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write an entire list of items to a <TT
+	  ><A HREF = "Control.Concurrent.Chan.html#t%3AChan"
+	    >Chan</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

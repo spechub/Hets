@@ -1,0 +1,440 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Concurrent.SampleVar</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Concurrent.SampleVar</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (concurrency)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Sample Variables</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Sample variables
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3ASampleVar"
+		>SampleVar</A
+		> a = <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> (<A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		>, <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewEmptySampleVar"
+		>newEmptySampleVar</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+		>SampleVar</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewSampleVar"
+		>newSampleVar</A
+		> :: a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+		>SampleVar</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AemptySampleVar"
+		>emptySampleVar</A
+		> :: <A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+		>SampleVar</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadSampleVar"
+		>readSampleVar</A
+		> :: <A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+		>SampleVar</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwriteSampleVar"
+		>writeSampleVar</A
+		> :: <A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+		>SampleVar</A
+		> a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Sample Variables</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3ASampleVar"
+	  ></A
+	  ><B
+	  >SampleVar</B
+	  > a = <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > (<A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  >, <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Sample variables are slightly different from a normal <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >:
+</P
+	  ><UL
+	  ><LI
+	    > Reading an empty <TT
+	      ><A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+		>SampleVar</A
+		></TT
+	      > causes the reader to block.
+(same as <TT
+	      ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+		>takeMVar</A
+		></TT
+	      > on empty <TT
+	      ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		></TT
+	      >)
+</LI
+	    ><LI
+	    > Reading a filled <TT
+	      ><A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+		>SampleVar</A
+		></TT
+	      > empties it and returns value.
+(same as <TT
+	      ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+		>takeMVar</A
+		></TT
+	      >)
+</LI
+	    ><LI
+	    > Writing to an empty <TT
+	      ><A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+		>SampleVar</A
+		></TT
+	      > fills it with a value, and
+potentially, wakes up a blocked reader (same as for <TT
+	      ><A HREF = "Control.Concurrent.MVar.html#v%3AputMVar"
+		>putMVar</A
+		></TT
+	      > on
+empty <TT
+	      ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		></TT
+	      >).
+</LI
+	    ><LI
+	    > Writing to a filled <TT
+	      ><A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+		>SampleVar</A
+		></TT
+	      > overwrites the current value.
+(different from <TT
+	      ><A HREF = "Control.Concurrent.MVar.html#v%3AputMVar"
+		>putMVar</A
+		></TT
+	      > on full <TT
+	      ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		></TT
+	      >.)</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewEmptySampleVar"
+	  ></A
+	  ><B
+	  >newEmptySampleVar</B
+	  > :: <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+	  >SampleVar</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Build a new, empty, <TT
+	  ><A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+	    >SampleVar</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewSampleVar"
+	  ></A
+	  ><B
+	  >newSampleVar</B
+	  > :: a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+	  >SampleVar</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Build a <TT
+	  ><A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+	    >SampleVar</A
+	    ></TT
+	  > with an initial value.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AemptySampleVar"
+	  ></A
+	  ><B
+	  >emptySampleVar</B
+	  > :: <A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+	  >SampleVar</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>If the SampleVar is full, leave it empty.  Otherwise, do nothing.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadSampleVar"
+	  ></A
+	  ><B
+	  >readSampleVar</B
+	  > :: <A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+	  >SampleVar</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Wait for a value to become available, then take it and return.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteSampleVar"
+	  ></A
+	  ><B
+	  >writeSampleVar</B
+	  > :: <A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+	  >SampleVar</A
+	  > a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write a value into the <TT
+	  ><A HREF = "Control.Concurrent.SampleVar.html#t%3ASampleVar"
+	    >SampleVar</A
+	    ></TT
+	  >, overwriting any previous value that
+was there.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

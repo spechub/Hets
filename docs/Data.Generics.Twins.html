@@ -1,0 +1,423 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Generics.Twins</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Generics.Twins</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >The idiom of multi-parameter traversal</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Twin mapping combinators</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Prime examples of twin traversal</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>&quot;Scrap your boilerplate&quot; --- Generic programming in Haskell 
+See <A HREF = "http://www.cs.vu.nl/boilerplate/"
+	  >http://www.cs.vu.nl/boilerplate/</A
+	  >. The present module 
+provides support for multi-parameter traversal, which is also 
+demonstrated with generic operations like equality.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Atfoldl"
+		>tfoldl</A
+		> :: (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a b . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; c (a -&gt; b) -&gt; c a -&gt; c b) -&gt; (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> g . g -&gt; c g) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> (<A HREF = "Data.Generics.Aliases.html#t%3AGeneric"
+		>Generic</A
+		> c) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> (<A HREF = "Data.Generics.Aliases.html#t%3AGeneric"
+		>Generic</A
+		> c)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtmapT"
+		>tmapT</A
+		> :: <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> <A HREF = "Data.Generics.Aliases.html#t%3AGenericT"
+		>GenericT</A
+		> -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> <A HREF = "Data.Generics.Aliases.html#t%3AGenericT"
+		>GenericT</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtmapQl"
+		>tmapQl</A
+		> :: (r -&gt; r -&gt; r) -&gt; r -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> (<A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> r) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> (<A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> r)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtmapM"
+		>tmapM</A
+		> :: Monad m =&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> (<A HREF = "Data.Generics.Aliases.html#t%3AGenericM"
+		>GenericM</A
+		> m) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> (<A HREF = "Data.Generics.Aliases.html#t%3AGenericM"
+		>GenericM</A
+		> m)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ageq"
+		>geq</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; a -&gt; a -&gt; Bool</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Agzip"
+		>gzip</A
+		> :: (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a b . (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a, <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> b) =&gt; a -&gt; b -&gt; Maybe b) -&gt; <SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a b . (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a, <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> b) =&gt; a -&gt; b -&gt; Maybe b</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >The idiom of multi-parameter traversal</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atfoldl"
+	  ></A
+	  ><B
+	  >tfoldl</B
+	  > :: (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a b . <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; c (a -&gt; b) -&gt; c a -&gt; c b) -&gt; (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > g . g -&gt; c g) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > (<A HREF = "Data.Generics.Aliases.html#t%3AGeneric"
+	  >Generic</A
+	  > c) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > (<A HREF = "Data.Generics.Aliases.html#t%3AGeneric"
+	  >Generic</A
+	  > c)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Twin mapping combinators</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtmapT"
+	  ></A
+	  ><B
+	  >tmapT</B
+	  > :: <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > <A HREF = "Data.Generics.Aliases.html#t%3AGenericT"
+	  >GenericT</A
+	  > -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > <A HREF = "Data.Generics.Aliases.html#t%3AGenericT"
+	  >GenericT</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtmapQl"
+	  ></A
+	  ><B
+	  >tmapQl</B
+	  > :: (r -&gt; r -&gt; r) -&gt; r -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > (<A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > r) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > (<A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > r)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtmapM"
+	  ></A
+	  ><B
+	  >tmapM</B
+	  > :: Monad m =&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > (<A HREF = "Data.Generics.Aliases.html#t%3AGenericM"
+	  >GenericM</A
+	  > m) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > (<A HREF = "Data.Generics.Aliases.html#t%3AGenericM"
+	  >GenericM</A
+	  > m)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Prime examples of twin traversal</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ageq"
+	  ></A
+	  ><B
+	  >geq</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; a -&gt; a -&gt; Bool</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Generic equality: an alternative to &quot;deriving Eq&quot;</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Agzip"
+	  ></A
+	  ><B
+	  >gzip</B
+	  > :: (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a b . (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a, <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > b) =&gt; a -&gt; b -&gt; Maybe b) -&gt; <SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a b . (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a, <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > b) =&gt; a -&gt; b -&gt; Maybe b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Generic zip controlled by a function with type-specific branches</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

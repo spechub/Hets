@@ -1,0 +1,1064 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Foreign.Marshal.Array</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Foreign.Marshal.Array</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  ffi@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Marshalling arrays</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#2"
+			>Allocation</A
+			></DT
+		      ><DT
+		      ><A HREF = "#3"
+			>Marshalling</A
+			></DT
+		      ><DT
+		      ><A HREF = "#4"
+			>Combined allocation and marshalling</A
+			></DT
+		      ><DT
+		      ><A HREF = "#5"
+			>Copying</A
+			></DT
+		      ><DT
+		      ><A HREF = "#6"
+			>Finding the length</A
+			></DT
+		      ><DT
+		      ><A HREF = "#7"
+			>Indexing</A
+			></DT
+		      ></DL
+		    ></DD
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Marshalling support: routines allocating, storing, and retrieving Haskell
+lists that are represented as arrays in the foreign language
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmallocArray"
+		>mallocArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmallocArray0"
+		>mallocArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AallocaArray"
+		>allocaArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AallocaArray0"
+		>allocaArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreallocArray"
+		>reallocArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreallocArray0"
+		>reallocArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApeekArray"
+		>peekArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApeekArray0"
+		>peekArray0</A
+		> :: (<A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a, <A HREF = "GHC.Base.html#t%3AEq"
+		>Eq</A
+		> a) =&gt; a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApokeArray"
+		>pokeArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApokeArray0"
+		>pokeArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewArray"
+		>newArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewArray0"
+		>newArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; a -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithArray"
+		>withArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; [a] -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithArray0"
+		>withArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; a -&gt; [a] -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcopyArray"
+		>copyArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmoveArray"
+		>moveArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AlengthArray0"
+		>lengthArray0</A
+		> :: (<A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a, <A HREF = "GHC.Base.html#t%3AEq"
+		>Eq</A
+		> a) =&gt; a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AadvancePtr"
+		>advancePtr</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Marshalling arrays</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "2"
+	  >Allocation</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmallocArray"
+	  ></A
+	  ><B
+	  >mallocArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate storage for the given number of elements of a storable type.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmallocArray0"
+	  ></A
+	  ><B
+	  >mallocArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Like <TT
+	  ><A HREF = "Foreign.Marshal.Array.html#v%3AmallocArray"
+	    >mallocArray</A
+	    ></TT
+	  >, but add an extra element to signal the end of the array
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AallocaArray"
+	  ></A
+	  ><B
+	  >allocaArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Temporarily allocate space for the given number of elements.
+</P
+	  ><UL
+	  ><LI
+	    > see <TT
+	      ><A HREF = "Foreign.Marshal.Alloc.html#v%3Aalloca"
+		>alloca</A
+		></TT
+	      > for the storage lifetime constraints
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AallocaArray0"
+	  ></A
+	  ><B
+	  >allocaArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Like <TT
+	  ><A HREF = "Foreign.Marshal.Array.html#v%3AallocaArray"
+	    >allocaArray</A
+	    ></TT
+	  >, but add an extra element to signal the end of the array
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreallocArray"
+	  ></A
+	  ><B
+	  >reallocArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Adjust the size of an array
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreallocArray0"
+	  ></A
+	  ><B
+	  >reallocArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Adjust the size of an array while adding an element for the end marker
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "3"
+	  >Marshalling</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApeekArray"
+	  ></A
+	  ><B
+	  >peekArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Convert an array of given length into a Haskell list.  This version
+traverses the array backwards using an accumulating parameter,
+which uses constant stack space.  The previous version using mapM
+needed linear stack space.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApeekArray0"
+	  ></A
+	  ><B
+	  >peekArray0</B
+	  > :: (<A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a, <A HREF = "GHC.Base.html#t%3AEq"
+	  >Eq</A
+	  > a) =&gt; a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Convert an array terminated by the given end marker into a Haskell list
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApokeArray"
+	  ></A
+	  ><B
+	  >pokeArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write the list elements consecutive into memory
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApokeArray0"
+	  ></A
+	  ><B
+	  >pokeArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write the list elements consecutive into memory and terminate them with the
+given marker element
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "4"
+	  >Combined allocation and marshalling</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewArray"
+	  ></A
+	  ><B
+	  >newArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write a list of storable elements into a newly allocated, consecutive
+sequence of storable values
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewArray0"
+	  ></A
+	  ><B
+	  >newArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; a -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write a list of storable elements into a newly allocated, consecutive
+sequence of storable values, where the end is fixed by the given end marker
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithArray"
+	  ></A
+	  ><B
+	  >withArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; [a] -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Temporarily store a list of storable values in memory
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithArray0"
+	  ></A
+	  ><B
+	  >withArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; a -&gt; [a] -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Like <TT
+	  ><A HREF = "Foreign.Marshal.Array.html#v%3AwithArray"
+	    >withArray</A
+	    ></TT
+	  >, but a terminator indicates where the array ends
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "5"
+	  >Copying</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>(argument order: destination, source)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcopyArray"
+	  ></A
+	  ><B
+	  >copyArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Copy the given number of elements from the second array (source) into the
+first array (destination); the copied areas may <EM
+	  >not</EM
+	  > overlap
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmoveArray"
+	  ></A
+	  ><B
+	  >moveArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Copy the given number of elements from the second array (source) into the
+first array (destination); the copied areas <EM
+	  >may</EM
+	  > overlap
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "6"
+	  >Finding the length</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlengthArray0"
+	  ></A
+	  ><B
+	  >lengthArray0</B
+	  > :: (<A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a, <A HREF = "GHC.Base.html#t%3AEq"
+	  >Eq</A
+	  > a) =&gt; a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Return the number of elements in an array, excluding the terminator
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "7"
+	  >Indexing</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AadvancePtr"
+	  ></A
+	  ><B
+	  >advancePtr</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Advance a pointer into an array by the given number of elements
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

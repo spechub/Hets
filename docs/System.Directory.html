@@ -1,0 +1,1834 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >System.Directory</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>System.Directory</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  stable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Actions on directories</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Actions on files</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Existence tests</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#4"
+		    >Permissions</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#5"
+		    >Timestamps</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>System-independent interface to directory manipulation.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcreateDirectory"
+		>createDirectory</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AremoveDirectory"
+		>removeDirectory</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ArenameDirectory"
+		>renameDirectory</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetDirectoryContents"
+		>getDirectoryContents</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> [<A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		>]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetCurrentDirectory"
+		>getCurrentDirectory</A
+		> :: <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsetCurrentDirectory"
+		>setCurrentDirectory</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AremoveFile"
+		>removeFile</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ArenameFile"
+		>renameFile</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdoesFileExist"
+		>doesFileExist</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdoesDirectoryExist"
+		>doesDirectoryExist</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3APermissions"
+		>Permissions</A
+		>  = <A HREF = "#v%3APermissions"
+		>Permissions</A
+		> {<TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3Areadable"
+		      >readable</A
+		      >, <A HREF = "#v%3Awritable"
+		      >writable</A
+		      >, <A HREF = "#v%3Aexecutable"
+		      >executable</A
+		      >, <A HREF = "#v%3Asearchable"
+		      >searchable</A
+		      > :: <A HREF = "Prelude.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		>}</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetPermissions"
+		>getPermissions</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "System.Directory.html#t%3APermissions"
+		>Permissions</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsetPermissions"
+		>setPermissions</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.Directory.html#t%3APermissions"
+		>Permissions</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetModificationTime"
+		>getModificationTime</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "System.Time.html#t%3AClockTime"
+		>ClockTime</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >A directory contains a series of entries, each of which is a named
+reference to a file system object (file, directory etc.).  Some
+entries may be hidden, inaccessible, or have some administrative
+function (e.g. `.' or `..' under POSIX
+<A HREF = "http://www.opengroup.org/onlinepubs/007904975/toc.htm"
+	    >http://www.opengroup.org/onlinepubs/007904975/toc.htm</A
+	    >), but in 
+this standard all such entries are considered to form part of the
+directory contents. Entries in sub-directories are not, however,
+considered to form part of the directory contents.
+</P
+	  ><P
+	  >Each file system object is referenced by a <EM
+	    >path</EM
+	    >.  There is
+normally at least one absolute path to each file system object.  In
+some operating systems, it may also be possible to have paths which
+are relative to the current directory.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Actions on directories</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcreateDirectory"
+	  ></A
+	  ><B
+	  >createDirectory</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><TT
+	      ><A HREF = "System.Directory.html#v%3AcreateDirectory"
+		>createDirectory</A
+		></TT
+	      > dir</TT
+	    > creates a new directory <TT
+	    >dir</TT
+	    > which is
+initially empty, or as near to empty as the operating system
+allows.
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3APermissionDenied"
+		>PermissionDenied</A
+		></TT
+	      >
+The process has insufficient privileges to perform the operation.
+<TT
+	      >[EROFS, EACCES]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisAlreadyExistsError"
+		>isAlreadyExistsError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AAlreadyExists"
+		>AlreadyExists</A
+		></TT
+	      >
+The operand refers to a directory that already exists.  
+<TT
+	      > [EEXIST]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AHardwareFault"
+		>HardwareFault</A
+		></TT
+	      >
+A physical I/O error has occurred.
+<TT
+	      >[EIO]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInvalidArgument"
+		>InvalidArgument</A
+		></TT
+	      >
+The operand is not a valid directory name.
+<TT
+	      >[ENAMETOOLONG, ELOOP]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3ANoSuchThing"
+		>NoSuchThing</A
+		></TT
+	      >
+There is no path to the directory. 
+<TT
+	      >[ENOENT, ENOTDIR]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AResourceExhausted"
+		>ResourceExhausted</A
+		></TT
+	      >
+Insufficient resources (virtual memory, process file descriptors,
+physical disk space, etc.) are available to perform the operation.
+<TT
+	      >[EDQUOT, ENOSPC, ENOMEM, EMLINK]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInappropriateType"
+		>InappropriateType</A
+		></TT
+	      >
+The path refers to an existing non-directory object.
+<TT
+	      >[EEXIST]</TT
+	      >
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AremoveDirectory"
+	  ></A
+	  ><B
+	  >removeDirectory</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><TT
+	      ><A HREF = "System.Directory.html#v%3AremoveDirectory"
+		>removeDirectory</A
+		></TT
+	      > dir</TT
+	    > removes an existing directory <EM
+	    >dir</EM
+	    >.  The
+implementation may specify additional constraints which must be
+satisfied before a directory can be removed (e.g. the directory has to
+be empty, or may not be in use by other processes).  It is not legal
+for an implementation to partially remove a directory unless the
+entire directory is removed. A conformant implementation need not
+support directory removal in all situations (e.g. removal of the root
+directory).
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AHardwareFault"
+		>HardwareFault</A
+		></TT
+	      >
+A physical I/O error has occurred.
+EIO
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInvalidArgument"
+		>InvalidArgument</A
+		></TT
+	      >
+The operand is not a valid directory name.
+[ENAMETOOLONG, ELOOP]
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3ANoSuchThing"
+		>NoSuchThing</A
+		></TT
+	      >
+The directory does not exist. 
+<TT
+	      >[ENOENT, ENOTDIR]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3APermissionDenied"
+		>PermissionDenied</A
+		></TT
+	      >
+The process has insufficient privileges to perform the operation.
+<TT
+	      >[EROFS, EACCES, EPERM]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AUnsatisfiedConstraints"
+		>UnsatisfiedConstraints</A
+		></TT
+	      >
+Implementation-dependent constraints are not satisfied.  
+<TT
+	      >[EBUSY, ENOTEMPTY, EEXIST]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AUnsupportedOperation"
+		>UnsupportedOperation</A
+		></TT
+	      >
+The implementation does not support removal in this situation.
+<TT
+	      >[EINVAL]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInappropriateType"
+		>InappropriateType</A
+		></TT
+	      >
+The operand refers to an existing non-directory object.
+<TT
+	      >[ENOTDIR]</TT
+	      >
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArenameDirectory"
+	  ></A
+	  ><B
+	  >renameDirectory</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><TT
+	      ><A HREF = "System.Directory.html#v%3ArenameDirectory"
+		>renameDirectory</A
+		></TT
+	      > old new</TT
+	    > changes the name of an existing
+directory from <EM
+	    >old</EM
+	    > to <EM
+	    >new</EM
+	    >.  If the <EM
+	    >new</EM
+	    > directory
+already exists, it is atomically replaced by the <EM
+	    >old</EM
+	    > directory.
+If the <EM
+	    >new</EM
+	    > directory is neither the <EM
+	    >old</EM
+	    > directory nor an
+alias of the <EM
+	    >old</EM
+	    > directory, it is removed as if by
+<TT
+	    ><A HREF = "System.Directory.html#v%3AremoveDirectory"
+	      >removeDirectory</A
+	      ></TT
+	    >.  A conformant implementation need not support
+renaming directories in all situations (e.g. renaming to an existing
+directory, or across different physical devices), but the constraints
+must be documented.
+</P
+	  ><P
+	  >On Win32 platforms, <TT
+	    >renameDirectory</TT
+	    > fails if the <EM
+	    >new</EM
+	    > directory already
+exists.
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AHardwareFault"
+		>HardwareFault</A
+		></TT
+	      >
+A physical I/O error has occurred.
+<TT
+	      >[EIO]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInvalidArgument"
+		>InvalidArgument</A
+		></TT
+	      >
+Either operand is not a valid directory name.
+<TT
+	      >[ENAMETOOLONG, ELOOP]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3ANoSuchThing"
+		>NoSuchThing</A
+		></TT
+	      >
+The original directory does not exist, or there is no path to the target.
+<TT
+	      >[ENOENT, ENOTDIR]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3APermissionDenied"
+		>PermissionDenied</A
+		></TT
+	      >
+The process has insufficient privileges to perform the operation.
+<TT
+	      >[EROFS, EACCES, EPERM]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AResourceExhausted"
+		>ResourceExhausted</A
+		></TT
+	      >
+Insufficient resources are available to perform the operation.  
+<TT
+	      >[EDQUOT, ENOSPC, ENOMEM, EMLINK]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AUnsatisfiedConstraints"
+		>UnsatisfiedConstraints</A
+		></TT
+	      >
+Implementation-dependent constraints are not satisfied.
+<TT
+	      >[EBUSY, ENOTEMPTY, EEXIST]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AUnsupportedOperation"
+		>UnsupportedOperation</A
+		></TT
+	      >
+The implementation does not support renaming in this situation.
+<TT
+	      >[EINVAL, EXDEV]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInappropriateType"
+		>InappropriateType</A
+		></TT
+	      >
+Either path refers to an existing non-directory object.
+<TT
+	      >[ENOTDIR, EISDIR]</TT
+	      >
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetDirectoryContents"
+	  ></A
+	  ><B
+	  >getDirectoryContents</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > [<A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><TT
+	      ><A HREF = "System.Directory.html#v%3AgetDirectoryContents"
+		>getDirectoryContents</A
+		></TT
+	      > dir</TT
+	    > returns a list of <EM
+	    >all</EM
+	    > entries
+in <EM
+	    >dir</EM
+	    >. 
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AHardwareFault"
+		>HardwareFault</A
+		></TT
+	      >
+A physical I/O error has occurred.
+<TT
+	      >[EIO]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInvalidArgument"
+		>InvalidArgument</A
+		></TT
+	      >
+The operand is not a valid directory name.
+<TT
+	      >[ENAMETOOLONG, ELOOP]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3ANoSuchThing"
+		>NoSuchThing</A
+		></TT
+	      >
+The directory does not exist.
+<TT
+	      >[ENOENT, ENOTDIR]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3APermissionDenied"
+		>PermissionDenied</A
+		></TT
+	      >
+The process has insufficient privileges to perform the operation.
+<TT
+	      >[EACCES]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AResourceExhausted"
+		>ResourceExhausted</A
+		></TT
+	      >
+Insufficient resources are available to perform the operation.
+<TT
+	      >[EMFILE, ENFILE]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInappropriateType"
+		>InappropriateType</A
+		></TT
+	      >
+The path refers to an existing non-directory object.
+<TT
+	      >[ENOTDIR]</TT
+	      >
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetCurrentDirectory"
+	  ></A
+	  ><B
+	  >getCurrentDirectory</B
+	  > :: <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >If the operating system has a notion of current directories,
+<TT
+	    ><A HREF = "System.Directory.html#v%3AgetCurrentDirectory"
+	      >getCurrentDirectory</A
+	      ></TT
+	    > returns an absolute path to the
+current directory of the calling process.
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AHardwareFault"
+		>HardwareFault</A
+		></TT
+	      >
+A physical I/O error has occurred.
+<TT
+	      >[EIO]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3ANoSuchThing"
+		>NoSuchThing</A
+		></TT
+	      >
+There is no path referring to the current directory.
+<TT
+	      >[EPERM, ENOENT, ESTALE...]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3APermissionDenied"
+		>PermissionDenied</A
+		></TT
+	      >
+The process has insufficient privileges to perform the operation.
+<TT
+	      >[EACCES]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AResourceExhausted"
+		>ResourceExhausted</A
+		></TT
+	      >
+Insufficient resources are available to perform the operation.
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AUnsupportedOperation"
+		>UnsupportedOperation</A
+		></TT
+	      >
+The operating system has no notion of current directory.
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsetCurrentDirectory"
+	  ></A
+	  ><B
+	  >setCurrentDirectory</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >If the operating system has a notion of current directories,
+<TT
+	    ><TT
+	      ><A HREF = "System.Directory.html#v%3AsetCurrentDirectory"
+		>setCurrentDirectory</A
+		></TT
+	      > dir</TT
+	    > changes the current
+directory of the calling process to <EM
+	    >dir</EM
+	    >.
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AHardwareFault"
+		>HardwareFault</A
+		></TT
+	      >
+A physical I/O error has occurred.
+<TT
+	      >[EIO]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInvalidArgument"
+		>InvalidArgument</A
+		></TT
+	      >
+The operand is not a valid directory name.
+<TT
+	      >[ENAMETOOLONG, ELOOP]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3ANoSuchThing"
+		>NoSuchThing</A
+		></TT
+	      >
+The directory does not exist.
+<TT
+	      >[ENOENT, ENOTDIR]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3APermissionDenied"
+		>PermissionDenied</A
+		></TT
+	      >
+The process has insufficient privileges to perform the operation.
+<TT
+	      >[EACCES]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AUnsupportedOperation"
+		>UnsupportedOperation</A
+		></TT
+	      >
+The operating system has no notion of current directory, or the
+current directory cannot be dynamically changed.
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInappropriateType"
+		>InappropriateType</A
+		></TT
+	      >
+The path refers to an existing non-directory object.
+<TT
+	      >[ENOTDIR]</TT
+	      >
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Actions on files</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AremoveFile"
+	  ></A
+	  ><B
+	  >removeFile</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "System.Directory.html#v%3AremoveFile"
+	      >removeFile</A
+	      ></TT
+	    > <EM
+	    >file</EM
+	    > removes the directory entry for an existing file
+<EM
+	    >file</EM
+	    >, where <EM
+	    >file</EM
+	    > is not itself a directory. The
+implementation may specify additional constraints which must be
+satisfied before a file can be removed (e.g. the file may not be in
+use by other processes).
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AHardwareFault"
+		>HardwareFault</A
+		></TT
+	      >
+A physical I/O error has occurred.
+<TT
+	      >[EIO]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInvalidArgument"
+		>InvalidArgument</A
+		></TT
+	      >
+The operand is not a valid file name.
+<TT
+	      >[ENAMETOOLONG, ELOOP]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3ANoSuchThing"
+		>NoSuchThing</A
+		></TT
+	      >
+The file does not exist. 
+<TT
+	      >[ENOENT, ENOTDIR]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3APermissionDenied"
+		>PermissionDenied</A
+		></TT
+	      >
+The process has insufficient privileges to perform the operation.
+<TT
+	      >[EROFS, EACCES, EPERM]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AUnsatisfiedConstraints"
+		>UnsatisfiedConstraints</A
+		></TT
+	      >
+Implementation-dependent constraints are not satisfied.  
+<TT
+	      >[EBUSY]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInappropriateType"
+		>InappropriateType</A
+		></TT
+	      >
+The operand refers to an existing directory.
+<TT
+	      >[EPERM, EINVAL]</TT
+	      >
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArenameFile"
+	  ></A
+	  ><B
+	  >renameFile</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><TT
+	      ><A HREF = "System.Directory.html#v%3ArenameFile"
+		>renameFile</A
+		></TT
+	      > old new</TT
+	    > changes the name of an existing file system
+object from <EM
+	    >old</EM
+	    > to <EM
+	    >new</EM
+	    >.  If the <EM
+	    >new</EM
+	    > object already
+exists, it is atomically replaced by the <EM
+	    >old</EM
+	    > object.  Neither
+path may refer to an existing directory.  A conformant implementation
+need not support renaming files in all situations (e.g. renaming
+across different physical devices), but the constraints must be
+documented.
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AHardwareFault"
+		>HardwareFault</A
+		></TT
+	      >
+A physical I/O error has occurred.
+<TT
+	      >[EIO]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInvalidArgument"
+		>InvalidArgument</A
+		></TT
+	      >
+Either operand is not a valid file name.
+<TT
+	      >[ENAMETOOLONG, ELOOP]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3ANoSuchThing"
+		>NoSuchThing</A
+		></TT
+	      >
+The original file does not exist, or there is no path to the target.
+<TT
+	      >[ENOENT, ENOTDIR]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > / <TT
+	      ><A HREF = "GHC.IOBase.html#v%3APermissionDenied"
+		>PermissionDenied</A
+		></TT
+	      >
+The process has insufficient privileges to perform the operation.
+<TT
+	      >[EROFS, EACCES, EPERM]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AResourceExhausted"
+		>ResourceExhausted</A
+		></TT
+	      >
+Insufficient resources are available to perform the operation.  
+<TT
+	      >[EDQUOT, ENOSPC, ENOMEM, EMLINK]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AUnsatisfiedConstraints"
+		>UnsatisfiedConstraints</A
+		></TT
+	      >
+Implementation-dependent constraints are not satisfied.
+<TT
+	      >[EBUSY]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AUnsupportedOperation"
+		>UnsupportedOperation</A
+		></TT
+	      >
+The implementation does not support renaming in this situation.
+<TT
+	      >[EXDEV]</TT
+	      >
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AInappropriateType"
+		>InappropriateType</A
+		></TT
+	      >
+Either path refers to an existing directory.
+<TT
+	      >[ENOTDIR, EISDIR, EINVAL, EEXIST, ENOTEMPTY]</TT
+	      >
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Existence tests</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdoesFileExist"
+	  ></A
+	  ><B
+	  >doesFileExist</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The operation <TT
+	  ><A HREF = "System.Directory.html#v%3AdoesFileExist"
+	    >doesFileExist</A
+	    ></TT
+	  > returns <TT
+	  ><A HREF = "Prelude.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  >
+if the argument file exists and is not a directory, and <TT
+	  ><A HREF = "Prelude.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  > otherwise.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdoesDirectoryExist"
+	  ></A
+	  ><B
+	  >doesDirectoryExist</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The operation <TT
+	  ><A HREF = "System.Directory.html#v%3AdoesDirectoryExist"
+	    >doesDirectoryExist</A
+	    ></TT
+	  > returns <TT
+	  ><A HREF = "Prelude.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  > if the argument file
+exists and is a directory, and <TT
+	  ><A HREF = "Prelude.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  > otherwise.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >Permissions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "System.Directory.html#t%3APermissions"
+	      >Permissions</A
+	      ></TT
+	    > type is used to record whether certain operations are
+permissible on a file/directory. <TT
+	    ><A HREF = "System.Directory.html#v%3AgetPermissions"
+	      >getPermissions</A
+	      ></TT
+	    > and <TT
+	    ><A HREF = "System.Directory.html#v%3AsetPermissions"
+	      >setPermissions</A
+	      ></TT
+	    >
+get and set these permissions, respectively. Permissions apply both to
+files and directories. For directories, the executable field will be
+<TT
+	    ><A HREF = "Prelude.html#v%3AFalse"
+	      >False</A
+	      ></TT
+	    >, and for files the searchable field will be <TT
+	    ><A HREF = "Prelude.html#v%3AFalse"
+	      >False</A
+	      ></TT
+	    >. Note that
+directories may be searchable without being readable, if permission has
+been given to use them as part of a path, but not to examine the 
+directory contents.
+</P
+	  ><P
+	  >Note that to change some, but not all permissions, a construct on the following lines must be used. 
+</P
+	  ><PRE
+	  >  makeReadable f = do
+     p &lt;- getPermissions f
+     setPermissions f (p {readable = True})
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3APermissions"
+	  ></A
+	  ><B
+	  >Permissions</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "5" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3APermissions"
+		      ></A
+		      ><B
+		      >Permissions</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body" COLSPAN = "2"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3Areadable"
+			    ></A
+			    ><B
+			    >readable</B
+			    >, <A NAME = "v%3Awritable"
+			    ></A
+			    ><B
+			    >writable</B
+			    >, <A NAME = "v%3Aexecutable"
+			    ></A
+			    ><B
+			    >executable</B
+			    >, <A NAME = "v%3Asearchable"
+			    ></A
+			    ><B
+			    >searchable</B
+			    > :: <A HREF = "Prelude.html#t%3ABool"
+			    >Bool</A
+			    ></TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "System.Directory.html#t%3APermissions"
+		      >Permissions</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "System.Directory.html#t%3APermissions"
+		      >Permissions</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "System.Directory.html#t%3APermissions"
+		      >Permissions</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "System.Directory.html#t%3APermissions"
+		      >Permissions</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetPermissions"
+	  ></A
+	  ><B
+	  >getPermissions</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "System.Directory.html#t%3APermissions"
+	  >Permissions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "System.Directory.html#v%3AgetPermissions"
+	      >getPermissions</A
+	      ></TT
+	    > operation returns the
+permissions for the file or directory.
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if the user is not permitted to access
+the permissions; or
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > if the file or directory does not exist.
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsetPermissions"
+	  ></A
+	  ><B
+	  >setPermissions</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.Directory.html#t%3APermissions"
+	  >Permissions</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "System.Directory.html#v%3AsetPermissions"
+	      >setPermissions</A
+	      ></TT
+	    > operation sets the
+permissions for the file or directory.
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if the user is not permitted to set
+the permissions; or
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > if the file or directory does not exist.
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "5"
+	  >Timestamps</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetModificationTime"
+	  ></A
+	  ><B
+	  >getModificationTime</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "System.Time.html#t%3AClockTime"
+	  >ClockTime</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "System.Directory.html#v%3AgetModificationTime"
+	      >getModificationTime</A
+	      ></TT
+	    > operation returns the
+clock time at which the file or directory was last modified.
+</P
+	  ><P
+	  >The operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if the user is not permitted to access
+the modification time; or
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > if the file or directory does not exist.
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,394 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Monad.Trans</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Monad.Trans</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The MonadTrans class.
+</P
+	  ><P
+	  >Inspired by the paper
+<EM
+	    >Functional Programming with Overloading and
+Higher-Order Polymorphism</EM
+	    >, 
+Mark P Jones (<A HREF = "http://www.cse.ogi.edu/~mpj/"
+	    >http://www.cse.ogi.edu/~mpj/</A
+	    >)
+Advanced School of Functional Programming, 1995.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A NAME = "t%3AMonadTrans"
+	  ></A
+	  ><B
+	  >MonadTrans</B
+	  > t  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Alift"
+		      ></A
+		      ><B
+		      >lift</B
+		      > :: <A HREF = "Prelude.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; m a -&gt; t m a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadTrans"
+		      >MonadTrans</A
+		      > (<A HREF = "Control.Monad.Cont.html#t%3AContT"
+		      >ContT</A
+		      > r)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadTrans"
+		      >MonadTrans</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadTrans"
+		      >MonadTrans</A
+		      > <A HREF = "Control.Monad.List.html#t%3AListT"
+		      >ListT</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadTrans"
+		      >MonadTrans</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadTrans"
+		      >MonadTrans</A
+		      > (<A HREF = "Control.Monad.Reader.html#t%3AReaderT"
+		      >ReaderT</A
+		      > r)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadTrans"
+		      >MonadTrans</A
+		      > (<A HREF = "Control.Monad.State.html#t%3AStateT"
+		      >StateT</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadTrans"
+		      >MonadTrans</A
+		      > (<A HREF = "Control.Monad.Writer.html#t%3AWriterT"
+		      >WriterT</A
+		      > w)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A HREF = "Prelude.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; <A NAME = "t%3AMonadIO"
+	  ></A
+	  ><B
+	  >MonadIO</B
+	  > m  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AliftIO"
+		      ></A
+		      ><B
+		      >liftIO</B
+		      > :: <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      > a -&gt; m a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > m =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > (<A HREF = "Control.Monad.Cont.html#t%3AContT"
+		      >ContT</A
+		      > r m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e, <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > m) =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > m =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > (<A HREF = "Control.Monad.List.html#t%3AListT"
+		      >ListT</A
+		      > m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > m) =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > m =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > (<A HREF = "Control.Monad.Reader.html#t%3AReaderT"
+		      >ReaderT</A
+		      > r m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > m =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > (<A HREF = "Control.Monad.State.html#t%3AStateT"
+		      >StateT</A
+		      > s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > m) =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > (<A HREF = "Control.Monad.Writer.html#t%3AWriterT"
+		      >WriterT</A
+		      > w m)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

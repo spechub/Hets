@@ -1,0 +1,1981 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >GHC.List</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>GHC.List</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (GHC Extensions)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  internal</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  cvs-ghc@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The List data type and its operations
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Amap"
+		>map</A
+		> :: (a -&gt; b) -&gt; [a] -&gt; [b]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A%2B%2B"
+		>(++)</A
+		> :: [a] -&gt; [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afilter"
+		>filter</A
+		> :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>) -&gt; [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aconcat"
+		>concat</A
+		> :: [[a]] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ahead"
+		>head</A
+		> :: [a] -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Alast"
+		>last</A
+		> :: [a] -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Atail"
+		>tail</A
+		> :: [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ainit"
+		>init</A
+		> :: [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Anull"
+		>null</A
+		> :: [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Alength"
+		>length</A
+		> :: [a] -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A!!"
+		>(!!)</A
+		> :: [a] -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afoldl"
+		>foldl</A
+		> :: (a -&gt; b -&gt; a) -&gt; a -&gt; [b] -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afoldl1"
+		>foldl1</A
+		> :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ascanl"
+		>scanl</A
+		> :: (a -&gt; b -&gt; a) -&gt; a -&gt; [b] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ascanl1"
+		>scanl1</A
+		> :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afoldr"
+		>foldr</A
+		> :: (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afoldr1"
+		>foldr1</A
+		> :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ascanr"
+		>scanr</A
+		> :: (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; [b]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ascanr1"
+		>scanr1</A
+		> :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aiterate"
+		>iterate</A
+		> :: (a -&gt; a) -&gt; a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Arepeat"
+		>repeat</A
+		> :: a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Areplicate"
+		>replicate</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Acycle"
+		>cycle</A
+		> :: [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Atake"
+		>take</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Adrop"
+		>drop</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsplitAt"
+		>splitAt</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; [a] -&gt; ([a], [a])</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtakeWhile"
+		>takeWhile</A
+		> :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>) -&gt; [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdropWhile"
+		>dropWhile</A
+		> :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>) -&gt; [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aspan"
+		>span</A
+		> :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>) -&gt; [a] -&gt; ([a], [a])</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Abreak"
+		>break</A
+		> :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>) -&gt; [a] -&gt; ([a], [a])</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Areverse"
+		>reverse</A
+		> :: [a] -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aand"
+		>and</A
+		> :: [<A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aor"
+		>or</A
+		> :: [<A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aany"
+		>any</A
+		> :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>) -&gt; [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aall"
+		>all</A
+		> :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>) -&gt; [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aelem"
+		>elem</A
+		> :: <A HREF = "GHC.Base.html#t%3AEq"
+		>Eq</A
+		> a =&gt; a -&gt; [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnotElem"
+		>notElem</A
+		> :: <A HREF = "GHC.Base.html#t%3AEq"
+		>Eq</A
+		> a =&gt; a -&gt; [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Alookup"
+		>lookup</A
+		> :: <A HREF = "GHC.Base.html#t%3AEq"
+		>Eq</A
+		> a =&gt; a -&gt; [(a, b)] -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Amaximum"
+		>maximum</A
+		> :: <A HREF = "GHC.Base.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; [a] -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aminimum"
+		>minimum</A
+		> :: <A HREF = "GHC.Base.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; [a] -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AconcatMap"
+		>concatMap</A
+		> :: (a -&gt; [b]) -&gt; [a] -&gt; [b]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Azip"
+		>zip</A
+		> :: [a] -&gt; [b] -&gt; [(a, b)]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Azip3"
+		>zip3</A
+		> :: [a] -&gt; [b] -&gt; [c] -&gt; [(a, b, c)]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AzipWith"
+		>zipWith</A
+		> :: (a -&gt; b -&gt; c) -&gt; [a] -&gt; [b] -&gt; [c]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AzipWith3"
+		>zipWith3</A
+		> :: (a -&gt; b -&gt; c -&gt; d) -&gt; [a] -&gt; [b] -&gt; [c] -&gt; [d]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aunzip"
+		>unzip</A
+		> :: [(a, b)] -&gt; ([a], [b])</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aunzip3"
+		>unzip3</A
+		> :: [(a, b, c)] -&gt; ([a], [b], [c])</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtakeUInt_append"
+		>takeUInt_append</A
+		> :: Int# -&gt; [b] -&gt; [b] -&gt; [b]</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amap"
+	  ></A
+	  ><B
+	  >map</B
+	  > :: (a -&gt; b) -&gt; [a] -&gt; [b]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3Amap"
+	      >map</A
+	      ></TT
+	    > <TT
+	    >f xs</TT
+	    > is the list obtained by applying <TT
+	    >f</TT
+	    > to each element
+of <TT
+	    >xs</TT
+	    >, i.e.,
+</P
+	  ><PRE
+	  > map f [x1, x2, ..., xn] == [f x1, f x2, ..., f xn]
+ map f [x1, x2, ...] == [f x1, f x2, ...]</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%2B%2B"
+	  ></A
+	  ><B
+	  >(++)</B
+	  > :: [a] -&gt; [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Append two lists, i.e.,
+</P
+	  ><PRE
+	  > [x1, ..., xm] ++ [y1, ..., yn] == [x1, ..., xm, y1, ..., yn]
+ [x1, ..., xm] ++ [y1, ...] == [x1, ..., xm, y1, ...]
+</PRE
+	  ><P
+	  >If the first list is not finite, the result is the first list.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afilter"
+	  ></A
+	  ><B
+	  >filter</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3Afilter"
+	      >filter</A
+	      ></TT
+	    >, applied to a predicate and a list, returns the list of
+those elements that satisfy the predicate; i.e.,
+</P
+	  ><PRE
+	  > filter p xs = [ x | x &lt;- xs, p x]</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aconcat"
+	  ></A
+	  ><B
+	  >concat</B
+	  > :: [[a]] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Concatenate a list of lists.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ahead"
+	  ></A
+	  ><B
+	  >head</B
+	  > :: [a] -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Extract the first element of a list, which must be non-empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alast"
+	  ></A
+	  ><B
+	  >last</B
+	  > :: [a] -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Extract the last element of a list, which must be finite and non-empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atail"
+	  ></A
+	  ><B
+	  >tail</B
+	  > :: [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Extract the elements after the head of a list, which must be non-empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ainit"
+	  ></A
+	  ><B
+	  >init</B
+	  > :: [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Return all the elements of a list except the last one.
+The list must be finite and non-empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anull"
+	  ></A
+	  ><B
+	  >null</B
+	  > :: [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Test whether a list is empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alength"
+	  ></A
+	  ><B
+	  >length</B
+	  > :: [a] -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Alength"
+	    >length</A
+	    ></TT
+	  > returns the length of a finite list as an <TT
+	  ><A HREF = "GHC.Base.html#t%3AInt"
+	    >Int</A
+	    ></TT
+	  >.
+It is an instance of the more general <TT
+	  ><A HREF = "Data.List.html#v%3AgenericLength"
+	    >genericLength</A
+	    ></TT
+	  >,
+the result type of which may be any kind of number.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A!!"
+	  ></A
+	  ><B
+	  >(!!)</B
+	  > :: [a] -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>List index (subscript) operator, starting from 0.
+It is an instance of the more general <TT
+	  ><A HREF = "Data.List.html#v%3AgenericIndex"
+	    >genericIndex</A
+	    ></TT
+	  >,
+which takes an index of any integral type.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afoldl"
+	  ></A
+	  ><B
+	  >foldl</B
+	  > :: (a -&gt; b -&gt; a) -&gt; a -&gt; [b] -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3Afoldl"
+	      >foldl</A
+	      ></TT
+	    >, applied to a binary operator, a starting value (typically
+the left-identity of the operator), and a list, reduces the list
+using the binary operator, from left to right:
+</P
+	  ><PRE
+	  > foldl f z [x1, x2, ..., xn] == (...((z `f` x1) `f` x2) `f`...) `f` xn
+</PRE
+	  ><P
+	  >The list must be finite.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afoldl1"
+	  ></A
+	  ><B
+	  >foldl1</B
+	  > :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Afoldl1"
+	    >foldl1</A
+	    ></TT
+	  > is a variant of <TT
+	  ><A HREF = "GHC.List.html#v%3Afoldl"
+	    >foldl</A
+	    ></TT
+	  > that has no starting value argument,
+and thus must be applied to non-empty lists.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ascanl"
+	  ></A
+	  ><B
+	  >scanl</B
+	  > :: (a -&gt; b -&gt; a) -&gt; a -&gt; [b] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3Ascanl"
+	      >scanl</A
+	      ></TT
+	    > is similar to <TT
+	    ><A HREF = "GHC.List.html#v%3Afoldl"
+	      >foldl</A
+	      ></TT
+	    >, but returns a list of successive
+reduced values from the left:
+</P
+	  ><PRE
+	  > scanl f z [x1, x2, ...] == [z, z `f` x1, (z `f` x1) `f` x2, ...]
+</PRE
+	  ><P
+	  >Note that
+</P
+	  ><PRE
+	  > last (scanl f z xs) == foldl f z xs.</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ascanl1"
+	  ></A
+	  ><B
+	  >scanl1</B
+	  > :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3Ascanl1"
+	      >scanl1</A
+	      ></TT
+	    > is a variant of <TT
+	    ><A HREF = "GHC.List.html#v%3Ascanl"
+	      >scanl</A
+	      ></TT
+	    > that has no starting value argument:
+</P
+	  ><PRE
+	  > scanl1 f [x1, x2, ...] == [x1, x1 `f` x2, ...]</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afoldr"
+	  ></A
+	  ><B
+	  >foldr</B
+	  > :: (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3Afoldr"
+	      >foldr</A
+	      ></TT
+	    >, applied to a binary operator, a starting value (typically
+the right-identity of the operator), and a list, reduces the list
+using the binary operator, from right to left:
+</P
+	  ><PRE
+	  > foldr f z [x1, x2, ..., xn] == x1 `f` (x2 `f` ... (xn `f` z)...)</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afoldr1"
+	  ></A
+	  ><B
+	  >foldr1</B
+	  > :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Afoldr1"
+	    >foldr1</A
+	    ></TT
+	  > is a variant of <TT
+	  ><A HREF = "GHC.List.html#v%3Afoldr"
+	    >foldr</A
+	    ></TT
+	  > that has no starting value argument,
+and thus must be applied to non-empty lists.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ascanr"
+	  ></A
+	  ><B
+	  >scanr</B
+	  > :: (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; [b]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3Ascanr"
+	      >scanr</A
+	      ></TT
+	    > is the right-to-left dual of <TT
+	    ><A HREF = "GHC.List.html#v%3Ascanl"
+	      >scanl</A
+	      ></TT
+	    >.
+Note that
+</P
+	  ><PRE
+	  > head (scanr f z xs) == foldr f z xs.</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ascanr1"
+	  ></A
+	  ><B
+	  >scanr1</B
+	  > :: (a -&gt; a -&gt; a) -&gt; [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Ascanr1"
+	    >scanr1</A
+	    ></TT
+	  > is a variant of <TT
+	  ><A HREF = "GHC.List.html#v%3Ascanr"
+	    >scanr</A
+	    ></TT
+	  > that has no starting value argument.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aiterate"
+	  ></A
+	  ><B
+	  >iterate</B
+	  > :: (a -&gt; a) -&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3Aiterate"
+	      >iterate</A
+	      ></TT
+	    > <TT
+	    >f x</TT
+	    > returns an infinite list of repeated applications
+of <TT
+	    >f</TT
+	    > to <TT
+	    >x</TT
+	    >:
+</P
+	  ><PRE
+	  > iterate f x == [x, f x, f (f x), ...]</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Arepeat"
+	  ></A
+	  ><B
+	  >repeat</B
+	  > :: a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Arepeat"
+	    >repeat</A
+	    ></TT
+	  > <TT
+	  >x</TT
+	  > is an infinite list, with <TT
+	  >x</TT
+	  > the value of every element.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Areplicate"
+	  ></A
+	  ><B
+	  >replicate</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Areplicate"
+	    >replicate</A
+	    ></TT
+	  > <TT
+	  >n x</TT
+	  > is a list of length <TT
+	  >n</TT
+	  > with <TT
+	  >x</TT
+	  > the value of
+every element.
+It is an instance of the more general <TT
+	  ><A HREF = "Data.List.html#v%3AgenericReplicate"
+	    >genericReplicate</A
+	    ></TT
+	  >,
+in which <TT
+	  >n</TT
+	  > may be of any integral type.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acycle"
+	  ></A
+	  ><B
+	  >cycle</B
+	  > :: [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Acycle"
+	    >cycle</A
+	    ></TT
+	  > ties a finite list into a circular one, or equivalently,
+the infinite repetition of the original list.  It is the identity
+on infinite lists.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atake"
+	  ></A
+	  ><B
+	  >take</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Atake"
+	    >take</A
+	    ></TT
+	  > <TT
+	  >n</TT
+	  >, applied to a list <TT
+	  >xs</TT
+	  >, returns the prefix of <TT
+	  >xs</TT
+	  >
+of length <TT
+	  >n</TT
+	  >, or <TT
+	  >xs</TT
+	  > itself if <TT
+	  >n &gt; <TT
+	    ><A HREF = "GHC.List.html#v%3Alength"
+	      >length</A
+	      ></TT
+	    > xs</TT
+	  >.
+It is an instance of the more general <TT
+	  ><A HREF = "Data.List.html#v%3AgenericTake"
+	    >genericTake</A
+	    ></TT
+	  >,
+in which <TT
+	  >n</TT
+	  > may be of any integral type.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Adrop"
+	  ></A
+	  ><B
+	  >drop</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Adrop"
+	    >drop</A
+	    ></TT
+	  > <TT
+	  >n xs</TT
+	  > returns the suffix of <TT
+	  >xs</TT
+	  >
+after the first <TT
+	  >n</TT
+	  > elements, or <TT
+	  >[]</TT
+	  > if <TT
+	  >n &gt; <TT
+	    ><A HREF = "GHC.List.html#v%3Alength"
+	      >length</A
+	      ></TT
+	    > xs</TT
+	  >.
+It is an instance of the more general <TT
+	  ><A HREF = "Data.List.html#v%3AgenericDrop"
+	    >genericDrop</A
+	    ></TT
+	  >,
+in which <TT
+	  >n</TT
+	  > may be of any integral type.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsplitAt"
+	  ></A
+	  ><B
+	  >splitAt</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; [a] -&gt; ([a], [a])</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3AsplitAt"
+	    >splitAt</A
+	    ></TT
+	  > <TT
+	  >n xs</TT
+	  > is equivalent to <TT
+	  >(<TT
+	    ><A HREF = "GHC.List.html#v%3Atake"
+	      >take</A
+	      ></TT
+	    > n xs, <TT
+	    ><A HREF = "GHC.List.html#v%3Adrop"
+	      >drop</A
+	      ></TT
+	    > n xs)</TT
+	  >.
+It is an instance of the more general <TT
+	  ><A HREF = "Data.List.html#v%3AgenericSplitAt"
+	    >genericSplitAt</A
+	    ></TT
+	  >,
+in which <TT
+	  >n</TT
+	  > may be of any integral type.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtakeWhile"
+	  ></A
+	  ><B
+	  >takeWhile</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3AtakeWhile"
+	    >takeWhile</A
+	    ></TT
+	  >, applied to a predicate <TT
+	  >p</TT
+	  > and a list <TT
+	  >xs</TT
+	  >, returns the
+longest prefix (possibly empty) of <TT
+	  >xs</TT
+	  > of elements that satisfy <TT
+	  >p</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdropWhile"
+	  ></A
+	  ><B
+	  >dropWhile</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3AdropWhile"
+	    >dropWhile</A
+	    ></TT
+	  > <TT
+	  >p xs</TT
+	  > returns the suffix remaining after <TT
+	  ><A HREF = "GHC.List.html#v%3AtakeWhile"
+	    >takeWhile</A
+	    ></TT
+	  > <TT
+	  >p xs</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aspan"
+	  ></A
+	  ><B
+	  >span</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; [a] -&gt; ([a], [a])</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Aspan"
+	    >span</A
+	    ></TT
+	  > <TT
+	  >p xs</TT
+	  > is equivalent to <TT
+	  >(<TT
+	    ><A HREF = "GHC.List.html#v%3AtakeWhile"
+	      >takeWhile</A
+	      ></TT
+	    > p xs, <TT
+	    ><A HREF = "GHC.List.html#v%3AdropWhile"
+	      >dropWhile</A
+	      ></TT
+	    > p xs)</TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abreak"
+	  ></A
+	  ><B
+	  >break</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; [a] -&gt; ([a], [a])</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Abreak"
+	    >break</A
+	    ></TT
+	  > <TT
+	  >p</TT
+	  > is equivalent to <TT
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3Aspan"
+	      >span</A
+	      ></TT
+	    > (<TT
+	    ><A HREF = "GHC.Base.html#v%3Anot"
+	      >not</A
+	      ></TT
+	    > . p)</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Areverse"
+	  ></A
+	  ><B
+	  >reverse</B
+	  > :: [a] -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Areverse"
+	    >reverse</A
+	    ></TT
+	  > <TT
+	  >xs</TT
+	  > returns the elements of <TT
+	  >xs</TT
+	  > in reverse order.
+<TT
+	  >xs</TT
+	  > must be finite.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aand"
+	  ></A
+	  ><B
+	  >and</B
+	  > :: [<A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Aand"
+	    >and</A
+	    ></TT
+	  > returns the conjunction of a Boolean list.  For the result to be
+<TT
+	  ><A HREF = "GHC.Base.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  >, the list must be finite; <TT
+	  ><A HREF = "GHC.Base.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  >, however, results from a <TT
+	  ><A HREF = "GHC.Base.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  >
+value at a finite index of a finite or infinite list.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aor"
+	  ></A
+	  ><B
+	  >or</B
+	  > :: [<A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Aor"
+	    >or</A
+	    ></TT
+	  > returns the disjunction of a Boolean list.  For the result to be
+<TT
+	  ><A HREF = "GHC.Base.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  >, the list must be finite; <TT
+	  ><A HREF = "GHC.Base.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  >, however, results from a <TT
+	  ><A HREF = "GHC.Base.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  >
+value at a finite index of a finite or infinite list.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aany"
+	  ></A
+	  ><B
+	  >any</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Applied to a predicate and a list, <TT
+	  ><A HREF = "GHC.List.html#v%3Aany"
+	    >any</A
+	    ></TT
+	  > determines if any element
+of the list satisfies the predicate.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aall"
+	  ></A
+	  ><B
+	  >all</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Applied to a predicate and a list, <TT
+	  ><A HREF = "GHC.List.html#v%3Aall"
+	    >all</A
+	    ></TT
+	  > determines if all elements
+of the list satisfy the predicate.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aelem"
+	  ></A
+	  ><B
+	  >elem</B
+	  > :: <A HREF = "GHC.Base.html#t%3AEq"
+	  >Eq</A
+	  > a =&gt; a -&gt; [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Aelem"
+	    >elem</A
+	    ></TT
+	  > is the list membership predicate, usually written in infix form,
+e.g., <TT
+	  >x <TT
+	    ><A HREF = "GHC.List.html#v%3Aelem"
+	      >elem</A
+	      ></TT
+	    > xs</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnotElem"
+	  ></A
+	  ><B
+	  >notElem</B
+	  > :: <A HREF = "GHC.Base.html#t%3AEq"
+	  >Eq</A
+	  > a =&gt; a -&gt; [a] -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3AnotElem"
+	    >notElem</A
+	    ></TT
+	  > is the negation of <TT
+	  ><A HREF = "GHC.List.html#v%3Aelem"
+	    >elem</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alookup"
+	  ></A
+	  ><B
+	  >lookup</B
+	  > :: <A HREF = "GHC.Base.html#t%3AEq"
+	  >Eq</A
+	  > a =&gt; a -&gt; [(a, b)] -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Alookup"
+	    >lookup</A
+	    ></TT
+	  > <TT
+	  >key assocs</TT
+	  > looks up a key in an association list.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amaximum"
+	  ></A
+	  ><B
+	  >maximum</B
+	  > :: <A HREF = "GHC.Base.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; [a] -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Amaximum"
+	    >maximum</A
+	    ></TT
+	  > returns the maximum value from a list,
+which must be non-empty, finite, and of an ordered type.
+It is a special case of <TT
+	  ><A HREF = "Data.List.html#v%3AmaximumBy"
+	    >maximumBy</A
+	    ></TT
+	  >, which allows the
+programmer to supply their own comparison function.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aminimum"
+	  ></A
+	  ><B
+	  >minimum</B
+	  > :: <A HREF = "GHC.Base.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; [a] -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Aminimum"
+	    >minimum</A
+	    ></TT
+	  > returns the minimum value from a list,
+which must be non-empty, finite, and of an ordered type.
+It is a special case of <TT
+	  ><A HREF = "Data.List.html#v%3AminimumBy"
+	    >minimumBy</A
+	    ></TT
+	  >, which allows the
+programmer to supply their own comparison function.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AconcatMap"
+	  ></A
+	  ><B
+	  >concatMap</B
+	  > :: (a -&gt; [b]) -&gt; [a] -&gt; [b]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Map a function over a list and concatenate the results.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Azip"
+	  ></A
+	  ><B
+	  >zip</B
+	  > :: [a] -&gt; [b] -&gt; [(a, b)]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Azip"
+	    >zip</A
+	    ></TT
+	  > takes two lists and returns a list of corresponding pairs.
+If one input list is short, excess elements of the longer list are
+discarded.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Azip3"
+	  ></A
+	  ><B
+	  >zip3</B
+	  > :: [a] -&gt; [b] -&gt; [c] -&gt; [(a, b, c)]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Azip3"
+	    >zip3</A
+	    ></TT
+	  > takes three lists and returns a list of triples, analogous to
+<TT
+	  ><A HREF = "GHC.List.html#v%3Azip"
+	    >zip</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AzipWith"
+	  ></A
+	  ><B
+	  >zipWith</B
+	  > :: (a -&gt; b -&gt; c) -&gt; [a] -&gt; [b] -&gt; [c]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3AzipWith"
+	    >zipWith</A
+	    ></TT
+	  > generalises <TT
+	  ><A HREF = "GHC.List.html#v%3Azip"
+	    >zip</A
+	    ></TT
+	  > by zipping with the function given
+as the first argument, instead of a tupling function.
+For example, <TT
+	  ><TT
+	    ><A HREF = "GHC.List.html#v%3AzipWith"
+	      >zipWith</A
+	      ></TT
+	    > (+)</TT
+	  > is applied to two lists to produce the
+list of corresponding sums.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AzipWith3"
+	  ></A
+	  ><B
+	  >zipWith3</B
+	  > :: (a -&gt; b -&gt; c -&gt; d) -&gt; [a] -&gt; [b] -&gt; [c] -&gt; [d]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "GHC.List.html#v%3AzipWith3"
+	    >zipWith3</A
+	    ></TT
+	  > function takes a function which combines three
+elements, as well as three lists and returns a list of their point-wise
+combination, analogous to <TT
+	  ><A HREF = "GHC.List.html#v%3AzipWith"
+	    >zipWith</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aunzip"
+	  ></A
+	  ><B
+	  >unzip</B
+	  > :: [(a, b)] -&gt; ([a], [b])</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.List.html#v%3Aunzip"
+	    >unzip</A
+	    ></TT
+	  > transforms a list of pairs into a list of first components
+and a list of second components.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aunzip3"
+	  ></A
+	  ><B
+	  >unzip3</B
+	  > :: [(a, b, c)] -&gt; ([a], [b], [c])</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "GHC.List.html#v%3Aunzip3"
+	    >unzip3</A
+	    ></TT
+	  > function takes a list of triples and returns three
+lists, analogous to <TT
+	  ><A HREF = "GHC.List.html#v%3Aunzip"
+	    >unzip</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtakeUInt_append"
+	  ></A
+	  ><B
+	  >takeUInt_append</B
+	  > :: Int# -&gt; [b] -&gt; [b] -&gt; [b]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

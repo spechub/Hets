@@ -1,0 +1,902 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >GHC.Ptr</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>GHC.Ptr</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (GHC Extensions)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  internal</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  ffi@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "GHC.Ptr.html#t%3APtr"
+	    >Ptr</A
+	    ></TT
+	  > and <TT
+	  ><A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	    >FunPtr</A
+	    ></TT
+	  > types and operations.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3APtr"
+		>Ptr</A
+		> a = <A HREF = "#v%3APtr"
+		>Ptr</A
+		> Addr#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnullPtr"
+		>nullPtr</A
+		> :: <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcastPtr"
+		>castPtr</A
+		> :: <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AplusPtr"
+		>plusPtr</A
+		> :: <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AalignPtr"
+		>alignPtr</A
+		> :: <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AminusPtr"
+		>minusPtr</A
+		> :: <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> b -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AFunPtr"
+		>FunPtr</A
+		> a = <A HREF = "#v%3AFunPtr"
+		>FunPtr</A
+		> Addr#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnullFunPtr"
+		>nullFunPtr</A
+		> :: <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		>FunPtr</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcastFunPtr"
+		>castFunPtr</A
+		> :: <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		>FunPtr</A
+		> a -&gt; <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		>FunPtr</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcastFunPtrToPtr"
+		>castFunPtrToPtr</A
+		> :: <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		>FunPtr</A
+		> a -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcastPtrToFunPtr"
+		>castPtrToFunPtr</A
+		> :: <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		>FunPtr</A
+		> b</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3APtr"
+	  ></A
+	  ><B
+	  >Ptr</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>A value of type <TT
+		  ><TT
+		    ><A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      ></TT
+		    > a</TT
+		  > represents a pointer to an object, or an
+array of objects, which may be marshalled to or from Haskell values
+of type <TT
+		  >a</TT
+		  >.
+</P
+		><P
+		>The type <TT
+		  >a</TT
+		  > will normally be an instance of class
+<TT
+		  ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		    >Storable</A
+		    ></TT
+		  > which provides the marshalling operations.</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3APtr"
+		      ></A
+		      ><B
+		      >Ptr</B
+		      > Addr#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a))</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a))</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a) (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a) <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnullPtr"
+	  ></A
+	  ><B
+	  >nullPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The constant <TT
+	  ><A HREF = "GHC.Ptr.html#v%3AnullPtr"
+	    >nullPtr</A
+	    ></TT
+	  > contains a distinguished value of <TT
+	  ><A HREF = "GHC.Ptr.html#t%3APtr"
+	    >Ptr</A
+	    ></TT
+	  >
+that is not associated with a valid memory location.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcastPtr"
+	  ></A
+	  ><B
+	  >castPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "GHC.Ptr.html#v%3AcastPtr"
+	    >castPtr</A
+	    ></TT
+	  > function casts a pointer from one type to another.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AplusPtr"
+	  ></A
+	  ><B
+	  >plusPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Advances the given address by the given offset in bytes.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AalignPtr"
+	  ></A
+	  ><B
+	  >alignPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Given an arbitrary address and an alignment constraint,
+<TT
+	  ><A HREF = "GHC.Ptr.html#v%3AalignPtr"
+	    >alignPtr</A
+	    ></TT
+	  > yields the next higher address that fulfills the
+alignment constraint.  An alignment constraint <TT
+	  >x</TT
+	  > is fulfilled by
+any address divisible by <TT
+	  >x</TT
+	  >.  This operation is idempotent.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AminusPtr"
+	  ></A
+	  ><B
+	  >minusPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > b -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computes the offset required to get from the first to the second
+argument.  We have 
+</P
+	  ><PRE
+	  > p2 == p1 `plusPtr` (p2 `minusPtr` p1)</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AFunPtr"
+	  ></A
+	  ><B
+	  >FunPtr</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>A value of type <TT
+		  ><TT
+		    ><A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      ></TT
+		    > a</TT
+		  > is a pointer to a piece of code. It
+may be the pointer to a C function or to a Haskell function created
+using <TT
+		  >foreign export dynamic</TT
+		  >.  A <TT
+		  >foreign export
+dynamic</TT
+		  > should normally be declared to produce a
+<TT
+		  ><A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		    >FunPtr</A
+		    ></TT
+		  > of the correct type.  For example:
+</P
+		><PRE
+		> type Compare = Int -&gt; Int -&gt; Bool
+ foreign export dynamic mkCompare :: Compare -&gt; IO (FunPtr Compare)</PRE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AFunPtr"
+		      ></A
+		      ><B
+		      >FunPtr</B
+		      > Addr#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a))</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > ix =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > ix (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a))</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s) (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a) (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a) <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnullFunPtr"
+	  ></A
+	  ><B
+	  >nullFunPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The constant <TT
+	  ><A HREF = "GHC.Ptr.html#v%3AnullFunPtr"
+	    >nullFunPtr</A
+	    ></TT
+	  > contains a
+distinguished value of <TT
+	  ><A HREF = "GHC.Ptr.html#t%3APtr"
+	    >Ptr</A
+	    ></TT
+	  > that is not
+associated with a valid memory location</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcastFunPtr"
+	  ></A
+	  ><B
+	  >castFunPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > a -&gt; <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Casts a <TT
+	  ><A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	    >FunPtr</A
+	    ></TT
+	  > to a <TT
+	  ><A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	    >FunPtr</A
+	    ></TT
+	  > of a different type</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcastFunPtrToPtr"
+	  ></A
+	  ><B
+	  >castFunPtrToPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > a -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Casts a <TT
+	  ><A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	    >FunPtr</A
+	    ></TT
+	  > to a <TT
+	  ><A HREF = "GHC.Ptr.html#t%3APtr"
+	    >Ptr</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcastPtrToFunPtr"
+	  ></A
+	  ><B
+	  >castPtrToFunPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Casts a <TT
+	  ><A HREF = "GHC.Ptr.html#t%3APtr"
+	    >Ptr</A
+	    ></TT
+	  > to a <TT
+	  ><A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	    >FunPtr</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

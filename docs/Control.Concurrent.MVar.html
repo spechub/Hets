@@ -1,0 +1,907 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Concurrent.MVar</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Concurrent.MVar</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (concurrency)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    ><TT
+		      >MVar</TT
+		      >s</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Synchronising variables
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AMVar"
+		>MVar</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewEmptyMVar"
+		>newEmptyMVar</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewMVar"
+		>newMVar</A
+		> :: a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtakeMVar"
+		>takeMVar</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AputMVar"
+		>putMVar</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadMVar"
+		>readMVar</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AswapMVar"
+		>swapMVar</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtryTakeMVar"
+		>tryTakeMVar</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtryPutMVar"
+		>tryPutMVar</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisEmptyMVar"
+		>isEmptyMVar</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithMVar"
+		>withMVar</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmodifyMVar_"
+		>modifyMVar_</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmodifyMVar"
+		>modifyMVar</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (a, b)) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AaddMVarFinalizer"
+		>addMVarFinalizer</A
+		> :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> () -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  ><TT
+	    >MVar</TT
+	    >s</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AMVar"
+	  ></A
+	  ><B
+	  >MVar</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >An <TT
+		><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		  >MVar</A
+		  ></TT
+		> (pronounced &quot;em-var&quot;) is a synchronising variable, used
+for communication between concurrent threads.  It can be thought of
+as a a box, which may be empty or full.
+</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+		      >MVar</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewEmptyMVar"
+	  ></A
+	  ><B
+	  >newEmptyMVar</B
+	  > :: <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Create an <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > which is initially empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewMVar"
+	  ></A
+	  ><B
+	  >newMVar</B
+	  > :: a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Create an <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > which contains the supplied value.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtakeMVar"
+	  ></A
+	  ><B
+	  >takeMVar</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Return the contents of the <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >.  If the <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > is currently
+empty, <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+	      >takeMVar</A
+	      ></TT
+	    > will wait until it is full.  After a <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+	      >takeMVar</A
+	      ></TT
+	    >, 
+the <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > is left empty.
+</P
+	  ><P
+	  >If several threads are competing to take the same <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >, one is chosen
+to continue at random when the <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > becomes full.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AputMVar"
+	  ></A
+	  ><B
+	  >putMVar</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Put a value into an <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >.  If the <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > is currently full,
+<TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AputMVar"
+	      >putMVar</A
+	      ></TT
+	    > will wait until it becomes empty.
+</P
+	  ><P
+	  >If several threads are competing to fill the same <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >, one is
+chosen to continue at random with the <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > becomes empty.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadMVar"
+	  ></A
+	  ><B
+	  >readMVar</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This is a combination of <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+	    >takeMVar</A
+	    ></TT
+	  > and <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AputMVar"
+	    >putMVar</A
+	    ></TT
+	  >; ie. it takes the value
+from the <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  >, puts it back, and also returns it.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AswapMVar"
+	  ></A
+	  ><B
+	  >swapMVar</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Swap the contents of an <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > for a new value.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtryTakeMVar"
+	  ></A
+	  ><B
+	  >tryTakeMVar</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A non-blocking version of <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+	    >takeMVar</A
+	    ></TT
+	  >.  The <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AtryTakeMVar"
+	    >tryTakeMVar</A
+	    ></TT
+	  > function
+returns immediately, with <TT
+	  ><A HREF = "Prelude.html#v%3ANothing"
+	    >Nothing</A
+	    ></TT
+	  > if the <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > was empty, or
+<TT
+	  ><TT
+	    ><A HREF = "Prelude.html#v%3AJust"
+	      >Just</A
+	      ></TT
+	    > a</TT
+	  > if the <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > was full with contents <TT
+	  >a</TT
+	  >.  After <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AtryTakeMVar"
+	    >tryTakeMVar</A
+	    ></TT
+	  >,
+the <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > is left empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtryPutMVar"
+	  ></A
+	  ><B
+	  >tryPutMVar</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A non-blocking version of <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AputMVar"
+	    >putMVar</A
+	    ></TT
+	  >.  The <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AtryPutMVar"
+	    >tryPutMVar</A
+	    ></TT
+	  > function
+attempts to put the value <TT
+	  >a</TT
+	  > into the <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  >, returning <TT
+	  ><A HREF = "Prelude.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  > if
+it was successful, or <TT
+	  ><A HREF = "Prelude.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  > otherwise.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisEmptyMVar"
+	  ></A
+	  ><B
+	  >isEmptyMVar</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Check whether a given <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > is empty.
+</P
+	  ><P
+	  >Notice that the boolean value returned  is just a snapshot of
+the state of the MVar. By the time you get to react on its result,
+the MVar may have been filled (or emptied) - so be extremely
+careful when using this operation.   Use <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AtryTakeMVar"
+	      >tryTakeMVar</A
+	      ></TT
+	    > instead if possible.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithMVar"
+	  ></A
+	  ><B
+	  >withMVar</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AwithMVar"
+	    >withMVar</A
+	    ></TT
+	  > is a safe wrapper for operating on the contents of an
+<TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  >.  This operation is exception-safe: it will replace the
+original contents of the <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > if an exception is raised (see
+<A HREF = "Control.Exception.html"
+	  >Control.Exception</A
+	  >).
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmodifyMVar_"
+	  ></A
+	  ><B
+	  >modifyMVar_</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A safe wrapper for modifying the contents of an <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  >.  Like <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AwithMVar"
+	    >withMVar</A
+	    ></TT
+	  >, 
+<TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AmodifyMVar"
+	    >modifyMVar</A
+	    ></TT
+	  > will replace the original contents of the <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > if an
+exception is raised during the operation.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmodifyMVar"
+	  ></A
+	  ><B
+	  >modifyMVar</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (a, b)) -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A slight variation on <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#v%3AmodifyMVar_"
+	    >modifyMVar_</A
+	    ></TT
+	  > that allows a value to be
+returned (<TT
+	  >b</TT
+	  >) in addition to the modified value of the <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  >.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AaddMVarFinalizer"
+	  ></A
+	  ><B
+	  >addMVarFinalizer</B
+	  > :: <A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > () -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Add a finalizer to an <TT
+	  ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > (GHC only).  See <A HREF = "Foreign.ForeignPtr.html"
+	  >Foreign.ForeignPtr</A
+	  > and
+<A HREF = "System.Mem.Weak.html"
+	  >System.Mem.Weak</A
+	  > for more about finalizers.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

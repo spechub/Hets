@@ -1,0 +1,1622 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Array.IArray</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Array.IArray</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Class of immutable array types</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Class of array types with immutable bounds</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Ordinary boxed/lazy arrays</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#4"
+		    >The <TT
+		      >Ix</TT
+		      > class and operations</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#5"
+		    >Array construction</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#6"
+		    >Indexing arrays</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#7"
+		    >Incremental updates</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#8"
+		    >Derived Arrays</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#9"
+		    >Deconstructing arrays</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Immutable arrays, with an overloaded interface.  For array types
+which can be used with this interface, see <A HREF = "Data.Array.html"
+	  >Data.Array</A
+	  >,
+<A HREF = "Data.Array.Unboxed.html"
+	  >Data.Array.Unboxed</A
+	  >, and <A HREF = "Data.Array.Diff.html"
+	  >Data.Array.Diff</A
+	  >.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		>HasBounds</A
+		> a =&gt; <A HREF = "#t%3AIArray"
+		>IArray</A
+		> a e </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "#t%3AHasBounds"
+		>HasBounds</A
+		> a </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AArray"
+		>Array</A
+		> i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Data.Ix.html"
+		>Data.Ix</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aarray"
+		>array</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; (i, i) -&gt; [(i, e)] -&gt; a i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AlistArray"
+		>listArray</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; (i, i) -&gt; [e] -&gt; a i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AaccumArray"
+		>accumArray</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; (e -&gt; e' -&gt; e) -&gt; e -&gt; (i, i) -&gt; [(i, e')] -&gt; a i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A!"
+		>(!)</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; a i e -&gt; i -&gt; e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A%2F%2F"
+		>(//)</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; a i e -&gt; [(i, e)] -&gt; a i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aaccum"
+		>accum</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; (e -&gt; e' -&gt; e) -&gt; a i e -&gt; [(i, e')] -&gt; a i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aamap"
+		>amap</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e', <A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; (e' -&gt; e) -&gt; a i e' -&gt; a i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aixmap"
+		>ixmap</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> j) =&gt; (i, i) -&gt; (i -&gt; j) -&gt; a j e -&gt; a i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Abounds"
+		>bounds</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		>HasBounds</A
+		> a, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; a i e -&gt; (i, i)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aindices"
+		>indices</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		>HasBounds</A
+		> a, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; a i e -&gt; [i]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aelems"
+		>elems</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; a i e -&gt; [e]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aassocs"
+		>assocs</A
+		> :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; a i e -&gt; [(i, e)]</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Class of immutable array types</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+	  >HasBounds</A
+	  > a =&gt; <A NAME = "t%3AIArray"
+	  ></A
+	  ><B
+	  >IArray</B
+	  > a e </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>Class of immutable array types.
+</P
+		><P
+		>An array type has the form <TT
+		  >(a i e)</TT
+		  > where <TT
+		  >a</TT
+		  > is the array type
+constructor (kind <TT
+		  >* -&gt; * -&gt; *</TT
+		  >), <TT
+		  >i</TT
+		  > is the index type (a member of
+the class <TT
+		  ><A HREF = "Data.Ix.html#t%3AIx"
+		    >Ix</A
+		    ></TT
+		  >), and <TT
+		  >e</TT
+		  > is the element type.  The <TT
+		  >IArray</TT
+		  > class is
+parameterised over both <TT
+		  >a</TT
+		  > and <TT
+		  >e</TT
+		  >, so that instances specialised to
+certain element types can be defined.
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      > e</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "Prelude.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "Prelude.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "Prelude.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "Prelude.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > (<A HREF = "GHC.Stable.html#t%3AStablePtr"
+		      >StablePtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt8"
+		      >Int8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt16"
+		      >Int16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt32"
+		      >Int32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt64"
+		      >Int64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord8"
+		      >Word8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord16"
+		      >Word16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord32"
+		      >Word32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord64"
+		      >Word64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIOArray"
+		      >IOArray</A
+		      >) e</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Stable.html#t%3AStablePtr"
+		      >StablePtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Int.html#t%3AInt8"
+		      >Int8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Int.html#t%3AInt16"
+		      >Int16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Int.html#t%3AInt32"
+		      >Int32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Int.html#t%3AInt64"
+		      >Int64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord8"
+		      >Word8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord16"
+		      >Word16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord32"
+		      >Word32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord64"
+		      >Word64</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Class of array types with immutable bounds</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A NAME = "t%3AHasBounds"
+	  ></A
+	  ><B
+	  >HasBounds</B
+	  > a </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Class of array types with bounds</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > <A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > <A HREF = "Data.Array.Base.html#t%3AUArray"
+		      >UArray</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > (<A HREF = "GHC.Arr.html#t%3ASTArray"
+		      >STArray</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > (<A HREF = "Data.Array.Base.html#t%3ASTUArray"
+		      >STUArray</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > a =&gt; <A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIOArray"
+		      >IOArray</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > <A HREF = "Data.Array.Storable.html#t%3AStorableArray"
+		      >StorableArray</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Ordinary boxed/lazy arrays</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AArray"
+	  ></A
+	  ><B
+	  >Array</B
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > b) =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > <A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      > e</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > i =&gt; <A HREF = "Prelude.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      > i)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > i, <A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > e) =&gt; <A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      > i e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > i, <A HREF = "Prelude.html#t%3AOrd"
+		      >Ord</A
+		      > e) =&gt; <A HREF = "Prelude.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      > i e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > a, <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > b) =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a, <A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > a, <A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > b) =&gt; <A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > (<A HREF = "Data.Array.IArray.html#t%3AArray"
+		      >Array</A
+		      > a b)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >The <TT
+	    >Ix</TT
+	    > class and operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Data.Ix.html"
+	  >Data.Ix</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "5"
+	  >Array construction</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aarray"
+	  ></A
+	  ><B
+	  >array</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i)</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >=&gt; (i, i)</TD
+	      ><TD CLASS = "rdoc"
+	      >bounds of the array: (lowest,highest)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; [(i, e)]</TD
+	      ><TD CLASS = "rdoc"
+	      >list of associations</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; a i e</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      ><P
+		>Constructs an immutable array from a pair of bounds and a list of
+initial associations.
+</P
+		><P
+		>The bounds are specified as a pair of the lowest and highest bounds in
+the array respectively.  For example, a one-origin vector of length 10
+has bounds (1,10), and a one-origin 10 by 10 matrix has bounds
+((1,1),(10,10)).
+</P
+		><P
+		>An association is a pair of the form <TT
+		  >(i,x)</TT
+		  >, which defines the value
+of the array at index <TT
+		  >i</TT
+		  > to be <TT
+		  >x</TT
+		  >.  The array is undefined if any
+index in the list is out of bounds.  If any two associations in the
+list have the same index, the value at that index is undefined.
+</P
+		><P
+		>Because the indices must be checked for these errors, <TT
+		  ><A HREF = "Data.Array.IArray.html#v%3Aarray"
+		    >array</A
+		    ></TT
+		  > is
+strict in the bounds argument and in the indices of the association
+list.  Whether <TT
+		  >array</TT
+		  > is strict or non-strict in the elements depends
+on the array type: <TT
+		  ><A HREF = "Data.Array.html#t%3AArray"
+		    >Array</A
+		    ></TT
+		  > is a non-strict array type, but
+all of the <TT
+		  ><A HREF = "Data.Array.Unboxed.html#t%3AUArray"
+		    >UArray</A
+		    ></TT
+		  > arrays are strict.  Thus in a
+non-strict array, recurrences such as the following are possible:
+</P
+		><PRE
+		> a = array (1,100) ((1,1) : [(i, i * a!(i-1)) | i \&lt;- [2..100]])
+</PRE
+		><P
+		>Not every index within the bounds of the array need appear in the
+association list, but the values associated with indices that do not
+appear will be undefined.
+</P
+		><P
+		>If, in any dimension, the lower bound is greater than the upper bound,
+then the array is legal, but empty. Indexing an empty array always
+gives an array-bounds error, but <TT
+		  ><A HREF = "Data.Array.IArray.html#v%3Abounds"
+		    >bounds</A
+		    ></TT
+		  > still yields the bounds with
+which the array was constructed.
+</P
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlistArray"
+	  ></A
+	  ><B
+	  >listArray</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+	  >IArray</A
+	  > a e, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; (i, i) -&gt; [e] -&gt; a i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Constructs an immutable array from a list of initial elements.
+The list gives the elements of the array in ascending order
+beginning with the lowest index.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AaccumArray"
+	  ></A
+	  ><B
+	  >accumArray</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+		>IArray</A
+		> a e, <A HREF = "Data.Ix.html#t%3AIx"
+		>Ix</A
+		> i)</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >=&gt; (e -&gt; e' -&gt; e)</TD
+	      ><TD CLASS = "rdoc"
+	      >An accumulating function</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; e</TD
+	      ><TD CLASS = "rdoc"
+	      >A default element</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; (i, i)</TD
+	      ><TD CLASS = "rdoc"
+	      >The bounds of the array</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; [(i, e')]</TD
+	      ><TD CLASS = "rdoc"
+	      >List of associations</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; a i e</TD
+	      ><TD CLASS = "rdoc"
+	      >Returns: the array</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      ><P
+		>Constructs an immutable array from a list of associations.  Unlike
+<TT
+		  ><A HREF = "Data.Array.IArray.html#v%3Aarray"
+		    >array</A
+		    ></TT
+		  >, the same index is allowed to occur multiple times in the list
+of associations; an <EM
+		  >accumulating function</EM
+		  > is used to combine the
+values of elements with the same index.
+</P
+		><P
+		>For example, given a list of values of some index type, hist produces
+a histogram of the number of occurrences of each index within a
+specified range:
+</P
+		><PRE
+		> hist :: (Ix a, Num b) =&gt; (a,a) -&gt; [a] -&gt; Array a b
+ hist bnds is = accumArray (+) 0 bnds [(i, 1) | i\&lt;-is, inRange bnds i]
+</PRE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "6"
+	  >Indexing arrays</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A!"
+	  ></A
+	  ><B
+	  >(!)</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+	  >IArray</A
+	  > a e, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; a i e -&gt; i -&gt; e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns the element of an immutable array at the specified index.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "7"
+	  >Incremental updates</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%2F%2F"
+	  ></A
+	  ><B
+	  >(//)</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+	  >IArray</A
+	  > a e, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; a i e -&gt; [(i, e)] -&gt; a i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Takes an array and a list of pairs and returns an array identical to
+the left argument except that it has been updated by the associations
+in the right argument. (As with the array function, the indices in the
+association list must be unique for the updated elements to be
+defined.) For example, if m is a 1-origin, n by n matrix, then
+<TT
+	    >m//[((i,i), 0) | i &lt;- [1..n]]</TT
+	    > is the same matrix, except with the
+diagonal zeroed.
+</P
+	  ><P
+	  >For most array types, this operation is O(<EM
+	    >n</EM
+	    >) where <EM
+	    >n</EM
+	    > is the size
+of the array.  However, the <TT
+	    ><A HREF = "Data.Array.Diff.html#t%3ADiffArray"
+	      >DiffArray</A
+	      ></TT
+	    > type provides
+this operation with complexity linear in the number of updates.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aaccum"
+	  ></A
+	  ><B
+	  >accum</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+	  >IArray</A
+	  > a e, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; (e -&gt; e' -&gt; e) -&gt; a i e -&gt; [(i, e')] -&gt; a i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    >accum f</TT
+	    > takes an array and an association list and accumulates pairs
+from the list into the array with the accumulating function <TT
+	    >f</TT
+	    >. Thus
+<TT
+	    ><A HREF = "Data.Array.IArray.html#v%3AaccumArray"
+	      >accumArray</A
+	      ></TT
+	    > can be defined using <TT
+	    ><A HREF = "Data.Array.IArray.html#v%3Aaccum"
+	      >accum</A
+	      ></TT
+	    >:
+</P
+	  ><PRE
+	  > accumArray f z b = accum f (array b [(i, z) | i \&lt;- range b])
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "8"
+	  >Derived Arrays</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aamap"
+	  ></A
+	  ><B
+	  >amap</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+	  >IArray</A
+	  > a e', <A HREF = "Data.Array.IArray.html#t%3AIArray"
+	  >IArray</A
+	  > a e, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; (e' -&gt; e) -&gt; a i e' -&gt; a i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns a new array derived from the original array by applying a
+function to each of the elements.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aixmap"
+	  ></A
+	  ><B
+	  >ixmap</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+	  >IArray</A
+	  > a e, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > j) =&gt; (i, i) -&gt; (i -&gt; j) -&gt; a j e -&gt; a i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns a new array derived from the original array by applying a
+function to each of the indices.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "9"
+	  >Deconstructing arrays</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abounds"
+	  ></A
+	  ><B
+	  >bounds</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+	  >HasBounds</A
+	  > a, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; a i e -&gt; (i, i)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Extracts the bounds of an array</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aindices"
+	  ></A
+	  ><B
+	  >indices</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AHasBounds"
+	  >HasBounds</A
+	  > a, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; a i e -&gt; [i]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns a list of all the valid indices in an array.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aelems"
+	  ></A
+	  ><B
+	  >elems</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+	  >IArray</A
+	  > a e, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; a i e -&gt; [e]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns a list of all the elements of an array, in the same order
+as their indices.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aassocs"
+	  ></A
+	  ><B
+	  >assocs</B
+	  > :: (<A HREF = "Data.Array.IArray.html#t%3AIArray"
+	  >IArray</A
+	  > a e, <A HREF = "Data.Ix.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; a i e -&gt; [(i, e)]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns the contents of an array as a list of associations.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,606 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Dynamic</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Dynamic</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >The <TT
+		      >Dynamic</TT
+		      > type</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Converting to and from <TT
+		      >Dynamic</TT
+		      ></A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Applying functions of dynamic type</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The Dynamic interface provides basic support for dynamic types.
+</P
+	  ><P
+	  >Operations for injecting values of arbitrary type into
+a dynamically typed value, Dynamic, are provided, together
+with operations for converting dynamic values into a concrete
+(monomorphic) type.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Data.Typeable.html"
+		>Data.Typeable</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3ADynamic"
+		>Dynamic</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtoDyn"
+		>toDyn</A
+		> :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> a =&gt; a -&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfromDyn"
+		>fromDyn</A
+		> :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> a =&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		> -&gt; a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfromDynamic"
+		>fromDynamic</A
+		> :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> a =&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		> -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdynApply"
+		>dynApply</A
+		> :: <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		> -&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		> -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdynApp"
+		>dynApp</A
+		> :: <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		> -&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		> -&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Data.Typeable.html"
+	  >Data.Typeable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >The <TT
+	    >Dynamic</TT
+	    > type</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ADynamic"
+	  ></A
+	  ><B
+	  >Dynamic</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>A value of type <TT
+		  ><A HREF = "Data.Dynamic.html#t%3ADynamic"
+		    >Dynamic</A
+		    ></TT
+		  > is an object encapsulated together with its type.
+</P
+		><P
+		>A <TT
+		  ><A HREF = "Data.Dynamic.html#t%3ADynamic"
+		    >Dynamic</A
+		    ></TT
+		  > may only represent a monomorphic value; an attempt to
+create a value of type <TT
+		  ><A HREF = "Data.Dynamic.html#t%3ADynamic"
+		    >Dynamic</A
+		    ></TT
+		  > from a polymorphically-typed
+expression will result in an ambiguity error (see <TT
+		  ><A HREF = "Data.Dynamic.html#v%3AtoDyn"
+		    >toDyn</A
+		    ></TT
+		  >).
+</P
+		><P
+		><TT
+		  ><A HREF = "GHC.Show.html#t%3AShow"
+		    >Show</A
+		    ></TT
+		  >ing a value of type <TT
+		  ><A HREF = "Data.Dynamic.html#t%3ADynamic"
+		    >Dynamic</A
+		    ></TT
+		  > returns a pretty-printed representation
+of the object's type; useful for debugging.
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		      >Dynamic</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		      >Dynamic</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Converting to and from <TT
+	    >Dynamic</TT
+	    ></A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtoDyn"
+	  ></A
+	  ><B
+	  >toDyn</B
+	  > :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > a =&gt; a -&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+	  >Dynamic</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Converts an arbitrary value into an object of type <TT
+	    ><A HREF = "Data.Dynamic.html#t%3ADynamic"
+	      >Dynamic</A
+	      ></TT
+	    >.  
+</P
+	  ><P
+	  >The type of the object must be an instance of <TT
+	    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+	      >Typeable</A
+	      ></TT
+	    >, which
+ensures that only monomorphically-typed objects may be converted to
+<TT
+	    ><A HREF = "Data.Dynamic.html#t%3ADynamic"
+	      >Dynamic</A
+	      ></TT
+	    >.  To convert a polymorphic object into <TT
+	    ><A HREF = "Data.Dynamic.html#t%3ADynamic"
+	      >Dynamic</A
+	      ></TT
+	    >, give it
+a monomorphic type signature.  For example:
+</P
+	  ><PRE
+	  >    toDyn (id :: Int -&gt; Int)
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfromDyn"
+	  ></A
+	  ><B
+	  >fromDyn</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >=&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		></TD
+	      ><TD CLASS = "rdoc"
+	      >the dynamically-typed object</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; a</TD
+	      ><TD CLASS = "rdoc"
+	      >a default value </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; a</TD
+	      ><TD CLASS = "rdoc"
+	      >returns: the value of the first argument, if
+it has the correct type, otherwise the value of
+the second argument.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      >Converts a <TT
+		><A HREF = "Data.Dynamic.html#t%3ADynamic"
+		  >Dynamic</A
+		  ></TT
+		> object back into an ordinary Haskell value of
+the correct type.  See also <TT
+		><A HREF = "Data.Dynamic.html#v%3AfromDynamic"
+		  >fromDynamic</A
+		  ></TT
+		>.</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfromDynamic"
+	  ></A
+	  ><B
+	  >fromDynamic</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >=&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		></TD
+	      ><TD CLASS = "rdoc"
+	      >the dynamically-typed object</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      >returns: <TT
+		><TT
+		  ><A HREF = "Data.Maybe.html#v%3AJust"
+		    >Just</A
+		    ></TT
+		  > a</TT
+		>, if the dyanmically-typed
+object has the correct type (and <TT
+		>a</TT
+		> is its value), 
+or <TT
+		><A HREF = "Data.Maybe.html#v%3ANothing"
+		  >Nothing</A
+		  ></TT
+		> otherwise.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      >Converts a <TT
+		><A HREF = "Data.Dynamic.html#t%3ADynamic"
+		  >Dynamic</A
+		  ></TT
+		> object back into an ordinary Haskell value of
+the correct type.  See also <TT
+		><A HREF = "Data.Dynamic.html#v%3AfromDyn"
+		  >fromDyn</A
+		  ></TT
+		>.</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Applying functions of dynamic type</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdynApply"
+	  ></A
+	  ><B
+	  >dynApply</B
+	  > :: <A HREF = "Data.Dynamic.html#t%3ADynamic"
+	  >Dynamic</A
+	  > -&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+	  >Dynamic</A
+	  > -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "Data.Dynamic.html#t%3ADynamic"
+	  >Dynamic</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdynApp"
+	  ></A
+	  ><B
+	  >dynApp</B
+	  > :: <A HREF = "Data.Dynamic.html#t%3ADynamic"
+	  >Dynamic</A
+	  > -&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+	  >Dynamic</A
+	  > -&gt; <A HREF = "Data.Dynamic.html#t%3ADynamic"
+	  >Dynamic</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

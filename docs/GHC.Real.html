@@ -1,0 +1,2463 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >GHC.Real</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>GHC.Real</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (GHC Extensions)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  internal</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  cvs-ghc@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The types <TT
+	  ><A HREF = "GHC.Real.html#t%3ARatio"
+	    >Ratio</A
+	    ></TT
+	  > and <TT
+	  ><A HREF = "GHC.Real.html#t%3ARational"
+	    >Rational</A
+	    ></TT
+	  >, and the classes <TT
+	  ><A HREF = "GHC.Real.html#t%3AReal"
+	    >Real</A
+	    ></TT
+	  >, <TT
+	  ><A HREF = "GHC.Real.html#t%3AFractional"
+	    >Fractional</A
+	    ></TT
+	  >,
+<TT
+	  ><A HREF = "GHC.Real.html#t%3AIntegral"
+	    >Integral</A
+	    ></TT
+	  >, and <TT
+	  ><A HREF = "GHC.Real.html#t%3ARealFrac"
+	    >RealFrac</A
+	    ></TT
+	  >.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3ARatio"
+		>Ratio</A
+		> a = <A HREF = "#v%3A%3A%25"
+		>(:%)</A
+		> !a !a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3ARational"
+		>Rational</A
+		> = <A HREF = "GHC.Real.html#t%3ARatio"
+		>Ratio</A
+		> <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AratioPrec"
+		>ratioPrec</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AratioPrec1"
+		>ratioPrec1</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ainfinity"
+		>infinity</A
+		> :: <A HREF = "GHC.Real.html#t%3ARational"
+		>Rational</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnotANumber"
+		>notANumber</A
+		> :: <A HREF = "GHC.Real.html#t%3ARational"
+		>Rational</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A%25"
+		>(%)</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; a -&gt; a -&gt; <A HREF = "GHC.Real.html#t%3ARatio"
+		>Ratio</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Anumerator"
+		>numerator</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; <A HREF = "GHC.Real.html#t%3ARatio"
+		>Ratio</A
+		> a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Adenominator"
+		>denominator</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; <A HREF = "GHC.Real.html#t%3ARatio"
+		>Ratio</A
+		> a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Areduce"
+		>reduce</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; a -&gt; a -&gt; <A HREF = "GHC.Real.html#t%3ARatio"
+		>Ratio</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> (<A HREF = "GHC.Num.html#t%3ANum"
+		>Num</A
+		> a, <A HREF = "GHC.Base.html#t%3AOrd"
+		>Ord</A
+		> a) =&gt; <A HREF = "#t%3AReal"
+		>Real</A
+		> a  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AtoRational"
+		      >toRational</A
+		      > :: a -&gt; <A HREF = "GHC.Real.html#t%3ARational"
+		      >Rational</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> (<A HREF = "GHC.Real.html#t%3AReal"
+		>Real</A
+		> a, <A HREF = "GHC.Enum.html#t%3AEnum"
+		>Enum</A
+		> a) =&gt; <A HREF = "#t%3AIntegral"
+		>Integral</A
+		> a  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aquot"
+		      >quot</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Arem"
+		      >rem</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Adiv"
+		      >div</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Amod"
+		      >mod</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AquotRem"
+		      >quotRem</A
+		      > :: a -&gt; a -&gt; (a, a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AdivMod"
+		      >divMod</A
+		      > :: a -&gt; a -&gt; (a, a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AtoInteger"
+		      >toInteger</A
+		      > :: a -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "GHC.Num.html#t%3ANum"
+		>Num</A
+		> a =&gt; <A HREF = "#t%3AFractional"
+		>Fractional</A
+		> a  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3A%2F"
+		      >(/)</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Arecip"
+		      >recip</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AfromRational"
+		      >fromRational</A
+		      > :: <A HREF = "GHC.Real.html#t%3ARational"
+		      >Rational</A
+		      > -&gt; a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> (<A HREF = "GHC.Real.html#t%3AReal"
+		>Real</A
+		> a, <A HREF = "GHC.Real.html#t%3AFractional"
+		>Fractional</A
+		> a) =&gt; <A HREF = "#t%3ARealFrac"
+		>RealFrac</A
+		> a  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AproperFraction"
+		      >properFraction</A
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; (b, a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Atruncate"
+		      >truncate</A
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Around"
+		      >round</A
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aceiling"
+		      >ceiling</A
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Afloor"
+		      >floor</A
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; b</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnumericEnumFrom"
+		>numericEnumFrom</A
+		> :: <A HREF = "GHC.Real.html#t%3AFractional"
+		>Fractional</A
+		> a =&gt; a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnumericEnumFromThen"
+		>numericEnumFromThen</A
+		> :: <A HREF = "GHC.Real.html#t%3AFractional"
+		>Fractional</A
+		> a =&gt; a -&gt; a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnumericEnumFromTo"
+		>numericEnumFromTo</A
+		> :: (<A HREF = "GHC.Base.html#t%3AOrd"
+		>Ord</A
+		> a, <A HREF = "GHC.Real.html#t%3AFractional"
+		>Fractional</A
+		> a) =&gt; a -&gt; a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnumericEnumFromThenTo"
+		>numericEnumFromThenTo</A
+		> :: (<A HREF = "GHC.Base.html#t%3AOrd"
+		>Ord</A
+		> a, <A HREF = "GHC.Real.html#t%3AFractional"
+		>Fractional</A
+		> a) =&gt; a -&gt; a -&gt; a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfromIntegral"
+		>fromIntegral</A
+		> :: (<A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a, <A HREF = "GHC.Num.html#t%3ANum"
+		>Num</A
+		> b) =&gt; a -&gt; b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ArealToFrac"
+		>realToFrac</A
+		> :: (<A HREF = "GHC.Real.html#t%3AReal"
+		>Real</A
+		> a, <A HREF = "GHC.Real.html#t%3AFractional"
+		>Fractional</A
+		> b) =&gt; a -&gt; b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AshowSigned"
+		>showSigned</A
+		> :: <A HREF = "GHC.Real.html#t%3AReal"
+		>Real</A
+		> a =&gt; (a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+		>ShowS</A
+		>) -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+		>ShowS</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aeven"
+		>even</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aodd"
+		>odd</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A%5E"
+		>(^)</A
+		> :: (<A HREF = "GHC.Num.html#t%3ANum"
+		>Num</A
+		> a, <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> b) =&gt; a -&gt; b -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A%5E%5E"
+		>(^^)</A
+		> :: (<A HREF = "GHC.Real.html#t%3AFractional"
+		>Fractional</A
+		> a, <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> b) =&gt; a -&gt; b -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Agcd"
+		>gcd</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; a -&gt; a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Alcm"
+		>lcm</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; a -&gt; a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AintegralEnumFrom"
+		>integralEnumFrom</A
+		> :: (<A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a, <A HREF = "GHC.Enum.html#t%3ABounded"
+		>Bounded</A
+		> a) =&gt; a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AintegralEnumFromThen"
+		>integralEnumFromThen</A
+		> :: (<A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a, <A HREF = "GHC.Enum.html#t%3ABounded"
+		>Bounded</A
+		> a) =&gt; a -&gt; a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AintegralEnumFromTo"
+		>integralEnumFromTo</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; a -&gt; a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AintegralEnumFromThenTo"
+		>integralEnumFromThenTo</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; a -&gt; a -&gt; a -&gt; [a]</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ARatio"
+	  ></A
+	  ><B
+	  >Ratio</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3A%3A%25"
+		      ></A
+		      ><B
+		      >(:%)</B
+		      > !a !a</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a, <A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > a) =&gt; <A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Num.html#t%3ANum"
+		      >Num</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Enum.html#t%3AEnum"
+		      >Enum</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a, <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > a) =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3ARational"
+	  ></A
+	  ><B
+	  >Rational</B
+	  > = <A HREF = "GHC.Real.html#t%3ARatio"
+	  >Ratio</A
+	  > <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Arbitrary-precision rational numbers, represented as a ratio of
+two <TT
+	  ><A HREF = "GHC.Num.html#t%3AInteger"
+	    >Integer</A
+	    ></TT
+	  > values.  A rational number may be constructed using
+the <TT
+	  ><A HREF = "GHC.Real.html#v%3A%25"
+	    >%</A
+	    ></TT
+	  > operator.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AratioPrec"
+	  ></A
+	  ><B
+	  >ratioPrec</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AratioPrec1"
+	  ></A
+	  ><B
+	  >ratioPrec1</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ainfinity"
+	  ></A
+	  ><B
+	  >infinity</B
+	  > :: <A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnotANumber"
+	  ></A
+	  ><B
+	  >notANumber</B
+	  > :: <A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%25"
+	  ></A
+	  ><B
+	  >(%)</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; a -&gt; <A HREF = "GHC.Real.html#t%3ARatio"
+	  >Ratio</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anumerator"
+	  ></A
+	  ><B
+	  >numerator</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; <A HREF = "GHC.Real.html#t%3ARatio"
+	  >Ratio</A
+	  > a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Adenominator"
+	  ></A
+	  ><B
+	  >denominator</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; <A HREF = "GHC.Real.html#t%3ARatio"
+	  >Ratio</A
+	  > a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Areduce"
+	  ></A
+	  ><B
+	  >reduce</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; a -&gt; <A HREF = "GHC.Real.html#t%3ARatio"
+	  >Ratio</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > (<A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a, <A HREF = "GHC.Base.html#t%3AOrd"
+	  >Ord</A
+	  > a) =&gt; <A NAME = "t%3AReal"
+	  ></A
+	  ><B
+	  >Real</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AtoRational"
+		      ></A
+		      ><B
+		      >toRational</B
+		      > :: a -&gt; <A HREF = "GHC.Real.html#t%3ARational"
+		      >Rational</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACChar"
+		      >CChar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACSChar"
+		      >CSChar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACUChar"
+		      >CUChar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACShort"
+		      >CShort</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACUShort"
+		      >CUShort</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACInt"
+		      >CInt</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACUInt"
+		      >CUInt</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLong"
+		      >CLong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACULong"
+		      >CULong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLLong"
+		      >CLLong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACULLong"
+		      >CULLong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACFloat"
+		      >CFloat</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACDouble"
+		      >CDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLDouble"
+		      >CLDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACPtrdiff"
+		      >CPtrdiff</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACSize"
+		      >CSize</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACWchar"
+		      >CWchar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACSigAtomic"
+		      >CSigAtomic</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACClock"
+		      >CClock</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACTime"
+		      >CTime</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Int.html#t%3AInt8"
+		      >Int8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Int.html#t%3AInt16"
+		      >Int16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Int.html#t%3AInt32"
+		      >Int32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Int.html#t%3AInt64"
+		      >Int64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Word.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Word.html#t%3AWord8"
+		      >Word8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Word.html#t%3AWord16"
+		      >Word16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Word.html#t%3AWord32"
+		      >Word32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "GHC.Word.html#t%3AWord64"
+		      >Word64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACIno"
+		      >CIno</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACMode"
+		      >CMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACOff"
+		      >COff</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACPid"
+		      >CPid</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACSsize"
+		      >CSsize</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACGid"
+		      >CGid</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACNlink"
+		      >CNlink</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACUid"
+		      >CUid</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACTcflag"
+		      >CTcflag</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > <A HREF = "System.Posix.Types.html#t%3AFd"
+		      >Fd</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > (<A HREF = "GHC.Real.html#t%3AReal"
+	  >Real</A
+	  > a, <A HREF = "GHC.Enum.html#t%3AEnum"
+	  >Enum</A
+	  > a) =&gt; <A NAME = "t%3AIntegral"
+	  ></A
+	  ><B
+	  >Integral</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aquot"
+		      ></A
+		      ><B
+		      >quot</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Arem"
+		      ></A
+		      ><B
+		      >rem</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Adiv"
+		      ></A
+		      ><B
+		      >div</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Amod"
+		      ></A
+		      ><B
+		      >mod</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AquotRem"
+		      ></A
+		      ><B
+		      >quotRem</B
+		      > :: a -&gt; a -&gt; (a, a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AdivMod"
+		      ></A
+		      ><B
+		      >divMod</B
+		      > :: a -&gt; a -&gt; (a, a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AtoInteger"
+		      ></A
+		      ><B
+		      >toInteger</B
+		      > :: a -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACChar"
+		      >CChar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACSChar"
+		      >CSChar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACUChar"
+		      >CUChar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACShort"
+		      >CShort</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACUShort"
+		      >CUShort</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACInt"
+		      >CInt</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACUInt"
+		      >CUInt</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLong"
+		      >CLong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACULong"
+		      >CULong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLLong"
+		      >CLLong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACULLong"
+		      >CULLong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACPtrdiff"
+		      >CPtrdiff</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACSize"
+		      >CSize</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACWchar"
+		      >CWchar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACSigAtomic"
+		      >CSigAtomic</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACClock"
+		      >CClock</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACTime"
+		      >CTime</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Int.html#t%3AInt8"
+		      >Int8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Int.html#t%3AInt16"
+		      >Int16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Int.html#t%3AInt32"
+		      >Int32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Int.html#t%3AInt64"
+		      >Int64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Word.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Word.html#t%3AWord8"
+		      >Word8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Word.html#t%3AWord16"
+		      >Word16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Word.html#t%3AWord32"
+		      >Word32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "GHC.Word.html#t%3AWord64"
+		      >Word64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACIno"
+		      >CIno</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACMode"
+		      >CMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACOff"
+		      >COff</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACPid"
+		      >CPid</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACSsize"
+		      >CSsize</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACGid"
+		      >CGid</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACNlink"
+		      >CNlink</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACUid"
+		      >CUid</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACTcflag"
+		      >CTcflag</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > <A HREF = "System.Posix.Types.html#t%3AFd"
+		      >Fd</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A NAME = "t%3AFractional"
+	  ></A
+	  ><B
+	  >Fractional</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3A%2F"
+		      ></A
+		      ><B
+		      >(/)</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Arecip"
+		      ></A
+		      ><B
+		      >recip</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AfromRational"
+		      ></A
+		      ><B
+		      >fromRational</B
+		      > :: <A HREF = "GHC.Real.html#t%3ARational"
+		      >Rational</A
+		      > -&gt; a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Float.html#t%3ARealFloat"
+		      >RealFloat</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > (<A HREF = "Data.Complex.html#t%3AComplex"
+		      >Complex</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACFloat"
+		      >CFloat</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACDouble"
+		      >CDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLDouble"
+		      >CLDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > (<A HREF = "GHC.Real.html#t%3AReal"
+	  >Real</A
+	  > a, <A HREF = "GHC.Real.html#t%3AFractional"
+	  >Fractional</A
+	  > a) =&gt; <A NAME = "t%3ARealFrac"
+	  ></A
+	  ><B
+	  >RealFrac</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AproperFraction"
+		      ></A
+		      ><B
+		      >properFraction</B
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; (b, a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Atruncate"
+		      ></A
+		      ><B
+		      >truncate</B
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Around"
+		      ></A
+		      ><B
+		      >round</B
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aceiling"
+		      ></A
+		      ><B
+		      >ceiling</B
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Afloor"
+		      ></A
+		      ><B
+		      >floor</B
+		      > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > b =&gt; a -&gt; b</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACFloat"
+		      >CFloat</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACDouble"
+		      >CDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLDouble"
+		      >CLDouble</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > (<A HREF = "GHC.Real.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnumericEnumFrom"
+	  ></A
+	  ><B
+	  >numericEnumFrom</B
+	  > :: <A HREF = "GHC.Real.html#t%3AFractional"
+	  >Fractional</A
+	  > a =&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnumericEnumFromThen"
+	  ></A
+	  ><B
+	  >numericEnumFromThen</B
+	  > :: <A HREF = "GHC.Real.html#t%3AFractional"
+	  >Fractional</A
+	  > a =&gt; a -&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnumericEnumFromTo"
+	  ></A
+	  ><B
+	  >numericEnumFromTo</B
+	  > :: (<A HREF = "GHC.Base.html#t%3AOrd"
+	  >Ord</A
+	  > a, <A HREF = "GHC.Real.html#t%3AFractional"
+	  >Fractional</A
+	  > a) =&gt; a -&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnumericEnumFromThenTo"
+	  ></A
+	  ><B
+	  >numericEnumFromThenTo</B
+	  > :: (<A HREF = "GHC.Base.html#t%3AOrd"
+	  >Ord</A
+	  > a, <A HREF = "GHC.Real.html#t%3AFractional"
+	  >Fractional</A
+	  > a) =&gt; a -&gt; a -&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfromIntegral"
+	  ></A
+	  ><B
+	  >fromIntegral</B
+	  > :: (<A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a, <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > b) =&gt; a -&gt; b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArealToFrac"
+	  ></A
+	  ><B
+	  >realToFrac</B
+	  > :: (<A HREF = "GHC.Real.html#t%3AReal"
+	  >Real</A
+	  > a, <A HREF = "GHC.Real.html#t%3AFractional"
+	  >Fractional</A
+	  > b) =&gt; a -&gt; b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowSigned"
+	  ></A
+	  ><B
+	  >showSigned</B
+	  > :: <A HREF = "GHC.Real.html#t%3AReal"
+	  >Real</A
+	  > a =&gt; (a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  >) -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aeven"
+	  ></A
+	  ><B
+	  >even</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aodd"
+	  ></A
+	  ><B
+	  >odd</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%5E"
+	  ></A
+	  ><B
+	  >(^)</B
+	  > :: (<A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a, <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > b) =&gt; a -&gt; b -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%5E%5E"
+	  ></A
+	  ><B
+	  >(^^)</B
+	  > :: (<A HREF = "GHC.Real.html#t%3AFractional"
+	  >Fractional</A
+	  > a, <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > b) =&gt; a -&gt; b -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Agcd"
+	  ></A
+	  ><B
+	  >gcd</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alcm"
+	  ></A
+	  ><B
+	  >lcm</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AintegralEnumFrom"
+	  ></A
+	  ><B
+	  >integralEnumFrom</B
+	  > :: (<A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a, <A HREF = "GHC.Enum.html#t%3ABounded"
+	  >Bounded</A
+	  > a) =&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AintegralEnumFromThen"
+	  ></A
+	  ><B
+	  >integralEnumFromThen</B
+	  > :: (<A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a, <A HREF = "GHC.Enum.html#t%3ABounded"
+	  >Bounded</A
+	  > a) =&gt; a -&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AintegralEnumFromTo"
+	  ></A
+	  ><B
+	  >integralEnumFromTo</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AintegralEnumFromThenTo"
+	  ></A
+	  ><B
+	  >integralEnumFromThenTo</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; a -&gt; a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

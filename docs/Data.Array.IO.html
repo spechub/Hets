@@ -1,0 +1,1070 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Array.IO</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Array.IO</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    ><TT
+		      >IO</TT
+		      > arrays with boxed elements</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    ><TT
+		      >IO</TT
+		      > arrays with unboxed elements</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Overloaded mutable array interface</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#4"
+		    >Doing I/O with <TT
+		      >IOUArray</TT
+		      >s</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Mutable boxed and unboxed arrays in the IO monad.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AIOArray"
+		>IOArray</A
+		> i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AIOUArray"
+		>IOUArray</A
+		> i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcastIOUArray"
+		>castIOUArray</A
+		> :: <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		>IOUArray</A
+		> ix a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		>IOUArray</A
+		> ix b)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Data.Array.MArray.html"
+		>Data.Array.MArray</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetArray"
+		>hGetArray</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		>IOUArray</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> <A HREF = "GHC.Word.html#t%3AWord8"
+		>Word8</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhPutArray"
+		>hPutArray</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		>IOUArray</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> <A HREF = "GHC.Word.html#t%3AWord8"
+		>Word8</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  ><TT
+	    >IO</TT
+	    > arrays with boxed elements</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AIOArray"
+	  ></A
+	  ><B
+	  >IOArray</B
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>An <TT
+		  ><A HREF = "Data.Array.IO.html#t%3AIOArray"
+		    >IOArray</A
+		    ></TT
+		  > is a mutable, boxed, non-strict array in the <TT
+		  ><A HREF = "GHC.IOBase.html#t%3AIO"
+		    >IO</A
+		    ></TT
+		  > monad.  
+The type arguments are as follows:
+</P
+		><UL
+		><LI
+		  > <TT
+		    >i</TT
+		    >: the index type of the array (should be an instance of <TT
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      ></TT
+		    >)
+</LI
+		  ><LI
+		  > <TT
+		    >e</TT
+		    >: the element type of the array.
+</LI
+		  ></UL
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOArray"
+		      >IOArray</A
+		      >) e</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > b) =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "Data.Array.IO.html#t%3AIOArray"
+		      >IOArray</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOArray"
+		      >IOArray</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOArray"
+		      >IOArray</A
+		      > e <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.IO.html#t%3AIOArray"
+		      >IOArray</A
+		      > i e)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  ><TT
+	    >IO</TT
+	    > arrays with unboxed elements</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AIOUArray"
+	  ></A
+	  ><B
+	  >IOUArray</B
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>Mutable, unboxed, strict arrays in the <TT
+		  ><A HREF = "GHC.IOBase.html#t%3AIO"
+		    >IO</A
+		    ></TT
+		  > monad.  The type
+arguments are as follows:
+</P
+		><UL
+		><LI
+		  > <TT
+		    >i</TT
+		    >: the index type of the array (should be an instance of <TT
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      ></TT
+		    >)
+</LI
+		  ><LI
+		  > <TT
+		    >e</TT
+		    >: the element type of the array.  Only certain element types
+are supported: see <A HREF = "Data.Array.MArray.html"
+		    >Data.Array.MArray</A
+		    > for a list of instances.
+</LI
+		  ></UL
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "GHC.Stable.html#t%3AStablePtr"
+		      >StablePtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Int.html#t%3AInt8"
+		      >Int8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Int.html#t%3AInt16"
+		      >Int16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Int.html#t%3AInt32"
+		      >Int32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Int.html#t%3AInt64"
+		      >Int64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord8"
+		      >Word8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord16"
+		      >Word16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord32"
+		      >Word32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "GHC.Word.html#t%3AWord64"
+		      >Word64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > b) =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "Prelude.html#t%3ABool"
+		      >Bool</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "Prelude.html#t%3AChar"
+		      >Char</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord"
+		      >Word</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a) <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a) <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "Prelude.html#t%3AFloat"
+		      >Float</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "Prelude.html#t%3ADouble"
+		      >Double</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Stable.html#t%3AStablePtr"
+		      >StablePtr</A
+		      > a) <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt8"
+		      >Int8</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt16"
+		      >Int16</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt32"
+		      >Int32</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt64"
+		      >Int64</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord8"
+		      >Word8</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord16"
+		      >Word16</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord32"
+		      >Word32</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.MArray.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord64"
+		      >Word64</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcastIOUArray"
+	  ></A
+	  ><B
+	  >castIOUArray</B
+	  > :: <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+	  >IOUArray</A
+	  > ix a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Data.Array.IO.html#t%3AIOUArray"
+	  >IOUArray</A
+	  > ix b)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Casts an <TT
+	  ><A HREF = "Data.Array.IO.html#t%3AIOUArray"
+	    >IOUArray</A
+	    ></TT
+	  > with one element type into one with a
+different element type.  All the elements of the resulting array
+are undefined (unless you know what you're doing...).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Overloaded mutable array interface</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Data.Array.MArray.html"
+	  >Data.Array.MArray</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >Doing I/O with <TT
+	    >IOUArray</TT
+	    >s</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetArray"
+	  ></A
+	  ><B
+	  >hGetArray</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: <A HREF = "GHC.IOBase.html#t%3AHandle"
+		>Handle</A
+		></TD
+	      ><TD CLASS = "rdoc"
+	      >Handle to read from</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		>IOUArray</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> <A HREF = "GHC.Word.html#t%3AWord8"
+		>Word8</A
+		></TD
+	      ><TD CLASS = "rdoc"
+	      >Array in which to place the values</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ><TD CLASS = "rdoc"
+	      >Number of <TT
+		><A HREF = "GHC.Word.html#t%3AWord8"
+		  >Word8</A
+		  ></TT
+		>s to read</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ><TD CLASS = "rdoc"
+	      >Returns: the number of <TT
+		><A HREF = "GHC.Word.html#t%3AWord8"
+		  >Word8</A
+		  ></TT
+		>s actually 
+read, which might be smaller than the number requested
+if the end of file was reached.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      >Reads a number of <TT
+		><A HREF = "GHC.Word.html#t%3AWord8"
+		  >Word8</A
+		  ></TT
+		>s from the specified <TT
+		><A HREF = "GHC.IOBase.html#t%3AHandle"
+		  >Handle</A
+		  ></TT
+		> directly
+into an array.</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhPutArray"
+	  ></A
+	  ><B
+	  >hPutArray</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: <A HREF = "GHC.IOBase.html#t%3AHandle"
+		>Handle</A
+		></TD
+	      ><TD CLASS = "rdoc"
+	      >Handle to write to</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		>IOUArray</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> <A HREF = "GHC.Word.html#t%3AWord8"
+		>Word8</A
+		></TD
+	      ><TD CLASS = "rdoc"
+	      >Array to write from</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ><TD CLASS = "rdoc"
+	      >Number of <TT
+		><A HREF = "GHC.Word.html#t%3AWord8"
+		  >Word8</A
+		  ></TT
+		>s to write</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      >Writes an array of <TT
+		><A HREF = "GHC.Word.html#t%3AWord8"
+		  >Word8</A
+		  ></TT
+		> to the specified <TT
+		><A HREF = "GHC.IOBase.html#t%3AHandle"
+		  >Handle</A
+		  ></TT
+		>.</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

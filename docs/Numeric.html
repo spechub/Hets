@@ -1,0 +1,437 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Numeric</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Numeric</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Odds and ends, mostly functions for reading and showing
+RealFloat-like kind of values.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfromRat"
+	  ></A
+	  ><B
+	  >fromRat</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; <A HREF = "GHC.Real.html#t%3ARational"
+	  >Rational</A
+	  > -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowSigned"
+	  ></A
+	  ><B
+	  >showSigned</B
+	  > :: <A HREF = "GHC.Real.html#t%3AReal"
+	  >Real</A
+	  > a =&gt; (a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  >) -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadSigned"
+	  ></A
+	  ><B
+	  >readSigned</B
+	  > :: <A HREF = "GHC.Real.html#t%3AReal"
+	  >Real</A
+	  > a =&gt; <A HREF = "GHC.Read.html#t%3AReadS"
+	  >ReadS</A
+	  > a -&gt; <A HREF = "GHC.Read.html#t%3AReadS"
+	  >ReadS</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadInt"
+	  ></A
+	  ><B
+	  >readInt</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; a -&gt; (<A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; (<A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  >) -&gt; <A HREF = "GHC.Read.html#t%3AReadS"
+	  >ReadS</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadDec"
+	  ></A
+	  ><B
+	  >readDec</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Read.html#t%3AReadS"
+	  >ReadS</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadOct"
+	  ></A
+	  ><B
+	  >readOct</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Read.html#t%3AReadS"
+	  >ReadS</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadHex"
+	  ></A
+	  ><B
+	  >readHex</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Read.html#t%3AReadS"
+	  >ReadS</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowInt"
+	  ></A
+	  ><B
+	  >showInt</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowIntAtBase"
+	  ></A
+	  ><B
+	  >showIntAtBase</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; (<A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  >) -&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowHex"
+	  ></A
+	  ><B
+	  >showHex</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowOct"
+	  ></A
+	  ><B
+	  >showOct</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowEFloat"
+	  ></A
+	  ><B
+	  >showEFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowFFloat"
+	  ></A
+	  ><B
+	  >showFFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowGFloat"
+	  ></A
+	  ><B
+	  >showGFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AshowFloat"
+	  ></A
+	  ><B
+	  >showFloat</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; a -&gt; <A HREF = "GHC.Show.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadFloat"
+	  ></A
+	  ><B
+	  >readFloat</B
+	  > :: <A HREF = "GHC.Real.html#t%3ARealFrac"
+	  >RealFrac</A
+	  > a =&gt; <A HREF = "GHC.Read.html#t%3AReadS"
+	  >ReadS</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfloatToDigits"
+	  ></A
+	  ><B
+	  >floatToDigits</B
+	  > :: <A HREF = "GHC.Float.html#t%3ARealFloat"
+	  >RealFloat</A
+	  > a =&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  > -&gt; a -&gt; ([<A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  >], <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  >)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlexDigits"
+	  ></A
+	  ><B
+	  >lexDigits</B
+	  > :: <A HREF = "GHC.Read.html#t%3AReadS"
+	  >ReadS</A
+	  > <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

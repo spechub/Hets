@@ -1,0 +1,388 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >System.Environment</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>System.Environment</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Miscellaneous information about the system environment.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetArgs"
+		>getArgs</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> [<A HREF = "Prelude.html#t%3AString"
+		>String</A
+		>]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetProgName"
+		>getProgName</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetEnv"
+		>getEnv</A
+		> :: <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithArgs"
+		>withArgs</A
+		> :: [<A HREF = "Prelude.html#t%3AString"
+		>String</A
+		>] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithProgName"
+		>withProgName</A
+		> :: <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetArgs"
+	  ></A
+	  ><B
+	  >getArgs</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > [<A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Computation <TT
+	  ><A HREF = "System.Environment.html#v%3AgetArgs"
+	    >getArgs</A
+	    ></TT
+	  > returns a list of the program's command
+line arguments (not including the program name).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetProgName"
+	  ></A
+	  ><B
+	  >getProgName</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.Environment.html#v%3AgetProgName"
+	      >getProgName</A
+	      ></TT
+	    > returns the name of the program as it was
+invoked.
+</P
+	  ><P
+	  >However, this is hard-to-impossible to implement on some non-Unix
+OSes, so instead, for maximum portability, we just return the leafname
+of the program as invoked. Even then there are some differences
+between platforms: on Windows, for example, a program invoked as foo
+is probably really <TT
+	    >FOO.EXE</TT
+	    >, and that is what <TT
+	    ><A HREF = "System.Environment.html#v%3AgetProgName"
+	      >getProgName</A
+	      ></TT
+	    > will return.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetEnv"
+	  ></A
+	  ><B
+	  >getEnv</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.Environment.html#v%3AgetEnv"
+	      >getEnv</A
+	      ></TT
+	    > <TT
+	    >var</TT
+	    > returns the value
+of the environment variable <TT
+	    >var</TT
+	    >.  
+</P
+	  ><P
+	  >This computation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > if the environment variable
+does not exist.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithArgs"
+	  ></A
+	  ><B
+	  >withArgs</B
+	  > :: [<A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  >] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "System.Environment.html#v%3AwithArgs"
+	    >withArgs</A
+	    ></TT
+	  > <TT
+	  >args act</TT
+	  > - while executing action <TT
+	  >act</TT
+	  >, have <TT
+	  ><A HREF = "System.Environment.html#v%3AgetArgs"
+	    >getArgs</A
+	    ></TT
+	  >
+return <TT
+	  >args</TT
+	  >.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithProgName"
+	  ></A
+	  ><B
+	  >withProgName</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "System.Environment.html#v%3AwithProgName"
+	    >withProgName</A
+	    ></TT
+	  > <TT
+	  >name act</TT
+	  > - while executing action <TT
+	  >act</TT
+	  >,
+have <TT
+	  ><A HREF = "System.Environment.html#v%3AgetProgName"
+	    >getProgName</A
+	    ></TT
+	  > return <TT
+	  >name</TT
+	  >.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,1104 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Generics.Reify</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Generics.Reify</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Types as values</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Generic operations to reify terms</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Generic operations to reify types</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>&quot;Scrap your boilerplate&quot; --- Generic programming in Haskell 
+See <A HREF = "http://www.cs.vu.nl/boilerplate/"
+	  >http://www.cs.vu.nl/boilerplate/</A
+	  >. The present module provides
+some preliminary support some sort of structural reflection. This
+module is presumably less common sense that most other boilerplate
+modules. Also, it is a bit less easy-going.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3ATypeVal"
+		>TypeVal</A
+		> a = a -&gt; ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtypeVal"
+		>typeVal</A
+		> :: <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsameType"
+		>sameType</A
+		> :: (<A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> b) =&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> b -&gt; Bool</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aval2type"
+		>val2type</A
+		> :: a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Atype2val"
+		>type2val</A
+		> :: <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithType"
+		>withType</A
+		> :: a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AargType"
+		>argType</A
+		> :: (a -&gt; b) -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AresType"
+		>resType</A
+		> :: (a -&gt; b) -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AparaType"
+		>paraType</A
+		> :: t a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3ATypeFun"
+		>TypeFun</A
+		> a r = <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a -&gt; r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3AGTypeFun"
+		>GTypeFun</A
+		> r = <SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeFun"
+		>TypeFun</A
+		> a r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AextType"
+		>extType</A
+		> :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> r) =&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> r -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeFun"
+		>TypeFun</A
+		> a r -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aglength"
+		>glength</A
+		> :: <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> Int</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Agcount"
+		>gcount</A
+		> :: <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> Bool -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> Int</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Agnodecount"
+		>gnodecount</A
+		> :: <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> Int</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Agtypecount"
+		>gtypecount</A
+		> :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> a =&gt; (a -&gt; ()) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+		>GenericQ</A
+		> Int</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Agfindtype"
+		>gfindtype</A
+		> :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> x, <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> y) =&gt; x -&gt; Maybe y</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapType"
+		>gmapType</A
+		> :: ([(<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		>, r')] -&gt; r) -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		> -&gt; r') -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapConstr"
+		>gmapConstr</A
+		> :: ([r] -&gt; r') -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> r -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		> -&gt; r')</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AconstrArity"
+		>constrArity</A
+		> :: <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		> -&gt; Int)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapSubtermTypes"
+		>gmapSubtermTypes</A
+		> :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> r) =&gt; (r -&gt; r -&gt; r) -&gt; r -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> r -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a -&gt; r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapSubtermTypesConst"
+		>gmapSubtermTypesConst</A
+		> :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> r) =&gt; (r -&gt; r -&gt; r) -&gt; r -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> r -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a -&gt; r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgcountSubtermTypes"
+		>gcountSubtermTypes</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a -&gt; Int</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreachableType"
+		>reachableType</A
+		> :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a, <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> b) =&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+		>TypeVal</A
+		> b -&gt; Bool</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdepthOfType"
+		>depthOfType</A
+		> :: <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> Bool -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> (Maybe (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		>, Maybe Int))</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdepthOfConstr"
+		>depthOfConstr</A
+		> :: <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> Bool -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+		>GTypeFun</A
+		> (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		> -&gt; Maybe Int)</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Types as values</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3ATypeVal"
+	  ></A
+	  ><B
+	  >TypeVal</B
+	  > a = a -&gt; ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Type as values to stipulate use of undefineds</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtypeVal"
+	  ></A
+	  ><B
+	  >typeVal</B
+	  > :: <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The value that denotes a type</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsameType"
+	  ></A
+	  ><B
+	  >sameType</B
+	  > :: (<A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > b) =&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > b -&gt; Bool</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Test for type equivalence</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aval2type"
+	  ></A
+	  ><B
+	  >val2type</B
+	  > :: a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Map a value to its type</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atype2val"
+	  ></A
+	  ><B
+	  >type2val</B
+	  > :: <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Stipulate this idiom!</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithType"
+	  ></A
+	  ><B
+	  >withType</B
+	  > :: a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Constrain a type</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AargType"
+	  ></A
+	  ><B
+	  >argType</B
+	  > :: (a -&gt; b) -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The argument type of a function</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AresType"
+	  ></A
+	  ><B
+	  >resType</B
+	  > :: (a -&gt; b) -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The result type of a function</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AparaType"
+	  ></A
+	  ><B
+	  >paraType</B
+	  > :: t a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The parameter type of type constructor</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3ATypeFun"
+	  ></A
+	  ><B
+	  >TypeFun</B
+	  > a r = <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a -&gt; r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3AGTypeFun"
+	  ></A
+	  ><B
+	  >GTypeFun</B
+	  > r = <SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeFun"
+	  >TypeFun</A
+	  > a r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AextType"
+	  ></A
+	  ><B
+	  >extType</B
+	  > :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > r) =&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > r -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeFun"
+	  >TypeFun</A
+	  > a r -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Extend a type function</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Generic operations to reify terms</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aglength"
+	  ></A
+	  ><B
+	  >glength</B
+	  > :: <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > Int</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Count the number of immediate subterms of the given term</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Agcount"
+	  ></A
+	  ><B
+	  >gcount</B
+	  > :: <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > Bool -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > Int</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Determine the number of all suitable nodes in a given term</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Agnodecount"
+	  ></A
+	  ><B
+	  >gnodecount</B
+	  > :: <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > Int</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Determine the number of all nodes in a given term</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Agtypecount"
+	  ></A
+	  ><B
+	  >gtypecount</B
+	  > :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > a =&gt; (a -&gt; ()) -&gt; <A HREF = "Data.Generics.Aliases.html#t%3AGenericQ"
+	  >GenericQ</A
+	  > Int</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Determine the number of nodes of a given type in a given term</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Agfindtype"
+	  ></A
+	  ><B
+	  >gfindtype</B
+	  > :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > x, <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > y) =&gt; x -&gt; Maybe y</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Find (unambiguously) an immediate subterm of a given type</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Generic operations to reify types</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapType"
+	  ></A
+	  ><B
+	  >gmapType</B
+	  > :: ([(<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  >, r')] -&gt; r) -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  > -&gt; r') -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Query all constructors of a given type</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapConstr"
+	  ></A
+	  ><B
+	  >gmapConstr</B
+	  > :: ([r] -&gt; r') -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > r -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  > -&gt; r')</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Query all subterm types of a given constructor</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AconstrArity"
+	  ></A
+	  ><B
+	  >constrArity</B
+	  > :: <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  > -&gt; Int)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Compute arity of a given constructor</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapSubtermTypes"
+	  ></A
+	  ><B
+	  >gmapSubtermTypes</B
+	  > :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > r) =&gt; (r -&gt; r -&gt; r) -&gt; r -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > r -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a -&gt; r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Query all immediate subterm types of a given type</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapSubtermTypesConst"
+	  ></A
+	  ><B
+	  >gmapSubtermTypesConst</B
+	  > :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > r) =&gt; (r -&gt; r -&gt; r) -&gt; r -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > r -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a -&gt; r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Query all immediate subterm types.
+There is an extra argument to <A HREF = "constant out.html"
+	  >constant out</A
+	  > the type at hand.
+This can be used to avoid cycles.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgcountSubtermTypes"
+	  ></A
+	  ><B
+	  >gcountSubtermTypes</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a -&gt; Int</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreachableType"
+	  ></A
+	  ><B
+	  >reachableType</B
+	  > :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a, <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > b) =&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > a -&gt; <A HREF = "Data.Generics.Reify.html#t%3ATypeVal"
+	  >TypeVal</A
+	  > b -&gt; Bool</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Reachability relation on types, i.e.,
+test if nodes of type <A HREF = "a.html"
+	  >a</A
+	  > are reachable from nodes of type <A HREF = "b.html"
+	  >b</A
+	  >.
+The relation is defined to be reflexive.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdepthOfType"
+	  ></A
+	  ><B
+	  >depthOfType</B
+	  > :: <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > Bool -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > (Maybe (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  >, Maybe Int))</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Depth of a datatype as the constructor with the minimum depth.
+The outermost <A HREF = "Nothing.html"
+	  >Nothing</A
+	  > denotes a type without constructors.
+The innermost <A HREF = "Nothing.html"
+	  >Nothing</A
+	  > denotes potentially infinite.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdepthOfConstr"
+	  ></A
+	  ><B
+	  >depthOfConstr</B
+	  > :: <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > Bool -&gt; <A HREF = "Data.Generics.Reify.html#t%3AGTypeFun"
+	  >GTypeFun</A
+	  > (<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  > -&gt; Maybe Int)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Depth of a constructor.
+Depth is viewed as the maximum depth of all subterm types + 1.
+<A HREF = "Nothing.html"
+	  >Nothing</A
+	  > denotes potentially infinite.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

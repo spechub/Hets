@@ -1,0 +1,4204 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Text.Html</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Text.Html</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  Andy Gill &lt;andy@galconn.com&gt;</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>An Html combinator library
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AHtmlElement"
+	  ></A
+	  ><B
+	  >HtmlElement</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "5" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHtmlString"
+		      ></A
+		      ><B
+		      >HtmlString</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHtmlTag"
+		      ></A
+		      ><B
+		      >HtmlTag</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body" COLSPAN = "2"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AmarkupTag"
+			    ></A
+			    ><B
+			    >markupTag</B
+			    > :: <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AmarkupAttrs"
+			    ></A
+			    ><B
+			    >markupAttrs</B
+			    > :: [<A HREF = "Text.Html.html#t%3AHtmlAttr"
+			    >HtmlAttr</A
+			    >]</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AmarkupContent"
+			    ></A
+			    ><B
+			    >markupContent</B
+			    > :: <A HREF = "Text.Html.html#t%3AHtml"
+			    >Html</A
+			    ></TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AHtmlAttr"
+	  ></A
+	  ><B
+	  >HtmlAttr</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHtmlAttr"
+		      ></A
+		      ><B
+		      >HtmlAttr</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Text.Html.html#t%3AHtmlAttr"
+		      >HtmlAttr</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >newtype</SPAN
+	  > <A NAME = "t%3AHtml"
+	  ></A
+	  ><B
+	  >Html</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "5" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHtml"
+		      ></A
+		      ><B
+		      >Html</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body" COLSPAN = "2"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AgetHtmlElements"
+			    ></A
+			    ><B
+			    >getHtmlElements</B
+			    > :: [<A HREF = "Text.Html.html#t%3AHtmlElement"
+			    >HtmlElement</A
+			    >]</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AADDATTRS"
+		      >ADDATTRS</A
+		      > <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTMLTABLE"
+		      >HTMLTABLE</A
+		      > <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A NAME = "t%3AHTML"
+	  ></A
+	  ><B
+	  >HTML</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AtoHtml"
+		      ></A
+		      ><B
+		      >toHtml</B
+		      > :: a -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AtoHtmlFromList"
+		      ></A
+		      ><B
+		      >toHtmlFromList</B
+		      > :: [a] -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "Prelude.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > a =&gt; <A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > [a]</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "Text.Html.html#t%3AHtmlTable"
+		      >HtmlTable</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "Text.Html.html#t%3AHtmlTree"
+		      >HtmlTree</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "Text.Html.html#t%3AHotLink"
+		      >HotLink</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A NAME = "t%3AADDATTRS"
+	  ></A
+	  ><B
+	  >ADDATTRS</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3A!"
+		      ></A
+		      ><B
+		      >(!)</B
+		      > :: a -&gt; [<A HREF = "Text.Html.html#t%3AHtmlAttr"
+		      >HtmlAttr</A
+		      >] -&gt; a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AADDATTRS"
+		      >ADDATTRS</A
+		      > b =&gt; <A HREF = "Text.Html.html#t%3AADDATTRS"
+		      >ADDATTRS</A
+		      > (a -&gt; b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AADDATTRS"
+		      >ADDATTRS</A
+		      > <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%3C%3C"
+	  ></A
+	  ><B
+	  >(&lt;&lt;)</B
+	  > :: <A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > a =&gt; (<A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; b) -&gt; a -&gt; b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AconcatHtml"
+	  ></A
+	  ><B
+	  >concatHtml</B
+	  > :: <A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > a =&gt; [a] -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%2B%2B%2B"
+	  ></A
+	  ><B
+	  >(+++)</B
+	  > :: (<A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > a, <A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > b) =&gt; a -&gt; b -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnoHtml"
+	  ></A
+	  ><B
+	  >noHtml</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atag"
+	  ></A
+	  ><B
+	  >tag</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aitag"
+	  ></A
+	  ><B
+	  >itag</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AemptyAttr"
+	  ></A
+	  ><B
+	  >emptyAttr</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AintAttr"
+	  ></A
+	  ><B
+	  >intAttr</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AstrAttr"
+	  ></A
+	  ><B
+	  >strAttr</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AstringToHtmlString"
+	  ></A
+	  ><B
+	  >stringToHtmlString</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3AURL"
+	  ></A
+	  ><B
+	  >URL</B
+	  > = <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AprimHtml"
+	  ></A
+	  ><B
+	  >primHtml</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AstringToHtml"
+	  ></A
+	  ><B
+	  >stringToHtml</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlineToHtml"
+	  ></A
+	  ><B
+	  >lineToHtml</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aaddress"
+	  ></A
+	  ><B
+	  >address</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aanchor"
+	  ></A
+	  ><B
+	  >anchor</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aapplet"
+	  ></A
+	  ><B
+	  >applet</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aarea"
+	  ></A
+	  ><B
+	  >area</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abasefont"
+	  ></A
+	  ><B
+	  >basefont</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abig"
+	  ></A
+	  ><B
+	  >big</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ablockquote"
+	  ></A
+	  ><B
+	  >blockquote</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abody"
+	  ></A
+	  ><B
+	  >body</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abold"
+	  ></A
+	  ><B
+	  >bold</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abr"
+	  ></A
+	  ><B
+	  >br</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acaption"
+	  ></A
+	  ><B
+	  >caption</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acenter"
+	  ></A
+	  ><B
+	  >center</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acite"
+	  ></A
+	  ><B
+	  >cite</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Addef"
+	  ></A
+	  ><B
+	  >ddef</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Adefine"
+	  ></A
+	  ><B
+	  >define</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Adlist"
+	  ></A
+	  ><B
+	  >dlist</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Adterm"
+	  ></A
+	  ><B
+	  >dterm</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aemphasize"
+	  ></A
+	  ><B
+	  >emphasize</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afieldset"
+	  ></A
+	  ><B
+	  >fieldset</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afont"
+	  ></A
+	  ><B
+	  >font</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aform"
+	  ></A
+	  ><B
+	  >form</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aframe"
+	  ></A
+	  ><B
+	  >frame</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aframeset"
+	  ></A
+	  ><B
+	  >frameset</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ah1"
+	  ></A
+	  ><B
+	  >h1</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ah2"
+	  ></A
+	  ><B
+	  >h2</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ah3"
+	  ></A
+	  ><B
+	  >h3</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ah4"
+	  ></A
+	  ><B
+	  >h4</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ah5"
+	  ></A
+	  ><B
+	  >h5</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ah6"
+	  ></A
+	  ><B
+	  >h6</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aheader"
+	  ></A
+	  ><B
+	  >header</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ahr"
+	  ></A
+	  ><B
+	  >hr</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aimage"
+	  ></A
+	  ><B
+	  >image</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ainput"
+	  ></A
+	  ><B
+	  >input</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aitalics"
+	  ></A
+	  ><B
+	  >italics</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Akeyboard"
+	  ></A
+	  ><B
+	  >keyboard</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alegend"
+	  ></A
+	  ><B
+	  >legend</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ali"
+	  ></A
+	  ><B
+	  >li</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ameta"
+	  ></A
+	  ><B
+	  >meta</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anoframes"
+	  ></A
+	  ><B
+	  >noframes</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aolist"
+	  ></A
+	  ><B
+	  >olist</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aoption"
+	  ></A
+	  ><B
+	  >option</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aparagraph"
+	  ></A
+	  ><B
+	  >paragraph</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aparam"
+	  ></A
+	  ><B
+	  >param</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Apre"
+	  ></A
+	  ><B
+	  >pre</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asample"
+	  ></A
+	  ><B
+	  >sample</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aselect"
+	  ></A
+	  ><B
+	  >select</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asmall"
+	  ></A
+	  ><B
+	  >small</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Astrong"
+	  ></A
+	  ><B
+	  >strong</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Astyle"
+	  ></A
+	  ><B
+	  >style</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asub"
+	  ></A
+	  ><B
+	  >sub</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asup"
+	  ></A
+	  ><B
+	  >sup</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atable"
+	  ></A
+	  ><B
+	  >table</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atd"
+	  ></A
+	  ><B
+	  >td</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atextarea"
+	  ></A
+	  ><B
+	  >textarea</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ath"
+	  ></A
+	  ><B
+	  >th</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athebase"
+	  ></A
+	  ><B
+	  >thebase</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athecode"
+	  ></A
+	  ><B
+	  >thecode</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athediv"
+	  ></A
+	  ><B
+	  >thediv</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athehtml"
+	  ></A
+	  ><B
+	  >thehtml</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athelink"
+	  ></A
+	  ><B
+	  >thelink</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athemap"
+	  ></A
+	  ><B
+	  >themap</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athespan"
+	  ></A
+	  ><B
+	  >thespan</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athetitle"
+	  ></A
+	  ><B
+	  >thetitle</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atr"
+	  ></A
+	  ><B
+	  >tr</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Att"
+	  ></A
+	  ><B
+	  >tt</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aulist"
+	  ></A
+	  ><B
+	  >ulist</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aunderline"
+	  ></A
+	  ><B
+	  >underline</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Avariable"
+	  ></A
+	  ><B
+	  >variable</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aaction"
+	  ></A
+	  ><B
+	  >action</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aalign"
+	  ></A
+	  ><B
+	  >align</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aalink"
+	  ></A
+	  ><B
+	  >alink</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aalt"
+	  ></A
+	  ><B
+	  >alt</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aaltcode"
+	  ></A
+	  ><B
+	  >altcode</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aarchive"
+	  ></A
+	  ><B
+	  >archive</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abackground"
+	  ></A
+	  ><B
+	  >background</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abase"
+	  ></A
+	  ><B
+	  >base</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abgcolor"
+	  ></A
+	  ><B
+	  >bgcolor</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aborder"
+	  ></A
+	  ><B
+	  >border</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abordercolor"
+	  ></A
+	  ><B
+	  >bordercolor</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acellpadding"
+	  ></A
+	  ><B
+	  >cellpadding</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acellspacing"
+	  ></A
+	  ><B
+	  >cellspacing</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Achecked"
+	  ></A
+	  ><B
+	  >checked</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aclear"
+	  ></A
+	  ><B
+	  >clear</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acode"
+	  ></A
+	  ><B
+	  >code</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acodebase"
+	  ></A
+	  ><B
+	  >codebase</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acolor"
+	  ></A
+	  ><B
+	  >color</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acols"
+	  ></A
+	  ><B
+	  >cols</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acolspan"
+	  ></A
+	  ><B
+	  >colspan</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acompact"
+	  ></A
+	  ><B
+	  >compact</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acontent"
+	  ></A
+	  ><B
+	  >content</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acoords"
+	  ></A
+	  ><B
+	  >coords</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aenctype"
+	  ></A
+	  ><B
+	  >enctype</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aface"
+	  ></A
+	  ><B
+	  >face</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aframeborder"
+	  ></A
+	  ><B
+	  >frameborder</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aheight"
+	  ></A
+	  ><B
+	  >height</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ahref"
+	  ></A
+	  ><B
+	  >href</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ahspace"
+	  ></A
+	  ><B
+	  >hspace</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ahttpequiv"
+	  ></A
+	  ><B
+	  >httpequiv</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aidentifier"
+	  ></A
+	  ><B
+	  >identifier</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aismap"
+	  ></A
+	  ><B
+	  >ismap</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alang"
+	  ></A
+	  ><B
+	  >lang</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alink"
+	  ></A
+	  ><B
+	  >link</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amarginheight"
+	  ></A
+	  ><B
+	  >marginheight</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amarginwidth"
+	  ></A
+	  ><B
+	  >marginwidth</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amaxlength"
+	  ></A
+	  ><B
+	  >maxlength</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amethod"
+	  ></A
+	  ><B
+	  >method</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amultiple"
+	  ></A
+	  ><B
+	  >multiple</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aname"
+	  ></A
+	  ><B
+	  >name</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anohref"
+	  ></A
+	  ><B
+	  >nohref</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anoresize"
+	  ></A
+	  ><B
+	  >noresize</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anoshade"
+	  ></A
+	  ><B
+	  >noshade</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anowrap"
+	  ></A
+	  ><B
+	  >nowrap</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Arel"
+	  ></A
+	  ><B
+	  >rel</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Arev"
+	  ></A
+	  ><B
+	  >rev</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Arows"
+	  ></A
+	  ><B
+	  >rows</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Arowspan"
+	  ></A
+	  ><B
+	  >rowspan</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Arules"
+	  ></A
+	  ><B
+	  >rules</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ascrolling"
+	  ></A
+	  ><B
+	  >scrolling</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aselected"
+	  ></A
+	  ><B
+	  >selected</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ashape"
+	  ></A
+	  ><B
+	  >shape</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asize"
+	  ></A
+	  ><B
+	  >size</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asrc"
+	  ></A
+	  ><B
+	  >src</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Astart"
+	  ></A
+	  ><B
+	  >start</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atarget"
+	  ></A
+	  ><B
+	  >target</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atext"
+	  ></A
+	  ><B
+	  >text</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atheclass"
+	  ></A
+	  ><B
+	  >theclass</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athestyle"
+	  ></A
+	  ><B
+	  >thestyle</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athetype"
+	  ></A
+	  ><B
+	  >thetype</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atitle"
+	  ></A
+	  ><B
+	  >title</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ausemap"
+	  ></A
+	  ><B
+	  >usemap</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Avalign"
+	  ></A
+	  ><B
+	  >valign</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Avalue"
+	  ></A
+	  ><B
+	  >value</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aversion"
+	  ></A
+	  ><B
+	  >version</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Avlink"
+	  ></A
+	  ><B
+	  >vlink</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Avspace"
+	  ></A
+	  ><B
+	  >vspace</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Awidth"
+	  ></A
+	  ><B
+	  >width</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AvalidHtmlTags"
+	  ></A
+	  ><B
+	  >validHtmlTags</B
+	  > :: [<A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AvalidHtmlITags"
+	  ></A
+	  ><B
+	  >validHtmlITags</B
+	  > :: [<A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AvalidHtmlAttrs"
+	  ></A
+	  ><B
+	  >validHtmlAttrs</B
+	  > :: [<A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aaqua"
+	  ></A
+	  ><B
+	  >aqua</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ablack"
+	  ></A
+	  ><B
+	  >black</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ablue"
+	  ></A
+	  ><B
+	  >blue</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afuchsia"
+	  ></A
+	  ><B
+	  >fuchsia</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Agray"
+	  ></A
+	  ><B
+	  >gray</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Agreen"
+	  ></A
+	  ><B
+	  >green</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alime"
+	  ></A
+	  ><B
+	  >lime</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amaroon"
+	  ></A
+	  ><B
+	  >maroon</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anavy"
+	  ></A
+	  ><B
+	  >navy</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aolive"
+	  ></A
+	  ><B
+	  >olive</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Apurple"
+	  ></A
+	  ><B
+	  >purple</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ared"
+	  ></A
+	  ><B
+	  >red</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asilver"
+	  ></A
+	  ><B
+	  >silver</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ateal"
+	  ></A
+	  ><B
+	  >teal</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ayellow"
+	  ></A
+	  ><B
+	  >yellow</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Awhite"
+	  ></A
+	  ><B
+	  >white</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlinesToHtml"
+	  ></A
+	  ><B
+	  >linesToHtml</B
+	  > :: [<A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  >] -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AprimHtmlChar"
+	  ></A
+	  ><B
+	  >primHtmlChar</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acopyright"
+	  ></A
+	  ><B
+	  >copyright</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AspaceHtml"
+	  ></A
+	  ><B
+	  >spaceHtml</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abullet"
+	  ></A
+	  ><B
+	  >bullet</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ap"
+	  ></A
+	  ><B
+	  >p</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A NAME = "t%3AHTMLTABLE"
+	  ></A
+	  ><B
+	  >HTMLTABLE</B
+	  > ht  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Acell"
+		      ></A
+		      ><B
+		      >cell</B
+		      > :: ht -&gt; <A HREF = "Text.Html.html#t%3AHtmlTable"
+		      >HtmlTable</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTMLTABLE"
+		      >HTMLTABLE</A
+		      > <A HREF = "Text.Html.html#t%3AHtmlTable"
+		      >HtmlTable</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTMLTABLE"
+		      >HTMLTABLE</A
+		      > <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >newtype</SPAN
+	  > <A NAME = "t%3AHtmlTable"
+	  ></A
+	  ><B
+	  >HtmlTable</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHtmlTable"
+		      ></A
+		      ><B
+		      >HtmlTable</B
+		      > (<A HREF = "Text.Html.BlockTable.html#t%3ABlockTable"
+		      >BlockTable</A
+		      > (<A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      > -&gt; <A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      >))</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTMLTABLE"
+		      >HTMLTABLE</A
+		      > <A HREF = "Text.Html.html#t%3AHtmlTable"
+		      >HtmlTable</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "Text.Html.html#t%3AHtmlTable"
+		      >HtmlTable</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Text.Html.html#t%3AHtmlTable"
+		      >HtmlTable</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%3C%2F%3E"
+	  ></A
+	  ><B
+	  >(&lt;/&gt;)</B
+	  > :: (<A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht1, <A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht2) =&gt; ht1 -&gt; ht2 -&gt; <A HREF = "Text.Html.html#t%3AHtmlTable"
+	  >HtmlTable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aabove"
+	  ></A
+	  ><B
+	  >above</B
+	  > :: (<A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht1, <A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht2) =&gt; ht1 -&gt; ht2 -&gt; <A HREF = "Text.Html.html#t%3AHtmlTable"
+	  >HtmlTable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%3C-%3E"
+	  ></A
+	  ><B
+	  >(&lt;-&gt;)</B
+	  > :: (<A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht1, <A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht2) =&gt; ht1 -&gt; ht2 -&gt; <A HREF = "Text.Html.html#t%3AHtmlTable"
+	  >HtmlTable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abeside"
+	  ></A
+	  ><B
+	  >beside</B
+	  > :: (<A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht1, <A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht2) =&gt; ht1 -&gt; ht2 -&gt; <A HREF = "Text.Html.html#t%3AHtmlTable"
+	  >HtmlTable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aaboves"
+	  ></A
+	  ><B
+	  >aboves</B
+	  > :: <A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht =&gt; [ht] -&gt; <A HREF = "Text.Html.html#t%3AHtmlTable"
+	  >HtmlTable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abesides"
+	  ></A
+	  ><B
+	  >besides</B
+	  > :: <A HREF = "Text.Html.html#t%3AHTMLTABLE"
+	  >HTMLTABLE</A
+	  > ht =&gt; [ht] -&gt; <A HREF = "Text.Html.html#t%3AHtmlTable"
+	  >HtmlTable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsimpleTable"
+	  ></A
+	  ><B
+	  >simpleTable</B
+	  > :: [<A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  >] -&gt; [<A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  >] -&gt; [[<A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  >]] -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmkHtmlTable"
+	  ></A
+	  ><B
+	  >mkHtmlTable</B
+	  > :: <A HREF = "Text.Html.BlockTable.html#t%3ABlockTable"
+	  >BlockTable</A
+	  > (<A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  >) -&gt; <A HREF = "Text.Html.html#t%3AHtmlTable"
+	  >HtmlTable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArenderTable"
+	  ></A
+	  ><B
+	  >renderTable</B
+	  > :: <A HREF = "Text.Html.BlockTable.html#t%3ABlockTable"
+	  >BlockTable</A
+	  > (<A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  >) -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AHtmlTree"
+	  ></A
+	  ><B
+	  >HtmlTree</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHtmlLeaf"
+		      ></A
+		      ><B
+		      >HtmlLeaf</B
+		      > <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHtmlNode"
+		      ></A
+		      ><B
+		      >HtmlNode</B
+		      > <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      > [<A HREF = "Text.Html.html#t%3AHtmlTree"
+		      >HtmlTree</A
+		      >] <A HREF = "Text.Html.html#t%3AHtml"
+		      >Html</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "Text.Html.html#t%3AHtmlTree"
+		      >HtmlTree</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtreeHtml"
+	  ></A
+	  ><B
+	  >treeHtml</B
+	  > :: [<A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  >] -&gt; <A HREF = "Text.Html.html#t%3AHtmlTree"
+	  >HtmlTree</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdebugHtml"
+	  ></A
+	  ><B
+	  >debugHtml</B
+	  > :: <A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > a =&gt; a -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AHotLink"
+	  ></A
+	  ><B
+	  >HotLink</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "5" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHotLink"
+		      ></A
+		      ><B
+		      >HotLink</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body" COLSPAN = "2"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AhotLinkURL"
+			    ></A
+			    ><B
+			    >hotLinkURL</B
+			    > :: <A HREF = "Text.Html.html#t%3AURL"
+			    >URL</A
+			    ></TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AhotLinkContents"
+			    ></A
+			    ><B
+			    >hotLinkContents</B
+			    > :: [<A HREF = "Text.Html.html#t%3AHtml"
+			    >Html</A
+			    >]</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AhotLinkAttributes"
+			    ></A
+			    ><B
+			    >hotLinkAttributes</B
+			    > :: [<A HREF = "Text.Html.html#t%3AHtmlAttr"
+			    >HtmlAttr</A
+			    >]</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Text.Html.html#t%3AHTML"
+		      >HTML</A
+		      > <A HREF = "Text.Html.html#t%3AHotLink"
+		      >HotLink</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Text.Html.html#t%3AHotLink"
+		      >HotLink</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ahotlink"
+	  ></A
+	  ><B
+	  >hotlink</B
+	  > :: <A HREF = "Text.Html.html#t%3AURL"
+	  >URL</A
+	  > -&gt; [<A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  >] -&gt; <A HREF = "Text.Html.html#t%3AHotLink"
+	  >HotLink</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AordList"
+	  ></A
+	  ><B
+	  >ordList</B
+	  > :: <A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > a =&gt; [a] -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunordList"
+	  ></A
+	  ><B
+	  >unordList</B
+	  > :: <A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > a =&gt; [a] -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdefList"
+	  ></A
+	  ><B
+	  >defList</B
+	  > :: (<A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > a, <A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > b) =&gt; [(a, b)] -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Awidget"
+	  ></A
+	  ><B
+	  >widget</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; [<A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  >] -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acheckbox"
+	  ></A
+	  ><B
+	  >checkbox</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ahidden"
+	  ></A
+	  ><B
+	  >hidden</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aradio"
+	  ></A
+	  ><B
+	  >radio</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Areset"
+	  ></A
+	  ><B
+	  >reset</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asubmit"
+	  ></A
+	  ><B
+	  >submit</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Apassword"
+	  ></A
+	  ><B
+	  >password</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atextfield"
+	  ></A
+	  ><B
+	  >textfield</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aafile"
+	  ></A
+	  ><B
+	  >afile</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aclickmap"
+	  ></A
+	  ><B
+	  >clickmap</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amenu"
+	  ></A
+	  ><B
+	  >menu</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; [<A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  >] -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Agui"
+	  ></A
+	  ><B
+	  >gui</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtml"
+	  >Html</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArenderHtml"
+	  ></A
+	  ><B
+	  >renderHtml</B
+	  > :: <A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > html =&gt; html -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AprettyHtml"
+	  ></A
+	  ><B
+	  >prettyHtml</B
+	  > :: <A HREF = "Text.Html.html#t%3AHTML"
+	  >HTML</A
+	  > html =&gt; html -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArenderHtml'"
+	  ></A
+	  ><B
+	  >renderHtml'</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.Html.html#t%3AHtmlElement"
+	  >HtmlElement</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AprettyHtml'"
+	  ></A
+	  ><B
+	  >prettyHtml'</B
+	  > :: <A HREF = "Text.Html.html#t%3AHtmlElement"
+	  >HtmlElement</A
+	  > -&gt; [<A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArenderTag"
+	  ></A
+	  ><B
+	  >renderTag</B
+	  > :: <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; [<A HREF = "Text.Html.html#t%3AHtmlAttr"
+	  >HtmlAttr</A
+	  >] -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AShowS"
+	  >ShowS</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,355 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >System.IO.Unsafe</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>System.IO.Unsafe</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Unsafe IO operations</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>&quot;Unsafe&quot; IO operations.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunsafePerformIO"
+		>unsafePerformIO</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunsafeInterleaveIO"
+		>unsafeInterleaveIO</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Unsafe IO operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunsafePerformIO"
+	  ></A
+	  ><B
+	  >unsafePerformIO</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >This is the &quot;back door&quot; into the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad, allowing
+<TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation to be performed at any time.  For
+this to be safe, the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation should be
+free of side effects and independent of its environment.
+</P
+	  ><P
+	  >If the I/O computation wrapped in <TT
+	    ><A HREF = "System.IO.Unsafe.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >
+performs side effects, then the relative order in which those side
+effects take place (relative to the main I/O trunk, or other calls to
+<TT
+	    ><A HREF = "System.IO.Unsafe.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >) is indeterminate.  You have to be careful when 
+writing and compiling modules that use <TT
+	    ><A HREF = "System.IO.Unsafe.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >:
+</P
+	  ><UL
+	  ><LI
+	    > Use <TT
+	      >{-# NOINLINE foo #-}</TT
+	      > as a pragma on any function <TT
+	      >foo</TT
+	      >
+that calls <TT
+	      ><A HREF = "System.IO.Unsafe.html#v%3AunsafePerformIO"
+		>unsafePerformIO</A
+		></TT
+	      >.  If the call is inlined,
+the I/O may be performed more than once.
+</LI
+	    ><LI
+	    > Use the compiler flag <TT
+	      >-fno-cse</TT
+	      > to prevent common sub-expression
+elimination being performed on the module, which might combine
+two side effects that were meant to be separate.  A good example
+is using multiple global variables (like <TT
+	      >test</TT
+	      > in the example below).
+</LI
+	    ><LI
+	    > Make sure that the either you switch off let-floating, or that the 
+call to <TT
+	      ><A HREF = "System.IO.Unsafe.html#v%3AunsafePerformIO"
+		>unsafePerformIO</A
+		></TT
+	      > cannot float outside a lambda.  For example, 
+if you say:
+<TT
+	      >
+f x = unsafePerformIO (newIORef [])
+</TT
+	      >
+you may get only one reference cell shared between all calls to <TT
+	      >f</TT
+	      >.
+Better would be
+<TT
+	      >
+f x = unsafePerformIO (newIORef [x])
+</TT
+	      >
+because now it can't float outside the lambda.
+</LI
+	    ></UL
+	  ><P
+	  >It is less well known that
+<TT
+	    ><A HREF = "System.IO.Unsafe.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    > is not type safe.  For example:
+</P
+	  ><PRE
+	  >     test :: IORef [a]
+     test = unsafePerformIO $ newIORef []
+     
+     main = do
+     	      writeIORef test [42]
+     	      bang \&lt;- readIORef test
+     	      print (bang :: [Char])
+</PRE
+	  ><P
+	  >This program will core dump.  This problem with polymorphic references
+is well known in the ML community, and does not arise with normal
+monadic use of references.  There is no easy way to make it impossible
+once you use <TT
+	    ><A HREF = "System.IO.Unsafe.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >.  Indeed, it is
+possible to write <TT
+	    >coerce :: a -&gt; b</TT
+	    > with the
+help of <TT
+	    ><A HREF = "System.IO.Unsafe.html#v%3AunsafePerformIO"
+	      >unsafePerformIO</A
+	      ></TT
+	    >.  So be careful!
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunsafeInterleaveIO"
+	  ></A
+	  ><B
+	  >unsafeInterleaveIO</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "System.IO.Unsafe.html#v%3AunsafeInterleaveIO"
+	    >unsafeInterleaveIO</A
+	    ></TT
+	  > allows <TT
+	  ><A HREF = "GHC.IOBase.html#t%3AIO"
+	    >IO</A
+	    ></TT
+	  > computation to be deferred lazily.
+When passed a value of type <TT
+	  >IO a</TT
+	  >, the <TT
+	  ><A HREF = "GHC.IOBase.html#t%3AIO"
+	    >IO</A
+	    ></TT
+	  > will only be performed
+when the value of the <TT
+	  >a</TT
+	  > is demanded.  This is used to implement lazy
+file reading, see <TT
+	  ><A HREF = "System.IO.html#v%3AhGetContents"
+	    >hGetContents</A
+	    ></TT
+	  >.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,1360 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Generics.Basics</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Generics.Basics</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >The Data class for processing constructor applications</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Constructor representations</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Constructing constructor representations</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#4"
+		    >Observing constructor representations</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#5"
+		    >Generic maps defined in terms of gfoldl </A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>&quot;Scrap your boilerplate&quot; --- Generic programming in Haskell 
+See <A HREF = "http://www.cs.vu.nl/boilerplate/"
+	  >http://www.cs.vu.nl/boilerplate/</A
+	  >. The present module provides
+the Data class with its primitives for generic programming.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Data.Typeable.html"
+		>Data.Typeable</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> a =&gt; <A HREF = "#t%3AData"
+		>Data</A
+		> a  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Agfoldl"
+		      >gfoldl</A
+		      > :: (<SPAN CLASS = "keyword"
+		      >forall</SPAN
+		      > a b . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > a =&gt; c (a -&gt; b) -&gt; a -&gt; c b) -&gt; (<SPAN CLASS = "keyword"
+		      >forall</SPAN
+		      > g . g -&gt; c g) -&gt; a -&gt; c a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AtoConstr"
+		      >toConstr</A
+		      > :: a -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		      >Constr</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AfromConstr"
+		      >fromConstr</A
+		      > :: <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		      >Constr</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AdataTypeOf"
+		      >dataTypeOf</A
+		      > :: a -&gt; <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+		      >DataType</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AConstr"
+		>Constr</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3AConIndex"
+		>ConIndex</A
+		> = Int</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AFixity"
+		      >Fixity</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3APrefix"
+			    >Prefix</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AInfix"
+			    >Infix</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3ADataType"
+		>DataType</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmkConstr"
+		>mkConstr</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AConIndex"
+		>ConIndex</A
+		> -&gt; String -&gt; <A HREF = "Data.Generics.Basics.html#t%3AFixity"
+		>Fixity</A
+		> -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmkDataType"
+		>mkDataType</A
+		> :: [<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		>] -&gt; <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+		>DataType</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AconString"
+		>conString</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		> -&gt; String</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AconFixity"
+		>conFixity</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		> -&gt; <A HREF = "Data.Generics.Basics.html#t%3AFixity"
+		>Fixity</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AconIndex"
+		>conIndex</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		> -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConIndex"
+		>ConIndex</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AstringCon"
+		>stringCon</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+		>DataType</A
+		> -&gt; String -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AindexCon"
+		>indexCon</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+		>DataType</A
+		> -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConIndex"
+		>ConIndex</A
+		> -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmaxConIndex"
+		>maxConIndex</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+		>DataType</A
+		> -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConIndex"
+		>ConIndex</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdataTypeCons"
+		>dataTypeCons</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+		>DataType</A
+		> -&gt; [<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		>Constr</A
+		>]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapT"
+		>gmapT</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> b . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> b =&gt; b -&gt; b) -&gt; a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapQ"
+		>gmapQ</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; a -&gt; u) -&gt; a -&gt; [u]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapQl"
+		>gmapQl</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; (r -&gt; r' -&gt; r) -&gt; r -&gt; (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; a -&gt; r') -&gt; a -&gt; r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapQr"
+		>gmapQr</A
+		> :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; (r' -&gt; r -&gt; r) -&gt; r -&gt; (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; a -&gt; r') -&gt; a -&gt; r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapM"
+		>gmapM</A
+		> :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a, <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m) =&gt; (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; a -&gt; m a) -&gt; a -&gt; m a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapMp"
+		>gmapMp</A
+		> :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a, <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		>MonadPlus</A
+		> m) =&gt; (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; a -&gt; m a) -&gt; a -&gt; m a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgmapMo"
+		>gmapMo</A
+		> :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a, <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		>MonadPlus</A
+		> m) =&gt; (<SPAN CLASS = "keyword"
+		>forall</SPAN
+		> a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		>Data</A
+		> a =&gt; a -&gt; m a) -&gt; a -&gt; m a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Data.Typeable.html"
+	  >Data.Typeable</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >The Data class for processing constructor applications</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > a =&gt; <A NAME = "t%3AData"
+	  ></A
+	  ><B
+	  >Data</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Agfoldl"
+		      ></A
+		      ><B
+		      >gfoldl</B
+		      > :: (<SPAN CLASS = "keyword"
+		      >forall</SPAN
+		      > a b . <A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > a =&gt; c (a -&gt; b) -&gt; a -&gt; c b) -&gt; (<SPAN CLASS = "keyword"
+		      >forall</SPAN
+		      > g . g -&gt; c g) -&gt; a -&gt; c a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Left-associative fold operation for constructor applications</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AtoConstr"
+		      ></A
+		      ><B
+		      >toConstr</B
+		      > :: a -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		      >Constr</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Obtaining the constructor from a given datum.
+For proper terms, this is meant to be the top-level constructor.
+Primitive datatypes are here viewed as potentially infinite sets of
+values (i.e., constructors).
+</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AfromConstr"
+		      ></A
+		      ><B
+		      >fromConstr</B
+		      > :: <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		      >Constr</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Building a term from a constructor</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AdataTypeOf"
+		      ></A
+		      ><B
+		      >dataTypeOf</B
+		      > :: a -&gt; <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+		      >DataType</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Provide access to list of all constructors</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > Int</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > Integer</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > Float</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > Char</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > Rational</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > Bool</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > a =&gt; <A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > [a]</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > a =&gt; <A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > (<A HREF = "Data.Maybe.html#t%3AMaybe"
+		      >Maybe</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > a, <A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > b) =&gt; <A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > (a, b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > a, <A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > b) =&gt; <A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > (Either a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > b) =&gt; <A HREF = "Data.Generics.Basics.html#t%3AData"
+		      >Data</A
+		      > (a -&gt; b)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Constructor representations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AConstr"
+	  ></A
+	  ><B
+	  >Constr</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Representation of constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    >Eq <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		      >Constr</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >Show <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		      >Constr</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+		      >Constr</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3AConIndex"
+	  ></A
+	  ><B
+	  >ConIndex</B
+	  > = Int</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Unique index for datatype constructors.
+Textual order is respected. Starts at 1.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AFixity"
+	  ></A
+	  ><B
+	  >Fixity</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Fixity of constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3APrefix"
+		      ></A
+		      ><B
+		      >Prefix</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AInfix"
+		      ></A
+		      ><B
+		      >Infix</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    >Eq <A HREF = "Data.Generics.Basics.html#t%3AFixity"
+		      >Fixity</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >Show <A HREF = "Data.Generics.Basics.html#t%3AFixity"
+		      >Fixity</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ADataType"
+	  ></A
+	  ><B
+	  >DataType</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >A package of constructor representations;
+could be a list, an array, a balanced tree, or others.
+</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    >Show <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+		      >DataType</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Constructing constructor representations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmkConstr"
+	  ></A
+	  ><B
+	  >mkConstr</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AConIndex"
+	  >ConIndex</A
+	  > -&gt; String -&gt; <A HREF = "Data.Generics.Basics.html#t%3AFixity"
+	  >Fixity</A
+	  > -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Make a representation for a datatype constructor</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmkDataType"
+	  ></A
+	  ><B
+	  >mkDataType</B
+	  > :: [<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  >] -&gt; <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+	  >DataType</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Make a package of constructor representations</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >Observing constructor representations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AconString"
+	  ></A
+	  ><B
+	  >conString</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  > -&gt; String</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Turn a constructor into a string</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AconFixity"
+	  ></A
+	  ><B
+	  >conFixity</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  > -&gt; <A HREF = "Data.Generics.Basics.html#t%3AFixity"
+	  >Fixity</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Determine fixity of a constructor;
+undefined for primitive types.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AconIndex"
+	  ></A
+	  ><B
+	  >conIndex</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  > -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConIndex"
+	  >ConIndex</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Determine index of a constructor.
+Undefined for primitive types.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AstringCon"
+	  ></A
+	  ><B
+	  >stringCon</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+	  >DataType</A
+	  > -&gt; String -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Lookup a constructor via a string</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AindexCon"
+	  ></A
+	  ><B
+	  >indexCon</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+	  >DataType</A
+	  > -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConIndex"
+	  >ConIndex</A
+	  > -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Lookup a constructor by its index;</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmaxConIndex"
+	  ></A
+	  ><B
+	  >maxConIndex</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+	  >DataType</A
+	  > -&gt; <A HREF = "Data.Generics.Basics.html#t%3AConIndex"
+	  >ConIndex</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Return maximum index;
+0 for primitive types</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdataTypeCons"
+	  ></A
+	  ><B
+	  >dataTypeCons</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3ADataType"
+	  >DataType</A
+	  > -&gt; [<A HREF = "Data.Generics.Basics.html#t%3AConstr"
+	  >Constr</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Return all constructors in increasing order of indicies;
+empty list for primitive types</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "5"
+	  >Generic maps defined in terms of gfoldl </A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapT"
+	  ></A
+	  ><B
+	  >gmapT</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > b . <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > b =&gt; b -&gt; b) -&gt; a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A generic transformation that maps over the immediate subterms</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapQ"
+	  ></A
+	  ><B
+	  >gmapQ</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; a -&gt; u) -&gt; a -&gt; [u]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A generic query that processes the immediate subterms and returns a list</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapQl"
+	  ></A
+	  ><B
+	  >gmapQl</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; (r -&gt; r' -&gt; r) -&gt; r -&gt; (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; a -&gt; r') -&gt; a -&gt; r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A generic query with a left-associative binary operator</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapQr"
+	  ></A
+	  ><B
+	  >gmapQr</B
+	  > :: <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; (r' -&gt; r -&gt; r) -&gt; r -&gt; (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; a -&gt; r') -&gt; a -&gt; r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A generic query with a right-associative binary operator</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapM"
+	  ></A
+	  ><B
+	  >gmapM</B
+	  > :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a, <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m) =&gt; (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; a -&gt; m a) -&gt; a -&gt; m a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A generic monadic transformation that maps over the immediate subterms</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapMp"
+	  ></A
+	  ><B
+	  >gmapMp</B
+	  > :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a, <A HREF = "Control.Monad.html#t%3AMonadPlus"
+	  >MonadPlus</A
+	  > m) =&gt; (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; a -&gt; m a) -&gt; a -&gt; m a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Transformation of at least one immediate subterm does not fail</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgmapMo"
+	  ></A
+	  ><B
+	  >gmapMo</B
+	  > :: (<A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a, <A HREF = "Control.Monad.html#t%3AMonadPlus"
+	  >MonadPlus</A
+	  > m) =&gt; (<SPAN CLASS = "keyword"
+	  >forall</SPAN
+	  > a . <A HREF = "Data.Generics.Basics.html#t%3AData"
+	  >Data</A
+	  > a =&gt; a -&gt; m a) -&gt; a -&gt; m a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Transformation of one immediate subterm with success</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

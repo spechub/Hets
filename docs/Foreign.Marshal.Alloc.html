@@ -1,0 +1,525 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Foreign.Marshal.Alloc</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Foreign.Marshal.Alloc</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  ffi@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Allocation</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Marshalling support: basic routines for memory allocation
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Amalloc"
+		>malloc</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmallocBytes"
+		>mallocBytes</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aalloca"
+		>alloca</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; (<A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AallocaBytes"
+		>allocaBytes</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; (<A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Arealloc"
+		>realloc</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> b =&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> b)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreallocBytes"
+		>reallocBytes</A
+		> :: <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afree"
+		>free</A
+		> :: <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfinalizerFree"
+		>finalizerFree</A
+		> :: <A HREF = "Foreign.ForeignPtr.html#t%3AFinalizerPtr"
+		>FinalizerPtr</A
+		> a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Allocation</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amalloc"
+	  ></A
+	  ><B
+	  >malloc</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate space for storable type.  The size of the area allocated
+is determined by the <TT
+	  ><A HREF = "Foreign.Storable.html#v%3AsizeOf"
+	    >sizeOf</A
+	    ></TT
+	  > method from the instance of
+<TT
+	  ><A HREF = "Foreign.Storable.html#t%3AStorable"
+	    >Storable</A
+	    ></TT
+	  > for the appropriate type.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmallocBytes"
+	  ></A
+	  ><B
+	  >mallocBytes</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate given number of bytes of storage, equivalent to C's <TT
+	  >malloc()</TT
+	  >.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aalloca"
+	  ></A
+	  ><B
+	  >alloca</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; (<A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Temporarily allocate space for a storable type.
+</P
+	  ><UL
+	  ><LI
+	    > the pointer passed as an argument to the function must <EM
+	      >not</EM
+	      > escape from
+this function; in other words, in <TT
+	      >alloca f</TT
+	      > the allocated storage must
+not be used after <TT
+	      >f</TT
+	      > returns
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AallocaBytes"
+	  ></A
+	  ><B
+	  >allocaBytes</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; (<A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Temporarily allocate the given number of bytes of storage.
+</P
+	  ><UL
+	  ><LI
+	    > the pointer passed as an argument to the function must <EM
+	      >not</EM
+	      > escape from
+this function; in other words, in <TT
+	      >allocaBytes n f</TT
+	      > the allocated storage
+must not be used after <TT
+	      >f</TT
+	      > returns
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Arealloc"
+	  ></A
+	  ><B
+	  >realloc</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > b =&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > b)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Adjust a malloc'ed storage area to the given size of the required type
+(corresponds to C's <TT
+	  >realloc()</TT
+	  >).
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreallocBytes"
+	  ></A
+	  ><B
+	  >reallocBytes</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Adjust a malloc'ed storage area to the given size (equivalent to
+C's <TT
+	  >realloc()</TT
+	  >).
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afree"
+	  ></A
+	  ><B
+	  >free</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Free malloc'ed storage (equivalent to
+C's <TT
+	  >free()</TT
+	  >)
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfinalizerFree"
+	  ></A
+	  ><B
+	  >finalizerFree</B
+	  > :: <A HREF = "Foreign.ForeignPtr.html#t%3AFinalizerPtr"
+	  >FinalizerPtr</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A pointer to a foreign function equivalent to <TT
+	  ><A HREF = "Foreign.Marshal.Alloc.html#v%3Afree"
+	    >free</A
+	    ></TT
+	  >, which may be used
+as a finalizer for storage allocated with <TT
+	  ><A HREF = "Foreign.Marshal.Alloc.html#v%3Amalloc"
+	    >malloc</A
+	    ></TT
+	  > or <TT
+	  ><A HREF = "Foreign.Marshal.Alloc.html#v%3AmallocBytes"
+	    >mallocBytes</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,786 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Text.ParserCombinators.ReadPrec</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Text.ParserCombinators.ReadPrec</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (uses Text.ParserCombinators.ReadP)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Precedences</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Precedence operations</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Other operations</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#4"
+		    >Converters</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This library defines parser combinators for precedence parsing.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3APrec"
+		>Prec</A
+		> = <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AminPrec"
+		>minPrec</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3APrec"
+		>Prec</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Alift"
+		>lift</A
+		> :: <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+		>ReadP</A
+		> a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aprec"
+		>prec</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3APrec"
+		>Prec</A
+		> -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Astep"
+		>step</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Areset"
+		>reset</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aget"
+		>get</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Alook"
+		>look</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A%2B%2B%2B"
+		>(+++)</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A%3C%2B%2B"
+		>(&lt;++)</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Apfail"
+		>pfail</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Achoice"
+		>choice</A
+		> :: [<A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a] -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadPrec_to_P"
+		>readPrec_to_P</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+		>ReadP</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadP_to_Prec"
+		>readP_to_Prec</A
+		> :: (<A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+		>ReadP</A
+		> a) -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadPrec_to_S"
+		>readPrec_to_S</A
+		> :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadS"
+		>ReadS</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadS_to_Prec"
+		>readS_to_Prec</A
+		> :: (<A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadS"
+		>ReadS</A
+		> a) -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		>ReadPrec</A
+		> a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AReadPrec"
+	  ></A
+	  ><B
+	  >ReadPrec</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AFunctor"
+		      >Functor</A
+		      > <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		      >ReadPrec</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		      >ReadPrec</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		      >ReadPrec</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Precedences</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3APrec"
+	  ></A
+	  ><B
+	  >Prec</B
+	  > = <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AminPrec"
+	  ></A
+	  ><B
+	  >minPrec</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3APrec"
+	  >Prec</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Precedence operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alift"
+	  ></A
+	  ><B
+	  >lift</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+	  >ReadP</A
+	  > a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Lift a predence-insensitive <TT
+	  ><A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+	    >ReadP</A
+	    ></TT
+	  > to a <TT
+	  ><A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	    >ReadPrec</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aprec"
+	  ></A
+	  ><B
+	  >prec</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3APrec"
+	  >Prec</A
+	  > -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  >(prec n p)</TT
+	  > checks that the precedence context is 
+less than or equal to n,
+* if not, fails
+* if so, parses p in context n</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Astep"
+	  ></A
+	  ><B
+	  >step</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Increases the precedence context by one</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Areset"
+	  ></A
+	  ><B
+	  >reset</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Resets the precedence context to zero</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Other operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aget"
+	  ></A
+	  ><B
+	  >get</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Alook"
+	  ></A
+	  ><B
+	  >look</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%2B%2B%2B"
+	  ></A
+	  ><B
+	  >(+++)</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%3C%2B%2B"
+	  ></A
+	  ><B
+	  >(&lt;++)</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Apfail"
+	  ></A
+	  ><B
+	  >pfail</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Achoice"
+	  ></A
+	  ><B
+	  >choice</B
+	  > :: [<A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a] -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >Converters</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadPrec_to_P"
+	  ></A
+	  ><B
+	  >readPrec_to_P</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+	  >ReadP</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadP_to_Prec"
+	  ></A
+	  ><B
+	  >readP_to_Prec</B
+	  > :: (<A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+	  >ReadP</A
+	  > a) -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadPrec_to_S"
+	  ></A
+	  ><B
+	  >readPrec_to_S</B
+	  > :: <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadS"
+	  >ReadS</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadS_to_Prec"
+	  ></A
+	  ><B
+	  >readS_to_Prec</B
+	  > :: (<A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadS"
+	  >ReadS</A
+	  > a) -&gt; <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+	  >ReadPrec</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

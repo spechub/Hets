@@ -1,0 +1,603 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Ix</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Ix</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  stable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Deriving Instances of Ix</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Class of index types.
+</P
+	  ><P
+	  >The <TT
+	    ><A HREF = "Data.Ix.html#t%3AIx"
+	      >Ix</A
+	      ></TT
+	    > class is used to map a continuous subrange of values in a type onto
+integers. It is used primarily for array indexing (see Section 6
+<A HREF = "http://www.haskell.org/onlinelibrary/array.html#arrays"
+	    >http://www.haskell.org/onlinelibrary/array.html#arrays</A
+	    >). The <TT
+	    ><A HREF = "Data.Ix.html#t%3AIx"
+	      >Ix</A
+	      ></TT
+	    >
+class contains the methods range, index, and inRange. The <TT
+	    ><A HREF = "Data.Ix.html#v%3Aindex"
+	      >index</A
+	      ></TT
+	    > operation
+maps a bounding pair, which defines the lower and upper bounds of the range,
+and a subscript, to an integer. The <TT
+	    ><A HREF = "Data.Ix.html#v%3Arange"
+	      >range</A
+	      ></TT
+	    > operation enumerates all
+subscripts; the <TT
+	    ><A HREF = "Data.Ix.html#v%3AinRange"
+	      >inRange</A
+	      ></TT
+	    > operation tells whether a particular subscript
+lies in the range defined by a bounding pair.
+</P
+	  ><P
+	  >An implementation is entitled to assume the following laws about these
+operations: 
+</P
+	  ><PRE
+	  >        range (l,u) !! index (l,u) i == i   -- when i is in range
+</PRE
+	  ><PRE
+	  >        inRange (l,u) i == i `elem` range (l,u)
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; <A HREF = "#t%3AIx"
+		>Ix</A
+		> a  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Arange"
+		      >range</A
+		      > :: (a, a) -&gt; [a]</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Aindex"
+		      >index</A
+		      > :: (a, a) -&gt; a -&gt; <A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AinRange"
+		      >inRange</A
+		      > :: (a, a) -&gt; a -&gt; <A HREF = "Prelude.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3ArangeSize"
+		      >rangeSize</A
+		      > :: (a, a) -&gt; <A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; <A NAME = "t%3AIx"
+	  ></A
+	  ><B
+	  >Ix</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Arange"
+		      ></A
+		      ><B
+		      >range</B
+		      > :: (a, a) -&gt; [a]</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Aindex"
+		      ></A
+		      ><B
+		      >index</B
+		      > :: (a, a) -&gt; a -&gt; <A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AinRange"
+		      ></A
+		      ><B
+		      >inRange</B
+		      > :: (a, a) -&gt; a -&gt; <A HREF = "Prelude.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3ArangeSize"
+		      ></A
+		      ><B
+		      >rangeSize</B
+		      > :: (a, a) -&gt; <A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "Prelude.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "Prelude.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "Prelude.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "Prelude.html#t%3AOrdering"
+		      >Ordering</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > ()</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > b) =&gt; <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > (a, b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a1, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a2, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a3) =&gt; <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > (a1, a2, a3)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a1, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a2, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a3, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a4) =&gt; <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > (a1, a2, a3, a4)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a1, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a2, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a3, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a4, <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > a5) =&gt; <A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > (a1, a2, a3, a4, a5)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Handle.html#t%3ASeekMode"
+		      >SeekMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIOMode"
+		      >IOMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Int.html#t%3AInt8"
+		      >Int8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Int.html#t%3AInt16"
+		      >Int16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Int.html#t%3AInt32"
+		      >Int32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Int.html#t%3AInt64"
+		      >Int64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Word.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Word.html#t%3AWord8"
+		      >Word8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Word.html#t%3AWord16"
+		      >Word16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Word.html#t%3AWord32"
+		      >Word32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "GHC.Word.html#t%3AWord64"
+		      >Word64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "System.Time.html#t%3AMonth"
+		      >Month</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Ix.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "System.Time.html#t%3ADay"
+		      >Day</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Deriving Instances of Ix</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Derived instance declarations for the class <TT
+	    ><A HREF = "Data.Ix.html#t%3AIx"
+	      >Ix</A
+	      ></TT
+	    > are only possible
+for enumerations (i.e. datatypes having only nullary constructors)
+and single-constructor datatypes, including arbitrarily large tuples,
+whose constituent types are instances of <TT
+	    ><A HREF = "Data.Ix.html#t%3AIx"
+	      >Ix</A
+	      ></TT
+	    >. 
+</P
+	  ><UL
+	  ><LI
+	    > For an enumeration, the nullary constructors are assumed to be
+numbered left-to-right with the indices being 0 to n-1 inclusive. This
+is the same numbering defined by the <TT
+	      ><A HREF = "Prelude.html#t%3AEnum"
+		>Enum</A
+		></TT
+	      > class. For example, given
+the datatype: 
+</LI
+	    ></UL
+	  ><PRE
+	  >	data Colour = Red | Orange | Yellow | Green | Blue | Indigo | Violet
+</PRE
+	  ><P
+	  >we would have: 
+</P
+	  ><PRE
+	  >	range   (Yellow,Blue)        ==  [Yellow,Green,Blue]
+	index   (Yellow,Blue) Green  ==  1
+	inRange (Yellow,Blue) Red    ==  False
+</PRE
+	  ><UL
+	  ><LI
+	    > For single-constructor datatypes, the derived instance declarations
+are as shown for tuples in Figure 1
+<A HREF = "http://www.haskell.org/onlinelibrary/ix.html#prelude-index"
+	      >http://www.haskell.org/onlinelibrary/ix.html#prelude-index</A
+	      >.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

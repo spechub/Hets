@@ -1,0 +1,820 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >GHC.Storable</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>GHC.Storable</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (GHC Extensions)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  internal</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  ffi@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Helper functions for <A HREF = "Foreign.Storable.html"
+	  >Foreign.Storable</A
+	  >
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadWideCharOffPtr"
+	  ></A
+	  ><B
+	  >readWideCharOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadIntOffPtr"
+	  ></A
+	  ><B
+	  >readIntOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadWordOffPtr"
+	  ></A
+	  ><B
+	  >readWordOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord"
+	  >Word</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Word.html#t%3AWord"
+	  >Word</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadPtrOffPtr"
+	  ></A
+	  ><B
+	  >readPtrOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > (<A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a) -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadFunPtrOffPtr"
+	  ></A
+	  ><B
+	  >readFunPtrOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > a) -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadFloatOffPtr"
+	  ></A
+	  ><B
+	  >readFloatOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadDoubleOffPtr"
+	  ></A
+	  ><B
+	  >readDoubleOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadStablePtrOffPtr"
+	  ></A
+	  ><B
+	  >readStablePtrOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > (<A HREF = "GHC.Stable.html#t%3AStablePtr"
+	  >StablePtr</A
+	  > a) -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Stable.html#t%3AStablePtr"
+	  >StablePtr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadInt8OffPtr"
+	  ></A
+	  ><B
+	  >readInt8OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Int.html#t%3AInt8"
+	  >Int8</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Int.html#t%3AInt8"
+	  >Int8</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadInt16OffPtr"
+	  ></A
+	  ><B
+	  >readInt16OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Int.html#t%3AInt16"
+	  >Int16</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Int.html#t%3AInt16"
+	  >Int16</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadInt32OffPtr"
+	  ></A
+	  ><B
+	  >readInt32OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Int.html#t%3AInt32"
+	  >Int32</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Int.html#t%3AInt32"
+	  >Int32</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadInt64OffPtr"
+	  ></A
+	  ><B
+	  >readInt64OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Int.html#t%3AInt64"
+	  >Int64</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Int.html#t%3AInt64"
+	  >Int64</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadWord8OffPtr"
+	  ></A
+	  ><B
+	  >readWord8OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord8"
+	  >Word8</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Word.html#t%3AWord8"
+	  >Word8</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadWord16OffPtr"
+	  ></A
+	  ><B
+	  >readWord16OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord16"
+	  >Word16</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Word.html#t%3AWord16"
+	  >Word16</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadWord32OffPtr"
+	  ></A
+	  ><B
+	  >readWord32OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord32"
+	  >Word32</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Word.html#t%3AWord32"
+	  >Word32</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadWord64OffPtr"
+	  ></A
+	  ><B
+	  >readWord64OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord64"
+	  >Word64</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Word.html#t%3AWord64"
+	  >Word64</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteWideCharOffPtr"
+	  ></A
+	  ><B
+	  >writeWideCharOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteIntOffPtr"
+	  ></A
+	  ><B
+	  >writeIntOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteWordOffPtr"
+	  ></A
+	  ><B
+	  >writeWordOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord"
+	  >Word</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Word.html#t%3AWord"
+	  >Word</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwritePtrOffPtr"
+	  ></A
+	  ><B
+	  >writePtrOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > (<A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a) -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteFunPtrOffPtr"
+	  ></A
+	  ><B
+	  >writeFunPtrOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > a) -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteFloatOffPtr"
+	  ></A
+	  ><B
+	  >writeFloatOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3AFloat"
+	  >Float</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteDoubleOffPtr"
+	  ></A
+	  ><B
+	  >writeDoubleOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Float.html#t%3ADouble"
+	  >Double</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteStablePtrOffPtr"
+	  ></A
+	  ><B
+	  >writeStablePtrOffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > (<A HREF = "GHC.Stable.html#t%3AStablePtr"
+	  >StablePtr</A
+	  > a) -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Stable.html#t%3AStablePtr"
+	  >StablePtr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteInt8OffPtr"
+	  ></A
+	  ><B
+	  >writeInt8OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Int.html#t%3AInt8"
+	  >Int8</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Int.html#t%3AInt8"
+	  >Int8</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteInt16OffPtr"
+	  ></A
+	  ><B
+	  >writeInt16OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Int.html#t%3AInt16"
+	  >Int16</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Int.html#t%3AInt16"
+	  >Int16</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteInt32OffPtr"
+	  ></A
+	  ><B
+	  >writeInt32OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Int.html#t%3AInt32"
+	  >Int32</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Int.html#t%3AInt32"
+	  >Int32</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteInt64OffPtr"
+	  ></A
+	  ><B
+	  >writeInt64OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Int.html#t%3AInt64"
+	  >Int64</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Int.html#t%3AInt64"
+	  >Int64</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteWord8OffPtr"
+	  ></A
+	  ><B
+	  >writeWord8OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord8"
+	  >Word8</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Word.html#t%3AWord8"
+	  >Word8</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteWord16OffPtr"
+	  ></A
+	  ><B
+	  >writeWord16OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord16"
+	  >Word16</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Word.html#t%3AWord16"
+	  >Word16</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteWord32OffPtr"
+	  ></A
+	  ><B
+	  >writeWord32OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord32"
+	  >Word32</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Word.html#t%3AWord32"
+	  >Word32</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteWord64OffPtr"
+	  ></A
+	  ><B
+	  >writeWord64OffPtr</B
+	  > :: <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > <A HREF = "GHC.Word.html#t%3AWord64"
+	  >Word64</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.Word.html#t%3AWord64"
+	  >Word64</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

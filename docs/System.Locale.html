@@ -1,0 +1,453 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >System.Locale</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>System.Locale</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  stable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This module provides the ability to adapt to local conventions.
+At present, it supports only time and date information as used by
+<TT
+	  ><A HREF = "System.Time.html#v%3AcalendarTimeToString"
+	    >calendarTimeToString</A
+	    ></TT
+	  > from the <A HREF = "System.Time.html"
+	  >System.Time</A
+	  > module.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3ATimeLocale"
+		>TimeLocale</A
+		>  = <A HREF = "#v%3ATimeLocale"
+		>TimeLocale</A
+		> {<TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3AwDays"
+		      >wDays</A
+		      > :: [(<A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      >, <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      >)]</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3Amonths"
+		      >months</A
+		      > :: [(<A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      >, <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      >)]</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3Aintervals"
+		      >intervals</A
+		      > :: [(<A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      >, <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      >)]</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3AamPm"
+		      >amPm</A
+		      > :: (<A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      >, <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3AdateTimeFmt"
+		      >dateTimeFmt</A
+		      >, <A HREF = "#v%3AdateFmt"
+		      >dateFmt</A
+		      >, <A HREF = "#v%3AtimeFmt"
+		      >timeFmt</A
+		      >, <A HREF = "#v%3Atime12Fmt"
+		      >time12Fmt</A
+		      > :: <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		>}</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdefaultTimeLocale"
+		>defaultTimeLocale</A
+		> :: <A HREF = "System.Locale.html#t%3ATimeLocale"
+		>TimeLocale</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aiso8601DateFormat"
+		>iso8601DateFormat</A
+		> :: <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Arfc822DateFormat"
+		>rfc822DateFormat</A
+		> :: <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ATimeLocale"
+	  ></A
+	  ><B
+	  >TimeLocale</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "5" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ATimeLocale"
+		      ></A
+		      ><B
+		      >TimeLocale</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body" COLSPAN = "2"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AwDays"
+			    ></A
+			    ><B
+			    >wDays</B
+			    > :: [(<A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    >, <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    >)]</TD
+			  ><TD CLASS = "rdoc"
+			  >full and abbreviated week days</TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3Amonths"
+			    ></A
+			    ><B
+			    >months</B
+			    > :: [(<A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    >, <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    >)]</TD
+			  ><TD CLASS = "rdoc"
+			  >full and abbreviated months</TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3Aintervals"
+			    ></A
+			    ><B
+			    >intervals</B
+			    > :: [(<A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    >, <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    >)]</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AamPm"
+			    ></A
+			    ><B
+			    >amPm</B
+			    > :: (<A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    >, <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    >)</TD
+			  ><TD CLASS = "rdoc"
+			  >AM/PM symbols</TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3AdateTimeFmt"
+			    ></A
+			    ><B
+			    >dateTimeFmt</B
+			    >, <A NAME = "v%3AdateFmt"
+			    ></A
+			    ><B
+			    >dateFmt</B
+			    >, <A NAME = "v%3AtimeFmt"
+			    ></A
+			    ><B
+			    >timeFmt</B
+			    >, <A NAME = "v%3Atime12Fmt"
+			    ></A
+			    ><B
+			    >time12Fmt</B
+			    > :: <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ><TD CLASS = "rdoc"
+			  >formatting strings</TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "System.Locale.html#t%3ATimeLocale"
+		      >TimeLocale</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "System.Locale.html#t%3ATimeLocale"
+		      >TimeLocale</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "System.Locale.html#t%3ATimeLocale"
+		      >TimeLocale</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdefaultTimeLocale"
+	  ></A
+	  ><B
+	  >defaultTimeLocale</B
+	  > :: <A HREF = "System.Locale.html#t%3ATimeLocale"
+	  >TimeLocale</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aiso8601DateFormat"
+	  ></A
+	  ><B
+	  >iso8601DateFormat</B
+	  > :: <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Normally, ISO-8601 just defines YYYY-MM-DD
+but we can add a time spec.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Arfc822DateFormat"
+	  ></A
+	  ><B
+	  >rfc822DateFormat</B
+	  > :: <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,1815 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >GHC.Exception</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>GHC.Exception</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (GHC extensions)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  internal</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  cvs-ghc@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Exceptions and exception-handling functions.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcatchException"
+		>catchException</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; (<A HREF = "GHC.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Acatch"
+		>catch</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; (<A HREF = "GHC.IOBase.html#t%3AIOError"
+		>IOError</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ablock"
+		>block</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aunblock"
+		>unblock</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AException"
+		      >Exception</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AArithException"
+			    >ArithException</A
+			    > <A HREF = "GHC.Exception.html#t%3AArithException"
+			    >ArithException</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AArrayException"
+			    >ArrayException</A
+			    > <A HREF = "GHC.Exception.html#t%3AArrayException"
+			    >ArrayException</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AAssertionFailed"
+			    >AssertionFailed</A
+			    > <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AAsyncException"
+			    >AsyncException</A
+			    > <A HREF = "GHC.Exception.html#t%3AAsyncException"
+			    >AsyncException</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ABlockedOnDeadMVar"
+			    >BlockedOnDeadMVar</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ADeadlock"
+			    >Deadlock</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ADynException"
+			    >DynException</A
+			    > Dynamic</TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AErrorCall"
+			    >ErrorCall</A
+			    > <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AExitException"
+			    >ExitException</A
+			    > <A HREF = "GHC.IOBase.html#t%3AExitCode"
+			    >ExitCode</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AIOException"
+			    >IOException</A
+			    > <A HREF = "GHC.Exception.html#t%3AIOException"
+			    >IOException</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ANoMethodError"
+			    >NoMethodError</A
+			    > <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ANonTermination"
+			    >NonTermination</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3APatternMatchFail"
+			    >PatternMatchFail</A
+			    > <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ARecConError"
+			    >RecConError</A
+			    > <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ARecSelError"
+			    >RecSelError</A
+			    > <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ARecUpdError"
+			    >RecUpdError</A
+			    > <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AAsyncException"
+		      >AsyncException</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AStackOverflow"
+			    >StackOverflow</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AHeapOverflow"
+			    >HeapOverflow</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AThreadKilled"
+			    >ThreadKilled</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AIOException"
+		>IOException</A
+		>  = <A HREF = "#v%3AIOError"
+		>IOError</A
+		> {<TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3Aioe_handle"
+		      >ioe_handle</A
+		      > :: (<A HREF = "Data.Maybe.html#t%3AMaybe"
+		      >Maybe</A
+		      > <A HREF = "GHC.IOBase.html#t%3AHandle"
+		      >Handle</A
+		      >)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3Aioe_type"
+		      >ioe_type</A
+		      > :: <A HREF = "GHC.IOBase.html#t%3AIOErrorType"
+		      >IOErrorType</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3Aioe_location"
+		      >ioe_location</A
+		      > :: <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3Aioe_description"
+		      >ioe_description</A
+		      > :: <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "recfield"
+		    ><A HREF = "#v%3Aioe_filename"
+		      >ioe_filename</A
+		      > :: (<A HREF = "Data.Maybe.html#t%3AMaybe"
+		      >Maybe</A
+		      > <A HREF = "GHC.IOBase.html#t%3AFilePath"
+		      >FilePath</A
+		      >)</TD
+		    ></TR
+		  ></TABLE
+		>}</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AArithException"
+		      >ArithException</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AOverflow"
+			    >Overflow</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AUnderflow"
+			    >Underflow</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ALossOfPrecision"
+			    >LossOfPrecision</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ADivideByZero"
+			    >DivideByZero</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ADenormal"
+			    >Denormal</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AArrayException"
+		      >ArrayException</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AIndexOutOfBounds"
+			    >IndexOutOfBounds</A
+			    > <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AUndefinedElement"
+			    >UndefinedElement</A
+			    > <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Athrow"
+		>throw</A
+		> :: <A HREF = "GHC.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthrowIO"
+		>throwIO</A
+		> :: <A HREF = "GHC.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AioError"
+		>ioError</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIOError"
+		>IOError</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcatchException"
+	  ></A
+	  ><B
+	  >catchException</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; (<A HREF = "GHC.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acatch"
+	  ></A
+	  ><B
+	  >catch</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; (<A HREF = "GHC.IOBase.html#t%3AIOError"
+	  >IOError</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "GHC.Exception.html#v%3Acatch"
+	      >catch</A
+	      ></TT
+	    > function establishes a handler that receives any <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIOError"
+	      >IOError</A
+	      ></TT
+	    >
+raised in the action protected by <TT
+	    ><A HREF = "GHC.Exception.html#v%3Acatch"
+	      >catch</A
+	      ></TT
+	    >.  An <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIOError"
+	      >IOError</A
+	      ></TT
+	    > is caught by
+the most recent handler established by <TT
+	    ><A HREF = "GHC.Exception.html#v%3Acatch"
+	      >catch</A
+	      ></TT
+	    >.  These handlers are
+not selective: all <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIOError"
+	      >IOError</A
+	      ></TT
+	    >s are caught.  Exception propagation
+must be explicitly provided in a handler by re-raising any unwanted
+exceptions.  For example, in
+</P
+	  ><PRE
+	  > f = catch g (\e -&gt; if IO.isEOFError e then return [] else ioError e)
+</PRE
+	  ><P
+	  >the function <TT
+	    >f</TT
+	    > returns <TT
+	    >[]</TT
+	    > when an end-of-file exception
+(cf. <TT
+	    ><A HREF = "System.IO.Error.html#v%3AisEOFError"
+	      >isEOFError</A
+	      ></TT
+	    >) occurs in <TT
+	    >g</TT
+	    >; otherwise, the
+exception is propagated to the next outer handler.
+</P
+	  ><P
+	  >When an exception propagates outside the main program, the Haskell
+system prints the associated <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIOError"
+	      >IOError</A
+	      ></TT
+	    > value and exits the program.
+</P
+	  ><P
+	  >Non-I/O exceptions are not caught by this variant; to catch all
+exceptions, use <TT
+	    ><A HREF = "Control.Exception.html#v%3Acatch"
+	      >catch</A
+	      ></TT
+	    > from <A HREF = "Control.Exception.html"
+	    >Control.Exception</A
+	    >.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ablock"
+	  ></A
+	  ><B
+	  >block</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Applying <TT
+	  ><A HREF = "GHC.Exception.html#v%3Ablock"
+	    >block</A
+	    ></TT
+	  > to a computation will
+execute that computation with asynchronous exceptions
+<EM
+	  >blocked</EM
+	  >.  That is, any thread which
+attempts to raise an exception in the current thread will be
+blocked until asynchronous exceptions are enabled again.  There's
+no need to worry about re-enabling asynchronous exceptions; that is
+done automatically on exiting the scope of
+<TT
+	  ><A HREF = "GHC.Exception.html#v%3Ablock"
+	    >block</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aunblock"
+	  ></A
+	  ><B
+	  >unblock</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>To re-enable asynchronous exceptions inside the scope of
+<TT
+	  ><A HREF = "GHC.Exception.html#v%3Ablock"
+	    >block</A
+	    ></TT
+	  >, <TT
+	  ><A HREF = "GHC.Exception.html#v%3Aunblock"
+	    >unblock</A
+	    ></TT
+	  > can be
+used.  It scopes in exactly the same way, so on exit from
+<TT
+	  ><A HREF = "GHC.Exception.html#v%3Aunblock"
+	    >unblock</A
+	    ></TT
+	  > asynchronous exception delivery will
+be disabled again.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AException"
+	  ></A
+	  ><B
+	  >Exception</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >The type of exceptions.  Every kind of system-generated exception
+has a constructor in the <TT
+		><A HREF = "GHC.Exception.html#t%3AException"
+		  >Exception</A
+		  ></TT
+		> type, and values of other
+types may be injected into <TT
+		><A HREF = "GHC.Exception.html#t%3AException"
+		  >Exception</A
+		  ></TT
+		> by coercing them to
+<TT
+		><A HREF = "Data.Dynamic.html#t%3ADynamic"
+		  >Dynamic</A
+		  ></TT
+		> (see the section on Dynamic Exceptions:
+<A HREF = "Control.Exception.html#DynamicExceptions"
+		>Control.Exception#DynamicExceptions</A
+		>).</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AArithException"
+		      ></A
+		      ><B
+		      >ArithException</B
+		      > <A HREF = "GHC.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >Exceptions raised by arithmetic
+operations.  (NOTE: GHC currently does not throw
+<TT
+		      ><A HREF = "GHC.Exception.html#t%3AArithException"
+			>ArithException</A
+			></TT
+		      >s except for <TT
+		      ><A HREF = "GHC.Exception.html#v%3ADivideByZero"
+			>DivideByZero</A
+			></TT
+		      >).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AArrayException"
+		      ></A
+		      ><B
+		      >ArrayException</B
+		      > <A HREF = "GHC.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >Exceptions raised by array-related
+operations.  (NOTE: GHC currently does not throw
+<TT
+		      ><A HREF = "GHC.Exception.html#t%3AArrayException"
+			>ArrayException</A
+			></TT
+		      >s).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AAssertionFailed"
+		      ></A
+		      ><B
+		      >AssertionFailed</B
+		      > <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >This exception is thrown by the
+<TT
+		      ><A HREF = "GHC.Base.html#v%3Aassert"
+			>assert</A
+			></TT
+		      > operation when the condition
+fails.  The <TT
+		      ><A HREF = "GHC.Base.html#t%3AString"
+			>String</A
+			></TT
+		      > argument contains the
+location of the assertion in the source program.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AAsyncException"
+		      ></A
+		      ><B
+		      >AsyncException</B
+		      > <A HREF = "GHC.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >Asynchronous exceptions (see section on Asynchronous Exceptions: <A HREF = "Control.Exception.html#AsynchronousExceptions"
+		      >Control.Exception#AsynchronousExceptions</A
+		      >).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ABlockedOnDeadMVar"
+		      ></A
+		      ><B
+		      >BlockedOnDeadMVar</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The current thread was executing a call to
+<TT
+		      ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+			>takeMVar</A
+			></TT
+		      > that could never return,
+because there are no other references to this <TT
+		      ><A HREF = "GHC.IOBase.html#t%3AMVar"
+			>MVar</A
+			></TT
+		      >.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ADeadlock"
+		      ></A
+		      ><B
+		      >Deadlock</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >There are no runnable threads, so the program is
+deadlocked.  The <TT
+		      ><A HREF = "GHC.Exception.html#v%3ADeadlock"
+			>Deadlock</A
+			></TT
+		      > exception is
+raised in the main thread only (see also: <A HREF = "Control.Concurrent.html"
+		      >Control.Concurrent</A
+		      >).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ADynException"
+		      ></A
+		      ><B
+		      >DynException</B
+		      > Dynamic</TD
+		    ><TD CLASS = "rdoc"
+		    >Dynamically typed exceptions (see section on Dynamic Exceptions: <A HREF = "Control.Exception.html#DynamicExceptions"
+		      >Control.Exception#DynamicExceptions</A
+		      >).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AErrorCall"
+		      ></A
+		      ><B
+		      >ErrorCall</B
+		      > <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The <TT
+		      ><A HREF = "GHC.Exception.html#v%3AErrorCall"
+			>ErrorCall</A
+			></TT
+		      > exception is thrown by <TT
+		      ><A HREF = "GHC.Err.html#v%3Aerror"
+			>error</A
+			></TT
+		      >.  The <TT
+		      ><A HREF = "GHC.Base.html#t%3AString"
+			>String</A
+			></TT
+		      >
+argument of <TT
+		      ><A HREF = "GHC.Exception.html#v%3AErrorCall"
+			>ErrorCall</A
+			></TT
+		      > is the string passed to <TT
+		      ><A HREF = "GHC.Err.html#v%3Aerror"
+			>error</A
+			></TT
+		      > when it was
+called.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AExitException"
+		      ></A
+		      ><B
+		      >ExitException</B
+		      > <A HREF = "GHC.IOBase.html#t%3AExitCode"
+		      >ExitCode</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The <TT
+		      ><A HREF = "GHC.Exception.html#v%3AExitException"
+			>ExitException</A
+			></TT
+		      > exception is thrown by <TT
+		      ><A HREF = "System.Exit.html#v%3AexitWith"
+			>exitWith</A
+			></TT
+		      > (and
+<TT
+		      ><A HREF = "System.Exit.html#v%3AexitFailure"
+			>exitFailure</A
+			></TT
+		      >).  The <TT
+		      ><A HREF = "GHC.IOBase.html#t%3AExitCode"
+			>ExitCode</A
+			></TT
+		      > argument is the value passed 
+to <TT
+		      ><A HREF = "System.Exit.html#v%3AexitWith"
+			>exitWith</A
+			></TT
+		      >.  An unhandled <TT
+		      ><A HREF = "GHC.Exception.html#v%3AExitException"
+			>ExitException</A
+			></TT
+		      > exception in the
+main thread will cause the program to be terminated with the given 
+exit code.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AIOException"
+		      ></A
+		      ><B
+		      >IOException</B
+		      > <A HREF = "GHC.Exception.html#t%3AIOException"
+		      >IOException</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >These are the standard IO exceptions generated by
+Haskell's <TT
+		      >IO</TT
+		      > operations.  See also <A HREF = "System.IO.Error.html"
+		      >System.IO.Error</A
+		      >.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ANoMethodError"
+		      ></A
+		      ><B
+		      >NoMethodError</B
+		      > <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to invoke a class method which has
+no definition in this instance, and there was no default
+definition given in the class declaration.  GHC issues a
+warning when you compile an instance which has missing
+methods.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ANonTermination"
+		      ></A
+		      ><B
+		      >NonTermination</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The current thread is stuck in an infinite loop.  This
+exception may or may not be thrown when the program is
+non-terminating.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3APatternMatchFail"
+		      ></A
+		      ><B
+		      >PatternMatchFail</B
+		      > <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >A pattern matching failure.  The <TT
+		      ><A HREF = "GHC.Base.html#t%3AString"
+			>String</A
+			></TT
+		      > argument should contain a
+descriptive message including the function name, source file
+and line number.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARecConError"
+		      ></A
+		      ><B
+		      >RecConError</B
+		      > <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to evaluate a field of a record
+for which no value was given at construction time.  The
+<TT
+		      ><A HREF = "GHC.Base.html#t%3AString"
+			>String</A
+			></TT
+		      > argument gives the location of the
+record construction in the source program.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARecSelError"
+		      ></A
+		      ><B
+		      >RecSelError</B
+		      > <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >A field selection was attempted on a constructor that
+doesn't have the requested field.  This can happen with
+multi-constructor records when one or more fields are
+missing from some of the constructors.  The
+<TT
+		      ><A HREF = "GHC.Base.html#t%3AString"
+			>String</A
+			></TT
+		      > argument gives the location of the
+record selection in the source program.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARecUpdError"
+		      ></A
+		      ><B
+		      >RecUpdError</B
+		      > <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to update a field in a record,
+where the record doesn't have the requested field.  This can
+only occur with multi-constructor records, when one or more
+fields are missing from some of the constructors.  The
+<TT
+		      ><A HREF = "GHC.Base.html#t%3AString"
+			>String</A
+			></TT
+		      > argument gives the location of the
+record update in the source program.</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exception.html#t%3AException"
+		      >Exception</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exception.html#t%3AException"
+		      >Exception</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exception.html#t%3AException"
+		      >Exception</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AAsyncException"
+	  ></A
+	  ><B
+	  >AsyncException</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Asynchronous exceptions</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AStackOverflow"
+		      ></A
+		      ><B
+		      >StackOverflow</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The current thread's stack exceeded its limit.
+Since an exception has been raised, the thread's stack
+will certainly be below its limit again, but the
+programmer should take remedial action
+immediately.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHeapOverflow"
+		      ></A
+		      ><B
+		      >HeapOverflow</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ><P
+		      >The program's heap is reaching its limit, and
+the program should take action to reduce the amount of
+live data it has. Notes:
+</P
+		      ><UL
+		      ><LI
+			> It is undefined which thread receives this exception.
+</LI
+			><LI
+			> GHC currently does not throw <TT
+			  ><A HREF = "GHC.Exception.html#v%3AHeapOverflow"
+			    >HeapOverflow</A
+			    ></TT
+			  > exceptions.</LI
+			></UL
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AThreadKilled"
+		      ></A
+		      ><B
+		      >ThreadKilled</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >This exception is raised by another thread
+calling <TT
+		      ><A HREF = "Control.Concurrent.html#v%3AkillThread"
+			>killThread</A
+			></TT
+		      >, or by the system
+if it needs to terminate the thread for some
+reason.</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AIOException"
+	  ></A
+	  ><B
+	  >IOException</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Exceptions that occur in the <TT
+		>IO</TT
+		> monad.
+An <TT
+		>IOException</TT
+		> records a more specific error type, a descriptive
+string and maybe the handle that was used when the error was
+flagged.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "5" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AIOError"
+		      ></A
+		      ><B
+		      >IOError</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body" COLSPAN = "2"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3Aioe_handle"
+			    ></A
+			    ><B
+			    >ioe_handle</B
+			    > :: (<A HREF = "Data.Maybe.html#t%3AMaybe"
+			    >Maybe</A
+			    > <A HREF = "GHC.IOBase.html#t%3AHandle"
+			    >Handle</A
+			    >)</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3Aioe_type"
+			    ></A
+			    ><B
+			    >ioe_type</B
+			    > :: <A HREF = "GHC.IOBase.html#t%3AIOErrorType"
+			    >IOErrorType</A
+			    ></TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3Aioe_location"
+			    ></A
+			    ><B
+			    >ioe_location</B
+			    > :: <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3Aioe_description"
+			    ></A
+			    ><B
+			    >ioe_description</B
+			    > :: <A HREF = "GHC.Base.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3Aioe_filename"
+			    ></A
+			    ><B
+			    >ioe_filename</B
+			    > :: (<A HREF = "Data.Maybe.html#t%3AMaybe"
+			    >Maybe</A
+			    > <A HREF = "GHC.IOBase.html#t%3AFilePath"
+			    >FilePath</A
+			    >)</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exception.html#t%3AIOException"
+		      >IOException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exception.html#t%3AIOException"
+		      >IOException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exception.html#t%3AIOException"
+		      >IOException</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AArithException"
+	  ></A
+	  ><B
+	  >ArithException</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >The type of arithmetic exceptions</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AOverflow"
+		      ></A
+		      ><B
+		      >Overflow</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AUnderflow"
+		      ></A
+		      ><B
+		      >Underflow</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ALossOfPrecision"
+		      ></A
+		      ><B
+		      >LossOfPrecision</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ADivideByZero"
+		      ></A
+		      ><B
+		      >DivideByZero</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ADenormal"
+		      ></A
+		      ><B
+		      >Denormal</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AArrayException"
+	  ></A
+	  ><B
+	  >ArrayException</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Exceptions generated by array operations</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AIndexOutOfBounds"
+		      ></A
+		      ><B
+		      >IndexOutOfBounds</B
+		      > <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to index an array outside
+its declared bounds.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AUndefinedElement"
+		      ></A
+		      ><B
+		      >UndefinedElement</B
+		      > <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to evaluate an element of an
+array that had not been initialized.</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "GHC.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athrow"
+	  ></A
+	  ><B
+	  >throw</B
+	  > :: <A HREF = "GHC.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Throw an exception.  Exceptions may be thrown from purely
+functional code, but may only be caught within the <TT
+	  ><A HREF = "GHC.IOBase.html#t%3AIO"
+	    >IO</A
+	    ></TT
+	  > monad.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowIO"
+	  ></A
+	  ><B
+	  >throwIO</B
+	  > :: <A HREF = "GHC.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >A variant of <TT
+	    ><A HREF = "GHC.Exception.html#v%3Athrow"
+	      >throw</A
+	      ></TT
+	    > that can be used within the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad.
+</P
+	  ><P
+	  >Although <TT
+	    ><A HREF = "GHC.Exception.html#v%3AthrowIO"
+	      >throwIO</A
+	      ></TT
+	    > has a type that is an instance of the type of <TT
+	    ><A HREF = "GHC.Exception.html#v%3Athrow"
+	      >throw</A
+	      ></TT
+	    >, the
+two functions are subtly different:
+</P
+	  ><PRE
+	  > throw e   `seq` return ()  ===&gt; throw e
+ throwIO e `seq` return ()  ===&gt; return ()
+</PRE
+	  ><P
+	  >The first example will cause the exception <TT
+	    >e</TT
+	    > to be raised,
+whereas the second one won't.  In fact, <TT
+	    ><A HREF = "GHC.Exception.html#v%3AthrowIO"
+	      >throwIO</A
+	      ></TT
+	    > will only cause
+an exception to be raised when it is used within the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad.
+The <TT
+	    ><A HREF = "GHC.Exception.html#v%3AthrowIO"
+	      >throwIO</A
+	      ></TT
+	    > variant should be used in preference to <TT
+	    ><A HREF = "GHC.Exception.html#v%3Athrow"
+	      >throw</A
+	      ></TT
+	    > to
+raise an exception within the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad because it guarantees
+ordering with respect to other <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > operations, whereas <TT
+	    ><A HREF = "GHC.Exception.html#v%3Athrow"
+	      >throw</A
+	      ></TT
+	    >
+does not.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AioError"
+	  ></A
+	  ><B
+	  >ioError</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIOError"
+	  >IOError</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Raise an <TT
+	  ><A HREF = "GHC.IOBase.html#t%3AIOError"
+	    >IOError</A
+	    ></TT
+	  > in the <TT
+	  ><A HREF = "GHC.IOBase.html#t%3AIO"
+	    >IO</A
+	    ></TT
+	  > monad.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

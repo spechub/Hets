@@ -1,0 +1,438 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Ratio</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Ratio</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  stable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Standard functions on rational numbers
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3ARatio"
+		>Ratio</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3ARational"
+		>Rational</A
+		> = <A HREF = "Data.Ratio.html#t%3ARatio"
+		>Ratio</A
+		> <A HREF = "Prelude.html#t%3AInteger"
+		>Integer</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A%25"
+		>(%)</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; a -&gt; a -&gt; <A HREF = "Data.Ratio.html#t%3ARatio"
+		>Ratio</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Anumerator"
+		>numerator</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; <A HREF = "Data.Ratio.html#t%3ARatio"
+		>Ratio</A
+		> a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Adenominator"
+		>denominator</A
+		> :: <A HREF = "GHC.Real.html#t%3AIntegral"
+		>Integral</A
+		> a =&gt; <A HREF = "Data.Ratio.html#t%3ARatio"
+		>Ratio</A
+		> a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AapproxRational"
+		>approxRational</A
+		> :: <A HREF = "GHC.Real.html#t%3ARealFrac"
+		>RealFrac</A
+		> a =&gt; a -&gt; a -&gt; <A HREF = "Data.Ratio.html#t%3ARational"
+		>Rational</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ARatio"
+	  ></A
+	  ><B
+	  >Ratio</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a, <A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > a) =&gt; <A HREF = "Prelude.html#t%3ARead"
+		      >Read</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "Prelude.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "Prelude.html#t%3ANum"
+		      >Num</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3AFractional"
+		      >Fractional</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3AReal"
+		      >Real</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "GHC.Real.html#t%3ARealFrac"
+		      >RealFrac</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a =&gt; <A HREF = "Prelude.html#t%3AEnum"
+		      >Enum</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Real.html#t%3AIntegral"
+		      >Integral</A
+		      > a, <A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > a) =&gt; <A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Ratio.html#t%3ARatio"
+		      >Ratio</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3ARational"
+	  ></A
+	  ><B
+	  >Rational</B
+	  > = <A HREF = "Data.Ratio.html#t%3ARatio"
+	  >Ratio</A
+	  > <A HREF = "Prelude.html#t%3AInteger"
+	  >Integer</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Arbitrary-precision rational numbers, represented as a ratio of
+two <TT
+	  ><A HREF = "Prelude.html#t%3AInteger"
+	    >Integer</A
+	    ></TT
+	  > values.  A rational number may be constructed using
+the <TT
+	  ><A HREF = "Data.Ratio.html#v%3A%25"
+	    >%</A
+	    ></TT
+	  > operator.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%25"
+	  ></A
+	  ><B
+	  >(%)</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; a -&gt; a -&gt; <A HREF = "Data.Ratio.html#t%3ARatio"
+	  >Ratio</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anumerator"
+	  ></A
+	  ><B
+	  >numerator</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; <A HREF = "Data.Ratio.html#t%3ARatio"
+	  >Ratio</A
+	  > a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Adenominator"
+	  ></A
+	  ><B
+	  >denominator</B
+	  > :: <A HREF = "GHC.Real.html#t%3AIntegral"
+	  >Integral</A
+	  > a =&gt; <A HREF = "Data.Ratio.html#t%3ARatio"
+	  >Ratio</A
+	  > a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AapproxRational"
+	  ></A
+	  ><B
+	  >approxRational</B
+	  > :: <A HREF = "GHC.Real.html#t%3ARealFrac"
+	  >RealFrac</A
+	  > a =&gt; a -&gt; a -&gt; <A HREF = "Data.Ratio.html#t%3ARational"
+	  >Rational</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

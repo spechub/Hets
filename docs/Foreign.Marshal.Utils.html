@@ -1,0 +1,762 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Foreign.Marshal.Utils</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Foreign.Marshal.Utils</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  ffi@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >General marshalling utilities</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#2"
+			>Combined allocation and marshalling</A
+			></DT
+		      ><DT
+		      ><A HREF = "#3"
+			>Marshalling of Boolean values (non-zero corresponds to <TT
+			  ><A HREF = "GHC.Base.html#v%3ATrue"
+			    >True</A
+			    ></TT
+			  >)</A
+			></DT
+		      ><DT
+		      ><A HREF = "#4"
+			>Marshalling of Maybe values</A
+			></DT
+		      ><DT
+		      ><A HREF = "#5"
+			>Marshalling lists of storable objects</A
+			></DT
+		      ><DT
+		      ><A HREF = "#6"
+			>Haskellish interface to memcpy and memmove</A
+			></DT
+		      ><DT
+		      ><A HREF = "#7"
+			>DEPRECATED FUNCTIONS (don't use; they may disappear at any time)</A
+			></DT
+		      ></DL
+		    ></DD
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Utilities for primitive marshaling
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Awith"
+		>with</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Anew"
+		>new</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfromBool"
+		>fromBool</A
+		> :: <A HREF = "GHC.Num.html#t%3ANum"
+		>Num</A
+		> a =&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		> -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtoBool"
+		>toBool</A
+		> :: <A HREF = "GHC.Num.html#t%3ANum"
+		>Num</A
+		> a =&gt; a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmaybeNew"
+		>maybeNew</A
+		> :: (a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)) -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmaybeWith"
+		>maybeWith</A
+		> :: (a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> b -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> c) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> c) -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> b -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> c) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> c</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmaybePeek"
+		>maybePeek</A
+		> :: (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> b)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithMany"
+		>withMany</A
+		> :: (a -&gt; (b -&gt; res) -&gt; res) -&gt; [a] -&gt; ([b] -&gt; res) -&gt; res</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcopyBytes"
+		>copyBytes</A
+		> :: <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmoveBytes"
+		>moveBytes</A
+		> :: <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithObject"
+		>withObject</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >General marshalling utilities</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "2"
+	  >Combined allocation and marshalling</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Awith"
+	  ></A
+	  ><B
+	  >with</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Allocate temporary storage for a value and marshal it into this storage
+</P
+	  ><UL
+	  ><LI
+	    > see the life time constraints imposed by <TT
+	      ><A HREF = "Foreign.Marshal.Alloc.html#v%3Aalloca"
+		>alloca</A
+		></TT
+	      >
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Anew"
+	  ></A
+	  ><B
+	  >new</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate storage for a value and marshal it into this storage
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "3"
+	  >Marshalling of Boolean values (non-zero corresponds to <TT
+	    ><A HREF = "GHC.Base.html#v%3ATrue"
+	      >True</A
+	      ></TT
+	    >)</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfromBool"
+	  ></A
+	  ><B
+	  >fromBool</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  > -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Convert a Haskell <TT
+	  ><A HREF = "GHC.Base.html#t%3ABool"
+	    >Bool</A
+	    ></TT
+	  > to its numeric representation
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtoBool"
+	  ></A
+	  ><B
+	  >toBool</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Convert a Boolean in numeric representation to a Haskell value
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "4"
+	  >Marshalling of Maybe values</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmaybeNew"
+	  ></A
+	  ><B
+	  >maybeNew</B
+	  > :: (a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)) -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Allocate storage and marshall a storable value wrapped into a <TT
+	    ><A HREF = "Data.Maybe.html#t%3AMaybe"
+	      >Maybe</A
+	      ></TT
+	    >
+</P
+	  ><UL
+	  ><LI
+	    > the <TT
+	      ><A HREF = "Foreign.Ptr.html#v%3AnullPtr"
+		>nullPtr</A
+		></TT
+	      > is used to represent <TT
+	      ><A HREF = "Data.Maybe.html#v%3ANothing"
+		>Nothing</A
+		></TT
+	      >
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmaybeWith"
+	  ></A
+	  ><B
+	  >maybeWith</B
+	  > :: (a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > b -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > c) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > c) -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > b -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > c) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > c</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Converts a <TT
+	  >withXXX</TT
+	  > combinator into one marshalling a value wrapped into a
+<TT
+	  ><A HREF = "Data.Maybe.html#t%3AMaybe"
+	    >Maybe</A
+	    ></TT
+	  >
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmaybePeek"
+	  ></A
+	  ><B
+	  >maybePeek</B
+	  > :: (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > b)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Convert a peek combinator into a one returning <TT
+	  ><A HREF = "Data.Maybe.html#v%3ANothing"
+	    >Nothing</A
+	    ></TT
+	  > if applied to a
+<TT
+	  ><A HREF = "Foreign.Ptr.html#v%3AnullPtr"
+	    >nullPtr</A
+	    ></TT
+	  > 
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "5"
+	  >Marshalling lists of storable objects</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithMany"
+	  ></A
+	  ><B
+	  >withMany</B
+	  > :: (a -&gt; (b -&gt; res) -&gt; res) -&gt; [a] -&gt; ([b] -&gt; res) -&gt; res</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Replicates a <TT
+	  >withXXX</TT
+	  > combinator over a list of objects, yielding a list of
+marshalled objects
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "6"
+	  >Haskellish interface to memcpy and memmove</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>(argument order: destination, source)
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcopyBytes"
+	  ></A
+	  ><B
+	  >copyBytes</B
+	  > :: <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Copies the given number of bytes from the second area (source) into the
+first (destination); the copied areas may <EM
+	  >not</EM
+	  > overlap
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmoveBytes"
+	  ></A
+	  ><B
+	  >moveBytes</B
+	  > :: <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Copies the given number of elements from the second area (source) into the
+first (destination); the copied areas <EM
+	  >may</EM
+	  > overlap
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "7"
+	  >DEPRECATED FUNCTIONS (don't use; they may disappear at any time)</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithObject"
+	  ></A
+	  ><B
+	  >withObject</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

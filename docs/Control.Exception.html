@@ -1,0 +1,3405 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Exception</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Exception</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >The Exception type</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Throwing exceptions</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Catching Exceptions</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#4"
+			>The <TT
+			  >catch</TT
+			  > functions</A
+			></DT
+		      ><DT
+		      ><A HREF = "#5"
+			>The <TT
+			  >handle</TT
+			  > functions</A
+			></DT
+		      ><DT
+		      ><A HREF = "#6"
+			>The <TT
+			  >try</TT
+			  > functions</A
+			></DT
+		      ><DT
+		      ><A HREF = "#7"
+			>The <TT
+			  >evaluate</TT
+			  > function</A
+			></DT
+		      ><DT
+		      ><A HREF = "#8"
+			>The <TT
+			  >mapException</TT
+			  > function</A
+			></DT
+		      ><DT
+		      ><A HREF = "#9"
+			>Exception predicates</A
+			></DT
+		      ></DL
+		    ></DD
+		  ><DT
+		  ><A HREF = "#10"
+		    >Dynamic exceptions</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#11"
+		    >Asynchronous Exceptions</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#12"
+			>Asynchronous exception control</A
+			></DT
+		      ><DD
+		      ><DL
+			><DT
+			  ><A HREF = "#13"
+			    >Applying <TT
+			      >block</TT
+			      > to an exception handler</A
+			    ></DT
+			  ><DT
+			  ><A HREF = "#14"
+			    >Interruptible operations</A
+			    ></DT
+			  ></DL
+			></DD
+		      ></DL
+		    ></DD
+		  ><DT
+		  ><A HREF = "#15"
+		    >Assertions</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#16"
+		    >Utilities</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This module provides support for raising and catching both built-in
+and user-defined exceptions.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AException"
+		      >Exception</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AArithException"
+			    >ArithException</A
+			    > <A HREF = "Control.Exception.html#t%3AArithException"
+			    >ArithException</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AArrayException"
+			    >ArrayException</A
+			    > <A HREF = "Control.Exception.html#t%3AArrayException"
+			    >ArrayException</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AAssertionFailed"
+			    >AssertionFailed</A
+			    > <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AAsyncException"
+			    >AsyncException</A
+			    > <A HREF = "Control.Exception.html#t%3AAsyncException"
+			    >AsyncException</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ABlockedOnDeadMVar"
+			    >BlockedOnDeadMVar</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ADeadlock"
+			    >Deadlock</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ADynException"
+			    >DynException</A
+			    > Dynamic</TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AErrorCall"
+			    >ErrorCall</A
+			    > <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AExitException"
+			    >ExitException</A
+			    > <A HREF = "GHC.IOBase.html#t%3AExitCode"
+			    >ExitCode</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AIOException"
+			    >IOException</A
+			    > <A HREF = "Control.Exception.html#t%3AIOException"
+			    >IOException</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ANoMethodError"
+			    >NoMethodError</A
+			    > <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ANonTermination"
+			    >NonTermination</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3APatternMatchFail"
+			    >PatternMatchFail</A
+			    > <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ARecConError"
+			    >RecConError</A
+			    > <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ARecSelError"
+			    >RecSelError</A
+			    > <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ARecUpdError"
+			    >RecUpdError</A
+			    > <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AIOException"
+		>IOException</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AArithException"
+		      >ArithException</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AOverflow"
+			    >Overflow</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AUnderflow"
+			    >Underflow</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ALossOfPrecision"
+			    >LossOfPrecision</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ADivideByZero"
+			    >DivideByZero</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ADenormal"
+			    >Denormal</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AArrayException"
+		      >ArrayException</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AIndexOutOfBounds"
+			    >IndexOutOfBounds</A
+			    > <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AUndefinedElement"
+			    >UndefinedElement</A
+			    > <A HREF = "Prelude.html#t%3AString"
+			    >String</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AAsyncException"
+		      >AsyncException</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AStackOverflow"
+			    >StackOverflow</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AHeapOverflow"
+			    >HeapOverflow</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AThreadKilled"
+			    >ThreadKilled</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthrowIO"
+		>throwIO</A
+		> :: <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Athrow"
+		>throw</A
+		> :: <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AioError"
+		>ioError</A
+		> :: <A HREF = "System.IO.Error.html#t%3AIOError"
+		>IOError</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthrowTo"
+		>throwTo</A
+		> :: <A HREF = "GHC.Conc.html#t%3AThreadId"
+		>ThreadId</A
+		> -&gt; <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Acatch"
+		>catch</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; (<A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcatchJust"
+		>catchJust</A
+		> :: (<A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> b) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; (b -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ahandle"
+		>handle</A
+		> :: (<A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhandleJust"
+		>handleJust</A
+		> :: (<A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> b) -&gt; (b -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Atry"
+		>try</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Prelude.html#t%3AEither"
+		>Either</A
+		> <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtryJust"
+		>tryJust</A
+		> :: (<A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> b) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Prelude.html#t%3AEither"
+		>Either</A
+		> b a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aevaluate"
+		>evaluate</A
+		> :: a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmapException"
+		>mapException</A
+		> :: (<A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		>) -&gt; a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AioErrors"
+		>ioErrors</A
+		> :: <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "System.IO.Error.html#t%3AIOError"
+		>IOError</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AarithExceptions"
+		>arithExceptions</A
+		> :: <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "Control.Exception.html#t%3AArithException"
+		>ArithException</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AerrorCalls"
+		>errorCalls</A
+		> :: <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdynExceptions"
+		>dynExceptions</A
+		> :: <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "Data.Dynamic.html#t%3ADynamic"
+		>Dynamic</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aassertions"
+		>assertions</A
+		> :: <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AasyncExceptions"
+		>asyncExceptions</A
+		> :: <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "Control.Exception.html#t%3AAsyncException"
+		>AsyncException</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AuserErrors"
+		>userErrors</A
+		> :: <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> <A HREF = "Prelude.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthrowDyn"
+		>throwDyn</A
+		> :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> exception =&gt; exception -&gt; b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthrowDynTo"
+		>throwDynTo</A
+		> :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> exception =&gt; <A HREF = "GHC.Conc.html#t%3AThreadId"
+		>ThreadId</A
+		> -&gt; exception -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcatchDyn"
+		>catchDyn</A
+		> :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+		>Typeable</A
+		> exception =&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; (exception -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ablock"
+		>block</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aunblock"
+		>unblock</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aassert"
+		>assert</A
+		> :: <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		> -&gt; a -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Abracket"
+		>bracket</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> b) -&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> c) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> c</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Abracket_"
+		>bracket_</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> b -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> c -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> c</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afinally"
+		>finally</A
+		> :: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> b -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >The Exception type</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AException"
+	  ></A
+	  ><B
+	  >Exception</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >The type of exceptions.  Every kind of system-generated exception
+has a constructor in the <TT
+		><A HREF = "Control.Exception.html#t%3AException"
+		  >Exception</A
+		  ></TT
+		> type, and values of other
+types may be injected into <TT
+		><A HREF = "Control.Exception.html#t%3AException"
+		  >Exception</A
+		  ></TT
+		> by coercing them to
+<TT
+		><A HREF = "Data.Dynamic.html#t%3ADynamic"
+		  >Dynamic</A
+		  ></TT
+		> (see the section on Dynamic Exceptions:
+<A HREF = "Control.Exception.html#DynamicExceptions"
+		>Control.Exception#DynamicExceptions</A
+		>).</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AArithException"
+		      ></A
+		      ><B
+		      >ArithException</B
+		      > <A HREF = "Control.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >Exceptions raised by arithmetic
+operations.  (NOTE: GHC currently does not throw
+<TT
+		      ><A HREF = "Control.Exception.html#t%3AArithException"
+			>ArithException</A
+			></TT
+		      >s except for <TT
+		      ><A HREF = "Control.Exception.html#v%3ADivideByZero"
+			>DivideByZero</A
+			></TT
+		      >).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AArrayException"
+		      ></A
+		      ><B
+		      >ArrayException</B
+		      > <A HREF = "Control.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >Exceptions raised by array-related
+operations.  (NOTE: GHC currently does not throw
+<TT
+		      ><A HREF = "Control.Exception.html#t%3AArrayException"
+			>ArrayException</A
+			></TT
+		      >s).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AAssertionFailed"
+		      ></A
+		      ><B
+		      >AssertionFailed</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >This exception is thrown by the
+<TT
+		      ><A HREF = "GHC.Base.html#v%3Aassert"
+			>assert</A
+			></TT
+		      > operation when the condition
+fails.  The <TT
+		      ><A HREF = "Prelude.html#t%3AString"
+			>String</A
+			></TT
+		      > argument contains the
+location of the assertion in the source program.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AAsyncException"
+		      ></A
+		      ><B
+		      >AsyncException</B
+		      > <A HREF = "Control.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >Asynchronous exceptions (see section on Asynchronous Exceptions: <A HREF = "Control.Exception.html#AsynchronousExceptions"
+		      >Control.Exception#AsynchronousExceptions</A
+		      >).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ABlockedOnDeadMVar"
+		      ></A
+		      ><B
+		      >BlockedOnDeadMVar</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The current thread was executing a call to
+<TT
+		      ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+			>takeMVar</A
+			></TT
+		      > that could never return,
+because there are no other references to this <TT
+		      ><A HREF = "GHC.IOBase.html#t%3AMVar"
+			>MVar</A
+			></TT
+		      >.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ADeadlock"
+		      ></A
+		      ><B
+		      >Deadlock</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >There are no runnable threads, so the program is
+deadlocked.  The <TT
+		      ><A HREF = "Control.Exception.html#v%3ADeadlock"
+			>Deadlock</A
+			></TT
+		      > exception is
+raised in the main thread only (see also: <A HREF = "Control.Concurrent.html"
+		      >Control.Concurrent</A
+		      >).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ADynException"
+		      ></A
+		      ><B
+		      >DynException</B
+		      > Dynamic</TD
+		    ><TD CLASS = "rdoc"
+		    >Dynamically typed exceptions (see section on Dynamic Exceptions: <A HREF = "Control.Exception.html#DynamicExceptions"
+		      >Control.Exception#DynamicExceptions</A
+		      >).</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AErrorCall"
+		      ></A
+		      ><B
+		      >ErrorCall</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The <TT
+		      ><A HREF = "Control.Exception.html#v%3AErrorCall"
+			>ErrorCall</A
+			></TT
+		      > exception is thrown by <TT
+		      ><A HREF = "Prelude.html#v%3Aerror"
+			>error</A
+			></TT
+		      >.  The <TT
+		      ><A HREF = "Prelude.html#t%3AString"
+			>String</A
+			></TT
+		      >
+argument of <TT
+		      ><A HREF = "Control.Exception.html#v%3AErrorCall"
+			>ErrorCall</A
+			></TT
+		      > is the string passed to <TT
+		      ><A HREF = "Prelude.html#v%3Aerror"
+			>error</A
+			></TT
+		      > when it was
+called.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AExitException"
+		      ></A
+		      ><B
+		      >ExitException</B
+		      > <A HREF = "GHC.IOBase.html#t%3AExitCode"
+		      >ExitCode</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The <TT
+		      ><A HREF = "Control.Exception.html#v%3AExitException"
+			>ExitException</A
+			></TT
+		      > exception is thrown by <TT
+		      ><A HREF = "System.Exit.html#v%3AexitWith"
+			>exitWith</A
+			></TT
+		      > (and
+<TT
+		      ><A HREF = "System.Exit.html#v%3AexitFailure"
+			>exitFailure</A
+			></TT
+		      >).  The <TT
+		      ><A HREF = "GHC.IOBase.html#t%3AExitCode"
+			>ExitCode</A
+			></TT
+		      > argument is the value passed 
+to <TT
+		      ><A HREF = "System.Exit.html#v%3AexitWith"
+			>exitWith</A
+			></TT
+		      >.  An unhandled <TT
+		      ><A HREF = "Control.Exception.html#v%3AExitException"
+			>ExitException</A
+			></TT
+		      > exception in the
+main thread will cause the program to be terminated with the given 
+exit code.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AIOException"
+		      ></A
+		      ><B
+		      >IOException</B
+		      > <A HREF = "Control.Exception.html#t%3AIOException"
+		      >IOException</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >These are the standard IO exceptions generated by
+Haskell's <TT
+		      >IO</TT
+		      > operations.  See also <A HREF = "System.IO.Error.html"
+		      >System.IO.Error</A
+		      >.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ANoMethodError"
+		      ></A
+		      ><B
+		      >NoMethodError</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to invoke a class method which has
+no definition in this instance, and there was no default
+definition given in the class declaration.  GHC issues a
+warning when you compile an instance which has missing
+methods.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ANonTermination"
+		      ></A
+		      ><B
+		      >NonTermination</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The current thread is stuck in an infinite loop.  This
+exception may or may not be thrown when the program is
+non-terminating.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3APatternMatchFail"
+		      ></A
+		      ><B
+		      >PatternMatchFail</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >A pattern matching failure.  The <TT
+		      ><A HREF = "Prelude.html#t%3AString"
+			>String</A
+			></TT
+		      > argument should contain a
+descriptive message including the function name, source file
+and line number.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARecConError"
+		      ></A
+		      ><B
+		      >RecConError</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to evaluate a field of a record
+for which no value was given at construction time.  The
+<TT
+		      ><A HREF = "Prelude.html#t%3AString"
+			>String</A
+			></TT
+		      > argument gives the location of the
+record construction in the source program.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARecSelError"
+		      ></A
+		      ><B
+		      >RecSelError</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >A field selection was attempted on a constructor that
+doesn't have the requested field.  This can happen with
+multi-constructor records when one or more fields are
+missing from some of the constructors.  The
+<TT
+		      ><A HREF = "Prelude.html#t%3AString"
+			>String</A
+			></TT
+		      > argument gives the location of the
+record selection in the source program.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARecUpdError"
+		      ></A
+		      ><B
+		      >RecUpdError</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to update a field in a record,
+where the record doesn't have the requested field.  This can
+only occur with multi-constructor records, when one or more
+fields are missing from some of the constructors.  The
+<TT
+		      ><A HREF = "Prelude.html#t%3AString"
+			>String</A
+			></TT
+		      > argument gives the location of the
+record update in the source program.</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "Control.Exception.html#t%3AException"
+		      >Exception</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Control.Exception.html#t%3AException"
+		      >Exception</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "Control.Exception.html#t%3AException"
+		      >Exception</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AIOException"
+	  ></A
+	  ><B
+	  >IOException</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Exceptions that occur in the <TT
+		>IO</TT
+		> monad.
+An <TT
+		>IOException</TT
+		> records a more specific error type, a descriptive
+string and maybe the handle that was used when the error was
+flagged.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "Control.Exception.html#t%3AIOException"
+		      >IOException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "Control.Exception.html#t%3AIOException"
+		      >IOException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Control.Exception.html#t%3AIOException"
+		      >IOException</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AArithException"
+	  ></A
+	  ><B
+	  >ArithException</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >The type of arithmetic exceptions</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AOverflow"
+		      ></A
+		      ><B
+		      >Overflow</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AUnderflow"
+		      ></A
+		      ><B
+		      >Underflow</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ALossOfPrecision"
+		      ></A
+		      ><B
+		      >LossOfPrecision</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ADivideByZero"
+		      ></A
+		      ><B
+		      >DivideByZero</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ADenormal"
+		      ></A
+		      ><B
+		      >Denormal</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "Control.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Control.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "Control.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "Control.Exception.html#t%3AArithException"
+		      >ArithException</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AArrayException"
+	  ></A
+	  ><B
+	  >ArrayException</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Exceptions generated by array operations</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AIndexOutOfBounds"
+		      ></A
+		      ><B
+		      >IndexOutOfBounds</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to index an array outside
+its declared bounds.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AUndefinedElement"
+		      ></A
+		      ><B
+		      >UndefinedElement</B
+		      > <A HREF = "Prelude.html#t%3AString"
+		      >String</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >An attempt was made to evaluate an element of an
+array that had not been initialized.</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "Control.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Control.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "Control.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "Control.Exception.html#t%3AArrayException"
+		      >ArrayException</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AAsyncException"
+	  ></A
+	  ><B
+	  >AsyncException</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >Asynchronous exceptions</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AStackOverflow"
+		      ></A
+		      ><B
+		      >StackOverflow</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >The current thread's stack exceeded its limit.
+Since an exception has been raised, the thread's stack
+will certainly be below its limit again, but the
+programmer should take remedial action
+immediately.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AHeapOverflow"
+		      ></A
+		      ><B
+		      >HeapOverflow</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ><P
+		      >The program's heap is reaching its limit, and
+the program should take action to reduce the amount of
+live data it has. Notes:
+</P
+		      ><UL
+		      ><LI
+			> It is undefined which thread receives this exception.
+</LI
+			><LI
+			> GHC currently does not throw <TT
+			  ><A HREF = "Control.Exception.html#v%3AHeapOverflow"
+			    >HeapOverflow</A
+			    ></TT
+			  > exceptions.</LI
+			></UL
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AThreadKilled"
+		      ></A
+		      ><B
+		      >ThreadKilled</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >This exception is raised by another thread
+calling <TT
+		      ><A HREF = "Control.Concurrent.html#v%3AkillThread"
+			>killThread</A
+			></TT
+		      >, or by the system
+if it needs to terminate the thread for some
+reason.</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "Control.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Control.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "Control.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "Control.Exception.html#t%3AAsyncException"
+		      >AsyncException</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Throwing exceptions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowIO"
+	  ></A
+	  ><B
+	  >throwIO</B
+	  > :: <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >A variant of <TT
+	    ><A HREF = "Control.Exception.html#v%3Athrow"
+	      >throw</A
+	      ></TT
+	    > that can be used within the <TT
+	    ><A HREF = "Prelude.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad.
+</P
+	  ><P
+	  >Although <TT
+	    ><A HREF = "Control.Exception.html#v%3AthrowIO"
+	      >throwIO</A
+	      ></TT
+	    > has a type that is an instance of the type of <TT
+	    ><A HREF = "Control.Exception.html#v%3Athrow"
+	      >throw</A
+	      ></TT
+	    >, the
+two functions are subtly different:
+</P
+	  ><PRE
+	  > throw e   `seq` return ()  ===&gt; throw e
+ throwIO e `seq` return ()  ===&gt; return ()
+</PRE
+	  ><P
+	  >The first example will cause the exception <TT
+	    >e</TT
+	    > to be raised,
+whereas the second one won't.  In fact, <TT
+	    ><A HREF = "Control.Exception.html#v%3AthrowIO"
+	      >throwIO</A
+	      ></TT
+	    > will only cause
+an exception to be raised when it is used within the <TT
+	    ><A HREF = "Prelude.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad.
+The <TT
+	    ><A HREF = "Control.Exception.html#v%3AthrowIO"
+	      >throwIO</A
+	      ></TT
+	    > variant should be used in preference to <TT
+	    ><A HREF = "Control.Exception.html#v%3Athrow"
+	      >throw</A
+	      ></TT
+	    > to
+raise an exception within the <TT
+	    ><A HREF = "Prelude.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad because it guarantees
+ordering with respect to other <TT
+	    ><A HREF = "Prelude.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > operations, whereas <TT
+	    ><A HREF = "Control.Exception.html#v%3Athrow"
+	      >throw</A
+	      ></TT
+	    >
+does not.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Athrow"
+	  ></A
+	  ><B
+	  >throw</B
+	  > :: <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Throw an exception.  Exceptions may be thrown from purely
+functional code, but may only be caught within the <TT
+	  ><A HREF = "Prelude.html#t%3AIO"
+	    >IO</A
+	    ></TT
+	  > monad.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AioError"
+	  ></A
+	  ><B
+	  >ioError</B
+	  > :: <A HREF = "System.IO.Error.html#t%3AIOError"
+	  >IOError</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Raise an <TT
+	  ><A HREF = "System.IO.Error.html#t%3AIOError"
+	    >IOError</A
+	    ></TT
+	  > in the <TT
+	  ><A HREF = "Prelude.html#t%3AIO"
+	    >IO</A
+	    ></TT
+	  > monad.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowTo"
+	  ></A
+	  ><B
+	  >throwTo</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AThreadId"
+	  >ThreadId</A
+	  > -&gt; <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "Control.Exception.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    > raises an arbitrary exception in the target thread (GHC only).
+</P
+	  ><P
+	  ><TT
+	    ><A HREF = "Control.Exception.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    > does not return until the exception has been raised in the
+target thread.  The calling thread can thus be certain that the target
+thread has received the exception.  This is a useful property to know
+when dealing with race conditions: eg. if there are two threads that
+can kill each other, it is guaranteed that only one of the threads
+will get to kill the other. </P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Catching Exceptions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>There are several functions for catching and examining
+exceptions; all of them may only be used from within the
+<TT
+	  ><A HREF = "Prelude.html#t%3AIO"
+	    >IO</A
+	    ></TT
+	  > monad.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "4"
+	  >The <TT
+	    >catch</TT
+	    > functions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acatch"
+	  ></A
+	  ><B
+	  >catch</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      >The computation to run</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; (<A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a)</TD
+	      ><TD CLASS = "rdoc"
+	      >Handler to invoke if an exception is raised</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      ><P
+		>This is the simplest of the exception-catching functions.  It
+takes a single argument, runs it, and if an exception is raised
+the &quot;handler&quot; is executed, with the value of the exception passed as an
+argument.  Otherwise, the result is returned as normal.  For example:
+</P
+		><PRE
+		>   catch (openFile f ReadMode) 
+       (\e -&gt; hPutStr stderr (\&quot;Couldn\'t open \&quot;++f++\&quot;: \&quot; ++ show e))
+</PRE
+		><P
+		>For catching exceptions in pure (non-<TT
+		  ><A HREF = "Prelude.html#t%3AIO"
+		    >IO</A
+		    ></TT
+		  >) expressions, see the
+function <TT
+		  ><A HREF = "Control.Exception.html#v%3Aevaluate"
+		    >evaluate</A
+		    ></TT
+		  >.
+</P
+		><P
+		>Note that due to Haskell's unspecified evaluation order, an
+expression may return one of several possible exceptions: consider
+the expression <TT
+		  >error &quot;urk&quot; + 1 `div` 0</TT
+		  >.  Does
+<TT
+		  ><A HREF = "Control.Exception.html#v%3Acatch"
+		    >catch</A
+		    ></TT
+		  > execute the handler passing
+<TT
+		  >ErrorCall &quot;urk&quot;</TT
+		  >, or <TT
+		  >ArithError DivideByZero</TT
+		  >?
+</P
+		><P
+		>The answer is &quot;either&quot;: <TT
+		  ><A HREF = "Control.Exception.html#v%3Acatch"
+		    >catch</A
+		    ></TT
+		  > makes a
+non-deterministic choice about which exception to catch.  If you
+call it again, you might get a different exception back.  This is
+ok, because <TT
+		  ><A HREF = "Control.Exception.html#v%3Acatch"
+		    >catch</A
+		    ></TT
+		  > is an <TT
+		  ><A HREF = "Prelude.html#t%3AIO"
+		    >IO</A
+		    ></TT
+		  > computation.
+</P
+		><P
+		>Note that <TT
+		  ><A HREF = "Control.Exception.html#v%3Acatch"
+		    >catch</A
+		    ></TT
+		  > catches all types of exceptions, and is generally
+used for &quot;cleaning up&quot; before passing on the exception using
+<TT
+		  ><A HREF = "Control.Exception.html#v%3AthrowIO"
+		    >throwIO</A
+		    ></TT
+		  >.  It is not good practice to discard the exception and
+continue, without first checking the type of the exception (it
+might be a <TT
+		  ><A HREF = "Control.Exception.html#v%3AThreadKilled"
+		    >ThreadKilled</A
+		    ></TT
+		  >, for example).  In this case it is usually better
+to use <TT
+		  ><A HREF = "Control.Exception.html#v%3AcatchJust"
+		    >catchJust</A
+		    ></TT
+		  > and select the kinds of exceptions to catch.
+</P
+		><P
+		>Also note that The <A HREF = "Prelude.html"
+		  >Prelude</A
+		  > also exports a
+function called <TT
+		  ><A HREF = "Control.Exception.html#v%3Acatch"
+		    >catch</A
+		    ></TT
+		  > which has the same type as
+<TT
+		  ><A HREF = "Control.Exception.html#v%3Acatch"
+		    >catch</A
+		    ></TT
+		  >, the difference being that the
+<A HREF = "Prelude.html"
+		  >Prelude</A
+		  > version only catches the IO and user
+families of exceptions (as required by Haskell 98).  We recommend
+either hiding the <A HREF = "Prelude.html"
+		  >Prelude</A
+		  > version of
+<TT
+		  ><A HREF = "Control.Exception.html#v%3Acatch"
+		    >catch</A
+		    ></TT
+		  > when importing
+<A HREF = "Control.Exception.html"
+		  >Control.Exception</A
+		  >, or importing
+<A HREF = "Control.Exception.html"
+		  >Control.Exception</A
+		  > qualified, to avoid name-clashes.</P
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcatchJust"
+	  ></A
+	  ><B
+	  >catchJust</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: (<A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> b)</TD
+	      ><TD CLASS = "rdoc"
+	      >Predicate to select exceptions</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      >Computation to run</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; (b -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a)</TD
+	      ><TD CLASS = "rdoc"
+	      >Handler</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      ><P
+		>The function <TT
+		  ><A HREF = "Control.Exception.html#v%3AcatchJust"
+		    >catchJust</A
+		    ></TT
+		  > is like <TT
+		  ><A HREF = "Control.Exception.html#v%3Acatch"
+		    >catch</A
+		    ></TT
+		  >, but it takes an extra
+argument which is an <EM
+		  >exception predicate</EM
+		  >, a function which
+selects which type of exceptions we're interested in.  There are
+some predefined exception predicates for useful subsets of
+exceptions: <TT
+		  ><A HREF = "Control.Exception.html#v%3AioErrors"
+		    >ioErrors</A
+		    ></TT
+		  >, <TT
+		  ><A HREF = "Control.Exception.html#v%3AarithExceptions"
+		    >arithExceptions</A
+		    ></TT
+		  >, and so on.  For example,
+to catch just calls to the <TT
+		  ><A HREF = "Prelude.html#v%3Aerror"
+		    >error</A
+		    ></TT
+		  > function, we could use
+</P
+		><PRE
+		>   result &lt;- catchJust errorCalls thing_to_try handler
+</PRE
+		><P
+		>Any other exceptions which are not matched by the predicate
+are re-raised, and may be caught by an enclosing
+<TT
+		  ><A HREF = "Control.Exception.html#v%3Acatch"
+		    >catch</A
+		    ></TT
+		  > or <TT
+		  ><A HREF = "Control.Exception.html#v%3AcatchJust"
+		    >catchJust</A
+		    ></TT
+		  >.</P
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "5"
+	  >The <TT
+	    >handle</TT
+	    > functions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ahandle"
+	  ></A
+	  ><B
+	  >handle</B
+	  > :: (<A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >A version of <TT
+	    ><A HREF = "Control.Exception.html#v%3Acatch"
+	      >catch</A
+	      ></TT
+	    > with the arguments swapped around; useful in
+situations where the code for the handler is shorter.  For example:
+</P
+	  ><PRE
+	  >   do handle (\e -&gt; exitWith (ExitFailure 1)) $
+	  ...</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhandleJust"
+	  ></A
+	  ><B
+	  >handleJust</B
+	  > :: (<A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > b) -&gt; (b -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A version of <TT
+	  ><A HREF = "Control.Exception.html#v%3AcatchJust"
+	    >catchJust</A
+	    ></TT
+	  > with the arguments swapped around (see
+<TT
+	  ><A HREF = "Control.Exception.html#v%3Ahandle"
+	    >handle</A
+	    ></TT
+	  >).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "6"
+	  >The <TT
+	    >try</TT
+	    > functions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Atry"
+	  ></A
+	  ><B
+	  >try</B
+	  > :: <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Prelude.html#t%3AEither"
+	  >Either</A
+	  > <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Similar to <TT
+	    ><A HREF = "Control.Exception.html#v%3Acatch"
+	      >catch</A
+	      ></TT
+	    >, but returns an <TT
+	    ><A HREF = "Prelude.html#t%3AEither"
+	      >Either</A
+	      ></TT
+	    > result which is
+<TT
+	    >(Right a)</TT
+	    > if no exception was raised, or <TT
+	    >(Left e)</TT
+	    > if an
+exception was raised and its value is <TT
+	    >e</TT
+	    >.
+</P
+	  ><PRE
+	  >  try a = catch (Right \`liftM\` a) (return . Left)
+</PRE
+	  ><P
+	  >Note: as with <TT
+	    ><A HREF = "Control.Exception.html#v%3Acatch"
+	      >catch</A
+	      ></TT
+	    >, it is only polite to use this variant if you intend
+to re-throw the exception after performing whatever cleanup is needed.
+Otherwise, <TT
+	    ><A HREF = "Control.Exception.html#v%3AtryJust"
+	      >tryJust</A
+	      ></TT
+	    > is generally considered to be better.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtryJust"
+	  ></A
+	  ><B
+	  >tryJust</B
+	  > :: (<A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > b) -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Prelude.html#t%3AEither"
+	  >Either</A
+	  > b a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A variant of <TT
+	  ><A HREF = "Control.Exception.html#v%3Atry"
+	    >try</A
+	    ></TT
+	  > that takes an exception predicate to select
+which exceptions are caught (c.f. <TT
+	  ><A HREF = "Control.Exception.html#v%3AcatchJust"
+	    >catchJust</A
+	    ></TT
+	  >).  If the exception
+does not match the predicate, it is re-thrown.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "7"
+	  >The <TT
+	    >evaluate</TT
+	    > function</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aevaluate"
+	  ></A
+	  ><B
+	  >evaluate</B
+	  > :: a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Forces its argument to be evaluated, and returns the result in
+the <TT
+	    ><A HREF = "Prelude.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad.  It can be used to order evaluation with respect to
+other <TT
+	    ><A HREF = "Prelude.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > operations; its semantics are given by
+</P
+	  ><PRE
+	  >   evaluate undefined `seq` return ()  ==&gt; return ()
+   catch (evaluate undefined) (\e -&gt; return ())  ==&gt; return ()
+</PRE
+	  ><P
+	  >NOTE: <TT
+	    >(evaluate a)</TT
+	    > is <EM
+	    >not</EM
+	    > the same as <TT
+	    >(a `seq` return a)</TT
+	    >.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "8"
+	  >The <TT
+	    >mapException</TT
+	    > function</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmapException"
+	  ></A
+	  ><B
+	  >mapException</B
+	  > :: (<A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  >) -&gt; a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This function maps one exception into another as proposed in the
+paper &quot;A semantics for imprecise exceptions&quot;.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "9"
+	  >Exception predicates</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>These pre-defined predicates may be used as the first argument to
+<TT
+	  ><A HREF = "Control.Exception.html#v%3AcatchJust"
+	    >catchJust</A
+	    ></TT
+	  >, <TT
+	  ><A HREF = "Control.Exception.html#v%3AtryJust"
+	    >tryJust</A
+	    ></TT
+	  >, or <TT
+	  ><A HREF = "Control.Exception.html#v%3AhandleJust"
+	    >handleJust</A
+	    ></TT
+	  > to select certain common
+classes of exceptions.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AioErrors"
+	  ></A
+	  ><B
+	  >ioErrors</B
+	  > :: <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "System.IO.Error.html#t%3AIOError"
+	  >IOError</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AarithExceptions"
+	  ></A
+	  ><B
+	  >arithExceptions</B
+	  > :: <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "Control.Exception.html#t%3AArithException"
+	  >ArithException</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AerrorCalls"
+	  ></A
+	  ><B
+	  >errorCalls</B
+	  > :: <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdynExceptions"
+	  ></A
+	  ><B
+	  >dynExceptions</B
+	  > :: <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "Data.Dynamic.html#t%3ADynamic"
+	  >Dynamic</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aassertions"
+	  ></A
+	  ><B
+	  >assertions</B
+	  > :: <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AasyncExceptions"
+	  ></A
+	  ><B
+	  >asyncExceptions</B
+	  > :: <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "Control.Exception.html#t%3AAsyncException"
+	  >AsyncException</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AuserErrors"
+	  ></A
+	  ><B
+	  >userErrors</B
+	  > :: <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "Prelude.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "10"
+	  >Dynamic exceptions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><A NAME = "DynamicExceptions"
+	  ></A
+	  > Because the <TT
+	  ><A HREF = "Control.Exception.html#t%3AException"
+	    >Exception</A
+	    ></TT
+	  > datatype is not extensible, there is an
+interface for throwing and catching exceptions of type <TT
+	  ><A HREF = "Data.Dynamic.html#t%3ADynamic"
+	    >Dynamic</A
+	    ></TT
+	  >
+(see <A HREF = "Data.Dynamic.html"
+	  >Data.Dynamic</A
+	  >) which allows exception values of any type in
+the <TT
+	  ><A HREF = "Data.Typeable.html#t%3ATypeable"
+	    >Typeable</A
+	    ></TT
+	  > class to be thrown and caught.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowDyn"
+	  ></A
+	  ><B
+	  >throwDyn</B
+	  > :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > exception =&gt; exception -&gt; b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Raise any value as an exception, provided it is in the
+<TT
+	  ><A HREF = "Data.Typeable.html#t%3ATypeable"
+	    >Typeable</A
+	    ></TT
+	  > class.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowDynTo"
+	  ></A
+	  ><B
+	  >throwDynTo</B
+	  > :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > exception =&gt; <A HREF = "GHC.Conc.html#t%3AThreadId"
+	  >ThreadId</A
+	  > -&gt; exception -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A variant of <TT
+	  ><A HREF = "Control.Exception.html#v%3AthrowDyn"
+	    >throwDyn</A
+	    ></TT
+	  > that throws the dynamic exception to an
+arbitrary thread (GHC only: c.f. <TT
+	  ><A HREF = "Control.Exception.html#v%3AthrowTo"
+	    >throwTo</A
+	    ></TT
+	  >).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcatchDyn"
+	  ></A
+	  ><B
+	  >catchDyn</B
+	  > :: <A HREF = "Data.Typeable.html#t%3ATypeable"
+	  >Typeable</A
+	  > exception =&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; (exception -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a) -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Catch dynamic exceptions of the required type.  All other
+exceptions are re-thrown, including dynamic exceptions of the wrong
+type.
+</P
+	  ><P
+	  >When using dynamic exceptions it is advisable to define a new
+datatype to use for your exception type, to avoid possible clashes
+with dynamic exceptions used in other libraries.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "11"
+	  >Asynchronous Exceptions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><A NAME = "AsynchronousExceptions"
+	    ></A
+	    > Asynchronous exceptions are so-called because they arise due to
+external influences, and can be raised at any point during execution.
+<TT
+	    ><A HREF = "Control.Exception.html#v%3AStackOverflow"
+	      >StackOverflow</A
+	      ></TT
+	    > and <TT
+	    ><A HREF = "Control.Exception.html#v%3AHeapOverflow"
+	      >HeapOverflow</A
+	      ></TT
+	    > are two examples of
+system-generated asynchronous exceptions.
+</P
+	  ><P
+	  >The primary source of asynchronous exceptions, however, is
+<TT
+	    ><A HREF = "Control.Exception.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    >:
+</P
+	  ><PRE
+	  >  throwTo :: ThreadId -&gt; Exception -&gt; IO ()
+</PRE
+	  ><P
+	  ><TT
+	    ><A HREF = "Control.Exception.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    > (also <TT
+	    ><A HREF = "Control.Exception.html#v%3AthrowDynTo"
+	      >throwDynTo</A
+	      ></TT
+	    > and <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AkillThread"
+	      >killThread</A
+	      ></TT
+	    >) allows one
+running thread to raise an arbitrary exception in another thread.  The
+exception is therefore asynchronous with respect to the target thread,
+which could be doing anything at the time it receives the exception.
+Great care should be taken with asynchronous exceptions; it is all too
+easy to introduce race conditions by the over zealous use of
+<TT
+	    ><A HREF = "Control.Exception.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    >.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "12"
+	  >Asynchronous exception control</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The following two functions allow a thread to control delivery of
+asynchronous exceptions during a critical region.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ablock"
+	  ></A
+	  ><B
+	  >block</B
+	  > :: <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Applying <TT
+	  ><A HREF = "Control.Exception.html#v%3Ablock"
+	    >block</A
+	    ></TT
+	  > to a computation will
+execute that computation with asynchronous exceptions
+<EM
+	  >blocked</EM
+	  >.  That is, any thread which
+attempts to raise an exception in the current thread will be
+blocked until asynchronous exceptions are enabled again.  There's
+no need to worry about re-enabling asynchronous exceptions; that is
+done automatically on exiting the scope of
+<TT
+	  ><A HREF = "Control.Exception.html#v%3Ablock"
+	    >block</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aunblock"
+	  ></A
+	  ><B
+	  >unblock</B
+	  > :: <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>To re-enable asynchronous exceptions inside the scope of
+<TT
+	  ><A HREF = "Control.Exception.html#v%3Ablock"
+	    >block</A
+	    ></TT
+	  >, <TT
+	  ><A HREF = "Control.Exception.html#v%3Aunblock"
+	    >unblock</A
+	    ></TT
+	  > can be
+used.  It scopes in exactly the same way, so on exit from
+<TT
+	  ><A HREF = "Control.Exception.html#v%3Aunblock"
+	    >unblock</A
+	    ></TT
+	  > asynchronous exception delivery will
+be disabled again.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section3"
+	><A NAME = "13"
+	  >Applying <TT
+	    >block</TT
+	    > to an exception handler</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >There's an implied <TT
+	    ><A HREF = "Control.Exception.html#v%3Ablock"
+	      >block</A
+	      ></TT
+	    > around every exception handler in a call
+to one of the <TT
+	    ><A HREF = "Control.Exception.html#v%3Acatch"
+	      >catch</A
+	      ></TT
+	    > family of functions.  This is because that is
+what you want most of the time - it eliminates a common race condition
+in starting an exception handler, because there may be no exception
+handler on the stack to handle another exception if one arrives
+immediately.  If asynchronous exceptions are blocked on entering the
+handler, though, we have time to install a new exception handler
+before being interrupted.  If this weren't the default, one would have
+to write something like
+</P
+	  ><PRE
+	  >      block (
+           catch (unblock (...))
+                      (\e -&gt; handler)
+      )
+</PRE
+	  ><P
+	  >If you need to unblock asynchronous exceptions again in the exception
+handler, just use <TT
+	    ><A HREF = "Control.Exception.html#v%3Aunblock"
+	      >unblock</A
+	      ></TT
+	    > as normal.
+</P
+	  ><P
+	  >Note that <TT
+	    ><A HREF = "Control.Exception.html#v%3Atry"
+	      >try</A
+	      ></TT
+	    > and friends <EM
+	    >do not</EM
+	    > have a similar default, because
+there is no exception handler in this case.  If you want to use <TT
+	    ><A HREF = "Control.Exception.html#v%3Atry"
+	      >try</A
+	      ></TT
+	    >
+in an asynchronous-exception-safe way, you will need to use
+<TT
+	    ><A HREF = "Control.Exception.html#v%3Ablock"
+	      >block</A
+	      ></TT
+	    >.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section3"
+	><A NAME = "14"
+	  >Interruptible operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Some operations are <EM
+	    >interruptible</EM
+	    >, which means that they can receive
+asynchronous exceptions even in the scope of a <TT
+	    ><A HREF = "Control.Exception.html#v%3Ablock"
+	      >block</A
+	      ></TT
+	    >.  Any function
+which may itself block is defined as interruptible; this includes
+<TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+	      >takeMVar</A
+	      ></TT
+	    >
+(but not <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AtryTakeMVar"
+	      >tryTakeMVar</A
+	      ></TT
+	    >),
+and most operations which perform
+some I/O with the outside world.  The reason for having
+interruptible operations is so that we can write things like
+</P
+	  ><PRE
+	  >      block (
+         a &lt;- takeMVar m
+         catch (unblock (...))
+               (\e -&gt; ...)
+      )
+</PRE
+	  ><P
+	  >if the <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+	      >takeMVar</A
+	      ></TT
+	    > was not interruptible,
+then this particular
+combination could lead to deadlock, because the thread itself would be
+blocked in a state where it can't receive any asynchronous exceptions.
+With <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+	      >takeMVar</A
+	      ></TT
+	    > interruptible, however, we can be
+safe in the knowledge that the thread can receive exceptions right up
+until the point when the <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AtakeMVar"
+	      >takeMVar</A
+	      ></TT
+	    > succeeds.
+Similar arguments apply for other interruptible operations like
+<TT
+	    ><A HREF = "System.IO.html#v%3AopenFile"
+	      >openFile</A
+	      ></TT
+	    >.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "15"
+	  >Assertions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aassert"
+	  ></A
+	  ><B
+	  >assert</B
+	  > :: <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  > -&gt; a -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >If the first argument evaluates to <TT
+	    ><A HREF = "Prelude.html#v%3ATrue"
+	      >True</A
+	      ></TT
+	    >, then the result is the
+second argument.  Otherwise an <TT
+	    ><A HREF = "Control.Exception.html#v%3AAssertionFailed"
+	      >AssertionFailed</A
+	      ></TT
+	    > exception is raised,
+containing a <TT
+	    ><A HREF = "Prelude.html#t%3AString"
+	      >String</A
+	      ></TT
+	    > with the source file and line number of the
+call to assert.
+</P
+	  ><P
+	  >Assertions can normally be turned on or off with a compiler flag
+(for GHC, assertions are normally on unless the <TT
+	    >-fignore-asserts</TT
+	    >
+option is give).  When assertions are turned off, the first
+argument to <TT
+	    ><A HREF = "Control.Exception.html#v%3Aassert"
+	      >assert</A
+	      ></TT
+	    > is ignored, and the second argument is
+returned as the result.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "16"
+	  >Utilities</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abracket"
+	  ></A
+	  ><B
+	  >bracket</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      >computation to run first (&quot;acquire resource&quot;)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> b)</TD
+	      ><TD CLASS = "rdoc"
+	      >computation to run last (&quot;release resource&quot;)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; (a -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> c)</TD
+	      ><TD CLASS = "rdoc"
+	      >computation to run in-between</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> c</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      ><P
+		>When you want to acquire a resource, do some work with it, and
+then release the resource, it is a good idea to use <TT
+		  ><A HREF = "Control.Exception.html#v%3Abracket"
+		    >bracket</A
+		    ></TT
+		  >,
+because <TT
+		  ><A HREF = "Control.Exception.html#v%3Abracket"
+		    >bracket</A
+		    ></TT
+		  > will install the necessary exception handler to
+release the resource in the event that an exception is raised
+during the computation.  If an exception is raised, then <TT
+		  ><A HREF = "Control.Exception.html#v%3Abracket"
+		    >bracket</A
+		    ></TT
+		  > will 
+re-raise the exception (after performing the release).
+</P
+		><P
+		>A common example is opening a file:
+</P
+		><PRE
+		> bracket
+   (openFile &quot;filename&quot; ReadMode)
+   (hClose)
+   (\handle -&gt; do { ... })
+</PRE
+		><P
+		>The arguments to <TT
+		  ><A HREF = "Control.Exception.html#v%3Abracket"
+		    >bracket</A
+		    ></TT
+		  > are in this order so that we can partially apply 
+it, e.g.:
+</P
+		><PRE
+		> withFile name = bracket (openFile name) hClose
+</PRE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abracket_"
+	  ></A
+	  ><B
+	  >bracket_</B
+	  > :: <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > b -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > c -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > c</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A variant of <TT
+	  ><A HREF = "Control.Exception.html#v%3Abracket"
+	    >bracket</A
+	    ></TT
+	  > where the return value from the first computation
+is not required.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afinally"
+	  ></A
+	  ><B
+	  >finally</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      >computation to run first</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ><TD CLASS = "rdoc"
+	      >computation to run afterward (even if an exception 
+was raised)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ><TD CLASS = "rdoc"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      >A specialised variant of <TT
+		><A HREF = "Control.Exception.html#v%3Abracket"
+		  >bracket</A
+		  ></TT
+		> with just a computation to run
+afterward.
+</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

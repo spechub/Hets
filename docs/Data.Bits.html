@@ -1,0 +1,1122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Bits</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Bits</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This module defines bitwise operations for signed and unsigned
+integers.  Instances of the class <TT
+	  ><A HREF = "Data.Bits.html#t%3ABits"
+	    >Bits</A
+	    ></TT
+	  > for the <TT
+	  ><A HREF = "GHC.Base.html#t%3AInt"
+	    >Int</A
+	    ></TT
+	  > and
+<TT
+	  ><A HREF = "GHC.Num.html#t%3AInteger"
+	    >Integer</A
+	    ></TT
+	  > types are available from this module, and instances for
+explicitly sized integral types are available from the
+<A HREF = "Data.Int.html"
+	  >Data.Int</A
+	  > and <A HREF = "Data.Word.html"
+	  >Data.Word</A
+	  > modules.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "GHC.Num.html#t%3ANum"
+		>Num</A
+		> a =&gt; <A HREF = "#t%3ABits"
+		>Bits</A
+		> a  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3A.%26."
+		      >(.&amp;.)</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3A.%7C."
+		      >(.|.)</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Axor"
+		      >xor</A
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Acomplement"
+		      >complement</A
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Ashift"
+		      >shift</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Arotate"
+		      >rotate</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Abit"
+		      >bit</A
+		      > :: <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AsetBit"
+		      >setBit</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AclearBit"
+		      >clearBit</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AcomplementBit"
+		      >complementBit</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AtestBit"
+		      >testBit</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AbitSize"
+		      >bitSize</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AisSigned"
+		      >isSigned</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AshiftL"
+		      >shiftL</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3AshiftR"
+		      >shiftR</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3ArotateL"
+		      >rotateL</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3ArotateR"
+		      >rotateR</A
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A NAME = "t%3ABits"
+	  ></A
+	  ><B
+	  >Bits</B
+	  > a  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>The <TT
+		  ><A HREF = "Data.Bits.html#t%3ABits"
+		    >Bits</A
+		    ></TT
+		  > class defines bitwise operations over integral types.
+</P
+		><UL
+		><LI
+		  > Bits are numbered from 0 with bit 0 being the least
+significant bit.
+</LI
+		  ></UL
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3A.%26."
+		      ></A
+		      ><B
+		      >(.&amp;.)</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Bitwise &quot;and&quot;</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3A.%7C."
+		      ></A
+		      ><B
+		      >(.|.)</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Bitwise &quot;or&quot;</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Axor"
+		      ></A
+		      ><B
+		      >xor</B
+		      > :: a -&gt; a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Bitwise &quot;xor&quot;</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Acomplement"
+		      ></A
+		      ><B
+		      >complement</B
+		      > :: a -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Reverse all the bits in the argument </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Ashift"
+		      ></A
+		      ><B
+		      >shift</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><P
+		      >Shift the argument left by the specified number of bits.
+Right shifts (signed) are specified by giving a negative value.
+</P
+		      ><P
+		      >An instance can define either this unified <TT
+			><A HREF = "Data.Bits.html#v%3Ashift"
+			  >shift</A
+			  ></TT
+			> or <TT
+			><A HREF = "Data.Bits.html#v%3AshiftL"
+			  >shiftL</A
+			  ></TT
+			> and
+<TT
+			><A HREF = "Data.Bits.html#v%3AshiftR"
+			  >shiftR</A
+			  ></TT
+			>, depending on which is more convenient for the type in
+question. </P
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Arotate"
+		      ></A
+		      ><B
+		      >rotate</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><P
+		      >Rotate the argument left by the specified number of bits.
+Right rotates are specified by giving a negative value.
+</P
+		      ><P
+		      >For unbounded types like <TT
+			><A HREF = "GHC.Num.html#t%3AInteger"
+			  >Integer</A
+			  ></TT
+			>, <TT
+			><A HREF = "Data.Bits.html#v%3Arotate"
+			  >rotate</A
+			  ></TT
+			> is equivalent to <TT
+			><A HREF = "Data.Bits.html#v%3Ashift"
+			  >shift</A
+			  ></TT
+			>.
+</P
+		      ><P
+		      >An instance can define either this unified <TT
+			><A HREF = "Data.Bits.html#v%3Arotate"
+			  >rotate</A
+			  ></TT
+			> or <TT
+			><A HREF = "Data.Bits.html#v%3ArotateL"
+			  >rotateL</A
+			  ></TT
+			> and
+<TT
+			><A HREF = "Data.Bits.html#v%3ArotateR"
+			  >rotateR</A
+			  ></TT
+			>, depending on which is more convenient for the type in
+question. </P
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Abit"
+		      ></A
+		      ><B
+		      >bit</B
+		      > :: <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><TT
+		      >bit i</TT
+		      > is a value with the <TT
+		      >i</TT
+		      >th bit set</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AsetBit"
+		      ></A
+		      ><B
+		      >setBit</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><TT
+		      >x `setBit` i</TT
+		      > is the same as <TT
+		      >x .|. bit i</TT
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AclearBit"
+		      ></A
+		      ><B
+		      >clearBit</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><TT
+		      >x `clearBit` i</TT
+		      > is the same as <TT
+		      >x .&amp;. complement (bit i)</TT
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AcomplementBit"
+		      ></A
+		      ><B
+		      >complementBit</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><TT
+		      >x `complementBit` i</TT
+		      > is the same as <TT
+		      >x `xor` bit i</TT
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AtestBit"
+		      ></A
+		      ><B
+		      >testBit</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Return <TT
+		      ><A HREF = "GHC.Base.html#v%3ATrue"
+			>True</A
+			></TT
+		      > if the <TT
+		      >n</TT
+		      >th bit of the argument is 1</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AbitSize"
+		      ></A
+		      ><B
+		      >bitSize</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Return the number of bits in the type of the argument.  The actual
+value of the argument is ignored.  The function <TT
+		      ><A HREF = "Data.Bits.html#v%3AbitSize"
+			>bitSize</A
+			></TT
+		      > is
+undefined for types that do not have a fixed bitsize, like <TT
+		      ><A HREF = "GHC.Num.html#t%3AInteger"
+			>Integer</A
+			></TT
+		      >.
+</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AisSigned"
+		      ></A
+		      ><B
+		      >isSigned</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    >Return <TT
+		      ><A HREF = "GHC.Base.html#v%3ATrue"
+			>True</A
+			></TT
+		      > if the argument is a signed type.  The actual
+value of the argument is ignored </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AshiftL"
+		      ></A
+		      ><B
+		      >shiftL</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><P
+		      >Shift the argument left by the specified number of bits
+(which must be non-negative).
+</P
+		      ><P
+		      >An instance can define either this and <TT
+			><A HREF = "Data.Bits.html#v%3AshiftR"
+			  >shiftR</A
+			  ></TT
+			> or the unified
+<TT
+			><A HREF = "Data.Bits.html#v%3Ashift"
+			  >shift</A
+			  ></TT
+			>, depending on which is more convenient for the type in
+question. </P
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3AshiftR"
+		      ></A
+		      ><B
+		      >shiftR</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><P
+		      >Shift the argument right (signed) by the specified number of bits
+(which must be non-negative).
+</P
+		      ><P
+		      >An instance can define either this and <TT
+			><A HREF = "Data.Bits.html#v%3AshiftL"
+			  >shiftL</A
+			  ></TT
+			> or the unified
+<TT
+			><A HREF = "Data.Bits.html#v%3Ashift"
+			  >shift</A
+			  ></TT
+			>, depending on which is more convenient for the type in
+question. </P
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3ArotateL"
+		      ></A
+		      ><B
+		      >rotateL</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><P
+		      >Rotate the argument left by the specified number of bits
+(which must be non-negative).
+</P
+		      ><P
+		      >An instance can define either this and <TT
+			><A HREF = "Data.Bits.html#v%3ArotateR"
+			  >rotateR</A
+			  ></TT
+			> or the unified
+<TT
+			><A HREF = "Data.Bits.html#v%3Arotate"
+			  >rotate</A
+			  ></TT
+			>, depending on which is more convenient for the type in
+question. </P
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3ArotateR"
+		      ></A
+		      ><B
+		      >rotateR</B
+		      > :: a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > -&gt; a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "doc"
+		    ><P
+		      >Rotate the argument right by the specified number of bits
+(which must be non-negative).
+</P
+		      ><P
+		      >An instance can define either this and <TT
+			><A HREF = "Data.Bits.html#v%3ArotateL"
+			  >rotateL</A
+			  ></TT
+			> or the unified
+<TT
+			><A HREF = "Data.Bits.html#v%3Arotate"
+			  >rotate</A
+			  ></TT
+			>, depending on which is more convenient for the type in
+question. </P
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Num.html#t%3AInteger"
+		      >Integer</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACChar"
+		      >CChar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACSChar"
+		      >CSChar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACUChar"
+		      >CUChar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACShort"
+		      >CShort</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACUShort"
+		      >CUShort</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACInt"
+		      >CInt</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACUInt"
+		      >CUInt</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLong"
+		      >CLong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACULong"
+		      >CULong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACLLong"
+		      >CLLong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACULLong"
+		      >CULLong</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACPtrdiff"
+		      >CPtrdiff</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACSize"
+		      >CSize</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACWchar"
+		      >CWchar</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACSigAtomic"
+		      >CSigAtomic</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACClock"
+		      >CClock</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "Foreign.C.Types.html#t%3ACTime"
+		      >CTime</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Int.html#t%3AInt8"
+		      >Int8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Int.html#t%3AInt16"
+		      >Int16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Int.html#t%3AInt32"
+		      >Int32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Int.html#t%3AInt64"
+		      >Int64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Word.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Word.html#t%3AWord8"
+		      >Word8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Word.html#t%3AWord16"
+		      >Word16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Word.html#t%3AWord32"
+		      >Word32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "GHC.Word.html#t%3AWord64"
+		      >Word64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACIno"
+		      >CIno</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACMode"
+		      >CMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACOff"
+		      >COff</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACPid"
+		      >CPid</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACSsize"
+		      >CSsize</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACGid"
+		      >CGid</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACNlink"
+		      >CNlink</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACUid"
+		      >CUid</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3ACTcflag"
+		      >CTcflag</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Bits.html#t%3ABits"
+		      >Bits</A
+		      > <A HREF = "System.Posix.Types.html#t%3AFd"
+		      >Fd</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

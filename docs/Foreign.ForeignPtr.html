@@ -1,0 +1,1003 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Foreign.ForeignPtr</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Foreign.ForeignPtr</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  ffi@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Finalised data pointers</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#2"
+			>Low-level operations</A
+			></DT
+		      ><DT
+		      ><A HREF = "#3"
+			>Allocating managed memory</A
+			></DT
+		      ></DL
+		    ></DD
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	    >ForeignPtr</A
+	    ></TT
+	  > type and operations.  This module is part of the
+Foreign Function Interface (FFI) and will usually be imported via
+the <A HREF = "Foreign.html"
+	  >Foreign</A
+	  > module.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3AFinalizerPtr"
+		>FinalizerPtr</A
+		> a = <A HREF = "Foreign.Ptr.html#t%3AFunPtr"
+		>FunPtr</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ())</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewForeignPtr"
+		>newForeignPtr</A
+		> :: <A HREF = "Foreign.ForeignPtr.html#t%3AFinalizerPtr"
+		>FinalizerPtr</A
+		> a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewForeignPtr_"
+		>newForeignPtr_</A
+		> :: <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AaddForeignPtrFinalizer"
+		>addForeignPtrFinalizer</A
+		> :: <A HREF = "Foreign.ForeignPtr.html#t%3AFinalizerPtr"
+		>FinalizerPtr</A
+		> a -&gt; <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithForeignPtr"
+		>withForeignPtr</A
+		> :: <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunsafeForeignPtrToPtr"
+		>unsafeForeignPtrToPtr</A
+		> :: <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtouchForeignPtr"
+		>touchForeignPtr</A
+		> :: <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AcastForeignPtr"
+		>castForeignPtr</A
+		> :: <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a -&gt; <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmallocForeignPtr"
+		>mallocForeignPtr</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmallocForeignPtrBytes"
+		>mallocForeignPtrBytes</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmallocForeignPtrArray"
+		>mallocForeignPtrArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmallocForeignPtrArray0"
+		>mallocForeignPtrArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		>ForeignPtr</A
+		> a)</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Finalised data pointers</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AForeignPtr"
+	  ></A
+	  ><B
+	  >ForeignPtr</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>The type <TT
+		  ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		    >ForeignPtr</A
+		    ></TT
+		  > represents references to objects that are
+maintained in a foreign language, i.e., that are not part of the
+data structures usually managed by the Haskell storage manager.
+The essential difference between <TT
+		  ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		    >ForeignPtr</A
+		    ></TT
+		  >s and vanilla memory
+references of type <TT
+		  >Ptr a</TT
+		  > is that the former may be associated
+with <EM
+		  >finalisers</EM
+		  >. A finaliser is a routine that is invoked when
+the Haskell storage manager detects that - within the Haskell heap
+and stack - there are no more references left that are pointing to
+the <TT
+		  ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		    >ForeignPtr</A
+		    ></TT
+		  >.  Typically, the finaliser will, then, invoke
+routines in the foreign language that free the resources bound by
+the foreign object.
+</P
+		><P
+		>The <TT
+		  ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		    >ForeignPtr</A
+		    ></TT
+		  > is parameterised in the same way as <TT
+		  ><A HREF = "Foreign.Ptr.html#t%3APtr"
+		    >Ptr</A
+		    ></TT
+		  >.  The
+type argument of <TT
+		  ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		    >ForeignPtr</A
+		    ></TT
+		  > should normally be an instance of
+class <TT
+		  ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		    >Storable</A
+		    ></TT
+		  >.
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		      >ForeignPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		      >ForeignPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		      >ForeignPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+		      >ForeignPtr</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3AFinalizerPtr"
+	  ></A
+	  ><B
+	  >FinalizerPtr</B
+	  > a = <A HREF = "Foreign.Ptr.html#t%3AFunPtr"
+	  >FunPtr</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ())</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A Finaliser is represented as a pointer to a foreign function that, at
+finalisation time, gets as an argument a plain pointer variant of the
+foreign pointer that the finalizer is associated with.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewForeignPtr"
+	  ></A
+	  ><B
+	  >newForeignPtr</B
+	  > :: <A HREF = "Foreign.ForeignPtr.html#t%3AFinalizerPtr"
+	  >FinalizerPtr</A
+	  > a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Turns a plain memory reference into a foreign pointer, and
+associates a finaliser with the reference.  The finaliser will be executed
+after the last reference to the foreign object is dropped.  Note that there
+is no guarantee on how soon the finaliser is executed after the last
+reference was dropped; this depends on the details of the Haskell storage
+manager. The only guarantee is that the finaliser runs before the program
+terminates.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewForeignPtr_"
+	  ></A
+	  ><B
+	  >newForeignPtr_</B
+	  > :: <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Turns a plain memory reference into a foreign pointer that may be
+associated with finalizers by using <TT
+	  ><A HREF = "Foreign.ForeignPtr.html#v%3AaddForeignPtrFinalizer"
+	    >addForeignPtrFinalizer</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AaddForeignPtrFinalizer"
+	  ></A
+	  ><B
+	  >addForeignPtrFinalizer</B
+	  > :: <A HREF = "Foreign.ForeignPtr.html#t%3AFinalizerPtr"
+	  >FinalizerPtr</A
+	  > a -&gt; <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This function adds a finaliser to the given foreign object.  The
+finalizer will run <EM
+	  >before</EM
+	  > all other finalizers for the same
+object which have already been registered.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithForeignPtr"
+	  ></A
+	  ><B
+	  >withForeignPtr</B
+	  > :: <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a -&gt; (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >This is a way to look at the pointer living inside a
+foreign object.  This function takes a function which is
+applied to that pointer. The resulting <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > action is then
+executed. The foreign object is kept alive at least during
+the whole action, even if it is not used directly
+inside. Note that it is not safe to return the pointer from
+the action and use it after the action completes. All uses
+of the pointer should be inside the
+<TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AwithForeignPtr"
+	      >withForeignPtr</A
+	      ></TT
+	    > bracket.  The reason for
+this unsafety is the same as for
+<TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AunsafeForeignPtrToPtr"
+	      >unsafeForeignPtrToPtr</A
+	      ></TT
+	    > below: the finalizer
+may run earlier than expected, because the compiler can only
+track usage of the <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	      >ForeignPtr</A
+	      ></TT
+	    > object, not
+a <TT
+	    ><A HREF = "Foreign.Ptr.html#t%3APtr"
+	      >Ptr</A
+	      ></TT
+	    > object made from it.
+</P
+	  ><P
+	  >This function is normally used for marshalling data to
+or from the object pointed to by the
+<TT
+	    ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	      >ForeignPtr</A
+	      ></TT
+	    >, using the operations from the
+<TT
+	    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+	      >Storable</A
+	      ></TT
+	    > class.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "2"
+	  >Low-level operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunsafeForeignPtrToPtr"
+	  ></A
+	  ><B
+	  >unsafeForeignPtrToPtr</B
+	  > :: <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >This function extracts the pointer component of a foreign
+pointer.  This is a potentially dangerous operations, as if the
+argument to <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AunsafeForeignPtrToPtr"
+	      >unsafeForeignPtrToPtr</A
+	      ></TT
+	    > is the last usage
+occurence of the given foreign pointer, then its finaliser(s) will
+be run, which potentially invalidates the plain pointer just
+obtained.  Hence, <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AtouchForeignPtr"
+	      >touchForeignPtr</A
+	      ></TT
+	    > must be used
+wherever it has to be guaranteed that the pointer lives on - i.e.,
+has another usage occurrence.
+</P
+	  ><P
+	  >To avoid subtle coding errors, hand written marshalling code
+should preferably use <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AwithForeignPtr"
+	      >withForeignPtr</A
+	      ></TT
+	    > rather
+than combinations of <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AunsafeForeignPtrToPtr"
+	      >unsafeForeignPtrToPtr</A
+	      ></TT
+	    > and
+<TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AtouchForeignPtr"
+	      >touchForeignPtr</A
+	      ></TT
+	    >.  However, the later routines
+are occasionally preferred in tool generated marshalling code.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtouchForeignPtr"
+	  ></A
+	  ><B
+	  >touchForeignPtr</B
+	  > :: <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >This function ensures that the foreign object in
+question is alive at the given place in the sequence of IO
+actions. In particular <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AwithForeignPtr"
+	      >withForeignPtr</A
+	      ></TT
+	    >
+does a <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AtouchForeignPtr"
+	      >touchForeignPtr</A
+	      ></TT
+	    > after it
+executes the user action.
+</P
+	  ><P
+	  >This function can be used to express liveness
+dependencies between <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	      >ForeignPtr</A
+	      ></TT
+	    >s: for
+example, if the finalizer for one
+<TT
+	    ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	      >ForeignPtr</A
+	      ></TT
+	    > touches a second
+<TT
+	    ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	      >ForeignPtr</A
+	      ></TT
+	    >, then it is ensured that the
+second <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	      >ForeignPtr</A
+	      ></TT
+	    > will stay alive at
+least as long as the first.  This can be useful when you
+want to manipulate <EM
+	    >interior pointers</EM
+	    > to
+a foreign structure: you can use
+touchForeignObj to express the
+requirement that the exterior pointer must not be finalized
+until the interior pointer is no longer referenced.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AcastForeignPtr"
+	  ></A
+	  ><B
+	  >castForeignPtr</B
+	  > :: <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a -&gt; <A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This function casts a <TT
+	  ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	    >ForeignPtr</A
+	    ></TT
+	  >
+parameterised by one type into another type.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "3"
+	  >Allocating managed memory</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmallocForeignPtr"
+	  ></A
+	  ><B
+	  >mallocForeignPtr</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Allocate some memory and return a <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	      >ForeignPtr</A
+	      ></TT
+	    > to it.  The memory
+will be released automatically when the <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	      >ForeignPtr</A
+	      ></TT
+	    > is discarded.
+</P
+	  ><P
+	  ><TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AmallocForeignPtr"
+	      >mallocForeignPtr</A
+	      ></TT
+	    > is equivalent to
+</P
+	  ><PRE
+	  >    do { p &lt;- malloc; newForeignPtr finalizerFree p }
+</PRE
+	  ><P
+	  >although it may be implemented differently internally: you may not
+assume that the memory returned by <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AmallocForeignPtr"
+	      >mallocForeignPtr</A
+	      ></TT
+	    > has been
+allocated with <TT
+	    ><A HREF = "Foreign.Marshal.Alloc.html#v%3Amalloc"
+	      >malloc</A
+	      ></TT
+	    >.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmallocForeignPtrBytes"
+	  ></A
+	  ><B
+	  >mallocForeignPtrBytes</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This function is similar to <TT
+	  ><A HREF = "Foreign.ForeignPtr.html#v%3AmallocForeignPtr"
+	    >mallocForeignPtr</A
+	    ></TT
+	  >, except that the
+size of the memory required is given explicitly as a number of bytes.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmallocForeignPtrArray"
+	  ></A
+	  ><B
+	  >mallocForeignPtrArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This function is similar to <TT
+	  ><A HREF = "Foreign.Marshal.Array.html#v%3AmallocArray"
+	    >mallocArray</A
+	    ></TT
+	  >,
+but yields a memory area that has a finalizer attached that releases
+the memory area.  As with <TT
+	  ><A HREF = "Foreign.ForeignPtr.html#v%3AmallocForeignPtr"
+	    >mallocForeignPtr</A
+	    ></TT
+	  >, it is not guaranteed that
+the block of memory was allocated by <TT
+	  ><A HREF = "Foreign.Marshal.Alloc.html#v%3Amalloc"
+	    >malloc</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmallocForeignPtrArray0"
+	  ></A
+	  ><B
+	  >mallocForeignPtrArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	  >ForeignPtr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This function is similar to <TT
+	  ><A HREF = "Foreign.Marshal.Array.html#v%3AmallocArray0"
+	    >mallocArray0</A
+	    ></TT
+	  >,
+but yields a memory area that has a finalizer attached that releases
+the memory area.  As with <TT
+	  ><A HREF = "Foreign.ForeignPtr.html#v%3AmallocForeignPtr"
+	    >mallocForeignPtr</A
+	    ></TT
+	  >, it is not guaranteed that
+the block of memory was allocated by <TT
+	  ><A HREF = "Foreign.Marshal.Alloc.html#v%3Amalloc"
+	    >malloc</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

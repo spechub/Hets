@@ -1,0 +1,705 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >GHC.Unicode</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>GHC.Unicode</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (GHC extensions)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  internal</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  cvs-ghc@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Implementations for the character predicates (isLower, isUpper, etc.)
+and the conversions (toUpper, toLower).  The implementation uses
+libunicode on Unix systems if that is available.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisAscii"
+		>isAscii</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisLatin1"
+		>isLatin1</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisControl"
+		>isControl</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisAsciiUpper"
+		>isAsciiUpper</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisAsciiLower"
+		>isAsciiLower</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisPrint"
+		>isPrint</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisSpace"
+		>isSpace</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisUpper"
+		>isUpper</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisLower"
+		>isLower</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisAlpha"
+		>isAlpha</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisDigit"
+		>isDigit</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisOctDigit"
+		>isOctDigit</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisHexDigit"
+		>isHexDigit</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisAlphaNum"
+		>isAlphaNum</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtoUpper"
+		>toUpper</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtoLower"
+		>toLower</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisAscii"
+	  ></A
+	  ><B
+	  >isAscii</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects the first 128 characters of the Unicode character set,
+corresponding to the ASCII character set.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisLatin1"
+	  ></A
+	  ><B
+	  >isLatin1</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects the first 256 characters of the Unicode character set,
+corresponding to the ISO 8859-1 (Latin-1) character set.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisControl"
+	  ></A
+	  ><B
+	  >isControl</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects control characters, which are the non-printing characters of
+the Latin-1 subset of Unicode.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisAsciiUpper"
+	  ></A
+	  ><B
+	  >isAsciiUpper</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisAsciiLower"
+	  ></A
+	  ><B
+	  >isAsciiLower</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisPrint"
+	  ></A
+	  ><B
+	  >isPrint</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects printable Unicode characters
+(letters, numbers, marks, punctuation, symbols and spaces).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisSpace"
+	  ></A
+	  ><B
+	  >isSpace</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects white-space characters in the Latin-1 range.
+(In Unicode terms, this includes spaces and some control characters.)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisUpper"
+	  ></A
+	  ><B
+	  >isUpper</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects alphabetic Unicode characters (letters) that are not lower-case.
+(In Unicode terms, this includes letters in upper and title cases,
+as well as modifier letters and other letters.)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisLower"
+	  ></A
+	  ><B
+	  >isLower</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects lower-case alphabetic Unicode characters (letters).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisAlpha"
+	  ></A
+	  ><B
+	  >isAlpha</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects alphabetic Unicode characters (letters).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisDigit"
+	  ></A
+	  ><B
+	  >isDigit</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects ASCII digits, i.e. <TT
+	  >'0'</TT
+	  >..<TT
+	  >'9'</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisOctDigit"
+	  ></A
+	  ><B
+	  >isOctDigit</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects ASCII octal digits, i.e. <TT
+	  >'0'</TT
+	  >..<TT
+	  >'7'</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisHexDigit"
+	  ></A
+	  ><B
+	  >isHexDigit</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Selects ASCII hexadecimal digits,
+i.e. <TT
+	  >'0'</TT
+	  >..<TT
+	  >'9'</TT
+	  >, <TT
+	  >'a'</TT
+	  >..<TT
+	  >'f'</TT
+	  >, <TT
+	  >'A'</TT
+	  >..<TT
+	  >'F'</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisAlphaNum"
+	  ></A
+	  ><B
+	  >isAlphaNum</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Selects alphabetic or numeric digit Unicode characters.
+</P
+	  ><P
+	  >Note that numeric digits outside the ASCII range are selected by this
+function but not by <TT
+	    ><A HREF = "GHC.Unicode.html#v%3AisDigit"
+	      >isDigit</A
+	      ></TT
+	    >.  Such digits may be part of identifiers
+but are not used by the printer and reader to represent numbers.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtoUpper"
+	  ></A
+	  ><B
+	  >toUpper</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Convert a letter to the corresponding upper-case letter, leaving any
+other character unchanged.  Any Unicode letter which has an upper-case
+equivalent is transformed.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtoLower"
+	  ></A
+	  ><B
+	  >toLower</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Convert a letter to the corresponding lower-case letter, leaving any
+other character unchanged.  Any Unicode letter which has a lower-case
+equivalent is transformed.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

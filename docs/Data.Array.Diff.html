@@ -1,0 +1,784 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Array.Diff</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Array.Diff</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Diff array types</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Overloaded immutable array interface</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Low-level interface</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Functional arrays with constant-time update.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AIOToDiffArray"
+		>IOToDiffArray</A
+		> a i e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3ADiffArray"
+		>DiffArray</A
+		> = <A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		>IOToDiffArray</A
+		> <A HREF = "Data.Array.IO.html#t%3AIOArray"
+		>IOArray</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3ADiffUArray"
+		>DiffUArray</A
+		> = <A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		>IOToDiffArray</A
+		> <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		>IOUArray</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Data.Array.IArray.html"
+		>Data.Array.IArray</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewDiffArray"
+		>newDiffArray</A
+		> :: (<A HREF = "Data.Array.Base.html#t%3AMArray"
+		>MArray</A
+		> a e <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		>, <A HREF = "GHC.Arr.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; (i, i) -&gt; [(<A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		>, e)] -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		>IOToDiffArray</A
+		> a i e)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadDiffArray"
+		>readDiffArray</A
+		> :: (<A HREF = "Data.Array.Base.html#t%3AMArray"
+		>MArray</A
+		> a e <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		>, <A HREF = "GHC.Arr.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; <A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		>IOToDiffArray</A
+		> a i e -&gt; <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> e</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreplaceDiffArray"
+		>replaceDiffArray</A
+		> :: (<A HREF = "Data.Array.Base.html#t%3AMArray"
+		>MArray</A
+		> a e <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		>, <A HREF = "GHC.Arr.html#t%3AIx"
+		>Ix</A
+		> i) =&gt; <A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		>IOToDiffArray</A
+		> a i e -&gt; [(<A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		>, e)] -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		>IOToDiffArray</A
+		> a i e)</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Diff array types</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Diff arrays have an immutable interface, but rely on internal
+updates in place to provide fast functional update operator
+<TT
+	    ><A HREF = "Data.Array.IArray.html#v%3A%2F%2F"
+	      >//</A
+	      ></TT
+	    >.
+</P
+	  ><P
+	  >When the <TT
+	    ><A HREF = "Data.Array.IArray.html#v%3A%2F%2F"
+	      >//</A
+	      ></TT
+	    > operator is applied to a diff array, its contents
+are physically updated in place. The old array silently changes
+its representation without changing the visible behavior:
+it stores a link to the new current array along with the
+difference to be applied to get the old contents.
+</P
+	  ><P
+	  >So if a diff array is used in a single-threaded style,
+i.e. after <TT
+	    ><A HREF = "Data.Array.IArray.html#v%3A%2F%2F"
+	      >//</A
+	      ></TT
+	    > application the old version is no longer used,
+<TT
+	    >a'!'i</TT
+	    > takes O(1) time and <TT
+	    >a <TT
+	      ><A HREF = "Data.Array.IArray.html#v%3A%2F%2F"
+		>//</A
+		></TT
+	      > d</TT
+	    > takes O(<TT
+	    >length d</TT
+	    >).
+Accessing elements of older versions gradually becomes slower.
+</P
+	  ><P
+	  >Updating an array which is not current makes a physical copy.
+The resulting array is unlinked from the old family. So you
+can obtain a version which is guaranteed to be current and
+thus have fast element access by <TT
+	    >a <TT
+	      ><A HREF = "Data.Array.IArray.html#v%3A%2F%2F"
+		>//</A
+		></TT
+	      > []</TT
+	    >.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AIOToDiffArray"
+	  ></A
+	  ><B
+	  >IOToDiffArray</B
+	  > a i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >An arbitrary <TT
+		><A HREF = "Data.Array.Base.html#t%3AMArray"
+		  >MArray</A
+		  ></TT
+		> type living in the <TT
+		><A HREF = "Prelude.html#t%3AIO"
+		  >IO</A
+		  ></TT
+		> monad can be converted
+to a diff array.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > a =&gt; <A HREF = "Data.Array.Base.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOArray"
+		      >IOArray</A
+		      >) e</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3AChar"
+		      >Char</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3AInt"
+		      >Int</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Data.Word.html#t%3AWord"
+		      >Word</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "Foreign.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3AFloat"
+		      >Float</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Prelude.html#t%3ADouble"
+		      >Double</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) (<A HREF = "Foreign.StablePtr.html#t%3AStablePtr"
+		      >StablePtr</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Data.Int.html#t%3AInt8"
+		      >Int8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Data.Int.html#t%3AInt16"
+		      >Int16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Data.Int.html#t%3AInt32"
+		      >Int32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Data.Int.html#t%3AInt64"
+		      >Int64</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Data.Word.html#t%3AWord8"
+		      >Word8</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Data.Word.html#t%3AWord16"
+		      >Word16</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Data.Word.html#t%3AWord32"
+		      >Word32</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+		      >IArray</A
+		      > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+		      >IOToDiffArray</A
+		      > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+		      >IOUArray</A
+		      >) <A HREF = "Data.Word.html#t%3AWord64"
+		      >Word64</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Type synonyms for the two most important IO array types.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3ADiffArray"
+	  ></A
+	  ><B
+	  >DiffArray</B
+	  > = <A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+	  >IOToDiffArray</A
+	  > <A HREF = "Data.Array.IO.html#t%3AIOArray"
+	  >IOArray</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Fully polymorphic lazy boxed diff array.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3ADiffUArray"
+	  ></A
+	  ><B
+	  >DiffUArray</B
+	  > = <A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+	  >IOToDiffArray</A
+	  > <A HREF = "Data.Array.IO.html#t%3AIOUArray"
+	  >IOUArray</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Strict unboxed diff array, working only for elements
+of primitive types but more compact and usually faster than <TT
+	  ><A HREF = "Data.Array.Diff.html#t%3ADiffArray"
+	    >DiffArray</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Overloaded immutable array interface</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Module <A HREF = "Data.Array.IArray.html"
+	  >Data.Array.IArray</A
+	  > provides the interface of diff arrays.
+They are instances of class <TT
+	  ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+	    >IArray</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Data.Array.IArray.html"
+	  >Data.Array.IArray</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Low-level interface</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>These are really internal functions, but you will need them
+to make further <TT
+	  ><A HREF = "Data.Array.IArray.html#t%3AIArray"
+	    >IArray</A
+	    ></TT
+	  > instances of various diff array types
+(for either more <TT
+	  ><A HREF = "Data.Array.Base.html#t%3AMArray"
+	    >MArray</A
+	    ></TT
+	  > types or more unboxed element types).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewDiffArray"
+	  ></A
+	  ><B
+	  >newDiffArray</B
+	  > :: (<A HREF = "Data.Array.Base.html#t%3AMArray"
+	  >MArray</A
+	  > a e <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  >, <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; (i, i) -&gt; [(<A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  >, e)] -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+	  >IOToDiffArray</A
+	  > a i e)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadDiffArray"
+	  ></A
+	  ><B
+	  >readDiffArray</B
+	  > :: (<A HREF = "Data.Array.Base.html#t%3AMArray"
+	  >MArray</A
+	  > a e <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  >, <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; <A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+	  >IOToDiffArray</A
+	  > a i e -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreplaceDiffArray"
+	  ></A
+	  ><B
+	  >replaceDiffArray</B
+	  > :: (<A HREF = "Data.Array.Base.html#t%3AMArray"
+	  >MArray</A
+	  > a e <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  >, <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i) =&gt; <A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+	  >IOToDiffArray</A
+	  > a i e -&gt; [(<A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  >, e)] -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Data.Array.Diff.html#t%3AIOToDiffArray"
+	  >IOToDiffArray</A
+	  > a i e)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

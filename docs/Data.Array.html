@@ -1,0 +1,428 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Array</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Array</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Basic non-strict arrays.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Data.Ix.html"
+	  >Data.Ix</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AArray"
+	  ></A
+	  ><B
+	  >Array</B
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a, <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > b) =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "Data.Array.html#t%3AArray"
+		      >Array</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AHasBounds"
+		      >HasBounds</A
+		      > <A HREF = "Data.Array.html#t%3AArray"
+		      >Array</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AIArray"
+		      >IArray</A
+		      > <A HREF = "Data.Array.html#t%3AArray"
+		      >Array</A
+		      > e</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > i =&gt; <A HREF = "GHC.Base.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Data.Array.html#t%3AArray"
+		      >Array</A
+		      > i)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > i, <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > e) =&gt; <A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Array.html#t%3AArray"
+		      >Array</A
+		      > i e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > i, <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > e) =&gt; <A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > (<A HREF = "Data.Array.html#t%3AArray"
+		      >Array</A
+		      > i e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > a, <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > a, <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > b) =&gt; <A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > (<A HREF = "Data.Array.html#t%3AArray"
+		      >Array</A
+		      > a b)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > a, <A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > a, <A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > b) =&gt; <A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > (<A HREF = "Data.Array.html#t%3AArray"
+		      >Array</A
+		      > a b)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aarray"
+	  ></A
+	  ><B
+	  >array</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; (i, i) -&gt; [(i, e)] -&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlistArray"
+	  ></A
+	  ><B
+	  >listArray</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; (i, i) -&gt; [e] -&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A!"
+	  ></A
+	  ><B
+	  >(!)</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e -&gt; i -&gt; e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Abounds"
+	  ></A
+	  ><B
+	  >bounds</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e -&gt; (i, i)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aindices"
+	  ></A
+	  ><B
+	  >indices</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e -&gt; [i]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aelems"
+	  ></A
+	  ><B
+	  >elems</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e -&gt; [e]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aassocs"
+	  ></A
+	  ><B
+	  >assocs</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e -&gt; [(i, e)]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AaccumArray"
+	  ></A
+	  ><B
+	  >accumArray</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; (e -&gt; a -&gt; e) -&gt; e -&gt; (i, i) -&gt; [(i, a)] -&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%2F%2F"
+	  ></A
+	  ><B
+	  >(//)</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e -&gt; [(i, e)] -&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aaccum"
+	  ></A
+	  ><B
+	  >accum</B
+	  > :: <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i =&gt; (e -&gt; a -&gt; e) -&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e -&gt; [(i, a)] -&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aixmap"
+	  ></A
+	  ><B
+	  >ixmap</B
+	  > :: (<A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > i, <A HREF = "GHC.Arr.html#t%3AIx"
+	  >Ix</A
+	  > j) =&gt; (i, i) -&gt; (i -&gt; j) -&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > j e -&gt; <A HREF = "Data.Array.html#t%3AArray"
+	  >Array</A
+	  > i e</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,2048 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Monad</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Monad</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Functor and monad classes</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Functions</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#3"
+			>Naming conventions</A
+			></DT
+		      ><DT
+		      ><A HREF = "#4"
+			>Basic functions from the <A HREF = "Prelude.html"
+			  >Prelude</A
+			  ></A
+			></DT
+		      ><DT
+		      ><A HREF = "#5"
+			>Generalisations of list functions</A
+			></DT
+		      ><DT
+		      ><A HREF = "#6"
+			>Conditional execution of monadic expressions</A
+			></DT
+		      ><DT
+		      ><A HREF = "#7"
+			>Monadic lifting operators</A
+			></DT
+		      ></DL
+		    ></DD
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Control.Monad.html#t%3AFunctor"
+	    >Functor</A
+	    ></TT
+	  >, <TT
+	  ><A HREF = "Control.Monad.html#t%3AMonad"
+	    >Monad</A
+	    ></TT
+	  > and <TT
+	  ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+	    >MonadPlus</A
+	    ></TT
+	  > classes,
+with some useful operations on monads.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "#t%3AFunctor"
+		>Functor</A
+		> f  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Afmap"
+		      >fmap</A
+		      > :: (a -&gt; b) -&gt; f a -&gt; f b</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "#t%3AMonad"
+		>Monad</A
+		> m  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3A%3E%3E%3D"
+		      >(&gt;&gt;=)</A
+		      > :: m a -&gt; (a -&gt; m b) -&gt; m b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3A%3E%3E"
+		      >(&gt;&gt;)</A
+		      > :: m a -&gt; m b -&gt; m b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Areturn"
+		      >return</A
+		      > :: a -&gt; m a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Afail"
+		      >fail</A
+		      > :: <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      > -&gt; m a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>class</SPAN
+		> <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; <A HREF = "#t%3AMonadPlus"
+		>MonadPlus</A
+		> m  <SPAN CLASS = "keyword"
+		>where</SPAN
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Amzero"
+		      >mzero</A
+		      > :: m a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "#v%3Amplus"
+		      >mplus</A
+		      > :: m a -&gt; m a -&gt; m a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmapM"
+		>mapM</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmapM_"
+		>mapM_</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Asequence"
+		>sequence</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; [m a] -&gt; m [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Asequence_"
+		>sequence_</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; [m a] -&gt; m ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3A%3D%3C%3C"
+		>(=&lt;&lt;)</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ajoin"
+		>join</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; m (m a) -&gt; m a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Amsum"
+		>msum</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		>MonadPlus</A
+		> m =&gt; [m a] -&gt; m a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfilterM"
+		>filterM</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a -&gt; m <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		>) -&gt; [a] -&gt; m [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmapAndUnzipM"
+		>mapAndUnzipM</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a -&gt; m (b, c)) -&gt; [a] -&gt; m ([b], [c])</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AzipWithM"
+		>zipWithM</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a -&gt; b -&gt; m c) -&gt; [a] -&gt; [b] -&gt; m [c]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AzipWithM_"
+		>zipWithM_</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a -&gt; b -&gt; m c) -&gt; [a] -&gt; [b] -&gt; m ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfoldM"
+		>foldM</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a -&gt; b -&gt; m a) -&gt; a -&gt; [b] -&gt; m a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfoldM_"
+		>foldM_</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a -&gt; b -&gt; m a) -&gt; a -&gt; [b] -&gt; m ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreplicateM"
+		>replicateM</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; m a -&gt; m [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreplicateM_"
+		>replicateM_</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; m a -&gt; m ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aguard"
+		>guard</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		>MonadPlus</A
+		> m =&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		> -&gt; m ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Awhen"
+		>when</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		> -&gt; m () -&gt; m ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aunless"
+		>unless</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		> -&gt; m () -&gt; m ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AliftM"
+		>liftM</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a1 -&gt; r) -&gt; m a1 -&gt; m r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AliftM2"
+		>liftM2</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a1 -&gt; a2 -&gt; r) -&gt; m a1 -&gt; m a2 -&gt; m r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AliftM3"
+		>liftM3</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a1 -&gt; a2 -&gt; a3 -&gt; r) -&gt; m a1 -&gt; m a2 -&gt; m a3 -&gt; m r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AliftM4"
+		>liftM4</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a1 -&gt; a2 -&gt; a3 -&gt; a4 -&gt; r) -&gt; m a1 -&gt; m a2 -&gt; m a3 -&gt; m a4 -&gt; m r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AliftM5"
+		>liftM5</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; (a1 -&gt; a2 -&gt; a3 -&gt; a4 -&gt; a5 -&gt; r) -&gt; m a1 -&gt; m a2 -&gt; m a3 -&gt; m a4 -&gt; m a5 -&gt; m r</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aap"
+		>ap</A
+		> :: <A HREF = "Control.Monad.html#t%3AMonad"
+		>Monad</A
+		> m =&gt; m (a -&gt; b) -&gt; m a -&gt; m b</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Functor and monad classes</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A NAME = "t%3AFunctor"
+	  ></A
+	  ><B
+	  >Functor</B
+	  > f  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>The <TT
+		  ><A HREF = "Control.Monad.html#t%3AFunctor"
+		    >Functor</A
+		    ></TT
+		  > class is used for types that can be mapped over.
+Instances of <TT
+		  ><A HREF = "Control.Monad.html#t%3AFunctor"
+		    >Functor</A
+		    ></TT
+		  > should satisfy the following laws:
+</P
+		><PRE
+		> fmap id  ==  id
+ fmap (f . g)  ==  fmap f . fmap g
+</PRE
+		><P
+		>The instances of <TT
+		  ><A HREF = "Control.Monad.html#t%3AFunctor"
+		    >Functor</A
+		    ></TT
+		  > for lists, Maybe and IO defined in the <A HREF = "Prelude.html"
+		  >Prelude</A
+		  >
+satisfy these laws.
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Afmap"
+		      ></A
+		      ><B
+		      >fmap</B
+		      > :: (a -&gt; b) -&gt; f a -&gt; f b</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.Cont.html#t%3ACont"
+		      >Cont</A
+		      > r)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.Cont.html#t%3AContT"
+		      >ContT</A
+		      > r m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > <A HREF = "Control.Monad.Identity.html#t%3AIdentity"
+		      >Identity</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.List.html#t%3AListT"
+		      >ListT</A
+		      > m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWS"
+		      >RWS</A
+		      > r w s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > ((-&gt;) r)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.Reader.html#t%3AReader"
+		      >Reader</A
+		      > r)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.Reader.html#t%3AReaderT"
+		      >ReaderT</A
+		      > r m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.ST.Lazy.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.State.html#t%3AState"
+		      >State</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.State.html#t%3AStateT"
+		      >StateT</A
+		      > s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.Writer.html#t%3AWriter"
+		      >Writer</A
+		      > w)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.Writer.html#t%3AWriterT"
+		      >WriterT</A
+		      > w m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > <A HREF = "Data.Maybe.html#t%3AMaybe"
+		      >Maybe</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > i =&gt; <A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "GHC.Arr.html#t%3AArray"
+		      >Array</A
+		      > i)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > []</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+		      >ReadP</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AFunctor"
+		      >Functor</A
+		      > <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		      >ReadPrec</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A NAME = "t%3AMonad"
+	  ></A
+	  ><B
+	  >Monad</B
+	  > m  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>The <TT
+		  ><A HREF = "Control.Monad.html#t%3AMonad"
+		    >Monad</A
+		    ></TT
+		  > class defines the basic operations over a <EM
+		  >monad</EM
+		  >.
+Instances of <TT
+		  ><A HREF = "Control.Monad.html#t%3AMonad"
+		    >Monad</A
+		    ></TT
+		  > should satisfy the following laws:
+</P
+		><PRE
+		> return a &gt;&gt;= k  ==  k a
+ m &gt;&gt;= return  ==  m
+ m &gt;&gt;= (\x -&gt; k x &gt;&gt;= h)  ==  (m &gt;&gt;= k) &gt;&gt;= h
+</PRE
+		><P
+		>Instances of both <TT
+		  ><A HREF = "Control.Monad.html#t%3AMonad"
+		    >Monad</A
+		    ></TT
+		  > and <TT
+		  ><A HREF = "Control.Monad.html#t%3AFunctor"
+		    >Functor</A
+		    ></TT
+		  > should additionally satisfy the law:
+</P
+		><PRE
+		> fmap f xs  ==  xs &gt;&gt;= return . f
+</PRE
+		><P
+		>The instances of <TT
+		  ><A HREF = "Control.Monad.html#t%3AMonad"
+		    >Monad</A
+		    ></TT
+		  > for lists, Maybe and IO defined in the <A HREF = "Prelude.html"
+		  >Prelude</A
+		  >
+satisfy these laws.
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3A%3E%3E%3D"
+		      ></A
+		      ><B
+		      >(&gt;&gt;=)</B
+		      > :: m a -&gt; (a -&gt; m b) -&gt; m b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3A%3E%3E"
+		      ></A
+		      ><B
+		      >(&gt;&gt;)</B
+		      > :: m a -&gt; m b -&gt; m b</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Areturn"
+		      ></A
+		      ><B
+		      >return</B
+		      > :: a -&gt; m a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Afail"
+		      ></A
+		      ><B
+		      >fail</B
+		      > :: <A HREF = "GHC.Base.html#t%3AString"
+		      >String</A
+		      > -&gt; m a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Arrow.html#t%3AArrowApply"
+		      >ArrowApply</A
+		      > a =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Arrow.html#t%3AArrowMonad"
+		      >ArrowMonad</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.Cont.html#t%3ACont"
+		      >Cont</A
+		      > r)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.Cont.html#t%3AContT"
+		      >ContT</A
+		      > r m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m, <A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e) =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > <A HREF = "Control.Monad.Identity.html#t%3AIdentity"
+		      >Identity</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.List.html#t%3AListT"
+		      >ListT</A
+		      > m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWS"
+		      >RWS</A
+		      > r w s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m) =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > ((-&gt;) r)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.Reader.html#t%3AReader"
+		      >Reader</A
+		      > r)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.Reader.html#t%3AReaderT"
+		      >ReaderT</A
+		      > r m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.ST.Lazy.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.State.html#t%3AState"
+		      >State</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.State.html#t%3AStateT"
+		      >StateT</A
+		      > s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.Writer.html#t%3AWriter"
+		      >Writer</A
+		      > w)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m) =&gt; <A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.Writer.html#t%3AWriterT"
+		      >WriterT</A
+		      > w m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > <A HREF = "Data.Maybe.html#t%3AMaybe"
+		      >Maybe</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > []</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "GHC.ST.html#t%3AST"
+		      >ST</A
+		      > s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > <A HREF = "Text.ParserCombinators.ReadP.html#t%3AP"
+		      >P</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+		      >ReadP</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		      >ReadPrec</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >class</SPAN
+	  > <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; <A NAME = "t%3AMonadPlus"
+	  ></A
+	  ><B
+	  >MonadPlus</B
+	  > m  <SPAN CLASS = "keyword"
+	  >where</SPAN
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >The MonadPlus class definition</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Methods</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Amzero"
+		      ></A
+		      ><B
+		      >mzero</B
+		      > :: m a</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "s8"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A NAME = "v%3Amplus"
+		      ></A
+		      ><B
+		      >mplus</B
+		      > :: m a -&gt; m a -&gt; m a</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > []</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > <A HREF = "Data.Maybe.html#t%3AMaybe"
+		      >Maybe</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Data.Either.html#t%3AEither"
+		      >Either</A
+		      > e)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m, <A HREF = "Control.Monad.Error.html#t%3AError"
+		      >Error</A
+		      > e) =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Control.Monad.Error.html#t%3AErrorT"
+		      >ErrorT</A
+		      > e m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Control.Monad.List.html#t%3AListT"
+		      >ListT</A
+		      > m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > m) =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Control.Monad.Reader.html#t%3AReaderT"
+		      >ReaderT</A
+		      > r m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > m =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Control.Monad.State.html#t%3AStateT"
+		      >StateT</A
+		      > s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > m) =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Control.Monad.Writer.html#t%3AWriterT"
+		      >WriterT</A
+		      > w m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > <A HREF = "Text.ParserCombinators.ReadP.html#t%3AP"
+		      >P</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > <A HREF = "Text.ParserCombinators.ReadP.html#t%3AReadP"
+		      >ReadP</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > <A HREF = "Text.ParserCombinators.ReadPrec.html#t%3AReadPrec"
+		      >ReadPrec</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Functions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "3"
+	  >Naming conventions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The functions in this library use the following naming conventions: 
+</P
+	  ><UL
+	  ><LI
+	    > A postfix `M' always stands for a function in the Kleisli category:
+<TT
+	      >m</TT
+	      > is added to function results (modulo currying) and nowhere else.
+So, for example, 
+</LI
+	    ></UL
+	  ><PRE
+	  >  filter  ::              (a -&gt;   Bool) -&gt; [a] -&gt;   [a]
+  filterM :: (Monad m) =&gt; (a -&gt; m Bool) -&gt; [a] -&gt; m [a]
+</PRE
+	  ><UL
+	  ><LI
+	    > A postfix `_' changes the result type from <TT
+	      >(m a)</TT
+	      > to <TT
+	      >(m ())</TT
+	      >.
+Thus (in the <A HREF = "Prelude.html"
+	      >Prelude</A
+	      >): 
+</LI
+	    ></UL
+	  ><PRE
+	  >  sequence  :: Monad m =&gt; [m a] -&gt; m [a] 
+  sequence_ :: Monad m =&gt; [m a] -&gt; m () 
+</PRE
+	  ><UL
+	  ><LI
+	    > A prefix `m' generalises an existing function to a monadic form.
+Thus, for example: 
+</LI
+	    ></UL
+	  ><PRE
+	  >  sum  :: Num a       =&gt; [a]   -&gt; a
+  msum :: MonadPlus m =&gt; [m a] -&gt; m a
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "4"
+	  >Basic functions from the <A HREF = "Prelude.html"
+	    >Prelude</A
+	    ></A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmapM"
+	  ></A
+	  ><B
+	  >mapM</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m [b]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmapM_"
+	  ></A
+	  ><B
+	  >mapM_</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a -&gt; m b) -&gt; [a] -&gt; m ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asequence"
+	  ></A
+	  ><B
+	  >sequence</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; [m a] -&gt; m [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Asequence_"
+	  ></A
+	  ><B
+	  >sequence_</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; [m a] -&gt; m ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3A%3D%3C%3C"
+	  ></A
+	  ><B
+	  >(=&lt;&lt;)</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "5"
+	  >Generalisations of list functions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ajoin"
+	  ></A
+	  ><B
+	  >join</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; m (m a) -&gt; m a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Control.Monad.html#v%3Ajoin"
+	    >join</A
+	    ></TT
+	  > function is the conventional monad join operator. It is used to
+remove one level of monadic structure, projecting its bound argument into the
+outer level.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Amsum"
+	  ></A
+	  ><B
+	  >msum</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonadPlus"
+	  >MonadPlus</A
+	  > m =&gt; [m a] -&gt; m a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfilterM"
+	  ></A
+	  ><B
+	  >filterM</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a -&gt; m <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; [a] -&gt; m [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmapAndUnzipM"
+	  ></A
+	  ><B
+	  >mapAndUnzipM</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a -&gt; m (b, c)) -&gt; [a] -&gt; m ([b], [c])</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Control.Monad.html#v%3AmapAndUnzipM"
+	    >mapAndUnzipM</A
+	    ></TT
+	  > function maps its first argument over a list, returning
+the result as a pair of lists. This function is mainly used with complicated
+data structures or a state-transforming monad.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AzipWithM"
+	  ></A
+	  ><B
+	  >zipWithM</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a -&gt; b -&gt; m c) -&gt; [a] -&gt; [b] -&gt; m [c]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Control.Monad.html#v%3AzipWithM"
+	    >zipWithM</A
+	    ></TT
+	  > function generalises <TT
+	  ><A HREF = "GHC.List.html#v%3AzipWith"
+	    >zipWith</A
+	    ></TT
+	  > to arbitrary monads.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AzipWithM_"
+	  ></A
+	  ><B
+	  >zipWithM_</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a -&gt; b -&gt; m c) -&gt; [a] -&gt; [b] -&gt; m ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "Control.Monad.html#v%3AzipWithM_"
+	    >zipWithM_</A
+	    ></TT
+	  > is the extension of <TT
+	  ><A HREF = "Control.Monad.html#v%3AzipWithM"
+	    >zipWithM</A
+	    ></TT
+	  > which ignores the final result.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfoldM"
+	  ></A
+	  ><B
+	  >foldM</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a -&gt; b -&gt; m a) -&gt; a -&gt; [b] -&gt; m a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "Control.Monad.html#v%3AfoldM"
+	      >foldM</A
+	      ></TT
+	    > function is analogous to <TT
+	    ><A HREF = "GHC.List.html#v%3Afoldl"
+	      >foldl</A
+	      ></TT
+	    >, except that its result is
+encapsulated in a monad. Note that <TT
+	    ><A HREF = "Control.Monad.html#v%3AfoldM"
+	      >foldM</A
+	      ></TT
+	    > works from left-to-right over
+the list arguments. This could be an issue where '(&gt;&gt;)' and the `folded
+function' are not commutative.
+</P
+	  ><PRE
+	  >	foldM f a1 [x1, x2, ..., xm ]
+</PRE
+	  ><P
+	  >==  
+</P
+	  ><PRE
+	  >	do
+	  a2 &lt;- f a1 x1
+	  a3 &lt;- f a2 x2
+	  ...
+	  f am xm
+</PRE
+	  ><P
+	  >If right-to-left evaluation is required, the input list should be reversed.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfoldM_"
+	  ></A
+	  ><B
+	  >foldM_</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a -&gt; b -&gt; m a) -&gt; a -&gt; [b] -&gt; m ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreplicateM"
+	  ></A
+	  ><B
+	  >replicateM</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; m a -&gt; m [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreplicateM_"
+	  ></A
+	  ><B
+	  >replicateM_</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; m a -&gt; m ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "6"
+	  >Conditional execution of monadic expressions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aguard"
+	  ></A
+	  ><B
+	  >guard</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonadPlus"
+	  >MonadPlus</A
+	  > m =&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  > -&gt; m ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Awhen"
+	  ></A
+	  ><B
+	  >when</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  > -&gt; m () -&gt; m ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Conditional execution of monadic expressions. For example, 
+</P
+	  ><PRE
+	  >	when debug (putStr &quot;Debugging\n&quot;)
+</PRE
+	  ><P
+	  >will output the string <TT
+	    >Debugging\n</TT
+	    > if the Boolean value <TT
+	    >debug</TT
+	    > is <TT
+	    ><A HREF = "GHC.Base.html#v%3ATrue"
+	      >True</A
+	      ></TT
+	    >,
+and otherwise do nothing.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aunless"
+	  ></A
+	  ><B
+	  >unless</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  > -&gt; m () -&gt; m ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The reverse of <TT
+	  ><A HREF = "Control.Monad.html#v%3Awhen"
+	    >when</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "7"
+	  >Monadic lifting operators</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The monadic lifting operators promote a function to a monad.
+The function arguments are scanned left to right. For example, 
+</P
+	  ><PRE
+	  >	liftM2 (+) [0,1] [0,2] = [0,2,1,3]
+	liftM2 (+) (Just 1) Nothing = Nothing
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AliftM"
+	  ></A
+	  ><B
+	  >liftM</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a1 -&gt; r) -&gt; m a1 -&gt; m r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AliftM2"
+	  ></A
+	  ><B
+	  >liftM2</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a1 -&gt; a2 -&gt; r) -&gt; m a1 -&gt; m a2 -&gt; m r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AliftM3"
+	  ></A
+	  ><B
+	  >liftM3</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a1 -&gt; a2 -&gt; a3 -&gt; r) -&gt; m a1 -&gt; m a2 -&gt; m a3 -&gt; m r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AliftM4"
+	  ></A
+	  ><B
+	  >liftM4</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a1 -&gt; a2 -&gt; a3 -&gt; a4 -&gt; r) -&gt; m a1 -&gt; m a2 -&gt; m a3 -&gt; m a4 -&gt; m r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AliftM5"
+	  ></A
+	  ><B
+	  >liftM5</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; (a1 -&gt; a2 -&gt; a3 -&gt; a4 -&gt; a5 -&gt; r) -&gt; m a1 -&gt; m a2 -&gt; m a3 -&gt; m a4 -&gt; m a5 -&gt; m r</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aap"
+	  ></A
+	  ><B
+	  >ap</B
+	  > :: <A HREF = "Control.Monad.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; m (a -&gt; b) -&gt; m a -&gt; m b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >In many situations, the <TT
+	    ><A HREF = "Control.Monad.html#v%3AliftM"
+	      >liftM</A
+	      ></TT
+	    > operations can be replaced by uses of
+<TT
+	    ><A HREF = "Control.Monad.html#v%3Aap"
+	      >ap</A
+	      ></TT
+	    >, which promotes function application. 
+</P
+	  ><PRE
+	  >	return f `ap` x1 `ap` ... `ap` xn
+</PRE
+	  ><P
+	  >is equivalent to 
+</P
+	  ><PRE
+	  >	liftMn f x1 x2 ... xn
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,698 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.Set</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.Set</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >The <TT
+		      >Set</TT
+		      > type</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Construction</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Inspection</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#4"
+		    >Operations</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>An implementation of sets, based on the <A HREF = "Data.FiniteMap.html"
+	  >Data.FiniteMap</A
+	  >.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AemptySet"
+		>emptySet</A
+		> :: <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmkSet"
+		>mkSet</A
+		> :: <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; [a] -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsetToList"
+		>setToList</A
+		> :: <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunitSet"
+		>unitSet</A
+		> :: a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AelementOf"
+		>elementOf</A
+		> :: <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisEmptySet"
+		>isEmptySet</A
+		> :: <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Acardinality"
+		>cardinality</A
+		> :: <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aunion"
+		>union</A
+		> :: <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunionManySets"
+		>unionManySets</A
+		> :: <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; [<A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a] -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AminusSet"
+		>minusSet</A
+		> :: <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmapSet"
+		>mapSet</A
+		> :: <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; (b -&gt; a) -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> b -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aintersect"
+		>intersect</A
+		> :: <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AaddToSet"
+		>addToSet</A
+		> :: <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdelFromSet"
+		>delFromSet</A
+		> :: <A HREF = "Prelude.html#t%3AOrd"
+		>Ord</A
+		> a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a -&gt; a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+		>Set</A
+		> a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >The <TT
+	    >Set</TT
+	    > type</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ASet"
+	  ></A
+	  ><B
+	  >Set</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > a =&gt; <A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.Set.html#t%3ASet"
+		      >Set</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Construction</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AemptySet"
+	  ></A
+	  ><B
+	  >emptySet</B
+	  > :: <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmkSet"
+	  ></A
+	  ><B
+	  >mkSet</B
+	  > :: <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; [a] -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsetToList"
+	  ></A
+	  ><B
+	  >setToList</B
+	  > :: <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunitSet"
+	  ></A
+	  ><B
+	  >unitSet</B
+	  > :: a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Inspection</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AelementOf"
+	  ></A
+	  ><B
+	  >elementOf</B
+	  > :: <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisEmptySet"
+	  ></A
+	  ><B
+	  >isEmptySet</B
+	  > :: <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Acardinality"
+	  ></A
+	  ><B
+	  >cardinality</B
+	  > :: <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >Operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aunion"
+	  ></A
+	  ><B
+	  >union</B
+	  > :: <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunionManySets"
+	  ></A
+	  ><B
+	  >unionManySets</B
+	  > :: <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; [<A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a] -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AminusSet"
+	  ></A
+	  ><B
+	  >minusSet</B
+	  > :: <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmapSet"
+	  ></A
+	  ><B
+	  >mapSet</B
+	  > :: <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; (b -&gt; a) -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > b -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aintersect"
+	  ></A
+	  ><B
+	  >intersect</B
+	  > :: <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AaddToSet"
+	  ></A
+	  ><B
+	  >addToSet</B
+	  > :: <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdelFromSet"
+	  ></A
+	  ><B
+	  >delFromSet</B
+	  > :: <A HREF = "Prelude.html#t%3AOrd"
+	  >Ord</A
+	  > a =&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a -&gt; a -&gt; <A HREF = "Data.Set.html#t%3ASet"
+	  >Set</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,1853 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.PackedString</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.PackedString</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >The <TT
+		      >PackedString</TT
+		      > type</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Converting to and from <TT
+		      >PackedString</TT
+		      >s</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >I/O with <TT
+		      >PackedString</TT
+		      >s	</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#4"
+		    >List-like manipulation functions</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>An efficient implementation of strings.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3APackedString"
+		>PackedString</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApackString"
+		>packString</A
+		> :: <A HREF = "Data.Char.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunpackPS"
+		>unpackPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.Char.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhPutPS"
+		>hPutPS</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetPS"
+		>hGetPS</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnilPS"
+		>nilPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AconsPS"
+		>consPS</A
+		> :: <A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AheadPS"
+		>headPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtailPS"
+		>tailPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnullPS"
+		>nullPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AappendPS"
+		>appendPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AlengthPS"
+		>lengthPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AindexPS"
+		>indexPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmapPS"
+		>mapPS</A
+		> :: (<A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		>) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfilterPS"
+		>filterPS</A
+		> :: (<A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		>) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreversePS"
+		>reversePS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AconcatPS"
+		>concatPS</A
+		> :: [<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>] -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AelemPS"
+		>elemPS</A
+		> :: <A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsubstrPS"
+		>substrPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtakePS"
+		>takePS</A
+		> :: <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdropPS"
+		>dropPS</A
+		> :: <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsplitAtPS"
+		>splitAtPS</A
+		> :: <A HREF = "Prelude.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; (<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>, <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfoldlPS"
+		>foldlPS</A
+		> :: (a -&gt; <A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; a) -&gt; a -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfoldrPS"
+		>foldrPS</A
+		> :: (<A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; a -&gt; a) -&gt; a -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtakeWhilePS"
+		>takeWhilePS</A
+		> :: (<A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		>) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdropWhilePS"
+		>dropWhilePS</A
+		> :: (<A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		>) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AspanPS"
+		>spanPS</A
+		> :: (<A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		>) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; (<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>, <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AbreakPS"
+		>breakPS</A
+		> :: (<A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		>) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; (<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>, <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AlinesPS"
+		>linesPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunlinesPS"
+		>unlinesPS</A
+		> :: [<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>] -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwordsPS"
+		>wordsPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AunwordsPS"
+		>unwordsPS</A
+		> :: [<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>] -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsplitPS"
+		>splitPS</A
+		> :: <A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AsplitWithPS"
+		>splitWithPS</A
+		> :: (<A HREF = "Data.Char.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "Prelude.html#t%3ABool"
+		>Bool</A
+		>) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AjoinPS"
+		>joinPS</A
+		> :: <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		> -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		>] -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+		>PackedString</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >The <TT
+	    >PackedString</TT
+	    > type</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3APackedString"
+	  ></A
+	  ><B
+	  >PackedString</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >A space-efficient representation of a <TT
+		><A HREF = "Data.Char.html#t%3AString"
+		  >String</A
+		  ></TT
+		>, which supports various
+efficient operations.  A <TT
+		><A HREF = "Data.PackedString.html#t%3APackedString"
+		  >PackedString</A
+		  ></TT
+		> contains full Unicode <TT
+		><A HREF = "Data.Char.html#t%3AChar"
+		  >Char</A
+		  ></TT
+		>s.</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "Data.PackedString.html#t%3APackedString"
+		      >PackedString</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "Data.PackedString.html#t%3APackedString"
+		      >PackedString</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Data.PackedString.html#t%3APackedString"
+		      >PackedString</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "Data.PackedString.html#t%3APackedString"
+		      >PackedString</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Converting to and from <TT
+	    >PackedString</TT
+	    >s</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApackString"
+	  ></A
+	  ><B
+	  >packString</B
+	  > :: <A HREF = "Data.Char.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Convert a <TT
+	  ><A HREF = "Data.Char.html#t%3AString"
+	    >String</A
+	    ></TT
+	  > into a <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunpackPS"
+	  ></A
+	  ><B
+	  >unpackPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.Char.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Convert a <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  > into a <TT
+	  ><A HREF = "Data.Char.html#t%3AString"
+	    >String</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >I/O with <TT
+	    >PackedString</TT
+	    >s	</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhPutPS"
+	  ></A
+	  ><B
+	  >hPutPS</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Outputs a <TT
+	    ><A HREF = "Data.PackedString.html#t%3APackedString"
+	      >PackedString</A
+	      ></TT
+	    > to the specified <TT
+	    ><A HREF = "System.IO.html#t%3AHandle"
+	      >Handle</A
+	      ></TT
+	    >.
+</P
+	  ><P
+	  >NOTE: the representation of the <TT
+	    ><A HREF = "Data.PackedString.html#t%3APackedString"
+	      >PackedString</A
+	      ></TT
+	    > in the file is assumed to
+be in the ISO-8859-1 encoding.  In other words, only the least signficant
+byte is taken from each character in the <TT
+	    ><A HREF = "Data.PackedString.html#t%3APackedString"
+	      >PackedString</A
+	      ></TT
+	    >.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetPS"
+	  ></A
+	  ><B
+	  >hGetPS</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Read a <TT
+	    ><A HREF = "Data.PackedString.html#t%3APackedString"
+	      >PackedString</A
+	      ></TT
+	    > directly from the specified <TT
+	    ><A HREF = "System.IO.html#t%3AHandle"
+	      >Handle</A
+	      ></TT
+	    >.
+This is far more efficient than reading the characters into a <TT
+	    ><A HREF = "Data.Char.html#t%3AString"
+	      >String</A
+	      ></TT
+	    >
+and then using <TT
+	    ><A HREF = "Data.PackedString.html#v%3ApackString"
+	      >packString</A
+	      ></TT
+	    >.  
+</P
+	  ><P
+	  >NOTE: as with <TT
+	    ><A HREF = "Data.PackedString.html#v%3AhPutPS"
+	      >hPutPS</A
+	      ></TT
+	    >, the string representation in the file is 
+assumed to be ISO-8859-1.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >List-like manipulation functions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnilPS"
+	  ></A
+	  ><B
+	  >nilPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AnilPS"
+	    >nilPS</A
+	    ></TT
+	  > value is the empty string.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AconsPS"
+	  ></A
+	  ><B
+	  >consPS</B
+	  > :: <A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AconsPS"
+	    >consPS</A
+	    ></TT
+	  > function prepends the given character to the
+given string.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AheadPS"
+	  ></A
+	  ><B
+	  >headPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AheadPS"
+	    >headPS</A
+	    ></TT
+	  > function returns the first element of a <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  > or throws an
+error if the string is empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtailPS"
+	  ></A
+	  ><B
+	  >tailPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AtailPS"
+	    >tailPS</A
+	    ></TT
+	  > function returns the tail of a <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  > or throws an error
+if the string is empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnullPS"
+	  ></A
+	  ><B
+	  >nullPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AnullPS"
+	    >nullPS</A
+	    ></TT
+	  > function returns True iff the argument is null.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AappendPS"
+	  ></A
+	  ><B
+	  >appendPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AappendPS"
+	    >appendPS</A
+	    ></TT
+	  > function appends the second string onto the first.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlengthPS"
+	  ></A
+	  ><B
+	  >lengthPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AlengthPS"
+	    >lengthPS</A
+	    ></TT
+	  > function returns the length of the input list.  Analogous to <TT
+	  ><A HREF = "Prelude.html#v%3Alength"
+	    >length</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AindexPS"
+	  ></A
+	  ><B
+	  >indexPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AindexPS"
+	    >indexPS</A
+	    ></TT
+	  > function returns the character in the string at the given position.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmapPS"
+	  ></A
+	  ><B
+	  >mapPS</B
+	  > :: (<A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  >) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AmapPS"
+	    >mapPS</A
+	    ></TT
+	  > function applies a function to each character in the string.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfilterPS"
+	  ></A
+	  ><B
+	  >filterPS</B
+	  > :: (<A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AfilterPS"
+	    >filterPS</A
+	    ></TT
+	  > function filters out the appropriate substring.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreversePS"
+	  ></A
+	  ><B
+	  >reversePS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AreversePS"
+	    >reversePS</A
+	    ></TT
+	  > function reverses the string.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AconcatPS"
+	  ></A
+	  ><B
+	  >concatPS</B
+	  > :: [<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >] -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AconcatPS"
+	    >concatPS</A
+	    ></TT
+	  > function concatenates a list of <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  >s.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AelemPS"
+	  ></A
+	  ><B
+	  >elemPS</B
+	  > :: <A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AelemPS"
+	    >elemPS</A
+	    ></TT
+	  > function returns True iff the given element is in the string.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsubstrPS"
+	  ></A
+	  ><B
+	  >substrPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AsubstrPS"
+	    >substrPS</A
+	    ></TT
+	  > function takes a <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  > and two indices
+and returns the substring of the input string between (and including)
+these indices.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtakePS"
+	  ></A
+	  ><B
+	  >takePS</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AtakePS"
+	    >takePS</A
+	    ></TT
+	  > function takes the first <TT
+	  >n</TT
+	  > characters of a <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdropPS"
+	  ></A
+	  ><B
+	  >dropPS</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AdropPS"
+	    >dropPS</A
+	    ></TT
+	  > function drops the first <TT
+	  >n</TT
+	  > characters of a <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsplitAtPS"
+	  ></A
+	  ><B
+	  >splitAtPS</B
+	  > :: <A HREF = "Prelude.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; (<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >, <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AsplitWithPS"
+	    >splitWithPS</A
+	    ></TT
+	  > function splits a <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  > at a given index.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfoldlPS"
+	  ></A
+	  ><B
+	  >foldlPS</B
+	  > :: (a -&gt; <A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; a) -&gt; a -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AfoldlPS"
+	    >foldlPS</A
+	    ></TT
+	  > function behaves like <TT
+	  ><A HREF = "Prelude.html#v%3Afoldl"
+	    >foldl</A
+	    ></TT
+	  > on <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  >s.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfoldrPS"
+	  ></A
+	  ><B
+	  >foldrPS</B
+	  > :: (<A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; a -&gt; a) -&gt; a -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AfoldrPS"
+	    >foldrPS</A
+	    ></TT
+	  > function behaves like <TT
+	  ><A HREF = "Prelude.html#v%3Afoldr"
+	    >foldr</A
+	    ></TT
+	  > on <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  >s.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtakeWhilePS"
+	  ></A
+	  ><B
+	  >takeWhilePS</B
+	  > :: (<A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AtakeWhilePS"
+	    >takeWhilePS</A
+	    ></TT
+	  > function is analogous to the <TT
+	  ><A HREF = "Prelude.html#v%3AtakeWhile"
+	    >takeWhile</A
+	    ></TT
+	  > function.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdropWhilePS"
+	  ></A
+	  ><B
+	  >dropWhilePS</B
+	  > :: (<A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AdropWhilePS"
+	    >dropWhilePS</A
+	    ></TT
+	  > function is analogous to the <TT
+	  ><A HREF = "Prelude.html#v%3AdropWhile"
+	    >dropWhile</A
+	    ></TT
+	  > function.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AspanPS"
+	  ></A
+	  ><B
+	  >spanPS</B
+	  > :: (<A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; (<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >, <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AspanPS"
+	    >spanPS</A
+	    ></TT
+	  > function returns a pair containing the result of
+running both <TT
+	  ><A HREF = "Data.PackedString.html#v%3AtakeWhilePS"
+	    >takeWhilePS</A
+	    ></TT
+	  > and <TT
+	  ><A HREF = "Data.PackedString.html#v%3AdropWhilePS"
+	    >dropWhilePS</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AbreakPS"
+	  ></A
+	  ><B
+	  >breakPS</B
+	  > :: (<A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; (<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >, <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AbreakPS"
+	    >breakPS</A
+	    ></TT
+	  > function breaks a string at the first position which
+satisfies the predicate.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlinesPS"
+	  ></A
+	  ><B
+	  >linesPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AlinesPS"
+	    >linesPS</A
+	    ></TT
+	  > function splits the input on line-breaks.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunlinesPS"
+	  ></A
+	  ><B
+	  >unlinesPS</B
+	  > :: [<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >] -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AunlinesPS"
+	    >unlinesPS</A
+	    ></TT
+	  > function concatenates the input list after
+interspersing newlines.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwordsPS"
+	  ></A
+	  ><B
+	  >wordsPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AwordsPS"
+	    >wordsPS</A
+	    ></TT
+	  > function is analogous to the <TT
+	  ><A HREF = "Prelude.html#v%3Awords"
+	    >words</A
+	    ></TT
+	  > function.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AunwordsPS"
+	  ></A
+	  ><B
+	  >unwordsPS</B
+	  > :: [<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >] -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AunwordsPS"
+	    >unwordsPS</A
+	    ></TT
+	  > function is analogous to the <TT
+	  ><A HREF = "Prelude.html#v%3Aunwords"
+	    >unwords</A
+	    ></TT
+	  > function.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsplitPS"
+	  ></A
+	  ><B
+	  >splitPS</B
+	  > :: <A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AsplitPS"
+	    >splitPS</A
+	    ></TT
+	  > function splits the input string on each occurance of the given <TT
+	  ><A HREF = "Data.Char.html#t%3AChar"
+	    >Char</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AsplitWithPS"
+	  ></A
+	  ><B
+	  >splitWithPS</B
+	  > :: (<A HREF = "Data.Char.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "Prelude.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AsplitWithPS"
+	    >splitWithPS</A
+	    ></TT
+	  > function takes a character predicate and splits the input string
+at each character which satisfies the predicate.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AjoinPS"
+	  ></A
+	  ><B
+	  >joinPS</B
+	  > :: <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  > -&gt; [<A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  >] -&gt; <A HREF = "Data.PackedString.html#t%3APackedString"
+	  >PackedString</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Data.PackedString.html#v%3AjoinPS"
+	    >joinPS</A
+	    ></TT
+	  > function takes a <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  > and a list of <TT
+	  ><A HREF = "Data.PackedString.html#t%3APackedString"
+	    >PackedString</A
+	    ></TT
+	  >s
+and concatenates the list after interspersing the first argument between
+each element of the list.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

@@ -1,0 +1,1636 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Concurrent</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Concurrent</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (concurrency)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Concurrent Haskell</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Basic concurrency operations</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Scheduling</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#4"
+			>Blocking</A
+			></DT
+		      ><DT
+		      ><A HREF = "#5"
+			>Waiting</A
+			></DT
+		      ></DL
+		    ></DD
+		  ><DT
+		  ><A HREF = "#6"
+		    >Communication abstractions</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#7"
+		    >Merging of streams</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#8"
+		    >Bound Threads</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#9"
+		    >GHC's implementation of concurrency</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#10"
+			>Terminating the program</A
+			></DT
+		      ><DT
+		      ><A HREF = "#11"
+			>Pre-emption</A
+			></DT
+		      ></DL
+		    ></DD
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A common interface to a collection of useful concurrency
+abstractions.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AThreadId"
+		>ThreadId</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmyThreadId"
+		>myThreadId</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Control.Concurrent.html#t%3AThreadId"
+		>ThreadId</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AforkIO"
+		>forkIO</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> () -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Control.Concurrent.html#t%3AThreadId"
+		>ThreadId</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AkillThread"
+		>killThread</A
+		> :: <A HREF = "Control.Concurrent.html#t%3AThreadId"
+		>ThreadId</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthrowTo"
+		>throwTo</A
+		> :: <A HREF = "Control.Concurrent.html#t%3AThreadId"
+		>ThreadId</A
+		> -&gt; <A HREF = "Control.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ayield"
+		>yield</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthreadDelay"
+		>threadDelay</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthreadWaitRead"
+		>threadWaitRead</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthreadWaitWrite"
+		>threadWaitWrite</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Control.Concurrent.MVar.html"
+		>Control.Concurrent.MVar</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Control.Concurrent.Chan.html"
+		>Control.Concurrent.Chan</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Control.Concurrent.QSem.html"
+		>Control.Concurrent.QSem</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Control.Concurrent.QSemN.html"
+		>Control.Concurrent.QSemN</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "Control.Concurrent.SampleVar.html"
+		>Control.Concurrent.SampleVar</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmergeIO"
+		>mergeIO</A
+		> :: [a] -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnmergeIO"
+		>nmergeIO</A
+		> :: [[a]] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> [a]</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ArtsSupportsBoundThreads"
+		>rtsSupportsBoundThreads</A
+		> :: <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AforkOS"
+		>forkOS</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> () -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Control.Concurrent.html#t%3AThreadId"
+		>ThreadId</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisCurrentThreadBound"
+		>isCurrentThreadBound</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ArunInBoundThread"
+		>runInBoundThread</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ArunInUnboundThread"
+		>runInUnboundThread</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Concurrent Haskell</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The concurrency extension for Haskell is described in the paper
+<EM
+	    >Concurrent Haskell</EM
+	    >
+<A HREF = "http://www.haskell.org/ghc/docs/papers/concurrent-haskell.ps.gz"
+	    >http://www.haskell.org/ghc/docs/papers/concurrent-haskell.ps.gz</A
+	    >.
+</P
+	  ><P
+	  >Concurrency is &quot;lightweight&quot;, which means that both thread creation
+and context switching overheads are extremely low.  Scheduling of
+Haskell threads is done internally in the Haskell runtime system, and
+doesn't make use of any operating system-supplied thread packages.
+</P
+	  ><P
+	  >However, if you want to interact with a foreign library that expects your
+program to use the operating system-supplied thread package, you can do so
+by using <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkOS"
+	      >forkOS</A
+	      ></TT
+	    > instead of <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkIO"
+	      >forkIO</A
+	      ></TT
+	    >.
+</P
+	  ><P
+	  >Haskell threads can communicate via <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >s, a kind of synchronised
+mutable variable (see <A HREF = "Control.Concurrent.MVar.html"
+	    >Control.Concurrent.MVar</A
+	    >).  Several common
+concurrency abstractions can be built from <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >s, and these are
+provided by the <A HREF = "Control.Concurrent.html"
+	    >Control.Concurrent</A
+	    > library.
+In GHC, threads may also communicate via exceptions.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Basic concurrency operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AThreadId"
+	  ></A
+	  ><B
+	  >ThreadId</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>A <TT
+		  ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > is an abstract type representing a handle to a thread.
+<TT
+		  ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > is an instance of <TT
+		  ><A HREF = "GHC.Base.html#t%3AEq"
+		    >Eq</A
+		    ></TT
+		  >, <TT
+		  ><A HREF = "GHC.Base.html#t%3AOrd"
+		    >Ord</A
+		    ></TT
+		  > and Show, where
+the <TT
+		  ><A HREF = "GHC.Base.html#t%3AOrd"
+		    >Ord</A
+		    ></TT
+		  > instance implements an arbitrary total ordering over
+<TT
+		  ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  >s. The Show instance lets you convert an arbitrary-valued
+<TT
+		  ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > to string form; showing a <TT
+		  ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > value is occasionally
+useful when debugging or diagnosing the behaviour of a concurrent
+program.
+</P
+		><P
+		><EM
+		  >Note</EM
+		  >: in GHC, if you have a <TT
+		  ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  >, you essentially have
+a pointer to the thread itself.  This means the thread itself can't be
+garbage collected until you drop the <TT
+		  ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  >.
+This misfeature will hopefully be corrected at a later date.
+</P
+		><P
+		><EM
+		  >Note</EM
+		  >: Hugs does not provide any operations on other threads;
+it defines <TT
+		  ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > as a synonym for ().
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "Control.Concurrent.html#t%3AThreadId"
+		      >ThreadId</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "Control.Concurrent.html#t%3AThreadId"
+		      >ThreadId</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "Control.Concurrent.html#t%3AThreadId"
+		      >ThreadId</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmyThreadId"
+	  ></A
+	  ><B
+	  >myThreadId</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Control.Concurrent.html#t%3AThreadId"
+	  >ThreadId</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns the <TT
+	  ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+	    >ThreadId</A
+	    ></TT
+	  > of the calling thread (GHC only).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AforkIO"
+	  ></A
+	  ><B
+	  >forkIO</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > () -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Control.Concurrent.html#t%3AThreadId"
+	  >ThreadId</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >This sparks off a new thread to run the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation passed as the
+first argument, and returns the <TT
+	    ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+	      >ThreadId</A
+	      ></TT
+	    > of the newly created
+thread.
+</P
+	  ><P
+	  >The new thread will be a lightweight thread; if you want to use a foreign
+library that uses thread-local storage, use <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkOS"
+	      >forkOS</A
+	      ></TT
+	    > instead.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AkillThread"
+	  ></A
+	  ><B
+	  >killThread</B
+	  > :: <A HREF = "Control.Concurrent.html#t%3AThreadId"
+	  >ThreadId</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "Control.Concurrent.html#v%3AkillThread"
+	      >killThread</A
+	      ></TT
+	    > terminates the given thread (GHC only).
+Any work already done by the thread isn't
+lost: the computation is suspended until required by another thread.
+The memory used by the thread will be garbage collected if it isn't
+referenced from anywhere.  The <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AkillThread"
+	      >killThread</A
+	      ></TT
+	    > function is defined in
+terms of <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    >:
+</P
+	  ><PRE
+	  > killThread tid = throwTo tid (AsyncException ThreadKilled)
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowTo"
+	  ></A
+	  ><B
+	  >throwTo</B
+	  > :: <A HREF = "Control.Concurrent.html#t%3AThreadId"
+	  >ThreadId</A
+	  > -&gt; <A HREF = "Control.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "Control.Concurrent.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    > raises an arbitrary exception in the target thread (GHC only).
+</P
+	  ><P
+	  ><TT
+	    ><A HREF = "Control.Concurrent.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    > does not return until the exception has been raised in the
+target thread.  The calling thread can thus be certain that the target
+thread has received the exception.  This is a useful property to know
+when dealing with race conditions: eg. if there are two threads that
+can kill each other, it is guaranteed that only one of the threads
+will get to kill the other. </P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Scheduling</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Scheduling may be either pre-emptive or co-operative,
+depending on the implementation of Concurrent Haskell (see below
+for imformation related to specific compilers).  In a co-operative
+system, context switches only occur when you use one of the
+primitives defined in this module.  This means that programs such
+as:
+</P
+	  ><PRE
+	  >   main = forkIO (write 'a') &gt;&gt; write 'b'
+     where write c = putChar c &gt;&gt; write c
+</PRE
+	  ><P
+	  >will print either <TT
+	    >aaaaaaaaaaaaaa...</TT
+	    > or <TT
+	    >bbbbbbbbbbbb...</TT
+	    >,
+instead of some random interleaving of <TT
+	    >a</TT
+	    >s and <TT
+	    >b</TT
+	    >s.  In
+practice, cooperative multitasking is sufficient for writing
+simple graphical user interfaces.  
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ayield"
+	  ></A
+	  ><B
+	  >yield</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "Control.Concurrent.html#v%3Ayield"
+	    >yield</A
+	    ></TT
+	  > action allows (forces, in a co-operative multitasking
+implementation) a context-switch to any other currently runnable
+threads (if any), and is occasionally useful when implementing
+concurrency abstractions.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "4"
+	  >Blocking</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Calling a foreign C procedure (such as <TT
+	  >getchar</TT
+	  >) that blocks waiting
+for input will block <EM
+	  >all</EM
+	  > threads, unless the <TT
+	  >threadsafe</TT
+	  > attribute
+is used on the foreign call (and your compiler / operating system
+supports it).  GHC's I/O system uses non-blocking I/O internally to
+implement thread-friendly I/O, so calling standard Haskell I/O
+functions blocks only the thread making the call.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "5"
+	  >Waiting</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthreadDelay"
+	  ></A
+	  ><B
+	  >threadDelay</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AthreadDelay"
+	      >threadDelay</A
+	      ></TT
+	    > operation will cause the current thread to
+suspend for a given number of microseconds (GHC only).
+</P
+	  ><P
+	  >Note that the resolution
+used by the Haskell runtime system's internal timer together with the
+fact that the thread may take some time to be rescheduled after the
+time has expired, means that the accuracy is more like 1/50 second.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthreadWaitRead"
+	  ></A
+	  ><B
+	  >threadWaitRead</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Block the current thread until data is available to read on the
+given file descriptor (GHC only).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthreadWaitWrite"
+	  ></A
+	  ><B
+	  >threadWaitWrite</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Block the current thread until data can be written to the
+given file descriptor (GHC only).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "6"
+	  >Communication abstractions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Concurrent.MVar.html"
+	  >Control.Concurrent.MVar</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Concurrent.Chan.html"
+	  >Control.Concurrent.Chan</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Concurrent.QSem.html"
+	  >Control.Concurrent.QSem</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Concurrent.QSemN.html"
+	  >Control.Concurrent.QSemN</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Concurrent.SampleVar.html"
+	  >Control.Concurrent.SampleVar</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "7"
+	  >Merging of streams</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmergeIO"
+	  ></A
+	  ><B
+	  >mergeIO</B
+	  > :: [a] -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnmergeIO"
+	  ></A
+	  ><B
+	  >nmergeIO</B
+	  > :: [[a]] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > [a]</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AmergeIO"
+	      >mergeIO</A
+	      ></TT
+	    > and <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AnmergeIO"
+	      >nmergeIO</A
+	      ></TT
+	    > functions fork one thread for each
+input list that concurrently evaluates that list; the results are
+merged into a single output list.  
+</P
+	  ><P
+	  >Note: Hugs does not provide these functions, since they require
+preemptive multitasking.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "8"
+	  >Bound Threads</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Support for multiple operating system threads and bound threads as described
+below is currently only available in the GHC runtime system when the runtime system
+has been compiled using a special option.
+</P
+	  ><P
+	  >When recompiling GHC, use ./configure --enable-threaded-rts to enable this.
+To find your GHC has already been compiled that way, use
+<TT
+	    ><A HREF = "Control.Concurrent.html#v%3ArtsSupportsBoundThreads"
+	      >rtsSupportsBoundThreads</A
+	      ></TT
+	    > from GHCi.
+</P
+	  ><P
+	  >Other Haskell systems do not currently support multiple operating system threads.
+</P
+	  ><P
+	  >A bound thread is a haskell thread that is <EM
+	    >bound</EM
+	    > to an operating system
+thread. While the bound thread is still scheduled by the Haskell run-time
+system, the operating system thread takes care of all the foreign calls made
+by the bound thread.
+</P
+	  ><P
+	  >To a foreign library, the bound thread will look exactly like an ordinary
+operating system thread created using OS functions like <TT
+	    >pthread_create</TT
+	    >
+or <TT
+	    >CreateThread</TT
+	    >.
+</P
+	  ><P
+	  >Bound threads can be created using the <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkOS"
+	      >forkOS</A
+	      ></TT
+	    > function below. All foreign
+exported functions are run in a bound thread (bound to the OS thread that
+called the function). Also, the <TT
+	    >main</TT
+	    > action of every Haskell program is
+run in a bound thread.
+</P
+	  ><P
+	  >Why do we need this? Because if a foreign library is called from a thread
+created using <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkIO"
+	      >forkIO</A
+	      ></TT
+	    >, it won't have access to any <EM
+	    >thread-local state</EM
+	    > - 
+state variables that have specific values for each OS thread
+(see POSIX's <TT
+	    >pthread_key_create</TT
+	    > or Win32's <TT
+	    >TlsAlloc</TT
+	    >). Therefore, some
+libraries (OpenGL, for example) will not work from a thread created using
+<TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkIO"
+	      >forkIO</A
+	      ></TT
+	    >. They work fine in threads created using <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkOS"
+	      >forkOS</A
+	      ></TT
+	    > or when called
+from <TT
+	    >main</TT
+	    > or from a <TT
+	    >foreign export</TT
+	    >.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArtsSupportsBoundThreads"
+	  ></A
+	  ><B
+	  >rtsSupportsBoundThreads</B
+	  > :: <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "GHC.Base.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  > if bound threads are supported.
+If <TT
+	  >rtsSupportsBoundThreads</TT
+	  > is <TT
+	  ><A HREF = "GHC.Base.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  >, <TT
+	  ><A HREF = "Control.Concurrent.html#v%3AisCurrentThreadBound"
+	    >isCurrentThreadBound</A
+	    ></TT
+	  >
+will always return <TT
+	  ><A HREF = "GHC.Base.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  > and both <TT
+	  ><A HREF = "Control.Concurrent.html#v%3AforkOS"
+	    >forkOS</A
+	    ></TT
+	  > and <TT
+	  ><A HREF = "Control.Concurrent.html#v%3ArunInBoundThread"
+	    >runInBoundThread</A
+	    ></TT
+	  > will
+fail.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AforkOS"
+	  ></A
+	  ><B
+	  >forkOS</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > () -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Control.Concurrent.html#t%3AThreadId"
+	  >ThreadId</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Like <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkIO"
+	      >forkIO</A
+	      ></TT
+	    >, this sparks off a new thread to run the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation passed as the
+first argument, and returns the <TT
+	    ><A HREF = "Control.Concurrent.html#t%3AThreadId"
+	      >ThreadId</A
+	      ></TT
+	    > of the newly created
+thread.
+</P
+	  ><P
+	  >However, <TT
+	    >forkOS</TT
+	    > uses operating system-supplied multithreading support to create
+a new operating system thread. The new thread is <EM
+	    >bound</EM
+	    >, which means that
+all foreign calls made by the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation are guaranteed to be executed
+in this new operating system thread; also, the operating system thread is not
+used for any other foreign calls.
+</P
+	  ><P
+	  >This means that you can use all kinds of foreign libraries from this thread 
+(even those that rely on thread-local state), without the limitations of <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkIO"
+	      >forkIO</A
+	      ></TT
+	    >.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisCurrentThreadBound"
+	  ></A
+	  ><B
+	  >isCurrentThreadBound</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns <TT
+	  ><A HREF = "GHC.Base.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  > if the calling thread is <EM
+	  >bound</EM
+	  >, that is, if it is
+safe to use foreign libraries that rely on thread-local state from the
+calling thread.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArunInBoundThread"
+	  ></A
+	  ><B
+	  >runInBoundThread</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Run the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation passed as the first argument. If the calling thread
+is not <EM
+	    >bound</EM
+	    >, a bound thread is created temporarily. <TT
+	    >runInBoundThread</TT
+	    >
+doesn't finish until the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation finishes.
+</P
+	  ><P
+	  >You can wrap a series of foreign function calls that rely on thread-local state
+with <TT
+	    >runInBoundThread</TT
+	    > so that you can use them without knowing whether the
+current thread is <EM
+	    >bound</EM
+	    >.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ArunInUnboundThread"
+	  ></A
+	  ><B
+	  >runInUnboundThread</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Run the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation passed as the first argument. If the calling thread
+is <EM
+	    >bound</EM
+	    >, an unbound thread is created temporarily using <TT
+	    ><A HREF = "Control.Concurrent.html#v%3AforkIO"
+	      >forkIO</A
+	      ></TT
+	    >.
+<TT
+	    >runInBoundThread</TT
+	    > doesn't finish until the <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > computation finishes.
+</P
+	  ><P
+	  >Use this function <EM
+	    >only</EM
+	    > in the rare case that you have actually observed a
+performance loss due to the use of bound threads. A program that
+doesn't need it's main thread to be bound and makes <EM
+	    >heavy</EM
+	    > use of concurrency
+(e.g. a web server), might want to wrap it's <TT
+	    >main</TT
+	    > action in
+<TT
+	    >runInUnboundThread</TT
+	    >.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "9"
+	  >GHC's implementation of concurrency</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This section describes features specific to GHC's
+implementation of Concurrent Haskell.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "10"
+	  >Terminating the program</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >In a standalone GHC program, only the main thread is
+required to terminate in order for the process to terminate.
+Thus all other forked threads will simply terminate at the same
+time as the main thread (the terminology for this kind of
+behaviour is &quot;daemonic threads&quot;).
+</P
+	  ><P
+	  >If you want the program to wait for child threads to
+finish before exiting, you need to program this yourself.  A
+simple mechanism is to have each child thread write to an
+<TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > when it completes, and have the main
+thread wait on all the <TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >s before
+exiting:
+</P
+	  ><PRE
+	  >   myForkIO :: IO () -&gt; IO (MVar ())
+   myForkIO io = do
+     mvar \&lt;- newEmptyMVar
+     forkIO (io \`finally\` putMVar mvar ())
+     return mvar
+</PRE
+	  ><P
+	  >Note that we use <TT
+	    ><A HREF = "Control.Exception.html#v%3Afinally"
+	      >finally</A
+	      ></TT
+	    > from the
+<A HREF = "Control.Exception.html"
+	    >Control.Exception</A
+	    > module to make sure that the
+<TT
+	    ><A HREF = "Control.Concurrent.MVar.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > is written to even if the thread dies or
+is killed for some reason.
+</P
+	  ><P
+	  >A better method is to keep a global list of all child
+threads which we should wait for at the end of the program:
+</P
+	  ><PRE
+	  >     children :: MVar [MVar ()]
+     children = unsafePerformIO (newMVar [])
+     
+     waitForChildren :: IO ()
+     waitForChildren = do
+     	(mvar:mvars) \&lt;- takeMVar children
+     	putMVar children mvars
+     	takeMVar mvar
+     	waitForChildren
+     
+     forkChild :: IO () -&gt; IO ()
+     forkChild io = do
+     	 mvar \&lt;- newEmptyMVar
+     	 forkIO (p \`finally\` putMVar mvar ())
+     	 childs \&lt;- takeMVar children
+     	 putMVar children (mvar:childs)
+     
+     later = flip finally
+     
+     main =
+     	later waitForChildren $
+     	...
+</PRE
+	  ><P
+	  >The main thread principle also applies to calls to Haskell from
+outside, using <TT
+	    >foreign export</TT
+	    >.  When the <TT
+	    >foreign export</TT
+	    >ed
+function is invoked, it starts a new main thread, and it returns
+when this main thread terminates.  If the call causes new
+threads to be forked, they may remain in the system after the
+<TT
+	    >foreign export</TT
+	    >ed function has returned.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "11"
+	  >Pre-emption</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >GHC implements pre-emptive multitasking: the execution of
+threads are interleaved in a random fashion.  More specifically,
+a thread may be pre-empted whenever it allocates some memory,
+which unfortunately means that tight loops which do no
+allocation tend to lock out other threads (this only seems to
+happen with pathalogical benchmark-style code, however).
+</P
+	  ><P
+	  >The rescheduling timer runs on a 20ms granularity by
+default, but this may be altered using the
+<TT
+	    >-i&lt;n&gt;</TT
+	    > RTS option.  After a rescheduling
+&quot;tick&quot; the running thread is pre-empted as soon as
+possible.
+</P
+	  ><P
+	  >One final note: the
+<TT
+	    >aaaa</TT
+	    > <TT
+	    >bbbb</TT
+	    > example may not
+work too well on GHC (see Scheduling, above), due
+to the locking on a <TT
+	    ><A HREF = "System.IO.html#t%3AHandle"
+	      >Handle</A
+	      ></TT
+	    >.  Only one thread
+may hold the lock on a <TT
+	    ><A HREF = "System.IO.html#t%3AHandle"
+	      >Handle</A
+	      ></TT
+	    > at any one
+time, so if a reschedule happens while a thread is holding the
+lock, the other thread won't be able to run.  The upshot is that
+the switch from <TT
+	    >aaaa</TT
+	    > to
+<TT
+	    >bbbbb</TT
+	    > happens infrequently.  It can be
+improved by lowering the reschedule tick period.  We also have a
+patch that causes a reschedule whenever a thread waiting on a
+lock is woken up, but haven't found it to be useful for anything
+other than this example :-)
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

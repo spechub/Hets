@@ -1,0 +1,4714 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >System.IO</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>System.IO</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  stable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >The IO monad</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >Files and handles</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#3"
+			>Standard handles</A
+			></DT
+		      ></DL
+		    ></DD
+		  ><DT
+		  ><A HREF = "#4"
+		    >Opening and closing files</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#5"
+			>Opening files</A
+			></DT
+		      ><DT
+		      ><A HREF = "#6"
+			>Closing files</A
+			></DT
+		      ><DT
+		      ><A HREF = "#7"
+			>Special cases</A
+			></DT
+		      ><DT
+		      ><A HREF = "#8"
+			>File locking</A
+			></DT
+		      ></DL
+		    ></DD
+		  ><DT
+		  ><A HREF = "#9"
+		    >Operations on handles</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#10"
+			>Determining the size of a file</A
+			></DT
+		      ><DT
+		      ><A HREF = "#11"
+			>Detecting the end of input</A
+			></DT
+		      ><DT
+		      ><A HREF = "#12"
+			>Buffering operations</A
+			></DT
+		      ><DT
+		      ><A HREF = "#13"
+			>Repositioning handles</A
+			></DT
+		      ><DT
+		      ><A HREF = "#14"
+			>Handle properties</A
+			></DT
+		      ><DT
+		      ><A HREF = "#15"
+			>Terminal operations</A
+			></DT
+		      ><DT
+		      ><A HREF = "#16"
+			>Showing handle state</A
+			></DT
+		      ></DL
+		    ></DD
+		  ><DT
+		  ><A HREF = "#17"
+		    >Text input and output</A
+		    ></DT
+		  ><DD
+		  ><DL
+		    ><DT
+		      ><A HREF = "#18"
+			>Text input</A
+			></DT
+		      ><DT
+		      ><A HREF = "#19"
+			>Text output</A
+			></DT
+		      ><DT
+		      ><A HREF = "#20"
+			>Special cases for standard input and output</A
+			></DT
+		      ></DL
+		    ></DD
+		  ><DT
+		  ><A HREF = "#21"
+		    >Binary input and output</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The standard IO library.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfixIO"
+		>fixIO</A
+		> :: (a -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> a) -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>type</SPAN
+		> <A HREF = "#t%3AFilePath"
+		>FilePath</A
+		> = <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AHandle"
+		>Handle</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Astdin"
+		>stdin</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Astdout"
+		>stdout</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Astderr"
+		>stderr</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AopenFile"
+		>openFile</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIOMode"
+		>IOMode</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3AIOMode"
+		      >IOMode</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AReadMode"
+			    >ReadMode</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AWriteMode"
+			    >WriteMode</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AAppendMode"
+			    >AppendMode</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3AReadWriteMode"
+			    >ReadWriteMode</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhClose"
+		>hClose</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadFile"
+		>readFile</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwriteFile"
+		>writeFile</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AappendFile"
+		>appendFile</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhFileSize"
+		>hFileSize</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhIsEOF"
+		>hIsEOF</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisEOF"
+		>isEOF</A
+		> :: <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3ABufferMode"
+		      >BufferMode</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3ANoBuffering"
+			    >NoBuffering</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ALineBuffering"
+			    >LineBuffering</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ABlockBuffering"
+			    >BlockBuffering</A
+			    > (<A HREF = "Data.Maybe.html#t%3AMaybe"
+			    >Maybe</A
+			    > <A HREF = "GHC.Base.html#t%3AInt"
+			    >Int</A
+			    >)</TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhSetBuffering"
+		>hSetBuffering</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3ABufferMode"
+		>BufferMode</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetBuffering"
+		>hGetBuffering</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "System.IO.html#t%3ABufferMode"
+		>BufferMode</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhFlush"
+		>hFlush</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetPosn"
+		>hGetPosn</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "System.IO.html#t%3AHandlePosn"
+		>HandlePosn</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhSetPosn"
+		>hSetPosn</A
+		> :: <A HREF = "System.IO.html#t%3AHandlePosn"
+		>HandlePosn</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AHandlePosn"
+		>HandlePosn</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhSeek"
+		>hSeek</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3ASeekMode"
+		>SeekMode</A
+		> -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><SPAN CLASS = "keyword"
+		      >data</SPAN
+		      > <A HREF = "#t%3ASeekMode"
+		      >SeekMode</A
+		      > </TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "decl"
+			  >= <A HREF = "#v%3AAbsoluteSeek"
+			    >AbsoluteSeek</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ARelativeSeek"
+			    >RelativeSeek</A
+			    ></TD
+			  ></TR
+			><TR
+			><TD CLASS = "decl"
+			  >| <A HREF = "#v%3ASeekFromEnd"
+			    >SeekFromEnd</A
+			    ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhTell"
+		>hTell</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Num.html#t%3AInteger"
+		>Integer</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhIsOpen"
+		>hIsOpen</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhIsClosed"
+		>hIsClosed</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhIsReadable"
+		>hIsReadable</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhIsWritable"
+		>hIsWritable</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhIsSeekable"
+		>hIsSeekable</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhIsTerminalDevice"
+		>hIsTerminalDevice</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhSetEcho"
+		>hSetEcho</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetEcho"
+		>hGetEcho</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhShow"
+		>hShow</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhWaitForInput"
+		>hWaitForInput</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhReady"
+		>hReady</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetChar"
+		>hGetChar</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetLine"
+		>hGetLine</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhLookAhead"
+		>hLookAhead</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetContents"
+		>hGetContents</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhPutChar"
+		>hPutChar</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhPutStr"
+		>hPutStr</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhPutStrLn"
+		>hPutStrLn</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhPrint"
+		>hPrint</A
+		> :: <A HREF = "GHC.Show.html#t%3AShow"
+		>Show</A
+		> a =&gt; <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; a -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ainteract"
+		>interact</A
+		> :: (<A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		>) -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AputChar"
+		>putChar</A
+		> :: <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AputStr"
+		>putStr</A
+		> :: <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AputStrLn"
+		>putStrLn</A
+		> :: <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Aprint"
+		>print</A
+		> :: <A HREF = "GHC.Show.html#t%3AShow"
+		>Show</A
+		> a =&gt; a -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetChar"
+		>getChar</A
+		> :: <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AChar"
+		>Char</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetLine"
+		>getLine</A
+		> :: <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AgetContents"
+		>getContents</A
+		> :: <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadIO"
+		>readIO</A
+		> :: <A HREF = "GHC.Read.html#t%3ARead"
+		>Read</A
+		> a =&gt; <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadLn"
+		>readLn</A
+		> :: <A HREF = "GHC.Read.html#t%3ARead"
+		>Read</A
+		> a =&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AopenBinaryFile"
+		>openBinaryFile</A
+		> :: <A HREF = "System.IO.html#t%3AFilePath"
+		>FilePath</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIOMode"
+		>IOMode</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhSetBinaryMode"
+		>hSetBinaryMode</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhPutBuf"
+		>hPutBuf</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetBuf"
+		>hGetBuf</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhPutBufNonBlocking"
+		>hPutBufNonBlocking</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AhGetBufNonBlocking"
+		>hGetBufNonBlocking</A
+		> :: <A HREF = "System.IO.html#t%3AHandle"
+		>Handle</A
+		> -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "System.IO.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      >module <A HREF = "System.IO.Error.html"
+		>System.IO.Error</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >The IO monad</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AIO"
+	  ></A
+	  ><B
+	  >IO</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>A value of type <TT
+		  ><TT
+		    ><A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TT
+		    > a</TT
+		  > is a computation which, when performed,
+does some I/O before returning a value of type <TT
+		  >a</TT
+		  >.  
+</P
+		><P
+		>There is really only one way to &quot;perform&quot; an I/O action: bind it to
+<TT
+		  >Main.main</TT
+		  > in your program.  When your program is run, the I/O will
+be performed.  It isn't possible to perform I/O from an arbitrary
+function, unless that function is itself in the <TT
+		  ><A HREF = "System.IO.html#t%3AIO"
+		    >IO</A
+		    ></TT
+		  > monad and called
+at some point, directly or indirectly, from <TT
+		  >Main.main</TT
+		  >.
+</P
+		><P
+		><TT
+		  ><A HREF = "System.IO.html#t%3AIO"
+		    >IO</A
+		    ></TT
+		  > is a monad, so <TT
+		  ><A HREF = "System.IO.html#t%3AIO"
+		    >IO</A
+		    ></TT
+		  > actions can be combined using either the do-notation
+or the <TT
+		  ><A HREF = "GHC.Base.html#v%3A%3E%3E"
+		    >&gt;&gt;</A
+		    ></TT
+		  > and <TT
+		  ><A HREF = "GHC.Base.html#v%3A%3E%3E%3D"
+		    >&gt;&gt;=</A
+		    ></TT
+		  > operations from the <TT
+		  ><A HREF = "GHC.Base.html#t%3AMonad"
+		    >Monad</A
+		    ></TT
+		  > class.
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > <A HREF = "System.IO.Error.html#t%3AIOError"
+		      >IOError</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Fix.html#t%3AMonadFix"
+		      >MonadFix</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "GHC.IOBase.html#t%3AIOArray"
+		      >IOArray</A
+		      > e <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Base.html#t%3ABool"
+		      >Bool</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Base.html#t%3AChar"
+		      >Char</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord"
+		      >Word</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3APtr"
+		      >Ptr</A
+		      > a) <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Ptr.html#t%3AFunPtr"
+		      >FunPtr</A
+		      > a) <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Float.html#t%3AFloat"
+		      >Float</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Float.html#t%3ADouble"
+		      >Double</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > (<A HREF = "GHC.Stable.html#t%3AStablePtr"
+		      >StablePtr</A
+		      > a) <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt8"
+		      >Int8</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt16"
+		      >Int16</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt32"
+		      >Int32</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Int.html#t%3AInt64"
+		      >Int64</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord8"
+		      >Word8</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord16"
+		      >Word16</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord32"
+		      >Word32</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.IO.Internals.html#t%3AIOUArray"
+		      >IOUArray</A
+		      > <A HREF = "GHC.Word.html#t%3AWord64"
+		      >Word64</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Foreign.Storable.html#t%3AStorable"
+		      >Storable</A
+		      > e =&gt; <A HREF = "Data.Array.Base.html#t%3AMArray"
+		      >MArray</A
+		      > <A HREF = "Data.Array.Storable.html#t%3AStorableArray"
+		      >StorableArray</A
+		      > e <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AFunctor"
+		      >Functor</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > <A HREF = "System.IO.html#t%3AIO"
+		      >IO</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfixIO"
+	  ></A
+	  ><B
+	  >fixIO</B
+	  > :: (a -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > a) -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >Files and handles</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >type</SPAN
+	  > <A NAME = "t%3AFilePath"
+	  ></A
+	  ><B
+	  >FilePath</B
+	  > = <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>File and directory names are values of type <TT
+	  ><A HREF = "GHC.Base.html#t%3AString"
+	    >String</A
+	    ></TT
+	  >, whose precise
+meaning is operating system dependent. Files can be opened, yielding a
+handle which can then be used to operate on the contents of that file.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AHandle"
+	  ></A
+	  ><B
+	  >Handle</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>Haskell defines operations to read and write characters from and to files,
+represented by values of type <TT
+		  >Handle</TT
+		  >.  Each value of this type is a
+<EM
+		  >handle</EM
+		  >: a record used by the Haskell run-time system to <EM
+		  >manage</EM
+		  > I/O
+with file system objects.  A handle has at least the following properties:
+</P
+		><UL
+		><LI
+		  > whether it manages input or output or both;
+</LI
+		  ><LI
+		  > whether it is <EM
+		    >open</EM
+		    >, <EM
+		    >closed</EM
+		    > or <EM
+		    >semi-closed</EM
+		    >;
+</LI
+		  ><LI
+		  > whether the object is seekable;
+</LI
+		  ><LI
+		  > whether buffering is disabled, or enabled on a line or block basis;
+</LI
+		  ><LI
+		  > a buffer (whose length may be zero).
+</LI
+		  ></UL
+		><P
+		>Most handles will also have a current I/O position indicating where the next
+input or output operation will occur.  A handle is <EM
+		  >readable</EM
+		  > if it
+manages only input or both input and output; likewise, it is <EM
+		  >writable</EM
+		  > if
+it manages only output or both input and output.  A handle is <EM
+		  >open</EM
+		  > when
+first allocated.
+Once it is closed it can no longer be used for either input or output,
+though an implementation cannot re-use its storage while references
+remain to it.  Handles are in the <TT
+		  ><A HREF = "GHC.Show.html#t%3AShow"
+		    >Show</A
+		    ></TT
+		  > and <TT
+		  ><A HREF = "GHC.Base.html#t%3AEq"
+		    >Eq</A
+		    ></TT
+		  > classes.  The string
+produced by showing a handle is system dependent; it should include
+enough information to identify the handle for debugging.  A handle is
+equal according to <TT
+		  ><A HREF = "GHC.Base.html#v%3A%3D%3D"
+		    >==</A
+		    ></TT
+		  > only to itself; no attempt
+is made to compare the internal state of different handles for equality.</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > <A HREF = "System.IO.html#t%3AHandle"
+		      >Handle</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "System.IO.html#t%3AHandle"
+		      >Handle</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "System.IO.html#t%3AHandle"
+		      >Handle</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "3"
+	  >Standard handles</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Three handles are allocated during program initialisation,
+and are initially open.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Astdin"
+	  ></A
+	  ><B
+	  >stdin</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A handle managing input from the Haskell program's standard input channel.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Astdout"
+	  ></A
+	  ><B
+	  >stdout</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A handle managing output to the Haskell program's standard output channel.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Astderr"
+	  ></A
+	  ><B
+	  >stderr</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A handle managing output to the Haskell program's standard error channel.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >Opening and closing files</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "5"
+	  >Opening files</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AopenFile"
+	  ></A
+	  ><B
+	  >openFile</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIOMode"
+	  >IOMode</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AopenFile"
+	      >openFile</A
+	      ></TT
+	    > <TT
+	    >file mode</TT
+	    > allocates and returns a new, open
+handle to manage the file <TT
+	    >file</TT
+	    >.  It manages input if <TT
+	    >mode</TT
+	    >
+is <TT
+	    ><A HREF = "System.IO.html#v%3AReadMode"
+	      >ReadMode</A
+	      ></TT
+	    >, output if <TT
+	    >mode</TT
+	    > is <TT
+	    ><A HREF = "System.IO.html#v%3AWriteMode"
+	      >WriteMode</A
+	      ></TT
+	    > or <TT
+	    ><A HREF = "System.IO.html#v%3AAppendMode"
+	      >AppendMode</A
+	      ></TT
+	    >,
+and both input and output if mode is <TT
+	    ><A HREF = "System.IO.html#v%3AReadWriteMode"
+	      >ReadWriteMode</A
+	      ></TT
+	    >.
+</P
+	  ><P
+	  >If the file does not exist and it is opened for output, it should be
+created as a new file.  If <TT
+	    >mode</TT
+	    > is <TT
+	    ><A HREF = "System.IO.html#v%3AWriteMode"
+	      >WriteMode</A
+	      ></TT
+	    > and the file
+already exists, then it should be truncated to zero length.
+Some operating systems delete empty files, so there is no guarantee
+that the file will exist following an <TT
+	    ><A HREF = "System.IO.html#v%3AopenFile"
+	      >openFile</A
+	      ></TT
+	    > with <TT
+	    >mode</TT
+	    >
+<TT
+	    ><A HREF = "System.IO.html#v%3AWriteMode"
+	      >WriteMode</A
+	      ></TT
+	    > unless it is subsequently written to successfully.
+The handle is positioned at the end of the file if <TT
+	    >mode</TT
+	    > is
+<TT
+	    ><A HREF = "System.IO.html#v%3AAppendMode"
+	      >AppendMode</A
+	      ></TT
+	    >, and otherwise at the beginning (in which case its
+internal position is 0).
+The initial buffer mode is implementation-dependent.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisAlreadyInUseError"
+		>isAlreadyInUseError</A
+		></TT
+	      > if the file is already open and cannot be reopened;
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisDoesNotExistError"
+		>isDoesNotExistError</A
+		></TT
+	      > if the file does not exist; or
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if the user does not have permission to open the file.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AIOMode"
+	  ></A
+	  ><B
+	  >IOMode</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AReadMode"
+		      ></A
+		      ><B
+		      >ReadMode</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AWriteMode"
+		      ></A
+		      ><B
+		      >WriteMode</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AAppendMode"
+		      ></A
+		      ><B
+		      >AppendMode</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AReadWriteMode"
+		      ></A
+		      ><B
+		      >ReadWriteMode</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "System.IO.html#t%3AIOMode"
+		      >IOMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "System.IO.html#t%3AIOMode"
+		      >IOMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "System.IO.html#t%3AIOMode"
+		      >IOMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Enum.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "System.IO.html#t%3AIOMode"
+		      >IOMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "System.IO.html#t%3AIOMode"
+		      >IOMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "System.IO.html#t%3AIOMode"
+		      >IOMode</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "6"
+	  >Closing files</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhClose"
+	  ></A
+	  ><B
+	  >hClose</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Computation <TT
+	  ><A HREF = "System.IO.html#v%3AhClose"
+	    >hClose</A
+	    ></TT
+	  > <TT
+	  >hdl</TT
+	  > makes handle <TT
+	  >hdl</TT
+	  > closed.  Before the
+computation finishes, if <TT
+	  >hdl</TT
+	  > is writable its buffer is flushed as
+for <TT
+	  ><A HREF = "System.IO.html#v%3AhFlush"
+	    >hFlush</A
+	    ></TT
+	  >.
+Performing <TT
+	  ><A HREF = "System.IO.html#v%3AhClose"
+	    >hClose</A
+	    ></TT
+	  > on a handle that has already been closed has no effect; 
+doing so not an error.  All other operations on a closed handle will fail.
+If <TT
+	  ><A HREF = "System.IO.html#v%3AhClose"
+	    >hClose</A
+	    ></TT
+	  > fails for any reason, any further operations (apart from
+<TT
+	  ><A HREF = "System.IO.html#v%3AhClose"
+	    >hClose</A
+	    ></TT
+	  >) on the handle will still fail as if <TT
+	  >hdl</TT
+	  > had been successfully
+closed.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "7"
+	  >Special cases</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>These functions are also exported by the <A HREF = "Prelude.html"
+	  >Prelude</A
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadFile"
+	  ></A
+	  ><B
+	  >readFile</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "System.IO.html#v%3AreadFile"
+	    >readFile</A
+	    ></TT
+	  > function reads a file and
+returns the contents of the file as a string.
+The file is read lazily, on demand, as with <TT
+	  ><A HREF = "System.IO.html#v%3AgetContents"
+	    >getContents</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteFile"
+	  ></A
+	  ><B
+	  >writeFile</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The computation <TT
+	  ><A HREF = "System.IO.html#v%3AwriteFile"
+	    >writeFile</A
+	    ></TT
+	  > <TT
+	  >file str</TT
+	  > function writes the string <TT
+	  >str</TT
+	  >,
+to the file <TT
+	  >file</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AappendFile"
+	  ></A
+	  ><B
+	  >appendFile</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The computation <TT
+	    ><A HREF = "System.IO.html#v%3AappendFile"
+	      >appendFile</A
+	      ></TT
+	    > <TT
+	    >file str</TT
+	    > function appends the string <TT
+	    >str</TT
+	    >,
+to the file <TT
+	    >file</TT
+	    >.
+</P
+	  ><P
+	  >Note that <TT
+	    ><A HREF = "System.IO.html#v%3AwriteFile"
+	      >writeFile</A
+	      ></TT
+	    > and <TT
+	    ><A HREF = "System.IO.html#v%3AappendFile"
+	      >appendFile</A
+	      ></TT
+	    > write a literal string
+to a file.  To write a value of any printable type, as with <TT
+	    ><A HREF = "System.IO.html#v%3Aprint"
+	      >print</A
+	      ></TT
+	    >,
+use the <TT
+	    ><A HREF = "GHC.Show.html#v%3Ashow"
+	      >show</A
+	      ></TT
+	    > function to convert the value to a string first.
+</P
+	  ><PRE
+	  > main = appendFile &quot;squares&quot; (show [(x,x*x) | x &lt;- [0,0.1..2]])</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "8"
+	  >File locking</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Implementations should enforce as far as possible, at least locally to the
+Haskell process, multiple-reader single-writer locking on files.
+That is, <EM
+	    >there may either be many handles on the same file which manage
+input, or just one handle on the file which manages output</EM
+	    >.  If any
+open or semi-closed handle is managing a file for output, no new
+handle can be allocated for that file.  If any open or semi-closed
+handle is managing a file for input, new handles can only be allocated
+if they do not manage output.  Whether two files are the same is
+implementation-dependent, but they should normally be the same if they
+have the same absolute path name and neither has been renamed, for
+example.
+</P
+	  ><P
+	  ><EM
+	    >Warning</EM
+	    >: the <TT
+	    ><A HREF = "System.IO.html#v%3AreadFile"
+	      >readFile</A
+	      ></TT
+	    > operation holds a semi-closed handle on
+the file until the entire contents of the file have been consumed.
+It follows that an attempt to write to a file (using <TT
+	    ><A HREF = "System.IO.html#v%3AwriteFile"
+	      >writeFile</A
+	      ></TT
+	    >, for
+example) that was earlier opened by <TT
+	    ><A HREF = "System.IO.html#v%3AreadFile"
+	      >readFile</A
+	      ></TT
+	    > will usually result in
+failure with <TT
+	    ><A HREF = "System.IO.Error.html#v%3AisAlreadyInUseError"
+	      >isAlreadyInUseError</A
+	      ></TT
+	    >.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "9"
+	  >Operations on handles</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "10"
+	  >Determining the size of a file</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhFileSize"
+	  ></A
+	  ><B
+	  >hFileSize</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>For a handle <TT
+	  >hdl</TT
+	  > which attached to a physical file,
+<TT
+	  ><A HREF = "System.IO.html#v%3AhFileSize"
+	    >hFileSize</A
+	    ></TT
+	  > <TT
+	  >hdl</TT
+	  > returns the size of that file in 8-bit bytes.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "11"
+	  >Detecting the end of input</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhIsEOF"
+	  ></A
+	  ><B
+	  >hIsEOF</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>For a readable handle <TT
+	  >hdl</TT
+	  >, <TT
+	  ><A HREF = "System.IO.html#v%3AhIsEOF"
+	    >hIsEOF</A
+	    ></TT
+	  > <TT
+	  >hdl</TT
+	  > returns
+<TT
+	  ><A HREF = "GHC.Base.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  > if no further input can be taken from <TT
+	  >hdl</TT
+	  > or for a
+physical file, if the current I/O position is equal to the length of
+the file.  Otherwise, it returns <TT
+	  ><A HREF = "GHC.Base.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisEOF"
+	  ></A
+	  ><B
+	  >isEOF</B
+	  > :: <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The computation <TT
+	  ><A HREF = "System.IO.html#v%3AisEOF"
+	    >isEOF</A
+	    ></TT
+	  > is identical to <TT
+	  ><A HREF = "System.IO.html#v%3AhIsEOF"
+	    >hIsEOF</A
+	    ></TT
+	  >,
+except that it works only on <TT
+	  ><A HREF = "System.IO.html#v%3Astdin"
+	    >stdin</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "12"
+	  >Buffering operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ABufferMode"
+	  ></A
+	  ><B
+	  >BufferMode</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>Three kinds of buffering are supported: line-buffering, 
+block-buffering or no-buffering.  These modes have the following
+effects. For output, items are written out, or <EM
+		  >flushed</EM
+		  >,
+from the internal buffer according to the buffer mode:
+</P
+		><UL
+		><LI
+		  > <EM
+		    >line-buffering</EM
+		    >: the entire output buffer is flushed
+whenever a newline is output, the buffer overflows, 
+a <TT
+		    ><A HREF = "System.IO.html#v%3AhFlush"
+		      >hFlush</A
+		      ></TT
+		    > is issued, or the handle is closed.
+</LI
+		  ><LI
+		  > <EM
+		    >block-buffering</EM
+		    >: the entire buffer is written out whenever it
+overflows, a <TT
+		    ><A HREF = "System.IO.html#v%3AhFlush"
+		      >hFlush</A
+		      ></TT
+		    > is issued, or the handle is closed.
+</LI
+		  ><LI
+		  > <EM
+		    >no-buffering</EM
+		    >: output is written immediately, and never stored
+in the buffer.
+</LI
+		  ></UL
+		><P
+		>An implementation is free to flush the buffer more frequently,
+but not less frequently, than specified above.
+The output buffer is emptied as soon as it has been written out.
+</P
+		><P
+		>Similarly, input occurs according to the buffer mode for handle {em hdl}.
+</P
+		><UL
+		><LI
+		  > <EM
+		    >line-buffering</EM
+		    >: when the buffer for the handle is not empty,
+the next item is obtained from the buffer; otherwise, when the
+buffer is empty, characters up to and including the next newline
+character are read into the buffer.  No characters are available
+until the newline character is available or the buffer is full.
+</LI
+		  ><LI
+		  > <EM
+		    >block-buffering</EM
+		    >: when the buffer for the handle becomes empty,
+the next block of data is read into the buffer.
+</LI
+		  ><LI
+		  > <EM
+		    >no-buffering</EM
+		    >: the next input item is read and returned.
+The <TT
+		    ><A HREF = "System.IO.html#v%3AhLookAhead"
+		      >hLookAhead</A
+		      ></TT
+		    > operation implies that even a no-buffered
+handle may require a one-character buffer.
+</LI
+		  ></UL
+		><P
+		>The default buffering mode when a handle is opened is
+implementation-dependent and may depend on the file system object
+which is attached to that handle.
+For most implementations, physical files will normally be block-buffered 
+and terminals will normally be line-buffered.</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ANoBuffering"
+		      ></A
+		      ><B
+		      >NoBuffering</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >buffering is disabled if possible.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ALineBuffering"
+		      ></A
+		      ><B
+		      >LineBuffering</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >line-buffering should be enabled if possible.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ABlockBuffering"
+		      ></A
+		      ><B
+		      >BlockBuffering</B
+		      > (<A HREF = "Data.Maybe.html#t%3AMaybe"
+		      >Maybe</A
+		      > <A HREF = "GHC.Base.html#t%3AInt"
+		      >Int</A
+		      >)</TD
+		    ><TD CLASS = "rdoc"
+		    >block-buffering should be enabled if possible.
+The size of the buffer is <TT
+		      >n</TT
+		      > items if the argument
+is <TT
+		      ><A HREF = "Data.Maybe.html#v%3AJust"
+			>Just</A
+			></TT
+		      > <TT
+		      >n</TT
+		      > and is otherwise implementation-dependent.</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "System.IO.html#t%3ABufferMode"
+		      >BufferMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "System.IO.html#t%3ABufferMode"
+		      >BufferMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "System.IO.html#t%3ABufferMode"
+		      >BufferMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "System.IO.html#t%3ABufferMode"
+		      >BufferMode</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhSetBuffering"
+	  ></A
+	  ><B
+	  >hSetBuffering</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3ABufferMode"
+	  >BufferMode</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhSetBuffering"
+	      >hSetBuffering</A
+	      ></TT
+	    > <TT
+	    >hdl mode</TT
+	    > sets the mode of buffering for
+handle <TT
+	    >hdl</TT
+	    > on subsequent reads and writes.
+</P
+	  ><P
+	  >If the buffer mode is changed from <TT
+	    ><A HREF = "System.IO.html#v%3ABlockBuffering"
+	      >BlockBuffering</A
+	      ></TT
+	    > or
+<TT
+	    ><A HREF = "System.IO.html#v%3ALineBuffering"
+	      >LineBuffering</A
+	      ></TT
+	    > to <TT
+	    ><A HREF = "System.IO.html#v%3ANoBuffering"
+	      >NoBuffering</A
+	      ></TT
+	    >, then
+</P
+	  ><UL
+	  ><LI
+	    > if <TT
+	      >hdl</TT
+	      > is writable, the buffer is flushed as for <TT
+	      ><A HREF = "System.IO.html#v%3AhFlush"
+		>hFlush</A
+		></TT
+	      >;
+</LI
+	    ><LI
+	    > if <TT
+	      >hdl</TT
+	      > is not writable, the contents of the buffer is discarded.
+</LI
+	    ></UL
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if the handle has already been used for reading
+or writing and the implementation does not allow the buffering mode
+to be changed.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetBuffering"
+	  ></A
+	  ><B
+	  >hGetBuffering</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "System.IO.html#t%3ABufferMode"
+	  >BufferMode</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Computation <TT
+	  ><A HREF = "System.IO.html#v%3AhGetBuffering"
+	    >hGetBuffering</A
+	    ></TT
+	  > <TT
+	  >hdl</TT
+	  > returns the current buffering mode
+for <TT
+	  >hdl</TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhFlush"
+	  ></A
+	  ><B
+	  >hFlush</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The action <TT
+	    ><A HREF = "System.IO.html#v%3AhFlush"
+	      >hFlush</A
+	      ></TT
+	    > <TT
+	    >hdl</TT
+	    > causes any items buffered for output
+in handle <TT
+	    >hdl</TT
+	    > to be sent immediately to the operating system.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisFullError"
+		>isFullError</A
+		></TT
+	      > if the device is full;
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if a system resource limit would be exceeded.
+It is unspecified whether the characters in the buffer are discarded
+or retained under these circumstances.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "13"
+	  >Repositioning handles</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetPosn"
+	  ></A
+	  ><B
+	  >hGetPosn</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "System.IO.html#t%3AHandlePosn"
+	  >HandlePosn</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Computation <TT
+	  ><A HREF = "System.IO.html#v%3AhGetPosn"
+	    >hGetPosn</A
+	    ></TT
+	  > <TT
+	  >hdl</TT
+	  > returns the current I/O position of
+<TT
+	  >hdl</TT
+	  > as a value of the abstract type <TT
+	  ><A HREF = "System.IO.html#t%3AHandlePosn"
+	    >HandlePosn</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhSetPosn"
+	  ></A
+	  ><B
+	  >hSetPosn</B
+	  > :: <A HREF = "System.IO.html#t%3AHandlePosn"
+	  >HandlePosn</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >If a call to <TT
+	    ><A HREF = "System.IO.html#v%3AhGetPosn"
+	      >hGetPosn</A
+	      ></TT
+	    > <TT
+	    >hdl</TT
+	    > returns a position <TT
+	    >p</TT
+	    >,
+then computation <TT
+	    ><A HREF = "System.IO.html#v%3AhSetPosn"
+	      >hSetPosn</A
+	      ></TT
+	    > <TT
+	    >p</TT
+	    > sets the position of <TT
+	    >hdl</TT
+	    >
+to the position it held at the time of the call to <TT
+	    ><A HREF = "System.IO.html#v%3AhGetPosn"
+	      >hGetPosn</A
+	      ></TT
+	    >.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if a system resource limit would be exceeded.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AHandlePosn"
+	  ></A
+	  ><B
+	  >HandlePosn</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "System.IO.html#t%3AHandlePosn"
+		      >HandlePosn</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "System.IO.html#t%3AHandlePosn"
+		      >HandlePosn</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhSeek"
+	  ></A
+	  ><B
+	  >hSeek</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3ASeekMode"
+	  >SeekMode</A
+	  > -&gt; <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhSeek"
+	      >hSeek</A
+	      ></TT
+	    > <TT
+	    >hdl mode i</TT
+	    > sets the position of handle
+<TT
+	    >hdl</TT
+	    > depending on <TT
+	    >mode</TT
+	    >.
+The offset <TT
+	    >i</TT
+	    > is given in terms of 8-bit bytes.
+</P
+	  ><P
+	  >If <TT
+	    >hdl</TT
+	    > is block- or line-buffered, then seeking to a position which is not
+in the current buffer will first cause any items in the output buffer to be
+written to the device, and then cause the input buffer to be discarded.
+Some handles may not be seekable (see <TT
+	    ><A HREF = "System.IO.html#v%3AhIsSeekable"
+	      >hIsSeekable</A
+	      ></TT
+	    >), or only support a
+subset of the possible positioning operations (for instance, it may only
+be possible to seek to the end of a tape, or to a positive offset from
+the beginning or current position).
+It is not possible to set a negative I/O position, or for
+a physical file, an I/O position beyond the current end-of-file.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if a system resource limit would be exceeded.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3ASeekMode"
+	  ></A
+	  ><B
+	  >SeekMode</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >A mode that determines the effect of <TT
+		><A HREF = "System.IO.html#v%3AhSeek"
+		  >hSeek</A
+		  ></TT
+		> <TT
+		>hdl mode i</TT
+		>, as follows:</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AAbsoluteSeek"
+		      ></A
+		      ><B
+		      >AbsoluteSeek</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >the position of <TT
+		      >hdl</TT
+		      > is set to <TT
+		      >i</TT
+		      >.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARelativeSeek"
+		      ></A
+		      ><B
+		      >RelativeSeek</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >the position of <TT
+		      >hdl</TT
+		      > is set to offset <TT
+		      >i</TT
+		      >
+from the current position.</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ASeekFromEnd"
+		      ></A
+		      ><B
+		      >SeekFromEnd</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    >the position of <TT
+		      >hdl</TT
+		      > is set to offset <TT
+		      >i</TT
+		      >
+from the end of the file.</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "System.IO.html#t%3ASeekMode"
+		      >SeekMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "System.IO.html#t%3ASeekMode"
+		      >SeekMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Arr.html#t%3AIx"
+		      >Ix</A
+		      > <A HREF = "System.IO.html#t%3ASeekMode"
+		      >SeekMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Enum.html#t%3AEnum"
+		      >Enum</A
+		      > <A HREF = "System.IO.html#t%3ASeekMode"
+		      >SeekMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Read.html#t%3ARead"
+		      >Read</A
+		      > <A HREF = "System.IO.html#t%3ASeekMode"
+		      >SeekMode</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "System.IO.html#t%3ASeekMode"
+		      >SeekMode</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhTell"
+	  ></A
+	  ><B
+	  >hTell</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Num.html#t%3AInteger"
+	  >Integer</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "14"
+	  >Handle properties</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhIsOpen"
+	  ></A
+	  ><B
+	  >hIsOpen</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhIsClosed"
+	  ></A
+	  ><B
+	  >hIsClosed</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhIsReadable"
+	  ></A
+	  ><B
+	  >hIsReadable</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhIsWritable"
+	  ></A
+	  ><B
+	  >hIsWritable</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhIsSeekable"
+	  ></A
+	  ><B
+	  >hIsSeekable</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "15"
+	  >Terminal operations</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhIsTerminalDevice"
+	  ></A
+	  ><B
+	  >hIsTerminalDevice</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Is the handle connected to a terminal? (GHC only)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhSetEcho"
+	  ></A
+	  ><B
+	  >hSetEcho</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Set the echoing status of a handle connected to a terminal (GHC only).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetEcho"
+	  ></A
+	  ><B
+	  >hGetEcho</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Get the echoing status of a handle connected to a terminal (GHC only).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "16"
+	  >Showing handle state</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhShow"
+	  ></A
+	  ><B
+	  >hShow</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><TT
+	  ><A HREF = "System.IO.html#v%3AhShow"
+	    >hShow</A
+	    ></TT
+	  > is in the <TT
+	  ><A HREF = "System.IO.html#t%3AIO"
+	    >IO</A
+	    ></TT
+	  > monad, and gives more comprehensive output
+than the (pure) instance of <TT
+	  ><A HREF = "GHC.Show.html#t%3AShow"
+	    >Show</A
+	    ></TT
+	  > for <TT
+	  ><A HREF = "System.IO.html#t%3AHandle"
+	    >Handle</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "17"
+	  >Text input and output</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "18"
+	  >Text input</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhWaitForInput"
+	  ></A
+	  ><B
+	  >hWaitForInput</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhWaitForInput"
+	      >hWaitForInput</A
+	      ></TT
+	    > <TT
+	    >hdl t</TT
+	    >
+waits until input is available on handle <TT
+	    >hdl</TT
+	    >.
+It returns <TT
+	    ><A HREF = "GHC.Base.html#v%3ATrue"
+	      >True</A
+	      ></TT
+	    > as soon as input is available on <TT
+	    >hdl</TT
+	    >,
+or <TT
+	    ><A HREF = "GHC.Base.html#v%3AFalse"
+	      >False</A
+	      ></TT
+	    > if no input is available within <TT
+	    >t</TT
+	    > milliseconds.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisEOFError"
+		>isEOFError</A
+		></TT
+	      > if the end of file has been reached.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhReady"
+	  ></A
+	  ><B
+	  >hReady</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhReady"
+	      >hReady</A
+	      ></TT
+	    > <TT
+	    >hdl</TT
+	    > indicates whether at least one item is
+available for input from handle <TT
+	    >hdl</TT
+	    >.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisEOFError"
+		>isEOFError</A
+		></TT
+	      > if the end of file has been reached.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetChar"
+	  ></A
+	  ><B
+	  >hGetChar</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhGetChar"
+	      >hGetChar</A
+	      ></TT
+	    > <TT
+	    >hdl</TT
+	    > reads a character from the file or
+channel managed by <TT
+	    >hdl</TT
+	    >, blocking until a character is available.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisEOFError"
+		>isEOFError</A
+		></TT
+	      > if the end of file has been reached.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetLine"
+	  ></A
+	  ><B
+	  >hGetLine</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhGetLine"
+	      >hGetLine</A
+	      ></TT
+	    > <TT
+	    >hdl</TT
+	    > reads a line from the file or
+channel managed by <TT
+	    >hdl</TT
+	    >.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisEOFError"
+		>isEOFError</A
+		></TT
+	      > if the end of file is encountered when reading
+the <EM
+	      >first</EM
+	      > character of the line.
+</LI
+	    ></UL
+	  ><P
+	  >If <TT
+	    ><A HREF = "System.IO.html#v%3AhGetLine"
+	      >hGetLine</A
+	      ></TT
+	    > encounters end-of-file at any other point while reading
+in a line, it is treated as a line terminator and the (partial)
+line is returned.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhLookAhead"
+	  ></A
+	  ><B
+	  >hLookAhead</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhLookAhead"
+	      >hLookAhead</A
+	      ></TT
+	    > returns the next character from the handle
+without removing it from the input buffer, blocking until a character
+is available.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisEOFError"
+		>isEOFError</A
+		></TT
+	      > if the end of file has been reached.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetContents"
+	  ></A
+	  ><B
+	  >hGetContents</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhGetContents"
+	      >hGetContents</A
+	      ></TT
+	    > <TT
+	    >hdl</TT
+	    > returns the list of characters
+corresponding to the unread portion of the channel or file managed
+by <TT
+	    >hdl</TT
+	    >, which is put into an intermediate state, <EM
+	    >semi-closed</EM
+	    >.
+In this state, <TT
+	    >hdl</TT
+	    > is effectively closed,
+but items are read from <TT
+	    >hdl</TT
+	    > on demand and accumulated in a special
+list returned by <TT
+	    ><A HREF = "System.IO.html#v%3AhGetContents"
+	      >hGetContents</A
+	      ></TT
+	    > <TT
+	    >hdl</TT
+	    >.
+</P
+	  ><P
+	  >Any operation that fails because a handle is closed,
+also fails if a handle is semi-closed.  The only exception is <TT
+	    ><A HREF = "System.IO.html#v%3AhClose"
+	      >hClose</A
+	      ></TT
+	    >.
+A semi-closed handle becomes closed:
+</P
+	  ><UL
+	  ><LI
+	    > if <TT
+	      ><A HREF = "System.IO.html#v%3AhClose"
+		>hClose</A
+		></TT
+	      > is applied to it;
+</LI
+	    ><LI
+	    > if an I/O error occurs when reading an item from the handle;
+</LI
+	    ><LI
+	    > or once the entire contents of the handle has been read.
+</LI
+	    ></UL
+	  ><P
+	  >Once a semi-closed handle becomes closed, the contents of the
+associated list becomes fixed.  The contents of this final list is
+only partially specified: it will contain at least all the items of
+the stream that were evaluated prior to the handle becoming closed.
+</P
+	  ><P
+	  >Any I/O errors encountered while a handle is semi-closed are simply
+discarded.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisEOFError"
+		>isEOFError</A
+		></TT
+	      > if the end of file has been reached.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "19"
+	  >Text output</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhPutChar"
+	  ></A
+	  ><B
+	  >hPutChar</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhPutChar"
+	      >hPutChar</A
+	      ></TT
+	    > <TT
+	    >hdl ch</TT
+	    > writes the character <TT
+	    >ch</TT
+	    > to the
+file or channel managed by <TT
+	    >hdl</TT
+	    >.  Characters may be buffered if
+buffering is enabled for <TT
+	    >hdl</TT
+	    >.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisFullError"
+		>isFullError</A
+		></TT
+	      > if the device is full; or
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if another system resource limit would be exceeded.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhPutStr"
+	  ></A
+	  ><B
+	  >hPutStr</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhPutStr"
+	      >hPutStr</A
+	      ></TT
+	    > <TT
+	    >hdl s</TT
+	    > writes the string
+<TT
+	    >s</TT
+	    > to the file or channel managed by <TT
+	    >hdl</TT
+	    >.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisFullError"
+		>isFullError</A
+		></TT
+	      > if the device is full; or
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if another system resource limit would be exceeded.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhPutStrLn"
+	  ></A
+	  ><B
+	  >hPutStrLn</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The same as <TT
+	  ><A HREF = "System.IO.html#v%3AhPutStr"
+	    >hPutStr</A
+	    ></TT
+	  >, but adds a newline character.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhPrint"
+	  ></A
+	  ><B
+	  >hPrint</B
+	  > :: <A HREF = "GHC.Show.html#t%3AShow"
+	  >Show</A
+	  > a =&gt; <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; a -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Computation <TT
+	    ><A HREF = "System.IO.html#v%3AhPrint"
+	      >hPrint</A
+	      ></TT
+	    > <TT
+	    >hdl t</TT
+	    > writes the string representation of <TT
+	    >t</TT
+	    >
+given by the <TT
+	    ><A HREF = "GHC.Show.html#v%3Ashows"
+	      >shows</A
+	      ></TT
+	    > function to the file or channel managed by <TT
+	    >hdl</TT
+	    >
+and appends a newline.
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisFullError"
+		>isFullError</A
+		></TT
+	      > if the device is full; or
+</LI
+	    ><LI
+	    > <TT
+	      ><A HREF = "System.IO.Error.html#v%3AisPermissionError"
+		>isPermissionError</A
+		></TT
+	      > if another system resource limit would be exceeded.</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section2"
+	><A NAME = "20"
+	  >Special cases for standard input and output</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>These functions are also exported by the <A HREF = "Prelude.html"
+	  >Prelude</A
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ainteract"
+	  ></A
+	  ><B
+	  >interact</B
+	  > :: (<A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  >) -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "System.IO.html#v%3Ainteract"
+	    >interact</A
+	    ></TT
+	  > function takes a function of type <TT
+	  >String-&gt;String</TT
+	  >
+as its argument.  The entire input from the standard input device is
+passed to this function as its argument, and the resulting string is
+output on the standard output device.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AputChar"
+	  ></A
+	  ><B
+	  >putChar</B
+	  > :: <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write a character to the standard output device
+(same as <TT
+	  ><A HREF = "System.IO.html#v%3AhPutChar"
+	    >hPutChar</A
+	    ></TT
+	  > <TT
+	  ><A HREF = "System.IO.html#v%3Astdout"
+	    >stdout</A
+	    ></TT
+	  >).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AputStr"
+	  ></A
+	  ><B
+	  >putStr</B
+	  > :: <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write a string to the standard output device
+(same as <TT
+	  ><A HREF = "System.IO.html#v%3AhPutStr"
+	    >hPutStr</A
+	    ></TT
+	  > <TT
+	  ><A HREF = "System.IO.html#v%3Astdout"
+	    >stdout</A
+	    ></TT
+	  >).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AputStrLn"
+	  ></A
+	  ><B
+	  >putStrLn</B
+	  > :: <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The same as <TT
+	  ><A HREF = "System.IO.html#v%3AputStrLn"
+	    >putStrLn</A
+	    ></TT
+	  >, but adds a newline character.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Aprint"
+	  ></A
+	  ><B
+	  >print</B
+	  > :: <A HREF = "GHC.Show.html#t%3AShow"
+	  >Show</A
+	  > a =&gt; a -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "System.IO.html#v%3Aprint"
+	      >print</A
+	      ></TT
+	    > function outputs a value of any printable type to the
+standard output device.
+Printable types are those that are instances of class <TT
+	    ><A HREF = "GHC.Show.html#t%3AShow"
+	      >Show</A
+	      ></TT
+	    >; <TT
+	    ><A HREF = "System.IO.html#v%3Aprint"
+	      >print</A
+	      ></TT
+	    >
+converts values to strings for output using the <TT
+	    ><A HREF = "GHC.Show.html#v%3Ashow"
+	      >show</A
+	      ></TT
+	    > operation and
+adds a newline.
+</P
+	  ><P
+	  >For example, a program to print the first 20 integers and their
+powers of 2 could be written as:
+</P
+	  ><PRE
+	  > main = print ([(n, 2^n) | n &lt;- [0..19]])</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetChar"
+	  ></A
+	  ><B
+	  >getChar</B
+	  > :: <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AChar"
+	  >Char</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Read a character from the standard input device
+(same as <TT
+	  ><A HREF = "System.IO.html#v%3AhGetChar"
+	    >hGetChar</A
+	    ></TT
+	  > <TT
+	  ><A HREF = "System.IO.html#v%3Astdin"
+	    >stdin</A
+	    ></TT
+	  >).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetLine"
+	  ></A
+	  ><B
+	  >getLine</B
+	  > :: <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Read a line from the standard input device
+(same as <TT
+	  ><A HREF = "System.IO.html#v%3AhGetLine"
+	    >hGetLine</A
+	    ></TT
+	  > <TT
+	  ><A HREF = "System.IO.html#v%3Astdin"
+	    >stdin</A
+	    ></TT
+	  >).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetContents"
+	  ></A
+	  ><B
+	  >getContents</B
+	  > :: <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "System.IO.html#v%3AgetContents"
+	    >getContents</A
+	    ></TT
+	  > operation returns all user input as a single string,
+which is read lazily as it is needed
+(same as <TT
+	  ><A HREF = "System.IO.html#v%3AhGetContents"
+	    >hGetContents</A
+	    ></TT
+	  > <TT
+	  ><A HREF = "System.IO.html#v%3Astdin"
+	    >stdin</A
+	    ></TT
+	  >).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadIO"
+	  ></A
+	  ><B
+	  >readIO</B
+	  > :: <A HREF = "GHC.Read.html#t%3ARead"
+	  >Read</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "System.IO.html#v%3AreadIO"
+	    >readIO</A
+	    ></TT
+	  > function is similar to <TT
+	  ><A HREF = "GHC.Read.html#v%3Aread"
+	    >read</A
+	    ></TT
+	  > except that it signals
+parse failure to the <TT
+	  ><A HREF = "System.IO.html#t%3AIO"
+	    >IO</A
+	    ></TT
+	  > monad instead of terminating the program.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadLn"
+	  ></A
+	  ><B
+	  >readLn</B
+	  > :: <A HREF = "GHC.Read.html#t%3ARead"
+	  >Read</A
+	  > a =&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "System.IO.html#v%3AreadLn"
+	    >readLn</A
+	    ></TT
+	  > function combines <TT
+	  ><A HREF = "System.IO.html#v%3AgetLine"
+	    >getLine</A
+	    ></TT
+	  > and <TT
+	  ><A HREF = "System.IO.html#v%3AreadIO"
+	    >readIO</A
+	    ></TT
+	  >.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "21"
+	  >Binary input and output</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AopenBinaryFile"
+	  ></A
+	  ><B
+	  >openBinaryFile</B
+	  > :: <A HREF = "System.IO.html#t%3AFilePath"
+	  >FilePath</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIOMode"
+	  >IOMode</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Like <TT
+	  ><A HREF = "System.IO.html#v%3AopenFile"
+	    >openFile</A
+	    ></TT
+	  >, but open the file in binary mode.
+On Windows, reading a file in text mode (which is the default)
+will translate CRLF to LF, and writing will translate LF to CRLF.
+This is usually what you want with text files.  With binary files
+this is undesirable; also, as usual under Microsoft operating systems,
+text mode treats control-Z as EOF.  Binary mode turns off all special
+treatment of end-of-line and end-of-file characters.
+(See also <TT
+	  ><A HREF = "System.IO.html#v%3AhSetBinaryMode"
+	    >hSetBinaryMode</A
+	    ></TT
+	  >.)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhSetBinaryMode"
+	  ></A
+	  ><B
+	  >hSetBinaryMode</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Select binary mode (<TT
+	  ><A HREF = "GHC.Base.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  >) or text mode (<TT
+	  ><A HREF = "GHC.Base.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  >) on a open handle.
+(GHC only; see also <TT
+	  ><A HREF = "System.IO.html#v%3AopenBinaryFile"
+	    >openBinaryFile</A
+	    ></TT
+	  >.)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhPutBuf"
+	  ></A
+	  ><B
+	  >hPutBuf</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "System.IO.html#v%3AhPutBuf"
+	      >hPutBuf</A
+	      ></TT
+	    > <TT
+	    >hdl buf count</TT
+	    > writes <TT
+	    >count</TT
+	    > 8-bit bytes from the
+buffer <TT
+	    >buf</TT
+	    > to the handle <TT
+	    >hdl</TT
+	    >.  It returns ().
+</P
+	  ><P
+	  >This operation may fail with:
+</P
+	  ><UL
+	  ><LI
+	    > <TT
+	      ><A HREF = "GHC.IOBase.html#v%3AResourceVanished"
+		>ResourceVanished</A
+		></TT
+	      > if the handle is a pipe or socket, and the
+reading end is closed.  (If this is a POSIX system, and the program
+has not asked to ignore SIGPIPE, then a SIGPIPE may be delivered
+instead, whose default action is to terminate the program).</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetBuf"
+	  ></A
+	  ><B
+	  >hGetBuf</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "System.IO.html#v%3AhGetBuf"
+	      >hGetBuf</A
+	      ></TT
+	    > <TT
+	    >hdl buf count</TT
+	    > reads data from the handle <TT
+	    >hdl</TT
+	    >
+into the buffer <TT
+	    >buf</TT
+	    > until either EOF is reached or
+<TT
+	    >count</TT
+	    > 8-bit bytes have been read.
+It returns the number of bytes actually read.  This may be zero if
+EOF was reached before any data was read (or if <TT
+	    >count</TT
+	    > is zero).
+</P
+	  ><P
+	  ><TT
+	    ><A HREF = "System.IO.html#v%3AhGetBuf"
+	      >hGetBuf</A
+	      ></TT
+	    > never raises an EOF exception, instead it returns a value
+smaller than <TT
+	    >count</TT
+	    >.
+</P
+	  ><P
+	  >If the handle is a pipe or socket, and the writing end
+is closed, <TT
+	    ><A HREF = "System.IO.html#v%3AhGetBuf"
+	      >hGetBuf</A
+	      ></TT
+	    > will behave as if EOF was reached.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhPutBufNonBlocking"
+	  ></A
+	  ><B
+	  >hPutBufNonBlocking</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AhGetBufNonBlocking"
+	  ></A
+	  ><B
+	  >hGetBufNonBlocking</B
+	  > :: <A HREF = "System.IO.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "GHC.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "System.IO.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "System.IO.Error.html"
+	  >System.IO.Error</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

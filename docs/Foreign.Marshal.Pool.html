@@ -1,0 +1,845 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Foreign.Marshal.Pool</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Foreign.Marshal.Pool</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  sven_panne@yahoo.com</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >Pool management</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >(Re-)Allocation within a pool</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Combined allocation and marshalling</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>This module contains support for pooled memory management. Under this scheme,
+(re-)allocations belong to a given pool, and everything in a pool is
+deallocated when the pool itself is deallocated. This is useful when
+<TT
+	  ><A HREF = "Foreign.Marshal.Alloc.html#v%3Aalloca"
+	    >alloca</A
+	    ></TT
+	  > with its implicit allocation and deallocation
+is not flexible enough, but explicit uses of <TT
+	  ><A HREF = "Foreign.Marshal.Alloc.html#v%3Amalloc"
+	    >malloc</A
+	    ></TT
+	  >
+and <TT
+	  ><A HREF = "Foreign.Marshal.Alloc.html#v%3Afree"
+	    >free</A
+	    ></TT
+	  > are too awkward.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3APool"
+		>Pool</A
+		> </TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewPool"
+		>newPool</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AfreePool"
+		>freePool</A
+		> :: <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwithPool"
+		>withPool</A
+		> :: (<A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledMalloc"
+		>pooledMalloc</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledMallocBytes"
+		>pooledMallocBytes</A
+		> :: <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledRealloc"
+		>pooledRealloc</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledReallocBytes"
+		>pooledReallocBytes</A
+		> :: <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledMallocArray"
+		>pooledMallocArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledMallocArray0"
+		>pooledMallocArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledReallocArray"
+		>pooledReallocArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledReallocArray0"
+		>pooledReallocArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledNew"
+		>pooledNew</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledNewArray"
+		>pooledNewArray</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3ApooledNewArray0"
+		>pooledNewArray0</A
+		> :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+		>Storable</A
+		> a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+		>Pool</A
+		> -&gt; a -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Foreign.Ptr.html#t%3APtr"
+		>Ptr</A
+		> a)</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >Pool management</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3APool"
+	  ></A
+	  ><B
+	  >Pool</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >A memory pool.</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewPool"
+	  ></A
+	  ><B
+	  >newPool</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate a fresh memory pool.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AfreePool"
+	  ></A
+	  ><B
+	  >freePool</B
+	  > :: <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Deallocate a memory pool and everything which has been allocated in the
+pool itself.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithPool"
+	  ></A
+	  ><B
+	  >withPool</B
+	  > :: (<A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Execute an action with a fresh memory pool, which gets automatically
+deallocated (including its contents) after the action has finished.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >(Re-)Allocation within a pool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledMalloc"
+	  ></A
+	  ><B
+	  >pooledMalloc</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate space for storable type in the given pool. The size of the area
+allocated is determined by the <TT
+	  ><A HREF = "Foreign.Storable.html#v%3AsizeOf"
+	    >sizeOf</A
+	    ></TT
+	  > method from the instance of
+<TT
+	  ><A HREF = "Foreign.Storable.html#t%3AStorable"
+	    >Storable</A
+	    ></TT
+	  > for the appropriate type.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledMallocBytes"
+	  ></A
+	  ><B
+	  >pooledMallocBytes</B
+	  > :: <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate the given number of bytes of storage in the pool.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledRealloc"
+	  ></A
+	  ><B
+	  >pooledRealloc</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Adjust the storage area for an element in the pool to the given size of
+the required type.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledReallocBytes"
+	  ></A
+	  ><B
+	  >pooledReallocBytes</B
+	  > :: <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Adjust the storage area for an element in the pool to the given size.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledMallocArray"
+	  ></A
+	  ><B
+	  >pooledMallocArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate storage for the given number of elements of a storable type in the
+pool.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledMallocArray0"
+	  ></A
+	  ><B
+	  >pooledMallocArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate storage for the given number of elements of a storable type in the
+pool, but leave room for an extra element to signal the end of the array.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledReallocArray"
+	  ></A
+	  ><B
+	  >pooledReallocArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Adjust the size of an array in the given pool.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledReallocArray0"
+	  ></A
+	  ><B
+	  >pooledReallocArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; <A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a -&gt; <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Adjust the size of an array with an end marker in the given pool.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Combined allocation and marshalling</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledNew"
+	  ></A
+	  ><B
+	  >pooledNew</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate storage for a value in the given pool and marshal the value into
+this storage.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledNewArray"
+	  ></A
+	  ><B
+	  >pooledNewArray</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate consecutive storage for a list of values in the given pool and
+marshal these values into it.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3ApooledNewArray0"
+	  ></A
+	  ><B
+	  >pooledNewArray0</B
+	  > :: <A HREF = "Foreign.Storable.html#t%3AStorable"
+	  >Storable</A
+	  > a =&gt; <A HREF = "Foreign.Marshal.Pool.html#t%3APool"
+	  >Pool</A
+	  > -&gt; a -&gt; [a] -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Allocate consecutive storage for a list of values in the given pool and
+marshal these values into it, terminating the end with the given marker.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

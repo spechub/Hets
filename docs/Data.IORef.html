@@ -1,0 +1,491 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Data.IORef</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Data.IORef</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >IORefs</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Mutable references in the IO monad.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AIORef"
+		>IORef</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewIORef"
+		>newIORef</A
+		> :: a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Data.IORef.html#t%3AIORef"
+		>IORef</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AreadIORef"
+		>readIORef</A
+		> :: <A HREF = "Data.IORef.html#t%3AIORef"
+		>IORef</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AwriteIORef"
+		>writeIORef</A
+		> :: <A HREF = "Data.IORef.html#t%3AIORef"
+		>IORef</A
+		> a -&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmodifyIORef"
+		>modifyIORef</A
+		> :: <A HREF = "Data.IORef.html#t%3AIORef"
+		>IORef</A
+		> a -&gt; (a -&gt; a) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AatomicModifyIORef"
+		>atomicModifyIORef</A
+		> :: <A HREF = "Data.IORef.html#t%3AIORef"
+		>IORef</A
+		> a -&gt; (a -&gt; (a, b)) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmkWeakIORef"
+		>mkWeakIORef</A
+		> :: <A HREF = "Data.IORef.html#t%3AIORef"
+		>IORef</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> () -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "GHC.Weak.html#t%3AWeak"
+		>Weak</A
+		> (<A HREF = "Data.IORef.html#t%3AIORef"
+		>IORef</A
+		> a))</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >IORefs</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AIORef"
+	  ></A
+	  ><B
+	  >IORef</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >A mutable variable in the <TT
+		><A HREF = "GHC.IOBase.html#t%3AIO"
+		  >IO</A
+		  ></TT
+		> monad</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "Data.IORef.html#t%3AIORef"
+		      >IORef</A
+		      > a)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Prelude.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "Data.IORef.html#t%3AIORef"
+		      >IORef</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewIORef"
+	  ></A
+	  ><B
+	  >newIORef</B
+	  > :: a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Data.IORef.html#t%3AIORef"
+	  >IORef</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Build a new <TT
+	  ><A HREF = "Data.IORef.html#t%3AIORef"
+	    >IORef</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AreadIORef"
+	  ></A
+	  ><B
+	  >readIORef</B
+	  > :: <A HREF = "Data.IORef.html#t%3AIORef"
+	  >IORef</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Read the value of an <TT
+	  ><A HREF = "Data.IORef.html#t%3AIORef"
+	    >IORef</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwriteIORef"
+	  ></A
+	  ><B
+	  >writeIORef</B
+	  > :: <A HREF = "Data.IORef.html#t%3AIORef"
+	  >IORef</A
+	  > a -&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Write a new value into an <TT
+	  ><A HREF = "Data.IORef.html#t%3AIORef"
+	    >IORef</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmodifyIORef"
+	  ></A
+	  ><B
+	  >modifyIORef</B
+	  > :: <A HREF = "Data.IORef.html#t%3AIORef"
+	  >IORef</A
+	  > a -&gt; (a -&gt; a) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Mutate the contents of an <TT
+	  ><A HREF = "Data.IORef.html#t%3AIORef"
+	    >IORef</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AatomicModifyIORef"
+	  ></A
+	  ><B
+	  >atomicModifyIORef</B
+	  > :: <A HREF = "Data.IORef.html#t%3AIORef"
+	  >IORef</A
+	  > a -&gt; (a -&gt; (a, b)) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Atomically modifies the contents of an <TT
+	    ><A HREF = "Data.IORef.html#t%3AIORef"
+	      >IORef</A
+	      ></TT
+	    >.
+</P
+	  ><P
+	  >This function is useful for using <TT
+	    ><A HREF = "Data.IORef.html#t%3AIORef"
+	      >IORef</A
+	      ></TT
+	    > in a safe way in a multithreaded
+program.  If you only have one <TT
+	    ><A HREF = "Data.IORef.html#t%3AIORef"
+	      >IORef</A
+	      ></TT
+	    >, then using <TT
+	    ><A HREF = "Data.IORef.html#v%3AatomicModifyIORef"
+	      >atomicModifyIORef</A
+	      ></TT
+	    > to
+access and modify it will prevent race conditions.
+</P
+	  ><P
+	  >Extending the atomicity to multiple <TT
+	    ><A HREF = "Data.IORef.html#t%3AIORef"
+	      >IORef</A
+	      ></TT
+	    >s is problematic, so it
+is recommended that if you need to do anything more complicated
+then using <TT
+	    ><A HREF = "GHC.IOBase.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > instead is a good idea.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmkWeakIORef"
+	  ></A
+	  ><B
+	  >mkWeakIORef</B
+	  > :: <A HREF = "Data.IORef.html#t%3AIORef"
+	  >IORef</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > () -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Weak.html#t%3AWeak"
+	  >Weak</A
+	  > (<A HREF = "Data.IORef.html#t%3AIORef"
+	  >IORef</A
+	  > a))</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Make a <TT
+	  ><A HREF = "GHC.Weak.html#t%3AWeak"
+	    >Weak</A
+	    ></TT
+	  > pointer to an <TT
+	  ><A HREF = "Data.IORef.html#t%3AIORef"
+	    >IORef</A
+	    ></TT
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

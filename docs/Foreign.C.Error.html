@@ -1,0 +1,1964 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Foreign.C.Error</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Foreign.C.Error</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  provisional</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  ffi@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>C-specific Marshalling support: Handling of C &quot;errno&quot; error codes
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >newtype</SPAN
+	  > <A NAME = "t%3AErrno"
+	  ></A
+	  ><B
+	  >Errno</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AErrno"
+		      ></A
+		      ><B
+		      >Errno</B
+		      > <A HREF = "Foreign.C.Types.html#t%3ACInt"
+		      >CInt</A
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "Foreign.C.Error.html#t%3AErrno"
+		      >Errno</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeOK"
+	  ></A
+	  ><B
+	  >eOK</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ae2BIG"
+	  ></A
+	  ><B
+	  >e2BIG</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeACCES"
+	  ></A
+	  ><B
+	  >eACCES</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeADDRINUSE"
+	  ></A
+	  ><B
+	  >eADDRINUSE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeADDRNOTAVAIL"
+	  ></A
+	  ><B
+	  >eADDRNOTAVAIL</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeADV"
+	  ></A
+	  ><B
+	  >eADV</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeAFNOSUPPORT"
+	  ></A
+	  ><B
+	  >eAFNOSUPPORT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeAGAIN"
+	  ></A
+	  ><B
+	  >eAGAIN</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeALREADY"
+	  ></A
+	  ><B
+	  >eALREADY</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeBADF"
+	  ></A
+	  ><B
+	  >eBADF</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeBADMSG"
+	  ></A
+	  ><B
+	  >eBADMSG</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeBADRPC"
+	  ></A
+	  ><B
+	  >eBADRPC</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeBUSY"
+	  ></A
+	  ><B
+	  >eBUSY</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeCHILD"
+	  ></A
+	  ><B
+	  >eCHILD</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeCOMM"
+	  ></A
+	  ><B
+	  >eCOMM</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeCONNABORTED"
+	  ></A
+	  ><B
+	  >eCONNABORTED</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeCONNREFUSED"
+	  ></A
+	  ><B
+	  >eCONNREFUSED</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeCONNRESET"
+	  ></A
+	  ><B
+	  >eCONNRESET</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeDEADLK"
+	  ></A
+	  ><B
+	  >eDEADLK</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeDESTADDRREQ"
+	  ></A
+	  ><B
+	  >eDESTADDRREQ</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeDIRTY"
+	  ></A
+	  ><B
+	  >eDIRTY</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeDOM"
+	  ></A
+	  ><B
+	  >eDOM</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeDQUOT"
+	  ></A
+	  ><B
+	  >eDQUOT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeEXIST"
+	  ></A
+	  ><B
+	  >eEXIST</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeFAULT"
+	  ></A
+	  ><B
+	  >eFAULT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeFBIG"
+	  ></A
+	  ><B
+	  >eFBIG</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeFTYPE"
+	  ></A
+	  ><B
+	  >eFTYPE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeHOSTDOWN"
+	  ></A
+	  ><B
+	  >eHOSTDOWN</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeHOSTUNREACH"
+	  ></A
+	  ><B
+	  >eHOSTUNREACH</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeIDRM"
+	  ></A
+	  ><B
+	  >eIDRM</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeILSEQ"
+	  ></A
+	  ><B
+	  >eILSEQ</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeINPROGRESS"
+	  ></A
+	  ><B
+	  >eINPROGRESS</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeINTR"
+	  ></A
+	  ><B
+	  >eINTR</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeINVAL"
+	  ></A
+	  ><B
+	  >eINVAL</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeIO"
+	  ></A
+	  ><B
+	  >eIO</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeISCONN"
+	  ></A
+	  ><B
+	  >eISCONN</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeISDIR"
+	  ></A
+	  ><B
+	  >eISDIR</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeLOOP"
+	  ></A
+	  ><B
+	  >eLOOP</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeMFILE"
+	  ></A
+	  ><B
+	  >eMFILE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeMLINK"
+	  ></A
+	  ><B
+	  >eMLINK</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeMSGSIZE"
+	  ></A
+	  ><B
+	  >eMSGSIZE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeMULTIHOP"
+	  ></A
+	  ><B
+	  >eMULTIHOP</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNAMETOOLONG"
+	  ></A
+	  ><B
+	  >eNAMETOOLONG</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNETDOWN"
+	  ></A
+	  ><B
+	  >eNETDOWN</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNETRESET"
+	  ></A
+	  ><B
+	  >eNETRESET</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNETUNREACH"
+	  ></A
+	  ><B
+	  >eNETUNREACH</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNFILE"
+	  ></A
+	  ><B
+	  >eNFILE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOBUFS"
+	  ></A
+	  ><B
+	  >eNOBUFS</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNODATA"
+	  ></A
+	  ><B
+	  >eNODATA</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNODEV"
+	  ></A
+	  ><B
+	  >eNODEV</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOENT"
+	  ></A
+	  ><B
+	  >eNOENT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOEXEC"
+	  ></A
+	  ><B
+	  >eNOEXEC</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOLCK"
+	  ></A
+	  ><B
+	  >eNOLCK</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOLINK"
+	  ></A
+	  ><B
+	  >eNOLINK</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOMEM"
+	  ></A
+	  ><B
+	  >eNOMEM</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOMSG"
+	  ></A
+	  ><B
+	  >eNOMSG</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNONET"
+	  ></A
+	  ><B
+	  >eNONET</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOPROTOOPT"
+	  ></A
+	  ><B
+	  >eNOPROTOOPT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOSPC"
+	  ></A
+	  ><B
+	  >eNOSPC</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOSR"
+	  ></A
+	  ><B
+	  >eNOSR</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOSTR"
+	  ></A
+	  ><B
+	  >eNOSTR</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOSYS"
+	  ></A
+	  ><B
+	  >eNOSYS</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOTBLK"
+	  ></A
+	  ><B
+	  >eNOTBLK</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOTCONN"
+	  ></A
+	  ><B
+	  >eNOTCONN</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOTDIR"
+	  ></A
+	  ><B
+	  >eNOTDIR</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOTEMPTY"
+	  ></A
+	  ><B
+	  >eNOTEMPTY</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOTSOCK"
+	  ></A
+	  ><B
+	  >eNOTSOCK</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNOTTY"
+	  ></A
+	  ><B
+	  >eNOTTY</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeNXIO"
+	  ></A
+	  ><B
+	  >eNXIO</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeOPNOTSUPP"
+	  ></A
+	  ><B
+	  >eOPNOTSUPP</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePERM"
+	  ></A
+	  ><B
+	  >ePERM</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePFNOSUPPORT"
+	  ></A
+	  ><B
+	  >ePFNOSUPPORT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePIPE"
+	  ></A
+	  ><B
+	  >ePIPE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePROCLIM"
+	  ></A
+	  ><B
+	  >ePROCLIM</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePROCUNAVAIL"
+	  ></A
+	  ><B
+	  >ePROCUNAVAIL</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePROGMISMATCH"
+	  ></A
+	  ><B
+	  >ePROGMISMATCH</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePROGUNAVAIL"
+	  ></A
+	  ><B
+	  >ePROGUNAVAIL</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePROTO"
+	  ></A
+	  ><B
+	  >ePROTO</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePROTONOSUPPORT"
+	  ></A
+	  ><B
+	  >ePROTONOSUPPORT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AePROTOTYPE"
+	  ></A
+	  ><B
+	  >ePROTOTYPE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeRANGE"
+	  ></A
+	  ><B
+	  >eRANGE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeREMCHG"
+	  ></A
+	  ><B
+	  >eREMCHG</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeREMOTE"
+	  ></A
+	  ><B
+	  >eREMOTE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeROFS"
+	  ></A
+	  ><B
+	  >eROFS</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeRPCMISMATCH"
+	  ></A
+	  ><B
+	  >eRPCMISMATCH</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeRREMOTE"
+	  ></A
+	  ><B
+	  >eRREMOTE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeSHUTDOWN"
+	  ></A
+	  ><B
+	  >eSHUTDOWN</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeSOCKTNOSUPPORT"
+	  ></A
+	  ><B
+	  >eSOCKTNOSUPPORT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeSPIPE"
+	  ></A
+	  ><B
+	  >eSPIPE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeSRCH"
+	  ></A
+	  ><B
+	  >eSRCH</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeSRMNT"
+	  ></A
+	  ><B
+	  >eSRMNT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeSTALE"
+	  ></A
+	  ><B
+	  >eSTALE</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeTIME"
+	  ></A
+	  ><B
+	  >eTIME</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeTIMEDOUT"
+	  ></A
+	  ><B
+	  >eTIMEDOUT</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeTOOMANYREFS"
+	  ></A
+	  ><B
+	  >eTOOMANYREFS</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeTXTBSY"
+	  ></A
+	  ><B
+	  >eTXTBSY</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeUSERS"
+	  ></A
+	  ><B
+	  >eUSERS</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeWOULDBLOCK"
+	  ></A
+	  ><B
+	  >eWOULDBLOCK</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AeXDEV"
+	  ></A
+	  ><B
+	  >eXDEV</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisValidErrno"
+	  ></A
+	  ><B
+	  >isValidErrno</B
+	  > :: <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AgetErrno"
+	  ></A
+	  ><B
+	  >getErrno</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AresetErrno"
+	  ></A
+	  ><B
+	  >resetErrno</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AerrnoToIOError"
+	  ></A
+	  ><B
+	  >errnoToIOError</B
+	  > :: <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "Foreign.C.Error.html#t%3AErrno"
+	  >Errno</A
+	  > -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "GHC.IOBase.html#t%3AHandle"
+	  >Handle</A
+	  > -&gt; <A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIOError"
+	  >IOError</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrno"
+	  ></A
+	  ><B
+	  >throwErrno</B
+	  > :: <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIf"
+	  ></A
+	  ><B
+	  >throwErrnoIf</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIf_"
+	  ></A
+	  ><B
+	  >throwErrnoIf_</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfRetry"
+	  ></A
+	  ><B
+	  >throwErrnoIfRetry</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfRetry_"
+	  ></A
+	  ><B
+	  >throwErrnoIfRetry_</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfMinus1"
+	  ></A
+	  ><B
+	  >throwErrnoIfMinus1</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfMinus1_"
+	  ></A
+	  ><B
+	  >throwErrnoIfMinus1_</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfMinus1Retry"
+	  ></A
+	  ><B
+	  >throwErrnoIfMinus1Retry</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfMinus1Retry_"
+	  ></A
+	  ><B
+	  >throwErrnoIfMinus1Retry_</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfNull"
+	  ></A
+	  ><B
+	  >throwErrnoIfNull</B
+	  > :: <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfNullRetry"
+	  ></A
+	  ><B
+	  >throwErrnoIfNullRetry</B
+	  > :: <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfRetryMayBlock"
+	  ></A
+	  ><B
+	  >throwErrnoIfRetryMayBlock</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfRetryMayBlock_"
+	  ></A
+	  ><B
+	  >throwErrnoIfRetryMayBlock_</B
+	  > :: (a -&gt; <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  >) -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfMinus1RetryMayBlock"
+	  ></A
+	  ><B
+	  >throwErrnoIfMinus1RetryMayBlock</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfMinus1RetryMayBlock_"
+	  ></A
+	  ><B
+	  >throwErrnoIfMinus1RetryMayBlock_</B
+	  > :: <A HREF = "GHC.Num.html#t%3ANum"
+	  >Num</A
+	  > a =&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowErrnoIfNullRetryMayBlock"
+	  ></A
+	  ><B
+	  >throwErrnoIfNullRetryMayBlock</B
+	  > :: <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a) -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > b -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Foreign.Ptr.html#t%3APtr"
+	  >Ptr</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

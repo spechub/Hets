@@ -1,0 +1,1199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >GHC.Conc</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>GHC.Conc</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (GHC extensions)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  internal</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  cvs-ghc@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Basic concurrency stuff.
+</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AThreadId"
+		>ThreadId</A
+		>  = <A HREF = "#v%3AThreadId"
+		>ThreadId</A
+		> ThreadId#</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmyThreadId"
+		>myThreadId</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Conc.html#t%3AThreadId"
+		>ThreadId</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AkillThread"
+		>killThread</A
+		> :: <A HREF = "GHC.Conc.html#t%3AThreadId"
+		>ThreadId</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthrowTo"
+		>throwTo</A
+		> :: <A HREF = "GHC.Conc.html#t%3AThreadId"
+		>ThreadId</A
+		> -&gt; <A HREF = "GHC.Exception.html#t%3AException"
+		>Exception</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Apar"
+		>par</A
+		> :: a -&gt; b -&gt; b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Apseq"
+		>pseq</A
+		> :: a -&gt; b -&gt; b</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Ayield"
+		>yield</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AlabelThread"
+		>labelThread</A
+		> :: <A HREF = "GHC.Conc.html#t%3AThreadId"
+		>ThreadId</A
+		> -&gt; <A HREF = "GHC.Base.html#t%3AString"
+		>String</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthreadDelay"
+		>threadDelay</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthreadWaitRead"
+		>threadWaitRead</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AthreadWaitWrite"
+		>threadWaitWrite</A
+		> :: <A HREF = "GHC.Base.html#t%3AInt"
+		>Int</A
+		> -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AMVar"
+		>MVar</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewMVar"
+		>newMVar</A
+		> :: a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "GHC.Conc.html#t%3AMVar"
+		>MVar</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AnewEmptyMVar"
+		>newEmptyMVar</A
+		> :: <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "GHC.Conc.html#t%3AMVar"
+		>MVar</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtakeMVar"
+		>takeMVar</A
+		> :: <A HREF = "GHC.Conc.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> a</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AputMVar"
+		>putMVar</A
+		> :: <A HREF = "GHC.Conc.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtryTakeMVar"
+		>tryTakeMVar</A
+		> :: <A HREF = "GHC.Conc.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Data.Maybe.html#t%3AMaybe"
+		>Maybe</A
+		> a)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AtryPutMVar"
+		>tryPutMVar</A
+		> :: <A HREF = "GHC.Conc.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AisEmptyMVar"
+		>isEmptyMVar</A
+		> :: <A HREF = "GHC.Conc.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> <A HREF = "GHC.Base.html#t%3ABool"
+		>Bool</A
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AaddMVarFinalizer"
+		>addMVarFinalizer</A
+		> :: <A HREF = "GHC.Conc.html#t%3AMVar"
+		>MVar</A
+		> a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> () -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AThreadId"
+	  ></A
+	  ><B
+	  >ThreadId</B
+	  > </TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>A <TT
+		  ><A HREF = "GHC.Conc.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > is an abstract type representing a handle to a thread.
+<TT
+		  ><A HREF = "GHC.Conc.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > is an instance of <TT
+		  ><A HREF = "GHC.Base.html#t%3AEq"
+		    >Eq</A
+		    ></TT
+		  >, <TT
+		  ><A HREF = "GHC.Base.html#t%3AOrd"
+		    >Ord</A
+		    ></TT
+		  > and Show, where
+the <TT
+		  ><A HREF = "GHC.Base.html#t%3AOrd"
+		    >Ord</A
+		    ></TT
+		  > instance implements an arbitrary total ordering over
+<TT
+		  ><A HREF = "GHC.Conc.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  >s. The Show instance lets you convert an arbitrary-valued
+<TT
+		  ><A HREF = "GHC.Conc.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > to string form; showing a <TT
+		  ><A HREF = "GHC.Conc.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > value is occasionally
+useful when debugging or diagnosing the behaviour of a concurrent
+program.
+</P
+		><P
+		><EM
+		  >Note</EM
+		  >: in GHC, if you have a <TT
+		  ><A HREF = "GHC.Conc.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  >, you essentially have
+a pointer to the thread itself.  This means the thread itself can't be
+garbage collected until you drop the <TT
+		  ><A HREF = "GHC.Conc.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  >.
+This misfeature will hopefully be corrected at a later date.
+</P
+		><P
+		><EM
+		  >Note</EM
+		  >: Hugs does not provide any operations on other threads;
+it defines <TT
+		  ><A HREF = "GHC.Conc.html#t%3AThreadId"
+		    >ThreadId</A
+		    ></TT
+		  > as a synonym for ().
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3AThreadId"
+		      ></A
+		      ><B
+		      >ThreadId</B
+		      > ThreadId#</TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > <A HREF = "GHC.Conc.html#t%3AThreadId"
+		      >ThreadId</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AOrd"
+		      >Ord</A
+		      > <A HREF = "GHC.Conc.html#t%3AThreadId"
+		      >ThreadId</A
+		      ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Show.html#t%3AShow"
+		      >Show</A
+		      > <A HREF = "GHC.Conc.html#t%3AThreadId"
+		      >ThreadId</A
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmyThreadId"
+	  ></A
+	  ><B
+	  >myThreadId</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Conc.html#t%3AThreadId"
+	  >ThreadId</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Returns the <TT
+	  ><A HREF = "GHC.Conc.html#t%3AThreadId"
+	    >ThreadId</A
+	    ></TT
+	  > of the calling thread (GHC only).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AkillThread"
+	  ></A
+	  ><B
+	  >killThread</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AThreadId"
+	  >ThreadId</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.Conc.html#v%3AkillThread"
+	      >killThread</A
+	      ></TT
+	    > terminates the given thread (GHC only).
+Any work already done by the thread isn't
+lost: the computation is suspended until required by another thread.
+The memory used by the thread will be garbage collected if it isn't
+referenced from anywhere.  The <TT
+	    ><A HREF = "GHC.Conc.html#v%3AkillThread"
+	      >killThread</A
+	      ></TT
+	    > function is defined in
+terms of <TT
+	    ><A HREF = "GHC.Conc.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    >:
+</P
+	  ><PRE
+	  > killThread tid = throwTo tid (AsyncException ThreadKilled)
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthrowTo"
+	  ></A
+	  ><B
+	  >throwTo</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AThreadId"
+	  >ThreadId</A
+	  > -&gt; <A HREF = "GHC.Exception.html#t%3AException"
+	  >Exception</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.Conc.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    > raises an arbitrary exception in the target thread (GHC only).
+</P
+	  ><P
+	  ><TT
+	    ><A HREF = "GHC.Conc.html#v%3AthrowTo"
+	      >throwTo</A
+	      ></TT
+	    > does not return until the exception has been raised in the
+target thread.  The calling thread can thus be certain that the target
+thread has received the exception.  This is a useful property to know
+when dealing with race conditions: eg. if there are two threads that
+can kill each other, it is guaranteed that only one of the threads
+will get to kill the other. </P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Apar"
+	  ></A
+	  ><B
+	  >par</B
+	  > :: a -&gt; b -&gt; b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Apseq"
+	  ></A
+	  ><B
+	  >pseq</B
+	  > :: a -&gt; b -&gt; b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Ayield"
+	  ></A
+	  ><B
+	  >yield</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>The <TT
+	  ><A HREF = "GHC.Conc.html#v%3Ayield"
+	    >yield</A
+	    ></TT
+	  > action allows (forces, in a co-operative multitasking
+implementation) a context-switch to any other currently runnable
+threads (if any), and is occasionally useful when implementing
+concurrency abstractions.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AlabelThread"
+	  ></A
+	  ><B
+	  >labelThread</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AThreadId"
+	  >ThreadId</A
+	  > -&gt; <A HREF = "GHC.Base.html#t%3AString"
+	  >String</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  ><TT
+	    ><A HREF = "GHC.Conc.html#v%3AlabelThread"
+	      >labelThread</A
+	      ></TT
+	    > stores a string as identifier for this thread if
+you built a RTS with debugging support. This identifier will be used in
+the debugging output to make distinction of different threads easier
+(otherwise you only have the thread state object's address in the heap).
+</P
+	  ><P
+	  >Other applications like the graphical Concurrent Haskell Debugger
+(<A HREF = "http://www.informatik.uni-kiel.de/~fhu/chd/"
+	    >http://www.informatik.uni-kiel.de/~fhu/chd/</A
+	    >) may choose to overload
+<TT
+	    ><A HREF = "GHC.Conc.html#v%3AlabelThread"
+	      >labelThread</A
+	      ></TT
+	    > for their purposes as well.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthreadDelay"
+	  ></A
+	  ><B
+	  >threadDelay</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The <TT
+	    ><A HREF = "GHC.Conc.html#v%3AthreadDelay"
+	      >threadDelay</A
+	      ></TT
+	    > operation will cause the current thread to
+suspend for a given number of microseconds (GHC only).
+</P
+	  ><P
+	  >Note that the resolution
+used by the Haskell runtime system's internal timer together with the
+fact that the thread may take some time to be rescheduled after the
+time has expired, means that the accuracy is more like 1/50 second.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthreadWaitRead"
+	  ></A
+	  ><B
+	  >threadWaitRead</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Block the current thread until data is available to read on the
+given file descriptor (GHC only).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AthreadWaitWrite"
+	  ></A
+	  ><B
+	  >threadWaitWrite</B
+	  > :: <A HREF = "GHC.Base.html#t%3AInt"
+	  >Int</A
+	  > -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Block the current thread until data can be written to the
+given file descriptor (GHC only).</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AMVar"
+	  ></A
+	  ><B
+	  >MVar</B
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      >An <TT
+		><A HREF = "GHC.Conc.html#t%3AMVar"
+		  >MVar</A
+		  ></TT
+		> (pronounced &quot;em-var&quot;) is a synchronising variable, used
+for communication between concurrent threads.  It can be thought of
+as a a box, which may be empty or full.
+</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AEq"
+		      >Eq</A
+		      > (<A HREF = "GHC.Conc.html#t%3AMVar"
+		      >MVar</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewMVar"
+	  ></A
+	  ><B
+	  >newMVar</B
+	  > :: a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Conc.html#t%3AMVar"
+	  >MVar</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Create an <TT
+	  ><A HREF = "GHC.Conc.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > which contains the supplied value.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AnewEmptyMVar"
+	  ></A
+	  ><B
+	  >newEmptyMVar</B
+	  > :: <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "GHC.Conc.html#t%3AMVar"
+	  >MVar</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Create an <TT
+	  ><A HREF = "GHC.Conc.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > which is initially empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtakeMVar"
+	  ></A
+	  ><B
+	  >takeMVar</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Return the contents of the <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >.  If the <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > is currently
+empty, <TT
+	    ><A HREF = "GHC.Conc.html#v%3AtakeMVar"
+	      >takeMVar</A
+	      ></TT
+	    > will wait until it is full.  After a <TT
+	    ><A HREF = "GHC.Conc.html#v%3AtakeMVar"
+	      >takeMVar</A
+	      ></TT
+	    >, 
+the <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > is left empty.
+</P
+	  ><P
+	  >If several threads are competing to take the same <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >, one is chosen
+to continue at random when the <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > becomes full.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AputMVar"
+	  ></A
+	  ><B
+	  >putMVar</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Put a value into an <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >.  If the <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > is currently full,
+<TT
+	    ><A HREF = "GHC.Conc.html#v%3AputMVar"
+	      >putMVar</A
+	      ></TT
+	    > will wait until it becomes empty.
+</P
+	  ><P
+	  >If several threads are competing to fill the same <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    >, one is
+chosen to continue at random with the <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > becomes empty.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtryTakeMVar"
+	  ></A
+	  ><B
+	  >tryTakeMVar</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Data.Maybe.html#t%3AMaybe"
+	  >Maybe</A
+	  > a)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A non-blocking version of <TT
+	  ><A HREF = "GHC.Conc.html#v%3AtakeMVar"
+	    >takeMVar</A
+	    ></TT
+	  >.  The <TT
+	  ><A HREF = "GHC.Conc.html#v%3AtryTakeMVar"
+	    >tryTakeMVar</A
+	    ></TT
+	  > function
+returns immediately, with <TT
+	  ><A HREF = "Data.Maybe.html#v%3ANothing"
+	    >Nothing</A
+	    ></TT
+	  > if the <TT
+	  ><A HREF = "GHC.Conc.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > was empty, or
+<TT
+	  ><TT
+	    ><A HREF = "Data.Maybe.html#v%3AJust"
+	      >Just</A
+	      ></TT
+	    > a</TT
+	  > if the <TT
+	  ><A HREF = "GHC.Conc.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > was full with contents <TT
+	  >a</TT
+	  >.  After <TT
+	  ><A HREF = "GHC.Conc.html#v%3AtryTakeMVar"
+	    >tryTakeMVar</A
+	    ></TT
+	  >,
+the <TT
+	  ><A HREF = "GHC.Conc.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > is left empty.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AtryPutMVar"
+	  ></A
+	  ><B
+	  >tryPutMVar</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>A non-blocking version of <TT
+	  ><A HREF = "GHC.Conc.html#v%3AputMVar"
+	    >putMVar</A
+	    ></TT
+	  >.  The <TT
+	  ><A HREF = "GHC.Conc.html#v%3AtryPutMVar"
+	    >tryPutMVar</A
+	    ></TT
+	  > function
+attempts to put the value <TT
+	  >a</TT
+	  > into the <TT
+	  ><A HREF = "GHC.Conc.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  >, returning <TT
+	  ><A HREF = "GHC.Base.html#v%3ATrue"
+	    >True</A
+	    ></TT
+	  > if
+it was successful, or <TT
+	  ><A HREF = "GHC.Base.html#v%3AFalse"
+	    >False</A
+	    ></TT
+	  > otherwise.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AisEmptyMVar"
+	  ></A
+	  ><B
+	  >isEmptyMVar</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > <A HREF = "GHC.Base.html#t%3ABool"
+	  >Bool</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Check whether a given <TT
+	    ><A HREF = "GHC.Conc.html#t%3AMVar"
+	      >MVar</A
+	      ></TT
+	    > is empty.
+</P
+	  ><P
+	  >Notice that the boolean value returned  is just a snapshot of
+the state of the MVar. By the time you get to react on its result,
+the MVar may have been filled (or emptied) - so be extremely
+careful when using this operation.   Use <TT
+	    ><A HREF = "GHC.Conc.html#v%3AtryTakeMVar"
+	      >tryTakeMVar</A
+	      ></TT
+	    > instead if possible.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AaddMVarFinalizer"
+	  ></A
+	  ><B
+	  >addMVarFinalizer</B
+	  > :: <A HREF = "GHC.Conc.html#t%3AMVar"
+	  >MVar</A
+	  > a -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > () -&gt; <A HREF = "GHC.IOBase.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Add a finalizer to an <TT
+	  ><A HREF = "GHC.Conc.html#t%3AMVar"
+	    >MVar</A
+	    ></TT
+	  > (GHC only).  See <A HREF = "Foreign.ForeignPtr.html"
+	  >Foreign.ForeignPtr</A
+	  > and
+<A HREF = "System.Mem.Weak.html"
+	  >System.Mem.Weak</A
+	  > for more about finalizers.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

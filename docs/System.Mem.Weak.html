@@ -1,0 +1,794 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >System.Mem.Weak</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>System.Mem.Weak</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      ><B
+		>Contents</B
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD
+	      ><DL
+		><DT
+		  ><A HREF = "#1"
+		    >The <TT
+		      >Weak</TT
+		      > type</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#2"
+		    >The general interface</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#3"
+		    >Specialised versions</A
+		    ></DT
+		  ><DT
+		  ><A HREF = "#4"
+		    >A precise semantics</A
+		    ></DT
+		  ></DL
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >In general terms, a weak pointer is a reference to an object that is
+not followed by the garbage collector - that is, the existence of a
+weak pointer to an object has no effect on the lifetime of that
+object.  A weak pointer can be de-referenced to find out
+whether the object it refers to is still alive or not, and if so
+to return the object itself.
+</P
+	  ><P
+	  >Weak pointers are particularly useful for caches and memo tables.
+To build a memo table, you build a data structure 
+mapping from the function argument (the key) to its result (the
+value).  When you apply the function to a new argument you first
+check whether the key/value pair is already in the memo table.
+The key point is that the memo table itself should not keep the
+key and value alive.  So the table should contain a weak pointer
+to the key, not an ordinary pointer.  The pointer to the value must
+not be weak, because the only reference to the value might indeed be
+from the memo table.   
+</P
+	  ><P
+	  >So it looks as if the memo table will keep all its values
+alive for ever.  One way to solve this is to purge the table
+occasionally, by deleting entries whose keys have died.
+</P
+	  ><P
+	  >The weak pointers in this library
+support another approach, called <EM
+	    >finalization</EM
+	    >.
+When the key referred to by a weak pointer dies, the storage manager
+arranges to run a programmer-specified finalizer.  In the case of memo
+tables, for example, the finalizer could remove the key/value pair
+from the memo table.  
+</P
+	  ><P
+	  >Another difficulty with the memo table is that the value of a
+key/value pair might itself contain a pointer to the key.
+So the memo table keeps the value alive, which keeps the key alive,
+even though there may be no other references to the key so both should
+die.  The weak pointers in this library provide a slight 
+generalisation of the basic weak-pointer idea, in which each
+weak pointer actually contains both a key and a value.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Synopsis</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "decl"
+	      ><SPAN CLASS = "keyword"
+		>data</SPAN
+		> <A HREF = "#t%3AWeak"
+		>Weak</A
+		> v</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmkWeak"
+		>mkWeak</A
+		> :: k -&gt; v -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> (<A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "System.Mem.Weak.html#t%3AWeak"
+		>Weak</A
+		> v)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AdeRefWeak"
+		>deRefWeak</A
+		> :: <A HREF = "System.Mem.Weak.html#t%3AWeak"
+		>Weak</A
+		> v -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> v)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3Afinalize"
+		>finalize</A
+		> :: <A HREF = "System.Mem.Weak.html#t%3AWeak"
+		>Weak</A
+		> v -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmkWeakPtr"
+		>mkWeakPtr</A
+		> :: k -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> (<A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "System.Mem.Weak.html#t%3AWeak"
+		>Weak</A
+		> k)</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AaddFinalizer"
+		>addFinalizer</A
+		> :: key -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> () -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "s8"
+	      ></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "decl"
+	      ><A HREF = "#v%3AmkWeakPair"
+		>mkWeakPair</A
+		> :: k -&gt; v -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> (<A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ()) -&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "System.Mem.Weak.html#t%3AWeak"
+		>Weak</A
+		> (k, v))</TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "1"
+	  >The <TT
+	    >Weak</TT
+	    > type</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >data</SPAN
+	  > <A NAME = "t%3AWeak"
+	  ></A
+	  ><B
+	  >Weak</B
+	  > v</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "ndoc"
+	      ><P
+		>A weak pointer object with a key and a value.  The value has type <TT
+		  >v</TT
+		  >.
+</P
+		><P
+		>A weak pointer expresses a relationship between two objects, the
+<EM
+		  >key</EM
+		  > and the <EM
+		  >value</EM
+		  >:  if the key is considered to be alive by the
+garbage collector, then the value is also alive.  A reference from
+the value to the key does <EM
+		  >not</EM
+		  > keep the key alive.
+</P
+		><P
+		>A weak pointer may also have a finalizer of type <TT
+		  >IO ()</TT
+		  >; if it does,
+then the finalizer will be run once, and once only, at a time after
+the key has become unreachable by the program (&quot;dead&quot;).  The storage
+manager attempts to run the finalizer(s) for an object soon after the
+object dies, but promptness is not guaranteed.  
+</P
+		><P
+		>References from the finalizer to the key are treated in the same way
+as references from the value to the key: they do not keep the key
+alive.  A finalizer may therefore ressurrect the key, perhaps by
+storing it in the same data structure.
+</P
+		><P
+		>The finalizer, and the relationship between the key and the value,
+exist regardless of whether the program keeps a reference to the
+<TT
+		  ><A HREF = "System.Mem.Weak.html#t%3AWeak"
+		    >Weak</A
+		    ></TT
+		  > object or not.
+</P
+		><P
+		>There may be multiple weak pointers with the same key.  In this
+case, the finalizers for each of these weak pointers will all be
+run in some arbitrary order, or perhaps concurrently, when the key
+dies.  If the programmer specifies a finalizer that assumes it has
+the only reference to an object (for example, a file that it wishes
+to close), then the programmer must ensure that there is only one
+such finalizer.
+</P
+		><P
+		>If there are no other threads to run, the runtime system will check
+for runnable finalizers before declaring the system to be deadlocked.
+</P
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > a =&gt; <A HREF = "Data.Typeable.html#t%3ATypeable"
+		      >Typeable</A
+		      > (<A HREF = "System.Mem.Weak.html#t%3AWeak"
+		      >Weak</A
+		      > a)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "2"
+	  >The general interface</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmkWeak"
+	  ></A
+	  ><B
+	  >mkWeak</B
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "arg"
+	      >:: k</TD
+	      ><TD CLASS = "rdoc"
+	      >key</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; v</TD
+	      ><TD CLASS = "rdoc"
+	      >value</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Prelude.html#t%3AMaybe"
+		>Maybe</A
+		> (<A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> ())</TD
+	      ><TD CLASS = "rdoc"
+	      >finalizer</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "arg"
+	      >-&gt; <A HREF = "Prelude.html#t%3AIO"
+		>IO</A
+		> (<A HREF = "System.Mem.Weak.html#t%3AWeak"
+		>Weak</A
+		> v)</TD
+	      ><TD CLASS = "rdoc"
+	      >returns: a weak pointer object</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "ndoc" COLSPAN = "2"
+	      ><P
+		>Establishes a weak pointer to <TT
+		  >k</TT
+		  >, with value <TT
+		  >v</TT
+		  > and a finalizer.
+</P
+		><P
+		>This is the most general interface for building a weak pointer.
+</P
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AdeRefWeak"
+	  ></A
+	  ><B
+	  >deRefWeak</B
+	  > :: <A HREF = "System.Mem.Weak.html#t%3AWeak"
+	  >Weak</A
+	  > v -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > v)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Dereferences a weak pointer.  If the key is still alive, then
+<TT
+	    ><TT
+	      ><A HREF = "Prelude.html#v%3AJust"
+		>Just</A
+		></TT
+	      > v</TT
+	    > is returned (where <TT
+	    >v</TT
+	    > is the <EM
+	    >value</EM
+	    > in the weak pointer), otherwise
+<TT
+	    ><A HREF = "Prelude.html#v%3ANothing"
+	      >Nothing</A
+	      ></TT
+	    > is returned.
+</P
+	  ><P
+	  >The return value of <TT
+	    ><A HREF = "System.Mem.Weak.html#v%3AdeRefWeak"
+	      >deRefWeak</A
+	      ></TT
+	    > depends on when the garbage collector
+runs, hence it is in the <TT
+	    ><A HREF = "Prelude.html#t%3AIO"
+	      >IO</A
+	      ></TT
+	    > monad.
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3Afinalize"
+	  ></A
+	  ><B
+	  >finalize</B
+	  > :: <A HREF = "System.Mem.Weak.html#t%3AWeak"
+	  >Weak</A
+	  > v -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	>Causes a the finalizer associated with a weak pointer to be run
+immediately.</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "3"
+	  >Specialised versions</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmkWeakPtr"
+	  ></A
+	  ><B
+	  >mkWeakPtr</B
+	  > :: k -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > (<A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()) -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "System.Mem.Weak.html#t%3AWeak"
+	  >Weak</A
+	  > k)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >A specialised version of <TT
+	    ><A HREF = "System.Mem.Weak.html#v%3AmkWeak"
+	      >mkWeak</A
+	      ></TT
+	    >, where the key and the value are
+the same object:
+</P
+	  ><PRE
+	  > mkWeakPtr key finalizer = mkWeak key key finalizer
+</PRE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AaddFinalizer"
+	  ></A
+	  ><B
+	  >addFinalizer</B
+	  > :: key -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > () -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >A specialised version of <TT
+	    ><A HREF = "System.Mem.Weak.html#v%3AmkWeakPtr"
+	      >mkWeakPtr</A
+	      ></TT
+	    >, where the <TT
+	    ><A HREF = "System.Mem.Weak.html#t%3AWeak"
+	      >Weak</A
+	      ></TT
+	    > object
+returned is simply thrown away (however the finalizer will be
+remembered by the garbage collector, and will still be run
+when the key becomes unreachable).
+</P
+	  ><P
+	  >Note: adding a finalizer to a <TT
+	    ><A HREF = "Foreign.ForeignPtr.html#t%3AForeignPtr"
+	      >ForeignPtr</A
+	      ></TT
+	    > using
+<TT
+	    ><A HREF = "System.Mem.Weak.html#v%3AaddFinalizer"
+	      >addFinalizer</A
+	      ></TT
+	    > won't work as well as using the specialised version
+<TT
+	    ><A HREF = "Foreign.ForeignPtr.html#v%3AaddForeignPtrFinalizer"
+	      >addForeignPtrFinalizer</A
+	      ></TT
+	    > because the latter
+version adds the finalizer to the primitive ForeignPtr# object
+inside, whereas the generic <TT
+	    ><A HREF = "System.Mem.Weak.html#v%3AaddFinalizer"
+	      >addFinalizer</A
+	      ></TT
+	    > will add the finalizer to
+the box.  Optimisations tend to remove the box, which may cause the
+finalizer to run earlier than you intended.  The same motivation
+justifies the existence of
+<TT
+	    ><A HREF = "Control.Concurrent.MVar.html#v%3AaddMVarFinalizer"
+	      >addMVarFinalizer</A
+	      ></TT
+	    > and
+<TT
+	    ><A HREF = "Data.IORef.html#v%3AmkWeakIORef"
+	      >mkWeakIORef</A
+	      ></TT
+	    > (the non-unformity is accidental).
+</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmkWeakPair"
+	  ></A
+	  ><B
+	  >mkWeakPair</B
+	  > :: k -&gt; v -&gt; <A HREF = "Prelude.html#t%3AMaybe"
+	  >Maybe</A
+	  > (<A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > ()) -&gt; <A HREF = "Prelude.html#t%3AIO"
+	  >IO</A
+	  > (<A HREF = "System.Mem.Weak.html#t%3AWeak"
+	  >Weak</A
+	  > (k, v))</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >A specialised version of <TT
+	    ><A HREF = "System.Mem.Weak.html#v%3AmkWeak"
+	      >mkWeak</A
+	      ></TT
+	    > where the value is actually a pair
+of the key and value passed to <TT
+	    ><A HREF = "System.Mem.Weak.html#v%3AmkWeakPair"
+	      >mkWeakPair</A
+	      ></TT
+	    >:
+</P
+	  ><PRE
+	  > mkWeakPair key val finalizer = mkWeak key (key,val) finalizer
+</PRE
+	  ><P
+	  >The advantage of this is that the key can be retrieved by <TT
+	    ><A HREF = "System.Mem.Weak.html#v%3AdeRefWeak"
+	      >deRefWeak</A
+	      ></TT
+	    >
+in addition to the value.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	><A NAME = "4"
+	  >A precise semantics</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >The above informal specification is fine for simple situations, but
+matters can get complicated.  In particular, it needs to be clear
+exactly when a key dies, so that any weak pointers that refer to it
+can be finalized.  Suppose, for example, the value of one weak pointer
+refers to the key of another...does that keep the key alive?
+</P
+	  ><P
+	  >The behaviour is simply this:
+</P
+	  ><UL
+	  ><LI
+	    >  If a weak pointer (object) refers to an <EM
+	      >unreachable</EM
+	      >
+key, it may be finalized.
+</LI
+	    ><LI
+	    >  Finalization means (a) arrange that subsequent calls
+to <TT
+	      ><A HREF = "System.Mem.Weak.html#v%3AdeRefWeak"
+		>deRefWeak</A
+		></TT
+	      > return <TT
+	      ><A HREF = "Prelude.html#v%3ANothing"
+		>Nothing</A
+		></TT
+	      >; and (b) run the finalizer.
+</LI
+	    ></UL
+	  ><P
+	  >This behaviour depends on what it means for a key to be reachable.
+Informally, something is reachable if it can be reached by following
+ordinary pointers from the root set, but not following weak pointers.
+We define reachability more precisely as follows A heap object is
+reachable if:
+</P
+	  ><UL
+	  ><LI
+	    > It is a member of the <EM
+	      >root set</EM
+	      >.
+</LI
+	    ><LI
+	    > It is directly pointed to by a reachable object, other than
+a weak pointer object.
+</LI
+	    ><LI
+	    > It is a weak pointer object whose key is reachable.
+</LI
+	    ><LI
+	    > It is the value or finalizer of an object whose key is reachable.
+</LI
+	    ></UL
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>

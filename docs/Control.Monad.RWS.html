@@ -1,0 +1,598 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+  ><TITLE
+    >Control.Monad.RWS</TITLE
+    ><LINK HREF = "haddock.css" REL = "stylesheet" TYPE = "text/css"
+    ></HEAD
+  ><BODY
+  ><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+    ><TR
+      ><TD CLASS = "topbar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><IMG SRC = "haskell_icon.gif" WIDTH = "16" HEIGHT = "16" ALT = " "
+		></TD
+	      ><TD CLASS = "title"
+	      >Haskell Hierarchical Libraries (base package)</TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../index.html"
+		>Contents</A
+		></TD
+	      ><TD CLASS = "topbut"
+	      ><A HREF = "../doc-index.html"
+		>Index</A
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "modulebar"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD
+	      ><FONT SIZE = "6"
+		>Control.Monad.RWS</FONT
+		></TD
+	      ><TD ALIGN = "right"
+	      ><TABLE CLASS = "narrow" CELLSPACING = "0" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "infohead"
+		    >Portability</TD
+		    ><TD CLASS = "infoval"
+		    >  non-portable (multi-param classes, functional dependencies)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Stability</TD
+		    ><TD CLASS = "infoval"
+		    >  experimental</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "infohead"
+		    >Maintainer</TD
+		    ><TD CLASS = "infoval"
+		    >  libraries@haskell.org</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Description</TD
+	></TR
+      ><TR
+      ><TD CLASS = "doc"
+	><P
+	  >Declaration of the MonadRWS class.
+</P
+	  ><P
+	  >Inspired by the paper
+<EM
+	    >Functional Programming with Overloading and
+Higher-Order Polymorphism</EM
+	    >, 
+Mark P Jones (<A HREF = "http://www.cse.ogi.edu/~mpj/"
+	    >http://www.cse.ogi.edu/~mpj/</A
+	    >)
+Advanced School of Functional Programming, 1995.</P
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "section1"
+	>Documentation</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >newtype</SPAN
+	  > <A NAME = "t%3ARWS"
+	  ></A
+	  ><B
+	  >RWS</B
+	  > r w s a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "5" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARWS"
+		      ></A
+		      ><B
+		      >RWS</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body" COLSPAN = "2"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3ArunRWS"
+			    ></A
+			    ><B
+			    >runRWS</B
+			    > :: (r -&gt; s -&gt; (a, s, w))</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWS"
+		      >RWS</A
+		      > r w s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWS"
+		      >RWS</A
+		      > r w s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "Control.Monad.Fix.html#t%3AMonadFix"
+		      >MonadFix</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWS"
+		      >RWS</A
+		      > r w s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "Control.Monad.Reader.html#t%3AMonadReader"
+		      >MonadReader</A
+		      > r (<A HREF = "Control.Monad.RWS.html#t%3ARWS"
+		      >RWS</A
+		      > r w s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "Control.Monad.Writer.html#t%3AMonadWriter"
+		      >MonadWriter</A
+		      > w (<A HREF = "Control.Monad.RWS.html#t%3ARWS"
+		      >RWS</A
+		      > r w s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "Control.Monad.State.html#t%3AMonadState"
+		      >MonadState</A
+		      > s (<A HREF = "Control.Monad.RWS.html#t%3ARWS"
+		      >RWS</A
+		      > r w s)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AevalRWS"
+	  ></A
+	  ><B
+	  >evalRWS</B
+	  > :: <A HREF = "Control.Monad.RWS.html#t%3ARWS"
+	  >RWS</A
+	  > r w s a -&gt; r -&gt; s -&gt; (a, w)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AexecRWS"
+	  ></A
+	  ><B
+	  >execRWS</B
+	  > :: <A HREF = "Control.Monad.RWS.html#t%3ARWS"
+	  >RWS</A
+	  > r w s a -&gt; r -&gt; s -&gt; (s, w)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmapRWS"
+	  ></A
+	  ><B
+	  >mapRWS</B
+	  > :: ((a, s, w) -&gt; (b, s, w')) -&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWS"
+	  >RWS</A
+	  > r w s a -&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWS"
+	  >RWS</A
+	  > r w' s b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithRWS"
+	  ></A
+	  ><B
+	  >withRWS</B
+	  > :: (r' -&gt; s -&gt; (r, s)) -&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWS"
+	  >RWS</A
+	  > r w s a -&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWS"
+	  >RWS</A
+	  > r' w s a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><SPAN CLASS = "keyword"
+	  >newtype</SPAN
+	  > <A NAME = "t%3ARWST"
+	  ></A
+	  ><B
+	  >RWST</B
+	  > r w s m a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "body"
+	><TABLE CLASS = "vanilla" CELLSPACING = "0" CELLPADDING = "0"
+	  ><TR
+	    ><TD CLASS = "section4"
+	      >Constructors</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "5" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "arg"
+		    ><A NAME = "v%3ARWST"
+		      ></A
+		      ><B
+		      >RWST</B
+		      ></TD
+		    ><TD CLASS = "rdoc"
+		    ></TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "body" COLSPAN = "2"
+		    ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		      ><TR
+			><TD CLASS = "arg"
+			  ><A NAME = "v%3ArunRWST"
+			    ></A
+			    ><B
+			    >runRWST</B
+			    > :: (r -&gt; s -&gt; m (a, s, w))</TD
+			  ><TD CLASS = "rdoc"
+			  ></TD
+			  ></TR
+			></TABLE
+		      ></TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "section4"
+	      >Instances</TD
+	      ></TR
+	    ><TR
+	    ><TD CLASS = "body"
+	      ><TABLE CLASS = "vanilla" CELLSPACING = "1" CELLPADDING = "0"
+		><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.Cont.html#t%3AMonadCont"
+		      >MonadCont</A
+		      > m) =&gt; <A HREF = "Control.Monad.Cont.html#t%3AMonadCont"
+		      >MonadCont</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e m) =&gt; <A HREF = "Control.Monad.Error.html#t%3AMonadError"
+		      >MonadError</A
+		      > e (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m =&gt; <A HREF = "GHC.Base.html#t%3AFunctor"
+		      >Functor</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m) =&gt; <A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > m) =&gt; <A HREF = "Control.Monad.html#t%3AMonadPlus"
+		      >MonadPlus</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.Fix.html#t%3AMonadFix"
+		      >MonadFix</A
+		      > m) =&gt; <A HREF = "Control.Monad.Fix.html#t%3AMonadFix"
+		      >MonadFix</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m) =&gt; <A HREF = "Control.Monad.Reader.html#t%3AMonadReader"
+		      >MonadReader</A
+		      > r (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m) =&gt; <A HREF = "Control.Monad.Writer.html#t%3AMonadWriter"
+		      >MonadWriter</A
+		      > w (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "GHC.Base.html#t%3AMonad"
+		      >Monad</A
+		      > m) =&gt; <A HREF = "Control.Monad.State.html#t%3AMonadState"
+		      >MonadState</A
+		      > s (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    ><A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadTrans"
+		      >MonadTrans</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s)</TD
+		    ></TR
+		  ><TR
+		  ><TD CLASS = "decl"
+		    >(<A HREF = "Data.Monoid.html#t%3AMonoid"
+		      >Monoid</A
+		      > w, <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > m) =&gt; <A HREF = "Control.Monad.Trans.html#t%3AMonadIO"
+		      >MonadIO</A
+		      > (<A HREF = "Control.Monad.RWS.html#t%3ARWST"
+		      >RWST</A
+		      > r w s m)</TD
+		    ></TR
+		  ></TABLE
+		></TD
+	      ></TR
+	    ></TABLE
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AevalRWST"
+	  ></A
+	  ><B
+	  >evalRWST</B
+	  > :: <A HREF = "GHC.Base.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWST"
+	  >RWST</A
+	  > r w s m a -&gt; r -&gt; s -&gt; m (a, w)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AexecRWST"
+	  ></A
+	  ><B
+	  >execRWST</B
+	  > :: <A HREF = "GHC.Base.html#t%3AMonad"
+	  >Monad</A
+	  > m =&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWST"
+	  >RWST</A
+	  > r w s m a -&gt; r -&gt; s -&gt; m (s, w)</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AmapRWST"
+	  ></A
+	  ><B
+	  >mapRWST</B
+	  > :: (m (a, s, w) -&gt; n (b, s, w')) -&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWST"
+	  >RWST</A
+	  > r w s m a -&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWST"
+	  >RWST</A
+	  > r w' s n b</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	><A NAME = "v%3AwithRWST"
+	  ></A
+	  ><B
+	  >withRWST</B
+	  > :: (r' -&gt; s -&gt; (r, s)) -&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWST"
+	  >RWST</A
+	  > r w s m a -&gt; <A HREF = "Control.Monad.RWS.html#t%3ARWST"
+	  >RWST</A
+	  > r' w s m a</TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Monad.Reader.html"
+	  >Control.Monad.Reader</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Monad.Writer.html"
+	  >Control.Monad.Writer</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "decl"
+	>module <A HREF = "Control.Monad.State.html"
+	  >Control.Monad.State</A
+	  ></TD
+	></TR
+      ><TR
+      ><TD CLASS = "s15"
+	></TD
+	></TR
+      ><TR
+      ><TD CLASS = "botbar"
+	>Produced by <A HREF = "http://www.haskell.org/haddock/"
+	  >Haddock</A
+	  > version 0.6</TD
+	></TR
+      ></TABLE
+    ></BODY
+  ></HTML
+>
