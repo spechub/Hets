@@ -215,32 +215,31 @@ printLatexLine kw line =
     hc_sty_annotation (if isEmpty line then kw_d else kw_d <\+> line)
     where kw_d = hc_sty_small_keyword ("\\%"++kw)
 
-{-
-instance PrettyPrint [Annotation] where
-    printText0 ga l = (vcat $ map (printText0 ga) l) -- <> ptext "\n"
+printAnnotationList_Text0 :: GlobalAnnos -> [Annotation] -> Doc
+printAnnotationList_Text0 ga l = (vcat $ map (printText0 ga) l) 
 
-    printLatex0 ga l = (vcat $ map (printLatex0 ga) l) -- <> ptext "\n"
--}
+printAnnotationList_Latex0 :: GlobalAnnos -> [Annotation] -> Doc
+printAnnotationList_Latex0 ga l = (vcat $ map (printLatex0 ga) l) 
 
 instance (PrettyPrint a) => PrettyPrint (Annoted a) where
     printText0 ga (Annoted i _ las ras) =
 	let i'   = printText0 ga i
-	    las' = vcat $ map (printText0 ga) las
+	    las' = printAnnotationList_Text0 ga las
 	    (la,rras) = case ras of
 			[]     -> (empty,[])
 			r@(l:xs)
 			    | isLabel l -> (printText0 ga l,xs)
 			    | otherwise -> (empty,r)
-	    ras' = vcat $ map (printText0 ga) rras
+	    ras' = printAnnotationList_Text0 ga rras
         in las' $+$ (hang i' 0 la) $$ ras'
 
     printLatex0 ga (Annoted i _ las ras) =
 	let i'   = printLatex0 ga i
-	    las' = vcat $ map (printLatex0 ga) las
+	    las' = printAnnotationList_Latex0 ga las
 	    (la,rras) = case ras of
 			[]     -> (empty,[])
 			r@(l:xs)
 			    | isLabel l -> (printLatex0 ga l,xs)
 			    | otherwise -> (empty,r)
-	    ras' = vcat $ map (printLatex0 ga) rras
+	    ras' =printAnnotationList_Latex0 ga rras
         in las' $+$ (hang_latex i' 0 la) $$ ras'
