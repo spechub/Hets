@@ -24,12 +24,12 @@ import Data.List (nub)
 data BASIC_SPEC b s f = Basic_spec [Annoted (BASIC_ITEMS b s f)]
 		  deriving (Show,Eq)
 
-data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS b s f)
+data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
                    -- the Annotation following the keyword is dropped
 		   -- but preceding the keyword is now an Annotation allowed
 		 | Free_datatype [Annoted DATATYPE_DECL] [Pos]
 		   -- pos: free, type, semi colons
-		 | Sort_gen [Annoted (SIG_ITEMS b s f)] [Pos] 
+		 | Sort_gen [Annoted (SIG_ITEMS s f)] [Pos] 
 		   -- pos: generated, opt. braces 
 		 | Var_items [VAR_DECL] [Pos]
 		   -- pos: var, semi colons
@@ -40,7 +40,7 @@ data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS b s f)
                  | Ext_BASIC_ITEMS b
 		   deriving (Show,Eq)
 
-data SIG_ITEMS b s f = Sort_items [Annoted (SORT_ITEM f)] [Pos] 
+data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] [Pos] 
 	         -- pos: sort, semi colons
 	       | Op_items [Annoted (OP_ITEM f)] [Pos]
 		 -- pos: op, semi colons

@@ -35,31 +35,29 @@ import CASL.OpItem
 -- sigItems
 -- ------------------------------------------------------------------------
 
-sortItems :: (AParsable b, AParsable s, AParsable f) => 
-             AParser (SIG_ITEMS b s f)
+sortItems :: (AParsable s, AParsable f) => 
+             AParser (SIG_ITEMS s f)
 sortItems = itemList sortS sortItem Sort_items
 
-typeItems :: (AParsable b, AParsable s, AParsable f) => 
-             AParser (SIG_ITEMS b s f)
+typeItems :: (AParsable s, AParsable f) => 
+             AParser (SIG_ITEMS s f)
 typeItems = itemList typeS datatype Datatype_items
 
-opItems :: (AParsable b, AParsable s, AParsable f) => 
-           AParser (SIG_ITEMS b s f)
+opItems :: (AParsable s, AParsable f) => 
+           AParser (SIG_ITEMS s f)
 opItems = itemList opS opItem Op_items
 
-predItems :: (AParsable b, AParsable s, AParsable f) => AParser (SIG_ITEMS b s f)
+predItems :: (AParsable s, AParsable f) => AParser (SIG_ITEMS s f)
 predItems = itemList predS predItem Pred_items
 
-sigItems :: (AParsable b, AParsable s, AParsable f) => AParser (SIG_ITEMS b s f)
-sigItems = sortItems <|> opItems <|> predItems <|> typeItems
-           <|> do s <- aparser []
-                  return (Ext_SIG_ITEMS s)
-
+sigItems :: (AParsable s, AParsable f) => AParser (SIG_ITEMS s f)
+sigItems = fmap Ext_SIG_ITEMS aparser <|>
+	   sortItems <|> opItems <|> predItems <|> typeItems
 
 ---- helpers ----------------------------------------------------------------
 
 datatypeToFreetype :: (AParsable b, AParsable s, AParsable f) =>
-                      SIG_ITEMS b s f -> Pos -> BASIC_ITEMS b s f 
+                      SIG_ITEMS s f -> Pos -> BASIC_ITEMS b s f 
 datatypeToFreetype d pos =
    case d of
      Datatype_items ts ps -> Free_datatype ts (pos : ps)
@@ -81,8 +79,7 @@ axiomToLocalVarAxioms ai a vs posl =
 
 basicItems :: (AParsable b, AParsable s, AParsable f) => 
               AParser (BASIC_ITEMS b s f)
-basicItems = 
-         fmap Sig_items sigItems
+basicItems = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items sigItems
 	     <|> do f <- asKey freeS
 		    ti <- typeItems
 		    return (datatypeToFreetype ti (tokPos f))
@@ -110,8 +107,6 @@ basicItems =
 					 (\ x y -> Annoted (item x) 
 					           [] (l_annos x) y) 
 					 fs ans) (map tokPos (a:ps)))
-             <|> do b <- aparser []
-                    return (Ext_BASIC_ITEMS b)
 
 varItems :: AParser ([VAR_DECL], [Token])
 varItems = do v <- varDecl

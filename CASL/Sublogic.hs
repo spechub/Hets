@@ -437,7 +437,7 @@ sl_basic_items (Local_var_axioms d l _) = sublogics_max
 sl_basic_items (Axiom_items l _) = comp_list $ map sl_formula
                                              $ map item l
 
-sl_sig_items :: SIG_ITEMS b s f -> CASL_Sublogics
+sl_sig_items :: SIG_ITEMS s f -> CASL_Sublogics
 sl_sig_items (Sort_items l _) = comp_list $ map sl_sort_item $ map item l
 sl_sig_items (Op_items l _) = comp_list $ map sl_op_item $ map item l
 sl_sig_items (Pred_items l _) = comp_list $ map sl_pred_item $ map item l
@@ -821,8 +821,8 @@ pr_symbol l s = pr_check l sl_symbol s
 -- returns a non-empty list of [SORT] if datatypes had to be removed
 -- completely
 --
-pr_sig_items :: CASL_Sublogics -> SIG_ITEMS b s f 
-                -> (Maybe (SIG_ITEMS b s f),[SORT])
+pr_sig_items :: CASL_Sublogics -> SIG_ITEMS s f 
+                -> (Maybe (SIG_ITEMS s f),[SORT])
 pr_sig_items l (Sort_items s p) =
              let
                (res,pos) = mapPos 1 p (pr_annoted l pr_sort_item) s

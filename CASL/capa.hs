@@ -29,9 +29,9 @@ lineParser, fileParser :: [(String, StringParser)]
 lineParser = [
  ("Terms", fromAParser (term :: AParser (TERM ()))),
  ("Formula", fromAParser (formula :: AParser (FORMULA ()))),
- ("SortItem", fromAParser (sortItems :: AParser (SIG_ITEMS () () ()))),
- ("OpItem", fromAParser (opItems :: AParser (SIG_ITEMS () () ()))),
- ("PredItem", fromAParser (predItems :: AParser (SIG_ITEMS () () ()))),
+ ("SortItem", fromAParser (sortItems :: AParser (SIG_ITEMS () ()))),
+ ("OpItem", fromAParser (opItems :: AParser (SIG_ITEMS () ()))),
+ ("PredItem", fromAParser (predItems :: AParser (SIG_ITEMS () ()))),
  ("MixfixTerms", toStringParser resolveTerm),
  ("MixfixFormula", toStringParser resolveForm),
  ("ShowTerms", fromAParser testTerm),

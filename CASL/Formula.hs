@@ -41,8 +41,7 @@ Portability :  portable
 -}
 
 module CASL.Formula (term, formula, restrictedTerm, restrictedFormula
-	       , varDecl, opSort, opFunSort, opType, predType, predUnitType
-	       , updFormulaPos) 
+	       , varDecl, opSort, opFunSort, opType, predType, predUnitType)
     where
 
 import Common.AnnoState
@@ -187,9 +186,6 @@ varDecl = do (vs, ps) <- varId `separatedBy` anComma
 	     s <- sortId
 	     return (Var_decl vs s (map tokPos ps ++[tokPos c]))
 
-updFormulaPos :: PosItem f => Pos -> Pos -> FORMULA f -> FORMULA f
-updFormulaPos o c = up_pos_l (\l-> o:l++[c])  
-
 predType :: AParser PRED_TYPE
 predType = do (ts, ps) <- sortId `separatedBy` crossT
 	      return (Pred_type ts (map tokPos ps))
@@ -226,9 +222,7 @@ parenFormula k =
 					           else Mixfix_term (tt:l)
 					  in termFormula k ft
 				     -- commas are not allowed
-			  _ -> do c <- cParenT
-				  return (updFormulaPos 
-						 (tokPos o) (tokPos c) f)
+			  _ -> cParenT >> return f 
 
 termFormula :: AParsable f => [String] -> (TERM f) -> AParser (FORMULA f)
 termFormula k t =  do e <- asKey exEqual
@@ -248,7 +242,9 @@ termFormula k t =  do e <- asKey exEqual
 		   <|> return (Mixfix_formula t)
 
 primFormula :: AParsable f => [String] -> AParser (FORMULA f)
-primFormula k = 
+primFormula k = do f <- aparser
+                   return (ExtFORMULA f)
+		<|>   
               do c <- asKey trueS
 		 return (True_atom [tokPos c])
               <|>
@@ -264,8 +260,6 @@ primFormula k =
 		 return (Negation f [tokPos c])
               <|> parenFormula k <|> quantFormula k 
 		      <|> (whenTerm k >>= termFormula k)
-              <|> do f <- aparser k
-                     return (ExtFORMULA f)
 
 andKey, orKey :: AParser Token
 andKey = asKey lAnd

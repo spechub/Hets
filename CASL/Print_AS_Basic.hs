@@ -95,8 +95,8 @@ printAnnotedFormula_Text0 ga (Annoted i _ las ras) =
 				    (empty) ga ras
         in las' $+$ (hang i' 0 la) $$ ras'
 
-instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
-         PrettyPrint (SIG_ITEMS b s f) where
+instance (PrettyPrint s, PrettyPrint f) =>
+         PrettyPrint (SIG_ITEMS s f) where
     printText0 ga (Sort_items l _) =  
 	text sortS<>pluralS_doc l <+> semiAnno_text ga l
     printText0 ga (Op_items l _) =  
@@ -697,8 +697,8 @@ condParensXjunction pf parens_fun ga x =
     where x' = pf ga x
 
 ---- instances of ListCheck for various data types of AS_Basic_CASL ---
-instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) => 
-         ListCheck (SIG_ITEMS b s f) where
+instance (PrettyPrint s, PrettyPrint f) => 
+         ListCheck (SIG_ITEMS s f) where
     (Sort_items l _)     `innerListGT` i = length l > i
     (Op_items l _)       `innerListGT` i = length l > i
     (Pred_items l _)     `innerListGT` i = length l > i

@@ -199,8 +199,8 @@ toSortGenAx ps (sorts, ops) = do
     addSentences [NamedSen ("ga_generated_" ++ 
  			 showSepList (showString "_") showId sortList "") f]
 
-ana_SIG_ITEMS :: (s -> e -> e) -> GlobalAnnos -> GenKind -> SIG_ITEMS b s f 
-	      -> State (Sign f e) (SIG_ITEMS b s f)
+ana_SIG_ITEMS :: (s -> e -> e) -> GlobalAnnos -> GenKind -> SIG_ITEMS s f 
+	      -> State (Sign f e) (SIG_ITEMS s f)
 ana_SIG_ITEMS as ga gk si = 
     case si of 
     Sort_items al ps -> 
@@ -225,14 +225,14 @@ ana_SIG_ITEMS as ga gk si =
 	   return si
 
 -- helper
-ana_Generated :: (s -> e -> e) -> GlobalAnnos -> [Annoted (SIG_ITEMS b s f)] 
+ana_Generated :: (s -> e -> e) -> GlobalAnnos -> [Annoted (SIG_ITEMS s f)] 
 	      -> State (Sign f e)
-	      ([(Set.Set Id, Set.Set Component)],[Annoted (SIG_ITEMS b s f)])
+	      ([(Set.Set Id, Set.Set Component)],[Annoted (SIG_ITEMS s f)])
 ana_Generated as ga al = do
    ul <- mapAnM (ana_SIG_ITEMS as ga Generated) al
    return (map (getGenSig . item) ul,ul)
    
-getGenSig :: SIG_ITEMS b s f -> (Set.Set Id, Set.Set Component)
+getGenSig :: SIG_ITEMS s f -> (Set.Set Id, Set.Set Component)
 getGenSig si = case si of 
       Sort_items al _ -> (Set.unions (map (getSorts . item) al), Set.empty)
       Op_items al _ -> (Set.empty, Set.unions (map (getOps . item) al))

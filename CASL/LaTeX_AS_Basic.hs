@@ -100,8 +100,8 @@ printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
 				    (latex_macro "\\`") ga ras
         in  {-trace (show i)-} (las' $+$ fsep_latex [i',la] $$ ras')
 
-instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) => 
-          PrintLaTeX (SIG_ITEMS b s f) where
+instance (PrintLaTeX s, PrintLaTeX f) => 
+          PrintLaTeX (SIG_ITEMS s f) where
     printLatex0 ga (Sort_items l _) =  
 	hc_sty_sig_item_keyword ga  (sortS++pluralS l) <\+>
 	set_tabbed_nest_latex (semiAnno_latex ga l)
