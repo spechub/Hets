@@ -49,12 +49,13 @@ module Options where
 import Version
 import Utils
 
-import Directory
-import System
+import System.Directory
+import System.Environment
+import System.Exit
 
-import Char (isSpace)
-import List
-import GetOpt
+import Data.Char (isSpace)
+import Data.List
+import System.Console.GetOpt
 
 {- | 'Flag' describes the raw options -}
 data Flag = Verbose Int

@@ -15,8 +15,8 @@ import Options
 -- import List
 import Utils
 
-import IO 
-import IOExts (trace)
+import Debug.Trace (trace)
+import System.IO
 import Print_HetCASL
 import AS_Library (LIB_DEFN()) 
 import GlobalLibraryAnnotations
