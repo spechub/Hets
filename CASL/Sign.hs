@@ -48,11 +48,6 @@ data Sign f e = Sign { sortSet :: Set.Set SORT
                , extendedInfo :: e
                } deriving Show
 
--- remove empty sets from set-valued maps
-normalize :: Ord k => Map.Map k (Set.Set b) ->  Map.Map k (Set.Set b) 
-normalize m = Map.foldWithKey f Map.empty m
-  where f k s = if Set.isEmpty s then id else Map.insert k s
-
 -- better ignore assoc flags for equality
 instance (Eq f, Eq e) => Eq (Sign f e) where
     e1 == e2 = 
@@ -60,9 +55,6 @@ instance (Eq f, Eq e) => Eq (Sign f e) where
         sortRel e1 == sortRel e2 &&
         opMap e1 == opMap e2 &&
         predMap e1 == predMap e2 &&
--- we rely on signatures already being normalized
---        normalize (opMap e1) == normalize (opMap e2) &&
---        normalize (predMap e1) == normalize (predMap e2) &&
         extendedInfo e1 == extendedInfo e2
 
 emptySign :: e -> Sign f e
@@ -77,19 +69,10 @@ emptySign e = Sign { sortSet = Set.empty
                , extendedInfo = e }
 
 subsortsOf :: SORT -> Sign f e -> Set.Set SORT
-subsortsOf s e =
-  Set.insert s $
-    Map.foldWithKey addSubs (Set.single s) (Rel.toMap $ sortRel e)
-  where addSubs sub supers =
-         if s `Set.member` supers 
-            then Set.insert sub
-            else id
+subsortsOf s e = Set.insert s $ Rel.predecessors (sortRel e) s
 
 supersortsOf :: SORT -> Sign f e -> Set.Set SORT
-supersortsOf s e =
-  case Map.lookup s $ Rel.toMap $ sortRel e of
-    Nothing -> Set.single s
-    Just supers -> Set.insert s supers
+supersortsOf s e = Set.insert s $ Rel.succs (sortRel e) s
 
 toOP_TYPE :: OpType -> OP_TYPE
 toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =
@@ -116,7 +99,8 @@ instance (PrettyPrint f, PrettyPrint e) => PrettyPrint (Sign f e) where
         $$ 
         (if Rel.isEmpty (sortRel s) then empty
             else ptext (sortS++sS) <+> 
-             (fsep . punctuate semi $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
+             (fsep . punctuate semi $ map printRel $ Map.toList 
+                       $ Rel.toMap $ sortRel s))
         $$ printSetMap (ptext opS) empty ga (opMap s)
         $$ printSetMap (ptext predS) space ga (predMap s)
         $$ printText0 ga (extendedInfo s)
