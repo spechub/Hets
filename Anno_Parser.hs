@@ -44,7 +44,7 @@ commentGroup = do try (string "%{")
 annote :: GenParser Char st Annotation
 annote = Anno_Parser.label <|> 
 	 do start_source_pos <- getPosition
-	    i <- anno_ident
+	    i <- try anno_ident
 	    anno <- ((annote_group i) <|> (annote_line i))
 	    end_pos <- getPosition
 	    case (parse_anno (add_pos end_pos anno) start_source_pos) of
