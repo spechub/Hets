@@ -39,16 +39,10 @@ type HasCASL_Sublogics = ()
 data HasCASL = HasCASL deriving (Show)
 instance Language HasCASL -- default definition is okay
 
-basicSpecTc, envTc, termTc, morphismTc, symbolTc, rawSymbolTc, symbItemsTc
-	       , symbMapItemsTc  :: TyCon
+basicSpecTc, envTc, termTc :: TyCon
 basicSpecTc      = mkTyCon "HasCASL.BasicSpec"
 envTc            = mkTyCon "HasCASL.Env"
 termTc           = mkTyCon "HasCASL.Term"
-morphismTc       = mkTyCon "HasCASL.Morphism"
-symbolTc         = mkTyCon "HasCASL.Symbol"
-rawSymbolTc      = mkTyCon "HasCASL.RawSymbol"
-symbItemsTc      = mkTyCon "HasCASL.SymbItems"
-symbMapItemsTc   = mkTyCon "HasCASL.SymbMapItems"
 
 instance Typeable BasicSpec where
     typeOf _ = mkAppTy basicSpecTc []
@@ -56,16 +50,6 @@ instance Typeable Env where
     typeOf _ = mkAppTy envTc []
 instance Typeable Term where
     typeOf _ = mkAppTy termTc []
-instance Typeable Morphism where
-  typeOf _ = mkAppTy morphismTc []
-instance Typeable Symbol where
-  typeOf _ = mkAppTy symbolTc []
-instance Typeable RawSymbol where
-  typeOf _ = mkAppTy rawSymbolTc []
-instance Typeable SymbItems where
-  typeOf _ = mkAppTy symbItemsTc []
-instance Typeable SymbMapItems where
-  typeOf _ = mkAppTy symbMapItemsTc []
 
 -- abstract syntax, parsing (and printing)
 

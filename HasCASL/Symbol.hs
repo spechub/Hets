@@ -28,18 +28,19 @@ import HasCASL.PrintAs
 import Common.PrettyPrint
 import Common.Lib.Pretty as PP
 import Common.PPUtils
+import Data.Dynamic
 
 
 -- * symbol data types
 -- | symbols 
 data SymbItems = SymbItems SymbKind [Symb] [Annotation] [Pos] 
 		  -- pos: kind, commas
-		  deriving (Show,Eq)
+		  deriving (Show, Eq, Typeable)
 
 -- | mapped symbols 
 data SymbMapItems = SymbMapItems SymbKind [SymbOrMap] [Annotation] [Pos]
 		      -- pos: kind commas
-		      deriving (Show,Eq)
+		      deriving (Show, Eq, Typeable)
 
 -- | kind of symbols
 data SymbKind = Implicit | SK_sort | SK_type | SK_op | SK_pred | SK_class
@@ -48,16 +49,16 @@ data SymbKind = Implicit | SK_sort | SK_type | SK_op | SK_pred | SK_class
 -- | type annotated symbols
 data Symb = Symb Id (Maybe SymbType) [Pos] 
 	    -- pos: colon (or empty)
-	    deriving (Show,Eq)
+	    deriving (Show, Eq)
 
 -- | type for symbols
 data SymbType = SymbType TypeScheme
-	    deriving (Show,Eq)
+	    deriving (Show, Eq)
 
 -- | mapped symbol
 data SymbOrMap = SymbOrMap Symb (Maybe Symb) [Pos]
 		   -- pos: "|->" (or empty)
-		   deriving (Show,Eq)
+		   deriving (Show, Eq)
 
 
 -- * parsers for symbols

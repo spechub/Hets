@@ -5,7 +5,7 @@ Licence     :  All rights reserved.
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  non-portable (via imports)
+Portability :  non-portable (deriving Typeable)
     
 Morphism on 'Env' (as for CASL)
 -}
@@ -18,6 +18,7 @@ import HasCASL.Merge
 import HasCASL.Symbol
 import Common.Id
 import Common.Result
+import Data.Dynamic
 import qualified Common.Lib.Map as Map
 
 data SymbolType = OpAsItemType TypeScheme 
@@ -29,10 +30,10 @@ instance Ord TypeScheme where
     t1 <= t2 = t1 == t2 || show t1 < show t2
 
 data Symbol = Symbol {symName :: Id, symbType :: SymbolType} 
-	      deriving (Show, Eq, Ord)
+	      deriving (Show, Eq, Ord, Typeable)
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId SymbKind Id
-    	         deriving (Show, Eq, Ord)
+    	         deriving (Show, Eq, Ord, Typeable)
 
 idToRaw :: Id -> RawSymbol
 idToRaw x = AnID x
@@ -74,7 +75,7 @@ matchSymb (Symbol idt _)                (AnID di)               = idt==di
 matchSymb (Symbol idt _)        (AKindedId _ di)                = idt==di
 
 data Morphism = Morphism {msource,mtarget :: Env}
-                         deriving (Eq, Show)
+                         deriving (Eq, Show, Typeable)
 
 mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2
