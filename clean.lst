@@ -99,6 +99,7 @@ pretty
 test
 todo
 
+utils/outlineAxioms
 utils/DrIFT
 utils/ag
 utils/cp_binary.mk
