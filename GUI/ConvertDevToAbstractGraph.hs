@@ -619,6 +619,8 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
     DeleteNode node -> error "delete node not yet implemented"
     InsertEdge (src,tgt,edgeLab) ->
       do let dgEdge = (libname, (src,tgt))
+-- ###### Fehler: nicht addlink ... src tgt, sondern src und tgt in den
+-- ###### ConversationMaps nachgucken - sonst falscher Descriptor!!
 	 (Result descr error) <- 
             addlink gid (getDGLinkType (dgl_type edgeLab)) "" src tgt graphInfo
          case error of

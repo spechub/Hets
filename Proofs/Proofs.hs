@@ -32,6 +32,7 @@ module Proofs.Proofs where
 
 import Logic.Logic
 import Logic.Prover
+import Logic.Grothendieck
 import Static.DevGraph
 import Common.Lib.Graph
 
@@ -110,6 +111,7 @@ globDecomp = undefined
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 globSubsume ::  ProofStatus -> ProofStatus
 globSubsume proofStatus@(globalContext,history,dGraph) =
+-- ##### überprüfung überflüssig?! #####
   if null (snd nextHistoryElem) then proofStatus  
    else (globalContext, nextHistoryElem:history, nextDGraph)
 
@@ -119,16 +121,12 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
     nextDGraph = fst result
     nextHistoryElem = snd result
 
-{- alle kanten vom Typ GlobalThm holen, 
-zur "Verarbeitung" an Hilfsfunktion weitergeben
- -}
-
-
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
-globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsDefPathOfSameMorphism dGraph morphism source target
-     then -- kante aus Graph löschen, stattdessen def einfügen
+globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if True
+--existsDefPathOfSameMorphism dGraph morphism source target
+     then
        globSubsumeAux newGraph (rules,changes) list
      else
        globSubsumeAux dGraph (rules,changes) list
@@ -146,62 +144,38 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
     newRules = (GlobSubsumption ledge):rules
     newChanges = (InsertEdge newEdge):((DeleteEdge ledge):changes)
 
-{- schauen, ob ein Pfad von GlobalDefs von source nach target geht
-falls ja: kante löschen, stattdessen GlobalDef von source nach target einfügen
-falls nein: nichts tun
-mit den übrigen kanten weitermachen -}
-{-
-existsDefPath :: DGraph -> GMorphism -> Node -> Node -> Bool
-existsDefPath dGraph morphism src tgt =
-  existsDefPathAux dGraph morphism [] (src:[]) tgt
 
-
-existsDefPathAux :: DGraph  -> GMorphism -> [LEdge DGLinkLab] 
-		 -> [Node] -> Node -> Bool
-existsDefPathAux _ _ _ [] _ = False
-existsDefPathAux dGraph morphism path nodes target =
-
-  if (elem target nodes) and (morphism == (calculateMorphism path edge))then True
-   else existsDefPathAux dGraph sucNodes target
-  where
-    outGoingEdges = concatMap (out dGraph) sourceNodes
-    globalDefEdges = filter isGlobalDef outGoingEdges
-    sucNodes = map getTargetNode globalDefEdges
-
-
-
-BBBB AAAA U  U SSSS TTTTT EEEE L    L    EEEE
-B  B A  A U  U S      T   E    L    L    E   
-BBBB AAAA U  U SSSS   T   EEEE L    L    EEEE
-B  B A  A U  U    S   T   E    L    L    E   
-BBBB A  A UUUU SSSS   T   EEEE LLLL LLLL EEEE
-
--}
-
--- existsDefPathOfSameMorphism :: DGraph -> GMorphism -> Node -> Node -> True
+existsDefPathOfSameMorphism :: DGraph -> GMorphism -> Node -> Node -> Bool
 existsDefPathOfSameMorphism dgraph morphism src tgt =
-  undefined
+  existsDefPathOfSameMorphismAux dgraph morphism tgt [] src
+
+existsDefPathOfSameMorphismAux dgraph morphism tgt path src =
+  if null outGoingEdges then False
+   else
+     if elem morphism morphismsOfPathsToTgt then True
+      else or [existsDefPathOfSameMorphismAux dgraph morphism tgt
+	       ((fst step):path) (snd step)| step <- nextStep]
 
   where 
     outGoingEdges = out dgraph src
     globalDefEdges = filter isGlobalDef outGoingEdges
+    nextStep = [(edge, getTargetNode edge)| edge <- globalDefEdges]
     defEdgesToTgt = [edge| edge <- globalDefEdges, tgt == getTargetNode edge]
+    defPathsToTgt = [edge:path| edge <- defEdgesToTgt]
+    morphismsOfPathsToTgt = map getMorphismOfPath defPathsToTgt
 
+getMorphismOfPath :: [LEdge DGLinkLab] -> GMorphism
+getMorphismOfPath [] = error "getMorphismOfPath: empty path"
+getMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
+  calculateCombinedMorphism morphism morphismOfFurtherPath
 
+  where
+    morphism = dgl_morphism edgeLab
+    morphismOfFurtherPath = getMorphismOfPath furtherPath
 
-
-
-
---getMorphismOfPath :: [LEdge DGLinkLab] -> GMorphism -> GMorphism
-getMorphismOfPath [] morphism = morphism
-getMorphismOfPath path@((src,tgt,edgeLab):furtherPath) morphism =
-  getMorphismOfPath furtherPath newMorphism
-
-  where newMorphism = calculateMorphism (dgl_type edgeLab) morphism
-
---calculateMorphism :: GMorphism -> GMorphism -> GMorphism
-calculateMorphism morph1 morph2 = error "calculateMorphism not yet implemented"
-
+calculateCombinedMorphism :: GMorphism -> GMorphism -> GMorphism
+calculateCombinedMorphism morph1 morph2 =
+  error "calculateMorphism not yet implemented"
 
 getTargetNode :: LEdge DGLinkLab -> Node
 getTargetNode (_,target,_) = target
