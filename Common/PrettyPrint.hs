@@ -21,14 +21,16 @@ module Common.PrettyPrint
     , PrettyPrint(..)
     , renderLatexVerb
     , startTab, endTab, setTab
-    , printToken_latex
     , setTabWithSpaces
+    , printToken_latex
+    , printDisplayToken_latex
     ) 
     where
 
 import Data.Char (isSpace,isAlphaNum,isDigit)
 import Common.Lib.State (State(..),evalState,get,put)
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf,isSuffixOf)
+import Data.Maybe (fromJust,isJust,maybe)  
 
 import Common.Id
 import Common.Lib.Pretty
@@ -67,6 +69,7 @@ data LRState = LRS { indentTabs  :: ![Int]
 		   , onlyTabs :: !Bool
 		   , isSetLine :: !Bool
 		   , collSpaceIndents :: ![Int]
+		   , insideAnno :: Bool
 		   }
 	     deriving (Show)
 
@@ -80,15 +83,17 @@ initialLRState = LRS { indentTabs         = []
 		     , onlyTabs           = False
 		     , isSetLine          = False
 		     , collSpaceIndents = []
+		     , insideAnno = False
 		     }
 
 -- a function that knows how to print LaTeX TextDetails 
 latex_txt :: TextDetails -> State LRState ShowS -> State LRState ShowS
 latex_txt (Chr c)   cont  
-    | c == '\n' = do endOfLine
+    | c == '\n' = do annoBrace <- endOfLine
 		     indent <- getIndent
 		     s <- cont
-		     return (showString "\\\\". showChar c . indent . s)
+		     return (annoBrace . showString "\\\\". 
+			     showChar c . indent . s)
     | otherwise = do s <- cont
 		     return (showChar c . s)
 latex_txt (Str s1)  cont
@@ -104,17 +109,35 @@ latex_txt (PStr s1) cont
 			  return (indent . s2)
     | s1 == endTab   = do subTabStop
 			  cont
-    | s1 == setTab   = do setTabStop
+    | s1 == setTab   = do state <- get
+			  setTabStop
 			  s2 <- cont
-			  return (showString s1 . s2)
+			  let (eAn,sAn) = if insideAnno state 
+					  then (showChar '}',
+					        showString startAnno)
+                                          else (id,id)
+			  return (eAn. showString s1 . sAn. s2)
     | setTabWSp
       `isPrefixOf`
       s1             = do addTabWithSpaces s1
 			  cont
-    | s1 == "\n"     = do endOfLine
+    | s1== startAnno = do setInsideAnno True
+			  s2 <- cont
+			  return (showString s1 . s2)
+    | s1 == endAnno  = do setInsideAnno False
+			  s2 <- cont
+			  return (showChar '}' . s2)
+    | s1 == "\n"     = do annoBrace <- endOfLine
 			  indent <- getIndent
 			  s2 <- cont
-			  return (showString "\\\\\n" . indent . s2)
+			  return (annoBrace . showString "\\\\\n" . 
+				  indent . s2)
+    | "\\kill\n"
+      `isSuffixOf`
+      s1             = do indent <- getIndent
+			  s2 <- cont
+			  return (showString s1 . 
+				  indent . s2)
     | otherwise      = do setOnlyTabs False
 			  s2 <- cont
 			  return (showString s1 . s2)
@@ -123,10 +146,11 @@ latex_txt (PStr s1) cont
 debug_latex_txt :: TextDetails -> State LRState String -> State LRState String
 debug_latex_txt (Chr c)   cont  
     | c == '\n' = do state <- get
-		     endOfLine
+		     annoBrace <- endOfLine
 		     indent <- getIndent
 		     s <- cont
-		     return ("\\\\%"++show (state::LRState)++c:(indent s))
+		     return (annoBrace "\\\\%"++show (state::LRState)
+			     ++c:(indent s))
     | otherwise = do s <- cont
 		     return (c:s)
 debug_latex_txt (Str s1)  cont
@@ -143,19 +167,30 @@ debug_latex_txt (PStr s1) cont
     | s1 == endTab   = do subTabStop
 			  s2 <- cont
 			  return (s1 ++ s2)
-    | s1 == setTab   = do setTabStop
+    | s1 == setTab   = do state <- get
+			  setTabStop
 			  s2 <- cont
-			  return (s1 ++ s2)
+			  let (eAn,sAn) = if insideAnno state 
+					  then (showChar '}',
+					        showString startAnno)
+                                          else (id,id)
+			  return (eAn s1 ++ sAn s2)
     | setTabWSp
       `isPrefixOf`
       s1             = do addTabWithSpaces s1
 			  s2 <- cont
 			  return (s1 ++ s2)
+    | s1== startAnno = do setInsideAnno True
+			  s2 <- cont
+			  return (s1 ++ s2)
+    | s1 == endAnno  = do setInsideAnno False
+			  s2 <- cont
+			  return ('}' : s2)
     | s1 == "\n"     = do state <- get
-			  endOfLine
+			  annoBrace <- endOfLine
 			  indent <- getIndent
 			  s2 <- cont
-			  return ("\\\\%"++show (state::LRState)
+			  return (annoBrace "\\\\%"++show (state::LRState)
 				  ++s1++indent s2)
     | otherwise      = do setOnlyTabs False
 			  s2 <- cont
@@ -165,6 +200,10 @@ debug_latex_txt (PStr s1) cont
 setOnlyTabs :: Bool -> State LRState ()
 setOnlyTabs b = do state <- get
 		   put $ state {onlyTabs = b}
+
+setInsideAnno :: Bool -> State LRState ()
+setInsideAnno b = do state <- get
+		     put $ state {insideAnno = b}
 
 -- a function to produce a String containing the actual tab stops in use
 getIndent :: State LRState ShowS
@@ -183,19 +222,24 @@ getIndent = do state <- get
 		   new_tab_line = foldl space_format id 
 				          (collSpaceIndents state)
 					  . showString "\\kill\n"
-	       return $ if null (collSpaceIndents state) then
-		           indent_fun 
-			else
-			   indent_fun . new_tab_line . indent_fun	      
+		   sAnno = (if insideAnno state 
+			    then showString startAnno 
+			    else id)
+	       return ( (if null (collSpaceIndents state) then
+		            indent_fun 
+			 else
+			    indent_fun . new_tab_line . indent_fun)
+	                 . sAnno)
     where space_format :: (ShowS) -> Int -> ShowS
 	  space_format sf1 i = sf1 . showString (replicate i '~')
 			       . showString "\\="
 
-endOfLine :: State LRState ()
+endOfLine :: State LRState ShowS
 endOfLine = do state <- get 
 	       put $ state { isSetLine = False
 			   , setTabsThisLine = 0
 			   }
+	       return (if insideAnno state then showChar '}' else id)
 
 setTabStop :: State LRState ()
 setTabStop = State (\state -> ( ()
@@ -269,13 +313,15 @@ addTabStop = State (\state -> let (new_indentTabs,newTabs) =
 
 -- decrease the indentTabs in the state by 1
 subTabStop :: State LRState ()
-subTabStop = State (\state -> ( ()
-			      , state {indentTabs = 
-                                            if null $ indentTabs state
-				            then []
-				            else init $ indentTabs state
-				      }
-			      ))
+subTabStop = do state <- get
+		let l_itabs = last itabs 
+		    itabs = indentTabs state
+		    indentTabs' = if null $ indentTabs state
+				  then []
+				  else if l_itabs == 1 
+				       then init itabs
+				       else init itabs -- ++ [l_itabs -1]
+                put (state {indentTabs = indentTabs'})
 
 -- |
 -- a constant String for starting a LaTeX indentation with tab stop
@@ -362,6 +408,11 @@ instance PrettyPrint Token where
 isChar :: Token -> Bool
 isChar t = "\'" `isPrefixOf` tokStr t 
 
+isLaTeXmacro :: String -> Bool 
+isLaTeXmacro s = or ['\\' `elem` s,
+		     '^' `elem` s,
+		     '_' `elem` s]
+
 printToken_latex :: (String -> Doc) -> Token -> Doc
 printToken_latex strConvDoc_fun t =
     let s = tokStr t
@@ -369,27 +420,42 @@ printToken_latex strConvDoc_fun t =
 	in if s `elem` map (:[]) "[](),;" then strConvDoc_fun s 
 	   else if isPlace t || s `elem` map (:[]) "{}" then strConvDoc_fun esc
 	   else if  all isAlphaNum s  
-		|| '\\' `elem` esc
+		|| ('\\' `elem` esc && not ('\\' `elem` s))
 		|| isChar t
 		then (\x -> latex_macro "\\Id{"<>x<>latex_macro "}") 
 			 $ strConvDoc_fun esc
 		else (\x -> latex_macro "\\Ax{"<>x<>latex_macro "}") 
 			 $ strConvDoc_fun s
 
+printDisplayToken_latex :: (String -> Doc) -> Token -> Doc
+printDisplayToken_latex strConvDoc_fun t =
+    if isLaTeXmacro str && not (isPlace t)
+       then latex_macro "\\Ax{"<>strConvDoc_fun str<>latex_macro "}"
+       else printToken_latex strConvDoc_fun t
+    where str = tokStr t
+
 instance PrettyPrint Id where
     printText0  ga i = 
-	printId printText0 ga i
+	printId printText0 ga Nothing i
     printLatex0 ga i = 
-	printId printLatex0 ga i
+	printId printLatex0 ga (Just DF_LATEX) i
 
-printId :: (GlobalAnnos -> Token -> Doc)
-	   -> GlobalAnnos -> Id -> Doc
-printId pf ga (Id tops ids _) =
-    let glue_tok = hcat . map (pf ga)
-	in if null ids then glue_tok tops 
-	   else let (toks, places) = splitMixToken tops
-		    comp = pf ga (mkSimpleId "[") <> 
-			   fcat (punctuate (pf ga $ mkSimpleId ",") 
-				$ map (printId pf ga) ids)
-			   <> pf ga (mkSimpleId "]")
-		    in fcat [glue_tok toks, comp, glue_tok places]
+printId :: (GlobalAnnos -> Token -> Doc) -- ^ function to print a Token
+	   -> GlobalAnnos -> (Maybe Display_format) -> Id -> Doc
+printId pf ga mdf i =
+    let glue_tok pf' = hcat . map pf'
+	disp_tops = lookupDisplay ga (fromJust mdf) i
+	print_ (Id tops_p ids_p _) = 
+	    if null ids_p then glue_tok (pf ga) tops_p 
+	    else let (toks, places) = splitMixToken tops_p
+		     comp = pf ga (mkSimpleId "[") <> 
+		            fcat (punctuate (pf ga $ mkSimpleId ",") 
+				            $ map (printId pf ga mdf) ids_p)
+			    <> pf ga (mkSimpleId "]")
+		 in fcat [glue_tok (pf ga) toks, comp, 
+			  glue_tok (pf ga) places]
+	in if isJust mdf 
+	   then maybe (print_ i) 
+		      (glue_tok (printDisplayToken_latex casl_axiom_latex)) 
+		      (disp_tops) 
+           else print_ i
