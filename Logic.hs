@@ -310,11 +310,13 @@ data (Logic id1 sublogics1
                 -- the translation functions are partial 
                 -- because the target may be a sublanguage
                 -- map_basic_spec :: basic_spec1 -> Maybe basic_spec2,
-                map_sign :: sign1 -> Maybe sign2,
-                projection:: Maybe (sign2 -> sign1, morphism2 -> morphism1, 
+                map_sign :: sign1 -> Maybe (sign2,[sentence2]),
+                projection:: Maybe (-- the right adjoint functor Psi
+                                    sign2 -> sign1, morphism2 -> morphism1,
+                                    -- the counit 
                                     sign2 -> morphism2,
-                                    -- right adjoint and counit
-                                    basic_spec2 -> basic_spec1,
+                                    -- basic_spec2 -> basic_spec1,
+                                    -- corresponding symbol translation
                                     symbol2 -> Maybe symbol1),  
                 map_morphism :: morphism1 -> Maybe morphism2,
                 map_sentence :: sign1 -> sentence1 -> Maybe sentence2,

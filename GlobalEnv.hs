@@ -1,4 +1,4 @@
--- needs ghc -fglasgow-exts -package lang
+-- needs ghc -fglasgow-exts -package data -package posix
 
 {- HetCATS/AS_Structured.hs
    $Id$
@@ -32,7 +32,6 @@
 
 
    todo:
-   Use better tables
    Should architectural data structures be based on SpecLenvs as well?
    
 -}
@@ -46,7 +45,7 @@ import AS_Structured
 import AS_Architecture
 import AS_Library
 import FiniteMap
-
+import Posix
 
 
 -- Keep structure of specifications, 
@@ -69,12 +68,13 @@ data SpecEnv = Basic_specEnv G_sign G_l_sentence_list
               }
            -- deriving (Show,Eq)
 
--- Add flattened Env at the outer level
+-- Add flattened Env and sublogic at the outer level
 -- for purposes of a quick static analysis
 data SpecLenv = SpecLenv {
                     flattenedEnv :: G_local_env,
                     hiddenEnv :: G_local_env,
-                    structuredEnv :: SpecEnv
+                    structuredEnv :: SpecEnv,
+                    sublogic :: G_sublogics
                   }
                           
 data GenericityEnv = GenericityEnv {
@@ -124,7 +124,7 @@ data FGlobalEnv = FGlobalEnv (FiniteMap SIMPLE_ID FGlobalEntry) [Annotation]
 emptyFGlobalEnv = emptyFM
 
 
-type LibEnv = FiniteMap String (GlobalEnv, LIB_DEFN)
+type LibEnv = FiniteMap String (GlobalEnv, LIB_DEFN, EpochTime)
 
 emptyLibEnv = emptyFM
 

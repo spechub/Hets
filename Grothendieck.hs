@@ -188,6 +188,14 @@ data G_diagram = forall id sublogics
          local_env sign morphism symbol raw_symbol =>
         G_diagram id (Diagram sign morphism)
 
+data G_sublogics = forall id sublogics
+        basic_spec sentence symb_items symb_map_items
+        local_env sign morphism symbol raw_symbol .
+        Logic id sublogics
+         basic_spec sentence symb_items symb_map_items
+         local_env sign morphism symbol raw_symbol =>
+        G_sublogics id sublogics
+
 homogenize_symb_items :: [G_symb_items] -> Maybe G_symb_items_list
 homogenize_symb_items [] = Nothing
 homogenize_symb_items (G_symb_items i (s::symb_map_items) : rest) = 

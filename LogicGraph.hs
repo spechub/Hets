@@ -93,11 +93,11 @@ id_repr i s = LogicRepr{
   target_sublogic = s,
 --  map_basic_spec = Just,
   map_sentence = \_ -> Just,
-  map_sign = Just,
+  map_sign = \sigma -> Just (sigma,[]),
   projection = Just (proj_sublogic_sign i s,
                      proj_sublogic_morphism i s,
                      proj_sublogic_epsilon i s,
-                     proj_sublogic_basic_spec i s,
+                     -- proj_sublogic_basic_spec i s,
                      proj_sublogic_symbol i s),
   map_morphism = Just,
   map_symbol = \x -> [x]
