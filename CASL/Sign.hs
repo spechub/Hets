@@ -55,7 +55,7 @@ data Alternative = Construct Id OpType [Component] [Pos]
 data GenKind = Free | Generated | Loose deriving (Show, Eq)
 -- for the positions of "free" and "generated" see GenItems/Sentence
 
-data VarDecl = VarDecl { varId :: Id
+data VarDecl = VarDecl { varId :: SIMPLE_ID
 		       , varSort :: SortId
                        , varPos :: ListPos -- pos of "," or ":"
 		       } deriving (Show, Eq)
@@ -185,8 +185,8 @@ data Sentence = Axiom (Annoted Axiom)
 
 getLabel :: Sentence -> String
 getLabel (Axiom ax) = let annos = r_annos(ax)
-                          isLabel a = case a of Label _ _ -> True; _ -> False 
-                          labels = filter isLabel annos
+                          isLbl a = case a of Label _ _ -> True; _ -> False 
+                          labels = filter isLbl annos
 		          getLabels(Label l _) = concat l  		    
                       in if null labels then "" else getLabels(head(labels))
 getLabel (GenItems l _) = let srts = filter (\x ->
