@@ -1,0 +1,63 @@
+library Sorting1
+
+spec Elem = 
+  sort Elem
+end
+
+spec TotalOrder =
+  sort Elem
+  pred __<=__ : Elem * Elem
+  forall x,y,z : Elem
+  . x <= x                         %(reflexive)%
+  . x <= z if x <= y /\ y <= z     %(transitive)%
+  . x = y if x <= y /\ y <= x      %(antisymmetric)%
+  . x <= y \/ y <= x               %(dichotomous)%
+end
+
+
+spec List[Elem] = 
+  free type List[Elem] ::=  Nil  | Cons(Elem; List[Elem])
+  pred __eps__ : Elem * List[Elem]
+  forall x,y:Elem; l:List[Elem]
+  . not x eps  Nil 
+  . x eps Cons(y, l) <=> x=y \/ x eps l
+end
+
+spec Sorting[TotalOrder] =
+{
+  List[Elem]
+then
+  preds is_ordered : List[Elem];
+        permutation : List[Elem] * List[Elem]
+  vars x,y:Elem; l,l1,l2:List[Elem]
+  . is_ordered( Nil )
+  . is_ordered(Cons(x, Nil))
+  . is_ordered(Cons(x, Cons(y, l))) <=> x<=y /\ is_ordered(Cons(y, l))
+  . permutation(l1,l2) <=> (forall x:Elem . x eps l1 <=>x eps l2)
+ then
+  op sorter : List[Elem]->List[Elem]
+  var l:List[Elem]
+  . is_ordered(sorter(l))
+  . permutation(l,sorter(l))
+}
+ hide is_ordered, permutation
+end
+
+spec InsertSort[TotalOrder] = 
+  List[Elem]
+then
+  ops insert : Elem*List[Elem] -> List[Elem];
+      insert_sort : List[Elem]->List[Elem]
+  vars x,y:Elem; l:List[Elem]
+  . insert(x, Nil ) = Cons(x, Nil) 
+  . insert(x, Cons(y, l)) = Cons(x, insert(y,l)) 
+         when x<=y else Cons(y, insert(x,l))
+  . insert_sort( Nil ) =  Nil 
+  . insert_sort(Cons(x, l)) = insert(x,insert_sort(l))
+ hide insert
+end
+
+view InsertSortCorrectness[TotalOrder] : 
+     Sorting[TotalOrder] to InsertSort[TotalOrder] =
+    sorter |-> insert_sort
+end
