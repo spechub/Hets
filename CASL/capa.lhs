@@ -37,6 +37,7 @@ lineParser = [
 
 fileParser = [("BasicSpec", fromAParser basicSpec)
 	      , ("analysis", toStringParser runAna)
+	      , ("signature", toStringParser getSign)
 	     ]
 
 \end{code}

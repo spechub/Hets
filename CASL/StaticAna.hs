@@ -19,6 +19,10 @@ module CASL.StaticAna where
 import CASL.AS_Basic_CASL
 import CASL.MixfixParser
 import Common.Lib.State
+import Common.PrettyPrint
+import Common.PPUtils
+import Common.Lib.Pretty
+import CASL.Print_AS_Basic
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -407,3 +411,33 @@ isEmptySig s =
 
 isSubSig :: Sign -> Sign -> Bool
 isSubSig sub super = isEmptySig $ diffSig sub super
+
+toOP_TYPE :: OpType -> OP_TYPE
+toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =
+    (case k of 
+     Total -> Total_op_type 
+     Partial -> Partial_op_type) args res []
+
+toPRED_TYPE :: PredType -> PRED_TYPE
+toPRED_TYPE PredType { predArgs = args } = Pred_type args []
+
+instance PrettyPrint Sign where
+    printText0 ga s = 
+	ptext "sorts" <+> commaT_text ga (Set.toList $ sortSet s) 
+	$$ 
+	vcat (map (\ (i, t) -> 
+		   ptext "op" <+>
+		   printText0 ga i <+> colon <>
+		   printText0 ga (toOP_TYPE t)) 
+	      $ concatMap (\ (o, ts) ->
+			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
+	       $ Map.toList $ opMap s)
+	$$ 
+	vcat (map (\ (i, t) -> 
+		   ptext "pred" <+>
+		   printText0 ga i <+> colon <+>
+		   printText0 ga (toPRED_TYPE t)) 
+	     $ concatMap (\ (o, ts) ->
+			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
+	     $ Map.toList $ predMap s)
+		   

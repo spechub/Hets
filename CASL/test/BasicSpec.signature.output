@@ -1,0 +1,1223 @@
+sorts ABCDEFGHIJKLMONOPQRSTUVWXYZ, Boolean, Char, Data1, Data2,
+      Data3, Data4, Forest, Int, List, Nat, Pos, Rat, Set, Tree, a, a',
+      a'b''2, a_b_c, ab2, ab_2_3_a, abc, abcdefghijlklmnopqrstuvwxyz, b,
+      c, d, e, nat, s, t, x0123456789,
+      ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïñòóôõöøùúûüıÿ
+op ' ' : Char
+op '!' : Char
+op '!' : s
+op '#' : Char
+op '$' : Char
+op '$' : s
+op '%' : Char
+op '&' : Char
+op '&' : s
+op '(' : Char
+op '(' : s
+op ')' : Char
+op ')' : s
+op '*' : Char
+op '+' : Char
+op ',' : Char
+op '-' : Char
+op '.' : Char
+op '/' : Char
+op '/' : s
+op '0' : Char
+op '0' : s
+op '1' : Char
+op '1' : s
+op '2' : Char
+op '2' : s
+op '3' : Char
+op '3' : s
+op '4' : Char
+op '4' : s
+op '5' : Char
+op '5' : s
+op '6' : Char
+op '6' : s
+op '7' : Char
+op '7' : s
+op '8' : Char
+op '8' : s
+op '9' : Char
+op '9' : s
+op ':' : Char
+op ';' : Char
+op '<' : Char
+op '=' : Char
+op '=' : s
+op '>' : Char
+op '?' : Char
+op '?' : s
+op '@' : Char
+op 'A' : Char
+op 'B' : Char
+op 'C' : Char
+op 'D' : Char
+op 'E' : Char
+op 'F' : Char
+op 'G' : Char
+op 'H' : Char
+op 'I' : Char
+op 'J' : Char
+op 'K' : Char
+op 'L' : Char
+op 'M' : Char
+op 'N' : Char
+op 'O' : Char
+op 'P' : Char
+op 'Q' : Char
+op 'R' : Char
+op 'S' : Char
+op 'T' : Char
+op 'U' : Char
+op 'V' : Char
+op 'W' : Char
+op 'X' : Char
+op 'Y' : Char
+op 'Z' : Char
+op '[' : Char
+op '\"' : Char
+op '\"' : s
+op '\'' : Char
+op '\000' : Char
+op '\000' : s
+op '\001' : Char
+op '\002' : Char
+op '\003' : Char
+op '\004' : Char
+op '\005' : Char
+op '\006' : Char
+op '\007' : Char
+op '\008' : Char
+op '\009' : Char
+op '\010' : Char
+op '\011' : Char
+op '\012' : Char
+op '\013' : Char
+op '\014' : Char
+op '\015' : Char
+op '\016' : Char
+op '\017' : Char
+op '\018' : Char
+op '\019' : Char
+op '\020' : Char
+op '\021' : Char
+op '\022' : Char
+op '\023' : Char
+op '\024' : Char
+op '\025' : Char
+op '\026' : Char
+op '\027' : Char
+op '\028' : Char
+op '\029' : Char
+op '\030' : Char
+op '\031' : Char
+op '\032' : Char
+op '\033' : Char
+op '\034' : Char
+op '\035' : Char
+op '\036' : Char
+op '\037' : Char
+op '\038' : Char
+op '\039' : Char
+op '\040' : Char
+op '\041' : Char
+op '\042' : Char
+op '\043' : Char
+op '\044' : Char
+op '\045' : Char
+op '\046' : Char
+op '\047' : Char
+op '\048' : Char
+op '\049' : Char
+op '\050' : Char
+op '\051' : Char
+op '\052' : Char
+op '\053' : Char
+op '\054' : Char
+op '\055' : Char
+op '\056' : Char
+op '\057' : Char
+op '\058' : Char
+op '\059' : Char
+op '\060' : Char
+op '\061' : Char
+op '\062' : Char
+op '\063' : Char
+op '\064' : Char
+op '\065' : Char
+op '\066' : Char
+op '\067' : Char
+op '\068' : Char
+op '\069' : Char
+op '\070' : Char
+op '\071' : Char
+op '\072' : Char
+op '\073' : Char
+op '\074' : Char
+op '\075' : Char
+op '\076' : Char
+op '\077' : Char
+op '\078' : Char
+op '\079' : Char
+op '\080' : Char
+op '\081' : Char
+op '\082' : Char
+op '\083' : Char
+op '\084' : Char
+op '\085' : Char
+op '\086' : Char
+op '\087' : Char
+op '\088' : Char
+op '\089' : Char
+op '\090' : Char
+op '\091' : Char
+op '\092' : Char
+op '\093' : Char
+op '\094' : Char
+op '\095' : Char
+op '\096' : Char
+op '\097' : Char
+op '\098' : Char
+op '\099' : Char
+op '\100' : Char
+op '\101' : Char
+op '\102' : Char
+op '\103' : Char
+op '\104' : Char
+op '\105' : Char
+op '\106' : Char
+op '\107' : Char
+op '\108' : Char
+op '\109' : Char
+op '\110' : Char
+op '\111' : Char
+op '\112' : Char
+op '\113' : Char
+op '\114' : Char
+op '\115' : Char
+op '\116' : Char
+op '\117' : Char
+op '\118' : Char
+op '\119' : Char
+op '\120' : Char
+op '\121' : Char
+op '\122' : Char
+op '\123' : Char
+op '\124' : Char
+op '\125' : Char
+op '\126' : Char
+op '\127' : Char
+op '\128' : Char
+op '\129' : Char
+op '\130' : Char
+op '\131' : Char
+op '\132' : Char
+op '\133' : Char
+op '\134' : Char
+op '\135' : Char
+op '\136' : Char
+op '\137' : Char
+op '\138' : Char
+op '\139' : Char
+op '\140' : Char
+op '\141' : Char
+op '\142' : Char
+op '\143' : Char
+op '\144' : Char
+op '\145' : Char
+op '\146' : Char
+op '\147' : Char
+op '\148' : Char
+op '\149' : Char
+op '\150' : Char
+op '\151' : Char
+op '\152' : Char
+op '\153' : Char
+op '\154' : Char
+op '\155' : Char
+op '\156' : Char
+op '\157' : Char
+op '\158' : Char
+op '\159' : Char
+op '\160' : Char
+op '\161' : Char
+op '\162' : Char
+op '\163' : Char
+op '\164' : Char
+op '\165' : Char
+op '\166' : Char
+op '\167' : Char
+op '\168' : Char
+op '\169' : Char
+op '\170' : Char
+op '\171' : Char
+op '\172' : Char
+op '\173' : Char
+op '\174' : Char
+op '\175' : Char
+op '\176' : Char
+op '\177' : Char
+op '\178' : Char
+op '\179' : Char
+op '\180' : Char
+op '\181' : Char
+op '\182' : Char
+op '\183' : Char
+op '\184' : Char
+op '\185' : Char
+op '\186' : Char
+op '\187' : Char
+op '\188' : Char
+op '\189' : Char
+op '\190' : Char
+op '\191' : Char
+op '\192' : Char
+op '\193' : Char
+op '\194' : Char
+op '\195' : Char
+op '\196' : Char
+op '\197' : Char
+op '\198' : Char
+op '\199' : Char
+op '\200' : Char
+op '\201' : Char
+op '\202' : Char
+op '\203' : Char
+op '\204' : Char
+op '\205' : Char
+op '\206' : Char
+op '\207' : Char
+op '\208' : Char
+op '\209' : Char
+op '\210' : Char
+op '\211' : Char
+op '\212' : Char
+op '\213' : Char
+op '\214' : Char
+op '\215' : Char
+op '\216' : Char
+op '\217' : Char
+op '\218' : Char
+op '\219' : Char
+op '\220' : Char
+op '\221' : Char
+op '\222' : Char
+op '\223' : Char
+op '\224' : Char
+op '\225' : Char
+op '\226' : Char
+op '\227' : Char
+op '\228' : Char
+op '\229' : Char
+op '\230' : Char
+op '\231' : Char
+op '\232' : Char
+op '\233' : Char
+op '\234' : Char
+op '\235' : Char
+op '\236' : Char
+op '\237' : Char
+op '\238' : Char
+op '\239' : Char
+op '\240' : Char
+op '\241' : Char
+op '\242' : Char
+op '\243' : Char
+op '\244' : Char
+op '\245' : Char
+op '\246' : Char
+op '\247' : Char
+op '\248' : Char
+op '\249' : Char
+op '\250' : Char
+op '\251' : Char
+op '\252' : Char
+op '\253' : Char
+op '\254' : Char
+op '\255' : Char
+op '\255' : s
+op '\?' : Char
+op '\\' : Char
+op '\\' : s
+op '\a' : Char
+op '\b' : Char
+op '\f' : Char
+op '\n' : Char
+op '\n' : s
+op '\o000' : Char
+op '\o000' : s
+op '\o001' : Char
+op '\o002' : Char
+op '\o003' : Char
+op '\o004' : Char
+op '\o005' : Char
+op '\o006' : Char
+op '\o007' : Char
+op '\o010' : Char
+op '\o011' : Char
+op '\o012' : Char
+op '\o013' : Char
+op '\o014' : Char
+op '\o015' : Char
+op '\o016' : Char
+op '\o017' : Char
+op '\o020' : Char
+op '\o021' : Char
+op '\o022' : Char
+op '\o023' : Char
+op '\o024' : Char
+op '\o025' : Char
+op '\o026' : Char
+op '\o027' : Char
+op '\o030' : Char
+op '\o031' : Char
+op '\o032' : Char
+op '\o033' : Char
+op '\o034' : Char
+op '\o035' : Char
+op '\o036' : Char
+op '\o037' : Char
+op '\o040' : Char
+op '\o041' : Char
+op '\o042' : Char
+op '\o043' : Char
+op '\o044' : Char
+op '\o045' : Char
+op '\o046' : Char
+op '\o047' : Char
+op '\o050' : Char
+op '\o051' : Char
+op '\o052' : Char
+op '\o053' : Char
+op '\o054' : Char
+op '\o055' : Char
+op '\o056' : Char
+op '\o057' : Char
+op '\o060' : Char
+op '\o061' : Char
+op '\o062' : Char
+op '\o063' : Char
+op '\o064' : Char
+op '\o065' : Char
+op '\o066' : Char
+op '\o067' : Char
+op '\o070' : Char
+op '\o071' : Char
+op '\o072' : Char
+op '\o073' : Char
+op '\o074' : Char
+op '\o075' : Char
+op '\o076' : Char
+op '\o077' : Char
+op '\o100' : Char
+op '\o101' : Char
+op '\o102' : Char
+op '\o103' : Char
+op '\o104' : Char
+op '\o105' : Char
+op '\o106' : Char
+op '\o107' : Char
+op '\o110' : Char
+op '\o111' : Char
+op '\o112' : Char
+op '\o113' : Char
+op '\o114' : Char
+op '\o115' : Char
+op '\o116' : Char
+op '\o117' : Char
+op '\o120' : Char
+op '\o121' : Char
+op '\o122' : Char
+op '\o123' : Char
+op '\o124' : Char
+op '\o125' : Char
+op '\o126' : Char
+op '\o127' : Char
+op '\o130' : Char
+op '\o131' : Char
+op '\o132' : Char
+op '\o133' : Char
+op '\o134' : Char
+op '\o135' : Char
+op '\o136' : Char
+op '\o137' : Char
+op '\o140' : Char
+op '\o141' : Char
+op '\o142' : Char
+op '\o143' : Char
+op '\o144' : Char
+op '\o145' : Char
+op '\o146' : Char
+op '\o147' : Char
+op '\o150' : Char
+op '\o151' : Char
+op '\o152' : Char
+op '\o153' : Char
+op '\o154' : Char
+op '\o155' : Char
+op '\o156' : Char
+op '\o157' : Char
+op '\o160' : Char
+op '\o161' : Char
+op '\o162' : Char
+op '\o163' : Char
+op '\o164' : Char
+op '\o165' : Char
+op '\o166' : Char
+op '\o167' : Char
+op '\o170' : Char
+op '\o171' : Char
+op '\o172' : Char
+op '\o173' : Char
+op '\o174' : Char
+op '\o175' : Char
+op '\o176' : Char
+op '\o177' : Char
+op '\o200' : Char
+op '\o201' : Char
+op '\o202' : Char
+op '\o203' : Char
+op '\o204' : Char
+op '\o205' : Char
+op '\o206' : Char
+op '\o207' : Char
+op '\o210' : Char
+op '\o211' : Char
+op '\o212' : Char
+op '\o213' : Char
+op '\o214' : Char
+op '\o215' : Char
+op '\o216' : Char
+op '\o217' : Char
+op '\o220' : Char
+op '\o221' : Char
+op '\o222' : Char
+op '\o223' : Char
+op '\o224' : Char
+op '\o225' : Char
+op '\o226' : Char
+op '\o227' : Char
+op '\o230' : Char
+op '\o231' : Char
+op '\o232' : Char
+op '\o233' : Char
+op '\o234' : Char
+op '\o235' : Char
+op '\o236' : Char
+op '\o237' : Char
+op '\o240' : Char
+op '\o241' : Char
+op '\o242' : Char
+op '\o243' : Char
+op '\o244' : Char
+op '\o245' : Char
+op '\o246' : Char
+op '\o247' : Char
+op '\o250' : Char
+op '\o251' : Char
+op '\o252' : Char
+op '\o253' : Char
+op '\o254' : Char
+op '\o255' : Char
+op '\o256' : Char
+op '\o257' : Char
+op '\o260' : Char
+op '\o261' : Char
+op '\o262' : Char
+op '\o263' : Char
+op '\o264' : Char
+op '\o265' : Char
+op '\o266' : Char
+op '\o267' : Char
+op '\o270' : Char
+op '\o271' : Char
+op '\o272' : Char
+op '\o273' : Char
+op '\o274' : Char
+op '\o275' : Char
+op '\o276' : Char
+op '\o277' : Char
+op '\o300' : Char
+op '\o301' : Char
+op '\o302' : Char
+op '\o303' : Char
+op '\o304' : Char
+op '\o305' : Char
+op '\o306' : Char
+op '\o307' : Char
+op '\o310' : Char
+op '\o311' : Char
+op '\o312' : Char
+op '\o313' : Char
+op '\o314' : Char
+op '\o315' : Char
+op '\o316' : Char
+op '\o317' : Char
+op '\o320' : Char
+op '\o321' : Char
+op '\o322' : Char
+op '\o323' : Char
+op '\o324' : Char
+op '\o325' : Char
+op '\o326' : Char
+op '\o327' : Char
+op '\o330' : Char
+op '\o331' : Char
+op '\o332' : Char
+op '\o333' : Char
+op '\o334' : Char
+op '\o335' : Char
+op '\o336' : Char
+op '\o337' : Char
+op '\o340' : Char
+op '\o341' : Char
+op '\o342' : Char
+op '\o343' : Char
+op '\o344' : Char
+op '\o345' : Char
+op '\o346' : Char
+op '\o347' : Char
+op '\o350' : Char
+op '\o351' : Char
+op '\o352' : Char
+op '\o353' : Char
+op '\o354' : Char
+op '\o355' : Char
+op '\o356' : Char
+op '\o357' : Char
+op '\o360' : Char
+op '\o361' : Char
+op '\o362' : Char
+op '\o363' : Char
+op '\o364' : Char
+op '\o365' : Char
+op '\o366' : Char
+op '\o367' : Char
+op '\o370' : Char
+op '\o371' : Char
+op '\o372' : Char
+op '\o373' : Char
+op '\o374' : Char
+op '\o375' : Char
+op '\o376' : Char
+op '\o377' : Char
+op '\o377' : s
+op '\r' : Char
+op '\t' : Char
+op '\v' : Char
+op '\x00' : Char
+op '\x00' : s
+op '\x01' : Char
+op '\x02' : Char
+op '\x03' : Char
+op '\x04' : Char
+op '\x05' : Char
+op '\x06' : Char
+op '\x07' : Char
+op '\x08' : Char
+op '\x09' : Char
+op '\x0A' : Char
+op '\x0B' : Char
+op '\x0C' : Char
+op '\x0D' : Char
+op '\x0E' : Char
+op '\x0F' : Char
+op '\x10' : Char
+op '\x11' : Char
+op '\x12' : Char
+op '\x13' : Char
+op '\x14' : Char
+op '\x15' : Char
+op '\x16' : Char
+op '\x17' : Char
+op '\x18' : Char
+op '\x19' : Char
+op '\x1A' : Char
+op '\x1B' : Char
+op '\x1C' : Char
+op '\x1D' : Char
+op '\x1E' : Char
+op '\x1F' : Char
+op '\x20' : Char
+op '\x21' : Char
+op '\x22' : Char
+op '\x23' : Char
+op '\x24' : Char
+op '\x25' : Char
+op '\x26' : Char
+op '\x27' : Char
+op '\x28' : Char
+op '\x29' : Char
+op '\x2A' : Char
+op '\x2B' : Char
+op '\x2C' : Char
+op '\x2D' : Char
+op '\x2E' : Char
+op '\x2F' : Char
+op '\x30' : Char
+op '\x31' : Char
+op '\x32' : Char
+op '\x33' : Char
+op '\x34' : Char
+op '\x35' : Char
+op '\x36' : Char
+op '\x37' : Char
+op '\x38' : Char
+op '\x39' : Char
+op '\x3A' : Char
+op '\x3B' : Char
+op '\x3C' : Char
+op '\x3D' : Char
+op '\x3E' : Char
+op '\x3F' : Char
+op '\x40' : Char
+op '\x41' : Char
+op '\x42' : Char
+op '\x43' : Char
+op '\x44' : Char
+op '\x45' : Char
+op '\x46' : Char
+op '\x47' : Char
+op '\x48' : Char
+op '\x49' : Char
+op '\x4A' : Char
+op '\x4B' : Char
+op '\x4C' : Char
+op '\x4D' : Char
+op '\x4E' : Char
+op '\x4F' : Char
+op '\x50' : Char
+op '\x51' : Char
+op '\x52' : Char
+op '\x53' : Char
+op '\x54' : Char
+op '\x55' : Char
+op '\x56' : Char
+op '\x57' : Char
+op '\x58' : Char
+op '\x59' : Char
+op '\x5A' : Char
+op '\x5B' : Char
+op '\x5C' : Char
+op '\x5D' : Char
+op '\x5E' : Char
+op '\x5F' : Char
+op '\x60' : Char
+op '\x61' : Char
+op '\x62' : Char
+op '\x63' : Char
+op '\x64' : Char
+op '\x65' : Char
+op '\x66' : Char
+op '\x67' : Char
+op '\x68' : Char
+op '\x69' : Char
+op '\x6A' : Char
+op '\x6B' : Char
+op '\x6C' : Char
+op '\x6D' : Char
+op '\x6E' : Char
+op '\x6F' : Char
+op '\x70' : Char
+op '\x71' : Char
+op '\x72' : Char
+op '\x73' : Char
+op '\x74' : Char
+op '\x75' : Char
+op '\x76' : Char
+op '\x77' : Char
+op '\x78' : Char
+op '\x79' : Char
+op '\x7A' : Char
+op '\x7B' : Char
+op '\x7C' : Char
+op '\x7D' : Char
+op '\x7E' : Char
+op '\x7F' : Char
+op '\x80' : Char
+op '\x81' : Char
+op '\x82' : Char
+op '\x83' : Char
+op '\x84' : Char
+op '\x85' : Char
+op '\x86' : Char
+op '\x87' : Char
+op '\x88' : Char
+op '\x89' : Char
+op '\x8A' : Char
+op '\x8B' : Char
+op '\x8C' : Char
+op '\x8D' : Char
+op '\x8E' : Char
+op '\x8F' : Char
+op '\x90' : Char
+op '\x91' : Char
+op '\x92' : Char
+op '\x93' : Char
+op '\x94' : Char
+op '\x95' : Char
+op '\x96' : Char
+op '\x97' : Char
+op '\x98' : Char
+op '\x99' : Char
+op '\x9A' : Char
+op '\x9B' : Char
+op '\x9C' : Char
+op '\x9D' : Char
+op '\x9E' : Char
+op '\x9F' : Char
+op '\xA0' : Char
+op '\xA1' : Char
+op '\xA2' : Char
+op '\xA3' : Char
+op '\xA4' : Char
+op '\xA5' : Char
+op '\xA6' : Char
+op '\xA7' : Char
+op '\xA8' : Char
+op '\xA9' : Char
+op '\xAA' : Char
+op '\xAB' : Char
+op '\xAC' : Char
+op '\xAD' : Char
+op '\xAE' : Char
+op '\xAF' : Char
+op '\xB0' : Char
+op '\xB1' : Char
+op '\xB2' : Char
+op '\xB3' : Char
+op '\xB4' : Char
+op '\xB5' : Char
+op '\xB6' : Char
+op '\xB7' : Char
+op '\xB8' : Char
+op '\xB9' : Char
+op '\xBA' : Char
+op '\xBB' : Char
+op '\xBC' : Char
+op '\xBD' : Char
+op '\xBE' : Char
+op '\xBF' : Char
+op '\xC0' : Char
+op '\xC1' : Char
+op '\xC2' : Char
+op '\xC3' : Char
+op '\xC4' : Char
+op '\xC5' : Char
+op '\xC6' : Char
+op '\xC7' : Char
+op '\xC8' : Char
+op '\xC9' : Char
+op '\xCA' : Char
+op '\xCB' : Char
+op '\xCC' : Char
+op '\xCD' : Char
+op '\xCE' : Char
+op '\xCF' : Char
+op '\xD0' : Char
+op '\xD1' : Char
+op '\xD2' : Char
+op '\xD3' : Char
+op '\xD4' : Char
+op '\xD5' : Char
+op '\xD6' : Char
+op '\xD7' : Char
+op '\xD8' : Char
+op '\xD9' : Char
+op '\xDA' : Char
+op '\xDB' : Char
+op '\xDC' : Char
+op '\xDD' : Char
+op '\xDE' : Char
+op '\xDF' : Char
+op '\xE0' : Char
+op '\xE1' : Char
+op '\xE2' : Char
+op '\xE3' : Char
+op '\xE4' : Char
+op '\xE5' : Char
+op '\xE6' : Char
+op '\xE7' : Char
+op '\xE8' : Char
+op '\xE9' : Char
+op '\xEA' : Char
+op '\xEB' : Char
+op '\xEC' : Char
+op '\xED' : Char
+op '\xEE' : Char
+op '\xEF' : Char
+op '\xF0' : Char
+op '\xF1' : Char
+op '\xF2' : Char
+op '\xF3' : Char
+op '\xF4' : Char
+op '\xF5' : Char
+op '\xF6' : Char
+op '\xF7' : Char
+op '\xF8' : Char
+op '\xF9' : Char
+op '\xFA' : Char
+op '\xFB' : Char
+op '\xFC' : Char
+op '\xFD' : Char
+op '\xFE' : Char
+op '\xFF' : Char
+op '\xFF' : s
+op ']' : Char
+op '^' : Char
+op '^' : s
+op '_' : Char
+op '`' : Char
+op 'a' : Char
+op 'a' : s
+op 'b' : Char
+op 'c' : Char
+op 'd' : Char
+op 'e' : Char
+op 'f' : Char
+op 'g' : Char
+op 'h' : Char
+op 'i' : Char
+op 'j' : Char
+op 'k' : Char
+op 'l' : Char
+op 'm' : Char
+op 'n' : Char
+op 'o' : Char
+op 'p' : Char
+op 'q' : Char
+op 'r' : Char
+op 's' : Char
+op 't' : Char
+op 'u' : Char
+op 'v' : Char
+op 'w' : Char
+op 'x' : Char
+op 'y' : Char
+op 'z' : Char
+op '{' : Char
+op '|' : Char
+op '}' : Char
+op '~' : Char
+op '¡' : Char
+op '¢' : Char
+op '£' : Char
+op '¤' : Char
+op '¥' : Char
+op '¦' : Char
+op '§' : Char
+op '§' : s
+op '¨' : Char
+op '©' : Char
+op 'ª' : Char
+op '«' : Char
+op '¬' : Char
+op '­' : Char
+op '®' : Char
+op '¯' : Char
+op '°' : Char
+op '±' : Char
+op '²' : Char
+op '³' : Char
+op '´' : Char
+op 'µ' : Char
+op '¶' : Char
+op '·' : Char
+op '¸' : Char
+op '¹' : Char
+op 'º' : Char
+op '»' : Char
+op '¼' : Char
+op '½' : Char
+op '¾' : Char
+op '¿' : Char
+op 'À' : Char
+op 'Á' : Char
+op 'Â' : Char
+op 'Ã' : Char
+op 'Ä' : Char
+op 'Å' : Char
+op 'Æ' : Char
+op 'Ç' : Char
+op 'È' : Char
+op 'É' : Char
+op 'Ê' : Char
+op 'Ë' : Char
+op 'Ì' : Char
+op 'Í' : Char
+op 'Î' : Char
+op 'Ï' : Char
+op 'Ğ' : Char
+op 'Ñ' : Char
+op 'Ò' : Char
+op 'Ó' : Char
+op 'Ô' : Char
+op 'Õ' : Char
+op 'Ö' : Char
+op '×' : Char
+op 'Ø' : Char
+op 'Ù' : Char
+op 'Ú' : Char
+op 'Û' : Char
+op 'Ü' : Char
+op 'İ' : Char
+op 'Ş' : Char
+op 'ß' : Char
+op 'ß' : s
+op 'à' : Char
+op 'á' : Char
+op 'â' : Char
+op 'ã' : Char
+op 'ä' : Char
+op 'å' : Char
+op 'æ' : Char
+op 'ç' : Char
+op 'è' : Char
+op 'é' : Char
+op 'ê' : Char
+op 'ë' : Char
+op 'ì' : Char
+op 'í' : Char
+op 'î' : Char
+op 'ï' : Char
+op 'ğ' : Char
+op 'ñ' : Char
+op 'ò' : Char
+op 'ó' : Char
+op 'ô' : Char
+op 'õ' : Char
+op 'ö' : Char
+op '÷' : Char
+op 'ø' : Char
+op 'ù' : Char
+op 'ú' : Char
+op 'û' : Char
+op 'ü' : Char
+op 'ı' : Char
+op 'ş' : Char
+op 'ÿ' : Char
+op +__ : Int -> Int
+op +__ : Nat -> Nat
+op +__ : Rat -> Rat
+op - : s -> s
+op -__ : Int -> Int
+op -__ : Rat -> Rat
+op 0 : Int
+op 0 : Nat
+op 0 : Rat
+op 0 : nat
+op 1 : Int
+op 1 : Nat
+op 1 : Pos
+op 1 : Rat
+op 1 : s
+op 2 : Nat
+op 2 : s
+op 3 : Nat
+op 3 : s
+op 4 : Nat
+op 4 : s
+op 5 : Nat
+op 6 : Nat
+op 7 : Nat
+op 8 : Nat
+op 9 : Nat
+op ACK : Char
+op Add : Data1 * Set -> Set
+op BEL : Char
+op BS : Char
+op CAN : Char
+op CR : Char
+op Cons : Data1 * List -> List
+op Cons : Tree * Forest -> Forest
+op Cons21 : Data1 * Data2 -> Data2
+op Cons22 : Data2 * Data1 -> Data2
+op Cons31 : Data1 * Data2 -> Data3
+op Cons32 : Data2 * Data1 -> Data3
+op Cons41 : Data1 * Data2 ->? Data4
+op Cons42 : Data2 * Data1 ->? Data4
+op DC1 : Char
+op DC2 : Char
+op DC3 : Char
+op DC4 : Char
+op DEL : Char
+op DLE : Char
+op EM : Char
+op ENQ : Char
+op EOT : Char
+op ESC : Char
+op ETB : Char
+op ETX : Char
+op FF : Char
+op FS : Char
+op False : Boolean
+op Forest : Tree
+op GS : Char
+op HT : Char
+op LF : Char
+op Leaf : Data1 -> Tree
+op Mt : Set
+op NAK : Char
+op NL : Char
+op NP : Char
+op NUL : Char
+op Nil : Forest
+op Nil : List
+op Not__ : Boolean -> Boolean
+op RS : Char
+op SI : Char
+op SO : Char
+op SOH : Char
+op SP : Char
+op SUB : Char
+op SYN : Char
+op SYX : Char
+op True : Boolean
+op US : Char
+op VT : Char
+op __! : Nat -> Nat
+op __*__ : Int * Int -> Int
+op __*__ : Nat * Nat -> Nat
+op __*__ : Pos * Pos -> Pos
+op __*__ : Rat * Rat -> Rat
+op __*__ : s * s -> s
+op __+__ : Int * Int -> Int
+op __+__ : Nat * Nat -> Nat
+op __+__ : Nat * Pos -> Pos
+op __+__ : Pos * Nat -> Pos
+op __+__ : Rat * Rat -> Rat
+op __+__ : s * s -> s
+op __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__ : s * s -> s
+op __-__ : Int * Int -> Int
+op __-__ : Nat * Nat -> Int
+op __-__ : Rat * Rat -> Rat
+op __-__ : s * s -> s
+op __-?__ : Nat * Nat ->? Nat
+op __/__ : Int * Pos -> Rat
+op __/__ : s * s -> s
+op __/__ : Rat * Rat ->? Rat
+op __/?__ : Int * Int ->? Int
+op __/?__ : Nat * Nat ->? Nat
+op __@@__ : Nat * Nat -> Nat
+op __@@__ : s * s -> s
+op __And__ : Boolean * Boolean -> Boolean
+op __Or__ : Boolean * Boolean -> Boolean
+op __^__ : Int * Nat -> Int
+op __^__ : Nat * Nat -> Nat
+op __^__ : Rat * Int -> Rat
+op __a : b
+op __and'__ : s
+op __div__ : Int * Int ->? Int
+op __div__ : Nat * Nat ->? Nat
+op __exp__ : s * s -> s
+op __frac__ : s * s -> s
+op __mod__ : Int * Int ->? Nat
+op __mod__ : Nat * Nat ->? Nat
+op __quot__ : Int * Int ->? Int
+op __quot__ : Nat * Nat ->? Nat
+op __rem__ : Int * Int ->? Int
+op __rem__ : Nat * Nat ->? Nat
+op a : Data1
+op a : b
+op a : s
+op a : s -> t
+op a :? s
+op abs : Int -> Nat
+op abs : Nat -> Nat
+op abs : Rat -> Rat
+op b : Data1
+op b : s -> s
+op b : s -> t
+op b : s ->? s
+op c : Data1
+op c : b
+op c : d
+op c : s
+op c : t
+op c : a * t * t * t -> s
+op c : s * s -> s
+op c : s * s * s -> s
+op c : s * t -> s
+op c : a ->? s
+op c : s * s ->? s
+op c : s * s * s ->? s
+op c : s * t ->? s
+op chr : Nat ->? Char
+op d : t
+op d : s -> t
+op e : t
+op f : s ->? s
+op g : s -> t
+op g : s ->? s
+op max : Int * Int -> Int
+op max : Nat * Nat -> Nat
+op max : Rat * Rat -> Rat
+op min : Int * Int -> Int
+op min : Nat * Nat -> Nat
+op min : Rat * Rat -> Rat
+op ord : Char -> Nat
+op pre : Nat ->? Nat
+op sel1 : Data3 ->? Data1
+op sel1 : Data4 ->? Data1
+op sel2 : Data3 ->? Data2
+op sel2 : Data4 ->? Data2
+op sign : Int -> Int
+op suc : Nat -> Nat
+op suc : Nat -> Pos
+op succ : nat -> nat
+op {__} : s -> s
+op {} : s
+pred __<__ : Int * Int
+pred __<__ : Nat * Nat
+pred __<__ : Rat * Rat
+pred __<__ : a * a
+pred __<=__ : Int * Int
+pred __<=__ : Nat * Nat
+pred __<=__ : Rat * Rat
+pred __>__ : Int * Int
+pred __>__ : Nat * Nat
+pred __>__ : Rat * Rat
+pred __>=__ : Int * Int
+pred __>=__ : Nat * Nat
+pred __>=__ : Rat * Rat
+pred a : ()
+pred b : s
+pred c : s * s
+pred c : s * s * s
+pred c : s * t
+pred even : Int
+pred even : Nat
+pred isDigit : Char
+pred isLetter : Char
+pred isPrintable : Char
+pred odd : Int
+pred odd : Nat
+pred p : ()
+pred q : s
+Error (line 426, column 12) not a predicate: e
+Error (line 425, column 26) not a predicate: e
+Error (line 304, column 6) unknown sort 'd'
+Error (line 303, column 6) unknown sort 'b'
+Error (line 293, column 50) unknown sort 'a'
+Error (line 293, column 31) unknown sort 'a'
+Error (line 291, column 13) unknown sort 'b'
+Error (line 291, column 7) unknown sort 'b'
+Error (line 289, column 20) unknown sort 'a'
+Error (line 289, column 16) unknown sort 'a'
+Error (line 286, column 60) unknown sort 'a'
+Error (line 286, column 41) unknown sort 'a'
+Error (line 285, column 55) unknown sort 'a'
+Error (line 285, column 36) unknown sort 'a'
+Error (line 284, column 50) unknown sort 'a'
+Error (line 284, column 31) unknown sort 'a'
+Error (line 269, column 3) unexpected mixfix token: a
+Error (line 269, column 7) unexpected mixfix token: a
+Error (line 267, column 15) unknown sort 'b'
+Error (line 267, column 9) unknown sort 'b'
+Error (line 265, column 20) unknown sort 'a'
+Error (line 265, column 16) unknown sort 'a'
+Error (line 260, column 9) no resolution for term: i * q - j * p
