@@ -503,7 +503,7 @@ ana_RENAMING :: DGraph -> G_sign -> RENAMING -> Result GMorphism
 ana_RENAMING dg gSigma (Renaming ren pos) = 
   foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
   where
-  ren' = zip ren (ttail pos ++ repeat nullPos)
+  ren' = zip ren (tail (pos ++ repeat nullPos))
 
 
 -- analysis of restrictions
@@ -544,7 +544,7 @@ ana_RESTRICTION dg gSigma gSigma' (Hidden restr pos) =
                   restr'
      return (mor,Nothing)
   where
-  restr' = zip restr (ttail pos ++ repeat nullPos)
+  restr' = zip restr (tail (pos ++ repeat nullPos))
 ana_RESTRICTION dg gSigma@(G_sign lid sigma) gSigma'@(G_sign lid' sigma') 
      (Revealed (G_symb_map_items_list lid1 sis) pos) = 
   do let sys = sym_of lid sigma

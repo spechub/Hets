@@ -30,9 +30,6 @@ nullPos = newPos "" 0 0
 headPos :: [Pos] -> Pos 
 headPos l = if null l then nullPos else head l
 
-ttail :: [a] -> [a]  -- total tail
-ttail l = if null l then [] else tail l
-
 type Region = (Pos,Pos)
  
 -- tokens as supplied by the scanner

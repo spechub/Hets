@@ -96,7 +96,7 @@ ana_LIB_ITEM_with_download lgraph defl libenv
            gannos genv dg l (Download_items ln items pos) = do
   -- we take as the default logic for imported libs 
   -- the global default logic
-  let items' = zip items (ttail (ttail pos) ++ repeat nullPos)
+  let items' = zip items (drop 2 (pos ++ repeat nullPos))
   libenv' <- ioToIORes (ana_file lgraph defl libenv ln)
   case lookupFM libenv' ln of
     Nothing -> do
