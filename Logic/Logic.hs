@@ -75,8 +75,8 @@ import UnsafeCoerce
 
 -- for Conversion to ATerms 
 import Common.ATerm.Lib -- (ATermConvertible)
-import ATC.Graph
-import ATC.AS_Annotation
+import ATC.Graph -- for Diagram
+import ATC.AS_Annotation -- for Named
 
 -- diagrams are just graphs
 type Diagram object morphism = Graph object morphism
@@ -84,7 +84,7 @@ type Diagram object morphism = Graph object morphism
 -- | Amalgamability analysis might be undecidable, so we need
 -- a special type for the result of ensures_amalgamability
 data Amalgamates = Yes
-		 | No String -- ^ the String contains the description of failure
+		 | No String -- ^ failure description
 		 | DontKnow 
 
 -- languages, define like "data CASL = CASL deriving Show" 
@@ -165,7 +165,7 @@ class (Language lid, PrintLaTeX basic_spec,
 	 				      
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
-class (Category lid sign morphism, Eq sentence, Show sentence, Ord sentence,
+class (Category lid sign morphism, Ord sentence,
        PrettyPrint sentence, PrintLaTeX sign, PrintLaTeX morphism, 
        Ord symbol, Show symbol, PrintLaTeX symbol,
        ATermConvertible sentence, ATermConvertible symbol,
@@ -207,7 +207,7 @@ class (Category lid sign morphism, Eq sentence, Show sentence, Ord sentence,
 
 class ( Syntax lid basic_spec symb_items symb_map_items
       , Sentences lid sentence proof_tree sign morphism symbol
-      , Show raw_symbol, Eq raw_symbol, Ord raw_symbol, PrintLaTeX raw_symbol)
+      , Ord raw_symbol, PrintLaTeX raw_symbol)
     => StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol 
@@ -274,7 +274,7 @@ instance LatticeWithTop () where
 class (StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
-       LatticeWithTop sublogics,ATermConvertible sublogics,
+       LatticeWithTop sublogics, ATermConvertible sublogics,
        Typeable sublogics, Typeable basic_spec, Typeable sentence, 
        Typeable symb_items, Typeable symb_map_items, Typeable sign, 
        Typeable morphism, Typeable symbol, Typeable raw_symbol, 
@@ -359,6 +359,7 @@ instance Eq AnyLogic where
 ----------------------------------------------------------------
 -- Typeable instances
 ----------------------------------------------------------------
+mkTyConApp :: TyCon -> [TypeRep] -> TypeRep
 mkTyConApp = mkAppTy
 
 proverTc :: TyCon
