@@ -4,12 +4,17 @@ import qualified ParsecToken as P
 import ParsecLanguage (emptyDef)
 
 import Id
+
+type GParser a = forall st. GenParser Char st a
+
 ------ helper functions ------ 
 
+convToPos :: SourcePos -> (Line, Column)
 convToPos (sp) = (sourceLine(sp),sourceColumn(sp))
 
 ------------------------------
 
+casl_letter :: [Char]
 casl_letter = ['a'..'z'] ++ ['A'..'Z'] ++
 	      [toEnum(192) .. toEnum(207)] ++
               [toEnum(209) .. toEnum(214)] ++
@@ -19,8 +24,10 @@ casl_letter = ['a'..'z'] ++ ['A'..'Z'] ++
 	      [toEnum(248) .. toEnum(253)] ++ -- icelandic thorn
 	      [toEnum(255)] 
 
+casl_no_bracket_sign :: [Char]
 casl_no_bracket_sign = "+-*/|\\&=`<>!?:$@#^~¡¿×÷£©±¶§¹²³¢°¬µ.·"
 
+casl_reserved_words :: String
 casl_reserved_words = 
     "and arch as assoc axiom axioms closed comm def else end " ++
     "exists false fit forall free from generated get given " ++
@@ -28,9 +35,11 @@ casl_reserved_words =
     "result reveal sort sorts spec then to true type types " ++
     "unit units var vars version view when with within . ·"
 
+casl_reserved_ops :: String
 casl_reserved_ops = 
     ": :? ::= = => <=> . · | |-> \\/ /\\ ¬"
 
+caslDef :: forall st. P.LanguageDef st
 caslDef = ( emptyDef {P.nestedComments = True
 		     ,P.commentStart   = "%["
 		     ,P.commentEnd     = "]%"
@@ -46,184 +55,203 @@ caslDef = ( emptyDef {P.nestedComments = True
 		     ,P.reservedOpNames = words casl_reserved_ops
 		     })
 
-infix_underscore = do { uc <- try (char '_')
-		      ; notFollowedBy (oneOf(" _\n" ++ 
-					     casl_no_bracket_sign)
-				      )
-		      ; return uc
-		      }
+infix_underscore :: GParser Char
+infix_underscore = do uc <- try (char '_')
+		      notFollowedBy (oneOf(" _\n" ++ 
+					   casl_no_bracket_sign))
+		      return uc
 
+casl_lexer :: forall st. P.TokenParser st
 casl_lexer = P.makeTokenParser caslDef
 
+whiteSpace :: forall st. CharParser st ()
 whiteSpace    = P.whiteSpace casl_lexer
+lexeme :: forall st a. CharParser st a -> CharParser st a
 lexeme        = P.lexeme casl_lexer
 
+symbol :: forall st. String -> CharParser st String
 symbol        = P.symbol casl_lexer
+natural :: forall st. CharParser st Integer
 natural       = P.natural casl_lexer
 
+parens :: forall st a. CharParser st a -> CharParser st a
 parens        = P.parens casl_lexer
+braces :: forall st a. CharParser st a -> CharParser st a
 braces        = P.braces casl_lexer
+squares :: forall st a. CharParser st a -> CharParser st a
 squares       = P.squares casl_lexer
 
+semi :: forall st. CharParser st String
 semi          = P.semi casl_lexer
+comma :: forall st. CharParser st String
 comma         = P.comma casl_lexer
+colon :: forall st. CharParser st String
 colon         = P.colon casl_lexer
 
+identifier :: forall st. CharParser st String
 identifier    = P.identifier casl_lexer
-operator      = P.operator casl_lexer 
-
+operator :: forall st. CharParser st String
+operator      = P.operator casl_lexer
+ 
+reserved :: forall st. String -> CharParser st ()
 reserved      = P.reserved casl_lexer
+reservedOp :: forall st. String -> CharParser st ()
 reservedOp    = P.reservedOp casl_lexer
 
+charLiteral :: forall st. CharParser st Char
 charLiteral   = P.charLiteral casl_lexer
+stringLiteral :: forall st. CharParser st String 
 stringLiteral = P.stringLiteral casl_lexer
 
 
 -- parses an Identifier without consuming following whitespaces
-casl_words = do { c  <- (P.identStart caslDef)
-		; cs <- many(P.identLetter caslDef)
-		; return (c:cs)
-		}
+casl_words :: GParser String
+casl_words = do c  <- (P.identStart caslDef)
+		cs <- many(P.identLetter caslDef)
+		return (c:cs)
 
-dot_words = try (do { dot  <- char '.'
-		; word <- casl_words
-		; return (dot:word)
-		})
+dot_words :: GParser String
+dot_words = try (do dot  <- char '.'
+		    word <- casl_words
+		    return (dot:word)
+		)
 	    <?> "dot word"
 
 -- parsers for reserved words and ops with two different signs, bat
 -- the same meaning
+reserved_dot :: GParser ()
 reserved_dot = (reserved "·") <|> (reserved ".")
 
+reserved_not :: GParser ()
 reserved_not = (reservedOp "¬") <|> (reserved "not")
 
+reserved_op :: GParser ()
 reserved_op = (reserved "ops") <|> (reserved "op")
 
+reserved_sort :: GParser ()
 reserved_sort = (reserved "sorts") <|> (reserved "sort")
 
+reserved_pred :: GParser ()
 reserved_pred = (reserved "preds") <|> (reserved "pred")
 
 -- parsers returning Ids according Id.hs
-simple_id = do { sp <- getPosition
-	       ; id <- identifier
-	       ; return (Id [Token id (convToPos sp)] [] [])
-	       }
+simple_id:: GParser Id
+simple_id = do sp <- getPosition
+	       i  <- identifier
+	       return $ Id [Token i (convToPos sp)] [] []
 
+casl_id :: GParser Id	       
 casl_id = comp_id
  
-token_id = do { tok <- try CaslLanguage.token
-	      ; return (Id [tok] [] [])
-	      }
+token_id :: GParser Id
+token_id = do tok <- try CaslLanguage.token
+	      return (Id [tok] [] [])
 
-token = do { sp  <- getPosition 
-	   ; tok <-  choice [identifier,
+token :: GParser Token
+token = do sp  <- getPosition 
+	   tok <-  choice [identifier,
 			     lexeme dot_words,
 			     operator, 
 			     fmap (\x -> show x) (charLiteral),
 			     fmap (:"") (digit)]
-	   ; return (Token tok (convToPos sp))
-	   }
+	   return $ Token tok (convToPos sp)
 
-place = (do { sp  <- getPosition
-	    ; try (symbol Id.place)
-	    ; return (Token Id.place (convToPos sp))
-	    }
-	 ) <?> "place"
+place :: GParser Token
+place = (do sp  <- getPosition
+	    try (symbol Id.place)
+	    return (Token Id.place (convToPos sp))
+	) <?> "place"
 
-place_token = do { pla <- try CaslLanguage.place
-		 ; option ([pla]) (do { tok <- try CaslLanguage.token
-				      ; return [pla,tok]
-				      })
-		 }
+place_token :: GParser [Token]
+place_token = do pla <- try CaslLanguage.place
+		 option ([pla]) (do tok <- try CaslLanguage.token
+				    return [pla,tok])
 
-
-mixfix_id accum = do { ts <- (try (fmap (:[]) CaslLanguage.place) 
-			      <|>
-			      try (fmap (:[]) CaslLanguage.token) 
-			      <|>
-			      special_between (symbol "{") (symbol "}") 
-			      (mkTokLst (mixfix_id []))
-			      <|>
-			      try (special_between (symbol "[") (symbol "]") 
-				   (mkTokLst (mixfix_id [])))
-			      <|>
-			      bracket_pair "{" "}"
-			      <|>
-			      bracket_pair "[" "]"
-			      <?> "mixfix id"
-			     )
-		     ; sqs <- option [] (lookAhead (fmap (:[]) (symbol "[")))
-		     ; fts <- option [] (lookAhead 
+mixfix_id :: [Token] -> GParser Id
+mixfix_id accum = do ts <- (try (fmap (:[]) CaslLanguage.place) 
+			    <|>
+			    try (fmap (:[]) CaslLanguage.token) 
+			    <|>
+			    special_between (symbol "{") (symbol "}") 
+			    (mkTokLst (mixfix_id []))
+			    <|>
+			    try (special_between (symbol "[") (symbol "]") 
+				 (mkTokLst (mixfix_id [])))
+			    <|>
+			    bracket_pair "{" "}"
+			    <|>
+			    bracket_pair "[" "]"
+			    <?> "mixfix id"
+			   )
+		     sqs <- option [] (lookAhead (fmap (:[]) (symbol "[")))
+		     fts <- option [] (lookAhead 
 					 (fmap (:[]) (CaslLanguage.token)))
-		     ; Id ats _ _ <- 
-		       let 
-		       accum_ts = (accum ++ ts)
-		       is_last_op = (case (last accum_ts) of 
-				     t@(Token s _) -> not
+		     Id ats _ _ <- 
+		         let accum_ts = (accum ++ ts)
+			     is_last_op = case (last accum_ts) of 
+					  t@(Token s _) -> not
 				                       ((last s) `elem` "[{}]"
 							||
-							isPlace (t)) )
-		       in
-		       if sqs == [] then
-		       (if is_last_op then
-			(if fts == [] then
-			 option (Id accum_ts [] []) (mixfix_id accum_ts)
-			 else
-			 unexpected "token follows token" 
-			)
-			else -- not is_last_op
-			option (Id accum_ts [] []) (mixfix_id accum_ts)
-		       )
-		       else -- sqs \= []
-		       (if isPlace (last accum_ts) then
-			option (Id accum_ts [] []) (mixfix_id accum_ts)
-			else
-			return (Id accum_ts [] [])
-		       )
-		     ; return (Id ats [] [])
-		     }
-    where mkTokLst p = fmap (\(Id ts cs pos) -> ts) p
-	  bracket_pair open close = do { o_sp <- getPosition
-				       ; o <- try (symbol open)
-				       ; c_sp <- getPosition
-				       ; c <- try (symbol close)
-				       ; return [Token o (convToPos o_sp),
-						 Token c (convToPos c_sp)]
-				       }		
-
-special_between start end p = do { st_sp <- getPosition
-				 ; st <- start
-				 ; res <- special_manyTill p end
-				 ; return ([Token st (convToPos st_sp)] ++
+							isPlace (t)) 
+		         in if sqs == [] then
+			       if is_last_op then
+			          if fts == [] then
+			             option (Id accum_ts [] []) 
+					    (mixfix_id accum_ts)
+			          else
+			             unexpected "token follows token" 
+			       else -- not is_last_op
+			          option (Id accum_ts [] []) 
+					 (mixfix_id accum_ts)
+		            else -- sqs \= []
+		               if isPlace (last accum_ts) then
+			          option (Id accum_ts [] []) 
+                                         (mixfix_id accum_ts)
+			       else
+			          return (Id accum_ts [] [])
+		     return (Id ats [] [])		     
+    where mkTokLst p = fmap (\(Id ts _cs _pos) -> ts) p
+	  bracket_pair open close = do o_sp <- getPosition
+				       o <- try (symbol open)
+				       c_sp <- getPosition
+				       c <- try (symbol close)
+				       return [Token o (convToPos o_sp),
+					       Token c (convToPos c_sp)]
+				       		
+special_between :: forall tok st.GenParser tok st String
+                   -> GenParser tok st String
+                   -> GenParser tok st [Token] -> GenParser tok st [Token]
+special_between start end p = do st_sp <- getPosition
+				 st <- start
+				 res <- special_manyTill p end
+				 return ([Token st (convToPos st_sp)] ++
 					   res) -- res also contains end
-				 }
-
+				 
+special_manyTill :: forall tok st.GenParser tok st [Token]
+                    -> GenParser tok st String -> GenParser tok st [Token]
 special_manyTill p end = scan
-    where scan  = do{ sp <- getPosition
-		    ; e <- end
-		    ; return [Token e (convToPos sp)] }
+    where scan  = do sp <- getPosition
+		     e <- end
+		     return [Token e (convToPos sp)] 
 		  <|>
-		  do{ x <- p
-		    ; xs <- scan
-		    ; return (x ++ xs) }
+		  do x <- p
+		     xs <- scan
+		     return (x ++ xs)
 
-
-comp_id = do { Id ts _ _  <- test_mixfix_id (mixfix_id [])
-             ; Id ts cs pos <- option (Id ts [] []) 
-                                   (do { cs <- squares (sepBy1 comp_id comma)
-				       ; return (Id ts cs [])
-				       })
-	     ; option (Id ts cs pos) 
-	              (do { ps <- many CaslLanguage.place
-			  ; return (Id (ts++ps) cs [])
-			  })
-             }
-    where test_mixfix_id p = do { id@(Id ts _ _) <- p
-				; if (case ts of [] -> False
-				                 [a] -> not (isPlace a)
-				                 otherwise -> True) 
-				  then
-				  return id
-				  else
-				  fail "only one place is not a legal mixfix id "
-				}
+comp_id :: GParser Id
+comp_id = do Id ts _ _  <- test_mixfix_id (mixfix_id [])
+             Id ts' cs pos <- option (Id ts [] []) 
+                                   (do cs <- squares (sepBy1 comp_id comma)
+				       return (Id ts cs [])
+				       )
+	     option (Id ts' cs pos) 
+	              (do ps <- many CaslLanguage.place
+		          return (Id (ts'++ps) cs []))
+    where test_mixfix_id p = 
+	      do i@(Id ts _ _) <- p
+		 if (case ts of []  -> False
+		                [a] -> not (isPlace a)
+		                _   -> True) 
+		   then return i
+		   else fail "only one place is not a legal mixfix id "
+				
