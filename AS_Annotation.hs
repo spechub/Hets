@@ -44,5 +44,6 @@ data Annotation = Comment_line String [Pos]
 
 data Annoted a = Annoted { item::a
 			 , opt_pos::[Pos]
-			 , annos::[Annotation]}
+			 , l_annos, r_annos::[Annotation]}
+	                   -- left or preceeding, right or following
 		 deriving (Show,Eq) 
