@@ -43,9 +43,9 @@ __union__
   : forall E : Type; N : Type . Graph N E * Graph N E -> Graph N E
     %(op)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+bottom : forall a : Type . a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
-if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------

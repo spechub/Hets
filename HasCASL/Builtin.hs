@@ -144,7 +144,7 @@ botType = bindA aType
 
 bList :: [(Id, TypeScheme)]
 bList = (botId, botType) : (defId, defType) : (notId, notType) : 
-	(ifThenElse, ifType) : (whenElse, whenType) :
+	(whenElse, whenType) :
         (trueId, unitType) : (falseId, unitType) :
         map ( \ e -> (e, eqType)) [eqId, exEq] ++
 	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]

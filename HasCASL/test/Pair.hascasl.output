@@ -36,6 +36,7 @@ __=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+bottom : forall a : Type . a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 f : a * b ->? Pair a b
     %(op)%
@@ -47,13 +48,7 @@ fst
   : forall a : Type; b : Type . Pair a b -> a
     %(select from Pair constructed by
     Pair : forall a : Type; b : Type . a * b -> Pair a b)%
-g : forall a : Type; b : Type . Pair a b ->? a
-    %(op)%
-      = \ (op Pair[_var_6; _var_7]
-           : forall a : Type; b : Type . a * b -> Pair a b)
-            (var a : _var_6, var b : _var_7)
-          . (var a : _var_6)
-if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
+g : forall a : Type; b : Type . Pair a b ->? a %(op)%
 not__ : Unit ->? Unit %(fun)%
 snd
   : forall a : Type; b : Type . Pair a b -> b

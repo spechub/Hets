@@ -26,9 +26,10 @@ translateIdWithType ty i =
   in case ty of 
      UpperId -> 
 	 if isLower c || c == '_' || isDigit c || s `Set.member` upperCaseList 
-	    then  "A_" ++ s else s  
-     LowerId -> if isUpper c || isDigit c || s `Set.member` lowerCaseList
-		then "a_" ++ s  else s 
+	    then  "A__" ++ s else s  
+     LowerId -> 
+	 if isUpper c || c == '_' || isDigit c || s `Set.member` lowerCaseList
+	    then "a__" ++ s  else s 
 
 -- reserved Haskell keywords
 lowerCaseList, upperCaseList :: Set.Set String
@@ -52,9 +53,10 @@ translateId (Id tlist idlist _) =
 
 -- | Translate a 'Token' according to the 'symbolMapping'.
 translateToken :: Token -> ShowS
-translateToken t = showString $
+translateToken t = let str = tokStr t in showString $
     if isPlace t then "_2"
-    else concatMap symbolMapping $ tokStr t
+    else if all isDigit str && not (isSingle str) then '_' : str
+    else concatMap symbolMapping str
 
 -- | Translate a compound list
 translateCompound :: [Id] -> ShowS

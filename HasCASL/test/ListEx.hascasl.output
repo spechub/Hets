@@ -83,6 +83,7 @@ __=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+bottom : forall a : Type . a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
 head
@@ -98,7 +99,6 @@ head
   : forall a : Type+ . List a -> a
     %(select from List constructed by
     Cons : forall a : Type+ . a * List a -> List a)%
-if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not__ : Unit ->? Unit %(fun)%
 rek
   : forall a : Type+ . even2 a -> odd2 a %(construct odd2)%

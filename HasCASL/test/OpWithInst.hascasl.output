@@ -23,9 +23,9 @@ __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 a : s %(op)%
+bottom : forall a : Type . a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
-if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------

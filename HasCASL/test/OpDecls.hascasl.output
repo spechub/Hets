@@ -56,6 +56,7 @@ __if__ : Unit * Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 a : s %(op)%
 b : s %(op)%
+bottom : forall a : Type . a %(fun)%
 c : s %(op)% = (op __+__ : s * s -> s)(op a : s, op b : s)
 d : s %(op)% = (op __+__ : s * s -> s)(op a : s, op a : s)
 def__ : forall a : Type . a ->? Unit %(fun)%
@@ -69,7 +70,6 @@ i : s
 i1 : s %(op)% = (op incr : s -> s)(op a : s)
 i2 : s %(op)% = (op incr : s -> s)(op a : s)
 i3 : s %(op)% = (op incr : s -> s)(op a : s)
-if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 incr : s -> s %(op)%
 l1
   : s

@@ -2,26 +2,26 @@ module Dummy where
 import Prelude (undefined, Show, Eq, Ord, Bool)
 import MyLogic
  
-data A_s = A_s
-         deriving (Show, Eq, Ord)
+data A__s = A__s
+          deriving (Show, Eq, Ord)
  
-data A_t = A_t
-         deriving (Show, Eq, Ord)
+data A__t = A__t
+          deriving (Show, Eq, Ord)
  
-a :: A_s
+a :: A__s
 a = undefined
  
-b :: A_s
+b :: A__s
  
-c :: A_t
+c :: A__t
  
-a_snd :: (A_s, A_t) -> A_t
+a__snd :: (A__s, A__t) -> A__t
  
-x :: A_s
+x :: A__s
 x = undefined
  
-y :: A_t
+y :: A__t
 y = undefined
-a_snd (x, y) = y
+a__snd (x, y) = y
 b = a
-c = a_snd (x, y)
+c = a__snd (x, y)

@@ -157,11 +157,8 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 	       case mt of 
 		   Just newTerm  -> let newPrg = ProgEq newPat newTerm qs in
 		     case getAppl newPat of
-		       Just (i, sc, args) -> let
-			   defTrm = if null args then newTerm
-					else LambdaTerm args 
-					     Partial newTerm [] in do
-			   addOpId i sc [] $ Definition Op defTrm
+		       Just (i, sc, _) -> do 
+			   addOpId i sc [] $ NoOpDefn Op
 			   appendSentences [NamedSen ("pe_" ++ showId i "")
 					    $ ProgEqSen i sc newPrg]
 			   e <- get

@@ -37,14 +37,14 @@ __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 a : s %(op)%
-b : s %(op)% = (op a : s)
+b : s %(op)%
+bottom : forall a : Type . a %(fun)%
 c : t
     %(op)% = (op snd : s * t -> t)((op x : s) : s, (op y : t) : t)
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
-if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not__ : Unit ->? Unit %(fun)%
-snd : s * t -> t %(op)% = \ (var x : s, var y : t) . (var y : t)
+snd : s * t -> t %(op)%
 true : Unit %(fun)%
 x : s %(op)%
 y : t %(op)%
@@ -67,10 +67,5 @@ program (op b : s) : s = (op a : s) %(pe_b)%
   (op c : t,
    (op snd : s * t -> t)((op x : s) : s, (op y : t) : t)) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
-*** Warning 6.10, different terms of 'snd'
-	\ (var x : s, var y : t) . (var y : t)
-	\ (var x : s, var y : t) . (var y : t) : t
-	
-
 *** Error 14.10, illegal toplevel pattern '(var x : s, var y : s)'
 *** Warning 17.9, illegal lhs pattern '(var b : s)'

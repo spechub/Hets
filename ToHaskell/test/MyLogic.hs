@@ -14,36 +14,33 @@ module MyLogic where
 
 type Pred a = a -> Bool
 
-bottom ::a
+bottom :: a
 bottom = undefined
 
-_2_S_B_2 :: (Bool, Bool) -> Bool
-_2_S_B_2 = uncurry (&&)
+a___2_S_B_2 :: (Bool, Bool) -> Bool
+a___2_S_B_2 = uncurry (&&)
  
-_2_L_E_G_2 :: (Bool, Bool) -> Bool
-_2_L_E_G_2 = _2_E_2
+a___2_L_E_G_2 :: (Bool, Bool) -> Bool
+a___2_L_E_G_2 = uncurry (==)
  
-_2_E_2 :: Eq a => (a, a) -> Bool
-_2_E_2 = uncurry (==)
+a___2_E_2 :: Eq a => (a, a) -> Bool
+a___2_E_2 = uncurry (==)
  
-_2_E_G_2 :: (Bool, Bool) -> Bool
-_2_E_G_2 (a, b) = if a then b else True
+a___2_E_G_2 :: (Bool, Bool) -> Bool
+a___2_E_G_2 (a, b) = if a then b else True
  
-_2_Ee_E_2 :: Eq a => (a, a) -> Bool
-_2_Ee_E_2 = _2_E_2
+a___2_Ee_E_2 :: Eq a => (a, a) -> Bool
+a___2_Ee_E_2 = uncurry (==)
  
-_2_B_S_2 :: (Bool, Bool) -> Bool
-_2_B_S_2 = uncurry (||) 
+a___2_B_S_2 :: (Bool, Bool) -> Bool
+a___2_B_S_2 = uncurry (||) 
 
-_2if_2 :: (Bool, Bool) -> Bool
-_2if_2 (a, b) = _2_E_G_2 (b, a)
+a___2if_2 :: (Bool, Bool) -> Bool
+a___2if_2 (a, b) = if b then a else True
 
-_2when_2else_2 :: (a, Bool, a) -> a
-_2when_2else_2 (a, b, c) = if b then a else c 
+a___2when_2else_2 :: (a, Bool, a) -> a
+a___2when_2else_2 (a, b, c) = if b then a else c 
 
-if_2then_2else_2 :: (Bool, a, a) -> a
-if_2then_2else_2 (a, b, c) = if a then b else c 
- 
 not_2 :: Bool -> Bool
 not_2 = not
 

@@ -2,7 +2,7 @@
   type Bool;
        Pred := \ S . S ->? Unit ;
        Set := \ S:Type . S ->? Unit ;
-  ops true, false : Bool;
+  ops True, False : Bool;
 
   ops emptySet : Set S;
       {__} : S -> Set S;
@@ -23,5 +23,5 @@
   . x isIn (s \\ s') <=> x isIn s /\ not x isIn s'
   . s disjoint s' <=> s intersection s' = emptySet
   . (x,y) isIn (s * t) <=> x isIn s /\ y isIn t
-  . inl x = (x,false)
-  . inr x = (x,true)
+  . inl x = (x,False)
+  . inr x = (x,True)

@@ -29,6 +29,7 @@ import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.Unify
 import HasCASL.Merge
+import HasCASL.Builtin
 
 -- | add diagnostic messages 
 addDiags :: [Diagnosis] -> State Env ()
@@ -203,9 +204,11 @@ addOpId i sc attrs defn =
            (l,r) = partitionOpId e i sc
 	   oInfo = OpInfo sc attrs defn 
        if null ds then 
-          if null l then do putAssumps $ Map.insert i 
-					(OpInfos (oInfo : r )) as
-			    return $ Just i
+          if null l then do
+	     if i `elem` map fst bList then addDiags $ 
+	        [mkDiag Error "illegal overloading of predefined identifier" i]
+                else putAssumps $ Map.insert i (OpInfos (oInfo : r)) as
+	     return $ Just i
 	  else do let Result es mo = mergeOpInfo tm c (head l) oInfo
 		  addDiags $ map (improveDiag i) es
 		  case mo of 

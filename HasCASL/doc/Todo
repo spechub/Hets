@@ -39,18 +39,12 @@ a wild card pattern (just "__" with lowest precedence?) is missing
 
 as-patterns are only partially implemented
 
-if-then-else is currently build in, but schould be user-definable.
 Allow for "op if__then__else : ..." . 
-
-Disallow "=" and "<=>" after "op" to avoid overloading with builtin
-names (Builtin.hs) or check for the type when changing terms to
-program equations (ProgEq.hs).
-
-Add a "bottom" or a missing case term to convert conditional equations
-(implications) to when-else terms.
 
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).
+
+Overloading is forbidden for builtin functions
 
 "__ __" has highest precedence and ":" has (strong) postfix precedence
 (adapt language summary C.2.1)
@@ -106,8 +100,6 @@ curly braces.)
 
 ToHaskell:
 formulas are not translated to Hassle Axioms
-
-overloaded names are not properly distinguished (Secd.het __+__)
 
 free types with subtypes components get too few constructors (and
 become disjoint types)

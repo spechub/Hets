@@ -157,26 +157,19 @@ __if__ : Unit * Unit ->? Unit %(pred)%
 __res__
   : s * t ->? s %(op)% = \ (var x : s, var y : t) .! (var x : s)
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
-bottom : forall p : Pcpo . p %(op)%
-def : forall s : Type . Pred s %(op)% = \ (var x : s) . ()
+bottom : forall a : Type . a %(op)%
+def : forall s : Type . Pred s %(op)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 eq : forall s : Type . s * s ->? Unit %(pred)%
 f : c --> d %(var)%
-false
-  : bool %(construct bool)%
-  : Unit ->? Unit %(pred)%
-  : Unit %(fun)%
+false : Unit %(fun)%
 fst : s * t ->? s %(op)% = \ (var x : s, var y : t) .! (var x : s)
 g : c --> d %(var)%
-if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not : Unit ->? Unit %(pred)%
 not__ : Unit ->? Unit %(fun)%
 sup : forall c : Cpo . (nat -> c) ->? c %(op)%
-true
-  : bool %(construct bool)%
-  : Unit ->? Unit %(pred)%
-  : Unit %(fun)%
-tt : forall s : Type . Pred s %(op)% = \ (var x : s) . ()
+true : Unit %(fun)%
+tt : forall s : Type . Pred s %(op)%
 %% Sentences -------------------------------------------------------------
 program (op def[_var_1] : forall s : Type . Pred s) =
             \ (var x : s) . () %(pe_def)%
@@ -210,6 +203,8 @@ free type bool
 *** Hint 11.6, redeclared type 'Unit'
 *** FatalError 14.11, illegal type pattern argument: __
 *** FatalError 15.8, illegal type pattern argument: __
+*** Error 17.6, illegal overloading of predefined identifier 'true'
+*** Error 17.12, illegal overloading of predefined identifier 'false'
 *** Hint 27.8, redeclared type '__->?__'
 *** Hint 30.8, redeclared type '__*__'
 *** FatalError 31.6, illegal type pattern: __ * __ * __
@@ -359,3 +354,5 @@ free type bool
 *** Error 192.27, unexpected mixfix token: Y
 *** Error 192.3, unexpected mixfix token: all
 *** Error 195.27, unexpected mixfix token: Y
+*** Error 200.20, illegal overloading of predefined identifier 'true'
+*** Error 200.27, illegal overloading of predefined identifier 'false'

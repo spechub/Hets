@@ -94,11 +94,11 @@ __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 a : Data1 %(construct Data1)%
   : ? s %(op)%
 b : Data1 %(construct Data1)%
+bottom : forall a : Type . a %(fun)%
 c : Data1 %(construct Data1)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 eq : s * s ->? Unit %(pred)%
 false : Unit %(fun)%
-if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not__ : Unit ->? Unit %(fun)%
 sel1
   : Data4 ->? Data1
@@ -119,7 +119,7 @@ sel2
     (Cons31 : Data1 * Data2 -> Data3,
      Cons32 : Data2 * Data1 -> Data3))%
 true : Unit %(fun)%
-tt : s ->? Unit %(op)% = \ (var x : s) . ()
+tt : s ->? Unit %(op)%
 %% Sentences -------------------------------------------------------------
 program (pred tt : s) = \ (var x : s) . () %(pe_tt)%
 (fun __=__[t] : forall a : Type . a * a ->? Unit)

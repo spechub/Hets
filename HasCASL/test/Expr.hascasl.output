@@ -43,9 +43,9 @@ b : bool -> bool %(op)% = \ (var x : bool) . (var x : bool)
             (var y : bool) = (op False : bool);
             (var z : bool) = (var x : bool)
         in (op True : bool)
+bottom : forall a : Type . a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
-if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not__ : Unit ->? Unit %(fun)%
 notA
   : bool

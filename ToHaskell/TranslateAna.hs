@@ -149,7 +149,7 @@ getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 -- | Converts functions in HasCASL to the coresponding haskell declarations.
 translateAssumps :: Assumps -> [HsDecl]
 translateAssumps as =
-  let distList =  distinctOpIds 0 $ Map.toList as
+  let distList =  distinctOpIds 2 $ Map.toList as
   in  concatMap translateAssump distList
 
 -- | Converts one distinct named function in HasCASL to the corresponding
@@ -232,7 +232,7 @@ translateTerm as tm t =
 			  translateIdWithType LowerId v
     QualOp _ (InstOpId uid _types _) ts _pos -> 
     -- The identifier 'uid' may have been renamed. To find its new name,
-    -- the typescheme 'ts' is tested for "Unifizierbarkeit" with the 
+    -- the typescheme 'ts' is tested for unifiability with the 
     -- typeschemes of the assumps. If an identifier is found, it is used
     -- as HsVar or HsCon.
       let oid = findUniqueId uid ts tm as 

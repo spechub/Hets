@@ -2,25 +2,24 @@ module Dummy where
 import Prelude (undefined, Show, Eq, Ord, Bool)
 import MyLogic
  
-a :: A_bool
+a :: A__bool
  
-b0 :: A_bool -> A_bool
-b0 = undefined
+b_02 :: A__bool -> A__bool
  
-b :: A_bool
+b :: A__bool
  
-notA :: A_bool
+notA :: A__bool
  
-data A_bool = A_True
-            | A_False
-            deriving (Show, Eq, Ord)
-a = A_True
+data A__bool = A__True
+             | A__False
+             deriving (Show, Eq, Ord)
+a = A__True
 notA
   = case a of
-        A_True -> A_False
-        A_False -> A_True
-b = let x = A_True
-        y = A_False
+        A__True -> A__False
+        A__False -> A__True
+b = let x = A__True
+        y = A__False
         z = x
-      in A_True
-b = \ x -> x
+      in A__True
+b_02 = \ x -> x
