@@ -89,7 +89,7 @@ addSubsort :: SORT -> SORT -> State Env ()
 addSubsort super sub = 
     do e <- get
        mapM_ checkSort [super, sub] 
-       put e { sortRel = Rel.insert sub super $ sortRel e }
+       put e { sortRel = Rel.transClosure $ Rel.insert sub super $ sortRel e }
 
 addVars :: VAR_DECL -> State Env ()
 addVars (Var_decl vs s _) = mapM_ (addVar s) vs
@@ -441,11 +441,13 @@ basicAnalysis (bs, inSig, ga) =
 diffSig :: Sign -> Sign -> Sign
 diffSig a b = 
     a { sortSet = sortSet a `Set.difference` sortSet b
-      , sortRel = fromSet $ Set.difference
-	(toSet $ sortRel a) $ toSet $ sortRel b
+      , sortRel = Rel.transClosure $ Rel.fromSet $ Set.difference
+	(Rel.toSet $ sortRel a) $ Rel.toSet $ sortRel b
       , opMap = opMap a `diffMapSet` opMap b	
       , predMap = predMap a `diffMapSet` predMap b	
       }
+  -- transClosure needed:  {a < b < c} - {a < c; b} 
+  -- is not transitive!
 
 diffMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) 
 	   -> Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
@@ -454,17 +456,11 @@ diffMapSet =
 			 if Set.isEmpty d then Nothing 
 			 else Just d )
 
-toSet :: (Ord a) => Rel.Rel a -> Set.Set (a, a)
-toSet = Set.fromList . Rel.toList
-
-fromSet :: (Ord a) => Set.Set (a, a) -> Rel.Rel a
-fromSet = Rel.fromList . Set.toList 
-
 addSig :: Sign -> Sign -> Sign
 addSig a b = 
     a { sortSet = sortSet a `Set.union` sortSet b
-      , sortRel = fromSet $ Set.union
-	(toSet $ sortRel a) $ toSet $ sortRel b
+      , sortRel = Rel.transClosure $ Rel.fromSet $ Set.union
+	(Rel.toSet $ sortRel a) $ Rel.toSet $ sortRel b
       , opMap = remPartOpsM $ Map.unionWith Set.union (opMap a) $ opMap b
       , predMap = Map.unionWith Set.union (predMap a) $ predMap b	
       }
@@ -477,8 +473,9 @@ isEmptySig s =
     Map.isEmpty (predMap s)
 
 isSubSig :: Sign -> Sign -> Bool
-isSubSig sub super = isEmptySig $ diffSig sub super 
-		     { opMap = addPartOpsM $ opMap super }
+isSubSig sub super = isEmptySig $ diffSig sub 
+                      (super 
+		       { opMap = addPartOpsM $ opMap super })
 
 partOps :: Set.Set OpType -> Set.Set OpType
 partOps s = Set.fromDistinctAscList $ map ( \ t -> t { opKind = Partial } ) 

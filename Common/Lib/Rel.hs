@@ -42,7 +42,7 @@ Currently, no further functions seem to be necessary:
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap
 		      , transMember, transClosure, fromList, toList
-                      , image, restrict) where
+                      , image, restrict, toSet, fromSet) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -130,3 +130,14 @@ restrict r s =
   Map.empty
   $
   toMap r
+
+{--------------------------------------------------------------------
+ Conversion from/to sets (Added by T.M.)
+--------------------------------------------------------------------}
+toSet :: (Ord a) => Rel a -> Set.Set (a, a)
+toSet = Map.foldWithKey (\a ra -> Set.fold (\b -> (Set.insert (a,b) .) ) id ra) Set.empty 
+        . toMap
+
+fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
+fromSet = Rel .
+          Set.fold (\(a,b) -> Map.setInsert a b) Map.empty
