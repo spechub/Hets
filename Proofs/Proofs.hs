@@ -106,6 +106,7 @@ globDecomp proofStatus@(globalContext,history,dgraph) =
    else (globalContext, ((newHistoryElem):history), newDgraph)
 
   where
+    -- nur die unproven oder allgemein die globalThms?
     globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
     (newDgraph, newHistoryElem) = globDecompAux dgraph globalThmEdges ([],[])
 
@@ -133,9 +134,21 @@ globDecompForOneEdge dgraph edge =
 
 globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange] ->
 			   [(Node, [LEdge DGLinkLab])] -> (DGraph,[DGChange])
-globDecompForOneEdgeAux dgraph edge changes [] = 
+globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] = 
   if null changes then (dgraph, [])
-   else ((delLEdge edge dgraph), (((DeleteEdge edge)):changes))
+  -- fällt die alte Kante ganz weg oder wird sie durch ein provenThm ersetzt?
+   else ((insEdge provenEdge (delLEdge edge dgraph)),
+	    ((DeleteEdge edge):((InsertEdge provenEdge):changes)))
+--	  ((DeleteEdge edge):changes))
+  where
+    (GlobalThm _ conservativity) = (dgl_type edgeLab)
+    provenEdge = (source,
+		  target,
+		  DGLink {dgl_morphism = dgl_morphism edgeLab,
+			  dgl_type = (GlobalThm True conservativity),
+			  dgl_origin = DGProof}
+		  )
+
 globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
  ((node,path):list) =
   globDecompForOneEdgeAux newGraph edge newChanges list
@@ -147,7 +160,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
 		   error "globDecomp: could not determine morphism of new edge"
 -- ist das die richtige Conservativity??
     (GlobalThm _ conservativity) = (dgl_type edgeLab)
-    newEdge = (source,
+    newEdge = (node,
 	       target,
 	       DGLink {dgl_morphism = morphism,
 		       dgl_type = (LocalThm False conservativity),
@@ -155,6 +168,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
                )
     newGraph = insEdge newEdge dgraph
     newChanges = ((InsertEdge newEdge):changes)
+
 
 getAllProvenLocGlobPathsTo :: DGraph -> Node -> [LEdge DGLinkLab]
 			      -> [(Node, [LEdge DGLinkLab])]
@@ -164,7 +178,7 @@ getAllProvenLocGlobPathsTo dgraph node path =
   globalPaths ++ locGlobPaths ++ 
     (concat (
       [getAllProvenLocGlobPathsTo dgraph (getSourceNode edge) path| 
-       (node, path@(edge:edges)) <- globalPaths]))
+       (_, path@(edge:edges)) <- globalPaths]))
   
 
   where

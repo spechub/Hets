@@ -163,6 +163,20 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		              writeIORef event newDescr
 		              writeIORef convRef newConvMaps
 		              redisplay gid actGraphInfo
+		              return ()    ),
+		  Button "TEMP - Global Decomposition"
+			  (do proofStatus <- readIORef ioRefProofStatus
+			      let newProofStatus@(_,history,_) =
+			            globDecomp proofStatus
+			      writeIORef ioRefProofStatus newProofStatus
+			      descr <- readIORef event
+			      convMaps <- readIORef convRef
+			      (newDescr,newConvMaps)
+			         <- applyChanges gid ln actGraphInfo descr 
+		                      convMaps history
+		              writeIORef event newDescr
+		              writeIORef convRef newConvMaps
+		              redisplay gid actGraphInfo
 		              return ()    )]),
 
 	        GlobalMenu(Menu (Just "proofs")
