@@ -82,6 +82,7 @@ mkProgEq e t = case getTupleAp t of
        let pvs = map getVar $ extractVars p
 	   rvs = map getVar $ extractVars p
        in if i `elem` [eqId, exEq, eqvId] && isLHS e p &&
+	  isExecutable e r && 
 	  null (checkUniqueness pvs) && 
 	       Set.fromList rvs `Set.subset` Set.fromList pvs then
 	  Just $ ProgEq p r $ posOfId i
@@ -98,10 +99,28 @@ mkCondEq e t = case getTupleAp t of
     mkCond env _f p = mkProgEq env p
      -- simply ignore the condition for simplicity now
 
+isExecutable e t = 
+    case t of 
+    QualVar _ _ _ -> True
+    QualOp _ _ _ _ -> True
+    QuantifiedTerm _ _ _ _ -> False
+    TypedTerm _ InType _ _ -> False
+    TypedTerm trm _ _ _ -> isExecutable e trm
+    ApplTerm t1 t2 _ -> isExecutable e t1 && isExecutable e t2
+    TupleTerm ts _ -> all (isExecutable e) ts
+    LambdaTerm ps _ trm _ -> all (isPat e) ps && isExecutable e trm
+    CaseTerm trm ps _ -> isExecutable e trm &&
+       all ( \ (ProgEq p c _) -> isPat e p && isExecutable e c) ps
+    LetTerm _ ps trm _ -> all ( \ (ProgEq p c _) -> 
+	   (isPat e p || isLHS e p) && isExecutable e c) ps
+           && isExecutable e trm
+    _ -> error "isExecutable"
+
 mkQuantEq e t = case t of 
     QuantifiedTerm Universal _ trm _ -> mkQuantEq e trm
-    -- also ignore quantified variables
-    _ -> mkCondEq e t
+    -- ignore quantified variables
+    -- do not allow conditional equations
+    _ -> mkProgEq e t
 	
 getTupleAp :: Term -> Maybe (Id, [Term])
 getTupleAp t = case getAppl t of
