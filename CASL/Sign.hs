@@ -1,6 +1,6 @@
 module CASL.Sign where
 
--- $Id$
+-- > $Id$
 
 import Common.Id
 import Common.AS_Annotation
@@ -212,7 +212,7 @@ getLabel (Axiom ax) = let annos = r_annos(ax)
 		          getLabels(Label l _) = concat l  		    
                       in if null labels then "" else getLabels(head(labels))
 getLabel (GenItems l _) = let srts = filter (\x ->
-					     case x of Symbol _ Sort -> True;
+					     case x of Symbol _ Sort -> True
                                                        _ -> False) l
                           in "ga_generated_" ++ concat 
 				 (intersperse "__" 
@@ -230,7 +230,7 @@ data Morphism = Morphism {msource,mtarget :: Sign,
                           pred_map :: Pred_map}
                          deriving (Eq, Show)
 
--- ??? this needs to be implemented!
+-- > this needs to be implemented!
 --         legal_sign :: Sign -> Bool
 --         legal_morphism :: Morphism -> Bool
 

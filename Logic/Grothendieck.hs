@@ -315,7 +315,7 @@ instance Eq GMorphism where
 
 data Grothendieck = Grothendieck deriving Show
 
-instance Language Grothendieck where
+instance Language Grothendieck
 
 instance Show GMorphism where
     show (GMorphism _ _ r s m) = show r ++ "(" ++ show s ++ ")" ++ show m

@@ -639,21 +639,21 @@ print_kind_latex ga k l = latex_macro "\\KW{"<>kw<>s<>latex_macro "}"
 	       "" -> empty 
 	       s' -> casl_keyword_latex s'
 
-condPrint_Mixfix :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc) ->
-		    (Doc -> Doc) -> -- ^ a function that surrounds 
+condPrint_Mixfix :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc)
+		 -> (Doc -> Doc)    -- ^ a function that surrounds 
 				    -- the given Doc with appropiate 
 				    -- parens
-		    (Doc -> Doc -> Doc) -> -- ^ a beside with space 
-					   -- like <+> or <\+>
-		    ([Doc] -> Doc) -> -- ^ a list concat with space and 
+		 -> (Doc -> Doc -> Doc) -- ^ a beside with space 
+					-- like <+> or <\+>
+		 -> ([Doc] -> Doc)    -- ^ a list concat with space and 
 				      -- fill the line policy  like
 				      -- fsep or fsep_latex
-		     (forall b . PrettyPrint b => 
-		          GlobalAnnos -> [b] -> Doc) -> 
+		 -> (forall b . PrettyPrint b => 
+		          GlobalAnnos -> [b] -> Doc)
 		          -- ^ a function that prints a nice 
 			  -- comma seperated list like commaT 
 			  -- or commaT_latex
-		    GlobalAnnos -> Id -> [TERM] -> Doc
+		 ->  GlobalAnnos -> Id -> [TERM] -> Doc
 condPrint_Mixfix pf parens_fun
 		 beside_fun fsep_fun commaT_fun 
 		 ga i l =
@@ -679,15 +679,15 @@ condPrint_Mixfix_latex =
 		     (<\+>) fsep_latex (commaT_latex printLatex0)
 
 -- printing consistent prefix application and predication
-print_prefix_appl :: (Doc -> Doc) -> -- ^ a function that surrounds 
+print_prefix_appl :: (Doc -> Doc)    -- ^ a function that surrounds 
 				     -- the given Doc with appropiate 
 				     -- parens
-		     (forall b . PrettyPrint b => 
-		          GlobalAnnos -> [b] -> Doc) -> 
+		  -> (forall b . PrettyPrint b => 
+		          GlobalAnnos -> [b] -> Doc)
 		          -- ^ a function that prints a nice 
 			  -- comma seperated list like commaT 
 			  -- or commaT_latex
-		     GlobalAnnos -> Doc -> [TERM] -> Doc 
+		  -> GlobalAnnos -> Doc -> [TERM] -> Doc 
 print_prefix_appl parens_fun commaT_fun ga po' l = po' <> 
 			     (if null l then empty 
 			      else parens_fun (commaT_fun ga l))
@@ -700,23 +700,23 @@ print_prefix_appl_latex :: GlobalAnnos -> Doc -> [TERM] -> Doc
 print_prefix_appl_latex = 
     print_prefix_appl parens_latex (commaT_latex printLatex0)
 
-print_Literal :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc) ->  
-		 (Doc -> Doc) -> -- ^ a function that surrounds 
+print_Literal :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc)
+	      -> (Doc -> Doc)    -- ^ a function that surrounds 
 				 -- the given Doc with appropiate 
 				 -- parens
-		 (Doc -> Doc -> Doc) -> -- ^ a beside with space 
+	      -> (Doc -> Doc -> Doc)    -- ^ a beside with space 
 					-- like <+> or <\+>
-		 ([Doc] -> Doc) -> -- ^ a list concat with space and 
+	      -> ([Doc] -> Doc)    -- ^ a list concat with space and 
 				   -- fill the line policy  like
 				   -- fsep or fsep_latex
-		 (forall b . PrettyPrint b => 
-		          GlobalAnnos -> [b] -> Doc) -> 
+	      -> (forall b . PrettyPrint b => 
+		          GlobalAnnos -> [b] -> Doc)
 		          -- ^ a function that prints a nice 
 			  -- comma seperated list like commaT 
 			  -- or commaT_latex
-		 Doc -> -- ^ a document containing the dot for a Fraction
-		 Doc -> -- ^ a document containing the 'E' of a Floating
-		 GlobalAnnos -> Id -> [TERM] -> Doc
+	      -> Doc   -- ^ a document containing the dot for a Fraction
+	      -> Doc   -- ^ a document containing the 'E' of a Floating
+	      -> GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal pf parens_fun 
 	      beside_fun fsep_fun commaT_fun dot_doc e_doc
 	      ga li ts 
@@ -792,16 +792,16 @@ print_Literal_latex =
 
 -- printing consitent mixfix application or predication
 {- TODO: consider string-, number-, list- and floating-annotations -}
-print_mixfix_appl :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc) ->
-		     (Doc -> Doc) -> -- ^ a function that surrounds 
+print_mixfix_appl :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc)
+		  -> (Doc -> Doc)   -- ^ a function that surrounds 
 				     -- the given Doc with appropiate 
 				     -- parens
-		     (Doc -> Doc -> Doc) -> -- ^ a beside with space 
+		  -> (Doc -> Doc -> Doc)    -- ^ a beside with space 
 					    -- like <+> or <\+>
-		     ([Doc] -> Doc) -> -- ^ a list concat with space and 
+		  -> ([Doc] -> Doc)    -- ^ a list concat with space and 
 				       -- fill the line policy  like
 				       -- fsep or fsep_latex
-		     GlobalAnnos -> Id -> [TERM] -> Doc
+		  -> GlobalAnnos -> Id -> [TERM] -> Doc
 print_mixfix_appl pf parens_fun 
 		  beside_fun fsep_fun 
 		  ga oid terms = 
@@ -850,15 +850,11 @@ print_mixfix_appl pf parens_fun
 	      | isPlace top = (ts,pf ga t)
 	      | otherwise   = (tS,pf ga top)
 
-condParensAppl :: (GlobalAnnos -> TERM -> Doc) -> 
-		  (Doc -> Doc) -> -- ^ a function that surrounds 
+condParensAppl :: (GlobalAnnos -> TERM -> Doc)
+	       -> (Doc -> Doc)    -- ^ a function that surrounds 
 				  -- the given Doc with appropiate 
 				  -- parens
-		  GlobalAnnos -> 
-		  Id -> 
-		  TERM -> 
-		  Maybe AssocEither -> 
-		  Doc
+	       -> GlobalAnnos -> Id -> TERM -> Maybe AssocEither -> Doc
 condParensAppl pf parens_fun ga o_i t mdir = 
     case t of
     Simple_id _ -> t'
@@ -898,11 +894,11 @@ condParensAppl pf parens_fun ga o_i t mdir =
     where t' = pf ga t
 
 
-condParensImplEquiv :: (GlobalAnnos -> FORMULA -> Doc) -> 
-		       (Doc -> Doc) -> -- ^ a function that surrounds 
+condParensImplEquiv :: (GlobalAnnos -> FORMULA -> Doc)
+		    -> (Doc -> Doc)    -- ^ a function that surrounds 
 				       -- the given Doc with appropiate 
 				       -- parens
-		       GlobalAnnos -> FORMULA -> FORMULA -> Doc
+		    -> GlobalAnnos -> FORMULA -> FORMULA -> Doc
 condParensImplEquiv pf parens_fun ga e_i f =  
     case e_i of 
     Implication _ _ _ -> case f of Implication _ _ _ -> f'
@@ -927,11 +923,11 @@ condParensImplEquiv pf parens_fun ga e_i f =
 				   _           -> parens_fun f'
     _ ->  error "Wrong call: condParensImplEquiv"
     where f' = pf ga f
-condParensXjunction :: (GlobalAnnos -> FORMULA -> Doc) -> 
-		       (Doc -> Doc) -> -- ^ a function that surrounds 
+condParensXjunction :: (GlobalAnnos -> FORMULA -> Doc)
+		    -> (Doc -> Doc)    -- ^ a function that surrounds 
 				       -- the given Doc with appropiate 
 				       -- parens
-		       GlobalAnnos -> FORMULA -> Doc
+		    -> GlobalAnnos -> FORMULA -> Doc
 condParensXjunction pf parens_fun ga x = 
     case x of Negation _ _ -> x' 
 	      True_atom _  -> x' 

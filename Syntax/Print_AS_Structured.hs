@@ -362,31 +362,31 @@ instance PrettyPrint Logic_name where
 		       Just sub -> casl_normal_latex "." <> printLatex0 ga sub)
 
 -----------------------------------------------
-print_fit_arg_list:: (GlobalAnnos -> (Annoted FIT_ARG) -> Doc) -> 
-		     (Doc -> Doc) -> -- ^ a function enclosing the Doc
-                                     -- in brackets
-		     ([Doc] -> Doc) -> -- ^ a function printing a list
-                                       -- of Doc seperated by space
-		     GlobalAnnos -> [Annoted FIT_ARG] -> Doc
+print_fit_arg_list :: (GlobalAnnos -> (Annoted FIT_ARG) -> Doc)
+		   -> (Doc -> Doc) -- ^ a function enclosing the Doc
+                                   -- in brackets
+		   -> ([Doc] -> Doc) -- ^ a function printing a list
+                                     -- of Doc seperated by space
+		   -> GlobalAnnos -> [Annoted FIT_ARG] -> Doc
 print_fit_arg_list _pf _b_fun _sep_fun _ga [] = empty
 print_fit_arg_list pf b_fun _sep_fun ga [fa] = b_fun $ pf ga fa
 print_fit_arg_list pf b_fun sep_fun ga fas = 
     sep_fun $ map (b_fun . (pf ga)) fas
 
-condBracesGroupSpec :: (GlobalAnnos -> (Annoted SPEC) -> Doc) -> 
-		     (Doc -> Doc) -> -- ^ a function enclosing the Doc
-                                     -- in braces
-		       GlobalAnnos -> (Annoted SPEC) -> Doc
+condBracesGroupSpec :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
+		    -> (Doc -> Doc) -- ^ a function enclosing the Doc
+                                    -- in braces
+		    -> GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesGroupSpec pf b_fun ga as =
     case skip_Group $ item as of
 		 Spec_inst _ _ _ -> as'
 		 _             -> b_fun as'
     where as' = pf ga as
 
-condBracesTransReduct :: (GlobalAnnos -> (Annoted SPEC) -> Doc) -> 
-		     (Doc -> Doc) -> -- ^ a function enclosing the Doc
-                                     -- in brackets
-		       GlobalAnnos -> (Annoted SPEC) -> Doc
+condBracesTransReduct :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
+		      -> (Doc -> Doc) -- ^ a function enclosing the Doc
+                                      -- in brackets
+		      -> GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesTransReduct pf b_fun ga as =
     case skip_Group $ item as of
 		 Extension _ _    -> b_fun as'
@@ -395,10 +395,10 @@ condBracesTransReduct pf b_fun ga as =
 		 _                -> as'
     where as' = pf ga as
 
-condBracesWithin :: (GlobalAnnos -> (Annoted SPEC) -> Doc) -> 
-		    (Doc -> Doc) -> -- ^ a function enclosing the Doc
-                                    -- in braces
-		    GlobalAnnos -> (Annoted SPEC) -> Doc
+condBracesWithin :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
+		 -> (Doc -> Doc) -- ^ a function enclosing the Doc
+                                 -- in braces
+		 -> GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesWithin pf b_fun ga as =
     case skip_Group $ item as of
 		 Extension _ _    -> b_fun as'
@@ -406,10 +406,10 @@ condBracesWithin pf b_fun ga as =
 		 _                -> as'
     where as' = pf ga as
 
-condBracesAnd :: (GlobalAnnos -> (Annoted SPEC) -> Doc) -> 
-		 (Doc -> Doc) -> -- ^ a function enclosing the Doc
-                                 -- in braces
-		 GlobalAnnos -> (Annoted SPEC) -> Doc
+condBracesAnd :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
+	      -> (Doc -> Doc) -- ^ a function enclosing the Doc
+                              -- in braces
+	      -> GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesAnd pf b_fun ga as =
     case skip_Group $ item as of
 		 Extension _ _    -> b_fun as'

@@ -180,5 +180,5 @@ notUnique (h:t) = let
                     diff = [ x | x<-t, x/=h ]
                     rest = notUnique diff
                   in
-                    case (h `elem` t) of True ->  h : rest;
+                    case (h `elem` t) of True ->  h : rest
                                          False -> rest

@@ -167,7 +167,7 @@ toExtPos :: Maybe ExtPos -> [Pos] -> ([Pos] -> [TokenKind]) -> [ExtPos]
 toExtPos pref p f = let
                       tokens = (zip p (f p))
                     in
-                      case pref of Nothing -> tokens;
+                      case pref of Nothing -> tokens
                                    Just ep -> ep:tokens
 
 tokPos_sort_decl :: [Pos] -> [TokenKind]
@@ -604,10 +604,10 @@ updateOpItems fn sigma
 mergeOpDefn :: Maybe OpDefn -> OpDefn -> OpDefn
 mergeOpDefn Nothing  x = x
 mergeOpDefn (Just y) x =
-  case x of OpDef _ _ _ -> x;
-            Constr _    -> x;
-            Select l1 s -> (case y of Select l2 _ -> Select (setAdd l1 l2) s;
-                                                _ -> x)
+  case x of OpDef _ _ _ -> x
+            Constr _    -> x
+            Select l1 s -> (case y of Select l2 _ -> Select (setAdd l1 l2) s
+                                      _ -> x)
 
 updateOpDefn :: Sign -> Id -> OpDefn -> Sign
 updateOpDefn sigma idt defn =
@@ -737,13 +737,13 @@ ana_SORT_ITEM sigma _itm _pos =
   case (item _itm) of
     (Sort_decl s_n _p)
       -> ana_sort_decl sigma _itm s_n
-                       (toExtPos (Just _pos) _p tokPos_sort_decl);
+                       (toExtPos (Just _pos) _p tokPos_sort_decl)
     (Subsort_decl s_n s _p)
       -> ana_subsort_decl sigma _itm Nothing s_n s
-                          (toExtPos (Just _pos) _p tokPos_subsort_decl);
+                          (toExtPos (Just _pos) _p tokPos_subsort_decl)
     (Subsort_defn s v s' f _p)
       -> ana_subsort_defn sigma _itm s v s' f
-                          (toExtPos (Just _pos) _p tokPos_subsort_defn);
+                          (toExtPos (Just _pos) _p tokPos_subsort_defn)
     (Iso_decl s_n _p)
       -> ana_iso_decl sigma _itm s_n
                       (toExtPos (Just _pos) _p tokPos_iso_decl)
@@ -840,7 +840,7 @@ ana_PRED_ITEM :: LocalEnv -> Annoted PRED_ITEM -> ExtPos -> Result LocalEnv
 ana_PRED_ITEM sigma _itm _pos =
   case (item _itm) of
     (Pred_decl p_n _t _p)  -> ana_pred_decl sigma _itm p_n _t
-                              (toExtPos (Just _pos) _p tokPos_pred_decl);
+                              (toExtPos (Just _pos) _p tokPos_pred_decl)
     (Pred_defn p _h _f _p) -> ana_pred_defn sigma _itm p _h _f
                               (toExtPos (Just _pos) _p tokPos_pred_defn)
 
@@ -1097,15 +1097,15 @@ ana_BASIC_ITEMS sigma _itm =
                                               (getSign $ localEnv sigma')
                                               (selectors sigma') }
     (Free_datatype _free_types _pos)
-      -> return sigma;
+      -> return sigma
     (Sort_gen sig_items pos)
-      -> ana_sort_gen sigma sig_items pos;
+      -> ana_sort_gen sigma sig_items pos
     (Var_items var_items pos)
-      -> ana_VAR_ITEMS sigma var_items pos;
+      -> ana_VAR_ITEMS sigma var_items pos
     (Local_var_axioms vars formulas pos)
       -> ana_local_var_axioms sigma vars ((head pos):
                                           (take ((length vars)-1) pos))
-                              formulas (drop (length vars) pos);
+                              formulas (drop (length vars) pos)
     (Axiom_items formulas pos)
       -> ana_axiom_items sigma formulas pos
 

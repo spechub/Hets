@@ -35,7 +35,7 @@ import Data.Dynamic
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data CASL = CASL deriving (Show)
-instance Language CASL where  -- default definition is okay
+instance Language CASL  -- default definition is okay
 
 instance Category CASL Sign Morphism  
     where
