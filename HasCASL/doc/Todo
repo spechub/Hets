@@ -15,8 +15,6 @@ unit type is a separat type!
 
 class names are not considered for mapping (Morphism.hs) 
 
-contradicting mappings are not checked for identity mappings in
-morphismUnion
 
 
 datatypes:

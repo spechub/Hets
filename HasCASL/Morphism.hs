@@ -26,6 +26,7 @@ import Common.Result
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
+import Data.List as List
 
 type FunMap = Map.Map (Id, TypeScheme) (Id, TypeScheme)
 
@@ -157,20 +158,35 @@ legalMor m = let s = msource m
 
 morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = 
-    do s <- merge (msource m1) $ msource m2
+    do let s1 = msource m1
+           s2 = msource m2
+           tm1 = Map.toList $ typeIdMap m1
+           tm2 = Map.toList $ typeIdMap m2
+                 -- unchanged types
+           ut1 = Map.keys (typeMap s1) List.\\ map fst tm1
+           ut2 = Map.keys (typeMap s2) List.\\ map fst tm2
+           mkP = map ( \ a -> (a, a))
+           tml = tm1 ++ tm2 ++ mkP (ut1 ++ ut2)
+           fm1 = Map.toList $ funMap m1
+           fm2 = Map.toList $ funMap m2
+                 -- all functions
+           af = concatMap ( \ (i, os) ->  
+                      map ( \ o -> (i, opType o)) $ opInfos os) . Map.toList
+                 -- unchanged functions
+           uf1 = af (assumps s1) List.\\ map fst fm1
+           uf2 = af (assumps s2) List.\\ map fst fm2
+           fml = fm1 ++ fm2 ++ mkP (uf1 ++ uf2)
+       s <- merge s1 s2
        t <- merge (mtarget m1) $ mtarget m2
        tm <- foldr ( \ (i, j) rm -> 
                      do m <- rm
                         case Map.lookup i m of
                           Nothing -> return $ Map.insert i j m
                           Just k -> if j == k then return m
-                            else do 
-                            Result [Diag Error 
-                              ("incompatible mapping of type id: " ++ 
-                               showId i " to: " ++ showId j " and: " 
-                               ++ showId k "") $ posOfId i] $ Just ()
-                            return m) 
-             (return $ typeIdMap m1) $ Map.toList $ typeIdMap m2
+                            else fail ("incompatible mapping of type id: " ++ 
+                                       showId i " to: " ++ showId j " and: " 
+                                       ++ showId k ""))
+             (return Map.empty) tml
        fm <- foldr ( \ (isc@(i, sc), jsc@(j, sc1)) rm -> do
                      let nsc = expand (typeMap t) sc1 
                          nisc = (i, expand (typeMap s) sc)
@@ -181,17 +197,13 @@ morphismUnion m1 m2 =
                        Just ksc@(k, sc2) -> if j == k && 
                          nsc == sc2  
                          then return m
-                            else do 
-                            Result [Diag Error 
-                              ("incompatible mapping of op: " ++ 
+                            else fail ("incompatible mapping of op: " ++ 
                                showFun isc " to: " ++ showFun jsc " and: " 
-                               ++ showFun ksc "") $ posOfId i] $ Just ()
-                            return m) 
-             (return Map.empty) (Map.toList (funMap m1) ++ 
-                                 Map.toList (funMap m2))
+                               ++ showFun ksc ""))
+             (return Map.empty) fml
        return (mkMorphism s t) 
-                  { typeIdMap = tm
-                  , funMap = fm }
+                  { typeIdMap = Map.filterWithKey (/=) tm
+                  , funMap = Map.filterWithKey (/=) fm }
 
 showFun :: (Id, TypeScheme) -> ShowS
 showFun (i, ty) = showId i . (" : " ++) . showPretty ty
