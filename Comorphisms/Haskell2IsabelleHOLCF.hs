@@ -116,7 +116,7 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
                IsaSign.Sign 
                () () () ()  where
     sourceLogic _ = Haskell
---    sourceSublogic _ = ()
+    sourceSublogic _ = ()
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_sign _ = transSignature
