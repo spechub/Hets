@@ -11,7 +11,19 @@ __*__
 a when a + b else b
 a when (op a:b) else b
 a when (var a:b) else b
-a when a else b
-a when (a) else b
-a when ((a)) else b
+a when f else b
+a when (f) else b
+a when ((f)) else b
 a when (op a:b)(a) else b
+A[a]
+B[a]
+A[a]A[a]p 
+A[a]!
+[[[a]]]
+[b, A[a]]
+b + [a] + b
+[a+b]
+A([a])
+- [a]
+b + A[a]
+[a]! %[combining [__] with __! is allowed without parenthesis]%

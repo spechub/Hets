@@ -1,0 +1,97 @@
+*
+Error: in line 1 at char 1: unexpected term or token: *
+**
+Error: in line 2 at char 1: unexpected term or token: **
+a_a
+Error: in line 3 at char 1: unexpected term or token: a_a
+__
+Error: in line 4 at char 1: no resolution for term: __
+1 @@%[Infix]% (2 @@3)
+1 :::2
+1
+(1 :::2) E3
+0 E1
+((1 @@2) :::(2 @@3)) E(3 @@4)
+'b' ::%[Infix]% ('l' ::%[Infix]% ('a' ::[]))
+[]
+<
+Error: in line 13 at char 1: unexpected term or token: <
+<=
+Error: in line 14 at char 1: unexpected term or token: <=
+.a
+Error: in line 15 at char 1: unexpected term or token: .a
+'a'
+Error: in line 16 at char 1: unexpected term or token: 'a'
+< [a, b]
+Error: in line 17 at char 1: unexpected term or token: <
+<= [a, b]
+Error: in line 18 at char 1: unexpected term or token: <=
+.a [a, b]
+Error: in line 19 at char 1: unexpected term or token: .a
+'a' [a, b]
+Error: in line 20 at char 1: unexpected term or token: 'a'
+__ * __
+Error: in line 21 at char 1: no resolution for term: __ * __
+(a __ b)
+Error: in line 22 at char 7: unexpected term or token: b
+(a __ b) a
+Error: in line 23 at char 7: unexpected term or token: b
+b(a __ b)
+Error: in line 24 at char 8: unexpected term or token: b
+b (a __ b) a
+Error: in line 25 at char 8: unexpected term or token: b
+{a __ b}
+Error: in line 26 at char 7: unexpected term or token: b
+{a __ b} a
+Error: in line 27 at char 7: unexpected term or token: b
+b {a __ b}
+Error: in line 28 at char 8: unexpected term or token: b
+b {a __ b} a
+Error: in line 29 at char 8: unexpected term or token: b
+[a __ b]
+Error: in line 30 at char 7: unexpected term or token: b
+[a __ b] a
+Error: in line 31 at char 7: unexpected term or token: b
+b [a __ b]
+Error: in line 32 at char 8: unexpected term or token: b
+b [a __ b] a
+Error: in line 33 at char 8: unexpected term or token: b
+({}, [], {[] {}})
+Error: in line 34 at char 3: unexpected term or token: }
+Error: in line 34 at char 14: unexpected term or token: }
+{{}, [], {[] {}}}
+Error: in line 35 at char 3: unexpected term or token: }
+[{}, [], {[] {}}]
+Error: in line 36 at char 3: unexpected term or token: }
+(var y : bb)
+(op y : bb)
+(op __<__ : a)
+(op __<__ : a -> b)
+(op __<__ : a ->? b)
+(op __<__ : a ->? b)
+(op __<__ : bb)
+(op __<__ :? bb)
+(op __<__ :? a)
+(op __<__ : a)
+(op __<__ : a)
+ys as b
+Error: in line 48 at char 1: unexpected term or token: ys
+(predy y :bb)
+Error: in line 49 at char 2: unexpected term or token: predy
+(predy :bb)
+Error: in line 50 at char 2: unexpected term or token: predy
+(predy :bb)
+Error: in line 51 at char 2: unexpected term or token: predy
+a when b else c
+# as b
+Error: in line 53 at char 1: unexpected term or token: #
+a b when b c else a f g when f a f else f a f g when f a f else f
+Error: in line 54 at char 1: no resolution for term: a b
+Error: in line 54 at char 10: no resolution for term: b c
+Error: in line 54 at char 19: no resolution for term: a f g
+Error: in line 54 at char 30: no resolution for term: f a f
+Error: in line 54 at char 41: no resolution for term: f a f g
+Error: in line 54 at char 54: no resolution for term: f a f
+(pred y : bb)
+(pred y : bb)
+(pred y : ())

@@ -1,7 +1,7 @@
 [a]
 Error: in line 1 at char 1: ambiguous mixfix term
+	a ::[]
 	[ a ]
-	a :: []
 (a) (b)
 Error: in line 2 at char 1: no resolution for term: (a) (b)
 a :s (a)
@@ -18,24 +18,94 @@ __ * __
 Error: in line 8 at char 1: no resolution for term: __ * __
 ([a], (a) (b), a +, __ < __ (a, b))
 Error: in line 9 at char 2: ambiguous mixfix term
+	a ::[]
 	[ a ]
-	a :: []
 Error: in line 9 at char 7: no resolution for term: (a) (b)
 Error: in line 9 at char 15: no resolution for term: a +
 Error: in line 9 at char 22: unexpected term or token: <
 [[a], (a) (b), a +, __ < __ (a, b)]
 Error: in line 10 at char 13: unexpected term or token: ,
-a when a + b else b
+a when a +b else b
 Error: in line 11 at char 8: not a predicate: __+__
 a when (op a : b) else b
 Error: in line 12 at char 8: not a formula: (op a : b)
 a when (var a : b) else b
 Error: in line 13 at char 8: not a formula: (var a : b)
-a when a else b
-Error: in line 14 at char 8: not a predicate: a
-a when a else b
-Error: in line 15 at char 9: not a predicate: a
-a when a else b
-Error: in line 16 at char 10: not a predicate: a
+a when f else b
+Error: in line 14 at char 8: not a predicate: f
+a when f else b
+Error: in line 15 at char 9: not a predicate: f
+a when f else b
+Error: in line 16 at char 10: not a predicate: f
 a when (op a : b)(a) else b
 Error: in line 17 at char 16: not a formula: (op a : b)(a)
+A [a]
+Error: in line 18 at char 1: ambiguous mixfix term
+	A(a ::[])
+	A([ a ])
+	A [ a ]
+	A [ a ]
+	A[a]
+B [a]
+Error: in line 19 at char 1: ambiguous mixfix term
+	B [ a ]
+	B [ a ]
+A [a] A [a] p
+Error: in line 20 at char 1: ambiguous mixfix term
+	A([ a ](A([ a ]p)))
+	A([ a ](A%[MixWithPost]% (a ::[]) p))
+	A([ a ](A%[MixWithPost]% ([ a ]) p))
+	A [ a ](A([ a ]p))
+	A([ a ]%[MixWithPost]% %[MixWithPost]% A [ a ] p)
+A [a] !
+Error: in line 21 at char 1: ambiguous mixfix term
+	A%[MixWithPost]% (a ::[]) !
+	A%[MixWithPost]% ([ a ]) !
+	%[MixWithPost]% A [ a ] !
+	%[MixWithPost]% A [ a ] !
+	A[a] !
+[[[a]]]
+Error: in line 22 at char 1: ambiguous mixfix term
+	%[Infix]% (%[Infix]% (a ::[]) ::[]) ::[]
+	[ (%[Infix]% (a ::[]) ::[]) ]
+	([ (a ::[]) ]) ::[]
+	[ ([ (a ::[]) ]) ]
+	%[Infix]% (([ a ]) ::[]) ::[]
+[b, A [a]]
+Error: in line 23 at char 1: ambiguous mixfix term
+	b ::%[Infix]% ((A(a ::[])) ::[])
+	b ::%[Infix]% ((A([ a ])) ::[])
+	b ::%[Infix]% (%[MixWithPost]% A [ a ] ::[])
+	b ::%[Infix]% (%[MixWithPost]% A [ a ] ::[])
+	b ::%[Infix]% (A[a] ::[])
+b + [a] + b
+Error: in line 24 at char 1: ambiguous mixfix term
+	b +([ a ](+b))
+	%[Infix]% b +(a ::[]) +b
+	%[Infix]% b +([ a ]) +b
+[a + b]
+Error: in line 25 at char 1: ambiguous mixfix term
+	(a +b) ::[]
+	[ (a +b) ]
+A ([a])
+Error: in line 26 at char 1: ambiguous mixfix term
+	A([a])
+	A([a])
+Error: in line 26 at char 3: ambiguous mixfix term
+	a ::[]
+	[ a ]
+- [a]
+Error: in line 27 at char 1: ambiguous mixfix term
+	-(a ::[])
+	-([ a ])
+b + A [a]
+Error: in line 28 at char 1: ambiguous mixfix term
+	b +(A(a ::[]))
+	b +(A([ a ]))
+	b +%[MixWithPost]% A [ a ]
+	b +%[MixWithPost]% A [ a ]
+	b +A[a]
+[a] !
+Error: in line 29 at char 1: ambiguous mixfix term
+	(a ::[]) !
+	([ a ]) !

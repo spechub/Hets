@@ -1,0 +1,40 @@
+(pred y : bb)
+(pred y : bb * bb)
+(pred y : bb * bb)(a, b)
+(pred y : bb * bb) a b
+Error: in line 4 at char 1: no resolution for term: (pred y : bb * bb) a b
+a =e= < b
+Error: in line 5 at char 7: unexpected term or token: <
+a #= e = b
+Error: in line 6 at char 3: unexpected term or token: #=
+exists1 (predy :: bb)
+Error: in line 7 at char 1: unexpected term or token: exists1
+Error: in line 7 at char 10: unexpected term or token: predy
+exists predy:bb . a
+exists! a:v . x
+exists! a:v . x
+exists! a:v . x
+forall a:v . x
+b => a
+def x
+def #
+Error: in line 15 at char 4: unexpected term or token: #
+{} when [] else {}
+Error: in line 16 at char 2: unexpected term or token: }
+Error: in line 16 at char 7: not a predicate: []
+Error: in line 16 at char 14: unexpected term or token: }
+Error: in line 16 at char 3: not a formula: {} when [] else {}
+a /\ b /\ c
+a \/ b \/ c
+a => b
+a <=> b
+true
+false
+b in s
+a =e= b
+a = b
+a => b => c => d
+d => c => b => a
+a <=> b
+(def d) => not c => b \/ c => a /\ b
+m divn = r <=> exists s:Nat . m = (n *r) +s /\ s <n
