@@ -96,7 +96,7 @@ OP-ITEM       ::= OP-NAME , ... , OP-NAME : TYPE-SCHEME
                 | OP-NAME : TYPE-SCHEME = TERM %% real constant (no shortcut)  
                 | OP-NAME OP-ARGS : TYPE = TERM    %% These forms are 
                 | OP-NAME OP-ARGS :? TYPE = TERM   %% discouraged
-                | OP-NAME :? TYPE = TERM   %% shortcut for OP-NAME ():?
+                | OP-NAME :? TYPE = TERM   %% shortcut for OP-NAME: () ->? TYPE
 
 OP-ATTR         ::= BIN-ATTR |  unit TERM
 BIN-ATTR        ::= assoc  |  comm  |  idem 
@@ -170,7 +170,8 @@ COMPONENT       ::= UNINST-OP-NAME , ... , UNINST-OP-NAME : TYPE
 GEN-VAR-DECL    ::= VAR-DECL | TYPE-VAR-DECL
 VAR-DECL        ::= VAR ,..., VAR : TYPE
 
-TYPE-VAR-DECL   ::= TYPE-VAR , ... , TYPE-VAR: CLASS
+TYPE-VAR-DECL   ::= TYPE-VAR , ... , TYPE-VAR: CLASS-NAME
+		  | TYPE-VAR , ... , TYPE-VAR: type
 		  | TYPE-VAR , ... , TYPE-VAR < TYPE
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

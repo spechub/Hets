@@ -111,7 +111,7 @@ data PartialKind = Partial | Total deriving (Show,Eq)
 
 data OpItem = OpDecl [OpName] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
-            | OpDefn OpName [Pattern] PartialKind TypeScheme Term [Pos]
+            | OpDefn OpName [Pattern] TypeScheme Term [Pos]
                -- pos "("s, ")"s, ":" or ":?", "="
                -- or "(", ")", "<=>"
               deriving (Show,Eq)
@@ -163,7 +163,7 @@ data Term = CondTerm Term Formula Term [Pos]
 	  -- pos "def"
 	  | QualVar Var Type [Pos]
 	  -- pos "(", "var", ":", ")"
-	  | QualOp InstOpName PartialKind Type [Pos]
+	  | QualOp InstOpName TypeScheme [Pos]
 	  -- pos "(", "op", ":", ")" 
 	  | ApplTerm Term Term [Pos]  -- analysed
 	  -- pos?
@@ -183,16 +183,31 @@ data Term = CondTerm Term Formula Term [Pos]
 	  -- pos "let", ";"s, "in"
 	  | TermToken Token
           | MixfixTerm [Term]
+	  | TypeMixfixTerm TypeQual Type [Pos]
+	  -- pos ":", "as" or "in"
 	  | BracketTerm BracketKind [Term] [Pos]
 	  -- pos brackets, ","s 
 	    deriving (Show,Eq)
 
-data Pattern = PatternToken Token
+data Pattern = PatternVar Var Type SeparatorKind [Pos]
+             -- pos "," or "colon" 
+	     | PatternConstr InstOpName TypeScheme [Pattern] [Pos] 
+	     -- constructor or toplevel operation applied to arguments
+	     -- pos "("s, ")"s
+             | PatternToken Token
 	     | BracketPattern BracketKind Pattern [Pos]
-	     | TuplePattern [Pattern] SeparatorKind [Pos]
+	     -- pos brackets
+	     | TuplePattern [Pattern] [Pos]
+	     -- pos ";"s (or ","s)
 	     | MixfixPattern [Pattern] 
-	     | TypedPattern Pattern Type [Pos]
-	     | AsPattern Pattern Pattern [Pos]
+	     | TypedPattern Pattern Type [Pos]     -- analysed
+	     -- pos ":"  
+	     | TypeMixfixPattern Type [Pos]
+	     -- pos ":"  
+	     | AsPattern Var Type Pattern [Pos]    -- analysed
+	     -- pos ":", "@"
+	     | AsMixfixPattern Pattern [Pos]
+	     -- pos "@"
 	       deriving (Show,Eq)
 
 data ProgEq = ProgEq Pattern Term [Pos] deriving (Show,Eq)
