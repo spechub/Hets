@@ -195,18 +195,16 @@ tiModule dumps modSyntax imports
 
 -- generate the class hierarchy skeleton
 
--- addClassToHierarchy :: AModule -> KindEnv -> AHsDecl -> ClassHierarchy -> ClassHierarchy
--- flip :: (a -> b -> c) -> b -> a -> c
--- foldl :: (a -> b -> a) -> a -> [b] -> a
-
---          classHierarchy 
---             = foldl (flip (addClassToHierarchy moduleName kindInfo)) importClassHierarchy rClassDecls
+         classHier =
+               foldl (flip (addClassToHierarchy moduleName kindInfo)) 
+	             importClassHierarchy                   
+		     rClassDecls
 
      -- add type class instances to the class hierarchy XXX this is broken
 
          cHierarchyWithInstances 
             -- = addInstancesToHierarchy kindInfo classHierarchy (rinstanceDecls ++ rdataDecls)
-            = importClassHierarchy -- classHierarchy 
+            = classHier
 
 {-
  -- lift the instance methods up to top-level decls
