@@ -61,21 +61,25 @@ instance Show Typ where
 
 showTyp :: Integer -> Typ -> String
 showTyp pri (Type ("typeAppl",[s,t])) =
-  case t of
-    TVar _ -> showTyp pri t ++ sp ++ showTyp pri s
-    _      -> showTyp pri s ++ sp ++ showTyp pri t
+  if withTVars t then showTyp pri t ++ sp ++ showTyp pri s
+    else showTyp pri s ++ sp ++ showTyp pri t
+  where withTVars t =
+          case t of
+            TVar _ -> True
+            Type (_, ts) -> and (map withTVars ts)
+            _      -> False
 showTyp pri (Type ("fun",[s,t])) = 
   bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 11 t)
 showTyp pri (Type ("*",[s,t])) =
-  showTyp pri s ++ " * " ++ showTyp pri t
+  lb ++ showTyp pri s ++ " * " ++ showTyp pri t ++ rb
 showTyp _ (Type (name,args)) = 
   case args of
     []     -> name
     arg:[] -> show arg ++ sp ++ name
     _      -> let (tyVars,types) = foldl split ([],[]) args
               in  
-                rb ++ concat (map ((sp++) . show) tyVars) ++
-                                concat (map ((sp++) . show) types) ++ lb ++ name
+                lb ++ concat (map ((sp++) . show) tyVars) ++
+                                concat (map ((sp++) . show) types) ++ rb ++ name
               where split (tv,ty) t = case t of 
                             TVar _ -> (tv++[t],ty)
                             _      -> (tv,ty++[t])
@@ -88,7 +92,7 @@ instance Show TypeSig where
      else Map.foldWithKey showTycon em (tycons tysig) 
      where showTycon t arity rest =
             "typedecl "++
-             (if arity>0 then rb++concat (map ((" 'a"++).show) [1..arity])++lb
+             (if arity>0 then lb++concat (map ((" 'a"++).show) [1..arity])++rb
                else em)
             ++ show t
             ++"\n"++rest
@@ -99,15 +103,26 @@ instance Show Term where
 showTerm :: Term -> String
 showTerm (Const (c,_)) = c
 showTerm (Free (v,_)) = v
-showTerm (Abs (v,_,t)) = rb++"% "++showTerm v++" . "++showTerm t++lb
+showTerm (Abs (v,_,t)) = lb++"% "++showTerm v++" . "++showTerm t++rb
 showTerm (Const ("All",_) `App` Abs (v,ty,t)) = 
   showQuant "!" v ty t
 showTerm (Const ("Ex",_) `App` Abs (v,ty,t)) = 
   showQuant "?" v ty t
 showTerm (Const ("Ex1",_) `App` Abs (v,ty,t)) = 
   showQuant "?!" v ty t
--- At this point is just t1 `App` t2 left
-showTerm t = show(toPrecTree t)
+showTerm (Case (term, alts)) =
+  let sAlts = map showCaseAlt alts
+  in
+   lb ++ "case" ++ sp ++ showTerm term ++ sp ++ "of" 
+      ++ sp ++ head sAlts ++  foldl (++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp) (tail sAlts) ++ rb
+-- Just t1 `App` t2 left
+showTerm t = show (toPrecTree t)
+
+
+showCaseAlt :: (Term, Term) -> String
+showCaseAlt (pat, term) =
+  showTerm pat ++ sp ++ "=>" ++ sp ++ showTerm term
+showCaseAlt _ = error "[Isabelle.IsaPrint] Wrong case alternative"
 
 showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var typ term =
@@ -212,7 +227,7 @@ toPrecTree t =
 -- )
 
 instance Show (Tree PrecTerm) where
-  show = showPTree
+   show = showPTree
 
 showPTree :: Tree PrecTerm -> String
 showPTree (Node (PrecTerm term _) []) = showTerm term
@@ -241,17 +256,17 @@ showPTree (Node (PrecTerm term pre) annos) =
 infixP :: Precedence -> String -> Tree PrecTerm -> Tree PrecTerm -> String
 infixP pAdult stAdult leftChild rightChild 
     | (pAdult < prLeftCld) && (pAdult < prRightCld) = 
-          rb++ stLeftCld ++lb++
+          lb++ stLeftCld ++rb++
               sp++ stAdult ++sp++
-                   rb++ stRightCld ++lb
+                   lb++ stRightCld ++rb
     | pAdult < prLeftCld = 
-          rb++ stLeftCld ++lb++
+          lb++ stLeftCld ++rb++
               sp++ stAdult ++sp++
                    stRightCld
     | pAdult < prRightCld = 
           stLeftCld ++
               sp++ stAdult ++sp++
-                   rb++ stRightCld ++lb
+                   lb++ stRightCld ++rb
     | otherwise = stLeftCld ++
                       sp++ stAdult ++sp++
                            stRightCld
@@ -268,16 +283,16 @@ prefixP :: Precedence -> String -> Tree PrecTerm -> Tree PrecTerm -> String
 prefixP pAdult stAdult leftChild rightChild 
     | (pAdult <= prLeftCld) && (pAdult <= prRightCld) =
           stAdult ++
-              sp++rb++ stLeftCld ++lb++
-                  sp++rb++ stRightCld ++lb
+              sp++lb++ stLeftCld ++rb++
+                  sp++lb++ stRightCld ++rb
     | pAdult <= prLeftCld = 
           stAdult ++
-              sp++rb++ stLeftCld ++lb++
+              sp++lb++ stLeftCld ++rb++
                   sp++ stRightCld
     | pAdult <= prRightCld = 
           stAdult ++
               sp++ stLeftCld ++
-                  sp++rb++ stRightCld ++lb
+                  sp++lb++ stRightCld ++rb
     | otherwise =  stAdult ++
                        sp++ stLeftCld ++
                            sp++ stRightCld
@@ -292,16 +307,16 @@ prefixP pAdult stAdult leftChild rightChild
 simpleInfix :: Precedence -> Tree PrecTerm -> Tree PrecTerm -> String
 simpleInfix pAdult leftChild rightChild 
     | (pAdult < prLeftCld) && (pAdult < prRightCld) = 
-          rbb++ stLeftCld ++lb++
-                sp++rb++ stRightCld ++lbb
+          lbb++ stLeftCld ++rb++
+                sp++lb++ stRightCld ++rbb
     | pAdult < prLeftCld = 
-          rbb++ stLeftCld ++lb++
-                sp++ stRightCld ++lb
+          lbb++ stLeftCld ++rb++
+                sp++ stRightCld ++rb
     | pAdult < prRightCld = 
-          rb++ stLeftCld ++sp++
-               rb++ stRightCld ++lbb
-    | otherwise = rb++ stLeftCld ++sp++
-                       stRightCld ++lb
+          lb++ stLeftCld ++sp++
+               lb++ stRightCld ++rbb
+    | otherwise = lb++ stLeftCld ++sp++
+                       stRightCld ++rb
   where prLeftCld = pr leftChild
         prRightCld = pr rightChild
         stLeftCld = showPTree leftChild
@@ -312,11 +327,11 @@ simpleInfix pAdult leftChild rightChild
 -}
 quant :: Tree PrecTerm -> Tree PrecTerm -> String
 quant (Node (PrecTerm (Const("All",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) []) = 
-  rb++showQuant "!"  v ty t++lb
+  lb++showQuant "!"  v ty t++rb
 quant (Node (PrecTerm (Const("Ex",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) [])  = 
-  rb++showQuant "?"  v ty t++lb
+  lb++showQuant "?"  v ty t++rb
 quant (Node (PrecTerm (Const("Ex1",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) []) = 
-  rb++showQuant "?!"  v ty t++lb
+  lb++showQuant "?!"  v ty t++rb
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 
 
@@ -325,8 +340,8 @@ pr (Node (PrecTerm _ p) _) = p
 
 -- Prints: (p1, p2)
 pair :: Tree PrecTerm -> Tree PrecTerm -> String
-pair leftChild rightChild = rb++showPTree leftChild++", "++
-                                showPTree rightChild++lb
+pair leftChild rightChild = lb++showPTree leftChild++", "++
+                                showPTree rightChild++rb
 
 -- Not, =, and, or, -->: Absteigende Prio, alle rechtsassoz (ausser Not)
 
@@ -346,13 +361,14 @@ pair leftChild rightChild = rb++showPTree leftChild++", "++
 
 instance Show Sign where
   show sig =
-    baseSig sig ++":\n"++
+    baseSig sig ++":\n\n"++
+    "ML \"proofs := 1\"\n\n" ++
     shows (tsig sig) (showDataTypeDefs (dataTypeTab sig))
       ++ (showsConstTab (constTab sig))
     where
     showsConstTab tab =
      if Map.isEmpty tab then ""
-      else "consts\n" ++ Map.foldWithKey showConst "" tab
+      else "\nconsts\n" ++ Map.foldWithKey showConst "" tab
     showConst c t rest = show c ++ " :: " ++ "\"" ++ show t ++ "\"\n" ++ rest
     showDataTypeDefs dtDefs = concat $ map showDataTypeDef dtDefs
     showDataTypeDef [] = ""
@@ -367,6 +383,7 @@ instance Show Sign where
     showArg arg = case arg of
                     TVar _ -> show arg
                     _      -> "\"" ++ show arg ++ "\""
+
 
 instance PrettyPrint Sign where
     printText0 _ = ptext . show
@@ -383,20 +400,20 @@ sp :: String
 sp = " "
 
 rb :: String
-rb = "("
+rb = ")"
 
 rbb :: String
 rbb = rb++rb
 
 lb :: String
-lb = ")"
+lb = "("
 
 lbb :: String
 lbb = lb++lb
 
 
 bracketize :: Bool -> String -> String
-bracketize b s = if b then rb++s++lb else s
+bracketize b s = if b then lb++s++rb else s
 
 isIsaChar :: Char -> Bool
 isIsaChar c = (isAlphaNum c && isAscii c) || c `elem` "_'"

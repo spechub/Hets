@@ -33,6 +33,8 @@ import ChildProcess
 import Directory
 import System
 
+-- import Debug.Trace
+
 isabelleProver :: Prover Sign Sentence () ()
 isabelleProver =
      Prover { prover_name = "Isabelle",
@@ -69,8 +71,8 @@ isaProve thName (sig,axs) goals = do
              writeFile fileName showTheory 
              system ("cp "++fileName++" "++origName)
              return ()
-  isa <- newChildProcess "/home/linux-bkb/bin/Isabelle" [arguments ({-["/home/cofi/sonja/HetCATS/Comorphisms/MainHC.thy"]++ -} [fileName])]
---  writeFile (thName++".thy") (showTheory (writeTo isa))
+  isabelle <- getEnv "ISABELLE"
+  isa <- newChildProcess isabelle [arguments [fileName]]
   msgs <- readProofs isa
   closeChildProcessFds isa
   return [] -- ??? to be implemented
@@ -84,7 +86,10 @@ isaProve thName (sig,axs) goals = do
       getFileName = reverse . fst . break (=='/') . reverse
       showGoal goal = (("theorem "++) . -- (++(ipc (show fd) (senName goal))) .
                       (++"\noops\n") . showSen) goal
-      showTheory = "theory " ++ getFileName thName ++ " = " 
+      showTheory = "ML \"val hetsLib = (OS.Process.getEnv \\\"HETS_LIB\\\"); \n"
+                   ++ "case hetsLib of NONE => add_path \\\".\\\" \n"
+                   ++ "| SOME s => add_path (s ^ \\\"/Isabelle\\\")\"\n\n"
+                   ++ "theory " ++ getFileName thName ++ " = " 
                    ++ showPretty sig "\n\naxioms\n" 
                    ++ showAxs ++ "\n" ++ showLemma ++ "\n\n" ++ showGoals --fd
                    ++ "\nend\n"
