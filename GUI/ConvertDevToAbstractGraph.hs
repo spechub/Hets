@@ -21,10 +21,8 @@ Portability :  non-portable (imports Logic)
 module GUI.ConvertDevToAbstractGraph where
 
 import Logic.Logic
-import Logic.Comorphism
 import Logic.Grothendieck
 import Comorphisms.LogicGraph
-
 import Static.DevGraph
 import Static.DGToSpec
 import Proofs.Proofs
@@ -41,11 +39,8 @@ import qualified Common.Lib.Map as Map hiding (isEmpty)
 import Common.Lib.Graph
 import Common.Id
 import Common.PrettyPrint
-import qualified Common.Lib.Pretty as Pretty
-import Common.AS_Annotation
 import qualified Common.Result as Res
 import Syntax.AS_Library
-import Syntax.Print_HetCASL
 
 import Data.IORef
 import List(nub)
@@ -453,8 +448,7 @@ showSpec descr convMap dgraph =
    Nothing -> return ()
    Just (libname,node) -> do
       let sp = dgToSpec dgraph node
-      putStrLn (show (printText0_eGA sp))
-
+      putStrLn (showPretty sp "")
 
 {- outputs the signature of a node in a window;
 used by the node menu defined in initializeGraph-}
