@@ -1,3 +1,0 @@
-type Nat : Type
-
-free type Nat ::= Zero | Suc (Prec : Nat)

@@ -1,2 +1,0 @@
-var a :Type+
-free type List a ::= Nil | Cons(head : a; tail : List a)

@@ -1,8 +1,0 @@
-for j in *.hascasl
-do
-    ../translateAna $j > $j.hs
-    echo Creating $j.hs
-    echo Compiling $j.hs
-    ghc --make -Wall -i:.. $j.hs
-done
-rm HasCASLModul.hi
