@@ -13,14 +13,15 @@ make static analysis checkable by RunParsers
 
 module CASL.RunStaticAna where
 
-import CASL.StaticAna
-import CASL.Sign
 import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
 import CASL.Parse_AS_Basic
 import CASL.AS_Basic_CASL
+import CASL.Sign
+import CASL.StaticAna
+import CASL.SimplifySen
 
 localAnalysis :: GlobalAnnos -> BASIC_SPEC () () () 
               -> Result (BASIC_SPEC () () ())
@@ -55,7 +56,10 @@ props ga bs =
             basicCASLAnalysis (bs, emptySign (), ga)
         es = filter ((<= Error)  . diagKind) ds
         in case ms of 
-           Just (_newBs, _difSig, _accSig, sents) -> Result es $ Just sents
+           Just (_newBs, _difSig, accSig, sents) -> Result es $ Just 
+                     $ map (mapNamed $ simplifySen (error "props1")
+                                     (error "props2") accSig)
+                       sents
            Nothing -> Result ds Nothing
 
 getProps :: GlobalAnnos -> AParser () (Result [Named (FORMULA ())])
