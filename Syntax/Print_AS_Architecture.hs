@@ -20,22 +20,12 @@ import Common.PPUtils
 
 import Syntax.AS_Architecture
 
-import Common.Id
-import Common.Print_AS_Annotation
 import Syntax.Print_AS_Structured
 
 
 import Data.List
 
 import Logic.Grothendieck
-
-{-
-instance PrettyPrint ARCH_SPEC_DEFN where
-    printText0 ga (Arch_spec_defn aa ab _) =
-	let aa' = printText0 ga aa
-	    ab' = printText0 ga ab
-	in aa' <+> ab'
--}
 
 instance PrettyPrint ARCH_SPEC where
     printText0 ga (Basic_arch_spec aa ab _) =
@@ -70,13 +60,6 @@ instance PrettyPrint UNIT_DECL_DEFN where
 	    ab' = printText0 ga ab
 	in hang (aa' <+> equals) 4 ab'
 
-{- This instance can be found in Print_AS_Library!
-instance PrettyPrint UNIT_SPEC_DEFN where
-    printText0 ga (Unit_spec_defn aa ab _) =
-	let aa' = printText0 ga aa
-	    ab' = printText0 ga ab
-	in aa' <+> ab'
--}
     printLatex0 ga (Unit_decl aa ab ac _) =
 	let aa' = simple_id_latex aa
 	    ab' = printLatex0 ga ab

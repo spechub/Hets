@@ -20,7 +20,6 @@ module Static.AnalysisLibrary
 where
 
 import Logic.Logic
-import Logic.LogicRepr
 import Logic.Grothendieck
 import Common.Lib.Graph
 import Static.DevGraph

@@ -16,8 +16,6 @@ module Common.Utils where
 
 import Data.List
 
-import Common.AS_Annotation
-
 {- | 
   A function inspired by perls join function. It joins a list of
   lists of elements by seperating them with a seperator element. 
