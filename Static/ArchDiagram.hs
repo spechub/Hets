@@ -19,7 +19,9 @@ import Maybe
 import Logic.Comorphism
 import Logic.Logic
 import Logic.Grothendieck
+import Common.PrettyPrint
 import Common.Lib.Graph
+import Common.Lib.Pretty
 import Static.DevGraph
 import Static.AnalysisStructured
 import Common.Result
@@ -71,9 +73,25 @@ emptyExtStUnitCtx :: ExtStUnitCtx
 emptyExtStUnitCtx = (emptyStBasedUnitCtx, emptyDiag)
 
 
+-- * Instances
+
+-- PrettyPrint
+instance PrettyPrint Diag where
+    printText0 ga diag = 
+	let gs (n, DiagNode {dn_sig = nsig}) = 
+		(n, getSig nsig)
+        in ptext "nodes: " 
+	   <+> (printText0 ga (map gs (labNodes diag)))
+	   <+> ptext "\nedges: "
+	   <+> (printText0 ga (edges diag))
+
 
 -- * Functions
 
+-- | Pretty print the diagram
+printDiag :: a -> String -> Diag -> Result a
+--printDiag res t diag = warning res (showPretty diag t) nullPos
+printDiag res _ _ = do return res
 
 -- | A mapping from extended to basic static unit context
 ctx :: ExtStUnitCtx -> StUnitCtx
@@ -144,6 +162,7 @@ extendDiagram lgraph diag srcNodes newNodeSig =
 	 diag' = insNode (node, nodeContents) diag
 	 newDiagNode = Diag_node_sig node newNodeSig
      diag'' <- insInclusionEdges lgraph diag' srcNodes newDiagNode
+     printDiag (newDiagNode, diag'') "extendDiagram" diag''
      return (newDiagNode, diag'') 
 
 
@@ -162,6 +181,7 @@ extendDiagramRev lgraph diag targetNodes newNodeSig =
 	 diag' = insNode (node, nodeContents) diag
 	 newDiagNode = Diag_node_sig node newNodeSig
      diag'' <- insInclusionEdgesRev lgraph diag' newDiagNode targetNodes
+     printDiag (newDiagNode, diag'') "extendDiagramRev" diag''     
      return (newDiagNode, diag'') 
 
 
@@ -184,6 +204,7 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) morph =
 	    [node] = newNodes 0 diag
  	    diag' = insNode (node, nodeContents) diag
 	    diag'' = insEdge (n, node, DiagLink { dl_morphism = morph }) diag'
+        printDiag (Diag_node_sig node targetSig, diag'', dg') "extendDiagramWithMorphism" diag''
         return (Diag_node_sig node targetSig, diag'', dg') 
      else do fatal_error ("Internal error: Static.AnalysisArchitecture.extendDiagramWithMorphism: the morphism domain differs from the signature in given source node")
 			 pos
@@ -208,6 +229,7 @@ extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig) morph =
 	    [node] = newNodes 0 diag
  	    diag' = insNode (node, nodeContents) diag
 	    diag'' = insEdge (node, n, DiagLink { dl_morphism = morph }) diag'
+        printDiag (Diag_node_sig node sourceSig, diag'', dg') "extendDiagramWithMorphismRev" diag''
         return (Diag_node_sig node sourceSig, diag'', dg') 
      else do fatal_error ("Internal error: Static.AnalysisArchitecture.extendDiagramWithMorphismRev: the morphism codomain differs from the signature in given target node")
 			 pos
@@ -224,8 +246,8 @@ homogeniseDiagram :: Logic lid sublogics
 		  -> Result (Diagram sign morphism)
 homogeniseDiagram targetLid diag = 
     -- The implementation relies on the representation of graph nodes as
-    -- integers. We can therefore simply obtain a list of all the labelled nodes
-    -- from diag, convert all the nodes and insert them to a new graph; then
+    -- integers. We can therefore just obtain a list of all the labelled nodes
+    -- from diag, convert all the nodes and insert them to a new diagram; then
     -- copy all the edges from the original to new diagram (coercing the morphisms).
     do let convertNode (n, DiagNode { dn_sig = NodeSig (_, G_sign srcLid sig) }) =
 	       do sig' <- rcoerce targetLid srcLid nullPos sig
@@ -254,3 +276,27 @@ homogeniseDiagram targetLid diag =
        -- insert converted edges to the diagram containing only nodes
        cDiag' <- convertEdges cDiag edges
        return cDiag'
+
+
+-- | Convert a list of diagram edges to list of edges labelled with homogeneous
+-- morphisms. 
+homogeniseEdges :: Logic lid sublogics
+		         basic_spec sentence symb_items symb_map_items
+			 sign morphism symbol raw_symbol proof_tree
+		=> lid                 -- ^ the target logic to which morphisms will be coerced
+		-> [LEdge DiagLinkLab] -- ^ the list of edges to be homogenised
+		-> Result [LEdge morphism]
+homogeniseEdges targetLid edges =
+    -- See homogeniseDiagram for comments on implementation.
+    do let convertEdge (n1, n2, DiagLink { dl_morphism = GMorphism cid _ mor }) =
+	       let srcLid = sourceLogic cid
+	       in if language_name cid == "id_" ++ language_name srcLid then
+		     do mor' <- rcoerce targetLid srcLid nullPos mor
+			return (n1, n2, mor')
+		     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
+					 nullPos
+	   convEdges [] = do return []
+	   convEdges (e : es) = do ce <- convertEdge e
+				   ces <- convEdges es
+				   return (ce : ces)
+       convEdges edges
