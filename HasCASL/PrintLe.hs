@@ -18,6 +18,7 @@ import Common.Id
 import HasCASL.PrintAs
 import HasCASL.Le
 import Data.Maybe
+import Common.GlobalAnnotations
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.Lib.Pretty as Pretty
@@ -100,26 +101,25 @@ instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 _ Nothing = empty
     printText0 ga (Just c) =  printText0 ga c
 
-{- Moved to PrettyPrint.hs, TM
-instance (PrettyPrint a, Ord a, PrettyPrint b) 
-    => PrettyPrint (Map.Map a b) where
-    printText0 ga m =
-	let l = Map.toList m in
-	    vcat(map (\ (a, b) -> printText0 ga a <> printText0 ga b) l)
--}
-
 instance PrettyPrint Env where
     printText0 ga (Env{classMap=cm, typeMap=tm, 
 		       assumps=as, sentences=se, envDiags=ds}) = 
 	noPrint (Map.isEmpty cm) (header "Classes")
-	$$ printText0 ga cm
+	$$ printMap0 ga cm
 	$$ noPrint (Map.isEmpty tm) (header "Type Constructors")
-	$$ printText0 ga tm
+	$$ printMap0 ga tm
 	$$ noPrint (Map.isEmpty as) (header "Assumptions")
-        $$ printText0 ga as
+        $$ printMap0 ga as
 	$$ noPrint (null se) (header "Sentences")
         $$ vcat (map (printText0 ga) se)
 	$$ noPrint (null ds) (header "Diagnostics")
 	$$ vcat (map (printText0 ga) $ reverse ds)
 	where header s =  ptext "%%" <+> ptext s 
 			  <+> ptext (replicate (70 - length s) '-')
+	      printMap0 :: (PrettyPrint a, Ord a, PrettyPrint b)  
+			   => GlobalAnnos -> Map.Map a b -> Doc
+	      printMap0 g m =
+		  let l = Map.toList m in
+			  vcat(map (\ (a, b) -> printText0 g a 
+				    <> printText0 g b) l)
+
