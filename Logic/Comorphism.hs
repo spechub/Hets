@@ -30,7 +30,6 @@ import Data.Maybe
 import Data.Dynamic
 import Common.AS_Annotation (Named, mapNamedM)
 
-import Common.ATerm.Lib
 --import Logic.Grothendieck
 -- Logic comorphisms (possibly also morphisms via adjointness)
 
@@ -73,11 +72,6 @@ class (Language cid,
           -- with no sentence translation
           -- - but these are spans!
     map_symbol :: cid -> symbol1 -> Set symbol2
-    fromShATerm_sign1 :: (ATermConvertible sign) => cid -> ATermTable -> sign
-    fromShATerm_sign1 _ att = fromShATerm att
-    fromShATerm_morphism2 :: (ATermConvertible morphism) => cid -> ATermTable -> morphism
-    fromShATerm_morphism2 _ att = fromShATerm att
-
 
 data IdComorphism lid  = 
      IdComorphism lid deriving Show
