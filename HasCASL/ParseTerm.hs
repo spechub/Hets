@@ -255,6 +255,7 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` commaT
 			  TypeArg t e k p 
 		      mergeVariance k (ExtClass c _ _) (t, v, ps) p =
 			  TypeArg t (ExtClass c v ps) k p
+		      mergeVariance k e (t, _, _) p = TypeArg t e k p
 		      makeTypeArgs ts ps q e = 
                          zipWith (mergeVariance Comma e) (init ts) 
 				     (map tokPos ps)

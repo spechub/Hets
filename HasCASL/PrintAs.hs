@@ -229,14 +229,14 @@ instance PrettyPrint Variance where
 instance PrettyPrint ExtClass where 
     printText0 ga (ExtClass c v _) = printText0 ga c <> printText0 ga v 
 				     <> space
+    printText0 ga (KindAppl k1 k2) = parens (printText0 ga k1)
+				     <> ptext funS <> printText0 ga k2 
 
 instance PrettyPrint ProdClass where 
     printText0 ga (ProdClass l _) = fcat $ punctuate (text timesS) 
 			       (map (printText0 ga) l)
 
 instance PrettyPrint Kind where
-    printText0 ga (KindAppl k1 k2) = parens (printText0 ga k1)
-				     <> ptext funS <> printText0 ga k2 
     printText0 ga (Kind l c _) = (if null l then empty else 
 			      (fcat $ punctuate (text funS) 
 			       (map (printText0 ga) l))

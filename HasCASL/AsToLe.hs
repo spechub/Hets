@@ -140,9 +140,10 @@ anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 
 convertTypeToClass :: Type -> State Env (Result Class)
 convertTypeToClass (TypeToken t) = 
-    do Result ds (Just cs) <- anaClassName False t 
-       if null cs then return $ Result ds Nothing
-	  else return $ Result ds (Just $ Intersection cs [])  
+    do if tokStr t == "Type" then return $ Result [] (Just $ universe) else 
+	  do Result ds (Just cs) <- anaClassName False t 
+	     if null cs then return $ Result ds Nothing
+		else return $ Result ds (Just $ Intersection cs [])  
 
 convertTypeToClass (BracketType Parens ts ps) = 
     convertTypeListToClass ts ps
@@ -317,9 +318,13 @@ anaTypeItem inst (TypeDecl pats kind _) =
 anaTypePattern :: Instance -> Kind -> TypePattern -> State Env ()
 anaTypePattern _ kind t = 
     let Result ds mi = convertTypePattern t
-    in case mi of 
+    in if typePatternArgs t == 0 || 
+       typePatternArgs t == kindArity kind then
+       case mi of 
 	       Just ti -> addTypeKind ti kind
 	       Nothing -> appendDiags ds
+       else appendDiags [Error "non-matching kind arity"
+					    $ posOfTypePattern t]
 
 convertTypePattern, makeMixTypeId :: TypePattern -> Result Id
 convertTypePattern (TypePattern t _ _) = return t
@@ -365,8 +370,12 @@ makeMixTypeId t =
 		(let p = errorPos err in (sourceLine p, sourceColumn p))
     Right x -> return x
 
-
-
+typePatternArgs :: TypePattern -> Int
+typePatternArgs (TypePattern _ as _) = length as
+typePatternArgs (TypePatternToken t) = if isPlace t then 1 else 0
+typePatternArgs (MixfixTypePattern ts) = sum (map typePatternArgs ts)
+typePatternArgs (BracketTypePattern _ ts _) = sum (map typePatternArgs ts)
+typePatternArgs (TypePatternArgs as) = length as
 
 posOfTypePattern :: TypePattern -> Pos
 posOfTypePattern (TypePattern t _ _) = posOfId t
@@ -434,10 +443,6 @@ addTypeKind t k =
 -- ----------------------------------------------------------------------------
 
 anaKind :: Kind -> State Env Kind
-anaKind (KindAppl k1 k2) =
-    do n1 <- anaKind k1
-       n2 <- anaKind k2
-       return $ KindAppl n1 n2
 anaKind (Kind args c p) = 
     do ca <- anaClassAppl c
        newArgs <- mapM anaProdClass args
@@ -447,10 +452,19 @@ anaExtClass :: ExtClass -> State Env ExtClass
 anaExtClass (ExtClass c v p) = 
     do ca <- anaClassAppl c
        return $ ExtClass ca v p
+anaExtClass (KindAppl k1 k2) =
+    do n1 <- anaKind k1
+       n2 <- anaKind k2
+       return $ KindAppl n1 n2
 
 anaProdClass :: ProdClass -> State Env ProdClass
 anaProdClass (ProdClass l p) =
     do cs <- mapM anaExtClass l
        return $ ProdClass cs p
 
+kindArity :: Kind -> Int
+kindArity(Kind args _ _) = 
+    sum $ map prodClassArity args
 
+prodClassArity :: ProdClass -> Int
+prodClassArity (ProdClass l _) = length l

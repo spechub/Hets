@@ -265,15 +265,18 @@ data GenVarDecl = GenVarDecl VarDecl
 
 data Variance = CoVar | ContraVar | InVar deriving (Show, Eq)
 
-data ExtClass = ExtClass Class Variance Pos deriving (Show, Eq)
-	        -- pos "+" or "-" (or nullPos)
+data ExtClass = ExtClass Class Variance Pos
+                -- pos "+" or "-" (or nullPos)
+	      | KindAppl Kind Kind  -- extension
+		deriving (Show, Eq)
 
-data ProdClass = ProdClass [ExtClass] [Pos] deriving (Show, Eq)
+data ProdClass = ProdClass [ExtClass] [Pos] 
                  -- pos crosses 
+		 deriving (Show, Eq)
+                
 
 data Kind = Kind [ProdClass] Class [Pos] 
 	    -- pos "->"s (first order)
-	  | KindAppl Kind Kind  -- extension
 	    deriving (Show, Eq)
 
 data Class = Downset Type   -- not parsed directly
