@@ -1,20 +1,36 @@
-module ToHaskell.TranslateAna where
+{- |
+Module      :  $Header$
+Copyright   :  (c) Uni Bremen 2003
+Licence     :  All rights reserved.
+
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
+   Translation of the abstract syntax of HasCASL after the static analysis
+   to the abstract syntax of haskell.
+-}
+
+module ToHaskell.TranslateAna (
+       -- * Translation of an environment
+         translateAna
+       -- * Translation of a map of assumptions
+       , translateAssumps
+       -- * Translation of a map of types
+       , translateTypeMap
+       ) where
 
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.Unify
 import Haskell.Language.Syntax
---import Common.AS_Annotation
 import Common.Id
---import Common.Lib.Parsec.Pos
 import qualified Common.Lib.Map as Map hiding (map)
-import Common.Lexer
-import Data.Char
-import Data.List
 import Common.Token
 import Common.AnnoState
 import Common.PPUtils
-
+import Data.Char
+import Data.List
 -------------------------------------------------------------------------
 -- einige "Konstanten"
 -------------------------------------------------------------------------
@@ -43,6 +59,8 @@ idToHaskell = fmap (WrapString . translateId) parseId
 -- Translation of an HasCASL-Environement
 -------------------------------------------------------------------------
 
+-- | Convert an abstract syntax of HasCASL (after the static analysis) 
+-- to the top datatype of the asbtract syntax of haskell.
 translateAna :: Env -> HsModule
 --translateAna env = error (show env)
 translateAna env = 
@@ -62,6 +80,7 @@ translateAna env =
 -- Translation of types
 -------------------------------------------------------------------------
 
+-- | Convert all HasCASL types to data or type declarations in haskell.
 translateTypeMap :: TypeMap -> [HsDecl]
 translateTypeMap m = concat $ map translateData (Map.assocs m)
 
@@ -138,6 +157,7 @@ getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 -- Translation of functions
 -------------------------------------------------------------------------
 
+-- | Convert functions in HasCASL to the coresponding haskell declarations.
 translateAssumps :: Assumps -> TypeMap -> [HsDecl]
 translateAssumps as tm =
   let distList =  distinctOpIds $ Map.toList as
@@ -253,10 +273,15 @@ translateTerm as tm t = case t of
          -- gut, eine Uebereinstimmung
           let oid = head $ Map.keys $ fittingAs
           in (HsVar (UnQual (HsIdent (translateIdWithType LowerId oid))))
-       --falls mehr als ein passendes TypeScheme gefunden wurde
-       --kann auf "Ähnlichkeit" mit der Id getestet werden
-       else error("problem with finding opid: " ++ show uid ++ "\n" ++ show ts
-                   ++ "\n" ++ show types ++ "\n" ++ show (Map.size fittingAs))
+       else
+          if Map.size fittingAs > 1 then
+          --falls mehr als ein passendes TypeScheme gefunden wurde
+          --kann auf "Ähnlichkeit" mit der Id getestet werden
+            let oid = head $ Map.keys $ fittingAs
+            in (HsVar (UnQual (HsIdent (translateIdWithType LowerId oid))))
+          else error("problem with finding opid: " ++ show uid ++ "\n" 
+                     ++ show ts ++ "\n" ++ show types ++ "\n" ++ 
+                     show (Map.size fittingAs))
 
   ApplTerm t1 t2 _pos -> HsApp(translateTerm as tm t1)(translateTerm as tm t2)
   TupleTerm ts _pos -> HsTuple (map (translateTerm as tm) ts)
