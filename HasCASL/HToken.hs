@@ -86,13 +86,13 @@ brackets parser k = bracketParser parser oBracketT cBracketT commaT k
 -- ----------------------------------------------
 
 -- allow type_ops as op_symbols (like "*")
-uninstOpName = mixId (hascasl_reserved_fwords, hascasl_reserved_fops)
-	       (hascasl_reserved_fwords, hascasl_reserved_fops)
+uninstOpName = mixId (hascasl_reserved_fops, hascasl_reserved_fwords)
+	       (hascasl_reserved_fops, hascasl_reserved_fwords)
 
 -- prohibit type_ops on the top-level
-typeName = mixId (hascasl_reserved_fwords,
-		  hascasl_type_ops ++ hascasl_reserved_fops)
-	   (hascasl_reserved_fwords, hascasl_reserved_fops)
+typeName = mixId (hascasl_type_ops ++ hascasl_reserved_fops,
+		  hascasl_reserved_fwords)
+	   (hascasl_reserved_fops, hascasl_reserved_fwords)
 
 -- ----------------------------------------------
 -- TYPE-VAR Ids
