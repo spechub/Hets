@@ -200,6 +200,7 @@ transSignature sign = Result []
 --    constTab = Map.foldWithKey insertOps 
 --                               Map.empty 
 --                               (assumps sign),
+    dataTypeTab = [],
     domainTab = getDomainTab (HatAna.types sign) (HatAna.values sign),
     showLemmas = False },
     [] ))  -- for now, no sentences
