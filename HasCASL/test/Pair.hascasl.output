@@ -7,12 +7,12 @@ op f : forall a : Type; b : Type .
              : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
               (var a : a, var b : b)
 op g : Pair a b ->? a
-program (op g[_var_8_v8; _var_9_v9]
+program (op g[_var_10_v10; _var_11_v11]
          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1)
-          ((op Pair[_var_8_v8; _var_9_v9]
+          ((op Pair[_var_10_v10; _var_11_v11]
             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-             (var a : _var_8_v8, var b : _var_9_v9))
-          = (var a : _var_8_v8)
+             (var a : _var_10_v10, var b : _var_11_v11))
+          = (var a : _var_10_v10)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pair
@@ -91,9 +91,9 @@ forall a : a; b : b
        (op Pair[a; b]
         : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
          (var a : a, var b : b)) %(def_f)%
-program (op g[_var_8_v8; _var_9_v9]
+program (op g[_var_10_v10; _var_11_v11]
          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1)
-          ((op Pair[_var_8_v8; _var_9_v9]
+          ((op Pair[_var_10_v10; _var_11_v11]
             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-             (var a : _var_8_v8, var b : _var_9_v9))
-          = (var a : _var_8_v8) %(pe_g)%
+             (var a : _var_10_v10, var b : _var_11_v11))
+          = (var a : _var_10_v10) %(pe_g)%

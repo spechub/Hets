@@ -1,0 +1,9 @@
+type t;
+op f : ?t -> t
+op g : t -> (?t)
+op a, b: t
+
+op c, d:?t
+
+. f a = g c
+

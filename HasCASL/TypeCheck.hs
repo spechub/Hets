@@ -95,7 +95,7 @@ typeCheck mt trm =
 	       let (s, cs, _, t) = head alts
 		   (ds, rcs) = simplify tm noC cs 
 		   es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
-	       addDiags(es ++ map (	\ c -> 
+	       addDiags(es ++ map ( \ c -> 
 		      mkDiag Error "unresolved constraint" c)
 	              (Set.toList rcs))
 	       return $ Just $ substTerm s t
@@ -119,18 +119,36 @@ freshVars l = mapM (freshTypeVar . posOfTerm) l
 inferAppl :: [Pos] -> Maybe Type -> Term  -> Term 
 	  -> State Env [(Subst, Constraints, Type, Term)]
 inferAppl ps mt t1 t2 = do
+            tm <- gets typeMap
 	    aty <- freshTypeVar $ posOfTerm t2
 	    rty <- case mt of 
 		  Nothing -> freshTypeVar $ posOfTerm t1
 		  Just ty -> return ty
 	    ops <- infer (Just $ FunType aty PFunArr rty []) t1
 	    combs <- mapM ( \ (sf, cs, _, tf) -> do 
-		   args <- infer (Just $ subst sf aty) t2 
-		   return $ map ( \ (sa, cr, _, ta) -> 
-				  let s = compSubst sf sa in
-			  (s, substC sa cs `joinC` cr, 
-			   subst s rty, 
-			   ApplTerm tf ta ps)) args) ops
+                   let sfty = subst sf aty
+		   args <- infer Nothing t2 
+		   return $ concatMap ( \ (sa, cr, tya, ta) ->  
+                       let m1 = mgu tm tya sfty 
+                           m2 = mgu tm tya $ FunType logicalType 
+                                        PFunArr sfty ps
+                           mkAT m b = case maybeResult m of 
+                                Nothing -> []
+                                Just s -> let rs = compSubst sa $ 
+                                                   compSubst sf s in
+                                        [(rs, 
+                                          substC rs cs `joinC` 
+                                              substC rs cr,
+                                          subst rs rty, 
+                                          ApplTerm 
+                                          (substTerm rs 
+                                           (if b then ApplTerm tf  
+                                            (TupleTerm [] ps) ps else tf))
+                                            ta ps)]
+                           l1 = mkAT m1 False
+                           l2 = mkAT m2 True
+                           in if null l1 then l2 else l1
+			  ) args) ops
 	    let res = concat combs 
 		origAppl = ApplTerm t1 t2 ps
 	    if null res then 
@@ -179,7 +197,7 @@ infer mt trm = do
                          let rs = concatMap ( \ (ty, is, cs, oi) ->
 				  let Result _ ms = mgu tm inTy ty in
 				  case ms of Nothing -> []
-					     Just s -> [(s, ty
+					     Just s -> [(s, subst s ty
 							, map (subst s) is
 							, substC s cs
 							, oi)]) insts

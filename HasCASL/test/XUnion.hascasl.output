@@ -94,7 +94,3 @@ true : Unit %(fun)%
 *** Hint 1.7, is type variable 'S'
 *** Hint 1.9, is type variable 'N'
 *** Hint 1.11, is type variable 'E'
-*** Hint 9.6, no type match for: g
-  with type: '_var_9_v9 ->? Unit' (6.51)
-  known types:
-    'Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))'

@@ -247,9 +247,5 @@ type Data4
 *** Hint 40.3, wrong result type '? Unit' (40.11)
   for application 'ff()'
 *** Error 40.3, no typing for 'ff() : ? Unit'
-*** Hint 47.7, no type match for: y
-  with type: 's' (16.9)
-  known types:
-    't'
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e
