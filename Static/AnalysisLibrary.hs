@@ -262,18 +262,17 @@ ana_LIB_ITEM :: LogicGraph -> AnyLogic -> HetcatsOpts
                  -> IOResult (LIB_ITEM,GlobalContext,AnyLogic,LibEnv)
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l  
              (Spec_defn spn gen asp pos) = do
-  let just_struct = analysis opts == Structured
-      analyseMessage = "Analyzing spec " ++ showPretty spn ""
+  let analyseMessage = "Analyzing spec " ++ showPretty spn ""
   ioToIORes (putIfVerbose opts 1  analyseMessage)
   if outputToStdout opts then
      return()
      else
      resToIORes $ message () analyseMessage
   (gen',(imp,params,parsig,allparams),dg') <- 
-     resToIORes (ana_GENERICITY lgraph gctx l just_struct gen)
+     resToIORes (ana_GENERICITY lgraph gctx l opts gen)
   (sp',body,dg'') <- 
      resToIORes (ana_SPEC lgraph (gannos,genv,dg') 
-                          allparams (Just spn) just_struct (item asp))
+                          allparams (Just spn) opts (item asp))
   let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
   if Map.member spn genv 
    then resToIORes (plain_error (libItem',gctx,l,libenv)
@@ -288,27 +287,25 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
-  let just_struct = analysis opts == Structured
-      analyseMessage = "Analyzing view " ++ showPretty vn ""
+  let analyseMessage = "Analyzing view " ++ showPretty vn ""
   ioToIORes (putIfVerbose opts 1  analyseMessage)
   if outputToStdout opts then
      return()
      else
      resToIORes $ message () analyseMessage
-  resToIORes (ana_VIEW_DEFN lgraph defl libenv gctx l just_struct
+  resToIORes (ana_VIEW_DEFN lgraph defl libenv gctx l opts
                             vn gen vt gsis pos)
 
 -- architectural specification
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l 
              asd@(Arch_spec_defn asn asp pos) = do
-  let just_struct = analysis opts == Structured
-      analyseMessage = "Analyzing arch spec " ++ showPretty asn ""
+  let analyseMessage = "Analyzing arch spec " ++ showPretty asn ""
   ioToIORes (putIfVerbose opts 1 analyseMessage )
   if outputToStdout opts then
      return()
      else
      resToIORes $ message () analyseMessage
-  (archSig, dg', asp') <- resToIORes (ana_ARCH_SPEC lgraph defl gctx l just_struct (item asp))
+  (archSig, dg', asp') <- resToIORes (ana_ARCH_SPEC lgraph defl gctx l opts (item asp))
   let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
       gctx' = (gannos, genv, dg')
   if Map.member asn genv 
@@ -327,14 +324,13 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l
 -- unit specification
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
              usd@(Unit_spec_defn usn usp pos) = do
-  let just_struct = analysis opts == Structured
-      analyseMessage = "Analyzing unit spec " ++ showPretty usn ""
+  let analyseMessage = "Analyzing unit spec " ++ showPretty usn ""
   ioToIORes (putIfVerbose opts 1 analyseMessage)
   if outputToStdout opts then
      return()
      else
      resToIORes $ message () analyseMessage
-  (unitSig, dg', usp') <- resToIORes (ana_UNIT_SPEC lgraph defl gctx l just_struct (EmptyNode defl) usp) 
+  (unitSig, dg', usp') <- resToIORes (ana_UNIT_SPEC lgraph defl gctx l opts (EmptyNode defl) usp) 
   let usd' = Unit_spec_defn usn usp' pos
   if Map.member usn genv 
      then
@@ -396,13 +392,13 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
 
 
 -- ??? Needs to be generalized to views between different logics
-ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
+ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l opts
               vn gen vt gsis pos = do
   let adj = adjustPos (headPos pos)
   (gen',(imp,params,parsig,allparams),dg') <- 
-       ana_GENERICITY lgraph gctx l just_struct gen
+       ana_GENERICITY lgraph gctx l opts gen
   (vt',(src,tar),dg'') <- 
-       ana_VIEW_TYPE lgraph (gannos,genv,dg') l allparams just_struct vt
+       ana_VIEW_TYPE lgraph (gannos,genv,dg') l allparams opts vt
   let gsigmaS = getSig src
       gsigmaT = getSig tar
   G_sign lidS sigmaS <- return gsigmaS
@@ -411,7 +407,7 @@ ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
   G_symb_map_items_list lid sis <- return gsis1
   sigmaS' <- rcoerce lid lidS (headPos pos) sigmaS
   sigmaT' <- rcoerce lid lidT (headPos pos) sigmaT
-  mor <- if just_struct then return (ide lid sigmaS')
+  mor <- if analysis opts == Structured then return (ide lid sigmaS')
            else do
              rmap <- adj $ stat_symb_map_items lid sis
              adj $ induced_from_to_morphism lid rmap sigmaS' sigmaT'

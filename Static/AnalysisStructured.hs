@@ -105,6 +105,7 @@ module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY, ana_VIEW_TYPE, ana_e
 				  ana_RENAMING, ana_RESTRICTION, extendMorphism)
 where
 
+import Options
 import Data.Maybe
 import Logic.Logic
 import Logic.Comorphism
@@ -129,9 +130,9 @@ import Common.Lib.Parsec.Pos -- for testing purposes
 -- the SIMPLE_ID may be a name if the specification shall be named,
 -- flag: shall only the structure be analysed?
 ana_SPEC :: LogicGraph -> GlobalContext -> NodeSig -> Maybe SIMPLE_ID -> 
-            Bool -> SPEC -> Result (SPEC,NodeSig,DGraph)
+            HetcatsOpts -> SPEC -> Result (SPEC,NodeSig,DGraph)
 
-ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp = 
+ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp = 
 
  case sp of
 
@@ -139,7 +140,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
     do G_sign lid' sigma' <- return (getSig nsig)
        sigma <- rcoerce lid' lid (newPos "a" 0 0) sigma'
        (bspec', _sigma_local, sigma_complete, ax) <- 
-          if just_struct 
+          if analysis opts == Structured 
            then return (bspec,empty_signature lid, empty_signature lid,[])
            else do b <- maybeToResult (newPos "b" 0 0) 
                           ("no basic analysis for logic "
@@ -168,11 +169,11 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
 
   Translation asp ren ->
    do let sp1 = item asp
-      (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
+      (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
       n' <- maybeToResult (newPos "c" 0 0) 
               "Internal error: Translation of empty spec" (getNode nsig')
       let gsigma = getSig nsig'
-      mor <- ana_RENAMING dg gsigma just_struct ren
+      mor <- ana_RENAMING dg gsigma opts ren
       -- ??? check that mor is identity on local env
       let gsigma' = cod Grothendieck mor 
            -- ??? too simplistic for non-comorphism inter-logic translations 
@@ -194,12 +195,12 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
       
   Reduction asp restr ->
    do let sp1 = item asp
-      (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
+      (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
       n' <- maybeToResult (newPos "d" 0 0) 
              "Internal error: Reduction of empty spec" (getNode nsig')
-      (hmor,tmor) <- ana_RESTRICTION dg gsigma gsigma' just_struct restr
+      (hmor,tmor) <- ana_RESTRICTION dg gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
       -- in order to keep the dg as simple as possible
       case tmor of
@@ -279,7 +280,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
           let ana r sp' = do
                 (sps1,nsigs,dg') <- r
                 (sp1,nsig',dg1) <- ana_SPEC lg (gannos,genv,dg') 
-                                            nsig Nothing just_struct sp'
+                                            nsig Nothing opts sp'
                 return (sp1:sps1,nsig':nsigs,dg1)
            in foldl ana (return ([],[],dg)) sps
       let nsigs' = reverse nsigs
@@ -324,7 +325,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
    ana res (name',asp',pos') = do
      (sps',nsig',dg') <- res
      (sp1',nsig1,dg1) <- 
-         ana_SPEC lg (gannos,genv,dg') nsig' name' just_struct (item asp')
+         ana_SPEC lg (gannos,genv,dg') nsig' name' opts (item asp')
      dg2 <- case (any isImplies $ l_annos asp',getNode nsig',getNode nsig1) of
        (True,Just n',Just n1) -> do
            let sig1 = getSig nsig1
@@ -341,7 +342,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
 
   Free_spec asp poss ->
    do let sp1 = item asp
-      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
+      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
       n' <- maybeToResult (newPos "e" 0 0) 
             "Internal error: Free spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
@@ -365,7 +366,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
 
   Cofree_spec asp poss ->
    do let sp1 = item asp
-      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
+      (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
       n' <- maybeToResult (newPos "f" 0 0) 
             "Internal error: Cofree spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
@@ -390,8 +391,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
   Local_spec asp asp' poss ->
    do let sp1 = item asp
           sp1' = item asp'
-      (sp2,nsig',dg') <- ana_SPEC lg gctx nsig Nothing just_struct sp1
-      (sp2',nsig'',dg'') <- ana_SPEC lg (gannos,genv,dg') nsig' Nothing just_struct sp1'
+      (sp2,nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
+      (sp2',nsig'',dg'') <- ana_SPEC lg (gannos,genv,dg') nsig' Nothing opts sp1'
       n'' <- maybeToResult (newPos "g" 0 0) 
             "Internal error: Local spec over empty spec" (getNode nsig'')
       let gsigma = getSig nsig
@@ -406,14 +407,14 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
           sys1 = sym_of lid sigma1
           sys2 = sym_of lid sigma2
           pos = headPos poss
-      mor3 <- if just_struct then return (ide lid sigma2)
+      mor3 <- if analysis opts == Structured then return (ide lid sigma2)
                else adjustPos pos $ cogenerated_sign lid 
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom lid mor3
           -- gsigma2 = G_sign lid sigma2
           gsigma3 = G_sign lid sigma3
           sys3 = sym_of lid sigma3
-      when (not( just_struct || sys2 `Set.difference` sys1 `Set.subset` sys3))
+      when (not( analysis opts == Structured || sys2 `Set.difference` sys1 `Set.subset` sys3))
        (pplain_error () 
          (ptext "attempt to hide the following symbols from the local environment"
           $$ printText ((sys2 `Set.difference` sys1) `Set.difference` sys3))
@@ -439,7 +440,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
   Closed_spec asp pos ->
    do let sp1 = item asp
           l = getLogic nsig
-      (sp',nsig',dg') <- ana_SPEC lg gctx (EmptyNode l) Nothing just_struct sp1
+      (sp',nsig',dg') <- ana_SPEC lg gctx (EmptyNode l) Nothing opts sp1
       n' <- maybeToResult (newPos "j" 0 0) 
             "Internal error: Closed spec over empty spec" (getNode nsig')
       let gsigma = getSig nsig
@@ -474,7 +475,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
               insNode (node,node_contents) dg')
 
   Group asp pos -> do
-   (sp',nsig',dg') <- ana_SPEC lg gctx nsig name just_struct (item asp)
+   (sp',nsig',dg') <- ana_SPEC lg gctx nsig name opts (item asp)
    return (Group (replaceAnnoted sp' asp) pos,nsig',dg')
 
 
@@ -599,7 +600,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
        anaFitArg res (nsig',fa) = do
          (fas',dg1,args) <- res
          (fa',dg',arg) <- ana_FIT_ARG lg (gannos,genv,dg1) 
-                                  spname imps nsig' just_struct fa
+                                  spname imps nsig' opts fa
          return (fa':fas',dg',arg:args)
        parLink gsigma' node (_mor_i,nsigA_i) = do
         nA_i <- getNode nsigA_i
@@ -625,9 +626,9 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
    do let sp1 = item asp1
           sp2 = item asp2
       (sp1',nsig1,dg1) <- 
-         ana_SPEC lg gctx (EmptyNode (Logic lid1)) Nothing just_struct sp1
+         ana_SPEC lg gctx (EmptyNode (Logic lid1)) Nothing opts sp1
       (sp2',_nsig2,dg2) <- 
-         ana_SPEC lg (gannos,genv,dg1) nsig1 Nothing just_struct sp2
+         ana_SPEC lg (gannos,genv,dg1) nsig1 Nothing opts sp2
       n' <- maybeToResult (newPos "k" 0 0) 
             "Internal error: Data spec over empty spec" (getNode nsig1)
       let gsigma' = getSig nsig1
@@ -674,9 +675,9 @@ ana_ren dg mor_res ren =
   do mor <- mor_res
      ana_ren1 dg mor ren
 
-ana_RENAMING :: DGraph -> G_sign -> Bool -> RENAMING -> Result GMorphism
-ana_RENAMING dg gSigma just_struct (Renaming ren pos) = 
-  if just_struct 
+ana_RENAMING :: DGraph -> G_sign -> HetcatsOpts -> RENAMING -> Result GMorphism
+ana_RENAMING dg gSigma opts (Renaming ren pos) = 
+  if analysis opts == Structured 
      then return (ide Grothendieck gSigma)
      else foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
   where
@@ -717,11 +718,16 @@ ana_restr dg gSigma mor_res restr =
   do mor <- mor_res
      ana_restr1 dg gSigma mor restr
 
-ana_RESTRICTION :: DGraph -> G_sign -> G_sign -> Bool -> RESTRICTION 
+ana_RESTRICTION :: DGraph -> G_sign -> G_sign -> HetcatsOpts -> RESTRICTION 
        -> Result (GMorphism, Maybe GMorphism)
-ana_RESTRICTION _ _ gSigma True _ =
+ana_RESTRICTION dg gSigma gSigma' opts restr =
+    ana_RESTRICTION' dg gSigma gSigma' (analysis opts == Structured) restr
+
+ana_RESTRICTION' :: DGraph -> G_sign -> G_sign -> Bool -> RESTRICTION 
+       -> Result (GMorphism, Maybe GMorphism)
+ana_RESTRICTION' _ _ gSigma True _ =
   return (ide Grothendieck gSigma,Nothing)
-ana_RESTRICTION dg gSigma gSigma' False (Hidden restr pos) = 
+ana_RESTRICTION' dg gSigma gSigma' False (Hidden restr pos) = 
   do mor <- foldl (ana_restr dg gSigma) 
                   (return (ide Grothendieck gSigma'))
                   restr'
@@ -729,7 +735,7 @@ ana_RESTRICTION dg gSigma gSigma' False (Hidden restr pos) =
   where
   restr' = zip restr (tail (pos ++ repeat (newPos "m" 0 0)))
   -- ??? Need to check that local env is not affected !
-ana_RESTRICTION _ (G_sign lid sigma) (G_sign lid' sigma') 
+ana_RESTRICTION' _ (G_sign lid sigma) (G_sign lid' sigma') 
      False (Revealed (G_symb_map_items_list lid1 sis) pos) = 
   do let sys = sym_of lid sigma -- local env
          sys' = sym_of lid' sigma' -- "big" signature
@@ -751,16 +757,16 @@ ana_RESTRICTION _ (G_sign lid sigma) (G_sign lid' sigma')
 
 
 ana_FIT_ARG :: LogicGraph -> GlobalContext -> SPEC_NAME -> NodeSig -> NodeSig 
-               -> Bool 
+               -> HetcatsOpts 
                -> FIT_ARG
                -> Result (FIT_ARG, DGraph, (G_morphism,NodeSig))
-ana_FIT_ARG lg gctx spname nsigI nsigP just_struct 
+ana_FIT_ARG lg gctx spname nsigI nsigP opts 
             fs@(Fit_spec asp gsis poss) = do
    let pos = getMyPos fs
        adj = adjustPos pos
    nP <- maybeToResult pos 
          "Internal error: empty parameter spec" (getNode nsigP)
-   (sp',nsigA,dg') <- ana_SPEC lg gctx nsigI Nothing just_struct (item asp)
+   (sp',nsigA,dg') <- ana_SPEC lg gctx nsigI Nothing opts (item asp)
    nA <- maybeToResult pos 
          "Internal error: empty argument spec" (getNode nsigA)
    let gsigmaP = getSig nsigP
@@ -772,7 +778,7 @@ ana_FIT_ARG lg gctx spname nsigI nsigP just_struct
    G_symb_map_items_list lid sis <- return gsis
    sigmaA' <- adj $ coerce lidA lidP sigmaA
    sigmaI' <- adj $ coerce lidI lidP sigmaI
-   mor <- adj $ if just_struct then return (ide lidP sigmaP)
+   mor <- adj $ if analysis opts == Structured then return (ide lidP sigmaP)
            else do
              rmap <- stat_symb_map_items lid sis
              rmap' <- coerce lid lidP rmap
@@ -794,7 +800,7 @@ ana_FIT_ARG lg gctx spname nsigI nsigP just_struct
            (G_morphism lidP mor,nsigA)
            )
 
-ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP just_struct 
+ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts 
             fv@(Fit_view vn afitargs poss ans) = do
    let pos = headPos poss
        adj = adjustPos pos
@@ -986,7 +992,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP just_struct
        anaFitArg res (nsig',fa) = do
          (fas',dg1,args) <- res
          (fa',dg',arg) <- ana_FIT_ARG lg (gannos,genv,dg1) 
-                                  spname imps nsig' just_struct fa
+                                  spname imps nsig' opts fa
          return (fa':fas',dg',arg:args)
        parLink gsigmaRes node (_mor_i,nsigA_i) = do
         nA_i <- getNode nsigA_i
@@ -1119,7 +1125,7 @@ apply_GS (nsigI,_params,gsigmaP,nsigB) args = do
 
 -- | analyze a GENERICITY
 -- Parameters: global context, current logic, just-structure-flag, GENERICITY
-ana_GENERICITY :: LogicGraph -> GlobalContext -> AnyLogic -> Bool 
+ana_GENERICITY :: LogicGraph -> GlobalContext -> AnyLogic -> HetcatsOpts 
                     -> GENERICITY
                     -> Result (GENERICITY,ExtGenSig,DGraph)
 
@@ -1132,21 +1138,21 @@ ana_GENERICITY _ (_,_,dg) l@(Logic lid) _
   return (gen,(EmptyNode l,[],G_sign lid (empty_signature lid),EmptyNode l),dg)
 
 -- one parameter ...
-ana_GENERICITY lg gctx@(gannos,genv,_) l just_struct 
+ana_GENERICITY lg gctx@(gannos,genv,_) l opts 
                (Genericity (Params [asp]) imps pos) = do
-  (imps',nsigI,dg') <- ana_IMPORTS lg gctx l just_struct imps
-  (sp',nsigP,dg'') <- ana_SPEC lg (gannos,genv,dg') nsigI Nothing just_struct (item asp)
+  (imps',nsigI,dg') <- ana_IMPORTS lg gctx l opts imps
+  (sp',nsigP,dg'') <- ana_SPEC lg (gannos,genv,dg') nsigI Nothing opts (item asp)
   return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
           (nsigI,[nsigP],getSig nsigP,nsigP),
           dg'')
 
 -- ... and more parameters
-ana_GENERICITY lg gctx@(gannos,genv,_) l just_struct 
+ana_GENERICITY lg gctx@(gannos,genv,_) l opts 
                (Genericity params imps pos) = do
   let adj = adjustPos $ headPos pos 
-  (imps',nsigI,dg') <- ana_IMPORTS lg gctx l just_struct imps
+  (imps',nsigI,dg') <- ana_IMPORTS lg gctx l opts imps
   (params',nsigPs,dg'') <- 
-      ana_PARAMS lg (gannos,genv,dg') l nsigI just_struct params
+      ana_PARAMS lg (gannos,genv,dg') l nsigI opts params
   gsigmaP <- adj $ homogeneousGsigManyUnion (map getSig nsigPs)
   G_sign lidP _ <- return gsigmaP
   let node_contents = DGNode {
@@ -1171,10 +1177,10 @@ ana_GENERICITY lg gctx@(gannos,genv,_) l just_struct
           (nsigI,nsigPs,gsigmaP,NodeSig(node,gsigmaP)),
            dg4)
 
-ana_PARAMS :: LogicGraph -> GlobalContext -> AnyLogic -> NodeSig -> Bool 
+ana_PARAMS :: LogicGraph -> GlobalContext -> AnyLogic -> NodeSig -> HetcatsOpts 
                 -> PARAMS
                 -> Result (PARAMS,[NodeSig],DGraph)
-ana_PARAMS lg (gannos,genv,dg) _ nsigI just_struct (Params asps) = do
+ana_PARAMS lg (gannos,genv,dg) _ nsigI opts (Params asps) = do
   (sps',pars,dg') <- foldl ana (return ([],[],dg)) (map item asps)
   return (Params (map (uncurry replaceAnnoted)
                       (zip (reverse sps') asps)),
@@ -1183,15 +1189,15 @@ ana_PARAMS lg (gannos,genv,dg) _ nsigI just_struct (Params asps) = do
   where
   ana res sp = do
     (sps',pars,dg1) <- res
-    (sp',par,dg') <- ana_SPEC lg (gannos,genv,dg1) nsigI Nothing just_struct sp
+    (sp',par,dg') <- ana_SPEC lg (gannos,genv,dg1) nsigI Nothing opts sp
     return (sp':sps',par:pars,dg')
 
-ana_IMPORTS ::  LogicGraph -> GlobalContext -> AnyLogic -> Bool -> IMPORTED
+ana_IMPORTS ::  LogicGraph -> GlobalContext -> AnyLogic -> HetcatsOpts -> IMPORTED
                 -> Result (IMPORTED,NodeSig,DGraph)
-ana_IMPORTS lg gctx l just_struct (Imported asps) = do
+ana_IMPORTS lg gctx l opts (Imported asps) = do
   let sp = Union asps (map (\_ -> (newPos "p" 0 0)) asps)
   (Union asps' _,nsig',dg') <- 
-       ana_SPEC lg gctx (EmptyNode l) Nothing just_struct sp
+       ana_SPEC lg gctx (EmptyNode l) Nothing opts sp
   return (Imported asps',nsig',dg')
    -- ??? emptyExplicit stuff needs to be added here
 
@@ -1200,15 +1206,15 @@ ana_IMPORTS lg gctx l just_struct (Imported asps) = do
 -- The AnyLogic is the current logic
 -- The NodeSig is the signature of the parameter of the view
 -- flag, whether just the structure shall be analysed
-ana_VIEW_TYPE:: LogicGraph -> GlobalContext -> AnyLogic -> NodeSig -> Bool
+ana_VIEW_TYPE:: LogicGraph -> GlobalContext -> AnyLogic -> NodeSig -> HetcatsOpts
                  -> VIEW_TYPE
                  -> Result (VIEW_TYPE,(NodeSig,NodeSig),DGraph)
-ana_VIEW_TYPE lg gctx@(gannos,genv,_) l parSig just_struct
+ana_VIEW_TYPE lg gctx@(gannos,genv,_) l parSig opts
               (View_type aspSrc aspTar pos) = do
   (spSrc',srcNsig,dg') <- 
-     ana_SPEC lg gctx (EmptyNode l) Nothing just_struct (item aspSrc)
+     ana_SPEC lg gctx (EmptyNode l) Nothing opts (item aspSrc)
   (spTar',tarNsig,dg'') <- 
-     ana_SPEC lg (gannos,genv,dg') parSig Nothing just_struct (item aspTar)
+     ana_SPEC lg (gannos,genv,dg') parSig Nothing opts (item aspTar)
   return (View_type (replaceAnnoted spSrc' aspSrc) 
                     (replaceAnnoted spTar' aspTar) 
                     pos,
