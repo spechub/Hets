@@ -182,14 +182,14 @@ ana_SIG_ITEMS :: GlobalAnnos -> GenKind -> SIG_ITEMS -> State Sign SIG_ITEMS
 ana_SIG_ITEMS ga gk si = 
     case si of 
     Sort_items al ps -> 
-	do ul <- mapAnM (ana_SORT_ITEM ga) al 
+	do ul <- mapM (ana_SORT_ITEM ga) al 
            closeSubsortRel
 	   return $ Sort_items ul ps
     Op_items al ps -> 
-	do ul <- mapAnM (ana_OP_ITEM ga) al 
+	do ul <- mapM (ana_OP_ITEM ga) al 
 	   return $ Op_items ul ps
     Pred_items al ps -> 
-	do ul <- mapAnM (ana_PRED_ITEM ga) al 
+	do ul <- mapM (ana_PRED_ITEM ga) al 
 	   return $ Pred_items ul ps
     Datatype_items al _ -> 
 	do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
@@ -233,46 +233,60 @@ getOps oi = case oi of
 	Set.fromList $ map ( \ i -> Component i $ toOpType ty) is
     Op_defn i par _ _ -> Set.single $ Component i $ toOpType $ headToType par
 
-ana_SORT_ITEM :: GlobalAnnos -> SORT_ITEM -> State Sign SORT_ITEM
-ana_SORT_ITEM ga si = 
-    case si of 
+ana_SORT_ITEM :: GlobalAnnos -> Annoted SORT_ITEM 
+	      -> State Sign (Annoted SORT_ITEM)
+ana_SORT_ITEM ga asi =
+    case item asi of 
     Sort_decl il _ ->
 	do mapM_ addSort il
-	   return si
+	   return asi
     Subsort_decl il i _ -> 
 	do mapM_ addSort (i:il)
 	   mapM_ (addSubsort i) il
-	   return si
+	   return asi
     Subsort_defn sub v super af ps -> 
 	do ops <- allOpIds 
 	   preds <- allPredIds
 	   newGa <- addAssocs ga
            let Result ds mf = resolveFormula newGa
 			      (Set.insert (simpleIdToId v) ops) preds $ item af
+	       lb = getRLabel af
+	       lab = if null lb then getRLabel asi else lb
            addDiags ds 
 	   addSort sub
            addSubsort super sub
-	   return $ case mf of 
-	            Nothing -> Subsort_decl [sub] super ps
-		    Just f -> Subsort_defn sub v super af { item = f } ps
+	   case mf of 
+	     Nothing -> return asi { item = Subsort_decl [sub] super ps}
+	     Just f -> do 
+	       addSentences[NamedSen lab $
+			     Quantification Universal [Var_decl [v] super []] 
+			     (Equivalence 
+			      (Membership (Qual_var v super []) sub [])
+			      f []) []]
+	       return asi { item = Subsort_defn sub v super af { item = f } ps}
     Iso_decl il _ ->
 	do mapM_ addSort il
 	   mapM_ ( \ i -> mapM_ (addSubsort i) il) il
-	   return si
+	   return asi
 
+toOpType :: OP_TYPE -> OpType
+toOpType (Total_op_type args r _) = OpType Total args r
+toOpType (Partial_op_type args r _) = OpType Partial args r
 
-ana_OP_ITEM :: GlobalAnnos -> OP_ITEM -> State Sign OP_ITEM
-ana_OP_ITEM ga oi = 
-    case oi of 
+ana_OP_ITEM :: GlobalAnnos -> Annoted OP_ITEM -> State Sign (Annoted OP_ITEM)
+ana_OP_ITEM ga aoi = 
+    case item aoi of 
     Op_decl ops ty il ps -> 
 	do mapM_ (addOp $ toOpType ty) ops
 	   ul <- mapM (ana_OP_ATTR ga) il
 	   if Assoc_op_attr `elem` il then
 	      mapM_ (addAssocOp $ toOpType ty) ops
 	      else return ()
-	   return $ Op_decl ops ty (catMaybes ul) ps
+	   return aoi {item = Op_decl ops ty (catMaybes ul) ps}
     Op_defn i par at ps -> 
 	do let ty = headToType par
+	       lb = getRLabel at
+	       lab = if null lb then getRLabel aoi else lb
 	       args = case par of 
 		      Total_op_head as _ _ -> as
 		      Partial_op_head as _ _ -> as
@@ -289,13 +303,13 @@ ana_OP_ITEM ga oi =
 	       Result ds mt = resolveMixfix newGa allOps preds False $ item at
 	   addDiags ds
 	   case mt of 
-	     Nothing -> return $ Op_decl [i] ty [] ps
-	     Just t -> do addSentences [NamedSen (getRLabel at) $
+	     Nothing -> return aoi { item = Op_decl [i] ty [] ps }
+	     Just t -> do addSentences [NamedSen lab $
 			     Quantification Universal vs 
 			     (Strong_equation 
 			      (Application (Qual_op_name i ty []) arg [])
 			      t []) []]
-			  return $ Op_defn i par at { item = t } ps
+			  return aoi {item = Op_defn i par at { item = t } ps }
 
 headToType :: OP_HEAD -> OP_TYPE
 headToType (Total_op_head args r ps) = 
@@ -318,14 +332,20 @@ ana_OP_ATTR ga oa =
 	   return $ fmap Unit_op_attr mt
     _ -> return $ Just oa
 
-ana_PRED_ITEM :: GlobalAnnos -> PRED_ITEM -> State Sign PRED_ITEM
-ana_PRED_ITEM ga p = 
-    case p of 
+toPredType :: PRED_TYPE -> PredType
+toPredType (Pred_type args _) = PredType args
+
+ana_PRED_ITEM :: GlobalAnnos -> Annoted PRED_ITEM 
+	      -> State Sign (Annoted PRED_ITEM)
+ana_PRED_ITEM ga ap = 
+    case item ap of 
     Pred_decl preds ty _ -> 
 	do mapM (addPred $ toPredType ty) preds
-	   return p
+	   return ap
     Pred_defn i par at ps ->
 	do let Pred_head args rs = par
+	       lb = getRLabel at
+	       lab = if null lb then getRLabel ap else lb
 	       ty = Pred_type (sortsOfArgs args) rs
 	       vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
 	       arg = concatMap ( \ (Var_decl v s qs) ->
@@ -340,14 +360,14 @@ ana_PRED_ITEM ga p =
 	       Result ds mt = resolveFormula newGa allOps preds $ item at
 	   addDiags ds
 	   case mt of 
-	     Nothing -> return $ Pred_decl [i] ty ps 
+	     Nothing -> return ap {item = Pred_decl [i] ty ps}
 	     Just t -> do 
-               addSentences [NamedSen (getRLabel at) $
+               addSentences [NamedSen lab $
 			     Quantification Universal vs 
 			     (Equivalence (Predication (Qual_pred_name i ty [])
 					   arg [])
 			      t []) []]
-	       return $ Pred_defn i par at { item = t } ps
+	       return ap {item = Pred_defn i par at { item = t } ps}
 
 -- full function type of a selector (result sort is component sort)
 data Component = Component { compId :: Id, compType :: OpType }
