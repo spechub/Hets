@@ -7,7 +7,8 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Preprocessor for sentences written in some logic.
+   Preprocessor for sentences written in some logic, usually used for transforming
+   file.inline.hs into file.hs.
    The sentences are replaced with corresponding abstract syntax trees in Haskell.
    This frees the programmer from writing AS tree expressions.
 
