@@ -169,11 +169,10 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
                  Just morph -> morph
                  otherwise ->
 		   error "globDecomp: could not determine morphism of new edge"
-    (GlobalThm _ conservativity) = (dgl_type edgeLab)
     newEdge = (node,
 	       target,
 	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (LocalThm False conservativity),
+		       dgl_type = (LocalThm False None),
 		       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge dgraph
@@ -243,7 +242,7 @@ locSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locSubsumeAux dgraph historyElement [] = (dgraph, historyElement)
 locSubsumeAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
-  if existsLocGlobDefPathOfMorphismBetween dgraph morphism source target
+  if existsProvenLocGlobPathOfMorphismBetween dgraph morphism source target
      then
        globSubsumeAux newGraph (newRules,newChanges) list
      else
@@ -293,10 +292,21 @@ existsLocGlobDefPathOfMorphismBetween dgraph morphism src tgt =
 
     where
       allPaths = getAllLocGlobDefPathsBetween dgraph src tgt
-      morphismsOfPaths =
-	  map calculateMorphismOfPath allPaths
+      morphismsOfPaths = map calculateMorphismOfPath allPaths
       filteredMorphismsOfLocGlobDefPaths = 
 	  getFilteredMorphisms morphismsOfPaths
+
+existsProvenLocGlobPathOfMorphismBetween :: DGraph -> GMorphism -> Node
+					 -> Node -> Bool
+existsProvenLocGlobPathOfMorphismBetween dgraph morphism src tgt =
+  elem morphism filteredMorphismsOfProvenLocGlobPaths
+
+    where
+      allPaths = getAllProvenLocGlobPathsBetween dgraph src tgt
+      morphismsOfPaths = map calculateMorphismOfPath allPaths
+      filteredMorphismsOfProvenLocGlobPaths = 
+	  getFilteredMorphisms morphismsOfPaths
+
 
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
@@ -345,6 +355,33 @@ getAllLocGlobDefPathsTo dgraph node path =
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     locGlobPaths = [(getSourceNode edge, (edge:path))| edge <- localEdges]
 
+{- returns all paths consisting of globalDef and proven gloabl thm edges only
+   or
+   of one localDef or proven local thm followed by any number of globalDef or
+   proven global thm edges-}
+getAllProvenLocGlobPathsBetween :: DGraph -> Node -> Node 
+				     -> [[LEdge DGLinkLab]]
+getAllProvenLocGlobPathsBetween dgraph src tgt =
+  getAllLocGlobPathsOfTypesBetween dgraph src tgt 
+    [isLocalDef,isProvenLocalThm] [isGlobalDef,isProvenGlobalThm]
+
+{- returns all paths consisting only of edges of the types in the snd list
+   or
+   of one edge of one of the types of the fst list followed by any number
+   of edges of the types of the snd list -}
+getAllLocGlobPathsOfTypesBetween :: DGraph -> Node -> Node -> [LEdge DGLinkLab -> Bool] -> [LEdge DGLinkLab -> Bool] -> [[LEdge DGLinkLab]]
+getAllLocGlobPathsOfTypesBetween dgraph src tgt locTypes globTypes =
+  locGlobPaths ++ globPaths
+
+  where
+    outEdges = out dgraph src
+    locEdges = [(edge,getTargetNode edge)|edge <- 
+		(filterByTypes locTypes outEdges)]
+    locGlobPaths = (concat [map ([edge]++) 
+		      (getAllPathsOfTypesBetween dgraph globTypes node tgt [])|
+			 (edge,node) <- locEdges])
+    globPaths = getAllProvenPathsBetween dgraph src tgt []
+    
 
 {- returns all paths of globalDef edges or proven globalThm edges 
    between the given source and target node -}
