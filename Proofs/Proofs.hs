@@ -153,11 +153,13 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 	    ((DeleteEdge edge):((InsertEdge provenEdge):changes)))
 
   where
-    (GlobalThm _ conservativity) = (dgl_type edgeLab)
+    (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     provenEdge = (source,
 		  target,
 		  DGLink {dgl_morphism = dgl_morphism edgeLab,
-			  dgl_type = (GlobalThm True conservativity),
+			  dgl_type = 
+			    (GlobalThm (Proven [])
+			     conservativity conservStatus),
 			  dgl_origin = DGProof}
 		  )
 -- for each path an unproven localThm edge is inserted
@@ -173,7 +175,9 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
     newEdge = (node,
 	       target,
 	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (LocalThm False None),
+		       dgl_type = (LocalThm (Static.DevGraph.Open)
+				   None (Static.DevGraph.Open)),
+		       -- @@@ 2. "Open" korrekt?
 		       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge dgraph
@@ -209,11 +213,12 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
   where
     morphism = dgl_morphism edgeLab
     auxGraph = delLEdge ledge dGraph
-    (GlobalThm _ conservativity) = (dgl_type edgeLab)
+    (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (source,
 	       target,
 	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (GlobalThm True conservativity),
+		       dgl_type = (GlobalThm (Proven [])
+				   conservativity conservStatus),
 		       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge auxGraph
@@ -253,11 +258,13 @@ locDecompAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
   where
     morphism = dgl_morphism edgeLab
     auxGraph = delLEdge ledge dgraph
-    (LocalThm _ conservativity) = (dgl_type edgeLab)
+    (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (source,
 	       target,
 	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (LocalThm True conservativity),
+		       dgl_type = 
+		         (LocalThm (Proven []) conservativity conservStatus),
+		       -- Kante(n?) bei "Proven" einfügen
 		       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge auxGraph
@@ -504,25 +511,25 @@ getTargetNode (_,target,_) = target
 isProvenGlobalThm :: LEdge DGLinkLab -> Bool
 isProvenGlobalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
-    (GlobalThm True _) -> True
+    (GlobalThm (Proven _) _ _) -> True
     otherwise -> False
 
 isUnprovenGlobalThm :: LEdge DGLinkLab -> Bool
 isUnprovenGlobalThm (_,_,edgeLab) = 
   case dgl_type edgeLab of
-    (GlobalThm False _) -> True
+    (GlobalThm Static.DevGraph.Open _ _) -> True
     otherwise -> False
 
 isProvenLocalThm :: LEdge DGLinkLab -> Bool
 isProvenLocalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
-    (LocalThm True _) -> True
+    (LocalThm (Proven _) _ _) -> True
     otherwise -> False
 
 isUnprovenLocalThm :: LEdge DGLinkLab -> Bool
 isUnprovenLocalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
-    (LocalThm False _) -> True
+    (LocalThm (Static.DevGraph.Open) _ _) -> True
     otherwise -> False
 
 isGlobalDef :: LEdge DGLinkLab -> Bool

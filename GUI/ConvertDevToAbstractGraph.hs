@@ -537,16 +537,17 @@ getDGLinkType GlobalDef = "globaldef"
 getDGLinkType HidingDef = "def"
 getDGLinkType (FreeDef _) = "def"
 getDGLinkType (CofreeDef _) = "def"
-getDGLinkType (LocalThm bool _) = "local"++(getThmType bool)
-getDGLinkType (GlobalThm bool _) = getThmType bool
-getDGLinkType (HidingThm _ bool) = getThmType bool
-getDGLinkType (FreeThm _ bool) = getThmType bool
+getDGLinkType (LocalThm thmLinkStatus _ _) = 
+    "local"++(getThmType thmLinkStatus)
+getDGLinkType (GlobalThm thmLinkStatus _ _) = getThmType thmLinkStatus
+getDGLinkType (HidingThm _ thmLinkStatus) = getThmType thmLinkStatus
+getDGLinkType (FreeThm _ bool) = if bool then "proventhm" else "unproventhm"
 
-getThmType :: Bool -> String
-getThmType bool =
-  case bool of
-    True -> "proventhm"
-    False -> "unproventhm"
+getThmType :: ThmLinkStatus -> String
+getThmType thmLinkStatus =
+  case thmLinkStatus of
+    Proven _ -> "proventhm"
+    Open -> "unproventhm"
 
 {- converts the edges of the development graph
 works the same way as convertNods does-}

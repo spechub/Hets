@@ -66,17 +66,18 @@ data DGLinkLab = DGLink {
               dgl_origin :: DGOrigin }
               deriving (Eq,Show)
 
+data ThmLinkStatus =  Open | Proven [DGLinkLab] deriving (Eq, Show)
 
 data DGLinkType = LocalDef 
             | GlobalDef
             | HidingDef
             | FreeDef NodeSig -- the "parameter" node
             | CofreeDef NodeSig -- the "parameter" node
-            | LocalThm Bool Conservativity -- is_proved
+	    | LocalThm ThmLinkStatus Conservativity ThmLinkStatus
                -- ??? Some more proof information is needed here
                -- (proof tree, ...)
-            | GlobalThm Bool Conservativity -- is_proved
-            | HidingThm GMorphism Bool  -- reduction mor, is_proved
+	    | GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
+	    | HidingThm GMorphism ThmLinkStatus
             | FreeThm GMorphism Bool
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms

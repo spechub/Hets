@@ -16,7 +16,7 @@ Jorina
    => bei Global Decomposition immer auch ein lokaler Link
       von ursprünglichem Source zu Target
 
-  Kantenmenü zum Anzeigen des Signaturmorphismus (mittels show anzeigen)
+(X)  Kantenmenü zum Anzeigen des Signaturmorphismus (mittels show anzeigen)
 
   (Global) Subsumption optimieren: auch globale Theorem-Links zulassen
     dazu muss in DevGraph.hs der Bool-Wert in den Theorem-Links durch
