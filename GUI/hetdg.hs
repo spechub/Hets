@@ -18,7 +18,8 @@ proceed fname showdg = do
     Nothing -> return ()
     Just (ln,dg,libenv) -> 
       if showdg then do
-       (gid,gv,cmaps) <- convertGraph ln libenv
+       graphMem <- initializeConverter
+       (gid,gv,cmaps) <- convertGraph graphMem ln libenv
        GUI.AbstractGraphView.redisplay gid gv
        getLine
        return () 

@@ -25,7 +25,11 @@ data ConversionMaps = ConversionMaps {
                         dg2abstrEdge :: DGraphToAGraphEdge,
                         abstr2dgNode :: AGraphToDGraphNode,
 		        abstr2dgEdge :: AGraphToDGraphEdge,
-                        libname2dg :: LibEnv }
+                        libname2dg :: LibEnv}
+
+data GraphMem = GraphMem {
+		  graphInfo :: GraphInfo,
+		  nextGraphId :: Descr}
 
 -- types of the Maps above
 type DGraphToAGraphNode = Map.Map (LIB_NAME,Node) Descr
@@ -33,22 +37,38 @@ type DGraphToAGraphEdge = Map.Map (LIB_NAME,Edge) Descr
 type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node) 
 type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,Edge)
 
+initializeConverter :: IO (IORef GraphMem)
+initializeConverter = do initGraphInfo <- initgraphs
+		         graphMem <- (newIORef GraphMem{nextGraphId = 0, graphInfo = initGraphInfo})
+			 return graphMem
+
+testInitialization :: IO Bool
+testInitialization = do graphMem <- initializeConverter
+			return (testConvertGraph graphMem)
+
+testConvertGraph :: IORef GraphMem -> Bool
+testConvertGraph graphMem = True
+
 {- converts the development graph given by its libname into an abstract graph
 and returns the descriptor of the latter, the graphInfo it is contained in
 and the conversion maps (see above)-}
-convertGraph :: LIB_NAME -> LibEnv -> IO (Descr, GraphInfo, ConversionMaps)
-convertGraph libname libEnv =
-  do let convMaps = ConversionMaps
+convertGraph :: IORef GraphMem -> LIB_NAME -> LibEnv -> IO (Descr, GraphInfo, ConversionMaps)
+convertGraph graphMem libname libEnv =
+  do --nextGraphId <- newIORef 0
+     let convMaps = ConversionMaps
            {dg2abstrNode = Map.empty::DGraphToAGraphNode, 
             abstr2dgNode = Map.empty::AGraphToDGraphNode,
             dg2abstrEdge = Map.empty::DGraphToAGraphEdge,
             abstr2dgEdge = Map.empty::AGraphToDGraphEdge,
             libname2dg = libEnv}
+
      case Map.lookup libname libEnv of
        Just (_,dgraph,_) -> if (isEmpty dgraph) then 
-                                  do (abstractGraph,graphInfo,convRef) <- initializeGraph libname dgraph convMaps
+                                  do (abstractGraph,graphInfo,convRef) <- initializeGraph graphMem libname
+									  dgraph convMaps
                                      return (abstractGraph, graphInfo,convMaps)
-                             else do (abstractGraph,graphInfo,convRef) <- initializeGraph libname dgraph convMaps
+                             else do (abstractGraph,graphInfo,convRef) <- initializeGraph graphMem libname
+									  dgraph convMaps
                                      newConvMaps <- convertNodes convMaps abstractGraph graphInfo dgraph libname
 		                     finalConvMaps <- convertEdges newConvMaps abstractGraph graphInfo dgraph libname
                                      writeIORef convRef finalConvMaps
@@ -61,29 +81,31 @@ convertGraph libname libEnv =
 
 {- initializes an empty abstract graph with the needed node and edge types,
 return type equals the one of convertGraph -}
-initializeGraph :: LIB_NAME -> DGraph -> ConversionMaps
+initializeGraph :: IORef GraphMem ->LIB_NAME -> DGraph -> ConversionMaps
                      -> IO (Descr,GraphInfo,IORef ConversionMaps)
-initializeGraph ln dGraph convMaps = do 
-  graphInfo <- initgraphs
+initializeGraph ioRefGraphMem ln dGraph convMaps = do 
+  graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
-  graphId <- newIORef 0
+  let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
+      actGraphInfo = graphInfo graphMem
+--  graphId <- newIORef 0
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
                [GlobalMenu(Menu (Just "internal nodes")
                  [Button "Hide" 
-                          (do gid <- readIORef graphId
+                          (do --gid <- readIORef graphId
                               Result descr _ <- hidenodetype gid
 			                            "internal"
-			                            graphInfo
+			                            actGraphInfo
                               writeIORef event descr
-                              redisplay gid graphInfo
+                              redisplay gid actGraphInfo
                               return ()    ),
                   Button "Show" 
-                          (do gid <- readIORef graphId
+                          (do --gid <- readIORef graphId
 			      descr <- readIORef event
-                              showIt gid descr graphInfo
-                              redisplay gid graphInfo
+                              showIt gid descr actGraphInfo
+                              redisplay gid actGraphInfo
                               return ()    )])]
                [("spec",
                  Ellipse $$$ Color "Magenta"
@@ -118,12 +140,16 @@ initializeGraph ln dGraph convMaps = do
 		     (Button "Show referenced library"
 		     (\ (name,descr,gid) ->
 		        do convMaps <- readIORef convRef
-                           g <- readIORef graphId
-		           newConvMaps <- showReferencedLibrary descr
-		                              g
-		                              graphInfo
+                           --g <- readIORef graphId
+		           (refDescr, newGraphInfo, refConvMaps) <- showReferencedLibrary ioRefGraphMem descr
+		                              gid
+		                              actGraphInfo
 		                              convMaps
-		           writeIORef convRef newConvMaps
+		           
+--writeIORef convRef newConvMaps
+                           writeIORef ioRefGraphMem graphMem{graphInfo = newGraphInfo, nextGraphId = refDescr +1}
+                           redisplay refDescr newGraphInfo
+		          -- redisplay gid graphInfo
 		           return ()
 		     ))
                  $$$ emptyNodeTypeParms
@@ -160,9 +186,14 @@ initializeGraph ln dGraph convMaps = do
                   ("unproventhm","def","unproventhm"),
                   ("unproventhm","proventhm","unproventhm"),
                   ("unproventhm","unproventhm","unproventhm")] 
-                 graphInfo
-  writeIORef graphId descr
-  return (descr,graphInfo,convRef)
+                 actGraphInfo
+  -- writeIORef graphId descr
+  writeIORef ioRefGraphMem graphMem{nextGraphId = gid+1}
+ -- writeIORef nextGraphId (gid + 1)
+ -- tempConvMaps <- readIORef convRef
+ --  writeIORef convRef tempConvMaps{nextGraphId = descr +1}
+  graphMem'<- readIORef ioRefGraphMem
+  return (descr,graphInfo graphMem',convRef)
 
 showSpec descr convMap dgraph =
   case Map.lookup descr convMap of
@@ -288,64 +319,25 @@ convertEdgesAux convMaps descr graphInfo ((src,tar,edge):lEdges) libname =
       otherwise -> error "Cannot find nodes"
 
 
-{- den aktuellen AbstractGraph um den neuen DevGraph erweitern:
-   - aktuellen AGraph haben wir als Uebergabeparameter
-   - neuen DevGraph holen:
-     - alten DevGraph holen
-     - daraus den DGRef holen
-     - daraus den Libname des referenzierten DevGraphen holen
-     - damit den neuen DevGraph holen
-   - neuen DevGraph an AGraph anhaengen:
-     - DevGraph-Knoten umwandeln und in AGraph (und ConversionMaps) adden
-     - DevGraph-Kanten umwandeln und in AGraph (und ConversionMaps) adden
-     - Verbindungskante zwischen DGRef und referenziertem Knoten einfuegen
-       - referenzierten Knoten aus DGRef holen
-       - Descr des ref. Knoten aus ConversionMaps holen
-       - Kante in AGraph adden
--}
-showReferencedLibrary :: Descr -> Descr -> GraphInfo -> ConversionMaps -> IO ConversionMaps
-showReferencedLibrary descr abstractGraph graphInfo convMaps =
+showReferencedLibrary :: IORef GraphMem -> Descr -> Descr -> GraphInfo -> ConversionMaps -> IO (Descr, GraphInfo, ConversionMaps)
+showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps =
   case Map.lookup descr (abstr2dgNode convMaps) of
     Just (libname,node) -> 
          case Map.lookup libname libname2dgMap of
 	  Just (_,dgraph,_) -> 
             do let (_,(DGRef _ refLibname refNode)) = labNode' (context node dgraph)
 	       case Map.lookup refLibname libname2dgMap of
-                 Just (_,refDgraph,_) -> 
-		   if (isEmpty refDgraph) then do return convMaps
-                    else do convMaps' <- convertNodesAux convMaps
-		                             abstractGraph
-				             graphInfo
-				             (labNodes refDgraph)
-				             libname
-                            newConvMaps' <- convertEdgesAux convMaps'
-				                abstractGraph
-					        graphInfo
-					        (labEdges refDgraph)
-					        libname
-                            case Map.lookup (libname,refNode) (dg2abstrNode newConvMaps') of
-                              Just refDescr -> do addlink descr "reference" "" descr refDescr graphInfo
-				  	          return (newConvMaps' {dg2abstrEdge =
-						           Map.insert (libname, (node,refNode))
-							       refDescr
-				                               (dg2abstrEdge convMaps),
-							   abstr2dgEdge = Map.insert refDescr
-				                               (libname, (node,refNode))
-				                               (abstr2dgEdge convMaps)})
-			      Nothing -> error "adding referenced node failed"
-                 Nothing -> error ("The referenced library ("
+                 Just (_,refDgraph,_) -> convertGraph graphMem refLibname (libname2dg convMaps)
+		 Nothing -> error ("The referenced library ("
 				     ++ (show refLibname)
 				     ++ ") is unknown")
-
-	       
           Nothing ->
-	    error ("Unknown library: " ++ (show libname))
+	    error ("Selected node belongs to unknown library: " ++ (show libname))
     Nothing ->
       error ("there is no node with the descriptor "
 	         ++ show descr)
 
     where libname2dgMap = libname2dg convMaps
-
 
 
 
