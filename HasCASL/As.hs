@@ -180,13 +180,11 @@ data ProdClass = ProdClass [ExtClass] [Pos] deriving (Show,Eq)
 
 data Kind = Kind [ProdClass] Class [Pos] deriving (Show,Eq)
 
-data Dir = Up | Down deriving (Show,Eq)  -- < oder > 
-
 dummyTypeVar = Token "a" nullPos -- for TypeVarDecl
 
 data Class = Universe [Pos] -- "type" or missing
 	   | ClassName ClassName
-           | TypeSet Dir TypeVar Type [Pos] -- { a . a < TYPE }  
+           | DownSet TypeVar Type [Pos] -- { a . a < TYPE }  
 	   | InterSection [Class] [Pos]  -- ( CLASS, ..., CLASS )
 	     deriving (Show,Eq)
 
