@@ -1,0 +1,8 @@
+parse error at (line 1, column 8):
+unexpected ">"
+expecting [<id>,...,<id>], "<", ",", "=", ";", "%%", "%{", "%(", "%" or end of input
+
+parse error at (line 2, column 38):
+unexpected "o"
+expecting end of input
+

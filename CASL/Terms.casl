@@ -51,3 +51,6 @@ ys as b
 a when b else c
 #as b
 a b when b c else a f g when f a f else f a f g when f a f else f 
+(pred y : bb) %[accepted for technical reason]%
+(pred y:bb)
+(pred y:())

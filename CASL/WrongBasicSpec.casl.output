@@ -1,0 +1,4 @@
+parse error at "WrongBasicSpec.casl" (line 1, column 1):
+unexpected "i"
+expecting "{", "%%", "%{", "%(", "%", "s", "op", "pred", "type", "free", "generated", "var", "forall", dot or "axiom"
+

@@ -1,9 +1,6 @@
 =
 =[a,b]
 (a, =, b) 
-(pred y : bb)
-(pred y:bb)
-(pred y:())
 as s
 : s
 true
