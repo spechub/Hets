@@ -54,6 +54,8 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 
 import Options
+import WriteFn
+import ReadFn
 
 import Data.IORef
 import Data.Maybe
@@ -205,6 +207,14 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		          (proofMenuSef gInfo locSubsume),
 		   Button "Local Decomposition (merge of rules)"
 			  (proofMenuSef gInfo locDecomp)
+                    ],
+                Menu (Just "File")
+                  [Button "Save"
+                     (do proofStatus <- readIORef ioRefProofStatus
+                         writeShATermFile "./proofStatus.log" proofStatus),
+                   Button "Save as..." (return ()),
+                   Button "Open..."
+		     (do openProofStatus "./proofStatus.log" ioRefProofStatus convRef)
                     ]])]
       -- the node types
                [("spec", 
@@ -304,6 +314,29 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   graphMem'<- readIORef ioRefGraphMem
   return (descr,graphInfo graphMem',convRef)
 
+
+openProofStatus :: FilePath -> (IORef ProofStatus) -> (IORef ConversionMaps)
+		-> IO()
+openProofStatus filename ioRefProofStatus convRef =
+  do resultProofStatus <- proofStatusFromShATerm filename
+     case Res.maybeResult resultProofStatus of
+       Nothing -> error ("Could not read proof status from file '" 
+                         ++ (show filename) ++ "'")
+       Just proofStatus@(globCon,libEnv',_,_) ->
+         do writeIORef ioRefProofStatus proofStatus
+            graphMem' <- initializeConverter
+	    let lns = [ln|(ln,gc) <- Map.assocs libEnv', gc == globCon]
+	    case length lns of
+              1 -> do let libname = head lns
+                      (gid', gv, convMaps') <- convertGraph graphMem' libname libEnv'
+                      let gid = gid'
+                          actGraphInfo = gv
+                      writeIORef convRef convMaps'
+                      redisplay gid actGraphInfo
+		      return ()
+              _ -> error "Could not determine libname of the saved development graph"
+                                  
+
 --proofMenu :: (ProofStatus -> IO ProofStatus) -> IO ()
 proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo) proofFun 
   = do
@@ -312,8 +345,10 @@ proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo) proofFun
   case res of
     Nothing -> do sequence $ map (putStrLn . show) diags
                   return ()
-    Just newProofStatus@(_,_,history,_) -> do
-      writeIORef ioRefProofStatus newProofStatus
+    Just newProofStatus@((globAnnos,globEnv,_),libEnv,history,dgraph) -> do
+      let newGlobContext = (globAnnos,globEnv,dgraph)
+          newLibEnv = Map.insert ln newGlobContext libEnv
+      writeIORef ioRefProofStatus (newGlobContext, newLibEnv, history,dgraph)
       descr <- readIORef event
       convMaps <- readIORef convRef
       --putStrLn (showPretty convMaps "")
