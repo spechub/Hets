@@ -27,19 +27,18 @@ import Common.Keywords
 import Common.AS_Annotation
 import Common.Anno_Parser
 import Common.Lib.Parsec
-import Common.PrettyPrint
 import Data.List(delete)
 
 
 -- | parsers that can collect annotations via side effects
 type AParser a = GenParser Char AnnoState a
 
-class (PosItem a, PrettyPrint a) => AParsable a where
-  aparser :: [String] -> AParser a
+class AParsable a where
+  aparser :: AParser a
 
 -- used for CASL extensions. If there is no extension, just fail
 instance AParsable () where
-  aparser _ = pzero
+  aparser = pzero
 
 -- | convert an annotation parser,
 -- start without annotations and possibly ignore trailing annotations

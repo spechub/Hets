@@ -41,14 +41,6 @@ funS  = "->"
 prodS  = "*"
 timesS  = "\215"
 
--- ** modal operators
-diamondS :: String
-diamondS = "<>"
-
--- | mind @[]@ also as (non-symbol) term
-boxS :: String
-boxS = "[]"  
-
 -- * symbol keywords 
 defnS,
   mapsTo,
@@ -98,7 +90,6 @@ withinS,
   sortS,
   revealS,
   resultS,
-  propS,
   localS,
   logicS,
   libraryS,
@@ -171,7 +162,6 @@ lambdaS  = "lambda"
 libraryS  = "library"
 localS  = "local"
 logicS = "logic" -- new keyword
-propS = "prop"
 resultS  = "result"
 revealS  = "reveal" 
 sortS  = "sort"
