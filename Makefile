@@ -12,8 +12,8 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ghc:hetcats:fgl
-COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
+INCLUDE_PATH = ghc:hetcats
+COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm:fgl/Data/Graph:fgl/Data/Graph/Inductive:fgl/Data/Graph/Inductive/Aux:fgl/Data/Graph/Inductive/Monad:fgl/Data/Graph/Inductive/Query
 CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
 
 ## set ghc imports properly for your system
@@ -80,7 +80,9 @@ ifneq ($(MAKECMDGOALS),apache_doc)
 ifneq ($(MAKECMDGOALS),clean_genRules)
 ifneq ($(MAKECMDGOALS),atctest2)
 ifneq ($(MAKECMDGOALS),hetana)
+ifneq ($(MAKECMDGOALS),taxonomy)
 include sources_hetcats.mk
+endif
 endif
 endif
 endif
@@ -204,9 +206,8 @@ hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files) $(
 	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hets $< $(HC_OPTS) 2>&1 | tee hetcats-make 
 
-taxonomy: Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs Taxonomy/MMiSSOntologyGraph.hs \
-          Taxonomy/OntoParser.hs
-	ghc --make -o Taxonomy/taxonomyTool Taxonomy/taxonomyTool.hs $(HC_OPTS) -package uni-util 
+taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
+	$(HC) --make -o Taxonomy/taxonomyTool $< -ifgl $(HC_OPTS)
 
 ###############################
 ### TAGS files for (x)emacs 
@@ -340,7 +341,6 @@ bin_clean:
 	$(RM) Haskell/wrap
 	$(RM) Syntax/hetpa
 	$(RM) Static/hetana
-	$(RM) Static/hetana
 	$(RM) GUI/hetdg
 	$(RM) hetpa
 	$(RM) hetana
@@ -348,6 +348,9 @@ bin_clean:
 	$(RM) atctest2
 	$(RM) atctest
 	$(RM) Common/annos
+	$(RM) Haskell/Hatchet/hatch
+	$(RM) ToHaskell/translateAna
+	$(RM) Taxonomy/taxonomyTool
 
 ### additonally removes *.d (dependency files) in every include directory
 ### also delete *.d.bak (dependency file backups)
@@ -356,12 +359,12 @@ d_clean: clean
 	(cd $$p ; $(RM) *.d *.d.bak) ; done
 
 ### remove files also in own libraries
-lib_clean: clean
+lib_clean:
 	for p in $(subst :, ,$(COMMONLIB_PATH)) . ; do \
 	(cd $$p ; $(RM) *.hi *.d *.o) ; done
 
 ### additionally removes the files that define the sources-variable
-real_clean: bin_clean lib_clean
+real_clean: bin_clean lib_clean clean
 	$(RM) hetcats-make sources_hetcats.mk
 
 ### additionally removes files not in CVS tree
@@ -497,7 +500,8 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in utils/genTransMFormFu
 ## Setting a global search path (for dependency files)
 
 ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),real_clean)
+ifneq ($(MAKECMDGOALS),bin_clean)
+ifneq ($(MAKECMDGOALS),lib_clean)
 ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),distclean)
@@ -513,6 +517,7 @@ endif
 
 sources_hetcats.mk: hetcats-make hetcats/Version.hs hets.hs utils/create_sources.pl $(drifted_files) $(happy_files)
 	$(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
+endif
 endif
 endif
 endif
