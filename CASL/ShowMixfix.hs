@@ -13,92 +13,95 @@ import CASL.Formula
 import Common.Lib.Parsec
 import Common.AnnoState
 import Common.Id
+import Common.Keywords
 
 import List
 
 showTerm :: TERM -> String
 showTerm (Simple_id s)               = tokStr s 
-showTerm (Qual_var v s _ )           = tokStr v ++ showId s ""
+showTerm (Qual_var v s _ )           = "("++varS++ tokStr v ++colonS 
+				       ++(showId s "")++")"
 showTerm (Application op_s ts _)     = showOps op_s 
-                                       ++ showTerms ts ("(",")")
-showTerm (Sorted_term t s _)         = showTerm t ++ " : " ++ showId s ""
-showTerm (Cast t s _)                = showTerm t ++ " as " ++ showId s ""
-showTerm (Conditional t1 f t2 _)     = showTerm t1 ++ " when " 
-                                       ++ showFormula f ++ " else " 
+                                       ++ showFnTs showTerm ts "(" ")" ","
+showTerm (Sorted_term t s _)         = showTerm t ++ colonS ++ showId s ""
+showTerm (Cast t s _)                = showTerm t ++ asS ++ showId s ""
+showTerm (Conditional t1 f t2 _)     = showTerm t1 ++ whenS 
+                                       ++ showFormula f ++ elseS 
                                        ++ showTerm t2
 showTerm (Unparsed_term str _)       = str
 -- A new intermediate state
 showTerm (Mixfix_qual_pred ps)       = showPredSymb ps
-showTerm (Mixfix_term ts)            = showTerms ts ("(",")")
+showTerm (Mixfix_term ts)            = showFnTs showTerm ts " " " " ","
 showTerm (Mixfix_token t)            = tokStr t
-showTerm (Mixfix_sorted_term s _ )   = showId s ""
-showTerm (Mixfix_cast s _)           = showId s ""
-showTerm (Mixfix_parenthesized ts _) = showTerms ts ("(",")")
-showTerm (Mixfix_bracketed ts _)     = showTerms ts ("[","]")
-showTerm (Mixfix_braced ts _)        = showTerms ts ("{","}") 
+showTerm (Mixfix_sorted_term s _ )   = colonS++showId s ""
+showTerm (Mixfix_cast s _)           = asS++showId s ""
+showTerm (Mixfix_parenthesized ts _) = showFnTs showTerm ts "(" ")" ","
+showTerm (Mixfix_bracketed ts _)     = showFnTs showTerm ts "[" "]" ","
+showTerm (Mixfix_braced ts _)        = showFnTs showTerm ts "{" "}" ","
 
--- Das zweite Argument ist die Art der Klammer die um die Terme 
--- gepackt werden sollen
-showTerms::[TERM] -> (String,String) -> String
-showTerms []     _ = "" 
-showTerms (t:[]) _ = showTerm t 
-showTerms ts     x = fst x ++ showTerms' ts ++ snd x where
-		     showTerms' (t:[]) = showTerm t
-		     showTerms' (t:r)  = showTerm t ++ "," ++ showTerms' r
-		     showTerms' []     = error "showTerms' undefined for []"
 
 -- die show-Funktion fuer den Datentyp OP_Symb
 showOps :: OP_SYMB -> String
 showOps(Op_name i)              = showId i ""
-showOps(Qual_op_name opn opt _) = "( op " ++ (showId opn "")++ " : " 
+showOps(Qual_op_name opn opt _) = "("++opS ++ (showId opn "") ++colonS 
                                   ++ (showOpt opt) ++ ")" 
 
 -- die show-Funktion fuer den Datentyp OP_Type
 showOpt :: OP_TYPE -> String
 showOpt (Total_op_type sorts s _ )   
         = if null sorts then showId s ""
-             else showIds sorts "" ++ " -> " ++ showId s ""  
+             else showIds sorts "" ++ funS ++ showId s ""  
 showOpt (Partial_op_type sorts s _ ) 
-        = if null sorts then "? " ++ showId s ""
-             else  showIds sorts ""++ " -> ? " ++ showId s ""
+        = if null sorts then quMark ++ showId s ""
+             else  showIds sorts ""++ funS ++ quMark ++ showId s ""
 
 -- die show-Funktion fuer den Daten-Typ FORMULA
 showFormula :: FORMULA -> String
 showFormula (Quantification qu var_Ds f _) 
             = showQuantifier qu ++ " " ++ showVarDecls var_Ds  
-              ++ "." ++ showFormula f
+              ++ dotS ++ showFormula f
 showFormula (Conjunction forms _) 
+            = showFnTs showFormula forms "(" ")" (" "++lAnd++" ")
+{-
             = if null forms then ""
-		 else "[" ++ (showFormulas forms "/\\") ++ "]"
+		 else "(" ++ (showFormulas forms (" "++lAnd++" ") ++ ")"
+-}
 showFormula (Disjunction forms _) 
+            = showFnTs showFormula forms "(" ")" (" "++lOr++" ")
+{-
             = if null forms then ""
-                 else "[" ++ (showFormulas forms "\\/") ++ "]"
-showFormula (Implication f1 f2 _) = showFormula f1 ++ " => "  ++ showFormula f2
-showFormula (Equivalence f1 f2 _) = showFormula f1 ++ " <=> " ++ showFormula f2
-showFormula (Negation f1 _) = "not "++showFormula f1
-showFormula (True_atom _ ) = "true "
-showFormula (False_atom _ )= "false "
+                 else "(" ++ (showFormulas forms (" "++lOr++" ") ++ ")"
+-}
+showFormula (Implication f1 f2 _) = showFormula f1 ++ implS  ++ showFormula f2
+showFormula (Equivalence f1 f2 _) = showFormula f1 ++ equivS ++ showFormula f2
+-- Hier gedanken machen, ob es eein Unterschied ist, ob die Formel eine List oder ein einzelnes Element ist.
+showFormula (Negation f1 _) = notS++"("++showFormula f1++")"
+showFormula (True_atom _ ) = trueS
+showFormula (False_atom _ )= falseS
 showFormula (Predication ps terms _) 
-             = showPredSymb ps ++ showTerms terms  ("[","]")
-showFormula (Definedness t _ ) = "def " ++ showTerm t
-showFormula (Existl_equation t1 t2 _ ) = showTerm t1 ++ " =e= " ++ showTerm t2
-showFormula (Strong_equation t1 t2 _ ) = showTerm t1 ++ " = " ++ showTerm t2
-showFormula (Membership t s _ ) = showTerm t ++ " in " ++ showId s ""
+             = showPredSymb ps ++ showFnTs showTerm terms  "(" ")" ","
+-- Hier gedanken machen, ob es eein Unterschied ist, ob die Formel eine List oder ein einzelnes Element ist.
+showFormula (Definedness t _ ) = defS ++"("++showTerm t++")"
+showFormula (Existl_equation t1 t2 _ ) = showTerm t1 ++ exEqual ++ showTerm t2
+showFormula (Strong_equation t1 t2 _ ) = showTerm t1 ++ equalS ++ showTerm t2
+showFormula (Membership t s _ ) = showTerm t ++ inS ++ showId s ""
 showFormula (Mixfix_formula t ) = showTerm t
 showFormula (Unparsed_formula str _ ) = str
 
+{-
 -- eine show-Funktion fuer [FORMULA]
 -- zweites Argument: Disjunction oder Conjunction
 showFormulas :: [FORMULA] -> String -> String
 showFormulas (f:[]) _ = showFormula f
 showFormulas (f:fs) x = showFormula f ++ x ++ showFormulas fs x
 showFormulas []     _ = error "showFormulas undefined for []"
+-}
 
 -- die show-Funktion fuer den Datentyp QUANTIFIER
 showQuantifier :: QUANTIFIER -> String
-showQuantifier Universal = "forall"
-showQuantifier Existential = "exists"
-showQuantifier Unique_existential = "exists!"
+showQuantifier Universal = forallS
+showQuantifier Existential = existsS
+showQuantifier Unique_existential = existsS++exMark
 
 showVarDecls :: [VAR_DECL]->String
 showVarDecls (vd:[]) = showVarDecl vd
@@ -108,26 +111,55 @@ showVarDecls []      = ""
 --Die beiden folgenden Funktionene noch einmal ueberarbeiten
 showVarDecl :: VAR_DECL -> String
 showVarDecl (Var_decl vars s _) 
-               = showVars vars ++" : " ++ showId s ""
+               = showVars vars ++colonS ++ showId s ""
 
 -- Show fuer den Datentyp [VAR]==[Token]
 -- in der Id.hs gibt es eine Ausgabe. Sollte ich nicht die nehmen?
 showVars::[VAR]->String
 showVars []   = ""
-showVars vars = showVrs vars  where
-		   showVrs (v:[]) = tokStr v
-		   showVrs (v:vs) = tokStr v ++ "," ++ showVrs vs
-		   showVrs []     = error "showVrs undefined  for []"
+showVars vars = showVars' vars  where
+		   showVars' (v:[]) = tokStr v
+		   showVars' (v:vs) = tokStr v ++ "," ++ showVars' vs
+		   showVars' []     = error "showVars' undefined  for []"
 
 -- show fuer den Datentyp PRED_SYMB
 showPredSymb::PRED_SYMB->String
 showPredSymb (Pred_name pn)           = showId pn ""
-showPredSymb (Qual_pred_name pn pt _) = "( pred " ++ showId pn "" ++ " : " 
+showPredSymb (Qual_pred_name pn pt _) = "("++predS ++ showId pn "" ++ colonS 
                                         ++ showPredType pt ++ ")"
 
 -- show fuer den Datentyp PRED_TYPE
 -- (geht das nicht einfacher?)
 showPredType::PRED_TYPE->String
-showPredType (Pred_type sorts _) = if null sorts then "( )"
-                                      else showIds sorts ""
+showPredType (Pred_type sorts _) = showFnTs showSort  sorts "(" ")" prodS
 
+showSort :: SORT -> String
+showSort s = showId s ""
+
+-- polymorphe Funktion die sowohl showTerms als auch showFormulas ersetzen soll.
+-- 
+type LeftKL  = String
+type RightKL = String
+type Septor  = String
+
+showFnTs :: (a -> String) -> [a] -> LeftKL -> RightKL -> Septor -> String
+--showFnTs (showTerm)         []  le ri _   = le++ri
+showFnTs f [] le ri _ = case f of
+			       showSort    -> le++ri
+			       showFormula -> ""
+			       showTerm    -> case le of
+                                                   "("     -> ""
+					           ""      -> ""
+					           _       -> le++ri
+			       _           -> error "showFnTs undefined" -- schlecht!!
+showFnTs f (x:[]) le ri _ = case f of 
+				   showSort    -> f x
+				   showFormula -> f x
+				   showTerm    -> le ++ f x ++ ri
+				   _           -> error "showFnTs undefined" --schlecht
+showFnTs f  xs    le ri sep = le 
+				 ++ showFnTs' f xs sep ++ 
+			      ri where
+			   showFnTs' _ (y:[]) _   = f y
+                           showFnTs' _ (y:ys) sep = f y ++ sep ++ showFnTs' f ys sep  
+			   showFnTs' _ []     _   = error "showFnTs not defined for []"
