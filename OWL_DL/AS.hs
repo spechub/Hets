@@ -30,7 +30,6 @@ type Namespace = NTree XNode
 -- | Data structur for Ontologies
 data Ontology = Ontology (Maybe OntologyID)
                    -- for Ontology header:OntologyAnnotations & AnnotationProperties
-                         [Axiom] 
                          [Directive] 
                          [Namespace]     -- NTrees XNode : namespaces
                 deriving (Show, Eq)
