@@ -106,18 +106,23 @@ checkFreeType (osig,osens) m fsn
                    let pos = headPos old_pred_ps
                    in warning Nothing ("Pedication: " ++ old_pred_id ++ " ist not new")pos
        | not $ and $ map checkTerm leadingTerms =
-                   let (Application _ _ ps) = head $ filter (\t->not $ checkTerm t) leadingTerms
+                   let (Application os _ ps) = head $ filter (\t->not $ checkTerm t) leadingTerms
                        pos = headPos ps
-                   in warning Nothing "the leading term consist of not only variables and constructors" pos              
+                   in warning Nothing ("a leading term of " ++ (opSymStr os) ++
+                      "consist of not only variables and constructors") pos
        | not $ and $ map checkVar leadingTerms =
-                   let (Application _ _ ps) = head $ filter (\t->not $ checkVar t) leadingTerms
+                   let (Application os _ ps) = head $ filter (\t->not $ checkVar t) leadingTerms
                        pos = headPos ps
-                   in warning Nothing "a variable occurs twice in a leading term" pos
-       | not $ checkPatterns leadingPatterns =
-                   let pos = headPos $ pattern_Pos leadingPatterns
-                   in warning Nothing "patterns overlap" pos
-       | (not $ null axioms) && (not $ proof) = 
-                   warning Nothing "not terminal" nullPos 
+                   in warning Nothing ("a variable occurs twice in a leading term of " ++ opSymStr os) pos
+       | not $ and $ map checkPatterns leadingPatterns = 
+                   let pos = headPos $ snd $ pattern_Pos leadingSymPatterns
+                       symb = fst $ pattern_Pos leadingSymPatterns
+                   in warning Nothing ("patterns overlap in " ++ symb) pos
+ --      | not $ checkPatterns leadingPatterns =
+ --                  let pos = headPos $ pattern_Pos leadingPatterns
+ --                  in warning Nothing "patterns overlap" pos
+ --      | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
+ --                  warning Nothing "not terminal" nullPos 
 #endif         
        | otherwise = return (Just True)
 #ifdef UNI_PACKAGE
@@ -247,7 +252,7 @@ checkFreeType (osig,osens) m fsn
        extract_leading_symb :: Either Term (Formula f) -> Either OP_SYMB PRED_SYMB
      - collect all operation symbols from recover_Sort_gen_ax fconstrs (= constructors)
 -}
-         ltp1 = map leading_Term_Predication axioms                 
+         ltp1 = map leading_Term_Predication (t_axioms ++ impl_p_axioms)                 
          ltp = trace (showPretty ltp1 "leading_term_pred") ltp1              --  leading_term_pred
          leadingTerms1 = concat $ map (\tp->case tp of
                                               Just (Left t)->[t]
@@ -260,9 +265,9 @@ checkFreeType (osig,osens) m fsn
                                                                _ -> False) ts
 {-
    no variable occurs twice in a leading term, 
-       if not, return Nothing
+      if not, return Nothing
 -} 
-         checkVar (Application _ ts _) = overlap $ concat $ map allVarOfTerm ts
+         checkVar (Application _ ts _) = notOverlap $ concat $ map allVarOfTerm ts
          allVarOfTerm t = case t of
                             Qual_var _ _ _ -> [t]
                             Sorted_term t' _ _ -> allVarOfTerm  t'
@@ -278,12 +283,32 @@ checkFreeType (osig,osens) m fsn
                               no symbol may be a variable
                               check recursively the arguments of constructor in each group
 -}
-
-         leadingPatterns1 = map (\l-> case l of                     
+         leadingSymPatterns = case (groupAxioms (t_axioms ++ impl_p_axioms)) of
+                                Just sym_fs -> zip (fst $ unzip sym_fs) $
+                                                   (map ((map (\f->case f of
+                                                                     Just (Left (Application _ ts _))->ts
+                                                                     Just (Right (Predication _ ts _))->ts
+                                                                     _ -> [])).
+                                                         (map leading_Term_Predication)) $ map snd sym_fs)
+                                Nothing -> error "axiom group"
+         leadingPatterns1 = snd $ unzip leadingSymPatterns
+{-
+         leadingPatterns1 = case (groupAxioms (t_axioms ++ impl_p_axioms)) of
+                              Just sym_fs -> map ((map (\f->case f of
+                                                              Just (Left (Application _ ts _))->ts
+                                                              Just (Right (Predication _ ts _))->ts
+                                                              _ -> [])).
+                                                   (map leading_Term_Predication)) $ map snd sym_fs
+                              Nothing -> error "axiom group"
+-}
+{-
+                            map (\l-> case l of                     
                                        Just (Left (Application _ ts _))->ts
-                              --         Just (Right (Predication _ ts _))->ts           -- PRED
+                                       Just (Right (Predication _ ts _))->ts           -- PRED
                                        _ ->[]) $ 
-                            map leading_Term_Predication axioms
+                            map leading_Term_Predication (t_axioms ++ impl_p_axioms)
+                      --      map leading_Term_Predication axioms
+-}
     --     leadingPatterns = trace (showPretty leadingPatterns1 (tmp1 ++ "\n" ++ tmp2 ++ "\n" ++ tmp ++ "\n")) leadingPatterns1    --leading Patterns
          leadingPatterns = trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1    --leading Patterns
          isApp t = case t of
@@ -295,10 +320,10 @@ checkFreeType (osig,osens) m fsn
                      Sorted_term t' _ _ ->isVar t'
                      _ -> False
          allIdentic ts = all (\t-> t== (head ts)) ts
-         overlap ts = let check [] = True
-                          check (p:ps)=if elem p ps then False
-                                       else check ps
-                      in check ts 
+         notOverlap ts = let check [] = True
+                             check (p:ps)=if elem p ps then False
+                                          else check ps
+                         in check ts 
          patternsOfTerm t = case t of
                               Application (Qual_op_name _ _ _) ts _-> ts
                               Sorted_term t' _ _ -> patternsOfTerm t'
@@ -320,10 +345,19 @@ checkFreeType (osig,osens) m fsn
                                             checkPatterns $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps 
                 | all isApp $ map head ps = all id $ map checkPatterns $ group ps
                 | otherwise = False
+
+         pattern_Pos [] = error "pattern overlap"
+         pattern_Pos sym_ps = if not $ checkPatterns $ snd $ head sym_ps then symPos $ fst $ head sym_ps
+                              else pattern_Pos $ tail sym_ps
+         symPos sym = case sym of
+                        Left (Qual_op_name on _ ps) -> (idStr on,ps)
+                        Right (Qual_pred_name pn _ ps) -> (idStr pn,ps)
+                        _ -> error "pattern overlap"               
+{-
          term_Pos t = case term t of
-                        Application _ _ p -> p                                                                                    
-                        Qual_var _ _ p -> p                                                                                       
-                        _ -> []      
+                        Application _ _ p -> p
+                        Qual_var _ _ p -> p
+                        _ -> []
          pattern_Pos pas
                 | length pas <=1 = []
                 | allIdentic pas = term_Pos $ head $ head pas
@@ -333,6 +367,7 @@ checkFreeType (osig,osens) m fsn
                 | all (\p-> sameOps p (head (head pas))) $ map head pas =
                                             pattern_Pos $ map (\p'->(patternsOfTerm $ head p')++(tail p')) pas
                 | otherwise = concat $ map pattern_Pos $ group pas
+-}
 
 {- 
    Automatic termination proof
@@ -446,7 +481,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
          o_constructors = trace (showPretty o_constructors1 "o_constructors") o_constructors1       -- olc constructors
          o_l_Syms1 = map leadingSym $ filter isOp_Pred $ oldfs             
          o_l_Syms = trace (showPretty o_l_Syms1 "o_leading_Symbol") o_l_Syms1         --old leading_Symbol
-         idStr (Id ts _ _) = concat $ map tokStr ts 
+    --     idStr (Id ts _ _) = concat $ map tokStr ts 
          rP cp = do                   --read the result of proof
             msg <- readMsg cp
             case msg of
@@ -671,3 +706,16 @@ opTyp_Axiom f = case (leadingSym f) of
                   Just (Left (Qual_op_name _ (Total_op_type _ _ _) _)) -> Just True 
                   Just (Left (Qual_op_name _ (Partial_op_type _ _ _) _)) -> Just False  
                   _ -> Nothing 
+
+idStr :: Id -> String
+idStr (Id ts _ _) = concat $ map tokStr ts 
+
+opSymStr :: OP_SYMB -> String 
+opSymStr os = case os of
+                Op_name on -> idStr on
+	        Qual_op_name on _ _ -> idStr on
+
+predSymStr :: PRED_SYMB -> String
+predSymStr ps = case ps of 
+                  Pred_name pn -> idStr pn 
+	          Qual_pred_name pn _ _ -> idStr pn
