@@ -45,7 +45,7 @@ import AS_Architecture
 import AS_Library
 import FiniteMap
 import Posix
-import Graph
+import Common.Lib.Graph
 
 -- Keep structure of specifications, 
 -- while replacing basic specs and symbol maps with their static semantics
