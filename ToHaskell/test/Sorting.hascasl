@@ -1,0 +1,42 @@
+  free type Nat ::= 0 | Succ(prec:Nat)
+  pred __<=__ : Nat*Nat
+  forall x,y:Nat
+  . 0 <= x
+  . not Succ(x) <= 0
+  . Succ(x)<=Succ(y) <=> x<=y
+
+  pred __<=__ : Nat * Nat
+  forall x,y,z : Nat
+  . x <= x                         %(reflexive)%
+  . x <= z if x <= y /\ y <= z     %(transitive)%
+  . x = y if x <= y /\ y <= x      %(antisymmetric)%
+  . x <= y \/ y <= x               %(dichotomous)%
+  . x = y => x <= y
+
+  free type List[Nat] ::= Nil | Cons(head:Nat; tail:List[Nat])
+  pred elem : Nat * List[Nat]
+  forall x,y:Nat; l:List[Nat]
+  . not elem (x,Nil)
+  . elem(x,Cons(y,l)) <=> x=y \/ elem(x,l)
+
+  preds is_ordered : List[Nat];
+        permutation : List[Nat] * List[Nat]
+  vars x,y:Nat; L,L1,L2:List[Nat]
+  . is_ordered(Nil)
+  . is_ordered(Cons(x,Nil))
+  . is_ordered(Cons(x,(Cons(y,L)))) <=> x<=y /\ is_ordered(Cons(y,L))
+  . permutation(L1,L2) <=> (forall x:Nat . elem(x,L1) <=> elem(x,L2))
+
+  op sorter : List[Nat]->List[Nat]
+  var L:List[Nat]
+  . is_ordered(sorter(L))
+  . permutation(L,sorter(L))
+
+  ops insert : Nat*List[Nat] -> List[Nat];
+      insert_sort : List[Nat]->List[Nat]
+  vars x,y:Nat; L:List[Nat]
+  . insert(x,Nil) = Cons(x,Nil)
+  . insert(x,Cons(y,L)) = Cons(x,insert(y,L)) when x<=y else Cons(y,insert(x,L))
+  . insert_sort(Nil) = Nil
+  . insert_sort(Cons(x,L)) = insert(x,insert_sort(L))
+
