@@ -53,7 +53,7 @@ Portability :  non-portable (various -fglasgow-exts extensions)
    provide both signature symbol set and symbol set of a signature
 -}
 
-module Logic.Logic where
+module Logic.Logic (module Logic.Logic, module Logic.Languages) where
 
 import Common.Id
 import Common.GlobalAnnotations
@@ -65,15 +65,13 @@ import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
 import Common.Print_AS_Annotation
+import Logic.Languages
 import Logic.Prover -- for one half of class Sentences
 
 import Common.PrettyPrint
+
 import Data.Dynamic
 import Common.DynamicUtils 
-
--- for coercion used in Grothendieck.hs and Analysis modules
-
-import UnsafeCoerce
 
 -- for Conversion to ATerms 
 import Common.ATerm.Lib -- (ATermConvertible)
@@ -84,26 +82,6 @@ import Common.Amalgamate
 import Common.Taxonomy
 import Taxonomy.MMiSSOntology (MMiSSOntology)
 
--- languages, define like "data CASL = CASL deriving Show" 
-
-class Show lid => Language lid where
-    language_name :: lid -> String
-    language_name i = show i
-    description :: lid -> String
-    -- default implementation
-    description _ = "No description available"
-
--- (a bit unsafe) coercion using the language name
-coerce :: (Typeable a, Typeable b, Language lid1, Language lid2,
-          Monad m) => lid1 -> lid2 -> a -> m b
-coerce i1 i2 a = if language_name i1 == language_name i2 
-                 then return $ unsafeCoerce a 
-                 else fail ("Logic "++ language_name i1 ++ " expected, but "
-                            ++ language_name i2 ++ " found")
-
-rcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2) => 
-           lid1 -> lid2 -> Pos-> a -> Result b
-rcoerce i1 i2 pos a = adjustPos pos $ coerce i1 i2 a
 
 -- Categories are given by a quotient,
 -- i.e. we need equality

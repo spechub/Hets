@@ -346,6 +346,9 @@ tyconAnyComorphism = mkTyCon "Logic.Grothendieck.AnyComorphism"
 instance Typeable AnyComorphism where
   typeOf _ = mkTyConApp tyconAnyComorphism []
 
+-- | compute the identity comorphism for a logic
+idComorphism :: AnyLogic -> AnyComorphism
+idComorphism (Logic lid) = Comorphism (IdComorphism lid (top_sublogic lid))
 
 -- | Test whether a comporphism is the identity
 isIdComorphism :: AnyComorphism -> Bool
@@ -371,11 +374,12 @@ compComorphism cm1@(Comorphism cid1) cm2@(Comorphism cid2) =
 data LogicGraph = LogicGraph {
                     logics :: Map.Map String AnyLogic, 
                     comorphisms :: Map.Map String AnyComorphism,
-                    inclusions :: Map.Map (String,String) AnyComorphism
+                    inclusions :: Map.Map (String,String) AnyComorphism,
+                    unions :: Map.Map (String,String) (AnyComorphism,AnyComorphism)
                   }
 
 emptyLogicGraph :: LogicGraph
-emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty
+emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty Map.empty
 
 -- | find a logic in a logic graph
 lookupLogic :: Monad m => String -> String -> LogicGraph -> m AnyLogic
@@ -384,6 +388,21 @@ lookupLogic error_prefix logname logicGraph =
     Nothing -> fail (error_prefix++" in LogicGraph logic \""
                       ++logname++"\" unknown")
     Just lid -> return lid
+
+-- | union to two logics
+logicUnion :: LogicGraph -> AnyLogic -> AnyLogic -> Result (AnyComorphism,AnyComorphism)
+logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
+  case logicInclusion lg l1 l2 of
+    Result _ (Just c) -> return (c,idComorphism l2) 
+    _ -> case logicInclusion lg l2 l1 of
+      Result _ (Just c) -> return (idComorphism l1,c) 
+      _ -> case Map.lookup (ln1,ln2) (unions lg) of
+        Just u -> return u
+        Nothing -> case Map.lookup (ln2,ln1) (unions lg) of
+          Just (c2,c1) -> return (c1,c2)
+          Nothing -> fail ("Union of logics "++ln1++" and "++ln2++" does not exist")
+   where ln1 = language_name lid1
+         ln2 = language_name lid2
 
 -- | find a comorphism in a logic graph
 lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
@@ -400,9 +419,7 @@ lookupComorphism coname logicGraph = do
          let mainLogic = takeWhile (/= '.') logic
          l <- maybe (fail ("Cannot find Logic "++mainLogic)) return
                  $ Map.lookup mainLogic (logics logicGraph)
-         case l of
-           Logic lid -> 
-            return $ Comorphism $ IdComorphism lid (top_sublogic lid)
+         return $ idComorphism l
       _ -> maybe (fail ("Cannot find logic comorphism "++name)) return
              $ Map.lookup name (comorphisms logicGraph)
 
@@ -523,46 +540,40 @@ gEmbed (G_morphism lid mor) =
   GMorphism (IdComorphism lid (top_sublogic lid)) (dom lid mor) mor
 
 -- | heterogeneous union of two Grothendieck signatures
---   the left signature determines the result logic
-gsigLeftUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
-gsigLeftUnion lg gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
+gsigUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
+gsigUnion lg gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
   if language_name lid1 == language_name lid2 
      then homogeneousGsigUnion gsig1 gsig2
      else do
-      GMorphism incl _ _ <- ginclusion lg 
-          (G_sign lid2 (empty_signature lid2))
-          (G_sign lid1 (empty_signature lid1))
-      let lid1' = targetLogic incl
-          lid2' = sourceLogic incl
-      sigma1' <- coerce lid1 lid1' sigma1
-      sigma2' <- coerce lid2 lid2' sigma2
-      (sigma2'',_) <- maybeToMonad "gsigLeftUnion: signature mapping failed" 
-                       (map_sign incl sigma2')  -- where to put axioms???
-      sigma3 <- signature_union lid1' sigma1' sigma2''
-      return (G_sign lid1' sigma3)
+      (Comorphism cid1,Comorphism cid2) <- logicUnion lg (Logic lid1) (Logic lid2)
+      let lidS1 = sourceLogic cid1
+          lidS2 = sourceLogic cid2
+          lidT1 = targetLogic cid1
+          lidT2 = targetLogic cid2
+      sigma1' <- mcoerce lid1 lidS1 "Union of signaturesa" sigma1
+      sigma2' <- mcoerce lid2 lidS2 "Union of signaturesb" sigma2
+      (sigma1'',_) <- maybeToMonad "gsigUnion: signature mapping failed" 
+                       (map_sign cid1 sigma1')  -- where to put axioms???
+      (sigma2'',_) <- maybeToMonad "gsigUnion: signature mapping failed" 
+                       (map_sign cid2 sigma2')  -- where to put axioms???
+      sigma2''' <- mcoerce lidT1 lidT2 "Union of signaturesc" sigma2''
+      sigma3 <- signature_union lidT1 sigma1'' sigma2'''
+      return (G_sign lidT1 sigma3)
 
 
 -- | homogeneous Union of two Grothendieck signatures
 homogeneousGsigUnion :: G_sign -> G_sign -> Result G_sign
 homogeneousGsigUnion (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
-  sigma2' <- coerce lid2 lid1 sigma2
+  sigma2' <- mcoerce lid2 lid1 "Union of signaturesd" sigma2
   sigma3 <- signature_union lid1 sigma1 sigma2'
   return (G_sign lid1 sigma3)
 
--- | homogeneous Union of a list of Grothendieck signatures
-homogeneousGsigManyUnion :: [G_sign] -> Result G_sign
-homogeneousGsigManyUnion [] =
-  fail "homogeneous union of emtpy list of signatures"
-homogeneousGsigManyUnion (G_sign lid sigma : gsigmas) = do
-  sigmas <- let coerce_lid (G_sign lid1 sigma1) = 
-                    coerce lid lid1 sigma1
-             in sequence (map coerce_lid gsigmas)
-  bigSigma <- let sig_union s1 s2 = do
-                       s1' <- s1
-                       signature_union lid s1' s2
-                in foldl sig_union (return sigma) sigmas
-  return (G_sign lid bigSigma)
-
+-- | union of a list of Grothendieck signatures
+gsigManyUnion :: LogicGraph -> [G_sign] -> Result G_sign
+gsigManyUnion _ [] =
+  fail "union of emtpy list of signatures"
+gsigManyUnion lg (gsigma : gsigmas) = 
+  foldM (gsigUnion lg) gsigma gsigmas
 
 -- | homogeneous Union of a list of morphisms
 homogeneousMorManyUnion :: [G_morphism] -> Result G_morphism
@@ -570,7 +581,7 @@ homogeneousMorManyUnion [] =
   fail "homogeneous union of emtpy list of morphisms"
 homogeneousMorManyUnion (G_morphism lid mor : gmors) = do
   mors <- let coerce_lid (G_morphism lid1 mor1) = 
-                    coerce lid lid1 mor1
+                    mcoerce lid lid1  "Union of signature morphisms" mor1
              in sequence (map coerce_lid gmors)
   bigMor <- let mor_union s1 s2 = do
                        s1' <- s1
@@ -580,11 +591,11 @@ homogeneousMorManyUnion (G_morphism lid mor : gmors) = do
 
 -- | inclusion between two logics
 logicInclusion :: LogicGraph -> AnyLogic -> AnyLogic -> Result AnyComorphism
-logicInclusion logicGraph (Logic lid1) (Logic lid2) =
+logicInclusion logicGraph l1@(Logic lid1) (Logic lid2) =
      let ln1 = language_name lid1
          ln2 = language_name lid2 in
      if ln1==ln2 then 
-       return (Comorphism (IdComorphism lid1 (top_sublogic lid1)))
+       return (idComorphism l1)
       else case Map.lookup (ln1,ln2) (inclusions logicGraph) of 
            Just (Comorphism i) -> 
                return (Comorphism i)
@@ -595,11 +606,11 @@ logicInclusion logicGraph (Logic lid1) (Logic lid2) =
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
 ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
     Comorphism i <- logicInclusion logicGraph (Logic lid1) (Logic lid2)
-    sigma1' <- rcoerce lid1 (sourceLogic i) (newPos "u" 0 0) sigma1
+    sigma1' <- mcoerce lid1 (sourceLogic i) "Inclusion of signatures" sigma1
     (sigma1'',_) <- maybeToResult (newPos "w" 0 0) 
                     "ginclusion: signature map failed" 
                     (map_sign i sigma1')
-    sigma2' <- rcoerce lid2 (targetLogic i) (newPos "v" 0 0) sigma2
+    sigma2' <- mcoerce lid2 (targetLogic i) "Inclusion of signatures" sigma2
     mor <- inclusion (targetLogic i) sigma1'' sigma2'
     return (GMorphism i sigma1' mor)
 
@@ -626,7 +637,7 @@ translateG_l_sentence_list (GMorphism cid sign1 morphism2)
                            (G_l_sentence_list lid sens) = do
   let tlid = targetLogic cid
   --(sigma2,_) <- map_sign cid sign1
-  sens' <- coerce lid (sourceLogic cid) sens
+  sens' <- mcoerce lid (sourceLogic cid) "Translation of sentence list" sens
   let sens'' = mapMaybe (mapNamedM (map_sentence cid sign1)) $ sens'
   sens''' <- sequence $ map (mapNamedM (map_sen tlid morphism2)) $ sens''
   return (G_l_sentence_list tlid sens''')
@@ -636,7 +647,7 @@ joinG_l_sentence_list :: G_l_sentence_list -> G_l_sentence_list
                             -> Maybe G_l_sentence_list
 joinG_l_sentence_list (G_l_sentence_list lid1 sens1)
                       (G_l_sentence_list lid2 sens2) = do
-  sens2' <- coerce lid1 lid2 sens2
+  sens2' <- mcoerce lid1 lid2 "Union of sentence lists" sens2
   return (G_l_sentence_list lid1 (sens1++sens2'))
 
 -- | Flatten a list of G_l_sentence_list's
@@ -701,5 +712,5 @@ coerceTheory :: forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
       lid -> G_theory -> Result (sign, [Named sentence])
 coerceTheory lid (G_theory lid2 sign2 sens2)
-  = rcoerce lid lid2 nullPos (sign2,sens2)
+  = mcoerce lid lid2 "Coercion of theories" (sign2,sens2)
 

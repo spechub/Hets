@@ -16,6 +16,10 @@
 
 {-
    Todo:
+
+   analysis of basic specs: use union of sigs
+   analysis of instantiations: if necessary, translate body along inclusion comorphism
+
    Improve efficiency by storing local signature fragments only
 
    Name views in devgraphs?
@@ -107,6 +111,8 @@ module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY,
                                   extendMorphism)
 where
 
+import Common.Trace
+
 import Options
 import Data.Maybe
 import Logic.Logic
@@ -138,7 +144,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 
   Basic_spec (G_basic_spec lid bspec) ->
     do G_sign lid' sigma' <- return (getSig nsig)
-       sigma <- rcoerce lid' lid (newPos "ab" 0 0) sigma'
+       sigma <- mcoerce lid' lid "Analysis of basic spec" sigma'
        (bspec', _sigma_local, sigma_complete, ax) <- 
           if isStructured opts
            then return (bspec,empty_signature lid, empty_signature lid,[])
@@ -147,7 +153,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                                          ++language_name lid) 
                           (basic_analysis lid)
                    b (bspec,sigma,gannos) 
-       incl <- adjustPos (newPos "b" 0 0) $ ginclusion lg 
+       incl <- ginclusion lg 
                       (G_sign lid sigma) (G_sign lid sigma_complete)
        let node_contents = DGNode {
              dgn_name = name,
@@ -170,7 +176,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Translation asp ren ->
    do let sp1 = item asp
       (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
-      n' <- maybeToResult (newPos "c" 0 0) 
+      n' <- maybeToResult nullPos
               "Internal error: Translation of empty spec" (getNode nsig')
       let gsigma = getSig nsig'
       mor <- ana_RENAMING dg gsigma opts ren
@@ -198,7 +204,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       (sp1',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
-      n' <- maybeToResult (newPos "d" 0 0) 
+      n' <- maybeToResult nullPos
              "Internal error: Reduction of empty spec" (getNode nsig')
       (hmor,tmor) <- ana_RESTRICTION dg gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
@@ -285,7 +291,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            in foldl ana (return ([],[],dg)) sps
       let nsigs' = reverse nsigs
           adj = adjustPos $ headPos pos
-      gbigSigma <- adj $ homogeneousGsigManyUnion (map getSig nsigs')
+      gbigSigma <- adj $ gsigManyUnion lg (map getSig nsigs')
       G_sign lid' _ <- return gbigSigma
       let node_contents = DGNode {
             dgn_name = name,
@@ -344,7 +350,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Free_spec asp poss ->
    do let sp1 = item asp
       (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
-      n' <- maybeToResult (newPos "e" 0 0) 
+      n' <- maybeToResult nullPos
             "Internal error: Free spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
           pos = headPos poss
@@ -368,7 +374,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Cofree_spec asp poss ->
    do let sp1 = item asp
       (sp',nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
-      n' <- maybeToResult (newPos "f" 0 0) 
+      n' <- maybeToResult nullPos
             "Internal error: Cofree spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
           pos = headPos poss
@@ -394,7 +400,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
           sp1' = item asp'
       (sp2,nsig',dg') <- ana_SPEC lg gctx nsig Nothing opts sp1
       (sp2',nsig'',dg'') <- ana_SPEC lg (gannos,genv,dg') nsig' Nothing opts sp1'
-      n'' <- maybeToResult (newPos "g" 0 0) 
+      n'' <- maybeToResult nullPos
             "Internal error: Local spec over empty spec" (getNode nsig'')
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
@@ -402,8 +408,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       G_sign lid sigma <- return gsigma
       G_sign lid' sigma' <- return gsigma'
       G_sign lid'' sigma'' <- return gsigma''
-      sigma1 <- rcoerce lid' lid (newPos "h" 0 0) sigma'
-      sigma2 <- rcoerce lid'' lid (newPos "i" 0 0) sigma''
+      sigma1 <- mcoerce lid' lid "Analysis of local spec" sigma'
+      sigma2 <- mcoerce lid'' lid "Analysis of local spec" sigma''
       let sys = sym_of lid sigma
           sys1 = sym_of lid sigma1
           sys2 = sym_of lid sigma2
@@ -442,16 +448,17 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Closed_spec asp pos ->
    do let sp1 = item asp
           l = getLogic nsig
+      -- analyse spec with empty local env
       (sp',nsig',dg') <- ana_SPEC lg gctx (EmptyNode l) Nothing opts sp1
-      n' <- maybeToResult (newPos "j" 0 0) 
+      n' <- maybeToResult nullPos
             "Internal error: Closed spec over empty spec" (getNode nsig')
+      -- construct union with local env
       let gsigma = getSig nsig
           gsigma' = getSig nsig'
           adj = adjustPos $ headPos pos 
-      gsigma'' <- adj $ homogeneousGsigUnion gsigma gsigma' 
-                -- also allow different logics???
+      gsigma'' <- adj $ gsigUnion lg gsigma gsigma' 
       G_sign lid'' _ <- return gsigma''
-      incl1 <- adj $ ginclusion lg gsigma' gsigma''
+      incl1 <- adj $ ginclusion lg gsigma gsigma''
       incl2 <- adj $ ginclusion lg gsigma' gsigma''
       let [node] = newNodes 0 dg'
           node_contents = DGNode {
@@ -459,22 +466,63 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
             dgn_sign =  gsigma'', -- G_sign lid'' (empty_signature lid''),
             dgn_sens = G_l_sentence_list lid'' [],
             dgn_origin = DGClosed }
-          link1 = (n',node,DGLink {
+          link1 = DGLink {
             dgl_morphism = incl1,
             dgl_type = GlobalDef,
-            dgl_origin = DGClosed })
-          link2 = DGLink {
+            dgl_origin = DGClosedLenv }
+          link2 = (n',node,DGLink {
             dgl_morphism = incl2,
             dgl_type = GlobalDef,
-            dgl_origin = DGClosedLenv }
-          insLink2 = case (getNode nsig) of
+            dgl_origin = DGClosed })
+          insLink1 = case (getNode nsig) of
                        Nothing -> id
-                       Just n -> insEdgeNub (n,node,link2)
+                       Just n -> insEdgeNub (n,node,link1)
       return (Closed_spec (replaceAnnoted sp' asp) pos,
               NodeSig(node,gsigma''),
-              insLink2 $
-              insEdgeNub link1 $
+              insLink1 $
+              insEdgeNub link2 $
               insNode (node,node_contents) dg')
+
+
+  Qualified_spec (Logic_name ln sublog) asp pos -> do
+      l@(Logic lid) <- lookupLogic "Static analysis: " (tokStr ln) lg
+      -- analyse spec with empty local env
+      (sp',nsig',dg') <- ana_SPEC lg gctx (EmptyNode l) 
+                                 Nothing opts (item asp)
+      n' <- maybeToResult nullPos
+            "Internal error: Qualified spec over empty spec" (getNode nsig')
+      -- construct union with local env
+      let gsigma = getSig nsig
+          gsigma' = getSig nsig'
+          adj = adjustPos $ headPos pos 
+      gsigma'' <- adj $ gsigUnion lg gsigma gsigma' 
+      G_sign lid'' _ <- return gsigma''
+      incl1 <- adj $ ginclusion lg gsigma gsigma''
+      incl2 <- adj $ ginclusion lg gsigma' gsigma''
+      let [node] = newNodes 0 dg'
+          node_contents = DGNode {
+            dgn_name = name,
+            dgn_sign =  gsigma'', -- G_sign lid'' (empty_signature lid''),
+            dgn_sens = G_l_sentence_list lid'' [],
+            dgn_origin = DGLogicQual }
+          link1 = DGLink {
+            dgl_morphism = incl1,
+            dgl_type = GlobalDef,
+            dgl_origin = DGLogicQualLenv }
+          link2 = (n',node,DGLink {
+            dgl_morphism = incl2,
+            dgl_type = GlobalDef,
+            dgl_origin = DGLogicQual })
+          insLink1 = case (getNode nsig) of
+                       Nothing -> id
+                       Just n -> insEdgeNub (n,node,link1)
+      return (Qualified_spec (Logic_name ln sublog) (replaceAnnoted sp' asp) pos,
+              NodeSig(node,gsigma''),
+              insLink1 $
+              insEdgeNub link2 $
+              insNode (node,node_contents) dg')
+
+
 
   Group asp pos -> do
    (sp',nsig',dg') <- ana_SPEC lg gctx nsig name opts (item asp)
@@ -504,7 +552,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       -- the case without parameters leads to a simpler dg
       (0,0) -> do
        let gsigmaB = getSig body
-       gsigma <- adj $ gsigLeftUnion lg (getSig nsig) gsigmaB
+       gsigma <- adj $ gsigUnion lg (getSig nsig) gsigmaB
        G_sign lid _ <- return gsigma
        nB <- adj $ maybeToMonad 
              "Internal error: empty body spec" (getNode body)
@@ -564,8 +612,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        (fitargs',dg',args) <- 
           foldl anaFitArg (return ([],dg,[])) (zip params fitargs)
        let actualargs = reverse args
-       (gsigma',morDelta) <- adj $ apply_GS gs actualargs
-       gsigmaRes <- adj $ homogeneousGsigUnion (getSig nsig) gsigma'
+       (gsigma',morDelta) <- adj $ apply_GS lg gs actualargs
+       gsigmaRes <- adj $ gsigUnion lg (getSig nsig) gsigma'
        G_sign lidRes _ <- return gsigmaRes
        nB <- adj $ maybeToMonad
              "Internal error: empty body spec" (getNode body)
@@ -619,10 +667,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
           (showPretty spname " expects "++show (length params)++" arguments"
            ++" but was given "++show (length afitargs)) pos
 
-
-
-  Qualified_spec _logname _asp _pos ->
-   ana_err "logic qualified specs"
+        
 
   Data (Logic lidD) (Logic lidP) asp1 asp2 pos ->
    do let sp1 = item asp1
@@ -632,11 +677,11 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
           lidP' = targetLogic cid
       (sp1',nsig1,dg1) <- 
          ana_SPEC lg gctx (EmptyNode (Logic lidD)) Nothing opts sp1
-      n' <- maybeToResult (newPos "k" 0 0) 
+      n' <- maybeToResult nullPos
             "Internal error: Data spec over empty spec" (getNode nsig1)
       let gsigma' = getSig nsig1
       G_sign lid' sigma' <- return gsigma'
-      sigmaD <- coerce lid' lidD' sigma' 
+      sigmaD <- mcoerce lid' lidD' "Analysis of data spec" sigma' 
       (sigmaD',sensD') <- maybeToResult (headPos pos) 
                           "Could not map signature along data logic inclusion"
                           (map_sign cid sigmaD)
@@ -671,7 +716,7 @@ ana_ren1 _ (GMorphism r sigma mor)
            (G_symb_map (G_symb_map_items_list lid sis),pos) = do
   let lid2 = targetLogic r
       adj = adjustPos pos
-  sis1 <- adj $ coerce lid2 lid sis
+  sis1 <- adj $ mcoerce lid2 lid "Analysis of renaming" sis
   rmap <- adj $ stat_symb_map_items lid2 sis1
   mor1 <- adj $ induced_from_morphism lid2 rmap (cod lid2 mor)
   mor2 <- adj $ maybeToMonad
@@ -693,7 +738,7 @@ ana_RENAMING dg gSigma opts (Renaming ren pos) =
      then return (ide Grothendieck gSigma)
      else foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
   where
-  ren' = zip ren (tail (pos ++ repeat (newPos "l" 0 0)))
+  ren' = zip ren (tail (pos ++ repeat nullPos))
 
 
 -- analysis of restrictions
@@ -704,7 +749,7 @@ ana_restr1 _ (G_sign _lid _sigma) (GMorphism cid sigma1 mor)
            (G_symb_list (G_symb_items_list lid' sis'),pos) = do
   let lid1 = sourceLogic cid
       lid2 = targetLogic cid
-  sis1 <- rcoerce lid1 lid' pos sis'
+  sis1 <- mrcoerce lid1 lid' pos "Analysis of restriction" sis'
   rsys <- stat_symb_items lid1 sis1
   let sys = sym_of lid1 sigma1
   let sys' = Set.filter (\sy -> any (\rsy -> matches lid1 sy rsy) rsys)
@@ -745,21 +790,21 @@ ana_RESTRICTION' dg gSigma gSigma' False (Hidden restr pos) =
                   restr'
      return (mor,Nothing)
   where
-  restr' = zip restr (tail (pos ++ repeat (newPos "m" 0 0)))
+  restr' = zip restr (tail (pos ++ repeat nullPos))
   -- ??? Need to check that local env is not affected !
 ana_RESTRICTION' _ (G_sign lid sigma) (G_sign lid' sigma') 
      False (Revealed (G_symb_map_items_list lid1 sis) pos) = 
   do let sys = sym_of lid sigma -- local env
          sys' = sym_of lid' sigma' -- "big" signature
          adj = adjustPos $ headPos pos
-     sis' <- adj $ coerce lid1 lid'  sis
+     sis' <- adj $ mcoerce lid1 lid' "Analysis of restriction" sis
      rmap <- adj $ stat_symb_map_items lid' sis'
      let sys'' = 
           Set.fromList
            [sy | sy <- Set.toList sys', rsy <- Map.keys rmap, matches lid' sy rsy]
           -- domain of rmap intersected with sys'
           -- domain of rmap should be checked to match symbols from sys' ???
-     sys1 <- adj $ coerce lid lid' sys
+     sys1 <- adj $ mcoerce lid lid' "Analysis of restriction" sys
         -- ??? this is too simple in case that local env is translated
         -- to a different logic
      mor1 <- adj $ generated_sign lid' (sys1 `Set.union` sys'') sigma'
@@ -788,12 +833,13 @@ ana_FIT_ARG lg gctx spname nsigI nsigP opts
    G_sign lidA sigmaA <- return gsigmaA
    G_sign lidI sigmaI <- return gsigmaI
    G_symb_map_items_list lid sis <- return gsis
-   sigmaA' <- adj $ coerce lidA lidP sigmaA
-   sigmaI' <- adj $ coerce lidI lidP sigmaI
+   sigmaA' <- adj $ mcoerce lidA lidP "Analysis of fitting argument" sigmaA
+   sigmaI' <- adj $ mcoerce lidI lidP "Analysis of fitting argument" sigmaI
    mor <- adj $ if isStructured opts then return (ide lidP sigmaP)
            else do
              rmap <- stat_symb_map_items lid sis
-             rmap' <- coerce lid lidP rmap
+             rmap' <- if null sis then return Map.empty 
+                       else mcoerce lid lidP "Analysis of fitting argument" rmap
              induced_from_to_morphism lidP rmap' sigmaP sigmaA'
    let symI = sym_of lidP sigmaI'
        symmap_mor = symmap_of lidP mor
@@ -841,7 +887,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
          gsigmaT = getSig target
          gsigmaP = getSig nsigP
          gsigmaI = getSig nsigI
-     gsigmaIS <- adj $ gsigLeftUnion lg gsigmaI gsigmaS
+     gsigmaIS <- adj $ gsigUnion lg gsigmaI gsigmaS
      when (not (is_subgsign gsigmaP gsigmaIS))
           (pplain_error () 
               (ptext "Parameter does not match source of fittig view."
@@ -871,9 +917,9 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
          -- the subcase with nonempty import
          Just nI -> do
            G_sign lidI sigI1 <- return gsigmaI
-           sigI <- adj $ coerce lidI lid sigI1
+           sigI <- adj $ mcoerce lidI lid "Analysis of instantiation with import" sigI1
            mor_I <- adj $ morphism_union lid morHom $ ide lid sigI 
-           gsigmaA <- adj $ gsigLeftUnion lg gsigmaI gsigmaT
+           gsigmaA <- adj $ gsigUnion lg gsigmaI gsigmaT
            G_sign lidA _ <- return gsigmaA
            G_sign lidP _ <- return gsigmaP
            incl1 <- adj $ ginclusion lg gsigmaI gsigmaA
@@ -927,9 +973,9 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
        (fitargs',dg',args) <- 
           foldl anaFitArg (return ([],dg,[])) (zip params fitargs)
        let actualargs = reverse args
-       (gsigmaA,mor_f) <- adj $ apply_GS gs actualargs
+       (gsigmaA,mor_f) <- adj $ apply_GS lg gs actualargs
        let gmor_f = gEmbed mor_f
-       gsigmaRes <- adj $ homogeneousGsigUnion gsigmaI gsigmaA
+       gsigmaRes <- adj $ gsigUnion lg gsigmaI gsigmaA
        G_sign lidRes _ <- return gsigmaRes
        mor1 <- adj $ maybeToMonad
                 (show (ptext "Morphism composition failed when instantiating generic fitting view" 
@@ -949,7 +995,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
                    ("heterogeneous fitting views not yet implemented")
                    pos)
        G_sign lidI sigI1 <- return gsigmaI
-       sigI <- adj $ coerce lidI lid1 sigI1
+       sigI <- adj $ mcoerce lidI lid1 "Analysis of instantiation with parameters" sigI1
        theta <- adj $ morphism_union lid1 mor1Hom (ide lid1 sigI)
        incl2 <- adj $ ginclusion lg gsigmaI gsigmaRes
        incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
@@ -1076,9 +1122,9 @@ extendMorphism :: G_sign      -- ^ formal parameter
 extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
                    (G_sign lidA sigmaA1) (G_morphism lidM fittingMor1) = do
   -- for now, only homogeneous instantiations....
-  sigmaB <- coerce lidB lid sigmaB1
-  sigmaA <- coerce lidA lid sigmaA1
-  fittingMor <- coerce lidM lid fittingMor1
+  sigmaB <- mcoerce lidB lid "Extension of symbol map" sigmaB1
+  sigmaA <- mcoerce lidA lid "Extension of symbol map" sigmaA1
+  fittingMor <- mcoerce lidM lid "Extension of symbol map" fittingMor1
   let symsP = sym_of lid sigmaP
       symsB = sym_of lid sigmaB
       idsB = Set.image (sym_name lid) symsB
@@ -1122,15 +1168,16 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
   return (G_sign lid sigma, G_morphism lid mor1)
 
 
-apply_GS :: ExtGenSig -> [(G_morphism,NodeSig)] -> Result(G_sign,G_morphism)
-apply_GS (nsigI,_params,gsigmaP,nsigB) args = do
+apply_GS :: LogicGraph -> ExtGenSig -> [(G_morphism,NodeSig)] 
+             -> Result(G_sign,G_morphism)
+apply_GS lg (nsigI,_params,gsigmaP,nsigB) args = do
   let mor_i = map fst args
       gsigmaA_i = map (getSig . snd) args
       gsigmaB = getSig nsigB
       gsigmaI = getSig nsigI
   G_sign lidI sigmaI <- return gsigmaI
   let idI = ide lidI sigmaI
-  gsigmaA <- homogeneousGsigManyUnion gsigmaA_i
+  gsigmaA <- gsigManyUnion lg gsigmaA_i
   mor_f <- homogeneousMorManyUnion (G_morphism lidI idI:mor_i)
   extendMorphism gsigmaP gsigmaB gsigmaA mor_f
 
@@ -1164,7 +1211,7 @@ ana_GENERICITY lg gctx@(gannos,genv,_) l opts
   (imps',nsigI,dg') <- ana_IMPORTS lg gctx l opts imps
   (params',nsigPs,dg'') <- 
       ana_PARAMS lg (gannos,genv,dg') l nsigI opts params
-  gsigmaP <- adj $ homogeneousGsigManyUnion (map getSig nsigPs)
+  gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
   G_sign lidP _ <- return gsigmaP
   let node_contents = DGNode {
         dgn_name = Nothing,
@@ -1206,7 +1253,7 @@ ana_PARAMS lg (gannos,genv,dg) _ nsigI opts (Params asps) = do
 ana_IMPORTS ::  LogicGraph -> GlobalContext -> AnyLogic -> HetcatsOpts -> IMPORTED
                 -> Result (IMPORTED,NodeSig,DGraph)
 ana_IMPORTS lg gctx l opts (Imported asps) = do
-  let sp = Union asps (map (\_ -> (newPos "p" 0 0)) asps)
+  let sp = Union asps (map (const nullPos) asps)
   (Union asps' _,nsig',dg') <- 
        ana_SPEC lg gctx (EmptyNode l) Nothing opts sp
   return (Imported asps',nsig',dg')

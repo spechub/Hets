@@ -369,7 +369,7 @@ unitTermTransRed' l ut =
 renaming :: (AnyLogic, LogicGraph) -> AParser RENAMING
 renaming l =
     do kWith <- asKey withS
-       (mappings, commas) <- parseMapping l
+       (mappings, commas, _) <- parseMapping l
        return (Renaming mappings (map tokPos (kWith : commas)))
 
 

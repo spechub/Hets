@@ -69,6 +69,12 @@ addInclusionNames c@(Comorphism cid) =
   ((language_name $ sourceLogic cid,
     language_name $ targetLogic cid),
    c)
+addUnionNames :: (AnyComorphism,AnyComorphism)
+                  -> ((String,String),(AnyComorphism,AnyComorphism))
+addUnionNames (c1@(Comorphism cid1),  c2@(Comorphism cid2)) =
+  ((language_name $ sourceLogic cid1,
+    language_name $ sourceLogic cid2),
+   (c1,c2))
 
 inclusionList :: [AnyComorphism]
 inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL, 
@@ -89,12 +95,16 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
 comorphismList :: [AnyComorphism]
 comorphismList = inclusionList ++ [Comorphism CASL2PCFOL, Comorphism PCFOL2FOL]
 
+unionList :: [(AnyComorphism,AnyComorphism)]
+unionList = []
+
 logicGraph :: LogicGraph
 logicGraph = 
   LogicGraph {
     logics =      Map.fromList $ map addLogicName logicList,
     comorphisms = Map.fromList $ map addComorphismName comorphismList,
-    inclusions =  Map.fromList $ map addInclusionNames inclusionList
+    inclusions =  Map.fromList $ map addInclusionNames inclusionList,
+    unions =      Map.fromList $ map addUnionNames unionList 
              }
 
 lookupComorphism_in_LG :: String -> Result AnyComorphism

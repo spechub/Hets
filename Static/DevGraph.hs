@@ -112,7 +112,8 @@ data Conservativity = None | Cons | Mono | Def
 
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
-              | DGLocal | DGClosed | DGClosedLenv | DGData
+              | DGLocal | DGClosed | DGClosedLenv | DGLogicQual | DGLogicQualLenv 
+              | DGData
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
               | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
@@ -145,11 +146,8 @@ getLogic (EmptyNode l) = l
 
 -- | Create a node that represents a union of signatures
 nodeSigUnion :: LogicGraph -> DGraph -> [NodeSig] -> DGOrigin -> Result (NodeSig, DGraph)
-{- TODO: this implementation uses homogenousGsigManyUnion, so requires
-   that the signatures share common logic. Would it be possible to deduce 
-   a common logic for given signatures based on logic graph? -}
 nodeSigUnion lgraph dg nodeSigs orig =
-  do sigUnion@(G_sign lid _) <- homogeneousGsigManyUnion (map getSig nodeSigs)
+  do sigUnion@(G_sign lid _) <- gsigManyUnion lgraph (map getSig nodeSigs)
      let nodeContents = DGNode {dgn_name = Nothing,
 				dgn_sign = sigUnion,
 				dgn_sens = G_l_sentence_list lid [],

@@ -114,7 +114,7 @@ libItem l@(lgc, lG) =
        vt <- viewType l
        (symbMap,ps) <- option ([],[]) 
                         (do s <- asKey equalS               
-                            (m, _) <- parseMapping l
+                            (m, _, _) <- parseMapping l
                             return (m,[s]))          
        q <- optEnd
        return (Syntax.AS_Library.View_defn vn g vt symbMap 

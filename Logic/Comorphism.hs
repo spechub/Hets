@@ -172,14 +172,14 @@ instance (Comorphism cid1
        \si1 se1 -> 
          do (si2,_) <- map_sign cid1 si1
             se2 <- map_sentence cid1 si1 se1 
-	    (si2', se2') <- coerce (targetLogic cid1) (sourceLogic cid2) 
-			    (si2, se2)
+	    (si2', se2') <- mcoerce (targetLogic cid1) (sourceLogic cid2) 
+			    "Mapping sentence along comorphism" (si2, se2)
             map_sentence cid2 si2' se2'
    map_sign (CompComorphism cid1 cid2) = 
        \si1 -> 
          do (si2, se2s) <- map_sign cid1 si1
-            (si2', se2s') <- coerce (targetLogic cid1) (sourceLogic cid2) 
-			     (si2, se2s)
+            (si2', se2s') <- mcoerce (targetLogic cid1) (sourceLogic cid2) 
+			     "Mapping signature along comorphism"(si2, se2s)
             (si3, se3s) <- map_sign cid2 si2' 
             return (si3, se3s ++ catMaybes
                           (map (mapNamedM (map_sentence cid2 si2')) se2s'))
@@ -187,16 +187,19 @@ instance (Comorphism cid1
    map_theory (CompComorphism cid1 cid2) = 
        \ti1 -> 
          do ti2 <- map_theory cid1 ti1
-            ti2' <- coerce (targetLogic cid1) (sourceLogic cid2) ti2 
+            ti2' <- mcoerce (targetLogic cid1) (sourceLogic cid2) 
+                        "Mapping theory along comorphism" ti2 
             map_theory cid2 ti2'
 
    map_morphism (CompComorphism cid1 cid2) = \ m1 -> 
        do m2 <- map_morphism cid1 m1 
-	  m3 <- coerce (targetLogic cid1) (sourceLogic cid2) m2
+	  m3 <- mcoerce (targetLogic cid1) (sourceLogic cid2)
+                  "Mapping signature morphism along comorphism"m2
           map_morphism cid2 m3
 
    map_symbol (CompComorphism cid1 cid2) = \ s1 -> 
-         let mycast = fromJust . coerce (targetLogic cid1) (sourceLogic cid2)
+         let mycast = fromJust . mcoerce (targetLogic cid1) (sourceLogic cid2)
+                                  "Mapping symbol along comorphism"
 	 in unions
 		(map (map_symbol cid2 . mycast) 
                  (toList (map_symbol cid1 s1)))
