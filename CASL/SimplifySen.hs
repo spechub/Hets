@@ -1,5 +1,5 @@
 {- |
-Module      :  $ $
+Module      :  $Header$
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
@@ -11,7 +11,7 @@ Portability :  portable
    Also the instances for Syntax an Category.
 -}
 
-module CASL.SimplifySen where
+module CASL.SimplifySen(simplifySen, rmTypesT, rmTypesF) where
 
 import Common.GlobalAnnotations
 import Common.Result
@@ -24,7 +24,7 @@ import CASL.Overload
 import Control.Exception (assert)
 
 {- |
-   reduce formula\/term informations for 'show theory' of HETS-graph representation.
+   simplifies formula\/term informations for 'show theory' of HETS-graph representation.
 -}
 simplifySen :: (PrettyPrint f, Eq f) =>
 	       (Min f e) -- ^ extension type analysis
@@ -53,7 +53,7 @@ simplifySen min_func e_func rmTypE_func sign formula =
 	anaFormulaCall = anaFormula min_func rmTypE_func sign
 
 {- |
-   remove the typ-informations out of Term.
+   simplifies the TERM such that there are no type-information in it.
 -}
 rmTypesT :: (PrettyPrint f, Eq f) => Min f e -- for 'anaFormula' in case of 'Conditional'
 	 ->(f -> f) -- ^ remove type information in ExtFORMULA
@@ -72,9 +72,10 @@ rmTypesT minT rmTypE_func signT termT =
 				     then Application (Op_name name) terms' pos2
 				     else if Set.size realSet == 1 then
 				        Application (Op_name name) terms' pos2 
-					else if checkLeqF opType1 $ Set.toList realSet then 
-					        Application (Qual_op_name name typ pos1) terms' pos2  
-						else Sorted_term (Application (Op_name name) terms' pos2) sort pos3
+					else Application (Op_name name) terms' pos2
+					{-   if checkLeqF opType1 $ Set.toList realSet then 
+					        Application (Qual_op_name name typ pos1) terms' pos2
+						else Sorted_term (Application (Op_name name) terms' pos2) sort pos3 -}
 		   Nothing -> error "Set of OP_NAME not found."
          Sorted_term t _ _ -> rmTypesTCall t 
 	 Cast term sort pos -> Cast (anaTermC term) sort pos
@@ -90,7 +91,7 @@ rmTypesT minT rmTypE_func signT termT =
 	  -- checkLeqP pt1 pt2 = or $ Prelude.map (leqP sign pt1) pt2
 
 {- |
-   analyzing the TERM with CASL.overload.minExpTerm.
+   analyzes the TERM if it is the Minimal Expansions of a TERM
 -}
 anaTerm :: (PrettyPrint f, Eq f) => Min f e -> (f -> f) -> Sign f e -> TERM f -> TERM f
 anaTerm minA rmtFunc signA term = 
@@ -103,7 +104,7 @@ anaTerm minA rmtFunc signA term =
           rtc = rmTypesT minA rmtFunc signA 
 
 {- |
-    remove the typ-informations out of Formula.
+    simplifies the FORMULA such that there are no type-information in it.
 -}
 rmTypesF ::(PrettyPrint f, Eq f) => Min f e 
 	 -> (f -> f) -- ^ remove type information in ExtFORMULA
@@ -129,7 +130,7 @@ rmTypesF minF rmTypesFunc signF form =
 	    anaTermCall = anaTerm minF rmTypesFunc signF
 
 {- |
-    analyzing the Formula with CASL.overload.minExpFORMULA.
+    analyzes the Formula if it is the Minimal Expansions of a FORMULA.
 -}
 anaFormula :: (PrettyPrint f, Eq f) => Min f e -> (f -> f) -> Sign f e -> FORMULA f -> FORMULA f
 anaFormula minF rmTypeE_func sign' form1 = 
