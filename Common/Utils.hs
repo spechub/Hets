@@ -18,14 +18,14 @@ Portability :  portable
 module Common.Utils where
 
 import Data.List
-import System.Directory
+
 {- | 
   A function inspired by perls join function. It joins a list of
   lists of elements by seperating them with a seperator element. 
 -} 
 joinWith :: a -- ^ seperator element
-	 -> [[a]] -- ^ list of lists of elements
-	 -> [a]  
+         -> [[a]] -- ^ list of lists of elements
+         -> [a]  
 joinWith sep = concat . intersperse (sep:[])
 
 {- |
@@ -34,26 +34,26 @@ joinWith sep = concat . intersperse (sep:[])
   dropped from the resulting list.
 -}
 splitOn :: Eq a => a -- ^ seperator
-	-> [a] -- ^ list to split
-	-> [[a]]
+        -> [a] -- ^ list to split
+        -> [[a]]
 splitOn sep = (\(f,r) -> f : case r of 
-	                     [] -> []
-			     _  -> (splitOn sep $ tail r)
-	      ) . break ((==) sep)
+                             [] -> []
+                             _  -> (splitOn sep $ tail r)
+              ) . break ((==) sep)
 
 {-|
   A function inspired by a perl function from the standard perl-module
   File::Basename. It removes the directory part of a filepath.
 -}
 basename :: FilePath -> FilePath
-basename fp = (\(path,basen) -> basen) (stripDir fp)
+basename fp = (\(_path,basen) -> basen) (stripDir fp)
 
 {-|
   A function inspired by a perl function from the standard perl-module
   File::Basename. It gives the directory part of a filepath.
 -}
 dirname :: FilePath -> FilePath
-dirname fp = (\(path,basen) -> path) (stripDir fp)
+dirname fp = (\(path,_basen) -> path) (stripDir fp)
 
 {-| 
   A function inspired by a perl function from the standard perl-module
@@ -62,11 +62,11 @@ dirname fp = (\(path,basen) -> path) (stripDir fp)
   suffixes. If a suffix matched it is removed from the basename.
 -}
 fileparse :: [String] -- ^ list of suffixes
-	  -> FilePath 
-	  -> (FilePath,FilePath,Maybe String) 
-	  -- ^ (basename,directory,matched suffix)
+          -> FilePath 
+          -> (FilePath,FilePath,Maybe String) 
+          -- ^ (basename,directory,matched suffix)
 fileparse sufs fp = let (path,base) = stripDir fp
-			(base',suf) = stripSuffix sufs base 
+                        (base',suf) = stripSuffix sufs base 
                     in (base',path,suf) 
 
 stripDir :: FilePath -> (FilePath,FilePath)
@@ -79,25 +79,25 @@ rmSuffix = reverse . tail . snd . break (=='.') . reverse
 
 stripSuffix :: [String] -> FilePath -> (FilePath,Maybe String)
 stripSuffix suf fp = case filter justs $ map (stripSuf fp) suf of
-		     []      -> (fp, Nothing)
-		     ((Just (x,s)):_)  -> (x,Just s)
+                     ((Just (x,s)):_)  -> (x,Just s)
+                     _                 -> (fp, Nothing)
     where stripSuf f s | s `isSuffixOf` f = Just (stripOf s f, s) 
-		       | otherwise = Nothing
-	  justs (Nothing) = False
-	  justs (Just _)  = True
+                       | otherwise = Nothing
+          justs (Nothing) = False
+          justs (Just _)  = True
 
 stripOf :: (Show a, Eq a) => [a] -> [a] -> [a]
 stripOf suf inp = reverse $ stripOf' (reverse suf) (reverse inp)
-    where stripOf' []     i  = i
-	  stripOf' (x:xs) [] = error $ 
-			       concat ["suffix is longer than input string\n"
-				      ,"input was: ", show suf, " ",show inp ]
-	  stripOf' (x:xs) (y:ys) | x == y    = stripOf' xs ys
-				 | otherwise = 
-				     error $ concat ["suffix don't match input"
-						    ," at "
-						    ,show $ reverse (x:xs)
-						    ," ",show $ reverse (y:ys)]
+    where stripOf' []    i  = i
+          stripOf' (_:_) [] = error $ 
+                               concat ["suffix is longer than input string\n"
+                                      ,"input was: ", show suf, " ",show inp ]
+          stripOf' (x:xs) (y:ys) | x == y    = stripOf' xs ys
+                                 | otherwise = 
+                                     error $ concat ["suffix don't match input"
+                                                    ," at "
+                                                    ,show $ reverse (x:xs)
+                                                    ," ",show $ reverse (y:ys)]
 
 -- stripOf suf = reverse . drop (length suf) . reverse
 
@@ -107,8 +107,8 @@ stripOf suf inp = reverse $ stripOf' (reverse suf) (reverse inp)
 chomp :: String -> String
 chomp = reverse . chomp' . reverse 
     where chomp' [] = []
-	  chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
-			    | otherwise = xs
+          chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
+                            | otherwise = xs
 
 -- IgnoreMaybe datatype
 -- extension to Maybe for use in computations over recursive types
@@ -147,16 +147,16 @@ toMaybe _            = Nothing
 -- map over IgnoreMaybe taking (Maybe a -> b) function
 --
 mapIgnore :: (Maybe a -> b) -> [IgnoreMaybe a] -> [b]
-mapIgnore f [] = []
+mapIgnore _ [] = []
 mapIgnore f (IgnoreNothing:t) = mapIgnore f t
 mapIgnore f (h:t) = (f $ toMaybe h):(mapIgnore f t)
 
 -- map over IgnoreMaybe taking (a -> b) function
 --
 mapIgnoreMaybe :: (a -> b) -> [IgnoreMaybe a] -> [b]
-mapIgnoreMaybe f [] = []
+mapIgnoreMaybe _ [] = []
 mapIgnoreMaybe f (RealJust x:t) = (f x):(mapIgnoreMaybe f t)
-mapIgnoreMaybe f (h:t) = mapIgnoreMaybe f t
+mapIgnoreMaybe f (_:t) = mapIgnoreMaybe f t
 
 -- add element to list as if it were a set
 --  addition is to the front if element wasn't already in the list, in which
@@ -175,7 +175,7 @@ setAdd set add = foldl setAddOne set add
 --
 allUnique :: Eq a => [a] -> Bool
 allUnique [] = False
-allUnique [h] = True
+allUnique [_] = True
 allUnique (h:t) = ([ x | x<-t, x == h ]==[]) && allUnique t
 
 -- compute members of a list occuring more than once
