@@ -69,11 +69,11 @@ generateAxioms sig =
     inlineAxioms CASL
       " sort s<s' \
       \ op pr : s'->?s \
-      \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(projection_transitiv)% " ++
+      \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(projection_transitive)% " ++
     inlineAxioms CASL
       " sort s \
       \ op inj : s->s \
-      \ forall x:s . inj(x)=e=x               %(indentity)%"             
+      \ forall x:s . inj(x)=e=x               %(identity)%"             
           | (s,s') <- rel2List]++               
    [inlineAxioms CASL
      " sort s<s';s'<s'' \
@@ -86,6 +86,9 @@ generateAxioms sig =
         y = mkSimpleId "y"
         inj = mkId [mkSimpleId "_inj"]
         pr=mkId [mkSimpleId "_pr"]
+        pr_trans=mkId [mkSimpleId "_pr_trans"]  
+        identity=mkId[mkSimpleId "_identity"]
+        tans=mkId[mkSimpleId "_trans"]
         rel2List=Rel.toList(sortRel sig)
         rel2Map=Rel.toMap(sortRel sig)
         
