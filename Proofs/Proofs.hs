@@ -124,10 +124,9 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
-globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if True
---existsDefPathOfSameMorphism dGraph morphism source target
+globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsDefPathOfSameMorphism dGraph morphism source target
      then
-       globSubsumeAux newGraph (rules,changes) list
+       globSubsumeAux newGraph (newRules,newChanges) list
      else
        globSubsumeAux dGraph (rules,changes) list
   where
@@ -147,7 +146,9 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
 
 existsDefPathOfSameMorphism :: DGraph -> GMorphism -> Node -> Node -> Bool
 existsDefPathOfSameMorphism dgraph morphism src tgt =
-  existsDefPathOfSameMorphismAux dgraph morphism tgt [] src
+ True 
+
+ -- existsDefPathOfSameMorphismAux dgraph morphism tgt [] src
 
 existsDefPathOfSameMorphismAux dgraph morphism tgt path src =
   if null outGoingEdges then False
@@ -174,16 +175,19 @@ getMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
     morphismOfFurtherPath = getMorphismOfPath furtherPath
 
 calculateCombinedMorphism :: GMorphism -> GMorphism -> GMorphism
-calculateCombinedMorphism morph1 morph2 =
-  error "calculateMorphism not yet implemented"
+calculateCombinedMorphism morph1 morph2 = 
+  case comp Grothendieck morph1 morph2 of
+    Just morphism -> morphism
+    Nothing -> error "wie soll mit diesem Fall umgegangen werden?"
 
 getTargetNode :: LEdge DGLinkLab -> Node
 getTargetNode (_,target,_) = target
 
 isUnprovenGlobalThm :: LEdge DGLinkLab -> Bool
-isUnprovenGlobalThm (_,_,edgeLab) = case dgl_type edgeLab of
-  (GlobalThm False _) -> True
-  otherwise -> False
+isUnprovenGlobalThm (_,_,edgeLab) = 
+  case dgl_type edgeLab of
+    (GlobalThm False _) -> True
+    otherwise -> False
 
 isGlobalDef ::LEdge DGLinkLab -> Bool
 isGlobalDef (_,_,edgeLab) =

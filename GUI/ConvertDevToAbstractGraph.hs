@@ -618,25 +618,36 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
     InsertNode lNode -> error "insert node not yet implemented"
     DeleteNode node -> error "delete node not yet implemented"
     InsertEdge (src,tgt,edgeLab) ->
-      do let dgEdge = (libname, (src,tgt))
--- -- ###### Fehler: nicht addlink ... src tgt, sondern src und tgt in den
--- -- ###### ConversationMaps nachgucken - sonst falscher Descriptor!!
-	 (Result descr error) <- 
-            addlink gid (getDGLinkType (dgl_type edgeLab)) "" src tgt graphInfo
-         case error of
-	   Nothing ->
-	     do let newConvMaps = convMaps 
-                      {dg2abstrEdge =
-		         Map.insert dgEdge descr (dg2abstrEdge convMaps),
-	               abstr2dgEdge =
-		         Map.insert descr dgEdge (abstr2dgEdge convMaps)}
- 	        applyChangesAux gid libname graphInfo (descr+1)
+      do
+        let dg2abstrNodeMap = dg2abstrNode convMaps
+        case (Map.lookup (libname,src) dg2abstrNodeMap,
+	      Map.lookup (libname,tgt) dg2abstrNodeMap) of
+          (Just abstrSrc, Just abstrTgt) ->
+            do let dgEdge = (libname, (src,tgt))
+	       (Result descr error) <- 
+                  addlink gid (getDGLinkType (dgl_type edgeLab))
+			      "" abstrSrc abstrTgt graphInfo
+	       case error of
+	         Nothing ->
+	           do let newConvMaps = convMaps 
+                              {dg2abstrEdge =
+		               Map.insert dgEdge descr (dg2abstrEdge convMaps),
+	                       abstr2dgEdge =
+		               Map.insert descr dgEdge (abstr2dgEdge convMaps)}
+ 	              applyChangesAux gid libname graphInfo (descr+1)
 				 newConvMaps changes
-	   Just _ -> 
+	         Just _ -> 
 -- -- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
 -- Momentane Lösung: ignorieren...
-	     applyChangesAux gid libname graphInfo eventDescr
+	           applyChangesAux gid libname graphInfo eventDescr
 			         convMaps changes
+          otherwise -> 
+-- -- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
+-- Momentane Lösung: ignorieren...
+	    applyChangesAux gid libname graphInfo eventDescr
+			         convMaps changes
+   
+
     DeleteEdge (src,tgt,_) ->
       do let dgEdge = (libname, (src,tgt))
              dg2abstrEdgeMap = dg2abstrEdge convMaps 
