@@ -177,11 +177,14 @@ getKindInfo renamedTidyModule imports =
 
 -- | collect types for data constructors
 getLocalDConsEnv :: TidyModule -> KindEnv -> TypeEnv
-getLocalDConsEnv renamedTidyModule kindInfo = 
+getLocalDConsEnv = getLocalDConsEnv2 True
+ 
+-- | True gets constructors, False selectors
+getLocalDConsEnv2 :: Bool -> TidyModule -> KindEnv -> TypeEnv
+getLocalDConsEnv2 b renamedTidyModule kindInfo = 
      let rNewTyDecls = tidyNewTyDecls renamedTidyModule 
          rDataDecls  = tidyDataDecls  renamedTidyModule 
-	 mname  = tidyModName    renamedTidyModule
-     in dataConsEnv mname kindInfo (rDataDecls ++ rNewTyDecls)
+     in dataConsEnv b kindInfo (rDataDecls ++ rNewTyDecls)
 
 getGlobalDConsEnv :: Env Scheme -> ModuleInfo -> TypeEnv
 getGlobalDConsEnv localDConsEnv imports = 
@@ -244,7 +247,8 @@ getLocalVarEnv :: TidyModule -> ModuleInfo -> SigEnv -> KindEnv
 	       -> ClassHierarchy -> TypeEnv -> Program -> TypeEnv
 getLocalVarEnv renamedTidyModule imports sigEnv kindInfo
 	       cHierarchyWithInstances globalDConsEnv program =
-    let importVarEnv = varAssumps imports
+    let sels = getLocalDConsEnv2 False renamedTidyModule kindInfo
+        importVarEnv = varAssumps imports
         mname  = tidyModName renamedTidyModule
      in tiProgram 
                  mname                
@@ -257,7 +261,7 @@ getLocalVarEnv renamedTidyModule imports sigEnv kindInfo
 		 -- class hierarchy with instances
                  globalDConsEnv                 
 		 -- data constructor type environment 
-                 importVarEnv                   
+                 (joinEnv sels importVarEnv)                   
 		 -- type environment
                  program                        
 		 -- binding groups

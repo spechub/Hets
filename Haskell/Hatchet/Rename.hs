@@ -449,10 +449,15 @@ renameAHsConDecl (AHsConDecl srcLoc hsName hsBangTypes) subTable
       hsName' <- renameAHsName hsName subTable
       hsBangTypes' <- renameAHsBangTypes hsBangTypes subTable
       return (AHsConDecl srcLoc hsName' hsBangTypes') 
-renameAHsConDecl (AHsRecDecl srcLoc hsName stuff) _subTable
-  = do
-      -- this will never be executed at the moment because the parser breaks on AHsRecDecls
-      return (AHsRecDecl srcLoc hsName stuff)
+renameAHsConDecl (AHsRecDecl srcLoc hsName hsLabeledBangTypes) subTable
+  = do hsName' <- renameAHsName hsName subTable
+       hsLabeledBangTypes' <- mapRename 
+	    ( \ (ls, bt) st -> do
+	      nbt <- renameAHsBangType bt st
+	      nls <- mapRename renameAHsName ls st
+	      return (nls, nbt)) hsLabeledBangTypes subTable
+       return (AHsRecDecl srcLoc hsName' hsLabeledBangTypes') 
+       -- selectors are not in scope
 
 renameAHsBangTypes :: [AHsBangType] -> SubTable -> ScopeSM ([AHsBangType])
 renameAHsBangTypes = mapRename renameAHsBangType

@@ -231,8 +231,12 @@ remSynsFromCondecl (AHsConDecl sloc name bangTypes)
    = do
         newBangTypes <- mapM remSynsFromBangType bangTypes
         return (AHsConDecl sloc name newBangTypes)
-remSynsFromCondecl (AHsRecDecl _ _ _)
-   = error $ "remSynsFromCondecl (AHsRecDecl _ _ _) not implemented"
+remSynsFromCondecl (AHsRecDecl sloc name labeledBangTypes)
+   = do 
+        newLBangTypes <- mapM ( \ (ls, bt) -> do
+			    nBt <- remSynsFromBangType bt
+		            return (ls, nBt)) labeledBangTypes
+        return (AHsRecDecl sloc name newLBangTypes)
 
 remSynsFromBangType :: AHsBangType -> PatSM AHsBangType
 

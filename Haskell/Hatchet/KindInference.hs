@@ -15,7 +15,8 @@
 
 module Haskell.Hatchet.KindInference (kiModule, 
                       KindEnv, 
-                      kiAHsQualType,
+                      bangTypeToType,
+		      kiAHsQualType,
                       kindOf,
                       ) where 
 
@@ -448,10 +449,10 @@ declsToKindGroup (AHsClassDecl _sloc qualType sigsAndDefaults : decls)
 
 
 conDeclToTypes :: AHsConDecl -> [AHsType]
-conDeclToTypes (AHsConDecl _sloc name bangTypes)
+conDeclToTypes (AHsConDecl _sloc _name bangTypes)
    = map bangTypeToType bangTypes
-conDeclToTypes (AHsRecDecl _lsoc _name _recs)
-   = error $ "conDeclToType (AHsRecDecl _lsoc _name _recs): not implemented yet"
+conDeclToTypes (AHsRecDecl _lsoc _name recs)
+   = map bangTypeToType $ concatMap ( \ (ls, bt) -> map (const bt) ls) recs 
 
 bangTypeToType :: AHsBangType -> AHsType
 bangTypeToType (AHsBangedTy t) = t
