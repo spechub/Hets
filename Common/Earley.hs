@@ -10,11 +10,31 @@ Portability :  portable
     
    generic mixfix analysis
 
-   Ambiguities are not removed yet and may cause explosion
+   - Ambiguities are not removed yet and may cause explosion
+
+   - filtering by longest id is not symmetric
+
+   todo: move 'getTokenList' and 'setIdePos' stuff from 'Id' into this module
 
 -}
 
-module Common.Earley where
+module Common.Earley (
+                     -- * special tokens for special ids
+                     varTok, exprTok, typeTok
+		     , applId, parenId, typeId, exprId, varId
+		     , tupleId, unitId, unknownId
+		     , Knowns
+		     , mkRuleId
+		     , listRules
+		     , getTokenPlaceList
+                     -- * resolution chart
+		     , Chart
+		     , mixDiags
+		     , ToExpr
+		     , initChart
+		     , nextChart
+		     , getResolved)
+    where
 
 import Common.Id
 import Common.Result
@@ -38,22 +58,18 @@ newtype Index = Index Int deriving (Eq, Ord, Show)
 startIndex :: Index
 startIndex = Index 0
 
--- | test if initial (although hiding (==) seems not to be possible) 
-isStartIndex :: Index -> Bool
-isStartIndex = (== startIndex)
-
-incrIndex, decrIndex :: Index -> Index
+incrIndex :: Index -> Index
 incrIndex (Index i) = Index (i + 1)
-decrIndex (Index i) = Index (i - 1)
 
 data Item a b = Item 
     { rule :: Id        -- the rule to match
-    , info :: b       -- additional info for 'rule'
-    , posList :: [Pos]    -- positions of Id tokens
-    , args :: [a]     -- currently collected arguments 
+    , info :: b         -- additional info for 'rule'
+    , posList :: [Pos]  -- positions of Id tokens
+    , args :: [a]       -- currently collected arguments 
       -- both in reverse order
-    , rest :: [Token] -- part of the rule after the "dot"
-    , index :: Index -- index into the Table/input string
+    , ambigs :: [[a]]   -- currently unused fields for ambiguities
+    , rest :: [Token]   -- part of the rule after the "dot"
+    , index :: Index    -- index into the Table/input string
     }
 
 instance Show (Item a b) where
@@ -69,84 +85,123 @@ instance Show (Item a b) where
 			  . showString ", "
 			  . shows i . showChar ']'
 
+-- | the non-terminal
 termStr :: String
 termStr = "(__)"
+-- | builtin terminals
 commaTok, termTok, oParenTok, cParenTok, placeTok :: Token
 commaTok = mkSimpleId "," -- for list elements 
 termTok = mkSimpleId termStr
 placeTok = mkSimpleId place
 oParenTok = mkSimpleId "(" 
 cParenTok = mkSimpleId ")" 
-
-exprTok, varTok, typeTok, unknownTok :: Token
-typeTok = mkSimpleId ":"
 listToken :: Token 
 listToken = mkSimpleId "[]"
+
+-- | token for type annotations
+typeTok :: Token
+typeTok = mkSimpleId ":"
+
+-- | token for a fixed (or recursively resolved) operator expression
+exprTok :: Token
 exprTok = mkSimpleId "(op )"
+-- | token for a fixed (or recursively resolved) argument expression
+varTok :: Token
 varTok = mkSimpleId "(var )"
+-- | token for an unknown variable (within patterns)
+unknownTok :: Token
 unknownTok = mkSimpleId "(?)"
 
+-- | construct an 'Id' from a token list
 mkRuleId :: [Token] -> Id
 mkRuleId toks = Id toks [] []
-applId, parenId, typeId, exprId, varId, tupleId, unitId, unknownId :: Id
+-- | the invisible application rule with two places
+applId :: Id
 applId       = mkRuleId [placeTok, placeTok]
+-- | parenthesis around one place
+parenId :: Id
 parenId      = mkRuleId [oParenTok, placeTok, cParenTok]
+-- | id for tuples with at least two arguments
+tupleId :: Id
 tupleId      = mkRuleId [oParenTok, placeTok, commaTok, placeTok, cParenTok]
+-- | id for the emtpy tuple
+unitId :: Id
 unitId       = mkRuleId [oParenTok, cParenTok]
+-- | see 'typeTok'
+typeId :: Id
 typeId       = mkRuleId [placeTok, typeTok]
+-- | see 'exprTok'
+exprId :: Id
 exprId	     = mkRuleId [exprTok]
+-- | see 'varTok'
+varId :: Id
 varId	     = mkRuleId [varTok]
+-- | see 'unkownTok'
+unknownId :: Id
 unknownId    = mkRuleId [unknownTok]
 
-listId :: Id -> Id
+listId :: (Id, Id) -> Id
 -- unique id (usually "[]" yields two tokens)
-listId i = Id [listToken] [i] []
+listId (f,c) = Id [listToken] [f,c] []
 
 isListId :: Id -> Bool
-isListId (Id ts cs _) = not (null ts) && head ts == listToken && isSingle cs
+isListId (Id ts cs _) = not (null ts) && head ts == listToken 
+			&& assert (length cs == 2) True
 
 isUnknownId :: Id -> Bool
 isUnknownId (Id ts _ _) = not (null ts) && head ts == unknownTok
 
-mkItem :: Index -> Id -> b -> [Token] -> Item a b
-mkItem ind ide inf toks = 
+mkItem :: Index -> (Id, b, [Token]) -> Item a b
+mkItem ind (ide, inf, toks) = 
     Item { rule = ide
 	 , info = inf
 	 , posList = []
 	 , args = []
+	 , ambigs = []
 	 , rest = toks
 	 , index = ind }
 
+-- | extract tokens with the non-terminal for places 
 getTokenPlaceList :: Id -> [Token]
 getTokenPlaceList = getTokenList termStr
 
-mkMixfixItem :: Index -> (Id, b) -> Item a b
-mkMixfixItem i (ide, inf) = 
-    mkItem i ide inf $ getTokenPlaceList ide
+asListAppl :: ToExpr a b -> Id -> b -> [a] -> [Pos] -> a
+asListAppl toExpr i b ra br =
+    if isListId i then    
+           let Id _ [f, c] _ = i
+	       mkList [] ps = toExpr c b [] ps
+	       mkList (hd:tl) ps = toExpr f b [hd, mkList tl ps] ps
+	   in mkList ra br
+    else if i == typeId
+	     || i == exprId 
+	     || i == parenId
+	     || i == varId
+	     then assert (isSingle ra) $ head ra
+	     else toExpr i b ra br
 
-listStates :: b -> GlobalAnnos -> Index -> [Item a b]
-listStates inf g i = 
+-- | construct the list rules
+listRules :: b -> GlobalAnnos -> [(Id, b, [Token])]
+listRules inf g = 
     let lists = list_lit $ literal_annos g
-        listState co toks = mkItem i (listId co) inf toks
+        listRule co toks = (listId co, inf, toks)
     in concatMap ( \ (bs, n, c) ->
        let (b1, b2, cs) = getListBrackets bs 
 	   e = Id (b1 ++ b2) cs [] in
 	   (if e == n then [] -- add b1 ++ b2 if its not yet included by n
-	       else [listState c $ getPlainTokenList e]) ++
-                   [listState c (b1 ++ [termTok] ++ b2) 
-		   , listState c (b1 ++ [termTok, commaTok, termTok] ++ b2)]
-		   ) $ Set.toList lists
-
+	       else [listRule (c, n) $ getPlainTokenList e]) 
+	   ++ [listRule (c, n) (b1 ++ [termTok] ++ b2), 
+	       listRule (c, n) (b1 ++ [termTok, commaTok, termTok] ++ b2)]
+		 ) $ Set.toList lists
 
 type Table a b = Map.Map Index [Item a b]
 
 lookUp :: Table a b -> Index -> [Item a b]
 lookUp ce k = Map.findWithDefault [] k ce
 
-
+-- | a set of strings that do not match a 'unknownTok'
 type Knowns = Set.Set String
 
--- recognize next token (possible introduce new tuple variable)
+-- | recognize next token (possible introduce new tuple variable)
 scanItem :: (a -> a -> a) -> Knowns -> (a, Token) -> Item a b
 	  -> [Item a b] 
 scanItem addType knowns (trm, t) p =
@@ -161,12 +216,12 @@ scanItem addType knowns (trm, t) p =
 		  [ q { rest = termTok : ts }
 		  , q { rest = tail ts }]
               else if t == exprTok || t == varTok then 
-		   [p { rest = tail ts, args = trm : args p }]
+		   [q { rest = tail ts, args = trm : args p }]
               else if t == typeTok then 
 		   assert (null (tail ts) && isSingle as) $
-		   [p { rest = [], args = [addType trm $ head as] }]
+		   [q { rest = [], args = [addType trm $ head as] }]
 	      else [q { rest = tail ts}]
-	  else if ide == unknownId 
+	  else if isUnknownId ide
 	         && not (tokStr t `Set.member` knowns) then
 	       [q { rest = tail ts
 		  , rule = mkRuleId [unknownTok, t]}]
@@ -176,26 +231,44 @@ scan :: (a -> a -> a) -> Knowns -> (a, Token) -> [Item a b]
      -> [Item a b] 
 scan f knowns term = concatMap (scanItem f knowns term)
 
-addArg :: a -> Item a b -> Item a b
-addArg arg p = assert (not $ null $ rest p) $
+addArg :: [[a]] -> (a, Pos) -> Item a b -> Item a b
+addArg ams (arg, q) p = assert (not $ null $ rest p) $
                p { rest = tail $ rest p
-		 , args = arg : args p }
+		 , posList = q : posList p
+		 , args = arg : args p 
+		 , ambigs = ams ++ ambigs p }
+
+-- | shortcut for a function that constructs an expression
+type ToExpr a b = Id -> b -> [a] -> [Pos] -> a 
+
+mkExpr :: ToExpr a b -> Item a b -> (a, Pos)
+mkExpr toExpr item = 
+    let orig = rule item
+	ps = posList item
+	rs = reverse ps
+	(ide, qs) = if isListId orig then (orig, rs) else
+		    setPlainIdePos orig rs
+	inf =  info item
+	as = reverse $ args item
+	in (asListAppl toExpr ide inf as qs, head qs)
 
 reduce :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
-       -> (Item a b -> a) -> Item a b -> [Item a b]
+       -> ToExpr a b -> Item a b -> [Item a b]
 reduce ga table filt toExpr item = 
-    map (addArg $ toExpr item)
+    let ide = rule item
+	inf = info item
+    in map (addArg (ambigs item) $ mkExpr toExpr item)
 	$ filter ( \ oi ->  let ts = rest oi in
 		   if null ts then False
 		   else if head ts == termTok
-		   then case filt (info item) $ info oi of 
-		   Nothing -> checkPrecs ga (rule item) (rule oi) 
+		   then case filt inf $ info oi of 
+		   Nothing -> checkPrecs ga ide (rule oi) 
 		              $ length $ args oi
 		   Just b -> b 
 		   else False )
 	$ lookUp table $ index item
 
-complete :: (b -> b -> Maybe Bool) -> (Item a b -> a) -> GlobalAnnos 
+complete :: (b -> b -> Maybe Bool) -> ToExpr a b -> GlobalAnnos 
 	 -> Table a b -> [Item a b] -> [Item a b]
 complete filt toExpr ga table items = 
     let completedItems = filter (null . rest) items
@@ -205,10 +278,10 @@ complete filt toExpr ga table items =
 	else complete filt toExpr ga table reducedItems ++ items
 
 predict :: [Item a b] -> [Item a b] -> [Item a b]
-predict rules items =
+predict rs items =
     if any ( \ p -> let ts = rest p in
 	    not (null ts) && head ts == termTok) items 
-    then rules ++ items
+    then rs ++ items
     else items
 
 overlap :: Item a b -> Item a b -> Bool
@@ -226,15 +299,15 @@ ordItem i1 i2 =
     compare (index i1, rest i1, size i2, rule i1)
 		(index i2, rest i2, size i1, rule i2)
 
-flatItems :: ([a] -> a) -> [Item a b] -> Item a b
-flatItems f (i:is) = 
+flatItems :: ToExpr a b -> [Item a b] -> Item a b
+flatItems toExpr (i:is) = 
     if null is 
     then i
-    else i { args = map f (transpose (map args (i:is))) }
+    else i { ambigs = map (fst . mkExpr toExpr) (i:is) : concatMap ambigs is }
 flatItems _ [] = error "flatItems: empty list"
 
-packAmbigs :: ([a] -> a) -> [Item a b] -> [Item a b]
-packAmbigs f = map (flatItems f) . groupBy equivItem . sortBy ordItem
+packAmbigs :: ToExpr a b -> [Item a b] -> [Item a b]
+packAmbigs toExpr = map (flatItems toExpr) . groupBy equivItem
 
 longest :: [Item a b] -> [Item a b]
 longest (i:is) =
@@ -249,17 +322,21 @@ filterLongest :: [Item a b] -> [Item a b]
 filterLongest = 
     concatMap longest . groupBy overlap
 
-data State a b = State { prevTable :: Table a b
+-- | the whole state for mixfix resolution 
+data Chart a b = Chart { prevTable :: Table a b
 		       , currIndex :: Index
 		       , currItems :: [Item a b]
+		       , rules :: [(Id, b, [Token])]
 		       , solveDiags :: [Diagnosis] }
 	       deriving Show
 
-nextState :: (Index -> [Item a b]) -> 
-	     (a -> a -> a) -> Knowns -> 
-	     (b -> b -> Maybe Bool) -> (Item a b -> a) -> GlobalAnnos -> 
-	     State a b -> (a, Token) -> State a b
-nextState fromRules addType knowns filt toExpr ga st term@(_, tok) = 
+-- | make one scan, complete, and predict step.
+-- The first function adds a type to the result.
+-- The second function filters based on argument and operator info.
+-- If filtering yields 'Nothing' further filtering by precedence is applied. 
+nextChart :: (a -> a -> a) -> (b -> b -> Maybe Bool) -> ToExpr a b 
+	  -> Knowns -> GlobalAnnos -> Chart a b -> (a, Token) -> Chart a b
+nextChart addType filt toExpr knowns ga st term@(_, tok) = 
     let table = prevTable st
 	idx = currIndex st
 	items = currItems st
@@ -269,7 +346,8 @@ nextState fromRules addType knowns filt toExpr ga st term@(_, tok) =
     in	if null items then st else
 	st { prevTable = nextTable
 	   , currIndex = nextIdx
-	   , currItems =  predict (fromRules nextIdx)
+	   , currItems =  predict (map (mkItem nextIdx) $ rules st)
+--	   $ packAmbigs toExpr
 --	   $ filterLongest
 --	   $ sortBy ordItem
 	   $ complete filt toExpr ga nextTable scannedItems
@@ -278,13 +356,21 @@ nextState fromRules addType knowns filt toExpr ga st term@(_, tok) =
 		      $ tokPos tok]
 		      else []) ++ solveDiags st }
 
-initState :: (Index -> [Item a b]) -> State a b
-initState fromRules = State { prevTable = Map.empty
-			    , currIndex = startIndex
-			    , currItems = fromRules startIndex
-			    , solveDiags = [] }
+-- | add intermediate diagnostic messages
+mixDiags :: [Diagnosis] -> Chart a b -> Chart a b
+mixDiags ds st = st { solveDiags = ds ++ solveDiags st }
 
-getResolved :: (a -> ShowS) -> Pos -> (Item a b -> a) -> State a b -> Result a
+-- | create the initial chart
+initChart :: [(Id, b, [Token])] -> Chart a b
+initChart ruleS = Chart { prevTable = Map.empty
+			, currIndex = startIndex
+			, currItems = map (mkItem startIndex) ruleS
+			, rules = ruleS
+			, solveDiags = [] }
+
+-- | extract resolved result
+getResolved :: (a -> ShowS) -> Pos -> ToExpr a b -> Chart a b 
+	    -> Result a
 getResolved pp p toExpr st = 
     let items = filter ((currIndex st/=) . index) $ currItems st 
 	ds = solveDiags st
@@ -302,14 +388,20 @@ getResolved pp p toExpr st =
 					$ map (tokStr . head . rest) 
 					 expected)) p : ds) Nothing
 		       else if null $ tail result then
-			    Result ds $ Just $ toExpr $ head result
-		       else Result (Diag Error 
-				    ("ambiguous mixfix term\n\t" ++ 
-				     showSepList (showString "\n\t") pp
-				     (map toExpr $ take 5 result) "") p : ds)
-		            Nothing   
-
+			    let har = head result 
+				ams = ambigs har
+				res = Just $ fst $ mkExpr toExpr har
+				in 
+				if null ams then 
+				   Result ds res
+				else Result ((map (showAmbigs pp p) $ 
+					     take 5 ams) ++ ds) res
+		       else Result ((showAmbigs pp p $
+			    map (fst . mkExpr toExpr) result) : ds) Nothing 
 				   
-
-
+showAmbigs :: (a -> ShowS) -> Pos -> [a] -> Diagnosis
+showAmbigs pp p as = 
+    Diag Error ("ambiguous mixfix term\n\t" ++ 
+		showSepList (showString "\n\t") pp
+		(take 5 as) "") p
 

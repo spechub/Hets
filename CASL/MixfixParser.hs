@@ -29,22 +29,26 @@ import Common.Earley
 import CASL.ShowMixfix 
 -- import Control.Exception (assert)
 
-type SItem = Item TERM Bool  -- True means predicate
+assert :: Bool -> a -> a
+assert b a = if b then a else error ("assert")
 
-mkSItem :: Index -> Bool -> Id -> SItem 
-mkSItem i b ide = mkMixfixItem i (ide,b) 
+type Rule = (Id, Bool, [Token])  -- True means predicate
 
-mkSingleArgSItem :: Index -> Bool -> Id -> SItem
-mkSingleArgSItem i b ide = mkItem i ide b 
-    (getPlainTokenList ide ++ [varTok])
+mixRule :: Bool -> Id -> Rule
+mixRule b ide = (ide, b, getTokenPlaceList ide) 
 
-mkSingleOpArgSItem :: Index -> Bool -> Id -> SItem
-mkSingleOpArgSItem i b ide = mkItem i ide b 
-    (getPlainTokenList ide ++ [exprTok])
+mkRule :: Id -> Rule
+mkRule = mixRule False
 
-mkArgsSItem :: Index -> Bool -> Id -> SItem
-mkArgsSItem i b ide = mkItem i ide b 
-    (getPlainTokenList ide ++ getTokenPlaceList tupleId)
+mkSingleArgRule :: Bool -> Id -> Rule
+mkSingleArgRule b ide = (ide, b, getPlainTokenList ide ++ [varTok])
+
+mkSingleOpArgRule :: Bool -> Id -> Rule
+mkSingleOpArgRule b ide = (ide, b, getPlainTokenList ide ++ [exprTok])
+
+mkArgsRule :: Bool -> Id -> Rule
+mkArgsRule b ide = (ide, b, getPlainTokenList ide 
+		      ++ getTokenPlaceList tupleId)
 
 singleArgId, singleOpArgId, multiArgsId :: Id
 singleArgId = mkRuleId (getPlainTokenList exprId ++ [varTok])
@@ -53,26 +57,26 @@ singleOpArgId = mkRuleId (getPlainTokenList exprId ++ [exprTok])
 multiArgsId = mkRuleId (getPlainTokenList exprId ++
 				 getPlainTokenList tupleId)
 
--- these are the possible matches for the nonterminal TERM
--- the same states are used for the predictions  
-
-initialSItem :: GlobalAnnos -> ([Id], [Id]) -> Index -> [SItem]
-initialSItem g (ops, preds) i = 
-    concat [mkSItem i False typeId :
-       mkSItem i False exprId :
-       mkSItem i False varId :
-       mkSItem i False singleArgId :
-       mkSItem i False singleOpArgId :
-       mkSItem i False multiArgsId :
-       listStates False g i, 
-       map (mkSItem i True) preds,
-       map (mkSingleArgSItem i True) preds,
-       map (mkSingleOpArgSItem i True) preds,
-       map (mkArgsSItem i True) preds,
-       map (mkSItem i False) ops,
-       map (mkSingleArgSItem i False) ops,
-       map (mkSingleOpArgSItem i False) ops,
-       map (mkArgsSItem i False) ops]
+initRules ::  GlobalAnnos -> IdSet -> Bool -> [Rule]
+initRules ga (opS, predS, _) maybeFormula = 
+    let ops = Set.toList opS
+	preds = if maybeFormula then 
+		     Set.toList predS else []
+    in concat [ mkRule typeId :
+       mkRule exprId :
+       mkRule varId :
+       mkRule singleArgId :
+       mkRule singleOpArgId :
+       mkRule multiArgsId :
+       listRules False ga, 
+       map (mixRule True) preds,
+       map (mkSingleArgRule True) preds,
+       map (mkSingleOpArgRule True) preds,
+       map (mkArgsRule True) preds,
+       map mkRule ops,
+       map (mkSingleArgRule False) ops,
+       map (mkSingleOpArgRule False) ops,
+       map (mkArgsRule False) ops]
 
 -- | meaningful position of a term
 posOfTerm :: TERM -> Pos
@@ -85,30 +89,23 @@ posOfTerm trm =
 		  case p of 
 		  Pred_name i -> posOfId i
 		  Qual_pred_name _ _ ps -> first (Just ps)
-              Application (Qual_op_name _ _ ps) [] [] -> first (Just ps)
+              Application o [] [] -> 
+		  case o of 
+		  Op_name i ->  posOfId i
+		  Qual_op_name _ _ ps -> first (Just ps)
 	      _ -> first $ get_pos_l trm 
     where first ps = case ps of 
 		    Nothing -> nullPos
 		    Just l -> if null l then nullPos else head l
 
 -- | construct application
-asAppl :: Id -> [TERM] -> Pos -> TERM
-asAppl f as p = let pos = if null as then [] else [p]
-		  in Application (Op_name f) as pos
+asAppl :: Id -> [TERM] -> [Pos] -> TERM
+asAppl f as ps = Application (Op_name f) as ps
 
 -- | constructing the parse tree from (the final) parser state(s)
-stateToAppl :: SItem -> TERM
-stateToAppl st = 
-    let ide = rule st 
-        ar = reverse $ args st
-        qs = reverse $ posList st
-    in if  ide == typeId
-	   || ide == exprId 
-           || ide == parenId
-	   || ide == varId
-       then assert (isSingle ar) $ head ar
-       else if ide == tupleId then  Mixfix_parenthesized ar qs
-       else if ide == singleArgId || ide == multiArgsId
+toAppl :: Id -> Bool -> [TERM] -> [Pos] -> TERM
+toAppl ide _ ar qs = 
+       if ide == singleArgId || ide == multiArgsId
 	    then assert (length ar > 1) $ 
 		 let har:tar = ar
 		     ps = posOfTerm har : qs 
@@ -118,38 +115,9 @@ stateToAppl st =
 		 Mixfix_qual_pred _ -> Mixfix_term [har,
 				   Mixfix_parenthesized tar ps]
 		 _ -> error "stateToAppl"
-	    else let newIde@(Id (t:_) _ _) = setIdePos ide ar qs
-		     pos = if isPlace t then posOfTerm $ head ar
-					  else tokPos t
-			        in Application (Op_name newIde) ar [pos]
-				   -- true mixfix
-
-asListAppl :: GlobalAnnos -> SItem -> TERM
-asListAppl g s =
-    let i = rule s
-        ra = reverse $ args s
-        br = reverse $ posList s in
-    if isListId i then    
-           let Id _ [f] _ = i
-	       ListCons b c = getLiteralType g f
-	       (b1, _, _) = getListBrackets b
-	       cl = length $ getPlainTokenList b
-               nb1 = length b1
-               na = length ra
-               nb = length br
-	       mkList [] ps = asAppl c [] (head ps)
-	       mkList (hd:tl) ps = asAppl f [hd, mkList tl (tail ps)] (head ps)
-	   in if null ra then asAppl c [] 
-		  (if null br then nullPos else head br)
-	      else if nb + 2 == cl + na then
-		   let br1 = drop (nb1 - 1) br 
-	           in  mkList ra br1  
-		   else error "asListAppl"
-    else stateToAppl s
+	    else Application (Op_name ide) ar qs
 
 type IdSet = (Set.Set Id, Set.Set Id, Set.Set Id)
-
-type Chart = State TERM Bool
 
 addType :: TERM -> TERM -> TERM
 addType tt t = 
@@ -158,29 +126,20 @@ addType tt t =
     Mixfix_cast s ps -> Cast t s ps
     _ -> error "addType"
 
-initSItems ::  GlobalAnnos -> IdSet -> Bool -> Index -> [SItem]
-initSItems ga (ops, preds, _) maybeFormula = 
-    initialSItem ga (Set.toList ops,  if maybeFormula then 
-		     Set.toList preds else [])
 
 filterByPredicate :: Bool -> Bool -> Maybe Bool
 filterByPredicate bArg bOp = 
     if bArg then Just False else
        if bOp then Just True else Nothing
 
-nextStep :: GlobalAnnos -> IdSet -> Bool -> Chart -> (TERM, Token) -> Chart
-nextStep ga ids maybeFormula =
-    nextState (initSItems ga ids maybeFormula)
-    addType Set.empty filterByPredicate (asListAppl ga) ga
+type TermChart = Chart TERM Bool
 
-iterateStates :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> Chart 
-	      -> Chart
-iterateStates g ids maybeFormula terms c = 
-    let selfcall = iterateStates g ids
-	self = selfcall maybeFormula
-	selfTerm = selfcall False
+iterateCharts :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> TermChart 
+	      -> TermChart
+iterateCharts g ids maybeFormula terms c = 
+    let self = iterateCharts g ids maybeFormula
 	expand = expandPos Mixfix_token 
-	oneStep = nextStep g ids maybeFormula c
+	oneStep = nextChart addType filterByPredicate toAppl Set.empty g c
 	resolveTerm = resolveMixTrm g ids False
     in if null terms then c
        else case head terms of
@@ -195,8 +154,8 @@ iterateStates g ids maybeFormula terms c =
 				      $ head ts
 		       tNew = case v of Nothing -> head ts
 					Just x -> x
-		       c2 = selfTerm (tail terms) (oneStep (tNew, varTok))
-		   in c2 {solveDiags = mds ++ solveDiags c2 }
+		       c2 = self (tail terms) (oneStep (tNew, varTok))
+		   in mixDiags mds c2
 		else self (expand ("(", ")") ts ps ++ tail terms) c
 	    Conditional t1 f2 t3 ps -> 
                 let Result mds v = 
@@ -206,22 +165,28 @@ iterateStates g ids maybeFormula terms c =
 			   return (Conditional t4 f5 t6 ps)
                     tNew = case v of Nothing -> head terms
 				     Just x -> x
-		    c2 = selfTerm (tail terms) (oneStep (tNew, varTok))
-		in c2 {solveDiags = mds ++ solveDiags c2 }
+		    c2 = self (tail terms) 
+			 (oneStep (tNew, varTok {tokPos = posOfTerm tNew}))
+		in mixDiags mds c2
             Mixfix_token t -> let (ds1, trm) = 
 				      convertMixfixToken (literal_annos g) t
-			          c2 = selfTerm (tail terms) $ oneStep $ 
+			          c2 = self (tail terms) $ oneStep $ 
 				       case trm of 
 						Mixfix_token tok -> (trm, tok)
-						_ -> (trm, varTok)
-				  in c2 {solveDiags = ds1 ++ solveDiags c2 }
-	    t@(Mixfix_sorted_term _ _) -> selfTerm (tail terms) 
-					  (oneStep (t, typeTok))
-	    t@(Mixfix_cast _ _) -> selfTerm (tail terms) 
-					  (oneStep (t, typeTok))
-	    t@(Qual_var _ _ _) -> selfTerm (tail terms) 
-					  (oneStep (t, varTok))
-	    t ->  selfTerm (tail terms) (oneStep (t, exprTok))
+						_ -> (trm, varTok 
+						      {tokPos = tokPos t})
+				  in mixDiags ds1 c2
+	    t@(Mixfix_sorted_term _ (p:_)) -> self (tail terms) 
+			    (oneStep (t, typeTok {tokPos = p}))
+	    t@(Mixfix_cast _ (p:_)) -> self (tail terms) 
+			    (oneStep (t, typeTok {tokPos = p}))
+	    t@(Qual_var _ _ (p:_)) -> self (tail terms) 
+			    (oneStep (t, varTok {tokPos = p}))
+	    t@(Application (Qual_op_name _ _ (p:_)) _ _) -> 
+		self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
+	    t@(Mixfix_qual_pred (Qual_pred_name _ _ (p:_))) -> 
+		self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
+	    t -> error ("iterate mixfix states: " ++ show t)
 
 mkIdSet :: Set.Set Id -> Set.Set Id -> IdSet
 mkIdSet ops preds = 
@@ -237,9 +202,9 @@ resolveMixfix g ops preds maybeFormula t =
 resolveMixTrm :: GlobalAnnos -> IdSet -> Bool 
 	      -> TERM -> Result TERM
 resolveMixTrm ga ids maybeFormula trm =
-	getResolved showTerm (posOfTerm trm) (asListAppl ga)
-	   $ iterateStates ga ids maybeFormula [trm] $ 
-	    initState $ initSItems ga ids maybeFormula
+	getResolved showTerm (posOfTerm trm) toAppl
+	   $ iterateCharts ga ids maybeFormula [trm] $ 
+	    initChart $ initRules ga ids maybeFormula
 
 resolveFormula :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> FORMULA 
 	       -> Result FORMULA
@@ -305,7 +270,7 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
 		     then return p else 
 			  plain_error p 
 		          ("not a predicate: " ++ showId ide "")
-			  (posOfTerm t)
+			  (posOfId ide)
 		 Mixfix_qual_pred qide ->
 		  return $ Predication qide [] []
 		 Mixfix_term [Mixfix_qual_pred qide, 
@@ -327,19 +292,19 @@ makeStringTerm c f tok =
   sp = tokPos tok
   str = init (tail (tokStr tok))
   makeStrTerm p l = 
-    if null l then asAppl c [] p
+    if null l then asAppl c [] [p]
     else let (hd, tl) = splitString caslChar l
-         in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p] [] []) [] p, 
-		      makeStrTerm (incSourceColumn p $ length hd) tl] p
+         in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p] [] []) [] [p], 
+		      makeStrTerm (incSourceColumn p $ length hd) tl] [p]
 
 makeNumberTerm :: Id -> Token -> TERM
 makeNumberTerm f t@(Token n p) =
     case n of
            [] -> error "makeNumberTerm"
-	   [_] -> asAppl (Id [t] [] []) [] p
-	   hd:tl -> asAppl f [asAppl (Id [Token [hd] p] [] []) [] p, 
+	   [_] -> asAppl (Id [t] [] []) [] [p]
+	   hd:tl -> asAppl f [asAppl (Id [Token [hd] p] [] []) [] [p], 
 			      makeNumberTerm f (Token tl 
-						(incSourceColumn p 1))] p
+						(incSourceColumn p 1))] [p]
 
 makeFraction :: Id -> Id -> Token -> TERM
 makeFraction f d t@(Token s p) = 
@@ -349,7 +314,7 @@ makeFraction f d t@(Token s p) =
        else asAppl d [makeNumberTerm f (Token n p),
 		      makeNumberTerm f (Token (tail r) 
 					(incSourceColumn p $ dotOffset + 1))]
-            $ incSourceColumn p dotOffset
+            [incSourceColumn p dotOffset]
 
 makeSignedNumber :: Id -> Token -> TERM
 makeSignedNumber f t@(Token n p) = 
@@ -358,7 +323,7 @@ makeSignedNumber f t@(Token n p) =
   hd:tl ->   
     if hd == '-' || hd == '+' then
        asAppl (Id [Token [hd] p] [] []) 
-		  [makeNumberTerm f (Token tl $ incSourceColumn p 1)] p
+		  [makeNumberTerm f (Token tl $ incSourceColumn p 1)] [p]
     else makeNumberTerm f t
 
 makeFloatTerm :: Id -> Id -> Id -> Token -> TERM
@@ -369,7 +334,7 @@ makeFloatTerm f d e t@(Token s p) =
        else asAppl e [makeFraction f d (Token m p),
 		      makeSignedNumber f (Token (tail r) 
 					  $ incSourceColumn p (offset + 1))]
-		$ incSourceColumn p offset
+		[incSourceColumn p offset]
 
 
 -- analyse Mixfix_token

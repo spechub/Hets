@@ -10,7 +10,7 @@ Error (line 7, column 3) unexpected mixfix token: <
 Error (line 8, column 1) expected further mixfix token: ["(var )","(op )","("]
 Error (line 9, column 1) unexpected mixfix token: (
 Error (line 10, column 13) unexpected mixfix token: ,
-Error (line 11, column 8) not a predicate: __+__
+Error (line 11, column 10) not a predicate: __+__
 Error (line 12, column 8) not a formula: (op a:b)
 Error (line 13, column 8) not a formula: (var a:b)
 Error (line 14, column 8) not a predicate: f
@@ -75,3 +75,21 @@ Error (line 28, column 1) ambiguous mixfix term
 Error (line 29, column 1) ambiguous mixfix term
 	__!(__::__(a,[]))
 	__!([__](a))
+Error (line 30, column 1) ambiguous mixfix term
+	__::__(A__([__]__(a,+__(b))),[])
+	[__](A__([__]__(a,+__(b))))
+	__::__(__[__]__(A,a,+__(b)),[])
+	[__](__[__]__(A,a,+__(b)))
+	__::__(__+__(A__(__::__(a,[])),b),[])
+Error (line 31, column 1) ambiguous mixfix term
+	__::__(__+__(b,A__(__::__(a,[]))),[])
+	[__](__+__(b,A__(__::__(a,[]))))
+	__::__(__+__(b,A__([__](a))),[])
+	[__](__+__(b,A__([__](a))))
+	__::__(__+__(b,__[__](A,a)),[])
+Error (line 32, column 1) ambiguous mixfix term
+	__::__(A__(__::__(a,[])),__::__(A__(__::__(a,[])),[]))
+	__::__(A__([__](a)),__::__(A__(__::__(a,[])),[]))
+	__::__(__[__](A,a),__::__(A__(__::__(a,[])),[]))
+	__::__(__[a](A),__::__(A__(__::__(a,[])),[]))
+	__::__(A[a],__::__(A__(__::__(a,[])),[]))

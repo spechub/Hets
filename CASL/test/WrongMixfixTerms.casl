@@ -27,3 +27,6 @@ A([a])
 - [a]
 b + A[a]
 [a]! %[combining [__] with __! is allowed without parenthesis]%
+[A[a] + b]
+[b + A[a]]
+[A[a], A[a]]
