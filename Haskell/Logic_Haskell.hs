@@ -28,7 +28,8 @@ import Haskell.HatParser                 (HsDecls,
                                           hatParser)
 import Haskell.HatAna
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo,
-                                          joinModuleInfo)
+                                          emptyModuleInfo,
+					  joinModuleInfo)
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl)
 import Haskell.Hatchet.HsSyn    (HsDecl)
 
@@ -102,14 +103,13 @@ instance StaticAnalysis Haskell HsDecls
 
   where
     empty_signature Haskell 
-       = emptySign
+       = emptyModuleInfo
     signature_union Haskell sig1 sig2 = return (joinModuleInfo sig1 sig2)
     inclusion Haskell _ _ = return ()
     basic_analysis Haskell = Just(basicAnalysis)
       where basicAnalysis (basicSpec, sig, _) = 	            
              let (modInfo, sens) = hatAna basicSpec sig
-             in Result [] $ Just (basicSpec, modInfo, 
-				  -- should be the difference
+             in Result [] $ Just (basicSpec, diffModInfo modInfo sig, 
 				  modInfo, sens)
 
 instance Logic Haskell Haskell_Sublogics
