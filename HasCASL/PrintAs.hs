@@ -40,14 +40,12 @@ printKind ga kind = case kind of
 			      _ -> space <> colon <> printText0 ga kind
 
 instance PrettyPrint Type where 
-    printText0 ga (TypeConstrAppl name kind args _) = printText0 ga name 
+    printText0 ga (TypeConstrAppl name i kind args _) = printText0 ga name 
+    			  <> if i == 0 then empty 
+			     else parens (int i)
 			  <> printKind ga kind
 			  <> if null args then empty 
 			     else parens (commas ga args)
-    printText0 ga (TypeVar name kind i _) = printText0 ga name
-			  <> printKind ga kind
-			  <> if i == 0 then empty 
-			     else parens (ptext (show i))
     printText0 ga (TypeToken t) = printText0 ga t
     printText0 ga (BracketType k l _) = bracket k $ commas ga l
     printText0 ga (KindedType t kind _) = printText0 ga t  

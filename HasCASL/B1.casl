@@ -30,6 +30,8 @@ type a__b, [__] : a -> b
 
 var x : a; y : Type; x : y
 
+var x : s
+
 var x: b
 
 var x < t

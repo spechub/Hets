@@ -4,7 +4,7 @@
    Authors: Christian Maeder
    Year:    2003
    
-   analyse types
+   analyse given classes and types
 -}
 
 module TypeAna where
@@ -14,60 +14,191 @@ import AsUtils
 import GlobalAnnotationsFunctions(emptyGlobalAnnos)
 import Id
 import Le
+import List(nub)
+import Maybe
 import MonadState
 import Pretty
 import PrettyPrint
-import PrintAs
+import PrintAs()
 import FiniteMap
 import Result
-import Set
 
-checkTypeKind :: Id -> Kind -> Type -> State Env (Result Type)
-checkTypeKind i k t = 
+-- ---------------------------------------------------------------------------
+-- analyse class
+-- ---------------------------------------------------------------------------
+
+anaClassName :: Bool -> ClassName -> State Env (Result [ClassName])
+-- True: declare the class
+anaClassName b ci = 
+    do ce <- getClassEnv
+       if isJust $ lookupFM ce ci then return $ return [ci]
+	 else if b then 
+		do putClassEnv $ defCEntry ce ci [] universe
+                   return $ return [ci]
+	      else 	  
+		return $ plain_error [] 
+		    ("undeclared class '" ++ tokStr ci ++  "'")
+		    (tokPos ci)
+
+anaClass :: Bool -> Class -> State Env Class
+anaClass b c@(As.Intersection cs ps) = 
+    if null cs
+       then 
+       do if null ps then return ()  -- no warning 
+	    else appendDiags [Diag Warning
+				 "redundant universe class" 
+				 (head ps)]
+	  return c
+       else
+    do Result ds (Just l) <- anaList (anaClassName (b && null (tail cs))) cs
+       appendDiags ds
+       return $ Intersection (nub $ concat l) ps
+
+anaClass _ (Downset t) = 
+    do newT <- anaType t
+       return $ Downset newT
+
+anaClassAppl :: Class -> State Env Class
+anaClassAppl c = anaClass False c
+
+-- ----------------------------------------------------------------------------
+-- analyse kind
+-- ----------------------------------------------------------------------------
+
+anaKind :: Kind -> State Env Kind
+anaKind (Kind args c p) = 
+    do ca <- anaClassAppl c
+       newArgs <- mapM anaProdClass args
+       return $ Kind newArgs ca p
+
+anaExtClass :: ExtClass -> State Env ExtClass
+anaExtClass (ExtClass c v p) = 
+    do ca <- anaClassAppl c
+       return $ ExtClass ca v p
+anaExtClass (KindAppl k1 k2) =
+    do n1 <- anaKind k1
+       n2 <- anaKind k2
+       return $ KindAppl n1 n2
+
+anaProdClass :: ProdClass -> State Env ProdClass
+anaProdClass (ProdClass l p) =
+    do cs <- mapM anaExtClass l
+       return $ ProdClass cs p
+
+-- ---------------------------------------------------------------------------
+-- analyse type
+-- ---------------------------------------------------------------------------
+
+checkTypeKind :: Id -> Kind -> State Env [Diagnosis]
+checkTypeKind i k = 
     do tk <- getTypeKinds
        case lookupFM tk i of
-           Nothing -> return $ plain_error t 
+           Nothing -> return [Diag Error 
 		      ("unknown type '" ++ showId i "'")
-				   (posOfId i)
+				   (posOfId i)]
 	   Just k2 -> if eqKind k2 k 
-			  then return $ return t 
-			  else return $ plain_error t
+			  then return []
+			  else return [Diag Error
 				       ("incompatible type kinds\n" ++ 
 					indent 2 (showPretty k . 
 						  showChar '\n' .  
 						  showPretty k2) "")
-				   (posOfKind k)
+				   (posOfKind k)]
 
-anaType :: Type -> State Env (Result Type)
-anaType (t@(TypeConstrAppl i k ts _)) =
-    if length ts > kindArity k then
-       return $ plain_error t 
-	      ("too many type arguments:\n" ++
-	       indent 2 (showPretty t) "")
-	      (posOfType t)
-       else checkTypeKind i k t
-
-anaType (t@(TypeVar i k v _)) =
-	 if v > 0 then return $ plain_error t
-	               ("unexpected generic variable '" ++ showId i "i")
-	               (posOfId i)
-	 else checkTypeKind i k t
-
-anaType (TypeToken t) = 
-    let i = simpleIdToId t in
+anaTypeId :: Id -> State Env Type
+anaTypeId i = 
     do tk <- getTypeKinds
        case lookupFM tk i of
-           Nothing -> return $ plain_error (TypeToken t) 
-		      ("unidentified type token '" ++ tokStr t)
-		      (tokPos t)
-	   Just k -> do ts <- getTypeVars 
-			return $ return $ if i `elementOf` ts
-			       then TypeVar i k 0 []
-			       else TypeConstrAppl i k [] []
+           Nothing -> do
+		      appendDiags [Diag Error 
+				   ("unidentified type '" ++ showId i "'")
+				   (posOfId i)]
+		      return (TypeConstrAppl i 0 nullKind [] []) 
+	   Just k -> return $ TypeConstrAppl i 0 k [] []
+
+anaType :: Type -> State Env Type
+anaType (t@(TypeConstrAppl i v k ts _)) =
+    let e1 = if length ts > kindArity k then
+	     [Diag Error ("too many type arguments:\n" ++
+	       indent 2 (showPretty t) "")
+	      (posOfType t)] else []
+	e2 = if v > 0 then 
+	     [Diag Error 
+	      ("too many type arguments:\n" ++
+	       indent 2 (showPretty t) "")
+	      (posOfType t)] else []
+    in do ds <- checkTypeKind i k
+	  appendDiags $ e1 ++ e2 ++ ds
+	  return t
+
+anaType (TypeToken t) = 
+    anaTypeId $ simpleIdToId t
 
 anaType (BracketType Parens ts ps) =
-    do Result ds (Just newTs) <- anaList anaType ts
-       return $ Result ds $ Just $ ProductType newTs ps
+    do newTs <- mapM anaType ts
+       return $ ProductType newTs ps
+
+anaType (BracketType b ts ps) =
+    let toks@[o,c] = mkBracketToken b ps 
+	i = if null ts then Id toks [] [] 
+	    else Id [o, Token place $ posOfType $ head ts, c] [] []
+    in
+    do newT <- anaTypeId i
+       if null ts then return newT
+	  else do args <- mapM anaType ts
+		  case newT of
+			   TypeConstrAppl _ _ k _ _ -> 
+			       do if kindArity k < length args then
+				     appendDiags [Diag Error 
+						  ("too many arguments for '"
+						   ++ showId i "'")
+						 $ posOfId i]
+				     else return ()
+				  return $ TypeConstrAppl i 0 k args []
+			   _ -> return $ TypeConstrAppl i 0
+				     (Kind 
+				      [ProdClass 
+				       (replicate (length args) extUniverse) 
+				       [] ] universe []) args []
+
+anaType(KindedType t k ps) =
+    do newK <- anaKind k
+       newT <- anaType t
+       -- getKind of t and compare it with k
+       return $ KindedType newT newK ps
+
+anaType (MixfixType ts) = 
+    do (f:as) <- mapM anaType ts
+       return $ case f of 
+	      TypeConstrAppl i g k bs _ ->
+		  TypeConstrAppl i g k (bs ++ as) []
+	      _ -> MixfixType (f:as) 
+
+anaType (LazyType t p) =
+    do newT <- anaType t
+       return $ LazyType newT p
+
+anaType (ProductType ts ps) =
+    do newTs <- mapM anaType ts
+       return $ ProductType newTs ps
+
+anaType (FunType t1 a t2 ps) =
+    do newT1 <- anaType t1
+       newT2 <- anaType t2
+       return $ FunType newT1 a newT2 ps
+
+mkBracketToken :: BracketKind -> [Pos] -> [Token]
+mkBracketToken k ps = 
+    if null ps then error "mkBracketToken"
+       else zipWith Token (getBrackets k) [head ps, last ps] 
+
+getBrackets :: BracketKind -> [String]
+getBrackets k = 
+    case k of Parens -> ["(", ")"]
+	      Squares -> ["[", "]"]
+	      Braces -> ["{", "}"]
+
+
 
 -- --------------------------------------------------------------------------
 showPretty :: PrettyPrint a => a -> ShowS

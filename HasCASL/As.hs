@@ -85,8 +85,7 @@ data PseudoType = SimplePseudoType Type
                 -- pos "\" "("s, ")"s, dot 
                   deriving (Show, Eq)
 
-data Type = TypeConstrAppl TypeName Kind [Type] [Pos]  -- analysed
-          | TypeVar TypeName Kind Int [Pos] -- analysed 
+data Type = TypeConstrAppl TypeName Int Kind [Type] [Pos]  -- analysed
             -- Int > 0 means generalized
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
@@ -103,8 +102,7 @@ data Type = TypeConstrAppl TypeName Kind [Type] [Pos]  -- analysed
             deriving (Show, Eq)
 
 posOfType :: Type -> Pos
-posOfType (TypeConstrAppl i _ _ _) = posOfId i
-posOfType (TypeVar i _ _ _) = posOfId i
+posOfType (TypeConstrAppl i _ _ _ _) = posOfId i
 posOfType (TypeToken t) = tokPos t
 posOfType (BracketType _ ts ps) = 
     if null ps then 

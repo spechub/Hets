@@ -79,8 +79,9 @@ optAnaVarDecl vd@(VarDecl v t _ _) =
 	       Nothing -> anaVarDecl vd
     else anaVarDecl vd
 
-anaVarDecl(VarDecl v t _ p) = 
-		   do as <- getAssumps
+anaVarDecl(VarDecl v oldT _ p) = 
+		   do t <- anaType oldT
+		      as <- getAssumps
 		      let l = lookUp as v 
 			  ts = SimpleTypeScheme t in 
 			  if ts `elem` l then 
@@ -116,48 +117,13 @@ anaClassDecls (ClassDefn ci syncl _) =
     do scls@(Intersection icls _) <- anaClassAppl syncl
        anaClassDecl [] scls ci
 
-anaClassDecls (DownsetDefn ci tv t _) = 
-    do Result ds (Just newT) <- anaType t 
+anaClassDecls (DownsetDefn ci _ t _) = 
+    do newT <- anaType t 
        anaClassDecl [] (Downset newT) ci
-       appendDiags ds
-	       
-anaClassName :: Bool -> ClassName -> State Env (Result [ClassName])
--- True: declare the class
-anaClassName b ci = 
-    do ce <- getClassEnv
-       if isJust $ lookupFM ce ci then return $ return [ci]
-	 else if b then 
-		do putClassEnv $ defCEntry ce ci [] universe
-                   return $ return [ci]
-	      else 	  
-		return $ plain_error [] 
-		    ("undeclared class '" ++ tokStr ci ++  "'")
-		    (tokPos ci)
-
-anaClass :: Bool -> Class -> State Env (Result Class)
-anaClass b c@(As.Intersection cs ps) = 
-    if null cs
-       then if null ps then return $ return c  -- no warning 
-	    else return $ warning c "redundant universe class" (head ps)
-       else
-    do Result ds (Just l) <- anaList (anaClassName (b && null (tail cs))) cs
-       return $ Result ds $ Just $ Intersection (nub $ concat l) ps
-
-anaClass _ c@(Downset t) = 
-    return $ plain_error c "anaClass for Downset not implemented" 
-	       (posOfType t)
 
 anaSuperClass :: Class -> State Env Class
 anaSuperClass c =
-    do Result ds (Just ca) <- anaClass True c 
-       appendDiags ds
-       return ca
-
-anaClassAppl :: Class -> State Env Class
-anaClassAppl c =
-    do Result ds (Just ca) <- anaClass False c
-       appendDiags ds
-       return ca
+    anaClass True c 
 
 anaClassDecl :: [ClassName] -> Class -> ClassName -> State Env ()
 anaClassDecl cs cdef ci = 
@@ -345,26 +311,3 @@ addTypeKind t k =
 			       return k
 -}
 
--- ----------------------------------------------------------------------------
--- Kind
--- ----------------------------------------------------------------------------
-
-anaKind :: Kind -> State Env Kind
-anaKind (Kind args c p) = 
-    do ca <- anaClassAppl c
-       newArgs <- mapM anaProdClass args
-       return $ Kind newArgs ca p
-
-anaExtClass :: ExtClass -> State Env ExtClass
-anaExtClass (ExtClass c v p) = 
-    do ca <- anaClassAppl c
-       return $ ExtClass ca v p
-anaExtClass (KindAppl k1 k2) =
-    do n1 <- anaKind k1
-       n2 <- anaKind k2
-       return $ KindAppl n1 n2
-
-anaProdClass :: ProdClass -> State Env ProdClass
-anaProdClass (ProdClass l p) =
-    do cs <- mapM anaExtClass l
-       return $ ProdClass cs p
