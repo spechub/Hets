@@ -9,6 +9,7 @@
 
 module RunParsers (exec, HetParser(HetParser)) where 
 
+import Lexer((<<))
 import Parsec
 import ParsecPos
 import PrettyPrint
@@ -61,7 +62,7 @@ parseLine p line n = let pos = setSourceLine (initialPos "") n
 		       in result (parse parser "" line)
 
 parseSpec :: (PrettyPrint a) => SourceName -> Parser a -> IO ()
-parseSpec fileName p  =  do r <- parseFromFile p fileName
+parseSpec fileName p  =  do r <- parseFromFile (p << eof) fileName
 			    putStrLn (result r)
 
 instance (Show a, PrettyPrint b) => PrettyPrint (Either a b) where
