@@ -10,7 +10,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ghc:hetcats
+INCLUDE_PATH = ghc:hetcats:fgl
 
 HC         = ghc
 HC_INCLUDE = -i$(INCLUDE_PATH)
