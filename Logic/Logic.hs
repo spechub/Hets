@@ -127,7 +127,7 @@ type ParseFun a = FilePath -> Int -> Int -> String -> (a,String,Int,Int)
                   -- args: filename, line, column, input text
                   -- result: value, remaining text, line, column 
 
-class (Language lid, PrettyPrint basic_spec, Eq basic_spec,
+class (Language lid, PrettyPrint basic_spec,
        PrettyPrint symb_items, Eq symb_items,
        PrettyPrint symb_map_items, Eq symb_map_items) =>
       Syntax lid basic_spec symb_items symb_map_items
@@ -212,9 +212,12 @@ class ( Syntax lid basic_spec symb_items symb_map_items
 
 -- sublogics
 
-class (Ord l, Show l) => LatticeWithTop l where
+class (Eq l, Show l) => LatticeWithTop l where
   meet, join :: l -> l -> l
   top :: l
+
+(<<=) :: LatticeWithTop l => l -> l -> Bool
+a <<= b = meet a b == b 
 
 -- a dummy instance 
 instance LatticeWithTop () where

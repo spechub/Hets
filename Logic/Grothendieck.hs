@@ -63,10 +63,6 @@ instance PrettyPrint G_basic_spec where
 
     printLatex0 ga (G_basic_spec _ s) = printLatex0 ga s
 
-instance Eq G_basic_spec where
-  (G_basic_spec i1 s1) == (G_basic_spec i2 s2) =
-     coerce i1 i2 s1 == Just s2
-
 data G_sentence = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .

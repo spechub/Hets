@@ -45,7 +45,7 @@ data SPEC = Basic_spec G_basic_spec
 	    -- pos: many of "[","]"; one balanced pair per FIT_ARG
 	  | Qualified_spec Logic_name (Annoted SPEC) [Pos]
 	    -- pos: "logic", Logic_name,":"
-	    deriving (Show,Eq)
+	    deriving (Show)
 
 
 {- Renaming and Hiding can be performend with intermediate Logic
@@ -72,33 +72,33 @@ data G_hiding = G_symb_list G_symb_items_list
 
 data SPEC_DEFN = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) [Pos]
 	         -- pos: "spec","=",opt "end"
-		 deriving (Show,Eq)
+		 deriving (Show)
 
 data GENERICITY = Genericity PARAMS IMPORTED [Pos]
 		  -- pos: many of "[","]" opt ("given", commas) 
-		  deriving (Show,Eq)
+		  deriving (Show)
 
 data PARAMS = Params [Annoted SPEC]
-	      deriving (Show,Eq)
+	      deriving (Show)
 
 data IMPORTED = Imported [Annoted SPEC]
-		deriving (Show,Eq)
+		deriving (Show)
 
 data FIT_ARG = Fit_spec (Annoted SPEC) G_symb_map_items_list [Pos]
 	       -- pos: opt "fit"
 	     | Fit_view VIEW_NAME [Annoted FIT_ARG] [Pos] [Annotation]
 	       -- The list of Annotations is written before the keyword 'view'
 	       -- pos: "view", opt many of "[","]"
-	       deriving (Show,Eq)
+	       deriving (Show)
 
 data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 			   [G_mapping] [Pos]
 	         -- pos: "view",":",opt "=", opt "end" 
-		  deriving (Show,Eq)
+		  deriving (Show)
 
 data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) [Pos]
 	         -- pos: "to"
-		 deriving (Show,Eq)
+		 deriving (Show)
 
 type SPEC_NAME = SIMPLE_ID
 type VIEW_NAME = SIMPLE_ID

@@ -156,7 +156,7 @@ comp_repr ::
             lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3 )
 
-comp_repr r1 r2 = if target_sublogic r1 <= source_sublogic r2 then
+comp_repr r1 r2 = if target_sublogic r1 <<= source_sublogic r2 then
    Just(LogicRepr{ 
    repr_name = repr_name r1++";"++repr_name r2,
    source = source r1, target = target r2,

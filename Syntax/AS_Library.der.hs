@@ -23,7 +23,6 @@ import Common.AS_Annotation
 
 import qualified Syntax.AS_Architecture
 import qualified Syntax.AS_Structured
-import Logic.Grothendieck
 
 
 data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] [Pos] [Annotation]
@@ -31,7 +30,7 @@ data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] [Pos] [Annotation]
 	        -- list of annotations is parsed preceding the first LIB_ITEM
 	        -- the last LIB_ITEM may be annotated with a following comment
 	        -- the first LIB_ITEM cannot be annotated
-		deriving (Show,Eq)
+		deriving (Show)
 
 {- for information on the list of Pos see the documentation in
    AS_Structured.hs and AS_Architecture.hs -}
@@ -59,7 +58,7 @@ data LIB_ITEM = Spec_defn Syntax.AS_Structured.SPEC_NAME
 		-- pos: "from","get",commas, opt "end"
 	      | Logic_decl Syntax.AS_Structured.Logic_name [Pos]
 		-- pos:  "logic", Logic_name
-		deriving (Show,Eq)
+		deriving (Show)
 
 data ITEM_NAME_OR_MAP = Item_name ITEM_NAME 
 		      | Item_name_map ITEM_NAME ITEM_NAME [Pos]
@@ -96,15 +95,14 @@ instance Show LIB_NAME where
 
 instance Eq LIB_ID where
   Direct_link s1 _ == Direct_link s2 _ = s1==s2
-  Direct_link s1 _ == Indirect_link s2 _ = False
-  Indirect_link s1 _ == Direct_link s2 _ = False
   Indirect_link s1 _ == Indirect_link s2 _ = s1==s2
+  _ == _ = False
 
 instance Ord LIB_ID where
   Direct_link s1 _ <= Direct_link s2 _ = s1<=s2
-  Direct_link _ _ <= Indirect_link _ _ = True
-  Indirect_link _ _ <= Direct_link _ _ = False
   Indirect_link s1 _ <= Indirect_link s2 _ = s1<=s2
+  Direct_link _ _ <= _ = True
+  Indirect_link _ _ <= _ = False
 
 getLIB_ID :: LIB_NAME -> LIB_ID
 getLIB_ID (Lib_version libid _) = libid
