@@ -67,7 +67,7 @@ fileparse sufs fp = let (path,base) = stripDir fp
                     in (base',path,suf) 
 
 stripDir :: FilePath -> (FilePath,FilePath)
-stripDir fp = (\(x,y) -> (reverse y, reverse' x)) 
+stripDir fp = (\(x,y) -> (reverse' y, reverse x)) 
 	      (break (== '/') (reverse fp))
     where reverse' "" = "."
 	  reverse' x  = reverse x
