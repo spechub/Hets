@@ -617,13 +617,12 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
   Qualified_spec logname asp pos ->
    ana_err "logic qualified specs"
 
-{-
   Data (Logic lid1) asp1 asp2 pos ->
    do let sp1 = item asp1
           sp2 = item asp2
           l = getLogic nsig
       (sp1',nsig1,dg1) <- 
-         ana_SPEC lg gctx (EmptyNode lid1) Nothing just_struct sp1
+         ana_SPEC lg gctx (EmptyNode (Logic lid1)) Nothing just_struct sp1
       (sp2',nsig2,dg2) <- 
          ana_SPEC lg (gannos,genv,dg1) nsig1 Nothing just_struct sp2
       n' <- maybeToResult (newPos "k" 0 0) 
@@ -634,11 +633,11 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
             dgn_name = name,
             dgn_sign = gsigma', -- G_sign lid' (empty_signature lid'), -- delta is empty
             dgn_sens = G_l_sentence_list lid' [],
-            dgn_origin = DGFree }
+            dgn_origin = DGData }
           [node] = newNodes 0 dg2
           link = (n',node,DGLink {
             dgl_morphism = error "AnalysisStructured.hs:5", -- ??? inclusion
-            dgl_type = FreeDef nsig,
+            dgl_type = GlobalDef,
             dgl_origin = DGFree })
       return (Data (Logic lid1) 
                    (replaceAnnoted sp1' asp1) 
@@ -647,7 +646,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
               NodeSig(node,gsigma'),
               insEdge link $
               insNode (node,node_contents) dg2)
--}
+
 
 -- analysis of renamings
 
