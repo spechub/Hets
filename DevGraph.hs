@@ -36,6 +36,7 @@ import Id
 -- ??? Some info about the theorems already proved for a node
 --     should be added
 --      or should it be kept separately?
+-- what about open theorems of a node???
 data DGNode = DGNode {
                 dgn_name :: Maybe SIMPLE_ID,
                 dgn_sign :: G_sign, -- only the delta
@@ -52,7 +53,12 @@ data DGNode = DGNode {
 isDGRef :: DGNode -> Bool
 isDGRef (DGNode _ _ _ _) = False
 isDGRef (DGRef _ _ _) = True
-            
+
+locallyEmtpy ::  DGNode -> Bool
+locallyEmtpy (DGNode _ (G_sign lid sigma) (G_l_sentence _ sens) _) = 
+  sigma == empty_signature lid && null sens
+locallyEmtpy (DGRef _ _ _) = True
+           
 data DGLink = DGLink {
               -- dgl_name :: String,
               -- dgl_src, dgl_tar :: DGNode,  -- already in graph structure
@@ -124,3 +130,39 @@ get_dgn_name (DGNode (Just name) _ _ _) = Just name
 get_dgn_name (DGRef (Just name) _ _) = Just name
 get_dgn_name _ = Nothing
 
+{- what should be in proof status:
+
+- proofs of thm links according to rules
+- cons, def and mono annos, and their proofs
+
+data DGProofTree = 
+   TheoremHideShift
+ | HideTheoremShift
+ | Borrowing
+ | ConsShift
+ | DefShift 
+ | MonoShift
+ | ConsComp
+ | DefComp 
+ | MonoComp
+ | DefToMono
+ | MonoToCons
+ | FreeIsMono
+ | MonoIsFree
+ | Composition
+ | GlobDecomp
+ | LocDecompI
+ | LocDecompII
+ | Subsumption
+ | BasicInference
+
+
+data DGTheorem = NodeTheorem ....
+                   | Proved (LEdge DGLink) DGProof
+                   | Conservative (LEdge DGLink) DGProof
+                   | Monomorphic (LEdge DGLink) DGProof
+                   | Definitional (LEdge DGLink) DGProof
+
+type DGProofStatus = [DGTheorem]
+
+-}
