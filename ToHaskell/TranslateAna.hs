@@ -14,8 +14,26 @@ import Common.Token
 import Common.AnnoState
 import Common.PPUtils
 
+-------------------------------------------------------------------------
+-- einige "Konstanten"
+-------------------------------------------------------------------------
+
 -- Positionsangaben in den erzeugten Haskelldatenstrukturen sind
 -- grundsätzlich falsch (werden evtl. nicht benötigt)
+nullLoc :: SrcLoc
+nullLoc = SrcLoc "" 1 1
+
+-- undefinierte Funktion
+functionUndef :: String -> HsDecl
+functionUndef s = 
+    HsPatBind nullLoc
+	      (HsPVar (HsIdent s))
+	      (HsUnGuardedRhs (HsVar (UnQual (HsIdent "undefined"))))
+	      []
+
+-------------------------------------------------------------------------
+-- Funktion zum Aufruf des Parsers
+-------------------------------------------------------------------------
 
 idToHaskell :: AParser WrapString
 idToHaskell = fmap (WrapString . translateId) parseId 
@@ -26,9 +44,16 @@ idToHaskell = fmap (WrapString . translateId) parseId
 
 translateAna :: Env -> HsModule
 --translateAna env = error (show env)
-translateAna env = HsModule (SrcLoc "" 1 1) (Module "HasCASLModul") 
+translateAna env = HsModule nullLoc (Module "HasCASLModul") 
 		   Nothing -- Maybe[HsExportSpec]
-		   []      -- [HsImportDecl]
+		   [(HsImportDecl nullLoc
+		                 (Module "Prelude") 
+                                 False 
+		                 Nothing 
+		                 (Just (False,[HsIAbs (HsIdent "undefined")])))]
+
+
+--HsIThingWith (HsIdent "Prelude") [(HsVarName (HsIdent "undefined"))]])))]
                    ((translateTypeMap (typeMap env)) ++ 
                     (translateAssumps (assumps env)))   -- [HsDecl]
 -- Achtung: env enthält noch andere zu übersetzende Argumente 
@@ -45,19 +70,18 @@ translateTypeMap m = concat $ map translateData (assocs m)
 translateData :: (TypeId, TypeInfo) -> [HsDecl]
 translateData (tid,info) = 
   let hsname = (HsIdent (translateIdWithType UpperId tid))
-      srcloc = (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
   in case (typeDefn info) of
        NoTypeDefn ->  -- z.B. bei sorts, was wird daraus?
-          [(HsDataDecl srcloc
+          [(HsDataDecl nullLoc
 	               [] -- empty HsContext
 	               hsname
 		       [] -- [HsName] no type arguments
-		       [(HsConDecl srcloc hsname [])]
+		       [(HsConDecl nullLoc hsname [])]
 		       [] -- [HsQName]  (für deriving) woher?
 	   )]
        Supertype _ _ _ -> [] -- Was wird daraus in Haskell? -> ignorieren
        DatatypeDefn _ typeargs altDefns -> 
- 	  [(HsDataDecl srcloc
+ 	  [(HsDataDecl nullLoc
 	               [] -- empty HsContext
 	               hsname
 		       (getDataArgs typeargs) -- type arguments
@@ -65,7 +89,7 @@ translateData (tid,info) =
 		       [] -- [HsQName]  (für deriving) woher?
 	   )]
        AliasTypeDefn ts -> 
-	  [(HsTypeDecl srcloc
+	  [(HsTypeDecl nullLoc
 	               hsname
 	               (getAliasArgs ts)
 	               (getAliasType ts)
@@ -74,11 +98,11 @@ translateData (tid,info) =
 
 translateAltDefn :: AltDefn -> HsConDecl
 translateAltDefn (Construct uid ts _ []) = 
-    HsConDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+    HsConDecl nullLoc
 	      (HsIdent (translateIdWithType UpperId uid))
 	      (getArgTypes ts)
 translateAltDefn (Construct uid _ts _ sel) =
-    HsRecDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+    HsRecDecl nullLoc
 	      (HsIdent (translateIdWithType UpperId uid))
 	      (translateRecords sel)
 
@@ -94,7 +118,7 @@ getArgTypes :: [Type] -> [HsBangType]
 getArgTypes ts = map getType ts
 
 getType :: Type -> HsBangType
-getType t = HsUnBangedTy (translateType t)
+getType t = HsBangedTy (translateType t)
 
 getDataArgs :: [TypeArg] -> [HsName]
 getDataArgs = map getAliasArg
@@ -116,7 +140,11 @@ getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 -------------------------------------------------------------------------
 
 translateAssumps :: Assumps -> [HsDecl]
-translateAssumps m = concat $ map translateAssump (assocs m)
+translateAssumps as = concat $ map translateAssump $ distinctOpIds $ assocs as
+
+-- Funktion, die evtl. überladenen Operationen eindeutige Namen gibt
+distinctOpIds :: [(Id,[OpInfo])] -> [(DistinctOpId,[OpInfo])]
+distinctOpIds = undefined
 
 translateAssump :: (Id,[OpInfo]) -> [HsDecl]
 translateAssump (_, []) = []
@@ -125,11 +153,12 @@ translateAssump (i, (x:xs)) = ((translateSignature i x) ++
 
 translateSignature :: Id -> OpInfo -> [HsDecl]
 translateSignature i opinf = 
-  let res = [HsTypeSig (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
-                       [(HsIdent (translateIdWithType LowerId i))]
-                       (translateTypeScheme (opType opinf))]
+  let fname = translateIdWithType LowerId i
+      res = HsTypeSig nullLoc
+                       [(HsIdent fname)]
+                       (translateTypeScheme (opType opinf))
   in case (opDefn opinf) of
-    NoOpDefn -> res
+    NoOpDefn -> [res, (functionUndef fname)]
     ConstructData _ -> []
     SelectData _ _ -> []
     Definition term -> (translateFunDef i (opType opinf) term)
@@ -163,7 +192,7 @@ translateType t = case t of
 -- translateFunDef liefert idealerweise eine HsTypSig und ein HsFunBind
 translateFunDef :: Id -> TypeScheme -> Term -> [HsDecl]
 translateFunDef i _ts term = 
-  [HsFunBind [HsMatch (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+  [HsFunBind [HsMatch nullLoc
 	             (HsIdent (translateIdWithType LowerId i)) --HsName
 	             (getPattern term) -- [HsPat]
 	             (getRhs term) -- HsRhs
@@ -177,7 +206,6 @@ getPattern _t = []
 getRhs :: Term -> HsRhs
 getRhs t = HsUnGuardedRhs (translateTerm t) 
 
--- liefert nur eine Expression, keine Liste
 translateTerm :: Term -> HsExp --HsFunBind
 translateTerm t = case t of
   --CondTerm _t1 _form _t2 _pos -> [] -- -> HsIf
@@ -199,7 +227,7 @@ translateTerm t = case t of
   --QuantifiedTerm _quant _vars _t1 _pos -> [] -- forall ... kommt das vor??
 
   LambdaTerm pats _part t1 _pos -> 
-      HsLambda (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+      HsLambda nullLoc
                (translatePattern pats)
 	       (translateTerm t1)
 
@@ -379,3 +407,6 @@ symbolTable =
     ('¿' , "_q"),    -- \191
     ('×' , "_m"),    -- \215
     ('÷' , "_g")]    -- \247
+
+
+type DistinctOpId = Id
