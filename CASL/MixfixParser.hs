@@ -35,7 +35,7 @@ import CASL.Formula(updFormulaPos)
 import qualified CASL.ShowMixfix as ShowMixfix (showTerm)
 
 showTerm :: GlobalAnnos -> TERM -> String
-showTerm _ t = ShowMixfix.showTerm t
+showTerm _ t = ShowMixfix.showTerm t ""
 
 -- Earley Algorithm
 
