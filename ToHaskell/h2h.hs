@@ -17,7 +17,6 @@ import System.Environment
 import Text.ParserCombinators.Parsec
 import Common.Result
 import Common.AnnoState
-import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.PrettyPrint
