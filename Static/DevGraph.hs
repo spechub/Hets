@@ -73,7 +73,7 @@ isDGRef (DGRef _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
 locallyEmpty (DGNode _ (G_sign lid sigma) (G_l_sentence_list _ sens) _) = 
-  sigma == empty_signature lid && null sens
+  is_subsig lid sigma (empty_signature lid) && null sens
 locallyEmpty (DGRef _ _ _) = True
            
 data DGLinkLab = DGLink {

@@ -127,6 +127,11 @@ instance Eq G_sign where
   (G_sign i1 sigma1) == (G_sign i2 sigma2) =
      coerce i1 i2 sigma1 == Just sigma2
 
+-- | prefer a faster subsignature test if possible
+is_subgsign :: G_sign -> G_sign -> Bool
+is_subgsign (G_sign i1 sigma1) (G_sign i2 sigma2) = 
+    maybe False (is_subsig i1 sigma1) $ coerce i2 i1 sigma2 
+
 instance Show G_sign where
     show (G_sign _ s) = show s
 

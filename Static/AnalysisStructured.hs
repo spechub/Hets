@@ -221,13 +221,15 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                    NodeSig(node,gsigma''),
                    insEdge link $
                    insNode (node,node_contents) dg')
-       Just tmor' ->
+       Just tmor' -> do 
+        let gsigma1 = dom Grothendieck tmor'
+            gsigma'' = cod Grothendieck tmor'
+           -- ??? too simplistic for non-comorphism inter-logic reductions 
+        G_sign lid1 _ <- return gsigma1
+        G_sign lid'' _ <- return gsigma''
         -- the case with identity translation leads to a simpler dg
         if tmor' == ide Grothendieck (dom Grothendieck tmor')
          then do
-           let gsigma1 = dom Grothendieck tmor'
-           -- ??? too simplistic for non-comorphism inter-logic reductions 
-           G_sign lid1 _ <- return gsigma1
            let [node1] = newNodes 0 dg'
                node_contents1 = DGNode {
                  dgn_name = name,
@@ -243,11 +245,6 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                    insEdge link1 $
                    insNode (node1,node_contents1) dg')
          else do
-           let gsigma1 = dom Grothendieck tmor'
-               gsigma'' = cod Grothendieck tmor'
-           -- ??? too simplistic for non-comorphism inter-logic reductions 
-           G_sign lid1 _ <- return gsigma1
-           G_sign lid'' _ <- return gsigma''
            let [node1,node''] = newNodes 1 dg'
                node_contents1 = DGNode {
                  dgn_name = Nothing,
@@ -331,7 +328,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
        (True,Just n',Just n1) -> do
            let sig1 = getSig nsig1
                sig' = getSig nsig'
-           when (not (sig1==sig')) (pplain_error () 
+           when (not (is_subgsign sig1 sig')) (pplain_error () 
              (ptext "Signature must not be extended in presence of %implies") 
              pos')
            return $ insEdge (n1,n',DGLink {
@@ -816,7 +813,7 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
          gsigmaP = getSig nsigP
          gsigmaI = getSig nsigI
      gsigmaIS <- gsigLeftUnion lg (headPos pos) gsigmaI gsigmaS
-     when (not (gsigmaIS == gsigmaP))
+     when (not (is_subgsign gsigmaP gsigmaIS))
           (pplain_error () 
               (ptext "Parameter does not match source of fittig view."
                $$ ptext "Parameter signature:"
