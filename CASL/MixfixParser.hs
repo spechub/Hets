@@ -54,52 +54,47 @@ checkAnyArg g op arg =
 -- and arguments must follow in parenthesis
 
 data State = State { rule :: Id
-                   , matchTerm ::Bool  -- False (literally match place) 
-		                       -- or True (treat as non-terminal)
+                   , posList :: [Pos]    -- positions of Id tokens
                    , arglist :: [TERM]   -- currently collected arguments 
-		                          -- in reverse order
+		                          -- both in reverse order
 		   , dotPos :: [Token]
 		   , rulePos :: Int
 		   }
 
 instance Eq State where
-    State r1 b1 _ t1 p1 == State r2 b2 _ t2 p2 =
-	r1 == r2 && t1 == t2 && p1 == p2 && b1 == b2
+    State r1 _ _ t1 p1 == State r2 _ _ t2 p2 =
+	r1 == r2 && t1 == t2 && p1 == p2
 
 instance Ord State where
-    State r1 b1 _ t1 p1 <= State r2 b2 _ t2 p2 =
+    State r1 _ _ t1 p1 <= State r2 _ _ t2 p2 =
 	if r1 == r2 then
-	       if t1 == t2 then
-		      if p1 == p2 then b1 <= b2
-		      else p1 <= p2
+	       if t1 == t2 then p1 <= p2
 	       else t1 <= t2
 	else r1 <= r2
 
 instance Show State where
-    showsPrec _ (State r b _ d p) = showChar '{' 
+    showsPrec _ (State r _ _ d p) = showChar '{' 
 				 . showSepList (showString "") showTok first
 				 . showChar '.' 
 				 . showSepList (showString "") showTok d
-                                 . showParen True (showMatch b)
 				 . shows p . showChar '}'
 	where first = take (length v - length d) v
-	      v = getTokenList r
-	      showMatch x = showString $ if x then "" else place
+	      v = getTokenList True r
 
 instance (Show a) => Show (Set a) where
     showsPrec _ = shows . setToList
 
-commaTok, placeTok, parenTok :: Token
-commaTok = mkSimpleId ","
-placeTok = mkSimpleId place
-parenTok = mkSimpleId "()" -- unique indicator
+commaTok, parenTok, termTok :: Token
+commaTok = mkSimpleId "," -- for list elements 
+termTok = mkSimpleId "(T)"
+parenTok = mkSimpleId "(..)" 
 
 colonTok, asTok, varTok, opTok, predTok :: Token
 colonTok = mkSimpleId ":"
 asTok = mkSimpleId "as"
-varTok = mkSimpleId "(var)"
-opTok = mkSimpleId "(op)"
-predTok = mkSimpleId "(pred)"
+varTok = mkSimpleId "(v)"
+opTok = mkSimpleId "(o)"
+predTok = mkSimpleId "(p)"
 
 expandPos :: (Token -> a) -> String -> String -> [a] -> [Pos] -> [a]
 expandPos f o c ts ps =
@@ -118,60 +113,60 @@ expandPos f o c ts ps =
 		(zipWith Token (o : replicate (n - 1) "," ++ [c]) ps1)
 	  in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
 	    		    
-getTokenList :: Id -> [Token]
-getTokenList (Id ts cs ps) = 
+getTokenList :: Bool -> Id -> [Token]
+getTokenList asLiteral (Id ts cs ps) = 
     let (pls, toks) = span isPlace (reverse ts) 
         cts = if null cs then [] else concat 
-	      $ expandPos (:[]) "[" "]" (map getTokenList cs) ps
-    in reverse toks ++ cts ++ reverse pls
+	      $ expandPos (:[]) "[" "]" (map (getTokenList True) cs) ps
+	      -- although positions will be replaced (by scan)
+        convert = if asLiteral then reverse else 
+		  map (\ t -> if isPlace t then termTok else t) . reverse 
+    in convert toks ++ cts ++ convert pls
 
 mkState :: Int -> Id -> State 
-mkState i ide = State ide True [] (getTokenList ide) i
+mkState i ide = State ide [] [] (getTokenList False ide) i
 
 mkApplState :: Int -> Id -> State
-mkApplState i ide = State ide False [] 
-		    (getTokenList ide ++ [parenTok]) i
+mkApplState i ide = State ide [] [] 
+		    (getTokenList True ide ++ [parenTok]) i
 
-mkTokState :: Int -> [Token] -> State
-mkTokState i toks = State (Id toks [] []) True [] toks i
-
-type ParseMap = FiniteMap Int (Set State)
-
-lookUp :: (Ord key) => FiniteMap key (Set a) -> key -> Set a
-lookUp m i = lookupWithDefaultFM m emptySet i
-
-initialState :: GlobalAnnos -> Set Id -> Int -> Set State
-initialState g is i = 
-       mapSet (mkApplState i) is `union` 
-       mapSet (mkState i) is `union` 
-       listStates g i `addToSet` 
-       mkTokState i [parenTok] `addToSet`
-       mkTokState i [placeTok, colonTok] `addToSet`
-       mkTokState i [placeTok, asTok] `addToSet`
-       mkTokState i [varTok] `addToSet`
-       mkTokState i [opTok] `addToSet`
-       mkTokState i [opTok, parenTok] `addToSet`
-       mkTokState i [predTok] `addToSet`
-       mkTokState i [predTok, parenTok]
 
 listId :: Id
 -- unique id (usually "[]" yields two tokens)
 listId = Id [mkSimpleId "[]"] [] []
 
 listStates :: GlobalAnnos -> Int -> Set State
-listStates g i = case list_lit (literal_annos g) of
+listStates g i = 
+    let listState toks = State listId [] [] toks i
+    in case list_lit (literal_annos g) of
 		Nothing -> emptySet
 		Just (Id b _ _, _, _) -> 
 		    let (b1, rest) = break isPlace b
 			b2 = if null rest then [] 
 			     else filter (not . isPlace) rest
-		    in mkSet [ State listId True [] (b1++b2) i
-			     , State listId True [] 
-				      (b1 ++ [placeTok] ++ b2) i
-			     , State listId True [] 
-			       (b1 ++ [placeTok, commaTok]
-			       ++ b2) i
-			     ]
+		    in mkSet [ listState (b1 ++ b2)
+			     , listState (b1 ++ [termTok] ++ b2)
+			     , listState (b1 ++ [termTok, commaTok] ++ b2)]
+
+initialState :: GlobalAnnos -> Set Id -> Int -> Set State
+initialState g is i = 
+    let mkTokState toks = State (Id toks [] []) [] [] toks i
+    in mapSet (mkApplState i) is `union` 
+       mapSet (mkState i) is `union` 
+       listStates g i `addToSet` 
+       mkTokState [parenTok] `addToSet`
+       mkTokState [termTok, colonTok] `addToSet`
+       mkTokState [termTok, asTok] `addToSet`
+       mkTokState [varTok] `addToSet`
+       mkTokState [opTok] `addToSet`
+       mkTokState [opTok, parenTok] `addToSet`
+       mkTokState [predTok] `addToSet`
+       mkTokState [predTok, parenTok]
+
+type ParseMap = FiniteMap Int (Set State)
+
+lookUp :: (Ord key) => FiniteMap key (Set a) -> key -> Set a
+lookUp m i = lookupWithDefaultFM m emptySet i
 
 scan :: TERM -> Int -> ParseMap -> ParseMap
 scan trm i m = 
@@ -186,20 +181,19 @@ scan trm i m =
   in
     addToFM m (i+1) (mkSet $ 
        foldr (\ (State o b a ts k) l ->
-	      if null ts || head ts /= t 
-	         || isPlace t && b then l 
-	      else if t == commaTok then 
-	             (State o True a 
-		      (placeTok : commaTok : tail ts) k)
-                     : (State o True a (placeTok : tail ts) k) : l
+	      if null ts || head ts /= t then l 
+	      else let p = tokPos t : b in 
+                   if t == commaTok then -- list elements separator
+	             (State o p a 
+		      (termTok : commaTok : tail ts) k)
+                     : (State o p a (termTok : tail ts) k) : l
               else if t == parenTok then
                      (State o b (trm : a) (tail ts) k) : l
               else if t == varTok || t == opTok || t == predTok then
                      (State o b [trm] (tail ts) k) : l
 	      else if t == colonTok || t == asTok then
-	             if null a then l else 
-	                (State o b [mkTerm $ head a] [] k) : l
-	           else (State o b a (tail ts) k) : l) [] 
+	             (State o b [mkTerm $ head a] [] k) : l
+	           else (State o p a (tail ts) k) : l) [] 
 	      (setToList $ lookUp m i))
      where mkTerm t1 = case trm of 
 	                  Mixfix_sorted_term s ps -> Sorted_term t1 s ps
@@ -214,16 +208,16 @@ compl g m l =
 collectArg :: GlobalAnnos -> ParseMap -> State -> [State]
 -- pre: finished rule 
 collectArg g m s@(State _ _ _ _ k) = 
-    map (\ (State o _ a ts k1) ->
-	 State o True (asListAppl g s : a) 
+    map (\ (State o b a ts k1) ->
+	 State o b (asListAppl g s : a) 
 	 (tail ts) k1)
     $ filter (filterByPrec g s)
     $ setToList $ lookUp m k
 
 filterByPrec :: GlobalAnnos -> State -> State -> Bool
 filterByPrec _ _ (State _ _ _ [] _) = False 
-filterByPrec g (State argIde _ _ _ _) (State opIde b args (hd:ts) _) = 
-       if isPlace hd && b then 
+filterByPrec g (State argIde _ _ _ _) (State opIde _ args (hd:ts) _) = 
+       if hd == termTok then 
 	  if opIde == listId || argIde == listId then True
 	  else if not (null ts) && head ts == commaTok then True
 	       else let n = length args in
@@ -243,28 +237,75 @@ isLeftArg (Id ts _ _) n = n + 1 == (length $ takeWhile isPlace ts)
 isRightArg (Id ts _ _) n = n == (length $ filter isPlace ts) - 
 	      (length $ takeWhile isPlace (reverse ts))
 	  
+
+setPlainIdePos :: Id -> [Pos] -> (Id, [Pos]) 
+setPlainIdePos (Id ts cs _) ps =
+   let (places, toks) = span isPlace (reverse ts) 
+       pls = reverse places
+       f = zipWith (\ a b -> up_pos (const b) a)
+       (ps1, ps2) = splitAt (length toks) ps
+       front = f (reverse toks) ps1
+   in if null cs then 
+      let (ps3, ps4) = splitAt (length pls) ps2
+      in (Id (front ++ f pls ps3) [] [], ps4)
+      else let (newCs, ps3, ps4) = foldr (\ a (prevCs, seps, rest) -> 
+				  let (c1, qs) = setPlainIdePos a rest
+				  in (c1: prevCs, head qs : seps, tail qs))
+			   ([], [head ps2], tail ps2) cs
+	       ps5 = tail ps4
+	       (ps6, ps7) = splitAt (length pls) ps5
+           in (Id (front ++ f pls ps6) 
+	       (reverse newCs)  
+	       (reverse (head ps4 : ps3)), ps7)
+
+setIdePos :: Id -> [TERM] -> [Pos] -> Id
+setIdePos i@(Id ts _ _) ar ps =
+   let nt = length $ getTokenList True i 
+       np = length ps
+       na = length $ filter isPlace ts       
+       (_, toks) = span isPlace (reverse ts) 
+   in if nt == np then  -- literal places
+         let (newId, []) = setPlainIdePos i ps
+         in newId
+      else if np + na == nt && na == length ar then -- mixfix
+         let (newTps, rargs, rqs) = mergePos (reverse toks) ar ps 
+             (newId, []) = setPlainIdePos i 
+			  (newTps ++ rqs ++ map posOfTerm rargs)
+         in newId
+      else error "setIdePos"
+   where mergePos [] args qs = ([], args, qs)
+	 mergePos (t:rs) args qs = 
+	     if isPlace t then
+                let (tokps, rargs, rqs) = mergePos rs (tail args) qs
+ 		in (posOfTerm (head args) : tokps, rargs, rqs)
+		else let (tokps, rargs, rqs) = mergePos rs args (tail qs)
+		     in (head qs : tokps, rargs, rqs)
+ 
 stateToAppl :: State -> TERM
-stateToAppl (State ide _ a _ _) = 
-    let vs = getTokenList ide 
+stateToAppl (State ide rs a _ _) = 
+    let vs = getTokenList True ide 
         ar = reverse a
-    in if length ar == 1 && 
-           (vs == [placeTok, colonTok] 
-	   || vs == [placeTok, asTok] 
+        qs = reverse rs
+    in if  vs == [termTok, colonTok] 
+	   || vs == [termTok, asTok] 
 	   || vs == [varTok] 
            || vs == [opTok]
            || vs == [predTok]
-           || vs == [parenTok])
+           || vs == [parenTok]
        then head ar
-       else if head vs == opTok -- plus arguments
+       else if vs == [opTok, parenTok]
 		 then let Application q _ _ = head ar
                           Mixfix_parenthesized ts ps = head a
                       in Application q ts ps 
-		 else if head vs == predTok 
+		 else if vs == [predTok, parenTok] 
 		      then Mixfix_term [head ar, head a] 
                       else case ar of 
 		           [Mixfix_parenthesized ts ps] -> 
-			       Application (Op_name ide) ts ps
-			   _ -> asAppl ide ar nullPos -- true mixfix
+			       Application (Op_name 
+					    (setIdePos ide ts qs))
+				ts ps
+			   _ -> asAppl (setIdePos ide ar qs) 
+				ar nullPos -- true mixfix
 
 asListAppl :: GlobalAnnos -> State -> TERM
 asListAppl g s@(State i _ a _ _) =
@@ -284,8 +325,8 @@ complete :: GlobalAnnos -> Int  -> ParseMap -> ParseMap
 complete g i m = addToFM m i $ mkSet $ complRec g m $ setToList $ lookUp m i 
 
 predict :: GlobalAnnos -> Set Id -> Int -> ParseMap -> ParseMap
-predict g is i m = if any (\ (State _ b _ ts _) -> not (null ts) 
-			 && isPlace (head ts) && b) 
+predict g is i m = if any (\ (State _ _ _ ts _) -> not (null ts) 
+			 && head ts == termTok) 
 		 (setToList $ lookUp m i)
 		 then addToFM_C union m i (initialState g is i)
 		 else m 
