@@ -64,7 +64,7 @@
 ---------------------------------------------------------------------------------
 module Common.Lib.Set  ( 
             -- * Set type
-              Set          -- instance Eq,Show
+              Set          -- instance Eq, Ord, Show
 
             -- * Operators
             , (\\)
@@ -450,6 +450,9 @@ fromDistinctAscList xs
 --------------------------------------------------------------------}
 instance Eq a => Eq (Set a) where
   t1 == t2  = (size t1 == size t2) && (toAscList t1 == toAscList t2)
+
+instance Ord a => Ord (Set a) where
+  t1 <= t2  = toAscList t1 <= toAscList t2
 
 {--------------------------------------------------------------------
   Show
