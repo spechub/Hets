@@ -101,12 +101,7 @@ basicItems = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items sigItems
 		    ai <- dotFormulae
 		    return (axiomToLocalVarAxioms ai a vs (map tokPos (f:ps)))
 	     <|> dotFormulae
-             <|> do a <- pluralKeyword axiomS
-		    (fs, ps, ans) <- itemAux startKeyword (annoParser formula)
-		    return (Axiom_items (zipWith 
-					 (\ x y -> Annoted (item x) 
-					           [] (l_annos x) y) 
-					 fs ans) (map tokPos (a:ps)))
+             <|> itemList axiomS formula Axiom_items
 
 varItems :: AParser ([VAR_DECL], [Token])
 varItems = do v <- varDecl
