@@ -121,12 +121,17 @@ anaVarDecl(VarDecl v oldT _ _) =
 		      as <- getAssumps
 		      let l = Map.findWithDefault [] v as
 			  ts = simpleTypeScheme t in 
-			  if ts `elem` l then 
+			  if ts `elem` map opType l then 
 			     addDiag $ mkDiag Warning 
-				      "repeated variable '" v
-			     else  putAssumps $ Map.insert v (ts:l) as
+				      "repeated variable" v
+			     else if any (unifiable ts) $ map opType l then
+				  addDiag $ mkDiag Error
+				      "illegal overloading of" v
+	                          else putAssumps $ Map.insert v 
+				       (OpInfo ts [] VarDefn : l ) as
 
-
+unifiable :: TypeScheme -> TypeScheme -> Bool
+unifiable _ _ = False
 -- ----------------------------------------------------------------------------
 -- ClassItem
 -- ----------------------------------------------------------------------------

@@ -12,12 +12,14 @@ module HasCASL.OpDecl where
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.ClassAna
+import HasCASL.TypeAna
 import Common.Id
 import HasCASL.Le
 import Control.Monad.State
 import Common.PrettyPrint
 import HasCASL.PrintAs(showPretty)
 import Common.Lib.Parsec.Pos
+import qualified Common.Lib.Map as Map
 import Common.Result
 import HasCASL.TypeDecl
 import Data.List
@@ -41,11 +43,20 @@ anaOpId (TypeScheme tvs q ps) attrs (OpId i args _) =
     do let newArgs = args ++ tvs
            sc = TypeScheme newArgs q ps
        appendDiags $ checkDifferentTypeArgs newArgs
-       (mk, newSc) <- anaTypeScheme Nothing sc
+       (mk, newSc) <- anaTypeScheme sc
        case mk of 
 	       Nothing -> return () -- induced error
 	       Just k -> do checkKinds (posOfId i) k star
 			    addOpId i newSc attrs
+
+anaTypeScheme :: TypeScheme -> State Env (Maybe Kind, TypeScheme)
+anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
+    do tm <- getTypeMap    -- save global variables  
+       mapM_ anaTypeVarDecl tArgs
+       (ik, newTy) <- anaType ty
+       let newPty = TypeScheme tArgs (q :=> newTy) p
+       putTypeMap tm       -- forget local variables 
+       return (ik, newPty)
 
 checkDifferentTypeArgs :: [TypeArg] -> [Diagnosis]
 checkDifferentTypeArgs l = 
@@ -62,3 +73,24 @@ shortPosShow p = showParen True (shows (sourceLine p) . showString "," .
 
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> State Env () 
 addOpId i sc attrs = missingAna i [posOfId i]
+
+{-
+unifiable :: TypeScheme -> TypeScheme -> State Env 
+unifiable sc1 sc2 =
+    do t1 <- freshInst sc1
+       t2 <- freshInst sc2
+       unify t1 t2
+
+freshInst (TypeScheme tArgs (q :=> t) _) = 
+    do i <- getState
+       setState (i + length tArgs)
+       return $ subst (mkSubst tArgs i) t 
+-}
+type Subst = Map.Map TypeId Type
+
+mkSubst :: [TypeArg] -> Integer -> Subst
+mkSubst [] _ = Map.empty
+mkSubst (TypeArg v _ _ _:r) i =
+     let tId = simpleIdToId $ mkSimpleId ("_var_" ++ show i)
+     in Map.insert v (TypeName tId 0) $ mkSubst r (i+1) 
+ 		   

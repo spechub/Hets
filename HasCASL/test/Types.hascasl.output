@@ -21,15 +21,16 @@ tuple1 :b ->a
 tuple3 :a ->b ->c ->d
 {__} :a ->b
 Assumptions
-o1 : m
-o2 : (m)(tuple1)
-o3 : (m)(tuple3)
-o4 : (((nt)(r))(List))(s)
-u : ([__])(r)
-v : ((m)(List),({__})(s))
-x : (((tuple3)(r))(s))(t)
-y : ((tuple3)(r))(s)
-z : (m)(([__])(__))
+o1 : m %(var)%
+o2 : (m)(tuple1) %(var)%
+o3 : (m)(tuple3) %(var)%
+o4 : (((nt)(r))(List))(s) %(var)%
+u : ([__])(r) %(var)%
+v : (m)(List) %(var)%
+  : ({__})(s) %(var)%
+x : (((tuple3)(r))(s))(t) %(var)%
+y : ((tuple3)(r))(s) %(var)%
+z : (m)(([__])(__)) %(var)%
 Hint (7,8) not a class '[r]'
 Hint (7,15) not a class '{s}'
 Hint (11,9) not a class 'tuple3 r s t'

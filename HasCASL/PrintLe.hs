@@ -11,6 +11,7 @@ module HasCASL.PrintLe where
 
 import HasCASL.As
 import HasCASL.HToken
+import Common.Id
 import HasCASL.PrintAs
 import HasCASL.Le
 import Data.Maybe
@@ -66,8 +67,26 @@ instance PrettyPrint [Kind] where
 instance PrettyPrint [Type] where
     printText0 ga l = space <> colon <> printList0 ga l
 
-instance PrettyPrint [TypeScheme] where
-    printText0 ga l = space <> colon <+> printList0 ga l
+instance PrettyPrint OpDefn where
+    printText0 _ NoOpDefn = empty
+    printText0 _ VarDefn = space <> ptext "%(var)%"
+    printText0 _ (ConstructData i) = space <> ptext ("%(construct " ++
+				     showId i ")%")
+    printText0 _ (SelectData c i) = space <> ptext ("%(select from " ++
+				     showId i " constructed by " 
+						    ++ showId c ")%")
+    printText0 ga (Definition t) = space <> ptext equalS <+> 
+				   printText0 ga t
+ 
+instance PrettyPrint OpInfo where
+    printText0 ga o = space <> colon <+> printText0 ga (opType o)
+		      <> (case opAttrs o of 
+			  [] -> empty 
+			  l -> comma <> commas ga l)
+		      <>  printText0 ga (opDefn o)
+
+instance PrettyPrint [OpInfo] where
+    printText0 ga l = vcat $ map (printText0 ga) l
 
 instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 _ Nothing = empty

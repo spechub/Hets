@@ -58,7 +58,19 @@ type TypeMap = Map TypeId TypeInfo
 -- assumptions
 -----------------------------------------------------------------------------
 
-type Assumps = Map Id [TypeScheme]
+data OpInfo = OpInfo { opType :: TypeScheme
+		     , opAttrs :: [OpAttr]
+		     , opDefn :: OpDefn
+		     } deriving (Show, Eq)
+
+data OpDefn = NoOpDefn
+	    | ConstructData TypeId     -- target type
+	    | SelectData UninstOpId TypeId   -- constructor of source type
+	    | Definition Term            
+	    | VarDefn deriving (Show, Eq)
+
+
+type Assumps = Map Id [OpInfo]
 
 -----------------------------------------------------------------------------
 -- local env

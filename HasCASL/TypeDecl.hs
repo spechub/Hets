@@ -97,7 +97,7 @@ anaTypeItem _ inst (SubtypeDefn pat v t f ps) =
 			   addSuperType newT i
 	   
 anaTypeItem _ inst (AliasType pat mk sc _) = 
-    do (ik, newPty) <- anaTypeScheme mk sc
+    do (ik, newPty) <- anaPseudoType mk sc
        let Result ds m = convertTypePattern pat
        appendDiags ds
        case (m, ik) of 
@@ -125,8 +125,8 @@ anaDatatype genKind inst (DatatypeDecl pat kind _alts derivs ps) =
 -- TO DO analyse alternatives and add them to Datatype Defn
 -- anaAlts :: Id -> 
 
-anaTypeScheme :: Maybe Kind -> TypeScheme -> State Env (Maybe Kind, TypeScheme)
-anaTypeScheme mk (TypeScheme tArgs (q :=> ty) p) =
+anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Maybe Kind, TypeScheme)
+anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
     do k <- case mk of 
 	    Nothing -> return Nothing
 	    Just j -> fmap Just $ anaKind j
@@ -156,7 +156,7 @@ typeArgToKind (TypeArg _ k _ _) = k
 anaTypeVarDecl :: TypeArg -> State Env ()
 anaTypeVarDecl(TypeArg t k _ _) = 
     do nk <- anaKind k
-       addTypeKind TypeVarDefn t k
+       addTypeKind TypeVarDefn t nk
 
 kindArity :: ApplMode -> Kind -> Int
 kindArity m (KindAppl k1 k2 _) =

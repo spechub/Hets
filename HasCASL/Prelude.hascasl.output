@@ -23,13 +23,13 @@ s :Type< ? s %(var)%
 s->t :Type< s ->? t
 t :Type %(var)%
 Assumptions
-f : c --> d
-g : c --> d
-x : s
-x1 : c
-x2 : c
-y1 : d
-y2 : d
+f : c --> d %(var)%
+g : c --> d %(var)%
+x : s %(var)%
+x1 : c %(var)%
+x2 : c %(var)%
+y1 : d %(var)%
+y2 : d %(var)%
 Error (4,7) illegal universe class declaration
 FatalError (13,4) no analysis yet for: true
 FatalError (13,10) no analysis yet for: false

@@ -14,7 +14,8 @@ t :a
 x :(a,{_ < t},b) %(var)%
 y :Type %(var)%
 Assumptions
-x : (s,y)
+x : s %(var)%
+  : y %(var)%
 Warning (3,14) redundant universe class
 Error (3,7) illegal universe class declaration
 Error (4,7) illegal universe class declaration
