@@ -126,7 +126,7 @@ hacapa: ../HasCASL/Main.hs $(drifted_files)
 	\cp -p $@ ../HasCASL/$@ 
 
 ### run tests in other directories
-check:
+check: hetcats
 	for i in $(TESTDIRS); do make -C $$i check; done
 
 ####################################################################
