@@ -18,6 +18,7 @@ import Common.Lib.Parsec.Pos
 
 import Common.Lexer
 import Common.Token
+import Common.ListBrackets
 -- import CaslLanguage
 import Common.Id
 import Common.AS_Annotation
@@ -169,30 +170,29 @@ prec_anno = do left_ids <- braces $ commaSep1 casl_id
 			          []
 		      )
 
-number_anno   = literal_anno f 1 "number"
-    where f [x] = Number_anno x
-	  f _   = error "wrong_number of ids"
+number_anno   = 
+    do n <- casl_id
+       return $ Number_anno n []
 
-string_anno   = literal_anno f 2 "string"
-    where f [x1,x2] = String_anno x1 x2
-	  f _       = error "wrong_number of ids"
+list_anno     = do 
+    bs <- caslListBrackets 
+    p <- commaT
+    ni <- casl_id 
+    q <- commaT
+    ci <- casl_id
+    return $ List_anno bs ni ci (toPos p [] q)
 
-floating_anno = literal_anno f 2 "floating"
-    where f [x1,x2] = Float_anno x1 x2
-	  f _       = error "wrong_number of ids"
+string_anno   = literal_2ids_anno String_anno
 
-list_anno     = literal_anno f 3 "list"
-    where f [x1,x2,x3] = List_anno x1 x2 x3
-	  f _          = error "wrong_number of ids"
+floating_anno = literal_2ids_anno Float_anno
 
-literal_anno :: ([Id] -> [Pos] -> Annotation) 
-	        -> Int -> String -> GenParser Char st Annotation
-literal_anno con cnt conStr = 
-    do ids <- commaSep1 casl_id
-       if length ids == cnt then return $ con ids $ []
-	else unexpected $ "Annotation \"" ++ conStr ++ 
-		          "\" malformed: wrong number of ids, " ++ 
-		          show cnt ++ " id(s) expected!" 
+literal_2ids_anno :: (Id -> Id -> [Pos] -> Annotation) 
+	        -> GenParser Char st Annotation
+literal_2ids_anno con = 
+    do i1 <- casl_id
+       p <- commaT
+       i2 <- casl_id
+       return $ con i1 i2 [tokPos p]
 
 display_anno :: GenParser Char st Annotation
 display_anno = do ident <- casl_id
@@ -203,7 +203,7 @@ display_anno = do ident <- casl_id
 			       <|> disp_symb "LATEX"
 			       <|> disp_symb "RTF")   
 		  return (Display_anno ident tls [])
-    where mklst a b c = [a,b,c] 
+    where -- mklst a b c = [a,b,c] 
 	  disp_symb sym = ( -- (ready_symb,""), default for optional ParsecPerm
 				 do symb <- lexeme (try (string 
 							   ready_symb))
