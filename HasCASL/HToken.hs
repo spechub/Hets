@@ -13,6 +13,8 @@ module HToken where
 import Id
 import Keywords
 import Lexer
+import Token(casl_reserved_ops, casl_reserved_words
+	    , formula_words, formula_ops)
 import Parsec
 
 -- ----------------------------------------------

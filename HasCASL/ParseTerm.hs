@@ -12,6 +12,7 @@ module ParseTerm where
 import Id
 import Keywords
 import Lexer
+import Token(formula_ops)
 import HToken
 import As
 import Parsec
