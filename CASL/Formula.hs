@@ -171,7 +171,7 @@ quant = try(
 quantFormula :: [String] -> AParser FORMULA
 quantFormula k = 
     do (q, p) <- quant
-       (vs, ps) <- varDecl `separatedBy` semiT
+       (vs, ps) <- varDecl `separatedBy` anSemi
        d <- dotT
        f <- impFormula k
        return (Quantification q vs f

@@ -279,8 +279,9 @@ toKey s = let p = string s in
 asSeparator :: String -> GenParser Char st Token
 asSeparator = pToken . string
 
-commaT :: GenParser Char st Token
+commaT, semiT :: GenParser Char st Token
 commaT = asSeparator ","
+semiT = asSeparator ";"
 
 oBraceT, cBraceT :: GenParser Char st Token
 oBraceT = asSeparator "{" 

@@ -57,7 +57,7 @@ basicItems = fmap Sig_items sigItems
 		    (vs, ps) <- varItems
 		    return (Var_items vs (map tokPos (v:ps)))
 	     <|> do f <- forallT 
-		    (vs, ps) <- varDecl `separatedBy` semiT 
+		    (vs, ps) <- varDecl `separatedBy` anSemi 
 		    a <- annos
 		    Axiom_items ((Annoted ft qs as rs):fs) ds <- dotFormulae
 		    let aft = Annoted ft qs (a++as) rs
@@ -72,7 +72,7 @@ basicItems = fmap Sig_items sigItems
 
 varItems :: AParser ([VAR_DECL], [Token])
 varItems = do v <- varDecl
-	      do s <- semiT
+	      do s <- try (addAnnos >> Lexer.semiT << addLineAnnos)
 		 do tryItemEnd startKeyword
 		    return ([v], [s])
 	           <|> 

@@ -52,7 +52,7 @@ alternative = do s <- pluralKeyword sortS
               <|> 
               do i <- parseId
 		 do o <- oParenT
-		    (cs, ps) <- component `separatedBy` semiT
+		    (cs, ps) <- component `separatedBy` anSemi
 		    c <- cParenT
 		    let qs = toPos o ps c in
 			do q <- quMarkT

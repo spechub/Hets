@@ -34,7 +34,7 @@ argDecl = fmap (\(Var_decl vs s ps) -> Arg_decl vs s ps) varDecl
 -- non-empty
 predHead :: AParser PRED_HEAD
 predHead = do o <- oParenT
-	      (vs, ps) <- argDecl `separatedBy` semiT
+	      (vs, ps) <- argDecl `separatedBy` anSemi
 	      p <- cParenT
 	      return (Pred_head vs (map tokPos (o:ps++[p])))
 
