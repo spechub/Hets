@@ -51,12 +51,12 @@ import Data.Maybe(maybeToList)
 -- | Parse a library of specifications
 library :: (AnyLogic,LogicGraph) -> AParser AnyLogic LIB_DEFN
 library (l,lG) = 
-   do (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
+   do setUserState l
+      (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
 			   (do s1 <- asKey libraryS -- 'library' keyword
 			       n <- libName         -- library name
 			       return ([tokPos s1], n))
       an <- annos          -- annotations 
-      setUserState l
       ls <- libItems lG     -- library elements
       return (Lib_defn ln ls ps an)
 

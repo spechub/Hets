@@ -332,7 +332,7 @@ lookupLogicName (Logic_name lid _sublog) lg =
 
 lookupAndSetLogicName :: Logic_name -> LogicGraph -> AParser AnyLogic AnyLogic
 lookupAndSetLogicName ln lg = do
-    l <- lookupAndSetLogicName ln lg
+    l <- lookupLogicName ln lg
     setUserState l
     return l
 
