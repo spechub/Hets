@@ -66,7 +66,7 @@ instance PrettyPrint RENAMING where
 	hang (text "with") 4 $ printText0 ga aa
 --	hang (text "with") 4 $ fcat $ 
 --	     map (print_symb_map_items_text lid ga) aa
-    printText0 ga (Logic_renaming l1 mor l2 _) =
+{-    printText0 ga (Logic_renaming l1 mor l2 _) =
 	let l1'  = printText0 ga l1
 	    mor' = printText0 ga mor
 	    l2'  = printText0 ga l2 
@@ -78,6 +78,7 @@ instance PrettyPrint RENAMING where
 					            l1' <+> text "-->" <+> l2'
 					     else l1' <+> text "--" <+> 
 					          mor' <+> text "->" <+> l2')
+-}
 
 instance PrettyPrint RESTRICTION where
 {- <<<<<<< Print_AS_Structured.hs
@@ -93,7 +94,7 @@ instance PrettyPrint RESTRICTION where
 	hang (text "hide") 4 $ printText0 ga aa
     printText0 ga (Revealed aa _) =
 	hang (text "reveal") 4 $ printText0 ga aa
-    printText0 ga (Logic_hiding l1 mor l2 _) =
+{-    printText0 ga (Logic_hiding l1 mor l2 _) =
 	hang (ptext "hide logic") 4 $ 
 	     (if null l1 then 
 	         if null mor then ptext "<--" <+> ptext l2
@@ -105,7 +106,7 @@ instance PrettyPrint RESTRICTION where
 	         else ptext l1 <+> ptext "<-" <+> 
 	                 ptext mor <+> ptext "--" <+> ptext l2
 	     )
-
+-}
 {- Is declared in Print_AS_Library
 instance PrettyPrint SPEC_DEFN where
     printText0 ga (Spec_defn aa ab ac _) =
@@ -114,6 +115,19 @@ instance PrettyPrint SPEC_DEFN where
 	    ac' = printText0 ga ac
 	in aa' <+> ab' <+> ac'
 -}
+
+instance PrettyPrint G_mapping where
+    printText0 ga (G_symb_map gsmil) = printText0 ga gsmil
+    printText0 ga (G_logic_translation enc slog tlog _) =
+	ptext "logic" {- TODO: implement right syntax. -}
+		 -- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
+
+
+instance PrettyPrint G_hiding where
+    printText0 ga (G_symb_list gsil) = printText0 ga gsil
+    printText0 ga (G_logic_projection enc slog tlog _) = 
+	ptext "logic" {- TODO: implement right syntax. -}
+		 -- pos: "logic",<projection>,":",<src-logic>,"->",<targ-logic>
 
 instance PrettyPrint GENERICITY where
     printText0 ga (Genericity aa ab _) =
