@@ -201,7 +201,7 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
-globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsProvenPathOfMorphismBetween dGraph morphism source target
+globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsProvenGlobPathOfMorphismBetween dGraph morphism source target
      then
        globSubsumeAux newGraph (newRules,newChanges) list
      else
@@ -271,15 +271,14 @@ locDecompAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
 
 {- checks if there is a path of globalDef edges or proven globalThm edges
    with the given morphism between the given source and target node -}
-existsProvenPathOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
+existsProvenGlobPathOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
 				    -> Bool
-existsProvenPathOfMorphismBetween dgraph morphism src tgt =
+existsProvenGlobPathOfMorphismBetween dgraph morphism src tgt =
   -- @@@ zum Testen: not (null (concat allDefPathsBetween))
   elem morphism filteredMorphismsOfProvenPaths
 
     where
-      allPaths = getAllProvenPathsBetween dgraph src tgt
-		 ([]::[LEdge DGLinkLab])
+      allPaths = getAllProvenGlobPathsBetween dgraph src tgt
       morphismsOfPaths = map calculateMorphismOfPath allPaths
       filteredMorphismsOfProvenPaths = getFilteredMorphisms morphismsOfPaths 
 
@@ -382,22 +381,20 @@ getAllLocGlobPathsOfTypesBetween dgraph src tgt locTypes globTypes =
     locGlobPaths = (concat [map ([edge]++) 
 		      (getAllPathsOfTypesBetween dgraph globTypes node tgt [])|
 			 (edge,node) <- locEdges])
-    globPaths = getAllProvenPathsBetween dgraph src tgt []
+    globPaths = getAllProvenGlobPathsBetween dgraph src tgt
     
 
 {- returns all paths of globalDef edges or proven globalThm edges 
    between the given source and target node -}
-getAllProvenPathsBetween :: DGraph -> Node -> Node -> [LEdge DGLinkLab]
-		           -> [[LEdge DGLinkLab]]
-getAllProvenPathsBetween dgraph src tgt path =
+getAllProvenGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
+getAllProvenGlobPathsBetween dgraph src tgt =
   getAllPathsOfTypesBetween dgraph [isGlobalDef,isProvenGlobalThm] src tgt []
 
 
 {- returns all paths of globalDef edges between the given source and 
    target node -}
-getAllDefPathsBetween :: DGraph -> Node -> Node -> [LEdge DGLinkLab]
-		           -> [[LEdge DGLinkLab]]
-getAllDefPathsBetween dgraph src tgt path =
+getAllGlobDefPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
+getAllGlobDefPathsBetween dgraph src tgt =
   getAllPathsOfTypeBetween dgraph isGlobalDef src tgt
 
 
@@ -436,11 +433,11 @@ getAllLocGlobDefPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
 getAllLocGlobDefPathsBetween dgraph src tgt = globDefPaths ++ locGlobDefPaths
 
   where
-    globDefPaths = getAllDefPathsBetween dgraph src tgt ([]::[LEdge DGLinkLab])
+    globDefPaths = getAllGlobDefPathsBetween dgraph src tgt
     outEdges = out dgraph src
     nextStep = [(edge,getTargetNode edge) | edge <- outEdges]
     pathEnds =
-	[(edge,getAllDefPathsBetween dgraph node tgt ([]::[LEdge DGLinkLab]))|
+	[(edge,getAllGlobDefPathsBetween dgraph node tgt)|
 		(edge, node) <- nextStep]
     locGlobDefPaths =
 	concat [addToAll edge paths | (edge, paths) <- pathEnds]
