@@ -96,7 +96,7 @@ ana_LIB_ITEM_with_download lgraph defl libenv
            gannos genv dg l (Download_items ln items pos) = do
   -- we take as the default logic for imported libs 
   -- the global default logic
-  let items' = zip items (drop 2 pos ++ nullPosList)
+  let items' = zip items (ttail (ttail pos) ++ repeat nullPos)
   libenv' <- ioToIORes (ana_file lgraph defl libenv ln)
   case lookupFM libenv' ln of
     Nothing -> do
@@ -167,7 +167,7 @@ ana_LIB_ITEM lgraph defl libenv gannos genv dg l (Spec_defn spn gen asp pos) = d
   if elemFM spn genv 
    then plain_error (gannos,genv,dg,l,libenv)
                     ("Name "++pretty spn++" already defined")
-                    (head (pos++nullPosList))
+                    (headPos pos)
    else return (gannos,
                 addToFM genv spn (SpecEntry (imp,params,parsig,body)),
                 dg'',
@@ -202,7 +202,7 @@ ana_LIB_ITEM lgraph defl libenv gannos genv dg l
   if elemFM vn genv 
    then plain_error (gannos,genv,dg,l,libenv)
                     ("Name "++pretty vn++" already defined")
-                    (head (pos++nullPosList))
+                    (headPos pos)
    else return (gannos,
                 addToFM genv vn (ViewEntry vsig),
                 insEdge link dg'',
