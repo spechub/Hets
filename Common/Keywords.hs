@@ -179,3 +179,7 @@ refinementS, refinedS, behaviourallyS :: String
 refinementS = "refinement"
 refinedS = "refined"
 behaviourallyS = "behaviourally"
+
+viaS, dataS :: String
+viaS = "via"
+dataS = "data"
