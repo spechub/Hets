@@ -14,14 +14,9 @@ choose one (or more) minimal/maximal typings
 
 module HasCASL.MinType where
 
-import Common.AS_Annotation
-import Common.PrettyPrint
-
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.TypeAna
-
-import Debug.Trace
 
 q2p :: (a, b, c, d) -> (c, d)
 q2p (_, _, c, d) = (c,d)
@@ -30,22 +25,18 @@ typeNub :: Bool -> TypeMap -> (a -> (Type, Term)) -> [a] -> [a]
 typeNub b tm f l = 
   case l of 
        [] -> []
-       x : xs -> (if any ( \ y -> case comp (f x) (f y) of
-                                  Lower -> not b
-                                  Higher -> b
-                                  BothDirections -> True
-                                  NoDirection -> False) xs then [] else [x]) 
+       x : xs -> (if any ( \ y -> comp (f x) (f y)) xs then [] else [x]) 
                      ++ typeNub b tm f xs
   where
-  comp :: (Type, Term) -> (Type, Term) -> PrecRel
+  comp :: (Type, Term) -> (Type, Term) -> Bool
   comp (ty1, t1) (ty2, t2) = 
     if eqTerm t1 t2 then let r = lesserType tm ty2 ty1 in
        if lesserType tm ty1 ty2 then
-          if r then BothDirections
-          else Lower
-       else if r then Higher 
-            else NoDirection
-    else NoDirection
+          if r then True
+          else not b 
+       else if r then b
+            else False
+    else False
 
 eqTerm :: Term -> Term -> Bool
 eqTerm t1 t2 = case (t1, t2) of

@@ -24,6 +24,7 @@ import HasCASL.MixAna
 import HasCASL.MapTerm
 import HasCASL.TypeAna
 import HasCASL.Constrain
+import HasCASL.MinType
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -63,9 +64,10 @@ instOpInfo oi = do
      (ty, inst, cs) <- instantiate $ opType oi
      return (ty, inst, cs, oi)
 
-lookupError :: Type -> [OpInfo] -> String
-lookupError ty ois = 
-    "  with type: " ++  showPretty ty "\n"
+lookupError :: Bool -> Type -> [OpInfo] -> String
+lookupError b ty ois = 
+    "  with (" ++ (if b then "maximal" else 
+                  "minimal") ++ ") type: " ++  showPretty ty "\n"
     ++ "  known types:\n    " ++
        showSepList ("\n    "++) (showPretty . opType) ois "" 
 
@@ -169,7 +171,8 @@ inferAppl b ps mt t1 t2 = do
                                  else l2 
                                else l1
                           ) args) ops
-            let res = concat combs 
+            let res2 = concat combs 
+                res = typeNub b tm q2p res2
                 origAppl = ApplTerm t1 t2 ps
             if null res then 
                addDiags [case mt of 
@@ -207,7 +210,7 @@ infer b mt trm = do
             let Result ds ms = mgu tm (mt, if null ts then inst else ts) 
                                (Just ty, inst)
             uniDiags ds 
-            case ms of 
+            rs <- case ms of 
                 Nothing -> let typ = fromJust mt 
                                p = if b then (ty, typ) else (typ, ty)
                            in if null inst && uncurry (lesserType tm) p
@@ -216,6 +219,7 @@ infer b mt trm = do
                 Just s -> return [(s, substC s cs, subst s ty, QualOp br 
                                    (InstOpId i (map (subst s) inst) qs)
                                    sc ps)]
+            return $ typeNub b tm q2p rs
         ResolvedMixTerm i ts ps ->
             if null ts then do 
                let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
@@ -239,11 +243,12 @@ infer b mt trm = do
                          if null rs then 
                             addDiags [Diag Hint
                                ("no type match for: " ++ showId i "\n"
-                                ++ lookupError inTy ois)
+                                ++ lookupError b inTy ois)
                                (posOfId i) ]
                             else return ()
                          return rs
-               return $ map ( \ (s, ty, is, cs, oi) -> 
+               return $ typeNub b tm q2p $
+                        map ( \ (s, ty, is, cs, oi) -> 
                               case opDefn oi of
                               VarDefn -> (s, cs, ty, QualVar $ 
                                           VarDecl i ty Other ps)

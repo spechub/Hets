@@ -282,7 +282,7 @@ free type bool
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.6, unexpected mixfix token: :
 *** Hint 60.9, no type match for: snd
-  with type: _var_9_v9 ->? t_v2
+  with (maximal) type: _var_9_v9 ->? t_v2
   known types:
     
 *** Hint 60.9, untypable application (with result type: t_v2)
@@ -297,14 +297,14 @@ free type bool
 
 *** Error 85.11, illegal supertype for variable '? s_v1'
 *** Hint 87.9, no type match for: all
-  with type: _var_45_v45 ->? Unit ->? Unit
+  with (maximal) type: _var_45_v45 ->? Unit ->? Unit
   known types:
     
 *** Hint 87.9, untypable application (with result type: Unit ->? Unit)
  'all(var p : s_v1 ->? Unit)'
 *** Error 87.9, no typing for 'all(var p : s_v1 ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
-  with type: _var_46_v46 ->? Unit ->? Unit
+  with (maximal) type: _var_46_v46 ->? Unit ->? Unit
   known types:
     
 *** Hint 90.9, untypable application (with result type: Unit ->? Unit)
@@ -313,21 +313,21 @@ free type bool
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 *** Hint 98.9, no type match for: ex
-  with type: _var_47_v47 ->? Unit ->? Unit
+  with (maximal) type: _var_47_v47 ->? Unit ->? Unit
   known types:
     
 *** Hint 98.9, untypable application (with result type: Unit ->? Unit)
  'ex(var p : s_v1 ->? Unit)'
 *** Error 98.9, no typing for 'ex(var p : s_v1 ->? Unit) : Unit ->? Unit'
 *** Hint 101.9, no type match for: ff
-  with type: _var_48_v48 ->? Unit ->? Unit
+  with (maximal) type: _var_48_v48 ->? Unit ->? Unit
   known types:
     
 *** Hint 101.9, untypable application (with result type: Unit ->? Unit)
  'ff()'
 *** Error 101.9, no typing for 'ff() : Unit ->? Unit'
 *** Hint 103.9, no type match for: neg
-  with type: _var_49_v49 ->? Unit ->? Unit
+  with (maximal) type: _var_49_v49 ->? Unit ->? Unit
   known types:
     
 *** Hint 103.9, untypable application (with result type: Unit ->? Unit)
@@ -370,7 +370,7 @@ free type bool
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
 *** Hint 10.18, no type match for: __::__
-  with type: _var_70_v70 ->? _var_68_v68 ->? _var_69_v69
+  with (minimal) type: _var_70_v70 ->? _var_68_v68 ->? _var_69_v69
   known types:
     
 *** Hint 10.18, untypable application (with result type: _var_68_v68 ->? _var_69_v69)

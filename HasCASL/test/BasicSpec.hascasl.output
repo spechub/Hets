@@ -204,28 +204,28 @@ type Data4
 *** Warning 11.19, redeclared class 'a'
 *** Error 20.12, unexpected mixfix token: res
 *** Hint 21.1, no type match for: fst
-  with type: _var_4_v4 ->? s
+  with (maximal) type: _var_4_v4 ->? s
   known types:
     
 *** Hint 21.1, untypable application (with result type: s)
  'fst(x : s, var y : t_v1)'
 *** Error 21.1, no typing for 'fst(x : s, var y : t_v1) : s'
 *** Hint 22.1, no type match for: snd
-  with type: _var_5_v5 ->? t_v1
+  with (maximal) type: _var_5_v5 ->? t_v1
   known types:
     
 *** Hint 22.1, untypable application (with result type: t_v1)
  'snd(x : s, var y : t_v1)'
 *** Error 22.1, no typing for 'snd(x : s, var y : t_v1) : t_v1'
 *** Hint 28.9, no type match for: all
-  with type: _var_6_v6 ->? ? Unit
+  with (maximal) type: _var_6_v6 ->? ? Unit
   known types:
     
 *** Hint 28.9, untypable application (with result type: ? Unit)
  'all(var p : ? s)'
 *** Error 28.9, no typing for 'all(var p : ? s) : ? Unit'
 *** Hint 30.9, no type match for: And
-  with type: _var_7_v7 ->? ? Unit
+  with (maximal) type: _var_7_v7 ->? ? Unit
   known types:
     
 *** Hint 30.9, untypable application (with result type: ? Unit)
@@ -234,14 +234,14 @@ type Data4
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 *** Hint 37.3, no type match for: ex
-  with type: _var_8_v8 ->? ? Unit
+  with (maximal) type: _var_8_v8 ->? ? Unit
   known types:
     
 *** Hint 37.3, untypable application (with result type: ? Unit)
  'ex(var p : ? s)'
 *** Error 37.3, no typing for 'ex(var p : ? s) : ? Unit'
 *** Hint 40.3, no type match for: ff
-  with type: _var_9_v9 ->? ? Unit
+  with (maximal) type: _var_9_v9 ->? ? Unit
   known types:
     
 *** Hint 40.3, untypable application (with result type: ? Unit)

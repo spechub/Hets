@@ -17,7 +17,9 @@ var nt : a -> (b -> c) -> c -> d
 var
 type s1, r1, t1 < t
 type s2 = r2 = t2
-type s3 : Type := t
+type s3 = {x : t . (fun __=__[tuple3 r s t]
+                    : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+                     (var x : tuple3 r s t, var x : tuple3 r s t)}
 %% Classes ---------------------------------------------------------------
 a < Type
 b < Type
@@ -42,7 +44,11 @@ r2 : Type < (t2, r2, s2)
 s : Type
 s1 : Type < t
 s2 : Type < (t2, r2, s2)
-s3 : Type := t
+s3
+  : Type < t
+    = {x : t . (fun __=__[tuple3 r s t]
+                : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+                 (var x : tuple3 r s t, var x : tuple3 r s t)}
 t : Type
 t1 : Type < t
 t2 : Type < (t2, r2, s2)
@@ -92,9 +98,3 @@ x : tuple3 r s t %(var)%
   expected: b -> c
      found: a -> b
 
-*** Error 38.19, ambiguous typings 
- 1. (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (var x : t, var x : t)
- 2. (fun __=__[tuple3 r s t]
- : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (var x : tuple3 r s t, var x : tuple3 r s t)
