@@ -8,7 +8,7 @@ import Static.AnalysisLibrary
 import System.IO
 import Static.DotGraph
 import Static.DevGraph
-import Options
+import Driver.Options
 
 proceed :: String -> IO()
 proceed fname = do

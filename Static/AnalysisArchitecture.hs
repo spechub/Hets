@@ -18,7 +18,7 @@
 module Static.AnalysisArchitecture (ana_ARCH_SPEC, ana_UNIT_SPEC)
 where
 
-import Options
+import Driver.Options
 import Logic.Logic
 import Logic.Grothendieck
 import Common.Lib.Graph

@@ -12,8 +12,8 @@ Portability  : non-portable
 
 module GUI.WebInterface where
 
-import Options
-import WriteFn
+import Driver.Options
+import Driver.WriteFn
 import Common.Lib.Map as Map
 import Char
 import Static.AnalysisLibrary

@@ -107,7 +107,7 @@ module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY,
                                   extendMorphism)
 where
 
-import Options
+import Driver.Options
 import Data.Maybe
 import Logic.Logic
 import Logic.Comorphism

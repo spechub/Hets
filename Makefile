@@ -1,32 +1,32 @@
-# hetcats/Makefile
+# Makefile
 # $Header$
 # Author: (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2004
 # Year:   2004
 
-# This Makefile will compile the new hetcats system and provides also
+# This Makefile will compile the new hets system and provides also
 # targets for test programs during implementation phases.
 
 # !!! Note: This makefile is written for GNU make !!!
-#           (gmake on solaris ; make on linux)
+#           (gmake on solaris)
 
 all: hets
 
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ghc hetcats fgl hxt
+INCLUDE_PATH = ghc fgl hxt
 COMMONLIB_PATH = Common/Lib Common/ATerm fgl/Data/Graph \
     fgl/Data/Graph/Inductive fgl/Data/Graph/Inductive/Internal \
     fgl/Data/Graph/Inductive/Monad fgl/Data/Graph/Inductive/Query
 CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Logic CASL CASL/CCC Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
-    CspCASL ATC ToHaskell Proofs Comorphisms Isabelle $(INCLUDE_PATH) \
+    CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver $(INCLUDE_PATH) \
     Haskell/Hatchet Hatchet Taxonomy $(PFE_PATHS)
 
 ## set ghc imports properly for your system
 GHC_IMPORTS =`$(HC) --print-libdir`/imports
 DRIFT_ENV = \
-  DERIVEPATH=.:ghc:hetcats:$(GHC_IMPORTS):$(subst $(space),:,$(PFE_PATHS))
+  DERIVEPATH=.:ghc:$(GHC_IMPORTS):$(subst $(space),:,$(PFE_PATHS))
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
 empty:=
@@ -161,7 +161,7 @@ TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell
 
 
 ####################################################################
-## sources for hetcats (semi - manually produced with a perl script)
+## sources for hets (semi - manually produced with a perl script)
 
 #GHCMAKE_OUTPUT = $(wildcard hetcats-make)
 
@@ -224,7 +224,7 @@ inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
-derived_sources += $(drifted_files) hetcats/Version.hs $(happy_files) \
+derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
                   $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
@@ -298,7 +298,7 @@ taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
 ###############################
 ### TAGS files for (x)emacs 
 # load them with "M-x" "visit-tags-table" from
-# "HetCATS/hetcats/hetcats.TAGS"
+# "HetCATS/hetcats.TAGS"
 # use "M-." to search for a tag
 # !!Beware this is somewhat instable, because it uses an absolute path!!
 hetcats.TAGS: $(sources) 
@@ -538,17 +538,17 @@ hetdg: GUI/hetdg.hs $(drifted_files) *.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### run tests in other directories
-check: hetcats
+check:
 	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
 
 ####################################################################
 ## Preparing the version of HetCATS
-hetcats/Version.hs: hetcats/Version.in version_nr
-	$(PERL) utils/build_version.pl version_nr < hetcats/Version.in > $@
+Driver/Version.hs: Driver/Version.in version_nr
+	$(PERL) utils/build_version.pl version_nr < Driver/Version.in > $@
 
 ## two hardcoded dependencies for a correct generation of Version.hs
-hetcats/Options.hs hetcats/WriteFn.hs hetcats/ReadFn.hs: hetcats/Version.hs
-hets.hs: hetcats/Version.hs
+Driver/Options.hs Driver/WriteFn.hs Driver/ReadFn.hs: Driver/Version.hs
+hets.hs: Driver/Version.hs
 ####################################################################
 ## rules for DrIFT
 .SUFFIXES:

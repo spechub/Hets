@@ -25,7 +25,7 @@ import Common.Utils
 import Common.Result
 import Common.GlobalAnnotations (emptyGlobalAnnos)
 import Syntax.GlobalLibraryAnnotations (initGlobalAnnos)
-import Options
+import Driver.Options
 import System.Environment (getArgs)
 -- import System.Posix.Process (exitImmediately)
 import System.Exit (ExitCode(ExitSuccess), exitWith)
@@ -49,8 +49,8 @@ import Destructible
 import Syntax.AS_Library (LIB_DEFN(..), LIB_NAME()) 
 import qualified Common.Lib.Map as Map
 
-import ReadFn
-import WriteFn
+import Driver.ReadFn
+import Driver.WriteFn
 
 {-
 #ifdef PROGRAMATICA

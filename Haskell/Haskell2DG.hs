@@ -11,7 +11,7 @@ Portability :  portable
 
 module Haskell.Haskell2DG (anaHaskellFile) where
 
-import Options
+import Driver.Options
     
 import Static.DevGraph          (DGNodeLab (..),
                                  DGLinkLab (..),

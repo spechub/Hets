@@ -6,8 +6,8 @@ import Common.ATerm.Lib
 import Common.Result
 import ATC.AS_Library
 import ATC.Sml_cats
-import WriteFn
-import ReadFn
+import Driver.WriteFn
+import Driver.ReadFn
 
 
 main :: IO ()

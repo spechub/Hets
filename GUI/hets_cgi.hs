@@ -32,9 +32,9 @@ Portability  : non-portable
 module Main where
 
 import CGI
-import Options
-import WriteFn
-import ReadFn
+import Driver.Options
+import Driver.WriteFn
+import Driver.ReadFn
 import Common.Lib.Map as Map
 import Common.Result
 import Common.AS_Annotation
@@ -53,7 +53,7 @@ import System.Posix.Types
 import System.Posix.Files
 import System.Posix.Process
 import System.Posix.Env
-import Version
+import Driver.Version
 
 type DiagStr = String
 type HtmlTitle = String

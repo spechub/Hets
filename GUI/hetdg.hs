@@ -34,7 +34,7 @@ import Static.DotGraph
 import GUI.ConvertDevToAbstractGraph
 
 import GUI.AbstractGraphView
-import Options
+import Driver.Options
 
 import Static.DevGraph
 

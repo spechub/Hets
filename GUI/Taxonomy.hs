@@ -25,7 +25,7 @@ import Taxonomy.MMiSSOntologyGraph
 import Common.Taxonomy
 import Common.Result as Res
 
-import Options
+import Driver.Options
 
 displayConceptGraph :: String -> G_theory -> IO ()
 displayConceptGraph _ _ = 

@@ -36,9 +36,9 @@ import Common.Result
 import Common.Id
 import qualified Common.Lib.Map as Map
 import Common.PrettyPrint
-import Options
-import ReadFn
-import WriteFn (writeFileInfo)
+import Driver.Options
+import Driver.ReadFn
+import Driver.WriteFn (writeFileInfo)
 import Data.List(nub)
 import System.Environment(getEnv)
 

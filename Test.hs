@@ -8,7 +8,7 @@ import Static.AnalysisLibrary
 import System.IO
 import Static.DotGraph
 import Static.DevGraph
-import Options
+import Driver.Options
 import CASL.Logic_CASL
 import Common.Lib.Graph
 import Logic.Logic

@@ -51,9 +51,9 @@ import qualified Common.Result as Res
 import Syntax.AS_Library
 import Common.GlobalAnnotations
 
-import Options
-import WriteFn
-import ReadFn
+import Driver.Options
+import Driver.WriteFn
+import Driver.ReadFn
 import FileDialog
 import Events
 import System.Directory
