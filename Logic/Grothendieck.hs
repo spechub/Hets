@@ -358,14 +358,10 @@ instance Category Grothendieck G_sign GMorphism where
   comp _ 
        (GMorphism r1 sigma1 mor1) 
        (GMorphism r2 _sigma2 mor2) = 
-    do let lid1::lid1 
-	   lid1 = sourceLogic r1
-           lid2::lid2 
-	   lid2 = targetLogic r1
-           lid3::lid3 
-	   lid3 = sourceLogic r2
-           lid4::lid4 
-	   lid4 = targetLogic r2
+    do let lid1 = sourceLogic r1
+           lid2 = targetLogic r1
+           lid3 = sourceLogic r2
+           lid4 = targetLogic r2
        ComorphismAux r1' lid1' lid2' <- 
          (coerce lid2 lid3 $ ComorphismAux r1 lid1 lid2)
             :: Maybe (AnyComorphismAux lid5 sublogics1
