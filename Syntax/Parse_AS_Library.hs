@@ -23,7 +23,7 @@ import Logic.Grothendieck
 import Logic.Logic
 -- import CASL.Logic_CASL  -- we need the default logic
 import Syntax.AS_Structured
-import Syntax.AS_Architecture
+-- import Syntax.AS_Architecture
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
 import Syntax.Parse_AS_Architecture
@@ -90,7 +90,7 @@ libItems l@(_, lG) = option [] $ do
 
 -- | Parse an element of the library
 libItem :: (AnyLogic, LogicGraph) -> AParser (LIB_ITEM, AnyLogic)
-libItem l@(log, lG) = 
+libItem l@(lgc, lG) = 
      -- spec defn
     do s <- asKey specS 
        n <- simpleId
@@ -99,7 +99,7 @@ libItem l@(log, lG) =
        a <- aSpec l
        q <- optEnd
        return (Syntax.AS_Library.Spec_defn n g a 
-	       (map tokPos ([s, e] ++ maybeToList q)), log)
+	       (map tokPos ([s, e] ++ maybeToList q)), lgc)
   <|> -- view defn
     do s1 <- asKey viewS
        vn <- simpleId
@@ -108,11 +108,11 @@ libItem l@(log, lG) =
        vt <- viewType l
        (symbMap,ps) <- option ([],[]) 
                         (do s <- asKey equalS               
-                            (m, ps) <- parseMapping l
+                            (m, _) <- parseMapping l
                             return (m,[s]))          
        q <- optEnd
        return (Syntax.AS_Library.View_defn vn g vt symbMap 
-                    (map tokPos ([s1, s2] ++ ps ++ maybeToList q)), log)
+                    (map tokPos ([s1, s2] ++ ps ++ maybeToList q)), lgc)
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
@@ -122,17 +122,17 @@ libItem l@(log, lG) =
        kEnd <- optEnd
        return (Syntax.AS_Library.Unit_spec_defn name usp
 	           (map tokPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)), 
-	       log)
+	       lgc)
   <|> -- arch spec
     do kArch <- asKey archS
        kSpec <- asKey specS
        name <- simpleId
        kEqu <- asKey equalS
-       archSpec <- annotedArchSpec l
+       asp <- annotedArchSpec l
        kEnd <- optEnd
-       return (Syntax.AS_Library.Arch_spec_defn name archSpec
+       return (Syntax.AS_Library.Arch_spec_defn name asp
 	           (map tokPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd)), 
-	       log)
+	       lgc)
   <|> -- download
     do s1 <- asKey fromS
        ln <- libName
@@ -140,7 +140,7 @@ libItem l@(log, lG) =
        (il,ps) <- itemNameOrMap `separatedBy` anComma
        q <- optEnd
        return (Download_items ln il 
-                (map tokPos ([s1, s2] ++ ps ++ maybeToList q)), log)
+                (map tokPos ([s1, s2] ++ ps ++ maybeToList q)), lgc)
   <|> -- logic
     do s1 <- asKey logicS
        logN <- logicName
