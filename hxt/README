@@ -1,0 +1,116 @@
+
+These are the plain sources of the Haskell XML Toolbox (HXT) with some
+slight modifications over version 4.02. The building of a separate
+package is skipped and the whole src tree is used directly.
+
+10.01.2005, Klaus Lüttich
+
+Original README follows:
+
+Original CVS-Id: README,v 1.8 2004/09/02 19:11:48 hxml Exp 
+
+INTRODUCTION
+============
+
+The Haskell XML Toolbox is a collection of tools for processing XML with
+Haskell.
+
+The core component of the Haskell XML Toolbox is a validating XML-Parser, which
+supports almost fully the Extensible Markup Language (XML) 1.0 (Second Edition).
+
+The Haskell XML Toolbox bases on the ideas of HaXml and HXML, but introduces a
+more general approach for processing XML with Haskell. The Haskell XML Toolbox
+uses a generic data model for representing XML documents, including the DTD
+subset and the document subset, in Haskell. This data model makes is possible to
+use filter functions as uniform design of XML processing applications. The whole
+XML parser of the Haskell XML Toolbox was implemented using this design.
+Libraries with filters and combinators are provided for processing the generic
+data model.
+
+The Haskell XML Toolbox is available from:
+    http://www.fh-wedel.de/~si/HXmlToolbox/
+
+The current version is 4.02, and is stable quality.
+
+The Haskell XML Toolbox was developed with Hugs Version December 2001 (later with ghci) and with
+Glasgow Haskell Compiler (GHC) 5.04, 6.01 and 6.2 on Linux systems. Testing on Windows systems
+has not been done yet.
+
+Please contact us (hxmltoolbox@fh-wedel.de) with any questions, comments, or bug
+reports.
+
+FEATURES
+========
+
+- Unicode and UTF-8, US-ASCII and ISO-Laitin-1 support
+- http: and file: protocol support
+- http access via proxy
+- http support build in or via external program curl for HTTP/1.1 support
+- wellformed document parsing and validation
+- support for namespaces
+- xpath support
+
+MISSING FEATURES AND KNOWN PROBLEMS
+===================================
+
+Known problems:
+- Line numbers are not always pointing to the source of syntax error
+- Line numbers are not yet reported for validity constraint errors.
+
+
+DOCUMENTATION
+=============
+
+Documentation in various formats is available in the 'doc' subdirectory.
+
+The source code is documented with Haddock
+
+The master's thesis "Design and Implementation of a validating XML parser in
+Haskell" by Martin Schmidt describes the design and motivation of the Haskell
+XML Toolbox
+
+
+INSTALLATION
+============
+
+To compile binary versions of the programs included in the Haskell XML Toolbox
+the "Glasgow Haskell Compiler" >= 6.2 and "GNU make" are needed.
+
+execute in this dir
+
+	make all
+
+for testing the distribution with the example programs try
+
+	make test
+
+for installing the software in the ghc package dir run (with root access)
+
+	make install
+
+for uninstalling the package run (with root access)
+
+	make uninstall
+
+for using the toolbox include
+
+	module XXX(...)
+	where
+	...
+	import Text.XML.HXT.Parser
+	...
+
+and compile with
+
+	ghc ... -package hxt ...
+
+for using the package with ghci set option
+
+	ghci> :set -package hxt
+
+
+good luck
+
+uwe schmidt
+
+(uwe@fh-wedel.de)
