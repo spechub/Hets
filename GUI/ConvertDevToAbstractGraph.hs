@@ -647,6 +647,8 @@ createLocalMenuValueTitleShowConservativity =
             case dgl_type edgelab of
                         GlobalThm _ c status -> return (showCons c status)
                         LocalThm _ c status -> return (showCons c status)
+                        _ -> return ""
+          Nothing -> return ""
               ))
   where
     showCons :: Conservativity -> ThmLinkStatus -> String
