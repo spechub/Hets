@@ -43,7 +43,6 @@
    (interface to provers)
 
    Todo:
-   Errors (via Monad)
    ATerm, XML
    ID auslagern
    Sublanguages more abstractly (lattice)
@@ -51,6 +50,18 @@
 -}
 
 module Logic where
+
+
+-- error messages
+
+newtype Error a = Result ([String],Maybe a)
+
+instance Monad Error where
+  return x = Result ([],Just x)
+  Result (errs, Nothing) >>= f = Result (errs,Nothing)
+  Result (errs1, Just x) >>= f = Result (errs1++errs2,y)
+     where Result (errs2,y) = f x
+
 
 -- maps and sets, just a quick thing
 
@@ -104,11 +115,16 @@ class (Eq object, Eq morphism) =>
 
 -- abstract syntax, parsing and printing
 
-class (Read basic_spec, Read sentence, Read symb_items, 
-       Read symb_map_items, Read anno,
-       Show basic_spec, Show sentence, Show symb_items, 
+class (Show basic_spec, Show sentence, Show symb_items, 
        Show symb_map_items, Show anno) =>
       Syntax basic_spec sentence symb_items symb_map_items anno
+      where 
+         -- parsing
+         parse_basic_spec :: id -> String -> Error basic_spec
+         parse_sentence :: id -> String -> Error sentence
+         parse_symb_items :: id -> String -> Error symb_items
+         parse_symb_map_items :: id -> String -> Error symb_map_items
+         parse_anno :: id -> String -> Error anno
 
 
 -- sublogics
@@ -185,19 +201,19 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
          logic_name :: id -> String
 
          -- sentence translation
-         map_sen :: id -> morphism -> sentence -> sentence
+         map_sen :: id -> morphism -> sentence -> Error sentence
 
          -- static analysis of basic specifications and symbol maps
          basic_analysis :: id -> 
                            (basic_spec,sign,[anno]) -> 
-                           (sign,[(String,sentence)])
-         stat_symb_map_items :: id -> [symb_map_items] -> Map raw_symbol
-         stat_symb_items :: id -> [symb_items] -> [raw_symbol] 
+                           Error (sign,[(String,sentence)])
+         stat_symb_map_items :: id -> [symb_map_items] -> Error (Map raw_symbol)
+         stat_symb_items :: id -> [symb_items] -> Error [raw_symbol] 
 
          -- architectural sharing analysis for one morphism
          ensures_amalgamability :: id ->
               (Diagram sign morphism, Node, sign, Edge morphism, morphism) -> 
-               Diagram sign morphism
+               Error (Diagram sign morphism)
          -- do we need it also for sinks consisting of two morphisms?
 
          -- symbols and symbol maps
@@ -206,16 +222,16 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
          sym_of :: id -> sign -> Set symbol
          symmap_of :: id -> morphism -> Map symbol
          matches :: id -> symbol -> raw_symbol -> Bool
-         name :: id -> symbol -> ID 
+         sym_name :: id -> symbol -> ID 
    
          -- operations on signatures and morphisms
          empty_signature :: id -> sign
-         signature_union :: id -> sign -> sign -> sign
-         final_union :: id -> sign -> sign -> sign
+         signature_union :: id -> sign -> sign -> Error sign
+         final_union :: id -> sign -> sign -> Error sign
          is_subsig :: id -> sign -> sign -> Bool
-         generated_sign, cogenerated_sign :: id -> [raw_symbol] -> sign -> morphism
-         induced_from_morphism :: id -> Map raw_symbol -> sign -> morphism
-         induced_from_to_morphism :: id -> Map raw_symbol -> sign -> sign -> morphism 
+         generated_sign, cogenerated_sign :: id -> [raw_symbol] -> sign -> Error morphism
+         induced_from_morphism :: id -> Map raw_symbol -> sign -> Error morphism
+         induced_from_to_morphism :: id -> Map raw_symbol -> sign -> sign -> Error morphism 
 
          -- sublogics
          sublogics :: [Sublogic basic_spec sentence symb_items symb_map_items anno
@@ -228,19 +244,7 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
 
          -- derived operations, need not to be given
 
-         -- parsing, printing, accessible via logic identity
-         read_basic_spec :: id -> String -> basic_spec
-         read_sentence :: id -> String -> sentence
-         read_symb_items :: id -> String -> symb_items
-         read_symb_map_items :: id -> String -> symb_map_items
-         read_anno :: id -> String -> anno
-
-         read_basic_spec _ = read
-         read_sentence _ = read
-         read_symb_items _ = read
-         read_symb_map_items _ = read
-         read_anno _ = read
- 
+         -- printing, accessible via logic identity
          show_basic_spec :: id -> basic_spec -> String
          show_sentence :: id -> sentence -> String
          show_symb_items :: id -> symb_items -> String
