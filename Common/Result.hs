@@ -148,9 +148,12 @@ instance PrettyPrint Diagnosis where
         <+> text (show sp)
 	<+> text s
 
+instance PosItem Diagnosis where
+    up_pos fn1 d  = d { diagPos = fn1 $ diagPos d }
+    get_pos = Just . diagPos
+
 instance PrettyPrint a => PrettyPrint (Result a) where
     printText0 g (Result ds m) = vcat ((case m of 
 				       Nothing -> empty
 	 			       Just x -> printText0 g x) :
 					    (map (printText0 g) ds))
-							
