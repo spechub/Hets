@@ -22,6 +22,7 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.MixAna
 import HasCASL.MapTerm
+import HasCASL.TypeAna
 import HasCASL.Constrain
 
 import qualified Common.Lib.Map as Map
@@ -64,9 +65,9 @@ instOpInfo oi = do
 
 lookupError :: Type -> [OpInfo] -> String
 lookupError ty ois = 
-    "  with type: " ++  showPrettyWithPos ty "\n"
+    "  with type: " ++  showPretty ty "\n"
     ++ "  known types:\n    " ++
-       showSepList ("\n    "++) (showPrettyWithPos . opType) ois "" 
+       showSepList ("\n    "++) (showPretty . opType) ois "" 
 
 checkList :: [Maybe Type] -> [Term] 
 	  -> State Env [(Subst, Constraints, [Type], [Term])]
@@ -96,7 +97,7 @@ typeCheck mt trm =
 		   (ds, rcs) = simplify tm cs 
 		   es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
 	       addDiags(es ++ map ( \ c -> 
-		      mkDiag Error "unresolved constraint" c)
+		      (mkDiag Error "unresolved constraint" c){diagPos = p}) 
 	              (Set.toList rcs))
 	       return $ Just $ substTerm s t
 	  else let falts = filter ( \ (_, cs, _, _) -> 
@@ -109,10 +110,10 @@ typeCheck mt trm =
                     return $ Just $ substTerm s t
                     else 
                     do addDiags [Diag Error 
-			 ("ambiguous typings \n  " ++
-			  showSepList ("\n  "++) 
-			  showPrettyWithPos 
-			  (take 5 $ map ( \ (s,_,_,t) -> 
+			 ("ambiguous typings \n " ++
+			  showSepList ("\n " ++) 
+			  ( \ (n, t) -> shows n . (". " ++) . showPretty t)
+			  (zip [1..(5::Int)] $ map ( \ (s,_,_,t) -> 
 					  substTerm s t) falts) "")
 			    p]
 	               return Nothing
@@ -155,11 +156,16 @@ inferAppl ps mt t1 t2 = do
                            mkATM b = maybe [] ((:[]) . mkAT b) . maybeResult
                            l1 = mkATM False m1
                            l2 = mkATM True m2
-                           (as, acs, ty, atrm) = mkAT False eps
+--                           (as, acs, ty, atrm) = mkAT False eps
                            in if null l1 then 
                                  if null l2 then 
-                                        [(as, Subtyping (subst sf tya) sfty
-                                            `Set.insert` acs, ty, atrm)]
+                                    if lesserType tm (subst sf tya) sfty then
+                                        [mkAT False eps]
+                                    else []
+{-
+                                       [(as, Subtyping (subst sf tya) sfty
+                                         `Set.insert` acs, ty, atrm)]
+-}
                                  else l2 
                                else l1
 			  ) args) ops
@@ -168,10 +174,10 @@ inferAppl ps mt t1 t2 = do
 	    if null res then 
 	       addDiags [case mt of 
 		       Nothing -> mkDiag Error
-				  "wrongly typed application" origAppl
+				  "untypable application" origAppl
 		       Just ty -> mkDiag Hint 
-			    ("wrong result type "
-			    ++ showPrettyWithPos ty "\n  for application")
+			    ("untypable application (with result type: "
+			    ++ showPretty ty ")\n")
 		            origAppl]
 	       else return ()
 	    return res

@@ -140,7 +140,7 @@ x : m a %(var)%
 *** Hint 7.8, is type variable 'b'
 *** Hint 9.5, is type variable 'm'
 *** Hint 15.5, is type variable 'f'
-*** Error 23.15, unresolved constraint 'Set : Monad'
+*** Error 25.8, unresolved constraint 'Set : Monad'
 *** Hint 25.8, 
   expected: Monad
      found: Functor

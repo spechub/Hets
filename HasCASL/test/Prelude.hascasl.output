@@ -282,11 +282,11 @@ free type bool
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.6, unexpected mixfix token: :
 *** Hint 60.9, no type match for: snd
-  with type: '_var_9_v9 ->? t_v2' (60.14)
+  with type: _var_9_v9 ->? t_v2
   known types:
     
-*** Hint 60.9, wrong result type 't_v2' (60.28)
-  for application 'snd(x : s_v1, var y : t_v2)'
+*** Hint 60.9, untypable application (with result type: t_v2)
+ 'snd(x : s_v1, var y : t_v2)'
 *** Error 60.9, no typing for 'snd(x : s_v1, var y : t_v2) : t_v2'
 *** Error 65.18, ambiguous mixfix term
 	def(__res__(x, y))
@@ -297,41 +297,41 @@ free type bool
 
 *** Error 85.11, illegal supertype for variable '? s_v1'
 *** Hint 87.9, no type match for: all
-  with type: '_var_45_v45 ->? Unit ->? Unit' (87.14)
+  with type: _var_45_v45 ->? Unit ->? Unit
   known types:
     
-*** Hint 87.9, wrong result type 'Unit ->? Unit'
-  for application 'all(var p : s_v1 ->? Unit)'
+*** Hint 87.9, untypable application (with result type: Unit ->? Unit)
+ 'all(var p : s_v1 ->? Unit)'
 *** Error 87.9, no typing for 'all(var p : s_v1 ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
-  with type: '_var_46_v46 ->? Unit ->? Unit' (90.14)
+  with type: _var_46_v46 ->? Unit ->? Unit
   known types:
     
-*** Hint 90.9, wrong result type 'Unit ->? Unit'
-  for application 'And(x, var y : Unit ->? Unit)'
+*** Hint 90.9, untypable application (with result type: Unit ->? Unit)
+ 'And(x, var y : Unit ->? Unit)'
 *** Error 90.9, no typing for 'And(x, var y : Unit ->? Unit) : Unit ->? Unit'
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 *** Hint 98.9, no type match for: ex
-  with type: '_var_47_v47 ->? Unit ->? Unit' (98.13)
+  with type: _var_47_v47 ->? Unit ->? Unit
   known types:
     
-*** Hint 98.9, wrong result type 'Unit ->? Unit'
-  for application 'ex(var p : s_v1 ->? Unit)'
+*** Hint 98.9, untypable application (with result type: Unit ->? Unit)
+ 'ex(var p : s_v1 ->? Unit)'
 *** Error 98.9, no typing for 'ex(var p : s_v1 ->? Unit) : Unit ->? Unit'
 *** Hint 101.9, no type match for: ff
-  with type: '_var_48_v48 ->? Unit ->? Unit'
+  with type: _var_48_v48 ->? Unit ->? Unit
   known types:
     
-*** Hint 101.9, wrong result type 'Unit ->? Unit'
-  for application 'ff()'
+*** Hint 101.9, untypable application (with result type: Unit ->? Unit)
+ 'ff()'
 *** Error 101.9, no typing for 'ff() : Unit ->? Unit'
 *** Hint 103.9, no type match for: neg
-  with type: '_var_49_v49 ->? Unit ->? Unit' (103.14)
+  with type: _var_49_v49 ->? Unit ->? Unit
   known types:
     
-*** Hint 103.9, wrong result type 'Unit ->? Unit'
-  for application 'neg(var r : Unit ->? Unit)'
+*** Hint 103.9, untypable application (with result type: Unit ->? Unit)
+ 'neg(var r : Unit ->? Unit)'
 *** Error 103.9, no typing for 'neg(var r : Unit ->? Unit) : Unit ->? Unit'
 *** Error 108.51, unexpected mixfix token: impl
 *** Error 108.22, unexpected mixfix token: all
@@ -370,14 +370,14 @@ free type bool
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
 *** Hint 10.18, no type match for: __::__
-  with type: '_var_70_v70 ->? _var_68_v68 ->? _var_69_v69' (176.17)
+  with type: _var_70_v70 ->? _var_68_v68 ->? _var_69_v69
   known types:
     
-*** Hint 10.18, wrong result type '_var_68_v68 ->? _var_69_v69' (176.27)
-  for application '__::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])'
-*** Error 10.18, wrongly typed application '__::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
+*** Hint 10.18, untypable application (with result type: _var_68_v68 ->? _var_69_v69)
+ '__::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])'
+*** Error 10.18, untypable application '__::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
     (var g : _var_64_v64)'
-*** Error 176.13, wrongly typed application '__<<=__
+*** Error 176.13, untypable application '__<<=__
     (var f : _var_61_v61,
      __::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
        (var g : _var_64_v64))'

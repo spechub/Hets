@@ -204,48 +204,48 @@ type Data4
 *** Warning 11.19, redeclared class 'a'
 *** Error 20.12, unexpected mixfix token: res
 *** Hint 21.1, no type match for: fst
-  with type: '_var_4_v4 ->? s' (21.6)
+  with type: _var_4_v4 ->? s
   known types:
     
-*** Hint 21.1, wrong result type 's' (21.20)
-  for application 'fst(x : s, var y : t_v1)'
+*** Hint 21.1, untypable application (with result type: s)
+ 'fst(x : s, var y : t_v1)'
 *** Error 21.1, no typing for 'fst(x : s, var y : t_v1) : s'
 *** Hint 22.1, no type match for: snd
-  with type: '_var_5_v5 ->? t_v1' (22.6)
+  with type: _var_5_v5 ->? t_v1
   known types:
     
-*** Hint 22.1, wrong result type 't_v1' (22.20)
-  for application 'snd(x : s, var y : t_v1)'
+*** Hint 22.1, untypable application (with result type: t_v1)
+ 'snd(x : s, var y : t_v1)'
 *** Error 22.1, no typing for 'snd(x : s, var y : t_v1) : t_v1'
 *** Hint 28.9, no type match for: all
-  with type: '_var_6_v6 ->? ? Unit' (28.14)
+  with type: _var_6_v6 ->? ? Unit
   known types:
     
-*** Hint 28.9, wrong result type '? Unit' (28.26)
-  for application 'all(var p : ? s)'
+*** Hint 28.9, untypable application (with result type: ? Unit)
+ 'all(var p : ? s)'
 *** Error 28.9, no typing for 'all(var p : ? s) : ? Unit'
 *** Hint 30.9, no type match for: And
-  with type: '_var_7_v7 ->? ? Unit' (30.14)
+  with type: _var_7_v7 ->? ? Unit
   known types:
     
-*** Hint 30.9, wrong result type '? Unit' (30.31)
-  for application 'And(x, var y : ? Unit)'
+*** Hint 30.9, untypable application (with result type: ? Unit)
+ 'And(x, var y : ? Unit)'
 *** Error 30.9, no typing for 'And(x, var y : ? Unit) : ? Unit'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 *** Hint 37.3, no type match for: ex
-  with type: '_var_8_v8 ->? ? Unit' (37.7)
+  with type: _var_8_v8 ->? ? Unit
   known types:
     
-*** Hint 37.3, wrong result type '? Unit' (37.18)
-  for application 'ex(var p : ? s)'
+*** Hint 37.3, untypable application (with result type: ? Unit)
+ 'ex(var p : ? s)'
 *** Error 37.3, no typing for 'ex(var p : ? s) : ? Unit'
 *** Hint 40.3, no type match for: ff
-  with type: '_var_9_v9 ->? ? Unit' (40.11)
+  with type: _var_9_v9 ->? ? Unit
   known types:
     
-*** Hint 40.3, wrong result type '? Unit' (40.11)
-  for application 'ff()'
+*** Hint 40.3, untypable application (with result type: ? Unit)
+ 'ff()'
 *** Error 40.3, no typing for 'ff() : ? Unit'
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e

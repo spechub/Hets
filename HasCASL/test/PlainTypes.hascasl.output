@@ -93,8 +93,8 @@ x : tuple3 r s t %(var)%
      found: a -> b
 
 *** Error 38.19, ambiguous typings 
-  '(fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (var x : t, var x : t)' (38.19)
-  '(fun __=__[tuple3 r s t]
+ 1. (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+  (var x : t, var x : t)
+ 2. (fun __=__[tuple3 r s t]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (var x : tuple3 r s t, var x : tuple3 r s t)' (38.19)
+  (var x : tuple3 r s t, var x : tuple3 r s t)

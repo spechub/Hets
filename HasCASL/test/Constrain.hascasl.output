@@ -52,7 +52,7 @@ true : Unit %(fun)%
 (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   ((op f[t] : forall e : Ord . e_v-1 -> e_v-1)(op b : t), op b : t)
 %% Diagnostics -----------------------------------------------------------
-*** Error 14.8, unresolved constraint 't : Ord'
+*** Error 16.7, unresolved constraint 't : Ord'
 *** Hint 16.7, 
   expected: Ord
      found: Eq
