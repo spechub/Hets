@@ -100,14 +100,135 @@ applyRule = undefined
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 
 -- @@@@ hier weitermachen!! @@@@ 
-{-globDecomp :: ProofStatus -> ProofStatus
+globDecomp :: ProofStatus -> ProofStatus
 globDecomp proofStatus@(globalContext,history,dgraph) =
-  concat [getAllLocDefPathsBetween dgraph src tgt| src <- allNodes]
+  if null (snd newHistoryElem) then proofStatus
+   else (globalContext, ((newHistoryElem):history), newDgraph)
+
   where
-    globalThmEdges = filter isUnprovenGlobalThm (labEdges dGraph)
-    sourcesOfglobalThmEdges = map getSource globalThmEdges 
-    allNodes = nodes dGraph
+    globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
+    (newDgraph, newHistoryElem) = globDecompAux dgraph globalThmEdges ([],[])
+
+globDecompAux :: DGraph -> [LEdge DGLinkLab] -> ([DGRule],[DGChange])
+	      -> (DGraph,([DGRule],[DGChange]))
+globDecompAux dgraph [] historyElem = (dgraph, historyElem)
+globDecompAux dgraph (edge:edges) historyElem =
+  globDecompAux newDGraph edges newHistoryElem
+
+  where
+    (newDGraph, newChanges) = globDecompForOneEdge dgraph edge
+    newHistoryElem = 
+      if null newChanges then historyElem
+       else (((GlobDecomp edge):(fst historyElem)),
+			(newChanges++(snd historyElem)))
+
+
+globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> (DGraph,[DGChange])
+globDecompForOneEdge dgraph edge =
+  globDecompForOneEdgeAux dgraph edge [] paths
+  
+  where
+    paths = getAllProvenLocGlobPathsTo dgraph (getSourceNode edge) []
+
+
+globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange] ->
+			   [(Node, [LEdge DGLinkLab])] -> (DGraph,[DGChange])
+globDecompForOneEdgeAux dgraph edge changes [] = 
+  if null changes then (dgraph, [])
+   else ((delLEdge edge dgraph), (((DeleteEdge edge)):changes))
+globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
+ ((node,path):list) =
+  globDecompForOneEdgeAux newGraph edge newChanges list
+
+  where
+    morphism = case calculateMorphismOfPath (path++(edge:[])) of
+                 Just morph -> morph
+                 otherwise ->
+		   error "globDecomp: could not determine morphism of new edge"
+-- ist das die richtige Conservativity??
+    (GlobalThm _ conservativity) = (dgl_type edgeLab)
+    newEdge = (source,
+	       target,
+	       DGLink {dgl_morphism = morphism,
+		       dgl_type = (LocalThm False conservativity),
+		       dgl_origin = DGProof}
+               )
+    newGraph = insEdge newEdge dgraph
+    newChanges = ((InsertEdge newEdge):changes)
+
+getAllProvenLocGlobPathsTo :: DGraph -> Node -> [LEdge DGLinkLab]
+			      -> [(Node, [LEdge DGLinkLab])]
+-- ist ein provenLocLink auch schon ein provenLocDefPath??
+-- nur Defs suchen oder auch proven Thms?
+getAllProvenLocGlobPathsTo dgraph node path =
+  globalPaths ++ locGlobPaths ++ 
+    (concat (
+      [getAllProvenLocGlobPathsTo dgraph (getSourceNode edge) path| 
+       (node, path@(edge:edges)) <- globalPaths]))
+  
+
+  where
+    inEdges = inn dgraph node
+    globalEdges = (filter isGlobalDef inEdges) 
+		  ++ (filter isProvenGlobalThm inEdges)
+    localEdges = (filter isLocalDef inEdges) 
+		 ++ (filter isProvenLocalThm inEdges)
+    globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
+    locGlobPaths = [(getSourceNode edge, (edge:path))| edge <- localEdges]
+{-
+Global decomposition:
+(ja) alle globalen Theorem-Links raussuchen
+für jeden
+  alle Knoten holen, von denen aus der Source-Knoten des Links über einen
+  locGlob-DefPfad zu erreichen ist
+  von jedem
+    einen locThm einfügen mit dem Morphismus des zu ersetzenden Links
+    nach dem Morphismus der Kante vom aktuellen Knoten zum Source-Knoten
+    des zu ersetzenden Links
+-}
+
+
+
+
+
+
+
+{-
+--concat [map (getAllLocDefPathsBetween dgraph src) sourcesOfGlobalThmEdges| src <- allNodes]
+  
+    where
+      globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
+      allNodes = nodes dgraph
+      result = globDecompAux history dgraph allNodes globalThmEdges
+
     
+
+globDecompAux :: [([DGRule],[DGChange])] -> DGraph -> [Node] -> [LEdge DGLinkLab] -> (DGraph,[([DGRule],[DGChange])])
+globDecompAux history dgraph nodes [] = (dgraph,history)
+globDecompAux history dgraph nodes (edge:edges) =
+  globDecompAux newHistory newDGraph nodes edges
+
+    where
+      changes = if null history then [] else snd (head history)
+      result = globDecompForOneEdge changes dgraph nodes edge 
+      newDGraph = fst result
+      newHistory = if null (fst (snd result)) then history
+                    else (snd result):history
+
+globDecompForOneEdge :: [DGChange] -> DGraph -> [Node] -> LEdge DGLinkLab -> (DGraph,([DGRule],[DGChange]))
+globDecompForOneEdge [] dgraph [] _ = (dgraph,([],[]))
+globDecompForOneEdge changes dgraph [] edge = 
+  (dgraph,((GlobDecomp edge):[],changes)) 
+globDecompForOneEdge changes dgraph (node:nodes) edge =
+  globDecompForOneEdge newChanges newDgraph nodes edge 
+
+    where
+      result = globDecompForOneEdgeAux dgraph edge node
+      newDgraph = fst result
+      newChanges = snd result
+
+globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> Node -> (DGraph,[DGChange])
+globDecompForOneEdgeAux = undefined
 -}
 {- alle globalThmEdges holen, für jede(edge1):
      alle locDefPfade zum source suchen, für jeden:
@@ -309,10 +430,22 @@ getSourceNode (source,_,_) = source
 getTargetNode :: LEdge DGLinkLab -> Node
 getTargetNode (_,target,_) = target
 
+isProvenGlobalThm :: LEdge DGLinkLab -> Bool
+isProvenGlobalThm (_,_,edgeLab) =
+  case dgl_type edgeLab of
+    (GlobalThm True _) -> True
+    otherwise -> False
+
 isUnprovenGlobalThm :: LEdge DGLinkLab -> Bool
 isUnprovenGlobalThm (_,_,edgeLab) = 
   case dgl_type edgeLab of
     (GlobalThm False _) -> True
+    otherwise -> False
+
+isProvenLocalThm :: LEdge DGLinkLab -> Bool
+isProvenLocalThm (_,_,edgeLab) =
+  case dgl_type edgeLab of
+    (LocalThm True _) -> True
     otherwise -> False
 
 isUnprovenLocalThm :: LEdge DGLinkLab -> Bool
