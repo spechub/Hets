@@ -1086,15 +1086,12 @@ pr_fun_map_entry l (t,i,b) =
       if ((isJust res) && (not b)) then
       Just (t,i,b) else Nothing
 
--- FIXME
--- function embedMorphism needs to be implemented in LocalEnv.hs
 pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
 pr_epsilon l1 s = let
                     l = adjust_logic l1
                     new = pr_sign l s
                   in
-                    (Morphism new s emptyFM emptyFM emptyFM)
-                    -- embedMorphism new s
+                    embedMorphism new s
 
 ------------------------------------------------------------------------------
 -- the end
