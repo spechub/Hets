@@ -42,7 +42,6 @@ import ATermAbstractSyntax
 -- added by KL
 import Char
 
-import Memo
 import FiniteMap
 import List
 --- From String to ATerm ------------------------------------------------------
@@ -287,8 +286,7 @@ toBase64 =
 
 -- helpers --
 
-abbrev = memo abbrev' 
-    where abbrev' i = "#"++mkAbbrev i
+abbrev i = '#':mkAbbrev i
 
 next_abbrev tbl = abbrev ((lengthTable tbl)+1)
 
