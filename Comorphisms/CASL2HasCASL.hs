@@ -202,11 +202,12 @@ toTerm s f = case f of
         mkEqTerm exEq ps (fromTERM s t1) $ fromTERM s t2
     Cas.Strong_equation t1 t2 ps -> 
         mkEqTerm eqId ps (fromTERM s t1) $ fromTERM s t2
-    Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts rs) ps) as qs ->
+    Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts rs) ps) args qs ->
         let sc = simpleTypeScheme $ if null ts then logicalType 
                  else predType $ mkProductType (map toType ts) rs 
-            in ApplTerm (QualOp Pred (InstOpId i [] ps) sc ps)
-               (mkTupleTerm (map (fromTERM s) as) qs) qs 
+            p = QualOp Pred (InstOpId i [] ps) sc ps
+            in if null args then p else 
+               ApplTerm p (mkTupleTerm (map (fromTERM s) args) qs) qs 
     Cas.Definedness t ps -> mkTerm defId defType ps $ fromTERM s t 
     Cas.Membership t ty ps -> TypedTerm (fromTERM s t) InType (toType ty) ps
     _ -> error "fromTERM"
@@ -225,9 +226,10 @@ fromTERM :: Sign f e -> Cas.TERM f -> Term
 fromTERM s t = case t of
     Cas.Qual_var v ty ps -> 
         QualVar $ VarDecl (simpleIdToId v) (toType ty) Other ps
-    Cas.Application (Cas.Qual_op_name i ot ps) as qs  ->
-        ApplTerm (QualOp Op (InstOpId i [] ps) (fromOP_TYPE ot) ps)
-             (mkTupleTerm (map (fromTERM s) as) qs) qs 
+    Cas.Application (Cas.Qual_op_name i ot ps) args qs  ->
+        let o = QualOp Op (InstOpId i [] ps) (fromOP_TYPE ot) ps in
+        if null args then o else
+        ApplTerm o (mkTupleTerm (map (fromTERM s) args) qs) qs 
     Cas.Sorted_term trm ty ps -> 
         TypedTerm (fromTERM s trm) OfType (toType ty) ps
     Cas.Cast trm ty ps -> TypedTerm (fromTERM s trm) AsType (toType ty) ps
