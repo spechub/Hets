@@ -62,7 +62,7 @@ type EquivRel a = [EquivClass a]
 type EquivRelTagged a b = [(a, b)]
 
 -- PrettyPrint instance (for diagnostic output)
-instance PrettyPrint CASLDiag where
+instance (PrettyPrint a,  PrettyPrint b) => PrettyPrint (Diagram a b) where
     printText0 ga diag = 
         ptext "nodes: " 
         <+> (printText0 ga (labNodes diag))
