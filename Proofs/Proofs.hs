@@ -72,8 +72,25 @@ import Syntax.AS_Library
 import Syntax.Print_AS_Library 
 #ifdef UNI_PACKAGE
 import GUI.HTkUtils
-#endif
+#else
+import Data.Char(isDigit, digitToInt)
 
+listBox :: String -> [String] -> IO (Maybe Int)
+listBox prompt choices = do
+   putStrLn prompt
+   mapM_ putStrLn $ zipWith (\ n c -> shows n ": " ++ c) [0::Int ..] choices
+   putStrLn "Please enter a number on the next line"
+   s <- getLine
+   if all isDigit s then 
+          let n = foldl ( \ r a -> r * 10 + digitToInt a) 0 s in 
+              if n >= length choices then
+                 putStrLn "number to large, try again"
+                 >> listBox prompt choices
+              else putStrLn ("you have chosen entry \"" ++ choices!!n)
+                   >> return (Just n)
+      else putStrLn ("illegal input \"" ++ s ++ "\" try again")
+           >> listBox prompt choices
+#endif
 
 {-
    proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
@@ -1279,7 +1296,6 @@ getProvers consCheck lg gsub =
 selectProver :: [(G_prover,AnyComorphism)] -> IOResult (G_prover,AnyComorphism)
 selectProver [p] = return p
 selectProver [] = resToIORes $ fatal_error "No pover available" nullPos
-#ifdef UNI_PACKAGE
 selectProver provers = do
    sel <- ioToIORes $ listBox 
                 "Choose a translation to a prover-supported logic"
@@ -1288,7 +1304,6 @@ selectProver provers = do
            Just j -> return j
            _ -> resToIORes $ fatal_error "Proofs.Proofs: selection" nullPos
    return (provers!!i)
-#endif
  
 -- applies basic inference to a given node
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
