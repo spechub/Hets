@@ -134,7 +134,7 @@ checkMonomorphRecursion :: Type	-> TypeMap -> DataPat -> Result ()
 checkMonomorphRecursion t tm p@(i, _, _) = 
     let rt = typeIdToType p in
     if occursIn tm i t then 
-       if equalSubs tm t rt then return ()
+       if lesserType tm t rt || lesserType tm rt t then return ()
        else Result [Diag Error  ("illegal polymorphic recursion" 
 				 ++ expected rt t) $ getMyPos t] Nothing
     else return ()
