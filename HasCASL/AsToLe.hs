@@ -25,6 +25,7 @@ import Common.Result
 import HasCASL.PrintAs
 import HasCASL.TypeAna
 import HasCASL.TypeDecl
+import HasCASL.Unify
 
 ----------------------------------------------------------------------------
 -- analysis
@@ -124,14 +125,12 @@ anaVarDecl(VarDecl v oldT _ _) =
 			  if ts `elem` map opType l then 
 			     addDiag $ mkDiag Warning 
 				      "repeated variable" v
-			     else if any (unifiable ts) $ map opType l then
-				  addDiag $ mkDiag Error
-				      "illegal overloading of" v
-	                          else putAssumps $ Map.insert v 
-				       (OpInfo ts [] VarDefn : l ) as
+			     else do bs <- mapM (unifiable ts) $ map opType l
+			             if or bs then addDiag $ mkDiag Error
+					    "illegal overloading of" v
+	                                else putAssumps $ Map.insert v 
+						 (OpInfo ts [] VarDefn : l ) as
 
-unifiable :: TypeScheme -> TypeScheme -> Bool
-unifiable _ _ = False
 -- ----------------------------------------------------------------------------
 -- ClassItem
 -- ----------------------------------------------------------------------------

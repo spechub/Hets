@@ -41,6 +41,7 @@ Hint (12,9) not a class 'tuple3 r s'
 Error (18,14) undeclared type '__'
 Error (18,11) incompatible kind of type '([__])(__)'
 Hint (18,9) not a class 'm [__]'
+Hint (7,15) type 'm' is not unifiable with '{__}'
 Error (24,5) incompatible kinds
 (Type ->Type) ->Type
   Type
