@@ -126,31 +126,35 @@ extKind =
 -- * type variables
 
 -- a (simple) type variable with a 'Variance'
-extTypeVar :: AParser (TypeId, Variance, Pos) 
-extTypeVar = do t <- typeVar
-		do   a <- plusT
-		     return (t, CoVar, tokPos a)
-	 	  <|>
-		  do a <- minusT
-		     return (t, ContraVar, tokPos a)
-		  <|> return (t, InVar, nullPos)
+extVar :: AParser Id -> AParser (Id, Variance, Pos) 
+extVar vp = 
+    do t <- vp
+       do   a <- plusT
+	    return (t, CoVar, tokPos a)
+          <|>
+	  do a <- minusT
+	     return (t, ContraVar, tokPos a)
+          <|> return (t, InVar, nullPos)
 
 -- several 'extTypeVar' with a 'Kind'
 typeVars :: AParser [TypeArg]
-typeVars = do (ts, ps) <- extTypeVar `separatedBy` anComma
-	      do   c <- colT
-                   if let isInVar(_, InVar, _) = True
-			  isInVar(_,_,_) = False
-		      in all isInVar ts then 
-		      do k <- extKind
-			 return (makeTypeArgs ts ps [tokPos c] k)
-		      else do k <- kind
-			      return (makeTypeArgs ts ps [tokPos c] k)
-	        <|> typeDownset ts ps
+typeVars = do (ts, ps) <- extVar typeVar `separatedBy` anComma
+	      typeKind ts ps
+
+allIsInVar :: [(TypeId, Variance, Pos)] -> Bool
+allIsInVar = all ( \ (_, v, _) -> case v of InVar -> True 
+		                            _ -> False)   
 
 -- 'parseType' a 'Downset' starting with 'lessT'
-typeDownset :: [(TypeId, Variance, Pos)] -> [Token] -> AParser [TypeArg]
-typeDownset vs ps = 
+typeKind :: [(TypeId, Variance, Pos)] -> [Token] -> AParser [TypeArg]
+typeKind vs ps = 
+    do c <- colT
+       if allIsInVar vs then 
+	  do k <- extKind
+	     return (makeTypeArgs vs ps [tokPos c] k)
+          else do k <- kind
+		  return (makeTypeArgs vs ps [tokPos c] k)
+    <|>
     do l <- lessT
        t <- parseType
        return (makeTypeArgs vs ps [tokPos l]
@@ -164,10 +168,10 @@ makeTypeArgs ts ps qs k =
     zipWith (mergeVariance Comma k) (init ts) 
 		(map ((:[]). tokPos) ps)
 		++ [mergeVariance Other k (last ts) qs]
-		where mergeVariance c (ExtKind e InVar _) (t, v, p) q =
-			  TypeArg t (ExtKind e v [p]) c q
-		      mergeVariance c e (t, _, _) p = 
-			  TypeArg t e c p 
+		where mergeVariance c e (t, InVar, _) q =
+			  TypeArg t e c q
+		      mergeVariance c e (t, v, p) q = 
+			  TypeArg t (ExtKind e v [p]) c q 
 
 -- | a single 'TypeArg' (parsed by 'typeVars')
 singleTypeArg :: AParser TypeArg
@@ -389,21 +393,15 @@ makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma [tokPos p])
 -- | either like 'varDecls' or type variables with a 'typeDownset'.
 -- A 'GenVarDecl' may later become a 'GenTypeVarDecl'.
 genVarDecls:: AParser [GenVarDecl]
-genVarDecls = do (vs, ps) <- var `separatedBy` anComma
-		 fmap (map GenVarDecl) (varDeclType vs ps)
+genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
+		 if allIsInVar vs then
+		    fmap (map GenVarDecl) 
+			     (varDeclType 
+			      (map ( \ (i, _, _) -> i) vs) ps)
 		      <|> fmap (map GenTypeVarDecl)
-			       (typeDownset (map toExtTypeVar vs) ps)
-			  where toExtTypeVar v@(Id ts cs qs) = 
-				    let s = last ts 
-					r = init ts    
-					n = Id r cs qs
-					p = tokPos s in
-				    if null r then (v, InVar, nullPos)
-				    else if tokStr s == plusS then
-					     (n, CoVar, p)
-				    else if tokStr s == minusS then
-					     (n, ContraVar, p)
-				    else (v, InVar, nullPos)
+			       (typeKind vs ps)
+		     else fmap (map GenTypeVarDecl)
+			       (typeKind vs ps)
 
 -- * patterns
 
