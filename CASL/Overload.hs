@@ -41,8 +41,6 @@ import Data.List                ( partition )
 {-----------------------------------------------------------
     Overload Resolution
 -----------------------------------------------------------}
-{- expand all formulae to be fully qualified, then return them if there is no
-   ambiguity -}
 overloadResolution :: Sign -> [FORMULA] -> Result [FORMULA]
 overloadResolution sign
     = mapM (minExpFORMULA sign)
@@ -63,18 +61,10 @@ minExpFORMULA sign formula
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- is_unambiguous t                             -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
-        Existl_equation term1 term2 pos -> do
-            t1  <- minExpTerm sign term1                        -- :: [[TERM]]
-            t2  <- minExpTerm sign term2                        -- :: [[TERM]]
-            -- find common supersort for each combination of equivs
-            return $ Existl_equation term1 term2 pos            -- :: FORMULA
-        -- FIXME: check whether sorts of terms match
-        Strong_equation term1 term2 pos -> do
-            t1  <- minExpTerm sign term1                        -- :: [[TERM]]
-            t2  <- minExpTerm sign term2                        -- :: [[TERM]]
-            -- find common supersort for each combination of equivs
-            return $ Strong_equation term1 term2 pos            -- :: FORMULA
-        -- FIXME: check whether sorts of terms match
+        Existl_equation term1 term2 pos ->
+            minExpFORMULA_eq sign Existl_equation term1 term2
+        Strong_equation term1 term2 pos ->
+            minExpFORMULA_eq sign Strong_equation term2 term2
         Membership term sort pos        -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- return
@@ -137,7 +127,6 @@ minExpFORMULA_pred sign predicate terms = do
             _   -> error
                 $ "Cannot disambiguate! Term: " ++ (show (predicate, terms))
                 ++ "\n  Possible Expansions: " ++ (show ps)
-
         qualify_pred    :: (PredType, [TERM]) -> FORMULA
         qualify_pred (pred', terms')
             = (Predication                                      -- :: FORMULA
@@ -164,6 +153,31 @@ minExpFORMULA_pred sign predicate terms = do
                     preds_equiv = pred1 `leqP` pred2            -- ::  Bool
                     types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
                 in b1 && b2 && (preds_equal || (preds_equiv && types_equal))
+
+{-----------------------------------------------------------
+    Minimal Expansions of a Predicate Application Term
+-----------------------------------------------------------}
+minExpFORMULA_eq :: Sign -> (TERM -> TERM -> [Id.Pos] -> FORMULA)
+                    -> TERM -> TERM -> Result FORMULA
+minExpFORMULA_eq sign eq term1 term2 = do
+    exps1       <- minExpTerm sign term1                -- :: [[TERM]]
+    exps2       <- minExpTerm sign term2                -- :: [[TERM]]
+    pairs       <- return
+        $ permute [(map head exps1), (map head exps2)]  -- :: [[TERM]]
+    candidates  <- return
+        $ filter (have_supersort) pairs                 -- :: [[TERM]]
+    case candidates of
+        [[t1,t2]]       -> return $ eq t1 t2 []
+        _               -> error
+            $ "Cannot disambiguate! Possible Expansions: "
+            ++ (show exps1) ++ "\n\t" ++ (show exps2)
+    where
+        have_supersort          :: [TERM] -> Bool
+        have_supersort terms
+            = not $ Set.isEmpty                         -- ::    Bool
+                $ foldr Set.intersection Set.empty      -- ::  Set.Set SORT
+                $ map term_to_supersort terms           -- :: [Set.Set SORT]
+            where term_to_supersort = (flip supersortsOf sign) . term_sort
 
 {-----------------------------------------------------------
     Minimal Expansions of a Term
