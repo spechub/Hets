@@ -21,7 +21,8 @@ BASIC-ITEMS     ::= axiom/axioms AXIOM ;...; AXIOM ;/
 SIG-ITEMS       ::= sort/sorts SORT-ITEM ; ... ; SORT-ITEM
 		  | type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
 		  | type/types TYPE-ITEM ; ... ; TYPE-ITEM ;/
-                  | type instance/instances TYPE-ITEM ; ... ; TYPE-ITEM ;/
+                  | type/types instance/instances 
+				TYPE-ITEM ; ... ; TYPE-ITEM ;/
                   | op/ops OP-ITEM ; ... ; OP-ITEM ;/
                   | pred/preds PRED-ITEM ; ... ; PRED-ITEM ;/   %% old style
 

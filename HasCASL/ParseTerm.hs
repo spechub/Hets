@@ -18,7 +18,9 @@ import Parsec
 import AS_Annotation
 import Anno_Parser(annotationL)
 
-colonT = asKey colonS
+noQuMark s = try $ asKey s << notFollowedBy (char '?')
+
+colonT = noQuMark colonS
 lessT = asKey lessS
 equalT = asKey equalS
 asT = asKey asP
@@ -134,17 +136,17 @@ prodType = do (ts, ps) <- mixType `separatedBy` crossT
 funType = do (ts, as) <- prodType `separatedBy` arrowT
 	     return (makeFun ts as)
 	       where makeFun [t] [] = t
-	             makeFun [t,r] [a] = FunType t (fst a) r (snd a)
+	             makeFun [t,r] [a] = FunType t (fst a) r [snd a]
 		     makeFun (t:r) (a:b) = makeFun [t, makeFun r b] [a]
 		     makeFun _ _ = error "makeFun got illegal argument"
 
-arrowT = do a <- asKey funS
+arrowT = do a <- noQuMark funS
 	    return (FunArr, tokPos a)
 	 <|>
 	 do a <- asKey pFun
 	    return (PFunArr, tokPos a)
 	 <|>
-	 do a <- asKey contFun
+	 do a <- noQuMark contFun
 	    return (ContFunArr, tokPos a)
          <|>
 	 do a <- asKey pContFun 
@@ -386,7 +388,9 @@ parenTerm = do o <- oParenT
 partialTypeScheme :: GenParser Char st (Token, TypeScheme)
 partialTypeScheme = do q <- qColonT
 		       t <- parseType 
-		       return (q, SimpleTypeScheme (LazyType t (tokPos q)))
+		       return (q, SimpleTypeScheme 
+			       (FunType (TupleType [] [tokPos q]) 
+				PFunArr t [tokPos q]))
 		    <|> bind (,) colonT typeScheme
 
 varTerm o = do v <- asKey varS
@@ -403,7 +407,7 @@ qualOpName o = do { v <- asKey opS
 		  ; return (QualOp i t (toPos o [v, c] p))
 		  }
 
-predType t = FunType t PFunArr (ProductType [] []) nullPos
+predType t = FunType t PFunArr (ProductType [] []) []
 predTypeScheme (SimpleTypeScheme t) = SimpleTypeScheme (predType t)
 predTypeScheme (TypeScheme vs t ps) = TypeScheme vs (predTypeScheme t) ps
 

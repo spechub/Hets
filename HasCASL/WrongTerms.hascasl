@@ -32,3 +32,5 @@ exists! a: v .! x
 pred
 var
 op
+(op __<__ : ?##) 
+(op __<__ : ? ##) 

@@ -79,32 +79,33 @@ commaTypeDecl :: TypePattern -> GenParser Char st TypeItem
 commaTypeDecl s = do { c <- commaT 
 		     ; (is, cs) <- typePattern `separatedBy` commaT
 		     ; let l = s : is 
-		           p = tokPos c : map tokPos cs
+		           p = c : cs
 		       in
 		       subTypeDecl (l, p)
 		       <|> kindedTypeDecl (l, p)
-		       <|> return (TypeDecl l nullKind p)
+		       <|> return (TypeDecl l nullKind (map tokPos p))
 		     }
 
 kindedTypeDecl (l, p) = 
     do { t <- colonT
        ; s <- kind
-       ; let d = TypeDecl l s (p++[tokPos t]) in 
+       ; let d = TypeDecl l s (map tokPos (p++[t])) in 
 	 if length l > 1 then return d
-	 else pseudoTypeDef (head l) s [tokPos t]
+	 else pseudoTypeDef (head l) s [t]
+	  <|> dataDef (head l) s [t] 
           <|> return d
        }
 
 isoDecl :: TypePattern -> GenParser Char st TypeItem
 isoDecl s = do { e <- equalT
-               ; subTypeDefn (s, tokPos e)
+               ; subTypeDefn (s, e)
 		 <|>
 		 (do { (l, p) <- typePattern `separatedBy` equalT
-		     ; return (IsoDecl (s:l) (tokPos e : map tokPos p))
+		     ; return (IsoDecl (s:l) (map tokPos (e:p)))
 		     })
 	       }
 
-subTypeDefn :: (TypePattern, Pos) -> GenParser Char st TypeItem
+subTypeDefn :: (TypePattern, Token) -> GenParser Char st TypeItem
 subTypeDefn (s, e) = do { a <- annos
 			; o <- oBraceT
 			; v <- var
@@ -114,15 +115,15 @@ subTypeDefn (s, e) = do { a <- annos
 			; f <- fmap TermFormula term
 			; p <- cBraceT
 			; return (SubtypeDefn s v t (Annoted f [] a []) 
-				  (e:tokPos o:tokPos c:tokPos d:[tokPos p]))
+				  (toPos e [o,c,d] p))
 			}
 
 
-subTypeDecl :: ([TypePattern], [Pos]) -> GenParser Char st TypeItem
+subTypeDecl :: ([TypePattern], [Token]) -> GenParser Char st TypeItem
 subTypeDecl (l, p) = 
     do { t <- lessT
        ; s <- parseType
-       ; return (SubtypeDecl l s (p++[tokPos t]))
+       ; return (SubtypeDecl l s (map tokPos (p++[t])))
        }
 
 sortItem :: GenParser Char st TypeItem
@@ -157,7 +158,16 @@ typeItem = do { s <- typePattern;
 		    return (TypeDecl [s] nullKind [])
 		  } 		
 
-typeItems = itemList typeS typeItem (TypeItems Plain)
+typeItems = do p <- pluralKeyword typeS
+	       do    q <- pluralKeyword instanceS
+		     typeItemList [p,q] Instance
+	         <|> typeItemList [p] Plain
+
+typeItemList ps k = 
+    do { (vs, ts, ans) <- itemAux (annoParser typeItem)
+       ; let r = zipWith appendAnno vs ans 
+	 in return (TypeItems k r (map tokPos (ps++ts)))
+       }
 
 -----------------------------------------------------------------------------
 -- pseudotype
@@ -166,7 +176,7 @@ typeItems = itemList typeS typeItem (TypeItems Plain)
 pseudoTypeDef t k l = 
     do c <- asKey assignS
        p <- pseudoType
-       return (AliasType t k p (l++[tokPos c]))
+       return (AliasType t k p (map tokPos (l++[c])))
 			
 typeArgSeq =    
     do (ts, ps) <- typeArgs `separatedBy` semiT 
@@ -192,9 +202,14 @@ pseudoType = do l <- asKey lamS
 dataDef t k l =
     do c <- asKey defnS
        a <- annos
-       (Annoted v _ _ b:as, ps) <- aAlternative `separatedBy` asKey barS
-       return (Datatype (DatatypeDecl t k (Annoted v [] a b:as) 
-                        Nothing (map tokPos (l++c:ps))))
+       (Annoted v _ _ b:as, ps) <- aAlternative `separatedBy` barT
+       let aa = Annoted v [] a b:as 
+	   qs = map tokPos (l++c:ps)
+	 in do d <- asKey derivingS
+	       cl <- parseClass
+	       return (Datatype (DatatypeDecl t k aa (Just cl)
+		       (qs ++ [tokPos d])))
+	    <|> return (Datatype (DatatypeDecl t k aa Nothing qs))
 
 aAlternative = do { a <- alternative
                   ; an <- annos
@@ -213,7 +228,6 @@ alternative = do { s <- pluralKeyword sortS <|> pluralKeyword typeS
 		      }
 		   <|> return (Constructor i cs Total [])
 		 }
-
 
 tupleComponent = 
     do o <- oParenT
@@ -256,20 +270,72 @@ compType is cs = do { c <- colonT
 	  makeComps _ _ _ _ = error "makeComps: empty selector list"
 
 -----------------------------------------------------------------------------
--- classDecl
+-- classItem
 -----------------------------------------------------------------------------
 
-pparseDownSet = 
-	     do c <- className
-		e <- equalT     
-	        o <- oBraceT
+classDecl :: GenParser Char st ClassDecl
+classDecl = do   (is, cs) <- className `separatedBy` commaT
+		 if length is == 1 then 
+		    subClassDecl (is, cs)
+		    <|>
+		    return (ClassDecl is (map tokPos cs))
+		   else 
+                    isoClassDecl (head is)
+		    <|>
+		    subClassDecl (is, cs)
+		    <|>
+		    return (ClassDecl is (map tokPos cs))
+
+subClassDecl (l, p) = 
+    do { t <- lessT
+       ; s <- parseClass
+       ; return (SubclassDecl l s (map tokPos (p++[t])))
+       }
+
+isoClassDecl s = 
+    do { e <- equalT
+       ;     do o <- oBraceT
 		i <- typeVar
 		d <- dotT
                 j <- asKey (tokStr i)
 		l <- lessT
                 t <- parseType
 		p <- cBraceT
-		return (DownsetDefn c i t (map tokPos [e,o,d,j,l,p])) 
+		return (DownsetDefn s i t (map tokPos [e,o,d,j,l,p])) 
+	     <|> 
+	     do c <- parseClass
+	        return (ClassDefn s c [tokPos e])
+       }
 
+basicItems = return (ProgItems [] [])
 
+classItem = do c <- classDecl
+	       do { o <- oBraceT 
+                  ; a <- annos
+                  ; i:is <- many1 basicItems
+                  ; p <- cBraceT
+                  ; return (ClassItem c ((Annoted i [] a [])  
+                                         : map (\x -> Annoted x [] [] []) is)
+                                   (map tokPos [o, p])) 
+		  }
+                  <|> 
+		  return (ClassItem c [] [])
 
+-----------------------------------------------------------------------------
+-- opItem
+-----------------------------------------------------------------------------
+
+opName = do i@(Id is cs ps) <- uninstOpName
+	    if isPlace $ last is then return (OpName i [])
+	      else 
+	        do ts <- many typeVarDeclSeq
+		   u <- many placeT
+		   return (OpName (Id (is++u) cs ps) ts)
+
+typeVarDeclSeq = 
+    do o <- oBracketT
+       (ts, cs) <- typeVarDecls `separatedBy` semiT
+       c <- cBracketT
+       return (TypeVarDecls (concat ts) (toPos o cs c))
+
+-- opItem = do 

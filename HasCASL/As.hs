@@ -99,7 +99,7 @@ data Type = TypeConstrAppl TypeName Kind [Type] [Pos]  -- analysed
 	  -- pos "?"
           | ProductType [Type] [Pos]
           -- pos crosses 
-          | FunType Type Arrow Type Pos
+          | FunType Type Arrow Type [Pos]
           -- pos arrow
             deriving (Show,Eq)
 

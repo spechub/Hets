@@ -48,7 +48,6 @@ b[a __ b] a
 (op __<__ : bb) 
 (op __<__ :? bb) 
 (op __<__ :? ##) 
-(op __<__ : ?##) 
 (pred y : bb)
 (pred y : bb*bb)
 (var y : bb->bb)
@@ -98,7 +97,6 @@ a \a:v.! !x
 =e=e=e=
 =e= e =e=
 =e =e= e=
-(op __<__ : ? ##) 
 (op __<__ :? ## -> bb) 
 (op __<__ :? aa*bb) 
 let x = y in z
