@@ -18,6 +18,7 @@ import qualified Common.Lib.Map as Map
 import Data.List
 import Control.Monad.State
 import Common.Result
+import Common.GlobalAnnotations
 
 -- for Logic.signature_union
 
@@ -26,9 +27,15 @@ instance Mergeable Env where
 	do cMap <- merge (classMap e1) $ classMap e2
 	   tMap <- merge (typeMap e1) $ typeMap e2
 	   let m = max (counter e1) $ counter e2
+	   mG <- merge (globalAnnos e1) $ globalAnnos e2    
 	   as <- mergeAssumps tMap m 
 		 (assumps e1) $ assumps e2
-	   return $ Env cMap tMap as (envDiags e1 ++ envDiags e2) m
+	   return $ Env cMap tMap as (sentences e1 ++ sentences e2) 
+		      mG (envDiags e1 ++ envDiags e2) m
+
+instance Mergeable GlobalAnnos where
+    merge a _ = return a 
+	-- if a == b then return a else fail "merge: GlobalAnnos"
 
 instance (Ord a, PosItem a, Mergeable b) => Mergeable (Map.Map a b) where
     merge = mergeMap merge

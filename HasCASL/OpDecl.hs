@@ -15,8 +15,6 @@ import HasCASL.TypeAna
 import Common.Id
 import HasCASL.Le
 import Control.Monad.State
-import Common.PrettyPrint
-import HasCASL.PrintAs()
 import Common.Lib.Parsec.Pos
 import qualified Common.Lib.Map as Map
 import Common.Result
@@ -24,12 +22,7 @@ import HasCASL.TypeDecl
 import Data.List
 import Data.Maybe
 import HasCASL.Unify
-
-
-missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
-missingAna t ps = appendDiags [Diag FatalError 
-			       ("no analysis yet for: " ++ showPretty t "")
-			      $ if null ps then nullPos else head ps]
+import HasCASL.MixAna
 
 posOfOpId :: OpId -> Pos
 posOfOpId (OpId i _ _) = posOfId i
@@ -38,18 +31,32 @@ anaOpItem :: OpItem -> State Env ()
 anaOpItem (OpDecl is sc attr _) = 
     mapM_ (anaOpId sc attr) is
 
-anaOpItem (OpDefn i _ _ _ _ _) = missingAna i [posOfOpId i]
+anaOpItem (OpDefn o pats sc partial trm ps) = 
+    do let newTrm = if null pats then trm else 
+		 LambdaTerm pats partial trm ps 
+       (i, newSc) <- getUninstOpId sc o
+       Result ds mt <- resolveTerm newTrm
+       appendDiags ds 
+       case mt of 
+	       Just t -> addOpId i newSc [] $ Definition t
+	       _ -> return ()
 
-anaOpId :: TypeScheme -> [OpAttr] -> OpId -> State Env ()
-anaOpId (TypeScheme tvs q ps) attrs (OpId i args _) =
+getUninstOpId :: TypeScheme -> OpId -> State Env (UninstOpId, TypeScheme)
+getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
     do let newArgs = args ++ tvs
            sc = TypeScheme newArgs q ps
        appendDiags $ checkDifferentTypeArgs newArgs
        (mk, newSc) <- anaTypeScheme sc
        case mk of 
 	       Nothing -> return () -- induced error
-	       Just k -> do checkKinds (posOfId i) k star
-			    addOpId i newSc attrs NoOpDefn
+	       Just k -> checkKinds (posOfId i) k star
+       return (i, newSc)
+
+
+anaOpId :: TypeScheme -> [OpAttr] -> OpId -> State Env ()
+anaOpId sc attrs o =
+    do (i, newSc) <- getUninstOpId sc o
+       addOpId i newSc attrs NoOpDefn
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe Kind, TypeScheme)
 anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =

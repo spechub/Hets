@@ -22,13 +22,20 @@ import Control.Monad
 import Control.Monad.State
 import HasCASL.OpDecl
 import Common.Result
+import Common.PrettyPrint
 import HasCASL.PrintAs
 import HasCASL.TypeAna
 import HasCASL.TypeDecl
+import HasCASL.MixAna
 
 ----------------------------------------------------------------------------
 -- analysis
 -----------------------------------------------------------------------------
+
+missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
+missingAna t ps = appendDiags [Diag FatalError 
+			       ("no analysis yet for: " ++ showPretty t "")
+			      $ if null ps then nullPos else head ps]
 
 anaBasicSpec :: BasicSpec -> State Env ()
 anaBasicSpec (BasicSpec l) = mapM_ anaBasicItem $ map item l
@@ -41,7 +48,15 @@ anaBasicItem (GenVarItems l _) = mapM_ anaGenVarDecl l
 anaBasicItem t@(ProgItems _ p) = missingAna t p
 anaBasicItem (FreeDatatype l _) = mapM_ (anaDatatype Free Plain) $ map item l
 anaBasicItem (GenItems l _) = mapM_ (anaSigItems Generated) $ map item l
-anaBasicItem t@(AxiomItems _ _ p) = missingAna t p 
+anaBasicItem (AxiomItems decls fs _) = 
+    do tm <- getTypeMap -- save type map
+       as <- getAssumps -- save vars
+       mapM_ anaGenVarDecl decls
+       ds <- mapM (( \ (TermFormula t) -> resolveTerm t ) . item) fs
+       appendDiags $ concatMap diags ds
+       putTypeMap tm -- restore 
+       putAssumps as -- restore
+       -- store the formulae
 
 anaSigItems :: GenKind -> SigItems -> State Env ()
 anaSigItems gk (TypeItems inst l _) = mapM_ (anaTypeItem gk inst) $ map item l

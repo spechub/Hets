@@ -16,6 +16,7 @@ import Common.Lib.Set as Set
 import Data.List
 import Control.Monad.State
 import Common.Result
+import Common.GlobalAnnotations
 
 -----------------------------------------------------------------------------
 -- classInfo
@@ -80,15 +81,18 @@ type Assumps = Map Id [OpInfo]
 data Env = Env { classMap :: ClassMap
                , typeMap :: TypeMap
 	       , assumps :: Assumps
+	       , sentences :: [(String, Formula)]	 
+               , globalAnnos :: GlobalAnnos
 	       , envDiags :: [Diagnosis]
 	       , counter :: Int
 	       } deriving Show
 
 instance Eq Env where
-    Env c1 t1 a1 _ _ == Env c2 t2 a2 _ _ = (c1, t1, a1) == (c2, t2, a2)
+    Env c1 t1 a1 s1 _ _ _ == Env c2 t2 a2 s2 _ _ _ = 
+	(c1, t1, a1, s1) == (c2, t2, a2, s2)
 
 initialEnv :: Env
-initialEnv = Env Map.empty Map.empty Map.empty [] 1
+initialEnv = Env Map.empty Map.empty Map.empty [] emptyGlobalAnnos [] 1
 
 appendDiags :: [Diagnosis] -> State Env ()
 appendDiags ds =
@@ -104,6 +108,9 @@ indent i s = showString $ concat $
 	     intersperse ('\n' : replicate i ' ') (lines $ s "")
 
 -- ---------------------------------------------------------------------
+
+getGlobalAnnos :: State Env GlobalAnnos
+getGlobalAnnos = gets globalAnnos
 
 getCounter :: State Env Int
 getCounter = gets counter
