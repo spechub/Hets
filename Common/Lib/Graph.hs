@@ -297,6 +297,12 @@ delEdge (v,w) g = case match v g of
                     (Nothing,_)        -> g
                     (Just (p,v,l,s),g) -> embed (p,v,l,filter ((/=w).snd) s) g
 
+delLEdge :: Eq b => LEdge b -> Graph a b -> Graph a b
+delLEdge (v,w,lab) g = case match v g of
+                    (Nothing,_)        -> g
+                    (Just (p,v,l,s),g) -> embed (p,v,l,filter ((/=(lab,w))) s) g
+
+
 delEdges :: [Edge] -> Graph a b -> Graph a b
 delEdges es g = foldr delEdge g es 
  
