@@ -53,7 +53,7 @@ c_displ dm =
     let m1 = Map.toList dm -- m1::[(Id,Map.Map Display_format String)] 
         m2 = map (\ (x,m) -> (x, Map.toList m)) m1
 	-- m2::[(ID,[(Display_format,String)])]
-    in map (\ (i,[d_f,str]) -> Display_anno i [d_f,str] []) m2
+    in map (\ (i,x) -> Display_anno i x []) m2
 		   
 c_lit_an::LiteralAnnos->[Annotation]
 c_lit_an la = let str = case (string_lit la) of
