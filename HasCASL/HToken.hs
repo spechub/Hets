@@ -84,9 +84,27 @@ var = fmap (\l -> Id l [] []) (start (lessS : hascasl_reserved_ops,
 hcKeys :: ([String], [String])
 hcKeys = (hascasl_reserved_ops, hascasl_reserved_words)
 
+-- | if-then-tokens
+ifThen :: GenParser Char st [Token]
+ifThen = 
+    do i <- pToken $ keyWord $ string ifS
+       p <- placeT
+       t <- pToken $ keyWord $ string thenS
+       q <- placeT
+       return [i, p , t, q]
+
+-- | if-then-else-identifier
+ite :: GenParser Char st Id
+ite = 
+    do ts <- try ifThen
+       do   e <- pToken $ keyWord $ string elseS
+	    p <- placeT
+	    return (mkId (ts ++ [e, p]))
+         <|> return (mkId ts)  
+
 -- | operation 'Id' (reserved stuff excluded)
 uninstOpId :: GenParser Char st Id
-uninstOpId = mixId hcKeys hcKeys
+uninstOpId = try ite <|> mixId hcKeys hcKeys
 
 -- | constructor 'Id' ('barS' additionally excluded)
 hconsId :: GenParser Char st Id
