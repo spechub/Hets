@@ -1,6 +1,6 @@
 module AS_Basic_CASL where
 
--- $Haeder$
+-- $Header$
 
 import Id
 import AS_Annotation 
