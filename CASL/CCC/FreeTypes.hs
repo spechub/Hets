@@ -93,8 +93,8 @@ checkFreeType (osig,osens) m fsn
                                Just p' -> headPos p'
                                Nothing -> nullPos 
                    in warning Nothing "axiom is incorrect" pos
-       | not $ null $ p_t_axioms = 
-                   let p = get_pos_l $ head p_t_axioms
+       | not $ null $ p_t_axioms ++ pcheck = 
+                   let p = get_pos_l $ head (p_t_axioms ++ pcheck)
                        pos = case p of
                                Just p' -> headPos p'
                                Nothing -> nullPos 
@@ -171,21 +171,39 @@ checkFreeType (osig,osens) m fsn
          axioms1 = filter (\f-> case f of                       
                                     Sort_gen_ax _ _ -> False
                                     _ -> True) fs
-         axioms = trace (showPretty axioms1 "axioms") axioms1         --  axioms
+         axioms = trace (showPretty axioms1 "axioms") axioms1                               --  axioms
          _axioms = map (\f-> case f of
                                Quantification _ _ f' _ -> f'
                                _ -> f) axioms
 
          l_Syms1 = map leadingSym axioms                                    
-         l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1         -- leading_Symbol
+         l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1                       -- leading_Symbol
 {-
   check all partial axiom
 -}
-         p_axioms = filter partialAxiom _axioms
-         t_axioms = filter (not.partialAxiom) _axioms
-         p_t_axioms = filter (\f-> case (opTyp_Axiom f) of
+         p_axioms = filter partialAxiom _axioms                       -- all partial axioms
+         t_axioms = filter (not.partialAxiom) _axioms                 -- all total axioms 
+         p_t_axioms = filter (\f-> case (opTyp_Axiom f) of            -- exist partial axioms in total axioms?
                                      Just False -> True
                                      _ -> False) t_axioms
+         equi_p_axioms = filter (\f-> case f of
+                                       Equivalence _ _ _ -> True
+                                       _ -> False) p_axioms
+         opSyms_p = map (\os-> case os of
+                                 (Just (Left opS)) -> opS
+                                 _ -> error "partial axiom") $ map leadingSym equi_p_axioms 
+         impl_p_axioms = filter (\f-> case f of
+                                        Equivalence _ _ _ -> False
+                                        Negation _ _ -> False
+                                        _ -> True) p_axioms
+         pcheck = foldl (\im os-> 
+                           filter (\im'-> 
+                             case leadingSym im' of
+                               (Just (Left opS)) -> opS /= os
+                               _ -> False) im) impl_p_axioms opSyms_p
+-- test :: [Int] -> [Int] -> [Int]
+-- test a b = foldl (\a b'-> filter (\a'->a'/=b') a) a b
+         
 {- 
   check if leading symbols are new (not in the image of morphism),
         if not, return Nothing
@@ -533,7 +551,8 @@ leadingSym f = do
 leadingSymPos ::(PosItem f)=> FORMULA f -> (Maybe (Either OP_SYMB PRED_SYMB),Maybe [Pos])
 leadingSymPos f = leading (f,False,False)
   where leading (f,b1,b2)= case (f,b1,b2) of
-                             ((Quantification _ _ f' _),b1',b2')  -> leading (f',b1',b2')
+                             ((Quantification _ _ f' _),b1,b2)  -> leading (f',b1,b2)
+                             ((Negation f' _),b1,b2) -> leading (f',b1,b2)
                              ((Implication _ f' _ _),False,False) -> leading (f',True,False)
                              ((Equivalence f' _ _),b,False) -> leading (f',b,True)
                              ((Definedness t _),_,_) -> case (term t) of
@@ -558,7 +577,8 @@ leading_Term_Predication ::  FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
 leading_Term_Predication f = leading (f,False,False)
     where leading (f,b1,b2)= case (f,b1,b2) of
                          --      ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)     -- ?
-                               ((Quantification _ _ f' _),_,_)  -> leading (f',b1,b2)     -- ?
+                               ((Quantification _ _ f' _),b1,b2)  -> leading (f',b1,b2)     -- ?
+                               ((Negation f' _),b1,b2) -> leading (f',b1,b2)
                                ((Implication _ f' _ _),False,False) -> leading (f',True,False)
                                ((Equivalence f' _ _),b,False) -> leading (f',b,True)
                                ((Definedness t _),_,_) -> case (term t) of
@@ -598,6 +618,7 @@ groupAxioms phis = do
 isOp_Pred :: FORMULA f -> Bool
 isOp_Pred f = case f of
                Quantification _ _ f' _ -> isOp_Pred f'
+               Negation f' _ -> isOp_Pred f'
                Implication _ f' _ _ -> isOp_Pred f'
                Equivalence f' _ _ -> isOp_Pred f'
                Definedness t _ -> case (term t) of
@@ -615,6 +636,15 @@ isOp_Pred f = case f of
 partialAxiom :: FORMULA f -> Bool
 partialAxiom f = case f of
                     Quantification _ _ f' _ -> partialAxiom f'
+                    Negation f' _ ->
+                               case f' of
+                                 Definedness t _ -> 
+                                            case (term t) of
+                                              Application opS _ _ -> case (partial_OpSymb opS) of
+                                                                       Just True -> True
+                                                                       _ -> False
+                                              _ -> False
+                                 _ -> False
                     Implication f' _ _ _ -> 
                                case f' of
                                  Definedness t _ -> 
