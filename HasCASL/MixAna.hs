@@ -400,7 +400,7 @@ mkPatAppl :: Pattern -> Pattern -> [Pos] -> Pattern
 mkPatAppl op arg qs = 
     case op of
 	    ResolvedMixPattern i as ps -> 
-		ResolvedMixPattern i (as++[arg]) (ps++qs)
+		ApplPattern op arg qs
 	    PatternVar (VarDecl i (MixfixType []) _ _) -> 
 		ResolvedMixPattern i [arg] qs
 	    TypedPattern p ty ps -> 
