@@ -55,7 +55,7 @@ addSuperType :: Type -> Id -> State Env ()
 addSuperType t i =
     do tk <- getTypeMap
        case Map.lookup i tk of
-	      Nothing -> error "addSuperType"
+	      Nothing -> return () -- previous error
 	      Just (TypeInfo ok ks sups defn) -> 
 				putTypeMap $ Map.insert i 
 					      (TypeInfo ok ks (t:sups) defn)
@@ -171,10 +171,12 @@ kindArity m (ExtClass _ _ _) = case m of
 anaTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env ()
 -- type args not yet considered for kind construction 
 anaTypeId defn _ kind i@(Id ts _ _)  = 
-    let n = length $ filter isPlace ts 
-    in if n == 0 || n == kindArity TopLevel kind then
-       addTypeKind defn i kind
-       else addDiag $ mkDiag Error "wrong arity of" i
+    do cMap <- getClassMap
+       let n = length $ filter isPlace ts 
+           nk = expandKind cMap kind
+       if n <= kindArity TopLevel nk then
+	  addTypeKind defn i kind
+	  else addDiag $ mkDiag Error "wrong arity of" i
 
 convertTypePatterns :: [TypePattern] -> Result [Id]
 convertTypePatterns [] = Result [] $ Just []
