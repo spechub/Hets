@@ -27,7 +27,7 @@ instance ATermConvertible G_basic_spec where
 	    (ShAAppl "G_basic_spec" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = (getATermByIndex1 i2 att)
-		    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+		    l = lookupLogic_in_LG ("ATermConvertible G_basic_spec:") i1' 
                 in case l of
 		    Logic lid -> 
 			G_basic_spec lid (fromShATerm_basic_spec lid att') 
@@ -44,7 +44,7 @@ instance ATermConvertible G_sentence where
 	    (ShAAppl "G_sentence" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-		    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+		    l = lookupLogic_in_LG ("ATerm_Convertible G_sentence:") i1' 
                 in case l of
                     Logic lid -> (G_sentence lid (fromShATerm_sentence lid att'))
          where
@@ -60,7 +60,7 @@ instance ATermConvertible G_l_sentence_list where
 	    (ShAAppl "G_l_sentence" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-		    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+		    l = lookupLogic_in_LG ("ATermConvertible G_l_sentence_list") i1' 
                 in case l of
                     Logic lid -> (G_l_sentence lid (fromShATerm_l_sentence_list lid att'))
          where
@@ -76,7 +76,7 @@ instance ATermConvertible G_sign where
 	    (ShAAppl "G_sign" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+                    l = lookupLogic_in_LG ("ATermConvertible G_sign:") i1' 
                 in case l of
                     Logic lid -> (G_sign lid (fromShATerm_sign lid att'))
          where
@@ -92,7 +92,7 @@ instance ATermConvertible G_sign_list where
 	    (ShAAppl "G_sign_list" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+                    l = lookupLogic_in_LG ("ATermConvertible G_sign_list:") i1' 
                 in case l of
                     Logic lid -> (G_sign_list lid (fromShATerm_sign_list lid att'))
          where
@@ -108,7 +108,7 @@ instance ATermConvertible G_symbol where
 	    (ShAAppl "G_symbol" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+                    l = lookupLogic_in_LG ("ATermConvertible G_symbol:") i1' 
                 in case l of 
                     Logic lid -> (G_symbol lid (fromShATerm_symbol lid att'))
          where
@@ -124,7 +124,7 @@ instance ATermConvertible G_symb_items_list where
 	    (ShAAppl "G_symb_items_list" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+                    l = lookupLogic_in_LG ("ATermConvertible G_symb_items_list:") i1' 
                 in case l of
                     Logic lid -> (G_symb_items_list lid (fromShATerm_symb_items_list lid att'))
          where
@@ -140,7 +140,7 @@ instance ATermConvertible G_symb_map_items_list where
 	    (ShAAppl "G_symb_map_items_list" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+                    l = lookupLogic_in_LG ("ATermConvertible G_symb_map_items_list:") i1' 
                 in case l of
                     Logic lid -> (G_symb_map_items_list lid (fromShATerm_symb_map_items_list lid att'))
          where
@@ -156,7 +156,7 @@ instance ATermConvertible G_diagram where
 	    (ShAAppl "G_diagram" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+                    l = lookupLogic_in_LG ("ATermConvertible G_diagram:") i1' 
                 in case l of
                     Logic lid -> (G_diagram lid (fromShATerm_diagram lid att'))
          where
@@ -173,7 +173,7 @@ instance ATermConvertible G_sublogics where
 	    (ShAAppl "G_sublogics" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+                    l = lookupLogic_in_LG ("ATermConvertible G_sublogics:") i1' 
                 in case l of 
                     Logic lid -> (G_sublogics lid (fromShATerm_sublogics lid att'))
          where
@@ -189,7 +189,7 @@ instance ATermConvertible G_morphism where
 	    (ShAAppl "G_morphism" [i1,i2] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                    l = lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1' 
+                    l = lookupLogic_in_LG ("ATermConvertible G_morphism:") i1' 
                 in case l of 
                     Logic lid -> (G_morphism lid (fromShATerm_morphism lid att'))
          where
@@ -219,7 +219,7 @@ instance ATermConvertible GMorphism where
            case aterm of
 	    (ShAAppl "GMorphism" [i1,i2,i3] _) ->
 	 	let i1'  = fromShATerm (getATermByIndex1 i1 att)
-                    c  =  lookupComorphism_in_LG ("couldn't find Comorphism " ++ i1' ++ " in Logic Graph") i1'
+                    c  =  lookupComorphism_in_LG ("ATermConvertible AnyComorphism:") i1'
                     att' = getATermByIndex1 i2 att
                     att'' = getATermByIndex1 i3 att
                 in case c of
@@ -243,7 +243,7 @@ instance ATermConvertible AnyLogic where
          case aterm of
 	    (ShAAppl "Logic" [i1] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
-                in lookupLogic_in_LG ("couldn't find Logic " ++ i1' ++ " in Logic Graph") i1'
+                in lookupLogic_in_LG ("ATermConvertible AnyLogic:") i1'
          where
          aterm = getATerm att
 

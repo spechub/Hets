@@ -89,6 +89,13 @@ data G_l_sentence_list = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree  =>
   G_l_sentence lid [Named sentence] 
 
+instance Show G_l_sentence_list where
+    show (G_l_sentence _ s) = show s
+
+instance Eq G_l_sentence_list where
+    (G_l_sentence i1 nl1) == (G_l_sentence i2 nl2) =
+     coerce i1 i2 nl1 == Just nl2
+
 -- | Grothendieck signatures
 data G_sign = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -252,14 +259,14 @@ data LogicGraph = LogicGraph {
 lookupLogic :: String -> String -> LogicGraph -> AnyLogic
 lookupLogic error_prefix logname logicGraph =
     case Map.lookup logname (logics logicGraph) of
-    Nothing -> error (error_prefix++"logic "++logname++" unknown")
+    Nothing -> error (error_prefix++" in LogicGraph logic \""++logname++"\" unknown")
     Just lid -> lid
 
 -- | find a comorphism in a logic graph
 lookupComorphism :: String -> String -> LogicGraph -> AnyComorphism
 lookupComorphism error_prefix coname logicGraph =
     case Map.lookup coname (comorphisms logicGraph) of
-    Nothing -> error (error_prefix++"logic "++coname++" unknown")
+    Nothing -> error (error_prefix++" in LogicGraph comorphism \""++coname++"\" unknown")
     Just cid -> cid
 
 
