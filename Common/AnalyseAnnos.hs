@@ -2,7 +2,7 @@
 
    Module      :  $Header$
    Copyright   :  (c) Christian Maeder, Klaus Lüttich, Carsten Fischer and Uni Bremen 2002-2003
-   Licence     :  All rights reserved.
+   Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 
    Maintainer  :  hets@tzi.de

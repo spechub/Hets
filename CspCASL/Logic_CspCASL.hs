@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c)  Markus Roggenbach, Till Mossakowski and Uni Bremen 2003
-Licence     :  All rights reserved.
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  experimental

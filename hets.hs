@@ -1,8 +1,11 @@
 {- |
-   > HetCATS/hets.hs
-   $Id$
-   Author: Klaus Lüttich
-   Year:   2003
+Module      :  $Header$
+Copyright   :  (c) Uni Bremen 2003
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable (imports Logic.Logic)
 
    The Main module of the hetcats system. It provides the main function
    to call.

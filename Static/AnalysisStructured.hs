@@ -2,8 +2,8 @@
 {- | 
    
    Module      :  $Header$
-   Cop-D¿yright   :  (c)  Till Mossakowski and Uni Bremen 2003-A
-   Licence     :  All rights reserved.
+   Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
+   Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
    Maintainer  :  hets@tzi.de
    Stability   :  provisional
