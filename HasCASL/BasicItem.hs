@@ -2,6 +2,8 @@ module BasicItem where
 
 import Id
 import Lexer
+import Type
+import Term
 import LocalEnv
 import Parsec
 
@@ -40,32 +42,40 @@ subSortDecl l = do { skipChar '<';
 		     return (AllLess l (Just s))
 		   }
 
-isoDecl s1 = do { equal;
-                  subSortDefn s1
-		  <|>
+isoDecl sig s1 = do { equal;
+                  subSortDefn sig s1
+{-		  <|>
 		  do { s <- sepBy sortId equal;
 		       return (AllEqual (s1:s))
 		     }
-		}
+-}		}
 
-subSortDefn s = do { t <- between (try (skipChar '{')) (skipChar '}') 
-		     (return ""); -- parse single var decl and term
-		     return (SubType s)
+subSortDefn sig s = do { t <- between (try (skipChar '{')) (skipChar '}') 
+			         (return ""); -- parse single var decl and term
+			 let si = SortItem (Decl (Symb s Sort)
+					            (Token("", nullPos)))
+			             (SortRels [] []) Nothing
+			 in
+			 return (sig { sorts = si:(sorts sig) })
 		   }
 
-sortItem = do { s1 <- sortId;
-		sortDecl s1
-		<|>
-		subSortDecl [s1]
-		<|>
-                isoDecl s1
-	      } 		
+sortItem sig = do { s1 <- sortId;
+--		    sortDecl sig s1
+--		    <|>
+--		    subSortDecl sig [s1]
+--		    <|>
+                    isoDecl sig s1
+		  } 		
 
-sortItems = do { pluralKeyword "sort";
-		 s <- sepBy1 sortItem semi;
-		 optSemi;
-		 return s 
-	       }
+sortItemsAux sig = do { sig2 <- sortItem sig;
+			option (sig2) 
+		          (semi >> option (sig2) 
+			        (sortItemsAux sig2))
+		      }
+
+sortItems sig = do { pluralKeyword "sort";
+		     sortItemsAux sig
+		   }
 
 opItem = do { o1 <- opId;
 	      opDecl o1
@@ -85,14 +95,15 @@ opItems = do { pluralKeyword "op";
 sigItems = sortItems -- <|> opItems
 
 
-basicItem = sigItems 
+basicItem = sigItems
 
+basicItems sig = do { sig2 <- basicItem sig;
+		      option (sig2) (basicItems sig2)
+		    }
 
-basicSpec = do { ann;
---		 setState(empty);
-		 many1 basicItem;
-	       }
-
+basicSpec sig = do { ann;
+		     basicItems sig
+		   }
 
 
 
