@@ -28,5 +28,6 @@ Error (11,7) alias class cannot become a real class 'i'
 Warning (12,7) redeclared class 'i'
 Warning (13,7) redeclared class 'i'
 Error (13,7) inconsistent redefinition of 'i'
+Warning (15,21) unchecked type: t
 Warning (15,7) redeclared class 'i'
 Error (15,7) inconsistent redefinition of 'i'

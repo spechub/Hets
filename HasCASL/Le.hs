@@ -11,10 +11,13 @@ module Le where
 
 import Id
 import As
-import MonadState
 import FiniteMap
+import GlobalAnnotationsFunctions(emptyGlobalAnnos)
 import List
+import MonadState
 import Result
+import Pretty
+import PrettyPrint
 
 data ClassInfo = ClassInfo { classId :: ClassId
 			   , superClasses :: [ClassId]
@@ -56,6 +59,21 @@ appendDiags ds =
     if null ds then return () else
     do e <- get
        put $ e {envDiags = ds ++ envDiags e}
+
+
+showPretty :: PrettyPrint a => a -> ShowS
+showPretty = showString . render . printText0 emptyGlobalAnnos 
+
+indent :: Int -> ShowS -> ShowS
+indent i s = showString $ concat $ 
+	     intersperse ('\n' : replicate i ' ') (lines $ s "")
+
+missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
+missingAna t ps = appendDiags [Diag FatalError 
+			       ("no analysis yet for: " ++ showPretty t "")
+			      $ if null ps then nullPos else head ps]
+
+-- ---------------------------------------------------------------------
 
 getClassMap :: State Env ClassMap
 getClassMap = gets classMap

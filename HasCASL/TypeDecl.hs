@@ -11,6 +11,7 @@ module TypeDecl where
 
 import As
 import AsUtils
+import ClassAna
 import FiniteMap
 import Id
 import Le
@@ -23,7 +24,6 @@ import ParsecError
 
 import PrintAs()
 import Result
-import TypeAna
 
 addTypeKind :: Id -> Kind -> State Env ()
 addTypeKind t k = 

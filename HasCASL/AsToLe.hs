@@ -11,6 +11,7 @@ module AsToLe where
 
 import AS_Annotation
 import As
+import ClassAna
 import ClassDecl
 import FiniteMap
 import Id

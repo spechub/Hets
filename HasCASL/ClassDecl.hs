@@ -17,18 +17,18 @@ import List
 import Maybe
 import MonadState
 import Result
-import TypeAna
+import ClassAna
 
 anaClassDecls :: ClassDecl -> State Env ()
 anaClassDecls (ClassDecl cls _) = 
     mapM_ (anaClassDecl [] Nothing) cls
 
 anaClassDecls (SubclassDecl _ (Downset _) _) = error "anaClassDecl"
-anaClassDecls (SubclassDecl cls sc@(Intersection supcls ps) _) =
+anaClassDecls (SubclassDecl cls sc@(Intersection supcls ps) qs) =
        if null supcls then 
 	  do appendDiags [Diag Warning
 			  "redundant universe class" 
-			 $ head ps ] 
+			 $ if null ps then head qs else head ps ] 
 	     mapM_ (anaClassDecl [] Nothing) cls
           else let hd:tl = supcls in 
 	      if null $ tl then
@@ -49,7 +49,7 @@ anaClassDecls (ClassDefn ci ic _) =
        anaClassDecl [] (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
-    do newT <- anaType t 
+    do downsetWarning t
        anaClassDecl [] (Just $ Downset t) ci
 
 anaClassDecl :: [ClassId] -> Maybe Class -> ClassId -> State Env ()

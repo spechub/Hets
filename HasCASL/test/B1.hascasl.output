@@ -37,5 +37,7 @@ Warning (20,7) redeclared class 'd'
 Error (20,7) class cannot become an alias class 'd'
 Warning (25,7) redeclared class 'h'
 Error (25,7) inconsistent redefinition of 'h'
+Warning (27,21) unchecked type: t
 Error (33,9) undeclared type 's'
+Warning (37,9) unchecked type: t
 Error (39,6) non-matching kind arity

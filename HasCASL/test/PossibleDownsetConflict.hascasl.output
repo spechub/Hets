@@ -9,14 +9,19 @@ s : Type
 t : Type
 Type Variables : (s,t)
 Assumptions
+Warning (3,21) unchecked type: s
+Warning (5,21) unchecked type: t
 Warning (7,7) redeclared class 'a'
 Error (7,7) alias class cannot become a real class 'a'
+Warning (9,20) unchecked type: t
 Warning (9,7) redeclared class 'a'
+Warning (11,20) unchecked type: s
 Warning (11,7) redeclared class 'a'
 Error (11,7) inconsistent redefinition of 'a'
 Warning (15,7) redeclared class 'a'
 Error (15,7) inconsistent redefinition of 'a'
 Warning (21,7) redeclared class 'h'
 Warning (21,12) already known as super class 'a'
+Warning (23,21) unchecked type: t
 Warning (23,7) redeclared class 'e'
 Error (23,7) inconsistent redefinition of 'e'
