@@ -801,6 +801,6 @@ basicInferenceNode lg (ln,node)
     let nextDGraph = dGraph -- ??? to be implemented
         nextHistoryElem = error "Proofs.Proofs: basic inference"
                  -- ??? to be implemented
-    return (globalContext, libEnv, {- nextHistoryElem: -} history, nextDGraph)
+    return (globalContext, libEnv, {- nextHistoryElem: -} ([],[]):history, nextDGraph)
    )
 

@@ -662,9 +662,11 @@ showOriginOfNode descr ab2dgNode dgraph =
 
 {- start local theorem proving at a node -}
 --proveAtNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
-proveAtNode gInfo descr ab2dgNode dgraph = 
+proveAtNode gInfo@(_,_,convRef,_,_,_) descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
-    Just libNode -> proofMenu gInfo (basicInferenceNode logicGraph libNode)
+    Just libNode -> 
+      do convMaps <- readIORef convRef
+         proofMenu gInfo (basicInferenceNode logicGraph libNode)
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
