@@ -18,8 +18,8 @@
 INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCASL:../aterm_conv
 
 HC         = ghc
-DRIFT      = ../utils/DrIFT
 PERL       = perl
+DRIFT      = $(PERL) ../utils/DrIFT
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances
 HC_INCLUDE = -i$(INCLUDE_PATH)
