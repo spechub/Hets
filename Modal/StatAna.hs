@@ -10,6 +10,10 @@ Portability :  portable
    static analysis of modal logic parts
 -}
 
+{- todo:
+   check quantifiers (sorts, variables in body) in ana_M_FORMULA
+-}
+
 module Modal.StatAna where
 
 import Modal.AS_Modal
@@ -112,11 +116,11 @@ ana_M_BASIC_ITEM _ bi = do
     case bi of
         Simple_mod_decl al fs ps -> do
 	    mapM_ ((updateExtInfo . addModId) . item) al
-	    newFs <- mapAnM (resultToState ana_M_FORMULA) fs 
+	    newFs <- mapAnM (resultToState (ana_M_FORMULA False)) fs 
 	    return $ Simple_mod_decl al newFs ps
 	Term_mod_decl al fs ps -> do
 	    mapM_ ((updateExtInfo . addModSort e) . item) al
-	    newFs <- mapAnM (resultToState ana_M_FORMULA) fs 
+	    newFs <- mapAnM (resultToState (ana_M_FORMULA True)) fs 
 	    return $ Term_mod_decl al newFs ps
 
 resultToState :: (a -> Result a) -> a -> State (Sign f e) a
@@ -158,53 +162,54 @@ map_M_FORMULA mor frm =
 	       newM <- mapMod m 
 	       return $ Diamond newM newF ps 
 
-ana_M_FORMULA :: FORMULA M_FORMULA -> Result (FORMULA M_FORMULA)
-ana_M_FORMULA (Conjunction phis pos) = do
-  phis' <- mapM ana_M_FORMULA phis
+ana_M_FORMULA :: Bool -> FORMULA M_FORMULA -> Result (FORMULA M_FORMULA)
+ana_M_FORMULA b (Conjunction phis pos) = do
+  phis' <- mapM (ana_M_FORMULA b) phis
   return (Conjunction phis' pos)
-ana_M_FORMULA (Disjunction phis pos) = do
-  phis' <- mapM ana_M_FORMULA phis
+ana_M_FORMULA b (Disjunction phis pos) = do
+  phis' <- mapM (ana_M_FORMULA b) phis
   return (Disjunction phis' pos)
-ana_M_FORMULA (Implication phi1 phi2 b pos) = do
-  phi1' <- ana_M_FORMULA phi1
-  phi2' <- ana_M_FORMULA phi2
-  return (Implication phi1' phi2' b pos)
-ana_M_FORMULA (Equivalence phi1 phi2 pos) = do
-  phi1' <- ana_M_FORMULA phi1
-  phi2' <- ana_M_FORMULA phi2
+ana_M_FORMULA b (Implication phi1 phi2 b1 pos) = do
+  phi1' <- ana_M_FORMULA b phi1
+  phi2' <- ana_M_FORMULA b phi2
+  return (Implication phi1' phi2' b1 pos)
+ana_M_FORMULA b (Equivalence phi1 phi2 pos) = do
+  phi1' <- ana_M_FORMULA b phi1
+  phi2' <- ana_M_FORMULA b phi2
   return (Equivalence phi1' phi2' pos)
-ana_M_FORMULA (Negation phi pos) = do
-  phi' <- ana_M_FORMULA phi
+ana_M_FORMULA b (Negation phi pos) = do
+  phi' <- ana_M_FORMULA b phi
   return (Negation phi' pos)
-ana_M_FORMULA phi@(True_atom _) = return phi
-ana_M_FORMULA phi@(False_atom _) = return phi
-ana_M_FORMULA (Mixfix_formula (Mixfix_token ident)) = 
+ana_M_FORMULA _ phi@(True_atom _) = return phi
+ana_M_FORMULA _ phi@(False_atom _) = return phi
+ana_M_FORMULA _ (Mixfix_formula (Mixfix_token ident)) = 
   return (Predication (Qual_pred_name (mkId [ident]) 
               (Pred_type [] []) []) 
               [] [])
-ana_M_FORMULA (ExtFORMULA (Box m phi pos)) = do
-  phi' <- ana_M_FORMULA phi
+ana_M_FORMULA b (ExtFORMULA (Box m phi pos)) = do
+  phi' <- ana_M_FORMULA b phi
   return(ExtFORMULA (Box m phi' pos))
-ana_M_FORMULA (ExtFORMULA (Diamond m phi pos)) = do
-  phi' <- ana_M_FORMULA phi
+ana_M_FORMULA b (ExtFORMULA (Diamond m phi pos)) = do
+  phi' <- ana_M_FORMULA b phi
   return(ExtFORMULA (Diamond m phi' pos))
-ana_M_FORMULA phi@(Quantification _ _ _ pos) = 
+ana_M_FORMULA b phi@(Quantification _ _ phi1 pos) = 
+  if b then ana_M_FORMULA b phi1
+    else anaError phi pos
+ana_M_FORMULA _ phi@(Predication _ _ pos) =
   anaError phi pos
-ana_M_FORMULA phi@(Predication _ _ pos) =
+ana_M_FORMULA _ phi@(Definedness _ pos) =
   anaError phi pos
-ana_M_FORMULA phi@(Definedness _ pos) =
+ana_M_FORMULA _ phi@(Existl_equation _ _ pos) =
   anaError phi pos
-ana_M_FORMULA phi@(Existl_equation _ _ pos) =
+ana_M_FORMULA _ phi@(Strong_equation _ _ pos) =
   anaError phi pos
-ana_M_FORMULA phi@(Strong_equation _ _ pos) =
+ana_M_FORMULA _ phi@(Membership _ _ pos) =
   anaError phi pos
-ana_M_FORMULA phi@(Membership _ _ pos) =
-  anaError phi pos
-ana_M_FORMULA phi@(Mixfix_formula _) =
+ana_M_FORMULA _ phi@(Mixfix_formula _) =
   anaError phi [nullPos]
-ana_M_FORMULA phi@(Unparsed_formula _ pos) =
+ana_M_FORMULA _ phi@(Unparsed_formula _ pos) =
   anaError phi pos
-ana_M_FORMULA phi@(Sort_gen_ax _) =
+ana_M_FORMULA _ phi@(Sort_gen_ax _) =
   anaError phi [nullPos]
 
 anaError :: a -> [Pos] -> Result a
