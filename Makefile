@@ -170,7 +170,7 @@ hets-old: $(objects)
 	$(HC) -o hets $(HC_OPTS) $(objects)
 
 hets.cgi: $(sources) GUI/hets_cgi.hs
-	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi
+	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_OPTS)
 
 hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files) $(inline_axiom_files)
 	$(RM) hetcats-make sources_hetcats.mk
