@@ -135,7 +135,7 @@ printAnnotedFormula_Latex0 :: GlobalAnnos -> Annoted FORMULA -> Doc
 printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
 	let i'   = hc_sty_axiom "\\bullet" <\+> printLatex0 ga i
 	    las' = if not $ null las then 
-	              casl_latex 0 "\n" <> printAnnotationList_Latex0 ga las
+	              sp_text 0 "\n" <> printAnnotationList_Latex0 ga las
 	           else
 		      empty
 	    (la,rras) = case ras of
