@@ -29,9 +29,6 @@ productSign = "*"
 altProductSign = "\215"
 
 -- simple Id
-nullPos :: Pos
-nullPos = (0, 0)
-
 simpleTok :: String -> Token
 simpleTok s = Token s nullPos
 

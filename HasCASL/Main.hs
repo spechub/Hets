@@ -3,7 +3,7 @@ module Main where
 import ParseType
 import ParseTerm
 import Token
--- import BasicItem
+import BasicItem
 -- import LocalEnv
 import Parsec
 import ParsecPos
@@ -17,7 +17,7 @@ main = do {l <- getArgs;
 	   in if option == "id" then checkLines parseId file
 	   else if option == "type" then checkLines parseType file
 	   else if option == "term" then checkLines parseTerm file
---	   else if option == "items" then parseSpec file
+	   else if option == "items" then parseSpec file
 	   else print ("unknown option: " ++ option) 
 	  }
 
@@ -36,12 +36,12 @@ parseLine p line n = let pos = setSourceLine (initialPos "") n
 				     }
 		     in result (parse parser "" line)
 
-{-
+
 parseSpec fileName =  do { r <- parseFromFile (basicSpec []) fileName
 			 ; putStrLn (result r)
 			 }
 	
--}   
+   
 result r = case r of Left err -> "parse error at " ++ show err ++ "\n"
 		     Right x  -> show x
 
