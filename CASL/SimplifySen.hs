@@ -24,7 +24,7 @@ import CASL.Overload
 import Control.Exception (assert)
 
 {- |
-   reduce formula/term informations for 'show theory' of HETS-graph representation.
+   reduce formula\/term informations for 'show theory' of HETS-graph representation.
 -}
 simplifySen :: (PrettyPrint f, Eq f) =>
 	       (Min f e) -- ^ extension type analysis
