@@ -1,2 +1,1 @@
-ghc --make -fglasgow-exts -Wall -i..:../fgl:../parsec:../pretty -package data Main.hs -o capa
-#MixfixParser.hs 
+ghc --make -fglasgow-exts -Wall -i..:../fgl:../parsec:../pretty -package data capa.lhs -o capa
