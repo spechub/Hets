@@ -75,7 +75,7 @@ hetcats: $(objects)
 	$(RM) $@
 	$(HC) -o $@ $(HC_OPTS) $(objects)
 
-hetcats-make: hetcats.lhs ../utils/create_sources.pl $(drifted_files)
+hetcats-make: hetcats.hs ../utils/create_sources.pl $(drifted_files)
 	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hetcats $< $(HC_OPTS) 2>&1 | tee hetcats-make && \
          $(PERL) ../utils/create_sources.pl hetcats-make sources_hetcats.mk
@@ -196,7 +196,7 @@ Version.hs: Version.in version_nr
 
 ## two hardcoded dependencies for a correct generation of Version.hs
 Options.hs: Version.hs
-hetcats.lhs: Version.hs
+hetcats.hs: Version.hs
 ####################################################################
 ## rules for DrIFT
 

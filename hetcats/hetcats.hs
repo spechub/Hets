@@ -1,6 +1,6 @@
-#!/home/maeder/bin/runhugs
 
-   HetCATS/hetcats/hetcats.hs
+{- |
+   >HetCATS/hetcats/hetcats.hs
    $Id$
    Author: Klaus Lüttich
    Year:   2002
@@ -8,8 +8,7 @@
    The Main module of the hetcats system. It provides the main function
    to call.
 
-\begin{code}
-
+-}
 module Main where
 
 import Options
@@ -28,4 +27,3 @@ main = do opt <- getArgs >>= hetcatsOpts
 	  write_LIB_DEFN opt ld
 	  -- write_GLOBAL_ENV env
 
-\end{code}
