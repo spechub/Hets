@@ -5,7 +5,7 @@ module Data.Graph.Inductive.Tree (Gr,UGr) where
 
 
 import Data.Graph.Inductive.Graph
-import Data.Graph.Inductive.Aux.FiniteMap
+import Data.Graph.Inductive.Internal.FiniteMap
 
 import Data.Maybe (fromJust)
 

@@ -29,7 +29,7 @@ import qualified Prelude as P (map)
 import Control.Monad.State
 import Data.Graph.Inductive.Graph
 --import Data.Graph.Inductive.Tree
-import Data.Graph.Inductive.Aux.FiniteMap
+import Data.Graph.Inductive.Internal.FiniteMap
 
 data (Ord a) => NodeMap a =
     NodeMap { map :: FiniteMap a Node,

@@ -11,8 +11,8 @@ import Data.Maybe
 
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Tree
-import Data.Graph.Inductive.Aux.FiniteMap
-import Data.Graph.Inductive.Aux.Queue
+import Data.Graph.Inductive.Internal.FiniteMap
+import Data.Graph.Inductive.Internal.Queue
 import Data.Graph.Inductive.Query.BFS (bft)
 
 

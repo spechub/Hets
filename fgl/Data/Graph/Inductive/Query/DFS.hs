@@ -1,16 +1,16 @@
--- (c) 2000 - 2002 by Martin Erwig [see file COPYRIGHT]
+-- (c) 2000 - 2005 by Martin Erwig [see file COPYRIGHT]
 -- | Depth-First Search  
 
 module Data.Graph.Inductive.Query.DFS(
     CFun,
     dfs,dfs',dff,dff',
-    dfsWith,
+    dfsWith, dfsWith',dffWith,dffWith',
     -- * Undirected DFS
     udfs,udfs',udff,udff',
     -- * Reverse DFS
-    rdff,rdff', rdfs, rdfs',
+    rdff,rdff',rdfs,rdfs',
     -- * Applications of DFS\/DFF
-    topsort,scc,reachable,
+    topsort,topsort',scc,reachable,
     -- * Applications of UDFS\/UDFF
     components,noComponents,isConnected
 ) where
@@ -207,6 +207,9 @@ postflattenF = concatMap postflatten
 
 topsort :: Graph gr => gr a b -> [Node]
 topsort = reverse . postflattenF . dff'
+
+topsort' :: Graph gr => gr a b -> [a]
+topsort' = reverse . postorderF . (dffWith' lab')
 
 scc :: Graph gr => gr a b -> [[Node]]
 scc g = map preorder (rdff (topsort g) g)            -- optimized, using rdff

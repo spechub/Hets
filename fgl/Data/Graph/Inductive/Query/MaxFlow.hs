@@ -89,10 +89,10 @@ updateFlow (u:v:vs) cf g = case match u g of
 mfmg :: (DynGraph gr,Num b,Ord b) => gr a (b,b,b) -> Node -> Node -> gr a (b,b,b)
 mfmg g s t | augPath == [] = g
            | otherwise     = mfmg (updateFlow augPath minC g) s t
-             where minC     = minimum (map ((\(_,_,z)->z).snd)(tail augLPath))
-                   augPath  = map fst augLPath
-                   augLPath = lesp s t gf
-                   gf       = elfilter (\(_,_,z)->z/=0) g
+             where minC        = minimum (map ((\(_,_,z)->z).snd)(tail augLPath))
+                   augPath     = map fst augLPath
+                   LP augLPath = lesp s t gf
+                   gf          = elfilter (\(_,_,z)->z/=0) g
 
 -- | Compute the flow from s to t on a graph whose edges are labeled with
 -- x, which is the max capacity and where not all edges need to be of the

@@ -2,7 +2,7 @@
 --  
 --  Inductive.hs -- Functional Graph Library  
 --
---  (c) 1999 - 2002 by Martin Erwig [see file COPYRIGHT]
+--  (c) 1999-2005 by Martin Erwig [see file COPYRIGHT]
 --
 ------------------------------------------------------------------------------
 
@@ -30,4 +30,4 @@ import Data.Graph.Inductive.NodeMap
 
 -- | Version info
 version :: IO ()
-version = putStrLn "\nFGL - Functional Graph Library, December 2003"
+version = putStrLn "\nFGL - Functional Graph Library, February 2005"

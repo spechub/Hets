@@ -17,11 +17,10 @@ where
 
 
 import Data.Graph.Inductive.Graph
-import Data.Graph.Inductive.Aux.Thread (threadMaybe,threadList)
+import Data.Graph.Inductive.Internal.Thread (threadMaybe,threadList)
 
-import Data.Tree
 import Data.List (nub)
-import Data.Graph.Inductive.Tree
+import Data.Tree
 
 -- | Reverse the direction of all edges.
 grev :: DynGraph gr => gr a b -> gr a b 
@@ -108,7 +107,6 @@ gfold f d b l g = fst (gfoldn f d b l g)
 --
 -- undirBy :: (b -> b -> b) -> Graph a b -> Graph a b
 -- undirBy = gmap (\(p,v,l,s)->let ps = nub (p++s) in (ps,v,l,ps))
-
 
 -- | Flatten a 'Tree', returning the elements in post-order.
 postorder :: Tree a -> [a]

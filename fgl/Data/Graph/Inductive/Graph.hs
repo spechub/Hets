@@ -1,5 +1,4 @@
-{-# OPTIONS -fallow-overlapping-instances #-}
--- (c) 1999-2002 by Martin Erwig [see file COPYRIGHT]
+-- (c) 1999-2005 by Martin Erwig [see file COPYRIGHT]
 -- | Static and Dynamic Inductive Graphs  
 module Data.Graph.Inductive.Graph (
     -- * General Type Defintions
@@ -8,7 +7,7 @@ module Data.Graph.Inductive.Graph (
     Edge,LEdge,UEdge,
     -- ** Types Supporting Inductive Graph View
     Adj,Context,MContext,Decomp,GDecomp,UDecomp,
-    Path,LPath,UPath,
+    Path,LPath(..),UPath,
     -- * Graph Type Classes
     -- | We define two graph classes:
     --
@@ -45,10 +44,11 @@ module Data.Graph.Inductive.Graph (
     context,lab,neighbors,
     suc,pre,lsuc,lpre,
     out,inn,outdeg,indeg,deg,
+    equal,
     -- ** Context Inspection
     node',lab',labNode',neighbors',
     suc',pre',lpre',lsuc',
-    out',inn',outdeg',indeg',deg'
+    out',inn',outdeg',indeg',deg',
 ) where
 
 
@@ -141,7 +141,11 @@ type UEdge   = LEdge ()
 -- | Unlabeled path
 type Path    = [Node]		
 -- | Labeled path
-type LPath a = [LNode a]	
+newtype LPath a = LP [LNode a]
+
+instance Show a => Show (LPath a) where
+  show (LP xs) = show xs
+
 -- | Quasi-unlabeled path
 type UPath   = [UNode]		
 
@@ -407,9 +411,11 @@ edgeComp e@(v,w,_) e'@(x,y,_) | e == e'              = EQ
 slabEdges :: (Eq b,Graph gr) => gr a b -> [LEdge b]
 slabEdges = sortBy edgeComp . labEdges
 
-instance (Eq a,Eq b,Graph gr) => Eq (gr a b) where
-  g == g' = slabNodes g == slabNodes g' && slabEdges g == slabEdges g'
+-- instance (Eq a,Eq b,Graph gr) => Eq (gr a b) where
+--   g == g' = slabNodes g == slabNodes g' && slabEdges g == slabEdges g'
 
+equal :: (Eq a,Eq b,Graph gr) => gr a b -> gr a b -> Bool
+equal g g' = slabNodes g == slabNodes g' && slabEdges g == slabEdges g'
 
 
 ----------------------------------------------------------------------

@@ -1,4 +1,4 @@
--- (c) 2000 - 2002 by Martin Erwig [see file COPYRIGHT]
+-- (c) 2000-2005 by Martin Erwig [see file COPYRIGHT]
 -- | Breadth-First Search Algorithms
 
 module Data.Graph.Inductive.Query.BFS(
@@ -16,8 +16,8 @@ module Data.Graph.Inductive.Query.BFS(
 
 
 import Data.Graph.Inductive.Graph
-import Data.Graph.Inductive.Aux.Queue
-import Data.Graph.Inductive.Aux.RootPath
+import Data.Graph.Inductive.Internal.Queue
+import Data.Graph.Inductive.Internal.RootPath
 
 -- bfs (node list ordered by distance)
 --
@@ -113,16 +113,16 @@ esp s t = getPath t . bft s
 --
 lbft :: Graph gr => Node -> gr a b -> LRTree b
 lbft v g = case (out g v) of 
-             []         -> [[]]
-             (v',_,l):_ -> lbf (queuePut [(v',l)] mkQueue) g
+             []         -> [LP []]
+             (v',_,l):_ -> lbf (queuePut (LP [(v',l)]) mkQueue) g
 
 lbf :: Graph gr => Queue (LPath b) -> gr a b -> LRTree b
 lbf q g | queueEmpty q || isEmpty g = []
         | otherwise                 =
        case match v g of
-         (Just c, g')  -> p:lbf (queuePutList (map (:p) (lsuc' c)) q') g'
+         (Just c, g')  -> LP p:lbf (queuePutList (map (\v->LP (v:p)) (lsuc' c)) q') g'
          (Nothing, g') -> lbf q' g'
-         where (p@((v,_):_),q') = queueGet q
+         where ((LP (p@((v,_):_))),q') = queueGet q
 
 lesp :: Graph gr => Node -> Node -> gr a b -> LPath b
 lesp s t = getLPath t . lbft s
