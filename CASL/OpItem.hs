@@ -23,7 +23,7 @@ import AS_Annotation
 import Parsec
 import Token
 import Formula
-import SortItem
+import ItemList(annos, itemList)
 import List
 
 -- stupid cast
