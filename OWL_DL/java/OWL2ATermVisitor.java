@@ -428,7 +428,9 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		}
 	}
 
-	public void visit(OWLAnnotationInstance ai) {
+	public void visit(OWLAnnotationInstance ai) throws OWLException {
+		term = visitRend.renderAnnotationInstance(ontology, ai);
+		
 		// skip annotation instances
 	}
 

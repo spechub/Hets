@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import org.semanticweb.owl.model.OWLOntology;
 import org.semanticweb.owl.model.OWLClass;
-import org.semanticweb.owl.impl.model.OWLPropertyImpl;
+// import org.semanticweb.owl.impl.model.OWLPropertyImpl;
 import org.semanticweb.owl.io.vocabulary.OWLVocabularyAdapter;
 import org.semanticweb.owl.io.vocabulary.RDFVocabularyAdapter;
 import org.semanticweb.owl.io.vocabulary.RDFSVocabularyAdapter;
@@ -117,7 +117,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 	}
 
-	public ATerm renderClass(OWLOntology ontology, OWLClass clazz)
+	public ATermList renderClass(OWLOntology ontology, OWLClass clazz)
 			throws OWLException {
 
 		boolean done = false;
@@ -131,14 +131,12 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 		if (clazz.getURI() != null) {
 			classID = strToATermAppl(shortForm(clazz.getURI()));
-			dep = strToATermAppl((clazz.isDeprecated(ontology) ? "Deprecated," : ""));
+			dep = strToATermAppl((clazz.isDeprecated(ontology) ? "true" : "false"));
 		}
 
 		/* Bit nasty this -- annotations result in a new axiom */
 		if (!clazz.getAnnotations(ontology).isEmpty()) {
-
 			annos = makeAnno(clazz.getAnnotations().iterator());
-			// done = true;
 		}
 
 		// Equivalent Class
@@ -163,7 +161,6 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		}
 
 		if (!clazz.getSuperClasses(ontology).isEmpty()) {
-
 			mod = strToATermAppl("partial");
 			descs = factory.makeList();
 
@@ -227,7 +224,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			mod = strToATermAppl("partial");
 
 			resList = factory.makeList(factory.makeAppl(classFun, classID, dep,
-					mod, factory.makeList(), factory.makeList()), resList);
+					mod, annos, factory.makeList()), resList);
 		}
 
 		// return is an ATermAppl: ATermOfClass(classID, ClassAxiomList)
@@ -330,11 +327,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 					values = factory.makeList(resValue, values);
 					// pw.print(", value(" + shortForm(prop.getURI()) + ", "
 					//		+ mkOther(visitor.result()) + ")");
-					// if (valIt.hasNext()) {
-					//	pw.print(",");
-					//	pw.print();
-					// }else break;
-				}
+					}
 				// 		if (it.hasNext()) {
 				// 		    pw.print();
 				// 		}
@@ -392,15 +385,13 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		// AFun rangeFun = factory.makeAFun("Range", 1, false);
 		ATermList rangeList = emptyList;
 		ATermList annoList = emptyList;
-		ATermAppl deprecated = strToATermAppl("");
+		ATermAppl deprecated;
 
 		// get annotations
 		annoList = makeAnno(prop.getAnnotations().iterator());
 		
 		// maybe deprecated
-		if (prop.isDeprecated(ontology)) {
-			deprecated = strToATermAppl("Deprecated");
-		}
+		deprecated = prop.isDeprecated(ontology)? strToATermAppl("true"):strToATermAppl("false");
 
 		// function
 		if (prop.isTransitive(ontology)) {
@@ -654,14 +645,26 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		return strToATermAppl(mkOther(visitor.result()));
 	}
 
+	public ATermAppl renderAnnotationInstance(OWLOntology ontology, OWLAnnotationInstance instance)
+		throws OWLException{
+		
+		URI aiID = instance.getProperty().getURI();
+		return renderAnnotationContent(true, instance.getContent(), aiID.toString());
+	}
+	
 	/* Well dodgy coding */
-	public ATermAppl renderAnnotationContent(Object o, String annoID)
+	public ATermAppl renderAnnotationContent(boolean isOntologyAnnotation, Object o, String annoID)
 			throws OWLException {
 
 		// Writer w = new StringWriter();
 		// PrintWriter printW = new PrintWriter(w);
 		ATermAppl aid = strToATermAppl(annoID);
 
+		if(isOntologyAnnotation) {
+			AFun defaltFun = factory.makeAFun("OntoAnnotation", 2, false);
+			return factory.makeAppl(defaltFun, aid, strToATermAppl(o.toString()));
+		}
+		
 		if (o instanceof URI) {
 			AFun uriAnnoFun = factory.makeAFun("URIAnnotation", 2, false);
 			ATerm uriA = strToATermAppl(o.toString());
@@ -692,9 +695,8 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 				}
 			}
 			return factory.makeAppl(dlFun, aid, strToATermAppl(result));
-		} else {
-			AFun defaltFun = factory.makeAFun("OntoAnnotation", 2, false);
-			return factory.makeAppl(defaltFun, aid, strToATermAppl(o.toString()));
+		}else{
+			throw(new OWLException("wrong object by calling the method of renderAnnotationContent."));
 		}
 	}
 
@@ -913,10 +915,9 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		for (; it.hasNext();) {
 			OWLAnnotationInstance oai = (OWLAnnotationInstance) it.next();
 
-			annoCont = renderAnnotationContent(oai.getContent(), shortForm(oai
+			annoCont = renderAnnotationContent(false, oai.getContent(), shortForm(oai
 					.getProperty().getURI()));
 			annos = factory.makeList(annoCont, annos);
-			/* Do we need to do this??? */
 			visitor.reset();
 			oai.accept(visitor);
 		}

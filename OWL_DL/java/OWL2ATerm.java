@@ -25,6 +25,7 @@ import org.semanticweb.owl.io.owl_rdf.OWLRDFParser;
 // import java.io.StringWriter;
 // import java.io.Writer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.net.URI;
 import java.util.Map;
 // import java.util.HashMap;
@@ -152,11 +153,11 @@ public class OWL2ATerm implements OWLValidationConstants {
 				messageList = factory.makeList(msgA, messageList);
 			}
 			
-			owlParserOutput(validation, messageList, onto).
-				writeToTextFile(new FileOutputStream(file, true));
+//			owlParserOutput(validation, messageList, onto).
+//				writeToTextFile(new FileOutputStream(file, true));
 
-//			owlParserOutput(validation, messageList, onto)
-//					.writeToSharedTextFile(new FileOutputStream(file, true));
+			owlParserOutput(validation, messageList, onto)
+					.writeToSharedTextFile(new FileOutputStream(file, true));
 			System.out.println("Done!");
 		} catch (IOException e) {
 			System.out.println("Error: can not build file: output.term");
@@ -183,6 +184,7 @@ public class OWL2ATerm implements OWLValidationConstants {
 			// ATerm for output:
 			// OWLParserOutput(validation, messages, namespaces, ontology)
 			AFun outputAFun = factory.makeAFun("OWLParserOutput", 4, false);
+			AFun ontologyFun = factory.makeAFun("Ontology", 2, false);
 			ATermList alist = factory.makeList();
 			AFun validation = factory.makeAFun("mixer", 0, true);
 			// ATerm result;
@@ -221,23 +223,41 @@ public class OWL2ATerm implements OWLValidationConstants {
 			Set ias = ontology.getIndividualAxioms();
 			// Property Axioms
 			Set pas = ontology.getPropertyAxioms();
-			// Annotation Properties
-			Set aps = ontology.getAnnotationProperties();
+			// Annotation (in ontology header): version, comment, label, etc. 
+			Set aps = ontology.getAnnotations(ontology);
+			// other annotation property
+			Set oaps = ontology.getAnnotationProperties();
 			
-			/*
-			 * if(annotations != null){ for(Iterator aIt =
-			 * annotations.iterator(); aIt.hasNext();){ alist =
-			 * factory.makeList(ploader.term((OWLAnnotationInstance)
-			 * aIt.next()), alist); } }
-			 */
+			
+			// Build ontology header
+			ATerm ontologyID = factory.parse("\"" + ontology.getURI().toString() + "\"");
+			// imports other ontology
+			AFun ontologyProperty = factory.makeAFun("OntologyProperty", 2, false);
+			for (Iterator it = ontology.getIncludedOntologies().iterator(); it
+					.hasNext();) {
+				ATermAppl importID = factory.makeAppl(factory.makeAFun("owl:imports", 0, true));
+				ATermAppl phyURI = factory.makeAppl(factory.makeAFun(((OWLOntology) it.next()).getPhysicalURI().toString(), 0, true));
+				alist = factory.makeList(factory.makeAppl(ontologyProperty, importID, phyURI), alist);
 
+			}
+			
+			// Annotation (Properties): version, comment, label, etc. 
+			if(aps != null){
+				for(Iterator apIt = aps.iterator(); apIt.hasNext();){
+					alist = factory.makeList(ploader.term((OWLAnnotationInstance) apIt.next()), alist);
+				}
+			}
+			
 			// Classes
 			if (classes != null) {
 				for (Iterator classIt = classes.iterator(); classIt.hasNext();) {
 					// atermList.add(ploader.term((OWLClassAxiom)
 					// classIt.next()));
-					alist = factory.makeList(ploader.term((OWLClass) classIt
-							.next()), alist);
+					ATermList classList = (ATermList) ploader.term((OWLClass) classIt.next());
+					while(!classList.isEmpty()){
+						alist = factory.makeList(classList.getFirst(), alist);
+						classList = classList.getNext();
+					}
 				}
 			}
 			
@@ -248,14 +268,6 @@ public class OWL2ATerm implements OWLValidationConstants {
 					// classIt.next()));
 					alist = factory.makeList(ploader.term((OWLClassAxiom) caIt
 							.next()), alist);
-				}
-			}
-
-			
-			// Annotation Properties
-			if(aps != null){
-				for(Iterator apIt = aps.iterator(); apIt.hasNext();){
-					alist = factory.makeList(ploader.term((OWLAnnotationProperty) apIt.next()), alist);
 				}
 			}
 			
@@ -278,16 +290,25 @@ public class OWL2ATerm implements OWLValidationConstants {
 							.term((OWLIndividualAxiom) indivIt.next()), alist);
 				}
 			}
-			
+			// Individuals
 			if(inds != null){
 				for(Iterator indIt = inds.iterator(); indIt.hasNext();){
 					alist = factory.makeList(ploader.term((OWLIndividual) indIt.next()), alist);
 				}
 			}
 			
+			//Annotation Property
+			if(oaps != null){
+				for(Iterator oapIt = oaps.iterator(); oapIt.hasNext();){
+					alist = factory.makeList(ploader.term((OWLAnnotationProperty) oapIt.next()), alist);
+				}
+			}
+			
 			// System.out.println(atermList.toString());
+			
+			ATermAppl ontologyTerm = factory.makeAppl(ontologyFun, ontologyID, alist.reverse());
 			return factory.makeAppl(outputAFun, validTerm, messages, ploader
-					.getNamespace(), alist.reverse());
+					.getNamespace(), ontologyTerm);
 
 		} catch (Exception e) {
 			System.out.println("Exception by owlParserOutput: \n" + e);
@@ -312,7 +333,7 @@ class OWL2ATermErrorHandler implements OWLRDFErrorHandler {
 	private PureFactory factory = new PureFactory();
 	
 	public OWL2ATermErrorHandler() {
-		wList = factory.makeList();
+		wList = factory.makeList0();
 		eList = factory.makeList();
 	}
 
