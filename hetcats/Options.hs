@@ -1,5 +1,6 @@
 
-{-| 
+{- 
+| 
  > HetCATS/hetcats/Options.hs
  > $Id$
  > Author: Martin Kühl
