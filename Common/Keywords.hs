@@ -25,11 +25,11 @@ module Common.Keywords where
 lessS :: String
 lessS  = "<"
 
--- | modifier for 'funS' or 'colonS'
+-- | modifier for 'existsS'
 exMark :: String
 exMark  = "!" 
 
--- | modifier for 'existsS'
+-- | modifier for 'funS' or 'colonS'
 quMark :: String 
 quMark  = "?"  
 
