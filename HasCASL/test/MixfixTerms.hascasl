@@ -11,3 +11,7 @@ a + def a
 def a = b
 def not a = a 
 a = not a
+10 * b(n div 10)
+10 when n < 10 else 10 * b(n div 10)
+m(m,n) = m when m <= n else n
+(i div p < j div q <=> i * q < j * p )

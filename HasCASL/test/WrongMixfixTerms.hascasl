@@ -1,1 +1,2 @@
 a < a < a
+(i div p <= j div q <=> i * q <= j * p )

@@ -20,7 +20,6 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.ParseTerm
 import HasCASL.Le
-import HasCASL.PrintAs
 import Common.GlobalAnnotations
 import Common.Lib.Set
 import Common.Id
@@ -44,7 +43,7 @@ stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__",
            "__ --> __", "__{__}--__-->{__}__", 
            "Pl7","folge_dem_Gang","nicht_wenden","Pl3","RS3", "RS6"] ++
         map (:[]) 
-        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789abcdefghijklmnoABCDEFGHIJKLMNO"
          ++ ["A[a[c,d],b]", "B[a[c,d],b]", "__B[a[c,d],b]__", 
 	     "a[c,d]", "__a[c,d]__", "A[a]", "A__B", 
 	     "A__", "__[a]", "__p", 
@@ -54,7 +53,7 @@ stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
 	     "__/=__", "even__", "odd__", "__isEmpty","not__", "def__",
 	     "__=__", "__=>__", "__/\\__", "__\\/__", "__<=>__",
 	     "__if__", "__when__else__", "if__then__else__",
-	    "__<=__<=__"] ++ map (:[]) "abcdpqrstuvwxyzPQRSTUVWXYZ" 
+	    "__<=__<=__"] ++ map (:[]) "pqrstuvwxyzPQRSTUVWXYZ" 
 
 mkIds :: [String] -> Set Id
 mkIds = fromList . map (parseString some_id)
@@ -67,7 +66,8 @@ resolveTerm :: GlobalAnnos -> AParser (Result Term)
 resolveTerm ga = do 
        trm <- term  
        let ids = Set.toList (stdOps `Set.union` stdPreds)
-           chart = evalState (iterateCharts (addBuiltins ga ids) [trm] $ 
+           chart = evalState (iterateCharts (addBuiltins ga 
+					     stdOps stdPreds) [trm] $ 
 	    initChart (initTermRules ids) Set.empty) initialEnv 
        return $ getResolved showPretty (posOfTerm trm) 
 			  toMixTerm chart
