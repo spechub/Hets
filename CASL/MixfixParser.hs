@@ -73,6 +73,7 @@ convertLitAnnos is la =
 	    }
 
 -- only check for the correct number of arguments
+lookupId :: [OpItem] -> Int -> Id -> [OpItem]
 lookupId is args i =
 	 filter (\x -> opId x == i && args == length(opArgs(opType x))) is
 
@@ -90,22 +91,46 @@ split p s = let ph = do hd <- p;
                Left _ -> error"split" 
 	       Right x -> x
 
-{-
-makeStringTerm ga tok = 
-    let c = emptyString ga in
-	    case c of 
-	    Nothing -> ([Error "no proper %string annotation" (tokPos tok)], [])
+makeStringTerm :: LiteralOpItems -> [OpItem] -> Token -> ([Diagnosis], [TERM])
+makeStringTerm ga is tok = 
+  let p = tokPos tok in
+	    case emptyString ga of 
+	    Nothing -> ([Error "no proper %string annotation" p], [])
             Just x -> let l = init (tail (tokStr tok))
-	              in if null l then ([], [x])
-			 else let f = consString ga
-                                  (hd, tl) = split caslChar l
-				  real = "'" ++ hd ++ "'" 
+                          y = asAppl x []
+	              in if null l then ([], [y])
+			 else case consString ga of 
+                              Nothing ->  
+				  ([Error "no %string constructor" p], [])
+                              Just f -> 
+				  let (errs, term) = makeStrTerm is y 
+						     (asAppl f) p l
+				  in (errs, [term])
 
+makeStrTerm :: [OpItem] -> TERM -> ([TERM] -> TERM) 
+               -> Pos -> [Char] -> ([Diagnosis], TERM)
+makeStrTerm is x f p l = 
+    if null l then ([], x)
+    else let (hd, tl) = split caslChar l
+             incr (line, column) = (line, column+1)
+             (errs, rest) = makeStrTerm is x f (incr p) tl
+	     real = "'" ++ hd ++ "'"
+         in case lookupId is 0 (Id [Token real nullPos] [] []) of 
+	    [c] -> (errs, f [asAppl c [], rest])
+            _ -> (Error ("missing or ambiguous definition for character " 
+			 ++ real) p : errs, rest)
 
-                    l = (init (tail (tokStr tok)))
-                in ([],[a]) -- continue for l
-         _ -> error "not unique" 
--}
+-- convert OpItem's OpType to OP_TYPE
+oldOpType :: OpItem -> OP_TYPE
+oldOpType f = 
+    let t = opType f in
+    (case opKind t of 
+    Total -> Total_op_type
+    Partial -> Partial_op_type) (opArgs t) (opRes t) []
+
+asAppl :: OpItem -> [TERM] -> TERM
+asAppl f args = Application (Qual_op_name (opId f) (oldOpType f) []) args []
+
 -- analyse Mixfix_token
 {-convertMixfixToken:: GlobalAnnos -> [varDecl] -> [OpItem] -> Token
          -> ([Diagnosis], [TERM]) 

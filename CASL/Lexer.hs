@@ -18,7 +18,8 @@
 module Lexer ( bind, (<<), (<:>), (<++>), signChars,
 	     , begDoEnd, flat, single, separatedBy, caslLetters, scanLPD
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
-	     , scanDigit, scanFloat, scanQuotedChar, scanString
+	     , scanDigit, scanFloat
+	     , caslChar, scanQuotedChar, scanString
 	     , reserved, placeS, placeT, pToken, asKey, toKey
 	     , oBraceT, cBraceT, oBracketT, cBracketT, oParenT, cParenT
 	     , commaT, semiT, skip, pluralKeyword, followedWith
