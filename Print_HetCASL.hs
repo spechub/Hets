@@ -30,5 +30,10 @@ printLIB_DEFN_latex :: LIB_DEFN -> String
 printLIB_DEFN_latex ld = renderLatex Nothing $ printLatex ga ld
     where ga = initGlobalAnnos ld
 
+printLIB_DEFN_debugLatex :: LIB_DEFN -> String
+printLIB_DEFN_debugLatex ld = debugRenderLatex Nothing $ printLatex ga ld
+    where ga = initGlobalAnnos ld
+
+
 printText0_eGA :: forall a . (PrettyPrint a) => a -> Doc
 printText0_eGA x = printText0 emptyGlobalAnnos x
