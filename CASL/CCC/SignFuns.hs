@@ -86,8 +86,8 @@ imageOfMorphism m =
               Just pts -> Map.insert ident (Set.insert pt pts) predM
 
 -}
-inhabited :: [Constraint] -> [SORT]
-inhabited constrs = iterateInhabited []
+inhabited :: [SORT] -> [Constraint] -> [SORT]
+inhabited sorts constrs = iterateInhabited sorts
       where (_,ops,_)=recover_Sort_gen_ax constrs
             argsAndres=concat $ map (\os-> case os of
                                           Op_name _->[]
@@ -102,8 +102,9 @@ inhabited constrs = iterateInhabited []
                                                       && (not (elem rs l'))then rs:l'
 					          else l') l argsAndres
 
-
+{-
 inhabitedF :: FORMULA f -> [SORT]
 inhabitedF f = case f of
                 Sort_gen_ax constrs True-> inhabited constrs
                 _ -> []
+-}

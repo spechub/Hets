@@ -189,7 +189,8 @@ evaluateOnePointFORMULA sig (Sort_gen_ax constrs _)=
                                                   if (all (\s->elem s l') as)
                                                       && (not (elem rs l'))then rs:l'
 					          else l') l argsAndres 
-          inhabited = iterateInhabited []          
+    --      inhabited = iterateInhabited []
+          inhabited = iterateInhabited $ Set.toList sorts          
       in if any (\s->Set.member s sorts) srts then Nothing
          else if all (\s->elem s inhabited) srts then Just True
               else Nothing  
