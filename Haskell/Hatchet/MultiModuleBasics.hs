@@ -77,8 +77,8 @@ concatModuleInfos = foldr joinModuleInfo emptyModuleInfo
 joinModuleInfo :: ModuleInfo -> ModuleInfo -> ModuleInfo
 joinModuleInfo mod1 mod2
     = ModuleInfo {
-            moduleName = error ("moduleName not defined since " ++ "merge of " 
-                                 ++ mn mod1 ++ " and " ++ mn mod2),
+            moduleName = AModule ((mn mod1) ++ (mn mod2)), --error ("moduleName not defined since " ++ "merge of " 
+--                                 ++ mn mod1 ++ " and " ++ mn mod2),
             varAssumps = comb varAssumps joinEnv,
             dconsAssumps = comb dconsAssumps joinEnv,
             kinds = comb kinds joinEnv,
