@@ -148,8 +148,7 @@ happy_files = Haskell/Hatchet/HsParser.hs
 # this variable holds the modules that should be documented
 # the imported parsec library is not included!
 cpp_sources = ./Isabelle/Logic_Isabelle.hs \
-    ./Proofs/Proofs.hs hets.hs ./CASL/CCC/FreeTypes.hs \
-    ./Comorphisms/HasCASL2IsabelleHOL.hs
+    ./Proofs/Proofs.hs hets.hs ./CASL/CCC/FreeTypes.hs
 
 doc_sources = $(filter-out $(cpp_sources) ,$(sources)) \
                $(patsubst %.hs, %.hspp, $(cpp_sources))
