@@ -40,9 +40,11 @@ module TypeInference where
 import Id
 import Le
 import As
+import AsToLe
 import FiniteMap
 import List -- (nub, (\\), intersect, union, partition)
 import Monad(msum)
+import MonadState
 
 enumId  :: Int -> Id
 enumId n = Id[Token "v" nullPos, Token (show n) nullPos][][]
@@ -145,11 +147,12 @@ instance SubstApplicable Pred where
   tv (IsIn _ t)      = tv t
 
 mguPred, matchPred :: Pred -> Pred -> Maybe Subst
-mguPred             = lift mgu
-matchPred           = lift match
+mguPred             = liftToPred mgu
+matchPred           = liftToPred match
 
-lift :: Monad m => (Le.Type -> Le.Type -> m Subst) -> Pred -> Pred -> m Subst
-lift m (IsIn i t) (IsIn i' t')
+liftToPred :: Monad m => (Le.Type -> Le.Type -> m Subst) 
+	   -> Pred -> Pred -> m Subst
+liftToPred m (IsIn i t) (IsIn i' t')
          | i == i'   = m t t'
          | otherwise = fail "classes differ"
 
@@ -171,13 +174,6 @@ insts ce i = case lookupFM ce i of Just (_, its) -> its
 defined :: Maybe a -> Bool
 defined (Just _) = True
 defined Nothing  = False
-
-modify       :: ClassEnv -> Id -> ClassInst -> ClassEnv
-modify ce i c = addToFM ce i c
-
-initialEnv :: ClassEnv
-initialEnv  = emptyFM
-
 
 type EnvTransformer = ClassEnv -> Maybe ClassEnv
 
@@ -202,7 +198,7 @@ addInst                        :: [Pred] -> Pred -> EnvTransformer
 addInst ps p@(IsIn i _) ce
  | not $ i `elemFM` ce          = fail "no class for instance"
  | any (overlap p) qs           = fail "overlapping instance"
- | otherwise                    = return (modify ce i c)
+ | otherwise                    = return (addToFM ce i c)
    where its = insts ce i
          qs  = [ q | (_ :=> q) <- its ]
          c   = (super ce i, (ps:=>p) : its)
@@ -294,24 +290,11 @@ instance Monad TI where
 runTI       :: Int -> TI a -> a
 runTI n (TI f) = x where (_, _, x) = f nullSubst n
 
-getSubst   :: TI Subst
-getSubst    = TI (\s n -> (s,n,s))
 
-unify      :: Le.Type -> Le.Type -> TI ()
-unify t1 t2 = do s <- getSubst
-                 u <- mgu (apply s t1) (apply s t2)
-                 extSubst u
-
-extSubst   :: Subst -> TI ()
-extSubst s' = TI (\s n -> (s'@@s, n, ()))
-
-freshInst               :: Scheme -> TI (Qual Le.Type)
+freshInst               :: Scheme -> TIL (Qual Le.Type)
 freshInst (Scheme ks qt) = do ts <- mapM newTVar ks
                               return (inst ts qt)
 
-newTVar    :: Le.Kind -> TI Le.Type
-newTVar k   = TI (\s n -> let v = Tyvar (enumId n) k
-                          in  (s, n+1, TVar v))
 
 class Instantiate t where
   inst  :: [Le.Type] -> t -> t
@@ -326,53 +309,58 @@ instance Instantiate t => Instantiate (Qual t) where
 instance Instantiate Pred where
   inst ts (IsIn c t) = IsIn c (inst ts t)
 
+newTVars :: Scheme -> TIL [Le.Type]
+newTVars (Scheme ks _) = 
+    TIL (\ (s, n) ->
+    let m = n + length(ks)
+    in [((s, m), 
+	 zipWith (\ k i -> (TVar (Tyvar (enumId i) k))) ks [n .. m - 1])])
+
 type Assumps = FiniteMap Id [Scheme]
 
 lookUp :: Ord a => FiniteMap a [b] -> a -> [b]
 lookUp ce = lookupWithDefaultFM ce [] 
 
+-- <type Til = StateT (Subst, Int) []
 
-{-
-newtype TIL a = TIL {til :: [(Subst, Int)] -> [(Subst, Int, a)]}
+newtype TIL a = TIL {til :: (Subst, Int) -> [((Subst, Int), a)]}
+
+returnL :: [a] -> TIL a
+returnL l = TIL (\ s -> map (\ x -> (s, x)) l)
 
 instance Monad TIL where
-  return x   = TIL (map \ (s, n) -> (s,n,x))
-  TIL f >>= g = TIL (\s n -> [(s2, n2, x2) | (s1, n1, x1) <- f s n,
-			    (s2, n2, x2) <- (til (g x1)) s1 n1])
-  fail _ = TIL (\ _ _ -> [])
+  return x = returnL [x]
+  f >>= g = TIL $ concatMap (\ (s, x) -> (til $ g x) s) . til f 
+  fail _ = TIL $ const []
 
+newTVar    :: Le.Kind -> TIL Le.Type
+newTVar k   = TIL (\ (s, n) -> let v = Tyvar (enumId n) k
+                          in  [((s, n+1), TVar v)])
 
-lift l = TI (\ s n -> map (\ x -> (s, n, x)) l)
--}
+getSubst   :: TIL Subst
+getSubst    = TIL (\ s -> [(s, fst s)])
 
-newTVars :: Int -> Scheme -> ([Le.Type], Int)
-newTVars n (Scheme ks _) = 
-    let m = n + length(ks)
-    in (zipWith (\ k i -> (TVar (Tyvar (enumId i) k))) ks [n .. m - 1], m)
+unify      :: Le.Type -> Le.Type -> TIL ()
+unify t1 t2 = do s <- getSubst
+                 u <- mgu (apply s t1) (apply s t2)
+                 extSubst u
 
-tiTerm :: ClassEnv -> Assumps -> As.Term -> Subst -> Int 
-       -> [(Subst, Int, Qual Le.Type, Le.Term)]
-tiTerm _ as (TermToken t) s n = let i = simpleIdToId t
-				    l = lookUp as i
-				    tss = map (newTVars n. apply s) l
-				 in zipWith (\ (ts, m) sc@(Scheme _ qs) -> 
-					   (s, m, 
-					    inst ts qs,
-					    BaseName i sc ts))
-				    tss l
+extSubst   :: Subst -> TIL ()
+extSubst s' = TIL (\ (s, n) -> [((s'@@s, n), ())])
 
+tiTerm :: ClassEnv -> Assumps -> As.Term -> TIL (Qual Le.Type, Le.Term)
+tiTerm _ as (TermToken t) = let i = simpleIdToId t
+			    in 
+			    do sc@(Scheme ks qs) <- returnL (lookUp as i)
+			       ts <- mapM newTVar ks
+                               return (inst ts qs, BaseName i sc ts) 
 
-tiTerm ce as (ApplTerm f a _) s n = 
-    [(s3 @@ s2 @@ s1, n2+1, (q1 ++ q2) :=> apply s3 t3, Application e1 e2) | 
-             (s1, n1, q1 :=> t1, e1) <- tiTerm ce as f s n,
-             (s2, n2, q2 :=> t2, e2) <- tiTerm ce as a s1 n1,
-             let t3 = TVar (Tyvar (enumId n2) star),
-             s3 <- mgu (apply s2 t1) (t2 `fn` t3) 
-             ]
-
--- test
-
-
+tiTerm ce as (ApplTerm f a _) = 
+    do (q1 :=> t1, e1) <- tiTerm ce as f
+       (q2 :=> t2, e2) <- tiTerm ce as a
+       t3 <- newTVar star
+       unify t1 (t2 `fn` t3)
+       return ((q1 ++ q2) :=> t3, Application e1 e2)
 
 {-
 
