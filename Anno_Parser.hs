@@ -13,7 +13,6 @@
 
 module Anno_Parser where
 import Parsec
-import qualified ParsecToken as P
 import ParsecError
 import ParsecPos
 import ParsecPerm
@@ -23,9 +22,6 @@ import Utils
 import CaslLanguage
 import Id
 import AS_Annotation
-
-import P_user_state
-import Logic
 
 comment = commentLine <|> commentGroup
 
