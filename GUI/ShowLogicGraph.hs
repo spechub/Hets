@@ -1,4 +1,4 @@
-{- Version 0.8a, am 02,06,2004 -}
+{- Version 0.9a, 05,06,2004 -}
 
 module GUI.ShowLogicGraph
 where
@@ -46,13 +46,13 @@ showLogicGraph
            disp s tD = debug (s ++ (show tD))
        logicG <- newGraph displaySort graphParms
        
-       (killChannel :: Channel ()) <- newChannel   
+--       (killChannel :: Channel ()) <- newChannel   
 
        let logicNodeMenu = LocalMenu(Menu (Just "Info") 
-               [Button "PPC" (\lg -> createTextDisplay ("Parsers, Provers and Cons_Checker of " ++ showTitle lg) (showPPC lg) [size(80,40)]),
-                Button "Sublogic" (\lg -> createTextDisplay ("Sublogics of " ++ showTitle lg) (showSubLogic lg) [size(80,40)]),
+               [Button "Tools" (\lg -> createTextDisplay ("Parsers, Provers and Cons_Checker of " ++ showTitle lg) (showPPC lg) [size(80,25)]),
+                Button "Sublogic" (\lg -> createTextDisplay ("Sublogics of " ++ showTitle lg) (showSubLogic lg) [size(80,25)]),
                 Button "Sublogic Graph" (\lg -> showSubLogicGraph displaySort lg),
-                Button "Description" (\lg -> createTextDisplay ("Description of " ++ showTitle lg) (showDescription lg) [size(80,40)])
+                Button "Description" (\lg -> createTextDisplay ("Description of " ++ showTitle lg) (showDescription lg) [size(83,25)])
 	       ])
            
            normalNodeTypeParms = 
@@ -85,7 +85,7 @@ showLogicGraph
                                     Comorphism cid ->
                                        let sid = Logic (sourceLogic cid)
                                            tid = Logic (targetLogic cid)
-                                       in  createTextDisplay (show c) (showDescription sid ++ "\n\n" ++ (showDescription tid)) [size(80,40)]))
+                                       in  createTextDisplay (show c) (showDescription sid ++ "\n\n" ++ (showDescription tid)) [size(83,25)]))
            normalArcTypeParms = logicArcMenu $$$         -- normal comorphism
                                 Color "black" $$$
                                 nullArcTypeParms
@@ -117,7 +117,15 @@ showLogicGraph
                   --(drop (length arcList1) (Map.elems (comorphisms logicGraph)))
        
        redraw logicG
-       
+{-       sync(
+            (receive killChannel) >>> 
+               do
+                  putStrLn "Destroy graph"
+                  destroy logicG
+               
+         +> (destroyed logicG)
+	)
+  -}     
 
      where 		
         (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms
@@ -185,7 +193,6 @@ showLogicGraph
 		        		     emptyGraphParms
 							    
                  subLogicG <- newGraph displaySort' graphParms 
---	         (killChannel :: Channel ()) <- newChannel
    
 	         let 
                      listG_Sublogics = map (\subl -> G_sublogics sublid subl) (all_sublogics sublid)
@@ -221,7 +228,7 @@ showLogicGraph
                  subArcList <- mapM insertSubArc [(lookupSublogic(g1), lookupSublogic(g2)) |
                                     g1 <- listG_Sublogics, g2 <- listG_Sublogics,
                                     g1 < g2, not (any (\g -> g1<g && g<g2)  listG_Sublogics)]
-                                 
+		                 
                  redraw subLogicG
 
 
