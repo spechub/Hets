@@ -180,7 +180,11 @@ anSemi = wrapAnnos Common.Lexer.semiT
 semiT = anSemi
 
 equalT, colonT, lessT, dotT :: AParser Token
-equalT = asKey equalS
+equalT = wrapAnnos $ pToken $ 
+	 (((lookAhead $ keySign $ string exEqual) 
+			  >> unexpected exEqual)
+	 <|> keySign (string equalS))
+
 colonT = asKey colonS
 lessT = asKey lessS
 dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
