@@ -45,6 +45,10 @@ data DGNode = DGNode {
                 dgn_libname :: LIB_NAME, 
                 dgn_node :: Node
               }
+
+isDGRef :: DGNode -> Bool
+isDGRef (DGNode _ _ _ _) = False
+isDGRef (DGRef _ _ _) = True
             
 data DGLink = DGLink {
               -- dgl_name :: String,
