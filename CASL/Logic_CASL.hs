@@ -149,10 +149,3 @@ instance Logic CASL CASL.Sublogic.CASL_Sublogics
          proj_sublogic_morphism CASL = CASL.Sublogic.pr_morphism
          proj_sublogic_epsilon CASL = CASL.Sublogic.pr_epsilon
          proj_sublogic_symbol CASL = CASL.Sublogic.pr_symbol
-
----- helpers ---------------------------------
-fun_err :: String -> a
-fun_err fname = 
-    error ("*** Function \"" ++ fname ++ "\" is not yet implemented!")
-
-----------------------------------------------

@@ -30,14 +30,13 @@ Portability :  non-portable
 
 -}
 
-module CspCASL.Logic_CspCASL where
+module CspCASL.Logic_CspCASL(CspCASL(CspCASL)) where
 
 import CspCASL.AS_CSP_CASL
 import CspCASL.Parse_hugo
 import CspCASL.Print_AS_CSP_CASL
 
 import CASL.AS_Basic_CASL
-import CASL.Logic_CASL
 
 import Logic.ParsecInterface
 import Common.AS_Annotation
@@ -50,6 +49,7 @@ import Common.Lexer((<<))
 import qualified CASL.Sublogic
 import CASL.StaticAna
 import CASL.SymbolParser
+import CASL.Logic_CASL(CASL(CASL))
 
 import Data.Dynamic
 
@@ -125,3 +125,10 @@ cspCaslBasicSpecTc = mkTyCon "CspCASL.Basic_CSP_CASL_C_SPEC"
 
 instance Typeable Basic_CSP_CASL_C_SPEC where
     typeOf _ = mkAppTy cspCaslBasicSpecTc []
+
+---- helpers ---------------------------------
+fun_err :: String -> a
+fun_err fname = 
+    error ("*** Function \"" ++ fname ++ "\" is not yet implemented!")
+
+----------------------------------------------
