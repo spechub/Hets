@@ -254,7 +254,7 @@ writeSharedATermSDoc at =
     else case writeTAF at emptyWTable of
     WS _ (Doc_len doc l)
         | l == 0 -> fatal_error "writeSharedATermSDoc"
-        | otherwise -> char '!'<> doc 
+        | otherwise -> text "!" <> doc 
 
 writeSharedATerm :: ATermTable -> String 
 writeSharedATerm = render . writeSharedATermSDoc
