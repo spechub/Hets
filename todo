@@ -223,6 +223,8 @@ IsaWin: support CASL-libraries
 Till
 ************************************************
 
+remove "prove" menu in abstracted dg
+
 better sublogic analysis in codings
 
 thy files in subdir

@@ -154,7 +154,8 @@ makegraph title menus nodetypeparams edgetypeparams comptable gv = do
   (gs,ev_cnt) <- readIORef gv
   let graphParms  = 
        foldr ($$) (GraphTitle title $$
-                   OptimiseLayout True $$ 
+                   OptimiseLayout True $$
+                   AllowClose (Just "closing window") $$ 
 	           emptyGraphParms)
                    menus 
       abstractNodetypeparams = LocalMenu
