@@ -38,8 +38,6 @@ import Data.Maybe
       TODO
       - equivalent candidates should be sorted in a suitable way
       - move functions from ListUtils to the (single) module of use
-      - maybe change *_commm_* input list to tuple or curried arguments
-      - for variables there should only be a single choice (shadowing)
 -}
 
 -- | the type of the type checking function of extensions
@@ -72,19 +70,17 @@ minExpFORMULA mef ga sign formula = case formula of
         f' <- minExpFORMULA mef ga sign' f
         return (Quantification q vars f' pos)
     Conjunction fs pos -> do
-        fs' <- mapM (minExpFORMULA mef ga sign) fs
+        fs' <- mapR (minExpFORMULA mef ga sign) fs
         return (Conjunction fs' pos)
     Disjunction fs pos -> do
-        fs' <- mapM (minExpFORMULA mef ga sign) fs
-        return $ Disjunction fs' pos
-    Implication f1 f2 b pos -> do
-        f1' <- minExpFORMULA mef ga sign f1
-        f2' <- minExpFORMULA mef ga sign f2
-        return (Implication f1' f2' b pos)
-    Equivalence f1 f2 pos -> do
-        f1' <- minExpFORMULA mef ga sign f1
-        f2' <- minExpFORMULA mef ga sign f2
-        return (Equivalence f1' f2' pos)
+        fs' <- mapR (minExpFORMULA mef ga sign) fs
+        return (Disjunction fs' pos)
+    Implication f1 f2 b pos -> 
+        joinResultWith (\ f1' f2' -> Implication f1' f2' b pos)
+              (minExpFORMULA mef ga sign f1) $ minExpFORMULA mef ga sign f2
+    Equivalence f1 f2 pos -> 
+        joinResultWith (\ f1' f2' -> Equivalence f1' f2' pos)
+              (minExpFORMULA mef ga sign f1) $ minExpFORMULA mef ga sign f2
     Negation f pos -> do
         f' <- minExpFORMULA mef ga sign f
         return (Negation f' pos)
@@ -123,7 +119,7 @@ oneExpTerm minF ga sign term = do
 -- | all minimal common supersorts of the two input sorts
 minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
 minimalSupers s s1 s2 = 
-    keepMinimals s id $ Set.toList $ common_supersorts s [s1, s2]
+    keepMinimals s id $ Set.toList $ common_supersorts s s1 s2
 
 {-----------------------------------------------------------
     - Minimal expansion of an equation formula -
@@ -266,7 +262,7 @@ minimize_eq s l = keepMinimals s (term_sort . snd) $
 {-----------------------------------------------------------
     - Minimal expansion of a term -
   Expand a given term by typing information.
-  * 'Simple_id' terms only exist after simplification
+  * 'Simple_id' do not exist!
   * 'Qual_var' terms are handled by 'minExpTerm_var'
   * 'Application' terms are handled by 'minExpTerm_op'.
   * 'Conditional' terms are handled by 'minExpTerm_cond'.
@@ -277,10 +273,6 @@ minExpTerm :: PrettyPrint f =>
               Sign f e              ->
               TERM f                ->
               Result [[TERM f]]
-minExpTerm _ _ sign (Simple_id tok)
-    = let ts = minExpTerm_var sign tok Nothing
-      in if null ts then mkError "no matching variable found" tok
-         else return ts
 minExpTerm _ _ sign (Qual_var var sort _)
     = let ts = minExpTerm_var sign var (Just sort)
       in if null ts then mkError "no matching qualified variable found" var
@@ -393,8 +385,7 @@ equiv_term s t1 t2 =
     (_,  Sorted_term t4 _ _) -> equiv_term s t1 t4
     (Cast t3 _ _, _) -> equiv_term s t3 t2
     (_, Cast t4 _ _) -> equiv_term s t1 t4
-    (Simple_id v1, Simple_id v2) -> v1 == v2 
-    (Qual_var v1 s1 _, Qual_var v2 s2 _) -> v1 == v2 && xeq_SORT s s1 s2
+    (Qual_var v1 _s1 _, Qual_var v2 _s2 _) -> v1 == v2
     (Conditional c1 _f1 e1 _, Conditional c2 _f2 e2 _) -> 
         equiv_term s c1 c2 && equiv_term s e1 e2
     _ -> False
@@ -501,73 +492,39 @@ term_sort term' = case term' of
     _ -> error "term_sort: unsorted TERM after expansion"
 
 
-{-----------------------------------------------------------
-    - Return the set of subsorts common to all given sorts -
------------------------------------------------------------}
-common_subsorts :: Sign f e -> [SORT] -> Set.Set SORT
-common_subsorts sign srts = let get_subsorts = flip subsortsOf sign
-                             in foldr1 Set.intersection
-                                    $ map get_subsorts $ srts
+-- | the set of subsorts common to both sorts
+common_subsorts :: Sign f e -> SORT -> SORT -> Set.Set SORT
+common_subsorts sign s1 s2 = Set.intersection (subsortsOf s1 sign) 
+                             $ subsortsOf s2 sign
 
+-- | the set of supersorts common to both sorts
+common_supersorts :: Sign f e -> SORT -> SORT -> Set.Set SORT
+common_supersorts sign s1 s2 = Set.intersection (supersortsOf s1 sign) 
+                             $ supersortsOf s2 sign
 
-{-----------------------------------------------------------
-    - Return the set of supersorts common to all given sorts -
------------------------------------------------------------}
-common_supersorts :: Sign f e -> [SORT] -> Set.Set SORT
-common_supersorts _ [] = Set.empty
-common_supersorts sign srts = let get_supersorts = flip supersortsOf sign
-                               in foldr1 Set.intersection
-                                      $ map get_supersorts $ srts
+-- True if both sorts have a common subsort
+have_common_subsorts :: Sign f e -> SORT -> SORT -> Bool
+have_common_subsorts s s1 s2 = not $ Set.isEmpty $ common_subsorts s s1 s2
 
+-- True if both sorts have a common supersort
+have_common_supersorts :: Sign f e -> SORT -> SORT -> Bool
+have_common_supersorts s s1 s2 = not $ Set.isEmpty $ common_supersorts s s1 s2
 
-{-----------------------------------------------------------
-    - True if all sorts have a common subsort -
------------------------------------------------------------}
-have_common_subsorts :: Sign f e -> [SORT] -> Bool
-have_common_subsorts s = (not . Set.isEmpty . common_subsorts s)
-
-
-{-----------------------------------------------------------
-    - True if all sorts have a common supersort -
------------------------------------------------------------}
-have_common_supersorts :: Sign f e -> [SORT] -> Bool
-have_common_supersorts s = (not . Set.isEmpty . common_supersorts s)
-
-
-{-----------------------------------------------------------
-    - True if s1 <= s2 OR s1 >= s2 -
------------------------------------------------------------}
-xeq_SORT :: Sign f e -> SORT -> SORT -> Bool
-xeq_SORT sign s1 s2 = (leq_SORT sign s1 s2) || (geq_SORT sign s1 s2)
-
-
-
-{-----------------------------------------------------------
-    - True if s1 <= s2 -
------------------------------------------------------------}
+-- | True if s1 is subsort of s2
 leq_SORT :: Sign f e -> SORT -> SORT -> Bool
 leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
 
-
-{-----------------------------------------------------------
-    - True if s1 >= s2 -
------------------------------------------------------------}
+-- | True if s1 is supersort of s2
 geq_SORT :: Sign f e -> SORT -> SORT -> Bool
 geq_SORT sign s1 s2 = Set.member s2 (subsortsOf s1 sign)
 
-
-{-----------------------------------------------------------
-    - True if o1 ~F o2 -
------------------------------------------------------------}
+-- | True if both ops are in the overloading relation 
 leqF :: Sign f e -> OpType -> OpType -> Bool
-leqF sign o1 o2 = zipped_all are_legal (opArgs o1) (opArgs o2)
-                && have_common_supersorts sign [(opRes o1), (opRes o2)]
-    where are_legal a b = have_common_subsorts sign [a, b]
+leqF sign o1 o2 = 
+    zipped_all (have_common_subsorts sign) (opArgs o1) (opArgs o2)
+                && have_common_supersorts sign (opRes o1) (opRes o2)
 
-
-{-----------------------------------------------------------
-    - True if p1 ~P p2 -
------------------------------------------------------------}
+-- | True if both preds are in the overloading relation 
 leqP :: Sign f e -> PredType -> PredType -> Bool
-leqP sign p1 p2 = zipped_all are_legal (predArgs p1) (predArgs p2)
-    where are_legal a b = have_common_subsorts sign [a, b]
+leqP sign p1 p2 = 
+    zipped_all (have_common_subsorts sign) (predArgs p1) (predArgs p2)
