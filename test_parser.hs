@@ -17,4 +17,18 @@ testPL par inp = testP (do { whiteSpace
 			   ; return res
 			   } ) inp
 
+testFile par name = do { inp <- readFile name
+		       ; sequence (map (testLine par) (lines inp))
+		       }
+    where testLine p line = do { putStr "** Input was: "
+			       ; print line
+			       ; putStr "** Result is: "
+			       ; testPL p line
+			       }
+
+testData p s = parse (do {whiteSpace ; res <- p; eof ; return res}) "" s
+
 main = testPL annotation "%%Aha\n"
+
+testId = testPL (sepBy casl_id semi) 
+	 "__++__ ; __+*[y__,a_l'__,4]__ ; {__}[__] ; __a__b[__z]" 
