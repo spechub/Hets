@@ -16,6 +16,8 @@ Portability :  portable
    predicate_monotonicity  (wie function_monotonicty)
    encodeFORMULA
    treat inj(u_i) separately
+   map_morphism should modify sort_map etc.
+   map_sign should avoid to generate OpNames with empty set of profiles
 -}
 
 module Comorphisms.CASL2PCFOL where
@@ -75,7 +77,10 @@ instance Comorphism CASL2PCFOL
                       }
     map_sign CASL2PCFOL sig = 
       let e = encodeSig sig in return (e, generateAxioms sig)
-    map_morphism CASL2PCFOL = return . id
+    map_morphism CASL2PCFOL mor = return 
+      (mor  { msource =  encodeSig $ msource mor,
+              mtarget =  encodeSig $ mtarget mor })
+      -- other components need to be adapted as well!
     map_sentence CASL2PCFOL sig = return . f2Formula
     map_symbol CASL2PCFOL = Set.single . id
 

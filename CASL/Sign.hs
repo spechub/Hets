@@ -53,6 +53,11 @@ data Sign f e = Sign { sortSet :: Set.Set SORT
                , extendedInfo :: e
                } deriving Show
 
+-- remove empty sets from set-valued maps
+normalize :: Ord k => Map.Map k (Set.Set b) ->  Map.Map k (Set.Set b) 
+normalize m = Map.foldWithKey f Map.empty m
+  where f k s = if Set.isEmpty s then id else Map.insert k s
+
 -- better ignore assoc flags for equality
 instance (Eq f, Eq e) => Eq (Sign f e) where
     e1 == e2 = 
@@ -60,6 +65,9 @@ instance (Eq f, Eq e) => Eq (Sign f e) where
         sortRel e1 == sortRel e2 &&
         opMap e1 == opMap e2 &&
         predMap e1 == predMap e2 &&
+-- we rely on signatures already being normalized
+--        normalize (opMap e1) == normalize (opMap e2) &&
+--        normalize (predMap e1) == normalize (predMap e2) &&
         extendedInfo e1 == extendedInfo e2
 
 emptySign :: e -> Sign f e
