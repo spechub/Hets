@@ -73,19 +73,31 @@ translateData (tid,info) =
        TypeVarDefn -> [] -- ?
 
 translateAltDefn :: AltDefn -> HsConDecl
-translateAltDefn (Construct uid ts _ _sel) = 
+translateAltDefn (Construct uid ts _ []) = 
     HsConDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
 	      (HsIdent (translateIdWithType UpperId uid))
 	      (getArgTypes ts)
+translateAltDefn (Construct uid _ts _ sel) =
+    HsRecDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+	      (HsIdent (translateIdWithType UpperId uid))
+	      (translateRecords sel)
+
+translateRecords ::[Selector] -> [([HsName],HsBangType)]
+translateRecords = map translateRecord
+
+translateRecord :: Selector -> ([HsName], HsBangType)
+translateRecord (Select opid t _) = 
+    ([(HsIdent (translateIdWithType LowerId opid))],
+     getType t)
 
 getArgTypes :: [Type] -> [HsBangType]
-getArgTypes ts = map getArgType ts
+getArgTypes ts = map getType ts
+
+getType :: Type -> HsBangType
+getType t = HsUnBangedTy (translateType t)
 
 getDataArgs :: [TypeArg] -> [HsName]
 getDataArgs = map getAliasArg
-
-getArgType :: Type -> HsBangType
-getArgType t = HsUnBangedTy (translateType t)
     
 getAliasArgs :: TypeScheme -> [HsName]
 getAliasArgs (TypeScheme arglist (_plist :=> _t) _poslist) = 
@@ -125,7 +137,7 @@ translateTypeScheme :: TypeScheme -> HsQualType
 translateTypeScheme (TypeScheme _arglist (_plist :=> t) _poslist) = 
   HsQualType [] (translateType t)
 -- Context aus plist (wird im Moment noch nicht benutzt)
--- arglist beachten (wird an anderr Stelle gemacht; 
+-- arglist beachten (wird an anderer Stelle gemacht; 
 --                   evtl. Signatur zu Type -> HsQualType ändern??)
 
 translateType :: Type -> HsType
@@ -227,6 +239,9 @@ subPlace :: String
 subPlace = "_2"
 
 symbolMapping :: Char -> String
+symbolMapping c = findWithDefault [c] c symbolMap
+
+{-symbolMapping :: Char -> String
 symbolMapping c = case c of 
 -- Special / reserviert
     '_'  -> "_1"    -- \95
@@ -273,7 +288,7 @@ symbolMapping c = case c of
     '×'  -> "_m"    -- \215
     '÷'  -> "_g"    -- \247
     _    -> [c]
-
+-}
 
 translateCompound :: [Id] -> String
 --  [      ,      ]
@@ -283,3 +298,52 @@ translateCompound ids = "_C" ++
                         (concat $ intersperse "_k" $ map translateId ids) ++
                         "_J"
 
+symbolMap :: Map Char String
+symbolMap = fromList symbolTable
+
+symbolTable :: [(Char,String)]
+symbolTable = 
+-- Special / reserviert
+   [('_' , "_1"),    -- \95
+    ('{' , "_b"),    -- \123
+    ('}' , "_r"),    -- \125
+    ('[' , "_s"),    -- \91
+    (']' , "_q"),    -- \93
+    ('.' , "_d"),    -- \46
+    ('\'', "_p"),
+-- Symbole
+    ('+' , "_P"),    -- \43
+    ('-' , "_M"),    -- \45
+    ('*' , "_T"),    -- \42
+    ('/' , "_D"),    -- \47
+    ('\\', "_B"),    -- \92
+    ('&' , "_A"),    -- \38
+    ('=' , "_I"),    -- \61
+    ('<' , "_L"),    -- \60
+    ('>' , "_G"),    -- \62
+    ('!' , "_E"),    -- \33
+    ('?' , "_Q"),    -- \63
+    (':' , "_C"),    -- \58
+    ('$' , "_S"),    -- \36
+    ('@' , "_O"),    -- \64
+    ('#' , "_H"),    -- \35
+    ('^' , "_V"),    -- \94
+    ('|' , "_I"),    -- \124
+    ('~' , "_N"),    -- \126
+    ('¡' , "_e"),    -- \161
+    ('¢' , "_c"),    -- \162   
+    ('£' , "_l"),    -- \163
+    ('§' , "_f"),    -- \167
+    ('©' , "_a"),    -- \169
+    ('¬' , "_n"),    -- \172
+    ('°' , "_h"),    -- \176
+    ('±' , "_k"),    -- \177
+    ('²' , "_w"),    -- \178
+    ('³' , "_t"),    -- \179
+    ('µ' , "_y"),    -- \181
+    ('¶' , "_j"),    -- \182
+    ('·' , "_i"),    -- \183
+    ('¹' , "_o"),    -- \185
+    ('¿' , "_q"),    -- \191
+    ('×' , "_m"),    -- \215
+    ('÷' , "_g")]    -- \247
