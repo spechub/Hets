@@ -24,7 +24,7 @@ spec Example =
     . exists! b4:B . true
     . true /\ false
     . (true => false) /\ (false => true)
-    . not (h b1 \/ g(a1,b2))
+%%    . not (h b1 \/ g(a1,b2))
     . a a1 = b a2 /\ b a2 = b a3 /\ a a1 = b a3
     . a a1 = b a2 \/ b a2 = b a3
     . a a1 = b a2 => b a2 = b a3
@@ -34,8 +34,9 @@ spec Example =
     . true
     . false
     . def e
-    . a1 abc b1 = a2 abc b2
+%%    . a1 abc b1 = a2 abc b2
     . a a1 = b a2
-    . \ . a1 = a2
-    . let a4 = \  (x:A,y:A) . x = y in h b1
-    . let a4 = a1;  a6 = a a2 in a6 = d
+    . (\ x:A . a1 = a2) = (\ x:A . b1 = b2)
+    . (\ x:A . a x) = (\ y:A . b y)
+%%    . let a4 = \  (x:A,y:A) . x = y in h b1
+%%    . let a4 = a1;  a6 = a a2 in a6 = d
