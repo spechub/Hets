@@ -28,9 +28,10 @@ Operations (constructors) in DatatypeDefns are not renamed (selectors
 are also not renamed in DatatypeSens, because they are not used)
 
 
-terms:
-mutual recursive let-equations (and what not?) are not supported yet
-(TypeCheck.hs)
+
+terms: 
+polymorphic (and constrained) let bindings are not supported
+yet, because variables are monomorph
 
 a wild card pattern can be given by a single underscore
 

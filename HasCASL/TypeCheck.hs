@@ -37,7 +37,7 @@ resolveTerm ga mt trm = do
     mtrm <- resolve ga trm
     case mtrm of 
 	      Nothing -> return Nothing
-	      Just t -> typeCheck infer mt t 
+	      Just t -> typeCheck mt t 
 
 checkPattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
 checkPattern ga pat = do
@@ -46,7 +46,7 @@ checkPattern ga pat = do
 	      Nothing -> return Nothing
 	      Just p -> do 
 		  np <- anaPattern p 
-		  typeCheck inferPat Nothing np
+		  typeCheck Nothing np
 
 freshInstList :: TypeScheme -> State Int (Type, [Type])
 freshInstList (TypeScheme tArgs (_ :=> t) _) = 
@@ -64,23 +64,21 @@ lookupError ty ois =
     ++ "  known types:\n    " ++
        showSepList ("\n    "++) (showPrettyWithPos . opType) ois "" 
 
-checkList :: (Maybe Type -> a -> State Env [(Subst, Type, a)])
-	  -> [Maybe Type] -> [a] -> State Env [(Subst, [Type], [a])]
-checkList _ [] [] = return [(eps, [], [])]
-checkList inf (ty : rty) (trm : rt) = do 
-      fts <- inf ty trm
+checkList :: [Maybe Type] -> [Term] -> State Env [(Subst, [Type], [Term])]
+checkList [] [] = return [(eps, [], [])]
+checkList (ty : rty) (trm : rt) = do 
+      fts <- infer ty trm
       combs <- mapM ( \ (sf, tyf, tf) -> do
-		      rts <- checkList inf (map (fmap (subst sf)) rty) rt
+		      rts <- checkList (map (fmap (subst sf)) rty) rt
 		      return $ map ( \ (sr, tys, tts) ->
 			     (compSubst sf sr, subst sr tyf : tys,
 				     tf : tts)) rts) fts
       return $ concat combs
-checkList _ _ _ = error "checkList"
+checkList _ _ = error "checkList"
 
-typeCheck :: (Maybe Type -> Term -> State Env [(Subst, Type, Term)])
-	  -> Maybe Type -> Term -> State Env (Maybe Term)
-typeCheck inf mt trm = 
-    do alts <- inf mt trm
+typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
+typeCheck mt trm = 
+    do alts <- infer mt trm
        if null alts then 
 	  do addDiags [mkDiag Error "no typing for" trm]
 	     return Nothing
@@ -193,7 +191,7 @@ infer mt trm = do
 	TupleTerm ts ps -> 
 	    case mt of 
             Nothing -> do 		    
-                ls <- checkList infer (map (const Nothing) ts) ts 
+                ls <- checkList (map (const Nothing) ts) ts 
 		return $ map ( \ (su, tys, trms) ->
                                    (su, mkProductType tys ps, 
 				    mkTupleTerm trms ps)) ls
@@ -205,7 +203,7 @@ infer mt trm = do
 	        case ms of 
 		     Nothing -> return []
 		     Just s  -> do 
-                         ls <- checkList infer (map (Just . subst s) vs) ts 
+                         ls <- checkList (map (Just . subst s) vs) ts 
 			 return $ map ( \ (su, tys, trms) ->
                                    (compSubst s su, mkProductType tys ps, 
 				    mkTupleTerm trms ps)) ls
@@ -263,7 +261,7 @@ infer mt trm = do
 	    case ms of 
 	        Nothing -> return []
 		Just s -> do 
-                    ls <- checkList inferPat (map (Just . subst s) vs) pats
+                    ls <- checkList (map (Just . subst s) vs) pats
 		    rs <- mapM ( \ ( s2, _, nps) -> do
 		       mapM_ addVarDecl $ concatMap extractVars nps
 		       let newS = compSubst s s2 
@@ -289,8 +287,10 @@ infer mt trm = do
 				 CaseTerm otrm nes ps)) es) ts
 	    return $ concat rs
         LetTerm b eqs inTrm ps -> do 
-	    es <- checkList inferLetEq (map (const Nothing) eqs) eqs
+	    es <- inferLetEqs eqs
 	    rs <- mapM ( \ (s1, _, nes) -> do 
+	       mapM_ addVarDecl $ concatMap (\ (ProgEq p _ _) -> 
+					     extractVars p) nes
 	       ts <- infer mt inTrm 
 	       return $ map ( \ (s2, ty, nt) -> 
  			      (compSubst s1 s2, ty, 
@@ -305,20 +305,22 @@ infer mt trm = do
 		addDiags [mkDiag Error "unexpected term" trm]
 		return [(eps, ty, trm)]
 
-
-inferLetEq :: Maybe Type -> ProgEq -> State Env [(Subst, Type, ProgEq)]
-inferLetEq _ (ProgEq pat trm ps) = do
-    ts <- infer Nothing trm
-    nps <- mapM ( \ (s2, tyt, nt) -> do
-           pps <- inferPat (Just tyt) pat		     
-           mapM ( \ (s3, _, pp) -> do
-               mapM_ addVarDecl $ extractVars pp
-	       return (compSubst s2 s3, tyt, ProgEq pp nt ps)) pps) ts
-    return $ concat nps
-
--- | type check patterns
-inferPat :: Maybe Type -> Pattern -> State Env [(Subst, Type, Pattern)]
-inferPat = infer 
+inferLetEqs :: [ProgEq] -> State Env [(Subst, [Type], [ProgEq])]
+inferLetEqs es = do
+    let pats = map (\ (ProgEq p _ _) -> p) es 
+	trms = map (\ (ProgEq _ t _) -> t) es
+	qs = map (\ (ProgEq _ _ q) -> q) es
+    do as <- gets assumps 
+       newPats <- checkList (map (const Nothing) pats) pats
+       combs <- mapM ( \ (sf, tys, pps) -> do
+	     mapM_ addVarDecl $ concatMap extractVars pps 
+	     newTrms <- checkList (map Just tys) trms 
+	     return $ map ( \ (sr, tys2, tts ) ->  
+			  (compSubst sf sr, tys2, 
+			   zipWith3 ( \ p t q -> ProgEq (substTerm sr p) t q)
+			       pps tts qs)) newTrms) newPats
+       putAssumps as					   
+       return $ concat combs 
 
 inferCaseEq :: Type -> Type -> ProgEq 
 	    -> State Env [(Subst, Type, Type, ProgEq)]
@@ -329,7 +331,7 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
 					      VarDefn -> True
 					      _ -> False) as
    putAssumps newAs
-   pats <- inferPat (Just pty) pat 
+   pats <- infer (Just pty) pat 
    putAssumps as
    if null pats then addDiags [mkDiag Error "unresolved case pattern" pat]
       else return ()
