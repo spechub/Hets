@@ -65,7 +65,7 @@ addTypeKind warn d i k =
 			         (PreDatatype, DatatypeDefn _ _ _) -> False
 			         _ -> True
 				then
-			        addDiags [mkDiag Warning 
+			        addDiags [mkDiag Hint 
 					  "redeclared type" i]
 				else return ()
 		             case mDef of

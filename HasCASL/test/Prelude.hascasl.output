@@ -195,15 +195,15 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Error 4.7, illegal universe class declaration 'Type'
 *** Hint 6.5, is type variable 's'
 *** Hint 6.7, is type variable 't'
-*** Warning 11.6, redeclared type 'Unit'
+*** Hint 11.6, redeclared type 'Unit'
 *** FatalError 14.11, illegal type pattern argument: __
 *** FatalError 15.8, illegal type pattern argument: __
-*** Warning 27.8, redeclared type '__->?__'
+*** Hint 27.8, redeclared type '__->?__'
 *** FatalError 31.6, illegal type pattern: __ * __ * __
 *** Error 46.11, unexpected mixfix token: und
 *** Error 46.9, unexpected pattern '__ und __ (x, y : Unit)'
 *** Error 46.9, illegal toplevel pattern '__ und __ (x, y : Unit)'
-*** Warning 50.8, redeclared type '__->__'
+*** Hint 50.8, redeclared type '__->__'
 *** Error 52.8, incompatible kind of: __->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
@@ -233,7 +233,7 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 	 \ (x : _var_43, y : s) . (__res__)(y, eq (x, y)))'
 *** Error 75.30, no typing for '(__=__)(\ (x : _var_42, y : s) . (__res__)(x, eq (x, y)),
 	\ (x : _var_43, y : s) . (__res__)(y, eq (x, y)))'
-*** Warning 85.6, redeclared type 's'
+*** Hint 85.6, redeclared type 's'
 *** Error 85.6, merge: TypeVarDefn of 's'
 
 *** Error 85.11, illegal supertype for variable '? s'
@@ -297,7 +297,7 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Hint 148.6, is type variable 'f'
 *** Error 150.15, unexpected mixfix token: [
 *** Hint 153.5, is type variable 'c'
-*** Warning 153.5, redeclared type 'c'
+*** Hint 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
 *** Error , undeclared type '_var_71'
 *** Error , undeclared type '_var_72'

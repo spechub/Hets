@@ -254,6 +254,6 @@ true : Bool %(Op)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.6, is type variable 'S'
 *** Hint 1.8, is type variable 'T'
-*** Warning 3.18, redeclared type 'S'
-*** Warning 3.8, redeclared type 'Pred'
-*** Warning 4.17, redeclared type 'S'
+*** Hint 3.18, redeclared type 'S'
+*** Hint 3.8, redeclared type 'Pred'
+*** Hint 4.17, redeclared type 'S'

@@ -53,9 +53,9 @@ not__ : Unit ->? Unit %(Fun)%
 true : Unit %(Fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 's'
-*** Warning 6.6, redeclared type 'a1'
-*** Warning 7.6, redeclared type 'a1'
-*** Warning 11.19, redeclared type 'a'
+*** Hint 6.6, redeclared type 'a1'
+*** Hint 7.6, redeclared type 'a1'
+*** Hint 11.19, redeclared type 'a'
 *** Error 11.15, duplicates at '(11,19)' for 'a'
 *** Error 13.9, duplicates at '(13,11)' for 'a'
 *** Error 17.14, illegal recursive type synonym 'a5 a -> Unit'
