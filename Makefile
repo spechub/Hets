@@ -52,6 +52,7 @@ HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
              -package uni-server -DUNI_PACKAGE
 
 PFE_TOOLDIR = $(wildcard ../programatica/tools)
+ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
       base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
       base/transforms base/transforms/Deriving hs2html \
@@ -59,10 +60,10 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
       property/TI property/defs property/parse2 property/parse2/Parser \
       hs2stratego hs2stratego/AST
 PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
-ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
-endif
 #-fallow-undecidable-instances -fno-monomorphism-restriction 
+endif
+
 
 ### Profiling (only for debugging)
 ### Attention every module must be compiled with profiling or the linker
@@ -77,48 +78,19 @@ HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 DRIFT_OPTS  = +RTS -K10m -RTS
 
 ### list of directories to run checks in
-TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell/test
+TESTDIRS    = Common CASL HasCASL
 
 
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
 
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),bin_clean)
-ifneq ($(MAKECMDGOALS),d_clean)
-ifneq ($(MAKECMDGOALS),real_clean)
-ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(MAKECMDGOALS),genRules)
-ifneq ($(MAKECMDGOALS),utils/genRules)
-ifneq ($(MAKECMDGOALS),hets-opt)
-ifneq ($(MAKECMDGOALS),hets-optimized)
-ifneq ($(MAKECMDGOALS),derivedSources)
-ifneq ($(MAKECMDGOALS),$(INLINEAXIOMS))
-ifneq ($(MAKECMDGOALS),release)
-ifneq ($(MAKECMDGOALS),check)
-ifneq ($(MAKECMDGOALS),apache_doc)
-ifneq ($(MAKECMDGOALS),clean_genRules)
-ifneq ($(MAKECMDGOALS),atctest2)
-ifneq ($(MAKECMDGOALS),hetana)
-ifneq ($(MAKECMDGOALS),taxonomy)
+GHCMAKE_OUTPUT = $(wildcard hetcats-make)
+
+ifneq ($(strip $(GHCMAKE_OUTPUT)),)
 include sources_hetcats.mk
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
+else
+SOURCE_PATH = $(COMMON_LIB_PATH):$(CLEAN_PATH)
+sources = $(wildcard $(subst :,/*hs , $(SOURCE_PATH))/*hs)
 endif
 
 objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
@@ -130,45 +102,48 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
 
 genrule_header_files = $(wildcard ATC/*.header.hs)
 
-genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
+atc_files := Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 Common/AS_Annotation.der.hs \
                 Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
                 Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-                CASL/Sublogic.hs \
-                CASL/Morphism.hs CASL/Sign.hs CASL/AS_Basic_CASL.der.hs \
-                HasCASL/As.hs HasCASL/Le.hs HasCASL/Morphism.hs \
-                HasCASL/Sublogic.hs \
-                Modal/AS_Modal.hs Modal/ModalSign.hs \
-                CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs \
-                COL/AS_COL.hs COL/COLSign.hs \
-                CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs \
                 Static/DevGraph.hs \
 		Proofs/Proofs.hs \
                 Isabelle/IsaSign.hs 
 
-gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
-                   ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
-                   ATC/AS_Structured.hs ATC/AS_Architecture.hs \
-                   ATC/DevGraph.hs \
-		   ATC/Proofs.hs \
-                   CASL/ATC_CASL.hs \
-                   HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs \
-                   Modal/ATC_Modal.hs CoCASL/ATC_CoCASL.hs COL/ATC_COL.hs \
-                   ATC/IsaSign.hs
+atc_der_files = $(foreach file, $(atc_files), ATC/$(basename $(basename $(notdir $(file)))).der.hs)
 
-generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
+CASL_files := CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
+              CASL/AS_Basic_CASL.der.hs 
+
+HasCASL_files := HasCASL/As.hs HasCASL/Le.hs HasCASL/Morphism.hs \
+                 HasCASL/Sublogic.hs \
+
+Modal_files := Modal/AS_Modal.hs Modal/ModalSign.hs
+CoCASL_files := CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
+COL_files := COL/AS_COL.hs COL/COLSign.hs
+CspCASL_files := CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
+
+logics := CASL HasCASL Modal CoCASL COL CspCASL
+
+atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
+
+generated_rule_files = $(atc_der_files) $(atc_logic_files)
+
+gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs Comorphisms/Modal2CASL.hs
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
-happy_files = Haskell/Hatchet/HsParser.hs
+happy_files = 
 
-# this variable holds the modules that should be documented
-# the imported parsec library is not included!
+derived_sources = $(drifted_files) $(happy_files) hetcats/Version.hs $(inline_axiom_files) Modal/ModalSystems.hs
+
+# sources that have {-# OPTIONS -cpp #-}
 cpp_sources = ./Isabelle/Logic_Isabelle.hs \
     ./Proofs/Proofs.hs hets.hs ./CASL/CCC/FreeTypes.hs \
     ./Comorphisms/LogicList.hs ./Comorphisms/LogicGraph.hs
 
+# this variable holds the modules that should be documented
 doc_sources = $(filter-out $(cpp_sources) ,$(sources)) \
                $(patsubst %.hs, %.hspp, $(cpp_sources))
 
@@ -191,24 +166,26 @@ tax_objects = $(patsubst %.hs,%.o,$(tax_sources))
 ####################################################################
 ### targets
 
-.PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg \
-         clean_genRules genRules
+.PHONY : all hets-opt hets-optimized clean d_clean real_clean bin_clean \
+         lib_clean distclean check capa hacapa clean_genRules genRules \
+         taxonomy hets.cgi count doc apache_doc post_doc4apache \
+         derivedSources install_hets install release
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 #.PRECIOUS: sources_hetcats.mk
 
 all: hets
 
-hets: $(sources)
+hets: $(sources) $(derived_sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS) 2>&1 | tee hetcats-make 
 
-hets-opt: hetcats/Version.hs
+hets-opt: $(sources) $(derived_sources)
 	$(MAKE) distclean
 	$(MAKE) derivedSources
 	$(MAKE) real_clean
 	$(MAKE) hets-optimized
 
-hets-optimized:  
+hets-optimized: $(sources) $(derived_sources) 
 	$(HC) --make -O -o hets hets.hs $(HC_OPTS) -w 2>&1 | tee hetcats-make
 	strip hets 
 
@@ -218,10 +195,6 @@ hets-old: $(objects)
 
 hets.cgi: $(sources) GUI/hets_cgi.hs
 	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_OPTS) -O
-
-hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files) $(inline_axiom_files) Modal/ModalSystems.hs
-	$(RM) hetcats-make sources_hetcats.mk
-	$(HC) --make -o hets $< $(HC_OPTS) 2>&1 | tee hetcats-make 
 
 taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
 	$(HC) --make -o Taxonomy/taxonomyTool $< -ifgl $(HC_OPTS)
@@ -266,7 +239,7 @@ post_doc4apache:
 ###############################
 ### release management
 
-derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs $(inline_axiom_files) Modal/ModalSystems.hs
+derivedSources: $(derived_sources)
 
 utils/DrIFT: $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT && \
@@ -305,17 +278,28 @@ install: hets-opt install-hets
 #############################
 ### ATC DrIFT-rule generation
 
-genRules: $(generated_rule_files) utils/genRules
+genRules: $(generated_rule_files)
 
-$(generated_rule_files): $(genrule_files) utils/genRules $(genrule_header_files) Makefile
-	$(MAKE) clean_genRules
+$(atc_der_files): $(atc_files) $(genrule_header_files)
 	$(foreach file,$(atc_files),$(gen_atc_files))
-	utils/genRules -r $(rule) -o CASL $(casl_files)
-	utils/genRules -r $(rule) -o HasCASL $(hascasl_files)
-	utils/genRules -r $(rule) -o Modal $(modal_files)
-	utils/genRules -r $(rule) -o CoCASL $(cocasl_files)
-	utils/genRules -r $(rule) -o COL $(col_files)
-	utils/genRules -r $(rule) -o CspCASL $(cspcasl_files)
+
+CASL/ATC_CASL.der.hs: $(CASL_files) utils/genRules
+	utils/genRules -r $(rule) -o CASL $(CASL_files)
+
+HasCASL/ATC_HasCASL.der.hs: $(HasCASL_files) utils/genRules
+	utils/genRules -r $(rule) -o HasCASL $(HasCASL_files)
+
+Modal/ATC_Modal.der.hs: $(Modal_files) utils/genRules
+	utils/genRules -r $(rule) -o Modal $(Modal_files)
+
+CoCASL/ATC_CoCASL.der.hs: $(CoCASL_files) utils/genRules
+	utils/genRules -r $(rule) -o CoCASL $(CoCASL_files)
+
+COL/ATC_COL.der.hs: $(COL_files) utils/genRules
+	utils/genRules -r $(rule) -o COL $(COL_files)
+
+CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) utils/genRules
+	utils/genRules -r $(rule) -o CspCASL $(CspCASL_files)
 
 rule:= ShATermConvertible
 
@@ -325,17 +309,8 @@ gen_atc_files = if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs 
                    utils/genRules -r $(rule) -o ATC $(file); \
                 fi ;
 
-atc_files := $(filter-out CASL/% HasCASL/% Modal/% CoCASL/% COL/% CspCASL/%,$(genrule_files))
-casl_files := $(filter CASL/% ,$(genrule_files))
-hascasl_files := $(filter HasCASL/% ,$(genrule_files))
-modal_files := $(filter Modal/% ,$(genrule_files))
-cocasl_files := $(filter CoCASL/% ,$(genrule_files))
-col_files := $(filter COL/% ,$(genrule_files))
-cspcasl_files := $(filter CspCASL/% ,$(genrule_files))
-#haskell_files := $(filter $(PFE_TOOLDIR)/%,$(genrule_files))
-
 clean_genRules: 
-	$(RM) $(generated_rule_files)
+	$(RM) $(generated_rule_files) $(gendrifted_files)
 
 ###############
 ### clean up
@@ -477,6 +452,7 @@ hetcats/Options.hs hetcats/WriteFn.hs hetcats/ReadFn.hs: hetcats/Version.hs
 hets.hs: hetcats/Version.hs
 ####################################################################
 ## rules for DrIFT
+.SUFFIXES:
 
 %.hs: %.ly
 	$(HAPPY) $<
@@ -488,7 +464,7 @@ hets.hs: hetcats/Version.hs
 %.hs: %.inline.hs $(INLINEAXIOMS)
 	$(INLINEAXIOMS) $< > $@
 
-## rule for cpp and haddock
+## rule for cpp and haddock 
 %.hspp: %.hs
 	$(HC) -E -cpp -DUNI_PACKAGE -optP -P $<
 
@@ -510,36 +486,7 @@ hets.hs: hetcats/Version.hs
 Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in utils/genTransMFormFunc.pl $(INLINEAXIOMS)
 	$(PERL) utils/genTransMFormFunc.pl $< $@
 
-
-####################################################################
-## Setting a global search path (for dependency files)
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),bin_clean)
-ifneq ($(MAKECMDGOALS),lib_clean)
-ifneq ($(MAKECMDGOALS),d_clean)
-ifneq ($(MAKECMDGOALS),real_clean)
-ifneq ($(MAKECMDGOALS),distclean)
-ifneq ($(MAKECMDGOALS),genRules)
-ifneq ($(MAKECMDGOALS),utils/genRules)
-ifneq ($(MAKECMDGOALS),derivedSources)
-ifneq ($(MAKECMDGOALS),release)
-ifneq ($(MAKECMDGOALS),clean_genRules)
-ifeq  ($(MAKECMDGOALS),hets-old)
-## include every .d file in INCLUDE_PATH
--include $(objects:.o=.d)
-endif
-
-sources_hetcats.mk: hetcats-make hetcats/Version.hs hets.hs utils/create_sources.pl $(drifted_files) $(happy_files)
+# hetcats-make is created as side-effect of hets or hets-optimized
+sources_hetcats.mk: hetcats-make utils/create_sources.pl
 	$(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
-endif
+
