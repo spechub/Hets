@@ -2,10 +2,48 @@
 Jorina
 ************************************************
 
+  George fragen wg. proofs-Men¸
+
+  Warum werden bei import_test-1.casl nicht alle internen Knoten versteckt?
+
   Ausgaben (show spec etc.) in eigenes Fenster, mittels htk
     (George oder Christoph fragen)
 
+  lokale Links anders darstellen (gepunktet?)
 
+  Knoten sind auch von sich selbst locally reachable
+   => bei Global Decomposition immer auch ein lokaler Link
+      von urspr¸nglichem Source zu Target
+
+  Kantenmen¸ zum Anzeigen des Signaturmorphismus (mittels show anzeigen)
+
+  (Global) Subsumption optimieren: auch globale Theorem-Links zulassen
+    dazu muss in DevGraph.hs der Bool-Wert in den Theorem-Links durch
+      data ThmLinkStatus =  Open | Proved [DGLinkLab]
+    ersetzt werden
+    Gleichzeitig hier auch noch einen ThmLinkStatus f¸r die
+      Conservativity einsetzen 
+    (default ist Open, z.B. in Static/AnalysisStructured.hs)
+ LocalThm ThmLinkStatus Conservativity ThmLinkStatus
+ GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
+ HidingThm GMorphism ThmLinkStatus 
+
+  Local Subsumption-Regel ausbauen zu Loc-Decomposition (I+II)
+    Signaturmorphismen d¸rfen verschieden sein
+    pr¸fen, ob beide die lokalen Axiome des Startknotens gleich abbilden
+    lokale Axiome mit dgn_sens (f¸r DGNode) bzw. f¸r DGRef
+      ¸ber dgn_libname und dgn_node in anderer Library nachgucken
+      und dort rekursiv die lokalen Axiome berechnen
+    Abbilden der Axiome entlang eines Signaturmorphismus: mit
+      map_sen aus Logic/Logic.hs. Vorher die G_l_sentence_list auspacken:
+         case dgn_sens_rekursiv node of
+           G_l_sentence lid sens -> sequence (map (map_sen lid mor) sens)
+       Result: siehe Common/Result.hs
+    genauso optimieren wie Subsumption, d.h. auch Theorem-Links zulassen
+      (allerdings lokale Links immer nur im 1. Schritt!)
+
+  Loc-Decomposition I
+  Local Inference
 
   Schlieﬂen der Fenster ohne "Absturz"
   Dokumentation
