@@ -16,15 +16,18 @@ module HasCASL.Logic_HasCASL where
 
 import HasCASL.As
 import HasCASL.Le
+import HasCASL.AsToLe
 import CASL.AS_Basic_CASL(SYMB_ITEMS, SYMB_MAP_ITEMS)
 import HasCASL.PrintAs
 import CASL.Print_AS_Basic
 import HasCASL.ParseItem
+import HasCASL.Merge
 import CASL.SymbolParser
 import Logic.ParsecInterface
 import Logic.Logic
 import Common.AnnoState(emptyAnnos)
 import Data.Dynamic
+import Control.Monad.State
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -71,7 +74,11 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism 
-               Symbol RawSymbol
+               Symbol RawSymbol where
+    basic_analysis HasCASL = Just ( \ (b, e, a) ->
+		let ne = snd $ (runState (anaBasicSpec b)) e 
+		    in return (ne, initialEnv, [])) 
+    signature_union = merge
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS

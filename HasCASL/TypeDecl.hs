@@ -11,6 +11,7 @@ module HasCASL.TypeDecl where
 
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.Merge
 import Common.AS_Annotation(item)
 import HasCASL.ClassAna
 import qualified Common.Lib.Map as Map

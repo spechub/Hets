@@ -11,6 +11,7 @@ module HasCASL.ClassAna where
 
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.Merge
 import Common.Id
 import HasCASL.Le
 import Data.List
@@ -129,18 +130,6 @@ eqKind (KindAppl p1 c1 _) (KindAppl p2 c2 _) =
     eqKind p1 p2 && eqKind c1 c2
 eqKind (ExtClass _ _ _) (ExtClass _ _ _) = True
 eqKind _ _ = False
-
-sameClass :: Class -> Class -> Bool
-sameClass(Intersection i1 _) (Intersection i2 _) = i1 == i2
-sameClass (Downset t1) (Downset t2) = t1 == t2
-sameClass _ _ = False
-
-sameKind ::  Kind -> Kind -> Bool
-sameKind (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
-    sameClass c1 c2 && v1 == v2
-sameKind (KindAppl p1 c1 _) (KindAppl p2 c2 _) =
-    sameKind p1 p2 && sameKind c1 c2
-sameKind _ _ = False
 
 -- ---------------------------------------------------------------------
 
