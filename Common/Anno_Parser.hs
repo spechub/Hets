@@ -82,7 +82,7 @@ anno_ident = fmap Annote_word $ string "%" >> casl_words
 
 annote_group :: Annote_word -> GenParser Char st Annotation
 annote_group s = do char '(' -- ) 
-		    annote_lines <- manyTill anyChar $ string ")%"
+		    annote_lines <- manyTill anyChar $ try $ string ")%"
 		    return $ Unparsed_anno s
 			    (Group_anno $ lines annote_lines) []
 
