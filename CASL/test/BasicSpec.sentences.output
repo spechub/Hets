@@ -12,97 +12,85 @@
   generated{sort Nat; op 0 : Nat;
                       op suc : Nat -> Nat} %(ga_generated_Nat)%,
    . forall m, n, r, s:Nat
-         . (pred __<=__ : Int * Int)((op inj : Nat -> Int)((op 0 : Nat)),
-                                     (op inj : Nat -> Int)((var n : Nat))) %(Nat_leq_def1)%,
+         . (pred __<=__ : Nat * Nat)((op 0 : Nat),
+                                     (var n : Nat)) %(Nat_leq_def1)%,
    . forall m, n, r, s:Nat
-         . not (pred __<=__ : Int *
-                              Int)((op inj : Pos -> Int)((op suc : Nat -> Pos)((var n : Nat))),
-                                   (op inj : Nat -> Int)((op 0 : Nat))) %(Nat_leq_def2)%,
+         . not (pred __<=__ : Nat *
+                              Nat)((op suc : Nat -> Nat)((var n : Nat)),
+                                   (op 0 : Nat)) %(Nat_leq_def2)%,
    . forall m, n, r, s:Nat
-         . (pred __<=__ : Int *
-                          Int)((op inj : Pos -> Int)((op suc : Nat -> Pos)((var m : Nat))),
-                               (op inj : Pos -> Int)((op suc : Nat -> Pos)((var n : Nat)))) <=>
-               (pred __<=__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
-                                         (op inj : Nat -> Int)((var n : Nat))) %(Nat_leq_def3)%,
+         . (pred __<=__ : Nat * Nat)((op suc : Nat -> Nat)((var m : Nat)),
+                                     (op suc : Nat -> Nat)((var n : Nat))) <=>
+               (pred __<=__ : Nat * Nat)((var m : Nat),
+                                         (var n : Nat)) %(Nat_leq_def3)%,
    . forall m, n, r, s:Nat
-         . (pred __>=__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
-                                     (op inj : Nat -> Int)((var n : Nat))) <=>
-               (pred __<=__ : Int * Int)((op inj : Nat -> Int)((var n : Nat)),
-                                         (op inj : Nat -> Int)((var m : Nat))) %(Nat_geq_def)%,
+         . (pred __>=__ : Nat * Nat)((var m : Nat), (var n : Nat)) <=>
+               (pred __<=__ : Nat * Nat)((var n : Nat),
+                                         (var m : Nat)) %(Nat_geq_def)%,
    . forall m, n, r, s:Nat
-         . (pred __<__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
-                                    (op inj : Nat -> Int)((var n : Nat))) <=>
-               (pred __<=__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
-                                         (op inj : Nat -> Int)((var n : Nat)))
+         . (pred __<__ : Nat * Nat)((var m : Nat), (var n : Nat)) <=>
+               (pred __<=__ : Nat * Nat)((var m : Nat), (var n : Nat))
                /\ not (var m : Nat) = (var n : Nat) %(Nat_less_def)%,
    . forall m, n, r, s:Nat
-         . (pred __>__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
-                                    (op inj : Nat -> Int)((var n : Nat))) <=>
-               (pred __<__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
-                                        (op inj : Nat -> Int)((var n : Nat))) %(Nat_greater_def)%,
+         . (pred __>__ : Nat * Nat)((var m : Nat), (var n : Nat)) <=>
+               (pred __<__ : Nat * Nat)((var m : Nat),
+                                        (var n : Nat)) %(Nat_greater_def)%,
    . forall m, n, r, s:Nat
          . (op __+__ : Nat * Nat -> Nat)((op 0 : Nat), (var m : Nat)) =
                (var m : Nat) %(Nat_add_0)%,
    . forall m, n, r, s:Nat
-         . (op __+__ : Pos *
-                       Nat -> Pos)((op suc : Nat -> Pos)((var n : Nat)), (var m : Nat)) =
-               (op suc : Nat -> Pos)((op __+__ : Nat * Nat -> Nat)((var n : Nat),
+         . (op __+__ : Nat *
+                       Nat -> Nat)((op suc : Nat -> Nat)((var n : Nat)), (var m : Nat)) =
+               (op suc : Nat -> Nat)((op __+__ : Nat * Nat -> Nat)((var n : Nat),
                                                                    (var m : Nat))) %(Nat_add_suc)%,
    . forall m, n, r, s:Nat
          . (op __*__ : Nat * Nat -> Nat)((op 0 : Nat), (var m : Nat)) =
                (op 0 : Nat) %(Nat_mult_0)%,
    . forall m, n, r, s:Nat
          . (op __*__ : Nat *
-                       Nat -> Nat)((op inj : Pos -> Nat)((op suc : Nat -> Pos)((var n : Nat))),
-                                   (var m : Nat)) =
+                       Nat -> Nat)((op suc : Nat -> Nat)((var n : Nat)), (var m : Nat)) =
                (op __+__ : Nat * Nat -> Nat)((op __*__ : Nat *
                                                          Nat -> Nat)((var n : Nat), (var m : Nat)),
                                              (var m : Nat)) %(Nat_mult_suc)%,
    . forall m, n, r, s:Nat
          . (op __^__ : Nat * Nat -> Nat)((var m : Nat), (op 0 : Nat)) =
-               (op inj : Pos -> Nat)((op 1 : Pos)) %(Nat_power_0)%,
+               (op 1 : Nat) %(Nat_power_0)%,
    . forall m, n, r, s:Nat
          . (op __^__ : Nat * Nat -> Nat)((var m : Nat),
-                                         (op inj : Pos -> Nat)((op suc : Nat -> Pos)((var n : Nat)))) =
+                                         (op suc : Nat -> Nat)((var n : Nat))) =
                (op __*__ : Nat * Nat -> Nat)((var m : Nat),
                                              (op __^__ : Nat * Nat -> Nat)((var m : Nat),
                                                                            (var n : Nat))) %(Nat_power_suc)%,
    . forall m, n, r, s:Nat
          . (op min : Nat * Nat -> Nat)((var m : Nat), (var n : Nat)) =
                (var m : Nat)
-                   when (pred __<=__ : Int *
-                                       Int)((op inj : Nat -> Int)((var m : Nat)),
-                                            (op inj : Nat -> Int)((var n : Nat)))
+                   when (pred __<=__ : Nat * Nat)((var m : Nat), (var n : Nat))
                    else (var n : Nat) %(Nat_min_def)%,
    . forall m, n, r, s:Nat
          . (op max : Nat * Nat -> Nat)((var m : Nat), (var n : Nat)) =
                (var n : Nat)
-                   when (pred __<=__ : Int *
-                                       Int)((op inj : Nat -> Int)((var m : Nat)),
-                                            (op inj : Nat -> Int)((var n : Nat)))
+                   when (pred __<=__ : Nat * Nat)((var m : Nat), (var n : Nat))
                    else (var m : Nat) %(Nat_max_def)%,
    . forall m, n, r, s:Nat
          . (op +__ : Nat -> Nat)((var m : Nat)) =
                (var m : Nat) %(plus_def)%,
    . forall m, n, r, s:Nat
-         . (op abs : Int -> Nat)((op inj : Nat -> Int)((var n : Nat))) =
-               (var n : Nat) %(Nat_abs)%,
+         . (op abs : Nat -> Nat)((var n : Nat)) = (var n : Nat) %(Nat_abs)%,
    . forall m, n, r, s:Nat
-         . (pred odd : Int)((op inj : Nat -> Int)((var m : Nat))) <=>
-               not (pred even : Int)((op inj : Nat -> Int)((var m : Nat))) %(Nat_odd_def)%,
+         . (pred odd : Nat)((var m : Nat)) <=>
+               not (pred even : Nat)((var m : Nat)) %(Nat_odd_def)%,
    . forall m, n, r, s:Nat
-         . (pred even : Int)((op inj : Nat -> Int)((op 0 : Nat))) %(Nat_even_0)%,
+         . (pred even : Nat)((op 0 : Nat)) %(Nat_even_0)%,
    . forall m, n, r, s:Nat
-         . (pred even : Int)((op inj : Pos -> Int)((op suc : Nat -> Pos)((var m : Nat)))) <=>
-               (pred odd : Int)((op inj : Nat -> Int)((var m : Nat))) %(Nat_even_suc)%,
+         . (pred even : Nat)((op suc : Nat -> Nat)((var m : Nat))) <=>
+               (pred odd : Nat)((var m : Nat)) %(Nat_even_suc)%,
    . forall m, n, r, s:Nat
          . (op __! : Nat -> Nat)((op 0 : Nat)) =
-               (op inj : Pos -> Nat)((op 1 : Pos)) %(Nat_factorial_0)%,
+               (op 1 : Nat) %(Nat_factorial_0)%,
    . forall m, n, r, s:Nat
-         . (op __! : Nat -> Nat)((op inj : Pos -> Nat)((op suc : Nat -> Pos)((var n : Nat)))) =
-               (op __*__ : Nat *
-                           Nat -> Nat)((op inj : Pos -> Nat)((op suc : Nat -> Pos)((var n : Nat))),
-                                       (op __! : Nat -> Nat)((var n : Nat))) %(Nat_factorial_suc)%,
+         . (op __! : Nat -> Nat)((op suc : Nat -> Nat)((var n : Nat))) =
+               (op __*__ : Nat * Nat -> Nat)((op suc : Nat -> Nat)((var n : Nat)),
+                                             (op __! : Nat -> Nat)((var n : Nat))) %(Nat_factorial_suc)%,
    . forall m, n, r, s:Nat
          . (op __-?__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
                (var r : Nat) <=>
@@ -117,8 +105,8 @@
                 (var r : Nat) <=>
                 (var m : Nat) =
                     (op __*__ : Nat * Nat -> Nat)((var r : Nat), (var n : Nat))) if
-               (pred __>__ : Int * Int)((op inj : Nat -> Int)((var n : Nat)),
-                                        (op inj : Nat -> Int)((op 0 : Nat))) %(Nat_divide_Pos)%,
+               (pred __>__ : Nat * Nat)((var n : Nat),
+                                        (op 0 : Nat)) %(Nat_divide_Pos)%,
    . forall m, n, r, s:Nat
          . (op __div__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
                (var r : Nat) <=>
@@ -128,12 +116,10 @@
                                                                     Nat -> Nat)((var n : Nat),
                                                                                 (var r : Nat)),
                                                         (var s : Nat))
-                      /\ (pred __<__ : Int * Int)((op inj : Nat -> Int)((var s : Nat)),
-                                                  (op inj : Nat -> Int)((var n : Nat)))) %(Nat_div)%,
+                      /\ (pred __<__ : Nat * Nat)((var s : Nat),
+                                                  (var n : Nat))) %(Nat_div)%,
    . forall m, n, r, s:Nat
-         . (op __mod__ : Int *
-                         Int ->? Nat)((op inj : Nat -> Int)((var m : Nat)),
-                                      (op inj : Nat -> Int)((var n : Nat))) =
+         . (op __mod__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
                (var s : Nat) <=>
                (exists r:Nat
                     . (var m : Nat) =
@@ -141,55 +127,43 @@
                                                                     Nat -> Nat)((var n : Nat),
                                                                                 (var r : Nat)),
                                                         (var s : Nat))
-                      /\ (pred __<__ : Int * Int)((op inj : Nat -> Int)((var s : Nat)),
-                                                  (op inj : Nat -> Int)((var n : Nat)))) %(Nat_mod)%,
+                      /\ (pred __<__ : Nat * Nat)((var s : Nat),
+                                                  (var n : Nat))) %(Nat_mod)%,
    . forall m, n, r, s:Nat
          . (op __quot__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
                (op __div__ : Nat * Nat ->? Nat)((var m : Nat),
                                                 (var n : Nat)) %(Nat_quot)%,
    . forall m, n, r, s:Nat
          . (op __rem__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
-               (op __mod__ : Int *
-                             Int ->? Nat)((op inj : Nat -> Int)((var m : Nat)),
-                                          (op inj : Nat -> Int)((var n : Nat))) %(Nat_rem)%,
+               (op __mod__ : Nat * Nat ->? Nat)((var m : Nat),
+                                                (var n : Nat)) %(Nat_rem)%,
    . forall m, n, r, s:Nat
-         . (op 1 : Pos) = (op suc : Nat -> Pos)((op 0 : Nat)) %(Nat_1_def)%,
+         . (op 1 : Nat) = (op suc : Nat -> Nat)((op 0 : Nat)) %(Nat_1_def)%,
    . forall m, n, r, s:Nat
-         . (op 2 : Nat) =
-               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op inj : Pos -> Nat)((op 1 : Pos)))) %(Nat_2_def)%,
+         . (op 2 : Nat) = (op suc : Nat -> Nat)((op 1 : Nat)) %(Nat_2_def)%,
    . forall m, n, r, s:Nat
-         . (op 3 : Nat) =
-               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 2 : Nat))) %(Nat_3_def)%,
+         . (op 3 : Nat) = (op suc : Nat -> Nat)((op 2 : Nat)) %(Nat_3_def)%,
    . forall m, n, r, s:Nat
-         . (op 4 : Nat) =
-               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 3 : Nat))) %(Nat_4_def)%,
+         . (op 4 : Nat) = (op suc : Nat -> Nat)((op 3 : Nat)) %(Nat_4_def)%,
    . forall m, n, r, s:Nat
-         . (op 5 : Nat) =
-               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 4 : Nat))) %(Nat_5_def)%,
+         . (op 5 : Nat) = (op suc : Nat -> Nat)((op 4 : Nat)) %(Nat_5_def)%,
    . forall m, n, r, s:Nat
-         . (op 6 : Nat) =
-               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 5 : Nat))) %(Nat_6_def)%,
+         . (op 6 : Nat) = (op suc : Nat -> Nat)((op 5 : Nat)) %(Nat_6_def)%,
    . forall m, n, r, s:Nat
-         . (op 7 : Nat) =
-               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 6 : Nat))) %(Nat_7_def)%,
+         . (op 7 : Nat) = (op suc : Nat -> Nat)((op 6 : Nat)) %(Nat_7_def)%,
    . forall m, n, r, s:Nat
-         . (op 8 : Nat) =
-               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 7 : Nat))) %(Nat_8_def)%,
+         . (op 8 : Nat) = (op suc : Nat -> Nat)((op 7 : Nat)) %(Nat_8_def)%,
    . forall m, n, r, s:Nat
-         . (op 9 : Nat) =
-               (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 8 : Nat))) %(Nat_9_def)%,
+         . (op 9 : Nat) = (op suc : Nat -> Nat)((op 8 : Nat)) %(Nat_9_def)%,
    . forall m, n, r, s:Nat
          . (op __@@__ : Nat * Nat -> Nat)((var m : Nat), (var n : Nat)) =
                (op __+__ : Nat * Nat -> Nat)((op __*__ : Nat *
                                                          Nat -> Nat)((var m : Nat),
-                                                                     (op inj : Pos -> Nat)((op suc : Nat -> Pos)((op 9 : Nat)))),
+                                                                     (op suc : Nat -> Nat)((op 9 : Nat))),
                                              (var n : Nat)) %(Nat_decimal_def)%,
    . forall p:Nat
          . (var p : Nat) in Pos <=>
-               (pred __>__ : Int * Int)((op inj : Nat -> Int)((var p : Nat)),
-                                        (op inj : Nat -> Int)((op 0 : Nat))),
-   . (op 1 : Pos) =
-         (op suc : Nat -> Pos)((op 0 : Nat)) %(Nat_1_as_Pos_def)%,
+               (pred __>__ : Nat * Nat)((var p : Nat), (op 0 : Nat)),
    . forall x:Nat; y:Nat
          . (op min : Nat * Nat -> Nat)((var x : Nat), (var y : Nat)) =
                (op min : Nat * Nat -> Nat)((var y : Nat),
@@ -213,23 +187,20 @@
    . forall x, m, n, r, s, t:Nat; p:Pos
          . def (op __-?__ : Nat * Nat ->? Nat)((var m : Nat),
                                                (var n : Nat)) <=>
-               (pred __>=__ : Int * Int)((op inj : Nat -> Int)((var m : Nat)),
-                                         (op inj : Nat -> Int)((var n : Nat))) %(Nat_sub_dom)%,
+               (pred __>=__ : Nat * Nat)((var m : Nat),
+                                         (var n : Nat)) %(Nat_sub_dom)%,
    . forall x, m, n, r, s, t:Nat; p:Pos
          . def (op __/?__ : Nat * Nat ->? Nat)((var m : Nat),
                                                (var n : Nat)) <=>
-               (op __mod__ : Int *
-                             Int ->? Nat)((op inj : Nat -> Int)((var m : Nat)),
-                                          (op inj : Nat -> Int)((var n : Nat))) =
+               (op __mod__ : Nat * Nat ->? Nat)((var m : Nat), (var n : Nat)) =
                    (op 0 : Nat) %(Nat_divide_dom)%,
    . forall x, m, n, r, s, t:Nat; p:Pos
          . def (op __div__ : Nat * Nat ->? Nat)((var m : Nat),
                                                 (var n : Nat)) <=>
                not (var n : Nat) = (op 0 : Nat) %(Nat_div_dom)%,
    . forall x, m, n, r, s, t:Nat; p:Pos
-         . def (op __mod__ : Int *
-                             Int ->? Nat)((op inj : Nat -> Int)((var m : Nat)),
-                                          (op inj : Nat -> Int)((var n : Nat))) <=>
+         . def (op __mod__ : Nat * Nat ->? Nat)((var m : Nat),
+                                                (var n : Nat)) <=>
                not (var n : Nat) = (op 0 : Nat) %(Nat_mod_dom)%,
    . forall x, m, n, r, s, t:Nat; p:Pos
          . def (op __quot__ : Nat * Nat ->? Nat)((var m : Nat),
@@ -255,10 +226,52 @@
                (op 0 : Nat) %(Nat_min_0)%,
   generated{sort Int; op __-__ : Nat *
                                  Nat -> Int} %(ga_generated_Int)%,
+   . forall a, b, c, d:Nat
+         . (op __-__ : Nat * Nat -> Int)((var a : Nat), (var b : Nat)) =
+               (op __-__ : Nat * Nat -> Int)((var c : Nat), (var d : Nat)) <=>
+               (op __+__ : Nat * Nat -> Nat)((var a : Nat), (var d : Nat)) =
+                   (op __+__ : Nat * Nat -> Nat)((var c : Nat),
+                                                 (var b : Nat)) %(Int_equality)%,
    . forall a:Nat
          . (op inj : Nat -> Int)((var a : Nat)) =
-               (op __-__ : Int * Int -> Int)((op inj : Nat -> Int)((var a : Nat)),
-                                             (op inj : Nat -> Int)((op 0 : Nat))) %(Int_Nat_embedding)%,
+               (op __-__ : Nat * Nat -> Int)((var a : Nat),
+                                             (op 0 : Nat)) %(Int_Nat_embedding)%,
+   . forall m, n, r, s:Int; a, b, c, d:Nat
+         . (op __+__ : Int * Int -> Int)((op __-__ : Int *
+                                                     Int -> Int)((op inj : Nat -> Int)((var a : Nat)),
+                                                                 (op inj : Nat -> Int)((var b : Nat))),
+                                         (op __-__ : Int *
+                                                     Int -> Int)((op inj : Nat -> Int)((var c : Nat)),
+                                                                 (op inj : Nat -> Int)((var d : Nat)))) =
+               (op __-__ : Int *
+                           Int -> Int)((op inj : Nat -> Int)((op __+__ : Nat *
+                                                                         Nat -> Nat)((var a : Nat),
+                                                                                     (var c : Nat))),
+                                       (op inj : Nat -> Int)((op __+__ : Nat *
+                                                                         Nat -> Nat)((var b : Nat),
+                                                                                     (var d : Nat)))) %(Int_add_def)%,
+   . forall m, n, r, s:Int; a, b, c, d:Nat
+         . (op __*__ : Int * Int -> Int)((op __-__ : Int *
+                                                     Int -> Int)((op inj : Nat -> Int)((var a : Nat)),
+                                                                 (op inj : Nat -> Int)((var b : Nat))),
+                                         (op __-__ : Int *
+                                                     Int -> Int)((op inj : Nat -> Int)((var c : Nat)),
+                                                                 (op inj : Nat -> Int)((var d : Nat)))) =
+               (op __-__ : Int *
+                           Int -> Int)((op inj : Nat -> Int)((op __+__ : Nat *
+                                                                         Nat -> Nat)((op __*__ : Nat *
+                                                                                                 Nat -> Nat)((var a : Nat),
+                                                                                                             (var c : Nat)),
+                                                                                     (op __*__ : Nat *
+                                                                                                 Nat -> Nat)((var b : Nat),
+                                                                                                             (var d : Nat)))),
+                                       (op inj : Nat -> Int)((op __+__ : Nat *
+                                                                         Nat -> Nat)((op __*__ : Nat *
+                                                                                                 Nat -> Nat)((var b : Nat),
+                                                                                                             (var c : Nat)),
+                                                                                     (op __*__ : Nat *
+                                                                                                 Nat -> Nat)((var a : Nat),
+                                                                                                             (var d : Nat))))) %(Int_mult_def)%,
    . forall m, n, r, s:Int; a, b, c, d:Nat
          . (op __-__ : Int * Int -> Int)((var m : Int), (var n : Int)) =
                (op __+__ : Int * Int -> Int)((var m : Int),
@@ -470,6 +483,10 @@
                (pred __<=__ : Rat * Rat)((var y : Rat),
                                          (var x : Rat)) %(Rat_geq_def)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+         . (pred __<__ : Rat * Rat)((var x : Rat), (var y : Rat)) <=>
+               (pred __<=__ : Rat * Rat)((var x : Rat), (var y : Rat))
+               /\ not (var x : Rat) = (var y : Rat) %(Rat_less_def)%,
+   . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . (pred __>__ : Rat * Rat)((var x : Rat), (var y : Rat)) <=>
                (pred __<__ : Rat * Rat)((var y : Rat),
                                         (var x : Rat)) %(Rat_greater_def)%,
@@ -503,6 +520,13 @@
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . not def (op __/__ : Rat * Rat ->? Rat)((var x : Rat),
                                                   (op inj : Nat -> Rat)((op 0 : Nat))) %(Rat_divide_def1)%,
+   . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+         . ((op __/__ : Rat * Rat ->? Rat)((var x : Rat), (var y : Rat)) =
+                (var z : Rat) <=>
+                (var z : Rat) =
+                    (op __*__ : Rat * Rat -> Rat)((var x : Rat), (var y : Rat))) if
+               not (var y : Rat) =
+                       (op inj : Nat -> Rat)((op 0 : Nat)) %(Rat_divide_def2)%,
    . forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
          . (op +__ : Rat -> Rat)((var x : Rat)) =
                (var x : Rat) %(Rat_plus_def)%,
@@ -555,6 +579,11 @@
                                                                       (op inj : Int -> Rat)((var j : Int)))) if
                not (var j : Int) =
                        (op inj : Nat -> Int)((op 0 : Nat)) %(Rat_divide_rule)%,
+   . (var a : s) = (var a : s),  . (var a : s) = (var a : s),
+   . forall a:t; a, b:s . (var a : s) = (var a : s),
+   . forall a:t; a, b:s . (var a : s) = (var a : s),
+   . (var a : s) = (var a : s),  . (var a : s) = (var a : s),
+   . (var a : s) = (var a : s),  . (var a : s) = (var a : s),
    . forall X1:a; X2:t; X3:t; X4:t; X5:t
          . (op a : s -> t)((op c : a * t * t * t * t -> s)((var X1 : a),
                                                            (var X2 : t), (var X3 : t), (var X4 : t),
@@ -692,6 +721,14 @@
    . forall x:s
          . (op c : s * s ->? s)((var x : s), (var x : s)) =
                (var x : s) %(ga_idem_c)%,
+   . (op a : s) = (op a : s),
+   . forall x, y:s; z:t
+         . (op c : s * s * t -> s)((var x : s), (var y : s), (var z : t)) =
+               (op a : s),
+   . (op a :? s) = (op a : s),
+   . forall x, y:s; z:t
+         . (op c : s * s * t ->? s)((var x : s), (var y : s), (var z : t)) =
+               (op a : s),
    . forall x, y:s; z:t
          . (pred c : s * s * t)((var x : s), (var y : s), (var z : t)) <=>
                false,
@@ -2976,6 +3013,7 @@
                                                        (op b : a)),
                               (op b : a)) =
          (op b : a) ]
+*** Error 90.19, no typing for: suc(0) : Pos
 *** Error 261.9, ambiguous mixfix term
   __*__(i, __-__(q, __*__(j, p)))
   __-__(__*__(i, q), __*__(j, p))
@@ -3029,186 +3067,19 @@
   must appear in alternative 'c : a ->? s'
 *** Error 304.6, unknown sort 'b'
 *** Error 305.6, unknown sort 'd'
-*** Error 351.11, wrong number of places '__and'__'
-*** Error 118.15, ambiguous term
-   . (op __-__ : s * s -> s)((op a : s), (var b : s)) =
-       (op __-__ : s * s -> s)((op c : s), (op d : t))
-   . (op __-__ : Int * Int -> Int)((var a : Nat), (var b : Nat)) =
-       (op __-__ : Int * Int -> Int)((var c : Nat), (var d : Nat))
-   . (op __-__ : s * s -> s)((var a : s), (var b : s)) =
-       (op __-__ : s * s -> s)((op c : s), (op d : t))
-*** Error 141.26, ambiguous term
-   . (op __+__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
-                                                   (var b : s)),
-                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
-       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op a : s),
-                                                       (op c : s)),
-                               (op __+__ : s * s -> s)((var b : s), (op d : t)))
-   . (op __+__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
-                                                   (var b : s)),
-                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
-       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((var a : s),
-                                                       (op c : s)),
-                               (op __+__ : s * s -> s)((var b : s), (op d : t)))
-   . (op __+__ : Int * Int -> Int)((op __-__ : Int *
-                                             Int -> Int)((var a : Nat), (var b : Nat)),
-                                 (op __-__ : Int * Int -> Int)((var c : Nat), (var d : Nat))) =
-       (op __-__ : Int * Int -> Int)((op __+__ : Nat *
-                                                 Nat -> Nat)((var a : Nat), (var c : Nat)),
-                                     (op __+__ : Nat * Nat -> Nat)((var b : Nat), (var d : Nat)))
-   . (op __+__ : s * s -> s)((op __-__ : s * s -> s)((var a : s),
-                                                   (var b : s)),
-                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
-       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op a : s),
-                                                       (op c : s)),
-                               (op __+__ : s * s -> s)((var b : s), (op d : t)))
-   . (op __+__ : s * s -> s)((op __-__ : s * s -> s)((var a : s),
-                                                   (var b : s)),
-                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
-       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((var a : s),
-                                                       (op c : s)),
-                               (op __+__ : s * s -> s)((var b : s), (op d : t)))
-*** Error 142.26, ambiguous term
-   . (op __*__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
-                                                   (var b : s)),
-                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
-       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-                                                                   s -> s)((op a : s), (op c : s)),
-                                                       (op __*__ : s * s -> s)((var b : s),
-                                                                               (op d : t))),
-                               (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s),
-                                                                               (op c : s)),
-                                                       (op __*__ : s * s -> s)((op a : s),
-                                                                               (op d : t))))
-   . (op __*__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
-                                                   (var b : s)),
-                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
-       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-                                                                   s -> s)((op a : s), (op c : s)),
-                                                       (op __*__ : s * s -> s)((var b : s),
-                                                                               (op d : t))),
-                               (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s),
-                                                                               (op c : s)),
-                                                       (op __*__ : s * s -> s)((var a : s),
-                                                                               (op d : t))))
-   . (op __*__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
-                                                   (var b : s)),
-                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
-       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-                                                                   s -> s)((var a : s), (op c : s)),
-                                                       (op __*__ : s * s -> s)((var b : s),
-                                                                               (op d : t))),
-                               (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s),
-                                                                               (op c : s)),
-                                                       (op __*__ : s * s -> s)((op a : s),
-                                                                               (op d : t))))
-   . (op __*__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
-                                                   (var b : s)),
-                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
-       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
-                                                                   s -> s)((var a : s), (op c : s)),
-                                                       (op __*__ : s * s -> s)((var b : s),
-                                                                               (op d : t))),
-                               (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s),
-                                                                               (op c : s)),
-                                                       (op __*__ : s * s -> s)((var a : s),
-                                                                               (op d : t))))
-   . (op __*__ : Int * Int -> Int)((op __-__ : Int *
-                                             Int -> Int)((var a : Nat), (var b : Nat)),
-                                 (op __-__ : Int * Int -> Int)((var c : Nat), (var d : Nat))) =
-       (op __-__ : Int * Int -> Int)((op __+__ : Nat *
-                                                 Nat -> Nat)((op __*__ : Nat *
-                                                                         Nat -> Nat)((var a : Nat),
-                                                                                     (var c : Nat)),
-                                                             (op __*__ : Nat *
-                                                                         Nat -> Nat)((var b : Nat),
-                                                                                     (var d : Nat))),
-                                     (op __+__ : Nat * Nat -> Nat)((op __*__ : Nat *
-                                                                               Nat -> Nat)((var b : Nat),
-                                                                                           (var c : Nat)),
-                                                                   (op __*__ : Nat *
-                                                                               Nat -> Nat)((var a : Nat),
-                                                                                           (var d : Nat))))
-*** Error 230.35, ambiguous term
-   . (var x : Rat) = (var y : Rat)
-   . (var x : s) = (var y : s)
-*** Error 242.12, ambiguous term
-   . (op __/__ : Rat * Rat ->? Rat)((var x : Rat), (var y : Rat)) =
-       (var z : Rat)
-   . (op __/__ : s * s -> s)((var x : s), (var y : s)) = (var z : s)
-*** Error 273.5, ambiguous term
-   . (op a : Data1) = (op a : Data1)
-   . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
-*** Error 274.5, ambiguous term
-   . (op a : Data1) = (op a : Data1)
-   . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
-*** Error 276.5, ambiguous term
-   . (op a : Data1) = (op a : Data1)
-   . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
-*** Error 277.5, ambiguous term
-   . (op a : Data1) = (op a : Data1)
-   . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
-*** Error 279.10, ambiguous term
-   . (op a : Data1) = (op a : Data1)
-   . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
-*** Error 280.3, ambiguous term
-   . (op a : Data1) = (op a : Data1)
-   . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
-*** Error 282.9, ambiguous term
-   . (op a : Data1) = (op a : Data1)
-   . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
-*** Error 283.5, ambiguous term
-   . (op a : Data1) = (op a : Data1)
-   . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
 *** Error 316.3, ambiguous term
-   . (op a : Data1) = (op a : Data1)
    . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
+   . (var a : s) = (var a : s)
 *** Error 317.3, ambiguous term
-   . (op a : Data1) = (op a : Data1)
    . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
+   . (var a : s) = (var a : s)
 *** Error 320.5, ambiguous term
-   . (op a : Data1) = (op a : Data1)
    . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
+   . (var a : s) = (var a : s)
 *** Error 321.5, ambiguous term
-   . (op a : Data1) = (op a : Data1)
    . (op a : b) = (op a : b)
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-   . (var a : s) = (op a : s)
-*** Error 342.5, ambiguous term
+   . (var a : s) = (var a : s)
+*** Error , ambiguous term
   (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
   (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
 *** Error 342.20, no operation with 2 arguments found for '__E__'
@@ -3217,35 +3088,12 @@
 *** Error 343.14, no operation with 2 arguments found for '__E__'
 *** Error 343.29, no operation with 2 arguments found for '__E__'
 *** Error 343.45, no operation with 2 arguments found for '__E__'
-*** Error 361.10, ambiguous term
-   . (op c : s * s -> s)((var x : s), (op a : s)) = (var x : s)
-   . (op c : s * s -> s)((var x : s), (var a : s)) = (var x : s)
-*** Error 361.10, ambiguous term
-   . (op c : s * s -> s)((op a : s), (var x : s)) = (var x : s)
-   . (op c : s * s -> s)((var a : s), (var x : s)) = (var x : s)
-*** Error 365.9, ambiguous term
-   . (op c : s * s ->? s)((var x : s), (op a : s)) = (var x : s)
-   . (op c : s * s ->? s)((var x : s), (var a : s)) = (var x : s)
-*** Error 365.9, ambiguous term
-   . (op c : s * s ->? s)((op a : s), (var x : s)) = (var x : s)
-   . (op c : s * s ->? s)((var a : s), (var x : s)) = (var x : s)
-*** Error 367.9, ambiguous term
-   . (op a : s) = (op a : s)
-   . (op a : s) = (var a : s)
-*** Error 368.9, ambiguous term
-   . (op c : s * s * t -> s)((var x : s), (var y : s), (var z : t)) =
-       (op a : s)
-   . (op c : s * s * t -> s)((var x : s), (var y : s), (var z : t)) =
-       (var a : s)
-*** Error 369.9, ambiguous term
-   . (op a :? s) = (op a : s)
-   . (op a :? s) = (var a : s)
-*** Error 370.9, ambiguous term
-   . (op c : s * s * t ->? s)((var x : s), (var y : s),
-                            (var z : t)) =
-       (op a : s)
-   . (op c : s * s * t ->? s)((var x : s), (var y : s),
-                            (var z : t)) =
-       (var a : s)
+*** Error 351.11, wrong number of places '__and'__'
+*** Error , ambiguous term
+  (op a : s) : s
+  (var a : s) : s
+*** Error , ambiguous term
+  (op a : s) : s
+  (var a : s) : s
 *** Error 426.26, no predicate with 0 arguments found for 'e'
 *** Error 427.12, no predicate with 0 arguments found for 'e'

@@ -19,20 +19,16 @@ import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
-import Common.Lib.State
 import CASL.Parse_AS_Basic
 import CASL.AS_Basic_CASL
 
 localAnalysis :: GlobalAnnos -> BASIC_SPEC () () () 
               -> Result (BASIC_SPEC () () ())
 localAnalysis ga bs = 
-    let (newBs, sig) = runState (ana_BASIC_SPEC id
-                                 (const $ const return)
-                                 (const True)
-                                 (const return) 
-                                 (const return) ga bs) 
-                       $ emptySign () 
-        in Result (envDiags sig) $ Just newBs
+        let Result ds ms = basicCASLAnalysis (bs, emptySign () , ga)
+        in Result ds $ case ms of 
+           Just (newBs, _difSig, _accSig, _sents) -> Just newBs
+           _ -> Nothing
 
 runAna :: GlobalAnnos -> AParser () (Result (BASIC_SPEC () () ()))
 runAna ga = 

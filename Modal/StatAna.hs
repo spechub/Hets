@@ -92,8 +92,7 @@ minExpForm ga s form =
                   Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
                   Term_mod t -> let
                     r = do
-                      ts <- minExpTerm minExpForm ga s t
-                      t2 <- is_unambiguous t ts ps
+                      t2 <- oneExpTerm minExpForm ga s t
                       let srt = term_sort t2
                           trm = Term_mod t2
                       if Map.member srt $ termModies $ extendedInfo s 
@@ -122,8 +121,7 @@ ana_M_SIG_ITEM :: Ana M_SIG_ITEM M_FORMULA ModalSign
 ana_M_SIG_ITEM ga mi = 
     case mi of 
     Rigid_op_items r al ps -> 
-        do ul <- mapM (ana_OP_ITEM mapM_FORMULA resolveM_FORMULA 
-                       noExtMixfixM ga) al 
+        do ul <- mapM (ana_OP_ITEM minExpForm ga) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Op_decl ops ty _ _ -> 
@@ -134,8 +132,7 @@ ana_M_SIG_ITEM ga mi =
                _ -> return ()
            return $ Rigid_op_items r ul ps
     Rigid_pred_items r al ps -> 
-        do ul <- mapM (ana_PRED_ITEM mapM_FORMULA 
-                       resolveM_FORMULA noExtMixfixM ga) al 
+        do ul <- mapM (ana_PRED_ITEM minExpForm ga) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Pred_decl ops ty _ -> 

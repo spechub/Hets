@@ -115,8 +115,7 @@ minExpForm ga s form =
                   Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
                   Term_mod t -> let
                     r = do 
-                      ts <- minExpTerm minExpForm ga s t
-                      t2 <- is_unambiguous t ts ps
+                      t2 <- oneExpTerm minExpForm ga s t
                       let srt = term_sort t2
                           trm = Term_mod t2
                       if Set.member srt ops 
@@ -322,12 +321,12 @@ toCoSortGenAx ps isFree (sorts, ops) = do
     addSentences [NamedSen ("ga_cogenerated_" ++ 
                          showSepList (showString "_") showId sortList "") f]
 
-ana_CoGenerated :: Ana C_SIG_ITEM C_FORMULA e 
+ana_CoGenerated :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
                 -> Ana ([(Set.Set Id, Set.Set Component)], 
-                        [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)]) C_FORMULA e
+                        [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)]) 
+                   C_FORMULA CoCASLSign
 ana_CoGenerated anaf ga (_, al) = do
-   ul <- mapAnM (ana_SIG_ITEMS mapC_FORMULA resolveC_FORMULA 
-                 noExtMixfixCo anaf ga Generated) al
+   ul <- mapAnM (ana_SIG_ITEMS minExpForm anaf ga Generated) al
    return (map (getCoGenSig . item) ul,ul)
    
 getCoGenSig :: SIG_ITEMS C_SIG_ITEM C_FORMULA 

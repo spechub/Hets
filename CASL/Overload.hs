@@ -16,7 +16,7 @@
       LNCS 1376, p. 333-348
 -}
 
-module CASL.Overload(minExpFORMULA, minExpTerm, Min(),
+module CASL.Overload(minExpFORMULA, oneExpTerm, Min(),
                      is_unambiguous, term_sort, leqF)  where
 
 import CASL.Sign
@@ -36,11 +36,8 @@ import Data.Maybe
 
 {-  
       TODO
-      - equivalent candidates should be sorted is a suitable way
-      - pass global annos for pretty-printing to hasSolutions and
-        is_unambiguous
+      - equivalent candidates should be sorted in a suitable way
       - move functions from ListUtils to the (single) module of use
-      - check SimplifySen
       - maybe change *_commm_* input list to tuple or curried arguments
       - for variables there should only be a single choice (shadowing)
 -}
@@ -101,9 +98,8 @@ minExpFORMULA mef ga sign formula = case formula of
     Strong_equation term1 term2 pos
         -> minExpFORMULA_eq mef ga sign Strong_equation term1 term2 pos
     Definedness term pos -> do
-        t  <- minExpTerm mef ga sign term
-        t' <- is_unambiguous term t pos
-        return (Definedness t' pos)
+        t <- oneExpTerm mef ga sign term
+        return (Definedness t pos)
     Membership term sort pos -> do
         ts   <- minExpTerm mef ga sign term
         let fs = map (concatMap ( \ t -> 
@@ -113,9 +109,16 @@ minExpFORMULA mef ga sign formula = case formula of
                     map ( \ c -> 
                         Membership (Sorted_term t c pos) sort pos)
                     $ minimalSupers sign s sort)) ts 
-        is_unambiguous formula fs pos
+        is_unambiguous ga formula fs pos
     ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
     _ -> return formula -- do not fail even for unresolved cases
+
+-- | test if a term can be uniquely resolved
+oneExpTerm :: PrettyPrint f => Min f e -> GlobalAnnos -> Sign f e 
+           -> TERM f -> Result (TERM f)
+oneExpTerm minF ga sign term = do 
+    ts <- minExpTerm minF ga sign term
+    is_unambiguous ga term ts []
 
 -- | all minimal common supersorts of the two input sorts
 minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
@@ -138,24 +141,26 @@ minExpFORMULA_eq :: PrettyPrint f =>
 minExpFORMULA_eq mef ga sign eq term1 term2 pos = do
     ps <- minExpTerm_cond mef ga sign ( \ t1 t2 -> eq t1 t2 pos) 
           term1 term2 pos
-    is_unambiguous (eq term1 term2 pos) ps pos
+    is_unambiguous ga (eq term1 term2 pos) ps pos
 
 -- | check if there is at least one solution
-hasSolutions :: PrettyPrint f => f -> [[f]] -> [Pos] -> Result [[f]]
-hasSolutions topterm ts pos = let terms = filter (not . null) ts in
+hasSolutions :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> [Pos] 
+             -> Result [[f]]
+hasSolutions ga topterm ts pos = let terms = filter (not . null) ts in
    if null terms then Result
-    [Diag Error ("no typing for: " ++ showPretty topterm "")
+    [Diag Error ("no typing for: " ++ show (printText0 ga topterm))
           $ headPos pos] Nothing
     else return terms
 
 -- | check if there is a unique equivalence class
-is_unambiguous :: PrettyPrint f => f -> [[f]] -> [Pos] -> Result f
-is_unambiguous topterm ts pos = do 
-    terms <- hasSolutions topterm ts pos
+is_unambiguous :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> [Pos] 
+               -> Result f
+is_unambiguous ga topterm ts pos = do 
+    terms <- hasSolutions ga topterm ts pos
     case terms of 
         [ term : _ ] -> return term
         _ -> Result [Diag Error ("ambiguous term\n  " ++ 
-                showSepList (showString "\n  ") showPretty 
+                showSepList (showString "\n  ") (shows . printText0 ga) 
                 (take 5 $ map head terms) "") $ headPos pos] Nothing
 
 checkIdAndArgs :: Id -> [a] -> [Pos] -> Result (Pos, Int)
@@ -221,7 +226,7 @@ minExpFORMULA_pred mef ga sign ide mty args poss = do
                                     args_eq sign predArgs leqP)
                        $ map get_profile 
                        $ permute expansions
-    is_unambiguous (Predication (Pred_name ide) args poss) qualForms poss
+    is_unambiguous ga (Predication (Pred_name ide) args poss) qualForms poss
 
 qualifyPreds :: Id -> [Pos] -> [[(PredType, [TERM f])]] -> [[FORMULA f]]
 qualifyPreds ide pos = map $ map $ qualify_pred ide pos 
@@ -287,7 +292,7 @@ minExpTerm mef ga sign top@(Sorted_term term sort pos) = do
     -- choose expansions that fit the given signature, then qualify
     let validExps = map (filter ( \ t -> leq_SORT sign (term_sort t) sort)) 
                           expandedTerm
-    hasSolutions top (map (map (\ t -> 
+    hasSolutions ga top (map (map (\ t -> 
                  Sorted_term t sort pos)) validExps) pos 
 minExpTerm mef ga sign top@(Cast term sort pos) = do
     expandedTerm <- minExpTerm mef ga sign term
@@ -299,27 +304,23 @@ minExpTerm mef ga sign top@(Cast term sort pos) = do
                     map ( \ c -> 
                         Cast (Sorted_term t c pos) sort pos)
                     $ minimalSupers sign s sort)) expandedTerm
-    hasSolutions top ts pos
+    hasSolutions ga top ts pos
 minExpTerm mef ga sign (Conditional term1 formula term2 pos) = do
     f <- minExpFORMULA mef ga sign formula
     ts <- minExpTerm_cond mef ga sign ( \ t1 t2 -> Conditional t1 f t2 pos) 
                     term1 term2 pos
-    hasSolutions (Conditional term1 formula term2 pos) ts pos
+    hasSolutions ga (Conditional term1 formula term2 pos) ts pos
 minExpTerm _ _ _n _
     = error "minExpTerm"
 
-
 -- | Minimal expansion of a possibly qualified variable identifier
 minExpTerm_var :: Sign f e -> Token -> Maybe SORT -> [[TERM f]]
-minExpTerm_var sign tok ms = 
-    let vars' = Map.findWithDefault Set.empty tok (varMap sign)
-        vars = case ms of 
-                   Nothing -> Set.toList vars' 
-                   Just s -> if Set.member s vars' then [s] else []
-    in map (map $ \ s -> Qual_var tok s []) 
-       $ equivalence_Classes  ( \ a b -> 
-           have_common_supersorts sign [a, b])
-       $ keepMinimals sign id vars
+minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of 
+    Nothing -> []
+    Just s -> let qv = [[Qual_var tok s []]] in
+              case ms of 
+              Nothing -> qv
+              Just s2 -> if s == s2 then qv else []
 
 keepMinimals :: Sign f e -> (a -> SORT) -> [a] -> [a]
 keepMinimals s' f' l = keepMinimals2 s' f' l l
@@ -362,7 +363,7 @@ minExpTerm_appl mef ga sign ide mty args poss = do
                                     $ args_eq sign opArgs leqF)
                        $ map get_profile 
                        $ permute expansions
-    hasSolutions (Application (Op_name ide) args poss) qualTerms poss
+    hasSolutions ga (Application (Op_name ide) args poss) qualTerms poss
 
 qualifyOps :: Id -> [Pos] -> [[(OpType, [TERM f])]] -> [[TERM f]]
 qualifyOps ide pos = map $ map $ qualify_op ide pos
