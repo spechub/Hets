@@ -37,7 +37,7 @@ bracket Braces t = braces t
 instance PrettyPrint Type where 
     printText0 ga (TypeConstrAppl name kind args _) = printText0 ga name 
 			  <> (case kind of 
-			       Kind [] (Universe _) _ -> empty
+			       Kind [] (Intersection [] _) _ -> empty
 			       _ -> space <> colon <> printText0 ga kind)
 			  <> if null args then empty 
 			     else parens (commas ga args)
@@ -45,7 +45,7 @@ instance PrettyPrint Type where
     printText0 ga (BracketType k l _) = bracket k $ commas ga l
     printText0 ga (KindedType t kind _) = printText0 ga t  
 			  <> (case kind of 
-			       Kind [] (Universe _) _ -> empty
+			       Kind [] (Intersection [] _) _ -> empty
 			       _ -> space <> colon <> printText0 ga kind)
     printText0 ga (MixfixType ts) = fsep (map (printText0 ga) ts)
     printText0 ga (TupleType args _) = parens $ commas ga args
@@ -220,10 +220,10 @@ instance PrettyPrint Kind where
 			     <> printText0 ga c
 
 instance PrettyPrint Class where 
-    printText0 _ (Universe _) = empty
-    printText0 ga (ClassName n) = printText0 ga n
     printText0 ga (Downset t) = braces $ text lessS <+> printText0 ga t
-    printText0 ga (Intersection c _) = parens $ commas ga c 
+    printText0 ga (Intersection c _) = if null c then empty 
+			   else if null $ tail c then printText0 ga $ head c
+			   else parens $ commas ga c 
 
 instance PrettyPrint Types where
     printText0 ga (Types l _) = Pretty.brackets $ commas ga l
@@ -301,7 +301,7 @@ instance PrettyPrint ClassDecl where
 instance PrettyPrint TypeItem where 
     printText0 ga (TypeDecl l k _) = commas ga l <> 
 				  case k of 
-				  Kind [] (Universe _) _ -> empty
+				  Kind [] (Intersection [] _) _ -> empty
 				  _ -> space <> colon <> printText0 ga k
     printText0 ga (SubtypeDecl l t _) = commas ga l <+> text lessS 
 					<+> printText0 ga t
@@ -316,7 +316,7 @@ instance PrettyPrint TypeItem where
 					   <+> printText0 ga f)
     printText0 ga (AliasType p k t _) =  (printText0 ga p <>
 				       case k of 
-				       Kind [] (Universe _) _ -> empty
+				       Kind [] (Intersection [] _) _ -> empty
 				       _ -> space <> colon <> printText0 ga k)
 				       <+> text assignS
 				       <+> printText0 ga t
@@ -354,7 +354,7 @@ instance PrettyPrint OpAttr where
 instance PrettyPrint DatatypeDecl where 
     printText0 ga (DatatypeDecl p k as d _) = (printText0 ga p <>
 				       case k of 
-				       Kind [] (Universe _) _ -> empty
+				       Kind [] (Intersection [] _) _ -> empty
 				       _ -> space <> colon <> printText0 ga k)
 				  <+> text defnS
 				  <+> vcat(punctuate (text " | ") 
