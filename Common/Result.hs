@@ -69,6 +69,9 @@ data Result a = Result { diags :: [Diagnosis]
 	               , maybeResult :: (Maybe a)
 		       } deriving (Show)
 
+instance Functor Result where
+    fmap f (Result errs m) = Result errs $ fmap f m
+ 
 instance Monad Result where
   return x = Result [] $ Just x
   Result errs Nothing >>= _ = Result errs Nothing
