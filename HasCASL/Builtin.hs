@@ -123,21 +123,21 @@ aType = TypeName aVar star (-1)
 bindA :: Type -> TypeScheme
 bindA ty = TypeScheme [TypeArg aVar star Other []] ty []
 
-eqType, logType, defType, notType, ifType, whenType, unitType :: TypeScheme
+lazyLog :: Type 
+lazyLog = LazyType logicalType []
+
+eqType, logType, defType, notType, whenType, unitType :: TypeScheme
 eqType = bindA $ 
 	  FunType (ProductType [aType, aType] [])
 	  PFunArr logicalType []
 logType = simpleTypeScheme $ 
-	  FunType (ProductType [logicalType, logicalType] [])
+	  FunType (ProductType [lazyLog, lazyLog] [])
 	  PFunArr logicalType []
 defType = bindA $ FunType aType PFunArr logicalType []
-notType = simpleTypeScheme $ FunType logicalType PFunArr logicalType []
+notType = simpleTypeScheme $ FunType lazyLog PFunArr logicalType []
 
-ifType = bindA $ 
-	  FunType (ProductType [logicalType, aType, aType] [])
-	  PFunArr aType []
 whenType = bindA $ 
-	  FunType (ProductType [aType, logicalType, aType] [])
+	  FunType (ProductType [aType, lazyLog, aType] [])
 	  PFunArr aType []
 unitType = simpleTypeScheme logicalType
 
