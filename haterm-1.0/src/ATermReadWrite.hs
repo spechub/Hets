@@ -29,6 +29,9 @@ module ATermReadWrite (
 
 import ATermAbstractSyntax
 
+-- added by KL
+import Char
+
 --- From String to ATerm ------------------------------------------------------
 
 readATerm ('!':str)	= let (t,_,_) = readTAF str [] in t
@@ -99,7 +102,7 @@ readTAFs' (']':str) tbl	= ([],str,tbl)
 
 dropSpaces		= dropWhile isSpace
 spanAFunChar		= span isAFunChar
-isAFunChar c		= (isAlphaNum c) || (c=='-') || (c=='_')
+isAFunChar c		= (isAlphaNum c) || (c `elem` "-_*+")
 spanNotQuote 		= span (/='"')
 spanAbbrevChar		= span (`elem` toBase64)
 isIntHead c		= (isDigit c) || (c=='-')
