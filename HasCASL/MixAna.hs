@@ -92,14 +92,14 @@ addBuiltins ga ids =
 		  (whenElse, ARight)]
 	precs = Rel.toList $ prec_annos ga
 	logIds = [eqvId, implId, infixIf, andId, orId, notId, 
-		 eqId, exEq, defId]
+		 eqId, exEq]
         lows = map fst $ filter ((`elem` logIds) . snd) precs
 	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
 		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
 		 (andId, notId), (orId, notId), (notId, eqId), (notId, exEq),
 	         (eqId, defId), (exEq, defId)]
 	eqs = map ( \ i -> (defId, i)) (whenElse : 
-	      (filter (`notElem` (lows ++ logIds)) $ filter isInfix ids))
+	      (filter (`notElem` (lows ++ defId:logIds)) $ filter isInfix ids))
 	appls = map ( \ i -> (i, applId)) (whenElse : 
 		(filter (/=applId) $ filter isInfix ids))
     in ga { assoc_annos = newAss
