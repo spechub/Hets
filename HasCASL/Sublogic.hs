@@ -419,7 +419,10 @@ is_ghorn_conc (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm ts _) _) =
 is_ghorn_conc x = is_horn_a x
 
 is_fol_t :: Term -> Bool
-is_fol_t _ = False
+is_fol_t (LambdaTerm _ _ _ _) = False
+is_fol_t (CaseTerm _ _ _) = False
+is_fol_t (LetTerm _ _ _ _) = False
+is_fol_t _ = True
 {- FOL:
   no lambda/let/case, 
   no higher types (i.e. all types are basic, tuples, or tuple -> basic)
@@ -484,12 +487,28 @@ sl_instance _ = bottom
 
 
 sl_classItem :: ClassItem -> HasCASL_Sublogics
-sl_classItem (ClassItem _ l _) = comp_list $ map sl_basicItem 
-                                           $ map item l
+sl_classItem (ClassItem c l _) = sublogics_max (sl_classDecl c)
+                                   (comp_list $ map sl_basicItem 
+                                              $ map item l)
+
+
+sl_classDecl :: ClassDecl -> HasCASL_Sublogics
+sl_classDecl (ClassDecl _ k _) = sl_kind k
+
+
+sl_kind :: Kind -> HasCASL_Sublogics
+sl_kind (Downset _ t k _) = sublogics_max (sl_type t) (sl_kind k)
+sl_kind (ClassKind _ k) = sl_kind k
+sl_kind (Intersection l _) = comp_list $ map sl_kind l
+sl_kind (FunKind k1 k2 _) = comp_list [need_hol, (sl_kind k1), (sl_kind k2)]
+sl_kind (ExtKind k _ _) = sl_kind k
+sl_kind _ = bottom
+-- prodKind =  FunKind starPlus (FunKind starPlus star []) [] !!!!
 
 
 sl_typeItem :: TypeItem -> HasCASL_Sublogics
-sl_typeItem (TypeDecl l _ _) = comp_list $ map sl_typePattern l
+sl_typeItem (TypeDecl l k _) = sublogics_max (sl_kind k) 
+                                 (comp_list $ map sl_typePattern l)
 sl_typeItem (SubtypeDecl l _ _) = sublogics_max need_sub
                                     (comp_list $ map sl_typePattern l)
 sl_typeItem (IsoDecl l _) = sublogics_max need_sub
@@ -499,8 +518,10 @@ sl_typeItem (SubtypeDefn tp _ t term _) =
              (sl_typePattern tp), 
              (sl_type t), 
              (sl_term (item term))]
-sl_typeItem (AliasType tp _ ts _) = sublogics_max (sl_typePattern tp)
-                                                  (sl_typeScheme ts)
+sl_typeItem (AliasType tp (Just k) ts _) = comp_list [(sl_kind k), (sl_typePattern tp),
+                                             (sl_typeScheme ts)]
+sl_typeItem (AliasType tp Nothing ts _) = sublogics_max (sl_typePattern tp)
+                                                        (sl_typeScheme ts)
 sl_typeItem (Datatype dDecl) = sl_datatypeDecl dDecl
 
 
@@ -514,22 +535,32 @@ sl_typePattern _ = bottom
 
 
 sl_type :: Type -> HasCASL_Sublogics
+{- sl_type (TypeName _ k i) = 
+  if (i == 0) then sublogics_max need_type_constructors (sl_kind k)
+    else sl_kind k
+sl_type (TypeAppl t1 t2) = comp_list [need_hol, (sl_type t1), (sl_type t2)] -}
 sl_type (TypeName _ _ v) = if v /= 0 then need_polymorphism else bottom
 sl_type (TypeAppl t1 t2) = comp_list [need_type_constructors,
 			   (sl_type t1), (sl_type t2)]
 sl_type (BracketType _ l _) = comp_list $ map sl_type l
-sl_type (KindedType t _ _) = sl_type t
+sl_type (KindedType t k _) = sublogics_max (sl_type t) (sl_kind k)
 sl_type (ExpandedType _ t) = sl_type t
 sl_type (MixfixType l) = comp_list $ map sl_type l
-sl_type (LazyType t _) = sl_type t
+sl_type (LazyType t _) = sublogics_max need_hol (sl_type t)
 sl_type (ProductType l _) = comp_list $ map sl_type l
+-- FOL i.e. no higher types (i.e. all types are basic, tuples, or tuple -> basic)
 sl_type (FunType t1 a t2 _) = 
+{-  let sl = comp_list [(sl_type t1), (sl_arrow a), (sl_type t2)]
+      hsl = sublogics_max need_ho sl
+  in
+    case t1 of
+      ProductType _ _ -> case t2 of 
+                           TypeName _ _ _ -> sl
+                           _ -> hsl
+      _ -> hsl
+sl_type _ = bottom -}
   comp_list [need_ho, (sl_type t1), (sl_arrow a), (sl_type t2)]
 sl_type (TypeToken _) = bottom
-
-{- FOL:
-  no higher types (i.e. all types are basic, tuples, or tuple -> basic)
--}
 
 
 sl_arrow :: Arrow -> HasCASL_Sublogics
@@ -575,19 +606,20 @@ sl_opAttr _ = need_eq
 
 
 sl_datatypeDecl :: DatatypeDecl -> HasCASL_Sublogics
-sl_datatypeDecl (DatatypeDecl t _ l c _) =
-  if (null c) then sublogics_max (sl_typePattern t)
-                                 (comp_list $ map sl_alternative 
-                                            $ map item l)
-    else comp_list [need_type_classes, 
-                   (sl_typePattern t),
-                   (comp_list $ map sl_alternative $ map item l)]
+sl_datatypeDecl (DatatypeDecl t k l c _) =
+  let sl = comp_list [(sl_typePattern t),
+                      (sl_kind k),
+                      (comp_list $ map sl_alternative 
+                                 $ map item l)]
+  in
+    if (null c) then sl
+      else sublogics_max need_type_classes sl
 
 
 sl_alternative :: Alternative -> HasCASL_Sublogics
-sl_alternative (Constructor _ l p _) =  
- comp_list [(sl_partiality p),
-            (comp_list $ map sl_component (concat l))]
+sl_alternative (Constructor _ l p _) =  sublogics_max (sl_partiality p)
+                                          (comp_list $ map sl_component 
+                                                            (concat l))
 sl_alternative (Subtype l _) = sublogics_max need_sub
                                  (comp_list $ map sl_type l)
 
@@ -632,18 +664,23 @@ sl_t _ = bottom
 sl_pattern :: Pattern -> HasCASL_Sublogics
 sl_pattern = sl_t
 
+
 sl_progEq :: ProgEq -> HasCASL_Sublogics
 sl_progEq (ProgEq p t _) = sublogics_max (sl_pattern p) (sl_t t)
+
 
 sl_varDecl :: VarDecl -> HasCASL_Sublogics
 sl_varDecl (VarDecl _ t _ _) = sl_type t
 
+
 sl_typeArg :: TypeArg -> HasCASL_Sublogics
-sl_typeArg (TypeArg _ _ _ _) = need_polymorphism
+sl_typeArg (TypeArg _ k _ _) = sublogics_max need_polymorphism (sl_kind k)
+
 
 sl_genVarDecl :: GenVarDecl -> HasCASL_Sublogics
 sl_genVarDecl (GenVarDecl v) = sl_varDecl v
 sl_genVarDecl (GenTypeVarDecl _) = need_polymorphism
+
 
 sl_opId :: OpId -> HasCASL_Sublogics
 sl_opId (OpId _ l _) = comp_list $ map sl_typeArg l
