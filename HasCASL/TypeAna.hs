@@ -409,7 +409,7 @@ anaType (mk, t) =
     do mT <- mkTypeConstrAppls TopLevel t
        tm <- gets typeMap
        case mT of 
-            Nothing -> return (star, mT)
+            Nothing -> return (star, Nothing)
 	    Just nt -> do newMk <- inferKind mk $ unalias tm nt
 			  return (case newMk of 
 				 Nothing -> star

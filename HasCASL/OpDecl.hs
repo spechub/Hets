@@ -69,14 +69,15 @@ tuplePatternToType (TuplePattern ps qs) =
 tuplePatternToType _ = error "tuplePatternToType"
 
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env OpItem
-anaOpItem ga br (OpDecl is sc attr ps) = 
+anaOpItem ga br ods@(OpDecl is sc attr ps) = 
     do mSc <- anaTypeScheme sc
-       let nSc = case mSc of 
-			  Nothing -> sc
-			  Just s -> generalize s
-       mAttrs <- mapM (anaAttr ga nSc) attr
-       us <- mapM (anaOpId br nSc attr) is
-       return $ OpDecl (catMaybes us) nSc (catMaybes mAttrs) ps
+       case mSc of 
+           Nothing -> return ods
+	   Just s -> do 
+	       let nSc = generalize s
+	       mAttrs <- mapM (anaAttr ga nSc) attr
+	       us <- mapM (anaOpId br nSc attr) is
+	       return $ OpDecl (catMaybes us) nSc (catMaybes mAttrs) ps
 
 anaOpItem ga br (OpDefn o oldPats sc partial trm ps) = 
     do let (op@(OpId i _ _), extSc) = getUninstOpId sc o
