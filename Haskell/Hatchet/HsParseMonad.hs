@@ -1,17 +1,7 @@
-
-
-
-
-
-
-
-
-
-
 module Haskell.Hatchet.HsParseMonad where
 
 import Haskell.Hatchet.HsSyn
-
+import Debug.Trace
 
 
 data ParseResult a = Ok ParseState a | Failed String
@@ -57,13 +47,13 @@ getContext = \i l c s -> Ok s s
 
 pushContext :: LexContext -> P ()
 pushContext ctxt = 
---trace ("pushing lexical scope: " ++ show ctxt ++"\n") $
+        trace ("pushing lexical scope: " ++ show ctxt ++"\n") $
 	\i l c s -> Ok (ctxt:s) ()
 
 popContext :: P ()
 popContext = \i l c stk ->
       case stk of
-   	(_:s) -> --trace ("popping lexical scope, context now "++show s ++ "\n") $ 
+   	(_:s) -> trace ("popping lexical scope, context now "++show s ++ "\n") $ 
             Ok s ()
         []    -> error "Internal error: empty context in popContext"
 

@@ -1,15 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
 module Haskell.Hatchet.HsParseUtils (
 	  parseError		-- String -> Pa
 	, splitTyConApp		-- HsType -> P (HsName,[HsType])
