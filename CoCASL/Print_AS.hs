@@ -74,11 +74,8 @@ instance PrettyPrint COALTERNATIVE where
     printText0 ga (CoSubsorts l _) = text sortS <+> commaT_text ga l 
 
 instance PrettyPrint COCOMPONENTS where
-    printText0 ga (CoTotal_select l s _) = commaT_text ga l 
+    printText0 ga (CoSelect l s _) = commaT_text ga l 
 				<> colon 
-				<> printText0 ga s 
-    printText0 ga (CoPartial_select l s _) = commaT_text ga l 
-				<> text (colonS ++ quMark) 
 				<> printText0 ga s 
 
 

@@ -107,10 +107,9 @@ cocomponent :: [String] -> AParser COCOMPONENTS
 cocomponent ks = 
     do (is, cs) <- parseId ks `separatedBy` anComma
        c <- colonST
-       (b, t, _) <- opSort ks
+       t <- opType ks
        let p = map tokPos (cs++[c]) 
-       return $ if b then CoPartial_select is t p
-	      else  CoTotal_select is t p
+       return $ CoSelect is t p
 
 instance AParsable C_SIG_ITEM where
   aparser = coSigItems

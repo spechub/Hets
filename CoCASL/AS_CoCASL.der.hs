@@ -47,10 +47,8 @@ data COALTERNATIVE = CoTotal_construct (Maybe OP_NAME) [COCOMPONENTS] [Pos]
 		   -- pos: sort, commas
 		   deriving (Show,Eq)
 
-data COCOMPONENTS = CoTotal_select [OP_NAME] SORT [Pos]
+data COCOMPONENTS = CoSelect [OP_NAME] OP_TYPE [Pos]
                   -- pos: commas, colon
-		| CoPartial_select [OP_NAME] SORT [Pos] 
-		  -- pos: commas, ":?"
 		     deriving (Show,Eq)
 
 data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM C_FORMULA)
