@@ -1,4 +1,7 @@
 This is the second attempt at creating an OMDoc-Interface.
+
+05 April 2005 : Some code-cleanup and commentation was done. 
+
 First Release - 02 April 2005
 
 OMDoc-Documents are read in with the 'Haskell XML Toolbox', validated and the resulting structures are processed.
