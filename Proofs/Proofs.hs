@@ -537,21 +537,9 @@ hideTheoremShiftAux libEnv dgraph (rules,changes) (ledge:list) =
 			((DeleteEdge ledge):
 			 ((InsertEdge newEdge):changes)))
       hideTheoremShiftAux libEnv newDGraph (newRules,newChanges) list
-{-      hideTheoremShiftAux libEnv dgraph
-	  (newRules,((InsertEdge fstEdge):
-		     ((InsertEdge sndEdge):changes))) list-}
 
-{-hideTheoremShiftAuxHandleNextStep :: LibEnv -> DGraph -> ([DGRule],[DGChange])
-		    -> (LEdge DGLinkLab,LEdge DGLinkLab) -> LEdge DGLinkLab-> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
-hideTheoremShiftAuxHandleNextStep libEnv dgraph (rules,changes) (fstEdge, sndEdge) ledge list =
-  hideTheoremShiftAux libEnv newDGraph (newRules,newChanges) list
-  where 
-    newRules = (HideTheoremShift ledge):rules
-    newChanges = (InsertEdge fstEdge):
-		 ((InsertEdge sndEdge):
-		  ((DeleteEdge ledge):
-		   ((InsertEdge newEdge):changes)))
--}
+
+{- creates a new proven HidingThm edge from the given HidingThm edge using the edge tuple as the proofBasis -}
 makeProvenHidingThmEdge :: (LEdge DGLinkLab, LEdge DGLinkLab) -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge ((_,_,fstLab),(_,_,sndLab)) (src,tgt,edgeLab) =
   (src,
@@ -569,7 +557,7 @@ makeProvenHidingThmEdge ((_,_,fstLab),(_,_,sndLab)) (src,tgt,edgeLab) =
 findProofBasisForHideTheoremShift :: DGraph -> LEdge DGLinkLab
 			  -> Maybe ((LEdge DGLinkLab),(LEdge DGLinkLab))
 findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
-  if (null pathPairsFilteredByMorphism) then Nothing
+  if (null pathPairsFilteredByConservativity) then Nothing
  {-    error (prettyPrintPossiblePathPairs dgraph hidingMorphism morphism
 	    possiblePathPairs)-}
    else Just (createEdgeForPath fstPath, createEdgeForPath sndPath)
@@ -583,19 +571,53 @@ findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
     pathPairsFilteredByMorphism 
 	= filterPairsByResultingMorphisms possiblePathPairs
 	  hidingMorphism morphism
+    pathPairsFilteredByConservativity
+        = filterPairsByConservativityOfSecondPath pathPairsFilteredByMorphism
     fstPath = fst (head pathPairsFilteredByMorphism)
     sndPath = snd (head pathPairsFilteredByMorphism)
 
 
+filterPairsByConservativityOfSecondPath ::
+    [([LEdge DGLinkLab],[LEdge DGLinkLab])] 
+	-> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
+filterPairsByConservativityOfSecondPath [] = []
+filterPairsByConservativityOfSecondPath (([],_):list) = 
+  filterPairsByConservativityOfSecondPath list
+filterPairsByConservativityOfSecondPath (([],_):list) = 
+  filterPairsByConservativityOfSecondPath list
+filterPairsByConservativityOfSecondPath (pair:list) =
+  if (and [cons >= Cons | cons <- map getConservativity (snd pair)]) 
+   then pair:(filterPairsByConservativityOfSecondPath list)
+    else filterPairsByConservativityOfSecondPath list
+{-
+--selectProofBasisListBox :: [(LEdge DGLinkLab, LEdge DGLinkLab)]
+	--	 -> (LEdge DGLinkLab, LEdge DGLinkLab)
+selectProofBasisListBox (basis:[]) = return basis
+#ifdef UNI_PACKAGE
+selectProofBasisListBox basisList = do
+   sel <- ioToIORes $ listBox 
+                "Choose a link tuple as the proof basis"
+		(map showEdgeTuple basisList)
+   i <- case sel of
+           Just j -> return j
+           _ -> resToIORes $ fatal_error "Proofs.Proofs: selection" nullPos
+   return (basisList!!i)
+#endif
+ 
+
+showEdgeTuple :: (LEdge DGLinkLab, LEdge DGLinkLab) -> String
+showEdgeTuple ((s1,t1,l1),(s2,t2,l2)) =
+  "fst: ("
+
+-}
 createEdgeForPath :: [LEdge DGLinkLab] -> LEdge DGLinkLab
 createEdgeForPath path =
   case (calculateMorphismOfPath path) of
     Just morphism -> (getSourceNode (head path),
                       getTargetNode (last path),
 		      DGLink {dgl_morphism = morphism,
-			      dgl_type = (GlobalThm Static.DevGraph.Open Cons
+			      dgl_type = (GlobalThm Static.DevGraph.Open None
 					  Static.DevGraph.Open),
-			                -- conservativity conservStatus
 			      dgl_origin = DGProof}
 		     )    
     Nothing -> error ("Could not determine morphism of path " ++ (show path))
@@ -636,8 +658,12 @@ prettyPrintPath dgraph morphism pathText p@(x:xs) =
 
 prettyPrintSourceNodeOfPath :: DGraph -> [LEdge DGLinkLab] -> String
 prettyPrintSourceNodeOfPath _ [] = "no source node"
-prettyPrintSourceNodeOfPath dgraph ((src,_,edgelab):_) =
-  case get_dgn_name lab of
+prettyPrintSourceNodeOfPath dgraph (edge:list) =
+  prettyPrintSourceNode dgraph edge
+
+prettyPrintSourceNode :: DGraph -> LEdge DGLinkLab -> String
+prettyPrintSourceNode dgraph (src,_,edgelab) =
+    case get_dgn_name lab of
     Just simpleId -> tokStr simpleId
     Nothing -> ""
   where
