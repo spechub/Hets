@@ -210,6 +210,7 @@ hets.cgi: $(sources) GUI/hets_cgi.hs
 	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf \
             -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_INCLUDE) \
             $(HC_FLAGS) -O
+	strip hets.cgi
 
 taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
 	$(HC) --make -o Taxonomy/taxonomyTool $< -ifgl $(HC_OPTS)
