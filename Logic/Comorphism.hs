@@ -59,6 +59,13 @@ class (Language cid,
     -- map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
     -- cover theoroidal comorphisms as well
     map_sign :: cid -> sign1 -> Maybe (sign2,[Named sentence2])
+    map_theory :: cid -> (sign1,[Named sentence1])
+                      -> Maybe (sign2,[Named sentence2])
+    --default implementation
+    map_theory cid (sign,sens) = do
+       (sign',sens') <- map_sign cid sign
+       sens'' <- mapM (mapNamedM (map_sentence cid sign)) sens
+       return (sign',sens'++sens'')
     map_morphism :: cid -> morphism1 -> Maybe morphism2
     map_sentence :: cid -> sign1 -> sentence1 -> Maybe sentence2
           -- also covers semi-comorphisms
