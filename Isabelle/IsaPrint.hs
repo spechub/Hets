@@ -1,4 +1,3 @@
-{-# OPTIONS -fallow-overlapping-instances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
@@ -17,19 +16,12 @@ Portability :  non-portable(overlapping-instances)
 
 module Isabelle.IsaPrint where
 
+import Isabelle.IsaSign
 import Common.Id 
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
-
-import Isabelle.IsaSign
-
 import Data.Char
-import Data.Tree
-
-import Debug.Trace
-
-
 
 ------------------- Id translation functions -------------------
 
@@ -44,7 +36,6 @@ showIsaI :: Id -> Int -> String
 showIsaI ident i = showIsa ident ++ "_" ++ show i
 
 
-
 ------------------- Printing functions -------------------
 
 instance Show Sentence where
@@ -54,7 +45,7 @@ instance PrintLaTeX Sentence where
     printLatex0 = printText0
 
 instance PrettyPrint Sentence where
-    printText0 _ = ptext . show
+    printText0 _ = text . show
 
 instance Show Typ where
   show = showTyp 1000
@@ -121,7 +112,7 @@ showTerm (If (t1,t2,t3)) = lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp
 showTerm (Let (pts, t)) = lb ++ "let" ++ sp ++ showPat False (head pts) 
                                 ++ concat (map (showPat True) (tail pts))
                                 ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
-showTerm t = show (toPrecTree t)
+showTerm t = showPTree (toPrecTree t)
 
 
 showPat :: Bool -> (Term, Term) -> String
@@ -182,6 +173,8 @@ type Precedence = Int
                    \/ -- right
 -}
 
+data PrecTermTree = Node PrecTerm [PrecTermTree]
+
 isaAppPrec :: Term -> PrecTerm
 isaAppPrec t = PrecTerm t 0
 
@@ -206,7 +199,7 @@ implPrec t = PrecTerm t 40
 noPrec :: Term -> PrecTerm
 noPrec t = PrecTerm t (-10)
 
-toPrecTree :: Term -> Tree PrecTerm
+toPrecTree :: Term -> PrecTermTree
 toPrecTree t =
   case t of
     (Const("All",t1) `App` Abs(v,ty,t2)) -> 
@@ -243,12 +236,12 @@ toPrecTree t =
     _ -> Node (noPrec t) []
 
 
-instance Show (Tree PrecTerm) where
-   show = showPTree
+-- instance Show PrecTermTree where
+--    show = showPTree
 
 data Assoc = LeftAs | NoAs | RightAs
 
-showPTree :: Tree PrecTerm -> String
+showPTree :: PrecTermTree -> String
 showPTree (Node (PrecTerm term _) []) = showTerm term
 showPTree (Node (PrecTerm term pre) annos) = 
   let leftChild = head annos
@@ -271,7 +264,7 @@ showPTree (Node (PrecTerm term pre) annos) =
    If the precedence of one side is weaker (here: higher number) than the 
    connector's one it is bracketed. Otherwise not. 
 -}
-infixP :: Precedence -> String -> Assoc -> Tree PrecTerm -> Tree PrecTerm -> String
+infixP :: Precedence -> String -> Assoc -> PrecTermTree -> PrecTermTree -> String
 infixP pAdult stAdult assoc leftChild rightChild 
     | (pAdult < prLeftCld) && (pAdult < prRightCld) = both
     | pAdult < prLeftCld = 
@@ -313,7 +306,7 @@ infixP pAdult stAdult assoc leftChild rightChild
 {- Application of (HasCASL-)operations with two arguments. 
    Both arguments are usually bracketed, except single ones.
 -}
-prefixP :: Precedence -> String -> Tree PrecTerm -> Tree PrecTerm -> String
+prefixP :: Precedence -> String -> PrecTermTree -> PrecTermTree -> String
 prefixP pAdult stAdult leftChild rightChild 
     | (pAdult <= prLeftCld) && (pAdult <= prRightCld) =
           stAdult ++
@@ -338,7 +331,7 @@ prefixP pAdult stAdult leftChild rightChild
 {- Isabelle application: An operation/a datatype-constructor is applied 
    to one argument. The whole expression is always bracketed.
 -}
-simpleInfix :: Precedence -> Tree PrecTerm -> Tree PrecTerm -> String
+simpleInfix :: Precedence -> PrecTermTree -> PrecTermTree -> String
 simpleInfix pAdult leftChild rightChild 
     | (pAdult < prLeftCld) && (pAdult < prRightCld) = 
           lbb++ stLeftCld ++rb++
@@ -359,7 +352,7 @@ simpleInfix pAdult leftChild rightChild
 
 {- Quantification _in_ Formulas
 -}
-quant :: Tree PrecTerm -> Tree PrecTerm -> String
+quant :: PrecTermTree -> PrecTermTree -> String
 quant (Node (PrecTerm (Const("All",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) []) = 
   lb++showQuant "!"  v ty t++rb
 quant (Node (PrecTerm (Const("Ex",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) [])  = 
@@ -369,11 +362,11 @@ quant (Node (PrecTerm (Const("Ex1",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) [
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 
 
-pr :: Tree PrecTerm -> Precedence
+pr :: PrecTermTree -> Precedence
 pr (Node (PrecTerm _ p) _) = p
 
 -- Prints: (p1, p2)
-pair :: Tree PrecTerm -> Tree PrecTerm -> String
+pair :: PrecTermTree -> PrecTermTree -> String
 pair leftChild rightChild = lb++showPTree leftChild++", "++
                                 showPTree rightChild++rb
 
@@ -410,6 +403,7 @@ instance Show Sign where
     showDataTypeDef (dt:dts) = 
        "datatype " ++ showDataType dt
        ++ (concat $ map (("and "++) . showDataType) dts) ++ "\n"
+    showDataType (_,[]) = error "IsaPrint.showDataType"
     showDataType (t,op:ops) =
        show t ++ " = " ++ showOp op 
        ++ (concat $ map ((" | "++) . showOp) ops)
@@ -421,7 +415,7 @@ instance Show Sign where
 
 
 instance PrettyPrint Sign where
-    printText0 _ = ptext . show
+    printText0 _ = text . show
 
 instance PrintLaTeX Sign where
     printLatex0 = printText0
