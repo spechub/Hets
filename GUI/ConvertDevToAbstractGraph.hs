@@ -33,6 +33,7 @@ import Proofs.Proofs
 
 import GUI.AbstractGraphView
 import GUI.ShowLogicGraph
+import GUI.HTkUtils
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
@@ -590,24 +591,6 @@ displayTheory ext node dgraph gPair =
 			    "nodes of type dg_ref do not have a theory"
      
 
-listBox :: String -> [String] -> IO (Maybe Int)
-listBox title entries =
-  do
-    main <- HTk.createToplevel [HTk.text title]
-    lb  <- HTk.newListBox main [HTk.value entries, bg "white", size (100, 50)] ::
-             IO (HTk.ListBox String)
-    HTk.pack lb [HTk.Side HTk.AtLeft, 
-                 HTk.Expand HTk.On, HTk.Fill HTk.Both]
-    scb <- HTk.newScrollBar main []
-    HTk.pack scb [HTk.Side HTk.AtRight, HTk.Fill HTk.Y]
-    lb HTk.# HTk.scrollbar HTk.Vertical scb
-    (press, _) <- HTk.bindSimple lb (HTk.ButtonPress (Just 1))
-    HTk.sync press
-    sel <- HTk.getSelection lb
-    HTk.destroy main
-    return (case sel of
-       Just [i] -> Just i
-       _ -> Nothing)
 
 {- translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
@@ -632,7 +615,7 @@ translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
          i <- case sel of
            Just j -> return j
            _ -> Res.resToIORes $ Res.fatal_error "" nullPos
-         Comorphism cid <- return $ head (drop i paths)
+         Comorphism cid <- return (paths!!i)
          -- adjust lid's
          let lidS = sourceLogic cid
              lidT = targetLogic cid

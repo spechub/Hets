@@ -58,7 +58,6 @@ import Logic.Comorphism
 import Static.DevGraph
 import Common.Result
 import Common.Lib.Graph
--- neu:
 import Common.Lib.Set (fromList)
 import qualified Common.Lib.Map as Map
 import List(nub)
@@ -66,6 +65,7 @@ import Common.Id
 import Common.AS_Annotation
 import Syntax.AS_Library
 import Syntax.Print_AS_Library 
+import GUI.HTkUtils
 
 
 {-
@@ -823,21 +823,23 @@ getGoals libEnv dg (n,_,edge) = do
 getProvers :: LogicGraph -> AnyLogic -> [(G_prover,AnyComorphism)]
 getProvers lg (Logic lid) =
   [(G_prover (targetLogic cid) p,Comorphism cid) | 
-        (_,Comorphism cid) <- cms,
+        Comorphism cid <- cms,
         language_name (sourceLogic cid) == language_name lid,
         p <- provers (targetLogic cid)]
-  where cms = Map.toList 
-               $ Map.insert ("Id_"++language_name lid)
-                            (Comorphism (IdComorphism lid))
-               $ comorphisms lg
-        -- ??? Should be composites as well!
-        -- ??? Sublogic check is missing!
-         
+  where cms = findComorphismPaths lg (Logic lid)
+
 
 selectProver :: [(G_prover,AnyComorphism)] -> IOResult (G_prover,AnyComorphism)
 selectProver [p] = return p
 selectProver [] = resToIORes $ fatal_error "No pover available" nullPos
-selectProver (p:_) = return p -- ??? to simplistic
+selectProver provers = do
+   sel <- ioToIORes $ listBox 
+                "Choose a translation to a prover-supported logic"
+                (map (show.snd) provers)
+   i <- case sel of
+           Just j -> return j
+           _ -> resToIORes $ fatal_error "Proofs.Proofs: selection" nullPos
+   return (provers!!i)
  
 -- applies basic inference to a given node
 basicInferenceNode :: LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
