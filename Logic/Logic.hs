@@ -295,7 +295,7 @@ class (StaticAnalysis lid
          sublogic_names lid _ = [language_name lid]
              -- the first name is the principal name
          all_sublogics :: lid -> [sublogics]
-         all_sublogics _ = []
+         all_sublogics _ = [top]
 
          is_in_basic_spec :: lid -> sublogics -> basic_spec -> Bool
          is_in_basic_spec _ _ _ = False
