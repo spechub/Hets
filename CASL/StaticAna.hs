@@ -17,6 +17,7 @@ module CASL.StaticAna where
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.MixfixParser
+import CASL.Overload
 import Common.Lib.State
 import Common.PrettyPrint
 import Common.Lib.Pretty
