@@ -190,7 +190,11 @@ class ( Syntax lid basic_spec symb_items symb_map_items
              lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
          stat_symb_map_items _ _ = fail "Logic.stat_symb_map_items"     
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol] 
-         stat_symb_items l _ = statErr l "stat_symb_items" 
+         stat_symb_items l _ = statErr l "stat_symb_items"
+         -- amalgamation
+         weaklyAmalgamableCocone :: lid -> Diagram sign morphism 
+                                     -> Result (sign, Map Node morphism)
+         weaklyAmalgamableCocone l _ = statErr l "weaklyAmalgamableCocone"
          -- architectural sharing analysis
          ensures_amalgamability :: lid ->
               ([CASLAmalgOpt],        -- the program options

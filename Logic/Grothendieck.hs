@@ -36,6 +36,7 @@ Portability :  non-portable (overlapping instances, dynamics, existentials)
    Todo:
    compComorphism: cancellation of id comorphisms if target sublogic is
                    not increased
+   gWeaklyAmalgamableCocone
 -}
 
 module Logic.Grothendieck where
@@ -774,4 +775,14 @@ coerceTheory :: forall lid sublogics
       lid -> G_theory -> Result (sign, [Named sentence])
 coerceTheory lid (G_theory lid2 sign2 sens2)
   = mcoerce lid lid2 "Coercion of theories" (sign2,sens2)
+
+
+------------------------------------------------------------------
+-- Grothendieck diagrams and weakly amalgamable cocones
+------------------------------------------------------------------
+
+type GDiagram = Diagram G_sign GMorphism
+
+gWeaklyAmalgamableCocone :: GDiagram -> Result (G_sign,Map.Map Node GMorphism)
+gWeaklyAmalgamableCocone _ = return (undefined,Map.empty) -- dummy implementation
 
