@@ -600,15 +600,15 @@ createLocalMenuButtonShowNumberOfNode =
 createLocalEdgeMenu gInfo = 
     LocalMenu (Menu (Just "edge menu")
 	       [createLocalMenuButtonShowMorphismOfEdge gInfo,
-		createLocalMenuButtonShowOriginOfEdge gInfo,
-                createLocalMenuButtonCheckconsistencyOfEdge gInfo]
+		createLocalMenuButtonShowOriginOfEdge gInfo]
 	      )
 
 createLocalEdgeMenuThmEdge gInfo =
    LocalMenu (Menu (Just "thm egde menu")
               [createLocalMenuButtonShowMorphismOfEdge gInfo,
 		createLocalMenuButtonShowOriginOfEdge gInfo,
-	        createLocalMenuButtonShowProofStatusOfThm gInfo]
+	        createLocalMenuButtonShowProofStatusOfThm gInfo,
+                createLocalMenuButtonCheckconsistencyOfEdge gInfo]
 	      )
 
 createLocalMenuButtonShowMorphismOfEdge _ = 
@@ -879,7 +879,7 @@ showProofStatusOfThm descr Nothing =
 
 {- check consistency of the edge -}
 checkconsistencyOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
-checkconsistencyOfEdge _ (ref,_,_,_,_,_,_) (Just (source,target,linklab)) = do 
+checkconsistencyOfEdge _ (ref,_,_,_,_,_,opts) (Just (source,target,linklab)) = do 
   (_,libEnv,_,dgraph) <- readIORef ref
   let dgtar = lab' (context target dgraph)
   case dgtar of
@@ -894,9 +894,14 @@ checkconsistencyOfEdge _ (ref,_,_,_,_,_,_) (Just (source,target,linklab)) = do
       G_theory lid1 sign1 sens1 <- return th
       case coerce lid1 lid (sign1,sens1) of
            Just (sign2, sens2) -> 
-               case consCheck lid (sign2,sens2) morphism2' sens of
-               res -> createTextDisplay "Result of consistency check" 
-                      (show res) [size(50,50)]
+             let Res.Result diags res = consCheck lid (sign2,sens2) morphism2' sens
+                 showRes = case res of
+                   Just(Just True) -> "The link is conservative"
+                   Just(Just False) -> "The link is not conservative"
+                   _ -> "Could not determine whether link is conservative"
+                 showDiags = unlines (map show diags)
+              in createTextDisplay "Result of consistency check" 
+                      (showRes++"\n"++showDiags) [size(50,50)]
            _ -> error "checkconsistencyOfEdge: wrong logic"   
 
 checkconsistencyOfEdge descr _ Nothing = 
