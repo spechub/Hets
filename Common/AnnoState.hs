@@ -40,11 +40,6 @@ class AParsable a where
 instance AParsable () where
   aparser = pzero
 
--- | convert an annotation parser,
--- start without annotations and possibly ignore trailing annotations
-aParse :: AParser a -> GenParser Char st a
-aParse p = parseWithState p emptyAnnos
-
 -- | just the list of currently collected annotations
 data AnnoState = AnnoState { toAnnos :: [Annotation] }
 

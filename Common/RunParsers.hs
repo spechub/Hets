@@ -27,14 +27,13 @@ import Common.AnalyseAnnos(addGlobalAnnos)
 import Common.Result
 import System.Environment
 
-type StringParser = GlobalAnnos -> GenParser Char () String
+type StringParser = GlobalAnnos -> AParser String
 
 fromAParser :: (PrettyPrint a) => AParser a -> StringParser
-fromAParser p ga = fmap (show . printText0 ga) $ parseWithState p emptyAnnos
+fromAParser p ga = fmap (show . printText0 ga) p
 
 toStringParser :: (PrettyPrint a) => (GlobalAnnos -> AParser a) -> StringParser
-toStringParser p ga = 
-    fmap (show . printText0 ga) $ parseWithState (p ga) emptyAnnos
+toStringParser p ga = fmap (show . printText0 ga) $ p ga
 
 exec :: [(String, StringParser)] -> [(String, StringParser)] -> IO ()
 exec lps fps = do l <- getArgs
@@ -81,11 +80,12 @@ parseLine ga p line n =
 		    i <- p ga
 		    eof
 		    return i
-	in showParse $ parse parser "" line
+	in showParse $ runParser parser emptyAnnos "" line
 
 parseSpec :: GlobalAnnos -> StringParser -> IO ()
 parseSpec ga p = do str <- getContents
-		    putStrLn $ showParse $ parse (p ga << eof) "" str
+		    putStrLn $ showParse $ 
+			     runParser (p ga << eof) emptyAnnos "" str
 
 showParse :: Either ParseError String -> String
 showParse e = case e of 

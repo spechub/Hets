@@ -24,7 +24,7 @@ import Common.PrettyPrint
 import Common.RunParsers
 
 anaParser :: StringParser
-anaParser ga = do b <- aParse basicSpec
+anaParser ga = do b <- basicSpec
 		  let (a, e) = runState (anaBasicSpec ga b) initialEnv
                   return $ show (printText0 ga a $$ printText0 ga e)
 
