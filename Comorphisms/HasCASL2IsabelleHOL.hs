@@ -248,37 +248,6 @@ transTerm sign (QualOp _ (InstOpId opId _ _) ts _)
   | opId == trueId  =  con "True"
   | opId == falseId = con "False"
   | otherwise       = termAppl conSome (con (transOpId sign opId ts))
--- term application
-transTerm sign (ApplTerm term term' _) =
-  transApplTerm term
-  where
-   transApplTerm t =
-     case t of
-       QualOp Fun (InstOpId opId _ _) _ _ -> 
-         -- logical formulas are translated seperatly (transLog)
-         if opId == whenElse then transWhenElse sign term'
-           else transLog sign opId term term'
-       -- predicates
-       QualOp Pred _ _ _                  -> 
-         termAppl (termAppl (con "pApp") (transTerm sign term)) 
-                                          (transTerm sign term')
-       -- distinguishes between partial and total term application
-       QualOp Op _ typeScheme _           -> 
-         if isPart typeScheme then mkApp "app"
-           else mkApp "apt"
-       -- seeks for determining inner term
-       ApplTerm t' _ _                    -> transApplTerm t'
-       -- strips TypedTerm
-       TypedTerm t' _ _ _                 -> transApplTerm t'
-       _                                  -> mkApp "app"
-   mkApp s = termAppl (termAppl (con s) (transTerm sign term)) 
-                      (transTerm sign term')
-   isPart (TypeScheme _ op _) = 
-     case op of
-       FunType _ PFunArr _ _ -> True
-       FunType _ FunArr _ _  -> False
-       _                     -> 
-         error "[Comorphisms.HasCASL2IsabelleHOL] Wrong operation type"
 -- quantified formulas
 transTerm sign (QuantifiedTerm quan varDecls phi _) = 
   foldr (quantify quan) (transTerm sign phi) varDecls
@@ -293,7 +262,44 @@ transTerm sign (QuantifiedTerm quan varDecls phi _) =
     qname Existential = exS
     qname Unique      = ex1S
 -- strip TypedTerm
-transTerm sign (TypedTerm t _ _ _) = transTerm sign t
+transTerm sign (TypedTerm t _ _ _) = 
+  case t of ApplTerm _ _ _ -> transApplTerm sign t
+            _              -> transTerm sign t
+  where
+    transApplTerm sig (ApplTerm t' t'' _) = 
+      transAppl sig t'
+     where  
+      -- decides which kind of translation is necessary: formula, predicate, ...
+      transAppl s tt =
+       case tt of
+        QualOp Fun (InstOpId opId _ _) _ _ -> 
+        -- logical formulas are translated seperatly (transLog)
+          if opId == whenElse then transWhenElse s t''
+            else transLog s opId t' t''
+        -- predicates
+        QualOp Pred _ _ _                  -> 
+          termAppl (termAppl (con "pApp") (transTerm s t')) 
+                                          (transTerm s t'')
+        -- distinguishes between partial and total term application
+        QualOp Op _ _ _                    -> transApplOp s t' t''
+        -- seeks for determining inner term
+        ApplTerm tt' _ _                  -> transAppl s tt'
+        -- strips TypedTerm
+        TypedTerm tt' _ _ _               -> 
+           transAppl s tt'
+        _                                  -> mkApp "app" s t' t''
+      mkApp s sg tt tt' = termAppl (termAppl (con s) (transTerm sg tt)) 
+                         (transTerm sg tt')
+      transApplOp s tt tt' =
+        case tt of TypedTerm _ _ typ _ ->
+                     case typ of FunType _ PFunArr _ _ -> 
+                                   mkApp "app" s tt tt'
+                                 FunType _ FunArr _ _  -> 
+                                   mkApp "apt" s tt tt'
+                                 _                     -> 
+                                   mkApp "app" s tt tt'
+                   _ -> mkApp "app" s tt tt'
+
 -- lambda abstraction
 transTerm sign (LambdaTerm pats p body _) =
   -- distinguishes between partial and total lambda abstraction
@@ -502,7 +508,7 @@ getTypeName p =
                      TypeName tyId _ 0       -> tyId
                      TypeAppl tp' _          -> name tp'
                      FunType _ _ tp' _       -> name tp'
-                     ProductType (tp':tps) _ -> name tp'
+                     ProductType (tp':_) _   -> name tp'
                      _                       -> 
                        error "HasCASL2IsabelleHOL.name (of type)"
 
@@ -682,7 +688,7 @@ redAppl cmxs sign
                      term    = CaseTerm newVar newPeqs' [] }
          newProgEq (p, t) = ProgEq p t nullPos
 
--- Input: ProgEqs that were build to replace a argument 
+-- Input: ProgEqs that were build to replace an argument 
 --        with a case statement
 -- Functionality: 
 recArgs :: Env -> [ProgEq] -> [ProgEq]
@@ -699,9 +705,9 @@ recArgs sign peqs
           | isSingle g = doPEQ gByCs (res ++ g)
           | otherwise  = doPEQ gByCs (res ++ [(toPEQ (testPEQs sign g))])
         toPEQ cmx = ProgEq (shrinkPat cmx) (term cmx) nullPos
-        testPEQs sign peqs
+        testPEQs sig ps
           | null peqs = error "HasCASL2IsabelleHOL.testPEQs"
-          | otherwise = concentrate (matricize peqs) sign
+          | otherwise = concentrate (matricize ps) sig
 
 -- accumulates arguments of caseMatrix to one pattern
 shrinkPat :: CaseMatrix -> As.Term
