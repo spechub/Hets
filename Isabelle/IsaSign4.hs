@@ -20,9 +20,6 @@ Portability :  portable
 module Isabelle.IsaSign4 where
 
 import qualified Common.Lib.Map as Map
-import Common.Id
-import Haskell.Hatchet.PPrint
-import qualified Haskell.Hatchet.Utils as Utils     
 
 ---------------- from src/Pure/Syntax/syntax.ML -------------------
 
@@ -99,7 +96,9 @@ mkProductType t1 t2 = Type "*" [ho_ho_ho] [t1,t2]
 mkTypeAppl :: Typ -> Typ -> Typ
 mkTypeAppl t1 t2 = Type "typeAppl" [ho_ho_ho] [t1,t2]
 
-s --> t = Type "fun" [ho_ho_ho] [s,t]
+mkFunType :: Typ -> Typ -> Typ
+mkFunType s t = Type "fun" [ho_ho_ho] [s,t]
+(-->) = mkFunType
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
 (--->) = flip $ foldr (-->)
@@ -140,37 +139,42 @@ mkDomAppl t1 t2 = Type "domAppl" domain [t1,t2]
   It is possible to create meaningless terms containing loose bound vars
   or type mismatches.  But such terms are not allowed in rules. -}
 
+data Flag = IsCont | NotCont deriving (Eq,Ord)
 
 data Term =
-        Const { termId::Term, 
+        Const { termBasicId::String, 
                 termType::Typ, 
                 defaultClass::IsaClass }  -- constants, with default class
-      | Free  { termId::Term, 
+      | Free  { termBasicId::String, 
                 termType::Typ, 
                 defaultClass::IsaClass }  -- free variables
       -- | Var   (Indexname, Typ)
       -- | Bound Int
       | Abs   { termId::Term, 
                 termType::Typ, 
-                absVar::Term }  -- lambda abstraction
-      | CAbs   { termId::Term, 
-                termType::Typ, 
-                absVar::Term }  -- lambda abstraction
-      | App { funId::Term, termId::Term }    -- application
-      | CApp { funId::Term, termId::Term } -- application
-      | Case { termId::Term, caseSubst::[(Term, Term)] }  -- case
+                absVar::Term,
+                flag::Flag }  -- lambda abstraction
+--      | CAbs   { termId::Term, 
+--                termType::Typ, 
+--                absVar::Term }  -- lambda abstraction
+      | App { funId::Term, 
+              argId::Term, 
+              flag::Flag }    -- application
+--      | CApp { funId::Term, argId::Term } -- application
+      | Case { termId::Term, caseSubst::[(Term, Term)], flag::Flag }  -- case
+      | If { ifId::Term, 
+             thenId::Term, 
+             elseId::Term, 
+             flag::Flag }        -- If then else
+      | Let { letSubst::[(Term, Term)], 
+              inId::Term, 
+              flag::Flag }   -- Let
       | Fix { funId::Term }
       deriving (Eq, Ord)
 
 --      | CApp { funId::Term, termId::Term, proofObl::ProofObl } -- application
 
-data Sentence = Sentence { senTerm :: Term
-                           }
-instance Eq Sentence where
-  s1 == s2 = senTerm s1 == senTerm s2
-
-instance Ord Sentence where
-  compare s1 s2 = compare (senTerm s1) (senTerm s2)
+data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord) 
 
 
 -------------------- from src/Pure/sorts.ML ------------------------
@@ -258,7 +262,8 @@ data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
                    constTab :: Map.Map String Typ,  -- constants with type
                    dataTypeTab :: DataTypeTab,
                    domainTab :: DomainTab,  -- needs HOLCF, extend this with domains
-                   syn :: Syntax
+                   syn :: Syntax,
+                   showLemmas :: Bool
                  }
              deriving (Eq)
 
@@ -280,4 +285,6 @@ emptySign = Sign { baseSig = "Pure",
                    tsig = emptyTypeSig,
                    constTab = Map.empty,
                    dataTypeTab = [],
+                   domainTab = [],
+                   showLemmas = False,
                    syn = () }
