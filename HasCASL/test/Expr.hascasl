@@ -1,0 +1,5 @@
+type bool ::= true | false
+
+var x : bool
+
+. case x of true -> ()| false -> ()

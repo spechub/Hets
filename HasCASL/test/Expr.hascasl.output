@@ -1,0 +1,18 @@
+type bool ::= true | 
+	      false
+var x : bool
+. case (var x : bool) of true : bool -> () | 
+			 false : bool -> ()
+%% Type Constructors -----------------------------------------------------
+bool : Type %[type __ ::=
+	      true : -> __
+	      false : -> __]%
+%% Assumptions -----------------------------------------------------------
+false : bool %(construct bool)%
+true : bool %(construct bool)%
+x : bool %(var)%
+%% Sentences -------------------------------------------------------------
+case (var x : bool) of true : bool -> () | 
+		       false : bool -> () %()%
+%% Diagnostics -----------------------------------------------------------
+Hint (line 3, column 9) not a class 'bool'

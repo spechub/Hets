@@ -240,10 +240,13 @@ scanState tm knowns (mty, trm) t p =
 			 , p { restRule = termTok : tail ts }]
               else return $
 		   if t == opTok || t == inTok then
-	             let Just ty = mty 
-                         mp = do q <- filterByType tm (ty,trm) p
-	                         return q { ruleType = ty, restRule = tail ts }
-	             in maybeToList mp
+		      case mty of 
+		      Nothing -> [p { restRule = tail ts }]
+		      Just ty -> 
+			  let mp = do q <- filterByType tm (ty,trm) p
+				      return q { ruleType = ty, 
+						 restRule = tail ts }
+			       in maybeToList mp
  	      else case mty of
 	           Nothing -> [p { restRule = tail ts
 			         , posList = tokPos t : posList p }]
@@ -257,7 +260,8 @@ scanState tm knowns (mty, trm) t p =
 		  , ruleId = mkRuleId [unknownTok, t]
 		  , ruleType = case mty of 
 		               Nothing -> ruleType p
-		               Just ty -> ty }]
+		               Just ty -> ty 
+		  }]
 	       else []
 
 -- construct resulting term from PState 
@@ -268,11 +272,11 @@ stateToAppl p =
         sc@(TypeScheme _ (_ :=> ty) _) = ruleScheme p
         ar = reverse $ ruleArgs p
 	qs = reverse $ posList p
-    in if  r == inId 
+    in if  not (null ar) && (r == inId 
 	   || r == parenId 
-	   || r == opId 
+	   || r == opId) 
        then head ar
-       else if r == applId then
+       else if r == applId && length ar == 2 then
 	    ApplTerm (head ar) (head (tail ar)) qs 
        else if r == tupleId || r == unitId then TupleTerm ar qs
        else let newI = setIdePos r ar qs in 
@@ -323,8 +327,8 @@ toAppl g s = let i = ruleId s in
                na = length ra
 	       br = reverse $ posList s
                nb = length br
-	       mkList [] ps = asAppl c [] (head ps)
-	       mkList (hd:tl) ps = asAppl f [hd, mkList tl (tail ps)] (head ps)
+	       mkList [] (p:_) = asAppl c [] p
+	       mkList (hd:tl) (p:ps) = asAppl f [hd, mkList tl ps] p
 	   in if null ra then asAppl c [] 
 		  (if null br then nullPos else head br)
 	      else if nb + 2 == cl + na then
