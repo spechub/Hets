@@ -25,8 +25,7 @@ module ATC_sml_cats (from_sml_ATerm,read_sml_ATerm) where
 
 import Data.List (isPrefixOf)
 
-import Common.ATerm.Conversion
-import Common.ATerm.ReadWrite
+import Common.ATerm.Lib
 
 import Common.Utils
 
