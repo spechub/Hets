@@ -128,5 +128,11 @@ writeFileInfo opts diags file ln lenv =
     Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
     Just gctx -> do
       let envFile = rmSuffix file ++ ".env"
-      putIfVerbose opts 1 ("Writing "++envFile); globalContexttoShATerm envFile gctx
-
+      putIfVerbose opts 1 ("Writing "++envFile)
+      res <- try (globalContexttoShATerm envFile gctx)
+      case res of
+       Right _ -> return ()
+       Left ioErr -> do 
+           putIfVerbose opts 1 (envFile++" not written")
+	   putIfVerbose opts 2 ("see following error description:\n"
+				++show ioErr++"\n")
