@@ -87,25 +87,29 @@ curriedKind os ps = do a <- asKey funS
 
 typeToken :: GenParser Char st Type
 typeToken = fmap TypeToken (pToken (scanWords <|> placeS <|> 
-				    reserved (hascasl_type_ops ++
-					      formula_ops ++
-					      hascasl_reserved_ops)
-				    scanAnySigns))
+				    reserved (equalS: hascasl_type_ops)
+				    scanSigns))
 
 braces :: GenParser Char st a -> ([a] -> [Pos] -> b) 
        -> GenParser Char st b
 braces p c = bracketParser p oBraceT cBraceT commaT c
 
+data TokenMode = AnyToken
+               | NoToken String   
+
 -- [...] may contain types or ids
-idToken :: Bool -> GenParser Char st Token
-idToken b = pToken (scanQuotedChar <|> scanDotWords 
-		 <|> scanDigit <|> scanWords <|> placeS <|> 
-		  reserved ((if b then formula_ops else funS:formula_ops)
-			    ++ hascasl_reserved_ops) 
-		  scanAnySigns)
+aToken :: TokenMode -> GenParser Char st Token
+aToken b = pToken (scanQuotedChar <|> scanDotWords 
+		   <|> scanDigit <|> scanWords <|> placeS <|> 
+		   case b of 
+		   AnyToken -> scanSigns 
+		   NoToken s -> reserved [s] scanSigns)
+
+idToken :: GenParser Char st Token
+idToken = aToken AnyToken
 
 primTypeOrId, typeOrId :: GenParser Char st Type
-primTypeOrId = fmap TypeToken (idToken True) 
+primTypeOrId = fmap TypeToken idToken
 	       <|> braces typeOrId (BracketType Braces)
 	       <|> brackets typeOrId (BracketType Squares)
 	       <|> bracketParser typeOrId oParenT cParenT commaT
@@ -269,12 +273,9 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` commaT
 typePatternToken, primTypePatternOrId, typePatternOrId 
     :: GenParser Char st TypePattern
 typePatternToken = fmap TypePatternToken (pToken (scanWords <|> placeS <|> 
-				    reserved (hascasl_type_ops ++
-					      formula_ops ++ 
-					      hascasl_reserved_ops)
-				    scanAnySigns))
+				    reserved [lessS, equalS] scanSigns))
 
-primTypePatternOrId = fmap TypePatternToken (idToken True) 
+primTypePatternOrId = fmap TypePatternToken idToken 
 	       <|> braces typePatternOrId (BracketTypePattern Braces)
 	       <|> brackets typePatternOrId (BracketTypePattern Squares)
 	       <|> bracketParser typePatternArgs oParenT cParenT semiT
@@ -310,10 +311,10 @@ typePattern = do ts <- many1 primTypePattern
 
 -- flag b allows "->" in patterns 
 
-tokenPattern :: Bool -> GenParser Char st Pattern
-tokenPattern b = fmap PatternToken (idToken b)
+tokenPattern :: TokenMode -> GenParser Char st Pattern
+tokenPattern b = fmap PatternToken (aToken b)
 					  
-primPattern :: Bool -> GenParser Char st Pattern
+primPattern :: TokenMode -> GenParser Char st Pattern
 primPattern b = tokenPattern b 
 		<|> braces pattern (BracketPattern Braces) 
 		<|> brackets pattern (BracketPattern Squares)
@@ -326,7 +327,7 @@ patterns = do (ts, ps) <- pattern `separatedBy` commaT
 		       else TuplePattern ts (map tokPos ps)
 		  in return tp
 
-mixPattern :: Bool -> GenParser Char st Pattern
+mixPattern :: TokenMode -> GenParser Char st Pattern
 mixPattern b = 
     do l <- many1 $ primPattern b
        let p = if length l == 1 then head l else MixfixPattern l
@@ -338,7 +339,7 @@ typedPattern p = do { c <- colT
 		    ; return (TypedPattern p t [tokPos c])
 		    }
 
-asPattern :: Bool -> GenParser Char st Pattern
+asPattern :: TokenMode -> GenParser Char st Pattern
 asPattern b = 
     do v <- mixPattern b
        do   c <- asT 
@@ -346,9 +347,8 @@ asPattern b =
 	    return (AsPattern v t [tokPos c])
          <|> return v
 
--- True allows "->" in patterns
 pattern :: GenParser Char st Pattern
-pattern = asPattern True
+pattern = asPattern AnyToken
 
 -----------------------------------------------------------------------------
 -- instOpId
@@ -387,15 +387,14 @@ typeScheme = do f <- forallT
 
 tToken :: GenParser Char st Token
 tToken = pToken(scanFloat <|> scanString 
-		       <|> scanQuotedChar <|> scanDotWords <|> scanTermWords 
-		       <|> reserved hascasl_reserved_ops scanAnySigns 
-		       <|> placeS <?> "id/literal" )
+		       <|> scanQuotedChar <|> scanDotWords <|> scanWords 
+		       <|> scanSigns <|> placeS <?> "id/literal" )
 
 termToken :: GenParser Char st Term
-termToken = fmap TermToken (asKey exEqual <|> tToken)
+termToken = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken)
 
 -- flag if within brackets: True allows "in"-Terms
-primTerm :: Bool -> GenParser Char st Term
+primTerm :: TypeMode -> GenParser Char st Term
 primTerm b = termToken
 	   <|> braces term (BracketTerm Braces)
 	   <|> brackets term  (BracketTerm Squares)
@@ -460,41 +459,49 @@ qualPredName o = do { v <- asKey predS
 			      (toPos o [v, c] p))
 		  }
 
-typeQual :: Bool -> GenParser Char st (TypeQual, Token) 
-typeQual b = 
+data TypeMode = NoIn | WithIn
+
+typeQual :: TypeMode -> GenParser Char st (TypeQual, Token) 
+typeQual m = 
 	      do q <- colT
 	         return (OfType, q)
 	      <|> 
-	   if b then 
 	      do q <- asT
 	         return (AsType, q)
 	      <|> 
-	      do q <- asKey inS
-		 return (InType, q)
-	   else
-	      do q <- asT
-	         return (AsType, q)
+	      case m of 
+		     NoIn -> pzero
+		     WithIn -> 
+			 do q <- asKey inS
+			    return (InType, q)
 
-typedTerm :: Term -> Bool -> GenParser Char st Term
+typedTerm :: Term -> TypeMode -> GenParser Char st Term
 typedTerm f b = 
     do (q, p) <- typeQual b
        t <- parseType
        return (TypedTerm f q t (tokPos p))
 
-mixTerm :: Bool -> GenParser Char st Term
-mixTerm b = 
+typedMixTerm :: TypeMode -> GenParser Char st Term
+typedMixTerm b = 
     do ts <- many1 $ primTerm b
        let t = if length ts == 1 then head ts else MixfixTerm ts
 	   in typedTerm t b <|> return t
 
+-- typedMixTerm may be separated by "=" or other non-type tokens
+mixTerm :: TypeMode -> GenParser Char st Term
+mixTerm b = 
+    do ts <- many1 $ typedMixTerm b
+       return $ if length ts == 1 then head ts else MixfixTerm ts
+
 term :: GenParser Char st Term
-term = mixTerm True
+term = mixTerm WithIn
+       
 
 -----------------------------------------------------------------------------
 -- quantified term
 -----------------------------------------------------------------------------
 
-forallTerm :: Bool -> GenParser Char st Term
+forallTerm :: TypeMode -> GenParser Char st Term
 forallTerm b = 
              do f <- forallT
 		(vs, ps) <- genVarDecls `separatedBy` semiT
@@ -513,7 +520,7 @@ exQuant =
 	   ; return (Existential, q)
 	   }
 
-exTerm :: Bool -> GenParser Char st Term
+exTerm :: TypeMode -> GenParser Char st Term
 exTerm b = 
          do { (q, p) <- exQuant
 	    ; (vs, ps) <- varDecls `separatedBy` semiT
@@ -530,7 +537,7 @@ lamDot = do d <- asKey (dotS++exMark) <|> asKey (cDot++exMark)
 	 do d <- dotT
 	    return (Partial,d)
 
-lambdaTerm :: Bool -> GenParser Char st Term
+lambdaTerm :: TypeMode -> GenParser Char st Term
 lambdaTerm b = 
              do l <- asKey lamS
 		pl <- lamPattern
@@ -550,29 +557,31 @@ lamPattern = do (vs, ps) <- varDecls `separatedBy` semiT
 -----------------------------------------------------------------------------
 -- b1 allows "->", b2 allows "in"-Terms
 
-patternTermPair :: Bool -> Bool -> String -> GenParser Char st ProgEq
+patternTermPair :: TokenMode -> TypeMode -> String -> GenParser Char st ProgEq
 patternTermPair b1 b2  sep = 
     do p <- asPattern b1
        s <- asKey sep
        t <- mixTerm b2
        return (ProgEq p t (tokPos s))
 
-caseTerm :: Bool -> GenParser Char st Term
+caseTerm :: TypeMode -> GenParser Char st Term
 caseTerm b = 
            do c <- asKey caseS
 	      t <- term
 	      o <- asKey ofS
-	      (ts, ps) <- patternTermPair False b funS `separatedBy` barT
+	      (ts, ps) <- patternTermPair (NoToken funS) b funS 
+			  `separatedBy` barT
 	      return (CaseTerm t ts (map tokPos (c:o:ps)))
 
 -----------------------------------------------------------------------------
 -- let-term
 -----------------------------------------------------------------------------
 
-letTerm :: Bool -> GenParser Char st Term
+letTerm :: TypeMode -> GenParser Char st Term
 letTerm b = 
           do l <- asKey letS
-	     (es, ps) <- patternTermPair True False equalS `separatedBy` semiT 
+	     (es, ps) <- patternTermPair (NoToken equalS) NoIn equalS 
+			 `separatedBy` semiT 
 	     i <- asKey inS
 	     t <- mixTerm b
 	     return (LetTerm es t (toPos l ps i))

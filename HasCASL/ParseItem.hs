@@ -294,11 +294,9 @@ classDecl = do   (is, cs) <- classId `separatedBy` commaT
 classItem :: GenParser Char st ClassItem
 classItem = do c <- classDecl
 	       do { o <- oBraceT 
-                  ; a <- annos
-                  ; i:is <- many1 basicItems
+                  ; i:is <- many1 aBasicItems
                   ; p <- cBraceT
-                  ; return (ClassItem c ((Annoted i [] a [])  
-                                         : map (\x -> Annoted x [] [] []) is)
+                  ; return (ClassItem c is
                                    (map tokPos [o, p])) 
 		  }
                   <|> 
@@ -484,8 +482,8 @@ freeDatatype =   do { f <- asKey freeS
                     ; return (FreeDatatype ds (tokPos f : ps))
                     }
 
-progItems = hasCaslItemList programS (patternTermPair True True equalS) 
-	    ProgItems
+progItems = hasCaslItemList programS (patternTermPair (NoToken equalS) 
+				      WithIn equalS) ProgItems
 
 axiomItems =     do { a <- pluralKeyword axiomS
                     ; (fs, ps, ans) <- hasCaslItemAux (fmap TermFormula term)

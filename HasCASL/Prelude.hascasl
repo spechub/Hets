@@ -1,9 +1,9 @@
 %% predefined universe containing all types, 
 %% superclass of all other classes
 
-class type
+class Type
 
-var s,t  : type 
+var s,t  : Type 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% invisible type "logical" for formulae
@@ -15,42 +15,45 @@ op true, false: logical
 ops __/\__, __\/__, __=>__, __if__,__<=>__ : logical * logical -> logical
 op not : logical -> logical
 
-op __=__,__=e=__ : t * t -> logical
+%% op __=__,__=e=__ : t * t -> logical
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% (builtin) type (constructors)
 
-type __->?__ : type- -> type+ -> type
+type __->?__ : Type- -> Type+ -> Type
 
-type unit: type  %% flat cpo with bottom
+type Unit: Type  %% flat cpo with bottom
 
-free type unit ::= ()       %% elsewhere "()" is illegal as constructor
+free type Unit ::= 1       %% "()" is illegal as constructor
+
+. 1 = ()
 
 %% nested pairs are different from n-tupels (n > 2)
-type __*__ : type+ -> type+ -> type
-type __*__*__ : type+ -> type+ -> type+ -> type
-...
+type __*__ : Type+ -> Type+ -> Type
+type __*__*__ : Type+ -> Type+ -> Type+ -> Type
+
+%% ...
 
 %% type aliases
-type pred (t:type-) = t ->? unit 
-type ? (t:type+) = unit ->? t
+type Pred (t:Type-) := t ->? Unit 
+type ? (t:Type) := Unit ->? t
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"  
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 
-op def, tt : pred s
+op def, tt : Pred s
 var x : s
 
 program def = \x: s . () %% def is also total (identical to tt) 
 
 program tt = \x: s . ()  %% tt is total "op tt(x: s): unit = ()"
 
-program __and__ (x, y: unit) : unit = ()
+program __und__ (x, y: Unit) : Unit = ()
 
 
 %% total function type
-type __->__ : type- -> type+ -> type 
+type __->__ : Type- -> Type+ -> Type 
 
 type s -> t < s ->? t
 
@@ -65,7 +68,7 @@ program snd (x: s; y: t) : t = y
 
 %% trivial because its the strict function property
 
-. (\x:s; y:t. def (x res y)) =  (\x:s; y:t. (def y) and (def x)) 
+. (\x:s; y:t. def (x res y)) =  (\x:s; y:t. (def y) und (def x)) 
 . fst = (__ res__)
 
 
@@ -87,50 +90,50 @@ pred eq : s * s
 
 type s < ?s
 
-program all (p: pred(s)) :? unit = eq(p, tt)
+program all (p: Pred(s)) : Pred Unit = eq(p, tt)
 
-%% the cast from ?s to s is still done manually here (for the strict "and")
-program And (x, y: ?unit) :? unit = t1() and t2()
+%% the cast from ?s to s is still done manually here (for the strict "und")
+program And (x, y: Pred Unit) : Pred Unit = t1() und t2()
 
-%% use "And" instead of "and" to avoid cast from "?unit" to "unit"
-program __impl__ (x, y: ?unit) = eq(x, x And y)
+%% use "And" instead of "und" to avoid cast from "?unit" to "unit"
+program __impl__ (x, y: Pred Unit) : Pred Unit = eq(x, x And y)
 
-program __or__ (x, y: ?unit) :? unit = all(\r: ?unit. 
-		((x impl r) and (y impl r)) impl r)
+program __or__ (x, y: Pred Unit) : Pred Unit = all(\r: Pred Unit. 
+		((x impl r) und (y impl r)) impl r)
 
-program ex (p: pred(s)) :? unit = all(\r: ?unit.
+program ex (p: Pred(s)) : Pred Unit = all(\r:  Pred Unit.
 		all(\x:s. p(x) impl r) impl r)
 
-program ff () :? unit = all(\r: ?unit. r())
+program ff () : Pred Unit = all(\r:  Pred Unit. r())
 
-program neg (r: ?unit) :? unit = r impl ff
+program neg (r: Pred Unit) : Pred Unit = r impl ff
 
 %% the type instance for the first "eq" should be "?t" 
 %% this is explicitely enforced by "\ .f(x)"
 
-. all(\f,g: s->?t. all(\x:s. eq(\ .f(x), g(x)) impl eq(f, g))))
+. all(\f,g: s->?t. all(\x:s. eq(\ . f(x), g(x)) impl eq(f, g)))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"  
 
-class Cpo < type
+class Cpo < Type
 {
 var c : Cpo
 
 pred __<<=__ : c * c
 
 . all(\x: c. x <<= x)                   %(reflexive)%
-. all(\x,y,z: c. ((x <<= y) and (y <<= z)) impl x <<= z)   %(transitive)%
-. all(\x,y,z: c. ((x <<= y) and (y <<= x)) impl eq(x,y))  %(antisymmetric)%
+. all(\x,y,z: c. ((x <<= y) und (y <<= z)) impl x <<= z)   %(transitive)%
+. all(\x,y,z: c. ((x <<= y) und (y <<= x)) impl eq(x,y))  %(antisymmetric)%
 
-pred isChain (s: nat -> c) = all(\n:nat. s(n) <<= s(Suc(n)))
-pred isBound (x: c; s: nat -> c) = all(\n:nat. s(n) <<= x)  
+pred isChain (s: nat -> c) <=> all(\n:nat. s(n) <<= s(Suc(n)))
+pred isBound (x: c; s: nat -> c) <=> all(\n:nat. s(n) <<= x)  
 
 op sup : (nat -> c) ->? c
 
 . all(\s: nat -> c. def(sup s) impl
-	(isBound(sup s, s) and all(\x:c. isBound(x, s) impl sup(s) <<= x)))
-                                                     %(sup is minimal bound)%
+	(isBound(sup s, s) und all(\x:c. isBound(x, s) impl sup(s) <<= x)))
+                                                     %(sup is minimally bound)%
 
 . all(\s:nat -> c. isChain(s) impl def(sup(s)))      %(sup exists)%
 }
@@ -157,21 +160,21 @@ type instance __*__ : Cpo+ -> Cpo+ -> Cpo
 
 var x1,x2 : c; y1, y2 : d 
 
-program (x1, y1) <<= (x2, y2) = (x1 <<= x2) and (y1 <<= y2) 
+program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2) 
 
 
 type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo      
 
-type unit : Pcpo
+type Unit : Pcpo
 
 %% Pcont
 type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo 
 
  type c -->? d < c ->? d
  . __ in c -->? d  = \f : c ->? d . 
-	all(\x,y: c. (def (f x) and x <<= y) impl def (f y)) and
-	all(\s: nat -> c. (isChain(s) and def f(sup(s))) impl 
-		ex(\m:nat. def f(s(m)) and 
+	all(\x,y: c. (def (f x) und x <<= y) impl def (f y)) und
+	all(\s: nat -> c. (isChain(s) und def f(sup(s))) impl 
+		ex(\m:nat. def f(s(m)) und 
 			eq(sup(\n:nat.!f(s(n+m))), f(sup(s)))))
 
   program f <<=[c -->? d] g = all(\x:c. def (f x) impl f(x) <<= g(x))
@@ -190,7 +193,7 @@ type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 
 op Y : (p -->? p) --> p
 
-. all(\f: p -->? p . eq(f(Y(f)), Y(f)) and
+. all(\f: p -->? p . eq(f(Y(f)), Y(f)) und
 	all(\x:p . eq(f(x), x) impl Y(f) <<= x))
 
 op undefined : c -->? p = Y(\x: c -->? p .! x) 
