@@ -71,9 +71,11 @@ instance PrettyPrint ModalSign where
 	$$
 	printSetMap (ptext rigidS <+> ptext predS) space ga (rigidPreds s) 
 	$$ (if Map.isEmpty ms then empty else
-	ptext modalitiesS <+> semiT_text ga (Map.keys ms))
+	ptext modalitiesS <+> semiT_text ga (Map.keys ms)
+            <> braces (printFormulaOfModalSign ga $ Map.elems ms))
 	$$ (if Map.isEmpty tms then empty else
-	ptext termS <+> ptext modalityS <+> semiT_text ga (Map.keys tms) <> braces (printFormulaOfModalSign ga (Map.elems tms)))
+	ptext termS <+> ptext modalityS <+> semiT_text ga (Map.keys tms) 
+            <> braces (printFormulaOfModalSign ga (Map.elems tms)))
 
 
 
