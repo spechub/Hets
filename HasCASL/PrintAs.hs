@@ -21,6 +21,10 @@ import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.GlobalAnnotations(GlobalAnnos)
 
+-- | short cut for: if b then empty else d
+noPrint :: Bool -> Doc -> Doc
+noPrint b d = if b then empty else d
+
 instance PrettyPrint TypePattern where 
     printText0 ga (TypePattern name args _) = printText0 ga name
 				 <> fcat (map (parens . printText0 ga) args)
