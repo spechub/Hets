@@ -99,6 +99,14 @@ data G_symb_map_items = forall id sublogics
          local_env sign morphism symbol raw_symbol =>
         G_symb_map_items id symb_map_items
 
+data G_symb_map_items_list = forall id sublogics
+        basic_spec sentence symb_items symb_map_items
+        local_env sign morphism symbol raw_symbol .
+        Logic id sublogics
+         basic_spec sentence symb_items symb_map_items
+         local_env sign morphism symbol raw_symbol =>
+        G_symb_map_items_list id [symb_map_items]
+
 coerce :: a -> Maybe b = fromDynamic . toDyn
 
 homogenize_symb_items :: [G_symb_items] -> Maybe G_symb_items_list
