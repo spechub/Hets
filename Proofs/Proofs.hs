@@ -554,11 +554,8 @@ findProofBasisForHideTheoremShift :: DGraph -> LEdge DGLinkLab
 				  -> [LEdge DGLinkLab]
 findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
   if (null pathPairsFilteredByMorphism) then ([]::[LEdge DGLinkLab])
-     {-error ("keine ProofBasis gefunden: " 
-		 ++(show (length pathsFromSrc))++" PATHS FROM SRC:\n"
-		 ++(concat (map myShow pathsFromSrc))
-		 ++(show (length pathsFromTgt))++" PATHS FROM TGT:\n"
-		 ++(concat (map myShow pathsFromTgt))) -}
+ {-    error (prettyPrintPossiblePathPairs dgraph hidingMorphism morphism
+	    possiblePathPairs)-}
    else (fst (head pathPairsFilteredByMorphism))
 	 ++(snd (head pathPairsFilteredByMorphism))
 
@@ -577,6 +574,68 @@ findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
     pathPairsFilteredByMorphism 
 	= filterPairsByResultingMorphisms possiblePathPairs
 	  hidingMorphism morphism
+
+-- ----- DEBUGGING METHODS -----
+prettyPrintPossiblePathPairs :: DGraph -> GMorphism -> GMorphism
+			      -> [([LEdge DGLinkLab],[[LEdge DGLinkLab]])] 
+			      -> String
+prettyPrintPossiblePathPairs dgraph hidingMorph morph pairs =
+ "DEBUG OUTPUT FOR HIDE THEOREM SHIFT\n\n"
+  ++ "hiding morphism of hiding link =<" ++ (showPretty hidingMorph "") ++">\n"
+  ++ "('normal') morphism of hiding link =<" ++ (showPretty morph "") ++ ">\n"
+  ++ "+++-+++-+++-+++-+++\n" 
+  ++ "+++-+++-+++-+++-+++\n" 
+  ++ (prettyPrintPossiblePathPairsAux dgraph hidingMorph morph pairs)
+
+prettyPrintPossiblePathPairsAux :: DGraph -> GMorphism -> GMorphism
+				-> [([LEdge DGLinkLab],[[LEdge DGLinkLab]])] 
+				-> String
+prettyPrintPossiblePathPairsAux  _ _ _ [] = ""
+prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph (([],_):pairs) 
+    = prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph pairs
+prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph ((_,[]):pairs)
+    = prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph pairs
+prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph ((p1,p2:ps):pairs) =
+  "FIRST: " ++ (prettyPrintPath dgraph hidingMorph "first" p1) ++ "SECOND: " ++ (prettyPrintPath dgraph morph "second" p2) ++ "+++-+++-+++-+++-+++\n" ++ (prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph ((p1,ps):pairs))
+
+
+prettyPrintPath :: DGraph -> GMorphism -> String -> [LEdge DGLinkLab] -> String
+prettyPrintPath dgraph _ _ [] = "<empty path>"
+prettyPrintPath dgraph morphism pathText p@(x:xs) =
+  "from <" ++ (prettyPrintSourceNodeOfPath dgraph p) ++ "> over <" ++ (prettyPrintMiddleNodesOfPath dgraph p) ++ "> to <" ++ (prettyPrintTargetNodeOfPath dgraph p) ++ "> with morphism < " ++ (showPretty pathMorphism "") ++ ">,\n which combined with the " ++ morphismText ++ " morphism of the hiding link results in <" ++ (showPretty (compMaybeMorphisms pathMorphism (Just morphism)) "") ++ ">\n"
+  where 
+    pathMorphism = calculateMorphismOfPath p
+    morphismText = case pathText of
+		     "first" -> "hiding"
+		     "second" -> "('normal')"
+
+prettyPrintSourceNodeOfPath :: DGraph -> [LEdge DGLinkLab] -> String
+prettyPrintSourceNodeOfPath _ [] = "no source node"
+prettyPrintSourceNodeOfPath dgraph ((src,_,edgelab):_) =
+  case get_dgn_name lab of
+    Just simpleId -> tokStr simpleId
+    Nothing -> ""
+  where
+    lab = lab' (context src dgraph)
+
+prettyPrintMiddleNodesOfPath :: DGraph -> [LEdge DGLinkLab] -> String
+prettyPrintMiddleNodesOfPath dgraph [] = ""
+prettyPrintMiddleNodesOfPath dgraph (edge:edges) =
+  if ((length edges) > 1) then (prettyPrintTargetNodeOfPath dgraph [edge]) 
+	 ++ ", " ++ prettyPrintMiddleNodesOfPath dgraph edges
+   else if (null edges) then "" else (prettyPrintTargetNodeOfPath dgraph [edge])
+
+prettyPrintTargetNodeOfPath :: DGraph -> [LEdge DGLinkLab] -> String
+prettyPrintTargetNodeOfPath _ [] = "no target node"
+prettyPrintTargetNodeOfPath dgraph p =
+  case get_dgn_name lab of
+    Just simpleId -> tokStr simpleId
+    Nothing -> ""
+  where
+    (_,tgt,_) = last p
+    lab = lab' (context tgt dgraph)
+
+-- -----END OF DEBUGGING METHODS -----
 
 {- returns a list of path pairs, as shorthand the pairs are not returned as path-path tuples but as path-<list of path> tuples. Every path in the list is a pair of the single path.
 The path pairs are selected by having the same target node. -}
