@@ -10,113 +10,150 @@ Portability :  portable
 
    Data structures for Isabelle signatures and theories.
    Adapted from Isabelle.
+
+LogicList.hs
+LogicGraph.hs
+
 -}
 
 module Isabelle.IsaSign where
 
 import qualified Common.Lib.Map as Map
 
--- temporary!!
-type Axiom = ()
-
 -------------------- not quite from src/Pure/term.ML ------------------------
+----------------------------- Names -----------------------------------------
+
+type IName = String
+
+type CName = IName  -- class name
+type TName = IName  -- type name
+type VName = IName -- value name
 
 {-Indexnames can be quickly renamed by adding an offset to the integer part,
   for resolution.-}
 type Indexname = (String,Int)
 
+--------- Classes
 {- Types are classified by sorts. -}
 
--- Classes
-
-data IsaClass  = IsaClass { classId :: String, classDef :: [Axiom] }
+data IsaClass  = IsaClass CName
                  deriving (Ord, Eq, Show)   
 
 type Sort  = [IsaClass]
 
-domain:: Sort
-domain = [pcpo]
+holType :: Sort
+holType = [IsaClass "hol_type"]
+
+dom:: Sort
+dom = [pcpo]
 
 isaTerm :: IsaClass
-isaTerm = IsaClass "term" []
-
-holType :: Sort
-holType = [IsaClass "hol_type" []]
+isaTerm = IsaClass "term"
 
 pcpo :: IsaClass
-pcpo = IsaClass "pcpo" []
+pcpo = IsaClass "pcpo"
 
-ho_ho :: [Sort]
-ho_ho = [holType, holType]
 
+----------- Kinds
+
+data ExKind = IKind IsaKind | IClass | PLogic
+
+data IsaKind  = Star
+              | Kfun IsaKind IsaKind
+                deriving (Ord, Eq, Show)  
 
 ------------------------------------------------------------------------------
 
-{- The sorts attached to TFrees and TVars specify the sort of that variable -}
-data Typ = Type  { typeId         :: String,
-                   typeArgKind    :: [Sort],
-                   typeResultKind :: Sort,
-                   typeArgs  :: [Typ] } 
-         | TFree { typeId    :: String,
-                   typeSort  :: Sort}
+{- 
+data Typ = TCons  { typeId    :: TName,
+                   typeSort  :: Sort,
+                   typeArgs  :: Int } 
+         | TAppl { constructor :: Typ,
+                   argument    :: Typ }
+         | TFree { typeId    :: TName,
+                   typeSort  :: Sort }
          | TVar  { indexname :: Indexname, -- (String,Int)
                    typeSort  :: Sort }
          deriving (Eq, Ord, Show)
+-}
+
+{- The sorts attached to TFrees and TVars specify the sort of that variable -}
+data Typ = Type  { typeId    :: TName,
+                   typeSort  :: Sort,
+                   typeArgs  :: [Typ] } 
+         | TFree { typeId    :: TName,
+                   typeSort  :: Sort }
+         | TVar  { indexname :: Indexname, -- (String,Int)
+                   typeSort  :: Sort }
+         deriving (Eq, Ord, Show)
+
+typeAppl :: Typ -> [Typ] -> Typ
+typeAppl t ts = 
+ case ts of 
+   [] -> t
+   v:vs -> typeAppl (binTypeAppl t v) vs
+
+binTypeAppl :: Typ -> Typ -> Typ
+binTypeAppl t1 t2 = case t1 of
+    Type n s [] -> Type n s []
+    Type n s ((TVar _ _):ts) -> Type n s (t2:ts)                 
+
+-- mkContAppl :: Typ -> Typ -> Typ 
+-- mkContAppl t1 t2 = Type "domAppl" dom [t1,t2]
 
 noType :: Typ
 noType = dummyT
 
 dummyT :: Typ
-dummyT = Type "dummy" [] holType []
+dummyT = Type "dummy" holType []
 
 boolType :: Typ
-boolType = Type "bool" [] holType []
+boolType = Type "bool" holType []
 
 mkOptionType :: Typ -> Typ
-mkOptionType t = Type "option" [holType] holType [t]
-
-prodS :: String 
-prodS = "*"    -- this is printed as it is!
+mkOptionType t = Type "option" holType [t]
 
 prodType :: Typ -> Typ -> Typ
-prodType t1 t2 = Type prodS ho_ho holType [t1,t2]
-
-typeApplS :: String 
-typeApplS = "typeAppl" -- maybe this should be " " for printing
-
-mkTypeAppl :: String -> [Typ] -> Typ
-mkTypeAppl s t = Type s ho_ho holType t
-
-funS :: String 
-funS = "fun"  -- may be this should be "=>" for printing
+prodType t1 t2 = Type prodS holType [t1,t2]
 
 mkFunType :: Typ -> Typ -> Typ
-mkFunType s t = Type funS ho_ho holType [s,t] -- was "-->" before
+mkFunType s t = Type funS holType [s,t] -- was "-->" before
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
 mkCurryFunType :: [Typ] -> Typ -> Typ
 mkCurryFunType = flip $ foldr mkFunType -- was "--->" before
 
 voidDom :: Typ
-voidDom = Type "void" [] domain []
+voidDom = Type "void" dom []
 -- voidDom = Type ("void",[pcpo],[])
 
 {- should this be included (as primitive)? -}
 flatDom :: Typ
-flatDom = Type "flat" [] domain []
+flatDom = Type "flat" dom []
 
 {- sort is ok? -}
 mkContFun :: Typ -> Typ -> Typ
-mkContFun t1 t2 = Type "dFun" [domain, domain] domain [t1,t2]
+mkContFun t1 t2 = Type "dFun" dom [t1,t2]
 
-mkDomProduct :: Typ -> Typ -> Typ
-mkDomProduct t1 t2 = Type "**" [domain, domain] domain [t1,t2]
+mkContProduct :: Typ -> Typ -> Typ
+mkContProduct t1 t2 = Type "**" dom [t1,t2]
 
-mkDomSum :: Typ -> Typ -> Typ
-mkDomSum t1 t2 = Type "++" [domain, domain] domain [t1,t2]
+{-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
+mkCurryContFun :: [Typ] -> Typ -> Typ
+mkCurryContFun = flip $ foldr mkContFun -- was "--->" before
 
-mkDomAppl :: Typ -> Typ -> Typ 
-mkDomAppl t1 t2 = Type "domAppl" [domain, domain] domain [t1,t2]
+mkContSum :: Typ -> Typ -> Typ
+mkContSum t1 t2 = Type "++" dom [t1,t2]
+
+-- not so useful, could be omitted
+-- typeApplS :: TName 
+-- typeApplS = "typeAppl" -- maybe this should be " " for printing
+
+prodS :: TName
+prodS = "*"    -- this is printed as it is!
+
+funS :: TName 
+funS = "fun"  -- may be this should be "=>" for printing
 
 {-Terms.  Bound variables are indicated by depth number.
   Free variables, (scheme) variables and constants have names.
@@ -126,35 +163,37 @@ mkDomAppl t1 t2 = Type "domAppl" [domain, domain] domain [t1,t2]
   It is possible to create meaningless terms containing loose bound vars
   or type mismatches.  But such terms are not allowed in rules. -}
 
-data Flag = IsCont | NotCont deriving (Eq, Ord ,Show)
+data Continuity = IsCont | NotCont deriving (Eq, Ord ,Show)
 
 data Term =
-        Const { termBasicId  :: String, 
-                termType     :: Typ, 
-                defaultClass :: IsaClass }  -- constants, with default class
-      | Free  { termBasicId  :: String, 
-                termType     :: Typ, 
-                defaultClass :: IsaClass }  -- free variables
-      -- | Var   (Indexname, Typ)
-      -- | Bound Int
-      | Abs   { absVar   :: Term, 
-                termType :: Typ, 
-                termId   :: Term,
-                flag     :: Flag }  -- lambda abstraction
+        Const { termName   :: VName }
+--                termType     :: Typ} 
+--                defaultClass :: IsaClass }  -- constants, with default class
+      | Free  { termName   :: VName }  
+--                termType     :: Typ} 
+--               defaultClass :: IsaClass }  -- free variables
+--    | Var   (Indexname, Typ)
+--    | Bound Int
+      | Abs   { absVars    :: [(Term,Typ)], 
+                termId     :: Term, 
+                continuity :: Continuity }  -- lambda abstraction
       | App { funId :: Term, 
               argId :: Term, 
-              flag  :: Flag }    -- application
-      | Case { termId    :: Term, 
-               caseSubst :: [(Term, Term)], 
-               flag      :: Flag }  -- case
+              continuity   :: Continuity }    -- application
+      | Case { termId      :: Term, 
+               caseSubst   :: [(Term, Term)] } 
+--               continuity  :: Continuity }  -- case
       | If { ifId   :: Term, 
              thenId :: Term, 
-             elseId :: Term, 
-             flag   :: Flag }        -- If then else
-      | Let { letSubst :: [(Term, Term)], 
-              inId     :: Term, 
-              flag     :: Flag }   -- Let
-      | Fix { funId    :: Term }
+             elseId :: Term } 
+--             continuity   :: Continuity }        -- If then else
+      | Let { letSubst    :: [(Term, Term)], 
+              inId        :: Term } 
+--              continuity  :: Continuity }   -- Let
+      | Tuples [Term] Continuity 
+      | Paren Term
+      | Wildcard
+      | Fix Term 
       deriving (Eq, Ord, Show)
 
 data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show) 
@@ -164,21 +203,17 @@ data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show)
 
 {-- type classes and sorts --}
 
-{-
-  Classes denote (possibly empty) collections of types that are
+{-  Classes denote (possibly empty) collections of types that are
   partially ordered by class inclusion. They are represented
-  symbolically by !!!!! strings. !!!!!!!!!!!
+  symbolically by strings. 
 
   Sorts are intersections of finitely many classes. They are
   represented by lists of classes.  Normal forms of sorts are sorted
   lists of minimal classes (wrt. current class inclusion).
 
-  (already defined in Pure/term.ML)
--}
-
+  (already defined in Pure/term.ML) -}
 
 {- sort signature information -}
-
 {-
   classrel:
     table representing the proper subclass relation; entries (c, cs)
@@ -188,42 +223,26 @@ data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show)
     table of association lists of all type arities; (t, ars) means
     that type constructor t has the arities ars; an element (c, Ss) of
     ars represents the arity t::(Ss)c;
+
+type Classrel = Map.Map IsaClass [IsaClass]
+type Arities = Map.Map IName [(IsaClass, [Sort])] -- function names are mapped to arities
+
 -}
 
-type Classrel = Map.Map IsaClass Sort
-type Arities = Map.Map String [(IsaClass, [Sort])]
-
-
--------------------- from src/Pure/type.ML ------------------------
-
-{- check what all the fields are. in particualar, check what arities
-are in Isabelle and try to understand what role they play in the
-translation. Then see whether there is some overlap with the new
-definition of Sort.
-
-emotional note -what the hell are all these strings?! 
-
-maybe after all its better to use the new representation of Sort,
-threfrom extracting the arities when needed. 
-OK, add the HOLCF terms. 
-What's Syntax?  
-
-the problem now is to see where information about classes turns out
-essential.  it is not clear whether we need to encode class
-information explicitly in the term data-type. after all, classes
-should be inferred by the type. anyway, its time to check the actual
-translation. the most critical point seems to be beta-reduction -
-that should actually produce proof obligations. -}
+type Classrel = Map.Map IsaClass [IsaClass]
+type Arities = Map.Map TName [(IsaClass, [(Typ, Sort)])]
+type Abbrs = Map.Map TName ([TName], Typ)
+-- type Arities = Map.Map TName [(IsaClass, [Sort])] old!!!
 
 data TypeSig =
   TySg {
     classrel:: Classrel,  -- domain of the map yields the classes
     defaultSort:: Sort,
-    log_types:: [String],
+    log_types:: [TName],
     univ_witness:: Maybe (Typ, Sort),
-    abbrs:: Map.Map String ([String], Typ),
-    arities:: Arities } -- the former field tycons can be computed 
-   deriving (Eq, Show)
+    abbrs:: Abbrs, -- constructor name, variable names, type.
+    arities:: Arities } -- actually isa-instances. the former field tycons can be computed.
+    deriving (Eq, Show)
 
 emptyTypeSig :: TypeSig
 emptyTypeSig = TySg {
@@ -236,12 +255,11 @@ emptyTypeSig = TySg {
 
 -------------------- from src/Pure/sign.ML ------------------------
 
-data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
+data Sign = Sign { baseSig :: IName, -- like Pure, HOL, Main etc.
                    tsig :: TypeSig,
-                   constTab :: Map.Map String Typ,  -- constants with type
-                   dataTypeTab :: DataTypeTab,
+                   constTab :: ConstTab,  -- value cons with type
                    domainTab :: DomainTab,  
-                   -- needs HOLCF, extend this with domains
+                   dataTypeTab :: DataTypeTab,
                    showLemmas :: Bool
                  }
              deriving (Eq, Show)
@@ -251,13 +269,18 @@ data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
     each datatype consists of its name (Typ) and a list of constructors
     each constructor consists of its name (String) and list of argument types
  -}                      
+
+type ConstTab = Map.Map VName Typ
+
 type DataTypeTab = [DataTypeTabEntry]
-type DataTypeTabEntry = [(Typ,[DataTypeAlt])] -- (type,[constructors])
-type DataTypeAlt = (String,[Typ])
+type DataTypeTabEntry = [DataTypeEntry] -- (type,[value cons])
+type DataTypeEntry = (Typ,[DataTypeAlt])
+type DataTypeAlt = (VName,[Typ])
 
 type DomainTab = [DomainTabEntry]
-type DomainTabEntry = [(Typ,[DomainAlt])] -- (type,[constructors])
-type DomainAlt = (String,[Typ])
+type DomainTabEntry = [DomainEntry] -- (type,[value cons])
+type DomainEntry = (Typ,[DomainAlt])
+type DomainAlt = (VName,[Typ])
 
 emptySign :: Sign
 emptySign = Sign { baseSig = "Pure",
@@ -266,3 +289,27 @@ emptySign = Sign { baseSig = "Pure",
                    dataTypeTab = [],
                    domainTab = [],
                    showLemmas = False }
+
+{- Instances in Haskell have form:
+
+instance (MyClass a, MyClass b) => MyClass (MyTypeConst a b)
+
+In Isabelle:
+
+instance MyTypeConst :: (MyClass, MyClass) MyClass
+
+Note that the Isabelle syntax does not allows for multi-parameter classes.
+Rather, it subsumes the syntax for arities.
+
+Type constraints are applied to value constructors in Haskell as follows:
+
+MyValCon :: (MyClass a, MyClass b) => MyTypeConst a b
+
+In Isabelle:
+
+MyValCon :: MyTypeConst (a::MyClass) (b::MyClass)
+
+In both cases, the typing expressions may be encoded as schemes.
+Schemes and instances allows for the inference of type constraints over 
+values of functions.
+-}
