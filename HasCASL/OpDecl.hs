@@ -99,24 +99,23 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        as <- gets assumps
        mapM (mapM addVarDecl) monoPats
        let newArgs = catMaybes mArgs  
-       checkUniqueTypevars newArgs
        mty <- anaStarType scTy
        case mty of 
            Just ty -> do 
                mt <- resolveTerm ga Nothing $ TypedTerm trm AsType ty ps
                putAssumps as
                putTypeMap tm
-               mSc <- generalizeS $ TypeScheme tArgs 
+               newSc <- generalizeS $ TypeScheme newArgs 
                       (patternsToType newPats ty) qs
-               case (mt, mSc) of 
-                   (Just lastTrm, Just newSc) -> do 
+               case mt of 
+                   Just lastTrm -> do 
                        let lamTrm = case (pats, partial) of 
                                     ([], Total) -> lastTrm
                                     _ -> LambdaTerm pats partial lastTrm ps
                            ot = QualOp br (InstOpId i [] []) newSc []
                            lhs = mkApplTerm ot pats
                            ef = mkEqTerm eqId ps lhs lastTrm
-                           f = mkForall (map GenTypeVarDecl tArgs
+                           f = mkForall (map GenTypeVarDecl newArgs
                                           ++ (map GenVarDecl $ 
                                               concatMap extractVars pats)) ef
                        addOpId i newSc [] $ Definition br lamTrm

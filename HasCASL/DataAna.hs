@@ -46,13 +46,13 @@ genSelVars n (ts:sels)  =
 
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
 makeSelTupleEqs dt ct n m (Select mi ty p : sels) = 
-    let Result _ msc = getSelType dt p ty in
-    (case (mi, msc) of
-    (Just i, Just sc) -> let
+    let sc = getSelType dt p ty in
+    (case mi of
+     Just i -> let
                   vt = QualVar $ mkSelVar n m ty
                   eq = mkEqTerm eqId [] (mkApplTerm (mkOpTerm i sc) [ct]) vt
               in [NamedSen ("ga_select_" ++ show i) eq]
-    _ -> [])
+     _ -> [])
     ++ makeSelTupleEqs dt ct n (m + 1) sels
 makeSelTupleEqs _ _ _ _ [] = []
 
@@ -67,8 +67,7 @@ makeAltSelEqs dt@(_, args, _) (Construct mc ts p sels) =
     case mc of
     Nothing -> []
     Just c -> let sc = TypeScheme args (getConstrType dt p ts) [] 
-                  Result _ msc = generalize sc
-                  newSc = maybe sc id msc
+                  newSc = generalize sc
                   vars = genSelVars 1 sels 
                   as = map ( \ vs -> mkTupleTerm (map QualVar vs) []) vars
                   ct = mkApplTerm (mkOpTerm c newSc) as
@@ -114,7 +113,7 @@ anaComp tys rt tm (NoSelector t) =
     do ct <- anaCompType tys rt t tm
        return  (ct, Select Nothing ct Partial)
 
-getSelType :: DataPat -> Partiality -> Type -> Result TypeScheme
+getSelType :: DataPat -> Partiality -> Type -> TypeScheme
 getSelType dp@(_, args, _) p rt = let dt = typeIdToType dp in 
     generalize $ TypeScheme args ((case p of 
     Partial -> addPartiality [dt]

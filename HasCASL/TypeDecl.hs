@@ -27,7 +27,6 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.AsUtils
-import HasCASL.Unify
 import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
@@ -137,12 +136,10 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                   case mt of 
                           Nothing -> return $ SubtypeDefn newPat v t f ps
                           Just ty -> do
-                              let newPty = TypeScheme nAs ty []
-                                  fullKind = typeArgsListToKind nAs star
+                              newPty <- generalizeS $ TypeScheme nAs ty []
+                              let fullKind = typeArgsListToKind nAs star
                                   Result es mvds = anaVars v ty
                               addDiags es
-                              checkUniqueTypevars nAs
-                              addDiags $ unboundTypevars nAs ty
                               if cyclicType i ty then do 
                                  addDiags [mkDiag Error 
                                      "illegal recursive subtype definition" ty]
@@ -199,16 +196,10 @@ anaTypeItem _ _ inst _ t@(AliasType pat mk sc ps) =
                                 let allArgs = nAs++args
                                     fullKind = typeArgsListToKind nAs ik
                                     allSc = TypeScheme allArgs ty qs
-                                checkUniqueTypevars allArgs
-                                gPty <- generalizeS allSc
-                                case gPty of 
-                                  Nothing -> return $ AliasType 
-                                             (TypePattern i [] [])
-                                             (Just fullKind) allSc ps
-                                  Just newPty -> do 
-                                    addTypeId True (AliasTypeDefn newPty) 
+                                newPty <- generalizeS allSc
+                                addTypeId True (AliasTypeDefn newPty) 
                                         inst fullKind i 
-                                    return $ AliasType (TypePattern i [] [])
+                                return $ AliasType (TypePattern i [] [])
                                         (Just fullKind) newPty ps
 anaTypeItem _ gk inst tys (Datatype d) = 
     do newD <- anaDatatype gk inst tys d 
@@ -235,7 +226,7 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
                   putTypeMap tm
                   let nAs = catMaybes newAs
                       fullKind = typeArgsListToKind nAs k
-                  checkUniqueTypevars nAs
+                  addDiags $ checkUniqueTypevars nAs
                   mi <- addTypeId False PreDatatype Plain fullKind i 
                   return $ case mi of 
                           Nothing -> Nothing 
@@ -289,17 +280,10 @@ anaDatatype genKind inst tys
                Nothing -> return ()
                Just c -> do
                    let ty = TypeScheme nAs (getConstrType dt p tc) []
-                   msc <- generalizeS ty 
-                   case msc of 
-                     Nothing -> return ()
-                     Just sc -> do 
-                       addOpId c sc [] (ConstructData i) 
-                       mapM_ ( \ (Select ms ts pa) -> case ms of 
-                           Just s -> do 
-                              ssc <- fromResult $ const $ getSelType dt pa ts
-                              case ssc of 
-                                 Nothing -> return Nothing
-                                 Just selSc -> addOpId s selSc []
+                   sc <- generalizeS ty 
+                   addOpId c sc [] (ConstructData i) 
+                   mapM_ ( \ (Select ms ts pa) -> case ms of 
+                           Just s -> addOpId s (getSelType dt pa ts) []
                                        $ SelectData [ConstrInfo c sc] i
                            Nothing -> return Nothing) $ concat sels) newAlts
            let de = DataEntry Map.empty i genKind nAs newAlts
@@ -337,7 +321,7 @@ addTypePattern defn inst kind (i, as) =
        let nAs = catMaybes newAs
            fullKind = typeArgsListToKind nAs kind
        putTypeMap tm
-       checkUniqueTypevars nAs
+       addDiags $ checkUniqueTypevars nAs
        mId <- addTypeId True defn inst fullKind i
        return $ case mId of 
                 Nothing -> Nothing

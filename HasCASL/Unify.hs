@@ -26,19 +26,6 @@ import Common.Result
 import Data.List as List
 import Data.Maybe
 
--- | check for unbound type variables
-unboundTypevars :: [TypeArg] -> Type -> [Diagnosis]
-unboundTypevars args ct = 
-    let restVars = varsOf ct List.\\ args in
-    if null restVars then []
-       else [mkDiag Error ("unbound type variable(s)\n  "
-                                  ++ showSepList ("," ++) showPretty 
-                                  restVars " in") ct]
-
--- | vars
-varsOf :: Type -> [TypeArg]
-varsOf = map snd . leaves (/=0)
-
 -- | bound vars
 genVarsOf :: Type -> [TypeArg]
 genVarsOf = map snd . leaves (<0)
@@ -91,10 +78,10 @@ asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 -- -------------------------------------------------------------------------
 freshInstList :: TypeScheme -> State Int (Type, [Type])
 freshInstList (TypeScheme tArgs t _) = 
-    do let vs = genVarsOf t
+    do let ls = leaves (< 0) t -- generic vars
+           vs = map snd ls
        ts <- mkSubst vs
-       return (rename ( \ i k n -> if n < 0 then 
-                        ts !! (-1-n) else TypeName i k n) t, 
+       return (subst (Map.fromList $ zip (map fst ls) ts) t,
                map (mapArg $ zip vs ts) tArgs)
 
 mapArg :: [(TypeArg, a)] -> TypeArg -> a

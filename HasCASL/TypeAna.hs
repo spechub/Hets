@@ -21,6 +21,7 @@ import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
+import Data.List as List
 
 -- --------------------------------------------------------------------------
 -- kind analysis
@@ -354,21 +355,38 @@ anaStarTypeR t = anaType (Just star, t)
 
 mkGenVars :: [TypeArg] -> Type -> Type
 mkGenVars fvs newTy = 
-    let ts = zipWith ( \ (TypeArg i k _ _) n -> 
-                                  TypeName i k n) fvs [-1, -2..]
-        m = Map.fromList $ zip fvs ts
-    in  repl m newTy
+     let ts = zipWith ( \ (TypeArg i k _ _) n ->
+                                   TypeName i k n) fvs [-1, -2..]
+         m = Map.fromList $ zip fvs ts
+     in  repl m newTy
 
-generalize :: TypeScheme -> Result TypeScheme
-generalize (TypeScheme newArgs newTy p) = do
-               let fvs = varsOf newTy
-                   qTy = mkGenVars fvs newTy
-                   ds = unboundTypevars newArgs newTy
-               if null ds then
-                  return $ TypeScheme newArgs qTy p
-                  else if null newArgs then 
-                       return $ TypeScheme fvs qTy p
-                  else Result ds Nothing
+generalize :: TypeScheme -> TypeScheme
+generalize (TypeScheme args ty p) =
+    let fvs = leaves (> 0) ty
+        ts = zipWith ( \ (v, TypeArg i k _ _) n -> 
+                       (v, TypeName i k n)) fvs [-1, -2..]
+        newTy = subst (Map.fromList ts) ty
+        newArgs = map snd fvs
+     in if null $ newArgs List.\\ args then TypeScheme args newTy p
+        else TypeScheme newArgs newTy p
+
+-- | check for unbound type variables
+unboundTypevars :: [TypeArg] -> Type -> [Diagnosis]
+unboundTypevars args ty = 
+    let restVars = map snd (leaves (> 0) ty) List.\\ args in
+    if null restVars then []
+       else [mkDiag Error ("unbound type variable(s)\n  "
+                                  ++ showSepList ("," ++) showPretty 
+                                  restVars " in") ty]
+
+generalizable :: TypeScheme -> [Diagnosis]
+generalizable (TypeScheme args ty _) = 
+    (if null args then [] else unboundTypevars args ty)
+    ++ checkUniqueTypevars args
+    
+-- | check uniqueness of type variables 
+checkUniqueTypevars :: [TypeArg] -> [Diagnosis]
+checkUniqueTypevars = checkUniqueness . map getTypeVar
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 

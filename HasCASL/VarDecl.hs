@@ -61,15 +61,20 @@ anaTypeScheme (TypeScheme tArgs ty p) =
     do tm <- gets typeMap    -- save global variables  
        mArgs <- mapM anaTypeVarDecl tArgs
        let newArgs = catMaybes mArgs  
-       checkUniqueTypevars newArgs
        mt <- anaStarType ty
        putTypeMap tm       -- forget local variables 
        case mt of 
            Nothing -> return Nothing
-           Just newTy -> generalizeS $ TypeScheme newArgs newTy p
+           Just newTy -> do 
+               let newSc = TypeScheme newArgs newTy p
+               gTy <- if null newArgs then return $ generalize newSc 
+                      else generalizeS newSc
+               return $ Just gTy
 
-generalizeS :: TypeScheme -> State Env (Maybe TypeScheme)
-generalizeS = fromResult . const . generalize
+generalizeS :: TypeScheme -> State Env TypeScheme
+generalizeS sc = do 
+    addDiags $ generalizable sc
+    return $ generalize sc
 
 anaKind :: Kind -> State Env Kind
 anaKind k = toState star $ anaKindM k
@@ -307,8 +312,9 @@ makeMonomorph :: VarDecl -> VarDecl
 makeMonomorph (VarDecl v t sk ps) = VarDecl v (monoType t) sk ps
 
 monoType :: Type -> Type
-monoType t = repl (Map.fromList $ map ( \ a@(TypeArg i k _ _) -> 
-                                        (a, TypeName i k 0)) $ varsOf t) t
+monoType t = subst (Map.fromList $ 
+                    map ( \ (v, TypeArg i k _ _) -> 
+                          (v, TypeName i k 0)) $ leaves (> 0) t) t
 
 -- | analyse 
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)
@@ -331,11 +337,6 @@ getVar(VarDecl v _ _ _) = v
 -- | check uniqueness of variables 
 checkUniqueVars :: [VarDecl] -> State Env ()
 checkUniqueVars = addDiags . checkUniqueness . map getVar
-
--- | check uniqueness of type variables 
-checkUniqueTypevars :: [TypeArg] -> State Env ()
-checkUniqueTypevars = addDiags . checkUniqueness 
-                      . map getTypeVar
 
 -- | filter out assumption
 filterAssumps  :: (OpInfo -> Bool) -> Assumps -> Assumps
