@@ -42,7 +42,14 @@ class (Language cid, Typeable cid,
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-             | cid -> lid1, cid -> lid2
+             | cid -> lid1, cid -> lid2, 
+               cid -> sublogics1, cid -> basic_spec1, cid -> sentence1, 
+               cid -> symb_items1, cid -> symb_map_items1, cid -> sign1, 
+               cid -> morphism1, cid -> symbol1, cid -> raw_symbol1, 
+               cid -> proof_tree1, cid -> sublogics2, cid -> basic_spec2, 
+               cid -> sentence2, cid -> symb_items2, 
+               cid -> symb_map_items2, cid -> sign2, cid -> morphism2, 
+               cid -> symbol2, cid -> raw_symbol2, cid -> proof_tree2
   where
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
@@ -77,7 +84,7 @@ instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree =>
          Language (IdComorphism lid) where
-           language_name _ = "id_"++language_name (undefined::lid)
+           language_name _ = "id_"++language_name (error "Comorphism.hs"::lid)
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -314,7 +321,7 @@ comp_comorphism r1 r2 = if targetSublogic r1 <<= sourceSublogic r2 then
             return (si3, se3s ++ catMaybes 
 				  (map (map_sentence r2 si2) se2s)) ,
 
-   projection = undefined ,
+   projection = error "Comorphism.hs:projection",
 
    map_morphism = \ m1 -> map_morphism r1 m1 >>=  map_morphism r2 ,
 

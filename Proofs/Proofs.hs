@@ -91,7 +91,7 @@ data BasicConsProof = BasicConsProof -- more detail to be added ...
    the list of DGChage must be constructed in parallel to the
    new DGraph -}
 applyRule :: DGRule -> DGraph -> Maybe ([DGChange],DGraph)
-applyRule = undefined
+applyRule = error "Proofs.hs:applyRule"
 
 -- ---------------------
 -- global decomposition

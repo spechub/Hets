@@ -195,7 +195,7 @@ parseHiding l =
 	     <|> return ([G_symb_list m], ps)
 
 parseRevealing :: LogicGraph -> GenParser Char AnyLogic (G_symb_map_items_list, [Token])
-parseRevealing l = undefined
+parseRevealing l = error "Parse_AS_Structured.hs:parseRevealing"
 
 ------------------------------------------------------------------------
 -- specs

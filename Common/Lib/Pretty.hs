@@ -550,7 +550,7 @@ sp_text sl s = case sl of {sl1 -> textBeside_ (PStr s) sl1 Empty}
 nest k  p = mkNest k (reduceDoc p)        -- Externally callable version
 
 -- mkNest checks for Nest's invariant that it doesn't have an Empty inside it
-mkNest k       _           | k `seq` False = undefined
+mkNest k       _           | k `seq` False = (error "Pretty.hs")
 mkNest k       (Nest k1 p) = mkNest (k + k1) p
 mkNest k       NoDoc       = NoDoc
 mkNest k       Empty       = Empty
@@ -575,7 +575,7 @@ above p g q                  = aboveNest p             g 0 (reduceDoc q)
 aboveNest :: RDoc -> Bool -> Int -> RDoc -> RDoc
 -- Specfication: aboveNest p g k q = p $g$ (nest k q)
 
-aboveNest _                   _ k _ | k `seq` False = undefined
+aboveNest _                   _ k _ | k `seq` False = (error "Pretty.hs")
 aboveNest NoDoc               g k q = NoDoc
 aboveNest (p1 `Union` p2)     g k q = aboveNest p1 g k q `union_` 
                                       aboveNest p2 g k q
@@ -597,7 +597,7 @@ nilAboveNest :: Bool -> Int -> RDoc -> RDoc
 -- Specification: text s <> nilaboveNest g k q 
 --              = text s <> (text "" $g$ nest k q)
 
-nilAboveNest _ k _           | k `seq` False = undefined
+nilAboveNest _ k _           | k `seq` False = (error "Pretty.hs")
 nilAboveNest g k Empty       = Empty    -- Here's why the "text s <>" is in the spec!
 nilAboveNest g k (Nest k1 q) = nilAboveNest g (k + k1) q
 
@@ -661,7 +661,7 @@ sepX x (p:ps) = sep1 x (reduceDoc p) 0 ps
 --                              `union` x $$ nest k (vcat ys)
 
 sep1 :: Bool -> RDoc -> Int -> [Doc] -> RDoc
-sep1 g _                   k ys | k `seq` False = undefined
+sep1 g _                   k ys | k `seq` False = (error "Pretty.hs")
 sep1 g NoDoc               k ys = NoDoc
 sep1 g (p `Union` q)       k ys = sep1 g p k ys
                                   `union_`
@@ -707,7 +707,7 @@ fill g (p:ps) = fill1 g (reduceDoc p) 0 ps
 
 
 fill1 :: Bool -> RDoc -> Int -> [Doc] -> Doc
-fill1 g _                   k ys | k `seq` False = undefined
+fill1 g _                   k ys | k `seq` False = (error "Pretty.hs")
 fill1 g NoDoc               k ys = NoDoc
 fill1 g (p `Union` q)       k ys = fill1 g p k ys
                                    `union_`
@@ -719,7 +719,7 @@ fill1 g (Nest n p)          k ys = nest_ n (fill1 g p (k - n) ys)
 fill1 g (NilAbove p)        k ys = nilAbove_ (aboveNest p False k (fill g ys))
 fill1 g (TextBeside s sl p) k ys = textBeside_ s sl (fillNB g p (k - sl) ys)
 
-fillNB g _           k ys | k `seq` False = undefined
+fillNB g _           k ys | k `seq` False = (error "Pretty.hs")
 fillNB g (Nest _ p)  k ys  = fillNB g p k ys
 fillNB g Empty k []        = Empty
 fillNB g Empty k (y:ys)    = nilBeside g (fill1 g (oneLiner (reduceDoc y)) k1 ys)
@@ -756,7 +756,7 @@ best mode w r p
   where
     get :: Int          -- (Remaining) width of line
         -> Doc -> Doc
-    get w _ | w==0 && False   = undefined
+    get w _ | w==0 && False   = (error "Pretty.hs")
     get w Empty               = Empty
     get w NoDoc               = NoDoc
     get w (NilAbove p)        = nilAbove_ (get w p)
@@ -769,7 +769,7 @@ best mode w r p
          -> Doc         -- This is an argument to TextBeside => eat Nests
          -> Doc         -- No unions in here!
 
-    get1 w _ _ | w==0 && False = undefined
+    get1 w _ _ | w==0 && False = (error "Pretty.hs")
     get1 w sl Empty               = Empty
     get1 w sl NoDoc               = NoDoc
     get1 w sl (NilAbove p)        = nilAbove_ (get (w - sl) p)
@@ -854,7 +854,7 @@ display mode page_width ribbon_width txt end doc
   = case page_width - ribbon_width of { gap_width ->
     case gap_width `quot` 2 of { shift ->
     let
-        lay k _            | k `seq` False = undefined
+        lay k _            | k `seq` False = (error "Pretty.hs")
         lay k (Nest k1 p)  = lay (k + k1) p
         lay k Empty        = end
     
@@ -876,10 +876,10 @@ display mode page_width ribbon_width txt end doc
 
                     other -> lay1 k s sl p
     
-        lay1 k _ sl _ | k+sl `seq` False = undefined
+        lay1 k _ sl _ | k+sl `seq` False = (error "Pretty.hs")
         lay1 k s sl p = Str (indent k) `txt` (s `txt` lay2 (k + sl) p)
     
-        lay2 k _ | k `seq` False = undefined
+        lay2 k _ | k `seq` False = (error "Pretty.hs")
         lay2 k (NilAbove p)        = nl_text `txt` lay k p
         lay2 k (TextBeside s sl p) = s `txt` (lay2 (k + sl) p)
         lay2 k (Nest _ p)          = lay2 k p

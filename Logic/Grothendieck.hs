@@ -44,7 +44,6 @@ import Common.Result
 import Common.Id
 import Common.Named
 import Data.Dynamic
-import Common.ATerm.Lib
 
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
@@ -93,8 +92,10 @@ data G_sign = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
   G_sign lid sign 
 
+tyconG_sign :: TyCon
+tyconG_sign = mkTyCon "Logic.Grothendieck.G_sign"
 instance Typeable G_sign where
-  typeOf _ = mkAppTy (mkTyCon "G_sign") []
+  typeOf _ = mkAppTy tyconG_sign []
 
 instance Eq G_sign where
   (G_sign i1 sigma1) == (G_sign i2 sigma2) =
@@ -253,20 +254,24 @@ data AnyComorphismAux lid1 sublogics1
                  lid2 sublogics2 basic_spec2 sentence2 
                  symb_items2 symb_map_items2
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
-      ComorphismAux cid lid1 lid2
+      ComorphismAux cid lid1 lid2 sign1 morphism2
 
-instance Typeable (lid1 sublogics1
+tyconAnyComorphismAux :: TyCon
+tyconAnyComorphismAux = mkTyCon "Logic.Grothendieck.AnyComorphismAux"
+instance Typeable (AnyComorphismAux lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1
         lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
-instance Show (lid1 sublogics1
+  where typeOf _ = mkAppTy tyconG_sign []
+instance Show (AnyComorphismAux lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1
         lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
+  where show _ = "<AnyComorphismAux>"
 
 {- This does not work due to needed ordering:
 instance Functor Set where
@@ -284,7 +289,7 @@ instance Monad Set where
 
 -- composition in diagrammatic order
 compAnyComorphism :: AnyComorphism -> AnyComorphism -> Maybe AnyComorphism
-compAnyComorphism = undefined
+compAnyComorphism = error "Grothendieck.hs:compAnyComorphism"
 {-
   (Comorphism (r1 :: Comorphism lid1 sublogics1 basic_spec1 sentence1 
                 symb_items1 symb_map_items1
@@ -362,22 +367,11 @@ instance Category Grothendieck G_sign GMorphism where
            lid2 = targetLogic r1
            lid3 = sourceLogic r2
            lid4 = targetLogic r2
-       ComorphismAux r1' lid1' lid2' <- 
-         (coerce lid2 lid3 $ ComorphismAux r1 lid1 lid2)
-            :: Maybe (AnyComorphismAux lid5 sublogics1
-                basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-                lid6 sublogics2
-                basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
---       r1' <- coerce lid2 lid3 r1
-       let r3 = CompComorphism r1' r2
---           lid5 = targetLogic r3
---       mor1' <- coerce lid2 lid3 mor1
---       mor1'' <- map_morphism r2 mor1'
---       mor <- comp lid5 mor2 mor1''
-       return undefined
---       return (GMorphism r3 undefined undefined) --sigma1 mor) 
+       ComorphismAux r1' _ _ sigma1' mor1' <- 
+         (coerce lid2 lid3 $ ComorphismAux r1 lid1 lid2 sigma1 mor1)
+       mor1'' <- map_morphism r2 mor1'
+       mor <- comp lid4 mor2 mor1''
+       return (GMorphism (CompComorphism r1' r2) sigma1' mor)
   dom _ (GMorphism r sigma _mor) = 
     G_sign (sourceLogic r) sigma
   cod _ (GMorphism r _sigma mor) = 
@@ -391,12 +385,6 @@ instance Category Grothendieck G_sign GMorphism where
       Nothing -> False
     where lid2 = targetLogic r
 
-ideGrothendieck (G_sign lid sigma) = 
-    GMorphism (IdComorphism lid) sigma (ide lid sigma)
-domGrothendieck  (GMorphism cid sigma _mor) = G_sign (sourceLogic cid) sigma
-codGrothendieck (GMorphism cid _sigma mor) = 
-   G_sign lid (cod lid mor)
-   where lid = targetLogic cid
 
 gEmbed :: G_morphism -> GMorphism
 --gEmbed _ = error "gEmbed"
@@ -445,5 +433,5 @@ homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
 -}
 
 inclusion :: G_sign -> G_sign -> GMorphism
-inclusion gsigma1 gsigma2 = 
+inclusion gsigma1 _gsigma2 = 
   ide Grothendieck gsigma1 -- ???

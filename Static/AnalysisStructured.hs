@@ -121,7 +121,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
            [node] = newNodes 0 dg
            dg' = insNode (node,node_contents) dg
            link = DGLink {
-                    dgl_morphism = undefined, -- where to get it from ???
+                    dgl_morphism = error "AnalysisStructured.hs:1", -- where to get it from ???
                     dgl_type = GlobalDef,
                     dgl_origin = DGExtension }
            dg'' = case nsig of
@@ -138,7 +138,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
               "Internal error: Translation of empty spec" (getNode nsig')
       mor <- ana_RENAMING dg (getSig nsig') ren
       -- ??? check that mor is identity on local env
-      let gsigma' = codGrothendieck mor 
+      let gsigma' = cod Grothendieck mor 
            -- ??? too simplistic for non-comorphism inter-logic translations 
       G_sign lid' sigma' <- return gsigma'
       let node_contents = DGNode {
@@ -168,7 +168,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
       -- in order to keep the dg as simple as possible
       case tmor of
        Nothing ->
-        do let gsigma' = domGrothendieck hmor
+        do let gsigma' = dom Grothendieck hmor
            -- ??? too simplistic for non-comorphism inter-logic reductions 
            G_sign lid' sigma' <- return gsigma'
            let node_contents = DGNode {
@@ -186,8 +186,8 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
                    insEdge link $
                    insNode (node,node_contents) dg')
        Just tmor' ->
-        do let gsigma1 = domGrothendieck tmor'
-               gsigma'' = codGrothendieck tmor'
+        do let gsigma1 = dom Grothendieck tmor'
+               gsigma'' = cod Grothendieck tmor'
            -- ??? too simplistic for non-comorphism inter-logic reductions 
            G_sign lid1 sigma1 <- return gsigma1
            G_sign lid'' sigma'' <- return gsigma''
@@ -238,7 +238,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
             dgn_origin = DGUnion }
           [node] = newNodes 0 dg'
           link = DGLink {
-             dgl_morphism = undefined, -- ??? how to get it?
+             dgl_morphism = error "AnalysisStructured.hs:2", -- ??? how to get it?
              dgl_type = GlobalDef,
              dgl_origin = DGUnion }
       return (let insE dg n = insEdge (n,node,link) dg -- link should vary
@@ -277,7 +277,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
             dgn_origin = DGFree }
           [node] = newNodes 0 dg'
           link = (n',node,DGLink {
-            dgl_morphism = undefined, -- ??? inclusion
+            dgl_morphism = error "AnalysisStructured.hs:3", -- ??? inclusion
             dgl_type = FreeDef nsig,
             dgl_origin = DGFree })
       return (Free_spec (replaceAnnoted sp' asp) pos,
@@ -299,7 +299,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
             dgn_origin = DGCofree }
           [node] = newNodes 0 dg'
           link = (n',node,DGLink {
-            dgl_morphism = undefined, -- ??? inclusion
+            dgl_morphism = error "AnalysisStructured.hs:4", -- ??? inclusion
             dgl_type = CofreeDef nsig,
             dgl_origin = DGCofree })
       return (Cofree_spec (replaceAnnoted sp' asp) pos,
@@ -543,7 +543,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
             dgn_origin = DGFree }
           [node] = newNodes 0 dg'
           link = (n',node,DGLink {
-            dgl_morphism = undefined, -- ??? inclusion
+            dgl_morphism = error "AnalysisStructured.hs:5", -- ??? inclusion
             dgl_type = FreeDef nsig,
             dgl_origin = DGFree })
       return (Data (Logic lid1) 
@@ -580,7 +580,7 @@ ana_ren dg mor_res ren =
 
 ana_RENAMING :: DGraph -> G_sign -> RENAMING -> Result GMorphism
 ana_RENAMING dg gSigma (Renaming ren pos) = 
-  foldl (ana_ren dg) (return (ideGrothendieck gSigma)) ren'
+  foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
   where
   ren' = zip ren (tail (pos ++ repeat nullPos))
 
@@ -621,7 +621,7 @@ ana_RESTRICTION :: DGraph -> G_sign -> G_sign -> RESTRICTION
        -> Result (GMorphism, Maybe GMorphism)
 ana_RESTRICTION dg gSigma gSigma' (Hidden restr pos) = 
   do mor <- foldl (ana_restr dg gSigma) 
-                  (return (ideGrothendieck gSigma'))
+                  (return (ide Grothendieck gSigma'))
                   restr'
      return (mor,Nothing)
   where
