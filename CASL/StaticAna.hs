@@ -104,6 +104,7 @@ addSentences ds =
     do e <- get
        put e { sentences = ds ++ sentences e }
 
+
 -- * traversing all data types of the abstract syntax
 
 ana_BASIC_SPEC :: GlobalAnnos -> BASIC_SPEC -> State Sign BASIC_SPEC

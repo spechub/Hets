@@ -37,13 +37,13 @@ isaProve thName (sig,axs) goals = do
   let showAxs = concat $ map ((++"\n") . showSen) (nameSens axs)
       showGoals = concat 
          $ map (("theorem "++) . (++"\noops\n\n") . showSen) goals
-      showTheory = thName ++ " = " 
+      showTheory = "theory " ++ thName ++ " = " 
                    ++ showPretty sig "\n\naxioms\n" 
                    ++ showAxs ++ "\n\n" ++ showGoals
                    ++ "\nend\n"
   writeFile (thName++".thy") showTheory
-  createTextDisplay thName ("Written Isabelle/Isar theory "++thName++".thy") 
-                    [size(30,30)]
+  createTextDisplay thName ("Wrote Isabelle/Isar theory "++thName++".thy") 
+                    [size(50,10)]
   return [] -- ??? to be implemented
 
 

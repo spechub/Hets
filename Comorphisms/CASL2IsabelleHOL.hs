@@ -30,6 +30,7 @@ import CASL.AS_Basic_CASL
 import CASL.Sublogic
 import CASL.Sign
 import CASL.Morphism
+import CASL.Quantification 
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
@@ -69,7 +70,7 @@ instance Comorphism CASL2IsabelleHOL
     map_sign _ = transSignature
     --map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign phi =
-      Just $ Sentence {senTerm = transFORMULA sign phi}
+      Just $ Sentence {senTerm = transFORMULA sign (stripQuant phi)}
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
 ------------------------------ Ids ---------------------------------
@@ -140,11 +141,6 @@ transPredType pt = map transSort (predArgs pt) ---> boolType
 transVar :: VAR -> String
 transVar = showIsaSid
 
-flatVAR_DECL :: VAR_DECL -> [(VAR, SORT)]
-flatVAR_DECL (Var_decl vlist s _) = map (\v -> (v,s)) vlist
-
-flatVAR_DECLs :: [VAR_DECL] -> [(VAR, SORT)]
-flatVAR_DECLs = concat . map flatVAR_DECL
 
 quantify q (v,t) phi  = 
   Const (qname q,dummyT) `App` Abs (transVar v,transSort t,phi)
@@ -162,7 +158,7 @@ binImpl phi1 phi2 =
 binEq phi1 phi2 = 
   Const("op =",dummyT) `App` phi1 `App` phi2
 
-transOP_SYMB _ (Op_name op) = showIsa op
+transOP_SYMB _ (Op_name op) = error "CASL2Isabelle: unqualified operation"
 transOP_SYMB sign (Qual_op_name op ot _) = 
   case (do ots <- Map.lookup op (opMap sign)
            if Set.size ots == 1 then return $ showIsa op
@@ -171,14 +167,14 @@ transOP_SYMB sign (Qual_op_name op ot _) =
     Just str -> str  
     Nothing -> showIsa op
 
-transPRED_SYMB _ (Pred_name p) = showIsa p
+transPRED_SYMB _ (Pred_name p) = error "CASL2Isabelle: unqualified predicate"
 transPRED_SYMB sign (Qual_pred_name p pt _) =
   case (do pts <- Map.lookup p (predMap sign)
            if Set.size pts == 1 then return $ showIsa p 
             else do i <- elemIndex (toPredType pt) (Set.toList pts)
                     return $ showIsaI p i) of
     Just str -> str
-    Nothing -> showIsa p
+    Nothing -> error "showIsa p"
 
 transFORMULA :: CASL.Sign.Sign -> FORMULA -> Term
 transFORMULA sign (Quantification quant vdecl phi _) =
@@ -191,8 +187,6 @@ transFORMULA sign (Implication phi1 phi2 _) =
   binImpl (transFORMULA sign phi1) (transFORMULA sign phi2)
 transFORMULA sign (Equivalence phi1 phi2 _) =
   binEq (transFORMULA sign phi1) (transFORMULA sign phi2)
-transFORMULA sign (Negation phi _) =
-  Const ("Not",dummyT) `App` (transFORMULA sign phi)
 transFORMULA sign (Negation phi _) =
   Const ("Not",dummyT) `App` (transFORMULA sign phi)
 transFORMULA sign (True_atom _) =
@@ -218,7 +212,7 @@ transFORMULA sign (Unparsed_formula _ _) =
   error "No translation for unparsed formulas"
 
 transTERM sign (Qual_var v s _) =
-  Free(transVar v,dummyT)
+  IsaSign.Free(transVar v,dummyT)
 transTERM sign (Application opsymb args _) =
   foldl App (Const (transOP_SYMB sign opsymb,dummyT)) 
             (map (transTERM sign) args)
@@ -231,7 +225,7 @@ transTERM sign (Conditional t1 phi t2 _) =
                       `App` (transTERM sign t1)
                       `App` (transTERM sign t2)
 transTERM sign (Simple_id v) =
-  Free(transVar v,dummyT)
+  IsaSign.Free(transVar v,dummyT)
   --error "No translation for undisambigated identifier"
 transTERM sign (Unparsed_term _ _) =
   error "No translation for unparsed terms"
@@ -243,3 +237,5 @@ transTERM sign (Mixfix_token _) =
   error "No translation for mixfix terms"
 transTERM sign (Mixfix_sorted_term _ _) =
   error "No translation for mixfix terms"
+
+

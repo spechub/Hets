@@ -450,7 +450,7 @@ calculateMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
   case maybeMorphismOfFurtherPath of
     Nothing -> if null furtherPath then Just morphism else Nothing
     Just morphismOfFurtherPath ->
-		  comp Grothendieck morphism morphismOfFurtherPath
+           resultToMaybe $ compHomInclusion morphism morphismOfFurtherPath
 
   where
     morphism = dgl_morphism edgeLab
@@ -626,7 +626,6 @@ computeTheory dg n = do
               $ fst $ match n dg
   let  nlab = lab' ctx
        paths = getAllLocGlobDefPathsTo dg n []
-  --debug 1 ("paths",paths)
   mors <- maybeToResult nullPos "Could not calculate morphism of path"
             $ sequence $ map (calculateMorphismOfPathWithStart dg) paths
   ctxs <- maybeToResult nullPos "Could not find start node of path"
@@ -663,6 +662,7 @@ getProvers lg (Logic lid) =
                             (Comorphism (IdComorphism lid))
                $ comorphisms lg
         -- ??? Should be composites as well!
+        -- ??? Sublogic check is missing!
          
 
 selectProver :: [(G_prover,AnyComorphism)] -> IOResult (G_prover,AnyComorphism)
@@ -681,7 +681,8 @@ basicInferenceNode lg (ln,node) proofStatus@(globalContext,history,dGraph) =
         localEdges = filter isUnprovenLocalThm inEdges
     goalslist <- resToIORes $ sequence $ map (getGoals dGraph) localEdges
     G_l_sentence_list lid3 goals <- 
-        resToIORes (maybeToResult nullPos "Logic mismatch for proof goals" 
+      if null goalslist then return $ G_l_sentence_list lid2 [] 
+        else resToIORes (maybeToResult nullPos "Logic mismatch for proof goals" 
                                   (flatG_l_sentence_list goalslist))
     let provers = getProvers lg (Logic lid1)
     (G_prover lid4 p,Comorphism cid) <- selectProver provers
@@ -690,7 +691,7 @@ basicInferenceNode lg (ln,node) proofStatus@(globalContext,history,dGraph) =
     sign' <- resToIORes $ rcoerce lidS lid1 nullPos sign
     axs' <- resToIORes $ rcoerce lidS lid2 nullPos axs
     goals' <- resToIORes $ rcoerce lidS lid3 nullPos goals
-    p' <- resToIORes $ rcoerce lidS lid4 nullPos p
+    p' <- resToIORes $ rcoerce lidT lid4 nullPos p
     -- Borrowing: translate theory and goal
     (sign'',sens'') <- resToIORes  
                         $ maybeToResult nullPos "Could not map signature"
@@ -711,7 +712,7 @@ basicInferenceNode lg (ln,node) proofStatus@(globalContext,history,dGraph) =
         nodeName = case nlab of
           DGNode _ _ _ _-> dgn_name nlab
           DGRef _ _ _ -> dgn_renamed nlab
-        thName = showPretty ln "_"
+        thName = showPretty (getLIB_ID ln) "_"
                  ++ maybe (show node) (flip showPretty "") nodeName
     ps <- ioToIORes $ prove p' thName (sign'',sens''++axs'') goals'' 
     let nextDGraph = dGraph -- ??? to be implemented

@@ -42,6 +42,9 @@
      Then inclusions are represented by pair of signatures
      (Non-inclusions could be specially displayed in the DG)
 
+   No optimization of heterogeneous unions!
+     (or use heterogeneous compInclusion in Proofs/Proof.hs)  
+
    Treatment of translations and reductions along logic translations
    (see WADT 02 paper).
    Open question:

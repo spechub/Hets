@@ -298,6 +298,9 @@ data LogicGraph = LogicGraph {
                     inclusions :: Map.Map (String,String) AnyComorphism
                   }
 
+emptyLogicGraph :: LogicGraph
+emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty
+
 -- | find a logic in a logic graph
 lookupLogic :: String -> String -> LogicGraph -> AnyLogic
 lookupLogic error_prefix logname logicGraph =
@@ -515,6 +518,21 @@ ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
 	   Nothing -> Result [Diag FatalError 
 			 ("No inclusion from "++ln1++" to "++ln2++" found")
                          (newPos "t" 0 0)] Nothing 
+-- | Composition of two Grothendieck signature morphisms 
+-- | with itermediate inclusion
+compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
+compInclusion lg mor1 mor2 = do
+  incl <- ginclusion lg (cod Grothendieck mor1) (dom Grothendieck mor2)
+  mor <- maybeToResult nullPos
+           "compInclusion: composition falied" $ comp Grothendieck mor1 incl
+  maybeToResult nullPos
+           "compInclusion: composition falied" $ comp Grothendieck mor mor2
+
+
+-- | Composition of two Grothendieck signature morphisms 
+-- | with itermediate homogeneous inclusion
+compHomInclusion :: GMorphism -> GMorphism -> Result GMorphism
+compHomInclusion mor1 mor2 = compInclusion emptyLogicGraph mor1 mor2
 
 -- | Translation of a G_l_sentence_list along a GMorphism
 translateG_l_sentence_list :: GMorphism -> G_l_sentence_list 
