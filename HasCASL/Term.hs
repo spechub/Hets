@@ -4,18 +4,22 @@ import Char (isLower)
 import Id
 import Type
 
--- symbols uniquely identify signature items 
-data Symb = Symb { symbId :: Id
+-- symbols uniquely identify signature items
+-- several ids should be expanded later. The list must be non-empty! 
+data Symb = Symb { symbIds :: [Id]
 		 , symbType :: Type 
 		 } 
 	    deriving (Eq, Ord)
 
+showCommaList :: Show a => [a] -> ShowS
+showCommaList = showSepList (showChar ',') showSign
+
 showSymb :: Symb -> ShowS
-showSymb (Symb i Unknown) = shows i
-showSymb (Symb i Sort) = shows i
+showSymb (Symb i Unknown) = showCommaList i
+showSymb (Symb i Sort) = showCommaList i
 showSymb (Symb i (PartialType v)) = 
-    showSign i . showSignStr (colonChar:partialSuffix) . shows v
-showSymb (Symb i t) = showSign i . showSignStr [colonChar] . shows t
+    showCommaList i . showSignStr (colonChar:partialSuffix) . shows v
+showSymb (Symb i t) = showCommaList i . showSignStr [colonChar] . shows t
 
 instance Show Symb where
     showsPrec _ = showSymb
@@ -24,7 +28,7 @@ instance Show Symb where
 type DeclNotation = Keyword 
 -- "sort s"     -> previous keyword(s) = "sort") 
 -- "sorts s; t" -> previous keyword(t) = ";")
--- "sorts s, t" -> previous keyword(t) = ",")
+-- "sorts s, t" -> commas are ignored within symbIds 
 -- for iso-decl or subsort-decl PreviousKeyword could be "<" or "="
 
 type Anno = String
@@ -131,7 +135,7 @@ data Term = BaseName QualId
 showTerm (BaseName q) = showShortQualId q
 
 showTerm (Application MixTerm ts [op, cl]) = 
-    shows op . showSepList (showChar ',') shows ts . shows cl
+    shows op . shows ts . shows cl
 showTerm (Application MixTerm ts []) = 
     showSepList (showString "") showSign ts
 showTerm (Application t ts _) = shows t . showParen True (shows ts)
@@ -163,7 +167,7 @@ showTerm MixTerm = showString "!MIX!"
 
 instance Show Term where
     showsPrec _ = showTerm
-    showList = showSepList (showChar ',') shows
+    showList = showCommaList
   
 isBaseName (BaseName _) = True
 isBaseName _ = False

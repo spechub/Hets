@@ -25,16 +25,17 @@ lessSign = toKey lessStr
 
 isMixIdOrCross (Id ts cs) = 
     not (null (tail ts)) || 
-	show ts `elem` [lessStr, productSign, altProductSign]
+	show ts `elem` 
+	  [lessStr, totalFunArrow, partialFunArrow, productSign, altProductSign]
 
 sortId = parseId  `checkWith` (not . isMixIdOrCross)
 
-typeId _ = do { i <- sortId
-	      ; return (Type i [])
-	      }
+typeId = do { i <- sortId
+	    ; return (Type i [])
+	    }
 
-primType :: Token -> Parser Type
-primType c = typeId c 
+primType :: Parser Type
+primType = typeId 
 	   <|> (do { o <- oParen
 		   ; (cParen >> return (crossProduct []))
 		     <|> (funType o << cParen)
@@ -46,7 +47,7 @@ toId :: Token -> Id
 toId i = Id [i] []
 
 productType :: Token -> Parser Type
-productType c = fmap makeProduct (separatedBy primType cross c)
+productType c = fmap makeProduct (separatedBy (const primType) cross c)
     where makeProduct [(c, x)] = x
 	  makeProduct [(_, x), (c, y)] = Type (toId c) [x, y]
 	  makeProduct ((_, x) : l@(_ : _)) =  

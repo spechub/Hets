@@ -1,5 +1,6 @@
 module OpItem (opItems) where
 
+import Id
 import ItemAux
 import Lexer
 import LocalEnv
@@ -13,18 +14,18 @@ import Type
 opId = parseId
 
 opItem ast key = do { o1 <- opId
-		    ; ol <- single (oneOpItem (key, o1))
+		    ; ol <- oneOpItem (key, o1)
 		            <|> commaOpItem (key, o1)
 		    ; return ((map AnOpItem ol) ++ ast)
 		    }
 
-mkOpItem a t (k, o) = OpItem (Decl (Symb o t) k []) a Nothing []
+mkOpItem a t os = OpItem (Decl (Symb os t) (Token "," nullPos) []) a Nothing []
 
 commaOpItem o = 
-    do { l <- comma >>= separatedBy (const opId) comma
+    do { l <- comma >>= opId `sepBy1` comma
        ; t <- partialColon >>= parsePartialType
        ; a <- option [] attrs
-       ; return (map (mkOpItem a t) (o:l)) 
+       ; return (mkOpItem a t l) 
        }
 
 declHead = (oParen >>= varDecls) << cParen

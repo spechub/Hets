@@ -18,17 +18,16 @@ colon = toKey [colonChar]
 partialColon = makeToken (keySign 
 		    (char colonChar <:> option "" (string partialSuffix)))
 
-makeDecl t []  = []
-makeDecl t ((c,v):l) = (Decl (Symb v t) c []) : (makeDecl t l)
+makeDecl i t = Decl (Symb i t) (Token "," nullPos) []
 
-varDecl :: Token -> Parser [Decl]
-varDecl t = do { l <- separatedBy (const varId) comma t
-	       ; r <- colon >>= funType
-	       ; return (makeDecl r l)
+varDecl :: Parser Decl
+varDecl = do { i <- varId `sepBy1` comma
+	       ; t <- colon >>= funType
+	       ; return (makeDecl i t)
  	       }
 
-varDecls :: Token -> Parser [Decl]
-varDecls t = fmap (concat . map snd) (separatedBy varDecl semi t)
+varDecls :: Parser [Decl]
+varDecls = varDecl `sepBy1` semi
 
 parseDecls = varDecls
 -- ----------------------------------------------
@@ -68,7 +67,7 @@ typedTerm = do { c <- try (colon <|> asTok <|> inTok) <?> "type"
 	       }
 
 toQualId :: Token -> Term
-toQualId t = BaseName (QualId (Symb (toId t) Unknown) 0 Inferred)
+toQualId t = BaseName (QualId (Symb [toId t] Unknown) 0 Inferred)
 
 terms :: Token -> Parser [Term]
 terms t = do { l <- separatedBy (const mixTerm) comma t
@@ -90,7 +89,7 @@ qualName = do { w <- toKey varStr <|> toKey opStr <|> toKey predStr
 	      ; let s = showTok w 
 		    ty = if s == predStr then predicate t else t 
 		    l = if s == varStr then 1 else 0 
-		in return (BaseName (QualId (Symb i ty) l UserGiven))
+		in return (BaseName (QualId (Symb [i] ty) l UserGiven))
 	      }
 
 parenTerm = do { o <- oParen
@@ -130,7 +129,7 @@ isLambda (Lambda _) = True
 isLambda _ = False
 
 quantTerm = do { q <- try quant
-	       ; v <- varDecls q
+	       ; v <- varDecls
 	       ; d <- getDot `checkWith` 
 		 \d -> length (showTok d) == 1
 		 || isLambda (binder q) 
