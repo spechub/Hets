@@ -58,9 +58,6 @@ y1 : d %(var)%
 y2 : d %(var)%
 %% Sentences -------------------------------------------------------------
 (op __=__ : s × s ->? Unit) ((op fst : s), (op __res__ : s)) %()%
-(op __=__ : s × s ->? Unit) (\ x : s . (op eq : s ×
-						s ->? Unit) (((op x : s), (op x : s))),
-			     (op tt : (Pred)(s))) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 4, column 7) illegal universe class declaration
 Warning (line 15, column 16) redeclared type 't'
@@ -74,6 +71,7 @@ FatalError (line 54, column 3) no resolution for term: __
 FatalError (line 60, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
 Error (line 65, column 19) unexpected mixfix token '('
 Error (line 75, column 24) unexpected mixfix token 'y'
+FatalError (line 74, column 11) no resolution for term: (\ x : s . eq (x, x)) = tt
 Warning (line 85, column 6) redeclared type 's'
 FatalError (line 87, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
 FatalError (line 90, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
@@ -88,13 +86,12 @@ Error (line 108, column 37) unexpected mixfix token 'f'
 Warning (line 115, column 13) redundant universe class
 Error (line 123, column 26) unexpected mixfix token 'y'
 Error (line 122, column 26) unexpected mixfix token 'y'
-Error (line 119, column 8) unexpected mixfix token '\ x : c . (op __<<=__ : c × c ->? Unit) ((op x : s), (op x : s))'
+FatalError (line 121, column 14) no resolution for term: x <<= x
 Error (line 125, column 44) unexpected mixfix token 's'
 Error (line 126, column 50) unexpected mixfix token 's'
 Error (line 134, column 20) unexpected mixfix token 'isChain'
 Error (line 131, column 42) unexpected mixfix token 'isBound'
-Error (line 119, column 8) unexpected mixfix token '\ x : p . (op __<<=__ : c × c ->? Unit) ((op bottom : p),
-					 (op x : s))'
+FatalError (line 143, column 15) no resolution for term: bottom <<= x
 FatalError (line 150, column 2) no analysis yet for: program __ <<= [f] __ = eq
 Warning (line 153, column 5) redeclared type 'c'
 Hint (line 157, column 13) not a class 'c'

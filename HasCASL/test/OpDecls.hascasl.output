@@ -14,8 +14,8 @@ c : s = (op __+__ : s × s -> s) ((op a : s), (op b : s))
 d : s = (op __+__ : s × s -> s) ((op a : s), (op a : s))
 e : s × s -> s = (op __+__ : s × s -> s)
 f : s × s -> s = (op __+__ : s × s -> s)
-g : s × s = (((op a : s), (op b : s)))
-h : s = (op __+__ : s × s -> s) (((op a : s), (op b : s)))
+g : s × s = ((op a : s), (op b : s))
+h : s = (op __+__ : s × s -> s) ((op a : s), (op b : s))
 i1 : s = (op incr : s -> s) (op a : s)
 i2 : s = (op incr : s -> s) (op a : s)
 i3 : s = (op incr : s -> s) (op a : s)
@@ -23,14 +23,12 @@ incr : s -> s
 l1 : s = (op __<=__<=__ : s × s × s -> s) ((op a : s), (op b : s),
 					   (op c : s))
 l2 : s × s × s -> s = (op __<=__<=__ : s × s × s -> s)
-l3 : s = (op __<=__<=__ : s × s × s -> s) (((op a : s), (op b : s),
-					    (op c : s)))
-l4 : s = (op __<=__<=__ : s × s × s -> s) (((op a : s), (op b : s),
-					    (op c : s)))
-l5 : s × s × s = (((op a : s), (op b : s), (op c : s)))
+l3 : s = (op __<=__<=__ : s × s × s -> s) ((op a : s), (op b : s),
+					   (op c : s))
+l4 : s = (op __<=__<=__ : s × s × s -> s) ((op a : s), (op b : s),
+					   (op c : s))
+l5 : s × s × s = ((op a : s), (op b : s), (op c : s))
 x : s %(var)%
-y : s = (op __<=__<=__ : s × s × s -> s) ((op a : s), (var x : s),
-					  (op a : s) : s)
 z : s = (op __+__ : s × s -> s) ((op x : s) as s,
 				 (op x : s) as t as s)
 %% Sentences -------------------------------------------------------------
@@ -43,3 +41,4 @@ Hint (line 7, column 14) type 't' is not unifiable with 's × s'
 Hint (line 3, column 12) type 't' is not unifiable with 's'
 Hint (line 3, column 12) type 't' is not unifiable with 's'
 Hint (line 40, column 9) not a class 's'
+Error (line 11, column 4) unexpected mixfix token '(op a : s) : s'

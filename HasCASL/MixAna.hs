@@ -35,16 +35,16 @@ import Data.Maybe
 lookUp :: (Ord a) => Map.Map a [b] -> a -> [b]
 lookUp ce k = Map.findWithDefault [] k ce
 
-type PMap = Map.Map Index [PState]
+type PMap a = Map.Map Index [PState a]
 
-data ParseMap = ParseMap { varCount :: Int
-			 , lastIndex :: Index
-			 , failDiags :: [Diagnosis]
-			 , parseMap :: PMap
-			 }
+data ParseMap a = ParseMap { varCount :: Int
+			   , lastIndex :: Index
+			   , failDiags :: [Diagnosis]
+			   , parseMap :: PMap a
+			   }
 
 -- match (and shift) a token (or partially finished term)
-scan :: TypeMap -> (Type, Term) -> ParseMap -> ParseMap
+scan :: TypeMap -> (Type, Term) -> ParseMap Term -> ParseMap Term
 scan tm (ty, trm) pm =
   let m = parseMap pm
       i = lastIndex pm
@@ -65,7 +65,8 @@ scan tm (ty, trm) pm =
 -- final complete/reduction phase 
 -- when a grammar rule (mixfix Id) has been fully matched
 
-collectArg :: GlobalAnnos -> TypeMap -> PMap -> PState -> [PState]
+collectArg :: GlobalAnnos -> TypeMap -> PMap Term -> PState Term 
+	   -> [PState Term]
 -- pre: finished rule 
 collectArg ga tm m
 	   s@(PState { ruleId = argIde, stateNo = arg, ruleType = argType }) =
@@ -74,16 +75,17 @@ collectArg ga tm m
     $ filter (filterByPrec ga argIde)
     $ lookUp m arg
 
-compl :: GlobalAnnos -> TypeMap -> PMap -> [PState] -> [PState]
+compl :: GlobalAnnos -> TypeMap -> PMap Term -> [PState Term] -> [PState Term]
 compl ga tm m l = 
   concat $ map (collectArg ga tm m) 
   $ filter (null . restRule) l
 
-complRec :: GlobalAnnos -> TypeMap -> PMap -> [PState] -> [PState]
+complRec :: GlobalAnnos -> TypeMap -> PMap Term -> [PState Term] 
+	 -> [PState Term]
 complRec ga tm m l = let l1 = compl ga tm m l in 
     if null l1 then l else complRec ga tm m l1 ++ l
 
-complete :: GlobalAnnos -> TypeMap -> ParseMap -> ParseMap
+complete :: GlobalAnnos -> TypeMap -> ParseMap Term -> ParseMap Term
 complete ga tm pm =
     let m = parseMap pm
 	i = lastIndex pm in
@@ -92,7 +94,7 @@ complete ga tm pm =
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
 
-predict :: GlobalAnnos -> Assumps -> ParseMap -> ParseMap
+predict :: GlobalAnnos -> Assumps -> ParseMap a -> ParseMap a
 predict ga is pm = 
     let m = parseMap pm
 	i = lastIndex pm 
@@ -106,7 +108,7 @@ predict ga is pm =
 		 else pm
 
 nextState :: GlobalAnnos -> Assumps -> TypeMap -> (Type, Term) 
-	  -> ParseMap -> ParseMap
+	  -> ParseMap Term -> ParseMap Term
 nextState ga is tm (ty, trm) pm =
     let pm3 = complete ga tm
 	      $ scan tm (ty, trm)
@@ -117,7 +119,7 @@ nextState ga is tm (ty, trm) pm =
        else pm3
 
 iterStates :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Type -> [Term] 
-	   -> ParseMap -> ParseMap
+	   -> ParseMap Term -> ParseMap Term
 iterStates ga as tm cm ty terms pm = 
     let self = iterStates ga as tm cm ty
     in if null terms then pm
@@ -180,14 +182,14 @@ iterStates ga as tm cm ty terms pm =
 		    Nothing -> pm2
 	    t  ->  self (tail terms) $ nextState ga as tm (MixfixType [], t) pm
 
-getAppls :: GlobalAnnos -> ParseMap -> [Term]
+getAppls :: GlobalAnnos -> ParseMap Term -> [Term]
 getAppls ga pm = 
     map (toAppl ga) $ 
 	filter (\ (PState { restRule = ts, stateNo = k }) 
 		-> null ts && isStartIndex k) $ 
 	     lookUp (parseMap pm) $ lastIndex pm
 
-getLastType :: ParseMap -> Type
+getLastType :: ParseMap a -> Type
 getLastType pm = 
     let tys =  map ruleType $ 
 	      filter (\ (PState { restRule = ts, stateNo = k }) 
@@ -196,7 +198,7 @@ getLastType pm =
     in if null tys then error "getLastType" else head tys
 
 resolveToParseMap :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Int 
-		  -> Type -> Term -> ParseMap
+		  -> Type -> Term -> ParseMap Term
 resolveToParseMap ga as tm cm c ty trm = 
     let (initStates, c2) = runState (initialState ga as startIndex) c in
     iterStates ga as tm cm ty [trm] 
@@ -205,7 +207,7 @@ resolveToParseMap ga as tm cm c ty trm =
 			, varCount = c2
 			, parseMap = Map.single startIndex initStates }
 
-checkResultType :: TypeMap -> Type -> ParseMap -> ParseMap
+checkResultType :: TypeMap -> Type -> ParseMap a -> ParseMap a
 checkResultType tm t pm =
     let m = parseMap pm
 	i = lastIndex pm in
