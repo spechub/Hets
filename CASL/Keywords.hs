@@ -1,4 +1,4 @@
-{-# OPTIONS -fno-warn-missing-signatures #-}
+
 {- HetCATS/CASL/Keywords.hs
    $Id$
    Authors: Christian Maeder
@@ -14,7 +14,72 @@
 
 module Keywords where
 
-import qualified Prelude ()
+import Prelude (String)
+
+withinS,
+  withS,
+  viewS,
+  versionS,
+  unitS,
+  typeS,
+  toS,
+  thenS,
+  specS,
+  sortS,
+  revealS,
+  resultS,
+  localS,
+  libraryS,
+  lambdaS,
+  inS,
+  idemS,
+  hideS,
+  givenS,
+  getS,
+  generatedS,
+  fromS,
+  freeS,
+  fitS,
+  forallS,
+  existsS,
+  endS,
+  commS,
+  closedS,
+  opS,
+  predS,
+  varS,
+  sS,
+  axiomS,
+  assocS,
+  asS,
+  archS,
+  andS,
+  whenS,
+  trueS,
+  notS,
+  ifS,
+  falseS,
+  elseS,
+  defS,
+  lOr,
+  lAnd,
+  negS,
+  equivS,
+  implS,
+  exEqual,
+  equalS,
+  defnS,
+  mapsTo,
+  barS,
+  cDot,
+  dotS,
+  colonS,
+  lessS,
+  timesS,
+  prodS,
+  funS,
+  quMark,
+  exMark :: String
 
 -- ----------------------------------------------
 -- casl special strings 
