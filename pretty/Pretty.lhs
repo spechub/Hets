@@ -11,6 +11,9 @@
 *                                                                               *
 *********************************************************************************
 
+Further Modifications done by Klaus Lüttich for rendering LaTeX in very 
+special way.
+
 Version 3.0     28 May 1997
   * Cured massive performance bug.  If you write
 
@@ -164,6 +167,8 @@ module Pretty (
         text,		-- :: String -> Doc
 	ptext,		-- :: String -> Doc
 	char,		-- :: Char   -> Doc
+
+	sp_text,        -- :: String -> Int -> Doc
 
         int,		-- :: Int     -> Doc
 	integer,	-- :: Integer -> Doc
@@ -561,6 +566,26 @@ mkNest k       p           = nest_ k p
 -- mkUnion checks for an empty document
 mkUnion Empty q = Empty
 mkUnion p q     = p `union_` q
+\end{code}
+
+*********************************************************
+*                                                       *
+\subsection{additional primitive Doc}
+*                                                       *
+*********************************************************
+
+added by Klaus Lüttich
+
+the primitive command sp_text can be used for a special use of this
+library. This function enables the possibility to use the rendering
+alghorithms provided for rendering LaTeX with a proportional font. It
+can also be abused because you can add text that has a zero width.
+
+
+\begin{code}
+
+sp_text :: Int -> String -> Doc
+sp_text sl s = case sl of {sl1 -> textBeside_ (PStr s) sl1 Empty}
 \end{code}
 
 *********************************************************
