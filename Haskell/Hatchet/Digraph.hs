@@ -37,12 +37,13 @@ module Haskell.Hatchet.Digraph(
 -- import Util	( sortLt )
 
 -- Extensions
-import ST
+import GHC.Arr
+import Control.Monad.ST
 
 -- std interfaces
-import Maybe
-import Array
-import List
+import Data.Maybe
+import Data.Array
+import Data.List
 
 
 
