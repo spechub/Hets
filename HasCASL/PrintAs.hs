@@ -62,25 +62,25 @@ instance PrettyPrint TypeScheme where
 				   <+> printText0 ga t
 
 instance PrettyPrint Partiality where
-    printText0 ga Partial = text quMark
-    printText0 ga Total = text exMark
+    printText0 _ Partial = text quMark
+    printText0 _ Total = text exMark
 
 instance PrettyPrint Arrow where 
-    printText0 ga FunArr = text funS
-    printText0 ga PFunArr = text pFun
-    printText0 ga ContFunArr = text contFun
-    printText0 ga PContFunArr = text pContFun 
+    printText0 _ FunArr = text funS
+    printText0 _ PFunArr = text pFun
+    printText0 _ ContFunArr = text contFun
+    printText0 _ PContFunArr = text pContFun 
 
 
 instance PrettyPrint Quantifier where 
-    printText0 ga Universal = text forallS
-    printText0 ga Existential = text existsS 
-    printText0 ga Unique = text $ existsS ++ exMark
+    printText0 _ Universal = text forallS
+    printText0 _ Existential = text existsS 
+    printText0 _ Unique = text $ existsS ++ exMark
 
 instance PrettyPrint TypeQual where 
-    printText0 ga OfType = colon
-    printText0 ga AsType = text asS
-    printText0 ga InType = text inS
+    printText0 _ OfType = colon
+    printText0 _ AsType = text asS
+    printText0 _ InType = text inS
 
 instance PrettyPrint Formula where
     printText0 ga (TermFormula t) = printText0 ga t
@@ -175,9 +175,9 @@ instance PrettyPrint TypeArg where
 				      <> printText0 ga c
 
 instance PrettyPrint Variance where 
-    printText0 ga CoVar = text plusS
-    printText0 ga ContraVar = text minusS
-    printText0 ga InVar = empty
+    printText0 _ CoVar = text plusS
+    printText0 _ ContraVar = text minusS
+    printText0 _ InVar = empty
 
 instance PrettyPrint ExtClass where 
     printText0 ga (ExtClass c v _) = printText0 ga c <> printText0 ga v 
@@ -195,7 +195,7 @@ instance PrettyPrint Kind where
 			     <> printText0 ga c
 
 instance PrettyPrint Class where 
-    printText0 ga (Universe _) = empty
+    printText0 _ (Universe _) = empty
     printText0 ga (ClassName n) = printText0 ga n
     printText0 ga (Downset t) = braces $ text lessS <+> printText0 ga t
     printText0 ga (Intersection c _) = parens $ commas ga c 
@@ -251,8 +251,8 @@ instance PrettyPrint SigItems where
     printText0 ga (PredItems l _) = text predS <+> semis ga l
 
 instance PrettyPrint Instance where
-    printText0 ga Instance = text instanceS
-    printText0 ga _ = empty
+    printText0 _ Instance = text instanceS
+    printText0 _ _ = empty
 		      
 instance PrettyPrint ClassItem where 
     printText0 ga (ClassItem d l _) = printText0 ga d $$ 
@@ -319,9 +319,9 @@ instance PrettyPrint PredItem where
 				     <+> printText0 ga f
 
 instance PrettyPrint BinOpAttr where 
-    printText0 ga Assoc = text assocS
-    printText0 ga Comm = text commS
-    printText0 ga Idem = text idemS
+    printText0 _ Assoc = text assocS
+    printText0 _ Comm = text commS
+    printText0 _ Idem = text idemS
 
 instance PrettyPrint OpAttr where 
     printText0 ga (BinOpAttr a _) = printText0 ga a
