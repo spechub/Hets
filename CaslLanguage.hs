@@ -9,8 +9,8 @@ type GParser a = forall st. GenParser Char st a
 
 ------ helper functions ------ 
 
-convToPos :: SourcePos -> (Line, Column)
-convToPos (sp) = (sourceLine(sp),sourceColumn(sp))
+convToPos :: SourcePos -> SourcePos
+convToPos = id
 
 ------------------------------
 
@@ -87,6 +87,11 @@ comma :: forall st. CharParser st String
 comma         = P.comma casl_lexer
 colon :: forall st. CharParser st String
 colon         = P.colon casl_lexer
+
+commaSep1 :: forall st a. CharParser st a -> CharParser st [a]
+commaSep1 = P.commaSep1 casl_lexer
+semiSep1 :: forall st a. CharParser st a -> CharParser st [a]
+semiSep1 = P.semiSep1 casl_lexer
 
 identifier :: forall st. CharParser st String
 identifier    = P.identifier casl_lexer

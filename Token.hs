@@ -65,7 +65,7 @@ module Token ( casl_reserved_ops, casl_reserved_words
              , formula_ops, formula_words
 	     , casl_reserved_fops, casl_reserved_fwords
 	     , equalT, colonT, colonST, quMarkT, lessT, dotT, crossT
-	     , asT, barT, forallT
+	     , asT, barT, forallT, casl_id
              , start, comps, mixId, parseId, sortId, varId) 
     where
 
@@ -198,9 +198,10 @@ mixId keys idKeys =
 -- CASL mixfix Ids
 -- ----------------------------------------------
 
-parseId :: GenParser Char st Id
+parseId, casl_id :: GenParser Char st Id
 parseId = mixId (casl_reserved_fops, casl_reserved_fwords) 
 	  (casl_reserved_fops, casl_reserved_fwords)
+casl_id = parseId
 
 -- ----------------------------------------------
 -- VAR Ids

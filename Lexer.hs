@@ -127,8 +127,9 @@ singleUnderline = char '_' `followedWith` scanLPD
 scanUnderlineWord :: GenParser Char st String
 scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "underline word"
 
-scanAnyWords :: GenParser Char st String
+scanAnyWords, casl_words :: GenParser Char st String
 scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord) <?> "words"
+casl_words = scanAnyWords
 
 scanDot :: GenParser Char st Char
 scanDot = char '.' `followedWith` caslLetter
@@ -295,6 +296,10 @@ brackets, parens, braces :: GenParser Char st a -> GenParser Char st a
 brackets p = oBracketT >> p << cBracketT
 parens p = oParenT >> p << cParenT 
 braces p = oBraceT >> p << cBraceT
+
+commaSep1, semiSep1 :: GenParser Char st a -> GenParser Char st [a]
+commaSep1 p = fmap fst $ separatedBy p commaT
+semiSep1 p = fmap fst $ separatedBy p semiT
 
 placeS :: GenParser Char st String
 placeS = string place

@@ -17,28 +17,31 @@ import ParsecPerm
 
 import Lexer
 import Token
-
+-- import CaslLanguage
 import Id
 import AS_Annotation
 
-type GParser a = forall st. GenParser Char st a
-
-comment :: GParser Annotation
+comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
 
-commentLine :: GParser Annotation
+charOrEof :: Char -> GenParser Char st ()
+charOrEof c = (char c >> return ()) <|> eof
+newlineOrEof :: GenParser Char st ()
+newlineOrEof = charOrEof '\n'
+
+commentLine :: GenParser Char st Annotation
 commentLine = do try (string "%%")
-		 line <- manyTill anyChar (newline <|> (eof >> return '\n'))  
+		 line <- manyTill anyChar newlineOrEof
 		 return (Comment_line line [])
 
-commentGroup :: GParser Annotation 
+commentGroup :: GenParser Char st Annotation 
 commentGroup = do try (string "%{")
 		  text_lines <- manyTill anyChar (try (string "}%"))
 		  sp <- getPosition
 		  return (Comment_group (lines text_lines) [conv sp])
     where conv sp = incSourceColumn sp (-2)
 
-annote :: GParser Annotation
+annote :: GenParser Char st Annotation
 annote = Anno_Parser.label <|> 
 	 do start_source_pos <- getPosition
 	    i <- anno_ident
@@ -59,45 +62,42 @@ annote = Anno_Parser.label <|>
 			   Annote_line  _ _ _ -> sp
 			   _ -> error "nothing to be done for other Annos"
 
-label :: GParser Annotation
+label :: GenParser Char st Annotation
 label = do try(string "%(")
 	   label_lines <- manyTill anyChar (string ")%")
 	   sp <- getPosition
 	   return (Label (lines label_lines) [conv sp])
     where conv sp = incSourceColumn sp (-2)
 
-anno_ident :: GParser String
-anno_ident = string "%" >> scanAnyWords
+anno_ident :: GenParser Char st String
+anno_ident = string "%" >> casl_words
 
-annote_group :: String -> GParser Annotation
+annote_group :: String -> GenParser Char st Annotation
 annote_group s = do char '(' -- ) 
 		    annote_lines <- manyTill anyChar (string ")%")
 		    return (Annote_group s (lines annote_lines) [])
 
-annote_line :: String -> GParser Annotation
+annote_line :: String -> GenParser Char st Annotation
 annote_line s = do anno <- do char ' '
-			      line <- manyTill anyChar 
-			                               (newline <|>
-							(eof >> return '\n'))
+			      line <- manyTill anyChar newlineOrEof
 			      return (Annote_line s line [])
 
 			       -- AnnoteWord (%implies ...)
-			   <|> do newline
+			   <|> do newlineOrEof
 				  return (Annote_line s "" [])
 		   return(anno)
 
-annotationL :: GParser Annotation
+annotationL :: GenParser Char st Annotation
 annotationL = do start_source_pos <- getPosition
 		 anno <- (comment <|> annote)
 		 return (add_pos anno (convToPos start_source_pos))
     where add_pos an p = up_pos_l (\l -> p:l) an
 
-annotation :: GParser Annotation
-annotation = do a <- annotationL  
-		skip -- cause all parsers above are not lexeme
-		return a
+annotation :: GenParser Char st Annotation
+annotation = lexeme annotationL  
+		-- cause all parsers above are not lexeme
 
-annotations :: GParser [Annotation]
+annotations :: GenParser Char st [Annotation]
 annotations = many annotation
 
 -----------------------------------------
@@ -142,7 +142,7 @@ parse_anno anno sp = case anno of
 					     return (Lassoc_anno res [])     
 			       rassoc p = do res <- p
 					     return (Rassoc_anno res [])
-			       assoc_anno = (sepBy1 parseId commaT)
+			       assoc_anno = commaSep1 casl_id
 
 
 		     _ -> Right anno
@@ -150,7 +150,7 @@ parse_anno anno sp = case anno of
 parse_internal :: GenParser Char () a -> SourcePos -> [Char] 
 	       -> Either ParseError a
 parse_internal p sp inp = parse (do setPosition sp
-				    skip
+				    whiteSpace
 				    res <- p
 				    return res
 				)
@@ -158,10 +158,10 @@ parse_internal p sp inp = parse (do setPosition sp
 			        inp 
 
 prec_anno, number_anno, string_anno, list_anno, floating_anno 
-    :: GParser Annotation
-prec_anno = do left_ids <- braces $ sepBy1 parseId commaT
+    :: GenParser Char st Annotation
+prec_anno = do left_ids <- braces $ commaSep1 casl_id
 	       sign <- lexeme (try (string "<>") <|> (string "<"))
-	       right_ids <- braces (sepBy1 parseId commaT)
+	       right_ids <- braces $ commaSep1 casl_id 
 	       return ( Prec_anno (sign == "<")
 				  left_ids
 				  right_ids
@@ -185,32 +185,30 @@ list_anno     = literal_anno f 3 "list"
 	  f _          = error "wrong_number of ids"
 
 literal_anno :: ([Id] -> [Pos] -> Annotation) 
-	        -> Int -> String -> GParser Annotation
+	        -> Int -> String -> GenParser Char st Annotation
 literal_anno con cnt conStr = 
-    do ids <- sepBy1 parseId commaT
+    do ids <- commaSep1 casl_id
        if length ids == cnt then return $ con ids $ []
 	else unexpected $ "Annotation \"" ++ conStr ++ 
 		          "\" malformed: wrong number of ids, " ++ 
 		          show cnt ++ " id(s) expected!" 
 
-display_anno :: GParser Annotation
-display_anno = do ident <- parseId
+display_anno :: GenParser Char st Annotation
+display_anno = do ident <- casl_id
 		  tls <- permute ( mklst <$?> (disp_symb "HTML")
 				         <|?> (disp_symb "LATEX")
 				         <|?> (disp_symb "RTF") )
+		         {- many (disp_symb "HTML"
+			       <|> disp_symb "LATEX"
+			       <|> disp_symb "RTF")   -}
 		  return (Display_anno ident tls [])
     where mklst a b c = [a,b,c] 
-	  disp_symb sym = ((ready_symb,""),
+	  disp_symb sym = ((ready_symb,""), -- default for optional ParsecPerm
 				 do symb <- lexeme (try (string 
 							   ready_symb))
-				    str <- manyTill anyChar 
-				      ((fmap 
-					(\_->())
-					(lookAhead (string "%")))
-				       <|>
-				       eof)
+				    str <- manyTill anyChar $ charOrEof '%'
 				    return (symb, reverse $
-					      dropWhile (`elem` whiteChars)
+					      dropWhile (`elem` blankChars)
 					      $ reverse str)
 				) where ready_symb = "%"++sym
 
@@ -218,8 +216,11 @@ semantic_anno :: ([Pos] -> Annotation)
 	         -> String -> String -> SourcePos -> [Pos] 
 		 -> Either ParseError Annotation
 semantic_anno anno kw as sp pos = 
-    if all (`elem` whiteChars) as then 
+    if all (`elem` blankChars) as then 
        Right (anno pos)
     else 
        Left (newErrorMessage (Expect("only whitespaces after %" ++ kw)) sp)
+
+blankChars :: String
+blankChars = "\n\r\t\v\f \160"
 
