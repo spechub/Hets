@@ -153,6 +153,8 @@ check' qs@((EqnInfo n ctx ps result):_)
     only_vars    = and (map is_var qs) 
 
 
+subsort definitions: are conservative if formula is satisfiable
+  (generate proof obligation)
 
 ************************************************
 Heng (Klaus)
