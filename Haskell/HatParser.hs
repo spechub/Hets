@@ -29,7 +29,7 @@ import Haskell.Hatchet.HsParseMonad
 import Common.Lib.Parsec
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Debug.Trace
+-- import Debug.Trace
 
 instance PrettyPrint HsDecls where
      printText0 _ hsDecls = 
@@ -40,14 +40,14 @@ type HsDecls = [HsDecl]
 hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
                s <- hStuff
-               trace ("@"++s++"@") (return ())
+--               trace ("@"++s++"@") (return ())
 	       let (l, c) = (sourceLine p, sourceColumn p)
                    r = HatParser.parse 
 		       ("\nmodule Anonymous where\n" ++ s) 
                           (SrcLoc l 0) c []
                case r of
 		           Ok _ (HsModule _ _ _ hsDecls) -> 
-			       trace (showPretty hsDecls " OK!") $ 
+--			       trace (showPretty hsDecls " OK!") $ 
 				     return hsDecls
 			   Failed msg -> do -- no failure position!
 			       fail msg
