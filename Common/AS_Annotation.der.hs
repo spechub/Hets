@@ -61,6 +61,12 @@ data Annoted a = Annoted { item::a
 	                   -- left or preceeding, right or following
 		 deriving (Show,Eq) 
 
+getRLabel :: Annoted a -> String
+getRLabel a = let ls = filter isLabel (r_annos a) in
+		  if null ls then "" else 
+		     let Label l _ = head ls 
+			 in unlines l   -- might be a multiline labels?
+                                        -- maybe remove white spaces
 
 -- | 
 -- 'isSemanticAnno' tests if the given 'Annotation' is a semantic one
