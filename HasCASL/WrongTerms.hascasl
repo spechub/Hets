@@ -14,7 +14,6 @@ _
 ;
 (,a)
 (a,)
-()
 as a
 : a
 in a
@@ -34,3 +33,5 @@ var
 op
 (op __<__ : ?##) 
 (op __<__ : ? ##) 
+y where x= y; z=y;
+y where x= y; z=y in t

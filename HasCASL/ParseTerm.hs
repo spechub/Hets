@@ -438,11 +438,7 @@ mixTerm b =
        let t = if length ts == 1 then head ts else MixfixTerm ts
 	   in typedTerm t b <|> return t
 
-wTerm b = 
-    do t <- mixTerm b 
-       whereTerm b t <|> return t
-
-term = wTerm True
+term = mixTerm True
 -----------------------------------------------------------------------------
 -- quantified term
 -----------------------------------------------------------------------------
@@ -451,7 +447,7 @@ forallTerm b =
              do f <- forallT
 		(vs, ps) <- genVarDecls `separatedBy` semiT
 		d <- dotT
-		t <- wTerm b
+		t <- mixTerm b
 		return (QuantifiedTerm Universal (concat vs) t 
 			(toPos f ps d))
 
@@ -468,7 +464,7 @@ exTerm b =
          do { (q, p) <- exQuant
 	    ; (vs, ps) <- varDecls `separatedBy` semiT
 	    ; d <- dotT
-	    ; f <- wTerm b
+	    ; f <- mixTerm b
 	    ; return (QuantifiedTerm q (map GenVarDecl (concat vs)) f
 		      (toPos p ps d))
 	    }
@@ -483,7 +479,7 @@ lambdaTerm b =
              do l <- asKey lamS
 		pl <- lamPattern
 		(k, d) <- lamDot      
-		t <- wTerm b
+		t <- mixTerm b
 		return (LambdaTerm pl k t (toPos l [] d))
 
 lamPattern = do (vs, ps) <- varDecls `separatedBy` semiT
@@ -501,7 +497,7 @@ patternTermPair :: Bool -> Bool -> String -> GenParser Char st ProgEq
 patternTermPair b1 b2  sep = 
     do p <- asPattern b1
        s <- asKey sep
-       t <- wTerm b2
+       t <- mixTerm b2
        return (ProgEq p t (tokPos s))
 
 caseTerm b = 
@@ -533,32 +529,12 @@ tryItemEnd l =
 startKeyword = dotS:cDot: hascasl_reserved_words
 
 -----------------------------------------------------------------------------
--- where-term
+-- let-term
 -----------------------------------------------------------------------------
-
-whereEquations b = 
-             do { p <- patternTermPair True b equalS
-		; do { s <- semiT
-                     ; do { tryItemEnd startKeyword
-                          ; return ([p], [s])
-                          }
-                       <|> 
-                       do { (ps, ts) <- whereEquations b 
-                          ; return (p:ps, s:ts)
-                          }
-                     }
-                  <|>
-                  return ([p], [])
-		}
-
-whereTerm b t = 
-              do w <- asKey whereS
-		 (ts, ps) <- whereEquations b
-		 return (LetTerm ts t (map tokPos (w:ps)))
 
 letTerm b = 
           do l <- asKey letS
 	     (es, ps) <- patternTermPair True False equalS `separatedBy` semiT 
 	     i <- asKey inS
-	     t <- wTerm b
+	     t <- mixTerm b
 	     return (LetTerm es t (toPos l ps i))

@@ -7,7 +7,7 @@ BASIC-ITEMS     ::= SIG-ITEMS
                   | free      type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
                   | generated type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
                   | generated { SIG-ITEMS ... SIG-ITEMS } ;/
-                  | program/programs "." PROG-EQ "." ... "." PROG-EQ ;/
+                  | program/programs PROG-EQ ; ... ; PROG-EQ ;/
                   | var/vars GEN-VAR-DECL ; ... ; GEN-VAR-DECL ;/
                   | forall GEN-VAR-DECL ; ... ; GEN-VAR-DECL
                              "." AXIOM "." ... "." AXIOM ;/ 
@@ -221,7 +221,6 @@ TERM            ::= MIXFIX-TERM
                   | MIXFIX-TERM TYPE-OP TYPE
 		  | MIXFIX-TERM QUANT-TERM
 		  | QUANT-TERM
-		  | MIXFIX-TERM where PROG-EQ ; ... ; PROG-EQ
 		  | MIXFIX-TERM CASE-TERM
 		  | CASE-TERM
 		  | MIXFIX-TERM LET-TERM

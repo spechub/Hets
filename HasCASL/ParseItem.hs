@@ -480,13 +480,7 @@ freeDatatype =   do { f <- asKey freeS
                     ; return (FreeDatatype ds (tokPos f : ps))
                     }
 
-progItems = do p <- pluralKeyword programS
-	       d <- dotT
-	       (es, ps) <- annotedProgEq `separatedBy` dotT
-	       return (ProgItems es (map tokPos (p:d:ps))) 
-
-annotedProgEq = bind appendAnno (annoParser (patternTermPair True True equalS))
-		lineAnnos
+progItems = itemList programS (patternTermPair True True equalS) ProgItems
 
 basicItems = fmap SigItems sigItems
 	     <|> classItems

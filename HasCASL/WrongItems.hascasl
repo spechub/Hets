@@ -1,0 +1,7 @@
+class x = y = z
+type ?
+type ->
+type ->?
+type *
+type -->
+type -->?

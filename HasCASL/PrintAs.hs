@@ -15,14 +15,14 @@ import HToken
 import Pretty
 import PrettyPrint
 
-commas l = hcat $ punctuate comma (map printText0 l)
-semis l = cat $ punctuate semi (map printText0 l)
+commas l = fsep $ punctuate comma (map printText0 l)
+semis l = sep $ punctuate semi (map printText0 l)
 
 instance PrettyPrint TypePattern where 
     printText0(TypePattern name args _) = printText0(name) 
-				 <> hcat (map (parens.printText0) args)
+				 <> fcat (map (parens.printText0) args)
     printText0(TypePatternToken t) = printText0(t)
-    printText0(MixfixTypePattern ts) = hsep (map printText0 ts)
+    printText0(MixfixTypePattern ts) = fsep (map printText0 ts)
     printText0(BracketTypePattern k l _) = bracket k $ commas l
     printText0(TypePatternArgs l) = semis l
 
@@ -42,10 +42,10 @@ instance PrettyPrint Type where
 			  <> (case kind of 
 			       Kind [] (Universe _) _ -> empty
 			       _ -> space <> colon <> printText0(kind))
-    printText0(MixfixType ts) = hsep (map printText0 ts)
+    printText0(MixfixType ts) = fsep (map printText0 ts)
     printText0(TupleType args _) = parens $ commas args
     printText0(LazyType t _) = text quMark <+> printText0(t)  
-    printText0(ProductType ts _) = hsep (punctuate (text " * ") 
+    printText0(ProductType ts _) = fsep (punctuate (space <> text timesS) 
 					 (map printText0 ts))
     printText0(FunType t1 arr t2 _) = printText0 t1
 				      <+> printText0 arr
@@ -112,7 +112,7 @@ instance PrettyPrint Term where
     printText0(LambdaTerm ps q t _) = text lamS
 				      <+> (if length ps == 1 then 
 					     printText0 $ head ps
-					     else hcat $ map 
+					     else fcat $ map 
 					   (parens.printText0) ps)
 				      <+> (case q of 
 					   Partial -> text dotS
@@ -129,7 +129,7 @@ instance PrettyPrint Term where
 				   <+> text inS
 				   <+> printText0 t
     printText0(TermToken t) = printText0 t
-    printText0(MixfixTerm ts) = hsep (map printText0 ts)
+    printText0(MixfixTerm ts) = fsep $ map printText0 ts
     printText0(BracketTerm k l _) = bracket k $ commas l
 
 instance PrettyPrint Pattern where 
@@ -137,11 +137,11 @@ instance PrettyPrint Pattern where
     printText0(PatternConstr n t args _) = printText0 n 
 			  <+> colon
 			  <+> printText0 t 
-			  <+> hcat (map (parens.printText0) args)
+			  <+> fcat (map (parens.printText0) args)
     printText0(PatternToken t) = printText0 t
     printText0(BracketPattern  k l _) = bracket k $ commas l
     printText0(TuplePattern ps _) = parens $ commas ps
-    printText0(MixfixPattern ps) = hsep (map printText0 ps)
+    printText0(MixfixPattern ps) = fsep (map printText0 ps)
     printText0(TypedPattern p t _) = printText0 p 
 			  <+> colon
 			  <+> printText0 t 
@@ -149,20 +149,16 @@ instance PrettyPrint Pattern where
 			  <+> text asP
 			  <+> printText0 p
 
-
-printEq0 s (ProgEq p t _) = printText0 p 
-			  <+> text s
-			  <+> printText0 t 
+printEq0 s (ProgEq p t _) = fsep [printText0 p 
+			  , text s
+			  , printText0 t] 
 
 instance PrettyPrint VarDecl where 
-    printText0(VarDecl v t k _) = case k of Comma -> printText0 v <> comma
-					    _ -> printText0 v <+> colon
+    printText0(VarDecl v t _ _) = printText0 v <+> colon
 						 <+> printText0 t
 
 instance PrettyPrint TypeVarDecl where 
-    printText0(TypeVarDecl v c k _) = case k of 
-				      Comma -> printText0 v <> comma
-				      _ -> printText0 v <+> 
+    printText0(TypeVarDecl v c _ _) = printText0 v <+> 
 					      case c of 
 					      Downset t -> 
 					        text lessS <+> printText0 t
@@ -173,9 +169,7 @@ instance PrettyPrint GenVarDecl where
     printText0(GenTypeVarDecl tv) = printText0 tv
 
 instance PrettyPrint TypeArg where 
-    printText0 (TypeArg v c k _) = printText0 v <>
-				   case k of Comma -> comma
-					     _ -> colon <> printText0 c
+    printText0 (TypeArg v c _ _) = printText0 v <> colon <> printText0 c
 
 instance PrettyPrint Variance where 
     printText0 CoVar = text plusS
@@ -186,12 +180,12 @@ instance PrettyPrint ExtClass where
     printText0(ExtClass c v _) = printText0 c <> printText0 v <> space
 
 instance PrettyPrint ProdClass where 
-    printText0(ProdClass l _) = hcat $ punctuate (text timesS) 
+    printText0(ProdClass l _) = fcat $ punctuate (text timesS) 
 			       (map printText0 l)
 
 instance PrettyPrint Kind where 
     printText0(Kind l c _) = (if null l then empty else 
-			      (hcat $ punctuate (text funS) 
+			      (fcat $ punctuate (text funS) 
 			       (map printText0 l))
 			      <> text funS) 
 			     <> printText0 c
@@ -206,14 +200,14 @@ instance PrettyPrint Types where
     printText0(Types l _) = Pretty.brackets $ commas l
 
 instance PrettyPrint InstOpName where
-    printText0 (InstOpName n l) = printText0 n <> hcat(map printText0 l)
+    printText0 (InstOpName n l) = printText0 n <> fcat(map printText0 l)
 
 ------------------------------------------------------------------------
 -- item stuff
 ------------------------------------------------------------------------
 instance PrettyPrint PseudoType where 
     printText0 (SimplePseudoType t) = printText0 t
-    printText0 (PseudoType l t _) = text lamS <+> hcat(map printText0 l)
+    printText0 (PseudoType l t _) = text lamS <+> fcat(map printText0 l)
 				<+> text dotS <+> printText0 t
 
 instance PrettyPrint TypeArgs where
@@ -225,24 +219,24 @@ instance PrettyPrint TypeVarDecls where
 instance PrettyPrint BasicSpec where 
     printText0 (BasicSpec l) = vcat (map printText0 l)
 
-dots l = text dotS <+> cat(punctuate (text " . ") (map printText0 l) )
-
 instance PrettyPrint ProgEq where
     printText0 = printEq0 equalS
 
 instance PrettyPrint BasicItem where 
     printText0 (SigItems s) = printText0 s
-    printText0 (ProgItems l _) = text programS <+> dots l
+    printText0 (ProgItems l _) = text programS <+> semis l
     printText0 (ClassItems i l _) = text classS <+> printText0 i
 			       <+> semis l
     printText0 (GenVarItems l _) = text varS <+> semis l
     printText0 (FreeDatatype l _) = text freeS <+> text typeS 
 				    <+> semis l
     printText0 (GenItems l _) = text generatedS <+> braces (semis l)
-    printText0 (LocalVarAxioms vs fs _) = text forallS 
+    printText0 (LocalVarAxioms vs fs p) = text forallS 
 			       <+> semis vs
-			       <+> dots fs
-    printText0 (AxiomItems fs _) = dots fs
+			       $$ printText0(AxiomItems fs p)
+    printText0 (AxiomItems fs _) = vcat (map 
+					 (\x -> text dotS <+> printText0 x) 
+					 fs)
 
 instance PrettyPrint SigItems where 
     printText0 (TypeItems i l _) = text typeS <+> printText0 i <+> semis l
@@ -298,7 +292,8 @@ instance PrettyPrint OpItem where
 				   <+> (printText0 t
 					<> (if null as then empty else comma)
 					<> commas as)
-    printText0 (OpDefn n ps s p t _) = (printText0 n <> hcat (map printText0 ps))
+    printText0 (OpDefn n ps s p t _) = (printText0 n 
+					<> fcat (map printText0 ps))
 			    <+> (colon <> if p == Partial 
 				 then text quMark else empty)
  			    <+> printText0 s 
@@ -307,7 +302,7 @@ instance PrettyPrint OpItem where
 
 instance PrettyPrint PredItem where 
     printText0 (PredDecl l t _) = commas l <+> colon <+> printText0 t
-    printText0 (PredDefn n ps f _) = (printText0 n <> hcat (map printText0 ps))
+    printText0 (PredDefn n ps f _) = (printText0 n <> fcat (map printText0 ps))
 				     <+> text equivS
 				     <+> printText0 f
 
@@ -334,21 +329,20 @@ instance PrettyPrint DatatypeDecl where
 						}
 
 instance PrettyPrint Alternative where 
-    printText0 (Constructor n cs p _) = printText0 n <> hcat (map printText0 cs)
+    printText0 (Constructor n cs p _) = printText0 n 
+					<> fcat (map printText0 cs)
 					<> (case p of {Partial -> text quMark;
 						       _ -> empty})
     printText0 (Subtype l _) = text typeS <+> commas l
 
 instance PrettyPrint Components where 
-    printText0 (Selector n p t k _) = printText0 n 
-				<> case k of {Comma -> comma;
-					      _ -> (colon <> 
-					       case p of { Partial ->text quMark;
-							   _ -> empty }) 
-					      <+> printText0 t }
+    printText0 (Selector n p t _ _) = printText0 n 
+				<> colon <> (case p of { Partial ->text quMark;
+							 _ -> empty } 
+					      <+> printText0 t)
     printText0 (NoSelector t) = printText0 t
     printText0 (NestedComponents l _) = parens $ semis l
 
 instance PrettyPrint OpName where 
-    printText0 (OpName n ts) = printText0 n <+> hcat(map printText0 ts)
+    printText0 (OpName n ts) = printText0 n <+> fcat(map printText0 ts)
 

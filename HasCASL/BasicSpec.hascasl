@@ -6,7 +6,6 @@ class TYPE = Type; TYPE={x.x < t}
 
 type Pred __ : Type- -> Type; Unit:TYPE
 
-type ?
 
 class a, b, c
 class a, b, c <d; a=b
@@ -16,53 +15,40 @@ var s:c
 pred tt : s
 var x : s
 
-program . tt = \x: s . ()  %% tt is total "op tt(x: s): unit = ()"
+program tt = \x: s . () 
 
-%% total functions
-program . __res__ (x: s; y: t) : s = x 
-program . fst (x: s; y: t) : s = x 
-program . snd (x: s; y: t) : t = y 
+program  __res__ (x: s; y: t) : s = x ;
+fst (x: s; y: t) : s = x ; 
+snd (x: s; y: t) : t = y 
 
 
-%% trivial because its the strict function property
 
 . (\x:s; y:t. def (x res y)) =  (\x:s; y:t. (def y) res (def x)) 
 . fst = (__ res__)
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Internal Logic
 
 pred eq : s * s
 
 . (\x: s. eq(x, x)) = tt
 . (\x, y:s. x res eq(x,y)) = (\x, y:s. y res eq(x,y))
 
-%% then %def
-
-%% notation "\ ."  abbreviates "\bla:unit." 
-%% where "bla" is never used, but only "()" instead
-
-%% for type inference 
-%% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
 
 type s < ?s
 
-program . all (p: (?s)) : (?()) = eq(p, tt)
+program all (p: (?s)) : (?()) = eq(p, tt)
 
-%% the cast from ?s to s is still done manually here (for the strict "and")
-program . And (x, y: (?())) :(?()) = t1() res t2()
+program And (x, y: (?())) :(?()) = t1() res t2()
 
-%% use "And" instead of "and" to avoid cast from "?unit" to "unit"
-program . __impl__ (x, y: (?())) = eq(x, x And y)
+program  __impl__ (x, y: (?())) = eq(x, x And y)
 
-program . __or__ (x, y: (?())) :(?()) = all(\r: (?()). 
+program  __or__ (x, y: (?())) :(?()) = all(\r: (?()). 
 		((x impl r) res (y impl r)) impl r)
 
-. ex (p: (?s)) :(?()) = all(\r: (?()).
+; ex (p: (?s)) :(?()) = all(\r: (?()).
 		all(\x:s. p(x) impl r) impl r)
 
-. ff () :(?()) = all(\r: (?()). r())
+; ff () :(?()) = all(\r: (?()). r())
 
 
 
