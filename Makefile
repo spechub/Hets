@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
-CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CspCASL:$(INCLUDE_PATH)
+CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:$(INCLUDE_PATH)
 
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0/imports'
 
@@ -214,7 +214,6 @@ lib_clean: clean
 ### additionally removes the files that define the sources-variable
 real_clean: bin_clean lib_clean
 	$(RM) hetcats-make sources_hetcats.mk
-	$(RM) AS_*.hs
 
 ### additionally removes files not in CVS tree
 distclean: real_clean clean_genRules d_clean
