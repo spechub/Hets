@@ -142,8 +142,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                CASLSign 
                CASLMor 
                Symbol RawSymbol where
-         basic_analysis CASL = Just $ basicAnalysis 
-			       (const id) (const id) return
+         basic_analysis CASL = Just $ basicAnalysis (const id) (const id)
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          -- ensures_amalgamability :: id

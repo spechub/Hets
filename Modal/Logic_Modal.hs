@@ -29,6 +29,9 @@ import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
+import CASL.Overload
+
+import Common.Id
 import Data.Dynamic
 
 data Modal = Modal deriving Show
@@ -89,13 +92,30 @@ instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
       provers Modal = [] 
       cons_checkers Modal = []
 
+instance MinExpForm M_FORMULA where
+    minExpForm s form = case form of
+        Box m f ps -> 
+	    do nm <- minMod s m ps
+	       nf <- minExpFORMULA s f
+	       return $ Box nm nf ps
+	Diamond m f ps -> 
+	    do nm <- minMod s m ps
+	       nf <- minExpFORMULA s f
+	       return $ Diamond nm nf ps
+	where minMod sig mod ps = case mod of
+	          Simple_mod _ -> return mod
+		  Term_mod t -> do 
+		      ts <- minExpTerm sig t
+		      nt <- is_unambiguous ts ps
+		      return $ Term_mod nt
+
 instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                MSign 
                ModalMor 
                Symbol RawSymbol where
          basic_analysis Modal = Just $ basicAnalysis 
-			       (const id) (const id) return
+			       (const id) (const id)
          stat_symb_map_items Modal = statSymbMapItems
          stat_symb_items Modal = statSymbItems
 	 ensures_amalgamability Modal _ = fail "ensures_amalgamability nyi" -- ???

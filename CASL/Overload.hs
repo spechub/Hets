@@ -17,10 +17,8 @@
     LNCS 1376, p. 333-348
 -}
 
--- does anyone ever need anything else from me?
-module CASL.Overload (
-    overloadResolution          -- :: Sign f e -> [FORMULA] -> Result [FORMULA]
-    ) where
+-- does anyone ever need anything else from me? (yes, in Logic_Modal!)
+module CASL.Overload where
 
 import CASL.Sign                -- Sign, OpType
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
@@ -68,10 +66,17 @@ import Data.List                ( partition )
 {-----------------------------------------------------------
     Overload Resolution
 -----------------------------------------------------------}
-overloadResolution      :: PrettyPrint f => (f -> Result f) 
-			-> Sign f e -> [Named.Named (FORMULA f)]
-                        -> Result [Named.Named (FORMULA f)]
-overloadResolution anaF sign  = mapM overload
+
+class PrettyPrint f => MinExpForm f where
+    minExpForm :: Sign f e -> f -> Result f
+
+instance MinExpForm () where
+    minExpForm _ = return
+
+overloadResolution      :: MinExpForm f => Sign f e 
+			-> [Named.Named (FORMULA f)]
+			-> Result [Named.Named (FORMULA f)]
+overloadResolution sign  = mapM overload
     where
 --        overload :: (Named.Named (FORMULA f)) -> Result (Named.Named (FORMULA f))
         overload sent = do
@@ -84,7 +89,7 @@ overloadResolution anaF sign  = mapM overload
 {-----------------------------------------------------------
     Minimal Expansions of a FORMULA
 -----------------------------------------------------------}
-minExpFORMULA :: PrettyPrint f =>
+minExpFORMULA :: MinExpForm f =>
                 Sign f e -> (FORMULA f) -> Result (FORMULA f)
 minExpFORMULA sign formula
     = case formula of
@@ -135,12 +140,12 @@ minExpFORMULA sign formula
             t'' <- is_unambiguous t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
 	Sort_gen_ax _ -> return formula
+	ExtFORMULA f -> fmap ExtFORMULA $ minExpForm sign f
 	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)
-    where
-        is_unambiguous :: PrettyPrint f => 
-			  [[TERM f]] -> [Id.Pos] -> Result (TERM f)
-        is_unambiguous term pos     = do
+
+is_unambiguous :: PrettyPrint f => [[TERM f]] -> [Id.Pos] -> Result (TERM f)
+is_unambiguous term pos = do
             case term of
                 [] -> pplain_error (Unparsed_term "<error>" [])
                    (ptext "No correct typing for " <+> printText term)
@@ -155,7 +160,7 @@ minExpFORMULA sign formula
 {-----------------------------------------------------------
     Minimal Expansions of a Predicate Application Formula
 -----------------------------------------------------------}
-minExpFORMULA_pred :: PrettyPrint f =>
+minExpFORMULA_pred :: MinExpForm f =>
                 Sign f e -> PRED_SYMB -> [TERM f] -> [Id.Pos] 
                 -> Result (FORMULA f)
 minExpFORMULA_pred sign predicate terms pos = do
@@ -230,7 +235,7 @@ minExpFORMULA_pred sign predicate terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Strong/Existl. Equation Formula
 -----------------------------------------------------------}
-minExpFORMULA_eq :: PrettyPrint f =>
+minExpFORMULA_eq :: MinExpForm f =>
                 Sign f e -> (TERM f -> TERM f -> [Id.Pos] -> FORMULA f)
                     -> TERM f -> TERM f -> [Id.Pos] -> Result (FORMULA f)
 minExpFORMULA_eq sign eq term1 term2 pos = do
@@ -265,7 +270,7 @@ minExpFORMULA_eq sign eq term1 term2 pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a TERM
 -----------------------------------------------------------}
-minExpTerm :: PrettyPrint f =>
+minExpTerm :: MinExpForm f =>
                 Sign f e -> TERM f -> Result [[TERM f]]
 minExpTerm sign term'
  = do -- debug 6 ("term'",term')
@@ -358,7 +363,7 @@ minExpTerm_qual sign var sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Sorted_term Term
 -----------------------------------------------------------}
-minExpTerm_sorted :: PrettyPrint f =>
+minExpTerm_sorted :: MinExpForm f =>
                 Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_sorted sign term sort pos = do
     expandedTerm <- minExpTerm sign term        -- :: [[TERM]]
@@ -381,13 +386,13 @@ minExpTerm_sorted sign term sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
-minExpTerm_op :: PrettyPrint f =>
+minExpTerm_op :: MinExpForm f =>
               Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_op sign (Op_name (Id.Id [tok] [] _)) [] _ = 
   minExpTerm_simple sign tok
 minExpTerm_op sign op terms pos = minExpTerm_op1 sign op terms pos
 
-minExpTerm_op1 :: PrettyPrint f =>
+minExpTerm_op1 :: MinExpForm f =>
                Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_op1 sign op terms pos = do
     --debug 3 ("op",op)
@@ -459,7 +464,7 @@ minExpTerm_op1 sign op terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Cast Term
 -----------------------------------------------------------}
-minExpTerm_cast :: PrettyPrint f =>
+minExpTerm_cast :: MinExpForm f =>
                 Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_cast sign term sort pos = do
     expandedTerm        <- minExpTerm sign term         -- :: [[TERM]]
@@ -475,7 +480,7 @@ minExpTerm_cast sign term sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Conditional Term
 -----------------------------------------------------------}
-minExpTerm_cond :: PrettyPrint f =>
+minExpTerm_cond :: MinExpForm f =>
                 Sign f e -> TERM f -> FORMULA f -> TERM f -> [Id.Pos]
                 -> Result [[TERM f]]
 minExpTerm_cond sign term1 formula term2 pos = do
