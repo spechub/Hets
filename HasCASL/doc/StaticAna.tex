@@ -1,9 +1,16 @@
 \documentclass{article}
+\usepackage[T1]{fontenc}
 
 \parindent 0pt
 \parskip 5pt
 
 \begin{document}
+
+\title{The HasCASL language and its analysis}
+
+\author{C. Maeder}
+
+\maketitle
 
 \section{Preliminaries}
 
@@ -16,7 +23,7 @@ well as ids and annotations from the top-level HetCATS directory.
 The concrete syntax of HasCASL is given as plain text in
 \texttt{Concrete-Syntax.txt}. The abstract syntax is given in
 \texttt{As.hs}. The document \texttt{Abstract-Syntax.txt} is out-dated and was
-indented as human readable abstract syntax.
+intended as a human readable abstract syntax.
 
 The data types in \texttt{As.hs} usually contain alternatives (Haskell
 constructors) for different representation before and after the static
@@ -34,7 +41,7 @@ Kinds are constructed from classes, types from type
 constructors and terms from values, i.e. operations or predicates.
 
 Classes, type constructors and values may be declared by giving them a name.
-A type constructors must at least be declared with a kind and a value with a
+A type constructor must at least be declared with a kind and a value with a
 type. (An implicit kind will always be the universe class \texttt{Type}.)
 
 Usually declarations are extended with further properties or even a unique
@@ -54,35 +61,34 @@ parser. A trivial intersection class is a single class name.
 \begin{itemize}
 \item A class name can be declared as a subclass of an intersection class. If
   this intersection class is trivial then the superclass name is also regarded
-  as new or repeated declaration.
+  as a new or repeated declaration.
   
-  A cyclic subclass relation is prohibited, although it may make sense
-  that all classes are regarded as equal.
-\item A class name may be defined as a synonym for an intersection class. 
-  When comparing classes synonyms are expanded.
-\item A class name may be defined as a downset of a type, comprising all
+  A cyclic subclass relation is prohibited.
+\item A class name may be defined as a synonym for an intersection class. For
+  the purpose of comparing classes, synonyms are expanded.
+\item A class name may be defined as the downset of a type, comprising all
   subtypes of the given type. (The variable name for the subtype is ignored.)
   
-  The downset of a type is expected to be a subclass of the downset of a
+  The downset of a type is a subclass of the downset of a
   supertype.
 \end{itemize}
 
 \subsubsection*{Remarks}
 
-Anonymous downsets (from variable or type declarations) and intersection
+Anonymous downsets (from variable declarations) and intersection
 classes are incomparable and cannot be combined. (However a unique class name
 could be generated from the type or an existing class name could be looked up
 via comparing types.)
 
-Class names are currently simple ids, that is, they cannot be compound ids.
-Since types may be parameter compound ids a downset definition will become
-ambiguous for two instances.
+Class names are token ids, that is, simple ids with an optional compound list,
+because types within downsets may also be compound ids.
 
 Class declarations may be repeated, sub- and superclass declarations are
 accumulated as long as they are non-cyclic.
 
 Class definitions may be repeated, if they remain equal, otherwise it is an
-error.
+error. Two downsets are equal if the corresponding types are equal. For type
+equality type aliases are expanded.
 
 All redeclarations issue a warning. 
 
@@ -95,27 +101,27 @@ There are two builtin kind constructors ($\to$ and $\times$), but these only
 control the notation of type constructor applications, for mixfix type ids
 only the overall arity of the kind matters. 
 
-The arguments of a kind may be again kinds (to support constructor classes
-later on) or classes with a co/contra variance inducing further subtype
-(not subclass) relations. 
+The arguments of a kind may again be kinds (to support constructor classes
+later on) or classes with (optional) co/contra variance inducing further
+subtype (not subclass) relations.
 
 \subsection{Types}
 
 Builtin type constructors are 4 different function arrows (partiality combined
-with continuity), products (in tuple or $\times$ notation) and the lazy
+with continuity), products (in $\times$ notation) and the lazy
 prefix type constructor ``$?$''.
 
 Type constructors names are declared with a kind. These names may be mixfix
-ids, but in order to avoid a mixfix analysis for types, these names should be
-simple. Instead the parser resolves types as follows:
+ids, but in order to avoid a mixfix analysis for types, they should be
+simple ids. Instead the parser resolves types as follows:
 
 \begin{itemize}
 \item function arrows have lowest infix priority and associate to the right
-\item next come products with infix $\times$ notation
+\item next come products with (generalized) infix $\times$ notation
 \item next comes lazy type construction
 \end{itemize}
 
-Everything else to the left of a $?$ is regarded as mixfix type. Simple cases
+Everything else to the right of a $?$ is regarded as mixfix type. Simple cases
 of such types are the following:
 
 \begin{itemize}
@@ -124,9 +130,10 @@ of such types are the following:
 \item braces or brackets with one argument refer to an unary outfix type
   constructor $\{\_\_\}$ or $[\_\_]$.
 \item braces or brackets with more arguments are considered illegal.
-\item parenthesis are taken as product types or as parenthesizing of a single
-  type (for one argument). The empty product is the builtin type alias
-  \texttt{Unit}.
+\item parenthesis may only contains a single argument. More arguments may only
+  occur to the left of a type constructor token.
+\item The empty tuple is illegal. Instead the builtin type 
+  \texttt{Unit} should be used.
 \end{itemize}
 
 Mixfix type expressions with several components are simply regarded as
@@ -137,26 +144,83 @@ Square brackets with several arguments could be taken as compound lists for a
 preceding token. (Singleton compound lists are not supported, but regarded as
 type construction, ie. for the list type.)
 
-Also for simplicity type names should not be overloaded. It is open if HasCASL
-should allow such overloading at all, but analysis of types and terms would
-become more consistent if mixfix analysis and overload resolution is equally
-treated for both types and terms. (With a mixfix analysis for types the
-parsing of types could be simplified.)
+Type names cannot be overloaded! (The analysis of types and terms could
+become more consistent if mixfix analysis and overload resolution were equally
+treated for both types and terms. With a mixfix analysis -- that is
+a rougher kind of overload resolution -- the parsing of types could
+be simplified. 
 
-Overloaded type names should have different/incompatible kinds. 
+Type names may be redeclared, but must then have the same kind structure. Only
+the classes in argument or result positions may be different. This flavor of
+overloading corresponds (on the level of terms) to the overloading groups of
+operations (in CASL) that only differ in sorts that are in the
+subsort relation.
+
+\subsubsection*{General declarations}
+
+Generally, there are two flavors of declarations for type constructors and
+operations: value and pattern notation. In a value declaration a mixfix id is
+separated from its kind or type by a colon whereas in a pattern declaration
+arguments and mixfix components are intermingled and only the (optional)
+result (class, kind or type) is written to the right of a colon. 
+
+If a result is omitted a default is substituted. No kind defaults to the
+\texttt{Universe} class and no result type for an operation indicates a
+predicate declaration (although the builtin \texttt{Pred} type constructor is
+recommended). The keyword \texttt{pred} is only kept for compatibility with
+CASL and not recommended.
+
+For simplicity only the value notation -- that does have no parenthesis on the
+(id) left hand side (but possible places) -- is supported. 
+
+The pattern notation may be seen as a generalization of the value notation,
+because the result may be of higher order, but even then the mixing of places
+and parenthesized arguments should be forbidden (places may at most follow the
+last parenthesized argument).
+
+The number of places must be equal or less to the number of arguments, where
+arguments of products are also counted. However, if a place is given for a
+first product component, then places must follow for all components of that
+product. (Within applications further arguments are written as for
+simple ids.)
 
 \subsubsection*{Type declarations}
 
-Generally, there are two flavors of declarations for type constructors and
-operations: value and function notation. In a value declaration a mixfix id is
-separated from its kind or type by a colon whereas in a function declaration
-arguments and mixfix components are intermingled and only the (optional)
-result (class, kind or type) is written to the left of a colon. 
+\begin{itemize}
+\item There are simple value and pattern declarations. 
+\item Type patterns (with the implicit kind \texttt{Universe})
+  may be declared to be subtypes of a given type. Only a simple type name as
+  super type is regarded to be an additional declaration (for compatibility
+  with CASL)
+  
+  This does (confusingly) not mean that the result class is an anonymous
+  downset (as within variable declarations)!
+\item Type patterns may be declared to be isomorphic, that is
+  they are not equal and this corresponds to a trivial cyclic subtype
+  relation.
+\item A type pattern may defined to be a predicate subtype defined via a
+  formula. For a repeated definition the equality of the formulae is
+  undecidable and not thoroughly checked (but left to a proof tool).  
+\item A type pattern may be a type alias. When comparing types these aliases
+  are replaced with there definition (with proper argument substitution). 
+\end{itemize}
 
+\subsection{Variable declarations}
 
-   
+By variable declarations either type or value variables can be declared.
+Type variables must be simple ids and there kind can either be an anonymous
+downset (and using $<$ instead of a colon) or an intersection class (where
+class names can also refer to a downset).
+
+A wrongly spelled (or non-existing) class name causes the analysis to assume
+that not a type but value variable is declared (most likely causing a type
+error). Keeping class and type names disjoint is not furhter enforced.
+
 \end{document}
+
+
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: t
 %%% End: 
+
