@@ -126,26 +126,26 @@ generateAxioms sig =
     inlineAxioms CASL
      " sort s< s' \
       \ op pr : s'->?s ; inj:s->s' \
-      \ forall x:s . pr(inj(x))=e=x           %(projection)% " ++
+      \ forall x:s . pr(inj(x))=e=x           %(ga_projection)% " ++
     inlineAxioms CASL
       " sort s<s' \
       \ op pr : s'->?s \
-      \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(projection_transitivity)% " ++
+      \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(ga_projection_injectivity)% " ++
     inlineAxioms CASL
       " sort s \
       \ op inj : s->s \
-      \ forall x:s . inj(x)=e=x               %(identity)%" 
+      \ forall x:s . inj(x)=e=x               %(ga_identity)%" 
           | (s,s') <- rel2List]++
    [inlineAxioms CASL                
       " sort s<s' \
       \ op pr : s' -> ?s \
       \ pred mem : s' \
-      \ forall x:s . mem(x) <=>def(pr(x))            %(mebership)%"
+      \ forall x:s . mem(x) <=>def(pr(x))            %(ga_mebership)%"
           | (s,s') <- rel2List, let mem=membership s]++
    [inlineAxioms CASL
      " sort s<s';s'<s'' \
       \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
-      \ forall x:s . inj(inj(x))=e=inj(x)      %(transitive)% "  
+      \ forall x:s . inj(inj(x))=e=inj(x)      %(ga_transitivity)% "  
           |(s,s')<-rel2List,s''<-Set.toList(supersortsOf s' sig)] ++
    [inlineAxioms CASL
     " sort s'<s ; s''<s ; w'_i ; w''_i ; w_i; w_j  \
@@ -154,7 +154,7 @@ generateAxioms sig =
     \ var u_j : w_i   \
     \ forall u_i : w_i . \
     \ inj((op f:w'_i->s')(inj(u_j)))=inj((op f:w''_i->s'')(inj(u_j))) \
-    \                                              %(function_monotonicity)%"
+    \                                              %(ga_function_monotonicity)%"
     
           |(f,l)<- ftTL,t1<-l,t2<-l,length(opArgs t1)==length(opArgs t2),
            t1<t2,let w'=(opArgs t1),let w''=(opArgs t2),
@@ -167,7 +167,7 @@ generateAxioms sig =
    " sort w'_i ; w''_i ; w_i  \ 
     \ pred p: w'_i;  pred p: w''_i;   inj:w_i->w'_i;   inj:w_i->w''_i \ 
     \ forall  v_i:w_i . (pred p:w'_i)(inj(v_i))=(pred p:w''_i)(inj(v_i)) \
-    \                                           %(predicate_monotonicity)%"
+    \                                           %(ga_predicate_monotonicity)%"
         | (f,l)<-pred2List, t1<-l, t2<-l, 
           length(predArgs t1)==length(predArgs t2),
           t1<t2, let w'=(predArgs t1), let w''=(predArgs t2), 
