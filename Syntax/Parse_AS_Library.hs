@@ -56,7 +56,6 @@ library l = do (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
 			       return ([tokPos s1], n))
                an <- annos          -- annotations 
                ls <- libItems l     -- library elements
-               eof
                return (Lib_defn ln ls ps an)
 
 -- | Parse library name
@@ -86,7 +85,9 @@ libId = do pos <- getPosition
 
 -- | Parse the library elements
 libItems :: (AnyLogic, LogicGraph) -> AParser [Annoted LIB_ITEM]
-libItems l@(_, lG) = option [] $ do 
+libItems l@(_, lG) = 
+    (eof >> return [])
+    <|> do 
     (r, newlog) <- libItem l
     an <- annos 
     is <- libItems (newlog, lG)
