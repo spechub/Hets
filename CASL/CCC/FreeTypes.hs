@@ -81,7 +81,7 @@ checkFreeType (osig,osens) m fsn
                    let (Id ts _ ps) = head $ filter (\s->not $ elem s srts) newL
                        pos = headPos ps
                        sname = concat $ map tokStr ts 
-                   in warning Nothing (sname ++ " is not in new sorts") pos
+                   in warning Nothing (sname ++ " is not freely generated") pos
        | Set.any (\s->not $ elem s f_Inhabited) newSorts =
                    let (Id ts _ ps) = head $ filter (\s->not $ elem s f_Inhabited) newL
                        pos = headPos ps
@@ -92,13 +92,13 @@ checkFreeType (osig,osens) m fsn
                        pos = case p of
                                Just p' -> headPos p'
                                Nothing -> nullPos 
-                   in warning Nothing "axiom is incorrect" pos
+                   in warning Nothing "axiom is not definitional" pos
        | not $ null $ p_t_axioms ++ pcheck = 
                    let p = get_pos_l $ head (p_t_axioms ++ pcheck)
                        pos = case p of
                                Just p' -> headPos p'
                                Nothing -> nullPos 
-                   in warning Nothing "partial axiom is incorrect" pos
+                   in warning Nothing "partial axiom is not definitional" pos
        | any id $ map find_ot id_ots =    
                    let pos = headPos old_op_ps
                    in warning Nothing ("Op: " ++ old_op_id ++ " ist not new") pos
@@ -119,7 +119,7 @@ checkFreeType (osig,osens) m fsn
                        symb = fst $ pattern_Pos leadingSymPatterns
                    in warning Nothing ("patterns overlap in " ++ symb) pos
        | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
-                   warning Nothing "not terminal" nullPos 
+                   warning Nothing "not terminating" nullPos 
 #endif         
        | otherwise = return (Just True)
 #ifdef UNI_PACKAGE
