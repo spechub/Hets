@@ -5,7 +5,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  non-portable (deriving Typeable)
+Portability :  portable
     
 Morphism on 'Env' (as for CASL)
 -}
@@ -29,7 +29,9 @@ import Common.Lib.Pretty
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Data.Dynamic
+
+import Data.List(partition)
+import Control.Monad(foldM)
 
 data SymbolType = OpAsItemType TypeScheme 
 		| TypeAsItemType Kind
@@ -56,10 +58,10 @@ instance Ord TypeScheme where
 			GT -> False 		   
 
 data Symbol = Symbol {symName :: Id, symbType :: SymbolType} 
-	      deriving (Show, Eq, Ord, Typeable)
+	      deriving (Show, Eq, Ord)
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId SymbKind Id
-    	         deriving (Show, Eq, Ord, Typeable)
+    	         deriving (Show, Eq, Ord)
 
 type SymbolMap = Map.Map Symbol Symbol 
 
@@ -176,7 +178,7 @@ instance Mergeable Env where
 	   let m = max (counter e1) $ counter e2
 	   tMap <- mergeMap (mergeTypeInfo Map.empty 0) 
 		   (typeMap e1) $ typeMap e2
-	   as <- mergeMap (mergeOpInfos tMap 0) 
+	   as <- mergeMap (mergeOpInfos tMap m) 
 		 (assumps e1) $ assumps e2
 	   return initialEnv { classMap = cMap
 			     , typeMap = tMap
@@ -187,7 +189,7 @@ data Morphism = Morphism { msource :: Env
 			 , classIdMap :: IdMap  -- ignore
 			 , typeIdMap :: IdMap 
                          , funMap :: FunMap } 
-                         deriving (Eq, Show, Typeable)
+                         deriving (Eq, Show)
 
 mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty Map.empty
@@ -288,6 +290,14 @@ legalMor m = let s = msource m
 	     && all ((`elem` (Map.keys $ assumps t)) . fst)
 		(Map.elems fs)
 
+mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
+mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = fmap OpInfos $  
+    foldM ( \ l o -> 
+	   let (es, us) = partition (isUnifiable tm c (opType o) . opType) l
+	   in if null es then return (o:l)
+	      else do r <- mergeOpInfo tm c (head es) o
+	              return (r : us)) l1 l2 
+
 morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = 
     do s <- merge (msource m1) $ msource m2
@@ -319,7 +329,7 @@ compatibleOpTypes = isUnifiable Map.empty 0
 
 instance PrettyPrint Morphism where
   printText0 ga m = braces (printText0 ga (msource m)) 
-		    <+> text mapsTo
+		    $$ text mapsTo
 		    <+> braces (printText0 ga (mtarget m))
 
 instance PrettyPrint Symbol where

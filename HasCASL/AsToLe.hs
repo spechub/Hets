@@ -44,10 +44,11 @@ basicAnalysis (b, e, ga) =
 
 -- | compute difference of signatures 
 diffEnv :: Env -> Env -> Env
-diffEnv e1 e2 = 
-    e1 { classMap = Map.differenceWith diffClass (classMap e1) (classMap e2)
-       , typeMap = Map.differenceWith diffType (typeMap e1) (typeMap e2)
-       , assumps = Map.differenceWith diffAss (assumps e1) (assumps e2)
+diffEnv e1 e2 = let tm = typeMap e2 in
+    initialEnv
+       { classMap = Map.differenceWith diffClass (classMap e1) (classMap e2)
+       , typeMap = Map.differenceWith diffType (typeMap e1) tm
+       , assumps = Map.differenceWith (diffAss tm) (assumps e1) (assumps e2)
        }
 
 -- | compute difference of class infos
@@ -60,18 +61,19 @@ diffType _ _ = Nothing
 
 -- | Check if two OpTypes are equal except from totality or partiality
 compatibleOpTypes :: TypeScheme -> TypeScheme -> Bool
-compatibleOpTypes = isUnifiable Map.empty 0 
+compatibleOpTypes = isUnifiable Map.empty 0
 
 -- | compute difference of overloaded operations
-diffAss :: OpInfos -> OpInfos -> Maybe OpInfos
-diffAss (OpInfos []) (OpInfos _) = Nothing 
-diffAss (OpInfos (o:l1)) (OpInfos l2) = 
-    let m = diffAss (OpInfos l1) (OpInfos l2) in
-    if any (\ p -> compatibleOpTypes (opType o) (opType p)) l2 
-      then m
-      else do OpInfos l <- m
-	      return (OpInfos (o:l))
-
+diffAss :: TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos
+diffAss tm (OpInfos l1) (OpInfos l2) = 
+    let l3 = diffOps l1 l2 in
+	if null l3 then Nothing else Just (OpInfos l3)
+    where diffOps [] l = []
+	  diffOps (o:os) (ps) = 
+	      let rs = diffOps os ps in
+	      if any (\ p -> isUnifiable tm 0 (opType o) (opType p)) ps
+		 then rs else o:rs
+ 
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
 cleanEnv e = diffEnv initialEnv 

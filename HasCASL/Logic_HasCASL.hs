@@ -15,7 +15,7 @@ Portability :  non-portable (imports Logic.Logic)
      - writing real functions
 -}
 
-module HasCASL.Logic_HasCASL where
+module HasCASL.Logic_HasCASL(HasCASL(HasCASL), HasCASL_Sublogics) where
 
 import HasCASL.As
 import HasCASL.Le
@@ -44,10 +44,17 @@ type HasCASL_Sublogics = ()
 data HasCASL = HasCASL deriving (Show)
 instance Language HasCASL -- default definition is okay
 
-basicSpecTc, envTc, termTc :: TyCon
-basicSpecTc      = mkTyCon "HasCASL.BasicSpec"
-envTc            = mkTyCon "HasCASL.Env"
-termTc           = mkTyCon "HasCASL.Term"
+basicSpecTc, envTc, termTc, symbolTc, rawSymbolTc, 
+    symbItemsTc, symbMapItemsTc, morphismTc :: TyCon
+
+basicSpecTc      = mkTyCon "HasCASL.As.BasicSpec"
+envTc            = mkTyCon "HasCASL.Le.Env"
+termTc           = mkTyCon "HasCASL.As.Term"
+symbolTc         = mkTyCon "HasCASL.Morphism.Symbol"
+rawSymbolTc      = mkTyCon "HasCASL.Morphism.RawSymbol"
+symbItemsTc      = mkTyCon "HasCASL.Symbol.SymbolItems"
+symbMapItemsTc   = mkTyCon "HasCASL.Symbol.SymbolMapItems"
+morphismTc       = mkTyCon "HasCASL.Morphism.Morphism"
 
 instance Typeable BasicSpec where
     typeOf _ = mkAppTy basicSpecTc []
@@ -55,6 +62,16 @@ instance Typeable Env where
     typeOf _ = mkAppTy envTc []
 instance Typeable Term where
     typeOf _ = mkAppTy termTc []
+instance Typeable Symbol where
+    typeOf _ = mkAppTy symbolTc []
+instance Typeable RawSymbol where
+    typeOf _ = mkAppTy rawSymbolTc []
+instance Typeable SymbItems where
+    typeOf _ = mkAppTy symbItemsTc []
+instance Typeable SymbMapItems where
+    typeOf _ = mkAppTy symbMapItemsTc []
+instance Typeable Morphism where
+    typeOf _ = mkAppTy morphismTc []
 
 -- abstract syntax, parsing (and printing)
 

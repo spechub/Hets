@@ -19,11 +19,9 @@ import HasCASL.Le
 import HasCASL.AsUtils
 import HasCASL.Unify
 import qualified Common.Lib.Map as Map
-import Data.List
-import Control.Monad
+import Data.List(nub, partition, nubBy)
+import Control.Monad(foldM)
 import Common.Result
-
--- for Logic.signature_union
 
 instance (Ord a, PosItem a, PrettyPrint a, Mergeable b) 
     => Mergeable (Map.Map a b) where
@@ -109,14 +107,6 @@ instance Mergeable Vars where
 		  else fail ("different variables for subtype definition\n\t" 
 			     ++ showPretty t1 "\n\t"
 			     ++ showPretty t2 "\n\t")
-
-mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
-mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = fmap OpInfos $  
-    foldM ( \ l o -> 
-	   let (es, us) = partition (isUnifiable tm c (opType o) . opType) l
-	   in if null es then return (o:l)
-	      else do r <- mergeOpInfo tm c (head es) o
-	              return (r : us)) l1 l2 
 
 mergeScheme :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Result TypeScheme
 mergeScheme tm c s1 s2 = let b = instScheme tm c s2 s1 in

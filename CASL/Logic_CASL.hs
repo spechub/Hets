@@ -12,7 +12,7 @@
 
 -}
 
-module CASL.Logic_CASL where
+module CASL.Logic_CASL(CASL(CASL)) where
 
 import CASL.AS_Basic_CASL
 import CASL.Print_AS_Basic
