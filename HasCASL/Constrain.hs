@@ -33,11 +33,6 @@ import Common.Result
 
 import Data.List
 import Data.Maybe
-import Control.Exception(assert)
--- import Debug.Trace(trace)
-
-trace :: a -> b -> b
-trace = flip const
 
 data Constrain = Kinding Type Kind
                | Subtyping Type Type 
@@ -107,7 +102,7 @@ byInst tm c = case c of
 	       _ -> error "byInst: unexpected Type" 
 	   _ -> error "byInst: unexpected Kind" 
     Subtyping t1 t2 -> if lesserType tm t1 t2 then return noC
-                       else if unify tm t1 t2 then return noC
+                       else if unify tm t1 t2 then return noC -- wrong!
                        else fail ("unable to prove: " ++ showPretty t1 " < " 
                                   ++ showPretty t2 "")
 
@@ -187,56 +182,64 @@ addSubst s = do
     (c, o) <- get
     put (c, compSubst o s)
 
+swap :: (a, b) -> (b, a)
+swap (a, b) = (b, a)
+
 -- pre: shapeMatch succeeds
-shapeMgu :: TypeMap -> (Type, Type) -> State (Int, Subst) ()
-shapeMgu tm (t1, t2) = do 
-  s <- gets snd
-  case (subst s t1, subst s t2) of 
-    (ExpandedType _ t, _) -> shapeMgu tm (t, t2)
-    (_, ExpandedType _ t) -> shapeMgu tm (t1, t)
-    (LazyType t _, _) -> shapeMgu tm (t, t2)
-    (_, LazyType t _) -> shapeMgu tm (t1, t)
-    (KindedType t _ _, _) -> shapeMgu tm (t, t2)
-    (_, KindedType t _ _) -> shapeMgu tm (t1, t)
-    (TypeName _ _ _, TypeName _ _ _) -> 
-        trace ("[[" ++ showPrettyWithPos t1 ", " ++ showPrettyWithPos t2 "]]\n"
-              ) $ return ()
-    (TypeName _ _ v1, _) -> assert (v1 > 0) $
+shapeMgu :: TypeMap -> [(Type, Type)] -> State (Int, Subst) [(Type, Type)]
+shapeMgu tm cs = 
+    let (atoms, structs) = partition ( \ p -> case p of
+                                       (TypeName _ _ _, TypeName _ _ _) -> True
+                                       _ -> False) cs 
+    in if null structs then return atoms else
+    let p@(t1, t2) = head structs
+        tl = tail structs 
+        rest = tl ++ atoms
+    in case p of 
+    (ExpandedType _ t, _) -> shapeMgu tm ((t, t2) : rest)
+    (_, ExpandedType _ t) -> shapeMgu tm ((t1, t) : rest)
+    (LazyType t _, _) -> shapeMgu tm ((t, t2) : rest)
+    (_, LazyType t _) -> shapeMgu tm ((t1, t) : rest)
+    (KindedType t _ _, _) -> shapeMgu tm ((t, t2) : rest)
+    (_, KindedType t _ _) -> shapeMgu tm ((t1, t) : rest)
+    (TypeName _ _ v1, _) -> if (v1 > 0) then
          case t2 of
          ProductType ts ps -> do 
              nts <- toPairState $ freshVarsT tm ts
-             addSubst $ Map.single v1 $ ProductType nts ps
-             mapM_ (shapeMgu tm) $ zip nts ts
+             let s = Map.single v1 $ ProductType nts ps
+             addSubst s
+             shapeMgu tm (zip nts ts ++ subst s rest)
          FunType t3 ar t4 ps -> do
              v3 <- toPairState $ freshTypeVarT tm t3
              v4 <- toPairState $ freshTypeVarT tm t4
-             addSubst $ Map.single v1 $ FunType v3 ar v4 ps
-             shapeMgu tm (v3, t3)
-             shapeMgu tm (v4, t4)
+             let s = Map.single v1 $ FunType v3 ar v4 ps
+             addSubst s
+             shapeMgu tm ((t3, v3) : (v4, t4) : subst s rest)
          TypeAppl _ _ -> do 
              let (topTy, args) = getTypeAppl tm t2 
              vs <- toPairState $ freshVarsT tm args
-             addSubst $ Map.single v1 $ mkTypeAppl topTy vs
-             mapM_ (shapeMgu tm) $ zip vs args
+             let s = Map.single v1 $ mkTypeAppl topTy vs
+             addSubst s
+             shapeMgu tm (zip vs args ++ subst s rest)
          _ -> error "shapeMgu"
-    (_, TypeName _ _ _) -> shapeMgu tm (t2, t1)
-    (TypeAppl t3 t4, TypeAppl t5 t6) -> do
-        shapeMgu tm (t3, t5)
-        shapeMgu tm (t4, t6)
-    (ProductType s1 _, ProductType s2 _) -> mapM_ (shapeMgu tm) $ zip s1 s2
-    (FunType t3 _ t4 _, FunType t5 _ t6 _) -> do
-        shapeMgu tm (t3, t5)
-        shapeMgu tm (t4, t6)
+         else error ("shapeMgu: " ++ showPretty t1 " < " ++ showPretty t2 "") 
+    (_, TypeName _ _ _) -> do as <- shapeMgu tm ((t2, t1) : map swap rest)
+                              return $ map swap as
+    (TypeAppl t3 t4, TypeAppl t5 t6) ->
+        shapeMgu tm ((t3, t5) : (t4, t6) : rest)
+    (ProductType s1 _, ProductType s2 _) -> shapeMgu tm (zip s1 s2 ++ rest)
+    (FunType t3 _ t4 _, FunType t5 _ t6 _) ->
+        shapeMgu tm ((t5, t3) : (t4, t6) : rest)
     _ -> error "shapeMgu (invalid precondition)"
 
-shapeUnify :: TypeMap -> [(Type, Type)] -> State Int Subst
+shapeUnify :: TypeMap -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
 shapeUnify tm l = do 
     c <- get 
-    let (n, t) = execState (mapM_ (shapeMgu tm) l) (c, Map.empty) 
+    let (as, (n, t)) = runState (shapeMgu tm l) (c, Map.empty) 
     put n
-    return t
+    return (t, as)
 
--- pre: same shape (after applying shapeMgu)
+-- must be integrated into shapeMgu
 atomize :: TypeMap -> (Type, Type) -> [(Type, Type)]
 atomize tm (t1, t2) = 
     case (t1, t2) of 
@@ -263,8 +266,7 @@ atomize tm (t1, t2) =
                       ExtKind _ CoVar _ -> l1
                       ExtKind _ ContraVar _ -> l2
                       _ -> l1 ++ l2) ks $ zip as1 as2)
-                 else trace (showPretty t1 ", " ++ showPretty t2 "") 
-                      error "atomize: getTypeAppl"
+                 else error "atomize: getTypeAppl"
           _ -> error "atomize"
 
 getRawKindAppl :: Kind -> [a] -> (Kind, [Kind])
@@ -309,10 +311,7 @@ preClose tm cs =
         subL = [ (t1, t2) | (Subtyping t1 t2) <- Set.toList subS ]
     in case shapeMatch tm (map fst subL) $ map snd subL of
        Result ds Nothing -> return $ Result ds Nothing
-       _ -> do s1 <- shapeUnify tm subL
-               let as = concatMap (atomize tm) $ map (subst s1) $
-                        trace (showPretty subL "\n" ++ showPretty s1 "\n"
-                              ++ showPretty (map (subst s1) subL) "") subL
+       _ -> do (s1, as) <- shapeUnify tm subL
                case collapser as of
                    Result ds Nothing -> return $ Result ds Nothing
                    Result _ (Just s2) -> let s = compSubst s1 s2 in 
