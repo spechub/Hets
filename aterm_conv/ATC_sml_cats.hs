@@ -97,7 +97,7 @@ instance ATermConvertible Id where
 fromATermTokenTup :: ATermTable -> [Token]
 fromATermTokenTup att = 
     case aterm of
-       (AAppl "tuple" [tops,_,_]) ->
+       (AAppl "" [tops,_,_]) ->
 	   fromATerm (getATermByIndexSp1 tops att)
        _         -> fromATermError "Token" aterm
     where aterm = getATerm att
@@ -240,7 +240,7 @@ instance (ATermConvertible a) => ATermConvertible (Annoted a) where
 	              let (bi,las) = fromATermAnnotedBasic_Items att
 	              in Annoted bi [] las []
 	       -- L_.* constuctors from SML 
-	        "tuple"           -> Annoted (fromATerm (getATermByIndexSp1 
+	        ""           -> Annoted (fromATerm (getATermByIndexSp1 
 						        (head as) 
 						        att))
 	                                     []
@@ -319,6 +319,8 @@ parse_anno pos_l inp =
     case (parse (set_pos Anno_Parser.annotations) "" inp) of
        Left err   -> error ("internal parse error at " ++ (show err))
        Right [x]  -> x
+       Right _    -> error ("something strange happend to \"" ++
+			     inp ++ "\" during ATerm Conversion")
     where set_pos p = do setPosition sp
 			 skip
 			 p
@@ -334,7 +336,10 @@ parse_disp_anno i pos_l inp =
        --Right xs   -> error $ "More than one displayanno" ++ show xs
     where sp = pos -- newPos "ATermConversion from SML" (fst pos) (snd pos)
 	  pos = head pos_l
-	  inp' = (showId i "") ++ (' ':inp)
+	  inp' = (showId i "") ++ (' ':s_inp)
+	  s_inp = case reverse inp of
+		  rin | "%)" `isPrefixOf` rin -> reverse $ drop 2 rin
+		      | otherwise -> inp
 
 ----- instances of AS_Basic_CASL.hs -------------------------------------
 instance ATermConvertible BASIC_SPEC where
@@ -594,7 +599,7 @@ instance ATermConvertible ARG_DECL where
     toATerm _ _ = error "*** toATerm for \"ARG_DECL\" not implemented"
     fromATerm att =
 	case aterm of
-	    (AAppl "arg-decl" [ AAppl "tuple" [aa,ab] ])  ->
+	    (AAppl "arg-decl" [ AAppl "" [aa,ab] ])  ->
 		let
 		aa' = fromATermVARs (getATermByIndexSp1 aa att)
 		ab' = fromATerm (getATermByIndexSp1 ab att)
@@ -602,7 +607,7 @@ instance ATermConvertible ARG_DECL where
 		in (Arg_decl aa' ab' ac')
 	    _ -> fromATermError "ARG_DECL" aterm
 	where
-	    Just aterm = getATermSp att' $ AAppl "arg-decl" [AAppl "tuple" []]
+	    Just aterm = getATermSp att' $ AAppl "arg-decl" [AAppl "" []]
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-ARG-DECL" [reg_i,item_i]) ->
@@ -793,14 +798,14 @@ instance ATermConvertible VAR_DECL where
     toATerm _ _ = error "*** toATerm for \"VAR_DECL\" not implemented"
     fromATerm att =
 	case aterm of
-	    (AAppl "tuple" [ aa,ab ])  ->
+	    (AAppl "" [ aa,ab ])  ->
 		let
 		aa' = fromATermVARs (getATermByIndexSp1 aa att)
 		ab' = fromATerm (getATermByIndexSp1 ab att)
 		in (Var_decl aa' ab' [])
 	    _ -> fromATermError "VAR_DECL" aterm
 	where
-	    Just aterm = getATermSp att $ AAppl "tuple" [ ]
+	    Just aterm = getATermSp att $ AAppl "" [ ]
 
 instance ATermConvertible FORMULA where
     toATerm _ _ = error "*** toATerm for \"FORMULA\" not implemented"
@@ -917,7 +922,7 @@ fromATermTERMS att =
 fromATermSIMPLE_ID :: ATermTable -> SIMPLE_ID
 fromATermSIMPLE_ID att = 
     case aterm of
-      (AAppl "tuple" [ si, _ ]) -> -- snd element is 'None' 
+      (AAppl "" [ si, _ ]) -> -- snd element is 'None' 
                                   -- (CASL.grm:((WORDS,None)))
           let s = fromATerm $ getATermByIndexSp1 si att
 	  in Token s nullPos
