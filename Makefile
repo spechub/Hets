@@ -17,10 +17,12 @@ INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
 CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CspCASL:$(INCLUDE_PATH)
 
+DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0/imports'
+
 HC         = ghc
 PERL       = perl
 HAPPY      = happy
-DRIFT      = $(PERL) utils/DrIFT
+DRIFT      = $(DRIFT_ENV) $(PERL) utils/DrIFT
 AG         = $(PERL) utils/ag
 HADDOCK    = $(PERL) utils/haddock
 
@@ -101,7 +103,7 @@ doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
 
 all: hets
 
-hets: $(sources) 
+hets: $(sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
 hets-old: $(objects)
