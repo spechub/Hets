@@ -44,10 +44,8 @@ generalize (TypeScheme vs q@(_ :=> ty) ps) =
 compSubst :: Subst -> Subst -> Subst
 compSubst s1 s2 = Map.union (Map.map (subst s2) s1) s2  
 
-
 mUnify :: TypeMap -> Maybe Type -> Type -> Result Subst
-mUnify tm mt ty = case mt of Nothing -> Result [] $ Just eps
-			     Just t -> unify tm t ty
+mUnify tm mt ty = unify tm mt (Just ty)
 
 -- | unifiability of type schemes including instantiation with fresh variables 
 -- and looking up type aliases
@@ -175,9 +173,7 @@ instance (Unifiable a, Unifiable b) => Unifiable (a, b) where
 				 unify tm (subst s1 t2) (subst s1 t4) in
 			     case m2 of 
 				     Nothing -> r2
-				     Just s2 -> return $
-						(Map.map (subst s2) s1 
-						   `Map.union` s2) 
+				     Just s2 -> return $ compSubst s1 s2
 
 instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
     subst s = map (subst s) 
@@ -186,6 +182,12 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
     unify tm [] l = unify tm l [] 
     unify _ (a:_) [] = Result [mkDiag Hint 
 			 ("unification failed at") a] Nothing
+
+instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
+    subst s = fmap (subst s) 
+    unify _ Nothing _ = return eps
+    unify _ _ Nothing = return eps
+    unify tm (Just a1) (Just a2) = unify tm a1 a2
 
 occursIn :: TypeId -> Type -> Bool
 occursIn i t = 
