@@ -212,6 +212,7 @@ printTerm ga b trm =
                 in case br of 
                 Let -> sep [text letS <+> des, text inS <+> dt]
                 Where -> hang (sep [dt, text whereS]) 6 des 
+                Program -> text programS <+> des
         TermToken t -> printText0 ga t
         MixTypeTerm q t _ -> printText0 ga q <+> printText0 ga t
         MixfixTerm ts -> fsep $ map (printText0 ga) ts

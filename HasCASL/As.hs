@@ -197,6 +197,9 @@ logicalType :: Type
 logicalType = TypeName unitTypeId star 0
               -- ProductType [] [] 
 
+liftType :: Type -> [Pos] -> Type
+liftType t qs = FunType logicalType PFunArr t qs
+
 mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
 mapTypeOfScheme f (TypeScheme args t ps) =
     TypeScheme args (f t) ps
@@ -262,15 +265,16 @@ instance Show Quantifier where
         Existential -> existsS 
         Unique -> existsS ++ exMark
 
-data TypeQual = OfType | AsType | InType deriving (Eq, Ord)
+data TypeQual = OfType | AsType | InType | Inferred deriving (Eq, Ord)
 
 instance Show TypeQual where
     show q = case q of
         OfType -> colonS
         AsType -> asS
         InType -> inS
+        Inferred -> colonS
 
-data LetBrand = Let | Where deriving (Show, Eq, Ord)
+data LetBrand = Let | Where | Program deriving (Show, Eq, Ord)
 
 data BracketKind = Parens | Squares | Braces deriving (Show, Eq, Ord)
 
