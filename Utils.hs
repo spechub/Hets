@@ -104,3 +104,51 @@ chomp = reverse . chomp' . reverse
     where chomp' [] = []
 	  chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
 			    | otherwise = xs
+
+-- IgnoreMaybe datatype
+-- extension to Maybe for use in computations over recursive types
+-- that need a "don't care" result
+--
+-- RealJust a means result a was computed
+-- RealNothing means computation failed
+-- IgnoreNothing means the rest of the computation should not be
+--               influenced by this result
+--
+data IgnoreMaybe a = RealJust a
+                   | RealNothing
+                   | IgnoreNothing
+
+-- drop IgnoreNothing from a list to get Maybe list
+--
+dropIgnore :: [IgnoreMaybe a] -> [Maybe a]
+dropIgnore []                = []
+dropIgnore ((RealJust x):t)  = (Just x):(dropIgnore t)
+dropIgnore (RealNothing:t)   = Nothing:(dropIgnore t)
+dropIgnore (IgnoreNothing:t) = dropIgnore t
+
+-- convert from Maybe to IgnoreMaybe
+--
+toIgnore :: Maybe a -> IgnoreMaybe a
+toIgnore (Just x) = RealJust x
+toIgnore _        = RealNothing
+
+-- convert from IgnoreMaybe to Maybe
+-- IgnoreNothing is propagated (wrt to the meaning given above) to Nothing
+--
+toMaybe :: IgnoreMaybe a -> Maybe a
+toMaybe (RealJust x) = Just x
+toMaybe _            = Nothing
+
+-- map over IgnoreMaybe taking (Maybe a -> b) function
+--
+mapIgnore :: (Maybe a -> b) -> [IgnoreMaybe a] -> [b]
+mapIgnore f [] = []
+mapIgnore f (IgnoreNothing:t) = mapIgnore f t
+mapIgnore f (h:t) = (f $ toMaybe h):(mapIgnore f t)
+
+-- map over IgnoreMaybe taking (a -> b) function
+--
+mapIgnoreMaybe :: (a -> b) -> [IgnoreMaybe a] -> [b]
+mapIgnoreMaybe f [] = []
+mapIgnoreMaybe f (RealJust x:t) = (f x):(mapIgnoreMaybe f t)
+mapIgnoreMaybe f (h:t) = mapIgnoreMaybe f t

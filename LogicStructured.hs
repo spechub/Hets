@@ -30,17 +30,12 @@
    evaluate logic_code/name should functions that can turn a language and/or
      encoding name into an id or even sublogics be implemented
 
-   see if it would be possible to analyse items pulled in via download_items
-     for their language/sublogic, this could for example be possible when
-     the library import function(s) to load the named items from the
-     library files would be implemented
-    
    arch_spec_name/spec_name G_sublogics could perhaps be computed if
      the named spec is also in the given lib_defn or spec_defn
 -------------------------------------------------------------------------- -}
 
 -----------------------------------------------------------------------------
--- export declaration
+-- Export declarations
 -----------------------------------------------------------------------------
 
 module LogicStructured ( -- SPEC_DEFN -> Maybe G_Sublogics
@@ -61,77 +56,24 @@ module LogicStructured ( -- SPEC_DEFN -> Maybe G_Sublogics
                        ) where
 
 -----------------------------------------------------------------------------
--- imports from other modules
+-- Imports from other modules
 -----------------------------------------------------------------------------
 
 import Maybe ( isJust )
-
+import Utils ( IgnoreMaybe(..), dropIgnore, toIgnore, toMaybe )
 import AS_Structured
 import AS_Architecture
 import qualified AS_Library
-
 import AS_Annotation ( Annoted(..) )
-
 import Logic ( coerce, language_name, meet, min_sublogic_symb_items,
                min_sublogic_symb_map_items, min_sublogic_basic_spec,
                top )
-
 import Grothendieck( G_basic_spec(..), G_sublogics(..),
                      G_symb_items_list(..), G_symb_map_items_list(..) )
 
 -----------------------------------------------------------------------------
--- module implementation
------------------------------------------------------------------------------
-
-{- --------------------------------------------------------------------------
-  IngoreMaybe datatype
------------------------------------------------------------------------------
-  This is an "extension" to the Maybe datatype to handle the fact that
-  there are three cases when descending into a sub-portion of a spec/lib
-  to calculate the logic/sublogic:
-  a) logic can be computed (i.e. basic_spec or smyb_map_items occurs
-     which have min_sublogics functions from Logic.hs available)
-     and all items given are in the same language
-  b) logic cannot be computed because of different languages occuring
-     in the input
-  c) the subtree does not have a computable but also does not imply
-     a language (i.e. logic_translation with null effect because
-     only source logic name is given which does not itself imply a
-     logic but only reinforces the computed logic of the item(s)
-     being translated)
-  The IgnoreNothing handles case c) because it will not influence the
-  result of the computation functions (map_logics_ign and top_logics_ign).
-  IgnoreNothing never leaves this module since all functions exported
-  are on types that always allow to decide whether a common sublogic can
-  be computed or not.
--------------------------------------------------------------------------- -}
-
-data IgnoreMaybe a = RealJust a
-                   | RealNothing
-                   | IgnoreNothing
-
--- drop IgnoreNothing from a list to get Maybe list
+-- Module implementation
 --
-dropIgnore :: [IgnoreMaybe a] -> [Maybe a]
-dropIgnore []                = []
-dropIgnore ((RealJust x):t)  = (Just x):(dropIgnore t)
-dropIgnore (RealNothing:t)   = Nothing:(dropIgnore t)
-dropIgnore (IgnoreNothing:t) = dropIgnore t
-
--- convert from Maybe to IgnoreMaybe
---
-toIgnore :: Maybe a -> IgnoreMaybe a
-toIgnore (Just x) = RealJust x
-toIgnore _        = RealNothing
-
--- convert from IgnoreMaybe to Maybe
--- IgnoreNothing is propagated (wrt to the meaning given above) to Nothing
---
-toMaybe :: IgnoreMaybe a -> Maybe a
-toMaybe (RealJust x) = Just x
-toMaybe _            = Nothing
-
------------------------------------------------------------------------------
 -- Computations on Maybe/IgnoreMaybe G_sublogics datatype
 -----------------------------------------------------------------------------
 
