@@ -35,7 +35,7 @@ import Options
 proceed fname showdg = do
   res <- anaFile logicGraph defaultLogic defaultHetcatsOpts fname 
   case res of
-    Just (ln,dg,libenv) -> 
+    Just (ln,_,dg,libenv) -> 
       if showdg then do
        graphMem <- initializeConverter
        (gid,gv,cmaps) <- convertGraph graphMem ln libenv

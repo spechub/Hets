@@ -105,6 +105,10 @@ data Annoted a = Annoted { item::a, opt_pos :: [Pos]
 mapAnnoted :: (a -> b) -> Annoted a -> Annoted b
 mapAnnoted f (Annoted i o l r) = Annoted (f i) o l r
 
+-- | replace the 'item'
+replaceAnnoted :: b -> Annoted a -> Annoted b
+replaceAnnoted x (Annoted _ o l r) = Annoted x o l r
+
 -- | add further following annotations
 appendAnno :: Annoted a -> [Annotation] -> Annoted a
 appendAnno (Annoted x p l r) y = Annoted x p l (r++y)

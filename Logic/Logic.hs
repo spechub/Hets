@@ -183,7 +183,8 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                            Maybe((basic_spec,  -- abstract syntax tree
                             sign,   -- efficient table for env signature
                             GlobalAnnos) ->   -- global annotations
-                           Result (sign,sign,[Named sentence]))
+                           Result (basic_spec,sign,sign,[Named sentence]))
+                           -- the resulting bspec has analyzed axioms in it
                            -- the first output sign united with the input sign
                            -- should yield the second output sign
                            -- the second output sign is the accumulated sign

@@ -358,14 +358,14 @@ emptySign :: Sign
 emptySign = emptyEnv 
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
-                 -> Result (Sign,Sign,[Named Sentence])
+                 -> Result (BASIC_SPEC,Sign,Sign,[Named Sentence])
 
 basicAnalysis (bs, inSig, ga) = 
-    let (_, accSig) = runState (ana_BASIC_SPEC ga bs) inSig
+    let (bs', accSig) = runState (ana_BASIC_SPEC ga bs) inSig
 	ds = envDiags accSig
 	sents = sentences accSig
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
-	in Result ds $ Just (cleanSig `diffSig` inSig, cleanSig, sents) 
+	in Result ds $ Just (bs',cleanSig `diffSig` inSig, cleanSig, sents) 
 
 diffSig :: Sign -> Sign -> Sign
 diffSig a b = 

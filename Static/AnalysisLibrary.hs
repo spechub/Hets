@@ -41,7 +41,7 @@ import Options
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
 anaFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> String
-              -> IO (Maybe (LIB_NAME,DGraph,LibEnv))
+              -> IO (Maybe (LIB_NAME,LIB_DEFN,DGraph,LibEnv))
 anaFile logicGraph defaultLogic opts fname = do
   putIfVerbose opts 1  ("Reading " ++ fname)
   input <- readFile fname
@@ -53,7 +53,8 @@ anaFile logicGraph defaultLogic opts fname = do
   return res
 
 
-ana_file1 :: LogicGraph -> AnyLogic -> LibEnv -> HetcatsOpts -> LIB_NAME -> IO LibEnv
+ana_file1 :: LogicGraph -> AnyLogic -> LibEnv -> HetcatsOpts -> LIB_NAME 
+              -> IO LibEnv
 ana_file1 logicGraph defaultLogic libenv opts libname = do
   case Map.lookup libname libenv of
    Just _ -> return libenv
@@ -69,7 +70,7 @@ ana_file1 logicGraph defaultLogic libenv opts libname = do
     Result diags res <- ioresToIO (ana_LIB_DEFN logicGraph defaultLogic libenv opts ast)
     sequence (map (putStrLn . show) diags)
     return (case res of 
-               Just (ln,dg,libenv') -> libenv'
+               Just (_,_,_,libenv') -> libenv'
                Nothing -> libenv) 
   
 
@@ -80,18 +81,27 @@ ana_file1 logicGraph defaultLogic libenv opts libname = do
 --    sequence (map (putStrLn . show) diags)
 ana_LIB_DEFN :: LogicGraph -> AnyLogic 
                  -> LibEnv -> HetcatsOpts -> LIB_DEFN
-                 -> IOResult (LIB_NAME,DGraph,LibEnv)
+                 -> IOResult (LIB_NAME,LIB_DEFN,DGraph,LibEnv)
 
-ana_LIB_DEFN lgraph l libenv opts (Lib_defn ln libItems pos ans) = do
-  (gctx@(_,_,dg),_,libenv') <- 
-     foldl ana (return ((gannos,Map.empty,empty),l,libenv))
-               (map item libItems)
-  return (ln,dg,Map.insert ln gctx libenv')
+ana_LIB_DEFN lgraph l libenv opts (Lib_defn ln alibItems pos ans) = do
+  (libItems',gctx@(_,_,dg),_,libenv') <- 
+     foldl ana (return ([],(gannos,Map.empty,empty),l,libenv))
+               (map item alibItems)
+  return (ln,
+          Lib_defn ln 
+                   (map (uncurry replaceAnnoted)
+                        (zip (reverse libItems') alibItems))
+                   pos 
+                   ans,
+          dg,
+          Map.insert ln gctx libenv')
   where
   gannos = addGlobalAnnos emptyGlobalAnnos ans
   ana res libItem = do
-    (gctx1,l1,libenv1) <- res
-    ana_LIB_ITEM lgraph l1 libenv1 gctx1 l1 opts libItem
+    (libItems',gctx1,l1,libenv1) <- res
+    (libItem',gctx1',l1',libenv1') <- 
+       ana_LIB_ITEM lgraph l1 libenv1 gctx1 l1 opts libItem
+    return (libItem':libItems',gctx1',l1',libenv1')
 
 -- analyse a LIB_ITEM
 -- Parameters: logic graph, default logic, library env
@@ -99,18 +109,21 @@ ana_LIB_DEFN lgraph l libenv opts (Lib_defn ln libItems pos ans) = do
 ana_LIB_ITEM :: LogicGraph -> AnyLogic -> LibEnv
                  -> GlobalContext -> AnyLogic -> HetcatsOpts
                  -> LIB_ITEM
-                 -> IOResult (GlobalContext,AnyLogic,LibEnv)
+                 -> IOResult (LIB_ITEM,GlobalContext,AnyLogic,LibEnv)
 
-ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts (Spec_defn spn gen asp pos) = do
+ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts 
+             (Spec_defn spn gen asp pos) = do
   let just_struct = False -- justStruct opts
   ioToIORes (putIfVerbose opts 1  ("Analyzing spec " ++ showPretty spn ""))
-  ((imp,params,parsig,allparams),dg') <- resToIORes (ana_GENERICITY gctx l just_struct gen)
-  (body,dg'') <- resToIORes (ana_SPEC (gannos,genv,dg') allparams (Just spn) just_struct (item asp))
+  (gen',(imp,params,parsig,allparams),dg') <- resToIORes (ana_GENERICITY gctx l just_struct gen)
+  (sp',body,dg'') <- resToIORes (ana_SPEC (gannos,genv,dg') allparams (Just spn) just_struct (item asp))
+  let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
   if Map.member spn genv 
-   then resToIORes (plain_error (gctx,l,libenv)
+   then resToIORes (plain_error (libItem',gctx,l,libenv)
                                 ("Name "++ showPretty spn " already defined")
                                 (headPos pos))
-   else return ((gannos,
+   else return (libItem',
+                (gannos,
                  Map.insert spn (SpecEntry (imp,params,parsig,body)) genv,
                  dg''),
                 l,
@@ -137,10 +150,10 @@ ana_LIB_ITEM lgraph defl libenv gctx l opts
              (Logic_decl ln pos) = do
   let log = lookupLogicName ln lgraph
   ioToIORes (putIfVerbose opts 1  ("logic "++show log))
-  return (gctx,log,libenv)
+  return (Logic_decl ln pos,gctx,log,libenv)
 
 ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts 
-             (Download_items ln items pos) = do
+             libItem@(Download_items ln items pos) = do
   -- we take as the default logic for imported libs 
   -- the global default logic
   ioToIORes (putIfVerbose opts 1 ("Analyzing from " ++ showPretty ln "\n"))
@@ -149,20 +162,22 @@ ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts
   case Map.lookup ln libenv' of
     Nothing -> do
        ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available:"++show (Map.keys libenv')))
-       return (gctx,l,libenv')
+       return (libItem,gctx,l,libenv')
     Just (gannos',genv',dg') -> do
                     -- ??? what to do with gannos' ?
       (genv1,dg1) <- resToIORes (foldl (ana_ITEM_NAME_OR_MAP ln genv') 
                                        (return (genv,dg)) items'
                                  )
-      return ((gannos,genv1,dg1),l,libenv')
+      return (libItem,(gannos,genv1,dg1),l,libenv')
 
 
 -- ??? Needs to be generalized to views between different logics
 ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
               vn gen vt gsis pos = do
-  ((imp,params,parsig,allparams),dg') <- ana_GENERICITY gctx l just_struct gen
-  ((src,tar),dg'') <- ana_VIEW_TYPE (gannos,genv,dg') l allparams just_struct vt
+  (gen',(imp,params,parsig,allparams),dg') <- 
+       ana_GENERICITY gctx l just_struct gen
+  (vt',(src,tar),dg'') <- 
+       ana_VIEW_TYPE (gannos,genv,dg') l allparams just_struct vt
   let gsigmaS = getSig src
       gsigmaT = getSig tar
   G_sign lidS sigmaS <- return gsigmaS
@@ -184,10 +199,11 @@ ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
                dgl_origin = DGView vn})
       vsig = (src,gmor,(imp,params,parsig,tar))
   if Map.member vn genv 
-   then plain_error (gctx,l,libenv)
+   then plain_error (View_defn vn gen' vt' gsis pos,gctx,l,libenv)
                     ("Name "++showPretty vn " already defined")
                     (headPos pos)
-   else return ((gannos,
+   else return (View_defn vn gen' vt' gsis pos,
+                (gannos,
                  Map.insert vn (ViewEntry vsig) genv,
                  insEdge link dg''),
                 l,

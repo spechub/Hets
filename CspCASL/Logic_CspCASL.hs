@@ -101,7 +101,7 @@ instance Sentences CspCASL () () () () ()
 instance StaticAnalysis CspCASL Basic_CSP_CASL_C_SPEC () ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                () () () ()  where
-         basic_analysis CspCASL = Just(\ _ -> return ((),(),[]))
+         basic_analysis CspCASL = Just(\(bspec,_,_) -> return (bspec,(),(),[]))
          stat_symb_map_items CspCASL = undefined
          stat_symb_items CspCASL = undefined
 
