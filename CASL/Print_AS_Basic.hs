@@ -657,7 +657,7 @@ instance PrettyPrint SYMB_MAP_ITEMS where
 		        <+> commaT_text ga l
 
     printLatex0 ga (Symb_map_items k l _) = 
-	print_kind_latex ga k l <\+> set_tabbed_nest_latex (commaT_latex ga l)
+	print_kind_latex ga k l <\+> commaT_latex ga l
 
 instance PrettyPrint SYMB_MAP_ITEMS_LIST where 
     printText0 ga (Symb_map_items_list l _) = commaT_text ga l
