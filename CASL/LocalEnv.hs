@@ -129,7 +129,7 @@ data Sign = SignAsList [SigItem]
 
 data LocalEnv = SignAsMap (FiniteMap Id [SigItem]) (Graph SortId ())
 
-data RaySymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
+data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
 data Kind = SortKind | FunKind | PredKind
 
 data Axiom = AxiomDecl [VarDecl] Formula [[Pos]] -- ,,,;,,,;
