@@ -39,7 +39,8 @@ runAna ga =
 localAna :: GlobalAnnos -> BASIC_SPEC () () () -> Result (Sign () ())
 localAna ga bs = 
     let Result ds (Just (_newBs, difSig, _accSig, _sents)) = 
-	    basicAnalysis (const id) (const id) (bs, emptySign () , ga)
+	    basicAnalysis (const return) 
+			      (const id) (const id) (bs, emptySign () , ga)
 	es = filter ((<= Error)  . diagKind) ds
 	in Result es $ Just difSig
 
@@ -51,7 +52,8 @@ getSign ga =
 props :: GlobalAnnos -> BASIC_SPEC () () () -> Result [Named (FORMULA ())]
 props ga bs = 
     let Result ds (Just (_newBs, _difSig, _accSig, sents)) = 
-	    basicAnalysis (const id) (const id) (bs, emptySign (), ga)
+	    basicAnalysis (const return) 
+			      (const id) (const id) (bs, emptySign (), ga)
 	es = filter ((<= Error)  . diagKind) ds
 	in Result es $ Just sents
 
