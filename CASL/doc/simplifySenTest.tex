@@ -21,6 +21,7 @@
 
 \begin{document}
 \part*{Test}
+\section*{Numbers.Nat}
 \begin{verbatim}
 sorts Nat, Pos
 sorts Pos < Nat
@@ -324,5 +325,21 @@ forall m, n, r, s:Nat
           (op __*__ : Nat * Nat -> Nat)(m : Nat ^ r : Nat,
                                         m : Nat ^ s : Nat)
     %(power_Nat)%
+\end{verbatim}
+
+\section*{sorts $s < t$}
+\begin{verbatim}
+sorts s, t
+sorts s < t
+op c : s
+op d : s
+op d : t
+op f : s -> t
+op f : t -> t
+
+
+def f(c)
+
+def f((op d : s))
 \end{verbatim}
 \end{document}
