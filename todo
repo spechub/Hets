@@ -191,6 +191,8 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
+analyse the ghc-6.4 difference in Logic/Comorphism.hs
+
 "free type Pair[S,T] ::= pair(first :S; second: T)" cannot be
 translated from CASL to Haskell, because generated selector variables
 become identical positions and are not distinguished by programmatica
