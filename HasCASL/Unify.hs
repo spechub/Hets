@@ -120,6 +120,14 @@ equalSubs tm a b = subsume tm a b && subsume tm b a
 starTypeInfo :: TypeInfo
 starTypeInfo = TypeInfo star [] [] NoTypeDefn
 
+relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
+relatedTypeIds tm i1 i2 = 
+    i1 == i2 ||
+	   (any (occursIn tm i1) $ superTypes $ 
+	       Map.findWithDefault starTypeInfo i2 tm)
+           || (any (occursIn tm i2) $ superTypes $ 
+	       Map.findWithDefault starTypeInfo i1 tm)
+
 instance Unifiable Type where
     subst m t = case t of
 	   TypeName i k _ -> 
@@ -145,11 +153,7 @@ instance Unifiable Type where
       mm tm t1 (b2, KindedType t2 _ _) = mm tm t1 (b2, t2)
       mm tm (b1, KindedType t1 _ _) t2 = mm tm (b1, t1) t2
       mm tm (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
-	if i1 == i2 ||
-	   (any (occursIn tm i1) $ superTypes $ 
-	       Map.findWithDefault starTypeInfo i2 tm)
-           || (any (occursIn tm i2) $ superTypes $ 
-	       Map.findWithDefault starTypeInfo i1 tm)
+	if relatedTypeIds tm i1 i2
 	   then return eps
 	else if v1 > 0 && b1 then return $ 
 	        Map.single (TypeArg i1 k1 Other []) t2

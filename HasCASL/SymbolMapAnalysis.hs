@@ -178,10 +178,21 @@ mapOps type_Map op_Map i ots e =
 	let sc = TySc $ opType ot
 	    (id', TySc sc') = Map.findWithDefault (i, mapTySc type_Map sc)
 			 (i, sc) op_Map
-	    in execState (addOpId id' sc' (opAttrs ot) (opDefn ot)) e')
-                   -- things in opAttrs and opDefns need renaming too!
+	    in execState (addOpId id' sc' (opAttrs ot) 
+			  (mapOpDefn type_Map $ opDefn ot)) e')
+                   -- more things in opAttrs and opDefns need renaming
     e $ opInfos ots
  
+mapOpDefn :: IdMap -> OpDefn -> OpDefn
+mapOpDefn im d = case d of
+   ConstructData i -> ConstructData $ Map.findWithDefault i i im
+   SelectData cs i -> SelectData (map (mapConstrInfo im) cs) 
+		      $ Map.findWithDefault i i im
+   _ -> d
+
+mapConstrInfo :: IdMap -> ConstrInfo -> ConstrInfo
+mapConstrInfo im ci = ci { constrType = mapTypeScheme im $ constrType ci}
+
 -- Some auxiliary functions for inducedFromToMorphism
 testMatch :: RawSymbolMap -> Symbol -> Symbol -> Bool
 testMatch rmap sym1 sym2 =

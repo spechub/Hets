@@ -123,7 +123,7 @@ mergeOpInfo :: TypeMap -> Int -> OpInfo -> OpInfo -> Result OpInfo
 mergeOpInfo tm c o1 o2 = 
 	do sc <- mergeScheme tm c (opType o1) $ opType o2
            as <- mergeAttrs (opAttrs o1) $ opAttrs o2
- 	   d <- merge (opDefn o1) $ opDefn o2
+ 	   d <- mergeOpDefn tm (opDefn o1) $ opDefn o2
 	   return $ OpInfo sc as d
 
 -- instance Mergeable [OpAttr] where
@@ -143,7 +143,7 @@ mergeAttrs l1 l2 =
 instance Mergeable OpAttr where
     merge (UnitOpAttr t1 p1) (UnitOpAttr t2 p2) = 
 	do t <- merge t1 t2
-	   return $ UnitOpAttr t1 (p1 ++ p2)
+	   return $ UnitOpAttr t (p1 ++ p2)
     merge _ _ = fail "merge: OpAttr"
 
 instance Mergeable OpBrand where
@@ -153,33 +153,35 @@ instance Mergeable OpBrand where
     merge _ Op   = return Op
     merge _ _    = return Fun
     
-instance Mergeable OpDefn where
-    merge VarDefn VarDefn = return VarDefn
-    merge VarDefn _       = fail "illegal redeclaration of a variable"
-    merge _ VarDefn       = fail "illegal redeclaration as variable"
-    merge (NoOpDefn _) d  = return d
-    merge d (NoOpDefn _)  = return d
-    merge d@(ConstructData d1) (ConstructData d2) = 
-	if d1 == d2 then return d else 
+-- instance Mergeable OpDefn where
+mergeOpDefn :: TypeMap -> OpDefn -> OpDefn -> Result OpDefn
+mergeOpDefn _ VarDefn VarDefn = return VarDefn
+mergeOpDefn _ VarDefn _       = fail "illegal redeclaration of a variable"
+mergeOpDefn _ _ VarDefn       = fail "illegal redeclaration as variable"
+mergeOpDefn _ (NoOpDefn _) d  = return d
+mergeOpDefn _ d (NoOpDefn _)  = return d
+mergeOpDefn tm d@(ConstructData d1) (ConstructData d2) = 
+	if relatedTypeIds tm d1 d2 then return d else 
 	   fail ("wrong constructor target type" ++
 		 expected d1 d2)
-    merge (SelectData c1 d1) (SelectData c2 d2) = 
-	if d1 == d2 then
-	   do c <- mergeConstrInfos c1 c2
+mergeOpDefn tm (SelectData c1 d1) (SelectData c2 d2) = 
+	if relatedTypeIds tm d1 d2 then
+	   do c <- mergeConstrInfos tm c1 c2
 	      return $ SelectData c d1
 	else fail ("wrong selector's source type" ++
 		   expected d1 d2)
-    merge (Definition b1 d1) (Definition b2 d2) =
+mergeOpDefn _ (Definition b1 d1) (Definition b2 d2) =
 	do d <- merge d1 d2
 	   b <- merge b1 b2
 	   return $ Definition b d
-    merge _d1 _d2 = fail "illegal redefinition"
+mergeOpDefn _ _d1 _d2 = fail "illegal redefinition"
 
-mergeConstrInfos :: [ConstrInfo] -> [ConstrInfo] -> Result [ConstrInfo]
-mergeConstrInfos [] c2 = return c2
-mergeConstrInfos (c : r) c2 =
-    do c3 <- mergeConstrInfos r c2
-       let cs = filter (==c) c2
+mergeConstrInfos :: TypeMap -> [ConstrInfo] -> [ConstrInfo] 
+		 -> Result [ConstrInfo]
+mergeConstrInfos _ [] c2 = return c2
+mergeConstrInfos tm (c : r) c2 =
+    do c3 <- mergeConstrInfos tm r c2
+       let cs = filter (isUnifiable tm 0 (constrType c) . constrType) c2
        if null cs then 
 	   return (c : c3)
 	   else return c3
