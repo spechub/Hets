@@ -200,10 +200,7 @@ checkFreeType (osig,osens) m fsn
                            filter (\im'-> 
                              case leadingSym im' of
                                (Just (Left opS)) -> opS /= os
-                               _ -> False) im) impl_p_axioms opSyms_p
--- test :: [Int] -> [Int] -> [Int]
--- test a b = foldl (\a b'-> filter (\a'->a'/=b') a) a b
-         
+                               _ -> False) im) impl_p_axioms opSyms_p         
 {- 
   check if leading symbols are new (not in the image of morphism),
         if not, return Nothing
