@@ -16,8 +16,6 @@
 
 module Haskell.Logic_Haskell (Haskell(..), empty_signature) where
 
-import Debug.Trace
-
 import CASL.AS_Basic_CASL       (SYMB_ITEMS, SYMB_MAP_ITEMS)
 import CASL.SymbolParser        (symbItems, symbMapItems)
 import Logic.ParsecInterface    (toParseFun)

@@ -4,7 +4,6 @@ import Haskell.Hatchet.HsParseMonad
 import Haskell.Hatchet.HsParseUtils
 import Haskell.Hatchet.HsSyn(SrcLoc(..))
 import Data.List
-import Debug.Trace
 import Char
 
 
@@ -169,29 +168,29 @@ tAB_LENGTH = 8 :: Int
 lexer :: (Token -> P a) -> P a
 lexer cont input (SrcLoc y x) col =
         if col == 0
-           then trace "lexerT " tab y x True input
-           else trace "lexerF " (tab y col False input) -- throw away old x
+           then tab y x True input
+           else tab y col False input -- throw away old x
   where
    	-- move past whitespace and comments
         tab y x bol [] = 
-        	trace "lexer: [] " (cont EOF [] (SrcLoc y x) col)
+        	cont EOF [] (SrcLoc y x) col
         tab y x bol ('\t':s) =
-        	trace "lexer: tab " (tab y (nextTab x) bol s)
+        	tab y (nextTab x) bol s
         tab y x bol ('\n':s) =
-                trace "lexer: nl " (newLine cont s y)
+                newLine cont s y
         tab y x bol ('-':'-':s) = 
-        	trace "lexer: - - " (newLine cont (drop 1 (dropWhile (/= '\n') s)) y)
+        	newLine cont (drop 1 (dropWhile (/= '\n') s)) y
         tab y x bol ('{':'-':s)
                 | head s == '#' = if bol 
-                                    then trace ("lexer: { -# lexBOLOP") (lexBOL cont ('{':'-':s) (SrcLoc y x) x)
-                                    else trace "lexer: { -# lexTokenOP " (lexToken 
-                                         cont ('{':'-':s) (SrcLoc y x) x)
+                                    then lexBOL cont ('{':'-':s) (SrcLoc y x) x
+                                    else lexToken 
+                                          cont ('{':'-':s) (SrcLoc y x) x
                 | otherwise = nestedComment tab y x bol s
         tab y x bol (c:s)
-        	| trace ("lexerIsWhite:" ++ show c) (isWhite c) = tab y (x+1) bol s
-        	| trace ("lexer:" ++ show c) otherwise = 
-        		if bol 	then trace "lexBOL " (lexBOL   cont (c:s) (SrcLoc y x) x)
-        			else trace "lexToken " (lexToken cont (c:s) (SrcLoc y x) x)
+        	| isWhite c = tab y (x+1) bol s
+        	| otherwise = 
+        		if bol 	then lexBOL   cont (c:s) (SrcLoc y x) x
+        			else lexToken cont (c:s) (SrcLoc y x) x
 
 	newLine cont s y =  tab (y+1) 1 True s
 
@@ -202,19 +201,16 @@ nextTab x = x + (tAB_LENGTH - (x-1) `mod` tAB_LENGTH)
 
 lexBOL :: (Token -> P a) -> P a
 lexBOL cont s loc@(SrcLoc y x) col context =
-   trace ("lexBOL: y="++show y++" x="++show x) $ 
+--   trace ("lexBOL: y="++show y++" x="++show x) $ 
         if need_close_curly then 
-                trace ("lexBOL: inserting '}'" ++ show context) $
         	-- Set col to 0, indicating that we're still at the
         	-- beginning of the line, in case we need a semi-colon too.
         	-- Also pop the context here, so that we don't insert
         	-- another close brace before the parser can pop it.
         	cont VRightCurly s loc 0 (tail context)
         else if need_semi_colon then
-                trace ("lexBOL: inserting ';' " ++ show context) $
         	cont SemiColon s loc col context
         else
-                trace ("lexBOL: lexToken " ++ show context) $
         	lexToken cont s loc col context
  where
         need_close_curly =
@@ -232,11 +228,10 @@ lexBOL cont s loc@(SrcLoc y x) col context =
 
 lexToken :: (Token -> P a) -> P a
 lexToken cont (c:s) loc@(SrcLoc y x') x =
-   trace ("lexToken: y="++show y++" x="++show x) $ 
    case c of
 -- ExtHas
         '{' | head s == '-' && head(tail s) == '#'->
-                        trace "Open erkannt " (special3 KW_OpenPrag)
+                        special3 KW_OpenPrag
         '#' | head s == '-' && head(tail s) == '}' ->
                         special3 KW_ClosePrag
 -- ExtHas
@@ -266,7 +261,7 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
         		Just keyword -> forward l_id keyword rest
         		Nothing -> forward l_id (VarId id) rest
 
-          | trace ("isUpper " ++ show c ++ " " ++ show (isUpper c)) (isUpper c) ->
+          | isUpper c ->
         	let
         	    (contail, rest) = span isIdent s
         	    l_con = 1 + length contail
@@ -275,11 +270,11 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
         	case rest of
         	    '.':s1 -> lexConIdOrQualId (c:contail) l_con rest
         	    _ ->          -- not a qualified object
-                          if trace ("TEST " ++ (show contail)) contail == "XIOMS" then forward l_con 
+                          if contail == "XIOMS" then forward l_con 
                                                       KW_AxiomsPrag rest
                                                  else forward l_con (ConId con) rest
 
-          | trace ("isSymbol " ++ show (isSymbol c)) (isSymbol c) ->
+          | isSymbol c ->
             -- if c == ':' then trace "special Colon " (special Colon)
              -- else   
         	let
@@ -310,10 +305,10 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
         	parseError ("illegal character \'" ++ show c ++ "\'\n") 
         		  s loc x
 
- where special t = trace ("special " ++ show t) (forward 1 t s)
-       forward n t s = trace ("forward " ++ show t ++ show (x+n)) (cont t s loc (x+n))
+ where special t = forward 1 t s
+       forward n t s = cont t s loc (x+n)
 -- forward (l_con+l_con1) (QConId (con, (c1:con1))) rest1
-       special3 t = trace ("special3 " ++ show t) (forward 3 t (tail(tail s)))
+       special3 t = forward 3 t (tail(tail s))
 
        lexFloatRest r = case span isDigit r of
         		      (r2, 'e':r3) -> lexFloatExp (r2 ++ "e") r3
@@ -328,7 +323,7 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
                                 ("", _ ) -> Nothing
                                 (ds, r3) -> Just (r1++ds,r3)
        lexConIdOrQualId con l_con (p:c1:s1)
-                     | trace "isUpper/isLower " (isLower c1) =	-- qualified varid?
+                     | isLower c1 =	-- qualified varid?
         		let
         		    (idtail, rest1) = span isIdent s1
         		    id = c1:idtail
@@ -343,7 +338,7 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
                                     '.':s2 -> lexConIdOrQualId (con ++ (p:id)) (l_con + l_id) rest1
                                     _      -> forward (l_con+l_id) (QVarId (con, id)) rest1
 
-        	     | trace "isUpper2 " (isUpper c1) =	-- qualified conid?
+        	     | isUpper c1 =	-- qualified conid?
         		let 
         		    (con1,rest1) = span isIdent s1
         		    l_con1 = 1 + length con1
@@ -352,7 +347,7 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
                             '.':s2 -> lexConIdOrQualId (con ++ (p:c1:con1)) (l_con + l_con1) rest1
                             _      -> forward (l_con+l_con1) (QConId (con, (c1:con1))) rest1
 
-        	     | trace "isUpper/isSymbol" (isSymbol c1) =	-- qualified symbol?
+        	     | isSymbol c1 =	-- qualified symbol?
         		let
         		    (symtail, rest1) = span isSymbol s1
         		    sym = c1 : symtail
