@@ -64,7 +64,7 @@ forall x, y:Nat
                                                         (var y : Nat) : Nat) : Nat) : Nat
 
 CiME:
-let F = signature "0:constant; suc : unary; + : binary";
+let F = signature "0:constant; suc:unary; +:binary";
 let X = vars "x y";
 let axioms = TRS F X "+(0,x) -> x; +(suc(x),y) -> suc(+(x,y)); ";
 termcrit "dp";
@@ -86,6 +86,9 @@ import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Result
 import Common.Id
+import Isabelle.IsaProve
+import ChildProcess
+import Foreign
 
 {-
    function checkFreeType:
@@ -108,9 +111,6 @@ import Common.Id
 -}
 checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] 
    -> Result (Maybe Bool)
--- checkFreeType m fsn = return $ checkFreeType1 m fsn
-
--- checkFreeType1 :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
 checkFreeType m fsn 
        | Set.any (\s->not $ elem s srts) newSorts =
                    let (Id _ _ ps) = head $ filter (\s->not $ elem s srts) newL
@@ -139,7 +139,8 @@ checkFreeType m fsn
        | not $ checkPatterns leadingPatterns =
                    let pos = headPos $ pattern_Pos leadingPatterns
                    in warning Nothing "patterns overlap" pos
-       | not $ proof == "3" = warning Nothing "not terminal" nullPos       -- hugs 1+2           
+       | (not $ null op_preds) && (not $ proof) = 
+                   warning Nothing "not terminal" nullPos          
        | otherwise = return (Just True)
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
          fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
@@ -225,7 +226,7 @@ checkFreeType m fsn
                                        Just (Right (Predication _ ts _))->ts
                                        _ ->[]) $ 
                             map leading_Term_Predication op_preds
-         leadingPatterns = trace (showPretty leadingPatterns1 "leading Pattern") leadingPatterns1    --leading Patterns
+         leadingPatterns = trace (showPretty leadingPatterns1 (tmp1 ++ "\n" ++ tmp2 ++ "\n" ++ tmp ++ "\n")) leadingPatterns1    --leading Patterns
          isApp t = case t of
                      Application _ _ _->True
                      Sorted_term t' _ _ ->isApp t'
@@ -296,7 +297,78 @@ checkFreeType m fsn
          term t = case t of
                     Sorted_term t' _ _ ->term t'
                     _ -> t
-         proof="34"   -- hugs 1+2                
+         -- Termination
+         idStr (Id ts _ _) = if (tokStr (head ts)) == "__" then (tokStr (head (tail ts)))
+                             else tokStr (head ts) 
+         rP cp = do
+            msg <- readMsg cp
+            case msg of
+              "Termination proof found." -> return True
+              "Quitting." -> return False
+              _ -> rP cp
+         opStr o_s = case o_s of
+                       Qual_op_name op_n (Total_op_type a_sorts _ _) _ -> case (length a_sorts) of 
+                                                                            0 -> (idStr op_n) ++ " : constant"
+                                                                            1 -> (idStr op_n) ++ " : unary"
+                                                                            2 -> (idStr op_n) ++ " : binary"
+                                                                            _ -> error "Termination_Signature"
+                       Qual_op_name op_n (Partial_op_type a_sorts _ _) _ -> case (length a_sorts) of 
+                                                                            0 -> (idStr op_n) ++ " : constant"
+                                                                            1 -> (idStr op_n) ++ " : unary"
+                                                                            2 -> (idStr op_n) ++ " : binary"
+                                                                            _ -> error "Termination_Signature"
+                       _ -> error "Termination_Signature"
+         sigComb sig1 sig2 | null sig2 =sig1
+                           | otherwise = case (head sig2) of
+                                           Just (Left o_s) -> if elem o_s sig1 then sigComb sig1 (tail sig2)
+                                                              else sigComb (o_s:sig1) (tail sig2)
+                                           Just (Right _) -> sigComb sig1 (tail sig2) 
+                                           _ -> error "Termination_Signature" 
+         signStr signs str
+                 | null signs = str
+                 | otherwise = signStr (tail signs) (str ++ (opStr $ head signs) ++ "; ")
+           --      | otherwise = if null str then signStr (tail signs) (str ++ (opStr $ head signs))
+           --                    else signStr (tail signs) (str ++ "; " ++ (opStr $ head signs))
+         varOfAxiom f = case f of
+                          Quantification Universal v_d _ _ -> concat $  map (\v-> case v of
+                                                                                   Var_decl vs _ _ -> vs
+                                                                                   _ -> error "Termination_Variable") v_d 
+                          _ -> error "Termination_Variable"
+         varsStr vars str
+                 | null vars = str
+                 | otherwise = if null str then varsStr (tail vars) (str ++ (tokStr $ head vars))
+                               else varsStr (tail vars) (str ++ " " ++ (tokStr $ head vars))
+         f_str f = case f of
+                     Quantification Universal _ f' _ -> f_str f' 
+                     Implication _ f' _ _ -> f_str f' 
+                     Strong_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)                   
+                     Existl_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)
+                     _ -> error "Termination_Axioms"
+         termStr t = case (term t) of
+                       (Qual_var var _ _) -> tokStr var
+                       (Application (Qual_op_name opn _ _) ts _) -> if null ts then (idStr opn)
+                                                                    else ((idStr opn) ++ "(" ++ 
+                                                                         (tail $ concat $ map (\s->"," ++ s) $ map termStr ts) ++ ")")
+                       _ -> error "Termination_Term"
+         axiomStr axioms str 
+                 | null axioms = str
+                 | otherwise = axiomStr (tail axioms) (str ++ (f_str $ (head axioms)) ++ "; ")                    
+         proof = unsafePerformIO (do
+                 cim <- newChildProcess "/home/xinga/bin/cime" []
+   --              sendMsg cim "let F = signature \"0 : constant;suc : unary;+ : binary\";"
+                 sendMsg cim ("let F = signature \"" ++ (signStr (sigComb constructors l_Syms) "") ++ "\";")     
+   --              sendMsg cim "let X = vars \"x y\";"
+                 sendMsg cim ("let X = vars \"" ++ (varsStr (varOfAxiom $ (head op_preds)) "") ++ "\";")        
+   --              sendMsg cim "let axioms = TRS F X \"+(0,x) -> x; +(suc(x),y) -> suc(+(x,y));\";"
+                 sendMsg cim ("let axioms = TRS F X \"" ++ (axiomStr op_preds "") ++"\";")    --3
+                 sendMsg cim "termcrit \"dp\";"
+                 sendMsg cim "termination axioms;"
+                 sendMsg cim "#quit;"
+                 res <-rP cim
+                 return res)
+         tmp = ("let axioms = TRS F X \"" ++ (axiomStr op_preds "") ++"\";")
+         tmp1 = ("let F = signature \"" ++ (signStr (sigComb constructors l_Syms) "") ++ "\";")
+         tmp2 = ("let X = vars \"" ++ (varsStr (varOfAxiom $ (head op_preds)) "") ++ "\";")                              
     
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
@@ -363,3 +435,12 @@ groupAxioms phis = do
                                   symb'= if not $ (elem fp symb) then fp:symb
                                          else symb
                               in p'++(filterA ps symb')
+{-
+instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (Either a b) where
+  printText0 ga (Left x) = printText0 ga x
+  printText0 ga (Right x) = printText0 ga x
+
+instance PrettyPrint a => PrettyPrint (Maybe a) where
+  printText0 ga (Just x) = printText0 ga x
+  printText0 ga Nothing = ptext "Nothing"
+-}
