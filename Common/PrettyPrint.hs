@@ -31,7 +31,6 @@ module Common.PrettyPrint
 import Data.Char (isSpace,isAlphaNum,isDigit)
 import Common.Lib.State (State(..),evalState,get,put)
 import Data.List (isPrefixOf,isSuffixOf)
-import Data.Maybe (fromJust,isJust,maybe)  
 
 import Common.Id
 import Common.Lib.Pretty
@@ -450,7 +449,6 @@ printId :: (GlobalAnnos -> Token -> Doc) -- ^ function to print a Token
 	   -> GlobalAnnos -> (Maybe Display_format) -> Id -> Doc
 printId pf ga mdf i =
     let glue_tok pf' = hcat . map pf'
-	disp_tops = lookupDisplay ga (fromJust mdf) i
 	print_ (Id tops_p ids_p _) = 
 	    if null ids_p then glue_tok (pf ga) tops_p 
 	    else let (toks, places) = splitMixToken tops_p
@@ -460,11 +458,11 @@ printId pf ga mdf i =
 			    <> pf ga (mkSimpleId "]")
 		 in fcat [glue_tok (pf ga) toks, comp, 
 			  glue_tok (pf ga) places]
-	in if isJust mdf 
-	   then maybe (print_ i) 
-		      (glue_tok (printDisplayToken_latex casl_axiom_latex)) 
-		      (disp_tops) 
-           else print_ i
+	in maybe (print_ i) 
+	   ( \ df -> maybe (print_ i) 
+	     (glue_tok (printDisplayToken_latex casl_axiom_latex))
+	     $ lookupDisplay ga df i) mdf
+
 
 instance PrettyPrint () where
    printText0 _ga _s = text "()"

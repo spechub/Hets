@@ -20,7 +20,6 @@ import Common.Keywords
 import Common.Lexer
 import CASL.AS_Basic_CASL
 import Common.AS_Annotation
-import Data.Maybe
 import Common.Lib.Parsec
 import CASL.Formula
 import CASL.SortItem

@@ -21,7 +21,6 @@ import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Lexer(whiteChars)
 import Common.LaTeX_funs 
-import Data.Maybe(fromJust)
 
 infixl 6 <\\+>
 
@@ -45,7 +44,8 @@ instance PrettyPrint Annotation where
 	let aa' = printText0 ga aa
 	    ab' = fcat $ punctuate space $ map printPair $ filter nullSnd ab
 	in printGroup (ptext "display") $ aa' <+> ab'
-	   where printPair (s1,s2) = ptext ("%" ++ showDF s1) <+> ptext s2
+	   where printPair (s1,s2) = ptext ("%" ++ lookupDisplayFormat s1) 
+				     <+> ptext s2
 		 nullSnd (_,s2) = not $ null s2
     printText0 ga (String_anno aa ab _) =
 	let aa' = printText0 ga aa
@@ -77,7 +77,7 @@ instance PrettyPrint Annotation where
 	let aa' = vcat $ map ptext aa
 	in ptext "%(" <> aa' <> ptext ")%"
     printText0 _ (Semantic_anno sa _) =
-	printLine (ptext $ fromJust $ lookup sa $ semantic_anno_table) empty
+	printLine (ptext $ lookupSemanticAnno sa) empty
 -- -------------------------------------------------------------------------
 -- LaTeX pretty printing
 -- -------------------------------------------------------------------------
@@ -117,16 +117,16 @@ instance PrettyPrint Annotation where
 				     $ map (casl_annotation_latex 
 					    . escape_latex) strs
     printLatex0 ga (Display_anno aa ab _) =
-	let aa' = printSmallId_orig_latex ga aa
+	let aa' = printSmallId_orig_latex aa
 	    ab' = fsep_latex $ map printPair $ filter nullSnd ab
 	in printLatexGroup "display" $ aa' <\\+> ab'
-	   where printPair (s1,s2) = la ("%" ++ showDF s1) 
+	   where printPair (s1,s2) = la ("%" ++ lookupDisplayFormat s1) 
 				     <\\+> maybe (la s2) pr_tops tops
 		 tops = lookupDisplay ga DF_LATEX aa
 		 la = casl_annotation_latex . escape_latex  
 		 pr_tops = hcat . map printAnnotationToken_latex
 		 nullSnd (_,s2) = not $ null s2
-		 printSmallId_orig_latex ga i@(Id tops ids _) =
+		 printSmallId_orig_latex (Id toks ids _) =
 		     let ids' = case ids of
 				[] -> empty
 				_  ->  ((\x -> casl_comment_latex "[" <> x 
@@ -134,7 +134,7 @@ instance PrettyPrint Annotation where
 					. fcat 
 					. punctuate smallComma_latex 
 					. map (printSmallId_latex ga)) ids
-		         (ts,ps) = splitMixToken tops
+		         (ts,ps) = splitMixToken toks
 			 pr_tops' = 
 			   hcat . map (printToken_latex casl_annotation_latex)
 		     in pr_tops' ts <> ids' <> pr_tops' ps
@@ -175,16 +175,13 @@ instance PrettyPrint Annotation where
            hc_sty_annotation (hc_sty_small_keyword ("\\%(") <>
 			      aa' <> hc_sty_small_keyword ")\\%" )
     printLatex0 _ (Semantic_anno sa  _) =
-	printLatexLine (fromJust $ lookup sa semantic_anno_table)  empty
+	printLatexLine (lookupSemanticAnno sa)  empty
 
 -- -------------------------------------------------------------------------
 -- utilies
 -- -------------------------------------------------------------------------
 printAnnotationToken_latex :: Token -> Doc
 printAnnotationToken_latex = printDisplayToken_latex casl_annotation_latex
-
-showDF :: Display_format -> String
-showDF df = fromJust $ lookup df display_format_table
 
 showPrecRel :: PrecRel -> String
 showPrecRel p = case p of Lower -> "<"

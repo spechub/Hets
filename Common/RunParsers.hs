@@ -25,7 +25,6 @@ import Common.PrettyPrint
 import Common.GlobalAnnotations
 import Common.AnalyseAnnos(addGlobalAnnos)
 import Common.Result
-import Data.Maybe
 import System.Environment
 
 type StringParser = GlobalAnnos -> GenParser Char () String
@@ -47,7 +46,8 @@ exec lps fps = do l <- getArgs
 			     ga <- if not $ null $ tail l then 
 				   do let annoFile = head (tail l)
 				      str <- readFile annoFile
-				      return $ fromJust $ maybeResult 
+				      maybe (error "run parser") 
+					     return $ maybeResult 
 					     $ addGlobalAnnos emptyGlobalAnnos 
 					     $ parseString annotations str
 				      -- should not fail 

@@ -23,7 +23,6 @@ import Common.Print_AS_Annotation
 import Common.PrettyPrint
 import Common.Result
 import Control.Monad
-import Data.Maybe
 
 import Common.Lib.Parsec
 import Common.Id (Token(..),nullPos,place)
@@ -121,7 +120,7 @@ store_display_annos =
 	          dm <- foldM ( \ table (df, str) ->
 			let oldTok = Map.findWithDefault tok df table 
 			    rtok = parse_display_str an str
-			    tok = fromMaybe [] (maybeResult rtok)
+			    tok = maybe [] id (maybeResult rtok)
 			    checkToks toks id'@(Id toks' _ _) =
 				if c_plc toks == c_plc toks'
 				then []

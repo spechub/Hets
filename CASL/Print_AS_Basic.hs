@@ -17,7 +17,6 @@ module CASL.Print_AS_Basic where
 
 import Data.List (mapAccumL)
 import Data.Char (isDigit)
-import Data.Maybe (fromJust)
 
 import Common.Id
 import Common.Lib.Parsec.Pos (sourceLine,sourceColumn)
@@ -33,9 +32,9 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 
-import Debug.Trace
---trace :: String -> a -> a
---trace _ a = a
+-- import Debug.Trace
+-- trace :: String -> a -> a
+-- trace _ a = a
 
 instance PrettyPrint BASIC_SPEC where
     printText0 ga (Basic_spec l) = 
@@ -1065,43 +1064,36 @@ condParensXjunction pf parens_fun ga x =
 left_most_pos :: FORMULA -> Pos
 left_most_pos f = 
     case f of
-    Quantification _ _ _ pl -> head' pl 
-    Conjunction _ pl   -> head' pl 
-    Disjunction _ pl   -> head' pl 
-    Implication _ _ pl -> head' pl 
-    Equivalence _ _ pl -> head' pl 
-    Negation _ pl -> head' pl 
-    True_atom pl -> head' pl 
-    False_atom pl -> head' pl 
+    Quantification _ _ _ pl -> headPos pl 
+    Conjunction _ pl   -> headPos pl 
+    Disjunction _ pl   -> headPos pl 
+    Implication _ _ pl -> headPos pl 
+    Equivalence _ _ pl -> headPos pl 
+    Negation _ pl -> headPos pl 
+    True_atom pl -> headPos pl 
+    False_atom pl -> headPos pl 
     Predication pre _ pl -> 
-	let p = head' pl
-	    p' = fromJust $ 
-	         get_pos (case pre of
+	let p = headPos pl
+	    p' = posOfId (case pre of
 			  Pred_name i          -> i
 			  Qual_pred_name i _ _ -> i)
 	in if isNullPos p 
 	   then p'
 	   else p	       
-    Definedness _ pl -> head' pl 
-    Existl_equation _ _ pl -> head' pl 
-    Strong_equation _ _ pl -> head' pl 
-    Membership _ _ pl -> head' pl 
-    Unparsed_formula _ pl -> head' pl 
-    _ -> nullPos
-    where head' l = if null l then nullPos else head l
+    Definedness _ pl -> headPos pl 
+    Existl_equation _ _ pl -> headPos pl 
+    Strong_equation _ _ pl -> headPos pl 
+    Membership _ _ pl -> headPos pl 
+    Unparsed_formula _ pl -> headPos pl 
+    Mixfix_formula t -> getMyPos t
 
 if_detect :: FORMULA -> [Pos] -> Bool
 if_detect _ []    = False
 if_detect f (p_impl:_) = 
-    case left_most_pos f of
-    p_form 
-	| line p_form == line p_impl -> column p_impl < column p_form
-	| line p_impl < line p_form  -> True
-	| line p_impl > line p_form  -> False
-    where line   = sourceLine
+        (line p_impl, column p_impl) < (line p_form, column p_form)
+    where p_form = left_most_pos f
+          line   = sourceLine
 	  column = sourceColumn
-	  
-
 
 hc_sty_sig_item_keyword :: GlobalAnnos -> String -> Doc
 hc_sty_sig_item_keyword ga str = 

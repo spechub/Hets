@@ -25,7 +25,6 @@ import Common.ListBrackets
 
 import Common.Id
 import Common.AS_Annotation
-import Data.Maybe(fromJust)
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
@@ -197,7 +196,7 @@ semantic_anno :: Semantic_anno -> Annote_text -> SourcePos
 semantic_anno sa text sp =
     let err = Left $ newErrorMessage 
 	      (UnExpect ("garbage after %" 
-			 ++ fromJust (lookup sa semantic_anno_table ))) 
+			 ++ lookupSemanticAnno sa))
 	      sp
 	in case text of
 		     Line_anno str ->      
