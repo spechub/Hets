@@ -1,13 +1,13 @@
-{- |
-Module       : $Header: 
+{-|
+Module       : $Header$
 Copyright    : (c) Heng Jiang, Uni Bremen 2004
-Licence      : 
+Licence      : similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer   : hets@tzi.de
 Stability    : provisional
-Protability  : 
+Portability  : non-portable
 
-   Interface for web page.
+   Interface for web page
 -}
 
 module GUI.WebInterface where
