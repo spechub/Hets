@@ -44,7 +44,7 @@ data LIB_ITEM = Spec_defn AS_Structured.SPEC_NAME
 	      | View_defn AS_Structured.VIEW_NAME 
 		          AS_Structured.GENERICITY 
 			  AS_Structured.VIEW_TYPE 
-		          G_symb_map_items_list 
+			  [AS_Structured.G_mapping]
 			  [Pos]
 
 	      | Arch_spec_defn AS_Architecture.ARCH_SPEC_NAME 
