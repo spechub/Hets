@@ -22,12 +22,9 @@ module Syntax.Parse_AS_Architecture where
 
 import Logic.Grothendieck
 import Logic.Logic
-
-import CASL.Logic_CASL  -- we need the default logic
-
+-- import CASL.Logic_CASL  -- we don't need the default logic
 import Syntax.AS_Structured
 import Syntax.AS_Architecture
--- import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
@@ -36,11 +33,7 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import Common.Lib.Parsec
--- import Common.Lib.Parsec.Char (digit)
--- import qualified Common.Lib.Map as Map
 import Common.Id
-import Data.List
-
 import Data.Maybe(maybeToList)
 
 
@@ -274,9 +267,9 @@ fitArgUnits l =
 -- @
 -- The SYMB-MAP-ITEMS-LIST is parsed using parseItemsMap.
 fitArgUnit :: (AnyLogic, LogicGraph) -> AParser FIT_ARG_UNIT
-fitArgUnit l = 
+fitArgUnit l@(Logic curLog, _) = 
     do ut <- unitTerm l
-       (kFit, smis) <- option (Nothing, G_symb_map_items_list CASL [])
+       (kFit, smis) <- option (Nothing, G_symb_map_items_list curLog [])
 		       (do kFit <- fmap Just (asKey fitS)
 			   (smis, _) <- parseItemsMap (fst l)
 			   return (kFit, smis))
