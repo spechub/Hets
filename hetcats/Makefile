@@ -96,8 +96,9 @@ d_clean: clean
 real_clean: d_clean bin_clean
 	$(RM) hetcats-make sources_hetcats.mk
 
-### additionally removes files created by DrIFT
+### additionally removes files not in CVS tree
 distclean: real_clean
+	$(RM) Version.hs
 	$(RM) $(drifted_files)
 
 ####################################################################
