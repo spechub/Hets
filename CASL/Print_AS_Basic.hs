@@ -16,7 +16,7 @@
 module Print_AS_Basic where
 
 -- debugging
---import IOExts (trace)
+import IOExts (trace)
 
 import List (mapAccumL)
 
@@ -24,6 +24,9 @@ import Id
 import AS_Basic_CASL
 import AS_Annotation
 import GlobalAnnotations
+import GlobalAnnotationsFunctions (precRel,isLAssoc,isRAssoc,isLiteral
+				  ,getLiteralType
+				  )
 
 import Print_AS_Annotation
 
@@ -66,7 +69,7 @@ instance PrettyPrint BASIC_ITEMS where
 	text forallS <+> semiT ga l
 		 $$ printText0 ga (Axiom_items f p)
     printText0 ga (Axiom_items f _) = 
-	vcat (map (\x -> char '.' <+> printText0 ga x) f)
+	vcat $ map (\x -> char '.' <+> printText0 ga x) f
 
 instance PrettyPrint SIG_ITEMS where
     printText0 ga (Sort_items l _) =  text sortS<>pluralS l <+> semiAnno ga l
@@ -89,9 +92,15 @@ instance PrettyPrint SORT_ITEM where
 
 instance PrettyPrint OP_ITEM where
     printText0 ga (Op_decl l t a _) = 
-	hang (commaT ga l) 4 (colon <> printText0 ga t <>  
-			      if null a then empty 
-			      else hang comma 4 $ commaT ga a)
+	hang (hang (commaT ga l) 
+	            4 
+	            (colon <> printText0 ga t <> condComma)) 
+             4 $
+	       if na then empty 
+	       else commaT ga a
+	where na = null a
+	      condComma = if na then empty
+			  else comma
     printText0 ga (Op_defn n h t _) = printText0 ga n 
 				  <> printText0 ga h
                                   <+> text equalS
@@ -197,19 +206,14 @@ instance PrettyPrint FORMULA where
     printText0 _ (True_atom _)  = ptext trueS
     printText0 _ (False_atom _) = ptext falseS
     printText0 ga (Predication p l _) = 
-	let (p_id@(Id tops cs _),isQual) = 
+	let (p_id,isQual) = 
 		case p of
 		       Pred_name i          -> (i,False)
 		       Qual_pred_name i _ _ -> (i,True)
 	    p' = printText0 ga p
-	in if isMixfix p_id then
-	      if isQual then 
-		 printText0_prefix_appl ga p' l
-	      else if length (filter isPlace tops) == length l then
-	                printText0_mixfix_appl ga tops cs l
-	           else 
-	                printText0_prefix_appl ga p' l
-	   else printText0_prefix_appl ga p' l
+	in if isQual then 
+	     printText0_prefix_appl ga p' l
+	   else condPrintText0_Mixfix ga p_id l
     printText0 ga (Definedness f _) = text defS <+> printText0 ga f
     printText0 ga (Existl_equation f g _) = 
 	hang (printText0 ga f <+> ptext exEqual) 4 $ printText0 ga g
@@ -236,19 +240,18 @@ instance PrettyPrint TERM where
 	parens $ text varS <+> printText0 ga n <+> colon <+> printText0 ga t
     printText0 ga (Application o l _) = 
     {- TODO: consider string-, number-, list- and floating-annotations -}
-	let (o_id@(Id tops cs _),isQual) = 
+	let (o_id,isQual) = 
 		case o of
 		       Op_name i          -> (i,False)
 		       Qual_op_name i _ _ -> (i,True)
 	    o' = printText0 ga o
-	in if isMixfix o_id then
-	      if isQual then 
-		 printText0_prefix_appl ga o' l
-	      else if length (filter isPlace tops) == length l then
-	                printText0_mixfix_appl ga tops cs l
-	           else 
-	                printText0_prefix_appl ga o' l
-	   else printText0_prefix_appl ga o' l
+	in if isQual then 
+	     printText0_prefix_appl ga o' l
+	   else 
+	     if isLiteral (literal_map ga) o_id then
+	       printText0_Literal ga o_id l
+	     else
+	       condPrintText0_Mixfix ga o_id l
     printText0 ga (Sorted_term t s _) = 
 	printText0 ga t	<+> colon <+> printText0 ga s
     printText0 ga (Cast  t s _) = 
@@ -391,16 +394,30 @@ semiT ga l = fsep $ punctuate semi $ map (printText0 ga) l
 crossT ga l = fsep $ punctuate (space<>char '*') $ map (printText0 ga) l
 
 semiAnno :: (PrettyPrint a) => GlobalAnnos -> [Annoted a] -> Doc
-semiAnno ga l = vcat $ map (\x -> printText0 ga (l_annos x) 
-			          $$ printText0 ga (item x) <> semi 
-			          <+> printText0 ga (r_annos x)) 
-		           l 
+semiAnno ga l = if null l then 
+		   empty 
+		else 
+		   vcat $ map (\x -> printText0 ga (l_annos x) 
+			       $$ printText0 ga (item x) <> semi 
+			       <+> printText0 ga (r_annos x)) 
+		              (init l) ++ [printText0 ga (last l)]
 
 -- like punctuate from Pretty, but prepends symbol to every element 
 -- omitting the first element 
 prepPunctuate :: Doc -> [Doc] -> [Doc]
 prepPunctuate _ [] = []
 prepPunctuate symb (x:xs) = x:map (\e -> symb <> e) xs
+
+condPrintText0_Mixfix :: GlobalAnnos -> Id -> [TERM] -> Doc
+condPrintText0_Mixfix ga i l =
+    if isMixfix i then
+       if length (filter isPlace tops) == length l then
+	  printText0_mixfix_appl ga i l
+       else 
+          printText0_prefix_appl ga o' l
+    else printText0_prefix_appl ga o' l
+    where tops = case i of Id tp _ _ -> tp 
+	  o' = printText0 ga i
 
 -- printing consistent prefix application and predication
 printText0_prefix_appl :: GlobalAnnos -> Doc -> [TERM] -> Doc 
@@ -409,37 +426,90 @@ printText0_prefix_appl ga po' l = po' <>
 			     (if null l then empty 
 			      else parens(commaT ga l))
 
+printText0_Literal :: GlobalAnnos -> Id -> [TERM] -> Doc
+printText0_Literal ga li ts 
+    | all (isSimple li) ts = case getLiteralType lmap li of
+			     _ -> condPrintText0_Mixfix ga li ts
+    | otherwise = condPrintText0_Mixfix ga li ts
+    where isSimple i t = case t of
+			 Application o its _ 
+			     | oi == i   -> all (isSimple i) its
+			     | otherwise -> False
+			     where oi = 
+				     case o of 
+				     Qual_op_name _ _ _ -> 
+					 error "cannot lierally Print Qual_id" 
+				     Op_name x -> x
+			 Simple_id _ -> True
+			 _           -> False
+	  lmap = literal_map ga
+
 -- printing consitent mixfix application or predication
 {- TODO: consider string-, number-, list- and floating-annotations -}
-printText0_mixfix_appl :: GlobalAnnos -> [TokenOrPlace] -> 
-			  [Id] -> [TERM] -> Doc
-printText0_mixfix_appl ga tops cs l = fsep nlI <+> c <+> fsep nlT
-		   where c = if null cs then empty 
-			     else fsep $ map (brackets . (printText0 ga)) cs
-	                 (topsI,topsT) = splitMixToken tops
-			 lI = take (length $ filter isPlace topsI) l
-			 lT = drop (length $ filter isPlace topsI) l
-			 nlI = fillIn topsI $ lI
-			 nlT = fillIn topsT $ lT
-			 fillIn tps ts = 
-			     let (_,nl) = mapAccumL pr ts tps in nl
-			 pr [] top = ([], ptext $ showTok top "")
-			 pr tS@(t:ts) top | isPlace top = 
-					      (ts,condParensPrefixAppl ga t)
-					  | otherwise   = 
-					      (tS,ptext $ showTok top "")
+printText0_mixfix_appl :: GlobalAnnos -> Id -> [TERM] -> Doc
+printText0_mixfix_appl ga oid l = ft <+> fsep nlI <+> c <+> fsep nlT <+> lt
+    where (tops,cs) = case oid of Id x1 x2 _ -> (x1,x2)
+	  c = if null cs then empty 
+	      else fsep $ map (sp_brackets . (printText0 ga)) cs
+          (topsI,topsT) = splitMixToken tops
+	  lI = take (length $ filter isPlace topsI) l
+	  lT = drop (length $ filter isPlace topsI) l
+	  nlI = fillIn topsI' lI'
+	  nlT = fillIn topsT' lT'
+	  isL3 = length tops >= 3
+	  (topsI',lI',ft) = if isL3 && (isPlace $ head topsI) then
+			      (tail topsI,tail lI,
+			       condParensAppl ga oid (head lI) (Just ALeft))
+			    else
+			      (topsI,lI,empty)
+	  (topsT',lT',lt) = if isL3 && 
+			       (not $ null topsT) && 
+                               (isPlace $ last topsT) 
+			    then
+			      (init topsT,init lT,
+			       condParensAppl ga oid (last lT) (Just ARight))
+			    else
+			      (topsT,lT,empty)
+	  fillIn tps ts = let (_,nl) = mapAccumL pr ts tps in nl
+	  pr [] top = ([], ptext $ showTok top "")
+	  pr tS@(t:ts) top | isPlace top = (ts,condParensAppl ga oid t Nothing)
+			   | otherwise   = (tS,ptext $ showTok top "")
 
-condParensPrefixAppl :: GlobalAnnos -> TERM -> Doc
-condParensPrefixAppl ga t = 
+condParensAppl :: GlobalAnnos -> Id -> TERM -> Maybe AssocEither -> Doc
+condParensAppl ga o_i t mdir = 
     case t of
     Simple_id _ -> t'
-    Application o [] _ -> t'
+    Application _ [] _ -> t'
+    Application o _ _ 
+        -- ordinary appl (no place)
+	| isOrdAppl o' -> ptext "%[Ord_Appl]%" <+> t' 
+	-- postfix appl
+	| isOrdAppl o_i && isPostfix o' -> ptext "%[OrdWithPost]%" <+> t' 
+	| isMixfix  o_i && isPostfix o' -> ptext "%[MixWithPost]%" <+> t' 
+	-- prefix appl w/o parens
+	| isOrdAppl o_i && isPrefix o'  -> ptext "%[OrdWithPre]%" <+> t'
+	| isPostfix o_i && isPrefix o'  -> parens t'
+	-- infix appl (left and right arg/place)
+	| isInfix o' && o_i == o' -> ptext "%[Infix]%" <+>
+	    case mdir of
+		      Nothing -> condParensPrec ga o_i o' t' 
+		      Just ALeft | isLAssoc amap o_i -> t'
+				 | otherwise -> parens t'
+		      Just ARight | isRAssoc amap o_i -> t'
+				  | otherwise -> parens t'
+	| otherwise -> condParensPrec ga o_i o' t'
+	where o' = case o of
+			  Op_name i          -> i
+			  Qual_op_name i _ _ -> i
+	      amap = assoc_annos ga
+    
     _ -> parens t'
     {- TODO: Consider prec-, lassoc- and rassoc-annotations -}
     where t' = printText0 ga t
 
 
-
+condParensPrec :: GlobalAnnos -> Id -> Id -> Doc -> Doc
+condParensPrec _ _ _ t = parens t -- TODO
 
 
 condParensImplEquiv :: GlobalAnnos -> FORMULA -> FORMULA -> Doc
@@ -452,6 +522,8 @@ condParensImplEquiv ga e_i f =
 				   True_atom _  -> f' 
 				   False_atom _ -> f'
 				   Predication _ _ _ -> f' 
+				   Existl_equation _ _ _ -> f'
+				   Strong_equation _ _ _ -> f'
 				   _           -> parens f'
     Equivalence _ _ _ -> case f of Disjunction _ _ -> f'
 				   Conjunction _ _ -> f'
@@ -460,6 +532,8 @@ condParensImplEquiv ga e_i f =
 				   False_atom _ -> f'
 				   Predication _ _ _ -> f'
 				   Quantification _ _ _ _ -> f'
+				   Existl_equation _ _ _ -> f'
+				   Strong_equation _ _ _ -> f'
 				   _           -> parens f'
     _ ->  error "Wrong call: condParensImplEquiv"
     where f' = printText0 ga f
@@ -468,7 +542,9 @@ condParensXjunction ga x =
     case x of Negation _ _ -> x' 
 	      True_atom _  -> x' 
 	      False_atom _ -> x'
-	      Predication _ _ _ -> x' 
+	      Predication _ _ _ -> x'
+	      Existl_equation _ _ _ -> x'
+	      Strong_equation _ _ _ -> x'
 	      _            -> parens x' 
     where x' = printText0 ga x
 
