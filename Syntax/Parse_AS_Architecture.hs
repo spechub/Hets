@@ -63,10 +63,10 @@ archSpec l =
 -- @
 groupArchSpec :: LogicGraph -> AParser AnyLogic (Annoted ARCH_SPEC)
 groupArchSpec l =
-    do kOpBr <- asKey "{"
+    do kOpBr <- oBraceT
        anno <- annos
        asp <- archSpec l
-       kClBr <- asKey "}"
+       kClBr <- cBraceT
        return (Annoted (Group_arch_spec asp (map tokPos [kOpBr, kClBr]))
 	               [] anno [])
     <|>  
@@ -82,11 +82,11 @@ groupArchSpec l =
 -- @
 basicArchSpec :: LogicGraph -> AParser AnyLogic (Annoted ARCH_SPEC)
 basicArchSpec l = 
-    do kUnit <- (do u <- asKey unitS; return u) <|> (do u <- asKey "units"; return u) -- TODO: more elegant
+    do kUnit <- pluralKeyword unitS
        declDefn <- unitDeclDefns l
        kResult <- asKey resultS
        expr <- unitExpr l
-       kSc <- option Nothing (fmap Just (asKey ";"))
+       kSc <- option Nothing (fmap Just anSemi)
        return (Annoted (Basic_arch_spec declDefn expr
 			    (map tokPos ([kUnit, kResult] ++ maybeToList kSc))) 
 	                [] [] [])
@@ -102,7 +102,7 @@ unitDeclDefns l =
     do dd <- unitDeclDefn l
        ann <- annos
        dds <- option []
-	      (do _ <- asKey ";"
+	      (do _ <- anSemi
 		  dds <- option [] (unitDeclDefns l)
 	          return dds)
        return ((Annoted dd [] [] ann) : dds)
@@ -115,7 +115,7 @@ unitDeclDefns l =
 unitDeclDefn :: LogicGraph -> AParser AnyLogic UNIT_DECL_DEFN
 unitDeclDefn l = do 
     name <- simpleId
-    do c <- asKey ":"     -- unit declaration 
+    do c <- colonT     -- unit declaration 
        decl <- refSpec l
        (gs, ps) <- option ([], [])
                             (do kGiven <- asKey givenS
@@ -134,7 +134,7 @@ unitDeclDefn l = do
 unitRef :: LogicGraph -> AParser AnyLogic UNIT_REF
 unitRef l = 
         do name <- simpleId
-	   sep1 <- asKey ":"
+	   sep1 <- asKey toS
 	   usp <- refSpec l
 	   return $ Unit_ref name usp [tokPos sep1]
 
@@ -156,14 +156,20 @@ unitSpec l =
 	{- NOTE: this can also be a spec name. If this is the case, this unit spec 
 	   will be converted on the static analysis stage.
 	   See Static.AnalysisArchitecture.ana_UNIT_SPEC. -}
-    try (do (gss, poss) <- unitArgs l
-	    gs <- groupSpec l
-	    return (Unit_type gss (emptyAnno gs) poss))
-    <|> -- specification name 
-	{- NOTE: this option will never be executed as the spec name will be parsed as
-	   unit type (see the comment above). -}
-    do name <- simpleId
-       return (Spec_name name)
+    do gps@(gs:gss, _) <- annoParser (groupSpec l) `separatedBy` crossT
+       let rest = unitRestType l gps
+       if null gss then do
+            option ( {- case item gs of 
+                    Spec_inst sn [] _ -> Spec_name sn -- annotations are lost
+                    _ -> -} Unit_type [] gs []) rest
+            else rest
+
+unitRestType :: LogicGraph -> ([Annoted SPEC], [Token]) 
+             -> AParser AnyLogic UNIT_SPEC
+unitRestType l (gs, ps) = do 
+    a <- asKey funS
+    g <- annoParser $ groupSpec l
+    return (Unit_type gs g $ map tokPos (ps ++ [a]))
 
 refSpec :: LogicGraph -> AParser AnyLogic REF_SPEC
 refSpec l = do 
@@ -179,7 +185,12 @@ refSpec l = do
 --             | { UNIT-DECL, ..., UNIT-DECL }
 -- @
 basicRefSpec :: LogicGraph -> AParser AnyLogic REF_SPEC
-basicRefSpec l =
+basicRefSpec l = -- component spec
+    do o <- oBraceT `followedWith` (simpleId >> asKey toS)
+       (us, ps) <- unitRef l `separatedBy` anComma
+       c <- cBraceT
+       return (Component_ref us $ toPos c ps o)
+    <|> -- unit spec
     do uSpec <- unitSpec l
        refinedRestSpec l uSpec <|> return (Unit_spec uSpec)
     <|> -- architectural spec
@@ -187,11 +198,7 @@ basicRefSpec l =
        kSpec <- asKey specS
        asp <- groupArchSpec l
        return (Arch_unit_spec asp (toPos kArch [] kSpec))
-    <|> -- component spec 
-    do  o <- oBraceT
-        (us, ps) <- unitRef l `separatedBy` anComma
-        c <- oBraceT
-        return (Component_ref us $ toPos c ps o)
+
 
 refinedRestSpec :: LogicGraph -> UNIT_SPEC -> AParser AnyLogic REF_SPEC
 refinedRestSpec l u = do
@@ -211,39 +218,6 @@ onlyRefinedRestSpec l b u = do
     rsp <- refSpec l
     return $ Refinement (null b) u ms rsp (b ++ toPos r ps t)           
 
--- | Parse a (possibly empty) list of group specs separated by "*"
--- and ending with "->".
--- @
--- UNIT-ARGS ::= GROUP-SPEC * ... * GROUP-SPEC ->
--- @
-unitArgs :: LogicGraph -> AParser AnyLogic ([Annoted SPEC], [Pos])
--- ^ returns the list of (annotated) group specs and a list of "*" and 
--- "->" positions
-unitArgs l = 
-    try (do (specs, poss) <- nonemptyUnitArgs l
- 	    return (specs, poss))
-    <|>
-    do return ([], [])
-
-
--- | Parse a nonempty list of group specs separated by "*"
--- and ending with "->".
--- @
--- UNIT-ARGS ::= GROUP-SPEC * ... * GROUP-SPEC ->
--- @
-nonemptyUnitArgs :: LogicGraph -> AParser AnyLogic ([Annoted SPEC], [Pos])
--- ^ returns the list of (annotated) group specs and a list of "*" and 
--- "->" positions
-nonemptyUnitArgs l = 
-    try (do gs <- groupSpec l
-	    kAst <- asKey prodS
-	    (gss, poss) <- nonemptyUnitArgs l
-	    return ((emptyAnno gs) : gss, (tokPos kAst) : poss))
-    <|> 
-    do gs <- groupSpec l
-       kFun <- asKey funS
-       return ([emptyAnno gs], map tokPos [kFun])
-
 
 -- | Parse a nonempty list of group unit terms separated by commas.
 -- The positions of commas are stored in annotations.
@@ -254,7 +228,7 @@ groupUnitTerms :: LogicGraph -> AParser AnyLogic [Annoted UNIT_TERM]
 groupUnitTerms l =
     do gut <- groupUnitTerm l
        (com, guts) <- option (Nothing, [])
-		      (do com <- fmap Just (asKey ",")
+		      (do com <- fmap Just anComma
 			  guts <- groupUnitTerms l
 			  return (com, guts))
        return ((Annoted gut (map tokPos (maybeToList com)) [] []) : guts)
@@ -273,9 +247,9 @@ groupUnitTerm l =
        (args, pos) <- fitArgUnits l
        return (Unit_appl name args pos)
     <|> -- unit term in brackets
-    do lbr <- asKey "{"
+    do lbr <- oBraceT
        ut <- unitTerm l
-       rbr <- asKey "}"
+       rbr <- cBraceT
        return (Group_unit_term ut (map tokPos [lbr, rbr]))
 
 
@@ -288,9 +262,9 @@ fitArgUnits :: LogicGraph -> AParser AnyLogic ([FIT_ARG_UNIT], [Pos])
 -- "[" and "]" positions
 fitArgUnits l = 
     option ([], []) 
-    (do opBr <- asKey "["
+    (do opBr <- oBracketT
 	fau <- fitArgUnit l
-	clBr <- asKey "]"
+	clBr <- cBracketT
         (faus, poss) <- fitArgUnits l
         return (fau : faus, [tokPos opBr, tokPos clBr] ++ poss))
 
@@ -450,7 +424,7 @@ unitBindings :: LogicGraph -> AParser AnyLogic ([UNIT_BINDING], [Pos])
 unitBindings l =
     do ub <- unitBinding l
        (ubs, poss) <- option ([], [])
-		          (do sc <- asKey ";"
+		          (do sc <- anSemi
 		              (ubs, poss) <- unitBindings l
 			      return (ubs, (tokPos sc) : poss))
        return (ub : ubs, poss)
@@ -478,7 +452,7 @@ unitDefns l =
     do ud <- unitDefn l
        ann <- annos
        uds <- option []
-	      (do _ <- asKey ";"
+	      (do _ <- anSemi
 		  uds <- option [] (unitDefns l)
 	          return uds)
        return ((Annoted ud [] [] ann) : uds)
