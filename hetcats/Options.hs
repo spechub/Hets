@@ -47,7 +47,7 @@ Usage: hetcats [OPTION...] file ... file
             (default: dg.taf)
 ?  -l id     --output-logic=id     select output logic and optional logic coding
                 mit Parsec (Token.simpleId) parsen
-  -L DIR    --casl-libdir=DIR     CASL library directory
+  -L DIR    --hets-libdir=DIR     CASL library directory
   -r RAW    --raw=RAW             raw options passed to the pretty-printer
             RAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the
             appropiate pretty-printer
@@ -91,7 +91,7 @@ instance Show HetcatsOpts where
                 ++ " --input-type="   ++ show (intype opts)
                 ++ " --output-types=" ++ showOutTypes (outtypes opts)
                 ++ " " ++ showRaw (rawopts opts)
-                ++ " --casl-libdir="  ++ (libdir opts)
+                ++ " --hets-libdir="  ++ (libdir opts)
                 ++ " --output-dir="   ++ (outdir opts)
                 ++ " " ++ showInFiles (infiles opts)
         where
@@ -230,7 +230,7 @@ options =
       "skip static analysis - just parse"
     , Option ['s'] ["just-structured"]  (NoArg (Analysis Structured))
       "skip basic analysis - just do structured analysis"
-    , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR")
+    , Option ['L'] ["hets-libdir"]  (ReqArg (\x -> LibDir x) "DIR")
       "CASL library directory"
     , Option ['r'] ["raw"] (ReqArg parseRawOpts "RAW")
       "raw options passed to the pretty-printer \n\tRAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer"
