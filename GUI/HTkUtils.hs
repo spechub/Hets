@@ -1,6 +1,6 @@
 {-
 Module      :  $Header$
-Copyright   :  (c)  Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c)  Till Mossakowski and Klaus Lüttich, Uni Bremen 2002-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
@@ -12,10 +12,13 @@ Portability :  non-portable (imports Logic)
 
 module GUI.HTkUtils where
 
+import System.Directory
+
 import HTk
 import Core
 import ScrollBox
 import TextDisplay
+import FileDialog
  -- only to avoid problematic ghc 6.2.1 compilation order
 import Common.Lib.Rel()
 
@@ -40,17 +43,18 @@ listBox title entries =
        _ -> Nothing)
 
 
----
+-- |
 -- Display some (longish) text in an uneditable, scrollable editor.
 -- Returns immediately-- the display is forked off to separate thread.
--- @param title   - the title of the window
--- @param filename  - the filename for saving the text
--- @param txt     - the text to be displayed
--- @param conf    - configuration options for the text editor
--- @param unpost  - action to be executed when the window is closed
--- @return result - the window in which the text is displayed
-createTextSaveDisplayExt :: String-> String -> String-> [Config Editor]-> IO()-> IO (Toplevel,
-								       Editor)
+createTextSaveDisplayExt :: String -- ^ title of the window
+                         -> String -- ^ default filename for saving the text
+                         -> String -- ^ text to be displayed
+                         -> [Config Editor] -- ^ configuration options for 
+                         -- the text editor
+                         -> IO() -- ^ action to be executed when 
+                         -- the window is closed
+                         -> IO (Toplevel,Editor) -- ^ the window in which 
+                         -- the text is displayed
 createTextSaveDisplayExt title filename txt conf unpost =
   do win <- createToplevel [text title]
      b   <- newFrame win  [relief Groove, borderwidth (cm 0.05)]    
@@ -72,15 +76,39 @@ createTextSaveDisplayExt title filename txt conf unpost =
      save <- clicked s
      spawnEvent (forever (quit >>> do destroy win; unpost
                            +>
-                         save >>> do writeFile filename txt; createTextDisplay "" ("Wrote "++filename) [size(30,10)]))
+                         save >>> do disableButs q s
+                                     askFileNameAndSave filename txt
+                                     enableButs q s
+                                     done))
      return (win, ed)
-
----
+   where disableButs b1 b2 = do disable b1
+                                disable b2
+         enableButs b1 b2 = do enable b1
+                               enable b2
+-- |
 -- Display some (longish) text in an uneditable, scrollable editor.
 -- Simplified version of createTextSaveDisplayExt
--- @param title   - the title of the window
--- @param filename  - the filename for saving the text
--- @param txt     - the text to be displayed
--- @param conf    - configuration options for the text editor
-createTextSaveDisplay :: String-> String -> String-> [Config Editor]-> IO()
-createTextSaveDisplay t f txt conf = do createTextSaveDisplayExt t f txt conf done; done
+
+createTextSaveDisplay :: String -- ^ title of the window
+                      -> String -- ^ default filename for saving the text
+                      -> String -- ^ text to be displayed
+                      -> [Config Editor]-- ^ configuration options for 
+                      -- the text editor
+                      -> IO()
+createTextSaveDisplay t f txt conf = 
+    do createTextSaveDisplayExt t f txt conf done; done
+
+
+--- added by KL
+-- |
+-- opens a FileDialog and saves to the selected file if OK is clicked
+-- otherwise nothing happens
+askFileNameAndSave :: String -- ^ default filename for saving the text
+                   -> String -- ^ text to be saved
+                   -> IO ()
+askFileNameAndSave defFN txt =
+    do curDir <- getCurrentDirectory
+       selev <- newFileDialogStr "Save file" (curDir++'/':defFN)
+       mfile <- sync selev
+       maybe done saveFile mfile
+    where saveFile fp = writeFile fp txt
