@@ -23,9 +23,11 @@ idToHaskell = fmap (WrapString . translateId) parseId
 
 translateAna :: Env -> HsModule
 --translateAna env = error (show env)
-translateAna env = HsModule (SrcLoc "" 1 1) (Module "HasCASLModul") Nothing []
+translateAna env = HsModule (SrcLoc "" 1 1) (Module "HasCASLModul") 
+		   Nothing -- Maybe[HsExportSpec]
+		   []      -- [HsImportDecl]
                    ((translateTypeMap (typeMap env)) ++ 
-                    (translateAssumps (assumps env)))
+                    (translateAssumps (assumps env)))   -- [HsDecl]
 -- Achtung: env enthält noch andere zu übersetzende Argumente 
 -- (z.B. classMap, sentences) !!
 
@@ -41,7 +43,7 @@ translateData :: (TypeId, TypeInfo) -> [HsDecl]
 translateData (tid,info) = 
   case (typeDefn info) of
     NoTypeDefn ->  -- z.B. bei sorts, was wird daraus?
-        ((HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+        [(HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
 	            [] -- HsContext
 	            (HsIdent (translateIdWithType UpperId tid))
 		    [] -- [HsName]
@@ -51,14 +53,14 @@ translateData (tid,info) =
 		       [])
 		    ]
 		    [] -- [HsQName]  (für deriving) woher?
-	 ):[])
-    Supertype _ _ _ -> [] -- ?
-    DatatypeDefn _ _ -> 
+	 )]
+    Supertype _ _ _ -> [] -- Was wird daraus in Haskell? -> ignorieren
+    DatatypeDefn _ _altDefns -> 
 	((HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
 	            [] -- HsContext
 	            (HsIdent (translateIdWithType UpperId tid))
 		    [] -- [HsName]
-		    [] -- [HsConDecl] woher?? (im Env nicht enthalten?)
+		    [] -- [HsConDecl] woher?? aus altDefns
 		    [] -- [HsQName]  (für deriving) woher?
 	 ):[])
     AliasTypeDefn _ -> [] -- ?
@@ -81,12 +83,14 @@ translateSignature :: Id -> OpInfo -> HsDecl
 translateSignature i opinf = 
   HsTypeSig (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
              [(HsIdent (translateIdWithType LowerId i))]
-             (HsQualType [] (translateTypeScheme (opType opinf)))
+             (translateTypeScheme (opType opinf))
 -- Achtung: falsche Positionsangabe
 
-translateTypeScheme :: TypeScheme -> HsType
+translateTypeScheme :: TypeScheme -> HsQualType
 translateTypeScheme (TypeScheme _arglist (_plist :=> t) _poslist) = 
-  (translateType t)
+  HsQualType [] (translateType t)
+-- Context aus plist?
+-- arglist für "uncurried" Argumente?
 
 translateType :: Type -> HsType
 translateType t = case t of
@@ -203,7 +207,7 @@ symbolMapping c = case c of
     '/'  -> "_D"    -- \47
     '\\' -> "_B"    -- \92
     '&'  -> "_A"    -- \38
-    --'='  ->       -- \61
+    '='  -> "_I"    -- \61
     '<'  -> "_L"    -- \60
     '>'  -> "_G"    -- \62
     '!'  -> "_E"    -- \33
