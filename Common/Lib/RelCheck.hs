@@ -44,7 +44,7 @@ prp_transClosure intrKern r =
      length (Map.keys $ toMap r) > 6 )  ==>
        ((Set.size $ toSet $ irreflex r) < 10) `trivial`
         collect (length (Map.keys $ toMap r))
-		 (transClosure (irreflex r) == 
+		 (transClosure (irreflex r) ==
 		  transClosure (intrKern $ transClosure r))
     where rel = r::(Rel Int)
 
@@ -73,4 +73,21 @@ myQuick = Config
   , configSize    = (+ 3) . (`div` 2)
   , configEvery   = \n args -> let s = show n in s ++ [ '\b' | _ <- s ]
   }
+
+prp_invTest :: (Rel Int -> Rel Int) -> Rel Int -> Property
+prp_invTest relFun rel =
+    (Set.size (mostRight rel) <= 3 && 
+     Set.size (symmetricSets rel) > 1 &&
+     length (Map.keys $ toMap rel) > 6 )  ==>
+       ((Set.size $ toSet $ irreflex rel) < 10) `trivial`
+        collect (length (Map.keys $ toMap rel))
+		((not . elem Set.empty) $ Map.elems (toMap $ relFun rel)) 
+
+prop_inv_transReduce = prp_invTest transReduce
+prop_inv_intransKernel = prp_invTest intransKernel
+prop_inv_transpose = prp_invTest transpose
+prop_inv_irreflex = prp_invTest irreflex
+prop_inv_rmSym = prp_invTest rmSym
+prop_inv_transClosure = prp_invTest transClosure
+
 
