@@ -82,9 +82,9 @@ casl_reserved_fops = formula_ops ++ casl_reserved_ops
 -- letter keywords
 casl_reserved_words, formula_words, casl_reserved_fwords :: [String]
 casl_reserved_words =
-    [andS, archS, asS, assocS, axiomS, axiomS ++ sS, closedS, commS, endS, 
+    [andS, archS, asS, axiomS, axiomS ++ sS, closedS, endS, 
     existsS, fitS, forallS, freeS, fromS, generatedS, getS, givenS,
-    hideS, idemS, inS, lambdaS, libraryS, localS, logicS,
+    hideS, inS, lambdaS, libraryS, localS, logicS,
     opS, opS ++ sS, predS, predS ++ sS, propS, propS ++ sS, resultS, revealS, 
     sortS, sortS ++ sS, specS, thenS, toS, typeS, typeS ++ sS, 
     unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
