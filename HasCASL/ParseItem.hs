@@ -79,7 +79,7 @@ itemAux itemParser =
 -- ------------------------------------------------------------------------
 
 nullKind :: Kind
-nullKind = Kind [] (Universe nullPos) []
+nullKind = Kind [] (Intersection [] []) []
 
 commaTypeDecl :: TypePattern -> GenParser Char st TypeItem
 commaTypeDecl s = do { c <- commaT 

@@ -42,13 +42,13 @@ quColon = do c <- colT
 -- universe is just a special className ("Type")
 parseClass :: GenParser Char st Class
 parseClass = fmap (\c -> if tokStr c == "Type" 
-		   then Universe $ tokPos c 
-		   else ClassName c) className
+		   then Intersection [] [tokPos c]
+		   else Intersection [c] []) className
              <|> 
 	     do o <- oParenT
 		(cs, ps) <- parseClass `separatedBy` commaT
 		c <- cParenT
-		return (Intersection cs (toPos o ps c))
+		return (Intersection (concatMap iclass cs) (toPos o ps c))
 
 extClass :: GenParser Char st ExtClass
 extClass = do c <- parseClass
@@ -198,7 +198,7 @@ typeVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
 		       return (makeTypeVarDecls vs ps t (tokPos c))
 		    <|> varDeclDownSet vs ps
 		    <|> return (makeTypeVarDecls vs ps 
-				(Universe nullPos) nullPos)
+				(Intersection [] []) nullPos)
 
 makeTypeVarDecls :: [TypeVar] -> [Token] -> Class -> Pos -> [TypeVarDecl]
 makeTypeVarDecls vs ps cl q = zipWith (\ v p -> 
@@ -250,7 +250,7 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` commaT
 		   return (makeTypeArgs ts ps (tokPos l)
 			   (ExtClass (Downset t) InVar nullPos))
 		<|> return (makeTypeArgs ts ps nullPos 
-			   (ExtClass (Universe nullPos) InVar nullPos))
+			   (ExtClass (Intersection [] []) InVar nullPos))
 		where mergeVariance k e (t, InVar, _) p = 
 			  TypeArg t e k p 
 		      mergeVariance k (ExtClass c _ _) (t, v, ps) p =

@@ -266,10 +266,8 @@ data ProdClass = ProdClass [ExtClass] [Pos] deriving (Show,Eq)
 data Kind = Kind [ProdClass] Class [Pos] deriving (Show,Eq)
 	    -- pos "->"s (first order)
 
-data Class = Universe Pos -- pos "Type" (or nullPos)
-	   | ClassName ClassName
-	   | Downset Type   -- not parsed directly
-	   | Intersection [Class] [Pos]  
+data Class = Downset Type   -- not parsed directly
+	   | Intersection { iclass :: [ClassName], classPos :: [Pos] }  
 	   -- pos "(", ","s, ")"
 	     deriving (Show,Eq)
 
