@@ -16,9 +16,9 @@ module ToHaskell.FromHasCASL where
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
+import qualified Common.Lib.Map as Map 
 
 import HasCASL.Le
-import HasCASL.AsToLe
 
 import ParseMonad
 import LexerOptions
@@ -34,19 +34,42 @@ import Haskell.HatParser
 import ToHaskell.TranslateAna
 import Data.List ((\\))
 
-
 mapSingleSentence :: Env -> Sentence -> Maybe (HsDeclI PNT)
-mapSingleSentence sign sen = Nothing
-{-
-    case translateSentence sign $ NamedSen "" sen of
-    [s] -> Just $ toAHsDecl $ sentence s
-    _ -> Nothing
--}
+mapSingleSentence sign sen = 
+    case mapTheory $ moveDataEntries (sign, [NamedSen "" sen]) of 
+    Nothing -> Nothing
+    Just (_, l) -> case l of 
+      [] -> Nothing
+      [s] -> Just $ sentence s
+      _ -> case mapTheory (sign, []) of
+           Nothing -> Nothing
+           Just (_, o) -> case l \\ o of
+             [] -> Nothing
+             [s] -> Just $ sentence s
+             _ -> Nothing
+
+moveDataEntries :: (Env, [Named Sentence]) -> (Env, [Named Sentence])
+moveDataEntries (e, l) = case l of 
+  [] -> (e, l)
+  NamedSen n (DatatypeSen s) : r -> case s of
+     [] -> moveDataEntries (e, r)
+     d@(DataEntry im i _ _ _) : t -> let 
+       j = Map.findWithDefault i i im 
+       tm = typeMap e
+       m = Map.lookup j tm in
+       case m of 
+        Nothing -> error "moveDataEntries"
+        Just ti -> moveDataEntries (e { typeMap = Map.insert j 
+                                  ti { typeDefn = DatatypeDefn d } tm },
+                    NamedSen n (DatatypeSen t) : r)
+  s : r -> let (e2, r2) = moveDataEntries (e , r) in (e2, s : r2)
 
 mapTheory :: (Env, [Named Sentence]) -> Maybe (Sign, [Named (HsDeclI PNT)])
-mapTheory (sig, csens) = 
-    let res@(Result _ m) = 
-            hatAna (HsDecls (preludeDecls ++ translateSig sig), 
+mapTheory th = 
+    let (sig, csens) = moveDataEntries th
+        res@(Result _ m) = 
+            hatAna (HsDecls (preludeDecls ++ translateSig sig
+                    ++ map sentence (concatMap (translateSentence sig) csens)),
                             emptySign, emptyGlobalAnnos)
     in case m of 
     Nothing -> error $ show res
@@ -90,7 +113,7 @@ preludeTheory = case maybeResult $ hatAna
 
 preludeDecls :: [HsDecl]
 preludeDecls = let ts = pLexerPass0 lexerflags0 
-                        -- adjust line 75 by hand!
+                        -- adjust line number of module Prelude by hand!
                         (replicate 75 '\n' ++ preludeString)
    in case parseTokens (HsParser.parse) "ToHaskell/FromHasCASL.hs" ts of
       Just (HsModule _ _ _ _ ds) -> ds
@@ -254,4 +277,45 @@ preludeString =
  \\n\
  \data  (a,b,c, d)\n\
  \   =  (,,,) a b c d\n\
- \   deriving (Show, Eq, Ord)"
+ \   deriving (Show, Eq, Ord)\n\
+ \type Unit = Bool\n\
+ \type Pred a = a -> Bool\n\
+ \\n\
+ \bottom :: a\n\
+ \bottom = error \"bottom\"\n\
+ \\n\
+ \a___2_S_B_2 :: (Bool, Bool) -> Bool\n\
+ \a___2_S_B_2 = bottom\n\
+ \ \n\
+ \a___2_L_E_G_2 :: (Bool, Bool) -> Bool\n\
+ \a___2_L_E_G_2 = bottom\n\
+ \ \n\
+ \a___2_E_2 :: (a, a) -> Bool\n\
+ \a___2_E_2 = bottom\n\
+ \ \n\
+ \a___2_E_G_2 :: (Bool, Bool) -> Bool\n\
+ \a___2_E_G_2 (a, b) = if a then b else True\n\
+ \ \n\
+ \a___2_Ee_E_2 :: (a, a) -> Bool\n\
+ \a___2_Ee_E_2 = bottom\n\
+ \ \n\
+ \a___2_B_S_2 :: (Bool, Bool) -> Bool\n\
+ \a___2_B_S_2 = bottom\n\
+ \\n\
+ \a___2if_2 :: (Bool, Bool) -> Bool\n\
+ \a___2if_2 (a, b) = if b then a else True\n\
+ \\n\
+ \a___2when_2else_2 :: (a, Bool, a) -> a\n\
+ \a___2when_2else_2 (a, b, c) = if b then a else c \n\
+ \\n\
+ \not_2 :: Bool -> Bool\n\
+ \not_2 = bottom\n\
+ \\n\
+ \def_2 :: a -> Bool\n\
+ \def_2 a = bottom\n\
+ \ \n\
+ \false :: Bool\n\
+ \false = False\n\
+ \\n\
+ \true :: Bool\n\
+ \true = True"

@@ -16,7 +16,7 @@ module ToHaskell.TranslateAna (
        -- * Translation of an environment
          translateSig
        -- * Translation of sentences
---       , translateSentence
+       , translateSentence
        -- * remove dummy decls that are better given by sentences
 --       , cleanSig
        ) where
@@ -33,6 +33,7 @@ import SourceNames
 import HsName hiding (Id)
 import HsDeclStruct
 import PropPosSyntax hiding (Id, HsName)
+import qualified NewPrettyPrint as HatPretty
 
 import ToHaskell.TranslateId
 import ToHaskell.UniqueId
@@ -46,7 +47,7 @@ import ToHaskell.UniqueId
 translateSig :: Env -> [HsDecl]
 translateSig env = 
     (concat $ map (translateTypeInfo env) $ Map.toList $ typeMap env)
---    ++ (concatMap translateAssump $ distinctOpIds 2 $ Map.toList $ assumps env)
+    ++ (concatMap translateAssump $ distinctOpIds 2 $ Map.toList $ assumps env)
 
 -------------------------------------------------------------------------
 -- Translation of types
@@ -138,7 +139,7 @@ translateDt env (DataEntry im i _ args alts) =
                        (concatMap (translateAltDefn env (j, args, star)
                                    args im) alts)
                        derives
-{-
+
 -------------------------------------------------------------------------
 -- Translation of functions
 -------------------------------------------------------------------------
@@ -150,30 +151,28 @@ translateDt env (DataEntry im i _ args alts) =
 translateAssump :: (Id, OpInfo) -> [HsDecl]
 translateAssump (i, opinf) = 
   let fname = mkHsIdent LowerId i
-      res = HsTypeSig nullLoc
-                       [fname]
+      loc = toProgPos $ posOfId i
+      res = hsTypeSig loc
+                       [fname] []
                        $ translateTypeScheme $ opType opinf
   in case opDefn opinf of
     VarDefn -> []
     ConstructData _ -> [] -- wrong case!
-    _ -> [res, (functionUndef fname)]
+    _ -> [res, functionUndef loc fname]
 
 -- | Translation of the result type of a typescheme to a haskell type.
 --   Uses 'translateType'.
-translateTypeScheme :: TypeScheme -> HsQualType
+translateTypeScheme :: TypeScheme -> HsType
 translateTypeScheme (TypeScheme _ t _) = 
-  HsUnQualType (translateType t)
+  translateType t
 
--}
 
 -- | Translation of types (e.g. product type, type application ...).
 translateType :: Type -> HsType
 translateType t = 
   case t of
   FunType t1 _arr t2 _ -> hsTyFun (translateType t1) (translateType t2)
-  ProductType tlist ps -> if null tlist 
-               then hsTyCon $ fakeSN $ UnQual "Bool"
-               else hsTyTuple (toProgPos $ headPos ps) 
+  ProductType tlist ps -> hsTyTuple (toProgPos $ headPos ps) 
                         $ map translateType tlist
   LazyType lt _ -> translateType lt
   KindedType kt _kind _ -> translateType kt
@@ -306,22 +305,6 @@ translateProgEq env (ProgEq pat t _) =
                      []]
     Nothing -> error ("translateLetProgEq: no toplevel id: " ++ show pat)
 
-translateSentence ::  Env -> Named Sentence -> [Named HsDecl] 
-translateSentence env sen = case sentence sen of
-    DatatypeSen dt -> map (translateDt env) dt
-    ProgEqSen _ _ pe -> [NamedSen (senName sen) 
-                        $ translateProgEq env pe]
-    _ -> []
-
--- For the definition of an undefined function.
--- Takes the name of the function as argument.
-functionUndef :: HsName -> HsDecl
-functionUndef s = 
-    HsPatBind nullLoc
-              (HsPVar s)
-              (HsUnGuardedRhs (HsVar (UnQual "undefined")))
-              []
-
 -- | remove dummy decls given by sentences
 cleanSig :: [HsDecl] -> [Named HsDecl] -> [HsDecl]
 cleanSig ds sens = 
@@ -337,6 +320,27 @@ cleanSig ds sens =
         HsPatBind _ (HsPVar n) _ _ -> UnQual n `notElem` funs
         _ -> True)
        ds 
+
 -}
+
+-- For the definition of an undefined function.
+-- Takes the name of the function as argument.
+functionUndef :: SrcLoc -> SN HsName -> HsDecl
+functionUndef loc s = 
+    hsPatBind loc
+              (rec $ HsPId $ HsVar s)
+              (HsBody $ rec $ HsApp 
+                          (rec $ HsId $ HsVar $ fakeSN $ UnQual "error")
+                       $ rec $ HsLit loc $ HsString $ HatPretty.pp s)
+              []
+
+translateSentence ::  Env -> Named Sentence -> [Named HsDecl] 
+translateSentence env sen = case sentence sen of
+    DatatypeSen dt -> map (translateDt env) dt
+{-    ProgEqSen _ _ pe -> [NamedSen (senName sen) 
+                        $ translateProgEq env pe]
+-}
+    _ -> []
+
 derives :: [SN HsName]
 derives = map (fakeSN . UnQual) ["Show", "Eq", "Ord"] 
