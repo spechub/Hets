@@ -36,7 +36,6 @@ Korrespondenz abstrakt-konkret:
 	       String -- morphism 
 	       Symbol RawSymbol 
 
-
   Weitere Instanzen mit HasCASL, CASL-LTL etc.
     (nur sich selbst als Sublogic)
   Logic-Representations (Sublogic immer = top)
@@ -558,8 +557,11 @@ sl_Form (FalseAtom _) = bottom
 sl_Form (TrueAtom _) = bottom
 sl_Form (AnnFormula f) = sl_Form $ strip_anno f
 
--- sl_morphism :: Morphism -> CASL_Sublogics
--- sl_morphism _ = top
+sl_morphism :: Morphism -> CASL_Sublogics
+sl_morphism (Morphism a b _ f p) = -- sublogics_max
+                                   (sublogics_max (sl_sign a) (sl_sign b))
+                                   -- (sublogics_max (sl_fun_map f)
+                                   --                (sl_pred_map p))
 
 sl_symbol :: Symbol -> CASL_Sublogics
 sl_symbol (Symbol _ t) = sl_symbtype t
@@ -610,8 +612,8 @@ in_symb_map_items_list l x = in_x l x sl_symb_map_items_list
 in_sign :: CASL_Sublogics -> Sign -> Bool
 in_sign l x = in_x l x sl_sign
 
--- in_morphism :: CASL_Sublogics -> morphism -> Bool
--- in_morphism l x = in_x l x sl_morphism
+in_morphism :: CASL_Sublogics -> Morphism -> Bool
+in_morphism l x = in_x l x sl_morphism
 
 in_symbol :: CASL_Sublogics -> Symbol -> Bool
 in_symbol l x = in_x l x sl_symbol

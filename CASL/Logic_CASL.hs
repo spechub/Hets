@@ -183,7 +183,7 @@ instance Logic CASL Sublogics.CASL_Sublogics
          -- is_in_sign :: id -> sublogics -> sign -> Bool
          is_in_sign CASL = Sublogics.in_sign
          -- is_in_morphism :: id -> sublogics -> morphism -> Bool
-         is_in_morphism CASL _ _ = fun_err "is_in_morphism"
+         is_in_morphism CASL = Sublogics.in_morphism
          -- is_in_symbol :: id -> sublogics -> symbol -> Bool
          is_in_symbol CASL = Sublogics.in_symbol
 
@@ -198,7 +198,7 @@ instance Logic CASL Sublogics.CASL_Sublogics
          -- min_sublogic_sign :: id -> sign -> sublogics
          min_sublogic_sign CASL = Sublogics.sl_sign
          -- min_sublogic_morphism :: id -> morphism -> sublogics
-         min_sublogic_morphism CASL _ = fun_err "min_sublogic_morphism"
+         min_sublogic_morphism CASL = Sublogics.sl_morphism
          -- min_sublogic_symbol :: id -> symbol -> sublogics
          min_sublogic_symbol CASL = Sublogics.sl_symbol
 
