@@ -166,7 +166,10 @@ ana_M_FORMULA (Negation phi pos) = do
   return (Negation phi' pos)
 ana_M_FORMULA phi@(True_atom _) = return phi
 ana_M_FORMULA phi@(False_atom _) = return phi
-ana_M_FORMULA (Mixfix_formula _) = undefined
+ana_M_FORMULA (Mixfix_formula (Mixfix_token ident)) = 
+  return (Predication (Qual_pred_name (mkId [ident]) 
+              (Pred_type [] []) []) 
+              [] [])
 ana_M_FORMULA (ExtFORMULA (Box m phi pos)) = do
   phi' <- ana_M_FORMULA phi
   return(ExtFORMULA (Box m phi' pos))
