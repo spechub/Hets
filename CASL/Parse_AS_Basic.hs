@@ -180,3 +180,93 @@ basicSpec = (oBraceT >> cBraceT >> return (Basic_spec []))
 
 aBasicItems :: GenParser Char st (Annoted BASIC_ITEMS)
 aBasicItems = bind (\ x y -> Annoted y [] x []) annos basicItems
+
+-- ------------------------------------------------------------------------
+-- symbol
+-- ------------------------------------------------------------------------
+
+symb = do { i <- parseId
+	  ; do { c <- colonST 
+	       ; t <- opOrPredType
+	       ; return (Qual_id i t [tokPos c])
+	       }
+	    <|> return (Symb_id i)
+	  }
+
+opOrPredType = 
+    do { (b, s, p) <- opSort
+       ; if b then return (O_type (Partial_op_type [] s [p]))
+	 else do { c <- crossT 
+		 ; (ts, ps) <- sortId `separatedBy` crossT
+		 ; fmap O_type (opFunSort (s:ts) (c:ps))
+		   <|> return (P_type (Pred_type (s:ts) (map tokPos (c:ps))))
+		 }
+	     <|> fmap O_type (opFunSort [s] [])
+	     <|> return (O_type (Total_op_type [] s []))
+	             -- could also be a pred type!
+       }
+    <|> fmap P_type predUnitType
+
+-- ------------------------------------------------------------------------
+-- symbol or map, symbKind 
+-- ------------------------------------------------------------------------
+
+symbOrMap = do s <- symb
+	       do   f <- asKey mapsTo
+		    t <- symb
+		    return (Symb_map s t [tokPos f])
+		  <|> return (Symb s)
+
+symbKind = try(
+        do { q <- pluralKeyword opS 
+	   ; return (Ops_kind, q)
+	   }
+        <|>
+        do { q <- pluralKeyword predS 
+	   ; return (Preds_kind, q)
+	   }
+        <|>
+        do { q <- pluralKeyword sortS 
+	   ; return (Sorts_kind, q)
+	   })
+        <?> "kind"
+
+-- ------------------------------------------------------------------------
+-- symb-items
+-- ------------------------------------------------------------------------
+
+symbItems = do s <- symb
+	       return (Symb_items Implicit [s] [])
+	    <|> 
+	    do (k, p) <- symbKind
+               (is, ps) <- symbs
+	       return (Symb_items k is (map tokPos (p:ps)))
+
+symbs = do s <- symb 
+	   do   c <- commaT `followedWith` symb
+	        (is, ps) <- symbs
+		return (s:is, c:ps)
+	     <|> return ([s], [])
+
+-- ------------------------------------------------------------------------
+-- symb-map-items
+-- ------------------------------------------------------------------------
+
+symbOrMapItems = 
+            do s <- symbOrMap
+	       return (Symb_map_items Implicit [s] [])
+	    <|> 
+	    do (k, p) <- symbKind
+               (is, ps) <- symbOrMaps
+	       return (Symb_map_items k is (map tokPos (p:ps)))
+
+symbOrMaps = 
+        do s <- symbOrMap 
+	   do   c <- commaT `followedWith` symb
+	        (is, ps) <- symbOrMaps
+		return (s:is, c:ps)
+	     <|> return ([s], [])
+
+
+
+    

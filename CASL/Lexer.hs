@@ -21,7 +21,7 @@ module Lexer ( bind, (<<), (<:>), (<++>),
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
 	     , reserved, placeS, placeT, pToken, asKey, toKey
 	     , oBraceT, cBraceT, oBracketT, cBracketT, oParenT, cParenT
-	     , commaT, semiT, skip, pluralKeyword
+	     , commaT, semiT, skip, pluralKeyword, followedWith
 	     ) where
 
 import Char (digitToInt)

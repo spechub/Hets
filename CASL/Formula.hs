@@ -36,8 +36,8 @@
 -}
 
 module Formula (term, formula
-	       , equalT, colonT, colonST, quMarkT, dotT
-	       , varDecl, opSort, opType, predType) 
+	       , equalT, colonT, colonST, quMarkT, dotT, crossT,
+	       , varDecl, opSort, opFunSort, opType, predType, predUnitType) 
     where
 
 import Id
@@ -195,10 +195,12 @@ updFormulaPos o c = up_pos_l (\l-> o:l++[c])
 
 predType = do { (ts, ps) <- sortId `separatedBy` crossT
 	      ; return (Pred_type ts (map tokPos ps))
-	      } <|> do { o <- oParenT
-		       ; c <- cParenT
-		       ; return (Pred_type [] [tokPos o, tokPos c])
-		       }
+	      } <|> predUnitType
+
+predUnitType = do { o <- oParenT
+		  ; c <- cParenT
+		  ; return (Pred_type [] [tokPos o, tokPos c])
+		  }
 
 qualPredName o = do { v <- asKey predS
 		    ; i <- parseId
