@@ -620,8 +620,8 @@ showDiags1 opts res = do
   where relevantDiagKind FatalError = True
         relevantDiagKind Error = True
         relevantDiagKind Warning = (verbose opts) >= 2
-        relevantDiagKind Hint = (verbose opts) >= 3
-        relevantDiagKind Debug  = (verbose opts) >= 4
+        relevantDiagKind Hint = (verbose opts) >= 4
+        relevantDiagKind Debug  = (verbose opts) >= 5
         relevantDiagKind MessageW = False
 
 
