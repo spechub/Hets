@@ -174,7 +174,7 @@ getLegalSuperClasses ce ci oldCs ses =
 		 return newCs
 
 showClassList :: [ClassId] -> ShowS
-showClassList is = showParen (length is > 1)
+showClassList is = showParen (not $ isSingle is)
 		   $ showSepList ("," ++) showId is
 
 -- check with merge

@@ -157,10 +157,10 @@ instance PrettyPrint Term where
 					  <+> text dotS    
 					  <+> printText0 ga t
     printText0 ga (LambdaTerm ps q t _) = text lamS
-				      <+> (if length ps == 1 then 
-					     printText0 ga $ head ps
-					     else fcat $ map 
-					   (parens.printText0 ga) ps)
+				      <+> (case ps of
+					   [p] -> printText0 ga p
+					   _ -> fcat $ map 
+					        (parens.printText0 ga) ps)
 				      <+> (case q of 
 					   Partial -> text dotS
 					   Total -> text $ dotS ++ exMark)

@@ -63,10 +63,9 @@ putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 -- | store type id and check the kind
 addTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env ()
 -- type args not yet considered for kind construction 
-addTypeId defn _ kind i@(Id ts _ _)  = 
+addTypeId defn _ kind i = 
     do nk <- toState kind classMap $ expandKind kind
-       let n = length $ filter isPlace ts 
-       if n <= kindArity TopLevel nk then
+       if placeCount i <= kindArity TopLevel nk then
 	  addTypeKind defn i kind
 	  else addDiag $ mkDiag Error "wrong arity of" i
 
@@ -251,10 +250,8 @@ typePatternToTokens (MixfixTypePattern ts) = concatMap typePatternToTokens ts
 typePatternToTokens (BracketTypePattern pk ts ps) =
     let tts = map typePatternToTokens ts 
 	expanded = concat $ expandPos (:[]) (getBrackets pk) tts ps in
-	case pk of 
-		Parens -> if length tts == 1 && 
-			  length (head tts) == 1 then head tts
-			  else expanded
+	case (pk, tts) of 
+		(Parens, [t@[_]]) -> t
 		_ -> expanded
 typePatternToTokens (TypePatternArg (TypeArg v _ _ _) _) =
     [Token "__" (posOfId v)]

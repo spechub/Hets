@@ -133,7 +133,7 @@ listId :: Id -> Id
 listId i = Id [listToken] [i] []
 
 isListId :: Id -> Bool
-isListId (Id ts cs _) = not (null ts) && head ts == listToken && length cs == 1
+isListId (Id ts cs _) = not (null ts) && head ts == listToken && isSingle cs
 
 isUnknownId :: Id -> Bool
 isUnknownId (Id ts _ _) = not (null ts) && head ts == unknownTok

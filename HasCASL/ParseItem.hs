@@ -50,10 +50,11 @@ kindedTypeDecl (l, p) =
     do t <- colT
        s <- kind
        let d = TypeDecl l s (map tokPos (p++[t]))
-       if length l > 1 then return d
-	  else pseudoTypeDef (head l) (Just s) [t]
+       if isSingle l then 
+	  pseudoTypeDef (head l) (Just s) [t]
 		   <|> dataDef (head l) s [t] 
 		   <|> return d
+	  else return d 
 
 isoDecl :: TypePattern -> AParser TypeItem
 isoDecl s = do e <- equalT
@@ -164,7 +165,7 @@ pseudoTypeDef t k l =
 
 component :: AParser [Components]
 component = do (is, cs) <- uninstOpId `separatedBy` anComma
-               if length is == 1 then
+               if isSingle is then
                  compType is cs 
                  <|> return [NoSelector (idToType(head is))]
                  else compType is cs
@@ -172,7 +173,7 @@ component = do (is, cs) <- uninstOpId `separatedBy` anComma
 idToType :: Id -> Type
 idToType (Id is cs ps) = 
     let ts = map TypeToken is
-	t = if length ts == 1 then head ts
+	t = if isSingle ts then head ts
 	    else MixfixType ts
 	in if null cs then t
   	   else let qs = map idToType cs
@@ -279,7 +280,7 @@ isoClassDecl s k ps =
 classDecl :: AParser ClassDecl
 classDecl = do   (is, cs) <- classId `separatedBy` anComma
 		 (ps, k) <- option ([], star) $ bind  (,) (single colT) kind 
-		 if length is == 1 then 
+		 if isSingle is then 
 		    subClassDecl is k (cs++ps)
 		    <|>
                     isoClassDecl (head is) k ps
@@ -381,7 +382,7 @@ opDeclOrDefn o =
 
 opItem :: AParser OpItem
 opItem = do (os, ps) <- opId `separatedBy` anComma
-	    if length os == 1 then
+	    if isSingle os then
 		    opDeclOrDefn (head os)
 		    else opDecl os ps
 
@@ -408,7 +409,7 @@ predDefn o = do ps <- many (bracketParser patterns oParenT cParenT anSemi
 
 predItem :: AParser OpItem
 predItem = do (os, ps) <- opId `separatedBy` anComma
-	      if length os == 1 then 
+	      if isSingle os then 
 		 predDecl os ps
 		 <|> 
 		 predDefn (head os)

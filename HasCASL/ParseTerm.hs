@@ -137,7 +137,7 @@ primTypeOrId = fmap TypeToken idToken
 		       (BracketType Parens)
 	       
 typeOrId = do ts <- many1 primTypeOrId
-	      let t = if length ts == 1 then head ts
+	      let t = if isSingle ts then head ts
  		      else MixfixType ts
 		 in 
 		 kindAnno t
@@ -162,12 +162,12 @@ lazyType = do q <- quMarkT
 	   <|> primType
 
 mixType = do ts <- many1 lazyType
-             let t = if length ts == 1 then head ts else MixfixType ts
+             let t = if isSingle ts then head ts else MixfixType ts
 	       in kindAnno t
 		  <|> return t 
 
 prodType = do (ts, ps) <- mixType `separatedBy` crossT
-	      return (if length ts == 1 then head ts 
+	      return (if isSingle ts then head ts 
 		      else ProductType ts (map tokPos ps)) 
 
 funType = do t1 <- prodType 
@@ -285,9 +285,9 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` anComma
 
 singleTypeArg :: AParser TypeArg
 singleTypeArg = do  as <- typeArgs 
-		    if length as == 1 
-		       then return $ head as 
-		       else unexpected "list of type arguments"
+		    case as of 
+			    [a] -> return a 
+			    _ -> unexpected "list of type arguments"
 
 typePatternToken, primTypePatternOrId, typePatternOrId, typePatternArg
     :: AParser TypePattern
@@ -307,7 +307,7 @@ primTypePatternOrId = fmap TypePatternToken idToken
 	       <|> typePatternArg
 
 typePatternOrId = do ts <- many1 primTypePatternOrId
-		     return( if length ts == 1 then head ts
+		     return( if isSingle ts then head ts
  			     else MixfixTypePattern ts)
 
 primTypePattern, typePattern :: AParser TypePattern
@@ -318,7 +318,7 @@ primTypePattern = typePatternToken
            <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
 
 typePattern = do ts <- many1 primTypePattern
-                 let t = if length ts == 1 then head ts 
+                 let t = if isSingle ts then head ts 
 			 else MixfixTypePattern ts
 	           in return t
 
@@ -346,14 +346,14 @@ primPattern b = tokenPattern b
 
 patterns :: AParser Pattern
 patterns = do (ts, ps) <- pattern `separatedBy` anComma
-	      let tp = if length ts == 1 then head ts 
+	      let tp = if isSingle ts then head ts 
 		       else TuplePattern ts (map tokPos ps)
 		  in return tp
 
 mixPattern :: TokenMode -> AParser Pattern
 mixPattern b = 
     do l <- many1 $ primPattern b
-       let p = if length l == 1 then head l else MixfixPattern l
+       let p = if isSingle l then head l else MixfixPattern l
 	   in typedPattern p <|> return p
 
 typedPattern :: Pattern -> AParser Pattern
@@ -512,7 +512,7 @@ typedTerm b =
 mixTerm :: TypeMode -> AParser Term
 mixTerm b = 
     do ts <- many1 $ typedTerm b
-       return $ if length ts == 1 then head ts else MixfixTerm ts
+       return $ if isSingle ts then head ts else MixfixTerm ts
 
 term :: AParser Term
 term = mixTerm WithIn
