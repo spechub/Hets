@@ -19,7 +19,20 @@ HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
              -package uni-server -DUNI_PACKAGE
 
-HC_OPTS    = $(HC_PACKAGE) $(HC_INCLUDE)
+PFE_TOOLDIR := $(wildcard ../programatica/tools)
+ifneq ($(strip $(PFE_TOOLDIR)),)
+PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
+      base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
+      base/transforms base/transforms/Deriving hs2html pfe property base \
+      property/pfe property/syntax property/AST property/transforms \
+      property/TI property/defs property/parse2 property/parse2/Parser \
+      hs2stratego hs2stratego/AST
+PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
+PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA \
+            -fno-monomorphism-restriction
+endif
+
+HC_OPTS    = $(HC_PACKAGE) $(HC_INCLUDE) $(PFE_FLAGS)
 
 ####################################################################
 ### targets
