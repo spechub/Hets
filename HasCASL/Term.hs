@@ -13,7 +13,9 @@ data Symb = Symb { symbId :: Id
 showSymb :: Symb -> ShowS
 showSymb (Symb i Unknown) = shows i
 -- showSymb (Symb i Sort) = shows i
-showSymb (Symb i t) = shows i . showChar ':' . shows t
+showSymb (Symb i (PartialType v)) = 
+    showSign i . showSignStr (colonChar:partialSuffix) . shows v
+showSymb (Symb i t) = showSign i . showSignStr [colonChar] . shows t
 
 instance Show Symb where
     showsPrec _ = showSymb
@@ -63,10 +65,10 @@ predStr = "pred"
 data QualId = QualId Symb DeclLevel QualKind deriving (Eq)
 
 showShortQualId(QualId s n UserGiven) =
-    showParen True ((if n == 1 then showString varStr
-		      else if isPredicate (symbType s) then showString predStr
-		      else showString opStr)
-		    . showChar ' ' . showSymb s) 
+    showParen True ((if n == 1 then showSignStr varStr
+		      else if isPredicate (symbType s) then showSignStr predStr
+		      else showSignStr opStr)
+		    . showSymb s) 
 
 showShortQualId(QualId s _ _) = showSymb s
 
@@ -88,13 +90,13 @@ data Binder = Lambda Totality | ArgDecl | SupersortVar
             | Exists | ExistsUnique
 	    deriving (Eq)
 
-showBinder (Lambda Partial) = showString lamStr     
-showBinder (Lambda Total) = showString (lamStr ++ totalSuffix)
-showBinder ArgDecl = showString "(...):" 
-showBinder SupersortVar = showString "{.|..}"
-showBinder Forall = showString allStr
-showBinder Exists = showString exStr
-showBinder ExistsUnique = showString (exStr ++ totalSuffix)
+showBinder (Lambda Partial) = showSignStr lamStr     
+showBinder (Lambda Total) = showSignStr (lamStr ++ totalSuffix)
+showBinder ArgDecl = showSignStr "(...):" 
+showBinder SupersortVar = showSignStr "{.|..}"
+showBinder Forall = showSignStr allStr
+showBinder Exists = showSignStr exStr
+showBinder ExistsUnique = showSignStr (exStr ++ totalSuffix)
  
 instance Show Binder where
     showsPrec _ = showBinder
@@ -104,9 +106,9 @@ inStr = "in"
 
 data TypeOp = OfType | AsType | InType deriving (Eq)     
 
-showTypeOp OfType = showChar colonChar
-showTypeOp AsType = showString asStr 
-showTypeOp InType = showString inStr 
+showTypeOp OfType = showSignStr [colonChar]
+showTypeOp AsType = showSignStr asStr 
+showTypeOp InType = showSignStr inStr 
 
 instance Show TypeOp where
     showsPrec _ = showTypeOp
@@ -129,30 +131,30 @@ showTerm (BaseName q) = showShortQualId q
 showTerm (Application MixTerm ts [op, cl]) = 
     shows op . showSepList (showChar ',') showTerm ts . shows cl
 showTerm (Application MixTerm ts []) = 
-    showSepList (showChar ' ') showTerm ts
-showTerm (Application t ts _) = showTerm t . showParen True (showList ts)
+    showSepList (showString "") showSign ts
+showTerm (Application t ts _) = showTerm t . showParen True (shows ts)
 
 showTerm (Binding ArgDecl decls (Typed term co t)) = 
-    showParen (not (null decls)) (showList decls)
-		  . showTypeOp co . showString 
-			(if isPartialType t then partialSuffix else "")
-		  . shows t . showString " = " . showTerm term  
+    showParen (not (null decls)) (shows decls)
+		  . showSignStr 
+			(if isPartialFunType t then colonChar:partialSuffix 
+			 else [colonChar])
+		  . showSign t . showSignStr "=" . showSign term  
 
 showTerm (Binding SupersortVar decls term) = 
-    showString "{ " . showList decls . showString " | "
-		   . showTerm term . showString " }"
+    showSignStr "{" . showSign decls . showSignStr "|"
+		   . showSign term . showString "}"
     
 showTerm (Binding (Lambda Total) decls term) = 
-    showString lamStr . showChar ' ' . showList decls 
-		   . showString (" \183 ! ") . showTerm term
+    showSignStr lamStr . showSign decls 
+		   . showSignStr ("\183!") . showTerm term
 
 showTerm (Binding b decls term) = 
-    showBinder b . showChar ' ' . showList decls 
-		   . showString " \183 " . showTerm term
+    showBinder b . showSign decls 
+		   . showSignStr "\183" . showTerm term
 
-showTerm (Typed MixTerm op t) = showTypeOp op . showChar ' ' . shows t 
-showTerm (Typed term op t) = showTerm term . showChar ' ' 
-	  . showTypeOp op . showChar ' ' . shows t 
+showTerm (Typed MixTerm op t) = showTypeOp op . shows t 
+showTerm (Typed term op t) = showSign term . showTypeOp op . shows t 
 
 showTerm (Annotated t an) = showTerm t . showAnnotation an
 showTerm MixTerm = showString "!MIX!"

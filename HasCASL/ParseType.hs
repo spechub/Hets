@@ -1,6 +1,6 @@
 module ParseType where
 
-import Id (Token(Token), Id(Id), isPlace) 
+import Id (Token(Token), Id(Id), showTok) 
 import Lexer ((<++>), (<<), keySign, toKey, checkWith)
 import Parsec
 import Token (skipChar, makeToken, parseId)
@@ -19,15 +19,20 @@ separatedBy p s t = do { r <- p t
 isMixIdOrCross (Id ts cs) = not (null (tail ts))
 			    || show ts `elem` [productSign, altProductSign]
 
+isPartialColon t = showTok t == colonChar : partialSuffix 
+
 typeId c = do { i <- parseId  `checkWith` (not . isMixIdOrCross)
-	      ; if show c == colonChar : partialSuffix then 
+	      ; if isPartialColon c then 
 		return (PartialType i) 
 		else return (Type i [])
 	      }
 
 primType :: Token -> Parser Type
 primType c = typeId c 
-	   <|> (oParen >>= funType) << cParen
+	   <|> (do { o <- oParen
+		   ; (cParen >> return (crossProduct []))
+		     <|> (funType o << cParen)
+		   })
 
 cross = makeToken(toKey productSign <|> toKey altProductSign <?> "cross")
 

@@ -62,9 +62,8 @@ parse error at (line 19, column 5):
 unexpected "->"
 expecting id or "("
 
-parse error at (line 20, column 2):
-unexpected ")"
-expecting id or "("
+parse error at (line 20, column 3):
+unexpected []
 
 parse error at (line 21, column 3):
 unexpected *

@@ -2,14 +2,8 @@ parse error at (line 1, column 2):
 unexpected end of input
 expecting "\\" or "\""
 
-parse error at (line 2, column 2):
-unexpected "1"
-expecting place, [<id>,...,<id>] or end of input
-
-parse error at (line 3, column 2):
-unexpected "."
-expecting place, [<id>,...,<id>] or end of input
-
+11
+1.0
 parse error at (line 4, column 2):
 unexpected "'"
 expecting "\\" or "\""
@@ -46,15 +40,12 @@ expecting "'"
 
 parse error at (line 13, column 1):
 unexpected end of input
-expecting id
+expecting "(", id/literal or quantifier
 
-parse error at (line 14, column 2):
-unexpected "b"
-expecting place, [<id>,...,<id>] or end of input
-
+1 b1
 parse error at (line 15, column 1):
 unexpected "as"
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 16, column 3):
 unexpected "c"
@@ -62,105 +53,78 @@ expecting "'"
 
 parse error at (line 17, column 1):
 unexpected "_"
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 18, column 4):
 unexpected "_"
-expecting underline word, place, [<id>,...,<id>] or end of input
+expecting underline word, "(", id/literal, type, quantifier or end of input
 
-parse error at (line 19, column 3):
-unexpected end of input
-expecting simple-id or place
-
+__
 parse error at (line 20, column 1):
 unexpected "."
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 21, column 1):
 unexpected "|"
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 22, column 1):
 unexpected "::="
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 23, column 1):
 unexpected "|->"
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 24, column 1):
 unexpected "->"
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 25, column 2):
 unexpected end of input
-expecting token or "]"
+expecting "(", id/literal, quantifier or "]"
 
 parse error at (line 26, column 1):
 unexpected "]"
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 27, column 2):
 unexpected end of input
-expecting token or "}"
+expecting "(", id/literal, quantifier or "}"
 
 parse error at (line 28, column 1):
 unexpected "}"
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 29, column 1):
 unexpected "`"
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 30, column 1):
 unexpected "%"
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 31, column 1):
 unexpected "."
-expecting id
+expecting "(", id/literal or quantifier
 
 parse error at (line 32, column 1):
 unexpected "."
-expecting id
+expecting "(", id/literal or quantifier
 
-parse error at (line 33, column 3):
-unexpected "="
-expecting id
-
-parse error at (line 34, column 5):
-unexpected "]"
-expecting simple-id or place
-
-parse error at (line 35, column 6):
-unexpected "]"
-expecting simple-id or place
-
+a[=]
+a[__]
+a[__]
 parse error at (line 36, column 10):
 unexpected "]"
-expecting token or "}"
+expecting "(", id/literal, quantifier or "}"
 
 parse error at (line 37, column 3):
 unexpected ","
-expecting id
+expecting "(", id/literal, quantifier or "]"
 
-parse error at (line 38, column 4):
-unexpected "="
-expecting id
-
-parse error at (line 39, column 15):
-unexpected "<"
-expecting place or end of input
-
-parse error at (line 40, column 4):
-unexpected "="
-expecting place, [<id>,...,<id>] or end of input
-
-parse error at (line 41, column 3):
-unexpected "]"
-expecting id
-
-parse error at (line 42, column 1):
-unexpected "\""
-expecting id
-
+.a[=,=]
+__<[bla]__<__
+aa==
+a[]
+""

@@ -1,0 +1,37 @@
+"
+'
+{
+[
+(
+}
+]
+)
+.
+_
+:
+:?
+,
+;
+(,a)
+(a,)
+()
+as a
+: a
+in a
+(op __<__ :?##) 
+(op __<__ : ? ##) 
+(op __<__ :? ## -> bb) 
+(op __<__ :? aa*bb) 
+(var __<__ :? bb) 	
+(pred __<__ :? bb) 
+(pred __<__ :? ##) 
+(pred __<__ :? bb*BB) 
+(pred __<__ :? ## * --) 
+forall! a: v . x
+forall a: v .! x
+exists a: v .! x
+exists ! a: v . x
+exists! a: v .! x
+pred
+var
+op

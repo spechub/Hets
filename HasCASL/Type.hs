@@ -1,7 +1,7 @@
 module Type where
 
 import Id
-import Lexer (signChars)
+import Lexer (signChars, caslLetters)
 
 -- simple Id
 nullPos :: Pos
@@ -24,13 +24,17 @@ altProductSign = "\215"
 
 internalBoolRep = simpleId("!BOOL!") -- invisible
 
-isSign c = c `elem` "{}[]" ++ signChars
+isSign c = c `elem` signChars
+isAlpha c = c `elem` ['0'..'9'] ++ "'" ++ caslLetters
 
 showSign i "" = show i
 showSign i s = let r = show i in 
-		     if not (null r) && isSign (last r) && isSign (head s) 
+		     if not (null r) && (isSign (last r) && isSign (head s) 
+					 || isAlpha (last r) && isAlpha (head s)
+					 || r == "=" && head s == 'e')
 			then r ++ " " ++ s else r ++ s
 
+showSignStr s = showSign (simpleId s) 
 -- ----------------------------------------------
 -- we want to have (at least some builtin) type constructors 
 -- for uniformity/generalization sorts get type "Sort"
@@ -44,7 +48,7 @@ data Type = Type Id [Type]
 	    deriving (Eq, Ord)
 
 showType :: Bool -> Type -> ShowS
-showType _ (PartialType i) = showString partialSuffix . shows i
+showType _ (PartialType i) = showSignStr partialSuffix . showSign i
 showType _ Unknown = showString "!UNKNOWN!"
 showType _ Sort = showString "!SORT!"
 showType _ t@(Type i []) = if isProduct t then showString "()" else showSign i
@@ -55,8 +59,7 @@ showType b t@(Type i (x:r)) = showParen b
   else if isProduct t 
        then let f x = showType (isFunType x || isProduct x) x 
             in showSepList (showSign i) f (x:r)
-       else shows i . shows (x:r)
---  showParen True (showSepList (showChar ',') shows (x:r))
+       else shows i . showSepList (showChar '_') shows (x:r)
  )
 
 instance Show Type where
@@ -77,15 +80,15 @@ predicate t = totalFun(t, internalBool)
 isFunType(Type s  [_, _]) = show s == totalFunArrow || show s == partialFunArrow
 isFunType _  = False
 
-isPartialType(Type s  [_, _]) = show s == partialFunArrow
-isPartialType _  = False
+isPartialFunType(Type s  [_, _]) = show s == partialFunArrow
+isPartialFunType _  = False
 
 argType(Type _ [t, _]) = t
 resType(Type _ [_, t]) = t
 
 isPredicate t = isFunType t && (resType(t) == internalBool)
 
-product = Type (simpleId productSign)
+crossProduct = Type (simpleId productSign)
 isProduct(Type s  _) = show s == productSign || show s == altProductSign
 isPoduct _ = False
 

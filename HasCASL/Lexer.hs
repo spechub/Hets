@@ -1,7 +1,7 @@
 module Lexer ( bind, (<<), (<:>), (<++>), begDoEnd, flat, single
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
-	     , skip, ann, keyWord, keySign, toKey, signChars
+	     , skip, ann, keyWord, keySign, toKey, signChars, caslLetters
 	     ) where
 
 import Char (digitToInt)

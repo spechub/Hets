@@ -1,8 +1,7 @@
 module ParseTerm where
 
-import Id (Token(Token), Id(Id))
-import Lexer ((<:>), (<++>), flat, scanFloat, scanString
-	     , single, toKey)
+import Id (Token(Token), Id(Id), showTok)
+import Lexer -- ((<:>), (<++>), flat, scanFloat, scanString, single, toKey)
 import Parsec
 import ParseType
 import Token
@@ -44,7 +43,7 @@ simpleTerm :: Parser Term
 simpleTerm = fmap toQualId (makeToken(scanFloat <|> scanString <|>
 				 otherToken <|> scanTermWords <|>
 				 try exEqual <|> scanTermSigns) 
-		       <|> uu)
+		       <|> uu <?> "id/literal")
 
 startTerm :: Parser Term
 startTerm = parenTerm <|> braceTerm <|> brktTerm <|> simpleTerm
@@ -52,7 +51,7 @@ startTerm = parenTerm <|> braceTerm <|> brktTerm <|> simpleTerm
 restTerm :: Parser Term
 restTerm = startTerm <|> typedTerm
 
-mixTerm = do { l <- startTerm <:> many restTerm 
+mixTerm = do { l <- startTerm <:> many restTerm <++> option [] (single quantTerm)
 	     ; if length l == 1 then return (head l) 
 	       else return (Application MixTerm l [])
 	     } <|> quantTerm  
@@ -63,7 +62,7 @@ typeOfPrefix t = if [colonChar] == show t then OfType
 			   else error ("typeOfPrefix: " ++ show t)
 
 typedTerm :: Parser Term
-typedTerm = do { c <- colon <|> asTok <|> inTok
+typedTerm = do { c <- try (colon <|> asTok <|> inTok) <?> "type"
 	       ; t <- funType c
 	       ; return (Typed MixTerm (typeOfPrefix c) t) 
 	       }
@@ -76,12 +75,19 @@ terms t = do { l <- separatedBy (const mixTerm) comma t
 	     ; return (map snd l)
 	     }
 
+isPartialId (PartialType _) = True
+isPartialId _ = False
+
 qualName = do { w <- makeToken 
 		     (toKey varStr <|> toKey opStr <|> toKey predStr)
 	      ; i <- parseId
-	      ; t <- colon >>= funType
-	      ; let ty = if show w == predStr then predicate t else t 
-		    l = if show w == varStr then 1 else 0 
+	      ; c <- partialColon `checkWith` \c -> showTok w == opStr
+		|| not (isPartialColon c)
+	      ; t <- funType c `checkWith` \t -> not (isPartialColon c) 
+		||  isPartialId t
+	      ; let s = showTok w 
+		    ty = if s == predStr then predicate t else t 
+		    l = if s == varStr then 1 else 0 
 		in return (BaseName (QualId (Symb i ty) l UserGiven))
 	      }
 
@@ -104,27 +110,29 @@ brktTerm = braTerm opBrkt clBrkt
 
 quant = toKey allStr
 	<|> (toKey exStr <|> toKey lamStr) 
-		<++> option "" (string totalSuffix)
+		<++> option "" (string totalSuffix) <?> "quantifier"
 
 getDot = oneOf ".\183" <:> option "" (string totalSuffix)
 
-binder t = if show t == allStr then Forall
-	     else if show t == exStr then Exists
-	          else if show t == exStr ++ totalSuffix then ExistsUnique
-		       else if show t == lamStr then Lambda Partial
-			    else if show t == lamStr ++ totalSuffix 
+binder t = let s = showTok t in
+	   if s == allStr then Forall
+	     else if s == exStr then Exists
+	          else if s == exStr ++ totalSuffix then ExistsUnique
+		       else if s == lamStr then Lambda Partial
+			    else if s == lamStr ++ totalSuffix 
 				 then Lambda Total
-				 else error ("binder: " ++ show t)
+				 else error ("binder: " ++ s)
 
 isLambda (Lambda _) = True
 isLambda _ = False
 
 quantTerm = do { q <- try (makeToken quant)
 	       ; v <- varDecls q
-	       ; d <- makeToken getDot
+	       ; d <- makeToken getDot `checkWith` \d -> length (showTok d) == 1
+		 || isLambda (binder q) 
                ; t <- mixTerm
 	       ; let b = binder q
-		     c = if isLambda b && [last (show d)] == totalSuffix
+		     c = if isLambda b && length (showTok d) > 1
 		         then Lambda Total else b
 		 in return (Binding c v t)
 	       }
