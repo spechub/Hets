@@ -104,6 +104,7 @@ docs/index.html: $(doc_sources)
 apache_doc:
 	cvs up -d
 	$(MAKE) distclean
+	$(MAKE) hetcats-make
 	$(RM) docs/*.html 
 	$(MAKE) doc
 	$(PERL) utils/post_process_docs.pl docs \
@@ -140,8 +141,8 @@ d_clean: clean
 	(cd $$p ; $(RM) *.d *.d.bak) ; done
 
 ### remove files also in own libraries
-lib_clean: 
-	for p in $(subst :, ,$(COMMONLIB_PATH):$(CLEANPATH)) . ; do \
+lib_clean: clean
+	for p in $(subst :, ,$(COMMONLIB_PATH)) . ; do \
 	(cd $$p ; $(RM) *.hi *.d *.o) ; done
 
 ### additionally removes the files that define the sources-variable
