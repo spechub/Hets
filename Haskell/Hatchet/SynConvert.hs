@@ -14,7 +14,7 @@
 
 -------------------------------------------------------------------------------}
 
-module Haskell.Hatchet.SynConvert (toAHsModule, 
+module Haskell.Hatchet.SynConvert (toAHsModule, toAHsDecl,
                    fromAHsModule, 
                    fromAHsDecl) where
 
