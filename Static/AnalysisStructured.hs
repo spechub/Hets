@@ -322,23 +322,49 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
    namedSps = zip3 (map (\_ -> Nothing) (tail asps) ++ [name]) 
                    asps 
                    (nullPos:pos)
-   ana res (name',asp',_pos') = do
+   ana res (name',asp',pos') = do
      (sps',nsig',dg') <- res
      (sp1',nsig1,dg1) <- 
          ana_SPEC lg (gannos,genv,dg') nsig' name' opts (item asp')
-     -- insert local theorem link for %implies
-     dg2 <- case (any isImplies $ l_annos asp',getNode nsig',getNode nsig1) of
-       (True,Just n',Just n1) -> do
-           let sig1 = getSig nsig1
-               _sig' = getSig nsig'
--- temporarily removed, for %cons test using %implies...
---           when (not (is_subgsign sig1 sig')) (pplain_error () 
---             (ptext "Signature must not be extended in presence of %implies") 
---             pos')
+     -- insert theorem link for semantic annotations
+     -- take the first semantic annotation
+     let anno = find isSemanticAnno $ l_annos asp'
+     -- is the extension going between real nodes?
+     dg2 <- case (anno,getNode nsig',getNode nsig1) of
+       (Just anno0@(Semantic_anno anno1 _),Just n',Just n1) -> do
+         -- any other semantic annotation? that's an error
+         when (any (\an -> isSemanticAnno an && an/=anno0) $ l_annos asp')
+              (pplain_error () (ptext "Conflicting semantic annotations") 
+                pos')
+         -- %implied should not occur here
+         when (anno1==SA_implied) 
+              (pplain_error () (ptext "Annotation %implied should come after a BASIC-ITEM") 
+                pos')
+         let sig1 = getSig nsig1
+             sig' = getSig nsig'
+         if anno1==SA_implies then do
+           when (not (is_subgsign sig1 sig')) (pplain_error () 
+             (ptext "Signature must not be extended in presence of %implies") 
+             pos')
+           -- insert a theorem link according to p. 319 of the CASL Reference Manual
            return $ insEdgeNub (n1,n',DGLink {
              dgl_morphism = ide Grothendieck sig1,
-             dgl_type = LocalThm Open Cons Open,
+             dgl_type = GlobalThm Open Cons Open,
              dgl_origin = DGExtension }) dg1
+          else do
+           let anno2 = case anno1 of
+                SA_cons -> Cons
+                SA_def -> Def
+                SA_mono -> Mono
+           -- insert a theorem link according to p. 319 of the CASL Reference Manual
+           -- the theorem link is trivally proved by the parallel definition link,
+           -- but for clarity, we leave it open here
+           -- the interesting open proof obligation is anno2, of course
+           incl <- ginclusion lg sig' sig1
+           return $ insEdgeNub (n',n1,DGLink {
+             dgl_morphism = incl,
+             dgl_type = GlobalThm Open anno2 Open,
+             dgl_origin = DGExtension }) dg1            
        _ -> return dg1
      return (sp1':sps',nsig1,dg2)
 
