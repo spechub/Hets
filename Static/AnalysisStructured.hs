@@ -83,26 +83,28 @@ spec GenCardinality [sort Subject,Object;
 %%Nat then
 local {
             Set [sort Object fit sort Elem |-> Object]
-	    reveal Set[Object], #__, __eps__,
-		   Nat,0,1,2,3,4,5,6,7,8,9,__@@__,__>=__,__<=__
+            reveal Set[Object], #__, __eps__,
+                   Nat,0,1,2,3,4,5,6,7,8,9,__@@__,__>=__,__<=__
        then
             op toSet : Subject -> Set [Object]
-	    forall x : Subject; y : Object 
-	    . predicate (x,y) <=> y eps toSet(x)
+            forall x : Subject; y : Object 
+            . predicate (x,y) <=> y eps toSet(x)
     }  within 
            pred minCardinality(s: Subject;n: Nat) <=>
-	            # toSet(s) >= n;
-		maxCardinality(s: Subject;n: Nat) <=>
-	            # toSet(s) <= n;
-		cardinality(s: Subject;n: Nat) <=>
-		    # toSet(s) = n
+                    # toSet(s) >= n;
+                maxCardinality(s: Subject;n: Nat) <=>
+                    # toSet(s) <= n;
+                cardinality(s: Subject;n: Nat) <=>
+                    # toSet(s) = n
 %%} hide Pos,toSet,Set[Object],#__,__eps__,__<=__,__>=__
 end
 -}
 
 
-module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY, ana_VIEW_TYPE, ana_err, 
-				  ana_RENAMING, ana_RESTRICTION, extendMorphism)
+module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY, 
+                                  ana_VIEW_TYPE, ana_err, isStructured,
+                                  ana_RENAMING, ana_RESTRICTION, 
+                                  extendMorphism)
 where
 
 import Options
@@ -140,7 +142,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
     do G_sign lid' sigma' <- return (getSig nsig)
        sigma <- rcoerce lid' lid (newPos "ab" 0 0) sigma'
        (bspec', _sigma_local, sigma_complete, ax) <- 
-          if analysis opts == Structured 
+          if isStructured opts
            then return (bspec,empty_signature lid, empty_signature lid,[])
            else do b <- maybeToResult nullPos
                           ("no basic analysis for logic "
@@ -408,18 +410,19 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
           sys1 = sym_of lid sigma1
           sys2 = sym_of lid sigma2
           pos = headPos poss
-      mor3 <- if analysis opts == Structured then return (ide lid sigma2)
+      mor3 <- if isStructured opts then return (ide lid sigma2)
                else adjustPos pos $ cogenerated_sign lid 
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom lid mor3
           -- gsigma2 = G_sign lid sigma2
           gsigma3 = G_sign lid sigma3
           sys3 = sym_of lid sigma3
-      when (not( analysis opts == Structured || sys2 `Set.difference` sys1 `Set.subset` sys3))
-       (pplain_error () 
-         (ptext "attempt to hide the following symbols from the local environment"
+      when (not( isStructured opts || 
+                 sys2 `Set.difference` sys1 `Set.subset` sys3))
+        $ pplain_error () (text 
+          "attempt to hide the following symbols from the local environment"
           $$ printText ((sys2 `Set.difference` sys1) `Set.difference` sys3))
-         pos)
+         pos
       let node_contents = DGNode {
             dgn_name = name,
             dgn_sign = gsigma3, -- G_sign lid (empty_signature lid), -- delta is empty
@@ -688,7 +691,7 @@ ana_ren dg mor_res ren =
 
 ana_RENAMING :: DGraph -> G_sign -> HetcatsOpts -> RENAMING -> Result GMorphism
 ana_RENAMING dg gSigma opts (Renaming ren pos) = 
-  if analysis opts == Structured 
+  if isStructured opts
      then return (ide Grothendieck gSigma)
      else foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
   where
@@ -732,7 +735,7 @@ ana_restr dg gSigma mor_res restr =
 ana_RESTRICTION :: DGraph -> G_sign -> G_sign -> HetcatsOpts -> RESTRICTION 
        -> Result (GMorphism, Maybe GMorphism)
 ana_RESTRICTION dg gSigma gSigma' opts restr =
-    ana_RESTRICTION' dg gSigma gSigma' (analysis opts == Structured) restr
+    ana_RESTRICTION' dg gSigma gSigma' (isStructured opts) restr
 
 ana_RESTRICTION' :: DGraph -> G_sign -> G_sign -> Bool -> RESTRICTION 
        -> Result (GMorphism, Maybe GMorphism)
@@ -789,7 +792,7 @@ ana_FIT_ARG lg gctx spname nsigI nsigP opts
    G_symb_map_items_list lid sis <- return gsis
    sigmaA' <- adj $ coerce lidA lidP sigmaA
    sigmaI' <- adj $ coerce lidI lidP sigmaI
-   mor <- adj $ if analysis opts == Structured then return (ide lidP sigmaP)
+   mor <- adj $ if isStructured opts then return (ide lidP sigmaP)
            else do
              rmap <- stat_symb_map_items lid sis
              rmap' <- coerce lid lidP rmap
@@ -1068,9 +1071,9 @@ extID ids idmap = Set.fold (extID1 idmap) (return Map.empty) ids
 
 
 extendMorphism :: G_sign      -- ^ formal parameter
-	       -> G_sign      -- ^ body
-	       -> G_sign      -- ^ actual parameter
-	       -> G_morphism  -- ^ fitting morphism
+               -> G_sign      -- ^ body
+               -> G_sign      -- ^ actual parameter
+               -> G_morphism  -- ^ fitting morphism
                -> Result(G_sign,G_morphism)
 extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
                    (G_sign lidA sigmaA1) (G_morphism lidM fittingMor1) = do
@@ -1231,6 +1234,10 @@ ana_VIEW_TYPE lg gctx@(gannos,genv,_) l parSig opts
           (srcNsig,tarNsig),
           dg'')
 
+-- | check if structured analysis should be performed 
+isStructured :: HetcatsOpts -> Bool
+isStructured a = case analysis a of Structured -> True
+                                    _ -> False
 
 -- | Auxiliary function for not yet implemented features
 ana_err :: String -> a
