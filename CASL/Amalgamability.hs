@@ -15,8 +15,9 @@ Portability :  portable
 
 TODO:
 
-* the rest of the algorithm
-* optimisations in congruentClosure
+* include functions and predicates in the analysis
+* optimisations in congruenceClosure (Nelson-Oppen algorithm?)
+* optimisation in colimitIsThin (fixUpdRule)
 * optimisations in the whole algorithm
 
 -}
@@ -82,6 +83,7 @@ sorts diag =
 taggedValsToEquivClasses :: Ord a
 			 => EquivRelTagged a -- ^ a list of (value, tag) pairs
 			 -> EquivRel a
+taggedValsToEquivClasses [] = []
 taggedValsToEquivClasses rel =
     let -- prepMap: create a map with all the equivalence class tags mapped to
 	-- empty lists
@@ -93,6 +95,17 @@ taggedValsToEquivClasses rel =
 	    let m' = Map.update (\ec -> Just (ds : ec)) ect m
 	    in convert dsps m'
     in convert rel (prepMap rel)
+
+
+-- | Convert the relation representation from list of 
+-- equivalence classes to list of (value, tag) pairs.
+equivClassesToTaggedVals :: Ord a
+			 => EquivRel a
+			 -> EquivRelTagged a
+equivClassesToTaggedVals rel =
+    let eqClToList [] = []
+	eqClToList eqcl@(fst : _) = map (\x -> (x, fst)) eqcl
+    in foldl (\vtl -> \eqcl -> vtl ++ (eqClToList eqcl)) [] rel
 
 
 -- | Merge the equivalence classes for elements fulfilling given condition.
@@ -200,8 +213,8 @@ subRelation :: Eq a
 -- relation or Nothing the first relation is a subset of the second one.
 subRelation [] _ = Nothing
 subRelation ([] : eqcls) sup = subRelation eqcls sup -- this should never be the case
-subRelation ((elt : elts) : eqcls) sup =
-    let findEqCl _ [] = [] -- this should never be the case
+subRelation (elts@(elt : _) : eqcls) sup =
+    let findEqCl _ [] = [] 
 	findEqCl elt (eqcl : eqcls) =
 	    if elem elt eqcl then eqcl else findEqCl elt eqcls
         checkEqCl [] _ = Nothing
@@ -302,10 +315,10 @@ wordDom w = let (n, s1, _) = last w in (n, s1)
 findTag :: Eq a
 	=> EquivRelTagged a
 	-> a
-	-> a
-findTag [] w = w -- this should never be the case
+	-> Maybe a
+findTag [] _ = Nothing 
 findTag ((w', t) : wtps) w = 
-    if w == w' then t else findTag wtps w
+    if w == w' then Just t else findTag wtps w
 
 
 -- | Compute the left-cancellable closure of a relation on words.
@@ -319,8 +332,8 @@ leftCancellableClosure rel =
 	checkPrefixes w1@(l1 : suf1) w2@(l2 : suf2) rel | w1 == w2 = rel
 							| l1 /= l2 = rel
 							| otherwise =
-	    let tag1 = findTag rel suf1
-		tag2 = findTag rel suf2
+	    let Just tag1 = findTag rel suf1
+		Just tag2 = findTag rel suf2
 		rel' = if tag1 == tag2 then rel
 		          else let upd (w, t) | t == tag2 = (w, tag1)
 					      | otherwise = (w, t)
@@ -341,13 +354,13 @@ leftCancellableClosure rel =
     in iterateWord1 rel 0
 
 
--- | Compute the congruent closure of a relation on words with
+-- | Compute the congruence closure of a relation on words with
 -- given \simeq relation on letters.
 -- This function should be applied to the relation until a fixpoint is reached.
-congruentClosure :: EquivRel DiagSort          -- ^ the simeq relation
-		 -> EquivRelTagged DiagEmbWord 
-		 -> EquivRelTagged DiagEmbWord
-congruentClosure simeq rel =
+congruenceClosure :: EquivRel DiagSort          -- ^ the simeq relation
+		  -> EquivRelTagged DiagEmbWord 
+		  -> EquivRelTagged DiagEmbWord
+congruenceClosure simeq rel =
     let -- iterateWord1 
         iterateWord1 rel pos | pos >= length rel = rel
 			     | otherwise =
@@ -362,13 +375,18 @@ congruentClosure simeq rel =
 											     | otherwise =
 				    let (w4, t4) = rel !! pos
 					rel' = if t3 /= t4 then rel
-					          else let ct1 = findTag rel (w3 ++ w1)
-							   ct2 = findTag rel (w4 ++ w2)
-						       in mergeEquivClasses rel ct1 ct2
+					          else let mct1 = findTag rel (w3 ++ w1)
+							   mct2 = findTag rel (w4 ++ w2)
+						       in case (mct1, mct2) of 
+									    (Nothing, _) -> rel -- w3w1 is not in the domain of rel
+									    (_, Nothing) -> rel -- w4w2 is not in the domain of rel
+									    (Just ct1, Just ct2) -> mergeEquivClasses rel ct1 ct2
 				    in iterateWord4 wtp1 wtp2 wtp3 rel' (pos + 1)
 
 			        wtp3@(w3, _) = rel !! pos
 				rel' = if inRel simeq (wordCod w1) (wordDom w3)
+				          -- inRel here is usually much more efficient 
+					  -- than findTag rel (w3 ++ w1)
 				          then iterateWord4 wtp1 wtp2 wtp3 rel 0
 					  else rel
 			    in iterateWord3 wtp1 wtp2 rel' (pos + 1)
@@ -382,7 +400,7 @@ congruentClosure simeq rel =
 		rel' = iterateWord2 wtp rel 0
 	    in iterateWord1 rel' (pos + 1)
 
-    in iterateWord1 rel 0
+    in iterateWord1 rel 0 
 
 
 -- | Compute the cong_tau relation for given diagram and sink.
@@ -479,6 +497,119 @@ finiteAdm_simeq embs simeq =
     in embWords' [] embs 0
 
 
+-- | Check if the colimit is thin.
+colimitIsThin :: EquivRel DiagSort
+	      -> [DiagEmb]
+	      -> EquivRel DiagEmbWord
+	      -> Bool
+colimitIsThin simeq embs c0 = 
+    let -- sortsC: a list of colimit sorts
+        sortsC = foldl (\s -> \eqcl -> (head eqcl : s)) [] simeq
+        simeqT = equivClassesToTaggedVals simeq
+
+	-- ordMap: map representing the topological order on sorts in the colimit
+        ordMap = 
+	    let sortClasses' m [] = m
+		sortClasses' m ((n, s1, s2) : embs) =
+		    let Just c1 = findTag simeqT (n, s1)
+			Just c2 = findTag simeqT (n, s2)
+		    in sortClasses' (Map.update (\s -> Just (Set.insert c2 s)) c1 m) embs
+		ordMap' = foldl (\m -> \cl -> Map.insert cl Set.empty m) Map.empty sortsC
+	    in sortClasses' ordMap' embs
+
+	-- larger: return a list of colimit sorts larger than given sort
+	larger s = 
+	    let dl = Set.toList (Map.find s ordMap)
+	    in (s : (foldl (\l -> \s -> l ++ (larger s)) [] dl))
+
+        -- s: the map representing sets S_{\geq s1,s2}
+        s = let compS m (s1, s2) = 
+		    let ls1 = Set.fromList (larger s1)
+			ls2 = Set.fromList (larger s2)
+		    in Map.insert (s1, s2) (Set.intersection ls1 ls2) m
+	    in foldl compS Map.empty [(s1, s2) | s1 <- sortsC, s2 <- sortsC]
+
+        -- b: the map representing sets B_{s1,s2}
+        b = let compB m sp =
+		    let sim s' s'' = not (Set.isEmpty (Map.find (s', s'') s))
+			rel = map (\x -> (x, x)) (Set.toList (Map.find sp s))
+			rel' = mergeEquivClassesBy sim rel
+		    in Map.insert sp (taggedValsToEquivClasses rel') m
+	    in foldl compB Map.empty [(s1, s2) | s1 <- sortsC, s2 <- sortsC]
+
+        embDomS (n, dom, _) = let Just s = findTag simeqT (n, dom) in s
+        embCodS (n, _, cod) = let Just s = findTag simeqT (n, cod) in s
+
+        -- checkAllSorts: check the C = B condition for all colimit sorts
+        checkAllSorts m | Map.isEmpty m = True
+			| otherwise =
+	    let -- checkSort: check if for given colimit sort C = B
+	        checkSort cs =
+		    let embsCs = filter (\e -> embDomS e == cs) embs
+			c = foldl (\m -> \ep -> Map.insert ep [] m) Map.empty
+			          [(d, e) | d <- embsCs, e <- embsCs]
+			c' = let updC c (d, e) =
+				     let s1 = embCodS d
+					 s2 = embCodS e
+				     in Map.update (\_ -> Just (Map.find (s1, s2) b)) (d, e) c
+			     in foldl updC c [(d, e) | d <- embsCs, e <- embsCs, inRel c0 [d] [e]]
+			c'' = let updC c (d@(n1, _, cod1), e@(n2, _, cod2)) =
+				      let s1 = embCodS d
+					  s2 = embCodS e
+					  [absCls] = filter (\ac -> any (s2==) ac) (Map.find (s1, s2) b)
+				      in if (filter (\(n, dom, cod) -> (n, dom) == (n1, cod1) && (n, cod) == (n2, cod2)) embsCs) == []
+ 					    then c
+					    else foldl (\c -> \k -> Map.update (\l -> Just (l ++ [absCls])) k c) c [(d, e), (e, d)]
+			      in foldl updC c' [(d, e) | d <- embsCs, e <- embsCs, wordDom [d] == wordDom [e]]
+			fixUpdRule c = 
+			    let updC c (e1, e2, e3) =
+				    let updC' c (b12, b23, b13) =
+					    let sb12 = Set.fromList b12
+						sb23 = Set.fromList b23
+						sb13 = Set.fromList b13
+						comm = Set.intersection sb12 (Set.intersection sb23 sb13)
+					    in if Set.isEmpty comm then c
+					          else let c' = if any (\l -> l == b13) (Map.find (e1, e3) c) 
+							           then c 
+								   else Map.update (\l -> Just (l ++ [b13])) (e1, e3) c
+						       in if any (\l -> l == b13) (Map.find (e1, e3) c') 
+							     then c' 
+							     else Map.update (\l -> Just (l ++ [b13])) (e3, e1) c'
+					s1 = embCodS e1
+					s3 = embCodS e3
+				    in foldl updC' c [(b12, b23, b13) |
+				                      b12 <- (Map.find (e1, e2) c),
+						      b23 <- (Map.find (e2, e3) c),
+						      b13 <- (Map.find (s1, s3) b)]
+			        c' = foldl updC c [(e1, e2, e3) | 
+			                           e1 <- embsCs, e2 <- embsCs, e3 <- embsCs]
+			    in if c' == c then c else fixUpdRule c'
+                        c3 = fixUpdRule c''
+                        checkIncl [] = True
+			checkIncl ((e1, e2) : embprs) =
+			    let s1 = embCodS e1
+				s2 = embCodS e2
+			    in if subRelation (Map.find (s1, s2) b) (Map.find (e1, e2) c3) == Nothing -- TODO c3
+				  then checkIncl embprs
+				  else False
+		    in checkIncl [(e1, e2) | e1 <- embsCs, e2 <- embsCs]
+
+                -- cs: next colimit sort to process	
+		-- m': the order map with cs removed
+		(cs, m') = let [(cs, _)] = take 1 (filter (\(_, lt) -> Set.isEmpty lt) 
+				                          (Map.toList m))
+			       m' = Map.delete cs m
+			       m'' = foldl (\m -> \k -> Map.update (\lt -> Just (Set.delete cs lt)) k m)
+				           m' (Map.keys m')
+			   in (cs, m'')
+	    in if checkSort cs then checkAllSorts m' else False
+
+    in checkAllSorts ordMap
+
+
+-- currTest simeq embs c0 = ()
+
+
 -- | Compute the \cong relation given its (finite) domain
 cong :: CASLDiag
      -> [DiagEmbWord]     -- ^ the Adm_\simeq set (the domain of \cong relation)
@@ -503,7 +634,7 @@ cong diag adm simeq =
 
         -- fixCongLc: apply Cong and Lc rules until a fixpoint is reached
 	fixCongLc rel =
-	    let rel' = (leftCancellableClosure . congruentClosure simeq) rel
+	    let rel' = (leftCancellableClosure . congruenceClosure simeq) rel
 	    in if rel == rel' then rel else fixCongLc rel'
 
 	-- compute the relation
@@ -551,10 +682,10 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) =
 				   getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
 				   lns = labNodes diag'
 				   sortString1 = renderText Nothing (printText (snd ns1)) ++
-					     " in {" ++ renderText Nothing (printText (getNodeSig (fst ns1) lns)) ++ "}"
+					     " in\n{" ++ renderText Nothing (printText (getNodeSig (fst ns1) lns)) ++ "}\n"
 				   sortString2 = renderText Nothing (printText (snd ns2)) ++
-					     " in {" ++ renderText Nothing (printText (getNodeSig (fst ns2) lns)) ++ "}"
-	                       in do return (No ("sorts " ++ sortString1 ++ " and " ++ sortString2))
+					     " in\n{" ++ renderText Nothing (printText (getNodeSig (fst ns2) lns)) ++ "}\n"
+	                       in do return (No ("sorts " ++ sortString1 ++ " and " ++ sortString2 ++ " might be different"))
 	    Nothing -> do let ct = cong_tau diag' sink st
 			      -- As we will be using a finite representation of \cong_0
 			      -- that may not contain some of the equivalence classes with
@@ -565,38 +696,28 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) =
 			      c0 = cong_0 diag s
 			  -- 2. Check the simple case: \cong_0 \in \cong, so if \cong_\tau \in \cong_0 the
 			  -- specification is correct.
-			  -- warning DontKnow ("cong_tau: " ++ (showPretty ct "")) nullPos -- test
-			  -- warning DontKnow ("cong_tau0: " ++ (showPretty ct0 "")) nullPos -- test
-			  -- warning DontKnow ("cong_0: " ++ (showPretty c0 "")) nullPos -- test
 		          case subRelation ct0 c0 of
 		               Nothing -> do return Yes
 			       Just _ -> do let em = embs diag
 					        mas = finiteAdm_simeq em s
 					    -- 3. Check if the set Adm_\simeq is finite.
 					    case mas of 
-						 Just as -> do --warning DontKnow ("Adm_simeq: " ++ (showPretty as "")) nullPos -- test
-							       -- TODO: 4. check the colimit thinness
-                                                               let c = cong diag as s
-                                                               -- 5. Check the cell condition in its full generality.
-							       -- warning DontKnow ("cong: " ++ (showPretty c "")) nullPos -- test
-                                                               case subRelation ct c of
-                                                                    Just (w1, w2) -> let rendEmbPath [] = []
-                                                                                         rendEmbPath (h : w) = 
-                                                                                             foldl (\t -> \s -> t ++ " < " ++ renderText Nothing (printText s)) 
-                                                                                                   (renderText Nothing (printText h)) w
-                                                                                         word1 = rendEmbPath (wordToEmbPath w1)
-                                                                                         word2 = rendEmbPath (wordToEmbPath w2)
-                                                                                     in do return (No ("embedding paths \n    " ++ word1 ++
-										  		       "\nand\n    " ++ word2 ++ "\nmight be different"))
-							            Nothing -> do return Yes 
-						 Nothing -> do {-let e = embs diag
-								   lw = looplessWords e s
-							       warning DontKnow ("Loopless: " ++ (showPretty lw "")) nullPos -- test
-							       return DontKnow-}
-							       let cR = congR diag s
-							       --warning DontKnow ("cong^R: " ++ (showPretty cR "")) nullPos -- test
-							       --warning DontKnow ("#eqcls: " ++ (showPretty (length cR) "")) nullPos -- test
-							       --return DontKnow
+						 Just as -> do -- 4. check the colimit thinness. If the colimit is thing then
+							       -- the specification is correct.
+                                                               if colimitIsThin s em c0 then return Yes
+                                                                  else do let c = cong diag as s
+								          -- 5. Check the cell condition in its full generality.
+                                                                          case subRelation ct c of
+                                                                               Just (w1, w2) -> let rendEmbPath [] = []
+                                                                                                    rendEmbPath (h : w) = 
+                                                                                                        foldl (\t -> \s -> t ++ " < " ++ renderText Nothing (printText s)) 
+                                                                                                              (renderText Nothing (printText h)) w
+                                                                                                    word1 = rendEmbPath (wordToEmbPath w1)
+                                                                                                    word2 = rendEmbPath (wordToEmbPath w2)
+                                                                                                in do return (No ("embedding paths \n    " ++ word1 ++
+										  		                  "\nand\n    " ++ word2 ++ "\nmight be different"))
+							                       Nothing -> do return Yes 
+						 Nothing -> do let cR = congR diag s
 							       -- 6. Check the restricted cell condition. If it holds then the
 							       -- specification is correct. Otherwise proof obligations need to 
 							       -- be generated.
