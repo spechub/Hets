@@ -402,7 +402,7 @@ qualOpName o = do { v <- asKey opS
 		  ; return (QualOp i t (toPos o [v, c] p))
 		  }
 
-predType t = FunType t PFunArr (ProductType [] []) []
+predType t = FunType t PFunArr (TupleType [] []) []
 predTypeScheme (SimpleTypeScheme t) = SimpleTypeScheme (predType t)
 predTypeScheme (TypeScheme vs t ps) = TypeScheme vs (predTypeScheme t) ps
 
