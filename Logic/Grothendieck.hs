@@ -321,28 +321,36 @@ instance Language Grothendieck
 instance Show GMorphism where
     show (GMorphism cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
  
-{-
+
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma) = 
-    GMorphism lid lid (IdComorphism lid) sigma (ide lid sigma)
+    GMorphism (IdComorphism lid) sigma (ide lid sigma)
   comp _ 
-      (GMorphism lid1 lid2 r1 sigma1 mor1) 
-      (GMorphism lid3 lid4 r2 _sigma2 mor2) =
-    do s <- coerce lid2 lid3 "x"
-       return (s=="x")
+      (GMorphism r1 sigma1 mor1) 
+      (GMorphism r2 _sigma2 mor2) = undefined
+    {- do let lid1 = sourceLogic r1
+           lid2 = targetLogic r1
+           lid3 = sourceLogic r2
+           lid4 = targetLogic r2
+       --r1' <- coerce lid2 lid3 r1
        let r3 = CompComorphism r1 r2
+           lid5 = targetLogic r3
        mor1' <- coerce lid2 lid3 mor1
-       mor1'' <- map_morphism r2 mor1' 
-       mor <- comp lid4 mor2 mor1''
-       return (GMorphism lid1 lid4 r3 sigma1 mor)
-  dom _ (GMorphism lid1 _lid2 _r sigma _mor) = G_sign lid1 sigma
-  cod _ (GMorphism _lid1 lid2 _r _sigma mor) = G_sign lid2 (cod lid2 mor)
+       mor1'' <- map_morphism r2 mor1'
+       mor <- comp lid5 mor2 mor1''
+       return (GMorphism r3 sigma1 mor) -}
+  dom _ (GMorphism r sigma _mor) = 
+    G_sign (sourceLogic r) sigma
+  cod _ (GMorphism r _sigma mor) = 
+    G_sign lid2 (cod lid2 mor)
+    where lid2 = targetLogic r
   legal_obj _ (G_sign lid sigma) = legal_obj lid sigma 
-  legal_mor _ (GMorphism _lid1 lid2 r sigma mor) =
-     legal_mor lid2 mor && case map_sign r sigma of
-        Just (sigma',_) -> sigma' == cod lid2 mor
-        Nothing -> False
--}
+  legal_mor _ (GMorphism r sigma mor) =
+    legal_mor lid2 mor && 
+    case map_sign r sigma of
+      Just (sigma',_) -> sigma' == cod lid2 mor
+      Nothing -> False
+    where lid2 = targetLogic r
 
 ideGrothendieck (G_sign lid sigma) = 
     GMorphism (IdComorphism lid) sigma (ide lid sigma)
