@@ -319,13 +319,21 @@ shapeRel tm cs =
     in case shapeMatch tm (map fst subL) $ map snd subL of
        Result ds Nothing -> return $ Result ds Nothing
        _ -> do (s1, atoms) <- shapeUnify tm subL
-               case collapser tm atoms of
-                   Result ds Nothing -> return $ Result ds Nothing
-                   Result _ (Just s2) -> let s = compSubst s1 s2 in 
-                     return $ return (s, substC s qs,
-                       Rel.transReduce $ Rel.fromList $ subst s2 atoms)
-                                                                
-        
+               return $ case collapser tm atoms of
+                   Result ds Nothing -> Result ds Nothing
+                   Result _ (Just s2) -> 
+                       let s = compSubst s1 s2 
+                           r = Rel.fromList $ subst s2 atoms
+                           nonvs = filter ( \ c -> case c of
+                             (TypeName _ _ 0, TypeName _ _ 0) -> True
+                             _ -> False) $ Rel.toList $ Rel.transClosure r
+                           es = filter (not . uncurry (lesserType tm)) nonvs
+                       in if null es then
+                          return (s, substC s qs, r)
+                          else Result (map ( \ (t1, t2) ->
+                                 mkDiag Hint "unable to prove" $ 
+                                             Subtyping t1 t2) es) Nothing
+
 -- | compute monotonicity of a type variable
 monotonic :: TypeMap -> Int -> Type -> (Bool, Bool)
 monotonic tm v t = 
