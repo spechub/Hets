@@ -11,6 +11,10 @@ version 0.9
 
 logic HasCASL
 
+spec Bool = 
+  sort Bool
+end
+
 spec Nat = {}
 spec List = {}
 spec InternalLogic = {}
@@ -21,9 +25,10 @@ spec Extensionality = {}
    Set membership is just holding of the predicate: x isIn s <=> s x
    Note that for disjoint unions and products, the type changes.  }%
 
-spec Set = InternalLogic and Extensionality then
+spec Set = InternalLogic and Extensionality and Bool then
   var S,T : Type
-  type Set S = Pred S
+  type Pred : Type -> Type;
+       Set : Type -> Type := Pred 
   ops emptySet : Set S;
       {__} : S -> Set S;
       __isIn__ : Pred (S * Set(S));
