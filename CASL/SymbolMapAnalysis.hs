@@ -152,8 +152,8 @@ inducedFromMorphism extEm rmap sigma = do
                          Rel.image (mapSort sort_Map) (sortRel sigma),
              opMap = Map.foldWithKey (mapOps sort_Map op_Map) 
                        Map.empty (opMap sigma),
- 	     assocOps = Map.foldWithKey (mapOps sort_Map op_Map)
-	               Map.empty (assocOps sigma),
+             assocOps = Map.foldWithKey (mapOps sort_Map op_Map)
+                       Map.empty (assocOps sigma),
              predMap = Map.foldWithKey (mapPreds sort_Map pred_Map) 
                        Map.empty (predMap sigma),
              varMap = Map.empty}
@@ -163,7 +163,7 @@ inducedFromMorphism extEm rmap sigma = do
                    sort_map = sort_Map,
                    fun_map = op_Map,
                    pred_map = pred_Map,
-		   extended_map = extEm sigma sigma' })
+                   extended_map = extEm sigma sigma' })
   where
   -- the sorts of the source signature 
   sortsSigma = sortSet sigma
@@ -562,16 +562,18 @@ restrictOps sym1 sym2 posmap =
     _ -> ([],[])
 
 -- the main function
-inducedFromToMorphism :: (PrettyPrint f, PrettyPrint e, PrettyPrint m) =>
-			 Ext f e m -> RawSymbolMap -> Sign f e -> Sign f e 
-		      -> Result (Morphism f e m)
-inducedFromToMorphism extEm rmap sigma1 sigma2 = do
+inducedFromToMorphism :: (PrettyPrint f, PrettyPrint e, PrettyPrint m) 
+                      => Ext f e m -- ^ compute extended morphism 
+                      -> (e -> e -> Bool) -- ^ subsignature test of extensions
+                      -> RawSymbolMap 
+                      -> Sign f e -> Sign f e -> Result (Morphism f e m)
+inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
   let symset1 = symOf sigma1
       symset2 = symOf sigma2
   -- 1. use rmap to get a renaming...
   mor1 <- inducedFromMorphism extEm rmap sigma1
   -- 1.1 ... is the renamed source signature contained in the target signature?
-  if isSubSig (mtarget mor1) sigma2 
+  if isSubSig isSubExt (mtarget mor1) sigma2 
    -- yes => we are done
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
@@ -721,8 +723,8 @@ generatedSign extEm sys sigma = do
   where
   symset = symOf sigma   -- 1. 
   sigma1 = Set.fold revealSym (sigma { sortSet = Set.empty
-				     , opMap = Map.empty
-				     , predMap = Map.empty }) sys  -- 4. 
+                                     , opMap = Map.empty
+                                     , predMap = Map.empty }) sys  -- 4. 
   revealSym sy sigma1 = case symbType sy of  -- 4.1.
     SortAsItemType ->      -- 4.1.1.
       sigma1 {sortSet = Set.insert (symName sy) $ sortSet sigma1}
@@ -758,7 +760,7 @@ Output: signature "Sigma1"<=Sigma.
 -}
 
 cogeneratedSign :: Ext f e m -> SymbolSet -> Sign f e 
-		-> Result (Morphism f e m)
+                -> Result (Morphism f e m)
 cogeneratedSign extEm symset sigma = do
   if not (symset `Set.subset` symset0)   -- 2.
    then pfatal_error 
@@ -781,7 +783,7 @@ cogeneratedSign extEm symset sigma = do
   profileContains s (OpAsItemType ot) = s `elem` (opRes ot:opArgs ot)
   profileContains s (PredAsItemType pt) = s `elem` (predArgs pt)
 
-finalUnion :: 
-              Sign f e -> Sign f e -> Result (Sign f e)
-finalUnion sigma1 sigma2 = return $ addSig sigma1 sigma2 
+finalUnion :: (e -> e -> e) -- ^ join signature extensions
+           -> Sign f e -> Sign f e -> Result (Sign f e)
+finalUnion addSigExt sigma1 sigma2 = return $ addSig addSigExt sigma1 sigma2 
   -- ???  Finality check not yet implemented

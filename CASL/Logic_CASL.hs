@@ -55,9 +55,12 @@ type CASLFORMULA = FORMULA ()
 dummy :: a -> b -> ()
 dummy _ _ = ()
 
+trueC :: a -> b -> Bool
+trueC _ _ = True
+
 -- Typeable instance
 tc_BASIC_SPEC, tc_SYMB_ITEMS, tc_SYMB_MAP_ITEMS, casl_SublocigsTc,
-	     sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc :: TyCon
+             sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc :: TyCon
 
 casl_SublocigsTc  = mkTyCon "CASL.Sublogics.CASL_Sublogics"
 tc_BASIC_SPEC     = mkTyCon "CASL.AS_Basic_CASL.BASIC_SPEC"
@@ -72,7 +75,7 @@ rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
 instance (Typeable b, Typeable s, Typeable f) 
     => Typeable (BASIC_SPEC b s f) where
   typeOf b = mkTyConApp tc_BASIC_SPEC 
-	     [typeOf $ (undefined :: BASIC_SPEC b s f -> b) b,
+             [typeOf $ (undefined :: BASIC_SPEC b s f -> b) b,
               typeOf $ (undefined :: BASIC_SPEC b s f -> s) b,
               typeOf $ (undefined :: BASIC_SPEC b s f -> f) b]
 instance Typeable SYMB_ITEMS where
@@ -81,15 +84,15 @@ instance Typeable SYMB_MAP_ITEMS where
   typeOf _ = mkTyConApp tc_SYMB_MAP_ITEMS []
 instance Typeable f => Typeable (FORMULA f) where
   typeOf f = mkTyConApp sentenceTc 
-	     [typeOf $ (undefined :: FORMULA f -> f) f]
+             [typeOf $ (undefined :: FORMULA f -> f) f]
 instance (Typeable f, Typeable e) => Typeable (Sign f e) where
   typeOf s = mkTyConApp signTc 
-	     [typeOf $ (undefined :: Sign f e -> f) s,
+             [typeOf $ (undefined :: Sign f e -> f) s,
               typeOf $ (undefined :: Sign f e -> e) s]
 instance (Typeable e, Typeable f, Typeable m) => 
     Typeable (Morphism f e m) where
   typeOf m = mkTyConApp morphismTc
-	     [typeOf $ (undefined :: Morphism f e m -> f) m,
+             [typeOf $ (undefined :: Morphism f e m -> f) m,
               typeOf $ (undefined :: Morphism f e m -> e) m,
               typeOf $ (undefined :: Morphism f e m -> m) m]
 instance Typeable Symbol where
@@ -102,25 +105,25 @@ instance Typeable CASL_Sublogics where
 instance Category CASL CASLSign CASLMor  
     where
          -- ide :: id -> object -> morphism
-	 ide CASL = idMor dummy
+         ide CASL = idMor dummy
          -- comp :: id -> morphism -> morphism -> Maybe morphism
-	 comp CASL = compose (const id)
+         comp CASL = compose (const id)
          -- dom, cod :: id -> morphism -> object
-	 dom CASL = msource
-	 cod CASL = mtarget
+         dom CASL = msource
+         cod CASL = mtarget
          -- legal_obj :: id -> object -> Bool
-	 legal_obj CASL = legalSign
+         legal_obj CASL = legalSign
          -- legal_mor :: id -> morphism -> Bool
-	 legal_mor CASL = legalMor
+         legal_mor CASL = legalMor
 
 -- abstract syntax, parsing (and printing)
 
 instance Syntax CASL CASLBasicSpec
-		SYMB_ITEMS SYMB_MAP_ITEMS
+                SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec CASL = Just $ basicSpec []
-	 parse_symb_items CASL = Just $ symbItems []
-	 parse_symb_map_items CASL = Just $ symbMapItems []
+         parse_symb_items CASL = Just $ symbItems []
+         parse_symb_map_items CASL = Just $ symbMapItems []
 
 -- lattices (for sublogics)
 
@@ -137,9 +140,9 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       map_sen CASL = mapSen (const return)
       parse_sentence CASL = Just
         ( \ _sign str ->
-	  case runParser (aFormula [] << eof) emptyAnnos "" str of
-	  Right x -> return $ item x
-	  Left err -> fail $ show err )
+          case runParser (aFormula [] << eof) emptyAnnos "" str of
+          Right x -> return $ item x
+          Left err -> fail $ show err )
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
@@ -151,16 +154,16 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                CASLMor 
                Symbol RawSymbol where
          basic_analysis CASL = Just $ basicAnalysis 
-			       (const $ const return) 
-			       (const return)
-			       (const return)
+                               (const $ const return) 
+                               (const return)
+                               (const return) const
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          -- ensures_amalgamability :: id
          --   -> (Diagram CASLSign CASLMor, Node, CASLSign, LEdge CASLMor, CASLMor)
          --   -> Result (Diagram CASLSign CASLMor)
-	 ensures_amalgamability CASL (diag, sink, desc) = 
-	     ensuresAmalgamability diag sink desc
+         ensures_amalgamability CASL (diag, sink, desc) = 
+             ensuresAmalgamability diag sink desc
 
          sign_to_basic_spec CASL _sigma _sens = Basic_spec [] -- ???
 
@@ -170,15 +173,15 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          
          empty_signature CASL = emptySign ()
          signature_union CASL sigma1 sigma2 = 
-           return $ addSig sigma1 sigma2
-         morphism_union CASL = morphismUnion (const id)
-	 final_union CASL = finalUnion
-         is_subsig CASL = isSubSig
-         inclusion CASL = sigInclusion dummy
+           return $ addSig dummy sigma1 sigma2
+         morphism_union CASL = morphismUnion (const id) dummy
+         final_union CASL = finalUnion dummy
+         is_subsig CASL = isSubSig trueC
+         inclusion CASL = sigInclusion dummy trueC
          cogenerated_sign CASL = cogeneratedSign dummy
          generated_sign CASL = generatedSign dummy
          induced_from_morphism CASL = inducedFromMorphism dummy
-         induced_from_to_morphism CASL = inducedFromToMorphism dummy
+         induced_from_to_morphism CASL = inducedFromToMorphism dummy trueC
 
 instance Logic CASL CASL.Sublogic.CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS

@@ -60,25 +60,25 @@ instance Typeable CoCASLSign where
 instance Category CoCASL CSign CoCASLMor  
     where
          -- ide :: id -> object -> morphism
-	 ide CoCASL = idMor dummy
+         ide CoCASL = idMor dummy
          -- comp :: id -> morphism -> morphism -> Maybe morphism
-	 comp CoCASL = compose (const id)
+         comp CoCASL = compose (const id)
          -- dom, cod :: id -> morphism -> object
-	 dom CoCASL = msource
-	 cod CoCASL = mtarget
+         dom CoCASL = msource
+         cod CoCASL = mtarget
          -- legal_obj :: id -> object -> Bool
-	 legal_obj CoCASL = legalSign
+         legal_obj CoCASL = legalSign
          -- legal_mor :: id -> morphism -> Bool
-	 legal_mor CoCASL = legalMor
+         legal_mor CoCASL = legalMor
 
 -- abstract syntax, parsing (and printing)
 
 instance Syntax CoCASL C_BASIC_SPEC
-		SYMB_ITEMS SYMB_MAP_ITEMS
+                SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec CoCASL = Just $ basicSpec cocasl_reserved_words
-	 parse_symb_items CoCASL = Just $ symbItems cocasl_reserved_words
-	 parse_symb_map_items CoCASL = Just $ symbMapItems cocasl_reserved_words
+         parse_symb_items CoCASL = Just $ symbItems cocasl_reserved_words
+         parse_symb_map_items CoCASL = Just $ symbMapItems cocasl_reserved_words
 
 -- CoCASL logic
 
@@ -97,11 +97,11 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA ()
                CoCASLMor 
                Symbol RawSymbol where
          basic_analysis CoCASL = Just $ basicAnalysis minExpForm
-			       ana_C_BASIC_ITEM ana_C_SIG_ITEM
+                               ana_C_BASIC_ITEM ana_C_SIG_ITEM diffCoCASLSign
          stat_symb_map_items CoCASL = statSymbMapItems
          stat_symb_items CoCASL = statSymbItems
-	 ensures_amalgamability CoCASL _ = 
-	     fail "CoCASL: ensures_amalgamability nyi" -- ???
+         ensures_amalgamability CoCASL _ = 
+             fail "CoCASL: ensures_amalgamability nyi" -- ???
 
          sign_to_basic_spec CoCASL _sigma _sens = Basic_spec [] -- ???
 
@@ -111,15 +111,16 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA ()
          
          empty_signature CoCASL = emptySign emptyCoCASLSign
          signature_union CoCASL sigma1 sigma2 = 
-           return $ addSig sigma1 sigma2
-         morphism_union CoCASL = morphismUnion (const id)
-	 final_union CoCASL = finalUnion
-         is_subsig CoCASL = isSubSig
-         inclusion CoCASL = sigInclusion dummy
+           return $ addSig addCoCASLSign sigma1 sigma2
+         morphism_union CoCASL = morphismUnion (const id) addCoCASLSign
+         final_union CoCASL = finalUnion addCoCASLSign
+         is_subsig CoCASL = isSubSig isSubCoCASLSign
+         inclusion CoCASL = sigInclusion dummy isSubCoCASLSign
          cogenerated_sign CoCASL = cogeneratedSign dummy
          generated_sign CoCASL = generatedSign dummy
          induced_from_morphism CoCASL = inducedFromMorphism dummy
-         induced_from_to_morphism CoCASL = inducedFromToMorphism dummy
+         induced_from_to_morphism CoCASL = 
+             inducedFromToMorphism dummy isSubCoCASLSign
 
 instance Logic CoCASL ()
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS

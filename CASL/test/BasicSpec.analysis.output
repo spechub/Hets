@@ -1434,7 +1434,7 @@ op b : a
 *** Error 294.55, total selectors 'a : s -> t,b : s -> t,d : s -> t'
 	must appear in alternative 'c : a ->? s'
 *** Error 294.29, duplicates at '(294,55)' for 'c : a -> s'
-*** Hint 294.55, redeclared op 'c'
+*** Warning 294.55, partially redeclared 'c'
 *** Error 294.57, unknown sort 'a'
 *** Hint 294.48, redeclared op 'd'
 *** Hint 294.43, redeclared op 'b'

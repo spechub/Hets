@@ -39,92 +39,92 @@ import Common.Result
 minExpForm :: Min M_FORMULA ModalSign
 minExpForm ga s form = 
     let newGa = addAssocs ga s
-	ops = formulaIds s
+        ops = formulaIds s
         preds = allPredIds s
-	res = resolveFormula newGa ops preds
+        res = resolveFormula newGa ops preds
         minMod md ps = case md of
-	          Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
-		  Term_mod t -> let
-		    r = do 
-		      t1 <- resolveMixfix newGa (allOpIds s) preds t
-		      ts <- minExpTerm minExpForm ga s t1
-		      t2 <- is_unambiguous t ts ps
-		      let srt = term_sort t2
-			  trm = Term_mod t2
-		      if Map.member srt $ termModies $ extendedInfo s 
-			 then return trm
-		         else Result [mkDiag Error 
-			      ("unknown term modality sort '"
-			       ++ showId srt "' for term") t ]
-			      $ Just trm
-		    in case t of
-		       Mixfix_token tm -> 
-			   if Map.member tm $ modies $ extendedInfo s 
-			      then return $ Simple_mod tm
-			      else case maybeResult r of
-			          Nothing -> Result 
-				      [mkDiag Error "unknown modality" tm]
-				      $ Just $ Simple_mod tm
-				  _ -> r
-		       _ -> r
+                  Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
+                  Term_mod t -> let
+                    r = do 
+                      t1 <- resolveMixfix newGa (allOpIds s) preds t
+                      ts <- minExpTerm minExpForm ga s t1
+                      t2 <- is_unambiguous t ts ps
+                      let srt = term_sort t2
+                          trm = Term_mod t2
+                      if Map.member srt $ termModies $ extendedInfo s 
+                         then return trm
+                         else Result [mkDiag Error 
+                              ("unknown term modality sort '"
+                               ++ showId srt "' for term") t ]
+                              $ Just trm
+                    in case t of
+                       Mixfix_token tm -> 
+                           if Map.member tm $ modies $ extendedInfo s 
+                              then return $ Simple_mod tm
+                              else case maybeResult r of
+                                  Nothing -> Result 
+                                      [mkDiag Error "unknown modality" tm]
+                                      $ Just $ Simple_mod tm
+                                  _ -> r
+                       _ -> r
     in case form of
         Box m f ps -> 
-	    do nm <- minMod m ps
+            do nm <- minMod m ps
                f1 <- res f
-	       f2 <- minExpFORMULA minExpForm ga s f1
-	       return $ Box nm f2 ps
-	Diamond m f ps -> 
-	    do nm <- minMod m ps
+               f2 <- minExpFORMULA minExpForm ga s f1
+               return $ Box nm f2 ps
+        Diamond m f ps -> 
+            do nm <- minMod m ps
                f1 <- res f
-	       f2 <- minExpFORMULA minExpForm ga s f1
-	       return $ Diamond nm f2 ps
+               f2 <- minExpFORMULA minExpForm ga s f1
+               return $ Diamond nm f2 ps
 
 ana_M_SIG_ITEM :: Ana M_SIG_ITEM M_FORMULA ModalSign
 ana_M_SIG_ITEM ga mi = 
     case mi of 
     Rigid_op_items r al ps -> 
-	do ul <- mapM (ana_OP_ITEM ga) al 
-	   case r of
+        do ul <- mapM (ana_OP_ITEM ga) al 
+           case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
-		   Op_decl ops ty _ _ -> 
-		       mapM_ (updateExtInfo . addRigidOp (toOpType ty)) ops
-		   Op_defn i par _ _ -> 
-		       updateExtInfo $ addRigidOp (toOpType $ headToType par) 
-				i ) ul
+                   Op_decl ops ty _ _ -> 
+                       mapM_ (updateExtInfo . addRigidOp (toOpType ty)) ops
+                   Op_defn i par _ _ -> 
+                       updateExtInfo $ addRigidOp (toOpType $ headToType par) 
+                                i ) ul
                _ -> return ()
-	   return $ Rigid_op_items r ul ps
+           return $ Rigid_op_items r ul ps
     Rigid_pred_items r al ps -> 
-	do ul <- mapM (ana_PRED_ITEM ga) al 
-	   case r of
+        do ul <- mapM (ana_PRED_ITEM ga) al 
+           case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
-		   Pred_decl ops ty _ -> 
-		       mapM_ (updateExtInfo . addRigidPred (toPredType ty)) ops
-	           Pred_defn i (Pred_head args _) _ _ -> 
-		       updateExtInfo $ addRigidPred 
-			        (PredType $ sortsOfArgs args) i ) ul
+                   Pred_decl ops ty _ -> 
+                       mapM_ (updateExtInfo . addRigidPred (toPredType ty)) ops
+                   Pred_defn i (Pred_head args _) _ _ -> 
+                       updateExtInfo $ addRigidPred 
+                                (PredType $ sortsOfArgs args) i ) ul
                _ -> return ()
-	   return $ Rigid_pred_items r ul ps
+           return $ Rigid_pred_items r ul ps
 
 addRigidOp :: OpType -> Id -> ModalSign -> Result ModalSign
 addRigidOp ty i m = return
-       m { rigidOps = addTo i ty { opKind = Partial } $ rigidOps m }
+       m { rigidOps = addOpTo i ty $ rigidOps m }
 
 addRigidPred :: PredType -> Id -> ModalSign -> Result ModalSign
 addRigidPred ty i m = return
-       m { rigidPreds = addTo i ty $ rigidPreds m }
+       m { rigidPreds = Map.setInsert i ty $ rigidPreds m }
 
 ana_M_BASIC_ITEM :: Ana M_BASIC_ITEM M_FORMULA ModalSign
 ana_M_BASIC_ITEM _ bi = do
     e <- get
     case bi of
         Simple_mod_decl al fs ps -> do
-	    newFs <- mapAnM (resultToState (ana_M_FORMULA False)) fs 
-	    mapM_ ((updateExtInfo . addModId newFs) . item) al
-	    return $ Simple_mod_decl al newFs ps
-	Term_mod_decl al fs ps -> do
-	    newFs <- mapAnM (resultToState (ana_M_FORMULA True)) fs 
-	    mapM_ ((updateExtInfo . addModSort newFs e) . item) al
-	    return $ Term_mod_decl al newFs ps
+            newFs <- mapAnM (resultToState (ana_M_FORMULA False)) fs 
+            mapM_ ((updateExtInfo . addModId newFs) . item) al
+            return $ Simple_mod_decl al newFs ps
+        Term_mod_decl al fs ps -> do
+            newFs <- mapAnM (resultToState (ana_M_FORMULA True)) fs 
+            mapM_ ((updateExtInfo . addModSort newFs e) . item) al
+            return $ Term_mod_decl al newFs ps
 
 resultToState :: (a -> Result a) -> a -> State (Sign f e) a
 resultToState f a = do 
@@ -153,18 +153,18 @@ addModSort frms e i m =
 map_M_FORMULA :: MapSen M_FORMULA ModalSign ()
 map_M_FORMULA mor frm =
     let mapMod m = case m of 
-		   Simple_mod _ -> return m
-		   Term_mod t -> do newT <- mapTerm map_M_FORMULA mor t
-				    return $ Term_mod newT
-	in case frm of
-	   Box m f ps -> do 
-	       newF <- mapSen map_M_FORMULA mor f
-	       newM <- mapMod m 
-	       return $ Box newM newF ps 
-	   Diamond m f ps -> do 
-	       newF <- mapSen map_M_FORMULA mor f
-	       newM <- mapMod m 
-	       return $ Diamond newM newF ps 
+                   Simple_mod _ -> return m
+                   Term_mod t -> do newT <- mapTerm map_M_FORMULA mor t
+                                    return $ Term_mod newT
+        in case frm of
+           Box m f ps -> do 
+               newF <- mapSen map_M_FORMULA mor f
+               newM <- mapMod m 
+               return $ Box newM newF ps 
+           Diamond m f ps -> do 
+               newF <- mapSen map_M_FORMULA mor f
+               newM <- mapMod m 
+               return $ Diamond newM newF ps 
 
 ana_M_FORMULA :: Bool -> FORMULA M_FORMULA -> Result (FORMULA M_FORMULA)
 ana_M_FORMULA b (Conjunction phis pos) = do

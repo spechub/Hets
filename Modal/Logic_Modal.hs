@@ -66,25 +66,25 @@ instance Typeable ModalSign where
 instance Category Modal MSign ModalMor  
     where
          -- ide :: id -> object -> morphism
-	 ide Modal = idMor dummy
+         ide Modal = idMor dummy
          -- comp :: id -> morphism -> morphism -> Maybe morphism
-	 comp Modal = compose (const id)
+         comp Modal = compose (const id)
          -- dom, cod :: id -> morphism -> object
-	 dom Modal = msource
-	 cod Modal = mtarget
+         dom Modal = msource
+         cod Modal = mtarget
          -- legal_obj :: id -> object -> Bool
-	 legal_obj Modal = legalSign
+         legal_obj Modal = legalSign
          -- legal_mor :: id -> morphism -> Bool
-	 legal_mor Modal = legalMor
+         legal_mor Modal = legalMor
 
 -- abstract syntax, parsing (and printing)
 
 instance Syntax Modal M_BASIC_SPEC
-		SYMB_ITEMS SYMB_MAP_ITEMS
+                SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec Modal = Just $ basicSpec modal_reserved_words
-	 parse_symb_items Modal = Just $ symbItems modal_reserved_words
-	 parse_symb_map_items Modal = Just $ symbMapItems modal_reserved_words
+         parse_symb_items Modal = Just $ symbItems modal_reserved_words
+         parse_symb_map_items Modal = Just $ symbMapItems modal_reserved_words
 
 -- Modal logic
 
@@ -103,11 +103,11 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
                ModalMor 
                Symbol RawSymbol where
          basic_analysis Modal = Just $ basicAnalysis minExpForm
-			       ana_M_BASIC_ITEM ana_M_SIG_ITEM
+                               ana_M_BASIC_ITEM ana_M_SIG_ITEM diffModalSign
          stat_symb_map_items Modal = statSymbMapItems
          stat_symb_items Modal = statSymbItems
-	 ensures_amalgamability Modal _ = 
-	     fail "Modal: ensures_amalgamability nyi" -- ???
+         ensures_amalgamability Modal _ = 
+             fail "Modal: ensures_amalgamability nyi" -- ???
 
          sign_to_basic_spec Modal _sigma _sens = Basic_spec [] -- ???
 
@@ -117,15 +117,16 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
          
          empty_signature Modal = emptySign emptyModalSign
          signature_union Modal sigma1 sigma2 = 
-           return $ addSig sigma1 sigma2
-         morphism_union Modal = morphismUnion (const id)
-	 final_union Modal = finalUnion
-         is_subsig Modal = isSubSig
-         inclusion Modal = sigInclusion dummy
+           return $ addSig addModalSign sigma1 sigma2
+         morphism_union Modal = morphismUnion (const id) addModalSign
+         final_union Modal = finalUnion addModalSign
+         is_subsig Modal = isSubSig isSubModalSign
+         inclusion Modal = sigInclusion dummy isSubModalSign
          cogenerated_sign Modal = cogeneratedSign dummy
          generated_sign Modal = generatedSign dummy
          induced_from_morphism Modal = inducedFromMorphism dummy
-         induced_from_to_morphism Modal = inducedFromToMorphism dummy
+         induced_from_to_morphism Modal = 
+             inducedFromToMorphism dummy isSubModalSign
 
 instance Logic Modal ()
                M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
