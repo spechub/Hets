@@ -1,12 +1,14 @@
 
 BASIC-SPEC      ::= BASIC-ITEMS ... BASIC-ITEMS  |  { }
 
-BASIC-ITEMS     ::= SIG-ITEMS  
-		  | CLASS-ITEMS
+BASIC-ITEMS     ::= SIG-ITEM
+                  | class/classes CLASS-ITEM ; ... ; CLASS-ITEM ;/
+                  | class instance/instances CLASS-ITEM ; ... ; CLASS-ITEM ;/
                   | free      type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
                   | generated type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
                   | generated { SIG-ITEMS ... SIG-ITEMS } ;/
-                  | var/vars GEN-VAR-DECL ; ... ; GENVAR-DECL ;/
+                  | program/programs PROG-EQ ; ... ; PROG-EQ ;/
+                  | var/vars GEN-VAR-DECL ; ... ; GEN-VAR-DECL ;/
                   | forall GEN-VAR-DECL ; ... ; GEN-VAR-DECL
                              "." AXIOM "." ... "." AXIOM ;/ 
                   | "." AXIOM "." ... "." AXIOM ;/ 
@@ -14,50 +16,40 @@ BASIC-ITEMS     ::= SIG-ITEMS
 %% for backwards compatibility with CASL v1.0
 BASIC-ITEMS     ::= axiom/axioms AXIOM ;...; AXIOM ;/
 
-SIG-ITEMS       ::= sort/sorts SORT-ITEM ; ... ; SORT-ITEM ;/
-                  | type/types TYPE-ITEM ; ... ; TYPE-ITEM ;/
-                  | type instance/instances TYPE-ITEM ; ... ; TYPE-ITEM ;/
-                  | op/ops OP-ITEM ; ... ; OP-ITEM ;/
-                  | program/programs PROG-EQ ; ... ; PROG-EQ ;/
-                  | pred/preds PRED-ITEM ; ... ; PRED-ITEM ;/      %% old style
-
-%% for backwards compatibility with CASL
-SORT-ITEM       ::= TYPE-NAME , ... , TYPE-NAME 
-                  | TYPE-NAME , ... , TYPE-NAME < TYPE-NAME 
-                  | TYPE-NAME = { VAR : TYPE "." FORMULA } 
-                  | TYPE-NAME = ... = TYPE-NAME   
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-TYPE-ITEM       ::= TYPE-NAME , ... , TYPE-NAME  %% same as SORT-ITEM
-                  | TYPE-DEFN-PATTERN , .... , TYPE-DEFN-PATTERN : KIND
-                  | TYPE-PATTERN := PSEUDOTYPE
+SIG-ITEMS       ::= sort/sorts SORT-ITEM ; ... ; SORT-ITEM
+		  | type/types TYPE-ITEM ; ... ; TYPE-ITEM ;/
+                  | type instance/instances TYPE-ITEM ; ... ; TYPE-ITEM ;/
+                  | op/ops OP-ITEM ; ... ; OP-ITEM ;/
+                  | pred/preds PRED-ITEM ; ... ; PRED-ITEM ;/   %% old style
+
+SORT-ITEM       ::= TYPE-PATTERN , ... , TYPE-PATTERN
                   | TYPE-PATTERN , ... , TYPE-PATTERN < TYPE 
-                  | TYPE-PATTERN = { VAR : TYPE "." FORMULA }
                   | TYPE-PATTERN = ... = TYPE-PATTERN
-		  | DATATYPE-DECL        %% TYPE-DEFN-PATTERN ::= ALTERNATIVES
+                  | TYPE-PATTERN = { VAR : TYPE "." FORMULA }
 
-%% TYPE , ... , TYPE clashes with intersection class without parenthesis
+TYPE-ITEM       ::= SORT-ITEM
+                  | TYPE-PATTERN , ... , TYPE-PATTERN : KIND
+                  | TYPE-PATTERN := PSEUDOTYPE
+                  | DATATYPE-DECL
 
-TYPE-DEFN-PATTERN ::= TYPE-NAME 
-		    | TYPE-NAME (TYPE-ARGS) ... (TYPE-ARGS)
-
-TYPE-PATTERN      ::= TYPE-DEFN-PATTERN
-		    | PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN
+TYPE-PATTERN      ::= TYPE-NAME 
+                    | TYPE-NAME (TYPE-ARGS) ... (TYPE-ARGS)
+                    | PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN
 
 PRIM-TYPE-PATTERN ::= [ ID , ... , ID ]      %% compound list
-		    | NO-BRACKET-TOKEN       %% TYPE-NAME or TYPE-VAR
-		    | { PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN } | { }
-		    | [ PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN ] | [ ]
+                    | NO-BRACKET-TOKEN       %% TYPE-NAME or TYPE-VAR
+                    | { PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN } | { }
+                    | [ PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN ] | [ ]
                     | TYPE-EXT-VAR
-		    | TYPE-PATTERN-ARG
-		    | (TYPE-PATTERN-ARG)
-		    | (TYPE-ARGS)            %% remaining arguments 
+                    | TYPE-PATTERN-ARG
+                    | (TYPE-PATTERN-ARG)
+                    | (TYPE-ARGS)            %% remaining arguments 
 
 TYPE-PATTERN-ARG ::=  TYPE-EXT-VAR : CLASS    
-		    | TYPE-VAR : EXT-CLASS
-		    | TYPE-VAR < TYPE    
-		    | TYPE-VAR > TYPE    
+                    | TYPE-VAR : EXT-CLASS
+                    | TYPE-VAR < TYPE    
 
 TYPE-VARS       ::= TYPE-VAR , ... , TYPE-VAR
 
@@ -65,40 +57,35 @@ TYPE-EXT-VAR    ::= TYPE-VAR | TYPE-VAR + | TYPE-VAR -
 TYPE-EXT-VARS   ::= TYPE-EXT-VAR , ... , TYPE-EXT-VAR
 
 TYPE-ARG        ::= TYPE-EXT-VARS           %% globally declared or universe
-		  | TYPE-VARS : EXT-CLASS      
-		  | TYPE-EXT-VARS : CLASS      
-		  | TYPE-EXT-VARS < TYPE 
-		  | TYPE-EXT-VARS > TYPE
+                  | TYPE-VARS : EXT-CLASS      
+                  | TYPE-EXT-VARS : CLASS      
+                  | TYPE-EXT-VARS < TYPE 
 
 TYPE-ARGS       :: TYPE-ARG ; ... ; TYPE-ARG
 
-%% curried kind!
 PSEUDOTYPE      ::= TYPE 
                   | \ TYPE-ARGS "." PSEUDOTYPE
-%% omit?          | \ (TYPE-ARGS) ... (TYPE-ARGS) "." PSEUDOTYPE  
+                  | \ (TYPE-ARGS) ... (TYPE-ARGS) "." PSEUDOTYPE  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-CLASS-ITEMS     ::= class/classes CLASS-ITEM ; ... ; CLASS-ITEM ;/
-                  | class instance/instances CLASS-ITEM ; ... ; CLASS-ITEM ;/
-
 CLASS-ITEM      ::= CLASS-DECL
-		  | CLASS-DECL {BASIC-ITEMS ... BASIC-ITEMS}  
+                  | CLASS-DECL {BASIC-ITEMS ... BASIC-ITEMS}  
 %% without "class" and without "type instance" inside
 
 CLASS-DECL      ::= CLASS-NAME , ... , CLASS-NAME
                   | CLASS-NAME , ... , CLASS-NAME < CLASS
                   | CLASS-NAME = CLASS
-                  | CLASS-NAME = ... = CLASS-NMAE
+                  | CLASS-NAME = ... = CLASS-NAME
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 UNINST-OP-NAME  :: = ID
 
 OP-NAME        ::= UNINST-OP-NAME 
-	         | UNINST-OP-NAME TYPE-INST-LIST ... TYPE-INST-LIST
+                 | UNINST-OP-NAME TYPE-INST-LIST ... TYPE-INST-LIST
 
-TYPE-INST-LIST ::= [TYPE-INST-DECL; ... ; TYPE-INST-DECL]
+TYPE-INST-LIST ::= [ TYPE-INST-DECL; ... ; TYPE-INST-DECL ]
 
 TYPE-INST-DECL ::= TYPE-VAR , ... , TYPE-VAR   %% global type vars
                  | TYPE-VAR-DECL
@@ -108,21 +95,21 @@ TYPE-INST-DECL ::= TYPE-VAR , ... , TYPE-VAR   %% global type vars
 OP-ITEM       ::= OP-NAME , ... , OP-NAME : TYPE-SCHEME
                 | OP-NAME , ... , OP-NAME : TYPE-SCHEME, OP-ATTR ,..., OP-ATTR 
                 | OP-NAME : TYPE-SCHEME = TERM %% real constant (no shortcut)  
-                | OP-NAME OP-ARGS : TYPE = TERM    %% This form is 
-                | OP-NAME OP-ARGS :? TYPE = TERM   %% not encouraged
-                | OP-NAME :? TYPE = TERM   %% shortcut for OP-NAME () :? ...
-				             %% strongly discouraged
-%% OP-ARGS instead of OP-HEAD 
+                | OP-NAME OP-ARGS : TYPE = TERM    %% These forms are 
+                | OP-NAME OP-ARGS :? TYPE = TERM   %% discouraged
+                | OP-NAME :? TYPE = TERM   %% shortcut for OP-NAME ():?
 
 OP-ATTR         ::= BIN-ATTR |  unit TERM
 BIN-ATTR        ::= assoc  |  comm  |  idem 
 
-PRED-ITEM       ::= OP-NAME, ..., OP-NAME: PRODUCT-TYPE  %% no currying!
-                  | OP-NAME ARG-DECLS <=> FORMULA  %% This form is 
+PRED-ITEM       ::= OP-NAME, ..., OP-NAME: TYPE-SCHEME  %% a product! 
+                  | OP-NAME ARG-DECLS <=> TERM       %% This form is 
                                                    %% not encouraged.
-                  | OP-NAME <=> FORMULA            %% Nor is this one.
+                  | OP-NAME <=> TERM               %% Nor is this one.
 
-%% PRED-TYPE =  PRODUCT-TYPE
+%% The TYPE within a TYPE-SCHEME of a PRED-ITEM is expanded to TYPE ->? () 
+%% not that (t1 -> t2) ->? () differs from t1 -> t2 ->? () 
+%% therefore arguments of a predicate are products
 
 %% curried ARG-DECLs must be put in parenthesis
 %% because a TYPE consumes the following input
@@ -162,18 +149,17 @@ PROG-EQ         ::= MIXFIX-PATTERN = TERM        %% TERM without formulae
 DATATYPE-DECL   ::= SIMPLE-DATATYPE-DECL | DERIVING-DATATYPE-DECL
 
 SIMPLE-DATATYPE-DECL   
-                ::= TYPE-DEFN-PATTERN "::=" ALTERNATIVE "|" ... "|" ALTERNATIVE
-                ::= TYPE-DEFN-PATTERN : KIND "::=" 
+                ::= TYPE-PATTERN "::=" ALTERNATIVE "|" ... "|" ALTERNATIVE
+                  | TYPE-PATTERN : KIND "::=" 
 					    ALTERNATIVE "|" ... "|" ALTERNATIVE
 DERIVING-DATATYPE-DECL
                 ::= SIMPLE-DATATYPE-DECL deriving CLASS
 
-%% take instance-notation from TYPE-DEFN-PATTERN 
+%% take instance-notation from TYPE-PATTERN 
 ALTERNATIVE     ::= UNINST-OP-NAME COMPONENTS ... COMPONENTS     
                   | UNINST-OP-NAME COMPONENTS ... COMPONENTS ?   
                   | UNINST-OP-NAME
-                  | sort/sorts TYPE-NAME , ... , TYPE-NAME
-                  | type/types TYPE , ... , TYPE                  
+                  | sort/sorts/type/types TYPE , ... , TYPE                  
 
 %% support for nested products
 COMPONENTS      ::= ( COMPONENT ; ... ; COMPONENT ) 
@@ -202,7 +188,6 @@ CLASS         ::= SIMPLE-CLASS | (CLASS , ... , CLASS)
 
 SIMPLE-CLASS  ::= type | CLASS-NAME 
 		| { SIMPLE-ID . SIMPLE-ID < TYPE } 
-		| { SIMPLE-ID . SIMPLE-ID > TYPE } 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 		
