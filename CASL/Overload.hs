@@ -12,7 +12,9 @@
 
 -}
 
-module CASL.Overload where
+module CASL.Overload (
+    overloadResolution  -- :: Sign -> [Sentence] -> Result [Sentence]
+    ) where
 
 import CASL.StaticAnalysis -- Sign = Env
 import CASL.AS_Basic -- FORMULA
@@ -188,45 +190,47 @@ minExpTerm_sorted sign term sort
             $ map selectExpansions expandedTerm -- choose Set foreach Expansion
 
 {-----------------------------------------------------------
-    Minimal Expansion of an Application Term
+    Minimal Expansion of a Function Application Term
 -----------------------------------------------------------}
 minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> Result [[TERM]]
 minExpTerm_op sign op terms
     = do
         -- ops :: [OP_SYMB]
         let ops = Map.toList (opMap sign)
-        -- expansions :: [[[Sorted_TERM]]]
+        -- expansions :: [[[TERM]]]
         expansions <- mapM (minExpTerm sign) terms
-        -- permuted_exps :: [[[Sorted_TERM]]]
+        -- permuted_exps :: [[[TERM]]]
         let permuted_exps = permute expansions
-        -- profiles :: [[(OP_SYMB, [SORT])]]
+        -- profiles :: [[(OP_SYMB, [TERM])]]
         let profiles = map get_profile permuted_exps
-        -- P :: [[[(OP_SYMB, [SORT])]]]
-        let P = map (equivalence_Classes op_eq) profiles
-        -- P' :: [[[(OP_SYMB, [SORT])]]]
+        -- P :: [[(OP_SYMB, [TERM])]]
+        let P = concat $ map (equivalence_Classes op_eq) profiles
+        -- P' :: [[(OP_SYMB, [TERM])]]
         let P' = map (minimize sign) P
-        -- kann das sein? das sieht mir aus, als wär da eine Liste zuviel drum
-        -- hab ich eventuell vorher ein concat vergessen?
         return qualifyTerms $ qualifyOps P'
-        -- TODO: qualifyTerms muss hier anders definiert sein
-        -- evtl. muss jede minExpX eine andere Fkt am Ende aufrufen...
     where
+        -- op_eq :: (OP_SYMB, [TERM]) -> (OP_SYMB, [TERM]) -> Bool
         op_eq (op1,ts1) (op2,ts2)
-            = let w1 = op_terms op1                             -- :: [TERM]
-                  w2 = op_terms op2                             -- :: [TERM]
-                  b1 = zipped_all (leq_SORT sign) ts1 w1        -- ::  Bool
-                  b2 = zipped_all (leq_SORT sign) ts2 w2        -- ::  Bool
+            = let w1 = op_terms op1                             -- :: [SORT]
+                  w2 = op_terms op2                             -- :: [SORT]
+                  s1 = map term_sort ts1                        -- :: [SORT]
+                  s2 = map term_sort ts2                        -- :: [SORT]
+                  b1 = zipped_all (leq_SORT sign) s1 w1         -- ::  Bool
+                  b2 = zipped_all (leq_SORT sign) s2 w2         -- ::  Bool
                   ops_equal = op1 == op2                        -- ::  Bool
                   ops_equiv = op1 leqF op2                      -- ::  Bool
-                  types_equal = all ( zipWith (==) ts1 ts2 )    -- ::  Bool
                   -- TODO: leqF fehlt noch!
+                  types_equal = all ( zipWith (==) ts1 ts2 )    -- ::  Bool
               in b1 && b2 && (ops_equal || (ops_equiv && types_equal))
-        get_profile cs -- :: [[Sorted_TERM]] -> [(OP_SYMB, [SORT])]
+        -- get_profile :: [[TERM]] -> [(OP_SYMB, [TERM])]
+        get_profile cs
             = [ (op', ts) | op' <- ops, ts <- (permute cs),
                 (op_name op') == (op_name op),
-                zipped_all (leq_SORT sign) ts (op_terms op') ]
-        -- TODO: darf hier ein unqualifizierter OP in Sign stecken?!?
-        -- wenn ja, dann muss ich op_terms anpassen!!!
+                zipped_all (leq_SORT sign) (map term_sort ts) (op_terms op') ]
+        -- qualifyOps :: [[(OP_SYMB, [TERM])]] -> [[(TERM, SORT)]]
+        qualifyOps = map (map qualify_op)
+        -- qualify_op :: (OP_SYMB, [TERM]) -> (TERM, SORT)
+        qualify_op (op, terms) = ((Application op terms []), (op_result op))
 
 {-----------------------------------------------------------
     Construct a TERM of type Sorted_term
@@ -280,9 +284,25 @@ op_name                         :: OP_SYMB -> OP_NAME
 op_name (Op_name name)          = name
 op_name (Qual_op_name name _ _) = name
 
-op_terms                        :: OP_SYMB -> OP_TYPE
-op_terms (Qual_op_name _ ts _)  = ts
-op_terms (Op_name _)            = error "Critical: Unqualified Op in op_terms!"
+op_type                         :: OP_SYMB -> Maybe OP_TYPE
+op_type (Qual_op_name _ t _)    = Just t
+op_type _                       = Nothing
+
+op_terms                        :: OP_SYMB -> [SORT]
+op_terms op                     = case (op_type op) of
+    Just (Total_op_type sorts _ _)      -> sorts
+    Just (Partial_op_type sorts _ _)    -> sorts
+    Nothing             -> error "Critical: Unqualified Op in op_terms!"
+
+op_result                       :: OP_SYMB -> SORT
+op_result op                    = case (op_type op) of
+    Just (Total_op_type _ sort _)       -> sort
+    Just (Partial_op_type _ sort _)     -> sort
+    Nothing             -> error "Critical: Unqualified Op in op_result!"
+
+term_sort                       :: TERM -> SORT
+term_sort (Sorted_term _ s _)   = s
+term_sort _                     = error "Critical: Unsorted Term in term_sort!"
 
 {-----------------------------------------------------------
     Return True if s1 <= s2
