@@ -1,0 +1,19 @@
+Hatchet einbinden
+In Logic_Haskell.hs: 
+- Sign durch Datentyp für Ergebnis des Typcheck ersetzen ("Interface-Files")
+- Sentence durch Datentyp für Programmdefinitionen ersetzen
+- in instance StaticAnalysis Funktion basic_analysis hinzufügen   
+  berechnet aus abstraktem Syntaxbaum die Typen der Funktionen
+    und guckt ob alle benutzten Identifier auch deklariert wurden
+  basic_analysis ist also ein Wrapper um eine Hatchet-Funktion
+
+   basic_analysis :: lid -> -- ignorieren
+                           Maybe((basic_spec,  -- abstract syntax tree
+                            sign,   -- was von importierten Modulen reinkommt
+                            GlobalAnnos) ->   -- global annotations
+                           Result (basic_spec,  -- wie oben zurückgeben
+                                  sign,sign, -- (gesamt, delta)
+                                  -- delta = Deklarationen im Modul
+                                  -- gesamt = importiert + delta 
+                                            (mittels Vereinigungsfunktion)
+                                  [Named sentence] -- Programmdefinitionen))
