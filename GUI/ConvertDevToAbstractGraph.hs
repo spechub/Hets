@@ -136,7 +136,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                               showIt gid descr actGraphInfo
                               redisplay gid actGraphInfo
                               return ()    ),
-		  Button "Proofs _ temp"
+		  Button "TEMP - Global Subsumption"
 			  (do proofStatus <- readIORef ioRefProofStatus
 			      let newProofStatus@(_,history,_) =
 			            globSubsume proofStatus
@@ -149,7 +149,21 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		              writeIORef event newDescr
 		              writeIORef convRef newConvMaps
 		              redisplay gid actGraphInfo
-		              return ()    ) ]),
+		              return ()    ), 
+		  Button "TEMP - Local Subsumption"
+			  (do proofStatus <- readIORef ioRefProofStatus
+			      let newProofStatus@(_,history,_) =
+			            locSubsume proofStatus
+			      writeIORef ioRefProofStatus newProofStatus
+			      descr <- readIORef event
+			      convMaps <- readIORef convRef
+			      (newDescr,newConvMaps)
+			         <- applyChanges gid ln actGraphInfo descr 
+		                      convMaps history
+		              writeIORef event newDescr
+		              writeIORef convRef newConvMaps
+		              redisplay gid actGraphInfo
+		              return ()    )]),
 
 	        GlobalMenu(Menu (Just "proofs")
                   [Button "Global Subsumption"

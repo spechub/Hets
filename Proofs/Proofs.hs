@@ -124,7 +124,7 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
-globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if True -- existsDefPathOfMorphism dGraph morphism source target
+globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsDefPathOfMorphismBetween dGraph morphism source target
      then
        globSubsumeAux newGraph (newRules,newChanges) list
      else
@@ -159,7 +159,7 @@ locSubsume proofStatus@(globalContext,history,dGraph) =
 locSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locSubsumeAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
-  if False --or [existsDefPathOfMorphism dGraph remainingMorphism nextSrc target | nextSrc <- nextSources]
+  if existsLocDefPathOfMorphismBetween dgraph morphism source target
      then
        globSubsumeAux newGraph (newRules,newChanges) list
      else
@@ -167,21 +167,26 @@ locSubsumeAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
   where
     morphism = dgl_morphism edgeLab
     outGoingEdges = out dgraph source
-    --localDefEdges = filter isLocalDef outGoingEdges
-    --nextStep = [(edge, getTargetNode edge)| edge <- localDefEdges]
+    localDefEdges = filter isLocalDef outGoingEdges
+    -- @@@@@ die richtige Variante einkommentieren, sobald decomp 
+    -- implementiert ist @@@@@
+    nextStep = [(morphism, tgt)|
+		   (_,tgt,lab) <- localDefEdges]
+    --nextStep = [(decomp Grothendieck morphism (dgl_morphism lab), tgt)|
+	--	   edge@(_,tgt,lab) <- localDefEdges]
     auxGraph = delLEdge ledge dgraph
-    (GlobalThm _ conservativity) = (dgl_type edgeLab)
+    (LocalThm _ conservativity) = (dgl_type edgeLab)
     newEdge = (source,
 	       target,
 	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (GlobalThm True conservativity),
+		       dgl_type = (LocalThm True conservativity),
 		       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge auxGraph
-    newRules = (GlobSubsumption ledge):rules
+    newRules = (LocSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
-
+{-
 
 existsDefPathOfMorphism :: DGraph -> GMorphism -> Node -> Node -> Bool
 existsDefPathOfMorphism dgraph morphism src tgt =
@@ -205,7 +210,61 @@ existsDefPathOfMorphismAux dgraph morphism tgt path src =
     morphismsOfPathsToTgt = map calculateMorphismOfPath defPathsToTgt
     filteredMorphismsOfPathsToTgt = getFilteredMorphisms morphismsOfPathsToTgt
 
+-}
+existsDefPathOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
+				    -> Bool
+existsDefPathOfMorphismBetween dgraph morphism src tgt =
+  elem morphism filteredMorphismsOfDefPaths
 
+    where
+      allDefPathsBetween = getAllDefPathsBetween dgraph src tgt
+			     ([]::[LEdge DGLinkLab]) ([]::[[LEdge DGLinkLab]])
+      morphismsOfDefPaths = 
+	  map calculateMorphismOfPath allDefPathsBetween
+      filteredMorphismsOfDefPaths = getFilteredMorphisms morphismsOfDefPaths 
+
+getAllDefPathsBetween :: DGraph -> Node -> Node -> [LEdge DGLinkLab]
+		           -> [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
+getAllDefPathsBetween dgraph src tgt path allPaths =
+  if null inGoingEdges then allPaths
+   else [edge:path| edge <- defEdgesFromSrc]
+           ++ (concat 
+                [getAllDefPathsBetween dgraph src nextTgt (edge:path) allPaths|
+                (edge,nextTgt) <- nextStep] )
+	   ++ allPaths
+
+  where
+    inGoingEdges = inn dgraph tgt
+    globalDefEdges = filter isGlobalDef inGoingEdges
+    defEdgesFromSrc = 
+	[edge| edge@(source,_,_) <- globalDefEdges, source == src]
+    nextStep =
+	[(edge, source)| edge@(source,_,_) <- globalDefEdges, source /= src]
+
+
+existsLocDefPathOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
+                                        -> Bool
+existsLocDefPathOfMorphismBetween dgraph morphism src tgt =
+  elem morphism filteredMorphismsOfLocDefPaths
+
+    where
+      allLocDefPathsBetween = getAllLocDefPathsBetween dgraph src tgt
+      morphismsOfLocDefPaths =
+	  map calculateMorphismOfPath allLocDefPathsBetween
+      filteredMorphismsOfLocDefPaths = 
+	  getFilteredMorphisms morphismsOfLocDefPaths
+
+getAllLocDefPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
+getAllLocDefPathsBetween dgraph src tgt = undefined
+
+{-  [map (edge++) (getAllDefPathsBetween nextSrc tgt ([]::[LEdge DGLinkLab])
+	     ([]::[[LEdge DGLinkLab]]))|(edge,nextSrc) <- nextStep] 
+
+  where
+    outGoingEdges = out dgraph src
+    localDefEdges = filter isLocalDef outGoingEdges
+    nextStep = [(edge, getTargetNode edge)| edge <- localDefEdges]
+-}
 -- Reihenfolge der Komposition überprüfen
 calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
 calculateMorphismOfPath [] = error "getMorphismOfPath: empty path"
@@ -244,9 +303,14 @@ isUnprovenLocalThm (_,_,edgeLab) =
     (LocalThm False _) -> True
     otherwise -> False
 
-isGlobalDef ::LEdge DGLinkLab -> Bool
+isGlobalDef :: LEdge DGLinkLab -> Bool
 isGlobalDef (_,_,edgeLab) =
   case dgl_type edgeLab of
     GlobalDef -> True
     otherwise -> False
 
+isLocalDef :: LEdge DGLinkLab -> Bool
+isLocalDef (_,_,edgeLab) =
+  case dgl_type edgeLab of
+    LocalDef -> True
+    otherwise -> False
