@@ -166,27 +166,27 @@ class (Category lid sign morphism, Ord sentence,
       where
          -- sentence translation
       map_sen :: lid -> morphism -> sentence -> Result sentence
+      map_sen l _ _ = statErr l "map_sen"
          -- simplification of sentences (leave out qualifications)
       simplify_sen :: lid -> sign -> sentence -> sentence
       simplify_sen _ _ = id  -- default implementation
          -- parsing of sentences
       parse_sentence :: lid -> Maybe (sign -> String -> Result sentence)
-           -- is a term parser needed as well?
-      print_named :: lid -> GlobalAnnos -> Named sentence -> Doc
+      parse_sentence _ = Nothing
            -- print a sentence with comments
+      print_named :: lid -> GlobalAnnos -> Named sentence -> Doc
+      print_named _ = printText0
       sym_of :: lid -> sign -> Set symbol
       symmap_of :: lid -> morphism -> EndoMap symbol
       sym_name :: lid -> symbol -> Id 
       provers :: lid -> [Prover sign sentence proof_tree symbol]
+      provers _ = []
       cons_checkers :: lid -> [Cons_checker 
                               (TheoryMorphism sign sentence morphism)] 
+      cons_checkers _ = []
       consCheck :: lid -> (sign,[Named sentence]) -> 
                        morphism -> [Named sentence] -> Result (Maybe Bool)
-      -- default implementations
-      parse_sentence _ = Nothing
-      print_named _ = printText0
-      provers _ = []
-      cons_checkers _ = []
+      consCheck l _ _ _ = statErr l "consCheck"
 
 -- static analysis
 statErr :: (Language lid, Monad m) => lid -> String -> m a
@@ -313,13 +313,19 @@ class (StaticAnalysis lid
          is_in_symbol _ _ _ = False
  
          min_sublogic_basic_spec :: lid -> basic_spec -> sublogics
+         min_sublogic_basic_spec _ _ = top
          min_sublogic_sentence :: lid -> sentence -> sublogics
+         min_sublogic_sentence _ _ = top
          min_sublogic_symb_items :: lid -> symb_items -> sublogics
+         min_sublogic_symb_items _ _ = top
          min_sublogic_symb_map_items :: lid -> symb_map_items -> sublogics
+         min_sublogic_symb_map_items _ _ = top
          min_sublogic_sign :: lid -> sign -> sublogics
+         min_sublogic_sign _ _ = top
          min_sublogic_morphism :: lid -> morphism -> sublogics
+         min_sublogic_morphism _ _ = top
          min_sublogic_symbol :: lid -> symbol -> sublogics
-
+         min_sublogic_symbol _ _ = top
          proj_sublogic_basic_spec :: lid -> sublogics 
                                   -> basic_spec -> basic_spec
          proj_sublogic_basic_spec _ _ b = b                          
