@@ -30,7 +30,7 @@ import Syntax.AS_Library
 import Static.AnalysisStructured
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions
+import Common.AnalyseAnnos
 import Common.Result
 import Common.Id
 import qualified Common.Lib.Map as Map
@@ -108,6 +108,7 @@ ana_LIB_DEFN :: LogicGraph -> AnyLogic -> HetcatsOpts
                  -> IOResult (LIB_NAME,LIB_DEFN,DGraph,LibEnv)
 
 ana_LIB_DEFN lgraph l opts libenv (Lib_defn ln alibItems pos ans) = do
+  gannos <- resToIORes $ addGlobalAnnos emptyGlobalAnnos ans
   (libItems',gctx@(_,_,dg),_,libenv') <- 
      foldl ana (return ([],(gannos,Map.empty,empty),l,libenv))
                (map item alibItems)
@@ -120,7 +121,6 @@ ana_LIB_DEFN lgraph l opts libenv (Lib_defn ln alibItems pos ans) = do
           dg,
           Map.insert ln gctx libenv')
   where
-  gannos = addGlobalAnnos emptyGlobalAnnos ans
   ana res libItem = do
     (libItems',gctx1,l1,libenv1) <- res
     (libItem',gctx1',l1',libenv1') <- 
