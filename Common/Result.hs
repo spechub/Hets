@@ -11,7 +11,7 @@
 
 -}
 
-module Common.Result where
+module Common.Result (module Common.Result, showPretty) where
 
 import Common.Id
 import Common.Lib.Parsec.Pos
@@ -24,6 +24,13 @@ data Diagnosis = Diag { diagKind :: DiagKind
 		      , diagString :: String
 		      , diagPos :: Pos 
 		      }
+
+mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
+mkDiag k s a =
+    Diag k (s ++ " '" ++ showPretty a "'") $
+		 case get_pos a of 
+		 Nothing -> nullPos
+		 Just p -> p
 
 data Result a = Result { diags :: [Diagnosis]
 	               , maybeResult :: (Maybe a)
@@ -41,8 +48,8 @@ x `ioBind` f = do
   res <- x
   case res of
     Result errs Nothing -> return (Result errs Nothing)
-    Result errs1 (Just x) -> do
-      Result errs2 y <- f x
+    Result errs1 (Just v) -> do
+      Result errs2 y <- f v
       return (Result (errs1++errs2) y)
 
 newtype IOResult a = IOResult (IO(Result a))
@@ -69,26 +76,15 @@ warning :: a -> String -> Pos -> Result a
 warning x s p = Result [Diag Warning s p] $ Just x  
 
 maybeToResult :: Pos -> String -> Maybe a -> Result a
-maybeToResult pos err (Just x) = return x
-maybeToResult pos err Nothing = 
-  fatal_error err pos
-
+maybeToResult p s m = Result [Diag FatalError s p] m
 
 instance Show Diagnosis where
-    showsPrec _ (Diag k s sp) = 
-	shows k . colonS . 
-	showString "in line " . shows (sourceLine sp) .
-	showString " at char " . shows (sourceColumn sp) . 
-	colonS . showString s 
-	       where colonS = showString ": "
-    showList [] = id
-    showList [d] = shows d
-    showList (d:ds) = shows d . showString "\n" . showList ds
+    showsPrec _ = showPretty
 
 instance PrettyPrint Diagnosis where
     printText0 _ (Diag k s sp) = 
 	ptext (show k)
-        <+> parens (int (sourceLine sp) <> comma <> int (sourceColumn sp))
+        <+> text (show sp)
 	<+> text s
 
 instance PrettyPrint a => PrettyPrint (Result a) where
