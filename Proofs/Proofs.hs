@@ -35,6 +35,7 @@ import Logic.Prover
 import Logic.Grothendieck
 import Static.DevGraph
 import Common.Lib.Graph
+import List(nub)
 
 {- proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
    DG0 is the development graph resulting from the static analysis
@@ -534,11 +535,12 @@ getInsertedEdges (change:list) =
    for the unproven ones -}
 selectProofBasis :: DGLinkLab -> [[LEdge DGLinkLab]] -> [DGLinkLab]
 selectProofBasis label paths =
-  if null provenPaths then selectProofBasisAux label unprovenPaths
-   else selectProofBasisAux label provenPaths
+  if null provenProofBasis then selectProofBasisAux label unprovenPaths
+   else provenProofBasis
 
   where 
     provenPaths = filterProvenPaths paths
+    provenProofBasis = selectProofBasisAux label provenPaths
     unprovenPaths = [path | path <- paths, notElem path provenPaths]
 
 {- selects the first path that does not form a proof cycle with the given
@@ -546,8 +548,29 @@ selectProofBasis label paths =
 selectProofBasisAux :: DGLinkLab -> [[LEdge DGLinkLab]] -> [DGLinkLab]
 selectProofBasisAux _ [] = []
 selectProofBasisAux label (path:list) =
-    if notProofCycle label path then [lab|(_,_,lab)<- path]
+    if notProofCycle label path then nub (calculateProofBasis path)
      else selectProofBasisAux label list
+
+
+{- calculates the proofBasis of the given path,
+ i.e. the list of all DGLinkLabs the proofs of the edges contained in the path
+ are based on, plus the DGLinkLabs of the edges themselves;
+ duplicates are not removed here, but in the calling method
+ selectProofBasisAux -}
+calculateProofBasis :: [LEdge DGLinkLab] -> [DGLinkLab]
+calculateProofBasis [] = []
+calculateProofBasis ((_,_,lab):edges) =
+  lab:((getProofBasis lab)++(calculateProofBasis edges))
+
+
+{- returns the proofBasis contained in the given DGLinkLab -}
+getProofBasis :: DGLinkLab -> [DGLinkLab]
+getProofBasis lab =
+  case dgl_type lab of 
+    (GlobalThm (Proven proofBasis) _ _) -> proofBasis
+    (LocalThm (Proven proofBasis) _ _) -> proofBasis
+    _ -> []
+
 
 {- returns all proven paths from the given list -}
 filterProvenPaths :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
