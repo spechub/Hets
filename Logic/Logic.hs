@@ -338,6 +338,12 @@ instance Eq AnyLogic where
 -- Typeable instances
 ----------------------------------------------------------------
 
+namedTc :: TyCon
+namedTc = mkTyCon "Common.Named.Named"
+
+instance Typeable s => Typeable (Named s) where 
+  typeOf s = mkAppTy namedTc [typeOf ((undefined :: Named a -> a) s)]
+
 setTc :: TyCon
 setTc = mkTyCon "Common.Lib.Set.Set"
 
