@@ -66,7 +66,7 @@ instance Comorphism HasCASL2IsabelleHOL
     map_sign _ = transSignature
     --map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign phi =
-      Just $ Sentence {senTerm = transTerm sign phi}
+      Just $ Sentence {senTerm = (transTerm sign phi)}
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
 ------------------------------ Ids ---------------------------------
@@ -110,7 +110,11 @@ transOpType :: TypeScheme -> Typ
 transOpType (TypeScheme _ (_ :=> opType) _) = transType opType
 
 transPredType :: TypeScheme -> Typ
-transPredType  (TypeScheme _ (_ :=> predType) _) = (transType predType) --> boolType
+transPredType  (TypeScheme _ (_ :=> predType) _) = 
+       case predType of
+         FunType tp _ _ _ -> (transType tp) --> boolType
+         _                -> error "Wrong predicate type"
+--                                                 (transType predType) --> boolType
 
 transType :: Type -> Typ
 transType typ = case typ of
@@ -124,12 +128,16 @@ transVar :: Var -> String
 transVar = showIsa
 
 transTerm :: Env -> As.Term -> IsaSign.Term
--- transTerm _ (QualVar var typ _) = 
---     Const("Some",((transType typ) --> (mkOptionType (transType typ)))) `App`  Free((transVar var,(transType typ))
+transTerm _ (QualVar var typ _) = 
+    Const("Some",((transType typ) --> (mkOptionType (transType typ)))) 
+      `App`  IsaSign.Free((transVar var,(transType typ)))
 transTerm _ (QualOp _ opId _ _) =
-       case opId of
-         trueId  -> Const ("True",dummyT)
-         falseId -> Const ("False",dummyT)
+       let op = getOp opId
+       in
+         case op of
+           "true"  -> Const ("True",dummyT)
+           "false" -> Const ("False",dummyT)
+           _       -> Const(op,dummyT)
 transTerm sign (ApplTerm term1 term2 _) = 
        case term1 of
          QualOp Fun opId logType _ -> transLog sign term1 term2
@@ -141,7 +149,7 @@ transTerm sign (QuantifiedTerm quant varDecls phi _) =
   foldr (quantify quant) (transTerm sign phi) (map toPair varDecls)
 transTerm sign (TypedTerm term _ typ _) = transTerm sign term
 transTerm sign (LambdaTerm pats Partial body _) = 
-  Const("Some",dummyT) `App` (foldr abstraction (transTerm sign body) pats)
+  Const("Some",dummyT) `App` (foldr (abstraction sign) (transTerm sign body) pats)
 transTerm sign (LetTerm Let eqs body _) = 
   transTerm sign (foldr let2lambda body eqs)
 transTerm sign (TupleTerm terms _) = foldl1 prod (map (transTerm sign) terms)
@@ -156,12 +164,12 @@ let2lambda (ProgEq pat term _) body =
 --       | Abs   (String, Typ, Term)
 --       | App Term  Term
 
-getVarName :: As.Term -> String
-getVarName term = case term of
-                    QualVar var _ _ -> transVar var
-                    TypedTerm term _ _ _ -> getVarName term
---                    TupleTerm terms _ -> evalName terms
-                    _ -> error "Illegal pattern in lambda abstraction"
+-- getVarName :: As.Term -> String
+-- getVarName term = case term of
+--                     QualVar var _ _ -> transVar var
+--                     TypedTerm term _ _ _ -> getVarName term
+-- --                    TupleTerm terms _ -> evalName terms
+--                     _ -> error "Illegal pattern in lambda abstraction"
 
 getType :: As.Term -> Typ
 getType term = case term of
@@ -171,26 +179,33 @@ getType term = case term of
                     _ -> error "Illegal pattern in lambda abstraction"
 
 transLog :: Env -> As.Term -> As.Term -> IsaSign.Term
-transLog sign (QualOp _ opId _ _) term = 
-       case opId of
-         andId  -> foldl1 binConj (map (transTerm sign) (getPhis term))
-         orId   -> foldl1 binDisj (map (transTerm sign) (getPhis term))
-         implId -> binImpl (transTerm sign (head (getPhis term))) 
-                           (transTerm sign (last (getPhis term)))
-         eqvId  -> binEq (transTerm sign (head (getPhis term))) 
-                         (transTerm sign (last (getPhis term)))
-         negId  -> Const ("Not",dummyT) `App` (transTerm sign term)
-         defId  -> Const ("defOp",dummyT) `App` (transTerm sign term)
---         exId   ->
-         eqId   -> binEq (transTerm sign (head (getPhis term))) 
-                         (transTerm sign (last (getPhis term)))
+transLog sign (QualOp a opId b c) term = 
+       let op = getOp opId
+       in
+       case op of
+         "/\\"  -> (foldl1 binConj (map (transTerm sign) (getPhis term)))
+         "\\/"  -> (foldl1 binDisj (map (transTerm sign) (getPhis term)))
+         "=>"   -> (binImpl (transTerm sign (head (getPhis term))) 
+                           (transTerm sign (last (getPhis term))))
+         "<=>"  -> (binEq (transTerm sign (head (getPhis term))) 
+                         (transTerm sign (last (getPhis term))))
+         "\172" -> (Const ("Not",dummyT) `App` (transTerm sign term))
+         "def"  -> (Const ("defOp",dummyT) `App` (transTerm sign term))
+--       "=e="   ->
+         "="    -> (binEq (transTerm sign (head (getPhis term))) 
+                         (transTerm sign (last (getPhis term))))
+         _      -> (transTerm sign (QualOp a opId b c)) `App` (transTerm sign term)
        where getPhis (TupleTerm phis _) = phis
+
+getOp (InstOpId uInst _ _) = getTokenName uInst
+getTokenName (Id (tok:toks) a b) = if (tokStr tok) == "__" then getTokenName (Id toks a b)
+                                     else tokStr tok --trace ("Token...: "++ (show toks) ++ "\n\n") (tokStr (head toks))
 
 -- mkSome :: Var -> String
 -- mkSome var = "Some "++(transVar var)
 
 quantify q (v,t) phi  = 
-  Const (qname q,dummyT) `App` Abs (transVar v,transType t,phi)
+  Const (qname q,dummyT) `App` Abs ((Const(transVar v, dummyT)),transType t,phi)
   where
   qname Universal   = "All"
   qname Existential = "Ex"
@@ -208,20 +223,9 @@ binEq phi1 phi2 =
 prod term1 term2 =
   Const("Pair",dummyT) `App` term1 `App` term2
 
-abstraction pat body = Abs((getVarName pat), (getType pat), body)
+abstraction sign pat body = Abs((transTerm sign pat), (getType pat), body)
 
 toPair (GenVarDecl (VarDecl var typ _ _)) = (var,typ)
-
--- data Term =
---           | TypedTerm Term TypeQual Type [Pos]
---           -- pos ":", "as" or "in"
---           | LambdaTerm [Pattern] Partiality Term [Pos]
---           -- pos "\", dot (plus "!") 
-
--- transFORMULA sign (Definedness t _) =
---   Const ("True",dummyT)
--- transFORMULA sign (Existl_equation t1 t2 _) =
---   Const ("op =",dummyT) `App` (transTERM sign t1) `App` (transTERM sign t2)
 
 
 
