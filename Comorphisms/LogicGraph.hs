@@ -44,11 +44,11 @@ import Comorphisms.HasCASL2Haskell
 import Comorphisms.CASL2IsabelleHOL
 import qualified Common.Lib.Map as Map
 import CASL.ATC_CASL
---import Modal.Logic_Modal
+import Modal.Logic_Modal
 
 logicList :: [AnyLogic]
-logicList = [Logic CASL, Logic HasCASL, Logic Haskell, Logic CspCASL,
-             Logic Isabelle]
+logicList = [Logic CASL, Logic HasCASL, Logic Haskell, 
+	     Logic Modal, Logic CspCASL, Logic Isabelle]
 
 inclusionList :: [AnyComorphism]
 inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2Haskell,
