@@ -11,12 +11,14 @@ main = exec lineParser fileParser
 
 lineParser, fileParser :: [(String, HetParser)]
 lineParser = [
- ("id", HetParser uninstOpName),
- ("typename", HetParser typeName),
- ("type", HetParser parseType),
- ("term", HetParser term),
- ("typepattern", HetParser typePattern),
- ("pattern", HetParser pattern),
- ("item", HetParser basicSpec)]
+ ("MixIds", HetParser uninstOpName),
+ ("Typenames", HetParser typeName),
+ ("Types", HetParser parseType),
+ ("Terms", HetParser term),
+ ("Typepattern", HetParser typePattern),
+ ("Pattern", HetParser pattern),
+ ("BasicItems", HetParser basicItems),
+ ("Items", HetParser basicSpec)]
 
-fileParser = [("items", HetParser basicSpec)]
+fileParser = [("BasicSpec", HetParser basicSpec),
+	     ("Prelude", HetParser basicSpec)]
