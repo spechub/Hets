@@ -56,22 +56,24 @@ import Common.Lib.Pretty
 -- what about open theorems of a node???
 data DGNodeLab = DGNode {
                 dgn_name :: Maybe SIMPLE_ID,
-                dgn_sign :: G_sign, 
-                dgn_sens :: G_l_sentence_list, 
+                dgn_sign :: G_sign,
+                dgn_sens :: G_l_sentence_list,
+                dgn_nf :: Maybe Node,
+                dgn_sigma :: Maybe GMorphism,
                 dgn_origin :: DGOrigin
-              }   
-            | DGRef { 
+              }
+            | DGRef {
                 dgn_renamed :: Maybe SIMPLE_ID,
-                dgn_libname :: LIB_NAME, 
+                dgn_libname :: LIB_NAME,
                 dgn_node :: Node
-              } deriving (Show,Eq)
+              } deriving (Show,Eq) 
 
 isDGRef :: DGNodeLab -> Bool
-isDGRef (DGNode _ _ _ _) = False
+isDGRef (DGNode _ _ _ _ _ _) = False
 isDGRef (DGRef _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
-locallyEmpty (DGNode _ (G_sign lid sigma) (G_l_sentence_list _ sens) _) = 
+locallyEmpty (DGNode _ (G_sign lid sigma) (G_l_sentence_list _ sens) _ _ _) = 
   is_subsig lid sigma (empty_signature lid) && null sens
 locallyEmpty (DGRef _ _ _) = True
            
@@ -290,7 +292,7 @@ emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
 
 get_dgn_name :: DGNodeLab -> Maybe SIMPLE_ID
-get_dgn_name (DGNode (Just name) _ _ _) = Just name
+get_dgn_name (DGNode (Just name) _ _ _ _ _) = Just name
 get_dgn_name (DGRef (Just name) _ _) = Just name
 get_dgn_name _ = Nothing
 

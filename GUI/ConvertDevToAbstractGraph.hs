@@ -681,7 +681,7 @@ getSignatureOfNode descr ab2dgNode dgraph =
     Just (libname, node) -> 
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
-           (DGNode name (G_sign _ sig) _ _) ->
+           (DGNode name (G_sign _ sig) _ _ _ _) ->
               let title = case name of
                    Nothing -> "Signature"
                    Just n -> "Signature of "++showPretty n ""
@@ -733,7 +733,7 @@ displayTheory :: String -> Node -> DGraph -> G_theory
 displayTheory ext node dgraph gth =
     let dgnode = lab' (context node dgraph)
         str = printTheory (simplifyTh gth) in case dgnode of
-           (DGNode name (G_sign _ _) _ _) ->
+           (DGNode name (G_sign _ _) _ _ _ _) ->
               let thname = case name of
                    Nothing -> "InternalNode"++show node
                    Just n -> showPretty n ""
@@ -793,7 +793,7 @@ getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
     Just (libname, node) -> 
       let dgnode = lab' (context node dgraph)
           name = case dgnode of
-                       (DGNode name _ _ _) -> name
+                       (DGNode name _ _ _ _ _) -> name
                        _ -> Nothing
        in case computeTheory libEnv dgraph node of
         Res.Result _ (Just th) ->
@@ -817,7 +817,7 @@ showOriginOfNode descr ab2dgNode dgraph =
     Just (libname, node) -> 
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
-           (DGNode name _ _ orig) ->    
+           (DGNode name _ _ _ _ orig) ->    
               let title = case name of
                      Nothing -> "Origin of node"
                      Just n -> "Origin of node "++showPretty n ""
@@ -881,7 +881,7 @@ checkconsistencyOfEdge _ (ref,_,_,_,_,_,_) (Just (source,target,linklab)) = do
   (_,libEnv,_,dgraph) <- readIORef ref
   let dgtar = lab' (context target dgraph)
   case dgtar of
-    (DGNode name _ (G_l_sentence_list lid sens) _) -> do   
+    (DGNode name _ (G_l_sentence_list lid sens) _ _ _) -> do   
       GMorphism cid sign1 morphism2 <- return $ dgl_morphism linklab
       let morphism2' = case coerce (targetLogic cid) lid morphism2 of
            Just m -> m

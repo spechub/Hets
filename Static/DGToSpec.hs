@@ -37,27 +37,27 @@ dgToSpec dg node = do
   let apredSps = map emptyAnno predSps
       pos = map (\_ -> nullPos) predSps
   case n of
-    (DGNode _ (G_sign lid1 sigma) (G_l_sentence_list lid2 sen) DGBasic) -> 
+    (DGNode _ (G_sign lid1 sigma) (G_l_sentence_list lid2 sen) _ _ DGBasic) -> 
       do sen' <- rcoerce lid1 lid2 nullPos sen
          let b = Basic_spec (G_basic_spec lid1 (sign_to_basic_spec lid1 sigma sen'))
          if null apredSps
           then return b
           else return (Extension (apredSps++[emptyAnno b]) pos)
-    (DGNode _ _ _ DGExtension) ->
+    (DGNode _ _ _ _ _ DGExtension) ->
          return (Extension apredSps pos)
-    (DGNode _ _ _ DGUnion) ->
+    (DGNode _ _ _ _ _ DGUnion) ->
          return (Union apredSps pos)
-    (DGNode _ _ _ DGTranslation) ->
+    (DGNode _ _ _ _ _ DGTranslation) ->
          return (Translation (head apredSps) (Renaming [] []))
-    (DGNode _ _ _ DGHiding) ->
+    (DGNode _ _ _ _ _ DGHiding) ->
          return (Reduction (head apredSps) (Hidden [] []))
-    (DGNode _ _ _ DGRevealing) ->
+    (DGNode _ _ _ _ _ DGRevealing) ->
          return (Reduction (head apredSps) (Hidden [] []))
-    (DGNode _ _ _ DGFree) ->
+    (DGNode _ _ _ _ _ DGFree) ->
          return (Free_spec (head apredSps) pos)
-    (DGNode _ _ _ DGCofree) ->
+    (DGNode _ _ _ _ _ DGCofree) ->
          return (Cofree_spec (head apredSps) pos)
-    (DGNode _ _ _ (DGSpecInst name)) ->
+    (DGNode _ _ _ _ _ (DGSpecInst name)) ->
          return (Spec_inst name [] pos)
     (DGRef (Just name) _ _) -> return (Spec_inst name [] pos)
     _ -> return (Extension apredSps pos)

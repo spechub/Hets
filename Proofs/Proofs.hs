@@ -758,17 +758,29 @@ getConservativity edge@(_,_,edgeLab) =
 
 theoremHideShift :: ProofStatus -> IO ProofStatus
 theoremHideShift proofStatus@(globalContext,libEnv,history,dgraph) =
-  error 
-  (concat (map (prettyPrintPath dgraph) 
-   (map snd 
-    (concat 
-     [getAllPathsBeginningWithHidingDefTo dgraph node ([]::[LEdge DGLinkLab])|
-      node <- map getTargetNode globalThmEdges]))))
+--  error 
+--  (concat (map (prettyPrintPath dgraph) 
+  -- (map snd 
+   -- (concat 
+     --[getAllPathsBeginningWithHidingDefTo dgraph node ([]::[LEdge DGLinkLab])|
+      --node <- map getTargetNode hidingEdges]))))
+  if (null (snd (theoremHideShiftInsertNodes dgraph hidingEdges))) then error "kam durch"
+    else error "kam durch zweiter zweig"
 
   where
-    globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
+    hidingEdges = filter isHidingEdge (labEdges dgraph)
 
-
+theoremHideShiftInsertNodes :: DGraph -> [LEdge DGLinkLab]
+			    -> (DGraph,[DGChange])
+theoremHideShiftInsertNodes dgraph [] = (dgraph, [])
+theoremHideShiftInsertNodes dgraph ((_,tgt,edgelab):list) =
+  case inGoingHidingDefs of
+    [] -> error (show nodeLab)
+    _ -> error (show nodeLab)
+  where 
+    inGoingHidingDefs = getAllPathsBeginningWithHidingDefTo dgraph tgt []
+    nodeLab = lab' (context tgt dgraph)
+    
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
@@ -983,6 +995,10 @@ isUnprovenLocalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
     (LocalThm (Static.DevGraph.Open) _ _) -> True
     _ -> False
+
+
+isHidingEdge :: LEdge DGLinkLab -> Bool
+isHidingEdge edge = isHidingDef edge || isHidingThm edge
 
 isHidingDef :: LEdge DGLinkLab -> Bool
 isHidingDef (_,_,edgeLab) =
@@ -1319,7 +1335,7 @@ basicInferenceNode checkCons lg (ln,node)
                 $ fst $ match node dGraph
     let nlab = lab' ctx  
         nodeName = case nlab of
-          DGNode _ _ _ _-> dgn_name nlab
+          DGNode _ _ _ _ _ _-> dgn_name nlab
           DGRef _ _ _ -> dgn_renamed nlab
         thName = showPretty (getLIB_ID ln) "_"
                  ++ maybe (show node) (flip showPretty "") nodeName
