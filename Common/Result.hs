@@ -14,7 +14,6 @@
 module Common.Result (module Common.Result, showPretty) where
 
 import Common.Id
-import Common.Lib.Parsec.Pos
 import Common.PrettyPrint
 import Common.Lib.Pretty
 
