@@ -766,7 +766,7 @@ Output: signature "Sigma1"<=Sigma.
 cogeneratedSign :: Ext f e m -> SymbolSet -> Sign f e 
                 -> Result (Morphism f e m)
 cogeneratedSign extEm symset sigma = do
-  if trace ("symset "++show symset++"\nsymset0 "++show symset0)
+  if {-trace ("symset "++show symset++"\nsymset0 "++show symset0)-}
            (not (symset `Set.subset` symset0))   -- 2.
    then pfatal_error 
          (ptext "Hiding: The following symbols" 
