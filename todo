@@ -136,18 +136,7 @@ OWL-DL -> CASL
 
 LaTeX pretty printer
 
-von Christian:
-a) analysierte Formeln und Terme optimal/kürzer ausgeben:
-
-shorten :: Sign -> {TERM, FORMULA} -> {TERM, FORMULA}
-
-In Abhängigkeit von Sign werden z.B. nicht-überladene Funktionen
-unqualifiziert ausgeben bzw. zwecks Eindeutigkeit wird (minimal) nur
-mit dem Ergebnistyp qualifiziert.
-
-((a: Nat) + (b: Nat)): Nat
-
-b) eine HetCASL spezifische PP Lib (mit neuem Doc Typ), um Text, Latex
+eine HetCASL spezifische PP Lib (mit neuem Doc Typ), um Text, Latex
 und andere Formate besser zu unterstützen und einheitlichen PP code
 für die CASL Datentypen zu bekommen.
 
@@ -158,7 +147,7 @@ HasCASL hat auch noch keine Mixfix- und Latex Ausgabe.
 Christian
 ************************************************
 
-assoc attribute does not translate along sig. mors
+logic coding form the comand line with printing of results
 
 Haskell modules: hiding, renaming
 
@@ -192,9 +181,6 @@ Klaus
 ************************************************
 
 CASL -> SPASS
-
-Fail when version numer is wrong
-(*** Warning , Wrong version number ... re-analyzing)
 
 Coding of subsorts as unary predicates (for ontologies)
 Translation between Achim's ontology data structure and CASL (in Hets)
