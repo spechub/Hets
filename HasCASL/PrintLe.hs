@@ -9,17 +9,35 @@
 
 module PrintLe where
 
-import PrintAs
 import As
+import PrintAs
 import Le
 import AsToLe
 import PrettyPrint
 import Pretty
 import FiniteMap
+import Keywords
+
+noPrint :: Bool -> Doc -> Doc
+noPrint b d = if b then empty else d
 
 instance PrettyPrint Le.ClassItem where
-    printText0 ga (Le.ClassItem _ sups defn insts _) =
-	ptext (showClassList sups [])
+    printText0 ga (Le.ClassItem _ sups defn@(Intersection defns _) insts _) =
+	(noPrint (null sups)
+	   (ptext lessS <+> if null $ tail sups 
+	    then printText0 ga $ head sups
+	    else parens (commas ga sups))
+	<> noPrint (null sups || null defns) space
+	<> noPrint (null defns)
+	   (ptext equalS <+> printText0 ga defn)
+	) $$ noPrint (null insts) 
+             (ptext "Instances" $$ 
+	      vcat (map (printText0 ga) insts))
+
+instance PrettyPrint a => PrettyPrint [a] where 
+    printText0 ga l = noPrint (null l)
+		      (if null $ tail l then printText0 ga $ head l
+		       else parens $ commas ga l)
 
 instance (PrettyPrint a, Ord a, PrettyPrint b) 
     => PrettyPrint (FiniteMap a b) where
@@ -31,8 +49,9 @@ instance (PrettyPrint a, Ord a, PrettyPrint b)
 instance PrettyPrint Env where
     printText0 ga e = printText0 ga (classEnv e)
 	$$ ptext "Type Constructors"
---	$$ printText0 ga (typeKinds e)
+	$$ printText0 ga (typeKinds e)
 	$$ ptext "Assumptions"
+        $$ printText0 ga (assumps e)  
 	$$ vcat (map (printText ga) (reverse $ envDiags e))
 
 {-

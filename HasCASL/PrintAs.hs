@@ -18,7 +18,7 @@ import GlobalAnnotations(GlobalAnnos)
 import Print_AS_Annotation
 
 commas, semis :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
-commas ga l = fsep $ punctuate comma (map (printText0 ga) l)
+commas ga l = fcat $ punctuate comma (map (printText0 ga) l)
 semis ga l = sep $ punctuate semi (map (printText0 ga) l)
 
 instance PrettyPrint TypePattern where 
@@ -34,25 +34,24 @@ bracket Parens t = parens t
 bracket Squares t = Pretty.brackets t
 bracket Braces t = braces t
 
+printKind :: GlobalAnnos -> Kind -> Doc
+printKind ga kind = case kind of 
+			      Kind [] (Intersection [] _) _ -> empty
+			      _ -> space <> colon <> printText0 ga kind
+
 instance PrettyPrint Type where 
     printText0 ga (TypeConstrAppl name kind args _) = printText0 ga name 
-			  <> (case kind of 
-			       Kind [] (Intersection [] _) _ -> empty
-			       _ -> space <> colon <> printText0 ga kind)
+			  <> printKind ga kind
 			  <> if null args then empty 
 			     else parens (commas ga args)
     printText0 ga (TypeVar name kind i _) = printText0 ga name
-			  <> (case kind of 
-			       Kind [] (Intersection [] _) _ -> empty
-			       _ -> space <> colon <> printText0 ga kind)
+			  <> printKind ga kind
 			  <> if i == 0 then empty 
 			     else parens (ptext (show i))
     printText0 ga (TypeToken t) = printText0 ga t
     printText0 ga (BracketType k l _) = bracket k $ commas ga l
     printText0 ga (KindedType t kind _) = printText0 ga t  
-			  <> (case kind of 
-			       Kind [] (Intersection [] _) _ -> empty
-			       _ -> space <> colon <> printText0 ga kind)
+			  <> printKind ga kind
     printText0 ga (MixfixType ts) = fsep (map (printText0 ga) ts)
     printText0 ga (TupleType args _) = parens $ commas ga args
     printText0 ga (LazyType t _) = text quMark <+> printText0 ga (t)  
@@ -235,7 +234,9 @@ instance PrettyPrint ProdClass where
     printText0 ga (ProdClass l _) = fcat $ punctuate (text timesS) 
 			       (map (printText0 ga) l)
 
-instance PrettyPrint Kind where 
+instance PrettyPrint Kind where
+    printText0 ga (KindAppl k1 k2) = parens (printText0 ga k1)
+				     <> ptext funS <> printText0 ga k2 
     printText0 ga (Kind l c _) = (if null l then empty else 
 			      (fcat $ punctuate (text funS) 
 			       (map (printText0 ga) l))
@@ -323,9 +324,7 @@ instance PrettyPrint ClassDecl where
 
 instance PrettyPrint TypeItem where 
     printText0 ga (TypeDecl l k _) = commas ga l <> 
-				  case k of 
-				  Kind [] (Intersection [] _) _ -> empty
-				  _ -> space <> colon <> printText0 ga k
+				  printKind ga k
     printText0 ga (SubtypeDecl l t _) = commas ga l <+> text lessS 
 					<+> printText0 ga t
     printText0 ga (IsoDecl l _) = cat(punctuate (text " = ") 
@@ -338,9 +337,7 @@ instance PrettyPrint TypeItem where
 					   <+> text dotS
 					   <+> printText0 ga f)
     printText0 ga (AliasType p k t _) =  (printText0 ga p <>
-				       case k of 
-				       Kind [] (Intersection [] _) _ -> empty
-				       _ -> space <> colon <> printText0 ga k)
+					  printKind ga k)
 				       <+> text assignS
 				       <+> printText0 ga t
     printText0 ga (Datatype t) = printText0 ga t
@@ -376,9 +373,7 @@ instance PrettyPrint OpAttr where
 
 instance PrettyPrint DatatypeDecl where 
     printText0 ga (DatatypeDecl p k as d _) = (printText0 ga p <>
-				       case k of 
-				       Kind [] (Intersection [] _) _ -> empty
-				       _ -> space <> colon <> printText0 ga k)
+					       printKind ga k)
 				  <+> text defnS
 				  <+> vcat(punctuate (text " | ") 
 					   (map (printText0 ga) as))

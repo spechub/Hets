@@ -55,7 +55,7 @@ allSuperClasses ce ci =
 		      ++  concatMap (allSuperClasses ce) (superClasses info)
     Nothing -> error "allSuperClasses"
 
-addToCE ce cid sups defn = addToFM ce cid 
+defCEntry ce cid sups defn = addToFM ce cid 
 			   (newClassItem cid) { superClasses = sups
 					      , classDefn = defn } 
 
@@ -66,7 +66,6 @@ addToCE ce cid sups defn = addToFM ce cid
 type Assumps = FiniteMap Id [TypeScheme]
 
 type TypeKinds = FiniteMap TypeName [Kind]
-
 
 -----------------------------------------------------------------------------
 -- local env
@@ -84,6 +83,17 @@ appendDiags ds =
     if null ds then return () else
     do e <- get
        put $ e {envDiags = ds ++ envDiags e}
+
+
+getClassEnv :: State Env ClassEnv
+getClassEnv = gets classEnv
+
+getTypeKinds :: State Env TypeKinds
+getTypeKinds = gets typeKinds
+
+putTypeKinds tk =  do { e <- get; put e { typeKinds = tk } }
+
+putClassEnv ce = do { e <- get; put e { classEnv = ce } }
 
 ----------------------------------------------------------------------------
 -- analysis
@@ -128,11 +138,9 @@ anaClassDecls (SubclassDecl cls supcl _) =
 
 anaClassDecls (ClassDefn ci syncl ps) =
     do scls@(Intersection icls _) <- anaClassAppl syncl
-       e <- get
-       let ce = classEnv e
-           mc = lookupFM ce ci in 
-	 case mc of 
-	   Nothing -> put $ e { classEnv = addToCE ce ci [] scls }
+       ce <- getClassEnv
+       case lookupFM ce ci of 
+	   Nothing -> putClassEnv $ defCEntry ce ci [] scls 
 	   Just info -> 
 	     do appendDiags [Warning ("redeclared class '"
 				    ++ tokStr ci ++ "'") 
@@ -146,19 +154,16 @@ anaClassDecls (ClassDefn ci syncl ps) =
 				     ++ showClassList (map snd cycles) "'")
 				   $ tokPos (snd $ head cycles)]
 		       else return ()  
-		     e1 <- get
-		     put $ e1 { classEnv = addToFM ce ci 
+		     putClassEnv $ addToFM ce ci 
 				info { classDefn = Intersection ( 
 				       nub $ map snd nocycles 
-				       ++ iClasses) (ps ++ qs) } }
+				       ++ iClasses) (ps ++ qs) }
 	       
 anaClassName b ci = 
-    do e <- get
-       let ce = classEnv e
-           mc = lookupFM ce ci in 
-	 if isJust mc then return $ return [ci]
+    do ce <- getClassEnv
+       if isJust $ lookupFM ce ci then return $ return [ci]
 	 else if b then 
-		do put $ e { classEnv = addToCE ce ci [] (Intersection [] []) }
+		do putClassEnv $ defCEntry ce ci [] (Intersection [] [])
                    return $ return [ci]
 	      else 	  
 		return $ non_fatal_error [] 
@@ -188,12 +193,10 @@ anaClassDecl scls ci =
     if tokStr ci == "Type" then 
        appendDiags [Error "illegal universe class declaration" (tokPos ci)]
     else 
-    do e <- get
-       let ce = classEnv e
-           mc = lookupFM ce ci in 
-	 case mc of 
-	    Nothing -> put $ e { classEnv = addToCE ce ci 
-				 scls (Intersection [] []) }
+    do ce <- getClassEnv
+       case lookupFM ce ci of 
+	    Nothing -> putClassEnv $ defCEntry ce ci 
+				 scls (Intersection [] [])
 	    Just info -> 
 		do appendDiags [Warning ("redeclared class '"
 					++ tokStr ci ++ "'") 
@@ -211,10 +214,9 @@ anaClassDecl scls ci =
 				      ++ showClassList (map snd cycles) "'")
 			      $ tokPos (snd $ head cycles)]
 			   else return ()  
-			 e1 <- get
-			 put $ e1 { classEnv = addToFM ce ci 
+			 putClassEnv $ addToFM ce ci 
 				  (info { superClasses = 
-					 nub $ map snd nocycles ++ sups }) }
+					 nub $ map snd nocycles ++ sups })
 			 let ds = filter (`elem` sups) scls in
 			     if null $ ds then return ()
 				else appendDiags [Warning 
@@ -264,11 +266,10 @@ anaProdClass (ProdClass l p) =
        return $ ProdClass cs p
 
 addTypeKind t k = 
-    do e <- get 
-       let tk = typeKinds e 
-           l = lookUp tk t in
+    do tk <- getTypeKinds
+       let l = lookUp tk t in
 	 if k `elem` l then
 	    appendDiags [Warning ("redeclared type '" 
 					       ++ showId t "'")
 				     $ posOfId t]
-		       else put $ e { typeKinds = addToFM tk t (k:l) }
+		       else putTypeKinds $ addToFM tk t (k:l)
