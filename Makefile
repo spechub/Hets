@@ -29,7 +29,7 @@ INSTALLDIR = /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.s
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
-INLINEAXIOMS_deps = utils/InlineAxioms/*hs $(drifted_files) $(happy_files) hetcats/Version.hs Modal/ModalSystems.hs
+INLINEAXIOMS_deps = utils/InlineAxioms/*hs $(drifted_files)
 
 HC         = ghc
 PERL       = perl
@@ -508,6 +508,3 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 # hetcats-make is created as side-effect of hets or hets-optimized
 sources_hetcats.mk: hetcats-make utils/create_sources.pl
 	$(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
-
-%::
-	$(RM) hetcats-make
