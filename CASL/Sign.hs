@@ -74,6 +74,9 @@ data SortRels = SortRels { subsorts :: [SortId]  -- explicitely given
 			 , allsupersrts :: [SortId]
 			 } deriving (Show, Eq)
 
+emptySortRels :: SortRels
+emptySortRels = SortRels [] [] [] []
+
 data ItemPos = ItemPos String TokenKind [Pos] deriving (Show, Eq)
 -- "filename" and kind of first token position
 
@@ -177,13 +180,17 @@ instance Eq SigItem where
 -- lost are unused global vars
 -- (and annotations for several ITEMS)
 
-data Sign = SignAsMap (FiniteMap Id [SigItem]) (Graph SortId ())
+data Sign = SignAsMap { getMap   :: (FiniteMap Id [SigItem]),
+                        getGraph :: (Graph SortId ()) }
 
 instance Eq Sign where
   (==) (SignAsMap m _) (SignAsMap n _) = n==m
 
 instance Show Sign where
     show = error "show for type Sign not defined"
+
+emptySign :: Sign
+emptySign = SignAsMap emptyFM empty
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
 	       deriving (Show, Eq)
