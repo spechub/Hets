@@ -178,8 +178,8 @@ parseMapping l =
 ------------------------------------------------------------------------
 
 parseItemsList :: LogicGraph -> GenParser Char AnyLogic (G_symb_items_list, [Token])
-parseItemsList l = undefined
-{-   do Logic id <- getState
+parseItemsList l = 
+   do Logic id <- getState
       s <- getInput
       pos <- getPosition
       (cs,rest) <- case parse_symb_items id of 
@@ -188,7 +188,7 @@ parseItemsList l = undefined
 	  Just p -> return (p (sourceName pos) s)
       setInput rest
       return (G_symb_items_list id cs, []) 
--}
+
 
 parseHiding :: LogicGraph -> GenParser Char AnyLogic ([G_hiding], [Token])
 parseHiding l =
@@ -216,8 +216,9 @@ sepBy2pos p sep =
     return (xs,ps)
     where rest x1 = do s <- sep
                        x <- p
-                       (xs,ps) <- option ([],[]) (rest x)
-                       return (x1:xs,s:ps) 
+                       (xs,ps) <- rest x
+                       return (x1:xs,s:ps)
+                   <|> return ([x1],[]) 
            
 
 
@@ -233,7 +234,7 @@ spec l = do (sps,ps) <- annoParser (specA l) `sepBy2pos` (asKey thenS)
 specA :: LogicGraph -> GenParser Char AnyLogic SPEC
 specA l = do (sps,ps) <- annoParser (specB l) `sepBy2pos` (asKey andS)
              return (Union sps (map tokPos ps))
-      <|> specA l
+      <|> specB l
 
 specB :: LogicGraph -> GenParser Char AnyLogic SPEC
 specB l = do p1 <- asKey localS
@@ -241,23 +242,24 @@ specB l = do p1 <- asKey localS
              p2 <- asKey withinS
              sp2 <- annoParser (specB l)
              return (Local_spec sp1 sp2 (map tokPos [p1,p2]))
-          <|> specC l
+          <|> do sp <- specC l
+                 return (item sp)
 
-specC :: LogicGraph -> GenParser Char AnyLogic SPEC
-specC l = do sp <- annoParser (specD l)
-             p <- asKey withS
-             (m, ps) <- parseMapping l
-             return (Translation sp (Renaming m (map tokPos (p:ps))))
-      <|> do sp <- annoParser (specD l)
-             p <- asKey hideS
-             (m, ps) <- parseHiding l
-             return (Reduction sp (Hidden m (map tokPos (p:ps))))
-      <|> do sp <- annoParser (specD l)
-             p <- asKey revealS
-             (m, ps) <- parseRevealing l
-             return (Reduction sp (Revealed m (map tokPos (p:ps))))
-      <|> specD l
-
+specC :: LogicGraph -> GenParser Char AnyLogic (Annoted SPEC)
+specC l = do{sp <- annoParser (specD l)
+             ; (do{  p <- asKey withS
+                   ; (m, ps) <- parseMapping l
+                   ; return (emptyAnno (Translation sp (Renaming m (map tokPos (p:ps)))))
+                  })<|>( do
+                {  p <- asKey hideS
+                 ; (m, ps) <- parseHiding l
+                 ; return (emptyAnno (Reduction sp (Hidden m (map tokPos (p:ps)))))
+                })<|>( do 
+                {  p <- asKey revealS
+                 ; (m, ps) <- parseRevealing l
+                 ; return (emptyAnno (Reduction sp (Revealed m (map tokPos (p:ps)))))
+                })<|> return sp
+             }
 specD :: LogicGraph -> GenParser Char AnyLogic SPEC
 specD l = do p <- asKey freeS
              sp <- groupSpec l
@@ -271,8 +273,8 @@ specD l = do p <- asKey freeS
       <|> specE l
        
 specE :: LogicGraph -> GenParser Char AnyLogic SPEC
-specE l = basicSpec l
-      <|> groupSpec l
+specE l = groupSpec l
+      <|> basicSpec l
       <|> logicSpec l
 
 
