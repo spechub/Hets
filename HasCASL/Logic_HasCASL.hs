@@ -33,7 +33,7 @@ import Common.PrettyPrint
 
 type Sign = Env
 type HasCASL_Sublogics = ()
-type Sentence = Formula
+type Sentence = Term
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -46,8 +46,8 @@ basicSpecTc :: TyCon
 basicSpecTc = mkTyCon "HasCASL.As.BasicSpec"
 envTc :: TyCon
 envTc = mkTyCon "HasCASL.Le.Env"
-formulaTc :: TyCon
-formulaTc = mkTyCon "HasCASL.As.Formula"
+termTc :: TyCon
+termTc = mkTyCon "HasCASL.As.Term"
 
 instance Typeable BasicSpec where
     typeOf _ = mkAppTy basicSpecTc []
@@ -55,8 +55,8 @@ instance Typeable BasicSpec where
 instance Typeable Env where
     typeOf _ = mkAppTy envTc []
 
-instance Typeable Formula where
-    typeOf _ = mkAppTy formulaTc []
+instance Typeable Term where
+    typeOf _ = mkAppTy termTc []
 
 instance Syntax HasCASL BasicSpec
 		SYMB_ITEMS SYMB_MAP_ITEMS
