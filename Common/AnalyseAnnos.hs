@@ -66,7 +66,7 @@ store_prec_annos pgr ans = fmap Rel.transClosure $
 			     then Result [mkDiag Error 
 				       "prec_anno with equal id" hi] (Just p2)
 			     else case prc of 
-			            Lower -> if Rel.transMember hi li p2 
+			            Lower -> if Rel.path hi li p2 
 				             then Result [mkDiag Error 
 							("prec_anno conflict: "
 							 ++ showId li " < " 
@@ -75,8 +75,8 @@ store_prec_annos pgr ans = fmap Rel.transClosure $
 			                                   (Just p2)
 			                     else return (Rel.insert li hi p2)
                                     BothDirections -> 
-				             if Rel.transMember hi li p2 == 
-				                Rel.transMember li hi p2 
+				             if Rel.path hi li p2 == 
+				                Rel.path li hi p2 
 				             then return (Rel.insert hi li 
 				                         (Rel.insert li hi p2))
                                              else Result [mkDiag Error

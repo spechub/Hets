@@ -11,7 +11,8 @@ Portability :  portable
 
 supply a simple data type for (precedence or subsort) relations. A
 relation is conceptually a set of (ordered) pairs. 
-But the hidden implementation is based on a map of sets.
+But the hidden implementation is based on a map of sets. 
+An alternative view is that of a directed Graph without isolated nodes.
 
 'Rel' replaces a directed graph with unique node labels (Ord a) and
 unlabelled edges (without multiplicity higher than one).
@@ -21,16 +22,17 @@ an edge 'member' (before or after calling 'transClosure').
 
 It is possible to insert self edges or bigger cycles.
 
-A transitive path can be checked by 'transMember' without computing
-the full transitive closure. A further 'insert', however,
+Checking for a 'path' corresponds to checking for a member in the 
+transitive closure. A further 'insert', however,
 may destroy the closedness property of a relation.
 
 -}
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
-                       union , subset, difference, transMember,
+                       union , subset, difference, path,
                        transClosure, fromList, toList, image,
-                       restrict, toSet, fromSet, topSort) where
+                       restrict, toSet, fromSet, topSort, 
+                       transpose, connComp) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -69,26 +71,84 @@ member a b r = Set.member b $ getDAdjs r a
 getDAdjs :: Ord a => Rel a -> a -> Set.Set a
 getDAdjs r a = Map.findWithDefault Set.empty a $ toMap r
 
--- | get right neighbours and right neighbours of right neighbours
-getTAdjs :: Ord a => Rel a -> Set.Set a -> Set.Set a -> Set.Set a
--- transitive right neighbours
--- initial call 'getTAdjs succs r Set.empty $ Set.single a'
-getTAdjs r given new =
-    if Set.isEmpty new then given else 
-    let ds = Set.unions $ map (getDAdjs r) $ Set.toList new in 
-    getTAdjs r (ds `Set.union` given) (ds Set.\\ new Set.\\ given)
-
 -- | test for 'member' or transitive membership
-transMember :: Ord a => a -> a -> Rel a -> Bool
-transMember a b r = Set.member b $ getTAdjs r Set.empty $ Set.single a
+path :: Ord a => a -> a -> Rel a -> Bool
+path a b r = Set.member b $ reachable r a
 
 -- | compute transitive closure (make all transitive members direct members)
 transClosure :: Ord a => Rel a -> Rel a
-transClosure r = Rel $ Map.map ( \ s -> getTAdjs r s s) $ toMap r
+transClosure r = Rel $ Map.mapWithKey ( \ k _ ->  reachable r k) $ toMap r
+
+{- adapted from D. King, J. Launchbury 95: 
+   Structuring depth-first search algorithms in Haskell.
+   (using Common.Lib.State and foldM makes it longer
+
+-}
+
+data Tree a = Node a [Tree a] deriving Show
+
+-- | get dfs tree rooted at node
+dfsT :: Ord a => Rel a -> Set.Set a -> a -> (Set.Set a, Tree a)
+dfsT r s v = let (t, ts) = dfsF r (Set.insert v s) $ Set.toList $ getDAdjs r v 
+                 in (t, Node v ts)
+
+-- | get dfs forest for a list of nodes
+dfsF :: Ord a => Rel a -> Set.Set a -> [a] -> (Set.Set a, [Tree a])
+dfsF r s l = case l of
+    [] -> (s, [])
+    x : xs -> if Set.member x s then dfsF r s xs else
+        let (t, a) = dfsT r s x
+            (u, ts) = dfsF r t xs in (u, a : ts)
+
+-- | get dfs forest of a relation 
+dfs :: Ord a => Rel a -> [a] -> [Tree a]
+dfs r = snd . dfsF r Set.empty 
+
+-- | get dfs forest of a relation 
+dff :: Ord a => Rel a -> [Tree a]
+dff r = dfs r $ Map.keys $ toMap r
+
+-- | get reverse relation
+transpose :: Ord a => Rel a -> Rel a 
+transpose = fromList . map (\ (a, b) -> (b, a)) . toList 
+
+flatT :: Ord a => Tree a -> Set.Set a
+flatT (Node v ts) = Set.insert v $ flatF ts
+
+flatF :: Ord a => [Tree a] -> Set.Set a
+flatF = Set.unions . map flatT
+
+postOrdT :: Tree a -> [a] -> [a]
+postOrdT (Node v ts) = postOrdF ts . (v:) 
+
+postOrdF :: [Tree a] -> [a] -> [a]
+postOrdF = foldr (.) id . map postOrdT
+
+postOrd :: Ord a => Rel a -> [a]
+postOrd r = postOrdF (dff r) []
+
+scc :: Ord a => Rel a -> [Tree a]
+scc r = dfs r $ reverse $ postOrd $ transpose r
+
+reachable :: Ord a => Rel a -> a -> Set.Set a 
+reachable r = flatF . dfs r . Set.toList . getDAdjs r
+
+{- | Connected components as a mapping from a minimal representative
+     to all other reachable nodes. Transposing the result allows
+     replacing nodes by a unique representatives. -}
+connComp :: Ord a => Rel a -> Rel a
+connComp r = Rel $ foldr (\ t m -> 
+                    let s = flatT t in 
+                    Map.insert (Set.findMin s) s m) Map.empty $ scc r
+
+{-
+-- | transitive reduction (minimal relation with the same transitive closure)
+transReduce :: Ord a => Rel a -> Rel a
+-}
 
 -- | convert a list of ordered pairs to a relation 
 fromList :: Ord a => [(a, a)] -> Rel a
-fromList = foldr (\ (a, b) r -> insert a b r ) empty
+fromList = foldr (\ (a, b) -> insert a b) empty
 
 -- | convert a relation to a list of ordered pairs
 toList ::  Ord a => Rel a -> [(a, a)]
@@ -133,7 +193,7 @@ toSet = Set.fromDistinctAscList . toList
 
 -- | convert a set of ordered pairs to a relation 
 fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
-fromSet = fromList . Set.toList
+fromSet = Set.fold (\ (a, b) -> insert a b) empty
 
 -- | topological sort a relation (more efficient for a closed relation)
 topSort :: Ord a => Rel a -> [Set.Set a]
@@ -162,7 +222,7 @@ removeCycle r@(Rel m) =
     let cycles = Map.filterWithKey Set.member m in
         if Map.isEmpty cycles then -- no cycle found 
            let cl = transClosure r in 
-           if r == transClosure r then Nothing -- no cycle there 
+           if r == cl then Nothing -- no cycle there 
               else removeCycle cl
            else let (a, os) = Map.findMin cycles
                     cs = Set.fold ( \ e s -> 
