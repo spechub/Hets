@@ -236,8 +236,9 @@ release:
 install-hets:
 	chmod g+w hets
 	cp -p hets $(INSTALLDIR)/versions/hets-`cat version_nr`
-	$(RM) $(INSTALLDIR)/hets
-	ln -s $(INSTALLDIR)/versions/hets-`cat version_nr` $(INSTALLDIR)/hets
+	cp -p version_nr $(INSTALLDIR)
+	(cd $(INSTALLDIR); $(RM) hets; \
+	    ln -s versions/hets-`cat version_nr` hets; $(RM) version_nr)
 
 install: hets-opt install-hets
 
