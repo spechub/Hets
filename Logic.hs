@@ -53,7 +53,7 @@ module Logic where
 
 import Id
 import GlobalAnnotations
-import Set
+import FiniteSet
 import FiniteMap
 import Graph
 import Result

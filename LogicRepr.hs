@@ -20,7 +20,7 @@
 module LogicRepr where
 
 import Logic
-import Set
+import FiniteSet
 import Maybe(catMaybes)
 
 -- Simple logic representations (possibly also morphisms via adjointness)
@@ -99,7 +99,7 @@ id_repr lid =
                                     Just),  
                 map_morphism = Just,
                 map_sentence = \sigma -> Just,
-                map_symbol = unitSet
+                map_symbol = single
                }
 
 -- composition of logic representations (diagrammatic order)
@@ -152,6 +152,6 @@ comp_repr r1 r2 = if target_sublogic r1 <= source_sublogic r2 then
 
    map_morphism = \ m1 -> map_morphism r1 m1 >>=  map_morphism r2 ,
 
-   map_symbol = \ s1 -> unionManySets 
-		(map (map_symbol r2) (setToList (map_symbol r1 s1)))
+   map_symbol = \ s1 -> unions
+		(map (map_symbol r2) (toList (map_symbol r1 s1)))
    }) else Nothing

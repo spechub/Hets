@@ -27,6 +27,10 @@ type Pos = SourcePos
 nullPos :: Pos 
 nullPos = newPos "" 0 0 
 
+headPos :: [Pos] -> Pos 
+headPos l = if null l then nullPos else head l
+tailPos :: [Pos] -> [Pos]
+tailPos l = if null l then [] else tail l
 nullPosList :: [Pos]
 nullPosList = nullPos:nullPosList
  

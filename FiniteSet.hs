@@ -1,6 +1,6 @@
 -- $Id$
 --------------------------------------------------------------------------------
-{-| Module      :  Set
+{-| Module      :  FiniteSet
     Copyright   :  (c) Daan Leijen 2002
     License     :  BSD-style
 
@@ -63,7 +63,7 @@
       * It is implemented directly, instead of using a seperate finite map implementation. 
 -}
 ---------------------------------------------------------------------------------
-module Set  ( 
+module FiniteSet  ( 
             -- * Set type
               Set          -- instance Eq,Show
 

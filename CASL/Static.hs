@@ -31,7 +31,7 @@ module Static ( basicAnalysis, statSymbMapItems, statSymbItems,
 import Maybe
 import Monad(foldM) -- instead of foldResult
 import FiniteMap
-import Set
+import FiniteSet hiding (filter)
 import Id
 import AS_Annotation
 import GlobalAnnotations
@@ -1176,7 +1176,7 @@ sigItemToSymbol (APredItem p) = Symbol (predId $ item p)
                                        (PredType (predType $ item p))
 
 symOf :: Sign -> Set Symbol
-symOf sigma = mkSet $ map sigItemToSymbol $ concat $ eltsFM $ getMap sigma
+symOf sigma = fromList $ map sigItemToSymbol $ concat $ eltsFM $ getMap sigma
 
 idToSortSymbol :: Id -> Symbol
 idToSortSymbol idt = Symbol idt Sign.Sort
