@@ -141,7 +141,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                    Just ty -> do
                        newPty <- generalizeS $ TypeScheme nAs ty []
                        let fullKind = typeArgsListToKind nAs star
-                           Result es mvds = anaVars v ty
+                           Result es mvds = anaVars v $ monoType ty
                            altDecl = Just $ AliasType newPat (Just fullKind)
                                      newPty ps
                            altAct = addTypeId True (AliasTypeDefn newPty) inst 
