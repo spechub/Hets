@@ -45,16 +45,13 @@ import Common.Lib.Pretty
 
 checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
 checkFreeType m fsn 
-       | Set.any (\s->not $ elem s srts) newSorts = Nothing     
-       | Set.any (\s->not $ elem s f_Inhabited) newSorts = Just False            
-             --      | any (\s->not $ elem s srts) newSorts = Nothing     
-             --      | any (\s->not $ elem s f_Inhabited) newSorts = Just False  
+       | Set.any (\s->not $ elem s srts) newSorts = Nothing
+       | Set.any (\s->not $ elem s f_Inhabited) newSorts = Just False
        | elem Nothing l_Syms = Nothing
-       | any id $ map (\s->Set.member s oldSorts) $ ops_sorts ++ preds_sorts = Nothing     -- 2       
-             --      | any id $ map (\s->elem s sorts) $ ops_sorts ++ preds_sorts = Nothing
+       | any id $ map find_ot id_ots ++ map find_pt id_pts = Nothing
        | not $ and $ map checkTerm leadingTerms = Nothing                 
        | not $ and $ map checkVar leadingTerms = Nothing 
- --      | not $ checkPatterns leadingPatterns = Nothing             --  1,2             
+       | not $ checkPatterns leadingPatterns = Nothing             --  1,2             
        | otherwise = Just True
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
          fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
@@ -67,6 +64,8 @@ checkFreeType m fsn
          allSorts = trace (showPretty allSorts1 "all sorts") allSorts1
          newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
          newSorts = trace (showPretty newSorts1 "new sorts") newSorts1
+         oldOpMap = opMap sig
+         oldPredMap = predMap sig
    --      sorts1 = Set.toList $ sortSet sig
    --      sorts = trace (showPretty sorts1 "old sorts") sorts1            -- "old" sorts
    --      newSorts2 = Set.toList $ sortSet (mtarget m)
@@ -87,15 +86,25 @@ checkFreeType m fsn
                                   _ -> False) fs
          op_preds = trace (showPretty op_preds1 "leading") op_preds1         --  leading
          l_Syms1 = map leadingSym op_preds
-         l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1         -- leading_Symbol  
+         l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1         -- leading_Symbol
          filterOp symb = case symb of
-                           Just (Left (Qual_op_name _ op _))->[res_OP_TYPE op]
-                           _ ->[]
+                           Just (Left (Qual_op_name ident (Total_op_type as rs _) _))->
+                                [(ident, OpType {opKind=Total, opArgs=as, opRes=rs})]
+                           Just (Left (Qual_op_name ident (Partial_op_type as rs _) _))->
+                                [(ident, OpType {opKind=Partial, opArgs=as, opRes=rs})]
+                           _ -> []
          filterPred symb = case symb of
-                               Just (Right (Qual_pred_name _ (Pred_type s _) _))->s
+                               Just (Right (Qual_pred_name ident (Pred_type s _) _))->
+                                    [(ident, PredType {predArgs=s})]
                                _ -> [] 
-         ops_sorts = concat $ map filterOp $ l_Syms 
-         preds_sorts = concat $ map filterPred $ l_Syms
+         id_ots = concat $ map filterOp $ l_Syms 
+         id_pts = concat $ map filterPred $ l_Syms
+         find_ot (ident,ot) = case Map.lookup ident oldOpMap of
+                                  Nothing -> False
+                                  Just ots -> Set.member ot ots
+         find_pt (ident,pt) = case Map.lookup ident oldPredMap of
+                                  Nothing -> False
+                                  Just pts -> Set.member pt pts
          ltp1 = map leading_Term_Predication op_preds                 
          ltp = trace (showPretty ltp1 "leading_term_pre") ltp1              --  leading_term_pre
          leadingTerms1 = concat $ map (\tp->case tp of
@@ -147,14 +156,27 @@ checkFreeType m fsn
                               Application (Qual_op_name _ _ _) ts _-> ts
                               Sorted_term t' _ _ -> patternsOfTerm t'
                               _ -> []
+         sameOps app1 app2 = case (term app1) of
+                               Application ops1 _ _ -> case (term app2) of
+                                                         Application ops2 _ _ -> ops1==ops2
+                                                         _ -> False
+                               _ -> False
+         group [] = []
+         group ps = (filter (\p1-> sameOps (head p1) (head (head ps))) ps):
+                      (group $ filter (\p2-> not $ sameOps (head p2) (head (head ps))) ps)
          checkMatrix ps 
                 | length ps <=1 = True
                 | allIdentic ps = False
-                | all isApp $ map head ps = (checkMatrix $ map tail $ filter (\p->isNil $ head p) ps) &&
-                                            (checkMatrix $ map (\p'->(patternsOfTerm $ head p')++(tail p')) $ 
-                                                                             filter (\p->isCons $ head p) ps)
                 | all isVar $ map head ps = if allIdentic $ map head ps then checkMatrix $ map tail ps
                                             else False
+                | all (\p-> sameOps p (head (head ps))) $ map head ps = 
+                                            checkMatrix $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps 
+                | all isApp $ map head ps = all id $ map checkMatrix $ group ps
+ --                | all isApp $ map head ps = (checkMatrix $ map tail $ filter (\p->isNil $ head p) ps) &&
+ --                                            (checkMatrix $ map (\p'->(patternsOfTerm $ head p')++(tail p')) $ 
+ --                                                                             filter (\p->isCons $ head p) ps)
+ --                | all isVar $ map head ps = if allIdentic $ map head ps then checkMatrix $ map tail ps
+ --                                            else False
                 | otherwise = False     
          checkPatterns [] = True
          checkPatterns ps
@@ -239,4 +261,4 @@ instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (Either a b) where
 
 instance PrettyPrint a => PrettyPrint (Maybe a) where
   printText0 ga (Just x) = printText0 ga x
-  printText0 ga Nothing = ptext "Nothing" 
+  printText0 ga Nothing = ptext "Nothing"
