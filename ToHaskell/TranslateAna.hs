@@ -70,7 +70,7 @@ translateData (tid,info) =
 	               (getAliasArgs ts)
 	               (getAliasType ts)
 	   )]
-       TypeVarDefn -> [] -- ?
+       TypeVarDefn -> [] -- werden in Haskell ignoriert
 
 translateAltDefn :: AltDefn -> HsConDecl
 translateAltDefn (Construct uid ts _ []) = 
@@ -109,6 +109,8 @@ getAliasArg (TypeArg tid _ _ _) = (HsIdent (translateIdWithType LowerId tid))
 
 getAliasType :: TypeScheme -> HsType
 getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
+
+
 -------------------------------------------------------------------------
 -- Translation of functions
 -------------------------------------------------------------------------
@@ -130,9 +132,9 @@ translateSignature i opinf =
     NoOpDefn -> res
     ConstructData _ -> []
     SelectData _ _ -> []
-    Definition term -> res ++ 
-                       translateTerm term -- Term zu HsFunBind übersetzen!! 
-    VarDefn -> res
+    Definition term -> (translateFunDef i (opType opinf) term)
+                        -- zu HsFunBind übersetzen!! 
+    VarDefn -> []
 
 translateTypeScheme :: TypeScheme -> HsQualType
 translateTypeScheme (TypeScheme _arglist (_plist :=> t) _poslist) = 
@@ -158,48 +160,43 @@ translateType t = case t of
          HsTyCon (UnQual (HsIdent (translateIdWithType UpperId tid)))
 --Missing: Übersetzung der Kind's    
 
-translateTerm :: Term -> [HsDecl] --HsFunBind
-translateTerm t = []
+-- translateFunDef liefert idealerweise eine HsTypSig und ein HsFunBind
+translateFunDef :: Id -> TypeScheme -> Term -> [HsDecl]
+translateFunDef i _ts term = 
+  [HsFunBind [HsMatch (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+	             (HsIdent (translateIdWithType LowerId i)) --HsName
+	             (getPattern term) -- [HsPat]
+	             (getRhs term) -- HsRhs
+	             [] -- {-where-} [HsDecl]
+	     ]
+   ]
 
-{------------------------------------------------------------------------
- Translation of Id's
- HasCASL  ->      Haskell
-  :                ::       (Typangabe)
-  ::               :        (Listenkonkatenation)
-  Opname           a___Opname
-  conname          A___conname
-  Reserviert       _r_<Ersatzzeichen>
-  Symbole          _Z_<Symbolzersatzzeichen>
+getPattern :: Term -> [HsPat]
+getPattern _t = []
 
-Ersatzzeichen für reservierte Zeichen und für Symbole:
--- Special / reserviert
-    _  -> _1
-    __ -> _2
-    {  -> _b
-    }  -> _d
-    [  -> _s
-    ]  -> _q
-    .  -> _p
+getRhs :: Term -> HsRhs
+getRhs t = HsUnGuardedRhs (head $ translateTerm t) 
 
--- Symbole
-    +  -> _P
-    -  -> _M
-    *  -> _T
-    /  -> _D
-    \  -> _B
-    &  -> _A
-    =  -> _E
-    <  -> _L
-    >  -> _G
-    !  -> _I
-    ?  -> _Q
-    :  -> _C
-    $  -> _S
-    @  -> _O
-    #  -> _H
-    ^  -> _V
-    ~  -> _N
-------------------------------------------------------------------------}
+-- liefert nur eine Expression, keine Liste
+translateTerm :: Term -> [HsExp] --HsFunBind
+translateTerm t = case t of
+  CondTerm _t1 _form _t2 _pos -> [] -- -> HsIf
+  QualVar _v _ty _pos -> [] -- -> HsVar
+  QualOp _opid _ts _pos -> [] -- -> HsInfixApp??
+  ApplTerm _t1 _t2 _pos -> [] -- -> HsApp
+  TupleTerm _ts _pos -> [] -- -> HsTuple
+  TypedTerm _t1 _tqual _ty _pos -> [] 
+  QuantifiedTerm _quant _vars _t1 _pos -> [] -- forall ...
+  LambdaTerm _pats _part _t1 _pos -> [] -- -> HsLambda
+  CaseTerm _t1 _progeqs _pos -> [] -- -> HsCase
+  LetTerm _progeqs _t1 _pos -> [] -- -> HsLet
+  TermToken _ttok -> error ("unexpected term (TermToken): " ++ show t)
+  MixfixTerm _ts -> error ("unexpected term (MixfixTerm): " ++ show t)
+  BracketTerm _ _ _ -> error ("unexpected term (BracketTerm): " ++ show t)
+
+------------------------------------------------------------------------
+-- Translation of Id's
+------------------------------------------------------------------------
 
 translateIdWithType :: IdCase -> Id -> String
 translateIdWithType ty (Id tlist idlist _poslist) = 
