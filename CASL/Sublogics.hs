@@ -115,9 +115,39 @@ bottom :: CASL_Sublogics
 bottom = (CASL_SL False False False False False Atomic)
 
 -- all elements
--- FIXME
 sublogics_all :: [CASL_Sublogics]
-sublogics_all = [top]
+sublogics_all = filter (not . adjust_check) $
+                morph_logic $ morph_part $ morph_cons $ morph_eq $ morph_pred
+                [CASL_SL True  False False False False Atomic,
+                 CASL_SL False False False False False Atomic]
+
+morph_part :: [CASL_Sublogics] -> [CASL_Sublogics]
+morph_part [] = []
+morph_part (h:t) = [h{ has_part = True }] ++ (morph_part t) ++
+                   [h{ has_part = False }]              
+
+morph_cons :: [CASL_Sublogics] -> [CASL_Sublogics]
+morph_cons [] = []
+morph_cons (h:t) = [h{ has_cons = True }] ++ (morph_cons t) ++
+                   [h{ has_cons = False }]              
+
+morph_eq :: [CASL_Sublogics] -> [CASL_Sublogics]
+morph_eq [] = []
+morph_eq (h:t) = [h{ has_eq = True }] ++ (morph_eq t) ++
+                 [h{ has_eq = False }]              
+
+morph_pred :: [CASL_Sublogics] -> [CASL_Sublogics]
+morph_pred [] = []
+morph_pred (h:t) = [h{ has_pred = True }] ++ (morph_pred t) ++
+                   [h{ has_pred = False }]              
+
+morph_logic :: [CASL_Sublogics] -> [CASL_Sublogics]
+morph_logic [] = []
+morph_logic (h:t) = [h{ which_logic = Atomic}] ++
+                    [h{ which_logic = Horn}]   ++
+                    [h{ which_logic = GHorn}]  ++
+                    [h{ which_logic = FOL}]    ++
+                    (morph_logic t)
 
 ------------------------------------------------------------------------------
 -- special constants
@@ -205,10 +235,13 @@ mb f (Just x) = f x
 
 -- adjust illegal combination "subsorting with atomic logic"
 adjust_logic :: CASL_Sublogics -> CASL_Sublogics
-adjust_logic x = if ((has_sub x) && (which_logic x == Atomic)) then
+adjust_logic x = if (adjust_check x) then
                    sublogics_max need_horn x
                  else
                    x
+
+adjust_check :: CASL_Sublogics -> Bool
+adjust_check x = (has_sub x) && (which_logic x == Atomic)
 
 mapMaybePos :: [Pos] -> (a -> Maybe b) -> [a] -> [Pos]
 mapMaybePos [] f l = []
