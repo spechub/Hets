@@ -101,8 +101,7 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
                 CASL/Sublogic.hs \
                 CASL/Morphism.hs CASL/Sign.hs CASL/AS_Basic_CASL.der.hs \
-                HasCASL/As.hs HasCASL/Le.hs HasCASL/SymbItem.hs \
-                HasCASL/Symbol.hs HasCASL/Morphism.hs \
+                HasCASL/As.hs HasCASL/Le.hs HasCASL/Morphism.hs \
                 Modal/AS_Modal.hs Modal/ModalSign.hs \
                 CspCASL/AS_CSP_CASL.hs \
                 Static/DevGraph.hs \
