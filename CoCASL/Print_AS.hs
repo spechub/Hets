@@ -58,11 +58,11 @@ instance PrettyPrint C_SIG_ITEM where
 	text cotypeS<>pluralS_doc l <+> semiAnno_text ga l 
 
 instance PrettyPrint CODATATYPE_DECL where
-    printText0 ga (CoDatatype_decl s a _) = 
-	printText0 ga s <+> 
-	sep ((hang (text defnS) 4 (printText0 ga $ head a)):
-	     (map (\x -> nest 2 $ ptext barS <+> nest 2 (printText0 ga x)) $ 
-		  tail a))
+    printText0 ga (CoDatatype_decl s a _) =
+	printText0 ga s <> case a of 
+          [] -> error "PrettyPrint CoCASL.CODATATYPE_DECL"
+          h : t -> sep $ hang (text defnS) 4 (printText0 ga h) :
+	      map (\x -> nest 2 $ ptext barS <+> nest 2 (printText0 ga x)) t
 
 instance PrettyPrint COALTERNATIVE where
     printText0 ga (CoTotal_construct n l _) = printText0 ga n 
