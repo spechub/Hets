@@ -14,28 +14,36 @@ Portability :  portable
 module ToHaskell.FromHasCASL where
 
 import Common.AS_Annotation
+import Common.GlobalAnnotations
+import Common.Result
 
 import HasCASL.Le
 import HasCASL.AsToLe
 
-import Haskell.Hatchet.Type
-import Haskell.Hatchet.Representation
-import qualified Haskell.Hatchet.Env as Env 
-import Haskell.Hatchet.MultiModuleBasics 
-import Haskell.Hatchet.AnnotatedHsSyn
-import Haskell.Hatchet.SynConvert
+import PNT
+import PropPosSyntax hiding (ModuleName, Id, HsName)
 import Haskell.HatAna
+import Haskell.HatParser
 
 import ToHaskell.TranslateAna
 
-mapSingleSentence :: Env -> Sentence -> Maybe AHsDecl
-mapSingleSentence sign sen = 
+
+mapSingleSentence :: Env -> Sentence -> Maybe (HsDeclI PNT)
+mapSingleSentence sign sen = Nothing
+{-
     case translateSentence sign $ NamedSen "" sen of
     [s] -> Just $ toAHsDecl $ sentence s
     _ -> Nothing
+-}
 
-mapTheory :: (Env, [Named Sentence]) -> (ModuleInfo, [Named AHsDecl])
-mapTheory (sig, csens) =
+mapTheory :: (Env, [Named Sentence]) -> Maybe (Sign, [Named (HsDeclI PNT)])
+mapTheory (sig, csens) = 
+    let res@(Result _ m) = 
+            hatAna (HsDecls $ translateSig sig, emptySign, emptyGlobalAnnos)
+    in case m of 
+              Nothing -> error $ show res
+              Just (_, _, hs, sens) -> Just (hs, sens) 
+{-
     let sign = addPreDefs sig 
         hs = translateSig sign
 	ps = concatMap (translateSentence sign) csens
@@ -102,3 +110,4 @@ myPrelude = ModuleInfo {
 		=  (qNil, Star `Kfun` Star) : 
 		   map ( \ i -> ( i, Star)) 
 			   [qUnit, qBool, qChar, qual "Show"]
+-}

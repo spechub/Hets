@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
-Licence     :  All rights reserved.
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  non-portable (imports Logic.Logic)
+Portability :  non-portable
 
    
    The embedding comorphism from HasCASL to Haskell.
@@ -23,10 +23,10 @@ import HasCASL.Le
 import HasCASL.Morphism
 
 import Haskell.Logic_Haskell
+import PNT
+import PropPosSyntax
 import Haskell.HatParser
-import Haskell.Hatchet.MultiModuleBasics 
-import Haskell.Hatchet.AnnotatedHsSyn
-
+import Haskell.HatAna
 import ToHaskell.FromHasCASL
 
 -- | The identity of the comorphism
@@ -41,8 +41,8 @@ instance Comorphism HasCASL2Haskell
                Morphism
                Symbol RawSymbol ()
                Haskell ()
-               HsDecls AHsDecl () ()
-               ModuleInfo
+               HsDecls (HsDeclI PNT) () ()
+               Sign
                ()
                () () () where
     sourceLogic _ = HasCASL
@@ -52,5 +52,5 @@ instance Comorphism HasCASL2Haskell
     --map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ = mapSingleSentence
     --map_symbol :: cid -> symbol1 -> Set symbol2
-    map_theory _ = Just . mapTheory
+    map_theory _ = mapTheory
 
