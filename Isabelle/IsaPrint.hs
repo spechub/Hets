@@ -118,15 +118,15 @@ showTerm (Case (term, alts)) =
 -- Just t1 `App` t2 left
 showTerm (If (t1,t2,t3)) = lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
                       ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ rb
-showTerm (Let (pts, t)) = "let" ++ sp ++ showPat False (head pts) 
+showTerm (Let (pts, t)) = lb ++ "let" ++ sp ++ showPat False (head pts) 
                                 ++ concat (map (showPat True) (tail pts))
-                                ++ sp ++ "in" ++ sp ++ showTerm t
+                                ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
 showTerm t = show (toPrecTree t)
 
 
 showPat :: Bool -> (Term, Term) -> String
 showPat b (pat, term) = 
-  let s = sp ++ showTerm pat ++ sp ++ "=" ++ sp ++ showTerm term
+  let s = sp ++ showTerm pat ++ sp ++ "=" ++ sp ++ lb ++ showTerm term ++ rb
   in
     if b then ";" ++ s
       else s
@@ -210,13 +210,13 @@ toPrecTree :: Term -> Tree PrecTerm
 toPrecTree t =
   case t of
     (Const("All",t1) `App` Abs(v,ty,t2)) -> 
-       Node (isaAppPrec (Const ("QUANT", dummyT))) 
+       Node (isaAppPrec (Const ("QUANT", noType))) 
             [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
     (Const("Ex",t1) `App` Abs(v,ty,t2)) -> 
-       Node (isaAppPrec (Const ("QUANT", dummyT))) 
+       Node (isaAppPrec (Const ("QUANT", noType))) 
             [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
     (Const("Ex1",t1) `App` Abs(v,ty,t2)) -> 
-       Node (isaAppPrec (Const ("QUANT", dummyT))) 
+       Node (isaAppPrec (Const ("QUANT", noType))) 
             [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]    
     (t1 `App` t2) -> 
       case t1 of 
@@ -238,7 +238,7 @@ toPrecTree t =
         Const (c, typ) `App` t3 
           -> Node (appPrec (Const (c, typ))) 
                   [toPrecTree t3, toPrecTree t2] 
-        _ -> Node (isaAppPrec (Const ("DUMMY", dummyT))) 
+        _ -> Node (isaAppPrec (Const ("DUMMY", noType))) 
                [toPrecTree t1, toPrecTree t2] 
     _ -> Node (noPrec t) []
 

@@ -205,7 +205,7 @@ transVar = showIsa
 
 transSentence :: Env -> Le.Sentence -> Maybe IsaSign.Term
 transSentence e s = case s of
-    Le.Formula t      -> trace ("TERM: "++show t++"\n\n" ++ "IsaTERM: "++ show  (transTerm e t)) 
+    Le.Formula t      -> --trace ("TERM: "++show t++"\n\n" ++ "IsaTERM: "++ show  (transTerm e t)) 
           (Just (transTerm e t))
     DatatypeSen _     -> Nothing
     ProgEqSen _ _ _pe -> Nothing
@@ -268,8 +268,8 @@ transTerm sign (LambdaTerm pats part body _) =
   where 
    lambdaAbs f =
      if (null pats) then conSome 
-                           `App` Abs(IsaSign.Free("dummyVar",dummyT), 
-                                     dummyT, 
+                           `App` Abs(IsaSign.Free("dummyVar",noType), 
+                                     noType, 
                                      (f sign body))
        else conSome `App` (foldr (abstraction sign) 
                                  (f sign body)
@@ -291,12 +291,12 @@ transTerm sign (CaseTerm t pEqs _) =
   in
     case t of
       QualVar (VarDecl decl _ _ _) -> 
-        Case (IsaSign.Free(transVar decl, dummyT), alts)
+        Case (IsaSign.Free(transVar decl, noType), alts)
       _                            -> 
         Case (transTerm sign t,
               (con "None", con "None"):
-               [(conSome `App` IsaSign.Free("caseVar", dummyT),
-               Case (IsaSign.Free("caseVar", dummyT), alts))])
+               [(conSome `App` IsaSign.Free("caseVar", noType),
+               Case (IsaSign.Free("caseVar", noType), alts))])
 
 transTerm _ _ = 
   error "[Comorphisms.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
@@ -374,8 +374,8 @@ transTotalLambda sign (LambdaTerm pats part body _) =
     Total   -> lambdaAbs transTotalLambda
   where 
     lambdaAbs f =
-      if (null pats) then Abs(IsaSign.Free("dummyVar",dummyT), 
-                              dummyT, 
+      if (null pats) then Abs(IsaSign.Free("dummyVar",noType), 
+                              noType, 
                               (f sign body))
         else  (foldr (abstraction sign) 
                      (f sign body)
@@ -615,10 +615,13 @@ matriArg pat cTerm =
 
 redArgs :: [CaseMatrix] -> CaseMatrix
 redArgs caMas
-  | or (map (testPatBrand Appl) caMas)  = trace ("appl "++show (redAppl caMas)++"\n") (redAppl caMas)
+  | or (map (testPatBrand Appl) caMas)  = --trace ("appl "++show (redAppl caMas)++"\n") 
+                (redAppl caMas)
   | or (map (testPatBrand Tuple) caMas) = head caMas
-  | and (map (testPatBrand QuOp) caMas) = trace "quop\n" (redQuOp caMas)
-  | otherwise                           = trace "other\n" shrinkPat (head caMas)
+  | and (map (testPatBrand QuOp) caMas) = --trace "quop\n" 
+               (redQuOp caMas)
+  | otherwise                           = --trace "other\n" 
+             shrinkPat (head caMas)
   where testPatBrand pb cm = pb == patBrand cm
 
 redQuOp :: [CaseMatrix] -> CaseMatrix
@@ -630,7 +633,8 @@ redQuOp caMas =
       newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) Other [])
       newPEqs = map newPEq (map shrinkPat caMas)
   in
-    trace ("newPeqs: "++show newPEqs++"\n") (if isSingle caMas then head (map shrinkPat caMas)
+--    trace ("newPeqs: "++show newPEqs++"\n") 
+    (if isSingle caMas then head (map shrinkPat caMas)
       else shrinkPat hCaMas { patterns = [newVar],
                               term = CaseTerm newVar newPEqs [] })
 
@@ -645,7 +649,8 @@ redAppl caMas =
       varName = "caseVar" ++ show (length caMas)
       varId = (mkId [(mkSimpleId varName)])
       newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) Other [])
-      newPEqs = trace ("newPEqs: "++show lastArgs++"\n") (map newPE (zip lastArgs terms)) --shrinkedMas
+      newPEqs = --trace ("newPEqs: "++show lastArgs++"\n") 
+              (map newPE (zip lastArgs terms)) --shrinkedMas
    in
     if isSingle caMas then shrinkPat (head caMas)
      else
@@ -696,7 +701,7 @@ substArg :: Env -> [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
 substArg sign pEqs =
   let frontCons = transPat sign (getFrontCons pEqs)
       varName = "caseVar" ++ show (length pEqs)
-      newPat = frontCons `App` IsaSign.Free(varName, dummyT)
+      newPat = frontCons `App` IsaSign.Free(varName, noType)
       varId = (mkId [(mkSimpleId varName)])
       newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) Other [])
       newTerm = transTerm sign (CaseTerm newVar newPEqs [])
@@ -723,23 +728,23 @@ stripProgEq (ProgEq pat t pos) = case pat of
 -- transCaseEx :: Env -> As.Term -> IsaSign.Term
 -- transCaseEx sign term =
 --   case term of
---     QualVar (VarDecl decl _ _ _) -> IsaSign.Free(transVar decl, dummyT)
+--     QualVar (VarDecl decl _ _ _) -> IsaSign.Free(transVar decl, noType)
 --     _                            -> transTerm sign term
 -}
 transCaseAlt :: Env -> ProgEq -> (IsaSign.Term, IsaSign.Term)
 transCaseAlt sign (ProgEq pat term _) = 
   (transPat sign pat, --trace ("term: "++show term++"\n") 
                  (transTerm sign term))
-   --Abs (transTerm sign pat, dummyT, transTerm sign term)
+   --Abs (transTerm sign pat, noType, transTerm sign term)
 
 transPat :: Env -> As.Term -> IsaSign.Term
-transPat _ (QualVar (VarDecl var _ _ _)) = IsaSign.Free(transVar var, dummyT)
+transPat _ (QualVar (VarDecl var _ _ _)) = IsaSign.Free(transVar var, noType)
 transPat sign (ApplTerm term1 term2 _) = 
   (transPat sign term1) `App` (transPat sign term2)
 transPat sign (TypedTerm term _ _ _) = transPat sign term
 -- transPat sign (LambdaTerm pats Partial body _) =
---   if (null pats) then Abs(IsaSign.Free("dummyVar",dummyT), 
---                                         dummyT, 
+--   if (null pats) then Abs(IsaSign.Free("dummyVar",noType), 
+--                                         noType, 
 --                                         (transPat sign body))
 --      else foldr (abstraction sign) 
 --                 (transPat sign body)

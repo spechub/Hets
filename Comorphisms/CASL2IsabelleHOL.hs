@@ -160,7 +160,7 @@ transPredType pt = map transSort (predArgs pt) ---> boolType
 ------------------------------ Formulas ------------------------------
 
 var :: String -> Term
-var v = IsaSign.Free(v,dummyT)
+var v = IsaSign.Free(v,noType)
 
 transVar :: VAR -> String
 transVar = showIsaSid
@@ -172,7 +172,7 @@ rvar :: Int -> String
 rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
 
 quantifyIsa q (v,t) phi =
-  Const (q,dummyT) `App` Abs ( (Const(v, dummyT)) , t,phi)
+  Const (q,noType) `App` Abs ( (Const(v, noType)) , t,phi)
 
 quantify q (v,t) phi  = 
   quantifyIsa (qname q) (transVar v, transSort t) phi
@@ -183,17 +183,17 @@ quantify q (v,t) phi  =
 
 
 binConj phi1 phi2 = 
-  Const("op &",dummyT) `App` phi1 `App` phi2
+  Const("op &",noType) `App` phi1 `App` phi2
 conj l = if null l then true else foldr1 binConj l
 
 binDisj phi1 phi2 = 
-  Const("op |",dummyT) `App` phi1 `App` phi2
+  Const("op |",noType) `App` phi1 `App` phi2
 binImpl phi1 phi2 = 
-  Const("op -->",dummyT) `App` phi1 `App` phi2
+  Const("op -->",noType) `App` phi1 `App` phi2
 binEq phi1 phi2 = 
-  Const("op =",dummyT) `App` phi1 `App` phi2
-true = Const ("True",dummyT)
-false = Const ("False",dummyT)
+  Const("op =",noType) `App` phi1 `App` phi2
+true = Const ("True",noType)
+false = Const ("False",noType)
 
 prodType t1 t2 = Type("*",[t1,t2])
 
@@ -235,20 +235,20 @@ transFORMULA sign tr (Implication phi1 phi2 _ _) =
 transFORMULA sign tr (Equivalence phi1 phi2 _) =
   binEq (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
 transFORMULA sign tr (Negation phi _) =
-  Const ("Not",dummyT) `App` (transFORMULA sign tr phi)
+  Const ("Not",noType) `App` (transFORMULA sign tr phi)
 transFORMULA sign tr (True_atom _) =
   true
 transFORMULA sign tr (False_atom _) =
-  Const ("False",dummyT)
+  Const ("False",noType)
 transFORMULA sign tr (Predication psymb args _) =
-  foldl App (Const (transPRED_SYMB sign psymb,dummyT)) 
+  foldl App (Const (transPRED_SYMB sign psymb,noType)) 
             (map (transTERM sign tr) args)
 transFORMULA sign tr (Definedness t _) =
   true
 transFORMULA sign tr (Existl_equation t1 t2 _) =
-  Const ("op =",dummyT) `App` (transTERM sign tr t1) `App` (transTERM sign tr t2)
+  Const ("op =",noType) `App` (transTERM sign tr t1) `App` (transTERM sign tr t2)
 transFORMULA sign tr (Strong_equation t1 t2 _) =
-  Const ("op =",dummyT) `App` (transTERM sign tr t1) `App` (transTERM sign tr t2)
+  Const ("op =",noType) `App` (transTERM sign tr t1) `App` (transTERM sign tr t2)
 transFORMULA sign tr (Membership t1 s _) =
   trace "WARNING: ignoring membership formula" $ true
   --error "No translation for membership"
@@ -266,18 +266,18 @@ transFORMULA sign tr (ExtFORMULA phi) =
 transTERM sign tr (Qual_var v s _) =
   var $ transVar v
 transTERM sign tr (Application opsymb args _) =
-  foldl App (Const (transOP_SYMB sign opsymb,dummyT)) 
+  foldl App (Const (transOP_SYMB sign opsymb,noType)) 
             (map (transTERM sign tr) args)
 transTERM sign tr (Sorted_term t s _) =
   transTERM sign tr t
 transTERM sign tr (Cast t s _) =
   transTERM sign tr t -- ??? Should lead to an error!
 transTERM sign tr (Conditional t1 phi t2 _) =
-  Const ("If",dummyT) `App` (transFORMULA sign tr phi) 
+  Const ("If",noType) `App` (transFORMULA sign tr phi) 
                       `App` (transTERM sign tr t1)
                       `App` (transTERM sign tr t2)
 transTERM sign tr (Simple_id v) =
-  IsaSign.Free(transVar v,dummyT)
+  IsaSign.Free(transVar v,noType)
   --error "No translation for undisambigated identifier"
 transTERM sign tr (Unparsed_term _ _) =
   error "No translation for unparsed terms"

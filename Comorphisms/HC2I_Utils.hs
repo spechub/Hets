@@ -41,7 +41,7 @@ termAppl t1 t2 = t1 `App` t2
 
 
 con :: String -> IsaSign.Term
-con s = Const(s, dummyT)
+con s = Const(s, noType)
 
 conSome :: IsaSign.Term
 conSome = con "Some"

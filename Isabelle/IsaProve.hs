@@ -113,7 +113,8 @@ isaProve thName (sig,axs) goals = do
   return [] -- ??? to be implemented
   where
       disAxs = disambiguateSens [] $ nameSens $ transSens axs
-      showLemma = concat $ map ((++"\n") . formLemmas) disAxs
+      (lemmas, decs) = unzip (map formLemmas disAxs)
+      showLemma = concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
       showAxs = concat $ map ((++"\n") . showSen) disAxs
       disGoals = disambiguateSens disAxs $ nameSens $ transSens goals
       showGoals = concat $ map showGoal disGoals
@@ -173,12 +174,12 @@ nameSens sens =
                               else sen
 
 -- form a lemmas from given axiom and add them both to Isabelles simplifier
-formLemmas :: Named a -> String
+formLemmas :: Named a -> (String, String)
 formLemmas sen = 
   let (sn, ln) = lemmaName (senName sen)
    in
-     "lemmas " ++ ln ++ " = " ++ sn ++ " [simplified]\n" ++
-     dec ln ++ "\n" ++ dec sn
+     ("lemmas " ++ ln ++ " = " ++ sn ++ " [simplified]\n",
+      dec ln ++ "\n" ++ dec sn)
   where 
   lemmaName s = (s, s++"'")
-  dec s = "declare " ++ s ++ "[simp]"
+  dec s = "declare " ++ s ++ " [simp]"

@@ -45,8 +45,8 @@ data Typ = Type (String,[Typ])  -- type constructor, with name and args
 infix -->
 infix --->
 
-dummyT :: Typ
-dummyT = Type("dummy",[])
+noType :: Typ
+noType = Type("noType",[])
 
 boolType :: Typ
 boolType = Type("bool",[])
