@@ -237,6 +237,10 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                    Solid $$$ Color "Steelblue"
 		   $$$ createLocalEdgeMenu gInfo
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
+		  ("hetdef",
+                   GraphConfigure.Double
+		   $$$ createLocalEdgeMenu gInfo
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("proventhm",
                    Solid $$$ Color "Green"
 		   $$$ createLocalEdgeMenuThmEdge gInfo
@@ -260,26 +264,37 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue)]
                  [("globaldef","globaldef","globaldef"),
 		  ("globaldef","def","def"),
+		  ("globaldef","hetdef","hetdef"),
                   ("globaldef","proventhm","proventhm"),
                   ("globaldef","unproventhm","unproventhm"),
                   ("globaldef","localunproventhm","localunproventhm"),
 		  ("def","globaldef","def"),
 		  ("def","def","def"),
+		  ("def","hetdef","hetdef"),
                   ("def","proventhm","proventhm"),
                   ("def","unproventhm","unproventhm"),
                   ("def","localunproventhm","localunproventhm"),
+		  ("hetdef","globaldef","hetdef"),
+		  ("hetdef","def","hetdef"),
+		  ("hetdef","hetdef","hetdef"),
+                  ("hetdef","proventhm","proventhm"),
+                  ("hetdef","unproventhm","unproventhm"),
+                  ("hetdef","localunproventhm","localunproventhm"),
                   ("proventhm","globaldef","proventhm"),
                   ("proventhm","def","proventhm"),
+                  ("proventhm","hetdef","proventhm"),
                   ("proventhm","proventhm","proventhm"),
                   ("proventhm","unproventhm","unproventhm"),
                   ("proventhm","localunproventhm","localunproventhm"),
                   ("unproventhm","globaldef","unproventhm"),
                   ("unproventhm","def","unproventhm"),
+                  ("unproventhm","hetdef","unproventhm"),
                   ("unproventhm","proventhm","unproventhm"),
                   ("unproventhm","unproventhm","unproventhm"), 
                   ("unproventhm","localunproventhm","localunproventhm"), 
                   ("localunproventhm","globaldef","localunproventhm"),
                   ("localunproventhm","def","localunproventhm"),
+                  ("localunproventhm","hetdef","localunproventhm"),
                   ("localunproventhm","proventhm","localunproventhm"),
                   ("localunproventhm","unproventhm","localunproventhm"), 
                   ("localunproventhm","localunproventhm","localunproventhm")] 
@@ -856,17 +871,24 @@ getDGNodeTypeAux :: DGNodeLab -> String
 getDGNodeTypeAux dgnode = if (locallyEmpty dgnode) then "locallyEmpty_"
                            else ""
 
-getDGLinkType :: DGLinkType -> String
-getDGLinkType LocalDef = "def"
-getDGLinkType GlobalDef = "globaldef"
-getDGLinkType HidingDef = "def"
-getDGLinkType (FreeDef _) = "def"
-getDGLinkType (CofreeDef _) = "def"
-getDGLinkType (LocalThm thmLinkStatus _ _) = 
+getDGLinkType :: DGLinkLab -> String
+getDGLinkType lnk = case (dgl_type lnk) of
+  GlobalDef ->
+    if hasIdComorphism $ dgl_morphism lnk then "globaldef"
+        else "hetdef"
+  t -> getDGLinkTypeAux t
+
+getDGLinkTypeAux :: DGLinkType -> String
+getDGLinkTypeAux LocalDef = "def"
+getDGLinkTypeAux GlobalDef = "globaldef"
+getDGLinkTypeAux HidingDef = "def"
+getDGLinkTypeAux (FreeDef _) = "def"
+getDGLinkTypeAux (CofreeDef _) = "def"
+getDGLinkTypeAux (LocalThm thmLinkStatus _ _) = 
     "local"++(getThmType thmLinkStatus)
-getDGLinkType (GlobalThm thmLinkStatus _ _) = getThmType thmLinkStatus
-getDGLinkType (HidingThm _ thmLinkStatus) = getThmType thmLinkStatus
-getDGLinkType (FreeThm _ bool) = if bool then "proventhm" else "unproventhm"
+getDGLinkTypeAux (GlobalThm thmLinkStatus _ _) = getThmType thmLinkStatus
+getDGLinkTypeAux (HidingThm _ thmLinkStatus) = getThmType thmLinkStatus
+getDGLinkTypeAux (FreeThm _ bool) = if bool then "proventhm" else "unproventhm"
 
 getThmType :: ThmLinkStatus -> String
 getThmType thmLinkStatus =
@@ -900,7 +922,7 @@ convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edgelab)):lEdges)
          tarnode = Map.lookup (libname,tar) (dg2abstrNode convMaps)
      case (srcnode,tarnode) of 
       (Just s, Just t) -> do
-        Result newDescr err <- addlink descr (getDGLinkType (dgl_type edgelab))
+        Result newDescr err <- addlink descr (getDGLinkType edgelab)
                                    "" (Just ledge) s t graphInfo
         newConvMaps <- (convertEdgesAux
                        convMaps {dg2abstrEdge = Map.insert
@@ -1030,7 +1052,7 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
            (Just abstrSrc, Just abstrTgt) ->
              do let dgEdge = (libname, (src,tgt,show edgelab))
 	        (Result descr err) <- 
-                   addlink gid (getDGLinkType (dgl_type edgelab))
+                   addlink gid (getDGLinkType edgelab)
 			      "" (Just ledge) abstrSrc abstrTgt graphInfo
 	        case err of
 	          Nothing ->

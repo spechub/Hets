@@ -468,6 +468,10 @@ instance Eq GMorphism where
      = Comorphism cid1 == Comorphism cid2 &&
        coerce cid1 cid1 (sigma1, mor1) == Just (sigma2, mor2)
 
+hasIdComorphism :: GMorphism -> Bool
+hasIdComorphism (GMorphism cid _ _) =
+  isIdComorphism (Comorphism cid)
+
 data Grothendieck = Grothendieck deriving Show
 
 instance Language Grothendieck
