@@ -235,8 +235,8 @@ ops 1, 2, 3, 4 : s;
     - : s -> s;
     __@@__, __exp__, __frac__ : s * s -> s
 . def 12
-. def 12 E34
-. def 12 E - 34
+. def 12E34
+. def 12E-34
 . def 12.34
   %%numbers
 . def 12.34E34
