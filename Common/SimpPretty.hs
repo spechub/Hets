@@ -1,40 +1,17 @@
 {-| 
    
 Module      :  $Header$
-Copyright   :  (c) Hughes, Peyton Jones, Klaus Lüttich, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Lüttich, C. Maeder Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   An imported and simplified version of GHC module
-   
-   GHCs documentation follows 
-
+   A very simplified version of John Hughes's 
+   and Simon Peyton Jones's Pretty Printer Combinators. Only catenable 
+   string sequences are left over
 -}
-
------------------------------------------------------------------------------
--- 
--- Module      :  Common.Lib.Pretty
--- Copyright   :  (c) The University of Glasgow 2001
--- License     :  BSD-style (see the file libraries/base/LICENSE)
--- 
--- Maintainer  :  libraries@haskell.org
--- Stability   :  provisional
--- Portability :  portable
---
--- John Hughes's and Simon Peyton Jones's Pretty Printer Combinators
--- 
--- Based on /The Design of a Pretty-printing Library/
--- in Advanced Functional Programming,
--- Johan Jeuring and Erik Meijer (eds), LNCS 925
--- <http://www.cs.chalmers.se/~rjmh/Papers/pretty.ps>
---
--- Heavily modified by Simon Peyton Jones, Dec 96
---
------------------------------------------------------------------------------
-
 
 module Common.SimpPretty (
 
@@ -42,10 +19,10 @@ module Common.SimpPretty (
         SDoc,            -- Abstract
 
 	-- * Primitive SDocuments
-        empty,comma,
+        empty, comma,
 
 	-- * Converting values into documents
-        text, char, 
+        text,
 
 	-- * Wrapping documents in delimiters
         parens, brackets, braces,
@@ -56,9 +33,6 @@ module Common.SimpPretty (
 	-- * Rendering documents
 
 	render, fullRender, writeFileSDoc
-
---        TextDetails(..)
-
   ) where
 
 
@@ -74,10 +48,7 @@ infixl 6 <>
 
 empty   :: SDoc;			-- ^ An empty document
 comma   :: SDoc;                 -- ^ A ',' character
-
 text	 :: String   -> SDoc
-char 	 :: Char     -> SDoc
-
 
 parens       :: SDoc -> SDoc; 	-- ^ Wrap document in @(...)@
 brackets     :: SDoc -> SDoc;  	-- ^ Wrap document in @[...]@
@@ -95,17 +66,11 @@ instance Show SDoc where
 -- | Renders the document as a string using the default style
 render     :: SDoc -> String
 
-fullRender :: (String -> a -> a)   -- ^What to do with text
-	   -> (a -> a -> a)             -- ^Compose two a
-           -> a                         -- ^What to do at the end
-           -> SDoc			-- ^The document
-           -> a                         -- ^Result
+comma = text ","
 
-comma = char ','
-
-parens p        = char '(' <> p <> char ')'
-brackets p      = char '[' <> p <> char ']'
-braces p        = char '{' <> p <> char '}'
+parens p        = text "(" <> p <> text ")"
+brackets p      = text "[" <> p <> text "]"
+braces p        = text "{" <> p <> text "}"
 
 -- ---------------------------------------------------------------------------
 -- The SDoc data type
@@ -115,17 +80,14 @@ braces p        = char '{' <> p <> char '}'
 
 -- | The abstract type of documents
 data SDoc
- = Empty                                -- empty
- | TextBeside String SDoc      -- text s <> x  
+ = Text String     -- text s
  | Beside SDoc SDoc                       
 
 -- ---------------------------------------------------------------------------
 -- @empty@, @text@
 
-empty = Empty
-
-char  c = TextBeside [c] Empty
-text  s = TextBeside s Empty
+empty = Text ""
+text = Text
 
 -- ---------------------------------------------------------------------------
 -- Horizontal composition @<>@
@@ -138,26 +100,20 @@ p <> q = Beside p q
 writeFileSDoc :: FilePath -> SDoc -> IO ()
 writeFileSDoc fp sd =
      do h <- openFile fp WriteMode
-	fullRender (hPutTD h) (>>) (return ()) sd
+	fullRender (hPutStr h) (>>) sd
 	hClose h
-    where hPutTD :: Handle -> String -> IO () -> IO ()
-	  hPutTD h s io = hPutStr  h s >> io 
 
 render doc       = showSDoc doc ""
 
 showSDoc :: SDoc -> String -> String
-showSDoc doc rest = fullRender showString (++) rest doc
+showSDoc doc = fullRender showString (.) doc
 
-fullRender = easy_display
-
-easy_display :: (String -> a -> a)
+fullRender :: (String -> a)
 	     -> (a -> a -> a)
-             -> a                        
              -> SDoc			
              -> a                         
-easy_display txt comp end doc 
+fullRender txt comp doc 
   = lay doc 
   where
-    lay Empty            = end
-    lay (TextBeside s p) = s `txt` lay p
-    lay (Beside p q)     = lay p `comp` lay q
+    lay (Text s) = txt s 
+    lay (Beside p q) = lay p `comp` lay q
