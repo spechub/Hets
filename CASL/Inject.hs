@@ -20,7 +20,7 @@ import Common.Id
 
 -- | the name of injections
 injName :: Id
-injName = mkId [mkSimpleId "inj"]
+injName = mkId [mkSimpleId "g__inj"]
 
 inject :: [Pos] -> TERM f -> SORT -> TERM f
 inject pos argument result_type = let argument_type = term_sort argument in
