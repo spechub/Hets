@@ -76,7 +76,7 @@ translateData (tid,info) =
 	               hsname
 		       (kindToTypeArgs 1 $ typeKind info)
 		       [(HsConDecl nullLoc hsname [])]
-		       [(UnQual $ HsIdent "Show")] -- [HsQName]  (deriving ...)
+		       [] -- [(UnQual $ HsIdent "Show")] -- (deriving ...)
 	    )]
 	 else (map (typeSynonym hsname)(superTypes info))
        Supertype _vars _ty _form ->[]
@@ -86,7 +86,7 @@ translateData (tid,info) =
 	               hsname
 		       (map getArg typeargs) -- type arguments
 		       (map translateAltDefn altDefns) -- [HsConDecl] 
-		       [(UnQual $ HsIdent "Show")] -- [HsQName]  (deriving ...)
+		       [] -- [(UnQual $ HsIdent "Show")] -- (deriving ...)
 	   )]
        AliasTypeDefn ts -> 
 	  [(HsTypeDecl nullLoc
@@ -289,9 +289,7 @@ translatePattern as tm pat =
         let oid = findUniqueId uid ts tm as
 	in case oid of
 	  Just i ->
-	      if isConstructId i $ Map.toList as then
 	        HsPApp (UnQual $ HsIdent $ translateIdWithType UpperId i) []
-	      else HsPApp (UnQual $ HsIdent $ translateIdWithType LowerId i) []
 	  _ -> error ("Proplem with finding of unique id: " ++ show pat)
       ApplTerm p1 p2 _pos -> 
 	  let tp = translatePattern as tm p1

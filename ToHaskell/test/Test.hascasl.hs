@@ -1,36 +1,27 @@
 module HasCASLModul where
-import Prelude (undefined, Show)
+import Prelude (undefined)
  
 data AT = A !(Int, B)
-        deriving Show
  
 data B = B
-       deriving Show
  
 data C = C
-       deriving Show
  
 data Int = Int
-         deriving Show
  
 type Pred a = a -> ()
  
 type Unit = ()
  
 data A__2_T_2 a1 a2 = A__2_T_2
-                    deriving Show
  
 data A__2_M_M_G_2 a1 a2 = A__2_M_M_G_2
-                        deriving Show
  
 data A__2_M_M_G_Q_2 a1 a2 = A__2_M_M_G_Q_2
-                          deriving Show
  
 data A__2_M_G_2 a1 a2 = A__2_M_G_2
-                      deriving Show
  
 data A__2_M_G_Q_2 a1 a2 = A__2_M_G_Q_2
-                        deriving Show
  
 type A_s = B
  
