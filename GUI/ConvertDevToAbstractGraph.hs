@@ -643,10 +643,17 @@ createLocalMenuValueTitleShowConservativity =
         case maybeLEdge of
           Just (_,_,edgelab) ->
             case dgl_type edgelab of
-                        GlobalThm _ c _ -> return (show c)
-                        LocalThm _ c _ -> return (show c)
+                        GlobalThm _ c status -> return (showCons c status)
+                        LocalThm _ c status -> return (showCons c status)
               ))
-  
+  where
+    showCons :: Conservativity -> ThmLinkStatus -> String
+    showCons c status =
+      case (c,status) of
+        (None,_) -> show c
+        (_,Open) -> (show c) ++ "?"
+        _ -> show c
+
 -- ------------------------------
 -- end of local menu definitions
 -- ------------------------------
