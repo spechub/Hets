@@ -21,6 +21,7 @@ Portability :  non-portable (via Logic)
    comorphism modifications
    comorphisms out of sublogic relationships
    restrictions of comorphisms to sublogics
+   morphisms and other translations via spans
 -}
 
 module Logic.Comorphism where
@@ -30,10 +31,6 @@ import Common.Lib.Set
 import Data.Maybe
 import Data.Dynamic
 import Common.AS_Annotation (Named, mapNamedM)
-
---import Logic.Grothendieck
--- Logic comorphisms (possibly also morphisms via adjointness)
-
 
 class (Language cid,
        Logic lid1 sublogics1
