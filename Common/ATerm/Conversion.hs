@@ -159,14 +159,19 @@ instance (ATermConvertible a,Integral a) => ATermConvertible (Ratio a) where
                    (AAppl "Ration" [at1,at2] _) -> let i1 = fromATerm at1
 						       i2 = fromATerm at2
 						   in (i1 % i2)
-   toShATerm att0 ((:%) i1 i2) = let (att1,i1') = toShATerm att0 i1
-                                     (att2,i2') = toShATerm att1 i2
-                                 in addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
-   fromShATerm att = case aterm of
-                      (ShAAppl "Ration" [i1',i2'] _) -> let i1 = fromShATerm (getATermByIndex1 i1' att)
-							    i2 = fromShATerm (getATermByIndex1 i2' att)
-							in (i1 % i2)
-                     where aterm = getATerm att 
+		   _ -> fromATermError "Ratio" at
+   toShATerm att0 ((:%) i1 i2) = 
+       let (att1,i1') = toShATerm att0 i1
+           (att2,i2') = toShATerm att1 i2
+       in addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
+   fromShATerm att = 
+       case aterm of
+       (ShAAppl "Ratio" [i1',i2'] _) -> 
+	   let i1 = fromShATerm (getATermByIndex1 i1' att)
+	       i2 = fromShATerm (getATermByIndex1 i2' att)
+	   in (i1 % i2)
+       _                ->  fromShATermError "Ratio" aterm
+       where aterm = getATerm att 
 
 instance ATermConvertible Char where                   
    toATerm c = AAppl s [] []
@@ -233,6 +238,7 @@ instance (ATermConvertible a) => ATermConvertible (Maybe a) where
                      (AAppl "Nothing" [] _) -> Nothing
                      (AAppl "Just" [x] _) -> let x' = fromATerm x
 					     in (Just x')
+		     _ -> fromATermError "Maybe" at
     toShATerm att maybe = case maybe of
                      Nothing -> addATerm (ShAAppl "Nothing" [] []) att
                      (Just x)  -> let (att1,x') = toShATerm att x
