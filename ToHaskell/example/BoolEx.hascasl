@@ -1,12 +1,21 @@
 %% Example for testing the translation from HasCASL to haskell.
 
-type Bool ::= True | False
+free type Bool ::= True | False
 
-op not : Bool -> Bool = \a. case a of True -> False | False -> True
-%%program not2 (true) = false 
-%%program not2 (false) = true
+op nicht : Bool -> Bool
+program nicht x = case x of False -> True | True -> False
 
-op and2 : Bool * Bool -> Bool
+op und : Bool * Bool -> Bool
+program und (x,y) = case (x,y) of (False, False) -> False
+				| (True, False)  -> False
+				| (False, True)  -> False
+				| (True, True)   -> True
 
-op ident : Bool -> Bool = \x. x
+op or : Bool * Bool -> Bool
+program or (x,y) = nicht (und ((nicht (x)), (nicht (y))))
 
+op implies : Bool * Bool -> Bool
+program implies (x,y) = nicht ( und (x,y))
+
+op iff : Bool * Bool -> Bool
+program iff (x,y) = und ((implies (x,y)), (implies (y,x)))
