@@ -147,15 +147,15 @@ typeVars = do (ts, ps) <- extTypeVar `separatedBy` anComma
 		      else do k <- kind
 			      return (makeTypeArgs ts ps [tokPos c] k)
 	        <|> typeDownset ts ps
-		<|> return (makeTypeArgs ts ps [] star)
 
 -- 'parseType' a 'Downset' starting with 'lessT'
 typeDownset :: [(TypeId, Variance, Pos)] -> [Token] -> AParser [TypeArg]
 typeDownset vs ps = 
     do l <- lessT
        t <- parseType
-       return $ makeTypeArgs vs ps [tokPos l]
-		  (Downset Nothing t MissingKind []) 
+       return (makeTypeArgs vs ps [tokPos l]
+		  (Downset Nothing t MissingKind [])) 
+    <|> return (makeTypeArgs vs ps [] star)
 
 -- | add the 'Kind' to all 'extTypeVar' and yield a 'TypeArg'
 makeTypeArgs :: [(TypeId, Variance, Pos)] -> [Token] 
