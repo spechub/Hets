@@ -72,12 +72,8 @@ instance Eq Id where
     Id tops1 ids1 _ == Id tops2 ids2 _ = tops1 == tops2 && ids1 == ids2
 
 instance Ord Id where
-    Id tops1 ids1 _ <= Id tops2 ids2 _ = if tops1 <= tops2 then 
-					 if tops2 <= tops1 then 
-					    ids1 <= ids2 
-					 else False 
-					 else False
-					 
+    Id tops1 ids1 _ <= Id tops2 ids2 _ = 
+	if tops1 == tops2 then ids1 <= ids2 else tops1 <= tops2
 
 noShow :: Bool -> ShowS -> ShowS
 noShow b s = if b then id else s
