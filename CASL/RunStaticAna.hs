@@ -1,6 +1,7 @@
 module CASL.RunStaticAna where
 
 import CASL.Static
+import CASL.Sign
 import Common.AnnoState
 import Common.Result
 import Common.PrettyPrint

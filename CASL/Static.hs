@@ -54,16 +54,6 @@ import Common.Named
 --
 ------------------------------------------------------------------------------
 
-data LocalEnv = Env { getGA     :: GlobalAnnos,
-                      getSign   :: Sign,
-                      getPsi    :: [Named Sentence],
-                      getGlobal :: [VarDecl] }
-	      deriving Show
-
-data SigLocalEnv = SigEnv { localEnv  :: LocalEnv,
-                            selectors :: [Annoted OpItem],
-                            w         :: Map.Map Symbol [Symbol],
-                            flag      :: Bool }
 
 data Annotations = Annotations { annosOptPos :: [Pos],
                                  annosLeft, annosRight :: [Annotation] }
@@ -318,21 +308,12 @@ chainPos env f items positions addPos toStrFun =
 ------------------------------------------------------------------------------
 
 hasElem :: Sign -> (Id -> SigItem -> Bool) -> Id -> Bool
-hasElem sigma f idt =
-  let
-    res = Map.lookup idt (getMap sigma)
-  in
-    if (isJust res) then
-      or $ map (f idt) (fromJust res)
-    else
-      False
+hasElem sigma f idt = isJust $ getElem sigma f idt
 
 getElem :: Sign -> (Id -> SigItem -> Bool) -> Id -> Maybe SigItem
 getElem sigma f idt =
-  if (hasElem sigma f idt) then
-    Just (head $ filter (f idt) $ fromJust $ Map.lookup idt $ getMap sigma)
-  else
-    Nothing
+  let l = filter (f idt) $ Map.findWithDefault [] idt $ getMap sigma
+  in if null l then Nothing else Just $ head l
 
 isSigSortItem :: Id -> SigItem -> Bool
 isSigSortItem idt (ASortItem s) = (sortId $ item s)==idt
@@ -720,21 +701,11 @@ ana_SORT_ITEM sigma _itm pos =
 -- PRED-DECL
 ------------------------------------------------------------------------------
 
-ana_PRED_TYPE' :: LocalEnv -> PredType -> PRED_TYPE -> ExtPos 
-                 -> Result PredType
-ana_PRED_TYPE' _ w' (Pred_type [] _) _ = return w'
-ana_PRED_TYPE' sigma w' (Pred_type (s_n:t) _) pos =
-  do checkSortExists sigma (getPos pos) s_n
-     ana_PRED_TYPE' sigma (w'++[s_n]) (Pred_type t []) pos
-
-ana_PRED_TYPE :: LocalEnv -> PRED_TYPE -> ExtPos -> Result PredType
-ana_PRED_TYPE sigma t pos = ana_PRED_TYPE' sigma [] t pos
-
 ana_pred_decl :: LocalEnv -> Annoted PRED_ITEM -> [PRED_NAME] -> PRED_TYPE
                  -> [ExtPos] -> Result LocalEnv
-ana_pred_decl sigma _itm p_n t pos =
-  do w' <- ana_PRED_TYPE sigma t (head pos)
-     let delta = foldPos (updatePredItem _itm w' Nothing)
+ana_pred_decl sigma _itm p_n (Pred_type ss _) pos =
+  do mapM_ (checkSortExists sigma $ getPos $ head pos) ss
+     let delta = foldPos (updatePredItem _itm ss Nothing)
                          (getSign sigma) p_n pos
      return sigma { getSign = delta }
 

@@ -4,6 +4,8 @@ module CASL.Sign where
 
 import Common.Id
 import Common.AS_Annotation
+import Common.GlobalAnnotations
+import Common.Named
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Data.List(intersperse)
@@ -192,12 +194,6 @@ instance Eq Sign where
 emptySign :: Sign
 emptySign = SignAsMap Map.empty Rel.empty
 
-data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
-    	         deriving (Show, Eq, Ord)
-
-data Kind = SortKind | FunKind | PredKind
-            deriving (Show, Eq, Ord)
-
 data Axiom = AxiomDecl [VarDecl] Formula [Pos]  
 	       -- pos: "var/forall", semi colons, dot
 	     deriving (Show, Eq)
@@ -214,6 +210,28 @@ getLabel (GenItems l _) = let srts = filter (\x ->
                           in "ga_generated_" ++ concat 
 				 (intersperse "__" 
 				      (map (show . symbId) srts))
+
+data LocalEnv = Env { getGA     :: GlobalAnnos,
+                      getSign   :: Sign,
+                      getPsi    :: [Named Sentence],
+                      getGlobal :: [VarDecl] }
+	      deriving Show
+
+data SigLocalEnv = SigEnv { localEnv  :: LocalEnv,
+                            selectors :: [Annoted OpItem],
+                            w         :: Map.Map Symbol [Symbol],
+                            flag      :: Bool }
+
+-- ---------------------------------------------------------------
+-- symbol stuff
+-- ---------------------------------------------------------------
+
+data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
+    	         deriving (Show, Eq, Ord)
+
+data Kind = SortKind | FunKind | PredKind
+            deriving (Show, Eq, Ord)
+
 
 type Sort_map = Map.Map Id Id
 type Fun_map =  Map.Map Id [(OpType, Id, Bool)] 
