@@ -1276,29 +1276,20 @@
                . forall a:Nat; b:Nat; c:Nat; d:Nat
                      . a - b = c : Nat - d : Nat <=>
                            a : Nat + d : Nat = c + b %(Int_equality)%,
-               . forall a:Nat . inj(a : Nat) : Int = a - 0 %(Int_Nat_embedding)%,
+               . forall a:Nat . a = a - 0 %(Int_Nat_embedding)%,
                . forall a:Nat; b:Nat; c:Nat; d:Nat
-                     . inj(a : Nat) : Int - inj(b : Nat) : Int : Int
-                       + inj(c : Nat) : Int - inj(d : Nat) : Int : Int : Int =
-                           inj(a : Nat + c : Nat) : Int - inj(b
-                                                              + d) : Int : Int %(Int_add_def)%,
+                     . (a - b) + (c : Int - d : Int) =
+                           (a : Nat + c : Nat) - (b + d) %(Int_add_def)%,
                . forall a:Nat; b:Nat; c:Nat; d:Nat
-                     . inj(a : Nat) : Int - inj(b : Nat) : Int : Int
-                       * inj(c : Nat) : Int - inj(d : Nat) : Int : Int : Int =
-                           inj(a : Nat * c : Nat + b * d) : Int - inj(b * c + a : Nat
-                                                                              * d : Nat) : Int : Int %(Int_mult_def)%,
+                     . (a - b) * (c : Int - d : Int) =
+                           (a : Nat * c : Nat + b * d) - (b * c + a : Nat
+                                                                  * d : Nat) %(Int_mult_def)%,
                . forall m:Int; n:Int . m - n = m + - n %(Int_sub_def)%,
                . forall m:Int . + m = m %(Int_pos_def)%,
-               . forall a:Nat; b:Nat
-                     . - inj(a : Nat) : Int - inj(b : Nat) : Int : Int : Int =
-                           inj(b : Nat) : Int - inj(a : Nat) : Int : Int %(Int_neg_def)%,
+               . forall a:Nat; b:Nat . - (a - b) = b - a %(Int_neg_def)%,
                . forall m:Int
                      . sign(m) =
-                           inj(0 : Nat) : Int
-                               when m = inj(0 : Nat) : Int
-                               else inj(1 : Pos) : Int
-                                        when m : Int > inj(0 : Nat) : Int
-                                        else - inj(1 : Pos) : Int : Int %(Int_sign_def)%,
+                           0 when m = 0 else 1 when m > 0 else - 1 %(Int_sign_def)%,
                . forall m:Int; n:Int . m <= n <=> n - m in Nat %(Int_leq_def)%,
                . forall m:Int; n:Int . m >= n <=> n <= m %(Int_geq_def)%,
                . forall m:Int; n:Int
@@ -1308,120 +1299,75 @@
                      . min(m, n) = m when m <= n else n %(Int_min_def)%,
                . forall m:Int; n:Int
                      . max(m, n) = n when m <= n else m %(Int_max_def)%,
-               . forall m:Int
-                     . inj(abs(m)) : Int = - m if
-                           m : Int < inj(0 : Nat) : Int %(Int_abs_def)%,
+               . forall m:Int . abs(m) = - m if m < 0 %(Int_abs_def)%,
                . forall a:Nat
-                     . - inj(1 : Pos) : Int : Int ^ a : Nat : Int =
-                           inj(1 : Pos) : Int
-                               when even(inj(a : Nat) : Int)
-                               else - inj(1 : Pos) : Int : Int %(Int_neg1_power_def)%,
+                     . - 1 ^ a = 1 when even(a) else - 1 %(Int_neg1_power_def)%,
                . forall m:Int; a:Nat
-                     . m ^ a =
-                           sign(m) ^ a * inj(abs(m) ^ a) : Int : Int %(Int_power_def)%,
-               . forall m:Int
-                     . even(m) <=> even(inj(abs(m)) : Int) %(Int_even_def)%,
+                     . m ^ a = sign(m) ^ a * abs(m) ^ a %(Int_power_def)%,
+               . forall m:Int . even(m) <=> even(abs(m)) %(Int_even_def)%,
                . forall m:Int . odd(m) <=> not even(m) %(Int_odd_def)%,
                . forall m:Int; n:Int
-                     . m /? n =
-                           sign(m) * sign(n) * inj(abs(m)
-                                                   /? abs(n)) : Int : Int %(Int_divide)%,
+                     . m /? n = sign(m) * sign(n) * (abs(m) /? abs(n)) %(Int_divide)%,
                . forall m:Int; n:Int
-                     . inj(m mod n) : Int < inj(abs(n)) : Int if
-                           not n = inj(0 : Nat) : Int %(Int_mod_range)%,
+                     . (m mod n) < abs(n) if not n = 0 %(Int_mod_range)%,
                . forall m:Int; n:Int
-                     . m = (m div n) * n + inj(m mod n) : Int : Int if
-                           not n = inj(0 : Nat) : Int %(Int_mod__div_def)%,
-               . forall m:Int
-                     . not def m : Int mod inj(0 : Nat) : Int : Nat %(Int_mod_zero)%,
-               . forall m:Int
-                     . not def m : Int div inj(0 : Nat) : Int : Int %(Int_div_zero)%,
+                     . m = (m div n) * n + (m mod n) if not n = 0 %(Int_mod__div_def)%,
+               . forall m:Int . not def m mod 0 %(Int_mod_zero)%,
+               . forall m:Int . not def m div 0 %(Int_div_zero)%,
                . forall m:Int; n:Int
                      . m quot n =
-                           sign(m) * sign(n) * inj(abs(m)
-                                                   quot abs(n)) : Int : Int %(Int_quot_def)%,
+                           sign(m) * sign(n) * (abs(m) quot abs(n)) %(Int_quot_def)%,
                . forall m:Int; n:Int
                      . m rem n =
-                           sign(m) * sign(n) * inj(abs(m)
-                                                   rem abs(n)) : Int : Int %(Int_rem_def)%,
+                           sign(m) * sign(n) * (abs(m) rem abs(n)) %(Int_rem_def)%,
                . forall a:Nat; b:Nat
-                     . def a -? b =>
-                           inj(a -? b) : Int =
-                               inj(a : Nat) : Int
-                               - inj(b : Nat) : Int : Int %(Int_Nat_sub_compat)%,
-               . forall m:Int
-                     . m = sign(m) * inj(abs(m)) : Int : Int %(Int_abs_decomp)%,
-               . forall m:Int
-                     . odd(m) <=> odd(inj(abs(m)) : Int) %(Int_odd_alt)%,
+                     . def a -? b => a -? b = a - b %(Int_Nat_sub_compat)%,
+               . forall m:Int . m = sign(m) * abs(m) %(Int_abs_decomp)%,
+               . forall m:Int . odd(m) <=> odd(abs(m)) %(Int_odd_alt)%,
                . forall m:Int; n:Int; r:Int
-                     . m /? n = r <=>
-                           not n = inj(0 : Nat) : Int /\ n * r = n %(Int_divide_dom1)%,
+                     . m /? n = r <=> not n = 0 /\ n * r = n %(Int_divide_dom1)%,
                . forall m:Int; n:Int
                      . def m /? n <=> m mod n = 0 %(Int_divide_dom2)%,
+               . forall m:Int; n:Int . def m mod n <=> not n = 0 %(Int_mod_dom)%,
+               . forall m:Int; n:Int . m mod n = m mod abs(n) %(Int_mod_abs)%,
+               . forall m:Int; n:Int . def m div n <=> not n = 0 %(Int_div_dom)%,
                . forall m:Int; n:Int
-                     . def m mod n <=> not n = inj(0 : Nat) : Int %(Int_mod_dom)%,
+                     . def m quot n <=> not n = 0 %(Int_quot_dom)%,
+               . forall m:Int; n:Int . def m rem n <=> not n = 0 %(Int_rem_dom)%,
                . forall m:Int; n:Int
-                     . m mod n = m : Int mod inj(abs(n)) : Int : Nat %(Int_mod_abs)%,
-               . forall m:Int; n:Int
-                     . def m div n <=> not n = inj(0 : Nat) : Int %(Int_div_dom)%,
-               . forall m:Int; n:Int
-                     . def m quot n <=> not n = inj(0 : Nat) : Int %(Int_quot_dom)%,
-               . forall m:Int; n:Int
-                     . def m rem n <=> not n = inj(0 : Nat) : Int %(Int_rem_dom)%,
-               . forall m:Int; n:Int
-                     . m = (m quot n) * n + (m rem n) if
-                           not n = inj(0 : Nat) : Int %(Int_quot_rem)%,
+                     . m = (m quot n) * n + (m rem n) if not n = 0 %(Int_quot_rem)%,
               generated{sort Rat; op __/__ : Int *
                                              Pos -> Rat} %(ga_generated_Rat)%,
                . forall i:Int; j:Int; p:Pos; q:Pos
-                     . i / p = j / q <=>
-                           i : Int * inj(q : Pos) : Int : Int =
-                               j : Int * inj(p : Pos) : Int : Int %(Rat_equality)%,
-               . forall i:Int . i / 1 = inj(i : Int) : Rat %(embeddingIntToRat)%,
+                     . i / p = j / q <=> i * q = j * p %(Rat_equality)%,
+               . forall i:Int . i / 1 = i %(embeddingIntToRat)%,
                . forall p:Pos; q:Pos; i:Int; j:Int
-                     . (i / p) <= (j / q) <=>
-                           i : Int * inj(q : Pos) : Int : Int <= j : Int
-                                                                 * inj(p : Pos) : Int : Int %(Rat_leq_def)%,
+                     . (i / p) <= (j / q) <=> (i * q) <= (j * p) %(Rat_leq_def)%,
                . forall x:Rat; y:Rat . x >= y <=> y <= x %(Rat_geq_def)%,
                . forall x:Rat; y:Rat
                      . x < y <=> x <= y /\ not x = y %(Rat_less_def)%,
                . forall x:Rat; y:Rat . x > y <=> y < x %(Rat_greater_def)%,
                . forall p:Pos; q:Pos; i:Int; j:Int
-                     . (i / p) + (j / q) =
-                           i : Int * inj(q : Pos) : Int : Int + j : Int
-                                                                * inj(p : Pos) : Int : Int : Int
-                           / (p * q) : Rat %(Rat_add_def)%,
+                     . (i / p) + (j / q) = (i * q + j * p) / (p * q) %(Rat_add_def)%,
                . forall x:Rat; y:Rat . x - y = x + - y %(Rat_sub_def)%,
                . forall p:Pos; q:Pos; i:Int; j:Int
                      . (i / p) * (j / q) = (i * j) / (p * q) %(Rat_mult_def)%,
-               . forall x:Rat
-                     . not def x : Rat / inj(0 : Nat) : Rat : Rat %(Rat_divide_def1)%,
+               . forall x:Rat . not def x / 0 %(Rat_divide_def1)%,
                . forall x:Rat; y:Rat; z:Rat
-                     . (x / y = z <=> z = x * y) if
-                           not y = inj(0 : Nat) : Rat %(Rat_divide_def2)%,
+                     . (x / y = z <=> z = x * y) if not y = 0 %(Rat_divide_def2)%,
                . forall x:Rat . + x = x %(Rat_plus_def)%,
                . forall p:Pos; i:Int . - (i / p) = - i / p %(Rat_minus_def)%,
-               . forall p:Pos; i:Int
-                     . abs(i / p) = inj(abs(i)) : Int / p : Pos : Rat %(Rat_abs_def)%,
-               . forall x:Rat
-                     . x : Rat ^ inj(0 : Nat) : Int : Rat =
-                           inj(1 : Pos) : Rat %(Rat_power_0)%,
-               . forall n:Nat; x:Rat
-                     . x : Rat ^ inj(suc(n)) : Int : Rat =
-                           x : Rat * x : Rat
-                                     ^ inj(n : Nat) : Int : Rat : Rat %(Rat_power_suc)%,
-               . forall p:Pos; x:Rat
-                     . x : Rat ^ - inj(p : Pos) : Int : Int : Rat =
-                           inj(1 : Pos) : Rat / x : Rat
-                                                ^ inj(p : Pos) : Int : Rat : Rat %(Rat_power_neg)%,
+               . forall p:Pos; i:Int . abs(i / p) = abs(i) / p %(Rat_abs_def)%,
+               . forall x:Rat . x ^ 0 = 1 %(Rat_power_0)%,
+               . forall n:Nat; x:Rat . x ^ suc(n) = x * x ^ n %(Rat_power_suc)%,
+               . forall p:Pos; x:Rat . x ^ - p = 1 / (x ^ p) %(Rat_power_neg)%,
                . forall x:Rat; y:Rat
                      . min(x, y) = x when x <= y else y %(Rat_min_def)%,
                . forall x:Rat; y:Rat
                      . max(x, y) = y when x <= y else x %(Rat_max_def)%,
                . forall i:Int; j:Int; p:Pos; q:Pos
-                     . (i / p) / (j / q) =
-                           (i / p) * inj(q : Pos) : Rat / inj(j : Int) : Rat : Rat : Rat if
-                           not j = inj(0 : Nat) : Int %(Rat_divide_rule)%,
+                     . (i / p) / (j / q) = (i / p) * (q / j) if
+                           not j = 0 %(Rat_divide_rule)%,
                . forall a:s . (var a : s) = (var a : s),
                . forall a:s . (var a : s) = (var a : s),
                . forall a:s . (var a : s) = (var a : s),
@@ -1471,8 +1417,8 @@
                . not def d(c) %(ga_selector_undef_d_c)%,
                . forall X1:a . not def d(c(X1)) %(ga_selector_undef_d_c)%,
               generated{sort s; op c : s; op c : a ->? s;
-                                op c : a * t * t * t -> s; op inj : s1 -> s;
-                                op inj : s2 -> s} %(ga_generated_s)%,
+                                op c : a * t * t * t -> s; op g__inj : s1 -> s;
+                                op g__inj : s2 -> s} %(ga_generated_s)%,
                . forall X1:a; X2:t; X3:t; X4:t
                      . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
                . forall X1:a; X2:t; X3:t; X4:t
@@ -1480,8 +1426,8 @@
                . forall X1:a; X2:t; X3:t; X4:t
                      . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
               generated{sort s; op c : s; op c : a ->? s;
-                                op c : a * t * t * t -> s; op inj : s1 -> s;
-                                op inj : s2 -> s} %(ga_generated_s)%,
+                                op c : a * t * t * t -> s; op g__inj : s1 -> s;
+                                op g__inj : s2 -> s} %(ga_generated_s)%,
                . forall X1:a; X2:t; X3:t; X4:t
                      . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
                . forall X1:a; X2:t; X3:t; X4:t
@@ -1489,8 +1435,8 @@
                . forall X1:a; X2:t; X3:t; X4:t
                      . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
               generated{sort s, t; op c : s; op c : a ->? s;
-                                   op c : a * t * t * t -> s; op inj : s1 -> s; op inj : s2 -> s;
-                                   op inj : t -> s} %(ga_generated_s_t)%,
+                                   op c : a * t * t * t -> s; op g__inj : s1 -> s;
+                                   op g__inj : s2 -> s; op g__inj : t -> s} %(ga_generated_s_t)%,
                . true %(The true formula)%,  . true %(and this)%,
                . forall x:b . x in a <=> true,
                . forall x:s; y:s; z:s
@@ -1546,8 +1492,8 @@
                            (exists x:s
                                 . not p \/ not q(x) \/ q(x) <=>
                                       (exists! x:s . not p /\ not q(x) /\ q(x))),
-               . forall x:s . def f(x),  . forall x:s . f(x) =e= inj(g(x)) : s,
-               . forall x:s . f(x) = inj(g(x)) : s,  . forall r1:t . r1 in s,
+               . forall x:s . def f(x),  . forall x:s . f(x) =e= g(x),
+               . forall x:s . f(x) = g(x),  . forall r1:t . r1 in s,
                . forall x:s . def g(x),  . forall x:s . def g(x) as s,
                . forall x:s . def f(x),  . forall x:s . def g(x),  . p,
                . forall x:s . q(x),
@@ -1564,42 +1510,26 @@
                . True And True = True %(And_def4)%,
                . forall x:Boolean; y:Boolean
                      . x Or y = Not (Not x And Not y) %(Or_def)%,
-               . forall n:Nat
-                     . def chr(n) <=> inj(n : Nat) : Int <= inj(255) : Int %(chr_dom)%,
+               . forall n:Nat . def chr(n) <=> n <= 255 %(chr_dom)%,
                . forall c:Char . chr(ord(c)) = (var c : Char) %(chr_def)%,
-               . forall n:Nat
-                     . ord(chr(n)) = n if
-                           inj(n : Nat) : Int <= inj(255) : Int %(ord_def)%,
-               . '\000' = chr(0) %(slash_000)%,
-               . '\001' = chr(inj(1 : Pos) : Nat) : Char %(slash_001)%,
+               . forall n:Nat . ord(chr(n)) = n if n <= 255 %(ord_def)%,
+               . '\000' = chr(0) %(slash_000)%,  . '\001' = chr(1) %(slash_001)%,
                . '\002' = chr(2) %(slash_002)%,  . '\003' = chr(3) %(slash_003)%,
                . '\004' = chr(4) %(slash_004)%,  . '\005' = chr(5) %(slash_005)%,
                . '\006' = chr(6) %(slash_006)%,  . '\007' = chr(7) %(slash_007)%,
                . '\008' = chr(8) %(slash_008)%,  . '\009' = chr(9) %(slash_009)%,
-               . '\010' =
-                     chr(inj(1 : Pos) : Nat @@ 0 : Nat : Nat) : Char %(slash_010)%,
-               . '\011' =
-                     chr(inj(1 : Pos) : Nat
-                         @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_011)%,
-               . '\012' =
-                     chr(inj(1 : Pos) : Nat @@ 2 : Nat : Nat) : Char %(slash_012)%,
-               . '\013' =
-                     chr(inj(1 : Pos) : Nat @@ 3 : Nat : Nat) : Char %(slash_013)%,
-               . '\014' =
-                     chr(inj(1 : Pos) : Nat @@ 4 : Nat : Nat) : Char %(slash_014)%,
-               . '\015' =
-                     chr(inj(1 : Pos) : Nat @@ 5 : Nat) : Char %(slash_015)%,
-               . '\016' =
-                     chr(inj(1 : Pos) : Nat @@ 6 : Nat) : Char %(slash_016)%,
-               . '\017' =
-                     chr(inj(1 : Pos) : Nat @@ 7 : Nat) : Char %(slash_017)%,
-               . '\018' =
-                     chr(inj(1 : Pos) : Nat @@ 8 : Nat) : Char %(slash_018)%,
-               . '\019' =
-                     chr(inj(1 : Pos) : Nat @@ 9 : Nat) : Char %(slash_019)%,
+               . '\010' = chr(10) %(slash_010)%,
+               . '\011' = chr(1 : Nat @@ 1 : Nat) %(slash_011)%,
+               . '\012' = chr(1 : Nat @@ 2 : Nat) %(slash_012)%,
+               . '\013' = chr(1 : Nat @@ 3 : Nat) %(slash_013)%,
+               . '\014' = chr(1 : Nat @@ 4 : Nat) %(slash_014)%,
+               . '\015' = chr(15) %(slash_015)%,
+               . '\016' = chr(16) %(slash_016)%,
+               . '\017' = chr(17) %(slash_017)%,
+               . '\018' = chr(18) %(slash_018)%,
+               . '\019' = chr(19) %(slash_019)%,
                . '\020' = chr(20) %(slash_020)%,
-               . '\021' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_021)%,
+               . '\021' = chr(2 : Nat @@ 1 : Nat) %(slash_021)%,
                . '\022' = chr(2 : Nat @@ 2 : Nat) %(slash_022)%,
                . '\023' = chr(2 : Nat @@ 3 : Nat) %(slash_023)%,
                . '\024' = chr(2 : Nat @@ 4 : Nat) %(slash_024)%,
@@ -1609,8 +1539,7 @@
                . '\028' = chr(28) %(slash_028)%,
                . '\029' = chr(29) %(slash_029)%,
                . '\030' = chr(30) %(slash_030)%,
-               . '\031' =
-                     chr(3 : Nat @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_031)%,
+               . '\031' = chr(3 : Nat @@ 1 : Nat) %(slash_031)%,
                . '\032' = chr(3 : Nat @@ 2 : Nat) %(slash_032)%,
                . '\033' = chr(3 : Nat @@ 3 : Nat) %(slash_033)%,
                . '\034' = chr(3 : Nat @@ 4 : Nat) %(slash_034)%,
@@ -1620,8 +1549,7 @@
                . '\038' = chr(38) %(slash_038)%,
                . '\039' = chr(39) %(slash_039)%,
                . '\040' = chr(40) %(slash_040)%,
-               . '\041' =
-                     chr(4 : Nat @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_041)%,
+               . '\041' = chr(4 : Nat @@ 1 : Nat) %(slash_041)%,
                . '\042' = chr(4 : Nat @@ 2 : Nat) %(slash_042)%,
                . '\043' = chr(4 : Nat @@ 3 : Nat) %(slash_043)%,
                . '\044' = chr(4 : Nat @@ 4 : Nat) %(slash_044)%,
@@ -1631,8 +1559,7 @@
                . '\048' = chr(48) %(slash_048)%,
                . '\049' = chr(49) %(slash_049)%,
                . '\050' = chr(50) %(slash_050)%,
-               . '\051' =
-                     chr(5 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_051)%,
+               . '\051' = chr(51) %(slash_051)%,
                . '\052' = chr(52) %(slash_052)%,
                . '\053' = chr(53) %(slash_053)%,
                . '\054' = chr(54) %(slash_054)%,
@@ -1642,8 +1569,7 @@
                . '\058' = chr(58) %(slash_058)%,
                . '\059' = chr(59) %(slash_059)%,
                . '\060' = chr(60) %(slash_060)%,
-               . '\061' =
-                     chr(6 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_061)%,
+               . '\061' = chr(61) %(slash_061)%,
                . '\062' = chr(62) %(slash_062)%,
                . '\063' = chr(63) %(slash_063)%,
                . '\064' = chr(64) %(slash_064)%,
@@ -1653,8 +1579,7 @@
                . '\068' = chr(68) %(slash_068)%,
                . '\069' = chr(69) %(slash_069)%,
                . '\070' = chr(70) %(slash_070)%,
-               . '\071' =
-                     chr(7 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_071)%,
+               . '\071' = chr(71) %(slash_071)%,
                . '\072' = chr(72) %(slash_072)%,
                . '\073' = chr(73) %(slash_073)%,
                . '\074' = chr(74) %(slash_074)%,
@@ -1664,8 +1589,7 @@
                . '\078' = chr(78) %(slash_078)%,
                . '\079' = chr(79) %(slash_079)%,
                . '\080' = chr(80) %(slash_080)%,
-               . '\081' =
-                     chr(8 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_081)%,
+               . '\081' = chr(81) %(slash_081)%,
                . '\082' = chr(82) %(slash_082)%,
                . '\083' = chr(83) %(slash_083)%,
                . '\084' = chr(84) %(slash_084)%,
@@ -1675,8 +1599,7 @@
                . '\088' = chr(88) %(slash_088)%,
                . '\089' = chr(89) %(slash_089)%,
                . '\090' = chr(90) %(slash_090)%,
-               . '\091' =
-                     chr(9 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_091)%,
+               . '\091' = chr(91) %(slash_091)%,
                . '\092' = chr(92) %(slash_092)%,
                . '\093' = chr(93) %(slash_093)%,
                . '\094' = chr(94) %(slash_094)%,
@@ -1685,238 +1608,108 @@
                . '\097' = chr(97) %(slash_097)%,
                . '\098' = chr(98) %(slash_098)%,
                . '\099' = chr(99) %(slash_099)%,
-               . '\100' =
-                     chr(inj(1 : Pos) : Nat @@ 00 : Nat) : Char %(slash_100)%,
-               . '\101' =
-                     chr(inj(1 : Pos) : Nat @@ 0 : Nat
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_101)%,
-               . '\102' =
-                     chr(inj(1 : Pos) : Nat @@ 02 : Nat) : Char %(slash_102)%,
-               . '\103' =
-                     chr(inj(1 : Pos) : Nat @@ 03 : Nat) : Char %(slash_103)%,
-               . '\104' =
-                     chr(inj(1 : Pos) : Nat @@ 04 : Nat) : Char %(slash_104)%,
-               . '\105' =
-                     chr(inj(1 : Pos) : Nat @@ 05 : Nat) : Char %(slash_105)%,
-               . '\106' =
-                     chr(inj(1 : Pos) : Nat @@ 06 : Nat) : Char %(slash_106)%,
-               . '\107' =
-                     chr(inj(1 : Pos) : Nat @@ 07 : Nat) : Char %(slash_107)%,
-               . '\108' =
-                     chr(inj(1 : Pos) : Nat @@ 08 : Nat) : Char %(slash_108)%,
-               . '\109' =
-                     chr(inj(1 : Pos) : Nat @@ 09 : Nat) : Char %(slash_109)%,
-               . '\110' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ 0 : Nat : Nat : Nat) : Char %(slash_110)%,
-               . '\111' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_111)%,
-               . '\112' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ 2 : Nat : Nat : Nat) : Char %(slash_112)%,
-               . '\113' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ 3 : Nat : Nat : Nat) : Char %(slash_113)%,
-               . '\114' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ 4 : Nat : Nat : Nat) : Char %(slash_114)%,
-               . '\115' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ 5 : Nat : Nat) : Char %(slash_115)%,
-               . '\116' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ 6 : Nat : Nat) : Char %(slash_116)%,
-               . '\117' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ 7 : Nat : Nat) : Char %(slash_117)%,
-               . '\118' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ 8 : Nat : Nat) : Char %(slash_118)%,
-               . '\119' =
-                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                               @@ 9 : Nat : Nat) : Char %(slash_119)%,
-               . '\120' =
-                     chr(inj(1 : Pos) : Nat @@ 20 : Nat) : Char %(slash_120)%,
-               . '\121' =
-                     chr(inj(1 : Pos) : Nat @@ 2 : Nat
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_121)%,
-               . '\122' =
-                     chr(inj(1 : Pos) : Nat @@ (2 : Nat
-                                                @@ 2 : Nat) : Nat) : Char %(slash_122)%,
-               . '\123' =
-                     chr(inj(1 : Pos) : Nat @@ (2 : Nat
-                                                @@ 3 : Nat) : Nat) : Char %(slash_123)%,
-               . '\124' =
-                     chr(inj(1 : Pos) : Nat @@ (2 : Nat
-                                                @@ 4 : Nat) : Nat) : Char %(slash_124)%,
-               . '\125' =
-                     chr(inj(1 : Pos) : Nat @@ 25 : Nat) : Char %(slash_125)%,
-               . '\126' =
-                     chr(inj(1 : Pos) : Nat @@ 26 : Nat) : Char %(slash_126)%,
-               . '\127' =
-                     chr(inj(1 : Pos) : Nat @@ 27 : Nat) : Char %(slash_127)%,
-               . '\128' =
-                     chr(inj(1 : Pos) : Nat @@ 28 : Nat) : Char %(slash_128)%,
-               . '\129' =
-                     chr(inj(1 : Pos) : Nat @@ 29 : Nat) : Char %(slash_129)%,
-               . '\130' =
-                     chr(inj(1 : Pos) : Nat @@ 30 : Nat) : Char %(slash_130)%,
-               . '\131' =
-                     chr(inj(1 : Pos) : Nat @@ 3 : Nat
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_131)%,
-               . '\132' =
-                     chr(inj(1 : Pos) : Nat @@ (3 : Nat
-                                                @@ 2 : Nat) : Nat) : Char %(slash_132)%,
-               . '\133' =
-                     chr(inj(1 : Pos) : Nat @@ (3 : Nat
-                                                @@ 3 : Nat) : Nat) : Char %(slash_133)%,
-               . '\134' =
-                     chr(inj(1 : Pos) : Nat @@ (3 : Nat
-                                                @@ 4 : Nat) : Nat) : Char %(slash_134)%,
-               . '\135' =
-                     chr(inj(1 : Pos) : Nat @@ 35 : Nat) : Char %(slash_135)%,
-               . '\136' =
-                     chr(inj(1 : Pos) : Nat @@ 36 : Nat) : Char %(slash_136)%,
-               . '\137' =
-                     chr(inj(1 : Pos) : Nat @@ 37 : Nat) : Char %(slash_137)%,
-               . '\138' =
-                     chr(inj(1 : Pos) : Nat @@ 38 : Nat) : Char %(slash_138)%,
-               . '\139' =
-                     chr(inj(1 : Pos) : Nat @@ 39 : Nat) : Char %(slash_139)%,
-               . '\140' =
-                     chr(inj(1 : Pos) : Nat @@ 40 : Nat) : Char %(slash_140)%,
-               . '\141' =
-                     chr(inj(1 : Pos) : Nat @@ 4 : Nat
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_141)%,
-               . '\142' =
-                     chr(inj(1 : Pos) : Nat @@ (4 : Nat
-                                                @@ 2 : Nat) : Nat) : Char %(slash_142)%,
-               . '\143' =
-                     chr(inj(1 : Pos) : Nat @@ (4 : Nat
-                                                @@ 3 : Nat) : Nat) : Char %(slash_143)%,
-               . '\144' =
-                     chr(inj(1 : Pos) : Nat @@ (4 : Nat
-                                                @@ 4 : Nat) : Nat) : Char %(slash_144)%,
-               . '\145' =
-                     chr(inj(1 : Pos) : Nat @@ 45 : Nat) : Char %(slash_145)%,
-               . '\146' =
-                     chr(inj(1 : Pos) : Nat @@ 46 : Nat) : Char %(slash_146)%,
-               . '\147' =
-                     chr(inj(1 : Pos) : Nat @@ 47 : Nat) : Char %(slash_147)%,
-               . '\148' =
-                     chr(inj(1 : Pos) : Nat @@ 48 : Nat) : Char %(slash_148)%,
-               . '\149' =
-                     chr(inj(1 : Pos) : Nat @@ 49 : Nat) : Char %(slash_149)%,
-               . '\150' =
-                     chr(inj(1 : Pos) : Nat @@ 50 : Nat) : Char %(slash_150)%,
-               . '\151' =
-                     chr(inj(1 : Pos) : Nat @@ 5
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_151)%,
-               . '\152' =
-                     chr(inj(1 : Pos) : Nat @@ 52 : Nat) : Char %(slash_152)%,
-               . '\153' =
-                     chr(inj(1 : Pos) : Nat @@ 53 : Nat) : Char %(slash_153)%,
-               . '\154' =
-                     chr(inj(1 : Pos) : Nat @@ 54 : Nat) : Char %(slash_154)%,
-               . '\155' =
-                     chr(inj(1 : Pos) : Nat @@ 55 : Nat) : Char %(slash_155)%,
-               . '\156' =
-                     chr(inj(1 : Pos) : Nat @@ 56 : Nat) : Char %(slash_156)%,
-               . '\157' =
-                     chr(inj(1 : Pos) : Nat @@ 57 : Nat) : Char %(slash_157)%,
-               . '\158' =
-                     chr(inj(1 : Pos) : Nat @@ 58 : Nat) : Char %(slash_158)%,
-               . '\159' =
-                     chr(inj(1 : Pos) : Nat @@ 59 : Nat) : Char %(slash_159)%,
-               . '\160' =
-                     chr(inj(1 : Pos) : Nat @@ 60 : Nat) : Char %(slash_160)%,
-               . '\161' =
-                     chr(inj(1 : Pos) : Nat @@ 6
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_161)%,
-               . '\162' =
-                     chr(inj(1 : Pos) : Nat @@ 62 : Nat) : Char %(slash_162)%,
-               . '\163' =
-                     chr(inj(1 : Pos) : Nat @@ 63 : Nat) : Char %(slash_163)%,
-               . '\164' =
-                     chr(inj(1 : Pos) : Nat @@ 64 : Nat) : Char %(slash_164)%,
-               . '\165' =
-                     chr(inj(1 : Pos) : Nat @@ 65 : Nat) : Char %(slash_165)%,
-               . '\166' =
-                     chr(inj(1 : Pos) : Nat @@ 66 : Nat) : Char %(slash_166)%,
-               . '\167' =
-                     chr(inj(1 : Pos) : Nat @@ 67 : Nat) : Char %(slash_167)%,
-               . '\168' =
-                     chr(inj(1 : Pos) : Nat @@ 68 : Nat) : Char %(slash_168)%,
-               . '\169' =
-                     chr(inj(1 : Pos) : Nat @@ 69 : Nat) : Char %(slash_169)%,
-               . '\170' =
-                     chr(inj(1 : Pos) : Nat @@ 70 : Nat) : Char %(slash_170)%,
-               . '\171' =
-                     chr(inj(1 : Pos) : Nat @@ 7
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_171)%,
-               . '\172' =
-                     chr(inj(1 : Pos) : Nat @@ 72 : Nat) : Char %(slash_172)%,
-               . '\173' =
-                     chr(inj(1 : Pos) : Nat @@ 73 : Nat) : Char %(slash_173)%,
-               . '\174' =
-                     chr(inj(1 : Pos) : Nat @@ 74 : Nat) : Char %(slash_174)%,
-               . '\175' =
-                     chr(inj(1 : Pos) : Nat @@ 75 : Nat) : Char %(slash_175)%,
-               . '\176' =
-                     chr(inj(1 : Pos) : Nat @@ 76 : Nat) : Char %(slash_176)%,
-               . '\177' =
-                     chr(inj(1 : Pos) : Nat @@ 77 : Nat) : Char %(slash_177)%,
-               . '\178' =
-                     chr(inj(1 : Pos) : Nat @@ 78 : Nat) : Char %(slash_178)%,
-               . '\179' =
-                     chr(inj(1 : Pos) : Nat @@ 79 : Nat) : Char %(slash_179)%,
-               . '\180' =
-                     chr(inj(1 : Pos) : Nat @@ 80 : Nat) : Char %(slash_180)%,
-               . '\181' =
-                     chr(inj(1 : Pos) : Nat @@ 8
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_181)%,
-               . '\182' =
-                     chr(inj(1 : Pos) : Nat @@ 82 : Nat) : Char %(slash_182)%,
-               . '\183' =
-                     chr(inj(1 : Pos) : Nat @@ 83 : Nat) : Char %(slash_183)%,
-               . '\184' =
-                     chr(inj(1 : Pos) : Nat @@ 84 : Nat) : Char %(slash_184)%,
-               . '\185' =
-                     chr(inj(1 : Pos) : Nat @@ 85 : Nat) : Char %(slash_185)%,
-               . '\186' =
-                     chr(inj(1 : Pos) : Nat @@ 86 : Nat) : Char %(slash_186)%,
-               . '\187' =
-                     chr(inj(1 : Pos) : Nat @@ 87 : Nat) : Char %(slash_187)%,
-               . '\188' =
-                     chr(inj(1 : Pos) : Nat @@ 88 : Nat) : Char %(slash_188)%,
-               . '\189' =
-                     chr(inj(1 : Pos) : Nat @@ 89 : Nat) : Char %(slash_189)%,
-               . '\190' =
-                     chr(inj(1 : Pos) : Nat @@ 90 : Nat) : Char %(slash_190)%,
-               . '\191' =
-                     chr(inj(1 : Pos) : Nat @@ 9
-                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_191)%,
-               . '\192' =
-                     chr(inj(1 : Pos) : Nat @@ 92 : Nat) : Char %(slash_192)%,
-               . '\193' =
-                     chr(inj(1 : Pos) : Nat @@ 93 : Nat) : Char %(slash_193)%,
-               . '\194' =
-                     chr(inj(1 : Pos) : Nat @@ 94 : Nat) : Char %(slash_194)%,
-               . '\195' =
-                     chr(inj(1 : Pos) : Nat @@ 95 : Nat) : Char %(slash_195)%,
-               . '\196' =
-                     chr(inj(1 : Pos) : Nat @@ 96 : Nat) : Char %(slash_196)%,
-               . '\197' =
-                     chr(inj(1 : Pos) : Nat @@ 97 : Nat) : Char %(slash_197)%,
-               . '\198' =
-                     chr(inj(1 : Pos) : Nat @@ 98 : Nat) : Char %(slash_198)%,
-               . '\199' =
-                     chr(inj(1 : Pos) : Nat @@ 99 : Nat) : Char %(slash_199)%,
+               . '\100' = chr(100) %(slash_100)%,
+               . '\101' = chr(101) %(slash_101)%,
+               . '\102' = chr(102) %(slash_102)%,
+               . '\103' = chr(103) %(slash_103)%,
+               . '\104' = chr(104) %(slash_104)%,
+               . '\105' = chr(105) %(slash_105)%,
+               . '\106' = chr(106) %(slash_106)%,
+               . '\107' = chr(107) %(slash_107)%,
+               . '\108' = chr(108) %(slash_108)%,
+               . '\109' = chr(109) %(slash_109)%,
+               . '\110' = chr(110) %(slash_110)%,
+               . '\111' = chr(1 @@ (1 : Nat @@ 1 : Nat)) %(slash_111)%,
+               . '\112' = chr(1 @@ (1 : Nat @@ 2 : Nat)) %(slash_112)%,
+               . '\113' = chr(1 @@ (1 : Nat @@ 3 : Nat)) %(slash_113)%,
+               . '\114' = chr(1 @@ (1 : Nat @@ 4 : Nat)) %(slash_114)%,
+               . '\115' = chr(115) %(slash_115)%,
+               . '\116' = chr(116) %(slash_116)%,
+               . '\117' = chr(117) %(slash_117)%,
+               . '\118' = chr(118) %(slash_118)%,
+               . '\119' = chr(119) %(slash_119)%,
+               . '\120' = chr(120) %(slash_120)%,
+               . '\121' = chr(1 @@ (2 : Nat @@ 1 : Nat)) %(slash_121)%,
+               . '\122' = chr(1 @@ (2 : Nat @@ 2 : Nat)) %(slash_122)%,
+               . '\123' = chr(1 @@ (2 : Nat @@ 3 : Nat)) %(slash_123)%,
+               . '\124' = chr(1 @@ (2 : Nat @@ 4 : Nat)) %(slash_124)%,
+               . '\125' = chr(125) %(slash_125)%,
+               . '\126' = chr(126) %(slash_126)%,
+               . '\127' = chr(127) %(slash_127)%,
+               . '\128' = chr(128) %(slash_128)%,
+               . '\129' = chr(129) %(slash_129)%,
+               . '\130' = chr(130) %(slash_130)%,
+               . '\131' = chr(1 @@ (3 : Nat @@ 1 : Nat)) %(slash_131)%,
+               . '\132' = chr(1 @@ (3 : Nat @@ 2 : Nat)) %(slash_132)%,
+               . '\133' = chr(1 @@ (3 : Nat @@ 3 : Nat)) %(slash_133)%,
+               . '\134' = chr(1 @@ (3 : Nat @@ 4 : Nat)) %(slash_134)%,
+               . '\135' = chr(135) %(slash_135)%,
+               . '\136' = chr(136) %(slash_136)%,
+               . '\137' = chr(137) %(slash_137)%,
+               . '\138' = chr(138) %(slash_138)%,
+               . '\139' = chr(139) %(slash_139)%,
+               . '\140' = chr(140) %(slash_140)%,
+               . '\141' = chr(1 @@ (4 : Nat @@ 1 : Nat)) %(slash_141)%,
+               . '\142' = chr(1 @@ (4 : Nat @@ 2 : Nat)) %(slash_142)%,
+               . '\143' = chr(1 @@ (4 : Nat @@ 3 : Nat)) %(slash_143)%,
+               . '\144' = chr(1 @@ (4 : Nat @@ 4 : Nat)) %(slash_144)%,
+               . '\145' = chr(145) %(slash_145)%,
+               . '\146' = chr(146) %(slash_146)%,
+               . '\147' = chr(147) %(slash_147)%,
+               . '\148' = chr(148) %(slash_148)%,
+               . '\149' = chr(149) %(slash_149)%,
+               . '\150' = chr(150) %(slash_150)%,
+               . '\151' = chr(151) %(slash_151)%,
+               . '\152' = chr(152) %(slash_152)%,
+               . '\153' = chr(153) %(slash_153)%,
+               . '\154' = chr(154) %(slash_154)%,
+               . '\155' = chr(155) %(slash_155)%,
+               . '\156' = chr(156) %(slash_156)%,
+               . '\157' = chr(157) %(slash_157)%,
+               . '\158' = chr(158) %(slash_158)%,
+               . '\159' = chr(159) %(slash_159)%,
+               . '\160' = chr(160) %(slash_160)%,
+               . '\161' = chr(161) %(slash_161)%,
+               . '\162' = chr(162) %(slash_162)%,
+               . '\163' = chr(163) %(slash_163)%,
+               . '\164' = chr(164) %(slash_164)%,
+               . '\165' = chr(165) %(slash_165)%,
+               . '\166' = chr(166) %(slash_166)%,
+               . '\167' = chr(167) %(slash_167)%,
+               . '\168' = chr(168) %(slash_168)%,
+               . '\169' = chr(169) %(slash_169)%,
+               . '\170' = chr(170) %(slash_170)%,
+               . '\171' = chr(171) %(slash_171)%,
+               . '\172' = chr(172) %(slash_172)%,
+               . '\173' = chr(173) %(slash_173)%,
+               . '\174' = chr(174) %(slash_174)%,
+               . '\175' = chr(175) %(slash_175)%,
+               . '\176' = chr(176) %(slash_176)%,
+               . '\177' = chr(177) %(slash_177)%,
+               . '\178' = chr(178) %(slash_178)%,
+               . '\179' = chr(179) %(slash_179)%,
+               . '\180' = chr(180) %(slash_180)%,
+               . '\181' = chr(181) %(slash_181)%,
+               . '\182' = chr(182) %(slash_182)%,
+               . '\183' = chr(183) %(slash_183)%,
+               . '\184' = chr(184) %(slash_184)%,
+               . '\185' = chr(185) %(slash_185)%,
+               . '\186' = chr(186) %(slash_186)%,
+               . '\187' = chr(187) %(slash_187)%,
+               . '\188' = chr(188) %(slash_188)%,
+               . '\189' = chr(189) %(slash_189)%,
+               . '\190' = chr(190) %(slash_190)%,
+               . '\191' = chr(191) %(slash_191)%,
+               . '\192' = chr(192) %(slash_192)%,
+               . '\193' = chr(193) %(slash_193)%,
+               . '\194' = chr(194) %(slash_194)%,
+               . '\195' = chr(195) %(slash_195)%,
+               . '\196' = chr(196) %(slash_196)%,
+               . '\197' = chr(197) %(slash_197)%,
+               . '\198' = chr(198) %(slash_198)%,
+               . '\199' = chr(199) %(slash_199)%,
                . '\200' = chr(200) %(slash_200)%,
-               . '\201' =
-                     chr(2 : Nat @@ 0 : Nat
-                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_201)%,
+               . '\201' = chr(201) %(slash_201)%,
                . '\202' = chr(202) %(slash_202)%,
                . '\203' = chr(203) %(slash_203)%,
                . '\204' = chr(204) %(slash_204)%,
@@ -1925,40 +1718,18 @@
                . '\207' = chr(207) %(slash_207)%,
                . '\208' = chr(208) %(slash_208)%,
                . '\209' = chr(209) %(slash_209)%,
-               . '\210' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ 0 : Nat : Nat : Nat) : Char %(slash_210)%,
-               . '\211' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_211)%,
-               . '\212' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ 2 : Nat : Nat : Nat) : Char %(slash_212)%,
-               . '\213' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ 3 : Nat : Nat : Nat) : Char %(slash_213)%,
-               . '\214' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ 4 : Nat : Nat : Nat) : Char %(slash_214)%,
-               . '\215' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ 5 : Nat : Nat) : Char %(slash_215)%,
-               . '\216' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ 6 : Nat : Nat) : Char %(slash_216)%,
-               . '\217' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ 7 : Nat : Nat) : Char %(slash_217)%,
-               . '\218' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ 8 : Nat : Nat) : Char %(slash_218)%,
-               . '\219' =
-                     chr(2 : Nat @@ inj(1 : Pos) : Nat
-                                    @@ 9 : Nat : Nat) : Char %(slash_219)%,
+               . '\210' = chr(210) %(slash_210)%,
+               . '\211' = chr(2 @@ (1 : Nat @@ 1 : Nat)) %(slash_211)%,
+               . '\212' = chr(2 @@ (1 : Nat @@ 2 : Nat)) %(slash_212)%,
+               . '\213' = chr(2 @@ (1 : Nat @@ 3 : Nat)) %(slash_213)%,
+               . '\214' = chr(2 @@ (1 : Nat @@ 4 : Nat)) %(slash_214)%,
+               . '\215' = chr(215) %(slash_215)%,
+               . '\216' = chr(216) %(slash_216)%,
+               . '\217' = chr(217) %(slash_217)%,
+               . '\218' = chr(218) %(slash_218)%,
+               . '\219' = chr(219) %(slash_219)%,
                . '\220' = chr(220) %(slash_220)%,
-               . '\221' =
-                     chr(2 : Nat @@ 2 : Nat
-                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_221)%,
+               . '\221' = chr(2 @@ (2 : Nat @@ 1 : Nat)) %(slash_221)%,
                . '\222' = chr(2 @@ (2 : Nat @@ 2 : Nat)) %(slash_222)%,
                . '\223' = chr(2 @@ (2 : Nat @@ 3 : Nat)) %(slash_223)%,
                . '\224' = chr(2 @@ (2 : Nat @@ 4 : Nat)) %(slash_224)%,
@@ -1968,9 +1739,7 @@
                . '\228' = chr(228) %(slash_228)%,
                . '\229' = chr(229) %(slash_229)%,
                . '\230' = chr(230) %(slash_230)%,
-               . '\231' =
-                     chr(2 : Nat @@ 3 : Nat
-                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_231)%,
+               . '\231' = chr(2 @@ (3 : Nat @@ 1 : Nat)) %(slash_231)%,
                . '\232' = chr(2 @@ (3 : Nat @@ 2 : Nat)) %(slash_232)%,
                . '\233' = chr(2 @@ (3 : Nat @@ 3 : Nat)) %(slash_233)%,
                . '\234' = chr(2 @@ (3 : Nat @@ 4 : Nat)) %(slash_234)%,
@@ -1980,9 +1749,7 @@
                . '\238' = chr(238) %(slash_238)%,
                . '\239' = chr(239) %(slash_239)%,
                . '\240' = chr(240) %(slash_240)%,
-               . '\241' =
-                     chr(2 : Nat @@ 4 : Nat
-                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_241)%,
+               . '\241' = chr(2 @@ (4 : Nat @@ 1 : Nat)) %(slash_241)%,
                . '\242' = chr(2 @@ (4 : Nat @@ 2 : Nat)) %(slash_242)%,
                . '\243' = chr(2 @@ (4 : Nat @@ 3 : Nat)) %(slash_243)%,
                . '\244' = chr(2 @@ (4 : Nat @@ 4 : Nat)) %(slash_244)%,
@@ -1992,9 +1759,7 @@
                . '\248' = chr(248) %(slash_248)%,
                . '\249' = chr(249) %(slash_249)%,
                . '\250' = chr(250) %(slash_250)%,
-               . '\251' =
-                     chr(2 : Nat @@ 5
-                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_251)%,
+               . '\251' = chr(251) %(slash_251)%,
                . '\252' = chr(252) %(slash_252)%,
                . '\253' = chr(253) %(slash_253)%,
                . '\254' = chr(254) %(slash_254)%,
@@ -2160,20 +1925,15 @@
                . 'ÿ' = '\255' %(printable_255)%,
                . forall c:Char
                      . isLetter(c) <=>
-                           (inj(ord('A')) : Int <= inj(ord(c)) : Int
-                            /\ inj(ord(c)) : Int <= inj(ord('Z')) : Int)
-                           \/ (inj(ord('a')) : Int <= inj(ord(c)) : Int
-                               /\ inj(ord(c)) : Int <= inj(ord('z')) : Int) %(isLetter_def)%,
+                           (ord('A') <= ord(c) /\ ord(c) <= ord('Z'))
+                           \/ (ord('a') <= ord(c) /\ ord(c) <= ord('z')) %(isLetter_def)%,
                . forall c:Char
                      . isDigit(c) <=>
-                           inj(ord('0')) : Int <= inj(ord(c)) : Int
-                           /\ inj(ord(c)) : Int <= inj(ord('9')) : Int %(isDigit_def)%,
+                           ord('0') <= ord(c) /\ ord(c) <= ord('9') %(isDigit_def)%,
                . forall c:Char
                      . isPrintable(c) <=>
-                           (inj(ord(' ')) : Int <= inj(ord(c)) : Int
-                            /\ inj(ord(c)) : Int <= inj(ord('~')) : Int)
-                           \/ (inj(ord(' ')) : Int <= inj(ord(c)) : Int
-                               /\ inj(ord(c)) : Int <= inj(ord('ÿ')) : Int) %(isPrintable_def)%,
+                           (ord(' ') <= ord(c) /\ ord(c) <= ord('~'))
+                           \/ (ord(' ') <= ord(c) /\ ord(c) <= ord('ÿ')) %(isPrintable_def)%,
                . '\o000' : Char = '\000' : Char %(slash_o000)%,
                . '\o001' = '\001' %(slash_o001)%,
                . '\o002' = '\002' %(slash_o002)%,
