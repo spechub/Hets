@@ -165,6 +165,12 @@ data TypeQual = OfType | AsType | InType deriving (Show, Eq, Ord)
 
 data BracketKind = Parens | Squares | Braces deriving (Show, Eq, Ord)
 
+getBrackets :: BracketKind -> (String, String)
+getBrackets b = case b of
+		       Parens -> ("(", ")")
+		       Squares -> ("[", "]")
+		       Braces -> ("{", "}")
+
 data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp deriving (Show, Eq, Ord)
 data EqOp = EqualOp | ExEqualOp deriving (Show, Eq, Ord)
 

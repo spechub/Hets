@@ -208,15 +208,16 @@ typePatternToTokens (TypePatternToken t) = [t]
 typePatternToTokens (MixfixTypePattern ts) = concatMap typePatternToTokens ts
 typePatternToTokens (BracketTypePattern pk ts ps) =
     let tts = map typePatternToTokens ts 
-	expand = expandPos (:[]) in
+	expanded = concat $ expandPos (:[]) (getBrackets pk) tts ps in
 	case pk of 
 		Parens -> if length tts == 1 && 
 			  length (head tts) == 1 then head tts
-			  else concat $ expand "(" ")" tts ps
-		Squares -> concat $ expand "[" "]" tts ps 
-		Braces ->  concat $ expand "{" "}" tts ps
+			  else expanded
+		_ -> expanded
 typePatternToTokens (TypePatternArg (TypeArg v _ _ _) _) =
     [Token "__" (posOfId v)]
+
+
 
 -- compound Ids not supported yet
 getToken :: GenParser Token st Token

@@ -193,11 +193,7 @@ anaType t =
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 
     if null ps then mkBracketToken k [nullPos]
-       else zipWith Token (getBrackets k) [head ps, last ps] 
+       else zipWith Token ((\ (o,c) -> [o,c]) $ getBrackets k) 
+		[head ps, last ps] 
 
-getBrackets :: BracketKind -> [String]
-getBrackets k = 
-    case k of Parens -> ["(", ")"]
-	      Squares -> ["[", "]"]
-	      Braces -> ["{", "}"]
 

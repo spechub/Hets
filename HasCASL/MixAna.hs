@@ -333,10 +333,16 @@ iterateStates g ops terms c =
     in if null terms then c
        else case head terms of
             MixfixTerm ts -> self (ts ++ tail terms) c
-            BracketTerm _ ts ps -> 
-		self (expand "[" "]" ts ps ++ tail terms) c
+            BracketTerm b ts ps -> 
+		self (expand b ts ps ++ tail terms) c
 	    t ->  self (tail terms) (nextState g ops t c)
-  where expand = expandPos TermToken 
+  where expand br = expandPos TermToken  
+		    (case br of
+			  Parens -> ("(", ")")
+			  Squares -> ("[", "]")
+			  Braces -> ("{", "}"))
+					      
+	
 
 getAppls :: GlobalAnnos -> Int -> ParseMap -> [Term]
 getAppls g i m = 

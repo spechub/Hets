@@ -335,9 +335,9 @@ iterateStates g ops preds terms c@(i, ds, m) =
        else case head terms of
             Mixfix_term ts -> self (ts ++ tail terms) c
             Mixfix_bracketed ts ps -> 
-		self (expand "[" "]" ts ps ++ tail terms) c
+		self (expand ("[", "]") ts ps ++ tail terms) c
 	    Mixfix_braced ts ps -> 
-		self (expand "{" "}" ts ps ++ tail terms) c
+		self (expand ("{", "}") ts ps ++ tail terms) c
 	    Mixfix_parenthesized ts ps -> 
 		let Result mds v = 
 			do tsNew <- mapM resolveTerm ts

@@ -32,9 +32,7 @@ instance PrettyPrint TypePattern where
     printText0 ga (TypePatternArg t _) = parens $ printText0 ga t
 
 bracket :: BracketKind -> Doc -> Doc
-bracket Parens t = parens t
-bracket Squares t = brackets t
-bracket Braces t = braces t
+bracket b t = let (o,c) = getBrackets b in ptext o <> t <> ptext c
 
 printKind :: GlobalAnnos -> Kind -> Doc
 printKind ga kind = case kind of 

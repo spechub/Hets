@@ -92,10 +92,10 @@ splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 	      (reverse toks, reverse pls)
 
 -- reconstruct token list 
--- expandPos f "{" "}" [a,b] [(1,1), (1,3), 1,5)] = 
+-- expandPos f ("{", "}") [a,b] [(1,1), (1,3), 1,5)] = 
 -- [ t"{" , a , t"," , b , t"}" ] where t = f . Token (and proper positions)
-expandPos :: (Token -> a) -> String -> String -> [a] -> [Pos] -> [a]
-expandPos f o c ts ps =
+expandPos :: (Token -> a) -> (String, String) -> [a] -> [Pos] -> [a]
+expandPos f (o, c) ts ps =
     if null ts then if null ps then map (f . mkSimpleId) [o, c]
        else map f (zipWith Token [o, c] [head ps , last ps])
     else  let n = length ts + 1
@@ -114,7 +114,7 @@ getTokenList :: String -> Id -> [Token]
 getTokenList placeStr (Id ts cs ps) = 
     let (toks, pls) = splitMixToken ts 
         cts = if null cs then [] else concat 
-	      $ expandPos (:[]) "[" "]" (map (getTokenList place) cs) ps
+	      $ expandPos (:[]) ("[", "]") (map (getTokenList place) cs) ps
 	      -- although positions will be replaced (by scan)
         convert = if placeStr == place then id else 
 		  map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
