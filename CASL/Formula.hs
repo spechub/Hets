@@ -1,25 +1,23 @@
 module Formula where
 
 import Id
-import Lexer
+import Keywords
+import Lexer -- (separatedBy,(<:>),scanFloat,scanString)
 import Token
+-- import CaslLanguage
 import AS_Basic_CASL
 import Parsec
 
-varStr = "var"
-predStr = "pred"
-opStr = "op"
-exStr = "exists"
-allStr = "forall"
-middleDotStr = "\183"
-dotChar = '.'
 
-equal = asKey equalStr
-colon = asKey [colonChar]
-semi = asKey ";"
+equalT = asKey equalS
+colonT = asKey colonS
+semiT = asKey semiS
+oParenT = asKey oParenS
+cParenT = asKey cParenS
+quMarkT = asKey quMark
 
-dot = try(asKey [dotChar] <|> asKey middleDotStr) <?> "dot"
-cross = try(asKey productSign <|> asKey altProductSign) <?> "cross"
+dotT = try(asKey dotS <|> asKey middleDotS) <?> "dot"
+crossT = try(asKey prodS <|> asKey timesS) <?> "cross"
 
 simpleTerm :: GenParser Char st TERM
 simpleTerm = fmap Mixfix_token (makeToken(scanFloat <|> scanString 
@@ -28,7 +26,7 @@ simpleTerm = fmap Mixfix_token (makeToken(scanFloat <|> scanString
 
 
 startTerm :: GenParser Char st TERM
-startTerm = parenTerm <|> braceTerm <|> sBrktTerm <|> simpleTerm
+startTerm = parenTerm <|> braceTerm <|> bracketTerm <|> simpleTerm
 
 restTerm :: GenParser Char st TERM
 restTerm = startTerm <|> typedTerm <|> castedTerm
@@ -39,9 +37,9 @@ mixTerm = do { l <- startTerm <:> many restTerm
              } 
 
 whenTerm = do { t <- mixTerm 
-	      ; do { w <- asKey "when"
-		   ;	f <- formula
-		   ; e <- asKey "else"
+	      ; do { w <- asKey whenS
+		   ; f <- formula
+		   ; e <- asKey elseS
 		   ; r <- whenTerm
 		   ; return (Conditional t f r [tokPos w, tokPos e])
 		   }
@@ -51,57 +49,55 @@ whenTerm = do { t <- mixTerm
 term = whenTerm
 
 typedTerm :: GenParser Char st TERM
-typedTerm = do { c <- colon
+typedTerm = do { c <- colonT
                ; t <- sortId
                ; return (Mixfix_sorted_term t [tokPos c])
                }
 
 castedTerm :: GenParser Char st TERM
-castedTerm = do { c <- asKey "as"
+castedTerm = do { c <- asKey asS
 		; t <- sortId
 		; return (Mixfix_cast t [tokPos c])
 		}
 
 terms :: GenParser Char st ([TERM], [Pos])
-terms = do { (ts, ps) <- term `separatedBy` comma
+terms = do { (ts, ps) <- term `separatedBy` commaT
            ; return (ts, map tokPos ps)
            }
 
-oParen = sepChar '('
-cParen = sepChar ')'
 
-qualVarName o = do { v <- asKey varStr
+qualVarName o = do { v <- asKey varS
 		   ; i <- varId
-		   ; c <- colon 
+		   ; c <- colonT 
 		   ; s <- sortId
-		   ; p <- cParen
+		   ; p <- cParenT
 		   ; return (Qual_var i s [o, tokPos v, tokPos c, tokPos p])
 		   }
 
-qualOpName o = do { v <- asKey opStr
+qualOpName o = do { v <- asKey opS
 		  ; i <- parseId
-		  ; c <- sepChar colonChar 
-		  ; do { q <- asKey partialSuffix 
+		  ; c <- colonT 
+		  ; do { q <- quMarkT
 		       ; s <- sortId
-		       ; p <- cParen
+		       ; p <- cParenT
 		       ; return (Application 
 				 (Qual_op_name i 
 				  (Partial_op_type [] s [tokPos q]) 
 				  [tokPos v, tokPos c, tokPos p]) [] [])
 		       }
 		    <|> do { t <- opType 
-			   ; p <- cParen
+			   ; p <- cParenT
 			   ; return (Application 
 				     (Qual_op_name i t
 				      [tokPos v, tokPos c, tokPos p]) [] [])
 			   }
 		   }
 
-opType = do { (ts, ps) <- sortId `separatedBy` cross
-	    ; do { a <- makeToken (string totalFunArrow)
+opType = do { (ts, ps) <- sortId `separatedBy` crossT
+	    ; do { a <- makeToken (string funS)
 		 ; let qs = map tokPos ps ++[tokPos a] 
 		   in
-		   do { asKey partialSuffix
+		   do { quMarkT
 		      ; s <- sortId
 		      ; return (Partial_op_type ts s qs)
 		      } <|> do { s <- sortId
@@ -109,125 +105,126 @@ opType = do { (ts, ps) <- sortId `separatedBy` cross
 			       }
 		   } <|> (if length ts == 1 then return 
 	                    (Total_op_type [] (head ts) [])
-	                  else unexpected ("missing " ++ totalFunArrow))
+	                  else unexpected ("missing " ++ funS))
 	    }
 
-parenTerm = do { o <- oParen
+parenTerm = do { o <- oParenT
                ; qualVarName (tokPos o) 
 		 <|> qualOpName (tokPos o)
 		 <|> do { (ts, ps) <- terms
-		        ; c <- cParen
+		        ; c <- cParenT
 		        ; return (Mixfix_parenthesized ts 
 				  (tokPos o : ps ++ [tokPos c]))
 			}
 	       }
 
-braceTerm = do { o <- oBrace
+braceTerm = do { o <- oBraceT
                ; (ts, ps) <- option ([], []) terms
-               ; c <- cBrace 
+               ; c <- cBraceT 
                ; return (Mixfix_braced ts (tokPos o : ps ++ [tokPos c]))
                }
 
-sBrktTerm = do { o <- opBrkt
-               ; (ts, ps) <- option ([], []) terms
-               ; c <- clBrkt 
-               ; return (Mixfix_bracketed ts (tokPos o : ps ++ [tokPos c]))
-               }
+bracketTerm = do { o <- oBracketT
+		 ; (ts, ps) <- option ([], []) terms
+		 ; c <- cBracketT 
+		 ; return (Mixfix_bracketed ts (tokPos o : ps ++ [tokPos c]))
+		 }
 
 quant = try(
-        do { q <- asKey (exStr++"!")
+        do { q <- asKey (existsS++exMark)
 	   ; return (Unique_existential, tokPos q)
 	   }
         <|>
-        do { q <- asKey exStr
+        do { q <- asKey existsS
 	   ; return (Existential, tokPos q)
 	   }
         <|>
-        do { q <- asKey allStr
+        do { q <- asKey forallS
 	   ; return (Universal, tokPos q)
 	   })
         <?> "quantifier"
        
 quantFormula = do { (q, p) <- quant
-		  ; (vs, ps) <- varDecl `separatedBy` semi
-		  ; d <- dot
+		  ; (vs, ps) <- varDecl `separatedBy` semiT
+		  ; d <- dotT
 		  ; f <- formula
 		  ; return (Quantification q vs f
 			    (p: map tokPos ps ++[tokPos d]))
 		  }
 
-varDecl = do { (vs, ps) <- varId `separatedBy` comma
-	     ; c <- colon
+varDecl = do { (vs, ps) <- varId `separatedBy` commaT
+	     ; c <- colonT
 	     ; s <- sortId
 	     ; return (Var_decl vs s (map tokPos ps ++[tokPos c]))
 	     }
 
-updFormulaPos _ _ f = f
+-- to be implemented
+updFormulaPos _ _ f = f  
 
-predType = do { (ts, ps) <- sortId `separatedBy` cross
+predType = do { (ts, ps) <- sortId `separatedBy` crossT
 	      ; return (Pred_type ts (map tokPos ps))
-	      } <|> do { o <- oParen
-		       ; c <- cParen
+	      } <|> do { o <- oParenT
+		       ; c <- cParenT
 		       ; return (Pred_type [] [tokPos o, tokPos c])
 		       }
 
-qualPredName o = do { v <- asKey predStr
+qualPredName o = do { v <- asKey predS
 		    ; i <- parseId
-		    ; c <- colon 
+		    ; c <- colonT 
 		    ; s <- predType
-		    ; p <- cParen
+		    ; p <- cParenT
 		    ; return (Predication 
 			      (Qual_pred_name i s 
 			       [o, tokPos v, tokPos c, tokPos p]) [] [])
 		    }
 
-parenFormula = do { o <- oParen
+parenFormula = do { o <- oParenT
 		  ; qualPredName (tokPos o) 
 		    <|> do { f <- formula
-			   ; c <- cParen
+			   ; c <- cParenT
 		           ; return (updFormulaPos (tokPos o) (tokPos c) f)
 			   }
 		  }
 
 termFormula = do { t <- term
-		 ; do { e <- asKey "=e="
+		 ; do { e <- asKey exEqual
 		      ; r <- term 
 		      ; return (Existl_equation t r [tokPos e])
 		      }
                    <|>
-		   do { e <- equal
+		   do { e <- equalT
 		      ; r <- term 
 		      ; return (Strong_equation t r [tokPos e])
 		      }
                    <|>
-		   do { e <- asKey "in"
+		   do { e <- asKey inS
 		      ; s <- sortId 
 		      ; return (Membership t s [tokPos e])
 		      }
 		   <|> return (Mixfix_formula t)
 		   }
 
-primFormula = do { c <- asKey "true"
+primFormula = do { c <- asKey trueS
 		 ; return (True_atom [tokPos c])
 		 }
               <|>
-	      do { c <- asKey "false"
+	      do { c <- asKey falseS
 		 ; return (False_atom [tokPos c])
 		 }
               <|>
-	      do { c <- asKey "def"
+	      do { c <- asKey defS
 		 ; t <- term
 		 ; return (Definedness t [tokPos c])
 		 }
               <|>
-	      do { c <- asKey "not" <|> asKey "\172"
+	      do { c <- asKey notS <|> asKey negS
 		 ; f <- primFormula 
 		 ; return (Negation f [tokPos c])
 		 }
               <|> parenFormula <|> quantFormula <|> termFormula
 
-andKey = asKey "/\\"
-orKey = asKey "\\/"
+andKey = asKey lAnd
+orKey = asKey lOr
 
 andOrFormula = do { f <- primFormula
 		  ; do { c <- andKey
@@ -241,8 +238,8 @@ andOrFormula = do { f <- primFormula
 		       }
 		    <|> return f
 		  }
-implKey = asKey "=>"
-ifKey = asKey "if"
+implKey = asKey implS
+ifKey = asKey ifS
 
 impFormula = do { f <- andOrFormula
 		  ; do { c <- implKey
@@ -255,7 +252,7 @@ impFormula = do { f <- andOrFormula
 		       ; return (makeIf (f:fs) (map tokPos (c:ps)))
 		       }
 		    <|>
-		    do { c <- asKey "<=>"
+		    do { c <- asKey equivS
 		       ; g <- andOrFormula
 		       ; return (Equivalence f g [tokPos c])
 		       }

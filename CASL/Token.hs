@@ -1,11 +1,7 @@
 -- $Header$
-module Token ( scanWords, scanSigns, makeToken, asKey
-	     , sepChar, opBrkt, clBrkt, oBrace, cBrace, uu, comma
-	     , parseId, sortId, varId, colonChar, equalStr, lessStr
-	     , partialSuffix, totalFunArrow, partialFunArrow 
-	     , totalFunArrow, productSign, altProductSign
-	     ) where
+module Token where
 
+import Keywords
 import Lexer
 import Id (Id(Id), Token(..), Pos, place, isPlace)
 import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
@@ -21,26 +17,9 @@ reserved :: [String] -> GenParser Char st String -> GenParser Char st String
 -- "try" to avoid reading keywords 
 reserved l p = try (p `checkWith` \r -> r `notElem` l)
 
--- sign keywords
-casl_reserved_ops = [":", ":?","::=",".","\183","|","|->"]
-
--- these signs are legal in terms, but illegal in declarations
-formula_ops = ["=", "=>", "<=>", "\\/", "/\\", "\172"] 
-
 scanTermSigns = reserved casl_reserved_ops scanAnySigns
 
 scanSigns = reserved formula_ops scanTermSigns
-
--- letter keywords
-casl_reserved_words = words( 
-    "and arch as assoc axiom axioms closed comm end " ++
-    "exists fit forall free from generated get given " ++
-    "hide idem in lambda library local op ops pred preds " ++
-    "result reveal sort sorts spec then to type types " ++
-    "unit units var vars version view with within")
-
--- these words are legal in terms, but illegal in declarations
-formula_words = ["def", "else", "if", "when", "false", "not", "true"]
 
 scanTermWords = reserved casl_reserved_words scanAnyWords 
 
@@ -53,9 +32,8 @@ scanWords = reserved formula_words scanTermWords
 setTokPos :: SourcePos -> String -> Token
 setTokPos p s = Token s (sourceLine p, sourceColumn p)
 
+makeToken :: GenParser Char st String -> GenParser Char st Token
 makeToken parser = skip(bind setTokPos getPosition parser)
-
-sepChar = makeToken . single . char
 
 asKey = makeToken . toKey
 
@@ -63,11 +41,13 @@ asKey = makeToken . toKey
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
-opBrkt = sepChar '[' <?> "" -- don't convey confusing mix-id tokens
-clBrkt = sepChar ']'
-oBrace = sepChar '{' <?> ""
-cBrace = sepChar '}'
-uu = makeToken (try (string place) <?> "place")
+commaT = asKey commaS
+
+oBracketT = asKey oBracketS <?> "" -- don't convey confusing mix-id tokens
+cBracketT = asKey cBracketS
+oBraceT = asKey oBraceS <?> ""
+cBraceT = asKey cBraceS
+placeT = makeToken (try (string place) <?> place)
 
 -- simple id (but more than only words)
 sid = makeToken (scanQuotedChar <|> scanDotWords 
@@ -75,13 +55,13 @@ sid = makeToken (scanQuotedChar <|> scanDotWords
 		 <|> scanWords <?> "simple-id")
 
 -- balanced mixfix-components {...}, [...]
-braced = begDoEnd oBrace innerList cBrace
-noComp = begDoEnd opBrkt innerList clBrkt
+braced = begDoEnd oBraceT innerList cBraceT
+noComp = begDoEnd oBracketT innerList cBracketT
 
 -- alternating sid and other mixfix components (including places)
 -- no two sid stand side by side
 innerMix1 = sid <:> option [] innerMix2
-innerMix2 = flat (many1 (braced <|> noComp <|> many1 uu))
+innerMix2 = flat (many1 (braced <|> noComp <|> many1 placeT))
             <++> option [] innerMix1
 
 -- ingredients starting either with an sid or brackets, braces or place 
@@ -100,16 +80,15 @@ topMix3 = noComp <++> flat (many braced) <++> option [] topMix1
 afterPlace = topMix1 <|> topMix2 <|> topMix3
 
 -- places and something balanced possibly including places as well  
-middle = many1 uu <++> option [] afterPlace  
+middle = many1 placeT <++> option [] afterPlace  
 
 -- balanced stuff interspersed with places  
 tokStart = afterPlace <++> flat (many middle)
 
 -- at least two places on its own or a non-place possibly preceded by places 
-start = tokStart <|> uu <:> (tokStart <|> many1 uu <++> option [] tokStart)
+start = tokStart <|> placeT <:> (tokStart <|> 
+				 many1 placeT <++> option [] tokStart)
         <?> "id"
-
-comma = sepChar ','
 
 -- ----------------------------------------------
 -- Mixfix Ids
@@ -117,9 +96,9 @@ comma = sepChar ','
 
 -- a compound list
 comps :: GenParser Char st ([Id], [Pos])
-comps = do { o <- opBrkt 
-	   ; (is, cs) <- parseId `separatedBy` comma
-	   ; c <- clBrkt
+comps = do { o <- oBracketT 
+	   ; (is, cs) <- parseId `separatedBy` commaT
+	   ; c <- cBracketT
 	   ; return (is, tokPos o : map tokPos cs ++ [tokPos c])
 	   } <?> "[<id>,...,<id>]"
 
@@ -128,7 +107,7 @@ comps = do { o <- opBrkt
 parseId = do { l <- start
              ; if isPlace (last l) then return (Id l [] [])
 	       else (do { (c, p) <- option ([], []) comps
-			; u <- many uu
+			; u <- many placeT
 			; return (Id (l++u) c p)
 			})
 	     }
@@ -138,19 +117,8 @@ parseId = do { l <- start
 -- ----------------------------------------------
 
 -- at least some no-bracket-signs should be disallowed for sorts
-colonChar = ':'
-equalStr = "="
-lessStr = "<"
-partialSuffix = "?"
-totalFunArrow = "->"
-partialFunArrow = totalFunArrow ++ partialSuffix
-productSign = "*"
-altProductSign = "\215"
 
-isSortId (t) = 
-        tokStr t `notElem` 
-          [[colonChar], equalStr, lessStr, productSign, altProductSign, 
-	   partialSuffix, totalFunArrow, partialFunArrow]
+isSortId (t) =  tokStr t `notElem` non_sort_signs
 
 -- sortIds are Ids without places, but possibly compound ids
 -- only (the above) simple ids are taken here (brackets/braces are illegal) 

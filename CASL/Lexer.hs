@@ -218,5 +218,6 @@ keySign :: GenParser Char st a -> GenParser Char st a
 keySign p = try(p << notFollowedBy (oneOf signChars))
 
 toKey s = let p = string s in 
-              if last s `elem` signChars then keySign p 
-		 else keyWord p
+	      if last s `elem` "[]{}(),;" then p 
+		 else if last s `elem` signChars then keySign p 
+		      else keyWord p
