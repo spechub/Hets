@@ -15,10 +15,14 @@ INCLUDE_PATH = ghc:hetcats:fgl
 HC         = ghc
 HC_INCLUDE = -i$(INCLUDE_PATH)
 
-# you need the "uni" library!
-HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
+# check for the "uni" library
+UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
+ifneq ($(strip $(UNI_PACKAGE_CONF)),)
+HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
              -package uni-server -DUNI_PACKAGE
+endif
 
+# check for programatica
 PFE_TOOLDIR := $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
@@ -32,7 +36,8 @@ PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA \
             -fno-monomorphism-restriction
 endif
 
-HC_OPTS    = $(HC_PACKAGE) $(HC_INCLUDE) $(PFE_FLAGS)
+HC_OPTS    = -fglasgow-exts -fallow-overlapping-instances \
+    $(HC_PACKAGE) $(HC_INCLUDE) $(PFE_FLAGS)
 
 ####################################################################
 ### targets
