@@ -20,39 +20,35 @@ Portability :  non-portable (imports Logic)
 
 module GUI.ConvertDevToAbstractGraph where
 
-import Proofs.Proofs
+import Logic.Logic
+import Logic.Comorphism
+import Logic.Grothendieck
+import Comorphisms.LogicGraph
 
 import Static.DevGraph
+import Static.DGToSpec
+import Proofs.Proofs
+
 import GUI.AbstractGraphView
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
-
 import TextDisplay
 import Configuration
 import qualified HTk
 
 import qualified Common.Lib.Map as Map hiding (isEmpty)
-import Syntax.AS_Library
-import Syntax.Print_HetCASL
-
 import Common.Lib.Graph
 import Common.Id
-import Data.IORef
-import Static.DGToSpec
-import List(nub)
-
-import Logic.Grothendieck
-import Logic.Logic
-
 import Common.PrettyPrint
 import qualified Common.Lib.Pretty as Pretty
 import Common.AS_Annotation
 import qualified Common.Result as Res
+import Syntax.AS_Library
+import Syntax.Print_HetCASL
 
-import Comorphisms.CASL2IsabelleHOL -- ??? Only preliminarily
-import CASL.Logic_CASL
-import Logic.Comorphism
+import Data.IORef
+import List(nub)
 
 
 {- Maps used to track which node resp edge of the abstract graph
@@ -138,6 +134,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
       actGraphInfo = graphInfo graphMem
 --  graphId <- newIORef 0
+  let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo)
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
              [GlobalMenu (Menu Nothing
@@ -160,57 +157,22 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                               return ()    )],
 
 	        Menu (Just "Proofs")
-                  [		  Button "Global Subsumption"
-			  (do proofStatus <- readIORef ioRefProofStatus
-			      let newProofStatus@(_,history,_) =
-			            globSubsume proofStatus
-			      writeIORef ioRefProofStatus newProofStatus
-			      descr <- readIORef event
-			      convMaps <- readIORef convRef
-			      (newDescr,newConvMaps)
-			         <- applyChanges gid ln actGraphInfo descr 
-		                      convMaps history
-		              writeIORef event newDescr
-		              writeIORef convRef newConvMaps
-		              redisplay gid actGraphInfo
-		              return ()    ), 
-		  Button "Local Decomposition (merge of rules)"
-			  (do proofStatus <- readIORef ioRefProofStatus
-			      let newProofStatus@(_,history,_) =
-			            locDecomp proofStatus
-			      writeIORef ioRefProofStatus newProofStatus
-			      descr <- readIORef event
-			      convMaps <- readIORef convRef
-			      (newDescr,newConvMaps)
-			         <- applyChanges gid ln actGraphInfo descr 
-		                      convMaps history
-		              writeIORef event newDescr
-		              writeIORef convRef newConvMaps
-		              redisplay gid actGraphInfo
-		              return ()    ),
-		  Button "Global Decomposition"
-			  (do proofStatus <- readIORef ioRefProofStatus
-			      let newProofStatus@(_,history,_) =
-			            globDecomp proofStatus
-			      writeIORef ioRefProofStatus newProofStatus
-			      descr <- readIORef event
-			      convMaps <- readIORef convRef
-			      (newDescr,newConvMaps)
-			         <- applyChanges gid ln actGraphInfo descr 
-		                      convMaps history
-		              writeIORef event newDescr
-		              writeIORef convRef newConvMaps
-		              redisplay gid actGraphInfo
-		              return ()    )]])]
+                  [Button "Global Subsumption"
+			  (proofMenuSef gInfo globSubsume),
+		   Button "Local Decomposition (merge of rules)"
+			  (proofMenuSef gInfo locDecomp),
+		   Button "Global Decomposition"
+			  (proofMenuSef gInfo globDecomp)
+                    ]])]
                [("spec", 
 		 createLocalMenuNodeTypeSpec "Magenta" convRef dGraph
                               ioRefSubtreeEvents ioRefVisibleNodes
-                                  actGraphInfo ioRefGraphMem
+                                  actGraphInfo ioRefGraphMem gInfo
                 ),
                 ("locallyEmpty_spec", 
 		 createLocalMenuNodeTypeSpec "Violet" convRef dGraph
                                           ioRefSubtreeEvents ioRefVisibleNodes
-                                              actGraphInfo ioRefGraphMem),
+                                          actGraphInfo ioRefGraphMem gInfo),
                 ("internal", 
 		 createLocalMenuNodeTypeInternal "Grey" convRef dGraph
                 ),
@@ -274,13 +236,35 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   graphMem'<- readIORef ioRefGraphMem
   return (descr,graphInfo graphMem',convRef)
 
+--proofMenu :: (ProofStatus -> IO ProofStatus) -> IO ()
+proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo) proofFun 
+  = do
+  proofStatus <- readIORef ioRefProofStatus
+  Res.Result diags res <- proofFun proofStatus
+  case res of
+    Nothing -> do sequence $ map (putStrLn . show) diags
+                  return ()
+    Just newProofStatus@(_,history,_) -> do
+      writeIORef ioRefProofStatus newProofStatus
+      descr <- readIORef event
+      convMaps <- readIORef convRef
+      (newDescr,newConvMaps)
+         <- applyChanges gid ln actGraphInfo descr convMaps history
+      writeIORef event newDescr
+      writeIORef convRef newConvMaps
+      redisplay gid actGraphInfo
+      return ()
+
+proofMenuSef gInfo proofFun =
+  proofMenu gInfo (return . return . proofFun)
+
 -- -------------------------------------------------------------
 -- methods to create the local menus of the different nodetypes
 -- -------------------------------------------------------------
 
 -- local menu for the nodetypes spec and locallyEmpty_spec
 createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents 
-			    ioRefVisibleNodes actGraphInfo ioRefGraphMem =
+	ioRefVisibleNodes actGraphInfo ioRefGraphMem gInfo =
                  Ellipse $$$ Color color
 		 $$$ ValueTitle (\ (s,_,_) -> return s) 
                  $$$ LocalMenu (Menu (Just "node menu")
@@ -289,12 +273,14 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
 		    createLocalMenuButtonShowTheory convRef dGraph,
 		    createLocalMenuButtonShowSublogic convRef dGraph,
                     createLocalMenuButtonShowNodeOrigin convRef dGraph,
+                    createLocalMenuButtonProveAtNode gInfo convRef dGraph,
 		    createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents 
 		                     convRef ioRefVisibleNodes ioRefGraphMem
 		                                         actGraphInfo,
 		    createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes 
 		              ioRefSubtreeEvents actGraphInfo
-		   ])
+		   ]) -- ??? Should be globalized somehow
+                  -- $$$ LocalMenu (Button "xxx" undefined) 
                   $$$ emptyNodeTypeParms 
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
@@ -337,64 +323,30 @@ createLocalMenuNodeTypeDgRef color convRef actGraphInfo
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
 
--- menu button for local menus to show the spec of a node
-createLocalMenuButtonShowSpec convRef dGraph =
-                    (Button "Show spec" 
+-- menu button for local menus
+createMenuButton title menuFun convRef dGraph =
+                    (Button title 
                       (\ (name,descr,gid) ->
                         do convMaps <- readIORef convRef
-                           showSpec descr
-		                    (abstr2dgNode convMaps)
-		                    dGraph
+                           menuFun descr
+		                   (abstr2dgNode convMaps)
+		                   dGraph
 		           return ()
                        )
 	            )
 
+createLocalMenuButtonShowSpec = createMenuButton "Show spec" showSpec
+createLocalMenuButtonShowSignature = 
+  createMenuButton "Show signature" getSignatureOfNode
+createLocalMenuButtonShowTheory = 
+  createMenuButton "Show theory" getTheoryOfNode
+createLocalMenuButtonShowSublogic = 
+  createMenuButton "Show sublogic" getSublogicOfNode 
+createLocalMenuButtonShowNodeOrigin  = 
+  createMenuButton "Show origin" showOriginOfNode 
+createLocalMenuButtonProveAtNode gInfo =
+  createMenuButton "Prove" (proveAtNode gInfo)
 
--- menu button for local menus to show the spec of a node
-createLocalMenuButtonShowSignature convRef dgraph =
-                    (Button "Show signature" 
-                      (\ (name,descr,gid) ->
-                        do convMaps <- readIORef convRef
-                           getSignatureOfNode descr
-		                              (abstr2dgNode convMaps)
-		                              dgraph
-		           return ()
-                       )
-	            )
-
-createLocalMenuButtonShowTheory convRef dgraph =
-                    (Button "Show theory" 
-                      (\ (name,descr,gid) ->
-                        do convMaps <- readIORef convRef
-                           getTheoryOfNode descr
-		                              (abstr2dgNode convMaps)
-		                              dgraph
-		           return ()
-                       )
-	            )
-
-createLocalMenuButtonShowSublogic convRef dgraph =
-                    (Button "Show sublogic" 
-                      (\ (name,descr,gid) ->
-                        do convMaps <- readIORef convRef
-                           getSublogicOfNode descr
-		                             (abstr2dgNode convMaps)
-		                             dgraph
-		           return ()
-                       )
-	            )
-
-
-createLocalMenuButtonShowNodeOrigin convRef dgraph =
-                    (Button "Show origin" 
-                      (\ (name,descr,gid) ->
-                        do convMaps <- readIORef convRef
-                           showOriginOfNode descr
-		                             (abstr2dgNode convMaps)
-		                             dgraph
-		           return ()
-                       )
-	            )
 createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef 
     ioRefVisibleNodes ioRefGraphMem actGraphInfo = 
                     (Button "Show just subtree"
@@ -587,6 +539,16 @@ showOriginOfNode descr ab2dgNode dgraph =
                      Just n -> "Origin of node "++showPretty n ""
                in createTextDisplay title 
                     (showPretty orig "") [size(30,10)]
+    Nothing -> error ("node with descriptor "
+                      ++ (show descr) 
+                      ++ " has no corresponding node in the development graph")
+
+
+{- start local theorem proving at a node -}
+--proveAtNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
+proveAtNode gInfo descr ab2dgNode dgraph = 
+  case Map.lookup descr ab2dgNode of
+    Just libNode -> proofMenu gInfo (basicInferenceNode logicGraph libNode)
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")

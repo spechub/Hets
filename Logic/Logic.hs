@@ -88,7 +88,7 @@ class Show lid => Language lid where
     language_name i = show i
 
 -- (a bit unsafe) coercion using the language name
-coerce :: (Typeable a, Typeable b, Language lid1, Language lid2, Show a) => 
+coerce :: (Typeable a, Typeable b, Language lid1, Language lid2) => 
           lid1 -> lid2 -> a -> Maybe b
 coerce i1 i2 a = if language_name i1 == language_name i2 then 
 		 --fromDynamic (toDyn (a)) else Nothing
@@ -105,7 +105,7 @@ rcoerce1 i1 i2 pos a b =
                          ++ language_name i2++" found")
                 (coerce i1 i2 a)
 
-rcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2, Show a) => 
+rcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2) => 
            lid1 -> lid2 -> Pos-> a -> Result b
 rcoerce i1 i2 pos a = -- rcoerce1 i1 i2 pos a undefined
   maybeToResult pos 
@@ -177,7 +177,7 @@ class (Category lid sign morphism, Eq sentence, Show sentence, Ord sentence,
       sym_of :: lid -> sign -> Set symbol
       symmap_of :: lid -> morphism -> EndoMap symbol
       sym_name :: lid -> symbol -> Id 
-      provers :: lid -> [Prover sentence proof_tree symbol]
+      provers :: lid -> [Prover sign sentence proof_tree symbol]
       cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
       fromShATerm_sentence :: lid -> ATermTable -> sentence

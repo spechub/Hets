@@ -38,11 +38,16 @@ module Proofs.Proofs where
 import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
+import Logic.Comorphism
 import Static.DevGraph
 import Common.Result
 import Common.Lib.Graph
+import qualified Common.Lib.Map as Map
 import List(nub)
 import Common.Id
+import Common.AS_Annotation
+import Syntax.AS_Library
+import Syntax.Print_AS_Library 
 
 {- proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
    DG0 is the development graph resulting from the static analysis
@@ -627,10 +632,89 @@ computeTheory dg n = do
   ctxs <- maybeToResult nullPos "Could not find start node of path"
             $ sequence $ map (fst . flip match dg . fst) paths
   let sens = map (sensOfNode dg . lab') ctxs
-  sens' <- maybeToResult nullPos "Could not translate sentences"
-            $ sequence 
-            $ map (resultToMaybe . uncurry translateG_l_sentence_list) 
+  sens' <- sequence 
+            $ map (uncurry translateG_l_sentence_list) 
             $ zip mors sens
   sens'' <- maybeToResult nullPos "Logic mismatch for sentences"
               $ flatG_l_sentence_list sens'
   return (dgn_sign nlab,sens'') -- ??? dgn_sign too simplistic 
+
+-- ---------------
+-- basic inference
+-- ---------------
+
+getGoals :: DGraph -> LEdge DGLinkLab -> Result G_l_sentence_list
+getGoals dg (n,_,edge) = do
+  ctx <- maybeToResult nullPos ("Could node find node "++show n)
+              $ fst $ match n dg
+  let nlab = lab' ctx  
+      sens = dgn_sens nlab -- ??? To simplistic
+      mor = dgl_morphism edge
+  translateG_l_sentence_list mor sens
+
+getProvers :: LogicGraph -> AnyLogic -> [(G_prover,AnyComorphism)]
+getProvers lg (Logic lid) =
+  [(G_prover (targetLogic cid) p,Comorphism cid) | 
+        (_,Comorphism cid) <- cms,
+        language_name (sourceLogic cid) == language_name lid,
+        p <- provers (targetLogic cid)]
+  where cms = Map.toList 
+               $ Map.insert ("Id_"++language_name lid)
+                            (Comorphism (IdComorphism lid))
+               $ comorphisms lg
+        -- ??? Should be composites as well!
+         
+
+selectProver :: [(G_prover,AnyComorphism)] -> IOResult (G_prover,AnyComorphism)
+selectProver [p] = return p
+selectProver [] = resToIORes $ fatal_error "No pover available" nullPos
+selectProver (p:_) = return p -- ??? to simplistic
+ 
+-- applies basic inference to a given node
+basicInferenceNode ::  LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
+                          -> IO (Result ProofStatus)
+basicInferenceNode lg (ln,node) proofStatus@(globalContext,history,dGraph) =
+  ioresToIO (do 
+    (G_sign lid1 sign,G_l_sentence_list lid2 axs) <- 
+         resToIORes $ computeTheory dGraph node
+    let inEdges = inn dGraph node
+        localEdges = filter isUnprovenLocalThm inEdges
+    goalslist <- resToIORes $ sequence $ map (getGoals dGraph) localEdges
+    G_l_sentence_list lid3 goals <- 
+        resToIORes (maybeToResult nullPos "Logic mismatch for proof goals" 
+                                  (flatG_l_sentence_list goalslist))
+    let provers = getProvers lg (Logic lid1)
+    (G_prover lid4 p,Comorphism cid) <- selectProver provers
+    let lidS = sourceLogic cid
+        lidT = targetLogic cid
+    sign' <- resToIORes $ rcoerce lidS lid1 nullPos sign
+    axs' <- resToIORes $ rcoerce lidS lid2 nullPos axs
+    goals' <- resToIORes $ rcoerce lidS lid3 nullPos goals
+    p' <- resToIORes $ rcoerce lidS lid4 nullPos p
+    -- Borrowing: translate theory and goal
+    (sign'',sens'') <- resToIORes  
+                        $ maybeToResult nullPos "Could not map signature"
+                        $ map_sign cid sign'
+    axs'' <- resToIORes
+                 $ maybeToResult nullPos "Could not map sentences"
+                 $ sequence 
+                 $ map (mapNamedM (map_sentence cid sign')) axs'
+    goals'' <- resToIORes
+                 $ maybeToResult nullPos "Could not map sentences"
+                 $ sequence 
+                 $ map (mapNamedM (map_sentence cid sign')) goals'
+    -- compute name ot theory
+    ctx <- resToIORes 
+                $ maybeToResult nullPos ("Could node find node "++show node)
+                $ fst $ match node dGraph
+    let nlab = lab' ctx  
+        nodeName = case nlab of
+          DGNode _ _ _ _-> dgn_name nlab
+          DGRef _ _ _ -> dgn_renamed nlab
+        thName = showPretty ln "_"
+                 ++ maybe (show node) (flip showPretty "") nodeName
+    ps <- ioToIORes $ prove p' thName (sign'',sens''++axs'') goals'' 
+    let nextDGraph = dGraph -- ??? to be implemented
+        nextHistoryElem = undefined -- ??? to be implemented
+    return (globalContext, {- nextHistoryElem: -} history, nextDGraph)
+   )

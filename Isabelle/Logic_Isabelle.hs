@@ -14,6 +14,8 @@ Portability :  portable
 module Isabelle.Logic_Isabelle where
 
 import Isabelle.IsaSign
+import Isabelle.IsaProve
+
 import Logic.Logic
 import Common.Result
 import Common.Id
@@ -34,7 +36,7 @@ instance Category Isabelle Sign ()
 	 dom Isabelle _ = emptySign
 	 cod Isabelle _ = emptySign
          -- legal_obj :: id -> object -> Bool
-	 legal_obj Isabelle _ = True -- ??? to simplistic
+	 legal_obj Isabelle _ = True -- ??? too simplistic
          -- legal_mor :: id -> morphism -> Bool
 	 legal_mor Isabelle _ = False
 
@@ -50,7 +52,7 @@ instance Logic.Logic.Syntax Isabelle () () ()
 instance Sentences Isabelle Sentence () Sign () ()  where
       map_sen Isabelle _morphism s = return s
       parse_sentence Isabelle = Nothing
-      provers Isabelle = [] 
+      provers Isabelle = [isabelleProver] 
       cons_checkers Isabelle = []
 
 instance StaticAnalysis Isabelle () Sentence ()

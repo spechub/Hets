@@ -39,6 +39,7 @@ Portability :  non-portable (overlapping instances, dynamics, existentials)
 module Logic.Grothendieck where
 
 import Logic.Logic
+import Logic.Prover
 import Logic.Comorphism
 import Common.PrettyPrint
 import Common.Lib.Pretty
@@ -540,3 +541,18 @@ joinG_l_sentence_list (G_l_sentence_list lid1 sens1)
 flatG_l_sentence_list :: [G_l_sentence_list] -> Maybe G_l_sentence_list
 flatG_l_sentence_list [] = Nothing
 flatG_l_sentence_list (gl:gls) = foldM joinG_l_sentence_list gl gls
+
+
+
+------------------------------------------------------------------
+-- Provers
+------------------------------------------------------------------
+
+-- | Grothendieck sublogics
+data G_prover = forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+     G_prover lid (Prover sign sentence proof_tree symbol)
