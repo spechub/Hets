@@ -328,15 +328,11 @@ insertLookupWithKey f kx x t
 
 -- | Insert into a set of values
 setInsert :: (Ord k, Ord a) => k -> a -> Map k (Set.Set a) -> Map k (Set.Set a)
-setInsert  kx x t = case lookup kx t of
-  Nothing -> insert kx (Set.single x) t
-  Just xs -> insert kx (Set.insert x xs) (delete kx t)
+setInsert  kx x t = insert kx (Set.insert x $ findWithDefault Set.empty kx t) t
 
 -- | Insert into a list of values
 listInsert :: Ord k => k -> a -> Map k [a] -> Map k [a]
-listInsert  kx x t = case lookup kx t of
-  Nothing -> insert kx [x] t
-  Just xs -> insert kx (x:xs) (delete kx t)
+listInsert  kx x t = insert kx (x : findWithDefault [] kx t) t
 
 {--------------------------------------------------------------------
   Deletion
