@@ -31,7 +31,7 @@ module Common.Lib.Graph (
    labUEdges,labUNodes,labUAdj,
    unlabEdges,unlabNodes,unlabAdj,
 -- utilities to build graphs
-   newNodes,insNode,insNodes,insEdge,insEdges,
+   newNodes,insNode,insNodes,insEdge,insEdges,insEdgeNub,
    mkGraph,mkUGraph,buildGr
 ) where
 
@@ -425,6 +425,14 @@ insEdge (v,w,l) g = embed (pre,v,lab,(l,w):suc) g'
 
 insEdges :: [LEdge b] -> Graph a b -> Graph a b
 insEdges es g = foldr insEdge g es
+
+-- | insert edge only if not already present
+insEdgeNub :: Eq b => LEdge b -> Graph a b -> Graph a b
+insEdgeNub (v,w,l) g = 
+   if (l,w) `elem` suc then g
+      else embed (pre,v,lab,(l,w):suc) g'
+   where (Just (pre,_,lab,suc),g') = match v g
+
  
 mkGraph :: [LNode a] -> [LEdge b] -> Graph a b
 mkGraph vs es = (insEdges es . insNodes vs) empty

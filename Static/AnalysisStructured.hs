@@ -162,7 +162,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                     dgl_origin = DGExtension }
            dg'' = case nsig of
                     EmptyNode _ -> dg'
-                    NodeSig (n,_) -> insEdge (n,node,link) dg'
+                    NodeSig (n,_) -> insEdgeNub (n,node,link) dg'
        return (Basic_spec (G_basic_spec lid bspec'),
                NodeSig (node,G_sign lid sigma_complete),
                dg'')
@@ -190,7 +190,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
             dgl_origin = DGTranslation })
       return (Translation (replaceAnnoted sp1' asp) ren,
               NodeSig(node,gsigma'),
-              insEdge link $
+              insEdgeNub link $
               insNode (node,node_contents) dg')
       
   Reduction asp restr ->
@@ -220,7 +220,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                   dgl_origin = DGHiding })
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig(node,gsigma''),
-                   insEdge link $
+                   insEdgeNub link $
                    insNode (node,node_contents) dg')
        Just tmor' -> do 
         let gsigma1 = dom Grothendieck tmor'
@@ -243,7 +243,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                  dgl_origin = DGRevealing })
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig(node1,gsigma1),
-                   insEdge link1 $
+                   insEdgeNub link1 $
                    insNode (node1,node_contents1) dg')
          else do
            let [node1,node''] = newNodes 1 dg'
@@ -267,9 +267,9 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                  dgl_origin = DGRevealTranslation })
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig(node'',gsigma''),
-                   insEdge link'' $
+                   insEdgeNub link'' $
                    insNode (node'',node_contents'') $
-                   insEdge link1 $
+                   insEdgeNub link1 $
                    insNode (node1,node_contents1) dg')
 
 
@@ -300,7 +300,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
               dgl_morphism = incl,
               dgl_type = GlobalDef,
               dgl_origin = DGUnion }
-            return (insEdge (n,node,link) dg1)
+            return (insEdgeNub (n,node,link) dg1)
       dg'' <- foldl insE (return (insNode (node,node_contents) dg'))
                          (catMaybes (map getNodeAndSig nsigs'))
       return (Union (map (uncurry replaceAnnoted)
@@ -333,7 +333,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            when (not (is_subgsign sig1 sig')) (pplain_error () 
              (ptext "Signature must not be extended in presence of %implies") 
              pos')
-           return $ insEdge (n1,n',DGLink {
+           return $ insEdgeNub (n1,n',DGLink {
              dgl_morphism = ide Grothendieck sig1,
              dgl_type = LocalThm Open None Open,
              dgl_origin = DGExtension }) dg1
@@ -361,7 +361,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
             dgl_origin = DGFree })
       return (Free_spec (replaceAnnoted sp' asp) poss,
               NodeSig(node,gsigma'),
-              insEdge link $
+              insEdgeNub link $
               insNode (node,node_contents) dg')
 
   Cofree_spec asp poss ->
@@ -385,7 +385,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
             dgl_origin = DGCofree })
       return (Cofree_spec (replaceAnnoted sp' asp) poss,
               NodeSig(node,gsigma'),
-              insEdge link $
+              insEdgeNub link $
               insNode (node,node_contents) dg')
 
   Local_spec asp asp' poss ->
@@ -433,7 +433,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                          (replaceAnnoted sp2' asp')
                          poss,
               NodeSig(node,gsigma3),
-              insEdge link $
+              insEdgeNub link $
               insNode (node,node_contents) dg'')
         
 
@@ -467,11 +467,11 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
             dgl_origin = DGClosedLenv }
           insLink2 = case (getNode nsig) of
                        Nothing -> id
-                       Just n -> insEdge (n,node,link2)
+                       Just n -> insEdgeNub (n,node,link2)
       return (Closed_spec (replaceAnnoted sp' asp) pos,
               NodeSig(node,gsigma''),
               insLink2 $
-              insEdge link1 $
+              insEdgeNub link1 $
               insNode (node,node_contents) dg')
 
   Group asp pos -> do
@@ -529,7 +529,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                    dgl_origin = DGSpecInst spname})
              return (sp,
                      NodeSig(node,gsigma),
-                     insEdge link $
+                     insEdgeNub link $
                      insNode (node,node_contents) dg)
               
          -- the subcase with nonempty local env 
@@ -552,8 +552,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                  dgl_origin = DGSpecInst spname})
            return (sp,
                    NodeSig(node,gsigma),
-                   insEdge link1 $
-                   insEdge link2 $
+                   insEdgeNub link1 $
+                   insEdgeNub link2 $
                    insNode (node,node_contents) dg)
        
       -- now the case with parameters
@@ -580,7 +580,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
              dgl_origin = DGSpecInst spname}
            insLink1 = case (getNode nsig) of
                         Nothing -> id
-                        Just n -> insEdge (n,node,link1)
+                        Just n -> insEdgeNub (n,node,link1)
            link2 = (nB,node,DGLink {
              dgl_morphism = gEmbed morDelta,
              dgl_type = GlobalDef,
@@ -591,9 +591,9 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                               (zip (reverse fitargs') afitargs))
                          poss,
                NodeSig(node,gsigmaRes),
-               foldr insEdge
+               foldr insEdgeNub
                   (insLink1 $
-                   insEdge link2 $
+                   insEdgeNub link2 $
                    insNode (node,node_contents) dg')
                 parLinks)
        where
@@ -648,7 +648,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                    (replaceAnnoted sp2' asp2) 
                    pos,
               NodeSig(node,gsigma'),
-              insEdge link $
+              insEdgeNub link $
               insNode (node,node_contents) dg2)
 
 
@@ -796,7 +796,7 @@ ana_FIT_ARG lg gctx spname nsigI nsigP opts
          dgl_type = GlobalThm Open None Open,
          dgl_origin = DGSpecInst spname})
    return (Fit_spec (replaceAnnoted sp' asp) gsis poss,
-           insEdge link dg',
+           insEdgeNub link dg',
            (G_morphism lidP mor,nsigA)
            )
 
@@ -854,7 +854,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
                  dgl_morphism = ide Grothendieck gsigmaP,
                  dgl_type = GlobalThm Open None Open,
                  dgl_origin = DGFitView spname})
-           return (fv,insEdge link dg,(G_morphism lid morHom,target))
+           return (fv,insEdgeNub link dg,(G_morphism lid morHom,target))
               
          -- the subcase with nonempty import
          Just nI -> do
@@ -900,11 +900,11 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
                  dgl_type = GlobalDef,
                  dgl_origin = DGFitViewAImp spname})
            return (fv,
-                   insEdge link $
-                   insEdge link1 $
-                   insEdge link2 $
-                   insEdge link3 $
-                   insEdge link4 $
+                   insEdgeNub link $
+                   insEdgeNub link1 $
+                   insEdgeNub link2 $
+                   insEdgeNub link3 $
+                   insEdgeNub link4 $
                    insNode (nA,node_contentsA) $
                    insNode (n',node_contents') dg,
                    (G_morphism lid mor_I,NodeSig (nA,gsigmaA)))
@@ -983,7 +983,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
                         (map (uncurry replaceAnnoted)
                              (zip (reverse fitargs') afitargs))
                         poss ans,
-               foldr insEdge
+               foldr insEdgeNub
                  (insNode (nA,node_contentsA) $
                   insNode (n',node_contents') dg')
                  (fitLinks++parLinks),
@@ -1167,7 +1167,7 @@ ana_GENERICITY lg gctx@(gannos,genv,_) l opts
          Nothing -> return dg
          Just n -> do 
            incl <- adj $ ginclusion lg (getSig nsig) gsigmaP
-           return (insEdge (n,node,DGLink {
+           return (insEdgeNub (n,node,DGLink {
                      dgl_morphism = incl,
                      dgl_type = GlobalDef,
                      dgl_origin = DGFormalParams }) dg)
