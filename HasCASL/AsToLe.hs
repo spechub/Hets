@@ -30,8 +30,6 @@ import HasCASL.Reader
 ----------------------------------------------------------------------------
 -- analysis
 -----------------------------------------------------------------------------
-logicalType :: Type 
-logicalType = TypeName (simpleIdToId (mkSimpleId "logical")) star 0
 
 missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
 missingAna t ps = appendDiags [Diag FatalError 
