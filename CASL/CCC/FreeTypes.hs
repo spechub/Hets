@@ -39,24 +39,74 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import CASL.CCC.SignFuns
 
-checkFreeType :: Morphism f e m -> [FORMULA f] -> Maybe Bool
-checkFreeType m fs=if any (\s->not $ elem s srts) sorts then Nothing
-                   else if all (\s->not $ elem s f_Inhabited) sorts then Just False
-                        else if elem Nothing $ map leadingSym op_preds then Nothing
-                             else Just True
+checkFreeType :: Eq f=> Morphism f e m -> [FORMULA f] -> Maybe Bool
+checkFreeType m fs 
+       | any (\s->not $ elem s srts) sorts = Nothing
+       | all (\s->not $ elem s f_Inhabited) sorts = Just False
+       | elem Nothing l_Syms =  Nothing
+       | (any id $ map (\s->elem s sorts) $ ops_sorts++preds_sorts) =Nothing
+       | not $ and $ map checkTerm leadingTerms =Nothing
+       | not $ and $ map checkVar leadingTerms =Nothing 
+--     |  =Nothing
+       | otherwise = Just True
    where sig = imageOfMorphism m
          sorts= Set.toList (sortSet sig)
          fconstrs= concat $ map fc fs
          fc f= case f of
                      Sort_gen_ax constrs True -> constrs
                      _->[]
-         (srts,_,_)=recover_Sort_gen_ax fconstrs 
+         (srts,constructors,_)=recover_Sort_gen_ax fconstrs 
          f_Inhabited=inhabited fconstrs
          op_preds= filter (\f->case f of
                                  Quantification _ _ _ _ -> True
                                  _ -> False) fs
+         l_Syms=map leadingSym op_preds
+         filterOp symb= case symb of
+                         Just (Left (Qual_op_name _ op _))->[res_OP_TYPE op]
+                         _ ->[]
+         filterPred symb=case symb of
+                               Just (Right (Qual_pred_name _ (Pred_type s _) _))->s
+                               _ -> [] 
+         ops_sorts=concat $ map filterOp $ l_Syms 
+         preds_sorts=concat $ map filterPred $ l_Syms
+         leadingTerms=concat $ map (\tp->case tp of
+                                             Just (Left t)->[t]
+                                             _ -> []) $ 
+                      map leading_Term_Predication fs
+         checkTerm (Application op ts _) =elem op constructors &&
+                                          all (\t-> case t of
+                                                     Qual_var _ _ _-> True
+                                                     _ -> False) ts
 
+         checkVar (Application _ ts _)=let check [] = True
+                                           check (p:ps)=if elem p ps then False
+                                                        else check ps
+                                       in check ts
 
+     
+{-
+         filterOp symb= case symb of
+                          Just (Left o)->[o]
+                          _ -> []
+         filterPred symb=case symb of
+                           Just (Right p)->[p]
+                           _ -> [] 
+         ops= concat $ map filterOp l_Syms
+         ops_sorts= map res_OP_TYPE $ 
+                    concat $ map (\o->case o of
+                                       Qual_op_name _ op _->[op]
+                                       _ -> [] ) ops 
+         preds=concat $ map filterPred l_Syms
+         preds_sorts= concat $ map (\p->case p of
+                                          Qual_pred_name _ p' _->case p' of
+                                                                  Pred_type s _->s) preds
+-}
+
+leadingSym :: FORMULA f -> Maybe(Either OP_SYMB PRED_SYMB)
+leadingSym f = do
+       tp<-leading_Term_Predication f
+       return (extract_leading_symb tp) 
+{-
 leadingSym :: FORMULA f -> Maybe(Either OP_SYMB PRED_SYMB)
 leadingSym f = leading (f,False,False)
   where leading (f,b1,b2)= case (f,b1,b2) of
@@ -70,7 +120,28 @@ leadingSym f = leading (f,False,False)
                             ((Existl_equation t _ _),_,_) -> case t of
                                                               Application opS _ _ -> return (Left opS)
                                                               _ -> Nothing
-                            _ -> Nothing           
+                            _ -> Nothing 
+-}          
+
+leading_Term_Predication ::  FORMULA f -> Maybe(Either (TERM f) (FORMULA f))
+leading_Term_Predication f =leading (f,False,False)
+  where leading (f,b1,b2)= case (f,b1,b2) of
+                            ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)
+                            ((Implication _ f' _ _),False,False) -> leading (f',True,False)
+                            ((Equivalence f' _ _),b,False) -> leading (f',b,True)
+                            ((Predication p ts ps),_,_) -> return (Right (Predication p ts ps))
+                            ((Strong_equation t _ _),_,_) -> case t of
+                                                              Application _ _ _ -> return (Left t)
+                                                              _ -> Nothing
+                            ((Existl_equation t _ _),_,_) -> case t of
+                                                              Application _ _ _ -> return (Left t)
+                                                              _ -> Nothing
+                            _ -> Nothing
+
+extract_leading_symb :: Either (TERM f) (FORMULA f) -> Either OP_SYMB PRED_SYMB
+extract_leading_symb lead = case lead of
+                              Left (Application os _ _) -> Left os
+                              Right (Predication p _ _) -> Right p
 
 {- group the axioms according to their leading symbol
    output Nothing if there is some axiom in incorrect form -}
