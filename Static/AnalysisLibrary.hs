@@ -122,9 +122,7 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
 			                 (resToIORes (Result dias mgc))
 		             anaLibFile' fname dias)
                        (\ gc@(_,_,dgraph) -> do 
-		          if outputToStdout opts then
-                             putStrLn ""
-		             else return()
+		          putIfVerbose opts 1 ""
 		          -- get all DGRefs from DGraph
 		          let libEnv' = (Map.insert libname gc libenv)
 		              nodesDGRef =
@@ -161,7 +159,7 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
          if outputToStdout opts then
 	    do
             res <- anaFile logicGraph defaultLogic opts libenv fname	
-	    putStrLn ""
+	    putIfVerbose opts 1 ""
 	    -- and just return the libenv
 	    return (case res of 
 		       Just (_,_,_,libenv') -> (diags', libenv')
