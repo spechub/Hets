@@ -121,14 +121,6 @@ check' qs@((EqnInfo n ctx ps result):_)
     only_vars    = and (map is_var qs) 
 
 
-************************************************
-Zicheng (Till)
-************************************************
-
-Translation from CASL with partiality to CASL without partiality
-
-details: see paper in Theoretical Computer Science, p. 418
-
 
 ************************************************
 Heng (Klaus)
@@ -191,6 +183,8 @@ HasCASL hat auch noch keine Mixfix- und Latex Ausgabe.
 ************************************************
 Christian
 ************************************************
+
+assoc attribute does not translate along sig. mors
 
 Haskell modules: hiding, renaming
 
@@ -258,6 +252,10 @@ Static analysis of architectural specs
 Till
 ************************************************
 
+update Hets, CASL, daVinci on web page
+
+remove qualifications from output
+
 CASL2PCFOL: x_i -> t_i, t=[inj(x_i)]
 
 packing of binaries: add hets-update, refer to TclTk
@@ -276,7 +274,7 @@ Missing points for heterogeneous WADT 04 example:
 - Improve adapation to Isabelle's lexis
 
 Isabelle: (ask Christoph)
-   free datatypes
+   remove datatypes from sort list
    prove local thm link (=> green)
 
    "prove" menu with choice windows
@@ -311,6 +309,8 @@ Translation between Achim's ontology data structure and CASL (in Hets)
 - George wg. Schlieﬂen von Fenstern
 - node numbers do not match
 - thm links with external target should be provable as well
+
+Hets interactive
 
 Remove warnings
 
@@ -360,6 +360,7 @@ Prover windows
 FOR STUDENTS
 ************************************************
 
+Data.Serizable
 Emacs mode
 Hets Web interface (cf. CATS/web_interface2.sml)
 CCC ?
