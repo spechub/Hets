@@ -21,9 +21,6 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
 
-mkError :: (PosItem a, PrettyPrint a) => String -> a -> Result b
-mkError s c = Result [mkDiag Error s c] Nothing
-
 anaClassId :: ClassId -> ClassMap -> Result Kind
 anaClassId ci cMap = 
        case Map.lookup ci cMap of

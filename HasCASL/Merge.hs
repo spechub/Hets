@@ -36,9 +36,6 @@ improveDiag :: (PosItem a, PrettyPrint a) => a -> Diagnosis -> Diagnosis
 improveDiag v d = d { diagString = let f:l = lines $ diagString d in 
                       unlines $ (f ++ " of '" ++ showPretty v "'") : l
                     , diagPos = getMyPos v
-                    , diagKind = case diagKind d of 
-                                 FatalError -> Error
-                                 w -> w 
                     }
 
 mergeMap :: (Ord a, PosItem a, PrettyPrint a) => 
@@ -98,7 +95,7 @@ mergeTypeDefn d1 d2 =
             (Supertype v1 s1 t1, Supertype v2 s2 t2) -> 
                 do s <- mergeScheme s1 s2
                    v <- merge v1 v2
-                   t <- mergeTerm t1 t2
+                   t <- mergeTerm Warning t1 t2
                    return $ Supertype v s t
             (_, _) -> mergeA "TypeDefn" d1 d2
 
@@ -122,7 +119,7 @@ mergeScheme s1@(TypeScheme a1 t1 _)
 
 instance Mergeable OpAttr where
     merge (UnitOpAttr t1 p1) (UnitOpAttr t2 p2) = 
-        do t <- mergeTerm t1 t2
+        do t <- mergeTerm Warning t1 t2
            return $ UnitOpAttr t (p1 ++ p2)
     merge a1 a2 = mergeA "attributes" a1 a2 
 
@@ -147,7 +144,7 @@ instance Mergeable OpDefn where
         c <- merge c1 c2
         return $ SelectData c d1
     merge (Definition b1 d1) (Definition b2 d2) =
-        do d <- mergeTerm d1 d2
+        do d <- mergeTerm Hint d1 d2
            b <- merge b1 b2
            return $ Definition b d
     merge _d1 _d2 = fail "illegal redefinition"
@@ -202,7 +199,7 @@ mergeA :: (PrettyPrint a, Eq a) => String -> a -> a -> Result a
 mergeA str t1 t2 = if t1 == t2 then return t1 else 
     fail ("different " ++ str ++ expected t1 t2)
 
-mergeTerm :: Term -> Term -> Result Term
-mergeTerm t1 t2 = if t1 == t2 then return t1 else
-            Result [Diag Warning ("different terms" ++ expected t1 t2) 
+mergeTerm :: DiagKind -> Term -> Term -> Result Term
+mergeTerm k t1 t2 = if t1 == t2 then return t1 else
+            Result [Diag k ("different terms" ++ expected t1 t2) 
                     nullPos] $ Just t2

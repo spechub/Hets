@@ -617,8 +617,7 @@ showDiags1 opts res = do
                Just res'' -> return res''
                Nothing    -> resToIORes $ Result [] Nothing
      else res
-  where relevantDiagKind FatalError = True
-        relevantDiagKind Error = True
+  where relevantDiagKind Error = True
         relevantDiagKind Warning = (verbose opts) >= 2
         relevantDiagKind Hint = (verbose opts) >= 4
         relevantDiagKind Debug  = (verbose opts) >= 5

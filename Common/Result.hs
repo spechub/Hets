@@ -32,7 +32,7 @@ maxdiags :: Int
 maxdiags = 20
 
 -- | severness of diagnostic messages
-data DiagKind = FatalError | Error | Warning | Hint | Debug 
+data DiagKind = Error | Warning | Hint | Debug 
               | MessageW -- ^ used for messages in the Web interface
                 deriving (Eq, Ord, Show)
 
@@ -50,7 +50,6 @@ mkDiag k s a = let q = char '\'' in
 -- | check whether a diagnosis is an error
 isErrorDiag :: Diagnosis -> Bool
 isErrorDiag d = case diagKind d of
-                FatalError -> True
                 Error -> True
                 _ -> False
 
@@ -145,11 +144,15 @@ resToIORes = IOResult . return
 
 -- | a failing result with a proper position
 fatal_error :: String -> Pos -> Result a
-fatal_error s p = Result [Diag FatalError s p] Nothing  
+fatal_error s p = Result [Diag Error s p] Nothing  
 
--- | a failing result, using pretty printed Doc
+-- | a failing result using pretty printed Doc
 pfatal_error :: Doc -> Pos -> Result a
 pfatal_error s p = fatal_error (show s) p  
+
+-- | a failing result constructing a message from a type 
+mkError :: (PosItem a, PrettyPrint a) => String -> a -> Result b
+mkError s c = Result [mkDiag Error s c] Nothing
 
 -- | add an error message but continue (within do)
 plain_error :: a -> String -> Pos -> Result a
@@ -182,7 +185,7 @@ message x m = Result [Diag MessageW m nullPos] $ Just x
 -- | add a fatal error message to a failure (Nothing)
 maybeToResult :: Pos -> String -> Maybe a -> Result a
 maybeToResult p s m = Result (case m of 
-                              Nothing -> [Diag FatalError s p]
+                              Nothing -> [Diag Error s p]
                               Just _ -> []) m
 
 -- | add a failure message in case of Nothing 
