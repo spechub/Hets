@@ -125,14 +125,6 @@ ana_M_BASIC_ITEM _ bi = do
 	    newFs <- mapAnM (resultToState (ana_M_FORMULA True)) fs 
 	    return $ Term_mod_decl al newFs ps
 
-resultToState :: (a -> Result a) -> a -> State (Sign f e) a
-resultToState f a = do 
-    let r =  f a 
-    addDiags $ reverse $ diags r
-    case maybeResult r of
-        Nothing -> return a
-        Just b -> return b
-
 addModId :: SIMPLE_ID -> ModalSign -> Result ModalSign
 addModId i m = 
     let ms = modies m in 
