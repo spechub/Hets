@@ -103,22 +103,22 @@ encodeSig sig = sig {sortRel=newsortRel,opMap=priopMap,predMap=newpredMap}
  inj=mkId[mkSimpleId "_inj"]
  pro=mkId[mkSimpleId "_proj"]
 
-      --(SORT,[SORT])->[(SORT,[SORT])]
- --map 
  predList= nub(fst(unzip (relList)))
- udupredList=[(x,Set.toList(supersortsOf x sig))|x<-predList]  --[(SORT,[SORT])]
- altpredMap=predMap sig
- newcomb (x,[])=[ ]  --(SORT,[SORT])->[(SORT,[SORT])]
- newcomb  (x,(y:ys))=(x,[y]):(newcomb (x,ys))
- pred  x = PredType {predArgs=x} --[SORT]
- newpredMap = insertPred  newLList altpredMap 
- newLList=(concat(map newcomb udupredList)) --map (SORT,[SORT])->[(SORT,[SORT])]  [(SORT,[SORT])] [[(SORT,[SORT])]]
- --[(SORT,[SORT])]->Map.Map Id (Set.Set PredType)
- insertPred  [ ] m  = m
- insertPred  ((x,y):xs) m = insertPred (xs) (Map.insert (Id [mkSimpleId "_elem_"] [x] []) (Set.fromList[pred y]) m)
+ udupredList=[(x,Set.toList(supersortsOf x sig))|x<-predList] 
+ oldpredMap=predMap sig
+ pred  x = PredType {predArgs=x} 
+ newList [ ] = [ ]
+ newList (x:xs) = [[x]]++(newList xs)
+ new1List (x,y) = (x,(newList y))
+ nList = map new1List udupredList 
+ predSet x  =  Set.fromList(map pred x) 
+ eleminsert m (x,y)  = Map.insert (Id [mkSimpleId "_elem_"] [x] []) (predSet y) (m) 
+ newpredMap  = foldl (eleminsert) (oldpredMap) (nList) 
+ 
+ 
 
- 
- 
+
+{-
 generateAxioms :: Sign f e -> [Named (FORMULA f)]
 generateAxioms sig = 
   concat 
@@ -138,48 +138,59 @@ generateAxioms sig =
       " sort s \
       \ op inj : s->s \
       \ forall x:s . inj(x)=e=x               %(indentity)%" ++
-    inlineAxioms CASL
+    inlineAxioms CASL                
       " sort s<s' \
       \ op pr : s' -> ?s \
       \ forall x:s . x<=>def(pr(x))            %(mebership)%"                               
-          | (s,s') <- rel2List])
-      where 
-        x = mkSimpleId "x"
-        y = mkSimpleId "y"
-        inj = mkId [mkSimpleId "_inj"]
-        pr=mkId [mkSimpleId "_pr"]
-        pr_trans=mkId [mkSimpleId "_pr_trans"]
-        indentity=mkId [mkSimpleId "_indentity"]
-        membership=mkId[mkSimpleId "_membership"]
-        rel2Map=Rel.toMap(sortRel sig)
-        --mapOp=Set.toList(opMap sig)
-        rel2List=Rel.toList(sortRel sig)
-
-
-{-
-++               
+          | (s,s') <- rel2List]++             
    [inlineAxioms CASL
      " sort s<s';s'<s'' \
       \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
       \ forall x:s . inj(inj(x))=e=inj(x)      %(transitive)% "  
           |(s,s')<-rel2List,s''<-Set.toList(supersortsOf s' sig)]++
    [inlineAxioms CASL
-    " sort s'<s ; s''<s ; w'_i ; w''_i ; w_i;  \
-    \ op f:w'->s' ; f:w''->s'' ; inj: s' -> s ; inj: s''->s ; inj: s_i->s'_i ; inj:s_i -> s''_i \
-    \ forall x_i : s_i . inj(f(inj(x_i)))=inj(f(inj(x_i))) \
-    \ |(w,s,s',s'',w'_i,w''_i,f) | f<-mapOp, 
-    
-    " 
-   
-   
-     ]
-
-
-
-
-
+    " sort s'<s ; s''<s ; w'_i ; w''_i ; w_i  \
+    \ op f:w'->s' ; f:w''->s'' ; inj: s' -> s ; inj: s''->s ; inj: w_i->w'_i ; inj:w_i -> w''_i  \
+    \ forall x_i : s_i . inj(f(inj(x_i)))=inj(f(inj(x_i)))  %(function_monotoniicity)%" 
+          |(s,s'',s',w'_i,w''_i,w,f) | s<-(supersortOf s' sig),s1<-(supersortOf s'' sig),s1==s,
+          w<-(supersortOf  w'_i sig),w1<-(supersortOf w''_i sig),w1==w,
+          (w'_i,s')<-rel2List,(w''_i,s'')<-rel2List,(member f opSet)])
+      where 
+        x = mkSimpleId "x"
+        y = mkSimpleId "y"
+        inj = mkId [mkSimpleId "_inj"]
+        pr=mkId [mkSimpleId "_pr"]
+        gaem_inj=mkId [mkSimpleId "ga_embedding_injectivity"]
+        pr_trans=mkId [mkSimpleId "_pr_trans"]
+        indentity=mkId [mkSimpleId "_indentity"]
+        membership=mkId[mkSimpleId "_membership"]
+        functionmono=mkId[mkSimpleId "_function-monotonicity"]
+        rel2List=Rel.toList(sortRel sig)
+        opSet=Set.fromList(elems(opMap sig))
+        total      (s, s') = OpType {opKind=Total,opArgs=[s],opRes=s'}
+        partial    (s, s') = OpType {opKind=Partial,opArgs=[s'],opRes=s}
+        --isinopSet  x = member (Set.fromList [total x]) (opSet)
+        --isproopSet x = member (Set.fromList [partial x]) (opSet)
+        --rel2Map=Rel.toMap(sortRel sig)
+        --mapOp=Set.toList(opMap sig)
 -}
-        
+
+  {-
+   [inlineAxioms CASL
+   " sort w'_i ; w''_i ; w_i ; \
+      
+
+
+   ]
+
+
+
+
+
+
+  -}
+
+       
         
     
         
