@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
-CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:$(INCLUDE_PATH):Haskell/Hatchet
+CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:$(INCLUDE_PATH):Haskell/Hatchet
 ## set ghc imports properly for your system
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0.1/imports:${GHC_IMPORTS}'
 
@@ -111,7 +111,7 @@ gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
 
 generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
 
-happy_files = Haskell/Language/Parser.hs Haskell/Hatchet/HsParser.hs
+happy_files = Haskell/Hatchet/HsParser.hs
 
 # this variable holds the modules that should be documented
 # the imported parsec library is not included!
@@ -316,14 +316,7 @@ HasCASL/hacapa: HasCASL/hacapa.hs CASL/capa HasCASL/*.hs
 ### Haskell parser
 hapa: Haskell/hapa
 
-Haskell/hapa: Haskell/hapa.lhs Haskell/*.hs Haskell/Language/*.hs $(happy_files)
-	$(RM) $@
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-### Haskell wrap parser
-wrap: Haskell/wrap
-
-Haskell/wrap: Haskell/wrap.lhs Haskell/*.hs
+Haskell/hapa: Haskell/hapa.hs Haskell/Hatchet/*.hs $(happy_files)
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 

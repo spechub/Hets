@@ -53,9 +53,11 @@ HasCASL/hacapa.hs
 HasCASL/test
 
 Haskell/HParser.hs
+Haskell/Language.hs
 Haskell/Logical.hs
 Haskell/ghc-call
 Haskell/hapa.lhs
+Haskell/hapa.hs
 Haskell/questions
 Haskell/todo
 Haskell/wrap.lhs
