@@ -2,7 +2,7 @@ module Language.Haskell.THSyntax
 -- FIXME: *urgh* we don't really want to export stuff like `counter'  -=chak
 where
 
-import Monad            ( liftM, sequence )
+import Monad            ( liftM, liftM2, sequence )
 
 import Data.IORef       ( IORef, newIORef, readIORef, writeIORef )
 import System.IO.Unsafe ( unsafePerformIO )
@@ -163,8 +163,16 @@ data Safety = Unsafe | Safe | Threadsafe
 
 type Cxt = [Typ]	-- (Eq a, Ord b)
 
-data Con = Constr String [Typ]
+data Strictness = Strict | NonStrict
          deriving( Show )
+
+data Con = Constr String [(Strictness, Typ)]
+         | RecConstr String [(String, Strictness, Typ)]
+         | InfixConstr (Strictness, Typ) String (Strictness, Typ)
+         deriving( Show )
+
+type StrType = Q (Strictness, Typ)
+type VarStrType = Q (String, Strictness, Typ)
 
 data Program = Program [ Dec ] 
              deriving( Show )
@@ -388,8 +396,16 @@ proto fun ty = liftM (Proto fun) $ ty
 ctxt :: [Type] -> Ctxt
 ctxt = sequence
 
-constr :: String -> [Type] -> Cons
-constr con tys = liftM (Constr con) $ sequence tys
+constr :: String -> [Q (Strictness, Typ)] -> Cons
+constr con strtys = liftM (Constr con) $ sequence strtys
+
+recConstr :: String -> [Q (String, Strictness, Typ)] -> Cons
+recConstr con varstrtys = liftM (RecConstr con) $ sequence varstrtys
+
+infixConstr :: Q (Strictness, Typ) -> String -> Q (Strictness, Typ) -> Cons
+infixConstr st1 con st2 = do st1' <- st1
+                             st2' <- st2
+                             return $ InfixConstr st1' con st2'
 
 
 --------------------------------------------------------------------------------
@@ -425,6 +441,17 @@ tupleTyCon i = return $ Tcon (Tuple i)
 
 namedTyCon :: String -> Type
 namedTyCon s = return $ Tcon (TconName s)
+
+strict, nonstrict :: Q Strictness
+strict = return $ Strict
+nonstrict = return $ NonStrict
+
+strictType :: Q Strictness -> Type -> Q (Strictness, Typ)
+strictType = liftM2 (,)
+
+varStrictType :: String -> Q (Strictness, Typ) -> Q (String, Strictness, Typ)
+varStrictType v st = do (s, t) <- st
+                        return (v, s, t)
 
 --------------------------------------------------------------
 -- useful helper functions
@@ -579,12 +606,15 @@ pprDec (Val p r ds) = pprPat p <+> pprRhs True r
 pprDec (TySyn t xs rhs) = text "type" <+> text t <+> hsep (map text xs) 
 				<+> text "=" <+> pprTyp rhs
 pprDec (Data t xs cs ds) = text "data" <+> text t <+> hsep (map text xs)
-                       <+> text "=" <+> sep (map pprCon cs)
+                       <+> sep (pref $ map pprCon cs)
                         $$ if null ds
                            then empty
                            else nest nestDepth
                               $ text "deriving"
                             <+> parens (hsep $ punctuate comma $ map text ds)
+    where pref :: [Doc] -> [Doc]
+          pref [] = [char '='] -- Can't happen in H98
+          pref (d:ds) = (char '=' <+> d):map (char '|' <+>) ds
 pprDec (Class cxt c xs ds) = text "class" <+> pprCxt cxt
                          <+> text c <+> hsep (map text xs)
                           $$ where_clause ds
@@ -609,7 +639,26 @@ pprClause (Clause ps rhs ds) = hsep (map pprPat ps) <+> pprRhs True rhs
 
 ------------------------------
 pprCon :: Con -> Doc
-pprCon (Constr c ts) = text c <+> hsep (map pprTyp ts)
+pprCon (Constr c sts) = text c <+> hsep (map pprStrictTyp sts)
+pprCon (RecConstr c vsts) = text c
+                        <+> char '{'
+                         <> hsep (punctuate comma $ map pprVarStrictTyp vsts)
+                         <> char '}'
+pprCon (InfixConstr st1 c st2) = pprStrictTyp st1
+                             <+> text c
+                             <+> pprStrictTyp st2
+
+------------------------------
+pprVarStrictTyp :: (String, Strictness, Typ) -> Doc
+pprVarStrictTyp (v, str, t) = text v <+> text "::" <+> text str' <> pprTyp t
+    where str' = case str of
+                     Strict -> "!"
+                     NonStrict -> ""
+
+------------------------------
+pprStrictTyp :: (Strictness, Typ) -> Doc
+pprStrictTyp (Strict, t) = char '!' <> pprTyp t
+pprStrictTyp (NonStrict, t) = pprTyp t
 
 ------------------------------
 pprParendTyp :: Typ -> Doc
