@@ -22,7 +22,7 @@ import Common.Token
 
  
 hStuff, stuff :: GenParser Char st String
-hStuff = flat $ many1 stuff 
+hStuff = flat $ many stuff 
 
 stuff = lineComment <|> nestComment <|> stringLit <|> charLit
 	<|> balanced "{}" 
