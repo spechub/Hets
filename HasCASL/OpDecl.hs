@@ -20,6 +20,7 @@ import PrettyPrint
 import PrintAs(showPretty)
 import Result
 import TypeDecl
+import List
 
 missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
 missingAna t ps = appendDiags [Diag FatalError 
@@ -37,7 +38,9 @@ anaOpItem (OpDefn i _ _ _ _ _) = missingAna i [posOfOpId i]
 
 anaOpId :: TypeScheme -> [OpAttr] -> OpId -> State Env ()
 anaOpId (TypeScheme tvs q ps) attrs (OpId i args) =
-    do let sc = TypeScheme (args ++ tvs) q ps 
+    do let newArgs = args ++ tvs
+           sc = TypeScheme newArgs q ps
+       appendDiags $ checkDifferentTypeArgs newArgs
        (mk, newSc) <- anaTypeScheme Nothing sc
        case mk of 
 	       Nothing -> return () -- induced error
@@ -47,4 +50,19 @@ anaOpId (TypeScheme tvs q ps) attrs (OpId i args) =
 			      ("wrong kind '" ++ showPretty k
 			       "' of type for operation") i 
 
-addOpId i sc attrs = return () 
+checkDifferentTypeArgs :: [TypeArgs] -> [Diagnosis]
+checkDifferentTypeArgs l = 
+    let v :: [Id] = concatMap (\ (TypeArgs tas _) 
+			       -> map (\ (TypeArg i _ _ _) -> i) tas) l
+	vd = filter ( not . null . tail) $ group $ sort v
+    in map ( \ vs -> mkDiag Error ("duplicate ids at '" ++
+	                          showSepList (showString " ") shortPosShow
+				  (map posOfId (tail vs)) "'" 
+				   ++ " for")  (head vs)) vd
+
+shortPosShow :: Pos -> ShowS
+shortPosShow p = showParen True (shows (sourceLine p) . showString "," .
+			 shows (sourceColumn p))
+
+addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> State Env () 
+addOpId i sc attrs = missingAna i [posOfId i]

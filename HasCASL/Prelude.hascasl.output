@@ -31,6 +31,14 @@ x2 : c
 y1 : d
 y2 : d
 Error (4,7) illegal universe class declaration
+FatalError (13,4) no analysis yet for: true
+FatalError (13,10) no analysis yet for: false
+FatalError (15,7) no analysis yet for: __/\__
+FatalError (15,15) no analysis yet for: __\/__
+FatalError (15,23) no analysis yet for: __=>__
+FatalError (15,31) no analysis yet for: __if__
+FatalError (15,38) no analysis yet for: __<=>__
+FatalError (16,4) no analysis yet for: not
 Warning (27,11) redeclared type 'Unit'
 FatalError (29,1) no analysis yet for: . 1 = ()
 Warning (39,16) redeclared type 't'
@@ -81,6 +89,7 @@ FatalError (130,1) no analysis yet for: pred isBound(x : c,s : nat -> c) <=> all
 Error (132,11) undeclared type 'nat'
 Error (132,18) undeclared type 'c'
 Error (132,25) undeclared type 'c'
+FatalError (132,4) no analysis yet for: sup
 FatalError (134,1) no analysis yet for: . all
   (\ s : nat -> c . def (sup s) impl
 		    (isBound (sup s,s) und all
@@ -112,6 +121,7 @@ FatalError (190,2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
 Error (194,9) undeclared type 'p'
 Error (194,16) undeclared type 'p'
 Error (194,23) undeclared type 'p'
+FatalError (194,4) no analysis yet for: Y
 FatalError (196,1) no analysis yet for: . all
   (\ f : p -->? p . eq (f (Y (f)),Y (f)) und all
 		    (\ x : p . eq (f (x),x) impl Y (f) <<= x))

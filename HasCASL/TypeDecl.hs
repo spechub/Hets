@@ -208,6 +208,9 @@ convertTypePattern t =
                    (posOfTypePattern t)
     else makeMixTypeId t
 
+-- TODO trailing places are not necessary for curried kinds
+-- and should be ignored to avoid different Ids "Pred" and "Pred__"
+
 typePatternToTokens :: TypePattern -> [Token]
 typePatternToTokens (TypePattern ti _ _) = getTokenList True ti
 typePatternToTokens (TypePatternToken t) = [t]
