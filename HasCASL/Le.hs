@@ -51,7 +51,7 @@ data TypeInfo = TypeInfo { typeKind :: Kind
  
 -----------------------------------------------------------------------------
 
-type TypeKinds = FiniteMap TypeId TypeInfo
+type TypeMap = FiniteMap TypeId TypeInfo
 
 -----------------------------------------------------------------------------
 -- assumptions
@@ -64,14 +64,13 @@ type Assumps = FiniteMap Id [TypeScheme]
 -----------------------------------------------------------------------------
 
 data Env = Env { classMap :: ClassMap
-               , typeKinds :: TypeKinds
-	       , typeVars :: [TypeId]
+               , typeMap :: TypeMap
 	       , assumps :: Assumps
 	       , envDiags :: [Diagnosis]
 	       } deriving Show
 
 initialEnv :: Env
-initialEnv = Env emptyFM emptyFM [] emptyFM []
+initialEnv = Env emptyFM emptyFM emptyFM []
 
 appendDiags :: [Diagnosis] -> State Env ()
 appendDiags ds =
@@ -94,25 +93,14 @@ getClassMap = gets classMap
 putClassMap :: ClassMap -> State Env ()
 putClassMap ce = do { e <- get; put e { classMap = ce } }
 
-getTypeKinds :: State Env TypeKinds
-getTypeKinds = gets typeKinds
+getTypeMap :: State Env TypeMap
+getTypeMap = gets typeMap
 
-putTypeKinds :: TypeKinds -> State Env ()
-putTypeKinds tk =  do { e <- get; put e { typeKinds = tk } }
+putTypeMap :: TypeMap -> State Env ()
+putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 
 getAssumps :: State Env Assumps
 getAssumps = gets assumps
 
 putAssumps :: Assumps -> State Env ()
 putAssumps as =  do { e <- get; put e { assumps = as } }
-
-getTypeVars :: State Env [TypeId]
-getTypeVars = gets typeVars
-
-putTypeVars :: [TypeId] -> State Env ()
-putTypeVars ts =  do { e <- get; put e { typeVars = ts } }
-
-addTypeVar :: TypeId -> State Env ()
-addTypeVar t = do ts <- getTypeVars
-		  if t `elem` ts then return ()
-		     else putTypeVars $ insert t ts

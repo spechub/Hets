@@ -145,14 +145,14 @@ unresolvedType = addDiag . mkDiag Error "unresolved type"
 
 getIdKind :: Id -> State Env (Maybe Kind)
 getIdKind i = 
-    do tk <- getTypeKinds
+    do tk <- getTypeMap
        let m = getKind tk i
        case m of
 	    Nothing -> addDiag $ mkDiag Error "undeclared type" i
 	    _ -> return ()
        return m
 
-getKind :: TypeKinds -> Id -> Maybe Kind
+getKind :: TypeMap -> Id -> Maybe Kind
 getKind tk i = 
        case lookupFM tk i of
        Nothing -> Nothing

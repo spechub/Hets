@@ -7,7 +7,6 @@ f
 g < h
 h
 Type Constructors
-Type Variables :
 Assumptions
 Warning (2,11) implicit declaration of superclass 'b'
 Warning (3,7) redeclared class 'b'

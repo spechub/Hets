@@ -5,9 +5,8 @@ d
 e = a
 h < (a,b,e)
 Type Constructors
-s :Type
-t :Type
-Type Variables : (s,t)
+s :Type %(var)%
+t :Type %(var)%
 Assumptions
 Warning (3,21) unchecked type 's'
 Warning (5,21) unchecked type 't'

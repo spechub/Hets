@@ -106,8 +106,7 @@ anaVarDecl(VarDecl v oldT _ p) =
 anaTypeVarDecl :: TypeArg -> State Env ()
 anaTypeVarDecl(TypeArg t k _ _) = 
     do nk <- anaKind k
-       addTypeKind t k
-       addTypeVar t
+       addTypeKind TypeVarDefn t k
 
 -- ----------------------------------------------------------------------------
 -- ClassItem

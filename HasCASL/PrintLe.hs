@@ -10,6 +10,7 @@
 module PrintLe where
 
 import As
+import HToken
 import PrintAs
 import Le
 import Maybe
@@ -37,9 +38,10 @@ instance PrettyPrint ClassInfo where
 
 instance PrettyPrint TypeDefn where
     printText0 _ NoTypeDefn = empty
-    printText0 _ TypeVarDefn = ptext varS
-    printText0 ga (AliasTypeDefn s) = printText ga s
-    printText0 ga (SubTypeDefn v t f) =  braces (printText0 ga v 
+    printText0 _ TypeVarDefn = space <> ptext "%(var)%"
+    printText0 ga (AliasTypeDefn s) = space <> ptext assignS <+> printText ga s
+    printText0 ga (SubTypeDefn v t f) =  space <> ptext equalS <+> 
+					 braces (printText0 ga v 
 					   <+> colon
 					   <+> printText0 ga t 
 					   <+> text dotS
@@ -51,8 +53,7 @@ instance PrettyPrint TypeInfo where
 	colon <> printList0 ga (k:ks) 
 	<> noPrint (null sups)
 	   (ptext lessS <+> printList0 ga sups)
-        <> noPrint (case defn of { NoTypeDefn -> True; _ -> False })
-             (space <> ptext equalS <+> printText0 ga defn) 
+        <> printText0 ga defn
 
 instance PrettyPrint [Kind] where
     printText0 ga l = colon <> printList0 ga l
@@ -79,8 +80,7 @@ instance (PrettyPrint a, Ord a, PrettyPrint b)
 instance PrettyPrint Env where
     printText0 ga e = printText0 ga (classMap e)
 	$$ ptext "Type Constructors"
-	$$ printText0 ga (typeKinds e)
-        $$ ptext "Type Variables" <+> printText0 ga (typeVars e)
+	$$ printText0 ga (typeMap e)
 	$$ ptext "Assumptions"
         $$ printText0 ga (assumps e)  
 	$$ vcat (map (printText ga) (reverse $ envDiags e))

@@ -33,18 +33,36 @@ missingAna t ps = appendDiags [Diag FatalError
 			       ("no analysis yet for: " ++ showPretty t "")
 			      $ if null ps then nullPos else head ps]
 
-addTypeKind :: Id -> Kind -> State Env ()
-addTypeKind t k = 
-    do tk <- getTypeKinds
-       case lookupFM tk t of
-	      Nothing -> putTypeKinds $ addToFM tk t 
-			 $ TypeInfo k [] [] NoTypeDefn
+compatibleTypeDefn :: TypeDefn -> TypeDefn -> Id -> [Diagnosis]
+compatibleTypeDefn d1 d2 i = 
+    if case (d1, d2) of 
+	    (TypeVarDefn, TypeVarDefn) -> True
+	    (TypeVarDefn, _) -> False
+	    (_, TypeVarDefn) -> False
+	    _ -> True
+    then [] else [mkDiag Error "incompatible redeclaration of type" i]
+
+addTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
+addTypeKind d i k = 
+    do tk <- getTypeMap
+       case lookupFM tk i of
+	      Nothing -> putTypeMap $ addToFM tk i 
+			 $ TypeInfo k [] [] d
 	      Just (TypeInfo ok ks sups defn) -> 
 		  let ds = eqKindDiag k ok in
 			  if null ds then 
-			     putTypeKinds $ addToFM tk t 
+			     putTypeMap $ addToFM tk i 
 					      $ TypeInfo ok (k:ks) sups defn
 			     else appendDiags ds
+
+addSuperType :: Type -> Id -> State Env ()
+addSuperType t i =
+    do tk <- getTypeMap
+       case lookupFM tk i of
+	      Nothing -> error "addSuperType"
+	      Just (TypeInfo ok ks sups defn) -> 
+				putTypeMap $ addToFM tk i 
+					      $ TypeInfo ok ks (t:sups) defn
 
 anaTypeItem :: Instance -> TypeItem -> State Env ()
 anaTypeItem inst (TypeDecl pats kind _) = 
@@ -53,12 +71,14 @@ anaTypeItem inst (TypeDecl pats kind _) =
 anaTypeItem inst (SubtypeDecl pats t _) = 
     do sup <- anaType t
        mapM_ (anaTypePattern inst nullKind) pats
-       let _rs = map (fromJust . maybeResult) $ 
+       let rs = map (fromJust . maybeResult) $ 
 		filter (isJust . maybeResult) $ 
 		map convertTypePattern pats
-       return ()
+       mapM_ (addSuperType t) rs
 
-anaTypeItem _ t@(IsoDecl _ p) = missingAna t p
+anaTypeItem inst (IsoDecl pats p) = 
+    mapM_ (anaTypePattern inst nullKind) pats
+
 anaTypeItem _ (SubtypeDefn t _ _ _ p) = missingAna t p
 anaTypeItem _ (Datatype (DatatypeDecl t _ _ _ p)) = missingAna t p
 anaTypeItem _ (AliasType t _ _ p) = missingAna t p
@@ -77,7 +97,6 @@ kindArity m (PlainClass _) = case m of
 			     TopLevel -> 0
 			     OnlyArg -> 1
 
-
 anaTypePattern :: Instance -> Kind -> TypePattern -> State Env ()
 -- type args not yet considered for kind construction 
 anaTypePattern _ kind t = 
@@ -85,10 +104,19 @@ anaTypePattern _ kind t =
     in if typePatternArgs t == 0 || 
        typePatternArgs t == kindArity TopLevel kind then
        case mi of 
-	       Just ti -> addTypeKind ti kind
+	       Just ti -> addTypeKind NoTypeDefn ti kind
 	       Nothing -> appendDiags ds
        else appendDiags [Diag Error "non-matching kind arity"
 					    $ posOfTypePattern t]
+
+convertTypePatterns :: [TypePattern] -> Result [Id]
+convertTypePatterns [] = Result [] $ Just []
+convertTypePatterns (s:r) =
+    let Result d m = convertTypePattern s
+	Result ds (Just l) = convertTypePatterns r
+	in case m of 
+		  Nothing -> Result (d++ds) $ Just l
+		  Just i -> Result (d++ds) $ Just (i:l)
 
 convertTypePattern, makeMixTypeId :: TypePattern -> Result Id
 convertTypePattern (TypePattern t _ _) = return t

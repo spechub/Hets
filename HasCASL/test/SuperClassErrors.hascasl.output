@@ -7,8 +7,7 @@ g < a
 h = Type
 i = (g,a)
 Type Constructors
-t :Type
-Type Variables : t
+t :Type %(var)%
 Assumptions
 Warning (1,11) implicit declaration of superclass 'b'
 Warning (2,7) redeclared class 'b'
