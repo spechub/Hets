@@ -1,7 +1,11 @@
-*** Error , Case.hs:10,14:
-  In the declaration of silly:
-    Case.hs:10,14: (type check):
-      Case.hs:15,28:
-	In the declaration of x:
-	  Case.hs:15,28: (type check):
-	    Not in scope: last
+
+
+ ---- Type checking AModule "Case" ----
+
+
+
+ ---- the types of identifiers ---- 
+
+Case.1_silly :: [Int] -> Int
+Case.2_main :: (Int,Int)
+Case.6_x :: Int

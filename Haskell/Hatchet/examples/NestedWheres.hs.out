@@ -1,10 +1,16 @@
-*** Error , NestedWheres.hs:4,8:
-  In the declaration of main:
-    NestedWheres.hs:4,8: (type check):
-      NestedWheres.hs:8,25:
-	In the declaration of mapMyId:
-	  NestedWheres.hs:8,25: (type check):
-	    NestedWheres.hs:11,38:
-	      In the declaration of scramble:
-		NestedWheres.hs:11,38: (type check):
-		  Not in scope: fst
+
+
+ ---- Type checking AModule "Main" ----
+
+
+
+ ---- the types of identifiers ---- 
+
+Main.12_scramble :: (a,(b,c)) -> (b,(a,c))
+Main.13_myId :: (a,(b,c)) -> (a,(b,c))
+Main.1_inc :: Num a => a -> a
+Main.22_first :: (a,b) -> a
+Main.23_second :: (a,b) -> b
+Main.2_double :: Num a => a -> a
+Main.3_main :: ([([Char],(Integer -> Integer,Integer))],[(Char,(Integer,Integer -> Integer))])
+Main.6_mapMyId :: [(a,(b,c))] -> [(a,(b,c))]

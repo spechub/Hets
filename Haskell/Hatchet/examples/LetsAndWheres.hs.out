@@ -1,5 +1,17 @@
-*** Error , LetsAndWheres.hs:6,9:
-  In the declaration of foo:
-    Failed to resolve ambiguous overloading:
-    Num t197 from LetsAndWheres.hs:9,13:
-      Hmm. No defaults available?
+
+
+ ---- Type checking AModule "Main" ----
+
+
+
+ ---- the types of identifiers ---- 
+
+Main.10_z :: a
+Main.1_foo :: Num a => b -> a
+Main.2_main :: Integer
+Main.4_y :: a
+Main.5_w :: a
+Main.6_x :: a
+Main.7_y :: a
+Main.8_x :: a
+Main.9_y :: a
