@@ -41,6 +41,7 @@ import Pretty
 import PPUtils (fsep_latex, comma_latex)
 import Result
 import Id
+import Dynamic
 
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
@@ -92,6 +93,9 @@ data G_sign = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
   G_sign lid sign 
+
+instance Typeable G_sign where
+  typeOf _ = mkAppTy (mkTyCon "G_sign") []
 
 instance Eq G_sign where
   (G_sign i1 sigma1) == (G_sign i2 sigma2) =
@@ -289,6 +293,16 @@ data GMorphism = forall lid1 sublogics1
               symb_items2 symb_map_items2
               sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
    sign1 morphism2 
+{-
+  | forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+    GMHomInclusion lid sign sign
+  | GMHetInclusion G_sign G_sign
+-}
 
 instance Eq GMorphism where
   (GMorphism lid1 lid2 r1 sigma1 mor1) == (GMorphism lid3 lid4 r2 sigma2 mor2)

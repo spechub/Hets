@@ -30,6 +30,8 @@ import Lexer((<<))
 import qualified Sublogics
 import qualified Static
 
+import Dynamic
+
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data CASL = CASL deriving (Show)
@@ -128,6 +130,20 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          -- extend_morphism :: id -> Sign -> Morphism -> Sign -> Sign
          --               -> Result Morphism
          extend_morphism CASL _s m _s1 _s2 = return m
+
+instance Typeable Sublogics.CASL_Sublogics where
+  typeOf _ = mkAppTy (mkTyCon "CASL_Sublogics") []
+instance Typeable Sentence where
+  typeOf _ = mkAppTy (mkTyCon "Sentence") []
+instance Typeable Sign where
+  typeOf _ = mkAppTy (mkTyCon "Sign") []
+instance Typeable Morphism where
+  typeOf _ = mkAppTy (mkTyCon "Morphism") []
+instance Typeable Symbol where
+  typeOf _ = mkAppTy (mkTyCon "Symbol") []
+instance Typeable RawSymbol where
+  typeOf _ = mkAppTy (mkTyCon "RawSymbol") []
+
 
 instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS

@@ -17,6 +17,7 @@ module AS_Basic_CASL where
 
 import Id
 import AS_Annotation 
+import Dynamic
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -246,3 +247,10 @@ data SYMB_OR_MAP = Symb SYMB
 		 | Symb_map SYMB SYMB [Pos]
 		   -- pos: "|->"
 		   deriving (Show,Eq)
+
+instance Typeable BASIC_SPEC where
+  typeOf _ = mkAppTy (mkTyCon "BASIC_SPEC") []
+instance Typeable SYMB_ITEMS where
+  typeOf _ = mkAppTy (mkTyCon "SYMB_ITEMS") []
+instance Typeable SYMB_MAP_ITEMS where
+  typeOf _ = mkAppTy (mkTyCon "SYMB_MAP_ITEMS") []

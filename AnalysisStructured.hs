@@ -92,8 +92,8 @@ ana_SPEC gannos genv dg nsig name sp =
  case sp of
 
   Basic_spec (G_basic_spec lid bspec) ->
-    do Logic lid' <- return (getLogic nsig)
-       sigma <- rcoerce lid' lid nullPos (getSig nsig)
+    do G_sign lid' sigma' <- return (getSig nsig)
+       sigma <- rcoerce lid' lid nullPos sigma'
        b <- maybeToResult nullPos 
                 ("no basic analysis for logic "++language_name lid) 
                 (basic_analysis lid)

@@ -22,6 +22,7 @@ module LogicRepr where
 import Logic
 import FiniteSet
 import Maybe(catMaybes)
+import Dynamic
 
 -- Simple logic representations (possibly also morphisms via adjointness)
 
@@ -57,6 +58,18 @@ data (Logic lid1 sublogics1
                 map_symbol :: symbol1 -> Set symbol2
                   -- codings may be more complex
                }
+
+instance (Logic lid1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+      Logic lid2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
+  Typeable (LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
+  where
 
 instance (Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1

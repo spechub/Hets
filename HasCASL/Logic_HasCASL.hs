@@ -23,6 +23,7 @@ import SymbolParser
 import ParsecInterface
 import Logic
 import AnnoState(emptyAnnos)
+import Dynamic
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -60,6 +61,19 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
                Sign 
                Morphism 
                Symbol RawSymbol where
+
+instance Typeable HasCASL_Sublogics where
+  typeOf _ = mkAppTy (mkTyCon "HasCASL_Sublogics") []
+instance Typeable BasicSpec where
+  typeOf _ = mkAppTy (mkTyCon "BasicSpec") []
+instance Typeable Sentence where
+  typeOf _ = mkAppTy (mkTyCon "Sentence") []
+instance Typeable Morphism where
+  typeOf _ = mkAppTy (mkTyCon "Morphism") []
+instance Typeable Symbol where
+  typeOf _ = mkAppTy (mkTyCon "Symbol") []
+instance Typeable RawSymbol where
+  typeOf _ = mkAppTy (mkTyCon "RawSymbol") []
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS

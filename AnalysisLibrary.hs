@@ -55,19 +55,22 @@ ana_file1 logicGraph defaultLogic fname = do
 
 ana_file :: LogicGraph -> AnyLogic -> LibEnv -> LIB_NAME -> IO LibEnv
 ana_file logicGraph defaultLogic libenv libname = do
-  let fname = case getLIB_ID libname of
-               Indirect_link p _ -> p
-               Direct_link _ _ -> error "No direct links implemented yet"
-  putStrLn ("Reading " ++ (fname++".casl"))
-  input <- readFile (fname++".casl")
-  let ast = case runParser (library logicGraph) defaultLogic fname input of
-              Left err -> error (show err)
-              Right ast -> ast
-  Result diags res <- ioresToIO (ana_LIB_DEFN logicGraph defaultLogic libenv ast)
-  sequence (map (putStrLn . show) diags)
-  return (case res of 
-             Just (ln,dg,libenv') -> libenv'
-             Nothing -> libenv) 
+  case lookupFM libenv libname of
+   Just _ -> return libenv
+   Nothing -> do
+    let fname = case getLIB_ID libname of
+                 Indirect_link p _ -> p
+                 Direct_link _ _ -> error "No direct links implemented yet"
+    putStrLn ("Reading " ++ (fname++".casl"))
+    input <- readFile (fname++".casl")
+    let ast = case runParser (library logicGraph) defaultLogic fname input of
+                Left err -> error (show err)
+                Right ast -> ast
+    Result diags res <- ioresToIO (ana_LIB_DEFN logicGraph defaultLogic libenv ast)
+    sequence (map (putStrLn . show) diags)
+    return (case res of 
+               Just (ln,dg,libenv') -> libenv'
+               Nothing -> libenv) 
   
 
 ana_LIB_DEFN :: LogicGraph -> AnyLogic 

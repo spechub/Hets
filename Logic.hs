@@ -57,10 +57,10 @@ import FiniteSet
 import FiniteMap
 import Graph
 import Result
---import Parsec
 import Prover -- for one half of class Sentences
 -- import IOExts(trace)
 import PrettyPrint
+import Dynamic
 
 -- for coercion used in Grothendieck.hs and Analysis modules
 
@@ -81,15 +81,31 @@ class Show lid => Language lid where
     language_name i = show i
 
 -- (a bit unsafe) coercion using the language name
-coerce :: (Language lid1, Language lid2, Show a) => lid1 -> lid2 -> a -> Maybe b
+coerce :: (Typeable a, Typeable b, Language lid1, Language lid2, Show a) => 
+          lid1 -> lid2 -> a -> Maybe b
 coerce i1 i2 a = if language_name i1 == language_name i2 then 
-		 (Just $ unsafeCoerce a) else Nothing
+		 --fromDynamic (toDyn (a)) else Nothing
+                 (Just $ unsafeCoerce a) else Nothing
 
-rcoerce :: (Language lid1, Language lid2, Show a) => lid1 -> lid2 -> Pos-> a -> Result b
-rcoerce i1 i2 pos a = 
+rcoerce1 :: (Typeable a, Typeable b, Language lid1, Language lid2, Show a) => 
+           lid1 -> lid2 -> Pos-> a -> b -> Result b
+rcoerce1 i1 i2 pos a b = 
   maybeToResult pos 
-                ("Logic "++ language_name i1 ++ " expected, but "
-                            ++ language_name i2++" found")
+                (if language_name i1 == language_name i2 then 
+                   "Internal type error concerning types "++show (typeOf a)
+                     ++" and "++show(typeOf b)
+                  else "Logic "++ language_name i1 ++ " expected, but "
+                         ++ language_name i2++" found")
+                (coerce i1 i2 a)
+
+rcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2, Show a) => 
+           lid1 -> lid2 -> Pos-> a -> Result b
+rcoerce i1 i2 pos a = -- rcoerce1 i1 i2 pos a undefined
+  maybeToResult pos 
+                (if language_name i1 == language_name i2 then 
+                   "Internal type error concerning type "++show (typeOf a)
+                  else "Logic "++ language_name i1 ++ " expected, but "
+                         ++ language_name i2++" found")
                 (coerce i1 i2 a)
 
 -- Categories are given by a quotient,
@@ -206,7 +222,11 @@ class (Ord l, Show l) => LatticeWithTop l where
 class (StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
-       LatticeWithTop sublogics) =>
+       LatticeWithTop sublogics,
+       Typeable sublogics, Typeable basic_spec, Typeable sentence, 
+       Typeable symb_items, Typeable symb_map_items, Typeable sign, 
+       Typeable morphism, Typeable symbol, Typeable raw_symbol, 
+       Typeable proof_tree) =>
       Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
@@ -241,6 +261,13 @@ class (StaticAnalysis lid
          proj_sublogic_morphism :: lid -> sublogics -> morphism -> morphism
          proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
          proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
+
+
+instance Typeable a => Typeable (Set a) where
+  typeOf l = mkAppTy (mkTyCon "Set") []
+
+instance (Typeable a,Typeable b) => Typeable (FiniteMap a b) where
+  typeOf l = mkAppTy (mkTyCon "FiniteMap") []
 
 
 {- class hierarchy:
