@@ -11,7 +11,7 @@
 module Print_AS_Basic where
 
 -- debugging
--- import IOExts (trace)
+--import IOExts (trace)
 
 import List (mapAccumL)
 
@@ -25,9 +25,6 @@ import Print_AS_Annotation
 import Keywords
 import Pretty
 import PrettyPrint
-
---debugging 
--- import IOExts (trace)
 
 instance PrettyPrint BASIC_SPEC where
     printText0 ga (Basic_spec l) = 
@@ -192,8 +189,19 @@ instance PrettyPrint FORMULA where
     printText0 ga (True_atom _) = text trueS
     printText0 ga (False_atom _) = text falseS
     printText0 ga (Predication p l _) = 
-	printText0 ga p <> 
-         (if null l then empty else parens(commaT ga l))
+	let (id@(Id tops cs _),isQual) = 
+		case p of
+		       Pred_name i          -> (i,False)
+		       Qual_pred_name i _ _ -> (i,True)
+	    p' = printText0 ga p
+	in if isMixfix id then
+	      if isQual then 
+		 printText0_prefix_appl ga p' l
+	      else if length (filter isPlace tops) == length l then
+	                printText0_mixfix_appl ga tops cs l
+	           else 
+	                printText0_prefix_appl ga p' l
+	   else printText0_prefix_appl ga p' l
     printText0 ga (Definedness f _) = text defS <+> printText0 ga f
     printText0 ga (Existl_equation f g _) = printText0 ga f
 			     <+> text exEqual
@@ -226,35 +234,19 @@ instance PrettyPrint TERM where
 					     <> colon 
 					     <> printText0 ga t))
     printText0 ga (Application o l _) = 
-	let (id@(Id tops cs _),isQual) = case o of
-				    Op_name i -> (i,False)
-				    Qual_op_name i _ _ -> (i,True)
+	let (id@(Id tops cs _),isQual) = 
+		case o of
+		       Op_name i          -> (i,False)
+		       Qual_op_name i _ _ -> (i,True)
+	    o' = printText0 ga o
 	in if isMixfix id then
 	      if isQual then 
-		 prefix_appl
+		 printText0_prefix_appl ga o' l
 	      else if length (filter isPlace tops) == length l then
-	                mixfix_appl tops cs
+	                printText0_mixfix_appl ga tops cs l
 	           else 
-	                prefix_appl
-	   else prefix_appl
-	where  prefix_appl = printText0 ga o <> 
-			     (if null l then empty 
-			      else parens(commaT ga l))
-	       mixfix_appl tops cs = fsep nlI <+> c <+> fsep nlT
-		   where c = if null cs then empty 
-			     else fsep $ map (brackets . (printText0 ga)) cs
-	                 p@(topsI,topsT) = splitMixToken tops
-			 lI = take (length $ filter isPlace topsI) l
-			 lT = drop (length $ filter isPlace topsI) l
-			 nlI = fillIn topsI $ lI
-			 nlT = fillIn topsT $ lT
-			 fillIn tops ts = 
-			     let (_,nl) = mapAccumL pr ts tops in nl
-			 pr [] top = ([], ptext $ showTok top "")
-			 pr tS@(t:ts) top | isPlace top = 
-					      (ts,parens $ printText0 ga t)
-					  | otherwise   = 
-					      (tS,ptext $ showTok top "")
+	                printText0_prefix_appl ga o' l
+	   else printText0_prefix_appl ga o' l
     printText0 ga (Sorted_term t s _) = printText0 ga t
 					<+> (colon
 					     <> printText0 ga s)
@@ -285,6 +277,34 @@ instance PrettyPrint OP_SYMB where
 						<+> printText0 ga o
 						<+> (colon
 						     <> printText0 ga t))
+
+----------------------------------------------------------------------------
+-- Two helpers:
+-- one is printing consistent prefix application and predication
+-- the other one prints consitent mixfix application or predication
+printText0_prefix_appl :: GlobalAnnos -> Doc -> [TERM] -> Doc 
+printText0_prefix_appl ga po' l = po' <> 
+			     (if null l then empty 
+			      else parens(commaT ga l))
+
+printText0_mixfix_appl :: GlobalAnnos -> [TokenOrPlace] -> 
+			  [Id] -> [TERM] -> Doc
+printText0_mixfix_appl ga tops cs l = fsep nlI <+> c <+> fsep nlT
+		   where c = if null cs then empty 
+			     else fsep $ map (brackets . (printText0 ga)) cs
+	                 p@(topsI,topsT) = splitMixToken tops
+			 lI = take (length $ filter isPlace topsI) l
+			 lT = drop (length $ filter isPlace topsI) l
+			 nlI = fillIn topsI $ lI
+			 nlT = fillIn topsT $ lT
+			 fillIn tops ts = 
+			     let (_,nl) = mapAccumL pr ts tops in nl
+			 pr [] top = ([], ptext $ showTok top "")
+			 pr tS@(t:ts) top | isPlace top = 
+					      (ts,parens $ printText0 ga t)
+					  | otherwise   = 
+					      (tS,ptext $ showTok top "")
+----------------------------------------------------------------------------
 
 {- old stuff or new stuff who knows / cares
 ----------
