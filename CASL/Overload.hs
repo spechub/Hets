@@ -1,7 +1,7 @@
-{- |
-
+{- | 
+   
     Module      :  $Header$
-    Copyright   :  (c) Martin Kuehl, T. Mossakowski, C. Maeder, Uni Bremen 2004
+    Copyright   :  (c) Martin Kühl, T. Mossakowski, C. Maeder, Uni Bremen 2004
     Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
     Maintainer  :  hets@tzi.de
@@ -10,44 +10,48 @@
 
     Overload resolution
     Follows Sect. III:3.3 of the CASL Reference Manual.
-    The algorthim is from:
-      Till Mossakowski, Kolyang, Bernd Krieg-Brueckner:
-      Static semantic analysis and theorem proving for CASL.
-      12th Workshop on Algebraic Development Techniques, Tarquinia 1997,
-      LNCS 1376, p. 333-348
+    The algorthim is from
+    Till Mossakowski, Kolyang, Bernd Krieg-Brueckner: 
+    Static semantic analysis and theorem proving for CASL.
+    12th Workshop on Algebraic Development Techniques, Tarquinia 1997, 
+    LNCS 1376, p. 333-348
 -}
 
 module CASL.Overload where
 
-import CASL.Sign
-import CASL.AS_Basic_CASL
+import Debug.Trace
 
-import qualified Common.Lib.Map         as Map
-import qualified Common.Lib.Set         as Set
-import           Common.Lib.Pretty
-import           Common.Lib.State
+import CASL.Sign                -- Sign, OpType
+import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
+import Common.Result            -- Result
 
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Id      as Id
 import qualified Common.AS_Annotation   as Named
-import qualified Common.Id              as Id
-import           Common.GlobalAnnotations
-import           Common.ListUtils
-import           Common.PrettyPrint
-import           Common.Result
+import Common.GlobalAnnotations
+import Common.PrettyPrint
+import Common.Lib.Pretty
+import Common.Lib.State
+import Common.ListUtils
 
 import Data.Maybe
 
-{-  Outline:
-    - calculate global information from signature and pass it through
-    - recurse through sentences until atomic sentences are reached
-    - calculate expansions of atomic sentences
+{-
+    Idee: 
+    - global Infos aus Sign berechnen + mit durchreichen
+      (connected compenents, s.u.)
+    - rekursiv in FORMULA absteigen, bis atomare Formel erreicht wird
+    - atomaren Formeln mit minExpTerm behandeln
 -}
-
-{-  TODO-List:
+{-
+    TODO-List:
     * generalize 'is_unambiguous' (see 'choose') and make it available globally
     * replace 'case' statements w/ pattern matching where possible
     * generalize minExpFORMULA_pred/minExpTerm_op/minExpTerm_cond
     * utilize Sets instead of Lists
     * generalize pairing func.s to inl/inr
+    * check whether Qual_var expansion works as it is supposed to
     * generalize expansion for Qual_var and Sorted_term
     * move structural logic to higher levels, as e.g. in
         qualifyOps = map (map qualify_op) -- map should go somewhere above
@@ -57,793 +61,692 @@ import Data.Maybe
     * gemeralize minimize_* or implement locally - needed only in one f. each
     * use more let/in constructs (instead of where) to simulate workflow
 
-    To find more items or pitfalls, search this file for:
-      BEWARE
-      FIXME
-      TODO
-      XXX
+    * use common upper bounds for membership and projection
+          then re-include "BEWARE: Restriction to minimal...."
 -}
 
+{-----------------------------------------------------------
+    Overload Resolution
+-----------------------------------------------------------}
 
--- TODO: this ain't mine, somebody might need to explain it
 type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
 
+overloadResolution :: (Eq f, PrettyPrint f) =>
+                      Min f e -> GlobalAnnos -> Sign f e 
+			      -> [Named.Named (FORMULA f)]
+			      -> Result [Named.Named (FORMULA f)]
+overloadResolution mef ga sign  = mapM overload
+    where
+    overload sent = do
+        let sent' = Named.sentence sent
+        --debug 1 ("sent'",sent')
+        exp_sent    <- minExpFORMULA mef ga sign sent'
+        --debug 2 ("exp_sent",exp_sent)
+        return sent { Named.sentence = exp_sent }
 
 {-----------------------------------------------------------
-    - Overload Resolution -
-  Apply the algorithm for overload resolution described in
-    Till Mossakowski, Kolyang, Bernd Krieg-Brueckner:
-    Static semantic analysis and theorem proving for CASL.
-    12th Workshop on Algebraic Development Techniques, Tarquinia 1997,
-    LNCS 1376, p. 333-348
-  to all given formulae/sentences w.r.t. the given annotations and
-  signature.  All real work is done by 'minExpFORMULA', which is
-  applied to any given formula in turn.
+    Minimal Expansions of a FORMULA
 -----------------------------------------------------------}
-overloadResolution :: (Eq f, PrettyPrint f)     =>
-                      Min f e                   ->
-                      GlobalAnnos               ->
-                      Sign f e                  ->
-                      [Named.Named (FORMULA f)] ->
-                      Result [Named.Named (FORMULA f)]
-                      -- neat type signature, eh?
-overloadResolution mef ga sign = mapM overload
-    where overload sent = do sent'    <- return $ Named.sentence sent
-                             exp_sent <- minExpFORMULA mef ga sign sent'
-                             return sent { Named.sentence = exp_sent }
+minExpFORMULA :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
+                Sign f e -> (FORMULA f) -> Result (FORMULA f)
+minExpFORMULA mef ga sign formula
+    = case formula of
+        -- Trivial Atom         -> Return untouched
+        True_atom _     -> return formula                       -- :: FORMULA
+        False_atom _    -> return formula                       -- :: FORMULA
+	-- Non-Atomic FORMULA   -> Recurse through subFORMULAe
+	Quantification q vars f pos -> do
+            let (_, sign') = runState (mapM_ addVars vars) sign
+	    f' <- minExpFORMULA mef ga sign' f
+	    return $ Quantification q vars f' pos
+	Conjunction fs pos -> do
+	    fs' <- mapM (minExpFORMULA mef ga sign) fs
+	    return $ Conjunction fs' pos
+	Disjunction fs pos -> do
+	    fs' <- mapM (minExpFORMULA mef ga sign) fs
+	    return $ Disjunction fs' pos
+	Implication f1 f2 b pos -> do
+	    f1' <- minExpFORMULA mef ga sign f1
+	    f2' <- minExpFORMULA mef ga sign f2
+	    return $ Implication f1' f2' b pos
+	Equivalence f1 f2 pos -> do
+	    f1' <- minExpFORMULA mef ga sign f1
+	    f2' <- minExpFORMULA mef ga sign f2
+	    return $ Equivalence f1' f2' pos
+	Negation f pos -> do
+	    f' <- minExpFORMULA mef ga sign f
+	    return $ Negation f' pos
+        -- Atomic FORMULA      -> Check for Ambiguities
+        Predication predicate terms pos ->
+            minExpFORMULA_pred mef ga sign predicate terms pos  -- :: FORMULA
+        Definedness term pos            -> do
+            t   <- minExpTerm mef ga sign term                  -- :: [[TERM]]
+            --debug 4 ("t", t)
+            t'  <- is_unambiguous term t pos                         -- :: TERM
+            return $ Definedness t' pos                         -- :: FORMULA
+	Existl_equation term1 term2 pos ->
+            minExpFORMULA_eq mef ga sign Existl_equation term1 term2 pos
+        Strong_equation term1 term2 pos ->
+            minExpFORMULA_eq mef ga sign Strong_equation term1 term2 pos
+        Membership term sort pos        -> do
+            t   <- minExpTerm mef ga sign term                  -- :: [[TERM]]
+            t'  <- let leq_term [] = False
+                       leq_term (t1:_) =
+                        leq_SORT sign sort $ term_sort t1 
+                    in return $ filter leq_term t               -- :: TERM
+                
+            t'' <- is_unambiguous term t' pos                        -- :: [[TERM]]
+            return $ Membership t'' sort pos                    -- :: FORMULA
+	Sort_gen_ax _ _ -> return formula
+	ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
+	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
+            ++ (show formula)
 
-
-{-----------------------------------------------------------
-    - Minimal expansion of a formula -
-  Expand a given formula by typing information.
-  * For non-atomic formulae, recurse through subsentences.
-  * For trival atomic formulae, no expansion is neccessary.
-  * For atomic formulae, the following cases are implemented:
-    + Predication is handled by the dedicated expansion function
-      'minExpFORMULA_pred'.
-    + Existl_equation and Strong_equation are handled by the dedicated
-      expansion function 'minExpFORMULA_eq'.
-    + Definedness is handled by expanding the subterm.
-    + Membership is handled by expanding the subterm, followed by
-      checking the found expansions' appropriateness to the stated
-      Membership.
-    + TODO: I don't know about 'Sort_gen_ax' and 'ExtFORMULA'.
------------------------------------------------------------}
-minExpFORMULA :: (Eq f, PrettyPrint f) =>
-                 Min f e               ->
-                 GlobalAnnos           ->
-                 Sign f e              ->
-                 (FORMULA f)           ->
-                 Result (FORMULA f)
-minExpFORMULA mef ga sign formula = case formula of
-    --- Trivial atomic formula   -> return sentence unmodified
-    True_atom _     -> return formula
-    False_atom _    -> return formula
-    Sort_gen_ax _ _ -> return formula
-    --- Non-atomic formula       -> recurse through subsentences
-    Quantification q vars f pos -> do
-        -- add 'vars' to signature
-        (_, sign') <- return $ runState (mapM_ addVars vars) sign
-        -- expand subformula
-        f' <- minExpFORMULA mef ga sign' f
-        -- wrap 'Quantification' around expanded sentence
-        return (Quantification q vars f' pos)
-    Conjunction fs pos -> do
-        -- expand all subformulae
-        fs' <- mapM (minExpFORMULA mef ga sign) fs
-        -- wrap 'Conjunction' around expanded sentences
-        return (Conjunction fs' pos)
-    Disjunction fs pos -> do
-        -- expand all subformulae
-        fs' <- mapM (minExpFORMULA mef ga sign) fs
-        -- wrap 'Disjunction' around expanded sentences
-        return $ Disjunction fs' pos
-        -- TODO: reminds of 'Conjunction'...
-    Implication f1 f2 b pos -> do
-        -- expand all subformulae
-        f1' <- minExpFORMULA mef ga sign f1
-        f2' <- minExpFORMULA mef ga sign f2
-        -- wrap 'Implication' around expanded sentences
-        return (Implication f1' f2' b pos)
-    Equivalence f1 f2 pos -> do
-        -- expand all subformulae
-        f1' <- minExpFORMULA mef ga sign f1
-        f2' <- minExpFORMULA mef ga sign f2
-        -- wrap 'Equivalence' around expanded sentences
-        return (Equivalence f1' f2' pos)
-        -- TODO: reminds of 'Implication'...
-    Negation f pos -> do
-        -- expand subformula
-        f' <- minExpFORMULA mef ga sign f
-        -- wrap 'Negation' around expanded sentence
-        return (Negation f' pos)
-        -- TODO: reminds of ... all of the above
-    --- Atomic formula           -> expand and check for ambiguities
-    Predication predicate terms pos
-        -- pass information to dedicated helper function
-        -> minExpFORMULA_pred mef ga sign predicate terms pos
-    Existl_equation term1 term2 pos
-        -- pass information to dedicated helper function
-        -> minExpFORMULA_eq mef ga sign Existl_equation term1 term2 pos
-    Strong_equation term1 term2 pos
-        -- pass information to dedicated helper function
-        -> minExpFORMULA_eq mef ga sign Strong_equation term1 term2 pos
-    Definedness term pos -> do
-        -- expand subterm
-        t  <- minExpTerm mef ga sign term
-        -- check expansions for ambiguity
-        t' <- is_unambiguous term t pos
-        -- wrap 'Definedness' around expanded term
-        return (Definedness t' pos)
-    Membership term sort pos -> do
-        -- expand subterm
-        t   <- minExpTerm mef ga sign term
-        -- choose expansions that fulfill 'Membership' to the given 'sort'
-        t'  <- let leq_term [] = False
-                   leq_term (t1:_) = leq_SORT sign sort $ term_sort t1
-                in return $ filter leq_term t
-        -- check chosen expansions for ambiguity
-        t'' <- is_unambiguous term t' pos
-        -- wrap 'Membership' around expanded term
-        return (Membership t'' sort pos)
-    ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
-    --- unknown formula         -> signal error
-    _ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
-                 ++ (show formula)
-                 -- TODO: is there a nicer kind of error I can signal here?
-
-
-{-----------------------------------------------------------
-    - Check expanded terms for ambiguity -
-  Check, whether the given expansions contain ambiguity.
-  If so, return any of the equivalent expansions, otherwise, or in
-  case no correct expansions were found, signal an error.
------------------------------------------------------------}
-is_unambiguous :: (Eq f, PrettyPrint f) =>
-                  TERM f                ->
-                  [[TERM f]]            ->
-                  [Id.Pos]              ->
-                  Result (TERM f)
---- unambiguous expansion found -> return first expansion
-is_unambiguous _ ((term:_):_) _ = return term
--- TODO: pattern should read '((term:_):[])' to really filter ambiguities
---- no expansions found         -> signal error
-is_unambiguous topterm [] pos
-    = pplain_error (Unparsed_term "<error>" [])
-                   (ptext "No correct typing for " <+> (printText topterm))
+is_unambiguous :: (Eq f, PrettyPrint f) => TERM f -> [[TERM f]] 
+	       -> [Id.Pos] -> Result (TERM f)
+is_unambiguous topterm term pos = do
+            case term of
+                [] -> pplain_error (Unparsed_term "<error>" [])
+                   (ptext "No correct typing for " <+> printText topterm)
                    (Id.headPos pos)
---- ambiguous expansions found  -> signal error
-is_unambiguous _ term pos
-    = pplain_error (Unparsed_term "<error>" [])
-                   (ptext "Cannot disambiguate!\nPossible Expansions: "
-                     <+> (printText term))
-                   (Id.headPos pos)
-
+                (_:_):_   -> return $ head $ head $ term         -- :: TERM
+        -- BEWARE! Oversimplified disambiguation!
+                --(_:_):[]   -> return head $ head term           -- :: TERM
+                _       -> pplain_error (Unparsed_term "<error>" [])
+                    (ptext "Cannot disambiguate!\nPossible Expansions: "
+                     <+> (printText term)) (Id.headPos pos)
 
 {-----------------------------------------------------------
-    - Minimal expansion of a predication formula -
-  'minExpFORMULA_pred' erweitert eine Praedikatenanwendung um
-  Sorteninformationen. Sie geht dabei entsprechend dem Algorithmus (TODO:
-  Seitenzahl aus dem CASL-Reference-Manual herausfinden) vor.
-  Zuerst werden die Erweiterungen der Argument-Terme erzeugt. Fuer jede
-  moegliche Argumentenliste aus diesen Erweiterungen wird dann ein sog.
-  'Profil' erzeugt, welches zusaetzlich zu der Argumentenliste auch dazu
-  passende Typinformationen des Praedikates enthaelt. Zusaetzlich werden die
-  Argumente noch in Injektionen verpackt, damit sie genau auf die Signatur
-  des Profils passen. Diese Profile werden in Aequivalenzklassen aufgeteilt,
-  damit entschieden werden kann, ob die Erweiterungen eindeutig sind. In
-  diesem Fall wird eine der aequivalenten eindeutigen Erweiterungen gewaehlt
-  und zurueckgegeben.
-  This process is analogous to expanding a function application (s. below),
-  just with the minimization step being left out.
-  TODO: Documentation!
+    Minimal Expansions of a Predicate Application Formula
 -----------------------------------------------------------}
-minExpFORMULA_pred :: (Eq f, PrettyPrint f) =>
-                      Min f e               ->
-                      GlobalAnnos           ->
-                      Sign f e              ->
-                      PRED_SYMB             ->
-                      [TERM f]              ->
-                      [Id.Pos]              ->
-                      Result (FORMULA f)
+minExpFORMULA_pred :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
+                Sign f e -> PRED_SYMB -> [TERM f] -> [Id.Pos] 
+                -> Result (FORMULA f)
 minExpFORMULA_pred mef ga sign predicate terms pos = do
-    -- expand argument subterms
-    expansions <- mapM (minExpTerm mef ga sign) terms
-    -- permute expansions to get a list of argument-lists to the predicate
-    permuted_exps <- return (permute expansions)
-    -- convert each permutation to a profile (as descr. on p. XXX)
-    -- then inject arguments that don't match the predicate's expected type
-    profiles <- return $ map (map insert_injections)
-                       $ map get_profile
-                         permuted_exps
-    -- collect generated profiles into equivalence classes
-    p <- return $ concat
-                $ map (equivalence_Classes pred_eq)
-                  profiles
-    -- choose profile if unambiguous, otherwise signal error
-    p' <- choose p
-    -- transform chosen profile into a qualified predicate application
-    return (qualify_pred p')
-    where -- the predicate's name
-          name :: PRED_NAME
-          name = pred_name predicate
-          -- predicates matching that name in the current environment
-          preds :: [PredType]
-          preds = Set.toList
-                  $ Map.findWithDefault Set.empty name $ predMap sign
-          -- extract a predicate's name from its definition
-          pred_name :: PRED_SYMB -> PRED_NAME
-          pred_name (Pred_name name') = name'
-          pred_name (Qual_pred_name name' _ _) = name'
-          -- if an unambiguous class of expansions is found, choose its head
-          -- otherwise signal an error
-          --choose :: [[(PredType, [TERM f])]] -> Result (PredType, [TERM f])
-          -- TODO: Signature throws an Error that I don't understand...
-          choose ps = case ps of
-              (_:_):_ -> return $ head $ head ps
-              [] -> pplain_error (PredType [],[])
-                                 (ptext "No correct typing for "
-                                   <+> (printText ps))
-                                 (Id.headPos pos)
-              _   -> pplain_error (PredType [], terms)
-                                  (ptext "Cannot disambiguate! Term: "
-                                   <+> (printText (predicate, terms))
-                                   $$ ptext "Possible Expansions: "
-                                   <+> (printText ps))
-                                  (Id.headPos pos)
-          -- wrap qualified predication around predicate and its argument terms
-          qualify_pred :: (PredType, [TERM f]) -> FORMULA f
-          qualify_pred (pred', terms')
-              = (Predication (Qual_pred_name name (toPRED_TYPE pred') [])
-                             terms'
-                             pos)
-          -- generate profiles as descr. on p. XXX
-          get_profile :: [[TERM f]] -> [(PredType, [TERM f])]
-          get_profile cs = [ (pred', ts) |
-                             pred' <- preds,
-                             ts    <- (permute cs),
-                             zipped_all (leq_SORT sign)
-                             (map term_sort ts)
-                             (predArgs pred') ]
-          -- insert injections for all argument terms where neccessary
-          insert_injections :: (PredType, [TERM f]) -> (PredType, [TERM f])
-          insert_injections (pred', args)
-              = (pred', (zipWith inject args (predArgs pred')))
-          -- the equivalence relation for predicates as descr. on p. XXX
-          pred_eq :: (PredType, [TERM f]) -> (PredType, [TERM f]) -> Bool
-          -- * TODO: Documentation!
-          -- * neuer Algorithmus:
-          --   checken, ob Praedikatsymbole und Argument-Terme Aequivalent sind.
-          --   Fuer letzteres pro Argument-Position in expansions nachgucken.
-          --   Ditto. fuer Operationen!
-          pred_eq (pred1,ts1) (pred2,ts2)
-              = let   w1 = predArgs pred1
-                      w2 = predArgs pred2
-                      s1 = map term_sort ts1
-                      s2 = map term_sort ts2
-                      b1 = zipped_all (leq_SORT sign) s1 w1
-                      b2 = zipped_all (leq_SORT sign) s2 w2
-                      preds_equal = (pred1 == pred2)
-                      preds_equiv = leqP sign pred1 pred2
-                      types_equal = False -- and (zipWith (==) s1 s2)
-                      -- TODO: check whether argtypes are equal
-                  in  b1 && b2 && (preds_equal
-                                   || (preds_equiv
-                                       && types_equal))
+    expansions          <- mapM
+        (minExpTerm mef ga sign) terms          -- ::        [[[TERM]]]
+    --debug 5 ("expansions", expansions)
+    permuted_exps       <- return
+        $ permute expansions                    -- ::        [[[TERM]]]
+    profiles            <- return
+        $ map get_profile permuted_exps         -- ::  [[(PredType, [TERM])]]
+    --debug 6 ("profiles", profiles)
+    p                   <- return
+        $ concat                                -- ::  [[(PredType, [TERM])]]
+        $ map (equivalence_Classes pred_eq)     -- :: [[[(PredType, [TERM])]]]
+          profiles                              -- ::  [[(PredType, [TERM])]]
+    --debug 7 ("p", p)
+    p'                  <- choose p             -- ::    (PredType, [TERM])
+    return $ qualify_pred p'
+    where
+        name            :: PRED_NAME
+        name             = pred_name predicate
+        preds           :: [PredType]
+        preds            = Set.toList
+            $ Map.findWithDefault
+                Set.empty name $ (predMap sign)
+        pred_name       :: PRED_SYMB -> PRED_NAME
+        pred_name pred'  = case pred' of
+            (Pred_name name')           -> name'
+            (Qual_pred_name name' _ _)  -> name'
+--   choose :: [[(PredType, [TERM f])]] -> Result (PredType, [TERM f])
+        choose ps        = case ps of
+            [] -> pplain_error (PredType [],[])
+                   (ptext "No correct typing for" 
+		    <+> printText (Predication predicate terms pos))
+                   (Id.posOfId name)
+        -- BEWARE! Oversimplified disambiguation!
+            --(p:_):[] -> return p
+            (_:_):_ -> return $ head $ head ps
+            _   -> pplain_error (PredType [], terms)
+                   (ptext "Cannot disambiguate! Term: " 
+                    <+> (printText (predicate, terms))
+                    $$ ptext "Possible Expansions: " 
+                    <+> (printText ps)) (Id.posOfId name)
+        qualify_pred    :: (PredType, [TERM f]) -> FORMULA f
+        qualify_pred (pred', terms')
+            = (Predication                                      -- :: FORMULA
+                (Qual_pred_name name (toPRED_TYPE pred') [])    -- :: PRED_SYMB
+                terms'                                          -- :: [TERM]
+                pos)                                            -- :: [Pos]
+        get_profile     :: [[TERM f]] -> [(PredType, [TERM f])]
+        get_profile cs
+            = [ (pred', ts) |
+                pred' <- preds,                                 -- :: PredType
+                ts <- (permute cs),                             -- ::  [TERM]
+                zipped_all (leq_SORT sign)                      -- ::   Bool
+                    (map term_sort ts)                          -- ::  [SORT]
+                    (predArgs pred') ]                          -- ::  [SORT]
+        pred_eq         :: (PredType, [TERM f]) -> (PredType, [TERM f]) -> Bool
+{- todo
+   Doku
 
+   neuer Algorithmus:
+   checken, ob Prädikatsymbole und Argument-Terme äquivalent sind.
+   Für letzteres pro Argument-Position in expansions nachgucken.
+   Dto. für Operationen.
 
--- Handy shortcut for the type signature of 'Existl_equation' et al.
-type Eq_constructor f = TERM f -> TERM f -> [Id.Pos] -> FORMULA f
+   Injektionen: op:w->s(t_i) : s'   ---->  "_inj":s->s'(op:w->s(t_i)) : s'
+-}
+        pred_eq (pred1,ts1) (pred2,ts2)
+            = let   w1 = predArgs pred1                         -- :: [SORT]
+                    w2 = predArgs pred2                         -- :: [SORT]
+                    s1 = map term_sort ts1                      -- :: [SORT]
+                    s2 = map term_sort ts2                      -- :: [SORT]
+                    b1 = zipped_all (leq_SORT sign) s1 w1       -- ::  Bool
+                    b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
+                    preds_equal = (pred1 == pred2)              -- ::  Bool
+                    preds_equiv = leqP sign pred1 pred2         -- ::  Bool
+                    types_equal = False -- and (zipWith (==) s1 s2) -- ::  Bool
+                in  b1 && b2 && (preds_equal
+                                 || (preds_equiv
+                                     && types_equal))
 
 {-----------------------------------------------------------
-    - Minimal expansion of an equation formula -
-  Expand an equation formula by typing information.
-  Expand all subterms w.r.t. the given environment, then find pairs of
-  expansions that belong to a common supersort.  Check these pairs for
-  ambiguity and, if none is found, wrap them into an equation formula
-  specified by the given 'Eq_constructor'.  If no correct expansions
-  are found or the found expansions are ambiguous, signal an error.
+    Minimal Expansions of a Strong/Existl. Equation Formula
 -----------------------------------------------------------}
-minExpFORMULA_eq :: (Eq f, PrettyPrint f) =>
-                    Min f e               ->
-                    GlobalAnnos           ->
-                    Sign f e              ->
-                    Eq_constructor f      ->
-                    TERM f                ->
-                    TERM f                ->
-                    [Id.Pos]              ->
-                    Result (FORMULA f)
+minExpFORMULA_eq :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
+                Sign f e -> (TERM f -> TERM f -> [Id.Pos] -> FORMULA f)
+                    -> TERM f -> TERM f -> [Id.Pos] -> Result (FORMULA f)
 minExpFORMULA_eq mef ga sign eq term1 term2 pos = do
-    -- expand subterms
-    exps1 <- minExpTerm mef ga sign term1
-    exps2 <- minExpTerm mef ga sign term2
-    -- choose head of any generated equivalence class, wrap into pairs
-    pairs <- return (permute [catMaybes (map maybeHead exps1),
-                              catMaybes (map maybeHead exps2)])
-    -- choose pairs that belong to a common supersort
-    candidates <- return (filter fit pairs)
-    -- check candidate pairs for ambiguity
+    exps1       <- minExpTerm mef ga sign term1                -- :: [[TERM]]
+    exps2       <- minExpTerm mef ga sign term2                -- :: [[TERM]]
+    --debug 1 ("exps1",exps1)
+    --debug 2 ("exps2",exps2)
+    pairs       <- return
+        $ permute [catMaybes (map maybeHead exps1), 
+                   catMaybes (map maybeHead exps2)]  -- :: [[TERM]]
+    --debug 3 ("pairs",pairs)
+    candidates  <- return
+        $ filter fit pairs                              -- :: [[TERM]]
+    --debug 3 ("candidates",candidates)
     case candidates of
-        -- unambiguous expansion found -> wrap 'eq' around expansions
-        ([t1,t2]:_) -> return (eq t1 t2 pos)
-        -- no expansions found         -> signal error
         [] -> pplain_error (eq term1 term2 pos)
-                           (ptext "No correct typing for "
-                             <+> printText (eq term1 term2 pos))
-                           (Id.headPos pos)
-        -- ambiguous expansions found  -> signal error
-        _ -> pplain_error (eq term1 term2 pos)
-                          (ptext "Cannot disambiguate! Possible Expansions: "
-                            <+> (printText exps1) $$ (printText exps2))
-                          (Id.headPos pos)
-    where -- True if the sorts of all given terms have a common supersort
-          fit :: [TERM f] -> Bool
-          fit = (have_common_supersorts sign) . (map term_sort)
-          -- 'Just . head' if there is a head, 'Nothing' else
-          maybeHead :: [a] -> Maybe a
-          maybeHead (x:_) = Just x
-          maybeHead _ = Nothing
-
-
-{-----------------------------------------------------------
-    - Minimal expansion of a term -
-  Expand a given term by typing information.
-  * 'Simple_id' terms are handled by 'minExpTerm_simple'.
-  * 'Qual_var' terms are handled by 'minExpTerm_qual'.
-  * 'Application' terms are handled by 'minExpTerm_op'.
-  * 'Sorted_term' terms are handled by 'minExpTerm_sorted'.
-  * 'Cast' terms are handled by 'minExpTerm_cast'.
-  * 'Conditional' terms are handled by 'minExpTerm_cond'.
------------------------------------------------------------}
-minExpTerm :: (Eq f, PrettyPrint f) =>
-              Min f e               ->
-              GlobalAnnos           ->
-              Sign f e              ->
-              TERM f                ->
-              Result [[TERM f]]
-minExpTerm mef ga sign (Simple_id var)
-    = minExpTerm_simple sign var
-    -- TODO: what about 'mef' and 'ga'?
-minExpTerm mef ga sign (Qual_var var sort pos)
-    = minExpTerm_qual sign var sort pos
-    -- TODO: what about 'mef' and 'ga'?
-minExpTerm mef ga sign (Application op terms pos)
-    = minExpTerm_op mef ga sign op terms pos
-minExpTerm mef ga sign (Sorted_term term sort pos)
-    = minExpTerm_sorted mef ga sign term sort pos
-minExpTerm mef ga sign (Cast term sort pos)
-    = minExpTerm_cast mef ga sign term sort pos
-minExpTerm mef ga sign (Conditional term1 formula term2 pos)
-    = minExpTerm_cond mef ga sign term1 formula term2 pos
-minExpTerm mef ga sign _
-    = error "minExpTerm"
-    -- TODO: is there a nicer kind of error I can signal here?
-
+               (ptext "No correct typing for " 
+		<+> printText (eq term1 term2 pos))
+               (Id.headPos pos)
+        -- BEWARE! Oversimplified disambiguation!
+        ([t1,t2]:_)       -> return $ eq t1 t2 pos
+        --([t1,t2]:[])       -> return $ eq t1 t2 pos
+        _               -> pplain_error (eq term1 term2 pos)
+            (ptext "Cannot disambiguate! Possible Expansions: "
+             <+> (printText exps1) $$ (printText exps2)) (Id.headPos pos)
+    where
+        fit     :: [TERM f] -> Bool
+        fit      = (have_common_supersorts sign) . (map term_sort)
+        maybeHead :: [a] -> Maybe a
+        maybeHead (x:_) = Just x
+        maybeHead _ = Nothing
 
 {-----------------------------------------------------------
-    - Minimal expansion of a simple identifier -
-  Expand a simple identifier by typing information.
-  Look up the given identifier in the given environment (as a variable
-  or a constant).  Sort the found definitions into equivalence
-  classes, then construct a qualified term from each.
+    Minimal Expansions of a TERM
 -----------------------------------------------------------}
-minExpTerm_simple :: Sign f e     ->
-                     Id.SIMPLE_ID ->
-                     Result [[TERM f]]
+minExpTerm :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
+                Sign f e -> TERM f -> Result [[TERM f]]
+minExpTerm mef ga sign term'
+ = do -- debug 6 ("term'",term')
+      u <- case term' of
+        Simple_id var
+            -> minExpTerm_simple sign var
+        Qual_var var sort pos
+            -> minExpTerm_qual sign var sort pos
+        Application op terms pos
+            -> minExpTerm_op mef ga sign op terms pos
+        Sorted_term term sort pos
+            -> minExpTerm_sorted mef ga sign term sort pos
+        Cast term sort pos
+            -> minExpTerm_cast mef ga sign term sort pos
+        Conditional term1 formula term2 pos
+            -> minExpTerm_cond mef ga sign term1 formula term2 pos
+        _   -> error "minExpTerm"
+      return u
+
+{-----------------------------------------------------------
+    Minimal Expansions of a Simple_id Term
+-----------------------------------------------------------}
+minExpTerm_simple :: 
+                Sign f e -> Id.SIMPLE_ID -> Result [[TERM f]]
 minExpTerm_simple sign var = do
-    -- look up identifier as variable in environment
-    vars <- return (Map.findWithDefault Set.empty var (varMap sign))
-    -- get name of identifier
-    name <- return (Id.simpleIdToId var)
-    -- look up constant matching name in environment
-    ops' <- return $ Set.filter is_const_op
-                   $ Map.findWithDefault Set.empty name (opMap sign)
-    ops <- return (Set.image opRes ops')
-    cs <- return (Set.union vars ops)
-    least <- return
+    vars        <- return
+        $ Map.findWithDefault                   -- :: Set.Set SORT
+            Set.empty var (varMap sign)
+    ops'        <- return
+        $ (Set.filter is_const_op)              -- :: Set.Set OpType
+        $ Map.findWithDefault                   -- :: Set.Set OpType
+            Set.empty name (opMap sign)
+    ops         <- return
+        $ Set.fromList                          -- :: Set.Set SORT
+        $ (map opRes)                           -- :: [SORT]
+        $ Set.toList                            -- :: [OpType]
+            ops'                                -- :: Set.Set OpType
+        -- maybe use Set.fold instead of List.map?
+    cs          <- return
+        $ Set.union vars ops                    -- :: Set.Set SORT
+    least       <- return
     -- BEWARE: Restriction to minimal sorts is not correct
     --         in case of downcasts: here, it may be the
     --         case that the cast is only correct for non-minimal sorts!
         $ {-Set.filter (is_least_sort cs)-} cs      -- :: Set.Set SORT
-    return $ qualifyTerms []
-           $ (equivalence_Classes eq)
-           $ map pair_with_id
-           $ Set.toList least
-    -- FIXME: Christian states that the result must be an
-    --        'Application' if var is indeed a constant!
-    where -- True if operation takes no arguments (i.e. op is a constant)
-          is_const_op :: OpType -> Bool
-          is_const_op = null . opArgs
-          -- True if given set of sorts contains no subsort of the given sort
-          is_least_sort :: Set.Set SORT -> SORT -> Bool
-          is_least_sort ss s
-              = Set.size (Set.intersection ss (subsortsOf s sign)) == 1
-          -- True if of the given sorts is a supersort of the other
-          eq = xeq_TUPLE sign
-          -- wrap 'Qual_var' and the current identifier around the given sort
-          pair_with_id :: SORT -> (TERM f, SORT)
-          pair_with_id sort = ((Qual_var var sort []), sort)
-
+    return
+        $ qualifyTerms []                       -- :: [[TERM]]
+        $ (equivalence_Classes eq)              -- :: [[(TERM, SORT)]]
+        $ map pair_with_id                      -- :: [(TERM, SORT)]
+        $ Set.toList least                      -- :: [SORT]
+    where
+        name                    :: Id.Id
+        name                     = Id.simpleIdToId var
+        is_const_op             :: OpType -> Bool
+        is_const_op op           = (null . opArgs) op
+        is_least_sort           :: Set.Set SORT -> SORT -> Bool
+        is_least_sort ss s
+            = Set.size (Set.intersection ss (subsortsOf s sign)) == 1
+        eq                       = xeq_TUPLE sign
+        pair_with_id            :: SORT -> (TERM f, SORT)
+        pair_with_id sort | isVar sort = ((Qual_var var sort []), sort)
+                          | otherwise = (Application (Qual_op_name name (Total_op_type [] sort [] )[]) [] [],sort)  -- should deal with partial constants as well!!!!
+        isVar                   :: SORT -> Bool
+        isVar s = s `Set.member` 
+                      maybe Set.empty id (Map.lookup var (varMap sign))
 
 {-----------------------------------------------------------
-    - Minimal expansion of a qualified variable -
-  Expand a qualified identifier by typing information.
-  First expand the identifier, disregarding the given qualification.
-  Then choose only expansions that satisfy that qualification, and
-  wrap the typing information around them.
+    Minimal Expansions of a Qual_var Term
 -----------------------------------------------------------}
-minExpTerm_qual :: Sign f e ->
-                   VAR      ->
-                   SORT     ->
-                   [Id.Pos] ->
-                   Result [[TERM f]]
+minExpTerm_qual :: 
+                Sign f e -> VAR -> SORT -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_qual sign var sort pos = do
-    -- expand subterm
-    expandedVar <- minExpTerm_simple sign var
-    -- choose expansions that fit the given signature, then qualify
-    return $ qualifyTerms pos
-           $ map selectExpansions expandedVar
-    where -- True if identifier and sort match the current signature
-          fits :: TERM f -> Bool
-          fits term = case term of
-              (Sorted_term (Qual_var var' _ _) sort' _)
-                  -> (var == var') && (sort == sort')
-              _   -> error "minExpTerm_qual: unsorted TERM after expansion"
-          -- TODO: this type-checking might be too restrictive, see 'term_sort'
-          -- choose all given terms that satisfy 'fits'
-          selectExpansions :: [TERM f] -> [(TERM f, SORT)]
-          selectExpansions c = [ ((Qual_var var sort []), sort) |
-                                 sorted <- c,
-                                 fits sorted ]
-          -- TODO: this looks very wrong, doesn't it?
-
+    expandedVar <- minExpTerm_simple sign var   -- :: [[TERM]]
+    return
+        $ qualifyTerms pos                      -- :: [[TERM]]
+        $ map selectExpansions expandedVar      -- :: [[(TERM, SORT)]]
+    where
+        fits                    :: TERM f -> Bool
+        fits term                = case term of
+            (Sorted_term (Qual_var var' _ _) sort' _)
+                -> (var == var') && (sort == sort')
+            _   -> error "minExpTerm_qual: unsorted TERM after expansion"
+        selectExpansions        :: [TERM f] -> [(TERM f, SORT)]
+        selectExpansions c
+            = [ ((Qual_var var sort []), sort) |       -- :: (TERM, SORT)
+                sorted <- c,                    -- :: TERM
+                fits sorted ]                   -- :: Bool
 
 {-----------------------------------------------------------
-    - Minimal expansion of a sorted term -
-  Expand a sorted term by typing information.
-  First expand the subterm, disregarding the given qualification.
-  Then choose only expansions that satisfy that qualification, and
-  wrap the typing information around them.
+    Minimal Expansions of a Sorted_term Term
 -----------------------------------------------------------}
-minExpTerm_sorted :: (Eq f, PrettyPrint f) =>
-                     Min f e               ->
-                     GlobalAnnos           ->
-                     Sign f e              ->
-                     TERM f                ->
-                     SORT                  ->
-                     [Id.Pos]              ->
-                     Result [[TERM f]]
+minExpTerm_sorted :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
+                Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_sorted mef ga sign term sort pos = do
-    -- expand subterm
-    expandedTerm <- minExpTerm mef ga sign term
-    -- choose expansions that fit the given signature, then qualify
-    return $ qualifyTerms pos
-           $ map selectExpansions expandedTerm
-    where -- choose all given terms that match the current sort
-          selectExpansions :: [TERM f] -> [(TERM f, SORT)]
-          selectExpansions c = [ (sorted, sort) |
-                                 sorted <- c,
-                                 term_sort sorted == sort ]
-
-
-{-----------------------------------------------------------
-    - Minimal expansion of a function application -
-  Expand a function application by typing information.
------------------------------------------------------------}
-minExpTerm_op :: (Eq f, PrettyPrint f) =>
-                 Min f e               ->
-                 GlobalAnnos           ->
-                 Sign f e              ->
-                 OP_SYMB               ->
-                 [TERM f]              ->
-                 [Id.Pos]              ->
-                 Result [[TERM f]]
--- If the op is indeed a constant, expand it as a simple identifier
-minExpTerm_op _ _ sign (Op_name (Id.Id [tok] [] _)) [] _
-    = minExpTerm_simple sign tok
--- FIXME: Christian states that the above is too restrictive.
---        It should probably expand into an application again...
-minExpTerm_op mef ga sign op terms pos = do
-    -- expand argument subterms
-    expansions <- mapM (minExpTerm mef ga sign) terms
-    -- permute expansions to get a list of argument-lists to the function
-    permuted_exps <- return (permute expansions)
-    -- convert each permutation to a profile (as descr. on p. XXX)
-    -- then inject arguments that don't match the function's expected type
-    profiles <- return $ map (map insert_injections)
-                       $ map get_profile permuted_exps
-    -- collect generated profiles into equivalence classes
-    p <- return $ concat
-                $ map (equivalence_Classes op_eq)
-                  profiles
-    -- minimize generated equivalence classes (as descr. on p. XXX)
-    p' <- return (map (minimize_op sign) p)
-    -- transform minimized eq.classes into qualified function application terms
-    return $ qualifyTerms pos
-           $ qualifyOps p'
-    where -- the function's name
-          name :: OP_NAME
-          name = op_name op
-          -- functions matching that name in the current environment
-          ops :: [OpType]
-          ops = Set.toList $ Map.findWithDefault Set.empty name $ (opMap sign)
-          -- extract a function's name from its definition
-          op_name :: OP_SYMB -> OP_NAME
-          op_name (Op_name name') = name'
-          op_name (Qual_op_name name' _ _) = name'
-          -- extract a function's signature from its definition
-          op_type :: OP_SYMB -> OP_TYPE
-          op_type (Op_name _) = error "unqualified op"
-          -- TODO: is there a nicer kind of error I can signal here?
-          op_type (Qual_op_name _ type' _) = type'
-          -- qualify all ops in a list of eq.classes of ops
-          qualifyOps :: [[(OpType, [TERM f])]] -> [[(TERM f, SORT)]]
-          qualifyOps = map (map qualify_op)
-          -- qualify a single op, given by its signature and its arguments
-          qualify_op :: (OpType, [TERM f]) -> (TERM f, SORT)
-          qualify_op (op', terms')
-              = ((Application (Qual_op_name name (toOP_TYPE op') [])
-                              terms'
-                              [])
-                , (opRes op'))
-          -- generate profiles as descr. on p. XXX
-          get_profile :: [[TERM f]] -> [(OpType, [TERM f])]
-          get_profile cs = [ (op', ts) |
-                             op' <- ops,
-                             ts  <- (permute cs),
-                             zipped_all (leq_SORT sign)
-                             (map term_sort ts)
-                             (opArgs op') ]
-          -- insert injections for all argument terms where neccessary
-          insert_injections :: (OpType, [TERM f]) -> (OpType, [TERM f])
-          insert_injections (op', args)
-              = (op', (zipWith inject args (opArgs op')))
-          -- the equivalence relation for functions as descr. on p. XXX
-          op_eq :: (OpType, [TERM f]) -> (OpType, [TERM f]) -> Bool
-          op_eq (op1,ts1) (op2,ts2)
-              = let w1 = opArgs op1
-                    w2 = opArgs op2
-                    s1 = map term_sort ts1
-                    s2 = map term_sort ts2
-                    b1 = zipped_all (leq_SORT sign) s1 w1
-                    b2 = zipped_all (leq_SORT sign) s2 w2
-                    ops_equal = (op1 == op2)
-                    ops_equiv = leqF sign op1 op2
-                    types_equal = False -- and (zipWith (==) s1 s2)
-                    -- TODO: check whether arg.types are equal
-                 in b1 && b2 && (ops_equal
-                                 || (ops_equiv
-                                     && types_equal))
-
+    expandedTerm <- minExpTerm mef ga sign term   -- :: [[TERM]]
+    --debug 7 ("expandedTerm", expandedTerm)
+    return
+        $ qualifyTerms pos                      -- :: [[TERM]]
+        $ map selectExpansions expandedTerm     -- :: [[(TERM, SORT)]]
+    where
+        selectExpansions        :: [TERM f] -> [(TERM f, SORT)]
+        selectExpansions c
+            = [ (sorted, sort) |                   -- :: (TERM, SORT)
+                sorted <- c,                       -- :: TERM
+                term_sort sorted == sort ]         -- :: Bool
 
 {-----------------------------------------------------------
-    - Minimal expansion of a type-cast -
-  Expand a type-cast by typing information.
-  First expand the contained subterm.  Of the generated expansions,
-  choose those that are of a subsort of the given target sort.
-  Qualify the chosen expansions as terms of the target sort.
+    Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
-minExpTerm_cast :: (Eq f, PrettyPrint f) =>
-                   Min f e               ->
-                   GlobalAnnos           ->
-                   Sign f e              ->
-                   TERM f                ->
-                   SORT                  ->
-                   [Id.Pos]              ->
-                   Result [[TERM f]]
+minExpTerm_op :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
+              Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
+minExpTerm_op _ _ sign (Op_name (Id.Id [tok] [] _)) [] _ = 
+  minExpTerm_simple sign tok
+minExpTerm_op mef ga sign op terms pos = 
+    minExpTerm_op1 mef ga sign op terms pos
+
+minExpTerm_op1 :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
+               Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
+minExpTerm_op1 mef ga sign op terms pos = do
+    --debug 3 ("op",op)
+    --debug 3 ("terms",show terms)
+    expansions          <- mapM
+        (minExpTerm mef ga sign) terms          -- ::       [[[TERM]]]
+    --debug 9 ("expansions", expansions)
+    permuted_exps       <- return
+        $ permute expansions                    -- ::       [[[TERM]]]
+    profiles            <- return
+        $ map get_profile permuted_exps         -- ::  [[(OpType, [TERM])]]
+    --debug 10 ("profiles", profiles)
+    p                   <- return
+        $ concat                                -- ::  [[(OpType, [TERM])]]
+        $ map (equivalence_Classes op_eq)       -- :: [[[(OpType, [TERM])]]]
+          profiles                              -- ::  [[(OpType, [TERM])]]
+    --debug 3 ("p",show p)
+    p'                  <- return
+        $ map (minimize_op sign) p              -- ::  [[(OpType, [TERM])]]
+{- debug 3 ("p'",show p')
+   debug 3 (" qualifyOps p'",show $  qualifyOps p')
+   debug 3 ("qualifyTerms pos $ qualifyOps p'",
+      show $ qualifyTerms pos $ qualifyOps p')
+-}
+    return
+        $ qualifyTerms pos                      -- ::        [[TERM]]
+        $ qualifyOps p'                         -- ::    [[(TERM, SORT)]]
+    where
+        name            :: OP_NAME
+        name             = op_name op
+        result          :: SORT
+        result           = opRes $ toOpType $ op_type op
+        ops             :: [OpType]
+        ops              = Set.toList
+            $ Map.findWithDefault
+                Set.empty name $ (opMap sign)
+        op_name         :: OP_SYMB -> OP_NAME
+        op_name op'      = case op' of
+            (Op_name name')             -> name'
+            (Qual_op_name name' _ _)    -> name'
+        op_type         :: OP_SYMB -> OP_TYPE
+        op_type (Op_name _)                     = error "unqualified op"
+        op_type (Qual_op_name _ type' _)        = type'
+        qualifyOps      :: [[(OpType, [TERM f])]] -> [[(TERM f, SORT)]]
+        qualifyOps       = map (map qualify_op)
+        qualify_op      :: (OpType, [TERM f]) -> (TERM f, SORT)
+        qualify_op (op', terms')
+            | True -- result == (opRes op')
+                = ((Application                                 -- ::  TERM
+                    (Qual_op_name name (toOP_TYPE op') [])      -- :: OP_SYMB
+                    terms'                                      -- :: [TERM]
+                    [])                                         -- :: [Pos]
+                  , (opRes op'))                                -- ::  SORT
+            | otherwise
+                = ((Application
+                    (injOpSymb (opRes op') result)
+                    [(Application
+                      (Qual_op_name name (toOP_TYPE op') [])
+                      terms' [])]
+                    [])
+                  , result)
+        get_profile     :: [[TERM f]] -> [(OpType, [TERM f])]
+        get_profile cs
+            = [ (op', ts) |                             -- :: (OpType, [TERM])
+                op'     <- ops,                         -- ::  OpType
+                ts      <- (permute cs),                -- ::  [TERM]
+                zipped_all (leq_SORT sign)              -- ::   Bool
+                    (map term_sort ts)                  -- ::  [SORT]
+                    (opArgs op') ]                      -- ::  [SORT]
+        op_eq           :: (OpType, [TERM f]) -> (OpType, [TERM f]) -> Bool
+        op_eq (op1,ts1) (op2,ts2)
+            = let   w1 = opArgs op1                             -- :: [SORT]
+                    w2 = opArgs op2                             -- :: [SORT]
+                    s1 = map term_sort ts1                      -- :: [SORT]
+                    s2 = map term_sort ts2                      -- :: [SORT]
+                    b1 = zipped_all (leq_SORT sign) s1 w1       -- ::  Bool
+                    b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
+                    ops_equal = (op1 == op2)                    -- ::  Bool
+                    ops_equiv = leqF sign op1 op2               -- ::  Bool
+                    types_equal = False -- and (zipWith (==) s1 s2) -- ::  Bool
+                in  b1 && b2 && (ops_equal
+                                || (ops_equiv
+                                    && types_equal))
+
+{-----------------------------------------------------------
+    Minimal Expansions of a Cast Term
+-----------------------------------------------------------}
+minExpTerm_cast :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
+                Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
 minExpTerm_cast mef ga sign term sort pos = do
-    -- expand subterm
-    expandedTerm <- minExpTerm mef ga sign term
-    -- choose only expansions that are subsorts of the given sort
-    validExps <- return $ map (filter (leq_SORT sign sort . term_sort))
-                          expandedTerm
-    -- pair expansions w/ the given sort, then wrap qualification around
-    return $ qualifyTerms pos
-           $ map (map (\ t -> (t, sort))) validExps
-
+    expandedTerm <- minExpTerm mef ga sign term         -- :: [[TERM]]
+    --debug 1 ("expandedTerm",expandedTerm)
+    validExps    <- return
+        $ map (filter (leq_SORT sign sort . term_sort)) -- ::  [[TERM]]
+        $ expandedTerm                                  -- ::  [[TERM]]
+    --debug 2 ("validExps",validExps)
+    return
+        $ qualifyTerms pos                              -- :: [[TERM]]
+        $ map (map (\ t -> (Cast t sort pos, sort))) validExps        -- :: [[(TERM, SORT)]]
 
 {-----------------------------------------------------------
-    - Minimal expansion of a conditional -
-  Expand a conditional by typing information.
+    Minimal Expansions of a Conditional Term
 -----------------------------------------------------------}
-minExpTerm_cond :: (Eq f, PrettyPrint f) =>
-                   Min f e               ->
-                   GlobalAnnos           ->
-                   Sign f e              ->
-                   TERM f                ->
-                   FORMULA f             ->
-                   TERM f                ->
-                   [Id.Pos]              ->
-                   Result [[TERM f]]
+minExpTerm_cond :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos ->
+                Sign f e -> TERM f -> FORMULA f -> TERM f -> [Id.Pos]
+                -> Result [[TERM f]]
 minExpTerm_cond  mef ga sign term1 formula term2 pos = do
-    -- expand both subterms and the subsentence
-    expansions1      <- minExpTerm mef ga sign term1
-    expansions2      <- minExpTerm mef ga sign term2
-    expanded_formula <- minExpFORMULA mef ga sign formula
-    -- permute stuff
-    permuted_exps <- return (permute [expansions1, expansions2])
-    profiles <- return (map get_profile permuted_exps)
-    p <- return (concat (map (equivalence_Classes eq) profiles))
-    p' <- return (map (minimize_cond sign) p)
-    return $ qualifyTerms pos
-           $ qualifyConds expanded_formula p'
-    where -- TODO
-          have_supersort :: [TERM f] -> Bool
-          have_supersort = not . Set.isEmpty . supersorts
-          supersorts :: [TERM f] -> Set.Set SORT
-          supersorts = common_supersorts sign . map term_sort
-          eq = xeq_TUPLE sign
-          qualifyConds :: FORMULA f ->
-                          [[([TERM f], SORT)]] ->
-                          [[(TERM f, SORT)]]
-          qualifyConds f = map $ map (qualify_cond f)
-          qualify_cond :: FORMULA f ->
-                          ([TERM f], SORT) ->
-                          (TERM f, SORT)
-          qualify_cond f (ts, s) = case ts of
-              [t1, t2] -> (Conditional t1 f t2 [], s)
-              _        -> (Unparsed_term "" [],s)
-          get_profile :: [[TERM f]] -> [([TERM f], SORT)]
-          get_profile cs = [ (c, s) |
-                             c <- permute cs,
-                             have_supersort c,
-                             s <- Set.toList (supersorts c) ]
+    expansions1
+        <- minExpTerm mef ga sign term1                -- ::       [[TERM]]
+    expansions2
+        <- minExpTerm mef ga sign term2                -- ::       [[TERM]]
+    expanded_formula
+        <- minExpFORMULA mef ga sign formula           -- ::       FORMULA
+    permuted_exps       <- return
+        $ permute [expansions1, expansions2]    -- ::      [[[TERM]]]
+    --debug 7 ("permuted_exps",permuted_exps)
+    profiles            <- return
+        $ map get_profile permuted_exps         -- ::  [[([TERM], SORT)]]
+    --debug 7 ("profiles",profiles)
+    p                   <- return
+        $ concat                                -- ::  [[([TERM], SORT)]]
+        $ map                                   -- :: [[[([TERM], SORT)]]]
+          (equivalence_Classes eq)
+          profiles                              -- ::  [[([TERM], SORT)]]
+    --debug 7 ("p",p)
+    p'                  <- return
+        $ map (minimize_cond sign) p            -- ::  [[([TERM], SORT)]]
+    --debug 7 ("p'",p')
+    return
+        $ qualifyTerms pos                      -- ::       [[TERM]]
+        $ qualifyConds expanded_formula p'      -- ::   [[(TERM, SORT)]]
+    where
+        have_supersort          :: [TERM f] -> Bool
+        have_supersort           = not . Set.isEmpty . supersorts
+        supersorts              :: [TERM f] -> Set.Set SORT
+        supersorts               = common_supersorts sign . map term_sort
+        eq                       = xeq_TUPLE sign
+        qualifyConds :: FORMULA f -> [[([TERM f], SORT)]] -> [[(TERM f, SORT)]]
+        qualifyConds f           = map $ map (qualify_cond f)
+        qualify_cond :: FORMULA f -> ([TERM f], SORT) -> (TERM f, SORT)
+        qualify_cond f (ts, s)   = case ts of
+            [t1, t2]    -> (Conditional t1 f t2 [], s)
+            _           -> (Unparsed_term "" [],s) {-error
+                $ "Internal Error: wrong number of TERMs in qualify_cond!"-}
+        get_profile             :: [[TERM f]] -> [([TERM f], SORT)]
+        get_profile cs
+            = [ (c, s) |                                -- :: ([TERM], SORT)
+                c <- permute cs,                        -- ::  [TERM]
+                have_supersort c,                       -- ::   Bool
+                s <- Set.toList $ supersorts c ]        -- ::   SORT
 
 
 {-----------------------------------------------------------
-    Construct a TERM of type Sorted_term from each (TERM, SORT) tuple
-    TODO: 'Sorted_term' does _not_ fit in all cases!
+    Construct a TERM of type Sorted_term
+    from each (TERM, SORT) tuple
 -----------------------------------------------------------}
-qualifyTerms :: [Id.Pos] -> [[(TERM f, SORT)]] -> [[TERM f]]
-qualifyTerms pos pairs = map (map qualify_term) pairs
-    where qualify_term :: (TERM f, SORT) -> TERM f
-          qualify_term (t, s) = Sorted_term t s pos
-
+qualifyTerms            :: [Id.Pos] -> [[(TERM f, SORT)]] -> [[TERM f]]
+qualifyTerms pos pairs = 
+    map (map qualify_term) pairs
+    where
+        qualify_term       :: (TERM f, SORT) -> TERM f
+        qualify_term (t, s) = Sorted_term t s pos
 
 {-----------------------------------------------------------
-    Construct explicit Injection to 'result_type'
-    if SORT of 'argument' does not match 'result_type'
+    For each C in P (see above), let C' choose _one_
+    f:s \in C for each s minimal such that f:s \in C
 -----------------------------------------------------------}
-inject :: TERM f -> SORT -> TERM f
-inject argument result_type
-    | argument_type == result_type
-        = argument
-    | otherwise
-        = (Application (injOpSymb argument_type result_type) [argument] [])
-    where argument_type = term_sort argument
+minimize_op :: 
+                Sign f e -> [(OpType, [TERM f])] -> [(OpType, [TERM f])]
+minimize_op sign ops_n_terms
+    = concat $ map reduce ops_n_terms
+    where
+        results         :: Set.Set SORT
+        results          = Set.fromList (map (opRes . fst) ops_n_terms)
+        lesserSorts     :: SORT -> Set.Set SORT
+        lesserSorts s    = Set.intersection results (subsortsOf s sign)
+        leastSort       :: SORT -> Bool
+        leastSort s      = Set.size (lesserSorts s) == 1
+        reduce          :: (OpType, [TERM f]) -> [(OpType, [TERM f])]
+        reduce x@(op,_)  = if (leastSort (opRes op)) then [x] else []
+
+{-----------------------------------------------------------
+    Workalike for minimize_op, but used inside m_e_t_cond
+-----------------------------------------------------------}
+minimize_cond :: 
+                Sign f e -> [([TERM f], SORT)] -> [([TERM f], SORT)]
+minimize_cond sign terms_n_sort
+    = concat $ map reduce terms_n_sort
+    where
+        sorts           :: Set.Set SORT
+        sorts            = Set.fromList (map snd terms_n_sort)
+        lesserSorts     :: SORT -> Set.Set SORT
+        lesserSorts s    = Set.intersection sorts (subsortsOf s sign)
+        leastSort       :: SORT -> Bool
+        leastSort s      = Set.size (lesserSorts s) == 1
+        reduce          :: ([TERM f], SORT) -> [([TERM f], SORT)]
+        reduce x@(_,s)   = if (leastSort s) then [x] else []
+
+term_sort   :: TERM f -> SORT
+term_sort term'  = case term' of
+    (Sorted_term _ sort _ )     -> sort
+    _                           -> error                -- unlikely
+        "term_sort: unsorted TERM after expansion"
+
+{-----------------------------------------------------------
+    Set of SubSORTs common to all given SORTs
+-----------------------------------------------------------}
+common_subsorts :: 
+                Sign f e -> [SORT] -> Set.Set SORT
+common_subsorts sign srts = let
+    get_subsorts = flip subsortsOf sign
+    in foldr1 Set.intersection $ map get_subsorts $ srts
+    -- in (foldr Set.intersection Set.empty) . (map get_subsorts)
+
+{-----------------------------------------------------------
+    Set of SuperSORTs common to all given SORTs
+-----------------------------------------------------------}
+common_supersorts :: 
+                Sign f e -> [SORT] -> Set.Set SORT
+common_supersorts _ [] = Set.empty
+common_supersorts sign srts = let
+    get_supersorts = flip supersortsOf sign
+    in foldr1 Set.intersection $ map get_supersorts $ srts
+
+{-----------------------------------------------------------
+    True if all SORTs have a common subSORT
+-----------------------------------------------------------}
+have_common_subsorts :: 
+                Sign f e -> [SORT] -> Bool
+have_common_subsorts s = (not . Set.isEmpty . common_subsorts s)
+
+{-----------------------------------------------------------
+    True if all SORTs have a common superSORT
+-----------------------------------------------------------}
+have_common_supersorts :: 
+                Sign f e -> [SORT] -> Bool
+have_common_supersorts s = (not . Set.isEmpty . common_supersorts s)
+
+{-----------------------------------------------------------
+    True if s1 <= s2 OR s1 >= s2
+-----------------------------------------------------------}
+xeq_SORT :: 
+                Sign f e -> SORT -> SORT -> Bool
+xeq_SORT sign s1 s2 = (leq_SORT sign s1 s2) || (geq_SORT sign s1 s2)
+
+{-----------------------------------------------------------
+    True if s1 <= s2 OR s1 >= s2
+-----------------------------------------------------------}
+xeq_TUPLE :: 
+                Sign f e -> (a, SORT) -> (a, SORT) -> Bool
+xeq_TUPLE sign (_,s1) (_,s2) = xeq_SORT sign s1 s2
+
+{-----------------------------------------------------------
+    True if s1 <= s2
+-----------------------------------------------------------}
+leq_SORT :: 
+                Sign f e -> SORT -> SORT -> Bool
+leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
+-- leq_SORT = (flip Set.member) . (flip supersortsOf)
+
+{-----------------------------------------------------------
+    True if s1 >= s2
+-----------------------------------------------------------}
+geq_SORT :: 
+                Sign f e -> SORT -> SORT -> Bool
+geq_SORT sign s1 s2 = Set.member s2 (subsortsOf s1 sign)
+-- geq_SORT = (flip Set.member) . (flip subsortsOf)
+
+{-----------------------------------------------------------
+    True if o1 ~F o2
+-----------------------------------------------------------}
+leqF :: 
+                Sign f e -> OpType -> OpType -> Bool
+leqF sign o1 o2 = zipped_all are_legal (opArgs o1) (opArgs o2)
+                && have_common_supersorts sign [(opRes o1), (opRes o2)]
+    where are_legal a b = have_common_subsorts sign [a, b]
+            
+{-----------------------------------------------------------
+    True if p1 ~P p2
+-----------------------------------------------------------}
+leqP :: 
+                Sign f e -> PredType -> PredType -> Bool
+leqP sign p1 p2 = zipped_all are_legal (predArgs p1) (predArgs p2)
+    where are_legal a b = have_common_subsorts sign [a, b]
+
 
 injName :: Id.Id
 injName = Id.mkId [Id.Token {Id.tokStr="_inj",
                              Id.tokPos=Id.nullPos}]
 
 injOpSymb :: SORT -> SORT -> OP_SYMB
-injOpSymb s1 s2 =
-    Qual_op_name injName
-                 (Total_op_type [s1] s2 [Id.nullPos])
-                 []
+injOpSymb s1 s2 = 
+  Qual_op_name injName
+               (Total_op_type [s1] s2 [Id.nullPos])
+               []
+
+{-
+
+Die alten SML-Funktionen, die hier verwandt wurden.
+Den Beschreibungen nach sind das genau die beiden, mit denen eine Menge in
+Aequivalenzklassen unterteilt wird.
+Wie die erste davon funktioniert, ist mir nicht offen ersichtlich,
+aber vielleicht brauch ich die eigentlich auch gar nicht?
+
+(* Compute the connected compenents of a graph which is given
+   by a list of nodes and a boolean function indicating whether
+   there is an egde between two nodes.
+   For each node, the algorithm splits the connected components
+   which have been computed so far into two categories:
+   those which are connected to the node and those which are not.
+   The former are all linked with @ in order to form a new connected
+   component, the latter are left untouched. *)
+     			 
+fun compute_conn_components (edges:'a*'a->bool) (nodes:'a list):'a list list =
+  let
+    fun is_connected(node,nil) = false
+      | is_connected(node,n::c) = 
+          edges(node,n) orelse edges(n,node) orelse is_connected(node,c)
+    fun split_components(node,nil,acc_comp_of_node,acc_other_comps) = 
+    	(node::acc_comp_of_node)::acc_other_comps
+      | split_components(node,current_comp::
+             other_comps,acc_comp_of_node,acc_other_comps) =
+        if is_connected(node,current_comp)
+        then split_components(node,other_comps,
+	     current_comp@acc_comp_of_node,acc_other_comps)
+        else split_components(node,other_comps,acc_comp_of_node,
+             current_comp::acc_other_comps)
+    fun add_node (node:'a,components:'a list list):'a list list =
+        split_components(node,components,nil,nil)
+  in
+  foldr add_node (nodes,[])
+  end 
+
+(* Compute the equivalence classes of the equivalence closures of leqF
+   and leqP resp.  and store them in a table indexed by function and
+   predicate names, resp.  This is needed when checking if terms or
+   predications are equivalent, since this equivalence is defined in
+   terms of the equivalence closures of leqF and leqP resp. *)
 
 
-{-----------------------------------------------------------
-    For each C in P (see above), let C' choose _one_
-    f:s \in C for each s minimal such that f:s \in C.
------------------------------------------------------------}
-minimize_op :: Sign f e -> [(OpType, [TERM f])] -> [(OpType, [TERM f])]
-minimize_op sign ops_n_terms = concat $ map reduce ops_n_terms
-    where results :: Set.Set SORT
-          results = Set.fromList (map (opRes . fst) ops_n_terms)
-          lesserSorts :: SORT -> Set.Set SORT
-          lesserSorts s = Set.intersection results (subsortsOf s sign)
-          leastSort :: SORT -> Bool
-          leastSort s = Set.size (lesserSorts s) == 1
-          reduce :: (OpType, [TERM f]) -> [(OpType, [TERM f])]
-          reduce x@(op,_) = if (leastSort (opRes op)) then [x] else []
+     			 
+fun get_conn_components (env:local_env) : local_env1 =
+	let
+	    val (srts,vars,funs,preds) = env
+	in
+	    (env,(Symtab_id.map (compute_conn_components (leqF env)) funs ,
+	          Symtab_id.map (compute_conn_components (leqP env)) preds) )
+	end
 
-
-{-----------------------------------------------------------
-    Workalike for minimize_op, but used inside m_e_t_cond.
------------------------------------------------------------}
-minimize_cond :: Sign f e -> [([TERM f], SORT)] -> [([TERM f], SORT)]
-minimize_cond sign terms_n_sort = concat $ map reduce terms_n_sort
-    where sorts :: Set.Set SORT
-          sorts = Set.fromList (map snd terms_n_sort)
-          lesserSorts :: SORT -> Set.Set SORT
-          lesserSorts s = Set.intersection sorts (subsortsOf s sign)
-          leastSort :: SORT -> Bool
-          leastSort s = Set.size (lesserSorts s) == 1
-          reduce :: ([TERM f], SORT) -> [([TERM f], SORT)]
-          reduce x@(_,s) = if (leastSort s) then [x] else []
-
-
-{-----------------------------------------------------------
-    - Extract the sort from a given term -
-  If the given term contains information about its sort, return that,
-  otherwise signal an error.
------------------------------------------------------------}
-term_sort :: TERM f -> SORT
-term_sort term' = case term' of
-    (Sorted_term _ sort _)                  -> sort
-    (Qual_var _ sort _)                     -> sort
-    (Cast _ sort _)                         -> sort
-    (Application (Qual_op_name _ ty _) _ _) -> res_OP_TYPE ty
-    _ -> error "term_sort: unsorted TERM after expansion"
-    -- TODO: is there a nicer kind of error I can signal here?
-
-
-{-----------------------------------------------------------
-    - Return the set of subsorts common to all given sorts -
------------------------------------------------------------}
-common_subsorts :: Sign f e -> [SORT] -> Set.Set SORT
-common_subsorts sign srts = let get_subsorts = flip subsortsOf sign
-                             in foldr1 Set.intersection
-                                    $ map get_subsorts $ srts
-
-
-{-----------------------------------------------------------
-    - Return the set of supersorts common to all given sorts -
------------------------------------------------------------}
-common_supersorts :: Sign f e -> [SORT] -> Set.Set SORT
-common_supersorts _ [] = Set.empty
-common_supersorts sign srts = let get_supersorts = flip supersortsOf sign
-                               in foldr1 Set.intersection
-                                      $ map get_supersorts $ srts
-
-
-{-----------------------------------------------------------
-    - True if all sorts have a common subsort -
------------------------------------------------------------}
-have_common_subsorts :: Sign f e -> [SORT] -> Bool
-have_common_subsorts s = (not . Set.isEmpty . common_subsorts s)
-
-
-{-----------------------------------------------------------
-    - True if all sorts have a common supersort -
------------------------------------------------------------}
-have_common_supersorts :: Sign f e -> [SORT] -> Bool
-have_common_supersorts s = (not . Set.isEmpty . common_supersorts s)
-
-
-{-----------------------------------------------------------
-    - True if s1 <= s2 OR s1 >= s2 -
------------------------------------------------------------}
-xeq_SORT :: Sign f e -> SORT -> SORT -> Bool
-xeq_SORT sign s1 s2 = (leq_SORT sign s1 s2) || (geq_SORT sign s1 s2)
-
-
-{-----------------------------------------------------------
-    - True if s1 <= s2 OR s1 >= s2 -
------------------------------------------------------------}
-xeq_TUPLE :: Sign f e -> (a, SORT) -> (a, SORT) -> Bool
-xeq_TUPLE sign (_,s1) (_,s2) = xeq_SORT sign s1 s2
-
-
-{-----------------------------------------------------------
-    - True if s1 <= s2 -
------------------------------------------------------------}
-leq_SORT :: Sign f e -> SORT -> SORT -> Bool
-leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
-
-
-{-----------------------------------------------------------
-    - True if s1 >= s2 -
------------------------------------------------------------}
-geq_SORT :: Sign f e -> SORT -> SORT -> Bool
-geq_SORT sign s1 s2 = Set.member s2 (subsortsOf s1 sign)
-
-
-{-----------------------------------------------------------
-    - True if o1 ~F o2 -
------------------------------------------------------------}
-leqF :: Sign f e -> OpType -> OpType -> Bool
-leqF sign o1 o2 = zipped_all are_legal (opArgs o1) (opArgs o2)
-                && have_common_supersorts sign [(opRes o1), (opRes o2)]
-    where are_legal a b = have_common_subsorts sign [a, b]
-
-
-{-----------------------------------------------------------
-    - True if p1 ~P p2 -
------------------------------------------------------------}
-leqP :: Sign f e -> PredType -> PredType -> Bool
-leqP sign p1 p2 = zipped_all are_legal (predArgs p1) (predArgs p2)
-    where are_legal a b = have_common_subsorts sign [a, b]
-
+-}
 
