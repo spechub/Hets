@@ -20,7 +20,7 @@ module Graph (
    isEmpty,matchSome,matchThe,context,contextP,
    delNode,delNodes,delEdge,delEdges,
    suc,pre,neighbors,out,inn,indeg,outdeg,deg,
-   suc',pre',neighbors',out',inn',indeg',outdeg',deg',node',lab',
+   suc',pre',neighbors',out',inn',indeg',outdeg',deg',node',lab',labNode',
    noNodes,nodeRange,nodes,labNodes,edges,labEdges,
    -- graph folds
    --    ufold,gfold,  --> see Basic.hs
