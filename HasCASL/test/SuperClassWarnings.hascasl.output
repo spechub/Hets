@@ -1,3 +1,4 @@
+%% Classes ---------------------------------------------------------------
 a < b
 b
 c
@@ -6,8 +7,7 @@ e < f
 f
 g < h
 h
-Type Constructors
-Assumptions
+%% Diagnostics -----------------------------------------------------------
 Warning "SuperClassWarnings.hascasl" (line 2, column 11) implicit declaration of superclass 'b'
 Warning "SuperClassWarnings.hascasl" (line 3, column 7) redeclared class 'b'
 Warning "SuperClassWarnings.hascasl" (line 4, column 11) redundant universe class

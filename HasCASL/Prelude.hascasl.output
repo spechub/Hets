@@ -1,7 +1,8 @@
+%% Classes ---------------------------------------------------------------
 Cpo
 Flatcpo < Cpo
 Pcpo < Cpo
-Type Constructors
+%% Type Constructors -----------------------------------------------------
 ?__ :Type ->Type := \ t:Type .  Unit ->? t
 Pred__ :Type- ->Type := \ t:Type- .  t ->? Unit
 Unit :(Type, Pcpo)
@@ -24,7 +25,7 @@ p :Pcpo %(var)%
 s :Type< ? s %(var)%
 s->t :Type< s ->? t
 t :Type %(var)%
-Assumptions
+%% Assumptions -----------------------------------------------------------
 Y : p -->? p --> p
 __/\__ : logical × logical -> logical
 __<=>__ : logical × logical -> logical
@@ -46,6 +47,7 @@ x1 : c %(var)%
 x2 : c %(var)%
 y1 : d %(var)%
 y2 : d %(var)%
+%% Diagnostics -----------------------------------------------------------
 Error "Prelude.hascasl" (line 4, column 7) illegal universe class declaration
 Warning "Prelude.hascasl" (line 27, column 11) redeclared type 'Unit'
 Error "Prelude.hascasl" (line 29, column 5) unexpected mixfix token '='

@@ -1,3 +1,4 @@
+%% Classes ---------------------------------------------------------------
 a < (e, g)
 b
 c
@@ -7,15 +8,16 @@ f
 g
 h = (a, b)
 j = {_ < t}
-Type Constructors
+%% Type Constructors -----------------------------------------------------
 [__] :a ->b
 a__b :a ->b
 t :a
 x :(a, {_ < t}, b) %(var)%
 y :Type %(var)%
-Assumptions
+%% Assumptions -----------------------------------------------------------
 x : s %(var)%
   : y %(var)%
+%% Diagnostics -----------------------------------------------------------
 Warning "B1.hascasl" (line 3, column 14) redundant universe class
 Error "B1.hascasl" (line 3, column 7) illegal universe class declaration
 Error "B1.hascasl" (line 4, column 7) illegal universe class declaration

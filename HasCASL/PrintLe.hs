@@ -20,7 +20,6 @@ import Common.Lib.Pretty as Pretty
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Keywords
-import Common.GlobalAnnotations
 
 instance PrettyPrint ClassInfo where
     printText0 ga (ClassInfo sups k defn) =
@@ -96,10 +95,17 @@ instance (PrettyPrint a, Ord a, PrettyPrint b)
 	    vcat(map (\ (a, b) -> printText0 ga a <> printText0 ga b) l)
 
 instance PrettyPrint Env where
-    printText0 ga e = printText0 ga (classMap e)
-	$$ ptext "Type Constructors"
-	$$ printText0 ga (typeMap e)
-	$$ ptext "Assumptions"
-        $$ printText0 ga (assumps e)  
-	$$ vcat (map (printText ga) (reverse $ envDiags e))
-
+    printText0 ga (Env{classMap=cm, typeMap=tm, 
+		       assumps=as, sentences=se, envDiags=ds}) = 
+	noPrint (Map.isEmpty cm) (header "Classes")
+	$$ printText0 ga cm
+	$$ noPrint (Map.isEmpty tm) (header "Type Constructors")
+	$$ printText0 ga tm
+	$$ noPrint (Map.isEmpty as) (header "Assumptions")
+        $$ printText0 ga as
+	$$ noPrint (null se) (header "Sentences")
+        $$ vcat (map (printText ga) se)
+	$$ noPrint (null ds) (header "Diagnostics")
+	$$ vcat (map (printText ga) $ reverse ds)
+	where header s =  ptext "%%" <+> ptext s 
+			  <+> ptext (replicate (70 - length s) '-')

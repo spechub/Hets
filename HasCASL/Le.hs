@@ -17,6 +17,7 @@ import Data.List
 import Control.Monad.State
 import Common.Result
 import Common.GlobalAnnotations
+import Common.Named
 
 -----------------------------------------------------------------------------
 -- classInfo
@@ -81,7 +82,7 @@ type Assumps = Map Id [OpInfo]
 data Env = Env { classMap :: ClassMap
                , typeMap :: TypeMap
 	       , assumps :: Assumps
-	       , sentences :: [(String, Formula)]	 
+	       , sentences :: [Named Formula]	 
                , globalAnnos :: GlobalAnnos
 	       , envDiags :: [Diagnosis]
 	       , counter :: Int

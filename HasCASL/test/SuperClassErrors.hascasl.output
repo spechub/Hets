@@ -1,3 +1,4 @@
+%% Classes ---------------------------------------------------------------
 a < b
 b
 c < d
@@ -6,9 +7,9 @@ e
 g < a
 h = Type
 i = (a, g)
-Type Constructors
+%% Type Constructors -----------------------------------------------------
 t :Type %(var)%
-Assumptions
+%% Diagnostics -----------------------------------------------------------
 Warning "SuperClassErrors.hascasl" (line 1, column 11) implicit declaration of superclass 'b'
 Warning "SuperClassErrors.hascasl" (line 2, column 7) redeclared class 'b'
 Error "SuperClassErrors.hascasl" (line 2, column 11) cyclic class relation via 'a'

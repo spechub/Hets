@@ -1,13 +1,14 @@
+%% Classes ---------------------------------------------------------------
 a = {_ < t}
 b = {_ < s}
 c
 d
 e = a
 h < (a, b, e)
-Type Constructors
+%% Type Constructors -----------------------------------------------------
 s :Type %(var)%
 t :Type %(var)%
-Assumptions
+%% Diagnostics -----------------------------------------------------------
 Warning "PossibleDownsetConflict.hascasl" (line 3, column 21) unchecked type 's'
 Warning "PossibleDownsetConflict.hascasl" (line 5, column 21) unchecked type 't'
 Warning "PossibleDownsetConflict.hascasl" (line 7, column 7) redeclared class 'a'
