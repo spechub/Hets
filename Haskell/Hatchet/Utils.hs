@@ -52,11 +52,7 @@ import Haskell.Hatchet.HsPretty        (PPHsMode (..),
                         render
                        )
 
-import Haskell.Hatchet.Pretty          (Doc,
-                        (<>),
-                        text)
-
-import Haskell.Hatchet.PPrint          (PPrint (..))
+import Haskell.Hatchet.PPrint          (PPrint (..), Doc, (<>), text)
 
 import Monad           (when)
 

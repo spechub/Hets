@@ -29,7 +29,7 @@ module Haskell.Hatchet.AHsPretty (PPLayout(..),PPAHsMode(..),defaultMode,
 
 import Haskell.Hatchet.AnnotatedHsSyn
 
-import qualified Haskell.Hatchet.Pretty as P
+import qualified Common.Lib.Pretty as P
 
 infixl 5 $$$ 
 

@@ -2,8 +2,9 @@
 -- PPrint:	Print functions
 -----------------------------------------------------------------------------
 
-module Haskell.Hatchet.PPrint(module Haskell.Hatchet.PPrint, module Haskell.Hatchet.Pretty) where
-import Haskell.Hatchet.Pretty
+module Haskell.Hatchet.PPrint(module Haskell.Hatchet.PPrint, 
+			      module Common.Lib.Pretty) where
+import Common.Lib.Pretty
 
 -----------------------------------------------------------------------------
 -- This module contains definitions that do not appear in the

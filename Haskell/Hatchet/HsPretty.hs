@@ -22,7 +22,7 @@ module Haskell.Hatchet.HsPretty (PPLayout(..),PPHsMode(..),defaultMode,
 
 import Haskell.Hatchet.HsSyn
 
-import qualified Haskell.Hatchet.Pretty as P
+import qualified Common.Lib.Pretty as P
 
 infixl 5 $$$ 
 
