@@ -19,6 +19,8 @@ Portability :  non-portable (import Logic.Logic)
    where <logic-name> must be a logic in the logic graph, and <basic-spec> a
    basic specification in that logic. Only the sentences are extracted from
    the basic specification, but the used identifiers must be declared.
+-}
+{-
    Identifiers are left as Haskell variables, which means that they must
    be bound by the enclosing expression. E.g.
 
@@ -35,7 +37,7 @@ generateAxioms sig =
 
 -}
 
-module Main where -- Comorphisms.PreProcessor where
+module Main where
 
 import Language.Haskell.Pretty as HP
 import Language.Haskell.Syntax
@@ -50,34 +52,53 @@ import System.Environment
 import System.Console.GetOpt
 import System.IO
 import Data.Char(ord)
-import Data.List(nub)
+import Data.List(nub, isPrefixOf)
 
--- avoid import Comorphisms.LogicList and the Grothendieck stuff
-import Logic.Logic
-import CASL.Logic_CASL
-import Modal.Logic_Modal
+-- avoid the whole Logic (and uni) overhead
+import CASL.Parse_AS_Basic(basicSpec)
+import CASL.Sign(emptySign)
+import CASL.StaticAna(basicCASLAnalysis)
+import Modal.AS_Modal(modal_reserved_words)
+import Modal.Parse_AS()
+import Modal.ModalSign(emptyModalSign)
+import Modal.StatAna(basicModalAnalysis)
+
+parseAndAnalyse :: (Show sens) => AParser () basic_spec -> sign
+                -> ((basic_spec, sign, GlobalAnnos)
+                    -> Result (basic_spec, sign, sign, sens))
+                -> String -> String
+parseAndAnalyse pars empt ana str =
+  case runParser pars (emptyAnnos ()) "inlineAxioms" str of 
+  Left err -> error (show err)
+  Right ast -> let Result ds m = ana (ast, empt, emptyGlobalAnnos) in
+            case m of
+              Just (_,_,_,sens) -> show sens
+              _ -> error ("Error during static analysis of inlineAxioms\n" ++
+                          unlines (map show ds))
+
+caslAna, modalAna :: String -> String
+caslAna = parseAndAnalyse (basicSpec []) (emptySign ()) basicCASLAnalysis
+modalAna = parseAndAnalyse (basicSpec modal_reserved_words)
+   (emptySign emptyModalSign) basicModalAnalysis
 
 -- currently only logic CASL and Modal are used
-lookupLogic_in_LG :: String -> String -> AnyLogic
-lookupLogic_in_LG err s = 
-  let fl = filter ((== s). show) [Logic CASL, Logic Modal] in 
-   if null fl then error (err ++ "unsupported logic " ++ s) else head fl
+lookupLogic_in_LG :: String -> String -> String -> String
+lookupLogic_in_LG err s = if s == "CASL" then caslAna
+                          else if s == "Modal" then modalAna
+                          else error (err ++ "unsupported logic " ++ s)
 
--- hack: delete position info of form "[nlineAxioms ...]", replace with "[]"
+-- hack: delete position info of form "[inlineAxioms ...]", replace with "[]"
 deletePos :: String -> String
-deletePos s = reverse (deletePos1 s "")
+deletePos "" = ""
+deletePos cs@(c : s) = case deletePrefixes ["[inlineAxioms", "[(line "] cs of
+      Just r -> "[]" ++ deletePos r
+      _ -> c : deletePos s
   where 
-  deletePos1 "" acc = acc
-  deletePos1 ('[':'i':'n':'l':'i':'n':'e':'A':'x':'i':'o':'m':'s':s1) acc =
-    deletePos1 (skipBra s1) (']':'[':acc)
-  deletePos1 ('[':'"':'i':'n':'l':'i':'n':'e':'A':'x':'i':'o':'m':'s':s1) acc =
-    deletePos1 (skipBra s1) (']':'[':acc)
-  deletePos1 ('[':'(':'l':'i':'n':'e':' ':s1) acc =
-    deletePos1 (skipBra s1) (']':'[':acc)
-  deletePos1 (c:s1) acc = deletePos1 s1 (c:acc)
-  skipBra "" = ""
-  skipBra (']':s2) = s2
-  skipBra (_:s2) = skipBra s2
+   deletePrefixes [] _ = Nothing
+   deletePrefixes (x:xs) str = if isPrefixOf x str then 
+     let r = dropWhile (/= ']') $ drop (length x) str in
+          if null r then error "missing bracket"  else Just $ tail r
+     else deletePrefixes xs  str
 
 -- parse Haskell expression and insert list comprehensions for x_i variables
 -- We rely on show for Ids giving just strings, such that these are
@@ -120,18 +141,7 @@ piHsExp (HsInfixApp expr1 qOp expr3) =
 piHsExp (HsApp (HsApp (HsVar (UnQual (HsIdent "inlineAxioms"))) 
                       (HsCon (UnQual (HsIdent logStr)))) 
                (HsLit (HsString str))) =
-  case lookupLogic_in_LG "inlineAxioms: " logStr of
-    Logic lid -> case parse_basic_spec lid of
-      Nothing -> error ("No parser for logic "++logStr)
-      Just p -> case runParser p (emptyAnnos ()) "inlineAxioms" str of
-        Left err -> error (show err)
-        Right ast -> case basic_analysis lid of
-          Nothing -> error ("No static analysis for logic "++logStr)
-          Just b -> let res = b (ast,empty_signature lid,emptyGlobalAnnos) in
-            case (hasErrors $ diags res, maybeResult res) of
-              (False,Just (_,_,_,sens)) -> listComp $ show sens
-              _ -> error ("Error during static analysis of inlineAxioms\n" ++
-                          concat (map ((++"\n").show) (diags res)))
+  listComp $ lookupLogic_in_LG "inlineAxioms: " logStr str
 piHsExp (HsApp expr1 expr2) =
   HsApp (piHsExp expr1) (piHsExp expr2)
 piHsExp (HsNegApp expr) =
