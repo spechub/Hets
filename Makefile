@@ -75,12 +75,13 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
 genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs Common/AS_Annotation.der.hs Common/Named.hs \
                 Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
                 CASL/Morphism.hs CASL/StaticAna.hs CASL/AS_Basic_CASL.der.hs \
-                Haskell/Hatchet/AnnotatedHsSyn.hs Haskell/Hatchet/MultiModuleBasics.hs \
+
                 HasCASL/Le.hs HasCASL/As.hs HasCASL/Symbol.hs HasCASL/Morphism.hs \
                 CspCASL/AS_CSP_CASL.hs \
                 Static/DevGraph.hs \
-                Haskell/Hatchet/HsSyn.hs Haskell/Hatchet/AnnotatedHsSyn.hs \
-                Haskell/Hatchet/MultiModuleBasics.hs Haskell/Hatchet/Representation.hs\
+                Haskell/Hatchet/AnnotatedHsSyn.hs Haskell/Hatchet/MultiModuleBasics.hs \
+                Haskell/Hatchet/HsSyn.hs \
+                Haskell/Hatchet/Representation.hs\
                 Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
                 Haskell/Hatchet/Env.hs 
 
