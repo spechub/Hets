@@ -316,17 +316,17 @@ opId = do i@(Id is cs ps) <- uninstOpId
 
 opAttr :: AParser OpAttr
 opAttr = do a <- asKey assocS
-	    return (BinOpAttr Assoc (tokPos a))
+	    return (BinOpAttr Assoc [tokPos a])
 	 <|>
 	 do a <- asKey commS
-	    return (BinOpAttr Comm (tokPos a))
+	    return (BinOpAttr Comm [tokPos a])
 	 <|>
 	 do a <- asKey idemS
-	    return (BinOpAttr Idem (tokPos a))
+	    return (BinOpAttr Idem [tokPos a])
 	 <|>
 	 do a <- asKey unitS
 	    t <- term
-	    return (UnitOpAttr t (tokPos a))
+	    return (UnitOpAttr t [tokPos a])
 
 opDecl :: [OpId] -> [Token] -> AParser OpItem
 opDecl os ps = do c <- colT

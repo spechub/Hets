@@ -15,15 +15,7 @@ import HasCASL.HToken
 import Common.Lib.Pretty 
 import Common.PrettyPrint
 import Common.GlobalAnnotations(GlobalAnnos)
-import Common.GlobalAnnotationsFunctions(emptyGlobalAnnos)
 import Common.Print_AS_Annotation
-
-noPrint :: Bool -> Doc -> Doc
-noPrint b d = if b then empty else d
-
-showPretty :: PrettyPrint a => a -> ShowS
-showPretty = showString . render . printText0 emptyGlobalAnnos 
-	     where _just_avoid_unused_import_warning = smallSpace_latex
 
 commas, semis :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
 commas ga l = fcat $ punctuate comma (map (printText0 ga) l)

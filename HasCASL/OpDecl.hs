@@ -16,7 +16,7 @@ import Common.Id
 import HasCASL.Le
 import Control.Monad.State
 import Common.PrettyPrint
-import HasCASL.PrintAs(showPretty)
+import HasCASL.PrintAs()
 import Common.Lib.Parsec.Pos
 import qualified Common.Lib.Map as Map
 import Common.Result

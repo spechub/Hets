@@ -24,8 +24,9 @@ import CASL.MixfixParser(getTokenList, expandPos)
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Error
 
-import HasCASL.PrintAs(showPretty)
+import HasCASL.PrintAs()
 import Common.Result
+import Common.PrettyPrint
 import HasCASL.TypeAna
 
 compatibleTypeDefn :: TypeDefn -> TypeDefn -> Id -> [Diagnosis]

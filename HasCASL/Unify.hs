@@ -9,8 +9,8 @@
 module HasCASL.Unify where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.PrintAs
-import HasCASL.ClassAna
 import Common.PrettyPrint
 import Common.Id
 import HasCASL.Le
@@ -22,16 +22,26 @@ import Data.Maybe
 
 unifiable :: TypeScheme -> TypeScheme -> State Env Bool
 unifiable sc1 sc2 =
-    do t1 <- freshInst sc1
-       t2 <- freshInst sc2
-       Result ds mm <- unify t1 t2
+    do tm <- getTypeMap
+       c <- getCounter
+       let Result ds mm = evalState (unifIable tm sc1 sc2) c
        appendDiags ds
        return $ isJust mm
 
-freshInst :: TypeScheme -> State Env Type
+isUnifiable :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
+isUnifiable tm c sc1 sc2 = isJust $ maybeResult $ 
+			   evalState (unifIable tm sc1 sc2) c
+
+unifIable :: TypeMap -> TypeScheme -> TypeScheme -> State Int (Result Subst)
+unifIable tm sc1 sc2 =
+    do t1 <- freshInst sc1
+       t2 <- freshInst sc2
+       return $ unify tm t1 t2
+
+freshInst :: TypeScheme -> State Int Type
 freshInst (TypeScheme tArgs (_ :=> t) _) = 
-    do c <- getCounter
-       putCounter (c + length tArgs)
+    do c <- get
+       put (c + length tArgs)
        return $ subst (mkSubst tArgs c) t
 
 type Subst = Map.Map TypeArg Type
@@ -55,7 +65,7 @@ mkSubst (tv@(TypeArg _ k _ _):r) i =
  		   
 class Unifiable a where
     subst :: Subst -> a -> a
-    unify :: a -> a -> State Env (Result Subst)
+    unify :: TypeMap -> a -> a -> Result Subst
 
 instance Unifiable Type where
     subst m t = case t of
@@ -75,70 +85,70 @@ instance Unifiable Type where
 	   ProductType l ps -> ProductType (map (subst m) l) ps
            FunType t1 a t2 ps -> FunType (subst m t1) a (subst m t2) ps
 			-- lookup type aliases
-    unify t1@(TypeName i1 k1 v1) t2@(TypeName i2 k2 v2) =
-	if i1 == i2 then return $ return $ Map.empty
-	else if v1 > 0 then return $ return $ 
+    unify tm t1@(TypeName i1 k1 v1) t2@(TypeName i2 k2 v2) =
+	if i1 == i2 then return $ Map.empty
+	else if v1 > 0 then return $ 
 	        Map.single (TypeArg i1 k1 Other []) t2
-		else if v2 > 0 then return $ return $
+		else if v2 > 0 then return $
 		     Map.single (TypeArg i2 k2 Other []) t1
-			else 
-		 do (a1, b1) <- expandAlias t1 
-		    (a2, b2) <- expandAlias t2
-		    if b1 || b2 then unify a1 a2
-		       else return $ Result [mkDiag Hint 
+			else let (a1, b1) = expandAlias tm t1 
+				 (a2, b2) = expandAlias tm t2 in
+			if b1 || b2 then unify tm a1 a2
+			   else Result [mkDiag Hint 
 					("type '" ++ showId i1 
 					 "' is not unifiable with") i2]
 					Nothing
-    unify t1@(TypeName i1 k1 v1) t2@(TypeAppl _ _) =
+    unify tm t1@(TypeName i1 k1 v1) t2@(TypeAppl _ _) =
 	if v1 > 0 then 
 	   if i1 `occursIn` t2 then 
-	      return $ Result [mkDiag Hint 
+	      Result [mkDiag Hint 
 			       ("var '" ++ showId i1 
 				"' occurs in") t2] Nothing
-	   else return $ return $
+	   else return $
 			Map.single (TypeArg i1 k1 Other []) t2
-	else do (a1, b1) <- expandAlias t1 
-		if b1 then unify a1 t2
-		   else return $ Result 
+	else let (a1, b1) = expandAlias tm t1 in
+		 if b1 then unify tm a1 t2
+		   else Result 
 			    [mkDiag Hint 
 			     ("type '" ++ showId i1 
 			      "' is not unifiable with") t2] Nothing
-    unify t2@(TypeAppl _ _) t1@(TypeName _ _ _) = unify t1 t2
-    unify t12@(TypeAppl t1 t2) t34@(TypeAppl t3 t4) = 
-	do (ta, a) <- expandAlias t12
-	   (tb, b) <- expandAlias t34
-	   if a || b then unify ta tb
-	      else unify (t1, t2) (t3, t4)
-    unify (ProductType p1 _) (ProductType p2 _) = unify p1 p2
-    unify (FunType t1 _ t2 _) (FunType t3 _ t4 _) = unify (t1, t2) (t3, t4)
-    unify t1 (LazyType t2 _) = unify t1 t2
-    unify (LazyType t1 _) t2 = unify t1 t2
-    unify t1 (KindedType t2 _ _) = unify t1 t2
-    unify (KindedType t1 _ _) t2 = unify t1 t2
-    unify t1 t2 = return $ Result [mkDiag Hint 
-				   ("type '" ++ showPretty t1 
-				    "' is not unifiable with") t2] Nothing
+    unify tm t2@(TypeAppl _ _) t1@(TypeName _ _ _) = unify tm t1 t2
+    unify tm t12@(TypeAppl t1 t2) t34@(TypeAppl t3 t4) = 
+	let (ta, a) = expandAlias tm t12
+	    (tb, b) = expandAlias tm t34 in
+	   if a || b then unify tm ta tb
+	      else unify tm (t1, t2) (t3, t4)
+    unify tm (ProductType p1 _) (ProductType p2 _) = unify tm p1 p2
+    unify tm (FunType t1 _ t2 _) (FunType t3 _ t4 _) = 
+	unify tm (t1, t2) (t3, t4)
+    unify tm t1 (LazyType t2 _) = unify tm t1 t2
+    unify tm (LazyType t1 _) t2 = unify tm t1 t2
+    unify tm t1 (KindedType t2 _ _) = unify tm t1 t2
+    unify tm (KindedType t1 _ _) t2 = unify tm t1 t2
+    unify _ t1 t2 = Result [mkDiag Hint 
+			    ("type '" ++ showPretty t1 
+			     "' is not unifiable with") t2] Nothing
 
 instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
     subst s (t1, t2) = (subst s t1, subst s t2)
-    unify (t1, t2) (t3, t4) =
-	do r1@(Result _ m1) <- unify t1 t3
+    unify tm (t1, t2) (t3, t4) =
+	let r1@(Result _ m1) = unify tm t1 t3 in
 	   case m1 of
-	       Nothing -> return r1
-	       Just s1 -> do r2@(Result _ m2) <- 
-				 unify (subst s1 t2) (subst s1 t4) 
+	       Nothing -> r1
+	       Just s1 -> let r2@(Result _ m2) =
+				 unify tm (subst s1 t2) (subst s1 t4) in
 			     case m2 of 
-				     Nothing -> return r2
-				     Just s2 -> return $ return $
+				     Nothing -> r2
+				     Just s2 -> return $
 						(Map.map (subst s2) s1 
 						   `Map.union` s2) 
 
 instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
     subst s = map (subst s) 
-    unify [] [] = return $ return $ Map.empty
-    unify (a1:r1) (a2:r2) = unify (a1, r1) (a2, r2)
-    unify [] l = unify l [] 
-    unify (a:_) [] = return $ Result [mkDiag Hint 
+    unify _ [] [] = return $ Map.empty
+    unify tm (a1:r1) (a2:r2) = unify tm (a1, r1) (a2, r2)
+    unify tm [] l = unify tm l [] 
+    unify _ (a:_) [] = Result [mkDiag Hint 
 			 ("unification failed at") a] Nothing
 
 occursIn :: TypeId -> Type -> Bool
@@ -154,26 +164,25 @@ occursIn i t =
 	   ProductType l _ -> any (occursIn i) l
 	   FunType t1 _ t2 _ -> occursIn i t1 || occursIn i t2
 
-expandAlias :: Type -> State Env (Type, Bool)
-expandAlias t = 
-    do (ps, as, ta, b) <- expandAliases t
+expandAlias :: TypeMap -> Type -> (Type, Bool)
+expandAlias tm t = 
+    let (ps, as, ta, b) = expandAliases tm t in
        if b && length ps == length as then
-	  return (subst (Map.fromList (zip ps $ reverse as)) ta, b)
-	  else return (t, False)
+	  (subst (Map.fromList (zip ps $ reverse as)) ta, b)
+	  else (t, False)
 
-expandAliases :: Type -> State Env ([TypeArg], [Type], Type, Bool)
-expandAliases t@(TypeName i _ _) =
-    do tk <- getTypeMap
-       case Map.lookup i tk of 
+expandAliases :: TypeMap -> Type -> ([TypeArg], [Type], Type, Bool)
+expandAliases tm t@(TypeName i _ _) =
+       case Map.lookup i tm of 
             Just (TypeInfo _ _ _ 
 		  (AliasTypeDefn (TypeScheme l (_ :=> ts) _))) ->
-				     return (l, [], ts, True)
-	    _ -> return ([], [], t, False)
+				     (l, [], ts, True)
+	    _ -> ([], [], t, False)
 
-expandAliases t@(TypeAppl t1 t2) =
-    do (ps, as, ta, b) <- expandAliases t1 
+expandAliases tm t@(TypeAppl t1 t2) =
+    let (ps, as, ta, b) = expandAliases tm t1 in
        if b then 
-	  return (ps, t2:as, ta, b)  -- reverse later on
-	  else return ([], [], t, False)
+	  (ps, t2:as, ta, b)  -- reverse later on
+	  else ([], [], t, False)
 
-expandAliases t = return ([], [], t, False)
+expandAliases _ t = ([], [], t, False)

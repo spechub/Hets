@@ -132,7 +132,8 @@ data PredItem = PredDecl [OpId] TypeScheme [Pos]
 
 data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq)
 
-data OpAttr = BinOpAttr BinOpAttr Pos | UnitOpAttr Term Pos deriving (Show, Eq)
+data OpAttr = BinOpAttr BinOpAttr [Pos] 
+	    | UnitOpAttr Term [Pos] deriving (Show, Eq)
 
 data DatatypeDecl = DatatypeDecl 
                     TypePattern 

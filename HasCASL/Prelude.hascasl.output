@@ -43,83 +43,83 @@ x1 : c %(var)%
 x2 : c %(var)%
 y1 : d %(var)%
 y2 : d %(var)%
-Error (4,7) illegal universe class declaration
-Warning (27,11) redeclared type 'Unit'
-FatalError (29,1) no analysis yet for: . 1 = ()
-Warning (39,16) redeclared type 't'
-Error (45,14) undeclared type 'Pred'
-Error (45,14) undeclared type 'Pred'
-Hint (46,9) not a class 's'
-FatalError (48,1) no analysis yet for: program def = \ x : s . ()
+Error "Prelude.hascasl" (line 4, column 7) illegal universe class declaration
+Warning "Prelude.hascasl" (line 27, column 11) redeclared type 'Unit'
+FatalError "Prelude.hascasl" (line 29, column 1) no analysis yet for: . 1 = ()
+Warning "Prelude.hascasl" (line 39, column 16) redeclared type 't'
+Error "Prelude.hascasl" (line 45, column 14) undeclared type 'Pred'
+Error "Prelude.hascasl" (line 45, column 14) undeclared type 'Pred'
+Hint "Prelude.hascasl" (line 46, column 9) not a class 's'
+FatalError "Prelude.hascasl" (line 48, column 1) no analysis yet for: program def = \ x : s . ()
 	%% def is also total (identical to tt) 
-FatalError (50,1) no analysis yet for: program tt = \ x : s . ()
+FatalError "Prelude.hascasl" (line 50, column 1) no analysis yet for: program tt = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
-FatalError (52,1) no analysis yet for: program __ und __ (x,y : Unit) : Unit = ()
-FatalError (60,1) no analysis yet for: . __ in s -> t = \ f : s ->? t . all (\ x : s . def f (x))
-FatalError (64,1) no analysis yet for: program __ res __ (x : s,y : t) : s = x
-FatalError (65,1) no analysis yet for: program fst (x : s,y : t) : s = x
-FatalError (66,1) no analysis yet for: program snd (x : s,y : t) : t = y
-FatalError (71,1) no analysis yet for: . (\ x : s; y : t . def (x res y)) =
+FatalError "Prelude.hascasl" (line 52, column 1) no analysis yet for: program __ und __ (x,y : Unit) : Unit = ()
+FatalError "Prelude.hascasl" (line 60, column 1) no analysis yet for: . __ in s -> t = \ f : s ->? t . all (\ x : s . def f (x))
+FatalError "Prelude.hascasl" (line 64, column 1) no analysis yet for: program __ res __ (x : s,y : t) : s = x
+FatalError "Prelude.hascasl" (line 65, column 1) no analysis yet for: program fst (x : s,y : t) : s = x
+FatalError "Prelude.hascasl" (line 66, column 1) no analysis yet for: program snd (x : s,y : t) : t = y
+FatalError "Prelude.hascasl" (line 71, column 1) no analysis yet for: . (\ x : s; y : t . def (x res y)) =
   (\ x : s; y : t . (def y) und (def x))
 . fst = (__ res __)
-FatalError (78,1) no analysis yet for: pred eq : s × s
-FatalError (80,1) no analysis yet for: . (\ x : s . eq (x,x)) = tt
+FatalError "Prelude.hascasl" (line 78, column 1) no analysis yet for: pred eq : s × s
+FatalError "Prelude.hascasl" (line 80, column 1) no analysis yet for: . (\ x : s . eq (x,x)) = tt
 . (\ x : s; y : s . x res eq (x,y)) =
   (\ x : s; y : s . y res eq (x,y))
-Warning (91,6) redeclared type 's'
-FatalError (93,1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p,tt)
-FatalError (96,1) no analysis yet for: program And (x,y : Pred Unit) : Pred Unit = t1 () und t2 ()
-FatalError (99,1) no analysis yet for: program __ impl __ (x,y : Pred Unit) : Pred Unit = eq (x,x And y)
-FatalError (101,1) no analysis yet for: program __ or __ (x,y : Pred Unit) : Pred Unit =
+Warning "Prelude.hascasl" (line 91, column 6) redeclared type 's'
+FatalError "Prelude.hascasl" (line 93, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p,tt)
+FatalError "Prelude.hascasl" (line 96, column 1) no analysis yet for: program And (x,y : Pred Unit) : Pred Unit = t1 () und t2 ()
+FatalError "Prelude.hascasl" (line 99, column 1) no analysis yet for: program __ impl __ (x,y : Pred Unit) : Pred Unit = eq (x,x And y)
+FatalError "Prelude.hascasl" (line 101, column 1) no analysis yet for: program __ or __ (x,y : Pred Unit) : Pred Unit =
 	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
-FatalError (104,1) no analysis yet for: program ex (p : Pred (s)) : Pred Unit =
+FatalError "Prelude.hascasl" (line 104, column 1) no analysis yet for: program ex (p : Pred (s)) : Pred Unit =
 	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
-FatalError (107,1) no analysis yet for: program ff () : Pred Unit = all (\ r : Pred Unit . r ())
-FatalError (109,1) no analysis yet for: program neg (r : Pred Unit) : Pred Unit = r impl ff
-FatalError (114,1) no analysis yet for: . all
+FatalError "Prelude.hascasl" (line 107, column 1) no analysis yet for: program ff () : Pred Unit = all (\ r : Pred Unit . r ())
+FatalError "Prelude.hascasl" (line 109, column 1) no analysis yet for: program neg (r : Pred Unit) : Pred Unit = r impl ff
+FatalError "Prelude.hascasl" (line 114, column 1) no analysis yet for: . all
   (\ f : s ->? t; g : s ->? t . all
 				(\ x : s . eq (\ . f (x),g (x)) impl eq (f,g)))
-Warning (121,13) redundant universe class
-FatalError (125,1) no analysis yet for: pred __<<=__ : c × c
-FatalError (127,1) no analysis yet for: . all (\ x : c . x <<= x) %(reflexive)%
+Warning "Prelude.hascasl" (line 121, column 13) redundant universe class
+FatalError "Prelude.hascasl" (line 125, column 1) no analysis yet for: pred __<<=__ : c × c
+FatalError "Prelude.hascasl" (line 127, column 1) no analysis yet for: . all (\ x : c . x <<= x) %(reflexive)%
 . all
   (\ x : c; y : c; z : c . ((x <<= y) und (y <<= z)) impl x <<= z)
   %(transitive)%
 . all
   (\ x : c; y : c; z : c . ((x <<= y) und (y <<= x)) impl eq (x,y))
   %(antisymmetric)%
-FatalError (131,1) no analysis yet for: pred isChain(s : nat -> c) <=> all
+FatalError "Prelude.hascasl" (line 131, column 1) no analysis yet for: pred isChain(s : nat -> c) <=> all
 			       (\ n : nat . s (n) <<= s (Suc (n)))
-FatalError (132,1) no analysis yet for: pred isBound(x : c,s : nat -> c) <=> all (\ n : nat . s (n) <<= x)
-FatalError (136,1) no analysis yet for: . all
+FatalError "Prelude.hascasl" (line 132, column 1) no analysis yet for: pred isBound(x : c,s : nat -> c) <=> all (\ n : nat . s (n) <<= x)
+FatalError "Prelude.hascasl" (line 136, column 1) no analysis yet for: . all
   (\ s : nat -> c . def (sup s) impl
 		    (isBound (sup s,s) und all
 		     (\ x : c . isBound (x,s) impl sup (s) <<= x)))
   %(sup is minimally bound)%
 . all (\ s : nat -> c . isChain (s) impl def (sup (s)))
   %(sup exists)%
-FatalError (149,1) no analysis yet for: . all (\ x : p . bottom <<= x)
-FatalError (156,2) no analysis yet for: program __ <<= [f] __ = eq
-Warning (159,5) redeclared type 'c'
-Hint (163,13) not a class 'c'
-Hint (163,13) not a class 'c'
-Hint (163,25) not a class 'd'
-Hint (163,25) not a class 'd'
-FatalError (165,1) no analysis yet for: program (x1,y1) <<= (x2,y2) = (x1 <<= x2) und (y1 <<= y2)
-FatalError (176,2) no analysis yet for: . __ in c -->? d
+FatalError "Prelude.hascasl" (line 149, column 1) no analysis yet for: . all (\ x : p . bottom <<= x)
+FatalError "Prelude.hascasl" (line 156, column 2) no analysis yet for: program __ <<= [f] __ = eq
+Warning "Prelude.hascasl" (line 159, column 5) redeclared type 'c'
+Hint "Prelude.hascasl" (line 163, column 13) not a class 'c'
+Hint "Prelude.hascasl" (line 163, column 13) not a class 'c'
+Hint "Prelude.hascasl" (line 163, column 25) not a class 'd'
+Hint "Prelude.hascasl" (line 163, column 25) not a class 'd'
+FatalError "Prelude.hascasl" (line 165, column 1) no analysis yet for: program (x1,y1) <<= (x2,y2) = (x1 <<= x2) und (y1 <<= y2)
+FatalError "Prelude.hascasl" (line 176, column 2) no analysis yet for: . __ in c -->? d
   =
   \ f : c ->? d . all
 		  (\ x : c; y : c . (def (f x) und x <<= y) impl def (f y)) und all
 		  (\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
 				    (\ m : nat . def f (s (m)) und eq
 						 (sup (\ n : nat .! f (s (n + m))),f (sup (s)))))
-FatalError (182,3) no analysis yet for: program f <<= [c -->? d] g =
+FatalError "Prelude.hascasl" (line 182, column 3) no analysis yet for: program f <<= [c -->? d] g =
 	all (\ x : c . def (f x) impl f (x) <<= g (x))
-FatalError (188,2) no analysis yet for: . __ in c --> d = \ f : c -->? d . all (\ x : c . def f (x))
-Hint (190,13) not a class 'c --> d'
-Hint (190,13) not a class 'c --> d'
-FatalError (192,2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
-FatalError (198,1) no analysis yet for: . all
+FatalError "Prelude.hascasl" (line 188, column 2) no analysis yet for: . __ in c --> d = \ f : c -->? d . all (\ x : c . def f (x))
+Hint "Prelude.hascasl" (line 190, column 13) not a class 'c --> d'
+Hint "Prelude.hascasl" (line 190, column 13) not a class 'c --> d'
+FatalError "Prelude.hascasl" (line 192, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
+FatalError "Prelude.hascasl" (line 198, column 1) no analysis yet for: . all
   (\ f : p -->? p . eq (f (Y (f)),Y (f)) und all
 		    (\ x : p . eq (f (x),x) impl Y (f) <<= x))
-FatalError (201,4) no analysis yet for: undefined
+FatalError "Prelude.hascasl" (line 201, column 4) no analysis yet for: undefined

@@ -65,7 +65,7 @@ data OpInfo = OpInfo { opType :: TypeScheme
 
 data OpDefn = NoOpDefn
 	    | ConstructData TypeId     -- target type
-	    | SelectData UninstOpId TypeId   -- constructor of source type
+	    | SelectData [UninstOpId] TypeId   -- constructors of source type
 	    | Definition Term            
 	    | VarDefn deriving (Show, Eq)
 

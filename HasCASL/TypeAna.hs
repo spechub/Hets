@@ -17,9 +17,10 @@ import HasCASL.Le
 import Data.List
 import Data.Maybe
 import Control.Monad.State
-import HasCASL.PrintAs(showPretty)
+import HasCASL.PrintAs()
 import qualified Common.Lib.Map as Map
 import Common.Result
+import Common.PrettyPrint
 
 data ApplMode = OnlyArg | TopLevel 
 

@@ -10,23 +10,17 @@
 module HasCASL.ClassAna where
 
 import HasCASL.As
-import HasCASL.AsUtils
+import HasCASL.AsUtils()
 import Common.Id
 import HasCASL.Le
 import Data.List
 import Data.Maybe
 import Control.Monad.State
-import HasCASL.PrintAs(showPretty)
+import HasCASL.PrintAs()
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Common.Result
 
-mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
-mkDiag k s a =
-    Diag k (s ++ " '" ++ showPretty a "'") $
-		 case get_pos a of 
-		 Nothing -> nullPos
-		 Just p -> p
 
 -- ---------------------------------------------------------------------------
 -- analyse class

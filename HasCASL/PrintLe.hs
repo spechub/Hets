@@ -72,9 +72,9 @@ instance PrettyPrint OpDefn where
     printText0 _ VarDefn = space <> ptext "%(var)%"
     printText0 _ (ConstructData i) = space <> ptext ("%(construct " ++
 				     showId i ")%")
-    printText0 _ (SelectData c i) = space <> ptext ("%(select from " ++
-				     showId i " constructed by " 
-						    ++ showId c ")%")
+    printText0 ga (SelectData c i) = space <> ptext ("%(select from " ++
+				     showId i " constructed by")
+				    <+> printList0 ga c <> ptext ")%"
     printText0 ga (Definition t) = space <> ptext equalS <+> 
 				   printText0 ga t
  
