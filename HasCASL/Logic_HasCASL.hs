@@ -18,27 +18,21 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.AsToLe
 import CASL.AS_Basic_CASL(SYMB_ITEMS, SYMB_MAP_ITEMS)
-import HasCASL.ParseItem
-import HasCASL.Merge
-import Common.Result
+import CASL.Print_AS_Basic()
 import CASL.SymbolParser
+import HasCASL.ParseItem
+import Common.Result
 import Logic.ParsecInterface
 import Logic.Logic
 import Common.AnnoState(emptyAnnos)
 import Data.Dynamic
 import Common.Lib.State
-import HasCASL.Morphism
-import qualified CASL.Sign
-import qualified CASL.Static
-import qualified CASL.SymbolAnalysis
-import qualified CASL.Sublogics
-import qualified CASL.Logic_CASL
+import qualified HasCASL.Morphism as M
+import CASL.Morphism
 
 type Sign = Env
-type HasCASL_Sublogics = CASL.Sublogics.CASL_Sublogics
+type HasCASL_Sublogics = ()
 type Sentence = Formula
-type Symbol = CASL.Sign.Symbol
-type RawSymbol = CASL.Sign.RawSymbol
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -49,19 +43,19 @@ instance Language HasCASL -- default definition is okay
 
 basicSpecTc :: TyCon
 basicSpecTc = mkTyCon "HasCASL.As.BasicSpec"
-signTc :: TyCon
-signTc = mkTyCon "HasCASL.Le.Env"
-sentenceTc :: TyCon
-sentenceTc = mkTyCon "HasCASL.As.Formula"
+envTc :: TyCon
+envTc = mkTyCon "HasCASL.Le.Env"
+formulaTc :: TyCon
+formulaTc = mkTyCon "HasCASL.As.Formula"
 
 instance Typeable BasicSpec where
     typeOf _ = mkAppTy basicSpecTc []
 
-instance Typeable Sign where
-    typeOf _ = mkAppTy signTc []
+instance Typeable Env where
+    typeOf _ = mkAppTy envTc []
 
-instance Typeable Sentence where
-    typeOf _ = mkAppTy sentenceTc []
+instance Typeable Formula where
+    typeOf _ = mkAppTy formulaTc []
 
 instance Syntax HasCASL BasicSpec
 		SYMB_ITEMS SYMB_MAP_ITEMS
@@ -70,55 +64,43 @@ instance Syntax HasCASL BasicSpec
 	 parse_symb_items HasCASL = Just(toParseFun symbItems ())
 	 parse_symb_map_items HasCASL = Just(toParseFun symbMapItems ())
 
-instance Category HasCASL Env Morphism where 
-    ide HasCASL e = ideMor e
-    comp HasCASL m1 m2 = Just $ compMor m1 m2
-    dom HasCASL m = msource m
-    cod HasCASL m = mtarget m
-    legal_obj HasCASL e = legalEnv e
-    legal_mor HasCASL m = legalMor m
+instance Category HasCASL Env M.Morphism where 
+    ide HasCASL e = M.ideMor e
+    comp HasCASL m1 m2 = Just $ M.compMor m1 m2
+    dom HasCASL m = M.msource m
+    cod HasCASL m = M.mtarget m
+    legal_obj HasCASL e = M.legalEnv e
+    legal_mor HasCASL m = M.legalMor m
 
-instance Sentences HasCASL Sentence () Sign Morphism Symbol
+instance Sentences HasCASL Sentence () Sign M.Morphism Symbol
 
 instance StaticAnalysis HasCASL BasicSpec Sentence ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
-               Morphism 
+               M.Morphism 
                Symbol RawSymbol where
     basic_analysis HasCASL = Just ( \ (b, e, _) ->
 		let ne = snd $ (runState (anaBasicSpec b)) e 
 		    in return (ne, initialEnv, [])) 
-    stat_symb_map_items HasCASL = CASL.SymbolAnalysis.statSymbMapItems
-    stat_symb_items HasCASL = CASL.SymbolAnalysis.statSymbItems
-    symbol_to_raw HasCASL = CASL.SymbolAnalysis.symbolToRaw
-    id_to_raw HasCASL = CASL.SymbolAnalysis.idToRaw
-    matches HasCASL = CASL.SymbolAnalysis.matches
-    sym_name HasCASL = CASL.SymbolAnalysis.symName
   
     signature_union HasCASL = merge
     empty_signature HasCASL = initialEnv
-    induced_from_to_morphism HasCASL _ e1 e2 = return $ mkMorphism e1 e2
-    induced_from_morphism HasCASL _ e = return $ ideMor e
-    morphism_union HasCASL m1 m2 = morphismUnion m1 m2
+    induced_from_to_morphism HasCASL _ e1 e2 = return $ M.mkMorphism e1 e2
+    induced_from_morphism HasCASL _ e = return $ M.ideMor e
+    morphism_union HasCASL m1 m2 = M.morphismUnion m1 m2
 
-    cogenerated_sign HasCASL _ e = return $ ideMor e
+    cogenerated_sign HasCASL _ e = return $ M.ideMor e
+
+    stat_symb_map_items HasCASL = statSymbMapItems
+    stat_symb_items HasCASL = statSymbItems
+    symbol_to_raw HasCASL = symbolToRaw
+    id_to_raw HasCASL = idToRaw
+    matches HasCASL = CASL.Morphism.matches
+    sym_name HasCASL = symName
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
-               Morphism
-               Symbol RawSymbol () where
-         sublogic_names HasCASL = CASL.Sublogics.sublogics_name
-         all_sublogics HasCASL = CASL.Sublogics.sublogics_all
-         is_in_symb_items HasCASL = CASL.Sublogics.in_symb_items
-         is_in_symb_map_items HasCASL = CASL.Sublogics.in_symb_map_items
-         is_in_symbol HasCASL = CASL.Sublogics.in_symbol
-
-         min_sublogic_symb_items HasCASL = CASL.Sublogics.sl_symb_items
-         min_sublogic_symb_map_items HasCASL = CASL.Sublogics.sl_symb_map_items
-         min_sublogic_symbol HasCASL = CASL.Sublogics.sl_symbol
-
-         proj_sublogic_symb_items HasCASL = CASL.Sublogics.pr_symb_items
-         proj_sublogic_symb_map_items HasCASL = CASL.Sublogics.pr_symb_map_items
-         proj_sublogic_symbol HasCASL = CASL.Sublogics.pr_symbol
+               M.Morphism
+               Symbol RawSymbol () 
 

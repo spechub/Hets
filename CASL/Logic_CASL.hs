@@ -23,13 +23,12 @@ import Common.AS_Annotation
 import Common.AnnoState(emptyAnnos)
 import Common.Lib.Parsec
 import Common.Lib.Map
-import CASL.Sign
 import Logic.Logic
 import Common.Lexer((<<))
 
-import qualified CASL.Sublogics
-import qualified CASL.Static
-import CASL.SymbolAnalysis
+import CASL.Sublogic
+import CASL.StaticAna
+import CASL.Morphism
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -67,12 +66,12 @@ instance Syntax CASL BASIC_SPEC
 
 -- lattices (for sublogics)
 
-instance LatticeWithTop CASL.Sublogics.CASL_Sublogics where
+instance LatticeWithTop CASL_Sublogics where
     -- meet, join :: l -> l -> l
-    meet = CASL.Sublogics.sublogics_min
-    join = CASL.Sublogics.sublogics_max
+    meet = CASL.Sublogic.sublogics_min
+    join = CASL.Sublogic.sublogics_max
     -- top :: l
-    top = CASL.Sublogics.top
+    top = CASL.Sublogic.top
 
 -- CASL logic
 
@@ -80,8 +79,7 @@ instance Sentences CASL Sentence () Sign Morphism Symbol where
       map_sen CASL _morphism s = return s
       parse_sentence CASL _sign str = 
 	  case runParser (aFormula << eof) emptyAnnos "" str of
-	  Right _ -> return $ Axiom $ Annoted 
-		     (AxiomDecl [] (TrueAtom []) []) [] [] []
+	  Right x -> return $ item x
 	  Left err -> fail $ show err
       provers CASL = [] 
       cons_checkers CASL = []
@@ -91,7 +89,7 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
                Sign 
                Morphism 
                Symbol RawSymbol where
-         basic_analysis CASL = Just CASL.Static.basicAnalysis
+         basic_analysis CASL = Just basicAnalysis
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          -- ensures_amalgamability :: id
@@ -105,17 +103,16 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          id_to_raw CASL = idToRaw
          sym_of CASL = symOf
          symmap_of CASL = symmapOf
-         matches CASL = CASL.SymbolAnalysis.matches
+         matches CASL = CASL.Morphism.matches
          sym_name CASL = symName
          
          -- add_sign :: id -> Sign -> Sign -> Sign
-	 add_sign CASL s1 s2 = s1 {getMap = union (getMap s1) (getMap s2)}
+	 add_sign CASL = addSig
          empty_signature CASL = emptySign
          signature_union CASL sigma1 _sigma2 = return sigma1 -- ??? incorrect
          morphism_union CASL mor1 _mor2 = return mor1 -- ??? incorrect
          -- final_union :: id -> Sign -> Sign -> Result Sign
-	 final_union CASL s1 s2 = return $ 
-	          s1 {getMap = union (getMap s1) (getMap s2)}
+	 final_union CASL s1 s2 = return $ addSig s1 s2
          is_subsig CASL = isSubSig
          cogenerated_sign CASL _rsys sigma = return (ide CASL sigma)
          generated_sign CASL _rsys sigma = return (ide CASL sigma)
@@ -130,37 +127,37 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          --               -> Result Morphism
          extend_morphism CASL _s m _s1 _s2 = return m
 
-instance Logic CASL CASL.Sublogics.CASL_Sublogics
+instance Logic CASL CASL.Sublogic.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism
                Symbol RawSymbol () where
-         sublogic_names CASL = CASL.Sublogics.sublogics_name
-         all_sublogics CASL = CASL.Sublogics.sublogics_all
+         sublogic_names CASL = CASL.Sublogic.sublogics_name
+         all_sublogics CASL = CASL.Sublogic.sublogics_all
 
-         is_in_basic_spec CASL = CASL.Sublogics.in_basic_spec
-         is_in_sentence CASL = CASL.Sublogics.in_sentence
-         is_in_symb_items CASL = CASL.Sublogics.in_symb_items
-         is_in_symb_map_items CASL = CASL.Sublogics.in_symb_map_items
-         is_in_sign CASL = CASL.Sublogics.in_sign
-         is_in_morphism CASL = CASL.Sublogics.in_morphism
-         is_in_symbol CASL = CASL.Sublogics.in_symbol
+         is_in_basic_spec CASL = CASL.Sublogic.in_basic_spec
+         is_in_sentence CASL = CASL.Sublogic.in_sentence
+         is_in_symb_items CASL = CASL.Sublogic.in_symb_items
+         is_in_symb_map_items CASL = CASL.Sublogic.in_symb_map_items
+         is_in_sign CASL = CASL.Sublogic.in_sign
+         is_in_morphism CASL = CASL.Sublogic.in_morphism
+         is_in_symbol CASL = CASL.Sublogic.in_symbol
 
-         min_sublogic_basic_spec CASL = CASL.Sublogics.sl_basic_spec
-         min_sublogic_sentence CASL = CASL.Sublogics.sl_sentence
-         min_sublogic_symb_items CASL = CASL.Sublogics.sl_symb_items
-         min_sublogic_symb_map_items CASL = CASL.Sublogics.sl_symb_map_items
-         min_sublogic_sign CASL = CASL.Sublogics.sl_sign
-         min_sublogic_morphism CASL = CASL.Sublogics.sl_morphism
-         min_sublogic_symbol CASL = CASL.Sublogics.sl_symbol
+         min_sublogic_basic_spec CASL = CASL.Sublogic.sl_basic_spec
+         min_sublogic_sentence CASL = CASL.Sublogic.sl_sentence
+         min_sublogic_symb_items CASL = CASL.Sublogic.sl_symb_items
+         min_sublogic_symb_map_items CASL = CASL.Sublogic.sl_symb_map_items
+         min_sublogic_sign CASL = CASL.Sublogic.sl_sign
+         min_sublogic_morphism CASL = CASL.Sublogic.sl_morphism
+         min_sublogic_symbol CASL = CASL.Sublogic.sl_symbol
 
-         proj_sublogic_basic_spec CASL = CASL.Sublogics.pr_basic_spec
-         proj_sublogic_symb_items CASL = CASL.Sublogics.pr_symb_items
-         proj_sublogic_symb_map_items CASL = CASL.Sublogics.pr_symb_map_items
-         proj_sublogic_sign CASL = CASL.Sublogics.pr_sign
-         proj_sublogic_morphism CASL = CASL.Sublogics.pr_morphism
-         proj_sublogic_epsilon CASL = CASL.Sublogics.pr_epsilon
-         proj_sublogic_symbol CASL = CASL.Sublogics.pr_symbol
+         proj_sublogic_basic_spec CASL = CASL.Sublogic.pr_basic_spec
+         proj_sublogic_symb_items CASL = CASL.Sublogic.pr_symb_items
+         proj_sublogic_symb_map_items CASL = CASL.Sublogic.pr_symb_map_items
+         proj_sublogic_sign CASL = CASL.Sublogic.pr_sign
+         proj_sublogic_morphism CASL = CASL.Sublogic.pr_morphism
+         proj_sublogic_epsilon CASL = CASL.Sublogic.pr_epsilon
+         proj_sublogic_symbol CASL = CASL.Sublogic.pr_symbol
 
 ---- helpers ---------------------------------
 fun_err :: String -> a

@@ -46,7 +46,7 @@ data Env = Env { sortSet :: Set.Set SORT
                , varMap :: Map.Map SIMPLE_ID (Set.Set SORT)
 	       , sentences :: [Named FORMULA]	 
 	       , envDiags :: [Diagnosis]
-	       } deriving (Show)
+	       } deriving (Show, Eq)
 
 emptyEnv :: Env
 emptyEnv = Env { sortSet = Set.empty
@@ -354,6 +354,9 @@ type Sign = Env  -- ignoring vars, sentences and diags
 
 type Sentence = FORMULA
 
+emptySign :: Sign
+emptySign = emptyEnv 
+
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                  -> Result (Sign,Sign,[Named Sentence])
 
@@ -362,7 +365,7 @@ basicAnalysis (bs, inSig, ga) =
 	ds = envDiags accSig
 	sents = sentences accSig
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
-	in Result ds $ Just (cleanSig,  cleanSig `diffSig` inSig, sents) 
+	in Result ds $ Just (cleanSig `diffSig` inSig, cleanSig, sents) 
 
 diffSig :: Sign -> Sign -> Sign
 diffSig a b = 
@@ -394,3 +397,13 @@ addSig a b =
       , opMap = Map.unionWith Set.union (opMap a) $ opMap b	
       , predMap = Map.unionWith Set.union (predMap a) $ predMap b	
       }
+
+isEmptySig :: Sign -> Bool 
+isEmptySig s = 
+    Set.isEmpty (sortSet s) && 
+    Rel.isEmpty (sortRel s) && 
+    Map.isEmpty (opMap s) &&
+    Map.isEmpty (predMap s)
+
+isSubSig :: Sign -> Sign -> Bool
+isSubSig sub super = isEmptySig $ diffSig sub super
