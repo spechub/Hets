@@ -1,0 +1,51 @@
+*
+**
+a_a
+__
+123
+1.2
+1
+1.2E3
+12.23E34
+"bla"
+""
+<
+<=
+.a
+'a'
+< [a,b]
+<=[a,b]
+.a[a,b]
+'a'[a,b]
+__*__
+(a __ b)
+(a __ b) a
+b(a __ b)
+b(a __ b) a
+{a __ b}
+{a __ b} a
+b{a __ b}
+b{a __ b} a
+[a __ b]
+[a __ b] a
+b[a __ b]
+b[a __ b] a
+({}, [], {[]{}}) 
+{{}, [], {[]{}}}
+[{}, [], {[]{}}]
+(var y : bb)
+(op y : bb) 
+(op __<__ : ##) 
+(op __<__ : ## -> --) 
+(op __<__ : bb) 
+(op __<__ :? bb) 
+(op __<__ :? ##) 
+(op __<__ : ?##) 
+(op __<__ : ? ##) 
+ys as b
+(predy y : bb)
+(predy : bb)
+(predy : bb)
+a when b else c
+#as b
+a b when b c else a f g when f a f else f a f g when f a f else f 

@@ -1,0 +1,26 @@
+(pred y : bb)
+(pred y : bb*bb)
+a =e=< b
+exists1 (predy :: bb) 
+exists predy : bb . a 
+exists! a: v . x
+exists!a:v.x
+exists! # :v.x
+forall a: v . x
+a if b
+def x
+def#
+{}when[]else{}
+a/\b/\c
+a\/b\/c
+a=>b
+a<=>b
+true
+false
+b in#
+a =e= b 
+(a = b)
+a=>b=>c=>d
+a if b if c if d
+a<=>b
+a/\b if b\/c if not c if def d

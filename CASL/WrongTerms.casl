@@ -1,0 +1,21 @@
+=
+=[a,b]
+(a, =, b) 
+(pred y : bb)
+(pred y:bb)
+(pred y:())
+as s
+: s
+true
+false
+a when f else
+var x
+(var x :? s) 
+not 
+def
+=e=
+=>
+if
+<=>
+/\
+\/
