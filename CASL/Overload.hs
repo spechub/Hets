@@ -311,7 +311,7 @@ minExpTerm_simple sign var = do
             = Set.size (Set.intersection ss (subsortsOf s sign)) == 1
         eq                       = xeq_TUPLE sign
         pair_with_id            :: SORT -> (TERM, SORT)
-        pair_with_id sort        = ((Simple_id var), sort)
+        pair_with_id sort        = ((Qual_var var sort []), sort)
 
 {-----------------------------------------------------------
     Minimal Expansions of a Qual_var Term
@@ -325,12 +325,12 @@ minExpTerm_qual sign var sort pos = do
     where
         fits                    :: TERM -> Bool
         fits term                = case term of
-            (Sorted_term (Simple_id var') sort' _)
+            (Sorted_term (Qual_var var' _ _) sort' _)
                 -> (var == var') && (sort == sort')
             _   -> error "Internal error: minExpTerm: unsorted TERM after expansion"
         selectExpansions        :: [TERM] -> [(TERM, SORT)]
         selectExpansions c
-            = [ ((Simple_id var), sort) |       -- :: (TERM, SORT)
+            = [ ((Qual_var var sort []), sort) |       -- :: (TERM, SORT)
                 sorted <- c,                    -- :: TERM
                 fits sorted ]                   -- :: Bool
 

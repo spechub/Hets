@@ -40,7 +40,7 @@ type Sort  = [Class]
 {- The sorts attached to TFrees and TVars specify the sort of that variable -}
 data Typ = Type (String,[Typ])
              | TFree (String, Sort)
-             -- | TVar  (Indexname, Sort)
+             -- TVar  (Indexname, Sort)
            deriving (Eq, Ord)
 
 instance Show Typ where
