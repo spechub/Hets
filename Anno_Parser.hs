@@ -1,5 +1,6 @@
 
 {- HetCATS/Anno_Parser.hs
+   $Id$
    Authors: Klaus Lüttich, Christian Maeder
    Year:   2002/2003
 
@@ -20,25 +21,28 @@ import Token
 import Id
 import AS_Annotation
 
+type GParser a = forall st. GenParser Char st a
 
-comment, commentLine, commentGroup :: GenParser Char st Annotation
+comment :: GParser Annotation
 comment = commentLine <|> commentGroup
 
+commentLine :: GParser Annotation
 commentLine = do try (string "%%")
 		 line <- manyTill anyChar (newline <|> (eof >> return '\n'))  
 		 return (Comment_line line [])
-		 
+
+commentGroup :: GParser Annotation 
 commentGroup = do try (string "%{")
 		  text_lines <- manyTill anyChar (try (string "}%"))
 		  sp <- getPosition
 		  return (Comment_group (lines text_lines) [conv sp])
     where conv sp = (\(l,c) -> (l,c-2)) (convToPos sp)
 
-annote, label :: GenParser Char st Annotation
+annote :: GParser Annotation
 annote = Anno_Parser.label <|> 
 	 do start_source_pos <- getPosition
-	    ide <- anno_ident
-	    anno <- ((annote_group ide) <|> (annote_line ide))
+	    i <- anno_ident
+	    anno <- ((annote_group i) <|> (annote_line i))
 	    end_pos <- getPosition
 	    case (parse_anno (add_pos end_pos anno) start_source_pos) of
 	        Left  err -> do setPosition (errorPos err)
@@ -56,43 +60,45 @@ annote = Anno_Parser.label <|>
 			   _ -> error "nothing to be done for other Annos"
 		   ) (convToPos sp)
 
+label :: GParser Annotation
 label = do try(string "%(")
 	   label_lines <- manyTill anyChar (string ")%")
 	   sp <- getPosition
 	   return (Label (lines label_lines) [conv sp])
     where conv sp = (\(l,c) -> (l,c-2)) (convToPos sp)
 
-anno_ident :: GenParser Char st String
+anno_ident :: GParser String
 anno_ident = string "%" >> scanAnyWords
 
-annote_group, annote_line :: String -> GenParser Char st Annotation
-annote_group ide = 
-    do char '(' -- ) 
-       annote_lines <- manyTill anyChar (string ")%")
-       return (Annote_group ide (lines annote_lines) [])
+annote_group :: String -> GParser Annotation
+annote_group s = do char '(' -- ) 
+		    annote_lines <- manyTill anyChar (string ")%")
+		    return (Annote_group s (lines annote_lines) [])
 
-annote_line ide = 
-                 do anno <- do char ' '
-			       line <- manyTill anyChar 
+annote_line :: String -> GParser Annotation
+annote_line s = do anno <- do char ' '
+			      line <- manyTill anyChar 
 			                               (newline <|>
 							(eof >> return '\n'))
-			       return (Annote_line ide line [])
-			       -- AnnoteWord (%implies ...)
-			    <|> do newline
-				   return (Annote_line ide "" [])
-		    return(anno)
+			      return (Annote_line s line [])
 
-annotationL, annotation :: GenParser Char st Annotation
+			       -- AnnoteWord (%implies ...)
+			   <|> do newline
+				  return (Annote_line s "" [])
+		   return(anno)
+
+annotationL :: GParser Annotation
 annotationL = do start_source_pos <- getPosition
 		 anno <- (comment <|> annote)
 		 return (add_pos anno (convToPos start_source_pos))
     where add_pos an p = up_pos_l (\l -> p:l) an
 
+annotation :: GParser Annotation
 annotation = do a <- annotationL  
 		skip -- cause all parsers above are not lexeme
 		return a
 
-annotations :: GenParser Char st [Annotation]
+annotations :: GParser [Annotation]
 annotations = many annotation
 
 -----------------------------------------
@@ -107,8 +113,12 @@ parse_anno anno sp = case anno of
 			 "implies" -> semantic_anno Implies      kw as sp pos
 			 "cons"    -> semantic_anno Conservative kw as sp pos
 			 "mono"    -> semantic_anno Monomorph    kw as sp pos
-			 _         -> parse_anno (Annote_group kw [as] pos) sp 
-		     Annote_group kw as _ -> 
+			 _         -> 
+			     case parse_anno (Annote_group kw [as] pos) sp of
+			     x@(Left _)  -> x
+			     Right (Annote_group _ _ _) -> Right anno
+			     x@(Right _) -> x
+		     Annote_group kw as _pos -> 
 			 case kw of
 			  "prec"    -> parse_internal prec_anno    nsp inp
 			  "display" -> parse_internal display_anno nsp inp
@@ -149,7 +159,7 @@ parse_internal p sp inp = parse (do setPosition sp
 			        inp 
 
 prec_anno, number_anno, string_anno, list_anno, floating_anno 
-    :: GenParser Char st Annotation
+    :: GParser Annotation
 prec_anno = do left_ids <- oBraceT >> sepBy1 parseId commaT << cBraceT
 	       sign <- (try (string "<>") <|> (string "<")) << skip
 	       right_ids <- oBraceT >> (sepBy1 parseId commaT) << cBraceT
@@ -162,26 +172,29 @@ prec_anno = do left_ids <- oBraceT >> sepBy1 parseId commaT << cBraceT
 number_anno   = literal_anno f 1 "number"
     where f [x] = Number_anno x
 	  f _   = error "wrong_number of ids"
+
 string_anno   = literal_anno f 2 "string"
     where f [x1,x2] = String_anno x1 x2
 	  f _       = error "wrong_number of ids"
+
 floating_anno = literal_anno f 2 "floating"
     where f [x1,x2] = Float_anno x1 x2
 	  f _       = error "wrong_number of ids"
+
 list_anno     = literal_anno f 3 "list"
     where f [x1,x2,x3] = List_anno x1 x2 x3
 	  f _          = error "wrong_number of ids"
 
-literal_anno :: ([Id] -> [a] -> b) -> Int -> [Char] -> GenParser Char st b
-literal_anno con nums conStr = 
+literal_anno :: ([Id] -> [Pos] -> Annotation) 
+	        -> Int -> String -> GParser Annotation
+literal_anno con cnt conStr = 
     do ids <- sepBy1 parseId commaT
-       if length ids == nums then return $ con ids $ []
+       if length ids == cnt then return $ con ids $ []
 	else unexpected $ "Annotation \"" ++ conStr ++ 
 		          "\" malformed: wrong number of ids, " ++ 
-		          show nums ++ " id(s) expected!" 
+		          show cnt ++ " id(s) expected!" 
 
-
-display_anno :: GenParser Char st Annotation
+display_anno :: GParser Annotation
 display_anno = do ident <- parseId
 		  tls <- permute ( mklst <$?> (disp_symb "HTML")
 				         <|?> (disp_symb "LATEX")
@@ -189,25 +202,25 @@ display_anno = do ident <- parseId
 		  return (Display_anno ident tls [])
     where mklst a b c = [a,b,c] 
 	  disp_symb sym = ((ready_symb,""),
-				 do { symb <- (try (string 
+				 do symb <- (try (string 
 							   ready_symb))
 				              << skip
-				    ; str <- manyTill anyChar 
+				    str <- manyTill anyChar 
 				      ((fmap 
 					(\_->())
 					(lookAhead (string "%")))
 				       <|>
 				       eof)
-				    ; return (symb, reverse $
+				    return (symb, reverse $
 					      dropWhile (`elem` whiteChars)
 					      $ reverse str)
-				    }
 				) where ready_symb = "%"++sym
 
-semantic_anno :: (a -> b) -> [Char] -> [Char] -> SourcePos -> a 
-	      -> Either ParseError b
+semantic_anno :: ([Pos] -> Annotation)
+	         -> String -> String -> SourcePos -> [Pos] 
+		 -> Either ParseError Annotation
 semantic_anno anno kw as sp pos = 
-    if (`elem` whiteChars) `all` as then 
+    if all (`elem` whiteChars) as then 
        Right (anno pos)
     else 
        Left (newErrorMessage (Expect("only whitespaces after %" ++ kw)) sp)
