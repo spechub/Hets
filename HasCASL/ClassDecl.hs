@@ -43,7 +43,7 @@ toState d f r = do m <- toMaybeState f r
 				      Just a -> a
 
 -- ---------------------------------------------------------------------
-
+-- adding diagnostic messages
 -- ---------------------------------------------------------------------
 
 appendDiags :: [Diagnosis] -> State Env ()
@@ -54,9 +54,6 @@ appendDiags ds =
 
 addDiag :: Diagnosis -> State Env ()
 addDiag d = appendDiags [d]
-
-putClassMap :: ClassMap -> State Env ()
-putClassMap ce = do { e <- get; put e { classMap = ce } }
 
 -- ---------------------------------------------------------------------------
 -- analyse classes as state
@@ -80,7 +77,7 @@ checkKindsS p k1 k2 = do toMaybeState classMap $ checkKinds  p k1 k2
 anaClassDecls :: ClassDecl -> State Env ()
 anaClassDecls (ClassDecl cls k _) = 
     do ak <- anaKindS k
-       mapM_ (anaClassDecl ak Set.empty Nothing) cls
+       mapM_ (addClassDecl ak Set.empty Nothing) cls
 
 anaClassDecls (SubclassDecl _ _ (Downset _) _) = error "anaClassDecl"
 anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
@@ -89,33 +86,43 @@ anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
 	  do addDiag $ Diag Warning
 			  "redundant universe class" 
 			 $ getPos (ps ++ qs)
-	     mapM_ (anaClassDecl ak supcls Nothing) cls
+	     mapM_ (addClassDecl ak supcls Nothing) cls
           else let (hd, tl) = Set.deleteFindMin supcls in 
 	      if Set.isEmpty tl then
 		 do Result _ mr <- toResultState classMap $ anaClassId hd
 		    if isJust mr then
 		       return () else do  
-			  anaClassDecl ak tl Nothing hd
+			  addClassDecl ak tl Nothing hd
 			  addDiag $ mkDiag Warning 
 				      "implicit declaration of superclass" hd
-		    mapM_ (anaClassDecl ak (Set.single hd) Nothing) cls
+		    mapM_ (addClassDecl ak (Set.single hd) Nothing) cls
 		  else do (sk, Intersection newSups _) <- anaClassS (ak, sc)
 			  checkKindsS hd sk ak
-			  mapM_ (anaClassDecl ak newSups Nothing) cls
+			  mapM_ (addClassDecl ak newSups Nothing) cls
 
 anaClassDecls (ClassDefn ci k ic _) =
     do ak <- anaKindS k
        (dk, newIc) <- anaClassS (ak, ic)
        checkKindsS ci dk ak
-       anaClassDecl ak Set.empty (Just newIc) ci 
+       addClassDecl ak Set.empty (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
     do addDiag $ downsetWarning t
-       anaClassDecl star Set.empty (Just $ Downset t) ci
+       addClassDecl star Set.empty (Just $ Downset t) ci
 
-anaClassDecl :: Kind -> Set.Set ClassId -> Maybe Class 
+-- ---------------------------------------------------------------------------
+-- store class decls
+-- ---------------------------------------------------------------------------
+
+-- | store a class map
+putClassMap :: ClassMap -> State Env ()
+putClassMap ce = do { e <- get; put e { classMap = ce } }
+
+-- | store a class 
+addClassDecl :: Kind -> Set.Set ClassId -> Maybe Class 
 	     -> ClassId -> State Env ()
-anaClassDecl kind sups defn ci = 
+-- check with merge
+addClassDecl kind sups defn ci = 
     if showId ci "" == "Type" then 
        addDiag $ Diag Error 
 		    "illegal universe class declaration" $ posOfId ci
@@ -170,6 +177,7 @@ showClassList :: [ClassId] -> ShowS
 showClassList is = showParen (length is > 1)
 		   $ showSepList ("," ++) showId is
 
+-- check with merge
 mergeDefns :: ClassId -> Class -> Class -> [Diagnosis]
 
 mergeDefns ci (Downset oldT) (Downset t) =

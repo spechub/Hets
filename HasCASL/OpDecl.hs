@@ -15,19 +15,8 @@ import HasCASL.TypeDecl
 import Common.Id
 import HasCASL.Le
 import Common.Lib.State
-import Common.Lib.Parsec.Pos
-import qualified Common.Lib.Map as Map
 import Common.Result
-import Data.List
-import Data.Maybe
-import HasCASL.Unify
 import HasCASL.MixAna
-
-putAssumps :: Assumps -> State Env ()
-putAssumps as =  do { e <- get; put e { assumps = as } }
-
-posOfOpId :: OpId -> Pos
-posOfOpId (OpId i _ _) = posOfId i
 
 anaOpItem :: OpItem -> State Env ()
 anaOpItem (OpDecl is sc attr _) = 
@@ -48,7 +37,7 @@ getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
     do let newArgs = args ++ tvs
            sc = TypeScheme newArgs q ps
        appendDiags $ checkUniqueness
-		       $ map (\ (TypeArg i _ _ _) -> i) newArgs
+		       $ map (\ (TypeArg v _ _ _) -> v) newArgs
        (k, newSc) <- anaTypeScheme sc
        checkKindsS i star k
        return (i, newSc)
@@ -68,36 +57,3 @@ anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
        putTypeMap tm       -- forget local variables 
        return (ik, newPty)
 
-checkDifferentTypeArgs :: [TypeArg] -> [Diagnosis]
-checkDifferentTypeArgs l = 
-    let v = map (\ (TypeArg i _ _ _) -> i) l
-	vd = filter ( not . null . tail) $ group $ sort v
-    in map ( \ vs -> mkDiag Error ("duplicate ids at '" ++
-	                          showSepList (showString " ") shortPosShow
-				  (map posOfId (tail vs)) "'" 
-				   ++ " for")  (head vs)) vd
-
-shortPosShow :: Pos -> ShowS
-shortPosShow p = showParen True (shows (sourceLine p) . showString "," .
-			 shows (sourceColumn p))
-
-unifiable :: TypeScheme -> TypeScheme -> State Env Bool
-unifiable sc1 sc2 =
-    do tm <- gets typeMap
-       c <- gets counter
-       let Result ds mm = evalState (unifIable tm sc1 sc2) c
-       appendDiags ds
-       return $ isJust mm
-
-addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env () 
-addOpId i sc attrs defn = 
-    do as <- gets assumps
-       let l = Map.findWithDefault [] i as
-       if sc `elem` map opType l then 
-	  addDiag $ mkDiag Warning 
-		      "repeated value" i
-	  else do bs <- mapM (unifiable sc) $ map opType l
-		  if or bs then addDiag $ mkDiag Error
-			 "illegal overloading of" i
-	             else putAssumps $ Map.insert i 
-			      (OpInfo sc attrs defn : l ) as

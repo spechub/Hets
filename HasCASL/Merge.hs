@@ -16,7 +16,7 @@ import HasCASL.AsUtils
 import HasCASL.Unify
 import qualified Common.Lib.Map as Map
 import Data.List
-import Control.Monad.State
+import Control.Monad
 import Common.Result
 import Common.GlobalAnnotations
 
