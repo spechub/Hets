@@ -1,6 +1,6 @@
 [a]
 Error (1,1) ambiguous mixfix term
-	a :: []
+	[a]
 	[ a ]
 (a) (b)
 Error (2,1) no resolution for term: (a) (b)
@@ -18,7 +18,7 @@ __ * __
 Error (8,1) no resolution for term: __ * __
 ([a], (a) (b), a +, __ < __ (a, b))
 Error (9,2) ambiguous mixfix term
-	a :: []
+	[a]
 	[ a ]
 Error (9,7) no resolution for term: (a) (b)
 Error (9,15) no resolution for term: a +
@@ -41,8 +41,8 @@ a when (op a : b)(a) else b
 Error (17,16) not a formula: (op a : b)(a)
 A [a]
 Error (18,1) ambiguous mixfix term
-	A (a :: [])
-	A ([ a ])
+	A [a]
+	A [ a ]
 	A [ a ]
 	A [ a ]
 	A[a]
@@ -52,60 +52,60 @@ Error (19,1) ambiguous mixfix term
 	B [ a ]
 A [a] A [a] p
 Error (20,1) ambiguous mixfix term
-	A ([ a ] (A ([ a ] p)))
-	A ([ a ] (A (a :: []) p))
-	A ([ a ] (A ([ a ]) p))
-	A [ a ] (A ([ a ] p))
-	A ([ a ] A [ a ] p)
+	A [ a ] (A [ a ] p)
+	A [ a ] (A [a] p)
+	A [ a ] (A [ a ] p)
+	A [ a ] (A [ a ] p)
+	A [ a ] A [ a ] p
 A [a] !
 Error (21,1) ambiguous mixfix term
-	A (a :: []) !
-	A ([ a ]) !
+	A [a] !
+	A [ a ] !
 	A [ a ] !
 	A [ a ] !
 	A[a] !
 [[[a]]]
 Error (22,1) ambiguous mixfix term
-	((a :: []) :: []) :: []
-	[ ((a :: []) :: []) ]
-	([ (a :: []) ]) :: []
-	[ ([ (a :: []) ]) ]
-	(([ a ]) :: []) :: []
+	[[[a]]]
+	[ [[a]] ]
+	[[ [a] ]]
+	[ [ [a] ] ]
+	[[[ a ]]]
 [b, A [a]]
 Error (23,1) ambiguous mixfix term
-	b :: ((A (a :: [])) :: [])
-	b :: ((A ([ a ])) :: [])
-	b :: (A [ a ] :: [])
-	b :: (A [ a ] :: [])
-	b :: (A[a] :: [])
+	[b, A [a]]
+	[b, A [ a ]]
+	[b, A [ a ]]
+	[b, A [ a ]]
+	[b, A[a]]
 b + [a] + b
 Error (24,1) ambiguous mixfix term
 	b + ([ a ] (+ b))
-	b + (a :: []) + b
-	b + ([ a ]) + b
+	b + [a] + b
+	b + [ a ] + b
 [a + b]
 Error (25,1) ambiguous mixfix term
-	(a + b) :: []
-	[ (a + b) ]
+	[a + b]
+	[ a + b ]
 A ([a])
 Error (26,1) ambiguous mixfix term
-	A ([a])
+	A [a]
 	A([a])
 Error (26,3) ambiguous mixfix term
-	a :: []
+	[a]
 	[ a ]
 - [a]
 Error (27,1) ambiguous mixfix term
-	- (a :: [])
-	- ([ a ])
+	- [a]
+	- [ a ]
 b + A [a]
 Error (28,1) ambiguous mixfix term
-	b + (A (a :: []))
-	b + (A ([ a ]))
+	b + (A [a])
+	b + (A [ a ])
 	b + A [ a ]
 	b + A [ a ]
 	b + A[a]
 [a] !
 Error (29,1) ambiguous mixfix term
-	(a :: []) !
-	([ a ]) !
+	[a] !
+	[ a ] !
