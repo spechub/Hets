@@ -58,7 +58,11 @@ instance PrintLaTeX AHsDecl where
 -- instances
 
 data Haskell = Haskell deriving (Show)
-instance Language Haskell  -- default definition is okay
+instance Language Haskell where
+ description _ = 
+  "Haskell - a purely functional programming language,\
+  \featuring static typing, higher-order functions, polymorphism, type classes and monadic effects\
+  \See http://www.haskell.org"
 
 type Sign = ModuleInfo 
 type Morphism = ()

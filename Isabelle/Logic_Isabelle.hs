@@ -26,7 +26,13 @@ import ATC.IsaSign
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data Isabelle = Isabelle deriving (Show)
-instance Language Isabelle  -- default definition is okay
+instance Language Isabelle where
+ description _ = 
+  "Isabelle - a generic theorem prover\
+  \This logic corresponds to the logic of Isabelle,\
+  \a weak intuitionistic type theory\
+  \Also, the logics encoded in Isabelle, like FOL, HOL; HOLCF, ZF are made available\
+  \See http://www.cl.cam.ac.uk/Research/HVG/Isabelle/"
 
 sentenceTc, signTc :: TyCon
 

@@ -40,10 +40,10 @@ data CASL = CASL deriving Show
 instance Language CASL where
  description _ = 
   "CASL - the Common algebraic specification language\
-  \The logic is subsorted partial first-order logic with sort generation constraints\
+  \This logic is subsorted partial first-order logic with sort generation constraints\
   \See the CASL User Manual, LNCS 2900\
   \and the CASL Reference Manual, LNCS 2960\
-  \See also http://www.cofi.info"
+  \See also http://www.cofi.info/CASL.html"
 
 type CASLBasicSpec = BASIC_SPEC () () ()
 type CASLFORMULA = FORMULA ()

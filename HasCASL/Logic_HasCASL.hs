@@ -38,7 +38,13 @@ type HasCASL_Sublogics = ()
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data HasCASL = HasCASL deriving (Show)
-instance Language HasCASL -- default definition is okay
+instance Language HasCASL where
+ description _ = 
+  "HasCASL - Algebraic Specification + Functional Programming = Environment for Formal Software Development\
+  \This logic is based on the partial lambda calculus,\
+  \and features subsorting, overloading and type class polymorphism\
+  \See the HasCASL summary and further papers,\
+  \available at http://www.tzi.de/cofi/HasCASL"
 
 basicSpecTc, envTc, senTc, symbolTc, rawSymbolTc, 
     symbItemsTc, symbMapItemsTc, morphismTc :: TyCon

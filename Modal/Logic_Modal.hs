@@ -36,7 +36,13 @@ import Data.Dynamic
 
 data Modal = Modal deriving Show
 
-instance Language Modal  -- default definition is okay
+instance Language Modal  where
+ description _ = 
+  "ModalCASL extends CASL by modal operators. Syntax for ordinary\
+  \modalities, multi-modal logics as well as  term-modal\
+  \logic (also covering dynamic logic) is provided.\
+  \Specific modal logics can be obtained via restrictions to\
+  \sublanguages."
 
 type MSign = Sign M_FORMULA ModalSign
 type ModalMor = Morphism M_FORMULA ModalSign ()

@@ -90,6 +90,9 @@ data Amalgamates = Yes
 class Show lid => Language lid where
     language_name :: lid -> String
     language_name i = show i
+    description :: lid -> String
+    -- default implementation
+    description _ = "No description available"
 
 -- (a bit unsafe) coercion using the language name
 coerce :: (Typeable a, Typeable b, Language lid1, Language lid2) => 
