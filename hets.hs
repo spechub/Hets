@@ -13,6 +13,7 @@ Portability :  non-portable (imports Logic.Logic)
 -}
 
 {- todo: option for omitting writing of env
+         destroy all graphs at the end
 -}
 
 module Main where
@@ -25,6 +26,9 @@ import Common.GlobalAnnotations (emptyGlobalAnnos)
 import Syntax.GlobalLibraryAnnotations (initGlobalAnnos)
 import Options
 import System.Environment
+import Events
+import Destructible
+import Data.IORef
 
 import Comorphisms.LogicGraph
 import Logic.Grothendieck
@@ -160,9 +164,12 @@ showGraph file opt env =
             putIfVerbose opt 3 "Converting Graph"
             (gid, gv, _cmaps) <- convertGraph graphMem ln libenv
             GUI.AbstractGraphView.redisplay gid gv
-            putIfVerbose opt 1 "Hit Return when finished"
-            getLine
-            return ()
+            --putIfVerbose opt 1 "Hit CTRL-C when finished"
+            (gs,_) <- readIORef gv
+            case lookup gid gs of
+              Just graph -> sync(destroyed (theGraph graph))
+              Nothing -> return ()
+            return ()  -- Should destroy all other graphs as well!
         Nothing -> putIfVerbose opt 1
             ("Error: Basic Analysis is neccessary to display "
              ++ "graphs in a graphical window")
