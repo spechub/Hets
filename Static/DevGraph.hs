@@ -39,11 +39,12 @@ import Syntax.AS_Library
 import Common.GlobalAnnotations
 
 import Common.Lib.Graph as Graph
-import Common.Lib.Map as Map
-import Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.PrettyPrint
 import Common.PPUtils
+import Common.Result
 import Common.Lib.Pretty
 
 -- ??? Some info about the theorems already proved for a node
@@ -131,6 +132,27 @@ getNodeAndSig (EmptyNode _) = Nothing
 getLogic (NodeSig (n,G_sign lid _)) = Logic lid
 getLogic (EmptyNode l) = l
 
+-- | Create a node that represents a union of signatures
+nodeSigUnion :: LogicGraph -> DGraph -> [NodeSig] -> DGOrigin -> Result (NodeSig, DGraph)
+nodeSigUnion lgraph dg nodeSigs orig =
+  do sigUnion@(G_sign lid _) <- homogeneousGsigManyUnion nullPos (map getSig nodeSigs)
+     let nodeContents = DGNode {dgn_name = Nothing,
+				dgn_sign = sigUnion,
+				dgn_sens = G_l_sentence_list lid [],
+				dgn_origin = orig }
+	 [node] = newNodes 0 dg
+	 dg' = insNode (node, nodeContents) dg
+	 inslink dgres nsig = do dg <- dgres
+				 case getNode nsig of
+				      Nothing -> return dg
+				      Just n -> do incl <- ginclusion lgraph (getSig nsig) sigUnion
+						   return (insEdge (n, node, DGLink {dgl_morphism = incl,
+										     dgl_type = GlobalDef,
+										     dgl_origin = orig }) dg)
+     dg'' <- foldl inslink (return dg') nodeSigs
+     return (NodeSig (node, sigUnion), dg'')
+
+
 data ExtNodeSig = ExtNodeSig (Node,G_ext_sign) | ExtEmptyNode AnyLogic
                deriving (Eq,Show)
 
@@ -154,21 +176,62 @@ getExtLogic (ExtEmptyNode l) = l
 
 -- import, formal parameters, united signature of formal params, body
 type ExtGenSig = (NodeSig,[NodeSig],G_sign,NodeSig)
+
 -- source, morphism, parameterized target
 type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
-type ArchSig = () -- to be done
-type UnitSig = () -- to be done
+
+
+-- * Types for architectural and unit specification analysis
+
+-- ** Basic types (as defined for basic static analysis in Chap. III:5.1)
+type ParUnitSig = ([NodeSig], NodeSig)
+data UnitSig = Unit_sig NodeSig
+	     | Par_unit_sig ParUnitSig 
+	       deriving (Show, Eq)
+emptyUnitSig :: AnyLogic -> UnitSig
+emptyUnitSig l = Unit_sig (EmptyNode l)
+type ImpUnitSig = (NodeSig, UnitSig)
+data ImpUnitSigOrSig = Imp_unit_sig ImpUnitSig 
+		     | Sig NodeSig
+		       deriving (Show, Eq)
+type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
+emptyStUnitCtx :: StUnitCtx
+emptyStUnitCtx = Map.empty
+
+-- ** Additional types (as defined for extended static analysis in Chap. III:5.6.1)
+type Item = Int -- TODO: better representation
+type StBasedUnitCtx = Map.Map SIMPLE_ID Item
+emptyStBasedUnitCtx :: StBasedUnitCtx
+emptyStBasedUnitCtx = Map.empty
+type BasedParUnitSig = (Item, ParUnitSig)
+type StParUnitCtx = Map.Map SIMPLE_ID BasedParUnitSig
+emptyStParUnitCtx :: StParUnitCtx
+emptyStParUnitCtx = Map.empty
+type Diag = () -- TODO: diagram from Logic.Logic
+emptyDiag :: Diag
+emptyDiag = ()
+type ExtStUnitCtx = (StParUnitCtx, StBasedUnitCtx, Diag)
+emptyExtStUnitCtx :: ExtStUnitCtx
+emptyExtStUnitCtx = (emptyStParUnitCtx, emptyStBasedUnitCtx, emptyDiag)
+
+-- | A mapping from extended to basic static unit context
+ctx :: ExtStUnitCtx -> StUnitCtx
+ctx (bs, ps, d) = emptyStUnitCtx -- TODO 
+
+
+type ArchSig = (StUnitCtx, UnitSig)
+
 
 data GlobalEntry = SpecEntry ExtGenSig 
                  | ViewEntry ExtViewSig
                  | ArchEntry ArchSig
                  | UnitEntry UnitSig deriving (Show,Eq)
 
-type GlobalEnv = Map SIMPLE_ID GlobalEntry
+type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
 
 type GlobalContext = (GlobalAnnos,GlobalEnv,DGraph)
 
-type LibEnv = Map LIB_NAME GlobalContext
+type LibEnv = Map.Map LIB_NAME GlobalContext
 
 
 emptyLibEnv :: LibEnv
