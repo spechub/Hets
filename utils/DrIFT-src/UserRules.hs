@@ -38,6 +38,7 @@ userRules :: [Rule]
 userRules = [("Binary", binary),
              ("Term", termfn),
              ("ATermConvertible", atermfn),
+	     ("UpPos",updateposfn),
              ("Implode", implodefn),
              ("Explode", explodefn)
             ]
@@ -237,7 +238,41 @@ childExplode v
 
 -- end of explode derivation
 
+-- begin of PosItem derivation 
+-- Author: luettich@tzi.de
+updateposfn dat =
+    if oneHas_p || oneHas_pl then
+       instanceSkeleton "PosItem"
+	       [ ((makeUpPosFn "up_pos"   pos   oneHas_p) , empty)
+	       , ((makeUpPosFn "up_pos_l" pos_l oneHas_pl), empty)
+	       ]
+               dat
+    else
+      empty
+    where 
+       oneHas tp =  any ((elem tp) . types) (body dat)
+       oneHas_p  = oneHas pos
+       oneHas_pl = oneHas pos_l	   
+       pos   = Con "Pos"
+       pos_l = List (Con "Pos")
 
+makeUpPosFn fname tp hasPos body =
+    if hasPos then
+       let 
+           cvs  = head (mknss [body] namesupply)
+	   cvs' = map (appFn tp (text "fn1")) (zip cvs (types body))
+       in hang (text fname <+> text "fn1" <+> ppCons cvs body <+> text "=") 
+	       4
+	       (ppCons cvs' body)
+    else
+       empty
+    where appFn appt fn (var,t) = 
+	      if t == appt then 
+		 parens (fn <+> var) 
+	      else 
+	         var
+
+-- end of PosItem derivation 
 
 -- begin of ATermConvertible derivation 
 -- Author: Joost.Visser@cwi.nl
@@ -294,9 +329,8 @@ makeFromATermFn dat =
         cases       = map (makeFromATerm (name dat)) (body dat)
 	whereblock  =
 	    text "where" $$
-            block [(text "aterm = let" <+> text "aterms" <+> text "=" <+>
-		    text "map (getATermSp att) pat_list" <+>
-		    text "in" <+> text "findATerm aterms")
+            block [text "aterm =" <+>
+		   text "findATerm (map (getATermSp att) pat_list)"
 		  ,text "pat_list =" <+> 
 		   bracketList (map makeFromATermPat (body dat))
 		  ] 
