@@ -21,9 +21,7 @@ __×__ : Type+ -> Type+ -> Type
 a : Type+ %(var)%
 b : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-Cons : forall a : Type+ .  a ×
-			   List a b -> List a %(construct List)%
-     : forall a : Type+ .  a × List a -> List a %(construct List)%
+Cons : forall a : Type+ .  a × List a -> List a %(construct List)%
 Nil : forall a : Type+ .  List a %(construct List)%
 __/\__ : Unit × Unit ->? Unit
 __<=>__ : Unit × Unit ->? Unit
@@ -33,14 +31,10 @@ __=e=__ : forall a : Type .  a × a ->? Unit
 __\/__ : Unit × Unit ->? Unit
 def__ : forall a : Type .  a ->? Unit
 head : forall a : Type+ .  List a -> a %(select from List constructed by
-				      (Cons : forall a : Type+ .  a × List a -> List a,
-				       Cons : forall a : Type+ .  a × List b -> List a,
-				       Cons : forall a : Type+ .  a × List a b -> List a))%
+				      Cons : forall a : Type+ .  a × List a -> List a)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a
 not__ : Unit ->? Unit
-tail : forall a : Type+ .  List a -> List a b %(select from List constructed by
-					     Cons : forall a : Type+ .  a × List a b -> List a)%
-     : forall a : Type+ .  List a -> List a %(select from List constructed by
+tail : forall a : Type+ .  List a -> List a %(select from List constructed by
 					   Cons : forall a : Type+ .  a × List a -> List a)%
 %% Diagnostics -----------------------------------------------------------
 Hint (line 1, column 5) is type variable 'b'
@@ -49,19 +43,15 @@ Warning (line 3, column 11) redeclared type 'a'
 Warning (line 4, column 16) redeclared type 'a'
 Warning (line 4, column 11) redeclared type 'List'
 Warning (line 5, column 16) redeclared type 'a'
-Error (line 5, column 28) wrong type scheme of 'Cons'
-  expected: forall a : Type+ .  a × List a -> List a
-     found: forall a : Type+ .  a × List b -> List a
-
-Error (line 5, column 43) wrong type scheme of 'tail'
-  expected: forall a : Type+ .  List a -> List a
-     found: forall a : Type+ .  List a -> List b
-
+Error (line 5, column 55) unbound type variable(s)
+	b : Type
 Warning (line 5, column 11) redeclared type 'List'
 Error (line 5, column 11) merge: TypeDefn of 'List'
 
 Warning (line 6, column 16) redeclared type 'a'
 Error (line 6, column 57) unexpected type argument 'b'
+Error (line 6, column 57) unbound type variable(s)
+	b : Type
 Warning (line 6, column 11) redeclared type 'List'
 Error (line 6, column 11) merge: TypeDefn of 'List'
 

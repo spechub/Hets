@@ -236,6 +236,11 @@ addVarDecl vd@(VarDecl v t _ _) =
 checkUniqueVars :: [VarDecl] -> State Env ()
 checkUniqueVars = addDiags . checkUniqueness . map ( \ (VarDecl v _ _ _) -> v )
 
+-- | check uniqueness of type variables 
+checkUniqueTypevars :: [TypeArg] -> State Env ()
+checkUniqueTypevars = addDiags . checkUniqueness 
+		      . map ( \ (TypeArg v _ _ _) -> v )
+
 -- | filter out assumption
 filterAssumps  :: (OpInfo -> Bool) -> Assumps -> Assumps
 filterAssumps p =

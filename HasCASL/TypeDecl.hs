@@ -178,6 +178,7 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs ps) =
 		      mkType ty ((TypeArg ai ak _ _): rest) =
 			  mkType (TypeAppl ty (TypeName ai ak 1)) rest
 		      dt = mkType ti nAs
+	          checkUniqueTypevars nAs
                   newAlts <- anaAlts dt
 				$ map item alts
 		  mapM_ ( \ (Construct c tc p sels) -> do
@@ -224,6 +225,7 @@ addTypePattern defn inst kind (i, as) =
     do newAs <- mapM anaTypeVarDecl as 
        let nAs = catMaybes newAs
            fullKind = typeArgsListToKind nAs kind
+       checkUniqueTypevars nAs
        mId <- addTypeId defn inst fullKind i
        return $ case mId of 
 		Nothing -> Nothing

@@ -19,7 +19,9 @@ import Common.Lib.State
 import Common.Result
 import HasCASL.Le
 import HasCASL.TypeAna
+import HasCASL.Unify
 import Data.Maybe
+import Data.List
 
 
 anaAlts :: Type -> [Alternative] -> State Env [AltDefn]
@@ -67,13 +69,13 @@ makePartial t =
 
 anaComp :: Id -> Type -> (Components, [Int]) 
 	-> State Env (Maybe Type, [Selector]) 
-anaComp _ _ (Selector s p t _ _, _) =
-    do mt <- anaStarType t
+anaComp _ rt (Selector s p t _ _, _) =
+    do mt <- anaCompType rt t
        case mt of 
            Just ct -> return (mt, [Select s ct p])
 	   _ -> return (Nothing, [])
 anaComp con rt (NoSelector t, i) =
-    do mt <- anaStarType t
+    do mt <- anaCompType rt t
        case mt of 
            Just ct -> return (mt, [Select (simpleIdToId $ mkSimpleId 
 			   ("%(" ++ showPretty rt "." ++ 
@@ -91,3 +93,19 @@ anaComp con rt (NestedComponents cs ps, i) =
 
 getSelType :: Type -> Partiality -> Type -> Type
 getSelType dt p rt = addPartiality p $ FunType dt FunArr rt []
+
+anaCompType :: Type -> Type -> State Env (Maybe Type)
+anaCompType dt t = do
+    mt <- anaStarType t 
+    case mt of 
+	    Nothing -> return Nothing
+	    Just ct -> unboundTypevars (varsOf dt) ct
+
+unboundTypevars :: [TypeArg] -> Type -> State Env (Maybe Type)
+unboundTypevars args ct = do 
+    let restVars = varsOf ct \\ args
+    if null restVars then do return $ Just ct
+       else do addDiags [Diag Error ("unbound type variable(s)\n\t"
+				     ++ showSepList ("," ++) showPretty 
+				     restVars "") $ posOf restVars]
+	       return Nothing
