@@ -86,7 +86,25 @@ checkFreeType m fs
                                      Just (Left (Application _ ts _))->ts
                                      Just (Right (Predication _ ts _))->ts) $ 
                          map leading_Term_Predication fs
-         checkPatterns ts=
+         isNil t = case t of
+                     Application _ ts _-> if length ts==0 then True
+                                          else False
+                     _ -> False
+         isCons t = case t of
+                      Application _ ts _-> if length ts>0 then True
+                                          else False
+                      _ -> False
+         isVar t = case t of
+                     Qual_var _ _ _ ->True
+                     _ -> False
+         
+         patternsOfTerm t= case t of
+                              Application (Qual_op_name _ _ _) ts _->ts
+                              _ -> [] 
+         checkPatterns [] = True
+         checkPatterns ts  
+                | length ts==1 =(all isVar $ patternsOfTerm $ head ts)&& (checkVar $ head ts)
+              --  | otherwise = 
 
      
 {-
