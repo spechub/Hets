@@ -1,0 +1,2 @@
+sort a > b
+sorts a=b=c=d; %()% b={a:s.b};  %()% op

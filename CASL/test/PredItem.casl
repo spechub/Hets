@@ -1,0 +1,9 @@
+pred a : bc
+pred a,b,c : bc
+pred __<__ : a*a
+pred __<__,__==__ : a*a
+pred a : ()
+preds a,# : ()
+pred a <=> %()% a<=>a  
+pred a(a,a:t) <=> %()% a<=>a  
+pred a(a:t) <=> %()% a<=>a  
