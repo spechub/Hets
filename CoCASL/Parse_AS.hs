@@ -21,8 +21,8 @@ import Common.Token
 import CoCASL.AS_CoCASL
 import Text.ParserCombinators.Parsec
 import CASL.Formula
-import CASL.OpItem
 import CASL.Parse_AS_Basic (sigItems)
+import CASL.AS_Basic_CASL
 
 cocaslFormula :: AParser st C_FORMULA
 cocaslFormula = 
@@ -42,9 +42,11 @@ modality :: [String] -> AParser st MODALITY
 modality ks = 
     do t <- term (prodS : ks ++ cocasl_reserved_words)
 	    -- put the term in parens if you need to use "*"
-       ((do asKey prodS; return ()) <|> return ())
-	    -- presence of "*" is not stored yet! 
-       return $ Term_mod t
+       option () (asKey prodS >> return ())  
+       -- presence of "*" is not stored yet! 
+       return $ case t of 
+           Mixfix_token tok -> Simple_mod tok
+           _ -> Term_mod t
 
 instance AParsable C_FORMULA where
   aparser = cocaslFormula
@@ -126,4 +128,3 @@ codatatypeToCofreetype ::  C_SIG_ITEM -> Pos -> C_BASIC_ITEM
 codatatypeToCofreetype d pos =
    case d of
      CoDatatype_items ts ps -> CoFree_datatype ts (pos : ps)
-     _ -> error "codatatypeToCofreetype"
