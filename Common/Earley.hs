@@ -63,8 +63,8 @@ setPlainIdePos (Id ts cs _) ps =
 	     (front, ps2) = setToksPos toks ps
 	     (newCs, ps3, ps4) = foldl ( \ (prevCs, seps, restPs) a -> 
 				  let (c1, qs) = setPlainIdePos a restPs
-				  in (c1: prevCs, head qs : seps, ttail qs))
-			   ([], [head ps2], ttail ps2) cs
+				  in (c1: prevCs, headPos qs : seps, ttail qs))
+			   ([], [headPos ps2], ttail ps2) cs
 	     (newPls, ps7) = setToksPos pls ps4
            in (Id (front ++ newPls) (reverse newCs) (reverse ps3), ps7)
 
@@ -342,8 +342,7 @@ mkExpr toExpr itm =
 		       setPlainIdePos (unProtect orig) rs
 		    else setPlainIdePos orig rs
 	as = reverse $ args itm
-	in (asListAppl toExpr ide as qs, 
-	    if null ps then nullPos else head ps)
+	in (asListAppl toExpr ide as qs, headPos ps)
 
 type Filt = Int -> Int -> Maybe Bool
 

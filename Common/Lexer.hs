@@ -175,7 +175,7 @@ scanString = flat (many (caslChar <|> (char '\'' >> return "\\\'")))
 	     `enclosedBy` char '"' <?> "literal string"
 
 isString :: Token -> Bool
-isString t = head (tokStr t) == '\"'
+isString t = take 1 (tokStr t) == "\""
 
 parseString :: Parser a -> String -> a
 parseString p s = case parse p "" s of
