@@ -201,12 +201,23 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
-Recursion does not compile due to clashes between built-in
-variances (-->? vs. ->? in subtype declaration)
-
 non-free/generated datatype declarations generate ga-axioms
+(this is indented)
+
+pretty printing mangles trailing and preceding annotations
+
+allow more annotations in structured specs
+the type FIT_ARG should be changed to
+
+data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] [Pos]
+	       -- pos: opt "fit"
+	     | Fit_view VIEW_NAME [Annoted FIT_ARG] [Pos]
+    -- annotations before view are stored elsewhere
+
+homogenizeGM should be moved to Static.AnalysisStructured
 
 logic coding form the comand line with printing of results
+(started)
 
 Haskell modules: hiding, renaming
 
@@ -221,12 +232,8 @@ Missing points for heterogeneous WADT 04 example:
 - improve display of HasCASL sigs + mors 
 
 Static analysis for HasCASL
-  checking class constraints of terms
   pattern analysis for program equations 
-  Sub-/Supertypes
-    - for simple types (currently type synonyms)
-  symbol representation
-  symbol map analysis (hiding sub/supertypes)
+  implemented only atomic subtyping
 
 Weak amalgamation analysis?
 
