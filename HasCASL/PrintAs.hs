@@ -174,6 +174,11 @@ printTerm :: GlobalAnnos -> Bool -> Term -> Doc
 printTerm ga b trm = 
     let ppParen = if b then parens else id 
         commaT = fsep . punctuate comma . map (printTerm ga False)
+        printApplTerm t = printTerm ga (case t of
+                               ApplTerm _ _ _ -> False
+                               TermToken _ -> False
+                               ResolvedMixTerm _ _ _ -> False
+                               _ -> True) t
     in
         (case trm of
                TupleTerm _ _ -> id
@@ -192,9 +197,9 @@ printTerm ga b trm =
             [t] -> printText0 ga n <> printTerm ga True t
             _ -> printText0 ga n <> parens (commaT ts)
         ApplTerm t1 t2 _ -> 
-            cat [printText0 ga t1, nest 2 $ printTerm ga True t2]
+            cat [printApplTerm t1, nest 2 $ printTerm ga True t2]
         TupleTerm ts _ -> parens (commaT ts)
-        TypedTerm term q typ _ -> hang (printText0 ga term <+> printText0 ga q)
+        TypedTerm t q typ _ -> hang (printApplTerm t <+> printText0 ga q)
                                   4 $ printText0 ga typ
         QuantifiedTerm q vs t _ -> hang (printText0 ga q <+> semiT_text ga vs)
                                    2 (text dotS <+> printText0 ga t)
