@@ -36,6 +36,12 @@ emptyCSPAddSign = CSPAddSign { channelNames = Map.empty
                        , processNames = Map.empty
                        }
 
+diffCSPAddSign :: CSPAddSign -> CSPAddSign -> CSPAddSign
+diffCSPAddSign a b = 
+    a { channelNames = channelNames a `Map.difference` channelNames b,
+        processNames = processNames a `Map.difference` processNames b
+      }
+
 emptyCSPSign :: CSPSign
 emptyCSPSign = emptySign emptyCSPAddSign
 

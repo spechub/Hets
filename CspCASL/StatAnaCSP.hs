@@ -49,11 +49,16 @@ statAna (Named_c3po (Named_csp_casl_spec _ sp)) =
 statAna (C3po sp) =
   statBasicSpec sp
 
+
 statBasicSpec :: CSP_CASL_C_SPEC -> Result CSPSign
 statBasicSpec (Csp_casl_c_spec sp ch p) =
   do (sp',sig,_,_) <- basicAnalysis (const $ const return) 
+                               (const True)
+                               (const $ const return) 
 			       (const return)
-			       (const return) (sp, emptyCSPSign, emptyGlobalAnnos)
+			       (const return) 
+                               diffCSPAddSign
+                               (sp, emptyCSPSign, emptyGlobalAnnos)
      let (_, accSig) = runState (ana_BASIC_CSP (ch,p)) sig
      return accSig
 	
