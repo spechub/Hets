@@ -63,8 +63,8 @@ showTyp :: Integer -> Typ -> String
 showTyp pri (Type ("typeAppl",[s,t])) =
   if withTVars t then showTyp pri t ++ sp ++ showTyp pri s
     else showTyp pri s ++ sp ++ showTyp pri t
-  where withTVars t =
-          case t of
+  where withTVars tv =
+          case tv of
             TVar _ -> True
             Type (_, ts) -> and (map withTVars ts)
             _      -> False
@@ -112,17 +112,17 @@ showTerm (Const ("Ex1",_) `App` Abs (v,ty,t)) =
   showQuant "?!" v ty t
 showTerm (Case (term, alts)) =
   let sAlts = map showCaseAlt alts
-  in
+  in 
    lb ++ "case" ++ sp ++ showTerm term ++ sp ++ "of" 
-      ++ sp ++ head sAlts ++  foldl (++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp) (tail sAlts) ++ rb
+      ++ sp ++ head sAlts ++  concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp)) (tail sAlts)) ++ rb
 -- Just t1 `App` t2 left
 showTerm t = show (toPrecTree t)
 
 
 showCaseAlt :: (Term, Term) -> String
 showCaseAlt (pat, term) =
+-- trace ("Pat: " ++ show pat ++ "\n Term: " ++ show term ++ "\n")
   showTerm pat ++ sp ++ "=>" ++ sp ++ showTerm term
-showCaseAlt _ = error "[Isabelle.IsaPrint] Wrong case alternative"
 
 showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var typ term =
@@ -162,7 +162,11 @@ data PrecTerm = PrecTerm Term Precedence deriving (Show)
 type Precedence = Int
 
 {- Precedences (descending): __ __ (Isabelle's term application),
-                             application of HasCASL ops, <=>, /\, \/, => -}
+                             application of HasCASL ops, <=>, =, /\, \/, => 
+   Associativity:  =  -- left
+                   => -- right
+                  <=> -- no
+-}
 
 isaAppPrec :: Term -> PrecTerm
 isaAppPrec t = PrecTerm t 0
@@ -229,6 +233,8 @@ toPrecTree t =
 instance Show (Tree PrecTerm) where
    show = showPTree
 
+data Assoc = LeftAs | NoAs | RightAs
+
 showPTree :: Tree PrecTerm -> String
 showPTree (Node (PrecTerm term _) []) = showTerm term
 showPTree (Node (PrecTerm term pre) annos) = 
@@ -237,10 +243,10 @@ showPTree (Node (PrecTerm term pre) annos) =
       rightChild = last annos
    in
     case term of
-      Const ("op =", _)   -> infixP pre "=" leftChild rightChild
-      Const ("op &", _)   -> infixP pre "&" leftChild rightChild
-      Const ("op |", _)   -> infixP pre "|" leftChild rightChild
-      Const ("op -->", _) -> infixP pre "-->" leftChild rightChild
+      Const ("op =", _)   -> infixP pre "=" LeftAs leftChild rightChild
+      Const ("op &", _)   -> infixP pre "&" RightAs leftChild rightChild
+      Const ("op |", _)   -> infixP pre "|" RightAs leftChild rightChild
+      Const ("op -->", _) -> infixP pre "-->" RightAs leftChild rightChild
       Const ("DUMMY", _)  -> simpleInfix pre leftChild rightChild
       Const ("Pair", _)   -> pair leftChild rightChild
       Const ("QUANT",_)   -> quant leftChild rightChild
@@ -253,27 +259,43 @@ showPTree (Node (PrecTerm term pre) annos) =
    If the precedence of one side is weaker (here: higher number) than the 
    connector's one it is bracketed. Otherwise not. 
 -}
-infixP :: Precedence -> String -> Tree PrecTerm -> Tree PrecTerm -> String
-infixP pAdult stAdult leftChild rightChild 
-    | (pAdult < prLeftCld) && (pAdult < prRightCld) = 
-          lb++ stLeftCld ++rb++
-              sp++ stAdult ++sp++
-                   lb++ stRightCld ++rb
+infixP :: Precedence -> String -> Assoc -> Tree PrecTerm -> Tree PrecTerm -> String
+infixP pAdult stAdult assoc leftChild rightChild 
+    | (pAdult < prLeftCld) && (pAdult < prRightCld) = both
     | pAdult < prLeftCld = 
-          lb++ stLeftCld ++rb++
-              sp++ stAdult ++sp++
-                   stRightCld
+        case assoc of 
+          LeftAs  -> if pAdult == prRightCld then both else left
+          RightAs -> left
+          NoAs    -> left
     | pAdult < prRightCld = 
-          stLeftCld ++
-              sp++ stAdult ++sp++
-                   lb++ stRightCld ++rb
-    | otherwise = stLeftCld ++
-                      sp++ stAdult ++sp++
-                           stRightCld
+        case assoc of
+          LeftAs  -> right
+          RightAs -> if pAdult == prLeftCld then both else right
+          NoAs    -> right
+    | (pAdult == prLeftCld) && (pAdult == prRightCld) = 
+        case assoc of
+          LeftAs  -> right
+          RightAs -> left
+          NoAs    -> no
+    | pAdult == prLeftCld = 
+        case assoc of
+          LeftAs  -> no
+          RightAs -> left
+          NoAs    -> no
+    | pAdult == prRightCld =
+        case assoc of
+          LeftAs  -> right
+          RightAs -> no
+          NoAs    -> no
+    | otherwise = no
   where prLeftCld = pr leftChild
         prRightCld = pr rightChild
         stLeftCld = showPTree leftChild
         stRightCld = showPTree rightChild
+        left = lb++ stLeftCld ++rb++sp++ stAdult ++sp++ stRightCld
+        both = lb++ stLeftCld ++rb++sp++ stAdult ++sp++lb++ stRightCld ++rb
+        right = stLeftCld ++sp++ stAdult ++sp++lb++ stRightCld ++rb
+        no =  stLeftCld ++sp++ stAdult ++sp++ stRightCld
 
 
 {- Application of (HasCASL-)operations with two arguments. 
@@ -369,7 +391,8 @@ instance Show Sign where
     showsConstTab tab =
      if Map.isEmpty tab then ""
       else "\nconsts\n" ++ Map.foldWithKey showConst "" tab
-    showConst c t rest = show c ++ " :: " ++ "\"" ++ show t ++ "\"\n" ++ rest
+    showConst c t rest = show c ++ " :: " ++ "\"" ++ show t ++ "\"" ++ showDecl c ++ "\n" ++ rest
+    showDecl c = sp ++ sp ++ sp ++ "( \"" ++ c ++ "\" )"
     showDataTypeDefs dtDefs = concat $ map showDataTypeDef dtDefs
     showDataTypeDef [] = ""
     showDataTypeDef (dt:dts) = 
