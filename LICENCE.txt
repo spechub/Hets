@@ -5,13 +5,6 @@ You have received the German original together with this translation.]
 
 Preamble
 
-Following the ideas of open source software, the provider of this
-licence provides access to the software for anyone without free, under
-the following conditions which are similar to the Lesser Gnu Public
-License (LGPL). When the "Institut für Rechtsfragen der Freien und
-Open Source Software" (www.ifross.de) has developed a version of the
-LGPL adapted to German law, this shall replace the present licence.
- 
 The aim of this licence agreement is to enable the free use of the
 software that is described in the sequel by anyone. In order to
 guarantee this, it is necessary to set up rules for the use of the
@@ -27,8 +20,9 @@ graphs.
 
 Following the ideas of open source software, the licence provider
 gives access to the software without fee for anyone (called "licence
-taker" in the sequel) under certain conditions. Each licence taker
-obligates himself to follow the terms of use below.
+taker" in the sequel) under the following conditions which are similar
+to the Lesser Gnu Public License (LGPL). Each licence taker obligates
+himself to follow the terms of use below.
 
 
 

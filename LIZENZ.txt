@@ -4,28 +4,24 @@ Lizenzvereinbarung
 
 Präambel
 
-Dem Open-Source-Gedanken folgend stellt der Lizenzgeber diese Software jedem 
-Interessenten unter folgenden, an der Lesser Gnu Public License (LGPL) 
-orientierten, Konditionen unentgeltlich zur Verfügung. Sobald das Institut für 
-Rechtsfragen der Freien und Open Source Software eine deutschsprachige Version 
-der LGPL entwickelt hat, wird diese die vorliegende Lizenz ersetzen.
+Ziel dieser Lizenzvereinbarung ist es, die freie Verwendung des
+nachfolgend beschriebenen Werkes durch jedermann zu ermöglichen. Um
+dies zu gewährleisten, ist es erforderlich, die weitere Nutzung durch
+für jeden Nutzer geltende Nutzungsbedingungen zu regeln.
 
-Ziel dieser Lizenzvereinbarung ist es, die freie Verwendung des nachfolgend 
-beschriebenen Werkes durch jedermann zu ermöglichen. Um dies zu gewährleisten, 
-ist es erforderlich, die weitere Nutzung durch für jeden Nutzer geltende 
-Nutzungsbedingungen zu regeln. 
+Lizenzgeber im Sinne dieses Vertrages ist die Universität Bremen,
+vertreten durch den Rektor (im Folgenden: "Lizenzgeber"). Der
+Lizenzgeber hat die Software Heterogeneous Tool Set" (Hets, im
+folgenden: "Software") entwickelt. Die Software besteht aus einem
+Kommandozeilen-Werkzeug zur Analyse von Spezifikationen und einer
+grafischen Oberfläche zum Spezifikations- und Beweismanagement mittels
+Entwicklungsgraphen.
 
-Lizenzgeber im Sinne dieses Vertrages ist die Universität Bremen, vertreten durch 
-den Rektor (im Folgenden: "Lizenzgeber"). Der Lizenzgeber hat die Software 
-Heterogeneous Tool Set" (Hets, im folgenden: "Software") entwickelt. Die Software 
-besteht aus einem Kommandozeilen-Werkzeug zur Analyse von Spezifikationen und 
-einer grafischen Oberfläche zum Spezifikations- und Beweismanagement mittels 
-Entwicklungsgraphen. 
-
-Dem Open-Source-Gedanken folgend stellt der Lizenzgeber diese Software jedem 
-interessierten Nutzer (im Folgenden: "Lizenznehmer") unter bestimmten Konditionen 
-unentgeltlich zur Verfügung. Jeder Lizenznehmer verpflichtet sich, die nachfolgenden 
-Nutzungsbedingungen zu beachten.
+Dem Open-Source-Gedanken folgend stellt der Lizenzgeber diese Software
+jedem interessierten Nutzer (im Folgenden: "Lizenznehmer") unter
+folgenden, an der Lesser Gnu Public License (LGPL) orientierten,
+Konditionen unentgeltlich zur Verfügung.  Jeder Lizenznehmer
+verpflichtet sich, die nachfolgenden Nutzungsbedingungen zu beachten.
 
 
 
