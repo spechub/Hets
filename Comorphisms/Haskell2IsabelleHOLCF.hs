@@ -121,6 +121,7 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
     targetSublogic _ = ()
     map_sign _ = transSignature
     map_sentence _ = transSentence
+    map_morphism _ _ = return ()
 --    map_theory _ = transTheory
 
 ------------------------------ Isa auxiliaries ----------------------------------
