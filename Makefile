@@ -234,7 +234,8 @@ release:
 	tar cvf HetCATS.tar HetCATS
 
 install-hets:
-	mv hets $(INSTALLDIR)/versions/hets-`cat version_nr`
+	chmod g+w hets
+	cp -p hets $(INSTALLDIR)/versions/hets-`cat version_nr`
 	$(RM) $(INSTALLDIR)/hets
 	ln -s $(INSTALLDIR)/versions/hets-`cat version_nr` $(INSTALLDIR)/hets
 
