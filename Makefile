@@ -261,7 +261,7 @@ utils/DrIFT: $(DRIFT_deps)
 
 utils/genRules: $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
-         $(HC) --make '-i../..:../DrIFT-src' -package text \
+         $(HC) --make '-i../..:../DrIFT-src' \
               GenerateRules.hs -o ../genRules && strip ../genRules)
 
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
