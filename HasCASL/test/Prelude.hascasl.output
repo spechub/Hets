@@ -231,8 +231,8 @@ free type bool
 *** Hint 6.5, is type variable 's'
 *** Hint 6.7, is type variable 't'
 *** Hint 11.6, redeclared type 'Unit'
-*** FatalError 14.11, illegal type pattern argument: __
-*** FatalError 15.8, illegal type pattern argument: __
+*** Error 14.11, illegal type pattern argument '__'
+*** Error 15.8, illegal type pattern argument '__'
 *** Error 17.6, illegal overloading of predefined identifier 'true'
 *** Error 17.12, illegal overloading of predefined identifier 'false'
 *** Error 19.9, illegal overloading of predefined identifier '__/\__'
@@ -243,7 +243,7 @@ free type bool
 *** Error 22.8, illegal overloading of predefined identifier '__=__'
 *** Hint 27.8, redeclared type '__->?__'
 *** Hint 30.8, redeclared type '__*__'
-*** FatalError 31.6, illegal type pattern: __ * __ * __
+*** Error 31.6, illegal type pattern '__ * __ * __'
 *** Hint 42.16, variable shadows global name(s) 'x'
 *** Hint 44.15, variable shadows global name(s) 'x'
 *** Error 46.11, unexpected mixfix token: und

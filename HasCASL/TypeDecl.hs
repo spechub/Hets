@@ -54,8 +54,8 @@ anaVars (VarTuple vs _) t =
                       if all isJust lms then 
                          return $ concatMap fromJust lms
                          else Result (concatMap diags lrs) Nothing 
-               else Result [mkDiag Error "wrong arity" t] Nothing
-           _ -> Result [mkDiag Error "product type expected" t] Nothing
+               else mkError "wrong arity" t
+           _ -> mkError "product type expected" t
 
 mapAnMaybe :: (Monad m) => (a -> m (Maybe b)) -> [Annoted a] -> m [Annoted b]
 mapAnMaybe f al = 
@@ -336,16 +336,11 @@ convertTypePatterns (s:r) =
                   Nothing -> Result (d++ds) $ Just l
                   Just i -> Result (d++ds) $ Just (i:l)
 
-
 illegalTypePattern, illegalTypePatternArg, illegalTypeId 
     :: TypePattern -> Result a 
-illegalTypePattern tp = fatal_error ("illegal type pattern: " ++ 
-                                  showPretty tp "") $ getMyPos tp
-illegalTypePatternArg tp = fatal_error ("illegal type pattern argument: " ++ 
-                                  showPretty tp "") $ getMyPos tp
-
-illegalTypeId tp = fatal_error ("illegal type pattern identifier: " ++ 
-                                  showPretty tp "") $ getMyPos tp
+illegalTypePattern tp = mkError "illegal type pattern" tp
+illegalTypePatternArg tp = mkError "illegal type pattern argument" tp
+illegalTypeId tp = mkError "illegal type pattern identifier" tp
 
 -- | convert a 'TypePattern'
 convertTypePattern :: TypePattern -> Result (Id, [TypeArg])

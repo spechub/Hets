@@ -72,9 +72,9 @@ x : y %(var)%
 *** Warning 20.7, redeclared class 'd'
 *** Error 20.7, cyclic class 'd'
 *** Warning 25.7, redeclared class 'h'
-*** FatalError 29.7, illegal type pattern argument: __
+*** Error 29.7, illegal type pattern argument '__'
 *** Hint 31.5, is type variable 'x'
 *** Hint 31.12, is type variable 'y'
 *** Error 33.9, unknown type 's'
 *** Hint 35.5, is type variable 'x'
-*** FatalError 39.8, illegal type pattern argument: __
+*** Error 39.8, illegal type pattern argument '__'

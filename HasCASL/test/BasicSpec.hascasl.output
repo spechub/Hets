@@ -188,7 +188,7 @@ type Data4
 *** Hint 3.5, is type variable 't'
 *** Error 5.21, unbound type variable(s)
   t : Type in 't_v1'
-*** FatalError 7.11, illegal type pattern argument: __
+*** Error 7.11, illegal type pattern argument '__'
 *** Error 11.16, undeclared class 'd'
 *** Warning 11.7, redeclared class 'a'
 *** Warning 11.10, redeclared class 'b'
