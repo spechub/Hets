@@ -34,10 +34,9 @@ hParser :: AParser [HsDecl]
 hParser = do b <- basicSpec
 	     let env = snd $ (runState (anaBasicSpec emptyGlobalAnnos b)) 
 		       initialEnv
-		 hs = translateSig False env
-		 nhs = map sentence $ concatMap (translateSentence env) 
-		       $ sentences env
-	     return (hs ++ nhs)
+		 hs = translateSig env
+		 nhs = concatMap (translateSentence env) $ sentences env
+	     return (cleanSig hs nhs ++ map sentence nhs)
 	  
 main :: IO ()
 main = do l <- getArgs

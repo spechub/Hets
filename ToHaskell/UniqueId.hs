@@ -30,19 +30,14 @@ import Common.Id
 import qualified Common.Lib.Map as Map hiding (map)
 
 -- | Generates distinct names for overloaded function identifiers.
-distinctOpIds :: [(Id,OpInfos)] -> [(Id, OpInfos)]
-distinctOpIds [] = []
-distinctOpIds ((i,OpInfos info):(idInfoList)) = 
-  let len = length info in
-  if len == 0 then
-     distinctOpIds idInfoList
-  else 
-     if len == 1 then
-        ((i,OpInfos info):(distinctOpIds (idInfoList)))
-     else -- if len > 1
-        ((newName i len,OpInfos $ [head info]):
-         (distinctOpIds((i, OpInfos $ tail info):(idInfoList))))
-
+distinctOpIds :: Int -> [(Id, OpInfos)] -> [(Id, OpInfo)]
+distinctOpIds _ [] = []
+distinctOpIds n ((i,OpInfos info) : idInfoList) = 
+    case info of
+    [] -> distinctOpIds 0 idInfoList
+    [hd] -> (i, hd) : distinctOpIds 0 idInfoList
+    hd : tl -> (newName i n, hd) : 
+	     distinctOpIds (n + 1) ((i, OpInfos tl) : idInfoList)
 
 -- | Adds a number to the name of an identifier.
 newName :: Id -> Int -> Id
@@ -70,10 +65,7 @@ findUniqueId uid ts tm as =
 --   Uses 'isSimilarId'.
 findSimilarId :: Id -> [Id] -> Id
 findSimilarId i ilist = 
-  let filtered = filter (== i) ilist
-  in if filtered == [] then
        head $ filter (isSimilarId i) ilist
-     else head filtered
 
 -- | Two identifiers are similar if the second is maximum one token longer
 --   and if they match in all other respects.
@@ -84,11 +76,14 @@ isSimilarId (Id tlist1 idlist1 _) (Id tlist2 idlist2 _) =
 -- | Two lists of token are similar if the second one is maximum one entry
 --   longer and if they match in all other respects.
 areSimilarTokens :: [Token] -> [Token] -> Bool
-areSimilarTokens [] [] = True
-areSimilarTokens (_t:_ts) [] = False
-areSimilarTokens [] (_t:ts) = length ts == 0
-areSimilarTokens (t1:ts1) (t2:ts2) = 
-   t1 == t2 && areSimilarTokens ts1 ts2
+areSimilarTokens l1 l2 = case l1 of 
+    [] -> case l2 of 
+	[] -> True	     
+        [_] -> True	     
+        _ -> False 
+    t1 : ts1 -> case l2 of 
+         [] -> False
+	 t2 : ts2 -> t1 == t2 && areSimilarTokens ts1 ts2
 
 -- | Tests wether a typescheme can be unified with any other typescheme 
 --   of the TypeMap.

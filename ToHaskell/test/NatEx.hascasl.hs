@@ -42,6 +42,9 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
+f :: Nat -> Nat
+f = undefined
+ 
 false :: ()
 false = undefined
  
@@ -50,6 +53,9 @@ if_2then_2else_2 = undefined
  
 not_2 :: () -> ()
 not_2 = undefined
+ 
+prec :: Nat -> Nat
+prec = undefined
  
 true :: ()
 true = undefined

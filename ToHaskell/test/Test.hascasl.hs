@@ -53,8 +53,8 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
-f2 :: C -> C
-f2 = undefined
+f0 :: C -> C
+f0 = undefined
  
 f :: B -> B
 f = undefined
@@ -67,6 +67,12 @@ if_2then_2else_2 = undefined
  
 not_2 :: () -> ()
 not_2 = undefined
+ 
+s1 :: AT -> Int
+s1 = undefined
+ 
+s2 :: AT -> B
+s2 = undefined
  
 true :: ()
 true = undefined

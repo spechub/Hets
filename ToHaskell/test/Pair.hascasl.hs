@@ -46,14 +46,25 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
+f :: (A_a, A_b) -> Pair
+f = undefined
+ 
 false :: ()
 false = undefined
+ 
+fst :: Pair -> A_a
+fst = undefined
+ 
+g :: Pair -> A_a
  
 if_2then_2else_2 :: ((), a, a) -> a
 if_2then_2else_2 = undefined
  
 not_2 :: () -> ()
 not_2 = undefined
+ 
+snd :: Pair -> A_b
+snd = undefined
  
 true :: ()
 true = undefined

@@ -24,11 +24,6 @@ import Haskell.Hatchet.AnnotatedHsSyn
 import Haskell.Hatchet.SynConvert
 import Haskell.HatAna
 
-mapSignature :: Env -> (ModuleInfo, [Named AHsDecl]) 
-mapSignature sign = 
-    let hs = translateSig True sign
-    in	hatAna hs emptyModuleInfo
-
 mapSingleSentence :: Env -> Sentence -> Maybe AHsDecl
 mapSingleSentence sign sen = 
     case translateSentence sign $ NamedSen "" sen of
@@ -37,8 +32,8 @@ mapSingleSentence sign sen =
 
 mapTheory :: (Env, [Named Sentence]) -> (ModuleInfo, [Named AHsDecl])
 mapTheory (sign, csens) =
-    let hs = translateSig False sign
+    let hs = translateSig sign
 	ps = concatMap (translateSentence sign) csens
-        (mi, _) = hatAna (hs ++ map sentence ps) emptyModuleInfo
+        (mi, _) = hatAna (cleanSig hs ps ++ map sentence ps) emptyModuleInfo
 	in (mi, map (mapNamed toAHsDecl) ps)
 

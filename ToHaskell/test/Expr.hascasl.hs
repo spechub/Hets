@@ -39,6 +39,15 @@ _2if_2 = undefined
 _2when_2else_2 :: (a, (), a) -> a
 _2when_2else_2 = undefined
  
+a :: A_bool
+a = undefined
+ 
+b0 :: A_bool -> A_bool
+b0 = undefined
+ 
+b :: A_bool
+b = undefined
+ 
 def_2 :: a -> ()
 def_2 = undefined
  
@@ -50,6 +59,9 @@ if_2then_2else_2 = undefined
  
 not_2 :: () -> ()
 not_2 = undefined
+ 
+notA :: A_bool
+notA = undefined
  
 true :: ()
 true = undefined

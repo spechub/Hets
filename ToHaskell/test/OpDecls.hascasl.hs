@@ -66,3 +66,6 @@ x1 = undefined
  
 x2 :: A_s
 x2 = undefined
+ 
+y :: A_s
+y = undefined

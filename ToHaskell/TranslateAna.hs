@@ -34,6 +34,7 @@ module ToHaskell.TranslateAna (
        , translateAltDefn
        , translateDt
        , translateSentence
+       , cleanSig
        ) where
 
 import Common.Id
@@ -57,8 +58,8 @@ import ToHaskell.UniqueId
 -- to the top datatype of the abstract syntax of haskell.
 -- Calls 'translateTypeMap' and 'translateAssumps'. 
 -- A True argument includes dummy types for data types.
-translateSig :: Bool -> Env -> [HsDecl]
-translateSig b env = translateTypeMap b (typeMap env) ++ 
+translateSig :: Env -> [HsDecl]
+translateSig env = translateTypeMap (typeMap env) ++ 
 		    translateAssumps (assumps env)
 
 -------------------------------------------------------------------------
@@ -67,15 +68,14 @@ translateSig b env = translateTypeMap b (typeMap env) ++
 
 -- | Converts all HasCASL types to data or type declarations in haskell.
 -- Uses 'translateData'. 
-translateTypeMap :: Bool -> TypeMap -> [HsDecl]
-translateTypeMap b m = concat $ map (translateTypeInfo b) (Map.assocs m)
+translateTypeMap :: TypeMap -> [HsDecl]
+translateTypeMap m = concat $ map translateTypeInfo (Map.assocs m)
 
 -- | Converts one type to a data or type declaration in haskell.
 -- Uses 'translateIdWithType'. True includes a dummy type for data types.
-translateTypeInfo :: Bool -> (TypeId, TypeInfo) -> [HsDecl]
-translateTypeInfo b (tid,info) = 
+translateTypeInfo :: (TypeId, TypeInfo) -> [HsDecl]
+translateTypeInfo (tid,info) = 
   let hsname = (HsIdent (translateIdWithType UpperId tid))
-      len = length $ superTypes info
       ddecl = HsDataDecl nullLoc
 	               [] -- empty HsContext
 	               hsname
@@ -83,17 +83,19 @@ translateTypeInfo b (tid,info) =
 		       [(HsConDecl nullLoc hsname [])]
 		       []
   in case (typeDefn info) of
-       NoTypeDefn ->
-         if len == 0 || (len == 1 && isSameId tid (head $ superTypes info))then
-           [ddecl]
-	 else (map (typeSynonym hsname)(superTypes info))
+       NoTypeDefn -> case superTypes info of
+         [] -> [ddecl]
+	 [si] -> if isSameId tid si then [ddecl] else 
+		 [typeSynonym hsname si]
+         si : _ -> [typeSynonym hsname si]
+       Supertype _ ts _ ->
+	   [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
        AliasTypeDefn ts -> 
-	  [(HsTypeDecl nullLoc
-	               hsname
-	               (getAliasArgs ts)
-	               (getAliasType ts)
-	   )]
-       DatatypeDefn _ _ _ -> if b then [ddecl] else []
+	   [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
+       DatatypeDefn _ args alts -> 
+	   [HsDataDecl nullLoc [] hsname
+		       (map getArg args) -- type arguments
+		       (map translateAltDefn alts) []]
        _ -> [] -- ignore others
 
 
@@ -139,7 +141,6 @@ getArg (TypeArg tid _ _ _) = (HsIdent (translateIdWithType LowerId tid))
 getAliasType :: TypeScheme -> HsType
 getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 
-
 -------------------------------------------------------------------------
 -- Translation of functions
 -------------------------------------------------------------------------
@@ -147,22 +148,23 @@ getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 -- | Converts functions in HasCASL to the coresponding haskell declarations.
 translateAssumps :: Assumps -> [HsDecl]
 translateAssumps as =
-  let distList =  distinctOpIds $ Map.toList as
-  in  concat $ map translateAssump distList
+  let distList =  distinctOpIds 0 $ Map.toList as
+  in  concatMap translateAssump distList
 
 -- | Converts one distinct named function in HasCASL to the corresponding
 -- haskell declaration.
 -- Generates a definition (Prelude.undefined) for functions that are not 
 -- defined in HasCASL.
-translateAssump :: (Id,OpInfos) -> [HsDecl]
+translateAssump :: (Id, OpInfo) -> [HsDecl]
 translateAssump (i, opinf) = 
   let fname = translateIdWithType LowerId i
       res = HsTypeSig nullLoc
                        [(HsIdent fname)]
-                       (translateTypeScheme (opType $ head $ opInfos opinf))
-  in case (opDefn $ head $ opInfos opinf) of
-    NoOpDefn _ -> [res, (functionUndef fname)]
-    _ -> []
+                       (translateTypeScheme (opType opinf))
+  in case (opDefn opinf) of
+    VarDefn -> []
+    ConstructData _ -> [] -- wrong case!
+    _ -> [res, (functionUndef fname)]
 
 -- | Translation of the result type of a typescheme to a haskell type.
 --   Uses 'translateType'.
@@ -349,7 +351,6 @@ translateSentence env sen = case sentence sen of
 -------------------------------------------------------------------------
 -- some stuff
 -------------------------------------------------------------------------
-
 -- The positions in the source code are not necessary during the translation,
 -- therefore the same SrcLoc is used everywhere.
 nullLoc :: SrcLoc
@@ -363,3 +364,20 @@ functionUndef s =
 	      (HsPVar (HsIdent s))
 	      (HsUnGuardedRhs (HsVar (UnQual (HsIdent "undefined"))))
 	      []
+
+-- | remove dummy decls given by sentences
+cleanSig :: [HsDecl] -> [Named HsDecl] -> [HsDecl]
+cleanSig ds sens = 
+    let dds = foldr ( \ nd l -> case sentence nd of
+		      HsDataDecl _ _ n _ _ _ -> n : l
+		      _ -> l) [] sens
+	funs = foldr ( \ nd l -> case sentence nd of
+		      HsFunBind (HsMatch _ n _ _ _ : _) -> n : l
+		      _ -> l) [] sens
+    in filter ( \ hs -> case hs of 
+        HsDataDecl _ _ n _ _ _ -> n `notElem` dds
+        HsTypeDecl _ n _ _ -> n `notElem` dds
+        HsPatBind _ (HsPVar n) _ _ -> UnQual n `notElem` funs
+	_ -> True)
+       ds 
+		       

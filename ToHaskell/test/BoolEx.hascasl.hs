@@ -42,17 +42,29 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
+eq :: (Bool, Bool) -> Bool
+ 
 false :: ()
 false = undefined
  
 if_2then_2else_2 :: ((), a, a) -> a
 if_2then_2else_2 = undefined
  
+le :: (Bool, Bool) -> Bool
+ 
+ne :: (Bool, Bool) -> Bool
+ 
+neg :: Bool -> Bool
+ 
 not_2 :: () -> ()
 not_2 = undefined
  
 true :: ()
 true = undefined
+ 
+vee :: (Bool, Bool) -> Bool
+ 
+wedge :: (Bool, Bool) -> Bool
  
 data Bool = True
           | False
