@@ -92,10 +92,11 @@ typeCheck mt trm =
 	  do addDiags [mkDiag Error "no typing for" trm]
 	     return Nothing
 	  else if null $ tail alts then do
+	       tm <- gets typeMap
 	       let (s, cs, _, t) = head alts
 	       addDiags $ map (	\ c -> 
 		      mkDiag Error "unresolved constraint" c)
-	              $ Set.toList $ simplify noC cs  
+	              $ Set.toList $ simplify tm noC cs  
 	       return $ Just $ substTerm s t
 	  else do addDiags [Diag Error 
 			 ("ambiguous typings \n  " ++

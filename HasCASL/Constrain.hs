@@ -17,14 +17,15 @@ module HasCASL.Constrain where
 import HasCASL.Unify 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.PrintAs
 import HasCASL.Le
+import HasCASL.ClassAna
 import HasCASL.TypeAna
 import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Keywords
 import Common.Id
+import Common.Result
 
 import Data.List
 import Data.Maybe
@@ -58,6 +59,7 @@ substC s = Set.image (\ c -> case c of
     Kinding ty k -> Kinding (subst s ty) k
     Subtyping t1 t2 -> Subtyping (subst s t1) $ subst s t2)
 
+{-
 inHnf :: Type -> Bool
 inHnf ty = 
     case ty of 
@@ -73,31 +75,31 @@ toHnf e c = case c of
 			    pss <- mapM (toHnf e) $ Set.toList cs 
 			    return $ Set.unions pss
     Subtyping _ _ -> return noC -- ignore
+-}
 
-
-simplify :: Constraints -> Constraints -> Constraints
-simplify cs rs = 
+simplify :: TypeMap -> Constraints -> Constraints -> Constraints
+simplify tm cs rs = 
     if Set.isEmpty rs then cs
     else let (r, rt) = Set.deleteFindMin rs in
-         case entail (Set.union cs rt) r of
-         Just _ -> simplify cs rt
-	 Nothing -> simplify (Set.insert r cs) rt
+         case entail tm (Set.union cs rt) r of
+         Just _ -> simplify tm cs rt
+	 Nothing -> simplify tm (Set.insert r cs) rt
 
-entail :: Monad m => Constraints -> Constrain -> m ()
-entail ps p = if p `Set.member` ps then return ()
-       else do is <- byInst p
-	       mapM_ (entail ps) $ Set.toList is
+entail :: Monad m => TypeMap -> Constraints -> Constrain -> m ()
+entail tm ps p = if p `Set.member` ps then return ()
+       else do is <- byInst tm p
+	       mapM_ (entail tm ps) $ Set.toList is
 
-byInst :: Monad m => Constrain -> m Constraints
-byInst c = case c of 
+byInst :: Monad m => TypeMap -> Constrain -> m Constraints
+byInst tm c = case c of 
     Kinding ty k -> case ty of 
-      ExpandedType _ t -> byInst $ Kinding t k
+      ExpandedType _ t -> byInst tm $ Kinding t k
       _ -> case k of
 	   Intersection l _ -> if null l then return noC else
-			  do pss <- mapM (\ ik -> byInst (Kinding ty ik)) l 
+			  do pss <- mapM (\ ik -> byInst tm (Kinding ty ik)) l 
 			     return $ Set.unions pss
-	   ExtKind ek _ _ -> byInst (Kinding ty ek)
-	   ClassKind _ _ -> let (topTy, args) = getTypeAppl ty in
+	   ExtKind ek _ _ -> byInst tm (Kinding ty ek)
+	   ClassKind _ _ -> let (topTy, args) = getTypeAppl tm ty in
 	       case topTy of 
 	       TypeName _ kind _ -> {-if null args then
 		   if kind == k && n == 0 then return noC 
@@ -149,16 +151,31 @@ getKindAppl k args = if null args then [(k, [])] else
     Downset _ _ dk _ -> getKindAppl dk args
     _ -> error ("getKindAppl " ++ show k)
 
-getTypeAppl :: Type -> (Type, [Type])
-getTypeAppl ty = let (t, args) = getTyAppl ty in
+getTypeAppl :: TypeMap -> Type -> (Type, [Type])
+getTypeAppl tm ty = let (t, args) = getTyAppl ty in
    (t, reverse args) where
     getTyAppl typ = case typ of
 	TypeAppl t1 t2 -> let (t, args) = getTyAppl t1 in (t, t2 : args)
 	ExpandedType _ t -> getTyAppl t
 	LazyType t _ -> getTyAppl t
 	KindedType t _ _ -> getTyAppl t
-	ProductType ts _ -> (TypeName productId star 0, reverse ts)
-	FunType t1 a t2 _ -> (TypeName (arrowId a) funKind 0, [t2, t1])
+	ProductType ts ps -> 
+	    let Result _ mk = getIdKind tm productId
+	    in case mk of
+	    Just k -> 
+                let rk = toIntersection (map fst $ getKindAppl k [typ,typ]) ps
+                in case ts of 
+		[t1,t2] -> (TypeName productId k 0, [t2, t1])
+		[] -> (TypeName productId rk 0, [])
+		[_] -> error "getTyAppl productType"
+		t:rt -> (TypeName productId k 0, [ProductType rt ps, t])
+	    _ -> error "getTyAppl productId"
+	FunType t1 a t2 _ -> 
+	    let i = arrowId a
+		Result _ mk = getIdKind tm i in
+	    case mk of
+	    Just k -> (TypeName i k 0, [t2, t1])
+	    _ -> error "getTyAppl arrowId"
 	_ -> (typ, [])
     
     
