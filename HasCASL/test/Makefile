@@ -5,7 +5,7 @@
 check: hacapa
 	./runcheck.sh ../hacapa
 
-output: 
+output: hacapa 
 	./runcheck.sh ../hacapa set
 
 %: 
