@@ -56,7 +56,7 @@ instance PrettyPrint Type where
     printText0 ga (TypeToken t) = printText0 ga t
     printText0 ga (BracketType k l _) = bracket k $ commas ga l
     printText0 ga (KindedType t kind _) = printText0 ga t  
-			  <> printKind ga kind
+			  <> space <> colon <> printText0 ga kind
     printText0 ga (MixfixType ts) = fsep (map (printText0 ga) ts)
     printText0 ga (LazyType t _) = text quMark <+> printText0 ga (t)  
     printText0 ga (ProductType ts _) = fsep (punctuate (space <> text timesS) 
@@ -262,14 +262,13 @@ instance PrettyPrint InstOpId where
 ------------------------------------------------------------------------
 instance PrettyPrint PseudoType where 
     printText0 ga (PseudoType l t _) = noPrint (null l) (text lamS 
-				<+> fcat(map (printText0 ga) l)
+				<+> (if null $ tail l then
+				     printText0 ga $ head l
+				     else fcat(map (parens . printText0 ga) l))
 				<+> text dotS <+> space) <> printText0 ga t
 
 instance PrettyPrint TypeArgs where
     printText0 ga (TypeArgs l _) = semis ga l
-
-instance PrettyPrint TypeVarDecls where 
-    printText0 ga (TypeVarDecls l _) = Pretty.brackets $ semis ga l
 
 instance PrettyPrint BasicSpec where 
     printText0 ga (BasicSpec l) = vcat (map (printText0 ga) l)
@@ -337,7 +336,10 @@ instance PrettyPrint TypeItem where
 					   <+> text dotS
 					   <+> printText0 ga f)
     printText0 ga (AliasType p k t _) =  (printText0 ga p <>
-					  printKind ga k)
+					  case k of 
+					  Nothing -> empty
+					  Just j -> space <> colon <> 
+					           printText ga j)
 				       <+> text assignS
 				       <+> printText0 ga t
     printText0 ga (Datatype t) = printText0 ga t
@@ -399,5 +401,6 @@ instance PrettyPrint Components where
 
 instance PrettyPrint OpId where 
     printText0 ga (OpId n ts) = printText0 ga n 
-				  <+> fcat(map (printText0 ga) ts)
+				  <+> fcat(map (Pretty.brackets . 
+						printText0 ga) ts)
 

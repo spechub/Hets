@@ -58,7 +58,6 @@ anaGenVarDecl :: GenVarDecl -> State Env ()
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 
-
 isSimpleId :: Id -> Bool
 isSimpleId (Id ts _ _) = null (tail ts) && head (tokStr (head ts)) 
 			 `elem` caslLetters
@@ -101,10 +100,6 @@ anaVarDecl(VarDecl v oldT _ _) =
 				      "repeated variable '" v
 			     else  putAssumps $ addToFM as v (ts:l)
 
-anaTypeVarDecl :: TypeArg -> State Env ()
-anaTypeVarDecl(TypeArg t k _ _) = 
-    do nk <- anaKind k
-       addTypeKind TypeVarDefn t k
 
 -- ----------------------------------------------------------------------------
 -- ClassItem

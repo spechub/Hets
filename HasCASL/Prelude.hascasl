@@ -35,8 +35,8 @@ type __*__*__ : Type+ -> Type+ -> Type+ -> Type
 %% ...
 
 %% type aliases
-type Pred (t:Type-) := t ->? Unit 
-type ? (t:Type) := Unit ->? t
+type Pred __ : Type -> Type := \ t:Type- . t ->? Unit 
+type ? __ := \ t:Type . Unit ->? t
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"  

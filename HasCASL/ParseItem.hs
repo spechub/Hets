@@ -53,7 +53,7 @@ kindedTypeDecl (l, p) =
        ; s <- kind
        ; let d = TypeDecl l s (map tokPos (p++[t])) in 
 	 if length l > 1 then return d
-	 else pseudoTypeDef (head l) s [t]
+	 else pseudoTypeDef (head l) (Just s) [t]
 	  <|> dataDef (head l) s [t] 
           <|> return d
        }
@@ -110,7 +110,7 @@ typeItem = do { s <- typePattern;
 		    <|>
 		    dataDef s nullKind []
 		    <|> 
-		    pseudoTypeDef s nullKind []
+		    pseudoTypeDef s Nothing []
 		    <|>
 		    kindedTypeDecl ([s],[])
 		    <|>
@@ -162,7 +162,7 @@ pseudoType = do l <- asKey lamS
 	     <|> do st <- parseType
 		    return $ PseudoType [] st []
 
-pseudoTypeDef :: TypePattern -> Kind -> [Token] -> AParser TypeItem
+pseudoTypeDef :: TypePattern -> Maybe Kind -> [Token] -> AParser TypeItem
 pseudoTypeDef t k l = 
     do c <- asKey assignS
        p <- pseudoType
@@ -323,12 +323,12 @@ classItems = do p <- pluralKeyword classS
 -- opItem
 -----------------------------------------------------------------------------
 
-typeVarDeclSeq :: AParser TypeVarDecls
+typeVarDeclSeq :: AParser TypeArgs
 typeVarDeclSeq = 
     do o <- oBracketT
        (ts, cs) <- typeVarDecls `separatedBy` anSemi
        c <- cBracketT
-       return (TypeVarDecls (concat ts) (toPos o cs c))
+       return (TypeArgs (concat ts) (toPos o cs c))
 
 opId :: AParser OpId
 opId = do i@(Id is cs ps) <- uninstOpId

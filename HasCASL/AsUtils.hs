@@ -63,6 +63,12 @@ posOfTypePattern pat =
     TypePatternArgs as -> posOf as
 -- ---------------------------------------------------------------------
 
+instance PosItem TypeArgs where
+    get_pos (TypeArgs tArgs ps) = Just $ firstPos tArgs ps
+
+instance PosItem PseudoType where
+    get_pos (PseudoType tArgs _ ps) = Just $ firstPos tArgs ps
+
 instance PosItem Type where
     get_pos = Just . posOfType
 

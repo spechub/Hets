@@ -16,10 +16,15 @@ import FiniteMap
 import Id
 import Le
 import MonadState
+import PrettyPrint
 import PrintAs(showPretty)
 import Result
 import TypeDecl
 
+missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
+missingAna t ps = appendDiags [Diag FatalError 
+			       ("no analysis yet for: " ++ showPretty t "")
+			      $ if null ps then nullPos else head ps]
 
 posOfOpId :: OpId -> Pos
 posOfOpId (OpId i _) = posOfId i

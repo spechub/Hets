@@ -88,10 +88,14 @@ prodClass = do (cs, ps) <- extClass `separatedBy` crossT
 	       return $ if length cs == 1 then head cs 
 		      else ProdClass cs (map tokPos ps)
 
-checkResultKind :: Kind -> AParser Kind
-checkResultKind k = case k of 
-		     ExtClass _ _ _ -> unexpected "variance of result kind"
+noProductKind :: Kind -> AParser Kind
+noProductKind k = case k of 
 		     ProdClass _ _ -> unexpected "product result kind"
+		     _ -> return k
+
+noExtKind :: Kind -> AParser Kind
+noExtKind k = case k of 
+		     ExtClass _ _ _ -> unexpected "variance of result kind"
 		     _ -> return k
 
 funKind, kind :: AParser Kind
@@ -102,7 +106,7 @@ funKind =
 	  return $ KindAppl k1 k2 $ [tokPos a]
         <|> return k1
 
-kind = funKind >>= checkResultKind
+kind = funKind >>= noProductKind >>= noExtKind
 
 -----------------------------------------------------------------------------
 -- type
@@ -254,15 +258,16 @@ extTypeVar = do t <- restrictedVar [lessS, plusS, minusS]
 		     return (t, ContraVar, tokPos a)
 		  <|> return (t, InVar, nullPos)
 
+-- relaxed restriction for funKind (products should be disallowed)
 typeArgs :: AParser [TypeArg]
 typeArgs = do (ts, ps) <- extTypeVar `separatedBy` anComma
 	      do   c <- colT
                    if let isInVar(_, InVar, _) = True
 			  isInVar(_,_,_) = False
 		      in all isInVar ts then 
-		      do k <- kind
+		      do k <- funKind >>= noProductKind
 			 return (makeTypeArgs ts ps [tokPos c] k)
-		      else do k <- kind
+		      else do k <- funKind >>= noProductKind
 			      return (makeTypeArgs ts ps [tokPos c] 
 				      (ExtClass k InVar []))
 	        <|> 

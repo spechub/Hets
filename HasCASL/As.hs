@@ -66,7 +66,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos "="s
                | SubtypeDefn TypePattern Var Type (Annoted Formula) [Pos]
                -- pos "=", "{", ":", dot, "}"
-               | AliasType TypePattern Kind PseudoType [Pos]
+               | AliasType TypePattern (Maybe Kind) PseudoType [Pos]
                -- pos ":="
 	       | Datatype DatatypeDecl
                  deriving (Show, Eq)
@@ -240,9 +240,6 @@ data SeparatorKind = Comma | Other deriving (Show, Eq)
 data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show, Eq)
 	       -- pos "," or ":" 
 
-data TypeVarDecls = TypeVarDecls [TypeArg] [Pos] deriving (Show, Eq)
-		    -- pos "[", ";"s, "]"
-
 data TypeArg = TypeArg TypeId Kind SeparatorKind [Pos]
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
 	       deriving (Show, Eq)
@@ -284,7 +281,7 @@ nullKind = PlainClass universe
 -- op names
 -- ----------------------------------------------------------------------------
 
-data OpId = OpId UninstOpId [TypeVarDecls] deriving (Show, Eq)
+data OpId = OpId UninstOpId [TypeArgs] deriving (Show, Eq)
 
 data Types = Types [Type] [Pos] deriving (Show, Eq) -- [TYPE, ..., TYPE]
 data InstOpId = InstOpId UninstOpId [Types] deriving (Show, Eq)

@@ -21,18 +21,11 @@ import MonadState
 
 import MixfixParser(getTokenList, expandPos)
 import Parsec
-import ParsecPos
 import ParsecError
 
-import PrettyPrint
 import PrintAs(showPretty)
 import Result
 import TypeAna
-
-missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
-missingAna t ps = appendDiags [Diag FatalError 
-			       ("no analysis yet for: " ++ showPretty t "")
-			      $ if null ps then nullPos else head ps]
 
 compatibleTypeDefn :: TypeDefn -> TypeDefn -> Id -> [Diagnosis]
 compatibleTypeDefn d1 d2 i = 
@@ -96,8 +89,73 @@ anaTypeItem inst (SubtypeDefn pat v t f ps) =
 				     inst nullKind i
 			   addSuperType newT i
 	   
-anaTypeItem _ (Datatype (DatatypeDecl t _ _ _ p)) = missingAna t p
-anaTypeItem _ (AliasType t _ _ p) = missingAna t p
+anaTypeItem inst (AliasType pat kind (PseudoType tArgs ty p) _) = 
+    do k <- case kind of 
+		      Nothing -> return Nothing
+		      Just j -> fmap Just $ anaKind j
+       tm <- getTypeMap    -- save global variables  
+       mapM_ anaTypeArgs tArgs
+       newTy <- anaType ty
+       let newPty = PseudoType tArgs newTy p
+       ik <- checkPseudoTypeKind newPty k
+       putTypeMap tm       -- forget local variables 
+       let Result ds m = convertTypePattern pat
+       appendDiags ds
+       case (m, ik) of 
+	      (Just i, Just ki) -> anaTypeId (AliasTypeDefn newPty) inst ki i 
+	      _ -> return ()
+
+anaTypeItem inst (Datatype d) = anaDatatype Loose inst d 
+
+anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env ()
+anaDatatype genKind inst (DatatypeDecl pat kind _alts derivs _) =
+    do k <- anaKind kind
+       case derivs of 
+		   Just c -> anaClass c
+		   Nothing -> return $ Intersection [] [] -- ignore
+       let Result ds m = convertTypePattern pat
+       appendDiags ds
+       case m of 
+	      Nothing -> return ()
+	      Just i -> 
+		  do -- newAlts <- anaAlts i alts 
+		     anaTypeId (DatatypeDefn genKind) inst k i 
+
+-- TO DO analyse alternatives and add them to Datatype Defn
+-- anaAlts :: Id -> 
+
+typeArgsListToKind :: [TypeArgs] -> Kind -> Kind
+typeArgsListToKind tArgs k = 
+    if null tArgs then k
+       else typeArgsListToKind (init tArgs) 
+	    (KindAppl (typeArgsToKind $ last tArgs) k []) 
+
+typeArgsToKind :: TypeArgs -> Kind
+typeArgsToKind (TypeArgs l ps) = if length l == 1 then typeArgToKind $ head l 
+				 else ProdClass (map typeArgToKind l) ps
+typeArgToKind :: TypeArg -> Kind
+typeArgToKind (TypeArg _ k _ _) = k
+
+
+checkPseudoTypeKind :: PseudoType -> Maybe Kind -> State Env (Maybe Kind)
+checkPseudoTypeKind (PseudoType tArgs ty _) kind =
+    do m <- inferKind ty 
+       case m of
+	      Nothing -> return kind
+	      Just k -> do let newK = typeArgsListToKind tArgs k
+			   case kind of 
+			        Nothing -> return ()
+			        Just ki -> appendDiags $ eqKindDiag ki newK
+			   return $ Just newK
+	      
+anaTypeVarDecl :: TypeArg -> State Env ()
+anaTypeVarDecl(TypeArg t k _ _) = 
+    do nk <- anaKind k
+       addTypeKind TypeVarDefn t k
+
+anaTypeArgs :: TypeArgs -> State Env ()
+anaTypeArgs(TypeArgs l _) = mapM_ anaTypeVarDecl l
+
 
 kindArity :: ApplMode -> Kind -> Int
 kindArity m (KindAppl k1 k2 _) =
@@ -137,8 +195,9 @@ convertTypePattern(TypePatternToken t) =
        else return $ (simpleIdToId t)
 
 convertTypePattern t =
-    if hasPlaces t && hasTypeArgs t then
-       fatal_error ( "illegal mix of '__' and '(...)'" ) 
+    if {- hasPlaces t && -} hasTypeArgs t then
+       fatal_error ( "arguments in type patterns not yet supported")
+		   -- "illegal mix of '__' and '(...)'"  
                    (posOfTypePattern t)
     else makeMixTypeId t
 
