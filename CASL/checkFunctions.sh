@@ -11,7 +11,7 @@ runcheck ()
     echo "testing $2"
     if [ -x $1 ] && [ -f $3 ]
     then 
-	$1 $2 $3 >& temp
+	$1 $2 $3 > temp
         declare -i a=`fgrep -c -i "error" temp`
         if [ -f $4 ]
 	then
