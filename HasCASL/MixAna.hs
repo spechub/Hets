@@ -18,16 +18,17 @@ import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
 import Common.Keywords
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Earley
 import Common.ConvertLiteral
 import Common.Lib.State
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.VarDecl
 import HasCASL.Le
-import HasCASL.Unify 
+
 import Data.Maybe
 import Control.Exception(assert)
 
@@ -73,7 +74,7 @@ iterateCharts ga terms chart =
 					 typeTok {tokPos = headPos ps})
 		    BracketTerm b ts ps -> self 
 		      (expandPos TermToken (getBrackets b) ts ps ++ tt) chart
-		    QualVar v typ ps -> do 
+		    QualVar (VarDecl v typ ok ps) -> do 
 		       mTyp <- anaStarType typ
 		       case mTyp of 
 			   Nothing -> recurse t
@@ -83,7 +84,7 @@ iterateCharts ga terms chart =
 			            Nothing -> addDiags [mkDiag Error 
 						  "value not found" v]
 				    _ -> return ()
-			       recurse $ QualVar v nTyp ps
+			       recurse $ QualVar $ VarDecl v nTyp ok ps
 		    QualOp b (InstOpId v ts qs) sc ps -> do 
 		       mSc <- anaTypeScheme sc
                        newTs <- anaInstTypes ts    
@@ -107,15 +108,15 @@ iterateCharts ga terms chart =
 		    LambdaTerm decls part hd ps -> do
 		       mDecls <- mapM (resolvePattern ga) decls
 		       let newDecls = catMaybes mDecls
-		       l <- mapM extractBindings newDecls
-		       let bs = concatMap snd l
+		       anaDecls <- mapM anaPattern newDecls
+		       let bs = concatMap extractVars anaDecls 
 		       checkUniqueVars bs 
 		       mapM_ addVarDecl bs
 		       mt <- resolve ga hd
 		       putAssumps as
 		       let newT = case mt of Just trm -> trm
 					     _ -> hd
-		       recurse $ LambdaTerm (map fst l) part newT ps
+		       recurse $ LambdaTerm anaDecls part newT ps
 		    CaseTerm hd eqs ps -> do 
 		       mt <- resolve ga hd 
 		       let newT = case mt of Just trm -> trm
@@ -139,6 +140,11 @@ iterateCharts ga terms chart =
 						TermToken _ -> (trm, tok)
 						_ -> (trm, exprTok 
 						      {tokPos = tokPos tok})
+		    AsPattern vd p ps -> do
+		        mp <- resolvePattern ga p
+			let newP = case mp of Just pat -> pat
+					      Nothing -> p
+		        recurse $ AsPattern vd newP ps
 		    _ -> error ("iterCharts: " ++ show t)
 
 -- * equation stuff 
@@ -149,7 +155,8 @@ resolveCaseEq ga (ProgEq p t ps) =
            Nothing -> return Nothing
 	   Just np -> do 
 	        as <- gets assumps
-		(newP, bs) <- extractBindings np
+		newP <- anaPattern np
+		let bs = extractVars newP
 		checkUniqueVars bs
 		mapM_ addVarDecl bs
 	        mtt <- resolve ga t
@@ -175,7 +182,8 @@ resolveLetEqs ga (ProgEq pat trm ps : rt) =
 	   Nothing -> do resolve ga trm
 			 resolveLetEqs ga rt
 	   Just nPat -> do 
-	       (newPat, bs) <- extractBindings nPat
+	       newPat <- anaPattern nPat
+	       let bs = extractVars newPat
 	       checkUniqueVars bs
 	       mapM addVarDecl bs
 	       mTrm <- resolve ga trm
@@ -185,71 +193,30 @@ resolveLetEqs ga (ProgEq pat trm ps : rt) =
 		       eqs <- resolveLetEqs ga rt 
 		       return (ProgEq newPat newTrm ps : eqs)
 
--- * pattern stuff
 
--- | extract bindings from a pattern
-extractBindings :: Pattern -> State Env (Pattern, [VarDecl])
-extractBindings pat = 
-    case pat of
-    QualVar v t ps -> case t of 
-         MixfixType [] -> 
-	     do tvar <- toEnvState freshVar
-		let ty = TypeName tvar star 1
-		return (QualVar v ty ps, [VarDecl v ty Other ps]) 
-	 _ -> do mt <- anaStarType t 
-		 case mt of 
-		     Just ty -> 
-			 return (QualVar v ty ps, [VarDecl v ty Other ps]) 
-		     _ -> return (pat, [])
-    ResolvedMixTerm i pats ps -> do 
-         l <- mapM extractBindings pats
-	 return (ResolvedMixTerm i (map fst l) ps, concatMap snd l)
-    ApplTerm p1 p2 ps -> do
-         (p3, l1) <- extractBindings p1
-         (p4, l2) <- extractBindings p2
-	 return (ApplTerm p3 p4 ps, l1 ++ l2) 
-    TupleTerm pats ps -> do 
-         l <- mapM extractBindings pats
-	 return (TupleTerm (map fst l) ps, concatMap snd l)
-    TypedTerm p q ty ps -> do 
-         mt <- anaStarType ty 
-	 let newT = case mt of Just t -> t
-			       _ -> ty
-         case p of 
-	     QualVar v (MixfixType []) _ ->
-		 return (QualVar v newT ps, [VarDecl v newT Other ps])
-	     _ -> do (newP, bs) <- extractBindings p
-		     return (TypedTerm newP q newT ps, bs)
-    AsPattern p1 p2 ps -> do
-         (p3, l1) <- extractBindings p1
-         (p4, l2) <- extractBindings p2
-	 return (AsPattern p3 p4 ps, l1 ++ l2) 
-    _ -> return (pat, [])
-
-
-mkPatAppl :: Pattern -> Pattern -> [Pos] -> Pattern
+mkPatAppl :: Term -> Term -> [Pos] -> Term
 mkPatAppl op arg qs = 
     case op of
-	    QualVar i (MixfixType []) _  -> 
+	    QualVar (VarDecl i (MixfixType []) _ _) -> 
 		ResolvedMixTerm i [arg] qs
 	    _ -> ApplTerm op arg qs
 
-toMixTerm :: Id -> [Pattern] -> [Pos] -> Pattern
+toMixTerm :: Id -> [Term] -> [Pos] -> Term
 toMixTerm i ar qs = 
     if i == applId then assert (length ar == 2) $
 	   let [op, arg] = ar in mkPatAppl op arg qs
     else if i == tupleId || i == unitId then
          mkTupleTerm ar qs
     else if isUnknownId i then
-         QualVar (simpleIdToId $ unToken i) 
-		     (MixfixType []) qs
+         QualVar $ VarDecl (simpleIdToId $ unToken i) 
+		     (MixfixType []) Other qs
     else ResolvedMixTerm i ar qs
 
 getKnowns :: Id -> Knowns
 getKnowns (Id ts cs _) = Set.union (Set.fromList (map tokStr ts)) $ 
 			 Set.unions (map getKnowns cs) 
 
-resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
+resolvePattern :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolvePattern ga = resolver ga (unknownId : builtinIds)
 
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)

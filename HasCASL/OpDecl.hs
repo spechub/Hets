@@ -89,7 +89,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        mPats <- mapM (mapM anaVarDecl) oldPats
        let newPats = map catMaybes mPats
 	   monoPats = map (map makeMonomorph) newPats
-	   pats = map (\ l -> mkTupleTerm (map toQualVar l) []) monoPats
+	   pats = map (\ l -> mkTupleTerm (map QualVar l) []) monoPats
        case mSc of 
 		Just newSc@(TypeScheme tArgs (qu :=> scTy) qs) -> do 
 		    ty <- toEnvState $ freshInst newSc

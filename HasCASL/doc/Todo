@@ -34,13 +34,7 @@ terms:
 mutual recursive let-equations (and what not?) are not supported yet
 (TypeCheck.hs)
 
-Maybe TypeCheck should generate new type variables for unknown
-variables (with type "MixfixType []") rather than MixAna
-(extractBindings).
-
-a wild card pattern (just "__" with lowest precedence?) is missing
-
-as-patterns are only partially implemented
+a wild card pattern can be given by a single underscore
 
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).

@@ -18,7 +18,7 @@ import Common.Id
 
 mapTerm :: ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type) -> Term -> Term
 mapTerm m t = case t of
-   QualVar v ty ps -> QualVar v (snd m ty) ps
+   QualVar vd -> QualVar $ mapVar (snd m) vd
    QualOp b (InstOpId i ts ps) sc qs -> 
         let (i2, sc2) = fst m (i, sc)
 	    in QualOp b (InstOpId i2 (map (snd m) ts) ps) sc2 qs
@@ -34,7 +34,7 @@ mapTerm m t = case t of
        CaseTerm (mapTerm m te) (map (mapEq m) es) ps
    LetTerm b es te ps ->
        LetTerm b (map (mapEq m) es) (mapTerm m te) ps
-   AsPattern v pa ps -> AsPattern v (mapTerm m pa) ps
+   AsPattern vd pa ps -> AsPattern (mapVar (snd m) vd) (mapTerm m pa) ps
    TermToken _ -> t
    MixfixTerm ts -> MixfixTerm $ map (mapTerm m) ts
    BracketTerm b ts ps -> BracketTerm b (map (mapTerm m) ts) ps

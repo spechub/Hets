@@ -149,7 +149,7 @@ transSentence e s = case s of
 
 
 transTerm :: Env -> As.Term -> IsaSign.Term
-transTerm _ (QualVar var typ _) = 
+transTerm _ (QualVar (VarDecl var typ _ _)) = 
     let tp = transType typ 
 	otp = tp --> mkOptionType tp
      in  (conSomeT otp) `App` IsaSign.Free(transVar var, tp)
@@ -195,7 +195,7 @@ let2lambda (ProgEq pat term _) body =
 
 getType :: As.Term -> Typ
 getType term = case term of
-                    QualVar _ typ _     ->  transType typ
+                    QualVar (VarDecl _ typ _ _) ->  transType typ
                     TypedTerm _ _ typ _ -> transType typ
                     TupleTerm terms _   -> evalTupleType terms
                     _ -> error "[Comorphims.HasCASL2IsabelleHOL] Illegal pattern in lambda abstraction"
@@ -245,7 +245,8 @@ abstraction sign pat body = Abs((transTermAbs sign pat), getType pat, body)
 
 
 transTermAbs :: Env -> As.Term -> IsaSign.Term
-transTermAbs _ (QualVar var typ _) = IsaSign.Free(transVar var, transType typ)
+transTermAbs _ (QualVar (VarDecl var typ _ _)) = 
+    IsaSign.Free(transVar var, transType typ)
 transTermAbs sign (TupleTerm terms _) = foldl1 (binConst isaPair) 
                                                (map (transTermAbs sign) terms)
 transTermAbs sign (QualOp _ (InstOpId opId _ _) _ _) = con (getNameOfOpId opId)

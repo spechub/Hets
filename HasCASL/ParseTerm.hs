@@ -325,7 +325,7 @@ prodType = do (ts, ps) <- mixType `separatedBy` crossT
 parseType :: AParser Type
 parseType = 
     do t1 <- prodType 
-       do a <- arrowT
+       do a <- arrowT <?> funS
 	  t2 <- parseType
 	  return $ FunType t1 (fst a) t2 [snd a] 
         <|> return t1
@@ -417,7 +417,8 @@ genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
 {- | different legal 'PatternToken's possibly excluding 'funS' or
 'equalS' for case or let patterns resp. -}
 tokenPattern :: TokenMode -> AParser Pattern
-tokenPattern b = fmap TermToken (aToken b)
+tokenPattern b = fmap TermToken (aToken b <|> pToken (string "_"))
+-- a single underscore serves as wildcard pattern
 					  
 -- | 'tokenPattern' or 'BracketPattern'
 primPattern :: TokenMode -> AParser Pattern
@@ -430,13 +431,13 @@ primPattern b = tokenPattern b
 -- | several 'typedPattern'
 mixPattern :: TokenMode -> AParser Pattern
 mixPattern b = 
-    do l <- many1 $ typedPattern b
+    do l <- many1 $ asPattern b
        return $ if isSingle l then head l else MixfixTerm l
 
 -- | a possibly typed ('parseType') pattern
 typedPattern :: TokenMode -> AParser Pattern
 typedPattern b = 
-    do t <- primPattern b 
+    do t <- primPattern b
        do c <- colT
           ty <- parseType
           return (MixfixTerm [t, MixTypeTerm OfType ty [tokPos c]])
@@ -445,16 +446,20 @@ typedPattern b =
 -- | top-level pattern (possibly 'AsPattern')
 asPattern :: TokenMode -> AParser Pattern
 asPattern b = 
-    do v <- mixPattern b
-       do   c <- asKey asP 
-	    t <- mixPattern b 
-	    case v of TermToken _ -> return (AsPattern v t [tokPos c])
-		      _ -> unexpected "complex pattern before '@'"    
-         <|> return v
+    do v <- typedPattern b
+       case v of 
+           TermToken tt -> if isPlace tt then return v else do 
+               c <- asKey asP 
+	       t <- typedPattern b 
+	       return (AsPattern 
+		       (VarDecl (mkId [tt]) (MixfixType []) Other [tokPos c])
+		       t [tokPos c])
+	     <|> return v 
+	   _ -> return v
 
 -- | an unrestricted 'asPattern'
 pattern :: AParser Pattern
-pattern = asPattern []
+pattern = mixPattern []
 
 -- | a 'Total' or 'Partial' lambda dot
 lamDot :: AParser (Partiality, Token)
@@ -558,7 +563,7 @@ varTerm =
        i <- var
        c <- colT
        t <- parseType
-       return $ QualVar i t $ toPos v [] c
+       return $ QualVar $ VarDecl i t Other $ toPos v [] c
 
 -- | 'opS' or 'functS'
 opBrand :: AParser (Token, OpBrand)
@@ -654,12 +659,11 @@ exQuant =
 -- | a (possibly unique) existential 'QuantifiedTerm'
 exTerm :: (InMode, TokenMode) -> AParser Term
 exTerm b = 
-    do (p, q) <- exQuant
+    do (p, q) <- exQuant <?> existsS
        (vs, ps) <- varDecls `separatedBy` anSemi
        d <- dotT
        f <- mixTerm b
        return $ QuantifiedTerm q (map GenVarDecl (concat vs)) f $ toPos p ps d
-
 
 -- | a 'LambdaTerm'
 lambdaTerm :: (InMode, TokenMode) -> AParser Term
@@ -694,7 +698,7 @@ letTerm b =
 -- | a customizable pattern equation 
 patternTermPair :: TokenMode -> (InMode, TokenMode) -> String -> AParser ProgEq
 patternTermPair b1 b2 sep = 
-    do p <- asPattern b1
+    do p <- mixPattern b1
        s <- asKey sep
        t <- mixTerm b2
        return (ProgEq p t (tokPos s))

@@ -53,17 +53,6 @@ instance PrettyPrint Morphism where
 		    $$ nest 1 (text mapsTo)
 		    <+> braces (printText0 ga (mtarget m))
       
-mapType :: IdMap -> Type -> Type
--- include classIdMap later
-mapType m ty = if Map.isEmpty m then ty else 
-	      rename ( \ i k n ->
-	       let t = TypeName i k n in
-	       if n == 0 then 
-		  case Map.lookup i m of
-		  Just j -> TypeName j k 0
-		  _ -> t
-	       else t) ty
-
 mapTypeScheme :: IdMap -> TypeScheme -> TypeScheme
 -- rename clashing type arguments later
 mapTypeScheme = mapTypeOfScheme . mapType

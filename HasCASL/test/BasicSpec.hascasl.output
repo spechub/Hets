@@ -200,28 +200,28 @@ type Data4
 *** Warning 11.19, redeclared class 'a'
 *** Error 20.12, unexpected mixfix token: res
 *** Hint 21.1, no type match for: fst
-  with type: '_var_3 ->? s' (21.20)
+  with type: '_var_3 ->? s' (21.6)
   known types:
     
 *** Hint 21.1, wrong result type 's' (21.20)
   for application 'fst(var x : s, var y : t)'
 *** Error 21.1, no typing for 'fst(var x : s, var y : t) : s'
 *** Hint 22.1, no type match for: snd
-  with type: '_var_4 ->? t' (22.20)
+  with type: '_var_4 ->? t' (22.6)
   known types:
     
 *** Hint 22.1, wrong result type 't' (22.20)
   for application 'snd(var x : s, var y : t)'
 *** Error 22.1, no typing for 'snd(var x : s, var y : t) : t'
 *** Hint 28.9, no type match for: all
-  with type: '_var_5 ->? ? Unit' (28.27)
+  with type: '_var_5 ->? ? Unit' (28.14)
   known types:
     
 *** Hint 28.9, wrong result type '? Unit' (28.27)
   for application 'all(var p : ? s)'
 *** Error 28.9, no typing for 'all(var p : ? s) : ? Unit'
 *** Hint 30.9, no type match for: And
-  with type: '_var_7 ->? ? Unit' (30.32)
+  with type: '_var_7 ->? ? Unit' (30.14)
   known types:
     
 *** Hint 30.9, wrong result type '? Unit' (30.32)
@@ -230,7 +230,7 @@ type Data4
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 *** Hint 37.3, no type match for: ex
-  with type: '_var_8 ->? ? Unit' (37.19)
+  with type: '_var_8 ->? ? Unit' (37.7)
   known types:
     
 *** Hint 37.3, wrong result type '? Unit' (37.19)

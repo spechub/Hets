@@ -27,7 +27,7 @@ import Common.AS_Annotation
 
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.Morphism
+import HasCASL.Unify
 import HasCASL.AsUtils
 import HasCASL.ProgEq
 
@@ -190,7 +190,7 @@ translateTerm :: Env -> Term -> HsExp
 translateTerm env t = 
   let undef = HsVar $ UnQual $ HsIdent "undefined" in
   case t of
-    QualVar v ty _pos -> 
+    QualVar (VarDecl v ty _ _) -> 
 	let (LowerId, i) = translateId env v $ simpleTypeScheme ty in HsVar i
     QualOp _ (InstOpId uid _types _) sc _pos -> 
     -- The identifier 'uid' may have been renamed. To find its new name,
@@ -230,7 +230,7 @@ translateTerm env t =
 -- | Conversion of patterns form HasCASL to haskell.
 translatePattern :: Env -> Pattern -> HsPat
 translatePattern env pat = case pat of
-      QualVar v ty _pos -> 
+      QualVar (VarDecl v ty _ _) -> 
 	  let (LowerId, UnQual i) = translateId env v $ simpleTypeScheme ty
 	      in HsPVar i
       QualOp _ (InstOpId uid _t _p) sc _pos -> 
@@ -248,7 +248,10 @@ translatePattern env pat = case pat of
       TypedTerm p OfType _ty _pos -> translatePattern env p 
                                  --the type is implicit
       --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
-      AsPattern _p1 _p2 _pos -> error "AsPattern nyi"
+      AsPattern (VarDecl v ty _ _) p _ -> 
+	    let (LowerId, UnQual i) = translateId env v $ simpleTypeScheme ty
+		hp = translatePattern env p
+	    in HsPAsPat i hp
       _ -> error ("translatePattern: unexpected pattern: " ++ show pat)
 
 

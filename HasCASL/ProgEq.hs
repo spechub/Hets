@@ -55,7 +55,7 @@ isVar, isConstrAppl, isPat, isLHS, isExecutable :: Env -> Term -> Bool
 
 isVar e t = case t of 
     TypedTerm trm OfType _ _  -> isVar e trm
-    QualVar _ _ _ -> True
+    QualVar _ -> True
     _ -> False
 
 isConstrAppl e t = case t of
@@ -66,7 +66,7 @@ isConstrAppl e t = case t of
 isPat e t = case t of 
     TypedTerm trm OfType _ _ -> isPat e trm
     TupleTerm ts _ -> all (isPat e) ts
-    AsPattern v p _ -> isVar e v && isPat e p
+    AsPattern _ p _ -> isPat e p
     _ -> isVar e t || isConstrAppl e t
 
 isLHS e t = case t of
@@ -76,7 +76,7 @@ isLHS e t = case t of
 
 isExecutable e t = 
     case t of 
-    QualVar _ _ _ -> True
+    QualVar _ -> True
     QualOp _ _ _ _ -> True
     QuantifiedTerm _ _ _ _ -> False
     TypedTerm _ InType _ _ -> False
@@ -175,7 +175,7 @@ getAppl = thrdM reverse . getAppl2
             InType -> Nothing
 	    _ -> getAppl trm 
 	QualOp _ (InstOpId i _ _) sc _ -> Just (i, sc, [])
-	QualVar v ty _ -> Just (v, simpleTypeScheme ty, [])
+	QualVar (VarDecl v ty _ _) -> Just (v, simpleTypeScheme ty, [])
 	ApplTerm t1 t2 _ -> thrdM (t2:) $ getAppl2 t1
         _ -> Nothing
 
@@ -187,16 +187,3 @@ translateSen env s = case s of
 		     Nothing -> s 
 		     Just (i, sc, _) -> ProgEqSen i sc pe
 	_ -> s 
-
--- | extract bindings from an analysed pattern
-extractVars :: Pattern -> [VarDecl]
-extractVars pat = 
-    case pat of
-    QualVar v t ps -> [VarDecl v t Other ps]
-    ApplTerm p1 p2 _ -> 
-         extractVars p1 ++ extractVars p2
-    TupleTerm pats _ -> concatMap extractVars pats
-    TypedTerm p _ _ _ -> extractVars p
-    AsPattern p1 p2 _ -> extractVars p1 ++ extractVars p2
-    ResolvedMixTerm _ pats _ -> concatMap extractVars pats
-    _ -> []

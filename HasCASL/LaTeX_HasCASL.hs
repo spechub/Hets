@@ -183,7 +183,7 @@ instance PrintLaTeX TypeQual where
 instance PrintLaTeX Term where
     printLatex0 ga t = printTerm ga 
 	   (case t of 
-		  QualVar _ _ _ -> True
+		  QualVar _ -> True
 		  QualOp _ _ _ _ -> True
 		  _ -> False) t
 
@@ -222,7 +222,7 @@ printTerm ga b trm =
 	       MixTypeTerm _ _ _ -> id
                _ -> ppParen)
       $ case trm of
-        QualVar v _t _ -> printLatex0 ga v
+        QualVar (VarDecl v _ _t _) -> printLatex0 ga v
                          {-sep [hc_sty_axiom varS <+> printLatex0 ga v,
 			      colon <+> printLatex0 ga t]-}
         QualOp _br n _t _ -> printLatex0 ga n

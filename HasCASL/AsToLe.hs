@@ -14,11 +14,11 @@ module HasCASL.AsToLe where
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.Result
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Common.Result
-import Common.Id
+
 import HasCASL.As
 import HasCASL.AsToIds
 import HasCASL.Le

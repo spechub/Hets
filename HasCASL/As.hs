@@ -283,7 +283,7 @@ getBrackets b = case b of
 -- parse quantified formulae as terms first
 -- eases also parsing of formulae in parenthesis
 
-data Term = QualVar Var Type [Pos]
+data Term = QualVar VarDecl
           -- pos "(", "var", ":", ")"
           | QualOp OpBrand InstOpId TypeScheme [Pos]
           -- pos "(", "op", ":", ")" 
@@ -308,7 +308,7 @@ data Term = QualVar Var Type [Pos]
           | MixfixTerm [Term]
           | BracketTerm BracketKind [Term] [Pos]
           -- pos brackets, ","s 
-          | AsPattern Pattern Pattern [Pos]          
+          | AsPattern VarDecl Pattern [Pos]          
           -- pos "@"
             deriving (Show,Ord)
 
@@ -478,7 +478,7 @@ instance Eq VarDecl where
     VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2) 
 
 instance Eq Term where
-    QualVar v1 t1 _ == QualVar v2 t2 _ = (v1, t1) == (v2, t2) 
+    QualVar v1 == QualVar v2 = v1 == v2
     QualOp b1 i1 s1 _ == QualOp b2 i2 s2 _ = (b1, i1, s1) == (b2, i2, s2) 
     ResolvedMixTerm i1 t1 _ == ResolvedMixTerm i2 t2 _ = (i1, t1) == (i2, t2) 
     ApplTerm s1 t1 _ == ApplTerm s2 t2 _ = (s1, t1) == (s2, t2) 

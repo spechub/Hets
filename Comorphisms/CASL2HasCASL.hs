@@ -225,7 +225,8 @@ fromOP_TYPE ot =
 
 fromTERM :: Sign f e -> Cas.TERM f -> Term
 fromTERM s t = case t of
-    Cas.Qual_var v ty ps -> QualVar (simpleIdToId v) (toType ty) ps
+    Cas.Qual_var v ty ps -> 
+	QualVar $ VarDecl (simpleIdToId v) (toType ty) Other ps
     Cas.Application (Cas.Qual_op_name i ot ps) as qs  ->
 	ApplTerm (QualOp Op (InstOpId i [] ps) (fromOP_TYPE ot) ps)
 	     (mkTupleTerm (map (fromTERM s) as) qs) qs 

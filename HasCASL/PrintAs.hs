@@ -170,7 +170,7 @@ instance PrettyPrint TypeQual where
 instance PrettyPrint Term where
     printText0 ga t = printTerm ga 
 	   (case t of 
-		  QualVar _ _ _ -> True
+		  QualVar _ -> True
 		  QualOp _ _ _ _ -> True
 		  _ -> False) t
 
@@ -194,8 +194,7 @@ printTerm ga b trm =
 	       MixTypeTerm _ _ _ -> id
                _ -> ppParen)
       $ case trm of
-        QualVar v t _ -> sep [text varS <+> printText0 ga v,
-			      colon <+> printText0 ga t]
+        QualVar vd -> text varS <+> printText0 ga vd
         QualOp br n t _ -> sep [printText0 ga br <+> printText0 ga n,
 			        colon <+> printText0 ga 
 				(if isPred br then unPredTypeScheme t else t)]
@@ -250,8 +249,10 @@ printEq0 ga s (ProgEq p t _) = hang (hang (printText0 ga p) 2 $ text s)
 			       4 $ printText0 ga t
 
 instance PrettyPrint VarDecl where 
-    printText0 ga (VarDecl v t _ _) = printText0 ga v <+> colon
-						 <+> printText0 ga t
+    printText0 ga (VarDecl v t _ _) = printText0 ga v <> 
+       case t of 
+       MixfixType [] -> empty 
+       _ -> space <> colon <+> printText0 ga t
 
 instance PrettyPrint GenVarDecl where 
     printText0 ga gvd = case gvd of 

@@ -15,6 +15,7 @@ type inference
 module HasCASL.TypeCheck where
 
 import HasCASL.Unify 
+import HasCASL.AsUtils
 import HasCASL.Merge
 import HasCASL.VarDecl
 import HasCASL.As
@@ -44,7 +45,7 @@ checkPattern ga pat = do
     case mPat of 
 	      Nothing -> return Nothing
 	      Just p -> do 
-		  (np, _) <- extractBindings p 
+		  np <- anaPattern p 
 		  typeCheck inferPat Nothing np
 
 freshInstList :: TypeScheme -> State Int (Type, [Type])
@@ -94,19 +95,20 @@ typeCheck inf mt trm =
 			    $ getMyPos trm]
 	          return Nothing
 
-freshTypeVar :: State Env Type		  
-freshTypeVar = do var <- toEnvState freshVar 
-		  return $ TypeName var star 1
+freshTypeVar :: Pos -> State Env Type		  
+freshTypeVar p = 
+    do var <- toEnvState $ freshVar p
+       return $ TypeName var star 1
 
-freshVars :: [a] -> State Env [Type]
-freshVars l = mapM (const freshTypeVar) l
+freshVars :: [Term] -> State Env [Type]
+freshVars l = mapM (freshTypeVar . posOfTerm) l
 
 inferAppl :: (Maybe Type -> Term -> State Env [(Subst, Type, Term)]) -> [Pos]
           -> Maybe Type -> Term  -> Term -> State Env [(Subst, Type, Term)]
 inferAppl inf ps mt t1 t2 = do
-	    aty <- freshTypeVar
+	    aty <- freshTypeVar $ posOfTerm t2
 	    rty <- case mt of 
-		  Nothing -> freshTypeVar
+		  Nothing -> freshTypeVar $ posOfTerm t1
 		  Just ty -> return ty
 	    ops <- inf (Just $ FunType aty PFunArr rty []) t1
 	    combs <- mapM ( \ (sf, _, tf) -> do 
@@ -135,13 +137,13 @@ infer mt trm = do
 	uniDiags = addDiags . map (improveDiag trm)
     as <- gets assumps
     case trm of 
-        QualVar v t ps -> do 
+        QualVar (VarDecl v t ok ps)  -> do 
 	    let Result ds ms = mUnify t
 	    uniDiags ds 
 	    case ms of 
 		Nothing -> return []
-		Just s -> let ty = (subst s t) in 
-			      return [(s, ty, QualVar v ty ps)] 
+		Just s -> let ty = subst s t in 
+			      return [(s, ty, QualVar $ VarDecl v ty ok ps)] 
 	QualOp b (InstOpId i ts qs) sc ps -> do
 	    (ty, inst) <- toEnvState $ freshInstList sc
 	    let Result ds ms = mgu tm (mt, if null ts then inst else ts) 
@@ -175,7 +177,8 @@ infer mt trm = do
 			 return rs
 	       return $ map ( \ (s, ty, is, oi) -> 
 			      case opDefn oi of
-			      VarDefn -> (s, ty, QualVar i ty ps)
+			      VarDefn -> (s, ty, QualVar $ 
+					  VarDecl i ty Other ps)
 			      x -> let br = case x of
 				            NoOpDefn b -> b
 				            Definition b _ -> b
@@ -251,7 +254,7 @@ infer mt trm = do
 			(s, typ, QuantifiedTerm quant decls tr ps)) rs
         LambdaTerm pats part resTrm ps -> do 
 	    vs <- freshVars pats
-	    rty <- freshTypeVar
+	    rty <- freshTypeVar $ posOfTerm resTrm
 	    let fty l = if null l then rty else 
 			FunType (head l) PFunArr (fty $ tail l) []
 		myty = fty vs
@@ -262,8 +265,7 @@ infer mt trm = do
 		Just s -> do 
                     ls <- checkList inferPat (map (Just . subst s) vs) pats
 		    rs <- mapM ( \ ( s2, _, nps) -> do
-		       bs <- mapM extractBindings nps
-		       mapM_ addVarDecl (concatMap snd bs)
+		       mapM_ addVarDecl $ concatMap extractVars nps
 		       let newS = compSubst s s2 
 		       es <- infer (Just $ subst newS rty) resTrm
                        putAssumps as
@@ -275,7 +277,7 @@ infer mt trm = do
 	CaseTerm ofTrm eqs ps -> do 
 	    ts <- infer Nothing ofTrm
 	    rty <- case mt of 
-		   Nothing -> freshTypeVar
+		   Nothing -> freshTypeVar $ posOfTerm trm
 		   Just ty -> return ty
 	    if null ts then addDiags [mkDiag Error 
 				      "unresolved of-term in case" ofTrm]
@@ -295,7 +297,11 @@ infer mt trm = do
 			       LetTerm b nes nt ps)) ts) es
 	    putAssumps as
 	    return $ concat rs
-    	_ -> do ty <- freshTypeVar
+	AsPattern (VarDecl v _ ok qs) pat ps -> do 
+	   pats <- infer mt pat
+	   return $ map ( \ (s1, t1, p1) -> (s1, t1, 
+			  AsPattern (VarDecl v t1 ok qs) p1 ps)) pats
+    	_ -> do ty <- freshTypeVar $ posOfTerm trm
 		addDiags [mkDiag Error "unexpected term" trm]
 		return [(eps, ty, trm)]
 
@@ -306,8 +312,7 @@ inferLetEq _ (ProgEq pat trm ps) = do
     nps <- mapM ( \ (s2, tyt, nt) -> do
            pps <- inferPat (Just tyt) pat		     
            mapM ( \ (s3, _, pp) -> do
-               (_, nbs) <- extractBindings pp 
-               mapM_ addVarDecl nbs
+               mapM_ addVarDecl $ extractVars pp
 	       return (compSubst s2 s3, tyt, ProgEq pp nt ps)) pps) ts
     return $ concat nps
 
@@ -329,8 +334,7 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
    if null pats then addDiags [mkDiag Error "unresolved case pattern" pat]
       else return ()
    es <- mapM ( \ (s, ty, p) -> do 
-		(_, bs) <- extractBindings p
-		mapM_ addVarDecl bs
+		mapM_ addVarDecl $ extractVars p
 		ts <- infer (Just $  subst s tty) trm
 		putAssumps as
 		return $ map ( \ (st, tyt, t) -> 

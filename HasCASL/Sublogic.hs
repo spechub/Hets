@@ -600,7 +600,7 @@ sl_term t = sublogics_max (get_logic t) (sl_t t)
 
 
 sl_t :: Term -> HasCASL_Sublogics
-sl_t (QualVar _ t _) = sl_type t
+sl_t (QualVar vd) = sl_varDecl vd
 sl_t (QualOp b i t _) =
   comp_list [(sl_opBrand b),
              (sl_instOpId i),
@@ -622,7 +622,7 @@ sl_t (LetTerm _ l t _) = sublogics_max (sl_t t)
 sl_t (MixTypeTerm _ t _) = sl_type t
 sl_t (MixfixTerm l) = comp_list $ map sl_t l
 sl_t (BracketTerm _ l _) = comp_list $ map sl_t l
-sl_t (AsPattern p1 p2 _) = sublogics_max (sl_pattern p1) (sl_pattern p2)
+sl_t (AsPattern vd p2 _) = sublogics_max (sl_varDecl vd) (sl_pattern p2)
 sl_t _ = bottom
 
 

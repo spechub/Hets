@@ -248,7 +248,7 @@ classItemList :: [Token] -> Instance -> AParser BasicItem
 classItemList ps k = hasCaslItemAux ps classItem $ ClassItems k
 
 classItems :: AParser BasicItem
-classItems = do p <- asKey (classS ++ "es") <|> asKey classS
+classItems = do p <- (asKey (classS ++ "es") <|> asKey classS) <?> classS
 	        do   q <- pluralKeyword instanceS
 		     classItemList [p, q] Instance
 	         <|> classItemList [p] Plain

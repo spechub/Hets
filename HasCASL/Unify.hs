@@ -82,15 +82,15 @@ freshInst (TypeScheme tArgs (_ :=> t) _) =
     do m <- mkSubst tArgs 
        return $ subst (Map.fromList m) t
 
-freshVar :: State Int Id 
-freshVar = 
+freshVar :: Pos -> State Int Id 
+freshVar p = 
     do c <- get
        put (c + 1)
-       return $ simpleIdToId $ mkSimpleId ("_var_" ++ show c)
+       return $ simpleIdToId $ Token ("_var_" ++ show c) p
 
 mkSingleSubst :: TypeArg -> State Int (TypeArg, Type)
 mkSingleSubst tv@(TypeArg _ k _ _) =
-    do ty <- freshVar
+    do ty <- freshVar $ posOfTypeArg tv
        return (tv, TypeName ty k 1)
 
 mkSubst :: [TypeArg] -> State Int [(TypeArg, Type)]
@@ -135,6 +135,16 @@ relatedTypeIds tm i1 i2 =
 
 allRelIds :: TypeMap -> TypeId -> Set.Set TypeId
 allRelIds tm i = Set.union (superIds tm i) $ subIds tm i 
+
+mapType :: IdMap -> Type -> Type
+mapType m ty = if Map.isEmpty m then ty else 
+	      rename ( \ i k n ->
+	       let t = TypeName i k n in
+	       if n == 0 then 
+		  case Map.lookup i m of
+		  Just j -> TypeName j k 0
+		  _ -> t
+	       else t) ty
 
 rename :: (TypeId -> Kind -> Int -> Type) -> Type -> Type
 rename m t = case t of

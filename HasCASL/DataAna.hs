@@ -50,7 +50,7 @@ makeSelTupleEqs dt args ct n m (Select mi ty p : sels) =
     (case mi of
     Nothing -> []
     Just i -> let sc = TypeScheme args ([] :=> getSelType dt p ty) [] 
-		  vt = toQualVar $ mkSelVar n m ty
+		  vt = QualVar $ mkSelVar n m ty
 		  eq = mkEqTerm eqId [] (mkApplTerm (mkOpTerm i sc) [ct]) vt
               in [NamedSen ("ga_select_" ++ show i) eq])
     ++ makeSelTupleEqs dt args ct n (m + 1) sels
@@ -69,7 +69,7 @@ makeAltSelEqs dt args (Construct mc ts p sels) =
     Nothing -> []
     Just c -> let sc = TypeScheme args ([] :=> getConstrType dt p ts) [] 
 		  vars = genSelVars 1 sels 
-		  as = map ( \ vs -> mkTupleTerm (map toQualVar vs) []) vars
+		  as = map ( \ vs -> mkTupleTerm (map QualVar vs) []) vars
 		  ct = mkApplTerm (mkOpTerm c sc) as
               in map (mapNamed (mkForall (map GenTypeVarDecl args
 				  ++ map GenVarDecl (concat vars))))

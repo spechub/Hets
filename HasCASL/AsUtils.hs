@@ -17,6 +17,20 @@ import HasCASL.PrintAs -- to reexport instances
 import Common.Id
 import Common.PrettyPrint
 
+-- | extract bindings from an analysed pattern
+extractVars :: Pattern -> [VarDecl]
+extractVars pat = 
+    case pat of
+    QualVar vd -> getVd vd
+    ApplTerm p1 p2 _ -> 
+         extractVars p1 ++ extractVars p2
+    TupleTerm pats _ -> concatMap extractVars pats
+    TypedTerm p _ _ _ -> extractVars p
+    AsPattern v p2 _ -> getVd v ++ extractVars p2
+    ResolvedMixTerm _ pats _ -> concatMap extractVars pats
+    _ -> []
+    where getVd vd@(VarDecl v _ _ _) = if showId v "" == "_" then [] else [vd]
+
 -- | construct term from id
 mkOpTerm :: Id -> TypeScheme -> Term
 mkOpTerm i sc = QualOp Op (InstOpId i [] []) sc []
@@ -24,10 +38,6 @@ mkOpTerm i sc = QualOp Op (InstOpId i [] []) sc []
 -- | bind a term
 mkForall :: [GenVarDecl] -> Term -> Term
 mkForall vl f = if null vl then f else QuantifiedTerm Universal vl f []
-
--- | convert declared to qualified variables
-toQualVar :: VarDecl -> Term
-toQualVar (VarDecl v ty _ ps) = QualVar v ty ps
 
 -- | construct application with curried arguments
 mkApplTerm :: Term -> [Term] -> Term
@@ -117,8 +127,11 @@ instance PosItem Vars where
 instance PosItem TypePattern where
     get_pos = Just . posOfTypePattern
 
+posOfTypeArg :: TypeArg -> Pos
+posOfTypeArg (TypeArg t _ _ ps) = firstPos [t] ps
+
 instance PosItem TypeArg where
-    get_pos (TypeArg t _ _ _) = Just $ posOfId t
+    get_pos = Just . posOfTypeArg
 
 posOfTypePattern :: TypePattern -> Pos
 posOfTypePattern pat = 
@@ -156,7 +169,7 @@ instance PosItem Term where
 posOfTerm :: Term -> Pos
 posOfTerm trm =
     case trm of
-    QualVar v _ ps -> firstPos [v] ps
+    QualVar v -> posOfVarDecl v
     QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] (ps++qs) 
     ResolvedMixTerm i _ _ -> posOfId i
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
@@ -170,9 +183,12 @@ posOfTerm trm =
     MixTypeTerm _ t ps -> firstPos [t] ps
     MixfixTerm ts -> posOf ts
     BracketTerm _ ts ps -> firstPos ts ps 
-    AsPattern p1 p2 ps -> firstPos [p1, p2] ps
+    AsPattern v _ ps -> firstPos [v] ps
 
 -- ---------------------------------------------------------------------
 
+posOfVarDecl :: VarDecl -> Pos
+posOfVarDecl (VarDecl v _ _ ps) = firstPos [v] ps
+
 instance PosItem VarDecl where
-    get_pos (VarDecl v _ _ ps) = Just $ firstPos [v] ps
+    get_pos = Just . posOfVarDecl

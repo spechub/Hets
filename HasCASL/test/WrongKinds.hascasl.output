@@ -4,84 +4,84 @@ expecting words, "(" or "{"
 
 parse error at 2.3:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 3.4:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 4.2:
 unexpected "*"
-expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
+expecting casl char, "_", "[", "%", "+", "-", "->" or end of input
 
 parse error at 5.6:
 unexpected contra-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 6.8:
 unexpected contra-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 7.7:
 unexpected "*"
-expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
+expecting "[", "%", "+", "-", "->" or end of input
 
 parse error at 8.5:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 9.10:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 10.11:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 11.7:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 12.7:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 (a, b -> c)
 parse error at 14.4:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 15.2:
 unexpected "*"
-expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
+expecting casl char, "_", "[", "%", "+", "-", "->" or end of input
 
 parse error at 16.4:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 (a -> b)+ -> c
 (a- -> b)+ -> c
 parse error at 19.2:
 unexpected "*"
-expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
+expecting casl char, "_", "[", "%", "+", "-", "->" or end of input
 
 parse error at 20.3:
 unexpected "*"
-expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", "," or ")"
+expecting casl char, "_", "[", "%", "+", "-", "->", "," or ")"
 
 parse error at 21.5:
 unexpected co-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 22.5:
 unexpected contra-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 23.5:
 unexpected contra-variance of kind
-expecting "%%", "%{", "%(", "%" or "->"
+expecting "%" or "->"
 
 parse error at 24.7:
 unexpected "*"
-expecting "%%", "%{", "%(", "%", "+", "-", "->" or end of input
+expecting "%", "+", "-", "->" or end of input
 

@@ -25,6 +25,7 @@ import Common.Lib.State
 import Common.Result
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeAna
@@ -335,3 +336,43 @@ filterAssumps p =
     Map.filter (not . null . opInfos) .
        Map.map (OpInfos . filter p . opInfos)
 
+-- | analyse types in typed patterns, and
+-- create fresh type vars for unknown ids tagged with type MixfixType []. 
+anaPattern :: Pattern -> State Env Pattern
+anaPattern pat = 
+    case pat of
+    QualVar vd -> do newVd <- checkVarDecl vd
+                     return $ QualVar newVd
+    ResolvedMixTerm i pats ps -> do 
+         l <- mapM anaPattern pats
+	 return $ ResolvedMixTerm i l ps
+    ApplTerm p1 p2 ps -> do
+         p3 <- anaPattern p1
+         p4 <- anaPattern p2
+	 return $ ApplTerm p3 p4 ps
+    TupleTerm pats ps -> do 
+         l <- mapM anaPattern pats
+	 return $ TupleTerm l ps
+    TypedTerm p q ty ps -> do 
+         mt <- anaStarType ty 
+	 let newT = case mt of Just t -> t
+			       _ -> ty
+         case p of 
+	     QualVar (VarDecl v (MixfixType []) ok qs) ->
+		 let newVd = VarDecl v newT ok (qs ++ ps) in
+		 return $ QualVar newVd
+	     _ -> do newP <- anaPattern p
+		     return $ TypedTerm newP q newT ps
+    AsPattern vd p2 ps -> do
+         newVd <- checkVarDecl vd
+         p4 <- anaPattern p2
+	 return $ AsPattern newVd p4 ps
+    _ -> return pat
+    where checkVarDecl vd@(VarDecl v t ok ps) = case t of 
+	    MixfixType [] -> do
+	        tvar <- toEnvState $ freshVar $ posOfVarDecl vd
+		return $ VarDecl v (TypeName tvar star 1) ok ps
+	    _ -> do mt <- anaStarType t 
+		    case mt of 
+		        Just ty -> return $ VarDecl v ty ok ps 
+		        _ -> return vd
