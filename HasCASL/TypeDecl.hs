@@ -89,14 +89,14 @@ anaTypeItem inst (SubtypeDefn pat v t f ps) =
 				     inst nullKind i
 			   addSuperType newT i
 	   
-anaTypeItem inst (AliasType pat kind (PseudoType tArgs ty p) _) = 
+anaTypeItem inst (AliasType pat kind (TypeScheme tArgs (q :=> ty) p) _) = 
     do k <- case kind of 
 		      Nothing -> return Nothing
 		      Just j -> fmap Just $ anaKind j
        tm <- getTypeMap    -- save global variables  
        mapM_ anaTypeArgs tArgs
        newTy <- anaType ty
-       let newPty = PseudoType tArgs newTy p
+       let newPty = TypeScheme tArgs (q :=> newTy) p
        ik <- checkPseudoTypeKind newPty k
        putTypeMap tm       -- forget local variables 
        let Result ds m = convertTypePattern pat
@@ -137,8 +137,8 @@ typeArgToKind :: TypeArg -> Kind
 typeArgToKind (TypeArg _ k _ _) = k
 
 
-checkPseudoTypeKind :: PseudoType -> Maybe Kind -> State Env (Maybe Kind)
-checkPseudoTypeKind (PseudoType tArgs ty _) kind =
+checkPseudoTypeKind :: TypeScheme -> Maybe Kind -> State Env (Maybe Kind)
+checkPseudoTypeKind (TypeScheme tArgs (_ :=> ty) _) kind =
     do m <- inferKind ty 
        case m of
 	      Nothing -> return kind

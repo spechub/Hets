@@ -12,9 +12,6 @@ module AsUtils where
 import As
 import Id
 
-getPos :: [Pos] -> Pos
-getPos l = if null l then nullPos else head l
-
 posOf :: PosItem a => [a] -> Pos
 posOf l = if null l then nullPos else 
 	  case get_pos $ head l of 
@@ -66,8 +63,8 @@ posOfTypePattern pat =
 instance PosItem TypeArgs where
     get_pos (TypeArgs tArgs ps) = Just $ firstPos tArgs ps
 
-instance PosItem PseudoType where
-    get_pos (PseudoType tArgs _ ps) = Just $ firstPos tArgs ps
+instance PosItem TypeScheme where
+    get_pos (TypeScheme tArgs _ ps) = Just $ firstPos tArgs ps
 
 instance PosItem Type where
     get_pos = Just . posOfType

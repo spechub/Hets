@@ -392,8 +392,9 @@ typeScheme = do f <- forallT
 		t <- typeScheme
                 return $ case t of 
 			 TypeScheme ots q ps ->
-			     TypeScheme (concat ts ++ ots) q
-					(ps ++ toPos f cs d)
+			     TypeScheme ((TypeArgs (concat ts) 
+					 $ map tokPos cs) : ots) q
+					(tokPos f:tokPos d:ps)
 	     <|> fmap simpleTypeScheme parseType
 
 -----------------------------------------------------------------------------

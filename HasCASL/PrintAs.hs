@@ -83,10 +83,12 @@ instance PrettyPrint t => PrettyPrint (Qual t) where
 
 -- no curried notation for bound variables 
 instance PrettyPrint TypeScheme where
-    printText0 ga (TypeScheme vs t _) = noPrint (null vs) (text forallS
-				   <+> semis ga vs 
-				   <+> text dotS <+> space)
-				   <> printText0 ga t
+    printText0 ga (TypeScheme vss t _) = hcat (map (\ (TypeArgs vs _) -> 
+						    text forallS
+						    <+> semis ga vs 
+						    <+> text dotS <+> space)
+					       vss) 
+					 <> printText0 ga t
 
 instance PrettyPrint Partiality where
     printText0 _ Partial = text quMark
@@ -260,8 +262,8 @@ instance PrettyPrint InstOpId where
 ------------------------------------------------------------------------
 -- item stuff
 ------------------------------------------------------------------------
-instance PrettyPrint PseudoType where 
-    printText0 ga (PseudoType l t _) = noPrint (null l) (text lamS 
+printPseudoType :: GlobalAnnos -> TypeScheme -> Doc
+printPseudoType ga (TypeScheme l t _) = noPrint (null l) (text lamS 
 				<+> (if null $ tail l then
 				     printText0 ga $ head l
 				     else fcat(map (parens . printText0 ga) l))
@@ -341,7 +343,7 @@ instance PrettyPrint TypeItem where
 					  Just j -> space <> colon <> 
 					           printText ga j)
 				       <+> text assignS
-				       <+> printText0 ga t
+				       <+> printPseudoType ga t
     printText0 ga (Datatype t) = printText0 ga t
 
 instance PrettyPrint OpItem where 

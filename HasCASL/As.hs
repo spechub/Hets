@@ -66,7 +66,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos "="s
                | SubtypeDefn TypePattern Var Type (Annoted Formula) [Pos]
                -- pos "=", "{", ":", dot, "}"
-               | AliasType TypePattern (Maybe Kind) PseudoType [Pos]
+               | AliasType TypePattern (Maybe Kind) TypeScheme [Pos]
                -- pos ":="
 	       | Datatype DatatypeDecl
                  deriving (Show, Eq)
@@ -79,10 +79,6 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  -- pos brackets 
                  | TypePatternArgs [TypeArg]
                    deriving (Show, Eq)
-
-data PseudoType = PseudoType [TypeArgs] Type [Pos]
-                -- pos "\" "("s, ")"s, dot 
-                  deriving (Show, Eq)
 
 data Type = TypeName TypeId Int  -- analysed
             -- Int > 0 means generalized
@@ -111,8 +107,9 @@ data Qual t = [Pred] :=> t
               deriving (Show, Eq)
 
 -- no curried notation for bound variables 
-data TypeScheme = TypeScheme [TypeArg] (Qual Type) [Pos]
-                -- pos "forall", ";"s,  dot 
+data TypeScheme = TypeScheme [TypeArgs] (Qual Type) [Pos]
+                -- pos "forall", ";"s,  dot (singleton list)
+                -- pos "\" "("s, ")"s, dot for type aliases
                   deriving (Show, Eq)
 
 simpleTypeScheme :: Type -> TypeScheme

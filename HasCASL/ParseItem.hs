@@ -150,17 +150,17 @@ typeArgSeq =
     do (ts, ps) <- typeArgs `separatedBy` anSemi 
        return [TypeArgs (concat ts) (map tokPos ps)]
 
-pseudoType :: AParser PseudoType
+pseudoType :: AParser TypeScheme
 pseudoType = do l <- asKey lamS
 		ts <- many1 typeArgParen <|> typeArgSeq
 		d <- dotT
 		t <- pseudoType
 		let qs = map tokPos [l,d]
 		case t of 
-		       PseudoType ts1 gt ps -> 
-			   return $ PseudoType (ts1++ts) gt (ps++qs)
+		       TypeScheme ts1 gt ps -> 
+			   return $ TypeScheme (ts1++ts) gt (ps++qs)
 	     <|> do st <- parseType
-		    return $ PseudoType [] st []
+		    return $ simpleTypeScheme st
 
 pseudoTypeDef :: TypePattern -> Maybe Kind -> [Token] -> AParser TypeItem
 pseudoTypeDef t k l = 

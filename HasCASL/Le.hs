@@ -40,7 +40,7 @@ data GenKind = Free | Generated | Loose deriving (Show, Eq)
 data TypeDefn = NoTypeDefn
               | Supertype TypeId Type Formula 
 	      | DatatypeDefn GenKind -- ...
-	      | AliasTypeDefn PseudoType
+	      | AliasTypeDefn TypeScheme
 	      | TypeVarDefn deriving (Show, Eq)
 
 data TypeInfo = TypeInfo { typeKind :: Kind
