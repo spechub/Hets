@@ -137,6 +137,8 @@ ppHsDecl (HsInfixDecl pos assoc prec nameList) =
 	    ppAssoc HsAssocLeft  = text "infixl"
 	    ppAssoc HsAssocRight = text "infixr"
 
+ppHsDecl (HsAxiomBind ax) = text $ show ax
+
 ppMatch (HsMatch pos f ps rhs whereDecls)
    =   myFsep (ppHsQNameParen f : map ppHsPat ps ++ [ppHsRhs rhs])
    $$$ ppWhere whereDecls
