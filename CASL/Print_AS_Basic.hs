@@ -34,12 +34,15 @@ instance PrettyPrint BASIC_ITEMS where
 				 $$ printText0(Axiom_items f p)
     printText0(Axiom_items f _) = vcat (map (\x -> text cDot  <+> printText0 x)
 					f)
+semiAnno l = vcat(map (\x -> printList (l_annos x) 
+			$$ printText0 (item x) <> semi 
+			<> printList (r_annos x)) l) 
 
 instance PrettyPrint SIG_ITEMS where
-    printText0(Sort_items l _) =  text sortS <+> semiT l 
-    printText0(Op_items l _) =  text opS <+> semiT l 
-    printText0(Pred_items l _) =  text predS <+> semiT l 
-    printText0(Datatype_items l _) = text typeS <+> semiT l 
+    printText0(Sort_items l _) =  text sortS <+> semiAnno l 
+    printText0(Op_items l _) =  text opS <+> semiAnno l 
+    printText0(Pred_items l _) =  text predS <+> semiAnno l 
+    printText0(Datatype_items l _) = text typeS <+> semiAnno l 
 
 commaT l = cat(punctuate comma (map printText0 l))
 
@@ -79,10 +82,11 @@ instance PrettyPrint OP_TYPE where
 					<> printText0 s
 
 instance PrettyPrint OP_HEAD where
-    printText0(Total_op_head l s _) = if null l then empty else parens(semiT l)
+    printText0(Total_op_head l s _) = (if null l then empty else parens(semiT l))
 			     <> colon
 			     <> printText0 s
-    printText0(Partial_op_head l s _) = if null l then empty else parens(semiT l)
+    printText0(Partial_op_head l s _) = 
+	(if null l then empty else parens(semiT l))
 			     <> text (colonS ++ quMark)
 			     <> printText0 s
 

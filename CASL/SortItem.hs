@@ -49,11 +49,13 @@ optSemi = bind (,) (option Nothing (fmap Just semiT)) lineAnnos
 -- skip to leading annotation and read it
 annos = skip >> many (anno << skip)
 
-isStartKeyword s = s `elem` "%":"}":"]":dotS:cDot:casl_reserved_words
+-- remove quantifier exist from casl_reserved_word!
+isStartKeyword s = s `elem` "}":"]":dotS:cDot:casl_reserved_words
 
 lookAheadItemKeyword :: GenParser Char st ()
 lookAheadItemKeyword = 
-    do { c <- lookAhead (many1 scanLPD <|> single (oneOf ("%}]"++signChars)))
+    do { c <- lookAhead (annos >> 
+			 (many1 scanLPD <|> single (oneOf ("}]"++signChars))))
        ; if isStartKeyword c then return () else unexpected c
        }
 
