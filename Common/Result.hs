@@ -30,7 +30,7 @@ data DiagKind = FatalError | Error | Warning | Hint deriving (Eq, Ord, Show)
 data Diagnosis = Diag { diagKind :: DiagKind
 		      , diagString :: String
 		      , diagPos :: Pos 
-		      }
+		      } deriving Eq
 
 -- | construct a message for a printable item that carries a position
 mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
