@@ -709,3 +709,8 @@ basicAnalysis extR extC mef ab as dif (bs, inSig, ga) = do
            , cleanSig
            , checked_sents ) 
 
+basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
+                  -> Result (BASIC_SPEC () () (), Sign () (), 
+                             Sign () (), [Named (FORMULA ())])
+basicCASLAnalysis = basicAnalysis (const $ const return)(const True)
+    (const $ const return) (const return) (const return) const

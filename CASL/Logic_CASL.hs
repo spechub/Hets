@@ -20,7 +20,6 @@ import CASL.SymbolParser
 import CASL.MapSentence
 import CASL.Amalgamability
 import Common.AS_Annotation
-import Common.AnnoState(emptyAnnos)
 import Text.ParserCombinators.Parsec
 import Logic.Logic
 import Common.Lexer((<<))
@@ -160,12 +159,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                CASLSign 
                CASLMor 
                Symbol RawSymbol where
-         basic_analysis CASL = Just $ basicAnalysis
-                               (const $ const return)
-                               (const True)
-                               (const $ const return) 
-                               (const return)
-                               (const return) const
+         basic_analysis CASL = Just $ basicCASLAnalysis
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          ensures_amalgamability CASL (opts, diag, sink, desc) = 
