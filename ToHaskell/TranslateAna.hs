@@ -267,7 +267,7 @@ translateTerm as tm t =
         _ -> error("Problem with finding of unique id: " ++ show t)
 
     ApplTerm t1 t2 _pos ->
-      HsApp(translateTerm as tm t1)(translateTerm as tm t2)
+      HsApp(translateTerm as tm t1)(HsParen $ translateTerm as tm t2)
     TupleTerm ts _pos -> HsTuple (map (translateTerm as tm) ts)
     TypedTerm t1 tqual ty _pos ->
       let res = (HsExpTypeSig nullLoc 
