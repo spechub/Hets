@@ -154,6 +154,17 @@ TODO: All das hier implementieren und testen :D
 --                   (xs', ys) = partition (eq x) xs
 --                   in xs':(equiv eq ys)
 
+-- {- Transform a list [l1,l2, ... ln] to
+--    (in sloppy notation) [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln] -}
+
+-- permute :: [[a]] -> [[a]]
+-- permute [] = [[]]
+-- permute [x] = map (\y -> [y]) x
+-- permute (x:l) =
+--     concat (map (distribute (permute l)) x)
+--     where
+--     distribute perms y = map ((:) y) perms
+
 -- leqF :: a -> a -> Bool -- Funktionsgleichheit
 -- leqP :: a -> a -> Bool -- Praedikatsgleichheit
 
