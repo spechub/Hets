@@ -34,7 +34,7 @@ i = (a, g)
 %% Type Constructors -----------------------------------------------------
 t : Type %(var)%
 %% Diagnostics -----------------------------------------------------------
-Warning (line 1, column 11) implicit declaration of superclass 'b'
+Warning (line 1, column 13) implicit declaration of superclass 'b'
 Warning (line 2, column 7) redeclared class 'b'
 Error (line 2, column 11) cyclic class relation via 'a'
 Warning (line 3, column 11) implicit declaration of superclass 'd'

@@ -1,4 +1,4 @@
-class a < b
+classes a < b
 class b < a     %% cycle
 class c < d
 class d < e

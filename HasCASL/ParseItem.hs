@@ -14,6 +14,7 @@ import Common.Id
 import Common.Keywords
 import Common.Lexer
 import Common.Token
+import Common.AnnoState
 import HasCASL.HToken
 import HasCASL.As
 import Common.Lib.Parsec
@@ -307,7 +308,7 @@ classItemList ps k =
        return (ClassItems k r (map tokPos (ps++ts)))
 
 classItems :: AParser BasicItem
-classItems = do p <- pluralKeyword classS
+classItems = do p <- asKey (classS ++ "es") <|> asKey classS
 	        do   q <- pluralKeyword instanceS
 		     classItemList [p, q] Instance
 	         <|> classItemList [p] Plain
