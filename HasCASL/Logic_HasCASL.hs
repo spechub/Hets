@@ -30,7 +30,7 @@ data HasCASL = HasCASL deriving (Show)
 instance Language HasCASL where  -- default definition is okay
 
 type Sign = BasicSpec
-data Morphism = NoMorphism deriving Eq
+data Morphism = NoMorphism deriving (Eq, Show)
 
 instance Category HasCASL Sign Morphism  
     where
@@ -44,7 +44,7 @@ instance Syntax HasCASL BasicSpec
 	 parse_symb_items HasCASL = Just(toParseFun symbItems ())
 	 parse_symb_map_items HasCASL = Just(toParseFun symbMapItems ())
 
-data HasCASL_Sublogics = NoSublogic deriving (Eq, Ord)
+data HasCASL_Sublogics = NoSublogic deriving (Eq, Ord, Show)
 
 instance LatticeWithTop HasCASL_Sublogics where
 

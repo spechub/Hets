@@ -30,8 +30,8 @@ where
 
 import Grothendieck
 import Logic_CASL  -- also serves as default logic
---import Logic_HasCASL
---import Logic_Haskell
+import Logic_HasCASL
+import Logic_Haskell
 
 logicGraph :: LogicGraph
 logicGraph = ([Logic CASL],[])
