@@ -25,9 +25,14 @@ type DatavaluedPropertyID = URIreference
 type IndividualvaluedPropertyID = URIreference
 type AnnotationPropertyID = URIreference
 type OntologyPropertyID = URIreference
+type Namespace = NTree XNode
 
 -- | Data structur for Ontologies
-data Ontology = Ontology (Maybe OntologyID) [Directive] [NTree XNode]
+data Ontology = Ontology (Maybe OntologyID)
+                   -- for Ontology header:OntologyAnnotations & AnnotationProperties
+                         [Axiom] 
+                         [Directive] 
+                         [Namespace]     -- NTrees XNode : namespaces
                 deriving (Show, Eq)
 data Directive = Anno Annotation | Ax Axiom | Fc Fact
                  deriving (Show, Eq)
@@ -124,7 +129,7 @@ data Axiom = Class
                    (Maybe Func) 
                    [Description] -- ^ Domain 
                    [Description] -- ^ Range
-           | AnnotaionProperty 
+           | AnnotationProperty 
                    AnnotationPropertyID 
                    [Annotation]
            | OntologyProperty 
