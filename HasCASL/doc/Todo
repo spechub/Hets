@@ -66,9 +66,6 @@ CASL:
 Overload.hs should generate Applications for constants rather than
 Var_decls (partially implemented)
 
-convert TERM to Mixfix_bracketed terms and use printText0 rather than
-showTerm from ShowMixfix
-
 Maybe funKind should be ignored as fun_map key for lookup. (Also the
 FunKind value of the mapping seems to be redundant, as it could also
 be looked up in the target signature.)
@@ -92,13 +89,13 @@ PrintModuleInfo is entirely faked and unusable for showing a Haskell
 theory that was directly read in (form a .het file and Haskell code in
 curly braces.)
 
-for logic Haskell static analysis is not executed because its result
+for logic Hatchet static analysis is not executed because its result
 is unused (also parser error messages are poor)
 
 
 
 ToHaskell:
-formulas are not translated to Hassle Axioms
+formulas are not translated to P-Logic Axioms
 
 free types with subtypes components get too few constructors (and
 become disjoint types)
@@ -113,3 +110,5 @@ signatures should be always legal by construction
 
 Design a comand line interface to trigger various outputs and
 translations (without daVinci!) to allow for profiling 
+(started)
+
