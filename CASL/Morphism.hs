@@ -23,6 +23,7 @@ import CASL.Sign
 import CASL.AS_Basic_CASL
 import Common.Id
 import Common.Result
+import Common.Keywords
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -93,10 +94,17 @@ makeTotal :: FunKind -> OpType -> OpType
 makeTotal Total t = t { opKind = Total }
 makeTotal _ t = t
 
-mapOpSym :: Sort_map -> Fun_map -> (Id,OpType) -> Maybe (Id,OpType)
-mapOpSym sMap fMap (i,ot) = do
-  (id',k) <- Map.lookup (i,ot) fMap
-  return (id',mapOpTypeK sMap k ot)
+mapOpSym :: Sort_map -> Fun_map -> (Id, OpType) -> (Id, OpType)
+mapOpSym sMap fMap (i, ot) = 
+    let mot = mapOpType sMap ot
+	val = (i, mot) in  -- unchanged names need not be in Fun_map
+    case Map.lookup (i, ot) fMap of 
+    Nothing -> case opKind ot of
+	       Total -> case Map.lookup (i, ot {opKind = Partial}) fMap of
+			Nothing -> val
+			Just (j, _) -> (j, mot) -- remains total
+	       _ -> val
+    Just (j, k) -> (j, makeTotal k mot)
 
 -- | Check if two OpTypes are equal except from totality or partiality
 compatibleOpTypes :: OpType -> OpType -> Bool
@@ -105,11 +113,9 @@ compatibleOpTypes ot1 ot2 = opArgs ot1 == opArgs ot2 && opRes ot1 == opRes ot2
 mapPredType :: Sort_map -> PredType -> PredType
 mapPredType sorts t = t { predArgs = map (mapSort sorts) $ predArgs t }
 
-mapPredSym :: Sort_map -> Pred_map -> (Id,PredType) -> Maybe (Id,PredType)
-mapPredSym sMap fMap (i,pt) = do
-  id' <- Map.lookup (i,pt) fMap
-  return (id',mapPredType sMap pt)
-
+mapPredSym :: Sort_map -> Pred_map -> (Id, PredType) -> (Id, PredType)
+mapPredSym sMap fMap (i, pt) = 
+    (Map.findWithDefault i (i, pt) fMap, mapPredType sMap pt)
 
 type Ext f e m = Sign f e -> Sign f e -> m
 
@@ -154,7 +160,7 @@ symbolToRaw sym = ASymbol sym
 idToRaw :: Id -> RawSymbol
 idToRaw x = AnID x
 
-rawSymName :: RawSymbol -> SORT
+rawSymName :: RawSymbol -> Id
 rawSymName (ASymbol sym) = symName sym
 rawSymName (AnID i) = i
 rawSymName (AKindedId _ i) = i
@@ -285,30 +291,25 @@ symbMapToMorphism extEm sigma1 sigma2 smap = do
     return (Map.insert (i, pt) (symName sym) m1)
       
 morphismToSymbMap ::  Morphism f e m -> SymbolMap
-morphismToSymbMap m =
+morphismToSymbMap mor =
   let
-    sorts = sort_map m
-    ops = fun_map m
-    preds = pred_map m
-    sortSymMap = 
-      Map.foldWithKey
-         ( \ s1 s2 -> Map.insert (idToSortSymbol s1) (idToSortSymbol s2))
-         Map.empty
-         sorts
-    opSymMap = 
-      Map.foldWithKey
-         ( \ (id1,t) (id2,k) -> 
-             Map.insert (idToOpSymbol id1 t) 
-                        (idToOpSymbol id2 $ mapOpTypeK sorts k t))
-         Map.empty
-         ops
-    predSymMap = 
-      Map.foldWithKey
-         ( \ (id1,t) id2 -> 
-             Map.insert (idToPredSymbol id1 t) 
-                        (idToPredSymbol id2 $ mapPredType sorts t))
-         Map.empty
-         preds
+    src = msource mor 
+    sorts = sort_map mor
+    ops = fun_map mor
+    preds = pred_map mor
+    sortSymMap =  Set.fold ( \ s -> Map.insert (idToSortSymbol s) $ 
+			     idToSortSymbol $ mapSort sorts s)
+		  Map.empty $ sortSet src
+    opSymMap = Map.foldWithKey
+               ( \ i s m -> Set.fold 
+		 ( \ t -> Map.insert (idToOpSymbol i t)
+		 $ uncurry idToOpSymbol $ mapOpSym sorts ops (i, t)) m s)
+               Map.empty $ opMap src
+    predSymMap = Map.foldWithKey
+               ( \ i s m -> Set.fold 
+		 ( \ t -> Map.insert (idToPredSymbol i t)
+		 $ uncurry idToPredSymbol $ mapPredSym sorts preds (i, t)) m s)
+               Map.empty $ predMap src
   in
     foldr Map.union sortSymMap [opSymMap,predSymMap]
 
@@ -327,26 +328,23 @@ idMor extEm sigma = embedMorphism extEm sigma sigma
 
 compose :: (Eq e, Eq f) => (m -> m -> m)
 	-> Morphism f e m -> Morphism f e m -> Maybe (Morphism f e m)
-compose comp mor1 mor2 = 
-  if mtarget mor1 == msource mor2 
-    then Just $ Morphism {
+compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then Just $ 
+  let sMap1 = sort_map mor1 
+      sMap2 = sort_map mor2 
+  in Morphism {
       msource = msource mor1,
       mtarget = mtarget mor2,
-      sort_map = Map.map (mapSort (sort_map mor2)) (sort_map mor1),
-      fun_map = Map.mapWithKey mapOpId (fun_map mor1),
-      pred_map = Map.mapWithKey mapPredId (pred_map mor1),
+      sort_map = Map.map ( \ s -> mapSort sMap2 s) sMap1,
+      fun_map  = Map.mapWithKey ( \ (_, ot) (j, k) ->
+		      let (ni, nt) = mapOpSym sMap2 (fun_map mor2) (j, 
+					    mapOpTypeK sMap1 k ot)
+		      in (ni, opKind nt)) $ fun_map mor1,
+      pred_map = Map.mapWithKey ( \ (_, ot) j ->
+		  fst $ mapPredSym sMap2 (pred_map mor2) 
+		  (j, mapPredType sMap1 ot)) $ pred_map mor1,
       extended_map = comp (extended_map mor1) (extended_map mor2)
       }
     else Nothing
-  where
-  mapOpId :: (Id, OpType) -> (Id,FunKind) -> (Id,FunKind)
-  mapOpId (_i,t) (id1,_k1) =
-    Map.find (id1,mapOpType (sort_map mor1) t) (fun_map mor2)
-  mapPredId :: (Id, PredType) -> Id -> Id
-  mapPredId (_i,t) id1 =
-    Map.find (id1,mapPredType (sort_map mor1) t) (pred_map mor2)
-  -- ??? dangerous use of Map.find here (may lead to call of error!)
-
 
 legalSign ::  Sign f e -> Bool
 legalSign sigma =
@@ -402,44 +400,59 @@ sigInclusion extEm sigma1 sigma2 =
   if isSubSig sigma1 sigma2 
      then return (embedMorphism extEm sigma1 sigma2)
      else pfatal_error 
-          (ptext "Attempt to construct inclusion between non-subsignatures:"
-           $$ ptext "Singature 1:" $$ printText sigma1
-           $$ ptext "Singature 2:" $$ printText sigma2)
+          (text "Attempt to construct inclusion between non-subsignatures:"
+           $$ text "Singature 1:" $$ printText sigma1
+           $$ text "Singature 2:" $$ printText sigma2)
            nullPos
 
 morphismUnion :: (m -> m -> m)  
               -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
 morphismUnion uniteM mor1 mor2 = do
-  let src = msource mor1 `addSig` msource mor2
-      tar = mtarget mor1 `addSig` mtarget mor2
-      smap = sort_map mor1 `Map.union` sort_map mor2
-      omap = fun_map mor1 `Map.union` fun_map mor2
-      pmap = pred_map mor1 `Map.union` pred_map mor2
-  when (not (sort_map mor2 `Map.subset` smap))
+  let smap1 = sort_map mor1
+      smap2 = sort_map mor2
+      omap1 = fun_map mor1
+      omap2 = fun_map mor2
+      pmap1 = pred_map mor1
+      pmap2 = pred_map mor2
+      smap = smap1 `Map.union` smap2
+      (omap, omap3) = Map.foldWithKey ( \ p@(i, ot) v m@(m1, m2) -> 
+	     if Map.member p omap1 then m
+	     else let oty = ot { opKind = case opKind ot of
+					 Total -> Partial
+					 Partial -> Total }
+		   in case Map.lookup (i, oty) omap1 of
+		      Just v2 -> let m3 = Map.delete p m2 in 
+				 if v == v2 then (m1, m3)
+				 else (m1, Map.insert (i, oty) v m3)
+					-- re-add with same opKind
+		      _ -> (Map.insert p v m1, m2)) (omap1, omap2) omap2 
+      pmap = pmap1 `Map.union` pmap2
+      diffKeys m = Map.keys . Map.differenceWith 
+		    ( \x y -> if x==y then Nothing else Just x) m
+  when (not (smap2 `Map.subset` smap))
     (pplain_error () 
-      (ptext "Incompatible signature morphisms."
-        $$ ptext "The following sorts are mapped differently"
-        <+> printText (Set.fromList
-               (sort_map mor1 `Map.differentKeys` sort_map mor2)))
+      (text "Incompatible signature morphisms."
+        $$ text "The following sorts are mapped differently"
+        <+> printText (Set.fromList $ diffKeys smap2 smap))
       nullPos)
-  when (not (fun_map mor2 `Map.subset` omap))
+  when (not (omap3 `Map.subset` omap))
     (pplain_error () 
-      (ptext "Incompatible signature morphisms."
-        $$ ptext "The following operations are mapped differently"
+      (text "Incompatible signature morphisms."
+        $$ text "The following operations are mapped differently"
         <+> printText (Set.fromList
-              (map (\(i,ot) -> idToOpSymbol i ot)
-                (fun_map mor1 `Map.differentKeys` fun_map mor2))))
+               $ map ( \ (i, ot) -> idToOpSymbol i ot)
+                $ diffKeys omap3 omap))
       nullPos)
-  when (not (pred_map mor2 `Map.subset` pmap))
+  when (not (pmap2 `Map.subset` pmap))
     (pplain_error () 
-      (ptext "Incompatible signature morphisms."
-        $$ ptext "The following predicates are mapped differently"
+      (text "Incompatible signature morphisms."
+        $$ text "The following predicates are mapped differently"
         <+> printText (Set.fromList
-              (map (\(i,pt) -> idToPredSymbol i pt)
-                (pred_map mor1 `Map.differentKeys` pred_map mor2))))
+              $ map (\ (i, pt) -> idToPredSymbol i pt)
+                $ diffKeys pmap2 pmap))
       nullPos)
-  return $ Morphism { msource = src,
-                      mtarget = tar,
+  return $ Morphism { msource = msource mor1 `addSig` msource mor2,
+                      mtarget = mtarget mor1 `addSig` mtarget mor2,
                       sort_map = smap, 
                       fun_map = omap, 
                       pred_map = pmap,
@@ -450,7 +463,7 @@ instance PrettyPrint Symbol where
   printText0 ga sy = 
     printText0 ga (symName sy) <> 
     (if isEmpty t then empty
-      else ptext ":" <> t)
+      else colon <+> t)
     where
     t = printText0 ga (symbType sy)
 
@@ -460,10 +473,9 @@ instance PrettyPrint SymbType where
   printText0 _ SortAsItemType = empty 
 
 instance PrettyPrint Kind where
-  printText0 _ SortKind = ptext "sort"
-  printText0 _ FunKind = ptext "op"
-  printText0 _ PredKind = ptext "pred"
-
+  printText0 _ SortKind = text sortS
+  printText0 _ FunKind = text opS
+  printText0 _ PredKind = text predS
 
 instance PrettyPrint RawSymbol where
   printText0 ga rsym = case rsym of
@@ -471,34 +483,37 @@ instance PrettyPrint RawSymbol where
     AnID i -> printText0 ga i
     AKindedId k i -> printText0 ga k <+> printText0 ga i
 
-
 instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) => 
     PrettyPrint (Morphism f e m) where
   printText0 ga mor = 
    (if null sorts then empty
-       else ptext "sorts" <+> (fsep $ punctuate comma sorts))
+       else text (sortS ++ sS) <+> (fsep $ punctuate comma sorts))
    $$ 
    (if null ops then empty
-       else ptext "ops" <+> (fsep $ punctuate comma ops))
+       else text (opS ++ sS) <+> (fsep $ punctuate comma ops))
    $$
    (if null preds then empty
-       else ptext "preds" <+> (fsep $ punctuate comma preds))
+       else text (predS ++ sS) <+> (fsep $ punctuate comma preds))
    $$ printText0 ga (extended_map mor)
-   <+>
-   ptext " : " $$ 
-   ptext "{" <+>  printText0 ga (msource mor) <+> ptext "}" <+> 
-   ptext "->" <+> 
-   ptext "{" <+>  printText0 ga (mtarget mor) <+> ptext "}"
-   where sorts = map print_sort_map (Map.toList $ sort_map mor)
+   $$ nest 1 colon $$ 
+   nest 3 (braces (space <> printText0 ga (msource mor) <> space))
+   $$ nest 1 (text funS) 
+   $$ nest 4 (braces (space <>  printText0 ga (mtarget mor) <> space))
+   where sMap = sort_map mor
+         sorts = map print_sort_map (Map.toList sMap)
          print_sort_map (s1,s2) = 
-           printText0 ga s1 <+> ptext "|->" <+> printText0 ga s2
+           printText0 ga s1 <+> text mapsTo <+> printText0 ga s2
          ops = map print_op_map (Map.toList $ fun_map mor)
-         print_op_map ((id1,ot),(id2,_kind)) = 
-           printText0 ga (Qual_op_name id1 (toOP_TYPE ot) [])
-           <+> ptext "|->" <+> 
-           printText0 ga id2
+         print_op_map ((id1,ot),(id2, kind)) =
+           printText0 ga id1 <+> colon 
+		    <+> printText0 ga (toOP_TYPE ot)
+           <+> text mapsTo <+> 
+           printText0 ga id2 <+> colon <> 
+		      (printText0 ga $ toOP_TYPE $ mapOpTypeK sMap kind ot)
          preds = map print_pred_map (Map.toList $ pred_map mor)
          print_pred_map ((id1,pt),id2) = 
-           printText0 ga (Qual_pred_name id1 (toPRED_TYPE pt) [])
-           <+> ptext "|->" <+> 
-           printText0 ga id2
+            printText0 ga id1 <+> colon 
+		    <+> printText0 ga (toPRED_TYPE pt)
+           <+> text mapsTo <+> 
+           printText0 ga id2 <+> colon <+> 
+		      (printText0 ga $ toPRED_TYPE $ mapPredType sMap pt)

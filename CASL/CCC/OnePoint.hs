@@ -22,7 +22,6 @@ module CASL.CCC.OnePoint where
 import CASL.Sign                -- Sign, OpType
 import CASL.Morphism              
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
-import Common.Result            -- Result
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -206,17 +205,13 @@ imageOfMorphism m =
              sortRel = Rel.image (\a->Map.find a sortMap) (sortRel src), 
              opMap = Map.foldWithKey 
                        (\ident ots l ->  
-                           Set.fold (\ot l' -> 
-                             case mapOpSym sortMap funMap (ident,ot) of
-                               Nothing -> l'
-                               Just id_ot -> insertOp id_ot l') l ots) 
+                           Set.fold (\ot l' -> insertOp
+                             (mapOpSym sortMap funMap (ident,ot)) l') l ots) 
                        Map.empty (opMap src),
-             predMap = Map.foldWithKey                                          
-                         (\ident pts l ->                                         
-                             Set.fold (\pt l' ->                                  
-                               case mapPredSym sortMap pMap (ident,pt) of      
-                                 Nothing -> l'                                    
-                                 Just id_pt -> insertPred id_pt l') l pts)        
+             predMap = Map.foldWithKey 
+                         (\ident pts l -> 
+                             Set.fold (\pt l' -> insertPred
+                               (mapPredSym sortMap pMap (ident,pt)) l') l pts)
                          Map.empty (predMap src)              
             }
     where sig = mtarget m

@@ -247,7 +247,7 @@ inducedFromMorphism extEm rmap sigma = do
     Set.fold mapOp m ots 
     where
     mapOp ot m1 = 
-      let (ident',ot') = fromMaybe (ident,ot) $ mapOpSym sort_Map op_Map (ident,ot)
+      let (ident',ot') = mapOpSym sort_Map op_Map (ident,ot)
       in Map.setInsert ident' ot' m1
 
   -- to a Pred_map, add evering resulting from mapping (ident,pts) according to rmap
@@ -316,7 +316,7 @@ inducedFromMorphism extEm rmap sigma = do
     Set.fold mapPred m pts 
     where
     mapPred pt m1 = 
-      let (ident',pt') = fromMaybe (ident,pt) $ mapPredSym sort_Map pred_Map (ident,pt)
+      let (ident',pt') = mapPredSym sort_Map pred_Map (ident,pt)
       in Map.setInsert ident' pt' m1
 
 {-
@@ -358,8 +358,8 @@ Output: morphism "mor": sigma1 -> sigma2
    can be mapped to each sym2 in symset1 union symset2 (i.e., they are
    both sorts or operations/predicates of the same arity, and
    moreover, if there is a pair (rsym1,rsym2) in rmap such that sym1
-   matches rsym1, thenrsym2 must match rsym2). Moreover, symset1
-   contains only symbols with names different form that of sym1,
+   matches rsym1, then rsym2 must match rsym2). Moreover, symset1
+   contains only symbols with names equal to that of sym1,
    whereas symset2 contains only symbols with names different from
    that of sym1.
 3. let "akmap" (from Actually Known Map) be an empty symbol map.
@@ -368,7 +368,7 @@ Output: morphism "mor": sigma1 -> sigma2
 //"No_map" value. Parameters are: sigma1, sigma2, akmap, posmap.
 GET MRV (minimun remaining values) "VARIABLE"
 4a. if posmap is empty
-        4a.1. check if akmap defines a mapping from every symbol in target mor1.
+        4a.1. check if akmap defines a mapping from every symbol in source mor1.
               (this should be vacuously true - Bartek?)
         4a.2. if yes, return akmap, otherwise return "No_map".
 4b. take a pair sym1 |-> (symset1,symset2) with MRV from posmap

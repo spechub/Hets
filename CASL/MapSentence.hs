@@ -17,11 +17,12 @@ module CASL.MapSentence where
 import CASL.Sign
 import CASL.Morphism
 import CASL.AS_Basic_CASL
-import Common.Id
 import Common.Result
 
 mapSrt :: Morphism f e m -> SORT -> SORT
 mapSrt m = mapSort (sort_map m)
+
+-- possibly remove Result stuff
 
 mapTerm :: MapSen f e m -> Morphism f e m -> TERM f -> Result (TERM f)
 mapTerm mf m t = case t of
@@ -44,10 +45,8 @@ mapTerm mf m t = case t of
    _ -> error "mapTerm"
 
 mapOpSymb :: Morphism f e m -> OP_SYMB -> Result OP_SYMB
-mapOpSymb m os@(Qual_op_name i t ps) = do 
-   (j, ty) <- maybeToResult (posOfId i) 
-	      ("no mapping for: " ++ showPretty os "") $ 
-	      mapOpSym (sort_map m) (fun_map m) (i, toOpType t)
+mapOpSymb m (Qual_op_name i t ps) = do 
+   let (j, ty) = mapOpSym (sort_map m) (fun_map m) (i, toOpType t)
    return $ Qual_op_name j (toOP_TYPE ty) ps
 mapOpSymb _ os = error ("mapOpSymb: unexpected op symb: "++ showPretty os "")
 
@@ -120,9 +119,7 @@ mapSen mf m f = case f of
 
 mapPrSymb :: 
              Morphism f e m -> PRED_SYMB -> Result PRED_SYMB
-mapPrSymb m p@(Qual_pred_name i t ps) = do 
-   (j, ty) <- maybeToResult (posOfId i) 
-	      ("no mapping for: " ++ showPretty p "") $ 
-	      mapPredSym (sort_map m) (pred_map m) (i, toPredType t)
+mapPrSymb m (Qual_pred_name i t ps) = do 
+   let (j, ty) = mapPredSym (sort_map m) (pred_map m) (i, toPredType t)
    return $ Qual_pred_name j (toPRED_TYPE ty) ps
 mapPrSymb _ p = error ("mapPrSymb: unexpected pred symb: "++ showPretty p "")
