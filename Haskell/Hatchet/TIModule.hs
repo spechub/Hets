@@ -15,21 +15,11 @@
 
 module Haskell.Hatchet.TIModule (tiModule, Timing (..)) where
 
-import Haskell.Hatchet.Infix                    (infixer)
-
 import Monad                    (when)
 
 import Haskell.Hatchet.AnnotatedHsSyn
-                                (ASrcLoc (..),
-                                 bogusASrcLoc,
-                                 AHsDecl,
-                                 AHsName (..),
-                                 AModule (..),
+                                (AHsDecl,
                                  AHsModule)
-
-import Haskell.Hatchet.SynConvert
-                                (fromAHsModule,
-                                 fromAHsDecl)
 
 import qualified Haskell.Hatchet.AHsPretty as AHsPretty
                                 (ppAHsModule,
@@ -38,80 +28,41 @@ import qualified Haskell.Hatchet.AHsPretty as AHsPretty
 
 import qualified Haskell.Hatchet.PPrint as PPrint         (render)
 
-import Haskell.Hatchet.Desugar  (desugarTidyModule)
+import Haskell.Hatchet.TIMain   (makeProgram)
 
-import Haskell.Hatchet.TIMain   (getFunDeclsBg,
-                                 makeProgram,
-                                 tiProgram)
-
-import Haskell.Hatchet.Rename   (renameTidyModule,
-                                 IdentTable,
+import Haskell.Hatchet.Rename   (IdentTable,
                                  printIdentTable)
 
-import Haskell.Hatchet.KindInference
-                                (KindEnv,
-                                 kiModule)
+import Haskell.Hatchet.KindInference (KindEnv)
 
-import Haskell.Hatchet.Representation
-                                (Kind,
-                                 Scheme,
-                                 Assump (..))
+import Haskell.Hatchet.Representation (Scheme)
 
+import CPUTime  (getCPUTime)
 
-import Haskell.Hatchet.DataConsAssump    (dataConsEnv)
-
-import CPUTime  (getCPUTime,
-                                 cpuTimePrecision)
-
-import Haskell.Hatchet.Utils    (maybeGetDeclName,
-                                 rJustify,
-                                 lJustify,
-                                 Binding (..),
-                                 getAModuleName,
-                                 getDeclName,
-                                 fromAHsName,
+import Haskell.Hatchet.Utils    (getAModuleName,
                                  doDump)
-
-import Haskell.Hatchet.FiniteMaps (toListFM,
-                                 zeroFM,
-                                 addToFM)
 
 import Haskell.Hatchet.TidyModule (tidyModule, 
                                  TidyModule (..),
                                  tidyModuleToAHsModule)
 
 
-import Haskell.Hatchet.TypeSigs (collectSigs,
-                                 listSigsToSigEnv)
+import Haskell.Hatchet.TypeSigs (listSigsToSigEnv)
 
 
-import Haskell.Hatchet.Class    (--addInstancesToHierarchy,
-                                 printClassHierarchy,
-                                 -- instanceToTopDecls,
-                                 addClassToHierarchy,
-                                 ClassHierarchy,
-                                 classMethodAssumps)
-
-import Maybe    (mapMaybe)
+import Haskell.Hatchet.Class    (printClassHierarchy,
+                                 ClassHierarchy)
 
 import IO
 
-import Haskell.Hatchet.Env      (listToEnv,
-                                 getNamesFromEnv,
-                                 Env,
-                                 envToList,
-                                 pprintEnv,
-                                 joinEnv,
-                                 showEnv)
-
-import Haskell.Hatchet.Type     (assumpId)
+import Haskell.Hatchet.Env      (Env,
+                                 pprintEnv)
 
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo(..))
 
-import Haskell.Hatchet.DependAnalysis (getBindGroups)
+import Haskell.Hatchet.DeclsDepends (debugDeclBindGroups)
 
-import Haskell.Hatchet.DeclsDepends (getDeclDeps,
-                                 debugDeclBindGroups)
+import Haskell.Hatchet.TIPhase
 
 --------------------------------------------------------------------------------
 
@@ -142,30 +93,11 @@ tiModule :: [String]                    -- dump flags
 tiModule dumps modSyntax imports 
    = do 
   
--- set all times to zero intially 
-
      initialTime <- getCPUTime
 
-     let timingInfo = Timing { desugarTime   = 0,
-                               renameTime     = 0,
-                               classTime      = 0,
-                               kindsTime      = 0,
-                               dconstypesTime = 0,
-                               typeInferTime  = 0,
-                               total          = 0 }
-
-     let importVarEnv = varAssumps imports
-         importDConsEnv = dconsAssumps imports
-         importClassHierarchy = classHierarchy imports
-         importKindEnv = kinds imports
-         importSynonyms = synonyms imports
-         importTyconMembers = tyconsMembers imports
-
-
 -- print the name of the module being typed
-
-     let moduleName = getAModuleName modSyntax
-     putStr $ "\n\n ---- Type checking " ++ show moduleName ++ " ----\n\n"
+     putStr $ "\n\n ---- Type checking " ++ show (getAModuleName modSyntax) 
+		++ " ----\n\n"
    
 -- print the syntax tree: depending on command line arguments
 
@@ -181,7 +113,7 @@ tiModule dumps modSyntax imports
 
      beforeTime <- getCPUTime
 
-     let desugaredTidyModule = desugarTidyModule importSynonyms tidyMod
+     let desugaredTidyModule = desugarTM imports tidyMod 
 
      when (doDump dumps "desugar") $
           do {putStrLn "\n\n ---- desugared code ---- \n\n";
@@ -196,26 +128,8 @@ tiModule dumps modSyntax imports
 -- uniquely rename variables and generate a table of information about identifiers
 
      beforeTime <- getCPUTime
-     
 
-         -- TODO: we probably need to worry about synonyms and 
-         --       the like as well but at the moment we can live
-         --       with vars and datacons only.
-     let importedNames = getNamesFromEnv importVarEnv 
-                      ++ getNamesFromEnv importDConsEnv
-                      ++ getNamesFromTycons importTyconMembers
-                      ++ getNamesFromEnv importClassHierarchy 
-                      ++ getNamesFromEnv importKindEnv         
-                     --  ++ getNamesFromInfix  -- shouldn't need this as we get
-                     -- them as part of getting their types in the varEnv
-         -- because we need to know to rename True to Prelude.True
-         -- as well, and this is a convenient way to do it:
-         getNamesFromTycons :: [(AHsName, [AHsName])] -> [AHsName]
-         getNamesFromTycons = concatMap snd 
-
-     let (renamedTidyModule', identTable) = renameTidyModule importedNames desugaredTidyModule
-         -- we pass in the imported infix decls and also the ones from the local module
-         renamedTidyModule = Haskell.Hatchet.Infix.infixer (tidyInFixDecls renamedTidyModule' ++ infixDecls imports) renamedTidyModule'
+     let (renamedTidyModule, identTable) = renameTM imports desugaredTidyModule
 
 -- All the names are getting qualified but they are unqualified by fromAHsModule
 
@@ -233,20 +147,9 @@ tiModule dumps modSyntax imports
 
      let renameT = afterTime - beforeTime
 
-     -- separate the renamed decls apart
-     let rTyDecls    = tidyTyDecls    renamedTidyModule 
-         rDataDecls  = tidyDataDecls  renamedTidyModule 
-         rNewTyDecls = tidyNewTyDecls renamedTidyModule 
-         rClassDecls = tidyClassDecls renamedTidyModule 
-         rInstDecls  = tidyInstDecls  renamedTidyModule 
-         rTySigs     = tidyTySigs     renamedTidyModule 
-         rFunBinds   = tidyFunBinds   renamedTidyModule 
-         rPatBinds   = tidyPatBinds   renamedTidyModule 
-
-
 -- collect all the type signatures from the module (this must be done after renaming)
 
-     let allTypeSigs = (collectSigs (rFunBinds ++ rPatBinds)) ++ rTySigs
+     let allTypeSigs = getAllTypeSigs renamedTidyModule
 
      when (doDump dumps "srcsigs") $
           do {putStrLn " \n\n ---- type signatures from source code (after renaming) ---- \n\n";
@@ -254,11 +157,9 @@ tiModule dumps modSyntax imports
 
 -- kind inference for all type constructors type variables and classes in the module
 
-     let classAndDataDecls = rDataDecls ++ rNewTyDecls ++ rClassDecls
-
      beforeTime <- getCPUTime
 
-     let kindInfo = kiModule importKindEnv classAndDataDecls
+     let kindInfo = getKindInfo renamedTidyModule imports
 
      when (doDump dumps "kinds") $
           do {putStrLn " \n\n ---- kind information ---- \n\n";
@@ -272,7 +173,7 @@ tiModule dumps modSyntax imports
 
      beforeTime <- getCPUTime
 
-     let localDConsEnv = dataConsEnv moduleName kindInfo (rDataDecls ++ rNewTyDecls)
+     let localDConsEnv = getLocalDConsEnv renamedTidyModule kindInfo
 
      when (doDump dumps "dconstypes") $
           do {putStr "\n\n ---- data constructor assumptions ---- \n\n";
@@ -281,19 +182,14 @@ tiModule dumps modSyntax imports
      afterTime <- getCPUTime
      let dconstypesT = afterTime - beforeTime
 
-     let globalDConsEnv = localDConsEnv `joinEnv` importDConsEnv
+     let globalDConsEnv = getGlobalDConsEnv localDConsEnv imports
 
 -- generate the class hierarchy skeleton
 
      beforeTime <- getCPUTime
-     let classHierarchy 
-            = foldl (flip (addClassToHierarchy moduleName kindInfo)) importClassHierarchy rClassDecls
-
-     -- add type class instances to the class hierarchy XXX this is broken
 
      let cHierarchyWithInstances 
-            -- = addInstancesToHierarchy kindInfo classHierarchy (rinstanceDecls ++ rdataDecls)
-            = classHierarchy 
+            = getClassHierarchy renamedTidyModule imports kindInfo
 
      when (doDump dumps "classes") $
           do {putStrLn " \n\n ---- class hierarchy ---- \n\n";
@@ -323,19 +219,10 @@ tiModule dumps modSyntax imports
 -- build an environment of assumptions for all the type signatures
 
      let sigEnv = listSigsToSigEnv kindInfo allTypeSigs 
-
-     let classMethodAssumptions = classMethodAssumps cHierarchyWithInstances
-     
-     let classMethodNames = map (\assump -> assumpId assump) classMethodAssumptions
-
-     let identTableWithMethods
-            -- = foldl (\fm name -> addToFM name (bogusASrcLoc, ClassMethod) fm) identTableWithInstances classMethodNames 
-            = foldl (\fm name -> addToFM name (bogusASrcLoc, ClassMethod) fm) identTable classMethodNames 
-
--- binding groups for top-level variables
-
+     let identTableWithMethods = getIdentTableWithMethods identTable
+				 cHierarchyWithInstances 
      let programBgs 
-            = getBindGroups (rFunBinds ++ rPatBinds) getDeclName getDeclDeps
+            = getProgramBgs renamedTidyModule
 
      when (doDump dumps "varbindgroups") $
           do {putStrLn " \n\n ---- toplevel variable binding groups ---- ";
@@ -346,15 +233,9 @@ tiModule dumps modSyntax imports
 
 -- type inference/checking for all variables
 
-     let localVarEnv
-            = tiProgram 
-                 moduleName                     -- name of the module
-                 sigEnv                         -- environment of type signatures
-                 kindInfo                       -- kind information about classes and type constructors
-                 cHierarchyWithInstances        -- class hierarchy with instances
-                 globalDConsEnv                 -- data constructor type environment 
-                 importVarEnv                   -- type environment
-                 program                        -- binding groups
+     let localVarEnv = getLocalVarEnv 
+		       renamedTidyModule imports sigEnv kindInfo
+		       cHierarchyWithInstances globalDConsEnv program
 
      beforeTime <- getCPUTime
 
@@ -381,4 +262,4 @@ tiModule dumps modSyntax imports
              kindInfo, 
              identTableWithMethods, 
              tidyModuleToAHsModule renamedTidyModule,
-             tidyTyDecls tidyMod) 
+             tidyTyDecls renamedTidyModule) 

@@ -1,9 +1,9 @@
 {-| 
 Module      :  $Header$
-Copyright   :  (c) Sonja Groening, Uni Bremen 2002-2004
+Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
@@ -15,34 +15,16 @@ import Options
 import Haskell.Hatchet.MultiModule  (expandDotsInTyCons,
                                      filterModuleInfo,
                                      importSpecToExportSpec)
-import Haskell.Hatchet.HsParseMonad (ParseResult (..))
-import Haskell.Hatchet.SynConvert   (toAHsModule)
-import Haskell.Hatchet.HsParsePostProcess (fixFunBindsInModule)
-import Haskell.Hatchet.HaskellPrelude
-                                (tyconsMembersHaskellPrelude, 
-                                 preludeDefs, 
-                                 preludeSynonyms,
-                                 preludeTyconAndClassKinds,
-                                 preludeClasses,
-                                 preludeInfixDecls,
-                                 preludeDataCons)
-import Haskell.Hatchet.Type     (assumpToPair)
-import Haskell.Hatchet.HsParser (parse)
-import Haskell.Hatchet.AnnotatedHsSyn (AHsDecl, 
-                                       AModule (..), 
+import Haskell.Hatchet.AnnotatedHsSyn (AModule (..), 
                                        AHsModule)
-import Haskell.Hatchet.Rename   (IdentTable)
-import Haskell.Hatchet.KindInference (KindEnv)
-import Haskell.Hatchet.Representation (Scheme)
-import Haskell.Hatchet.Class    (ClassHierarchy)
-import Haskell.Hatchet.Env      (Env, listToEnv)
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
                                           joinModuleInfo,
                                           getTyconsMembers,
                                           getInfixDecls,
                                           concatModuleInfos)
-import Haskell.Hatchet.TIModule (tiModule, Timing)
-import Haskell.Hatchet.HsSyn    (SrcLoc (..), HsModule (..))
+import Haskell.Hatchet.TIHetsModule (tiModule)
+import Haskell.Hatchet.TIPhase
+import Haskell.Hatchet.HsSyn    (HsModule (..))
 import Haskell.Hatchet.Utils    (getAModuleName)
     
 import Static.DevGraph          (DGNodeLab (..),
@@ -53,8 +35,7 @@ import Static.DevGraph          (DGNodeLab (..),
                                  LibEnv,
                                  GlobalEntry(..),
                                  NodeSig(..),
-                                 getNode,
-                                 get_dgn_name)
+                                 getNode)
 import Syntax.AS_Library        (LIB_NAME (..),
                                  LIB_ID (..))
 import Haskell.Hatchet.AnnotatedHsSyn
@@ -68,7 +49,6 @@ import Common.Lib.Graph          (Node,
                                   insNode,
                                   insEdge,
                                   newNodes,
-                                  labNodes,
                                   match)
 
 import Common.Id                 (Token (..),
@@ -104,22 +84,11 @@ anaHaskellFileAux srcFile =
      let (dg',le') = hasEnv2DG libName absSyn modInfo le
      return (Just(libName, moduleSyntax, dg', le'))
 
-parseFile :: String -> IO HsModule
-parseFile srcFile =
-  do
-     src <- readFile srcFile
-     return (parseHsSource src)
-
 typeInference :: HsModule 
               -> IO (AHsModule, ModuleInfo, LibEnv)
 typeInference moduleSyntax =
    do
-    -- re-group matches into their associated 
-    -- funbinds (patch up the output from the parser)
-     let moduleSyntaxFixedFunBinds = fixFunBindsInModule moduleSyntax
-
-    -- map the abstract syntax into the annotated abstract syntax
-     let annotatedSyntax = toAHsModule moduleSyntaxFixedFunBinds
+     let annotatedSyntax = getAnnotedSyntax moduleSyntax
 
      (modInfos, le) <- anaImportDecls annotatedSyntax
 
@@ -128,29 +97,16 @@ typeInference moduleSyntax =
 
     -- this is the ModuleInfo that we were passing into tiModule
     -- earlier (just the Prelude stuff)
-     let preludeModInfo =
-           ModuleInfo {
-             moduleName = AModule "Prelude",
-             varAssumps = (listToEnv $ map assumpToPair preludeDefs),
-             tyconsMembers = tyconsMembersHaskellPrelude, 
-             dconsAssumps = (listToEnv $ map assumpToPair preludeDataCons),
-             classHierarchy = listToEnv preludeClasses,
-             kinds = (listToEnv preludeTyconAndClassKinds),
-             infixDecls = preludeInfixDecls,
-             synonyms = preludeSynonyms
-           }
 
      let initialModInfo = joinModuleInfo preludeModInfo importedModInfo
 
     -- call the type inference code for this module 
-     (timings, 
-      moduleEnv, 
-      dataConEnv,
-      newClassHierarchy, 
-      newKindInfoTable,
-      moduleIds,
-      moduleRenamed,
-      moduleSynonyms) <- tiModule [] annotatedSyntax initialModInfo
+         (moduleEnv, 
+	  dataConEnv,
+	  newClassHierarchy, 
+	  newKindInfoTable,
+	  moduleRenamed,
+	  moduleSynonyms) = tiModule annotatedSyntax initialModInfo
 
      let modInfo = ModuleInfo { varAssumps = moduleEnv, 
                                 moduleName = getAModuleName annotatedSyntax,
@@ -162,8 +118,6 @@ typeInference moduleSyntax =
                                 synonyms = moduleSynonyms }
 
      return (moduleRenamed, modInfo, le)
-
-
 
 anaImportDecls :: AHsModule -> IO ([ModuleInfo], LibEnv)
 anaImportDecls (AHsModule _ _ idecls _) = anaImports idecls [] Map.empty
@@ -178,25 +132,18 @@ anaImports (imp:imps) modInfos le =
 
 anaOneImport :: AHsImportDecl -> LibEnv 
                               -> IO (ModuleInfo, LibEnv)
-anaOneImport (AHsImportDecl _ aMod _ _ maybeListOfIdents) le =
- let ln = toLibName aMod
- in--  if Map.member ln le 
---      then do return (getModInfo ln le, le)
---      else              
-      do modSyn <- parseFile (fileName aMod)
+anaOneImport (AHsImportDecl _ aMod _ _ maybeListOfIdents) le = do
+         let ln = toLibName aMod
+         modSyn <- parseFile (fileName aMod)
          (annoSyn, modInfo, leImports) <- typeInference modSyn
          let le' = le `Map.union` leImports
-         let filteredModInfo = filtModInfo aMod modInfo maybeListOfIdents
+             filteredModInfo = filtModInfo aMod modInfo maybeListOfIdents
+             (dg,node) = addNode empty annoSyn filteredModInfo
          case annoSyn of
-              AHsModule modName _ [] _ -> 
-                   let (dg,node) = addNode empty annoSyn filteredModInfo
-                   in do return (filteredModInfo,
-                                 (addDG2LibEnv le' ln node dg))
-              AHsModule modName _ idecls _ -> 
-                   let (dg,node) = addNode empty annoSyn filteredModInfo
-                       dg' = addLinks idecls dg node le'
-                   in do return (filteredModInfo,
-                                 (addDG2LibEnv le' ln node dg'))
+              AHsModule _ _ idecls  _ -> case idecls of
+	         [] -> return (filteredModInfo,addDG2LibEnv le' ln node dg)
+		 _ -> return (filteredModInfo, addDG2LibEnv le' ln node 
+			     $ addLinks idecls dg node le')
 
  where filtModInfo _ modInfo Nothing = modInfo
                               -- we're not imposing restrictions
@@ -204,16 +151,6 @@ anaOneImport (AHsImportDecl _ aMod _ _ maybeListOfIdents) le =
               filterModuleInfo aModule modInfo $
                expandDotsInTyCons aModule (tyconsMembers modInfo) $
                 map importSpecToExportSpec importSpecs
---        getModInfo ln le = 
---                 let (_, _, dg) = Map.find ln le
---                 in findModInfo (ln2SimpleId ln) (getlabNodes dg)
---        findModInfo sid (lab:labs) = 
---                 let trySid = get_dgn_name lab
---                 in if sid == trySid then getMI (dgn_sign lab)
---                                     else findModInfo sid labs
---        getlabNodes dg = let (_, labs) = unzip (labNodes dg)
---                         in labs
---        getMI (G_sign Haskell modInfo) = modInfo
 
 toLibName :: AModule -> LIB_NAME
 toLibName aMod = Lib_id(Indirect_link (fileName aMod) [])
@@ -349,11 +286,6 @@ getNodeContent n dg =
 getDgn_name :: DGNodeLab -> SIMPLE_ID
 getDgn_name nl = let Just(n) = dgn_name nl
                  in  n
-
-parseHsSource :: String -> HsModule
-parseHsSource s = case parse s (SrcLoc 1 1) 0 [] of
-                      Ok _ e -> e
-                      Failed err -> error err
 
 
 

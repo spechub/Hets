@@ -18,47 +18,23 @@ import Monad                    (when)
 
 import List                     (null)
 
-import Haskell.Hatchet.ModuleIO              (writeModuleInfo, readModuleInfo, toString)
+import Haskell.Hatchet.ModuleIO              (writeModuleInfo, readModuleInfo)
 
-import Haskell.Hatchet.MultiModuleBasics        -- (ModuleInfo(..), joinModuleInfo)
+import Haskell.Hatchet.MultiModuleBasics
 
 import Haskell.Hatchet.TIModule                 (tiModule, 
                                  Timing (..))
 
-import Haskell.Hatchet.HsParser                 (parse)
-
-import Haskell.Hatchet.HsSyn                    (HsModule, 
-                                 SrcLoc (..))
-
-import Haskell.Hatchet.AnnotatedHsSyn           (ASrcLoc (..),
-                                 bogusASrcLoc,
-                                 AModule(..),
-                                 AHsModule)
-
-import Haskell.Hatchet.HsParseMonad             (ParseResult (..))
-
-
-import Haskell.Hatchet.Env                      (listToEnv)
-
 import System.Environment       (getArgs,
                                  getProgName)
 
-
-import Haskell.Hatchet.HaskellPrelude           (tyconsMembersHaskellPrelude, 
-                                 preludeDefs, 
-                                 preludeSynonyms,
-                                 preludeTyconAndClassKinds,
-                                 preludeClasses,
-                                 preludeInfixDecls,
-                                 preludeDataCons)
 
 
 import Haskell.Hatchet.Opts                     (processCmdLine,
                                  makeUsageInfo,
                                  usageHeader)
 
-import CPUTime                  (getCPUTime,
-                                 cpuTimePrecision)
+import CPUTime                  (cpuTimePrecision)
 
 
 import Haskell.Hatchet.Utils                    (rJustify,
@@ -67,21 +43,9 @@ import Haskell.Hatchet.Utils                    (rJustify,
                                  doDump
                                  )
 
-import Haskell.Hatchet.Class                    (emptyClassHierarchy)
-
-import Haskell.Hatchet.FiniteMaps               (listToFM,
-                                 filterFM)
-
-import Haskell.Hatchet.Type                     (assumpToPair)
-
-import Haskell.Hatchet.Representation           (Assump (..))
-
-import Haskell.Hatchet.SynConvert               (toAHsModule)
-
-import Haskell.Hatchet.HsParsePostProcess       (fixFunBindsInModule)
+import Haskell.Hatchet.TIPhase
 
 --------------------------------------------------------------------------------
-
 -- here's where the action begins
 
 main =
@@ -107,29 +71,8 @@ main =
 
 -- read the source file and parse
 
-     src <- readFile srcFile
-     let moduleSyntax = parseHsSource src
-
--- re-group matches into their associated funbinds (patch up the output from the parser)
-
-     let moduleSyntaxFixedFunBinds = fixFunBindsInModule moduleSyntax
-
--- map the abstract syntax into the annotated abstract syntax
-
-     let annotatedSyntax = toAHsModule moduleSyntaxFixedFunBinds 
-
-     -- this is the ModuleInfo that we were passing into tiModule
-     -- earlier (just the Prelude stuff)
-     let preludeModInfo = ModuleInfo {
-                                moduleName = AModule "Prelude",
-                                varAssumps = (listToEnv $ map assumpToPair preludeDefs),
-                                tyconsMembers = tyconsMembersHaskellPrelude, 
-                                dconsAssumps = (listToEnv $ map assumpToPair preludeDataCons),
-                                classHierarchy = listToEnv preludeClasses,
-                                kinds = (listToEnv preludeTyconAndClassKinds),
-                                infixDecls = preludeInfixDecls,
-                                synonyms = preludeSynonyms
-                           }
+     moduleSyntax <- parseFile srcFile
+     let annotatedSyntax = getAnnotedSyntax moduleSyntax
 
      -- now we read in the .ti files from the imported
      -- modules to pass in to tiModule
@@ -143,7 +86,7 @@ main =
       dataConEnv,
       newClassHierarchy, 
       newKindInfoTable,
-      moduleIds,
+      _moduleIds,
       moduleRenamed,
       moduleSynonyms) <- tiModule dumps annotatedSyntax initialModInfo
 
@@ -161,7 +104,8 @@ main =
 
      case intermediateFile of
         Nothing                        -> return ()
-        Just possibleIntermediateName  -> writeModuleInfo possibleIntermediateName annotatedSyntax modInfo
+        Just possibleIntermediateName  -> 
+	    writeModuleInfo possibleIntermediateName annotatedSyntax modInfo
 
 -- dump crude timing information if requested
 
@@ -170,17 +114,6 @@ main =
 -- THE END.
 
 --------------------------------------------------------------------------------
-
--- utilities
-
--- call the haskell parser and check for errors
-
-parseHsSource :: String -> HsModule
-parseHsSource s = case parse s (SrcLoc 1 1) 0 [] of
-                      Ok state e -> e
-                      Failed err -> error err
-
-
 -- A factor to convert pico seconds to milli seconds
 
 timeScale :: Integer
@@ -199,32 +132,38 @@ dumpTimes :: [String] -> Timing -> IO ()
 dumpTimes dumps timings
   = do
       let precision = cpuTimePrecision
-          suffix =  "seconds" ++ show (precision `div` timeScale) ++ "ms\n"
+          _suffix =  "seconds" ++ show (precision `div` timeScale) ++ "ms\n"
 
       putStr $ "\n\n ---- time taken for program phases ---- \n\n"
 
       when (doDump dumps "desugar") $
-           putStrLn $ (lJustify 40 "desugaring: ") ++ (showTime $ desugarTime timings)
+           putStrLn $ (lJustify 40 "desugaring: ") ++ 
+			(showTime $ desugarTime timings)
 
-      when (doDump dumps "renamed" || doDump dumps "idents" || doDump dumps "typesigs") $
-           putStrLn $ (lJustify 40 "uniquely renaming variables: ") ++ (showTime $ renameTime timings)
+      when (doDump dumps "renamed" || doDump dumps "idents" || 
+	    doDump dumps "typesigs") $
+           putStrLn $ (lJustify 40 "uniquely renaming variables: ") ++ 
+			(showTime $ renameTime timings)
 
       when (doDump dumps "classes") $
-           putStrLn $ (lJustify 40 "generating class hierarchy: ") ++ (showTime $ classTime timings)
+           putStrLn $ (lJustify 40 "generating class hierarchy: ") ++ 
+			(showTime $ classTime timings)
 
       when (doDump dumps "kinds") $
-           putStrLn $ (lJustify 40 "kind inference: ") ++ (showTime $ kindsTime timings)
+           putStrLn $ (lJustify 40 "kind inference: ") ++ 
+			(showTime $ kindsTime timings)
 
       when (doDump dumps "dconstypes") $
-           putStrLn $ (lJustify 40 "analysing data constructor types: ") ++ (showTime $ dconstypesTime timings)
+           putStrLn $ (lJustify 40 "analysing data constructor types: ") ++ 
+			(showTime $ dconstypesTime timings)
 
       when (doDump dumps "types") $
-           putStrLn $ (lJustify 40 "full module type inference: ") ++ (showTime $ typeInferTime timings)
+           putStrLn $ (lJustify 40 "full module type inference: ") ++ 
+			(showTime $ typeInferTime timings)
 
       when (not $ null dumps) $
-           putStrLn $ (lJustify 40 "total time:           ") ++ (showTime $ total timings)
+           putStrLn $ (lJustify 40 "total time:           ") ++ 
+			(showTime $ total timings)
 
       putStrLn $ "\n   (times are accurate to " ++ showTime precision ++ ")"
       putStrLn $   "   (and include the printing time)"
-
-

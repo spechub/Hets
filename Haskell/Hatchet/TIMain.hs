@@ -18,7 +18,7 @@
 
 -------------------------------------------------------------------------------}
 
-module Haskell.Hatchet.TIMain (tiProgram,
+module Haskell.Hatchet.TIMain (tiProgram, Program, TypeEnv,
                makeProgram,
                getFunDeclsBg) where
 

@@ -26,7 +26,7 @@ import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
                                           joinModuleInfo,
                                           getTyconsMembers,
                                           getInfixDecls)
-import Haskell.Hatchet.TIHetsModule          (tiModule)
+import Haskell.Hatchet.TIHetsModule      (tiModule)
 import Haskell.Hatchet.AnnotatedHsSyn    
 import Haskell.Hatchet.Env               (listToEnv,
                                           emptyEnv)
@@ -42,18 +42,6 @@ import Haskell.Hatchet.HsParsePostProcess
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl)
 import Haskell.Hatchet.HsSyn             (HsDecl)
 import Haskell.Hatchet.Type              (assumpToPair)
-
-preludeSign :: ModuleInfo
-preludeSign = ModuleInfo {
-               moduleName = AModule "Prelude",
-               varAssumps = (listToEnv $ map assumpToPair preludeDefs),
-               tyconsMembers = tyconsMembersHaskellPrelude, 
-               dconsAssumps = (listToEnv $ map assumpToPair preludeDataCons),
-               classHierarchy = listToEnv preludeClasses,
-               kinds = (listToEnv preludeTyconAndClassKinds),
-               infixDecls = preludeInfixDecls,
-               synonyms = preludeSynonyms
-              }
 
 emptySign :: ModuleInfo
 emptySign = ModuleInfo { varAssumps = emptyEnv,
@@ -74,9 +62,8 @@ hatAna hs sig =
    	 dataConEnv,
    	 newClassHierarchy,
    	 newKindInfoTable,
-   	 _moduleIds,
    	 moduleRenamed,
-   	 moduleSynonyms) = tiModule [] aMod sig
+   	 moduleSynonyms) = tiModule aMod sig
   	modInfo = sig {     varAssumps = moduleEnv, 
     			    dconsAssumps = dataConEnv, 
     			    classHierarchy = newClassHierarchy,
