@@ -3,16 +3,22 @@ free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
 op f : forall a : Type; b : Type .
          a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2
      = \ (var a : a, var b : b)
-         .! (op Pair[a_v1; b_v2]
-             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-              (var a : a, var b : b) as
+         .! (((op Pair[a_v1; b_v2]
+               : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
+                  a_v1 * b_v2 -> Pair a_v1 b_v2)
+               (var a : a, var b : b) :
+                 Pair a_v1 b_v2) as
                 Pair a_v1 b_v2
 op g : Pair a b ->? a
-program (op g[_var_17_v17; _var_19_v19]
-         : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1)
-          ((op Pair[_var_17_v17; _var_19_v19]
-            : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-             (var a : _var_17_v17, var b : _var_19_v19))
+program ((op g[_var_17_v17; _var_19_v19]
+          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1) :
+             Pair _var_17_v17 _var_19_v19 ->? _var_17_v17)
+          (((op Pair[_var_17_v17; _var_19_v19]
+             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
+                _var_17_v17 * _var_19_v19 -> Pair _var_17_v17 _var_19_v19)
+             (var a : _var_17_v17, var b : _var_19_v19) :
+               Pair _var_17_v17 _var_19_v19) :
+            _var_17_v17
           = (var a : _var_17_v17)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
@@ -48,9 +54,11 @@ def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 f : forall a : Type; b : Type . a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2
     %(op)%
       = \ (var a : a, var b : b)
-          .! (op Pair[a_v1; b_v2]
-              : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-               (var a : a, var b : b) as
+          .! (((op Pair[a_v1; b_v2]
+                : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
+                   a_v1 * b_v2 -> Pair a_v1 b_v2)
+                (var a : a, var b : b) :
+                  Pair a_v1 b_v2) as
                  Pair a_v1 b_v2
 false : Unit %(fun)%
 fst
@@ -90,15 +98,21 @@ forall a : a; b : b
       ((op f
         : forall a : Type; b : Type . a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2)
          (var a : a, var b : b),
-       (op Pair[a_v1; b_v2]
-        : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-         (var a : a, var b : b) as
+       (((op Pair[a_v1; b_v2]
+          : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
+             a_v1 * b_v2 -> Pair a_v1 b_v2)
+          (var a : a, var b : b) :
+            Pair a_v1 b_v2) as
            Pair a_v1 b_v2) %(def_f)%
-program (op g[_var_17_v17; _var_19_v19]
-         : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1)
-          ((op Pair[_var_17_v17; _var_19_v19]
-            : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-             (var a : _var_17_v17, var b : _var_19_v19))
+program ((op g[_var_17_v17; _var_19_v19]
+          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1) :
+             Pair _var_17_v17 _var_19_v19 ->? _var_17_v17)
+          (((op Pair[_var_17_v17; _var_19_v19]
+             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
+                _var_17_v17 * _var_19_v19 -> Pair _var_17_v17 _var_19_v19)
+             (var a : _var_17_v17, var b : _var_19_v19) :
+               Pair _var_17_v17 _var_19_v19) :
+            _var_17_v17
           = (var a : _var_17_v17) %(pe_g)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 4.39, in type of '(var a : a, var b : b)'
@@ -110,7 +124,8 @@ program (op g[_var_17_v17; _var_19_v19]
   is not unifiable with type 'Unit ->? _var_25_v25 * _var_26_v26' (2.16)
 
 *** Hint 8.11, in type of '(op Pair[_var_28_v28; _var_29_v29]
- : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)'
+ : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
+    _var_28_v28 * _var_29_v29 -> Pair _var_28_v28 _var_29_v29'
   type 'Pair _var_28_v28 _var_29_v29' (2.11)
   is not unifiable with type 'Unit ->? Pair _var_18_v18 _var_19_v19' (6.8)
 

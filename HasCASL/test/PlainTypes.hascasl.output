@@ -11,9 +11,11 @@ var v : m List
 var nt : a -> (b -> c) -> c -> d
 type s1, r1, t1 < t
 type s2 = r2 = t2
-type s3 = {x : t . (fun __=__[t]
-                    : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-                     (var x : t, var x : t)}
+type s3 = {x : t . ((fun __=__[t]
+                     : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+                        t * t ->? Unit)
+                     (var x : t, var x : t) :
+                       Unit}
 %% Classes ---------------------------------------------------------------
 a < Type
 b < Type
@@ -40,9 +42,11 @@ s1 : Type < t
 s2 : Type < (t2, r2, s2)
 s3
   : Type < t
-    = {x : t . (fun __=__[t]
-                : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-                 (var x : t, var x : t)}
+    = {x : t . ((fun __=__[t]
+                 : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+                    t * t ->? Unit)
+                 (var x : t, var x : t) :
+                   Unit}
 t : Type
 t1 : Type < t
 t2 : Type < (t2, r2, s2)

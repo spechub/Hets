@@ -1,8 +1,10 @@
 type s, t
 op snd : s * t -> t
-program (op snd : s * t -> t)(var x : s, var y : t) = (var y : t)
-program (op snd : s * t -> t)(var x : s, var y : t) = (var y : t)
-program (op snd : s * t -> t)(var x : s, var y : t) =
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
+            (var y : t)
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
+            (var y : t)
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
             (var y : t) : t
 program (op snd : s * t -> t)(var x : s, var y : t) : t =
             (var y : t)
@@ -13,10 +15,9 @@ program (op snd : s * t -> t)(var x : s, var y : t) : t =
 op a : s
 program (var b : s) = (op a : s)
 op b : s
-program (op b : s) : s = (op a : s)
+program (op b : s) = (op a : s)
 op x : s; y : t
-op c : t
-     = (op snd : s * t -> t)((op x : s) : s, (op y : t) : t) as t
+op c : t = ((op snd : s * t -> t)(op x : s, op y : t) : t) as t
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
@@ -41,8 +42,7 @@ __when__else__
 a : s %(op)%
 b : s %(op)%
 bottom : forall a : Type . a_v-1 %(fun)%
-c : t
-    %(op)% = (op snd : s * t -> t)((op x : s) : s, (op y : t) : t) as t
+c : t %(op)% = ((op snd : s * t -> t)(op x : s, op y : t) : t) as t
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
@@ -52,11 +52,11 @@ x : s %(op)%
 y : t %(op)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (op snd : s * t -> t)(var x : s, var y : t) =
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
             (var y : t) %(pe_snd)%
-program (op snd : s * t -> t)(var x : s, var y : t) =
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
             (var y : t) %(pe_snd)%
-program (op snd : s * t -> t)(var x : s, var y : t) =
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
             (var y : t) : t %(pe_snd)%
 program (op snd : s * t -> t)(var x : s, var y : t) : t =
             (var y : t) %(pe_snd)%
@@ -65,11 +65,10 @@ program (op snd : s * t -> t)(var x : s, var y : t) : t =
 program (op snd : s * t -> t)(var x : s, var y : t) : t =
             (var y : t) %(pe_snd)%
 program (var b : s) = (op a : s) %(pe_b)%
-program (op b : s) : s = (op a : s) %(pe_b)%
+program (op b : s) = (op a : s) %(pe_b)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op c : t,
-   (op snd : s * t -> t)((op x : s) : s, (op y : t) : t) as
-       t) %(def_c)%
+   ((op snd : s * t -> t)(op x : s, op y : t) : t) as t) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 3.14, in type of '(var x : _var_1_v1, var y : _var_2_v2)'
   type '_var_1_v1 * _var_2_v2' (3.14)
@@ -97,7 +96,7 @@ program (op b : s) : s = (op a : s) %(pe_b)%
 
 *** Error 14.10, illegal toplevel pattern '(var x : s, var y : s)'
 *** Warning 17.9, illegal lhs pattern '(var b : s)'
-*** Hint 23.17, in type of '((op x : s) : s, (op y : t) : t)'
+*** Hint 23.17, in type of '(op x : s, op y : t)'
   type 's * t' (23.21)
   is not unifiable with type 'Unit ->? _var_35_v35 * _var_36_v36' (2.10)
 

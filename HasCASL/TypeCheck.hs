@@ -34,6 +34,8 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.Lib.State
 
+import Control.Exception(assert)
+
 substTerm :: Subst -> Term -> Term
 substTerm s = mapTerm (id, subst s)
 
@@ -179,9 +181,11 @@ inferAppl ps mt t1 t2 = do
                 putLocalVars vs
                 let args = args1 ++ args2
                     combs2 = map ( \ (sa, ca, _, ta) ->
-                        let sr = compSubst sf sa in
-                          [(sr, joinC ca $ substC sa cf, subst sr rty, 
-                                     ApplTerm tf ta ps)]) args
+                        let sr = compSubst sf sa 
+                            nTy = subst sr rty in 
+                          [(sr, joinC ca $ substC sa cf, nTy, 
+                            TypedTerm (ApplTerm tf ta ps) 
+                            Inferred nTy ps)]) args
                 return $ concat combs2) ops
             let res = concat combs 
             if null res then 
@@ -195,7 +199,20 @@ inferAppl ps mt t1 t2 = do
                else return ()
             return res
 
--- True means possibly find a smaller type
+
+getTypeOf :: Term -> Type
+getTypeOf trm = case trm of
+    TypedTerm _ q t _ -> case q of InType -> logicalType
+                                   _ -> t
+    QualVar (VarDecl _ t _ _) -> t
+    QualOp _ _ (TypeScheme [] t _) _ -> t
+    TupleTerm ts ps -> if null ts then logicalType
+                       else mkProductType (map getTypeOf ts) ps
+    QuantifiedTerm _ _ t _ -> getTypeOf t
+    LetTerm _ _ t _ -> getTypeOf t
+    AsPattern _ p _ -> getTypeOf p
+    _ -> error "getTypeOf"
+
 infer :: Maybe Type -> Term 
       -> State Env [(Subst, Constraints, Type, Term)]
 infer mt trm = do
@@ -213,11 +230,14 @@ infer mt trm = do
             addDiags $ map (improveDiag trm) ds 
             return $ case ms of 
                 Nothing -> []
-                Just s -> let q@(_, ncs, nTy, qv) = 
-                                  (s, substC s cs, subst s ty, 
-                                   QualOp br (InstOpId i (map (subst s) inst)
-                                              qs) sc ps) in case mt of 
-                    Nothing -> [q]
+                Just s -> 
+                    let nTy = subst s ty
+                        ncs = substC s cs
+                        qv = TypedTerm (QualOp br 
+                             (InstOpId i (map (subst s) inst) qs) sc ps)
+                             Inferred nTy ps
+                    in case mt of                         
+                    Nothing -> [(s, ncs, nTy, qv)]
                     Just inTy -> [(s, insertC (Subtyping nTy $ subst s inTy) 
                                    ncs, nTy, qv)]
         ResolvedMixTerm i ts ps ->
@@ -237,17 +257,21 @@ infer mt trm = do
                         Nothing -> ""
                         Just inTy -> '\n' : lookupError inTy ois) (posOfId i)]
                    else return ()
-               return $ typeNub tm q2p $ map ( \ (s, ty, is, cs, oi) -> 
-                              case opDefn oi of
-                              VarDefn -> (s, cs, ty, QualVar $ 
-                                          VarDecl i ty Other ps)
-                              x -> let br = case x of
-                                            NoOpDefn v -> v
-                                            Definition v _ -> v
-                                            _ -> Op in 
-                                      (s, cs, ty, 
-                                       QualOp br (InstOpId i is [])
-                                                  (opType oi) ps)) ls
+               return $ typeNub tm q2p $ map 
+                   ( \ (s, ty, is, cs, oi) -> 
+                     let od = opDefn oi
+                         br = case od of
+                              NoOpDefn v -> v
+                              Definition v _ -> v
+                              _ -> Op 
+                     in (s, cs, ty, case opType oi of 
+                     sc@(TypeScheme [] sTy _) -> assert (sTy == ty) $
+                         case od of
+                             VarDefn -> QualVar $ VarDecl i ty Other ps
+                             _ -> QualOp br (InstOpId i [] []) sc ps
+                     sc -> TypedTerm (QualOp br 
+                                       (InstOpId i is []) sc ps)
+                                       Inferred ty ps)) ls
             else inferAppl ps mt (ResolvedMixTerm i [] ps)
                  $ mkTupleTerm ts ps
         ApplTerm t1 t2 ps -> inferAppl ps mt t1 t2
@@ -264,6 +288,8 @@ infer mt trm = do
                                 Nothing -> cs
                                 Just ty -> insertC (Subtyping nTy
                                                    $ subst su ty) cs, nTy,
+                                assert (and $ zipWith (==) tys 
+                                       $ map getTypeOf trms) $
                                 mkTupleTerm trms ps)) ls
         TypedTerm t qual ty ps -> do 
             case qual of 
@@ -300,7 +326,8 @@ infer mt trm = do
                                  Nothing -> cs
                                  Just jTy -> insertC (Subtyping sTy
                                                       $ subst s jTy) cs,
-                                 sTy, TypedTerm tr qual sTy ps)) rs
+                                 sTy, if getTypeOf tr == sTy then tr
+                                      else TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenLocalVar decls
             rs <- infer (Just logicalType) t 
@@ -334,8 +361,9 @@ infer mt trm = do
                                        Nothing -> cr
                                        Just ty -> insertC (Subtyping typ 
                                                           $ subst s2 ty) cr,
-                                       typ, 
-                                       LambdaTerm nps part rtm ps)) es) ls
+                                       typ, TypedTerm
+                                       (LambdaTerm nps part rtm ps)
+                                       Inferred typ ps)) es) ls
             return $ concat rs 
         CaseTerm ofTrm eqs ps -> do 
             ts <- infer Nothing ofTrm
@@ -350,18 +378,19 @@ infer mt trm = do
                  return $ map ( \ (s2, cr, _, ty, nes) ->
                                 (compSubst s1 s2, 
                                  substC s2 cs `joinC` cr, ty, 
-                                 CaseTerm otrm nes ps)) es) ts
+                                 TypedTerm (CaseTerm otrm nes ps)
+                                 Inferred ty ps)) es) ts
             return $ concat rs
         LetTerm br eqs inTrm ps -> do 
             es <- inferLetEqs eqs
             rs <- mapM ( \ (s1, cs, _, nes) -> do 
-               mapM_ addLocalVar $ concatMap (\ (ProgEq p _ _) -> 
-                                             extractVars p) nes
+               mapM_ addLocalVar $ concatMap 
+                         ( \ (ProgEq p _ _) -> extractVars p) nes
                ts <- infer mt inTrm 
                return $ map ( \ (s2, cr, ty, nt) -> 
                               (compSubst s1 s2, 
                                substC s2 cs `joinC` cr,
-                               ty, 
+                               ty, assert (getTypeOf nt == ty) $ 
                                LetTerm br nes nt ps)) ts) es
             putLocalVars vs
             return $ concat rs

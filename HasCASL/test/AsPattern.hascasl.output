@@ -1,6 +1,6 @@
 type a
 op f : a -> a
-program (op f : a -> a)(v : a @ (var _ : a)) = (var v : a)
+program (op f : a -> a)(v : a @ (var _ : a)) : a = (var v : a)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
@@ -29,7 +29,8 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (op f : a -> a)(v : a @ (var _ : a)) = (var v : a) %(pe_f)%
+program (op f : a -> a)(v : a @ (var _ : a)) : a =
+            (var v : a) %(pe_f)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 5.12, in type of 'v : a @ (var _ : a)'
   typename 'a' (5.16)

@@ -7,19 +7,27 @@ op __union__ : Graph N E * Graph N E -> Graph N E;
    __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N));
        g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))
-. (fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
-   : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-    ((op __union__[N; E]
-      : forall N : Type; E : Type .
-          Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
-                             (E_v-2 ->? N_v-1)) *
-          Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
-                             (E_v-2 ->? N_v-1)) -> Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) *
-                                                                      (E_v-2 ->? N_v-1) *
-                                                                      (E_v-2 ->? N_v-1)))
+. ((fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
+    : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+       ((N ->? Unit) * (E ->? N) * (E ->? N)) *
+       ((N ->? Unit) * (E ->? N) * (E ->? N)) ->? Unit)
+    (((op __union__[N; E]
+       : forall N : Type; E : Type .
+           Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
+                              (E_v-2 ->? N_v-1)) *
+           Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
+                              (E_v-2 ->? N_v-1)) -> Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) *
+                                                                       (E_v-2 ->? N_v-1) *
+                                                                       (E_v-2 ->? N_v-1))) :
+          Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)) *
+          Graph N E@(Set N@(N ->? Unit) * (E ->? N) *
+                     (E ->? N)) -> Graph N E@(Set N@(N ->? Unit) * (E ->? N) *
+                                              (E ->? N)))
        (var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
-        var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))),
-     var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))
+        var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))) :
+         (N ->? Unit) * (E ->? N) * (E ->? N),
+     var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))) :
+      Unit
 %% Type Constructors -----------------------------------------------------
 E : Type %(var_3)%
 Graph
@@ -77,19 +85,27 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
- : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  ((op __union__[N; E]
-    : forall N : Type; E : Type .
-        Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
-                           (E_v-2 ->? N_v-1)) *
-        Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
-                           (E_v-2 ->? N_v-1)) -> Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) *
-                                                                    (E_v-2 ->? N_v-1) *
-                                                                    (E_v-2 ->? N_v-1)))
+((fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
+  : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+     ((N ->? Unit) * (E ->? N) * (E ->? N)) *
+     ((N ->? Unit) * (E ->? N) * (E ->? N)) ->? Unit)
+  (((op __union__[N; E]
+     : forall N : Type; E : Type .
+         Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
+                            (E_v-2 ->? N_v-1)) *
+         Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
+                            (E_v-2 ->? N_v-1)) -> Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) *
+                                                                     (E_v-2 ->? N_v-1) *
+                                                                     (E_v-2 ->? N_v-1))) :
+        Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)) *
+        Graph N E@(Set N@(N ->? Unit) * (E ->? N) *
+                   (E ->? N)) -> Graph N E@(Set N@(N ->? Unit) * (E ->? N) *
+                                            (E ->? N)))
      (var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
-      var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))),
-   var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))
+      var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))) :
+       (N ->? Unit) * (E ->? N) * (E ->? N),
+   var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))) :
+    Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.7, is type variable 'S'
 *** Hint 1.9, is type variable 'N'
@@ -136,16 +152,25 @@ Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))' (8.17)
          ((_var_95_v95 ->? _var_96_v96) * (_var_97_v97 ->? _var_98_v98) *
           (_var_99_v99 ->? _var_100_v100))' (5.26)
 
-*** Hint 9.8, in type of '((op __union__[N; _var_72_v72]
-  : forall N : Type; E : Type .
-      Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
-                         (E_v-2 ->? N_v-1)) *
-      Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
-                         (E_v-2 ->? N_v-1)) -> Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) *
-                                                                  (E_v-2 ->? N_v-1) *
-                                                                  (E_v-2 ->? N_v-1)))
+*** Hint 9.8, in type of '(((op __union__[N; _var_72_v72]
+   : forall N : Type; E : Type .
+       Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
+                          (E_v-2 ->? N_v-1)) *
+       Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
+                          (E_v-2 ->? N_v-1)) -> Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) *
+                                                                   (E_v-2 ->? N_v-1) *
+                                                                   (E_v-2 ->? N_v-1))) :
+      Graph N _var_72_v72@(Set N@(N ->? Unit) * (_var_72_v72 ->? N) *
+                           (_var_72_v72 ->? N)) *
+      Graph N _var_72_v72@(Set N@(N ->? Unit) * (_var_72_v72 ->? N) *
+                           (_var_72_v72 ->? N)) -> Graph N _var_72_v72@(Set N@(N ->? Unit) *
+                                                                        (_var_72_v72 ->? N) *
+                                                                        (_var_72_v72 ->? N)))
    (var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
-    var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))),
+    var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))) :
+     (_var_104_v104 ->? _var_105_v105) *
+     (_var_106_v106 ->? _var_107_v107) *
+     (_var_108_v108 ->? _var_109_v109),
  var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
   type '((N ->? Unit) * (E ->? N) * (E ->? N)) *
 Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))' (8.23)

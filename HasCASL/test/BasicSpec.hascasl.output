@@ -7,13 +7,15 @@ class a, b, c < Type; a < b
 type s : c
 pred tt : s
 var x : s
-program (pred tt : s) = \ (var x : s) : s . ()
+program (pred tt : s) = (\ (var x : s) . ()) : s ->? Unit
 pred eq : s * s
 type s < ? s
 forall x : t; y : t
 . %(..)%
-  (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-    (var x : t, var y : t)
+  ((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+       t * t ->? Unit)
+    (var x : t, var y : t) :
+      Unit
 type s
 op a : (? s)
 type Data1 ::= a | 
@@ -115,9 +117,11 @@ tt : s ->? Unit %(pred)%
 x : s %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (pred tt : s) = \ (var x : s) : s . () %(pe_tt)%
-(fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (var x : t, var y : t)
+program (pred tt : s) = (\ (var x : s) . ()) : s ->? Unit %(pe_tt)%
+((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+     t * t ->? Unit)
+  (var x : t, var y : t) :
+    Unit
 type Data1
   ::= a : Data1
       b : Data1

@@ -1,6 +1,8 @@
 internal {type s, t; fun o, q : s -> t;
-          . (fun __=__[s -> t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-              (fun o : s -> t, fun q : s -> t)}
+          . ((fun __=__[s -> t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+                 (s -> t) * (s -> t) ->? Unit)
+              (fun o : s -> t, fun q : s -> t) :
+                Unit}
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
@@ -31,8 +33,10 @@ q : s -> t %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(fun __=__[s -> t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (fun o : s -> t, fun q : s -> t)
+((fun __=__[s -> t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+     (s -> t) * (s -> t) ->? Unit)
+  (fun o : s -> t, fun q : s -> t) :
+    Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 6.3, in type of '(fun o : s -> t, fun q : s -> t)'
   type '(s -> t) * (s -> t)' (4.12)

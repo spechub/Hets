@@ -3,8 +3,11 @@ op f : ? t -> t
 op g : t -> (? t)
 op a, b : t
 op c, d : Unit ->? t
-. (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-    ((op f : ? t -> t)(op a : t), (op g : t -> ? t)(op c : Unit ->? t))
+. ((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+       t * t ->? Unit)
+    ((op f : ? t -> t)(op a : t) : t,
+     (op g : t -> ? t)(op c : Unit ->? t) : t) :
+      Unit
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
@@ -38,14 +41,17 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  ((op f : ? t -> t)(op a : t), (op g : t -> ? t)(op c : Unit ->? t))
+((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+     t * t ->? Unit)
+  ((op f : ? t -> t)(op a : t) : t,
+   (op g : t -> ? t)(op c : Unit ->? t) : t) :
+    Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 8.5, in type of '(op a : t)'
   typename 't' (4.10)
   is not unifiable with type 'Unit ->? _var_5_v5' (8.5)
 
-*** Hint 8.9, in type of '(op g : t -> ? t)(op c : Unit ->? t)'
+*** Hint 8.9, in type of '(op g : t -> ? t)(op c : Unit ->? t) : _var_8_v8'
   typename 't' (3.8)
   is not unifiable with type 'Unit ->? t' (6.10)
 
@@ -53,11 +59,12 @@ true : Unit %(fun)%
   typename 't' (4.10)
   is not unifiable with type 'Unit ->? _var_11_v11' (8.5)
 
-*** Hint 8.9, in type of '(op g : t -> ? t)(op c : Unit ->? t)'
+*** Hint 8.9, in type of '(op g : t -> ? t)(op c : Unit ->? t) : _var_14_v14'
   typename 't' (3.8)
   is not unifiable with type 'Unit ->? t' (6.10)
 
-*** Hint 8.3, in type of '((op f : ? t -> t)(op a : t), (op g : t -> ? t)(op c : Unit ->? t))'
+*** Hint 8.3, in type of '((op f : ? t -> t)(op a : t) : _var_12_v12,
+ (op g : t -> ? t)(op c : Unit ->? t) : _var_14_v14)'
   type 't * t' (4.10)
   is not unifiable with type 'Unit ->? _var_3_v3 * _var_4_v4'
 

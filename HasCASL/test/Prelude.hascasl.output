@@ -23,11 +23,15 @@ type __*__ : Type+ -> Type+ -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : Pred s
 var x : s
-program (op def[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s . ()
+program (op def[s]
+         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
+            Pred s@(s ->? Unit)
+          = (\ (var x : s) . ()) : s ->? Unit
         %% def is also total (identical to tt) 
-program (op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s . ()
+program (op tt[s]
+         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
+            Pred s@(s ->? Unit)
+          = (\ (var x : s) . ()) : s ->? Unit
         %% tt is total "op tt(x: s): unit = ()"
 %% total function type
 type __->__ : Type- -> Type+ -> Type
@@ -38,35 +42,55 @@ op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
 op fst : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
      = \ (var x : s, var y : t) .! (var x : s) as s_v1
 %% trivial because its the strict function property
-. (fun __=__[_var_33_v33 * _var_35_v35 ->? _var_33_v33]
-   : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-    (op fst[_var_33_v33; _var_35_v35]
-     : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1,
-     op __res__[_var_33_v33; _var_35_v35]
-     : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
+. ((fun __=__[_var_33_v33 * _var_35_v35 ->? _var_33_v33]
+    : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+       (_var_33_v33 * _var_35_v35 ->? _var_33_v33) *
+       (_var_33_v33 * _var_35_v35 ->? _var_33_v33) ->? Unit)
+    ((op fst[_var_33_v33; _var_35_v35]
+      : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+         _var_33_v33 * _var_35_v35 ->? _var_33_v33,
+     (op __res__[_var_33_v33; _var_35_v35]
+      : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+         _var_33_v33 * _var_35_v35 ->? _var_33_v33) :
+      Unit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred eq : s * s
-. (fun __=__[s ->? Unit]
-   : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-    (\ (var x : s) : s
-       . (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
-           (var x : s, var x : s),
-     op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-. (fun __=__[s * s ->? s]
-   : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-    (\ (var x : s, var y : s)
-       . (op __res__[s; Unit]
-          : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
-           (var x : s,
-            (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
-              (var x : s, var y : s)),
-     \ (var x : s, var y : s)
-       . (op __res__[s; Unit]
-          : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
-           (var y : s,
-            (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
-              (var x : s, var y : s)))
+. ((fun __=__[s ->? Unit]
+    : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+       (s ->? Unit) * (s ->? Unit) ->? Unit)
+    ((\ (var x : s)
+        . ((pred eq[s] : forall s : Type . s_v-1 * s_v-1) : s * s ->? Unit)
+            (var x : s, var x : s) :
+              Unit) :
+         s ->? Unit,
+     (op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
+         Pred s@(s ->? Unit)) :
+      Unit
+. ((fun __=__[s * s ->? s]
+    : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+       (s * s ->? s) * (s * s ->? s) ->? Unit)
+    ((\ (var x : s, var y : s)
+        . ((op __res__[s; Unit]
+            : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+               s * Unit ->? s)
+            (var x : s,
+             ((pred eq[s] : forall s : Type . s_v-1 * s_v-1) : s * s ->? Unit)
+               (var x : s, var y : s) :
+                 Unit) :
+              s) :
+         s * s ->? s,
+     (\ (var x : s, var y : s)
+        . ((op __res__[s; Unit]
+            : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+               s * Unit ->? s)
+            (var y : s,
+             ((pred eq[s] : forall s : Type . s_v-1 * s_v-1) : s * s ->? Unit)
+               (var x : s, var y : s) :
+                 Unit) :
+              s) :
+         s * s ->? s) :
+      Unit
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit." 
 %% where "bla" is never used, but only "()" instead
@@ -185,10 +209,14 @@ y1 : d %(var)%
 y2 : d %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (op def[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s . () %(pe_def)%
-program (op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s . () %(pe_tt)%
+program (op def[s]
+         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
+            Pred s@(s ->? Unit)
+          = (\ (var x : s) . ()) : s ->? Unit %(pe_def)%
+program (op tt[s]
+         : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
+            Pred s@(s ->? Unit)
+          = (\ (var x : s) . ()) : s ->? Unit %(pe_tt)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
@@ -199,30 +227,52 @@ forall x : s; y : t
       ((op fst : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
          (var x : s, var y : t),
        (var x : s) as s_v1) %(def_fst)%
-(fun __=__[_var_33_v33 * _var_35_v35 ->? _var_33_v33]
- : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-  (op fst[_var_33_v33; _var_35_v35]
-   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1,
-   op __res__[_var_33_v33; _var_35_v35]
-   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
-(fun __=__[s ->? Unit] : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-  (\ (var x : s) : s
-     . (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
-         (var x : s, var x : s),
-   op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-(fun __=__[s * s ->? s] : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-  (\ (var x : s, var y : s)
-     . (op __res__[s; Unit]
-        : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
-         (var x : s,
-          (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
-            (var x : s, var y : s)),
-   \ (var x : s, var y : s)
-     . (op __res__[s; Unit]
-        : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
-         (var y : s,
-          (pred eq[s] : forall s : Type . s_v-1 * s_v-1)
-            (var x : s, var y : s)))
+((fun __=__[_var_33_v33 * _var_35_v35 ->? _var_33_v33]
+  : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+     (_var_33_v33 * _var_35_v35 ->? _var_33_v33) *
+     (_var_33_v33 * _var_35_v35 ->? _var_33_v33) ->? Unit)
+  ((op fst[_var_33_v33; _var_35_v35]
+    : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+       _var_33_v33 * _var_35_v35 ->? _var_33_v33,
+   (op __res__[_var_33_v33; _var_35_v35]
+    : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+       _var_33_v33 * _var_35_v35 ->? _var_33_v33) :
+    Unit
+((fun __=__[s ->? Unit]
+  : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+     (s ->? Unit) * (s ->? Unit) ->? Unit)
+  ((\ (var x : s)
+      . ((pred eq[s] : forall s : Type . s_v-1 * s_v-1) : s * s ->? Unit)
+          (var x : s, var x : s) :
+            Unit) :
+       s ->? Unit,
+   (op tt[s] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
+       Pred s@(s ->? Unit)) :
+    Unit
+((fun __=__[s * s ->? s]
+  : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+     (s * s ->? s) * (s * s ->? s) ->? Unit)
+  ((\ (var x : s, var y : s)
+      . ((op __res__[s; Unit]
+          : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+             s * Unit ->? s)
+          (var x : s,
+           ((pred eq[s] : forall s : Type . s_v-1 * s_v-1) : s * s ->? Unit)
+             (var x : s, var y : s) :
+               Unit) :
+            s) :
+       s * s ->? s,
+   (\ (var x : s, var y : s)
+      . ((op __res__[s; Unit]
+          : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+             s * Unit ->? s)
+          (var y : s,
+           ((pred eq[s] : forall s : Type . s_v-1 * s_v-1) : s * s ->? Unit)
+             (var x : s, var y : s) :
+               Unit) :
+            s) :
+       s * s ->? s) :
+    Unit
 free type bool
   ::= true : bool
       false : bool %(ga_bool)%
@@ -270,10 +320,12 @@ free type bool
   def(__res__(x, y))
   def__(__res__(x, y))
 *** Error 65.59, unexpected mixfix token: und
-*** Hint 66.3, in type of '(op fst[_var_28_v28; _var_29_v29]
- : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1,
- op __res__[_var_30_v30; _var_31_v31]
- : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)'
+*** Hint 66.3, in type of '((op fst[_var_28_v28; _var_29_v29]
+  : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+     _var_28_v28 * _var_29_v29 ->? _var_28_v28,
+ (op __res__[_var_30_v30; _var_31_v31]
+  : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+     _var_30_v30 * _var_31_v31 ->? _var_30_v30)'
   type '(_var_28_v28 * _var_29_v29 ->? _var_28_v28) *
 (_var_30_v30 * _var_31_v31 ->? _var_30_v30)' (59.12)
   is not unifiable with type 'Unit ->? _var_14_v14 * _var_15_v15' (22.14)
@@ -288,10 +340,15 @@ free type bool
   type 's * s' (40.9)
   is not unifiable with type 'Unit ->? _var_55_v55 * _var_56_v56' (72.11)
 
-*** Hint 74.11, in type of '(\ (var x : s) : s
-   . (pred eq[_var_54_v54] : forall s : Type . s_v-1 * s_v-1)
-       (var x : s, var x : s),
- op tt[_var_57_v57] : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))'
+*** Hint 74.11, in type of '((\ (var x : s)
+    . ((pred eq[_var_54_v54] : forall s : Type . s_v-1 * s_v-1) :
+           _var_54_v54 * _var_54_v54 ->? Unit)
+        (var x : s, var x : s) :
+          _var_52_v52) :
+     _var_51_v51 ->? _var_52_v52,
+ (op tt[_var_57_v57]
+  : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
+     Pred _var_57_v57@(_var_57_v57 ->? Unit))'
   type '(s ->? Unit) * Pred _var_57_v57@(_var_57_v57 ->? Unit)' (74.8)
   is not unifiable with type 'Unit ->? _var_38_v38 * _var_39_v39' (22.14)
 
@@ -305,8 +362,10 @@ free type bool
   is not unifiable with type 'Unit ->? _var_81_v81 * _var_82_v82' (72.11)
 
 *** Hint 75.15, in type of '(var x : s,
- (pred eq[_var_80_v80] : forall s : Type . s_v-1 * s_v-1)
-   (var x : s, var y : s))'
+ ((pred eq[_var_80_v80] : forall s : Type . s_v-1 * s_v-1) :
+      _var_80_v80 * _var_80_v80 ->? Unit)
+   (var x : s, var y : s) :
+     _var_79_v79)'
   type 's * Unit' (40.9)
   is not unifiable with type 'Unit ->? _var_71_v71 * _var_72_v72' (58.16)
 
@@ -320,8 +379,10 @@ free type bool
   is not unifiable with type 'Unit ->? _var_100_v100 * _var_101_v101' (72.11)
 
 *** Hint 75.44, in type of '(var y : s,
- (pred eq[_var_99_v99] : forall s : Type . s_v-1 * s_v-1)
-   (var x : s, var y : s))'
+ ((pred eq[_var_99_v99] : forall s : Type . s_v-1 * s_v-1) :
+      _var_99_v99 * _var_99_v99 ->? Unit)
+   (var x : s, var y : s) :
+     _var_98_v98)'
   type 's * Unit' (75.40)
   is not unifiable with type 'Unit ->? _var_90_v90 * _var_91_v91' (58.16)
 
@@ -335,8 +396,10 @@ free type bool
   is not unifiable with type 'Unit ->? _var_127_v127 * _var_128_v128' (72.11)
 
 *** Hint 75.15, in type of '(var x : s,
- (pred eq[_var_126_v126] : forall s : Type . s_v-1 * s_v-1)
-   (var x : s, var y : s))'
+ ((pred eq[_var_126_v126] : forall s : Type . s_v-1 * s_v-1) :
+      _var_126_v126 * _var_126_v126 ->? Unit)
+   (var x : s, var y : s) :
+     _var_125_v125)'
   type 's * Unit' (40.9)
   is not unifiable with type 'Unit ->? _var_117_v117 * _var_118_v118' (58.16)
 
@@ -350,23 +413,35 @@ free type bool
   is not unifiable with type 'Unit ->? _var_146_v146 * _var_147_v147' (72.11)
 
 *** Hint 75.44, in type of '(var y : s,
- (pred eq[_var_145_v145] : forall s : Type . s_v-1 * s_v-1)
-   (var x : s, var y : s))'
+ ((pred eq[_var_145_v145] : forall s : Type . s_v-1 * s_v-1) :
+      _var_145_v145 * _var_145_v145 ->? Unit)
+   (var x : s, var y : s) :
+     _var_144_v144)'
   type 's * Unit' (75.40)
   is not unifiable with type 'Unit ->? _var_136_v136 * _var_137_v137' (58.16)
 
-*** Hint 75.17, in type of '(\ (var x : s, var y : s)
-   . (op __res__[_var_115_v115; _var_116_v116]
-      : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
-       (var x : s,
-        (pred eq[_var_121_v121] : forall s : Type . s_v-1 * s_v-1)
-          (var x : s, var y : s)),
- \ (var x : s, var y : s)
-   . (op __res__[_var_134_v134; _var_135_v135]
-      : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
-       (var y : s,
-        (pred eq[_var_140_v140] : forall s : Type . s_v-1 * s_v-1)
-          (var x : s, var y : s)))'
+*** Hint 75.17, in type of '((\ (var x : s, var y : s)
+    . ((op __res__[_var_115_v115; _var_116_v116]
+        : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+           _var_115_v115 * _var_116_v116 ->? _var_115_v115)
+        (var x : s,
+         ((pred eq[_var_121_v121] : forall s : Type . s_v-1 * s_v-1) :
+              _var_121_v121 * _var_121_v121 ->? Unit)
+           (var x : s, var y : s) :
+             _var_120_v120) :
+          _var_111_v111) :
+     _var_112_v112 * _var_113_v113 ->? _var_111_v111,
+ (\ (var x : s, var y : s)
+    . ((op __res__[_var_134_v134; _var_135_v135]
+        : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
+           _var_134_v134 * _var_135_v135 ->? _var_134_v134)
+        (var y : s,
+         ((pred eq[_var_140_v140] : forall s : Type . s_v-1 * s_v-1) :
+              _var_140_v140 * _var_140_v140 ->? Unit)
+           (var x : s, var y : s) :
+             _var_139_v139) :
+          _var_130_v130) :
+     _var_131_v131 * _var_132_v132 ->? _var_130_v130)'
   type '(s * s ->? s) * (s * s ->? s)' (40.9)
   is not unifiable with type 'Unit ->? _var_62_v62 * _var_63_v63' (22.14)
 
