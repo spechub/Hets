@@ -26,6 +26,7 @@ import Control.Monad
 import Control.Monad.State
 import qualified Char as C
 import Data.List(intersperse)
+import Data.Maybe(mapMaybe)
 import HasCASL.Unify
 
 -- Earley Algorithm
@@ -236,16 +237,27 @@ filterByPrec g (PState argIde _ _ _ _ _) (PState opIde _ _ args (hd:_) _) =
                          else checkAnyArg g opIde argIde
        else False
 
-filterByType :: ParseMap -> PState -> PState -> Bool
+expandType :: TypeMap -> Type -> Type
+expandType tm oldT = 
+    case oldT of 
+	   TypeName _ _ _ -> fst $ expandAlias tm oldT
+	   KindedType t _ _ -> t
+	   LazyType t _ -> t
+	   _ -> oldT
+
+filterByType :: ParseMap -> PState -> PState -> Maybe PState
 filterByType cm argState opState = 
-    case ruleType (opState) of
-		t@(TypeName _ _ _) -> 
-		    let (newT, b) = expandAlias (typeAliases cm) t in
-			if b then filterByType cm argState 
-                                  opState {ruleType = newT}
-			else False 
-		FunType t1 a t2 _ -> True
-		_ -> False
+    let tm = typeAliases cm in
+    case expandType tm $ ruleType opState of
+		FunType t1 _ t2 _ -> 
+		    case expandType tm t1 of 
+		    argType -> 
+			do s <- maybeResult $ unify tm argType
+				$ ruleType argState
+			   return opState {ruleType = subst s t2,
+					   ruleArgs = stateToAppl argState:
+						   ruleArgs opState}
+		_ -> Nothing
 
 -- final complete/reduction phase 
 -- when a grammar rule (mixfix Id) has been fully matched
@@ -253,10 +265,7 @@ filterByType cm argState opState =
 collectArg :: GlobalAnnos -> ParseMap -> PState -> [PState]
 -- pre: finished rule 
 collectArg g m s@(PState _ _ _ _ _ k) = 
-    foldr (\ (PState o ty b a ts k1) l ->
-	 PState o ty b (toAppl g s : a) 
-	 (tail ts) k1 : l) []
-    $ filter (filterByType m s)
+    mapMaybe (filterByType m s)
     $ filter (filterByPrec g s)
     $ lookUp (parseMap m) k
 
