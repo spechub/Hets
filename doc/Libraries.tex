@@ -68,6 +68,7 @@
 \begin{document}
 
 \title{CASL libraries on the web}
+\author{Till Mossakowski}
 
 \maketitle
 
@@ -166,7 +167,7 @@ is too much for the moment.
 
 \item 
 Direct absolute URIs are taken as such. 
-It is unclear relative to what the direct relative
+It is unclear relative to what base address the direct relative
 URIs mentioned in the summary should be interpreted.
 
 Local files can be accessed via \texttt{file://path},
@@ -223,17 +224,19 @@ project, or a standard package like the collection of libraries
 of basic datatypes.  \Hets should provide some means of
 specifying which libraries belong to a package.
 
-\item URNs are not needed: the syntax of URLs suffices, and moreover,
-URLs are directly understood by browsers and web servers.
+\item URNs are not needed: the syntax of usual URIs suffices, and moreover,
+these are directly understood by browsers and web servers.
 
 \item We should have a look at VSE to get feeling for a realistic system
 (however, VSE does not have version control).
-Currently, VSE needs Solaris 5 or SunOS 5.6. In Bremen, we only have Solaris 8 and 9.
+Unfortunately, currently, VSE needs Solaris 5 or SunOS 5.6. In Bremen, we only have Solaris 8 and 9.
 
 
 \end{enumerate}
 
-
+\section*{Acknowledgements}
+Thanks to Christoph L\"uth, Klaus L\"uttich and Achim Mahnke for
+useful discussions and comments.
 
 
 \end{document}
