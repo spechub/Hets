@@ -20,7 +20,7 @@ import Common.Id
 import qualified Common.Lib.Map as Map
 import Data.List
 import Common.AS_Annotation (Named)
--- import Debug.Trace
+import Debug.Trace
 
 -- HasCASL
 import HasCASL.Logic_HasCASL
@@ -65,7 +65,7 @@ instance Comorphism HasCASL2IsabelleHOL
     map_sign _ = transSignature
     --map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign phi =
-      Just $ Sentence {senTerm = (transSentence sign phi)}
+            Just $ Sentence {senTerm = (transSentence sign phi)}
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
 ------------------------------ Ids ---------------------------------
@@ -92,26 +92,40 @@ transSignature sign =
     constTab = Map.foldWithKey insertOps 
                                Map.empty 
                                (assumps sign),
-    dataTypeTab = [], 
+    dataTypeTab = transDatatype (typeMap sign),
     syn = () },
     [] )  -- for now, no sentences
    where 
-    extractTypeName typeId _ m = Map.insert (showIsa typeId) 0 m
+    extractTypeName typeId typeInfo m = if isDatatypeDefn typeInfo then m
+                                         else Map.insert (showIsa typeId) 0 m
+    isDatatypeDefn t = case typeDefn t of
+                  DatatypeDefn _ -> True
+                  _              -> False
     insertOps opName opInfs m = 
      let opIs = opInfos opInfs
      in if (length opIs) == 1 then
-            Map.insert (showIsa opName) (transOpInfo (head opIs)) m
-          else foldl (\m1 (opInf,i) -> Map.insert (showIsaI opName i) 
-                                               (transOpInfo opInf) m1) 
-                     m
-                     (zip opIs [1..length opIs])
+          let transOp = transOpInfo (head opIs)
+          in case transOp of 
+               Just op -> Map.insert (showIsa opName) op m
+               Nothing -> m
+          else 
+            let transOps = map transOpInfo opIs
+            in  foldl (\m1 (transOp,i) -> 
+                           case transOp of
+                             Just typ -> Map.insert (showIsaI opName i) 
+                                                     typ m1
+                             Nothing   -> m1)
+                       m
+                       (zip transOps [1..length transOps])
 
  
-transOpInfo :: OpInfo -> Typ
-transOpInfo (OpInfo opT _ opDef) = case opDef of
-                      NoOpDefn Pred -> transPredType opT
-                      NoOpDefn _    -> transOpType opT
-                      _             -> error "[Comorphims.HasCASL2IsabelleHOL] Not supported operation declaration and/or definition"
+transOpInfo :: OpInfo -> Maybe Typ
+transOpInfo (OpInfo opT _ opDef) = 
+  case opDef of
+    NoOpDefn Pred   -> Just (transPredType opT)
+    NoOpDefn _      -> Just (transOpType opT)
+    ConstructData _ -> Nothing
+    _               -> error "[Comorphims.HasCASL2IsabelleHOL] Not supported operation declaration and/or definition"
 
 
 transOpType :: TypeScheme -> Typ
@@ -124,20 +138,47 @@ transPredType  (TypeScheme _ (_ :=> pre) _) =
          FunType tp _ _ _ -> (transType tp) --> boolType
          _                -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong predicate type"
 
-
 transType :: Type -> Typ
-transType (TypeName typeId _ _) = Type(showIsa typeId,[])
+transType (TypeName typeId _ i) = trace ("typeName "++show typeId++" i "++show i++"\n") (if i == 0 then Type(showIsa typeId,[])
+                                   else TVar((showIsa typeId,0),[]))
 transType (ProductType types _) = foldr1 IsaSign.mkProductType 
                                          (map transType types)
-transType (FunType type1 arr type2 _) = case arr of
-                                          PFunArr -> (transType type1) 
-                                                       --> (mkOptionType (transType type2))
-                                          FunArr  -> (transType type1) --> (transType type2)
-                                          _       -> error "[Comorphims.HasCASL2IsabelleHOL] Not supported function type in use"
-transType _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported type in use"
+transType (FunType type1 arr type2 _) = 
+  case arr of
+    PFunArr -> (transType type1) --> (mkOptionType (transType type2))
+    FunArr  -> (transType type1) --> (transType type2)
+    _       -> error "[Comorphims.HasCASL2IsabelleHOL] Not supported function type"
+transType (TypeAppl type1 type2) = Type("appl", [transType type1] ++ [transType type2])
+transType _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported type"
 
---transDatatypes :: TypeMap -> DataTypeTab
---transDatatypes 
+
+transDatatype :: TypeMap -> DataTypeTab
+transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
+
+extractDataypes :: TypeInfo -> [DataEntry] -> [DataEntry]
+extractDataypes ti des = case typeDefn ti of
+                           DatatypeDefn de -> des++[de]
+                           _               -> des
+
+transDataEntry :: DataEntry -> DataTypeTabEntry
+transDataEntry (DataEntry _ tyId Le.Free tyArgs alts) = 
+                         [((mkDName tyId tyArgs), (map mkAltDefn alts))]
+transDataEntry _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported datatype definition"
+
+mkDName :: TypeId -> [TypeArg] -> Typ
+mkDName tyId tyArgs = Type(showIsa tyId,(map transTypeArg tyArgs))
+
+transTypeArg :: TypeArg -> Typ
+transTypeArg (TypeArg tyId _ _ _) = TVar((showIsa tyId,0),[])
+
+mkAltDefn :: AltDefn -> DataTypeAlt
+mkAltDefn (Construct opId types Total _) = 
+   let typs = map transType types
+   in case opId of
+        Just opI -> (showIsa opI, typs)
+        Nothing  -> ("", typs)
+mkAltDefn (Construct _ _ Partial _) = error "[Comorphims.HasCASL2IsabelleHOL] Not supported alternative definition in (free) datatype"
+
 
 ------------------------------ Formulas ------------------------------
 
@@ -148,7 +189,7 @@ transVar = showIsa
 transSentence :: Env -> Le.Sentence -> IsaSign.Term
 transSentence e s = case s of
     Le.Formula t      -> transTerm e t
-    DatatypeSen _     -> error "[Comorphims.HasCASL2IsabelleHOL] transSentence: data type"
+    DatatypeSen l     -> con "Ich bin gar kein richtiger Term..." -- !!!!!!!!!!!!!!!!PFUI!!!!!!!!!!!!!!!!!!!!!!
     ProgEqSen _ _ _pe -> error "[Comorphims.HasCASL2IsabelleHOL] transSentence: program"
 
 
@@ -173,10 +214,11 @@ transTerm sign (ApplTerm term1 term2 _) =
      where mkApp s sign t1 t2 = con s 
                                  `App` (transTerm sign term1) 
                                  `App` (transTerm sign term2)
-           isPart (TypeScheme _ (_ :=> op) _) = case op of
-                                                  FunType _ PFunArr _ _ -> True
-                                                  FunType _ FunArr _ _  -> False
-                                                  _                     -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong operation type"
+           isPart (TypeScheme _ (_ :=> op) _) = 
+             case op of
+               FunType _ PFunArr _ _ -> True
+               FunType _ FunArr _ _  -> False
+               _                     -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong operation type"
 transTerm sign (QuantifiedTerm quant varDecls phi _) = 
   foldr (quantify quant) 
         (transTerm sign phi) 
@@ -196,7 +238,7 @@ transTerm sign (TupleTerm terms _) =
   foldl1 (binConst pairC) (map (transTerm sign) terms)
 --   conSome `App` (foldl1 (binConst pairC) 
 --                         (map (transTerm sign) terms))
-transTerm _ _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax in use."
+transTerm _ _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
 
 
 let2lambda :: ProgEq -> As.Term -> As.Term
@@ -283,7 +325,7 @@ getNameOfOpId (Id (tok:toks) a b) =
 
 toPair :: GenVarDecl -> (Var,Type)
 toPair (GenVarDecl (VarDecl var typ _ _)) = (var,typ)
-toPair _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported GenVarDecl in use"
+toPair _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported GenVarDecl"
 
 
 binConst :: String -> IsaSign.Term -> IsaSign.Term -> IsaSign.Term
