@@ -30,6 +30,8 @@ import HasCASL.TypeAna
 -- ---------------------------------------------------------------------------
 -- analyse types as state
 -- ---------------------------------------------------------------------------
+putTypeMap :: TypeMap -> State Env ()
+putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 
 anaTypeS :: (Kind, Type) -> State Env (Kind, Type) 
 anaTypeS kt = toState kt ( \ e -> (classMap e, typeMap e)) $ anaType $ snd kt 

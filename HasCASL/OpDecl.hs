@@ -25,6 +25,9 @@ import Data.Maybe
 import HasCASL.Unify
 import HasCASL.MixAna
 
+putAssumps :: Assumps -> State Env ()
+putAssumps as =  do { e <- get; put e { assumps = as } }
+
 posOfOpId :: OpId -> Pos
 posOfOpId (OpId i _ _) = posOfId i
 
@@ -78,6 +81,14 @@ checkDifferentTypeArgs l =
 shortPosShow :: Pos -> ShowS
 shortPosShow p = showParen True (shows (sourceLine p) . showString "," .
 			 shows (sourceColumn p))
+
+unifiable :: TypeScheme -> TypeScheme -> State Env Bool
+unifiable sc1 sc2 =
+    do tm <- gets typeMap
+       c <- gets counter
+       let Result ds mm = evalState (unifIable tm sc1 sc2) c
+       appendDiags ds
+       return $ isJust mm
 
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env () 
 addOpId i sc attrs defn = 

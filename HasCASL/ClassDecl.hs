@@ -10,6 +10,7 @@
 module HasCASL.ClassDecl where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Id
@@ -20,6 +21,41 @@ import Common.Lib.State
 import Common.Result
 import HasCASL.ClassAna
 import HasCASL.Reader
+
+-- ---------------------------------------------------------------------------
+-- state helpers
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------
+
+toResultState :: (s -> r) -> ReadR r a -> State s (Result a) 
+toResultState f m = State $ \s -> (readR m $ f s, s)
+
+toMaybeState :: (Env -> r) -> ReadR r a -> State Env (Maybe a) 
+toMaybeState f r = do Result ds m <- toResultState f r 
+		      appendDiags ds 
+		      return m
+
+toState :: a -> (Env -> r) -> ReadR r a -> State Env a
+toState d f r = do m <- toMaybeState f r
+		   return $ case m of Nothing -> d
+				      Just a -> a
+
+-- ---------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------
+
+appendDiags :: [Diagnosis] -> State Env ()
+appendDiags ds =
+    if null ds then return () else
+    do e <- get
+       put $ e {envDiags = ds ++ envDiags e}
+
+addDiag :: Diagnosis -> State Env ()
+addDiag d = appendDiags [d]
+
+putClassMap :: ClassMap -> State Env ()
+putClassMap ce = do { e <- get; put e { classMap = ce } }
 
 -- ---------------------------------------------------------------------------
 -- analyse classes as state
@@ -50,7 +86,7 @@ anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
        if Set.isEmpty supcls then 
 	  do addDiag $ Diag Warning
 			  "redundant universe class" 
-			 $ if null ps then head qs else head ps
+			 $ getPos (ps ++ qs)
 	     mapM_ (anaClassDecl ak supcls Nothing) cls
           else let (hd, tl) = Set.deleteFindMin supcls in 
 	      if Set.isEmpty tl then

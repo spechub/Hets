@@ -15,7 +15,6 @@ a read only state (copied from Control.Monad.Reader and modified)
 module HasCASL.Reader where
 
 import Common.Result
-import Common.Lib.State
 
 -- ---------------------------------------------------------------------------
 -- Our fixed reader monad 
@@ -59,32 +58,3 @@ foldReadR m (h:t) = ReadR $ \ r ->
 withReadR :: (r' -> r) -> ReadR r a -> ReadR r' a
 withReadR f m = ReadR $ readR m . f
 
-toResultState :: (s -> r) -> ReadR r a -> State s (Result a) 
-toResultState f m = State $ \s -> (readR m $ f s, s)
-
-
-{- 
-
--- not quite an instance of StateT
--- but different binding compared to: State s (Maybe a)
-newtype StateS s a = StateS { stateS :: s -> (Maybe a, s) }
-
-instance Functor (StateS s) where
-        fmap f m = StateS $ \s -> let 
-                (x, s') = stateS m s in 
-                (fmap f x, s')
-
-bindStateS :: StateS s a -> (a -> StateS s b) -> StateS s b
-m `bindStateS` k = StateS $ \s -> let
-                (x, s') = stateS m s in
-                case x of Nothing -> (Nothing, s')
-			  Just a -> stateS (k a) s'
-
-toStateS :: State s a -> StateS s a
-toStateS m = StateS $ \s -> let 
-	   (x, s') = runState m s in (Just x, s')
-
-fromStateS :: StateS s a -> State s (Maybe a)
-fromStateS m = State $ \s -> stateS m s
-
--}

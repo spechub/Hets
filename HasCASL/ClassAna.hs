@@ -103,12 +103,15 @@ eqKindDiag :: Pos -> Kind -> Kind -> [Diagnosis]
 eqKindDiag p k1 k2 = 
     if eqKind k1 k2 then []
        else [ Diag Error
-	      ("incompatible kinds\n" ++ 
-	       indent 2 (showPretty k1 . 
+	      (indent 2 (showString "incompatible kinds\n" .
+			 showPretty k1 . 
 			 showChar '\n' .  
 			 showPretty k2) "")
 	    $ p ]
 
+indent :: Int -> ShowS -> ShowS
+indent i s = showString $ concat $ 
+	     intersperse ('\n' : replicate i ' ') (lines $ s "")
 
 eqKind :: Kind -> Kind -> Bool
 eqKind (KindAppl p1 c1 _) (KindAppl p2 c2 _) =

@@ -20,14 +20,6 @@ import Common.Result
 import Data.List
 import Data.Maybe
 
-unifiable :: TypeScheme -> TypeScheme -> State Env Bool
-unifiable sc1 sc2 =
-    do tm <- gets typeMap
-       c <- gets counter
-       let Result ds mm = evalState (unifIable tm sc1 sc2) c
-       appendDiags ds
-       return $ isJust mm
-
 isUnifiable :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
 isUnifiable tm c sc1 sc2 = isJust $ maybeResult $ 
 			   evalState (unifIable tm sc1 sc2) c

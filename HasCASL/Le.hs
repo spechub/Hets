@@ -12,9 +12,6 @@ module HasCASL.Le where
 import HasCASL.As
 import Common.Lib.Map as Map
 import Common.Lib.Set as Set
-import Data.List
-import HasCASL.Reader
-import Common.Lib.State
 import Common.Result
 import Common.GlobalAnnotations
 import Common.Named
@@ -100,44 +97,4 @@ instance Eq Env where
 
 initialEnv :: Env
 initialEnv = Env Map.empty Map.empty Map.empty [] emptyGlobalAnnos [] 1
-
-appendDiags :: [Diagnosis] -> State Env ()
-appendDiags ds =
-    if null ds then return () else
-    do e <- get
-       put $ e {envDiags = ds ++ envDiags e}
-
-addDiag :: Diagnosis -> State Env ()
-addDiag d = appendDiags [d]
-
-putCounter :: Int -> State Env ()
-putCounter i = do { e <- get; put e { counter = i } }
-
-putClassMap :: ClassMap -> State Env ()
-putClassMap ce = do { e <- get; put e { classMap = ce } }
-
-putTypeMap :: TypeMap -> State Env ()
-putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
-
-putAssumps :: Assumps -> State Env ()
-putAssumps as =  do { e <- get; put e { assumps = as } }
-
--- ---------------------------------------------------------------------
-
-toMaybeState :: (Env -> r) -> ReadR r a -> State Env (Maybe a) 
-toMaybeState f r = do Result ds m <- toResultState f r 
-		      appendDiags ds 
-		      return m
-
-toState :: a -> (Env -> r) -> ReadR r a -> State Env a
-toState d f r = do m <- toMaybeState f r
-		   return $ case m of Nothing -> d
-				      Just a -> a
-
--- ---------------------------------------------------------------------
-indent :: Int -> ShowS -> ShowS
-indent i s = showString $ concat $ 
-	     intersperse ('\n' : replicate i ' ') (lines $ s "")
-
--- ---------------------------------------------------------------------
 
