@@ -16,7 +16,7 @@ INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
 CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:$(INCLUDE_PATH):Haskell/Hatchet
 ## set ghc imports properly for your system
-DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0.1/imports:${GHC_IMPORTS}'
+DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.2/imports:${GHC_IMPORTS}'
 
 HC         = ghc
 PERL       = perl
