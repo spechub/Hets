@@ -11,8 +11,6 @@
 
    Data types and functions for architectural diagrams.
 
-   TODO:
-   * add description parameter to extendDiagram* functions
 -}
 
 module Static.ArchDiagram 
@@ -178,10 +176,11 @@ extendDiagramRev :: LogicGraph
 		 -> Diag          -- ^ the diagram to be extended
 		 -> [DiagNodeSig] -- ^ the nodes which should be linked to the new node
 		 -> NodeSig       -- ^ the signature with which the new node should be labelled
+		 -> String        -- ^ the node description (for diagnostics)
 		 -> Result (DiagNodeSig, Diag)
 -- ^ returns the new node and the extended diagram
-extendDiagramRev lgraph diag targetNodes newNodeSig = 
-  do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = ""}
+extendDiagramRev lgraph diag targetNodes newNodeSig desc = 
+  do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
 	 [node] = newNodes 0 diag
 	 diag' = insNode (node, nodeContents) diag
 	 newDiagNode = Diag_node_sig node newNodeSig
@@ -200,12 +199,14 @@ extendDiagramWithMorphism :: Pos           -- ^ the position (for diagnostics)
 			  -> DGraph        -- ^ the development graph
 			  -> DiagNodeSig   -- ^ the node from which the edge should originate
 			  -> GMorphism     -- ^ the morphism with which the new edge should be labelled
+			  -> String        -- ^ the node description (for diagnostics)
+			  -> DGOrigin      -- ^ the origin of the new node
 			  -> Result (DiagNodeSig, Diag, DGraph)
 -- ^ returns the new node, the extended diagram and extended development graph
-extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) morph =
+extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) morph desc orig =
   if (getSig nsig) == (dom Grothendieck morph) then
-     do (targetSig, dg') <- extendDGraph dg nsig morph DGTranslation -- TODO: parameterised origin
-	let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = ""}
+     do (targetSig, dg') <- extendDGraph dg nsig morph orig
+	let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = desc}
 	    [node] = newNodes 0 diag
  	    diag' = insNode (node, nodeContents) diag
 	    diag'' = insEdge (n, node, DiagLink { dl_morphism = morph }) diag'
@@ -225,12 +226,14 @@ extendDiagramWithMorphismRev :: Pos           -- ^ the position (for diagnostics
 			     -> DGraph        -- ^ the development graph
 			     -> DiagNodeSig   -- ^ the node to which the edge should point
 			     -> GMorphism     -- ^ the morphism with which the new edge should be labelled
+			     -> String        -- ^ the node description (for diagnostics)
+			     -> DGOrigin      -- ^ the origin of the new node
 			     -> Result (DiagNodeSig, Diag, DGraph)
 -- ^ returns the new node, the extended diagram and extended development graph
-extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig) morph =
+extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig) morph desc orig =
   if (getSig nsig) == (cod Grothendieck morph) then
-     do (sourceSig, dg') <- extendDGraphRev dg nsig morph DGTranslation -- TODO: parameterised origin
-	let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = ""}
+     do (sourceSig, dg') <- extendDGraphRev dg nsig morph orig
+	let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
 	    [node] = newNodes 0 diag
  	    diag' = insNode (node, nodeContents) diag
 	    diag'' = insEdge (node, n, DiagLink { dl_morphism = morph }) diag'
