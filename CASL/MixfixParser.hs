@@ -38,9 +38,7 @@ showTerm _ t = ShowMixfix.showTerm t ""
 
 -- Earley Algorithm
 
-data IdKind = IsPred | IsOp | IsBoth deriving (Eq, Ord)
-
-data State = State (Id, IdKind)  -- True means predicate
+data State = State (Id, Bool)  -- True means predicate
                    [Pos]    -- positions of Id tokens
                    [TERM]   -- currently collected arguments 
 		                               -- both in reverse order
@@ -67,12 +65,12 @@ varTok = mkSimpleId "(v)"
 opTok = mkSimpleId "(o)"
 predTok = mkSimpleId "(p)"
 
-mkState :: Int -> IdKind -> Id -> State 
+mkState :: Int -> Bool -> Id -> State 
 mkState i b ide = State (ide, b) [] [] (getTokenList termStr ide) i
 
-mkApplState :: Int -> IdKind -> Id -> State
+mkApplState :: Int -> Bool -> Id -> State
 mkApplState i b ide = State (ide, b) [] [] 
-		    (getTokenList place ide ++ [parenTok]) i
+		    (getPlainTokenList ide ++ [parenTok]) i
 
 
 listToken :: Token 
@@ -87,12 +85,12 @@ isListId (Id ts cs _) = not (null ts) && head ts == listToken && length cs == 1
 listStates :: GlobalAnnos -> Int -> [State]
 listStates g i = 
     let lists = list_lit $ literal_annos g
-        listState co toks = State (listId co, IsOp) [] [] toks i
+        listState co toks = State (listId co, False) [] [] toks i
     in concatMap ( \ (bs, n, c) ->
        let (b1, b2, cs) = getListBrackets bs 
 	   e = Id (b1 ++ b2) cs [] in
 	   (if e == n then [] -- add b1 ++ b2 if its not yet included by n
-	       else [listState c $ getTokenList place e]) ++
+	       else [listState c $ getPlainTokenList e]) ++
                    [listState c (b1 ++ [termTok] ++ b2) 
 		   , listState c (b1 ++ [termTok, commaTok] ++ b2)]
 		   ) $ Set.toList lists
@@ -100,25 +98,23 @@ listStates g i =
 -- these are the possible matches for the nonterminal TERM
 -- the same states are used for the predictions  
 
-initialState :: GlobalAnnos -> ([Id], [Id], [Id]) -> Int -> [State]
-initialState g (ops, preds, both) i = 
+initialState :: GlobalAnnos -> ([Id], [Id]) -> Int -> [State]
+initialState g (ops, preds) i = 
     let mkPredState b toks = State (Id toks [] [], b) [] [] toks i
-	mkTokState = mkPredState IsOp
+	mkTokState = mkPredState False
     in concat [mkTokState [parenTok] : 
        mkTokState [termTok, colonTok] :
        mkTokState [termTok, asTok] :
        mkTokState [varTok] :
        mkTokState [opTok] :
        mkTokState [opTok, parenTok] :
-       mkPredState IsPred [predTok] :
-       mkPredState IsPred [predTok, parenTok] :
+       mkPredState True [predTok] :
+       mkPredState True [predTok, parenTok] :
        listStates g i, 
-       map (mkState i IsBoth) both,
-       map (mkApplState i IsBoth) both,
-       map (mkState i IsPred) preds,
-       map (mkApplState i IsPred) preds,
-       map (mkState i IsOp) ops,
-       map (mkApplState i IsOp) ops]
+       map (mkState i True) preds,
+       map (mkApplState i True) preds,
+       map (mkState i False) ops,
+       map (mkApplState i False) ops]
 
 type ParseMap = Map Int [State]
 
@@ -189,9 +185,9 @@ filterByPrec _ _ (State _ _ _ [] _) = False
 filterByPrec g (State (argIde, predArg) _ _ _ _) 
 		 (State (opIde, predOp) _ args (hd:_) _) = 
        if hd == termTok then 
-	  if predArg == IsPred
+	  if predArg
 	  then False 
-	  else if isListId opIde || isListId argIde || predOp == IsPred
+	  else if isListId opIde || isListId argIde || predOp
 	       then True else 
 	       let n = length args in
 		    if isLeftArg opIde n then 
@@ -225,7 +221,7 @@ setPlainIdePos (Id ts cs _) ps =
 
 setIdePos :: Id -> [TERM] -> [Pos] -> Id
 setIdePos i@(Id ts _ _) ar ps =
-   let nt = length $ getTokenList place i 
+   let nt = length $ getPlainTokenList i 
        np = length ps
        na = length $ filter isPlace ts       
        (_, toks) = span isPlace (reverse ts) 
@@ -249,7 +245,7 @@ setIdePos i@(Id ts _ _) ar ps =
 
 stateToAppl :: State -> TERM
 stateToAppl (State (ide, _) rs a _ _) = 
-    let vs = getTokenList place ide 
+    let vs = getPlainTokenList ide 
         ar = reverse a
         qs = reverse rs
     in if  vs == [termTok, colonTok] 
@@ -285,7 +281,7 @@ asListAppl g s@(State (i,_) bs a _ _) =
            let Id _ [f] _ = i
 	       ListCons b c = getLiteralType g f
 	       (b1, _, _) = getListBrackets b
-	       cl = length $ getTokenList place b
+	       cl = length $ getPlainTokenList b
                nb1 = length b1
                ra = reverse a
                na = length ra
@@ -333,7 +329,7 @@ predict :: GlobalAnnos -> [Id] -> Int -> ParseMap -> ParseMap
 predict g ops i m = 
     if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts) 
 		      && head ts == termTok) (lookUp m i)
-    then insertWith (++) i (initialState g (ops, [], []) i) m
+    then insertWith (++) i (initialState g (ops, []) i) m
     else m 
 
 type Chart = (Int, [Diagnosis], ParseMap)
@@ -353,10 +349,10 @@ nextState g ops trm (i, ds, m) =
 type IdSet = (Set Id, Set Id, Set Id)
 
 iterateStates :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> Chart -> Chart
-iterateStates g ids@(ops,_,both) maybeFormula terms c@(i, ds, m) = 
+iterateStates g ids@(ops, _, _) maybeFormula terms c@(i, ds, m) = 
     let self = iterateStates g ids maybeFormula
 	expand = expandPos Mixfix_token 
-	oneStep = nextState g (Set.toList $ Set.union ops both)
+	oneStep = nextState g (Set.toList ops)
 	resolvePred = resolveMixTrm g ids
         resolveTerm = resolvePred maybeFormula
     in if null terms then c
@@ -415,7 +411,7 @@ getAppls g i m =
 mkIdSet :: Set Id -> Set Id -> IdSet
 mkIdSet ops preds = 
     let both = Set.intersection ops preds in
-	(Set.difference ops both, Set.difference preds both, both)
+	(ops, Set.difference preds both, preds)
 
 resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
 resolveMixfix g ops preds maybeFormula t = 
@@ -424,13 +420,11 @@ resolveMixfix g ops preds maybeFormula t =
 
 resolveMixTrm :: GlobalAnnos -> IdSet -> Bool 
 	      -> TERM -> Result TERM
-resolveMixTrm g ids@(ops, preds, both) mayBeFormula trm =
+resolveMixTrm g ids@(ops, preds, _) mayBeFormula trm =
     let (i, ds, m) = iterateStates g ids mayBeFormula [trm] 
 		     (0, [], Map.single 0 $ initialState g 
-		      (if mayBeFormula then (Set.toList ops, 
-					    Set.toList preds, 
-					    Set.toList both)
-		       else (Set.toList $ Set.union ops both, [], [])) 0)
+		      (Set.toList ops, if mayBeFormula then 
+					    Set.toList preds else []) 0)
         ts = getAppls g i m
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
@@ -450,17 +444,15 @@ resolveFormula g ops preds f =
 	in if null ds then r else Result ds Nothing
 
 resolveMixFrm :: GlobalAnnos -> IdSet-> FORMULA -> Result FORMULA
-resolveMixFrm g ids@(ops, preds, both) frm =
+resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
     let self = resolveMixFrm g ids 
 	resolveTerm = resolveMixTrm g ids False in
     case frm of 
        Quantification q vs fOld ps -> 
 	   let varIds = Set.fromList $ concatMap (\ (Var_decl va _ _) -> 
 			       map simpleIdToId va) vs
-	       vps = Set.intersection varIds preds
-	       newBoth = Set.union both vps
-	       newIds = ((Set.\\) (Set.union ops varIds) newBoth,
-			 (Set.\\) preds vps, newBoth)
+	       newIds = (Set.union ops varIds,
+			 (Set.\\) onlyPreds varIds, preds)
            in   
 	   do fNew <- resolveMixFrm g newIds fOld 
 	      return $ Quantification q vs fNew ps
@@ -509,7 +501,7 @@ resolveMixFrm g ids@(ops, preds, both) frm =
                             else updFormulaPos (head ps) (last ps) p
 		 Application (Op_name ide) args ps -> 
 		     let p = Predication (Pred_name ide) args ps in
-		     if ide `Set.member` preds || ide `Set.member` both
+		     if ide `Set.member` preds 
 		     then return p else 
 			  plain_error p 
 		          ("not a predicate: " ++ showId ide "")

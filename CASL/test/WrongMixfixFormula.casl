@@ -1,1 +1,2 @@
 forall aa:s . aa <= ab => p
+a < b < c

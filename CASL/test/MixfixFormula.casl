@@ -6,3 +6,4 @@ i * q <= j * p
 (i * q) <= (j * p)
 c * (a + b) = (c * a) + (c * b)
 (a + b) * c = (a * c) + (b * c)
+a <= b <= c
