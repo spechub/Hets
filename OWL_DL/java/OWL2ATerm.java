@@ -18,7 +18,7 @@ import org.semanticweb.owl.io.Parser;
 import org.semanticweb.owl.util.OWLManager;
 // import org.semanticweb.owl.model.OWLException;
 // import org.semanticweb.owl.impl.model.*;
-import org.semanticweb.owl.model.*;   // Class Axiom
+import org.semanticweb.owl.model.*;                    // Class Axiom
 // import org.semanticweb.owl.io.simple.*;
 import org.semanticweb.owl.io.owl_rdf.OWLRDFParser;
 // import java.io.StringWriter;
@@ -31,9 +31,10 @@ import java.util.Map;
 // import org.apache.log4j.BasicConfigurator;
 import org.semanticweb.owl.validation.OWLValidationConstants;
 import uk.ac.man.cs.img.owl.validation.SpeciesValidator;
-import org.semanticweb.owl.io.owl_rdf.OWLRDFErrorHandler;
-// import uk.ac.man.cs.img.owl.validation.ConstructChecker;
-import org.xml.sax.SAXException;
+// import org.semanticweb.owl.io.owl_rdf.OWLRDFErrorHandler;
+import org.semanticweb.owl.validation.*;
+// import uk.ac.man.cs.img.owl.validation.*;
+// import org.xml.sax.SAXException;
 import org.semanticweb.owl.util.URIMapper;
 // import org.semanticweb.owl.util.PropertyBasedURIMapper;
 // import java.util.Properties;
@@ -45,7 +46,7 @@ import aterm.pure.*;
 import java.util.*;
 import java.io.*;
 // import javax.swing.filechooser.FileFilter;
-import org.mindswap.pellet.owlapi.*;     // for PelletLoader
+// import org.mindswap.pellet.owlapi.*;     // for PelletLoader
 import org.mindswap.pellet.*;            // for KnowledgeBase
 
 public class OWL2ATerm implements OWLValidationConstants {
@@ -60,13 +61,12 @@ public class OWL2ATerm implements OWLValidationConstants {
 		OWLOntology onto = null;
 
 		// LongOpt[] longopts = new LongOpt[11];
-		boolean warnings = false;
+		// boolean warnings = false;
 		// boolean constructs = false;
-		boolean noImports = false;
+		// boolean noImports = false;
 		String uriMapping = "";
 		int validation = -1;
 		ATermFactory factory = new PureFactory();
-
 		// BasicConfigurator.configure();
 
 		try {
@@ -80,18 +80,19 @@ public class OWL2ATerm implements OWLValidationConstants {
 			
 			File file = new File("./output.term");
 			if(file.exists()){
-				file.delete();
-				file.createNewFile();
+					file.delete();
+					file.createNewFile();
 			}
+				
+			System.out.println("OWL parse beginning ..." );	
 			
-		
 			// Warning
 			List warningList;
-			OWL2ATermErrorHandler handler = new OWL2ATermErrorHandler();
+			// OWL2ATermErrorHandler handler = new OWL2ATermErrorHandler();
 
-			rdfParser.setOWLRDFErrorHandler(handler);
+			// rdfParser.setOWLRDFErrorHandler(handler);
 
-			warningList = handler.getList();
+			// warningList = handler.getList();
 
 			parser = rdfParser;
 			
@@ -103,72 +104,100 @@ public class OWL2ATerm implements OWLValidationConstants {
 			}
 
 			onto = parser.parseOntology(uri);
-			
+	
 			// Validation
 			SpeciesValidator sv = new SpeciesValidator();
+			/*
 			Map options = new HashMap();
 			options.put("uriMapper", mapper);
 			if (noImports) {
 				options.put("ignoreSchemaImports", new Boolean(true));
 			}
 			sv.setOptions(options);
+			*/
 
+			// build an new SpeciesValidatorReporter to save all messages.
+			System.out.println("creating messages...");
+			OWLATReporter reporter = new OWLATReporter();
+			sv.setReporter(reporter);
+			
+			System.out.println("Please waiting ......");
 			if (sv.isOWLLite(onto)) {
 				validation = LITE;
-			} else if (sv.isOWLDL(onto)) {
-				validation = DL;
-			} else if (sv.isOWLFull(onto)) {
-				validation = FULL;
+				
+			} else{
+				System.out.println("Please waiting ......");
+				if (sv.isOWLDL(onto)) {	
+					validation = DL;
+				} else{
+					System.out.println("Please waiting ......");
+					if (sv.isOWLFull(onto)) {
+						validation = FULL;
+					}
+				}
 			}
 			
-		    owlParserOutput(validation, warningList, onto).writeToSharedTextFile(new FileOutputStream(file));
-		} catch (Exception ex) {
+			//owlParserOutput(validation, factory.makeList(), onto).
+			//	writeToTextFile(new FileOutputStream(file, true));
+			
+			owlParserOutput(validation, reporter.getMessageList(), onto).
+				writeToSharedTextFile(new FileOutputStream(file, true));
+		    System.out.println("Done!");
+		}catch(IOException e){
+			System.out.println("Error: can not build file: output.term");
+			System.exit(1);
+		}
+		catch (Exception ex) {
 			ex.printStackTrace();
 		}
 	}
-
 	
-	static ATermList owlParserOutput(int valid, List message, OWLOntology ontology) {
+	static ATermAppl owlParserOutput(int valid, ATermList messages, OWLOntology ontology) {
 
 		try {
-			final String Lite = "Lite";
-			final String Dl = "Dl";
-			final String Full = "Full";
-			PelletLoader ploader = new PelletLoader(new KnowledgeBase());
+			final String AT_LITE = "Lite";
+			final String AT_DL = "DL";
+			final String AT_FULL = "Full";
+			OWL2ATermLoader ploader = new OWL2ATermLoader(new KnowledgeBase(), ontology);
 			ATermFactory factory = new PureFactory();
 			// List atermList = new ArrayList();       // List of ATermAppl
+			AFun outputAFun = factory.makeAFun("OWLParserOutput",3,false);
 			ATermList alist = factory.makeList();
 			AFun validation = factory.makeAFun("mixer", 0, true);
-			ATerm result;
-			
+			// ATerm result;
+
 			// Validation as ATerm appended in ATermList.
 			switch (valid){
 				case LITE:
-					 validation = factory.makeAFun(Lite, 0, true);
+					 validation = factory.makeAFun(AT_LITE, 0, true);
 					 break;
 			    case DL: 
-					 validation = factory.makeAFun(Dl, 0, true);
+					 validation = factory.makeAFun(AT_DL, 0, true);
 					 break;
 			    case FULL: 
-					 validation = factory.makeAFun(Full, 0, true);
+					 validation = factory.makeAFun(AT_FULL, 0, true);
 					 break;
 			}
 			// atermList.add(factory.makeAppl(validation));
-			alist = factory.makeList(factory.makeAppl(validation), alist);
+			ATermAppl validTerm = factory.makeAppl(validation);
 			
 			// Warning message
-			for(Iterator it = message.iterator(); it.hasNext();){
-				//atermList.add(factory.makeAppl(factory.makeAFun((String) it.next(), 0, true)));
-				alist = factory.makeList(factory.makeAppl(factory.makeAFun((String) it.next(), 0, true)),alist);
-			}
+			// the messages haven been created by ErrorHandler
+			// System.out.println("creating messages");
+			// for(Iterator it = message.iterator(); it.hasNext();){
+				// atermList.add(factory.makeAppl(factory.makeAFun((String) it.next(), 0, true)));
+			//	alist = factory.makeList(factory.makeAppl(factory.makeAFun((String) it.next(), 0, true)),alist);
+			//}
 			
 			// Load the current OWL ontology
+			System.out.println("creating ATermList from OWL.");
 			ploader.load(ontology);
-			
+
 			// Annotations
 			// Set annotations = ontology.getAnnotations();
 			
 			// Axioms
+			Set classes = ontology.getClasses();
 			Set cas = ontology.getClassAxioms();
 			Set ias = ontology.getIndividualAxioms();
 			Set pas = ontology.getPropertyAxioms();
@@ -182,46 +211,45 @@ public class OWL2ATerm implements OWLValidationConstants {
 			*/
 			
 			if(cas != null){
-				for(Iterator classIt = cas.iterator(); classIt.hasNext();){
+				for(Iterator caIt = cas.iterator(); caIt.hasNext();){
 					// atermList.add(ploader.term((OWLClassAxiom) classIt.next()));
-					alist = factory.makeList(ploader.term((OWLClassAxiom) classIt.next()), alist);
+					alist = factory.makeList(ploader.term((OWLClassAxiom) caIt.next()), alist);
 				}
 			}
 			
+			// the accept-Method has not benn implemented in OWLIndivudualAxiomImpl
+			/*
 			if(ias != null){
 				 for(Iterator indivIt = ias.iterator(); indivIt.hasNext();){
 					// atermList.add(ploader.term((OWLIndividualAxiom) indivIt.next()));
 				 	alist = factory.makeList(ploader.term((OWLIndividualAxiom) indivIt.next()), alist);
 				 }
 			}
-
+			*/		
 			if(pas != null){
 				for(Iterator propIt = pas.iterator(); propIt.hasNext();){
 					// atermList.add(ploader.term((OWLPropertyAxiom) propIt.next()));
 					alist = factory.makeList(ploader.term((OWLPropertyAxiom) propIt.next()), alist);
 				}
 			}
-
-			/*
-			ATerm[] atermArray = new ATerm[atermList.size()];
 			
-			int i = 0;
-			for(Iterator it = atermList.iterator(); it.hasNext();){
-				atermArray[i++] = (ATerm) it.next();
+			if(classes != null){
+				for(Iterator classIt = classes.iterator(); classIt.hasNext();){
+					// atermList.add(ploader.term((OWLClassAxiom) classIt.next()));
+					alist = factory.makeList(ploader.term((OWLClass) classIt.next()), alist);
+				}
 			}
-			alist = ATermUtils.makeList(atermArray);
-			*/
 			
 			// System.out.println(atermList.toString());
-		    return alist.reverse();
+		    return factory.makeAppl(outputAFun, validTerm, messages, alist.reverse());
 
 		} catch (Exception e) {
-			System.out.println(e);	
+			System.out.println("Exception by owlParserOutput: \n" + e);	
 			return null;
 		}
 	}
 }
-
+/*
 class OWL2ATermErrorHandler implements OWLRDFErrorHandler {
 
 	ArrayList wList;
@@ -252,5 +280,66 @@ class OWL2ATermErrorHandler implements OWLRDFErrorHandler {
 	public List getList() {
 		return wList;
 	}
+}
+*/
 
+class OWLATReporter implements SpeciesValidatorReporter, OWLValidationConstants {
+	
+	static ATermFactory factory = new PureFactory();
+	static ATermList messageList = factory.makeList();
+	// File file;
+	AFun messageFun = factory.makeAFun("MassageList", 1, false);
+	
+	public OWLATReporter(){
+		// factory = new PureFactory();
+		// messageList = factory.makeList();
+	    // file = new File("./output.term");
+	}
+	public void ontology( OWLOntology onto ) {
+	  
+	}
+
+	public void done( String str ) {
+	   
+	}
+
+	public void message( String str ) {
+		
+	}
+	
+	public void explain( int l, int code, String str ) {
+		
+		// System.out.println(SpeciesValidator.readableCode( code ));
+
+		ATermAppl aa = factory.makeAppl(factory.makeAFun("Message", 3, false), 
+				factory.parse(level(l)), 
+				factory.parse("\""+ SpeciesValidator.readableCode( code ) + "\""), 
+				factory.parse("\""+str+"\""));
+		messageList = factory.makeList(aa, messageList);
+
+		/*
+		try{
+			aa.writeToSharedTextFile(new FileOutputStream(file, true));
+		}catch(Exception e){
+			System.out.println(e);
+		}
+		*/
+		// System.out.println(aa);
+	}
+	
+	public ATermList getMessageList(){
+		return messageList.reverse();
+	}
+	
+	private String level(int l){
+		if ( l == LITE ) {
+		    return "OWL-Lite";
+		} else if ( l == DL ) {
+		    return "OWL-DL  ";
+		} else if ( l == FULL ) {
+		    return "OWL-Full";
+		} else {
+		    return "OTHER   ";
+		}
+	}
 }
