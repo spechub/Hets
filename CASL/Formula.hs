@@ -191,8 +191,7 @@ varDecl = do { (vs, ps) <- varId `separatedBy` commaT
 	     ; return (Var_decl vs s (map tokPos ps ++[tokPos c]))
 	     }
 
--- to be implemented
-updFormulaPos _ _ f = f  
+updFormulaPos o c = up_pos_l (\l-> o:l++[c])  
 
 predType = do { (ts, ps) <- sortId `separatedBy` crossT
 	      ; return (Pred_type ts (map tokPos ps))
