@@ -69,7 +69,7 @@ impl :: String
 impl = "op -->"
 
 eqv :: String
-eqv = "op <=>"
+eqv = "op ="
 
 eq :: String
 eq = "op ="
