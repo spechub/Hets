@@ -43,7 +43,11 @@ data Annotation = URIAnnotation
 -- | Data literal
 data DataLiteral = TypedL TypedLiteral 
                  | PlainL PlainLiteral
+                 | RDFSL  RDFSLiteral
                    deriving (Show, Eq)
+
+type RDFSLiteral = String
+
 type TypedLiteral = (LexicalForm, URIreference)  
                     -- ^ consist of a lexical representatoin and a URI.                   
 type PlainLiteral = (LexicalForm, LanguageTag)  
@@ -173,6 +177,6 @@ data Cardinality = MinCardinality Int
 
 data DataRange = DID DatatypeID 
                | OneOfData [DataLiteral]
-               | RL DataLiteral       -- ^ rdfs:literal
+               | RLit RDFSLiteral       -- ^ rdfs:literal
                  deriving (Show, Eq)
 
