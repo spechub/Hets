@@ -89,18 +89,35 @@ showTerm (Const ("Ex",_) `App` Abs (v,ty,t)) =
   showQuant "?" v ty t
 showTerm (Const ("Ex1",_) `App` Abs (v,ty,t)) = 
   showQuant "?!" v ty t
+-- just t1 `App` t2 is left
 showTerm t = show(toPrecTree t)
 
 showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var typ term =
   (s++sp++showTerm var++" :: "++show typ++" . "++showTerm term)
 
+
+{-   
+   For nearly perfect parenthesis - they only appear when needed - 
+   a formula/term is broken open in following pieces:
+                            (logical) connector
+                           /                   \
+                          /                     \
+                formula's lhs               formula's rhs
+
+   Every connector is annotated with its precedence, every 'unbreakable'
+   formula gets the lowest precedence.
+-}
+
 -- term annotated with precedence
 data PrecTerm = PrecTerm Term Precedence deriving (Show)
 type Precedence = Int
 
-pseudoPrec :: Term -> PrecTerm
-pseudoPrec t = PrecTerm t 0
+{- Precedences (descending): __ __ (Isabelle's term application),
+                             application of HasCASL ops, <=>, /\, \/, => -}
+
+isaAppPrec :: Term -> PrecTerm
+isaAppPrec t = PrecTerm t 0
 
 appPrec :: Term -> PrecTerm
 appPrec t = PrecTerm t 5
@@ -127,7 +144,13 @@ toPrecTree :: Term -> Tree PrecTerm
 toPrecTree t =
 -- trace ("[sT] "++st t++"\n") (
   case t of
-    (t1 `App` t2) ->
+    (Const("All",t1) `App` Abs(v,ty,t2)) -> Node (isaAppPrec (Const ("QUANT", dummyT))) 
+               [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
+    (Const("Ex",t1) `App` Abs(v,ty,t2)) -> Node (isaAppPrec (Const ("QUANT", dummyT))) 
+               [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
+    (Const("Ex1",t1) `App` Abs(v,ty,t2)) -> Node (isaAppPrec (Const ("QUANT", dummyT))) 
+               [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]    
+    (t1 `App` t2) -> 
       case t1 of 
         Const ("op <=>", typ) `App` t3 
           -> Node (eqvPrec (Const ("op =",typ))) [toPrecTree t3, toPrecTree t2] 
@@ -142,7 +165,7 @@ toPrecTree t =
                [toPrecTree t3, toPrecTree t2] 
         Const (c, typ) `App` t3 
           -> Node (appPrec (Const (c, typ))) [toPrecTree t3, toPrecTree t2] 
-        _ -> Node (pseudoPrec (Const ("dummy", dummyT))) 
+        _ -> Node (isaAppPrec (Const ("dummy", dummyT))) 
                [toPrecTree t1, toPrecTree t2] 
     _ -> Node (noPrec t) []
 -- )
@@ -158,14 +181,22 @@ showPTree (Node (PrecTerm term pre) annos) =
       rightChild = last annos
    in
     case term of
-      Const ("op =", _) -> infixP pre "=" leftChild rightChild
-      Const ("op &", _) -> infixP pre "&" leftChild rightChild
-      Const ("op |", _) -> infixP pre "|" leftChild rightChild
+      Const ("op =", _)   -> infixP pre "=" leftChild rightChild
+      Const ("op &", _)   -> infixP pre "&" leftChild rightChild
+      Const ("op |", _)   -> infixP pre "|" leftChild rightChild
       Const ("op -->", _) -> infixP pre "-->" leftChild rightChild
-      Const ("dummy", _) -> simpleInfix pre leftChild rightChild
-      Const ("Pair", _) -> pair leftChild rightChild
-      Const (c, _) -> prefixP pre c leftChild rightChild
-      _ -> showTerm term
+      Const ("dummy", _)  -> simpleInfix pre leftChild rightChild
+      Const ("Pair", _)   -> pair leftChild rightChild
+      Const ("QUANT",_)   -> quant leftChild rightChild
+      Const (c, _)        -> prefixP pre c leftChild rightChild
+      _                   -> showTerm term
+
+
+{- Logical connectors: For readability and by habit they are written 
+   at an infix position.
+   If the precedence of one side is weaker (here: higher number) than the 
+   connector's one it is bracketed. Otherwise not. 
+-}
 
 infixP :: Precedence -> String -> Tree PrecTerm -> Tree PrecTerm -> String
 infixP pAdult stAdult leftChild rightChild 
@@ -230,6 +261,16 @@ simpleInfix pAdult leftChild rightChild
         prRightCld = pr rightChild
         stLeftCld = showPTree leftChild
         stRightCld = showPTree rightChild
+
+
+quant :: Tree PrecTerm -> Tree PrecTerm -> String
+quant (Node (PrecTerm (Const("All",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) []) = 
+  rb++showQuant "!"  v ty t++lb
+quant (Node (PrecTerm (Const("Ex",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) [])  = 
+  rb++showQuant "?"  v ty t++lb
+quant (Node (PrecTerm (Const("Ex1",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) []) = 
+  rb++showQuant "?!"  v ty t++lb
+quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 
 
 pr :: Tree PrecTerm -> Precedence
