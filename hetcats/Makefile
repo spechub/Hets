@@ -38,7 +38,7 @@ HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 
 ### list of directories to run checks in
-TESTDIRS    = ../CASL ../test
+TESTDIRS    = ../CASL ../HasCASL ../test
 
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
@@ -146,14 +146,14 @@ capa: ../CASL/capa
 
 ../CASL/capa: ../CASL/capa.lhs $(drifted_files) ../CASL/*.hs
 	$(RM) $@
-	$(HC) --make -o ../CASL/$@ $< $(HC_OPTS)
+	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL parser
 hacapa: ../HasCASL/hacapa
 
 ../HasCASL/hacapa: ../HasCASL/hacapa.lhs $(drifted_files) ../HasCASL/*.hs 
 	$(RM) $@
-	$(HC) --make -o ../HasCASL/$@ $< $(HC_OPTS)
+	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL parser
 hetpa: ../hetpa.hs $(drifted_files) ../*.hs 
