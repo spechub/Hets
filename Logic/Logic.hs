@@ -81,6 +81,11 @@ import Common.ATerm.Lib -- (ATermConvertible)
 -- for HetcatsOpts passed to ensures_amalgamability
 import Options
 
+import Common.Taxonomy
+import Taxonomy.MMiSSOntology (MMiSSOntology)
+
+
+
 -- diagrams are just graphs
 type Diagram object morphism = Graph object morphism
 
@@ -258,6 +263,13 @@ class ( Syntax lid basic_spec symb_items symb_map_items
              lid -> EndoMap raw_symbol -> sign -> sign -> Result morphism
          induced_from_to_morphism l _ _ _ = 
              statErr l "induced_from_to_morphism"
+	 -- generate taxonomy from theory
+	 theory_to_taxonomy :: lid 
+			    -> TaxoGraphKind
+			    -> MMiSSOntology
+			    -> sign -> [Named sentence] 
+			    -> Result MMiSSOntology
+	 theory_to_taxonomy l _ _ _ _ = statErr l "theory_to_taxonomy"
 
 -- sublogics
 
