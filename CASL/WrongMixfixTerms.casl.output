@@ -27,3 +27,15 @@ Error: in line 9 at char 22: unexpected term or token: <
 Error: in line 10 at char 13: unexpected term or token: ,
 a when a + b else b
 Error: in line 11 at char 8: not a predicate: __+__
+a when (op a : b) else b
+Error: in line 12 at char 8: not a formula: (op a : b)
+a when (var a : b) else b
+Error: in line 13 at char 8: not a formula: (var a : b)
+a when a else b
+Error: in line 14 at char 8: not a predicate: a
+a when a else b
+Error: in line 15 at char 9: not a predicate: a
+a when a else b
+Error: in line 16 at char 10: not a predicate: a
+a when (op a : b)(a) else b
+Error: in line 17 at char 16: not a formula: (op a : b)(a)

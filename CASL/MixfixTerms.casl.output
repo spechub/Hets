@@ -16,3 +16,4 @@ a : s : s as s as s
 + a
 a + b
 a when a < b else b
+a when (pred a : b) else b

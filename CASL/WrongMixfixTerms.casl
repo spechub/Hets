@@ -9,3 +9,9 @@ __*__
 ([a], (a)(b), a +, __<__(a,b))
 [[a], (a)(b), a +, __<__(a,b)]
 a when a + b else b
+a when (op a:b) else b
+a when (var a:b) else b
+a when a else b
+a when (a) else b
+a when ((a)) else b
+a when (op a:b)(a) else b

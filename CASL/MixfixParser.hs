@@ -430,7 +430,9 @@ posOfTerm trm =
 		  case p of 
 		  Pred_name i -> posOfId i
 		  Qual_pred_name _ _ ps -> first (Just ps)
+              Application (Qual_op_name _ _ ps) [] [] -> first (Just ps)
 	      _ -> first $ get_pos_l trm 
+              
     where first ps = case ps of 
 		    Nothing -> nullPos
 		    Just l -> if null l then nullPos else head l
