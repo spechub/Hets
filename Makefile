@@ -195,9 +195,10 @@ release:
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository co HetCATS
 	$(RM) -r uni
 	ln -s ../uni uni
-	(cd HetCATS; $(MAKE) driftedSources; ./clean.sh)
-	find HetCATS -name CVS | xargs -r $(RM) -r
-	tar zcvf HetCATS.tgz HetCATS     
+	(cd HetCATS; $(MAKE) driftedSources; ./clean.sh; \
+           find . -name CVS | xargs -r $(RM) -r; \
+           $(RM) clean.lst; $(RM) Makefile; mv ReleaseMakefile Makefile)
+	tar zcvf HetCATS.tgz HetCATS
 
 #############################
 ### ATC DrIFT-rule generation
