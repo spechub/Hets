@@ -75,7 +75,7 @@ clean:
          unset p THIS_DIR
 
 ### additonally removes *.d (dependency files) in every include directory
-### also delete *.d.bak (depedency file backups)
+### also delete *.d.bak (dependency file backups)
 d_clean: clean
 	THIS_DIR=`pwd`;\
          for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
