@@ -19,6 +19,7 @@ import Le
 import Maybe
 import Monad
 import MonadState
+import OpDecl
 import ParseTerm(isSimpleId)
 import Result
 import TypeAna
@@ -46,7 +47,7 @@ anaBasicItem t@(AxiomItems _ _ p) = missingAna t p
 
 anaSigItems :: SigItems -> State Env ()
 anaSigItems (TypeItems inst l _) = mapM_ (anaAnnotedTypeItem inst) l
-anaSigItems l@(OpItems _ p) = missingAna l p 
+anaSigItems (OpItems l _) =  mapM_ anaAnnotedOpItem l
 anaSigItems l@(PredItems _ p) = missingAna l p 
 
 ----------------------------------------------------------------------------
@@ -119,26 +120,9 @@ anaAnnotedClassItem _ aci =
 anaAnnotedTypeItem :: Instance -> Annoted TypeItem -> State Env ()
 anaAnnotedTypeItem inst i = anaTypeItem inst $ item i
 
-
 -- ----------------------------------------------------------------------------
--- addTypeKind
+-- OpItem
 -- ----------------------------------------------------------------------------
 
-
-{- 
--- add instances later on
-	  let ce = classEnv e 
-	      mc = lookupFM ce ci 
-	    in case mc of 
-	       Nothing -> do appendDiags [Error ("undeclared class '"
-					     ++ tokStr c ++ "'")
-				     $ tokPos c]
-			     return star
-	       Just info -> do put $ e { classEnv =
-				      addToFM ce ci info 
-				      { instances = 
-					[] :=> (ci `IsIn` TCon (Tycon t k))
-					: instances info } }
-			       return k
--}
-
+anaAnnotedOpItem ::  Annoted OpItem -> State Env ()
+anaAnnotedOpItem i = anaOpItem $ item i

@@ -21,24 +21,6 @@ import PrintAs(showPretty)
 import FiniteMap
 import Result
 
-checkTypeKind :: Id -> Kind -> State Env [Diagnosis]
-checkTypeKind i k = 
-    do tk <- getTypeKinds
-       case lookupFM tk i of
-           Nothing -> return [Diag Error 
-		      ("unknown type '" ++ showId i "'")
-				   (posOfId i)]
-	   Just ks -> return $ eqKindDiag k $ head ks
-
-anaTypeId :: Id -> State Env Type 
-anaTypeId i = 
-    do tk <- getTypeKinds
-       appendDiags $ case lookupFM tk i of
-         Nothing -> [Diag Error ("undeclared type '" ++ showId i "'")
-		    $ posOfId i]
-	 _ -> []
-       return $ TypeName i 0
-
 data ApplMode = OnlyArg | TopLevel 
 
 mkTypeConstrAppls :: ApplMode -> Type -> State Env Type

@@ -57,28 +57,39 @@ parsePlainClass :: GenParser Char st Kind
 parsePlainClass = 
              fmap PlainClass parseClassId 
              <|> 
-	     do oParenT >> kind << cParenT
+	     do oParenT >> funKind << cParenT
 
 extClass :: GenParser Char st Kind
 extClass = do c <- parsePlainClass
-	      do s <- plusT
-	         return (ExtClass c CoVar (tokPos s))
-	       <|> 
-	       do s <- minusT
-	          return (ExtClass c ContraVar (tokPos s))
-	       <|> return (ExtClass c InVar nullPos)
+	      case c of ExtClass _ _ _ -> return c
+			_ -> do 
+			     s <- plusT
+			     return (ExtClass c CoVar (tokPos s))
+			 <|> do 
+			     s <- minusT
+			     return (ExtClass c ContraVar (tokPos s))
+			 <|> return c
 
 prodClass :: GenParser Char st Kind
 prodClass = do (cs, ps) <- extClass `separatedBy` crossT
 	       return $ if length cs == 1 then head cs 
 		      else ProdClass cs (map tokPos ps)
 
-kind :: GenParser Char st Kind
-kind = do k1 <- prodClass
-	  do a <- asKey funS
-	     k2 <- kind
-	     return $ KindAppl k1 k2 $ tokPos a
-	    <|> return k1
+checkResultKind :: Kind -> GenParser Char st Kind
+checkResultKind k = case k of 
+		     ExtClass _ _ _ -> unexpected "variance of result kind"
+		     ProdClass _ _ -> unexpected "product result kind"
+		     _ -> return k
+
+funKind, kind :: GenParser Char st Kind
+funKind = 
+    do k1 <- prodClass
+       do a <- asKey funS
+	  k2 <- kind
+	  return $ KindAppl k1 k2 $ tokPos a
+        <|> return k1
+
+kind = funKind >>= checkResultKind
 
 -----------------------------------------------------------------------------
 -- type

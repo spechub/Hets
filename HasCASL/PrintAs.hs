@@ -236,7 +236,7 @@ instance PrettyPrint Kind where
 					    PlainClass _ -> id
 					    _ -> parens) (printText0 ga k)
 						 <> printText0 ga v 
-    printText0 ga (ProdClass l _) = fcat $ punctuate (text timesS) 
+    printText0 ga (ProdClass l _) = fcat $ punctuate (space <> text timesS) 
 			       (map (\ k ->
 				     (case k of KindAppl _ _ _ -> parens
 				                ProdClass _ _ -> parens

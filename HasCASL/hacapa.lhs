@@ -25,6 +25,7 @@ lineParser, fileParser :: [(String, HetParser)]
 lineParser = [
  ("MixIds", HetParser uninstOpId),
  ("Typenames", HetParser typeId),
+ ("Kinds", HetParser kind),
  ("Types", HetParser parseType),
  ("Terms", HetParser term),
  ("Typepattern", HetParser typePattern),

@@ -5,7 +5,7 @@ SET=$2
 
 . ../CASL/checkFunctions.sh
 
-for i in Types Terms Items;
+for i in Kinds Types Terms Items;
 do
     runmycheck $i hascasl
     runwrongcheck $i hascasl
