@@ -12,17 +12,18 @@ Portability :  portable
 
 
 module CASL.LiteralFuns ( CASL.LiteralFuns.isLiteral
-		   , isNumber
-		   , isSignedNumber
-		   , isString
-		   , isList
-		   , isFloat
-		   , isFrac
-		   , collectElements
-		   , basicTerm
-		   , convCASLChar
-		   , splitAppl
-		   ) where
+			, isNumber
+			, isSignedNumber
+			, isString
+			, isList
+			, isFloat
+			, isFrac
+			, collectElements
+			,leftAssCollElems
+			, basicTerm
+			, convCASLChar
+			, splitAppl
+			) where
 
 -- debugging
 -- import Debug.Trace (trace)
@@ -117,17 +118,31 @@ splitAppl t = case t of
 	      Application oi ts _ -> (op_id oi,ts)
 	      _ -> error "splitAppl: no Application found"
 
+
+leftAssCollElems :: Id -> [TERM] -> [TERM]
+leftAssCollElems i trs = 
+     case trs of
+	      []    -> error "no elements to collect"
+	      [x]   -> [x]
+	      [x,y] -> leftAssCollElems i (splitA x) ++ [y]
+	      _ys   -> error "too many elements to collect"
+    where splitA t = case t of
+			  Application oi its _ 
+			      | op_id oi == i -> its
+			      | otherwise     -> [t]
+			  _        -> error "splitA: no Appl found"
+
 collectElements :: (Maybe Id) -> Id -> [TERM] -> [TERM]
 collectElements mnid i trs = 
      case trs of
 	      []    -> error "no elements to collect"
 	      [x]   -> getToken x
-	      [x,y] -> x : collectElements mnid i (splitA i y)
+	      [x,y] -> x : collectElements mnid i (splitA y)
 	      _ys   -> error "too many elements to collect"
-    where splitA ii t = case t of
+    where splitA t = case t of
 			  Application oi its _ 
-			      | op_id oi == ii -> its
-			      | otherwise      -> [t]
+			      | op_id oi == i -> its
+			      | otherwise     -> [t]
 			  _        -> error "splitA: no Appl found"
 	  getToken :: TERM -> [TERM]
 	  getToken trm = case mnid of 
