@@ -57,6 +57,8 @@ import Driver.ReadFn
 import FileDialog
 import Events
 import System.Directory
+import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
+import Sources(toSimpleSource)
 
 import Data.IORef
 import Data.Maybe
@@ -102,13 +104,18 @@ type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node)
 type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
 
 
+data InternalNames = 
+     InternalNames { showNames :: Bool,
+                     updater :: [(String,(String -> String) -> IO ())] }
+ 
+
 type GInfo = (IORef ProofStatus,
               IORef Descr,
               IORef ConversionMaps,
               Descr,
               LIB_NAME,
               GraphInfo,
-              IORef Bool, -- show internal names?
+              IORef InternalNames, -- show internal names?
               HetcatsOpts)
 
 initializeConverter :: IO (IORef GraphMem)
@@ -164,7 +171,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
-  showInternalNames <- newIORef True
+  showInternalNames <- newIORef (InternalNames False [])
   ioRefProofStatus <- newIORef (globContext, libname2dg convMaps,
 		                [([]::[DGRule], []::[DGChange])],
 				dGraph)
@@ -204,9 +211,11 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
              [GlobalMenu (Menu Nothing
                [Menu (Just "Unnamed nodes")
                  [Button "Hide/show names" 
-                          (do b <- readIORef showInternalNames
-                              writeIORef showInternalNames (not b)
-                              putStrLn ("showInternalNames ="++show b)
+                          (do (int::InternalNames) <- readIORef showInternalNames
+                              let showThem = not $ showNames int
+                                  showIt s = if showThem then s else ""
+                              mapM_ (\(s,upd) -> upd (\_ -> showIt s)) (updater int)
+                              writeIORef showInternalNames (int {showNames = showThem})
                               redisplay gid actGraphInfo
                               return ()    ),
                   Button "Hide nodes" 
@@ -444,9 +453,12 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
 createLocalMenuNodeTypeInternal color convRef dGraph 
                                 gInfo@(_,_,_,_,_,_,showInternalNames,_) =
                  Ellipse $$$ Color color
-		 $$$ ValueTitle (\ (s,_,_) -> do
-                       b <- readIORef showInternalNames
-                       if b then return s else return "")
+		 $$$ ValueTitleSource (\ (s,_,_) -> do
+                       b <- newSimpleBroadcaster ""
+                       int <- readIORef showInternalNames
+                       let upd = (s,applySimpleUpdate b)
+                       writeIORef showInternalNames (int {updater = upd:updater int})
+                       return $ toSimpleSource b)
                  $$$ LocalMenu (Menu (Just "node menu")
                     [--createLocalMenuButtonShowSpec convRef dGraph,
 		     createLocalMenuButtonShowNumberOfNode,
