@@ -160,16 +160,18 @@ component :: AParser [Components]
 component = do (is, cs) <- uninstOpId `separatedBy` anComma
                if length is == 1 then
                  compType is cs 
-                 <|> return [NoSelector (mkType(head is))]
+                 <|> return [NoSelector (idToType(head is))]
                  else compType is cs
-         where mkType (Id is cs ps) = 
-		   let ts = map TypeToken is
-		       t = if length ts == 1 then head ts
-			   else MixfixType ts
-		       in if null cs then t
-  		       else let qs = map mkType cs
-				q = BracketType Squares qs ps
-				in MixfixType (q:ts)
+
+idToType :: Id -> Type
+idToType (Id is cs ps) = 
+    let ts = map TypeToken is
+	t = if length ts == 1 then head ts
+	    else MixfixType ts
+	in if null cs then t
+  	   else let qs = map idToType cs
+		    q = BracketType Squares qs ps
+		    in MixfixType (q:ts)
 
 tupleComponent :: AParser Components
 tupleComponent = 
@@ -181,6 +183,13 @@ tupleComponent =
         do (cs, ps) <- tupleComponent `separatedBy` anComma
 	   c <- cParenT
 	   return (NestedComponents cs (toPos o ps c))
+
+
+altComponent :: AParser Components
+altComponent = 
+    tupleComponent
+    <|> do i <- uninstOpId
+	   return (NoSelector $ idToType i)
 		      
 compType :: [UninstOpId] -> [Token] -> AParser [Components]
 compType is cs = do c <- colT 
@@ -201,7 +210,7 @@ alternative = do s <- pluralKeyword sortS <|> pluralKeyword typeS
                  return (Subtype ts (map tokPos (s:cs)))
               <|> 
               do i <- uninstOpId
-                 cs <- many tupleComponent
+                 cs <- many altComponent
 		 do q <- quMarkT
 		    return (Constructor i cs Partial [tokPos q])
 		   <|> return (Constructor i cs Total [])

@@ -365,15 +365,14 @@ instance PrettyPrint DatatypeDecl where
 				  <+> text defnS
 				  <+> vcat(punctuate (text " | ") 
 					   (map (printText0 ga) as))
-				  <+> case d of { Nothing -> empty
-						; Just c -> text derivingS
-						  <+> printText0 ga c
-						}
+				  <+> case d of Nothing -> empty
+						Just c -> text derivingS
+							  <+> printText0 ga c
 
 instance PrettyPrint Alternative where 
     printText0 ga (Constructor n cs p _) = printText0 ga n 
-					<> fcat (map (printText0 ga) cs)
-					<> (case p of {Partial -> text quMark;
+					<+> fsep (map (printText0 ga) cs)
+					<+> (case p of {Partial -> text quMark;
 						       _ -> empty})
     printText0 ga (Subtype l _) = text typeS <+> commaT_text ga l
 

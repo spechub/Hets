@@ -155,6 +155,7 @@ ALTERNATIVE     ::= UNINST-OP-NAME COMPONENTS ... COMPONENTS
 
 %% support for nested products
 COMPONENTS      ::= ( COMPONENT ; ... ; COMPONENT ) 
+		  | TYPE
 COMPONENT       ::= UNINST-OP-NAME , ... , UNINST-OP-NAME : TYPE
                   | UNINST-OP-NAME , ... , UNINST-OP-NAME :? TYPE
                   | TYPE
