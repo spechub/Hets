@@ -211,15 +211,18 @@ scanDigit :: GenParser Char st String
 scanDigit = single digit
 
 isNumber :: Token -> Bool
-isNumber t = let s = tokStr t in length s > 1 && isDigit (head s)
+isNumber t = case tokStr t of 
+			   c:_:_ -> isDigit c
+			   _     -> False
 
 isFloating :: Token -> Bool
 -- precondition: isNumber
 isFloating t = any (\c -> c == '.' || c == 'E') (tokStr t)
 
 isLitToken :: Token -> Bool
-isLitToken t = isString t || 
-	       let c = head (tokStr t) in c == '\'' || isDigit c 
+isLitToken t = case tokStr t of 
+	       c:_ -> c == '\"' || c == '\'' || isDigit c
+	       _ -> False
 
 -- ----------------------------------------------
 -- nested comment outs

@@ -21,16 +21,16 @@ compound-list. Braces and brackets in b1__b2 together must match.
 module Common.ListBrackets where
 
 import Common.Token
-import Common.Id (Id(Id), Token(..), isPlace)
+import Common.Id
 import Common.Lib.Parsec
 
 checkForPlaces :: ([String], [String]) -> [Token] -> GenParser Char st [Token] 
 checkForPlaces l ts = 
     do let ps = filter isPlace ts
-       if length ps == 0 then nextListToks topMix3 l 
+       if null ps then nextListToks topMix3 l 
 	  -- topMix3 starts with square brackets 
-	  else if length ps > 1 then unexpected "multiple places"
-	       else return []
+	  else if isSingle ps then return []
+	       else unexpected "multiple places"
 
 nextListToks :: (([String], [String]) -> GenParser Char st [Token])
 	     -> ([String], [String]) -> GenParser Char st [Token]

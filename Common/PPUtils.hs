@@ -49,11 +49,10 @@ instance ListCheck a => ListCheck (Annoted a) where
 -- has more than one element a String containig one "s" is returned.
 pluralS :: ListCheck a => [a] -> String
 pluralS l = 
-    if length l > 1 then lastS 
-    else case l of 
-	     [x] -> if x `innerListGT` 1 then lastS 
-		    else ""
-	     _ -> error "pluralS do not accept list with zero elements"
+    case l of 
+	   []  -> error "pluralS does not accept empty list"
+	   [x] -> if x `innerListGT` 1 then lastS else ""
+	   _   -> lastS
     where lastS = "s"
 
 pluralS_doc :: ListCheck a => [a] -> Doc

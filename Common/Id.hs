@@ -215,9 +215,14 @@ mkSimpleId s = Token s nullPos
 simpleIdToId :: SIMPLE_ID -> Id
 simpleIdToId sid = Id [sid] [] []
 
+-- | efficiently test for a singleton list 
+isSingle :: [a] -> Bool
+isSingle [_] = True
+isSingle _   = False
+
 -- | test for a 'SIMPLE_ID'
 isSimpleId :: Id -> Bool
-isSimpleId (Id ts cs _) = null cs && length ts == 1 
+isSimpleId (Id ts cs _) = null cs && isSingle ts
 
 ---- some useful predicates for Ids -------------------------------------
 
