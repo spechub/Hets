@@ -12,10 +12,10 @@ Portability :  non-portable
 module Haskell.HatAna (module Haskell.HatAna, PNT, TiDecl) where
 
 import Common.AS_Annotation 
-import Common.Id(nullPos, Pos(..))
+import Common.Id(Pos(..))
 import Common.Result 
 import Common.GlobalAnnotations
-import Haskell.HatParser
+import Haskell.HatParser hiding (hatParser)
 import Haskell.PreludeString
 import Common.PrettyPrint
 import Common.Lib.Pretty
