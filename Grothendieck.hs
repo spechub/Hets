@@ -147,8 +147,8 @@ instance Show G_symb_items_list where
   show (G_symb_items_list _ l) = show l
 
 instance PrettyPrint G_symb_items_list where
-  printText0 ga (G_symb_items_list _ l) = fcat $ punctuate comma 
-					  (map (printText0 ga) l)
+  printText0 ga (G_symb_items_list _ l) = 
+      fcat $ punctuate (comma<>space) $ map (printText0 ga) l
 
 instance Eq G_symb_items_list where
   (G_symb_items_list _ s1) == (G_symb_items_list _ s2) =
@@ -166,8 +166,8 @@ instance Show G_symb_map_items_list where
   show (G_symb_map_items_list _ l) = show l
 
 instance PrettyPrint G_symb_map_items_list where
-  printText0 ga (G_symb_map_items_list _ l) = fcat $ punctuate comma 
-					  (map (printText0 ga) l)
+  printText0 ga (G_symb_map_items_list _ l) = 
+      fcat $ punctuate (comma<>space) $ map (printText0 ga) l
 
 instance Eq G_symb_map_items_list where
   (G_symb_map_items_list _ s1) == (G_symb_map_items_list _ s2) =
