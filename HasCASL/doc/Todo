@@ -28,8 +28,8 @@ are also not renamed in DatatypeSens, because they are not used)
 
 
 types:
-types in downset should be monomorph. Subtype definitions should have
-a monomorph supertype
+currently certain subtype relations are checked, but unification still
+checks relatedTypeIds (and fails in Secd.hascasl and Numbers.casl without this)
 
 
 

@@ -370,7 +370,7 @@ free type bool
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
 *** Hint 10.18, no type match for: __::__
-  with (minimal) type: _var_70_v70 ->? _var_68_v68 ->? _var_69_v69
+  with (maximal) type: _var_70_v70 ->? _var_68_v68 ->? _var_69_v69
   known types:
     
 *** Hint 10.18, untypable application (with result type: _var_68_v68 ->? _var_69_v69)
