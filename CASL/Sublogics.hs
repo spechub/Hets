@@ -178,6 +178,33 @@ adjust_logic x = if ((has_sub x) && (which_logic x == Atomic)) then
                  else
                    x
 
+mapMaybePos :: [Pos] -> (a -> Maybe b) -> [a] -> [Pos]
+mapMaybePos [] f l = []
+mapMaybePos p f [] = p
+mapMaybePos (p1:pl) f (h:t) = if (isJust (f h)) then
+                                p1:(mapMaybePos pl f t)
+                              else
+                                mapMaybePos pl f t
+
+-- tl n times if possible
+tln :: Int -> [a] -> [a]
+tln 0 l     = l
+tln n []    = []
+tln n (h:t) = tln (n-1) t
+
+-- top n elements if possible
+topn :: Int -> [a] -> [a]
+topn 0 l     = []
+topn n []    = []
+topn n (h:t) = h:(topn (n-1) t)
+
+mapPos :: [Pos] -> (a -> Maybe b) -> [a] -> ([b],[Pos])
+mapPos p f l = let
+                 res = mapMaybe f l
+                 pos = mapMaybePos p f l
+               in
+                 (res,pos)
+
 ------------------------------------------------------------------------------
 -- functions to analyse formulae
 ------------------------------------------------------------------------------
@@ -671,14 +698,15 @@ pr_basic_items l (Sig_items s) =
                  Just (Sig_items (fromJust res))
 pr_basic_items l (Free_datatype d p) =
                let
-                 res = (mapMaybe (pr_annoted l pr_datatype_decl)) d
+                 (res,pos) = mapPos (tln 2 p)
+                                    (pr_annoted l pr_datatype_decl) d
                in
                  if (res==[]) then Nothing else
-                 Just (Free_datatype res p)
+                 Just (Free_datatype res ((topn 2 p) ++ pos))
 pr_basic_items l (Sort_gen s p) =
                if (has_cons l) then
                  let
-                   res = (mapMaybe (pr_annoted l pr_sig_items)) s
+                   res = mapMaybe (pr_annoted l pr_sig_items) s
                  in
                    if (res==[]) then Nothing else
                    Just (Sort_gen res p)
@@ -687,16 +715,17 @@ pr_basic_items l (Sort_gen s p) =
 pr_basic_items l (Var_items v p) = Just (Var_items v p)
 pr_basic_items l (Local_var_axioms v f p) =
                let
-                 res = (mapMaybe (pr_annoted l pr_formula)) f
+                 (res,pos) = mapPos (tln (length v) p)
+                                    (pr_annoted l pr_formula) f
                in
                  if (res==[]) then Nothing else
-                 Just (Local_var_axioms v res p)
+                 Just (Local_var_axioms v res ((topn (length v) p) ++ pos))
 pr_basic_items l (Axiom_items f p) =
                let
-                 res = (mapMaybe (pr_annoted l pr_formula)) f
+                 (res,pos) = mapPos p (pr_annoted l pr_formula) f
                in
                  if (res==[]) then Nothing else
-                 Just (Axiom_items res p)
+                 Just (Axiom_items res pos)
 
 pr_datatype_decl :: CASL_Sublogics -> DATATYPE_DECL -> Maybe DATATYPE_DECL
 pr_datatype_decl l d = pr_check l sl_datatype_decl d
@@ -707,16 +736,18 @@ pr_symbol l s = pr_check l sl_symbol s
 pr_sig_items :: CASL_Sublogics -> SIG_ITEMS -> Maybe SIG_ITEMS
 pr_sig_items l (Sort_items s p) =
              let
-               res = (mapMaybe (pr_annoted l pr_sort_item)) s
+               (res,pos) = mapPos (tln 1 p)
+                                  (pr_annoted l pr_sort_item) s
              in
                if (res==[]) then Nothing else
-               Just (Sort_items res p)
+               Just (Sort_items res ((topn 1 p) ++ pos))
 pr_sig_items l (Op_items o p) =
              let
-               res = (mapMaybe (pr_annoted l pr_op_item)) o
+               (res,pos) = mapPos (tln 1 p)
+                                  (pr_annoted l pr_op_item) o
              in
                if (res==[]) then Nothing else
-               Just (Op_items res p)
+               Just (Op_items res ((topn 1 p) ++ pos))
 pr_sig_items l (Pred_items i p) =
              if (has_pred l) then
                Just (Pred_items i p)
@@ -724,10 +755,11 @@ pr_sig_items l (Pred_items i p) =
                Nothing
 pr_sig_items l (Datatype_items d p) =
              let
-               res = (mapMaybe (pr_annoted l pr_datatype_decl)) d
+               (res,pos) = mapPos (tln 1 p)
+                                  (pr_annoted l pr_datatype_decl) d
              in
                if (res==[]) then Nothing else
-               Just (Datatype_items res p)
+               Just (Datatype_items res ((topn 1 p) ++ pos))
 
 pr_op_item :: CASL_Sublogics -> OP_ITEM -> Maybe OP_ITEM
 pr_op_item l i = pr_check l sl_op_item i
@@ -750,10 +782,10 @@ pr_symb_items :: CASL_Sublogics -> SYMB_ITEMS -> Maybe SYMB_ITEMS
 pr_symb_items l (Symb_items k s p) =
               if (in_x l k sl_symb_kind) then
                 let
-                  res = (mapMaybe (pr_symb l)) s
+                  (res,pos) = mapPos (tln 1 p) (pr_symb l) s
                 in
                   if (res==[]) then Nothing else
-                  Just (Symb_items k res p)
+                  Just (Symb_items k res ((topn 1 p) ++ pos))
               else
                 Nothing
 
@@ -761,10 +793,10 @@ pr_symb_map_items :: CASL_Sublogics -> SYMB_MAP_ITEMS -> Maybe SYMB_MAP_ITEMS
 pr_symb_map_items l (Symb_map_items k s p) =
                   if (in_x l k sl_symb_kind) then
                     let
-                      res = (mapMaybe (pr_symb_or_map l)) s
+                      (res,pos) = mapPos (tln 1 p) (pr_symb_or_map l) s
                     in
                       if (res==[]) then Nothing else
-                      Just (Symb_map_items k res p)
+                      Just (Symb_map_items k res ((topn 1 p) ++ pos))
                   else
                     Nothing
 
