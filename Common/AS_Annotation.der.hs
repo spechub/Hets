@@ -102,6 +102,10 @@ data Annoted a = Annoted { item::a, opt_pos :: [Pos]
 			 , l_annos, r_annos::[Annotation]}
 		 deriving (Show, Eq) 
 
+-- | change the 'item'
+mapAnnoted :: (a -> b) -> Annoted a -> Annoted b
+mapAnnoted f (Annoted i o l r) = Annoted (f i) o l r
+
 -- | get the label following (or to the right of) an 'item'
 getRLabel :: Annoted a -> String
 getRLabel a = let ls = filter isLabel (r_annos a) in
