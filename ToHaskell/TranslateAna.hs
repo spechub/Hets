@@ -5,7 +5,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  non-portable 
 
    Translation of the abstract syntax of HasCASL after the static analysis
    to the abstract syntax of Haskell.
@@ -74,7 +74,7 @@ translateTypeInfo env (tid,info) =
            [hsTypeDecl loc (mkTp $ getAliasArgs ts) $ getAliasType ts]
        AliasTypeDefn ts -> 
            [hsTypeDecl loc (mkTp $ getAliasArgs ts) $ getAliasType ts]
---       DatatypeDefn de -> [sentence $ translateDt env de] 
+       DatatypeDefn de -> [sentence $ translateDt env de] 
        _ -> []  -- ignore others
 
 isSameId :: TypeId -> Type -> Bool
@@ -106,30 +106,39 @@ getArg (TypeArg tid _ _ _) = hsTyVar $ mkHsIdent LowerId tid
 getAliasType :: TypeScheme -> HsType
 getAliasType (TypeScheme _ t _) = translateType t
 
-{-
 -- | Translation of an alternative constructor for a datatype definition.
 translateAltDefn :: Env -> DataPat -> [TypeArg] -> IdMap -> AltDefn 
-                 -> [HsConDecl]
+                 -> [HsConDecl HsType [HsType]]
 translateAltDefn env dt args im (Construct muid origTs p _) = 
     let ts = map (mapType im) origTs in
     case muid of
-    Just uid -> let sc = TypeScheme args (getConstrType dt p ts) []
-                    (UpperId, UnQual ui) = translateId env uid sc
-                in [HsConDecl nullLoc ui $ map (HsBangedType . translateType) ts]
+    Just uid -> let loc = toProgPos $ posOfId uid
+                    sc = TypeScheme args (getConstrType dt p ts) []
+                    -- resolve overloading
+                    (c, ui) = translateId env uid sc
+                in case c of 
+                   UpperId -> -- no existentials, no context
+                       [HsConDecl loc [] [] ui $ 
+                                  map (HsBangedType . translateType) ts]
+                   _ -> error "ToHaskell.TranslateAna.translateAltDefn"
     Nothing -> []
 
 translateDt :: Env -> DataEntry -> Named HsDecl
 translateDt env (DataEntry im i _ args alts) = 
-         let j = Map.findWithDefault i i im in
+         let j = Map.findWithDefault i i im 
+             loc = toProgPos $ posOfId i 
+             hsname = mkHsIdent UpperId j
+             hsTyName = hsTyCon hsname
+             tp = foldl hsTyApp hsTyName $ map getArg args
+         in
          NamedSen ("ga_" ++ showId j "") $
-         HsDataDecl nullLoc
+         hsDataDecl loc
                        [] -- empty HsContext
-                       (mkHsIdent UpperId j)
-                       (map getArg args) -- type arguments
+                       tp
                        (concatMap (translateAltDefn env (j, args, star)
                                    args im) alts)
                        derives
-
+{-
 -------------------------------------------------------------------------
 -- Translation of functions
 -------------------------------------------------------------------------
@@ -330,4 +339,4 @@ cleanSig ds sens =
        ds 
 -}
 derives :: [SN HsName]
-derives = [] --map (fakeSN . UnQual) ["Show", "Eq", "Ord"] 
+derives = map (fakeSN . UnQual) ["Show", "Eq", "Ord"] 
