@@ -399,7 +399,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
 -}      
          oldfs1 = map sentence (filter is_user_or_sort_gen osens)
          oldfs = trace (showPretty oldfs1 "old formulas") oldfs1               -- old formulas
-         old_axioms = filter (\f->case f of                      -- *******************
+         old_axioms = filter (\f->case f of                      
                                     Sort_gen_ax _ _ -> False
                                     _ -> True) oldfs
          o_fconstrs = concat $ map fc oldfs
