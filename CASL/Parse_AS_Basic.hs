@@ -20,8 +20,8 @@ import Keywords
 import Lexer
 import AS_Basic_CASL
 import AS_Annotation
-import Maybe
-import Parsec
+import Data.Maybe
+import Common.Lib.Parsec
 import Formula
 import SortItem
 import OpItem

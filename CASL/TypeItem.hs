@@ -20,7 +20,7 @@ import Keywords
 import Lexer
 import AS_Basic_CASL
 import AS_Annotation
-import Parsec
+import Common.Lib.Parsec
 import Token
 import Formula
 import ItemList

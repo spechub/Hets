@@ -2,7 +2,7 @@ parse error at (line 1, column 8):
 unexpected ">"
 expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "<", ",", "=", ";" or end of input
 
-parse error at (line 2, column 38):
+parse error at (line 2, column 40):
 unexpected "o"
-expecting end of input
+expecting casl char or end of input
 

@@ -11,11 +11,11 @@ module RunParsers (exec, HetParser(HetParser)) where
 
 import AnnoState
 import Lexer((<<))
-import Parsec
-import ParsecPos
+import Common.Lib.Parsec
+import Common.Lib.Parsec.Pos
 import PrettyPrint
-import Pretty
-import System
+import Common.Lib.Pretty
+import System.Environment
 import RunMixfixParser (stdAnnos)
 
 data HetParser = forall a. PrettyPrint a => 

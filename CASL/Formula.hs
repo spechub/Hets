@@ -46,7 +46,7 @@ import Keywords
 import Lexer
 import Token
 import AS_Basic_CASL
-import Parsec
+import Common.Lib.Parsec
 import ItemList
 
 simpleTerm :: [String] -> AParser TERM

@@ -12,7 +12,7 @@ module AnnoState where
 import Lexer
 import AS_Annotation
 import Anno_Parser
-import Parsec
+import Common.Lib.Parsec
 
 -- ----------------------------------------------
 -- annotations

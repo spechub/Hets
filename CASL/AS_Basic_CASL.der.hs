@@ -17,7 +17,7 @@ module AS_Basic_CASL where
 
 import Id
 import AS_Annotation 
-import Dynamic
+import Data.Dynamic
 
 -- DrIFT command
 {-! global: UpPos !-}

@@ -5,9 +5,9 @@ module Sign where
 import Id
 import AS_Annotation
 import FiniteMap
-import Graph
-import List(intersperse)
-import Maybe(mapMaybe)
+import Common.Lib.Graph
+import Data.List(intersperse)
+import Data.Maybe(mapMaybe)
 import GlobalAnnotations()
 
 type SortId = Id  -- non-mixfix, but possibly compound

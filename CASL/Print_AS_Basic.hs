@@ -16,8 +16,8 @@
 module Print_AS_Basic where
 
 -- debugging
-import List (mapAccumL)
-import Char (isDigit)
+import Data.List (mapAccumL)
+import Data.Char (isDigit)
 
 import Id
 import AS_Basic_CASL
@@ -30,7 +30,7 @@ import LiteralFuns
 import Print_AS_Annotation
 
 import Keywords
-import Pretty
+import Common.Lib.Pretty
 import PrettyPrint
 import PPUtils
 

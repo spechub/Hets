@@ -1,1 +1,1 @@
-ghc --make -fglasgow-exts -Wall -i..:../fgl:../parsec:../pretty:../ghc -package data capa.lhs -o capa
+ghc --make -fglasgow-exts -Wall -i..:../Logic:../Common:../ghc -package data capa.lhs -o capa

@@ -9,5 +9,5 @@ output: capa
 	bash ./runcheck.sh ./capa set
 
 %: 
-	(cd ../hetcats; $(MAKE) $@)
+	(cd ..; $(MAKE) $@)
 

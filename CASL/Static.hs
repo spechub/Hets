@@ -34,10 +34,10 @@ module Static {-( basicAnalysis, statSymbMapItems, statSymbItems,
 -- Imports from other modules
 ------------------------------------------------------------------------------
 
-import Maybe
-import Monad(foldM) -- instead of foldResult
+import Data.Maybe
+import Control.Monad(foldM) -- instead of foldResult
 import FiniteMap
-import FiniteSet hiding (filter)
+import Common.Lib.Set hiding (filter)
 import Id
 import AS_Annotation
 import GlobalAnnotations

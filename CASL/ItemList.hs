@@ -14,10 +14,10 @@ import Id
 import Keywords
 import Lexer
 import AS_Annotation
-import Maybe
-import Parsec
+import Data.Maybe
+import Common.Lib.Parsec
 import Token
-import List(delete)
+import Data.List(delete)
 
 
 wrapAnnos :: AParser a -> AParser a

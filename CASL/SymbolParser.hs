@@ -13,7 +13,7 @@ import Id
 import Keywords
 import Lexer
 import AS_Basic_CASL
-import Parsec
+import Common.Lib.Parsec
 import Token
 import Formula
 

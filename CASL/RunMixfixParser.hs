@@ -5,7 +5,7 @@ import MixfixParser
 import AS_Basic_CASL
 import GlobalAnnotations
 import GlobalAnnotationsFunctions
-import Set
+import Common.Lib.Set
 import Id
 import Result
 
@@ -50,7 +50,7 @@ stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
 	    "__<=__<=__"] ++ map (:[]) "abcdpqrstuvwxyzPQRSTUVWXYZ" 
 
 mkIds :: [String] -> Set Id
-mkIds = mkSet . map (parseString parseId)
+mkIds = fromList . map (parseString parseId)
 
 stdOps, stdPreds :: Set Id
 stdOps = mkIds stdOpsL

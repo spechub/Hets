@@ -23,13 +23,12 @@ import GlobalAnnotations
 import Result
 import Id
 import FiniteMap
-import Set
+import Common.Lib.Set hiding (filter, split)
 import Lexer (caslChar)
-import Monad
-import ParsecPrim
-import ParsecPos
+import Control.Monad
+import Common.Lib.Parsec
 import qualified Char as C
-import List(intersperse)
+import Data.List(intersperse)
 import PrettyPrint
 import Print_AS_Basic
 import GlobalAnnotationsFunctions
@@ -153,7 +152,7 @@ listStates g i =
 initialState :: GlobalAnnos -> Set Id -> Int -> [State]
 initialState g ids i = 
     let mkTokState toks = State (Id toks [] []) [] [] toks i
-        is = setToList ids
+        is = toList ids
     in mkTokState [parenTok] : 
        mkTokState [termTok, colonTok] :
        mkTokState [termTok, asTok] :
@@ -472,7 +471,7 @@ resolveFormula g ops preds frm =
 	   let varIds = foldl (\ l (Var_decl va _ _) -> 
 			       map (\t->Id[t][][]) va ++ l) [] vs
            in   
-	   do fNew <- resolveFormula g (mkSet varIds `union` ops) 
+	   do fNew <- resolveFormula g (fromList varIds `union` ops) 
 	                 preds fOld 
 	      return $ Quantification q vs fNew ps
        Conjunction fsOld ps -> 
@@ -520,7 +519,7 @@ resolveFormula g ops preds frm =
                             else updFormulaPos (head ps) (last ps) p
 		 Application (Op_name ide) args ps -> 
 		     let p = Predication (Pred_name ide) args ps in
-		     if ide `elementOf` preds then return p
+		     if ide `member` preds then return p
 		     else plain_error p 
 		          ("not a predicate: " ++ showId ide "")
 			  (posOfTerm t)

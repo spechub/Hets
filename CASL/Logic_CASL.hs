@@ -21,7 +21,7 @@ import SymbolParser
 import ParsecInterface
 import AS_Annotation
 import AnnoState(emptyAnnos)
-import Parsec
+import Common.Lib.Parsec
 import FiniteMap
 import Sign
 import Logic
