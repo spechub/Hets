@@ -13,7 +13,6 @@ Portability :  portable
 
 module HasCASL.RunStaticAna where
 
-import Common.AnnoState
 import HasCASL.Le
 import HasCASL.PrintLe
 import HasCASL.AsToLe(anaBasicSpec)

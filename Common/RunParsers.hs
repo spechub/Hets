@@ -25,7 +25,6 @@ import Common.AnnoState
 import Common.PrettyPrint
 import Common.GlobalAnnotations
 import Common.AnalyseAnnos(addGlobalAnnos)
-import Common.Id
 import Common.Result
 import System.Environment
 
