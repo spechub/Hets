@@ -52,7 +52,7 @@ data Sign f e = Sign { sortSet :: Set.Set SORT
 -- better ignore assoc flags for equality
 instance (Eq f, Eq e) => Eq (Sign f e) where
     e1 == e2 = 
-	sortSet e1 == sortSet e1 &&
+	sortSet e1 == sortSet e2 &&
 	sortRel e1 == sortRel e2 &&
 	opMap e1 == opMap e2 &&
 	predMap e1 == predMap e2 &&
