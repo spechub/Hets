@@ -118,11 +118,8 @@ checkFreeType (osig,osens) m fsn
                    let pos = headPos $ snd $ pattern_Pos leadingSymPatterns
                        symb = fst $ pattern_Pos leadingSymPatterns
                    in warning Nothing ("patterns overlap in " ++ symb) pos
- --      | not $ checkPatterns leadingPatterns =
- --                  let pos = headPos $ pattern_Pos leadingPatterns
- --                  in warning Nothing "patterns overlap" pos
- --      | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
- --                  warning Nothing "not terminal" nullPos 
+       | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
+                   warning Nothing "not terminal" nullPos 
 #endif         
        | otherwise = return (Just True)
 #ifdef UNI_PACKAGE
@@ -183,6 +180,12 @@ checkFreeType (osig,osens) m fsn
 
          l_Syms1 = map leadingSym axioms                                    
          l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1                       -- leading_Symbol
+         op_Syms = concat $ map (\s-> case s of
+                                        Just (Left op) -> [op]
+                                        _ -> []) l_Syms
+         pred_Syms = concat $ map (\s-> case s of
+                                          Just (Right p) -> [p]
+                                          _ -> []) l_Syms  
 {-
   check all partial axiom
 -}
@@ -292,23 +295,6 @@ checkFreeType (osig,osens) m fsn
                                                          (map leading_Term_Predication)) $ map snd sym_fs)
                                 Nothing -> error "axiom group"
          leadingPatterns1 = snd $ unzip leadingSymPatterns
-{-
-         leadingPatterns1 = case (groupAxioms (t_axioms ++ impl_p_axioms)) of
-                              Just sym_fs -> map ((map (\f->case f of
-                                                              Just (Left (Application _ ts _))->ts
-                                                              Just (Right (Predication _ ts _))->ts
-                                                              _ -> [])).
-                                                   (map leading_Term_Predication)) $ map snd sym_fs
-                              Nothing -> error "axiom group"
--}
-{-
-                            map (\l-> case l of                     
-                                       Just (Left (Application _ ts _))->ts
-                                       Just (Right (Predication _ ts _))->ts           -- PRED
-                                       _ ->[]) $ 
-                            map leading_Term_Predication (t_axioms ++ impl_p_axioms)
-                      --      map leading_Term_Predication axioms
--}
     --     leadingPatterns = trace (showPretty leadingPatterns1 (tmp1 ++ "\n" ++ tmp2 ++ "\n" ++ tmp ++ "\n")) leadingPatterns1    --leading Patterns
          leadingPatterns = trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1    --leading Patterns
          isApp t = case t of
@@ -481,13 +467,20 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
          o_constructors = trace (showPretty o_constructors1 "o_constructors") o_constructors1       -- olc constructors
          o_l_Syms1 = map leadingSym $ filter isOp_Pred $ oldfs             
          o_l_Syms = trace (showPretty o_l_Syms1 "o_leading_Symbol") o_l_Syms1         --old leading_Symbol
-    --     idStr (Id ts _ _) = concat $ map tokStr ts 
-         rP cp = do                   --read the result of proof
+         o_op_Syms = concat $ map (\s-> case s of
+                                          Just (Left op) -> [op]
+                                          _ -> []) o_l_Syms
+         o_pred_Syms = concat $ map (\s-> case s of
+                                            Just (Right p) -> [p]
+                                            _ -> []) o_l_Syms  
+         --  read the result of proof
+         rP cp = do
             msg <- readMsg cp
             case msg of
               "Termination proof found." -> return True
               "Quitting." -> return False
               _ -> rP cp
+         --  OP_SYMB -> Signature of CiME
          opStr o_s = case o_s of                -- kontext analyse
                        Qual_op_name op_n (Total_op_type a_sorts _ _) _ -> case (length a_sorts) of 
                                                                             0 -> (idStr op_n) ++ " : constant"
@@ -497,7 +490,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                                                             4 -> (idStr op_n) ++ " : 4"
                                                                             5 -> (idStr op_n) ++ " : 5"
                                                                             6 -> (idStr op_n) ++ " : 6"
-                                                                            _ -> error "Termination_Signature"
+                                                                            _ -> error "Termination_Signature_OpS"
                        Qual_op_name op_n (Partial_op_type a_sorts _ _) _ -> case (length a_sorts) of 
                                                                             0 -> (idStr op_n) ++ " : constant"
                                                                             1 -> (idStr op_n) ++ " : unary"
@@ -506,64 +499,113 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                                                             4 -> (idStr op_n) ++ " : 4"
                                                                             5 -> (idStr op_n) ++ " : 5"
                                                                             6 -> (idStr op_n) ++ " : 6"
-                                                                            _ -> error "Termination_Signature"
-                       _ -> error "Termination_Signature"
+                                                                            _ -> error "Termination_Signature_OpS"
+                       _ -> error "Termination_Signature_OpS"
+         --  PRED_SYMB -> Signature of CiME
+         predStr p_s = case p_s of
+                       Qual_pred_name pred_n (Pred_type sts _) _ -> case (length sts) of
+                                                                      0 -> (idStr pred_n) ++ " : constant"
+                                                                      1 -> (idStr pred_n) ++ " : unary"
+                                                                      2 -> (idStr pred_n) ++ " : binary"
+                                                                      3 -> (idStr pred_n) ++ " : 3"
+                                                                      4 -> (idStr pred_n) ++ " : 4"
+                                                                      5 -> (idStr pred_n) ++ " : 5"
+                                                                      6 -> (idStr pred_n) ++ " : 6"
+                                                                      _ -> error "Termination_Signature_PredS"
+                       _ -> error "Termination_Signature_PredS"
+         noDouble [] = []
+         noDouble (x:xs) 
+                  | elem x xs = noDouble xs
+                  | otherwise = x:(noDouble xs)
+
+{-
+         --  collection of signature
+         --  operation
          sigComb sig1 sig2 | null sig2 =sig1             
                            | otherwise = case (head sig2) of
                                            Just (Left o_s) -> if elem o_s sig1 then sigComb sig1 (tail sig2)
                                                               else sigComb (o_s:sig1) (tail sig2)
-                                           Just (Right _) -> sigComb sig1 (tail sig2)       --  not Predication
-                                           _ -> error "Termination_Signature" 
-         signStr signs str                         -- transform signature to string
+                                           Just (Right p_s) -> p_s:(sigComb sig1 (tail sig2))       --  not Predication
+                                           _ -> error "Termination_Signature_Comb"
+-}
+         --  build signature of operation together 
+         opSignStr signs str                      
                  | null signs = str
-                 | otherwise = signStr (tail signs) (str ++ (opStr $ head signs) ++ "; ")
-         varOfAxiom f = case f of                  -- all variable of a axiom
+                 | otherwise =  opSignStr (tail signs) (str ++ (opStr $ head signs) ++ "; ")
+         --  build signature of predication together 
+         predSignStr signs str                      
+                 | null signs = str
+                 | otherwise =  predSignStr (tail signs) (str ++ (predStr $ head signs) ++ "; ")
+
+         --  all variable of a axiom
+         varOfAxiom f = case f of
                           Quantification Universal v_d _ _ -> concat $  map (\v-> case v of
+                                                                                   Var_decl vs _ _ -> vs
+                                                                                   _ -> error "Termination_Variable") v_d
+                          Quantification Existential v_d _ _ -> concat $  map (\v-> case v of
+                                                                                   Var_decl vs _ _ -> vs
+                                                                                   _ -> error "Termination_Variable") v_d
+                          Quantification Unique_existential v_d _ _ -> concat $  map (\v-> case v of
                                                                                    Var_decl vs _ _ -> vs
                                                                                    _ -> error "Termination_Variable") v_d
                           _ -> [] 
          allVar vs = foldl (\hv tv->hv ++ (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
-         varsStr vars str                               --  transform variable-array to string
+         --  transform variables to string
+         varsStr vars str                               
                  | null vars = str
                  | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
                                else varsStr (tail vars) (str ++ " " ++ (tokStr $ head vars))
-         f_str f = case f of                           --  transform a axiom to string
-                     Quantification Universal _ f' _ -> f_str f' 
-                     Implication _ f' _ _ -> f_str f' 
-                     Strong_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)                   
+         --  transform a axiom to string
+         f_str f = case f of
+                     Quantification Universal _ f' _ -> f_str f'
+                     Conjunction fs _ -> error "Termination_Axioms_Conjunction"
+                     Disjunction fs _ -> error "Termination_Axioms_Disjunction"
+                     Implication f1 f2 _ _ -> error "Termination_Axioms_Implication" 
+                     Equivalence f1 f2 _ -> error "Termination_Axioms_Equivalence"
+                     Negation f' _ -> error "Termination_Axioms_Negation"
+                     True_atom _ -> "Termination_Axioms_True"	    
+	             False_atom _ -> "Termination_Axioms_False"
+                     Predication p_s ts _ -> ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
+                     Definedness t _ -> "Termination_Axioms_Definedness"
                      Existl_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)
+                     Strong_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)                   
                      _ -> error "Termination_Axioms"
-         t_f_str f =case f of                     --  condition of term
+         --  condition of term
+         t_f_str f =case f of
                      Strong_equation t1 t2 _ -> ("eq(" ++ (termStr t1) ++ "," ++ (termStr t2) ++ ")")
                      _ -> error "Termination_Term-Formula"
-         termStr t = case (term t) of              -- transform a term to string
+         termsStr ts = drop 1 $ concat $ map (\s->","++s) $ map termStr ts
+         --  transform a term to string
+         termStr t = case (term t) of
                        (Qual_var var _ _) -> tokStr var
                        (Application (Qual_op_name opn _ _) ts _) -> if null ts then (idStr opn)
                                                                     else ((idStr opn) ++ "(" ++ 
                                                                          (tail $ concat $ map (\s->"," ++ s) $ map termStr ts) ++ ")")
                        (Conditional t1 f t2 _) -> ("when_else(" ++ (termStr t1) ++ "," ++ (t_f_str f) ++  "," ++ (termStr t2)  ++
-                                                  ")")                                 -- ?
+                                                  ")")
                        _ -> error "Termination_Term"
-         axiomStr axioms str                           -- transform all axioms to string
+         --  transform all axioms to string
+         axiomStr axioms str
                  | null axioms = str
                  | otherwise = axiomStr (tail axioms) (str ++ (f_str $ (head axioms)) ++ "; ")                    
          proof = unsafePerformIO (do
-          --       cim <- newChildProcess "/home/xinga/bin/cime" []
+              --   cim <- newChildProcess "/home/xinga/bin/cime" []
                  cim <- newChildProcess "cime" []
                  sendMsg cim ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
-                              (signStr (sigComb (o_constructors ++ constructors) (o_l_Syms ++ l_Syms)) "") ++ "\";")
+                              (opSignStr (noDouble (o_constructors ++ constructors ++ o_op_Syms ++ op_Syms)) "") ++
+                              (predSignStr (noDouble (o_pred_Syms ++ pred_Syms)) "") ++ "\";")
                  sendMsg cim ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_axioms ++ axioms) "") ++ "\";")        
                  sendMsg cim ("let axioms = TRS F X \"eq(t1,t1) -> True; " ++ 
                                                      "eq(t1,t2) -> False; " ++ 
                                                      "when_else(t1,True,t2) -> t1; " ++ 
-                                                     "when_else(t1,False,t2) -> t2; " ++ 
+                                                     "when_else(t1,False,t2) -> t2; " ++
                                 (axiomStr (old_axioms ++ axioms) "") ++"\";")    
                  sendMsg cim "termcrit \"dp\";"
                  sendMsg cim "termination axioms;"
                  sendMsg cim "#quit;"
                  res <-rP cim
                  return res)
-       -- print infomation 
+{-       --  print infomation 
          tmp = ("let axioms = TRS F X \"eq(t1,t1) -> True; " ++ 
                                        "eq(t1,t2) -> False; " ++ 
                                        "when_else(t1,True,t2) -> t1; " ++ 
@@ -571,7 +613,8 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                 (axiomStr (old_axioms ++ axioms) "") ++"\";")
          tmp1 = ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " 
                  ++ (signStr (sigComb (o_constructors ++ constructors) (o_l_Syms ++ l_Syms)) "") ++ "\";")
-         tmp2 = ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_axioms ++ axioms) "") ++ "\";")                              
+         tmp2 = ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_axioms ++ axioms) "") ++ "\";")
+-}                              
 #endif
 
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
@@ -608,8 +651,7 @@ term t = case t of
 leading_Term_Predication ::  FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
 leading_Term_Predication f = leading (f,False,False)
     where leading (f,b1,b2)= case (f,b1,b2) of
-                         --      ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)     -- ?
-                               ((Quantification _ _ f' _),b1,b2)  -> leading (f',b1,b2)     -- ?
+                               ((Quantification _ _ f' _),b1,b2)  -> leading (f',b1,b2)     
                                ((Negation f' _),b1,b2) -> leading (f',b1,b2)
                                ((Implication _ f' _ _),False,False) -> leading (f',True,False)
                                ((Equivalence f' _ _),b,False) -> leading (f',b,True)
@@ -719,3 +761,10 @@ predSymStr :: PRED_SYMB -> String
 predSymStr ps = case ps of 
                   Pred_name pn -> idStr pn 
 	          Qual_pred_name pn _ _ -> idStr pn
+{-
+noDouble :: (Eq a) => [a] -> [a]
+noDouble [] = []
+noDouble (x:xs) 
+    | elem x xs = noDouble xs
+    | otherwise = x:(noDouble xs)
+-}
