@@ -12,9 +12,6 @@
    Some functions for building and accessing the datastructures 
    of GlobalAnnotations. 
 
-   todo: partition annotations 
-   and report diagnostics for non-global annotations 
-
 -}
 
 module Common.AnalyseAnnos where
@@ -41,14 +38,11 @@ import qualified Common.Lib.Set as Set
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> Result GlobalAnnos
 addGlobalAnnos ga all_annos = do
     do let (annos, rest_annos) = partition ( \ a -> case a of 
-	    Prec_anno _ _ _ _-> True
-	    Assoc_anno _ _ _ -> True
-            Display_anno _ _ _ -> True
-	    Number_anno _ _ -> True
-            String_anno _ _ _ -> True
-	    Float_anno _ _ _ -> True
-	    List_anno _ _ _ _ -> True
-	    _ -> False) all_annos
+	    Label _ _ -> False
+	    Semantic_anno _ _ -> False
+	    Unparsed_anno (Annote_word _) _ _ -> False
+            -- line and group comments will be ignored
+	    _ -> True) all_annos
 	   ds = map ( \ d -> mkDiag Error "unexpected annotation" d) 
 		rest_annos
        Result ds (Just ())
