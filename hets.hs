@@ -31,6 +31,8 @@ import ReadFn
 import WriteFn
 --import ProcessFn
 
+import Haskell.Haskell2DG
+
 main :: IO ()
 main = 
     do opt <- getArgs >>= hetcatsOpts
@@ -40,33 +42,35 @@ main =
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opt file = 
     do putIfVerbose opt 2 ("Processing file: " ++ file)
-       -- hier: testen, ob intype opt = HaskellIn. In diesem Falle anaHaskellFile aufrufen
-       --        und dann showGraph auf das Resultat anwenden
-       --         andernfalls wie folgt weitermachen:
-       ld <- read_LIB_DEFN opt file
-       -- (env,ld') <- analyse_LIB_DEFN opt
-       (ld',env) <- 
-            case (analysis opt) of
-                Skip        -> do
-                    putIfVerbose opt 2
-                        ("Skipping static analysis on file: " ++ file)
-                    return (ld, Nothing)
-                _       -> do
-                    putIfVerbose opt 2 ("Analyzing file: " ++ file)
-                    Common.Result.Result diags res <- ioresToIO 
-                      (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)
-                    sequence (map ((putIfVerbose opt 1) . show) (take maxdiags diags))
-                    case res of
-                     Just (_,ld1,_,_) -> return (ld1,res)
-                     Nothing -> return (ld, res)
-       let odir = if null (outdir opt) then dirname file else outdir opt
-       putIfVerbose opt 3 ("Current OutDir: " ++ odir)
-       case gui opt of
-            Only    -> showGraph file opt env
-            Also    -> do showGraph file opt env
-                          write_LIB_DEFN file (opt { outdir = odir }) ld'
-                          -- write_GLOBAL_ENV env
-            Not     -> write_LIB_DEFN file (opt { outdir = odir }) ld'
+       case intype opt of
+             HaskellIn -> do  r <- anaHaskellFile opt file
+                              showGraph file opt r
+             _         -> 
+                do
+                  ld <- read_LIB_DEFN opt file
+               -- (env,ld') <- analyse_LIB_DEFN opt
+                  (ld',env) <- 
+                     case (analysis opt) of
+                             Skip        -> do
+                                putIfVerbose opt 2
+                                    ("Skipping static analysis on file: " ++ file)
+                                return (ld, Nothing)
+                             _       -> do
+                                putIfVerbose opt 2 ("Analyzing file: " ++ file)
+                                Common.Result.Result diags res <- ioresToIO 
+                                     (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)
+                                sequence (map ((putIfVerbose opt 1) . show) (take maxdiags diags))
+                                case res of
+                                     Just (_,ld1,_,_) -> return (ld1,res)
+                                     Nothing -> return (ld, res)
+                  let odir = if null (outdir opt) then dirname file else outdir opt
+                  putIfVerbose opt 3 ("Current OutDir: " ++ odir)
+                  case gui opt of
+                      Only    -> showGraph file opt env
+                      Also    -> do showGraph file opt env
+                                    write_LIB_DEFN file (opt { outdir = odir }) ld'
+                                    -- write_GLOBAL_ENV env
+                      Not     -> write_LIB_DEFN file (opt { outdir = odir }) ld'
 
 {- showGraph :: FilePath -> HetcatsOpts -> (Maybe (LIB_NAME, -- filename
                                                       HsModule, -- as tree
