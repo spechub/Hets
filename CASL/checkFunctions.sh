@@ -12,11 +12,10 @@ runcheck ()
     if [ -x $1 ] && [ -f $3 ]
     then 
 	$1 $2 $3 >& temp
-        declare -i a=`fgrep -c "parse error" temp`
+        declare -i a=`fgrep -c -i "error" temp`
         if [ -f $4 ]
 	then
-	    diff -w temp $4 >& /dev/null
-	    if [ $? ]
+	    if diff -w temp $4 >& /dev/null 
 	    then echo " passed"
             else echo " failed diff with $4"
 	    fi
@@ -27,7 +26,15 @@ runcheck ()
             if [ "$a" -ne 0 -a "$a" -ne "$b" ]
             then echo " $a errors for $b input lines"
  	    fi 
+        else 
+	    echo " missing comparison file $4 (newly created)" 
+            cat temp > $4
 	fi
+    else 
+	if [ -f $3 ] 
+	then echo " missing executable $1" 
+        else echo " missing file $3"
+        fi
     fi
 }
 

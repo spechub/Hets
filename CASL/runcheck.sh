@@ -9,8 +9,10 @@
 runcheck capa Terms MixIds.casl MixIds.casl.output $1
 runcheck capa Terms WrongMixIds.casl WrongMixIds.casl.asTerms.output $1
 
-for i in MixIds Terms Formula SortItem OpItem PredItem BasicSpec;
+#don't take files starting with "Wrong"
+for j in [A-V]*.casl; 
 do
+    i=`basename $j .casl`
     runmycheck capa $i casl $1
     runwrongcheck capa $i casl $1
 done
