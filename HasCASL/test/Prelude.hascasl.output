@@ -330,7 +330,7 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Error 182.7, unexpected mixfix token: :
 *** Error , undeclared type '_var_81'
 *** Error , undeclared type '_var_82'
-*** Error 186.25, unexpected mixfix token: [
+*** Error 186.26, unexpected mixfix token: c
 *** Error 190.9, incompatible kind of: p -->? p
   expected: Cpo-
      found: Type

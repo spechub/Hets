@@ -44,14 +44,23 @@ expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", cross, "->?", 
 *** Error 24.1, ambiguous mixfix term
 	B (([__])(b))
 	(__[__])(B, b)
-(B[a[c,d],b])
-*** Error 26.3, unexpected mixfix token: ,
-*** Error 27.8, unexpected mixfix token: ,
+*** Error 25.1, ambiguous mixfix term
+	B ((__::__)(a ((__::__)(c, (__::__)(d, ([])))), (__::__)(b, ([]))))
+	(B[a[c,d],b])
+(__::__)(a,
+	 (__::__)((__::__)(c, (__::__)(d, ([]))), (__::__)(b, ([]))))
+(__::__)(a ((__::__)(c, (__::__)(d, ([])))), (__::__)(b, ([])))
+*** Error 10.18, ambiguous mixfix term
+	(__::__)(a ((__::__)(c, (__::__)(d, ([])))), (__::__)(b, ([])))
+	(__::__)((a[c,d]), (__::__)(b, ([])))
 (__B[a[c,d],b]__) (a, b)
 (while__do__od)((while__do__od)(a, b), c)
 (while__do__od)((while__do__od)(a, b), (while__do__od)(c, d))
 ({____})(a, ({____})(b, c))
-*** Error 32.3, unexpected mixfix token: ,
+(__::__)(a, (__::__)(A 0 B, ([])))
+*** Error 32.5, ambiguous mixfix term
+	A 0 B
+	(A__)(0) B
 *** Error 33.1, ambiguous mixfix term
 	A ((A__B)(0 B))
 	(A__)((A__B)(0 B))

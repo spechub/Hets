@@ -68,9 +68,10 @@ resolveTerm ga = do
        trm <- term  
        let ids = stdOps `Set.union` stdPreds
 	   newGa = addBuiltins ga 
-	   prec = mkPrecIntMap $ prec_annos newGa
+	   prec@(_, _, m) = mkPrecIntMap $ prec_annos newGa
            chart = evalState (iterateCharts newGa [trm] $ 
-			      initChart (initTermRules (prec, stdPreds) ids)
+			      initChart (listRules m newGa ++
+					 initTermRules (prec, stdPreds) ids)
 			      Set.empty) 
 		   initialEnv { preIds = (prec, stdPreds) }
        return $ getResolved showPretty (posOfTerm trm) 

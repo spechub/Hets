@@ -270,10 +270,11 @@ iterateCharts ga terms chart =
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolve ga trm =
     do as <- gets assumps
-       ps <- gets preIds
+       ps@((_, _, m), _) <- gets preIds
        chart<- iterateCharts ga [trm] $ 
-	       initChart (initTermRules ps $ Set.fromDistinctAscList 
-			  $ Map.keys as) Set.empty
+	       initChart (listRules m ga ++ 
+			  (initTermRules ps $ Set.fromDistinctAscList 
+			  $ Map.keys as)) Set.empty
        let Result ds mr = getResolved showPretty (posOfTerm trm) 
 			  toMixTerm chart
        addDiags ds

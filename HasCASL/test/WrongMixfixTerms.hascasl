@@ -2,3 +2,4 @@ def not a = a
 a = not a
 a < a < a
 (i div p <= j div q <=> i * q <= j * p )
+L --> x = L --> [x]
