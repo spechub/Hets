@@ -40,6 +40,7 @@ import Logic.Logic
 import CASL.Sign
 import CASL.Morphism
 import List
+import Debug.Trace
 
 -- Exported types
 type CASLSign = Sign () ()
@@ -474,7 +475,7 @@ leftCancellableClosure rel =
 		wtp = rel !! pos
 		rel' = iterateWord2 wtp rel 0
             in iterateWord1 rel' (pos + 1)
-    in iterateWord1 rel 0
+    in {-trace ("leftCancellableClosure " ++ show rel) $-} iterateWord1 rel 0
 
 
 -- | Compute the congruence closure of a relation on words with
@@ -523,7 +524,7 @@ congruenceClosure simeq rel =
 		rel' = iterateWord2 wtp rel 0
 	    in iterateWord1 rel' (pos + 1)
 
-    in iterateWord1 rel 0 
+    in{- trace ("congruenceClosure " ++ show rel) $-} iterateWord1 rel 0 
 
 
 -- | Compute the cong_tau relation for given diagram and sink.
@@ -664,7 +665,7 @@ colimitIsThin simeq embs c0 =
         embCodS (n, _, cod) = let Just s = findTag simeqT (n, cod) in s
 
         -- checkAllSorts: check the C = B condition for all colimit sorts
-        checkAllSorts m | Map.isEmpty m = True
+        checkAllSorts m | Map.isEmpty m = {-trace "CT: Yes"-} True
 			| otherwise =
 	    let -- checkSort: check if for given colimit sort C = B
 	        checkSort cs =
@@ -679,10 +680,10 @@ colimitIsThin simeq embs c0 =
 			c'' = let updC c (d@(n1, _, cod1), e@(n2, _, cod2)) =
 				      let s1 = embCodS d
 					  s2 = embCodS e
-					  [absCls] = filter (\ac -> any (s2==) ac) (Map.find (s1, s2) b)
-				      in if (filter (\(n, dom, cod) -> (n, dom) == (n1, cod1) && (n, cod) == (n2, cod2)) embsCs) == []
+				      in if (filter (\(n, dom, cod) -> (n, dom) == (n1, cod1) && (n, cod) == (n2, cod2)) embs) == []
  					    then c
-					    else foldl (\c -> \k -> Map.update (\l -> Just (l ++ [absCls])) k c) c [(d, e), (e, d)]
+					    else let [absCls] = filter (\ac -> any (s2==) ac) (Map.find (s1, s2) b)
+						 in foldl (\c -> \k -> Map.update (\l -> Just (l ++ [absCls])) k c) c [(d, e), (e, d)]
 			      in foldl updC c' [(d, e) | d <- embsCs, e <- embsCs, wordDom [d] == wordDom [e]]
 			fixUpdRule c = 
 			    let updC c (e1, e2, e3) =
@@ -712,9 +713,12 @@ colimitIsThin simeq embs c0 =
 			checkIncl ((e1, e2) : embprs) =
 			    let s1 = embCodS e1
 				s2 = embCodS e2
-			    in if subRelation (Map.find (s1, s2) b) (Map.find (e1, e2) c3) == Nothing -- TODO c3
-				  then checkIncl embprs
-				  else False
+				res = if subRelation (Map.find (s1, s2) b) (Map.find (e1, e2) c3) == Nothing
+				         then checkIncl embprs
+				         else False
+			    in {-trace ("B[" ++ (show s1) ++ ", " ++ (show s2) ++ ":\n" ++ (show (Map.find (s1, s2) b)) ++ "\n" ++
+			              "C[" ++ (show e1) ++ ", " ++ (show e2) ++ ":\n" ++ (show (Map.find (e1, e2) c3)) ++ "\n\n")-}
+			             res
 		    in checkIncl [(e1, e2) | e1 <- embsCs, e2 <- embsCs]
 
                 -- cs: next colimit sort to process	
@@ -725,12 +729,10 @@ colimitIsThin simeq embs c0 =
 			       m'' = foldl (\m -> \k -> Map.update (\lt -> Just (Set.delete cs lt)) k m)
 				           m' (Map.keys m')
 			   in (cs, m'')
-	    in if checkSort cs then checkAllSorts m' else False
+	    in if checkSort cs then checkAllSorts m' else {-trace "CT: No"-} False
 
-    in checkAllSorts ordMap
-
-
--- currTest simeq embs c0 = ()
+    in {-trace ("\\simeq: " ++ (show simeq) ++ "\nEmbs: " ++ (show embs) ++ "\n\\cong_0: " ++ show c0)-} 
+         checkAllSorts ordMap
 
 
 -- | Compute the \cong relation given its (finite) domain
@@ -805,12 +807,10 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
 			      Nothing -> renderText Nothing (printText (getNodeSig n lns))
            -- and now the relevant stuff
 	   diag = delNode tn diag'
-           s = simeq diag
+           s = {-trace ("Diagram: " ++ showPretty diag "\n Sink: " ++ showPretty sink "")-} simeq diag
 	   st = simeq_tau sink
        -- 1. Check the inclusion (*). If it doesn't hold, the specification is
        -- incorrect.
-       --warning DontKnow ("sink: " ++ (showPretty sink "")) nullPos -- test
-       --warning DontKnow ("diag: " ++ (showPretty diag "")) nullPos -- test
        case subRelation st s of
 	    Just (ns1, ns2) -> let sortString1 = renderText Nothing (printText (snd ns1)) ++
 					     " in\n\n" ++ formatSig (fst ns1) ++ "\n\n"
@@ -822,8 +822,6 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
 		     sopt = simeqOp_tau sink
                  -- 2. Check sharing of operations. If the check fails, the specification is
 		 -- incorrect
-		 --warning DontKnow ("simeqOp: " ++ (showPretty sop "")) nullPos -- test
-		 --warning DontKnow ("simeqOp_tau: " ++ (showPretty sopt "")) nullPos -- test
                  case subRelation sopt sop of
 		      Just (nop1, nop2) -> let opString1 = formatOp (snd nop1) ++
 							   " in\n\n" ++ formatSig (fst nop1) ++ "\n\n"
@@ -835,8 +833,6 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
 			       spredt = simeqPred_tau sink
 			   -- 3. Check sharing of predicates. If the check fails, the specification is
 			   -- incorrect
-			   --warning DontKnow ("simeqPred: " ++ (showPretty spred "")) nullPos -- test
-			   --warning DontKnow ("simeqPred_tau: " ++ (showPretty spredt "")) nullPos -- test
 		           case subRelation spredt spred of
 			        Just (np1, np2) -> let pString1 = formatPred (snd np1) ++
 								  " in\n\n" ++ formatSig (fst np1) ++ "\n\n"
