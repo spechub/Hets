@@ -103,9 +103,6 @@ formulas are not translated to Hassle Axioms
 free types with subtypes components get too few constructors (and
 become disjoint types)
 
-SimpleDatatypes.casl cannot be translated, because of wrong names
-
-
 
 
 HetAna/Logic:

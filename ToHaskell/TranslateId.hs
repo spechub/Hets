@@ -17,7 +17,6 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Data.Char
 
-
 -- | Converts an identifier to a valid lower or upper case Haskell name
 translateIdWithType :: IdCase -> Id -> String
 translateIdWithType ty i = 
@@ -56,6 +55,8 @@ translateToken :: Token -> ShowS
 translateToken t = let str = tokStr t in showString $
     if isPlace t then "_2"
     else if all isDigit str && not (isSingle str) then '_' : str
+    else if head str == '\'' then
+         "_3" ++ concatMap (('_' : ) . show . ord) (tail str) ++ "_X"
     else concatMap symbolMapping str
 
 -- | Translate a compound list
