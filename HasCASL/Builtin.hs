@@ -155,20 +155,21 @@ bList = (botId, botType) : (defId, defType) : (notId, notType) :
 	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
 addUnit :: TypeMap -> TypeMap
-addUnit tm = foldr ( \ (i, k, d) m -> 
+addUnit tm = foldr ( \ (i, k, s, d) m -> 
 		 Map.insertWith ( \ _ old -> old) i
-			 (TypeInfo k [k] [] d) m) tm $
-	      (unitTypeId,
-	        star, NoTypeDefn)
+			 (TypeInfo k [k] s d) m) tm $
+	      (unitTypeId, star, [], NoTypeDefn)
 	      : (simpleIdToId $ mkSimpleId "Pred", 
-		FunKind star star [],
-		AliasTypeDefn defType)
+		FunKind star star [], [], AliasTypeDefn defType)
 	      : (simpleIdToId $ mkSimpleId "Logical", 
-		star, AliasTypeDefn $ simpleTypeScheme $ 
+		star, [], AliasTypeDefn $ simpleTypeScheme $ 
 		 FunType logicalType PFunArr logicalType [])
-	      : (productId, prodKind, NoTypeDefn)
-	      : map ( \ a -> (arrowId a, funKind, NoTypeDefn)) 
-		[FunArr, PFunArr, ContFunArr, PContFunArr]
+	      : (productId, prodKind, [], NoTypeDefn)
+	      : map ( \ (a, l) -> (arrowId a, funKind, 
+                        map ( \ b -> TypeName (arrowId b) funKind 0) l,
+                                   NoTypeDefn)) 
+		[(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]), 
+                 (ContFunArr, [PContFunArr, FunArr])]
 
 addOps :: Assumps -> Assumps
 addOps as = foldr ( \ (i, sc) m -> 

@@ -923,9 +923,9 @@ U : Type %(var_55)%
 Unit : Type
 V : Type %(var_2)%
 __*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type
-__-->?__ : Type- -> Type+ -> Type
-__->__ : Type- -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
+__-->?__ : Type- -> Type+ -> Type < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
 __->?__ : Type- -> Type+ -> Type
 a : Type %(var_54)%
 %% Assumptions -----------------------------------------------------------

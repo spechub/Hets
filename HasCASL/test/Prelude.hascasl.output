@@ -149,11 +149,11 @@ __*__
      Type+ -> Type+ -> Type)
 __-->__
   : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Pcpo+ -> Pcpo,
-     Type- -> Type+ -> Type) < c_v102 -->? d_v107
+     Type- -> Type+ -> Type) < (c_v102 -->? d_v107, __-->?__, __->__)
 __-->?__
   : (Cpo- -> Cpo+ -> Pcpo,
-     Type- -> Type+ -> Type) < c_v102 ->? d_v107
-__->__ : Type- -> Type+ -> Type < s_v1 ->? t_v2
+     Type- -> Type+ -> Type) < (c_v102 ->? d_v107, __->?__)
+__->__ : Type- -> Type+ -> Type < (s_v1 ->? t_v2, __->?__)
 __->?__ : Type- -> Type+ -> Type
 bool
   : Flatcpo

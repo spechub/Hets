@@ -48,9 +48,9 @@ Tree2
                (head : Tree a_v-1; tail : Tree2 a_v-1)]%
 Unit : Type
 __*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type
-__-->?__ : Type- -> Type+ -> Type
-__->__ : Type- -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
+__-->?__ : Type- -> Type+ -> Type < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
 __->?__ : Type- -> Type+ -> Type
 a : Type+ %(var_2)%
 b : Type %(var_1)%

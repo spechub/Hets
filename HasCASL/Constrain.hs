@@ -227,8 +227,9 @@ shapeMgu tm cs =
     (_, TypeName _ _ _) -> do ats <- shapeMgu tm ((t2, t1) : map swap rest)
                               return $ map swap ats
     (ProductType s1 _, ProductType s2 _) -> shapeMgu tm (zip s1 s2 ++ rest)
-    (FunType t3 _ t4 _, FunType t5 _ t6 _) -> 
-        shapeMgu tm ((t5, t3) : (t4, t6) : rest)
+    (FunType t3 a1 t4 _, FunType t5 a2 t6 _) ->
+        let arr a = TypeName (arrowId a) funKind 0 in
+        shapeMgu tm ((arr a1, arr a2) : (t5, t3) : (t4, t6) : rest)
     _ -> let (top1, as1) = getTypeAppl tm t1
              (top2, as2) = getTypeAppl tm t2
              in case (top1, top2) of 

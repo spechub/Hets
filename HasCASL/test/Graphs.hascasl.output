@@ -139,9 +139,9 @@ Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
 T : Type %(var_2)%
 Unit : Type
 __*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type
-__-->?__ : Type- -> Type+ -> Type
-__->__ : Type- -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
+__-->?__ : Type- -> Type+ -> Type < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
 __->?__ : Type- -> Type+ -> Type
 %% Assumptions -----------------------------------------------------------
 False : Bool %(op)%

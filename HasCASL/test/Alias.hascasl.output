@@ -25,9 +25,9 @@ MyPred : Type -> Type := \ s : Type . s_v-1 ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type
 __*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type
-__-->?__ : Type- -> Type+ -> Type
-__->__ : Type- -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
+__-->?__ : Type- -> Type+ -> Type < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
 __->?__ : Type- -> Type+ -> Type
 a1
   : Type -> Type -> Type
