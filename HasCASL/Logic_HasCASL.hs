@@ -82,8 +82,8 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
                Sign 
                M.Morphism 
                Symbol RawSymbol where
-    basic_analysis HasCASL = Just ( \ (b, e, _) ->
-		let ne = snd $ (runState (anaBasicSpec b)) e 
+    basic_analysis HasCASL = Just ( \ (b, e, ga) ->
+		let ne = snd $ (runState (anaBasicSpec ga b)) e 
 		    in return (b, ne, initialEnv, [])) 
   
     signature_union HasCASL = merge
