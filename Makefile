@@ -144,7 +144,7 @@ doc: docs/index.html utils/hd-lib
 
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h \
-          --read-interface=http://www.haskell.org/ghc/docs/latest/html/base,/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base/base.haddock \
+          --read-interface=http://www.haskell.org/ghc/docs/latest/html/libraries/base,/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base/base.haddock \
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
 apache_doc:
