@@ -257,8 +257,8 @@ getToken = token tokStr tokPos Just
 -- | parse a type 'Id' from a token list
 parseTypePatternId :: GenParser Token st Id
 parseTypePatternId =
-    do ts <- many1 getToken 
-       return $ Id ts [] []
+    do t <- getToken 
+       return $ Id [t] [] []
 
 -- | convert a 'TypePattern' to a type 'Id' via 'typePatternToTokens' 
 -- and 'parseTypePatternId' 
