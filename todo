@@ -176,6 +176,13 @@ HasCASL hat auch noch keine Mixfix- und Latex Ausgabe.
 
 
 ************************************************
+Daniel
+************************************************
+
+generate infrastructure for circular coinduction
+CCS example: commutativity of || by coinduction
+
+************************************************
 Christian
 ************************************************
 
@@ -246,6 +253,9 @@ IsaWin: support CASL-libraries
 ************************************************
 Till
 ************************************************
+
+for CSP-CASL example: with logic
+heterogeneous static ana
 
 theorem links between nodes in different libraries
 
