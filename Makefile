@@ -65,7 +65,7 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
 
 # this variable holds the modules that should be documented
 # the imported parsec library is not included!
-doc_sources = $(filter-out Common/Lib/% ,$(sources))
+doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
 
 ####################################################################
 ### targets
