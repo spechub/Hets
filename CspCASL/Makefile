@@ -31,6 +31,6 @@ print:			print_csp.hs
 			ghc $(GHCOPTS) -o print print_csp.hs
 
 test:			c3po
-			./c3po tests/*.csp-casl
+			./c3po test/*.csp-casl
 
 ### Makefile ends here
