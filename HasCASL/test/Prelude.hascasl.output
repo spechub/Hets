@@ -213,8 +213,8 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 
 *** Error 54.3, expected further mixfix token: ["/\\","<=>","=","=>","=e="]
 *** Error 54.42, ambiguous mixfix term
+	(def__)(f x)
 	def f x
-	(def__)(f) x
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.3, unexpected term '__'
 *** Hint 54.32, in type of '\ f : s ->? t . all (\ x : s . def f (x))'
@@ -361,8 +361,8 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 
 *** Error 182.4, expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 *** Error 182.46, ambiguous mixfix term
+	(def__)(f x)
 	def f x
-	(def__)(f) x
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.4, unexpected term '__'
 *** Hint 182.36, in type of '\ f : c -->? d . all (\ x : c . def f (x))'

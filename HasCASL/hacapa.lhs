@@ -12,6 +12,7 @@ import HasCASL.ParseItem
 import HasCASL.ParseTerm
 import HasCASL.HToken
 import Common.RunParsers
+import HasCASL.RunMixfixParser
 import HasCASL.RunStaticAna
 
 main :: IO ()
@@ -23,6 +24,7 @@ lineParser = [
  ("Kinds", fromAParser kind),
  ("Types", fromAParser parseType),
  ("Terms", fromAParser term),
+ ("MixfixTerms", toStringParser resolveTerm),
  ("Typepattern", fromAParser typePattern),
  ("Pattern", fromAParser pattern),
  ("BasicItems", fromAParser basicItems),
