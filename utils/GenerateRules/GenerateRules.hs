@@ -100,8 +100,11 @@ removeMultipleImports (x:xs) | multi x xs = removeMultipleImports xs
                                      | s/=x = multi s xs
 
 cutModuleName :: FilePath -> FilePath
-cutModuleName ('.':xs) = xs
-cutModuleName (x:xs)   = cutModuleName xs
+cutModuleName fp = reverse $ remP $ fst $ break (=='.') (reverse fp)
+    where remP [] = [] 
+	  remP xs@(x:xs1) 
+	      | x == '.' = xs1
+	      | otherwise = xs
 
 rules :: String -> [String] -> String
 rules rule []     = []
