@@ -33,7 +33,7 @@ data AnyLogic = forall id sublogics
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
-        Ins id
+        Logic id
 
 data AnyRepresentation = forall id1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -64,7 +64,7 @@ id_repr i s = LogicRepr{
   source = i, target = i,
   source_sublogic = s, 
   target_sublogic = s,
-  map_basic_spec = Just,
+--  map_basic_spec = Just,
   map_sentence = \_ -> Just,
   map_sign = Just,
   projection = Just (proj_sublogic_sign i s,
@@ -73,7 +73,7 @@ id_repr i s = LogicRepr{
                      proj_sublogic_basic_spec i s,
                      proj_sublogic_symbol i s),
   map_morphism = Just,
-  map_symbol = Just
+  map_symbol = \x -> [x]
  }
 
 comp_repr :: AnyRepresentation -> AnyRepresentation -> Maybe AnyRepresentation
@@ -105,7 +105,7 @@ comp_repr (Repr (r1 :: {-Logic id1 sublogics1
    source = source r1, target = target r2,
    source_sublogic = source_sublogic r1, 
    target_sublogic = target_sublogic r2,
-   map_basic_spec = map_basic_spec r2 `comp` (coerce (map_basic_spec r1)::Maybe(basic_spec1 -> Maybe basic_spec3)),
+   -- map_basic_spec = map_basic_spec r2 `comp` (coerce (map_basic_spec r1)::Maybe(basic_spec1 -> Maybe basic_spec3)),
    map_sentence = 
      ( \sigma -> 
         map_sentence r2 (the (((coerce (map_sign r1 sigma))::Maybe sign3)))
@@ -117,18 +117,13 @@ comp_repr (Repr (r1 :: {-Logic id1 sublogics1
                       proj_sublogic_basic_spec i s,
                       proj_sublogic_symbol i s) -} ,
    map_morphism = map_morphism r2 `comp` (coerce (map_morphism r1)::Maybe(morphism1 -> Maybe morphism3)),
-   map_symbol = map_symbol r2 `comp` (coerce (map_symbol r1)::Maybe(symbol1 -> Maybe symbol3))
+   map_symbol = map_symbol r2 `comp` (coerce (map_symbol r1)::Maybe(symbol1 -> [symbol3]))
  }))
                 else Nothing
 
 
-{-
-T i_src1 (t1::as_src1->as_tar1) i_tar1) (T i_src2 (t2::as_src2->as_tar2) i_tar2) =
-      case    ((Dynamic.fromDynamic (Dynamic.toDyn t2))::Maybe (as_tar1->as_tar2)) of
-        Just t -> Just (T i_src1 (t . t1) i_tar2)
-        Nothing -> Nothing 
 
--}
-
-the_logic_list :: [AnyLogic] = []
+the_logic_list :: [AnyLogic] = [] -- [Logic CASL, Logic HasCASL, ...]
 the_representation_list :: [AnyRepresentation] = []
+
+

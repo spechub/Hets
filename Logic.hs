@@ -47,14 +47,13 @@
    Weak amalgamability, also for reprs
    Metavars
    repr maps
-   symbol maps for reprs
-   reprs out of sublogic relaionships
+   reprs out of sublogic relationships
 -}
 
 module Logic where
 
 import Id
-import Anno
+import AS_Annotation
 import Error
 import Dynamic
 
@@ -192,7 +191,7 @@ class (Syntax basic_spec sentence symb_items symb_map_items,
          basic_analysis :: id -> 
                            (basic_spec,  -- abstract syntax tree
                             local_env,   -- efficient table for env signature
-                            [Anno]) ->   -- global annotations
+                            [Annotation]) ->   -- global annotations
                            Result (sign,[(String,sentence)])
                                    -- these include any new annotations
          stat_symb_map_items :: id -> [symb_map_items] -> Result (Map raw_symbol)
@@ -225,7 +224,8 @@ class (Syntax basic_spec sentence symb_items symb_map_items,
          extend_morphism :: Id -> sign -> morphism -> sign -> sign -> Result morphism
 
          -- sublogics
-         sublogic_names :: id -> sublogics -> [String]
+         sublogic_names :: id -> sublogics -> [String] 
+             -- the first name is the principal name
          all_sublogics :: id -> [sublogics]
 
          is_in_basic_spec :: id -> sublogics -> basic_spec -> Bool
@@ -263,7 +263,6 @@ class (Syntax basic_spec sentence symb_items symb_map_items,
          show_sentence :: id -> sentence -> String
          show_symb_items :: id -> symb_items -> String
          show_symb_map_items :: id -> symb_map_items -> String
-         show_anno :: id -> Anno -> String
          show_sign :: id -> sign -> String
          show_morphism :: id -> morphism -> String
          show_symbol :: id -> symbol -> String
@@ -295,10 +294,9 @@ data (Logic id1 sublogics1
      LogicRepr {repr_name :: String,
                 source :: id1, source_sublogic :: sublogics1,
                 target :: id2, target_sublogic :: sublogics2,
-                map_basic_spec :: basic_spec1 -> Maybe basic_spec2,
-                      -- partial because the target may be a sublanguage
-                map_sentence :: sign1 -> sentence1 -> Maybe sentence2,
-                      -- also cover semi-representations
+                -- the translation functions are partial 
+                -- because the target may be a sublanguage
+                -- map_basic_spec :: basic_spec1 -> Maybe basic_spec2,
                 map_sign :: sign1 -> Maybe sign2,
                 projection:: Maybe (sign2 -> sign1, morphism2 -> morphism1, 
                                     sign2 -> morphism2,
@@ -306,5 +304,9 @@ data (Logic id1 sublogics1
                                     basic_spec2 -> basic_spec1,
                                     symbol2 -> Maybe symbol1),  
                 map_morphism :: morphism1 -> Maybe morphism2,
-                map_symbol :: symbol1 -> Maybe symbol2
+                map_sentence :: sign1 -> sentence1 -> Maybe sentence2,
+                      -- also covers semi-representations
+                      -- with no sentence translation
+                map_symbol :: symbol1 -> Set symbol2
+                  -- codings may be more complex
                }
