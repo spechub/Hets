@@ -1,5 +1,4 @@
 {- |
-
     Module      :  $Header$
     Copyright   :  (c) Martin Kuehl, T. Mossakowski, C. Maeder, Uni Bremen 2004
     Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
@@ -63,10 +62,8 @@ import Data.Maybe
       TODO
 -}
 
-
--- TODO: this ain't mine, somebody might need to explain it
+-- | the type of the type checking function
 type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
-
 
 {-----------------------------------------------------------
     - Overload Resolution -
@@ -187,9 +184,7 @@ minExpFORMULA mef ga sign formula = case formula of
         return (Membership t'' sort pos)
     ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
     --- unknown formula         -> signal error
-    _ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
-                 ++ (show formula)
-                 -- TODO: is there a nicer kind of error I can signal here?
+    _ -> error "minExpFORMULA: unexpected type of FORMULA: "
 
 
 {-----------------------------------------------------------
@@ -256,9 +251,8 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
     permuted_exps <- return (permute expansions)
     -- convert each permutation to a profile (Step 3)
     -- then inject arguments that don't match the predicate's expected type
-    profiles <- return -- $ map (map insert_injections) TODO: fix inlineAxioms
-                       $ map get_profile
-                         permuted_exps
+    profiles <- return $ -- map (map insert_injections) TODO: fix inlineAxioms
+                       map get_profile permuted_exps
     -- collect generated profiles into equivalence classes (Step 5)
     -- by the computed equivalence relation (Step 4)
     -- and unify them (also Step 5)
@@ -405,12 +399,10 @@ minExpTerm :: (Eq f, PrettyPrint f) =>
               Sign f e              ->
               TERM f                ->
               Result [[TERM f]]
-minExpTerm mef ga sign (Simple_id var)
+minExpTerm _ _ sign (Simple_id var)
     = minExpTerm_simple sign var
-    -- TODO: what about 'mef' and 'ga'?
-minExpTerm mef ga sign (Qual_var var sort pos)
+minExpTerm _ _ sign (Qual_var var sort pos)
     = minExpTerm_qual sign var sort pos
-    -- TODO: what about 'mef' and 'ga'?
 minExpTerm mef ga sign (Application op terms pos)
     = minExpTerm_op mef ga sign op terms pos
 minExpTerm mef ga sign (Sorted_term term sort pos)
@@ -419,9 +411,8 @@ minExpTerm mef ga sign (Cast term sort pos)
     = minExpTerm_cast mef ga sign term sort pos
 minExpTerm mef ga sign (Conditional term1 formula term2 pos)
     = minExpTerm_cond mef ga sign term1 formula term2 pos
-minExpTerm mef ga sign _
+minExpTerm _ _ _n _
     = error "minExpTerm"
-    -- TODO: is there a nicer kind of error I can signal here?
 
 
 {-----------------------------------------------------------
@@ -576,8 +567,8 @@ minExpTerm_op mef ga sign op terms pos = do
     permuted_exps <- return (permute expansions)
     -- convert each permutation to a profile (Step 3)
     -- then inject arguments that don't match the function's expected type
-    profiles <- return -- $ map (map insert_injections) TODO: fix inlineAxioms
-                       $ map get_profile permuted_exps
+    profiles <- return $ -- map (map insert_injections) TODO: fix inlineAxioms
+                       map get_profile permuted_exps
     -- collect generated profiles into equivalence classes (Step 5)
     -- by the computed equivalence relation (Step 4)
     -- and unify them (also Step 5)
@@ -599,11 +590,6 @@ minExpTerm_op mef ga sign op terms pos = do
           op_name :: OP_SYMB -> OP_NAME
           op_name (Op_name name') = name'
           op_name (Qual_op_name name' _ _) = name'
-          -- extract a function's signature from its definition
-          op_type :: OP_SYMB -> OP_TYPE
-          op_type (Op_name _) = error "unqualified op"
-          -- TODO: is there a nicer kind of error I can signal here?
-          op_type (Qual_op_name _ type' _) = type'
           -- qualify all ops in a list of eq.classes of ops
           qualifyOps :: [[(OpType, [TERM f])]] -> [[(TERM f, SORT)]]
           qualifyOps = map (map qualify_op)
@@ -818,7 +804,6 @@ term_sort term' = case term' of
     (Cast _ sort _)                         -> sort
     (Application (Qual_op_name _ ty _) _ _) -> res_OP_TYPE ty
     _ -> error "term_sort: unsorted TERM after expansion"
-    -- TODO: is there a nicer kind of error I can signal here?
 
 
 {-----------------------------------------------------------
