@@ -19,7 +19,7 @@ import Print_AS_Basic
 import Parse_AS_Basic
 import SymbolParser
 import ParsecInterface
-import AnnoState(emptyState)
+import AnnoState(emptyAnnos)
 
 import Sign
 import Logic
@@ -52,7 +52,7 @@ instance Category CASL Sign Morphism
 instance Syntax CASL BASIC_SPEC 
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec CASL = Just(toParseFun basicSpec emptyState)
+         parse_basic_spec CASL = Just(toParseFun basicSpec emptyAnnos)
 	 parse_symb_items CASL = Just(toParseFun symbItems ())
 	 parse_symb_map_items CASL = Just(toParseFun symbMapItems ())
 

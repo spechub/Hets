@@ -22,6 +22,7 @@ import ParseItem
 import SymbolParser
 import ParsecInterface
 import Logic
+import AnnoState(emptyAnnos)
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -39,7 +40,7 @@ instance Category HasCASL Sign Morphism
 instance Syntax HasCASL BasicSpec
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec HasCASL = Just(toParseFun basicSpec emptyState)
+         parse_basic_spec HasCASL = Just(toParseFun basicSpec emptyAnnos)
 	 parse_symb_items HasCASL = Just(toParseFun symbItems ())
 	 parse_symb_map_items HasCASL = Just(toParseFun symbMapItems ())
 

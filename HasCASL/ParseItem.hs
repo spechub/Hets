@@ -7,7 +7,7 @@
    parser for HasCASL basic Items
 -}
 
-module ParseItem (module ParseItem, emptyState) where
+module ParseItem where
 
 import AnnoState
 import Id

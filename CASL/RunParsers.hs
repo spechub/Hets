@@ -16,7 +16,6 @@ import ParsecPos
 import PrettyPrint
 import Pretty
 import System
-import ItemList
 import RunMixfixParser (stdAnnos)
 
 data HetParser = forall a. PrettyPrint a => 
@@ -60,13 +59,13 @@ parseLine p line n = let pos = setSourceLine (initialPos "") n
 				     i <- p
 				     eof
 				     return i
-		       in result (runParser parser emptyState "" line)
+		       in result (runParser parser emptyAnnos "" line)
 
 parseSpec :: PrettyPrint a => SourceName -> AParser a 
 	  -> IO ()
 parseSpec fileName p  =  do str <- readFile fileName
 			    putStrLn $ result $ 
-				     runParser (p << eof) emptyState 
+				     runParser (p << eof) emptyAnnos
 					       fileName str
 
 instance (Show a, PrettyPrint b) => PrettyPrint (Either a b) where

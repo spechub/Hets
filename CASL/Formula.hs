@@ -110,13 +110,13 @@ qualOpName o = do v <- asKey opS
 			  (Qual_op_name i t
 			   [o, tokPos v, tokPos c, tokPos p]) [] [])
 
-opSort :: AParser (Bool, Id, Pos)
+opSort :: GenParser Char st (Bool, Id, Pos)
 opSort = fmap (\s -> (False, s, nullPos)) sortId 
 	 <|> do q <- quMarkT
 		s <- sortId
 		return (True, s, tokPos q)
 
-opFunSort :: [Id] -> [Token] -> AParser OP_TYPE
+opFunSort :: [Id] -> [Token] -> GenParser Char st OP_TYPE
 opFunSort ts ps = do a <- pToken (string funS)
 		     (b, s, _) <- opSort
 		     let qs = map tokPos ps ++[tokPos a] in 
@@ -185,11 +185,12 @@ varDecl = do (vs, ps) <- varId `separatedBy` commaT
 updFormulaPos :: Pos -> Pos -> FORMULA -> FORMULA
 updFormulaPos o c = up_pos_l (\l-> o:l++[c])  
 
-predType, predUnitType :: AParser PRED_TYPE
+predType :: AParser PRED_TYPE
 predType = do (ts, ps) <- sortId `separatedBy` crossT
 	      return (Pred_type ts (map tokPos ps))
 	   <|> predUnitType
 
+predUnitType :: GenParser Char st PRED_TYPE
 predUnitType = do o <- oParenT
 		  c <- cParenT
 		  return (Pred_type [] [tokPos o, tokPos c])
