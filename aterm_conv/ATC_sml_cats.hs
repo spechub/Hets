@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-overlapping-instances #-}
 -- needs: -ifgl:haterm-1.0/src -package util -package data -fglasgow-exts -fallow-overlapping-instances
 
 {- HetCATS/aterm_conv/ATC_sml_cats.hs
@@ -44,7 +45,7 @@ import AS_Library
 import Parsec (parse,setPosition)
 import ParsecPos (newPos)
 import qualified Anno_Parser (annotations,parse_anno)
-import CaslLanguage
+import Lexer(skip)
 
 from_sml_ATerm :: ATermTable -> LIB_DEFN
 read_sml_ATerm :: FilePath -> IO LIB_DEFN
@@ -319,7 +320,7 @@ parse_anno pos_l inp =
        Left err   -> error ("internal parse error at " ++ (show err))
        Right [x]  -> x
     where set_pos p = do setPosition sp
-			 whiteSpace
+			 skip
 			 p
 	  sp = newPos "ATermConversion from SML" (fst pos) (snd pos)
 	  pos = head pos_l
