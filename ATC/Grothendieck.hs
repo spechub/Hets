@@ -17,6 +17,7 @@ import ATC.Named
 import Logic.Logic
 import Logic.Comorphism
 import ATC.Graph
+import qualified Common.Lib.Set as Set
 
 instance ATermConvertible G_basic_spec where
      toShATerm att0 (G_basic_spec lid basic_spec) = 
@@ -94,6 +95,25 @@ instance ATermConvertible G_sign where
          aterm = getATerm att
      fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_sign\""
      toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_sign\""
+
+instance ATermConvertible G_ext_sign where
+     toShATerm att0 (G_ext_sign lid sign _) = 
+	 case toShATerm att0 (language_name lid) of { (att1,i1) ->
+         case toShATerm att1 sign of { (att2,i2) ->
+           addATerm (ShAAppl "G_ext_sign" [i1,i2] []) att2}}
+     fromShATerm att = 
+         case aterm of
+	    (ShAAppl "G_ext_sign" [i1,i2] _) ->
+		let i1' = fromShATerm (getATermByIndex1 i1 att)
+                    att' = getATermByIndex1 i2 att
+                    l = lookupLogic_in_LG ("ATermConvertible G_ext_sign:") i1' 
+                in case l of
+                    Logic lid -> (G_ext_sign lid (fromShATerm_sign lid att') Set.empty)
+	    u     -> fromShATermError "G_ext_sign" u
+         where
+         aterm = getATerm att
+     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_ext_sign\""
+     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_ext_sign\""
 
 instance ATermConvertible G_sign_list where
      toShATerm att0 (G_sign_list lid signs) = 

@@ -43,6 +43,7 @@ import Logic.Comorphism
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.PPUtils 
 import Common.Result
 import Common.Id
@@ -137,6 +138,34 @@ data G_sign_list = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
   G_sign_list lid [sign] 
+
+-- | Grothendieck extended signatures
+data G_ext_sign = forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+  G_ext_sign lid sign (Set.Set symbol)
+
+tyconG_ext_sign :: TyCon
+tyconG_ext_sign = mkTyCon "Logic.Grothendieck.G_ext_sign"
+instance Typeable G_ext_sign where
+  typeOf _ = mkAppTy tyconG_ext_sign []
+
+instance Eq G_ext_sign where
+  (G_ext_sign i1 sigma1 sys1) == (G_ext_sign i2 sigma2 sys2) =
+     coerce i1 i2 sigma1 == Just sigma2
+     && coerce i1 i2 sys1 == Just sys2
+
+instance Show G_ext_sign where
+    show (G_ext_sign _ s _) = show s
+
+instance PrettyPrint G_ext_sign where
+    printText0 ga (G_ext_sign _ s _) = printText0 ga s
+
+langNameExtSig :: G_ext_sign -> String
+langNameExtSig (G_ext_sign lid _ _) = language_name lid
 
 -- | Grothendieck symbols
 data G_symbol = forall lid sublogics

@@ -164,10 +164,10 @@ ana_LIB_DEFN :: LogicGraph -> AnyLogic -> HetcatsOpts
                  -> LibEnv -> LIB_DEFN
                  -> IOResult (LIB_NAME,LIB_DEFN,DGraph,LibEnv)
 
-ana_LIB_DEFN lgraph l opts libenv (Lib_defn ln alibItems pos ans) = do
+ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
   gannos <- resToIORes $ addGlobalAnnos emptyGlobalAnnos ans
   (libItems',gctx@(_,_,dg),_,libenv') <- 
-     foldl ana (return ([],(gannos,Map.empty,empty),l,libenv))
+     foldl ana (return ([],(gannos,Map.empty,empty),defl,libenv))
                (map item alibItems)
   return (ln,
           Lib_defn ln 
@@ -182,7 +182,7 @@ ana_LIB_DEFN lgraph l opts libenv (Lib_defn ln alibItems pos ans) = do
     (libItems',gctx1,l1,libenv1) <- res
     IOResult (do
       Result diags res <-
-         ioresToIO (ana_LIB_ITEM lgraph l1 opts libenv1 gctx1 l1 libItem)
+         ioresToIO (ana_LIB_ITEM lgraph defl opts libenv1 gctx1 l1 libItem)
       showDiags opts diags
       if hasErrors diags then fail "Stopped due to errors"
        else case res of
@@ -228,14 +228,14 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
                             vn gen vt gsis pos)
 
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l 
-             (Arch_spec_defn asn asp pos) = do
+             asd@(Arch_spec_defn asn asp pos) = do
   ioToIORes (putIfVerbose opts 1  ("Analyzing arch spec "++showPretty asn ""))
-  ana_err "arch spec"
+  resToIORes (warning (asd,gctx,l,libenv) "Ignoring arch spec" (headPos pos))
 
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
-             (Unit_spec_defn usn usp pos) = do
+             usd@(Unit_spec_defn usn usp pos) = do
   ioToIORes (putIfVerbose opts 1  ("Analyzing unit spec "++showPretty usn ""))
-  ana_err "unit spec"
+  resToIORes (warning (usd,gctx,l,libenv) "Ignoring unit spec" (headPos pos))
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l 
              (Logic_decl ln pos) = do

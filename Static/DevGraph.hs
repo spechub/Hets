@@ -31,6 +31,7 @@ import Common.GlobalAnnotations
 
 import Common.Lib.Graph as Graph
 import Common.Lib.Map as Map
+import Common.Lib.Set as Set
 import Common.Id
 import Common.PrettyPrint
 import Common.Lib.Pretty
@@ -119,6 +120,27 @@ getNodeAndSig (EmptyNode _) = Nothing
 
 getLogic (NodeSig (n,G_sign lid _)) = Logic lid
 getLogic (EmptyNode l) = l
+
+data ExtNodeSig = ExtNodeSig (Node,G_ext_sign) | ExtEmptyNode AnyLogic
+               deriving (Eq,Show)
+
+instance PrettyPrint ExtNodeSig where
+  printText0 ga (ExtEmptyNode _) = ptext "<empty NodeSig>"
+  printText0 ga (ExtNodeSig(n,sig)) = 
+    ptext "node" <+> printText0 ga n <> ptext ":" <> printText0 ga sig
+
+getExtNode (NodeSig (n,sigma)) = Just n
+getExtNode (EmptyNode _) = Nothing
+
+getExtSig (ExtNodeSig (n,sigma)) = sigma
+getExtSig (ExtEmptyNode (Logic lid)) = 
+  G_ext_sign lid (empty_signature lid) Set.empty
+
+getExtNodeAndSig (ExtNodeSig (n,sigma)) = Just (n,sigma)
+getExtNodeAndSig (ExtEmptyNode _) = Nothing
+
+getExtLogic (ExtNodeSig (_,G_ext_sign lid _ _)) = Logic lid
+getExtLogic (ExtEmptyNode l) = l
 
 -- import, formal parameters, united signature of formal params, body
 type ExtGenSig = (NodeSig,[NodeSig],G_sign,NodeSig)

@@ -425,7 +425,7 @@ basicAnalysis (bs, inSig, ga) = do
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
 	diff = diffSig cleanSig inSig
 	remPartOpsS s = s { opMap = remPartOpsM $ opMap s }
-    checked_sents <- return sents -- overloadResolution inSig sents
+    checked_sents <- overloadResolution accSig sents
     Result ds (Just ()) -- insert diags
     return ( newBs
 	   , remPartOpsS diff
