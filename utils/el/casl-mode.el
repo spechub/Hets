@@ -6,7 +6,7 @@
   "Version of CASL-Mode")
 
 (defgroup casl nil
-  "Major mode for editing Haskell programs."
+  "Major mode for editing (heterogeneous) CASL programs."
   :group 'languages
   :prefix "casl-")
 
@@ -109,7 +109,7 @@
      (1 casl-other-name-face keep t) (3 casl-other-name-face keep t) 
      (4 casl-other-name-face keep t) (6 casl-other-name-face keep t)) 
    ;; reserved keyword
-   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
+   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|idem\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
      (2 casl-keyword-face keep t))
    '("[,;]" (0 casl-black-komma-face t t))
   )	
