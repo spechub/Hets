@@ -71,7 +71,7 @@ instance PrettyPrint SORT_ITEM where
 			       <> braces(printText0 ga v
 					  <> colon
 					  <> printText0 ga t
-					  <> (text cDot
+					  <> (ptext "."
 					  <+> printText0 ga f))
     printText0 ga (Iso_decl l _) = 
 	hcat(punctuate  (text equalS) (map (printText0 ga) l))
