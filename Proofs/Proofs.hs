@@ -62,7 +62,7 @@ import Logic.Comorphism
 import Static.DevGraph
 import Common.Result
 import Common.Lib.Graph
-import Common.Lib.Set (fromList)
+import qualified Common.Lib.Set as Set --(fromList, intersection, isEmpty)
 import qualified Common.Lib.Map as Map
 import Data.List(nub)
 import Data.Maybe
@@ -86,7 +86,7 @@ type ProofStatus = (GlobalContext,LibEnv,[([DGRule],[DGChange])],DGraph)
 
 data DGRule = 
    TheoremHideShift
- | HideTheoremShift
+ | HideTheoremShift (LEdge DGLinkLab)
  | Borrowing
  | ConsShift
  | DefShift 
@@ -527,6 +527,110 @@ getDGNode libEnv dgraph node =
   where contextOfNode = (context node dgraph)
         nodeLab = lab' contextOfNode
 
+
+-- ----------------------------------------------
+-- hide theorem shift
+-- ----------------------------------------------
+
+hideTheoremShift :: ProofStatus -> ProofStatus
+hideTheoremShift proofStatus@(globalContext,libEnv,history,dGraph) =
+  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
+
+  where
+    hidingThmEdges = filter isHidingThm (labEdges dGraph)
+    result = hideTheoremShiftAux libEnv dGraph ([],[]) hidingThmEdges
+    nextDGraph = fst result
+    nextHistoryElem = snd result
+
+{- auxiliary method for hideTheoremShift -}
+hideTheoremShiftAux :: LibEnv -> DGraph -> ([DGRule],[DGChange])
+		    -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
+hideTheoremShiftAux libEnv dgraph historyElement [] = (dgraph, historyElement)
+hideTheoremShiftAux
+           libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) = 
+  if null (findProofBasisForHideTheoremShift consGlobThmsFromTgt globThmsFromSrc (morphism,hidingMorphism)) then
+    hideTheoremShiftAux libEnv dgraph (rules,changes) list
+   else 
+    hideTheoremShiftAux libEnv newDgraph (newRules,newChanges) list
+
+
+  where
+    globThms = filter isGlobalThm (labEdges dgraph)
+    consGlobThms = [edge| edge <- globThms, (getConservativity edge) <= Cons]
+    consGlobThmsFromTgt = [edge|edge@(source,_,_) <- consGlobThms,
+			  source == tgt]
+    globThmsFromSrc = [edge| edge@(_,target,_) <- globThms, target == src]
+    morphism = dgl_morphism edgeLab
+    maybeThSrc = computeLocalTheory libEnv dgraph src
+    auxGraph = delLEdge ledge dgraph
+    (HidingThm hidingMorphism _) = (dgl_type edgeLab)
+    newEdge = (src,
+	       tgt,
+	       DGLink {dgl_morphism = morphism,
+		       dgl_type = (HidingThm hidingMorphism (Proven [])),
+		       dgl_origin = DGProof}
+               )
+    newDgraph = insEdge newEdge auxGraph
+    newRules = (HideTheoremShift ledge):rules
+    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+
+
+findProofBasisForHideTheoremShift :: [LEdge DGLinkLab] -> [LEdge DGLinkLab] -> (GMorphism,GMorphism) -> [LEdge DGLinkLab]
+findProofBasisForHideTheoremShift [] _ _ = []
+findProofBasisForHideTheoremShift consEdges edges (morphism, hidingMorphism)
+  | not (null provenTuples) = headTupleToList provenTuples
+  | not (null tuplesFirstEdgeProven) = headTupleToList tuplesFirstEdgeProven
+  | not (null tuplesSecondEdgeProven) = headTupleToList tuplesSecondEdgeProven
+  | otherwise = headTupleToList possibleProofBasisTuples
+
+  where 
+    possibleProofBasisTuples
+	= filterPairsWithSameMorphism
+            (computeEdgeCompMorphismTuples consEdges morphism)
+            (computeEdgeCompMorphismTuples edges hidingMorphism)
+    provenTuples 
+	= [pair|pair@(edge,edge2)<- possibleProofBasisTuples, 
+	   isProven edge && isProven edge2]
+    tuplesFirstEdgeProven
+	= [pair|pair@(edge,edge2)<- possibleProofBasisTuples, isProven edge]
+    tuplesSecondEdgeProven
+	= [pair|pair@(edge,edge2)<- possibleProofBasisTuples, isProven edge2]
+
+
+headTupleToList :: [(a,a)] -> [a]
+headTupleToList [] = []
+headTupleToList ((x,y):list) = [x,y]
+
+filterPairsWithSameMorphism :: [(LEdge DGLinkLab,Maybe GMorphism)] -> [(LEdge DGLinkLab,Maybe GMorphism)] -> [(LEdge DGLinkLab,LEdge DGLinkLab)]
+filterPairsWithSameMorphism [] _ = []
+filterPairsWithSameMorphism ((edge,morph):tuples) tuples2 =
+  [(edge,edge2)| (edge2,morph2) <- tuples2,
+   morph2 == morph && morph2 /= Nothing]
+  ++(filterPairsWithSameMorphism tuples tuples2)
+  
+  
+computeEdgeCompMorphismTuples :: [LEdge DGLinkLab] -> GMorphism 
+			      -> [(LEdge DGLinkLab, Maybe GMorphism)]
+computeEdgeCompMorphismTuples edges morphism =
+  [(edge,compMorphisms (dgl_morphism edgeLab) morphism)|
+   edge@(_,_,edgeLab) <- edges]
+
+
+compMorphisms :: GMorphism -> GMorphism -> Maybe GMorphism
+compMorphisms morph1 morph2 =
+  resultToMaybe $ compHomInclusion morph1 morph2 
+
+
+{- returns the Conservativity if the given edge has one,
+   otherwise an error is raised -}
+getConservativity :: LEdge DGLinkLab -> Conservativity
+getConservativity edge@(_,_,edgeLab) =
+  case dgl_type edgeLab of
+    (LocalThm _ cons _) -> cons
+    (GlobalThm _ cons _) -> cons
+    otherwise -> error ("Could not determine conservativity of "
+			++(show edge)++"Edge has wrong type.")
+
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
@@ -726,6 +830,7 @@ getTargetNode (_,target,_) = target
 isProven :: LEdge DGLinkLab -> Bool
 isProven edge = isGlobalDef edge || isLocalDef edge 
 		|| isProvenGlobalThm edge || isProvenLocalThm edge
+                || isProvenHidingThm edge
 
 isGlobalEdge :: LEdge DGLinkLab -> Bool
 isGlobalEdge edge = isGlobalDef edge || isGlobalThm edge
@@ -779,6 +884,18 @@ isHidingDef :: LEdge DGLinkLab -> Bool
 isHidingDef (_,_,edgeLab) =
   case dgl_type edgeLab of
     HidingDef -> True
+    otherwise -> False
+
+isHidingThm :: LEdge DGLinkLab -> Bool
+isHidingThm (_,_,edgeLab) =
+  case dgl_type edgeLab of
+    (HidingThm _ _) -> True
+    otherwise -> False
+
+isProvenHidingThm :: LEdge DGLinkLab -> Bool
+isProvenHidingThm (_,_,edgeLab) =
+  case dgl_type edgeLab of
+    (HidingThm _ (Proven _)) -> True
     otherwise -> False
 
 -- ----------------------------------------------------------------------------

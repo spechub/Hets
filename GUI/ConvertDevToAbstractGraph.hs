@@ -229,7 +229,9 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		   Button "Local Subsumption"
 		          (proofMenuSef gInfo locSubsume),
 		   Button "Local Decomposition (merge of rules)"
-			  (proofMenuSef gInfo locDecomp)
+			  (proofMenuSef gInfo locDecomp),
+		   Button "Hide Theorem Shift"
+		          (proofMenuSef gInfo hideTheoremShift)
                     ]])]
       -- the node types
                [("spec", 
@@ -263,6 +265,10 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                    Solid $$$ Color "Steelblue"
 		   $$$ createLocalEdgeMenu gInfo
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
+		  ("hidingdef",
+                   Solid $$$ Color "Lightblue"
+		   $$$ createLocalEdgeMenu gInfo
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
 		  ("hetdef",
                    GraphConfigure.Double
 		   $$$ createLocalEdgeMenu gInfo
@@ -283,6 +289,14 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                    Dashed $$$ Color "Red" 
 		   $$$ createLocalEdgeMenuThmEdge gInfo
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
+                  ("unprovenhidingthm",
+                   Solid $$$ Color "Orange"
+                   $$$ createLocalEdgeMenuThmEdge gInfo
+                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
+                  ("provenhidingthm",
+                   Solid $$$ Color "Lightgreen"
+                   $$$ createLocalEdgeMenuThmEdge gInfo
+                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   -- > ######### welche Farbe fuer reference ##########
                   ("reference",
                    Dotted $$$ Color "Grey"
@@ -934,20 +948,22 @@ getDGLinkType lnk = case (dgl_type lnk) of
 getDGLinkTypeAux :: DGLinkType -> String
 getDGLinkTypeAux LocalDef = "def"
 getDGLinkTypeAux GlobalDef = "globaldef"
-getDGLinkTypeAux HidingDef = "def"
+getDGLinkTypeAux HidingDef = "hidingdef"
 getDGLinkTypeAux (FreeDef _) = "def"
 getDGLinkTypeAux (CofreeDef _) = "def"
 getDGLinkTypeAux (LocalThm thmLinkStatus _ _) = 
     "local"++(getThmType thmLinkStatus)
-getDGLinkTypeAux (GlobalThm thmLinkStatus _ _) = getThmType thmLinkStatus
-getDGLinkTypeAux (HidingThm _ thmLinkStatus) = getThmType thmLinkStatus
+getDGLinkTypeAux (GlobalThm thmLinkStatus _ _) = 
+    (getThmType thmLinkStatus)++"thm"
+getDGLinkTypeAux (HidingThm _ thmLinkStatus) =
+    (getThmType thmLinkStatus)++"hidingthm"
 getDGLinkTypeAux (FreeThm _ bool) = if bool then "proventhm" else "unproventhm"
 
 getThmType :: ThmLinkStatus -> String
 getThmType thmLinkStatus =
   case thmLinkStatus of
-    Proven _ -> "proventhm"
-    Open -> "unproventhm"
+    Proven _ -> "proven"
+    Open -> "unproven"
 
 {- converts the edges of the development graph
 works the same way as convertNods does-}
