@@ -91,6 +91,7 @@ split p s = let ph = do hd <- p;
                Left _ -> error"split" 
 	       Right x -> x
 
+-- may be convert to Sign.Term
 makeStringTerm :: LiteralOpItems -> [OpItem] -> Token -> ([Diagnosis], [TERM])
 makeStringTerm ga is tok = 
   let p = tokPos tok in
@@ -132,14 +133,33 @@ asAppl :: OpItem -> [TERM] -> TERM
 asAppl f args = Application (Qual_op_name (opId f) (oldOpType f) []) args []
 
 -- analyse Mixfix_token
-{-convertMixfixToken:: GlobalAnnos -> [varDecl] -> [OpItem] -> Token
+convertMixfixToken::  LiteralOpItems -> [VarDecl] -> [OpItem] -> Token
          -> ([Diagnosis], [TERM]) 
-
 convertMixfixToken ga vs is t = 
      if isPlace t then ([], [Mixfix_token t])
-     else if isString t then 
-	  case string_lit $ literal_annos ga of
-	  Nothing -> ([Error "missing %string annotation" (tokPos t)], [])
-          Just (c, f) -> makeStringTerm is c f t
-     else error "not implemented yet"
+     else if isString t then makeStringTerm ga is t
+     else if isNumber t then error "not implemented yet"
+     else let i = Id [t] [] []
+              os = map (\o -> asAppl o []) (lookupId is 0 i)
+              ds = map (\v -> Qual_var (varId v) (varSort v) [])
+			 (filter (\x -> varId x == t) vs)
+	  in case os ++ ds of 
+	     [] -> ([Error ("no matching constant or variable for: "
+			    ++ tokStr t)(tokPos t)], [])
+	     l -> ([], os ++ ds)
+
+
+
+{-
+lookupToken :: [OpItem] -> Int -> Token -> [OpItem]
+lookupToken is pos t =
+	 filter (\x -> opId x == i && args == length(opArgs(opType x))) is
+
+
+getNthToken :: Id -> Int -> Token
+getNthToken (Id ts cs _) n = 
+    let (_, toks) = span isPlace (reverse l) in 
+    (reverse toks) !! n
+
+numberOfTokens 
 -}
