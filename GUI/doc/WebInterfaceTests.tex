@@ -1,0 +1,133 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{german}
+\usepackage{isolatin1}
+\usepackage{amssymb}
+\usepackage{epsfig}
+\usepackage{moreverb}
+
+\setlength{\textwidth}{16cm}
+\setlength{\topmargin}{-1cm}
+\setlength{\evensidemargin}{0cm}
+\setlength{\oddsidemargin}{0cm}
+\setlength{\textheight}{24cm}
+
+% skip between paragraphs
+\setlength{\parskip}{1ex}
+% ... and no indentation at start of a new paragraph
+\setlength{\parindent}{0ex}
+\pagestyle{plain}
+\thispagestyle{plain}
+
+\begin{document}
+\part*{Test}
+
+\section{Directy: Incorrect}
+\begin{itemize}
+   \item TestBasic.casl - similar output: OK
+   \item silvia.casl    - similar output: OK (valid specification)
+\end{itemize}
+
+\section{Directy: Correct}
+
+\begin{itemize}
+   \item donald.casl        - similar output: OK
+   \item fred1.casl         - similar output: OK
+   \item frederic.casl      - similar output: OK
+   \item import\_test.casl  - similar output: OK (ERROR)
+   \item Invoice.casl       - not similar output:
+\end{itemize}
+\textit{kommandos konsole:}
+\begin{verbatim}
+Analyzing from Basic/Numbers version 0.3
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/Numbers.env
+Analyzing from Basic/StructuredDatatypes version 0.3
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/StructuredDatatypes.env
+Analyzing from Basic/RelationsAndOrders
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/RelationsAndOrders.env
+Analyzing from Basic/Algebra_I
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/Algebra_I.env
+Analyzing from Basic/SimpleDatatypes
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/SimpleDatatypes.env
+Analyzing spec ORDER
+Analyzing spec STOCK
+Analyzing spec INVOICE
+Analyzing spec ORDER_QUEUE
+Analyzing spec QUEUES
+Analyzing spec WHS
+Analyzing arch spec Warehouse
+*** Error /home/cofi/jiang/HetCATS/CASL-lib/TestSuite/Correct/Invoice.casl:203.36,
+    Amalgamability is not ensured:
+sorts Product in
+OrderFun [NatAlg]
+and Product in
+StockFun [NatAlg]
+might be different
+Fail: Stopped due to errors
+\end{verbatim}
+\textit{Web interface:}
+\begin{verbatim}
+Analyzing from Basic/Numbers version 0.3
+Analyzing from Basic/StructuredDatatypes version 0.3
+Analyzing spec ORDER
+Analyzing spec STOCK
+Analyzing spec INVOICE
+Analyzing spec ORDER_QUEUE
+Analyzing spec QUEUES
+Analyzing spec WHS
+Analyzing arch spec Warehouse
+*** Error <stdin>:203.36, Amalgamability is not ensured: 
+sorts Product in OrderFun [NatAlg] and Product in StockFun [NatAlg] 
+might be different
+\end{verbatim}
+\begin{itemize}
+    \item min\_test.casl     - similar output: OK
+    \item piotr.casl         - similar output: OK (ERROR)
+    \item piotr\_short.casl  - similar output: OK (ERROR)
+    \item pushouts.casl      - similar output: OK
+    \item serge.casl         - similar output: OK
+    \item subsorts.casl      - similar output: OK
+    \item TestArch.casl      - similar output: OK (ERROR)
+    \item TestBasic.casl     - similar output: OK
+    \item TestStruct.casl    - similar output: OK (ERROR)
+    \item union\_test.casl   - similar output: OK
+    \item view\_test.casl    - similar output: OK
+    \item WareHouse.casl     - BOMBOM
+\end{itemize}
+\textit{Kommandos konsole:}
+\begin{verbatim}
+Analyzing from TestSuite/Correct/Invoice
+Reading /home/cofi/jiang/HetCATS/CASL-lib/TestSuite/Correct/Invoice
+Analyzing from Basic/Numbers version 0.3
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/Numbers.env
+Analyzing from Basic/StructuredDatatypes version 0.3
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/StructuredDatatypes.env
+Analyzing from Basic/RelationsAndOrders
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/RelationsAndOrders.env
+Analyzing from Basic/Algebra_I
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/Algebra_I.env
+Analyzing from Basic/SimpleDatatypes
+Reading /home/cofi/jiang/HetCATS/CASL-lib/Basic/SimpleDatatypes.env
+Analyzing spec ORDER
+Analyzing spec STOCK
+Analyzing spec INVOICE
+Analyzing spec ORDER_QUEUE
+Analyzing spec QUEUES
+Analyzing spec WHS
+Analyzing arch spec Warehouse
+*** Error /home/cofi/jiang/HetCATS/CASL-lib/TestSuite/Correct/Invoice.casl:203.36, Amalgamability is not ensured:
+sorts Product in
+OrderFun [NatAlg]
+and Product in
+StockFun [NatAlg]
+might be different
+
+Fail: user error (Stopped due to errors)
+\end{verbatim}
+\textit{Web interface:}
+\begin{verbatim}
+ Analyzing from TestSuite/Correct/Invoice
+*** FatalError , Internal error: did not find library TestSuite/Correct/Invoice available: []
+\end{verbatim}
+
+\end{document}
