@@ -22,7 +22,6 @@ import Logic.Grothendieck
 import Logic.Logic
 
 import Syntax.AS_Structured
-import Common.Print_AS_Annotation
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
@@ -305,8 +304,8 @@ spAnnotedPrint pf pAn beside_ keyw ai =
 	                 -- Todo: indent annos
           in  case (render keyw) of
                 "\\THEN" | not $ isEmpty anno  -> anno $+$ as' $+$ i'
-                keyw'                         -> keyw `beside_` san $+$ as' $+$ i'
-    where checkAnno an keyword beside_ san = 
+                _keyw'                         -> keyw `beside_` san $+$ as' $+$ i'
+    where checkAnno an _keyword _beside san' = 
             case an of 
                  Semantic_anno anno _ ->
                           case anno of 
@@ -314,6 +313,6 @@ spAnnotedPrint pf pAn beside_ keyw ai =
                                 SA_def      -> sp_text 0 "\\THENDEF"
 				SA_implies  -> sp_text 0 "\\THENIMPLIES"
 				SA_mono     -> sp_text 0 "\\THENMONO"
-				anno'       -> keyw `beside_` san'
-                 an' -> keyw `beside_` san'                 
+				_anno'      -> keyw `beside_` san'
+                 _an' -> keyw `beside_` san'                 
 
