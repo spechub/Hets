@@ -1,0 +1,9 @@
+  var S,N,E : Type
+  type Set S := S ->? Unit;
+  type Graph N E := Set N * (E->?N) * (E->?N) 
+
+  ops  __union__ : Graph N E * Graph N E -> Graph N E;
+       __union__, __intersection__, __\\__  : Set S * Set S -> Set S;
+
+  forall g,g' : Graph N E
+  . (g union g')  = g

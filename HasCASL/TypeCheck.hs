@@ -105,17 +105,17 @@ lookupError :: Maybe Type -> [OpInfo] -> String
 lookupError mt ois = 
     (case mt of 
      Nothing -> ""
-     Just ty -> "expected type: " ++  showPretty ty "\n")
+     Just ty -> "with type: " ++  showPretty ty "\n")
     ++ "known types:\n  " ++
        showSepList (showString "\n  ") (showPretty . opType) ois "" 
 
 checkList :: (Maybe Type -> a -> State Env [(Subst, Type, a)])
-	  -> [Type] -> [a] -> State Env [(Subst, [Type], [a])]
+	  -> [Maybe Type] -> [a] -> State Env [(Subst, [Type], [a])]
 checkList _ [] [] = return [(eps, [], [])]
 checkList inf (ty : rty) (trm : rt) = do 
-      fts <- inf (Just ty) trm
+      fts <- inf ty trm
       combs <- mapM ( \ (sf, tyf, tf) -> do
-		      rts <- checkList inf (subst sf rty) rt
+		      rts <- checkList inf (map (fmap (subst sf)) rty) rt
 		      return $ map ( \ (sr, tys, tts) ->
 			     (compSubst sf sr, subst sr tyf : tys,
 				     tf : tts)) rts) fts
@@ -165,7 +165,9 @@ inferAppl inf appl mt t1 t2 = do
 			   appl tf ta)) args) ops
 	    let res = concat combs 
 	    if null res then 
-	       do addDiags [mkDiag Error "wrongly typed application" 
+	       do addDiags [mkDiag (case mt of Nothing -> Error
+				               _ -> Hint)
+			    "wrongly typed application" 
 			    (appl t1 t2)]
 		  return res
 	       else  return res
@@ -195,34 +197,42 @@ infer mt trm = do
 	       mls <- mapM (mUnifySc mt) ois
 	       let ls = catMaybes mls
 	       if null ls then 
-		  do addDiags [Diag Error 
+		  do addDiags [Diag (case mt of Nothing -> Error
+				                _ -> Hint)
 			       ("no type match for: " ++ showId i "\n"
 				++ lookupError mt ois)
 			       (posOfId i) ]
 		     return []
 	          else return $ map ( \ (s, ty, oi) -> 
 			      case opDefn oi of
-			      VarDefn -> (s, subst s ty, QualVar i ty ps)
+			      VarDefn -> (s, ty, QualVar i ty ps)
 			      x -> let br = case x of
 				            NoOpDefn b -> b
 				            Definition b _ -> b
 				            _ -> Op in 
-				      (s, subst s ty, 
+				      (s, ty, 
 				       QualOp br (InstOpId i [] [])
 						  (opType oi) ps)) ls
 	    else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)
 		 (if isSingle ts then head ts else TupleTerm ts ps) ps
 	ApplTerm t1 t2 ps -> inferAppl infer ( \ x y -> ApplTerm x y ps) 
 			     mt t1 t2
-	TupleTerm ts ps -> do
-	     vs <- freshVars ts
-	     let pt = ProductType vs []
-	         Result ds ms = mUnify tm mt pt
-	     addDiags ds
-	     case ms of 
+	TupleTerm ts ps -> 
+	    case mt of 
+            Nothing -> do 		    
+                ls <- checkList infer (map (const Nothing) ts) ts 
+		return $ map ( \ (su, tys, trms) ->
+                                   (su, ProductType tys ps, 
+				    TupleTerm trms ps)) ls
+	    Just ty -> do 
+	        vs <- freshVars ts
+	        let pt = ProductType vs []
+	            Result ds ms = unify tm ty pt
+		addDiags ds
+	        case ms of 
 		     Nothing -> return []
 		     Just s  -> do 
-                         ls <- checkList infer (subst s vs) ts 
+                         ls <- checkList infer (map (Just . subst s) vs) ts 
 			 return $ map ( \ (su, tys, trms) ->
                                    (compSubst s su, ProductType tys ps, 
 				    TupleTerm trms ps)) ls
@@ -280,7 +290,7 @@ infer mt trm = do
 	    case ms of 
 	        Nothing -> return []
 		Just s -> do 
-                    ls <- checkList inferPat (subst s vs) pats
+                    ls <- checkList inferPat (map (Just . subst s) vs) pats
 		    rs <- mapM ( \ ( s2, _, nps) -> do
 		       bs <- mapM extractBindings nps
 		       mapM_ addVarDecl (concatMap snd bs)
@@ -307,8 +317,7 @@ infer mt trm = do
 				 CaseTerm otrm nes ps)) es) ts
 	    return $ concat rs
         LetTerm b eqs inTrm ps -> do 
-	    vs <- freshVars eqs
-	    es <- checkList inferLetEq vs eqs
+	    es <- checkList inferLetEq (map (const Nothing) eqs) eqs
 	    rs <- mapM ( \ (s1, _, nes) -> do 
 	       ts <- infer mt inTrm 
 	       return $ map ( \ (s2, ty, nt) -> 
@@ -369,7 +378,11 @@ inferPat mt pat = do
 	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
 	       mls <- mapM (mUnifySc mt) ois
 	       let ls = catMaybes mls
-	       if null ls then do addDiags [mkDiag Error "no match for" i]
+	       if null ls then do addDiags [Diag (case mt of Nothing -> Error
+				                             _ -> Hint) 
+			           ("no type match for: " ++ showId i "\n"
+				    ++ lookupError mt ois)
+					    (posOfId i) ]
 				  return []
 	          else return $ map ( \ (s, ty, oi) -> 
 			      case opDefn oi of
@@ -381,15 +394,22 @@ inferPat mt pat = do
 		 (if isSingle ts then head ts else TuplePattern ts ps) ps
 	ApplPattern p1 p2 ps -> inferAppl inferPat 
 				( \ x y -> ApplPattern x y ps) mt p1 p2
-	TuplePattern ts ps -> do
-	     vs <- freshVars ts
-	     let pt = ProductType vs []
-	         Result ds ms = mUnify tm mt pt
-	     addDiags ds
-	     case ms of 
+	TuplePattern ts ps -> 
+	    case mt of 
+	    Nothing -> do 	    
+                ls <- checkList inferPat (map (const Nothing) ts) ts 
+		return $ map ( \ (su, tys, trms) ->
+                                     (su, ProductType tys ps, 
+				    TuplePattern trms ps)) ls
+	    Just ty -> do
+	        vs <- freshVars ts
+	        let pt = ProductType vs []
+	            Result ds ms = unify tm ty pt
+	        addDiags ds
+	        case ms of 
 		     Nothing -> return []
 		     Just s  -> do 
-                         ls <- checkList inferPat (subst s vs) ts 
+                         ls <- checkList inferPat (map (Just . subst s) vs) ts 
 			 return $ map ( \ (su, tys, trms) ->
                                    (compSubst s su, ProductType tys ps, 
 				    TuplePattern trms ps)) ls
