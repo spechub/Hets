@@ -36,6 +36,7 @@ import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Syntax.Print_AS_Architecture
 import List
+-- import Debug.Trace
 
 
 -- | Analyse an architectural specification
@@ -193,12 +194,14 @@ ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, _) curl justStruct
        -- analyse the unit term
        (p@(Diag_node_sig n _), diag''', dg''', ut') <- ana_UNIT_TERM lgraph defl (gannos, genv, dg'') 
 				                                     curl justStruct (buc', diag'') (item ut)
-       -- add new node to the diagram
-       (z, diag4) <- extendDiagram lgraph diag''' [] (EmptyNode curl) (renderText Nothing (printText exp))
+       -- insert diagram edges from the parameter nodes to the node representing unit term
+       diag4 <- insInclusionEdges lgraph diag''' pardnsigs p
        -- check amalgamability conditions
        let pos = getPos_UNIT_EXPRESSION exp
-       () <- assertAmalgamability pos diag''' (inn diag''' n)
-       return (z, Par_unit_sig (map snd args, getSigFromDiag p), diag4, dg''', 
+       () <- assertAmalgamability pos diag4 (inn diag4 n)
+       -- add new node to the diagram
+       (z, diag5) <- extendDiagram lgraph diag4 [] (EmptyNode curl) (renderText Nothing (printText exp))
+       return (z, Par_unit_sig (map snd args, getSigFromDiag p), diag5, dg''', 
 	       Unit_expression ubs' (replaceAnnoted ut' ut) poss)
 
 
