@@ -18,4 +18,3 @@ parse error at 5.7:
 unexpected "?"
 expecting casl char, underline word, "{", "[", __, [<id>,...,<id>], "%%", "%{", "%(", "%", ",", "<=>" or "("
 
-pred a() <=> e
