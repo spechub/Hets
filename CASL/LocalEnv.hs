@@ -18,15 +18,17 @@ data FunKind = Total | Partial deriving (Eq, Ord)
 data OpType = OpType {opKind :: FunKind, opArgs :: [SortId], opRes :: SortId} 
 	      deriving (Eq, Ord)
 
-data ItemType = OpAsItemType OpType
-	      | PredType [SortId]
+type PredType = [SortId]
+
+data SymbType = OpAsItemType OpType
+	      | PredType PredType
 	      | Sort 
 		deriving (Eq, Ord)
 
-data ItemId = ItemId {itemId :: Id, itemType :: ItemType} deriving (Eq, Ord)
+data Symbol = Symbol {symbId :: Id, sumbType :: SymbType} deriving (Eq, Ord)
 
 -- the list of items which are part of a "sort-gen" (or free type)
-type GenItems = [ItemId] 
+type GenItems = [Symbol] 
 
 -- full function type of a selector (result sort is component sort)
 data Component = Component (Maybe Id) OpType 
@@ -56,8 +58,8 @@ data BinOpAttr = Assoc | Comm | Idem deriving (Show)
 
 data OpAttr = BinOpAttr BinOpAttr | UnitOpAttr Term
 
-type ConsId = ItemId
-type SelId = ItemId
+type ConsId = Symbol
+type SelId = Symbol
 
 data OpDefn = OpDef [VarDecl] Term
             | Constr ConsId
@@ -73,7 +75,7 @@ data OpItem = OpItem { opId :: Id
 data PredDefn = PredDef [VarDecl] Formula
 
 data PredItem = PredItem { predId :: Id
-			 , predType :: [SortId]
+			 , predType :: PredType
 			 , predDefn :: Maybe PredDefn
 			 , predAn :: [Anno]
 			 }
@@ -97,24 +99,27 @@ data PolyOp = DefOp | EqualOp | ExEqualOp
 data Formula = Binding Binder [VarDecl] Formula
 	     | Connect LogOp [Formula]
 	     | TermTest PolyOp [Term]
-	     | PredAppl Id [SortId] [Term]
+	     | PredAppl Id PredType [Term]
 	     | ElemTest Term SortId
 
 data SigItem = ASortItem SortItem 
 	     | AnOpItem OpItem
-	     | APredItem OpItem
-
+	     | APredItem PredItem
 
 type IdMap a = FiniteMap Id a
 
 type OpMap = IdMap (FiniteMap OpType OpItem)
-type PredMap = IdMap (FiniteMap [SortId] PredItem) 
+type PredMap = IdMap (FiniteMap PredType PredItem) 
 
 data Sign = SignAsList [SigItem]
-	  | SignAsMap (FiniteMap ItemId SigItem)
+	  | SignAsMap (FiniteMap Symbol SigItem)
           | SignForSearch { sorts :: Set SortId
 			  , ops :: OpMap 
 			  , preds :: PredMap} 
+
+
+data RaySymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
+data Kind = SortKind | FunKind | PredKind
 
 data Axiom = AxiomDecl [VarDecl] Formula [Anno]
 
