@@ -100,6 +100,7 @@ withinS,
   resultS,
   propS,
   localS,
+  logicS,
   libraryS,
   lambdaS,
   inS,
@@ -169,6 +170,7 @@ inS  = "in"
 lambdaS  = "lambda"
 libraryS  = "library"
 localS  = "local"
+logicS = "logic" -- new keyword
 propS = "prop"
 resultS  = "result"
 revealS  = "reveal" 

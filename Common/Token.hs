@@ -84,7 +84,7 @@ casl_reserved_words, formula_words, casl_reserved_fwords :: [String]
 casl_reserved_words =
     [andS, archS, asS, assocS, axiomS, axiomS ++ sS, closedS, commS, endS, 
     existsS, fitS, forallS, freeS, fromS, generatedS, getS, givenS,
-    hideS, idemS, inS, lambdaS, libraryS, localS, 
+    hideS, idemS, inS, lambdaS, libraryS, localS, logicS,
     opS, opS ++ sS, predS, predS ++ sS, propS, propS ++ sS, resultS, revealS, 
     sortS, sortS ++ sS, specS, thenS, toS, typeS, typeS ++ sS, 
     unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
@@ -205,9 +205,8 @@ sortId = do s <- varId
 -- simpleIds for spec- and view-name 
 ------------------------------------------------------------------------
 
-logicS = "logic" -- new keyword
-
-simpleId = pToken (reserved (logicS:casl_reserved_words) scanAnyWords)
+simpleId :: GenParser Char st Token
+simpleId = varId 
 
 -- ----------------------------------------------
 -- Tokens 
