@@ -36,21 +36,19 @@ import Data.Maybe
 
 data Constrain = Kinding Type Kind
                | Subtyping Type Type 
-		 deriving (Eq, Ord, Show)
+                 deriving (Eq, Ord, Show)
 
 instance PrettyPrint Constrain where
     printText0 ga c = case c of 
        Kinding ty k -> printText0 ga ty <+> colon 
-				      <+> printText0 ga k
+                                      <+> printText0 ga k
        Subtyping t1 t2 -> printText0 ga t1 <+> text lessS
-				      <+> printText0 ga t2
+                                      <+> printText0 ga t2
 
 instance PosItem Constrain where
   get_pos c = Just $ case c of 
     Kinding ty _ -> posOfType ty
     Subtyping t1 t2 -> firstPos [t1, t2] []
-
-instance PosItem a => PosItem (Set.Set a)
 
 type Constraints = Set.Set Constrain
 
@@ -74,11 +72,11 @@ simplify :: TypeMap -> Constraints -> ([Diagnosis], Constraints)
 simplify tm rs = 
     if Set.isEmpty rs then ([], noC)
     else let (r, rt) = Set.deleteFindMin rs 
-	     Result ds m = entail tm r
+             Result ds m = entail tm r
              (es, cs) = simplify tm rt
              in (ds ++ es, case m of
                                  Just _ -> cs
-	                         Nothing -> insertC r cs)
+                                 Nothing -> insertC r cs)
 
 entail :: Monad m => TypeMap -> Constrain -> m ()
 entail tm p = 
@@ -90,28 +88,28 @@ byInst tm c = case c of
     Kinding ty k -> case ty of 
       ExpandedType _ t -> byInst tm $ Kinding t k
       _ -> case k of
-	   Intersection l _ -> if null l then return noC else
-			  do pss <- mapM (\ ik -> byInst tm (Kinding ty ik)) l 
-			     return $ Set.unions pss
-	   ExtKind ek _ _ -> byInst tm (Kinding ty ek)
-	   ClassKind _ _ -> let (topTy, args) = getTypeAppl tm ty in
-	       case topTy of 
-	       TypeName _ kind _ -> if null args then
-		   if lesserKind tm kind k then return noC 
-		         else fail $ expected k kind
-		   else do 
-		       let ks = getKindAppl kind args
-		       newKs <- dom tm k ks 
-		       return $ Set.fromList $ zipWith Kinding args newKs
-	       _ -> error "byInst: unexpected Type" 
-	   _ -> error "byInst: unexpected Kind" 
+           Intersection l _ -> if null l then return noC else
+                          do pss <- mapM (\ ik -> byInst tm (Kinding ty ik)) l 
+                             return $ Set.unions pss
+           ExtKind ek _ _ -> byInst tm (Kinding ty ek)
+           ClassKind _ _ -> let (topTy, args) = getTypeAppl tm ty in
+               case topTy of 
+               TypeName _ kind _ -> if null args then
+                   if lesserKind tm kind k then return noC 
+                         else fail $ expected k kind
+                   else do 
+                       let ks = getKindAppl kind args
+                       newKs <- dom tm k ks 
+                       return $ Set.fromList $ zipWith Kinding args newKs
+               _ -> error "byInst: unexpected Type" 
+           _ -> error "byInst: unexpected Kind" 
     Subtyping t1 t2 -> if lesserType tm t1 t2 then return noC
                        else fail ("unable to prove: " ++ showPretty t1 " < " 
                                   ++ showPretty t2 "")
 
 maxKind :: TypeMap -> Kind -> Kind -> Maybe Kind
 maxKind tm k1 k2 = if lesserKind tm k1 k2 then Just k1 else 
-		if lesserKind tm k2 k1 then Just k2 else Nothing
+                if lesserKind tm k2 k1 then Just k2 else Nothing
 
 maxKinds :: TypeMap -> [Kind] -> Maybe Kind
 maxKinds tm l = case l of 
@@ -120,8 +118,8 @@ maxKinds tm l = case l of
     [k1, k2] -> maxKind tm k1 k2
     k1 : k2 : ks -> case maxKind tm k1 k2 of 
           Just k -> maxKinds tm (k : ks)
-	  Nothing -> do k <- maxKinds tm (k2 : ks)
-			maxKind tm k1 k 
+          Nothing -> do k <- maxKinds tm (k2 : ks)
+                        maxKind tm k1 k 
 
 maxKindss :: TypeMap -> [[Kind]] -> Maybe [Kind]
 maxKindss tm l = let margs = map (maxKinds tm) $ transpose l in
@@ -131,12 +129,12 @@ maxKindss tm l = let margs = map (maxKinds tm) $ transpose l in
 dom :: Monad m => TypeMap -> Kind -> [(Kind, [Kind])] -> m [Kind]
 dom tm k ks = 
     let fks = filter ( \ (rk, _) -> lesserKind tm rk k ) ks 
-	margs = maxKindss tm $ map snd fks
+        margs = maxKindss tm $ map snd fks
         in if null fks then fail ("class not found " ++ showPretty k "") 
            else case margs of 
-	      Nothing -> fail "dom: maxKind"
-	      Just args -> if any ((args ==) . snd) fks then return args
-			   else fail "dom: not coregular"
+              Nothing -> fail "dom: maxKind"
+              Just args -> if any ((args ==) . snd) fks then return args
+                           else fail "dom: not coregular"
 
 -- | get kind of an analyzed type
 kindOfType :: TypeMap -> Type -> Kind
@@ -157,9 +155,9 @@ kindOfType tm ty = case ty of
             Just k -> let 
                 rk = toIntersection (map fst $ getKindAppl k [ty,ty]) ps
                 tn = TypeName productId k 0 
-		mkAppl [t1] = t1
+                mkAppl [t1] = t1
                 mkAppl (t1:tr) = TypeAppl (TypeAppl tn t1) $ mkAppl tr
-		mkAppl [] = error "kindOfType: mkAppl"
+                mkAppl [] = error "kindOfType: mkAppl"
                 in if null ts then rk else kindOfType tm (mkAppl ts)
     LazyType t _ -> kindOfType tm t
     KindedType _ k _ -> k
@@ -344,10 +342,10 @@ shapeRel tm cs =
 monotonic :: TypeMap -> Int -> Type -> (Bool, Bool)
 monotonic tm v t = 
      case t of 
-	   TypeName _ _ i -> (True, i /= v)
-	   ExpandedType _ t2 -> monotonic tm v t2
-	   KindedType tk _ _ -> monotonic tm v tk
-	   LazyType tl _ -> monotonic tm v tl
+           TypeName _ _ i -> (True, i /= v)
+           ExpandedType _ t2 -> monotonic tm v t2
+           KindedType tk _ _ -> monotonic tm v tk
+           LazyType tl _ -> monotonic tm v tl
            _ -> let (top, args) = getTypeAppl tm t in case top of
                 TypeName _ k _ -> 
                     let ks = snd $ getRawKindAppl (rawKind k) args 
