@@ -308,7 +308,7 @@ forall x:s
 . f(x) =e= g(x)
 . f(x) = g(x)
 . r1 in s
-. def g(x) : t
+. def (g(x)) : t
 . def g(x) as s
 . def (op f : s ->? s)(x)
 . def (op g : s -> t)(x)
@@ -1364,7 +1364,7 @@ op b : a
 . (b || b) || b = b
 *** Hint 17.9, redeclared as total 'min'
 *** Hint 17.14, redeclared as total 'max'
-*** Error 90.19, no typing for: suc(0) : Pos
+*** Error 90.19, no typing for: (suc(0)) : Pos
 *** Hint 98.10, redeclared op 'min'
 *** Hint 98.15, redeclared op 'max'
 *** Hint 121.18, redeclared sort 'Int'
