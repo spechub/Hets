@@ -75,7 +75,8 @@ files.
 \item[Logic\_CASL.hs] contains the instance for the class \texttt{Logic.Logic}
 \item[MixfixParser.hs] uses precedence and associativity to resolve
   mixfix terms (and formulae). Also \%list, \%string, \%number and
-  \%floating annotations are resolved 
+  \%floating annotations are resolved
+\item[Morphism.hs] symbol and morphism stuff for \texttt{Logic}
 \item[OpItem.hs] parsers \texttt{opItem} and \texttt{predItem}
 \item[Parse\_AS\_Basic.hs] supplies the top-level parsers \texttt{basicSpec,
   basicItems, dotFormulae} and \texttt{sigItems}
@@ -85,12 +86,14 @@ files.
   analysis
 \item[RunStaticAna.hs] is an additional driver to test the static 
   analysis (call \texttt{capa analysis < file})  
-\item[Sign.hs] is the analysed abstract syntax and the signature for an
-  instance of the class \texttt{Logic}.
+\item[Sign.hs] (unused) was the analysed abstract syntax 
 \item[SortItem.hs] parsers \texttt{sortItem} and \texttt{datatype} (requires
   \texttt{Formula.hs} for subsort definitions)
-\item[Static.hs] implements the static analysis
-\item[Sublogics.hs] used by \texttt{Logic\_CASL.hs}
+\item[Static.hs] (unused) implements the static analysis
+\item[StaticAna.hs] implements a simple static analysis
+\item[Sublogic.hs] used by \texttt{Logic\_CASL.hs}
+\item[Sublogics.hs] older version
+\item[SymbolAnalysis] (unused) 
 \item[SymbolParser.hs] parses symbols and symbol maps that are not needed for
   basic specs but for heterogeneous structured specifications
   (\texttt{Logic\_CASL.hs}). These parsers do not deal with annotations,
