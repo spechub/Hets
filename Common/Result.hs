@@ -23,6 +23,10 @@ import Common.Lib.Parsec.Pos
 -- diagnostic messages
 -- ---------------------------------------------------------------------
 
+-- | maximum number of messages that are output
+maxdiags :: Int
+maxdiags = 20
+
 -- | severness of diagnostic messages
 data DiagKind = FatalError | Error | Warning | Hint deriving (Eq, Ord, Show)
 
@@ -36,6 +40,10 @@ data Diagnosis = Diag { diagKind :: DiagKind
 mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
 mkDiag k s a =
     Diag k (s ++ " '" ++ showPretty a "'") $ getMyPos a 
+
+-- | Check whether a diagnosis list contains errors
+hasErrors :: [Diagnosis] -> Bool
+hasErrors = any (\d -> diagKind d `elem` [FatalError,Error])
 
 -- ---------------------------------------------------------------------
 -- uniqueness check

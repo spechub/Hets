@@ -61,10 +61,11 @@ anaFile logicGraph defaultLogic opts fname = do
         Left err -> do putStrLn (show err)
                        return Nothing
         Right ast -> do
-          Result diags res <- 
+          Result diags res <-
             ioresToIO (ana_LIB_DEFN logicGraph defaultLogic opts
                                     emptyLibEnv ast)
-          sequence (map (putStrLn . show) diags)
+          -- no diags expected here, since these are handled in ana_LIB_DEFN
+          -- sequence (map (putStrLn . show) diags)
           return res
 
 -- lookup/read a library
@@ -121,11 +122,18 @@ ana_LIB_DEFN lgraph l opts libenv (Lib_defn ln alibItems pos ans) = do
           dg,
           Map.insert ln gctx libenv')
   where
-  ana res libItem = do
+  ana res libItem = do 
     (libItems',gctx1,l1,libenv1) <- res
-    (libItem',gctx1',l1',libenv1') <- 
-       ana_LIB_ITEM lgraph l1 opts libenv1 gctx1 l1 libItem
-    return (libItem':libItems',gctx1',l1',libenv1')
+    IOResult (do
+      Result diags res <-
+         ioresToIO (ana_LIB_ITEM lgraph l1 opts libenv1 gctx1 l1 libItem)
+      sequence (map (putStrLn . show) diags)
+      if hasErrors diags then fail "Stopped due to errors"
+       else case res of
+         Just (libItem',gctx1',l1',libenv1') -> 
+           return (return (libItem':libItems',gctx1',l1',libenv1'))
+         Nothing -> fail "Stopped. No result available"
+      )
 
 -- analyse a LIB_ITEM
 -- Parameters: logic graph, default logic, opts, library env

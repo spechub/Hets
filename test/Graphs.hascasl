@@ -33,7 +33,7 @@ spec Set = InternalLogic and Extensionality then
       __*__ : Set S -> Set T -> Set (S*T);
       __disjointUnion__ :  Set S -> Set S -> Set (S*Bool);
       inl,inr : S -> S*Bool;
-  forall x,x':S; y:T; s,s:Set(S); t:Set(T) 
+  forall x,x':S; y:T; s,s':Set(S); t:Set(T) 
   . not x isIn emptySet
   . x isIn {x'} <=> x=x'
   . x isIn s <=> s x
@@ -366,7 +366,7 @@ spec GraphHomomorphism =
 then
   var N1, E1, N2, E2, N3, E3 : Type
   type Hom N1 E1 N2 E2 = 
-     {h : Graph N1 E1 * (N1->?N2) * (E1->?E2) * Graph N2 E2 .
+     {(g1,hn,he,g2) : Graph N1 E1 * (N1->?N2) * (E1->?E2) * Graph N2 E2 .
        hn :: nodes g1 --> nodes g2 /\ he :: edges g1 --> edges g2 
        /\ forall e:E1 . e isIn edges e =>
           (   hn(source g1 e) = source g2 (he e)
