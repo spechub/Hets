@@ -16,11 +16,14 @@ import Common.ATerm.Lib
 import Common.Result
 import Comorphisms.LogicGraph
 import Logic.Logic
-import ATC.Comorphism
-import Logic.Logic
-import Logic.Comorphism
-import ATC.Graph
 import qualified Common.Lib.Set as Set
+
+atermErr :: String -> String -> a
+atermErr f d = error ("function \"" ++ f 
+    ++ "\" not derived (implemented) for data type \"" ++ d ++ "\"")
+fromATermErr, toATermErr :: String -> a
+fromATermErr = atermErr "fromATerm"
+toATermErr = atermErr "toATerm"
 
 instance ATermConvertible G_basic_spec where
      toShATerm att0 (G_basic_spec lid basic_spec) = 
@@ -35,12 +38,12 @@ instance ATermConvertible G_basic_spec where
                 case lookupLogic_in_LG 
 		      ("ATermConvertible G_basic_spec:") i1'  of {
 		    Logic lid -> 
-			G_basic_spec lid (fromShATerm_basic_spec lid att')}}} 
+			G_basic_spec lid (fromShATerm att')}}} 
 	    u     -> fromShATermError "G_basic_spec" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_basic_spec\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_basic_spec\""
+     fromATerm _ = fromATermErr "G_basic_spec"
+     toATerm _ = toATermErr "G_basic_spec"
 
 instance ATermConvertible G_sentence where
      toShATerm att0 (G_sentence lid sentence) = 
@@ -54,12 +57,12 @@ instance ATermConvertible G_sentence where
                     att' = getATermByIndex1 i2 att
 		    l = lookupLogic_in_LG ("ATerm_Convertible G_sentence:") i1' 
                 in case l of
-                    Logic lid -> (G_sentence lid (fromShATerm_sentence lid att'))
+                    Logic lid -> (G_sentence lid (fromShATerm att'))
 	    u     -> fromShATermError "G_sentence" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_sentence\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_sentence\""
+     fromATerm _ = fromATermErr "G_sentence"
+     toATerm _ = toATermErr "G_sentence"
 
 instance ATermConvertible G_l_sentence_list where
      toShATerm att0 (G_l_sentence_list lid n_sentence) = 
@@ -73,12 +76,12 @@ instance ATermConvertible G_l_sentence_list where
                case getATermByIndex1 i2 att of { att' ->
                case lookupLogic_in_LG 
                         ("ATermConvertible G_l_sentence_list") i1'  of {
-                    Logic lid -> (G_l_sentence_list lid (fromShATerm_l_sentence_list lid att'))}}}
+                    Logic lid -> (G_l_sentence_list lid (fromShATerm att'))}}}
 	    u     -> fromShATermError "G_l_sentence_list" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_l_sentence_list\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_l_sentence_list\""
+     fromATerm _ = fromATermErr "G_l_sentence_list"
+     toATerm _ = toATermErr "G_l_sentence_list"
 
 instance ATermConvertible G_sign where
      toShATerm att0 (G_sign lid sign) = 
@@ -92,12 +95,12 @@ instance ATermConvertible G_sign where
                     att' = getATermByIndex1 i2 att
                     l = lookupLogic_in_LG ("ATermConvertible G_sign:") i1' 
                 in case l of
-                    Logic lid -> (G_sign lid (fromShATerm_sign lid att'))
+                    Logic lid -> (G_sign lid (fromShATerm att'))
 	    u     -> fromShATermError "G_sign" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_sign\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_sign\""
+     fromATerm _ = fromATermErr "G_sign"
+     toATerm _ = toATermErr "G_sign"
 
 instance ATermConvertible G_ext_sign where
      toShATerm att0 (G_ext_sign lid sign _) = 
@@ -111,12 +114,12 @@ instance ATermConvertible G_ext_sign where
                     att' = getATermByIndex1 i2 att
                     l = lookupLogic_in_LG ("ATermConvertible G_ext_sign:") i1' 
                 in case l of
-                    Logic lid -> (G_ext_sign lid (fromShATerm_sign lid att') Set.empty)
+                    Logic lid -> (G_ext_sign lid (fromShATerm att') Set.empty)
 	    u     -> fromShATermError "G_ext_sign" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_ext_sign\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_ext_sign\""
+     fromATerm _ = fromATermErr "G_ext_sign"
+     toATerm _ = toATermErr "G_ext_sign"
 
 instance ATermConvertible G_sign_list where
      toShATerm att0 (G_sign_list lid signs) = 
@@ -130,12 +133,12 @@ instance ATermConvertible G_sign_list where
                     att' = getATermByIndex1 i2 att
                     l = lookupLogic_in_LG ("ATermConvertible G_sign_list:") i1' 
                 in case l of
-                    Logic lid -> (G_sign_list lid (fromShATerm_sign_list lid att'))
+                    Logic lid -> (G_sign_list lid (fromShATerm att'))
 	    u     -> fromShATermError "G_sign" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_sign_list\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_sign_list\""
+     fromATerm _ = fromATermErr "G_sign_list"
+     toATerm _ = toATermErr "G_sign_list"
 
 instance ATermConvertible G_symbol where
      toShATerm att0 (G_symbol lid symbol) = 
@@ -149,12 +152,12 @@ instance ATermConvertible G_symbol where
                     att' = getATermByIndex1 i2 att
                     l = lookupLogic_in_LG ("ATermConvertible G_symbol:") i1' 
                 in case l of 
-                    Logic lid -> (G_symbol lid (fromShATerm_symbol lid att'))
+                    Logic lid -> (G_symbol lid (fromShATerm att'))
 	    u     -> fromShATermError "G_symbol" u
          where
          aterm = getATerm att 
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_symbol\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_symbol\""
+     fromATerm _ = fromATermErr "G_symbol"
+     toATerm _ = toATermErr "G_symbol"
 
 instance ATermConvertible G_symb_items_list where
      toShATerm att0 (G_symb_items_list lid symb_items) = 
@@ -168,12 +171,12 @@ instance ATermConvertible G_symb_items_list where
                     att' = getATermByIndex1 i2 att
                     l = lookupLogic_in_LG ("ATermConvertible G_symb_items_list:") i1' 
                 in case l of
-                    Logic lid -> (G_symb_items_list lid (fromShATerm_symb_items_list lid att'))
+                    Logic lid -> (G_symb_items_list lid (fromShATerm att'))
 	    u     -> fromShATermError "G_symb_items_list" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_symb_items_list\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_symb_items_list\""
+     fromATerm _ = fromATermErr "G_symb_items_list"
+     toATerm _ = toATermErr "G_symb_items_list"
 
 instance ATermConvertible G_symb_map_items_list where
      toShATerm att0 (G_symb_map_items_list lid symb_map_items) = 
@@ -187,12 +190,12 @@ instance ATermConvertible G_symb_map_items_list where
                     att' = getATermByIndex1 i2 att
                     l = lookupLogic_in_LG ("ATermConvertible G_symb_map_items_list:") i1' 
                 in case l of
-                    Logic lid -> (G_symb_map_items_list lid (fromShATerm_symb_map_items_list lid att'))
+                    Logic lid -> (G_symb_map_items_list lid (fromShATerm att'))
 	    u     -> fromShATermError "G_symb_map_items_list" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_symb_map_items_list\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_symb_map_items_list\""
+     fromATerm _ = fromATermErr "G_symb_map_items_list"
+     toATerm _ = toATermErr "G_symb_map_items_list"
 
 instance ATermConvertible G_diagram where
      toShATerm att0 (G_diagram lid diagram) = 
@@ -206,12 +209,12 @@ instance ATermConvertible G_diagram where
                     att' = getATermByIndex1 i2 att
                     l = lookupLogic_in_LG ("ATermConvertible G_diagram:") i1' 
                 in case l of
-                    Logic lid -> (G_diagram lid (fromShATerm_diagram lid att'))
+                    Logic lid -> (G_diagram lid (fromShATerm att'))
 	    u     -> fromShATermError "G_diagram" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_diagram\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_diagram\""
+     fromATerm _ = fromATermErr "G_diagram"
+     toATerm _ = toATermErr "G_diagram"
 
 instance ATermConvertible G_sublogics where
      toShATerm att0 (G_sublogics lid sublogics) = 
@@ -227,12 +230,12 @@ instance ATermConvertible G_sublogics where
                           ("ATermConvertible G_sublogics:") i1' 
                 in case l of 
                     Logic lid -> 
-                     (G_sublogics lid (fromShATerm_sublogics lid att'))
+                     (G_sublogics lid (fromShATerm att'))
 	    u     -> fromShATermError "G_sublogics" u
          where
          aterm = getATerm att 
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_sublogic\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_sublogics\""
+     fromATerm _ = fromATermErr "G_sublogic"
+     toATerm _ = toATermErr "G_sublogics"
 
 instance ATermConvertible G_morphism where
      toShATerm att0 (G_morphism lid morphism) = 
@@ -246,12 +249,12 @@ instance ATermConvertible G_morphism where
                     att' = getATermByIndex1 i2 att
                     l = lookupLogic_in_LG ("ATermConvertible G_morphism:") i1' 
                 in case l of 
-                    Logic lid -> (G_morphism lid (fromShATerm_morphism lid att'))
+                    Logic lid -> (G_morphism lid (fromShATerm att'))
 	    u     -> fromShATermError "G_morphism" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"G_morphism\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"G_morphism\""
+     fromATerm _ = fromATermErr "G_morphism"
+     toATerm _ = toATermErr "G_morphism"
 
 ---------------------------------------------------------------
 
@@ -268,8 +271,8 @@ instance ATermConvertible AnyComorphism where
 	    u     -> fromShATermError "Comorphism" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Comorphism\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Comorphism\""
+     fromATerm _ = fromATermErr "Comorphism"
+     toATerm _ = toATermErr "Comorphism"
 
 instance ATermConvertible GMorphism where
      toShATerm att0 (GMorphism cid sign1 morphism2) = 
@@ -286,13 +289,13 @@ instance ATermConvertible GMorphism where
                     att'' = getATermByIndex1 i3 att
                 in case c of
 		     Comorphism cid ->
-                       (GMorphism cid (fromShATerm_sign1 cid att') 
-                                      (fromShATerm_morphism2 cid att'') )
+                       (GMorphism cid (fromShATerm att') 
+                                      (fromShATerm att'') )
 	    u     -> fromShATermError "GMorphism" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"GMorphism\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"GMorphism\""
+     fromATerm _ = fromATermErr "GMorphism"
+     toATerm _ = toATermErr "GMorphism"
 
 instance ATermConvertible Grothendieck where
      toShATerm att0 Grothendieck = 
@@ -301,8 +304,8 @@ instance ATermConvertible Grothendieck where
                       (ShAAppl "Grothendieck" [] _) -> Grothendieck
 		      u     -> fromShATermError "Grothendiek" u
                      where aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Grothendieck\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Grothendieck\""
+     fromATerm _ = fromATermErr "Grothendieck"
+     toATerm _ = toATermErr "Grothendieck"
 
 
 instance ATermConvertible AnyLogic where
@@ -317,8 +320,8 @@ instance ATermConvertible AnyLogic where
 	    u     -> fromShATermError "AnyLogic" u
          where
          aterm = getATerm att
-     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"AnyLogic\""
-     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"AnyLogic\""
+     fromATerm _ = fromATermErr "AnyLogic"
+     toATerm _ = toATermErr "AnyLogic"
 
 
 
