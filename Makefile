@@ -16,7 +16,7 @@ INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
 CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:$(INCLUDE_PATH)
 
-DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0/imports'
+DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0.1/imports'
 
 HC         = ghc
 PERL       = perl
@@ -129,7 +129,7 @@ doc: docs/index.html utils/hd-lib
 
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h \
-          -i/home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/base,/home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/base/base.haddock \
+          -i/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base,/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base/base.haddock \
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
 apache_doc:
@@ -142,12 +142,12 @@ apache_doc:
 
 a_docs_base:
 	$(RM) -r a-docs/base
-	cp -r /home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/base a-docs
+	cp -r /home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base a-docs
 
 post_doc4apache:
 	$(PERL) utils/post_process_docs.pl docs \
             'Common.Lib.Map.html:Common.Lib._Map.html' \
-            '/home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/:'
+            '/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/:'
 	mv docs/* a-docs/
 
 #############################
