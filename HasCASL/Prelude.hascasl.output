@@ -31,13 +31,11 @@ x2 : c
 y1 : d
 y2 : d
 Error (4,7) illegal universe class declaration
-FatalError (13,4) no analysis yet for: true
-FatalError (15,7) no analysis yet for: __/\__
-FatalError (16,4) no analysis yet for: not
 Warning (27,11) redeclared type 'Unit'
 FatalError (29,1) no analysis yet for: . 1 = ()
 Warning (39,16) redeclared type 't'
-FatalError (45,4) no analysis yet for: def
+Error (45,14) undeclared type 'Pred'
+Error (45,14) undeclared type 'Pred'
 Hint (46,9) not a class 's'
 FatalError (48,1) no analysis yet for: program def = \ x : s . ()
 	%% def is also total (identical to tt) 
@@ -80,7 +78,9 @@ FatalError (125,1) no analysis yet for: . all (\ x : c . x <<= x) %(reflexive)%
 FatalError (129,1) no analysis yet for: pred isChain(s : nat -> c) <=> all
 			       (\ n : nat . s (n) <<= s (Suc (n)))
 FatalError (130,1) no analysis yet for: pred isBound(x : c,s : nat -> c) <=> all (\ n : nat . s (n) <<= x)
-FatalError (132,4) no analysis yet for: sup
+Error (132,11) undeclared type 'nat'
+Error (132,18) undeclared type 'c'
+Error (132,25) undeclared type 'c'
 FatalError (134,1) no analysis yet for: . all
   (\ s : nat -> c . def (sup s) impl
 		    (isBound (sup s,s) und all
@@ -88,7 +88,7 @@ FatalError (134,1) no analysis yet for: . all
   %(sup is minimally bound)%
 . all (\ s : nat -> c . isChain (s) impl def (sup (s)))
   %(sup exists)%
-FatalError (145,4) no analysis yet for: bottom
+Error (145,13) undeclared type 'p'
 FatalError (147,1) no analysis yet for: . all (\ x : p . bottom <<= x)
 FatalError (154,2) no analysis yet for: program __ <<= [f] __ = eq
 Hint (161,13) not a class 'c'
@@ -109,7 +109,9 @@ FatalError (186,2) no analysis yet for: . __ in c --> d = \ f : c -->? d . all (
 Hint (188,15) not a class 'c --> d'
 Hint (188,15) not a class 'c --> d'
 FatalError (190,2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
-FatalError (194,4) no analysis yet for: Y
+Error (194,9) undeclared type 'p'
+Error (194,16) undeclared type 'p'
+Error (194,23) undeclared type 'p'
 FatalError (196,1) no analysis yet for: . all
   (\ f : p -->? p . eq (f (Y (f)),Y (f)) und all
 		    (\ x : p . eq (f (x),x) impl Y (f) <<= x))

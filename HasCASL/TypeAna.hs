@@ -97,20 +97,20 @@ inferKind (TypeAppl t1 t2) =
 		       _ -> do addDiag $ wrongKind t1
 			       return Nothing
 inferKind (FunType t1 _ t2 _) = 
-    do checkKind t1 nullKind 
-       checkKind t2 nullKind
-       return $ Just nullKind 
+    do checkKind t1 star 
+       checkKind t2 star
+       return $ Just star 
 inferKind (ProductType ts _) = 
     do ms <- mapM inferKind ts 
        let ns = map ( \ (Just x, y) -> (x, y)) 
 		$ filter (isJust . fst) $ zip ms ts 
 	   es = map (wrongKind . snd) $ 
-		filter (not . eqKind Compatible nullKind . fst) ns
+		filter (not . eqKind Compatible star . fst) ns
        appendDiags es
-       return $ Just nullKind 
+       return $ Just star 
 inferKind (LazyType t _) = 
-    do checkKind t nullKind
-       return $ Just nullKind 
+    do checkKind t star
+       return $ Just star 
 inferKind (TypeToken t) = getIdKind (simpleIdToId t)
 inferKind (KindedType t k _) =
     do checkKind t k
@@ -158,11 +158,11 @@ getKind tk i =
        Nothing -> Nothing
        Just (TypeInfo k _ _ _) -> Just k
     
-anaType :: Type -> State Env Type
+anaType :: Type -> State Env (Maybe Kind, Type)
 anaType t = 
     do newT <- mkTypeConstrAppls TopLevel t
-       inferKind newT
-       return newT
+       k <- inferKind newT
+       return (k, newT)
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 

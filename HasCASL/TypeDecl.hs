@@ -72,17 +72,21 @@ anaTypeItem _ inst (SubtypeDecl pats t _) =
     do sup <- anaType t
        let Result ds (Just is) = convertTypePatterns pats
        appendDiags ds
-       mapM_ (anaTypeId NoTypeDefn inst nullKind) is   
+       mapM_ (anaTypeId NoTypeDefn inst star) is   
        mapM_ (addSuperType t) is
 
 anaTypeItem _ inst (IsoDecl pats _) = 
     do let Result ds (Just is) = convertTypePatterns pats
        appendDiags ds
-       mapM_ (anaTypeId NoTypeDefn inst nullKind) is
+       mapM_ (anaTypeId NoTypeDefn inst star) is
        mapM_ ( \ i -> mapM_ (addSuperType (TypeName i 0)) is) is 
 
 anaTypeItem _ inst (SubtypeDefn pat v t f ps) = 
-    do newT <- anaType t
+    do (mk, newT) <- anaType t
+       k <- case mk of 
+	      Nothing -> return star
+	      Just k -> do appendDiags $ eqKindDiag k star 
+			   return k
        addDiag $ Diag Warning ("unchecked formula '" ++ showPretty f "'")
 		   $ firstPos [v] ps
        let Result ds m = convertTypePattern pat
@@ -90,19 +94,11 @@ anaTypeItem _ inst (SubtypeDefn pat v t f ps) =
        case m of 
 	      Nothing -> return ()
 	      Just i -> do anaTypeId (Supertype v newT $ item f) 
-				     inst nullKind i
+				     inst k i
 			   addSuperType newT i
 	   
-anaTypeItem _ inst (AliasType pat kind (TypeScheme tArgs (q :=> ty) p) _) = 
-    do k <- case kind of 
-		      Nothing -> return Nothing
-		      Just j -> fmap Just $ anaKind j
-       tm <- getTypeMap    -- save global variables  
-       mapM_ anaTypeArgs tArgs
-       newTy <- anaType ty
-       let newPty = TypeScheme tArgs (q :=> newTy) p
-       ik <- checkPseudoTypeKind newPty k
-       putTypeMap tm       -- forget local variables 
+anaTypeItem _ inst (AliasType pat mk sc _) = 
+    do (ik, newPty) <- anaTypeScheme mk sc
        let Result ds m = convertTypePattern pat
        appendDiags ds
        case (m, ik) of 
@@ -128,6 +124,25 @@ anaDatatype genKind inst (DatatypeDecl pat kind _alts derivs _) =
 -- TO DO analyse alternatives and add them to Datatype Defn
 -- anaAlts :: Id -> 
 
+anaTypeScheme :: Maybe Kind -> TypeScheme -> State Env (Maybe Kind, TypeScheme)
+anaTypeScheme mk (TypeScheme tArgs (q :=> ty) p) =
+    do k <- case mk of 
+	    Nothing -> return Nothing
+	    Just j -> fmap Just $ anaKind j
+       tm <- getTypeMap    -- save global variables  
+       mapM_ anaTypeArgs tArgs
+       (ik, newTy) <- anaType ty
+       let newPty = TypeScheme tArgs (q :=> newTy) p
+       sik <- case ik of
+	      Nothing -> return k
+	      Just sk -> do let newK = typeArgsListToKind tArgs sk
+			    case k of 
+			        Nothing -> return ()
+			        Just ki -> appendDiags $ eqKindDiag ki newK
+			    return $ Just newK
+       putTypeMap tm       -- forget local variables 
+       return (sik, newPty)
+
 typeArgsListToKind :: [TypeArgs] -> Kind -> Kind
 typeArgsListToKind tArgs k = 
     if null tArgs then k
@@ -140,18 +155,6 @@ typeArgsToKind (TypeArgs l ps) = if length l == 1 then typeArgToKind $ head l
 typeArgToKind :: TypeArg -> Kind
 typeArgToKind (TypeArg _ k _ _) = k
 
-
-checkPseudoTypeKind :: TypeScheme -> Maybe Kind -> State Env (Maybe Kind)
-checkPseudoTypeKind (TypeScheme tArgs (_ :=> ty) _) kind =
-    do m <- inferKind ty 
-       case m of
-	      Nothing -> return kind
-	      Just k -> do let newK = typeArgsListToKind tArgs k
-			   case kind of 
-			        Nothing -> return ()
-			        Just ki -> appendDiags $ eqKindDiag ki newK
-			   return $ Just newK
-	      
 anaTypeVarDecl :: TypeArg -> State Env ()
 anaTypeVarDecl(TypeArg t k _ _) = 
     do nk <- anaKind k

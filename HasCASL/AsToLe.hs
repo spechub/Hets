@@ -22,6 +22,7 @@ import Monad
 import MonadState
 import OpDecl
 import Result
+import PrintAs
 import TypeAna
 import TypeDecl
 
@@ -113,7 +114,15 @@ optAnaVarDecl vd@(VarDecl v t s q) =
     else anaVarDecl vd
 
 anaVarDecl(VarDecl v oldT _ _) = 
-		   do t <- anaType oldT
+		   do (mk, t) <- anaType oldT
+		      case mk of 
+			      Nothing -> return ()
+			      Just k -> if eqKind Compatible k star
+					then  return ()
+					else addDiag $
+					     mkDiag Error
+					("wrong kind '" ++ showPretty k
+					 "' of type for variable") v 
 		      as <- getAssumps
 		      let l = lookupWithDefaultFM as [] v 
 			  ts = simpleTypeScheme t in 
