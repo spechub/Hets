@@ -88,7 +88,7 @@ asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 
 -- -------------------------------------------------------------------------
 freshInstList :: TypeScheme -> State Int (Type, [Type])
-freshInstList (TypeScheme tArgs (_ :=> t) _) = 
+freshInstList (TypeScheme tArgs t _) = 
     do let vs = genVarsOf t
        ts <- mkSubst vs  
        return (rename ( \ i k n -> if n < 0 then 
@@ -278,11 +278,11 @@ expandAliases :: TypeMap -> Type -> ([TypeArg], [Type], Type, Bool)
 expandAliases tm t = case t of 
     TypeName i _ _ -> case Map.lookup i tm of 
             Just (TypeInfo _ _ _ 
-		  (AliasTypeDefn (TypeScheme l (_ :=> ts) _))) ->
-		     (l, [], ts, True)
+		  (AliasTypeDefn (TypeScheme l ty _))) ->
+		     (l, [], ty, True)
 	    Just (TypeInfo _ _ _
-		  (Supertype _ (TypeScheme l (_ :=> ts) _) _)) ->
-		     (l, [], ts, True)
+		  (Supertype _ (TypeScheme l ty _) _)) ->
+		     (l, [], ty, True)
 	    _ -> wrap t
     TypeAppl t1 t2 -> 
 	let (ps, as, ta, b) = expandAliases tm t1 

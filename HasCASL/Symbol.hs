@@ -116,7 +116,7 @@ subSyms e t = case t of
 
 subSymsOf :: Symbol -> SymbolSet
 subSymsOf sy = case symType sy of
-     OpAsItemType (TypeScheme _ (_ :=> ty) _) -> subSyms (symEnv sy) ty
+     OpAsItemType (TypeScheme _ ty _) -> subSyms (symEnv sy) ty
      _ -> Set.empty
 
 relatedSyms :: Env -> Symbol -> SymbolSet

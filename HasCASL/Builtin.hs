@@ -121,7 +121,7 @@ aType :: Type
 aType = TypeName aVar star (-1)
 
 bindA :: Type -> TypeScheme
-bindA ty = TypeScheme [TypeArg aVar star Other []] ([] :=> ty) []
+bindA ty = TypeScheme [TypeArg aVar star Other []] ty []
 
 eqType, logType, defType, notType, ifType, whenType, unitType :: TypeScheme
 eqType = bindA $ 

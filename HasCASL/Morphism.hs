@@ -76,8 +76,8 @@ mapAlt m tm args dt c@(Construct mi ts p sels) =
     case mi of
     Just i -> 
       let sc = TypeScheme args 
-	     ([] :=> getConstrType dt p (map (mapType tm) ts)) []
-	  (j, TypeScheme _ (_ :=> ty) _) = 
+	     (getConstrType dt p (map (mapType tm) ts)) []
+	  (j, TypeScheme _ ty _) = 
 	      mapFunSym (typeMap $ mtarget m) (typeIdMap m) (funMap m) (i, sc)
 	  in Construct (Just j) ts (getPartiality ts ty) sels
                 -- do not change (unused) selectors

@@ -126,21 +126,6 @@ instance PrettyPrint Type where
 					<+> printText0 ga arr
 					<+> printText0 ga t2
 
-instance PrettyPrint Pred where
-    printText0 ga (IsIn c ts) = if null ts then printText0 ga c 
-				else if null $ tail ts then
-				     printText0 ga (head ts) <+>
-				     colon <+> printText0 ga c
-				else printText0 ga c <+>
-				     fsep (punctuate space
-				     (map (printText0 ga) ts))
-				     
-instance PrettyPrint t => PrettyPrint (Qual t) where
-    printText0 ga (ps :=> t) = (if null ps then empty
-			       else parens $ commaT_text ga ps <+>
-				    ptext implS <+> space) <>
-					       printText0 ga t
-
 -- no curried notation for bound variables 
 instance PrettyPrint TypeScheme where
     printText0 ga (TypeScheme vs t _) = let tdoc = printText0 ga t in 

@@ -135,21 +135,6 @@ instance PrintLaTeX Type where
 					<+> printLatex0 ga arr
 					<+> printLatex0 ga t2
 
-instance PrintLaTeX Pred where
-    printLatex0 ga (IsIn c ts) = if null ts then printLatex0 ga c 
-				else if null $ tail ts then
-				     printLatex0 ga (head ts) <+>
-				     colon <+> printLatex0 ga c
-				else printLatex0 ga c <+>
-				     fsep_latex (punctuate space
-				     (map (printLatex0 ga) ts))
-				     
-instance PrintLaTeX t => PrintLaTeX (Qual t) where
-    printLatex0 ga (ps :=> t) = (if null ps then empty
-			       else parens $ commaT_latex ga ps <+>
-				    hc_sty_axiom implS <+> space) <>
-					       printLatex0 ga t
-
 -- no curried notation for bound variables 
 instance PrintLaTeX TypeScheme where
     printLatex0 ga (TypeScheme vs t _) = let tdoc = printLatex0 ga t in 

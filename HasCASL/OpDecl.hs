@@ -30,7 +30,7 @@ import HasCASL.TypeCheck
 import HasCASL.ProgEq
 
 anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
-anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) = 
+anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) = 
     do let mTy = case unalias ty of 
 		      FunType arg _ t3 _ -> 
 			  case unalias arg of 
@@ -91,7 +91,7 @@ anaOpItem ga br (OpDecl is sc attr ps) = do
 	return $ OpDecl (catMaybes us) sc attr ps
 
 anaOpItem ga br (OpDefn o oldPats sc partial trm ps) = 
-    do let (op@(OpId i _ _), extSc@(TypeScheme tArgs (qu :=> scTy) qs)) = 
+    do let (op@(OpId i _ _), extSc@(TypeScheme tArgs scTy qs)) = 
 	       getUninstOpId sc o
        checkUniqueVars $ concat oldPats
        tm <- gets typeMap
@@ -112,7 +112,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 	       putTypeMap tm
 	       mSc <- fromResult $ const $ generalize $ 
 			                TypeScheme tArgs 
-					(qu :=> patternsToType newPats ty) qs
+					(patternsToType newPats ty) qs
 	       case (mt, mSc) of 
 		   (Just lastTrm, Just newSc) -> do 
 		       let lamTrm = case (pats, partial) of 

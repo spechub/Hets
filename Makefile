@@ -260,8 +260,7 @@ $(generated_rule_files): $(genrule_files) utils/genRules #$(genrule_header_files
 	$(MAKE) clean_genRules
 	$(foreach file,$(atc_files),$(gen_atc_files))
 	utils/genRules -r $(rule) -o CASL $(casl_files)
-	utils/genRules -r $(rule) -o HasCASL -h ATC/HasCASL.header.hs \
-            $(hascasl_files)
+	utils/genRules -r $(rule) -o HasCASL $(hascasl_files)
 	utils/genRules -r $(rule) -o Modal $(modal_files)
 	utils/genRules -r $(rule) -o CoCASL $(cocasl_files)
 	utils/genRules -r $(rule) -o CspCASL $(cspcasl_files)

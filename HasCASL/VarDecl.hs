@@ -58,7 +58,7 @@ anaInstTypes ts = if null ts then return []
 		   Just (_, ty) -> ty:rs
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
-anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
+anaTypeScheme (TypeScheme tArgs ty p) =
     do tm <- gets typeMap    -- save global variables  
        mArgs <- mapM anaTypeVarDecl tArgs
        let newArgs = catMaybes mArgs  
@@ -68,7 +68,7 @@ anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
        case mt of 
            Nothing -> return Nothing
 	   Just newTy -> fromResult $ const $ generalize 
-			 $ TypeScheme newArgs (q :=> newTy) p
+			 $ TypeScheme newArgs newTy p
 
 anaKind :: Kind -> State Env Kind
 anaKind k = toState star $ anaKindM k
@@ -200,7 +200,7 @@ addOpId i sc attrs defn =
        let tm = typeMap e
 	   as = assumps e
 	   c = counter e
-           (TypeScheme _ (_ :=> ty) _) = sc 
+           TypeScheme _ ty _ = sc 
            ds = if placeCount i > 1 then case unalias ty of 
 		   FunType arg _ _ _ -> case unalias arg of
 		       ProductType ts _ -> if placeCount i /= length ts then 
@@ -209,7 +209,7 @@ addOpId i sc attrs defn =
 		       _ -> [mkDiag Error "expected tuple argument for" i]
 		   _ -> [mkDiag Error "expected function type for" i]
 		 else []
-           (l,r) = partitionOpId e i sc
+           (l, r) = partitionOpId e i sc
 	   oInfo = OpInfo sc attrs defn 
        if null ds then 
 	       do let Result es mo = foldM (mergeOpInfo tm c) oInfo l

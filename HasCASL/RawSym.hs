@@ -54,7 +54,7 @@ statSymbItems sl = do rs <- mapM (\ (SymbItems kind l _ _)
 symbToRaw :: SymbKind -> Symb -> Result RawSymbol
 symbToRaw k (Symb idt mt _)     = case mt of 
     Nothing -> return $ symbKindToRaw k idt
-    Just (SymbType sc@(TypeScheme vs (_ :=> t) _)) -> 
+    Just (SymbType sc@(TypeScheme vs t _)) -> 
 	let r = return $ AQualId idt $ OpAsItemType sc
 	    rk = if null vs then Nothing else 
 		 convTypeToKind t 

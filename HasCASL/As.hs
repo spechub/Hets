@@ -182,28 +182,22 @@ arrowId a = Id (map mkSimpleId [place, show a, place]) [] []
 productId :: Id
 productId = Id (map mkSimpleId [place, prodS, place]) [] []
 
-data Pred = IsIn ClassId [Type]
-              deriving (Show, Eq, Ord)
-
-data Qual t = [Pred] :=> t
-              deriving (Show, Eq, Ord)
-
 -- no curried notation for bound variables 
-data TypeScheme = TypeScheme [TypeArg] (Qual Type) [Pos]
+data TypeScheme = TypeScheme [TypeArg] Type [Pos]
                 -- pos "forall", ";"s,  dot (singleton list)
                 -- pos "\" "("s, ")"s, dot for type aliases
                   deriving (Show, Ord)
 
 simpleTypeScheme :: Type -> TypeScheme
-simpleTypeScheme t = TypeScheme [] ([] :=> t) []
+simpleTypeScheme t = TypeScheme [] t []
 
 logicalType :: Type 
 logicalType = -- TypeName (simpleIdToId (mkSimpleId "Unit")) star 0
               ProductType [] [] 
 
 mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
-mapTypeOfScheme f (TypeScheme args (q :=> t) ps) =
-    TypeScheme args (q :=> f t) ps
+mapTypeOfScheme f (TypeScheme args t ps) =
+    TypeScheme args (f t) ps
 
 predTypeScheme :: TypeScheme -> TypeScheme
 predTypeScheme = mapTypeOfScheme predType

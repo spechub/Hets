@@ -138,7 +138,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 		  case mt of 
 			  Nothing -> return $ SubtypeDefn newPat v t f ps
 			  Just ty -> do
-			      let newPty = TypeScheme nAs ([]:=>ty) []
+			      let newPty = TypeScheme nAs ty []
 				  fullKind = typeArgsListToKind nAs star
 				  Result es mvds = anaVars v ty
 			      addDiags es
@@ -190,7 +190,7 @@ anaTypeItem _ _ inst _ t@(AliasType pat mk sc ps) =
 		      newPat = TypePattern i nAs []
 		  case mt of 
 			  Nothing -> return $ AliasType newPat mk sc ps
-			  Just newSc@(TypeScheme args qty@(_ :=> ty) qs) -> 
+			  Just newSc@(TypeScheme args ty qs) -> 
 			      if cyclicType i ty then 
 			        do addDiags [mkDiag Error 
 				       "illegal recursive type synonym" ty]
@@ -198,7 +198,7 @@ anaTypeItem _ _ inst _ t@(AliasType pat mk sc ps) =
 			        else do 
 			        let allArgs = nAs++args
 				    fullKind = typeArgsListToKind nAs ik
-				    allSc = TypeScheme allArgs qty qs
+				    allSc = TypeScheme allArgs ty qs
     			        checkUniqueTypevars allArgs
 			        gPty <- fromResult $ const $ generalize allSc
 				case gPty of 
@@ -291,7 +291,7 @@ anaDatatype genKind inst tys
            mapM_ ( \ (Construct mc tc p sels) -> case mc of 
 	       Nothing -> return ()
 	       Just c -> do
-	           let ty = TypeScheme nAs ([] :=> getConstrType dt p tc) []
+	           let ty = TypeScheme nAs (getConstrType dt p tc) []
 		   msc <- fromResult $ const $ generalize ty 
 		   case msc of 
 		     Nothing -> return ()
@@ -313,7 +313,7 @@ anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"
 
 -- | analyse a pseudo type (represented as a 'TypeScheme')
 anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, Maybe TypeScheme)
-anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
+anaPseudoType mk (TypeScheme tArgs ty p) =
     do k <- case mk of 
 	    Nothing -> return Nothing
 	    Just j -> fromResult $ anaKindM j
@@ -328,7 +328,7 @@ anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
 	      case k of 
 		     Nothing -> return () 
 		     Just j -> addDiags $ checkKinds ty j newK
-	      return (newK, Just $ TypeScheme tArgs (q :=> newTy) p)
+	      return (newK, Just $ TypeScheme tArgs newTy p)
 
 -- | add a type pattern 
 addTypePattern :: TypeDefn -> Instance -> Kind -> (Id, [TypeArg])  

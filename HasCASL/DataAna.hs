@@ -65,7 +65,7 @@ makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
 makeAltSelEqs dt@(_, args, _) (Construct mc ts p sels) = 
     case mc of
     Nothing -> []
-    Just c -> let sc = TypeScheme args ([] :=> getConstrType dt p ts) [] 
+    Just c -> let sc = TypeScheme args (getConstrType dt p ts) [] 
 		  Result _ msc = generalize sc
 		  newSc = maybe sc id msc
 		  vars = genSelVars 1 sels 
@@ -115,7 +115,7 @@ anaComp tys rt tm (NoSelector t) =
 
 getSelType :: DataPat -> Partiality -> Type -> Result TypeScheme
 getSelType dp@(_, args, _) p rt = let dt = typeIdToType dp in 
-    generalize $ TypeScheme args ([] :=> (case p of 
+    generalize $ TypeScheme args ((case p of 
     Partial -> addPartiality [dt]
     Total -> id) (FunType dt FunArr rt [])) []
 

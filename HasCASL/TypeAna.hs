@@ -255,9 +255,9 @@ mkGenVars fvs newTy =
     in  repl m newTy
 
 generalize :: TypeScheme -> Result TypeScheme
-generalize (TypeScheme newArgs (q :=> newTy) p) = do
+generalize (TypeScheme newArgs newTy p) = do
  	       let fvs = varsOf newTy
-		   qTy = q :=> mkGenVars fvs newTy
+		   qTy = mkGenVars fvs newTy
                    ds = unboundTypevars newArgs newTy
 	       if null ds then
 	          return $ TypeScheme newArgs qTy p

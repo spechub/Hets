@@ -129,11 +129,11 @@ transOpInfo (OpInfo opT _ opDef) =
 
 
 transOpType :: TypeScheme -> Typ
-transOpType (TypeScheme _ (_ :=> op) _) = transType op
+transOpType (TypeScheme _ op _) = transType op
 
 
 transPredType :: TypeScheme -> Typ
-transPredType  (TypeScheme _ (_ :=> pre) _) = 
+transPredType  (TypeScheme _ pre _) = 
        case pre of
          FunType tp _ _ _ -> (transType tp) --> boolType
          _                -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong predicate type"
@@ -214,7 +214,7 @@ transTerm sign (ApplTerm term1 term2 _) =
      where mkApp s = con s 
                                  `App` (transTerm sign term1) 
                                  `App` (transTerm sign term2)
-           isPart (TypeScheme _ (_ :=> op) _) = 
+           isPart (TypeScheme _ op _) = 
              case op of
                FunType _ PFunArr _ _ -> True
                FunType _ FunArr _ _  -> False

@@ -570,17 +570,11 @@ sl_arrow _ = bottom
 
 
 sl_typeScheme :: TypeScheme -> HasCASL_Sublogics
-sl_typeScheme (TypeScheme l (p :=> t) _) = 
+sl_typeScheme (TypeScheme l t _) = 
   comp_list ((comp_list $ map sl_typeArg l) :  
-             (comp_list $ map sl_pred p) : 
 	     case unalias t of 
 	     FunType t1 a t2 _ -> [(sl_type t1), (sl_arrow a), (sl_type t2)]
 	     _ -> [sl_type t])
-
-sl_pred :: Pred -> HasCASL_Sublogics
-sl_pred (IsIn _ l) = sublogics_max need_type_classes 
-                       (comp_list $ map sl_type l)
-
 
 sl_opItem :: OpItem -> HasCASL_Sublogics
 sl_opItem (OpDecl l t m _) = 
