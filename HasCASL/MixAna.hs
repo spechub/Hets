@@ -39,7 +39,23 @@ import Data.Maybe
 assert :: Bool -> a -> a
 assert b a = if b then a else error ("assert")
 
-type Rule = (Id, (), [Token])
+data RuleKind = LogOp | RelOp | PredOp Id | InfixOp Id | OtherOp Id | ApplOp 
+	      | TupleOp | WhenOp | AtomOp
+
+idToRuleKind :: Set.Set Id -> Id -> RuleKind 
+idToRuleKind ps i = if Set.member i builtinLogIds then LogOp
+	      else if Set.member i builtinRelIds then RelOp
+	      else if Set.member i ps then PredOp i
+	      else if isInfix i then
+			   if i == applId then ApplOp
+			   else if i == whenElse then WhenOp
+			   else InfixOp i
+	      else if i `elem` [parenId, exprId, unknownId] 
+		   then AtomOp
+		   else if i `elem` [tupleId, unitId] then TupleOp
+		   else OtherOp i
+
+type Rule = (Id, RuleKind, [Token])
 
 trueId :: Id
 trueId = mkId [mkSimpleId trueS]
@@ -86,6 +102,10 @@ notId = mkId $ map mkSimpleId [notS, place]
 builtinRelIds :: Set.Set Id 
 builtinRelIds = Set.fromDistinctAscList [typeId, eqId, exEq, defId]
 
+builtinLogIds :: Set.Set Id 
+builtinLogIds = Set.fromDistinctAscList 
+		 [andId, eqvId, implId, orId, infixIf, notId] 
+
 addBuiltins :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> GlobalAnnos
 addBuiltins ga opIds predIds = 
     let ass = assoc_annos ga
@@ -94,12 +114,10 @@ addBuiltins ga opIds predIds =
 		  (implId, ARight), (infixIf, ALeft), 
 		  (whenElse, ARight)]
 	precs = prec_annos ga
-	logIds = Set.fromDistinctAscList 
-		 [andId, eqvId, implId, orId, infixIf, notId] 
-	relIds = (Set.filter isInfix predIds Set.\\ logIds) `Set.union` 
+	relIds = (Set.filter isInfix predIds Set.\\ builtinLogIds) `Set.union` 
 		 builtinRelIds
 	opIs = Set.toList ((((Set.filter isInfix opIds)
-		Set.\\ relIds) Set.\\ logIds) 
+		Set.\\ relIds) Set.\\ builtinLogIds) 
 	        Set.\\ Set.fromDistinctAscList [applId, whenElse])
 
 	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
@@ -116,23 +134,25 @@ addBuiltins ga opIds predIds =
     in ga { assoc_annos = newAss
 	  , prec_annos = Rel.transClosure newPrecs }
 
-initTermRules :: Set.Set Id -> [Rule]
-initTermRules is = map (mixRule ()) (Set.toList
-    (Set.fromDistinctAscList 
-     [unitId, parenId, tupleId, exprId, typeId, applId] 
-     `Set.union` is)) ++
-    map ( \ i -> (protect i, (), getPlainTokenList i )) 
-	    (filter isMixfix $ Set.toList is)
+initTermRules :: Set.Set Id -> Set.Set Id -> [Rule]
+initTermRules ps is = 
+    (map ( \ i -> mixRule (idToRuleKind ps i) i) 
+	    (Set.toList
+	     (Set.fromDistinctAscList 
+	      [unitId, parenId, tupleId, exprId, typeId, applId] 
+	      `Set.union` is))) ++
+    (map ( \ i -> (protect i, idToRuleKind ps i, getPlainTokenList i)) 
+	    (filter isMixfix $ Set.toList is))
 
 addType :: Term -> Term -> Term
 addType (TypedTerm _ qual ty ps) t = TypedTerm t qual ty ps 
 addType (MixInTerm ty ps) t = TypedTerm t InType ty ps 
 addType _ _ = error "addType"
 
-dummyFilter :: () -> () -> Maybe Bool
-dummyFilter () () = Nothing
+opKindFilter :: PrecedenceGraph -> RuleKind -> RuleKind -> Maybe Bool
+opKindFilter prec arg op = Nothing
 
-toMixTerm :: Id -> () -> [Term] -> [Pos] -> Term
+toMixTerm :: Id -> RuleKind -> [Term] -> [Pos] -> Term
 toMixTerm ide _ ar qs = 
     if ide == applId then assert (length ar == 2) $
        let [op, arg] = ar in ApplTerm op arg qs
@@ -140,7 +160,7 @@ toMixTerm ide _ ar qs =
 	 mkTupleTerm ar qs
     else ResolvedMixTerm ide ar qs
 
-type TermChart = Chart Term ()
+type TermChart = Chart Term RuleKind
 
 -- | find information for qualified operation
 findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> Type -> Maybe OpInfo
@@ -152,7 +172,8 @@ iterateCharts :: GlobalAnnos -> [Term] -> TermChart
 iterateCharts ga terms chart = 
     do e <- get
        let self = iterateCharts ga  
-	   oneStep = nextChart addType dummyFilter toMixTerm ga chart
+	   oneStep = nextChart addType (opKindFilter $ prec_annos ga) 
+		     toMixTerm ga chart
 	   as = assumps e
 	   tm = typeMap e
        if null terms then return chart else 
@@ -246,8 +267,9 @@ iterateCharts ga terms chart =
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolve ga trm =
     do as <- gets assumps
+       ps <- gets preIds
        chart<- iterateCharts ga [trm] $ 
-	       initChart (initTermRules $ Set.fromDistinctAscList 
+	       initChart (initTermRules ps $ Set.fromDistinctAscList 
 			  $ Map.keys as) Set.empty
        let Result ds mr = getResolved showPretty (posOfTerm trm) 
 			  toMixTerm chart
@@ -358,15 +380,16 @@ resolveConstrPattern ga pat =
        putAssumps as
        return mp
 
-initPatternRules :: [Id] -> [Rule]
-initPatternRules is = 
-    (tupleId, (), getTokenPlaceList tupleId) :
-    (parenId, (), getTokenPlaceList parenId) :
-    (unknownId, (), getTokenPlaceList unknownId) : 
-    (applId, (), getTokenPlaceList applId) : 
-    (exprId, (), getTokenPlaceList exprId) :
-    map ( \ i -> (i, (), getTokenPlaceList i )) is ++
-    map ( \ i -> (protect i, (), getPlainTokenList i )) (filter isMixfix is)
+initPatternRules :: Set.Set Id -> [Id] -> [Rule]
+initPatternRules ps is = 
+    (tupleId, TupleOp, getTokenPlaceList tupleId) :
+    (parenId, AtomOp, getTokenPlaceList parenId) :
+    (unknownId, AtomOp, getTokenPlaceList unknownId) : 
+    (applId, ApplOp, getTokenPlaceList applId) : 
+    (exprId, AtomOp, getTokenPlaceList exprId) :
+    map ( \ i -> (i, idToRuleKind ps i, getTokenPlaceList i )) is ++
+    map ( \ i -> (protect i, idToRuleKind ps i, 
+		  getPlainTokenList i )) (filter isMixfix is)
 
 addPatternType :: Pattern -> Pattern -> Pattern
 addPatternType (TypedPattern _ ty ps) p = TypedPattern p ty ps 
@@ -384,7 +407,7 @@ mkPatAppl op arg qs =
 		TypedPattern (mkPatAppl p arg qs) ty ps
 	    _ -> error ("mkPatAppl: " ++ show op)
 
-toPat :: Id -> () -> [Pattern] -> [Pos] -> Pattern
+toPat :: Id -> RuleKind -> [Pattern] -> [Pos] -> Pattern
 toPat i _ ar qs = 
     if i == applId then assert (length ar == 2) $
 	   let [op, arg] = ar in mkPatAppl op arg qs
@@ -398,12 +421,13 @@ toPat i _ ar qs =
 	     else if isSingle ar then [head ar] 
 	     else [mkTuplePattern ar qs]) qs
 
-type PatChart = Chart Pattern ()
+type PatChart = Chart Pattern RuleKind
 
 iterPatCharts :: GlobalAnnos -> [Pattern] -> PatChart -> State Env PatChart
 iterPatCharts ga pats chart= 
     let self = iterPatCharts ga
-	oneStep = nextChart addPatternType dummyFilter toPat ga chart
+	oneStep = nextChart addPatternType (opKindFilter $ prec_annos ga) 
+		  toPat ga chart
     in if null pats then return chart
        else 
        do let p:pp = pats
@@ -428,11 +452,12 @@ getKnowns (Id ts cs _) = Set.union (Set.fromList (map tokStr ts)) $
 resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
 resolvePattern ga pat =
     do as <- gets assumps
+       ps <- gets preIds
        let ids = Map.keys as 
 	   ks = Set.union (Set.fromList (tokStr exprTok: inS : 
 					 map (:[]) "{}[](),"))
 		    $ Set.unions $ map getKnowns ids
-       chart <- iterPatCharts ga [pat] $ initChart (initPatternRules ids) ks
+       chart <- iterPatCharts ga [pat] $ initChart (initPatternRules ps ids) ks
        let Result ds mp =  getResolved showPretty (posOfPat pat) toPat chart
        addDiags ds
        return mp

@@ -15,11 +15,11 @@ module HasCASL.Merge where
 import Common.Id
 import Common.PrettyPrint
 import HasCASL.As
-import HasCASL.AsToIds
 import HasCASL.Le
 import HasCASL.AsUtils
 import HasCASL.Unify
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Data.List
 import Control.Monad
 import Common.Result
@@ -34,9 +34,14 @@ instance Mergeable Env where
 		   (typeMap e1) $ typeMap e2
 	   as <- mergeMap (mergeOpInfos tMap m) 
 		 (assumps e1) $ assumps e2
-	   return $ Env cMap tMap as (sentences e1 ++ sentences e2) 
-		      (envDiags e1 ++ envDiags e2) 
-		      (mixRules e1) m
+	   return e1 { classMap = cMap
+		     , typeMap = tMap
+		     , counter = m
+		     , assumps = as 
+		     , sentences = sentences e1 ++ sentences e2
+		     , envDiags = envDiags e1 ++ envDiags e2
+		     , preIds = Set.union (preIds e1) $ preIds e2 }
+
 
 instance (Ord a, PosItem a, PrettyPrint a, Mergeable b) 
     => Mergeable (Map.Map a b) where

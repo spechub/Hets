@@ -19,6 +19,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Named
 import Common.Result
+import Common.Id
 import HasCASL.As
 import HasCASL.AsToIds
 import HasCASL.Le
@@ -66,11 +67,10 @@ diffAss a1 _a2 = Nothing -- Just a1
 
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
-cleanEnv e = diffEnv e 
-	     { envDiags = [], sentences = [], counter = 1
-             , assumps = filterAssumps (not . isVarDefn) (assumps e)
+cleanEnv e = diffEnv initialEnv 
+	     { classMap = classMap e
              , typeMap = Map.filter (not . isTypeVarDefn) (typeMap e)
-	     , mixRules = [] }
+	     , assumps = filterAssumps (not . isVarDefn) (assumps e) }
 	     preEnv 
 
 -- | environment with predefined types and operations
@@ -78,9 +78,9 @@ preEnv :: Env
 preEnv = initialEnv { typeMap = addUnit Map.empty
 		    , assumps = addOps Map.empty }
 
-addRules :: [Rule] -> State Env ()
-addRules r = do e <- get
-		put e { mixRules = r }
+addPreIds :: Set.Set Id -> State Env ()
+addPreIds r = do e <- get
+		 put e { preIds = r }
 
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
@@ -100,7 +100,7 @@ anaBasicSpec ga b@(BasicSpec l) = do
 	Ids newPreds newOps = idsOfBasicSpec b 
 	newGa = addBuiltins ga (Set.union ids newOps) 
 		(Set.union preds newPreds) 
-    addRules $ initTermRules $ Set.unions [newPreds, ids, newOps]
+    addPreIds $ Set.union preds newPreds
     ul <- mapAnM (anaBasicItem newGa) l
     return $ BasicSpec ul
 

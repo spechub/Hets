@@ -14,7 +14,8 @@ module HasCASL.Le where
 
 import HasCASL.As
 import HasCASL.AsToIds
-import Common.Lib.Map as Map
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Result
 import Common.Lib.State
 import Common.Named
@@ -29,7 +30,7 @@ data ClassInfo = ClassInfo { classKinds :: [Kind] -- superKinds
 
 -----------------------------------------------------------------------------
 
-type ClassMap = Map ClassId ClassInfo
+type ClassMap = Map.Map ClassId ClassInfo
 
 -----------------------------------------------------------------------------
 -- typeInfo
@@ -64,7 +65,7 @@ isTypeVarDefn t = case typeDefn t of
  
 -----------------------------------------------------------------------------
 
-type TypeMap = Map TypeId TypeInfo
+type TypeMap = Map.Map TypeId TypeInfo
 
 -----------------------------------------------------------------------------
 -- assumptions
@@ -92,7 +93,7 @@ isVarDefn o = case opDefn o of
 
 data OpInfos = OpInfos { opInfos :: [OpInfo] } deriving (Show, Eq)
 
-type Assumps = Map UninstOpId OpInfos
+type Assumps = Map.Map UninstOpId OpInfos
 
 -----------------------------------------------------------------------------
 -- local env
@@ -103,12 +104,12 @@ data Env = Env { classMap :: ClassMap
 	       , assumps :: Assumps
 	       , sentences :: [Named Term]	 
 	       , envDiags :: [Diagnosis]
-	       , mixRules :: [(Id, (), [Token])]
+	       , preIds :: Set.Set Id
 	       , counter :: Int
 	       } deriving (Show, Eq)
 
 initialEnv :: Env
-initialEnv = Env Map.empty Map.empty Map.empty [] [] [] 1
+initialEnv = Env Map.empty Map.empty Map.empty [] [] Set.empty 1
 
 -- | add diagnostic messages 
 addDiags :: [Diagnosis] -> State Env ()

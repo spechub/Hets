@@ -68,7 +68,7 @@ resolveTerm ga = do
        let ids = stdOps `Set.union` stdPreds
            chart = evalState (iterateCharts (addBuiltins ga 
 					     stdOps stdPreds) [trm] $ 
-	    initChart (initTermRules ids) Set.empty) initialEnv 
+	    initChart (initTermRules stdPreds ids) Set.empty) initialEnv 
        return $ getResolved showPretty (posOfTerm trm) 
 			  toMixTerm chart
 
