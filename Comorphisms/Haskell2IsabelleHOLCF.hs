@@ -68,6 +68,12 @@ import HsPatMaps
 
 import SyntaxRec
 
+import TiPropDecorate
+import PropSyntaxStruct
+import HsDeclStruct
+import HsGuardsStruct
+import TiDecorate
+
 -- The identity of the comorphism
 data Haskell2IsabelleHOLCF = Haskell2IsabelleHOLCF deriving (Show)
 
@@ -95,6 +101,8 @@ type VaMap = Map.Map (HsIdentI PNT) (Scheme PNT)
 type TyMap = Map.Map (HsIdentI PNT) (Kind, TiTypes.TypeInfo PNT)
 -- type FiMap = Map.Map (HsIdentI (SN Id)) HsFixity
 
+type Dec = TiPropDecorate.TiDecl
+
 ------------------------------ Comorphism -----------------------------------------
 
 instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
@@ -110,13 +118,55 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_sign _ = transSignature
+    map_sentence _ = transSentence
+--    map_theory _ = transTheory
+
+------------------------------ Theory translation -------------------------------
+
+transSentence :: HatAna.Sign -> TiPropDecorate.TiDecl PNT -> Result IsaSign.Sentence
+transSentence sign (TiPropDecorate.Dec d) = case d of
+             PropSyntaxStruct.Base p -> case p of
+               HsDeclStruct.HsFunBind _ [l] -> Result [] (Just (Sentence $ transMatch l)) 
+
+transMatch :: 
+  HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds -> IsaTerm 
+transMatch (HsDeclStruct.HsMatch _ nm _ (HsGuardsStruct.HsBody x) _) = 
+       App (App (Const "IsaEq") (Const $ showIsaS nm) IsCont) (transExp x) IsCont
+
+
+
+-- transTheory :: (HatAna.Sign, [TiPropDecorate.TiDecls PNT] -> 
+--                      Result (IsaSign.Sign, [Named IsaSign.Sentence])  
+--transTheory (sign, decls) = do x <- transSignature sign
+--                               y <- maybeResult x
+--                            return [] (y, transDeclsL decls)
+{-
+transDeclsL ::  [TiPropDecorate.TiDecls PNT] -> [Named IsaSign.Sentence]
+transDeclsL ds = concat (map transDecl ds)
+
+transDecls ::  TiPropDecorate.TiDecls PNT -> [Named IsaSign.Sentence]
+transDecls ds = case Decs x _ -> transDecl x
+
+transDecl ::  TiPropDecorate.TiDecl PNT -> Named IsaSign.Sentence
+transDecl (Dec d) = case d of
+             Base p -> case p of
+                HsFunBind _ ls -> NamedSen [] (map transMatch ls) 
+
+transMatch :: 
+  HsMatch PNT (HsRhs (PropSyntaxRec.HsExpI PNT)) p ds ->IsaSign.Definition 
+transMatch (HsMatch _ nm _ x _) -> transDef nm x
+--           Prop p ->
+
+transDef :: PNT -> HsRhs (PropSyntaxRec.HsExpI PNT) -> IsaSign.Definition
+transDef l r = case r of HsBody e -> (showIsaS l, transExp r)
+-}
 
 ------------------------------ Signature translation -----------------------------
 
-transSignature :: HatAna.Sign -> Result (IsaSign.Sign,[Named IsaSign.Sentence]) 
+transSignature :: HatAna.Sign -> Result (IsaSign.Sign, [Named IsaSign.Sentence]) 
 
 transSignature sign = Result [] 
- (Just(IsaSign.Sign{
+ (Just (IsaSign.Sign{
     baseSig = "MainHC",
     tsig = emptyTypeSig 
            { 
@@ -141,6 +191,8 @@ transSignature sign = Result []
 showIsaS :: Show i => i -> IsaSign.IName
 showIsaS x = (Translate.transString) (show x)
 
+--showIsaPNT :: PNT -> IsaSign.IName
+--showIsaPNT t = 
 
 -------------------------------- Identifier translation -----------------------
 
@@ -234,7 +286,7 @@ getConstTab f =
     liftMapByList Map.toList Map.fromList showIsaS transFromScheme f
 
 transFromScheme :: TiTypes.Scheme PNT -> IsaType
-transFromScheme s = case s of Forall _ _ (_ :=> t) -> transType t
+transFromScheme s = case s of Forall _ _ (_ TiTypes.:=> t) -> transType t
 
 
 ----------------------------- getting Classrel (from KEnv) -----------------------
@@ -425,7 +477,7 @@ getDomainTab g f =
 
 getHsType :: VaMap -> HsIdent.HsIdentI PNT -> HsType
 getHsType f n = case Map.lookup n f of 
-                               Just (Forall _ _ (_ :=> t)) -> t
+                               Just (Forall _ _ (_ TiTypes.:=> t)) -> t
 
 getDomainEntry :: IsaSign.ConstTab -> HsType -> IsaSign.DomainEntry
 getDomainEntry ctab t = 
@@ -466,7 +518,7 @@ transE trId trE trP e =
    HsId (HsVar x)              -> Free x
    HsId (HsCon c)              -> Const c
    HsApp x y                   -> App x y IsCont
-   HsLambda ps e               -> Abs [(x, noType) | x <- ps] e IsCont
+   HsLambda ps e               -> IsaSign.Abs [(x, noType) | x <- ps] e IsCont
 --   HsLet ds e                  -> Let ds e 
    HsIf x y z                  -> If x y z 
 --   HsCase e ds                 -> Case e ds 
@@ -490,15 +542,22 @@ transP trId trP p =
 --   HsPIrrPat p -> twiddlePat p
 --   _ -> not_supported "Pattern" p
 
-transPat :: SyntaxRec.HsPatI PNT -> IsaPattern
-transPat (Pat p) = transP showIsaS transPat p
+transPat :: TiDecorate.TiPat PNT -> IsaPattern
+transPat (TiDecorate.Pat p) = transP showIsaS transPat p
+
+-- transPat :: SyntaxRec.HsPatI PNT -> IsaPattern
+-- transPat (Pat p) = transP showIsaS transPat p
 
 extVars :: IsaPattern -> VName
 extVars p = case p of Free x -> x
 
-transExp :: PropSyntaxRec.HsExpI PNT -> IsaTerm
+transExp :: TiPropDecorate.TiExp PNT -> IsaTerm
 transExp t = case t of 
-    (PropSyntaxRec.Exp e) -> transE showIsaS transExp transPat e
+    (TiPropDecorate.Exp e) -> transE showIsaS transExp transPat e
+
+-- transExp :: PropSyntaxRec.HsExpI PNT -> IsaTerm
+-- transExp t = case t of 
+--    (PropSyntaxRec.Exp e) -> transE showIsaS transExp transPat e
 
 --    transE showIsaS transExp transE transLocalDecs e
 --  where
