@@ -58,7 +58,7 @@ type EquivClass a = [a]
 -- | equivalence relations are represented as lists of equivalence classes
 type EquivRel a = [EquivClass a]
 -- | or, sometimes, as lists of pairs (element, equiv. class tag)
-type EquivRelTagged a = [(a, a)]
+type EquivRelTagged a b = [(a, b)]
 
 -- PrettyPrint instance (for diagnostic output)
 instance PrettyPrint CASLDiag where
@@ -108,8 +108,8 @@ preds diag =
 
 -- | Convert the relation representation from list of pairs 
 -- (val, equiv. class tag) to a list of equivalence classes.
-taggedValsToEquivClasses :: Ord a
-			 => EquivRelTagged a -- ^ a list of (value, tag) pairs
+taggedValsToEquivClasses :: Ord b
+			 => EquivRelTagged a b -- ^ a list of (value, tag) pairs
 			 -> EquivRel a
 taggedValsToEquivClasses [] = []
 taggedValsToEquivClasses rel =
@@ -129,7 +129,7 @@ taggedValsToEquivClasses rel =
 -- equivalence classes to list of (value, tag) pairs.
 equivClassesToTaggedVals :: Ord a
 			 => EquivRel a
-			 -> EquivRelTagged a
+			 -> EquivRelTagged a a
 equivClassesToTaggedVals rel =
     let eqClToList [] = []
 	eqClToList eqcl@(fst : _) = map (\x -> (x, fst)) eqcl
@@ -137,10 +137,10 @@ equivClassesToTaggedVals rel =
 
 
 -- | Merge the equivalence classes for elements fulfilling given condition.
-mergeEquivClassesBy :: Eq a 
-		    => (a -> a -> Bool) -- ^ the condition stating when two elements are in relation
-	            -> EquivRelTagged a -- ^ the input relation
-		    -> EquivRelTagged a 
+mergeEquivClassesBy :: Eq b 
+		    => (a -> a -> Bool)   -- ^ the condition stating when two elements are in relation
+	            -> EquivRelTagged a b -- ^ the input relation
+		    -> EquivRelTagged a b
 -- ^ returns the input relation with equivalence classes merged according to
 -- the condition.
 mergeEquivClassesBy cond rel =
@@ -169,11 +169,11 @@ mergeEquivClassesBy cond rel =
 
 
 -- | Merge the equivalence classes for given tags.
-mergeEquivClasses :: Eq a
-		  => EquivRelTagged a
-		  -> a                -- ^ tag 1
-		  -> a                -- ^ tag 2
-		  -> EquivRelTagged a
+mergeEquivClasses :: Eq b
+		  => EquivRelTagged a b
+		  -> b                -- ^ tag 1
+		  -> b                -- ^ tag 2
+		  -> EquivRelTagged a b
 mergeEquivClasses rel tag1 tag2 | tag1 == tag2 = rel
 				| otherwise =
     let upd (el, tag) | tag == tag2 = (el, tag1)
@@ -287,40 +287,40 @@ simeqPred diag =
 
 
 -- | Compute the simeq_tau relation for given diagram.
-simeq_tau :: [LEdge CASLMor]
+simeq_tau :: [(Node, CASLMor)]
 	  -> EquivRel DiagSort
 simeq_tau sink = 
     let -- tagEdge: for given morphism m create a list of pairs 
 	-- (a, b) where a is DiagSort from the source signature that
-	-- is mapped by m to DiagSort b
-        tagEdge (sn, tn, Morphism { sort_map = sm }) = 
-	    map (\(ss, ts) -> ((sn, ss), (tn, ts))) (Map.toList sm)
+	-- is mapped by m to b
+        tagEdge (sn, Morphism { sort_map = sm }) = 
+	    map (\(ss, ts) -> ((sn, ss), ts)) (Map.toList sm)
         rel = foldl (\l -> \e -> l ++ (tagEdge e)) [] sink
     in taggedValsToEquivClasses rel
 
 
 -- | Compute the simeq^op_tau relation for given diagram.
-simeqOp_tau :: [LEdge CASLMor]
+simeqOp_tau :: [(Node, CASLMor)]
 	    -> EquivRel DiagOp
 simeqOp_tau sink = 
     let -- tagEdge: for given morphism m create a list of pairs 
 	-- (a, b) where a is DiagOp from the source signature that
-	-- is mapped by m to DiagOp b
-        tagEdge (sn, tn, Morphism { sort_map = sm, fun_map = fm }) = 
-	    map (\srcOp -> ((sn, srcOp), (tn, mapOpSym sm fm srcOp))) (Map.keys fm)
+	-- is mapped by m to b
+        tagEdge (sn, Morphism { sort_map = sm, fun_map = fm }) = 
+	    map (\srcOp -> ((sn, srcOp), mapOpSym sm fm srcOp)) (Map.keys fm)
         rel = foldl (\l -> \e -> l ++ (tagEdge e)) [] sink
     in taggedValsToEquivClasses rel
 
 
 -- | Compute the simeq^pred_tau relation for given diagram.
-simeqPred_tau :: [LEdge CASLMor]
+simeqPred_tau :: [(Node, CASLMor)]
 	      -> EquivRel DiagPred
 simeqPred_tau sink = 
     let -- tagEdge: for given morphism m create a list of pairs 
 	-- (a, b) where a is DiagPred from the source signature that
-	-- is mapped by m to DiagPred b
-        tagEdge (sn, tn, Morphism { sort_map = sm, pred_map = pm }) = 
-	    map (\srcPred -> ((sn, srcPred), (tn, mapPredSym sm pm srcPred))) (Map.keys pm)
+	-- is mapped by m to b
+        tagEdge (sn, Morphism { sort_map = sm, pred_map = pm }) = 
+	    map (\srcPred -> ((sn, srcPred), mapPredSym sm pm srcPred)) (Map.keys pm)
         rel = foldl (\l -> \e -> l ++ (tagEdge e)) [] sink
     in taggedValsToEquivClasses rel
 
@@ -364,11 +364,11 @@ embs diag =
 
 -- | Compute the set of sort embeddings (relations on sorts) defined
 -- in the source nodes of the sink.
-sinkEmbs :: CASLDiag        -- ^ the diagram
-	 -> [LEdge CASLMor] -- ^ the sink
+sinkEmbs :: CASLDiag          -- ^ the diagram
+	 -> [(Node, CASLMor)] -- ^ the sink
 	 -> [DiagEmb]
 sinkEmbs _ [] = []
-sinkEmbs diag ((srcNode, _, _) : edges) = 
+sinkEmbs diag ((srcNode, _) : edges) = 
     let (_, _, Sign {sortRel = sr}, _) = context srcNode diag
     in (map (\(s1, s2) -> (srcNode, s1, s2)) (toList sr)) ++ (sinkEmbs diag edges)
     
@@ -437,17 +437,17 @@ wordDom w = let (n, s1, _) = last w in (n, s1)
 
 -- | Find an equivalence class tag for given element.
 findTag :: Eq a
-	=> EquivRelTagged a
+	=> EquivRelTagged a b
 	-> a
-	-> Maybe a
+	-> Maybe b
 findTag [] _ = Nothing 
 findTag ((w', t) : wtps) w = 
     if w == w' then Just t else findTag wtps w
 
 
 -- | Compute the left-cancellable closure of a relation on words.
-leftCancellableClosure :: EquivRelTagged DiagEmbWord
-		       -> EquivRelTagged DiagEmbWord
+leftCancellableClosure :: EquivRelTagged DiagEmbWord DiagEmbWord
+		       -> EquivRelTagged DiagEmbWord DiagEmbWord
 leftCancellableClosure rel = 
     let -- checkPrefixes: for each common prefix of two given words
 	-- merge the equivalence classes of the suffixes
@@ -482,8 +482,8 @@ leftCancellableClosure rel =
 -- given \simeq relation on letters.
 -- This function should be applied to the relation until a fixpoint is reached.
 congruenceClosure :: EquivRel DiagSort          -- ^ the simeq relation
-		  -> EquivRelTagged DiagEmbWord 
-		  -> EquivRelTagged DiagEmbWord
+		  -> EquivRelTagged DiagEmbWord DiagEmbWord
+		  -> EquivRelTagged DiagEmbWord DiagEmbWord
 congruenceClosure simeq rel =
     let -- iterateWord1 
         iterateWord1 rel pos | pos >= length rel = rel
@@ -529,7 +529,7 @@ congruenceClosure simeq rel =
 
 -- | Compute the cong_tau relation for given diagram and sink.
 cong_tau :: CASLDiag          -- ^ the diagram
-	 -> [LEdge CASLMor]   -- ^ the sink
+	 -> [(Node, CASLMor)] -- ^ the sink
 	 -> EquivRel DiagSort -- ^ the \simeq_tau relation
 	 -> EquivRel DiagEmbWord
 cong_tau diag sink st = 
@@ -869,24 +869,23 @@ wordToEmbPath ((_, s1, s2) : embs) =
 
     
 -- | The amalgamability checking function for CASL. 
-ensuresAmalgamability :: CASLDiag        -- ^ the diagram to be checked;
-					 -- must already be extended with the node
-					 -- that is the target of the sink.
-		      -> [LEdge CASLMor] -- ^ the sink
+ensuresAmalgamability :: CASLDiag          -- ^ the diagram to be checked;
+					   -- must already be extended with the node
+					   -- that is the target of the sink.
+		      -> [(Node, CASLMor)] -- ^ the sink
 		      -> Diagram String String -- ^ the diagram containing descriptions of nodes and edges
 		      -> Result Amalgamates
-ensuresAmalgamability diag' sink@((_, tn, _) : _) desc = 
+ensuresAmalgamability diag sink desc = 
     do let -- aux. functions that help printing out diagnostics
            getNodeSig _ [] = emptySign () -- this should never be the case
 	   getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
-	   lns = labNodes diag'
+	   lns = labNodes diag
            formatOp (id, t) = renderText Nothing (printText id) ++ " :" ++ renderText Nothing (printText t)
            formatPred (id, t) = renderText Nothing (printText id) ++ " : " ++ renderText Nothing (printText t)
 	   formatSig n = case find (\(n', d) -> n' == n && d /= "") (labNodes desc) of
 			      Just (_, d) -> d 
 			      Nothing -> renderText Nothing (printText (getNodeSig n lns))
            -- and now the relevant stuff
-	   diag = delNode tn diag'
            s = {-trace ("Diagram: " ++ showPretty diag "\n Sink: " ++ showPretty sink "")-} simeq diag
 	   st = simeq_tau sink
        -- 1. Check the inclusion (*). If it doesn't hold, the specification is
@@ -920,7 +919,7 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
 			                                          " in\n\n" ++ formatSig (fst np2) ++ "\n\n"
 						   in do return (No ("\npredicates " ++ pString1 ++ "and " ++ pString2 ++ "might be different"))
 			        Nothing ->
-                                  do let ct = cong_tau diag' sink st
+                                  do let ct = cong_tau diag sink st
 				         -- As we will be using a finite representation of \cong_0
 					 -- that may not contain some of the equivalence classes with
 					 -- only one element it's sufficient to check that the subrelation
