@@ -72,11 +72,12 @@ processFile opt file =
                                      (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)
                                 showDiags opt diags
                                 case res of
-                                     Just (ln,ld1,_,lenv) -> do
-                                       writeFileInfo opt diags file ln lenv
-				       --checkFile opt file ln lenv
-                                       return (ld1,res)
-                                     Nothing -> return (ld, res)
+                                 Just (ln,ld1,_,lenv) -> do
+                                   when (EnvOut `elem` outtypes opt)
+				        (writeFileInfo opt diags file ln lenv)
+				   --checkFile opt file ln lenv
+                                   return (ld1,res)
+                                 Nothing -> return (ld, res)
                   let odir = if null (outdir opt) then dirname file else outdir opt
                   putIfVerbose opt 3 ("Current OutDir: " ++ odir)
 		  let (globalAnnos,notTrans) = 
