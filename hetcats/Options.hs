@@ -152,7 +152,7 @@ hetcats_usage = usageInfo header options
 
 -- custom error-message prepended to our usage info
 hetcats_error :: String -> IO String
-hetcast_error s = error (s ++ "\n" ++ hetcats_usage)
+hetcats_error s = error (s ++ "\n" ++ hetcats_usage)
 
 -- parses the optional Argument to --verbose
 parse_verb :: Maybe String -- optional Argument to --verbose
