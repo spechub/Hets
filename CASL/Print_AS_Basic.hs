@@ -10,6 +10,12 @@
 
 module Print_AS_Basic where
 
+-- debugging
+-- import IOExts (trace)
+
+import List (mapAccumL)
+
+import Id
 import AS_Basic_CASL
 import AS_Annotation
 import GlobalAnnotations
@@ -39,7 +45,7 @@ instance PrettyPrint BASIC_ITEMS where
     printText0 ga (Local_var_axioms l f p) = text forallS 
 				 <+> semiT ga l
 				 $$ printText0 ga (Axiom_items f p)
-    printText0 ga (Axiom_items f _) = vcat (map (\x -> text cDot  <+> printText0 ga x)
+    printText0 ga (Axiom_items f _) = vcat (map (\x -> char '.' <+> printText0 ga x)
 					f)
 
 semiAnno :: (PrettyPrint a) => GlobalAnnos -> [Annoted a] -> Doc
@@ -80,7 +86,7 @@ instance PrettyPrint OP_ITEM where
                                   <+> text equalS
 				  <+> printText0 ga t
 
-crossT ga l = hcat(punctuate (text timesS) (map (printText0 ga) l))
+crossT ga l = hcat(punctuate (char '*') (map (printText0 ga) l))
 
 instance PrettyPrint OP_TYPE where
     printText0 ga (Total_op_type l s _) = (if null l then empty 
@@ -165,7 +171,7 @@ instance PrettyPrint VAR_DECL where
 instance PrettyPrint FORMULA where
     printText0 ga (Quantification q l f _) = printText0 ga q
 			     <+> (semiT ga l
-				  <> text cDot)
+				  <> char '.')
 			     <+> printText0 ga f
     printText0 ga (Conjunction l _) = 
 	parens(cat(punctuate (space 
@@ -181,9 +187,9 @@ instance PrettyPrint FORMULA where
     printText0 ga (Equivalence  f g _) = parens(printText0 ga f
 			     <+> text equivS
 			     <+> printText0 ga g)
-    printText0 ga (Negation f _) = text negS <+> printText0 ga f
-    printText0 _ (True_atom _) = text trueS
-    printText0 _ (False_atom _) = text falseS
+    printText0 ga (Negation f _) = text "not" <+> printText0 ga f
+    printText0 ga (True_atom _) = text trueS
+    printText0 ga (False_atom _) = text falseS
     printText0 ga (Predication p l _) = 
 	printText0 ga p <> 
          (if null l then empty else parens(commaT ga l))
@@ -218,9 +224,36 @@ instance PrettyPrint TERM where
 					<+> (printText0 ga n
 					     <> colon 
 					     <> printText0 ga t))
-    printText0 ga (Application o l _) = printText0 ga o <> 
-					(if null l then empty 
-					 else parens(commaT ga l))
+    printText0 ga (Application o l _) = 
+	let (id@(Id tops cs _),isQual) = case o of
+				    Op_name i -> (i,False)
+				    Qual_op_name i _ _ -> (i,True)
+	in if isMixfix id then
+	      if isQual then 
+		 prefix_appl
+	      else if length (filter isPlace tops) == length l then
+	                mixfix_appl tops cs
+	           else 
+	                prefix_appl
+	   else prefix_appl
+	where  prefix_appl = printText0 ga o <> 
+			     (if null l then empty 
+			      else parens(commaT ga l))
+	       mixfix_appl tops cs = fsep nlI <+> c <+> fsep nlT
+		   where c = if null cs then empty 
+			     else fsep $ map (brackets . (printText0 ga)) cs
+	                 p@(topsI,topsT) = splitMixToken tops
+			 lI = take (length $ filter isPlace topsI) l
+			 lT = drop (length $ filter isPlace topsI) l
+			 nlI = fillIn topsI $ lI
+			 nlT = fillIn topsT $ lT
+			 fillIn tops ts = 
+			     let (_,nl) = mapAccumL pr ts tops in nl
+			 pr [] top = ([], ptext $ showTok top "")
+			 pr tS@(t:ts) top | isPlace top = 
+					      (ts,parens $ printText0 ga t)
+					  | otherwise   = 
+					      (tS,ptext $ showTok top "")
     printText0 ga (Sorted_term t s _) = printText0 ga t
 					<+> (colon
 					     <> printText0 ga s)
@@ -251,6 +284,54 @@ instance PrettyPrint OP_SYMB where
 						<+> printText0 ga o
 						<+> (colon
 						     <> printText0 ga t))
+
+{- old stuff or new stuff who knows / cares
+----------
+instance PrettyPrint SYMB_ITEMS where
+    printText0 ga (Symb_items aa ab _) =
+	let aa' = printText0 ga aa
+	    ab' = fcat $ punctuate (comma<>space) $ map (printText0 ga) ab
+	in aa' <+> ab'
+
+instance PrettyPrint SYMB_MAP_ITEMS where
+    printText0 ga (Symb_map_items aa ab _) =
+	let aa' = printText0 ga aa
+	    ab' = fcat $ punctuate (comma<>space) $ map (printText0 ga) ab
+	in aa' <+> ab'
+
+instance PrettyPrint SYMB_KIND where
+    printText0 ga Implicit =
+	empty
+    printText0 ga Sorts_kind =
+	ptext "sort"
+    printText0 ga Ops_kind =
+	ptext "op"
+    printText0 ga Preds_kind =
+	ptext "pred"
+
+instance PrettyPrint SYMB where
+    printText0 ga (Symb_id aa) =
+	printText0 ga aa
+    printText0 ga (Qual_id aa ab _) =
+	let aa' = printText0 ga aa
+	    ab' = printText0 ga ab
+	in aa' <> colon <+> ab'
+
+instance PrettyPrint TYPE where
+    printText0 ga (O_type aa) =
+	printText0 ga aa
+    printText0 ga (P_type aa) =
+	printText0 ga aa
+
+instance PrettyPrint SYMB_OR_MAP where
+    printText0 ga (Symb aa) =
+	printText0 ga aa
+    printText0 ga (Symb_map aa ab _) =
+	let aa' = printText0 ga aa
+	    ab' = printText0 ga ab
+	in aa' <+> ptext "|->" <+> ab'
+
+-}
 
 instance PrettyPrint SYMB_ITEMS where
  printText0 ga (Symb_items k l _) = printText0 ga k <+>
@@ -287,3 +368,4 @@ instance PrettyPrint SYMB_OR_MAP where
     printText0 ga (Symb_map s t _) = printText0 ga s 
 				     <+> text mapsTo
 				     <+> printText0 ga t
+
