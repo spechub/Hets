@@ -12,9 +12,7 @@
    extensions
 
    TODO:
-   - make sure the precedence is OK
-   - annotations
-   - see specific TODOs in functions
+    check UNIT-BINDING
 -}
 
 module Syntax.Parse_AS_Architecture where
@@ -32,8 +30,6 @@ import Common.Lexer
 import Common.Token
 import Text.ParserCombinators.Parsec
 import Common.Id
-import Data.Maybe(maybeToList)
-
 
 ------------------------------------------------------------------------
 -- * Parsing functions
@@ -97,10 +93,10 @@ unitDeclDefn l = do
     name <- simpleId
     do c <- colonT     -- unit declaration 
        decl <- refSpec l
-       (gs, ps) <- option ([], [])
-                            (do kGiven <- asKey givenS
-                                guts <- groupUnitTerms l
-                                return (guts, [kGiven]))
+       (gs, ps) <- option ([], []) $
+         do kGiven <- asKey givenS
+            (guts, qs) <- groupUnitTerm l `separatedBy` anComma
+            return (guts, kGiven:qs)
        return (Unit_decl name decl gs $ map tokPos (c:ps)) 
      <|> -- unit definition
      unitDefn' l name
@@ -112,9 +108,9 @@ unitDeclDefn l = do
 unitRef :: LogicGraph -> AParser AnyLogic UNIT_REF
 unitRef l = 
         do name <- simpleId
-	   sep1 <- asKey toS
-	   usp <- refSpec l
-	   return $ Unit_ref name usp [tokPos sep1]
+           sep1 <- asKey toS
+           usp <- refSpec l
+           return $ Unit_ref name usp [tokPos sep1]
 
 
 -- | Parse unit specification
@@ -131,8 +127,8 @@ unitSpec l =
        return (Closed_unit_spec uSpec [tokPos kClosed])
     <|> -- unit type 
 {- NOTE: this can also be a spec name. If this is the case, this unit spec 
-	   will be converted on the static analysis stage.
-	   See Static.AnalysisArchitecture.ana_UNIT_SPEC. -}
+           will be converted on the static analysis stage.
+           See Static.AnalysisArchitecture.ana_UNIT_SPEC. -}
     do gps@(gs:gss, _) <- annoParser (groupSpec l) `separatedBy` crossT
        let rest = unitRestType l gps
        if null gss then do
@@ -195,71 +191,40 @@ onlyRefinedRestSpec l b u = do
     rsp <- refSpec l
     return $ Refinement (null b) u ms rsp (b ++ toPos r ps t)           
 
-
--- | Parse a nonempty list of group unit terms separated by commas.
--- The positions of commas are stored in annotations.
--- @
--- GROUP-UNIT-TERMS ::= GROUP-UNIT-TERM ,..., GROUP-UNIT-TERM
--- @
-groupUnitTerms :: LogicGraph -> AParser AnyLogic [Annoted UNIT_TERM]
-groupUnitTerms l =
-    do gut <- groupUnitTerm l
-       (com, guts) <- option (Nothing, [])
-		      (do com <- fmap Just anComma
-			  guts <- groupUnitTerms l
-			  return (com, guts))
-       return ((Annoted gut (map tokPos (maybeToList com)) [] []) : guts)
-		     
-
 -- | Parse group unit term
 -- @
 -- GROUP-UNIT-TERM ::= UNIT-NAME
 --                   | UNIT-NAME FIT-ARG-UNITS
 --                   | { UNIT-TERM }
 -- @
-groupUnitTerm :: LogicGraph -> AParser AnyLogic UNIT_TERM
-groupUnitTerm l =
+groupUnitTerm :: LogicGraph -> AParser AnyLogic (Annoted UNIT_TERM)
+groupUnitTerm l = annoParser $
         -- unit name/application
     do name <- simpleId
-       (args, pos) <- fitArgUnits l
-       return (Unit_appl name args pos)
+       args <- many (fitArgUnit l)
+       return (Unit_appl name args [])
     <|> -- unit term in brackets
     do lbr <- oBraceT
        ut <- unitTerm l
        rbr <- cBraceT
        return (Group_unit_term ut (map tokPos [lbr, rbr]))
 
-
--- | Parse the (possibly empty) list of arguments for unit application.
--- @
--- FIT-ARG-UNITS ::= [ FIT-ARG-UNIT ] ... [ FIT-ARG-UNIT ]
--- @
-fitArgUnits :: LogicGraph -> AParser AnyLogic ([FIT_ARG_UNIT], [Pos])
--- ^ returns a list of arguments for unit application and a list of 
--- "[" and "]" positions
-fitArgUnits l = 
-    option ([], []) 
-    (do opBr <- oBracketT
-	fau <- fitArgUnit l
-	clBr <- cBracketT
-        (faus, poss) <- fitArgUnits l
-        return (fau : faus, [tokPos opBr, tokPos clBr] ++ poss))
-
-
 -- | Parse an argument for unit application.
 -- @
--- FIT-ARG-UNIT ::= UNIT-TERM
---                | UNIT-TERM fit SYMB-MAP-ITEMS-LIST
+-- FIT-ARG-UNIT ::= [ UNIT-TERM ]
+--                | [ UNIT-TERM fit SYMB-MAP-ITEMS-LIST ]
 -- @
 -- The SYMB-MAP-ITEMS-LIST is parsed using parseItemsMap.
 fitArgUnit :: LogicGraph -> AParser AnyLogic FIT_ARG_UNIT
 fitArgUnit l =
-    do ut <- unitTerm l
+    do o <- oBracketT
+       ut <- unitTerm l
        (fargs, qs) <- option ([], [])
-		       (do kFit <- asKey fitS
-			   (smis, ps) <- parseMapping l
-			   return (smis, kFit:ps))
-       return $ Fit_arg_unit ut fargs $ map tokPos qs
+                       (do kFit <- asKey fitS
+                           (smis, ps) <- parseMapping l
+                           return (smis, kFit:ps))
+       c <- cBracketT
+       return $ Fit_arg_unit ut fargs $ toPos o qs c
 
 
 -- | Parse unit term.
@@ -284,8 +249,8 @@ unitTermAmalgamation :: LogicGraph -> AParser AnyLogic (Annoted UNIT_TERM)
 unitTermAmalgamation l = 
     do (uts, toks) <- annoParser2 (unitTermLocal l) `separatedBy` (asKey andS)
        return (case uts of
-	       [ut] -> ut
-	       _ -> emptyAnno (Amalgamation uts (map tokPos toks)))
+               [ut] -> ut
+               _ -> emptyAnno (Amalgamation uts (map tokPos toks)))
 
 
 -- | Parse local unit term
@@ -316,7 +281,7 @@ unitTermLocal l =
 -- @
 
 unitTermTransRed :: LogicGraph -> AParser AnyLogic (Annoted UNIT_TERM)
-unitTermTransRed l = annoParser (groupUnitTerm l) >>=  
+unitTermTransRed l = groupUnitTerm l >>=  
     translation_list l Unit_translation Unit_reduction
 
 -- | Parse unit expression
@@ -327,12 +292,12 @@ unitTermTransRed l = annoParser (groupUnitTerm l) >>=
 unitExpr :: LogicGraph -> AParser AnyLogic (Annoted UNIT_EXPRESSION)
 unitExpr l =
          do (bindings, poss) <- option ([], [])
-	     (do kLambda <- asKey lambdaS
-		 (bindings, poss) <- unitBinding l `separatedBy` anSemi
-		 kDot <- asKey dotS
-		 return (bindings, toPos kLambda poss kDot))
-	    ut <- unitTerm l
-	    return (emptyAnno $ Unit_expression bindings ut poss)
+             (do kLambda <- asKey lambdaS
+                 (bindings, poss) <- unitBinding l `separatedBy` anSemi
+                 kDot <- asKey dotS
+                 return (bindings, toPos kLambda poss kDot))
+            ut <- unitTerm l
+            return (emptyAnno $ Unit_expression bindings ut poss)
 
 -- | Parse unit binding
 -- @
@@ -355,5 +320,5 @@ unitDefn l = simpleId >>= unitDefn' l
 unitDefn' :: LogicGraph -> SIMPLE_ID -> AParser AnyLogic UNIT_DECL_DEFN
 unitDefn' l name = do
        kEqu <- asKey equalS
-       expr <- unitExpr l
+       expr <- annoParser2 $ unitExpr l
        return (Unit_defn name (item expr) (map tokPos [kEqu]))
