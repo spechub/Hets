@@ -48,10 +48,29 @@ anaTypeItem inst (TypeDecl pats kind _) =
 anaTypePattern inst kind (TypePatternToken t) = 
     let i = simpleIdToId t
     in 
-    do k <- anaKind kind
-       addTypeScheme i (Scheme [] ([] :=> TCon (Tycon i k)))
+    do k <- anaPlainKind kind
+       let ty = [] :=> TCon (Tycon i k)
+	 in do addTypeScheme i (Scheme [] ty)
+	       anaKind kind ty
+       
 
-anaKind (Kind [] (As.Universe _) _) = return star 
+anaPlainKind (Kind [] _  _) = return star 
+anaKind (Kind [] (As.Universe _) _) _ = return ()
+anaKind (Kind [] (As.ClassName ci) _) (qs :=> t) = 
+    let i = simpleIdToId ci in
+    do e <- get
+       let cs = classenv e 
+           m = lookupFM cs i 
+	 in case m of 
+	    Nothing -> writeMsg e (Error ("undeclared class '"
+					  ++ showId i "'")
+				   $ posOfId i)
+	    Just (sc, is) -> put (e {classenv =
+				     addToFM cs i (sc, 
+						   (qs :=> 
+						    (i `IsIn` t))
+						   : is)})
+
 
 -- addTypeScheme :: Id -> Scheme -> State LEnv ()
 addTypeScheme i sc = do 
@@ -59,5 +78,7 @@ addTypeScheme i sc = do
 		     let as = assumps e 
                          l = lookUp as i in
                        if sc `elem` l then
-			  writeMsg e (Warning "repeated declaration" nullPos)
+			  writeMsg e (Warning ("repeated declaration for '" 
+					       ++ showId i "'")
+				     $ posOfId i)
 		       else put (e {assumps = addToFM as i (sc:l)})
