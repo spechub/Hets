@@ -4,14 +4,13 @@ import Haskell.Hatchet.AnnotatedHsSyn
 import Common.Named
 
 type AHsDecls = [AHsDecl]
-
-type NamedSentences = [Named AHsDecls]
+type NamedSentences = [Named AHsDecl]
 
 extractSentences :: AHsModule -> NamedSentences
-extractSentences (AHsModule _ _ _ decls) = [NamedSen { senName = "",
-                                                       sentence = filterDecls decls }]
+extractSentences (AHsModule _ _ _ decls) = filterDecls decls
 
-filterDecls :: AHsDecls -> AHsDecls
+filterDecls :: AHsDecls -> NamedSentences
+filterDecls [] = []
 filterDecls (decl:decls) =
      case decl of
        (AHsTypeDecl _ _ _ _) -> filterDecls decls
@@ -22,5 +21,21 @@ filterDecls (decl:decls) =
        (AHsDefaultDecl _ _) -> filterDecls decls
        (AHsInfixDecl _ _ _ _) -> filterDecls decls
        (AHsTypeSig _ _ _) -> filterDecls decls           -- skip: no sentences
-       (AHsFunBind _) -> decl:(filterDecls decls)
-       (AHsPatBind _ _ _ _) -> decl:(filterDecls decls)
+       (AHsFunBind matches) -> ( NamedSen { senName = funName matches, sentence = decl } )
+                             :(filterDecls decls)
+       (AHsPatBind _ pat _ _) -> ( NamedSen { senName = patName pat, sentence = decl } ):(filterDecls decls)
+     where funName ((AHsMatch _ name _ _ _):rest) = show name
+           patName pat =
+             case pat of
+               AHsPVar name -> show name
+               AHsPLit lit -> "Literal"
+               AHsPNeg p -> "-" ++ patName p
+               AHsPInfixApp _ name _ -> show name
+               AHsPApp name _ -> show name
+               AHsPTuple _ -> "Tuple"
+               AHsPList _ -> "List"
+               AHsPParen p -> patName p
+               AHsPRec name _ -> show name
+               AHsPAsPat name _ -> show name
+               AHsPWildCard -> "Wildcard"
+               AHsPIrrPat p -> "~" ++ patName p
