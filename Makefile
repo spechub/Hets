@@ -38,8 +38,6 @@ PERL       = perl
 HAPPY      = happy
 DRIFT      = $(DRIFT_ENV) utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
-APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
-                      Haskell/ProgramaticaPrelude.hs
 HADDOCK    = haddock
 CPPP       = cpp 
 
@@ -86,9 +84,32 @@ pfe_sources = $(wildcard $(subst :,/*hs , $(PFE_PATHS)))
 PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
 happy_files = $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
   $(PFE_TOOLDIR)/base/parse2/Lexer/HsLex.hs
+
 logics += Haskell
 derived_sources += Haskell/PreludeString.hs
+APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
+                      Haskell/ProgramaticaPrelude.hs
 
+## rule for appendHaskellPreludeString
+Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
+        $(APPENDPRELUDESTRING)
+	$(APPENDPRELUDESTRING) < $< > $@
+
+Ast_Haskell_files := HsDeclStruct HsExpStruct HsFieldsStruct \
+          HsGuardsStruct HsKindStruct HsPatStruct HsTypeStruct HsAssocStruct \
+          HsModule HsName HsLiteral HsIdent
+
+Other_PFE_files := property/AST/HsPropStruct base/defs/PNT \
+      base/defs/UniqueNames base/Modules/TypedIds \
+      base/TI/TiKinds \
+      base/parse2/SourceNames base/syntax/SyntaxRec \
+      property/syntax/PropSyntaxStruct
+
+Haskell_files = $(addsuffix .hs, \
+	$(addprefix $(PFE_TOOLDIR)/base/AST/, $(Ast_Haskell_files)) \
+	$(addprefix $(PFE_TOOLDIR)/, $(Other_PFE_files)))
+
+## rule for ATC generation
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) utils/genRules
 	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
              $(Haskell_files)
@@ -161,20 +182,6 @@ Hatchet_files := Haskell/Hatchet/AnnotatedHsSyn.hs \
                 Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
                 Haskell/Hatchet/Env.hs \
 
-Ast_Haskell_files := HsDeclStruct HsExpStruct HsFieldsStruct \
-          HsGuardsStruct HsKindStruct HsPatStruct HsTypeStruct HsAssocStruct \
-          HsModule HsName HsLiteral HsIdent
-
-Other_PFE_files := property/AST/HsPropStruct base/defs/PNT \
-      base/defs/UniqueNames base/Modules/TypedIds \
-      base/TI/TiKinds \
-      base/parse2/SourceNames base/syntax/SyntaxRec \
-      property/syntax/PropSyntaxStruct
-
-Haskell_files = $(addsuffix .hs, \
-	$(addprefix $(PFE_TOOLDIR)/base/AST/, $(Ast_Haskell_files)) \
-	$(addprefix $(PFE_TOOLDIR)/, $(Other_PFE_files)))
-
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
 generated_rule_files = $(atc_der_files) $(atc_logic_files)
@@ -186,8 +193,8 @@ inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
-derived_sources = $(drifted_files) hetcats/Version.hs $(happy_files) \
-                  $(inline_axiom_files) Modal/ModalSystems.hs 
+derived_sources += $(drifted_files) hetcats/Version.hs $(happy_files) \
+                  $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = ./Isabelle/Logic_Isabelle.hs \
@@ -430,7 +437,7 @@ real_clean: bin_clean lib_clean clean
 
 ### additionally removes files not in CVS tree
 distclean: real_clean clean_genRules d_clean
-	$(RM) $(derived_files) 
+	$(RM) $(derived_sources) 
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 
 ####################################################################
@@ -528,11 +535,6 @@ hets.hs: hetcats/Version.hs
 ## rules for inlineAxioms
 %.hs: %.inline.hs $(INLINEAXIOMS)
 	$(INLINEAXIOMS) $< > $@
-
-## rule for appendHaskellPreludeString
-Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
-        $(APPENDPRELUDESTRING)
-	$(APPENDPRELUDESTRING) < $< > $@
 
 ## rule for cpp and haddock 
 %.hspp: %.hs
