@@ -202,21 +202,18 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
    the actual implementation -}
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
-globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
-globSubsumeAux dGraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
-  if null allPaths
+globSubsumeAux dgraph historyElement [] = (dgraph, historyElement)
+globSubsumeAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+  if null proofBasis
    then
-     globSubsumeAux dGraph (rules,changes) list
+     globSubsumeAux dgraph (rules,changes) list
    else 
-     globSubsumeAux (insEdge newEdge (delLEdge ledge dGraph)) (newRules,newChanges) list
+     globSubsumeAux (insEdge newEdge (delLEdge ledge dgraph)) (newRules,newChanges) list
 
   where
     morphism = dgl_morphism edgeLab
-    allPaths = getAllProvenGlobPathsOfMorphismBetween dGraph morphism src tgt
-    proofBasis =
-      case allPaths of
-        [] -> []
-        (path:paths) -> map getLabelOfEdge path
+    allPaths = getAllGlobPathsOfMorphismBetween dgraph morphism src tgt
+    proofBasis = selectProofBasis edgeLab allPaths
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (src,
 	       tgt,
@@ -288,13 +285,13 @@ locDecompAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 
 {- returns a list of all proven global paths of the given morphism between
    the given source and target node-}
-getAllProvenGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
+getAllGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
 					  -> [[LEdge DGLinkLab]]
-getAllProvenGlobPathsOfMorphismBetween dgraph morphism src tgt = 
+getAllGlobPathsOfMorphismBetween dgraph morphism src tgt = 
   filterPathsByMorphism morphism allPaths
 
   where 
-      allPaths = getAllProvenGlobPathsBetween dgraph src tgt
+      allPaths = getAllGlobPathsBetween dgraph src tgt
 
 {- Benutzung dieser Methode derzeit auskommentiert - wird wahrscheinlich weggeschmissen -}
 {- returns a list of all proven loc-glob paths of the given morphism between
@@ -365,11 +362,11 @@ getAllLocGlobPathsOfTypesBetween dgraph src tgt locTypes globTypes =
     globPaths = getAllProvenGlobPathsBetween dgraph src tgt
     -}
 
-{- returns all paths of globalDef edges or proven globalThm edges 
+{- returns all paths of globalDef edges or globalThm edges 
    between the given source and target node -}
-getAllProvenGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
-getAllProvenGlobPathsBetween dgraph src tgt =
-  getAllPathsOfTypesBetween dgraph [isGlobalDef,isProvenGlobalThm] src tgt []
+getAllGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
+getAllGlobPathsBetween dgraph src tgt =
+  getAllPathsOfTypesBetween dgraph [isGlobalDef,isGlobalThm] src tgt []
 
 
 {- gets all paths consisting of local/global thm/def edges
@@ -382,8 +379,7 @@ getAllThmDefPathsOfMorphismBetween dgraph morphism src tgt =
   where
     allPaths = getAllPathsOfTypesBetween dgraph types src tgt []
     types = 
-      [isProvenGlobalThm,
-       isUnprovenGlobalThm,
+      [isGlobalThm,
        isProvenLocalThm,
        isProvenLocalThm,
        isUnprovenLocalThm,
@@ -465,6 +461,13 @@ getTargetNode (_,target,_) = target -}
 -- -------------------------------------
 -- methods to check the type of an edge
 -- -------------------------------------
+isProven :: LEdge DGLinkLab -> Bool
+isProven edge = isGlobalDef edge || isLocalDef edge 
+		|| isProvenGlobalThm edge || isProvenLocalThm edge
+
+isGlobalThm :: LEdge DGLinkLab -> Bool
+isGlobalThm edge = isProvenGlobalThm edge || isUnprovenGlobalThm edge
+
 isProvenGlobalThm :: LEdge DGLinkLab -> Bool
 isProvenGlobalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
@@ -525,13 +528,33 @@ getInsertedEdges (change:list) =
 -- methods to check and select proof basis
 -- ----------------------------------------
 
+{- determines all proven paths in the given list and tries to selet a
+   proof basis from these (s. selectProofBasisAux);
+   if this fails the same is done for the rest of the given paths, i.e.
+   for the unproven ones -}
+selectProofBasis :: DGLinkLab -> [[LEdge DGLinkLab]] -> [DGLinkLab]
+selectProofBasis label paths =
+  if null provenPaths then selectProofBasisAux label unprovenPaths
+   else selectProofBasisAux label provenPaths
+
+  where 
+    provenPaths = filterProvenPaths paths
+    unprovenPaths = [path | path <- paths, notElem path provenPaths]
+
 {- selects the first path that does not form a proof cycle with the given
  label (if such a path exits) and returns the labels of its edges -}
-selectProofBasis :: DGLinkLab -> [[LEdge DGLinkLab]] -> [DGLinkLab]
-selectProofBasis _ [] = []
-selectProofBasis label (path:list) =
-  if notProofCycle label path then [lab|(_,_,lab)<- path]
-   else selectProofBasis label list
+selectProofBasisAux :: DGLinkLab -> [[LEdge DGLinkLab]] -> [DGLinkLab]
+selectProofBasisAux _ [] = []
+selectProofBasisAux label (path:list) =
+    if notProofCycle label path then [lab|(_,_,lab)<- path]
+     else selectProofBasisAux label list
+
+{- returns all proven paths from the given list -}
+filterProvenPaths :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
+filterProvenPaths [] = []
+filterProvenPaths (path:list) =
+  if (and [isProven edge| edge <- path]) then path:(filterProvenPaths list)
+   else filterProvenPaths list
 
 {- opposite of isProofCycle -}
 notProofCycle :: DGLinkLab -> [LEdge DGLinkLab] -> Bool

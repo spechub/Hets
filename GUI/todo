@@ -18,8 +18,8 @@ Jorina
 
 (X)  Kantenmenü zum Anzeigen des Signaturmorphismus (mittels show anzeigen)
 
-- (Global) Subsumption optimieren: auch globale Theorem-Links zulassen
-(X) dazu muss in DevGraph.hs der Bool-Wert in den Theorem-Links durch
+(X)  (Global) Subsumption optimieren: auch globale Theorem-Links zulassen
+    dazu muss in DevGraph.hs der Bool-Wert in den Theorem-Links durch
       data ThmLinkStatus =  Open | Proved [DGLinkLab]
     ersetzt werden
     Gleichzeitig hier auch noch einen ThmLinkStatus für die
