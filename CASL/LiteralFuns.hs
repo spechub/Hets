@@ -19,7 +19,6 @@ module CASL.LiteralFuns ( CASL.LiteralFuns.isLiteral
 			, isFloat
 			, isFrac
 			, collectElements
-			,leftAssCollElems
 			, basicTerm
 			, convCASLChar
 			, splitAppl
@@ -45,10 +44,14 @@ isLiteral ga i trm =
 
 isNumber :: GlobalAnnos -> Id -> [TERM] -> Bool
 isNumber ga i trs = 
-    digitTest i && null trs || (getLiteralType ga i == Number && 
-		    all (sameId digitTest i) trs)
-    where digitTest ii = case ii of
-			 Id [t] [] _ -> isDigit $ head $ tokStr t
+    (digitTest i && null trs) 
+    || (getLiteralType ga i == Number && all (sameId digitTest i) trs)
+    where digitTest ii = 
+	      (getLiteralType ga ii == Number) || case ii of
+			 Id [t] [] _ 
+			     | not $ null tstr -> isDigit $ head $ tstr 
+			     | otherwise    -> False
+			     where tstr = tokStr t
 			 _           -> False
 
 isSignedNumber :: GlobalAnnos -> Id -> [TERM] -> Bool
@@ -134,10 +137,26 @@ leftAssCollElems i trs =
 
 collectElements :: (Maybe Id) -> Id -> [TERM] -> [TERM]
 collectElements mnid i trs = 
+    if detect_left_ass i trs 
+    then leftAssCollElems i trs
+    else collectElementsRight mnid i trs
+
+detect_left_ass :: Id -> [TERM] -> Bool
+detect_left_ass i trs = 
+    case trs of
+    []    -> True
+    [_]   -> False
+    [x,_] ->  case x of
+	  Application oi _ _ -> op_id oi == i
+	  _        -> False	      
+    _     -> False
+
+collectElementsRight :: (Maybe Id) -> Id -> [TERM] -> [TERM]
+collectElementsRight mnid i trs = 
      case trs of
 	      []    -> error "no elements to collect"
 	      [x]   -> getToken x
-	      [x,y] -> x : collectElements mnid i (splitA y)
+	      [x,y] -> x : collectElementsRight mnid i (splitA y)
 	      _ys   -> error "too many elements to collect"
     where splitA t = case t of
 			  Application oi its _ 
@@ -145,14 +164,14 @@ collectElements mnid i trs =
 			      | otherwise     -> [t]
 			  _        -> error "splitA: no Appl found"
 	  getToken :: TERM -> [TERM]
-	  getToken trm = case mnid of 
-			 Nothing -> [trm]
-			 Just nid -> case trm of
+	  getToken trm = maybe [trm]
+			       (\ nid -> case trm of
 				     Application oid [] _ 
 					 | op_id oid == nid -> []
 					 | otherwise -> 
 					     error "null element not found"
-				     _ -> error "no Application found"
+				     _ -> error "no Application found") 
+			       mnid
 
 basicTerm :: TERM -> Maybe Token
 basicTerm trm = case trm of
