@@ -42,6 +42,7 @@ asKey = makeToken . toKey
 -- ----------------------------------------------
 
 commaT = asKey commaS
+semiT = asKey semiS
 
 oBracketT = asKey oBracketS <?> "" -- don't convey confusing mix-id tokens
 cBracketT = asKey cBracketS

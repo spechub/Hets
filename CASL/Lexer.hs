@@ -1,5 +1,5 @@
-module Lexer ( bind, (<<), (<:>), (<++>), begDoEnd, flat, single
-	     , separatedBy
+module Lexer ( bind, (<<), (<:>), (<++>), signChars, scanLPD
+	     , begDoEnd, flat, single, separatedBy
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
 	     , skip, ann, keyWord, keySign, toKey

@@ -99,7 +99,7 @@ instance PrettyPrint ARG_DECL where
 
 instance PrettyPrint OP_ATTR where
     printText0(Assoc_op_attr) = text assocS
-    printText0(Common_op_attr) = text commS 
+    printText0(Comm_op_attr) = text commS 
     printText0(Idem_op_attr) = text idemS
     printText0(Unit_op_attr t) = text unitS <+> printText0 t
 

@@ -27,7 +27,6 @@ import Parsec
 
 equalT = asKey equalS
 colonT = asKey colonS
-semiT = asKey semiS
 oParenT = asKey oParenS
 cParenT = asKey cParenS
 quMarkT = asKey quMark
@@ -91,21 +90,12 @@ qualVarName o = do { v <- asKey varS
 qualOpName o = do { v <- asKey opS
 		  ; i <- parseId
 		  ; c <- makeToken (string colonS) 
-		  ; do { q <- quMarkT
-		       ; s <- sortId
-		       ; p <- cParenT
-		       ; return (Application 
-				 (Qual_op_name i 
-				  (Partial_op_type [] s [tokPos q]) 
-				  [tokPos v, tokPos c, tokPos p]) [] [])
-		       }
-		    <|> do { t <- opType 
-			   ; p <- cParenT
-			   ; return (Application 
-				     (Qual_op_name i t
-				      [tokPos v, tokPos c, tokPos p]) [] [])
-			   }
-		   }
+		  ; t <- opType 
+		  ; p <- cParenT
+		  ; return (Application 
+			    (Qual_op_name i t
+			     [tokPos v, tokPos c, tokPos p]) [] [])
+		  }
 
 opType = do { (ts, ps) <- sortId `separatedBy` crossT
 	    ; do { a <- makeToken (string funS)
@@ -117,10 +107,14 @@ opType = do { (ts, ps) <- sortId `separatedBy` crossT
 		      } <|> do { s <- sortId
 			       ; return (Total_op_type ts s qs)
 			       }
-		   } <|> (if length ts == 1 then return 
-	                    (Total_op_type [] (head ts) [])
-	                  else unexpected ("missing " ++ funS))
+		   } 
+	      <|> (if length ts == 1 then return (Total_op_type [] (head ts) [])
+	           else unexpected ("missing " ++ funS))
 	    }
+         <|> do { q <- quMarkT
+		; s <- sortId
+		; return (Partial_op_type [] s [tokPos q])
+		}
 
 parenTerm = do { o <- oParenT
                ; qualVarName (tokPos o) 
@@ -195,10 +189,13 @@ qualPredName o = do { v <- asKey predS
 
 parenFormula = do { o <- oParenT
 		  ; let po = tokPos o in
-		    do { q <- (qualVarName po
-			       <|> qualOpName po
-			       <|> qualPredName po) 
-		       ; l <- many restTerm
+		    do { q <- (qualVarName po <|> qualOpName po)
+		       ; l <- many1 restTerm
+		       ; return (Mixfix_formula (Mixfix_term (q:l)))
+		       }
+		    <|>
+		    do { q <- qualPredName po
+		       ; l <- many restTerm   -- optional arguments
 		       ; if null l then return (Mixfix_formula q)
 			 else return (Mixfix_formula (Mixfix_term (q:l)))
 		       }
@@ -213,16 +210,7 @@ parenFormula = do { o <- oParenT
 					           else Mixfix_term (tt:l)
 					  in return (Mixfix_formula ft) 
 					}
-				     <|> 
-				     do { c <- commaT
-					; (ts, ps) <- term `separatedBy` commaT
-					; q <- cParenT
-					; l <- many1 restTerm
-					; let tt = Mixfix_parenthesized (t:ts)
-						     (map tokPos (o:c:ps++[q]))
-					  in return (Mixfix_formula 
-						       (Mixfix_term (tt:l)))
-					}
+				     -- commas are not allowed
 				   ; _ -> do { c <- cParenT
 					     ; return (updFormulaPos 
 						       (tokPos o) (tokPos c) f)

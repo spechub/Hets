@@ -61,7 +61,7 @@ data SORT_ITEM = Sort_decl [SORT] [Pos]
 
 data OP_ITEM = Op_decl [OP_NAME] OP_TYPE [OP_ATTR] [Pos]
 	       -- pos: commas, colon, OP_ATTR sep. by commas
-	     | Op_defn OP_NAME OP_HEAD TERM [Pos]
+	     | Op_defn OP_NAME OP_HEAD (Annoted TERM) [Pos]
 	       -- pos: "="
 	       deriving (Show,Eq)
 
@@ -80,7 +80,7 @@ data ARG_DECL = Arg_decl [VAR] SORT [Pos]
 	        -- pos: commas, colon
 		deriving (Show,Eq)
 
-data OP_ATTR = Assoc_op_attr | Common_op_attr | Idem_op_attr
+data OP_ATTR = Assoc_op_attr | Comm_op_attr | Idem_op_attr
 	     | Unit_op_attr TERM
 	       deriving (Show,Eq)
 

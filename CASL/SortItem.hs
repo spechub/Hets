@@ -1,7 +1,7 @@
 module SortItem where
 
 import Id
-import Keywords (lessS)
+import Keywords (lessS, sortS)
 import Lexer
 import AS_Basic_CASL
 import AS_Annotation
@@ -10,6 +10,7 @@ import Maybe
 import Parsec
 import Token
 import Formula
+import ItemAux
 
 lessT = asKey lessS
 
@@ -62,12 +63,13 @@ sortItem = do { s <- sortId ;
 		    return (Sort_decl [s] [])
 		  } 		
 
-
-
-
-
-
-
+sortItems = do { p <- pluralKeyword sortS
+	       ; a <- annotations
+	       ; (v:vs, ts, b:ans) <- itemAux sortItem
+	       ; let s = Annoted v [] a b
+		     r = zipWith (\ x y -> Annoted x [] [] y) vs ans 
+		 in return (Sort_items (s:r) (map tokPos (p:ts)))
+	       }
 
 
 
