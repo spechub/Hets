@@ -51,14 +51,6 @@ module HasCASL.Sublogic ( -- * datatypes
                    sl_morphism,
                    sl_symbol,
                    
---                    -- * projects an element into a given sublogic
---                    pr_basic_spec,
---                    pr_symb_items,
---                    pr_symb_map_items,
---                    pr_sign,
---                    pr_morphism,
---                    pr_epsilon,
---                    pr_symbol
                  ) where
 
 
@@ -69,9 +61,6 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.Morphism
 import HasCASL.Builtin
-
-import Common.ATerm.Conversion
-import Dynamics
 
 ------------------------------------------------------------------------------
 -- | Datatypes for HasCASL sublogics
@@ -830,6 +819,3 @@ in_morphism l x = in_x l x sl_morphism
 
 in_symbol :: HasCASL_Sublogics -> Symbol -> Bool
 in_symbol l x = in_x l x sl_symbol
-
-instance ATermConvertible HasCASL_Sublogics 
-instance HasTyRep HasCASL_Sublogics

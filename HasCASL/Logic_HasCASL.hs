@@ -48,7 +48,7 @@ instance Language HasCASL where
   \available at http://www.tzi.de/cofi/HasCASL"
 
 basicSpecTc, envTc, senTc, symbolTc, rawSymbolTc, 
-    symbItemsTc, symbMapItemsTc, morphismTc :: TyCon
+    symbItemsTc, symbMapItemsTc, morphismTc, sublogicTc :: TyCon
 
 basicSpecTc      = mkTyCon "HasCASL.As.BasicSpec"
 envTc            = mkTyCon "HasCASL.Le.Env"
@@ -58,6 +58,7 @@ rawSymbolTc      = mkTyCon "HasCASL.Morphism.RawSymbol"
 symbItemsTc      = mkTyCon "HasCASL.Symbol.SymbolItems"
 symbMapItemsTc   = mkTyCon "HasCASL.Symbol.SymbolMapItems"
 morphismTc       = mkTyCon "HasCASL.Morphism.Morphism"
+sublogicTc       = mkTyCon "HasCASL.Sublogic.HasCASL_Sublogics"
 
 instance Typeable BasicSpec where
     typeOf _ = mkTyConApp basicSpecTc []
@@ -74,6 +75,8 @@ instance Typeable SymbItems where
 instance Typeable SymbMapItems where
     typeOf _ = mkTyConApp symbMapItemsTc []
 instance Typeable Morphism where
+    typeOf _ = mkTyConApp morphismTc []
+instance Typeable HasCASL_Sublogics where
     typeOf _ = mkTyConApp morphismTc []
 
 -- abstract syntax, parsing (and printing)
