@@ -27,7 +27,7 @@ HC         = ghc
 PERL       = perl
 HAPPY      = happy
 DRIFT      = $(DRIFT_ENV) utils/DrIFT
-INLINEAXIOMS = utils/inlineAxioms
+INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 
 HC_FLAGS   = -Wall  
@@ -65,6 +65,7 @@ ifneq ($(MAKECMDGOALS),utils/genRules)
 ifneq ($(MAKECMDGOALS),hets-opt)
 ifneq ($(MAKECMDGOALS),hets-optimized)
 ifneq ($(MAKECMDGOALS),derivedSources)
+ifneq ($(MAKECMDGOALS),utils/outlineAxioms)
 ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),check)
 ifneq ($(MAKECMDGOALS),apache_doc)
@@ -72,6 +73,7 @@ ifneq ($(MAKECMDGOALS),clean_genRules)
 ifneq ($(MAKECMDGOALS),atctest2)
 ifneq ($(MAKECMDGOALS),hetana)
 include sources_hetcats.mk
+endif
 endif
 endif
 endif
@@ -212,10 +214,10 @@ utils/genRules: $(GENERATERULES_deps)
          $(HC) --make '-i../..:../DrIFT-src' -package text GenerateRules.hs -o ../genRules && \
          strip ../genRules)
 
-utils/inlineAxioms: $(INLINEAXIOMS_deps)
-	(cd utils/InlineAxioms; \
-         $(MAKE) install && \
-         strip ../inlineAxioms)
+utils/outlineAxioms: $(INLINEAXIOMS_deps)
+	$(HC) --make utils/InlineAxioms/InlineAxioms.hs \
+                          $(HC_OPTS) -o utils/outlineAxioms
+	strip utils/outlineAxioms
 
 release: 
 	$(RM) -r HetCATS
@@ -399,7 +401,7 @@ hets.hs: hetcats/Version.hs
 	$(DRIFT) $(DRIFT_OPTS) $< > $@
 
 ## rules for inlineAxioms
-%.hs: %.inline.hs utils/inlineAxioms
+%.hs: %.inline.hs utils/outlineAxioms
 	$(INLINEAXIOMS) $< > $@
 
 ## compiling rules for object and interface files
