@@ -16,6 +16,8 @@
 
 module Haskell.Logic_Haskell (Haskell(..), empty_signature) where
 
+import Debug.Trace
+
 import CASL.AS_Basic_CASL       (SYMB_ITEMS, SYMB_MAP_ITEMS)
 import CASL.SymbolParser        (symbItems, symbMapItems)
 import Logic.ParsecInterface    (toParseFun)
@@ -48,7 +50,8 @@ import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
 import Haskell.Hatchet.TIHetsModule          (tiModule)
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl (..),
                                           AModule (..))
-import Haskell.Hatchet.Env               (listToEnv)
+import Haskell.Hatchet.Env               (listToEnv,
+                                          emptyEnv)
 import Haskell.Hatchet.HaskellPrelude    (preludeDefs,
                                           tyconsMembersHaskellPrelude,
                                           preludeDataCons,
@@ -68,6 +71,8 @@ import Haskell.HaskellUtils              (extractSentences)
 import Common.Result                     (Result (..))
 import Common.Lib.Pretty
 import Common.PrettyPrint
+
+import Haskell.ExtHaskellCvrt            (cvrtHsModule)
 
 instance Typeable ModuleInfo
 instance PrettyPrint ModuleInfo
@@ -143,11 +148,20 @@ instance StaticAnalysis Haskell HsDecls
 
 
        where
-          empty_signature Haskell = emptyModuleInfo
+          empty_signature Haskell 
+                    = ModuleInfo { varAssumps = emptyEnv,
+                                   moduleName = AModule "EmptyModule",
+                                   dconsAssumps = emptyEnv,
+                                   classHierarchy = emptyEnv,
+                                   tyconsMembers = [], 
+                                   kinds = emptyEnv,
+                                   infixDecls = [],
+                                   synonyms = [] }
+--          empty_signature Haskell = emptyModuleInfo
           inclusion Haskell _ _ = return ()
           basic_analysis Haskell = Just(basicAnalysis)
               where basicAnalysis (basicSpec, sig, _) = 	            
-  			let basicMod = HsModule (Module "Anonymous") Nothing [] basicSpec
+  			let basicMod = cvrtHsModule (HsModule (Module "Anonymous") Nothing [] basicSpec)
 
           -- re-group matches into their associated funbinds (patch up the output from the parser)
                             moduleSyntaxFixedFunBinds = fixFunBindsInModule basicMod
