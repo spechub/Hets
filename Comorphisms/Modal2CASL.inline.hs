@@ -40,12 +40,13 @@ import CASL.Morphism
 import Modal.Logic_Modal
 import Modal.AS_Modal
 import Modal.ModalSign
-
-import Data.Maybe (mapMaybe)
-import Control.Exception (assert)
+import Modal.Utils
 
 -- generated function
 import Modal.ModalSystems
+
+import Data.Maybe (mapMaybe,isJust,fromJust)
+import Control.Exception (assert)
 
 -- Debugging
 import Debug.Trace
@@ -111,7 +112,46 @@ transSig sign =
            "\nRigid Preds: "  ++ show rigPreds' ++
 	   "\nOriginal Preds: " ++ show (predMap sign) ++ "\n"
           )  -}
-    MME {caslSign = 
+   let sorSet     = sortSet sign
+       fws        = freshWorldSort sorSet
+       flexOps'   = Map.foldWithKey (addWorld_OP fws) 
+	                            Map.empty $ flexibleOps
+       flexPreds' = addWorldRels True relsTermMod $
+		    addWorldRels False relsMod $ 
+		    Map.foldWithKey (addWorld_PRED fws) 
+			            Map.empty $ flexiblePreds
+       rigOps'    = rigidOps $ extendedInfo sign
+       rigPreds'  = rigidPreds $ extendedInfo sign
+       flexibleOps   = diffMapSet (opMap sign) rigOps'
+       flexiblePreds = diffMapSet (predMap sign) rigPreds'
+       relations = Map.union relsMod relsTermMod
+       genRels f mp = Map.foldWithKey (\me _ nm -> f me nm) Map.empty mp
+       genModFrms f mp = Map.foldWithKey f [] mp
+       relSymbS me = Id [mkSimpleId "g_R"] [mkId [me]] []
+       relSymbT me = Id [mkSimpleId "g_R_t"] [me] []
+       relsMod = genRels (\ me nm -> Map.insert (SimpleM me) (relSymbS me) nm) 
+			 (modies $ extendedInfo sign)
+       relsTermMod = genRels (\ me nm -> 
+                                  Map.insert (SortM me) (relSymbT me) nm) 
+                             (termModies $ extendedInfo sign)
+       relModFrms = genModFrms (\ me frms trFrms -> trFrms ++ 
+				         transSchemaMFormulas partMME
+				                  fws (relSymbS me) frms)
+		               (modies $ extendedInfo sign)
+       relTermModFrms = genModFrms (\ me frms trFrms -> trFrms ++ 
+				         transSchemaMFormulas partMME
+				                  fws (relSymbT me) frms)
+			       (termModies $ extendedInfo sign)
+       addWorldRels isTermMod rels mp = 
+	      let argSorts rs = if isTermMod 
+			     then [getModTermSort rs,fws,fws]
+			     else [fws,fws] in
+               Map.fold (\rs nm -> Map.insert rs 
+			                      (Set.single $ 
+					            PredType $ argSorts rs)
+                                              nm) 
+		        mp rels
+       partMME = MME {caslSign = 
 	    (emptySign ()) 
                {sortSet = Set.insert fws sorSet 
 	       , sortRel = sortRel sign
@@ -124,45 +164,9 @@ transSig sign =
 --	 rigOps = rigOps',
 	 flexPreds = flexiblePreds,
 --	 rigPreds = rigPreds',
-	 relFormulas = relFrms}
-    where sorSet     = sortSet sign
-	  fws        = freshWorldSort sorSet
-	  flexOps'   = Map.foldWithKey (addWorld_OP fws) 
-		                       Map.empty $ flexibleOps
-	  flexPreds' = addWorldRels $ 
-	               Map.foldWithKey (addWorld_PRED fws) 
-			               Map.empty $ flexiblePreds
-	  rigOps'    = rigidOps $ extendedInfo sign
-	  rigPreds'  = rigidPreds $ extendedInfo sign
-	  flexibleOps     = diffMapSet (opMap sign) rigOps'
-	  flexiblePreds   = diffMapSet (predMap sign) rigPreds'
-	  resultOfSimpleModies =
-	       Map.foldWithKey (\me frms (nm,trFrms) -> 
-				    case Id [mkSimpleId "g_R"] 
-					            [mkId [me]] [] of
-				    relSymb -> 
-				      (Map.insert (SimpleM me) relSymb nm,
-				       trFrms ++ 
-				         transSchemaMFormulas 
-				                  fws relSymb frms))
-			(Map.empty,[]) 
-			(modies $ extendedInfo sign)
-	  (relations,relFrms) = 
-	      Map.foldWithKey (\me frms (nm,trFrms) -> 
-			           case Id [mkSimpleId "g_R_t"] [me] [] of
-			           relSymb ->
-			             (Map.insert (SortM me) relSymb nm,
-				      trFrms ++ 
-				      transSchemaMFormulas 
-				                 fws relSymb frms))
-		                resultOfSimpleModies
-				(termModies $ extendedInfo sign)
-	  addWorldRels mp = 
-               Map.fold (\rs nm -> Map.insert rs 
-			                      (Set.single $ PredType [fws,fws])
-                                              nm) 
-		        mp relations
-
+	 relFormulas = []}
+      in partMME { relFormulas = relModFrms++relTermModFrms}
+    
 {- ModalSign { rigidOps :: Map.Map Id (Set.Set OpType)
    , rigidPreds :: Map.Map Id (Set.Set PredType)
    , modies :: Set.Set SIMPLE_ID
@@ -183,10 +187,10 @@ mapMor m = Morphism {msource = caslSign $ transSig $ msource m
 mapSym :: Symbol -> Symbol
 mapSym = id  -- needs to be changed once modal symbols are added
 
-transSchemaMFormulas :: SORT -> PRED_NAME 
+transSchemaMFormulas :: ModMapEnv -> SORT -> PRED_NAME 
 		     -> [AnModFORM] -> [Named CASLFORMULA]
-transSchemaMFormulas fws relSymb = 
-    mapMaybe (transSchemaMFormula fws relSymb worldVars)
+transSchemaMFormulas mapEnv fws relSymb = 
+    mapMaybe (transSchemaMFormula (mapTERM mapEnv) fws relSymb worldVars)
 
 transSen :: MSign -> ModalFORMULA -> CASLFORMULA
 transSen msig = mapSenTop (transSig msig) 
@@ -248,7 +252,8 @@ mapSen mapEnv@(MME{worldSort = fws,flexPreds=fPreds}) vars
 
 mapMSen :: ModMapEnv -> [VAR] -> M_FORMULA -> CASLFORMULA
 mapMSen mapEnv@(MME{worldSort=fws,modalityRelMap=pwRelMap}) vars f
-   = let trans_f1 = mkId [mkSimpleId "Place Holder for Formula"] 
+   = let trans_f1 = mkId [mkSimpleId "Placeholder for Formula"] 
+	 t_var    = mkSimpleId "Placeholder for Modality Term"
 	 (w1,w2,newVars) = assert (not (null vars)) 
                            (let nVars = 
 				 freshWorldVar (vars) : vars
@@ -258,23 +263,46 @@ mapMSen mapEnv@(MME{worldSort=fws,modalityRelMap=pwRelMap}) vars f
                     (error ("Modal2CASL: Undefined modality " ++ show mo)) 
 		    (modalityToModName mo)
 		    map'
-	 trans' propSymb trForm nvs f1 = 
-	     replacePropPredication propSymb (mapSen mapEnv nvs f1) trForm
+	 trans' mTerm propSymb trForm nvs f1 = 
+	     replacePropPredication mTerm 
+				    propSymb (mapSen mapEnv nvs f1) trForm
+	 mapT = mapTERM mapEnv newVars 
      in
      case f of
      Box     moda f1 _ -> 
+       let rel = getRel moda pwRelMap in
+	case moda of
+	Simple_mod _ ->
           case map sentence
                $  concat [inlineAxioms CASL
 		       " sort fws \n\
 		       \ pred rel : fws * fws; \n\
 		       \      trans_f1 : () \n\
 		       \ vars w1 : fws \n\
-		       \ . forall w2 : fws . rel(w1,w2) => \n\
-		       \      trans_f1"
-		       | let rel = getRel moda pwRelMap] of 
-		   [newFormula] -> trans' trans_f1 newFormula newVars f1
+                       \ . forall w2 : fws . rel(w1,w2) => \n\
+		       \      trans_f1"] of 
+		   [newFormula] -> trans' Nothing 
+				          trans_f1 newFormula newVars f1
 		   _  -> error "Modal2CASL: mapMSen: impossible error"
+	Term_mod t ->
+	 let tt    = getModTermSort rel in
+          case map sentence
+               $  concat [inlineAxioms CASL
+		       " sort fws,tt \n\
+		       \ pred rel : tt * fws * fws; \n\
+		       \      trans_f1 : () \n\
+		       \ vars w1 : fws; t_var : tt \n\
+		       \ . forall w2 : fws . rel(t_var,w1,w2) => \n\
+		       \      trans_f1"] of 
+		   [newFormula] -> trans' (Just (rel,t_var,mapT t)) 
+				          trans_f1 newFormula 
+					  newVars f1
+		   _  -> error "Modal2CASL: mapMSen: impossible error"
+
      Diamond moda f1 _ -> 
+       let rel = getRel moda pwRelMap in
+	case moda of
+	Simple_mod _ ->
           case map sentence
                $  concat [inlineAxioms CASL
 		       " sort fws \n\
@@ -282,9 +310,22 @@ mapMSen mapEnv@(MME{worldSort=fws,modalityRelMap=pwRelMap}) vars f
 		       \      trans_f1 : () \n\
 		       \ vars w1 : fws \n\
 		       \ . exists w2 : fws . rel(w1,w2) /\\ \n\
-		       \      trans_f1"
-		       | let rel = getRel moda pwRelMap] of 
-		   [newFormula] -> trans' trans_f1 newFormula newVars f1
+		       \      trans_f1"] of 
+		   [newFormula] -> trans' Nothing 
+				          trans_f1 newFormula newVars f1
+		   _  -> error "Modal2CASL: mapMSen: impossible error"
+	Term_mod t ->
+	 let tt = getModTermSort rel in
+          case map sentence
+               $  concat [inlineAxioms CASL
+		       " sort fws,tt \n\
+		       \ pred rel : tt * fws * fws; \n\
+		       \      trans_f1 : () \n\
+		       \ vars w1 : fws; t_var:tt \n\
+		       \ . exists w2 : fws . rel(t_var,w1,w2) /\\ \n\
+		       \      trans_f1"] of 
+		   [newFormula] -> trans' (Just (rel,t_var,mapT t))
+				          trans_f1 newFormula newVars f1
 		   _  -> error "Modal2CASL: mapMSen: impossible error"
 
 -- head [VAR] is always the current world variable (for Application) 
@@ -337,20 +378,31 @@ modalityToModName (Term_mod t) =
 sortedWorldTerm :: SORT -> VAR -> TERM ()
 sortedWorldTerm fws v = Sorted_term (Qual_var v fws []) fws [] 
 
-replacePropPredication :: PRED_NAME -- ^ propositional symbol to replace
+replacePropPredication :: Maybe (PRED_NAME,VAR,TERM ()) 
+                        -- ^ Just (pSymb,x,t) replace x 
+			-- with t in Predication of pSymb 
+                       -> PRED_NAME -- ^ propositional symbol to replace
 		       -> CASLFORMULA -- ^ Formula to insert
 		       -> CASLFORMULA -- ^ Formula with placeholder
 		       -> CASLFORMULA
-replacePropPredication pSymb frmIns frmToChn =
+replacePropPredication mTerm pSymb frmIns frmToChn =
     case frmToChn of
     Quantification q vs frm ps ->
-	Quantification q vs (replacePropPredication pSymb frmIns frm) ps
+	Quantification q vs (replacePropPredication mTerm pSymb frmIns frm) ps
     Conjunction fs ps -> 
-	Conjunction (map (replacePropPredication pSymb frmIns) fs) ps 
+	Conjunction (map (replacePropPredication mTerm pSymb frmIns) fs) ps 
     Implication f1 f2 b ps ->
-	Implication f1 (replacePropPredication pSymb frmIns f2) b ps
+	Implication (replacePropPredication mTerm pSymb frmIns f1) 
+		    (replacePropPredication mTerm pSymb frmIns f2) b ps
     Predication (Qual_pred_name symb (Pred_type [] []) []) [] [] 
 	| symb == pSymb -> frmIns
+    Predication qpn@(Qual_pred_name symb _ _) (arg1:args) ps
+	| (isJust mTerm) && symb == pSymbT -> 
+	    case arg1 of
+	    Sorted_term (Qual_var v1 _ _) _ _ 
+		| v1 == var -> Predication qpn (term:args) ps 
+	    _ -> error "Modal2CASL: replacePropPredication: unknown term to replace"
+          where (pSymbT,var,term) = fromJust mTerm 
     p@(Predication _ _ _) -> p 
     _ -> error "Modal2CASL: replacePropPredication: unknown formula to replace"
 

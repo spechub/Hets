@@ -71,18 +71,14 @@ import CASL.AS_Basic_CASL
 -- ModalCASL
 import Modal.AS_Modal
 import Modal.Print_AS
+import Modal.Utils
 
-addNonEmptyLabel :: String -> Maybe (Named a) -> Maybe (Named a)
-addNonEmptyLabel _ Nothing = Nothing
-addNonEmptyLabel l (Just s) 
-    | null l    = Just s
-    | otherwise = Just $ s {senName = l}
-
-transSchemaMFormula :: SORT -> PRED_NAME -> [VAR] 
+transSchemaMFormula :: ([VAR] -> TERM M_FORMULA -> TERM ())
+                    -> SORT -> PRED_NAME -> [VAR] 
 		    -> AnModFORM -> Maybe (Named CASLFORMULA)
 
 ',
-'transSchemaMFormula world rel vars anMF =
+'transSchemaMFormula mapT world rel vars anMF =
    let '.
 	  join("\n       ",map {'w'.$_.' = vars !! '.($_-1);} (1,2,3,4,5)).
 	  ' in
@@ -91,12 +87,13 @@ transSchemaMFormula :: SORT -> PRED_NAME -> [VAR]
 
 foreach my $pair (@input) {
 #    print "Pair: $pair\n";
+    my $moda_i = 0;
     my ($pattern,$result) = split /\]\],\s+?\[\[/s,$pair;
 #    print "    $pattern => $result\n";
-    $pattern =~ s/""/label/os;
+    $pattern =~ s/""/_label/os;
     $pattern =~ s/\n//gos;
     $pattern =~ s/\s+/ /go;
-    $pattern =~ s/Simple_mod empty/_/go;
+    $pattern =~ s/Simple_mod empty/'moda'.$moda_i++/goe;
     $pattern =~ s/ (p|q) / _ /go;
     $pattern =~ s/\}\s*$//o;
     $pattern =~ s/NamedSen\{senName = //o;
@@ -104,12 +101,16 @@ foreach my $pair (@input) {
     $pattern =~ s/\[\]/_/go;
     $result =~ s/\n//gos;
     $result =~ s/\s+/ /go;
+    my $list = "";
+    for (my $i = 0; $i < $moda_i; $list .= 'moda'.$i++.",") {};
+    $list = "[$list";
+    $list =~ s/,$/]/o;
     unless ($result =~ m/^\s*Nothing\s*$/o) {
 	$result = "Just \$ ".$result;
     }	
     print OUT
 '      ('.$pattern.") -> \n".
-'         addNonEmptyLabel label ('.$result.")\n";
+'         addTerm mapT rel (map modToTerm '.$list.') vars ('.$result.")\n";
 }
 print OUT '      (_,f)'." -> \n".
           '          trace ('.$disclaimer.'++"Modal2CASL: unknown formula \\""++showPretty f "\\"\\n"++show f) Nothing
