@@ -40,10 +40,29 @@ unifIable tm sc1 sc2 =
 
 freshInst :: TypeScheme -> State Int Type
 freshInst (TypeScheme tArgs (_ :=> t) _) = 
-    do c <- get
-       put (c + length tArgs)
-       return $ subst (mkSubst tArgs c) t
+    do m <- mkSubst tArgs 
+       return $ subst m t
 
+freshVar :: State Int Id 
+freshVar = 
+    do c <- get
+       put (c + 1)
+       return $ simpleIdToId $ mkSimpleId ("_var_" ++ show c)
+
+freshType :: Kind -> State Int Type
+freshType k = 
+    do tId <- freshVar
+       return $ TypeName tId k 1
+
+mkSingleSubst :: TypeArg -> State Int Subst
+mkSingleSubst tv@(TypeArg _ k _ _) =
+    do ty <- freshType k
+       return $ Map.single tv ty
+
+mkSubst :: [TypeArg] -> State Int Subst
+mkSubst tas = do ms <- mapM mkSingleSubst tas
+		 return $ Map.unions ms
+ 		   
 type Subst = Map.Map TypeArg Type
 
 instance Ord TypeArg where
@@ -52,17 +71,10 @@ instance Ord TypeArg where
 
 instance Ord Kind where
 -- only for expanded kinds
-    ExtClass _ _ _ <= KindAppl _ _ _ = True 
-    ExtClass _ _ _ <= ExtClass _ _ _ = True 
-    KindAppl _ _ _ <= ExtClass _ _ _ = False
     KindAppl k1 k2 _ <= KindAppl k3 k4 _ = (k1, k2) <= (k3, k4)
+    KindAppl _ _ _ <= ExtClass _ _ _ = False
+    ExtClass _ _ _ <= _ = True 
 
-mkSubst :: [TypeArg] -> Int -> Subst
-mkSubst [] _ = Map.empty
-mkSubst (tv@(TypeArg _ k _ _):r) i =
-     let tId = simpleIdToId $ mkSimpleId ("_var_" ++ show i)
-     in Map.insert tv (TypeName tId k 1) $ mkSubst r (i+1) 
- 		   
 class Unifiable a where
     subst :: Subst -> a -> a
     unify :: TypeMap -> a -> a -> Result Subst
