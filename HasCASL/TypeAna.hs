@@ -78,25 +78,35 @@ mkTypeConstrAppls _ (FunType t1 a t2 ps) =
        newT2 <- mkTypeConstrAppls TopLevel t2
        return $ FunType newT1 a newT2 ps
 
+expandApplKind :: ClassMap -> Class -> Kind
+expandApplKind cMap c = 
+    case c of
+    Intersection (a:_) _ -> 
+	case anaClassId cMap a of
+	    Just k -> case k of 
+			     ExtClass c2 _ _ -> expandApplKind cMap c2
+			     _ -> k
+	    _ -> error "expandKind"
+    _ -> star
+
 inferKind :: Type -> State Env (Maybe Kind)
 inferKind (TypeName i _) = getIdKind i
 inferKind (TypeAppl t1 t2) = 
     do m1 <- inferKind t1 
-       m2 <- inferKind t2
        case m1 of 
 	    Nothing -> return Nothing
 	    Just mk1 ->
 		case mk1 of 
-		       KindAppl k1 k2 _ -> do
-			   case m2 of 
-				   Nothing -> return ()
-				   Just mk2 -> if eqKind mk2 k1
-                                               then return ()
-					       else addDiag $ wrongKind t2
+		       KindAppl k1 k2 _ -> do checkKind t2 k1
+					      return $ Just k2
+		       ExtClass c _ _ -> 
+			   do cMap <- getClassMap 
+			      case expandApplKind cMap c of
+			            KindAppl k1 k2 _ -> do checkKind t2 k1
+							   return $ Just k2
+				    _ -> do addDiag $ wrongKind t1
+					    return Nothing
 
-			   return $ Just k2
-		       _ -> do addDiag $ wrongKind t1
-			       return Nothing
 inferKind (FunType t1 _ t2 _) = 
     do checkKind t1 star 
        checkKind t2 star
@@ -128,9 +138,10 @@ checkKind t j = do
 	m <- inferKind t 
 	case m of 
 	       Nothing -> return ()
-	       Just k -> if eqKind k j
-			  then return ()
-			  else addDiag $ wrongKind t
+	       Just k -> do cMap <- getClassMap
+			    if eqKind (expandKind cMap k) $ expandKind cMap j
+			       then return ()
+			       else addDiag $ wrongKind t
 
 noGroundType, wrongKind :: Type -> Diagnosis
 noGroundType t = mkDiag Error "no ground type" t
@@ -145,8 +156,7 @@ getIdKind i =
        case m of
 	    Nothing -> do addDiag $ mkDiag Error "undeclared type" i
                           return Nothing
-	    Just k -> do cMap <- getClassMap
-			 return $ Just $ expandKind cMap k
+	    Just k -> return $ Just k
 
 getKind :: TypeMap -> Id -> Maybe Kind
 getKind tk i = 
