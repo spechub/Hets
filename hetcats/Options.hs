@@ -508,7 +508,7 @@ doIfVerbose opts level func =
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags :: HetcatsOpts -> [Diagnosis] -> IO()
 showDiags opts diags = do
-  sequence $ map (putStrLn . show) $ take maxdiags
+  sequence $ map (putStrLn . show) -- $ take maxdiags
            $ filter (relevantDiagKind . diagKind) $ diags
   return ()
   where relevantDiagKind FatalError = True
