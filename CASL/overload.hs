@@ -58,6 +58,7 @@ minExpTerm sign sentence
         Implication sent1 sent2 _      -> minExpTermAll [sent1, sent2]
         Equivalence sent1 sent2 _      -> minExpTermAll [sent1, sent2]
         Negation sentence' _           -> minExpTerm sign sentence'
+        -- maybe construct sentences from my results here...
         True_atom _                    -> -- [["True", "_bool"]]
         False_atom _                   -> -- [["False", "_bool"]]
         Predication PRED_SYMB [TERM] _ -> -- predicate application
@@ -82,36 +83,37 @@ minExpTerm_ sign term
         Application op terms _  -> minExpTerm_op sign op terms
         -- wie unterscheidet sich das von Qual_var???
         _                       -> -- parser error - bail out?
-{- restliche, fehlende Faelle sind:
+{- restliche, noch fehlende Faelle sind:
    Cast term sort _
    Conditional term1 formula term2 _
    Unparsed_term string _
    mehrere Mixfix-Teile bei denen ich mir nicht sicher bin, was sie
    sein sollen und was ich mit ihnen anfangen koennen soll... -}
 
--- -- -- Die Hilfsfunktionen fuer minExpTerm, je nach Typ des Terms
-
 {-----------------------------------------------------------
   minExpTerm Helper Functions for Special Cases
 -----------------------------------------------------------}
-minExpTerm_simple sign var =
-let 
-    my_consts = [ (var, sort) | (var', sort) <- (varMap sign), var' == var ]
-    my_funcs = [ (var, sort) | (var', sort) <- (opMap sign), var' == var ]
-    my_subset = (minimize sign) (my_consts ++ my_funcs)
-    in equiv leqF my_subset
-minExpTerm_qual sign var sort =
-    let
-    met_var = minExpTerm_simple sign var
-    make_met = \c -> [ (var, sort) |
-                       (var', sort') <- c, sort' <= sort, var' == var ]
-    in map make_met met_var
-minExpTerm_sorted sign term sort =
-    let
-    met_var = minExpTerm sign term -- ist das der einzige Unterschied?
-    make_met = \c -> [ (term, sort) |
-                       (term', sort') <- c, sort' <= sort, term' == term ]
-    in map make_met met_var
+minExpTerm_simple sign var
+    = let
+      my_consts = [ (var, sort) | (var', sort) <- (varMap sign), var' == var ]
+      my_funcs = [ (var, sort) | (var', sort) <- (opMap sign), var' == var ]
+      my_subset = (minimize sign) (my_consts ++ my_funcs)
+      in
+      equiv leqF my_subset
+minExpTerm_qual sign var sort
+    = let
+      met_var = minExpTerm_simple sign var
+      make_met = \c -> [ (var, sort) |
+                         (var', sort') <- c, sort' <= sort, var' == var ]
+      in
+      map make_met met_var
+minExpTerm_sorted sign term sort
+    = let
+      met_var = minExpTerm sign term -- ist das der einzige Unterschied?
+      make_met = \c -> [ (term, sort) |
+                         (term', sort') <- c, sort' <= sort, term' == term ]
+      in
+      map make_met met_var
 minExpTerm_op sign op terms = [[]]
 -- the lean mean difficulty machine :\)
 -- das gilt, nehme ich an, auch als Fall fuer Praedikat-Applikation?
@@ -120,17 +122,20 @@ minExpTerm_op sign op terms = [[]]
 -- ein Problem koennten noch die Definitionen von sort' <= sort und
 -- var' == var darstellen, falls ich die noch machen muss.
 -- Da hilft wohl auch nur ein beherzter Blick in die fremde source ^^
-
+-- Update: das ist quasi in Common.Lib.Rel gemacht worden :\)
 
 -- Diese Funktionen fehlen in jedem Fall noch und sich ziemlich wichtig:
-minimize :: Sign -> [TERM] -> [TERM] -- minimiert
+minimize :: Sign -> [TERM] -> [TERM] -- minimieren
 
 equiv :: (a -> a -> Bool) -> [a] -> [[a]] -- Aequivalenzklassen
 -- naive Implementation:
 equiv _ [] = []
-equiv eq (x:xs) = let
-                  (xs', ys) = partition (eq x) xs
-                  in xs':(equiv eq ys)
+equiv eq (x:l)
+    = let
+      (xs, ys) = partition (eq x) l
+      xs' = (x:xs)
+      in
+      xs':(equiv eq ys)
 -- komplexere Implementation: siehe unten, Till's SML-version
 
 {- Transform a list [l1,l2, ... ln] to
@@ -138,8 +143,8 @@ equiv eq (x:xs) = let
 permute :: [[a]] -> [[a]]
 permute [] = [[]]
 permute [x] = map (\y -> [y]) x
-permute (x:l) =
-    concat (map (distribute (permute l)) x)
+permute (x:l)
+    = concat (map (distribute (permute l)) x)
     where
     distribute perms y = map ((:) y) perms
 
