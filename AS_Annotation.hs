@@ -40,3 +40,9 @@ data Annotation = Comment_line String [Pos]
 		-- by every annotation
 		-- | Pos_anno Region Annotation 
 		  deriving (Show,Eq)   
+
+
+data Annoted a = Annoted { item::a
+			 , opt_pos::[Pos]
+			 , annos::[Annotation]}
+		 deriving (Show,Eq) 
