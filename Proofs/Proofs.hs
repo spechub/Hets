@@ -184,29 +184,6 @@ automaticRecursive cnt proofStatus = do
     automaticRecursive 1 (globalContext, libEnv, newHistory, dgraph)
 
 
-removeContraryChanges :: [DGChange] -> [DGChange]
-removeContraryChanges [] = []
-removeContraryChanges (change:changes) =
-  if elem contraryChange changes
-   then removeContraryChanges (removeChange contraryChange changes)
-    else change:(removeContraryChanges changes)
-  where
-    contraryChange = getContraryChange change
-
-
-getContraryChange :: DGChange -> DGChange
-getContraryChange change =
-  case change of
-    InsertEdge edge -> DeleteEdge edge
-    DeleteEdge edge -> InsertEdge edge
-    InsertNode node -> DeleteNode node
-    DeleteNode node -> InsertNode node
-
-removeChange :: DGChange -> [DGChange] -> [DGChange]
-removeChange change changes =
-  (takeWhile (change /=) changes)
-  ++(tail (dropWhile (change /=) changes))
-
 automaticAux :: ProofStatus -> IO ProofStatus
 automaticAux = (hideTheoremShift True).locDecomp.locSubsume.globDecomp.globSubsume
 
@@ -751,16 +728,38 @@ getConservativity edge@(_,_,edgeLab) =
 theoremHideShift :: ProofStatus -> IO ProofStatus
 theoremHideShift proofStatus@(globalContext,libEnv,history,dgraph) = do
   let allNodes = nodes dgraph
-      (leaves,nonLeaves)
+      (nonLeaves,leaves)
 	  = splitByProperty allNodes (hasIngoingHidingDef dgraph)
       cs = [context l dgraph|l<- leaves]
       labs = [lab' c|c <- cs]
   (auxGraph,changes) <- handleLeaves dgraph leaves
---  (finalGraph,furtherChanges) <- handleNonLeaves dgraph nonLeaves
+--  (finalGraph,furtherChanges) <- handleNonLeaves auxGraph nonLeaves
   let furtherChanges = []
       finalGraph = auxGraph
+      finalChanges = removeContraryChanges (furtherChanges++changes)
   return (globalContext, libEnv,
-	  ([TheoremHideShift],furtherChanges++changes):history, finalGraph)
+	  ([TheoremHideShift],finalChanges):history, finalGraph)
+
+showChanges :: [DGChange] -> String
+showChanges [] = ""
+showChanges (change:changes) = 
+  case change of
+    InsertEdge edge -> "InsertEdge " ++ (showEdgeChange edge)
+		       ++ (showChanges changes)
+    DeleteEdge edge -> "DeleteEdge " ++ (showEdgeChange edge)
+		       ++ (showChanges changes)
+    InsertNode node -> "InsertNode " ++ (showNodeChange node)
+		       ++ (showChanges changes)
+    DeleteNode node -> "DeleteNode " ++ (showNodeChange node)
+		       ++ (showChanges changes)
+
+showEdgeChange :: LEdge DGLinkLab -> String
+showEdgeChange (src,tgt,edgelab) =
+  " from " ++ (show src) ++ " to " ++ (show tgt) ++ " and of type " ++ (show (dgl_type edgelab)) ++ "\n\n"
+
+showNodeChange :: LNode DGNodeLab -> String
+showNodeChange (descr, nodelab) =
+  (show descr) ++ " with name " ++ (show (dgn_name nodelab)) ++ "\n\n"
 
 
 splitByProperty :: [a] -> (a -> Bool) -> ([a],[a])
@@ -797,7 +796,7 @@ convertToNf dgraph node = do
       sign = dgn_sign dgnodelab
       [newNode] = newNodes 0 dgraph
       newDgnode = (newNode, 
-		   DGNode {dgn_name = makeName (mkSimpleId "Hallo"), --dgn_name dgnodelab,
+		   DGNode {dgn_name = dgn_name dgnodelab,
 			   dgn_sign = sign,
 			   dgn_sens = dgn_sens dgnodelab,
 			   dgn_nf = Just newNode,
@@ -813,11 +812,9 @@ convertToNf dgraph node = do
 adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
 adoptEdges dgraph oldNode newNode = do
   let ingoingEdges = inn dgraph oldNode
+      outgoingEdges = [outEdge| outEdge <- out dgraph oldNode,
+		                not (elem outEdge ingoingEdges)]
       (auxGraph, changes) = adoptEdgesAux dgraph ingoingEdges newNode True
--- hier weitermachen: out auxGraph oldNode geht nicht
--- daher muss verhindert werden, dass in den outgoingEdges welche der
--- ingoingEdges enthalten sind.
-      outgoingEdges = out dgraph oldNode
       (finalGraph, furtherChanges) 
 	  = adoptEdgesAux auxGraph outgoingEdges newNode False
   return (finalGraph, changes ++ furtherChanges)
@@ -830,16 +827,46 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
   (finalGraph, [DeleteEdge oldEdge,InsertEdge newEdge]++furtherChanges)
 
   where
-    newEdge = if areIngoingEdges then (src,node,edgelab)
-	        else (node,tgt,edgelab)
+    (newSrc,newTgt) = if src == tgt then (node,node) else (src,tgt)
+    newEdge = if areIngoingEdges then (newSrc,node,edgelab)
+	        else (node,newTgt,edgelab)
     auxGraph = insEdge newEdge (delLEdge oldEdge dgraph)
     (finalGraph,furtherChanges) 
 	= adoptEdgesAux auxGraph list node areIngoingEdges
 
-
+-- was machen, wenn der Knoten ein DGRef ist??
 handleNonLeaves :: DGraph -> [Node] -> IO (DGraph,[DGChange])
 handleNonLeaves dgraph [] = return (dgraph,[])
 handleNonLeaves dgraph (node:list) = undefined
+
+-- ----------------------------------------------
+-- methods that keep the change list clean
+-- ----------------------------------------------
+
+removeContraryChanges :: [DGChange] -> [DGChange]
+removeContraryChanges [] = []
+removeContraryChanges (change:changes) =
+  if elem contraryChange changes
+   then removeContraryChanges (removeChange contraryChange changes)
+    else change:(removeContraryChanges changes)
+  where
+    contraryChange = getContraryChange change
+
+
+getContraryChange :: DGChange -> DGChange
+getContraryChange change =
+  case change of
+    InsertEdge edge -> DeleteEdge edge
+    DeleteEdge edge -> InsertEdge edge
+    InsertNode node -> DeleteNode node
+    DeleteNode node -> InsertNode node
+
+
+removeChange :: DGChange -> [DGChange] -> [DGChange]
+removeChange change changes =
+  (takeWhile (change /=) changes)
+  ++(tail (dropWhile (change /=) changes))
+
 
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
