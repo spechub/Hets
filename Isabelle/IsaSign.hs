@@ -57,6 +57,9 @@ mkOptionType t = Type("option",[t])
 mkProductType :: Typ -> Typ -> Typ
 mkProductType t1 t2 = Type ("*",[t1,t2])
 
+mkTypeAppl :: Typ -> Typ -> Typ
+mkTypeAppl t1 t2 = Type ("typeAppl",[t1,t2])
+
 s --> t = Type("fun",[s,t])
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
@@ -78,6 +81,7 @@ data Term =
       -- | Bound Int
       | Abs   (Term, Typ, Term)
       | App Term  Term
+      | Case (Term, [(Term, Term)]) 
       deriving (Eq, Ord)
 
 data Sentence = Sentence { senTerm :: Term
