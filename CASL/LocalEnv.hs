@@ -10,20 +10,21 @@ import List(intersperse)
 
 type SortId = Id  -- non-mixfix, but possibly compound
 
-data FunKind = Total | Partial deriving (Eq, Ord)
+data FunKind = Total | Partial deriving (Show, Eq, Ord)
 
 -- constants have empty argument lists 
 data OpType = OpType {opKind :: FunKind, opArgs :: [SortId], opRes :: SortId} 
-	      deriving (Eq, Ord)
+	      deriving (Show, Eq, Ord)
 
 type PredType = [SortId]
 
 data SymbType = OpAsItemType OpType
 	      | PredType PredType
 	      | Sort 
-		deriving (Eq, Ord)
+		deriving (Show, Eq, Ord)
 
-data Symbol = Symbol {symbId :: Id, symbType :: SymbType} deriving (Eq, Ord)
+data Symbol = Symbol {symbId :: Id, symbType :: SymbType} 
+	      deriving (Show, Eq, Ord)
 
 -- the list of items which are part of a "sort-gen" (or free type)
 type GenItems = [Symbol] 
@@ -141,8 +142,8 @@ getLabel :: Sentence -> String
 getLabel (Axiom ax) = let annos = r_annos(ax)
                           isLabel a = case a of Label _ _ -> True; _ -> False 
                           labels = filter isLabel annos
-		          getLabel(Label l _) = concat l  		    
-                      in if null labels then "" else getLabel(head(labels))
+		          getLabels(Label l _) = concat l  		    
+                      in if null labels then "" else getLabels(head(labels))
 getLabel (GenItems l _) = let srts = filter (\x ->
 					     case x of Symbol _ Sort -> True;
                                                        _ -> False) l

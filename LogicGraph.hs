@@ -47,16 +47,17 @@
 
 -}
 
-module LogicGraph (module LogicGraph,module Logic_CASL) where
+module LogicGraph (module LogicGraph) where
 
 -- exporting the imported Logic instances makes it more easy to access
 -- the Logic_ids defined in those modules
 import Logic
 import Set
 import Dynamic
+import Logic_CASL
 
 -- The Logic instances needed for the logic list
-import Logic_CASL
+-- import Logic_CASL
 
 instance Typeable a => Typeable (Set a) where
   typeOf t = mkAppTy (mkTyCon "Set") [typeOf t]
@@ -65,29 +66,31 @@ instance Typeable a => Typeable (Set a) where
 -- Existential types for logics and representations
 
 data AnyLogic = forall id sublogics
-        basic_spec sentence symb_items symb_map_items
+        basic_spec sentence symb_items_list symb_map_items_list
         local_env sign morphism symbol raw_symbol .
         Logic id sublogics
-         basic_spec sentence symb_items symb_map_items
+         basic_spec sentence symb_items_list symb_map_items_list
          local_env sign morphism symbol raw_symbol =>
         Logic id
 
 data AnyRepresentation = forall id1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
+        basic_spec1 sentence1 symb_items_list1 symb_map_items_list1
         local_env1 sign1 morphism1 symbol1 raw_symbol1
         id2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2
+        basic_spec2 sentence2 symb_items_list2 symb_map_items_list2
         local_env2 sign2 morphism2 symbol2 raw_symbol2 .
       (Logic id1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
+        basic_spec1 sentence1 symb_items_list1 symb_map_items_list1
         local_env1 sign1 morphism1 symbol1 raw_symbol1,
       Logic id2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        basic_spec2 sentence2 symb_items_list2 symb_map_items_list2 
         local_env2 sign2 morphism2 symbol2 raw_symbol2) =>
-  Repr(LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                     local_env1 sign1 morphism1 symbol1 raw_symbol1
-                 id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                     local_env2 sign2 morphism2 symbol2 raw_symbol2)
+  Repr(LogicRepr id1 sublogics1 basic_spec1 sentence1 
+                 symb_items_list1 symb_map_items_list1
+                 local_env1 sign1 morphism1 symbol1 raw_symbol1
+                 id2 sublogics2 basic_spec2 sentence2 
+                 symb_items_list2 symb_map_items_list2
+                 local_env2 sign2 morphism2 symbol2 raw_symbol2)
 
 
 --  Composition of representations
@@ -124,24 +127,24 @@ id_repr i s = LogicRepr{
 
 comp_repr :: AnyRepresentation -> AnyRepresentation -> Maybe AnyRepresentation
 comp_repr (Repr (r1 :: {-Logic id1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
+        basic_spec1 sentence1 symb_items_list1 symb_map_items_list1
         local_env1 sign1 morphism1 symbol1 raw_symbol1,
         Logic id2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        basic_spec2 sentence2 symb_items_list2 symb_map_items_list2 
         local_env2 sign2 morphism2 symbol2 raw_symbol2) => -}
-        LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+        LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items_list1 symb_map_items_list1
                 local_env1 sign1 morphism1 symbol1 raw_symbol1
-            id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+            id2 sublogics2 basic_spec2 sentence2 symb_items_list2 symb_map_items_list2
                 local_env2 sign2 morphism2 symbol2 raw_symbol2))
   (Repr (r2 :: {-Logic id3 sublogics3
-         basic_spec3 sentence3 symb_items3 symb_map_items3
+         basic_spec3 sentence3 symb_items_list3 symb_map_items_list3
          local_env3 sign3 morphism3 symbol3 raw_symbol3,
          Logic id4 sublogics4
-         basic_spec4 sentence4 symb_items4 symb_map_items4 
+         basic_spec4 sentence4 symb_items_list4 symb_map_items_list4 
          local_env4 sign4 morphism4 symbol4 raw_symbol4) => -}
-         LogicRepr id3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
+         LogicRepr id3 sublogics3 basic_spec3 sentence3 symb_items_list3 symb_map_items_list3
                 local_env3 sign3 morphism3 symbol3 raw_symbol3
-            id4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
+            id4 sublogics4 basic_spec4 sentence4 symb_items_list4 symb_map_items_list4
                 local_env4 sign4 morphism4 symbol4 raw_symbol4)) = 
   case coerce (source r2)::Maybe id2 of
   Nothing -> Nothing

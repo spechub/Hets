@@ -29,8 +29,8 @@ import AS_Structured
 import Print_AS_Annotation
 
 instance PrettyPrint SPEC where
-    printText0 ga (Basic_spec (G_basic_spec lid aa)) =
-	let aa' = print_basic_spec_text lid ga aa
+    printText0 ga (Basic_spec aa) =
+	let aa' = printText0 ga aa
 	in aa'
     printText0 ga (Translation aa ab) =
 	let aa' = printText0 ga aa
@@ -65,8 +65,8 @@ instance PrettyPrint SPEC where
 	in aa' <+> ab'
 
 instance PrettyPrint RENAMING where
-    printText0 ga (Renaming (G_symb_map_items_list lid aa) _) =
-	let aa' = cat $ map (print_symb_map_items_text lid ga) aa
+    printText0 ga (Renaming aa _) =
+	let aa' = printText0 ga aa
 	in aa'
     printText0 ga (Logic_renaming aa ab ac _) =
 	let aa' = printText0 ga aa
@@ -75,11 +75,11 @@ instance PrettyPrint RENAMING where
 	in aa' <+> ab' <+> ac'
 
 instance PrettyPrint RESTRICTION where
-    printText0 ga (Hidden (G_symb_items_list lid aa) _) =
-	let aa' = cat $ map (print_symb_items_text lid ga) aa
+    printText0 ga (Hidden aa _) =
+	let aa' = printText0 ga aa
 	in aa'
-    printText0 ga (Revealed (G_symb_map_items_list lid aa) _) =
-	let aa' = cat $ map (print_symb_map_items_text lid ga) aa
+    printText0 ga (Revealed aa _) =
+	let aa' = printText0 ga aa
 	in aa'
     printText0 ga (Logic_hiding aa ab ac _) =
 	let aa' = printText0 ga aa
@@ -111,9 +111,9 @@ instance PrettyPrint IMPORTED where
 	in aa'
 
 instance PrettyPrint FIT_ARG where
-    printText0 ga (Fit_spec aa (G_symb_map_items_list lid ab) _) =
+    printText0 ga (Fit_spec aa ab _) =
 	let aa' = printText0 ga aa
-	    ab' = cat $ map (print_symb_map_items_text lid ga) ab
+	    ab' = printText0 ga ab
 	in aa' <+> ab'
     printText0 ga (Fit_view aa ab _ ad) =
 	let aa' = printText0 ga aa
@@ -122,11 +122,11 @@ instance PrettyPrint FIT_ARG where
 	in aa' <+> ab' <+> ad'
 
 instance PrettyPrint VIEW_DEFN where
-    printText0 ga (View_defn aa ab ac (G_symb_map_items_list lid ad) _) =
+    printText0 ga (View_defn aa ab ac ad _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
 	    ac' = printText0 ga ac
-	    ad' = cat $ map (print_symb_map_items_text lid ga) ad
+	    ad' = printText0 ga ad
 	in aa' <+> ab' <+> ac' <+> ad'
 
 instance PrettyPrint VIEW_TYPE where

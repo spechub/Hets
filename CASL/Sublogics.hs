@@ -440,6 +440,9 @@ sl_symb_items :: SYMB_ITEMS -> CASL_Sublogics
 sl_symb_items (Symb_items k l _) = sublogics_max (sl_symb_kind k)
                                    (comp_list ((map sl_symb) l))
 
+sl_symb_items_list :: SYMB_ITEMS_LIST -> CASL_Sublogics
+sl_symb_items_list (Symb_items_list l _) = comp_list $ map sl_symb_items l
+
 sl_symb_kind :: SYMB_KIND -> CASL_Sublogics
 sl_symb_kind (Preds_kind) = need_pred
 sl_symb_kind _ = bottom
@@ -455,6 +458,10 @@ sl_type (P_type _) = need_pred
 sl_symb_map_items :: SYMB_MAP_ITEMS -> CASL_Sublogics
 sl_symb_map_items (Symb_map_items k l _) = sublogics_max (sl_symb_kind k)
                                           (comp_list ((map sl_symb_or_map) l))
+
+sl_symb_map_items_list :: SYMB_MAP_ITEMS_LIST -> CASL_Sublogics
+sl_symb_map_items_list (Symb_map_items_list l _) = 
+    comp_list $ map sl_symb_map_items l
 
 sl_symb_or_map :: SYMB_OR_MAP -> CASL_Sublogics
 sl_symb_or_map (Symb s) = sl_symb s
@@ -572,6 +579,12 @@ in_symb_items l x = in_x l x sl_symb_items
 
 in_symb_map_items :: CASL_Sublogics -> SYMB_MAP_ITEMS -> Bool
 in_symb_map_items l x = in_x l x sl_symb_map_items
+
+in_symb_items_list :: CASL_Sublogics -> SYMB_ITEMS_LIST -> Bool
+in_symb_items_list l x = in_x l x sl_symb_items_list
+
+in_symb_map_items_list :: CASL_Sublogics -> SYMB_MAP_ITEMS_LIST -> Bool
+in_symb_map_items_list l x = in_x l x sl_symb_map_items_list
 
 in_sign :: CASL_Sublogics -> Sign -> Bool
 in_sign l x = in_x l x sl_sign

@@ -202,8 +202,7 @@ opOrPredType =
 		   <|> return (P_type (Pred_type (s:ts) (map tokPos (c:ps))))
 		 }
 	     <|> fmap O_type (opFunSort [s] [])
-	     <|> return (O_type (Total_op_type [] s []))
-	             -- could also be a pred type!
+	     <|> return (A_type s)
        }
     <|> fmap P_type predUnitType
 
@@ -211,7 +210,8 @@ opOrPredType =
 -- symbol or map, symbKind 
 -- ------------------------------------------------------------------------
 
-symbOrMap = do s <- symb
+symbMap = 
+            do s <- symb
 	       do   f <- asKey mapsTo
 		    t <- symb
 		    return (Symb_map s t [tokPos f])
@@ -235,6 +235,9 @@ symbKind = try(
 -- symb-items
 -- ------------------------------------------------------------------------
 
+symbItemsList = do (is, ps) <- symbItems `separatedBy` commaT
+		   return (Symb_items_list is (map tokPos ps))
+
 symbItems = do s <- symb
 	       return (Symb_items Implicit [s] [])
 	    <|> 
@@ -252,18 +255,21 @@ symbs = do s <- symb
 -- symb-map-items
 -- ------------------------------------------------------------------------
 
-symbOrMapItems = 
-            do s <- symbOrMap
+symbMapItemsList = do (is, ps) <- symbMapItems `separatedBy` commaT
+		      return (Symb_map_items_list is (map tokPos ps))
+
+symbMapItems = 
+            do s <- symbMap
 	       return (Symb_map_items Implicit [s] [])
 	    <|> 
 	    do (k, p) <- symbKind
-               (is, ps) <- symbOrMaps
+               (is, ps) <- symbMaps
 	       return (Symb_map_items k is (map tokPos (p:ps)))
 
-symbOrMaps = 
-        do s <- symbOrMap 
+symbMaps = 
+        do s <- symbMap 
 	   do   c <- commaT `followedWith` symb
-	        (is, ps) <- symbOrMaps
+	        (is, ps) <- symbMaps
 		return (s:is, c:ps)
 	     <|> return ([s], [])
 

@@ -40,11 +40,11 @@ instance PrettyPrint LIB_ITEM where
 	    ab' = printText0 ga ab
 	    ac' = printText0 ga ac
 	in aa' <+> ab' <+> ac'
-    printText0 ga (View_defn aa ab ac (G_symb_map_items_list lid ad) _) =
+    printText0 ga (View_defn aa ab ac ad _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
 	    ac' = printText0 ga ac
-	    ad' = cat $ map (print_symb_map_items_text lid ga) ad
+	    ad' = printText0 ga ad
 	in aa' <+> ab' <+> ac' <+> ad'
     printText0 ga (Arch_spec_defn aa ab _) =
 	let aa' = printText0 ga aa

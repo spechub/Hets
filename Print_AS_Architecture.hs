@@ -114,8 +114,8 @@ instance PrettyPrint UNIT_TERM where
 	in aa'
 
 instance PrettyPrint FIT_ARG_UNIT where
-    printText0 ga (Fit_arg_unit aa (G_symb_map_items_list lid ab) _) =
+    printText0 ga (Fit_arg_unit aa ab _) =
 	let aa' = printText0 ga aa
-	    ab' = cat $ map (print_symb_map_items_text lid ga) ab
+	    ab' = printText0 ga ab
 	in aa' <+> ab'
 

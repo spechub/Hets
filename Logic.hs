@@ -61,6 +61,7 @@ import FiniteMap
 import Graph
 import Error
 import Dynamic
+import Parsec
 
 import Pretty (Doc)
 import PrettyPrint
@@ -95,34 +96,18 @@ class (Eq object, Eq morphism) =>
 -- abstract syntax, parsing and printing
 
 class (PrettyPrint basic_spec, Eq basic_spec, Show basic_spec,
-       Show sentence, PrettyPrint symb_items, Show symb_items,
-       Show symb_map_items,
-       PrettyPrint symb_map_items, Eq symb_items, Eq symb_map_items) =>
-      Syntax id basic_spec sentence symb_items symb_map_items
-        | id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items
+       Show sentence, PrettyPrint symb_items_list, Show symb_items_list,
+       Show symb_map_items_list,
+       PrettyPrint symb_map_items_list, Eq symb_items_list, 
+       Eq symb_map_items_list) =>
+      Syntax id basic_spec sentence symb_items_list symb_map_items_list
+        | id -> basic_spec, id -> sentence, id -> symb_items_list,
+          id -> symb_map_items_list
       where 
          -- parsing
-         parse_basic_spec :: id -> String -> Result basic_spec
-         parse_symb_items :: id -> String -> Result [symb_items]
-         parse_symb_map_items :: id -> String -> Result [symb_map_items]
-         comment_line :: id -> String
-         comment_group :: id -> (String,String)
-	 -- printing via class PrettyPrint
-	 print_basic_spec_latex :: id -> GlobalAnnos -> basic_spec -> Doc
-	 print_basic_spec_latex _ = printLatex
-	 print_basic_spec_text  :: id -> GlobalAnnos -> basic_spec -> Doc
-	 print_basic_spec_text  _ = printText
-	 print_symb_items_latex :: id -> GlobalAnnos -> symb_items -> Doc
-	 print_symb_items_latex _ = printLatex
-	 print_symb_items_text  :: id -> GlobalAnnos -> symb_items -> Doc
-	 print_symb_items_text  _ = printText
-	 print_symb_map_items_latex :: 
-	     id -> GlobalAnnos -> symb_map_items -> Doc
-	 print_symb_map_items_latex _ = printLatex 
-	 print_symb_map_items_text  :: 
-	     id -> GlobalAnnos -> symb_map_items -> Doc
-	 print_symb_map_items_text  _ = printText
+         parse_basic_spec :: id -> GenParser Char st basic_spec
+         parse_symb_items_list :: id -> GenParser Char st symb_items_list
+         parse_symb_map_items_list :: id -> GenParser Char st symb_map_items_list
 
 -- lattices (for sublogics)
 
@@ -179,7 +164,7 @@ data Cons_checker morphism =
 
 -- logics
 
-class (Syntax id basic_spec sentence symb_items symb_map_items,
+class (Syntax id basic_spec sentence symb_items_list symb_map_items_list,
        Show sign, Show morphism, Show symbol, Show raw_symbol,
        Ord symbol, --  needed for efficient symbol tables
        Eq raw_symbol,
@@ -187,12 +172,12 @@ class (Syntax id basic_spec sentence symb_items symb_map_items,
        LatticeWithTop sublogics,
        -- needed for heterogeneous coercions:
        Typeable id, Typeable sublogics, Typeable sign, Typeable morphism, Typeable symbol, Typeable raw_symbol,
-       Typeable basic_spec, Typeable sentence, Typeable symb_items, Typeable symb_map_items) =>
+       Typeable basic_spec, Typeable sentence, Typeable symb_items_list, Typeable symb_map_items_list) =>
       Logic id sublogics
-        basic_spec sentence symb_items symb_map_items
+        basic_spec sentence symb_items_list symb_map_items_list
         local_env sign morphism symbol raw_symbol 
-        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items, id -> local_env,
+        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items_list,
+          id -> symb_map_items_list, id -> local_env,
           id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
        where
          logic_name :: id -> String
@@ -202,7 +187,7 @@ class (Syntax id basic_spec sentence symb_items symb_map_items,
 
          -- sentence translation
          map_sen :: id -> morphism -> sentence -> Result sentence
-
+         map_sen = error("map_sen")
          -- parsing of sentences
          parse_sentence :: id -> local_env -> String -> Result sentence
            -- is a term parser needed as well?
@@ -217,9 +202,11 @@ class (Syntax id basic_spec sentence symb_items symb_map_items,
                               -- just the input local env, united with the sign.
                               -- We have both just for efficiency reasons.
                               -- These include any new annotations
-         stat_symb_map_items :: id -> [symb_map_items] -> Result (EndoMap raw_symbol)
-         stat_symb_items :: id -> [symb_items] -> Result [raw_symbol] 
-
+         stat_symb_map_items_list :: 
+	     id -> symb_map_items_list -> Result (EndoMap raw_symbol)
+	 stat_symb_map_items_list = error("stat_symb_map_items_list")
+         stat_symb_items_list :: id -> symb_items_list -> Result [raw_symbol] 
+	 stat_symb_items_list = error("stat_symb_items_list")
          -- architectural sharing analysis for one morphism
          ensures_amalgamability :: id ->
               (Diagram sign morphism, Node, sign, LEdge morphism, morphism) -> 
@@ -230,6 +217,7 @@ class (Syntax id basic_spec sentence symb_items symb_map_items,
          symbol_to_raw :: id -> symbol -> raw_symbol
          id_to_raw :: id -> Id -> raw_symbol 
          sym_of :: id -> sign -> Set symbol
+         sym_of = error("sym_of")
          symmap_of :: id -> morphism -> EndoMap symbol
          matches :: id -> symbol -> raw_symbol -> Bool
          sym_name :: id -> symbol -> Id 
@@ -253,23 +241,25 @@ class (Syntax id basic_spec sentence symb_items symb_map_items,
 
          is_in_basic_spec :: id -> sublogics -> basic_spec -> Bool
          is_in_sentence :: id -> sublogics -> sentence -> Bool
-         is_in_symb_items :: id -> sublogics -> symb_items -> Bool
-         is_in_symb_map_items :: id -> sublogics -> symb_map_items -> Bool
+         is_in_symb_items_list :: id -> sublogics -> symb_items_list -> Bool
+         is_in_symb_map_items_list :: id -> sublogics -> symb_map_items_list -> Bool
          is_in_sign :: id -> sublogics -> sign -> Bool
          is_in_morphism :: id -> sublogics -> morphism -> Bool
          is_in_symbol :: id -> sublogics -> symbol -> Bool
 
          min_sublogic_basic_spec :: id -> basic_spec -> sublogics
+         min_sublogic_basic_spec = error("min_sublogic_basic_spec")
          min_sublogic_sentence :: id -> sentence -> sublogics
-         min_sublogic_symb_items :: id -> symb_items -> sublogics
-         min_sublogic_symb_map_items :: id -> symb_map_items -> sublogics
+         min_sublogic_sentence = error("min_sublogic_sentence")
+         min_sublogic_symb_items_list :: id -> symb_items_list -> sublogics
+         min_sublogic_symb_map_items_list :: id -> symb_map_items_list -> sublogics
          min_sublogic_sign :: id -> sign -> sublogics
          min_sublogic_morphism :: id -> morphism -> sublogics
          min_sublogic_symbol :: id -> symbol -> sublogics
 
          proj_sublogic_basic_spec :: id -> sublogics -> basic_spec -> basic_spec
-         proj_sublogic_symb_items :: id -> sublogics -> symb_items -> Maybe symb_items
-         proj_sublogic_symb_map_items :: id -> sublogics -> symb_map_items -> Maybe symb_map_items
+         proj_sublogic_symb_items_list :: id -> sublogics -> symb_items_list -> Maybe symb_items_list
+         proj_sublogic_symb_map_items_list :: id -> sublogics -> symb_map_items_list -> Maybe symb_map_items_list
          proj_sublogic_sign :: id -> sublogics -> sign -> sign 
          proj_sublogic_morphism :: id -> sublogics -> morphism -> morphism
          proj_sublogic_epsilon :: id -> sublogics -> sign -> morphism
@@ -278,33 +268,6 @@ class (Syntax id basic_spec sentence symb_items symb_map_items,
          -- provers
          provers :: [Prover sentence symbol]
          cons_checkers :: [Cons_checker (TheoryMorphism sign sentence morphism)] 
-
-         -- derived operations, need not to be given
-
-         -- printing, accessible via logic identity
-         show_basic_spec :: id -> basic_spec -> String
-         show_sentence :: id -> sentence -> String
-         show_symb_items :: id -> symb_items -> String
-         show_symb_items_list :: id -> [symb_items] -> String
-         show_symb_map_items :: id -> symb_map_items -> String
-         show_symb_map_items_list :: id -> [symb_map_items] -> String
-         show_sign :: id -> sign -> String
-         show_morphism :: id -> morphism -> String
-         show_symbol :: id -> symbol -> String
-         show_raw_symbol :: id -> raw_symbol -> String 
-
-         show_basic_spec _ = show
-         show_sentence _ = show
-         show_symb_items _ = show
-         show_symb_items_list _ l = showList l ""
-         show_symb_map_items _ = show
-         show_symb_map_items_list _ l = showList l ""
-         show_sign _ = show
-         show_morphism _ = show
-         show_symbol _ = show
-         show_raw_symbol _ = show
-
-
 
 -- Simple logic representations (possibly also morphisms via adjointness)
 

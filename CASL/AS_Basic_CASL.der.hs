@@ -214,9 +214,17 @@ data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] [Pos]
 		  -- pos: SYMB_KIND, commas
 		  deriving (Show,Eq)
 
+data SYMB_ITEMS_LIST = Symb_items_list [SYMB_ITEMS] [Pos] 
+		  -- pos: commas
+		  deriving (Show,Eq)
+
 data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] [Pos]
 		      -- pos: SYMB_KIND, commas
 		      deriving (Show,Eq)
+
+data SYMB_MAP_ITEMS_LIST = Symb_map_items_list [SYMB_MAP_ITEMS] [Pos] 
+		  -- pos: commas
+		  deriving (Show,Eq)
 
 data SYMB_KIND = Implicit | Sorts_kind 
 	       | Ops_kind | Preds_kind
@@ -229,6 +237,7 @@ data SYMB = Symb_id Id
 
 data TYPE = O_type OP_TYPE
 	  | P_type PRED_TYPE
+	  | A_type SORT -- ambiguous pred or (constant total) op 
 	    deriving (Show,Eq)
 
 data SYMB_OR_MAP = Symb SYMB

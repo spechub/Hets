@@ -125,7 +125,7 @@ instance PrettyPrint PRED_ITEM where
 				        <+> printText0 ga f
 
 instance PrettyPrint PRED_TYPE where
-    printText0 ga (Pred_type [] _) = parens (empty)
+    printText0 _ (Pred_type [] _) = parens (empty)
     printText0 ga (Pred_type l _) = crossT ga l
 
 instance PrettyPrint PRED_HEAD where
@@ -182,8 +182,8 @@ instance PrettyPrint FORMULA where
 			     <+> text equivS
 			     <+> printText0 ga g)
     printText0 ga (Negation f _) = text negS <+> printText0 ga f
-    printText0 ga (True_atom _) = text trueS
-    printText0 ga (False_atom _) = text falseS
+    printText0 _ (True_atom _) = text trueS
+    printText0 _ (False_atom _) = text falseS
     printText0 ga (Predication p l _) = 
 	printText0 ga p <> 
          (if null l then empty else parens(commaT ga l))
@@ -198,12 +198,12 @@ instance PrettyPrint FORMULA where
 			     <+> text inS
 			     <+> printText0 ga g
     printText0 ga (Mixfix_formula t) = printText0 ga t
-    printText0 ga (Unparsed_formula s _) = text s 
+    printText0 _ (Unparsed_formula s _) = text s 
 
 instance PrettyPrint QUANTIFIER where
-    printText0 ga (Universal) = text forallS
-    printText0 ga (Existential) = text existsS
-    printText0 ga (Unique_existential) = text (existsS ++ exMark)
+    printText0 _ (Universal) = text forallS
+    printText0 _ (Existential) = text existsS
+    printText0 _ (Unique_existential) = text (existsS ++ exMark)
 
 instance PrettyPrint PRED_SYMB where
     printText0 ga (Pred_name n) = printText0 ga n
@@ -252,3 +252,38 @@ instance PrettyPrint OP_SYMB where
 						<+> (colon
 						     <> printText0 ga t))
 
+instance PrettyPrint SYMB_ITEMS where
+ printText0 ga (Symb_items k l _) = printText0 ga k <+>
+				    commaT ga l
+
+instance PrettyPrint SYMB_ITEMS_LIST where
+    printText0 ga (Symb_items_list l _) = commaT ga l
+
+instance PrettyPrint SYMB_MAP_ITEMS where
+ printText0 ga (Symb_map_items k l _) = printText0 ga k <+>
+				    commaT ga l
+
+instance PrettyPrint SYMB_MAP_ITEMS_LIST where 
+    printText0 ga (Symb_map_items_list l _) = commaT ga l
+
+instance PrettyPrint SYMB_KIND where 
+    printText0 _ Implicit = empty
+    printText0 _ Sorts_kind = text sortS
+    printText0 _ Ops_kind = text opS
+    printText0 _ Preds_kind = text predS
+
+instance PrettyPrint SYMB where 
+    printText0 ga (Symb_id i) = printText0 ga i
+    printText0 ga (Qual_id i t _) = printText0 ga i <> colon 
+				    <> printText0 ga t
+
+instance PrettyPrint TYPE where 
+    printText0 ga (O_type t) = printText0 ga t
+    printText0 ga (P_type t) = printText0 ga t
+    printText0 ga (A_type t) = printText0 ga t
+
+instance PrettyPrint SYMB_OR_MAP where 
+    printText0 ga (Symb s) = printText0 ga s
+    printText0 ga (Symb_map s t _) = printText0 ga s 
+				     <+> text mapsTo
+				     <+> printText0 ga t
