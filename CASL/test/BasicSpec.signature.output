@@ -1254,11 +1254,222 @@ pred q : s
 *** Error 304.6, unknown sort 'b'
 *** Error 305.6, unknown sort 'd'
 *** Error 351.11, wrong number of places '__and'__'
-*** Error 342.14, No correct typing for  (1 @@ 2) E (3 @@ 4)
-*** Error 342.26, No correct typing for  (1 @@ 2) E -(3 @@ 4)
-*** Error 342.39, No correct typing for  (1 @@ 2) ::: (3 @@ 4)
-*** Error 343.5, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E (3 @@ 4)
-*** Error 343.20, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E +(3 @@ 4)
-*** Error 343.36, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E -(3 @@ 4)
-*** Error 426.26, No correct typing for   . e
-*** Error 427.12, No correct typing for   . e
+*** Error 118.15, ambiguous term
+   . (op __-__ : s * s -> s)((op a : s), (var b : s)) =
+       (op __-__ : s * s -> s)((op c : s), (op d : t))
+   . (op __-__ : Int * Int -> Int)((var a : Nat), (var b : Nat)) =
+       (op __-__ : Int * Int -> Int)((var c : Nat), (var d : Nat))
+   . (op __-__ : s * s -> s)((var a : s), (var b : s)) =
+       (op __-__ : s * s -> s)((op c : s), (op d : t))
+*** Error 141.26, ambiguous term
+   . (op __+__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
+                                                   (var b : s)),
+                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
+       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op a : s),
+                                                       (op c : s)),
+                               (op __+__ : s * s -> s)((var b : s), (op d : t)))
+   . (op __+__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
+                                                   (var b : s)),
+                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
+       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((var a : s),
+                                                       (op c : s)),
+                               (op __+__ : s * s -> s)((var b : s), (op d : t)))
+   . (op __+__ : Int * Int -> Int)((op __-__ : Int *
+                                             Int -> Int)((var a : Nat), (var b : Nat)),
+                                 (op __-__ : Int * Int -> Int)((var c : Nat), (var d : Nat))) =
+       (op __-__ : Int * Int -> Int)((op __+__ : Nat *
+                                                 Nat -> Nat)((var a : Nat), (var c : Nat)),
+                                     (op __+__ : Nat * Nat -> Nat)((var b : Nat), (var d : Nat)))
+   . (op __+__ : s * s -> s)((op __-__ : s * s -> s)((var a : s),
+                                                   (var b : s)),
+                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
+       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op a : s),
+                                                       (op c : s)),
+                               (op __+__ : s * s -> s)((var b : s), (op d : t)))
+   . (op __+__ : s * s -> s)((op __-__ : s * s -> s)((var a : s),
+                                                   (var b : s)),
+                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
+       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((var a : s),
+                                                       (op c : s)),
+                               (op __+__ : s * s -> s)((var b : s), (op d : t)))
+*** Error 142.26, ambiguous term
+   . (op __*__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
+                                                   (var b : s)),
+                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
+       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
+                                                                   s -> s)((op a : s), (op c : s)),
+                                                       (op __*__ : s * s -> s)((var b : s),
+                                                                               (op d : t))),
+                               (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s),
+                                                                               (op c : s)),
+                                                       (op __*__ : s * s -> s)((op a : s),
+                                                                               (op d : t))))
+   . (op __*__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
+                                                   (var b : s)),
+                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
+       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
+                                                                   s -> s)((op a : s), (op c : s)),
+                                                       (op __*__ : s * s -> s)((var b : s),
+                                                                               (op d : t))),
+                               (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s),
+                                                                               (op c : s)),
+                                                       (op __*__ : s * s -> s)((var a : s),
+                                                                               (op d : t))))
+   . (op __*__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
+                                                   (var b : s)),
+                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
+       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
+                                                                   s -> s)((var a : s), (op c : s)),
+                                                       (op __*__ : s * s -> s)((var b : s),
+                                                                               (op d : t))),
+                               (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s),
+                                                                               (op c : s)),
+                                                       (op __*__ : s * s -> s)((op a : s),
+                                                                               (op d : t))))
+   . (op __*__ : s * s -> s)((op __-__ : s * s -> s)((op a : s),
+                                                   (var b : s)),
+                           (op __-__ : s * s -> s)((op c : s), (op d : t))) =
+       (op __-__ : s * s -> s)((op __+__ : s * s -> s)((op __*__ : s *
+                                                                   s -> s)((var a : s), (op c : s)),
+                                                       (op __*__ : s * s -> s)((var b : s),
+                                                                               (op d : t))),
+                               (op __+__ : s * s -> s)((op __*__ : s * s -> s)((var b : s),
+                                                                               (op c : s)),
+                                                       (op __*__ : s * s -> s)((var a : s),
+                                                                               (op d : t))))
+   . (op __*__ : Int * Int -> Int)((op __-__ : Int *
+                                             Int -> Int)((var a : Nat), (var b : Nat)),
+                                 (op __-__ : Int * Int -> Int)((var c : Nat), (var d : Nat))) =
+       (op __-__ : Int * Int -> Int)((op __+__ : Nat *
+                                                 Nat -> Nat)((op __*__ : Nat *
+                                                                         Nat -> Nat)((var a : Nat),
+                                                                                     (var c : Nat)),
+                                                             (op __*__ : Nat *
+                                                                         Nat -> Nat)((var b : Nat),
+                                                                                     (var d : Nat))),
+                                     (op __+__ : Nat * Nat -> Nat)((op __*__ : Nat *
+                                                                               Nat -> Nat)((var b : Nat),
+                                                                                           (var c : Nat)),
+                                                                   (op __*__ : Nat *
+                                                                               Nat -> Nat)((var a : Nat),
+                                                                                           (var d : Nat))))
+*** Error 230.35, ambiguous term
+   . (var x : Rat) = (var y : Rat)
+   . (var x : s) = (var y : s)
+*** Error 242.12, ambiguous term
+   . (op __/__ : Rat * Rat ->? Rat)((var x : Rat), (var y : Rat)) =
+       (var z : Rat)
+   . (op __/__ : s * s -> s)((var x : s), (var y : s)) = (var z : s)
+*** Error 273.5, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 274.5, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 276.5, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 277.5, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 279.10, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 280.3, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 282.9, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 283.5, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 316.3, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 317.3, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 320.5, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 321.5, ambiguous term
+   . (op a : Data1) = (op a : Data1)
+   . (op a : b) = (op a : b)
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+   . (var a : s) = (op a : s)
+*** Error 342.5, ambiguous term
+  (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
+  (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
+*** Error 342.20, no operation with 2 arguments found for '__E__'
+*** Error 342.32, no operation with 2 arguments found for '__E__'
+*** Error 342.45, no operation with 2 arguments found for '__:::__'
+*** Error 343.14, no operation with 2 arguments found for '__E__'
+*** Error 343.29, no operation with 2 arguments found for '__E__'
+*** Error 343.45, no operation with 2 arguments found for '__E__'
+*** Error 361.10, ambiguous term
+   . (op c : s * s -> s)((var x : s), (op a : s)) = (var x : s)
+   . (op c : s * s -> s)((var x : s), (var a : s)) = (var x : s)
+*** Error 361.10, ambiguous term
+   . (op c : s * s -> s)((op a : s), (var x : s)) = (var x : s)
+   . (op c : s * s -> s)((var a : s), (var x : s)) = (var x : s)
+*** Error 365.9, ambiguous term
+   . (op c : s * s ->? s)((var x : s), (op a : s)) = (var x : s)
+   . (op c : s * s ->? s)((var x : s), (var a : s)) = (var x : s)
+*** Error 365.9, ambiguous term
+   . (op c : s * s ->? s)((op a : s), (var x : s)) = (var x : s)
+   . (op c : s * s ->? s)((var a : s), (var x : s)) = (var x : s)
+*** Error 367.9, ambiguous term
+   . (op a : s) = (op a : s)
+   . (op a : s) = (var a : s)
+*** Error 368.9, ambiguous term
+   . (op c : s * s * t -> s)((var x : s), (var y : s), (var z : t)) =
+       (op a : s)
+   . (op c : s * s * t -> s)((var x : s), (var y : s), (var z : t)) =
+       (var a : s)
+*** Error 369.9, ambiguous term
+   . (op a :? s) = (op a : s)
+   . (op a :? s) = (var a : s)
+*** Error 370.9, ambiguous term
+   . (op c : s * s * t ->? s)((var x : s), (var y : s),
+                            (var z : t)) =
+       (op a : s)
+   . (op c : s * s * t ->? s)((var x : s), (var y : s),
+                            (var z : t)) =
+       (var a : s)
+*** Error 426.26, no predicate with 0 arguments found for 'e'
+*** Error 427.12, no predicate with 0 arguments found for 'e'
