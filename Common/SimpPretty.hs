@@ -45,22 +45,19 @@ module Common.SimpPretty (
         empty,comma,
 
 	-- * Converting values into documents
-        text, char, integer,
+        text, char, 
 
 	-- * Wrapping documents in delimiters
         parens, brackets, braces,
 
 	-- * Combining documents
-        (<>), punctuate,
-
-	-- * Predicates on documents
-	isEmpty,
+        (<>), 
 
 	-- * Rendering documents
 
-	render, fullRender,writeFileSDoc,
+	render, fullRender, writeFileSDoc
 
-        TextDetails(..)
+--        TextDetails(..)
 
   ) where
 
@@ -75,14 +72,11 @@ infixl 6 <>
 
 -- The primitive SDoc values
 
-isEmpty :: SDoc    -> Bool;  -- ^ Returns 'True' if the document is empty
-
 empty   :: SDoc;			-- ^ An empty document
 comma   :: SDoc;                 -- ^ A ',' character
 
 text	 :: String   -> SDoc
 char 	 :: Char     -> SDoc
-integer  :: Integer  -> SDoc
 
 
 parens       :: SDoc -> SDoc; 	-- ^ Wrap document in @(...)@
@@ -91,9 +85,7 @@ braces	     :: SDoc -> SDoc;   	-- ^ Wrap document in @{...}@
 
 -- Combining @SDoc@ values
 
-(<>)   :: SDoc -> SDoc -> SDoc;     -- ^Beside
-punctuate :: SDoc -> [SDoc] -> [SDoc];      -- ^ @punctuate p [d1, ... dn] = [d1 \<> p, d2 \<> p, ... dn-1 \<> p, dn]@
-
+(<>) :: SDoc -> SDoc -> SDoc;     -- ^Beside
 
 -- Displaying @SDoc@ values. 
 
@@ -103,7 +95,7 @@ instance Show SDoc where
 -- | Renders the document as a string using the default style
 render     :: SDoc -> String
 
-fullRender :: (TextDetails -> a -> a)   -- ^What to do with text
+fullRender :: (String -> a -> a)   -- ^What to do with text
 	   -> (a -> a -> a)             -- ^Compose two a
            -> a                         -- ^What to do at the end
            -> SDoc			-- ^The document
@@ -111,17 +103,9 @@ fullRender :: (TextDetails -> a -> a)   -- ^What to do with text
 
 comma = char ','
 
-integer  n = text (show n)
-
 parens p        = char '(' <> p <> char ')'
 brackets p      = char '[' <> p <> char ']'
 braces p        = char '{' <> p <> char '}'
-
-punctuate _ []     = []
-punctuate p (d:ds) = go d ds
-                   where
-                     go d1 [] = [d1]
-                     go d1 (e:es) = (d1 <> p) : go e es
 
 -- ---------------------------------------------------------------------------
 -- The SDoc data type
@@ -132,51 +116,21 @@ punctuate p (d:ds) = go d ds
 -- | The abstract type of documents
 data SDoc
  = Empty                                -- empty
- | TextBeside TextDetails SDoc      -- text s <> x  
+ | TextBeside String SDoc      -- text s <> x  
  | Beside SDoc SDoc                       
 
-type RSDoc = SDoc         -- RSDoc is a "reduced SDoc", guaranteed not to have a top-level Above or Beside
-
-
-reduceSDoc :: SDoc -> RSDoc
-reduceSDoc (Beside p q) = beside p (reduceSDoc q)
-reduceSDoc p              = p
-
-
-data TextDetails = Chr  {-# UNPACK #-} !Char
-                 | Str  {-# UNPACK #-} !String
-
-        -- Arg of a TextBeside is always an RSDoc
-
-{-textBeside_ :: TextDetails -> SDoc -> SDoc
-textBeside_ s p = TextBeside s p
--}
 -- ---------------------------------------------------------------------------
--- @empty@, @text@, @nest@, @union@
+-- @empty@, @text@
 
 empty = Empty
 
-isEmpty Empty = True
-isEmpty _     = False
-
-char  c = TextBeside (Chr c) Empty
-text  s = TextBeside (Str s) Empty
+char  c = TextBeside [c] Empty
+text  s = TextBeside s Empty
 
 -- ---------------------------------------------------------------------------
 -- Horizontal composition @<>@
 
 p <> q = Beside p q
-
-beside :: SDoc -> RSDoc -> RSDoc
--- Specification: beside g p q = p <g> q
- 
-beside Empty             q   = q
-beside (TextBeside s p) q   = TextBeside s rest
-                               where
-                                  rest = case p of
-                                           Empty -> q
-                                           _     -> beside p q
-beside p q2 = beside (reduceSDoc p) q2
 
 -- ---------------------------------------------------------------------------
 -- Displaying the best layout
@@ -186,30 +140,17 @@ writeFileSDoc fp sd =
      do h <- openFile fp WriteMode
 	fullRender (hPutTD h) (>>) (return ()) sd
 	hClose h
-    where hPutTD :: Handle -> TextDetails -> IO () -> IO ()
-	  hPutTD h td io = case td of
-			 Chr  c -> hPutChar h c >> io
-			 Str  s -> hPutStr  h s >> io
+    where hPutTD :: Handle -> String -> IO () -> IO ()
+	  hPutTD h s io = hPutStr  h s >> io 
 
 render doc       = showSDoc doc ""
 
 showSDoc :: SDoc -> String -> String
-showSDoc doc rest = fullRender string_txt_comp (++) rest doc
+showSDoc doc rest = fullRender showString (++) rest doc
 
-{-
-string_txt (Chr c)   s  = c:s
-string_txt (Str s1)  s2 = s1 ++ s2
-string_txt (PStr s1) s2 = s1 ++ s2
--}
-string_txt_comp :: TextDetails -> String -> String
-string_txt_comp td = case td of
-		     Chr  c -> showChar   c
-		     Str  s -> showString s
+fullRender = easy_display
 
-
-fullRender txt comp end doc = easy_display txt comp end (doc)
-
-easy_display :: (TextDetails -> a -> a)
+easy_display :: (String -> a -> a)
 	     -> (a -> a -> a)
              -> a                        
              -> SDoc			
@@ -219,9 +160,4 @@ easy_display txt comp end doc
   where
     lay Empty            = end
     lay (TextBeside s p) = s `txt` lay p
-    lay (Beside Empty q) = lay q
-    lay (Beside p Empty) = lay p
-    lay (Beside p q)     = (lay p) `comp` (lay q) 
-    lay _ = error "lay: Beside found"
-
-
+    lay (Beside p q)     = lay p `comp` lay q
