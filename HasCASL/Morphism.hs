@@ -15,7 +15,7 @@ module HasCASL.Morphism where
 import HasCASL.Le
 import HasCASL.As
 import HasCASL.AsToLe
-import HasCASL.TypeCheck
+import HasCASL.Builtin
 import HasCASL.PrintLe
 import HasCASL.Unify
 import HasCASL.Merge

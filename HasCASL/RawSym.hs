@@ -19,7 +19,7 @@ import HasCASL.SymbItem
 import HasCASL.TypeAna
 import HasCASL.OpDecl
 import HasCASL.Unify
-import HasCASL.TypeCheck
+import HasCASL.Builtin
 import Common.Id
 import Common.Result
 import Common.PrettyPrint

@@ -20,7 +20,7 @@ module HasCASL.SymbolMapAnalysis
 
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.TypeCheck
+import HasCASL.Builtin
 import HasCASL.AsToLe
 import HasCASL.SymbItem
 import HasCASL.Symbol
