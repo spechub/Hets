@@ -253,11 +253,69 @@ A wrongly spelled (or non-existing) class name causes the analysis to assume
 that not a type but value variable is declared (most likely causing a type
 error). Keeping class and type names disjoint is not further enforced.
 
-\subsection{Terms}
+\subsection{Data types}
+
+Currently, monomorphic data type definitions are collected. Constructor ids
+and selector ids within one alternative must be disjoint (although this is to
+restrictive, because only the qualified names must be disjoint). For missing
+selectors unique (non-CASL) ids are generated. 
+
+\subsection{Terms and formulae}
+
+For a uniform mixfix- and type- analysis, terms and formulae are not
+distinguished and all treated as terms. If the first argument of a mixfix
+operation is a (unnested) product type, the individual component arguments may
+be placed according to the place holders. Otherwise curried arguments will be
+expected at place holder positions. Thus a classical infix operation may
+either have a curried type or conform to the CASL notation with a product
+argument. For a curried type, trailing place holders may be omitted, since the
+unparenthesized prefix notation (always) means (unlike CASL) function
+application.
+
+Currently, class constraints and sub/supertype information is ignored during
+type analysis, but typed terms (via \texttt{:}) are checked for unifying
+types. (Laziness is ignored during unification.)
+
+Type casts (via \texttt{as}) or type containment tests (via\texttt{in})
+only check for a (unique) type and omit subtype reasoning (that may be done
+later, possibly involving a proof tool).
+
+(Literate notations, i.e. for lists, have not yet been added to the analysis.)
+
+\subsubsection{Binding terms}
+
+Binding terms are quantified formulae, lambda terms, case- and
+let-expressions. Left-hand-side patterns add variable bindings that may
+occur in right-hand-side expressions. 
+
+Currently, patterns are not analysed.
+
+\subsubsection{Operation definitions}
+
+Operations may be given via a defining term. Operation's arguments on the left
+hand side of an equal sign are moved to the right hand side following a
+lambda.
+
+\subsubsection{Program equations}
+
+Program equations correspond to Haskell equations. In order to resolve mixfix
+patterns on the left hand side, the so called definition target, must be a
+simple prefix identifier with arguments in parenthesis or must have been
+declared previously (with place holders and a signature type).
+
+Currently, program equations are not analysed due to the missing
+pattern analysis.
+
+\subsubsection{Formulae}
+
+Formulae are simply treated as terms of a ``logical'' type. The fact that
+terms may not contain arbitrary formulae must be ruled out later on.
+
+Predicates are treated like (special) operations. 
 
 \section{Sources in \texttt{HetCATS/HasCASL}}
 
-HasCASL relies on stuff from \texttt{Common} and \texttt{CASL}.
+HasCASL only relies on stuff from \texttt{Common}.
 
 \begin{description}
 \item[Abstract-Syntax.txt] outdated
@@ -267,30 +325,34 @@ HasCASL relies on stuff from \texttt{Common} and \texttt{CASL}.
 \item[ClassAna.hs] analyse classes
 \item[ClassDecl.hs] analyse class declarations
 \item[Concrete-Syntax.txt] concrete syntax
-\item[HToken.hs] extension of \texttt{Common/Token.hs} for HasCASL
+\item[DataAna.hs] analyse data type definitions
+\item[HToken.hs] extension of \texttt{Common.Token} for HasCASL
   (further keywords)
 \item[Le.hs] analysed local environment
-\item[OpDecl.hs] analyse declarations
 \item[Logic\_HasCASL.hs] instance for \texttt{Logic.Logic}
+\item[Merge.hs] consistently merge together repeated or extended items
+\item[MixAna.hs] top-level mixfix-analysis
+\item[MixParserState.hs] states containing types and argument terms during
+  combined mixfix- and type- analysis
+\item[Morphism.hs] dummy morphisms for \texttt{Logic\_HasCASL}
+\item[OpDecl.hs] analyse declarations
 \item[ParseItem.hs] parsing basic (HasCASL) items
 \item[ParseTerm.hs] parsing classes, types, terms and formulae
 \item[PrintAs.hs] pretty printing the abstract syntax
 \item[PrintLe.hs] pretty printing the analysed abstract syntax
-\item[RunStaticAna.hs] wrapper for \texttt{CASL.RunParsers}
+\item[RunStaticAna.hs] wrapper for \texttt{Common.RunParsers}
 \item[TypeAna.hs] analyse types
-\item[TypeDecls.hs] analyse type declarations
+\item[TypeDecl.hs] analyse type declarations
+\item[Unify.hs] unification of types
 \item[hacapa.lhs] counterpart to \texttt{CASL/capa.lhs} 
 \end{description}
 
-As in \texttt{HetCATS/CASL/} there are some test files (
-\texttt{*.hascasl}, \texttt{Wrong*.hascasl} and \texttt{*.output}) and a
-script \texttt{runcheck.sh}. The binary produced by \texttt{ghc-call}
-is named \texttt{hacapa}.
+The binary produced by \texttt{ghc-call} is named \texttt{hacapa}.
 
 The subdirectory \texttt{test} contains \texttt{*.hascasl} files with basic
-HasCASL specifications. The binary \texttt{hacapa} called with the option
-\texttt{analysis} and an input file produces an environment and diagnostic
-messages on standard output. 
+HasCASL specifications (or test cases per lines). The binary \texttt{hacapa}
+called with the option \texttt{analysis} produces for the standard input an
+environment and diagnostic messages on standard output.
 
 As for CASL the tests can also be run by \texttt{make check} or 
 \texttt{make output}.
