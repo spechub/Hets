@@ -613,11 +613,10 @@ translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
          -- translate theory along chosen comorphism
          (sign'',sens1) <- 
              Res.resToIORes $ Res.maybeToResult 
-                                nullPos "Could not map signature"
+                                nullPos "Could not map theory"
                         $ map_theory cid (sign',sens')
-         let tlog = targetLogic cid
          Res.ioToIORes $ displayTheory "Translated theory" node dgraph 
-            (G_sign tlog sign'', G_l_sentence_list tlog sens1)
+            (G_sign lidT sign'', G_l_sentence_list lidT sens1)
      )
     showDiags defaultHetcatsOpts diags
     return ()
