@@ -3,7 +3,7 @@
 .PHONY: check
 
 check: hacapa 
-	./runcheck.sh hacapa
+	bash ./runcheck.sh ./hacapa
 
 %: 
 	(cd ../hetcats; $(MAKE) $@)
