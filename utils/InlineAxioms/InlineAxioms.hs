@@ -204,10 +204,13 @@ indexVar (HsVar (UnQual (HsIdent v))) =
   case reverse v of
     _:'_':_ -> [v]
     _ -> []
+-- special treatment of CASL Var_decl's, since these should not count
+-- as enumerated lists
+indexVar (HsApp (HsCon (UnQual (HsIdent "Var_decl"))) (HsList exprs)) = 
+  concat (map indexVar exprs)
 indexVar (HsApp expr1 expr2) = 
   indexVar expr1++indexVar expr2
 indexVar (HsTuple exprs) = concat (map indexVar exprs)
-indexVar (HsList exprs) = concat (map indexVar exprs)
 indexVar (HsParen expr) = indexVar expr
 indexVar _ = []
 
@@ -229,14 +232,26 @@ lcHsExp (HsDo stmts) = HsDo (map lcHsStmt stmts)
 lcHsExp (HsTuple exprs) = HsTuple (map lcHsExp exprs)
 lcHsExp (expr@(HsList [])) = expr
 lcHsExp (HsList (exprs@(expr:_))) = 
-  case indexVar expr of
+  case nub $ indexVar expr of
     [] -> HsList (map lcHsExp exprs)
-    vs ->  HsListComp expr 
-                 [HsGenerator (SrcLoc 0 0) 
-                              (HsPVar (HsIdent v)) 
-                              (HsVar (UnQual (HsIdent (v0 v)))) | v<- nub vs]
+    [v] ->  HsListComp expr [HsGenerator 
+              (SrcLoc 0 0) 
+              (HsPVar $ HsIdent $ v) 
+              (HsVar $ UnQual $ HsIdent $ v0 $ v)
+            ]
+    vs ->  HsListComp expr [HsGenerator 
+              (SrcLoc 0 0) 
+              (HsPTuple (map (HsPVar . HsIdent) vs)) 
+              (mkZip (map (HsVar . UnQual . HsIdent . v0) vs))
+            ]
                -- The list variable v0 is just v without index
-               where v0 v = reverse $ drop 2 $ reverse v
+  where v0 v = reverse $ drop 2 $ reverse v
+        mkZip l = 
+          foldl HsApp (HsVar $ Qual (Module "Data.List") 
+                                    (HsIdent ("zip"++ext)))
+                l
+          where ext = if n==2 then "" else show n
+                n = length l
 lcHsExp (HsParen expr) = HsParen (lcHsExp expr)
 lcHsExp (HsLeftSection expr1 expr2) = HsLeftSection (lcHsExp expr1) (lcHsExp expr2)
 lcHsExp (HsRightSection expr1 expr2) =  HsRightSection (lcHsExp expr1) (lcHsExp expr2)
