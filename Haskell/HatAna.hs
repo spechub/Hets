@@ -16,8 +16,11 @@ import Common.Result
 import Common.GlobalAnnotations
 import PropPosSyntax hiding (ModuleName, Id)
 import TiModule
+import Modules
+import AST4ModSys
 import HsName
 import Names
+import Ents
 import SourceNames
 import Relations
 import WorkModule
@@ -37,17 +40,21 @@ import Common.ATerm.Lib
 import Common.DynamicUtils
 import Data.Dynamic
 import Data.List((\\))
+import Data.Set
 
 data Sign = Sign 
     { instances :: [TiInstanceDB.Instance PNT]
     , types :: [TiClasses.TAssump PNT]
-    , values :: [TiTypes.Assump PNT] } deriving (Show, Eq)
+    , values :: [TiTypes.Assump PNT] 
+    , scope :: Rel QName Ents.Entity
+    } deriving (Show, Eq)
 
 diffSign :: Sign -> Sign -> Sign
 diffSign e1 e2 = 
      emptyEnv { instances = instances e1 \\ instances e2
               , types = types e1 \\ types e2
-              , values = values e1 \\ values e2 }
+              , values = values e1 \\ values e2 
+              , scope = scope e1 `minusSet` scope e2 }
 
 isSubSign :: Sign -> Sign -> Bool
 isSubSign e1 e2 = diffSign e1 e2 == emptyEnv
@@ -93,42 +100,47 @@ instance PrettyPrint Sign where
               text "instances:" $$ 
                    vcat (map (text . HatPretty.pp) is)) $$ 
           (if null ts then empty else
-              text "types:" $$ 
+              text "\ntypes:" $$ 
                    vcat (map (text . HatPretty.pp) ts)) $$
           (if null vs then empty else
-              text "values:" $$ 
+              text "\nvalues:" $$ 
                    vcat (map (text . HatPretty.pp) vs))
 
 instance PrintLaTeX Sign where
      printLatex0 = printText0
 
-extendTiEnv :: Sign -> [TiInstanceDB.Instance PNT]
+extendSign :: Sign -> [TiInstanceDB.Instance PNT]
             -> [TiClasses.TAssump PNT] 
-            -> [TiTypes.Assump PNT] -> Sign
-extendTiEnv e is ts vs = 
+            -> [TiTypes.Assump PNT] 
+            -> Rel QName Ents.Entity
+            -> Sign
+extendSign e is ts vs s = 
       e { instances = is ++ instances e 
         , types = ts ++ types e
-        , values = vs ++ values e } 
+        , values = vs ++ values e 
+        , scope = s `union` scope e } 
 
 emptyEnv :: Sign
 emptyEnv = Sign { instances = []
                 , types = []
-                , values = [] }
+                , values = [] 
+                , scope = emptyRel }
 
 hatAna :: (HsDecls, Sign, GlobalAnnos) -> 
           Result (HsDecls, Sign, Sign, [Named (HsDeclI PNT)])
-hatAna (hs@(HsDecls ds), e, _) = 
-   case scopeModule (mkWM (emptyRel, emptyRel)
+hatAna (hs@(HsDecls ds), e, _) = do
+   let pmod = HsModule loc0 (SN (MainModule "") loc0) Nothing [] ds
+       insc = inscope (toMod pmod) (const emptyRel)
+       osc = scope e `union` insc
+       (sm, _) = scopeModule (mkWM (osc, emptyRel)
                                 :: WorkModuleI QName (SN Id), 
                               [] :: [(ModuleName, Rel (SN Id) (Ent (SN Id)))])
-                 $ HsModule loc0 (SN (MainModule "") loc0)
-                   Nothing [] ds
-   of (sm, _) -> do 
-        (HsModule _ _ _ _  fs :>: (is, (ts, vs))) <- 
+                 pmod
+   (HsModule _ _ _ _  fs :>: (is, (ts, vs))) <- 
             lift $ inMyEnv $ tcModule 
                       (sm :: HsModuleI (SN ModuleName) PNT [HsDeclI PNT])
-        return (hs, extendTiEnv emptyEnv is ts vs, 
-                              extendTiEnv e is ts vs, map emptyName fs)
+   return (hs, extendSign emptyEnv is ts vs insc, 
+                              extendSign e is ts vs insc, map emptyName fs)
    where
    inMyEnv = extendts (values e) 
                . extendkts (types e) 
