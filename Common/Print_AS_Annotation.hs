@@ -16,7 +16,7 @@ import Common.AS_Annotation
 
 import Common.GlobalAnnotations
 
-import Common.Id (Id(..),splitMixToken)
+import Common.Id (Id(..),splitMixToken,Token)
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Lexer(whiteChars)
@@ -117,16 +117,27 @@ instance PrettyPrint Annotation where
 				     $ map (casl_annotation_latex 
 					    . escape_latex) strs
     printLatex0 ga (Display_anno aa ab _) =
-	let aa' = printSmallId_latex ga aa
+	let aa' = printSmallId_orig_latex ga aa
 	    ab' = fsep_latex $ map printPair $ filter nullSnd ab
 	in printLatexGroup "display" $ aa' <\\+> ab'
 	   where printPair (s1,s2) = la ("%" ++ showDF s1) 
 				     <\\+> maybe (la s2) pr_tops tops
 		 tops = lookupDisplay ga DF_LATEX aa
 		 la = casl_annotation_latex . escape_latex  
-		 pr_tops = 
-		     hcat . map (printDisplayToken_latex casl_annotation_latex)
+		 pr_tops = hcat . map printAnnotationToken_latex
 		 nullSnd (_,s2) = not $ null s2
+		 printSmallId_orig_latex ga i@(Id tops ids _) =
+		     let ids' = case ids of
+				[] -> empty
+				_  ->  ((\x -> casl_comment_latex "[" <> x 
+					 <> casl_comment_latex "]")
+					. fcat 
+					. punctuate smallComma_latex 
+					. map (printSmallId_latex ga)) ids
+		         (ts,ps) = splitMixToken tops
+			 pr_tops' = 
+			   hcat . map (printToken_latex casl_annotation_latex)
+		     in pr_tops' ts <> ids' <> pr_tops' ps
     printLatex0 ga (String_anno aa ab _) =
 	let aa' = printSmallId_latex ga aa
 	    ab' = printSmallId_latex ga ab
@@ -169,6 +180,8 @@ instance PrettyPrint Annotation where
 -- -------------------------------------------------------------------------
 -- utilies
 -- -------------------------------------------------------------------------
+printAnnotationToken_latex :: Token -> Doc
+printAnnotationToken_latex = printDisplayToken_latex casl_annotation_latex
 
 showDF :: Display_format -> String
 showDF df = fromJust $ lookup df display_format_table
@@ -200,7 +213,7 @@ d1 <\\+> d2 = if isEmpty d1
 
 
 printSmallId_latex :: GlobalAnnos -> Id -> Doc
-printSmallId_latex ga (Id tops ids _) =
+printSmallId_latex ga i@(Id tops ids _) =
     let ids' = case ids of
 	       [] -> empty
 	       _  ->  ((\x -> casl_comment_latex "[" <> x 
@@ -210,7 +223,10 @@ printSmallId_latex ga (Id tops ids _) =
 		       . map (printSmallId_latex ga)) ids
 	(ts,ps) = splitMixToken tops
 	pr_tops = hcat . map (printToken_latex casl_annotation_latex)
-    in pr_tops ts <> ids' <> pr_tops ps
+    in maybe (pr_tops ts <> ids' <> pr_tops ps)
+             (hcat . map printAnnotationToken_latex)
+	     (lookupDisplay ga DF_LATEX i)
+	     
 
 printGroup :: Doc -> Doc -> Doc
 printGroup key grp = ptext "%" <> key <> ptext "(" <> grp <> ptext ")%"
