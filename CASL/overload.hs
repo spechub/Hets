@@ -18,33 +18,51 @@ import CASL.AS_Basic -- FORMULA
 import Common.Result -- Result
 
 {-
+
+Idee: 
+- global Infos aus Sign berechnen + mit durchreichen
+  (connected compenents, s.u.)
+- rekursiv in Sentence absteigen, bis atomare Formel erreicht wird
+- atomaren Formeln mit MinExpTerm behandeln
+
 TODO: All das hier implementieren und testen :D
+
 -}
 
--- overloadResolution :: Sign -> [Sentence] -> [Sentence] -- Result [Sentence]
+-- -- -- die Hauptfunktion, macht aus Formeln ... Formeln :\)
+
+-- overloadResolution :: Sign -> [Sentence] -> Result [Sentence]
 -- overloadResolution sign sents =
---     [ minExpTerm sign atom | atom <- (concat $ map getAtoms sents) ]
--- -- TODO: das hier in Result  verpacken und natuerlich vorher auf
--- -- Fehler pruefen
--- -- ... und natuerlich voerher sinnvollerweise implementieren :)
+--     return [ minExpTerm sign atom | atom <- (concat $ map getAtoms sents) ]
+-- -- TODO: den Rest implementieren und dann hier auf Fehler testen
 
 -- -- Nimmt Formulae auseinander und gibt eine Liste der
--- -- zugrundeliegenden atomaren Formulae zurueck.
+-- -- zugrundeliegenden atomaren Formulae zurueck. 
+-- -- ... oder eher der zugrundeliegenden atomaren Terme?
 -- -- Idee: nimmt eine zusammengesetzte Formel auseinander und durchsucht
 -- -- die erhaltenen Formeln weiter nach Atomen.
 -- -- Nicht-zusammengesetzte Formeln sind atomar und werden (in eine
 -- -- Liste verpackt) zurueckgegeben.
 -- getAtoms :: Sentence -> [Sentence]
--- getAtoms sentence =
---     case sentence of
---         Quantification _ _ sent' _ -> getAtoms sent'
---         Conjunction sents _        -> concat $ map getAtoms sents
---         Disjunction sents _        -> concat $ map getAtoms sents
---         Implication s1 s2 _        -> concat [getAtoms s1, getAtoms s2]
---         Equivalence s1 s2 _        -> concat [getAtoms s1, getAtoms s2]
---         Negation sent' _           -> getAtoms sent'
---         _                          -> [sentence]
--- -- na, ob das wohl soweit stimmt... ?
+-- getAtoms (Quantification _ _ sentence _) = getAtoms sentence
+-- getAtoms (Conjunction sentences _) = getAllAtoms sentences
+-- getAtoms (Disjunction sentences _) = getAllAtoms sentences
+-- getAtoms (Implication sent1 sent2 _) = getAllAtoms [sent1, sent2]
+-- getAtoms (Equivalence sent1 sent2 _) = getAllAtoms [sent1, sent2]
+-- getAtoms (Negation sentence _) = getAtoms sentence
+-- -- entweder: es gibt sentences zurueck
+-- getAtoms sentence = [sentence]
+-- -- oder: es gibt terme zurueck
+-- -- getAtoms (Predication _ terms _) = terms
+-- -- getAtoms (Definedness term _) = [term]
+-- -- getAtoms (Existl_equation term1 term2 _) = [term1, term2]
+-- -- getAtoms (Strong_equation term1 term2 _) = [term1, term2]
+-- -- getAtoms (Membership term _ _) = [term]
+-- -- getAtoms (Mixfix_formula term) = term
+-- -- getAtoms Unparsed_formula _ _) = [] -- da solltsn Fehler gebn
+-- -- -- es fehlen noch: True_atom und False_atom ... was mach ich mit denen?
+--     where
+--     getAllAtoms = concat . (map getAtoms)
 
 -- -- das hier ist die, die eine Formel erwartet - ich muss noch pruefen,
 -- -- ob sich das lohnt oder ob ich nicht die Terme selbst direkt
@@ -54,16 +72,16 @@ TODO: All das hier implementieren und testen :D
 -- -- Ergebnistyp: Aequivalanzklassen von irgendwas...
 -- minExpTerm sign sentence =
 --     case sentence of
--- 	True_atom [Pos] -> 
--- 	False_atom [Pos] -> 
--- 	Predication PRED_SYMB [TERM] [Pos] -> 
--- 	Definedness TERM [Pos] -> 
--- 	Existl_equation TERM TERM [Pos] -> 
--- 	Strong_equation TERM TERM [Pos] -> 
--- 	Membership TERM SORT [Pos] -> 
--- 	Mixfix_formula TERM  -> 
---         Unparsed_formula String [Pos] -> 
---         _ -> 
+--                   True_atom [Pos] -> [["true", "_bool"]]
+--  	          False_atom [Pos] -> [["false", "_bool"]]
+--  	          Predication PRED_SYMB [TERM] [Pos] -> 
+--  	          Definedness TERM [Pos] -> 
+--  	          Existl_equation TERM TERM [Pos] -> 
+--  	          Strong_equation TERM TERM [Pos] -> 
+--  	          Membership TERM SORT [Pos] -> 
+--  	          Mixfix_formula TERM  -> 
+--                   Unparsed_formula String [Pos] -> 
+--                   _ -> 
 -- -- so ... und was fang ich jetzt damit an? -- Tja, das ist hier die Frage
 
 -- -- die hier, alternativ, nimmt einen Term und zerlegt/erweitert
@@ -77,53 +95,68 @@ TODO: All das hier implementieren und testen :D
 -- -- direkt als pattern-matching gemacht haben koennte, also:
 -- -- TODO: case .. of umschreiben als pattern-matching
 -- minExpTerm_ :: Sign -> TERM -> [[TERM]]
--- minExpTerm_ sign term =
---     case term of
---               Simple_id var ->
---                   let
---                   consts = [ (var,sort) | 
---                              (var',sort) <- (varMap sign), 
---                              var' == var
---                            ]
---                   funcs = [ (var,sort) |
---                             (var',sort) <- (opMap sign),
---                             var' == var
---                           ]
---                   in equiv leqn_f $ minimize $ consts ++ funcs
---               Qual_var var sort _ ->
---                   let
---                   met_t = minExpTerm_ sign var
---                   met_ts c = [ (t,s) | (t,s') <- c, s' <= s ]
---                   met_ts' = map met_ts met_t
---                   in met_ts'
---               Sorted_term term sort _ ->
---                   let
---                   met_t = minExpTerm_ sign var
---                   met_ts c = [ (t,s) | (t,s') <- c, s' <= s ]
---                   met_ts' = map met_ts met_t
---                   in met_ts'
---                   -- oder ist da ein Unterschied, den ich beachten muss?
---               Application op terms _ -> [[]]
---               -- das gilt, nehme ich an, auch als Fall fuer
---               -- Praedikat-Applikation? dafuer sehe ich naemlich
---               -- ansonsten keinen anderen...
---               Cast term sort _ -> [[]]
---               Conditional term formula term _ -> [[]]
---               -- da muss ich dann wohl wieder die formel in atome zerlegen?
---               Unparsed_term str _ -> [[]] 
---               -- na was fuer den Fall wohl richtig sein soll...
---               _ -> [[]]
---               -- Das muss dann wohl ein Mixfix sein ...
---               -- was auch immer zum Henker das sein mag.
---               -- naja, find ich schon noch raus... ^^
+-- minExpTerm_ sign (Simple_id var) = minExpTerm_simple sign var
+-- minExpTerm_ sign (Qual_var var sort _) = minExpTerm_qual sign var sort
+-- minExpTerm_ sign (Sorted_term term sort _) = minExpTerm_sorted sign term sort
+-- -- wie unterscheidet sich das von Qual_var???
+-- minExpTerm_ sign (Application op terms _) = minExpTerm_op sign op terms
+-- -- bei den restlichen bin ich nicht sicher, wie sie mit den
+-- -- dokumentierten Faellen vereinbar sind bzw. ihnen entsprechen, und
+-- -- also auch nicht, was ich damit machen soll.
+-- -- -- meine Tastatur is zu hart und mein kleiner Finger tut weh :\( --
+-- -- das da oben im Smiley ist kein Tippfehler, die Klammer verwirrt
+-- -- Emacs ^_^
+-- minExpTerm_ sign _ = [[]]
+-- -- restliche, fehlende Faelle sind:
+-- -- Cast term sort _
+-- -- Conditional term1 formula term2 _
+-- -- Unparsed_term string _
+-- -- mehrere Mixfix-Teile bei denen ich mir nicht sicher bin, was sie
+-- -- sein sollen und was ich mit ihnen anfangen koennen soll...
 
+-- -- -- Die Hilfsfunktionen fuer minExpTerm, je nach Typ des Terms
+
+-- minExpTerm_simple sign var =
+--     let 
+--     my_consts = [ (var, sort) | (var', sort) <- (varMap sign), var' == var ]
+--     my_funcs = [ (var, sort) | (var', sort) <- (opMap sign), var' == var ]
+--     my_subset = (minimize sign) (my_consts ++ my_funcs)
+--     in equiv leqF my_subset
+-- minExpTerm_qual sign var sort =
+--     let
+--     met_var = minExpTerm_simple sign var
+--     make_met = \c -> [ (var, sort) |
+--                        (var', sort') <- c, sort' <= sort, var' == var ]
+--     in map make_met met_var
+-- minExpTerm_sorted sign term sort =
+--     let
+--     met_var = minExpTerm sign term -- ist das der einzige Unterschied?
+--     make_met = \c -> [ (term, sort) |
+--                        (term', sort') <- c, sort' <= sort, term' == term ]
+--     in map make_met met_var
+-- minExpTerm_op sign op terms = [[]]
+-- -- the lean mean difficulty machine :\)
+-- -- das gilt, nehme ich an, auch als Fall fuer Praedikat-Applikation?
+-- -- dafuer sehe ich naemlich ansonsten keinen anderen...
+-- -- -- --
+-- -- ein Problem koennten noch die Definitionen von sort' <= sort und
+-- -- var' == var darstellen, falls ich die noch machen muss.
+-- -- Da hilft wohl auch nur ein beherzter Blick in die fremde source ^^
+
+
+-- -- Diese Funktionen fehlen in jedem Fall noch und sich ziemlich wichtig:
+-- minimize :: Sign -> [TERM] -> [TERM] -- minimiert
+-- equiv :: (a -> a -> Bool) -> [a] -> [[a]] -- Aequivalenzklassen
+-- leqF :: a -> a -> Bool -- Funktionsgleichheit
+-- leqP :: a -> a -> Bool -- Praedikatsgleichheit
 
 {-
-Idee: 
-- global Infos aus Sign berechnen + mit durchreichen
-  (connected compenents, s.u.)
-- rekursiv in Sentence absteigen, bis atomare Formel erreicht wird
-- atomaren Formeln mit MinExpTerm behandeln
+
+Die alten SML-Funktionen, die hier verwandt wurden.
+Den Beschreibungen nach sind das genau die beiden, mit denen eine Menge in
+Aequivalenzklassen unterteilt wird.
+Wie die erste davon funktioniert, ist mir nicht offen ersichtlich,
+aber vielleicht brauch ich die eigentlich auch gar nicht?
 
 (* Compute the connected compenents of a graph which is given
    by a list of nodes and a boolean function indicating whether
@@ -166,9 +199,14 @@ fun get_conn_components (env:local_env) : local_env1 =
 		      Symtab_id.map (compute_conn_components (leqP env)) preds) )
 	end
 
----
+-}
 
-Sign == Env and looks like this:
+{- 
+
+So sehen meine Datentypen aus
+(also nicht meine, sondern die, die ich hier benutze:
+
+Sign == Env
 data Env = Env { sortSet :: Set.Set SORT
 	       , sortRel :: Rel.Rel SORT	 
                , opMap :: Map.Map Id (Set.Set OpType)
@@ -182,7 +220,7 @@ data Env = Env { sortSet :: Set.Set SORT
 Sentence == FORMULA
 siehe AS_Basic fuer FORMULA, TERM und alle darin verwandten Typen
 
-Result is a Monad and looks like this:
+Result is a Monad
 -- | The 'Result' monad.  
 -- A failing 'Result' should include a 'FatalError' message.
 -- Otherwise diagnostics should be non-fatal.
