@@ -29,8 +29,9 @@ import Logic.Comorphism
 import Common.Id
 import qualified Common.Lib.Map as Map
 import Data.List
+import Data.Maybe
 import Common.AS_Annotation (Named)
--- import Debug.Trace
+import Debug.Trace
 
 -- HasCASL
 import HasCASL.Logic_HasCASL
@@ -146,18 +147,20 @@ transPredType :: TypeScheme -> Typ
 transPredType  (TypeScheme _ pre _) = 
        case pre of
          FunType tp _ _ _ -> (transType tp) --> boolType
-         _                -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong predicate type"
+         _                -> 
+           error "[Comorphims.HasCASL2IsabelleHOL] Wrong predicate type"
 
 transType :: Type -> Typ
 transType (TypeName typeId _ i) = if i == 0 then Type(showIsa typeId,[])
                                     else TVar((showIsa typeId,0),[])
-transType (ProductType types _) = foldr1 IsaSign.mkProductType 
+transType (ProductType types _) = foldl1 IsaSign.mkProductType 
                                          (map transType types)
 transType (FunType type1 arr type2 _) = 
   case arr of
     PFunArr -> (transType type1) --> (mkOptionType (transType type2))
     FunArr  -> (transType type1) --> (transType type2)
-    _       -> error "[Comorphims.HasCASL2IsabelleHOL] Not supported function type"
+    _       -> 
+      error "[Comorphims.HasCASL2IsabelleHOL] Not supported function type"
 transType (TypeAppl type1 type2) = Type("typeAppl", [transType type1] ++ [transType type2])
 transType _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported type"
 
@@ -173,7 +176,8 @@ extractDataypes ti des = case typeDefn ti of
 transDataEntry :: DataEntry -> DataTypeTabEntry
 transDataEntry (DataEntry _ tyId Le.Free tyArgs alts) = 
                          [((mkDName tyId tyArgs), (map mkAltDefn alts))]
-transDataEntry _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported datatype definition"
+transDataEntry _ = 
+  error "[Comorphims.HasCASL2IsabelleHOL] Not supported datatype definition"
 
 mkDName :: TypeId -> [TypeArg] -> Typ
 mkDName tyId tyArgs = Type(showIsa tyId,(map transTypeArg tyArgs)) --Type("typeAppl",(Type(showIsa tyId,[])):(map transTypeArg tyArgs)) --
@@ -200,7 +204,8 @@ transSentence :: Env -> Le.Sentence -> IsaSign.Term
 transSentence e s = case s of
     Le.Formula t      -> transTerm e t
     DatatypeSen l     -> con "Ich bin gar kein richtiges Axiom..." -- transDataEntryAx (head l)
-    ProgEqSen _ _ _pe -> error "[Comorphims.HasCASL2IsabelleHOL] transSentence: program"
+    ProgEqSen _ _ _pe -> 
+      error "[Comorphims.HasCASL2IsabelleHOL] transSentence: program"
 
 
 transTerm :: Env -> As.Term -> IsaSign.Term
@@ -212,14 +217,19 @@ transTerm _ (QualOp _ (InstOpId opId _ _) _ _)
   | opId == trueId =  con "True"
   | opId == falseId = con "False"
   | otherwise = conSome `App` con (getNameOfOpId opId)
-transTerm sign (ApplTerm term1 term2 _) =
-     case term1 of
+transTerm sign (ApplTerm term1 term2 p) =
+  testTerm term1
+  where
+--  trace ("Constructors?? "++ show (ApplTerm term1 term2 p) ++ "\n")
+   testTerm t =
+     case t of
        QualOp Fun (InstOpId opId _ _) _ _ -> transLog sign opId term1 term2 
        QualOp Pred _ _ _ -> con "pApp" 
                               `App` (transTerm sign term1) 
                               `App` (transTerm sign term2)
        QualOp Op _ typeScheme _ -> if isPart typeScheme then mkApp "app"
                                                         else mkApp "apt"
+       ApplTerm t1 _ _ -> testTerm t1
        _                 -> mkApp "app"
      where mkApp s = con s 
                                  `App` (transTerm sign term1) 
@@ -228,34 +238,214 @@ transTerm sign (ApplTerm term1 term2 _) =
              case op of
                FunType _ PFunArr _ _ -> True
                FunType _ FunArr _ _  -> False
-               _                     -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong operation type"
+               _                     -> 
+                 error "[Comorphims.HasCASL2IsabelleHOL] Wrong operation type"
 transTerm sign (QuantifiedTerm quan varDecls phi _) = 
   foldr (quantify quan) 
         (transTerm sign phi) 
         (map toPair varDecls)
 transTerm sign (TypedTerm term _ _ _) = transTerm sign term
-transTerm sign (LambdaTerm pats Partial body _) = 
-  if (null pats) then conSome 
-                        `App` Abs(IsaSign.Free("dummyVar",dummyT), 
-                                  dummyT, 
-                                  (transTerm sign body))
-    else conSome `App` (foldr (abstraction sign) 
-                              (transTerm sign body)
-                              pats)
+transTerm sign (LambdaTerm pats part body _) =
+  case part of
+    Partial -> lambdaAbs transTerm
+    Total   -> lambdaAbs transTotalLambda
+  where 
+   lambdaAbs f =
+    if (null pats) then conSome 
+                          `App` Abs(IsaSign.Free("dummyVar",dummyT), 
+                                    dummyT, 
+                                    (f sign body))
+      else conSome `App` (foldr (abstraction sign) 
+                                (f sign body)
+                                pats)
 transTerm sign (LetTerm Let eqs body _) = 
   transTerm sign (foldr let2lambda body eqs)
 transTerm sign (TupleTerm terms _) =
   foldl1 (binConst pairC) (map (transTerm sign) terms)
 transTerm sign (CaseTerm term pEqs _) = 
-  Case (transTerm sign term,  
-         (con "None", con "None"):
-           [(conSome `App` IsaSign.Free("x", dummyT),
-             Case (IsaSign.Free("x", dummyT), map (transProgEq sign) pEqs))])
-transTerm _ _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
+--  trace ("pEqs " ++ show pEqs ++ "\n")
+  let alts = map (transCaseAlt sign) pEqs
+  in
+    case term of
+      QualVar (VarDecl decl _ _ _) -> Case (IsaSign.Free(transVar decl, dummyT), alts)
+      _                            -> Case (transTerm sign term,
+                                             (con "None", con "None"):
+                                              [(conSome `App` IsaSign.Free("x", dummyT),
+                                                Case (IsaSign.Free("x", dummyT), alts))])
+transTerm _ _ = 
+  error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
+
+transTotalLambda :: Env -> As.Term -> IsaSign.Term
+transTotalLambda _ (QualVar (VarDecl var typ _ _)) = 
+  IsaSign.Free(transVar var, transType typ)
+transTotalLambda _ (QualOp _ (InstOpId opId _ _) _ _)
+  | opId == trueId =  con "True"
+  | opId == falseId = con "False"
+  | otherwise = con (getNameOfOpId opId)
+transTotalLambda sign (ApplTerm term1 term2 _) = (transTotalLambda sign term1) `App` (transTotalLambda sign term2)
+--   testTerm term1
+--   where
+-- --  trace ("Constructors?? "++ show (ApplTerm term1 term2 p) ++ "\n")
+--    testTerm t =
+--      case t of
+--        QualOp Fun (InstOpId opId _ _) _ _ -> transLog sign opId term1 term2 
+--        QualOp Pred _ _ _ -> con "pApp" 
+--                               `App` (transTerm sign term1) 
+--                               `App` (transTerm sign term2)
+--        QualOp Op _ typeScheme _ -> if isPart typeScheme then mkApp "app"
+--                                                         else mkApp "apt"
+--        ApplTerm t1 _ _ -> testTerm t1
+--        _                 -> mkApp "app"
+--      where mkApp s = con s 
+--                                  `App` (transTerm sign term1) 
+--                                  `App` (transTerm sign term2)
+--            isPart (TypeScheme _ op _) = 
+--              case op of
+--                FunType _ PFunArr _ _ -> True
+--                FunType _ FunArr _ _  -> False
+--                _                     -> 
+--                  error "[Comorphims.HasCASL2IsabelleHOL] Wrong operation type"
+-- transTerm sign (QuantifiedTerm quan varDecls phi _) = 
+--   foldr (quantify quan) 
+--         (transTerm sign phi) 
+--         (map toPair varDecls)
+transTotalLambda sign (TypedTerm term _ _ _) = transTotalLambda sign term
+transTotalLambda sign (LambdaTerm pats part body _) =
+  case part of
+    Partial -> lambdaAbs transTerm
+    Total   -> lambdaAbs transTotalLambda
+  where 
+   lambdaAbs f =
+    if (null pats) then Abs(IsaSign.Free("dummyVar",dummyT), 
+                                    dummyT, 
+                                    (f sign body))
+      else  (foldr (abstraction sign) 
+                                (f sign body)
+                                pats)
+transTotalLambda sign (LetTerm Let eqs body _) = 
+  transTotalLambda sign (foldr let2lambda body eqs)
+transTotalLambda sign (TupleTerm terms _) =
+  foldl1 (binConst isaPair) (map (transTotalLambda sign) terms)
+transTotalLambda sign (CaseTerm term pEqs _) = 
+--  trace ("pEqs " ++ show pEqs ++ "\n")
+  Case (transTotalLambda sign term, map transCaseAltTotal pEqs)
+  where transCaseAltTotal (ProgEq pat term _) = (transPat sign pat, transTotalLambda sign term)
+transTotalLambda _ _ = 
+  error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
 
 
-transProgEq :: Env -> ProgEq -> (IsaSign.Term, IsaSign.Term)
-transProgEq sign (ProgEq pat term _) = 
+-- transCaseEx :: [InstOpId] -> As.Term -> IsaSign.Term
+-- transCaseEx sign term =
+--   case term of
+--     QualVar (VarDecl decl _ _ _) -> IsaSign.Free(transVar decl, dummyT)
+--     _                            -> transTerm sign term
+
+
+-- arangeCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
+-- arangeCaseAlts sign pEqs = 
+--   let pats = map stripProgEq pEqs
+--   in
+--     case pats of
+--       (QualVar _):[] -> transCaseAlt sign pEqs
+--       _              -> sortCaseAlts sign pEqs
+
+-- sortCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
+-- sortCaseAlts sign pEqs = 
+--   concat (map unfoldCons (map (groupCons pEqs) (getCons sign)))
+
+
+-- --  CaseTerm term (concat (map unfoldCons 
+-- --                        (map (groupCons pEqs) (grepCons (map filt pEqs))))) p
+      
+
+-- groupCons :: [ProgEq] -> InstOpId -> [ProgEq]
+-- groupCons pEqs name =  filter hasSameName pEqs
+--   where hasSameName (ProgEq pat _ _) = 
+--           case pat of
+--             QualOp _ n _ _    -> n == name
+--             ApplTerm t1 t2 _  -> hasSameName t1
+--             TypedTerm t _ _ _ -> hasSameName t
+--             -- TupleTerm
+--             _                 -> False
+
+-- unfoldCons :: [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
+-- unfoldCons pEqs =
+--   let pats = map stripProgEq pEqs
+--   in
+--     if and (map noArgs pats) then transCaseAlt pEqs
+--         else testArg pEqs
+--   where noArgs (QualOp _ _ _ _) = True
+--         noArgs _                = False
+
+--         isVar (ProgEq pat _ _) = case pat of
+--                                    QualVar _ -> True
+--                                    _         -> False
+                                    
+--         ppEqs = zip (map stripProgEq pEqs) pEqs
+
+
+-- testArg :: [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
+-- testArg pEqs = 
+--   let pats = stripProgEq pEqs
+--   in
+--     if and (map argIsVar ppEqs) then transCaseAlt pEqs
+--       else map (substArg ppEqs)
+--   where argIsVar pat = case pat of
+--                               ApplTerm _ t _ -> case t of
+--                                                   QualVar _ -> True
+--                                                   ApplTerm _ t _ -> argIsVar t
+--                                                   _         -> False
+--                               QualVar _      -> True
+--                               TypedTerm t _ _ -> argIsVar t
+--                               -- TupleTerm
+--                               _              -> False
+--          substArg (pat, pEq) =
+--            case pat of
+--              ApplTerm t1 t2 _  -> (t1, addPat pEq)
+--              _                 -> pat
+--          where
+--            addPat (ProgEq pat term) = 
+         
+                                                  
+-- VarDecl Var Type SeparatorKind [Pos]
+
+-- stripProgEq :: ProgEq -> Pattern
+-- stripProgEq (ProgEq pat _ _) = case pat of
+--                                  TypedTerm t _ _ _ -> stripProgEq t
+--                                  -- TupleTerm      ->
+--                                  _                 -> pat
+
+
+-- -- grep the names of all constructors
+-- grepCons :: [Pattern] -> [InstOpId]
+-- grepCons pats =
+--   nub (catMaybes (map allCons pats))
+--   where allCons pat =
+--           case pat of
+--             QualOp _ name _ _ -> Just (name)
+--             ApplTerm t1 t2 _  -> allCons t1
+--             TypedTerm t _ _ _ -> allCons t
+--             QualVar _         -> Nothing
+--             -- TupleTerm
+--             _                 -> 
+--               error "[Comorphims.HasCASL2IsabelleHOL] Illegal case pattern."
+ 
+
+
+{- todo
+nested case patterns:
+1. check if set of patterns is
+1a. one pattern consisting of a variable => we are done
+1b. set of constructor patterns 
+    1b1. sort patterns according to leading constructor
+    1b2. for each group of patterns with the same leading constructor
+         1b2a. for each argument position, call 1. recursively
+
+-}
+
+
+transCaseAlt :: Env -> ProgEq -> (IsaSign.Term, IsaSign.Term)
+transCaseAlt sign (ProgEq pat term _) = 
   (transPat sign pat, transTerm sign term)
    --Abs (transTerm sign pat, dummyT, transTerm sign term)
 
@@ -264,24 +454,20 @@ transPat _ (QualVar (VarDecl var _ _ _)) = IsaSign.Free(transVar var, dummyT)
 transPat sign (ApplTerm term1 term2 _) = 
   (transPat sign term1) `App` (transPat sign term2)
 transPat sign (TypedTerm term _ _ _) = transPat sign term
-transPat sign (LambdaTerm pats Partial body _) =
-  if (null pats) then Abs(IsaSign.Free("dummyVar",dummyT), 
-                                        dummyT, 
-                                        (transPat sign body))
-     else foldr (abstraction sign) 
-                (transPat sign body)
-                pats
-transPat sign (LetTerm Let eqs body _) = 
-  transPat sign (foldr let2lambda body eqs)
+-- transPat sign (LambdaTerm pats Partial body _) =
+--   if (null pats) then Abs(IsaSign.Free("dummyVar",dummyT), 
+--                                         dummyT, 
+--                                         (transPat sign body))
+--      else foldr (abstraction sign) 
+--                 (transPat sign body)
+--                 pats
+-- transPat sign (LetTerm Let eqs body _) = 
+--   transPat sign (foldr let2lambda body eqs)
 transPat sign (TupleTerm terms _) =
   foldl1 (binConst isaPair) (map (transPat sign) terms)
-transPat sign term = 
-  case term of
-    (QualOp _ _ _ _) -> tt
-    (QuantifiedTerm _ _ _ _) -> tt
-    (CaseTerm _ _ _) -> tt
-  where tt = transTerm sign term
-transPat _ _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
+transPat _ (QualOp _ (InstOpId id _ _) _ _) = con (getNameOfOpId id)
+transPat _ _ =  error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
+
 
 let2lambda :: ProgEq -> As.Term -> As.Term
 let2lambda (ProgEq pat term _) body = 
