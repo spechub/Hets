@@ -736,6 +736,23 @@ getConservativity edge@(_,_,edgeLab) =
     otherwise -> None
 
 -- ----------------------------------------------
+-- theorem hide shift
+-- ----------------------------------------------
+
+theoremHideShift :: ProofStatus -> IO ProofStatus
+theoremHideShift proofStatus@(globalContext,libEnv,history,dgraph) =
+  error 
+  (concat (map (prettyPrintPath dgraph) 
+   (map snd 
+    (concat 
+     [getAllPathsBeginningWithHidingDefTo dgraph node ([]::[LEdge DGLinkLab])|
+      node <- map getTargetNode globalThmEdges]))))
+
+  where
+    globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
+
+
+-- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
 
@@ -778,6 +795,22 @@ getAllLocGlobDefPathsTo :: DGraph -> Node -> [LEdge DGLinkLab]
 			      -> [(Node, [LEdge DGLinkLab])]
 getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo 
 			      ([isLocalDef]::[LEdge DGLinkLab -> Bool])
+
+
+getAllPathsBeginningWithHidingDefTo :: DGraph -> Node -> [LEdge DGLinkLab]
+				    -> [(Node, [LEdge DGLinkLab])]
+getAllPathsBeginningWithHidingDefTo dgraph node path =
+  resultPath ++ 
+  (concat ( [getAllPathsBeginningWithHidingDefTo
+             dgraph (getSourceNode edge) (edge:path) | 
+	     edge <- nextEdges]))
+  where
+    inEdges = inn dgraph node
+    nextEdges = [edge| edge <- inEdges, not (elem edge path)]
+    resultPath = 
+      if ((not (null path)) && (isHidingDef (head path)))
+	 then [(node,path)] else []
+
 
 
 {- returns all paths consisting of global edges only

@@ -231,7 +231,9 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
 			  (proofMenuSef gInfo locDecomp),
 		   Button "Hide Theorem Shift"
 	                  (proofMenu gInfo (fmap return . 
-					    (hideTheoremShift False)))
+					    (hideTheoremShift False))),
+		   Button "Theorem Hide Shift"
+	                  (proofMenu gInfo (fmap return . theoremHideShift))
                     ]])]
       -- the node types
                [("spec", 
