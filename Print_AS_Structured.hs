@@ -30,56 +30,96 @@ import GlobalAnnotations
 import List
 
 instance PrettyPrint SPEC where
+    --- This implementation don't uses the grouping information 
+    --- it detects this information by precedence rules
     printText0 ga (Basic_spec aa) =
 	nest 4 $ printText0 ga aa
     printText0 ga (Translation aa ab) =
-	let aa' = printText0 ga aa
+	let aa' = condBracesTransReduct ga aa
 	    ab' = printText0 ga ab
-	in hang aa' 0 ab'
+	in hang aa' 4 ab'
     printText0 ga (Reduction aa ab) =
-	let aa' = printText0 ga aa
+	let aa' = condBracesTransReduct ga aa
 	    ab' = printText0 ga ab
-	in hang aa' 0 ab'
+	in hang aa' 4 ab'
     printText0 ga (Union aa _) = 
 	fsep $ intersperse' aa 
 	where intersperse' [] = [] 
 	      intersperse' (x:xs) =
 		  (printText0 ga x):
-		  map (\y -> ptext "and" $$ printText0 ga y) xs
+		  map (\y -> ptext "and" $$ condBracesAnd ga y) xs
     printText0 ga (Extension aa _) =
 	fsep $ printList aa
 	       -- intersperse (ptext "then") $ map (printText0 ga) aa
 	where printList [] = []
-	      printList (x:xs) = (printText0 ga x):map spPrintText0 xs
-	      spPrintText0 x = 
-		  case x of 
-		  Annoted i _ las _ ->
-		      let i'   = printText0 ga i
-			  las' = printText0 ga las
-		      in ptext "then" <+> las' $$ i'
+	      printList (x:xs) = 
+		  (printText0 ga x):
+		    map (spAnnotedPrintText0 ga (ptext "then")) xs
     printText0 ga (Free_spec aa _) =
-	hang (ptext "free") 5 $ printText0 ga aa
+	hang (ptext "free") 5 $ condBracesGroupSpec ga aa
     printText0 ga (Local_spec aa ab _) =
-	let aa' = printText0 ga aa
-	    ab' = printText0 ga ab
+	let aa' = condBracesWithin ga aa
+	    ab' = condBracesWithin ga ab
 	in (hang (ptext "local") 4 aa') $$ 
 	   (hang (ptext "within") 4 ab')
     printText0 ga (Closed_spec aa _) =
-	hang (ptext "closed") 4 $ printText0 ga aa
+	hang (ptext "closed") 4 $ condBracesGroupSpec ga aa
     printText0 ga (Group aa _) =
-	lbrace $+$ printText0 ga aa $$ rbrace
+	printText0 ga aa
     printText0 ga (Spec_inst aa ab) =
 	let aa' = printText0 ga aa
 	    ab' = printText0_fit_arg_list ga ab
 	in nest 4 (hang aa' 4 ab')
     printText0 ga (Qualified_spec ln asp _) =
 	ptext "logic" <+> (printText0 ga ln) <> colon $$ (printText0 ga asp)
+    --- Another implementation of printText 
+    --- This implementation uses simply the supplied grouping information
+    printText ga (Basic_spec aa) =
+	nest 4 $ printText ga aa
+    printText ga (Translation aa ab) =
+	let aa' = printText ga aa
+	    ab' = printText ga ab
+	in hang aa' 4 ab'
+    printText ga (Reduction aa ab) =
+	let aa' = printText ga aa
+	    ab' = printText ga ab
+	in hang aa' 4 ab'
+    printText ga (Union aa _) = 
+	fsep $ intersperse' aa 
+	where intersperse' [] = [] 
+	      intersperse' (x:xs) =
+		  (printText ga x):
+		  map (\y -> ptext "and" $$ printText ga y) xs
+    printText ga (Extension aa _) =
+	fsep $ printList aa
+	       -- intersperse (ptext "then") $ map (printText ga) aa
+	where printList [] = []
+	      printList (x:xs) = 
+		  (printText ga x):
+		    map (spAnnotedPrintText0 ga (ptext "then")) xs
+    printText ga (Free_spec aa _) =
+	hang (ptext "free") 5 $ printText ga aa
+    printText ga (Local_spec aa ab _) =
+	let aa' = printText ga aa
+	    ab' = printText ga ab
+	in (hang (ptext "local") 4 aa') $$ 
+	   (hang (ptext "within") 4 ab')
+    printText ga (Closed_spec aa _) =
+	hang (ptext "closed") 4 $ printText ga aa
+    printText ga (Group aa _) =
+	lbrace $+$ printText ga aa $$ rbrace
+    printText ga (Spec_inst aa ab) =
+	let aa' = printText ga aa
+	    ab' = printText0_fit_arg_list ga ab
+	in nest 4 (hang aa' 4 ab')
+    printText ga (Qualified_spec ln asp _) =
+	ptext "logic" <+> (printText ga ln) <> colon $$ (printText ga asp)
 
      
 
 instance PrettyPrint RENAMING where
     printText0 ga (Renaming aa _) =
-	hang (text "with") 4 $ printText0 ga aa
+	hang (text "with") 4 $ cat $ map (printText0 ga) aa
 --	hang (text "with") 4 $ fcat $ 
 --	     map (print_symb_map_items_text lid ga) aa
 {-    printText0 ga (Logic_renaming l1 mor l2 _) =
@@ -107,7 +147,7 @@ instance PrettyPrint RESTRICTION where
 	      punctuate comma $ map (print_symb_map_items_text lid ga) aa
 -}
     printText0 ga (Hidden aa _) =
-	hang (text "hide") 4 $ printText0 ga aa
+	hang (text "hide") 4 $ cat $ map (printText0 ga) aa
     printText0 ga (Revealed aa _) =
 	hang (text "reveal") 4 $ printText0 ga aa
 {-    printText0 ga (Logic_hiding l1 mor l2 _) =
@@ -151,19 +191,19 @@ instance PrettyPrint GENERICITY where
 instance PrettyPrint PARAMS where
     printText0 ga (Params aa) =
 	if null aa then empty
-	else fcat $ punctuate space $ map (brackets . (printText0 ga)) aa
+	else sep $ map (sp_brackets . (printText0 ga)) aa
 
 instance PrettyPrint IMPORTED where
     printText0 ga (Imported aa) =
 	if null aa then empty 
 	else ptext "given" <+> (fsep $ punctuate comma $ 
-				         map (printText0 ga) aa)
+				         map (condBracesGroupSpec ga) aa)
 
 printText0_fit_arg_list::GlobalAnnos -> [Annoted FIT_ARG] -> Doc
 printText0_fit_arg_list _ [] = empty
-printText0_fit_arg_list ga [fa] = brackets $ printText0 ga fa
+printText0_fit_arg_list ga [fa] = sp_brackets $ printText0 ga fa
 printText0_fit_arg_list ga fas = 
-    fsep $ map (brackets . (printText0 ga)) fas
+    sep $ map (sp_brackets . (printText0 ga)) fas
 
 instance PrettyPrint FIT_ARG where
     printText0 ga (Fit_spec aa ab _) =
@@ -191,11 +231,13 @@ instance PrettyPrint VIEW_DEFN where
 	in aa' <+> ab' <+> ac' <+> ad'
 -}
 
-instance PrettyPrint VIEW_TYPE where
+-- this instance is there, but is no longer in use
+{- instance PrettyPrint VIEW_TYPE where
     printText0 ga (View_type aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in aa' <+> ptext "to" <+> ab'
+	in hang (aa' <+> ptext "to") 4 ab'
+-}
 
 instance PrettyPrint Logic_code where
     printText0 ga (Logic_code (Just enc) (Just src) (Just tar) _) =
@@ -228,4 +270,35 @@ instance PrettyPrint Logic_name where
 		       Nothing -> empty 
 		       Just sub -> ptext "." <> printText0 ga sub)
 
+
+condBracesGroupSpec :: GlobalAnnos -> (Annoted SPEC) -> Doc
+condBracesGroupSpec ga as =
+    case item as of
+		 Spec_inst _ _ -> as'
+		 _             -> sp_braces as'
+    where as' = printText0 ga as
+
+condBracesTransReduct :: GlobalAnnos -> (Annoted SPEC) -> Doc
+condBracesTransReduct ga as =
+    case item as of
+		 Extension _ _    -> sp_braces as'
+		 Union _ _        -> sp_braces as'
+		 Local_spec _ _ _ -> sp_braces as'
+		 _                -> as'
+    where as' = printText0 ga as
+
+condBracesWithin :: GlobalAnnos -> (Annoted SPEC) -> Doc
+condBracesWithin ga as =
+    case item as of
+		 Extension _ _    -> sp_braces as'
+		 Union _ _        -> sp_braces as'
+		 _                -> as'
+    where as' = printText0 ga as
+
+condBracesAnd :: GlobalAnnos -> (Annoted SPEC) -> Doc
+condBracesAnd ga as =
+    case item as of
+		 Extension _ _    -> sp_braces as'
+		 _                -> as'
+    where as' = printText0 ga as
 
