@@ -710,8 +710,9 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
 
 extendMorphism :: Pos -> G_sign -> G_sign -> G_sign -> G_morphism
                   -> Result(G_sign,G_morphism)
-extendMorphism pos gsigma gsigma' gsigmaA mor = 
-  return (gsigmaA,mor) -- ??? needs to be implemented
+extendMorphism pos gsigma gsigma' gsigmaA mor = do
+  gsigmaRes <- homogeneousGsigUnion pos gsigma' gsigmaA
+  return (gsigmaRes,mor) -- ??? needs to be implemented
 
 apply_GS :: Pos -> ExtGenSig -> [(G_morphism,NodeSig)] -> Result(G_sign,G_morphism)
 apply_GS pos (nsigI,params,gsigmaP,nsigB) args = do
