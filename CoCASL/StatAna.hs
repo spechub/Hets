@@ -21,14 +21,13 @@ Portability :  portable
 
 module CoCASL.StatAna where
 
-import Debug.Trace
-
 import CoCASL.AS_CoCASL
 import CoCASL.Print_AS
 import CoCASL.CoCASLSign
 
 import CASL.Sign
 import CASL.MixfixParser
+import CASL.Utils
 import CASL.StaticAna
 import CASL.AS_Basic_CASL
 import CASL.Overload
@@ -63,9 +62,12 @@ resolveC_FORMULA ga ids cf = case cf of
    _ -> error "resolveC_FORMULA"
 
 noExtMixfixCo :: C_FORMULA -> Bool
-noExtMixfixCo = 
-    (const $ 
-     trace "CoCASL.StatAna: noExtMixfixCo is not yet implemented" True)
+noExtMixfixCo cf = 
+    let noInner = noMixfixF noExtMixfixCo in
+    case cf of
+    Box _ f _     -> noInner f
+    Diamond _ f _ -> noInner f
+    _ -> True
 
 minExpForm :: Min C_FORMULA CoCASLSign
 minExpForm ga s form = 
@@ -106,7 +108,7 @@ minExpForm ga s form =
         phi -> return phi
 
 ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
-ana_C_SIG_ITEM ga mi = 
+ana_C_SIG_ITEM _ mi = 
     case mi of 
     CoDatatype_items al _ -> 
         do let sorts = map (( \ (CoDatatype_decl s _ _) -> s) . item) al
@@ -270,7 +272,7 @@ ana_C_BASIC_ITEM ga bi = do
            closeSubsortRel 
            return bi
     CoSort_gen al ps ->
-        do (gs,ul) <- ana_CoGenerated ana_C_SIG_ITEM ga al
+        do (gs,ul) <- ana_CoGenerated ana_C_SIG_ITEM ga ([], al)
            toCoSortGenAx ps False 
                 (Set.unions $ map fst gs, Set.unions $ map snd gs)
            return $ CoSort_gen ul ps
@@ -288,9 +290,12 @@ toCoSortGenAx ps isFree (sorts, ops) = do
     addSentences [NamedSen ("ga_cogenerated_" ++ 
                          showSepList (showString "_") showId sortList "") f]
 
-ana_CoGenerated as ga al = do
+ana_CoGenerated :: Ana C_SIG_ITEM C_FORMULA e 
+                -> Ana ([(Set.Set Id, Set.Set Component)], 
+                        [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)]) C_FORMULA e
+ana_CoGenerated anaf ga (_, al) = do
    ul <- mapAnM (ana_SIG_ITEMS resolveC_FORMULA 
-                 noExtMixfixCo as ga Generated) al
+                 noExtMixfixCo anaf ga Generated) al
    return (map (getCoGenSig . item) ul,ul)
    
 getCoGenSig :: SIG_ITEMS C_SIG_ITEM C_FORMULA 
