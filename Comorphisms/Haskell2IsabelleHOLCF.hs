@@ -121,6 +121,13 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
     map_sentence _ = transSentence
 --    map_theory _ = transTheory
 
+------------------------------ Isa auxiliaries ----------------------------------
+
+-- multiCApp :: Term [IsaTerm] -> IsaTerm 
+-- multiCApp t ls = case ls of 
+--                 [] -> t
+--                 x:xs -> multiCApp (App t x IsCont) xs 
+
 ------------------------------ Theory translation -------------------------------
 
 transSentence :: HatAna.Sign -> TiPropDecorate.TiDecl PNT -> Result IsaSign.Sentence
@@ -134,8 +141,13 @@ transMatch ::
   HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds -> IsaTerm 
 transMatch t = case t of 
   (HsDeclStruct.HsMatch _ nm _ (HsGuardsStruct.HsBody x) _) -> 
-       App (App (Const "IsaEq") (Const $ showIsaS nm) IsCont) (transExp x) IsCont
+       App (App (Const "IsaEq" noType) (Const (showIsaS nm) noType) IsCont) (transExp x) IsCont
   _ -> error "Haskell2IsabelleHOLCF.transMatch, case not yet supported"
+
+--transMatchList ::  [HsDeclStruct.HsMatchI PNT (TiPropDecorate.TiExp PNT) p ds] -> IsaTerm
+--transMatchList ls = case ls of
+--   [] -> Bottom
+--   x:xs -> Fix (transMatch x 'isaOr' transMatchList xs) 
 
 -- transTheory :: (HatAna.Sign, [TiPropDecorate.TiDecls PNT] -> 
 --                      Result (IsaSign.Sign, [Named IsaSign.Sentence])  
@@ -200,8 +212,8 @@ showIsaS x = (Translate.transString) (show x)
 
 idTrans :: Show i => HsIdent.HsIdentI i -> IsaSign.Term
 idTrans t = case t of
-                 HsVar x -> Free (showIsaS x) 
-                 HsCon x -> Const (showIsaS x) 
+                 HsVar x -> Free (showIsaS x) noType
+                 HsCon x -> Const (showIsaS x) noType
 
 ------------------------------- Kind translation ------------------------------
 
@@ -524,10 +536,10 @@ transE :: (PNT -> IsaSign.VName) -> (e -> IsaTerm) -> (p -> IsaPattern) ->
             (HsExpStruct.EI PNT e p j h k) -> IsaTerm
 transE trId trE trP e =
  case (mapEI5 trId trE trP e) of 
-   HsId (HsVar x)              -> Free x
-   HsId (HsCon c)              -> Const c
-   HsApp x y                   -> App x y IsCont
-   HsLambda ps e               -> IsaSign.Abs [(x, noType) | x <- ps] e IsCont
+   HsId (HsVar x)              -> Free x noType
+   HsId (HsCon c)              -> Const c noType
+   HsApp x y                   -> App x y IsCont 
+--   HsLambda ps e               -> IsaSign.Abs [(x, noType) | x <- ps] e IsCont
 --   HsLet ds e                  -> Let ds e 
    HsIf x y z                  -> If x y z 
 --   HsCase e ds                 -> Case e ds 
@@ -539,8 +551,8 @@ transP :: (PNT -> IsaSign.VName) -> (p -> IsaPattern) ->
             (HsPatStruct.PI PNT p) -> IsaPattern
 transP trId trP p =
  case HsPatMaps.mapPI trId trP p of
-   HsPId (HsVar x) -> Free x
-   HsPId (HsCon c) -> Const c
+   HsPId (HsVar x) -> Free x noType
+   HsPId (HsCon c) -> Const c noType
 --   HsPLit _ lit -> litPat (transL lit) -- new
 --   HsPApp c ps -> App x y IsCont
    HsPTuple ps -> Tuples ps IsCont 
@@ -563,7 +575,7 @@ transPat x = case x of
 
 extVars :: IsaPattern -> VName
 extVars p = case p of 
-    Free x -> x
+    Free x _ -> x 
     _ -> error "Haskell2IsabelleHOLCF.extVars"
 
 transExp :: TiPropDecorate.TiExp PNT -> IsaTerm
