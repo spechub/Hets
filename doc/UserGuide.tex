@@ -355,6 +355,27 @@ showing the dependencies among the specifications (cf. Sect.~\ref{sec:DevGraph})
 Use \texttt{DIR} as the directory for specification libraries
 (equivalently, you can set the variable \texttt{HETS\_LIB} before
 calling \Hets).
+\item[\texttt{--casl-amalg=ANALYSIS}]
+  The \texttt{ANALYSIS} argument specifies the options for
+  amalgamability checking 
+  algorithm for \CASL logic; it is a comma-separated list of zero or
+  more of the following options:
+  \begin{description}
+  \item[\texttt{sharing}] perform sharing analysis for sorts,
+    operations and predicates.
+  \item[\texttt{cell}] perform cell condition check; implies
+    \texttt{sharing}. With this option on the subsort embeddings are
+    analyzed. 
+  \item[\texttt{colimit-thinness}] perform colimit thinness check;
+    implies \texttt{sharing}. The colimit thinness check is less
+    complete and usually takes longer than the full cell condition
+    check (\texttt{cell} option), but may prove more efficient in case
+    of certain specifications. 
+  \end{description}
+  If \texttt{ANALYSIS} is empty then amalgamability analysis for
+  \CASL is skipped. 
+  The default value for \texttt{--casl-amalg} is
+  \texttt{cell}. 
 \end{description}
 
 \section{Heterogeneous Specification} \label{sec:HetSpec}
