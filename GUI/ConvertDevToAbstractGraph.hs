@@ -551,7 +551,7 @@ showOriginOfNode descr ab2dgNode dgraph =
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showMorphismOfEdge _ (Just (_,_,linklab)) = 
       createTextDisplay "Signature morphism" 
-           (showPretty (dgl_morphism linklab) "") [size(50,50)]
+           (showPretty (dgl_morphism linklab) "") [size(150,50)]
 showMorphismOfEdge descr Nothing = 
       createTextDisplay "Error" 
           ("edge "++(show descr)++" has no corresponding edge"

@@ -139,9 +139,13 @@ minExpFORMULA sign formula
         is_unambiguous          :: [[TERM]] -> [Id.Pos] -> Result TERM
         is_unambiguous term pos     = do
             case term of
-                [_]:_   -> return $ head $ head term            -- :: TERM
-                _       -> pplain_error (Unparsed_term "" [])
-                    (ptext "Cannot disambiguate! Possible Expansions: "
+                [] -> pplain_error (Unparsed_term "<error>" [])
+                   (ptext "No correct typing for " <+> printText term)
+                   (Id.headPos pos)
+        -- BEWARE! Oversimplified disambiguation!
+                (_:_):_   -> return $ head $ head term            -- :: TERM
+                _       -> pplain_error (Unparsed_term "<error>" [])
+                    (ptext "Cannot disambiguate1! Possible Expansions: "
                      <+> (printText term)) (Id.headPos pos)
 
 {-----------------------------------------------------------
@@ -174,9 +178,13 @@ minExpFORMULA_pred sign predicate terms pos = do
             (Qual_pred_name name' _ _)  -> name'
         choose          :: [[(PredType, [TERM])]] -> Result (PredType, [TERM])
         choose ps        = case ps of
-            [_]:_ -> return $ head $ head ps
+            [] -> pplain_error (PredType [],[])
+                   (ptext "No correct typing for " <+> printText ps)
+                   (Id.headPos pos)
+        -- BEWARE! Oversimplified disambiguation!
+            (_:_):_ -> return $ head $ head ps
             _   -> pplain_error (PredType [], terms)
-                   (ptext "Cannot disambiguate! Term: " 
+                   (ptext "Cannot disambiguate2! Term: " 
                     <+> (printText (predicate, terms))
                     $$ ptext "Possible Expansions: " 
                     <+> (printText ps)) (Id.headPos pos)
@@ -205,7 +213,7 @@ minExpFORMULA_pred sign predicate terms pos = do
                     preds_equal = (pred1 == pred2)              -- ::  Bool
                     preds_equiv = leqP sign pred1 pred2         -- ::  Bool
                     types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
-                in b1 && b2 && (preds_equal || (preds_equiv && types_equal))
+                in True -- b1 && b2 && (preds_equal || (preds_equiv && types_equal))
 
 {-----------------------------------------------------------
     Minimal Expansions of a Strong/Existl. Equation Formula
@@ -225,9 +233,13 @@ minExpFORMULA_eq sign eq term1 term2 pos = do
         $ filter fit pairs                              -- :: [[TERM]]
     --debug 3 ("candidates",candidates)
     case candidates of
-        [[t1,t2]]       -> return $ eq t1 t2 pos
+        [] -> pplain_error (eq term1 term2 pos)
+               (ptext "No correct typing for " <+> printText (eq term1 term2 pos))
+               (Id.headPos pos)
+        -- BEWARE! Oversimplified disambiguation!
+        ([t1,t2]:_)       -> return $ eq t1 t2 pos
         _               -> pplain_error (eq term1 term2 pos)
-            (ptext "Cannot disambiguate! Possible Expansions: "
+            (ptext "Cannot disambiguate3! Possible Expansions: "
              <+> (printText exps1) $$ (printText exps2)) (Id.headPos pos)
     where
         fit     :: [TERM] -> Bool
@@ -283,7 +295,10 @@ minExpTerm_simple sign var = do
     cs          <- return
         $ Set.union vars ops                    -- :: Set.Set SORT
     least       <- return
-        $ Set.filter (is_least_sort cs) cs      -- :: Set.Set SORT
+    -- BEWARE: Restriction to minimal sorts is not correct
+    --         in case of downcasts: here, it may be the
+    --         case that the cast is only correct for non-minimal sorts!
+        $ {-Set.filter (is_least_sort cs)-} cs      -- :: Set.Set SORT
     return
         $ qualifyTerms []                       -- :: [[TERM]]
         $ (equivalence_Classes eq)              -- :: [[(TERM, SORT)]]
@@ -424,12 +439,14 @@ minExpTerm_op1 sign op terms pos = do
 minExpTerm_cast :: Sign -> TERM -> SORT -> [Id.Pos] -> Result [[TERM]]
 minExpTerm_cast sign term sort pos = do
     expandedTerm        <- minExpTerm sign term         -- :: [[TERM]]
+    --debug 1 ("expandedTerm",expandedTerm)
     validExps           <- return
-        $ filter (leq_SORT sign sort . term_sort)       -- ::  [TERM]
-        $ map head expandedTerm                         -- ::  [TERM]
+        $ map (filter (leq_SORT sign sort . term_sort)) -- ::  [[TERM]]
+        $ expandedTerm                                  -- ::  [[TERM]]
+    --debug 2 ("validExps",validExps)
     return
         $ qualifyTerms pos                              -- :: [[TERM]]
-        $ [map (\ t -> (t, sort)) validExps]            -- :: [[(TERM, SORT)]]
+        $ map (map (\ t -> (t, sort))) validExps        -- :: [[(TERM, SORT)]]
 
 {-----------------------------------------------------------
     Minimal Expansions of a Conditional Term

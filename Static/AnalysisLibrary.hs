@@ -110,7 +110,7 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
 		maybe (do showDiags opts dias
 		          anaLibFile' fname)
                       (\ gc@(_,_,dgraph) -> do 
-                       putIfVerbose opts 1 "Read environment from file... "
+                       putIfVerbose opts 1 ("Reading "++env_fname)
 		       putStrLn ""
 		       -- get all DGRefs from DGraph
 		       let libEnv' = (Map.insert libname gc libenv)
