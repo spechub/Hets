@@ -47,7 +47,7 @@
 
 -}
 
-module LogicGraph (module LogicGraph) where
+module LogicGraph (module LogicGraph,module Logic_CASL) where
 
 -- exporting the imported Logic instances makes it more easy to access
 -- the Logic_ids defined in those modules
