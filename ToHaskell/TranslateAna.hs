@@ -231,6 +231,7 @@ translateTerm env t =
 translatePattern :: Env -> Pattern -> HsPat
 translatePattern env pat = case pat of
       QualVar (VarDecl v ty _ _) -> 
+	  if show v == "_" then HsPWildCard else
 	  let (LowerId, UnQual i) = translateId env v $ simpleTypeScheme ty
 	      in HsPVar i
       QualOp _ (InstOpId uid _t _p) sc _pos -> 
