@@ -12,7 +12,7 @@
 
 -}
 
--- does anyone ever need anything else from here??
+-- does anyone ever need anything else from me?
 module CASL.Overload (
     overloadResolution          -- :: Sign -> [FORMULA] -> Result [FORMULA]
     ) where
@@ -29,13 +29,30 @@ import qualified Common.Id      as Id
 import Data.List                ( partition )
 
 {-
-
     Idee: 
     - global Infos aus Sign berechnen + mit durchreichen
       (connected compenents, s.u.)
     - rekursiv in FORMULA absteigen, bis atomare Formel erreicht wird
     - atomaren Formeln mit minExpTerm behandeln
-
+-}
+{-
+    TODO-List:
+    * check whether Common.Lib.Rel needs to be imported
+    * retain [Pos] in TERMs and FORMULAe, don't throw them away(!)
+    * generalize 'is_unambiguous' (see 'choose') and make it available globally
+    * replace 'case' statements w/ pattern matching where possible
+    * generalize minExpFORMULA_pred/minExpTerm_op/minExpTerm_cond
+    * try to utilize Sets instead of Lists
+    * generalize pairing func.s to inl/inr
+    * check whether Qual_var expansion works as it is supposed to
+    * generalize expansion for Qual_var and Sorted_term
+    * move structural logic to higher levels, as e.g. in
+        qualifyOps = map (map qualify_op) -- map should go somewhere above
+    * sweep op-like logic from minExpTerm_cond where it is unneeded
+    * generalize zipped_all
+    * generalize qualifyTerms or implement locally - too much structural force
+    * gemeralize minimize_* or implement locally - needed only in one func. each
+    * use more let/in constructs (instead of where) to simulate workflow
 -}
 
 {-----------------------------------------------------------
@@ -136,11 +153,11 @@ minExpFORMULA_pred sign predicate terms = do
         get_profile     :: [[TERM]] -> [(PredType, [TERM])]
         get_profile cs
             = [ (pred', ts) |
-                pred' <- preds,                                 -- :: OpType
-                ts <- (permute cs),                             -- :: [TERM]
-                zipped_all (leq_SORT sign)                      -- ::  Bool
-                    (map term_sort ts)                          -- :: [SORT]
-                    (predArgs pred') ]                          -- :: [SORT]
+                pred' <- preds,                                 -- :: PredType
+                ts <- (permute cs),                             -- ::  [TERM]
+                zipped_all (leq_SORT sign)                      -- ::   Bool
+                    (map term_sort ts)                          -- ::  [SORT]
+                    (predArgs pred') ]                          -- ::  [SORT]
         pred_eq         :: (PredType, [TERM]) -> (PredType, [TERM]) -> Bool
         pred_eq (pred1,ts1) (pred2,ts2)
             = let   w1 = predArgs pred1                         -- :: [SORT]
@@ -150,7 +167,7 @@ minExpFORMULA_pred sign predicate terms = do
                     b1 = zipped_all (leq_SORT sign) s1 w1       -- ::  Bool
                     b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
                     preds_equal = (pred1 == pred2)              -- ::  Bool
-                    preds_equiv = pred1 `leqP` pred2            -- ::  Bool
+                    preds_equiv = leqP sign pred1 pred2         -- ::  Bool
                     types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
                 in b1 && b2 && (preds_equal || (preds_equiv && types_equal))
 
@@ -165,20 +182,15 @@ minExpFORMULA_eq sign eq term1 term2 = do
     pairs       <- return
         $ permute [(map head exps1), (map head exps2)]  -- :: [[TERM]]
     candidates  <- return
-        $ filter (have_supersort) pairs                 -- :: [[TERM]]
+        $ filter fit pairs                              -- :: [[TERM]]
     case candidates of
         [[t1,t2]]       -> return $ eq t1 t2 []
         _               -> error
             $ "Cannot disambiguate! Possible Expansions: "
             ++ (show exps1) ++ "\n\t" ++ (show exps2)
     where
-        have_supersort          :: [TERM] -> Bool
-        have_supersort terms
-            = not $ Set.isEmpty                         -- ::    Bool
-                $ foldr Set.intersection Set.empty      -- ::  Set.Set SORT
-                $ map term_to_supersort                 -- :: [Set.Set SORT]
-                  terms
-            where term_to_supersort = (flip supersortsOf sign) . term_sort
+        fit     :: [TERM] -> Bool
+        fit      = (have_common_supersorts sign) . (map term_sort)
 
 {-----------------------------------------------------------
     Minimal Expansions of a TERM
@@ -213,14 +225,14 @@ minExpTerm_simple sign var = do
         $ Map.findWithDefault                   -- :: Set.Set SORT
             Set.empty var (varMap sign)
     ops'        <- return
-        $ Map.findWithDefault                   -- :: Set.Set SORT
+        $ (Set.filter is_const_op)              -- :: Set.Set OpType
+        $ Map.findWithDefault                   -- :: Set.Set OpType
             Set.empty name (opMap sign)
     ops         <- return
         $ Set.fromList                          -- :: Set.Set SORT
         $ (map opRes)                           -- :: [SORT]
-        $ Set.toList                            -- :: [SORT]
-        $ (Set.filter is_const_op)              -- :: Set.Set SORT
-            ops'                                -- :: Set.Set SORT
+        $ Set.toList                            -- :: [OpType]
+            ops'                                -- :: Set.Set OpType
         -- maybe use Set.fold instead of List.map?
     cs          <- return
         $ Set.union vars ops                    -- :: Set.Set SORT
@@ -228,7 +240,7 @@ minExpTerm_simple sign var = do
         $ Set.filter (is_least_sort cs) cs      -- :: Set.Set SORT
     return
         $ qualifyTerms                          -- :: [[TERM]]
-        $ (equivalence_Classes leqF)            -- :: [[(TERM, SORT)]]
+        $ (equivalence_Classes eq)              -- :: [[(TERM, SORT)]]
         $ map pair_with_id                      -- :: [(TERM, SORT)]
         $ Set.toList least                      -- :: [SORT]
     where
@@ -239,6 +251,7 @@ minExpTerm_simple sign var = do
         is_least_sort           :: Set.Set SORT -> SORT -> Bool
         is_least_sort ss s
             = Set.size (Set.intersection ss (subsortsOf s sign)) == 1
+        eq                       = xeq_TUPLE sign
         pair_with_id            :: SORT -> (TERM, SORT)
         pair_with_id sort        = ((Simple_id var), sort)
 
@@ -340,7 +353,7 @@ minExpTerm_op sign op terms = do
                     b1 = zipped_all (leq_SORT sign) s1 w1       -- ::  Bool
                     b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
                     ops_equal = (op1 == op2)                    -- ::  Bool
-                    ops_equiv = op1 `leqF` op2                  -- ::  Bool
+                    ops_equiv = leqF sign op1 op2               -- ::  Bool
                     types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
                 in b1 && b2 && (ops_equal || (ops_equiv && types_equal))
 
@@ -374,7 +387,8 @@ minExpTerm_cond sign term1 formula term2 = do
         $ map get_profile permuted_exps         -- ::  [[([TERM], SORT)]]
     p                   <- return
         $ concat                                -- ::  [[([TERM], SORT)]]
-        $ map (equivalence_Classes eq)          -- :: [[[([TERM], SORT)]]]
+        $ map                                   -- :: [[[([TERM], SORT)]]]
+          (equivalence_Classes eq)
           profiles                              -- ::  [[([TERM], SORT)]]
     p'                  <- return
         $ map (minimize_cond sign) p            -- ::  [[([TERM], SORT)]]
@@ -383,15 +397,10 @@ minExpTerm_cond sign term1 formula term2 = do
         $ qualifyConds expanded_formula p'      -- ::   [[(TERM, SORT)]]
     where
         have_supersort          :: [TERM] -> Bool
-        have_supersort           = not . Set.isEmpty . common_supersort
-        common_supersort        :: [TERM] -> Set.Set SORT
-        common_supersort terms
-            = foldr Set.intersection Set.empty          -- ::  Set.Set SORT
-                $ map term_to_supersort terms           -- :: [Set.Set SORT]
-            where term_to_supersort = (flip supersortsOf sign) . term_sort
-        eq                      :: ([TERM], SORT) -> ([TERM], SORT) -> Bool
-        eq (_, s1) (_, s2)
-            = (leq_SORT sign s1 s2) || (geq_SORT sign s1 s2)
+        have_supersort           = not . Set.isEmpty . supersorts
+        supersorts              :: [TERM] -> Set.Set SORT
+        supersorts               = common_supersorts sign . map term_sort
+        eq                       = xeq_TUPLE sign
         qualifyConds            :: FORMULA -> [[([TERM], SORT)]] -> [[(TERM, SORT)]]
         qualifyConds f           = map $ map (qualify_cond f)
         qualify_cond            :: FORMULA -> ([TERM], SORT) -> (TERM, SORT)
@@ -404,7 +413,7 @@ minExpTerm_cond sign term1 formula term2 = do
             = [ (c, s) |                                -- :: ([TERM], SORT)
                 c <- cs,                                -- ::  [TERM]
                 have_supersort c,                       -- ::   Bool
-                s <- Set.toList $ common_supersort c ]  -- ::   SORT
+                s <- Set.toList $ supersorts c ]        -- ::   SORT
 
 {-----------------------------------------------------------
     Divide a Set (List) into equivalence classes w.r. to eq
@@ -487,26 +496,73 @@ term_sort term'  = case term' of
         "minExpTerm: unsorted TERM after expansion"
 
 {-----------------------------------------------------------
-    Return True if s1 <= s2
+    Set of SubSORTs common to all given SORTs
+-----------------------------------------------------------}
+common_subsorts :: Sign -> [SORT] -> Set.Set SORT
+common_subsorts sign = let
+    get_subsorts = flip subsortsOf sign
+    in (foldr Set.intersection Set.empty) . (map get_subsorts)
+
+{-----------------------------------------------------------
+    Set of SuperSORTs common to all given SORTs
+-----------------------------------------------------------}
+common_supersorts :: Sign -> [SORT] -> Set.Set SORT
+common_supersorts sign = let
+    get_supersorts = flip supersortsOf sign
+    in (foldr Set.intersection Set.empty) . (map get_supersorts)
+
+{-----------------------------------------------------------
+    True if all SORTs have a common subSORT
+-----------------------------------------------------------}
+have_common_subsorts :: Sign -> [SORT] -> Bool
+have_common_subsorts s = (not . Set.isEmpty . common_subsorts s)
+
+{-----------------------------------------------------------
+    True if all SORTs have a common superSORT
+-----------------------------------------------------------}
+have_common_supersorts :: Sign -> [SORT] -> Bool
+have_common_supersorts s = (not . Set.isEmpty . common_supersorts s)
+
+{-----------------------------------------------------------
+    True if s1 <= s2 OR s1 >= s2
+-----------------------------------------------------------}
+xeq_SORT :: Sign -> SORT -> SORT -> Bool
+xeq_SORT sign s1 s2 = (leq_SORT sign s1 s2) || (geq_SORT sign s1 s2)
+
+{-----------------------------------------------------------
+    True if s1 <= s2 OR s1 >= s2
+-----------------------------------------------------------}
+xeq_TUPLE :: Sign -> (a, SORT) -> (a, SORT) -> Bool
+xeq_TUPLE sign (_,s1) (_,s2) = xeq_SORT sign s1 s2
+
+{-----------------------------------------------------------
+    True if s1 <= s2
 -----------------------------------------------------------}
 leq_SORT :: Sign -> SORT -> SORT -> Bool
 leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
 -- leq_SORT = (flip Set.member) . (flip supersortsOf)
 
 {-----------------------------------------------------------
-    Return True if s1 >= s2
+    True if s1 >= s2
 -----------------------------------------------------------}
 geq_SORT :: Sign -> SORT -> SORT -> Bool
 geq_SORT sign s1 s2 = Set.member s2 (subsortsOf s1 sign)
 -- geq_SORT = (flip Set.member) . (flip subsortsOf)
 
-{- Die hier fehlen noch - sind aber essentiell :) -}
-leqF :: a -> a -> Bool -- Funktionsgleichheit
-leqF _ _ = True
-
-leqP :: a -> a -> Bool -- Praedikatsgleichheit
-leqP _ _ = True
-
+{-----------------------------------------------------------
+    True if o1 ~F o2
+-----------------------------------------------------------}
+leqF :: Sign -> OpType -> OpType -> Bool
+leqF sign o1 o2 = zipped_all are_legal (opArgs o1) (opArgs o2)
+                && have_common_supersorts sign [(opRes o1), (opRes o2)]
+    where are_legal a b = have_common_subsorts sign [a, b]
+            
+{-----------------------------------------------------------
+    True if p1 ~P p2
+-----------------------------------------------------------}
+leqP :: Sign -> PredType -> PredType -> Bool
+leqP sign p1 p2 = zipped_all are_legal (predArgs p1) (predArgs p2)
+    where are_legal a b = have_common_subsorts sign [a, b]
 
 {-
 
