@@ -1,0 +1,236 @@
+
+BASIC-SPEC      ::= BASIC-ITEMS ... BASIC-ITEMS  |  { }
+
+BASIC-ITEMS     ::= SIG-ITEMS  
+                  | class/classes CLASS-ITEM { CLASS-SPEC } ;/
+                  | class instance/instances CLASS-ITEM { CLASS-SPEC } ;/
+                  | free      type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
+                  | generated type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
+                  | generated { SIG-ITEMS ... SIG-ITEMS } ;/
+                  | var/vars GEN-VAR-DECL ; ... ; GENVAR-DECL ;/
+                  | forall GEN-VAR-DECL ; ... ; GEN-VAR-DECL
+                             "." AXIOM "." ... "." AXIOM ;/ 
+                  | "." AXIOM "." ... "." AXIOM ;/ 
+
+%% for backwards compatibility with CASL v1.0
+BASIC-ITEMS     ::= axiom/axioms AXIOM ;...; AXIOM ;/
+
+SIG-ITEMS       ::= sort/sorts SORT-ITEM ; ... ; SORT-ITEM ;/
+                  | type/types TYPE-ITEM ; ... ; TYPE-ITEM ;/
+                  | type instance/instances TYPE-ITEM ; ... ; TYPE-ITEM ;/
+                  | op/ops OP-ITEM ; ... ; OP-ITEM ;/
+                  | program/programs PROG-EQ ; ... ; PROG-EQ ;/
+                  | pred/preds PRED-ITEM ; ... ; PRED-ITEM ;/      %% old style
+                  | type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
+
+%% for backwards compatibility with CASL
+SORT-ITEM       ::= TYPE-NAME , ... , TYPE-NAME 
+                  | TYPE-NAME , ... , TYPE-NAME < TYPE-NAME 
+                  | TYPE-NAME = { VAR : TYPE "." FORMULA } 
+                  | TYPE-NAME = ... = TYPE-NAME   
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TYPE-ITEM       ::= TYPE-NAME , ... , TYPE-NAME  %% same as SORT-ITEM
+                  | TYPE-DEFN-PATTERN , .... , TYPE-DEFN-PATTERN : KIND
+                  | TYPE-DEFN-PATTERN = PSEUDOTYPE
+                  | TYPE , ... , TYPE < TYPE      %% with global TYPE-VARs
+                  | TYPE = { VAR : TYPE "." FORMULA }   %% "" 
+                  | TYPE = ... = TYPE                   %% ""
+
+TYPE-DEFN-PATTERN ::= TYPE-NAME 
+		    | TYPE-NAME (TYPE-ARG) ... (TYPE-ARG)
+%% "(" of first TYPE-ARG ist required 
+%% in order to recognize the end of the TYPE-NAME 
+
+TYPE-ARG        ::= TYPE-VAR                 %% globally declared
+		  | TYPE-VAR + | TYPE-VAR -  %% globally declared
+		  | TYPE-VAR : EXT-CLASS      
+		  | TYPE-VAR < TYPE | TYPE-VAR > TYPE
+
+%% curried kind!
+PSEUDOTYPE      ::= TYPE 
+                  | \ TYPE-ARG "." PSEUDOTYPE
+                  | \ (TYPE-ARG) ... (TYPE-ARG) "." PSEUDOTYPE
+
+CLASS-ITEM      ::= CLASS-NAME 
+                  | CLASS-NAME , ... , CLASS-NAME < CLASS
+                  | CLASS-NAME = CLASS
+                  | CLASS-NAME = ... = CLASS-NMAE
+
+CLASS-SPEC      ::= BASIC-ITEMS ... BASIC-ITEMS  
+%% without "class" and without "type instance"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+OP-ITEM         ::= OP-NAME , ... , OP-NAME : TYPE-SCHEME
+                  | OP-NAME , ... , OP-NAME : TYPE-SCHEME, OP-ATTR ,..., OP-ATTR 
+                  | OP-NAME : TYPE = TERM    %% real constant (no shortcut)  
+                  | OP-NAME OP-ARGS : TYPE = TERM    %% This form is 
+                  | OP-NAME OP-ARGS :? TYPE = TERM   %% not encouraged
+                  | OP-NAME :? TYPE = TERM   %% shortcut for OP-NAME () :? ...
+				             %% strongly discouraged
+
+%% OP-ARGS instead of OP-HEAD 
+
+OP-NAME        ::= ID | ID [TYPE-INST-DECL; ... ; TYPE-INST-DECL]
+
+TYPE-INST-DECL ::= TYPE-VAR , ... , TYPE-VAR   %% global type vars
+                 | TYPE-VAR-DECL
+
+OP-ATTR         ::= BIN-ATTR |  unit TERM
+BIN-ATTR        ::= assoc  |  comm  |  idem 
+
+PRED-ITEM       ::= OP-NAME, ..., OP-NAME: PRODUCT-TYPE  %% no currying!
+                  | OP-NAME ARG-DECLS <=> FORMULA  %% This form is 
+                                                   %% not encouraged.
+                  | OP-NAME <=> FORMULA            %% Nor is this one.
+
+%% PRED-TYPE =  PRODUCT-TYPE
+
+%% curried ARG-DECLs must be put in parenthesis
+%% because a TYPE consumes the following input
+
+OP-ARGS         ::= ARG-DECLS ... ARG-DECLS
+ARG-DECLS       ::= ( PATTERN ; ... ; PATTERN ) | ()
+
+%% can this be recognized? (VARs are IDs!)
+PATTERN         ::= VAR , ... , VAR        % globally declared 
+		  | VAR-DECL
+		  | MIXFIX-PATTERN , ... , MIXFIX-PATTERN
+
+MIXFIX-PATTERN  ::= INST-PATTERN ... INST-PATTERN
+                  | INST-PATTERN ... INST-PATTERN : TYPE
+
+INST-PATTERN    ::= SIMPLE-PATTERN 
+		  | SIMPLE-PATTERN [TYPE, ... , TYPE]
+		  | ( PATTERN ; ... ; PATTERN ) | ()   %% without instantiation  
+
+SIMPLE-PATTERN  ::= "__"
+		  | NO-BRACKET-TOKEN          %% VAR or part of ID
+                  | [ PATTERN ; ... ; PATTERN ] | [ ]         %% mixfix 
+		  | { PATTERN ; ... ; PATTERN } | { }         %% mixfix 
+
+
+PROG-EQ         ::= MIXFIX-PATTERN = TERM        %% TERM without formulae
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+DATATYPE-DECL   ::= SIMPLE-DATATYPE-DECL | DERIVING-DATATYPE-DECL
+
+SIMPLE-DATATYPE-DECL   
+                ::= TYPE-DEFN-PATTERN "::=" 
+                                ALTERNATIVE "|" ... "|" ALTERNATIVE
+DERIVING-DATATYPE-DECL
+                ::= SIMPLE-DATATYPE-DECL deriving CLASS , ... , CLASS
+
+UNINST-OP-NAME  :: = ID
+
+%% take instance-notation from TYPE-DEFN-PATTERN 
+ALTERNATIVE     ::= UNINST-OP-NAME COMPONENTS ... COMPONENTS     
+                  | UNINST-OP-NAME COMPONENTS ... COMPONENTS ?   
+                  | UNINST-OP-NAME
+                  | sort/sorts TYPE-NAME , ... , TYPE-NAME
+                  | type/types TYPE , ... , TYPE                  
+
+%% support for nested products
+COMPONENTS      ::= ( COMPONENT ; ... ; COMPONENT ) 
+COMPONENT       ::= UNINST-OP-NAME , ... , UNINST-OP-NAME : TYPE
+                  | UNINST-OP-NAME , ... , UNINST-OP-NAME :? TYPE               
+                  | TYPE
+		  | ( COMPONENT ; ... ; COMPONENT )  
+
+GEN-VAR-DECL    ::= VAR-DECL | TYPE-VAR-DECL
+VAR-DECL        ::= VAR ,..., VAR : TYPE
+
+TYPE-VAR-DECL   ::= TYPE-VAR , ... , TYPE-VAR: CLASS
+		  | TYPE-VAR , ... , TYPE-VAR < TYPE
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+KIND            ::= CLASS
+		  | EXT-CLASS -> ... -> EXT-CLASS -> CLASS
+
+EXT-CLASS       ::= CLASS | CLASS + | CLASS -
+
+CLASS         ::= SIMPLE-CLASS , ... , SIMPLE-CLASS
+
+SIMPLE-CLASS  ::= type | CLASS-NAME | ( CLASS )
+		| { SIMPLE-ID . SIMPLE-ID < TYPE} 
+		| { SIMPLE-ID . SIMPLE-ID > TYPE} 
+		
+TYPE-SCHEME     ::= TYPE | forall TYPE-VAR-DECL ; ... ; TYPE-VAR-DECL . TYPE
+
+PRIM-TYPE      ::= NO-BRACKET-TOKEN   %% TYPE-VAR or TYPE-NAME
+	         | (TYPE)
+		 | ()                 %% unit
+
+MIXFIX-TYPE      ::= PRIM-TYPE ... PRIM-TYPE
+                   | PRIM-TYPE ... PRIM-TYPE : KIND
+
+PRODUCT-TYPE     ::= MIXFIX-TYPE * ... * MIXFIX-TYPE
+
+TYPE             ::= PRODUCT-TYPE ARR ... ARR PRODUCT-TYPE
+
+ARR              ::= ->? | -> | -->? | -->
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+FORMULA         ::= TERM   %% of type logical or ?unit
+
+%% EQUAL-OP        ::= "=" | =e=
+%% BIN-CONNECT     ::= /\ | \/ | => | if | <=>
+
+%% also Prelude: not, true, false, def, __when__else__
+
+TERM            ::= MIXFIX-TERM
+                  | MIXFIX-TERM TYPE-OP TYPE
+		  | MIXFIX-TERM QUANT-TERM
+		  | QUANT-TERM
+		  | MIXFIX-TERM CASE-TERM
+		  | CASE-TERM
+
+MIXFIX-TERM     ::= INST-TERM ... INST-TERM
+
+TYPE-OP         ::= ":" | as | in
+
+%% ";" is already used as item-separator
+CASE-TERM       ::= case TERM of PATTERN -> TERM | ... | PATTERN -> TERM
+
+QUANT-TERM      ::= QUANTIFIER  VAR-DECL ;...; VAR-DECL "." TERM 
+                  | forall  TYPE-VAR-DECL ;...; TYPE-VAR-DECL "." TERM %% at top
+		  | \ LAMBDA-DOT TERM     % for unit
+		  | \ VAR-DECL LAMBDA-DOT TERM
+		  | \ (VAR-DECL) ... (VAR-DECL) LAMBDA-DOT TERM
+
+%% case/lambda-Terms must be without formula ingredients
+
+LAMBDA-DOT      ::= "." | ".!"
+QUANTIFIER      ::= forall  |  exists  |  exists!
+
+INST-TERM       ::= SIMPLE-TERM
+		  | SIMPLE-TERM [TYPE, ... , TYPE]
+		  | LITERAL
+                  | QUAL-PRED-NAME | QUAL-VAR-NAME | QUAL-OP-NAME 
+                  | ( TERM , ... , TERM )  |  ( )		  
+
+SIMPLE-TERM     ::= "__"
+		  | NO-BRACKET-TOKEN              %% plus formula keywords     
+                  | [ TERM , ... , TERM ]  |  [ ]     %% mixfix
+                  | { TERM , ... , TERM }  |  { }     %% mixfix
+
+QUAL-VAR-NAME   ::= ( var VAR : TYPE )
+
+INST-OP-NAME    ::= ID [TYPE, ... , TYPE]
+
+QUAL-PRED-NAME  ::= ( pred UNINST-OP-NAME : TYPE-SCHEME )
+		  | ( pred INST-OP-NAME : TYPE)
+
+QUAL-OP-NAME    ::= ( op UNINST-OP-NAME : TYPE-SCHEME )
+		  | ( op INST-OP-NAME : TYPE)
+
+TYPE-NAME       ::= ID  %% MIXFIX-COMPOUND-ID
+
+CLASS-NAME      ::= SIMPLE-ID %% disjoint with TYPE-VAR and TYPE-NAME ingredients
+VAR             ::= ID 
+TYPE-VAR        ::= SIMPLE-ID

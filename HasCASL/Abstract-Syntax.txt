@@ -21,9 +21,8 @@ TYPE-DECL           ::= TYPE-VAL-DECL | TYPE-FUN-DECL
 TYPE-VAL-DECL       ::= type-val-const-decl TYPE-NAME+ KIND
 TYPE-FUN-DECL       ::= type-constr-fun-decl TYPE-PATTERN+ CLASS+
 TYPE-PATTERN        ::= type-constr-pattern TYPE-NAME TYPE-ARG* 
-TYPE-ARG            ::= TYPE-VARS | TYPE-ARG-DECL
-TYPE-VARS           ::= type-vars TYPE-VAR+
-TYPE-ARG-DECL       ::= type-arg-decl TYPE-VAR+ EXT-CLASS
+TYPE-ARG            ::= TYPE-VAR | TYPE-ARG-DECL
+TYPE-ARG-DECL       ::= type-arg-decl TYPE-VAR EXT-CLASS
 		    
 TYPE-ALIAS-DEFN     ::= TYPE-ALIAS-VAL-DEFN | TYPE-ALIAS-FUN-DEFN
 TYPE-ALIAS-VAL-DEFN ::= type-alias-val-defn TYPE-NAME PSEUDOTYPE
@@ -214,8 +213,8 @@ INT-QUANTIFIER   ::= int-all | int-exists | int-exists-uniquely
 
 
 
-SORT: obsolete
-CLASS-NAME       ::= TOKEN-ID
+%% SORT: obsolete
+CLASS-NAME       ::= TOKEN-ID   %% or SIMPLE-ID
 TYPE-NAME ::= ID 
 OP-NAME          ::= ID
 PRED-NAME: obsolete
@@ -257,7 +256,7 @@ SUBTYPE-DEFN     ::= subtype-defn TYPE-PATTERN VAR TYPE FORMULA
 ALTERNATIVE      ::= ... | SUBTYPE
 SUBTYPE         ::= subtype TYPE
 
-TERM             ::= ... | MEMBERSHIP
+FORMULA          ::= ... | MEMBERSHIP
 MEMBERSHIP       ::= membership TERM TYPE
 
 TERM             ::= ... | CAST
@@ -268,241 +267,5 @@ CAST             ::= cast TERM TYPE
 
 
 
-
-
-
-Concrete Syntax
-===============
-
-
-BASIC-SPEC      ::= BASIC-ITEMS...BASIC-ITEMS  |  { }
-
-BASIC-ITEMS     ::= SIG-ITEMS  
-                  | class/classes CLASS-DECL ;...; CLASS-DECL ;/
-                  | instance/instances INSTANCE-DECL ;...; INSTANCE-DECL ;/
-                  | free      type/types DATATYPE-DECL ;...; DATATYPE-DECL ;/
-                  | generated type/types DATATYPE-DECL ;...; DATATYPE-DECL ;/
-                  | generated { SIG-ITEMS...SIG-ITEMS } ;/
-                  | var/vars GEN-VAR-DECL ;...; GEN-VAR-DECL ;/
-                  | forall GEN-VAR-DECL ;...; GEN-VAR-DECL
-                             "." AXIOM "."..."." AXIOM ;/ 
-                  | "." AXIOM "."..."." AXIOM ;/ 
-
-The following alternative concrete syntax productions:
-
-BASIC-ITEMS     ::=  var/vars GEN-VAR-DECL ;...; GEN-VAR-DECL 
-                              "." AXIOM "."..."." AXIOM ;/
-                  |  axiom/axioms AXIOM ;...; AXIOM ;/
-
-are included for backwards compatibility with CASL v1.0, but may be
-removed in some future version.
-
-SIG-ITEMS       ::= sort/sorts SORT-ITEM ;...; SORT-ITEM ;/
-                  | type/types TYPE-ITEM;...; TYPE-ITEM ;/
-                  | op/ops OP-ITEM ;...; OP-ITEM ;/
-                  | pred/preds PRED-ITEM ;...; PRED-ITEM  ;/
-                  | type/types DATATYPE-DECL ;...; DATATYPE-DECL ;/
-
-SORT-ITEM       ::= TYPE-NAME ,..., TYPE-NAME 
-                  | TYPE-NAME ,..., TYPE-NAME < TYPE-NAME 
-                  | TYPE-NAME = { VAR : TYPE "." FORMULA } 
-                  | TYPE-NAME =...= TYPE-NAME   
-
-TYPE-ITEM       ::= TYPE-NAME ,..., TYPE-NAME: KIND
-                  | TYPE-PATTERN ,..., TYPE-PATTERN: 
-                                CLASS ,..., CLASS
-                  | TYPE-NAME = PSEUDOTYPE
-                  | TYPE-PATTERN = TYPE
-
-TYPE-PATTERN
-                ::= TYPE-NAME
-                  | TYPE-NAME(TYPE-VAR-OR-DECL ;...; TYPE-VAR-OR-DECL)
-                  | TYPE-NAME TYPE-VAR-OR-DECL ... TYPE-VAR-OR-DECL
-TYPE-VAR-OR-DECL::= TYPE-VAR | TYPE-VAR: EXT-CLASS
-PSEUDOTYPE      ::= TYPE 
-                  | \ TYPE-VAR-DECL ;...; TYPE-VAR-DECL "." TYPE
-
-CLASS-ITEMS     ::= class/classes CLASS-ITEM; ...; CLASS-ITEM
-CLASS-ITEM      ::= CLASS-NAME 
-                  | CLASS-NAME ,..., CLASS-NAME < CLASS-NAME
-
-INSTANCE-ITEMS  ::= instance/instances INSTANCE-ITEM ;...; INSTANCE-ITEM
-INSTANCE-ITEM   ::= INSTANCE-DECL | INSTANCE-DEFN
-INSTANCE-DECL   ::= CLASS-NAME < CLASS-NAME
-                | TYPE-VAR: CLASS-NAME < CLASS-NAME
-                | TYPE: KIND
-                | TYPE(CLASS, ...,CLASS): CLASS
-                | TYPE-PATTERN: CLASS
-INSTANCE-DEFN   ::= INSTANCE-DECL { BASIC-SPEC }
-
-OP-ITEM         ::= OP-NAME, ..., OP-NAME: TYPE-SCHEME
-                  | OP-NAME, ..., OP-NAME: TYPE-SCHEME, OP-ATTR ,..., OP-ATTR 
-                  | OP-NAME: TYPE = TERM
-                  | OP-NAME: TYPE =rec TERM
-                  | OP-NAME OP-ARGS : TYPE = TERM    %% This form is 
-                  | OP-NAME OP-ARGS :? TYPE = TERM   %% not encouraged
-
-%% OP-ARGS instead of OP-HEAD and PRED-HEAD
-
-%% OP-TYPE: obsolete
-
-%% SOME-SORTS: obsolete 
-
-OP-ATTR         ::= assoc  |  comm  |  idem  |  unit TERM
-
-PRED-ITEM       ::= OP-NAME, ..., OP-NAME: TYPE
-                  | OP-NAME OP-ARGS <=> FORMULA  %% This form is 
-                                                 %% not encouraged.
-                  | OP-NAME <=> FORMULA          %% Nor is this one.
-                  | OP-NAME: TYPE = TERM          %% \-Term -? unit
-                  | OP-NAME: TYPE =rec TERM       %% \-Term ->? unit
-
-%% PRED-TYPE: obsolete
-
-OP-ARGS         ::= ARG-DECLS ... ARG-DECLS
-ARG-DECLS       ::= ( ARG-DECL ;...; ARG-DECL ) 
-ARG-DECL        ::= VAR ,..., VAR : TYPE
-
-%% curried ARG-DECLs must be but in parenthesis
-%% because a TYPE would "eat" a following VAR 
-
-DATATYPE-DECL   ::= SIMPLE-DATATYPE-DECL | DERIVING-DATATYPE-DECL
-
-SIMPLE-DATATYPE-DECL   
-                ::= TYPE-PATTERN "::=" 
-                                ALTERNATIVE "|"..."|" ALTERNATIVE
-DERIVING-DATATYPE-DECL
-                ::= SIMPLE-DATATYPE-DECL deriving CLASS ,..., CLASS
-
-ALTERNATIVE     ::= OP-NAME COMPONENTS ... COMPONENTS     
-                  | OP-NAME COMPONENTS ... COMPONENTS ?   
-                  | OP-NAME                           
-                  | sort/sorts TYPE-NAME ,..., TYPE-NAME
-                  | type/types TYPE ,..., TYPE                  
-
-%% compare with OP-ARGS
-COMPONENTS      ::= ( COMPONENT ;...; COMPONENT ) 
-COMPONENT       ::= OP-NAME ,..., OP-NAME : TYPE
-                  | OP-NAME ,..., OP-NAME : ? TYPE               
-                  | TYPE                                        
-
-VAR-DECL        ::= VAR ,..., VAR : TYPE
-TYPE-VAR-DECL   ::= TYPE-VAR, ..., TYPE-VAR: CLASS ,..., CLASS 
-
-KIND            ::= EXT-CLASS * ... * EXT-CLASS -> CLASS,...,CLASS
-EXT-CLASS       ::= CLASS ,..., CLASS | + | - 
-                  | CLASS ,..., CLASS +
-                  | CLASS ,..., CLASS -
-
-%% VARIANCE        ::= covariant | contravariant | invariant
-
-CLASS           ::= type | {TYPE} | CLASS-NAME
-
-TYPE-SCHEME     ::= TYPE | forall TYPE-VAR-DECL;...;TYPE-VAR-DECL. TYPE
-
-PRIM-TYPE      ::= NO-BRACKET-TOKEN   %% TYPE-VAR or TYPE-NAME
-	         | (TYPE)
-		 | ()                 %% unit
-
-MIXFIX-TYPE      ::= PRIM-TYPE ... PRIM-TYPE 
-
-PRODUCT-TYPE     ::= MIXFIX-TYPE * ... * MIXFIX-TYPE
-
-TYPE             ::= PRODUCT-TYPE ARR ... ARR PRODUCT-TYPE
-
-ARR              ::= ->? | -> | -->? | -->
-
-
-AXIOM           ::= EXT-FORMULA | TYPE-QUANTIFICATION
-TYPE-QUANTIFICATION
-                ::= forall TYPE-VAR-DECL ;...; TYPE-VAR-DECL "." EXT-FORMULA
-EXT-FORMULA     ::= FORMULA | OP-NAME =rec TERM
-
-FORMULA         ::= QUANTIFIER  VAR-DECL ;...; VAR-DECL "." FORMULA
-                  | FORMULA /\ FORMULA /\.../\ FORMULA
-                  | FORMULA \/ FORMULA \/...\/ FORMULA
-                  | FORMULA => FORMULA
-                  | FORMULA if FORMULA
-                  | FORMULA <=> FORMULA
-                  | not FORMULA
-                  | true | false
-                  | TERM =e= TERM
-                  | TERM = TERM
-                  | ( FORMULA )
-                  | MIXFIX...MIXFIX
-                  | TERM
-
-QUANTIFIER      ::= forall  |  exists  |  exists!
-
-TERMS:          obsolete
-
-TERM            ::= MIXFIX...MIXFIX
-
-MIXFIX          ::= NO-BRACKET-TOKEN  |  LITERAL  |  PLACE
-                  | QUAL-PRED-NAME  |  QUAL-VAR-NAME  |  QUAL-OP-NAME 
-                  | OP-NAME
-                  | OP-NAME(TYPE, ..., TYPE)
-                  | OP-NAME TYPE ... TYPE
-                  | TERM : TYPE
-                  | TERM as TYPE
-                  | TERM when FORMULA else TERM
-                  | TERM ... TERM
-                  | ( TERM ,..., TERM )
-                  | [ TERM ,..., TERM ]  |  [ ]
-                  | { TERM ,..., TERM }  |  { }
-                  | pr1(TERM) | ... | prn(TERM)
-                  | ()
-                  | \ VAR-DECL "." ! TERM       
-                  | \ VAR-DECL "."  TERM
-                  | case TERM of TERM -> TERM; ... TERM -> TERM ;/
-                  | TERM res TERM
-                  | tt | tt TYPE | tt(TYPE)
-                  | ff | ff TYPE | ff(TYPE)
-                  | neg TERM
-                  | TERM and ... and TERM
-                  | TERM or ... or TERM
-                  | TERM impl TERM
-                  | TERM equiv TERM
-                  | INT-QUANTIFIER TERM | INT-QUANTIFIER TYPE TERM
-                  | INT-QUANTIFIER(TYPE) TERM
-                  
-
-INT-QUANTIFIER ::= all | ex | ex!
-
-QUAL-VAR-NAME   ::= ( var VAR : TYPE )
-
-QUAL-PRED-NAME  ::= ( pred OP-NAME : TYPE )
-
-QUAL-OP-NAME    ::= ( op OP-NAME : TYPE )
-
-TYPE-NAME::= ID 
-OP-NAME         ::= ID
-PRED-NAME: obsolete
-CLASS-NAME      ::= TOKEN-ID
-VAR             ::= SIMPLE-ID 
-TYPE-VAR        ::= SIMPLE-ID
-
-
-SIMPLE-ID       ::= WORDS
-ID              ::= TOKEN-ID  |  MIXFIX-ID
-TOKEN-ID        ::= TOKEN
-MIXFIX-ID       ::= TOKEN-ID PLACE-TOKEN-ID ... PLACE-TOKEN-ID
-                  |          PLACE-TOKEN-ID ... PLACE-TOKEN-ID
-PLACE-TOKEN-ID  ::= PLACE TOKEN-ID
-                  | PLACE
-PLACE           ::= __
-
-TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR 
-                  | SIGNS
-NO-BRACKET-TOKEN::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR
-                  | NO-BRACKET-SIGNS
-
-SIGNS           ::= NO-BRACKET-SIGNS  |  BRACKET-SIGNS
-                  | NO-BRACKET-SIGNS BRACKET-SIGNS
-BRACKET-SIGNS   ::= BRACKET SIGNS
-                  | BRACKET
-BRACKET         ::= [  |  ]  |  {  |  }
-
-LITERAL         ::= DIGITS  |  FRACTION  |  FLOATING  |  STRING
 
 
