@@ -30,7 +30,8 @@ import PrettyPrint
 -- import IOExts (trace)
 
 instance PrettyPrint BASIC_SPEC where
-    printText0 ga (Basic_spec l) = vcat (map (printText0 ga) l) 
+    printText0 ga (Basic_spec l) = 
+	if null l then braces empty else vcat (map (printText0 ga) l) 
 
 semiT ga l = cat(punctuate semi (map (printText0 ga) l) )
 
