@@ -591,6 +591,7 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
            addSentences $ map makeInjective 
                             $ filter ( \ (_, _, ces) -> not $ null ces) 
                               comps
+           addSentences $ makeDisjSubsorts s sbs
            addSentences $ concatMap ( \ c -> map (makeDisjToSort c) sbs)
                         comps 
            addSentences $ makeDisjoint comps 
@@ -599,6 +600,24 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
                                map (makeUndefForm ses) ttrips) sels
          _ -> return ()
        return cs
+
+makeDisjSubsorts :: SORT -> [SORT] -> [Named (FORMULA f)]
+makeDisjSubsorts d subs = case subs of
+    [] -> []
+    s : rs -> map (makeDisjSubsort s) rs ++ makeDisjSubsorts d rs
+  where
+  makeDisjSubsort :: SORT -> SORT -> Named (FORMULA f)
+  makeDisjSubsort s1 s2 = let
+     n = mkSimpleId "x"
+     pd = posOfId d
+     p1 = posOfId s1
+     p2 = posOfId s2
+     p = [pd, p1, p2]
+     v = Var_decl [n] d [pd]
+     qv = toQualVar v
+     in NamedSen ("ga_disjoint_sorts_" ++ showId s1 "_" ++ showId s2 "") $
+     mkForall [v] (Negation (Conjunction [
+              Membership qv s1 [p1], Membership qv s2 [p2]] p) p) p
 
 makeDisjToSort :: (Id, OpType, [COMPONENTS]) -> SORT -> Named (FORMULA f)
 makeDisjToSort a s = 
@@ -621,12 +640,13 @@ makeInjective a =
         p) p
 
 makeDisjoint :: [(Id, OpType, [COMPONENTS])] -> [Named (FORMULA f)]
-makeDisjoint [] = []
-makeDisjoint (a:as) = map (makeDisj a) as ++ makeDisjoint as
-makeDisj :: (Id, OpType, [COMPONENTS]) 
-                           -> (Id, OpType, [COMPONENTS])
-                           -> Named (FORMULA f)
-makeDisj a1 a2 = 
+makeDisjoint l = case l of
+    [] -> []
+    c : cs -> map (makeDisj c) cs ++ makeDisjoint cs
+  where
+  makeDisj :: (Id, OpType, [COMPONENTS]) -> (Id, OpType, [COMPONENTS])
+           -> Named (FORMULA f)
+  makeDisj a1 a2 = 
     let (c1, v1, t1, _) = selForms1 "X" a1
         (c2, v2, t2, _) = selForms1 "Y" a2
         p = [posOfId c1, posOfId c2]

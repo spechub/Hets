@@ -16,6 +16,8 @@
                               X1 = Y1 /\ X2 = Y2 /\ X3 = Y3 /\ X4 = Y4 %(ga_injective_c)%,
                   . forall X1:a; Y1:a
                         . c(X1) = c(Y1) <=> X1 = Y1 %(ga_injective_c)%,
+                  . forall x:s
+                        . not (x in s2 /\ x in s1) %(ga_disjoint_sorts_s2_s1)%,
                   . not c in s2 %(ga_disjoint_c_sort_s2)%,
                   . not c in s1 %(ga_disjoint_c_sort_s1)%,
                   . forall X1:a; X2:t; X3:t; X4:t
