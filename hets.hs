@@ -34,6 +34,7 @@ import Comorphisms.LogicGraph
 import Logic.Grothendieck
 import Static.AnalysisLibrary
 import Static.DevGraph
+import Static.PrintDevGraph
 
 --import Syntax.Print_HetCASL
 #ifdef UNI_PACKAGE
@@ -109,6 +110,7 @@ processFile opt file =
                                  Just (ln,ld1,_,lenv) -> do
                                    when (hasEnvOut opt)
                                         (writeFileInfo opt ds file ln lenv)
+                                   putIfVerbose opt 5 (showPretty lenv "")
                                    --checkFile opt file ln lenv
                                    return (ld1,res)
                                  Nothing -> return (ld, res)
