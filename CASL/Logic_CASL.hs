@@ -55,8 +55,6 @@ instance Syntax CASL BASIC_SPEC
 	 parse_symb_items CASL = symbItems
 	 parse_symb_map_items CASL = symbMapItems
 
-data CASL_sublogics = CASL_ deriving (Show,Eq,Ord)
-
 instance Typeable Sublogics.CASL_Sublogics where
     typeOf (Sublogics.CASL_SL _ _ _ _ _ _) = mkAppTy (mkTyCon "CASL_SL") []
 
