@@ -1,9 +1,9 @@
 {- |
-   Module     : $Header$
-   Author     : Maciek Makowski
-   Maintainer : m.makowski@students.mimuw.edu.pl
-   Year       : 2003
-   Copyright   :  
+   Module      :  $Header$
+   Author      :  Maciek Makowski
+   Maintainer  :  hets@tzi.de
+   Year        :  2003
+   Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004
    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
    Stability   :  provisional
    Portability :  non-portable (via imports)
@@ -168,11 +168,16 @@ unitSpec l =
        kSpec <- asKey specS
        asp <- groupArchSpec l
        return (Syntax.AS_Architecture.Arch_unit_spec asp (map tokPos [kArch, kSpec]))
-    <|> -- unit type
+    <|> -- unit type 
+	{- NOTE: this can also be a spec name. If this is the case, this unit spec 
+	   will be converted on the static analysis stage.
+	   See Static.AnalysisArchitecture.ana_UNIT_SPEC. -}
     try (do (gss, poss) <- unitArgs l
 	    gs <- groupSpec l
 	    return (Syntax.AS_Architecture.Unit_type gss (emptyAnno gs) poss))
     <|> -- specification name 
+	{- NOTE: this option will never be executed as the spec name will be parsed as
+	   unit type (see the comment above). -}
     do name <- simpleId
        return (Syntax.AS_Architecture.Spec_name name)
 
