@@ -45,8 +45,9 @@ import Logic
 import AS_Structured
 import AS_Architecture
 import AS_Library
+import FiniteMap
 
-type Table a b = [(a,b)]  -- very inefficient, improve!
+
 
 -- Keep structure of specifications, 
 -- while replacing basic specs and symbol maps with their static semantics
@@ -85,9 +86,9 @@ data GenericityEnv = GenericityEnv {
 -- Follows the semantic domains of the architectural semantics
 type CompSigs = G_sign_list
 type UnitSig = (CompSigs, G_sign)
-type StBasedUnitCtx = Table UNIT_NAME Node
+type StBasedUnitCtx = FiniteMap UNIT_NAME Node
 type BasedParUnitSig = (Node, UnitSig)
-type StParUnitCtx = Table UNIT_NAME BasedParUnitSig
+type StParUnitCtx = FiniteMap UNIT_NAME BasedParUnitSig
 type ExtStUnitCtx = (StParUnitCtx, StBasedUnitCtx, G_diagram)
 type ArchSig = (ExtStUnitCtx, UnitSig)
 
@@ -98,8 +99,8 @@ data GlobalEntry =
   | ArchSpecDefnEnv ArchSig
   | UnitSpecDefnEnv UnitSig
 
-data GlobalEnv = GlobalEnv (Table SIMPLE_ID GlobalEntry) [Annotation]
-emptyGlobalEnv = []
+data GlobalEnv = GlobalEnv (FiniteMap SIMPLE_ID GlobalEntry) [Annotation]
+emptyGlobalEnv = emptyFM
 
 
 -- Flattened global environment
@@ -119,11 +120,11 @@ data FGlobalEntry =
    | FArchSpecDefnEnv ArchSig
    | FUnitSpecDefnEnv UnitSig
 			
-data FGlobalEnv = FGlobalEnv (Table SIMPLE_ID FGlobalEntry) [Annotation]
-emptyFGlobalEnv = []
+data FGlobalEnv = FGlobalEnv (FiniteMap SIMPLE_ID FGlobalEntry) [Annotation]
+emptyFGlobalEnv = emptyFM
 
 
-type LibEnv = Table String (GlobalEnv, LIB_DEFN)
+type LibEnv = FiniteMap String (GlobalEnv, LIB_DEFN)
 
-emptyLibEnv = []
+emptyLibEnv = emptyFM
 

@@ -103,8 +103,8 @@ class (Eq object, Eq morphism) =>
 
 -- abstract syntax, parsing and printing
 
-class (Show basic_spec, Show sentence, Show symb_items, 
-       Show symb_map_items) =>
+class (Show basic_spec, Eq basic_spec, Show sentence, Show symb_items, 
+       Show symb_map_items, Eq symb_items, Eq symb_map_items) =>
       Syntax basic_spec sentence symb_items symb_map_items
       where 
          -- parsing
@@ -174,6 +174,7 @@ data Cons_checker morphism =
 class (Syntax basic_spec sentence symb_items symb_map_items,
        Show sign, Show morphism, Show symbol, Show raw_symbol,
        Ord symbol, --  needed for efficient symbol tables
+       Eq raw_symbol,
        Category id sign morphism,
        LatticeWithTop sublogics,
        -- needed for heterogeneous coercions:
@@ -269,7 +270,9 @@ class (Syntax basic_spec sentence symb_items symb_map_items,
          show_basic_spec :: id -> basic_spec -> String
          show_sentence :: id -> sentence -> String
          show_symb_items :: id -> symb_items -> String
+         show_symb_items_list :: id -> [symb_items] -> String
          show_symb_map_items :: id -> symb_map_items -> String
+         show_symb_map_items_list :: id -> [symb_map_items] -> String
          show_sign :: id -> sign -> String
          show_morphism :: id -> morphism -> String
          show_symbol :: id -> symbol -> String
@@ -278,11 +281,14 @@ class (Syntax basic_spec sentence symb_items symb_map_items,
          show_basic_spec _ = show
          show_sentence _ = show
          show_symb_items _ = show
+         show_symb_items_list _ l = showList l ""
          show_symb_map_items _ = show
+         show_symb_map_items_list _ l = showList l ""
          show_sign _ = show
          show_morphism _ = show
          show_symbol _ = show
          show_raw_symbol _ = show
+
 
 
 -- Simple logic representations (possibly also morphisms via adjointness)

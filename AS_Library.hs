@@ -6,7 +6,6 @@
    libraries in HetCASL.
 
    todo:
-   -- Deriving Show and Eq is not so easy with stuff from the Grothendieck logic
 -}
 
 module AS_Library where
@@ -16,7 +15,7 @@ import Grothendieck
 import Id
 
 data LIB_DEFN = Lib_defn(LIB_NAME,[LIB_ITEM])
-		-- deriving (Show,Eq)
+		deriving (Show,Eq)
 
 data LIB_ITEM = Spec_defn(SPEC_NAME,GENERICITY,SPEC)
 --	      | SPEC_DEFN SPEC_DEFN
@@ -28,21 +27,21 @@ data LIB_ITEM = Spec_defn(SPEC_NAME,GENERICITY,SPEC)
 	      | Unit_spec_defn(SPEC_NAME,UNIT_SPEC)
 --	      | DOWNLOAD_ITEMS DOWNLOAD_ITEMS
 	      | Download_items (LIB_NAME,[ITEM_NAME_OR_MAP])
-		-- deriving (Show,Eq)
+		deriving (Show,Eq)
 
 data ITEM_NAME_OR_MAP = Item_name ITEM_NAME 
 		      | Item_name_map(ITEM_NAME,ITEM_NAME)
-			-- deriving (Show,Eq)
+			deriving (Show,Eq)
 
 type ITEM_NAME = SIMPLE_ID
 
 data LIB_NAME = Lib_version(LIB_ID,VERSION_NUMBER)
 	      | Lib_id LIB_ID
-		-- deriving (Show,Eq)
+		deriving (Show,Eq)
 
 data LIB_ID = Direct_link URL
 	    | Indirect_link PATH 
-	      -- deriving (Show,Eq)
+	      deriving (Show,Eq)
 
 data VERSION_NUMBER = Version_number [Int] deriving (Show,Eq)
 

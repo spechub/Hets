@@ -43,6 +43,12 @@ data G_basic_spec = forall id sublogics
          local_env sign morphism symbol raw_symbol =>
         G_basic_spec id basic_spec
 
+instance Show G_basic_spec where
+  show (G_basic_spec id s) = show_basic_spec id s
+instance Eq G_basic_spec where
+  (G_basic_spec id1 s1) == (G_basic_spec id2 s2) =
+     coerce s1 == Just s2
+
 data G_sentence = forall id sublogics
         basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol .
@@ -112,6 +118,12 @@ data G_symbol = forall id sublogics
          local_env sign morphism symbol raw_symbol =>
         G_symbol id symbol
 
+instance Show G_symbol where
+  show (G_symbol id s) = show_symbol id s
+instance Eq G_symbol where
+  (G_symbol id1 s1) == (G_symbol id2 s2) =
+     coerce s1 == Just s2
+
 data G_symb_items = forall id sublogics
         basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol .
@@ -119,6 +131,12 @@ data G_symb_items = forall id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
         G_symb_items id symb_items
+
+instance Show G_symb_items where
+  show (G_symb_items id s) = show_symb_items id s
+instance Eq G_symb_items where
+  (G_symb_items id1 s1) == (G_symb_items id2 s2) =
+     coerce s1 == Just s2
 
 data G_symb_items_list = forall id sublogics
         basic_spec sentence symb_items symb_map_items
@@ -128,6 +146,12 @@ data G_symb_items_list = forall id sublogics
          local_env sign morphism symbol raw_symbol =>
         G_symb_items_list id [symb_items]
 
+instance Show G_symb_items_list where
+  show (G_symb_items_list id s) = show_symb_items_list id s
+instance Eq G_symb_items_list where
+  (G_symb_items_list id1 s1) == (G_symb_items_list id2 s2) =
+     coerce s1 == Just s2
+
 data G_symb_map_items = forall id sublogics
         basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol .
@@ -136,6 +160,12 @@ data G_symb_map_items = forall id sublogics
          local_env sign morphism symbol raw_symbol =>
         G_symb_map_items id symb_map_items
 
+instance Show G_symb_map_items where
+  show (G_symb_map_items id s) = show_symb_map_items id s
+instance Eq G_symb_map_items where
+  (G_symb_map_items id1 s1) == (G_symb_map_items id2 s2) =
+     coerce s1 == Just s2
+
 data G_symb_map_items_list = forall id sublogics
         basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol .
@@ -143,6 +173,12 @@ data G_symb_map_items_list = forall id sublogics
          basic_spec sentence symb_items symb_map_items
          local_env sign morphism symbol raw_symbol =>
         G_symb_map_items_list id [symb_map_items]
+
+instance Show G_symb_map_items_list where
+  show (G_symb_map_items_list id s) = show_symb_map_items_list id s
+instance Eq G_symb_map_items_list where
+  (G_symb_map_items_list id1 s1) == (G_symb_map_items_list id2 s2) =
+     coerce s1 == Just s2
 
 data G_diagram = forall id sublogics
         basic_spec sentence symb_items symb_map_items
