@@ -377,7 +377,7 @@ nextState g is trm (i, ds, m) =
 		 scan trm i $
 		 predict g is i m
     in if null (lookUp m1 (i+1)) && null ds
-		    then (i+1, Error ("unexpected mixfix token: " 
+		    then (i+1, Diag Error ("unexpected mixfix token: " 
 				      ++ show (printText0 g trm))
 			       (posOfTerm trm) : ds, m)
        else (i+1, ds, m1)
@@ -446,12 +446,12 @@ resolveMixfix g ops preds mayBeFormula trm =
 		      (if mayBeFormula then ops `union` preds else ops) 0)
         ts = getAppls g i m
     in if null ts then if null ds then 
-                        non_fatal_error trm ("no resolution for term: "
+                        plain_error trm ("no resolution for term: "
 					     ++ show (printText0 g trm))
 					    (posOfTerm trm)
 		       else Result ds (Just trm)
        else if null $ tail ts then Result ds (Just (head ts))
-	    else Result (Error ("ambiguous mixfix term\n\t" ++ 
+	    else Result (Diag Error ("ambiguous mixfix term\n\t" ++ 
 			 (concat  
 			 $ intersperse "\n\t" 
 			 $ map (show . printText0 g) 
@@ -515,7 +515,7 @@ resolveFormula g ops preds frm =
 		 Application (Op_name ide) args ps -> 
 		     let p = Predication (Pred_name ide) args ps in
 		     if ide `elementOf` preds then return p
-		     else non_fatal_error p 
+		     else plain_error p 
 		          ("not a predicate: " ++ showId ide "")
 			  (posOfTerm t)
 		 Mixfix_qual_pred qide ->
@@ -524,7 +524,7 @@ resolveFormula g ops preds frm =
 			      Mixfix_parenthesized ts ps] ->
 		  return $ Predication qide ts ps
                  Mixfix_term _ -> return $ Mixfix_formula t -- still wrong
-		 _ -> non_fatal_error (Mixfix_formula t)
+		 _ -> plain_error (Mixfix_formula t)
 	                ("not a formula: " ++ show (printText0 g t))
 			(posOfTerm t)
        f -> return f
@@ -629,7 +629,8 @@ convertMixfixToken ga t =
 		    else ([], makeNumberTerm f t)
      else ([], te)
     where te =  Mixfix_token t
-          err s = ([Error ("missing %" ++ s ++ " annotation") (tokPos t)], te)
+          err s = ([Diag Error ("missing %" ++ s ++ " annotation") (tokPos t)]
+		  , te)
 
 
 
