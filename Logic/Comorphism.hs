@@ -126,6 +126,7 @@ instance Logic lid sublogics
            targetSublogic (IdComorphism _lid sub) = sub
            mapSublogic _ = id
            map_sign _ = \sigma -> return (sigma,[])
+           map_theory _ = \ (sigma, sens) -> return (sigma, sens)
            map_morphism _ = return
            map_sentence _ = \_ -> return
            map_symbol _ = single
