@@ -164,8 +164,8 @@ ana_M_FORMULA (Equivalence phi1 phi2 pos) = do
 ana_M_FORMULA (Negation phi pos) = do
   phi' <- ana_M_FORMULA phi
   return (Negation phi' pos)
-ana_M_FORMULA phi@(True_atom pos) = return phi
-ana_M_FORMULA phi@(False_atom pos) = return phi
+ana_M_FORMULA phi@(True_atom _) = return phi
+ana_M_FORMULA phi@(False_atom _) = return phi
 ana_M_FORMULA (Mixfix_formula _) = undefined
 ana_M_FORMULA (ExtFORMULA (Box m phi pos)) = do
   phi' <- ana_M_FORMULA phi
