@@ -1,145 +1,34 @@
 # Makefile for a Release
 # $Header$
-# Author: (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2004
+# Author: (c) Christian Maeder, Uni Bremen 2002-2004
 # Year:   2004
 
 # This Makefile will compile the hets sources
 # note that you'll need the "uni" library residing in ".." 
 # from http://www.informatik.uni-bremen.de/~ger/cvs/CVS.html
 
-# This makefile is written for GNU make (gmake on solaris, make on linux)
-
 ####################################################################
 ## Some varibles, which control the compilation
 
 INCLUDE_PATH = ghc:hetcats
-COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
-CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:CspCASL:ATC:Proofs:Comorphisms:$(INCLUDE_PATH):Haskell/Hatchet
-
-## set ghc imports properly for your system!
-DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0.1/imports:${GHC_IMPORTS}'
 
 HC         = ghc
-PERL       = perl
-HAPPY      = happy
-DRIFT      = $(DRIFT_ENV) utils/DrIFT
-HADDOCK    = haddock
-
-#HC_FLAGS   = -fglasgow-exts
-
 HC_INCLUDE = -i$(INCLUDE_PATH)
 
 # you need the "uni" library!
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
              -package uni-server
 
-### Profiling and Warnings (only for debugging)
-### Attention every module must be compiled with profiling or the linker
-### cannot link the various .o files properly. So after switching on
-### Profiling, do an 'gmake clean; gmake'
-### If you need Profiling comment out the following line 
-#HC_PROF    = -prof -auto-all 
-
-HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
-HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
-
-
-drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
-    Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
-    $(gendrifted_files)
-
-genrule_header_files = $(wildcard ATC/*.header.hs)
-
-genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
-                Common/AS_Annotation.der.hs \
-                Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
-                Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-                CASL/Sublogic.hs \
-                CASL/Morphism.hs CASL/Sign.hs CASL/AS_Basic_CASL.der.hs \
-                HasCASL/Le.hs HasCASL/As.hs HasCASL/Symbol.hs \
-                HasCASL/Morphism.hs HasCASL/AsToIds.hs \
-                CspCASL/AS_CSP_CASL.hs \
-                Static/DevGraph.hs \
-                Haskell/Hatchet/AnnotatedHsSyn.hs \
-                Haskell/Hatchet/MultiModuleBasics.hs \
-                Haskell/Hatchet/HsSyn.hs \
-                Haskell/Hatchet/Representation.hs\
-                Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
-                Haskell/Hatchet/Env.hs 
-
-gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
-                   ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
-                   ATC/AS_Structured.hs ATC/AS_Architecture.hs \
-                   ATC/DevGraph.hs \
-                   CASL/ATC_CASL.hs Haskell/ATC_Haskell.hs \
-                   HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs 
-
-generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
-
-happy_files = Haskell/Language/Parser.hs Haskell/Hatchet/HsParser.hs
+HC_OPTS    = $(HC_PACKAGE) $(HC_INCLUDE)
 
 ####################################################################
 ### targets
 
-.PHONY : clean real_clean bin_clean \
-         clean_genRules genRules
-
-.SECONDARY : %.hs %.d $(generated_rule_files)
-
 all: hets-optimized
 
-hets-opt: hetcats/Version.hs
-	$(MAKE) distclean
-	$(MAKE) derivedSources
-	$(MAKE) hets-optimized
-
 hets-optimized:
-	$(HC) --make -O2 -o hets hets.hs $(HC_OPTS)
+	$(HC) --make -O -o hets hets.hs $(HC_OPTS) -w
 	strip hets
-
-derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
-
-utils/DrIFT:
-	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
-
-utils/genRules:
-	(cd utils/GenerateRules; \
-           $(HC) --make -i../.. -package text GenerateRules.hs -o ../genRules)
-
-	$(RM) uni
-
-#############################
-### ATC DrIFT-rule generation
-
-genRules: $(generated_rule_files) utils/genRules
-
-$(generated_rule_files): $(genrule_files) utils/genRules $(genrule_header_files)
-	$(foreach file,$(atc_files),$(gen_atc_files))
-	utils/genRules -r $(rule) -o CASL    -h ATC/CASL.header.hs \
-            $(casl_files)
-	utils/genRules -r $(rule) -o HasCASL -h ATC/HasCASL.header.hs \
-            $(hascasl_files)
-	utils/genRules -r $(rule) -o CspCASL -h ATC/CspCASL.header.hs \
-            $(cspcasl_files)
-	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
-            $(haskell_files)
-
-rule = ShATermConvertible
-
-gen_atc_files = if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; then \
-                   utils/genRules -r $(rule) -o ATC -h ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
-                else \
-                   utils/genRules -r $(rule) -o ATC $(file); \
-                fi ;
-
-atc_files := $(filter-out CASL/% HasCASL/% CspCASL/% Haskell/% ,$(genrule_files))
-casl_files := $(filter CASL/% ,$(genrule_files))
-hascasl_files := $(filter HasCASL/% ,$(genrule_files))
-cspcasl_files := $(filter CspCASL/% ,$(genrule_files))
-haskell_files := $(filter Haskell/%,$(genrule_files))
-
-clean_genRules: 
-	$(RM) $(generated_rule_files)
 
 ###############
 ### clean up
@@ -148,40 +37,7 @@ clean_genRules:
 bin_clean: 
 	$(RM) hets
 
-### removes *.hi and *.o in all include directories
+### remove *.hi and *.o
 clean: bin_clean
-	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
-	(cd $$p ; $(RM) *.hi *.o) ; done
+	find . -name \*.o -o -name \*.hi | xargs $(RM) -r
 
-
-### remove files also in own libraries
-lib_clean: clean
-	for p in $(subst :, ,$(COMMONLIB_PATH)) . ; do \
-	(cd $$p ; $(RM) *.hi *.o) ; done
-
-### synonym
-real_clean: lib_clean
-
-### additionally generated files not in CVS tree
-distclean: real_clean clean_genRules
-	$(RM) hetcats/Version.hs
-	$(RM) $(drifted_files)
-	$(RM) $(happy_files)
-
-
-####################################################################
-## Preparing the version of HetCATS
-hetcats/Version.hs: hetcats/Version.in version_nr
-	$(PERL) utils/build_version.pl version_nr < hetcats/Version.in > $@
-
-## two hardcoded dependencies for a correct generation of Version.hs
-hetcats/Options.hs hetcats/WriteFn.hs hetcats/ReadFn.hs: hetcats/Version.hs
-hets.hs: hetcats/Version.hs
-####################################################################
-## rules for DrIFT
-
-%.hs: %.ly
-	$(HAPPY) $<
-
-%.hs: %.der.hs utils/DrIFT
-	$(DRIFT) $(DRIFT_OPTS) $< > $@
