@@ -1,5 +1,5 @@
 module Token ( scanTermWords, scanTermSigns, otherToken, makeToken
-	     , obr, cbr, ocb, ccb, uu, parseId
+	     , skipChar, obr, cbr, ocb, ccb, uu, parseId
 	     ) where
 
 import Lexer
@@ -55,14 +55,16 @@ setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
 
 makeToken parser = skip(bind setTokPos getPosition parser)
 
+skipChar = makeToken . single . char
+
 -- ----------------------------------------------
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
-obr = makeToken (single (char '['))
-cbr = makeToken (single (char ']'))
-ocb = makeToken (single (char '{'))
-ccb = makeToken (single (char '}'))
+obr = skipChar '['
+cbr = skipChar ']'
+ocb = skipChar '{'
+ccb = skipChar '}'
 uu = makeToken (try (string place) <?> "place")
 
 -- simple id

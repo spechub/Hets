@@ -28,8 +28,11 @@ data SortDefn = SubsortDefn Term   -- binding Term "{ x : t | p(x) }"
               | Datatype [Alternative] GenKind GenItems
 	        deriving (Show,Eq)
 
-data SortItem = SortItem Decl SortRels (Maybe SortDefn)
-	        deriving (Show,Eq)
+data SortItem = SortItem { sortDecl :: Decl
+			 , sortRels :: SortRels
+                         , sortDef  :: Maybe SortDefn
+			 , sortAn   :: [Anno]
+			 } deriving (Show,Eq)
 
 data OpAttr = AssocOpAttr | CommonOpAttr | IdemOpAttr | UnitOpAttr Term
 	       deriving (Show,Eq)
@@ -46,7 +49,7 @@ data OpDefn = Definition Term
             | Selector SortId [ConsSymb] SelSymb
 	      deriving (Show,Eq)
 
-data OpItem = OpItem Decl [OpAttr] (Maybe OpDefn) 
+data OpItem = OpItem Decl [OpAttr] (Maybe OpDefn) [Anno]
 	        deriving (Show,Eq)      
 
 type Axiom = Term        -- synonyms

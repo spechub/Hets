@@ -4,7 +4,9 @@ import Id
 import Type
 
 -- symbols uniquely identify signature items 
-data Symb = Symb Id Type deriving (Show, Eq, Ord)
+data Symb = Symb { symbId :: Id
+		 , symbType :: Type 
+		 } deriving (Show, Eq, Ord)
 
 -- try to reconstruct notation of (nested) declaration  
 type DeclNotation = Keyword 
@@ -13,8 +15,13 @@ type DeclNotation = Keyword
 -- "sorts s, t" -> previous keyword(t) = ",")
 -- for iso-decl or subsort-decl PreviousKeyword could be "<" or "="
 
+type Anno = String
+
 -- declaration of a variable or operation 
-data Decl = Decl Symb DeclNotation  deriving (Show,Eq)
+data Decl = Decl { symb :: Symb
+		 , nota :: DeclNotation
+		 , declAn :: [Anno]
+		 } deriving (Show,Eq)
 
 -- for faster lookup
 type DeclLevel = Int
@@ -43,5 +50,5 @@ data Binder = Lambda Totality | ArgDecl | SupersortVar
 -- a typed term is also a special application
 data Term = BaseName QualId
           | Application Term [Term] [Keyword] -- notation hint
-	  | Binding Binder [VarDecl] Term           
+	  | Binding Binder [VarDecl] Term [Anno]           
 	    deriving (Show,Eq)
