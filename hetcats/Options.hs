@@ -247,25 +247,33 @@ parseVerbosity (Just s)
                    [(i,"")] -> Verbose i
                    _        -> hetsError User (s ++ " is not a valid INT")
 
+-- | possible input types. Boolean flag is true if intype is useable for downloads.
+inTypes :: [(String,(InType,Bool))]
+inTypes = [("casl",(CASLIn,True)),
+           ("het",(HetCASLIn,True)),
+           ("hs",(HaskellIn,True)),
+           ("gen_trm",(ATermIn NonBAF,False)),
+           ("tree.gen_trm",(ATermIn NonBAF,False)),
+           ("gen_trm.baf",(ATermIn BAF,False)),
+           ("tree.gen_trm.baf",(ATermIn BAF,False)),
+           ("ast",(ASTreeIn NonBAF,False)),
+           ("ast.baf",(ASTreeIn BAF,False))]
+
+-- | 
+downloadExtensions :: [String]
+downloadExtensions = map fst $ filter (\(_,(_,b)) -> b) inTypes
+
 -- | 'parseInType' parses an 'InType' Flag from user input
 parseInType :: String -> Flag
 parseInType = InType . parseInType1
 
+
 -- | 'parseInType1' parses an 'InType' Flag from a String
 parseInType1 :: String -> InType
-parseInType1 "casl"             = CASLIn
-parseInType1 "hetcasl"          = HetCASLIn
-parseInType1 "het"              = HetCASLIn
-parseInType1 "hs"               = HaskellIn
-parseInType1 "spec"             = HetCASLIn
-parseInType1 "gen_trm"          = ATermIn NonBAF
-parseInType1 "tree.gen_trm"     = ATermIn NonBAF
-parseInType1 "gen_trm.baf"      = ATermIn BAF
-parseInType1 "tree.gen_trm.baf" = ATermIn BAF
-parseInType1 "ast"              = ASTreeIn NonBAF
-parseInType1 "ast.baf"          = ASTreeIn BAF
-parseInType1 str                = hetsError User
-                                   (str ++ " is not a valid ITYPE")
+parseInType1 str = 
+  case lookup str inTypes of
+    Just (int,_) -> int
+    Nothing -> hetsError User (str ++ " is not a valid ITYPE")
 
 -- 'parseOutTypes' parses an 'OutTypes' Flag from user input
 parseOutTypes :: String -> Flag
@@ -342,8 +350,7 @@ parseRawOpts s =
 -- | 'guessInType' parses an 'InType' from the FilePath to our 'InFile'
 guessInType :: FilePath -> InType
 guessInType file = 
-    case fileparse ["casl","spec","hetcasl","het","gen_trm","tree.gen_trm",
-                    "gen_trm.baf","tree.gen_trm.baf","ast","ast.baf"]
+    case fileparse (map fst inTypes)
          file of
       (_,_,Just suf) -> parseInType1 suf
       (_,_,Nothing)  -> hetsError User $

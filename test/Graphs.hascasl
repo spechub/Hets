@@ -68,7 +68,7 @@ then
   ops __coproduct__ : Ob * Ob -> Ob;
       inl,inr : Ob * Ob -> Mor;
       [__!__] : Mor * Mor ->? Mor
-  pred __ :: __ --> __ : Mor * Ob * Ob 
+  %%pred __ :: __ --> __ : Mor * Ob * Ob 
   pred __mediates__ (h:Mor;p:Mor*Mor) <=>
      let (f,g) = p in  
      h :: (dom f) coproduct (dom g) --> cod f

@@ -1,5 +1,7 @@
 \documentclass{article}
 
+\addtolength\textheight{0.8cm}
+
 \parindent 0pt
 \parskip 5pt
 \usepackage{xspace}
@@ -69,10 +71,11 @@
 
 \title{CASL libraries on the web}
 \author{Till Mossakowski}
+\date{Version 0.3\\[1ex] \today}
 
 \maketitle
 
-From the \CASL summary:
+\section{What the \CASL summary says}
 
 \begin{quote}
 A library may be located at a particular \emphindex{site} on the
@@ -142,7 +145,25 @@ character `\Gram{\textasciitilde}'.}
 \end{quote}
 
 
-Proposal for implementation in the Heterogeneous Tool Set (\Hets):
+\section{Proposal for implementation in the Heterogeneous Tool Set (\Hets)}
+
+Briefly some words about what \Hets is:
+\Hets (\url{http://www.tzi.de/cofi/hets}) is a tool combining various 
+tools for different specification languages, thus providing a tool for
+a heterogeneous specification language. The structuring constructs of
+this language are those of \CASL, plus some new heterogeneous
+constructs like
+
+\begin{verbatim}
+    logic <language-name>
+\end{verbatim}
+
+for indicating the language of the subsequent specification text.
+Languages currently supported by \Hets are \CASL, \HasCASL, \CspCASL
+and Haskell.
+
+Now the proposal how to implement the \CASL library mechanism
+in \Hets:
 
 \begin{enumerate}
 \item 
@@ -167,33 +188,56 @@ is too much for the moment.
 
 \item 
 Direct absolute URIs are taken as such. 
-It is unclear relative to what base address the direct relative
-URIs mentioned in the summary should be interpreted.
+Direct relative URIs are written \texttt{./path}
+or \texttt{../path}. They are interpreted relative to the URI
+of the referencing library.
 
-Local files can be accessed via \texttt{file://path},
-but \texttt{path} must begin with a \texttt{/}
-(otherwise the first name in \texttt{apth} it is interpreted as a hostname).
-It is rather inconvenient that one is forced to specify
-always the full path.
-Hence the following proposal: with
-\begin{quote}\texttt{hetslib:path}\end{quote}
-it is possible to access local files relative to the value of \$HETS\_LIB.
-Note that \texttt{hetslib:path} is in principle a valid URI,
-although \texttt{hetslib} is not registered, of course.
-(Also allow servers as value of \$HETS\_LIB ?)
+Local files can be accessed via \texttt{file://path}.
+\texttt{path} must begin with a \texttt{/}
+(otherwise the first name in \texttt{path} it is interpreted as a hostname).
+
+Often, it will be more convenient to access local files
+via \texttt{./path} or \texttt{../path}. Should \texttt{./path} then
+also be allowed as defining library name in a local library
+(and only there)?
 
 \item 
 Versioning: should the location of a library be a directory
 containing all the versions (which means that library
-\texttt{name} in path \texttt{path} version \texttt{nnn} is accessed via \texttt{path/name/v\_nnn}), 
+\texttt{name} in path \texttt{path} version \texttt{nnn} is accessed via \texttt{path/name/v\_nnn},
+and the current version via \texttt{path/name/name}), 
 or should the version be appended to the name of the library (which
 means that library \texttt{name} in path \texttt{path} version \texttt{nnn} is accessed via
-\texttt{path/name\_v\_nnn}) ? 
-A decision in favour of the former is taken in the summary, and
-indeed counting all the versions and development graphs, proof object, proof scripts
-etc.\ that shall be stored, this make sense.
+\texttt{path/name\_v\_nnn}, and the current version
+via \texttt{path/name}) ?
 
-\item The versioning is realized in cvs with tags, one for each version
+A decision in favour of the former approach is taken in the summary,
+the main argument being all the versions and development graphs, proof
+object, proof scripts etc.\ that shall be stored together with the
+library. On the other hand, editing and browsing will be easier with
+the latter approach, because fewer subdirectories have to be entered. 
+Moreover, many other specification and programming
+language take the latter approach, and their integration into \Hets
+should be eased. Hence, the following reconcilation of the appraoches
+is proposed:
+
+\begin{quote}
+   A CASL library is stored in a file ending ``.casl''. A directory having
+   the same name (but without the ending) contains previously-defined
+   versions of the library, various indexes, tool-generated information
+   and perhaps other documentation.
+\end{quote}
+
+For files with a language-specific module mechanism, a language-specific
+ending is chosen (e.g.\ ``.hs'' for Haskell).
+For heterogeneous libraries, the ending is ``.het''\footnote{``.spec''
+is already reserved for RPM specification files, and Emacs comes
+with a standard mode for these.}, indicating that the needed
+logic(s) have to specified within the library itself.
+
+\item The versioning is realized in cvs with tags\footnote{Probably, viewcvs
+orders tags alphabetically. This coincides with the intended lexikographic version
+ordering only if main version numbers are not greater than 9.} , one for each version
 (note that one cannot use cvs version numbers, because they are numbered
 consecutively, while \CASL version numbers are chosen by the user).
 The versioning scheme shall be supported by a shell script that in
@@ -224,19 +268,43 @@ project, or a standard package like the collection of libraries
 of basic datatypes.  \Hets should provide some means of
 specifying which libraries belong to a package.
 
+Packages ease the download of library versions that
+together form a consistent global configuration. It would be bad if
+the user who does not want to use latest versions but rather particular
+fixed versions would have to care about the fact that say StructuredDatatypes
+version 0.9 uses Numbers version 0.7, and therefore (s)he also should use
+Numbers version 0.7 when importing StructuredDatatypes version 0.9 in order
+to avoid having two different copies of the Numbers. It is much easier
+if the Basic Datatypes have global version numbers which are the same
+for each library, such that StructuredDatatypes version 0.9 uses
+Numbers version 0.9. Actually, we are following this policy already
+for the Basic Datatypes, but it would be easier if also \Hets would
+support some kind of configuration management along these lines.
+cvs uses tags for this, and since these shall correspond to \CASL
+version numbers, perhaps a package is just a cvs project or folder
+in such a project, and we just should provide a mechanism for
+globally tagging such a folder, which would mean that not only
+the cvs tag is set, but also the version numbers used in the CASL
+libraries are updated accordingly.
+
+Note that this is a tools issue that should not affect the summary.
+
+
+
 \item URNs are not needed: the syntax of usual URIs suffices, and moreover,
 these are directly understood by browsers and web servers.
 
-\item We should have a look at VSE to get feeling for a realistic system
-(however, VSE does not have version control).
-Unfortunately, currently, VSE needs Solaris 5 or SunOS 5.6. In Bremen, we only have Solaris 8 and 9.
+%\item We should have a look at VSE to get feeling for a realistic system
+%(however, VSE does not have version control).
+%Unfortunately, currently, VSE needs Solaris 5 or SunOS 5.6. In Bremen, we only have Solaris 8 and 9.
 
 
 \end{enumerate}
 
 \section*{Acknowledgements}
-Thanks to Christoph L\"uth, Klaus L\"uttich and Achim Mahnke for
-useful discussions and comments.
+Thanks to Christoph L\"uth, Klaus L\"uttich, Achim Mahnke and Peter D.\ Mosses for
+useful discussions and comments on earlier versions of this note.
 
 
 \end{document}
+

@@ -49,7 +49,7 @@ anaFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> String
               -> IO (Maybe (LIB_NAME,LIB_DEFN,DGraph,LibEnv))
 anaFile logicGraph defaultLogic opts fname = do
   putIfVerbose opts 1  ("Reading " ++ fname)
-  let names = [fname,fname++".spec",fname++".casl"]
+  let names = map (fname++) ("":(map ("."++) downloadExtensions))
   -- look for the first existing file
   existFlags <- sequence (map doesFileExist names)
   let fname' = find fst (zip existFlags names) >>= (return . snd)
