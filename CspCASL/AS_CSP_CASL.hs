@@ -39,7 +39,7 @@ data Basic_CSP_CASL_C_SPEC = Basic_csp_casl_c_spec CHANNEL_DECL PROCESS_DEFN
 -- DATA, CHANNEL & PROCESS Def.
 ----------------------------------------------------------------------------
 
-type DATA_DEFN = BASIC_SPEC           -- will become a structured spec later
+type DATA_DEFN = BASIC_SPEC () () ()   -- will become a structured spec later
 
 data CHANNEL_DECL = Channel_items [CHANNEL_ITEM]
 		   deriving (Show,Eq)

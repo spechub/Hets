@@ -50,9 +50,9 @@ instance Typeable CASL2IsabelleHOL where
 
 instance Comorphism CASL2IsabelleHOL
                CASL CASL.Sublogic.CASL_Sublogics
-               BASIC_SPEC CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CASL.Sign.CASLSign 
-               CASL.Morphism.CASLMor
+               CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CASLSign 
+               CASLMor
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign 
@@ -79,7 +79,7 @@ instance Comorphism CASL2IsabelleHOL
 
 ---------------------------- Signature -----------------------------
 
-transSignature :: CASL.Sign.CASLSign  
+transSignature :: CASLSign  
                    -> Maybe(IsaSign.Sign,[Named IsaSign.Sentence]) 
 transSignature sign = 
   Just(IsaSign.Sign{
@@ -158,14 +158,14 @@ transPRED_SYMB sign (Qual_pred_name p pt _) =
     Just str -> str
     Nothing -> error "showIsa p"
 
-transFORMULA :: CASL.Sign.CASLSign  -> CASLFORMULA -> Term
+transFORMULA :: CASLSign  -> CASLFORMULA -> Term
 transFORMULA sign (Quantification quant vdecl phi _) =
   foldr (quantify quant) (transFORMULA sign phi) (flatVAR_DECLs vdecl)
 transFORMULA sign (Conjunction phis _) =
   foldl1 binConj (map (transFORMULA sign) phis)
 transFORMULA sign (Disjunction phis _) =
   foldl1 binDisj (map (transFORMULA sign) phis)
-transFORMULA sign (Implication phi1 phi2 _) =
+transFORMULA sign (Implication phi1 phi2 _ _) =
   binImpl (transFORMULA sign phi1) (transFORMULA sign phi2)
 transFORMULA sign (Equivalence phi1 phi2 _) =
   binEq (transFORMULA sign phi1) (transFORMULA sign phi2)
