@@ -1,0 +1,8 @@
+%prec   {a} < {b}
+%prec   {b} < {c}
+
+%prec   {c} < {a}
+
+
+%left_assoc a
+%right_assoc a

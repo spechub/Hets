@@ -1,0 +1,8 @@
+%prec( {a} < {b})%
+%prec( {b} < {a})%
+parse error at (line 3, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+%left_assoc( a)%
+%right_assoc( a)%

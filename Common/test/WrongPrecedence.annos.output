@@ -1,0 +1,4 @@
+%prec( {a} < {b})%
+%prec( {b} < {a})%
+%left_assoc( a)%
+%right_assoc( a)%
