@@ -55,17 +55,26 @@ translateData (tid,info) =
 		    [] -- [HsQName]  (für deriving) woher?
 	 )]
     Supertype _ _ _ -> [] -- Was wird daraus in Haskell? -> ignorieren
-    DatatypeDefn _ _altDefns -> 
-	((HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+    DatatypeDefn _ altDefns -> 
+	[(HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
 	            [] -- HsContext
 	            (HsIdent (translateIdWithType UpperId tid))
 		    [] -- [HsName]
-		    [] -- [HsConDecl] woher?? aus altDefns
+		    (map translateAltDefn altDefns) -- [HsConDecl] 
 		    [] -- [HsQName]  (für deriving) woher?
-	 ):[])
-    AliasTypeDefn _ -> [] -- ?
+	 )]
+    AliasTypeDefn _ts -> []  -- [(translateTypeScheme _ts)] ?
     TypeVarDefn -> [] -- ?
 -- Achtung: falsche Positionsangabe
+
+translateAltDefn :: AltDefn -> HsConDecl
+translateAltDefn (Construct uid ts _sel) = 
+    HsConDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+	      (HsIdent (translateIdWithType UpperId uid))
+	      (getArgTypes ts)
+
+getArgTypes :: TypeScheme -> [HsBangType]
+getArgTypes _ts = []
 
 -------------------------------------------------------------------------
 -- Translation of functions
@@ -90,7 +99,7 @@ translateTypeScheme :: TypeScheme -> HsQualType
 translateTypeScheme (TypeScheme _arglist (_plist :=> t) _poslist) = 
   HsQualType [] (translateType t)
 -- Context aus plist?
--- arglist für "uncurried" Argumente?
+-- arglist für alias-Type (\, lambda)
 
 translateType :: Type -> HsType
 translateType t = case t of
