@@ -71,7 +71,8 @@ data LRState = LRS { indentTabs  :: ![Int]
 		   , recentlySet 
 		   , totalTabStops 
 		   , setTabsThisLine 
-		   , indentTabsWritten :: !Int 
+		   , indentTabsWritten :: !Int
+		   , onlyTabs :: !Bool
 		   , isSetLine :: !Bool
 		   , collSpaceIndents :: ![Int]
 		   }
@@ -84,6 +85,7 @@ initialLRState = LRS { indentTabs         = []
 		     , totalTabStops      = 0
 		     , setTabsThisLine    = 0
 		     , indentTabsWritten  = 0
+		     , onlyTabs           = False
 		     , isSetLine          = False
 		     , collSpaceIndents = []
 		     }
@@ -101,7 +103,8 @@ latex_txt (Str s1)  cont
     | null s1        = cont
     | all isSpace s1 = do s2 <- cont
 			  return (showChar ' ' . s2)
-    | otherwise      = do s2 <- cont
+    | otherwise      = do setOnlyTabs False
+			  s2 <- cont
 			  return (showString s1 . s2)
 latex_txt (PStr s1) cont
     | s1 == startTab = do indent <- addTabStop
@@ -120,13 +123,14 @@ latex_txt (PStr s1) cont
 			  indent <- getIndent
 			  s2 <- cont
 			  return (showString "\\\\\n" . indent . s2)
-    | otherwise      = do s2 <- cont
+    | otherwise      = do setOnlyTabs False
+			  s2 <- cont
 			  return (showString s1 . s2)
 
 -- a function that knows how to print LaTeX TextDetails 
 debug_latex_txt :: TextDetails -> State LRState String -> State LRState String
 debug_latex_txt (Chr c)   cont  
-    | c == '\n' = do state <- State (\st -> (st,st))
+    | c == '\n' = do state <- get
 		     endOfLine
 		     indent <- getIndent
 		     s <- cont
@@ -137,7 +141,8 @@ debug_latex_txt (Str s1)  cont
     | null s1        = cont
     | all isSpace s1 = do s2 <- cont
 			  return ( ' ':s2)
-    | otherwise      = do s2 <- cont
+    | otherwise      = do setOnlyTabs False
+			  s2 <- cont
 			  return (s1 ++ s2)
 debug_latex_txt (PStr s1) cont
     | s1 == startTab = do indent <- addTabStop
@@ -154,14 +159,19 @@ debug_latex_txt (PStr s1) cont
       s1             = do addTabWithSpaces s1
 			  s2 <- cont
 			  return (s1 ++ s2)
-    | s1 == "\n"     = do state <- State (\st -> (st,st))
+    | s1 == "\n"     = do state <- get
 			  endOfLine
 			  indent <- getIndent
 			  s2 <- cont
 			  return ("\\\\%"++show state++s1++indent s2)
-    | otherwise      = do s2 <- cont
+    | otherwise      = do setOnlyTabs False
+			  s2 <- cont
 			  return (s1 ++ s2)
 
+
+setOnlyTabs :: Bool -> State LRState ()
+setOnlyTabs b = do state <- get
+		   put $ state {onlyTabs = b}
 
 -- a function to produce a String containing the actual tab stops in use
 getIndent :: State LRState ShowS
@@ -169,6 +179,7 @@ getIndent = do state <- get
 	       let indentTabsSum = foldl (+) 0 (indentTabs state)
 	       put $ state { indentTabsWritten = indentTabsSum
 			   , collSpaceIndents  = []
+			   , onlyTabs = True
 			   , totalTabStops = max (totalTabStops state)
 			                         (indentTabsSum +
 						  length 
@@ -248,8 +259,9 @@ addTabStop = State (\state -> let (new_indentTabs,newTabs) =
                                                     > 
 		                                      indentTabsWritten state 
 		                                  && not (isSetLine state)
+		                                  && onlyTabs state
 		                                then (inTabs newTabs,
-						      succ $ 
+						      newTabs + 
 						       indentTabsWritten state)
 		                                else (id,
 						      indentTabsWritten state)
@@ -364,6 +376,7 @@ printToken_latex strConvDoc_fun t =
 	    else 
 	       if  all isAlphaNum s  
 		|| '\\' `elem` escape_latex s
+		|| head s == '\''
 	       then (\x -> latex_macro "\\Id{"<>x<>latex_macro "}") 
 			. strConvDoc_fun . escape_latex
 	       else (\x -> latex_macro "\\Ax{"<>x<>latex_macro "}") 
@@ -376,9 +389,9 @@ instance PrettyPrint Id where
     printLatex0 ga (Id tops cs _) = 
 	printId printLatex0 comma_latex brackets_latex ga tops cs
 
-printId :: (forall a . PrettyPrint a => GlobalAnnos -> a -> Doc) 
-	   -> Doc -> -- ^ a comma seperator
-	   (Doc -> Doc) -- ^ a function that surrounds the given Doc 
+printId :: (forall a . PrettyPrint a => GlobalAnnos -> a -> Doc)
+	   -> Doc -- ^ a comma seperator
+	   -> (Doc -> Doc) -- ^ a function that surrounds the given Doc 
 			-- with brackets
 	   -> GlobalAnnos -> [TokenOrPlace] -> [Id] -> Doc
 printId pf comma_fun brackets_fun ga tops ids =
