@@ -56,7 +56,9 @@ processFile opt file =
                     Common.Result.Result diags res <- ioresToIO 
                       (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)
                     sequence (map ((putIfVerbose opt 3) . show) diags)
-                    return (ld, res)
+                    case res of
+                     Just (_,ld1,_,_) -> return (ld1,res)
+                     Nothing -> return (ld, res)
        let odir = if null (outdir opt) then dirname file else outdir opt
        putIfVerbose opt 3 ("Current OutDir: " ++ odir)
        case gui opt of
