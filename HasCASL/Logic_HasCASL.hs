@@ -84,7 +84,7 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
                Symbol RawSymbol where
     basic_analysis HasCASL = Just ( \ (b, e, ga) ->
 		let (nb, ne) = runState (anaBasicSpec ga b) e 
-		    in Result (envDiags ne) $ 
+		    in Result (reverse (envDiags ne)) $ 
 				    Just (nb, initialEnv, ne, sentences ne)) 
   
     signature_union HasCASL = merge
