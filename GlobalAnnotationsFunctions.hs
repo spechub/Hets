@@ -17,6 +17,7 @@ module GlobalAnnotationsFunctions
     ( emptyGlobalAnnos, addGlobalAnnos
     , precRel, isLAssoc, isRAssoc, isAssoc, isLiteral, getLiteralType
     , store_prec_annos, store_assoc_annos
+    , nullStr, nullList, bracketList
     ) 
     where
 
@@ -29,7 +30,9 @@ import GlobalAnnotations
 import Graph
 import GraphUtils
 import FiniteMap
+
 import List (nub,mapAccumL)
+import Maybe (fromJust)
 
 emptyGlobalAnnos :: GlobalAnnos
 emptyGlobalAnnos = GA { prec_annos    = (emptyFM,empty)
@@ -78,8 +81,8 @@ mkPairs (Prec_anno False ll rl _) = concatMap ((zip ll) . repeat) rl ++
 mkPairs _ = error "unsupported annotation"
 
 precRel :: PrecedenceGraph -- ^ Graph describing the precedences
-	-> Id -- ^ x ID (y id z) -- outer id
-	-> Id -- ^ x id (y ID z) -- inner id
+	-> Id -- ^ x oID (y iid z) -- outer id
+	-> Id -- ^ x oid (y iID z) -- inner id
 	-> PrecRel
 precRel (imap,g) out_id in_id =
     case (o_n `inSuc` i_n,o_n `inPre` i_n) of
@@ -184,7 +187,7 @@ getLiteralType :: LiteralMap -> Id -> LiteralType
 getLiteralType lmap i =
     case lookupFM lmap i of
     Just t  -> t
-    Nothing -> error $ show i ++ "is not a literal id"
+    Nothing -> error $ show i ++ " is not a literal id"
 emptyLiteralAnnos :: LiteralAnnos
 emptyLiteralAnnos = LA { string_lit  = Nothing
 			, list_lit   = Nothing 
@@ -194,11 +197,26 @@ emptyLiteralAnnos = LA { string_lit  = Nothing
 
 store_literal_annos :: LiteralAnnos -> [Annotation] -> LiteralAnnos
 store_literal_annos la ans = 
-    la { string_lit = setStringLit (string_lit la) ans
-       , list_lit   = setListLit   (list_lit la)   ans
-       , number_lit = setNumberLit (number_lit la) ans
-       , float_lit  = setFloatLit  (float_lit la)  ans
-       }
+    let string_lit' = setStringLit (string_lit la) ans
+        list_lit'   = setListLit   (list_lit la)   ans    
+        test_diff s l = let (s_null,s_conc) = fromJust s
+		            (l_null,l_conc) = (\(_,n,c)-> (n,c)) (fromJust l)
+                            isNothing x = case x of
+					  Nothing -> True
+					  _ -> False
+	                in or [ isNothing s
+			      , isNothing l
+			      , s_null /= l_null
+			      , s_conc /= l_conc ]
+        diff = test_diff string_lit' list_lit'
+    in if diff then
+           la { string_lit = string_lit'
+	      , list_lit   = list_lit'
+	      , number_lit = setNumberLit (number_lit la) ans
+	      , float_lit  = setFloatLit  (float_lit la)  ans
+	      }
+       else
+         error "%string- and %list-annotions use same identifiers"
 
 setStringLit :: Maybe (Id,Id) -> [Annotation] -> Maybe (Id,Id)
 setStringLit mids ans = 
@@ -274,6 +292,22 @@ sameIds a1 a2 =
 	  ++ spp a1 ++ spp a2
     where spp a = show $ printText0 emptyGlobalAnnos a
 -------------------------------------------------------------------------
+
+nullStr, nullList, bracketList :: GlobalAnnos -> Id		 
+nullStr ga = case string_lit $ literal_annos ga of
+	     Just (n,_) -> n
+	     Nothing    -> error "nullStr Id not found"
+
+nullList ga = case list_lit $ literal_annos ga of
+	      Just (_,n,_) -> n
+	      Nothing    -> error "nullList Id not found"
+
+bracketList ga = case list_lit $ literal_annos ga of
+	      Just (b,_,_) -> b
+	      Nothing    -> error "bracketList Id not found"
+
+-------------------------------------------------------------------------
+
 -- |
 -- an error function for Annotations
 
