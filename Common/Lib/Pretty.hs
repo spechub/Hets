@@ -1,3 +1,17 @@
+{- 
+   > HetCATS/Common/Lib/Pretty.hs
+   > $Id$
+   > Authors: Hughes, Peyton Jones, Klaus Lüttich
+   > Year:    2002/2003
+
+   An imported and only slightly modified module of GHC
+   
+   modifications are marked by "added by KL"
+
+   GHCs documentation follows 
+
+-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Common.Lib.Pretty
@@ -178,7 +192,7 @@ module Common.Lib.Pretty (
         lparen, rparen, lbrack, rbrack, lbrace, rbrace,
 
 	-- * Converting values into documents
-        text, char, ptext,
+        text, char, ptext, sp_text,
         int, integer, float, double, rational,
 
 	-- * Wrapping documents in delimiters
@@ -240,6 +254,14 @@ rbrace	:: Doc;			-- ^ A '}' character
 
 text	 :: String   -> Doc
 ptext	 :: String   -> Doc
+-- added by KL
+{- |
+the conversion function @sp_text@ can be used for a special use of this
+library. This function enables the possibility to use the rendering
+alghorithms provided for rendering LaTeX with a proportional font. It
+can also be abused because you can add text that has a zero width.
+-}
+sp_text  :: Int -> String -> Doc
 char 	 :: Char     -> Doc
 int      :: Int      -> Doc
 integer  :: Integer  -> Doc
@@ -522,6 +544,8 @@ isEmpty _     = False
 char  c = textBeside_ (Chr c) 1 Empty
 text  s = case length   s of {sl -> textBeside_ (Str s)  sl Empty}
 ptext s = case length s of {sl -> textBeside_ (PStr s) sl Empty}
+-- added by KL
+sp_text sl s = case sl of {sl1 -> textBeside_ (PStr s) sl1 Empty}
 
 nest k  p = mkNest k (reduceDoc p)        -- Externally callable version
 
