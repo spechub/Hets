@@ -264,6 +264,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
 		 $$$ ValueTitle (\ (s,_,_) -> return s) 
                  $$$ LocalMenu (Menu (Just "node menu")
                    [--createLocalMenuButtonShowSpec convRef dGraph,
+		    createLocalMenuButtonShowNumberOfNode,
 		    createLocalMenuButtonShowSignature convRef dGraph,
 		    createLocalMenuButtonShowTheory convRef dGraph,
 		    createLocalMenuButtonShowSublogic convRef dGraph,
@@ -285,6 +286,7 @@ createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
 		 $$$ ValueTitle (\ (s,_,_) -> return "")
                  $$$ LocalMenu (Menu (Just "node menu")
                     [--createLocalMenuButtonShowSpec convRef dGraph,
+		     createLocalMenuButtonShowNumberOfNode,
 		     createLocalMenuButtonShowSignature convRef dGraph,
  		     createLocalMenuButtonShowTheory convRef dGraph,
  		     createLocalMenuButtonShowSublogic convRef dGraph,
@@ -402,6 +404,12 @@ createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes
 
 		    )
 
+-- for debugging
+createLocalMenuButtonShowNumberOfNode =
+  (Button "Show number of node"
+    (\ (name, descr, gid) ->
+       getNumberOfNode descr))
+
 -- -------------------------------------------------------------
 -- methods to create the local menus for the edges
 -- -------------------------------------------------------------
@@ -449,6 +457,12 @@ showSpec descr convMap dgraph =
    Just (libname,node) -> do
       let sp = dgToSpec dgraph node
       putStrLn (showPretty sp "")
+
+{- auxiliary method for debugging. shows the number of the given node in the abstraction graph -}
+getNumberOfNode :: Descr -> IO()
+getNumberOfNode descr =
+  let title = "Number of node"
+    in createTextDisplay title (showPretty descr "") [size(10,10)]
 
 {- outputs the signature of a node in a window;
 used by the node menu defined in initializeGraph-}
