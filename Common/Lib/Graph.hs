@@ -300,7 +300,7 @@ delEdge (v,w) g = case match v g of
 
 delLEdge :: Eq b => LEdge b -> Graph a b -> Graph a b
 delLEdge (v,w,lab) g = case match v g of
-                    (Nothing,_)        -> g
+                    (Nothing,_)        -> error "delLEdge did not work"
                     (Just (p,v,l,s),g) -> embed (p,v,l,filter ((/=(lab,w))) s) g
 
 

@@ -110,8 +110,7 @@ applyRule = error "Proofs.hs:applyRule"
    if possible -}
 globDecomp :: ProofStatus -> ProofStatus
 globDecomp proofStatus@(globalContext,history,dgraph) =
-  if null (snd newHistoryElem) then proofStatus
-   else (globalContext, ((newHistoryElem):history), newDgraph)
+  (globalContext, ((newHistoryElem):history), newDgraph)
 
   where
     globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
@@ -190,8 +189,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
 -- applies global subsumption to all unproven global theorem edges if possible
 globSubsume ::  ProofStatus -> ProofStatus
 globSubsume proofStatus@(globalContext,history,dGraph) =
-  if null (snd nextHistoryElem) then proofStatus  
-   else (globalContext, nextHistoryElem:history, nextDGraph)
+  (globalContext, nextHistoryElem:history, nextDGraph)
 
   where
     globalThmEdges = filter isUnprovenGlobalThm (labEdges dGraph)
@@ -233,8 +231,7 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
 -- applies this merge of rules to all unproven localThm edges if possible
 locDecomp ::  ProofStatus -> ProofStatus
 locDecomp proofStatus@(globalContext,history,dGraph) =
-  if null (snd nextHistoryElem) then proofStatus  
-   else (globalContext, nextHistoryElem:history, nextDGraph)
+  (globalContext, nextHistoryElem:history, nextDGraph)
 
   where
     localThmEdges = filter isUnprovenLocalThm (labEdges dGraph)
