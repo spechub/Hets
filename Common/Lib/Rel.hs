@@ -32,7 +32,7 @@ Some parts are adapted from D. King, J. Launchbury 95:
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
                        union , subset, difference, path,
-                       succs, predecessors, irreflex,
+                       succs, predecessors, irreflex, sccOfClosure,
                        transClosure, fromList, toList, image,
                        restrict, toSet, fromSet, topSort, nodes,
                        transpose, connComp, collaps, transReduce) where
@@ -157,6 +157,19 @@ connComp r = foldr (\ t (m1, m2) ->
                     in (Set.fold (flip Map.insert m) m1 s,
                         Map.insert m s m2))
                     (Map.empty, Map.empty) $ scc r
+
+-- | compute strongly connected components for a transitively closed relation 
+sccOfClosure :: Ord a => Rel a -> Map.Map a (Set.Set a)
+sccOfClosure r@(Rel m) = 
+        fst $ Map.foldWithKey
+               ( \ k v (m1, s) -> 
+                let s1 = Set.delete k s in
+                if Set.member k v then
+                  if Set.member k s then (m1, s1) 
+                     else let s2 = preds r k v in
+                           (Map.insert k s2 m1, Set.union s1 
+                            $ Set.filter (> k) s2)
+                 else (m1, s1)) (Map.empty, Set.empty) m
 
 -- | collaps strongly connected components to its minimal representative
 collaps :: Ord a => Map.Map a a -> Rel a -> Rel a
