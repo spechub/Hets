@@ -86,12 +86,15 @@ module Common.Lib.Set  (
             , union, unions
             , difference
             , intersection
+            , disjoint
             
             -- * Filter
             , filter
             , partition
             , split
             , splitMember
+            , all
+            , any
 
             -- * Fold
             , fold
@@ -123,7 +126,7 @@ module Common.Lib.Set  (
             , valid
             ) where
 
-import Prelude hiding (filter)
+import Prelude hiding (filter, all)
 
 {-
 -- just for testing
@@ -335,6 +338,13 @@ intersect t (Bin _ x l r)
     tl            = intersect lt l
     tr            = intersect gt r
 
+{--------------------------------------------------------------------
+  Disjointness
+--------------------------------------------------------------------}
+-- | /O(n+m)/. Are two sets disjoint?
+disjoint :: Ord a => Set a -> Set a -> Bool
+s1 `disjoint` s2 = s1 `intersection` s2 == empty
+
 
 {--------------------------------------------------------------------
   Filter and partition
@@ -357,6 +367,20 @@ partition p (Bin _ x l r)
   where
     (l1,l2) = partition p l
     (r1,r2) = partition p r
+
+-- | /O(n)/. Do all elements satisfy the predicate?
+all :: Ord a => (a -> Bool) -> Set a -> Bool
+all p Tip = True
+all p (Bin _ x l r)
+  | p x       = (all p l) && (all p r)
+  | otherwise = False
+
+-- | /O(n)/. Does some element satisfy the predicate?
+exists :: Ord a => (a -> Bool) -> Set a -> Bool
+exists p Tip = False
+exists p (Bin _ x l r)
+  | p x       = True
+  | otherwise = (exists p l) || (exists p r)
 
 {--------------------------------------------------------------------
   Fold

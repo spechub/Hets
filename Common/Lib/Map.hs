@@ -59,6 +59,7 @@
 module Common.Lib.Map  ( 
             -- * Map type
               Map          -- instance Eq,Show
+            , EndoMap
 
             -- * Operators
             , (!), (\\)
@@ -202,6 +203,8 @@ m1 \\ m2 = difference m1 m2
 -- | A Map from keys @k@ and values @a@. 
 data Map k a  = Tip 
               | Bin !Size !k a !(Map k a) !(Map k a) 
+
+type EndoMap a = Map a a
 
 type Size     = Int
 

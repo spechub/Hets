@@ -40,7 +40,7 @@ Currently, no further functions seem to be necessary:
 
 -}
 
-module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member
+module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap
 		      , transMember, transClosure, fromList, toList) where
 
 import qualified Common.Lib.Map as Map

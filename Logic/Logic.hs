@@ -78,9 +78,6 @@ import Common.ATerm.Lib -- (ATermConvertible)
 import ATC.Named
 import ATC.Graph
 
--- maps
-
-type EndoMap a = Map a a
 
 -- diagrams are just graphs
 type Diagram object morphism = Graph object morphism

@@ -41,21 +41,16 @@ instance Language CASL  -- default definition is okay
 instance Category CASL Sign Morphism  
     where
          -- ide :: id -> object -> morphism
-	 ide CASL sigma = Morphism { msource = sigma,
-                                     mtarget = sigma,
-				     sort_map = empty,
-				     fun_map = empty,
-				     pred_map = empty
-                                   }
+	 ide CASL = idMor
          -- comp :: id -> morphism -> morphism -> Maybe morphism
-	 comp CASL sigma1 _sigma2 = Just sigma1 -- ???
+	 comp CASL = compose
          -- dom, cod :: id -> morphism -> object
-	 dom CASL mor = msource mor
-	 cod CASL mor = mtarget mor
+	 dom CASL = msource
+	 cod CASL = mtarget
          -- legal_obj :: id -> object -> Bool
-	 legal_obj CASL _ = fun_err "legall_obj"
+	 legal_obj CASL = legalSign
          -- legal_mor :: id -> morphism -> Bool
-	 legal_mor CASL _ = fun_err "legal_mor"
+	 legal_mor CASL = legalMor
 
 
 -- abstract syntax, parsing (and printing)
@@ -79,7 +74,7 @@ instance LatticeWithTop CASL_Sublogics where
 -- CASL logic
 
 instance Sentences CASL Sentence () Sign Morphism Symbol where
-      map_sen CASL _morphism s = return s
+      map_sen CASL _morphism s = return s -- ???
       parse_sentence CASL _sign str = 
 	  case runParser (aFormula << eof) emptyAnnos "" str of
 	  Right x -> return $ item x
@@ -98,9 +93,9 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          -- ensures_amalgamability :: id
          --   -> (Diagram Sign Morphism, Node, Sign, LEdge Morphism, Morphism)
          --   -> Result (Diagram Sign Morphism)
-	 ensures_amalgamability CASL _ = fail "ensures_amalgamability nyi"
+	 ensures_amalgamability CASL _ = fail "ensures_amalgamability nyi" -- ???
 
-         sign_to_basic_spec CASL _sigma _sens = Basic_spec []
+         sign_to_basic_spec CASL _sigma _sens = Basic_spec [] -- ???
 
          symbol_to_raw CASL = symbolToRaw
          id_to_raw CASL = idToRaw
@@ -125,7 +120,7 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          generated_sign CASL _rsys sigma = return (ide CASL sigma)
          -- generated_sign, cogenerated_sign :: id -> [RawSymbol]
          --                -> Sign -> Result Morphism
-         induced_from_morphism CASL _rmap sigma = return (ide CASL sigma)-- ???
+         induced_from_morphism CASL = inducedFromMorphism
          induced_from_to_morphism CASL _rmap sigmaS _sigmaT =
            return (ide CASL sigmaS) -- ???
          --induced_from_to_morphism :: id -> EndoMap RawSymbol

@@ -78,17 +78,6 @@ import qualified Common.Lib.Map as Map
 import Data.List hiding (union)
 import Common.PrettyPrint
 
--- should be moved to eslewhere!
-
-lookupNode :: Node -> Graph a b -> a
-lookupNode n dg = lab' $ context n dg
-
-setFilter p s = fromList (filter p (toList s))
-setAny p s = any p (toList s)
-setAll p s = all p (toList s)
-s1 `disjoint` s2 = s1 `intersection` s2 == empty
-
-domFM m = fromList (Map.keys m)
 
 -- | analyze a SPEC
 -- Parameters: global context, local environment,
@@ -684,7 +673,7 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
    let symI = sym_of lidP sigmaI'
        symmap_mor = symmap_of lidP mor
    -- are symbols of the imports left untouched?
-  {- if setAll (\sy -> lookupFM symmap_mor sy == Just sy) symI
+  {- if Set.all (\sy -> lookupFM symmap_mor sy == Just sy) symI
     then return ()
     else plain_error () "Fitting morphism must not affect import" (headPos pos)
    -} -- ??? does not work
