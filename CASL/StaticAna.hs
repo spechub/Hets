@@ -13,6 +13,10 @@ Follows Chaps. III:2 and III:3 of the CASL Reference Manual.
     
 -}
 
+{- todo: correct implementation of variables
+         (shadowing instead of overloading)
+-}
+
 module CASL.StaticAna where
 
 import CASL.AS_Basic_CASL
