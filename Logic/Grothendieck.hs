@@ -198,7 +198,7 @@ sublogicOfTh (G_theory lid sigma sens) =
 -- | simplify a theory (throw away qualifications)
 simplifyTh :: G_theory -> G_theory
 simplifyTh (G_theory lid sigma sens) =
-  G_theory lid sigma (map (mapNamed (simplify_sen lid)) sens)
+  G_theory lid sigma (map (mapNamed (simplify_sen lid sigma)) sens)
 
 -- | Grothendieck symbols
 data G_symbol = forall lid sublogics

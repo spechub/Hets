@@ -58,6 +58,13 @@ dummy _ _ = ()
 trueC :: a -> b -> Bool
 trueC _ _ = True
 
+--     simplify_sen :: lid -> sign -> sentence -> sentence
+simplifySen :: (Sign f e -> a -> a) -> Sign f e -> FORMULA a -> FORMULA a
+simplifySen e_func sign form = 
+    case form of
+    ExtFORMULA f -> ExtFORMULA $ e_func sign f
+    _ -> form
+
 -- Typeable instance
 tc_BASIC_SPEC, tc_SYMB_ITEMS, tc_SYMB_MAP_ITEMS, casl_SublocigsTc,
              sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc :: TyCon
@@ -147,6 +154,7 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
       consCheck CASL = checkFreeType
+      simplify_sen CASL = simplifySen dummy
 
 instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
