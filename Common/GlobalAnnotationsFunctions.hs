@@ -18,9 +18,9 @@
 
 module Common.GlobalAnnotationsFunctions 
     ( emptyGlobalAnnos, addGlobalAnnos
-    , precRel, isLAssoc, isRAssoc, isAssoc, isLiteral, getLiteralType
+    , precRel, isLAssoc, isRAssoc, isAssoc, getLiteralType
     , store_prec_annos, store_assoc_annos
-    , nullStr, nullList, getListBrackets, listBrackets
+    , getListBrackets, listBrackets
     ) 
     where
 
@@ -34,13 +34,12 @@ import qualified Common.Lib.Set as Set
 
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> GlobalAnnos
 addGlobalAnnos ga annos = 
-    let ga'= ga { prec_annos    = store_prec_annos    (prec_annos  ga)   annos
+             ga { prec_annos    = store_prec_annos    (prec_annos  ga)   annos
 		, assoc_annos   = store_assoc_annos   (assoc_annos ga)   annos
 		, display_annos = store_display_annos (display_annos ga) annos
 		, literal_annos = store_literal_annos (literal_annos ga) annos
+		, literal_map   = store_literal_map (literal_map ga) annos
 		} 
-	in  ga' {literal_map = up_literal_map 
-		                    (literal_map ga') (literal_annos ga') }
 
 store_prec_annos :: PrecedenceGraph -> [Annotation] -> PrecedenceGraph
 store_prec_annos pgr = Rel.transClosure . 
@@ -58,11 +57,10 @@ store_prec_annos pgr = Rel.transClosure .
 				     else 
 				     case prc of 
 				     Lower -> Rel.insert li hi p2
-				     Higher -> Rel.insert hi li p2
 				     BothDirections -> 
 				           Rel.insert hi li (Rel.insert 
 							     li hi p2)
-				     NoDirection -> p2)
+				     _ -> error "prec_anno relation")
 			     p1 hIds)
 	              p0 lIds
 	    _ -> p0 ) pgr  
@@ -97,101 +95,83 @@ isRAssoc = isAssoc ARight
 isAssoc :: AssocEither -> AssocMap -> Id -> Bool
 isAssoc ae amap i =
     case Map.lookup i amap of
-    Nothing              -> False
-    Just ae' | ae' == ae -> True
-	     | otherwise -> False
+    Nothing  -> False
+    Just ae' -> ae' == ae 
 
 ---------------------------------------------------------------------------
 
 store_display_annos :: DisplayMap -> [Annotation] -> DisplayMap
-store_display_annos dm = Map.union dm . Map.fromList .
-    foldr ( \ an l -> 
+store_display_annos = 
+    foldr ( \ an m -> 
 	    case an of 
-	    Display_anno i sxs _ -> (i,sxs) : l
-	    _ -> l) []
+	    Display_anno i sxs _ -> 
+	       let t = Map.findWithDefault Map.empty i m in 
+	       Map.insert i 
+	       (foldr ( \ (df, str) tab ->
+			let oldStr = Map.findWithDefault str df tab in 
+			if oldStr == str then  
+			Map.insert df str tab
+			else error ("conflict: " ++ show an)
+		      ) t sxs) m
+	    _ -> m )
 
 ----------------------------------------------------------------------
 
-up_literal_map :: LiteralMap -> LiteralAnnos -> LiteralMap
-up_literal_map lmap la =
-    let oids = Map.toList lmap
-	(sids,rem_str) = case string_lit la of
-			 Nothing      -> ([],False)
-			 Just (i1,i2) -> ([(i1,StringCons),(i2,StringNull)],
-					  True)
-        (lids,rem_lst) = let s = list_lit la in
-			     (concatMap ( \ (i1,i2,i3) -> 
-			    [(i1,ListBrackets), (i2,ListCons), (i3,ListNull)])
-					  $ Set.toList s , Set.isEmpty s)
-	(nid,rem_num)  = case number_lit la of
-			 Nothing -> ([],False)
-			 Just i  -> ([(i,Number)],True)
-	(fids,rem_flo) = case float_lit la of
-			 Nothing -> ([],False)
-			 Just (i1,i2) -> ([(i1,Fraction),(i2,Floating)],
-					  True)
-	remids = (if rem_str then
-		   map fst $ filter (\(_,x) ->    x == StringCons 
-                                               || x == StringNull) oids  
-		 else []) ++
-		 (if rem_lst then
-		   map fst $ filter (\(_,x) ->    x == ListCons 
-                                               || x == ListNull
-					       || x == ListBrackets) oids  
-		 else []) ++
-		 (if rem_num then
-		   map fst $ filter (\(_,x) ->    x == Number) oids  
-		 else []) ++
-		 (if rem_flo then
-		   map fst $ filter (\(_,x) ->    x == Floating 
-					       || x == Fraction) oids  
-		 else [])
-    in (foldr Map.delete lmap remids) `Map.union` 
-       Map.fromList (lids ++ fids ++ nid ++ sids)
+getLiteralType ::  GlobalAnnos -> Id -> LiteralType
+getLiteralType ga i = 
+    Map.findWithDefault NoLiteral i $ literal_map ga
 
-isLiteral :: LiteralMap -> Id -> Bool
-isLiteral lmap i = case Map.lookup i lmap of
-		   Just _  -> True
-		   Nothing -> False
-
-getLiteralType :: LiteralMap -> Id -> LiteralType
-getLiteralType lmap i =
-    case Map.lookup i lmap of
-    Just t  -> t
-    Nothing -> error $ show i ++ " is not a literal id"
+store_literal_map :: LiteralMap -> [Annotation] -> LiteralMap
+store_literal_map = 
+    foldr ( \ a m -> let err = error ("conflict: " ++ show a) in
+	    case a of 
+	    Number_anno id1 _ -> 
+	        let oc = Map.findWithDefault Number id1 m
+	            in if oc == Number -- repeated or new
+	            then Map.insert id1 Number m else err  
+	    String_anno id1 id2 _ ->
+	        let c = StringCons id1
+                    oc = Map.findWithDefault c id2 m
+	            on = Map.findWithDefault StringNull id1 m
+	            in if oc == c && on == StringNull then
+	            Map.insert id1 StringNull $ Map.insert id2 c m
+	            else err
+	    Float_anno id1 id2 _ ->
+	        let oc = Map.findWithDefault Fraction id1 m
+	            on = Map.findWithDefault Floating id2 m
+	            in if oc == Fraction && on == Floating then
+	            Map.insert id2 Floating $ Map.insert id1 Fraction m
+	            else err
+	    List_anno id1 id2 id3 _ -> 
+	        let c = ListCons id1 id2
+	            n = ListNull id1
+                    oc = Map.findWithDefault c id3 m
+	            on = Map.findWithDefault n id2 m
+	            in if c == oc && n == on then
+	            Map.insert id2 n $ Map.insert id3 c m  
+	            else err
+	    _ -> m )
 
 store_literal_annos :: LiteralAnnos -> [Annotation] -> LiteralAnnos
 store_literal_annos la ans = 
-    let string_lit' = setStringLit (string_lit la) ans
-        list_lit'   = setListLit   (list_lit la)   ans    
-	newLA = 
-           la { string_lit = string_lit'
-	      , list_lit   = list_lit'
+           la { string_lit = setStringLit (string_lit la) ans
+	      , list_lit = setListLit (list_lit la) ans
 	      , number_lit = setNumberLit (number_lit la) ans
 	      , float_lit  = setFloatLit  (float_lit la)  ans
 	      }
-	in case string_lit' of 
-	   Nothing -> newLA
-	   Just (s_null,s_conc) -> 
-	       let cs = Set.filter ( \ (_, n, c) -> 
-			n == s_null || c == s_conc) list_lit' 
-		   in if Set.isEmpty cs then newLA
-		      else  error 
-		   ("%string- and %list-annotions use same identifiers: "
-                     ++ show (Set.findMin cs))
 
 setStringLit :: Maybe (Id,Id) -> [Annotation] -> Maybe (Id,Id)
 setStringLit = 
     foldr ( \ a m ->
-	    case a of 
-	    String_anno id1 id2 _ ->
-	        case m of 
-	        Nothing -> Just (id1, id2)
-	        Just p -> 
-	            if (id1, id2) == p then m
-	            else error ("conflict %string " ++ showId id1 "," 
-				++ showId id2 " and " ++ show p)
-	    _ -> m )
+            case a of 
+            String_anno id1 id2 _ ->
+                case m of 
+                Nothing -> Just (id1, id2)
+                Just p -> 
+                    if (id1, id2) == p then m
+                    else error ("conflict %string " ++ showId id1 "," 
+                                ++ showId id2 " and " ++ show p)
+            _ -> m )
 
 setFloatLit :: Maybe (Id,Id) -> [Annotation] -> Maybe (Id,Id)
 setFloatLit = 
@@ -222,41 +202,31 @@ setNumberLit =
 setListLit :: Set.Set (Id,Id,Id) -> [Annotation] -> Set.Set (Id,Id,Id)
 setListLit = 
     foldr ( \ a s ->
-	    case a of 
-	    List_anno id1 id2 id3 _ ->
-	            let cs = Set.filter ( \ ( o1, o2, o3) -> 
-				 o1 == id1 || o2 == id2 || o3 == id3) s in
-	            if Set.isEmpty cs then Set.insert (id1, id2, id3) s 
-	            else error ("conflict %list " ++ showId id1 "," 
-				++ showId id2 "'" ++ showId id3 " and " 
-				++ show (Set.findMin cs))
-	    _ -> s )
+            case a of 
+            List_anno id1 id2 id3 _ ->
+                    let cs = Set.filter ( \ ( o1, o2, o3) -> 
+                                 o1 == id1 || o2 == id2 || o3 == id3) s in
+                    if Set.isEmpty cs then Set.insert (id1, id2, id3) s 
+                    else error ("conflict %list " ++ showId id1 "," 
+                                ++ showId id2 "'" ++ showId id3 " and " 
+                                ++ show (Set.findMin cs))
+            _ -> s )
 
 -------------------------------------------------------------------------
 
-nullStr, nullList :: GlobalAnnos -> Id		 
-nullStr ga = case string_lit $ literal_annos ga of
-	     Just (n,_) -> n
-	     Nothing    -> error "nullStr Id not found"
-
-nullList ga = let s = list_lit $ literal_annos ga in 
-              if Set.isEmpty s then error "nullList Id not found"
-	      else let (_, n, _) = Set.findMin s in n
-
----------------------------------------------------------------------------
-
-getListBrackets :: Id -> ([Token], [Token])
-getListBrackets (Id b _ _) = 
+getListBrackets :: Id -> ([Token], [Token], [Id])
+getListBrackets (Id b cs _) = 
     let (b1, rest) = break isPlace b
 	b2 = if null rest then [] 
 	     else filter (not . isPlace) rest
-    in (b1, b2)
+    in (b1, b2, cs)
 
-listBrackets :: GlobalAnnos -> ([Token], [Token])
-listBrackets g = 
-    let s = list_lit $ literal_annos g 
-	in if Set.isEmpty s then ([], [])
-	   else let (bs, _, _) = Set.findMin s in 
-		getListBrackets bs		 
+listBrackets :: GlobalAnnos -> Id -> Id
+listBrackets g i = 
+    case Map.findWithDefault Number i $ literal_map g of
+    ListNull b -> b
+    ListCons b _ -> b
+    _ -> error "listBrackets"
+
 -------------------------------------------------------------------------
 

@@ -133,22 +133,31 @@ mkApplState i (ide, info) =
        t <- freshInst sc
        return $ mkPState i ide sc t $ getTokenList place ide
 
-listId :: Id
+listToken :: Token 
+listToken = mkSimpleId "[]"
+listId :: Id -> Id
 -- unique id (usually "[]" yields two tokens)
-listId = Id [mkSimpleId "[]"] [] []
+listId i = Id [listToken] [i] []
 
+isListId :: Id -> Bool
+isListId (Id ts cs _) = head ts == listToken && length cs == 1
 
 listStates :: GlobalAnnos -> Index -> State Int [PState]
 -- no empty list (can be written down directly)
 listStates g i = 
     do ty <- freshType star
-       let listState toks = mkPState i listId (simpleTypeScheme $ 
+       let lists = list_lit $ literal_annos g
+	   listState co toks = mkPState i (listId co) (simpleTypeScheme $ 
 					   BracketType Squares [] []) 
-			    ty toks
-	   (b1, b2) = listBrackets g
-       return $ if null b1 || null b2 then []
-	      else [ listState (b1 ++ [termTok] ++ b2) 
-		     , listState (b1 ++ [termTok, commaTok] ++ b2)]
+			       ty toks
+	   in return $ concatMap ( \ (bs, n, c) ->
+	     let (b1, b2, cs) = getListBrackets bs 
+		 e = Id (b1 ++ b2) cs [] in
+	     (if e == n then [] -- add b1 ++ b2 if its not yet included by n
+	      else [listState c $ getTokenList place e]) ++
+                   [listState c (b1 ++ [termTok] ++ b2) 
+		   , listState c (b1 ++ [termTok, commaTok] ++ b2)]
+		   ) $ Set.toList lists
 
 -- these are the possible matches for the nonterminal (T)
 -- the same states are used for the predictions  
@@ -236,12 +245,13 @@ stateToAppl p =
 					       else last qs))
 	       
 toAppl :: GlobalAnnos -> PState -> Term
-toAppl g s =
-    if ruleId s == listId then    
-           let (b, c, f) = Set.findMin $ list_lit $ literal_annos g
-	       (b1, b2) = getListBrackets b
+toAppl g s = let i = ruleId s in
+    if isListId i then    
+           let Id _ [f] _ = i
+	       ListCons b c = getLiteralType g f
+	       (b1, _, _) = getListBrackets b
+	       cl = length $ getTokenList place b
                nb1 = length b1
-               nb2 = length b2
                ra = reverse $ ruleArgs s
                na = length ra
 	       br = reverse $ posList s
@@ -250,7 +260,7 @@ toAppl g s =
 	       mkList (hd:tl) ps = asAppl f [hd, mkList tl (tail ps)] (head ps)
 	   in if null ra then asAppl c [] 
 		  (if null br then nullPos else head br)
-	      else if nb + 1 == nb1 + nb2 + na then
+	      else if nb + 2 == cl + na then
 		   let br1 = drop (nb1 - 1) br 
 	           in  mkList ra br1  
 		   else error "toAppl"
@@ -292,7 +302,7 @@ filterByPrec g PState { ruleId = argIde }
 		 PState { ruleId = opIde, ruleArgs = args, restRule = ts } =
     if null ts then False else
        if head ts == termTok then 
-	  if opIde == listId || argIde == listId then True
+	  if isListId opIde || isListId argIde then True
 	  else let n = length args in
 		    if isLeftArg opIde n then 
 		       if isPostfix opIde && (isPrefix argIde

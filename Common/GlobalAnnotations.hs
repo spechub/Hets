@@ -18,8 +18,8 @@ module Common.GlobalAnnotations where
 import Common.Id
 
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 
 data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
@@ -39,7 +39,7 @@ emptyGlobalAnnos = GA { prec_annos    = Rel.empty
 
 emptyLiteralAnnos :: LiteralAnnos
 emptyLiteralAnnos = LA { string_lit  = Nothing
-			, list_lit   = Set.empty
+			, list_lit = Set.empty
 			, number_lit = Nothing
 			, float_lit  = Nothing
 			}
@@ -48,18 +48,22 @@ type PrecedenceGraph = Rel.Rel Id
 
 type AssocMap = Map.Map Id AssocEither
 
-type DisplayMap = Map.Map Id [(Display_format,String)]
+type DisplayMap = Map.Map Id (Map.Map Display_format String)
 
 type LiteralMap = Map.Map Id LiteralType
 
-data LiteralType = StringCons | StringNull
-		 | ListBrackets | ListCons | ListNull
+data LiteralType = StringCons Id  -- id of null string 
+		 | StringNull
+		 | ListCons Id Id  -- brackets and null list
+                 | ListNull Id -- brackets
+		 | NoLiteral -- as error value
 		 | Number
-		 | Fraction | Floating
+		 | Fraction 
+		 | Floating
 		   deriving (Show,Eq)
 
 data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
-		       , list_lit   :: Set.Set (Id,Id,Id)
+                       , list_lit :: Set.Set (Id, Id, Id)
 		       , number_lit :: Maybe Id
 		       , float_lit  :: Maybe (Id,Id)
 		       } deriving (Show)

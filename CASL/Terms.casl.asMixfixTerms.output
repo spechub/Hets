@@ -56,7 +56,7 @@ b [a __ b]
 Error (line 32, column 8) unexpected mixfix token: b
 b [a __ b] a
 Error (line 33, column 8) unexpected mixfix token: b
-({}, [], {[] {}})
+({}, [ ], {[] {}})
 Error (line 34, column 3) unexpected mixfix token: }
 Error (line 34, column 14) unexpected mixfix token: }
 {{}, [], {[] {}}}

@@ -13,7 +13,7 @@
 a : s + b : s
 a as s : s as s
 a : s : s as s as s
-[]
+[ ]
 + a
 a + b
 a when a < b else b

@@ -65,7 +65,6 @@ varTok = mkSimpleId "(v)"
 opTok = mkSimpleId "(o)"
 predTok = mkSimpleId "(p)"
 
-
 mkState :: Int -> Id -> State 
 mkState i ide = State ide [] [] (getTokenList termStr ide) i
 
@@ -73,19 +72,28 @@ mkApplState :: Int -> Id -> State
 mkApplState i ide = State ide [] [] 
 		    (getTokenList place ide ++ [parenTok]) i
 
-listId :: Id
+
+listToken :: Token 
+listToken = mkSimpleId "[]"
+listId :: Id -> Id
 -- unique id (usually "[]" yields two tokens)
-listId = Id [mkSimpleId "[]"] [] []
+listId i = Id [listToken] [i] []
+
+isListId :: Id -> Bool
+isListId (Id ts cs _) = head ts == listToken && length cs == 1
 
 listStates :: GlobalAnnos -> Int -> [State]
--- no empty list (can be written down directly)
 listStates g i = 
-    let listState toks = State listId [] [] toks i
-	(b1, b2) = listBrackets g
-    in if null b1 || null b2 then []
-       else [ listState (b1 ++ [termTok] ++ b2) 
-		     , listState (b1 ++ [termTok, commaTok] ++ b2)]
--- assume that b1 ++ b2 is included as Id for the empty list
+    let lists = list_lit $ literal_annos g
+        listState co toks = State (listId co) [] [] toks i
+    in concatMap ( \ (bs, n, c) ->
+       let (b1, b2, cs) = getListBrackets bs 
+	   e = Id (b1 ++ b2) cs [] in
+	   (if e == n then [] -- add b1 ++ b2 if its not yet included by n
+	       else [listState c $ getTokenList place e]) ++
+                   [listState c (b1 ++ [termTok] ++ b2) 
+		   , listState c (b1 ++ [termTok, commaTok] ++ b2)]
+		   ) $ Set.toList lists
 
 -- these are the possible matches for the nonterminal TERM
 -- the same states are used for the predictions  
@@ -128,7 +136,7 @@ scan trm i m =
        foldr (\ (State o b a ts k) l ->
 	      if null ts || head ts /= t then l 
 	      else let p = tokPos t : b in 
-                   if t == commaTok && o == listId then 
+                   if t == commaTok && isListId o then 
 	      -- list elements separator
 	             (State o p a 
 		      (termTok : commaTok : tail ts) k)
@@ -174,7 +182,7 @@ filterByPrec :: GlobalAnnos -> State -> State -> Bool
 filterByPrec _ _ (State _ _ _ [] _) = False 
 filterByPrec g (State argIde _ _ _ _) (State opIde _ args (hd:_) _) = 
        if hd == termTok then 
-	  if opIde == listId || argIde == listId then True
+	  if isListId opIde || isListId argIde then True
 	  else let n = length args in
 		    if isLeftArg opIde n then 
 		       if isPostfix opIde && (isPrefix argIde
@@ -260,18 +268,19 @@ stateToAppl (State ide rs a _ _) =
 
 asListAppl :: GlobalAnnos -> State -> TERM
 asListAppl g s@(State i bs a _ _) =
-    if i == listId then    
-           let (b, c, f) = Set.findMin $ list_lit $ literal_annos g
-	       (b1, b2) = getListBrackets b
+    if isListId i then    
+           let Id _ [f] _ = i
+	       ListCons b c = getLiteralType g f
+	       (b1, _, _) = getListBrackets b
+	       cl = length $ getTokenList place b
                nb1 = length b1
-               nb2 = length b2
                ra = reverse a
                na = length ra
                nb = length bs
 	       mkList [] ps = asAppl c [] (head ps)
 	       mkList (hd:tl) ps = asAppl f [hd, mkList tl (tail ps)] (head ps)
 	   in if null a then asAppl c [] (if null bs then nullPos else last bs)
-	      else if nb + 1 == nb1 + nb2 + na then
+	      else if nb + 2 == cl + na then
 		   let br = reverse bs 
 		       br1 = drop (nb1 - 1) br 
 	           in  mkList (reverse a) br1  
