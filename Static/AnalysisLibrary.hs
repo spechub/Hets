@@ -19,7 +19,7 @@ Portability :  non-portable(Logic)
 -}
 
 
-module Static.AnalysisLibrary (anaFile, ana_LIB_DEFN) where
+module Static.AnalysisLibrary (anaFile, ana_LIB_DEFN, anaString) where
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -58,17 +58,27 @@ anaFile logicGraph defaultLogic opts libenv fname = do
       return Nothing
     Just fname'' -> do
       input <- readFile fname''
-      ast <- read_LIB_DEFN_M defaultLogic fname'' input
-      Result diags res <-
-            ioresToIO (ana_LIB_DEFN logicGraph defaultLogic opts
-                                    libenv ast)
-          -- no diags expected here, since these are handled in ana_LIB_DEFN
-          -- sequence (map (putStrLn . show) diags)
-      case res of 
-            Nothing -> return()
-            Just (ln,_,_,lenv) ->
-              writeFileInfo opts diags fname'' ln lenv
-      return res
+      anaString logicGraph defaultLogic opts libenv input (Just fname'')
+
+-- | parsing and static analysis for string (=contents of file)
+-- Parameters: logic graph, default logic, contents of file, filename (if any)
+anaString :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
+              -> Maybe String -> IO (Maybe (LIB_NAME,LIB_DEFN,DGraph,LibEnv))
+anaString logicGraph defaultLogic opts libenv input fname = do
+  let fname' = case fname of
+        Nothing -> "<stdin>"
+        Just n -> n
+  ast <- read_LIB_DEFN_M defaultLogic fname' input
+  Result diags res <-
+        ioresToIO (ana_LIB_DEFN logicGraph defaultLogic opts
+                                libenv ast)
+      -- no diags expected here, since these are handled in ana_LIB_DEFN
+      -- sequence (map (putStrLn . show) diags)
+  case (res,fname) of 
+        (Just (ln,_,_,lenv), Just n) ->
+          writeFileInfo opts diags n ln lenv
+        _ -> return ()
+  return res
 
 -- lookup/read a library
 anaLibFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> LIB_NAME 
