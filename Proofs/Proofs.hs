@@ -21,7 +21,7 @@ Portability :  non-portable(Logic)
    Lecture Notes in Computer Science 2029, p. 269-283,
    Springer-Verlag 2001.
 
-todo:
+todo in general:
 
 Order of rule application: try to use local links induced by %implies 
 for subsumption proofs (such that the %implied formulas need not be
@@ -35,8 +35,23 @@ Add proof status information
 - proofs of thm links according to rules
 - cons, def and mono annos, and their proofs
 
+todo for Jorina:
 
+
+   todo:
+   - verwendung bereits gelöschter Kante bei locDecomp (nach globDecomp) in
+     view-test1.casl
+   - Identitäts-Pfeile bei local decomp (ähnlich wir bei GlobSubsume)
+   - bei GlobDecomp hinzufügen:
+     zusätzlich alle Pfade K<--theta-- M --sigma-->N in den aktuellen 
+     Knoten N, die mit einem HidingDef anfangen, und danach nur GlobalDef
+     theta ist der Signaturmorphismus des HidingDef's (geht "falsch rum")
+     sigma ist die Komposition der Signaturmorphismen auf dem restl. Pfad
+     für jeden solchen Pfad: einen HidingThm theta einfügen. sigma ist
+     der normale Morphismus (wie bei jedem anderen Link)
+     siehe auch Seite 302 des CASL Reference Manual
 -}
+
 module Proofs.Proofs where
 
 import Logic.Logic
@@ -56,24 +71,14 @@ import Syntax.AS_Library
 import Syntax.Print_AS_Library 
 
 
-{- proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
+{-
+   proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
    DG0 is the development graph resulting from the static analysis
    Ri is a list of rules that transforms DGi-1 to DGi
    With the list of intermediate proof states, one can easily implement
     an undo operation
-
-   todo:
-   - verwendung bereits gelöschter Kante bei locDecomp (nach globDecomp) in
-     view-test1.casl
-   - Identitäts-Pfeile bei local decomp (ähnlich wir bei GlobSubsume)
-   - bei GlobDecomp hinzufügen:
-     zusätzlich alle Pfade K<--theta-- M --sigma-->N in den aktuellen 
-     Knoten N, die mit einem HidingDef anfangen, und danach nur GlobalDef
-     theta ist der Signaturmorphismus des HidingDef's (geht "falsch rum")
-     sigma ist die Komposition der Signaturmorphismen auf dem restl. Pfad
-     für jeden solchen Pfad: einen HidingThm theta einfügen. sigma ist
-     der normale Morphismus (wie bei jedem anderen Link)
 -}
+
 type ProofStatus = (GlobalContext,LibEnv,[([DGRule],[DGChange])],DGraph)
 
 data DGRule = 
