@@ -45,7 +45,7 @@ lowerCaseList = Set.fromList ["undefined", "error", "seq", "fst", "snd",
                  "show", "showList", "showsPrec","shows",
                  "showChar", "showString", "showParen",
                  "showArgument", "showParenArg", "then", "type", "where"]
-upperCaseList = Set.fromList ["True", "False", "Bool", "Int", "Num", 
+upperCaseList = Set.fromList ["Int", "Num", 
                          "Ordering",
 			 "Char", "String", "Read", "Show", "ShowS", "IO",
                          "Integer", "Rational", "Double", "Fractional",
