@@ -20,9 +20,9 @@
 module LogicRepr where
 
 import Logic
-import FiniteSet
-import Maybe(catMaybes)
-import Dynamic
+import Common.Lib.Set
+import Data.Maybe(catMaybes)
+import Data.Dynamic
 
 -- Simple logic representations (possibly also morphisms via adjointness)
 

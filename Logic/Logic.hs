@@ -53,14 +53,14 @@ module Logic where
 
 import Id
 import GlobalAnnotations
-import FiniteSet
+import Common.Lib.Set
 import FiniteMap
-import Graph
+import Common.Lib.Graph
 import Result
 import Prover -- for one half of class Sentences
 -- import IOExts(trace)
 import PrettyPrint
-import Dynamic
+import Data.Dynamic
 
 -- for coercion used in Grothendieck.hs and Analysis modules
 

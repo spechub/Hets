@@ -37,11 +37,11 @@ module Grothendieck where
 import Logic
 import LogicRepr
 import PrettyPrint
-import Pretty
+import Common.Lib.Pretty
 import PPUtils (fsep_latex, comma_latex)
 import Result
 import Id
-import Dynamic
+import Data.Dynamic
 
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic

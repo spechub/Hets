@@ -10,8 +10,8 @@ module ParsecInterface
 where
 
 import Logic
-import Parsec
-import ParsecError
+import Common.Lib.Parsec
+-- import Common.Lib.Parsec.Error
 
 -- for a Parsec parser and an initial state, obtain a ParseFun as needed in Logic.hs
 
