@@ -134,7 +134,7 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
        globSubsumeAux dGraph (rules,changes) list
   where
     auxGraph = delLEdge ledge dGraph
-               -- ### wieder reinnehmen, sobald Eq definiert #####
+               -- wieder reinnehmen, sobald Eq definiert #####
 	       -- let auxGraph = delLEdge ledge dGraph
     newEdge = (source,
 	       target,
