@@ -103,7 +103,7 @@ cspCaslCSpec = do { d <- dataDefn
 basicCspCaslCSpec :: AParser Basic_CSP_CASL_C_SPEC
 basicCspCaslCSpec = do { c <- channelDecl
                   ; p <- processDefn
-                  ; return $ trace ("fertig "++show p) (Basic_csp_casl_c_spec c p)
+                  ; return (Basic_csp_casl_c_spec c p)
                   }
 
 ----------------------------------------------------------------------------
