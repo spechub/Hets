@@ -25,7 +25,9 @@ DRIFT      = $(DRIFT_ENV) $(PERL) utils/DrIFT
 AG         = $(PERL) utils/ag
 HADDOCK    = $(PERL) utils/haddock
 
-HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
+HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall -O2
+# please remove '-O2' if compilation lasts to long on your system
+# but please don't commit to cvs server
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci -package uni-server
 
@@ -36,7 +38,7 @@ AG_FLAGS   = -mdcfs
 ### cannot link the various .o files properly. So after switching on
 ### Profiling, do an 'gmake clean; gmake'
 ### If you need Profiling comment out the following line 
-#HC_PROF    = -prof -auto-all -Wall 
+#HC_PROF    = -prof -auto-all 
 
 HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
@@ -71,6 +73,8 @@ objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
     $(gendrifted_files)
+
+genrule_header_files = $(wildcard ATC/*.header.hs)
 
 genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs Common/AS_Annotation.der.hs Common/Named.hs \
                 Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
@@ -161,7 +165,7 @@ post_doc4apache:
 
 genRules: $(generated_rule_files)
 
-$(generated_rule_files): $(genrule_files) 
+$(generated_rule_files): $(genrule_files) $(genrule_header_files)
 	$(MAKE) clean_genRules
 	$(foreach file,$(atc_files),$(gen_atc_files))
 	utils/genRules -r $(rule) -o CASL    -h ATC/CASL.header.hs $(casl_files)
@@ -290,6 +294,10 @@ atctest: ATC/ATCTest.hs ATC/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
+### ATerm.Lib test system
+atermlibtest: Common/ATerm/ATermLibTest.hs Common/ATerm/*.hs Common/SimpPretty.hs
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL with dev graph
 hetdg: GUI/hetdg.hs $(drifted_files) *.hs 
