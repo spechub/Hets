@@ -17,28 +17,33 @@ c :Cpo %(var)%
 c-->d :Type< c -->? d
 c-->?d :Type< c ->? d
 d :Cpo %(var)%
+f :Flatcpo %(var)%
 logical :Type %% free type definition omitted
-nat :Flatcpo
+nat :(Type,Flatcpo)
+p :Pcpo %(var)%
 s :Type< ? s %(var)%
 s->t :Type< s ->? t
 t :Type %(var)%
 Assumptions
+Y : p -->? p --> p
+__/\__ : logical × logical -> logical
+__<=>__ : logical × logical -> logical
+__=>__ : logical × logical -> logical
+__\/__ : logical × logical -> logical
+__if__ : logical × logical -> logical
+bottom : p
 f : c --> d %(var)%
+false : logical
 g : c --> d %(var)%
+not : logical -> logical
+sup : nat -> c ->? c
+true : logical
 x : s %(var)%
 x1 : c %(var)%
 x2 : c %(var)%
 y1 : d %(var)%
 y2 : d %(var)%
 Error (4,7) illegal universe class declaration
-FatalError (13,4) no analysis yet for: true
-FatalError (13,10) no analysis yet for: false
-FatalError (15,7) no analysis yet for: __/\__
-FatalError (15,15) no analysis yet for: __\/__
-FatalError (15,23) no analysis yet for: __=>__
-FatalError (15,31) no analysis yet for: __if__
-FatalError (15,38) no analysis yet for: __<=>__
-FatalError (16,4) no analysis yet for: not
 Warning (27,11) redeclared type 'Unit'
 FatalError (29,1) no analysis yet for: . 1 = ()
 Warning (39,16) redeclared type 't'
@@ -74,55 +79,47 @@ FatalError (109,1) no analysis yet for: program neg (r : Pred Unit) : Pred Unit 
 FatalError (114,1) no analysis yet for: . all
   (\ f : s ->? t; g : s ->? t . all
 				(\ x : s . eq (\ . f (x),g (x)) impl eq (f,g)))
-Warning (119,13) redundant universe class
-FatalError (123,1) no analysis yet for: pred __<<=__ : c × c
-FatalError (125,1) no analysis yet for: . all (\ x : c . x <<= x) %(reflexive)%
+Warning (121,13) redundant universe class
+FatalError (125,1) no analysis yet for: pred __<<=__ : c × c
+FatalError (127,1) no analysis yet for: . all (\ x : c . x <<= x) %(reflexive)%
 . all
   (\ x : c; y : c; z : c . ((x <<= y) und (y <<= z)) impl x <<= z)
   %(transitive)%
 . all
   (\ x : c; y : c; z : c . ((x <<= y) und (y <<= x)) impl eq (x,y))
   %(antisymmetric)%
-FatalError (129,1) no analysis yet for: pred isChain(s : nat -> c) <=> all
+FatalError (131,1) no analysis yet for: pred isChain(s : nat -> c) <=> all
 			       (\ n : nat . s (n) <<= s (Suc (n)))
-FatalError (130,1) no analysis yet for: pred isBound(x : c,s : nat -> c) <=> all (\ n : nat . s (n) <<= x)
-Error (132,11) undeclared type 'nat'
-Error (132,18) undeclared type 'c'
-Error (132,25) undeclared type 'c'
-FatalError (132,4) no analysis yet for: sup
-FatalError (134,1) no analysis yet for: . all
+FatalError (132,1) no analysis yet for: pred isBound(x : c,s : nat -> c) <=> all (\ n : nat . s (n) <<= x)
+FatalError (136,1) no analysis yet for: . all
   (\ s : nat -> c . def (sup s) impl
 		    (isBound (sup s,s) und all
 		     (\ x : c . isBound (x,s) impl sup (s) <<= x)))
   %(sup is minimally bound)%
 . all (\ s : nat -> c . isChain (s) impl def (sup (s)))
   %(sup exists)%
-Error (145,13) undeclared type 'p'
-FatalError (147,1) no analysis yet for: . all (\ x : p . bottom <<= x)
-FatalError (154,2) no analysis yet for: program __ <<= [f] __ = eq
-Hint (161,13) not a class 'c'
-Hint (161,13) not a class 'c'
-Hint (161,25) not a class 'd'
-Hint (161,25) not a class 'd'
-FatalError (163,1) no analysis yet for: program (x1,y1) <<= (x2,y2) = (x1 <<= x2) und (y1 <<= y2)
-FatalError (174,2) no analysis yet for: . __ in c -->? d
+FatalError (149,1) no analysis yet for: . all (\ x : p . bottom <<= x)
+FatalError (156,2) no analysis yet for: program __ <<= [f] __ = eq
+Warning (159,5) redeclared type 'c'
+Hint (163,13) not a class 'c'
+Hint (163,13) not a class 'c'
+Hint (163,25) not a class 'd'
+Hint (163,25) not a class 'd'
+FatalError (165,1) no analysis yet for: program (x1,y1) <<= (x2,y2) = (x1 <<= x2) und (y1 <<= y2)
+FatalError (176,2) no analysis yet for: . __ in c -->? d
   =
   \ f : c ->? d . all
 		  (\ x : c; y : c . (def (f x) und x <<= y) impl def (f y)) und all
 		  (\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
 				    (\ m : nat . def f (s (m)) und eq
 						 (sup (\ n : nat .! f (s (n + m))),f (sup (s)))))
-FatalError (180,3) no analysis yet for: program f <<= [c -->? d] g =
+FatalError (182,3) no analysis yet for: program f <<= [c -->? d] g =
 	all (\ x : c . def (f x) impl f (x) <<= g (x))
-FatalError (186,2) no analysis yet for: . __ in c --> d = \ f : c -->? d . all (\ x : c . def f (x))
-Hint (188,15) not a class 'c --> d'
-Hint (188,15) not a class 'c --> d'
-FatalError (190,2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
-Error (194,9) undeclared type 'p'
-Error (194,16) undeclared type 'p'
-Error (194,23) undeclared type 'p'
-FatalError (194,4) no analysis yet for: Y
-FatalError (196,1) no analysis yet for: . all
+FatalError (188,2) no analysis yet for: . __ in c --> d = \ f : c -->? d . all (\ x : c . def f (x))
+Hint (190,15) not a class 'c --> d'
+Hint (190,15) not a class 'c --> d'
+FatalError (192,2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
+FatalError (198,1) no analysis yet for: . all
   (\ f : p -->? p . eq (f (Y (f)),Y (f)) und all
 		    (\ x : p . eq (f (x),x) impl Y (f) <<= x))
-FatalError (199,4) no analysis yet for: undefined
+FatalError (201,4) no analysis yet for: undefined

@@ -25,7 +25,6 @@ import Common.Result
 import HasCASL.PrintAs
 import HasCASL.TypeAna
 import HasCASL.TypeDecl
-import HasCASL.Unify
 
 ----------------------------------------------------------------------------
 -- analysis
@@ -119,17 +118,7 @@ anaVarDecl(VarDecl v oldT _ _) =
 		      case mk of 
 			      Nothing -> return ()
 			      Just k -> checkKinds (posOfId v) k star
-		      as <- getAssumps
-		      let l = Map.findWithDefault [] v as
-			  ts = simpleTypeScheme t in 
-			  if ts `elem` map opType l then 
-			     addDiag $ mkDiag Warning 
-				      "repeated variable" v
-			     else do bs <- mapM (unifiable ts) $ map opType l
-			             if or bs then addDiag $ mkDiag Error
-					    "illegal overloading of" v
-	                                else putAssumps $ Map.insert v 
-						 (OpInfo ts [] VarDefn : l ) as
+		      addOpId v (simpleTypeScheme t) [] VarDefn
 
 -- ----------------------------------------------------------------------------
 -- ClassItem

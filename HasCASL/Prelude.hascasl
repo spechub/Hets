@@ -116,6 +116,8 @@ program neg (r: Pred Unit) : Pred Unit = r impl ff
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"  
 
+type nat
+
 class Cpo < Type
 {
 var c : Cpo

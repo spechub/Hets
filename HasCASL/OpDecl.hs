@@ -18,10 +18,13 @@ import Control.Monad.State
 import Common.PrettyPrint
 import HasCASL.PrintAs(showPretty)
 import Common.Lib.Parsec.Pos
+import qualified Common.Lib.Map as Map
 import Common.Result
 import HasCASL.TypeDecl
 import Data.List
 import Data.Maybe
+import HasCASL.Unify
+
 
 missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
 missingAna t ps = appendDiags [Diag FatalError 
@@ -46,7 +49,7 @@ anaOpId (TypeScheme tvs q ps) attrs (OpId i args _) =
        case mk of 
 	       Nothing -> return () -- induced error
 	       Just k -> do checkKinds (posOfId i) k star
-			    addOpId i newSc attrs
+			    addOpId i newSc attrs NoOpDefn
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe Kind, TypeScheme)
 anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
@@ -70,6 +73,15 @@ shortPosShow :: Pos -> ShowS
 shortPosShow p = showParen True (shows (sourceLine p) . showString "," .
 			 shows (sourceColumn p))
 
-addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> State Env () 
-addOpId i sc attrs = missingAna i [posOfId i]
-
+addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env () 
+addOpId i sc attrs defn = 
+    do as <- getAssumps
+       let l = Map.findWithDefault [] i as
+       if sc `elem` map opType l then 
+	  addDiag $ mkDiag Warning 
+		      "repeated value" i
+	  else do bs <- mapM (unifiable sc) $ map opType l
+		  if or bs then addDiag $ mkDiag Error
+			 "illegal overloading of" i
+	             else putAssumps $ Map.insert i 
+			      (OpInfo sc attrs defn : l ) as
