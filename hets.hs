@@ -30,7 +30,7 @@ import Debug.Trace
 main :: IO ()
 main = 
     do opt <- getArgs >>= hetcatsOpts
-       putIfVerbose opt 3 ("Options: " ++ print opt)
+       putIfVerbose opt 3 ("Options: " ++ show opt)
        sequence_ $ map (processFile opt) (infiles opt)
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
