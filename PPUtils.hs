@@ -116,7 +116,8 @@ commaT_latex pf ga l = fsep_latex $ punctuate comma_latex $ map (pf ga) l
 semiT_latex pf ga l = fsep_latex $ punctuate semi_latex $ map (pf ga) l
 
 crossT_latex pf ga l = 
-    fsep_latex $ punctuate (space_latex <> hc_sty_axiom "\\times") $ 
+    fcat $ punctuate (space_latex 
+		      <> hc_sty_axiom "\\times"<> space_latex) $ 
 	       map (pf ga) l
 
 semiAnno_latex :: (PrettyPrint a) => 
@@ -151,14 +152,42 @@ simple_id_latex :: SIMPLE_ID -> Doc
 simple_id_latex = hc_sty_structid . tokStr
 
 -- |
--- functions for nice indentation
-hetcasl_nest_latex :: Doc -> Doc
-hetcasl_nest_latex = nest (7 * indent_mult)
+-- constant document to start indentation by a LaTeX tab stop
+startTab_latex :: Doc
+startTab_latex = latex_macro startTab
 
-casl_nest_latex :: Doc -> Doc
-casl_nest_latex = nest (5 * indent_mult)
+-- |
+-- constant document to end indentation by a LaTeX tab stop
+endTab_latex :: Doc
+endTab_latex = latex_macro endTab
 
-params_nest_latex :: Doc -> Doc
-params_nest_latex = nest (3 * indent_mult)
+-- |
+-- constant document to set a LaTeX tab stop at this position
+setTab_latex :: Doc
+setTab_latex = latex_macro setTab
 
+setTabWithSpaces_latex :: Int -> Doc
+setTabWithSpaces_latex = latex_macro . setTabWithSpaces
 
+-- |
+-- function for nice indentation
+tabbed_nest_latex :: Doc -> Doc
+tabbed_nest_latex d = startTab_latex <> d <> endTab_latex
+
+-- |
+-- function for nice indentation together with starting
+set_tabbed_nest_latex :: Doc -> Doc
+set_tabbed_nest_latex d = setTab_latex <> tabbed_nest_latex d 
+
+tab_nest_latex :: Int -> Doc -> Doc
+tab_nest_latex i d = tabbed_nest_latex (nest_latex i d)
+
+tab_hang_latex :: Doc -> Int -> Doc -> Doc
+tab_hang_latex d1 i d2 = sep_latex [d1, tab_nest_latex i d2]
+
+{-nest_latex :: Int -> Doc -> Doc
+nest_latex k = nest (k * space_latex_width)
+     
+hang_latex :: Doc -> Int -> Doc -> Doc
+hang_latex d1 n d2 = sep_latex [d1, nest_latex n d2]
+-}
