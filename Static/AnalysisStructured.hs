@@ -68,7 +68,7 @@ import Common.GlobalAnnotationsFunctions
 import Common.Result
 import Common.Id
 import Common.Lib.Set hiding (filter)
-import FiniteMap
+import qualified Common.Lib.Map as Map
 import Data.List hiding (union)
 import Common.PrettyPrint
 
@@ -81,7 +81,7 @@ setAny p s = any p (toList s)
 setAll p s = all p (toList s)
 s1 `disjoint` s2 = s1 `intersection` s2 == empty
 
-domFM m = fromList (keysFM m)
+domFM m = fromList (Map.keys m)
 
 ana_SPEC :: GlobalAnnos -> GlobalEnv -> DGraph -> NodeSig 
               -> Maybe SIMPLE_ID -> SPEC
@@ -355,7 +355,7 @@ ana_SPEC gannos genv dg nsig name sp =
 
 
   Spec_inst spname afitargs pos ->
-   case lookupFM genv spname of
+   case Map.lookup spname genv of
     Nothing -> plain_error (nsig,dg) 
                  ("Specification "++pretty spname++" not found") (headPos pos)
     Just (ViewEntry _) -> 
@@ -553,7 +553,7 @@ ana_RESTRICTION dg gSigma@(G_sign lid sigma) gSigma'@(G_sign lid' sigma')
      rmap <- stat_symb_map_items lid' sis'
      let sys'' = 
           fromList
-           [sy | sy <- toList sys', rsy <- keysFM rmap, matches lid' sy rsy]
+           [sy | sy <- toList sys', rsy <- Map.keys rmap, matches lid' sy rsy]
      sys1 <- rcoerce lid lid' (headPos pos) sys
         -- ??? this is too simple in case that local env is translated
         -- to a different logic

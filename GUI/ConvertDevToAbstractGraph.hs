@@ -5,7 +5,7 @@ import GUI.AbstractGraphView
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
-import FiniteMap
+import qualified Common.Lib.Map as Map hiding (isEmpty)
 import Syntax.AS_Library
 import Common.Lib.Graph
 import Common.PrettyPrint
@@ -17,8 +17,8 @@ import Static.DGToSpec
 pretty x = show $ printText0 emptyGlobalAnnos x
 
 
-{- FiniteMaps used to track which node resp edge of the abstract graph correspondes with which of the development graph and vice versa
-and one FiniteMap to store which libname belongs to which development graph-}
+{- Maps used to track which node resp edge of the abstract graph correspondes with which of the development graph and vice versa
+and one Map to store which libname belongs to which development graph-}
 data ConversionMaps = ConversionMaps {
 		        dg2abstrNode :: DGraphToAGraphNode,
                         dg2abstrEdge :: DGraphToAGraphEdge,
@@ -27,23 +27,23 @@ data ConversionMaps = ConversionMaps {
                         libname2dg :: LibEnv
                       }
 
--- types of the FiniteMaps above
-type DGraphToAGraphNode = FiniteMap (LIB_NAME,Node) Descr
-type DGraphToAGraphEdge = FiniteMap (LIB_NAME,Edge) Descr
-type AGraphToDGraphNode = FiniteMap Descr (LIB_NAME,Node) 
-type AGraphToDGraphEdge = FiniteMap Descr (LIB_NAME,Edge)
+-- types of the Maps above
+type DGraphToAGraphNode = Map.Map (LIB_NAME,Node) Descr
+type DGraphToAGraphEdge = Map.Map (LIB_NAME,Edge) Descr
+type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node) 
+type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,Edge)
 
 {- converts the development graph given by its libname into an abstract graph
 and returns the descriptor of the latter, the graphInfo it is contained in and the conversion maps (see above)-}
 convertGraph :: LIB_NAME -> LibEnv -> IO (Descr, GraphInfo, ConversionMaps)
 convertGraph libname libEnv =
   do let convMaps = ConversionMaps
-           {dg2abstrNode = emptyFM::DGraphToAGraphNode, 
-            abstr2dgNode = emptyFM::AGraphToDGraphNode,
-            dg2abstrEdge = emptyFM::DGraphToAGraphEdge,
-            abstr2dgEdge = emptyFM::AGraphToDGraphEdge,
+           {dg2abstrNode = Map.empty::DGraphToAGraphNode, 
+            abstr2dgNode = Map.empty::AGraphToDGraphNode,
+            dg2abstrEdge = Map.empty::DGraphToAGraphEdge,
+            abstr2dgEdge = Map.empty::AGraphToDGraphEdge,
             libname2dg = libEnv}
-     case lookupFM libEnv libname of
+     case Map.lookup libname libEnv of
        Just (_,dgraph,_) -> if (isEmpty dgraph) then 
                                   do (abstractGraph,graphInfo,convRef) <- initializeGraph libname dgraph convMaps
                                      return (abstractGraph, graphInfo,convMaps)
@@ -116,7 +116,7 @@ initializeGraph ln dGraph convMaps = do
   return (descr,graphInfo,convRef)
 
 showSpec descr convMap dgraph =
-  case lookupFM convMap descr of
+  case Map.lookup descr convMap of
    Nothing -> return ()
    Just (libname,node) -> do
       let sp = dgToSpec dgraph node
@@ -126,7 +126,7 @@ showSpec descr convMap dgraph =
 used by the node menu defined in initializeGraph-}
 getSignatureOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO String
 getSignatureOfNode descr ab2dgNode dgraph = 
-  case lookupFM ab2dgNode descr of
+  case Map.lookup descr ab2dgNode of
     Just (libname, node) -> do let dgnode = lab' (context node dgraph)
                                return (show (dgn_sign dgnode))
     Nothing -> error ("node with descriptor "
@@ -152,8 +152,8 @@ convertNodesAux convMaps descr graphInfo ((node,dgnode):lNodes) libname =
   do Result newDescr err <- addnode descr (getDGNodeType dgnode) (getDGNodeName dgnode) graphInfo
      --putStrLn (maybe "" id err)
      newConvMaps <- (convertNodesAux
-                       convMaps {dg2abstrNode = addToFM (dg2abstrNode convMaps) (libname, node) newDescr,
-                                 abstr2dgNode = addToFM (abstr2dgNode convMaps) newDescr (libname, node)}
+                       convMaps {dg2abstrNode = Map.insert (libname, node) newDescr (dg2abstrNode convMaps),
+                                 abstr2dgNode = Map.insert newDescr (libname, node) (abstr2dgNode convMaps)}
                                        descr graphInfo lNodes libname)
      return newConvMaps
 
@@ -205,16 +205,16 @@ convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo -> DGraph ->
                     [LEdge DGLink] -> LIB_NAME -> IO ConversionMaps
 convertEdgesAux convMaps descr graphInfo dgraph [] libname = return convMaps
 convertEdgesAux convMaps descr graphInfo dgraph ((src,tar,edge):lEdges) libname = 
-  do let srcnode = lookupFM (dg2abstrNode convMaps) (libname,src)
-         tarnode = lookupFM (dg2abstrNode convMaps) (libname,tar)
+  do let srcnode = Map.lookup (libname,src) (dg2abstrNode convMaps)
+         tarnode = Map.lookup (libname,tar) (dg2abstrNode convMaps)
      case (srcnode,tarnode) of 
       (Just s, Just t) -> do
         Result newDescr err <- addlink descr (getDGLinkType (dgl_type edge)) "" s t graphInfo
         --putStrLn (maybe "" id err)
         --putStrLn ("Adding link" ++ show descr)
         newConvMaps <- (convertEdgesAux
-                       convMaps {dg2abstrEdge = addToFM (dg2abstrEdge convMaps) (libname, (src,tar)) newDescr,
-                                 abstr2dgEdge = addToFM (abstr2dgEdge convMaps) newDescr (libname, (src,tar))}
+                       convMaps {dg2abstrEdge = Map.insert (libname, (src,tar)) newDescr (dg2abstrEdge convMaps),
+                                 abstr2dgEdge = Map.insert  newDescr (libname, (src,tar))(abstr2dgEdge convMaps)}
                                        descr graphInfo dgraph lEdges libname)
         return newConvMaps
       otherwise -> error "Cannot find nodes"

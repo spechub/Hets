@@ -34,7 +34,7 @@ import Common.GlobalAnnotations
 import Common.GlobalAnnotationsFunctions
 import Common.Result
 import Common.Id
-import FiniteMap
+import qualified Common.Lib.Map as Map
 import Common.Result
 
 
@@ -55,7 +55,7 @@ ana_file1 logicGraph defaultLogic fname = do
 
 ana_file :: LogicGraph -> AnyLogic -> LibEnv -> LIB_NAME -> IO LibEnv
 ana_file logicGraph defaultLogic libenv libname = do
-  case lookupFM libenv libname of
+  case Map.lookup libname libenv of
    Just _ -> return libenv
    Nothing -> do
     let fname = case getLIB_ID libname of
@@ -78,9 +78,10 @@ ana_LIB_DEFN :: LogicGraph -> AnyLogic
                  -> IOResult (LIB_NAME,DGraph,LibEnv)
 
 ana_LIB_DEFN lgraph l libenv (Lib_defn ln libItems pos ans) = do
-  (gannos',genv,dg,_,libenv') <- foldl ana (return (gannos,emptyFM,empty,l,libenv))
+  (gannos',genv,dg,_,libenv') <- foldl ana (return 
+					    (gannos,Map.empty,empty,l,libenv))
                                    (map item libItems)
-  return (ln,dg,addToFM libenv' ln (genv,dg,gannos'))
+  return (ln,dg,Map.insert ln (genv,dg,gannos') libenv')
   where
   gannos = addGlobalAnnos emptyGlobalAnnos ans
   ana res libItem = do
@@ -98,9 +99,9 @@ ana_LIB_ITEM_with_download lgraph defl libenv
   -- the global default logic
   let items' = zip items (drop 2 (pos ++ repeat nullPos))
   libenv' <- ioToIORes (ana_file lgraph defl libenv ln)
-  case lookupFM libenv' ln of
+  case Map.lookup ln libenv' of
     Nothing -> do
-       ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available:"++show (keysFM libenv')))
+       ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available:"++show (Map.keys libenv')))
        return (gannos,genv,dg,l,libenv')
     Just (genv',dg',gannos') -> do
                     -- ??? what to do with gannos' ?
@@ -121,14 +122,14 @@ ana_ITEM_NAME_OR_MAP ln genv' res (Item_name_map old new _, pos) =
 ana_ITEM_NAME_OR_MAP1 ln genv' res old new pos = do
   (genv,dg) <- res
   entry <- maybeToResult pos 
-            (pretty old++" not found") (lookupFM genv' old)
-  case lookupFM genv new of
+            (pretty old++" not found") (Map.lookup old genv')
+  case Map.lookup new genv of
     Nothing -> return ()
     Just _ -> fatal_error (pretty new++" already used") pos 
   case entry of
     SpecEntry extsig ->
       let (dg1,extsig1) = refExtsig ln dg new extsig
-          genv1 = addToFM genv new (SpecEntry extsig1)
+          genv1 = Map.insert new (SpecEntry extsig1) genv
        in return (genv1,dg1)
     ViewEntry vsig -> ana_err "view download"
     ArchEntry asig -> ana_err "arch spec download"
@@ -164,12 +165,12 @@ ana_LIB_ITEM :: LogicGraph -> AnyLogic -> LibEnv -> GlobalAnnos
 ana_LIB_ITEM lgraph defl libenv gannos genv dg l (Spec_defn spn gen asp pos) = do
   ((imp,params,parsig,allparams),dg') <- ana_GENERICITY gannos genv dg l gen
   (body,dg'') <- ana_SPEC gannos genv dg' allparams (Just spn) (item asp)
-  if elemFM spn genv 
+  if Map.member spn genv 
    then plain_error (gannos,genv,dg,l,libenv)
                     ("Name "++pretty spn++" already defined")
                     (headPos pos)
    else return (gannos,
-                addToFM genv spn (SpecEntry (imp,params,parsig,body)),
+                Map.insert spn (SpecEntry (imp,params,parsig,body)) genv,
                 dg'',
                 l,
                 libenv)
@@ -199,12 +200,12 @@ ana_LIB_ITEM lgraph defl libenv gannos genv dg l
                dgl_type = GlobalThm False,
                dgl_origin = DGView vn})
       vsig = (src,gmor,(imp,params,parsig,tar))
-  if elemFM vn genv 
+  if Map.member vn genv 
    then plain_error (gannos,genv,dg,l,libenv)
                     ("Name "++pretty vn++" already defined")
                     (headPos pos)
    else return (gannos,
-                addToFM genv vn (ViewEntry vsig),
+                Map.insert vn (ViewEntry vsig) genv,
                 insEdge link dg'',
                 l,
                 libenv)

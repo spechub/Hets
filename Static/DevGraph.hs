@@ -29,8 +29,8 @@ import Logic.Grothendieck
 import Syntax.AS_Library
 import Common.GlobalAnnotations
 
-import Common.Lib.Graph
-import FiniteMap
+import Common.Lib.Graph as Graph
+import Common.Lib.Map as Map
 import Common.Id
 
 -- ??? Some info about the theorems already proved for a node
@@ -116,14 +116,14 @@ data GlobalEntry = SpecEntry ExtGenSig
                  | ArchEntry ArchSig
                  | UnitEntry UnitSig
 
-type GlobalEnv = FiniteMap SIMPLE_ID GlobalEntry
+type GlobalEnv = Map SIMPLE_ID GlobalEntry
 
 type LibEntry = (GlobalEnv,DGraph,GlobalAnnos)
 
-type LibEnv = FiniteMap LIB_NAME LibEntry
+type LibEnv = Map LIB_NAME LibEntry
 
 emptyLibEnv :: LibEnv
-emptyLibEnv = emptyFM
+emptyLibEnv = Map.empty
 
 get_dgn_name :: DGNode -> Maybe SIMPLE_ID
 get_dgn_name (DGNode (Just name) _ _ _) = Just name

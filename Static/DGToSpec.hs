@@ -24,8 +24,8 @@ import Common.GlobalAnnotations
 import Common.GlobalAnnotationsFunctions
 import Common.Result
 import Common.Id
-import Common.Lib.Set
-import FiniteMap
+import Common.Lib.Set as Set
+import Common.Lib.Map as Map hiding (map)
 import Data.List
 import Common.PrettyPrint
 
