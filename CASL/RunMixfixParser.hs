@@ -48,10 +48,10 @@ stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
 	     "__/=__", "even__", "odd__", "__isEmpty",
 	    "__<=__<=__"] ++ map (:[]) "abcdpqrstuvwxyzPQRSTUVWXYZ" 
 
-mkIds :: [String] -> [Id]
-mkIds = map (parseString parseId)
+mkIds :: [String] -> Set Id
+mkIds = mkSet . map (parseString parseId)
 
-stdOps, stdPreds :: [Id]
+stdOps, stdPreds :: Set Id
 stdOps = mkIds stdOpsL
 stdPreds = mkIds stdPredsL 
 

@@ -5,6 +5,14 @@
    Year:    2002
 
    Mixfix analysis of terms
+
+   Missing features:
+   - the positions of Ids from %string, %list, %number and %floating annotations
+     is not changed within applications (and might be misleading)
+   - using (Set State) instead of [State] avoids explosion
+     but detection of local ambiguities (that of subterms) is more difficult
+     solution: equal list states should be merged into a single state
+               that stores the local ambiguity
 -}
 
 module MixfixParser (parseString, resolveFormula, resolveMixfix)
@@ -135,9 +143,10 @@ listStates g i =
 -- these are the possible matches for the nonterminal TERM
 -- the same states are used for the predictions  
 
-initialState :: GlobalAnnos -> [Id] -> Int -> [State]
-initialState g is i = 
+initialState :: GlobalAnnos -> Set Id -> Int -> [State]
+initialState g ids i = 
     let mkTokState toks = State (Id toks [] []) [] [] toks i
+        is = setToList ids
     in mkTokState [parenTok] : 
        mkTokState [termTok, colonTok] :
        mkTokState [termTok, asTok] :
@@ -352,7 +361,7 @@ complete g i m = addToFM m i $ complRec g m $ lookUp m i
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
 
-predict :: GlobalAnnos -> [Id] -> Int -> ParseMap -> ParseMap
+predict :: GlobalAnnos -> Set Id -> Int -> ParseMap -> ParseMap
 predict g is i m = if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts) 
 			 && head ts == termTok) 
 		 (lookUp m i)
@@ -361,18 +370,18 @@ predict g is i m = if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts)
 
 type Chart = (Int, [Diagnosis], ParseMap)
 
-nextState :: GlobalAnnos -> [Id] -> TERM -> Chart -> Chart
+nextState :: GlobalAnnos -> Set Id -> TERM -> Chart -> Chart
 nextState g is trm (i, ds, m) = 
     let m1 = complete g (i+1) $
 		 scan trm i $
 		 predict g is i m
     in if null (lookUp m1 (i+1)) && null ds
-		    then (i+1, Error ("unexpected term or token: " 
+		    then (i+1, Error ("unexpected mixfix token: " 
 				      ++ show (printText0 g trm))
 			       (posOfTerm trm) : ds, m)
        else (i+1, ds, m1)
 
-iterateStates :: GlobalAnnos -> [Id] -> [Id] -> [TERM] -> Chart -> Chart
+iterateStates :: GlobalAnnos -> Set Id -> Set Id -> [TERM] -> Chart -> Chart
 iterateStates g ops preds terms c@(i, ds, m) = 
     let self = iterateStates g ops preds 
         resolveTerm = resolveMixfix g ops preds False
@@ -437,12 +446,11 @@ getAppls g i m =
 	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
 	     lookUp m i
 
-resolveMixfix :: GlobalAnnos -> [Id] -> [Id] -> Bool -> TERM -> Result TERM
+resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
 resolveMixfix g ops preds mayBeFormula trm =
     let (i, ds, m) = iterateStates g ops preds [trm] 
 		     (0, [], unitFM 0 $ initialState g 
-		      (if mayBeFormula then setToList $
-		       mkSet (ops ++ preds) else ops) 0)
+		      (if mayBeFormula then ops `union` preds else ops) 0)
         ts = getAppls g i m
     in if null ts then if null ds then 
                         non_fatal_error trm ("no resolution for term: "
@@ -456,13 +464,17 @@ resolveMixfix g ops preds mayBeFormula trm =
 			 $ map (show . printText0 g) 
 			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
 
-resolveFormula :: GlobalAnnos -> [Id] -> [Id] -> FORMULA -> Result FORMULA
+resolveFormula :: GlobalAnnos -> Set Id -> Set Id -> FORMULA -> Result FORMULA
 resolveFormula g ops preds frm =
     let self = resolveFormula g ops preds 
 	resolveTerm = resolveMixfix g ops preds False in
     case frm of 
        Quantification q vs fOld ps -> 
-	   do fNew <- self fOld 
+	   let varIds = foldl (\ l (Var_decl va _ _) -> 
+			       map (\t->Id[t][][]) va ++ l) [] vs
+           in   
+	   do fNew <- resolveFormula g (mkSet varIds `union` ops) 
+	                 preds fOld 
 	      return $ Quantification q vs fNew ps
        Conjunction fsOld ps -> 
 	   do fsNew <- mapM self fsOld  
@@ -509,7 +521,7 @@ resolveFormula g ops preds frm =
                             else updFormulaPos (head ps) (last ps) p
 		 Application (Op_name ide) args ps -> 
 		     let p = Predication (Pred_name ide) args ps in
-		     if ide `elem` preds then return p
+		     if ide `elementOf` preds then return p
 		     else non_fatal_error p 
 		          ("not a predicate: " ++ showId ide "")
 			  (posOfTerm t)
