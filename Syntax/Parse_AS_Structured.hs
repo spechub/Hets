@@ -198,19 +198,18 @@ spec l = do (sps,ps) <- annoParser2 (specA l) `separatedBy` (asKey thenS)
                     _ -> emptyAnno (Extension sps (map tokPos ps)))
 
 specA :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
-specA l = do (sps,ps) <- annoParser (specB l) `separatedBy` (asKey andS)
+specA l = do (sps,ps) <- specB l `separatedBy` (asKey andS)
              return (case sps of
                      [sp] -> sp
                      _ -> emptyAnno (Union sps (map tokPos ps)))
 
-specB :: (AnyLogic, LogicGraph) -> AParser SPEC
+specB :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
 specB l = do p1 <- asKey localS
              sp1 <- aSpec l
              p2 <- asKey withinS
-             sp2 <- annoParser (specB l)
-             return (Local_spec sp1 sp2 (map tokPos [p1,p2]))
-          <|> do sp <- specC l
-                 return (item sp) -- ??? what to do with anno?
+             sp2 <- specB l
+             return (emptyAnno $ Local_spec sp1 sp2 (map tokPos [p1,p2]))
+          <|> specC l
 
 specC :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
 specC l@(Logic lid, lG) =     
@@ -273,7 +272,9 @@ specE l = do lookAhead (try (oBraceT >> cBraceT))
 				     (asKey withS <|> asKey hideS
 				      <|> asKey revealS <|> asKey andS
 				      <|> asKey thenS <|> cBraceT
-				      <|> asKey fitS
+				      <|> asKey fitS <|> asKey viewS
+				      <|> asKey specS <|> asKey archS
+				      <|> asKey unitS
 				      <|> asKey withinS <|> asKey endS
 				      <|> oBracketT <|> cBracketT
 				      <|> (eof >> return (Token "" nullPos)))
