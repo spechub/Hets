@@ -694,7 +694,7 @@ quantification n env esg eopt =
   where xEnv e s = addToFM_C addX e s 1 
 	addX x y = x + y 
 	cntF_x_env m e esg2 eopt2 s = 
-	          countF m (xEnv e s) esg2 eopt2
+	          (countF m (xEnv e s) esg2 eopt2) - (countF m e esg2 eopt2)
 
 
 ----------------- Benutzer-Schnittstelle-----------------------
