@@ -93,6 +93,84 @@ Angucken:
 Heng (Klaus)
 ************************************************
 
+Darstellung des Logik-Graphen
+
+dazu importieren:
+
+-- für Graph-Darstellung
+import DaVinciGraph
+import GraphDisp
+import GraphConfigure
+
+-- für Erzeugen von Fenstern
+import TextDisplay
+import Configuration
+import qualified HTk
+
+plus unten genannte Module
+
+Aufgabe: den Logik-Graph aus folgendem Modul:
+  logicGraph aus Comorphisms/LogicGraph.hs, Typ in Logic/Grothendieck.hs
+aufbereiten für Anzeige, Vorbild ist in uni/graphs/test/GraphDispTest.hs
+
+Aufbau von nodeTypeParams
+-------------------------
+Knoten (bzw. Kanten) habe Werte, in diesem Fall: AnyLogic (bzw. AnyComorphism)
+
+nur 1 Knotentyp, rund, grün
+
+Menüfunktionen AnyLogic -> IO ()
+ValueTitle AnyLogic -> String (= language_name aus Logic/Logic.hs)
+$$$ ist Funktion zum Zusammenfügen von Knotentyp-Parametern
+
+Knotenmenü:
+unter Menüeintrag "Info" anzeigen: Werte aus Logic/Logic.hs
+erstmal AnyLogic-Wert auspacken, z.B. mit
+case l of
+  Logic lid ->
+
+Logik-Namen ausgbene (mit language_name lid)
+Test auf Just _, dann String ausgeben
+parse_basic_spec lid    "Parser for basic specifications"
+parse_symb_items lid    "Parser for symbol lists"
+parse_symb_map_items lid  "Parser for symbol maps"
+parse_sentence lid        "Parser for sentences"
+basic_analysis lid        "Analysis of basic specifications"
+data_logic lid            "is a process logic"
+
+Ausgaben:
+map (sublogic_names lid)  (all_sublogics lid)
+map prover_name (provers lid)    -- aus Logic/Provers.hs
+map cons_checker_name (cons_checkers lid)
+
+Anzeigen dieser Ausgabe mit:
+ createTextDisplay title str [size(100,50)]
+str ist der anzuzeigende Inhalt
+
+
+Aufbau von arcTypeParams
+-------------------------
+
+Kantentypen:
+- einen "normal" für "normale" Comorphismen, schwarz
+- einen "inclusion" für Inclusions, blau
+
+Kantenmenü: Anzeige von sourceSublogic und targetSublogic (siehe Logic/Comorphisms.hs)
+mittels language_name
+
+Aufbau des Graphen selbst
+------------------------
+GraphDisp.newGraph daVinciSort  -- aus uni/graphs/GraphDisp.hs
+   -- mit leerem globalen Menü
+newNode -- 
+newArc
+
+Anzeige des Graphen
+-------------------
+redraw
+
+-------------------------------------------------------------------
+
 LaTeX pretty printer
 
 von Christian:
@@ -343,3 +421,22 @@ instance Monad Set where
   return = unitSet
   m >>= k          = unionManySets (setToList (fmap k m))
 -}
+
+
+
+
+Aufbau von comptable
+--------------------
+[("normal","normal","normal"),
+ ("normal","inclusion","normal"),
+ ("inclusion","normal","normal"),
+ ("inclusion","inclusion","inclusion")]
+
+Aufbau von ginfo
+--------------------
+Mit initgraphs erzeugen
+
+Aufbau des Graphen selbst
+------------------------
+addnode
+addlink
