@@ -184,7 +184,7 @@ onlyRefinedRestSpec :: LogicGraph -> [Pos] -> UNIT_SPEC ->
 onlyRefinedRestSpec l b u = do
     r <- asKey refinedS
     (ms, ps) <- option ([], []) $ do
-                 v <- asKey "via" -- not a keyword
+                 v <- asKey viaS -- not a keyword
                  (m, ts) <- parseMapping l
                  return (m, v : ts)
     t <- asKey toS
