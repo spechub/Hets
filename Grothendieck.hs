@@ -32,6 +32,7 @@ module Grothendieck where
 import Logic
 import PrettyPrint
 import Pretty
+import PPUtils (fsep_latex, comma_latex)
 
 data G_basic_spec = forall id sublogics
         basic_spec sentence symb_items symb_map_items
@@ -46,6 +47,8 @@ instance Show G_basic_spec where
 
 instance PrettyPrint G_basic_spec where
     printText0 ga (G_basic_spec _ s) = printText0 ga s
+
+    printLatex0 ga (G_basic_spec _ s) = printLatex0 ga s
 
 instance Eq G_basic_spec where
   (G_basic_spec i1 s1) == (G_basic_spec i2 s2) =
@@ -116,8 +119,11 @@ instance Show G_symb_items_list where
   show (G_symb_items_list _ l) = show l
 
 instance PrettyPrint G_symb_items_list where
-  printText0 ga (G_symb_items_list _ l) = 
-      fcat $ punctuate (comma<>space) $ map (printText0 ga) l
+    printText0 ga (G_symb_items_list _ l) = 
+	fsep $ punctuate comma $ map (printText0 ga) l
+
+    printLatex0 ga (G_symb_items_list _ l) = 
+	fsep_latex $ punctuate comma_latex $ map (printLatex0 ga) l
 
 instance Eq G_symb_items_list where
   (G_symb_items_list i1 s1) == (G_symb_items_list i2 s2) =
@@ -135,8 +141,11 @@ instance Show G_symb_map_items_list where
   show (G_symb_map_items_list _ l) = show l
 
 instance PrettyPrint G_symb_map_items_list where
-  printText0 ga (G_symb_map_items_list _ l) = 
-      fcat $ punctuate (comma<>space) $ map (printText0 ga) l
+    printText0 ga (G_symb_map_items_list _ l) = 
+	fsep $ punctuate comma $ map (printText0 ga) l
+
+    printLatex0 ga (G_symb_map_items_list _ l) = 
+	fsep_latex $ punctuate comma_latex $ map (printLatex0 ga) l
 
 instance Eq G_symb_map_items_list where
   (G_symb_map_items_list i1 s1) == (G_symb_map_items_list i2 s2) =
