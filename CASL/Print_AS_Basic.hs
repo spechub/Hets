@@ -257,7 +257,7 @@ instance PrettyPrint OP_TYPE where
 					 hc_sty_axiom "\\rightarrow")
 	    result_type = printLatex0 ga s
 	in if isEmpty arg_types then result_type
-	   else cat [arg_types,type_arr <\+> result_type]
+	   else sep_latex [arg_types,type_arr <\+> result_type]
 
     printLatex0 ga (Partial_op_type l s _) = 
 	(if null l then hc_sty_axiom quMark 
@@ -899,7 +899,8 @@ print_Literal pf parens_fun
 	  toksNumber i   = if tokIsDigit then
 			     [tok]
 			   else
-			     trace (show ts) $ map (termToTok "number") $
+			     -- trace (show ts) $ 
+			     map (termToTok "number") $
 				 collectElements Nothing i ts
 	     where tok = case i of
 			 Id []     _ _ -> error "malformed Id!!!"
