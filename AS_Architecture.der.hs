@@ -45,7 +45,7 @@ data UNIT_SPEC_DEFN = Unit_spec_defn SPEC_NAME UNIT_SPEC [Pos]
 		      -- pos: "unit","spec","=", opt "end"
 		      deriving (Show,Eq)
 
-data UNIT_SPEC = Unit_type [SPEC] SPEC [Pos]
+data UNIT_SPEC = Unit_type [Annoted SPEC] (Annoted SPEC) [Pos]
 	         -- pos: opt "*"s , "->"
 	       | Spec_name SPEC_NAME
 	       | Arch_unit_spec (Annoted ARCH_SPEC) [Pos] 
