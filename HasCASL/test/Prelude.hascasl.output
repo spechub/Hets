@@ -236,7 +236,7 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Warning 85.6, redeclared type 's'
 *** Error 85.6, merge: TypeVarDefn of 's'
 
-*** Error 85.11, cyclic super type '? s'
+*** Error 85.11, illegal supertype for variable '? s'
 *** Hint 87.9, no type match for: all
   with type: '_var_57 ->? Pred Unit' (87.28)
   known types:

@@ -41,7 +41,7 @@ __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
 s : Type < t
-t : Type
+t : Type < t
 %% Assumptions -----------------------------------------------------------
 __+__ : s × s -> s %(Op)%
 __/\__ : Unit × Unit ->? Unit %(Fun)%
@@ -89,5 +89,4 @@ z : s %(Op)% = (op __+__ : s × s -> s) ((op x : s) as s,
 (op x : s) in s %(bla_label)%
 (op x : s) in t %()%
 %% Diagnostics -----------------------------------------------------------
-*** Error 1.12, cyclic super type 't'
 *** Error 9.7, expected tuple argument for '__+__'

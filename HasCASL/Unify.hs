@@ -27,14 +27,13 @@ import Data.Maybe
 
 -- | vars
 varsOf :: Type -> Set.Set TypeArg
-varsOf = leaves True
+varsOf = leaves (>0)
 
 -- | vars or other ids 
-leaves :: Bool -> Type -> Set.Set TypeArg
+leaves :: (Int -> Bool) -> Type -> Set.Set TypeArg
 leaves b t = 
     case t of 
-	   TypeName j k i -> if let c = i == 0 in 
-				    if b then not c else c 
+	   TypeName j k i -> if b(i)
 			     then Set.single $ TypeArg j k Other [] 
 			     else Set.empty
 	   TypeAppl t1 t2 -> leaves b t1 `Set.union` leaves b t2
@@ -122,13 +121,11 @@ subsume tm a b = isJust $ maybeResult $ match tm (False, a) (True, b)
 equalSubs :: Unifiable a => TypeMap -> a -> a -> Bool
 equalSubs tm a b = subsume tm a b && subsume tm b a
 
-idsOf :: Bool -> Type -> Set.Set TypeId
+idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
 idsOf b = Set.image ( \ (TypeArg j _ _ _) -> j) . leaves b
 
 occursIn :: TypeMap -> TypeId -> Type -> Bool
-occursIn tm i t = 
-    Set.any (relatedTypeIds tm i) $ Set.union (idsOf True t)
-       $ idsOf False t
+occursIn tm i =  Set.any (relatedTypeIds tm i) . idsOf (const True)
 
 relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
 relatedTypeIds tm i1 i2 =  
@@ -280,16 +277,17 @@ expandAliases _ t = ([], [], t, False)
 
 -- | super type ids
 superIds :: TypeMap -> Id -> Set.Set Id
-superIds tm i = supIds tm (Set.single i) $   
-		Set.unions $ map superTypeToId $ superTypes 
-		     $ Map.findWithDefault starTypeInfo i tm
+superIds tm = supIds tm Set.empty . Set.single
 
 supIds :: TypeMap -> Set.Set Id -> Set.Set Id -> Set.Set Id
 supIds tm known new = 
     if Set.isEmpty new then known else 
-    let more = Set.unions $ map (superIds tm) $ Set.toList new 
-	newKnown = Set.union known new
-	in supIds tm newKnown (more Set.\\ newKnown)
+       let more = Set.unions $ map superTypeToId $ 
+		  concatMap ( \ i -> superTypes 
+			    $ Map.findWithDefault starTypeInfo i tm)
+                  $ Set.toList new 
+	   newKnown = Set.union known new
+    in supIds tm newKnown (more Set.\\ newKnown)
 
 starTypeInfo :: TypeInfo
 starTypeInfo = TypeInfo star [] [] NoTypeDefn

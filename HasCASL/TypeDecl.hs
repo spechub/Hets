@@ -235,15 +235,20 @@ dataPatToType _ = error "dataPatToType"
 -- | add a supertype to a given type id
 addSuperType :: Type -> Id -> State Env ()
 addSuperType t i =
-    do tk <- gets typeMap
-       if occursIn tk i $ unalias tk t then 
+    do tm <- gets typeMap
+       {- if occursIn tk i $ unalias tk t then 
 	  addDiags [mkDiag Error "cyclic super type" t]
-	  else case Map.lookup i tk of
-	      Nothing -> return () -- previous error
-	      Just (TypeInfo ok ks sups defn) -> 
-				putTypeMap $ Map.insert i 
-					      (TypeInfo ok ks (t:sups) defn)
-					      tk
+	  else -} 
+       case Map.lookup i tm of
+           Nothing -> return () -- previous error
+	   Just ti@(TypeInfo ok ks sups defn) -> 
+	       if isTypeVarDefn ti then
+		  addDiags[mkDiag Error "illegal supertype for variable" t]
+	       else if any (== t) sups then 
+		  addDiags[mkDiag Hint "repeated supertype" t]
+	       else putTypeMap $ Map.insert i 
+			(TypeInfo ok ks (t:sups) defn) tm
+
 addDataSubtype :: Type -> Type -> State Env ()
 addDataSubtype dt st = 
     case st of 
