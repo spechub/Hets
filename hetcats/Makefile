@@ -84,7 +84,6 @@ casl_test_parser: ../CASL/Main.hs $(drifted_files)
 	rm -f $@
 	$(HC) --make -Wall -fno-warn-missing-signatures -o $@ $< $(HC_OPTS)
 
->>>>>>> 1.3
 ####################################################################
 ## rules for DrIFT
 %.hs: %.der.hs
