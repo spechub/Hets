@@ -222,13 +222,19 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                    Solid 
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
 		  ("def",
-                   Solid $$$ Color "Steelblue"
+                   Dotted $$$ Color "Steelblue"
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
                   ("proventhm",
                    Solid $$$ Color "Green" 
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
                   ("unproventhm",
                    Solid $$$ Color "Red" 
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+                  ("localproventhm",
+                   Dashed $$$ Color "Green" 
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+                  ("localunproventhm",
+                   Dashed $$$ Color "Red" 
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
                   -- > ######### welche Farbe fuer reference ##########
                   ("reference",
@@ -500,7 +506,7 @@ getDGLinkType GlobalDef = "globaldef"
 getDGLinkType HidingDef = "def"
 getDGLinkType (FreeDef _) = "def"
 getDGLinkType (CofreeDef _) = "def"
-getDGLinkType (LocalThm bool _) = getThmType bool
+getDGLinkType (LocalThm bool _) = "local"++(getThmType bool)
 getDGLinkType (GlobalThm bool _) = getThmType bool
 getDGLinkType (HidingThm _ bool) = getThmType bool
 getDGLinkType (FreeThm _ bool) = getThmType bool
