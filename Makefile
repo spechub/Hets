@@ -55,7 +55,7 @@ ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),genRules)
 ifneq ($(MAKECMDGOALS),hets-opt)
 ifneq ($(MAKECMDGOALS),hets-optimized)
-ifneq ($(MAKECMDGOALS),driftedSources)
+ifneq ($(MAKECMDGOALS),derivedSources)
 ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),apache_doc)
 ifneq ($(MAKECMDGOALS),clean_genRules)
@@ -132,7 +132,7 @@ hets: $(sources)
 
 hets-opt: hetcats/Version.hs
 	$(MAKE) distclean
-	$(MAKE) driftedSources
+	$(MAKE) derivedSources
 	$(MAKE) hets-optimized
 
 hets-optimized:
@@ -158,13 +158,12 @@ hetcats.TAGS: $(sources)
 
 ###############################
 ### Documentation via haddock
-doc: docs/index.html utils/hd-lib
+doc: docs/index.html
 
-
-## put Prelude.html and other base files into docs!
+# index for prelude is missing
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h \
-   -i utils/base.haddock \
+          -i docs/base.haddock \
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
 apache_doc:
@@ -179,12 +178,13 @@ apache_doc:
 post_doc4apache:
 	$(PERL) utils/post_process_docs.pl docs \
             'Common.Lib.Map.html:Common.Lib._Map.html'
-	mv docs/* a-docs/
+	cp docs/*.* a-docs/
+	$(RM) docs/index.html
 
 ###############################
 ### release management
 
-driftedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
+derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
 
 utils/DrIFT:
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
@@ -198,7 +198,7 @@ release:
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository co HetCATS
 	$(RM) -r uni
 	ln -s ../uni uni
-	(cd HetCATS; $(MAKE) driftedSources; ./clean.sh; \
+	(cd HetCATS; $(MAKE) derivedSources; ./clean.sh; \
            find . -name CVS | xargs -r $(RM) -r; \
            $(RM) clean.*; $(RM) Makefile; mv ReleaseMakefile Makefile)
 	tar zcvf HetCATS.tgz HetCATS
@@ -400,7 +400,7 @@ ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),genRules)
-ifneq ($(MAKECMDGOALS),driftedSources)
+ifneq ($(MAKECMDGOALS),derivedSources)
 ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),clean_genRules)
 ifeq  ($(MAKECMDGOALS),hets-old)
