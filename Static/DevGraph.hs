@@ -35,7 +35,6 @@ module Static.DevGraph where
 
 import Logic.Logic
 import Logic.Grothendieck
-import Logic.GCategory
 import Syntax.AS_Library
 import Common.GlobalAnnotations
 

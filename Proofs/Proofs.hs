@@ -55,7 +55,6 @@ module Proofs.Proofs where
 import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
-import Logic.GCategory
 import Logic.Comorphism
 import Static.DevGraph
 import Common.Result
