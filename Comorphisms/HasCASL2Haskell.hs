@@ -39,7 +39,7 @@ instance Language HasCASL2Haskell -- default definition is okay
 
 instance Comorphism HasCASL2Haskell
                HasCASL ()
-               BasicSpec Term SymbItems SymbMapItems
+               BasicSpec Sentence SymbItems SymbMapItems
                Env
                Morphism
                Symbol RawSymbol ()

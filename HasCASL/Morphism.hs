@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
     
@@ -62,6 +62,21 @@ mapTySc m (TySc s1) = TySc $ mapTypeScheme m s1
 mapSen :: Morphism -> Term -> Result Term
 mapSen m = let tm = typeIdMap m in 
        return . mapTerm (mapFunSym tm (funMap m), mapType tm)
+
+mapAlt :: Morphism -> AltDefn -> AltDefn
+mapAlt m c@(Construct _i _ts _p _sels) = c -- missing
+
+mapSentence :: Morphism -> Sentence -> Result Sentence
+mapSentence m s = case s of 
+   Formula t -> fmap Formula $ mapSen m t 
+   DatatypeSen t k args alts -> return $ DatatypeSen 
+           (Map.findWithDefault t t $ typeIdMap m) k args $ map (mapAlt m) alts
+   ProgEqSen i sc pe ->
+       let tm = typeIdMap m 
+	   fm = funMap m 
+	   f = mapFunSym tm fm
+	   (ni, nsc) = f (i, sc) 
+	   in return $ ProgEqSen ni sc $ mapEq (f,  mapType tm) pe
 
 mapFunSym :: IdMap -> FunMap -> (Id, TypeScheme) -> (Id, TypeScheme)
 mapFunSym tm fm (i, sc) =  

@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
@@ -33,7 +33,7 @@ import Data.List
 
 -- | basic analysis
 basicAnalysis :: (BasicSpec, Env, GlobalAnnos) -> 
-                 Result (BasicSpec, Env, Env, [Named Term])
+                 Result (BasicSpec, Env, Env, [Named Sentence])
 basicAnalysis (b, e, ga) = 
     let (nb, ne) = runState (anaBasicSpec ga b) e 
 	ce = cleanEnv ne
@@ -149,7 +149,8 @@ anaBasicItem ga (AxiomItems decls fs ps) =
        putTypeMap tm -- restore 
        putAssumps as -- restore
        let newFs = catMaybes ts
-           sens = map ( \ f -> NamedSen (getRLabel f) $ item f) newFs 
+           sens = map ( \ f -> NamedSen (getRLabel f) $ Formula $ item f) 
+		  newFs 
        appendSentences sens
        return $ AxiomItems (catMaybes ds) newFs ps
 anaBasicItem ga (Internal l ps) = 
@@ -157,7 +158,7 @@ anaBasicItem ga (Internal l ps) =
        return $ Internal ul ps
 
 -- | add sentences
-appendSentences :: [Named Term] -> State Env ()
+appendSentences :: [Named Sentence] -> State Env ()
 appendSentences fs =
     do e <- get
        put $ e {sentences = sentences e ++ fs}

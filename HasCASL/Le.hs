@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
@@ -24,7 +24,7 @@ import Common.AS_Annotation(Named)
 -----------------------------------------------------------------------------
 
 data ClassInfo = ClassInfo { classKinds :: [Kind] -- superKinds
-			   } deriving (Show, Eq)
+                           } deriving (Show, Eq)
 
 -----------------------------------------------------------------------------
 
@@ -34,32 +34,40 @@ type ClassMap = Map.Map ClassId ClassInfo
 -- typeInfo
 -----------------------------------------------------------------------------
 
-data GenKind = Free | Generated | Loose deriving (Show, Eq) 
+data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord) 
 
 data AltDefn = Construct UninstOpId [Type] Partiality [Selector] 
                -- argument types
-	       deriving (Show, Eq) 
+               deriving (Show, Eq, Ord) 
 
 data Selector = Select UninstOpId Type Partiality -- only result type
-		deriving (Show, Eq) 
+                deriving (Show, Eq, Ord) 
 
 data TypeDefn = NoTypeDefn
               | PreDatatype     -- auxiliary entry for DatatypeDefn
               | Supertype Vars TypeScheme Term 
-	      | DatatypeDefn GenKind [TypeArg] [AltDefn]
-	      | AliasTypeDefn TypeScheme
-	      | TypeVarDefn deriving (Show, Eq)
+              | DatatypeDefn GenKind [TypeArg] [AltDefn]
+              | AliasTypeDefn TypeScheme
+              | TypeVarDefn deriving (Show, Eq)
 
 data TypeInfo = TypeInfo { typeKind :: Kind
-			 , otherTypeKinds :: [Kind]
-			 , superTypes :: [Type]
-			 , typeDefn :: TypeDefn
-			 } deriving (Show, Eq)
+                         , otherTypeKinds :: [Kind]
+                         , superTypes :: [Type]
+                         , typeDefn :: TypeDefn
+                         } deriving (Show, Eq)
 
 isTypeVarDefn :: TypeInfo -> Bool
 isTypeVarDefn t = case typeDefn t of
-		  TypeVarDefn -> True
-		  _           -> False
+                  TypeVarDefn -> True
+                  _           -> False
+
+data Sentence = Formula Term
+              | DatatypeSen TypeId GenKind [TypeArg] [AltDefn]
+--            | SupertypeSen TypeId Vars TypeScheme Term 
+--            | OpAttrSen UninstOpId TypeScheme OpAttr
+--            | OpDefnSen UninstOpId TypeScheme OpBrand Term
+              | ProgEqSen UninstOpId TypeScheme ProgEq
+	        deriving (Show, Eq, Ord)
  
 -----------------------------------------------------------------------------
 
@@ -70,24 +78,24 @@ type TypeMap = Map.Map TypeId TypeInfo
 -----------------------------------------------------------------------------
 
 data OpInfo = OpInfo { opType :: TypeScheme
-		     , opAttrs :: [OpAttr]
-		     , opDefn :: OpDefn
-		     } deriving (Show, Eq)
+                     , opAttrs :: [OpAttr]
+                     , opDefn :: OpDefn
+                     } deriving (Show, Eq)
 
 data ConstrInfo = ConstrInfo { constrId :: UninstOpId
-			     , constrType :: TypeScheme 
-			     } deriving (Show, Eq)
+                             , constrType :: TypeScheme 
+                             } deriving (Show, Eq)
 
 data OpDefn = NoOpDefn OpBrand
-	    | ConstructData TypeId     -- target type
-	    | SelectData [ConstrInfo] TypeId   -- constructors of source type
-	    | Definition OpBrand Term            
-	    | VarDefn deriving (Show, Eq)
+            | ConstructData TypeId     -- target type
+            | SelectData [ConstrInfo] TypeId   -- constructors of source type
+            | Definition OpBrand Term            
+            | VarDefn deriving (Show, Eq)
 
 isVarDefn :: OpInfo -> Bool
 isVarDefn o = case opDefn o of 
-	      VarDefn -> True
-	      _       -> False 
+              VarDefn -> True
+              _       -> False 
 
 data OpInfos = OpInfos { opInfos :: [OpInfo] } deriving (Show, Eq)
 
@@ -101,28 +109,28 @@ type PrecMap = (Map.Map Id Int, Int, Int)
 
 data Env = Env { classMap :: ClassMap
                , typeMap :: TypeMap
-	       , assumps :: Assumps
-	       , sentences :: [Named Term]	 
-	       , envDiags :: [Diagnosis]
-	       , preIds :: (PrecMap, Set.Set Id)
-	       , counter :: Int
-	       } deriving Show
+               , assumps :: Assumps
+               , sentences :: [Named Sentence]       
+               , envDiags :: [Diagnosis]
+               , preIds :: (PrecMap, Set.Set Id)
+               , counter :: Int
+               } deriving Show
 
 initialEnv :: Env
 initialEnv = Env Map.empty Map.empty Map.empty [] [] 
-	     ((Map.empty, 0, 0), Set.empty) 1
+             ((Map.empty, 0, 0), Set.empty) 1
 
 -----------------------------------------------------------------------------
 -- symbol stuff
 -----------------------------------------------------------------------------
 
 data SymbolType = OpAsItemType TypeScheme
-		| TypeAsItemType Kind
-		| ClassAsItemType Kind
-		  deriving (Show, Eq, Ord)
+                | TypeAsItemType Kind
+                | ClassAsItemType Kind
+                  deriving (Show, Eq, Ord)
 
 data Symbol = Symbol {symName :: Id, symType :: SymbolType, symEnv :: Env} 
-	      deriving Show
+              deriving Show
 
 type SymbolMap = Map.Map Symbol Symbol 
 type SymbolSet = Set.Set Symbol 
@@ -138,8 +146,8 @@ idToOpSymbol e idt typ = Symbol idt (OpAsItemType typ) e
 
 -- note that the type of a raw symbol is not analysed!
 data RawSymbol = AnID Id | AKindedId SymbKind Id 
-	       | AQualId Id SymbolType
-    	         deriving (Show, Eq, Ord)
+               | AQualId Id SymbolType
+                 deriving (Show, Eq, Ord)
 
 type RawSymbolMap = Map.Map RawSymbol RawSymbol
 
@@ -162,10 +170,10 @@ symbolToRaw sym = AQualId (symName sym) $ symType sym
 symbKindToRaw :: SymbKind -> Id -> RawSymbol
 symbKindToRaw Implicit = AnID 
 symbKindToRaw sk = AKindedId $ case sk of 
-		   SK_pred -> SK_op
-		   SK_fun -> SK_op
-		   SK_sort -> SK_type
-		   _ -> sk
+                   SK_pred -> SK_op
+                   SK_fun -> SK_op
+                   SK_sort -> SK_type
+                   _ -> sk
 
 -- new type to defined a different Eq and Ord instance
 data TySc = TySc TypeScheme deriving Show

@@ -28,7 +28,7 @@ import HasCASL.Logic_HasCASL
 -- import HasCASL.Sublogic
 -- import HasCASL.MiniAs as MiniAs
 -- import HasCASL.MiniLe
-import HasCASL.Le
+import HasCASL.Le as Le
 import HasCASL.As as As
 import HasCASL.Morphism
 
@@ -44,7 +44,7 @@ instance Language HasCASL2IsabelleHOL -- default definition is okay
 
 instance Comorphism HasCASL2IsabelleHOL
                HasCASL HasCASL_Sublogics
-               BasicSpec As.Term SymbItems SymbMapItems
+               BasicSpec Le.Sentence SymbItems SymbMapItems
                Env Morphism
                Symbol RawSymbol ()
                Isabelle () () IsaSign.Sentence () ()
@@ -66,7 +66,7 @@ instance Comorphism HasCASL2IsabelleHOL
     map_sign _ = transSignature
     --map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign phi =
-      Just $ Sentence {senTerm = (transTerm sign phi)}
+      Just $ Sentence {senTerm = (transSentence sign phi)}
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
 ------------------------------ Ids ---------------------------------
@@ -126,6 +126,12 @@ transType typ = case typ of
 
 transVar :: Var -> String
 transVar = showIsa
+
+transSentence :: Env -> Le.Sentence -> IsaSign.Term
+transSentence e s = case s of
+    Le.Formula t -> transTerm e t
+    DatatypeSen _ _ _ _ -> error "transSentence: data type"
+    ProgEqSen _ _ _pe -> error "transSentence: program"
 
 transTerm :: Env -> As.Term -> IsaSign.Term
 transTerm _ (QualVar var typ _) = 

@@ -1,10 +1,9 @@
--- {-# OPTIONS -fno-warn-missing-methods #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
@@ -41,12 +40,12 @@ type HasCASL_Sublogics = ()
 data HasCASL = HasCASL deriving (Show)
 instance Language HasCASL -- default definition is okay
 
-basicSpecTc, envTc, termTc, symbolTc, rawSymbolTc, 
+basicSpecTc, envTc, senTc, symbolTc, rawSymbolTc, 
     symbItemsTc, symbMapItemsTc, morphismTc :: TyCon
 
 basicSpecTc      = mkTyCon "HasCASL.As.BasicSpec"
 envTc            = mkTyCon "HasCASL.Le.Env"
-termTc           = mkTyCon "HasCASL.As.Term"
+senTc            = mkTyCon "HasCASL.Le.Sentence"
 symbolTc         = mkTyCon "HasCASL.Morphism.Symbol"
 rawSymbolTc      = mkTyCon "HasCASL.Morphism.RawSymbol"
 symbItemsTc      = mkTyCon "HasCASL.Symbol.SymbolItems"
@@ -57,8 +56,8 @@ instance Typeable BasicSpec where
     typeOf _ = mkTyConApp basicSpecTc []
 instance Typeable Env where
     typeOf _ = mkTyConApp envTc []
-instance Typeable Term where
-    typeOf _ = mkTyConApp termTc []
+instance Typeable Sentence where
+    typeOf _ = mkTyConApp senTc []
 instance Typeable Symbol where
     typeOf _ = mkTyConApp symbolTc []
 instance Typeable RawSymbol where
@@ -87,8 +86,8 @@ instance Category HasCASL Env Morphism where
     legal_obj HasCASL e = legalEnv e
     legal_mor HasCASL m = legalMor m
 
-instance Sentences HasCASL Term () Env Morphism Symbol where
-    map_sen HasCASL = mapSen
+instance Sentences HasCASL Sentence () Env Morphism Symbol where
+    map_sen HasCASL = mapSentence
     sym_name HasCASL = symName
     sym_of HasCASL = symOf -- \ _ -> Set.empty
     symmap_of HasCASL = morphismToSymbMap
@@ -96,7 +95,7 @@ instance Sentences HasCASL Term () Env Morphism Symbol where
     provers HasCASL = [] 
     cons_checkers HasCASL = []
 
-instance StaticAnalysis HasCASL BasicSpec Term ()
+instance StaticAnalysis HasCASL BasicSpec Sentence ()
                SymbItems SymbMapItems
                Env 
                Morphism 
@@ -122,7 +121,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     final_union HasCASL = merge
 
 instance Logic HasCASL HasCASL_Sublogics
-               BasicSpec Term SymbItems SymbMapItems
+               BasicSpec Sentence SymbItems SymbMapItems
                Env 
                Morphism
                Symbol RawSymbol () where
