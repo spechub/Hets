@@ -56,13 +56,10 @@ import Common.Named
 --
 ------------------------------------------------------------------------------
 
-data GlobalVars = Global { global :: [VarDecl] }
-                  deriving (Eq,Show)
-
 data LocalEnv = Env { getGA     :: GlobalAnnos,
                       getSign   :: Sign,
                       getPsi    :: [Named Sentence],
-                      getGlobal :: GlobalVars }
+                      getGlobal :: [VarDecl] }
 	      deriving Show
 
 data SigLocalEnv = SigEnv { localEnv  :: LocalEnv,
@@ -92,12 +89,9 @@ toAnnoted a (Annotations x y z) = Annoted a x y z
 toSigLocalEnv :: LocalEnv -> SigLocalEnv
 toSigLocalEnv env = SigEnv env [] empty False
 
-emptyGlobal :: GlobalVars
-emptyGlobal = Global []
-
 emptyLocalEnv :: LocalEnv
 emptyLocalEnv =
-  Env emptyGlobalAnnos emptySign [] emptyGlobal
+  Env emptyGlobalAnnos emptySign [] []
 
 emptyExtPos :: ExtPos
 emptyExtPos = ExtPos Key nullPos
@@ -672,7 +666,7 @@ ana_subsort_defn sigma _itm s v s' f pos =
        let _defn = SubsortDefn (toVarDecl s' _colpos v) _f
                                (map getPos $ tail pos)
        delta    <- ana_subsort_decl sigma _itm (Just _defn) [s] s' pos
-       _f'      <- ana_FORMULA delta { getGlobal = emptyGlobal } f'
+       _f'      <- ana_FORMULA delta { getGlobal = [] } f'
        let phi   = toNamedSentence [] (someLabel (subsortLabel s s') f) _f'
        return delta { getPsi = addNamedSentences (getPsi delta) [phi] }
 
@@ -793,20 +787,20 @@ ana_ARG_DECL_list sigma _ad = ana_ARG_DECL_list' sigma ([],[]) _ad
 ana_pred_defn :: LocalEnv -> Annoted PRED_ITEM -> PRED_NAME -> PRED_HEAD
                  -> Annoted FORMULA -> [ExtPos] -> Result LocalEnv
 ana_pred_defn sigma _ann p (Pred_head _ad pos') _f pos =
-  do (_x_s_n,w') <- ana_ARG_DECL_list sigma _ad
+  do (x_s_n,w') <- ana_ARG_DECL_list sigma _ad
      let _delta' = updatePredItem _ann w' Nothing
                                   (getSign sigma) p (head pos)
      phi        <- ana_no_anno_FORMULA (sigma { getSign = _delta',
-                                        getGlobal = Global _x_s_n }) _f
-     let _defn   = PredDef _x_s_n phi (pos' ++ [(getPos $ last pos)])
+                                        getGlobal = x_s_n }) _f
+     let _defn   = PredDef x_s_n phi (pos' ++ [(getPos $ last pos)])
      let delta   = updatePredDefn _delta' p (Just _defn)
      return sigma { getSign = delta,
                     getPsi   = addNamedSentences (getPsi sigma)
                                [toNamedSentence [] (someLabel
-                               (predDefnLabel p (_x_s_n)) _f)
-                               (cloneAnnos _f (Quantified Forall _x_s_n
+                               (predDefnLabel p (x_s_n)) _f)
+                               (cloneAnnos _f (Quantified Forall x_s_n
                                (Connect EquivOp [PredAppl p w'
-                               (map toVarId _x_s_n) Inferred [],phi]
+                               (map toVarId x_s_n) Inferred [],phi]
                                [])[]))] }
 
 ------------------------------------------------------------------------------
@@ -1003,8 +997,8 @@ ana_VAR_DECL sigma (Var_decl x_n s pos') pos =
   do checkSortExists sigma (getPos pos) s
      let _extPos = toExtPos Nothing pos' tokPos_VAR_DECL
      let _decls  = toVarDecls s _extPos x_n
-     return sigma { getGlobal = Global (setAdd (global $ getGlobal sigma)
-                                                _decls) }
+     return sigma { getGlobal = setAdd (getGlobal sigma)
+                                                _decls }
 
 ------------------------------------------------------------------------------
 -- VAR-ITEMS
@@ -1022,7 +1016,7 @@ ana_local_var_axioms' :: LocalEnv -> Annoted FORMULA -> ExtPos ->
                          Result LocalEnv
 ana_local_var_axioms' sigma _f _pos =
   do _phi     <- ana_FORMULA sigma _f
-     let _phi' = toNamedSentence (global $ getGlobal sigma)
+     let _phi' = toNamedSentence (getGlobal sigma)
                                  (someLabel "" _phi) _phi
      return sigma { getPsi = addNamedSentences (getPsi sigma) [_phi'] }
 
