@@ -7,16 +7,15 @@
    This module contains all instances of PrettyPrint for AS_Annotation.hs 
 
    todo:
-      - ATermConversion SML-CATS has now his own module 
-        (s. HetCATS/aterm_conv/)
       - LaTeX Pretty Printing
 -}
 
 module Print_AS_Annotation where
 
 import AS_Annotation
-import Id
+-- import Id
  
+import GlobalAnnotations
 import PrettyPrint
 import Pretty
 
@@ -32,7 +31,7 @@ instance PrettyPrint Annotation where
 	in ptext "%" <> aa' <+> ab' -- <> ptext "\n"
     printText0 ga (Annote_group aa ab _) =
 	let aa' = printText0 ga aa
-	    ab' = printText0 ga ab
+	    ab' = vcat $ map ptext ab
 	in printGroup aa' ab'
     printText0 ga (Display_anno aa ab _) =
 	let aa' = printText0 ga aa
@@ -69,8 +68,8 @@ instance PrettyPrint Annotation where
 	printGroup (ptext "right_assoc") $ fcat $ 
 				punctuate (comma <> space) $ 
 					  map (printText0 ga) aa
-    printText0 ga (Label aa _) =
-	let aa' = printText0 ga aa
+    printText0 _ (Label aa _) =
+	let aa' = vcat $ map ptext aa
 	in ptext "%(" <> aa' <> ptext ")%"
     printText0 _ (Implies _) =
 	printLine (ptext "implies") empty
@@ -94,6 +93,26 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
     printText0 ga (Annoted i _ las ras) =
 	let i'   = printText0 ga i
 	    las' = printText0 ga las
-	    ras' = printText0 ga ras
-        in las' $+$ i' <+> ras'
+	    (la,rras) = case ras of
+			[]     -> (empty,[])
+			r@(l:xs)
+			    | isLabel l -> (printText0 ga l,xs)
+			    | otherwise -> (empty,r)
+	    ras' = printText0 ga rras
+        in las' $+$ (hang i' 0 la) $$ ras'
 
+spAnnotedPrintText0 :: (PrettyPrint a) => 
+		       GlobalAnnos -> Doc -> (Annoted a) -> Doc
+spAnnotedPrintText0 ga keyw ai = 
+    case ai of 
+    Annoted i _ las _ ->
+	let i'   = printText0 ga i
+            (msa,as) = case las of
+		       []     -> (Nothing,[]) 
+		       (x:xs) | isSemanticAnno x -> (Just x,xs)
+		       xs     -> (Nothing,xs)
+	    san      = case msa of
+		       Nothing -> empty
+		       Just a  -> printText0 ga a 
+	    as' = printText0 ga as
+        in keyw <+> san $$ as' $$ i'
