@@ -37,7 +37,7 @@ module Taxonomy.MMiSSOntology (
   -- :: String - > InsertMode -> MMiSSOntology 
   
   insertClass,
-  -- :: MMiSSOntology -> ClassName -> OptText -> (Maybe SuperClass) -> (Maybe ClassType) 
+  -- :: MMiSSOntology -> ClassName -> OptText -> [SuperClass] -> (Maybe ClassType) 
   --      -> WithError (MMiSSOntology)
 
   insertObject, 
@@ -167,7 +167,7 @@ data MMiSSOntology = MMiSSOntology {
 
 data ClassDecl = ClassDecl ClassName 
                            DefaultText 
-                          (Maybe SuperClass)
+                           [SuperClass]
                           [(RelName, [ClassName])] 
                            AutoInserted
                           (Maybe ClassType)
@@ -219,78 +219,77 @@ getRelationGraph o = relationGraph o
 
 
 
-insertClass :: MMiSSOntology -> ClassName -> DefaultText -> (Maybe SuperClass) -> (Maybe ClassType) 
-               -> WithError (MMiSSOntology)
+insertClass :: MMiSSOntology -> ClassName -> DefaultText -> [SuperClass] 
+            -> (Maybe ClassType) 
+            -> WithError (MMiSSOntology)
 
-insertClass onto className optText maybeSuper maybeType =
-  case lookupFM (classes onto) className of
-    Nothing -> myInsertClass className optText maybeSuper maybeType
-    Just(ClassDecl _ _ _ _ auto _) -> 
+insertClass onto className optText superCs maybeType =
+  maybe
+    (myInsertClass className optText superCs maybeType)
+    (\ (ClassDecl _ _ _ _ auto _) -> 
       case (mode onto) of
         AutoInsert -> 
           if (auto == True)
-            then myInsertClass className optText maybeSuper maybeType
-            else hasError("Insertion of class: " ++ className ++ " -> Class is properly defined and can't be overridden. (AutoInsert is on).\n")
-        _ -> hasError("Insertion of class: " ++ className ++ " -> Class is already defined in Ontology.\n")
+            then myInsertClass className optText superCs maybeType
+            else hasError("Insertion of class: " ++ className ++ 
+                          " -> Class is properly defined and "++
+                          "can't be overridden. (AutoInsert is on).\n")
+        _ -> hasError("Insertion of class: " ++ className  ++
+                      " -> Class is already defined in Ontology.\n"))
+    (lookupFM (classes onto) className)
   where 
     myInsertClass cn opt super classType =
       let class1 = (cn, (ClassDecl cn opt super [] False classType))
       in case super of
-           Nothing          -> addClasses [class1] super 
-           Just(superClass) -> 
-             if (elemFM superClass (classes onto))
-               then addClasses [class1] super 
-               else case (mode onto) of
-                      AutoInsert -> let class2 = (superClass, (ClassDecl superClass "" Nothing [] True Nothing))
-                                    in addClasses (class1:(class2:[])) super
-                      _  -> hasError("Insertion of class: " ++ cn ++ " -> Superclass " ++ superClass ++ " not defined in Ontology.\n")
-    addClasses :: [(String, ClassDecl)] -> Maybe String -> WithError MMiSSOntology
-    addClasses cList super = 
+           []          -> addClasses [class1] super 
+           superClasses -> 
+               let (defSC,undefSC) = 
+                       partition (\sC -> elemFM sC (classes onto))
+                                 superClasses
+                   sClassDecls = 
+                       map (\sC -> (sC, (ClassDecl sC "" [] [] 
+                                              True Nothing))) undefSC
+               in if null undefSC
+                then addClasses [class1] super 
+                else case (mode onto) of
+                      AutoInsert -> addClasses (class1:sClassDecls) super
+                      _  -> hasError("Insertion of class: " ++ cn ++ 
+                                     " -> Superclass " ++ show undefSC ++ 
+                                     " not defined in Ontology.\n")
+    addClasses :: [(String, ClassDecl)] -> [SuperClass] 
+               -> WithError MMiSSOntology
+    addClasses cList superCs = 
        let g = classGraph onto
-           newgraph = case length cList of
-                        0 -> g
-                        1 -> let (className, (ClassDecl _ _ _ _ _ cType)) =  head cList 
-                                 (g1, node1) =  
-                                    case (findLNode g className) of
-                                      Nothing -> 
-                                         let n = head (newNodes 1 g)
-                                          in ((insNode (n, (className,"", getClassNodeType cType)) g), n)
-                                      Just(node) -> (g, node)
-                                 g2 = case super of
-                                        Nothing -> g1
-                                        (Just(superClass)) -> case (findLNode g1 superClass) of
-                                                                Nothing -> g1
-                                                                Just(sNode) -> insEdge (node1, sNode, "isa") g1
-                             in g2
-                        2 -> let (subClass, (ClassDecl _ _ _ _ _ subcType)) =  head cList
-                                 (superClass, (ClassDecl _ _ _ _ _ supercType)) = head (drop 1 cList) 
-                                 (g1, node1) = 
-                                    case (findLNode g subClass) of
-                                      Nothing -> 
-                                         let n = head (newNodes 1 g)
-                                          in ((insNode (n, (subClass,"", getClassNodeType subcType)) g), n)
-                                      Just(node) -> (g, node)
-                                 (g2, node2) = 
-                                    case (findLNode g1 superClass) of
-                                      Nothing -> 
-                                          let n = head (newNodes 1 g1)
-                                           in ((insNode (n, (superClass,"", getClassNodeType supercType)) g1), n)
-                                      Just(node) -> (g1, node)
-                             in  insEdge (node1, node2, "isa") g2
+           newgraph = 
+               case length cList of
+               x | x == 0 -> g
+                 | x == 1 -> 
+                     let (className, (ClassDecl _ _ _ _ _ cType)) = head cList
+                         (g1, node1) = getInsNode g className cType 
+                     in foldl (addIsaEdge node1) g1 superCs		  
+                 | x > 1 -> 
+                   let (subClass, (ClassDecl _ _ _ _ _ subcType)) = head cList
+                       (g1, node1) = getInsNode g subClass subcType
+                   in foldl (insClass node1) g1 superCs
        in
-         hasValue( MMiSSOntology {name = name onto, 
-	    		          classes = addListToFM (classes onto) cList,
-			          objects = objects onto,
-			          relations = relations onto,
-			          objectLinks = objectLinks onto,
-			          mode = mode onto,
-                                  classGraph = newgraph,
-                                  relationGraph = relationGraph onto} )
-    getClassNodeType (Just (cType)) = if (cType == Predicate)
+         hasValue( onto { classes = addListToFM (classes onto) cList,
+			  classGraph = newgraph} )
+    getInsNode g cl clType =
+        maybe (let n = head (newNodes 1 g)
+               in ((insNode (n,(cl,"", getClassNodeType clType)) g), n))
+              (\node -> (g, node))
+              (findLNode g cl)
+    insClass node1 g1 sC =
+        case getInsNode g1 sC Nothing of 
+        -- at this place all autoinserted classes have type 
+        -- Nothing (s. def. of sClassDecls)
+        (g2,node2) -> insEdge (node1, node2, "isa") g2
+    addIsaEdge node1 g1 superClass =
+	maybe g1 (\ sNode -> insEdge (node1, sNode, "isa") g1)
+                 (findLNode g1 superClass)
+    getClassNodeType = maybe OntoClass (\ cType -> if cType == Predicate
                                         then OntoPredicate
-                                        else OntoClass
-    getClassNodeType Nothing = OntoClass
-
+                                        else OntoClass)
 
 {--
 data RelationDecl = RelationDecl  RelName
@@ -378,7 +377,7 @@ insertRelationType onto relName source target =
     lookupClass o className =
        case lookupFM (classes o) className of
          Nothing -> if ((mode o) == AutoInsert)
-                      then return (addClasses o [(className, (ClassDecl className "" Nothing [] True Nothing))])
+                      then return (addClasses o [(className, (ClassDecl className "" [] [] True Nothing))])
                       else hasError("Insertion of relation type: Class " ++ className 
                                         ++ " doesn't exist in the Ontology.\n")
          Just((ClassDecl cn defT sup typeList ai classType)) ->
@@ -441,7 +440,7 @@ insertObject onto objectName defText className =
     lookupClass o className =
        case lookupFM (classes o) className of
          Nothing -> if ((mode o) == AutoInsert)
-                      then return (addClasses o [(className, (ClassDecl className "" Nothing [] True Nothing))])
+                      then return (addClasses o [(className, (ClassDecl className "" [] [] True Nothing))])
                       else hasError("Insertion of object: " ++ objectName ++ " -> Class " ++ className 
                                         ++ " doesn't exist in the Ontology.\n")
          Just(_) -> return o
@@ -539,9 +538,9 @@ writeOWLClass :: String -> ClassDecl -> String
 writeOWLClass inStr (ClassDecl name defText super relTypes _ _) =
  let start = "<owl:Class rdf:ID=\"" ++ name ++ "\">\n"
      defTextStr = "  <MPhrase>" ++ (latexToEntity defText) ++ "</MPhrase>\n"
-     superStr = case super of
-                  Just(str) -> "<rdfs:subClassOf rdf:resource=\"#" ++ str ++ "\"/>\n"
-                  Nothing -> ""
+     superStr = 
+         concatMap (\ str -> "<rdfs:subClassOf rdf:resource=\"#" ++ 
+                             str ++ "\"/>\n" ) super
      propertyRestrictions = foldl writePropRestriction "" relTypes
      end = "</owl:Class>\n"
  in inStr ++ start ++ defTextStr ++ superStr ++ propertyRestrictions ++ end

@@ -48,25 +48,15 @@ convSign KSubsort onto sign =
     where str x = showPretty x ""
 	  relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
 	  addSor sort weOnto =
-	     let sortStr = str sort in
-	      weither (const weOnto)
-		     (\ on -> 
-		      maybe (insertClass on 
-		                         sortStr sortStr 
-			                 Nothing (Just SubSort))
-	                     (\ l -> addSuperSorts sort l weOnto) $
-		             Map.lookup sort relMap) weOnto
-	  addSuperSorts sort supSl weOnto =
-	      weither (const weOnto)
-		     (\_ -> Set.fold insRel weOnto supSl) weOnto
-	      where sortStr = str sort
-		    insRel supS weOn =
-			weither (const weOn)
-			   (\ on -> 
-			         insertClass on
-			                     sortStr sortStr
-			                     (Just (str supS))
-			                     (Just SubSort)) weOn
+	     let sortStr = str sort 
+             in weither (const weOnto)
+		        (\ on -> insClass on sortStr
+                                          (maybe [] toStrL $ 
+                                                 Map.lookup sort relMap))
+                        weOnto
+          insClass o nm supL = 
+              insertClass o nm nm supL (Just SubSort)
+          toStrL = Set.fold (\ s rs -> str s : rs) [] 
 
 convSen :: WithError MMiSSOntology 
 	-> Named (FORMULA f) -> WithError MMiSSOntology
