@@ -106,7 +106,12 @@ instance PrettyPrint Sign where
                               | (a, b) <- Map.toList fs ]) $$
           text "\nscope:" $$ 
           text (HatPretty.pp sc) $$
-          text "-}"
+          text "-}" $$
+          text "module Dummy where"
+          $$ text "import Prelude (error, Show, Eq, Ord, Bool)"
+          $$ text "import MyLogic"
+
+
 
 extendSign :: Sign -> [TiInstanceDB.Instance PNT]
             -> [TiClasses.TAssump PNT] 
