@@ -347,6 +347,12 @@ parseRawOpts s =
         error' = hetsError User (s ++ " ia not a valid RAW String")
     in Raw [(parsePrefix prefix) (drop 1 string)]
 
+
+-- | guesses the InType
+guess :: String -> InType -> InType
+guess file GuessIn = guessInType file
+guess file itype   = itype
+
 -- | 'guessInType' parses an 'InType' from the FilePath to our 'InFile'
 guessInType :: FilePath -> InType
 guessInType file = 

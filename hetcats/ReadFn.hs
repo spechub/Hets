@@ -31,7 +31,7 @@ import ATC.DevGraph
 read_LIB_DEFN :: HetcatsOpts -> FilePath -> IO LIB_DEFN
 read_LIB_DEFN opt file = 
     do putIfVerbose opt 3 ("Reading file: " ++ file)
-       ld <- case guess (intype opt) of
+       ld <- case guess file (intype opt) of
          ATermIn _  -> read_sml_ATerm file
          ASTreeIn _ -> error "Abstract Syntax Trees aren't implemented yet"
          CASLIn     -> do
@@ -48,9 +48,6 @@ read_LIB_DEFN opt file =
                Right ast -> return ast
                _         -> error "Unknown InType wanted in read_LIB_DEFN"
        return ld
-    where
-    guess GuessIn = guessInType file
-    guess itype   = itype
 
 readLIB_DEFN_from_file :: FilePath -> IO LIB_DEFN
 readLIB_DEFN_from_file = readShATermFile

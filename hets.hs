@@ -42,7 +42,7 @@ main =
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opt file = 
     do putIfVerbose opt 2 ("Processing file: " ++ file)
-       case intype opt of
+       case guess file (intype opt) of
              HaskellIn -> do  r <- anaHaskellFile opt file
                               showGraph file opt r
              _         -> 
