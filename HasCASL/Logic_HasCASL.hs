@@ -91,7 +91,10 @@ instance Category HasCASL Env Morphism where
     legal_obj HasCASL e = legalEnv e
     legal_mor HasCASL m = legalMor m
 
-instance Sentences HasCASL Term () Env Morphism Symbol
+instance Sentences HasCASL Term () Env Morphism Symbol where
+    sym_name HasCASL = symName
+    sym_of HasCASL = symOf -- \ _ -> Set.empty
+    symmap_of HasCASL = morphismToSymbMap
 
 instance StaticAnalysis HasCASL BasicSpec Term ()
                SymbItems SymbMapItems
@@ -113,9 +116,6 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     symbol_to_raw HasCASL = symbolToRaw
     id_to_raw HasCASL = idToRaw
     matches HasCASL = matchSymb
-    sym_name HasCASL = symName
-    sym_of HasCASL = symOf -- \ _ -> Set.empty
-    symmap_of HasCASL = morphismToSymbMap
 
     final_union HasCASL = mergeEnv
 

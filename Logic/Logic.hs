@@ -49,6 +49,8 @@ Portability :  non-portable (various -fglasgow-exts extensions)
    ATerm, XML
    Weak amalgamability
    Metavars
+   raw symbols are now symbols, symbols are now signature symbols
+   provide both signature symbol set and symbol set of a signature
    
 -}
 
@@ -174,6 +176,9 @@ class (Category lid sign morphism, Eq sentence, Show sentence, PrettyPrint sign,
          -- parsing of sentences
       parse_sentence :: lid -> sign -> String -> Result sentence
            -- is a term parser needed as well?
+      sym_of :: lid -> sign -> Set symbol
+      symmap_of :: lid -> morphism -> EndoMap symbol
+      sym_name :: lid -> symbol -> Id 
       provers :: lid -> [Prover sentence proof_tree symbol]
       cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
@@ -229,10 +234,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- symbols and symbol maps
          symbol_to_raw :: lid -> symbol -> raw_symbol
          id_to_raw :: lid -> Id -> raw_symbol 
-         sym_of :: lid -> sign -> Set symbol
-         symmap_of :: lid -> morphism -> EndoMap symbol
          matches :: lid -> symbol -> raw_symbol -> Bool
-         sym_name :: lid -> symbol -> Id 
    
          -- operations on signatures and morphisms
          empty_signature :: lid -> sign

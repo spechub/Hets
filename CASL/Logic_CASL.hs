@@ -81,6 +81,9 @@ instance Sentences CASL FORMULA () Sign Morphism Symbol where
 	  case runParser (aFormula << eof) emptyAnnos "" str of
 	  Right x -> return $ item x
 	  Left err -> fail $ show err
+      sym_of CASL = symOf
+      symmap_of CASL = morphismToSymbMap
+      sym_name CASL = symName
       provers CASL = [] 
       cons_checkers CASL = []
 
@@ -101,10 +104,7 @@ instance StaticAnalysis CASL BASIC_SPEC FORMULA ()
 
          symbol_to_raw CASL = symbolToRaw
          id_to_raw CASL = idToRaw
-         sym_of CASL = symOf
-         symmap_of CASL = morphismToSymbMap
          matches CASL = CASL.Morphism.matches
-         sym_name CASL = symName
          
          empty_signature CASL = emptySign
          signature_union CASL sigma1 sigma2 = 

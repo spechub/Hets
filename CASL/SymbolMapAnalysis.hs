@@ -20,118 +20,7 @@ remove identity subsort relations resulting from non-injective renaming
 
 overloading stuff is missing (wait for Martin's implementation of leqF and leqP)
 
-Hets allows to totalize operations with renamings: 
-sort s op f:s->?s with f |-> f:s->s
-This contradicts the semantics, since a ``totalizing''
-signature morphism is not generating.
-=> We need to introduce a mechanism that totality is inherited.
-
-Another problem:
-The distinction total and partial operations at the symbol level
-has been dropped in winter 2000 in order to allow
-unions of signatures where a function is declared
-to be total in one signature and partial (with same profile
-otherwise) in the other one. In order to make this possible,
-we need that signature morphisms that merely ``totalize'' functions
-are signature inclusions. But if signature inclusions are
-those signature morphisms with underlying symbol set inlcusion,
-we cannot distinguish between totality and partiality at the
-symbol level.
-The problem is now that we seem to need to have a direct
-"element" relation between raw symbols and signatures in order
-to be able to check whether the raw symbols from the input
-syntax are really in the signature. However, this element
-relation has not been introduced into the semantics (probably
-because it has been found too complicated). This means that
-
-spec sp =
-  sort s
-  ops f:s with f:?s |-> g
-end
-
-is now legal, since raw symbols like "f:?s" are only matched
-with symbols, and not with the signature (and symbols ignore
-totality/partiality).
-
-Quoting a mail from Dec 20th, 2000:
-
-The outcome was that it might confuse
-the user to write -> in symbol maps standing for both -> and ->?
-in signatures.
-In the meantime, we have found a solution avoiding this problem,
-at the cost of a further slight complication of the semantics.
-
-Namely:
-- Allow -> and ->? in symbol maps, as before.
-- The symbol functor works with symbols where totality or partiality
-  is ignored. As a consequence, unions of total and partial operation
-  symbols that are otherwise the same are allowed, and instantiations
-  of partial with total operation symbols work fine.
-- Raw symbols do distinguish between total and partial function
-  symbols.
-- There is an element relation between raw symbols and signatures,
-  which allows to check that the raw symbols occurring in the
-  input syntax actually are in the (given resp. resulting) signature.
-  This ensures compatibility of semantics and input syntax.
-  (Otherwise, "a:?s with a:s"  would be legal.)
-
-An alternative (but probably somehow equivalent) suggestion by
-Andrzej:
-
-"Institutions with raw symbols" are built on this by requiring that
-the symbol functor is factored through a signature raw symbols functor
-(better name needed), call it R, and call the second component of the
-factorisation I. In CASL R(Sigma) is now the set of fully qualified
-symbols in Sigma (I mean, R is the symbol functor used so far), and I
-just glues together qualified partial function symbols and qualified
-total function symbols. Full set of raw symbols is now what we have in
-the semantics now: signature raw symbols plus "kinded" identifiers
-(including plain identifiers, kinded by "implicit"). Of course, extra
-matching relation is still needed between signature raw symbols and
-kinded identifiers.
-
-Perhaps a better way out:
-Distinguish between partial and total functions at the symbol level,
-and let a total function generate both a partial and a total
-function symbol. And remove the following sentence in I:4.2.1 of the summary:
-
-  If a partial operation symbol is renamed into a total one,
-  this is only well-formed in case that the resulting operation
-  symbol is already total due to another component of the renaming.
-
-Then 
-
-sort s op f:s->?s with f |-> f:s->s
-
-is legal again, and does the expected thing: it totalizes f.
-What to do with generation?
-We need detection of totality, except from those cases where
-a partial function symbol is mapped to a total one. Ugly!
-Aha: mapping a partial function to a total one is reflected
-at the symbol level! Hence something like "identity as much as
-possible" would suffice. But: currently this just means that
-names are left unchanged as much as possible. Something like
-f:s->?s |-> g would match with both yielding a partial and a
-total g.
-Hmmmmmm...
-
-
-Side remark Question: Shouldn't (co)generation of signatures also work with
-raw symbols?
-
-Side remark II:
-For now, we have not implemented these suggestions in the semantics.
-This means that even
-
-sort s op f:s->?s with f |-> f:s->s
-
-is legal - but not with the intuitive semantics (totalizing f),
-but with the semantics that f remains partial.
-
-Indeed, the current behaviour Hets is still different from this
-semantics, since we have not implemented the totality inheritance
-yet (see above). Hence, it coincides with the intuitive semantics.
-
+introduce symbol functor (additionally to signature symbol functor)
 
 -}
 
@@ -274,7 +163,7 @@ inducedFromMorphism rmap sigma = do
   where
   -- the sorts of the source signature 
   sortsSigma = sortSet sigma
-  -- surtFun is the sort map as a Haskell function
+  -- sortFun is the sort map as a Haskell function
   sortFun s = 
     -- rsys contains the raw symbols to which s is mapped to
     case Set.size rsys of
