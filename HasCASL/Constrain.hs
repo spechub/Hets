@@ -34,6 +34,10 @@ import Common.Result
 import Data.List
 import Data.Maybe
 import Control.Exception(assert)
+-- import Debug.Trace(trace)
+
+trace :: a -> b -> b
+trace = flip const
 
 data Constrain = Kinding Type Kind
                | Subtyping Type Type 
@@ -136,12 +140,37 @@ dom tm k ks =
 	      Just args -> if any ((args ==) . snd) fks then return args
 			   else fail "dom: not coregular"
 
+-- | get kind of an analyzed type
+kindOfType :: TypeMap -> Type -> Kind
+kindOfType tm ty = case ty of 
+    TypeName _ k _ -> k
+    TypeAppl t1 t2 -> toIntersection 
+                (concatMap snd $ getKindAppl (kindOfType tm t1) [t2]) 
+                [posOfType t1, posOfType t2]
+    ExpandedType _ t1 -> kindOfType tm t1
+    FunType t1 a t2 _ -> 
+       let i = arrowId a
+           Result _ mk = getIdKind tm i in case mk of
+       Just k -> let tn = TypeName i k 0 in 
+           kindOfType tm (TypeAppl (TypeAppl tn t1) t2)
+       Nothing -> error "kindOfType: FunType" 
+    ProductType ts ps -> let Result _ mk = getIdKind tm productId in case mk of
+            Nothing -> error "kindOfType: ProductType" 
+            Just k -> let 
+                rk = toIntersection (map fst $ getKindAppl k [ty,ty]) ps
+                tn = TypeName productId k 0 
+		mkAppl [t1] = t1
+                mkAppl (t1:tr) = TypeAppl (TypeAppl tn t1) $ mkAppl tr
+		mkAppl [] = error "kindOfType: mkAppl"
+                in if null ts then rk else kindOfType tm (mkAppl ts)
+    LazyType t _ -> kindOfType tm t
+    KindedType _ k _ -> k
+    _ -> error "kindOfType"
+
 freshTypeVarT :: TypeMap -> Type -> State Int Type             
 freshTypeVarT tm t = 
     do (var, c) <- freshVar $ posOfType t
-       let mp = maybeResult $ anaType (Nothing, t) tm
-           k = assert (isJust mp) $ fst $ fromJust mp
-       return $ TypeName var k c
+       return $ TypeName var (kindOfType tm t) c
 
 freshVarsT :: TypeMap -> [Type] -> State Int [Type]
 freshVarsT tm l = mapM (freshTypeVarT tm) l
@@ -156,19 +185,22 @@ toPairState p =
 addSubst :: Subst -> State (Int, Subst) ()
 addSubst s = do 
     (c, o) <- get
-    put (c, compSubst s o)
+    put (c, compSubst o s)
 
 -- pre: shapeMatch succeeds
 shapeMgu :: TypeMap -> (Type, Type) -> State (Int, Subst) ()
-shapeMgu tm (t1, t2) = 
-    case (t1, t2) of 
+shapeMgu tm (t1, t2) = do 
+  s <- gets snd
+  case (subst s t1, subst s t2) of 
     (ExpandedType _ t, _) -> shapeMgu tm (t, t2)
     (_, ExpandedType _ t) -> shapeMgu tm (t1, t)
     (LazyType t _, _) -> shapeMgu tm (t, t2)
     (_, LazyType t _) -> shapeMgu tm (t1, t)
     (KindedType t _ _, _) -> shapeMgu tm (t, t2)
     (_, KindedType t _ _) -> shapeMgu tm (t1, t)
-    (TypeName _ _ _, TypeName _ _ _) -> return ()
+    (TypeName _ _ _, TypeName _ _ _) -> 
+        trace ("[[" ++ showPrettyWithPos t1 ", " ++ showPrettyWithPos t2 "]]\n"
+              ) $ return ()
     (TypeName _ _ v1, _) -> assert (v1 > 0) $
          case t2 of
          ProductType ts ps -> do 
@@ -177,7 +209,7 @@ shapeMgu tm (t1, t2) =
              mapM_ (shapeMgu tm) $ zip nts ts
          FunType t3 ar t4 ps -> do
              v3 <- toPairState $ freshTypeVarT tm t3
-             v4 <- toPairState $ freshTypeVarT tm  t4
+             v4 <- toPairState $ freshTypeVarT tm t4
              addSubst $ Map.single v1 $ FunType v3 ar v4 ps
              shapeMgu tm (v3, t3)
              shapeMgu tm (v4, t4)
@@ -200,7 +232,7 @@ shapeMgu tm (t1, t2) =
 shapeUnify :: TypeMap -> [(Type, Type)] -> State Int Subst
 shapeUnify tm l = do 
     c <- get 
-    let (_, (n, t)) = runState (mapM_ (shapeMgu tm) l) (c, Map.empty) 
+    let (n, t) = execState (mapM_ (shapeMgu tm) l) (c, Map.empty) 
     put n
     return t
 
@@ -223,7 +255,7 @@ atomize tm (t1, t2) =
               let r1 = rawKind k1 
                   r2 = rawKind k2 
                   (_, ks) = getRawKindAppl r1 as1 
-              in assert (r1 == r2 && length as1 == length as2) $
+              in if (r1 == r2 && length as1 == length as2) then
                  (top1, top2) : (concat $ zipWith ( \ k (a1, a2) -> 
                       let l1 = atomize tm (a1, a2)
                           l2 = atomize tm (a2, a1)
@@ -231,6 +263,8 @@ atomize tm (t1, t2) =
                       ExtKind _ CoVar _ -> l1
                       ExtKind _ ContraVar _ -> l2
                       _ -> l1 ++ l2) ks $ zip as1 as2)
+                 else trace (showPretty t1 ", " ++ showPretty t2 "") 
+                      error "atomize: getTypeAppl"
           _ -> error "atomize"
 
 getRawKindAppl :: Kind -> [a] -> (Kind, [Kind])
@@ -276,10 +310,12 @@ preClose tm cs =
     in case shapeMatch tm (map fst subL) $ map snd subL of
        Result ds Nothing -> return $ Result ds Nothing
        _ -> do s1 <- shapeUnify tm subL
-               let as = concatMap (atomize tm  . subst s1) subL
+               let as = concatMap (atomize tm) $ map (subst s1) $
+                        trace (showPretty subL "\n" ++ showPretty s1 "\n"
+                              ++ showPretty (map (subst s1) subL) "") subL
                case collapser as of
                    Result ds Nothing -> return $ Result ds Nothing
-                   Result _ (Just s2) -> let s = compSubst s2 s1 in 
+                   Result _ (Just s2) -> let s = compSubst s1 s2 in 
                      return $ return (s, joinC (substC s qs) $ 
                        foldr ( \ (t1, t2) -> insertC $ Subtyping t1 t2)
                        Set.empty $ Rel.toList $ Rel.transReduce 
