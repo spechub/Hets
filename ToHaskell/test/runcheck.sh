@@ -17,6 +17,6 @@ for i in [A-Z]*.hascasl;
 do
 #    ../../HasCASL/hacapa analysis < $i > $i.output
     runhatch $i
-    ghc -c -Wall $i.hs >& $i.out
+    ghc -c -Wall $i.hs > $i.out 2>&1
 done
 rm -f *.o *.hi
