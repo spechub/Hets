@@ -36,7 +36,17 @@ checkFreeType m fs=if any (\s->not $ elem s srts) sorts then Nothing
          op_preds= filter (\f->case f of
                                  Quantification _ _ _ _ -> True
                                  _ -> False) fs
-         
+
+{- problems:
+   phi1 => (phi2 => phi3)  soll Nothing ergeben
+   phi1 <=> (phi2 => phi3) soll Nothing ergeben
+   also:
+   Rekursion beschränken, 2 Bool-Argumente mitführen, die sagt, ob es schon 
+       eine Implikation bzw. eine Äquivalenz gab
+       Hilfs-Funktion um 2 Zusatzargumente erweitern
+       anfangs sind die Argumente False False
+       bei einer Implikation bzw. Äquivalenz wird es für den rekursiven Aufruf auf True gesetzt
+-}         
 leadingSym :: FORMULA f -> Maybe(Either OP_SYMB PRED_SYMB)
 leadingSym f= case f of
                 Quantification Universal _ f' _  -> leadingSym f'
@@ -50,3 +60,10 @@ leadingSym f= case f of
                                            Application opS _ _ -> return (Left opS)
                                            _ -> Nothing
                 _ -> Nothing 
+
+{- group the axioms according to their leading symbol
+   output Nothing if there is some axiom in incorrect form -}
+groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB,[FORMULA f])]
+groupAxioms phis = do
+  symbs <- mapM leadingSym phis
+  fail "groupAxioms not yet implemented"
