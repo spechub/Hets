@@ -1,0 +1,184 @@
+class type %% universe 
+
+type __->?__ : type- -> type+ -> type
+
+type unit: type  %% flat cpo with bottom?
+
+free type unit = ()       %% elsewhere "()" is illegal as constructor
+
+type __*__ : type+ -> type+ -> type
+type __*__*__ : type+ -> type+ -> type+ -> type
+...
+
+type pred (t:type-) = t ->? unit 
+
+type ? (t:type) = unit ->? t
+
+
+
+typevar s : type 
+
+
+%% "pred p args = e" abbreviates "op p args :? unit = e"  
+%% CASL requires "<=>" for pred-defn and disallows "()" as result
+
+pred def (x: s) = () %% def is partial?
+
+pred tt (x: s) = ()  %% tt is total? "op tt(x: s): unit = ()"
+
+pred __and__ (x, y: unit) = ()
+
+typevar t : type 
+
+type __->__ : type- -> type+ -> type 
+
+type s -> t = {f: s ->? t . all(\x:s. def f(x))}  %% see below
+
+
+op __res__ (x: s; y: t) : s = x 
+op fst (x: s; y: t) : s = x
+op snd (x: s; y: t) : t = y
+
+. (\x:s; y:t. def (x res y)) =  (\x:s; y:t. (def y) and (def x)) 
+. fst = (__ res__)
+
+
+%% Internal Logic
+
+op eq : pred (s * s)
+
+. (\x: s. eq(x, x)) = tt
+. (\x, y:s. x res eq(x,y)) = (\x, y:s. y res eq(x,y))
+
+
+
+%% def
+
+pred all (p: pred(s)) = eq(p, tt)
+
+pred __impl__ (x, y: ?unit) = eq(x, \ . x() and y())
+
+%% notation "\ ."  abbreviates "\bla:unit." 
+%% where "bla" is never used, but only "()" instead
+
+pred __or__ (x, y: ?unit) = all(\r: ?unit. 
+		(\ . (x impl r) and (y impl r)) impl r)
+
+pred ex (p: pred(s)) = all(\r: ?unit.
+		\ . all(\x:s. (\ . p(x)) impl r) impl r)
+
+pred ff () = all(\r: ?unit. r())
+
+pred neg (r: ?unit) = r impl ff
+
+
+
+%% implies --> check "... impl f = g" is "... impl (f = g)" 
+
+. all(\f,g: s->?t. all(\x:s. (\ .eq(\ .f(x),\ .g(x))) impl (\ .(f = g))))
+
+
+%% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"  
+
+class Cpo < type
+
+typevar c : Cpo
+
+ops __<=__ : pred (c * c)
+    isChain : pred (nat -> c)
+    isBound : pred (c * (nat -> c))
+    sup : (nat -> c) ->? c
+
+. all(\x: c. x <= x)                   %(reflexive)%
+. all(\x,y,z: c. (\ .(x <= y) and (y <= z)) impl \ .x <= z)   %(transitive)%
+. all(\x,y,z: c. (\ .(x <= y) and (y <= x)) impl \ .eq(x,y))  %(antisymmetric)%
+
+pred isChain (s: nat -> c) = all(\n:nat. s(n) <= s(Suc(n)))
+pred isBound (x: c; s: nat -> c) = all(\n:nat. s(n) <= x)  
+
+. all(\s: nat -> c. (\ .def (sup s)) impl
+	\ .isBound(sup s, s) and all(\x:c. (\ .isBound(x, s)) impl 
+		\ . (sup s) <= x))         %(sup is minimal bound)%
+
+class Pcpo < Cpo
+
+typevar p : Pcpo
+
+op bottom : p 
+
+. all(\x : p. bottom <= x)   
+
+. def bottom = ff()  %% ?
+
+class Flatcpo < Cpo   %instance
+
+typevar f : Flatcpo 
+
+op __<=__ : pred (f * f) = eq
+
+typevar c, d: Cpo
+
+type __*__ : Cpo+ -> Cpo+ -> Cpo
+
+pred __<=__ ((x1,y1),(x2,y2): c * d) = (x1 <= x2) and (y1 <= y2)    
+
+type __*__ : Pcpo+ -> Pcpo+ -> Pcpo
+
+type unit : Pcpo
+
+%% Pcont
+type __-->?__ : Cpo- -> Cpo+ -> Pcpo
+
+type c -->? d  = {f : c ->? d . 
+	all(\x,y: c. (\ . def (f x) and x <= y) impl \ .def (f y)) and
+	all(\s: nat -> c. (\ . isChain(s) and def f(sup(s))) impl \ .
+		ex(\m:nat. def f(s(m)) and (sup(\n:nat.!f(s(n+m))) = f(sup(s)))))
+
+pred __<=__ (f,g: c -->? d) = all(\x:c. (\ .def (f x)) impl \ .f(x) <= g(x))
+
+%% Tcont
+type __-->__ : Cpo- -> Cpo+ -> Cpo 
+
+type c --> d = {f : c -->? d . all(\x:c. def f(x))}
+ 
+pred __<=__ (f,g: c --> d) = f <= g as c -->? d
+
+type __-->__ : Cpo- -> Pcpo+ -> Pcpo   %% redundant?
+
+op Y : (p -->? p) --> p
+
+. all(\f: p -->? p . eq(f(Y(f)), Y(f)) and
+	all(\x:p . (\ . eq(f(x), x)) impl \ . Y(f) <= x))
+
+op undefined : unit -->? p = Y(\x: unit -->? p .! x) 
+
+%% generalize ?
+
+op undefined : c -->? p = Y(\x: c -->? p .! x) 
+
+
+%% shortcuts for the above "\ ."-liftings ?
+
+type Truth = unit ->? unit
+
+op T : Truth = \ . tt()
+
+op And (t1, t2: Truth) : Truth = \ . t1() and t2()
+
+op Impl (t1, t2: Truth) : Truth = \ . t1 impl t2
+
+type Predicate = s -> Truth %% total?
+
+op All(p: Predicate(s)) : truth == \ . all p()
+
+
+
+%% user stuff
+
+class Flatpcpo < Flatcpo, Pcpo
+
+free type bool = true | false
+
+type bool : flatpcpo
+type nat : flatpcpo
+
