@@ -215,7 +215,7 @@ utils/genRules: $(GENERATERULES_deps)
 
 utils/inlineAxioms: $(INLINEAXIOMS_deps)
 	(cd utils/InlineAxioms; \
-         make install && \
+         $(MAKE) install && \
          strip ../inlineAxioms)
 
 release: 
