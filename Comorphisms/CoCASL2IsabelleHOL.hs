@@ -107,7 +107,8 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
              -- variables for the extra parameters
              varDecls = zip [xvar i | i<-indicesArgs] (map transSort args)
              -- the selector ...
-             top = Const (transOP_SYMB sign opsymb) noType isaTerm
+--(c)             top = Const (transOP_SYMB sign opsymb) noType isaTerm
+             top = Const (transOP_SYMB sign opsymb) -- noType 
              -- applied to x and extra parameter vars
              appFold = foldl ( \ t1 t2 -> App t1 t2 IsCont)
              rhs = appFold (App top (var "x") IsCont) 

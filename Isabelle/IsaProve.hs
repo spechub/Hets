@@ -215,21 +215,29 @@ formLemmas sen =
 freeTypesSen (Sentence t) = Sentence (freeTypesTerm t)
 
 freeTypesTerm :: Term -> Term
-freeTypesTerm (Const "O" t s) = Const "OO" (freeTypesTyp t) s
-freeTypesTerm (Const c t s) = Const c (freeTypesTyp t) s
-freeTypesTerm (Free v t s) = Free v (freeTypesTyp t) s
-freeTypesTerm (Abs v ty t f) = Abs v (freeTypesTyp ty) (freeTypesTerm t) f
+freeTypesTerm (Const "O") = Const "OO"  
+freeTypesTerm (Const c) = Const c 
+freeTypesTerm (Free v) = Free v  
+-- freeTypesTerm (Const "O" t) = Const "OO" (freeTypesTyp t) 
+-- freeTypesTerm (Const c t) = Const c (freeTypesTyp t)
+-- freeTypesTerm (Free v t) = Free v (freeTypesTyp t) 
+freeTypesTerm (Abs vs t f) = Abs [(freeTypesTerm x, freeTypesTyp y) | (x,y) <- vs] (freeTypesTerm t) f 
 freeTypesTerm (App t1 t2 f) = App (freeTypesTerm t1) (freeTypesTerm t2) f
-freeTypesTerm (Case term alts f) = 
-  Case (freeTypesTerm term) (map freeTypesTermPair alts) f
-freeTypesTerm (If t1 t2 t3 f) =
-  If (freeTypesTerm t1) (freeTypesTerm t2) (freeTypesTerm t3) f
-freeTypesTerm (Let defs body f) = 
-  Let (map freeTypesTermPair defs) (freeTypesTerm body) f
+freeTypesTerm (Case term alts) = 
+  Case (freeTypesTerm term) (map freeTypesTermPair alts)
+freeTypesTerm (If t1 t2 t3) =
+  If (freeTypesTerm t1) (freeTypesTerm t2) (freeTypesTerm t3) 
+freeTypesTerm (Let defs body) = 
+  Let (map freeTypesTermPair defs) (freeTypesTerm body)
 freeTypesTerm (Fix f) =
   Fix (freeTypesTerm f)
 
 freeTypesTermPair (t1,t2) = (freeTypesTerm t1,freeTypesTerm t2)
 
-freeTypesTyp (Type t _ s _) = TFree t s
+-- <<<<<<< IsaProve.hs
+freeTypesTyp (Type t s _) = TFree t s
 freeTypesTyp t = t
+-- =======
+-- freeTypesTyp (Type t _ s _) = TFree t s
+-- freeTypesTyp t = t
+-- >>>>>>> 1.28

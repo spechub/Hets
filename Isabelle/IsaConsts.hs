@@ -23,12 +23,12 @@ binConst :: String -> Term -> Term -> Term
 binConst s t1 t2 = termAppl (termAppl (con s) t1) t2
 
 -- | construct a constant
-conT :: String -> Typ -> Term
-conT s t = Const s t isaTerm
+conT :: String -> Term
+conT s = Const s -- noType
 
 -- | construct a constant with no type
 con :: String -> Term
-con s = conT s noType
+con s = Const s -- noType
 
 -- * some stuff
 
@@ -36,7 +36,7 @@ someS :: String
 someS = "Some"
 
 conSomeT :: Typ -> Term
-conSomeT t = conT someS t
+conSomeT t = Const someS -- t
 
 -- | some constant with no type
 conSome :: Term
@@ -84,8 +84,8 @@ binEqv = binConst eqv
 
 -- * boolean constants
 true, false :: Term
-true = con "True"
-false = con "False"
+true = Const "True" -- boolType
+false = Const "False" -- boolType
 
 -- | pair stuff
 pairC :: String

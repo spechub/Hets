@@ -84,10 +84,10 @@ instance Comorphism CASL2IsabelleHOL
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_theory _ = transTheory sigTrCASL formTrCASL
-    --map_morphism _ morphism1 -> Maybe morphism2
+     --map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign =
       return . mapSen formTrCASL sign
-    --map_symbol :: cid -> symbol1 -> Set symbol2
+     --map_symbol :: cid -> symbol1 -> Set symbol2
 
 ------------------------------ Ids ---------------------------------
 
@@ -116,7 +116,7 @@ transTheory trSig trForm (sign,sens) =
      map (mapNamed (mapSen trForm sign)) sens)  -- for now, no new sentences
   where 
     dtDefs = makeDtDefs sign $ sens
-    dtTypes = map ((\(Type s _ _ _) -> s).fst) $ concat dtDefs
+    dtTypes = map ((\(Type s _ _) -> s).fst) $ concat dtDefs
     insertOps op ts m = 
      if Set.size ts == 1 
       then Map.insert (showIsa op) (transOpType (Set.findMin ts)) m
@@ -136,7 +136,7 @@ makeDtDefs sign = delDoubles . (mapMaybe $ makeDtDef sign)
   where
   delDoubles xs = delDouble xs []
   delDouble [] _  = []
-  delDouble (x:xs) sortList = let (Type s _a _b _c) = fst (head x) in
+  delDouble (x:xs) sortList = let (Type s _a _b) = fst (head x) in
       if (length sortList) == 
          (length (addSortList s sortList)) then
 	delDouble xs sortList
@@ -160,7 +160,7 @@ makeDtDef sign (NamedSen _ (Sort_gen_ax constrs True)) =
 makeDtDef _ _ = Nothing
 
 transSort :: SORT -> Typ
-transSort s = Type (showIsa s) [] [] []
+transSort s = Type (showIsa s) [] []
 
 transOpType :: OpType -> Typ
 transOpType ot = mkCurryFunType (map transSort $ opArgs ot) 
@@ -173,7 +173,8 @@ transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 ------------------------------ Formulas ------------------------------
 
 var :: String -> Term
-var v = IsaSign.Free v noType isaTerm
+--(c) var v = IsaSign.Free v noType isaTerm
+var v = IsaSign.Free v -- noType
 
 transVar :: VAR -> String
 transVar = showIsaSid
@@ -184,10 +185,13 @@ xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
 rvar :: Int -> String
 rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
 
+--(c) quantifyIsa :: String -> (String, Typ) -> Term -> Term
+--(c) quantifyIsa q (v,t) phi =
+--(c)  App (Const q noType isaTerm) (Abs (Const v noType isaTerm) t phi NotCont)
+--(c)      NotCont
 quantifyIsa :: String -> (String, Typ) -> Term -> Term
 quantifyIsa q (v,t) phi =
-  App (Const q noType isaTerm) (Abs (Const v noType isaTerm) t phi NotCont)
-      NotCont
+ App (Const q) (Abs [(Free v, t)] phi NotCont) NotCont
 
 quantify :: QUANTIFIER -> (VAR, SORT) -> Term -> Term
 quantify q (v,t) phi  = 
@@ -282,8 +286,9 @@ transTERM sign tr (Conditional t1 phi t2 _) =
   foldl termAppl (con "If") [transFORMULA sign tr phi,
        transTERM sign tr t1, transTERM sign tr t2]
 transTERM _sign _tr (Simple_id v) =
-  IsaSign.Free (transVar v) noType isaTerm
-  --error "No translation for undisambiguated identifier"
+--(c)  IsaSign.Free (transVar v) noType isaTerm
+  IsaSign.Free (transVar v) -- noType
+--error "No translation for undisambiguated identifier"
 transTERM _sign _tr _ =
   error "CASL2IsabelleHOL.transTERM" 
 

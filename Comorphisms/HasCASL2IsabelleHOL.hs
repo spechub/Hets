@@ -152,7 +152,7 @@ transPredType  (TypeScheme _ pre _) =
 transType :: Type -> Typ
 -- type name
 transType (TypeName tyId _ i) = 
-    if i == 0 then Type (showIsa tyId) [] [] [] -- translate kind here!!
+    if i == 0 then Type (showIsa tyId) [] [] -- translate kind here!!
        else TFree (showIsa tyId) []
 -- product type
 transType (ProductType ts _) = 
@@ -166,13 +166,15 @@ transType (FunType t arr t' _) =
       error "[Comorphisms.HasCASL2IsabelleHOL] Not supported function type"
 -- type application
 transType (TypeAppl t t') = 
-    mkTypeAppl c (ts ++ [transType t'])
-    where (c, ts) = stripAppl t "" []
-          stripAppl ty c ts =
-            case ty of
-              TypeAppl ty ty' -> stripAppl ty c ((transType ty'):ts)
-              TypeName i _ _ -> (showIsa i, ts)
-              _              -> error "HasCASL2IsabelleHOL.transType"
+    binTypeAppl (transType t) (transType t')
+--(c) transType (TypeAppl t t') = 
+--(c)    mkTypeAppl c (ts ++ [transType t'])
+--(c)    where (c, ts) = stripAppl t "" []
+--(c)          stripAppl ty c ts =
+--(c)            case ty of
+--(c)              TypeAppl ty ty' -> stripAppl ty c ((transType ty'):ts)
+--(c)              TypeName i _ _ -> (showIsa i, ts)
+--(c)              _              -> error "HasCASL2IsabelleHOL.transType"
 
 transType _ = error "[Comorphisms.HasCASL2IsabelleHOL] Not supported type"
 
@@ -189,7 +191,7 @@ transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
 transDataEntry :: DataEntry -> DataTypeTabEntry
 transDataEntry (DataEntry _ tyId Le.Free tyArgs alts) = 
                          [((transDName tyId tyArgs), (map transAltDefn alts))]
-  where transDName ti ta = Type (showIsa ti) [] [] (map transTypeArg ta)
+  where transDName ti ta = Type (showIsa ti) [] (map transTypeArg ta)
 transDataEntry _ = 
   error "[Comorphisms.HasCASL2IsabelleHOL] Not supported datatype definition"
 
@@ -238,7 +240,9 @@ transTerm :: Env -> As.Term -> IsaSign.Term
 transTerm _ (QualVar (VarDecl var t _ _)) = 
   let t'  = transType t 
       ot = mkFunType t' $ mkOptionType t'
-  in  termAppl (conSomeT ot) (IsaSign.Free (transVar var) t' isaTerm)
+  in  termAppl (conSomeT ot) (IsaSign.Free (transVar var))
+--(c)  in  termAppl (conSomeT ot) (IsaSign.Free (transVar var) t' isaTerm)
+--  in  termAppl (conSomeT ot) (IsaSign.Free (transVar var))
 
 transTerm sign (QualOp _ (InstOpId opId _ _) ts _)
   | opId == trueId  =  con "True"
@@ -282,8 +286,8 @@ transTerm sign (QuantifiedTerm quan varDecls phi _) =
     quantify q gvd phi' = 
       case gvd of
         (GenVarDecl (VarDecl var typ _ _)) ->
-          termAppl (con $ qname q) (Abs (con $ transVar var) 
-                               (transType typ) phi' NotCont)
+          termAppl (con $ qname q) -- (Abs [(transVar var, noType)] phi' NotCont) 
+               (Abs [(con $ transVar var, transType typ)] phi' NotCont)
         (GenTypeVarDecl (TypeArg _ _ _ _)) ->  phi'
     qname Universal   = allS
     qname Existential = exS
@@ -300,14 +304,17 @@ transTerm sign (LambdaTerm pats p body _) =
   where 
    lambdaAbs f =
      if (null pats) then termAppl conSome 
-                           (Abs (IsaSign.Free "dummyVar" noType isaTerm) 
-                                     noType (f sign body) IsCont)
+                           (Abs [(IsaSign.Free "dummyVar", noType)] 
+                                      (f sign body) IsCont)
+--                           (Abs [("dummyVar", noType)] 
+--                                      (f sign body) IsCont)
        else termAppl conSome (foldr (abstraction sign) 
                                  (f sign body)
                                  pats)
 -- let statement
 transTerm sign (LetTerm As.Let peqs body _) = 
-  IsaSign.Let (map transProgEq peqs) (transTerm sign body) IsCont
+--  IsaSign.Let (map transProgEq peqs) (transTerm sign body) IsCont
+  IsaSign.Let (map transProgEq peqs) (transTerm sign body) 
   where
     transProgEq (ProgEq pat t _) = 
       (transPattern sign pat, transPattern sign t)
@@ -323,13 +330,13 @@ transTerm sign (CaseTerm t peqs _) =
     -- a term application that may evaluate to 'Some x' or 'None'
     case t of
       QualVar (VarDecl decl _ _ _) -> 
-        Case (IsaSign.Free (transVar decl) noType isaTerm) alts IsCont
+        Case (IsaSign.Free (transVar decl)) alts 
       _                            -> 
         Case (transTerm sign t)
              ((con "None", con "None"):
-               [(App conSome (IsaSign.Free "caseVar" noType isaTerm) IsCont,
-               Case (IsaSign.Free "caseVar" noType isaTerm) alts IsCont)])
-             IsCont
+               [(App conSome (IsaSign.Free "caseVar") NotCont,
+               Case (IsaSign.Free "caseVar") alts)])
+--             IsCont
 
 transTerm _ _ = 
   error "[Comorphisms.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
@@ -375,7 +382,7 @@ transWhenElse sign t =
         let ts = (map (transTerm sign) terms)
         in
            if (length ts) == 3 
-              then If (head $ tail ts) (head  ts) (last ts) NotCont
+              then If (head $ tail ts) (head  ts) (last ts) -- NotCont
               else error 
                 "[Comorphisms.HasCASL2IsabelleHOL] Wrong when-else definition"
       _                 -> 
@@ -387,7 +394,8 @@ transWhenElse sign t =
 -- form Abs(pattern term)
 abstraction :: Env -> As.Term -> IsaSign.Term -> IsaSign.Term
 abstraction sign pat body = 
-    Abs (transPattern sign pat) (getType pat) body IsCont where
+    Abs [(transPattern sign pat, getType pat)] body IsCont where
+--    Abs (transPattern sign pat) body IsCont where
     getType t =
       case t of
         QualVar (VarDecl _ typ _ _) ->  transType typ
@@ -401,7 +409,7 @@ abstraction sign pat body =
 -- a pattern keeps his type 't', isn't translated to 't option'
 transPattern :: Env -> As.Term -> IsaSign.Term
 transPattern _ (QualVar (VarDecl var typ _ _)) = 
-  IsaSign.Free (transVar var) (transType typ) isaTerm
+  IsaSign.Free (transVar var) -- (transType typ)
 transPattern sign (TupleTerm terms _) = foldl1 (binConst isaPair) 
                                                (map (transPattern sign) terms)
 transPattern _ (QualOp _ (InstOpId opId _ _) _ _) = con (showIsa opId)
@@ -412,7 +420,7 @@ transPattern sign t = transTerm sign t
 -- translation of total lambda abstraction bodies
 transTotalLambda :: Env -> As.Term -> IsaSign.Term
 transTotalLambda _ (QualVar (VarDecl var typ _ _)) = 
-  IsaSign.Free(transVar var) (transType typ) isaTerm
+  IsaSign.Free (transVar var) -- (transType typ) 
 transTotalLambda sign t@(QualOp _ (InstOpId opId _ _) _ _) =
   if (opId == trueId) || (opId == falseId) then transTerm sign t
     else con (showIsa opId)
@@ -425,15 +433,16 @@ transTotalLambda sign (LambdaTerm pats part body _) =
     Total   -> lambdaAbs transTotalLambda
   where 
     lambdaAbs f =
-      if (null pats) then Abs(IsaSign.Free "dummyVar" noType isaTerm) 
-                              noType (f sign body) IsCont
+      if (null pats) then Abs [(IsaSign.Free "dummyVar", noType)] 
+                               (f sign body) IsCont
+--      if (null pats) then Abs [("dummyVar", noType)] 
         else  (foldr (abstraction sign) 
                      (f sign body)
                      pats)
 transTotalLambda sign (TupleTerm terms _) =
   foldl1 (binConst isaPair) (map (transTotalLambda sign) terms)
 transTotalLambda sign (CaseTerm t pEqs _) = 
-  Case (transTotalLambda sign t) (map transCaseAltTotal pEqs) IsCont
+  Case (transTotalLambda sign t) (map transCaseAltTotal pEqs) 
   where transCaseAltTotal (ProgEq pat trm _) = 
                 (transPat sign pat, transTotalLambda sign trm)
 transTotalLambda sign t = transTerm sign t   
@@ -732,7 +741,7 @@ transCaseAlt sign (ProgEq pat trm _) =
 
 transPat :: Env -> As.Term -> IsaSign.Term
 transPat _ (QualVar (VarDecl var _ _ _)) = 
-    IsaSign.Free (transVar var) noType isaTerm
+    IsaSign.Free (transVar var) -- noType 
 transPat sign (ApplTerm term1 term2 _) = 
   termAppl (transPat sign term1) (transPat sign term2)
 transPat sign (TypedTerm trm _ _ _) = transPat sign trm
