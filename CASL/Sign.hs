@@ -36,18 +36,19 @@ type GenItems = [Symbol]
 
 data TokenKind = Key | Comma | Semi | Less | Equal | Colon deriving (Show, Eq)
 
-data ListPos = ListPos TokenKind Pos deriving (Show, Eq)
+data ExtPos = ExtPos { tokenKind :: TokenKind
+		     , getPos :: Pos } deriving (Show, Eq)
 -- position of "," or ":"
 
 -- full function type of a selector (result sort is component sort)
-data Component = Component (Maybe Id) OpType (Maybe ListPos)
+data Component = Component (Maybe Id) OpType (Maybe ExtPos)
                  -- pos of "," or ":" (as Key)
 		 deriving (Show, Eq) 
 
 -- full function type of constructor (result sort is the data type)
 data Alternative = Construct Id OpType [Component] [Pos] 
                  -- pos: "(", semi colons, ")", optional "?"
-		 | Subsort SortId ListPos
+		 | Subsort SortId ExtPos
 		 -- pos of "," or "sort"
 		 deriving (Show, Eq) 
 
@@ -58,7 +59,7 @@ data GenKind = Free | Generated | Loose deriving (Show, Eq)
 
 data VarDecl = VarDecl { varId :: SIMPLE_ID
 		       , varSort :: SortId
-                       , varPos :: ListPos -- pos of "," or ":"
+                       , varPos :: ExtPos -- pos of "," or ":"
 		       } deriving (Show, Eq)
 
 -- sort defined as predicate subtype or as more or less loose datatype
@@ -78,8 +79,8 @@ data SortRels = SortRels { subsorts :: [SortId]  -- explicitely given
 emptySortRels :: SortRels
 emptySortRels = SortRels [] [] [] []
 
-data ItemPos = ItemPos String TokenKind [Pos] deriving (Show, Eq)
--- "filename" and kind of first token position
+data ItemPos = ItemPos TokenKind [Pos] deriving (Show, Eq)
+-- with kind of first token position
 
 -- sort or type 
 data SortItem = SortItem { sortId :: SortId
