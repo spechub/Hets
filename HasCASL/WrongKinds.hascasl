@@ -1,0 +1,14 @@
+()
+a+
+a+ - -> b %[stops at -]%
+a*b
+a->b-
+(a->b)-
+a-> b * c
+(a+ * (b-)+ * d) -> e %[nested variance]%
+a->(b->c+)
+a->(b->c)+
+(a->b+)->c
+(a->b+) * d ->c
+(a,b->c)
+(a+,b) -> c

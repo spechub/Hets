@@ -57,7 +57,18 @@ parsePlainClass :: GenParser Char st Kind
 parsePlainClass = 
              fmap PlainClass parseClassId 
              <|> 
-	     do oParenT >> funKind << cParenT
+	     do o <- oParenT
+		f <- funKind
+		case f of 
+		  PlainClass k -> do
+		      p <- commaT
+		      (cs, ps) <- parseClass `separatedBy` commaT
+		      c <- cParenT
+		      return $ PlainClass $ Intersection 
+				 (nub $ concatMap iclass (k:cs)) 
+					    (toPos o (p:ps) c)
+		    <|> do cParenT >> return f
+		  _ ->  cParenT >> return f
 
 extClass :: GenParser Char st Kind
 extClass = do c <- parsePlainClass

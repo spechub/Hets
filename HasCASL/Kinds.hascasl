@@ -1,5 +1,6 @@
 Type
 a
+(a,b) %[Intersection]%
 a->b
 a->b->c
 (a)
@@ -14,3 +15,4 @@ a*b->c*d->e
 (a+ * (b- *c)+ * d) -> e %[nested products]%
 (a- * (b+ ->c)- * d-) -> e %[nested products]%
 (a- * (b+ ->c)- * d-) -> e %[nested products]%
+(a,b) * (c,d) -> (e,f) %[Intersection]%
