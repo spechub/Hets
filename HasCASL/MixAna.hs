@@ -53,7 +53,7 @@ termToToken trm =
           _ -> opTok
 
 -- match (and shift) a token (or partially finished term)
-scan :: TypeMap -> (Type, a) -> (a -> Token) -> ParseMap a -> ParseMap a
+scan :: TypeMap -> (Maybe Type, a) -> (a -> Token) -> ParseMap a -> ParseMap a
 scan tm (ty, trm) f pm =
   let m = parseMap pm
       i = lastIndex pm
@@ -114,7 +114,7 @@ predict f pm =
 
 completeScanPredict :: (PrettyPrint a, PosItem a) 
 		    => GlobalAnnos -> TypeMap 
-		    -> (Type, a) -> (PState a -> a) -> (a -> Token)
+		    -> (Maybe Type, a) -> (PState a -> a) -> (a -> Token)
                     -> (Index -> State Int [PState a])
 		    -> ParseMap a -> ParseMap a
 completeScanPredict ga tm (ty, a) fromState toToken initStates pm =
@@ -126,7 +126,7 @@ completeScanPredict ga tm (ty, a) fromState toToken initStates pm =
        then  pm3 { failDiags = [mkDiag Error "unexpected mixfix token" a] }
        else pm3
 
-nextState :: GlobalAnnos -> Assumps -> TypeMap -> (Type, Term) 
+nextState :: GlobalAnnos -> Assumps -> TypeMap -> (Maybe Type, Term) 
 	  -> ParseMap Term -> ParseMap Term
 nextState ga is tm (ty, trm) = 
     completeScanPredict ga tm (ty, trm) stateToAppl termToToken $
@@ -153,7 +153,7 @@ iterStates ga as tm cm ty terms pm =
 			let mi = findOpId as tm (varCount pm) v typq in 
 			    case mi of 
 			    Just _ -> self (tail terms) $ nextState ga as tm 
-				      (typq, t) pm
+				      (Just typq, t) pm
 			    Nothing -> pm { failDiags = 
 					    [mkDiag Error 
 					     "value not found" v] }
@@ -165,7 +165,7 @@ iterStates ga as tm cm ty terms pm =
 			let mi = findOpId as tm (varCount pm) v typq in 
 			    case mi of 
 			    Just _ -> self (tail terms) $ nextState ga as tm 
-				      (typq, t) pm
+				      (Just typq, t) pm
 			    Nothing -> pm { failDiags = 
 					    [mkDiag Error 
 					     "value not found" v] }
@@ -174,7 +174,7 @@ iterStates ga as tm cm ty terms pm =
 		let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) in
 	        case mt of 
 		Just (_, typq) -> 
-		    let (Result ds mtt, c2) = runState
+		    let (Result ds mtt, c2) = runRState
 			   (case tqual of 
 			        OfType -> resolve ga as tm cm (typq, hd)
 			        _ -> resolveAny ga as tm cm hd) 
@@ -183,48 +183,50 @@ iterStates ga as tm cm ty terms pm =
 			in case mtt of  
 			Just (_, ttt) -> self (tail terms) 
 				   $ nextState ga as tm 
-				   (case tqual of 
+				   (Just (case tqual of 
 				    InType -> logicalType
-				    _ -> typq, TypedTerm ttt tqual typq ps) pm2
+				    _ -> typq), 
+				    TypedTerm ttt tqual typq ps) pm2
 			Nothing -> pm2
 		Nothing -> pm { failDiags = es }
 	    QuantifiedTerm quant decls hd ps ->
-		let (Result ds mtt, c2) = runState 
+		let (Result ds mtt, c2) = runRState 
 		        (resolve ga as tm cm (logicalType, hd)) $ varCount pm
 		    pm2 = pm { varCount = c2, failDiags = ds }
 		    in case mtt of 
 		    Just (_, tt) -> self (tail terms) $ nextState ga as tm 
-		         (logicalType, QuantifiedTerm quant decls tt ps) pm2
+		         (Just logicalType, 
+			  QuantifiedTerm quant decls tt ps) pm2
 		    Nothing -> pm2
 	    LambdaTerm decls part hd ps -> 
-		let (Result ds mtt, c2) = runState 
+		let (Result ds mtt, c2) = runRState 
 		            (resolveAny ga as tm cm hd) $ varCount pm
 		    pm2 = pm { varCount = c2, failDiags = ds }
 		    in case mtt of 
 		    Just (typq, tt) -> self (tail terms) $ nextState ga as tm 
-		         (typq, LambdaTerm decls part tt ps) pm2
+		         (Just typq, LambdaTerm decls part tt ps) pm2
 		    Nothing -> pm2
 	    CaseTerm hd (ProgEq pat e1 pps : _) ps -> 
- 		let (Result ds mtt, c2) = runState 
+ 		let (Result ds mtt, c2) = runRState 
 		            (resolveAny ga as tm cm hd) $ varCount pm
-                    (Result es frst, c3) = runState 
+                    (Result es frst, c3) = runRState 
 		            (resolveAny ga as tm cm e1) c2
  		    pm2 = pm { varCount = c3, failDiags = ds++es }
 		    in case (mtt, frst)  of 
 		    (Just (_, tt), Just (typq, te)) -> self (tail terms) 
 		                            $ nextState ga as tm 
-		         (typq, CaseTerm tt [ProgEq pat te pps] ps) pm2
+		         (Just typq, CaseTerm tt [ProgEq pat te pps] ps) pm2
 		    _ -> pm2
 	    LetTerm eqs hd ps ->
-		let (Result ds mtt, c2) = runState 
+		let (Result ds mtt, c2) = runRState 
 		            (resolveAny ga as tm cm hd) $ varCount pm
 		    pm2 = pm { varCount = c2, failDiags = ds }
 		    in case mtt of 
 		    Just (typq, tt) -> self (tail terms) $ nextState ga as tm 
-		         (typq, LetTerm eqs tt ps) pm2
+		         (Just typq, LetTerm eqs tt ps) pm2
 		    Nothing -> pm2
 	    t@(TermToken _) ->  self (tail terms) 
-		 $ nextState ga as tm (MixfixType [], t) pm
+		 $ nextState ga as tm (Nothing, t) pm
 	    t -> error ("iterStates: " ++ show t)
 
 getAppls :: ParseMap a -> [PState a]
@@ -260,9 +262,9 @@ checkResultType tm t pm =
 		 $ lookUp m i) m }
 
 resolveAny :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
-	-> Term -> State Int (Result (Type, Term))
+	-> Term -> RState Int (Type, Term)
 resolveAny ga as tm cm trm =
-    do tvar <- freshVar
+    do tvar <- liftS freshVar
        resolve ga as tm cm (TypeName tvar star 1, trm)
 
 resolveFromParseMap :: (PosItem a, PrettyPrint a) => (PState a -> a) 
@@ -282,18 +284,32 @@ resolveFromParseMap f tm (ty, a) pm0 =
 				 $ take 5 ts) ++ "for" ) a : ds) Nothing
 
 resolve :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
-	-> (Type, Term) -> State Int (Result (Type, Term))
+	-> (Type, Term) -> RState Int (Type, Term)
 resolve ga as tm cm (ty, trm) =
-    do c <- get
-       return $ resolveFromParseMap (toAppl ga) tm (ty, trm) $ 
+    do c <- liftS get
+       liftR $ resolveFromParseMap (toAppl ga) tm (ty, trm) $ 
 	      resolveToParseMap ga as tm cm c ty trm
 
-resolveTerm :: GlobalAnnos -> Type -> Term -> State Env (Result Term)
+toEnvRState :: RState Int a -> RState Env a 
+toEnvRState p = 
+    do s <- liftS get
+       let (r, c) = runRState p $ counter s
+       liftS $ put s { counter = c }
+       liftR r 
+
+resolveTerm :: GlobalAnnos -> Type -> Term -> RState Env Term
 resolveTerm ga ty trm = 
-    do s <- get
-       r <- toEnvState $ resolve ga
+    do s <- liftS $ get
+       (_, r) <- toEnvRState $ resolve ga
 	    (assumps s) (typeMap s) (classMap s) (ty, trm)
-       return $ fmap snd r 
+       return r
+
+toRResultState :: RState s a -> State s (Result a)
+toRResultState r = 
+    do s <- get 
+       let (r', s') = runRState r s 
+       put s'
+       return r'
 
 -- ---------------------------------
 -- patterns
@@ -355,7 +371,7 @@ initialPatState as i =
 	       opId]
        return (a:p:t:l1 ++ l2 ++ l3)
 
-nextPatState :: GlobalAnnos -> Assumps -> TypeMap -> (Type, Pattern) 
+nextPatState :: GlobalAnnos -> Assumps -> TypeMap -> (Maybe Type, Pattern) 
 	      -> ParseMap Pattern -> ParseMap Pattern
 nextPatState ga is tm (ty, trm) = 
     completeScanPredict ga tm (ty, trm) patFromState patToToken
@@ -382,11 +398,11 @@ iterPatStates ga as tm cm ty pats pm =
 			in case mtt of  
 			Just (_, ttt) -> self (tail pats) 
 				   $ nextPatState ga as tm 
-				   (typq, TypedPattern ttt typq ps) pm2
+				   (Just typq, TypedPattern ttt typq ps) pm2
 			Nothing -> pm2
 		Nothing -> pm { failDiags = es }
 	    t@(PatternToken _) -> self (tail pats) $ nextPatState ga as tm 
-		   (MixfixType [], t) pm
+		   (Nothing, t) pm
 	    t -> error ("iterPatState: " ++ show t)
 
 resolvePatToParseMap :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Int 

@@ -215,9 +215,9 @@ initialState g as i =
        return (a:p:t:ls ++ l1 ++ l2 ++ l3)
 
 -- recognize next token (possible introduce new tuple variable)
-scanState :: TypeMap -> (Type, a) -> Token -> PState a
+scanState :: TypeMap -> (Maybe Type, a) -> Token -> PState a
 	  -> State Int [PState a]
-scanState tm (ty, trm) t p =
+scanState tm (mty, trm) t p =
     do let ts = restRule p
        if null ts then return [] else 
 	  if head ts == t then 
@@ -227,7 +227,8 @@ scanState tm (ty, trm) t p =
                       newTy = case ruleType p of 
 	                  FunType lastTy PFunArr (ProductType tys ps) _ -> 
 	                      FunType lastTy PFunArr 
-					  (FunType nextTy PFunArr		                                             (ProductType (tys++[nextTy]) ps)
+					  (FunType nextTy PFunArr
+		                           (ProductType (tys++[nextTy]) ps)
 					   []) []
 	                  _ -> error "scanState"
 		  return [ p { restRule = termTok : commaTok : tail ts
@@ -235,14 +236,24 @@ scanState tm (ty, trm) t p =
 			 , p { restRule = termTok : tail ts }]
               else return $
 		   if t == opTok || t == inTok then
-	             let mp = do q <- filterByType tm (ty,trm) p
+	             let Just ty = mty 
+                         mp = do q <- filterByType tm (ty,trm) p
 	                         return q { ruleType = ty, restRule = tail ts }
 	             in maybeToList mp
- 	      else [p { restRule = tail ts, posList = tokPos t : posList p }]
+ 	      else case mty of
+	           Nothing -> [p { restRule = tail ts
+			         , posList = tokPos t : posList p }]
+		   Just ty -> maybeToList 
+		       (do q <- filterByType tm (ty,trm) p
+			   return q { ruleType = ty, restRule = tail ts
+                                    , posList = tokPos t : posList q })
 	  else return $ if ruleId p == unknownId 
 	         && tokStr t `notElem` tokStr inTok : map (:[]) "{}[]()," then
 	       [p { restRule = tail ts, posList = tokPos t : posList p
-		  , ruleId = mkRuleId [unknownTok, t] }]
+		  , ruleId = mkRuleId [unknownTok, t]
+		  , ruleType = case mty of 
+		               Nothing -> ruleType p
+		               Just ty -> ty }]
 	       else []
 
 -- construct resulting term from PState 

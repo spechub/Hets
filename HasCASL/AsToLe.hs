@@ -54,7 +54,7 @@ anaBasicItem ga (AxiomItems decls fs _) =
        as <- gets assumps -- save vars
        mapM_ anaGenVarDecl decls
        ds <- mapM (( \ (TermFormula t) -> 
-		     resolveTerm ga logicalType t ) . item) fs
+		     toRResultState $ resolveTerm ga logicalType t ) . item) fs
        putTypeMap tm -- restore 
        putAssumps as -- restore
        appendDiags $ concatMap diags ds
@@ -166,7 +166,7 @@ anaProgEq ga (ProgEq pat trm _) =
 	       let bs = extractBindings newPat
 	       e <- get
 	       mapM_ anaVarDecl bs
-	       Result ts mt <- resolveTerm ga ty trm
+	       Result ts mt <- toRResultState $ resolveTerm ga ty trm
 	       put e
 	       appendDiags ts
 	       case mt of 
