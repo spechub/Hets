@@ -1,0 +1,757 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8"
+><TITLE
+>Text.ParserCombinators.Parsec.Error</TITLE
+><LINK HREF="haddock.css" REL="stylesheet" TYPE="text/css"
+><SCRIPT SRC="haddock.js" TYPE="text/javascript"
+></SCRIPT
+></HEAD
+><BODY
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="topbar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><IMG SRC="haskell_icon.gif" WIDTH="16" HEIGHT="16" ALT=" "
+></TD
+><TD CLASS="title"
+>Haskell Hierarchical Libraries (parsec package)</TD
+><TD CLASS="topbut"
+><A HREF="index.html"
+>Contents</A
+></TD
+><TD CLASS="topbut"
+><A HREF="doc-index.html"
+>Index</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="modulebar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><FONT SIZE="6"
+>Text.ParserCombinators.Parsec.Error</FONT
+></TD
+><TD ALIGN="right"
+><TABLE CLASS="narrow" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="infohead"
+>Portability</TD
+><TD CLASS="infoval"
+>portable</TD
+></TR
+><TR
+><TD CLASS="infohead"
+>Stability</TD
+><TD CLASS="infoval"
+>provisional</TD
+></TR
+><TR
+><TD CLASS="infohead"
+>Maintainer</TD
+><TD CLASS="infoval"
+>daan@cs.uu.nl</TD
+></TR
+></TABLE
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Description</TD
+></TR
+><TR
+><TD CLASS="doc"
+>Parse errors
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Synopsis</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3AMessage"
+>Message</A
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+>= <A HREF="#v%3ASysUnExpect"
+>SysUnExpect</A
+> !<A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>| <A HREF="#v%3AUnExpect"
+>UnExpect</A
+> !<A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>| <A HREF="#v%3AExpect"
+>Expect</A
+> !<A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>| <A HREF="#v%3AMessage"
+>Message</A
+> !<A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AmessageString"
+>messageString</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AmessageCompare"
+>messageCompare</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Prelude.html#t%3AOrdering"
+>Ordering</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AmessageEq"
+>messageEq</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Prelude.html#t%3ABool"
+>Bool</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3AParseError"
+>ParseError</A
+> </TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AerrorPos"
+>errorPos</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Pos.html#t%3ASourcePos"
+>SourcePos</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AerrorMessages"
+>errorMessages</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; [<A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AerrorIsUnknown"
+>errorIsUnknown</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Prelude.html#t%3ABool"
+>Bool</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AshowErrorMessages"
+>showErrorMessages</A
+> :: <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; [<A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+>] -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AnewErrorMessage"
+>newErrorMessage</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Pos.html#t%3ASourcePos"
+>SourcePos</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AnewErrorUnknown"
+>newErrorUnknown</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Pos.html#t%3ASourcePos"
+>SourcePos</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AaddErrorMessage"
+>addErrorMessage</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AsetErrorPos"
+>setErrorPos</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Pos.html#t%3ASourcePos"
+>SourcePos</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AsetErrorMessage"
+>setErrorMessage</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AmergeError"
+>mergeError</A
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Documentation</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3AMessage"
+></A
+><B
+>Message</B
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="section4"
+>Constructors</TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="arg"
+><A NAME="v%3ASysUnExpect"
+></A
+><B
+>SysUnExpect</B
+> !<A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+><TD CLASS="rdoc"
+></TD
+></TR
+><TR
+><TD CLASS="arg"
+><A NAME="v%3AUnExpect"
+></A
+><B
+>UnExpect</B
+> !<A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+><TD CLASS="rdoc"
+></TD
+></TR
+><TR
+><TD CLASS="arg"
+><A NAME="v%3AExpect"
+></A
+><B
+>Expect</B
+> !<A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+><TD CLASS="rdoc"
+></TD
+></TR
+><TR
+><TD CLASS="arg"
+><A NAME="v%3AMessage"
+></A
+><B
+>Message</B
+> !<A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+><TD CLASS="rdoc"
+></TD
+></TR
+></TABLE
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AmessageString"
+></A
+><B
+>messageString</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AmessageCompare"
+></A
+><B
+>messageCompare</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Prelude.html#t%3AOrdering"
+>Ordering</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AmessageEq"
+></A
+><B
+>messageEq</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Prelude.html#t%3ABool"
+>Bool</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3AParseError"
+></A
+><B
+>ParseError</B
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:ParseError')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:ParseError" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><A HREF="Prelude.html#t%3AShow"
+>Show</A
+> <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AerrorPos"
+></A
+><B
+>errorPos</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Pos.html#t%3ASourcePos"
+>SourcePos</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AerrorMessages"
+></A
+><B
+>errorMessages</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; [<A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AerrorIsUnknown"
+></A
+><B
+>errorIsUnknown</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Prelude.html#t%3ABool"
+>Bool</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AshowErrorMessages"
+></A
+><B
+>showErrorMessages</B
+> :: <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+> -&gt; [<A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+>] -&gt; <A HREF="Prelude.html#t%3AString"
+>String</A
+></TD
+></TR
+><TR
+><TD CLASS="doc"
+>Language independent show function
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AnewErrorMessage"
+></A
+><B
+>newErrorMessage</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Pos.html#t%3ASourcePos"
+>SourcePos</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AnewErrorUnknown"
+></A
+><B
+>newErrorUnknown</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Pos.html#t%3ASourcePos"
+>SourcePos</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AaddErrorMessage"
+></A
+><B
+>addErrorMessage</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AsetErrorPos"
+></A
+><B
+>setErrorPos</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Pos.html#t%3ASourcePos"
+>SourcePos</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AsetErrorMessage"
+></A
+><B
+>setErrorMessage</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AMessage"
+>Message</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AmergeError"
+></A
+><B
+>mergeError</B
+> :: <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+> -&gt; <A HREF="Text.ParserCombinators.Parsec.Error.html#t%3AParseError"
+>ParseError</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="botbar"
+>Produced by <A HREF="http://www.haskell.org/haddock/"
+>Haddock</A
+> version 0.6</TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

@@ -209,7 +209,7 @@ doc: docs/index.html
 # index for prelude is missing
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h \
-          -i docs/base.haddock \
+          -i docs/base.haddock -i docs/parsec.haddock \
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
 apache_doc:
