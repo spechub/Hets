@@ -20,6 +20,8 @@
 -- does anyone ever need anything else from me? (yes, in Logic_Modal!)
 module CASL.Overload where
 
+import Debug.Trace
+
 import CASL.Sign                -- Sign, OpType
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import Common.Result            -- Result

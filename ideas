@@ -2,6 +2,9 @@
 Heterogeneous Theory
 ====================
 
+proof theoretic comorphisms (e.g. CASL->HasCASL, sort gen axs are
+  only proof theoretically translatable)
+
 in favour of comorphisms: subinstitution Eq= -> FOL= is not a morphism
 
 TCS-paper: based on WADT 2002 paper, all 8 forms of (co)-morphisms
@@ -44,6 +47,11 @@ BIT-Bsp. in CASL-LTL und HasCASL
 ETAPS-Typ
 Saarbrücker Bsp.e
 Bsp. von Franzosen (LeGall...)
+
+COL / observational logic
+-------------------------
+specify in COL, then project to CASL (= close desgin), 
+add new sorts, return to COL
 
 Modal logics
 ------------

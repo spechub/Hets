@@ -36,7 +36,7 @@ generateAxioms sig =
 
 module Main where -- Comorphisms.PreProcessor where
 
-import Debug.Trace
+--import Debug.Trace
 
 import Haskell.Hatchet.HsPretty as HP
 import Haskell.Hatchet.HsSyn
@@ -123,10 +123,11 @@ piHsExp (HsApp (HsApp (HsVar (UnQual (HsIdent "inlineAxioms")))
         Left err -> error (show err)
         Right ast -> case basic_analysis lid of
           Nothing -> error ("No static analysis for logic "++logStr)
-          Just b -> case maybeResult $ b (ast,empty_signature lid,emptyGlobalAnnos) of
-            Nothing -> error "Error during static analysis of inlineAxioms"
-            Just (_,_,_,sens) ->
-               listComp $ show sens
+          Just b -> let res = b (ast,empty_signature lid,emptyGlobalAnnos) in
+            case (hasErrors $ diags res, maybeResult res) of
+              (False,Just (_,_,_,sens)) -> listComp $ show sens
+              _ -> error ("Error during static analysis of inlineAxioms\n" ++
+                          concat (map ((++"\n").show) (diags res)))
 piHsExp (HsApp expr1 expr2) =
   HsApp (piHsExp expr1) (piHsExp expr2)
 piHsExp (HsNegApp expr) =
@@ -210,6 +211,7 @@ indexVar (HsVar (UnQual (HsIdent v))) =
     _ -> []
 -- special treatment of CASL Var_decl's, since these should not count
 -- as enumerated lists
+indexVar (HsVar _) = error "inlineAxioms: qualified var"
 indexVar (HsApp (HsCon (UnQual (HsIdent "Var_decl"))) (HsList exprs)) = 
   concat (map indexVar exprs)
 indexVar (HsApp expr1 expr2) = 
@@ -238,12 +240,12 @@ lcHsExp (expr@(HsList [])) = expr
 lcHsExp (HsList (exprs@(expr:_))) = 
   case nub $ indexVar expr of
     [] -> HsList (map lcHsExp exprs)
-    [v] ->  HsListComp expr [HsGenerator 
+    [v] -> HsListComp (lcHsExp expr) [HsGenerator 
               (SrcLoc 0 0) 
               (HsPVar $ HsIdent $ v) 
               (HsVar $ UnQual $ HsIdent $ v0 $ v)
             ]
-    vs ->  HsListComp expr [HsGenerator 
+    vs -> HsListComp (lcHsExp expr) [HsGenerator 
               (SrcLoc 0 0) 
               (HsPTuple (map (HsPVar . HsIdent) vs)) 
               (mkZip (map (HsVar . UnQual . HsIdent . v0) vs))
