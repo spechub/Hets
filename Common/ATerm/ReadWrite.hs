@@ -43,7 +43,7 @@ import Common.ATerm.AbstractSyntax
 -- added by KL
 import Char
 import List
-import Data.FiniteMap
+import qualified Common.DFiniteMap as IntMap
 import Common.SimpPretty
 
 --import Debug.Trace
@@ -96,8 +96,8 @@ readAT at str@(c:cs)
 
 
 readAFun :: String -> (String,String)
-readAFun ('"':str)	=  let (c,('"':str')) = spanNotQuote' str 
-                           in (quote c,str')
+readAFun ('"':str)	=  let (c, str') = spanNotQuote' str 
+                           in ('"': c, str')
 readAFun str		=  spanAFunChar str
 
 readParenATs :: ATermTable -> String -> ((ATermTable,[Int]),String)
@@ -151,12 +151,10 @@ readTAF at str@(x:xs) tbl l
   | isIntHead x =  
      case {-# SCC "RspanDigits" #-} span isDigit xs of
      (i,str') -> 
-       case length (x:i) of
-       l' ->
          case readAnnTAF at str' tbl 0 of
 	 (RTS_list (at',ann) str'' tbl' l'') ->
-	   case {-# SCC "Rread_integer" #-} readInteger x i of
-	   integer ->
+	   case {-# SCC "Rread_integer" #-} readInteger (x:i) of
+	   (integer, l') ->
 	    case {-# SCC "RaddAInt" #-} 
 	       addATermNoFullSharing (ShAInt integer ann) at' of
 	    at_t@(_,ai) ->
@@ -164,7 +162,7 @@ readTAF at str@(x:xs) tbl l
 	         seq ai (condAddElement next_abbrev_R_len 
 			                (addRAbbrev ai) (l'+l'') tbl') of
 	      tbl'' -> {-# SCC "RTS_AInt" #-} RTS at_t str'' tbl'' (l+l'+l'')
-  | isAFunChar x || x=='"' || x=='(' = 
+  | isAlphaNum x || x=='"' || x=='(' || x == '_' || x == '*' || x == '+' = 
      case {-# SCC "RspanConstructor" #-} readAFun str of
      (c,str') ->
        case {-# SCC "RTAFs_AAppl" #-} 
@@ -224,28 +222,19 @@ spanAFunChar :: String -> (String,String)
 spanAFunChar		= span isAFunChar
 
 isAFunChar :: Char -> Bool
-isAFunChar c		= (isAlphaNum c) || (c `elem` "-_*+")
+isAFunChar c = isAlphaNum c || c == '_' || c == '*' || c == '+' ||  c == '-'
 
-
-{-spanNotQuote :: String -> (String,String)
-spanNotQuote 		= span (/='"')
--}
 spanAbbrevChar :: String -> (String,String)
 spanAbbrevChar		= span isBase64Char
 
 isIntHead :: Char -> Bool
 isIntHead c		= (isDigit c) || (c=='-')
 
-quote :: String -> String
-quote str		= ('"':str)++"\""
-
 spanNotQuote' :: String -> (String,String)
-spanNotQuote' []		= ([],[])
-spanNotQuote' xs@('"':_xs')  	= ([],xs)
-spanNotQuote' ('\\':'"':xs')	= case spanNotQuote' xs' of
-                                  (ys,zs) -> ('\\':'"':ys,zs) 
-spanNotQuote' ('\\':'\\':xs')	= case spanNotQuote' xs' of
-                                  (ys,zs) -> ('\\':'\\':ys,zs) 
+spanNotQuote' []		= error "spanNotQuote'"
+spanNotQuote' ('"':xs')  	= ("\"",xs')
+spanNotQuote' ('\\':c:xs')	= case spanNotQuote' xs' of
+                                  (ys,zs) -> ('\\':c:ys,zs) 
 spanNotQuote' (x:xs')	= case spanNotQuote' xs' of
 			       (ys,zs) -> (x:ys,zs) 
 
@@ -294,9 +283,10 @@ writeATerm :: ATermTable -> String
 writeATerm at           = writeAT at $ ""
 
 writeSharedATermSDoc :: ATermTable -> SDoc
-writeSharedATermSDoc at =     
-    case writeTAF at emptyWTable of
-    (WS _ (Doc_len doc l)) 
+writeSharedATermSDoc at = 
+    if getTopIndex at == -1 then fatal_error "writeSharedATermSDoc: empty"
+    else case writeTAF at emptyWTable of
+    WS _ (Doc_len doc l)
 --    (WS (WTab _ ((Doc_len d _),i)) (Doc_len doc _)) -> 
 	| isEmpty doc || l == 0 -> fatal_error "writeSharedATermSDoc"
 	| otherwise ->
@@ -333,14 +323,14 @@ writeAT' at (i:is) = let at' = getATermByIndex1 i at
 		      
 --shared--
 writeTAF :: ATermTable -> WriteTable -> Write_struct
-writeTAF at tbl =  
-    case indexOf at tbl of
-    (Just s) -> WS tbl s 
-    Nothing  -> seq tbl' $ WS (condAddElement next_abbrev_W_len
-                                (addWAbbrev (getTopIndex at)) 
-		                len tbl') 
-		   d_len
-    where (WS tbl' d_len@(Doc_len _ len)) = writeTAF' at tbl
+writeTAF at tbl@(WTab ai_abb_map _) = let i = getTopIndex at in  
+    case IntMap.lookup i ai_abb_map of
+    Just s -> WS tbl s 
+    Nothing  -> case writeTAF' at tbl of
+		(WS tbl' d_len@(Doc_len _ len)) -> 
+		    WS (condAddElement next_abbrev_W_len
+                                (addWAbbrev i) 
+		                len tbl') d_len
 	  -- risking a faulty writeTAF' implementation
 
 writeTAF' :: ATermTable -> WriteTable -> Write_struct
@@ -506,27 +496,20 @@ parenthesiseAnnS s@(Doc_len d dl)
 -- ATermIndex is the Index that is given by getATermIndex.
 
 -- Map: Abbrev     -> ATermIndex
-data ReadTable  = RTab (FiniteMap Int Int) {-# UNPACK #-} !Int
+data ReadTable  = RTab (IntMap.Map Int Int) {-# UNPACK #-} !Int
 
 -- 1st Map: ATermIndex -> Abbrev
 -- TODO: implement 2nd Map as WriteCache 
 --         (sf::ShowS,length of String in sf::Int) .. done
-data WriteTable = WTab (FiniteMap Int Doc_len) 
+data WriteTable = WTab (IntMap.Map Int Doc_len) 
                        {-# UNPACK #-} !(Doc_len,Int)
 
 emptyRTable :: ReadTable
-emptyRTable = RTab emptyFM 0
+emptyRTable = RTab IntMap.empty 0
 
 emptyWTable :: WriteTable
-emptyWTable = WTab emptyFM (abbrevD 0,0)
+emptyWTable = WTab IntMap.empty (abbrevD 0, 0)
 
--- abbrev of top-level / selected ATerm for wirting
-indexOf :: ATermTable -> WriteTable -> Maybe (Doc_len)
-indexOf at (WTab ai_abb_map _) = 
-    case getTopIndex at of
-    ai -> if ai == -1 
-          then Nothing
-          else lookupFM ai_abb_map ai
 {-
 lengthOfShATermInd :: Int -> WriteTable -> Maybe Int
 lengthOfShATermInd ai (WTab _ lmap _) = IntMap.lookup ai lmap
@@ -537,28 +520,27 @@ addWAbbrev :: Int -> WriteTable -> WriteTable
 addWAbbrev ai (WTab ai_abb_map (da,i)) 
     | ai < 0    = error "addWAbbrev: negative index" 
     | otherwise = 
-	case (addToFM ai_abb_map ai da) of
+	case (IntMap.insert ai da ai_abb_map) of
 	new_map -> seq new_map (
 		  maybe (WTab new_map (abbrevD (i+1),i+1))
 		        (error ("destructive update in WriteTable "
 				++show i++" "
 				++show ai))
-		        (lookupFM ai_abb_map ai))
+		        (IntMap.lookup ai ai_abb_map))
 
 -- the String Argument is not used and serves as dummy for ease of code change
 addRAbbrev :: Int -> ReadTable -> ReadTable
 addRAbbrev ai (RTab abb_ai_map i) 
     | ai < 0    = error "addRAbbrev: negative index" 
     | otherwise = 
-	maybe (RTab (addToFM abb_ai_map i ai) (i+1)) 
+	maybe (RTab (IntMap.insert i ai abb_ai_map) (i+1)) 
 	      (error ("destructive update in ReadTable "++show i++" "
 		      ++show ai))
-	      (lookupFM abb_ai_map i)
+	      (IntMap.lookup i abb_ai_map)
 
 getAbbrevTerm :: Int -> ATermTable -> ReadTable -> ShATerm
 getAbbrevTerm i at (RTab abb_ai_map _) =  
-    case lookupWithDefaultFM abb_ai_map 
-                 (error ("Index "++show i++" not found")) i of
+    case IntMap.find i abb_ai_map of
     ai -> getATerm $ getATermByIndex1 ai at 
 
 {-
@@ -570,26 +552,26 @@ getAbbrevTerm i at (RTab abb_ai_map _) =
 -}
 --- Intger Read ---------------------------------------------------------------
 
-readInteger :: Char -> String -> Integer
-readInteger hd str = condNeg (conv (reverse str'))
-    where conv []   = 0
-	  conv (x:xs) = toInteger (ord x - ord '0') + 10 * conv xs
-	  str'    = if hd == '-' then str    else (hd:str)
-	  condNeg = if hd == '-' then negate else id
+readInteger :: String -> (Integer, Int)
+readInteger s@(hd:str) = if hd == '-' then case conv str of
+			 (m, l) -> (negate m, l + 1)
+			 else conv s
+    where f (m, l) x = (toInteger (ord x - ord '0') + 10 * m, l + 1)
+	  conv = foldl f (0, 0)
 
 --- Base 64 encoding ----------------------------------------------------------
 
-mkAbbrev :: Int -> [Char]
+mkAbbrev :: Int -> String
 mkAbbrev x
+  | x > 0       = mkAbbrevAux x ""
   | x == 0	= "A"
-  | x < 0       = error ("mkAbbrev: negative Int "++ show x)
-  | otherwise   = reverse (mkAbbrevAux x)
+  | otherwise   = error ("mkAbbrev: negative Int "++ show x)
 
-mkAbbrevAux :: Int -> [Char]
-mkAbbrevAux x
-  | x > 0	= case quotRem x 64 of 
-		  (d, m) -> toBase64Char m : mkAbbrevAux d
-  | otherwise	= []
+mkAbbrevAux :: Int -> String -> String
+mkAbbrevAux x str = 
+  if x > 0 then case quotRem x 64 of 
+	 (d, m) -> mkAbbrevAux d (toBase64Char m : str)
+  else str
 
 deAbbrev :: [Char] -> Int
 deAbbrev =  let f m c = 64*m + toBase64Int c in foldl f 0 
@@ -623,8 +605,7 @@ toBase64Char i
     | otherwise = error "toBase64Char"
 
 isBase64Char :: Char -> Bool
-isBase64Char c = c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || isDigit c
-		 || c == '+' || c == '/'
+isBase64Char c = isAscii c && (isAlphaNum c || c == '+' || c == '/')
 
 -- helpers --
 abbrevD :: Int -> Doc_len
