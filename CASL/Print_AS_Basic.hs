@@ -31,8 +31,7 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 
-import Debug.Trace
-import Control.Exception (assert)
+-- import Debug.Trace
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
@@ -83,7 +82,7 @@ printFormulaAux ga f =
 printAnnotedFormula_Text0 :: PrettyPrint f => 
                              GlobalAnnos -> Annoted (FORMULA f) -> Doc
 printAnnotedFormula_Text0 ga (Annoted i _ las ras) =
-	let i'   = char '.' <+> printText0 ga i
+	let i'   = char '.' <+> printFORMULA ga i
 	    las' = if not $ null las then 
 	               ptext "\n" <> printAnnotationList_Text0 ga las
 		   else
@@ -115,7 +114,7 @@ instance PrettyPrint f =>
 	-- TODO: lannos of f should printed after the equal sign 
 	printText0 ga s <+> ptext equalS <+> 
 	   braces (hang (printText0 ga v <+> colon <+> printText0 ga t) 
-		         4 (ptext "." <+> printText0 ga f))
+		         4 (char '.' <+> printFORMULA ga (item f)))
     printText0 ga (Iso_decl l _) = 
 	fsep $ punctuate  (space <>text equalS) $ map (printText0 ga) l
 
@@ -177,7 +176,7 @@ instance PrettyPrint f => PrettyPrint (PRED_ITEM f) where
     printText0 ga (Pred_defn n h f _) = printText0 ga n 
 				        <> printText0 ga h
                                         <+> text equivS
-				        <+> printText0 ga f
+				        <+> printFORMULA ga (item f)
 
 instance PrettyPrint PRED_TYPE where
     printText0 _ (Pred_type [] _) = parens empty
@@ -217,6 +216,7 @@ instance PrettyPrint VAR_DECL where
 				<> colon 
 				<> printText0 ga s 
 
+printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
 printFORMULA ga (Quantification q l f _) = 
 	hang (printText0 ga q <+> semiT_text ga l) 4 $ 
 	     char '.' <+> printFORMULA ga f
@@ -259,10 +259,9 @@ printFORMULA ga (Strong_equation f g _) =
 	hang (printText0 ga f <+> ptext equalS) 4 $ printText0 ga g 
 printFORMULA ga (Membership f g _) = 
 	printText0 ga f <+> ptext inS <+> printText0 ga g
-printFORMULA ga (Mixfix_formula t) = assert 
-				        (trace ("Mixfix_formula found: "++
-						showPretty t "") True) 
-					(printText0 ga t)
+printFORMULA ga (Mixfix_formula t) = {- trace ("Mixfix_formula found: "
+                                            ++ showPretty t "") $ -}
+					printText0 ga t
 printFORMULA _ (Unparsed_formula s _) = text s 
 printFORMULA ga (Sort_gen_ax constrs _) = 
         text generatedS <> 
