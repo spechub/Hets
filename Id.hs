@@ -54,7 +54,7 @@ showSepList _ f [x] = f x
 showSepList s f (x:r) = f x . s . showSepList s f r
 
 instance PrettyPrint Token where
- printText0 t = text (tokStr t)
+ printText0 ga t = ptext (tokStr t)
 
 -- special tokens
 type Keyword = Token
@@ -68,8 +68,13 @@ isPlace(Token t _) = t == place
 -- TokenOrPlace list must be non-empty!
 data Id = Id [TokenOrPlace] [Id] [Pos] 
                                  -- pos of "[", commas, "]" 
-	  deriving (Eq, Ord, Show)
+	  deriving (Show)
 
+instance Eq Id where
+    Id tops1 ids1 _ == Id tops2 ids2 _ = tops1 == tops2 && ids1 == ids2
+
+instance Ord Id where
+    Id tops1 ids1 _ <= Id tops2 ids2 _ = tops1 <= tops2 && ids1 <= ids2
 
 showId (Id ts is _) = 
 	let (toks, places) = splitMixToken ts 
@@ -83,7 +88,7 @@ splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 	      (reverse toks, reverse pls)
 
 instance PrettyPrint Id where
- printText0 i = text (showId i "")
+ printText0 ga i = text (showId i "")
 
 -- Simple Ids
 
