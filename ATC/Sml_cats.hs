@@ -1,4 +1,3 @@
-{-# OPTIONS -fno-glasgow-exts #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich and Uni Bremen 2002-2004
@@ -6,11 +5,11 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports Logic.Grothendieck)
 
    This module exports functions, that can convert an sml-CATS ATerm
    into the Haskell abstract syntax tree. So it contains all the
-   necessary instances of ATermConvertible and a heuritic function
+   necessary instances of ATermConvertible and a heuristic function
    that calculates the new lists of Pos out of Region tuples.
 
    the templates for the instances are automatically derived by
