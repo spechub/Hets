@@ -9,6 +9,25 @@
     Portability :  portable
 
 -}
+{- todo
+   extend function checkFreeType:
+   - check if leading symbols are new (not in the image of morphism), if not, return Nothing
+   - the leading terms consist of variables and constructors only, if not, return Nothing
+     - split function leading_Symb into 
+       leading_Term_Predication ::  FORMULA f -> Maybe(Either Term (Formula f))
+       and 
+       extract_leading_symb :: Either Term (Formula f) -> Either OP_SYMB PRED_SYMB
+     - collect all operation symbols from recover_Sort_gen_ax fconstrs (= constructors)
+   - no variable occurs twice in a leading term, if not, return Nothing
+   - check that patterns do not overlap, if not, return Nothing This means:
+       in each group of the grouped axioms:
+       all patterns of leading terms/formulas are disjoint
+       this means: either leading symbol is a variable, and there is just one axiom
+                   otherwise, group axioms according to leading symbol
+                              no symbol may be a variable
+                              check recursively the arguments of constructor in each group
+  - return (Just True)
+-} 
 
 module CASL.CCC.FreeTypes where
 
@@ -37,16 +56,6 @@ checkFreeType m fs=if any (\s->not $ elem s srts) sorts then Nothing
                                  Quantification _ _ _ _ -> True
                                  _ -> False) fs
 
-{- problems:
-   phi1 => (phi2 => phi3)  soll Nothing ergeben
-   phi1 <=> (phi2 => phi3) soll Nothing ergeben
-   also:
-   Rekursion beschränken, 2 Bool-Argumente mitführen, die sagt, ob es schon 
-       eine Implikation bzw. eine Äquivalenz gab
-       Hilfs-Funktion um 2 Zusatzargumente erweitern
-       anfangs sind die Argumente False False
-       bei einer Implikation bzw. Äquivalenz wird es für den rekursiven Aufruf auf True gesetzt
--}
 
 leadingSym :: FORMULA f -> Maybe(Either OP_SYMB PRED_SYMB)
 leadingSym f = leading (f,False,False)
