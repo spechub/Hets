@@ -136,7 +136,7 @@ transTheory trSig trForm (sign,sens) =
 deleteDtTypes dtDef (a,b) = (a, Set.fromList(List.filter (isNotIn dtDef a) (Set.toList b)))
 
 --test if there is an entry in dtDef which has the constructor a and the arguments (opArgs b) 
-isNotIn ((d:_):_) a b = (isSameConst (showIsa a) args const == False)  
+isNotIn ((d:_):ds) a b = (isSameConst (showIsa a) args const == False) && (isNotIn ds a b)  
     where
     (OpType {opArgs = args}) = b
     (typ, const) = d
