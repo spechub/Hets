@@ -85,6 +85,9 @@ uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
 endif
 
+### list of directories to run checks in
+TESTDIRS += Common CASL HasCASL Haskell/Hatchet/examples
+
 PFE_TOOLDIR = $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
@@ -142,7 +145,10 @@ Haskell_files = $(addsuffix .hs, \
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) utils/genRules
 	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
             $(Haskell_files)
+
+TESTDIRS += ToHaskell
 endif
+
 happy_files += Haskell/Hatchet/HsParser.hs
 
 ### Profiling (only for debugging)
@@ -156,10 +162,6 @@ happy_files += Haskell/Hatchet/HsParser.hs
 HCI_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS)
 HC_OPTS = $(HCI_OPTS) $(HC_PROF)
 DRIFT_OPTS = +RTS -K10m -RTS
-
-### list of directories to run checks in
-TESTDIRS = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell
-
 
 ####################################################################
 ## sources for hets (semi - manually produced with a perl script)
