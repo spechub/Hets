@@ -17,7 +17,7 @@ module Haskell.Hatchet.HsSyn (
     HsGuardedRhs(..), HsQualType(..), HsType(..), HsContext, HsAsst,
     HsLiteral(..), HsExp(..), HsPat(..), HsPatField(..), HsStmt(..),
     HsFieldUpdate(..), HsAlt(..), HsGuardedAlts(..), HsGuardedAlt(..),
-    AxBinding(..), AxiomBndr(..), Quantifier(..), Formula(..), AxiomName, 
+    AxBinding(..), AxiomBndr(..), Quantifier(..), Formula(..), 
 
     prelude_mod, main_mod, 
     unit_con_name, tuple_con_name,
@@ -89,18 +89,18 @@ data HsAssoc
   deriving (Eq,Show)
 
 data HsDecl
-	 = HsTypeDecl	 SrcLoc HsName [HsName] HsType -- type synonyms
-	 | HsDataDecl	 SrcLoc HsContext HsName [HsName] [HsConDecl] [HsQName] -- datatypes
+	 = HsTypeDecl	 SrcLoc HsName [HsName] HsType
+	 | HsDataDecl	 SrcLoc HsContext HsName [HsName] [HsConDecl] [HsQName]
 	 | HsInfixDecl   SrcLoc HsAssoc Int [HsName]
-	 | HsNewTypeDecl SrcLoc HsContext HsName [HsName] HsConDecl [HsQName] -- shorthand datatypes, with one implicit constructor
-	 | HsClassDecl	 SrcLoc HsQualType [HsDecl]  -- classes
-	 | HsInstDecl	 SrcLoc HsQualType [HsDecl]  -- class instances
+	 | HsNewTypeDecl SrcLoc HsContext HsName [HsName] HsConDecl [HsQName]
+	 | HsClassDecl	 SrcLoc HsQualType [HsDecl]
+	 | HsInstDecl	 SrcLoc HsQualType [HsDecl]
 	 | HsDefaultDecl SrcLoc HsType
-	 | HsTypeSig	 SrcLoc [HsName] HsQualType -- type of function
+	 | HsTypeSig	 SrcLoc [HsName] HsQualType
 	 -- | HsFunBind     SrcLoc [HsMatch]
-	 | HsFunBind     [HsMatch]  -- function body
-	 | HsPatBind	 SrcLoc HsPat HsRhs {-where-} [HsDecl] -- value definition
-         | HsAxiomBind AxBinding -- HasSLe axioms
+	 | HsFunBind     [HsMatch]
+	 | HsPatBind	 SrcLoc HsPat HsRhs {-where-} [HsDecl]
+         | HsAxiomBind AxBinding
   deriving (Eq,Show)
 
 data HsMatch 
@@ -168,7 +168,7 @@ data HsExp
 	| HsLet [HsDecl] HsExp                        -- above needs patch to HsParser.ly
 	| HsIf HsExp HsExp HsExp
 	| HsCase HsExp [HsAlt]
-	| HsDo [HsStmt]                               -- do
+	| HsDo [HsStmt]
 	| HsTuple [HsExp]
 	| HsList [HsExp]
 	| HsParen HsExp
@@ -268,10 +268,9 @@ data AxBinding
   | AxiomDecl      AxiomName Formula
   deriving (Eq,Show)
 
-data Formula
-  = AxQuant   Quantifier Formula
-  | AxEq      Formula HsExp SrcLoc
-  | AxExp     HsExp
+data AxiomBndr
+ = AxiomBndr HsName
+ | AxiomBndrSig HsName HsQualType
   deriving (Eq,Show)
 
 data Quantifier
@@ -280,12 +279,10 @@ data Quantifier
    | AxExistsOne [AxiomBndr]
   deriving (Eq,Show)
 
-data AxiomBndr
- = AxiomBndr HsName
- | AxiomBndrSig HsName HsQualType
+data Formula
+  = AxQuant   Quantifier Formula
+  | AxEq      Formula HsExp SrcLoc
+  | AxExp     HsExp
   deriving (Eq,Show)
-
-
-
 
 
