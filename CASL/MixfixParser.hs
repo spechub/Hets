@@ -38,7 +38,9 @@ showTerm _ t = ShowMixfix.showTerm t ""
 
 -- Earley Algorithm
 
-data State = State Id
+data IdKind = IsPred | IsOp | IsBoth deriving (Eq, Ord)
+
+data State = State (Id, IdKind)  -- True means predicate
                    [Pos]    -- positions of Id tokens
                    [TERM]   -- currently collected arguments 
 		                               -- both in reverse order
@@ -65,11 +67,11 @@ varTok = mkSimpleId "(v)"
 opTok = mkSimpleId "(o)"
 predTok = mkSimpleId "(p)"
 
-mkState :: Int -> Id -> State 
-mkState i ide = State ide [] [] (getTokenList termStr ide) i
+mkState :: Int -> IdKind -> Id -> State 
+mkState i b ide = State (ide, b) [] [] (getTokenList termStr ide) i
 
-mkApplState :: Int -> Id -> State
-mkApplState i ide = State ide [] [] 
+mkApplState :: Int -> IdKind -> Id -> State
+mkApplState i b ide = State (ide, b) [] [] 
 		    (getTokenList place ide ++ [parenTok]) i
 
 
@@ -85,7 +87,7 @@ isListId (Id ts cs _) = not (null ts) && head ts == listToken && length cs == 1
 listStates :: GlobalAnnos -> Int -> [State]
 listStates g i = 
     let lists = list_lit $ literal_annos g
-        listState co toks = State (listId co) [] [] toks i
+        listState co toks = State (listId co, IsOp) [] [] toks i
     in concatMap ( \ (bs, n, c) ->
        let (b1, b2, cs) = getListBrackets bs 
 	   e = Id (b1 ++ b2) cs [] in
@@ -98,21 +100,25 @@ listStates g i =
 -- these are the possible matches for the nonterminal TERM
 -- the same states are used for the predictions  
 
-initialState :: GlobalAnnos -> Set Id -> Int -> [State]
-initialState g ids i = 
-    let mkTokState toks = State (Id toks [] []) [] [] toks i
-        is = Set.toList ids
+initialState :: GlobalAnnos -> ([Id], [Id], [Id]) -> Int -> [State]
+initialState g (ops, preds, both) i = 
+    let mkPredState b toks = State (Id toks [] [], b) [] [] toks i
+	mkTokState = mkPredState IsOp
     in mkTokState [parenTok] : 
        mkTokState [termTok, colonTok] :
        mkTokState [termTok, asTok] :
        mkTokState [varTok] :
        mkTokState [opTok] :
        mkTokState [opTok, parenTok] :
-       mkTokState [predTok] :
-       mkTokState [predTok, parenTok] :
+       mkPredState IsPred [predTok] :
+       mkPredState IsPred [predTok, parenTok] :
        listStates g i ++
-       map (mkState i) is ++ 
-       map (mkApplState i) is
+       map (mkState i IsOp) ops ++ 
+       map (mkApplState i IsOp) ops ++
+       map (mkState i IsPred) preds ++ 
+       map (mkApplState i IsPred) preds ++
+       map (mkState i IsBoth) both ++ 
+       map (mkApplState i IsBoth) both
 
 type ParseMap = Map Int [State]
 
@@ -136,7 +142,7 @@ scan trm i m =
        foldr (\ (State o b a ts k) l ->
 	      if null ts || head ts /= t then l 
 	      else let p = tokPos t : b in 
-                   if t == commaTok && isListId o then 
+                   if t == commaTok && isListId (fst o) then 
 	      -- list elements separator
 	             (State o p a 
 		      (termTok : commaTok : tail ts) k)
@@ -178,15 +184,16 @@ isLeftArg (Id ts _ _) n = n + 1 == (length $ takeWhile isPlace ts)
 isRightArg (Id ts _ _) n = n == (length $ filter isPlace ts) - 
 	      (length $ takeWhile isPlace (reverse ts))
 	  
-filterByPrec :: GlobalAnnos -> Set Id -> Bool -> State -> State -> Bool
-filterByPrec _ _ _ _ (State _ _ _ [] _) = False 
-filterByPrec g preds maybeFormula 
-		 (State argIde _ _ _ _) (State opIde _ args (hd:_) _) = 
+filterByPrec :: GlobalAnnos -> State -> State -> Bool
+filterByPrec _ _ (State _ _ _ [] _) = False 
+filterByPrec g (State (argIde, predArg) _ _ _ _) 
+		 (State (opIde, predOp) _ args (hd:_) _) = 
        if hd == termTok then 
-	  if isListId opIde || isListId argIde || 
-		 (Set.member opIde preds && maybeFormula)
-	  then True
-	  else let n = length args in
+	  if predArg == IsPred
+	  then False 
+	  else if isListId opIde || isListId argIde || predOp == IsPred
+	       then True else 
+	       let n = length args in
 		    if isLeftArg opIde n then 
 		       if isPostfix opIde && (isPrefix argIde
 					      || isInfix argIde) then False
@@ -241,7 +248,7 @@ setIdePos i@(Id ts _ _) ar ps =
 -- constructing the parse tree from (the final) parser state(s)
 
 stateToAppl :: State -> TERM
-stateToAppl (State ide rs a _ _) = 
+stateToAppl (State (ide, _) rs a _ _) = 
     let vs = getTokenList place ide 
         ar = reverse a
         qs = reverse rs
@@ -273,7 +280,7 @@ stateToAppl (State ide rs a _ _) =
 				   -- true mixfix
 
 asListAppl :: GlobalAnnos -> State -> TERM
-asListAppl g s@(State i bs a _ _) =
+asListAppl g s@(State (i,_) bs a _ _) =
     if isListId i then    
            let Id _ [f] _ = i
 	       ListCons b c = getLiteralType g f
@@ -296,59 +303,61 @@ asListAppl g s@(State i bs a _ _) =
 -- final complete/reduction phase 
 -- when a grammar rule (mixfix Id) has been fully matched
 
-collectArg :: GlobalAnnos -> Set Id -> Bool -> ParseMap -> State -> [State]
+collectArg :: GlobalAnnos -> ParseMap -> State -> [State]
 -- pre: finished rule 
-collectArg g preds maybeFormula m s@(State _ _ _ _ k) = 
+collectArg g m s@(State _ _ _ _ k) = 
     map (\ (State o b a ts k1) ->
 	 State o b (asListAppl g s : a) 
 	 (tail ts) k1)
-    $ filter (filterByPrec g preds maybeFormula s)
+    $ filter (filterByPrec g s)
     $ lookUp m k
 
-compl :: GlobalAnnos -> Set Id -> Bool -> ParseMap -> [State] -> [State]
-compl g preds maybeFormula m l = 
-  concat $ map (collectArg g preds maybeFormula m) 
+compl :: GlobalAnnos -> ParseMap -> [State] -> [State]
+compl g m l = 
+  concat $ map (collectArg g m) 
   $ filter (\ (State _ _ _ ts _) -> null ts) l
 
-complRec :: GlobalAnnos -> Set Id -> Bool -> ParseMap -> [State] -> [State]
-complRec g preds maybeFormula m l = 
-    let l1 = compl g preds maybeFormula m l in 
-	if null l1 then l else complRec g preds maybeFormula m l1 ++ l
+complRec :: GlobalAnnos -> ParseMap -> [State] -> [State]
+complRec g m l = 
+    let l1 = compl g m l in 
+	if null l1 then l else complRec g m l1 ++ l
 
-complete :: GlobalAnnos -> Set Id -> Bool -> Int  -> ParseMap -> ParseMap
-complete g preds maybeFormula i m = 
-    Map.insert i (complRec g preds maybeFormula m $ lookUp m i) m
+complete :: GlobalAnnos -> Int  -> ParseMap -> ParseMap
+complete g i m = 
+    Map.insert i (complRec g m $ lookUp m i) m
 
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
 
-predict :: GlobalAnnos -> Set Id -> Int -> ParseMap -> ParseMap
-predict g is i m = if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts) 
-			 && head ts == termTok) 
-		 (lookUp m i)
-		 then insertWith (++) i (initialState g is i) m
-		 else m 
+predict :: GlobalAnnos -> [Id] -> Int -> ParseMap -> ParseMap
+predict g ops i m = 
+    if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts) 
+		      && head ts == termTok) (lookUp m i)
+    then insertWith (++) i (initialState g (ops, [], []) i) m
+    else m 
 
 type Chart = (Int, [Diagnosis], ParseMap)
 
-nextState :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Chart -> Chart
-nextState g is preds maybeFormula trm (i, ds, m) = 
-    let m1 = complete g preds maybeFormula (i+1) $
+nextState :: GlobalAnnos -> [Id] -> TERM 
+	  -> Chart -> Chart
+nextState g ops trm (i, ds, m) = 
+    let m1 = complete g (i+1) $
 		 scan trm i $
-		 predict g is i m
+		 predict g ops i m
     in if null (lookUp m1 (i+1)) && null ds
 		    then (i+1, Diag Error ("unexpected mixfix token: " 
 				      ++ showTerm g trm)
 			       (posOfTerm trm) : ds, m)
        else (i+1, ds, m1)
 
-iterateStates :: GlobalAnnos -> Set Id -> Set Id -> Bool -> [TERM] 
-	      -> Chart -> Chart
-iterateStates g ops preds maybeFormula terms c@(i, ds, m) = 
-    let self = iterateStates g ops preds maybeFormula
+type IdSet = (Set Id, Set Id, Set Id)
+
+iterateStates :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> Chart -> Chart
+iterateStates g ids@(ops,_,both) maybeFormula terms c@(i, ds, m) = 
+    let self = iterateStates g ids maybeFormula
 	expand = expandPos Mixfix_token 
-	oneStep = nextState g ops preds maybeFormula
-	resolvePred = resolveMixfix g ops preds
+	oneStep = nextState g (Set.toList $ Set.union ops both)
+	resolvePred = resolveMixTrm g ids
         resolveTerm = resolvePred maybeFormula
     in if null terms then c
        else case head terms of
@@ -367,7 +376,7 @@ iterateStates g ops preds maybeFormula terms c@(i, ds, m) =
 	    Conditional t1 f2 t3 ps -> 
                 let Result mds v = 
 			do t4 <- resolvePred False t1
-			   f5 <- resolveFormula g ops preds f2 		 
+			   f5 <- resolveMixFrm g ids f2 		 
 			   t6 <- resolvePred False t3 
 			   return (Conditional t4 f5 t6 ps)
                     tNew = case v of Nothing -> head terms
@@ -403,11 +412,23 @@ getAppls g i m =
 	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
 	     lookUp m i
 
+mkIdSet :: Set Id -> Set Id -> IdSet
+mkIdSet ops preds = 
+    let both = Set.intersection ops preds in
+	(Set.difference ops both, Set.difference preds both, both)
+
 resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
-resolveMixfix g ops preds mayBeFormula trm =
-    let (i, ds, m) = iterateStates g ops preds mayBeFormula [trm] 
+resolveMixfix g ops preds = resolveMixTrm g $ mkIdSet ops preds 
+
+resolveMixTrm :: GlobalAnnos -> IdSet -> Bool 
+	      -> TERM -> Result TERM
+resolveMixTrm g ids@(ops, preds, both) mayBeFormula trm =
+    let (i, ds, m) = iterateStates g ids mayBeFormula [trm] 
 		     (0, [], Map.single 0 $ initialState g 
-		      (if mayBeFormula then ops `Set.union` preds else ops) 0)
+		      (if mayBeFormula then (Set.toList ops, 
+					    Set.toList preds, 
+					    Set.toList both)
+		       else (Set.toList $ Set.union ops both, [], [])) 0)
         ts = getAppls g i m
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
@@ -422,16 +443,22 @@ resolveMixfix g ops preds mayBeFormula trm =
 			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
 
 resolveFormula :: GlobalAnnos -> Set Id -> Set Id -> FORMULA -> Result FORMULA
-resolveFormula g ops preds frm =
-    let self = resolveFormula g ops preds 
-	resolveTerm = resolveMixfix g ops preds False in
+resolveFormula g ops preds = resolveMixFrm g $ mkIdSet ops preds
+
+resolveMixFrm :: GlobalAnnos -> IdSet-> FORMULA -> Result FORMULA
+resolveMixFrm g ids@(ops, preds, both) frm =
+    let self = resolveMixFrm g ids 
+	resolveTerm = resolveMixTrm g ids False in
     case frm of 
        Quantification q vs fOld ps -> 
-	   let varIds = foldl (\ l (Var_decl va _ _) -> 
-			       map (\t->Id[t][][]) va ++ l) [] vs
+	   let varIds = Set.fromList $ concatMap (\ (Var_decl va _ _) -> 
+			       map simpleIdToId va) vs
+	       vps = Set.intersection varIds preds
+	       newBoth = Set.union both vps
+	       newIds = ((Set.\\) (Set.union ops varIds) newBoth,
+			 (Set.\\) preds vps, newBoth)
            in   
-	   do fNew <- resolveFormula g (Set.fromList varIds `Set.union` ops) 
-	                 preds fOld 
+	   do fNew <- resolveMixFrm g newIds fOld 
 	      return $ Quantification q vs fNew ps
        Conjunction fsOld ps -> 
 	   do fsNew <- mapM self fsOld  
@@ -468,7 +495,7 @@ resolveFormula g ops preds frm =
 	   do tNew <- resolveTerm tOld  
 	      return $ Membership tNew s ps
        Mixfix_formula tOld -> 
-	   do tNew <- resolveMixfix g ops preds True tOld
+	   do tNew <- resolveMixTrm g ids True tOld
 	      mkPredication tNew
          where mkPredication t = 
 	         case t of 
@@ -478,8 +505,9 @@ resolveFormula g ops preds frm =
                             else updFormulaPos (head ps) (last ps) p
 		 Application (Op_name ide) args ps -> 
 		     let p = Predication (Pred_name ide) args ps in
-		     if ide `Set.member` preds then return p
-		     else plain_error p 
+		     if ide `Set.member` preds || ide `Set.member` both
+		     then return p else 
+			  plain_error p 
 		          ("not a predicate: " ++ showId ide "")
 			  (posOfTerm t)
 		 Mixfix_qual_pred qide ->

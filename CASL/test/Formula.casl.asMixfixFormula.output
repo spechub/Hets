@@ -2,7 +2,7 @@
 (pred y : bb * bb)
 (pred y : bb * bb)(a, b)
 (pred y : bb * bb) a b
-Error (line 4, column 1) no resolution for term: (pred y:bb*bb) a b
+Error (line 4, column 18) unexpected mixfix token: a
 a =e= < b
 Error (line 5, column 7) unexpected mixfix token: <
 a #= e = b
