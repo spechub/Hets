@@ -1,6 +1,3 @@
-{-# OPTIONS -fallow-overlapping-instances #-}
--- needs: -ifgl:haterm-1.0/src -package util -package data -fglasgow-exts -fallow-overlapping-instances
-
 {- HetCATS/aterm_conv/ATC_sml_cats.hs
    $Id$
    Author: Klaus Lüttich
