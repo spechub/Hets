@@ -94,19 +94,21 @@ Comments to: hets@tzi.de
 
 The Heterogeneous Tool Set (\protect\Hets) is the main analysis tool
 for the specification language heterogeneous \CASL. Heterogeneous
-\CASL combines the specification langauage \CASL with \CASL extensions
+\CASL (\HetCASL) combines the specification langauage \CASL with \CASL extensions
 and sublanguages, as well as comletely different logics and even
-programming languages such as Haskell. Heterogeneous \CASL
+programming languages such as Haskell. \HetCASL
 extends the strucruting mechanisms of \CASL:
 \emph{Basic specifications} are
 unstructured specifications or modules written in a specific logic.
-(The graph of currently supported logics is shown in Fig.~\ref{fig:LogicGraph}.)
+The graph of currently supported logics is shown in Fig.~\ref{fig:LogicGraph},
+and the degree of support by \Hets in Fig.~\ref{fig:Languages}.
+
 With \emph{heterogeneous structured specifications}, it is possible to
 combine and rename specifications, hide parts thereof, and also
 translate them to other logics. \emph{Architectural specifications}
-precsribe the structure of implementations.
-\emph{Specification libraries} are collections of named structured
-and architectural specifications.
+precsribe the structure of implementations.  \emph{Specification
+  libraries} are collections of named structured and architectural
+specifications. 
 
 \Hets consists of logic-specific tools for the parsing and static
 analysis of the different involved logics, as well as a
@@ -123,18 +125,41 @@ $$\xymatrix{
 &
 \Text{\CspCASL} \\
 &
-\CASL \ar[u]
+\CASL \ar[u] \ar[ur]
 &
 }$$
 \caption{Graph of logics currently supported by \Hets.\label{fig:LogicGraph}}
 \end{figure}
 
+\begin{figure}
+\begin{tabular}{|l|l|l|}\\\hline
+Language & Parser & Static Analysis & Prover \\\hline
+\CASL & x & x & - \\\hline
+\HasCASL & x & (x) & - \\\hline
+Haskell & x & x & -\\\hline
+\CspCASL & x & - & - \\\hline
+Structured specifications & x & x & - \\\hline
+Architectural specifications & x & - & x\hline
+\end{tabular}
+\caption{Current degree of \Hets support for the different languages.\label{fig:Languages}}
+\end{figure}
 
+An introduction to \CASL can be found in the \CASL User Manual
+\cite{CASL/UserManual}; the detailed language reference is given in
+the \CASL Reference Manual \cite{CASL/RefManual}.  These documents
+explain both the \CASL logic and language of basic specifications as
+well as the logic-independent constructs for structured and
+architectural specifications.  Corresponding documents explaining the
+\HetCASL language constructs for \emph{heterogeneous} structured specifications
+are forthcoming, until then, \cite{Mossakowski:2003:FHS} may serve as a short
+introduction. Moreover, the main heterogeneous constructs will be illustrated 
+in Sect.~\ref{sec:HetSpec} below.
 
-
-
-
-
+An overview of \HasCASL is given in \cite{Schroeder:2002:HIS};
+the language is summarized in \cite{HasCASL/Summary}.
+The definitive reference for Haskell is \cite{Haskell98},
+see also \url{www.haskell.org}. An introduction to \CspCASL
+is given in \cite{Roggenbach:2003:CCN}.
 
 \section{Getting started}
  
@@ -143,26 +168,24 @@ The latest \Hets version can be obtained from the
 improved constantly, it is recommended always to use the latest version.
 
 \Hets currently is available for Linux, Solaris and
-Mac OS-X.
+Mac OS-X. After downloading your platform specific distribution,
+you have to unpack it as follows (note that the filenames will
+be slightly different, depending on your platform):
 
+\begin{verbatim}
+gunzip hets.tgz
+tar xf hets.tar
+\end{verbatim}
 
+\QUERY{Install script needed?!?}
 
-
-This README belongs to a Hets release (and does not apply to
-sources directly obtained via cvs).
-
-The aim of this release is a binary "hets" that is able to analyse
-heterogeneous and in particular CASL specifications.
-
-The output of hets, if the input is successfully accepted, can be
-displayed by "daVinci".
 
 daVinci is maintained by b-novative and b-novative holds all rights.
 This release may be accompanied with free binary releases of daVinci
-Version 2.1, but daVinci 2.1 is no longer supported or maintained!
+Version 2.1, but daVinci 2.1 is no longer supported or maintained.
 However, you are encouraged to obtain the latest version of daVinci
-Presenter (currently 3.0.5) from http://www.b-novative.com that is
-free for academic purposes.
+Presenter (currently 3.0.5) from \url{http://www.b-novative.com}.
+It needs a license key, but is free for academic purposes.
 
 Linux: the linux binary release of daVinci 2.1 relies on the old
 shlibs5 that must be installed on your system (if ./daVinci cannot be
@@ -176,23 +199,23 @@ b-novative may have one in the mean time
 
 For best quality, get the latest version of daVinci from b-novative.
 
-For hets to find daVinci, the environment variables DAVINCIHOME and
-UNIDAVINCI must be set to the installation directory of daVinci and to
+For \Hets to find daVinci, the environment variables \texttt{DAVINCIHOME} and
+\texttt{UNIDAVINCI} must be set to the installation directory of daVinci and to
 the actual executable, respectively.
-
+\QUERY{This should be done by the install script!}
 \begin{verbatim}
 export DAVINCIHOME=<path>/daVinci_V2.1
 export UNIDAVINCI=<path>/daVinci_V2.1/daVinci
 \end{verbatim}
 
-A typical call of hets is then: <path>/hets -g Basic/Numbers.casl
-
+The environment variable \texttt{HETS_LIB} should be set to
+a location where specification libraries are stored.
 
 
 
 \section{Analysis of Specifications}
-
-Consider the first example in this book:
+Consider the following \CASL
+specification:
 
 \VERTSPACE
 \begin{BIGEXAMPLE}
@@ -215,16 +238,16 @@ neither \(x < y\) nor \(y < x\).
 \I\END
 \end{BIGEXAMPLE}
 
-\POINT{\protect\Hets can be used for parsing and 
-checking static well-formedness of specifications.}
+\Hets can be used for parsing and 
+checking static well-formedness of specifications.
 
                 \index{parsing}%
                 \index{static!analysis}%
                 \index{analysis, static}%
 
 Let us assume that the example is in a file named
-\texttt{Order.casl} (actually, this file is provided on the web 
-and on the CD-ROM coming with this volume). 
+\texttt{Order.casl} (actually, this file is provided 
+with the \Hets distribution).
 Then you can check the well-formedness of the
 specification by typing (into some shell):
 
@@ -237,32 +260,124 @@ well as its correctness with respect to the static semantics (e.g.\
 whether all identifiers have been declared before they are used,
 whether operators are applied to arguments of the correct sorts,
 whether the use of overloaded symbols is unambiguous, and so on).
+The following flags are available in this context:
+\begin{description}
+\item[\texttt{-p}, \texttt{--just-parse}] Just do the parsing -- the static analysis
+is skipped.
+\item[\texttt{-s}, \texttt{--just-structured}]
+Do the parsing and the static analysis of (heterogeneous) structured
+specifications, but leave out the analysis of basic specifications.
+This can be used to quickly produce a development graph
+showing the dependencies among the specifications (cf. Sect.~\ref{sec:DevGraph}).
+\item[\texttt{-L DIR}, \texttt{--hets-libdir=DIR}]
+Use \texttt{DIR} as the directory for specification libraries
+(equivalently, you can set the variable \texttt{HETS_LIB} before
+calling \Hets).
+\end{itemize}
 
-  -p         --just-parse           skip static analysis - just parse
-  -s         --just-structured      skip basic analysis - just do structured analysis
-  -L DIR     --casl-libdir=DIR      CASL library directory
+\section{Heterogeneous Specification} \label{sec:HetSpec}
 
+\Hets accepts plain text input files with the following endings:
 
-\section{Heterogeneous Specification}
+\begin{tabular}{lll}\hline
+Ending & default logic & structuring language\\\hline
+\texttt{.casl} & \CASL & \CASL \\\hline
+\texttt{.het} & \CASL & \CASL \\\hline
+\texttt{.hs} & Haskell & Haskell\hline
+\end{tabular}
 
+Although the endings \texttt{.casl} and \texttt{.het} are
+interchangeable, the former should be used for libraries of
+homogeneous \CASL specifications and the latter for \HetCASL libraries
+of heterogeneous specifications (that use the \CASL structuring
+constructs). Within a \HetCASL library, the current logic can be changed e.g.\ 
+to \HasCASL in the following way:
+
+\begin{verbatim}
+logic HasCASL
+\end{verbatim}
+
+The subsequent specifications are then parsed and analysed as
+\HasCASL specifications. Within such specifications,
+it is possible to use references to named \CASL specifications;
+these are then automatically translated along the default
+embedding of \CASL into \HasCASL. (Heterogeneous constructs
+for explicit translations between logics will be made available
+in the future.)
+
+A \CspCASL specification consists of a \CASL specification
+for the data part and a \Csp process built over this data part.
+Therefore, \HetCASL provides a heterogeneous language construct
+\texttt{data} as follows:
+
+\begin{verbatim}
+library Buffer
+
+logic CASL
+
+spec List =
+  free type List[Elem] ::= nil | cons(Elem; List[Elem])
+end
+
+logic CspCASL
+
+spec Buffer =
+  data List
+  channel read, write : Elem
+  process read   
+  let Buf(l:List[Elem]) =
+              read?x -> Buf( cons(x,nil) )
+              [] if l=nil then STOP else write!last(l) -> Buf( rest(l) )
+              in Buf(nil)
+end
+\end{verbatim}
+
+Here, the construct \texttt{data List} refers to the \CASL specification
+\texttt{List}, which is implicitly embedded into \CspCASL.
+
+The ending \texttt{.hs} is available for directly reading in
+Haskell programs, and hence supports the Haskell module system.
+By contrast, in \HetCASL libraries (ending with \texttt{.het}),
+the logic Haskell has to be chosen explicitly, and the \CASL structuring
+syntax needs to be used:
+
+\begin{verbatim}
+library Factorial
+
+logic Haskell
+
+spec Factorial =
+fac :: Int -> Int
+fac n = foldl (*) 1 [1..n]
+end
+\end{verbatim}
+
+Note that according to the Haskell syntax, Haskell function
+declarations and definitions need to start with the first column of
+the text.
 
 \section{Formatting}
 
-
-It is also possible to generate a pretty printed \LaTeX\ version
-of \texttt{Order.casl} by typing:
+A formatter with pretty-printed output currently is available only for
+the \CASL logic. For example, it is possible to generate a pretty
+printed \LaTeX\ version of \texttt{Order.casl} by typing:
 
 \begin{quote}
 \texttt{hets -o pp.tex Order.casl}
 \end{quote}
 
-  -r RAW     --raw=RAW              raw options passed to the pretty-printer
-        RAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer
+The option \texttt{-r RAW} or \texttt{--raw=RAW},
+where \texttt{RAW} is \texttt{(ascii|text|(la)?tex)=STRING},
+and \texttt{STRING} is passed to the appropiate pretty-printer.
 
 
 
-\section{Development Graphs}
-  -g         --gui                  show graphical output in a GUI window
+\section{Development Graphs}\label{sec:DevGraph}
+
+The following options let \Hets show the development graph of
+a specification library:
+\begin{description}
+\item[\texttt{-g}, \texttt{--gui}]  show graphical output in a GUI window
   -G         --only-gui             show graphical output in a GUI window - don't write Output to file
 
 
@@ -274,7 +389,6 @@ the natural numbers form a strict partial order as a view, as follows:
 \I\SPEC \NAMEREF{Natural} = ~\FREE \TYPE \(Nat ::= 0 \| suc(Nat)\)~\END
 \end{BIGEXAMPLE}
 
-\pagebreak
 
 \begin{EXAMPLE}
 \I\SPEC \NAMEDEFN{Natural\_Order\_2} =
@@ -491,6 +605,36 @@ graphical representation of \CASL structured specifications.
   -h         --help, --usage        print usage information and exit
 
 
+\section{Precursors of \Hets}
+
+\Hets has been built based on experiences with its
+precursors, 
+                \index{Cats@\Cats}%
+\Cats and 
+                \index{Maya@\MAYA}%
+\MAYA.
+The \CASL Tool Set (\Cats) 
+\cite{Mossakowski:2000:CST,Mossakowski:1998:SSA}
+comes with roughly the same analysis tools as \Hets.
+%,
+%but neither supports extensions nor does it identify
+%sublanguages of \CASL (and the tools to be used with
+%sublanguages only).
+The management of development graphs is not integrated
+in \Cats, 
+but is provided with a stand-alone version of the
+tool \MAYA \cite{Autexier:2002:IHD,AutexierEtal02}. 
+%(which only supports part of \CASL's
+%structuring constructs; in particular, hiding is not supported).
+%
+\Cats and \MAYA 
+%are mainly important in the current transition phase,
+%since \Hets does not support full \CASL (e.g. architectural 
+%specifications) yet.
+%They
+ can be obtained from the \CoFI tools home page \cite{CoFITools}.
+
+
 \section{Architecture of \Hets}
 
 \Hets is written in Haskell. Its parser uses combinator 
@@ -535,38 +679,28 @@ If your favourite logic is missing in \Hets, please tell us
 logics and proof tools to integrate next into \Hets. Help with
 integration of more logics and proof tools into \Hets is also welcome.
 
-\Hets< is mainly maintained by
+\Hets is mainly maintained by
 Christian Maeder (maeder@tzi.de) and Till Mossakowski
 (till@tzi.de). The mailing list is hets@tzi.de.
 
-\section{Precursors of \Hets}
 
-\Hets has been built based on experiences with its
-precursors, 
-                \index{Cats@\Cats}%
-\Cats and 
-                \index{Maya@\MAYA}%
-\MAYA.
-The \CASL Tool Set (\Cats) 
-\cite{Mossakowski:2000:CST,Mossakowski:1998:SSA}
-comes with roughly the same analysis tools as \Hets.
-%,
-%but neither supports extensions nor does it identify
-%sublanguages of \CASL (and the tools to be used with
-%sublanguages only).
-The management of development graphs is not integrated
-in \Cats, 
-but is provided with a stand-alone version of the
-tool \MAYA \cite{Autexier:2002:IHD,AutexierEtal02}. 
-%(which only supports part of \CASL's
-%structuring constructs; in particular, hiding is not supported).
-%
-\Cats and \MAYA 
-%are mainly important in the current transition phase,
-%since \Hets does not support full \CASL (e.g. architectural 
-%specifications) yet.
-%They
- can be obtained from the \CoFI tools home page \cite{CoFITools}.
+\paragraph{Acknowledgement}
+\Hets has been programmed by the following people:
+Katja Abu-Dib,
+Carsten Fischer,
+Jorina Freya Gerken,
+Sonja Gr\"{o}ning,
+Wiebke Herding,
+Martin K\"{u}hl,
+Klaus L\"{u}ttich,
+Christian Maeder,
+Maciek Makowski,
+Till Mossakowski,
+Daniel Pratsch,
+Felix Reckers,
+Markus Roggenbach, 
+and
+Pascal Schmidt.
 
 \end{document}
 
