@@ -49,73 +49,91 @@ checkFreeType m fsn
        | any (\s->not $ elem s f_Inhabited) newSorts = Just False   -- check if *new* sorts are inhabited
        | elem Nothing l_Syms = Nothing                                                                  
        | any id $ map (\s->elem s sorts) $ ops_sorts ++ preds_sorts = Nothing
-       | not $ and $ map checkTerm leadingTerms = Nothing                  --   ?
+       | not $ and $ map checkTerm leadingTerms = Nothing                 
        | not $ and $ map checkVar leadingTerms = Nothing 
-       | not $ and $ map checkPatterns leadingPatterns = Nothing           --   ?    
+       | not $ checkPatterns leadingPatterns = Nothing              
        | otherwise = Just True
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
          fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
          is_user_or_sort_gen ax = take 12 name == "ga_generated" || take 3 name /= "ga_"
              where name = senName ax
          sig = imageOfMorphism m
-         sorts1= Set.toList (sortSet sig)
+         sorts1 = Set.toList (sortSet sig)
          sorts = trace (showPretty sorts1 "old sorts") sorts1            -- "old" sorts
          newSorts1 = Set.toList $ sortSet (mtarget m)
-         newSorts= trace (showPretty newSorts1 "new sorts") newSorts1    -- "new" sorts 
-         fconstrs= concat $ map fc fs
-         fc f= case f of
+         newSorts = trace (showPretty newSorts1 "new sorts") newSorts1    -- "new" sorts 
+         fconstrs = concat $ map fc fs
+         fc f = case f of
                      Sort_gen_ax constrs True -> constrs
                      _->[]
-         (srts,constructors,_)=recover_Sort_gen_ax fconstrs 
-         f_Inhabited=inhabited fconstrs
-         op_preds1= filter (\f->case f of
-                                 Quantification Universal _ _ _ -> True
-                                 _ -> False) fs
-         op_preds= trace (showPretty op_preds1 "leading") op_preds1
-         l_Syms1=map leadingSymb op_preds
-         l_Syms=trace (showPretty l_Syms1 "leading_Symbol") l_Syms1
-         filterOp symb= case symb of
-                         Just (Left (Qual_op_name _ op _))->[res_OP_TYPE op]
-                         _ ->[]
-         filterPred symb=case symb of
+         (srts,constructors1,_) = recover_Sort_gen_ax fconstrs
+         constructors = trace (showPretty constructors1 "constructors") constructors1 
+         f_Inhabited = inhabited fconstrs
+         op_preds1 = filter (\f->case f of
+                                  Quantification Universal _ _ _ -> True
+                                  _ -> False) fs
+         op_preds = trace (showPretty op_preds1 "leading") op_preds1         --  leading
+         l_Syms1 = map leadingSym op_preds
+         l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1         -- leading_Symbol  
+         filterOp symb = case symb of
+                           Just (Left (Qual_op_name _ op _))->[res_OP_TYPE op]
+                           _ ->[]
+         filterPred symb = case symb of
                                Just (Right (Qual_pred_name _ (Pred_type s _) _))->s
                                _ -> [] 
-         ops_sorts=concat $ map filterOp $ l_Syms 
-         preds_sorts=concat $ map filterPred $ l_Syms
-         leadingTerms=concat $ map (\tp->case tp of
-                                             Just (Left t)->[t]
-                                             _ -> []) $ 
-                      map leading_Term_Predication fs
-         checkTerm (Application op ts _) =elem op constructors &&
-                                          all (\t-> case t of
-                                                     Qual_var _ _ _-> True
-                                                     _ -> False) ts
-         checkVar (Application _ ts _)=let check [] = True
-                                           check (p:ps)=if elem p ps then False
-                                                        else check ps
-                                       in check ts
-         leadingPatterns=map (\l-> case l of                     
-                                     Just (Left (Application _ ts _))->ts
-                                     Just (Right (Predication _ ts _))->ts
-                                     _ ->[]) $ 
-                         map leading_Term_Predication fs
+         ops_sorts = concat $ map filterOp $ l_Syms 
+         preds_sorts = concat $ map filterPred $ l_Syms
+         ltp1 = map leading_Term_Predication op_preds                 
+         ltp = trace (showPretty ltp1 "leading_term_pre") ltp1 
+         leadingTerms1 = concat $ map (\tp->case tp of
+                                              Just (Left t)->[t]
+                                              _ -> []) $ ltp
+         leadingTerms = trace (showPretty leadingTerms1 "leading Term") leadingTerms1   -- leading Term
+         checkTerm (Application _ ts _) = all id $ map (\t-> case (term t) of
+                                                               Qual_var _ _ _ -> True
+                                                               Application op' _ _ -> elem op' constructors && 
+                                                                                      checkTerm (term t) 
+                                                               _ -> False) ts 
+         checkVar (Application _ ts _) = overlap ts
+
+{-
+let check [] = True
+                                             check (p:ps)=if elem p ps then False
+                                                          else check ps
+                                         in check ts
+-}
+         leadingPatterns1 = map (\l-> case l of                     
+                                       Just (Left (Application _ ts _))->ts
+                                       Just (Right (Predication _ ts _))->ts
+                                       _ ->[]) $ 
+                            map leading_Term_Predication op_preds
+         leadingPatterns = trace (showPretty leadingPatterns1 "leading Pattern") leadingPatterns1
          isNil t = case t of
                      Application _ ts _-> if length ts==0 then True
                                           else False
+                     Sorted_term t' _ _ ->isNil t'
                      _ -> False
          isCons t = case t of
                       Application _ ts _-> if length ts>0 then True
-                                          else False
+                                           else False
+                      Sorted_term t' _ _ ->isCons t'
                       _ -> False
          isApp t = case t of
                      Application _ _ _->True
+                     Sorted_term t' _ _ ->isApp t'
                      _ -> False
          isVar t = case t of
                      Qual_var _ _ _ ->True
+                     Sorted_term t' _ _ ->isVar t'
                      _ -> False
-         allIdentic ts= all (\t-> t== (head ts)) ts           
-         patternsOfTerm t= case t of
+         allIdentic ts = all (\t-> t== (head ts)) ts
+         overlap ts = let check [] = True
+                          check (p:ps)=if elem p ps then False
+                                       else check ps
+                      in check ts 
+         patternsOfTerm t = case t of
                               Application (Qual_op_name _ _ _) ts _->ts
+                              Sorted_term t' _ _ ->patternsOfTerm t'
                               _ -> []
          checkMatrix ps 
                 | length ps <=1 = True
@@ -127,9 +145,12 @@ checkFreeType m fsn
                                             else False
                 | otherwise = False     
          checkPatterns [] = True
-         checkPatterns ts
-                | length ts==1 =(all isVar $ patternsOfTerm $ head ts)&& (checkVar $ head ts)
-                | otherwise = checkMatrix $ map patternsOfTerm ts
+         checkPatterns ps
+                | (length ps) == 1 = (all isVar $ head ps) && (overlap $ head ps)
+                | otherwise = checkMatrix ps
+         term t = case t of
+                    Sorted_term t' _ _ ->term t'
+                    _ -> t                   
     
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
@@ -163,18 +184,18 @@ leading_Term_Predication f = leading (f,False,False)
                             ((Implication _ f' _ _),False,False) -> leading (f',True,False)
                             ((Equivalence f' _ _),b,False) -> leading (f',b,True)
                             ((Predication p ts ps),_,_) -> return (Right (Predication p ts ps))
-                            ((Strong_equation t _ _),_,_) -> case t of
-                                                              Application _ _ _ -> return (Left t)
+                            ((Strong_equation t _ _),_,_) -> case (term t) of
+                                                              Application _ _ _ -> return (Left (term t))
                                                               _ -> Nothing
-                            ((Existl_equation t _ _),_,_) -> case t of
-                                                              Application _ _ _ -> return (Left t)
+                            ((Existl_equation t _ _),_,_) -> case (term t) of
+                                                              Application _ _ _ -> return (Left (term t))
                                                               _ -> Nothing
                             _ -> Nothing
-{-
+
         term t = case t of
                   Sorted_term t' _ _ ->term t'
                   _ -> t
--} 
+ 
 
 
 extract_leading_symb :: Either (TERM f) (FORMULA f) -> Either OP_SYMB PRED_SYMB
