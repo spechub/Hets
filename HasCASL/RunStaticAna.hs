@@ -10,6 +10,7 @@
 
 module RunStaticAna where
 
+import Le
 import AsToLe
 import Lexer((<<))
 import ParseItem
@@ -25,7 +26,7 @@ import GlobalAnnotationsFunctions
 ana :: String -> State Env ()
 ana s =   do e <- get
 	     case parse (basicSpec << eof) "" s of
-	       Left err -> appendDiags [Error (showErrorMessages 
+	       Left err -> appendDiags [Diag Error (showErrorMessages 
 					      "or" "unknown parse error" 
                         "expecting" "unexpected" "end of input"
                        (errorMessages err)) (let p = errorPos err in 

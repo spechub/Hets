@@ -12,7 +12,6 @@ module PrintLe where
 import As
 import PrintAs
 import Le
-import AsToLe
 import PrettyPrint
 import Pretty
 import FiniteMap
@@ -22,8 +21,8 @@ import GlobalAnnotations
 noPrint :: Bool -> Doc -> Doc
 noPrint b d = if b then empty else d
 
-instance PrettyPrint Le.ClassItem where
-    printText0 ga (Le.ClassItem _ sups defn@(Intersection defns _) insts _) =
+instance PrettyPrint ClassInfo where
+    printText0 ga (ClassInfo _ sups defn@(Intersection defns _) insts) =
 	(noPrint (null sups)
 	   (ptext lessS <+> if null $ tail sups 
 	    then printText0 ga $ head sups
@@ -34,7 +33,7 @@ instance PrettyPrint Le.ClassItem where
 	) $$ noPrint (null insts) 
              (ptext "Instances" $$ 
 	      vcat (map (printText0 ga) insts))
-    printText0 _ _ = error "PrintLe.printText0 for Le.ClassItem"
+    printText0 _ _ = error "PrintLe.printText0 for ClassInfo"
 
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
 printList0 ga l = noPrint (null l)

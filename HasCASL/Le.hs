@@ -2,7 +2,7 @@
 {- HetCATS/HasCASL/Le.hs
    $Id$
    Authors: Christian Maeder
-   Year:    2002
+   Year:    2002/2003
    
    abstract syntax after/during static analysis
 -}
@@ -11,82 +11,96 @@ module Le where
 
 import Id
 import As
+import AsUtils
+import MonadState
+import FiniteMap
+import List
+import Result
+import Set
 
------------------------------------------------------------------------------
--- Symbols
------------------------------------------------------------------------------
-
-data SymbType = OpType TypeScheme
-	      | TypeKind Kind
-	      | Class
-		deriving (Show, Eq)      
-
-data Symbol = Symbol {symbId :: Id, sumbType :: SymbType} deriving (Show, Eq)
-
--- the list of items which are part of a "sort-gen" (or free type)
-type GenItems = [Symbol] 
-
------------------------------------------------------------------------------
--- Items
------------------------------------------------------------------------------
-
-data GenKind = Free | Generated | Loose deriving (Show, Eq)      
-
-data TypeBody = Alias Type -- non-recursive
-	      | Datatype [Le.Alternative] GenKind GenItems
-	      | SubtypeDefn VarDecl Type Term -- a formula
-		deriving (Show, Eq)
-
--- type variables correspond to the kind
-data TypeDefn = TypeDefn [TypeVarDecl] TypeBody deriving (Show, Eq)
-
--- full function type of constructor (result sort is the data type)
-data Alternative = Construct Id Type [Component] 
-		 | Subtype Type
-		   deriving (Show, Eq)
-
--- full function type of a selector (result sort is component sort)
-data Component = Component (Maybe Id) Type  deriving (Show, Eq)
-
-data ClassItem = ClassItem { classId :: ClassName
+data ClassInfo = ClassInfo { classId :: ClassName
 			   , superClasses :: [ClassName]
 			   , classDefn :: Class
 			   , instances :: [Qual Pred]
-                           , classBody :: [SigItem]
 			   } deriving (Show, Eq)
 
-newClassItem :: ClassName -> Le.ClassItem
-newClassItem cid = Le.ClassItem cid [] (Intersection [] []) [] []
+newClassInfo :: ClassName -> ClassInfo
+newClassInfo cid = ClassInfo cid [] (Intersection [] []) []
 
-showClassList :: [ClassName] -> ShowS
-showClassList is = showParen (length is > 1)
-		   $ showSepList ("," ++) ((++) . tokStr) is
+-----------------------------------------------------------------------------
+
+type ClassEnv = FiniteMap ClassName ClassInfo
+
+-- transitiv super classes 
+-- PRE: all superclasses and defns must be defined in ClassEnv
+-- and there must be no cycle!
+allSuperClasses :: ClassEnv -> ClassName -> [ClassName]
+allSuperClasses ce ci = 
+    case lookupFM ce ci of 
+    Just info -> nub $
+		      ci: concatMap (allSuperClasses ce) (iclass $ 
+							  classDefn info) 
+		      ++  concatMap (allSuperClasses ce) (superClasses info)
+    Nothing -> error "allSuperClasses"
+
+defCEntry :: ClassEnv -> ClassName  -> [ClassName] -> Class -> ClassEnv
+defCEntry ce cid sups defn = addToFM ce cid 
+			   (newClassInfo cid) { superClasses = sups
+					      , classDefn = defn } 
+
+-----------------------------------------------------------------------------
+-- assumptions
+-----------------------------------------------------------------------------
+
+type Assumps = FiniteMap Id [TypeScheme]
+
+type TypeKinds = FiniteMap TypeName Kind
+
+-----------------------------------------------------------------------------
+-- local env
+-----------------------------------------------------------------------------
+
+data Env = Env { classEnv :: ClassEnv
+               , typeKinds :: TypeKinds
+	       , typeVars :: Set TypeName
+	       , assumps :: Assumps
+	       , envDiags :: [Diagnosis]
+	       } deriving Show
+
+initialEnv :: Env
+initialEnv = Env emptyFM emptyFM emptySet emptyFM []
+
+appendDiags :: [Diagnosis] -> State Env ()
+appendDiags ds =
+    if null ds then return () else
+    do e <- get
+       put $ e {envDiags = ds ++ envDiags e}
 
 
-data TypeRel = TypeRel [TypeVarDecl] Type Type deriving (Show, Eq)
+getClassEnv :: State Env ClassEnv
+getClassEnv = gets classEnv
 
-data TypeItem = TypeItem{ typeConstrId :: Id
-			, itemKind :: Kind
-			, subtypes :: [TypeRel]
-			, supertypes :: [TypeRel]
-			, typeDefn :: Maybe TypeDefn
-			} deriving (Show, Eq)
+putClassEnv :: ClassEnv -> State Env ()
+putClassEnv ce = do { e <- get; put e { classEnv = ce } }
 
-type ConsId = Symbol
-type SelId = Symbol
+getTypeKinds :: State Env TypeKinds
+getTypeKinds = gets typeKinds
 
-data OpDefn = OpDef [VarDecl] Term
-            | Constr ConsId
-            | Select [ConsId] SelId
-	      deriving (Show, Eq)
+putTypeKinds :: TypeKinds -> State Env ()
+putTypeKinds tk =  do { e <- get; put e { typeKinds = tk } }
 
-data OpItem = OpItem { opId :: Id
-		     , opType :: TypeScheme
-		     , opAttrs :: [OpAttr]
-		     , opDefn :: Maybe OpDefn
-		     } deriving (Show, Eq)	      
+getAssumps :: State Env Assumps
+getAssumps = gets assumps
 
-data SigItem = AClassItem Le.ClassItem
-	     | ATypeItem Le.TypeItem
-	     | AnOpItem Le.OpItem
-	       deriving (Show, Eq)
+putAssumps :: Assumps -> State Env ()
+putAssumps as =  do { e <- get; put e { assumps = as } }
+
+getTypeVars :: State Env (Set TypeName)
+getTypeVars = gets typeVars
+
+putTypeVars :: (Set TypeName) -> State Env ()
+putTypeVars ts =  do { e <- get; put e { typeVars = ts } }
+
+addTypeVar :: TypeName -> State Env ()
+addTypeVar t = do ts <- getTypeVars 
+		  putTypeVars $ addToSet ts t

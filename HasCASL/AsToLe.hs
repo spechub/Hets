@@ -11,106 +11,21 @@ module AsToLe where
 
 import AS_Annotation
 import As
+import AsUtils
 import Le
 import Id
 import Monad
 import MonadState
 import FiniteMap
 import Result
-import List
+import List(nub, partition)
 import Maybe
 import ParseTerm(isSimpleId)
 import MixfixParser(getTokenList, expandPos)
 import Parsec
 import ParsecPos
 import ParsecError
-
-----------------------------------------------------------------------------
--- FiniteMap stuff
------------------------------------------------------------------------------
-
-lookUp :: (Ord a, MonadPlus m) => FiniteMap a (m b) -> a -> (m b)
-lookUp ce = lookupWithDefaultFM ce mzero
-
-showMap :: Ord a => (a -> ShowS) -> (b -> ShowS) -> FiniteMap a b -> ShowS
-showMap showA showB m =
-    showSepList (showChar '\n') (\ (a, b) -> showA a . showString " -> " .
-				 indent 2 (showB b))
-				 (fmToList m) 
-
------------------------------------------------------------------------------
-
-indent :: Int -> ShowS -> ShowS
-indent i s = showString $ concat $ 
-	     intersperse ('\n' : replicate i ' ') (lines $ s "")
-
------------------------------------------------------------------------------
-
-type ClassEnv = FiniteMap ClassName Le.ClassItem
-
--- transitiv super classes 
--- PRE: all superclasses and defns must be defined in ClassEnv
--- and there must be no cycle!
-allSuperClasses :: ClassEnv -> ClassName -> [ClassName]
-allSuperClasses ce ci = 
-    case lookupFM ce ci of 
-    Just info -> nub $
-		      ci: concatMap (allSuperClasses ce) (iclass $ 
-							  classDefn info) 
-		      ++  concatMap (allSuperClasses ce) (superClasses info)
-    Nothing -> error "allSuperClasses"
-
-defCEntry :: ClassEnv -> ClassName  -> [ClassName] -> Class -> ClassEnv
-defCEntry ce cid sups defn = addToFM ce cid 
-			   (newClassItem cid) { superClasses = sups
-					      , classDefn = defn } 
-
------------------------------------------------------------------------------
--- assumptions
------------------------------------------------------------------------------
-
-type Assumps = FiniteMap Id [TypeScheme]
-
-type TypeKinds = FiniteMap TypeName Kind
-
------------------------------------------------------------------------------
--- local env
------------------------------------------------------------------------------
-
-data Env = Env { classEnv :: ClassEnv
-               , typeKinds :: TypeKinds
-	       , assumps :: Assumps
-	       , envDiags :: [Diagnosis]
-	       } deriving Show
-
-initialEnv :: Env
-initialEnv = Env emptyFM emptyFM emptyFM []
-
-appendDiags :: [Diagnosis] -> State Env ()
-appendDiags ds =
-    if null ds then return () else
-    do e <- get
-       put $ e {envDiags = ds ++ envDiags e}
-
-
-getClassEnv :: State Env ClassEnv
-getClassEnv = gets classEnv
-
-putClassEnv :: ClassEnv -> State Env ()
-putClassEnv ce = do { e <- get; put e { classEnv = ce } }
-
-getTypeKinds :: State Env TypeKinds
-getTypeKinds = gets typeKinds
-
-putTypeKinds :: TypeKinds -> State Env ()
-putTypeKinds tk =  do { e <- get; put e { typeKinds = tk } }
-
-getAssumps :: State Env Assumps
-getAssumps = gets assumps
-
-putAssumps :: Assumps -> State Env ()
-putAssumps as =  do { e <- get; put e { assumps = as } }
-
+import TypeAna
 
 ----------------------------------------------------------------------------
 -- analysis
@@ -170,7 +85,7 @@ anaVarDecl(VarDecl v t _ p) =
 			  ts = SimpleTypeScheme t in 
 			  if ts `elem` l then 
 			     appendDiags 
-				     [Warning 
+				     [Diag Warning 
 				      ("repeated variable '" 
 				       ++ showId v "'") p ]
 			     else  putAssumps $ addToFM as v (ts:l)
@@ -179,9 +94,8 @@ anaTypeVarDecl :: TypeVarDecl -> State Env ()
 anaTypeVarDecl(TypeVarDecl t k _ _) = 
     do nk <- anaKind k
        addTypeKind t k
-
--- ----------------------------------------------------------------------------
--- As.ClassItem
+       addTypeVar t
+-- ------------------------------------------------------------------------------ As.ClassItem
 -- ----------------------------------------------------------------------------
 
 anaAnnotedClassItem :: Instance -> Annoted As.ClassItem -> State Env ()
@@ -204,7 +118,7 @@ anaClassDecls (ClassDefn ci syncl _) =
 
 anaClassDecls (DownsetDefn ci tv _ _) = 
     do anaClassDecl [] universe ci
-       appendDiags [Warning "definition currently ignored" (tokPos tv)]
+       appendDiags [Diag Warning "definition currently ignored" (tokPos tv)]
 	       
 anaClassName :: Bool -> ClassName -> State Env (Result [ClassName])
 -- True: declare the class
@@ -215,7 +129,7 @@ anaClassName b ci =
 		do putClassEnv $ defCEntry ce ci [] universe
                    return $ return [ci]
 	      else 	  
-		return $ non_fatal_error [] 
+		return $ plain_error [] 
 		    ("undeclared class '" ++ tokStr ci ++  "'")
 		    (tokPos ci)
 
@@ -225,13 +139,11 @@ anaClass b c@(As.Intersection cs ps) =
        then if null ps then return $ return c  -- no warning 
 	    else return $ warning c "redundant universe class" (head ps)
        else
-    do newCs <- mapM (anaClassName (b && null (tail cs))) cs
-       return $ Result (concatMap diags newCs) 
-		  (Just $ Intersection 
-		   (nub $ concatMap (fromJust . maybeResult) newCs) ps)
+    do Result ds (Just l) <- anaList (anaClassName (b && null (tail cs))) cs
+       return $ Result ds $ Just $ Intersection (nub $ concat l) ps
 
 anaClass _ c@(Downset t) = 
-    return $ non_fatal_error c "anaClass for Downset not implemented" 
+    return $ plain_error c "anaClass for Downset not implemented" 
 	       (posOfType t)
 
 anaSuperClass :: Class -> State Env Class
@@ -249,7 +161,7 @@ anaClassAppl c =
 anaClassDecl :: [ClassName] -> Class -> ClassName -> State Env ()
 anaClassDecl cs cdef@(Intersection is ps) ci = 
     if tokStr ci == "Type" then 
-       appendDiags [Error "illegal universe class declaration" (tokPos ci)]
+       appendDiags [Diag Error "illegal universe class declaration" (tokPos ci)]
     else 
     do ce <- getClassEnv
        case lookupFM ce ci of 
@@ -270,12 +182,12 @@ anaClassDecl cs cdef@(Intersection is ps) ci =
 		    newIs = Intersection (nub $ defIs ++ oldIs) 
 			       (ps ++ qs)
 		    cycles = map snd $ scycs ++ icycs
-		in do appendDiags [Warning ("repeated class '"
+		in do appendDiags [Diag Warning ("repeated class '"
 					++ tokStr ci ++ "'") 
 			      $ tokPos ci]
 		      if not $ null cycles then
 			      appendDiags 
-			      [Error 
+			      [Diag Error 
 			       ("cyclic class relation via '"
 				      ++ showClassList cycles "'")
 			      $ tokPos (head cycles)]
@@ -286,18 +198,22 @@ anaClassDecl cs cdef@(Intersection is ps) ci =
 		      let ds = filter (`elem` oldCs) defCs in
 			    if null ds then return ()
 			       else appendDiags 
-					[Warning 
+					[Diag Warning 
 					 ("repeated superclass '"
 					  ++ showClassList ds "'")
 					$ tokPos (head ds)]
 		      if null oldIs then return ()
 			     else appendDiags
-					[Warning 
+					[Diag Warning 
 					 ("merged definition '"
 					  ++ showClassList defIs "'")
 					$ tokPos (head defIs)]
 
-anaClassDecl _ (Downset _) _ = error "anaClassDecl for Downset"
+anaClassDecl _ (Downset t) ci = 
+    do anaType t 
+       appendDiags [Diag Error
+		    ("ignored downset for '" ++ tokStr ci ++ "'")
+		    $ posOfType t]
 
 -- ----------------------------------------------------------------------------
 -- TypeItem
@@ -312,6 +228,7 @@ anaTypeItem inst (TypeDecl pats kind _) =
        mapM_ (anaTypePattern inst k) pats 
 
 anaTypePattern :: Instance -> Kind -> TypePattern -> State Env ()
+-- type args not yet considered for kind construction 
 anaTypePattern _ kind t = 
     let Result ds mi = convertTypePattern t
     in if typePatternArgs t == 0 || 
@@ -319,7 +236,7 @@ anaTypePattern _ kind t =
        case mi of 
 	       Just ti -> addTypeKind ti kind
 	       Nothing -> appendDiags ds
-       else appendDiags [Error "non-matching kind arity"
+       else appendDiags [Diag Error "non-matching kind arity"
 					    $ posOfTypePattern t]
 
 convertTypePattern, makeMixTypeId :: TypePattern -> Result Id
@@ -373,20 +290,6 @@ typePatternArgs (MixfixTypePattern ts) = sum (map typePatternArgs ts)
 typePatternArgs (BracketTypePattern _ ts _) = sum (map typePatternArgs ts)
 typePatternArgs (TypePatternArgs as) = length as
 
-posOfTypePattern :: TypePattern -> Pos
-posOfTypePattern (TypePattern t _ _) = posOfId t
-posOfTypePattern (TypePatternToken t) = tokPos t
-posOfTypePattern (MixfixTypePattern ts) = 
-    if null ts then nullPos else posOfTypePattern $ head ts
-posOfTypePattern (BracketTypePattern _ ts ps) = 
-    if null ps then 
-       if null ts then nullPos
-       else posOfTypePattern $ head ts
-    else head ps
-posOfTypePattern (TypePatternArgs as) = 
-    if null as then nullPos else 
-       let TypeArg t _ _ _ = head as in tokPos t
-		    
 hasPlaces, hasTypeArgs :: TypePattern -> Bool
 hasPlaces (TypePattern _ _ _) = False
 hasPlaces (TypePatternToken t) = isPlace t
@@ -410,7 +313,7 @@ addTypeKind :: Id -> Kind -> State Env ()
 addTypeKind t k = 
     do tk <- getTypeKinds
        case lookupFM tk t of
-            Just _ -> appendDiags [Warning 
+            Just _ -> appendDiags [Diag Warning 
 				   ("shadowing type '" 
 				    ++ showId t "'") 
 				  $ posOfId t]
@@ -457,10 +360,3 @@ anaProdClass :: ProdClass -> State Env ProdClass
 anaProdClass (ProdClass l p) =
     do cs <- mapM anaExtClass l
        return $ ProdClass cs p
-
-kindArity :: Kind -> Int
-kindArity(Kind args _ _) = 
-    sum $ map prodClassArity args
-
-prodClassArity :: ProdClass -> Int
-prodClassArity (ProdClass l _) = length l
