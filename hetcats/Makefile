@@ -20,7 +20,7 @@ PERL       = perl
 DRIFT      = $(PERL) ../utils/DrIFT
 AG         = $(PERL) ../utils/ag
 
-HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
+HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package data
 
@@ -121,13 +121,13 @@ ghci:
 ### CASL parser
 capa: ../CASL/Main.hs $(drifted_files)
 	$(RM) $@
-	$(HC) --make -o $@ $< $(HC_OPTS)
+	$(HC) --make -Wall -o $@ $< $(HC_OPTS)
 	\cp -p $@ ../CASL/$@ 
 
 ### HasCASL parser
 hacapa: ../HasCASL/Main.hs $(drifted_files)
 	$(RM) $@
-	$(HC) --make -o $@ $< $(HC_OPTS)
+	$(HC) --make -Wall -o $@ $< $(HC_OPTS)
 	\cp -p $@ ../HasCASL/$@ 
 
 ### run tests in other directories
