@@ -12,10 +12,10 @@
    . p/\r => q
 -}
 
-module AS_Modal where
+module Modal.AS_Modal where
 
-import Id
-import AS_Annotation
+import Common.Id
+import Common.AS_Annotation
 
 data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEMS]
 		deriving (Show,Eq)

@@ -13,21 +13,21 @@ parse_basic_spec :: id -> Maybe(ParseFun basic_spec)
 --                                       ^ Rückgabetyp
 -}
 
-module Parse_AS where
-import AnnoState
-import Id
-import Token
-import Keywords
-import Lexer
-import AS_Modal
--- import AS_Annotation
--- import Maybe
+module Modal.Parse_AS where
+import Common.AnnoState
+import Common.Id
+import Common.Token
+import Common.Keywords
+import Common.Lexer
+import Modal.AS_Modal
+-- import Common.AS_Annotation
+-- import Data.Maybe
 import Common.Lib.Parsec
---import Formula
---import SortItem
---import OpItem
---import TypeItem
-import ItemList
+--import CASL.Formula
+--import CASL.SortItem
+--import CASL.OpItem
+--import CASL.TypeItem
+import CASL.ItemList
 
 -- aus CASL, kann bleiben
 basicSpec :: AParser BASIC_SPEC
@@ -37,7 +37,7 @@ basicSpec = (fmap Basic_spec $ many1 $
 
 basicItems :: AParser BASIC_ITEMS
 basicItems = fmap Sig_items sigItems
-	    <|> dotFormulae    -- später!
+--	    <|> dotFormulae    -- später!
 
 sigItems :: AParser SIG_ITEMS
 sigItems = propItems 

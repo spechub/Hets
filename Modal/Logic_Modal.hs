@@ -4,14 +4,14 @@
    Authors: Wiebke Herding
    Year:    2003
 -}
-module Logic_Modal where
+module Modal.Logic_Modal where
 
-import Logic
-import Id
+import Logic.Logic
+import Common.Id
 import FiniteMap
-import Set
-import Maybe
-import AS_Modal
+import Common.Lib.Set
+import Data.Maybe
+import Modal.AS_Modal
 
 data Modal = Modal deriving (Show)
 
@@ -26,7 +26,7 @@ type Morphism = (Sign, FiniteMap Id Id, Sign)
 instance Category Modal Sign Morphism  
     where
        -- ide :: id -> object -> morphism
-       ide Modal sigma = (sigma, listToFM [(i,i) | i<- setToList sigma], sigma)
+       ide Modal sigma = (sigma, listToFM [(i,i) | i<- toList sigma], sigma)
        -- comp :: id -> morphism -> morphism -> Maybe morphism
        comp Modal (sigma1 ,m1,_) (_,m2,sigma2) =  
 	   Just (sigma1,plusFM m1 m2,sigma2)
@@ -37,7 +37,7 @@ instance Category Modal Sign Morphism
        legal_obj Modal _ = True
        -- legal_mor :: id -> morphism -> Bool
        legal_mor Modal (sigma,m,_)
-		| keysFM m == setToList sigma	 = True 
+		| keysFM m == toList sigma	 = True 
 		| True	 = False
 
 -- abstract syntax, parsing (and printing)
