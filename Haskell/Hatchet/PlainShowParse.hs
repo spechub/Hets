@@ -15,8 +15,7 @@
 
 module Haskell.Hatchet.PlainShowParse where
 
-import Haskell.Hatchet.Env(Env)
-import Haskell.Hatchet.FiniteMaps(toListFM, listToFM)
+import Haskell.Hatchet.FiniteMaps(FiniteMap, toListFM, listToFM)
 import Haskell.Hatchet.ParseLib
 import Haskell.Hatchet.Rename           (unRename)
 import Haskell.Hatchet.AnnotatedHsSyn
@@ -103,7 +102,8 @@ instance PlainShowParse a => PlainShowParse [a] where
     toString = toStringList
     plainParse = plainParseList 
 
-instance PlainShowParse a => PlainShowParse (Env a) where
+instance (Ord k, PlainShowParse k, PlainShowParse a) 
+    => PlainShowParse (FiniteMap k a) where
     toString fm = toString (toListFM fm)
     plainParse = do { x <- plainParseList; return (listToFM x) }
 
@@ -258,6 +258,7 @@ instance PlainShowParse Pred where
 instance PlainShowParse Kind where
     toString Star = "*"
     toString (Kfun k1 k2) = withBrackets (toString k1 ++ "->" ++ toString k2)
+    toString k = error ("toString for: " ++ show k)
 
     plainParse = binopr "->" Kfun $  -- assumes bracketing to the right
                  bracketed plainParse +++ retVal "*" Star
@@ -265,7 +266,7 @@ instance PlainShowParse Kind where
 
 -- instance PlainShowParse Class (a Class is just an AHsName)
 
-instance PlainShowParse Inst where
+instance PlainShowParse a => PlainShowParse (Qual a) where
     toString (preds :=> pred) = ":=>" `withArgs` [toString preds, toString pred]
     plainParse = ":=>" `parseWithArgs` (\(preds,pred) -> preds :=> pred)
 

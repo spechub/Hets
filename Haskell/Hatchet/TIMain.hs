@@ -41,12 +41,9 @@ import Haskell.Hatchet.AnnotatedHsSyn           -- almost everything
 
 
 import Haskell.Hatchet.Representation (Type (..),
-                                 Tyvar (..), 
-                                 Tycon (..),
                                  Kind (..),
                                  Pred (..),
                                  Qual (..),
-                                 Subst,
                                  Scheme (..),
                                  Assump (..))
 
@@ -57,17 +54,11 @@ import Haskell.Hatchet.Type     (apply,
                                  quantify,
                                  toScheme,
                                  assumpToPair,
-                                 find,
-                                 makeAssump,
-                                 assumpId)
-
-import Monad                    (zipWithM)
+                                 makeAssump)
 
 import Haskell.Hatchet.Diagnostic (Diagnostic(..), 
-                                 withASrcLoc,
                                  makeMsg, 
                                  locMsg, 
-                                 dumpDiagnostic,
                                  locSimple, 
                                  simpleMsg)
 
@@ -79,10 +70,8 @@ import Haskell.Hatchet.Class    (ClassHierarchy,
 
 import Haskell.Hatchet.TIMonad  (runTI,
                                  getSubst,
-                                 getErrorContext,
                                  getClassHierarchy,
                                  withContext,
-                                 getKindEnv,
                                  getSigEnv,
                                  dConScheme,
                                  newTVar,
@@ -101,12 +90,8 @@ import Haskell.Hatchet.HaskellPrelude           (fn,
                                  tList,
                                  tChar)
 
-import Haskell.Hatchet.Utils    (isSigDecl,
-                                 isBindDecl,
-                                 fromAHsName,
+import Haskell.Hatchet.Utils    (isBindDecl,
                                  getDeclName,
-                                 groupEquations,
-                                 Binding (..),
                                  fst3,
                                  snd3,
                                  trd3)
@@ -114,21 +99,11 @@ import Haskell.Hatchet.Utils    (isSigDecl,
 import Haskell.Hatchet.FiniteMaps (FiniteMap,
                                  lookupFM,
                                  mapFM,
-                                 toListFM,
-                                 listToFM)
+                                 toListFM)
 
-import Haskell.Hatchet.KindInference (KindEnv, 
-                                 kiAHsQualType)
-
-import Haskell.Hatchet.Rename   (bindOfId,
-                                 IdentTable)
+import Haskell.Hatchet.KindInference (KindEnv) 
 
 import Haskell.Hatchet.DependAnalysis (getBindGroups)
-
-import Maybe                    (fromMaybe)
-
-import Haskell.Hatchet.TypeUtils (aHsTypeSigToAssumps,
-                                 qualifyAssump)
 
 import Haskell.Hatchet.TypeSigs                 (SigEnv)
 
@@ -148,12 +123,12 @@ import Haskell.Hatchet.DeclsDepends (getDeclDeps)
 -- a TypeEnv maps identifier names to type schemes
 type TypeEnv = Env Scheme
 
-instance Types a => Types (AHsName, a) where
+instance Types a => Types (b, a) where
    apply s (x, y) = (x, apply s y)
    tv (_, y) = tv y 
 
-instance Types TypeEnv where
-   apply s = mapFM (\k e -> apply s e)
+instance (Ord k, Types a) => Types (FiniteMap k a) where
+   apply s = mapFM ( \ _ e -> apply s e)
    tv env = tv $ map snd $ toListFM env
 
 
