@@ -126,7 +126,6 @@ translateDt env (DataEntry im i _ args alts) =
                                    args im) alts)
                        derives
 
-
 -------------------------------------------------------------------------
 -- Translation of functions
 -------------------------------------------------------------------------
@@ -246,17 +245,17 @@ translatePattern env pat = case pat of
                  _ -> error ("problematic application pattern " ++ show pat)
       TupleTerm pats _ -> 
           HsPTuple $ map (translatePattern env) pats
-      TypedTerm p OfType _ty _ -> translatePattern env p 
+      TypedTerm _ InType _ _ -> error "translatePattern InType"
+      TypedTerm p _ _ty _ -> translatePattern env p 
                                  --the type is implicit
       --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
       AsPattern (VarDecl v ty _ _) p _ -> 
             let (c, UnQual i) = translateId env v $ simpleTypeScheme ty
                 hp = translatePattern env p
             in case c of 
-               LowerId ->  HsPAsPat i hp
+               LowerId -> HsPAsPat i hp
                _ -> error ("unexpected constructor as @-variable: " ++ show v)
       _ -> error ("translatePattern: unexpected pattern: " ++ show pat)
-
 
 -- | Translation of a program equation of a case term in HasCASL
 translateCaseProgEq :: Env -> ProgEq -> HsAlt
