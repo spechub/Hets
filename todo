@@ -6,10 +6,7 @@ Plan and priority list for CoFI tool activities
 Sonja (Till)
 ************************************************
 
-Haskell parser für XHaskell erweitern
 Diplom: Encoding for HasCASL in Isabelle/HOL(CF)
-
-Haskell modules: hiding, renaming
 
 ************************************************
 Jorina (Till)
@@ -198,6 +195,7 @@ HasCASL hat auch noch keine Mixfix- und Latex Ausgabe.
 Christian
 ************************************************
 
+Haskell modules: hiding, renaming
 
 - group the axioms according to their leading operation/predicate symbol,
   i.e. the f resp. the p in
