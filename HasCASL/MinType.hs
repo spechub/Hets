@@ -25,8 +25,9 @@ typeNub :: TypeMap -> (a -> (Type, Term)) -> [a] -> [a]
 typeNub tm f l = 
   case l of 
        [] -> []
-       x : xs -> (if any ( \ y -> comp (f x) (f y)) xs then [] else [x]) 
-                     ++ typeNub tm f xs
+       x : xs -> let rest = typeNub tm f xs in
+                 if any ( \ y -> comp (f x) $ f y) xs then rest
+                 else x : filter ( \ y -> not $ comp (f y) $ f x) rest 
   where
   comp :: (Type, Term) -> (Type, Term) -> Bool
   comp (ty1, t1) (ty2, t2) = 
