@@ -459,7 +459,6 @@ hetcatsOpts argv =
   let argv' = filter (not . isUni) argv
       isUni ('-':'-':'u':'n':'i':_) = True
       isUni _ = False
-      seq' x = seq x x
    in case (getOpt Permute options argv') of
         (opts,non_opts,[]) ->
             do flags <- checkFlags opts
@@ -531,7 +530,6 @@ noPerms = Permissions { readable = False
                       , executable = False
                       , searchable = False
                       }
-
 
 -- auxiliary functions: collect flags -- 
 
