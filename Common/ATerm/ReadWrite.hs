@@ -33,7 +33,7 @@ import Common.ATerm.AbstractSyntax
 -- added by KL
 import Char
 import List
-import Array
+import Data.Array
 import Data.FiniteMap
 import Common.SimpPretty
 --import Debug.Trace
@@ -546,12 +546,13 @@ deAbbrevAux (c:cs)	=  let i = base64Array ! c
 			   in seq r (i + 64*r)
 
 revBase64Array :: Array Int Char
-revBase64Array = array (0,63) $ zip integerList toBase64
-    where integerList :: [Int]
-	  integerList = [0..63]
+revBase64Array = listArray (0,63) toBase64
 
 base64Array :: Array Char Int
-base64Array = array ('+','z') $ zip toBase64 integerList
+base64Array = array ('+','z') toBase64pairs
+
+toBase64pairs :: [(Char,Int)]
+toBase64pairs =  zip toBase64 integerList
     where integerList :: [Int]
 	  integerList = [0..63]
 
