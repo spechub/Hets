@@ -130,7 +130,7 @@ instance PrettyPrint SPEC where
     printLatex0 ga (Union aa _) = fsep_latex $ intersperse' aa 
 	where intersperse' [] = [] 
 	      intersperse' (x:xs) =
-		  (printLatex0 ga x):
+		  (condBracesAnd printLatex0 sp_braces_latex ga x):
 		  map (\y -> hc_sty_plain_keyword "and" $$ 
 		       condBracesAnd printLatex0 sp_braces_latex ga y)
                       xs
@@ -147,7 +147,7 @@ instance PrettyPrint SPEC where
 			                  (condBracesGroupSpec printLatex0 
 					               sp_braces_latex ga aa))
     printLatex0 ga (Local_spec aa ab _) =
-	let aa' = condBracesWithin printLatex0 sp_braces_latex ga aa
+	let aa' = printLatex0 ga aa
 	    ab' = condBracesWithin printLatex0 sp_braces_latex ga ab
 	in (hang_latex (hc_sty_plain_keyword "local") 8 aa') $$ 
 	   (hang_latex (hc_sty_plain_keyword "within") 8 ab')
