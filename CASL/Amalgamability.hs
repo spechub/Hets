@@ -15,14 +15,12 @@ Portability :  portable
 
 TODO:
 
-* the whole algorithm
+* \comp_\tau and\/or \comp_0 are not computed correctly: see the 
+  FailAmalg example, where the amalgamability check should fail but
+  succeedes in step 2.
 
-* care needs to be taken when comparing DiagSorts and DiagEmbs coming
-  from the nodes that are sink's sources: all of these nodes should be treated
-  as one node, so the node parameter in DiagSort and DiagEmb should be
-  ignored in this case. A possible (?) solution would be to mark all
-  the DiagSorts coming from the sink sources with the same node, e.g. the node that
-  is the codomain of the first morphism in the sink.
+* the rest of the algorithm
+
 
 -}
 
@@ -85,7 +83,7 @@ instance PrettyPrint (Diagram CASLSign CASLMor) where
 
 -- | Compute the Sorts set -- a disjoint union of all the sets
 -- in the diagram.
-sorts :: Diagram CASLSign CASLMor -- ^ the diagram to get the sorts from
+sorts :: CASLDiag        -- ^ the diagram to get the sorts from
       -> [DiagSort]
 sorts diag = 
     let mkNodeSortPair n sort = (n, sort)
@@ -157,8 +155,24 @@ mergeEquivClasses rel tag1 tag2 | tag1 == tag2 = rel
     in map upd rel
     
 
+-- | Return true if there is an edge between srcNode and targetNode
+-- and the morphism with which it's labelled maps srcSort to targetSort
+isMorph :: CASLDiag
+	-> DiagSort
+	-> DiagSort
+	-> Bool
+isMorph diag (srcNode, srcSort) (targetNode, targetSort) = 
+    let checkEdges [] = False
+        checkEdges ((sn, tn, Morphism { sort_map = sm }) : edges) =
+	    if sn == srcNode && 
+	       tn == targetNode &&
+	       mapSort sm srcSort == targetSort 
+	       then True else checkEdges edges
+    in checkEdges (out diag srcNode)
+
+
 -- | Compute the simeq relation for given diagram.
-simeq :: Diagram CASLSign CASLMor -- ^ the diagram for which the relation should be created
+simeq :: CASLDiag  -- ^ the diagram for which the relation should be created
       -> EquivRel DiagSort
 -- ^ returns the relation represented as a list of equivalence
 -- classes (each represented as a list of diagram sorts)
@@ -168,17 +182,7 @@ simeq diag =
     -- denotes the equivalence class to which it belongs. All the pairs with
     -- equal second element denote elements of one equivalence class.
 
-    let -- isMorph: return true if there is an edge between srcNode and targetNode
-	-- and the morphism with which it's labelled maps srcSort to targetSort
-        isMorph (srcNode, srcSort) (targetNode, targetSort) = 
-	    let checkEdges [] = False
-                checkEdges ((sn, tn, Morphism { sort_map = sm }) : edges) =
-		    if sn == srcNode && 
-		       tn == targetNode &&
-		       mapSort sm srcSort == targetSort 
-		       then True else checkEdges edges
-	    in checkEdges (out diag srcNode)
-        mergeCond ds ds' = isMorph ds ds' || isMorph ds' ds
+    let mergeCond ds ds' = isMorph diag ds ds' || isMorph diag ds' ds
 
         -- compute the relation
 	rel = map (\ds -> (ds, ds)) (sorts diag)
@@ -226,6 +230,16 @@ subRelation ((elt : elts) : eqcls) sup =
 	    Just elt2 -> Just (elt, elt2)
 
 
+-- | Compute the set of sort embeddings defined in the diagram.
+embs :: CASLDiag
+     -> [DiagEmb]
+embs diag =
+    let embs' [] = []
+        embs' ((n, Sign {sortRel = sr}) : lNodes) = 
+	    (map (\(s1, s2) -> (n, s1, s2)) (toList sr)) ++ (embs' lNodes)
+    in embs' (labNodes diag)
+
+
 -- | Compute the set of sort embeddings (relations on sorts) defined
 -- in the source nodes of the sink.
 sinkEmbs :: CASLDiag        -- ^ the diagram
@@ -244,7 +258,8 @@ inRel :: Eq a
       -> a          -- ^ the second element
       -> Bool
 inRel [] _ _ = False
-inRel (eqc : eqcs) a b = 
+inRel (eqc : eqcs) a b | a == b = True
+		       | otherwise =
     case find (\x -> x == a) eqc of
          Nothing -> inRel eqcs a b
 	 Just _ -> case find (\x -> x == b) eqc of
@@ -335,7 +350,7 @@ leftCancellableClosure rel =
 
 -- | Compute the congruent closure of a relation on words with
 -- given \simeq relation on letters.
--- TODO: this should be applied until a fixpoint is reached
+-- This function should be applied to the relation until a fixpoint is reached.
 congruentClosure :: EquivRel DiagSort          -- ^ the simeq relation
 		 -> EquivRelTagged DiagEmbWord 
 		 -> EquivRelTagged DiagEmbWord
@@ -345,10 +360,10 @@ congruentClosure simeq rel =
 			     | otherwise =
 	    let -- iterateWord2
 	        iterateWord2 wtp1@(_, t1) rel pos | pos >= length rel = rel
-						| otherwise =
+						  | otherwise =
                     let -- iterateWord3
 		        iterateWord3 wtp1@(w1, _) wtp2 rel pos | pos >= length rel = rel
-						       | otherwise =
+							       | otherwise =
 			    let -- iterateWord4
 			        iterateWord4 wtp1@(w1, _) wtp2@(w2, _) wtp3@(w3, t3) rel pos | pos >= length rel = rel
 											     | otherwise =
@@ -357,13 +372,13 @@ congruentClosure simeq rel =
 					          else let ct1 = findTag rel (w3 ++ w1)
 							   ct2 = findTag rel (w4 ++ w2)
 						       in mergeEquivClasses rel ct1 ct2
-				    in iterateWord4 wtp1 wtp2 wtp3 rel (pos + 1)
+				    in iterateWord4 wtp1 wtp2 wtp3 rel' (pos + 1)
 
 			        wtp3@(w3, _) = rel !! pos
 				rel' = if inRel simeq (wordCod w1) (wordDom w3)
 				          then iterateWord4 wtp1 wtp2 wtp3 rel 0
 					  else rel
-			    in iterateWord3 wtp1 wtp2 rel (pos + 1)
+			    in iterateWord3 wtp1 wtp2 rel' (pos + 1)
 
 		        wtp2@(_, t2) = rel !! pos
 			rel' = if t1 /= t2 then rel
@@ -387,12 +402,13 @@ cong_tau diag sink st =
         domCodEqual w1 w2 = 
 	    -- we ignore the nodes form which the sorts come,
 	    -- as all the sink source nodes are considered to be one node
-	    let (_, sdom1) = wordDom w1
+	    -- TODO: ^ this is wrong
+	    {-let (_, sdom1) = wordDom w1
 		(_, scod1) = wordCod w1
 		(_, sdom2) = wordDom w2
 		(_, scod2) = wordCod w2
-	    in sdom1 == sdom2 && scod1 == scod2
-	    -- wordDom w1 == wordDom w2 && wordCod w1 == wordCod w2
+	    in sdom1 == sdom2 && scod1 == scod2-}
+	       wordDom w1 == wordDom w2 && wordCod w1 == wordCod w2
 	-- comp: the Comp rule works for words 1 and 2-letter long
 	-- with equal domains and codomains
         comp w1@[_] w2@[_, _] = domCodEqual w1 w2
@@ -400,7 +416,8 @@ cong_tau diag sink st =
 	comp _ _ = False
 	
         -- fixCongLc: apply Cong and Lc rules until a fixpoint is reached
-        fixCongLc rel = 
+	-- TODO: Lc seems redundant in this case
+        fixCongLc rel =
 	    let rel' = (leftCancellableClosure . congruentClosure st) rel
 	    in if rel == rel' then rel else fixCongLc rel'
 
@@ -413,26 +430,65 @@ cong_tau diag sink st =
     in taggedValsToEquivClasses rel''
 
 
+-- | Compute the cong_0 relation for given diagram.
+cong_0 :: CASLDiag
+       -> EquivRel DiagSort -- ^ the \simeq relation
+       -> EquivRel DiagEmbWord
+cong_0 diag simeq = 
+-- TODO: make the parts common with cong_tau global
+    let -- domCodEqual: check that domains and codomains of given words are equal
+        domCodEqual w1 w2 = 
+	       wordDom w1 == wordDom w2 && wordCod w1 == wordCod w2
+
+	-- diagRule: the Diag rule
+	diagRule [(n1, s11, s12)] [(n2, s21, s22)] =
+	    isMorph diag (n1, s11) (n2, s21) &&
+	    isMorph diag (n1, s12) (n2, s22)
+	diagRule _ _ = False
+
+	-- comp: the Comp rule works for words 1 and 2-letter long
+	-- with equal domains and codomains
+        comp w1@[_] w2@[_, _] = domCodEqual w1 w2
+	comp w1@[_, _] w2@[_] = domCodEqual w1 w2
+	comp _ _ = False
+	
+	-- compute the relation
+	em = embs diag
+	words = embWords em simeq
+	rel = map (\w -> (w, w)) words
+	rel' = mergeEquivClassesBy rel diagRule
+	rel'' = mergeEquivClassesBy rel' comp
+    in taggedValsToEquivClasses rel''
+
+
 -- | The amalgamability checking function for CASL.
 ensuresAmalgamability :: CASLDiag        -- ^ the diagram to be checked
 		      -> [LEdge CASLMor] -- ^ the sink
 		      -> Result Amalgamates
-ensuresAmalgamability diag sink = 
-    do let s = simeq diag
+ensuresAmalgamability diag' sink@((_, tn, _) : _) = 
+    do let diag = delNode tn diag'
+           s = simeq diag
 	   st = simeq_tau sink
-	   ct = cong_tau diag sink st
-       -- 1. Checking the  inclusion (*). If it doesn't hold, the specification is
+       -- 1. Check the inclusion (*). If it doesn't hold, the specification is
        -- incorrect.
-       --warning DontKnow (showPretty ct "") nullPos -- test
        --warning DontKnow ("sink: " ++ (showPretty sink "")) nullPos -- test
        --warning DontKnow ("diag: " ++ (showPretty diag "")) nullPos -- test
        case subRelation st s of
 	    Just (ns1, ns2) -> let getNodeSig _ [] = emptySign () -- this should never be the case
 				   getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
-				   lns = labNodes diag
+				   lns = labNodes diag'
 				   sortString1 = renderText Nothing (printText (snd ns1)) ++
 					     " in {" ++ renderText Nothing (printText (getNodeSig (fst ns1) lns)) ++ "}"
 				   sortString2 = renderText Nothing (printText (snd ns2)) ++
 					     " in {" ++ renderText Nothing (printText (getNodeSig (fst ns2) lns)) ++ "}"
 	                       in do return (No ("sorts " ++ sortString1 ++ " and " ++ sortString2))
-	    Nothing -> return DontKnow -- TODO
+	    Nothing -> do let ct = cong_tau diag' sink st
+			      c0 = cong_0 diag s
+			  -- 2. Check the simple case: \cong_0 \in \cong, so if \cong_\tau \in \cong_0 the
+			  -- specification is correct.
+			  --warning DontKnow ("cong_tau: " ++ (showPretty ct "")) nullPos -- test
+			  --warning DontKnow ("cong_0: " ++ (showPretty c0 "")) nullPos -- test
+		          case subRelation ct c0 of
+		               Nothing -> do return Yes
+			       Just _ -> return DontKnow -- TODO
+
