@@ -19,6 +19,7 @@ module Common.Lib.Graph (
 -- derived operations
    isEmpty,matchSome,matchThe,context,contextP,
    delNode,delNodes,delEdge,delEdges,
+   delLEdge,
    suc,pre,neighbors,out,inn,indeg,outdeg,deg,
    suc',pre',neighbors',out',inn',indeg',outdeg',deg',node',lab',labNode',
    noNodes,nodeRange,nodes,labNodes,edges,labEdges,
