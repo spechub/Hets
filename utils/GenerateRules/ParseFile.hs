@@ -1,23 +1,22 @@
 module ParseFile where
 
 import Parsec
+import ParseHeader
 
 type Modulename = String
-type Data   = String
+--type Data   = String
 type Import = String
 
-inputFile :: Parser (Modulename,[Data],[Import])
-inputFile = do many (comment <|> do {space;return ()})
-               string "module"
-               spaces
-               m <- identifier     
-               spaces
-	       (ds,is) <- dataOrImport ([],[])
-	       return (m,ds,is)
+inputFile :: Parser ([Data],[Import])
+inputFile = do (ds,is) <- dataOrImport ([],[])
+	       return (ds,is)
 
 dataOrImport :: ([Data],[Import]) -> Parser ([Data],[Import])
 dataOrImport (ds,is) = do try comment
                           dataOrImport (ds,is)
+                       <|>
+                       do m <- (try modulename)
+                          dataOrImport (ds,m:is)
                        <|>
                        do d <- (try dataType)
                           dataOrImport (d:ds,is)
@@ -31,6 +30,13 @@ dataOrImport (ds,is) = do try comment
 	               do eof
                           return (ds,is)
                
+modulename :: Parser Import
+modulename = do string "module"
+                spaces
+                m <- identifier
+                spaces
+                return m
+
 dataType :: Parser Data
 dataType = do string "data"
 	      spaces
@@ -39,7 +45,7 @@ dataType = do string "data"
               char '='
               return d 
 	      
-
+{-
 identifier :: Parser String
 identifier = do x <- upper
                 xs <- many (alphaNum <|> oneOf "_-.,")
@@ -53,13 +59,15 @@ comment = do string "{-"
           do string "--"
              manyTill anyChar (try newline)
 	     return ()
-
+-}
 importData :: Parser String
 importData = do string "import"
                 spaces 
-                mod <- try (string "Common.") <|> try (string "Syntax.") <|> (string "Logic.") 
+                qual <- option "" (try (do{string "qualified";spaces;return "qualified "})) 
                 d <- identifier
-                return (mod++d)
+                f <- option "" (try (do{spaces;b <- between (char '(') (char ')') (many1 (noneOf "()"));return ("("++b++")")}))
+                as <- option "" (try (do{spaces;string "as";spaces;c<-identifier;return (" as "++c)}))  
+                return (qual++d++f++as)
   
 
 
