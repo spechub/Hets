@@ -6,7 +6,8 @@ import List
 import Char
 
 -- convert all LATIN-1 symbol to ASCII representations
--- useful for generating lowlevel labels from identifiers
+--  useful for generating lowlevel labels from identifiers
+--  the names are the ones specified in the Unicode standard
 --
 toASCII :: String -> String
 toASCII []     = []
@@ -68,7 +69,6 @@ toASCII "\91"  = "_LeftSquareBracket_"
 toASCII "\92"  = "_ReverseSolidus_"
 toASCII "\93"  = "_RightSquareBracket_"
 toASCII "\94"  = "_Circumflex_"
-toASCII "\95"  = "_LowerLine_"
 toASCII "\96"  = "_GraveAccent_"
 toASCII "\123" = "_LeftCurlyBracket_"
 toASCII "\124" = "_VerticalLine_"
@@ -206,12 +206,18 @@ toASCII "\255" = "_LatinSmallLetterYWithDiaeresis_"
 toASCII [x]    = [x]
 toASCII l      = concat $ map (toASCII . (\x -> [x])) l
 
-singleton :: a -> [a]
-singleton x = [x]
-
+-- a list of all possible transscription strings
+--
 allTransscripts :: [String]
-allTransscripts = map (toASCII.singleton) ['\0'..'\255']
+allTransscripts = map (toASCII.(\x -> [x])) ['\0'..'\255']
 
+-- check to see if one of the transscriptions strings in the given list
+--  fits the beginning of a string
+--  if yes, return the corresponding normal LATIN-1 character as the new
+--  starting character of the string and drop the transscription from
+--  the beginning of the string
+--  if no, return the original string
+--
 checkOne :: String -> [String] -> Int -> String
 checkOne s [] idx    = s
 checkOne s (h:t) idx = if (h `isPrefixOf` s) then
@@ -219,9 +225,21 @@ checkOne s (h:t) idx = if (h `isPrefixOf` s) then
                        else
                          checkOne s t (idx+1)
 
+-- convert from ASCII with LATIN-1 transscriptions to LATIN-1
+--  runs checkOne with the complete transscriptions list as generatable
+--  by fromASCII, starting with the whole string, then dropping the
+--  first character after the check to iterate over the whole string
+--
 fromASCII :: String -> String
 fromASCII [] = []
 fromASCII s  = let
-                 res = checkOne s allTransscripts 0
+                 try = checkOne s allTransscripts 0
+                 res = if (length s>1) then
+                         if (take 2 s)=="__" then
+                           s
+                         else
+                           try
+                       else
+                         try
                in
                  (head res):(fromASCII $ tail res) 
