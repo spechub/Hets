@@ -60,7 +60,7 @@ import Haskell.Hatchet.SynConvert        (toAHsModule)
 import Haskell.Hatchet.Type              (assumpToPair)
 import Haskell.Hatchet.Utils             (getAModuleName)
 import Haskell.Hatchet.HsParsePostProcess (fixFunBindsInModule)
-import Haskell.Hatchet.HsSyn             (HsModule (..),
+import Haskell.Hatchet.HsSyn             (HsModule (..), HsDecl,
                                           Module (..))
 import Haskell.HatParser                 (HsDecls,
                                           hatParser)
@@ -71,15 +71,15 @@ import Common.PrettyPrint
 
 import Haskell.ExtHaskellCvrt            (cvrtHsModule)
 
-moduleInfoTc, hsDeclsTc, aHsDeclTc :: TyCon
+moduleInfoTc, hsDeclTc, aHsDeclTc :: TyCon
 moduleInfoTc   = mkTyCon "Haskell.Hatchet.MultiModuleBasics.ModuleInfo"
-hsDeclsTc      = mkTyCon "Haskell.HatParser.HsDecls"
+hsDeclTc       = mkTyCon "Haskell.Hatchet.HsSyn.HsDecl"
 aHsDeclTc      = mkTyCon "Haskell.Hatchet.AnnotatedHsSyn.AHsDecl"
 
 instance Typeable ModuleInfo where
     typeOf _ = mkAppTy moduleInfoTc []
-instance Typeable HsDecls where
-    typeOf _ = mkAppTy hsDeclsTc []
+instance Typeable HsDecl where
+    typeOf _ = mkAppTy hsDeclTc []
 instance Typeable AHsDecl where
     typeOf _ = mkAppTy aHsDeclTc []
 
