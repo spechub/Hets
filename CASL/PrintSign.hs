@@ -25,7 +25,7 @@ instance PrettyPrint OpType where
 instance PrettyPrint SymbType where
 	 printText0 ga (OpAsItemType ot) = printText0 ga ot
 	 printText0 ga (PredType pt)     = printList0 ga (space<>text timesS) pt
-         printText0 ga Sort              = text sortS
+         printText0 _ Sort              = text sortS
 
 instance PrettyPrint Symbol where
          printText0 ga (Symbol{symbId = sI, symbType = sT}) 
@@ -51,9 +51,9 @@ instance PrettyPrint Alternative where
          printText0 ga (Subsort sId _) = printText0 ga sId
 
 instance PrettyPrint GenKind where
-         printText0 ga Free      = ptext freeS <> space
-         printText0 ga Generated = ptext generatedS <> space
-         printText0 ga Loose     = empty
+         printText0 _ Free      = ptext freeS <> space
+         printText0 _ Generated = ptext generatedS <> space
+         printText0 _ Loose     = empty
         
 instance PrettyPrint VarDecl where
          printText0 ga (VarDecl{varId=vI, varSort=vS}) 
@@ -90,9 +90,9 @@ instance PrettyPrint SortItem where
 					doc <+> commaT_text ga xs)
 
 instance PrettyPrint BinOpAttr where
-	 printText0 ga Assoc = ptext assocS
-	 printText0 ga Comm  = ptext commS
-	 printText0 ga Idem  = ptext idemS
+	 printText0 _ Assoc = ptext assocS
+	 printText0 _ Comm  = ptext commS
+	 printText0 _ Idem  = ptext idemS
 
 instance PrettyPrint OpAttr where
          printText0 ga (BinOpAttr binOp) = printText0 ga binOp
@@ -111,10 +111,10 @@ instance PrettyPrint OpItem where
          printText0 ga (OpItem{opId=i,opType=oT,opAttrs=oAtLs,opDefn=mODef}) 
 	     = ptext opS <+> printText0 ga i <+>
 	       (case mODef of
-		  Nothing     -> colon <+> printText0 ga oT
+		  Nothing  -> colon <+> printText0 ga oT
 		                 <+> noPrint (null oAtLs) comma
 	                         <+> printList0 ga comma oAtLs
-		  Just opDefn -> printText0 ga opDefn)
+		  Just d   -> printText0 ga d)
 
 -- ist die Ausgabe richtig?
 instance PrettyPrint PredDefn where
@@ -133,8 +133,8 @@ instance PrettyPrint PredItem where
 				Nothing     -> empty)
 
 instance PrettyPrint TypeQualifier where
-         printText0 ga OfType = colon
-         printText0 ga AsType = ptext asS
+         printText0 _ OfType = colon
+         printText0 _ AsType = ptext asS
 
 instance PrettyPrint Term where
          printText0 ga (VarId i sId qual _) 
@@ -146,7 +146,7 @@ instance PrettyPrint Term where
 	       <+> printText0 ga sId
 		      )
 
-         printText0 ga (OpAppl id opT termLs qual _) 
+         printText0 ga (OpAppl _i opT termLs _qual _) 
              = parens (text opS <+> printText0 ga opT) 
                <> parens (commaT_text ga termLs) 
          printText0 ga (Typed term tQual sId _) 
@@ -158,22 +158,22 @@ instance PrettyPrint Term where
 	       <+> text elseS <+> printText0 ga t2
 
 instance PrettyPrint Quantifier where
-         printText0 ga Forall = ptext forallS
-         printText0 ga Exists = ptext existsS
-	 printText0 ga ExistsUnique = ptext (existsS++exMark)
+         printText0 _ Forall = ptext forallS
+         printText0 _ Exists = ptext existsS
+	 printText0 _ ExistsUnique = ptext (existsS++exMark)
 
 instance PrettyPrint LogOp where
-         printText0 ga NotOp   = ptext notS
-         printText0 ga AndOp   = ptext lAnd
-         printText0 ga OrOp    = ptext lOr
-         printText0 ga ImplOp  = ptext implS
-         printText0 ga EquivOp = ptext equivS
-         printText0 ga IfOp    = ptext ifS
+         printText0 _ NotOp   = ptext notS
+         printText0 _ AndOp   = ptext lAnd
+         printText0 _ OrOp    = ptext lOr
+         printText0 _ ImplOp  = ptext implS
+         printText0 _ EquivOp = ptext equivS
+         printText0 _ IfOp    = ptext ifS
 
 instance PrettyPrint PolyOp where
-         printText0 ga DefOp     = ptext defS
-         printText0 ga EqualOp   = ptext equalS
-         printText0 ga ExEqualOp = ptext exEqual
+         printText0 _ DefOp     = ptext defS
+         printText0 _ EqualOp   = ptext equalS
+         printText0 _ ExEqualOp = ptext exEqual
 
 instance PrettyPrint Formula where
  	 printText0 ga (Quantified quan vdLs form _) 
@@ -184,14 +184,14 @@ instance PrettyPrint Formula where
               = printList0 ga (printText0 ga logOp<>space) formLs 
 	 printText0 ga (TermTest polyOp termLs _)
 	     = printList0 ga (printText0 ga polyOp<>space) termLs
-         printText0 ga (PredAppl i pT termLs qual _)
+         printText0 ga (PredAppl i pT termLs _qual _)
               = parens (text predS <+> printText0 ga i <+> colon 
                         <+> crossT_text ga pT)
                 <+> parens (commaT_text ga termLs)
          printText0 ga (ElemTest term sId _) 
  	     = printText0 ga term <+> text inS <+> printText0 ga sId
-         printText0 ga (TrueAtom _)  = ptext trueS
-         printText0 ga (FalseAtom _) = ptext falseS
+         printText0 _ (TrueAtom _)  = ptext trueS
+         printText0 _ (FalseAtom _) = ptext falseS
          printText0 ga (AnnFormula anForm) = printText0 ga anForm
 
 instance PrettyPrint SigItem where
@@ -211,9 +211,9 @@ instance PrettyPrint RawSymbol where
 	     = printText0 ga kind <+> colon <+> printText0 ga i
 
 instance PrettyPrint Kind where
-         printText0 ga SortKind = ptext sortS -- ???
-         printText0 ga FunKind  = empty -- ???
-         printText0 ga PredKind = ptext predS -- ???
+         printText0 _ SortKind = ptext sortS -- ???
+         printText0 _ FunKind  = empty -- ???
+         printText0 _ PredKind = ptext predS -- ???
         
 instance PrettyPrint Axiom where
          printText0 ga (AxiomDecl vDecLs form _ ) 
