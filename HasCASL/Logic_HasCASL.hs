@@ -28,7 +28,6 @@ import HasCASL.Morphism
 import HasCASL.ATC_HasCASL
 import HasCASL.LaTeX_HasCASL
 import HasCASL.SymbolMapAnalysis
-import HasCASL.MapTerm
 import HasCASL.Sublogic
 import Logic.Logic
 import Data.Dynamic
@@ -84,11 +83,11 @@ instance Typeable HasCASL_Sublogics where
 -- abstract syntax, parsing (and printing)
 
 instance Syntax HasCASL BasicSpec
-		SymbItems SymbMapItems
+                SymbItems SymbMapItems
       where 
          parse_basic_spec HasCASL = Just basicSpec
-	 parse_symb_items HasCASL = Just symbItems
-	 parse_symb_map_items HasCASL = Just symbMapItems
+         parse_symb_items HasCASL = Just symbItems
+         parse_symb_map_items HasCASL = Just symbMapItems
 
 instance Category HasCASL Env Morphism where 
     ide HasCASL e = ideMor e
