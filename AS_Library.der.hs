@@ -57,10 +57,8 @@ data LIB_ITEM = Spec_defn AS_Structured.SPEC_NAME
 
 	      | Download_items  LIB_NAME [ITEM_NAME_OR_MAP] [Pos] 
 		-- pos: "from","get",commas, opt "end"
-	      | Logic String String [Pos]
-	      --      ^ logic ^
-	      --              | opt sub_logic
-		-- pos:  "logic", first string, snd string
+	      | Logic AS_Structured.Logic_name [Pos]
+		-- pos:  "logic", Logic_name
 		deriving (Show,Eq)
 
 data ITEM_NAME_OR_MAP = Item_name ITEM_NAME 

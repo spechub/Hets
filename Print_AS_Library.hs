@@ -70,10 +70,9 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 	let aa' = printText0 ga aa
 	    ab' = fcat $ punctuate (comma<>space) $ map (printText0 ga) ab
 	in hang (ptext "from" <+> aa' <+> ptext "get") 4 ab'
-    printText0 ga (AS_Library.Logic aa ab _) =
+    printText0 ga (AS_Library.Logic aa _) =
 	let aa' = printText0 ga aa
-	    ab' = printText0 ga ab
-	in ptext "logic" <+> aa' <+> ab'
+	in ptext "logic" <+> aa' 
 
 instance PrettyPrint ITEM_NAME_OR_MAP where
     printText0 ga (Item_name aa) =

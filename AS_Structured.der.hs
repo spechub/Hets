@@ -42,7 +42,10 @@ data SPEC = Basic_spec G_basic_spec
 	    -- pos: "{","}"
           | Spec_inst SPEC_NAME [Annoted FIT_ARG]
 	    -- pos: many of "[","]"; one balanced pair per FIT_ARG
+	  | Qualified_spec Logic_name (Annoted SPEC) [Pos]
+	    -- pos: "logic", Logic_name,":"
 	    deriving (Show,Eq)
+
 
 {- Renaming and Hiding can be performend with intermediate Logic
    mappings / Logic projections.
@@ -67,12 +70,12 @@ data RESTRICTION = Hidden [G_hiding] [Pos]
 		   deriving (Show,Eq)
 
 data G_mapping = G_symb_map G_symb_map_items_list
-	       | G_logic_translation String String String [Pos]
+	       | G_logic_translation String Logic_name Logic_name [Pos]
 		 -- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
 		 deriving (Show,Eq)
 
 data G_hiding = G_symb_list G_symb_items_list
-	       | G_logic_projection String String String [Pos]
+	       | G_logic_projection String Logic_name Logic_name [Pos]
 		 -- pos: "logic",<projection>,":",<src-logic>,"->",<targ-logic>
 		 deriving (Show,Eq)
 
@@ -108,4 +111,7 @@ data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) [Pos]
 
 type SPEC_NAME = SIMPLE_ID
 type VIEW_NAME = SIMPLE_ID
+
+data Logic_name = Logic_name String String
+		  deriving (Show,Eq)
 

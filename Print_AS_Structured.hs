@@ -60,6 +60,10 @@ instance PrettyPrint SPEC where
 	let aa' = printText0 ga aa
 	    ab' = printText0_fit_arg_list ga ab
 	in hang aa' 4 ab'
+    printText0 ga (Qualified_spec ln asp _) =
+	ptext "logic" <+> (printText0 ga ln) <> colon $$ (printText0 ga asp)
+
+     
 
 instance PrettyPrint RENAMING where
     printText0 ga (Renaming aa _) =
@@ -118,16 +122,16 @@ instance PrettyPrint SPEC_DEFN where
 
 instance PrettyPrint G_mapping where
     printText0 ga (G_symb_map gsmil) = printText0 ga gsmil
-    printText0 ga (G_logic_translation enc slog tlog _) =
+    printText0 ga (G_logic_translation enc sln tln _) =
 	ptext "logic" {- TODO: implement right syntax. -}
-		 -- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
+	-- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
 
 
 instance PrettyPrint G_hiding where
     printText0 ga (G_symb_list gsil) = printText0 ga gsil
-    printText0 ga (G_logic_projection enc slog tlog _) = 
+    printText0 ga (G_logic_projection enc sln tln _) = 
 	ptext "logic" {- TODO: implement right syntax. -}
-		 -- pos: "logic",<projection>,":",<src-logic>,"->",<targ-logic>
+	-- pos: "logic",<projection>,":",<src-logic>,"->",<targ-logic>
 
 instance PrettyPrint GENERICITY where
     printText0 ga (Genericity aa ab _) =
@@ -143,7 +147,7 @@ instance PrettyPrint PARAMS where
 instance PrettyPrint IMPORTED where
     printText0 ga (Imported aa) =
 	if null aa then empty 
-	else ptext "given" <+> (fcat $ punctuate (comma <> space) $ 
+	else ptext "given" <+> (fsep $ punctuate comma $ 
 				         map (printText0 ga) aa)
 
 printText0_fit_arg_list ga [] = empty
@@ -158,10 +162,8 @@ instance PrettyPrint FIT_ARG where
                          {- fcat $ punctuate (comma <> space) $ 
 	                     map (print_symb_map_items_text lid ga) ab-}
 	    null' = case ab of 
-		    G_symb_map_items_list lid sis -> null sis
+		    G_symb_map_items_list _ sis -> null sis
 			-- null_symb_map_items_list lid sis
-		    _ -> error $ "somthing very strange happend "++
-			         "to G_symb_map_items_list"
 	in aa' <+> if null' then empty else hang (ptext "fit") 4 ab'
     printText0 ga (Fit_view aa ab _ ad) =
 	let aa' = printText0 ga aa
@@ -186,4 +188,10 @@ instance PrettyPrint VIEW_TYPE where
 	in aa' <+> ptext "to" <+> ab'
 
 
+
+instance PrettyPrint Logic_name where
+    printText0 ga (Logic_name log slog) =
+       ptext "log" <> (if null slog then empty 
+		       else ptext "." <> ptext "slog")
+		  -- pos: Logic,opt (".", Sublogic)
 
