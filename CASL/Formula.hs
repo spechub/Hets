@@ -1,3 +1,19 @@
+-----------------------------------------------------------------------------
+-- 
+-- Module      :  Formula
+-- Copyright   :  (c) Christian Maeder 2002
+-- License     :  
+-- 
+-- Maintainer  :  maeder@tzi.de
+-- Stability   :  experimental 
+-- Portability :  ghc-5.02.3 / Haskell98 compatible
+--
+-- $Header$
+--
+-- Description : parse terms and formulae
+--               
+-----------------------------------------------------------------------------
+
 module Formula where
 
 import Id
@@ -16,14 +32,13 @@ oParenT = asKey oParenS
 cParenT = asKey cParenS
 quMarkT = asKey quMark
 
-dotT = try(asKey dotS <|> asKey middleDotS) <?> "dot"
+dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
 crossT = try(asKey prodS <|> asKey timesS) <?> "cross"
 
 simpleTerm :: GenParser Char st TERM
 simpleTerm = fmap Mixfix_token (makeToken(scanFloat <|> scanString 
 		       <|>  scanQuotedChar <|> scanDotWords <|> scanWords 
 		       <|>  scanSigns <|> string place <?> "id/literal" )) 
-
 
 startTerm :: GenParser Char st TERM
 startTerm = parenTerm <|> braceTerm <|> bracketTerm <|> simpleTerm
@@ -64,7 +79,6 @@ terms :: GenParser Char st ([TERM], [Pos])
 terms = do { (ts, ps) <- term `separatedBy` commaT
            ; return (ts, map tokPos ps)
            }
-
 
 qualVarName o = do { v <- asKey varS
 		   ; i <- varId
@@ -180,14 +194,42 @@ qualPredName o = do { v <- asKey predS
 
 parenFormula = do { o <- oParenT
 		  ; qualPredName (tokPos o) 
-		    <|> do { f <- formula
-			   ; c <- cParenT
-		           ; return (updFormulaPos (tokPos o) (tokPos c) f)
-			   }
-		  }
+		    <|> 
+		    do { l <- (qualVarName (tokPos o) <|> qualOpName (tokPos o)) 
+		         <:> many1 restTerm
+		       ;  return (Mixfix_formula (Mixfix_term l))
+		       }
+		    <|>
+		    do { f <- formula
+		       ; case f of { Mixfix_formula t -> 
+				     do { c <- cParenT
+					; l <- many restTerm
+					; let tt = Mixfix_parenthesized [t]
+					           [tokPos o, tokPos c]
+					      ft = if null l then tt 
+					           else Mixfix_term (tt:l)
+					  in return (Mixfix_formula ft) 
+					}
+				     <|> 
+				     do { c <- commaT
+					; (ts, ps) <- term `separatedBy` commaT
+					; q <- cParenT
+					; l <- many1 restTerm
+					; let tt = Mixfix_parenthesized (t:ts)
+						     (map tokPos (o:c:ps++[q]))
+					  in return (Mixfix_formula 
+						       (Mixfix_term (tt:l)))
+					}
+				   ; _ -> do { c <- cParenT
+					     ; return (updFormulaPos 
+						       (tokPos o) (tokPos c) f)
+					     }
+				   }
+		       }
+		    }
 
 termFormula = do { t <- term
-		 ; do { e <- asKey exEqual
+		 ; do { e <- makeToken (try (string exEqual))
 		      ; r <- term 
 		      ; return (Existl_equation t r [tokPos e])
 		      }

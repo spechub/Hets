@@ -117,18 +117,16 @@ parseId = do { l <- start
 -- ----------------------------------------------
 
 -- at least some no-bracket-signs should be disallowed for sorts
+-- obsolete isSortId (t) =  tokStr t `notElem` non_sort_signs
 
-isSortId (t) =  tokStr t `notElem` non_sort_signs
-
--- sortIds are Ids without places, but possibly compound ids
--- only (the above) simple ids are taken here (brackets/braces are illegal) 
-sortId = do { s <- sid `checkWith` isSortId
+-- sortIds are words, but possibly compound ids
+sortId = do { s <- makeToken scanWords
 	    ; (c, p) <- option ([], []) comps
 	    ; return (Id [s] c p)
 	    }
 
 -- ----------------------------------------------
--- SORT Ids
+-- VAR Ids
 -- ----------------------------------------------
--- no compound ids (just a token) 
-varId = sid
+-- no compound ids (just a word) 
+varId = makeToken scanWords

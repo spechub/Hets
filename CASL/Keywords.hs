@@ -38,12 +38,12 @@ non_sort_signs = [colonS, equalS, lessS, prodS, timesS,
 -- ----------------------------------------------
 
 dotS = "."
-middleDotS = "\183"
+cDot = "\183"
 barS = "|"
 mapsTo = "|->"
 defnS = "::="
-casl_reserved_ops = [colonS, colonS++quMark, defnS, dotS, middleDotS, 
-		     barS, mapsTo]
+pColon = colonS++quMark
+casl_reserved_ops = [colonS, pColon, defnS, dotS, cDot, barS, mapsTo]
 
 equalS = "="
 exEqual = "=e="  -- unusual keyword 

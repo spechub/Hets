@@ -1,11 +1,12 @@
 (pred y : bb)
 (pred y : bb*bb)
 a =e=< b
+a #=e= b
 exists1 (predy :: bb) 
 exists predy : bb . a 
 exists! a: v . x
 exists!a:v.x
-exists! # :v.x
+exists! a :v.x
 forall a: v . x
 a if b
 def x
@@ -17,7 +18,7 @@ a=>b
 a<=>b
 true
 false
-b in#
+b in s
 a =e= b 
 (a = b)
 a=>b=>c=>d
