@@ -238,24 +238,26 @@ iterStates ga ty terms =
 					    LambdaTerm newDecls part tt ps)
 	                      self (tail terms) 
 	               Nothing -> return () 
-	    CaseTerm hd (ProgEq pat e1 pps : _) ps -> 
+	    CaseTerm hd eqs ps -> 
  		do let (mtt, e2) = runState (resolveAny ga hd) e
-                       (frst, e3) = runState 
-		            (resolveAny ga e1) e2
+                       ((_,rTyp,newEqs), e3) = runState 
+		            (resolveCaseEqs ga (case mtt of
+						Nothing -> Nothing
+						Just (tyP, _) -> Just tyP)
+			     Nothing eqs) e2
  	           put (e3, pm)			       
-		   case (mtt, frst)  of 
-	               (Just (_, tt), Just (typ, te)) ->
-	                   do nextState ga (Just typ, 
-					    CaseTerm tt [ProgEq pat te pps] ps)
+		   case mtt of 
+	               Just (_, tt) ->
+	                   do nextState ga (rTyp, CaseTerm tt newEqs ps)
 	                      self (tail terms) 
 	               _ -> return ()
 	    LetTerm eqs hd ps ->
-		do let (mtt, e2) = runState 
-		            (resolveAny ga hd) e
-	           put (e2, pm)			       
+		do let (newEqs, e1) = runState (resolveLetEqs ga eqs) e
+		       (mtt, e2) = runState (resolveAny ga hd) e1
+	           put (e2 {assumps = as}, pm)			       
 		   case mtt of 
 		       Just (typq, tt) -> 
-	                   do nextState ga (Just typq, LetTerm eqs tt ps)
+	                   do nextState ga (Just typq, LetTerm newEqs tt ps)
                               self (tail terms)
 		       Nothing -> return ()
 	    t@(TermToken _) -> do nextState ga (Nothing, t)
@@ -330,6 +332,61 @@ resolveAny ga trm =
     do tvar <- toEnvState freshVar
        resolve ga (TypeName tvar star 1, trm)
 
+resolveCaseEq :: GlobalAnnos -> (Maybe Type) -> (Maybe Type) -> ProgEq -> 
+		 State Env (Maybe Type, Maybe Type, Maybe ProgEq)
+resolveCaseEq ga mTyPat mTyTrm (ProgEq p t ps) = 
+    do mtp <- case mTyPat of Just ty -> resolvePat ga (ty, p)
+			     Nothing -> resolvePattern ga p
+       case mtp of 
+           Nothing -> return (mTyPat, mTyTrm, Nothing)
+	   Just (newTyPat, newP) -> do
+	        as <- gets assumps 
+		mapM addVarDecl $ extractBindings newP 
+	        mtt <- case mTyTrm of Just ty -> resolve ga (ty, t)
+				      Nothing -> resolveAny ga t 
+		putAssumps as 
+		case mtt of 
+		    Nothing -> return (Just newTyPat, mTyTrm, Nothing)
+	            Just (newTyTrm, newT) -> 
+			return (Just newTyPat, Just newTyTrm, Just 
+			       $ ProgEq newP newT ps)
+
+resolveCaseEqs :: GlobalAnnos -> (Maybe Type) -> (Maybe Type) -> [ProgEq] -> 
+		 State Env (Maybe Type, Maybe Type, [ProgEq])
+resolveCaseEqs _ mTyPat mTyTrm [] = return (mTyPat, mTyTrm, [])
+resolveCaseEqs ga mTyPat mTyTrm (eq:rt) = 
+    do (newTyPat, newTyTrm, mEq) <- resolveCaseEq ga mTyPat mTyTrm eq
+       (lastTyPat, lastTyTrm, eqs) <- resolveCaseEqs ga newTyPat newTyTrm rt
+       return (lastTyPat, lastTyTrm, case mEq of 
+	       Nothing -> eqs
+	       Just newEq -> newEq : eqs)
+
+resolveLetEqs :: GlobalAnnos -> [ProgEq] -> State Env [ProgEq]
+resolveLetEqs _ [] = return []
+resolveLetEqs ga (ProgEq pat trm ps : rt) = 
+    do mPat <- resolvePattern ga pat
+       case mPat of 
+	   Nothing -> do resolveAny ga trm
+			 resolveLetEqs ga rt
+	   Just (ty, newPat) -> do 
+	       as <- gets assumps
+	       mapM addVarDecl $ extractBindings newPat
+	       mTrm <- resolve ga (ty, trm)
+	       case mTrm of
+	           Nothing -> resolveLetEqs ga rt 
+		   Just (tyTrm, newTrm) -> do 
+		       putAssumps as
+		       e <- get
+		       let ((_, lastPat), (c, _, ds)) = 
+			       runState(specializePatVars
+				    (typeMap e) (tyTrm, newPat)) 
+				       (counter e, Map.empty, [])
+		       put e { counter = c }
+		       addDiags ds
+		       mapM addVarDecl $ extractBindings lastPat
+		       eqs <- resolveLetEqs ga rt 
+		       return (ProgEq lastPat newTrm ps : eqs)
+
 -- ---------------------------------
 -- patterns
 -- ---------------------------------
@@ -354,7 +411,7 @@ patToToken pat =
 patFromState :: PState Pattern -> Pattern
 patFromState p =
     let r@(Id ts _ _)= ruleId p
-        sc@(TypeScheme _ (_ :=> _ty) _) = ruleScheme p
+        sc@(TypeScheme _ (_ :=> ty) _) = ruleScheme p
         ar = reverse $ ruleArgs p
 	qs = reverse $ posList p
     in if  r == inId 
@@ -372,7 +429,10 @@ patFromState p =
 	        if null $ tail ts then error "patFromState"
 	        else PatternVar (VarDecl (Id [head $ tail ts] [] []) 
 				 (ruleType p) Other qs)
-	    else PatternConstr (InstOpId (setIdePos r ar qs) [] []) sc ar qs
+	    else let newI = setIdePos r ar qs in 
+		     if null ar && isVar p then PatternVar 
+			    $ VarDecl newI ty Other []
+	    else PatternConstr (InstOpId newI [] []) sc ar qs
 
 initialPatState :: Assumps -> Index -> State Int [PState a]
 initialPatState as i = 
