@@ -68,7 +68,7 @@ instance Typeable CSPAddMorphism where
   typeOf _ = mkTyConApp morTc []
 
 -- dummy instances, need to be elaborated!
-instance PrettyPrint CSPAddSign where
-instance PrettyPrint CSPAddMorphism where
-instance PrintLaTeX CSPAddSign where
-instance PrintLaTeX CSPAddMorphism where
+instance PrettyPrint CSPAddSign 
+instance PrettyPrint CSPAddMorphism
+instance PrintLaTeX CSPAddSign
+instance PrintLaTeX CSPAddMorphism
