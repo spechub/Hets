@@ -35,14 +35,14 @@ instance Language CASL where  -- default definition is okay
 instance Category CASL Sign Morphism  
     where
          -- ide :: id -> object -> morphism
-	 ide CASL sigma = fun_err "ide" {-Morphism { msource = sigma,
-                                     mtarget = sigma,
-                                     sort_map = -}
+	 ide CASL sigma = Morphism { msource = sigma,
+                                     mtarget = sigma
+                                   }
          -- o :: id -> morphism -> morphism -> Maybe morphism
-	 comp CASL _ _ = fun_err "comp"
+	 comp CASL sigma1 sigma2 = Just sigma1 -- ???
          -- dom, cod :: id -> morphism -> object
-	 dom CASL _ = fun_err "dom"
-	 cod CASL _ = fun_err "cod"
+	 dom CASL _ = emptySign
+	 cod CASL _ = emptySign
          -- legal_obj :: id -> object -> Bool
 	 legal_obj CASL _ = fun_err "legall_obj"
          -- legal_mor :: id -> morphism -> Bool
@@ -93,13 +93,14 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
          
          -- add_sign :: id -> Sign -> Sign -> Sign      
          empty_signature CASL = emptySign
-         -- signature_union :: id -> Sign -> Sign -> Result Sign
+         signature_union CASL sigma1 sigma2 = return sigma1 -- ??? incorrect
          -- final_union :: id -> Sign -> Sign -> Result Sign
          is_subsig CASL = Static.isSubSig
+         cogenerated_sign CASL rsys sigma = return (ide CASL sigma)
+         generated_sign CASL rsys sigma = return (ide CASL sigma)
          -- generated_sign, cogenerated_sign :: id -> [RawSymbol]
          --                -> Sign -> Result Morphism
-         -- induced_from_morphism :: id -> EndoMap RawSymbol -> Sign
-         --               -> Result Morphism
+         induced_from_morphism CASL rmap sigma = return (ide CASL sigma) -- ???
          -- induced_from_to_morphism :: id -> EndoMap RawSymbol
          --               -> Sign -> Sign -> Result Morphism
          -- extend_morphism :: id -> Sign -> Morphism -> Sign -> Sign

@@ -66,6 +66,7 @@ data DGLinkType = LocalDef
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
 
+
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
               | DGLocal | DGClosed 
@@ -102,6 +103,8 @@ type LibEntry = (GlobalEnv,DGraph,GlobalAnnos)
 
 type LibEnv = FiniteMap LIB_NAME LibEntry
 
+emptyLibEnv :: LibEnv
+emptyLibEnv = emptyFM
 
 get_dgn_name :: DGNode -> Maybe SIMPLE_ID
 get_dgn_name (DGNode (Just name) _ _ _) = Just name

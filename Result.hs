@@ -36,6 +36,16 @@ instance Monad Result where
      where Result errs2 y = f x
   fail s = fatal_error s nullPos
 
+ioBind :: IO(Result a) -> (a -> IO(Result b)) -> IO(Result b)
+x `ioBind` f = do
+  res <- x
+  case res of
+    Result errs Nothing -> return (Result errs Nothing)
+    Result errs1 (Just x) -> do
+      Result errs2 y <- f x
+      return (Result (errs1++errs2) y)
+
+
 fatal_error :: String -> Pos -> Result a
 fatal_error s p = Result [Diag FatalError s p] Nothing  
 

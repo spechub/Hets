@@ -39,8 +39,13 @@
       does signature+comorphism suffice, such that c(local env)\subseteq sig?
     if no: this means that only closed specs may be translated
 
+   Revealings wihout translations: just one arrow
 
    Pushouts: only admissible within one logic?
+
+   Optimizations:
+   Union nodes can be extended by a basic spec directly no new node needed)
+   Also: free, cofree nodes
 -}
 
 
@@ -69,10 +74,11 @@ s1 `disjoint` s2 = s1 `intersect` s2 == emptySet
 
 domFM m = mkSet (keysFM m)
 
-ana_SPEC :: GlobalAnnos -> GlobalEnv -> DGraph -> NodeSig -> SPEC
+ana_SPEC :: GlobalAnnos -> GlobalEnv -> DGraph -> NodeSig 
+              -> Maybe SIMPLE_ID -> SPEC
               -> Result (NodeSig,DGraph)
 
-ana_SPEC gannos genv dg nsig sp = 
+ana_SPEC gannos genv dg nsig name sp = 
 
   case sp of
 
@@ -84,10 +90,11 @@ ana_SPEC gannos genv dg nsig sp =
                   (basic_analysis lid)
          (sigma_local, sigma_complete, ax) <- b (bspec,sigma,gannos) 
          let node_contents = DGNode {
+               dgn_name = name,
                dgn_sign = G_sign lid sigma_local, -- only the delta
                dgn_sens = G_l_sentence lid ax,
                dgn_origin = DGBasic }
-             [node] = newNodes 1 dg
+             [node] = newNodes 0 dg
              dg' = insNode (node,node_contents) dg
              link = DGLink {
                       dgl_morphism = undefined, -- where to get it from ???
@@ -96,11 +103,11 @@ ana_SPEC gannos genv dg nsig sp =
              dg'' = case nsig of
                       EmptyNode _ -> dg'
                       NodeSig (n,_) -> insEdge (n,node,link) dg'
-         return (NodeSig (node,G_sign lid sigma_complete),dg')
+         return (NodeSig (node,G_sign lid sigma_complete),dg'')
 
     Translation asp ren ->
      do let sp = item asp
-        (nsig',dg') <- ana_SPEC gannos genv dg nsig sp
+        (nsig',dg') <- ana_SPEC gannos genv dg nsig Nothing sp
         n' <- maybeToResult nullPos "Translation of empty spec" (getNode nsig')
         mor <- ana_RENAMING dg (getSig nsig') ren
         -- ??? check that mor is identity on local env
@@ -108,10 +115,11 @@ ana_SPEC gannos genv dg nsig sp =
              -- ??? too simplistic for non-comorphism inter-logic translations 
         G_sign lid' sigma' <- return gsigma'
         let node_contents = DGNode {
+              dgn_name = name,
               dgn_sign = G_sign lid' (empty_signature lid'), -- delta is empty
               dgn_sens = G_l_sentence lid' [],
               dgn_origin = DGTranslation }
-            [node] = newNodes 1 dg'
+            [node] = newNodes 0 dg'
             link = DGLink {
               dgl_morphism = mor,
               dgl_type = GlobalDef,
@@ -122,7 +130,7 @@ ana_SPEC gannos genv dg nsig sp =
       
     Reduction asp restr ->
      do let sp = item asp
-        (nsig',dg') <- ana_SPEC gannos genv dg nsig sp
+        (nsig',dg') <- ana_SPEC gannos genv dg nsig Nothing sp
         let gsigma = getSig nsig
             gsigma' = getSig nsig'
         n' <- maybeToResult nullPos "Reduction of empty spec" (getNode nsig')
@@ -135,10 +143,11 @@ ana_SPEC gannos genv dg nsig sp =
              -- ??? too simplistic for non-comorphism inter-logic reductions 
              G_sign lid' sigma' <- return gsigma'
              let node_contents = DGNode {
+                   dgn_name = name,
                    dgn_sign = G_sign lid' (empty_signature lid'), 
                    dgn_sens = G_l_sentence lid' [],
                    dgn_origin = DGHiding }
-                 [node] = newNodes 1 dg'
+                 [node] = newNodes 0 dg'
                  link = DGLink {
                     dgl_morphism = hmor,
                     dgl_type = HidingDef,
@@ -152,8 +161,9 @@ ana_SPEC gannos genv dg nsig sp =
              -- ??? too simplistic for non-comorphism inter-logic reductions 
              G_sign lid1 sigma1 <- return gsigma1
              G_sign lid'' sigma'' <- return gsigma''
-             let [node1,node''] = newNodes 2 dg'
+             let [node1,node''] = newNodes 1 dg'
                  node_contents1 = DGNode {
+                   dgn_name = Nothing,
                    dgn_sign = G_sign lid1 (empty_signature lid1),
                    dgn_sens = G_l_sentence lid1 [],
                    dgn_origin = DGRevealing }
@@ -162,6 +172,7 @@ ana_SPEC gannos genv dg nsig sp =
                    dgl_type = HidingDef,
                    dgl_origin = DGRevealing }
                  node_contents'' = DGNode {
+                  dgn_name = name,
                    dgn_sign = G_sign lid'' (empty_signature lid''),
                    dgn_sens = G_l_sentence lid'' [],
                    dgn_origin = DGRevealTranslation }
@@ -181,7 +192,7 @@ ana_SPEC gannos genv dg nsig sp =
      do let sps = map item asps
         (nsigs,dg') <- let ana r sp = do
                             (nsigs,dg) <- r
-                            (nsig,dg1) <- ana_SPEC gannos genv dg nsig sp
+                            (nsig,dg1) <- ana_SPEC gannos genv dg nsig Nothing sp
                             return (nsig:nsigs,dg1)
                       in foldl ana (return ([],dg)) sps
         G_sign lid' sigma' <- return (getSig (head nsigs))
@@ -195,10 +206,11 @@ ana_SPEC gannos genv dg nsig sp =
                              signature_union lid' s1' s2
                       in foldl sig_union (return sigma') sigmas
         let node_contents = DGNode {
+              dgn_name = name,
               dgn_sign = G_sign lid' (empty_signature lid'), 
               dgn_sens = G_l_sentence lid' [],
               dgn_origin = DGUnion }
-            [node] = newNodes 1 dg'
+            [node] = newNodes 0 dg'
             link = DGLink {
                dgl_morphism = undefined, -- ??? how to get it?
                dgl_type = GlobalDef,
@@ -207,13 +219,14 @@ ana_SPEC gannos genv dg nsig sp =
                 in (NodeSig(node,G_sign lid' big_sigma),
                     foldl insE (insNode (node,node_contents) dg') nodes))
 
-
+    Extension [] pos -> return (nsig,dg)
     Extension asps pos ->
-     foldl ana (return (nsig,dg)) (map item asps)
+     foldl ana (return (nsig,dg)) namedSps
      where
-     ana res sp = do
+     namedSps = zip (map (\_ -> Nothing) (tail asps) ++ [name]) (map item asps)
+     ana res (name,sp) = do
        (nsig,dg) <- res
-       ana_SPEC gannos genv dg nsig sp
+       ana_SPEC gannos genv dg nsig name sp
 
     Free_spec asp pos ->
      ana_err "free specs"
@@ -228,7 +241,7 @@ ana_SPEC gannos genv dg nsig sp =
      ana_err "closed specs"
 
     Group asp pos ->
-     ana_SPEC gannos genv dg nsig (item asp)
+     ana_SPEC gannos genv dg nsig name (item asp)
 
 
     Spec_inst spname afitargs ->

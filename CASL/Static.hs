@@ -12,8 +12,14 @@
 -----------------------------------------------------------------------------
   TODO
 
-  implement meaningful functions
+  datatypes
 
+  Speicherzugriffsfehler bei Analyse von
+
+  sort Nat 
+  preds  even: Nat
+
+  deshalb gibt basic_analysis erstmal nur triviale Werte zurück
 -------------------------------------------------------------------------- -}
 
 -----------------------------------------------------------------------------
@@ -1111,13 +1117,13 @@ ana_BASIC_SPEC sigma (Basic_spec l) = foldM ana_BASIC_ITEMS sigma l
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                  -> Result (Sign,Sign,[(String,Sentence)])
-basicAnalysis (spec,sigma,ga) =
-  do env <- ana_BASIC_SPEC
+basicAnalysis (spec,sigma,ga) = return(emptySign,emptySign,[])
+{-  do env <- ana_BASIC_SPEC
             (Env "unknown" ga sigma emptySentences emptyGlobal) spec
      let sigma' = getSign env
      let delta  = signDiff sigma sigma'
      return (delta,sigma',flattenSentences $ getPsi env)
-
+-}
 ------------------------------------------------------------------------------
 --
 --                             Static Analysis
