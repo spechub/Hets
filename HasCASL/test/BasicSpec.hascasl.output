@@ -205,6 +205,9 @@ type Data4
 *** Warning 11.13, redeclared class 'c'
 *** Warning 11.19, redeclared class 'a'
 *** Warning 18.15, variable shadows global name(s) 'x'
+*** Hint 18.14, unable to prove: s < _var_2_v2
+*** Error 18.14, in term'\ (var x : s) : s . ()' of type '_var_2_v2 ->? Unit'
+ unresolved constraints '{ s < _var_2_v2 }'
 *** Error 20.12, unexpected mixfix token: res
 *** Hint 21.1, no type match for: fst
   with (maximal) type: _var_4_v4 ->? s

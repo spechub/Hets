@@ -28,11 +28,11 @@ op def, tt : Pred s
 var x : s
 program (op def[_var_3_v3]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s_v1 . ()
+          = \ (var x : s) : _var_4_v4 . ()
         %% def is also total (identical to tt) 
 program (op tt[_var_6_v6]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s_v1 . ()
+          = \ (var x : s) : _var_7_v7 . ()
         %% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -211,10 +211,10 @@ y2 : d %(var)%
 %% Sentences -------------------------------------------------------------
 program (op def[_var_3_v3]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s_v1 . () %(pe_def)%
+          = \ (var x : s) : _var_4_v4 . () %(pe_def)%
 program (op tt[_var_6_v6]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s_v1 . () %(pe_tt)%
+          = \ (var x : s) : _var_7_v7 . () %(pe_tt)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
@@ -271,7 +271,13 @@ free type bool
 *** Hint 30.8, redeclared type '__*__'
 *** FatalError 31.6, illegal type pattern: __ * __ * __
 *** Warning 42.16, variable shadows global name(s) 'x'
+*** Hint 42.15, unable to prove: s < _var_4_v4
+*** Error 42.15, in term'\ (var x : s) : _var_4_v4 . ()' of type '_var_4_v4 ->? Unit'
+ unresolved constraints '{ s < _var_4_v4 }'
 *** Warning 44.15, variable shadows global name(s) 'x'
+*** Hint 44.14, unable to prove: s < _var_7_v7
+*** Error 44.14, in term'\ (var x : s) : _var_7_v7 . ()' of type '_var_7_v7 ->? Unit'
+ unresolved constraints '{ s < _var_7_v7 }'
 *** Error 46.11, unexpected mixfix token: und
 *** Hint 50.8, redeclared type '__->__'
 *** Error 52.8, incompatible kind of: __->__

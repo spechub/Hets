@@ -22,7 +22,6 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.MixAna
 import HasCASL.MapTerm
-import HasCASL.TypeAna
 import HasCASL.Constrain
 import HasCASL.MinType
 
@@ -193,8 +192,6 @@ infer :: Maybe Type -> Term
       -> State Env [(Subst, Constraints, Type, Term)]
 infer mt trm = do
     tm <- gets typeMap
-    let mUnify = mgu tm mt . Just
-        uniDiags = addDiags . map (improveDiag trm)
     as <- gets assumps
     vs <- gets localVars
     case trm of 
@@ -205,7 +202,7 @@ infer mt trm = do
         QualOp br (InstOpId i ts qs) sc ps -> do
             (ty, inst, cs) <- instantiate sc
             let Result ds ms = mgu tm (if null ts then inst else ts) inst
-            uniDiags ds 
+            addDiags $ map (improveDiag trm) ds 
             return $ case ms of 
                 Nothing -> []
                 Just s -> let q@(_, ncs, nTy, qv) = 
@@ -267,79 +264,71 @@ infer mt trm = do
         TypedTerm t qual ty ps -> do 
             case qual of 
                 OfType -> do
-                    let Result ds ms = mUnify ty
-                    uniDiags ds
-                    case ms of 
-                        Nothing -> if lesserType tm ty $ fromJust mt then do 
-                            rs <- infer (Just ty) t
-                            return $ map ( \ (s2, cs, typ, tr) -> 
-                                (s2, cs, typ, TypedTerm tr qual ty ps)) rs
-                           else return []
-                        Just s -> do 
-                            rs <- infer (Just $ subst s ty) t 
-                            return $ map ( \ (s2, cs, typ, tr) -> 
-                                (compSubst s s2, substC s cs, typ, 
-                                 TypedTerm tr qual ty ps)) rs
+                    rs <- infer (Just ty) t
+                    return $ map ( \ (s, cs, _, tr) -> 
+                          let sTy = subst s ty in
+                                (s, case mt of 
+                                 Nothing -> cs
+                                 Just jTy -> insertC (Subtyping sTy
+                                                      $ subst s jTy) cs,
+                                 sTy, TypedTerm tr qual sTy ps)) rs
                 InType -> do 
-                    let Result ds ms = mUnify logicalType
-                    uniDiags ds
-                    case ms of 
-                        Nothing -> return []
-                        Just s -> do 
-                            rs <- infer Nothing t
-                            return $ map ( \ (s2, cs, typ, tr) -> 
-                                (compSubst s s2, 
-                                 substC s $ insertC (Subtyping ty typ) cs, 
+                    rs <- infer Nothing t
+                    return $ map ( \ (s, cs, typ, tr) -> 
+                           let sTy = subst s ty in
+                               (s, insertC (Subtyping sTy typ) $ 
+                                 case mt of
+                                 Nothing -> cs
+                                 Just jTy -> insertC (Subtyping (subst s jTy)
+                                                      logicalType) cs,
                                  logicalType, 
-                                 TypedTerm tr qual ty ps)) rs
+                                 TypedTerm tr qual sTy ps)) rs
                 AsType -> do
-                    let Result ds ms = mUnify ty
-                    uniDiags ds
-                    case ms of 
-                        Nothing -> return []
-                        Just s -> do 
-                            rs <- infer Nothing t
-                            return $ map ( \ (s2, cs, typ, tr) ->
-                                (compSubst s s2, 
-                                 substC s $ insertC (Subtyping ty typ) cs,
-                                 ty, TypedTerm tr qual ty ps)) rs
+                    rs <- infer Nothing t
+                    return $ map ( \ (s, cs, typ, tr) -> 
+                        let sTy = subst s ty in
+                                (s, insertC (Subtyping sTy typ) $
+                                 case mt of
+                                 Nothing -> cs
+                                 Just jTy -> insertC (Subtyping (subst s jTy)
+                                                      sTy) cs,
+                                 sTy, TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenLocalVar decls
-            let Result ds ms = mUnify logicalType
-            uniDiags ds
-            case ms of 
-                Nothing -> return []
-                Just _ -> do 
-                    rs <- infer (Just logicalType) t 
-                    putLocalVars vs
-                    putTypeMap tm
-                    return $ map ( \ (s, cs, typ, tr) -> 
-                        (s, cs, typ, QuantifiedTerm quant decls tr ps)) rs
+            rs <- infer (Just logicalType) t 
+            putLocalVars vs
+            putTypeMap tm
+            return $ map ( \ (s, cs, typ, tr) -> 
+                        (s, case mt of 
+                         Nothing -> cs
+                         Just ty -> insertC (Subtyping (subst s ty) 
+                                             logicalType) cs, 
+                         typ, QuantifiedTerm quant decls tr ps)) rs
         LambdaTerm pats part resTrm ps -> do 
             pvs <- freshVars pats
             rty <- freshTypeVar $ posOfTerm resTrm
             let fty l = if null l then rty else 
-                        FunType (head l) (case part of
+                        FunType (head l) (if null (tail l) then case part of
                                           Partial -> PFunArr
-                                          Total -> FunArr) (fty $ tail l) []
+                                          Total -> FunArr
+                                         else FunArr) (fty $ tail l) []
                 myty = fty pvs
-                Result ds ms = mUnify myty
-            uniDiags ds 
-            case ms of 
-                Nothing -> return []
-                Just s -> do 
-                    ls <- checkList (map (Just . subst s) pvs) pats
-                    rs <- mapM ( \ ( s2, cs, _, nps) -> do
+            ls <- checkList (map Just pvs) pats
+            rs <- mapM ( \ ( s, cs, _, nps) -> do
                        mapM_ addLocalVar $ concatMap extractVars nps
-                       let newS = compSubst s s2 
-                       es <- infer (Just $ subst newS rty) resTrm
+                       es <- infer (Just $ subst s rty) resTrm
                        putLocalVars vs
-                       return $ map ( \ (s3, cr, _, rtm) -> 
-                                      (compSubst newS s3, 
-                                       substC s3 cs `joinC` cr,
-                                       subst s3 (subst newS myty), 
+                       return $ map ( \ (s2, cr, _, rtm) -> 
+                                      let s3 = compSubst s s2
+                                          typ = subst s3 myty in
+                                      (s3, joinC (substC s2 cs) $ 
+                                       case mt of 
+                                       Nothing -> cr
+                                       Just ty -> insertC (Subtyping typ 
+                                                          $ subst s2 ty) cr,
+                                       typ, 
                                        LambdaTerm nps part rtm ps)) es) ls
-                    return $ concat rs 
+            return $ concat rs 
         CaseTerm ofTrm eqs ps -> do 
             ts <- infer Nothing ofTrm
             rty <- case mt of 
