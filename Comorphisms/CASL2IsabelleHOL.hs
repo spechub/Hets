@@ -111,7 +111,7 @@ transTheory trSig trForm (sign,sens) =
                   (Map.foldWithKey insertPreds
                                    Map.empty
                                    (predMap sign))
-                  (opMap sign),
+                  (delDtTypes (opMap sign)),
     dataTypeTab = dtDefs },      
      map (mapNamed (mapSen trForm sign)) sens)  -- for now, no new sentences
   where 
@@ -122,14 +122,35 @@ transTheory trSig trForm (sign,sens) =
       then Map.insert (showIsa op) (transOpType (Set.findMin ts)) m
       else 
       foldl (\m1 (t,i) -> Map.insert (showIsaI op i) (transOpType t) m1) m 
-            (zip (Set.toList (Set.deleteMin ts)) [2..size ts])
+            (zip (Set.toList ts) [2..(size ts + 1)])
     insertPreds pre ts m =
      if Set.size ts == 1 
       then Map.insert (showIsa pre) (transPredType (Set.findMin ts)) m
       else
       foldl (\m1 (t,i) -> Map.insert (showIsaI pre i) (transPredType t) m1) m 
             (zip (Set.toList ts) [1..size ts])
- 
+    --delete all elements from dataTypeTab in constTab
+    delDtTypes opMap = Map.fromList (map (deleteDtTypes dtDefs) (Map.toList opMap)) 
+
+--filter out all elements from dtDef   
+deleteDtTypes dtDef (a,b) = (a, Set.fromList(List.filter (isNotIn dtDef a) (Set.toList b)))
+
+--test if there is an entry in dtDef which has the constructor a and the arguments (opArgs b) 
+isNotIn [[]]        _ _ = True == True
+isNotIn ([]:cs)     _ _ = True == True
+isNotIn ((d:ds):cs) a b = (isSameConst (showIsa a) args const == False)  
+    where
+    (OpType {opArgs = args, opRes = res}) = b
+    (typ, const) = d
+    isSameConst _ _    ([]) = False
+    isSameConst a args (e:es) = ((a == (fst e)) && hasArgs args (snd e)) 
+				 || (isSameConst a args es) 
+    hasArgs [] [] = True
+    hasArgs [] _  = False
+    hasArgs _  [] = False
+    hasArgs (arg1:args1) (arg2:args2) = (showIsa arg1 == (typeId arg2)) 
+					         && hasArgs args1 args2
+
 makeDtDefs :: CASL.Sign.Sign f e -> [Named (FORMULA f)] 
                -> [[(Typ,[(String,[Typ])])]]
 makeDtDefs sign = delDoubles . (mapMaybe $ makeDtDef sign)
@@ -203,10 +224,11 @@ quantify q (v,t) phi  =
 
 transOP_SYMB :: CASL.Sign.Sign f e -> OP_SYMB -> String
 transOP_SYMB sign (Qual_op_name op ot _) = 
-  case (do ots <- Map.lookup op (opMap sign)
+  case (do ots <- Map.lookup op (opMap sign) 
            if Set.size ots == 1 then return $ showIsa op
             else do i <- elemIndex (toOpType ot) (Set.toList ots)
-                    return $ showIsaI op (i+1)) of
+                    return $ showIsa op) of
+--                    return $ showIsaI op (i+1)) of
     Just str -> str  
     Nothing -> showIsa op
 transOP_SYMB _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
