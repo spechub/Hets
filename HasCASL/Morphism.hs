@@ -53,7 +53,6 @@ instance PrettyPrint Morphism where
 		    $$ nest 1 (text mapsTo)
 		    <+> braces (printText0 ga (mtarget m))
       
-
 mapType :: IdMap -> Type -> Type
 -- include classIdMap later
 mapType m ty = if Map.isEmpty m then ty else 
@@ -81,8 +80,8 @@ mapDataEntry m (DataEntry tm i k args alts) =
     let tim = compIdMap tm $ typeIdMap m
     in DataEntry tim i k args $ map 
 	   (mapAlt m tim args $ 
-	    TypeName (Map.findWithDefault i i tim) 
-	    (typeArgsListToKind args star) 0) alts
+	    typeIdToType (Map.findWithDefault i i tim) 
+	    args star) alts
 
 mapAlt :: Morphism -> IdMap -> [TypeArg] -> Type -> AltDefn -> AltDefn
 mapAlt m tm args dt c@(Construct mi ts p sels) = 

@@ -8,32 +8,16 @@ Stability   :  experimental
 Portability :  portable 
 
    Translation of the abstract syntax of HasCASL after the static analysis
-   to the abstract syntax of haskell.
+   to the abstract syntax of Haskell.
 
-   todo: rename also vars when overloaded
 -}
 
 module ToHaskell.TranslateAna (
        -- * Translation of an environment
          translateSig
-       -- * Translation of a map of assumptions
-       , translateAssumps
-       , distinctOpIds
-       , translateTypeScheme
-       , translateType
-       , translateFunDef
-       -- ** Translation of terms
-       , translateTerm
-       -- ** Translation of pattern
-       , translatePattern
-       -- ** Translation of toplevel program equation
-       , translateProgEq
-       -- * Translation of a map of types
-       , translateTypeMap
-       , translateTypeInfo
-       , translateAltDefn
-       , translateDt
+       -- * Translation of sentences
        , translateSentence
+       -- * remove dummy decls that are better given by sentences
        , cleanSig
        ) where
 
@@ -44,6 +28,7 @@ import Common.AS_Annotation
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.Morphism
+import HasCASL.AsUtils
 import HasCASL.ProgEq
 
 import Haskell.Hatchet.HsSyn
@@ -55,28 +40,21 @@ import ToHaskell.UniqueId
 -- Translation of an HasCASL-Environement
 -------------------------------------------------------------------------
 
-
 -- | Converts an abstract syntax of HasCASL (after the static analysis) 
 -- to the top datatype of the abstract syntax of haskell.
--- Calls 'translateTypeMap' and 'translateAssumps'. 
--- A True argument includes dummy types for data types.
 translateSig :: Env -> [HsDecl]
-translateSig env = translateTypeMap (typeMap env) ++ 
-		    translateAssumps (assumps env)
+translateSig env = 
+    (concat $ map (translateTypeInfo env) $ Map.toList $ typeMap env)
+    ++ (concatMap translateAssump $ distinctOpIds 2 $ Map.toList $ assumps env)
 
 -------------------------------------------------------------------------
 -- Translation of types
 -------------------------------------------------------------------------
 
--- | Converts all HasCASL types to data or type declarations in haskell.
--- Uses 'translateData'. 
-translateTypeMap :: TypeMap -> [HsDecl]
-translateTypeMap m = concat $ map translateTypeInfo (Map.assocs m)
-
--- | Converts one type to a data or type declaration in haskell.
--- Uses 'translateIdWithType'. True includes a dummy type for data types.
-translateTypeInfo :: (TypeId, TypeInfo) -> [HsDecl]
-translateTypeInfo (tid,info) = 
+-- | Converts one type to a data or type declaration in Haskell.
+-- Uses 'translateIdWithType'.
+translateTypeInfo :: Env -> (TypeId, TypeInfo) -> [HsDecl]
+translateTypeInfo env (tid,info) = 
   let hsname = (HsIdent (translateIdWithType UpperId tid))
       ddecl = HsDataDecl nullLoc
 	               [] -- empty HsContext
@@ -94,8 +72,9 @@ translateTypeInfo (tid,info) =
 	   [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
        AliasTypeDefn ts -> 
 	   [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
-       DatatypeDefn de -> [sentence $ translateDt de] 
-       _ -> [] -- ignore others
+       DatatypeDefn de -> [sentence $ translateDt env de] 
+       TypeVarDefn -> [] -- ignore others
+       PreDatatype -> [] -- ignore others
 
 
 isSameId :: TypeId -> Type -> Bool
@@ -117,20 +96,6 @@ kindToTypeArgs i k = case k of
 			 else kindToTypeArgs i $ head l
     ExtKind ek _ _ -> kindToTypeArgs i ek
 
-
--- | Translation of an alternative constructor for a datatype definition.
---   Uses 'translateRecord'.
-translateAltDefn :: IdMap -> AltDefn -> [HsConDecl]
-translateAltDefn tm (Construct muid ts _ _) = 
-    case muid of
-    Just uid -> [HsConDecl nullLoc
-	      (HsIdent (translateIdWithType UpperId uid))
-	      $ map getType $ map (mapType tm) ts]
-    Nothing -> []
-
-getType :: Type -> HsBangType
-getType t = HsBangedTy (translateType t)
-    
 getAliasArgs :: TypeScheme -> [HsName]
 getAliasArgs (TypeScheme arglist (_plist :=> _t) _poslist) = 
     map getArg arglist
@@ -142,15 +107,34 @@ getArg (TypeArg tid _ _ _) = (HsIdent (translateIdWithType LowerId tid))
 getAliasType :: TypeScheme -> HsType
 getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 
+-- | Translation of an alternative constructor for a datatype definition.
+translateAltDefn :: Env -> Type -> [TypeArg] -> IdMap -> AltDefn -> [HsConDecl]
+translateAltDefn env dt args im (Construct muid origTs p _) = 
+    let ts = map (mapType im) origTs in
+    case muid of
+    Just uid -> let sc = TypeScheme args ([] :=> getConstrType dt p ts) []
+                    (UpperId, UnQual ui) = translateId (assumps env)
+				(typeMap env) uid sc
+		in [HsConDecl nullLoc ui $ map (HsBangedTy . translateType) ts]
+    Nothing -> []
+
+translateDt :: Env -> DataEntry -> Named HsDecl
+translateDt env (DataEntry im i _ args alts) = 
+   	 let j = Map.findWithDefault i i im
+	     dt = typeIdToType j args star
+	     hsname = HsIdent $ translateIdWithType UpperId j in
+         NamedSen ("ga_" ++ showId j "") $
+         HsDataDecl nullLoc
+	               [] -- empty HsContext
+	               hsname
+		       (map getArg args) -- type arguments
+		       (concatMap (translateAltDefn env dt args im) alts)
+		       derives
+
+
 -------------------------------------------------------------------------
 -- Translation of functions
 -------------------------------------------------------------------------
-
--- | Converts functions in HasCASL to the coresponding haskell declarations.
-translateAssumps :: Assumps -> [HsDecl]
-translateAssumps as =
-  let distList =  distinctOpIds 2 $ Map.toList as
-  in  concatMap translateAssump distList
 
 -- | Converts one distinct named function in HasCASL to the corresponding
 -- haskell declaration.
@@ -209,39 +193,37 @@ translateFunDef as tm i ts term =
 	       ]
      ]
 
-
 getPattern :: Term -> [HsPat]
 getPattern _t = []
 
 getRhs :: Assumps -> TypeMap -> Term -> HsRhs
 getRhs as tm t = HsUnGuardedRhs (translateTerm as tm t) 
 
-isConstructId :: Id -> [(Id,OpInfos)] -> Bool
-isConstructId _ [] = False
-isConstructId i ((i1,info1):idInfoList) = 
-  if i == i1 then
-    or $ map isConstructor $ opInfos info1
-  else isConstructId i idInfoList
-
+translateId :: Assumps -> TypeMap -> Id -> TypeScheme -> (IdCase, HsQName)
+translateId as tm uid sc = 
+      let oid = findUniqueId uid sc tm as 
+	  mkUnQual c j = (c, UnQual $ HsIdent $ translateIdWithType c j)
+      in case oid of
+        Just (i, oi) -> if isConstructor oi then mkUnQual UpperId i
+			else mkUnQual LowerId i
+	_ -> mkUnQual LowerId uid -- variable
+ 
 -- | Converts a term in HasCASL to an expression in haskell
 translateTerm :: Assumps -> TypeMap -> Term -> HsExp
 translateTerm as tm t = 
   let undef = HsVar $ UnQual $ HsIdent "undefined" in
   case t of
-    QualVar v _ty _pos -> HsVar $ UnQual $ HsIdent $ 
-			  translateIdWithType LowerId v
-    QualOp _ (InstOpId uid _types _) ts _pos -> 
+    QualVar v ty _pos -> 
+	let (LowerId, i) = translateId as tm v $ simpleTypeScheme ty in HsVar i
+    QualOp _ (InstOpId uid _types _) sc _pos -> 
     -- The identifier 'uid' may have been renamed. To find its new name,
     -- the typescheme 'ts' is tested for unifiability with the 
     -- typeschemes of the assumps. If an identifier is found, it is used
     -- as HsVar or HsCon.
-      let oid = findUniqueId uid ts tm as 
-      in case oid of
-        Just i ->
-	    if isConstructId i $ Map.toList as then
-	      (HsCon (UnQual (HsIdent (translateIdWithType UpperId i))))
-	    else (HsVar (UnQual (HsIdent (translateIdWithType LowerId i))))
-        _ -> error("translateTerm: non-unique id: " ++ show t)
+      let (c, ui) = translateId as tm uid sc
+      in case c of
+        UpperId -> HsCon ui
+	LowerId -> HsVar ui
     ApplTerm t1 t2 _pos -> let at = translateTerm as tm t2 in
        HsApp (translateTerm as tm t1) $ (case at of 
        HsTuple _ -> id
@@ -271,14 +253,12 @@ translateTerm as tm t =
 -- | Conversion of patterns form HasCASL to haskell.
 translatePattern :: Assumps -> TypeMap -> Pattern -> HsPat
 translatePattern as tm pat = case pat of
-      QualVar v _ty _pos
-	  -> HsPVar $ HsIdent $ translateIdWithType LowerId v
-      QualOp _ (InstOpId uid _t _p) ts _pos -> 
-        let oid = findUniqueId uid ts tm as
-	in case oid of
-	  Just i ->
-	        HsPApp (UnQual $ HsIdent $ translateIdWithType UpperId i) []
-	  _ -> error ("translatePattern: non-unique id: " ++ show pat)
+      QualVar v ty _pos -> 
+	  let (LowerId, UnQual i) = translateId as tm v $ simpleTypeScheme ty
+	      in HsPVar i
+      QualOp _ (InstOpId uid _t _p) sc _pos -> 
+        let (_, ui) = translateId as tm uid sc
+	in HsPApp ui []
       ApplTerm p1 p2 _pos -> 
 	  let tp = translatePattern as tm p1
 	      a = translatePattern as tm p2
@@ -315,35 +295,20 @@ translateLetProgEq as tm (ProgEq pat t _pos) =
 translateProgEq ::Assumps ->  TypeMap -> ProgEq -> HsDecl
 translateProgEq as tm (ProgEq pat t _) = 
     case getAppl pat of
-    Just (uid, ts, args) -> 
-        let oid = findUniqueId uid ts tm as
-	in case oid of
-	  Just i -> HsFunBind [HsMatch nullLoc
-	             (UnQual $ HsIdent $ translateIdWithType LowerId i)
+    Just (uid, sc, args) -> 
+        let (_, ui) = translateId as tm uid sc
+	in HsFunBind [HsMatch nullLoc ui
 	             (map (translatePattern as tm) args) -- [HsPat]
 	             (HsUnGuardedRhs $ translateTerm as tm t) -- HsRhs
 	             []]
-	  _ -> error ("translateLetProgEq: non-unique id: " ++ show pat)
     Nothing -> error ("translateLetProgEq: no toplevel id: " ++ show pat)
-
-translateDt :: DataEntry -> Named HsDecl
-translateDt (DataEntry im i _ args alts) = 
-   	 let j = Map.findWithDefault i i im
-	     hsname = HsIdent $ translateIdWithType UpperId j in
-         NamedSen ("ga_" ++ showId j "") $
-         HsDataDecl nullLoc
-	               [] -- empty HsContext
-	               hsname
-		       (map getArg args) -- type arguments
-		       (concatMap (translateAltDefn im) alts) -- [HsConDecl] 
-		       derives
 
 translateSentence ::  Env -> Named Sentence -> [Named HsDecl] 
 translateSentence env sen = 
     let as = assumps env
 	tm = typeMap env
     in case sentence sen of
-    DatatypeSen dt -> map translateDt dt
+    DatatypeSen dt -> map (translateDt env) dt
     ProgEqSen _ _ pe -> [NamedSen (senName sen) 
 			$ translateProgEq as tm pe]
     _ -> []
@@ -380,7 +345,6 @@ cleanSig ds sens =
         HsPatBind _ (HsPVar n) _ _ -> UnQual n `notElem` funs
 	_ -> True)
        ds 
-
 derives :: [HsQName]
 derives = [(UnQual $ HsIdent "Show"), (UnQual $ HsIdent "Eq"),
 	   (UnQual $ HsIdent "Ord")] 
