@@ -371,7 +371,7 @@ pos_const True  dat =
 	  ,parens (text "AAppl" <+> doubleQuotes pos_name <+> 
 		   bracketList [text "reg_i",text "item_i"]) <+>
 	   text "->" $$
-	   nest 4 (parenList [text "(fromATerm_reg reg_i att"
+	   nest 4 (parenList [text "fromATerm_reg reg_i att"
 			     ,text "getATermByIndexSp1 item_i att"])
 	  ,text "otherwise -> ([],att)"
 	  ]
