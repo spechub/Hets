@@ -120,7 +120,7 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 Modal/AS_Modal.hs Modal/ModalSign.hs \
                 CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs \
                 COL/AS_COL.hs COL/COLSign.hs \
-                CspCASL/AS_CSP_CASL.hs \
+                CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs \
                 Static/DevGraph.hs \
                 Haskell/Hatchet/AnnotatedHsSyn.hs \
                 Haskell/Hatchet/MultiModuleBasics.hs \

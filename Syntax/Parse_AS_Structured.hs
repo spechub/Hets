@@ -216,11 +216,11 @@ specC l@(Logic lid, lG) =
         let rest = annoParser (specD l) >>= translation_list l
         in case data_logic lid of
 	  Nothing -> rest
-	  Just (Logic dlid) -> do
+	  Just (Logic lidD) -> do
                          p1 <- asKey "data"
-			 sp1 <- groupSpec (Logic dlid, lG)
+			 sp1 <- groupSpec (Logic lidD, lG)
                          sp2 <- specD l
-                         return (emptyAnno (Data (Logic dlid) 
+                         return (emptyAnno (Data (Logic lidD) (Logic lid) 
                                                  (emptyAnno sp1) 
                                                  (emptyAnno sp2) 
                                                  [tokPos p1]))

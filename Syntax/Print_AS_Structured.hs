@@ -80,8 +80,8 @@ instance PrettyPrint SPEC where
 	in nest 4 (hang aa' 4 ab')
     printText0 ga (Qualified_spec ln asp _) =
 	ptext "logic" <+> (printText0 ga ln) <> colon $$ (printText0 ga asp)
-    printText0 ga (Data (Logic l) s1 s2 _) =
-	ptext (language_name l) <+> (printText0 ga s1) $$ (printText0 ga s2)
+    printText0 ga (Data _ _ s1 s2 _) =
+	ptext ("data ") <+> (printText0 ga s1) $$ (printText0 ga s2)
 
 instance PrettyPrint RENAMING where
     printText0 ga (Renaming aa _) =

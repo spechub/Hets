@@ -53,7 +53,7 @@ data SPEC = Basic_spec G_basic_spec
 	    -- pos: many of "[","]"; one balanced pair per FIT_ARG
 	  | Qualified_spec Logic_name (Annoted SPEC) [Pos]
 	    -- pos: "logic", Logic_name,":"
-          | Data AnyLogic (Annoted SPEC) (Annoted SPEC) [Pos]
+          | Data AnyLogic AnyLogic (Annoted SPEC) (Annoted SPEC) [Pos]
             -- pos: "data"
 	    deriving (Show)
 

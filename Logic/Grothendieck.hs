@@ -573,6 +573,21 @@ homogeneousMorManyUnion (G_morphism lid mor : gmors) = do
                 in foldl mor_union (return mor) mors
   return (G_morphism lid bigMor)
 
+-- | inclusion between two logics
+logicInclusion :: LogicGraph -> AnyLogic -> AnyLogic -> Result AnyComorphism
+logicInclusion logicGraph (Logic lid1) (Logic lid2) =
+     let ln1 = language_name lid1
+         ln2 = language_name lid2 in
+     if ln1==ln2 then 
+       return (Comorphism (IdComorphism lid1 (top_sublogic lid1)))
+      else case Map.lookup (ln1,ln2) (inclusions logicGraph) of 
+           Just (Comorphism i) -> 
+              return (Comorphism i)
+	   Nothing -> Result [Diag FatalError 
+			 ("No inclusion from "++ln1++" to "++ln2++" found")
+                         nullPos] Nothing 
+
+
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
 ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
@@ -594,6 +609,7 @@ ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
 	   Nothing -> Result [Diag FatalError 
 			 ("No inclusion from "++ln1++" to "++ln2++" found")
                          (newPos "t" 0 0)] Nothing 
+
 -- | Composition of two Grothendieck signature morphisms 
 -- | with itermediate inclusion
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism

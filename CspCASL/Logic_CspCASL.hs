@@ -54,7 +54,7 @@ import Common.DynamicUtils
 data CspCASL = CspCASL deriving (Show)
 instance Language CspCASL  -- default definition is okay
 
-instance Category CspCASL () ()
+instance Category CspCASL CSPSign CSPMorphism
     where
          -- ide :: id -> object -> morphism
 	 ide CspCASL sigma = fun_err "ide"
@@ -93,20 +93,20 @@ instance LatticeWithTop () where
 -- CspCASL logic
 
 
-instance Sentences CspCASL () () () () () where
+instance Sentences CspCASL () () CSPSign CSPMorphism () where
   parse_sentence CspCASL = Nothing
 
 instance StaticAnalysis CspCASL Basic_CSP_CASL_C_SPEC () ()
                SYMB_ITEMS SYMB_MAP_ITEMS
-               () () () ()  where
+               CSPSign CSPMorphism () ()  where
          basic_analysis CspCASL = Nothing -- Just(\(bspec,_,_) -> return (bspec,(),(),[]))
          stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
          stat_symb_items CspCASL = error "Logic_CspCASL.hs"
 
 instance Logic CspCASL ()
                Basic_CSP_CASL_C_SPEC () SYMB_ITEMS SYMB_MAP_ITEMS
-               ()
-               ()
+               CSPSign
+               CSPMorphism
                () () () where
 
          data_logic CspCASL = Just (Logic CASL)

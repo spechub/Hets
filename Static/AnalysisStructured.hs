@@ -326,6 +326,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
      (sps',nsig',dg') <- res
      (sp1',nsig1,dg1) <- 
          ana_SPEC lg (gannos,genv,dg') nsig' name' opts (item asp')
+     -- insert local theorem link for %implies
      dg2 <- case (any isImplies $ l_annos asp',getNode nsig',getNode nsig1) of
        (True,Just n',Just n1) -> do
            let sig1 = getSig nsig1
@@ -622,34 +623,42 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Qualified_spec _logname _asp _pos ->
    ana_err "logic qualified specs"
 
-  Data (Logic lid1) asp1 asp2 pos ->
+  Data (Logic lidD) (Logic lidP) asp1 asp2 pos ->
    do let sp1 = item asp1
           sp2 = item asp2
+      Comorphism cid <- logicInclusion lg (Logic lidD) (Logic lidP)
+      let lidD' = sourceLogic cid
+          lidP' = targetLogic cid
       (sp1',nsig1,dg1) <- 
-         ana_SPEC lg gctx (EmptyNode (Logic lid1)) Nothing opts sp1
-      (sp2',_nsig2,dg2) <- 
-         ana_SPEC lg (gannos,genv,dg1) nsig1 Nothing opts sp2
+         ana_SPEC lg gctx (EmptyNode (Logic lidD)) Nothing opts sp1
       n' <- maybeToResult (newPos "k" 0 0) 
             "Internal error: Data spec over empty spec" (getNode nsig1)
       let gsigma' = getSig nsig1
-      G_sign lid' _sigma' <- return gsigma'
+      G_sign lid' sigma' <- return gsigma'
+      sigmaD <- coerce lid' lidD' sigma' 
+      (sigmaD',sensD') <- maybeToResult (headPos pos) 
+                          "Could not map signature along data logic inclusion"
+                          (map_sign cid sigmaD)
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_sign = gsigma', -- G_sign lid' (empty_signature lid'), -- delta is empty
-            dgn_sens = G_l_sentence_list lid' [],
+            dgn_sign = G_sign lidP' sigmaD', 
+            dgn_sens = G_l_sentence_list lidP' sensD',
             dgn_origin = DGData }
-          [node] = newNodes 0 dg2
+          [node] = newNodes 0 dg1
           link = (n',node,DGLink {
-            dgl_morphism = error "AnalysisStructured.hs:5", -- ??? inclusion
+            dgl_morphism = GMorphism cid sigmaD (ide lidP' sigmaD'),
             dgl_type = GlobalDef,
-            dgl_origin = DGFree })
-      return (Data (Logic lid1) 
+            dgl_origin = DGData })
+      let dg2 = insEdgeNub link $
+                insNode (node,node_contents) dg1
+      (sp2',nsig2,dg3) <- 
+         ana_SPEC lg (gannos,genv,dg2) nsig1 Nothing opts sp2
+      return (Data (Logic lidD) (Logic lidP)
                    (replaceAnnoted sp1' asp1) 
                    (replaceAnnoted sp2' asp2) 
                    pos,
-              NodeSig(node,gsigma'),
-              insEdgeNub link $
-              insNode (node,node_contents) dg2)
+              nsig2,
+              dg3)
 
 
 -- analysis of renamings

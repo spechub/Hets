@@ -273,6 +273,7 @@ class (StaticAnalysis lid
           lid -> sign, lid -> morphism, lid ->symbol, lid -> raw_symbol
 	  where
 
+         -- for a process logic, return its data logic
          data_logic :: lid -> Maybe AnyLogic
 	 data_logic _ = Nothing
 

@@ -24,10 +24,14 @@ import CASL.Morphism
 import Common.Id
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Data.Dynamic
+import Common.DynamicUtils
+import Common.PrettyPrint
+import Common.PrintLaTeX
 
 data CSPAddSign = CSPAddSign { channelNames :: Map.Map Id SORT
                              , processNames :: Map.Map Id (Maybe SORT)}
-                  deriving Show
+                  deriving (Eq, Show)
 
 type CSPSign = Sign () CSPAddSign
 
@@ -49,6 +53,22 @@ data CSPAddMorphism =
      CSPAddMorphism { channelMap :: Map.Map Id Id
                     , processMap :: Map.Map Id Id
                     }
-     deriving Show
+     deriving (Eq, Show)
+
 
 type CSPMorphism = Morphism () CSPAddSign CSPAddMorphism
+
+
+signTc      = mkTyCon "CspCASL.SignCSP.CSPAddSign"
+instance Typeable CSPAddSign where
+  typeOf _ = mkTyConApp signTc []
+
+morTc      = mkTyCon "CspCASL.SignCSP.CSPAddMorphism"
+instance Typeable CSPAddMorphism where
+  typeOf _ = mkTyConApp morTc []
+
+-- dummy instances, need to be elaborated!
+instance PrettyPrint CSPAddSign where
+instance PrettyPrint CSPAddMorphism where
+instance PrintLaTeX CSPAddSign where
+instance PrintLaTeX CSPAddMorphism where

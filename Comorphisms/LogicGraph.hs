@@ -48,6 +48,8 @@ import Comorphisms.CASL2Modal
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.HasCASL2IsabelleHOL
+import Comorphisms.CASL2CspCASL
+
 import qualified Common.Lib.Map as Map
 
 -- This needs to be seperated for utils/InlineAxioms/InlineAxioms.hs
@@ -68,7 +70,8 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
 		 Comorphism CASL2Modal, 
 		 Comorphism Modal2CASL, 
                  Comorphism CASL2CoCASL, Comorphism CoCASL2IsabelleHOL, 
-                 Comorphism HasCASL2IsabelleHOL]
+                 Comorphism HasCASL2IsabelleHOL,
+                 Comorphism CASL2CspCASL]
 
 comorphismList :: [AnyComorphism]
 comorphismList = inclusionList ++ [Comorphism CASL2PCFOL, Comorphism PCFOL2FOL]
