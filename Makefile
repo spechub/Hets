@@ -53,6 +53,7 @@ ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),genRules)
+ifneq ($(MAKECMDGOALS),utils/genRules)
 ifneq ($(MAKECMDGOALS),hets-opt)
 ifneq ($(MAKECMDGOALS),hets-optimized)
 ifneq ($(MAKECMDGOALS),derivedSources)
@@ -62,6 +63,7 @@ ifneq ($(MAKECMDGOALS),apache_doc)
 ifneq ($(MAKECMDGOALS),clean_genRules)
 ifneq ($(MAKECMDGOALS),atctest2)
 include sources_hetcats.mk
+endif
 endif
 endif
 endif
@@ -191,11 +193,13 @@ post_doc4apache:
 derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
 
 utils/DrIFT:
-	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
+	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT; \
+           strip ../DrIFT)
 
 utils/genRules:
 	(cd utils/GenerateRules; \
-           $(HC) --make -i../.. -package text GenerateRules.hs -o ../genRules)
+         $(HC) --make '-i../..:../DrIFT-src' -package text GenerateRules.hs -o ../genRules;\
+         strip ../genRules)
 
 release: 
 	$(RM) -r HetCATS
@@ -397,6 +401,7 @@ ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),genRules)
+ifneq ($(MAKECMDGOALS),utils/genRules)
 ifneq ($(MAKECMDGOALS),derivedSources)
 ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),clean_genRules)
@@ -407,6 +412,7 @@ endif
 
 sources_hetcats.mk: hetcats-make hetcats/Version.hs hets.hs utils/create_sources.pl $(drifted_files) $(happy_files)
 	$(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
+endif
 endif
 endif
 endif
