@@ -52,8 +52,7 @@
 module Logic where
 
 import Id
-import AS_Annotation
-
+import GlobalAnnotations
 import Set
 import FiniteMap
 import Graph
@@ -143,7 +142,7 @@ class ( Syntax id basic_spec symb_items symb_map_items
          basic_analysis :: id -> 
                            Maybe((basic_spec,  -- abstract syntax tree
                             local_env,   -- efficient table for env signature
-                            [Annotation]) ->   -- global annotations
+                            GlobalAnnos) ->   -- global annotations
                            Result (local_env,sign,[(String,sentence)]))
                               -- the output local env is expected to be
                               -- just the input local env, united with the sign.
