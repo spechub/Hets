@@ -26,10 +26,7 @@ Common/test_parser.hs
 Common/ATerm/ATermLibTest.hs
 Common/Lib/Graph
 
-Common/Lib/Parsec/Expr.hs
-Common/Lib/Parsec/Language.hs
-Common/Lib/Parsec/Perm.hs
-Common/Lib/Parsec/Token.hs
+Common/Lib/Parsec
 Common/Lib/RelCheck.hs
 Common/Lib/Text
 Common/test
@@ -63,9 +60,8 @@ Haskell/hapa.lhs
 Haskell/hapa.hs
 Haskell/questions
 Haskell/todo
-Haskell/wrap.lhs
 
-Haskell
+Haskell/Hatchet
 Haskell/Language
 Lottery
 Modal/Basic.mod
