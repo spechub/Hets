@@ -55,6 +55,10 @@ Usage: hets [OPTION...] file ... file
   -r RAW    --raw=RAW             raw options passed to the pretty-printer
             RAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the
             appropiate pretty-printer
+            --casl-amalg=ANALYSIS  CASL amalgamability analysis options
+            ANALYSIS is a comma-separated list of zero or more options from: 
+	    (sharing,cell,colimit-thinness)
+
 -}
 
 module Options where
@@ -70,7 +74,6 @@ import Data.List
 import Control.Monad (filterM)
 
 import System.Console.GetOpt
-
 
 -- main Datatypes --
 
@@ -88,6 +91,7 @@ data HetcatsOpts =
 	  , defLogic :: String     -- initial logic 
 	  , web      :: WebType    -- Web Interface
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
+	  , caslAmalg :: [CASLAmalgOpt] -- CASL amalgamability analysis options
           }
     deriving (Eq)
 
@@ -127,6 +131,7 @@ makeOpts opts (Raw x)      = opts { rawopts = x }
 makeOpts opts (Web x)      = opts { web = x }
 makeOpts opts (Verbose x)  = opts { verbose = x }
 makeOpts opts (DefaultLogic x) = opts { defLogic = x }
+makeOpts opts (CASLAmalg x) = opts { caslAmalg = x }
 makeOpts opts _    = opts -- skipped
 
 -- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
@@ -147,6 +152,7 @@ defaultHetcatsOpts =
 	  , defLogic = "CASL"
           , verbose  = 1
           , outputToStdout = True
+	  , caslAmalg = [Cell]
           }
 
 -- | every 'Flag' describes a raw option
@@ -163,6 +169,7 @@ data Flag = Analysis AnaType     -- to analyse or not to analyse
           | Version              -- print version number
 	  | Web      WebType     -- show output in web
 	  | DefaultLogic String  -- default logic to start with
+	  | CASLAmalg [CASLAmalgOpt] -- CASL amalgamability analysis options
             deriving (Show,Eq)
 
 -- | 'AnaType' describes the type of analysis we want performed
@@ -217,6 +224,13 @@ data WebType = Yes | No
 data RawOpt = RawAscii String | RawLatex String
               deriving (Show, Eq)
 
+-- | 'CASLAmalgOpt' describes the options for CASL amalgamability analysis algorithms
+data CASLAmalgOpt = Sharing         -- ^ perform the sharing checks
+		  | ColimitThinness -- ^ perform colimit thinness check (implies Sharing)
+		  | Cell            -- ^ perform cell condition check (implies Sharing)
+		  | NoAnalysis      -- ^ dummy option to indicate empty option string
+		    deriving (Show, Eq)
+
 -- | 'ErrorSource' describes possible sources of errors: 
 -- user input or internal errors
 data ErrorSource = User | Intern
@@ -256,6 +270,8 @@ options =
       "CASL library directory"
     , Option ['r'] ["raw"] (ReqArg parseRawOpts "RAW")
       "raw options passed to the pretty-printer \n\tRAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer"
+    , Option [] ["casl-amalg"] (ReqArg parseCASLAmalg "ANALYSIS")
+      "CASL amalgamability analysis options \n\tANALYSIS is a comma-separated list of zero or more options from: (sharing,cell,colimit-thinness)"
     ]
 -- TODO: order in some useful way...
 
@@ -282,6 +298,14 @@ inTypes = [("casl",(CASLIn,True)),
            ("tree.gen_trm.baf",(ATermIn BAF,False)),
            ("ast",(ASTreeIn NonBAF,False)),
            ("ast.baf",(ASTreeIn BAF,False))]
+
+-- | possible CASL amalgamability options
+caslAmalgOpts :: [(String, CASLAmalgOpt)]
+caslAmalgOpts = [("sharing", Sharing),
+		 ("colimit-thinness", ColimitThinness),
+		 ("cell", Cell),
+		 ("", NoAnalysis)]
+
 
 -- | 
 downloadExtensions :: [String]
@@ -412,6 +436,22 @@ guessInType file =
       (_,_,Just suf) -> parseInType1 suf
       (_,_,Nothing)  -> hetsError User $
                         "InType of " ++ file ++ " unclear, please specify"
+
+
+-- | 'parseCASLAmalg' parses CASL amalgamability options
+parseCASLAmalg :: String -> Flag
+parseCASLAmalg str = 
+    let tokenize s = 
+	    let mcp = findIndex (== ',') s
+	    in case mcp of
+			Nothing -> [s]
+			Just pos -> let (w, (_ : s')) = splitAt pos s
+				    in w : (tokenize s')
+	recognize tok = case lookup tok caslAmalgOpts of
+						      Nothing -> hetsError User (tok ++ " is not a valid CASL amalgamability analysis option")
+						      Just opt -> opt
+    in CASLAmalg (filter (/= NoAnalysis) (map recognize (tokenize str)))
+
 
 -- main functions --
 
