@@ -7,15 +7,18 @@ instance (ATermConvertible a,
 	let (att1,aa') = toShATerm att0 $ labNodes graph
             (att2,bb') = toShATerm att1 $ labEdges graph
 	    lat = [ aa' , bb' ]
-	in addATerm (ShAAppl "Graph" lat []) att1
+	in addATerm (ShAAppl "Graph" lat []) att2
     fromShATerm att =
 	case aterm of
 	    (ShAAppl "Graph" [ aa , bb ] _) ->
 		let aa' = fromShATerm (getATermByIndex1 aa att)
                     bb' = fromShATerm (getATermByIndex1 bb att)
 		    in (mkGraph aa' bb')
+	    u -> fromShATermError "Graph" u
 	where
 	    aterm = getATerm att
+    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Graph\""
+    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Graph\""
 
 --end header
 

@@ -15,6 +15,10 @@ instance ATermConvertible SourcePos where
                     bb' = fromShATerm (getATermByIndex1 bb att)
                     cc' = fromShATerm (getATermByIndex1 cc att)
 		    in (newPos aa' bb' cc')
+	    u -> fromShATermError "SourcePos" u
 	where
 	    aterm = getATerm att
+    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"SourcePos\""
+    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"SourcePos\""
+
 -- </header>

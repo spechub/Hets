@@ -20,6 +20,8 @@ instance (ATermConvertible a) => ATermConvertible (Annoted a) where
             _ -> fromShATermError "Annoted" aterm
 	where
 	    aterm = getATerm att
+    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Annoted\""
+    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Annoted\""
 
 -- end header
 

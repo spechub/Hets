@@ -13,7 +13,7 @@ instance ATermConvertible Assump where
 	let (att1,an') = toShATerm att0 an
 	    (att2,s') = toShATerm att1 s 
 	    lat = [an',s']
-	in addATerm (ShAAppl "Assump_"  lat []) att0
+	in addATerm (ShAAppl "Assump_"  lat []) att2
     fromShATerm att =
 	case aterm of
 	    (ShAAppl "Assump_" [an',s' ] _) ->
@@ -31,7 +31,7 @@ instance (ATermConvertible a) => ATermConvertible (Qual a) where
 	let (att1,p') = toShATerm att0 p
 	    (att2,t') = toShATerm att1 t 
 	    lat = [p',t']
-	in addATerm (ShAAppl "Qual_"  lat []) att0
+	in addATerm (ShAAppl "Qual_"  lat []) att2
     fromShATerm att =
 	case aterm of
 	    (ShAAppl "Qual_" [an',s' ] _) ->

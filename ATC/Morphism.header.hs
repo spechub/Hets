@@ -11,5 +11,8 @@ instance ATermConvertible Morphism where
 		let msource = fromShATerm $ getATermByIndex1 i1 att 
 		    mtarget = fromShATerm $ getATermByIndex1 i2 att 
                 in (Morphism msource mtarget)
+	    u -> fromShATermError "Morphism" u
 	where
 	    aterm = getATerm att
+    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Morphism\""
+    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Morphism\""

@@ -6,9 +6,9 @@ instance ATermConvertible Morphism where
     toShATerm att0 (Morphism aa bb cc dd ee)=
 	let (att1,i1) = toShATerm att0 aa
             (att2,i2) = toShATerm att1 bb
-            (att3,i3) = toShATerm att1 cc
-            (att4,i4) = toShATerm att1 dd
-            (att5,i5) = toShATerm att1 ee
+            (att3,i3) = toShATerm att2 cc
+            (att4,i4) = toShATerm att3 dd
+            (att5,i5) = toShATerm att4 ee
             lat = [i1,i2,i3,i4,i5]
 	in addATerm (ShAAppl "Morphism"  lat []) att5
     fromShATerm att =
@@ -20,8 +20,12 @@ instance ATermConvertible Morphism where
 		    dd = fromShATerm $ getATermByIndex1 i4 att 
 		    ee = fromShATerm $ getATermByIndex1 i5 att 
                 in (Morphism aa bb cc dd ee)
+	    u -> fromShATermError "Morphism" u
 	where
 	    aterm = getATerm att
+    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Morphism\""
+    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Morphism\""
+
 
 instance ATermConvertible CASL_Sublogics where
     toShATerm att (CASL_SL b1 b2 b3 b4 b5 for) =
@@ -41,7 +45,10 @@ instance ATermConvertible CASL_Sublogics where
                              i5' = fromShATerm (getATermByIndex1 i5 att)
                              i6' = fromShATerm (getATermByIndex1 i6 att)
                          in (CASL_SL i1' i2' i3' i4' i5' i6')
+		       u -> fromShATermError "CASL_Sublogics" u
                       where aterm = getATerm att
+    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"CASL_Sublogics\""
+    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"CASL_Sublogics\""
 
 
 
@@ -55,7 +62,12 @@ instance ATermConvertible CASL_Formulas where
 		       (ShAAppl "Horn" [] []) -> Horn
 		       (ShAAppl "GHorn" [] []) -> GHorn
 		       (ShAAppl "FOL" [] []) -> FOL
+		       u -> fromShATermError "CASL_Formulas" u
                       where aterm = getATerm att
+
+    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"CASL_Formulas\""
+    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"CASL_Formulas\""
+
 -- end header
 
 
