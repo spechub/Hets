@@ -62,7 +62,6 @@ Symbols
 >	'('	{ LeftParen }
 >	')'	{ RightParen }
 >	';'	{ SemiColon }
->       ':'     { Colon }                       -- ExtHaskell
 >	'{'	{ LeftCurly }
 >	'}'	{ RightCurly }
 >	vccurly { VRightCurly }			-- a virtual close brace
@@ -757,9 +756,9 @@ Axioms (Extended Haskell)
 >       | subformula '=' srcloc exp             { AxEq $1 $4 $3 }
 
 > quantification :: { Quantifier }
->       : 'forall' axiom_var_list ':'           { AxForall $2 }
->       | 'exists' axiom_var_list ':'           { AxExists $2 }
->       | 'exists!' axiom_var_list ':'          { AxExistsOne $2 }
+>       : 'forall' axiom_var_list '->'           { AxForall $2 }
+>       | 'exists' axiom_var_list '->'           { AxExists $2 }
+>       | 'exists!' axiom_var_list '->'          { AxExistsOne $2 }
 
 > axiom_var_list :: { [AxiomBndr] }
 >       : axiom_var                             { [$1] }

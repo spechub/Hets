@@ -27,7 +27,6 @@ data Token
         | LeftParen
         | RightParen
         | SemiColon
-        | Colon                         -- ExtHas
         | LeftCurly
         | RightCurly
         | VRightCurly			-- a virtual close brace
@@ -240,7 +239,6 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
         ')' -> special RightParen
         ',' -> special Comma
         ';' -> special SemiColon
-        ':' | head s /= ':' -> special Colon
         '[' -> special LeftSquare
         ']' -> special RightSquare
         '`' -> special BackQuote
@@ -275,8 +273,6 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
                                                  else forward l_con (ConId con) rest
 
           | isSymbol c ->
-            -- if c == ':' then trace "special Colon " (special Colon)
-             -- else   
         	let
         	    (symtail, rest) = span isSymbol s
         	    sym = c : symtail
