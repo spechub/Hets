@@ -10,10 +10,9 @@ Portability :  portable
    for the execution of translated HasCASL program equations
 -}
 
-module MyLogic (_2_S_B_2, _2_L_E_G_2, _2_E_2
-	       , _2_E_G_2, _2_Ee_E_2, _2_B_S_2
-	       , _2if_2, _2when_2else_2, if_2then_2else_2
-	       , not_2, true, false, def_2) where
+module MyLogic where
+
+type Pred a = a -> Bool
 
 _2_S_B_2 :: (Bool, Bool) -> Bool
 _2_S_B_2 = uncurry (&&)
