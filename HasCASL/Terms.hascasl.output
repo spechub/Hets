@@ -114,3 +114,9 @@ let x = case x in t of y -> z;
 if a then b
 a if b
 if a then b else c
+(a,b) as t
+((a,b) as t)
+\ (a @ (b,c) : S × S) . a
+\ (a # (b,c) : S × S) . a
+\ (a # (b,c) # : S × S) . a
+\ (a) . a

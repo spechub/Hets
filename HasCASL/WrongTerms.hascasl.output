@@ -170,3 +170,7 @@ parse error at (line 43, column 13):
 unexpected end of input
 expecting casl char, "if", "=e=", "=", id/literal, "{", "[", "(", "forall", "exists!", "exists", "\\", "case" or "let"
 
+parse error at (line 44, column 11):
+unexpected "@"
+expecting quoted char, dot-words, digit, words, "__", "{", "[", "(", ":", ",", ";" or ")"
+

@@ -5,15 +5,10 @@ SET=$2
 
 . ../CASL/checkFunctions.sh
 
-for i in Kinds Types Terms Items;
+for i in MixIds Kinds Types Terms Items BasicSpec;
 do
     runmycheck $i hascasl
     runwrongcheck $i hascasl
-done
-
-for i in MixIds BasicSpec;
-do
-    runmycheck $i hascasl
 done
 
 (cd test; bash runcheck.sh ../$PA $SET)
