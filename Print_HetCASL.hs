@@ -14,6 +14,7 @@
 
 module Print_HetCASL where
 
+import Pretty
 import PrettyPrint
 import GlobalAnnotations
 import GlobalAnnotationsFunctions
@@ -28,3 +29,6 @@ printLIB_DEFN_text ld = renderText $ printText ga ld
 printLIB_DEFN_latex :: LIB_DEFN -> String
 printLIB_DEFN_latex ld = renderLatex $ printLatex ga ld
     where ga = initGlobalAnnos ld
+
+printText0_eGA :: forall a . (PrettyPrint a) => a -> Doc
+printText0_eGA x = printText0 emptyGlobalAnnos x
