@@ -1186,8 +1186,6 @@ pr_sortitem l (SortItem id rels def pos alt) =
 -- remove information about how a sort was defined if not expressable
 -- in the target sublogic
 --
--- FIXME
--- handle [Pos] in Datatype case
 pr_sortdefn :: CASL_Sublogics -> Maybe SortDefn -> Maybe SortDefn
 pr_sortdefn l Nothing = Nothing
 pr_sortdefn l (Just (SubsortDefn v f p)) =
@@ -1203,13 +1201,12 @@ pr_sortdefn l (Just (SubsortDefn v f p)) =
               Nothing
 pr_sortdefn l (Just (Datatype alt kind items p)) =
             let
-              a = mapMaybe (pr_annoted l pr_Alternative) alt
-              b = pr_genitems l items
+              (res,pos) = mapPos 1 p (pr_annoted l pr_Alternative) alt
+              b = case (pr_genitems l items) of Nothing -> [];
+                                                      x -> fromJust x
             in
-              if (isJust b) then
-                Just (Datatype a kind (fromJust b) p)
-              else
-                Nothing
+              case res of [] -> Nothing;
+                           x -> Just (Datatype x kind b pos)
 
 pr_genitems :: CASL_Sublogics -> GenItems -> Maybe GenItems
 pr_genitems l i = let
@@ -1220,13 +1217,11 @@ pr_genitems l i = let
                     else
                       Just res
 
--- FIXME
--- handle [Pos] in Construct case correctly
 pr_Alternative :: CASL_Sublogics -> Alternative -> Maybe Alternative
 pr_Alternative l (Construct i t c p) =
                if (in_x l t sl_optype) then
                  let
-                   (res,pos) = mapPos 0 p (pr_Component l) c
+                   (res,pos) = mapPos 1 p (pr_Component l) c
                  in
                    if (res==[]) then
                      Nothing
