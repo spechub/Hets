@@ -35,16 +35,25 @@ Jorina
 
 
 - Local Subsumption-Regel ausbauen zu Loc-Decomposition (I+II)
+    zu einem lokalen Theoremlink alle parallelen "locally reachable" Links (Thm+Def)
     Signaturmorphismen dürfen verschieden sein
+    Ringbeweis-Check, + sich selbst darf er auch nicht nehmen
     prüfen, ob beide die lokalen Axiome des Startknotens gleich abbilden
-    lokale Axiome mit dgn_sens (für DGNode) bzw. für DGRef
-      über dgn_libname und dgn_node in anderer Library nachgucken
-      und dort rekursiv die lokalen Axiome berechnen
+    Funktion dgn_sens_rekursiv: steigt bei DGRef rekrusiv ab
+      (über dgn_libname und dgn_node in anderer Library nachgucken)
+      bis DGNode erreicht ist, dann 
+        lokale Axiome mit dgn_sens die lokalen Axiome berechnen
     Abbilden der Axiome entlang eines Signaturmorphismus: mit
       map_sen aus Logic/Logic.hs. Vorher die G_l_sentence_list auspacken:
          case dgn_sens_rekursiv node of
-           G_l_sentence lid sens -> sequence (map (map_sen lid mor) sens)
+           G_l_sentence_list lid sens -> do
+               sens1 <- sequence (map (map_sen lid mor1) sens)
+               sens2 <- sequence (map (map_sen lid mor2) sens)
+               return (Set.fromList sens1) == (Set.fromList sens2)
        Result: siehe Common/Result.hs
+    Vergleichen: Abbildung des Axiome mit Morphismus1 + Morphismus2
+    aus resultierenden Listen Mengen machen (Set.fromList aus Common.Lib.set) 
+     + diese dann vergleichen
     genauso optimieren wie Subsumption, d.h. auch Theorem-Links zulassen
       (allerdings lokale Links immer nur im 1. Schritt!)
 
