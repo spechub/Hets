@@ -18,6 +18,8 @@ import qualified Common.Lib.Map as Map
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
+import Common.GlobalAnnotations
+import Common.AS_Annotation
 import CASL.Print_AS_Basic
 import CASL.Sign
 import Modal.AS_Modal
@@ -26,6 +28,14 @@ import CASL.AS_Basic_CASL (FORMULA(..))
 
 import Debug.Trace
 
+printFormulaOfModalSign :: PrettyPrint f => GlobalAnnos 
+                        -> [[Annoted (FORMULA f)]] -> Doc
+printFormulaOfModalSign ga f =
+    vcat $ map rekuPF f 
+	where rekuPF ::PrettyPrint f =>  [Annoted (FORMULA f)] -> Doc
+              rekuPF tf = fsep $ punctuate semi  
+                          $ map (printAnnotedFormula_Text0 ga False) tf
+			     
 instance PrettyPrint M_BASIC_ITEM where
     printText0 ga (Simple_mod_decl is fs _) = 
 	ptext modalityS <+> semiAnno_text ga is

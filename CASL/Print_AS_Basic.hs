@@ -79,12 +79,6 @@ printFormulaAux :: PrettyPrint f => GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
 printFormulaAux ga f =
   vcat $ map (printAnnotedFormula_Text0 ga True) f
 
-printFormulaOfModalSign :: PrettyPrint f => GlobalAnnos -> [[Annoted (FORMULA f)]] -> Doc
-printFormulaOfModalSign ga f =
-    vcat $ map rekuPF f 
-	where rekuPF ::PrettyPrint f =>  [Annoted (FORMULA f)] -> Doc
-              rekuPF tf = fsep $ punctuate semi  $ map (printAnnotedFormula_Text0 ga False) tf
-			     
 printAnnotedFormula_Text0 :: PrettyPrint f => 
 			     GlobalAnnos -> Bool ->  Annoted (FORMULA f) -> Doc
 printAnnotedFormula_Text0 ga withDot (Annoted i _ las ras) =
