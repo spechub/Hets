@@ -32,7 +32,6 @@ convertGlobalAnnos ga = c_prec (prec_annos ga)
 	      ++ c_assoc (assoc_annos ga)
 	      ++ c_displ (display_annos ga)
               ++ c_lit_an (literal_annos ga)
-	      ++ c_lit_map (literal_map ga)
 
 -- Achtung noch nicht fertig
 c_prec::PrecedenceGraph->[Annotation]
@@ -68,22 +67,3 @@ c_lit_an la = let str = case (string_lit la) of
 				 Just (a,b) -> [Float_anno a b []]
                                  _ -> []
               in str++lis++number++flo
-
-
--- Only a Dummy
-c_lit_map::LiteralMap->[Annotation]
-c_lit_map _lm = []
-
-{-
-c_lit_map lm = let liste = Map.toList lm -- [(Id,LiteralType)]
-	       in concat $ map (\ (i,lt) -> checkLT i lt) liste
-
-
-checkLT::Id->LiteralType->[Annotation]
-checkLT i lt  = case lt of
-			StringCons x -> [String_anno i x []]
-			ListCons x y -> [List_anno i x y []]
-			Number       -> [Number_anno i []]
-			Floating     -> [Float_anno i i []] -- Achtung, falsch!
-			_ -> []
--}
