@@ -18,13 +18,6 @@ import Common.Result
 import HasCASL.Unify
 import HasCASL.MixAna
 
-toEnvState :: State Int a -> State Env a 
-toEnvState pi = 
-    do s <- get
-       let (r, c) = runState pi $ counter s
-       put s { counter = c }
-       return r 
-
 anaOpItem :: OpItem -> State Env ()
 anaOpItem (OpDecl is sc attr _) = 
     mapM_ (anaOpId sc attr) is

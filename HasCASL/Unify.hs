@@ -24,6 +24,13 @@ isUnifiable :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
 isUnifiable tm c sc1 sc2 = isJust $ maybeResult $ 
 			   evalState (unifIable tm sc1 sc2) c
 
+toEnvState :: State Int a -> State Env a 
+toEnvState p = 
+    do s <- get
+       let (r, c) = runState p $ counter s
+       put s { counter = c }
+       return r 
+
 unifIable :: TypeMap -> TypeScheme -> TypeScheme -> State Int (Result Subst)
 unifIable tm sc1 sc2 =
     do t1 <- freshInst sc1
