@@ -15,7 +15,7 @@ import Id
 import AS_Annotation 
 
 data BasicSpec = BasicSpec [Annoted BasicItem]
-                  deriving (Show,Eq)
+                  deriving (Show, Eq)
 
 data BasicItem = SigItems SigItems
                | ProgItems [Annoted ProgEq] [Pos]
@@ -31,7 +31,7 @@ data BasicItem = SigItems SigItems
                -- or "generated" "type" ";"s
                | AxiomItems [GenVarDecl] [Annoted Formula] [Pos]
                -- pos "forall" (if GenVarDecl not empty), dots 
-                 deriving (Show,Eq)
+                 deriving (Show, Eq)
 
 data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
               -- pos "type", ";"s
@@ -39,14 +39,14 @@ data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
               -- pos "op", ";"s
               | PredItems [Annoted PredItem] [Pos]
               -- pos "pred", ";"s
-                 deriving (Show,Eq)
+                 deriving (Show, Eq)
 
 -- "instance" indicator
-data Instance = Instance | Plain deriving (Show,Eq)
+data Instance = Instance | Plain deriving (Show, Eq)
 
 data ClassItem = ClassItem ClassDecl [Annoted BasicItem] [Pos] 
                  -- pos "{", ";"s "}"
-                 deriving (Show,Eq)
+                 deriving (Show, Eq)
 
 data ClassDecl = ClassDecl [ClassName] [Pos]
                -- pos ","s
@@ -56,7 +56,7 @@ data ClassDecl = ClassDecl [ClassName] [Pos]
                -- pos "="
                | DownsetDefn ClassName TypeVar Type [Pos] 
 	       -- pos " =" "{", dot, "<", typeVar,  "}"
-                 deriving (Show,Eq)
+                 deriving (Show, Eq)
                           
 data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos ","s
@@ -69,7 +69,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                | AliasType TypePattern Kind PseudoType [Pos]
                -- pos ":="
 	       | Datatype DatatypeDecl
-                 deriving (Show,Eq)
+                 deriving (Show, Eq)
 
 data TypePattern = TypePattern TypeName [TypeArg] [Pos]
                  -- pos "("s, ")"s 
@@ -78,14 +78,16 @@ data TypePattern = TypePattern TypeName [TypeArg] [Pos]
                  | BracketTypePattern BracketKind [TypePattern] [Pos]
                  -- pos brackets 
                  | TypePatternArgs [TypeArg]
-                   deriving (Show,Eq)
+                   deriving (Show, Eq)
 
 data PseudoType = SimplePseudoType Type 
                 | PseudoType [TypeArgs] PseudoType [Pos]
                 -- pos "\" "("s, ")"s, dot 
-                  deriving (Show,Eq)
+                  deriving (Show, Eq)
 
 data Type = TypeConstrAppl TypeName Kind [Type] [Pos]  -- analysed
+          | TypeVar TypeName Kind Int [Pos] -- analysed 
+            -- Int > 0 means generalized
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
           | KindedType Type Kind Pos
@@ -99,34 +101,40 @@ data Type = TypeConstrAppl TypeName Kind [Type] [Pos]  -- analysed
           -- pos crosses 
           | FunType Type Arrow Type [Pos]
           -- pos arrow
-            deriving (Show,Eq)
+            deriving (Show, Eq)
 
 data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
-             deriving (Show,Eq)
+             deriving (Show, Eq)
+
+data Pred = IsIn ClassName [Type]
+              deriving (Show, Eq)
+
+data Qual t = [Pred] :=> t
+              deriving (Show, Eq)
 
 -- no curried notation for bound variables 
 data TypeScheme = SimpleTypeScheme Type
-                | TypeScheme [TypeVarDecl] TypeScheme [Pos]
+                | TypeScheme [TypeVarDecl] (Qual Type) [Pos]
                 -- pos "forall", ";"s,  dot 
-                  deriving (Show,Eq)
+                  deriving (Show, Eq)
 
-data Partiality = Partial | Total deriving (Show,Eq)
+data Partiality = Partial | Total deriving (Show, Eq)
 
 data OpItem = OpDecl [OpName] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
             | OpDefn OpName [Pattern] TypeScheme Partiality Term [Pos]
                -- pos "("s, ")"s, ":" or ":?", "="
-              deriving (Show,Eq)
+              deriving (Show, Eq)
 
 data PredItem = PredDecl [OpName] TypeScheme [Pos]
                -- pos ","s, ":", ","s
               | PredDefn OpName [Pattern] Formula [Pos]
                -- pos "("s, ")"s, "<=>"
-              deriving (Show,Eq)
+              deriving (Show, Eq)
 
-data BinOpAttr = Assoc | Comm | Idem deriving (Show,Eq)
+data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq)
 
-data OpAttr = BinOpAttr BinOpAttr Pos | UnitOpAttr Term Pos deriving (Show,Eq)
+data OpAttr = BinOpAttr BinOpAttr Pos | UnitOpAttr Term Pos deriving (Show, Eq)
 
 data DatatypeDecl = DatatypeDecl 
                     TypePattern 
@@ -135,31 +143,31 @@ data DatatypeDecl = DatatypeDecl
                     (Maybe Class) 
                     [Pos] 
 		     -- pos "::=", "|"s, "deriving"
-		     deriving (Show,Eq)
+		     deriving (Show, Eq)
 
 data Alternative = Constructor UninstOpName [Components] Partiality [Pos]
 		   -- pos: "?"
 		 | Subtype [Type] [Pos]
 		   -- pos: "type", ","s
-		   deriving (Show,Eq)
+		   deriving (Show, Eq)
 
 data Components = Selector UninstOpName Partiality Type SeparatorKind Pos 
 		-- pos ",", ":" or ":?"
 		| NoSelector Type
 		| NestedComponents [Components] [Pos]
 		  -- pos : "(", ";"s, ")"
-		  deriving (Show,Eq)
+		  deriving (Show, Eq)
 
 data Quantifier = Universal | Existential | Unique
-		  deriving (Show,Eq)
+		  deriving (Show, Eq)
 
-data TypeQual = OfType | AsType | InType deriving (Show,Eq)
+data TypeQual = OfType | AsType | InType deriving (Show, Eq)
 
-data BracketKind = Parens | Squares | Braces deriving (Show,Eq)
+data BracketKind = Parens | Squares | Braces deriving (Show, Eq)
 
 
-data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp deriving (Show,Eq)
-data EqOp = EqualOp | ExEqualOp deriving (Show,Eq)
+data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp deriving (Show, Eq)
+data EqOp = EqualOp | ExEqualOp deriving (Show, Eq)
 
 -- proper formulae only exist after static analysis
 data Formula = TermFormula Term 	  
@@ -173,7 +181,7 @@ data Formula = TermFormula Term
              -- pos quantifier, ";"s, dot
 	     | PolyFormula [TypeVarDecl] Formula [Pos]
              -- pos "forall", ";"s, dot
-	       deriving (Show,Eq)
+	       deriving (Show, Eq)
 
 -- parse quantified formulae as terms first
 -- eases also parsing of formulae in parenthesis
@@ -203,7 +211,7 @@ data Term = CondTerm Term Formula Term [Pos]
           | MixfixTerm [Term]
 	  | BracketTerm BracketKind [Term] [Pos]
 	  -- pos brackets, ","s 
-	    deriving (Show,Eq)
+	    deriving (Show, Eq)
 
 data Pattern = PatternVars [VarDecl] [Pos]
              -- pos ";"s 
@@ -220,65 +228,66 @@ data Pattern = PatternVars [VarDecl] [Pos]
 	     -- pos ":"  
 	     | AsPattern Pattern Pattern [Pos]
 	     -- pos "@"
-	       deriving (Show,Eq)
+	       deriving (Show, Eq)
 
-data ProgEq = ProgEq Pattern Term Pos deriving (Show,Eq)
+data ProgEq = ProgEq Pattern Term Pos deriving (Show, Eq)
 	    -- pos "=" (or "->" following case-of)
 -- ----------------------------------------------------------------------------
 -- (type) var decls
 -- ----------------------------------------------------------------------------
 
-data SeparatorKind = Comma | Other deriving (Show,Eq)
+data SeparatorKind = Comma | Other deriving (Show, Eq)
 
-data VarDecl = VarDecl Var Type SeparatorKind Pos deriving (Show,Eq)
+data VarDecl = VarDecl Var Type SeparatorKind Pos deriving (Show, Eq)
 	       -- pos "," or ":" 
 
-data TypeVarDecl = TypeVarDecl TypeVar Class SeparatorKind Pos 
+-- currently TypeName is a simple Token and Kind is only a Class
+data TypeVarDecl = TypeVarDecl TypeName Kind SeparatorKind Pos 
                    -- pos "," or ":" 
-		   deriving (Show,Eq)
+		   deriving (Show, Eq)
 
-data TypeVarDecls = TypeVarDecls [TypeVarDecl] [Pos] deriving (Show,Eq)
+data TypeVarDecls = TypeVarDecls [TypeVarDecl] [Pos] deriving (Show, Eq)
 		    -- pos "[", ";"s, "]"
 
 data TypeArg = TypeArg TypeVar ExtClass SeparatorKind Pos
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
-	       deriving (Show,Eq)
+	       deriving (Show, Eq)
 
-data TypeArgs = TypeArgs [TypeArg] [Pos] deriving (Show,Eq)
+data TypeArgs = TypeArgs [TypeArg] [Pos] deriving (Show, Eq)
 	        -- pos ";"s
 
 data GenVarDecl = GenVarDecl VarDecl
 		| GenTypeVarDecl TypeVarDecl
-		  deriving (Show,Eq)
+		  deriving (Show, Eq)
 
 -- ----------------------------------------------------------------------------
 -- class
 -- ----------------------------------------------------------------------------
 
-data Variance = CoVar | ContraVar | InVar deriving (Show,Eq)
+data Variance = CoVar | ContraVar | InVar deriving (Show, Eq)
 
-data ExtClass = ExtClass Class Variance Pos deriving (Show,Eq)
+data ExtClass = ExtClass Class Variance Pos deriving (Show, Eq)
 	        -- pos "+" or "-" (or nullPos)
 
-data ProdClass = ProdClass [ExtClass] [Pos] deriving (Show,Eq)
+data ProdClass = ProdClass [ExtClass] [Pos] deriving (Show, Eq)
                  -- pos crosses 
 
-data Kind = Kind [ProdClass] Class [Pos] deriving (Show,Eq)
+data Kind = Kind [ProdClass] Class [Pos] deriving (Show, Eq)
 	    -- pos "->"s (first order)
 
 data Class = Downset Type   -- not parsed directly
 	   | Intersection { iclass :: [ClassName], classPos :: [Pos] }  
 	   -- pos "(", ","s, ")"
-	     deriving (Show,Eq)
+	     deriving (Show, Eq)
 
 -- ----------------------------------------------------------------------------
 -- op names
 -- ----------------------------------------------------------------------------
 
-data OpName = OpName UninstOpName [TypeVarDecls] deriving (Show,Eq)
+data OpName = OpName UninstOpName [TypeVarDecls] deriving (Show, Eq)
 
-data Types = Types [Type] [Pos] deriving (Show,Eq) -- [TYPE, ..., TYPE]
-data InstOpName = InstOpName UninstOpName [Types] deriving (Show,Eq)
+data Types = Types [Type] [Pos] deriving (Show, Eq) -- [TYPE, ..., TYPE]
+data InstOpName = InstOpName UninstOpName [Types] deriving (Show, Eq)
 
 -- ----------------------------------------------------------------------------
 -- ids

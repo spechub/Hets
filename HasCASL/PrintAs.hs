@@ -41,6 +41,12 @@ instance PrettyPrint Type where
 			       _ -> space <> colon <> printText0 ga kind)
 			  <> if null args then empty 
 			     else parens (commas ga args)
+    printText0 ga (TypeVar name kind i _) = printText0 ga name
+			  <> (case kind of 
+			       Kind [] (Intersection [] _) _ -> empty
+			       _ -> space <> colon <> printText0 ga kind)
+			  <> if i == 0 then empty 
+			     else parens (ptext (show i))
     printText0 ga (TypeToken t) = printText0 ga t
     printText0 ga (BracketType k l _) = bracket k $ commas ga l
     printText0 ga (KindedType t kind _) = printText0 ga t  
@@ -55,6 +61,22 @@ instance PrettyPrint Type where
     printText0 ga (FunType t1 arr t2 _) = printText0 ga t1
 				      <+> printText0 ga arr
 				      <+> printText0 ga t2
+
+
+instance PrettyPrint Pred where
+    printText0 ga (IsIn c ts) = if null ts then printText0 ga c 
+				else if null $ tail ts then
+				     printText0 ga (head ts) <+>
+				     colon <+> printText0 ga c
+				else printText0 ga c <+>
+				     fsep (punctuate space
+				     (map (printText0 ga) ts))
+				     
+instance PrettyPrint t => PrettyPrint (Qual t) where
+    printText0 ga (ps :=> t) = (if null ps then empty
+			       else parens $ commas ga ps <+>
+				    ptext implS <+> space) <>
+					       printText0 ga t
 
 -- no curried notation for bound variables 
 instance PrettyPrint TypeScheme where
@@ -185,11 +207,12 @@ instance PrettyPrint VarDecl where
 						 <+> printText0 ga t
 
 instance PrettyPrint TypeVarDecl where 
-    printText0 ga (TypeVarDecl v c _ _) = printText0 ga v <+> 
-					      case c of 
-					      Downset t -> 
-					        text lessS <+> printText0 ga t
-					      _ -> colon <+> printText0 ga c
+    printText0 ga (TypeVarDecl v c _ _) = 
+	printText0 ga v <+> 
+	case c of 
+	Kind [] (Downset t) _ -> 
+	    text lessS <+> printText0 ga t
+	_ -> colon <+> printText0 ga c
 
 instance PrettyPrint GenVarDecl where 
     printText0 ga (GenVarDecl v) = printText0 ga v

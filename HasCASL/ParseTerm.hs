@@ -201,10 +201,11 @@ typeVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
 				(Intersection [] []) nullPos)
 
 makeTypeVarDecls :: [TypeVar] -> [Token] -> Class -> Pos -> [TypeVarDecl]
-makeTypeVarDecls vs ps cl q = zipWith (\ v p -> 
-				      TypeVarDecl v cl Comma (tokPos p))
-					 (init vs) ps 
-			      ++ [TypeVarDecl (last vs) cl Other q]
+makeTypeVarDecls vs ps c q = let cl = Kind [] c [] in 
+    zipWith (\ v p -> 
+	     TypeVarDecl (simpleIdToId v) cl Comma (tokPos p))
+		(init vs) ps 
+		++ [TypeVarDecl (simpleIdToId $ last vs) cl Other q]
 
 genVarDecls:: GenParser Char st [GenVarDecl]
 genVarDecls = do (vs, ps) <- var `separatedBy` commaT
@@ -370,7 +371,14 @@ typeScheme = do f <- forallT
 		(ts, cs) <- typeVarDecls `separatedBy` semiT
 		d <- dotT
 		t <- typeScheme
-		return (TypeScheme (concat ts) t (toPos f cs d))
+                return $ case t of 
+			 SimpleTypeScheme ty ->
+			     TypeScheme (concat ts) 
+					    ([] :=> ty) 
+					    (toPos f cs d)
+			 TypeScheme ots q ps ->
+			     TypeScheme (concat ts ++ ots) q
+					(ps ++ toPos f cs d)
 	     <|> fmap SimpleTypeScheme parseType
 
 -----------------------------------------------------------------------------
@@ -436,7 +444,8 @@ qualOpName o = do { v <- asKey opS
 
 predTypeScheme :: TypeScheme -> TypeScheme
 predTypeScheme (SimpleTypeScheme t) = SimpleTypeScheme (predType t)
-predTypeScheme (TypeScheme vs t ps) = TypeScheme vs (predTypeScheme t) ps
+predTypeScheme (TypeScheme vs (qs :=> t) ps) = 
+    TypeScheme vs (qs :=> predType t) ps
 
 predType :: Type -> Type
 predType t = FunType t PFunArr (TupleType [] []) []
