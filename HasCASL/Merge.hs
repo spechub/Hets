@@ -19,29 +19,11 @@ import HasCASL.Le
 import HasCASL.AsUtils
 import HasCASL.Unify
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Data.List
 import Control.Monad
 import Common.Result
 
 -- for Logic.signature_union
-
-instance Mergeable Env where
-    merge e1 e2 =
-	do cMap <- merge (classMap e1) $ classMap e2
-	   let m = max (counter e1) $ counter e2
-	   tMap <- mergeMap (mergeTypeInfo Map.empty m) 
-		   (typeMap e1) $ typeMap e2
-	   as <- mergeMap (mergeOpInfos tMap m) 
-		 (assumps e1) $ assumps e2
-	   return e1 { classMap = cMap
-		     , typeMap = tMap
-		     , counter = m
-		     , assumps = as 
-		     , sentences = sentences e1 ++ sentences e2
-		     , envDiags = envDiags e1 ++ envDiags e2
-		     , preIds = Set.union (preIds e1) $ preIds e2 }
-
 
 instance (Ord a, PosItem a, PrettyPrint a, Mergeable b) 
     => Mergeable (Map.Map a b) where

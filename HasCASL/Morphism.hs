@@ -171,6 +171,18 @@ mapFunSym tm fm (i, sc) = do
       -- unify sc2 with sc1 later
   return (newI, sc2)
 
+instance Mergeable Env where
+    merge e1 e2 =
+	do cMap <- merge (classMap e1) $ classMap e2
+	   let m = max (counter e1) $ counter e2
+	   tMap <- mergeMap (mergeTypeInfo Map.empty 0) 
+		   (typeMap e1) $ typeMap e2
+	   as <- mergeMap (mergeOpInfos tMap 0) 
+		 (assumps e1) $ assumps e2
+	   return initialEnv { classMap = cMap
+			     , typeMap = tMap
+			     , assumps = as }
+
 data Morphism = Morphism { msource :: Env
 			 , mtarget :: Env
 			 , classIdMap :: IdMap  -- ignore
