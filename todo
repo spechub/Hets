@@ -154,6 +154,8 @@ subsort definitions: are conservative if formula is satisfiable
 Heng (Klaus)
 ************************************************
 
+LaTeX: see listings.sty for LaTeX generation (cf. CoSiT paper)
+
 emacs mode: 
   highlight does not work properly for HasCASL/Set.het or UserManual/Sbcs.casl
      some operation symbols
@@ -190,6 +192,10 @@ CCS example: commutativity of || by coinduction
 ************************************************
 Christian
 ************************************************
+
+simplification of HasCASL sentences (omit types)
+
+hets-daily for Linux 2.6
 
 analyse the ghc-6.4 difference in Logic/Comorphism.hs
 
@@ -284,6 +290,31 @@ IsaWin: support CASL-libraries
 ************************************************
 Till
 ************************************************
+
+from Stefan Wölfl:
+computeTheory does not work across library imports
+local theorems
+all nodes named
+hierarchical Isabelle theories
+daVinci printing is not adequate
+hiding of internal nodes does not work
+
+CSPs
+----
+FOL without quantifiers and with uniform disjunctions
+  (i.e.  x R1 y \/ x R2 y)
+ (with and without =)
+algorithmic path consistency over a relation algebra
+  plug in reasoner for this
+  develop correctness results (algorithmic path consistency=path consistency)
+    within CASL
+
+CASL sublogics:
+---------------
+FOL without quantifiers (with and without =)
+guarded fragment
+Prop
+
 
 [from DOLCE cooperation:
 quit wish!
