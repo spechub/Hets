@@ -1,7 +1,7 @@
 {- |
 
    Module      :  $Header$
-   Copyright   :  (c) Christian Maeder, Klaus Lüttich, Carsten Fischer and Uni Bremen 2002-2003
+   Copyright   :  (c) Christian Maeder, Klaus Lüttich and Uni Bremen 2002-2003
    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 
@@ -41,7 +41,7 @@ addGlobalAnnos ga all_annos = do
 	    Unparsed_anno _ _ _ -> False
             -- line and group and comments will be ignored
 	    _ -> True) all_annos
-	   ds = map ( \ d -> mkDiag Hint "ignoring annotation" d) 
+	   ds = map ( \ d -> mkDiag Hint "no analysis of" d) 
 		rest_annos
        Result ds (Just ())
        n_prec_annos <- store_prec_annos (prec_annos  ga) annos
