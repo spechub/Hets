@@ -15,8 +15,6 @@ Portability :  portable
 
 TODO:
 
-* include functions and predicates in the analysis
-* change the representation of equivalences to utilise Maps and Sets
 * optimisations in congruenceClosure (Nelson-Oppen algorithm?)
 * optimisation in colimitIsThin (fixUpdRule)
 * optimisations in the whole algorithm
@@ -623,9 +621,9 @@ finiteAdm_simeq embs simeq =
 
 
 -- | Check if the colimit is thin.
-colimitIsThin :: EquivRel DiagSort
-	      -> [DiagEmb]
-	      -> EquivRel DiagEmbWord
+colimitIsThin :: EquivRel DiagSort    -- ^ the simeq relation
+	      -> [DiagEmb]            -- ^ the set of diagram embeddings
+	      -> EquivRel DiagEmbWord -- ^ the cong_0 relation
 	      -> Bool
 colimitIsThin simeq embs c0 = 
     let -- sortsC: a list of colimit sorts
@@ -805,7 +803,7 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
 	   formatSig n = case find (\(n', d) -> n' == n && d /= "") (labNodes desc) of
 			      Just (_, d) -> d 
 			      Nothing -> renderText Nothing (printText (getNodeSig n lns))
-           -- and now the relevand stuff
+           -- and now the relevant stuff
 	   diag = delNode tn diag'
            s = simeq diag
 	   st = simeq_tau sink
