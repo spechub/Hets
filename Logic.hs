@@ -99,7 +99,9 @@ class (Language id, Eq sign, Show sign, Eq morphism) =>
 
 -- abstract syntax, parsing and printing
 
-type ParseFun a = FilePath -> String -> (a,String)
+type ParseFun a = FilePath -> Int -> Int -> String -> (a,String,Int,Int)
+                  -- args: filename, line, column, input text
+                  -- result: value, remaining text, line, column 
 
 class (Language id, PrettyPrint basic_spec, Eq basic_spec,
        PrettyPrint symb_items, Eq symb_items,

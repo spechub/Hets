@@ -1,11 +1,8 @@
 
--- parse (do x<-many (char 'a'); s <- getInput; return (x,s)) "" "aaab"
-
-
 {- HetCATS/Parse_AS_Structured.hs
    $Id$
-   Author: Christian Maeder
-   Year:   2002
+   Author: Till Mossakowski, Christian Maeder
+   Year:   2002/2003
 
    Parsing the Structured part of hetrogenous specifications.
    http://www.cofi.info/Documents/CASL/Summary/
@@ -151,16 +148,8 @@ switchLogic n l@(Logic i : _) =
 parseItemsMap :: GenParser Char AnyLogic (G_symb_map_items_list, [Token])
 parseItemsMap = 
    do Logic id <- getState
-      (cs, ps) <- do
-         s <- getInput
-         pos <- getPosition
-         (cs,rest) <- case parse_symb_map_items id of 
-             Nothing -> fail ("no symbol map parser for language " 
-   				    ++ language_name id)
-	     Just p -> return (p (sourceName pos) s)
-         setInput rest
-         return cs 
-       `separatedBy` plainComma
+      (cs, ps) <- callParser (parse_symb_map_items id) (language_name id) "symbol maps"
+                      `separatedBy` plainComma
       return (G_symb_map_items_list id cs, ps)
 
 
@@ -184,16 +173,8 @@ parseMapping l =
 parseItemsList :: LogicGraph -> GenParser Char AnyLogic (G_symb_items_list, [Token])
 parseItemsList l = 
    do Logic id <- getState
-      (cs,ps) <- do
-         s <- getInput
-         pos <- getPosition
-         (cs,rest) <- case parse_symb_items id of 
-             Nothing -> fail ("no symbol item parser for language " 
-	   			    ++ language_name id)
-	     Just p -> return (p (sourceName pos) s)
-         setInput rest
-         return cs 
-       `separatedBy` plainComma
+      (cs, ps) <- callParser (parse_symb_items id) (language_name id) "symbols"
+                      `separatedBy` plainComma
       return (G_symb_items_list id cs, []) 
 
 
@@ -249,7 +230,7 @@ specC l = do{sp <- annoParser (specD l)
                  ; return (emptyAnno (Reduction sp (Hidden m (map tokPos (p:ps)))))
                 })<|>( do 
                 {  p <- asKey revealS
-                 ; (m, ps) <- parseRevealing l
+                 ; (m, ps) <- parseItemsMap
                  ; return (emptyAnno (Reduction sp (Revealed m (map tokPos (p:ps)))))
                 })<|> return sp
              }
@@ -280,15 +261,25 @@ specE l = groupSpec l
       <|> logicSpec l
 
 
+callParser p name itemType = do
+    s <- getInput
+    pos <- getPosition
+    (x,rest,line,col) <- case p of 
+	 Nothing -> fail ("no "++itemType++" parser for language " 
+			    ++ name)
+	 Just p -> return (p (sourceName pos)
+                              (sourceLine pos)
+                              (sourceColumn pos) s)
+    setInput rest
+    let pos' = setSourceColumn (setSourceLine pos line) col
+    setPosition pos'
+    return x
+
+
 basicSpec :: LogicGraph -> GenParser Char AnyLogic SPEC
 basicSpec l = do Logic id <- getState
-                 s <- getInput
-                 pos <- getPosition
-		 (bspec,rest) <- case parse_basic_spec id of 
-		   Nothing -> fail ("no parser for language " 
-				    ++ language_name id)
-		   Just p -> return (p (sourceName pos) s)
-                 setInput rest
+                 bspec <- callParser (parse_basic_spec id) (language_name id)
+                            "basic specification"
                  return (Basic_spec (G_basic_spec id bspec))
 
 
@@ -403,13 +394,17 @@ libName = do lid <- libId
                Nothing -> Lib_id lid
                Just v1 -> Lib_version lid v1)
 
-libId = do (path,ps) <- scanAnyWords `separatedBy` (asKey "/")
-           return (Indirect_link (concat (intersperse "/" path)) [tokPos (head ps)])
+libId = do pos <- getPosition
+           path <- scanAnyWords `sepBy1` (string "/")
+           skip
+           return (Indirect_link (concat (intersperse "/" path)) [(sourceLine pos, sourceColumn pos)])
            -- ??? URL need to be added
 
 version = do s <- asKey versionS
-             (ns,ps) <- many1 digit `separatedBy` (asKey ".")
-             return (Version_number ns (map tokPos [s,head ps]))
+             pos <- getPosition
+             n <- many1 digit `sepBy1` (string ".")
+             skip
+             return (Version_number n ([tokPos s,(sourceLine pos, sourceColumn pos)]))
 
 itemNameOrMap = do i1 <- simpleId
                    i' <- option Nothing (do
@@ -452,3 +447,5 @@ parseLib fname =
 test fname = do
   (x,errs) <- parseLib fname
   putStrLn (show (printText0_eGA x))
+  if errs == "" then return ()
+   else putStrLn ("\nUnread input:\n"++take 20 errs++" ...")
