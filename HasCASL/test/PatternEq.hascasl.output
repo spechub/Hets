@@ -49,6 +49,7 @@ snd : s * t -> t %(op)%
 true : Unit %(fun)%
 x : s %(op)%
 y : t %(op)%
+¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 program (op snd : s * t -> t)(var x : s, var y : t) =
             (var y : t) %(pe_snd)%

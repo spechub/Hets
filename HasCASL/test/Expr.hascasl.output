@@ -55,6 +55,7 @@ notA
             (op True : bool) -> (op False : bool) | 
             (op False : bool) -> (op True : bool)
 true : Unit %(fun)%
+¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 type bool
   ::= True : bool

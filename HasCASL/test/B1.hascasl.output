@@ -57,6 +57,7 @@ false : Unit %(fun)%
 not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 x : y %(var)%
+¬__ : Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 3.7, illegal universe class declaration 'Type'
 *** Error 4.7, illegal universe class declaration 'Type'

@@ -96,6 +96,7 @@ y : s
 z : s
     %(op)%
       = (op __+__ : t * t -> t)((op x : s) as s, (op x : s) as t as s)
+¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__ : forall a : Type . a * a ->? Unit)
   (op c : s, (op __+__ : t * t -> t)(op a : t, op b : t)) %(def_c)%

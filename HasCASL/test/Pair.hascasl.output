@@ -56,6 +56,7 @@ snd
     %(select from Pair constructed by
     Pair : forall a : Type; b : Type . a * b -> Pair a b)%
 true : Unit %(fun)%
+¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
   . (fun __=__ : forall a : Type . a * a ->? Unit)

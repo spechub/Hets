@@ -52,6 +52,7 @@ def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
+¬__ : Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 's'
 *** Hint 6.6, redeclared type 'a1'

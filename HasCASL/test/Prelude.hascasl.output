@@ -186,6 +186,7 @@ true
   : Unit ->? Unit %(pred)%
   : Unit %(fun)%
 tt : forall s : Type . Pred s %(op)%
+¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 program (op def[_var_1] : forall s : Type . Pred s) =
             \ (var x : s) . () %(pe_def)%

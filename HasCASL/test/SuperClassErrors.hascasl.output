@@ -53,6 +53,7 @@ def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
+¬__ : Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 1.13, undeclared class 'b'
 *** Error 3.11, undeclared class 'd'

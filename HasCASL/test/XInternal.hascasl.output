@@ -28,6 +28,7 @@ not__ : Unit ->? Unit %(fun)%
 o : s -> t %(fun)%
 q : s -> t %(fun)%
 true : Unit %(fun)%
+¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__[s -> t] : forall a : Type . a * a ->? Unit)
   (fun o : s -> t, fun q : s -> t)

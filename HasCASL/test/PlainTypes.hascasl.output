@@ -67,6 +67,7 @@ u : [r] %(var)%
 v : m List %(var)%
   : {s} %(var)%
 x : tuple3 r s t %(var)%
+¬__ : Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 12.9, incompatible kind of: tuple3 r s
   expected: Type

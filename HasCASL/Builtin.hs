@@ -65,6 +65,9 @@ defId = mkId $ map mkSimpleId [defS, place]
 notId :: Id 
 notId = mkId $ map mkSimpleId [notS, place]
 
+negId :: Id 
+negId = mkId $ map mkSimpleId [negS, place]
+
 builtinRelIds :: Set.Set Id 
 builtinRelIds = Set.fromDistinctAscList [typeId, eqId, exEq, defId]
 
@@ -89,15 +92,17 @@ addBuiltins ga =
 
 	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
 		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
-		 (andId, notId), (orId, notId)]
+		 (andId, notId), (orId, notId),
+		(andId, negId), (orId, negId)]
 
         rels1 = map ( \ i -> (notId, i)) $ Set.toList builtinRelIds
+        rels1b = map ( \ i -> (negId, i)) $ Set.toList builtinRelIds
 	rels2 = map ( \ i -> (i, whenElse)) $ Set.toList builtinRelIds
 	ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
 	ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
 	newPrecs = foldr (\ (a, b) p -> if Rel.member b a p then p else 
 			 Rel.insert a b p) precs $  
-		  concat [logs, rels1, rels2, ops1, ops2]
+		  concat [logs, rels1, rels1b, rels2, ops1, ops2]
     in ga { assoc_annos = newAss
 	  , prec_annos = Rel.transClosure newPrecs }
 
@@ -144,9 +149,9 @@ botType = bindA aType
 
 bList :: [(Id, TypeScheme)]
 bList = (botId, botType) : (defId, defType) : (notId, notType) : 
-	(whenElse, whenType) :
+	(negId, notType) : (whenElse, whenType) :
         (trueId, unitType) : (falseId, unitType) :
-        map ( \ e -> (e, eqType)) [eqId, exEq] ++
+        (eqId, eqType) : (exEq, eqType) :
 	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
 addUnit :: TypeMap -> TypeMap

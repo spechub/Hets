@@ -107,7 +107,7 @@ mkProgEq e t = case getTupleAp t of
 		      else mkConstTrueEq e t
 	  else mkConstTrueEq e t
     _ -> case getAppl t of 
-	Just (i, _, [f]) -> if i == notId then
+	Just (i, _, [f]) -> if i `elem` [notId, negId] then
 	    case mkConstTrueEq e f of
 	    Just (ProgEq p _ ps) -> Just $ ProgEq p 
 		(mkQualOp falseId unitType []) ps

@@ -119,6 +119,7 @@ tail
     %(select from List constructed by
     Cons : forall a : Type+ . a * List a -> List a)%
 true : Unit %(fun)%
+¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 forall a : Type+; x_1_1 : a; x_1_2 : List a
   . (fun __=__ : forall a : Type . a * a ->? Unit)

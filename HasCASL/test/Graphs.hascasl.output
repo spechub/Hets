@@ -135,6 +135,7 @@ inr : forall S : Type . S -> S * Bool %(op)%
 not__ : Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 {__} : forall S : Type . S -> Set S %(op)%
+¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun not__ : Unit ->? Unit)
   ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
