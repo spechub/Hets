@@ -98,4 +98,12 @@ findATerm l = case List.find just l of
     where just mt = case mt of
 		    (Just _) -> True
 		    Nothing  -> False
+
+-- converts an aterm region information to [Pos]
+fromATerm_reg reg_i at = [fst r,snd r] 
+    where r :: ((Int,Int),(Int,Int)) -- Id.hs Region
+	  r = fromATerm r_at
+	  r_at = getATermByIndexSp1 reg_i at
+
+
 -------------------------------------------------------------------------------
