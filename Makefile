@@ -169,6 +169,9 @@ hets-old: $(objects)
 	$(RM) $@
 	$(HC) -o hets $(HC_OPTS) $(objects)
 
+hets.cgi: $(sources) GUI/hets_cgi.hs
+	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi
+
 hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files) $(inline_axiom_files)
 	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hets $< $(HC_OPTS) 2>&1 | tee hetcats-make 
@@ -183,6 +186,10 @@ hetcats.TAGS: $(sources)
 	/home/ger/linux/ghc-5.04.2/bin/i386-unknown-linux/hasktags \
 	  $(sources); mv TAGS $@; mv tags hetcats.tags
 
+###############################
+### count lines of code
+count: $(sources)
+	wc -l $(sources)
 ###############################
 ### Documentation via haddock
 doc: docs/index.html
