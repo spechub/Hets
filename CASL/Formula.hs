@@ -58,8 +58,10 @@ crossT = try(asKey prodS <|> asKey timesS) <?> "cross"
 
 simpleTerm :: GenParser Char st TERM
 simpleTerm = fmap Mixfix_token (pToken(scanFloat <|> scanString 
-		       <|>  scanQuotedChar <|> scanDotWords <|> scanWords 
-		       <|>  scanSigns <|> placeS <?> "id/literal" )) 
+		       <|>  scanQuotedChar <|> scanDotWords 
+		       <|>  reserved casl_reserved_words scanAnyWords
+		       <|>  reserved casl_reserved_ops scanAnySigns
+		       <|>  placeS <?> "id/literal" )) 
 
 startTerm, restTerm, mixTerm, whenTerm  :: GenParser Char st TERM
 startTerm = parenTerm <|> braceTerm <|> bracketTerm <|> simpleTerm

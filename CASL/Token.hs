@@ -63,12 +63,13 @@ TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR
 
 module Token ( casl_reserved_ops, casl_reserved_words
              , formula_ops, formula_words
-             , scanWords, scanSigns, parseId, sortId, varId) 
+	     , casl_reserved_fops, casl_reserved_fwords
+             , start, mixId, parseId, sortId, varId) 
     where
 
 import Keywords
 import Lexer
-import Id (Id(Id), Token(..), Pos, isPlace)
+import Id (Id(Id), Token(..), Pos, toPos, isPlace)
 import ParsecPrim (GenParser, (<?>), (<|>), many)
 import ParsecCombinator (many1, option)
 
@@ -76,21 +77,15 @@ import ParsecCombinator (many1, option)
 -- casl keyword handling
 -- ----------------------------------------------
 
-casl_reserved_ops :: [String]
+casl_reserved_ops, formula_ops, casl_reserved_fops :: [String]
 casl_reserved_ops = [colonS, colonS++quMark, defnS, dotS, cDot, barS, mapsTo]
 
-scanTermSigns :: GenParser Char st String
-scanTermSigns = reserved casl_reserved_ops scanAnySigns
-
 -- these signs are legal in terms, but illegal in declarations
-formula_ops :: [String]
 formula_ops = [equalS, implS, equivS, lOr, lAnd, negS] 
-
-scanSigns :: GenParser Char st String
-scanSigns = reserved formula_ops scanTermSigns
+casl_reserved_fops = formula_ops ++ casl_reserved_ops
 
 -- letter keywords
-casl_reserved_words :: [String]
+casl_reserved_words, formula_words, casl_reserved_fwords :: [String]
 casl_reserved_words =
     [andS, archS, asS, assocS, axiomS, axiomS ++ sS, closedS, commS, endS, 
     existsS, fitS, forallS, freeS, fromS, generatedS, getS, givenS,
@@ -99,106 +94,110 @@ casl_reserved_words =
     sortS ++ sS, specS, thenS, toS, typeS, typeS ++ sS, 
     unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
 
-scanTermWords :: GenParser Char st String
-scanTermWords = reserved casl_reserved_words scanAnyWords 
-
 -- these words are legal in terms, but illegal in declarations
-formula_words :: [String]
-formula_words = [defS, elseS, ifS, whenS, falseS, notS, trueS]
 
-scanWords :: GenParser Char st String
-scanWords = reserved formula_words scanTermWords
+formula_words = [defS, elseS, ifS, whenS, falseS, notS, trueS]
+casl_reserved_fwords = formula_words ++ casl_reserved_words
 
 -- ----------------------------------------------
 -- bracket-token (for ids)
+-- pass list of key symbols and keuwords as parameter
 -- ----------------------------------------------
 
 -- simple id (but more than only words)
-sid :: GenParser Char st Token
-sid = pToken (scanQuotedChar <|> scanDotWords 
-		 <|> scanDigit <|> scanSigns 
-		 <|> scanWords <?> "simple-id")
+sid :: ([String], [String]) -> GenParser Char st Token
+sid (kOps, kWords) = pToken (scanQuotedChar <|> scanDotWords 
+		<|> scanDigit <|> reserved kOps scanAnySigns 
+		<|> reserved kWords scanAnyWords <?> "simple-id")
 
 -- balanced mixfix-components {...}, [...]
-braced, noComp :: GenParser Char st [Token]
-braced = begDoEnd oBraceT innerList cBraceT
-noComp = begDoEnd oBracketT innerList cBracketT
+braced, noComp :: ([String], [String]) -> GenParser Char st [Token]
+braced l = begDoEnd oBraceT (innerList l) cBraceT
+noComp l = begDoEnd oBracketT (innerList l) cBracketT
 
 -- alternating sid and other mixfix components (including places)
 -- no two sid stand side by side
-innerMix1, innerMix2 :: GenParser Char st [Token]
-innerMix1 = sid <:> option [] innerMix2
-innerMix2 = flat (many1 (braced <|> noComp <|> many1 placeT))
-            <++> option [] innerMix1
+innerMix1, innerMix2 :: ([String], [String]) -> GenParser Char st [Token]
+innerMix1 l = sid l <:> option [] (innerMix2 l)
+innerMix2 l = flat (many1 (braced l <|> noComp l<|> many1 placeT))
+            <++> option [] (innerMix1 l)
 
 -- ingredients starting either with an sid or brackets, braces or place 
-innerList :: GenParser Char st [Token]
-innerList =  option [] (innerMix1 <|> innerMix2 <?> "token")
+innerList :: ([String], [String]) -> GenParser Char st [Token]
+innerList l =  option [] (innerMix1 l <|> innerMix2 l <?> "token")
 
 -- a mixfix component starting with an sid (outside innerList)
-topMix1, topMix2, topMix3 :: GenParser Char st [Token]
-topMix1 = sid <:> option [] topMix2
+topMix1, topMix2, topMix3 :: ([String], [String]) -> GenParser Char st [Token]
+topMix1 l = sid l <:> option [] (topMix2 l)
 
 -- following an sid only braced mixfix-components are acceptable
 -- square brackets after an sid will be taken as compound part
-topMix2 = flat (many1 braced) <++> option [] topMix1
+topMix2 l = flat (many1 (braced l)) <++> option [] (topMix1 l)
 
 -- square brackets (as mixfix component) are ok following a place 
-topMix3 = noComp <++> flat (many braced) <++> option [] topMix1
+topMix3 l = noComp l <++> flat (many (braced l)) <++> option [] (topMix1 l)
 
-afterPlace, middle, tokStart :: GenParser Char st [Token]
-afterPlace = topMix1 <|> topMix2 <|> topMix3
+afterPlace, middle :: ([String], [String]) -> GenParser Char st [Token]
+afterPlace l = topMix1 l <|> topMix2 l<|> topMix3 l
 
 -- places and something balanced possibly including places as well  
-middle = many1 placeT <++> option [] afterPlace  
+middle l = many1 placeT <++> option [] (afterPlace l)  
 
 -- balanced stuff interspersed with places  
-tokStart = afterPlace <++> flat (many middle)
+tokStart, start :: ([String], [String]) -> GenParser Char st [Token]
+tokStart l = afterPlace l <++> flat (many (middle l))
 
 -- at least two places on its own or a non-place possibly preceded by places 
-start :: GenParser Char st [Token]
-start = tokStart <|> placeT <:> (tokStart <|> 
-				 many1 placeT <++> option [] tokStart)
-        <?> "id"
+start l = tokStart l <|> placeT <:> (tokStart l <|> 
+				 many1 placeT <++> option [] (tokStart l))
+				     <?> "id"
 
 -- ----------------------------------------------
--- Mixfix Ids
+-- mixfix and compound ids
 -- ----------------------------------------------
 
 -- a compound list
-comps :: GenParser Char st ([Id], [Pos])
-comps = do o <- oBracketT 
-	   (is, cs) <- parseId `separatedBy` commaT
-	   c <- cBracketT
-	   return (is, tokPos o : map tokPos cs ++ [tokPos c])
-	<?> "[<id>,...,<id>]"
+comps :: ([String], [String]) -> GenParser Char st ([Id], [Pos])
+comps keys = do o <- oBracketT
+	        (ts, ps) <- mixId keys keys `separatedBy` commaT
+	        c <- cBracketT
+	        return (ts, toPos o ps c)
+	     <?> "[<id>,...,<id>]"
 
 -- a compound list does not follow a place
 -- but after a compound list further places may follow
+-- keywords within components may be different
+mixId :: ([String], [String]) -> ([String], [String]) -> GenParser Char st Id
+mixId keys idKeys = 
+    do l <- start keys
+       if isPlace (last l) then return (Id l [] [])
+	  else do (c, p) <- option ([], []) (comps idKeys)
+		  u <- many placeT
+		  return (Id (l++u) c p)
+
+-- ----------------------------------------------
+-- CASL mixfix Ids
+-- ----------------------------------------------
+
 parseId :: GenParser Char st Id
-parseId = do l <- start
-             if isPlace (last l) then return (Id l [] [])
-	       else (do (c, p) <- option ([], []) comps
-			u <- many placeT
-			return (Id (l++u) c p)
-		    )
+parseId = mixId (casl_reserved_fops, casl_reserved_fwords) 
+	  (casl_reserved_fops, casl_reserved_fwords)
+
+-- ----------------------------------------------
+-- VAR Ids
+-- ----------------------------------------------
+
+-- no compound ids (just a word) 
+varId :: GenParser Char st Token
+varId = pToken (reserved casl_reserved_fwords scanAnyWords)
 
 -- ----------------------------------------------
 -- SORT Ids
 -- ----------------------------------------------
 
--- at least some no-bracket-signs should be disallowed for sorts
--- obsolete isSortId (t) =  tokStr t `notElem` non_sort_signs
-
 -- sortIds are words, but possibly compound ids
 sortId :: GenParser Char st Id
-sortId = do s <- pToken scanWords
-	    (c, p) <- option ([], []) comps
+sortId = do s <- varId
+	    (c, p) <- option ([], []) 
+		      (comps (casl_reserved_fops, casl_reserved_fwords))
 	    return (Id [s] c p)
-
--- ----------------------------------------------
--- VAR Ids
--- ----------------------------------------------
--- no compound ids (just a word) 
-varId :: GenParser Char st Token
-varId = pToken scanWords
