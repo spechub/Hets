@@ -18,8 +18,7 @@ import CASL.AS_Basic -- FORMULA
 import Common.Result -- Result
 
 {-
-=======
->>>>>>> 1.5
+
 Idee: 
 - global Infos aus Sign berechnen + mit durchreichen
   (connected compenents, s.u.)
@@ -30,144 +29,124 @@ TODO: All das hier implementieren und testen :D
 
 -}
 
--- -- -- die Hauptfunktion, macht aus Formeln ... Formeln :\)
+{-----------------------------------------------------------
+  Overload Resolution
+-----------------------------------------------------------}
+{- expand all sentences to be fully qualified, then return them if there is no
+   ambiguity -}
+overloadResolution :: Sign -> [Sentence] -> Result [Sentence]
+overloadResolution sign sentences
+    = let
+      expandedSentences =
+          map (minExpTerm sign) sentences
+      in
+      return expandedSentences
 
--- overloadResolution :: Sign -> [Sentence] -> Result [Sentence]
--- overloadResolution sign sents =
---     return [ minExpTerm sign atom | atom <- (concat $ map getAtoms sents) ]
--- -- TODO: den Rest implementieren und dann hier auf Fehler testen
+{-----------------------------------------------------------
+  Minimal Expansion of a Sentence
+-----------------------------------------------------------}
+{- descend recursively into sentences if sentence is non-atomic
+   expand atomic sentence otherwise
+   TODO: how to construct the complete, qualified sentence from
+   the results? -}
+minExpTerm :: Sign -> Sentence -> [[Sentence]]
+minExpTerm sign sentence
+    = case sentence of
+        Quantification _ _ sentence' _ -> minExpTerm sign sentence'
+        Conjunction sentences _        -> minExpTermAll sentences
+        Disjunction sentences _        -> minExpTermAll sentences
+        Implication sent1 sent2 _      -> minExpTermAll [sent1, sent2]
+        Equivalence sent1 sent2 _      -> minExpTermAll [sent1, sent2]
+        Negation sentence' _           -> minExpTerm sign sentence'
+        True_atom _                    -> -- [["True", "_bool"]]
+        False_atom _                   -> -- [["False", "_bool"]]
+        Predication PRED_SYMB [TERM] _ -> -- predicate application
+        Definedness TERM _             -> -- see till's mail
+        Existl_equation TERM TERM _    -> -- ?
+        Strong_equation TERM TERM _    -> -- ?
+        Membership TERM SORT _         -> -- ?
+        Mixfix_formula _               -> -- parser error - bail out?
+        Unparsed_formula _ _           -> -- parser error - bail out?
+    where
+    minExpTermAll = map (minExpTerm sign)
 
--- -- Nimmt Formulae auseinander und gibt eine Liste der
--- -- zugrundeliegenden atomaren Formulae zurueck. 
--- -- ... oder eher der zugrundeliegenden atomaren Terme?
--- -- Idee: nimmt eine zusammengesetzte Formel auseinander und durchsucht
--- -- die erhaltenen Formeln weiter nach Atomen.
--- -- Nicht-zusammengesetzte Formeln sind atomar und werden (in eine
--- -- Liste verpackt) zurueckgegeben.
--- getAtoms :: Sentence -> [Sentence]
--- getAtoms (Quantification _ _ sentence _) = getAtoms sentence
--- getAtoms (Conjunction sentences _) = getAllAtoms sentences
--- getAtoms (Disjunction sentences _) = getAllAtoms sentences
--- getAtoms (Implication sent1 sent2 _) = getAllAtoms [sent1, sent2]
--- getAtoms (Equivalence sent1 sent2 _) = getAllAtoms [sent1, sent2]
--- getAtoms (Negation sentence _) = getAtoms sentence
--- -- entweder: es gibt sentences zurueck
--- getAtoms sentence = [sentence]
--- -- oder: es gibt terme zurueck
--- -- getAtoms (Predication _ terms _) = terms
--- -- getAtoms (Definedness term _) = [term]
--- -- getAtoms (Existl_equation term1 term2 _) = [term1, term2]
--- -- getAtoms (Strong_equation term1 term2 _) = [term1, term2]
--- -- getAtoms (Membership term _ _) = [term]
--- -- getAtoms (Mixfix_formula term) = term
--- -- getAtoms Unparsed_formula _ _) = [] -- da solltsn Fehler gebn
--- -- -- es fehlen noch: True_atom und False_atom ... was mach ich mit denen?
---     where
---     getAllAtoms = concat . (map getAtoms)
-
--- -- das hier ist die, die eine Formel erwartet - ich muss noch pruefen,
--- -- ob sich das lohnt oder ob ich nicht die Terme selbst direkt
--- -- weiterreichen sollte ... andererseite hab ich das Gefuehl, dass
--- -- dann einige Sachen fehlen wuerden...
--- minExpTerm :: Sign -> Sentence -> [[Sentence]]
--- -- Ergebnistyp: Aequivalanzklassen von irgendwas...
--- minExpTerm sign sentence =
---     case sentence of
---                   True_atom [Pos] -> [["true", "_bool"]]
---  	          False_atom [Pos] -> [["false", "_bool"]]
---  	          Predication PRED_SYMB [TERM] [Pos] -> 
---  	          Definedness TERM [Pos] -> 
---  	          Existl_equation TERM TERM [Pos] -> 
---  	          Strong_equation TERM TERM [Pos] -> 
---  	          Membership TERM SORT [Pos] -> 
---  	          Mixfix_formula TERM  -> 
---                   Unparsed_formula String [Pos] -> 
---                   _ -> 
--- -- so ... und was fang ich jetzt damit an? -- Tja, das ist hier die Frage
-
--- -- die hier, alternativ, nimmt einen Term und zerlegt/erweitert
--- -- diesen. Das sollte bewirken, dass ich direkt ueber den fuer den
--- -- algo relevanten Typen eine Fallunterscheidung machen kann und somit
--- -- eine rekursionsebene spare, wenn ich terme direkt runterwerfe. In
--- -- jedem fall brauche ich diese funktion, als haupt-finktion oder als
--- -- helfer, damit ich die unterschiedlichen Terme einfach unterscheiden
--- -- kann.
--- -- wobei mir gerade auffaellt, dass ich die fallunterscheidung auch
--- -- direkt als pattern-matching gemacht haben koennte, also:
--- -- TODO: case .. of umschreiben als pattern-matching
--- minExpTerm_ :: Sign -> TERM -> [[TERM]]
--- minExpTerm_ sign (Simple_id var) = minExpTerm_simple sign var
--- minExpTerm_ sign (Qual_var var sort _) = minExpTerm_qual sign var sort
--- minExpTerm_ sign (Sorted_term term sort _) = minExpTerm_sorted sign term sort
--- -- wie unterscheidet sich das von Qual_var???
--- minExpTerm_ sign (Application op terms _) = minExpTerm_op sign op terms
--- -- bei den restlichen bin ich nicht sicher, wie sie mit den
--- -- dokumentierten Faellen vereinbar sind bzw. ihnen entsprechen, und
--- -- also auch nicht, was ich damit machen soll.
--- -- -- meine Tastatur is zu hart und mein kleiner Finger tut weh :\( --
--- -- das da oben im Smiley ist kein Tippfehler, die Klammer verwirrt
--- -- Emacs ^_^
--- minExpTerm_ sign _ = [[]]
--- -- restliche, fehlende Faelle sind:
--- -- Cast term sort _
--- -- Conditional term1 formula term2 _
--- -- Unparsed_term string _
--- -- mehrere Mixfix-Teile bei denen ich mir nicht sicher bin, was sie
--- -- sein sollen und was ich mit ihnen anfangen koennen soll...
+{-----------------------------------------------------------
+  Minimal Expansion of a Term
+-----------------------------------------------------------}
+minExpTerm_ :: Sign -> TERM -> [[TERM]]
+minExpTerm_ sign term
+    = case term of
+        Simple_id var           -> minExpTerm_simple sign var
+        Qual_var var sort _     -> minExpTerm_qual sign var sort
+        Sorted_term term sort _ -> minExpTerm_sorted sign term sort
+        Application op terms _  -> minExpTerm_op sign op terms
+        -- wie unterscheidet sich das von Qual_var???
+        _                       -> -- parser error - bail out?
+{- restliche, fehlende Faelle sind:
+   Cast term sort _
+   Conditional term1 formula term2 _
+   Unparsed_term string _
+   mehrere Mixfix-Teile bei denen ich mir nicht sicher bin, was sie
+   sein sollen und was ich mit ihnen anfangen koennen soll... -}
 
 -- -- -- Die Hilfsfunktionen fuer minExpTerm, je nach Typ des Terms
 
--- minExpTerm_simple sign var =
--- let 
---     my_consts = [ (var, sort) | (var', sort) <- (varMap sign), var' == var ]
---     my_funcs = [ (var, sort) | (var', sort) <- (opMap sign), var' == var ]
---     my_subset = (minimize sign) (my_consts ++ my_funcs)
---     in equiv leqF my_subset
--- minExpTerm_qual sign var sort =
---     let
---     met_var = minExpTerm_simple sign var
---     make_met = \c -> [ (var, sort) |
---                        (var', sort') <- c, sort' <= sort, var' == var ]
---     in map make_met met_var
--- minExpTerm_sorted sign term sort =
---     let
---     met_var = minExpTerm sign term -- ist das der einzige Unterschied?
---     make_met = \c -> [ (term, sort) |
---                        (term', sort') <- c, sort' <= sort, term' == term ]
---     in map make_met met_var
--- minExpTerm_op sign op terms = [[]]
--- -- the lean mean difficulty machine :\)
--- -- das gilt, nehme ich an, auch als Fall fuer Praedikat-Applikation?
--- -- dafuer sehe ich naemlich ansonsten keinen anderen...
--- -- -- --
--- -- ein Problem koennten noch die Definitionen von sort' <= sort und
--- -- var' == var darstellen, falls ich die noch machen muss.
--- -- Da hilft wohl auch nur ein beherzter Blick in die fremde source ^^
+{-----------------------------------------------------------
+  minExpTerm Helper Functions for Special Cases
+-----------------------------------------------------------}
+minExpTerm_simple sign var =
+let 
+    my_consts = [ (var, sort) | (var', sort) <- (varMap sign), var' == var ]
+    my_funcs = [ (var, sort) | (var', sort) <- (opMap sign), var' == var ]
+    my_subset = (minimize sign) (my_consts ++ my_funcs)
+    in equiv leqF my_subset
+minExpTerm_qual sign var sort =
+    let
+    met_var = minExpTerm_simple sign var
+    make_met = \c -> [ (var, sort) |
+                       (var', sort') <- c, sort' <= sort, var' == var ]
+    in map make_met met_var
+minExpTerm_sorted sign term sort =
+    let
+    met_var = minExpTerm sign term -- ist das der einzige Unterschied?
+    make_met = \c -> [ (term, sort) |
+                       (term', sort') <- c, sort' <= sort, term' == term ]
+    in map make_met met_var
+minExpTerm_op sign op terms = [[]]
+-- the lean mean difficulty machine :\)
+-- das gilt, nehme ich an, auch als Fall fuer Praedikat-Applikation?
+-- dafuer sehe ich naemlich ansonsten keinen anderen...
+-- -- --
+-- ein Problem koennten noch die Definitionen von sort' <= sort und
+-- var' == var darstellen, falls ich die noch machen muss.
+-- Da hilft wohl auch nur ein beherzter Blick in die fremde source ^^
 
 
--- -- Diese Funktionen fehlen in jedem Fall noch und sich ziemlich wichtig:
--- minimize :: Sign -> [TERM] -> [TERM] -- minimiert
+-- Diese Funktionen fehlen in jedem Fall noch und sich ziemlich wichtig:
+minimize :: Sign -> [TERM] -> [TERM] -- minimiert
 
--- equiv :: (a -> a -> Bool) -> [a] -> [[a]] -- Aequivalenzklassen
--- -- naive Implementation:
--- equiv _ [] = []
--- equiv eq (x:xs) = let
---                   (xs', ys) = partition (eq x) xs
---                   in xs':(equiv eq ys)
+equiv :: (a -> a -> Bool) -> [a] -> [[a]] -- Aequivalenzklassen
+-- naive Implementation:
+equiv _ [] = []
+equiv eq (x:xs) = let
+                  (xs', ys) = partition (eq x) xs
+                  in xs':(equiv eq ys)
+-- komplexere Implementation: siehe unten, Till's SML-version
 
--- {- Transform a list [l1,l2, ... ln] to
---    (in sloppy notation) [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln] -}
+{- Transform a list [l1,l2, ... ln] to
+   (in sloppy notation) [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln] -}
+permute :: [[a]] -> [[a]]
+permute [] = [[]]
+permute [x] = map (\y -> [y]) x
+permute (x:l) =
+    concat (map (distribute (permute l)) x)
+    where
+    distribute perms y = map ((:) y) perms
 
--- permute :: [[a]] -> [[a]]
--- permute [] = [[]]
--- permute [x] = map (\y -> [y]) x
--- permute (x:l) =
---     concat (map (distribute (permute l)) x)
---     where
---     distribute perms y = map ((:) y) perms
+leqF :: a -> a -> Bool -- Funktionsgleichheit
+leqP :: a -> a -> Bool -- Praedikatsgleichheit
 
--- leqF :: a -> a -> Bool -- Funktionsgleichheit
--- leqP :: a -> a -> Bool -- Praedikatsgleichheit
+-- diverse Ordering Funktionen fuer SORT-Typen
 
 {-
 
