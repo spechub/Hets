@@ -80,7 +80,7 @@ genRules flags files =
                  (fileHead ++ "\n\nmodule " ++ dir ++ "." 
                   ++ fileWP
                   ++ " where\n\n" 
-                  ++ (if dir == "CspCASL" then 
+                  ++ (if elem dir ["Modal", "CoCASL", "COL", "CspCASL"] then 
                              "import CASL.ATC_CASL\n" else "")  
                   ++ concat (map (\x->"import "++x++"\n") 
                                             imports') 
