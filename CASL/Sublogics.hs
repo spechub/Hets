@@ -245,6 +245,93 @@ get_logic_sd f = if (is_horn_p_a f) then need_horn else
                  if (is_ghorn_prem f) then need_ghorn else
                  need_fol
 
+-- and now for Formula instead of FORMULA
+
+is_Atomic_f :: Formula -> Bool
+is_Atomic_f (Quantified q _ f _) = (is_Atomic_q q) && (is_Atomic_f f)
+is_Atomic_f (Connect AndOp l _) = and_list ((map is_Atomic_f) l)
+is_Atomic_f (TrueAtom _) = True
+is_Atomic_f (PredAppl _ _ _ _ _) = True
+is_Atomic_f (TermTest ExEqualOp _ _) = True
+is_Atomic_f (TermTest DefOp _ _) = True
+is_Atomic_f (AnnFormula f) = is_Atomic_f (strip_anno f)
+is_Atomic_f _ = False
+
+is_Atomic_q :: Quantifier -> Bool
+is_Atomic_q (Forall) = True
+is_Atomic_q _ = False
+
+is_Horn_f :: Formula -> Bool
+is_Horn_f (Quantified q _ f _) = (is_Atomic_q q) && (is_Horn_f f)
+is_Horn_f (Connect ImplOp [f,g] _) = (is_Horn_p_conj f) && (is_Horn_a g)
+is_Horn_f (Connect IfOp [g,f] _) = (is_Horn_p_conj f) && (is_Horn_a g) 
+is_Horn_f (AnnFormula f) = is_Horn_f (strip_anno f)
+is_Horn_f _ = False
+
+is_Horn_p_conj :: Formula -> Bool
+is_Horn_p_conj (Connect AndOp l _) = and_list ((map is_Horn_p_a) l)
+is_Horn_p_conj (AnnFormula f) = is_Horn_p_conj (strip_anno f)
+is_Horn_p_conj _ = False
+
+is_Horn_a :: Formula -> Bool
+is_Horn_a (TrueAtom _) = True
+is_Horn_a (PredAppl _ _ _ _ _) = True
+is_Horn_a (TermTest _ _ _) = True
+is_Horn_a (ElemTest _ _ _) = True
+is_Horn_a (AnnFormula f) = is_Horn_a (strip_anno f)
+is_Horn_a _ = False
+
+is_Horn_p_a :: Formula -> Bool
+is_Horn_p_a (TrueAtom _) = True
+is_Horn_p_a (PredAppl _ _ _ _ _) = True
+is_Horn_p_a (TermTest DefOp _ _) = True
+is_Horn_p_a (TermTest ExEqualOp _ _) = True
+is_Horn_p_a (ElemTest _ _ _) = True
+is_Horn_p_a (AnnFormula f) = is_Horn_p_a (strip_anno f)
+is_Horn_p_a _ = False
+
+is_Ghorn_f :: Formula -> Bool
+is_Ghorn_f (Quantified q _ f _) = (is_Atomic_q q) && (is_Ghorn_f f)
+is_Ghorn_f (Connect AndOp l _) = (is_Ghorn_c_conj l) || (is_Ghorn_f_conj l)
+is_Ghorn_f (Connect ImplOp [f,g] _) = (is_Ghorn_prem f) && (is_Ghorn_conc g)
+is_Ghorn_f (Connect IfOp [g,f] _) = (is_Ghorn_prem f) && (is_Ghorn_conc g)
+is_Ghorn_f (Connect EquivOp [f,g] _) = (is_Ghorn_prem f) && (is_Ghorn_prem g)
+is_Ghorn_f (TrueAtom _) = True
+is_Ghorn_f (PredAppl _ _ _ _ _) = True
+is_Ghorn_f (TermTest _ _ _) = True
+is_Ghorn_f (ElemTest _ _ _) = True
+is_Ghorn_f (AnnFormula f) = is_Ghorn_f (strip_anno f)
+is_Ghorn_f _ = False
+
+is_Ghorn_c_conj :: [Formula] -> Bool
+is_Ghorn_c_conj l = and_list ((map is_Ghorn_conc) l)
+
+is_Ghorn_f_conj :: [Formula] -> Bool
+is_Ghorn_f_conj l = and_list ((map is_Ghorn_f) l)
+
+is_Ghorn_p_conj :: [Formula] -> Bool
+is_Ghorn_p_conj l = and_list ((map is_Ghorn_prem) l)
+
+is_Ghorn_prem :: Formula -> Bool
+is_Ghorn_prem (Connect AndOp l _) = is_Ghorn_p_conj l
+is_Ghorn_prem x = is_Horn_p_a x
+
+is_Ghorn_conc :: Formula -> Bool
+is_Ghorn_conc (Connect AndOp l _) = is_Ghorn_c_conj l
+is_Ghorn_conc x = is_Horn_a x
+
+get_Logic :: Formula -> CASL_Sublogics
+get_Logic f = if (is_Atomic_f f) then bottom else
+              if (is_Horn_f f) then need_horn else
+              if (is_Ghorn_f f) then need_ghorn else
+              need_fol
+
+-- for the formula inside a subsort-defn
+get_Logic_sd :: Formula -> CASL_Sublogics
+get_Logic_sd f = if (is_Horn_p_a f) then need_horn else
+                 if (is_Ghorn_prem f) then need_ghorn else
+                 need_fol
+
 ------------------------------------------------------------------------------
 -- functions to compute minimal sublogic for a given element
 ------------------------------------------------------------------------------
@@ -346,8 +433,10 @@ sl_form (False_atom _) = bottom
 sl_form (Predication _ l _) = sublogics_max need_pred
                               (comp_list ((map sl_term) l))
 sl_form (Definedness t _) = sl_term t
-sl_form (Existl_equation t u _) = sublogics_max (sl_term t) (sl_term u)
-sl_form (Strong_equation t u _) = sublogics_max (sl_term t) (sl_term u)
+sl_form (Existl_equation t u _) = sublogics_max need_eq
+                                  (sublogics_max (sl_term t) (sl_term u))
+sl_form (Strong_equation t u _) = sublogics_max need_eq
+                                  (sublogics_max (sl_term t) (sl_term u))
 sl_form (Membership t _ _) = sublogics_max need_sub (sl_term t)
 sl_form (Mixfix_formula t) = sl_term t
 sl_form (Unparsed_formula _ _) = bottom
@@ -381,7 +470,8 @@ sl_sortitem (SortItem _ r d _ _) = sublogics_max (sl_sortrels r)
                                                  (mb sl_sortdefn d)
 
 sl_sortdefn :: SortDefn -> CASL_Sublogics
-sl_sortdefn (SubsortDefn _ f _) = sl_Formula f
+sl_sortdefn (SubsortDefn _ f _) = sublogics_max (sl_Formula f)
+                                                (get_Logic_sd f)
 
 sl_sortrels :: SortRels -> CASL_Sublogics
 sl_sortrels (SortRels [] [] [] []) = bottom
@@ -424,7 +514,18 @@ sl_Term (Cond t f u _) = sublogics_max (sl_Term t)
 sl_Term _ = bottom
 
 sl_Formula :: Formula -> CASL_Sublogics
-sl_Formula _ = top
+sl_Formula f = sublogics_max (get_Logic f) (sl_Form f)
+
+sl_Form :: Formula -> CASL_Sublogics
+sl_Form (Quantified _ _ f _) = sl_Form f
+sl_Form (Connect _ l _) = comp_list ((map sl_Form) l)
+sl_Form (TermTest _ l _) = comp_list ((map sl_Term) l)
+sl_Form (PredAppl _ _ l _ _) = sublogics_max need_pred
+                                             (comp_list ((map sl_Term) l))
+sl_Form (ElemTest t _ _) = sublogics_max need_sub (sl_Term t)
+sl_Form (FalseAtom _) = bottom
+sl_Form (TrueAtom _) = bottom
+sl_Form (AnnFormula f) = sl_Form (strip_anno f)
 
 -- sl_morphism :: Morphism -> CASL_Sublogics
 -- sl_morphism _ = top
