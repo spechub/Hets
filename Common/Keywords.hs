@@ -63,6 +63,8 @@ withinS,
   falseS,
   elseS,
   defS,
+  diamondS,
+  boxS,
   lOr,
   lAnd,
   negS,
@@ -112,6 +114,8 @@ equivS  = "<=>"
 negS  = "\172"
 lAnd  = "/\\"   -- logical and/or
 lOr  = "\\/"
+boxS = "[]"
+diamondS = "<>"
 
 defS  = "def"
 elseS  = "else"
