@@ -1539,6 +1539,8 @@ in forall x : Elem
 *** Hint 19.7, is type variable 'Elem'
 *** Hint 31.6, is type variable 'Elem'
 *** Hint 31.6, redeclared type 'Elem'
+*** Warning 34.12, variable shadows global name(s) 'S'
+*** Warning 34.12, variable shadows global name(s) 'S'
 *** Hint 37.7, is type variable 'S'
 *** Hint 37.7, redeclared type 'S'
 *** Hint 40.7, is type variable 'a'

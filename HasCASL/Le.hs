@@ -115,6 +115,7 @@ type PrecMap = (Map.Map Id Int, Int, Int)
 data Env = Env { classMap :: ClassMap
                , typeMap :: TypeMap
                , assumps :: Assumps
+               , localVars :: Map.Map Id Type
                , sentences :: [Named Sentence]       
                , envDiags :: [Diagnosis]
                , preIds :: (PrecMap, Set.Set Id)
@@ -122,7 +123,7 @@ data Env = Env { classMap :: ClassMap
                } deriving Show
 
 initialEnv :: Env
-initialEnv = Env Map.empty Map.empty Map.empty [] [] 
+initialEnv = Env Map.empty Map.empty Map.empty Map.empty [] [] 
              ((Map.empty, 0, 0), Set.empty) 1
 
 -----------------------------------------------------------------------------

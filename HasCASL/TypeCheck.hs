@@ -88,21 +88,6 @@ checkList (ty : rty) (trm : rt) = do
                      $ concat combs
 checkList _ _ = error "checkList"
 
-tryUnifySubtypings :: (Subst, Constraints, Type, Term)
-                   -> State Env (Subst, Constraints, Type, Term)
-tryUnifySubtypings (s, cs, ty, trm) = 
-    return (s, substC s cs, subst s ty, substTerm s trm)
-{- do
-    tm <- gets typeMap
-    let subTys = toListC cs
-        Result ds ms = mgu tm (map fst subTys) $ map snd subTys
-    addDiags ds
-    return $ case ms of 
-        Nothing -> (s, substC s cs, subst s ty, substTerm s trm)
-        Just u -> let r = compSubst s u in
-            (r, substC s cs, subst u ty, substTerm r trm)
--}
-
 typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
 typeCheck mt trm = 
     do alts1 <- infer mt trm
@@ -212,6 +197,7 @@ infer mt trm = do
     let mUnify = mgu tm mt . Just
         uniDiags = addDiags . map (improveDiag trm)
     as <- gets assumps
+    vs <- gets localVars
     case trm of 
         qv@(QualVar (VarDecl v t qs ps))  -> do
             case mt of 
@@ -225,22 +211,25 @@ infer mt trm = do
                                 Just (s, cc) -> let nty = subst s t in 
                                      [(s, cc, nty,
                                        QualVar $ VarDecl v nty qs ps)]
-        qv@(QualOp br (InstOpId i ts qs) sc ps) -> do
+        QualOp br (InstOpId i ts qs) sc ps -> do
             (ty, inst, cs) <- instantiate sc
-            let Result ds ms = mgu tm (mt, if null ts then inst else ts) 
-                               (Just ty, inst)
+            let Result ds ms = mgu tm (if null ts then inst else ts) inst
             uniDiags ds 
-            rs <- case ms of 
-                Nothing -> if null inst && lesserType tm ty (fromJust mt) 
-                              then return[(eps, cs, ty, qv)]
-                              else return []
-                Just s -> return [(s, substC s cs, subst s ty, QualOp br 
-                                   (InstOpId i (map (subst s) inst) qs)
-                                   sc ps)]
-            return rs 
+            return $ case ms of 
+                Nothing -> []
+                Just s -> let q@(_, ncs, nTy, qv) = 
+                                  (s, substC s cs, subst s ty, 
+                                   QualOp br (InstOpId i (map (subst s) inst)
+                                              qs) sc ps) in case mt of 
+                    Nothing -> [q]
+                    Just inTy -> [(s, insertC (Subtyping nTy $ subst s inTy) 
+                                   ncs, nTy, qv)]
         ResolvedMixTerm i ts ps ->
             if null ts then do 
-               let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
+               let ois = case Map.lookup i vs of 
+                         Nothing -> opInfos $ Map.findWithDefault 
+                                    (OpInfos []) i as
+                         Just t -> [OpInfo (simpleTypeScheme t) [] VarDefn]
                insts <- mapM instOpInfo ois 
                ls <- case mt of 
                      Nothing -> return $ map ( \ (ty, is, cs, oi) 
@@ -286,14 +275,14 @@ infer mt trm = do
                                    (su, cs, mkProductType tys ps, 
                                     mkTupleTerm trms ps)) ls
             Just ty -> do 
-                vs <- freshVars ts
-                let pt = mkProductType vs []
+                tvs <- freshVars ts
+                let pt = mkProductType tvs []
                     Result ds ms = mgu tm ty pt
                 uniDiags ds
                 case ms of 
                      Nothing -> return []
                      Just s  -> do 
-                         ls <- checkList (map (Just . subst s) vs) ts 
+                         ls <- checkList (map (Just . subst s) tvs) ts 
                          return $ map ( \ (su, cs, tys, trms) ->
                                         (compSubst s su, substC s cs, 
                                          mkProductType tys ps, 
@@ -346,33 +335,36 @@ infer mt trm = do
                                            TypedTerm tr qual ty ps)]) rs
                             return $ concat combs
         QuantifiedTerm quant decls t ps -> do
-            mapM_ addGenVarDecl decls
+            mapM_ addGenLocalVar decls
             let Result ds ms = mUnify logicalType
             uniDiags ds
             case ms of 
                 Nothing -> return []
                 Just _ -> do 
                     rs <- infer (Just logicalType) t 
-                    putAssumps as
+                    putLocalVars vs
+                    putTypeMap tm
                     return $ map ( \ (s, cs, typ, tr) -> 
                         (s, cs, typ, QuantifiedTerm quant decls tr ps)) rs
         LambdaTerm pats part resTrm ps -> do 
-            vs <- freshVars pats
+            pvs <- freshVars pats
             rty <- freshTypeVar $ posOfTerm resTrm
             let fty l = if null l then rty else 
-                        FunType (head l) PFunArr (fty $ tail l) []
-                myty = fty vs
+                        FunType (head l) (case part of
+                                          Partial -> PFunArr
+                                          Total -> FunArr) (fty $ tail l) []
+                myty = fty pvs
                 Result ds ms = mUnify myty
             uniDiags ds 
             case ms of 
                 Nothing -> return []
                 Just s -> do 
-                    ls <- checkList (map (Just . subst s) vs) pats
+                    ls <- checkList (map (Just . subst s) pvs) pats
                     rs <- mapM ( \ ( s2, cs, _, nps) -> do
-                       mapM_ addVarDecl $ concatMap extractVars nps
+                       mapM_ addLocalVar $ concatMap extractVars nps
                        let newS = compSubst s s2 
                        es <- infer (Just $ subst newS rty) resTrm
-                       putAssumps as
+                       putLocalVars vs
                        return $ map ( \ (s3, cr, _, rtm) -> 
                                       (compSubst newS s3, 
                                        substC s3 cs `joinC` cr,
@@ -397,7 +389,7 @@ infer mt trm = do
         LetTerm br eqs inTrm ps -> do 
             es <- inferLetEqs eqs
             rs <- mapM ( \ (s1, cs, _, nes) -> do 
-               mapM_ addVarDecl $ concatMap (\ (ProgEq p _ _) -> 
+               mapM_ addLocalVar $ concatMap (\ (ProgEq p _ _) -> 
                                              extractVars p) nes
                ts <- infer mt inTrm 
                return $ map ( \ (s2, cr, ty, nt) -> 
@@ -405,7 +397,7 @@ infer mt trm = do
                                substC s2 cs `joinC` cr,
                                ty, 
                                LetTerm br nes nt ps)) ts) es
-            putAssumps as
+            putLocalVars vs
             return $ concat rs
         AsPattern (VarDecl v _ ok qs) pat ps -> do 
            pats <- infer mt pat
@@ -420,17 +412,17 @@ inferLetEqs es = do
     let pats = map (\ (ProgEq p _ _) -> p) es 
         trms = map (\ (ProgEq _ t _) -> t) es
         qs = map (\ (ProgEq _ _ q) -> q) es
-    do as <- gets assumps 
+    do vs <- gets localVars
        newPats <- checkList (map (const Nothing) pats) pats
        combs <- mapM ( \ (sf, pcs, tys, pps) -> do
-             mapM_ addVarDecl $ concatMap extractVars pps 
+             mapM_ addLocalVar $ concatMap extractVars pps 
              newTrms <- checkList (map Just tys) trms 
              return $ map ( \ (sr, tcs, tys2, tts ) ->  
                           (compSubst sf sr, 
                            joinC tcs $ substC sr pcs, tys2, 
                            zipWith3 ( \ p t q -> ProgEq (substTerm sr p) t q)
                                pps tts qs)) newTrms) newPats
-       putAssumps as                                       
+       putLocalVars vs                                       
        return $ concat combs 
 
 inferCaseEq :: Type -> Type -> ProgEq 
@@ -446,10 +438,11 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
    putAssumps as
    if null pats then addDiags [mkDiag Error "unresolved case pattern" pat]
       else return ()
+   vs <- gets localVars
    es <- mapM ( \ (s, cs, ty, p) -> do 
-                mapM_ addVarDecl $ extractVars p
+                mapM_ addLocalVar $ extractVars p
                 ts <- infer (Just $  subst s tty) trm
-                putAssumps as
+                putLocalVars vs
                 return $ map ( \ (st, cr, tyt, t) -> 
                        (compSubst s st, 
                         substC st cs `joinC` cr,

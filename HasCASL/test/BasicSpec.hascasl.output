@@ -204,6 +204,7 @@ type Data4
 *** Warning 11.10, redeclared class 'b'
 *** Warning 11.13, redeclared class 'c'
 *** Warning 11.19, redeclared class 'a'
+*** Warning 18.15, variable shadows global name(s) 'x'
 *** Error 20.12, unexpected mixfix token: res
 *** Hint 21.1, no type match for: fst
   with (maximal) type: _var_4_v4 ->? s

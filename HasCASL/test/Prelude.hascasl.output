@@ -270,6 +270,8 @@ free type bool
 *** Hint 27.8, redeclared type '__->?__'
 *** Hint 30.8, redeclared type '__*__'
 *** FatalError 31.6, illegal type pattern: __ * __ * __
+*** Warning 42.16, variable shadows global name(s) 'x'
+*** Warning 44.15, variable shadows global name(s) 'x'
 *** Error 46.11, unexpected mixfix token: und
 *** Hint 50.8, redeclared type '__->__'
 *** Error 52.8, incompatible kind of: __->__
@@ -292,6 +294,9 @@ free type bool
 	def(__res__(x, y))
 	def__(__res__(x, y))
 *** Error 65.59, unexpected mixfix token: und
+*** Warning 74.5, variable shadows global name(s) 'x'
+*** Warning 75.6, variable shadows global name(s) 'x'
+*** Warning 75.35, variable shadows global name(s) 'x'
 *** Hint 85.6, redeclared type 's'
 *** Error 85.6, merge: TypeVarDefn of 's'
 
