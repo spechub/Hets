@@ -44,7 +44,7 @@ commaTypeDecl s = do { c <- anComma
 		       in
 		       subTypeDecl (l, p)
 		       <|> kindedTypeDecl (l, p)
-		       <|> return (TypeDecl l nullKind (map tokPos p))
+		       <|> return (TypeDecl l star (map tokPos p))
 		     }
 
 kindedTypeDecl :: ([TypePattern], [Token]) -> AParser TypeItem
@@ -98,7 +98,7 @@ sortItem = do { s <- typePattern;
 		    <|>
                     isoDecl s
 		    <|> 
-		    return (TypeDecl [s] nullKind [])
+		    return (TypeDecl [s] star [])
 		  } 		
 
 sortItems :: AParser SigItems
@@ -108,7 +108,7 @@ typeItem :: AParser TypeItem
 typeItem = do { s <- typePattern;
 		    subTypeDecl ([s],[])
 		    <|>
-		    dataDef s nullKind []
+		    dataDef s star []
 		    <|> 
 		    pseudoTypeDef s Nothing []
 		    <|>
@@ -118,7 +118,7 @@ typeItem = do { s <- typePattern;
 		    <|>
                     isoDecl s
 		    <|> 
-		    return (TypeDecl [s] nullKind [])
+		    return (TypeDecl [s] star [])
 		  } 		
 
 typeItemList :: [Token] -> Instance -> AParser SigItems
@@ -249,7 +249,7 @@ dataItem = do t <- typePattern
 		   k <- kind
 		   Datatype d <- dataDef t k [c]
 		   return d
-		<|> do Datatype d <- dataDef t nullKind []
+		<|> do Datatype d <- dataDef t star []
 		       return d
 
 dataItems :: AParser BasicItem

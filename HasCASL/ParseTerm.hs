@@ -230,7 +230,7 @@ typeVarDecls = do (vs, ps) <- typeVar `separatedBy` anComma
 		       return (makeTypeVarDecls vs ps t (tokPos c))
 		    <|> varDeclDownSet vs ps
 		    <|> return (makeTypeVarDecls vs ps 
-				nullKind nullPos)
+				star nullPos)
 
 makeTypeVarDecls :: [TypeId] -> [Token] -> Kind -> Pos -> [TypeArg]
 makeTypeVarDecls vs ps cl q = 
@@ -275,7 +275,7 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` anComma
 		   t <- parseType
 		   return (makeTypeArgs ts ps [tokPos l]
 			   (PlainClass (Downset t)))
-		<|> return (makeTypeArgs ts ps [] nullKind)
+		<|> return (makeTypeArgs ts ps [] star)
 		where mergeVariance k e (t, InVar, _) p = 
 			  TypeArg t e k p 
 		      mergeVariance k e (t, v, ps) p =

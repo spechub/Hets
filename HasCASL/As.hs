@@ -271,8 +271,8 @@ data Class = Downset Type   -- not parsed directly
 universe :: Class
 universe = Intersection [] []
 
-nullKind :: Kind
-nullKind = PlainClass universe
+star :: Kind
+star = PlainClass universe
 
 -- ----------------------------------------------------------------------------
 -- op names
