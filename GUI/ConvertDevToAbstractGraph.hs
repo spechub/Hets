@@ -324,14 +324,15 @@ openProofStatus filename ioRefProofStatus convRef =
                          ++ (show filename) ++ "'")
        Just proofStatus@(globCon,libEnv',_,_) ->
          do writeIORef ioRefProofStatus proofStatus
-            graphMem' <- initializeConverter
+            initGraphInfo <- initgraphs
+            graphMem' <- (newIORef GraphMem{nextGraphId = 0, 
+				      graphInfo = initGraphInfo})
 	    let lns = [ln|(ln,gc) <- Map.assocs libEnv', gc == globCon]
 	    case length lns of
               1 -> do let libname = head lns
-                      (gid', gv, convMaps') <- convertGraph graphMem' libname libEnv'
-                      let gid = gid'
-                          actGraphInfo = gv
-                      writeIORef convRef convMaps'
+                      (gid, actGraphInfo, convMaps) 
+			  <- convertGraph graphMem' libname libEnv'
+                      writeIORef convRef convMaps
                       redisplay gid actGraphInfo
 		      return ()
               _ -> error "Could not determine libname of the saved development graph"
