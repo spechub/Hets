@@ -217,7 +217,7 @@ derived_sources += $(drifted_files) hetcats/Version.hs $(happy_files) \
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Isabelle/Logic_Isabelle.hs \
     Proofs/Proofs.hs hets.hs CASL/CCC/FreeTypes.hs \
-    Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs
+    Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs $(happy_files)
 
 
 nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
