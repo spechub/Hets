@@ -35,22 +35,19 @@ data Diagnosis = Diag { diagKind :: DiagKind
 -- | construct a message for a printable item that carries a position
 mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
 mkDiag k s a =
-    Diag k (s ++ " '" ++ showPretty a "'") $
-		 case get_pos a of 
-		 Nothing -> nullPos
-		 Just p -> p
+    Diag k (s ++ " '" ++ showPretty a "'") $ getMyPos a 
 
 -- ---------------------------------------------------------------------
 -- uniqueness check
 -- ---------------------------------------------------------------------
 
--- | errors for duplicate ids in argument, selector or constructor lists. 
-checkUniqueness :: [Id] -> [Diagnosis]
+-- | errors for duplicates in argument, selector or constructor lists. 
+checkUniqueness :: (PrettyPrint a, PosItem a, Ord a) => [a] -> [Diagnosis]
 checkUniqueness l = 
     let vd = filter ( not . null . tail) $ group $ sort l
-    in map ( \ vs -> mkDiag Error ("duplicate ids at '" ++
+    in map ( \ vs -> mkDiag Error ("duplicates at '" ++
 	                          showSepList (showString " ") shortPosShow
-				  (map posOfId (tail vs)) "'" 
+				  (map getMyPos (tail vs)) "'" 
 				   ++ " for")  (head vs)) vd
     where shortPosShow :: Pos -> ShowS
 	  shortPosShow p = showParen True 
