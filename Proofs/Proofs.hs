@@ -99,7 +99,6 @@ applyRule = undefined
    where e1...en are the global theorem links in DGm
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 
--- @@@@ hier weitermachen!! @@@@ 
 globDecomp :: ProofStatus -> ProofStatus
 globDecomp proofStatus@(globalContext,history,dgraph) =
   if null (snd newHistoryElem) then proofStatus
@@ -189,77 +188,7 @@ getAllProvenLocGlobPathsTo dgraph node path =
 		 ++ (filter isProvenLocalThm inEdges)
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     locGlobPaths = [(getSourceNode edge, (edge:path))| edge <- localEdges]
-{-
-Global decomposition:
-(ja) alle globalen Theorem-Links raussuchen
-für jeden
-  alle Knoten holen, von denen aus der Source-Knoten des Links über einen
-  locGlob-DefPfad zu erreichen ist
-  von jedem
-    einen locThm einfügen mit dem Morphismus des zu ersetzenden Links
-    nach dem Morphismus der Kante vom aktuellen Knoten zum Source-Knoten
-    des zu ersetzenden Links
--}
 
-
-
-
-
-
-
-{-
---concat [map (getAllLocDefPathsBetween dgraph src) sourcesOfGlobalThmEdges| src <- allNodes]
-  
-    where
-      globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
-      allNodes = nodes dgraph
-      result = globDecompAux history dgraph allNodes globalThmEdges
-
-    
-
-globDecompAux :: [([DGRule],[DGChange])] -> DGraph -> [Node] -> [LEdge DGLinkLab] -> (DGraph,[([DGRule],[DGChange])])
-globDecompAux history dgraph nodes [] = (dgraph,history)
-globDecompAux history dgraph nodes (edge:edges) =
-  globDecompAux newHistory newDGraph nodes edges
-
-    where
-      changes = if null history then [] else snd (head history)
-      result = globDecompForOneEdge changes dgraph nodes edge 
-      newDGraph = fst result
-      newHistory = if null (fst (snd result)) then history
-                    else (snd result):history
-
-globDecompForOneEdge :: [DGChange] -> DGraph -> [Node] -> LEdge DGLinkLab -> (DGraph,([DGRule],[DGChange]))
-globDecompForOneEdge [] dgraph [] _ = (dgraph,([],[]))
-globDecompForOneEdge changes dgraph [] edge = 
-  (dgraph,((GlobDecomp edge):[],changes)) 
-globDecompForOneEdge changes dgraph (node:nodes) edge =
-  globDecompForOneEdge newChanges newDgraph nodes edge 
-
-    where
-      result = globDecompForOneEdgeAux dgraph edge node
-      newDgraph = fst result
-      newChanges = snd result
-
-globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> Node -> (DGraph,[DGChange])
-globDecompForOneEdgeAux = undefined
--}
-{- alle globalThmEdges holen, für jede(edge1):
-     alle locDefPfade zum source suchen, für jeden:
-       Morphismus davon merken (morph1)
-       source davon merken, für jede(source1):
-         localThmEdge von source1 zum target von edge1 mit dem Morphismus
-	           (Morphismus von edge1)°morph1 einfügen
--}
-
-{- try to apply rules GlobSubsumption  
-     to all global theorem links in the current DG 
-   current DG = DGm
-   add to proof status the pair ([Subsumption e1,...,Subsumption en],DGm+1)
-   where e1...en are those global theorem links in DGm for which the
-     rule subsumption can be applied
-   if n=0, then just return the original proof status
-   DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 globSubsume ::  ProofStatus -> ProofStatus
 globSubsume proofStatus@(globalContext,history,dGraph) =
 -- -- ##### überprüfung überflüssig?! #####
