@@ -34,12 +34,15 @@ __+__(a, b)
 __when__else__(a, __<__(a, b), b)
 __when__else__(a, pred a : b, b)
 {____}(a, b)
-____p(a, b)
+*** Error 22.1, ambiguous mixfix term
+	a(b)(p)
+	____p(a, b)
+	__p(a(b))
 *** Error 23.1, ambiguous mixfix term
 	q(a)(b)
 	q____(a, b)
 *** Error 24.1, ambiguous mixfix term
-	B(__::__(b, []))
+	B([__](b))
 	__[__](B, b)
 *** Error 25.1, ambiguous mixfix term
 	B(__::__(a(__::__(c, __::__(d, []))), __::__(b, [])))
@@ -56,19 +59,20 @@ while__do__od(while__do__od(a, b), while__do__od(c, d))
 __::__(a, __::__(A__(0(B)), []))
 *** Error 32.2, ambiguous mixfix term
 	__::__(a, __::__(A__(0(B)), []))
-	__::__(a, __::__(A__B(0), []))
+	__::__(a, __::__(A(0)(B), []))
 *** Error 33.1, ambiguous mixfix term
+	A(A__B(0(B)))
 	A__(A__(0(B)(B)))
-	A__B(A__(0))(B)
+	A(A__B(0))(B)
 	A__B(A__(0(B)))
 __+__(__+__(b, A__(0(B))), b)
 *** Error 34.1, ambiguous mixfix term
 	__+__(__+__(b, A__(0(B))), b)
-	__+__(__+__(b, A__B(0)), b)
+	__+__(__+__(b, A(0)(B)), b)
 -__(A__(0(B)))
 *** Error 35.1, ambiguous mixfix term
 	-__(A__(0(B)))
-	-__(A__B(0))
+	-__(A(0)(B))
 __!(__!(__!(a)))
 __-->__(__-->__(__{__}--__-->{__}__(Pl7, nicht_wenden,
                                     folge_dem_Gang, nicht_wenden, Pl3),

@@ -4,3 +4,6 @@ a < a < a
 (i div p <= j div q <=> i * q <= j * p )
 L --> x = L --> [x]
 a + def a
+f a <= f a <= f a
+m # #
+D A b
