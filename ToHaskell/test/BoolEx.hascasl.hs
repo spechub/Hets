@@ -1,19 +1,24 @@
 module HasCASLModul where
-import Prelude (undefined)
+import Prelude (undefined, Show)
  
 type Pred a = a -> ()
  
 type Unit = ()
  
 data A__2_T_2 a1 a2 = A__2_T_2
+                    deriving Show
  
 data A__2_M_M_G_2 a1 a2 = A__2_M_M_G_2
+                        deriving Show
  
 data A__2_M_M_G_Q_2 a1 a2 = A__2_M_M_G_Q_2
+                          deriving Show
  
 data A__2_M_G_2 a1 a2 = A__2_M_G_2
+                      deriving Show
  
 data A__2_M_G_Q_2 a1 a2 = A__2_M_G_Q_2
+                        deriving Show
  
 _2_S_B_2 :: ((), ()) -> ()
 _2_S_B_2 = undefined
@@ -68,6 +73,7 @@ wedge :: (Bool, Bool) -> Bool
  
 data Bool = True
           | False
+          deriving Show
 neg x
   = case x of
         False -> True

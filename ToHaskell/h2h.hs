@@ -46,7 +46,7 @@ main = do l <- getArgs
 	        case r of 
 		       Right hs -> do
 		           putStrLn "module HasCASLModul where"
-		           putStrLn "import Prelude (undefined)"
+		           putStrLn "import Prelude (undefined, Show)"
 			   mapM_ (putStrLn . render . ppHsDecl) hs
 		       Left err -> putStrLn $ show err
 	     else putStrLn "missing argument"

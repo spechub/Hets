@@ -83,7 +83,7 @@ translateTypeInfo (tid,info) =
 	               hsname
 		       (kindToTypeArgs 1 $ typeKind info)
 		       [(HsConDecl nullLoc hsname [])]
-		       []
+		       derives
   in case (typeDefn info) of
        NoTypeDefn -> case superTypes info of
          [] -> [ddecl]
@@ -97,7 +97,7 @@ translateTypeInfo (tid,info) =
        DatatypeDefn _ args alts -> 
 	   [HsDataDecl nullLoc [] hsname
 		       (map getArg args) -- type arguments
-		       (map translateAltDefn alts) []]
+		       (map translateAltDefn alts) derives]
        _ -> [] -- ignore others
 
 
@@ -334,7 +334,7 @@ translateDt (DatatypeConstr i _ _ args alts) =
 	               hsname
 		       (map getArg args) -- type arguments
 		       (map translateAltDefn alts) -- [HsConDecl] 
-		       []
+		       derives
 
 translateSentence ::  Env -> Named Sentence -> [Named HsDecl] 
 translateSentence env sen = 
@@ -381,4 +381,6 @@ cleanSig ds sens =
         HsPatBind _ (HsPVar n) _ _ -> UnQual n `notElem` funs
 	_ -> True)
        ds 
-		       
+
+derives :: [HsQName]
+derives = [(UnQual $ HsIdent "Show")] 
