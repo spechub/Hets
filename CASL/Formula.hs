@@ -40,6 +40,7 @@ module Formula (term, formula, restrictedTerm, restrictedFormula
 	       , updFormulaPos) 
     where
 
+import AnnoState
 import Id
 import Keywords
 import Lexer
@@ -47,14 +48,14 @@ import Token
 import AS_Basic_CASL
 import Parsec
 
-simpleTerm :: [String] -> GenParser Char st TERM
+simpleTerm :: [String] -> AParser TERM
 simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString 
 		       <|>  scanQuotedChar <|> scanDotWords 
 		       <|>  reserved (k ++ casl_reserved_fwords) scanAnyWords
 		       <|>  reserved (k ++ casl_reserved_fops) scanAnySigns
 		       <|>  placeS <?> "id/literal" )) 
 
-startTerm, restTerm, mixTerm, whenTerm  :: [String] -> GenParser Char st TERM
+startTerm, restTerm, mixTerm, whenTerm  :: [String] -> AParser TERM
 startTerm k = parenTerm k <|> braceTerm k <|> bracketTerm k <|> simpleTerm k
 
 restTerm k = startTerm k <|> typedTerm <|> castedTerm
@@ -72,13 +73,13 @@ whenTerm k =
 		 return (Conditional t f r [tokPos w, tokPos e])
 		<|> return t
 
-term :: GenParser Char st TERM
+term :: AParser TERM
 term = whenTerm []
 
-restrictedTerm :: [String] -> GenParser Char st TERM
+restrictedTerm :: [String] -> AParser TERM
 restrictedTerm = whenTerm 
 
-typedTerm, castedTerm :: GenParser Char st TERM
+typedTerm, castedTerm :: AParser TERM
 typedTerm = do c <- colonT
                t <- sortId
                return (Mixfix_sorted_term t [tokPos c])
@@ -87,12 +88,12 @@ castedTerm = do c <- asT
 		t <- sortId
 		return (Mixfix_cast t [tokPos c])
 
-terms :: [String] -> GenParser Char st ([TERM], [Pos])
+terms :: [String] -> AParser ([TERM], [Pos])
 terms k = 
     do (ts, ps) <- whenTerm k `separatedBy` commaT
        return (ts, map tokPos ps)
 
-qualVarName, qualOpName :: Pos -> GenParser Char st TERM
+qualVarName, qualOpName :: Pos -> AParser TERM
 qualVarName o = do v <- asKey varS
 		   i <- varId
 		   c <- colonT 
@@ -109,20 +110,20 @@ qualOpName o = do v <- asKey opS
 			  (Qual_op_name i t
 			   [o, tokPos v, tokPos c, tokPos p]) [] [])
 
-opSort :: GenParser Char st (Bool, Id, Pos)
+opSort :: AParser (Bool, Id, Pos)
 opSort = fmap (\s -> (False, s, nullPos)) sortId 
 	 <|> do q <- quMarkT
 		s <- sortId
 		return (True, s, tokPos q)
 
-opFunSort :: [Id] -> [Token] -> GenParser Char st OP_TYPE
+opFunSort :: [Id] -> [Token] -> AParser OP_TYPE
 opFunSort ts ps = do a <- pToken (string funS)
 		     (b, s, _) <- opSort
 		     let qs = map tokPos ps ++[tokPos a] in 
 			 return (if b then Partial_op_type ts s qs
 				 else Total_op_type ts s qs)
 
-opType :: GenParser Char st OP_TYPE
+opType :: AParser OP_TYPE
 opType = do (b, s, p) <- opSort
 	    if b then return (Partial_op_type [] s [p])
 	       else do c <- crossT 
@@ -131,7 +132,7 @@ opType = do (b, s, p) <- opSort
  	            <|> opFunSort [s] []
 	            <|> return (Total_op_type [] s [])
 
-parenTerm, braceTerm, bracketTerm :: [String] -> GenParser Char st TERM
+parenTerm, braceTerm, bracketTerm :: [String] -> AParser TERM
 parenTerm k = 
             do o <- oParenT
                qualVarName (tokPos o) 
@@ -154,7 +155,7 @@ bracketTerm k =
        c <- cBracketT 
        return (Mixfix_bracketed ts (tokPos o : ps ++ [tokPos c]))
 
-quant :: GenParser Char st (QUANTIFIER, Pos)
+quant :: AParser (QUANTIFIER, Pos)
 quant = try(
         do q <- asKey (existsS++exMark)
 	   return (Unique_existential, tokPos q)
@@ -166,7 +167,7 @@ quant = try(
 	   return (Universal, tokPos q))
         <?> "quantifier"
        
-quantFormula :: [String] -> GenParser Char st FORMULA
+quantFormula :: [String] -> AParser FORMULA
 quantFormula k = 
     do (q, p) <- quant
        (vs, ps) <- varDecl `separatedBy` semiT
@@ -175,7 +176,7 @@ quantFormula k =
        return (Quantification q vs f
 	       (p: map tokPos ps ++[tokPos d]))
 
-varDecl :: GenParser Char st VAR_DECL
+varDecl :: AParser VAR_DECL
 varDecl = do (vs, ps) <- varId `separatedBy` commaT
 	     c <- colonT
 	     s <- sortId
@@ -184,7 +185,7 @@ varDecl = do (vs, ps) <- varId `separatedBy` commaT
 updFormulaPos :: Pos -> Pos -> FORMULA -> FORMULA
 updFormulaPos o c = up_pos_l (\l-> o:l++[c])  
 
-predType, predUnitType :: GenParser Char st PRED_TYPE
+predType, predUnitType :: AParser PRED_TYPE
 predType = do (ts, ps) <- sortId `separatedBy` crossT
 	      return (Pred_type ts (map tokPos ps))
 	   <|> predUnitType
@@ -193,7 +194,7 @@ predUnitType = do o <- oParenT
 		  c <- cParenT
 		  return (Pred_type [] [tokPos o, tokPos c])
 
-qualPredName :: Pos -> GenParser Char st TERM
+qualPredName :: Pos -> AParser TERM
 qualPredName o = do v <- asKey predS
 		    i <- parseId
 		    c <- colonT 
@@ -203,7 +204,7 @@ qualPredName o = do v <- asKey predS
 			    (Qual_pred_name i s 
 			     [o, tokPos v, tokPos c, tokPos p]))
 
-parenFormula :: [String] -> GenParser Char st FORMULA
+parenFormula :: [String] -> AParser FORMULA
 parenFormula k = 
                do o <- oParenT
 		  let po = tokPos o in
@@ -227,7 +228,7 @@ parenFormula k =
 					 return (updFormulaPos 
 						 (tokPos o) (tokPos c) f)
 
-termFormula :: [String] -> TERM -> GenParser Char st FORMULA
+termFormula :: [String] -> TERM -> AParser FORMULA
 termFormula k t =  do e <- asKey exEqual
 		      r <- whenTerm k
 		      return (Existl_equation t r [tokPos e])
@@ -244,7 +245,7 @@ termFormula k t =  do e <- asKey exEqual
 		      return (Membership t s [tokPos e])
 		   <|> return (Mixfix_formula t)
 
-primFormula :: [String] -> GenParser Char st FORMULA
+primFormula :: [String] -> AParser FORMULA
 primFormula k = 
               do c <- asKey trueS
 		 return (True_atom [tokPos c])
@@ -263,11 +264,11 @@ primFormula k =
 		      <|> (whenTerm k >>= termFormula k)
 
 
-andKey, orKey :: GenParser Char st Token
+andKey, orKey :: AParser Token
 andKey = asKey lAnd
 orKey = asKey lOr
 
-andOrFormula :: [String] -> GenParser Char st FORMULA
+andOrFormula :: [String] -> AParser FORMULA
 andOrFormula k = 
                do f <- primFormula k
 		  do c <- andKey
@@ -279,11 +280,11 @@ andOrFormula k =
 		       return (Disjunction (f:fs) (map tokPos (c:ps)))
 		    <|> return f
 
-implKey, ifKey :: GenParser Char st Token
+implKey, ifKey :: AParser Token
 implKey = asKey implS
 ifKey = asKey ifS
 
-impFormula :: [String] -> GenParser Char st FORMULA
+impFormula :: [String] -> AParser FORMULA
 impFormula k = 
              do f <- andOrFormula k
 		do c <- implKey
@@ -304,8 +305,8 @@ impFormula k =
 		          makeImpl _ _ = error "makeImpl got illegal argument"
 			  makeIf l p = makeImpl (reverse l) (reverse p)
 
-formula :: GenParser Char st FORMULA
+formula :: AParser FORMULA
 formula = impFormula []
 
-restrictedFormula :: [String] -> GenParser Char st FORMULA
+restrictedFormula :: [String] -> AParser FORMULA
 restrictedFormula = impFormula

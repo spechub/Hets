@@ -1,10 +1,10 @@
 module RunMixfixParser where
 
+import AnnoState
 import MixfixParser
 import AS_Basic_CASL
 import GlobalAnnotations
 import GlobalAnnotationsFunctions
-import Parsec
 import Set
 import Id
 import Result
@@ -12,6 +12,7 @@ import Result
 import Token
 import Formula
 import Anno_Parser
+
 
 -- start testing
 stdAnnosL, stdOpsL, stdPredsL :: [String]
@@ -55,10 +56,10 @@ stdOps, stdPreds :: Set Id
 stdOps = mkIds stdOpsL
 stdPreds = mkIds stdPredsL 
 
-resolveForm :: Parser (Result FORMULA)
+resolveForm :: AParser (Result FORMULA)
 resolveForm = 
       resolveFormula stdAnnos stdOps stdPreds `fmap` formula
 
-resolveTerm :: Parser (Result TERM)
+resolveTerm :: AParser (Result TERM)
 resolveTerm = 
       resolveMixfix stdAnnos stdOps stdPreds False `fmap` term

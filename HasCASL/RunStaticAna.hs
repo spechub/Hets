@@ -10,13 +10,13 @@
 
 module RunStaticAna where
 
+import AnnoState
 import Le
 import AsToLe(anaBasicSpec)
 import ParseItem(basicSpec)
-import Parsec
 import MonadState
 
-anaParser :: Parser Env
+anaParser :: AParser Env
 anaParser = do b <- basicSpec
 	       return $ snd $ (runState (anaBasicSpec b)) initialEnv
 

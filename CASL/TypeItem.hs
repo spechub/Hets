@@ -14,6 +14,7 @@
 
 module TypeItem where
 
+import AnnoState
 import Id
 import Keywords
 import Lexer
@@ -22,27 +23,29 @@ import AS_Annotation
 import Parsec
 import Token
 import Formula
-import ItemList(annos, itemList)
+import ItemList
 
 -- ------------------------------------------------------------------------
 -- datatypes
 -- ------------------------------------------------------------------------
 
-datatype :: GenParser Char st DATATYPE_DECL
+datatype :: AParser DATATYPE_DECL
 datatype = do s <- sortId
+	      addAnnos
 	      e <- asKey defnS
-	      a <- annos
+	      addAnnos
+	      a <- getAnnos
 	      (Annoted v _ _ b:as, ps) <- aAlternative 
 		`separatedBy` barT
 	      return (Datatype_decl s (Annoted v [] a b:as) 
 			(map tokPos (e:ps)))
 
-aAlternative :: GenParser Char st (Annoted ALTERNATIVE)
-aAlternative = do a <- alternative
+aAlternative :: AParser (Annoted ALTERNATIVE)
+aAlternative = do a <- alternative 
 		  an <- annos
 		  return (Annoted a [] [] an)
 
-alternative :: GenParser Char st ALTERNATIVE
+alternative :: AParser ALTERNATIVE
 alternative = do s <- pluralKeyword sortS
 		 (ts, cs) <- sortId `separatedBy` commaT
 		 return (Subsorts ts (map tokPos (s:cs)))
@@ -63,14 +66,14 @@ isSortId :: Id -> Bool
 isSortId (Id is _ _) = length is == 1 && not (null (tokStr (head is))) 
 		       && head (tokStr (head is)) `elem` caslLetters
 
-component :: GenParser Char st COMPONENTS
+component :: AParser COMPONENTS
 component = do (is, cs) <- parseId `separatedBy` commaT
 	       if length is == 1 && isSortId (head is) then
 		 compSort is cs 
 		 <|> return (Sort (head is))
 		 else compSort is cs
 
-compSort :: [OP_NAME] -> [Token] -> GenParser Char st COMPONENTS
+compSort :: [OP_NAME] -> [Token] -> AParser COMPONENTS
 compSort is cs = do c <- colonST
 		    (b, t, _) <- opSort
 		    let p = map tokPos (cs++[c]) in 
@@ -81,6 +84,6 @@ compSort is cs = do c <- colonST
 -- sigItems
 -- ------------------------------------------------------------------------
 
-typeItems :: GenParser Char st SIG_ITEMS
+typeItems :: AParser SIG_ITEMS
 typeItems = itemList typeS datatype Datatype_items
 

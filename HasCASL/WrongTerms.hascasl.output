@@ -104,7 +104,7 @@ expecting "{", __, ",", ":" or "<"
 
 parse error at (line 27, column 13):
 unexpected ".!" or "!"
-expecting "?", words, "__", "(", "{", "[", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
+expecting "?", words, "__", "(", "{", "[", ":", cross, "->", "->?", "-->", "-->?", ";", "%%", "%{", "%(", "%" or dot
 
 parse error at (line 28, column 13):
 unexpected ".!" or "!"

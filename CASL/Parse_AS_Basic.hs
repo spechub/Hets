@@ -14,6 +14,7 @@
 
 module Parse_AS_Basic where
 
+import AnnoState
 import Id
 import Keywords
 import Lexer
@@ -32,14 +33,14 @@ import ItemList
 -- sigItems
 -- ------------------------------------------------------------------------
 
-sigItems :: GenParser Char st SIG_ITEMS
+sigItems :: AParser SIG_ITEMS
 sigItems = sortItems <|> opItems <|> predItems <|> typeItems
 
 -- ------------------------------------------------------------------------
 -- basicItems
 -- ------------------------------------------------------------------------
 
-basicItems :: GenParser Char st BASIC_ITEMS
+basicItems :: AParser BASIC_ITEMS
 basicItems = fmap Sig_items sigItems
 	     <|> do f <- asKey freeS
 		    Datatype_items ts ps <- typeItems
@@ -49,7 +50,6 @@ basicItems = fmap Sig_items sigItems
 		       return (Sort_gen [Annoted t [] [] []] [tokPos g])
 		      <|> 
 		      do o <- oBraceT
-			 a <- annos
 			 is <- annosParser sigItems
 			 c <- cBraceT
 			 return (Sort_gen is
@@ -71,7 +71,7 @@ basicItems = fmap Sig_items sigItems
 					 (\ x y -> Annoted x [] [] y) 
 					 fs ans) (map tokPos (a:ps)))
 
-varItems :: GenParser Char st ([VAR_DECL], [Token])
+varItems :: AParser ([VAR_DECL], [Token])
 varItems = do v <- varDecl
 	      do s <- semiT
 		 do tryItemEnd startKeyword
@@ -82,7 +82,7 @@ varItems = do v <- varDecl
 		<|>
 		return ([v], [])
              
-dotFormulae :: GenParser Char st BASIC_ITEMS
+dotFormulae :: AParser BASIC_ITEMS
 dotFormulae = do d <- dotT
 		 (fs, ds) <- aFormula `separatedBy` dotT
 		 (m, an) <- optSemi
@@ -92,15 +92,15 @@ dotFormulae = do d <- dotT
 			Nothing -> return (Axiom_items ns ps)
 			Just t -> return (Axiom_items ns
 			       (ps ++ [tokPos t]))
-    where aFormula = bind appendAnno (annoParser formula) lineAnnos
+    where aFormula = bind appendAnno (annoParser formula) getLineAnnos
 
 
 -- ------------------------------------------------------------------------
 -- basicSpec
 -- ------------------------------------------------------------------------
 
-basicSpec :: GenParser Char st BASIC_SPEC
+basicSpec :: AParser BASIC_SPEC
 basicSpec = (fmap Basic_spec $ many1 $ 
-	    try $ bind addLeftAnno annos basicItems)
+	    try $ annoParser basicItems)
             <|> try (oBraceT >> cBraceT >> return (Basic_spec []))
 

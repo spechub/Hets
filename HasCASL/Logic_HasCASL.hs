@@ -39,7 +39,7 @@ instance Category HasCASL Sign Morphism
 instance Syntax HasCASL BasicSpec
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec HasCASL = Just(toParseFun basicSpec ())
+         parse_basic_spec HasCASL = Just(toParseFun basicSpec emptyState)
 	 parse_symb_items HasCASL = Just(toParseFun symbItems ())
 	 parse_symb_map_items HasCASL = Just(toParseFun symbMapItems ())
 

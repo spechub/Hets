@@ -1,4 +1,1 @@
-parse error at "WrongBasicSpec.hascasl" (line 4, column 1):
-unexpected "%"
-expecting "?", words, "__", signs, "(", "{", "[", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
-
+. f = g forall x : s . x = x %()%

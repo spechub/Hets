@@ -17,9 +17,9 @@ module Logic_CASL where
 import AS_Basic_CASL
 import Print_AS_Basic
 import Parse_AS_Basic
-import Lexer
 import SymbolParser
 import ParsecInterface
+import AnnoState(emptyState)
 
 import Sign
 import Logic
@@ -52,7 +52,7 @@ instance Category CASL Sign Morphism
 instance Syntax CASL BASIC_SPEC 
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec CASL = Just(toParseFun basicSpec ())
+         parse_basic_spec CASL = Just(toParseFun basicSpec emptyState)
 	 parse_symb_items CASL = Just(toParseFun symbItems ())
 	 parse_symb_map_items CASL = Just(toParseFun symbMapItems ())
 
@@ -136,6 +136,7 @@ instance Logic CASL Sublogics.CASL_Sublogics
          proj_sublogic_symbol CASL = Sublogics.pr_symbol
 
 ---- helpers ---------------------------------
+fun_err :: String -> a
 fun_err fname = 
     error ("*** Function \"" ++ fname ++ "\" is not yet implemented!")
 

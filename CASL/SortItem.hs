@@ -14,6 +14,7 @@
 
 module SortItem where
 
+import AnnoState
 import Id
 import Keywords
 import Lexer
@@ -22,27 +23,27 @@ import AS_Annotation
 import Parsec
 import Token
 import Formula
-import ItemList (annos, itemList)
+import ItemList
 
 -- ------------------------------------------------------------------------
 -- sortItem
 -- ------------------------------------------------------------------------
 
-commaSortDecl :: Id -> GenParser Char st SORT_ITEM
+commaSortDecl :: Id -> AParser SORT_ITEM
 commaSortDecl s = do c <- commaT 
 		     (is, cs) <- sortId `separatedBy` commaT
 		     let l = s : is 
 		         p = tokPos c : map tokPos cs in
 		       subSortDecl (l, p) <|> return (Sort_decl l p)
 
-isoDecl :: Id -> GenParser Char st SORT_ITEM
+isoDecl :: Id -> AParser SORT_ITEM
 isoDecl s = do e <- equalT
                subSortDefn (s, tokPos e)
 		 <|>
 		 (do (l, p) <- sortId `separatedBy` equalT
 		     return (Iso_decl (s:l) (tokPos e : map tokPos p)))
 
-subSortDefn :: (Id, Pos) -> GenParser Char st SORT_ITEM
+subSortDefn :: (Id, Pos) -> AParser SORT_ITEM
 subSortDefn (s, e) = do a <- annos
 			o <- oBraceT
 			v <- varId
@@ -54,12 +55,12 @@ subSortDefn (s, e) = do a <- annos
 			return (Subsort_defn s v t (Annoted f [] a []) 
 				(e:tokPos o:tokPos c:tokPos d:[tokPos p]))
 
-subSortDecl :: ([Id], [Pos]) -> GenParser Char st SORT_ITEM
+subSortDecl :: ([Id], [Pos]) -> AParser SORT_ITEM
 subSortDecl (l, p) = do t <- lessT
 			s <- sortId
 			return (Subsort_decl l s (p++[tokPos t]))
 
-sortItem :: GenParser Char st SORT_ITEM 
+sortItem :: AParser SORT_ITEM 
 sortItem = do s <- sortId ;
 	      subSortDecl ([s],[])
 		    <|>
@@ -69,6 +70,6 @@ sortItem = do s <- sortId ;
 		    <|> 
 		    return (Sort_decl [s] [])
 
-sortItems :: GenParser Char st SIG_ITEMS
+sortItems :: AParser SIG_ITEMS
 sortItems = itemList sortS sortItem Sort_items
 

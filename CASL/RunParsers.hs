@@ -9,15 +9,18 @@
 
 module RunParsers (exec, HetParser(HetParser)) where 
 
+import AnnoState
 import Lexer((<<))
 import Parsec
 import ParsecPos
 import PrettyPrint
 import Pretty
 import System
+import ItemList
 import RunMixfixParser (stdAnnos)
 
-data HetParser = forall a. PrettyPrint a => HetParser (Parser a)
+data HetParser = forall a. PrettyPrint a => 
+		 HetParser (AParser a)
 
 exec :: [(String, HetParser)] -> [(String, HetParser)] -> IO ()
 exec lps fps = do l <- getArgs
@@ -41,27 +44,30 @@ exec lps fps = do l <- getArgs
                                  putStrLn $ unwords
 					      (map fst lps ++ map fst fps) 
 
-checkLines :: (PrettyPrint a) => Parser a -> FilePath -> IO ()
+checkLines :: PrettyPrint a => AParser a -> FilePath -> IO ()
 checkLines p fileName = do s <- readFile fileName
 			   putStr (unlines (scanLines p (lines s) 1))
 
-scanLines :: (Show tok, PrettyPrint a) =>
-             GenParser tok () a -> [[tok]] -> Line -> [String]
+scanLines :: PrettyPrint a =>
+             AParser a -> [String] -> Line -> [String]
 scanLines _ [] _ = []
 scanLines p (x:l) n = (parseLine p x n) : (scanLines p l (n+1))
 
-parseLine :: (Show tok, PrettyPrint a) =>
-             GenParser tok () a -> [tok] -> Line -> String
+parseLine :: PrettyPrint a =>
+             AParser a -> String -> Line -> String
 parseLine p line n = let pos = setSourceLine (initialPos "") n
 			 parser = do setPosition pos
 				     i <- p
 				     eof
 				     return i
-		       in result (parse parser "" line)
+		       in result (runParser parser emptyState "" line)
 
-parseSpec :: (PrettyPrint a) => SourceName -> Parser a -> IO ()
-parseSpec fileName p  =  do r <- parseFromFile (p << eof) fileName
-			    putStrLn (result r)
+parseSpec :: PrettyPrint a => SourceName -> AParser a 
+	  -> IO ()
+parseSpec fileName p  =  do str <- readFile fileName
+			    putStrLn $ result $ 
+				     runParser (p << eof) emptyState 
+					       fileName str
 
 instance (Show a, PrettyPrint b) => PrettyPrint (Either a b) where
     printText0 g r = case r of

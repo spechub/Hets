@@ -9,11 +9,11 @@
 
 module ItemList where
 
+import AnnoState
 import Id
 import Keywords
 import Lexer
 import AS_Annotation
-import Anno_Parser(annotationL)
 import Maybe
 import Parsec
 import Token
@@ -23,38 +23,30 @@ import List(delete)
 -- annotations
 -- ----------------------------------------------
 
--- skip to leading annotation and read many
-annos :: GenParser Char st [Annotation]
-annos = skip >> many (annotationL << skip)
-
--- annotations on one line
-lineAnnos :: GenParser Char st [Annotation]
-lineAnnos = do p <- getPosition
-	       do a <- annotationL
-		  skip
-		  q <- getPosition
-		  if sourceLine q <= sourceLine p + 1 then
-		      do l <- lineAnnos
-			 return (a:l)
-		      else return [a]
-		 <|> return []
+annos, lineAnnos :: AParser [Annotation]
+annos = addAnnos >> getAnnos
+lineAnnos = addAnnos >> getLineAnnos
 
 -- optional semicolon followed by annotations on the same line
-optSemi :: GenParser Char st (Maybe Token, [Annotation])
-optSemi = do (a1, s) <- try (bind (,) annos semiT)
-             a2 <- lineAnnos 			     
-	     return (Just s, a1 ++ a2)
-          <|> do a <- lineAnnos
-		 return (Nothing, a)
+optSemi :: AParser (Maybe Token, [Annotation])
+optSemi = do addAnnos
+             l <- getLineAnnos
+	     a <- getAnnos 
+	     do s <- semiT
+		addAnnos
+		l2 <- getLineAnnos
+		return (Just s, l ++ a ++ l2)
+	      <|> do setState $ AnnoState [] a
+		     return (Nothing, l)
 
 -- succeeds if an item is not continued after a semicolon
-tryItemEnd :: [String] -> GenParser Char st ()
+tryItemEnd :: [String] -> AParser ()
 tryItemEnd l = 
-    try (do c <- lookAhead (annos >> 
+    try (do c <- lookAhead 
 			      (single (oneOf "\"([{")
 			       <|> placeS
 			       <|> scanAnySigns
-			       <|> many scanLPD))
+			       <|> many scanLPD)
 	    if null c || c `elem` l then return () else unexpected c)
 
 
@@ -70,22 +62,24 @@ appendAnno (Annoted x p l r) y = Annoted x p l (r++y)
 addLeftAnno :: [Annotation] -> a -> Annoted a
 addLeftAnno l i = Annoted i [] l []
 
-annoParser :: GenParser Char st a -> GenParser Char st (Annoted a)
+annoParser :: AParser a 
+	   -> AParser (Annoted a)
 annoParser parser = bind addLeftAnno annos parser
 
-annosParser :: GenParser Char st a -> GenParser Char st [Annoted a]
-annosParser parser = do (as, is) <- annos `separatedBy` parser
-			if null is then unexpected ("empty item list")
-			   else let bs = zipWith addLeftAnno (init as) is
-				in return (init bs ++ 
-					   [appendAnno (last bs) (last as)])
 
-itemList :: String -> GenParser Char st b
-               -> ([Annoted b] -> [Pos] -> a) -> GenParser Char st a
+annosParser :: AParser a 
+	    -> AParser [Annoted a]
+annosParser parser = 
+    do is <- many1 $ try $ annoParser parser
+       a <- annos 
+       return (init is ++ [appendAnno (last is) a])
+
+itemList :: String -> AParser b
+               -> ([Annoted b] -> [Pos] -> a) -> AParser a
 itemList = auxItemList startKeyword
 
-auxItemList :: [String] -> String -> GenParser Char st b
-               -> ([Annoted b] -> [Pos] -> a) -> GenParser Char st a
+auxItemList :: [String] -> String -> AParser b
+            -> ([Annoted b] -> [Pos] -> a) -> AParser a
 
 auxItemList startKeywords keyword parser constr =
     do p <- pluralKeyword keyword
@@ -93,8 +87,8 @@ auxItemList startKeywords keyword parser constr =
        let r = zipWith appendAnno vs ans in 
 	   return (constr r (map tokPos (p:ts)))
 
-itemAux :: [String] -> GenParser Char st a 
-	-> GenParser Char st ([a], [Token], [[Annotation]])
+itemAux :: [String] -> AParser a 
+	-> AParser ([a], [Token], [[Annotation]])
 itemAux startKeywords itemParser = 
     do a <- itemParser
        (m, an) <- optSemi
