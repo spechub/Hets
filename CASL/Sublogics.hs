@@ -898,10 +898,35 @@ pr_opitem l i = pr_check l sl_opitem i
 pr_preditem :: CASL_Sublogics -> PredItem -> Maybe PredItem
 pr_preditem l i = pr_check l sl_preditem i
 
--- FIXME:
-
 pr_morphism :: CASL_Sublogics -> Morphism -> Morphism
-pr_morphism l m = m
+pr_morphism l (Morphism s t sm fm pm) =
+  Morphism (pr_sign l s) (pr_sign l t) sm (pr_fun_map l fm) (pr_pred_map l pm)
+
+pr_pred_map :: CASL_Sublogics -> Pred_map -> Pred_map
+pr_pred_map l x = if (has_pred l) then x else emptyFM
+
+add_to_fm :: [(Id,[(OpType,Id,Bool)])] -> Fun_map -> Fun_map
+add_to_fm [] fm = fm
+add_to_fm ((a,b):t) fm = add_to_fm t (addToFM fm a b)
+
+pr_fun_map :: CASL_Sublogics -> Fun_map -> Fun_map
+pr_fun_map l m = add_to_fm (map (pr_fun_map_entries l) $ fmToList m) emptyFM
+
+pr_fun_map_entries :: CASL_Sublogics -> (Id,[(OpType,Id,Bool)]) -> (Id,[(OpType,Id,Bool)])
+pr_fun_map_entries l (i,ll) = (i,mapMaybe (pr_fun_map_entry l) ll)
+
+pr_fun_map_entry :: CASL_Sublogics -> (OpType,Id,Bool) -> Maybe (OpType,Id,Bool)
+pr_fun_map_entry l (t,i,b) =
+  if (has_part l) then
+    Just (t,i,b)
+  else
+    let
+      res = pr_check l sl_optype t
+    in
+      if ((isJust res) && (not b)) then
+      Just (t,i,b) else Nothing
+
+-- FIXME:
 
 -- pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
 -- pr_epsilon l s = 
