@@ -27,7 +27,7 @@ import Parsec
 import Id
 import List
 
-import Maybe(maybeToList, fromJust)
+import Maybe(maybeToList)
 
 ------------------------------------------------------------------------
 -- annotation adapter
@@ -77,18 +77,18 @@ logicName = do e <- encodingName
 parseLogic :: GenParser Char st Logic_code
 parseLogic = 
     do l <- asKey logicS
-       do e <- logicName
+       do e <- logicName  -- try to parse encoding or logic source after "logic" 
           case e of 
 		 Logic_name _ (Just _) -> parseOptLogTarget Nothing (Just e) [l]
 		 Logic_name f Nothing -> 
 		      do c <- asKey colonS
 			 parseLogAfterColon (Just f) [l,c]
 		      <|> parseOptLogTarget Nothing (Just e) [l]
-         <|> do f <- asKey funS
+         <|> do f <- asKey funS  -- parse at least a logic target after "logic"
 		t <- logicName
 		return (Logic_code Nothing Nothing (Just t) (map tokPos [l,f]))
 
--- auxiliary (given encoding e)
+-- parse optional logic source and target after a colon (given an encoding e)
 parseLogAfterColon e l =
     do s <- logicName
        parseOptLogTarget e (Just s) l
@@ -96,49 +96,82 @@ parseLogAfterColon e l =
     <|> parseOptLogTarget e Nothing l
     <|> return (Logic_code e Nothing Nothing (map tokPos l))
 
--- auxiliary (given encoding e or source s) 
+-- parse an optional logic target (given encoding e or source s) 
 parseOptLogTarget e s l =
     do f <- asKey funS
        do t <- logicName
 	  return (Logic_code e s (Just t) (map tokPos (l++[f])))
         <|> return (Logic_code e s Nothing (map tokPos (l++[f])))
 
-
 ------------------------------------------------------------------------
--- find the proper logic list
+-- for parsing "," not followed by "logic" within G_mapping
 ------------------------------------------------------------------------
+-- ParsecCombinator.notFollowedBy only allows to check for a single "tok"
+-- thus a single Char.
 
-findLogic :: String -> [AnyLogic] -> ([AnyLogic],[AnyLogic])
-findLogic s l = partition (\ (Logic x) -> language_name x == s) l
+notFollowedWith :: GenParser tok st a -> GenParser tok st b 
+		-> GenParser tok st a 
 
-------------------------------------------------------------------------
--- parse G_mapping
-------------------------------------------------------------------------
+p1 `notFollowedWith` p2 = try ((p1 >> p2 >> pzero) <|> p1)
 
-parseMapping :: [AnyLogic] -> GenParser Char st ([G_mapping], [Token])
-parseMapping l@(Logic i : _) =
-    do n <- parseLogic
+plainComma = commaT `notFollowedWith` asKey logicS
+
+-- rearrange list to keep current logic as first element
+-- does not consume anything! (may only fail)
+switchLogic :: Logic_code -> [AnyLogic] -> GenParser Char st [AnyLogic]
+switchLogic n l@(Logic i : _) =
        let s = case n of 
 	       Logic_code _ _ (Just (Logic_name t _)) _ -> tokStr t
 	       _ -> language_name i
-	   (f, r) = findLogic s l in
-		  if null f then fail ("unknown language " ++ s)
-		  else do c <- commaT
-			  (gs, ps) <- parseMapping (f++r)
-			  return (G_logic_translation n : gs, c:ps)
-		       <|> return ([G_logic_translation n], [])
-    <|> do is <- parse_symb_map_items i
-	   do c <- commaT 
-  	      (g:gs, ps) <- parseMapping l
-	      let gg = case g of 
-		       G_symb_map (G_symb_map_items_list j js) -> 
-			   G_symb_map (G_symb_map_items_list i 
-				       (is: map (fromJust . coerce i j) js)) 
-					  : gs
-		       _ -> G_symb_map (G_symb_map_items_list i [is]) : g : gs
-	        in return (gg, c : ps)
-	     <|> return ([G_symb_map (G_symb_map_items_list i [is])], [])
-	   
+	   (f, r) =  partition (\ (Logic x) -> language_name x == s) l
+       in if null f then fail ("unknown language " ++ s)
+	  else return (f++r)
+
+------------------------------------------------------------------------
+-- parse G_mapping (if you modify this, do so for G_hiding, too!)
+------------------------------------------------------------------------
+
+parseItemsMap :: [AnyLogic] -> GenParser Char st (G_symb_map_items_list, [Token])
+parseItemsMap (Logic i : _) = 
+    do (cs, ps) <- parse_symb_map_items i `separatedBy` plainComma
+       return (G_symb_map_items_list i cs, ps) 
+
+parseMapping :: [AnyLogic] -> GenParser Char st ([G_mapping], [Token])
+parseMapping l =
+    do n <- parseLogic
+       l' <- switchLogic n l  
+       do c <- commaT
+	  (gs, ps) <- parseMapping l'
+	  return (G_logic_translation n : gs, c:ps)
+        <|> return ([G_logic_translation n], [])
+    <|> do (m, ps) <- parseItemsMap l
+	   do  c <- commaT 
+  	       (gs, qs) <- parseMapping l
+	       return (G_symb_map m : gs, ps ++ c : qs)
+	     <|> return ([G_symb_map m], ps)
+
+------------------------------------------------------------------------
+-- parse G_hiding (copied from above, but code sharing would be better!) 
+------------------------------------------------------------------------
+
+parseItemsList :: [AnyLogic] -> GenParser Char st (G_symb_items_list, [Token])
+parseItemsList (Logic i : _) = 
+    do (cs, ps) <- parse_symb_items i `separatedBy` plainComma
+       return (G_symb_items_list i cs, ps) 
+
+parseHiding :: [AnyLogic] -> GenParser Char st ([G_hiding], [Token])
+parseHiding l =
+    do n <- parseLogic
+       l' <- switchLogic n l 
+       do c <- commaT
+	  (gs, ps) <- parseHiding l'
+	  return (G_logic_projection n : gs, c:ps)
+        <|> return ([G_logic_projection n], [])
+    <|> do (m, ps) <- parseItemsList l
+	   do  c <- commaT 
+  	       (gs, qs) <- parseHiding l
+	       return (G_symb_list m : gs, ps ++ c : qs)
+	     <|> return ([G_symb_list m], ps)
 
 ------------------------------------------------------------------------
 -- specs
@@ -149,21 +182,18 @@ spec :: [AnyLogic] -> GenParser Char st SPEC
 spec l = reSpec l 
 
 reSpec :: [AnyLogic] -> GenParser Char st SPEC
-reSpec l = annoParser (simpleSpec l) >>= (renaming l ) -- <|> restriction l
-
-parseMaps :: [AnyLogic] -> GenParser Char st (G_symb_map_items_list, [Token])
-parseMaps (Logic i : _) = 
-    do (cs, ps) <- parse_symb_map_items i `separatedBy` commaT
-       return (G_symb_map_items_list i cs, ps) 
-
-
--- parseMapping :: [AnyLogic] -> GenParser Char st (G_mapping, [Token])
-
+reSpec l = annoParser (simpleSpec l) >>= 
+	   (\ s -> renaming l s <|> restriction l s)
 
 renaming l s = 
     do w <- asKey withS
-       (m, ps) <- parseMaps l
-       return (Translation s (Renaming [G_symb_map m] (map tokPos (w:ps))))
+       (m, ps) <- parseMapping l
+       return (Translation s (Renaming m (map tokPos (w:ps))))
+
+restriction l s = 
+    do w <- asKey hideS
+       (m, ps) <- parseHiding l
+       return (Reduction s (Hidden m (map tokPos (w:ps))))
 
 simpleSpec :: [AnyLogic] -> GenParser Char st SPEC
 simpleSpec l@(Logic i : _) = 
