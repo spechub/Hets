@@ -80,21 +80,20 @@ anaOpItem ga br (OpDecl is sc attr ps) =
 
 anaOpItem ga br (OpDefn o oldPats sc partial trm ps) = 
     do let (op@(OpId i _ _), extSc) = getUninstOpId sc o
-       l <- mapM extractBindings oldPats
-       let bs = concatMap snd l
-	   pats = map fst l
        mSc <- anaTypeScheme extSc 
        as <- gets assumps
-       checkUniqueVars bs
+       checkUniqueVars $ concat oldPats
        putAssumps $ filterVars as
-       mapM_ anaVarDecl bs
+       mPats <- mapM (mapM anaVarDecl) oldPats
+       let newPats = map catMaybes mPats
+	   pats = map (\ l -> TuplePattern (map PatternVar l) []) newPats
        case mSc of 
 		Just newSc@(TypeScheme tArgs (qu :=> _) qs) -> do 
 		    ty <- toEnvState $ freshInst newSc
 		    mt <- resolveTerm ga (Just ty) trm
 		    putAssumps as
 		    case mt of 
-			      Nothing -> return $ OpDefn op pats 
+			      Nothing -> return $ OpDefn op newPats 
 					     newSc partial trm ps
 			      Just lastTrm -> do 
 			          let lastSc = TypeScheme tArgs 
@@ -109,7 +108,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 		Nothing -> do 
 		    mt <- resolveTerm ga Nothing trm
 		    putAssumps as
-		    return $ OpDefn op pats extSc partial 
+		    return $ OpDefn op newPats extSc partial 
 			      (case mt of Nothing -> trm
 			                  Just x -> x) ps
 							  

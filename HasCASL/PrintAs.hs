@@ -370,8 +370,8 @@ instance PrettyPrint OpItem where
 				   <+> (printText0 ga t
 					<> (if null as then empty else comma)
 					<> commaT_text ga as)
-    printText0 ga (OpDefn n ps s p t _) = (printText0 ga n 
-					<> fcat (map (printText0 ga) ps))
+    printText0 ga (OpDefn n ps s p t _) = 
+	(printText0 ga n <> fcat (map (parens . semiT_text ga) ps))
 			    <+> (colon <> if p == Partial 
 				 then text quMark else empty)
  			    <+> printText0 ga s 
@@ -398,19 +398,18 @@ instance PrettyPrint DatatypeDecl where
 							  <+> commaT_text ga d
 
 instance PrettyPrint Alternative where 
-    printText0 ga (Constructor n cs p _) = printText0 ga n 
-					<+> fsep (map (printText0 ga) cs)
-					<+> (case p of {Partial -> text quMark;
-						       _ -> empty})
+    printText0 ga (Constructor n cs p _) = 
+	printText0 ga n <+> fsep (map (parens . semiT_text ga) cs)
+		       <+> (case p of {Partial -> text quMark;
+				       _ -> empty})
     printText0 ga (Subtype l _) = text typeS <+> commaT_text ga l
 
-instance PrettyPrint Components where 
+instance PrettyPrint Component where 
     printText0 ga (Selector n p t _ _) = printText0 ga n 
 				<> colon <> (case p of { Partial ->text quMark;
 							 _ -> empty } 
 					      <+> printText0 ga t)
     printText0 ga (NoSelector t) = printText0 ga t
-    printText0 ga (NestedComponents l _) = parens $ semiT_text ga l
 
 instance PrettyPrint OpId where 
     printText0 ga (OpId n ts _) = printText0 ga n 

@@ -39,7 +39,7 @@ anaAlt _ _ (Subtype ts ps) =
        return []
 
 anaAlt tys dt (Constructor i cs p _) = 
-    do newCs <- mapM (anaComp i tys dt) $ zip cs $ map (:[]) [1..]
+    do newCs <- mapM (anaComps i tys dt) $ zip cs $ map (:[]) [1..]
        let mts = map fst newCs
        if all isJust mts then 
 	  do let sels = concatMap snd newCs
@@ -67,7 +67,17 @@ makePartial t =
 		       _ -> FunType t1 PFunArr t2 ps
 	   _ -> LazyType t []  
 
-anaComp :: Id -> [(Id, Type)] -> Type -> (Components, [Int]) 
+anaComps :: Id -> [(Id, Type)] -> Type -> ([Component], [Int]) 
+	-> State Env (Maybe Type, [Selector]) 
+anaComps con tys rt (cs, i) =
+    do newCs <- mapM (anaComp con tys rt) $ zip cs $ map (:i) [1..]
+       let mts = map fst newCs
+       if all isJust mts then 
+          return (Just $ ProductType (catMaybes mts) [],
+                  concatMap snd newCs)
+          else return  (Nothing, [])
+
+anaComp :: Id -> [(Id, Type)] -> Type -> (Component, [Int]) 
 	-> State Env (Maybe Type, [Selector]) 
 anaComp _ tys rt (Selector s p t _ _, _) =
     do mt <- anaCompType tys rt t
@@ -82,14 +92,6 @@ anaComp con tys rt (NoSelector t, i) =
 			    showId con ".sel_" ++ show i ++ ")%"))
 				   ct Partial])
 	   _ -> return  (Nothing, [])
-
-anaComp con tys rt (NestedComponents cs ps, i) =
-    do newCs <- mapM (anaComp con tys rt) $ zip cs $ map (:i) [1..]
-       let mts = map fst newCs
-       if all isJust mts then 
-	  return (Just $ ProductType (catMaybes mts) ps,
-		  concatMap snd newCs)
-	  else return  (Nothing, [])
 
 getSelType :: Type -> Partiality -> Type -> Type
 getSelType dt p rt = addPartiality p $ FunType dt FunArr rt []

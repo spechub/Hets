@@ -182,8 +182,8 @@ data Partiality = Partial | Total deriving (Show, Eq)
 
 data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
-            | OpDefn OpId [Pattern] TypeScheme Partiality Term [Pos]
-               -- pos "("s, ")"s, ":" or ":?", "="
+            | OpDefn OpId [[VarDecl]] TypeScheme Partiality Term [Pos]
+               -- pos "("s, ";"s, ")"s, ":" or ":?", "="
               deriving (Show, Eq)
 
 data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq)
@@ -200,17 +200,15 @@ data DatatypeDecl = DatatypeDecl
 		     -- pos "::=", "|"s, "deriving"
 		     deriving (Show, Eq)
 
-data Alternative = Constructor UninstOpId [Components] Partiality [Pos]
-		   -- pos: "?"
+data Alternative = Constructor UninstOpId [[Component]] Partiality [Pos]
+		   -- pos: "("s, ";"s, ")"s, "?"
 		 | Subtype [Type] [Pos]
 		   -- pos: "type", ","s
 		   deriving (Show)
 
-data Components = Selector UninstOpId Partiality Type SeparatorKind Pos 
+data Component = Selector UninstOpId Partiality Type SeparatorKind Pos 
 		-- pos ",", ":" or ":?"
 		| NoSelector Type
-		| NestedComponents [Components] [Pos]
-		  -- pos : "(", ";"s, ")"
 		  deriving (Show)
 
 data Quantifier = Universal | Existential | Unique
@@ -444,9 +442,8 @@ instance Eq Alternative where
     Subtype t1 _ == Subtype t2 _ = t1 == t2
     _ == _ = False
 
-instance Eq Components where 
+instance Eq Component where 
     Selector i1 p1 t1 _ _ == Selector i2 p2 t2 _ _ =
 	(i1, t1, p1) == (i2, t2, p2)
     NoSelector t1 == NoSelector t2 = t1 == t2
-    NestedComponents l1 _ == NestedComponents l2 _ = l1 == l2 
     _ == _ = False

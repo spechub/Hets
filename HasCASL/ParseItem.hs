@@ -151,42 +151,31 @@ pseudoTypeDef t k l =
 			
 -- * parsing datatypes 
 
-component :: AParser [Components]
+component :: AParser [Component]
 component = 
     try (do (is, cs) <- uninstOpId `separatedBy` anComma
             compType is cs)
 	    <|> do t <- parseType  
 		   return [NoSelector t]
 
-idToType :: Id -> Type
-idToType (Id is cs ps) = 
-    let ts = map TypeToken is
-	t = if isSingle ts then head ts
-	    else MixfixType ts
-	in if null cs then t
-  	   else let qs = map idToType cs
-		    q = BracketType Squares qs ps
-		    in MixfixType (q:ts)
 
-tupleComponent :: AParser Components
-tupleComponent = 
-    do o <- oParenT
-       do (cs, ps) <- component `separatedBy` anSemi 
-	  c <- cParenT
-	  return (NestedComponents (concat cs) (toPos o ps c))
-        <|> 
-        do (cs, ps) <- tupleComponent `separatedBy` anComma
-	   c <- cParenT
-	   return (NestedComponents cs (toPos o ps c))
+concatFst :: [[a]] -> [Pos] -> ([a], [Pos])
+concatFst as ps = (concat as, ps)
 
+tupleComponent :: AParser ([Component], [Pos])
+tupleComponent = bracketParser component oParenT cParenT anSemi concatFst
 
-altComponent :: AParser Components
+altComponent :: AParser ([Component], [Pos])
 altComponent = 
     tupleComponent
-    <|> do i <- typeId
-	   return (NoSelector $ idToType i)
-		      
-compType :: [UninstOpId] -> [Token] -> AParser [Components]
+    <|> do i <- typeVar
+	   return ([NoSelector $ idToType i], [])
+	where idToType :: Id -> Type
+	      idToType (Id [t] [] []) = TypeToken t
+	      idToType _ = error "idToType"
+
+
+compType :: [UninstOpId] -> [Token] -> AParser [Component]
 compType is cs = do c <- colT 
                     t <- parseType
 		    return (makeComps is (cs++[c]) Total t)
@@ -205,10 +194,12 @@ alternative = do s <- pluralKeyword sortS <|> pluralKeyword typeS
                  return (Subtype ts (map tokPos (s:cs)))
               <|> 
               do i <- hconsId
-                 cs <- many altComponent
+                 cps <- many altComponent
+		 let ps = concatMap snd cps
+		     cs = map fst cps
 		 do q <- quMarkT
-		    return (Constructor i cs Partial [tokPos q])
-		   <|> return (Constructor i cs Total [])
+		    return (Constructor i cs Partial (ps++[tokPos q]))
+		   <|> return (Constructor i cs Total ps)
 
 dataDef :: TypePattern -> Kind -> [Token] -> AParser TypeItem
 dataDef t k l =
@@ -269,11 +260,7 @@ classItems = do p <- asKey (classS ++ "es") <|> asKey classS
 -- * parse op items
 
 typeVarDeclSeq :: AParser ([TypeArg], [Pos])
-typeVarDeclSeq = 
-    do o <- oBracketT
-       (ts, cs) <- typeVars `separatedBy` anSemi
-       c <- cBracketT
-       return (concat ts, toPos o cs c)
+typeVarDeclSeq = bracketParser typeVars oBracketT cBracketT anSemi concatFst
 
 opId :: AParser OpId
 opId = do i@(Id is cs ps) <- uninstOpId
@@ -306,10 +293,13 @@ opDecl os ps = do c <- colT
 		       return (OpDecl os t as (map tokPos (ps++[c,d]++cs))) 
 		    <|> return (OpDecl os t [] (map tokPos (ps++[c])))
 
-opArgs :: AParser [Pattern]
-opArgs = many1 (bracketParser varDecls oParenT cParenT anSemi 
-		      (\ l p -> TuplePattern
-		       (map PatternVar $ concat l) p)) 
+opArg :: AParser ([VarDecl], [Pos])
+opArg = bracketParser varDecls oParenT cParenT anSemi concatFst
+
+opArgs :: AParser ([[VarDecl]], [Pos])
+opArgs = 
+    do cps <- many1 opArg
+       return (map fst cps, concatMap snd cps)
 
 -- | a 'Total' or a 'Partial' function definition
 quColon :: AParser (Partiality, Token)
@@ -331,12 +321,13 @@ opDeclOrDefn o =
 		return (OpDefn o [] t Total f (toPos c [] e))  
          <|> return (OpDecl [o] t [] (map tokPos [c]))
     <|> 
-    do ps <- opArgs
+    do (as, ps) <- opArgs
        do    (p, c) <- quColon
 	     t <- parseType 
 	     e <- equalT
 	     f <- term 
-	     return (OpDefn o ps (simpleTypeScheme t) p f (toPos c [] e))
+	     return (OpDefn o as (simpleTypeScheme t) p f 
+		     (ps ++ toPos c [] e))
     <|> 
     do c <- qColonT 
        t <- parseType 
@@ -363,11 +354,11 @@ predDecl os ps = do c <- colT
 			    (map tokPos (ps++[c])))
 
 predDefn :: OpId -> AParser OpItem
-predDefn o = do ps <- opArgs
+predDefn o = do (as, ps) <- opArg
 		e <- asKey equivS
 		f <- term
-		return (OpDefn o ps (simpleTypeScheme logicalType)
-			Partial f [tokPos e]) 
+		return $ OpDefn o [as] (simpleTypeScheme logicalType)
+			Partial f (ps ++ [tokPos e]) 
 
 predItem :: AParser OpItem
 predItem = do (os, ps) <- opId `separatedBy` anComma

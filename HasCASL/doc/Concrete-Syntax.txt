@@ -81,7 +81,8 @@ ALTERNATIVE     ::= OP-NAME TUPLE-COMPONENT...TUPLE-COMPONENT
                   | sort/sorts TYPE-NAME ,..., TYPE-NAME
                   | type/types TYPE ,..., TYPE
 
-TUPLE-COMPONENT ::= ( COMPONENT ;...; COMPONENT )
+TUPLE-COMPONENT ::= ( COMPONENT ;...; COMPONENT ) 
+		  | SIMPLE-ID   %% for a simple curried type argument 
 
 COMPONENT       ::= OP-NAME ,..., OP-NAME : TYPE
                   | OP-NAME ,..., OP-NAME :? TYPE
@@ -125,10 +126,10 @@ GEN-VAR-DECL    ::= TYPE-VARS
 TYPE            ::= TYPE ARROW TYPE
                   | TYPE *...* TYPE
                   | ( TYPE )
-                  | Pred Type
+                  | Pred TYPE           %% predefined Alias
                   | ? TYPE
-                  | Unit
-                  | Logical
+                  | Unit                %% predefined (empty product)
+                  | Logical             %% predefined Alias
                   | TYPE : KIND
                   | TYPE TYPE
 ARROW           ::= ->? | -> | -->? | -->

@@ -86,7 +86,7 @@ class Cpo < Type
       {var c : Cpo; predfun __<<=__ : forall c : Cpo .  c × c ->? Unit; ;
        predfun isChain(s : nat -> c) :? Unit = all
 					       (\ n : nat . s (n) <<= s (Suc (n)));
-       predfun isBound(x : c, s : nat -> c) :? Unit = all
+       predfun isBound(x : c; s : nat -> c) :? Unit = all
 						      (\ n : nat . s (n) <<= x);
        op sup : forall c : Cpo .  (nat -> c) ->? c;}
 class Pcpo < Cpo
