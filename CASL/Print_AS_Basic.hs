@@ -192,11 +192,11 @@ instance PrettyPrint PRED_HEAD where
     printText0 ga (Pred_head l _) = parens (semiT_text ga l)
 
 instance PrettyPrint DATATYPE_DECL where
-    printText0 ga (Datatype_decl s a _) = 
-	printText0 ga s <+> 
-	sep ((hang (text defnS) 4 (printText0 ga $ head a)):
-	     (map (\x -> nest 2 $ ptext barS <+> nest 2 (printText0 ga x)) $ 
-		  tail a))
+    printText0 ga (Datatype_decl s a _) = case a of 
+        h : t -> printText0 ga s <+> 
+	    sep ((hang (text defnS) 4 (printText0 ga h)):
+	     (map (\x -> nest 2 $ ptext barS <+> nest 2 (printText0 ga x)) t))
+        [] -> error "PrettyPrint CASL.DATATYPE_DECL"
 
 instance PrettyPrint ALTERNATIVE where
     printText0 ga (Total_construct n l _) = printText0 ga n 
