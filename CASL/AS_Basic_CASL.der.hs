@@ -9,7 +9,7 @@
    Symb_map_items.
 
    todo:
-     - ATerm conversion
+     - ATerm conversion has now his own module (s. HetCATS/aterm_conv/)
      - Pretty printing
 -}
 
@@ -17,6 +17,9 @@ module AS_Basic_CASL where
 
 import Id
 import AS_Annotation 
+
+-- DrIFT command
+{-! global: UpPos !-}
 
 data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEMS]
 		  deriving (Show,Eq)
