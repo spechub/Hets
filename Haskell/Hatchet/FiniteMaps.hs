@@ -45,7 +45,7 @@
 --    of the above mentioned technical report would be implemented.
 --
 
-module Haskell.Hatchet.FiniteMaps (FiniteMap (..), zeroFM, unitFM,
+module Haskell.Hatchet.FiniteMaps (FiniteMap, zeroFM, unitFM,
 		   listToFM, listToCombFM, joinFM, joinCombFM, sizeFM,
 		   addToFM, addToCombFM, delFromFM, diffFM,
 		   intersectFM, intersectCombFM, mapFM, foldFM,

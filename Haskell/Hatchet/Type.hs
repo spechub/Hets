@@ -53,8 +53,10 @@ import Haskell.Hatchet.FiniteMaps               (toListFM,
                                  zeroFM,
                                  unitFM,
                                  joinFM,
+                                 lookupFM,
+			         mapFM,			 
                                  intersectFM,
-                                 FiniteMap (..))
+                                 FiniteMap)
 
 import Haskell.Hatchet.Representation           (Type (..),
                                  Tyvar (..),
@@ -135,8 +137,8 @@ instance Types Type where
   -- seem to make much difference, as the variables are 
   -- mostly independent
 
-  apply s (TVar var@(Tyvar name _kind)) 
-     = case lookupSubstitutionMap s name of
+  apply s (TVar var) 
+     = case lookupFM s var of
           Just t  -> t
           Nothing -> TVar var 
   apply s (TAp l r)     = TAp (apply s l) (apply s r)
@@ -174,19 +176,10 @@ merge s1 s2 = if agree then Just s else Nothing
 -- according to profiling almost half of the computation time
 -- is spent here
 
-lookupSubstitutionMap :: FiniteMap Tyvar Type -> AHsName -> Maybe Type
-lookupSubstitutionMap (Node (Tyvar k _kind) e _ sm gr) k'
-   | k' <  k    = lookupSubstitutionMap sm k' 
-   | k' >  k    = lookupSubstitutionMap gr k' 
-   | otherwise  = Just e
-lookupSubstitutionMap Leaf _
-   = Nothing
-
 -- specialised version of mapFM for substitutions
 
 mapSubstitution :: Subst -> FiniteMap Tyvar Type -> FiniteMap Tyvar Type 
-mapSubstitution s (Node k e n sm gr)  = Node k (apply s e) n (mapSubstitution s sm) (mapSubstitution s gr)
-mapSubstitution s Leaf                = Leaf
+mapSubstitution s = mapFM (const $ apply s) 
 
 --------------------------------------------------------------------------------
 
