@@ -9,6 +9,8 @@ import Common.Lib.Set
 import Common.Id
 import Common.Result
 import Common.Lexer
+import Common.Lib.Pretty
+import Common.PrettyPrint
 
 import Common.Token
 import CASL.Formula
@@ -65,20 +67,29 @@ resolveTerm :: AParser (Result TERM)
 resolveTerm = 
       resolveMixfix stdAnnos stdOps stdPreds False `fmap` term
 
-testTerm :: AParser String
+data WrapString = WrapString String
+instance Show WrapString where
+    showsPrec _ (WrapString s) _ = s 
+
+instance PrettyPrint WrapString where
+    printText0 _ (WrapString s) = text s 
+
+testTerm :: AParser WrapString
 testTerm = do t <- term
-	      return $ showTerm t ""
+	      return $ WrapString $ showTerm t ""
 
-testTermMix :: AParser String
+testTermMix :: AParser WrapString
 testTermMix = do Result ds mt <- resolveTerm
-		 return $ case mt of Just t -> showTerm t ""
-				     _ -> show ds
+		 return $ WrapString $ 
+			case mt of Just t -> showTerm t ""
+				   _ -> show ds
 
-testFormula :: AParser String
+testFormula :: AParser WrapString
 testFormula = do f <- formula
-		 return $ showFormula f ""
+		 return $ WrapString $ showFormula f ""
 
-testFormulaMix :: AParser String
+testFormulaMix :: AParser WrapString
 testFormulaMix = do Result ds m <- resolveForm
-		    return $ case m of Just f -> showFormula f ""
-				       _ -> show ds
+		    return $ WrapString $ 
+			   case m of Just f -> showFormula f ""
+				     _ -> show ds
