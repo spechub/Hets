@@ -13,12 +13,12 @@ type t : a
 class h < (a, b)
 class h < c
 class j < {v . v < t}
-type a, [ : a -> b
+type [__] : a -> b
 var x : a; y : Type; x : y
 var
 var x : b
 var x : {_ < t}
-type a : b
+type  : b
 %% Classes ---------------------------------------------------------------
 a < (b, d, e, g)
 b < (c, d, e)
@@ -32,13 +32,12 @@ j < {v . v < t}
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
-[ : a -> b
+[__] : a -> b
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
-a : a -> b
 t : a
 x : ({_ < t}, b, a) %(var)%
 y : Type %(var)%
@@ -68,11 +67,9 @@ Warning (line 18, column 7) redeclared class 'b'
 Warning (line 20, column 7) redeclared class 'd'
 Error (line 20, column 7) cyclic class 'd'
 Warning (line 25, column 7) redeclared class 'h'
+FatalError (line 29, column 7) illegal type pattern argument: __
 Hint (line 31, column 5) is type variable 'x'
 Hint (line 31, column 12) is type variable 'y'
 Error (line 33, column 9) unknown type 's'
 Hint (line 35, column 5) is type variable 'x'
-Error (line 39, column 6) incompatible kind of: a
-  expected: Type -> Type
-     found: Type
-
+FatalError (line 39, column 8) illegal type pattern argument: __

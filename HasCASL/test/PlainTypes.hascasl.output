@@ -1,7 +1,7 @@
 class a, b, c, d < Type
 type r, s, t
-type [, { : a -> b
-var
+type [__], {__} : a -> b
+var u : ([__])(r); v : ({__})(s)
 type tuple3 : a -> b -> c -> d
 var x : (((tuple3)(r))(s))(t)
 var y : ((tuple3)(r))(s)
@@ -27,7 +27,7 @@ d < Type
 List : a -> b
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
-[ : a -> b
+[__] : a -> b
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
@@ -47,7 +47,7 @@ t1 : Type < t
 t2 : Type < (t2, r2, s2)
 tuple1 : b -> a
 tuple3 : a -> b -> c -> d
-{ : a -> b
+{__} : a -> b
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit × Unit ->? Unit
 __<=>__ : Unit × Unit ->? Unit
@@ -62,12 +62,12 @@ o1 : m %(var)%
 o2 : (m)(tuple1) %(var)%
 o3 : (m)(tuple3) %(var)%
 o4 : (((nt)(r))(List))(s) %(var)%
+u : ([__])(r) %(var)%
 v : (m)(List) %(var)%
+  : ({__})(s) %(var)%
 x : (((tuple3)(r))(s))(t) %(var)%
 y : ((tuple3)(r))(s) %(var)%
 %% Diagnostics -----------------------------------------------------------
-Error (line 7, column 9) illegal type '[r]'
-Error (line 7, column 16) illegal type '{s}'
 Error (line 12, column 9) incompatible kind of: ((tuple3)(r))(s)
   expected: Type
      found: c -> d

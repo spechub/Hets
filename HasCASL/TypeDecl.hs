@@ -5,7 +5,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  non-portable (MonadState)
+Portability :  portable
     
 analyse type decls
 
@@ -15,19 +15,15 @@ module HasCASL.TypeDecl where
 
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.AsUtils
 import HasCASL.ClassAna
 import HasCASL.Unify
 import qualified Common.Lib.Map as Map
+import Common.Lexer
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
 import Data.Maybe
 import Data.List
-
-
-import Common.Lib.Parsec
-import Common.Lib.Parsec.Error
 
 import Common.Result
 import Common.GlobalAnnotations
@@ -120,7 +116,7 @@ anaTypeItem ga _ inst (SubtypeDefn pat v t f ps) =
        putAssumps as
        case m of 
 	      Nothing -> return $ TypeDecl [] star ps
-	      Just i -> case (mt, mv) of 
+	      Just (i, _, _) -> case (mt, mv) of 
 		  (Just newF, Just _) -> do 
 		      let newT = fromJust mty	       
 		      mi <- addTypeId (Supertype v newT $ item newF) 
@@ -138,7 +134,7 @@ anaTypeItem _ _ inst (AliasType pat mk sc ps) =
        addDiags ds
        (ik, mt) <- anaPseudoType mk sc
        case m of 
-	      Just i -> case mt of 
+	      Just (i, _, _) -> case mt of 
 		  Nothing -> return $ TypeDecl [] star ps
 		  Just nsc -> do let newPty = generalize nsc
 				 addTypeId (AliasTypeDefn newPty) inst ik i 
@@ -165,7 +161,7 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs ps) =
        addDiags ds
        case m of 
 	      Nothing -> return $ DatatypeDecl pat k [] newDerivs ps
-	      Just i -> 
+	      Just (i, _, _) -> 
 		  do let dt = TypeName i k 0
                      newAlts <- anaAlts dt 
 				$ map item alts
@@ -218,65 +214,58 @@ convertTypePatterns (s:r) =
 	Result ds (Just l) = convertTypePatterns r
 	in case m of 
 		  Nothing -> Result (d++ds) $ Just l
-		  Just i -> Result (d++ds) $ Just (i:l)
+		  Just (i, _, _) -> Result (d++ds) $ Just (i:l)
 
--- | convert a 'TypePattern' to a type 'Id' via 'makeMixTypeId'
-convertTypePattern :: TypePattern -> Result Id
-convertTypePattern (TypePattern t _ _) = return t
-convertTypePattern(TypePatternToken t) = 
-    if isPlace t then fatal_error ("illegal type '__'") (tokPos t)
-       else return $ (simpleIdToId t)
 
-convertTypePattern t =
-    if hasTypeArgs t then
-       fatal_error ( "arguments in type patterns not yet supported")
-                   (posOfTypePattern t)
-    else makeMixTypeId t
+illegalTypePattern, illegalTypePatternArg  :: TypePattern -> Result a 
+illegalTypePattern tp = fatal_error ("illegal type pattern: " ++ 
+				  showPretty tp "") $ getMyPos tp
+illegalTypePatternArg tp = fatal_error ("illegal type pattern argument: " ++ 
+				  showPretty tp "") $ getMyPos tp
 
--- trailing places are not necessary for curried kinds
--- and will be ignored to avoid different Ids "Pred" and "Pred__"
+-- | convert a 'TypePattern'
+convertTypePattern :: TypePattern -> Result (Id, [TypeArg], Int)
+convertTypePattern (TypePattern t as _) = return (t, as, 0)
+convertTypePattern tp@(TypePatternToken t) = 
+    if isPlace t then illegalTypePattern tp
+       else return (simpleIdToId t, [], 0) 
+convertTypePattern tp@(MixfixTypePattern (TypePatternToken t1 : rp)) =
+    if isPlace t1 then 
+       case rp of 
+	       [TypePatternToken inId, TypePatternToken t2] -> 
+		   if isPlace t2 && head (tokStr inId) `elem` signChars
+		     then return (Id [t1,inId,t2] [] [], [], 2)
+		   else illegalTypePattern tp
+	       _ -> illegalTypePattern tp
+    else do as <- mapM convertToTypeArg rp 
+	    return (simpleIdToId t1, as, 0)
+convertTypePattern tp@(MixfixTypePattern 
+		       [TypePatternArg a _, TypePatternToken inId, rb]) =
+    if head (tokStr inId) `elem` signChars
+       then do b <- convertToTypeArg rb
+	       return (Id [Token place $ getMyPos a, inId, 
+			   Token place $ getMyPos rb] [] [], [a, b], 0)
+    else illegalTypePattern tp
+convertTypePattern (BracketTypePattern bk [ap] ps) =
+    case bk of 
+    Parens -> convertTypePattern ap
+    _ -> let (o, c) = getBrackets bk
+	     tid = Id [Token o $ head ps, Token place $ getMyPos ap, 
+		       Token c $ last ps] [] [] in  
+         case ap of 
+	 TypePatternToken t -> if isPlace t then 
+	     return (tid, [], 1)
+ 	     else return (tid, [TypeArg (simpleIdToId t) MissingKind Other []]
+			 , 0)
+	 _ -> do a <- convertToTypeArg ap
+		 return (tid, [a], 0)
+convertTypePattern tp = illegalTypePattern tp
 
--- | decompose a 'TypePattern' into tokens
-typePatternToTokens :: TypePattern -> [Token]
-typePatternToTokens (TypePattern ti _ _) = getPlainTokenList ti
-typePatternToTokens (TypePatternToken t) = [t]
-typePatternToTokens (MixfixTypePattern ts) = concatMap typePatternToTokens ts
-typePatternToTokens (BracketTypePattern pk ts ps) =
-    let tts = map typePatternToTokens ts 
-	expanded = concat $ expandPos (:[]) (getBrackets pk) tts ps in
-	case (pk, tts) of 
-		(Parens, [t@[_]]) -> t
-		_ -> expanded
-typePatternToTokens (TypePatternArg (TypeArg v _ _ _) _) =
-    [Token "__" (posOfId v)]
-
--- compound Ids not supported yet
--- | get the next 'Token' from a token list
-getToken :: GenParser Token st Token
-getToken = token tokStr tokPos Just
-
--- | parse a type 'Id' from a token list
-parseTypePatternId :: GenParser Token st Id
-parseTypePatternId =
-    do t <- getToken 
-       return $ Id [t] [] []
-
--- | convert a 'TypePattern' to a type 'Id' via 'typePatternToTokens' 
--- and 'parseTypePatternId' 
-makeMixTypeId :: TypePattern -> Result Id
-makeMixTypeId t = 
-    case parse parseTypePatternId "" (typePatternToTokens t) of
-    Left err -> fatal_error (showErrorMessages "or" "unknown parse error" 
-                             "expecting" "unexpected" "end of input"
-			     (errorMessages err)) 
-		(errorPos err)
-    Right x -> return x
-
--- | check for type arguments
-hasTypeArgs:: TypePattern -> Bool
-hasTypeArgs (TypePattern _ _ _) = True
-hasTypeArgs (TypePatternToken _) = False
-hasTypeArgs (MixfixTypePattern ts) = any hasTypeArgs ts
-hasTypeArgs (BracketTypePattern _ ts _) = any hasTypeArgs ts
-hasTypeArgs (TypePatternArg _ _) = True
+convertToTypeArg :: TypePattern -> Result TypeArg
+convertToTypeArg tp@(TypePatternToken t) = 
+    if isPlace t then illegalTypePatternArg tp
+    else return $ TypeArg (simpleIdToId t) MissingKind Other []
+convertToTypeArg (TypePatternArg a _) =  return a
+convertToTypeArg (BracketTypePattern Parens [tp] _) =  convertToTypeArg tp
+convertToTypeArg tp = illegalTypePatternArg tp
 

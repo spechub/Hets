@@ -1,7 +1,7 @@
 class Type < Type
 var t : Type
 class TYPE < {x . x < t}
-type Pred : Type- -> Type; Unit : TYPE
+type  : Type- -> Type; Unit : TYPE
 class a, b, c < Type
 class a, b, c < Type; a < b
 type s : c
@@ -102,10 +102,7 @@ tt : s ->? Unit = \ x : s . ()
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration 'Type'
 Hint (line 3, column 5) is type variable 't'
-Error (line 7, column 6) incompatible kind of: Pred
-  expected: Type -> Type
-     found: Type- -> Type
-
+FatalError (line 7, column 11) illegal type pattern argument: __
 Error (line 11, column 16) undeclared class 'd'
 Warning (line 11, column 7) redeclared class 'a'
 Warning (line 11, column 10) redeclared class 'b'
