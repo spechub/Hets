@@ -798,9 +798,35 @@ basicInferenceNode lg (ln,node)
         thName = showPretty (getLIB_ID ln) "_"
                  ++ maybe (show node) (flip showPretty "") nodeName
     ps <- ioToIORes $ prove p' thName (sign'',sens''++axs'') goals'' 
-    let nextDGraph = dGraph -- ??? to be implemented
-        nextHistoryElem = error "Proofs.Proofs: basic inference"
+    let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
+--    let nextDGraph = dGraph -- ??? to be implemented
+  --      nextHistoryElem = error "Proofs.Proofs: basic inference"
                  -- ??? to be implemented
-    return (globalContext, libEnv, {- nextHistoryElem: -} ([],[]):history, nextDGraph)
+    return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
    )
 
+proveLocalEdges :: DGraph -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
+proveLocalEdges dGraph edges = (nextDGraph,([LocalInference],changes))
+
+  where (nextDGraph,(_,changes)) = proveLocalEdgesAux ([],[]) dGraph edges
+
+
+proveLocalEdgesAux :: ([DGRule],[DGChange]) -> DGraph -> [LEdge DGLinkLab] 
+  -> (DGraph,([DGRule],[DGChange]))
+proveLocalEdgesAux historyElem dGraph [] = (dGraph, historyElem)
+proveLocalEdgesAux (rules,changes) dGraph ((edge@(src, tgt, edgelab)):edges) = 
+  if True then proveLocalEdgesAux (rules,(DeleteEdge edge):((InsertEdge provenEdge):changes)) (insEdge provenEdge(delLEdge edge dGraph)) edges
+   else proveLocalEdgesAux (rules,changes) dGraph edges
+
+  where
+    morphism = dgl_morphism edgelab
+    (LocalThm _ conservativity conservStatus) = (dgl_type edgelab)
+    proofBasis = [] -- to be implemented
+    provenEdge = (src,
+	       tgt,
+	       DGLink {dgl_morphism = morphism,
+		       dgl_type = 
+		         (LocalThm (Proven proofBasis)
+			  conservativity conservStatus),
+		       dgl_origin = DGProof}
+               )
