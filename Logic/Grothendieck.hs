@@ -297,12 +297,12 @@ lookupComorphism coname logicGraph = do
       'i':'d':'_':logic -> do
          l <- maybeToResult 
                 nullPos ("Cannot find logic "++logic)
-                $ Map.lookup logic (logics logicGraph)
+                 $ Map.lookup logic (logics logicGraph)
          case l of
            Logic lid -> return $ Comorphism $ IdComorphism lid
       _ -> maybeToResult 
             nullPos ("Cannot find logic comorphism "++name) 
-            $ Map.lookup name (comorphisms logicGraph)
+             $ Map.lookup name (comorphisms logicGraph)
 
 -- | auxiliary existential type needed for composition of comorphisms
 data AnyComorphismAux lid1 sublogics1
