@@ -41,7 +41,11 @@ lineAnnos = do p <- getPosition
 
 -- optional semicolon followed by annotations on the same line
 optSemi :: GenParser Char st (Maybe Token, [Annotation])
-optSemi = bind (,) (option Nothing (fmap Just semiT)) lineAnnos
+optSemi = do (a1, s) <- try (bind (,) annos semiT)
+             a2 <- lineAnnos 			     
+	     return (Just s, a1 ++ a2)
+          <|> do a <- lineAnnos
+		 return (Nothing, a)
 
 -- succeeds if an item is not continued after a semicolon
 tryItemEnd :: [String] -> GenParser Char st ()
