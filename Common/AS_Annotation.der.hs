@@ -118,8 +118,9 @@ getRLabel :: Annoted a -> String
 getRLabel a = let ls = filter isLabel (r_annos a) in
 		  if null ls then "" else 
 		     let Label l _ = head ls 
-			 in unlines l   -- might be a multiline label
-                                        -- maybe remove white spaces
+			 in if null l then "" else head l
+			    -- might be a multiline label
+                            -- maybe remove white spaces
 
 -- | 
 -- 'isLabel' tests if the given 'Annotation' is a label
