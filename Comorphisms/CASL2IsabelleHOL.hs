@@ -23,7 +23,7 @@ import Data.Dynamic
 import Data.List
 import Common.PrettyPrint
 import Common.AS_Annotation (Named, mapNamedM)
-
+import Debug.Trace
 -- CASL
 import CASL.Logic_CASL 
 import CASL.AS_Basic_CASL
@@ -185,9 +185,12 @@ transFORMULA sign (Existl_equation t1 t2 _) =
 transFORMULA sign (Strong_equation t1 t2 _) =
   Const ("op =",dummyT) `App` (transTERM sign t1) `App` (transTERM sign t2)
 transFORMULA sign (Membership t1 s _) =
-  error "No translation for membership"
+  trace "WARNING: ignoring membership formula" $ Const ("True",dummyT)
+  --error "No translation for membership"
 transFORMULA sign (Sort_gen_ax constrs) =
-  error "No translation for sort generation constraints"
+   trace "WARNING: ignoring sort generation constraints" 
+          $ Const ("True",dummyT)
+  --error "No translation for sort generation constraints"
 transFORMULA sign (Mixfix_formula _) = 
   error "No translation for mixfix formulas"
 transFORMULA sign (Unparsed_formula _ _) = 

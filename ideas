@@ -47,6 +47,9 @@ Bsp. von Franzosen (LeGall...)
 
 Modal logics
 ------------
+Gabbay: 19h inf 700 ad/356-1
+      a phi 551 a/387-3   a phi 551 a/387-2
+     tb 3925-1    a mat 038 e/593-1     a mat 038 e/593-2
 - Fiadeiro/Maibaum: Temporal reasoning over deontic specifiations, 
   JLC 1(3) 1991.
 - J.J. Meyer, R. Wieringa: Book about Deontic logic, 1993
@@ -132,3 +135,15 @@ DOLCE
 =====
 Ontoclean
 
+
+DFG projects
+============
+CASL methodology, 3rd volume, ccc tools (Till, Lutz, Cxl)
+CoCASL/Concurrent Haskell (George's events)/SPIN/CspCASL (Till, Shi, Lutz)
+   Modal-CASL als Anforderungssprache
+   div. Prozessalgebren (wir stellen den allg. Rahmen)
+Management of change (bkb, Hutter, Till, cxl, Achim, Kohlhase?)
+HetCASL/Hets (Till)
+Ontologien: neuer SFB-Antrag (Frühjahr 2005)
+Abstract robotics (cxl, paolo)
+AWE II / General FM (cxl, bkb)

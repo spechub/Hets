@@ -153,7 +153,7 @@ isChar t = take 1 (tokStr t) == "\'"
 
 instance PrettyPrint Id where
     printText0  ga i = 
-	printId printText0 ga Nothing undefined i
+	printId printText0 ga Nothing (error "Common.PrettyPrint: Id") i
 
 printId :: (GlobalAnnos -> Token -> Doc) -- ^ function to print a Token
 	   -> GlobalAnnos -> (Maybe Display_format) 

@@ -132,6 +132,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo)
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
+         -- the global menu
              [GlobalMenu (Menu Nothing
                [Menu (Just "Unnamed nodes")
                  [Button "Hide" 
@@ -159,6 +160,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		   Button "Global Decomposition"
 			  (proofMenuSef gInfo globDecomp)
                     ]])]
+      -- the node types
                [("spec", 
 		 createLocalMenuNodeTypeSpec "Magenta" convRef dGraph
                               ioRefSubtreeEvents ioRefVisibleNodes
@@ -181,6 +183,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		 createLocalMenuNodeTypeDgRef "LightSteelBlue" convRef 
 		        actGraphInfo ioRefGraphMem graphMem
                  ) ]
+      -- the link types
                  [("globaldef",
                    Solid 
 		   $$$ createLocalEdgeMenu
@@ -266,7 +269,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
                    [--createLocalMenuButtonShowSpec convRef dGraph,
 		    createLocalMenuButtonShowNumberOfNode,
 		    createLocalMenuButtonShowSignature convRef dGraph,
-		    createLocalMenuButtonShowTheory convRef dGraph,
+		    createLocalMenuButtonShowTheory gInfo convRef dGraph,
 		    createLocalMenuButtonShowSublogic convRef dGraph,
                     createLocalMenuButtonShowNodeOrigin convRef dGraph,
                     createLocalMenuButtonProveAtNode gInfo convRef dGraph,
@@ -288,7 +291,7 @@ createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
                     [--createLocalMenuButtonShowSpec convRef dGraph,
 		     createLocalMenuButtonShowNumberOfNode,
 		     createLocalMenuButtonShowSignature convRef dGraph,
- 		     createLocalMenuButtonShowTheory convRef dGraph,
+ 		     createLocalMenuButtonShowTheory gInfo convRef dGraph,
  		     createLocalMenuButtonShowSublogic convRef dGraph,
                      createLocalMenuButtonProveAtNode gInfo convRef dGraph,
                      createLocalMenuButtonShowNodeOrigin convRef dGraph])
@@ -337,8 +340,8 @@ createMenuButton title menuFun convRef dGraph =
 createLocalMenuButtonShowSpec = createMenuButton "Show spec" showSpec
 createLocalMenuButtonShowSignature = 
   createMenuButton "Show signature" getSignatureOfNode
-createLocalMenuButtonShowTheory = 
-  createMenuButton "Show theory" getTheoryOfNode
+createLocalMenuButtonShowTheory (proofStatus,_,_,_,_,_) = 
+  createMenuButton "Show theory" (getTheoryOfNode proofStatus)
 createLocalMenuButtonShowSublogic = 
   createMenuButton "Show sublogic" getSublogicOfNode 
 createLocalMenuButtonShowNodeOrigin  = 
@@ -487,13 +490,16 @@ getSignatureOfNode descr ab2dgNode dgraph =
 
 {- outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
-getTheoryOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
-getTheoryOfNode descr ab2dgNode dgraph = case (do
+getTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
+                     DGraph -> IO()
+getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
+ (_,libEnv,_,_) <- readIORef proofStatusRef
+ case (do
   (libname, node) <- 
         Res.maybeToResult nullPos ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
   (G_sign lid sign,G_l_sentence_list lid' sens) <- 
-                   computeTheory dgraph node
+                   computeTheory libEnv dgraph node
   let shownsens = concat $ map ((++"\n") . flip showPretty "") sens
   return (node,showPretty sign "\n\naxioms\n" ++ shownsens)
     ) of

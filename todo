@@ -93,6 +93,24 @@ port CCC to Haskell
 Zicheng (Till)
 ************************************************
 
+cvs -d :pserver:mnd@.... login
+cvs -d :pserver:mnd@.... checkout HetCATS
+
+Translation from CASL with subsorts to CASL without subsorts
+cvs -d :pserver:cvsread@.... login
+cvs -d :pserver:cvsread@.... checkout CATS
+
+see CATS/basic_encode.sml, encode SubCFOL into CFOL
+
+encode subsorting by injection functions
+1. translation of signatures (see HetCATS/CASL/Sign.hs)
+2. genertion of axioms (injectivity, overloading ...)
+   (see HetCATS/CASL/AS_Basic_CASL.hs)
+details: see paper in Theoretical Computer Science, p. 407
+
+Angucken:
+  FORMULA in CASL/AS_Basic.hs
+  Sign in CASL/Sign.hs
 
 ************************************************
 Heng (Klaus)
@@ -165,6 +183,13 @@ Static analysis of architectural specs
 Till
 ************************************************
 
+- George wg. Schließen von Fenstern
+- undefined when proving view in RelOrders
+- fail when doing local decomp in RelOrders
+- node numbers od not match
+- show subtree in RelOrders explodes
+- thm links with external target should be provable as well
+
 Missing points for heterogeneous WADT 04 example:
 - coding to Isabelle: translate sort gen constraints
 - remove / in thy names (ask cxl for function)
@@ -184,6 +209,7 @@ Isabelle: (ask Christoph)
    prove local thm link (=> green)
    better interaction between Isabelle instance (for one node)
     + selection of single goals that are proved
+    => use PGIP interface (Christoph, David)
    CASL-like syntax
    CASL annotation for lemmas that should be used in proof
    inherit CASL's mixfix syntax

@@ -144,7 +144,7 @@ type Haskell_Sublogics = ()
 
 type Sentence = AHsDecl
 instance Ord AHsDecl where
-  compare x y = undefined
+  compare x y = error "Haskell.Logic_Haskell: compare for AHsDecl"
 
 instance PrettyPrint Sentence where
   printText0 _ = ptext . show

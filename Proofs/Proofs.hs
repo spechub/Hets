@@ -327,7 +327,18 @@ getSentenceList libEnv dgraph node =
       Just (_,_,refDgraph) -> getSentenceList libEnv refDgraph (dgn_node nodeLab)
       Nothing -> Nothing
     else Just (dgn_sens nodeLab)
+    where nodeLab = lab' (context node dgraph)
 
+
+{- returns the sentence list of the given node -}
+getSignature :: LibEnv -> DGraph -> Node -> Maybe G_sign
+getSignature libEnv dgraph node =
+  if isDGRef nodeLab
+    then case Map.lookup (dgn_libname nodeLab) libEnv of
+      Just (_,_,refDgraph) -> 
+         getSignature libEnv refDgraph (dgn_node nodeLab)
+      Nothing -> Nothing
+    else Just (dgn_sign nodeLab)
     where nodeLab = lab' (context node dgraph)
 
 {- removes all paths from the given list of paths whose morphism does not translate the given sentence list to the same resulting sentence list as the given morphism-}
@@ -673,9 +684,6 @@ elemOfProofBasis label (_,_,dglink) =
     (LocalThm (Proven proofBasis) _ _) -> elem label proofBasis
     _ -> False
 
-sensOfNode :: DGraph -> DGNodeLab -> G_l_sentence_list
-sensOfNode dg (DGNode {dgn_sens = sens}) = sens
-sensOfNode dg _ = undefined -- ??? to simplistic
 
 -- | Calculate the morphism of a path with given start node
 calculateMorphismOfPathWithStart :: DGraph -> (Node,[LEdge DGLinkLab]) 
@@ -687,35 +695,30 @@ calculateMorphismOfPathWithStart dg (n,[]) = do
 calculateMorphismOfPathWithStart _ (_,p) = calculateMorphismOfPath p
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
-computeTheory :: DGraph -> Node -> Result (G_sign,G_l_sentence_list) 
-computeTheory dg n = do
-  ctx <- maybeToResult nullPos ("Could node find node "++show n)
-              $ fst $ match n dg
-  let  nlab = lab' ctx
-       paths = getAllLocGlobDefPathsTo dg n []
+computeTheory :: LibEnv -> DGraph -> Node -> Result (G_sign,G_l_sentence_list) 
+computeTheory libEnv dg n = do
+  let  paths = getAllLocGlobDefPathsTo dg n []
   mors <- maybeToResult nullPos "Could not calculate morphism of path"
-            $ sequence $ map (calculateMorphismOfPathWithStart dg) paths
-  ctxs <- maybeToResult nullPos "Could not find start node of path"
-            $ sequence $ map (fst . flip match dg . fst) paths
-  let sens = map (sensOfNode dg . lab') ctxs
-  sens' <- sequence 
-            $ map (uncurry translateG_l_sentence_list) 
+            $ mapM (calculateMorphismOfPathWithStart dg) paths
+  sens <- maybeToResult nullPos "Could not calculate sentence list of node"
+            $ mapM (getSentenceList libEnv dg . fst) paths
+  sens' <- mapM (uncurry translateG_l_sentence_list) 
             $ zip mors sens
   sens'' <- maybeToResult nullPos "Logic mismatch for sentences"
               $ flatG_l_sentence_list sens'
-  return (dgn_sign nlab,sens'') -- ??? dgn_sign too simplistic 
+  sig <- maybeToResult nullPos "Could not calculate signature of node"
+              $ getSignature libEnv dg n
+  return (sig,sens'') 
 
 -- ---------------
 -- basic inference
 -- ---------------
 
-getGoals :: DGraph -> LEdge DGLinkLab -> Result G_l_sentence_list
-getGoals dg (n,_,edge) = do
-  ctx <- maybeToResult nullPos ("Could node find node "++show n)
-              $ fst $ match n dg
-  let nlab = lab' ctx  
-      sens = dgn_sens nlab -- ??? To simplistic
-      mor = dgl_morphism edge
+getGoals :: LibEnv -> DGraph -> LEdge DGLinkLab -> Result G_l_sentence_list
+getGoals libEnv dg (n,_,edge) = do
+  sens <- maybeToResult nullPos ("Could node find node "++show n)
+              $  getSentenceList libEnv dg n
+  let mor = dgl_morphism edge
   translateG_l_sentence_list mor sens
 
 getProvers :: LogicGraph -> AnyLogic -> [(G_prover,AnyComorphism)]
@@ -738,15 +741,16 @@ selectProver [] = resToIORes $ fatal_error "No pover available" nullPos
 selectProver (p:_) = return p -- ??? to simplistic
  
 -- applies basic inference to a given node
-basicInferenceNode ::  LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
+basicInferenceNode :: LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
-basicInferenceNode lg (ln,node) proofStatus@(globalContext,libEnv,history,dGraph) =
+basicInferenceNode lg (ln,node) 
+         proofStatus@(globalContext,libEnv,history,dGraph) =
   ioresToIO (do 
     (G_sign lid1 sign,G_l_sentence_list lid2 axs) <- 
-         resToIORes $ computeTheory dGraph node
+         resToIORes $ computeTheory libEnv dGraph node
     let inEdges = inn dGraph node
         localEdges = filter isUnprovenLocalThm inEdges
-    goalslist <- resToIORes $ sequence $ map (getGoals dGraph) localEdges
+    goalslist <- resToIORes $ mapM (getGoals libEnv dGraph) localEdges
     G_l_sentence_list lid3 goals <- 
       if null goalslist then return $ G_l_sentence_list lid2 [] 
         else resToIORes (maybeToResult nullPos "Logic mismatch for proof goals" 
@@ -765,12 +769,10 @@ basicInferenceNode lg (ln,node) proofStatus@(globalContext,libEnv,history,dGraph
                         $ map_sign cid sign'
     axs'' <- resToIORes
                  $ maybeToResult nullPos "Could not map sentences"
-                 $ sequence 
-                 $ map (mapNamedM (map_sentence cid sign')) axs'
+                 $ mapM (mapNamedM (map_sentence cid sign')) axs'
     goals'' <- resToIORes
                  $ maybeToResult nullPos "Could not map sentences"
-                 $ sequence 
-                 $ map (mapNamedM (map_sentence cid sign')) goals'
+                 $ mapM (mapNamedM (map_sentence cid sign')) goals'
     -- compute name ot theory
     ctx <- resToIORes 
                 $ maybeToResult nullPos ("Could node find node "++show node)
@@ -783,6 +785,8 @@ basicInferenceNode lg (ln,node) proofStatus@(globalContext,libEnv,history,dGraph
                  ++ maybe (show node) (flip showPretty "") nodeName
     ps <- ioToIORes $ prove p' thName (sign'',sens''++axs'') goals'' 
     let nextDGraph = dGraph -- ??? to be implemented
-        nextHistoryElem = undefined -- ??? to be implemented
+        nextHistoryElem = error "Proofs.Proofs: basic inference"
+                 -- ??? to be implemented
     return (globalContext, libEnv, {- nextHistoryElem: -} history, nextDGraph)
    )
+
