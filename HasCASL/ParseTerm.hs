@@ -108,7 +108,7 @@ kind = funKind >>= noExtKind
 
 typeToken :: AParser Type
 typeToken = fmap TypeToken (pToken (scanWords <|> placeS <|> 
-				    reserved (equalS: hascasl_type_ops)
+				    reserved (equalS:barS:hascasl_type_ops)
 				    scanSigns))
 
 mkBraces :: AParser a -> ([a] -> [Pos] -> b) 

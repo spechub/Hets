@@ -203,10 +203,10 @@ separated from its kind or type by a colon whereas in a pattern declaration
 arguments and mixfix components are intermingled and only the (optional)
 result (kind or type) is written to the right of a colon. 
 
-If a result is omitted a default is substituted. No kind defaults to the
-\emph{universe} and no result type for an operation indicates a
-predicate declaration (although the builtin \texttt{Pred} type constructor is
-recommended). The keyword \texttt{pred} is only kept for compatibility with
+If a result (kind or type) is omitted, a default is substituted. No kind
+defaults to the \emph{universe} and no result type for an operation indicates
+a predicate declaration (although the builtin \texttt{Pred} type constructor
+is recommended). The keyword \texttt{pred} is only kept for compatibility with
 CASL and not recommended.
 
 For simplicity only the value notation -- that does have no parenthesis on the
@@ -253,6 +253,7 @@ A wrongly spelled (or non-existing) class name causes the analysis to assume
 that not a type but value variable is declared (most likely causing a type
 error). Keeping class and type names disjoint is not further enforced.
 
+\subsection{Terms}
 
 \section{Sources in \texttt{HetCATS/HasCASL}}
 

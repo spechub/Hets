@@ -194,7 +194,7 @@ tupleComponent =
 altComponent :: AParser Components
 altComponent = 
     tupleComponent
-    <|> do i <- uninstOpId
+    <|> do i <- hconsId
 	   return (NoSelector $ idToType i)
 		      
 compType :: [UninstOpId] -> [Token] -> AParser [Components]
@@ -215,7 +215,7 @@ alternative = do s <- pluralKeyword sortS <|> pluralKeyword typeS
                  (ts, cs) <- parseType `separatedBy` anComma
                  return (Subtype ts (map tokPos (s:cs)))
               <|> 
-              do i <- uninstOpId
+              do i <- hconsId
                  cs <- many altComponent
 		 do q <- quMarkT
 		    return (Constructor i cs Partial [tokPos q])
