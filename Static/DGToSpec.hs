@@ -14,21 +14,17 @@ where
 
 import Data.Maybe
 import Logic.Logic
-import Logic.LogicRepr
 import Logic.Grothendieck
 import Common.Lib.Graph
 import Static.DevGraph
 import Syntax.AS_Structured
 import Common.AS_Annotation
-import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions
 import Common.Result
 import Common.Id
-import Common.Lib.Set as Set
-import Common.Lib.Map as Map hiding (map)
 import Data.List
 import Common.PrettyPrint
 
+emptyAnno :: SPEC -> Annoted SPEC
 emptyAnno x = Annoted x [] [] []
 
 dgToSpec :: DGraph -> Node -> Result SPEC
@@ -61,4 +57,4 @@ dgToSpec dg node = do
     (DGNode _ _ _ (DGSpecInst name)) ->
          return (Spec_inst name [] pos)
     (DGRef (Just name) _ _) -> return (Spec_inst name [] pos)
-    otherwise -> return (Extension apredSps pos)
+    _ -> return (Extension apredSps pos)
