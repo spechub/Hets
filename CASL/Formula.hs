@@ -35,7 +35,7 @@
    and all brackets must be balanced in "b1 b2" (the empty list).
 -}
 
-module Formula (term, formula
+module Formula (term, formula, restrictedTerm, restrictedFormula
 	       , varDecl, opSort, opFunSort, opType, predType, predUnitType
 	       , updFormulaPos) 
     where
@@ -47,31 +47,36 @@ import Token
 import AS_Basic_CASL
 import Parsec
 
-simpleTerm :: GenParser Char st TERM
-simpleTerm = fmap Mixfix_token (pToken(scanFloat <|> scanString 
+simpleTerm :: [String] -> GenParser Char st TERM
+simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString 
 		       <|>  scanQuotedChar <|> scanDotWords 
-		       <|>  reserved casl_reserved_fwords scanAnyWords
-		       <|>  reserved casl_reserved_fops scanAnySigns
+		       <|>  reserved (k ++ casl_reserved_fwords) scanAnyWords
+		       <|>  reserved (k ++ casl_reserved_fops) scanAnySigns
 		       <|>  placeS <?> "id/literal" )) 
 
-startTerm, restTerm, mixTerm, whenTerm  :: GenParser Char st TERM
-startTerm = parenTerm <|> braceTerm <|> bracketTerm <|> simpleTerm
+startTerm, restTerm, mixTerm, whenTerm  :: [String] -> GenParser Char st TERM
+startTerm k = parenTerm k <|> braceTerm k <|> bracketTerm k <|> simpleTerm k
 
-restTerm = startTerm <|> typedTerm <|> castedTerm
+restTerm k = startTerm k <|> typedTerm <|> castedTerm
 
-mixTerm = do l <- startTerm <:> many restTerm
-             return (if length l == 1 then head l else Mixfix_term l)
+mixTerm k = 
+    do l <- startTerm k <:> many (restTerm k)
+       return (if length l == 1 then head l else Mixfix_term l)
 
-whenTerm = do t <- mixTerm 
+whenTerm k = 
+           do t <- mixTerm k 
 	      do w <- asKey whenS
-		 f <- formula
+		 f <- impFormula k
 		 e <- asKey elseS
-		 r <- whenTerm
+		 r <- whenTerm k
 		 return (Conditional t f r [tokPos w, tokPos e])
 		<|> return t
 
 term :: GenParser Char st TERM
-term = whenTerm
+term = whenTerm []
+
+restrictedTerm :: [String] -> GenParser Char st TERM
+restrictedTerm = whenTerm 
 
 typedTerm, castedTerm :: GenParser Char st TERM
 typedTerm = do c <- colonT
@@ -82,9 +87,10 @@ castedTerm = do c <- asT
 		t <- sortId
 		return (Mixfix_cast t [tokPos c])
 
-terms :: GenParser Char st ([TERM], [Pos])
-terms = do (ts, ps) <- term `separatedBy` commaT
-           return (ts, map tokPos ps)
+terms :: [String] -> GenParser Char st ([TERM], [Pos])
+terms k = 
+    do (ts, ps) <- whenTerm k `separatedBy` commaT
+       return (ts, map tokPos ps)
 
 qualVarName, qualOpName :: Pos -> GenParser Char st TERM
 qualVarName o = do v <- asKey varS
@@ -125,25 +131,28 @@ opType = do (b, s, p) <- opSort
  	            <|> opFunSort [s] []
 	            <|> return (Total_op_type [] s [])
 
-parenTerm, braceTerm, bracketTerm :: GenParser Char st TERM
-parenTerm = do o <- oParenT
+parenTerm, braceTerm, bracketTerm :: [String] -> GenParser Char st TERM
+parenTerm k = 
+            do o <- oParenT
                qualVarName (tokPos o) 
 		 <|> qualOpName (tokPos o)
 		 <|> qualPredName (tokPos o)
-		 <|> do (ts, ps) <- terms
+		 <|> do (ts, ps) <- terms k
 		        c <- cParenT
 		        return (Mixfix_parenthesized ts 
 				  (tokPos o : ps ++ [tokPos c]))
 
-braceTerm = do o <- oBraceT
-               (ts, ps) <- option ([], []) terms
-               c <- cBraceT 
-               return (Mixfix_braced ts (tokPos o : ps ++ [tokPos c]))
+braceTerm k = 
+    do o <- oBraceT
+       (ts, ps) <- option ([], []) $ terms k
+       c <- cBraceT 
+       return (Mixfix_braced ts (tokPos o : ps ++ [tokPos c]))
 
-bracketTerm = do o <- oBracketT
-		 (ts, ps) <- option ([], []) terms
-		 c <- cBracketT 
-		 return (Mixfix_bracketed ts (tokPos o : ps ++ [tokPos c]))
+bracketTerm k = 
+    do o <- oBracketT
+       (ts, ps) <- option ([], []) $ terms k
+       c <- cBracketT 
+       return (Mixfix_bracketed ts (tokPos o : ps ++ [tokPos c]))
 
 quant :: GenParser Char st (QUANTIFIER, Pos)
 quant = try(
@@ -157,13 +166,14 @@ quant = try(
 	   return (Universal, tokPos q))
         <?> "quantifier"
        
-quantFormula :: GenParser Char st FORMULA
-quantFormula = do (q, p) <- quant
-		  (vs, ps) <- varDecl `separatedBy` semiT
-		  d <- dotT
-		  f <- formula
-		  return (Quantification q vs f
-			    (p: map tokPos ps ++[tokPos d]))
+quantFormula :: [String] -> GenParser Char st FORMULA
+quantFormula k = 
+    do (q, p) <- quant
+       (vs, ps) <- varDecl `separatedBy` semiT
+       d <- dotT
+       f <- impFormula k
+       return (Quantification q vs f
+	       (p: map tokPos ps ++[tokPos d]))
 
 varDecl :: GenParser Char st VAR_DECL
 varDecl = do (vs, ps) <- varId `separatedBy` commaT
@@ -193,39 +203,40 @@ qualPredName o = do v <- asKey predS
 			    (Qual_pred_name i s 
 			     [o, tokPos v, tokPos c, tokPos p]))
 
-parenFormula :: GenParser Char st FORMULA
-parenFormula = do o <- oParenT
+parenFormula :: [String] -> GenParser Char st FORMULA
+parenFormula k = 
+               do o <- oParenT
 		  let po = tokPos o in
 		    do q <- qualPredName po 
 			    <|> qualVarName po <|> qualOpName po
-		       l <- many restTerm   -- optional arguments
-		       termFormula (if null l then q else
-					      Mixfix_term (q:l))
+		       l <- many $ restTerm k  -- optional arguments
+		       termFormula k (if null l then q else
+				      Mixfix_term (q:l))
 		    <|>
-		    do f <- formula
+		    do f <- impFormula k
 		       case f of Mixfix_formula t -> 
 				     do c <- cParenT
-					l <- many restTerm
+					l <- many $ restTerm k
 					let tt = Mixfix_parenthesized [t]
 					           [tokPos o, tokPos c]
 					    ft = if null l then tt 
 					           else Mixfix_term (tt:l)
-					  in termFormula ft
+					  in termFormula k ft
 				     -- commas are not allowed
 				 _ -> do c <- cParenT
 					 return (updFormulaPos 
 						 (tokPos o) (tokPos c) f)
 
-termFormula :: TERM -> GenParser Char st FORMULA
-termFormula t =    do e <- asKey exEqual
-		      r <- term 
+termFormula :: [String] -> TERM -> GenParser Char st FORMULA
+termFormula k t =  do e <- asKey exEqual
+		      r <- whenTerm k
 		      return (Existl_equation t r [tokPos e])
                    <|>
 		   do try (string exEqual)
 		      unexpected ("sign following " ++ exEqual)
                    <|>
 		   do e <- equalT
-		      r <- term 
+		      r <- whenTerm k
 		      return (Strong_equation t r [tokPos e])
                    <|>
 		   do e <- asKey inS
@@ -233,35 +244,38 @@ termFormula t =    do e <- asKey exEqual
 		      return (Membership t s [tokPos e])
 		   <|> return (Mixfix_formula t)
 
-primFormula :: GenParser Char st FORMULA
-primFormula = do c <- asKey trueS
+primFormula :: [String] -> GenParser Char st FORMULA
+primFormula k = 
+              do c <- asKey trueS
 		 return (True_atom [tokPos c])
               <|>
 	      do c <- asKey falseS
 		 return (False_atom [tokPos c])
               <|>
 	      do c <- asKey defS
-		 t <- term
+		 t <- whenTerm k
 		 return (Definedness t [tokPos c])
               <|>
 	      do c <- try(asKey notS <|> asKey negS) <?> "\"not\""
-		 f <- primFormula 
+		 f <- primFormula k 
 		 return (Negation f [tokPos c])
-              <|> parenFormula <|> quantFormula <|> (term >>= termFormula)
+              <|> parenFormula k <|> quantFormula k 
+		      <|> (whenTerm k >>= termFormula k)
 
 
 andKey, orKey :: GenParser Char st Token
 andKey = asKey lAnd
 orKey = asKey lOr
 
-andOrFormula :: GenParser Char st FORMULA
-andOrFormula = do f <- primFormula
+andOrFormula :: [String] -> GenParser Char st FORMULA
+andOrFormula k = 
+               do f <- primFormula k
 		  do c <- andKey
-		     (fs, ps) <- primFormula `separatedBy` andKey
+		     (fs, ps) <- primFormula k `separatedBy` andKey
 		     return (Conjunction (f:fs) (map tokPos (c:ps)))
 		    <|>
 		    do c <- orKey
-		       (fs, ps) <- primFormula `separatedBy` orKey
+		       (fs, ps) <- primFormula k `separatedBy` orKey
 		       return (Disjunction (f:fs) (map tokPos (c:ps)))
 		    <|> return f
 
@@ -269,18 +283,19 @@ implKey, ifKey :: GenParser Char st Token
 implKey = asKey implS
 ifKey = asKey ifS
 
-impFormula :: GenParser Char st FORMULA
-impFormula = do f <- andOrFormula
+impFormula :: [String] -> GenParser Char st FORMULA
+impFormula k = 
+             do f <- andOrFormula k
 		do c <- implKey
-		   (fs, ps) <- andOrFormula `separatedBy` implKey
+		   (fs, ps) <- andOrFormula k `separatedBy` implKey
 		   return (makeImpl (f:fs) (map tokPos (c:ps)))
 		  <|>
 		  do c <- ifKey
-		     (fs, ps) <- andOrFormula `separatedBy` ifKey
+		     (fs, ps) <- andOrFormula k `separatedBy` ifKey
 		     return (makeIf (f:fs) (map tokPos (c:ps)))
 		  <|>
 		  do c <- asKey equivS
-		     g <- andOrFormula
+		     g <- andOrFormula k
 		     return (Equivalence f g [tokPos c])
 		  <|> return f
 		    where makeImpl [f,g] p = Implication f g p
@@ -290,4 +305,7 @@ impFormula = do f <- andOrFormula
 			  makeIf l p = makeImpl (reverse l) (reverse p)
 
 formula :: GenParser Char st FORMULA
-formula = impFormula
+formula = impFormula []
+
+restrictedFormula :: [String] -> GenParser Char st FORMULA
+restrictedFormula = impFormula
