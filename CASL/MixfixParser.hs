@@ -16,7 +16,7 @@ Portability :  portable
 -}
 
 module CASL.MixfixParser (resolveFormula, resolveMixfix, MixResolve
-                         ,resolveMixTrm, resolveMixFrm)
+                         ,resolveMixTrm, resolveMixFrm, mkIdSet)
     where 
 import CASL.AS_Basic_CASL 
 import Common.GlobalAnnotations
