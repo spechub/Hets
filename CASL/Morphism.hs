@@ -91,7 +91,7 @@ mapOpSym sMap fMap (id,ot) = do
   (id',k) <- Map.lookup (id,ot) fMap
   return (id',mapOpTypeK sMap k ot)
 
--- | Check if two OpTypes are equal except from totality/partiality
+-- | Check if two OpTypes are equal except from totality or partiality
 compatibleOpTypes :: OpType -> OpType -> Bool
 compatibleOpTypes ot1 ot2 = opArgs ot1 == opArgs ot2 && opRes ot1 == opRes ot2
 

@@ -10,6 +10,9 @@ Portability :  portable
     
 The symbol map analysis for the CASL logic
 
+-}
+
+{-
 todo:
 
 remove identity subsort relations resulting from non-injective renaming
@@ -113,7 +116,6 @@ total g.
 Hmmmmmm...
 
 
-[
 Side remark Question: Shouldn't (co)generation of signatures also work with
 raw symbols?
 
@@ -129,7 +131,7 @@ but with the semantics that f remains partial.
 Indeed, the current behaviour Hets is still different from this
 semantics, since we have not implemented the totality inheritance
 yet (see above). Hence, it coincides with the intuitive semantics.
-]
+
 
 -}
 
