@@ -207,10 +207,10 @@ Import Declarations
 >	| {- empty -}				{ False }
 
 > importlist :: { [HsImportSpec] }
-> 	:  importlist ',' import		{ $3 : $1 }
-> 	|  import				{ [$1]  }
+> 	:  importlist ',' importspec		{ $3 : $1 }
+> 	|  importspec				{ [$1]  }
 
-> import :: { HsImportSpec }
+> importspec :: { HsImportSpec }
 > 	:  var					{ HsIVar $1 }
 > 	|  tyconorcls				{ HsIAbs $1 }
 > 	|  tyconorcls '(' '..' ')'		{ HsIThingAll $1 }
