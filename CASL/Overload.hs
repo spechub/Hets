@@ -63,6 +63,7 @@ import Data.List                ( partition )
     * use more let/in constructs (instead of where) to simulate workflow
 
     * use common upper bounds for membership and projection
+          then re-include "BEWARE: Restriction to minimal...."
 -}
 
 {-----------------------------------------------------------
