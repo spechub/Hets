@@ -1,0 +1,77 @@
+(__+__)((__+__)((__+__)((__+__)((__*__)(4, (__^__)(x, 4)),
+				(__*__)(3, (__^__)(x, 3))),
+			(__*__)(2, (__^__)(x, 2))),
+		(__*__)(1, (__^__)(x, 1))),
+	(__*__)(0, (__^__)(x, 0)))
+(__::::__)('a',
+	   (__::::__)('b',
+		      (__::::__)('\"',
+				 (__::::__)('\'', (__::::__)('\n', (__::::__)('\\', empty))))))
+(__@@__)(1, 2)
+(__:::__)((__@@__)(1, 2), 1)
+(__E__)(1, 1)
+(__E__)((__:::__)(1, 0), 2)
+(__E__)((__:::__)(1, 0), -((__@@__)(2, 3)))
+(__+__)((__@@__)(1, 2),
+	(__*__)((__@@__)(3, 4),
+		(__::::__)('a', (__::::__)('f', (__::::__)('a', empty)))))
+(__+__)(empty, empty)
+(op x : a) (a, b)
+a
+(__+__)(a, b)
+a : s + b : s
+parse error at 14.12:
+unexpected "as" or "a"
+expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", cross, "->?", "-->", "-->?", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
+
+parse error at 15.7:
+unexpected "as" or "a"
+expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", cross, "->?", "-->", "-->?", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
+
+([])
+(+__)(a)
+(__+__) (a, b)
+(__when__else__)(a, (__<__)(a, b), b)
+(__when__else__)(a, (predfun a : b ->? Unit), b)
+({____})(a, b)
+*** Error 22.1, ambiguous mixfix term
+	a ((__p)(b))
+	a b p
+	(____p)(a, b)
+*** Error 23.1, ambiguous mixfix term
+	q a b
+	(q____)(a, b)
+*** Error 24.1, ambiguous mixfix term
+	B (([__])(b))
+	(__[__])(B, b)
+(B[a[c,d],b])
+*** Error 26.3, unexpected mixfix token: ,
+*** Error 27.8, unexpected mixfix token: ,
+(__B[a[c,d],b]__) (a, b)
+(while__do__od)((while__do__od)(a, b), c)
+(while__do__od)((while__do__od)(a, b), (while__do__od)(c, d))
+({____})(a, ({____})(b, c))
+*** Error 32.3, unexpected mixfix token: ,
+*** Error 33.1, ambiguous mixfix term
+	A ((A__B)(0 B))
+	(A__)((A__B)(0 B))
+	A ((A__B)(0)) B
+	(A__B)(A 0 B)
+(__+__)((__+__)(b, A 0 B), b)
+*** Error 34.5, ambiguous mixfix term
+	A 0 B
+	(A__)(0) B
+*** Error 35.1, ambiguous mixfix term
+	(-__)((A__B)(0))
+	(-__)((A__)(0)) B
+(__!)((__!)((__!)(a)))
+(__-->__)((__-->__)((__{__}--__-->{__}__)(Pl7, nicht_wenden,
+					  folge_dem_Gang, nicht_wenden, Pl3),
+		    RS3),
+	  RS6)
+(__*__)((__+__)(a, b), c)
+(__*__)(a, (__*__)(b, c))
+(__*__)(c, (__+__)(a, b))
+(__*__)((__*__)(a, b), c)
+(__*__)(s n, c)
+(-__) ((__!)(a))

@@ -24,6 +24,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Earley
+import Common.ConvertLiteral
 import Common.Lib.State
 import HasCASL.As
 import HasCASL.AsUtils
@@ -216,7 +217,16 @@ iterateCharts ga terms chart =
 					     _ -> hd
 		       putAssumps as
 		       recurse $ LetTerm b newEs newT ps
-		    TermToken tok -> self tt $ oneStep (t, tok)
+		    TermToken tok -> do
+			let (ds1, trm) = convertMixfixToken 
+					 (literal_annos ga) 
+					 ResolvedMixTerm TermToken tok
+			addDiags ds1 
+			self tt $ oneStep $ 
+				       case trm of 
+						TermToken _ -> (trm, tok)
+						_ -> (trm, exprTok 
+						      {tokPos = tokPos tok})
 		    _ -> error ("iterCharts: " ++ show t)
 
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
