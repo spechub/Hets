@@ -30,18 +30,18 @@ Portability :  non-portable (imports Logic.Logic)
 module Comorphisms.HasCASL2IsabelleHOLCF where
 
 import Logic.Logic
-import Logic.Comorphism
-import Common.Id
+-- import Logic.Comorphism
+-- import Common.Id
 import Common.Result as Result
 import qualified Common.Lib.Map as Map
 -- import qualified Haskell.Hatchet.AnnotatedHsSyn as Annotated
 import Data.List
 import Data.Maybe
 import Common.AS_Annotation (Named)
-import Debug.Trace
+-- import Debug.Trace
 
 -- Haskell
-import Haskell.Hatchet.HsSyn
+-- import Haskell.Hatchet.HsSyn
 import Haskell.Hatchet.MultiModuleBasics as MMB
 --import qualified Haskell.Hatchet.MultiModuleBasics as MMB (ModuleInfo,
 --                                          emptyModuleInfo,
@@ -52,8 +52,8 @@ import Haskell.Hatchet.Representation as Rep
 
 -- Isabelle
 import Isabelle.IsaSign4 as IsaSign
-import Isabelle.Logic_Isabelle
-import Isabelle.IsaPrint
+-- import Isabelle.Logic_Isabelle
+-- import Isabelle.IsaPrint
 
 -- | The identity of the comorphism
 data Haskell2IsabelleHOLCF = Haskell2IsabelleHOLCF deriving (Show)
@@ -147,6 +147,8 @@ transSignature ns sign = let datatypeList = transDatatype ns (tyconsMembers sign
                                       (fm2map $ kinds sign)},
     constTab = Map.fromList $ extractConsts datatypeList,
     dataTypeTab = inDearrowize datatypeList, 
+    domainTab = [],
+    showLemmas = False,
     syn = () },
     [] ))                                 -- for now, no sentences
  where 
@@ -158,8 +160,8 @@ transSignature ns sign = let datatypeList = transDatatype ns (tyconsMembers sign
                          else m
     arity k = case k of 
                    Rep.Star -> 0
-                   (Rep.Kfun k1 k2) -> 1 + arity k2
-                   (Rep.KVar k) -> 0
+                   (Rep.Kfun _ k2) -> 1 + arity k2
+                   (Rep.KVar _) -> 0
 --    insertOps dtlist name scheme m = Map.insert (show name) (findType dtlist scheme) m
 
     
@@ -242,7 +244,8 @@ subTypeFormula t1 t2 = if t1 == t2 then True else
 
 
 extractType :: Scheme -> Type
-extractType (Forall kindList (predList :=> t)) = t 
+extractType (Forall _ (_ :=> t)) = t 
+-- extractType (Forall kindList (predList :=> t)) = t 
 
 --extractPreds :: Scheme -> [Pred]
 --extractPreds (Forall kindList (predList :=> t)) = predList 
@@ -255,7 +258,7 @@ gDomProduct as = case as of a:rest -> mkDomProduct a (gDomProduct rest)
 trType :: Type -> VarName Typ
 trType t
    = case t of
-           Rep.TVar tyvar -> do findResult <- lookupInMap t 
+           Rep.TVar _ ->     do findResult <- lookupInMap t 
                                 case findResult of
                                       Nothing -> do nm <- nextName
                                                     updateVMap (t, nm)
@@ -265,7 +268,7 @@ trType t
            Rep.TAp t1 t2  -> do a1 <- trType t1
                                 a2 <- trType t2
                                 return $ mkDomAppl a1 a2 
-           Rep.TGen i     -> do findResult <- lookupInMap t 
+           Rep.TGen _     -> do findResult <- lookupInMap t 
                                 case findResult of
                                       Nothing -> do nm <- nextName
                                                     updateVMap (t, nm)
