@@ -173,10 +173,10 @@ translateAssump as tm (i, opinf) =
                        [(HsIdent fname)]
                        (translateTypeScheme (opType $ head $ opInfos opinf))
   in case (opDefn $ head $ opInfos opinf) of
-    NoOpDefn -> [res, (functionUndef fname)]
+    NoOpDefn _ -> [res, (functionUndef fname)]
     ConstructData _ -> []  -- Implicitly introduced by the datatype definition.
     SelectData _ _ -> []   -- Implicitly introduced by the datatype definition.
-    Definition term -> 
+    Definition _ term -> 
       (translateFunDef as tm i (opType $ head $ opInfos opinf) term)
     VarDefn -> []
 
@@ -253,7 +253,7 @@ translateTerm as tm t =
 		 nullLoc 
 		 (HsVar (UnQual (HsIdent (translateIdWithType LowerId v))))
 		 (HsQualType [] $ translateType ty))      
-    QualOp (InstOpId uid _types _) ts _pos -> 
+    QualOp _ (InstOpId uid _types _) ts _pos -> 
     -- The identifier 'uid' may have been renamed. To find its new name,
     -- the typescheme 'ts' is tested for "Unifizierbarkeit" with the 
     -- typeschemes of the assumps. If an identifier is found, it is used

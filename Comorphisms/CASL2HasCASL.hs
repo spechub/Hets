@@ -79,7 +79,7 @@ makeType ide = TypeName ide star 0
 trOpType :: CASL.StaticAna.OpType -> HasCASL.Le.OpInfo
 trOpType ot = OpInfo { opType = TypeScheme [] ([] :=> t) [],
 		       opAttrs = [],
-		       opDefn = NoOpDefn
+		       opDefn = NoOpDefn Op
 		     }
                where t = FunType arg arrow res []
                      arrow = case opKind ot of
@@ -91,7 +91,7 @@ trOpType ot = OpInfo { opType = TypeScheme [] ([] :=> t) [],
 trPredType :: CASL.StaticAna.PredType -> HasCASL.Le.OpInfo
 trPredType pt = OpInfo { opType = TypeScheme [] ([] :=> t) [],
 		         opAttrs = [],
-		         opDefn = NoOpDefn
+		         opDefn = NoOpDefn Op
 		     }
                where t = predType arg
                      arg = ProductType (map makeType $ predArgs pt) []
