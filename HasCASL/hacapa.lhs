@@ -32,7 +32,6 @@ parseA p s = case runParser p emptyAnnos "" s of
 lineParser, fileParser :: [(String, StringParser)]
 lineParser = [
  ("MixIds", fromAParser uninstOpId),
- ("Typenames", fromAParser typeId),
  ("Kinds", fromAParser kind),
  ("Types", fromAParser parseType),
  ("Terms", fromAParser term),

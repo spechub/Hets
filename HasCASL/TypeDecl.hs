@@ -167,13 +167,13 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs _) =
                      newAlts <- fromReadR [] $ anaAlts dt 
 				$ map item alts
 		     mapM_ ( \ (Construct c tc p sels) -> do
-			     addOpId c (simpleTypeScheme $ 
-					getConstrType dt p tc) 
+			     let ty = simpleTypeScheme $ getConstrType dt p tc
+			     addOpId c ty
 			                [] (ConstructData i)
 			     mapM_ ( \ (Select s ts pa) -> 
 				     addOpId s (simpleTypeScheme $ 
 						getSelType dt pa ts) 
-				     [] (SelectData [c] i)
+				     [] (SelectData [ConstrInfo c ty] i)
 			           ) sels) newAlts
 		     addTypeId (DatatypeDefn genKind [] newAlts) inst k i 
 

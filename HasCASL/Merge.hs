@@ -176,13 +176,22 @@ instance Mergeable OpDefn where
 	if d1 == d2 then return d else 
 	   fail ("wrong constructor target type" ++
 		 expected d1 d2)
-    merge d@(SelectData c1 d1) (SelectData c2 d2) = 
-	if d1 == d2 then 
-	       if sort c1 == sort c2 then return d else 
-		  fail ("wrong associated constructors")
+    merge (SelectData c1 d1) (SelectData c2 d2) = 
+	if d1 == d2 then
+	   do c <- mergeConstrInfos c1 c2
+	      return $ SelectData c d1
 	else fail ("wrong selector's source type" ++
 		   expected d1 d2)
     merge d@(Definition d1) (Definition d2) =  
 	if d1 == d2 then return d else 
 	   fail "merge: definition"
     merge _d1 _d2 = fail "illegal redefinition"
+
+mergeConstrInfos :: [ConstrInfo] -> [ConstrInfo] -> Result [ConstrInfo]
+mergeConstrInfos [] c2 = return c2
+mergeConstrInfos (c : r) c2 =
+    do c3 <- mergeConstrInfos r c2
+       let cs = filter (==c) c2
+       if null cs then 
+	   return (c : c3)
+	   else return c3

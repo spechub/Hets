@@ -94,10 +94,10 @@ mkBrackets parser k = bracketParser parser oBracketT cBracketT commaT k
 hcKeys :: ([String], [String])
 hcKeys = (hascasl_reserved_ops, hascasl_reserved_words)
 
-uninstOpId, hconsId, typeId :: GenParser Char st Id
+uninstOpId, hconsId :: GenParser Char st Id
 uninstOpId = mixId hcKeys hcKeys
-hconsId = mixId (barS:hascasl_reserved_ops, hascasl_reserved_words) hcKeys
-typeId = mixId (lessS:barS:hascasl_reserved_ops, hascasl_reserved_words) hcKeys
+hconsId = mixId (quMark:barS:hascasl_reserved_ops, hascasl_reserved_words) 
+	  hcKeys
 
 -- ----------------------------------------------
 -- TYPE-VAR Ids

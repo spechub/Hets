@@ -70,9 +70,13 @@ data OpInfo = OpInfo { opType :: TypeScheme
 		     , opDefn :: OpDefn
 		     } deriving (Show, Eq)
 
+data ConstrInfo = ConstrInfo { constrId :: UninstOpId
+			     , constrType :: TypeScheme 
+			     } deriving (Show, Eq)
+
 data OpDefn = NoOpDefn
 	    | ConstructData TypeId     -- target type
-	    | SelectData [UninstOpId] TypeId   -- constructors of source type
+	    | SelectData [ConstrInfo] TypeId   -- constructors of source type
 	    | Definition Term            
 	    | VarDefn deriving (Show, Eq)
 

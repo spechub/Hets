@@ -18,37 +18,45 @@ Data3 : Type %[type __ ::=
 	       Cons31 : Data1 × Data2 -> __ (sel1 :? Data1)(sel2 :? Data2)
 	       Cons32 : Data2 × Data1 -> __ (sel2 :? Data2)(sel1 :? Data1)]%
 Data4 : Type %[type __ ::=
-	       Cons41 : Data1 × Data2 -> 
-			? -> __ (sel1 :? Data1)(sel2 :? Data2)(%(Data4.Cons41.sel_[2])% :? ?)
-	       Cons42 : Data2 × Data1 -> 
-			? -> __ (sel2 :? Data2)(sel1 :? Data1)(%(Data4.Cons42.sel_[2])% :? ?)]%
+	       Cons41 : Data1 × Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
+	       Cons42 : Data2 × Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
 Pred : Type- -> Type
 Pred__ : Type- -> Type
 Unit : TYPE
 s : (c, Type) < ? s %(var)%
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-%(Data2.Cons21.sel_[1,1])% : Data2 ->? Data1 %(select from Data2 constructed by Cons21)%
-%(Data2.Cons21.sel_[2,1])% : Data2 ->? Data2 %(select from Data2 constructed by Cons21)%
-%(Data2.Cons22.sel_[1,1])% : Data2 ->? Data2 %(select from Data2 constructed by Cons22)%
-%(Data2.Cons22.sel_[2,1])% : Data2 ->? Data1 %(select from Data2 constructed by Cons22)%
-%(Data4.Cons41.sel_[2])% : Data4 ->? ? %(select from Data4 constructed by Cons41)%
-%(Data4.Cons42.sel_[2])% : Data4 ->? ? %(select from Data4 constructed by Cons42)%
+%(Data2.Cons21.sel_[1,1])% : Data2 ->? Data1 %(select from Data2 constructed by
+					    Cons21 : Data1 × Data2 -> Data2)%
+%(Data2.Cons21.sel_[2,1])% : Data2 ->? Data2 %(select from Data2 constructed by
+					    Cons21 : Data1 × Data2 -> Data2)%
+%(Data2.Cons22.sel_[1,1])% : Data2 ->? Data2 %(select from Data2 constructed by
+					    Cons22 : Data2 × Data1 -> Data2)%
+%(Data2.Cons22.sel_[2,1])% : Data2 ->? Data1 %(select from Data2 constructed by
+					    Cons22 : Data2 × Data1 -> Data2)%
 Cons21 : Data1 × Data2 -> Data2 %(construct Data2)%
 Cons22 : Data2 × Data1 -> Data2 %(construct Data2)%
 Cons31 : Data1 × Data2 -> Data3 %(construct Data3)%
 Cons32 : Data2 × Data1 -> Data3 %(construct Data3)%
-Cons41 : Data1 × Data2 -> ? -> Data4 %(construct Data4)%
-Cons42 : Data2 × Data1 -> ? -> Data4 %(construct Data4)%
+Cons41 : Data1 × Data2 ->? Data4 %(construct Data4)%
+Cons42 : Data2 × Data1 ->? Data4 %(construct Data4)%
 a : Data1 %(construct Data1)%
   : ? s
 b : Data1 %(construct Data1)%
 c : Data1 %(construct Data1)%
 eq : s × s ->? Unit
-sel1 : Data4 ->? Data1 %(select from Data4 constructed by Cons41)%
-     : Data3 ->? Data1 %(select from Data3 constructed by Cons31)%
-sel2 : Data4 ->? Data2 %(select from Data4 constructed by Cons41)%
-     : Data3 ->? Data2 %(select from Data3 constructed by Cons31)%
+sel1 : Data4 ->? Data1 %(select from Data4 constructed by
+		      (Cons41 : Data1 × Data2 ->? Data4,
+		       Cons42 : Data2 × Data1 ->? Data4))%
+     : Data3 ->? Data1 %(select from Data3 constructed by
+		      (Cons31 : Data1 × Data2 -> Data3,
+		       Cons32 : Data2 × Data1 -> Data3))%
+sel2 : Data4 ->? Data2 %(select from Data4 constructed by
+		      (Cons41 : Data1 × Data2 ->? Data4,
+		       Cons42 : Data2 × Data1 ->? Data4))%
+     : Data3 ->? Data2 %(select from Data3 constructed by
+		      (Cons31 : Data1 × Data2 -> Data3,
+		       Cons32 : Data2 × Data1 -> Data3))%
 tt : s ->? Unit
 x : s %(var)%
 %% Diagnostics -----------------------------------------------------------
@@ -105,16 +113,6 @@ Warning (line 68, column 11) redeclared type 's'
 Warning (line 72, column 73) data subtype ignored
 Error (line 72, column 52) undeclared type 'Data2'
 Error (line 72, column 36) undeclared type 'Data2'
-Error (line 73, column 64) wrong associated constructors of 'sel2'
-
-Error (line 73, column 77) wrong associated constructors of 'sel1'
-
-Error (line 75, column 90) undeclared type '?'
-Error (line 75, column 54) undeclared type '?'
-Error (line 75, column 65) wrong associated constructors of 'sel2'
-
-Error (line 75, column 78) wrong associated constructors of 'sel1'
-
 Error (line 77, column 8) unexpected mixfix token 'true'
 Hint (line 77, column 23) not a class 's'
 Error (line 77, column 25) unexpected mixfix token 'e'

@@ -77,6 +77,10 @@ instance PrettyPrint TypeInfo where
 	   (space <> ptext lessS <+> printList0 ga sups)
         <> printText0 ga defn
 
+instance PrettyPrint ConstrInfo where
+    printText0 ga (ConstrInfo i t) = 
+	printText0 ga i <+> colon <+> printText0 ga t
+
 instance PrettyPrint OpDefn where
     printText0 _ NoOpDefn = empty
     printText0 _ VarDefn = space <> ptext "%(var)%"
@@ -84,7 +88,7 @@ instance PrettyPrint OpDefn where
 				     showId i ")%")
     printText0 ga (SelectData c i) = space <> ptext ("%(select from " ++
 				     showId i " constructed by")
-				    <+> printList0 ga c <> ptext ")%"
+				    $$ printList0 ga c <> ptext ")%"
     printText0 ga (Definition t) = space <> ptext equalS <+> 
 				   printText0 ga t
  

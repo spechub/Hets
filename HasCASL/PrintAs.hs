@@ -45,13 +45,26 @@ instance PrettyPrint Type where
     			  <> parens (printText0 ga t2) 
     printText0 ga (TypeToken t) = printText0 ga t
     printText0 ga (BracketType k l _) = bracket k $ commaT_text ga l
-    printText0 ga (KindedType t kind _) = printText0 ga t  
-			  <> space <> colon <+> printText0 ga kind
+    printText0 ga (KindedType t kind _) = (case t of 
+					    FunType _ _ _ _ -> parens
+					    ProductType _ _ -> parens
+					    LazyType _ _ -> parens
+					    TypeAppl _ _ -> parens
+					    _ -> id) (printText0 ga t) 
+					  <+> colon <+> printText0 ga kind
     printText0 ga (MixfixType ts) = fsep (map (printText0 ga) ts)
-    printText0 ga (LazyType t _) = text quMark <+> printText0 ga (t)  
+    printText0 ga (LazyType t _) = text quMark <+> (case t of 
+					    FunType _ _ _ _ -> parens
+					    ProductType _ _ -> parens
+					    KindedType _ _ _ -> parens
+					    _ -> id) (printText0 ga t)  
     printText0 ga (ProductType ts _) = if null ts then parens empty 
 			  else fsep (punctuate (space <> text timesS) 
-				     (map (printText0 ga) ts))
+				     (map ( \ t -> 
+					    (case t of 
+					    FunType _ _ _ _ -> parens
+					    ProductType _ _ -> parens
+					    _ -> id) $ printText0 ga t) ts))
     printText0 ga (FunType t1 arr t2 _) = (case t1 of 
 					   FunType _ _ _ _ -> parens
 					   _ -> id) (printText0 ga t1)

@@ -90,3 +90,11 @@ parse error at (line 23, column 4):
 unexpected "->", "?" or "-"
 expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->?", "-->", "-->?" or end of input
 
+parse error at (line 24, column 2):
+unexpected end of input
+expecting words, "__", signs, "(", "{" or "["
+
+parse error at (line 25, column 9):
+unexpected end of input
+expecting words, "__", signs, "(", "{" or "["
+
