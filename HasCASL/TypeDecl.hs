@@ -22,8 +22,14 @@ import Parsec
 import ParsecPos
 import ParsecError
 
-import PrintAs()
+import PrettyPrint
+import PrintAs(showPretty)
 import Result
+
+missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
+missingAna t ps = appendDiags [Diag FatalError 
+			       ("no analysis yet for: " ++ showPretty t "")
+			      $ if null ps then nullPos else head ps]
 
 addTypeKind :: Id -> Kind -> State Env ()
 addTypeKind t k = 
@@ -46,12 +52,29 @@ anaTypeItem _ (SubtypeDefn t _ _ _ p) = missingAna t p
 anaTypeItem _ (Datatype (DatatypeDecl t _ _ _ p)) = missingAna t p
 anaTypeItem _ (AliasType t _ _ p) = missingAna t p
 
+data ApplMode = OnlyArg | TopLevel 
+
+kindArity :: ApplMode -> Kind -> Int
+kindArity m (KindAppl k1 k2 _) =
+    case m of 
+	       TopLevel -> kindArity OnlyArg k1 + 
+			   kindArity TopLevel k2
+	       OnlyArg -> 1
+kindArity m (ProdClass ks _) = 
+    case m of TopLevel -> 0
+	      OnlyArg -> sum $ map (kindArity m) ks
+kindArity m (ExtClass k _ _) = kindArity m k
+kindArity m (PlainClass _) = case m of
+			     TopLevel -> 0
+			     OnlyArg -> 1
+
+
 anaTypePattern :: Instance -> Kind -> TypePattern -> State Env ()
 -- type args not yet considered for kind construction 
 anaTypePattern _ kind t = 
     let Result ds mi = convertTypePattern t
     in if typePatternArgs t == 0 || 
-       typePatternArgs t == kindArity kind then
+       typePatternArgs t == kindArity TopLevel kind then
        case mi of 
 	       Just ti -> addTypeKind ti kind
 	       Nothing -> appendDiags ds

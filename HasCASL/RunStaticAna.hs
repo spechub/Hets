@@ -15,7 +15,6 @@ import AsToLe(anaBasicSpec)
 import ParseItem(basicSpec)
 import Parsec
 import MonadState
-import PrintLe()
 
 anaParser :: Parser Env
 anaParser = do b <- basicSpec

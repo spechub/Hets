@@ -14,7 +14,7 @@ import Id
 
 posOfKind :: Kind -> Pos
 posOfKind (KindAppl _ _ p) = p 
-posOfKind (ProdClass s ps) = head ps
+posOfKind (ProdClass _ ps) = head ps
 posOfKind (ExtClass _ _ p) = p
 posOfKind (PlainClass c) = posOfClass c
 

@@ -246,7 +246,7 @@ instance PrettyPrint Kind where
 			  (case k1 of 
 				  KindAppl _ _ _ -> parens
 				  _ -> id) (printText0 ga k1)
-			  <> text funS 
+			  <+> text funS 
 			  <> printText0 ga k2
 
 instance PrettyPrint Class where 

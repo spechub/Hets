@@ -19,7 +19,6 @@ import Le
 import Maybe
 import Monad
 import MonadState
-import PrintAs()
 import ParseTerm(isSimpleId)
 import Result
 import TypeAna
@@ -83,7 +82,7 @@ optAnaVarDecl vd@(VarDecl v t s q) =
        do cMap <- getClassMap 
 	  let Result _ mc = convertTypeToClass cMap t 
 	      in case mc of
-	       Just c -> anaTypeVarDecl(TypeVarDecl v (Kind [] c []) s q)
+	       Just c -> anaTypeVarDecl(TypeVarDecl v (PlainClass c) s q)
 	       Nothing -> anaVarDecl vd
     else anaVarDecl vd
 

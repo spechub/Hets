@@ -17,8 +17,16 @@ import List
 import Maybe
 import MonadState
 import PrintAs(showPretty)
+import PrettyPrint
 import FiniteMap
 import Result
+
+mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
+mkDiag k s a =
+    Diag k (s ++ " '" ++ showPretty a "'") $
+		 case get_pos a of 
+		 Nothing -> nullPos
+		 Just p -> p
 
 -- ---------------------------------------------------------------------------
 -- analyse class
@@ -41,8 +49,7 @@ allSuperClasses ce ci =
 anaClassId :: ClassMap -> ClassId -> [Diagnosis]
 anaClassId cMap ci = 
        case lookupFM cMap ci of
-       Nothing -> [Diag Error ("undeclared class '" ++ showId ci "'")
-		  $ posOfId ci]
+       Nothing -> [mkDiag Error "undeclared class" ci]
        _ -> []
 
 anaClass :: Class -> State Env Class
@@ -60,8 +67,10 @@ anaClass (Downset t) =
 
 downsetWarning :: Type -> State Env ()
 downsetWarning t = 
-    appendDiags [Diag Warning ("unchecked type: " ++ showPretty t "")
-			       $ posOfType t]
+    addDiag $ mkDiag Warning "unchecked type" t
+
+instance PosItem Type where
+    get_pos = Just . posOfType
 
 -- ----------------------------------------------------------------------------
 -- analyse kind
@@ -111,10 +120,15 @@ eqKind emod (ExtClass c1 v1 _) (ExtClass c2 v2 _) =
     eqKind emod c1 c2 && 
 	   case emod of Compatible -> True
 			SameSyntax -> v1 == v2
+eqKind emod (ExtClass c1 _ _) c2 =
+    case emod of Compatible -> eqKind emod c1 c2
+		 SameSyntax -> False
+eqKind emod c2 (ExtClass c1 _ _) =
+    case emod of Compatible -> eqKind emod c2 c1
+		 SameSyntax -> False
 eqKind emod (PlainClass c1) (PlainClass c2) = 
 	   case emod of Compatible -> True
 			SameSyntax -> eqClass c1 c2
-
 eqKind _ _ _ = False
 
 eqListBy :: (a -> a -> Bool) -> [a] -> [a] -> Bool

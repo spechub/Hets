@@ -15,7 +15,7 @@ import ParseTerm
 import PrintLe
 import HToken
 import RunParsers
--- import RunStaticAna
+import RunStaticAna
 
 main :: IO ()
 main = exec lineParser fileParser
@@ -33,6 +33,6 @@ lineParser = [
  ("Items", HetParser basicSpec)]
 
 fileParser = [ ("BasicSpec", HetParser basicSpec)
---	     , ("analysis", HetParser anaParser)
+	     , ("analysis", HetParser anaParser)
 	     ]
 \end{code}

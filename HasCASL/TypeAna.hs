@@ -17,7 +17,7 @@ import Le
 import List
 import Maybe
 import MonadState
-import PrintAs()
+import PrintAs(showPretty)
 import FiniteMap
 import Result
 
@@ -37,59 +37,137 @@ anaTypeId i =
          Nothing -> [Diag Error ("undeclared type '" ++ showId i "'")
 		    $ posOfId i]
 	 _ -> []
-       return $ TypeConstrAppl i 0 Nothing [] []
+       return $ TypeName i 0
 
-mkTypeConstrAppls :: Type -> State Env Type
-mkTypeConstrAppls (TypeConstrAppl i v k ts ps) = 
-    do newTs <- mapM mkTypeConstrAppls ts
-       return $ TypeConstrAppl i v k newTs ps
-mkTypeConstrAppls (TypeToken t) = return $
-    TypeConstrAppl (simpleIdToId t) 0 Nothing [] []
-mkTypeConstrAppls t@(BracketType b ts ps) =
-    do args <- mapM mkTypeConstrAppls ts
+data ApplMode = OnlyArg | TopLevel 
+
+mkTypeConstrAppls :: ApplMode -> Type -> State Env Type
+mkTypeConstrAppls _ t@(TypeName _ _) = 
+       return t 
+
+mkTypeConstrAppls m (TypeAppl t1 t2) = 
+    do t3 <- mkTypeConstrAppls m t1
+       t4 <- mkTypeConstrAppls OnlyArg t2
+       return $ TypeAppl t3 t4 
+
+mkTypeConstrAppls _ (TypeToken t) = return $
+    TypeName (simpleIdToId t) 0
+
+mkTypeConstrAppls m t@(BracketType b ts ps) =
+    do args <- mapM (mkTypeConstrAppls m) ts
        let toks@[o,c] = mkBracketToken b ps 
 	   i = if null ts then Id toks [] [] 
 	       else Id [o, Token place $ posOfType $ head ts, c] [] []
-	   res = TypeConstrAppl i 0 Nothing args []
-       if null ts then return res
-	  else if null $ tail ts then
-	       return $ case b of 
-			       Parens -> head args
-			       _ -> res
-	       else do appendDiags [Diag Error
-				       ("illegal type: " ++ 
-					showPretty t "")
-				      $ posOfType t]
-		       return res
+	   n = TypeName i 0 
+	   ds = [Diag Error ("illegal type: " ++ showPretty t "")
+		$ posOfType t]
+       if null ts then return n
+	  else if null $ tail ts 
+	       then return $ case b of 
+			   Parens -> head args 
+			   _ -> TypeAppl n (head args)
+	       else do case m of 
+			      TopLevel -> appendDiags ds
+			      OnlyArg -> case b of 
+						Parens -> return ()
+						_ -> appendDiags ds
+		       return $ BracketType b args ps
 
-mkTypeConstrAppls (MixfixType (f:a)) =
-   do newF <- mkTypeConstrAppls f 
-      newA <- mapM mkTypeConstrAppls a
-      return $ MixfixType $ newF : newA
+mkTypeConstrAppls _ (MixfixType []) = error "mkTypeConstrAppl (MixfixType [])"
+mkTypeConstrAppls _ (MixfixType (f:a)) =
+   do newF <- mkTypeConstrAppls TopLevel f 
+      newA <- mapM (mkTypeConstrAppls OnlyArg) a
+      return $ foldl1 TypeAppl $ newF : newA
  
-
-mkTypeConstrAppls (KindedType t k p) =
-    do newT <- mkTypeConstrAppls t
+mkTypeConstrAppls m (KindedType t k p) =
+    do newT <- mkTypeConstrAppls m t
        return $ KindedType newT k p
 
-mkTypeConstrAppls (LazyType t p) =
-    do newT <- mkTypeConstrAppls t
+mkTypeConstrAppls _ (LazyType t p) =
+    do newT <- mkTypeConstrAppls TopLevel t
        return $ LazyType newT p
 
-mkTypeConstrAppls (ProductType ts ps) =
-    do newTs <- mapM mkTypeConstrAppls ts
+mkTypeConstrAppls _ (ProductType ts ps) =
+    do newTs <- mapM (mkTypeConstrAppls TopLevel) ts
        return $ ProductType newTs ps
 
-mkTypeConstrAppls (FunType t1 a t2 ps) =
-    do newT1 <- mkTypeConstrAppls t1
-       newT2 <- mkTypeConstrAppls t2
+mkTypeConstrAppls _ (FunType t1 a t2 ps) =
+    do newT1 <- mkTypeConstrAppls TopLevel t1
+       newT2 <- mkTypeConstrAppls TopLevel t2
        return $ FunType newT1 a newT2 ps
 
-getIdKind :: TypeKinds -> Id -> Maybe Kind
-getIdKind tk i = 
+inferKind :: Type -> State Env (Maybe Kind)
+inferKind (TypeName i _) = getIdKind i
+inferKind (TypeAppl t1 t2) = 
+    do m1 <- inferKind t1 
+       m2 <- inferKind t2
+       case m1 of 
+	    Nothing -> return Nothing
+	    Just mk1 ->
+		case mk1 of 
+		       KindAppl k1 k2 _ -> do
+			   case m2 of 
+				   Nothing -> return ()
+				   Just mk2 -> if eqKind Compatible mk2 k1
+					       then return ()
+					       else addDiag $ wrongKind t2
+			   return $ Just k2
+		       _ -> do addDiag $ wrongKind t1
+			       return Nothing
+inferKind (FunType t1 _ t2 _) = 
+    do checkKind t1 nullKind 
+       checkKind t2 nullKind
+       return $ Just nullKind 
+inferKind (ProductType ts _) = 
+    do ms <- mapM inferKind ts 
+       let ns = map ( \ (Just x, y) -> (x, y)) 
+		$ filter (isJust . fst) $ zip ms ts 
+	   es = map (wrongKind . snd) $ 
+		filter (not . eqKind Compatible nullKind . fst) ns
+       appendDiags es
+       return $ Just nullKind 
+inferKind (LazyType t _) = 
+    do checkKind t nullKind
+       return $ Just nullKind 
+inferKind (TypeToken t) = getIdKind (simpleIdToId t)
+inferKind (KindedType t k _) =
+    do checkKind t k
+       return $ Just k
+inferKind t@(MixfixType _) = 
+    do unresolvedType t
+       return Nothing
+inferKind t@(BracketType b ts _) =
+    case b of 
+	   Parens -> do
+	      ms <- mapM inferKind ts
+	      if all isJust ms then
+		 return $ Just $ ProdClass (map fromJust ms) []
+		 else return Nothing
+	   _ -> do unresolvedType t
+		   return Nothing
+
+checkKind :: Type -> Kind -> State Env ()
+checkKind t j = do
+	m <- inferKind t 
+	case m of 
+	       Nothing -> return ()
+	       Just k -> if eqKind Compatible k j
+			  then return ()
+			  else addDiag $ wrongKind t
+
+noGroundType, wrongKind :: Type -> Diagnosis
+noGroundType t = mkDiag Error "no ground type" t
+wrongKind t = mkDiag Error "incompatible kind of type" t
+unresolvedType :: Type -> State Env ()
+unresolvedType = addDiag . mkDiag Error "unresolved type"
+
+getIdKind :: Id -> State Env (Maybe Kind)
+getIdKind i = 
+    do tk <- getTypeKinds
        case lookupFM tk i of
-       Nothing -> Nothing
-       Just ks -> Just $ head ks 
+	    Nothing -> do addDiag $ mkDiag Error "undeclared type" i
+			  return Nothing
+	    Just ks -> return $ Just $ head ks 
 
 getKind :: TypeKinds -> Id -> Maybe Kind
 getKind tk i = 
@@ -97,75 +175,11 @@ getKind tk i =
        Nothing -> Nothing
        Just ks -> Just $ head ks 
     
-
 anaType :: Type -> State Env Type
-anaType (t@(TypeConstrAppl i v k ts _)) = do
-    let e1 = case k of
-	     Nothing -> []
-	     Just kind -> if length ts > kindArity kind then
-			  [Diag Error ("too many type arguments:\n" ++
-				       indent 2 (showPretty t) "")
-			   (posOfType t)] else []
-	e2 = if v > 0 then 
-	     [Diag Error 
-	      ("uninstantiated generic variable " ++
-	       showId i "")
-	      (posOfId i)] else []
---    ds <- checkTypeKind i k
-    appendDiags $ e1 ++ e2
-    return t
-
-anaType (TypeToken t) = 
-    
-    anaTypeId $ simpleIdToId t
-
-anaType (BracketType Parens ts ps) =
-    do newTs <- mapM anaType ts
-       return $ ProductType newTs ps
-
-anaType (BracketType b ts ps) = do
-    let toks@[o,c] = mkBracketToken b ps 
-	i = if null ts then Id toks [] [] 
-	    else Id [o, Token place $ posOfType $ head ts, c] [] []
-    newT <- anaTypeId i
-    if null ts then return newT
-	  else do args <- mapM anaType ts
-		  case newT of
-			   TypeConstrAppl _ _ (Just k) _ _ -> 
-			       do if kindArity k < length args then
-				     appendDiags [Diag Error 
-						  ("too many arguments for '"
-						   ++ showId i "'")
-						 $ posOfId i]
-				     else return ()
-				  return $ TypeConstrAppl i 0 (Just k) args []
-			   _ -> return $ TypeConstrAppl i 0 Nothing args []
-
-anaType(KindedType t k ps) =
-    do newK <- anaKind k
-       newT <- anaType t
-       -- getKind of t and compare it with k
-       return $ KindedType newT newK ps
-
-anaType (MixfixType ts) = 
-    do (f:as) <- mapM anaType ts
-       return $ case f of 
-	      TypeConstrAppl i g k bs _ ->
-		  TypeConstrAppl i g k (bs ++ as) []
-	      _ -> MixfixType (f:as) 
-
-anaType (LazyType t p) =
-    do newT <- anaType t
-       return $ LazyType newT p
-
-anaType (ProductType ts ps) =
-    do newTs <- mapM anaType ts
-       return $ ProductType newTs ps
-
-anaType (FunType t1 a t2 ps) =
-    do newT1 <- anaType t1
-       newT2 <- anaType t2
-       return $ FunType newT1 a newT2 ps
+anaType t = 
+    do newT <- mkTypeConstrAppls TopLevel t
+       inferKind newT
+       return newT
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 

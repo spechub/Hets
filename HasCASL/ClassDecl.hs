@@ -26,9 +26,9 @@ anaClassDecls (ClassDecl cls _) =
 anaClassDecls (SubclassDecl _ (Downset _) _) = error "anaClassDecl"
 anaClassDecls (SubclassDecl cls sc@(Intersection supcls ps) qs) =
        if null supcls then 
-	  do appendDiags [Diag Warning
+	  do addDiag $ Diag Warning
 			  "redundant universe class" 
-			 $ if null ps then head qs else head ps ] 
+			 $ if null ps then head qs else head ps
 	     mapM_ (anaClassDecl [] Nothing) cls
           else let hd:tl = supcls in 
 	      if null $ tl then
@@ -36,10 +36,8 @@ anaClassDecls (SubclassDecl cls sc@(Intersection supcls ps) qs) =
 		    if null $ anaClassId cMap hd then
 		       return () else do  
 			  anaClassDecl [] Nothing hd
-			  appendDiags [Diag Warning 
-				       ("implicit declaration of superclass '"
-					++ showId hd "'")
-				      $ posOfId hd]
+			  addDiag $ mkDiag Warning 
+				      "implicit declaration of superclass" hd
 		    mapM_ (anaClassDecl [hd] Nothing) cls
 		  else do Intersection newSups _ <- anaClass sc
 			  mapM_ (anaClassDecl newSups Nothing) cls
@@ -55,8 +53,8 @@ anaClassDecls (DownsetDefn ci _ t _) =
 anaClassDecl :: [ClassId] -> Maybe Class -> ClassId -> State Env ()
 anaClassDecl sups defn ci = 
     if showId ci "" == "Type" then 
-       appendDiags [Diag Error 
-		    "illegal universe class declaration" (posOfId ci)]
+       addDiag $ Diag Error 
+		    "illegal universe class declaration" $ posOfId ci
     else do
        cMap <- getClassMap
        case lookupFM cMap ci of
@@ -64,25 +62,18 @@ anaClassDecl sups defn ci =
 		       (newClassInfo ci) { superClasses = sups, 
 					   classDefn = defn }
 	    Just info -> do 
-	        appendDiags [Diag Warning 
-			     ("redeclared class '"
-			      ++ showId ci "'") 
-			    $ posOfId ci]
+	        addDiag $ mkDiag Warning "redeclared class" ci
 		let oldDefn = classDefn info
 		    oldSups = superClasses info
 		if isJust defn then
 		   if isJust oldDefn then
 		      appendDiags $ mergeDefns ci 
 				      (fromJust oldDefn) (fromJust defn)
-		      else appendDiags [Diag Error 
-			     ("class cannot become an alias class '"
-			      ++ showId ci "'") 
-			    $ posOfId ci]
+		      else addDiag $ mkDiag Error
+			     "class cannot become an alias class" ci
 		      else if isJust oldDefn then
-			   appendDiags [Diag Error 
-			     ("alias class cannot become a real class '"
-			      ++ showId ci "'") 
-			    $ posOfId ci]
+			   addDiag $ mkDiag Error 
+			     "alias class cannot become a real class" ci
 		      else do
 		      newSups <- getLegalSuperClasses cMap ci oldSups sups
 		      putClassMap $ addToFM cMap ci info 
@@ -97,18 +88,14 @@ getLegalSuperClasses ce ci oldCs cs =
 	   newCs = nub $ defCs ++ oldCs
 	   cycles = map snd scycs
 	   dubs = filter (`elem` allSuperClasses ce ci) defCs
+	   myDiag k s l = Diag k (s ++ " '" ++ showClassList l "'")
+			  $ posOfId $ head l
 	   in do if null cycles then return ()
-		    else appendDiags 
-			     [Diag Error 
-			      ("cyclic class relation via '"
-			       ++ showClassList cycles "'")
-			     $ posOfId (head cycles)]
+		    else addDiag $ myDiag Error 
+			      "cyclic class relation via" cycles
 		 if null dubs then return ()
-		    else appendDiags 
-			     [Diag Warning 
-			      ("already known as super class '"
-			       ++ showClassList dubs "'")
-			     $ posOfId (head dubs)]
+		    else addDiag $ myDiag Warning 
+			      "already known as super class" dubs
 		 return newCs
 
 showClassList :: [ClassId] -> ShowS

@@ -57,6 +57,8 @@ appendDiags ds =
     do e <- get
        put $ e {envDiags = ds ++ envDiags e}
 
+addDiag :: Diagnosis -> State Env ()
+addDiag d = appendDiags [d]
 
 indent :: Int -> ShowS -> ShowS
 indent i s = showString $ concat $ 
