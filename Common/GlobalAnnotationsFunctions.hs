@@ -1,10 +1,11 @@
 
-{- HetCATS/GlobalAnnotations.hs
-   $Id$
-   Author: Klaus Lüttich
-   Year:   2002
--}
 {- |
+
+   Module      :  $Header$
+   Copyright   :  (c) Christian Maeder, Klaus Lüttich and Uni Bremen 2002-2003
+   Licence     :  All rights reserved.
+
+
    Maintainer  :  hets@tzi.de
    Stability   :  provisional
    Portability :  portable
@@ -55,7 +56,7 @@ store_prec_annos pgr = Rel.transClosure .
 				     case prc of 
 				     Lower -> if Rel.transMember hi li p2 then
 				       error ("prec_anno conflict: " ++
-					     showId li " < " ++ showId hi "\n" 
+					     showId li " < " ++ showId hi "\n"
 					     ++ showRel p2 "")
 				       else Rel.insert li hi p2
 				     BothDirections -> 
@@ -64,13 +65,14 @@ store_prec_annos pgr = Rel.transClosure .
 				         then Rel.insert hi li 
 				              (Rel.insert li hi p2)
 				         else error ("prec_anno conflict: " ++
-					    showId li " <> " ++ showId hi "\n" 
+					    showId li " <> " ++ showId hi "\n"
 					     ++ showRel p2 "")
 				     _ -> error "prec_anno relation")
 			     p1 hIds)
 	              p0 lIds
 	    _ -> p0 ) pgr  
-    where showRel r = showSepList (showString "\n") showIdPair $ Rel.toList r  
+    where showRel r = showSepList (showString "\n") showIdPair $ Rel.toList r
+  
 
 precRel :: PrecedenceGraph -- ^ Graph describing the precedences
 	-> Id -- ^ x oID (y iid z) -- outer id
