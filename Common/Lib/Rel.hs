@@ -144,15 +144,7 @@ connComp r = foldr (\ t (m1, m2) ->
 
 -- | collaps strongly connected components to its minimal representative
 collaps :: Ord a => Map.Map a a -> Rel a -> Rel a
-collaps c (Rel m) =
-         let f e = Map.findWithDefault e e c
-         in Rel $ Map.foldWithKey ( \ k s r ->
-                                    let i = f k 
-                                        t = Set.image f s
-                                    in case Map.lookup i r of 
-                                    Nothing -> Map.insert i t r
-                                    Just v -> Map.insert i (Set.union v t) r) 
-                  Map.empty m
+collaps c = image (\ e -> Map.findWithDefault e e c)
 
 {- | transitive reduction (minimal relation with the same transitive closure)
      of a DAG (non-trivial cycles will be lost). -}
@@ -186,18 +178,22 @@ instance (Show a, Ord a) => Show (Rel a) where
 --------------------------------------------------------------------}
 -- | Image of a relation under a function
 image :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
-image f = fromList . map ( \ (a, b) -> (f a, f b)) . toList
+image f (Rel m) = Rel $ Map.foldWithKey 
+    ( \ a v -> Map.insertWith Set.union (f a) $ Set.image f v) Map.empty m 
 
 {--------------------------------------------------------------------
-  Restriction (Added by T.M.) (implementation changed by C.M.)
+  Restriction (Added by T.M.) 
 --------------------------------------------------------------------}
 -- | Restriction of a relation under a set
 restrict :: Ord a => Rel a -> Set.Set a -> Rel a
-restrict r s = fromAscList $ filter 
-               ( \ (a, b) -> Set.member a s && Set.member b s) $ toList r
+restrict (Rel m) s = Rel $ Map.foldWithKey 
+    ( \ a v -> if Set.member a s then
+                   let r = Set.intersection v s in
+                   if Set.isEmpty r then id else Map.insert a r
+               else id) Map.empty m 
 
 {--------------------------------------------------------------------
- Conversion from/to sets (Added by T.M.)(implementation changed by C.M.)
+ Conversion from/to sets (Added by T.M.) (implementation changed by C.M.)
 --------------------------------------------------------------------}
 -- | convert a relation to a set of ordered pairs
 toSet :: (Ord a) => Rel a -> Set.Set (a, a)
@@ -220,8 +216,7 @@ topSort r@(Rel m) =
     if isEmpty r then []
     else let es = Set.unions $ Map.elems m
              ms = (Set.fromDistinctAscList $ Map.keys m) Set.\\ es in 
-       if Set.isEmpty ms then let hasCyc = removeCycle r in 
-           case hasCyc of 
+        if Set.isEmpty ms then case removeCycle r of 
            Nothing -> topSort (transClosure r)
            Just (a, cyc, restRel) ->
                map ( \ s -> if Set.member a s then 
@@ -239,23 +234,21 @@ topSort r@(Rel m) =
 removeCycle :: Ord a => Rel a -> Maybe (a, Set.Set a, Rel a)
 removeCycle r@(Rel m) = 
     let cycles = Map.filterWithKey Set.member m in
-        if Map.isEmpty cycles then -- no cycle found 
-           let cl = transClosure r in 
-           if r == cl then Nothing -- no cycle there 
-              else removeCycle cl
+        if Map.isEmpty cycles then Nothing
            else let (a, os) = Map.findMin cycles
                     cs = Set.fold ( \ e s -> 
                             if member e a r then 
                                     Set.insert e s else s) Set.empty 
-                         $ Set.delete a os
-                    m1 = Map.map (Set.image ( \ e -> 
-                                              if Set.member e cs then 
-                                              a else e)) m 
-                    rs = Map.foldWithKey ( \ k v s -> 
-                                 if Set.member k cs then 
-                                        Set.union s $ Set.delete a v else s) 
-                         Set.empty m1
-            in Just (a, cs, Rel $ Map.insert a rs $ Set.fold Map.delete m1 cs)
+                         os
+                    m1 = Map.foldWithKey 
+                         ( \ k v -> let i = Set.difference v cs 
+                                    in if Set.member k cs 
+                                       then Map.insertWith Set.union a i
+                                       else Map.insert k 
+                                            (if Set.size v > Set.size i 
+                                             then Set.insert a i else i))
+                         Map.empty m
+                    in Just (a, Set.delete a cs, Rel m1)
 
 {- The result is a representative "a", the cycle "cs", i.e. all other
 elements that are represented by "a" and the remaining relation with
