@@ -1,53 +1,59 @@
-module Token where
+module Token ( scanTermWords, scanTermSigns, otherToken, makeToken
+	     , obr, cbr, ocb, ccb, uu, parseId
+	     ) where
 
 import Lexer
-import Id
-import ParsecPos
-import ParsecPrim
-import ParsecCombinator
-import ParsecChar
+import Id (Id(Id), Token(Token), place, isPlace)
+import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
+import ParsecPrim (Parser, (<?>), (<|>), getPosition, many, try)
+import ParsecCombinator (many1, option, sepBy1)
+import ParsecChar (char, string)
 
-casl_reserved_ops = [":?","::=",".","\183","|","|->","->","->?"]
+-- ----------------------------------------------
+-- casl keyword handling
+-- ----------------------------------------------
 
-special_ops = [":","="]
-formula_ops = ["=>","<=>","\\/","/\\","\172"] 
+reserved :: [String] -> Parser String -> Parser String
+reserved l p = p `checkWith` \r -> r `notElem` l 
+
+-- sign keywords
+casl_reserved_ops = [":", ":?","::=",".","\183","|","|->","->","->?"]
+
+-- these signs are legal in terms, but illegal in declarations
+formula_ops = ["=", "=>","<=>","\\/","/\\","\172"] 
 
 scanTermSigns = reserved casl_reserved_ops scanAnySigns
 
-scanSigns = reserved (special_ops ++ formula_ops) scanTermSigns
+scanSigns = reserved formula_ops scanTermSigns
 
+-- letter keywords
 casl_reserved_words = words( 
-    "and arch assoc axiom axioms closed comm end " ++
+    "and arch as assoc axiom axioms closed comm end " ++
     "exists fit forall free from generated get given " ++
-    "hide idem lambda library local op ops pred preds " ++
+    "hide idem in lambda library local op ops pred preds " ++
     "result reveal sort sorts spec then to type types " ++
     "unit units var vars version view with within")
 
 -- these words are legal in terms, but illegal in declarations
 poly_words = ["def","else","when"]
 mono_words = ["false","not","true"]
-type_words = ["as","in"]
-
-
-reserved :: [String] -> Parser String -> Parser String
-reserved l p = p `checkWith` (\r -> r `notElem` l) 
 
 scanTermWords = reserved casl_reserved_words scanAnyWords 
 
 scanWords = reserved (poly_words 
 		      ++ mono_words
-		      ++ type_words
 		     ) scanTermWords
-
--- ----------------------------------------------
--- no-bracket-token, literal or place (for terms)
--- ----------------------------------------------
 
 otherToken = scanDigit <|> scanQuotedChar <|> scanDotWords
 
-scanMixLeaf = makeToken(try scanFloat <|> scanString <|> otherToken 
-			<|> scanTermWords <|> try (string "=e=") 
-			<|> scanTermSigns <|> scanPlace)
+-- ----------------------------------------------
+-- lexical tokens with position
+-- ----------------------------------------------
+
+setTokPos :: SourcePos -> String -> Token
+setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
+
+makeToken parser = skip(bind setTokPos getPosition parser)
 
 -- ----------------------------------------------
 -- bracket-token (for ids)
@@ -57,10 +63,10 @@ obr = makeToken (single (char '['))
 cbr = makeToken (single (char ']'))
 ocb = makeToken (single (char '{'))
 ccb = makeToken (single (char '}'))
-uu = makeToken (scanPlace)
+uu = makeToken (try (string place) <?> "place")
 
 -- simple id
-sid = makeToken (otherToken <|> scanSigns <|> scanWords <?> "simple-id")
+sid = makeToken (otherToken <|> scanSigns <|> scanWords)
 
 singleId = single (sid `notFollowedWith` sid) 
 
@@ -79,11 +85,11 @@ middle = many1 uu <++> option [] afterPlace
 
 tokStart = afterPlace <++> flat (many middle)
 
-start = tokStart <|> (uu <:> (tokStart <|> (many1 uu <++> option [] tokStart)))
+start = tokStart <|> uu <:> (tokStart <|> many1 uu <++> option [] tokStart)
         <?> "mix-id"
 
-comps = between obr cbr
-	(sepBy1 parseId (skip (char ','))) <?> "[<id>,...,<id>]"
+comps = obr >> (parseId `sepBy1` skip (char ',')) << cbr 
+	<?> "[<id>,...,<id>]"
 
 parseId = do { l <- start
              ; if isPlace (last l) then return (Id l [])

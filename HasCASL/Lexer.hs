@@ -1,12 +1,17 @@
-module Lexer where
+module Lexer ( bind, (<<), (<:>), (<++>), begDoEnd, flat, single
+	     , checkWith, notFollowedWith
+	     , scanAnySigns, scanAnyWords, scanDotWords 
+	     , scanDigit, scanFloat, scanQuotedChar, scanString
+	     , skip, ann
+	     ) where
 
-import Char
-import Id
-import Monad
-import ParsecPos
-import ParsecPrim
-import ParsecCombinator
-import ParsecChar
+import Char (digitToInt)
+import Monad (MonadPlus (mplus), liftM2)
+import ParsecPrim ((<?>), (<|>), many, try, skipMany
+		  , unexpected, consumeNothing, Parser, GenParser)
+import ParsecCombinator (count, eof, option, lookAhead, many1)
+import ParsecChar (char, digit, hexDigit, octDigit
+		  , oneOf, noneOf, satisfy, string)
 
 -- ----------------------------------------------
 -- no-bracket-signs
@@ -16,9 +21,7 @@ signChars = "!#$&*+-./:<=>?@\\^|~" ++ "¡¢£§©¬°±²³µ¶·¹¿×÷"
 -- "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
 -- \172 neg \183 middle dot \215 times 
 
-scanAnySigns = many1 (oneOf signChars <?> "sign") <?> "signs"
-
-scanPlace = try (string place) <?> "place"
+scanAnySigns = many1 (oneOf signChars <?> "casl sign") <?> "signs"
 
 -- ----------------------------------------------
 -- casl letters
@@ -44,15 +47,17 @@ scanLPD = caslLetter <|> digit <|> prime <?> "casl char"
 bind :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
 bind f p q = do { x <- p; y <- q; return (f x y) }
 
-followedBy :: (Monad m) => m a -> m b -> m a
-followedBy = bind const
+infixl <<
 
-infixr 1 <:>
+(<<) :: (Monad m) => m a -> m b -> m a
+(<<) = bind const
+
+infixr 5 <:>
 
 (<:>) :: (Monad m) => m a -> m [a] -> m [a]
 (<:>) = liftM2 (:)
 
-infixr 1 <++>
+infixr 5 <++>
 
 (<++>) :: (Monad m, MonadPlus p) => m (p a) -> m (p a) -> m (p a)
 (<++>) = liftM2 mplus
@@ -72,22 +77,18 @@ notFollowedWith :: (Show b) => GenParser tok st a
 		-> GenParser tok st b -> GenParser tok st a
 p `notFollowedWith` q = do { x <- p
                            ; try (do { c <- q
-				     ; consumeNothing
 				     ; unexpected (show c) 
 				     }
-				  <|> return x)
-{-
-                           ; y <- lookAhead (option Nothing (fmap Just (try q)))
-			   ; case y of Nothing -> return x
-			               Just z -> unexpected (show z)
--}
+				  <|> return ())
+			   ; consumeNothing
+			   ; return x
 			   }
 
 followedWith :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
-p `followedWith` q = try (p `followedBy` lookAhead q)
+p `followedWith` q = try (p << lookAhead q)
 
 begDoEnd :: (Monad f, Functor f) => f a -> f [a] -> f a -> f [a]
-begDoEnd open p close = (open <:> p) <++> single close  
+begDoEnd open p close = open <:> p <++> single close  
 
 enclosedBy :: (Monad f, Functor f) => f [a] -> f a -> f [a]
 p `enclosedBy` q = begDoEnd q p q
@@ -124,12 +125,12 @@ value base s = foldl (\x d -> base*x + (digitToInt d)) 0 s
 
 simpleEscape = single (oneOf "'\"\\ntrvbfa?")
 
-decEscape = count 3 digit `checkWith` (\s -> value 10 s <= 255)
+decEscape = count 3 digit `checkWith` \s -> value 10 s <= 255
 
 hexEscape = char 'x' <:> count 2 hexDigit -- cannot be too big
 
 octEscape = char 'o' <:> 
-	    (count 3 octDigit `checkWith` (\s -> value 8 s <= 255))
+	    count 3 octDigit `checkWith` \s -> value 8 s <= 255
 
 escapeChar = char '\\' <:> 
 	     (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)
@@ -154,13 +155,13 @@ scanString = flat (many (caslChar <|> string "'")) `enclosedBy` char '"'
 
 getNumber = many1 digit
 
-scanFloat = (getNumber <++> option "" 
-	     ((char '.' <:> getNumber)
+scanFloat = getNumber <++> option "" 
+	     (char '.' <:> getNumber
 	      <++> option "" 
-	      ((char 'E' <:> option "" (single (oneOf "+-")))
-	       <++> getNumber))) `checkWith` (\n -> length n > 1)
+	      (char 'E' <:> option "" (single (oneOf "+-"))
+	       <++> getNumber)) `checkWith` \n -> length n > 1
 
-scanDigit = getNumber `checkWith` (\n -> length n == 1)
+scanDigit = (getNumber << consumeNothing) `checkWith` \n -> length n == 1
 
 -- ----------------------------------------------
 -- comments and label
@@ -170,11 +171,11 @@ newlineChars = "\n\r"
 
 eol = (eof >> return '\n') <|> oneOf newlineChars
 
-textLine = many (noneOf newlineChars) `followedBy` eol
+textLine = many (noneOf newlineChars) << eol
 
 commentLine = try (string "%%") <++> textLine
 
-notEndText c = try (char c `notFollowedWith` char '%' <?> "")
+notEndText c = try (char c `notFollowedWith` char '%')
 
 middleText c = many (satisfy (/=c) <|> notEndText c) 
 
@@ -191,27 +192,18 @@ labelAnn = comment '(' ')'
 blankChars = "\t\v\f \160" -- non breaking space
 
 skip :: GenParser Char st a -> GenParser Char st a
-skip p = p `followedBy`  
-	 skipMany(single (oneOf (newlineChars ++ blankChars)) 
-		  <|> commentOut <?> "")
+skip p = p << skipMany(single (oneOf (newlineChars ++ blankChars)) 
+		       <|> commentOut <?> "")
 
 -- ----------------------------------------------
 -- annotations starting with %word
 -- ----------------------------------------------
 
 annote = try(char '%' <:> scanAnyWords) <++>
-	 (((try(char '(') <:> middleText ')') <++> string ")%")
+	 (try(char '(') <:> middleText ')' <++> string ")%"
 	  <|> textLine)
 
 -- annotations between items
 ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
       <?> "annotation"
 
--- ----------------------------------------------
--- lexical tokens with position
--- ----------------------------------------------
-
-setTokPos :: SourcePos -> String -> Token
-setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
-
-makeToken parser = skip(bind setTokPos getPosition parser)

@@ -1,7 +1,7 @@
 module Main where
 
 import Token
-import BasicItem
+-- import BasicItem
 import LocalEnv
 import Parsec
 import ParsecPos
@@ -29,11 +29,11 @@ scanId line n = let pos = setSourceLine (initialPos "") n
 				}
 		in result (parse parser "" line)
 
-
+{-
 parseSpec fileName =  do { r <- parseFromFile (basicSpec empty) fileName
 			 ; putStrLn (result r)
 			 }
-	   
+-}	   
 result r = case r of Left err -> "parse error at " ++ show err ++ "\n"
 		     Right x  -> show x
 
