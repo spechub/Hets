@@ -60,6 +60,8 @@ import Control.Monad (filterM)
 
 import System.Console.GetOpt
 
+import Debug.Trace
+
 
 -- main Datatypes --
 
@@ -103,9 +105,7 @@ defaultHetcatsOpts =
     HcOpt { verbose = 0
 	  , infile = ""
 	  , intype   = ATerm NonBAF
-	  , outdir = "."
-	    -- ...or like cats: same as that of the input file
-	    -- might be done with an extra constructor?
+	  , outdir = ""
 	  , outtypes = [HetCASLOut OutASTree Ascii]
             {- better default options, but 
 	    the underlying functions are not yet implemented:
@@ -299,14 +299,20 @@ parseLibDir s = LibDir s
 hetcatsOpts :: [String] -> IO HetcatsOpts
 hetcatsOpts argv =
     case (getOpt Permute options argv) of
-        (opts,non_opts,[]) -> do withOpts <- formOpts opts
-				 withIns  <- formInFiles non_opts
-				 let ourOpts = (withOpts . withIns) 
-					       defaultHetcatsOpts
-				 if (verbose ourOpts > 2)
-				    then printOpts ourOpts
-				    else return ()
-				 return ourOpts
+        (opts,non_opts,[]) ->
+	    do withOpts <- formOpts opts
+	       withIns  <- formInFiles non_opts
+	       ourOpts  <- return $
+			   (withOpts . withIns) 
+			   defaultHetcatsOpts
+{-	       if (verbose ourOpts > 2)
+		  then printOpts ourOpts
+		  else return () --fall through -}
+	       ourOpts' <- if (null $ outdir ourOpts)
+		      then return $ ourOpts { outdir = dirname 
+					      (infile ourOpts) }
+		      else return ourOpts
+	       return ourOpts'
         (_,_,errs) -> fail (concat errs ++ hetsUsage)
 
 -- TODO: implement some kind of sequence...
@@ -316,7 +322,7 @@ formOpts fs = do if (hasHelp fs)
 			    exitWith ExitSuccess
 		    else return () -- fall through
 		 if (hasVersion fs)
-		    then do putStrLn ("version of hetcats: " 
+		    then do putStrLn ("version of hets: " 
 				      ++ hetcats_version)
 			    exitWith ExitSuccess
 		    else return () -- fall through
@@ -331,9 +337,9 @@ formOpts fs = do if (hasHelp fs)
     hasHelp xs = Help `elem` xs
 
 extractOpts :: [Flag] -> HetcatsOpts -> HetcatsOpts
-extractOpts ((Verbose _):xs)  opts = extractOpts xs opts
 extractOpts ((Version):xs)    opts = extractOpts xs opts
 extractOpts ((Help):xs)       opts = extractOpts xs opts
+extractOpts ((Verbose x):xs)  opts = extractOpts xs opts { verbose = x }
 extractOpts ((InType x):xs)   opts = extractOpts xs opts { intype = x }
 extractOpts ((OutDir x):xs)   opts = extractOpts xs opts { outdir = x }
 extractOpts ((OutTypes x):xs) opts = extractOpts xs opts { outtypes = x }
@@ -418,13 +424,16 @@ collectOutTypes :: [Flag] -> [Flag]
 collectOutTypes fs =
     let (ots,fs') = partition isOType fs
 	otypes = foldl concatOTypes [] ots
-    in (OutTypes otypes):fs'
+	otypes' = if (null otypes) then [] else [(OutTypes otypes)]
+    in otypes' ++ fs'
     where
     isOType (OutTypes _) = True
     isOType _            = False
     concatOTypes os (OutTypes ot) = os ++ ot
     concatOTypes _ _ = hetsError Intern "Unknown Error in collectOutTypes"
 
+-- TODO: if there were OutDirs specified, and none of them are sane,
+-- we should warn the user instead of sticking to our defaults!
 collectOutDirs :: [Flag] -> IO [Flag]
 collectOutDirs fs =
     do let (ods,fs') = partition isOutDir fs
@@ -453,7 +462,7 @@ hetsUsage = usageInfo header options
 -- non really an error Message, but anyway...
 printOpts :: HetcatsOpts -> IO ()
 printOpts opts = 
-    let optString = "user called: hets " ++ (show opts)
+    let optString = "Options: " ++ (show opts)
     in putStrLn optString
 
 
