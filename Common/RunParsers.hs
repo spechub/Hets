@@ -37,12 +37,12 @@ toStringParser p ga =
 
 exec :: [(String, StringParser)] -> [(String, StringParser)] -> IO ()
 exec lps fps = do l <- getArgs
-		  if length l == 0 then 
+		  if null l then 
 		     parseSpec emptyGlobalAnnos $ snd  $ head $ fps
 		     else do let opt = head l
 				 lps' = filter (\(s, _) -> s == opt) lps
 				 fps' = filter (\(s, _) -> s == opt) fps
-			     ga <- if length l >= 1 then 
+			     ga <- if not $ null $ tail l then 
 				   do let annoFile = head (tail l)
 				      str <- readFile annoFile
 				      return $ addGlobalAnnos emptyGlobalAnnos 
