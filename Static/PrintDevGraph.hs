@@ -17,10 +17,9 @@ import Logic.Logic
 import Logic.Grothendieck
 import Syntax.AS_Library
 import Syntax.Print_AS_Library
+import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.Lib.Graph as Graph
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.PrettyPrint
 import Common.PPUtils
@@ -36,7 +35,8 @@ instance PrettyPrint LibEnv where
 printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> Doc
 printLibrary le (ln, (ga, ge, dg)) = 
     text libraryS <+> printText0 ga ln $$ 
-         vcat (map (printTheory le ga dg) $ Map.toList ge)
+         foldr (aboveWithNLs 2) P.empty 
+                   (map (printTheory le ga dg) $ Map.toList ge)
 
 printTheory :: LibEnv -> GlobalAnnos -> DGraph 
             -> (SIMPLE_ID, GlobalEntry) -> Doc
@@ -48,7 +48,6 @@ printTheory le ga dg (sn, ge) = case ge of
             Just (G_theory lid sign sens) ->
                 text specS <+> printText0 ga sn $$
                  printText0 ga sign $$ text "" $$
-                   vcat (map (print_named lid ga) sens)
+                   vsep (map (print_named lid ga . 
+                              mapNamed (simplify_sen lid sign)) sens)
     _ -> P.empty                             
-                       
-    
