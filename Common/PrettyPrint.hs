@@ -14,7 +14,7 @@
      
 -}
 
-module PrettyPrint 
+module Common.PrettyPrint 
     ( renderLatex
     , debugRenderLatex
     , renderText 
@@ -33,10 +33,10 @@ import Data.List (isPrefixOf)
 -- debugging
 -- import IOExts (trace)
 
-import Id
+import Common.Id
 import Common.Lib.Pretty
-import GlobalAnnotations
-import LaTeX_funs
+import Common.GlobalAnnotations
+import Common.LaTeX_funs
 
 
 -- This type class allows pretty printing of instantiating Datatypes

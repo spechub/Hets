@@ -9,7 +9,7 @@
 
 -}
 
-module LaTeX_maps where
+module Common.LaTeX_maps where
 
 import FiniteMap(listToFM,FiniteMap)
 

@@ -1,4 +1,4 @@
-{- HetCATS/LogicGraph.hs
+{- HetCATS/Syntax/LogicGraph.hs
    $Id$
    Till Mossakowski
    
@@ -25,11 +25,11 @@
 
 -}
 
-module LogicGraph
+module Syntax.LogicGraph
 where
 
-import Grothendieck
-import Logic_CASL  -- also serves as default logic
+import Logic.Grothendieck
+import CASL.Logic_CASL  -- also serves as default logic
 -- import Logic_HasCASL
 --import Logic_Haskell
 

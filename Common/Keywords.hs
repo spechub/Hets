@@ -12,7 +12,7 @@
    C.4 Lexical Syntax
 -}
 
-module Keywords where
+module Common.Keywords where
 
 import Prelude (String)
 

@@ -15,11 +15,11 @@
 
 -}
 
-module Lexer where
+module Common.Lexer where
 
-import Char (digitToInt)
-import Id (Token(..), place)
-import Monad (MonadPlus (mplus), liftM2)
+import Data.Char (digitToInt)
+import Common.Id (Token(..), place)
+import Control.Monad (MonadPlus (mplus), liftM2)
 import Common.Lib.Parsec
 
 -- ----------------------------------------------

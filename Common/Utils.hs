@@ -12,11 +12,11 @@
      - Add your own functions.
 -}
 
-module Utils where
+module Common.Utils where
 
-import List
+import Data.List
 
-import AS_Annotation
+import Common.AS_Annotation
 
 {- | 
   A function inspired by perls join function. It joins a list of

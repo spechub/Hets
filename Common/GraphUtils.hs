@@ -11,7 +11,7 @@
 
 -}
 
-module GraphUtils where
+module Common.GraphUtils where
 
 import Common.Lib.Graph
 

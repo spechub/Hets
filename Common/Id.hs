@@ -15,7 +15,7 @@
    This compound list follows the last non-place token! 
 -}
 
-module Id where
+module Common.Id where
 
 import Data.Char
 import Common.Lib.Parsec.Pos 

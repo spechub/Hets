@@ -7,16 +7,16 @@
    generically parse "<keyword>/<keywords> ITEM ; ... ; ITEM"
 -}
 
-module ItemList where
+module CASL.ItemList where
 
-import AnnoState
-import Id
-import Keywords
-import Lexer
-import AS_Annotation
+import Common.AnnoState
+import Common.Id
+import Common.Keywords
+import Common.Lexer
+import Common.AS_Annotation
 import Data.Maybe
 import Common.Lib.Parsec
-import Token
+import Common.Token
 import Data.List(delete)
 
 
@@ -27,9 +27,9 @@ asKey :: String -> AParser Token
 asKey s = wrapAnnos $ pToken $ toKey s
 
 anComma, commaT, anSemi, semiT :: AParser Token
-anComma = wrapAnnos Lexer.commaT
+anComma = wrapAnnos Common.Lexer.commaT
 commaT = anComma
-anSemi = wrapAnnos Lexer.semiT
+anSemi = wrapAnnos Common.Lexer.semiT
 semiT = anSemi
 
 equalT, colonT, lessT, dotT :: AParser Token
@@ -53,7 +53,7 @@ lineAnnos = addLineAnnos >> getAnnos
 
 -- optional semicolon followed by annotations on the same line
 optSemi :: AParser (Maybe Token, [Annotation])
-optSemi = do (a1, s) <- try $ bind (,) annos Lexer.semiT
+optSemi = do (a1, s) <- try $ bind (,) annos Common.Lexer.semiT
              a2 <- lineAnnos                         
              return (Just s, a1 ++ a2)
           <|> do a <- lineAnnos

@@ -1,6 +1,6 @@
 -- needs ghc -fglasgow-exts
 
-{- HetCATS/AS_Structured.hs
+{- HetCATS/Syntax/AS_Structured.hs
    $Id$
    Author: Klaus Lüttich
    Year:   2002
@@ -14,15 +14,15 @@
      - LaTeX Pretty Printing
 -}
 
-module AS_Structured where
+module Syntax.AS_Structured where
 
 -- DrIFT command:
 {-! global: UpPos !-}
 
-import Id
-import AS_Annotation
+import Common.Id
+import Common.AS_Annotation
 
-import Grothendieck
+import Logic.Grothendieck
 
 data SPEC = Basic_spec G_basic_spec 
 	  | Translation (Annoted SPEC) RENAMING 

@@ -2,11 +2,11 @@ module Main
 
 where
 
-import Parse_AS_Structured
+import Syntax.Parse_AS_Structured
 import System.Environment
 import Common.Lib.Parsec
-import LogicGraph
-import Print_HetCASL
+import Syntax.LogicGraph
+import Syntax.Print_HetCASL
 
 parsefile fname = do
   input <- readFile fname

@@ -6,10 +6,10 @@
    Generates a ParseFun as needed by Logic.hs
 -}
 
-module ParsecInterface
+module Logic.ParsecInterface
 where
 
-import Logic
+import Logic.Logic
 import Common.Lib.Parsec
 -- import Common.Lib.Parsec.Error
 

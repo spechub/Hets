@@ -11,11 +11,11 @@
 
 -}
 
-module Result where
+module Common.Result where
 
-import Id
+import Common.Id
 import Common.Lib.Parsec.Pos
-import PrettyPrint
+import Common.PrettyPrint
 import Common.Lib.Pretty
 
 data DiagKind = FatalError | Error | Warning | Hint deriving (Eq, Ord, Show)

@@ -24,7 +24,7 @@
 -- Export declarations
 -----------------------------------------------------------------------------
 
-module Sublogics ( -- datatypes
+module CASL.Sublogics ( -- datatypes
                    CASL_Sublogics(..),
                    CASL_Formulas(..),
 
@@ -73,12 +73,12 @@ module Sublogics ( -- datatypes
 -- Imports from other modules
 ------------------------------------------------------------------------------
 
-import Maybe ( catMaybes, fromJust, isJust, isNothing, mapMaybe )
+import Data.Maybe ( catMaybes, fromJust, isJust, isNothing, mapMaybe )
 import FiniteMap ( emptyFM, isEmptyFM, fmToList, listToFM )
-import Id ( Id, Pos )
-import AS_Annotation
-import AS_Basic_CASL
-import Sign
+import Common.Id ( Id, Pos )
+import Common.AS_Annotation
+import CASL.AS_Basic_CASL
+import CASL.Sign
 
 ------------------------------------------------------------------------------
 -- Datatypes for CASL sublogics

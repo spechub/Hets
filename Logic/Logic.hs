@@ -49,17 +49,17 @@
    
 -}
 
-module Logic where
+module Logic.Logic where
 
-import Id
-import GlobalAnnotations
+import Common.Id
+import Common.GlobalAnnotations
 import Common.Lib.Set
 import FiniteMap
 import Common.Lib.Graph
-import Result
-import Prover -- for one half of class Sentences
--- import IOExts(trace)
-import PrettyPrint
+import Common.Result
+import Logic.Prover -- for one half of class Sentences
+
+import Common.PrettyPrint
 import Data.Dynamic
 
 -- for coercion used in Grothendieck.hs and Analysis modules

@@ -9,7 +9,7 @@
 
 -}
 
-module Prover where
+module Logic.Prover where
 
 -- theories and theory morphisms
 

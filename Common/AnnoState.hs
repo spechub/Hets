@@ -7,11 +7,11 @@
    a state to collect annotations
 -}
 
-module AnnoState where
+module Common.AnnoState where
 
-import Lexer
-import AS_Annotation
-import Anno_Parser
+import Common.Lexer
+import Common.AS_Annotation
+import Common.Anno_Parser
 import Common.Lib.Parsec
 
 -- ----------------------------------------------

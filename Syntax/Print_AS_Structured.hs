@@ -1,6 +1,6 @@
 -- needs ghc -fglasgow-exts
 
-{- HetCATS/Print_AS_Structured.hs
+{- HetCATS/Syntax/Print_AS_Structured.hs
    $Id$
    Author: Klaus Lüttich
    Year:   2002
@@ -11,21 +11,18 @@
      - LaTeX Pretty Printing
 -}
 
-module Print_AS_Structured where
+module Syntax.Print_AS_Structured where
 
 import Common.Lib.Pretty
-import PrettyPrint
-import PPUtils
+import Common.PrettyPrint
+import Common.PPUtils
 
--- debugging stuff
---import IOExts (trace)
+import Logic.Grothendieck
 
-import Grothendieck
-
-import AS_Structured
-import Print_AS_Annotation
-import AS_Annotation
-import GlobalAnnotations
+import Syntax.AS_Structured
+import Common.Print_AS_Annotation
+import Common.AS_Annotation
+import Common.GlobalAnnotations
 import Data.List
 
 instance PrettyPrint SPEC where

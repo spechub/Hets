@@ -12,17 +12,17 @@
      - Add your own functions.
 -}
 
-module PPUtils (module PPUtils,module LaTeX_funs) where
+module Common.PPUtils (module Common.PPUtils,module Common.LaTeX_funs) where
  
-import Id
-import AS_Annotation
-import GlobalAnnotations
+import Common.Id
+import Common.AS_Annotation
+import Common.GlobalAnnotations
 
-import Print_AS_Annotation
+import Common.Print_AS_Annotation
 import Common.Lib.Pretty
-import PrettyPrint
+import Common.PrettyPrint
 
-import LaTeX_funs 		  
+import Common.LaTeX_funs 		  
 
 -- | 
 -- a helper class for calculating the pluralS of e.g. ops

@@ -1,4 +1,4 @@
-{- HetCATS/Print_AS_Library.hs
+{- HetCATS/Syntax/Print_AS_Library.hs
    $Id$
    Author: Klaus Lüttich
    Year:   2002
@@ -12,22 +12,22 @@
      - LaTeX Pretty Printing
 -}
 
-module Print_AS_Library where
+module Syntax.Print_AS_Library where
 
 -- debugging
 -- import IOExts (trace)
 
 import Common.Lib.Pretty
-import PrettyPrint
-import PPUtils
+import Common.PrettyPrint
+import Common.PPUtils
 
-import Id
-import qualified AS_Structured as AS_Struct 
-import AS_Library
+import Common.Id
+import qualified Syntax.AS_Structured as AS_Struct 
+import Syntax.AS_Library
 
-import Print_AS_Annotation
-import Print_AS_Architecture
-import Print_AS_Structured
+import Common.Print_AS_Annotation
+import Syntax.Print_AS_Architecture
+import Syntax.Print_AS_Structured
 
 instance PrettyPrint LIB_DEFN where
     printText0 ga (Lib_defn aa ab _ ad) =
@@ -89,7 +89,7 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 	let aa' = printText0 ga aa
 	    ab' = fsep $ punctuate comma $ map (printText0 ga) ab
 	in (hang (ptext "from" <+> aa' <+> ptext "get") 4 ab') <> ptext "\n"
-    printText0 ga (AS_Library.Logic_decl aa _) =
+    printText0 ga (Syntax.AS_Library.Logic_decl aa _) =
 	let aa' = printText0 ga aa
 	in ptext "logic" <+> aa' 
 
@@ -176,7 +176,7 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 			<\+> hc_sty_plain_keyword "get") 
 	               8 
 	               (tabbed_nest_latex ab')) <> latex_macro "\n"
-    printLatex0 ga (AS_Library.Logic_decl aa _) =
+    printLatex0 ga (Syntax.AS_Library.Logic_decl aa _) =
 	let aa' = printLatex0 ga aa
 	in hc_sty_plain_keyword "logic" <\+> aa' 
 

@@ -1,5 +1,5 @@
 
-{- HetCATS/GlobalLibraryAnnotations.hs
+{- HetCATS/Syntax/GlobalLibraryAnnotations.hs
    $Id$
    Author: Christian Maeder
    Year:   2002
@@ -8,11 +8,11 @@
 
 -}
 
-module GlobalLibraryAnnotations where
+module Syntax.GlobalLibraryAnnotations where
 
-import GlobalAnnotations(GlobalAnnos)
-import GlobalAnnotationsFunctions(emptyGlobalAnnos, addGlobalAnnos)
-import AS_Library(LIB_DEFN(Lib_defn))
+import Common.GlobalAnnotations(GlobalAnnos)
+import Common.GlobalAnnotationsFunctions(emptyGlobalAnnos, addGlobalAnnos)
+import Syntax.AS_Library(LIB_DEFN(Lib_defn))
 
 initGlobalAnnos :: LIB_DEFN -> GlobalAnnos
 initGlobalAnnos ld = setGlobalAnnos emptyGlobalAnnos ld

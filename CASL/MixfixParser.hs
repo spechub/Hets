@@ -15,24 +15,24 @@
                that stores the local ambiguity
 -}
 
-module MixfixParser ( parseString, resolveFormula, resolveMixfix
+module CASL.MixfixParser ( parseString, resolveFormula, resolveMixfix
 		    , getTokenList, expandPos )
     where 
-import AS_Basic_CASL 
-import GlobalAnnotations
-import Result
-import Id
+import CASL.AS_Basic_CASL 
+import Common.GlobalAnnotations
+import Common.Result
+import Common.Id
 import FiniteMap
 import Common.Lib.Set hiding (filter, split)
-import Lexer (caslChar)
+import Common.Lexer (caslChar)
 import Control.Monad
 import Common.Lib.Parsec
 import qualified Char as C
 import Data.List(intersperse)
-import PrettyPrint
-import Print_AS_Basic
-import GlobalAnnotationsFunctions
-import Formula(updFormulaPos)
+import Common.PrettyPrint
+import CASL.Print_AS_Basic
+import Common.GlobalAnnotationsFunctions
+import CASL.Formula(updFormulaPos)
 
 showTerm :: GlobalAnnos -> TERM -> String
 showTerm g t = show $ printText0 g t 

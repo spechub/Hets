@@ -9,18 +9,18 @@
    used Lexer, Keywords and Token rather than CaslLanguage 
 -}
 
-module Anno_Parser where
+module Common.Anno_Parser where
 
-import Common.Lib.Parsec
+import Common.Lib.Parsec hiding (label)
 import Common.Lib.Parsec.Error
 import Common.Lib.Parsec.Pos
 import Common.Lib.Parsec.Perm
 
-import Lexer
-import Token
+import Common.Lexer
+import Common.Token
 -- import CaslLanguage
-import Id
-import AS_Annotation
+import Common.Id
+import Common.AS_Annotation
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
@@ -43,7 +43,7 @@ commentGroup = do try (string "%{")
     where conv sp = incSourceColumn sp (-2)
 
 annote :: GenParser Char st Annotation
-annote = Anno_Parser.label <|> 
+annote = label <|> 
 	 do start_source_pos <- getPosition
 	    i <- try anno_ident
 	    anno <- ((annote_group i) <|> (annote_line i))

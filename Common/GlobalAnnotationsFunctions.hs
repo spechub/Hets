@@ -13,7 +13,7 @@
 -}
 
 
-module GlobalAnnotationsFunctions 
+module Common.GlobalAnnotationsFunctions 
     ( emptyGlobalAnnos, addGlobalAnnos
     , precRel, isLAssoc, isRAssoc, isAssoc, isLiteral, getLiteralType
     , store_prec_annos, store_assoc_annos
@@ -21,14 +21,14 @@ module GlobalAnnotationsFunctions
     ) 
     where
 
-import Id
-import AS_Annotation
-import Print_AS_Annotation
-import PrettyPrint
-import GlobalAnnotations
+import Common.Id
+import Common.AS_Annotation
+import Common.Print_AS_Annotation
+import Common.PrettyPrint
+import Common.GlobalAnnotations
 
 import Common.Lib.Graph
-import GraphUtils
+import Common.GraphUtils
 import FiniteMap
 
 import Data.List (nub,mapAccumL)

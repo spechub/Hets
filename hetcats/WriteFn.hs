@@ -12,14 +12,14 @@
 module WriteFn where
 
 import Options
--- import List
-import Utils
+
+import Common.Utils
 
 import Debug.Trace (trace)
 import System.IO
-import Print_HetCASL
-import AS_Library (LIB_DEFN()) 
-import GlobalLibraryAnnotations
+import Syntax.Print_HetCASL
+import Syntax.AS_Library (LIB_DEFN()) 
+import Syntax.GlobalLibraryAnnotations
 
 -- for debugging
 

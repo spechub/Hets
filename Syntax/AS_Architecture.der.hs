@@ -1,5 +1,5 @@
 
-{- HetCATS/AS_Architecture.hs
+{- HetCATS/Syntax/AS_Architecture.hs
    $Id$
    Author: Klaus Lüttich
    Year:   2002
@@ -13,13 +13,13 @@
      - LaTeX Pretty Printing
 -}
 
-module AS_Architecture where
+module Syntax.AS_Architecture where
 
-import Id
-import AS_Annotation
+import Common.Id
+import Common.AS_Annotation
 
-import AS_Structured
-import Grothendieck
+import Syntax.AS_Structured
+import Logic.Grothendieck
 
 {-! global : UpPos !-}
 

@@ -7,15 +7,15 @@
    may be needed for structured specs 
 -}
 
-module SymbolParser where
+module CASL.SymbolParser where
 
-import Id
-import Keywords
-import Lexer
-import AS_Basic_CASL
+import Common.Id
+import Common.Keywords
+import Common.Lexer
+import CASL.AS_Basic_CASL
 import Common.Lib.Parsec
-import Token
-import Formula
+import Common.Token
+import CASL.Formula
 
 -- ------------------------------------------------------------------------
 -- symbol

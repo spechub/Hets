@@ -26,7 +26,7 @@
 -- Export declarations
 -----------------------------------------------------------------------------
 
-module Static {-( basicAnalysis, statSymbMapItems, statSymbItems,
+module CASL.Static {-( basicAnalysis, statSymbMapItems, statSymbItems,
                 symbolToRaw, idToRaw, symOf, symmapOf, matches,
                 isSubSig, symName )-} where
 
@@ -38,16 +38,16 @@ import Data.Maybe
 import Control.Monad(foldM) -- instead of foldResult
 import FiniteMap
 import Common.Lib.Set hiding (filter)
-import Id
-import AS_Annotation
-import GlobalAnnotations
-import GlobalAnnotationsFunctions
-import AS_Basic_CASL
-import Sign
-import Result
-import Latin
-import Utils
-import Logic ( EndoMap )
+import Common.Id
+import Common.AS_Annotation
+import Common.GlobalAnnotations
+import Common.GlobalAnnotationsFunctions
+import CASL.AS_Basic_CASL
+import CASL.Sign
+import Common.Result
+import CASL.Latin
+import Common.Utils
+import Logic.Logic ( EndoMap )
 
 ------------------------------------------------------------------------------
 --
@@ -306,7 +306,7 @@ toFunKind False = Partial
 toFunKind _     = Total
 
 sortToSymbol :: SortId -> Symbol
-sortToSymbol s = Symbol s Sign.Sort
+sortToSymbol s = Symbol s CASL.Sign.Sort
 
 opTypeIdToSymbol :: OpType -> Id -> Symbol
 opTypeIdToSymbol typ idt = Symbol idt (OpAsItemType typ)
@@ -858,7 +858,7 @@ ana_OP_ITEM sigma _itm _pos =
 sig_COMPONENTS :: COMPONENTS -> [SortId]
 sig_COMPONENTS (Total_select   f_n s' _) = replicate (length f_n) s'
 sig_COMPONENTS (Partial_select f_n s' _) = replicate (length f_n) s'
-sig_COMPONENTS (AS_Basic_CASL.Sort s'  ) = [s']
+sig_COMPONENTS (CASL.AS_Basic_CASL.Sort s'  ) = [s']
 
 sig_COMPONENTS_list :: [COMPONENTS] -> [SortId]
 sig_COMPONENTS_list l = concat $ map sig_COMPONENTS l
@@ -912,7 +912,7 @@ ana_COMPONENTS ann s f ws (sigma,c) components top_pos =
         -> ana_select ann s f ws (sigma,c) f_n s' pos Total top_pos
       Partial_select f_n s' pos
         -> ana_select ann s f ws (sigma,c) f_n s' pos Partial top_pos
-      AS_Basic_CASL.Sort s'
+      CASL.AS_Basic_CASL.Sort s'
         -> (sigma,c ++ [Component Nothing (OpType Total [s'] s)
                                   (Just (toListPos top_pos))]))
 
@@ -1166,7 +1166,7 @@ isSubSig sub super =
 symbTypeToKind :: SymbType -> Kind
 symbTypeToKind (OpAsItemType _) = FunKind
 symbTypeToKind (PredType _)     = PredKind
-symbTypeToKind (Sign.Sort)      = SortKind
+symbTypeToKind (CASL.Sign.Sort)      = SortKind
 
 symbolToRaw :: Symbol -> RawSymbol
 symbolToRaw (Symbol idt typ) = AKindedId (symbTypeToKind typ) idt
@@ -1175,7 +1175,7 @@ idToRaw :: Id -> RawSymbol
 idToRaw x = AnID x
 
 sigItemToSymbol :: SigItem -> Symbol
-sigItemToSymbol (ASortItem s) = Symbol (sortId $ item s) Sign.Sort
+sigItemToSymbol (ASortItem s) = Symbol (sortId $ item s) CASL.Sign.Sort
 sigItemToSymbol (AnOpItem  o) = Symbol (opId $ item o)
                                        (OpAsItemType (opType $ item o))
 sigItemToSymbol (APredItem p) = Symbol (predId $ item p)
@@ -1185,7 +1185,7 @@ symOf :: Sign -> Set Symbol
 symOf sigma = fromList $ map sigItemToSymbol $ concat $ eltsFM $ getMap sigma
 
 idToSortSymbol :: Id -> Symbol
-idToSortSymbol idt = Symbol idt Sign.Sort
+idToSortSymbol idt = Symbol idt CASL.Sign.Sort
 
 idToOpSymbol :: Id -> OpType -> Symbol
 idToOpSymbol idt typ = Symbol idt (OpAsItemType typ)
@@ -1226,7 +1226,7 @@ symmapOf (Morphism src _ sorts funs preds) =
 matches :: Symbol -> RawSymbol -> Bool
 matches x                            (ASymbol y)              =  x==y
 matches (Symbol idt _)                (AnID di)               = idt==di
-matches (Symbol idt Sign.Sort)        (AKindedId SortKind di) = idt==di
+matches (Symbol idt CASL.Sign.Sort)        (AKindedId SortKind di) = idt==di
 matches (Symbol idt (OpAsItemType _)) (AKindedId FunKind di)  = idt==di
 matches (Symbol idt (PredType _))     (AKindedId PredKind di) = idt==di
 matches _                            _                        = False

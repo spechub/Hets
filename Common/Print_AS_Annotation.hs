@@ -10,18 +10,18 @@
       - LaTeX Pretty Printing
 -}
 
-module Print_AS_Annotation where
+module Common.Print_AS_Annotation where
 
 import Data.Char (isSpace)
 
-import AS_Annotation
+import Common.AS_Annotation
 
-import GlobalAnnotations
+import Common.GlobalAnnotations
 
-import Id (Id(..),splitMixToken)
-import PrettyPrint
+import Common.Id (Id(..),splitMixToken)
+import Common.PrettyPrint
 import Common.Lib.Pretty
-import LaTeX_funs
+import Common.LaTeX_funs
 
 infixl 6 <\\+>
 

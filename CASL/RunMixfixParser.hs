@@ -1,17 +1,17 @@
-module RunMixfixParser where
+module CASL.RunMixfixParser where
 
-import AnnoState
-import MixfixParser
-import AS_Basic_CASL
-import GlobalAnnotations
-import GlobalAnnotationsFunctions
+import Common.AnnoState
+import CASL.MixfixParser
+import CASL.AS_Basic_CASL
+import Common.GlobalAnnotations
+import Common.GlobalAnnotationsFunctions
 import Common.Lib.Set
-import Id
-import Result
+import Common.Id
+import Common.Result
 
-import Token
-import Formula
-import Anno_Parser
+import Common.Token
+import CASL.Formula
+import Common.Anno_Parser
 
 
 -- start testing

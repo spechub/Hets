@@ -61,11 +61,11 @@ TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR
    The IDs within the compound list may surely be compound IDs again.
 -}
 
-module Token where
+module Common.Token where
 
-import Keywords
-import Lexer
-import Id (Id(Id), Token(..), Pos, toPos, isPlace)
+import Common.Keywords
+import Common.Lexer
+import Common.Id (Id(Id), Token(..), Pos, toPos, isPlace)
 import Common.Lib.Parsec
 
 -- ----------------------------------------------

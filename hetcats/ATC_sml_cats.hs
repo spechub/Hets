@@ -23,29 +23,29 @@ module ATC_sml_cats (from_sml_ATerm,read_sml_ATerm) where
 -- for debugging only
 --import IOExts (trace)
 
-import List (isPrefixOf)
+import Data.List (isPrefixOf)
 
 import ATermLib
 
-import Utils
+import Common.Utils
 
-import Id
-import AS_Annotation
+import Common.Id
+import Common.AS_Annotation
 
-import AS_Basic_CASL
+import CASL.AS_Basic_CASL
 
-import Logic_CASL
-import Grothendieck
+import CASL.Logic_CASL
+import Logic.Grothendieck
 
-import AS_Structured
-import AS_Architecture
-import AS_Library
+import Syntax.AS_Structured
+import Syntax.AS_Architecture
+import Syntax.AS_Library
 
 -- the following module provides the ability to parse the "unparsed-anno"
 import Common.Lib.Parsec (parse,setPosition)
 import Common.Lib.Parsec.Pos (newPos)
-import qualified Anno_Parser (annotations,parse_anno)
-import Lexer(skip)
+import qualified Common.Anno_Parser (annotations,parse_anno)
+import Common.Lexer(skip)
 
 from_sml_ATerm :: ATermTable -> LIB_DEFN
 read_sml_ATerm :: FilePath -> IO LIB_DEFN
@@ -65,7 +65,7 @@ instance ATermConvertible Token where
                 in (Token aa' ab')
             (AAppl "place" [])  ->
                 let
-                aa' = Id.place
+                aa' = Common.Id.place
                 ab' = nullPos
                 in (Token aa' ab')
 	    _ -> fromATermError "Token" aterm
@@ -316,7 +316,7 @@ toAnnoList ai att = fromATerm $ getATermByIndexSp1 ai att
 
 parse_anno :: [Pos] -> String -> Annotation
 parse_anno pos_l inp =
-    case (parse (set_pos Anno_Parser.annotations) "" inp) of
+    case (parse (set_pos Common.Anno_Parser.annotations) "" inp) of
        Left err   -> error ("internal parse error at " ++ (show err))
        Right [x]  -> x
        Right _    -> error ("something strange happend to \"" ++
@@ -329,7 +329,7 @@ parse_anno pos_l inp =
 
 parse_disp_anno :: Id -> [Pos] -> String -> Annotation
 parse_disp_anno i pos_l inp =
-    case (Anno_Parser.parse_anno (Annote_group "display" [inp'] pos_l) sp) of
+    case (Common.Anno_Parser.parse_anno (Annote_group "display" [inp'] pos_l) sp) of
        Left err   -> error ("internal parse error at " ++ (show err))
        --Right [] -> error $ "No displayanno: " ++ inp' 
        Right x  -> x -- trace ("parsed display anno:" ++ show x) x
@@ -349,7 +349,7 @@ instance ATermConvertible BASIC_SPEC where
 	    (AAppl "basic-spec" [ aa ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
-		in (AS_Basic_CASL.Basic_spec aa')
+		in (CASL.AS_Basic_CASL.Basic_spec aa')
 	    _ -> fromATermError "BASIC_SPEC" aterm
 	where
 	    aterm = findATerm att' (map (getATermSp att') pat_list)
@@ -1221,7 +1221,7 @@ instance ATermConvertible SPEC where
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
 		aa'' = G_basic_spec CASL aa'
-		in group (AS_Structured.Basic_spec aa'') group_flag
+		in group (Syntax.AS_Structured.Basic_spec aa'') group_flag
 	    (AAppl "translation" [ aa,ab,_ ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
@@ -1870,7 +1870,7 @@ instance ATermConvertible LIB_ITEM where
 		as  = toAnnoList ad att
 		ac''= addLAnnoList as ac'
 		ad' = pos_l
-		in AS_Library.Spec_defn aa' ab' ac'' ad'
+		in Syntax.AS_Library.Spec_defn aa' ab' ac'' ad'
 	    (AAppl "view-defn" [ aa,ab,ac,ad,_ ])  ->
 		let  -- the annotation list is lost !!!!
 		aa' = fromATermSIMPLE_ID (getATermByIndexSp1 aa att)
@@ -1882,25 +1882,25 @@ instance ATermConvertible LIB_ITEM where
 {-		as  = toAnnoList ae att
 		ac''= addLAnnoList as ac'-}
 		ae' = pos_l
-		in (AS_Library.View_defn aa' ab' ac' ad'' ae')
+		in (Syntax.AS_Library.View_defn aa' ab' ac' ad'' ae')
 	    (AAppl "arch-spec-defn" [ aa,ab,_ ])  ->
 		let
 		aa' = fromATermSIMPLE_ID (getATermByIndexSp1 aa att)
 		ab' = fromATerm (getATermByIndexSp1 ab att)
 		ac' = pos_l
-		in (AS_Library.Arch_spec_defn aa' ab' ac')
+		in (Syntax.AS_Library.Arch_spec_defn aa' ab' ac')
 	    (AAppl "unit-spec-defn" [ aa,ab,_ ])  ->
 		let
 		aa' = fromATermSIMPLE_ID (getATermByIndexSp1 aa att)
 		ab' = fromATerm (getATermByIndexSp1 ab att)
 		ac' = pos_l
-		in (AS_Library.Unit_spec_defn aa' ab' ac')
+		in (Syntax.AS_Library.Unit_spec_defn aa' ab' ac')
 	    (AAppl "download-items" [ aa,ab,_ ])  ->
 		let
 		aa' = fromATerm (getATermByIndexSp1 aa att)
 		ab' = fromATerm (getATermByIndexSp1 ab att)
 		ac' = pos_l
-		in (AS_Library.Download_items aa' ab' ac')
+		in (Syntax.AS_Library.Download_items aa' ab' ac')
 	    _ -> fromATermError "LIB_ITEM" aterm
 	where
 	    aterm = findATerm att' (map (getATermSp att') pat_list)

@@ -24,7 +24,7 @@
 -}
 
 
-module LaTeX_funs (
+module Common.LaTeX_funs (
 		   space_latex_width,
 
 		   calc_line_length,
@@ -85,7 +85,7 @@ import Data.List (isPrefixOf)
 -- for the debug hack
 import Debug.Trace
 
-import LaTeX_maps
+import Common.LaTeX_maps
 import Common.Lib.Pretty
 
 infixl 6 <\+>, <~>

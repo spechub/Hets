@@ -1,5 +1,5 @@
 
-{- HetCATS/AS_Library.hs
+{- HetCATS/Syntax/AS_Library.hs
    $Id$
    Author: Klaus Lüttich
    Year:   2002
@@ -13,17 +13,17 @@
      - LaTeX Pretty Printing
 -}
 
-module AS_Library where
+module Syntax.AS_Library where
 
 -- DrIFT command:
 {-! global: UpPos !-}
 
-import Id
-import AS_Annotation
+import Common.Id
+import Common.AS_Annotation
 
-import qualified AS_Architecture
-import qualified AS_Structured
-import Grothendieck
+import qualified Syntax.AS_Architecture
+import qualified Syntax.AS_Structured
+import Logic.Grothendieck
 
 
 data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] [Pos] [Annotation]
@@ -36,28 +36,28 @@ data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] [Pos] [Annotation]
 {- for information on the list of Pos see the documentation in
    AS_Structured.hs and AS_Architecture.hs -}
 
-data LIB_ITEM = Spec_defn AS_Structured.SPEC_NAME 
-		          AS_Structured.GENERICITY 
-                          (Annoted AS_Structured.SPEC) 
+data LIB_ITEM = Spec_defn Syntax.AS_Structured.SPEC_NAME 
+		          Syntax.AS_Structured.GENERICITY 
+                          (Annoted Syntax.AS_Structured.SPEC) 
 			  [Pos]
 	      
-	      | View_defn AS_Structured.VIEW_NAME 
-		          AS_Structured.GENERICITY 
-			  AS_Structured.VIEW_TYPE 
-			  [AS_Structured.G_mapping]
+	      | View_defn Syntax.AS_Structured.VIEW_NAME 
+		          Syntax.AS_Structured.GENERICITY 
+			  Syntax.AS_Structured.VIEW_TYPE 
+			  [Syntax.AS_Structured.G_mapping]
 			  [Pos]
 
-	      | Arch_spec_defn AS_Architecture.ARCH_SPEC_NAME 
-		               (Annoted AS_Architecture.ARCH_SPEC) 
+	      | Arch_spec_defn Syntax.AS_Architecture.ARCH_SPEC_NAME 
+		               (Annoted Syntax.AS_Architecture.ARCH_SPEC) 
 			       [Pos]
 
-	      | Unit_spec_defn AS_Structured.SPEC_NAME 
-		               AS_Architecture.UNIT_SPEC 
+	      | Unit_spec_defn Syntax.AS_Structured.SPEC_NAME 
+		               Syntax.AS_Architecture.UNIT_SPEC 
 			       [Pos]
 
 	      | Download_items  LIB_NAME [ITEM_NAME_OR_MAP] [Pos] 
 		-- pos: "from","get",commas, opt "end"
-	      | Logic_decl AS_Structured.Logic_name [Pos]
+	      | Logic_decl Syntax.AS_Structured.Logic_name [Pos]
 		-- pos:  "logic", Logic_name
 		deriving (Show,Eq)
 
@@ -117,47 +117,47 @@ instance Ord LIB_NAME where
   ln1 <= ln2 = getLIB_ID ln1 <= getLIB_ID ln2
 
 -- functions for casts
-cast_S_L_Spec_defn :: AS_Structured.SPEC_DEFN -> LIB_ITEM 
-cast_L_S_Spec_defn :: LIB_ITEM  -> AS_Structured.SPEC_DEFN
+cast_S_L_Spec_defn :: Syntax.AS_Structured.SPEC_DEFN -> LIB_ITEM 
+cast_L_S_Spec_defn :: LIB_ITEM  -> Syntax.AS_Structured.SPEC_DEFN
 
-cast_S_L_Spec_defn (AS_Structured.Spec_defn x y z p) = 
-    (AS_Library.Spec_defn x y z p) 
+cast_S_L_Spec_defn (Syntax.AS_Structured.Spec_defn x y z p) = 
+    (Syntax.AS_Library.Spec_defn x y z p) 
 cast_S_L_Spec_defn _ = error "wrong constructor for \"cast_S_L_Spec_defn\""
 
-cast_L_S_Spec_defn (AS_Library.Spec_defn x y z p) =
-    (AS_Structured.Spec_defn x y z p)
+cast_L_S_Spec_defn (Syntax.AS_Library.Spec_defn x y z p) =
+    (Syntax.AS_Structured.Spec_defn x y z p)
 cast_L_S_Spec_defn _ = error "wrong constructor for \"cast_L_S_Spec_defn\""
 
-cast_S_L_View_defn :: AS_Structured.VIEW_DEFN -> LIB_ITEM 
-cast_L_S_View_defn :: LIB_ITEM  -> AS_Structured.VIEW_DEFN
+cast_S_L_View_defn :: Syntax.AS_Structured.VIEW_DEFN -> LIB_ITEM 
+cast_L_S_View_defn :: LIB_ITEM  -> Syntax.AS_Structured.VIEW_DEFN
 
-cast_S_L_View_defn (AS_Structured.View_defn w x y z p) = 
-    (AS_Library.View_defn w x y z p) 
+cast_S_L_View_defn (Syntax.AS_Structured.View_defn w x y z p) = 
+    (Syntax.AS_Library.View_defn w x y z p) 
 cast_S_L_View_defn _ = error "wrong constructor for \"cast_S_L_View_defn\""
 
-cast_L_S_View_defn (AS_Library.View_defn w x y z p) =
-    (AS_Structured.View_defn w x y z p)
+cast_L_S_View_defn (Syntax.AS_Library.View_defn w x y z p) =
+    (Syntax.AS_Structured.View_defn w x y z p)
 cast_L_S_View_defn _ = error "wrong constructor for \"cast_L_S_View_defn\""
 
-cast_A_L_Arch_spec_defn :: AS_Architecture.ARCH_SPEC_DEFN -> LIB_ITEM
-cast_L_A_Arch_spec_defn :: LIB_ITEM       -> AS_Architecture.ARCH_SPEC_DEFN
+cast_A_L_Arch_spec_defn :: Syntax.AS_Architecture.ARCH_SPEC_DEFN -> LIB_ITEM
+cast_L_A_Arch_spec_defn :: LIB_ITEM       -> Syntax.AS_Architecture.ARCH_SPEC_DEFN
 
-cast_A_L_Arch_spec_defn (AS_Architecture.Arch_spec_defn x y p) =
-    (AS_Library.Arch_spec_defn x y p)
+cast_A_L_Arch_spec_defn (Syntax.AS_Architecture.Arch_spec_defn x y p) =
+    (Syntax.AS_Library.Arch_spec_defn x y p)
 cast_A_L_Arch_spec_defn _ = 
     error "wrong constructor for \"cast_A_L_Arch_defn\""
 
-cast_L_A_Arch_spec_defn (AS_Library.Arch_spec_defn x y p) =
-    (AS_Architecture.Arch_spec_defn x y p)
+cast_L_A_Arch_spec_defn (Syntax.AS_Library.Arch_spec_defn x y p) =
+    (Syntax.AS_Architecture.Arch_spec_defn x y p)
 cast_L_A_Arch_defn _ = error "wrong constructor for \"cast_L_A_Arch_defn\""
 
-cast_A_L_Unit_spec_defn :: AS_Architecture.UNIT_SPEC_DEFN -> LIB_ITEM
-cast_L_A_Unit_spec_defn :: LIB_ITEM       -> AS_Architecture.UNIT_SPEC_DEFN
+cast_A_L_Unit_spec_defn :: Syntax.AS_Architecture.UNIT_SPEC_DEFN -> LIB_ITEM
+cast_L_A_Unit_spec_defn :: LIB_ITEM       -> Syntax.AS_Architecture.UNIT_SPEC_DEFN
 
-cast_A_L_Unit_spec_defn (AS_Architecture.Unit_spec_defn x y p) =
-    (AS_Library.Unit_spec_defn x y p)
+cast_A_L_Unit_spec_defn (Syntax.AS_Architecture.Unit_spec_defn x y p) =
+    (Syntax.AS_Library.Unit_spec_defn x y p)
 cast_A_L_Unit_defn _ = error "wrong constructor for \"cast_A_L_Unit_defn\""
 
-cast_L_A_Unit_spec_defn (AS_Library.Unit_spec_defn x y p) =
-    (AS_Architecture.Unit_spec_defn x y p)
+cast_L_A_Unit_spec_defn (Syntax.AS_Library.Unit_spec_defn x y p) =
+    (Syntax.AS_Architecture.Unit_spec_defn x y p)
 cast_L_A_Spec_defn _ = error "wrong constructor for \"cast_L_A_Unit_defn\""

@@ -1,5 +1,5 @@
 
-{- HetCATS/Print_AS_Architecture.hs
+{- HetCATS/Syntax/Print_AS_Architecture.hs
    $Id$
    Author: Klaus Lüttich
    Year:   2002
@@ -12,22 +12,22 @@
      - LaTeX Pretty Printing
 -}
 
-module Print_AS_Architecture where
+module Syntax.Print_AS_Architecture where
 
 import Common.Lib.Pretty
-import PrettyPrint
-import PPUtils
+import Common.PrettyPrint
+import Common.PPUtils
 
-import AS_Architecture
+import Syntax.AS_Architecture
 
-import Id
-import Print_AS_Annotation
-import Print_AS_Structured
+import Common.Id
+import Common.Print_AS_Annotation
+import Syntax.Print_AS_Structured
 
 
 import Data.List
 
-import Grothendieck
+import Logic.Grothendieck
 
 {-
 instance PrettyPrint ARCH_SPEC_DEFN where

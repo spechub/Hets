@@ -1,14 +1,14 @@
-module Sign where
+module CASL.Sign where
 
 -- $Id$
 
-import Id
-import AS_Annotation
+import Common.Id
+import Common.AS_Annotation
 import FiniteMap
 import Common.Lib.Graph
 import Data.List(intersperse)
 import Data.Maybe(mapMaybe)
-import GlobalAnnotations()
+import Common.GlobalAnnotations()
 
 type SortId = Id  -- non-mixfix, but possibly compound
 

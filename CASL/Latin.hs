@@ -1,10 +1,10 @@
 -- |
 -- > $Id$
 
-module Latin ( toASCII, fromASCII ) where
+module CASL.Latin ( toASCII, fromASCII ) where
 
-import List 
-import Char
+import Data.List 
+import Data.Char
 
 -- convert all LATIN-1 symbol to ASCII representations
 --  useful for generating lowlevel labels from identifiers

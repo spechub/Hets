@@ -6,9 +6,9 @@
 
 -}
 
-module ShowMixfix where
+module CASL.ShowMixfix where
 
-import AS_Basic_CASL
+import CASL.AS_Basic_CASL
 
 showTERM :: TERM -> String
 showTERM t = "bla"

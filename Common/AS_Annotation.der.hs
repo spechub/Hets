@@ -13,8 +13,8 @@
       - LaTeX Pretty Printing
 -}
 
-module AS_Annotation where
-import Id
+module Common.AS_Annotation where
+import Common.Id
 
 -- DrIFT command
 {-! global: UpPos !-}

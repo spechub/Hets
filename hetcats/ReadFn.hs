@@ -14,7 +14,7 @@ module ReadFn where
 import Options
 
 import ATC_sml_cats
-import AS_Library
+import Syntax.AS_Library
 
 read_LIB_DEFN :: HetcatsOpts -> IO LIB_DEFN
 read_LIB_DEFN opt = read_sml_ATerm (infile opt)

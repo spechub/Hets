@@ -35,19 +35,19 @@
    and all brackets must be balanced in "b1 b2" (the empty list).
 -}
 
-module Formula (term, formula, restrictedTerm, restrictedFormula
+module CASL.Formula (term, formula, restrictedTerm, restrictedFormula
 	       , varDecl, opSort, opFunSort, opType, predType, predUnitType
 	       , updFormulaPos) 
     where
 
-import AnnoState
-import Id
-import Keywords
-import Lexer
-import Token
-import AS_Basic_CASL
+import Common.AnnoState
+import Common.Id
+import Common.Keywords
+import Common.Lexer
+import Common.Token
+import CASL.AS_Basic_CASL
 import Common.Lib.Parsec
-import ItemList
+import CASL.ItemList
 
 simpleTerm :: [String] -> AParser TERM
 simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString 

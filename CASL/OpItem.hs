@@ -13,18 +13,18 @@
    C.2.1 Basic Specifications with Subsorts
 -}
 
-module OpItem where
+module CASL.OpItem where
 
-import AnnoState
-import Id
-import Keywords
-import Lexer
-import AS_Basic_CASL
-import AS_Annotation
+import Common.AnnoState
+import Common.Id
+import Common.Keywords
+import Common.Lexer
+import CASL.AS_Basic_CASL
+import Common.AS_Annotation
 import Common.Lib.Parsec
-import Token
-import Formula
-import ItemList
+import Common.Token
+import CASL.Formula
+import CASL.ItemList
 import Data.List
 
 -- stupid cast

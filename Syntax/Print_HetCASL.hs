@@ -1,5 +1,5 @@
 
-{- HetCATS/Print_HetCASL.hs
+{- HetCATS/Syntax/Print_HetCASL.hs
    $Id$
    Author: Klaus Lüttich
    Year:   2002
@@ -12,16 +12,16 @@
 
 -}
 
-module Print_HetCASL where
+module Syntax.Print_HetCASL where
 
 import Common.Lib.Pretty
-import PrettyPrint
-import PPUtils (calc_line_length)
-import GlobalAnnotationsFunctions(emptyGlobalAnnos)
-import GlobalLibraryAnnotations
+import Common.PrettyPrint
+import Common.PPUtils (calc_line_length)
+import Common.GlobalAnnotationsFunctions(emptyGlobalAnnos)
+import Syntax.GlobalLibraryAnnotations
 
-import AS_Library
-import Print_AS_Library
+import Syntax.AS_Library
+import Syntax.Print_AS_Library
 
 printLIB_DEFN_text :: LIB_DEFN -> String
 printLIB_DEFN_text ld = renderText Nothing $ printText ga ld

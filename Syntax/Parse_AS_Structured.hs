@@ -1,5 +1,5 @@
 
-{- HetCATS/Parse_AS_Structured.hs
+{- HetCATS/Syntax/Parse_AS_Structured.hs
    $Id$
    Author: Till Mossakowski, Christian Maeder
    Year:   2002/2003
@@ -18,30 +18,30 @@
     arch specs
 -}
 
-module Parse_AS_Structured where
+module Syntax.Parse_AS_Structured where
 
-import Grothendieck
-import Logic
+import Logic.Grothendieck
+import Logic.Logic
 
-import Logic_CASL  -- we need the default logic
+import CASL.Logic_CASL  -- we need the default logic
 
-import AS_Structured
-import AS_Library
-import AS_Annotation
-import Anno_Parser
-import Id(tokPos)
-import Keywords
-import Lexer
-import Token
+import Syntax.AS_Structured
+import Syntax.AS_Library
+import Common.AS_Annotation
+import Common.Anno_Parser
+import Common.Id(tokPos)
+import Common.Keywords
+import Common.Lexer
+import Common.Token
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Char (digit)
-import Id
+import Common.Id
 import Data.List
 
 import Data.Maybe(maybeToList)
 
-import Print_AS_Structured  -- for test purposes
-import Print_HetCASL
+import Syntax.Print_AS_Structured  -- for test purposes
+import Syntax.Print_HetCASL
 
 ------------------------------------------------------------------------
 -- annotation adapter
@@ -408,7 +408,8 @@ libItem l = -- spec defn
        e <- asKey equalS
        a <- aSpec l
        q <- optEnd
-       return (AS_Library.Spec_defn n g a (map tokPos ([s, e] ++ maybeToList q)))
+       return (Syntax.AS_Library.Spec_defn n g a 
+	       (map tokPos ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS
        vn <- simpleId
@@ -420,7 +421,7 @@ libItem l = -- spec defn
                             (m, ps) <- parseMapping l
                             return (m,[s]))          
        q <- optEnd
-       return (AS_Library.View_defn vn g vt symbMap 
+       return (Syntax.AS_Library.View_defn vn g vt symbMap 
                     (map tokPos ([s1,s2] ++ ps ++ maybeToList q)))
   <|> -- download
     do s1 <- asKey fromS

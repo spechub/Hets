@@ -13,26 +13,26 @@
        and also prec-, lassoc- and rassoc-annotations
 -}
 
-module Print_AS_Basic where
+module CASL.Print_AS_Basic where
 
 -- debugging
 import Data.List (mapAccumL)
 import Data.Char (isDigit)
 
-import Id
-import AS_Basic_CASL
-import AS_Annotation
-import GlobalAnnotations
-import GlobalAnnotationsFunctions (precRel,isLAssoc,isRAssoc
+import Common.Id
+import CASL.AS_Basic_CASL
+import Common.AS_Annotation
+import Common.GlobalAnnotations
+import Common.GlobalAnnotationsFunctions (precRel,isLAssoc,isRAssoc
 				  ,nullStr,nullList,bracketList)
-import LiteralFuns
+import CASL.LiteralFuns
 
-import Print_AS_Annotation
+import Common.Print_AS_Annotation
 
-import Keywords
+import Common.Keywords
 import Common.Lib.Pretty
-import PrettyPrint
-import PPUtils
+import Common.PrettyPrint
+import Common.PPUtils
 
 instance PrettyPrint BASIC_SPEC where
     printText0 ga (Basic_spec l) = 

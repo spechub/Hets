@@ -47,7 +47,7 @@ OTYPE is (pp.(het|tex|html))|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)|
 module Options where
 
 import Version
-import Utils
+import Common.Utils
 
 import System.Directory
 import System.Environment

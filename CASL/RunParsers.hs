@@ -7,16 +7,16 @@
    test some parsers (and printers)
 -}
 
-module RunParsers (exec, HetParser(HetParser)) where 
+module CASL.RunParsers (exec, HetParser(HetParser)) where 
 
-import AnnoState
-import Lexer((<<))
+import Common.AnnoState
+import Common.Lexer((<<))
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Pos
-import PrettyPrint
+import Common.PrettyPrint
 import Common.Lib.Pretty
 import System.Environment
-import RunMixfixParser (stdAnnos)
+import CASL.RunMixfixParser (stdAnnos)
 
 data HetParser = forall a. PrettyPrint a => 
 		 HetParser (AParser a)

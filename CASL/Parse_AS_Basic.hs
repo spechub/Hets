@@ -12,21 +12,21 @@
    C.2.1 Basic Specifications with Subsorts
 -}
 
-module Parse_AS_Basic where
+module CASL.Parse_AS_Basic where
 
-import AnnoState
-import Id
-import Keywords
-import Lexer
-import AS_Basic_CASL
-import AS_Annotation
+import Common.AnnoState
+import Common.Id
+import Common.Keywords
+import Common.Lexer
+import CASL.AS_Basic_CASL
+import Common.AS_Annotation
 import Data.Maybe
 import Common.Lib.Parsec
-import Formula
-import SortItem
-import OpItem
-import TypeItem
-import ItemList
+import CASL.Formula
+import CASL.SortItem
+import CASL.OpItem
+import CASL.TypeItem
+import CASL.ItemList
 
 -- ------------------------------------------------------------------------
 -- sigItems
@@ -72,7 +72,7 @@ basicItems = fmap Sig_items sigItems
 
 varItems :: AParser ([VAR_DECL], [Token])
 varItems = do v <- varDecl
-	      do s <- try (addAnnos >> Lexer.semiT << addLineAnnos)
+	      do s <- try (addAnnos >> Common.Lexer.semiT << addLineAnnos)
 		 do tryItemEnd startKeyword
 		    return ([v], [s])
 	           <|> 

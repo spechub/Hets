@@ -13,10 +13,10 @@
      - Pretty printing
 -}
 
-module AS_Basic_CASL where
+module CASL.AS_Basic_CASL where
 
-import Id
-import AS_Annotation 
+import Common.Id
+import Common.AS_Annotation 
 import Data.Dynamic
 
 -- DrIFT command

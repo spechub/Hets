@@ -32,15 +32,15 @@
 
 -}
 
-module Grothendieck where
+module Logic.Grothendieck where
 
-import Logic
-import LogicRepr
-import PrettyPrint
+import Logic.Logic
+import Logic.LogicRepr
+import Common.PrettyPrint
 import Common.Lib.Pretty
-import PPUtils (fsep_latex, comma_latex)
-import Result
-import Id
+import Common.PPUtils (fsep_latex, comma_latex)
+import Common.Result
+import Common.Id
 import Data.Dynamic
 
 ------------------------------------------------------------------

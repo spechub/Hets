@@ -12,9 +12,9 @@
 
 -}
 
-module GlobalAnnotations where
+module Common.GlobalAnnotations where
 
-import Id
+import Common.Id
 
 import Common.Lib.Graph
 import FiniteMap

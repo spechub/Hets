@@ -11,7 +11,7 @@
 -}
 
 
-module LiteralFuns ( LiteralFuns.isLiteral
+module CASL.LiteralFuns ( CASL.LiteralFuns.isLiteral
 		   , isNumber
 		   , isSignedNumber
 		   , isString
@@ -29,17 +29,17 @@ import Debug.Trace (trace)
 
 import Data.Char (isDigit)
 
-import Id
-import AS_Basic_CASL
-import GlobalAnnotations
-import GlobalAnnotationsFunctions (isLiteral,getLiteralType		   
+import Common.Id
+import CASL.AS_Basic_CASL
+import Common.GlobalAnnotations
+import Common.GlobalAnnotationsFunctions (isLiteral,getLiteralType		   
 				  , nullList, nullStr
 				  )
 
 
 isLiteral :: GlobalAnnos -> Id -> [TERM] -> Bool
 isLiteral ga i trm =
-    if GlobalAnnotationsFunctions.isLiteral (literal_map ga) i 
+    if Common.GlobalAnnotationsFunctions.isLiteral (literal_map ga) i 
     then or [ isNumber ga i trm 
 	    , isString ga i trm
 	    , isList   ga i trm

@@ -11,7 +11,7 @@
 module Main where
 
 import Options
-import System
+import System.Environment
 
 import ReadFn
 import WriteFn

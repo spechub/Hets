@@ -17,9 +17,9 @@
    reprs out of sublogic relationships
 -}
 
-module LogicRepr where
+module Logic.LogicRepr where
 
-import Logic
+import Logic.Logic
 import Common.Lib.Set
 import Data.Maybe(catMaybes)
 import Data.Dynamic
