@@ -11,6 +11,10 @@ Portability :  portable
 The symbol map analysis for the CASL logic
 
 todo:
+
+remove identity subsort relations resulting from non-injective renaming
+(or add them to ALL signatures)
+
 overloading stuff is missing (wait for Martin's implementation of leqF and leqP)
 
 Hets allows to totalize operations with renamings: 
