@@ -24,8 +24,9 @@ import HasCASL.Reader
 
 anaAlts :: Type -> [Alternative] -> ReadR (ClassMap, TypeMap) [AltDefn]
 anaAlts dt alts = do l <- foldReadR (anaAlt dt) alts
-		     -- check for disjoint constructor names 
-		     return l
+		     lift $ Result (checkUniqueness $ map 
+				    ( \ (Construct i _ _) -> i) l) 
+				    $ Just l
 
 anaAlt :: Type -> Alternative -> ReadR (ClassMap, TypeMap) AltDefn 
 anaAlt _ (Subtype ts ps) = 
@@ -40,7 +41,8 @@ anaAlt dt (Constructor i cs p _) =
            sels = concatMap snd newCs
 	   con = Construct i (simpleTypeScheme prt) sels
 	   -- check for disjoint selectors 
-       return con
+       lift $ Result (checkUniqueness $ map ( \ (Select s _) -> s ) sels)
+	    $ Just con
 
 addPartiality :: Partiality -> Type -> Type
 addPartiality Total t = t		 
@@ -66,8 +68,8 @@ anaComp con rt (NoSelector t, i) =
     do (k, ct) <- anaType (star, t) 
        checkKindsR t star k
        return (ct, [Select (simpleIdToId $ mkSimpleId 
-			    (showPretty rt "." ++ 
-			     showId con ".sel_" ++ show i))
+			    ("%(" ++ showPretty rt "." ++ 
+			     showId con ".sel_" ++ show i ++ ")%"))
 		    $ simpleTypeScheme $ FunType rt PFunArr ct []]) 
 
 anaComp con rt (NestedComponents cs ps, i) =

@@ -47,7 +47,8 @@ getUninstOpId :: TypeScheme -> OpId -> State Env (UninstOpId, TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
     do let newArgs = args ++ tvs
            sc = TypeScheme newArgs q ps
-       appendDiags $ checkDifferentTypeArgs newArgs
+       appendDiags $ checkUniqueness
+		       $ map (\ (TypeArg i _ _ _) -> i) newArgs
        (k, newSc) <- anaTypeScheme sc
        checkKindsS i star k
        return (i, newSc)
