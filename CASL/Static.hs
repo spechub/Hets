@@ -48,6 +48,7 @@ import CASL.Sign
 import Common.Result
 import CASL.Latin
 import Common.Utils
+import Common.Named
 
 ------------------------------------------------------------------------------
 --
@@ -60,9 +61,7 @@ type Filename = String
 data GlobalVars = Global { global :: [VarDecl] }
                   deriving (Eq,Show)
 
-data NamedSentence = NamedSen { senName  :: String,
-                                sentence :: Sentence }
-                     deriving (Eq,Show)
+type NamedSentence = Named Sentence
 
 data Sentences = Sentences { sentences :: [NamedSentence] }
                  deriving (Eq,Show)
