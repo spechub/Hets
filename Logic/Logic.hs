@@ -123,9 +123,9 @@ class (Language lid, Eq sign, Show sign, Eq morphism, Show morphism) =>
 
 -- abstract syntax, parsing and printing
 
-type ParseFun a = FilePath -> Int -> Int -> String -> (a,String,Int,Int)
-                  -- args: filename, line, column, input text
-                  -- result: value, remaining text, line, column 
+type ParseFun a = Pos -> String -> (a,String, Pos)
+                  -- args: start pos (including file name), input text
+                  -- result: value, remaining text, end pos
 
 class (Language lid, PrettyPrint basic_spec,
        PrettyPrint symb_items, Eq symb_items,

@@ -285,14 +285,11 @@ specE l = do lookAhead (try (oBraceT >> cBraceT)) -- avoid overlap with group sp
 callParser p name itemType = do
     s <- getInput
     pos <- getPosition
-    (x,rest,line,col) <- case p of 
+    (x,rest,pos') <- case p of 
 	 Nothing -> fail ("no "++itemType++" parser for language " 
 			    ++ name)
-	 Just p -> return (p (sourceName pos)
-                              (sourceLine pos)
-                              (sourceColumn pos) s)
+	 Just pa -> return (pa pos s)
     setInput rest
-    let pos' = setSourceColumn (setSourceLine pos line) col
     setPosition pos'
     return x
 
