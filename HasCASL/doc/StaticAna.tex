@@ -1,0 +1,153 @@
+\documentclass{article}
+
+\parindent 0pt
+\parskip 5pt
+
+\begin{document}
+
+\section{Preliminaries}
+
+see the documentation for HetCATS and CASL
+
+\section{HasCASL Parser}
+The HasCASL parser reuses the token parser from CASL \texttt{(HToken.hs)} as
+well as ids and annotations from the top-level HetCATS directory.
+
+The concrete syntax of HasCASL is given as plain text in
+\texttt{Concrete-Syntax.txt}. The abstract syntax is given in
+\texttt{As.hs}. The document \texttt{Abstract-Syntax.txt} is out-dated and was
+indented as human readable abstract syntax.
+
+The data types in \texttt{As.hs} usually contain alternatives (Haskell
+constructors) for different representation before and after the static
+analysis, because an application usually requires a mixfix analysis that
+depends on a global environment. Parsing alone only depends on its input
+(and not on any global information).
+
+\section{Static Analysis}
+
+HasCASL entities are -- in hierarchical
+order -- kinds, types and terms, where predicate types and formulae are
+special cases of types respectively. terms.
+
+Kinds are constructed from classes, types from type
+constructors and terms from values, i.e. operations or predicates.
+
+Classes, type constructors and values may be declared by giving them a name.
+A type constructors must at least be declared with a kind and a value with a
+type. (An implicit kind will always be the universe class \texttt{Type}.)
+
+Usually declarations are extended with further properties or even a unique
+definition.
+
+In opposition to the hierarchy a class can be defined as a downset of a type
+and a subtype can be defined via a predicate.
+
+\subsection{Classes}
+
+The major representation of a class is given by an intersection class over
+class names only. The universe class \texttt{Type} is simply an empty
+intersection. Nested intersection classes are flattened already by the
+parser. A trivial intersection class is a single class name.
+
+\subsubsection*{Kinds of declarations}
+\begin{itemize}
+\item A class name can be declared as a subclass of an intersection class. If
+  this intersection class is trivial then the superclass name is also regarded
+  as new or repeated declaration.
+  
+  A cyclic subclass relation is prohibited, although it may make sense
+  that all classes are regarded as equal.
+\item A class name may be defined as an intersection class. This means that
+  all class names of the intersection class are super classes. Only a trivial
+  intersection class introduces a proper class synonym.
+\item A class name may be defined as a downset of a type, comprising all
+  subtypes of the given type. (The variable name for the subtype is ignored.)
+  
+  The downset of a type is expected to be a subclass of the downset of a
+  supertype.
+\end{itemize}
+
+\subsubsection*{Remarks}
+
+Anonymous downsets (from variable or type declarations) and intersection
+classes are incomparable and cannot be combined. (However a unique class name
+could be generated from the type or an existing class name could be looked up
+via comparing types.)
+
+Class names are currently simple ids, that is, they cannot be compound ids.
+Since types may be parameter compound ids a downset definition will become
+ambiguous for two instances.
+
+Class declarations may be repeated, sub- and superclass declarations are
+accumulated as long as they are non-cyclic.
+
+Class definitions may be repeated, if they remain equal. (Currently, different
+intersection definitions are merged together which is wrong for class
+synonyms.) 
+
+All redeclarations issue a warning.
+
+The optional list of basic-items and the ``\texttt{instance}''-tag for a class
+are currently ignored. These basic-items will be simply treated recursively.
+
+\subsection{Kinds}
+
+There are two builtin kind constructors ($\to$ and $\times$), but these only
+control the notation of type constructor applications, for mixfix type ids
+only the overall arity of the kind matters. 
+
+The arguments of a kind may be again kinds (to support constructor classes
+later on) or classes with a co-/contra-variance inducing further subtype
+(not subclass) relations. 
+
+\subsection{Types}
+
+Builtin type constructors are 4 different function arrows (partiality combined
+with continuity), products (in tuple or $\times$ notation) and the lazy
+prefix type constructor ``$?$''.
+
+Type constructors names are declared with a kind. These names may be mixfix
+ids, but in order to avoid a mixfix analysis for types, these names should be
+simple. Instead the parser resolves types as follows:
+
+\begin{itemize}
+\item function arrows have lowest infix priority and associate to the right
+\item next come products with infix $\times$ notation
+\item next comes lazy type construction
+\end{itemize}
+
+Everything to the left of $?$ until another $?$, $\times$ or arrow is regarded
+as mixfix type. Simple cases of such types are the following:
+
+\begin{itemize}
+\item A single token is taken as nullary type constructor name
+\item empty braces or brackets are taken as an id (with two tokens) as above
+\item braces or brackets with one argument refer to an unary outfix type
+  constructor $\{\_\_\}$ or $[\_\_]$.
+\item braces or brackets with more arguments are considered illegal.
+\item parenthesis are taken as product types or as parenthesizing of a single
+  type. The empty product is the builtin type alias \texttt{Unit}.
+\end{itemize}
+
+Mixfix type expressions with several components are simply regarded as
+unparenthesized prefix applications provided that the first component is a
+token (taken as type constructor id). 
+
+Square brackets with several arguments could be taken as compound lists for a
+preceding token. (Singleton compound lists are not supported, but regarded as
+type construction, ie. for the list type.)
+
+Also for simplicity type names should not be overloaded. It is open if HasCASL
+should allow such overloading at all, but analysis of types and terms would
+become more consistent if mixfix analysis and overload resolution is equally
+treated for both types and terms. (With a mixfix analysis for types the
+parsing of types could be simplified.)
+
+Overloaded type names should have different/incompatible kinds. 
+
+\end{document}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
