@@ -15,13 +15,17 @@
 
 -}
 
-module LogicStructured where
+module LogicStructured ( -- SPEC -> Maybe G_Sublogics
+                         min_sublogic_spec,
+                         -- LIB_DEFN -> Maybe G_Sublogics
+                         min_sublogic_lib
+                       ) where
 
 import Maybe
 import Id
 import AS_Structured
 import AS_Architecture
-import AS_Library
+import qualified AS_Library
 import AS_Annotation
 import Logic
 import Grothendieck
@@ -46,24 +50,21 @@ map_logics :: [Maybe G_sublogics] -> Maybe G_sublogics
 map_logics [] = Nothing
 map_logics (h:t) = foldr top_logics h t
 
--- FIXME
--- move to shared file with common functions
-strip_anno :: Annoted a -> a
-strip_anno x = item x
+-- functions on datatypes from AS_Structured
 
 sl_spec :: SPEC -> Maybe G_sublogics
 sl_spec (Basic_spec (G_basic_spec i b)) = 
   Just (G_sublogics i (min_sublogic_basic_spec i b))
-sl_spec (Translation s r) = top_logics (sl_spec $ strip_anno s) (sl_renaming r)
-sl_spec (Reduction s r) = top_logics (sl_spec $ strip_anno s) (sl_restriction r)
-sl_spec (Union l _) = map_logics $ map sl_spec $ map strip_anno l
-sl_spec (Extension l _) = map_logics $ map sl_spec $ map strip_anno l
-sl_spec (Free_spec s _) = sl_spec $ strip_anno s
-sl_spec (Local_spec a b _) = top_logics (sl_spec $ strip_anno a)
-                                        (sl_spec $ strip_anno b)
-sl_spec (Group s _) = sl_spec $ strip_anno s
-sl_spec (Spec_inst _ l) = map_logics $ map sl_fit_arg $ map strip_anno l
-sl_spec (Qualified_spec _ s _) = sl_spec $ strip_anno s
+sl_spec (Translation s r) = top_logics (sl_spec $ item s) (sl_renaming r)
+sl_spec (Reduction s r) = top_logics (sl_spec $ item s) (sl_restriction r)
+sl_spec (Union l _) = map_logics $ map sl_spec $ map item l
+sl_spec (Extension l _) = map_logics $ map sl_spec $ map item l
+sl_spec (Free_spec s _) = sl_spec $ item s
+sl_spec (Local_spec a b _) = top_logics (sl_spec $ item a)
+                                        (sl_spec $ item b)
+sl_spec (Group s _) = sl_spec $ item s
+sl_spec (Spec_inst _ l) = map_logics $ map sl_fit_arg $ map item l
+sl_spec (Qualified_spec _ s _) = sl_spec $ item s
 
 sl_renaming :: RENAMING -> Maybe G_sublogics
 sl_renaming (Renaming l _) = map_logics $ map sl_g_mapping l
@@ -155,27 +156,53 @@ sl_g_symb_map_items_list (G_symb_map_items_list i l) =
   (G_sublogics i (foldr meet top ((map (min_sublogic_symb_map_items i)) l)))
   
 sl_spec_defn :: SPEC_DEFN -> Maybe G_sublogics
-sl_spec_defn (AS_Structured.Spec_defn _ g s _) = top_logics (sl_genericity g)
-                                                 (sl_spec $ strip_anno s)
+sl_spec_defn (Spec_defn _ g s _) = top_logics (sl_genericity g)
+                                              (sl_spec $ item s)
 
 sl_genericity :: GENERICITY -> Maybe G_sublogics
 sl_genericity (Genericity p i _) = top_logics (sl_params p) (sl_imported i)
 
 sl_params :: PARAMS -> Maybe G_sublogics
-sl_params (Params l) = map_logics $ map sl_spec $ map strip_anno l
+sl_params (Params l) = map_logics $ map sl_spec $ map item l
 
 sl_imported :: IMPORTED -> Maybe G_sublogics
-sl_imported (Imported l) = map_logics $ map sl_spec $ map strip_anno l
+sl_imported (Imported l) = map_logics $ map sl_spec $ map item l
 
 sl_fit_arg :: FIT_ARG -> Maybe G_sublogics
-sl_fit_arg (Fit_spec s l _) = top_logics (sl_spec $ strip_anno s)
+sl_fit_arg (Fit_spec s l _) = top_logics (sl_spec $ item s)
                                          (sl_g_symb_map_items_list l)
-sl_fit_arg (Fit_view _ l _ _) = map_logics $ map sl_fit_arg $ map strip_anno l
+sl_fit_arg (Fit_view _ l _ _) = map_logics $ map sl_fit_arg $ map item l
 
 sl_view_defn :: VIEW_DEFN -> Maybe G_sublogics
-sl_view_defn (AS_Structured.View_defn _ g t l _) =
+sl_view_defn (View_defn _ g t l _) =
   map_logics ([sl_genericity g,sl_view_type t] ++ ((map sl_g_mapping) l))
 
 sl_view_type :: VIEW_TYPE -> Maybe G_sublogics
-sl_view_type (View_type a b _) = top_logics (sl_spec $ strip_anno a)
-                                            (sl_spec $ strip_anno b)
+sl_view_type (View_type a b _) = top_logics (sl_spec $ item a)
+                                            (sl_spec $ item b)
+
+-- functions on datatypes from AS_Library
+
+sl_lib_defn :: AS_Library.LIB_DEFN -> Maybe G_sublogics
+sl_lib_defn (AS_Library.Lib_defn _ l _ _) =
+  map_logics $ map sl_lib_item $ map item l
+
+-- FIXME
+-- what about architectural specs?
+-- more important: Download_items, how can we know the logic of
+--  imported stuff?
+sl_lib_item :: AS_Library.LIB_ITEM -> Maybe G_sublogics
+sl_lib_item (AS_Library.Spec_defn _ g s _) =
+  top_logics (sl_genericity g) (sl_spec $ item s)
+sl_lib_item (AS_Library.View_defn _ g t l _) =
+  map_logics ((sl_genericity g):(sl_view_type t):((map sl_g_mapping) l))
+sl_lib_item (AS_Library.Arch_spec_defn _ s _) = Nothing
+sl_lib_item (AS_Library.Unit_spec_defn _ s _) = Nothing
+sl_lib_item (AS_Library.Download_items _ l _) = Nothing
+sl_lib_item (AS_Library.Logic n _) = sl_logic_name n
+
+-- top level stuff for this module
+
+min_sublogic_spec = sl_spec
+
+min_sublogic_lib = sl_lib_defn
