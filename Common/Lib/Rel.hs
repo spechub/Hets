@@ -35,7 +35,7 @@ module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
                        union , subset, difference, path,
                        transClosure, fromList, toList, image,
                        restrict, toSet, fromSet, topSort, 
-                       transpose, connComp, collaps) where
+                       isolated, transpose, connComp, collaps) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -59,7 +59,7 @@ toMap (Rel m) = Map.filter (not . Set.isEmpty) m
 difference :: Ord a => Rel a -> Rel a -> Rel a
 difference a b = Set.fold insertNode 
                  (fromSet $ Set.difference  (toSet a) $ toSet b)
-                 $ Set.difference (nodeSet a) $ nodeSet b
+                 $ Set.difference (isolated a) $ nodeSet b
 
 -- | union of two relations
 union :: Ord a => Rel a -> Rel a -> Rel a
@@ -68,8 +68,8 @@ union a b = Set.fold insertNode (fromSet $ Set.union (toSet a) $ toSet b)
 
 -- | is the first relation a subset of the second
 subset :: Ord a => Rel a -> Rel a -> Bool
-subset a b = Set.subset (nodeSet a) (nodeSet b) 
-             && Set.subset (toSet a) (toSet b)
+subset a b = Set.subset (nodeSet a) (nodeSet b) && 
+             Set.subset (toSet a) (toSet b)
 
 -- | insert an ordered pair
 insert :: Ord a => a -> a -> Rel a -> Rel a
@@ -163,7 +163,7 @@ transReduce :: Ord a => Rel a -> Rel a
 
 -- | convert a list of ordered pairs to a relation 
 fromList :: Ord a => [(a, a)] -> Rel a
-fromList = foldr (\ (a, b) -> insert a b) empty
+fromList = foldr (uncurry insert) empty
 
 -- | convert a relation to a list of ordered pairs
 toList :: Rel a -> [(a, a)]
@@ -215,11 +215,14 @@ image f r = let (ns, es) = toGraph r in
 
 
 {--------------------------------------------------------------------
-  Restriction (Added by T.M.)
+  Restriction (Added by T.M.)(implementation changed by C.M.)
 --------------------------------------------------------------------}
 -- | Restriction of a relation under a set
 restrict :: Ord a => Rel a -> Set.Set a -> Rel a
-restrict (Rel m) s = Rel $ Map.foldWithKey
+restrict r@(Rel m) s = 
+    Rel $ Map.filterWithKey ( \ k v -> not (Set.isEmpty v)
+                              || Set.member k (isolated r))
+            $ Map.foldWithKey
                      (\a ra -> if a `Set.member` s 
                       then Map.insert a $ Set.intersection ra s
                       else id) Map.empty m
@@ -234,15 +237,15 @@ toSet = Set.fromDistinctAscList . toList
 
 -- | convert a set of ordered pairs to a relation 
 fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
-fromSet s = let r@(Rel m) = fromAscList  $ Set.toList s
-                ns = Set.unions $ Map.elems m
+fromSet s = close $ fromAscList $ Set.toList s where
                 -- | convert a sorted list of ordered pairs to a relation 
-                fromAscList :: (Ord a) => [(a, a)] -> Rel a
-                fromAscList = Rel . Map.fromDistinctAscList 
-                    . map ( \ l -> (fst (head l), 
-                                    Set.fromDistinctAscList $ map snd l))
-                          . groupBy ( \ (a, _) (b, _) -> a == b)
-                in Set.fold insertNode r ns
+    fromAscList :: (Ord a) => [(a, a)] -> Rel a
+    fromAscList = Rel . Map.fromDistinctAscList 
+                  . map ( \ l -> (fst (head l), 
+                                  Set.fromDistinctAscList $ map snd l))
+                        . groupBy ( \ (a, _) (b, _) -> a == b)
+    close :: Ord a => Rel a -> Rel a 
+    close r@(Rel m) = Set.fold insertNode r $ Set.unions $ Map.elems m
 
 -- | topological sort a relation (more efficient for a closed relation)
 topSort :: Ord a => Rel a -> [Set.Set a]
