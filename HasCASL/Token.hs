@@ -22,7 +22,7 @@ reserved l p = try (p `checkWith` \r -> r `notElem` l)
 casl_reserved_ops = [":", ":?","::=",".","\183","|","|->","->","->?"]
 
 -- these signs are legal in terms, but illegal in declarations
-formula_ops = ["=", "=>","<=>","\\/","/\\","\172"] 
+formula_ops = ["=", "=>", "<=>", "\\/", "/\\", "\172"] 
 
 scanTermSigns = reserved casl_reserved_ops scanAnySigns
 
@@ -37,14 +37,11 @@ casl_reserved_words = words(
     "unit units var vars version view with within")
 
 -- these words are legal in terms, but illegal in declarations
-poly_words = ["def","else","when"]
-mono_words = ["false","not","true"]
+formula_words = ["def", "else", "if", "when", "false", "not", "true"]
 
 scanTermWords = reserved casl_reserved_words scanAnyWords 
 
-scanWords = reserved (poly_words 
-		      ++ mono_words
-		     ) scanTermWords
+scanWords = reserved formula_words scanTermWords
 
 otherToken = scanQuotedChar <|> scanDotWords
 

@@ -14,8 +14,6 @@ import Type
 
 {-
 isSigStartKeyword s = s `elem` (words "sort sorts op ops pred preds type types var vars axiom axioms forall free generated .") 
-
-getDot = oneOf ".\183"
 -}
 
 mapf :: (Functor f) => f a -> (a -> b) -> f b
@@ -23,6 +21,7 @@ mapf = flip fmap
 
 pluralKeyword s = makeToken (string s <++> option "" (string "s"))
 
+sortId = parseId
 opId = parseId
 
 optSemi = bind (\ x y -> (x, y)) (option Nothing (fmap Just semi)) ann
@@ -41,7 +40,7 @@ topVarDecls t = do { l <- varDecl t
 
 data ParsedSortItems = AllLess [(Token, Id)] (Maybe (Token, Id)) 
 		     | AllEqual [(Token, Id)] 
-		     | SubType (Token, Id) Type -- Term
+		     | SubType (Token, Id) Type Term 
 		       deriving (Show)
 
 
@@ -61,6 +60,8 @@ equalSortDecl e l = do { s2 <- sortId
 				       })
 		       } 
 
+equal = skipChar '='
+
 isoDecl :: Token -> Id -> Parser ParsedSortItems
 isoDecl key s1 = do { e <- equal
                     ; subSortDefn key s1
@@ -78,9 +79,10 @@ subSortDefn key s = do { o <- oBrace
 		       ; c <- colon
 		       ; t <- funType c
 		       ; bar	 
-		       ; many (noneOf "}") -- Term
+		       ; e <- mixTerm
 		       ; cBrace
-		       ; return (SubType (key, s) t)
+		       ; let f = Binding SupersortVar [Decl (Symb v t) o []] e []
+			 in return (SubType (key, s) t f)
 		       }
 
 subSortDecl :: [(Token, Id)] -> Parser ParsedSortItems
@@ -120,8 +122,8 @@ asSortItems (AllEqual l) =
          sorts = map (mkItem types types) l 
     in   sorts -- maybe delete self
 
-asSortItems (SubType p t) =
-    [mkItem [] [t] p]
+asSortItems (SubType p t e) =
+    [(mkItem [] [t] p) {sortDef = Just (SubsortDefn e)}]
 
 sortItemsAux sig key = do { si <- sortItem key;
 			    (m, an) <- optSemi;

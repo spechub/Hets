@@ -9,8 +9,8 @@ import System
 
 main = do {l <- getArgs;
 	   if null l then print "missing argument"
---	   else parseSpec (head l)
-           else checkIds (head l)
+	   else parseSpec (head l)
+--           else checkIds (head l)
 	  }
 
 

@@ -1,15 +1,14 @@
 module Lexer ( bind, (<<), (<:>), (<++>), begDoEnd, flat, single
-	     , checkWith, notFollowedWith
-	     , scanAnySigns, scanAnyWords, scanDotWords 
+	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
-	     , skip, ann
+	     , skip, ann, keyStr, keySign
 	     ) where
 
 import Char (digitToInt)
 import Monad (MonadPlus (mplus), liftM2)
 import ParsecPrim ((<?>), (<|>), many, try, skipMany
 		  , unexpected, consumeNothing, Parser, GenParser)
-import ParsecCombinator (count, eof, option, lookAhead, many1)
+import ParsecCombinator (count, eof, option, lookAhead, many1, notFollowedBy)
 import ParsecChar (char, digit, hexDigit, octDigit
 		  , oneOf, noneOf, satisfy, string)
 
@@ -72,17 +71,6 @@ flat = fmap concat
 -- ----------------------------------------------
 -- ParsecCombinator extension
 -- ----------------------------------------------
-
-notFollowedWith :: (Show b) => GenParser tok st a 
-		-> GenParser tok st b -> GenParser tok st a
-p `notFollowedWith` q = do { x <- p
-                           ; try (do { c <- q
-				     ; unexpected (show c) 
-				     }
-				  <|> return ())
-			   ; consumeNothing
-			   ; return x
-			   }
 
 followedWith :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
 p `followedWith` q = try (p << lookAhead q)
@@ -176,7 +164,7 @@ textLine = many (noneOf newlineChars) << eol
 
 commentLine = try (string "%%") <++> textLine
 
-notEndText c = try (char c `notFollowedWith` char '%')
+notEndText c = try (char c << notFollowedBy (char '%'))
 
 middleText c = many (satisfy (/=c) <|> notEndText c) 
 
@@ -207,4 +195,7 @@ annote = try(char '%' <:> scanAnyWords) <++>
 -- annotations between items
 ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
       <?> "annotation"
+
+keyStr s = string s << notFollowedBy scanLPD
+keySign p = p << notFollowedBy (oneOf signChars)
 

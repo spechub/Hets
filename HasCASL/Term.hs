@@ -62,10 +62,12 @@ data Binder = Lambda Totality | ArgDecl | SupersortVar
             | Exists | ExistsUnique
 	    deriving (Show,Eq)      
 
+data TypeOp = OfType | AsType | InType deriving (Show,Eq)     
+
 -- one type for terms and formulae
 -- op or var possibly applied to no arguments (base-case)
--- a typed term is also a special application
 data Term = BaseName QualId
           | Application Term [Term] [Keyword] -- notation hint
 	  | Binding Binder [VarDecl] Term [Anno]           
+	  | Typed Term TypeOp Type
 	    deriving (Show,Eq)
