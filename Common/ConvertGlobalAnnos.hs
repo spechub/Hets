@@ -14,6 +14,9 @@ convert global annotations to a list of annotations
 
 module Common.ConvertGlobalAnnos where
 
+import Data.List (concatMap)
+
+import Common.Id (tokStr)
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
@@ -51,8 +54,9 @@ c_assoc am =
 
 c_displ::DisplayMap->[Annotation]
 c_displ dm =
-    let m1 = Map.toList dm -- m1::[(Id,Map.Map Display_format String)] 
-        m2 = map (\ (x,m) -> (x, Map.toList m)) m1
+    let m1 = Map.toList dm -- m1::[(Id,Map.Map Display_format [Token])] 
+	toStrTup = (\ (x,y) -> (x, concatMap tokStr y))
+        m2 = map (\ (x,m) -> (x, map toStrTup (Map.toList m))) m1
 	-- m2::[(ID,[(Display_format,String)])]
     in map (\ (i,x) -> Display_anno i x []) m2
 		   
