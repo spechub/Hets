@@ -76,7 +76,7 @@ doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
 .SECONDARY : %.hs %.d 
 #.PRECIOUS: sources_hetcats.mk
 
-all:
+all: $(sources)
 	$(HC) --make -o hets hets.hs $(HC_OPTS)
 
 hets: $(sources)
