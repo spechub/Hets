@@ -693,12 +693,12 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
      case Map.lookup (True,0) posmap2 of
        Nothing -> return ()
        Just syms -> pfatal_error
-         (ptext "No symbol map for "
+         (ptext "No symbol mapping for "
            <+> printText (Set.fromList $ map fst syms)) nullPos
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
      smap1 <- case smap of
-                 Nothing -> fail "No symbol map"
+                 Nothing -> fail "No signature morphism for symbol map"
                  Just x -> return x
      -- 9./10. compute and return the resulting morphism
      symbMapToMorphism sigma1 sigma2 smap1

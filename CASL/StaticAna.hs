@@ -59,7 +59,8 @@ emptyEnv = Env { sortSet = Set.empty
 
 subsortsOf :: SORT -> Env -> Set.Set SORT
 subsortsOf s e =
-  Map.foldWithKey addSubs (Set.empty) (Rel.toMap $ sortRel e)
+  Set.insert s $
+    Map.foldWithKey addSubs (Set.empty) (Rel.toMap $ sortRel e)
   where addSubs sub supers =
          if s `Set.member` supers 
             then Set.insert sub
@@ -68,8 +69,8 @@ subsortsOf s e =
 supersortsOf :: SORT -> Env -> Set.Set SORT
 supersortsOf s e =
   case Map.lookup s $ Rel.toMap $ sortRel e of
-    Nothing -> Set.empty
-    Just supers -> supers
+    Nothing -> Set.single s
+    Just supers -> Set.insert s supers
 
 addSort :: SORT -> State Env ()
 addSort s = 
