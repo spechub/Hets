@@ -10,7 +10,7 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.AS_Annotation
 import Common.Print_AS_Annotation
-import Common.AnalyseAnnos
+import Common.GlobalAnnotations
 
 import Common.Id
 
@@ -118,7 +118,7 @@ printId id@(Id mix comp _) = do if comp == [] then
 				     putStr ": " 
 				     putStrLn (showId id "")
 
-
+-- call it with "-p {casl_id, casl_id2} <files>"
 main = do { as <- getArgs
 	  ; (p,files) <- return (extract_par as)
 	  ; sequence (map (parseFile' p) files)  
