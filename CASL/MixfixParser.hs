@@ -30,43 +30,28 @@ import Anno_Parser
 
 -- precedence graph stuff
 
-type Prec = (PrecedenceGraph, AssocMap)
-
-emptyPrec :: Prec
-emptyPrec = ((emptyFM, empty), emptyFM)
-
-
-mkPrecGraph :: [String] -> PrecedenceGraph
-mkPrecGraph s = store_prec_annos (emptyFM, empty) $
-	      map (parseString annotationL) s
-
-mkAssocMap :: [String] -> AssocMap
-mkAssocMap s = store_assoc_annos emptyFM $
-    map (parseString annotationL) s
-
-mkPrec :: [String] -> [String] -> Prec
-mkPrec precs assocs = (mkPrecGraph precs, mkAssocMap assocs)
-
 precAnnos = [ "%prec({__+__} < {__*__})%", "%prec({__*__} < {__^__})%" ]
 assocAnnos = ["%left_assoc(__+__)%"]
 
-testPrec = mkPrec precAnnos assocAnnos
+testAnnos = addGlobalAnnos emptyGlobalAnnos 
+	    $ map (parseString annotationL) (precAnnos ++ assocAnnos)
 
-checkLeft :: Prec -> Id -> Id -> Bool
-checkLeft g left top = isOrdAppl left || 
-		       case precRel (fst g) top left of 
-		       Lower -> True
-		       _ -> if left == top then isLAssoc (snd g) left
-			    else False
+checkArg :: GlobalAnnos -> AssocEither -> Id -> Id -> Bool
+checkArg g dir op arg = 
+    if arg == op 
+       then isAssoc dir (assoc_annos g) op
+       else 
+       case precRel (prec_annos g) op arg of
+       Lower -> True
+       Higher -> False
+       ExplGroup BothDirections -> False
+       ExplGroup NoDirection -> not $ isInfix arg
 
-checkRight :: Prec -> Id -> Id -> Bool
-checkRight g top right = isOrdAppl right || 
-			 case precRel (fst g) top right of 
-			 Lower -> True
-			 _ -> if right == top then isRAssoc (snd g) right
-			      else False
-
-
+checkAnyArg :: GlobalAnnos -> Id -> Id -> Bool
+checkAnyArg g op arg = 
+    case precRel (prec_annos g) op arg of
+    ExplGroup BothDirections -> False
+    _ -> True				       
 
 -- Earley Algorithm
 
@@ -141,12 +126,12 @@ scan t i m =
 lookUp :: (Ord key) => FiniteMap key (Set a) -> key -> Set a
 lookUp m i = lookupWithDefaultFM m emptySet i
 
-compl :: Prec -> Chart -> [State] -> [State]
+compl :: GlobalAnnos -> Chart -> [State] -> [State]
 compl g m l = 
   concat $ map (collectArg g m) 
   $ filter (\ (State _ _ _ ts _) -> null ts) l
 
-collectArg :: Prec -> Chart -> State -> [State]
+collectArg :: GlobalAnnos -> Chart -> State -> [State]
 -- pre: finished rule 
 collectArg g m s@(State _ _ _ _ k) = 
 -- insert filter by precedence (if all arguments are given)
@@ -157,16 +142,16 @@ collectArg g m s@(State _ _ _ _ k) =
 		       && isPlace (head ts) && mayMatchNT b)
     $ setToList $ lookUp m k
 
-filterByPrec :: Prec -> State -> State -> Bool
+filterByPrec :: GlobalAnnos -> State -> State -> Bool
 filterByPrec g (State argIde _ _ _ _) (State opIde b args ts k) = 
-    if null args then checkLeft g argIde opIde 
-       else checkRight g opIde argIde
+    if null args then checkArg g ALeft opIde argIde 
+       else checkArg g ARight opIde argIde
 
-complRec :: Prec -> Chart -> [State] -> [State]
+complRec :: GlobalAnnos -> Chart -> [State] -> [State]
 complRec g m l = let l1 = compl g m l in 
     if null l1 then l else complRec g m l1 ++ l
 
-complete :: Prec -> Int  -> Chart -> Chart
+complete :: GlobalAnnos -> Int  -> Chart -> Chart
 complete g i m = addToFM m i $ mkSet $ complRec g m $ setToList $ lookUp m i 
 
 predict :: Set Id -> Int -> Chart -> Chart
@@ -176,7 +161,7 @@ predict ms i m = if any (\ (State _ b _ ts _) -> not (null ts)
 		 then addToFM_C union m i (mapSet (mkState i) ms)
 		 else m 
 
-nextState :: Set Id -> Prec -> [Token] -> Int -> Chart -> Chart
+nextState :: Set Id -> GlobalAnnos -> [Token] -> Int -> Chart -> Chart
 nextState rules pG toks pos chart = 
     if null toks then chart
     else let c1 = predict rules pos chart
@@ -186,7 +171,7 @@ nextState rules pG toks pos chart =
 		     (complete pG (pos + 1) c2)
 
 mkChart :: Set Id -> [Token] -> Chart
-mkChart rules toks = nextState rules testPrec toks 0 (initialState rules)
+mkChart rules toks = nextState rules testAnnos toks 0 (initialState rules)
 
 sucChart :: Chart -> Bool
 sucChart m = any (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
@@ -215,9 +200,7 @@ testChart = myChart myRules myTokens
 myChart r t = mkChart (mkSet $ map (parseString parseId) r)
 		  (map (mkSimpleId . (: [])) t)
 
-testAppls = map (printText 
-		 (addGlobalAnnos emptyGlobalAnnos 
-		  (map (parseString annotationL) (precAnnos ++ assocAnnos))))
+testAppls = map (printText testAnnos)
 	    $ getAppls testChart
 
 -- --------------------------------------------------------------- 
