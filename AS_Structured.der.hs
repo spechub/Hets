@@ -44,47 +44,37 @@ data SPEC = Basic_spec G_basic_spec
 	    -- pos: many of "[","]"; one balanced pair per FIT_ARG
 	    deriving (Show,Eq)
 
-{- The next two datatypes contain two new constructors. They are
-   needed for the Heterogenus specification purposes.  
-   The Concrete Syntax:
-   RENAMING ::= ...
-              | with logic LOGIC -- MORPHISM -> LOGIC
-	      | with logic MORPHISM -> LOGIC
-	      | with logic --> LOGIC
-	      | with logic LOGIC --> LOGIC
-	      | with logic MORPHISM
-   RESTRICTION ::= ...
-                 | hide logic LOGIC <- MORPHISM -- LOGIC
-                 | hide logic MORPHISM
-                 | hide logic LOGIC <-- LOGIC
-		 | hide logic <-- LOGIC
-		 | hide logic MORPHISM <- LOGIC
-
-   MORPHISM  ::= SP_WORD
-   LOGIC     ::= SP_WORD
-   SP_WORD   ::= SP_LETTER ... SP_LETTER
-   SP_LETTER ::= LETTER-P-D | NO-BRACKET-SIGN
+{- Renaming and Hiding can be performend with intermediate Logic
+   mappings / Logic projections.
 
 -}
-
- 
-data RENAMING = Renaming G_symb_map_items_list [Pos]
+data RENAMING = Renaming [G_mapping] [Pos]
 	        -- pos: "with"; comma pos is stored inside the list
-	      | Logic_renaming String String String [Pos]
+	      -- | Logic_renaming String String String [Pos]
 		-- pos: "with","logic","1st str,"<-",2nd str,"--",3rd str
 		  -- if one string is empty pos is ommitted and
 		  -- pos of arrows may differ
 		 deriving (Show,Eq)
 
-data RESTRICTION = Hidden G_symb_items_list [Pos]
-		   -- pos: "hide"; comma pos is stored inside the list
+data RESTRICTION = Hidden [G_hiding] [Pos]
+		   -- pos: "hide", list of comma pos 
 		 | Revealed G_symb_map_items_list [Pos]
 		   -- pos: "reveal"; comma pos is stored inside the list
-		 | Logic_hiding String String String [Pos]
+		 -- | Logic_hiding String String String [Pos]
 		-- pos: "hide","logic",1st str,"--",2nd str,"->",3rd str
 		  -- if one string is empty pos is ommitted and
 		  -- pos of arrows may differ
 		   deriving (Show,Eq)
+
+data G_mapping = G_symb_map G_symb_map_items_list
+	       | G_logic_translation String String String [Pos]
+		 -- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
+		 deriving (Show,Eq)
+
+data G_hiding = G_symb_list G_symb_items_list
+	       | G_logic_projection String String String [Pos]
+		 -- pos: "logic",<projection>,":",<src-logic>,"->",<targ-logic>
+		 deriving (Show,Eq)
 
 data SPEC_DEFN = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) [Pos]
 	         -- pos: "spec","=",opt "end"
@@ -108,7 +98,7 @@ data FIT_ARG = Fit_spec (Annoted SPEC) G_symb_map_items_list [Pos]
 	       deriving (Show,Eq)
 
 data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
-			   G_symb_map_items_list [Pos]
+			   [G_mapping] [Pos]
 	         -- pos: "view",":",opt "=", opt "end" 
 		  deriving (Show,Eq)
 
