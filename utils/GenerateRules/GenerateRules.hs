@@ -12,8 +12,8 @@ module Main where
 
 import System.Console.GetOpt
 import System.Directory
-import System
-import Parsec
+import System.Environment
+import Text.ParserCombinators.Parsec
 import Common.Utils
 import ParseFile
 import ParseHeader

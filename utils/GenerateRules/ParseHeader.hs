@@ -12,7 +12,7 @@ Portability :  portable
 
 module ParseHeader where
 
-import Parsec
+import Text.ParserCombinators.Parsec
 
 type Data   = String
 type Exclude = String
