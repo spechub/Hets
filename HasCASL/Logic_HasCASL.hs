@@ -29,6 +29,7 @@ import HasCASL.ATC_HasCASL
 import HasCASL.LaTeX_HasCASL
 import HasCASL.SymbolMapAnalysis
 import HasCASL.Sublogic
+import HasCASL.Merge
 import Logic.Logic
 import Data.Dynamic
 import Common.DynamicUtils 

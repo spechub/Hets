@@ -28,6 +28,10 @@ import qualified Common.Lib.Map as Map
 import Control.Monad(foldM)
 import Data.List
 
+-- | merge together repeated or extended items
+class Mergeable a where
+    merge :: a -> a -> Result a 
+
 instance (Ord a, PosItem a, PrettyPrint a, Mergeable b) 
     => Mergeable (Map.Map a b) where
     merge = mergeMap id merge

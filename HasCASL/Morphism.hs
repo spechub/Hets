@@ -18,6 +18,7 @@ import HasCASL.AsToLe
 import HasCASL.Unify
 import HasCASL.MapTerm
 import HasCASL.AsUtils
+import HasCASL.Merge
 
 import Common.Id
 import Common.Keywords

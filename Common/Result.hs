@@ -8,13 +8,12 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   This module provides a 'Result' type and some monadic functions to
-   use this type for accumulation of errors and warnings occuring
-   during the analyse phases.
+   This module provides a 'Result' type and some monadic functions
+   for accumulating 'Diagnosis' messages during analysis phases.
 
 -}
 
-module Common.Result(module Common.Result, showPretty) where
+module Common.Result(module Common.Result, Common.PrettyPrint.showPretty) where
 
 import Common.Id
 import Common.PrettyPrint
@@ -23,20 +22,12 @@ import Data.List
 import Common.Lib.Parsec.Pos
 import Common.Lib.Parsec.Error
 
--- ---------------------------------------------------------------------
--- diagnostic messages
--- ---------------------------------------------------------------------
-
--- | maximum number of messages that are output
-maxdiags :: Int
-maxdiags = 20
-
 -- | severness of diagnostic messages
 data DiagKind = Error | Warning | Hint | Debug 
-              | MessageW -- ^ used for messages in the Web interface
+              | MessageW -- ^ used for messages in the web interface
                 deriving (Eq, Ord, Show)
 
--- | a diagnostic message with a position
+-- | a diagnostic message with 'Pos'
 data Diagnosis = Diag { diagKind :: DiagKind
                       , diagString :: String
                       , diagPos :: Pos 
@@ -62,11 +53,7 @@ adjustDiagPos :: Pos -> Diagnosis -> Diagnosis
 adjustDiagPos p d = let o = diagPos d in 
    d {diagPos = if o == nullPos then p else o}
  
--- ---------------------------------------------------------------------
--- uniqueness check
--- ---------------------------------------------------------------------
-
--- | errors for duplicates in argument, selector or constructor lists. 
+-- | A uniqueness check yields errors for duplicates in a given list.
 checkUniqueness :: (PrettyPrint a, PosItem a, Ord a) => [a] -> [Diagnosis]
 checkUniqueness l = 
     let vd = filter ( not . null . tail) $ group $ sort l
@@ -80,13 +67,7 @@ checkUniqueness l =
                             showString "," . 
                             shows (sourceColumn p))
 
--- ---------------------------------------------------------------------
--- the Result monad
--- ---------------------------------------------------------------------
-
--- | The 'Result' monad.  
--- A failing 'Result' should include a 'FatalError' message.
--- Otherwise diagnostics should be non-fatal.
+-- | The result monad. A failing result should include an error message.
 data Result a = Result { diags :: [Diagnosis]
                        , maybeResult :: (Maybe a)
                        } deriving (Show)
@@ -101,20 +82,7 @@ instance Monad Result where
      where Result errs2 y = f x
   fail s = fatal_error s nullPos
 
--- ---------------------------------------------------------------------
--- merging for instances of Logic.signature_union
--- ---------------------------------------------------------------------
-
--- | merge together repeated or extended items
-class Mergeable a where
-    merge :: a -> a -> Result a 
-    -- diff :: a -> a -> a 
-    -- with if (c <- a `merge` b)  then (c `diff' a == b)  
-
--- ---------------------------------------------------------------------
--- Result with IO
--- ---------------------------------------------------------------------
-
+-- | bind results within the 'IO' monad
 ioBind :: IO(Result a) -> (a -> IO(Result b)) -> IO(Result b)
 x `ioBind` f = do
   res <- x
@@ -129,24 +97,23 @@ instance Monad IOResult where
   return x = IOResult (return (return x))
   IOResult x >>= f = IOResult (x `ioBind` (\y -> let IOResult z = f y in z))
 
+-- | unpack an IOResult
 ioresToIO :: IOResult a -> IO(Result a)
 ioresToIO (IOResult x) = x
 
+-- | pack an IO value as IOResult
 ioToIORes :: IO a -> IOResult a
 ioToIORes = IOResult . (fmap return)
 
+-- | pack a pure result as IOResult
 resToIORes :: Result a -> IOResult a
 resToIORes = IOResult . return
-
--- ---------------------------------------------------------------------
--- contructing a Result
--- ---------------------------------------------------------------------
 
 -- | a failing result with a proper position
 fatal_error :: String -> Pos -> Result a
 fatal_error s p = Result [Diag Error s p] Nothing  
 
--- | a failing result using pretty printed Doc
+-- | a failing result using pretty printed 'Doc'
 pfatal_error :: Doc -> Pos -> Result a
 pfatal_error s p = fatal_error (show s) p  
 
@@ -154,11 +121,11 @@ pfatal_error s p = fatal_error (show s) p
 mkError :: (PosItem a, PrettyPrint a) => String -> a -> Result b
 mkError s c = Result [mkDiag Error s c] Nothing
 
--- | add an error message but continue (within do)
+-- | add an error message but don't fail
 plain_error :: a -> String -> Pos -> Result a
 plain_error x s p = Result [Diag Error s p] $ Just x  
 
--- | an error message, using pretty printed Doc
+-- | add an error message using a pretty printed 'Doc' but don't fail
 pplain_error :: a -> Doc -> Pos -> Result a
 pplain_error x s p = plain_error x (show s) p
 
@@ -166,7 +133,7 @@ pplain_error x s p = plain_error x (show s) p
 warning :: a -> String -> Pos -> Result a
 warning x s p = Result [Diag Warning s p] $ Just x  
 
--- | add a warning, using pretty printed Doc
+-- | add a warning using a pretty printed 'Doc'
 pwarning :: a -> Doc -> Pos -> Result a
 pwarning x s p = warning x (show s) p
 
@@ -174,34 +141,28 @@ pwarning x s p = warning x (show s) p
 hint :: a -> String -> Pos -> Result a
 hint x s p = Result [Diag Hint s p] $ Just x  
 
--- | add a hint, using pretty printed Doc
+-- | add a hint using a pretty printed 'Doc'
 phint :: a -> Doc -> Pos -> Result a
 phint x s p = hint x (show s) p
 
--- | add a message
+-- | add a (web interface) message
 message :: a -> String -> Result a
 message x m = Result [Diag MessageW m nullPos] $ Just x
 
--- | add a fatal error message to a failure (Nothing)
+-- | add a failure message to 'Nothing'
 maybeToResult :: Pos -> String -> Maybe a -> Result a
 maybeToResult p s m = Result (case m of 
                               Nothing -> [Diag Error s p]
                               Just _ -> []) m
 
--- | add a failure message in case of Nothing 
--- (can be used instead of 'maybeResult nullPos' or 'maybeToList')
+-- | add a failure message to 'Nothing'
+-- (alternative for 'maybeToResult' with 'nullPos') 
 maybeToMonad :: Monad m => String -> Maybe a -> m a
 maybeToMonad s m = case m of 
                         Nothing -> fail s 
                         Just v -> return v
 
-maybePlainError :: a -> Pos -> String -> Maybe a -> Result a
-maybePlainError def p s m = 
-  case m of 
-      Nothing -> plain_error def s p
-      Just x -> return x
-
--- | check whether no errors are present, coerce into Maybe
+-- | check whether no errors are present, coerce into 'Maybe'
 resultToMaybe :: Result a -> Maybe a
 resultToMaybe (Result ds val) = if hasErrors ds then Nothing else val
 
@@ -247,12 +208,13 @@ instance PrettyPrint a => PrettyPrint (Result a) where
     printText0 g (Result ds m) = vcat ((case m of 
                                        Nothing -> empty
                                        Just x -> printText0 g x) :
-                                            (map (printText0 g) ds))
+                                           map (printText0 g) ds)
 
 -- ---------------------------------------------------------------------
 -- debugging
 -- ---------------------------------------------------------------------
 
+-- | add a debug point
 debug :: (PosItem a, PrettyPrint a) => Int -> (String, a) -> Result ()
 debug n (s, a) = Result [mkDiag Debug 
                          (" point " ++ show n ++ "\nVariable "++s++":\n") a ]
