@@ -23,6 +23,7 @@ module Static.AnalysisLibrary (anaFile, ana_LIB_DEFN, anaString) where
 
 import Logic.Logic
 import Logic.Grothendieck
+import Comorphisms.LogicGraph
 import Common.Lib.Graph
 import Static.DevGraph
 import qualified Syntax.AS_Structured
@@ -114,10 +115,13 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
 	     (Result dias mgc) <- globalContextfromShATerm env_fname
 	     -- the conversion/reading might yield an error that
 	     -- should be caught here
-	     maybe (do showDiags opts dias
+	     maybe (do ioresToIO $ showDiags1 opts (resToIORes (Result dias mgc))
+		       --showDiags opts dias
 		       anaLibFile' fname)
                    (\ gc@(_,_,dgraph) -> do 
-		       putStrLn ""
+		       if outputToStdout opts then
+                          putStrLn ""
+		          else return()
 		       -- get all DGRefs from DGraph
 		       let libEnv' = (Map.insert libname gc libenv)
 		           nodesDGRef =
@@ -155,7 +159,9 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
          do
          -- read and analyze the library,
          res <- anaFile logicGraph defaultLogic opts libenv fname
-	 putStrLn ""
+	 if outputToStdout opts then
+	    putStrLn ""
+	    else return()
 	 -- and just return the libenv
 	 return (case res of 
                Just (_,_,_,libenv') -> libenv'
@@ -175,6 +181,7 @@ ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
   (libItems',gctx@(_,_,dg),_,libenv') <- 
      foldl ana (return ([],(gannos,Map.empty,empty),defl,libenv))
                (map item alibItems)
+
   return (ln,
           Lib_defn ln 
                    (map (uncurry replaceAnnoted)
@@ -183,18 +190,27 @@ ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
                    ans,
           dg,
           Map.insert ln gctx libenv')
+
   where
   ana res libItem = do 
     (libItems',gctx1,l1,libenv1) <- res
+
     IOResult (do
       Result diags res <-
-         ioresToIO (ana_LIB_ITEM lgraph defl opts libenv1 gctx1 l1 libItem)
-      showDiags opts diags
-      if hasErrors diags then fail "Stopped due to errors"
-       else case res of
-         Just (libItem',gctx1',l1',libenv1') -> 
-           return (return (libItem':libItems',gctx1',l1',libenv1'))
-         Nothing -> fail "Stopped. No result available"
+         ioresToIO $ ana_LIB_ITEM lgraph defl opts libenv1 gctx1 l1 libItem   
+      ioresToIO $ showDiags1 opts (resToIORes (Result diags res))
+
+      if hasErrors diags then 
+	 if outputToStdout opts then
+	   fail "Stopped due to errors"
+	   else case res of
+		Just (libItem',gctx1',l1',libenv1') ->
+		    ioresToIO $ resToIORes (Result diags (Just ([],gctx1',l1',libenv1)))
+		Nothing -> fail "Stopped."
+	 else case res of
+		   Just (libItem',gctx1',l1',libenv1') -> 
+			 return (return (libItem':libItems',gctx1',l1',libenv1'))
+		   Nothing -> fail "Stopped. No result available"
       )
 
 -- analyse a LIB_ITEM
@@ -227,7 +243,6 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
                  dg''),
                 l,
                 libenv)
-
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
