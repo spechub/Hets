@@ -24,7 +24,7 @@ Portability :  portable
 
 module Comorphisms.CASL2PCFOL where
 
-import Test
+--import Test
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
