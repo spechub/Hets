@@ -165,7 +165,6 @@ data TypeQual = OfType | AsType | InType deriving (Show, Eq)
 
 data BracketKind = Parens | Squares | Braces deriving (Show, Eq)
 
-
 data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp deriving (Show, Eq)
 data EqOp = EqualOp | ExEqualOp deriving (Show, Eq)
 
@@ -272,8 +271,10 @@ data ExtClass = ExtClass Class Variance Pos deriving (Show, Eq)
 data ProdClass = ProdClass [ExtClass] [Pos] deriving (Show, Eq)
                  -- pos crosses 
 
-data Kind = Kind [ProdClass] Class [Pos] deriving (Show, Eq)
+data Kind = Kind [ProdClass] Class [Pos] 
 	    -- pos "->"s (first order)
+	  | KindAppl Kind Kind  -- extension
+	    deriving (Show, Eq)
 
 data Class = Downset Type   -- not parsed directly
 	   | Intersection { iclass :: [ClassName], classPos :: [Pos] }  
