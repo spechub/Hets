@@ -23,7 +23,7 @@ import qualified Common.Lib.Set as Set
 
 -- CASL
 import CASL.Logic_CASL 
-import CASL.Sublogic
+import CASL.Sublogic as CasSub
 import CASL.Sign
 import qualified CASL.AS_Basic_CASL as Cas
 import qualified CASL.Morphism as CasM
@@ -35,6 +35,7 @@ import HasCASL.Builtin
 import HasCASL.VarDecl
 import HasCASL.Unify
 import HasCASL.Morphism
+import HasCASL.Sublogic as HasSub
 
 -- | The identity of the comorphism
 data CASL2HasCASL = CASL2HasCASL deriving (Show)
@@ -52,15 +53,15 @@ instance Comorphism CASL2HasCASL
                Env Morphism Symbol RawSymbol () where
     sourceLogic CASL2HasCASL = CASL
     sourceSublogic CASL2HasCASL = CASL_SL
-                      { has_sub = True, -- simple subsorting in HasCASL
-                        has_part = True,
-                        has_cons = True,
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
+                      { CasSub.has_sub = True, -- simple subsorting in HasCASL
+                        CasSub.has_part = True,
+                        CasSub.has_cons = True,
+                        CasSub.has_eq = True,
+                        CasSub.has_pred = True,
+                        CasSub.which_logic = CasSub.FOL
                       }
     targetLogic CASL2HasCASL = HasCASL
-    targetSublogic CASL2HasCASL = ()
+    targetSublogic CASL2HasCASL = HasSub.top
     map_sign CASL2HasCASL sig = let e = mapSig sig in Just (e, [])
     map_morphism CASL2HasCASL = Just . mapMor
     map_sentence CASL2HasCASL sig = Just . toSentence sig
