@@ -323,6 +323,11 @@ instance Show AnyLogic where
 instance Eq AnyLogic where
   Logic lid1 == Logic lid2 = language_name lid1 == language_name lid2
 
+tyconAnyLogic :: TyCon
+tyconAnyLogic = mkTyCon "Logic.Logic.AnyLogic"
+instance Typeable AnyLogic where
+  typeOf _ = mkTyConApp tyconAnyLogic []
+
 ----------------------------------------------------------------
 -- Typeable instances
 ----------------------------------------------------------------

@@ -294,6 +294,12 @@ instance Show AnyComorphism where
     ++" : "++language_name (sourceLogic cid)
     ++" -> "++language_name (targetLogic cid)
 
+tyconAnyComorphism :: TyCon
+tyconAnyComorphism = mkTyCon "Logic.Grothendieck.AnyComorphism"
+instance Typeable AnyComorphism where
+  typeOf _ = mkTyConApp tyconAnyComorphism []
+
+
 -- | Test whether a comporphism is the identity
 isIdComorphism :: AnyComorphism -> Bool
 isIdComorphism (Comorphism cid) =
