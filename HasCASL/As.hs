@@ -26,7 +26,7 @@ data BasicItem = SigItems SigItems
                -- pos "var", ";"s
                | FreeDatatype [Annoted DatatypeDecl] [Pos]
                -- pos "free", "type", ";"s
-               | GenItems [Annoted BasicItem] [Pos] 
+               | GenItems [Annoted SigItems] [Pos] 
                -- pos "generated" "{", ";"s, "}"
                -- or "generated" "type" ";"s
                | LocalVarAxioms [GenVarDecl] [Annoted Formula] [Pos]

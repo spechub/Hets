@@ -445,30 +445,56 @@ predItems = itemList predS predItem PredItems
 
 sigItems = sortItems <|> opItems <|> predItems <|> typeItems
 
+
 -----------------------------------------------------------------------------
--- basicItem
+-- generated sigItems
 -----------------------------------------------------------------------------
 
-basicItems = fmap SigItems sigItems
-             <|> do { f <- asKey freeS
-                    ; FreeDatatype ds ps <- dataItems
-                    ; return (FreeDatatype ds (tokPos f : ps))
-                    }
-{-
-             <|> do { g <- asKey generatedS
+generatedItems = do { g <- asKey generatedS
                     ; do { FreeDatatype ds ps <- dataItems
-                         ; return (Sort_gen [Annoted t [] [] []] [tokPos g])
+                         ; return (GenItems [Annoted (TypeItems Plain
+				   (map (\d -> Annoted
+							(Datatype (item d)) 
+					 [] (l_annos d) (r_annos d)) ds) ps) 
+					 [] [] []] 
+				   [tokPos g])
                          }
                       <|> 
                       do { o <- oBraceT
                          ; a <- annos
                          ; i:is <- many1 sigItems
                          ; c <- cBraceT
-                         ; return (Sort_gen ((Annoted i [] a [])  
+                         ; return (GenItems ((Annoted i [] a [])  
                                             : map (\x -> Annoted x [] [] []) is)
                                    (toPos g [o] c)) 
                          }
                     }
+
+
+-----------------------------------------------------------------------------
+-- basicItem
+-----------------------------------------------------------------------------
+
+freeDatatype =   do { f <- asKey freeS
+                    ; FreeDatatype ds ps <- dataItems
+                    ; return (FreeDatatype ds (tokPos f : ps))
+                    }
+
+progItems = do p <- pluralKeyword programS
+	       d <- dotT
+	       (es, ps) <- annotedProgEq `separatedBy` dotT
+	       return (ProgItems es (map tokPos (p:d:ps))) 
+
+annotedProgEq = bind appendAnno (annoParser (patternTermPair True equalS))
+		lineAnnos
+
+
+basicItems = fmap SigItems sigItems
+	     <|> classItems
+	     <|> progItems
+	     <|> generatedItems
+             <|> freeDatatype
+{-
              <|> do { v <- pluralKeyword varS
                     ; (vs, ps) <- varItems
                     ; return (Var_items vs (map tokPos (v:ps)))

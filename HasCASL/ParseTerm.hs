@@ -501,6 +501,7 @@ lamPattern = do (vs, ps) <- varDecls `separatedBy` semiT
 -----------------------------------------------------------------------------
 -- case-term
 -----------------------------------------------------------------------------
+-- True allows "in"-Terms
 
 patternTermPair :: Bool -> String -> GenParser Char st ProgEq
 patternTermPair b sep = do p <- pattern
