@@ -51,7 +51,9 @@ ifneq ($(MAKECMDGOALS),bin_clean)
 ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),apache_doc)
 include sources_hetcats.mk
+endif
 endif
 endif
 endif
