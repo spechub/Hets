@@ -640,11 +640,13 @@ getSublogicOfNode descr ab2dgNode dgraph =
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
            (DGNode name _ _ _) ->
-	     case (dgn_sign dgnode) of
-	       G_sign lid sigma ->
-                let logstr = (language_name lid ++ "." 
+	     case (dgn_sign dgnode,dgn_sens dgnode) of
+	       (G_sign lid sigma,G_l_sentence_list lid' sens) ->
+                let sens' = fromJust $ coerce lid lid' (map sentence sens)
+                    logstr = (language_name lid ++ "." 
 			      ++ head (sublogic_names lid 
-				       (min_sublogic_sign lid sigma)))
+				       (foldr Logic.Logic.join (min_sublogic_sign lid sigma)
+                                              (map (min_sublogic_sentence lid) sens'))))
                     title = case name of
                      Nothing -> "Sublogic"
                      Just n -> "Sublogic of "++showPretty n ""

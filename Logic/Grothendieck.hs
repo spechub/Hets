@@ -262,9 +262,9 @@ instance Eq G_sublogics where
 instance Ord G_sublogics where
     compare (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
      case coerce lid1 lid2 l2 of
-       Just l2' -> if l1==l2' then EQ
+       Just l2' -> compare l1 l2' {-if l1==l2' then EQ
                      else if l1 <<= l2' then LT
-                     else GT
+                     else GT-}
        Nothing -> error "Attempt to compare sublogics of different logics"
 
 -- | Homogeneous Grothendieck signature morphisms

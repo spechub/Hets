@@ -420,7 +420,10 @@ is_ghorn_conc x = is_horn_a x
 
 is_fol_t :: Term -> Bool
 is_fol_t _ = False
-
+{- FOL:
+  no lambda/let/case, 
+  no higher types (i.e. all types are basic, tuples, or tuple -> basic)
+-}
 -- compute logic of a formula by checking all logics in turn
 --
 get_logic :: Term -> HasCASL_Sublogics
@@ -502,7 +505,8 @@ sl_typeItem (Datatype dDecl) = sl_datatypeDecl dDecl
 
 
 sl_typePattern :: TypePattern -> HasCASL_Sublogics
-sl_typePattern (TypePattern _ l _) = comp_list $ map sl_typeArg l
+sl_typePattern (TypePattern _ l _) = comp_list $ map sl_typeArg l 
+-- non-empty args --> type constructor!
 sl_typePattern (MixfixTypePattern l) = comp_list $ map sl_typePattern l
 sl_typePattern (BracketTypePattern _ l _) = comp_list $ map sl_typePattern l
 sl_typePattern (TypePatternArg _ _) = need_polymorphism
@@ -515,12 +519,15 @@ sl_type (TypeAppl t1 t2) = sublogics_max (sl_type t1) (sl_type t2)
 sl_type (BracketType _ l _) = comp_list $ map sl_type l
 sl_type (KindedType t _ _) = sl_type t
 sl_type (MixfixType l) = comp_list $ map sl_type l
-sl_type (LazyType t _) = sublogics_max need_type_constructors
-                                       (sl_type t)
+sl_type (LazyType t _) = sl_type t
 sl_type (ProductType l _) = comp_list $ map sl_type l
 sl_type (FunType t1 a t2 _) = 
   comp_list [(sl_type t1), (sl_arrow a), (sl_type t2)]
 sl_type _ = bottom
+
+{- FOL:
+  no higher types (i.e. all types are basic, tuples, or tuple -> basic)
+-}
 
 
 sl_arrow :: Arrow -> HasCASL_Sublogics
@@ -561,7 +568,7 @@ sl_partiality _ = bottom
 
 sl_opAttr :: OpAttr -> HasCASL_Sublogics
 sl_opAttr (UnitOpAttr t _) = sl_term t
-sl_opAttr _ = bottom
+sl_opAttr _ = need_eq
 
 
 sl_datatypeDecl :: DatatypeDecl -> HasCASL_Sublogics
@@ -576,8 +583,7 @@ sl_datatypeDecl (DatatypeDecl t _ l c _) =
 
 sl_alternative :: Alternative -> HasCASL_Sublogics
 sl_alternative (Constructor _ l p _) =  
- comp_list [need_type_constructors,
-            (sl_partiality p),
+ comp_list [(sl_partiality p),
             (comp_list $ map sl_component (concat l))]
 sl_alternative (Subtype l _) = sublogics_max need_sub
                                  (comp_list $ map sl_type l)
@@ -743,8 +749,7 @@ sl_datatypeDefn (DatatypeConstr _ _ _ l m) =
 
 sl_altDefn :: AltDefn -> HasCASL_Sublogics
 sl_altDefn (Construct _ l p m) =
-  comp_list [need_type_constructors,
-             (comp_list $ map sl_type l),
+  comp_list [(comp_list $ map sl_type l),
              (sl_partiality p),
              (comp_list $ map sl_selector m)]
 

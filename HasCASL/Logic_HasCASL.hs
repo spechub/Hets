@@ -41,10 +41,10 @@ import Common.Result
 data HasCASL = HasCASL deriving (Show)
 instance Language HasCASL where
  description _ = 
-  "HasCASL - Algebraic Specification + Functional Programming = Environment for Formal Software Development\
-  \This logic is based on the partial lambda calculus,\
-  \and features subsorting, overloading and type class polymorphism\
-  \See the HasCASL summary and further papers,\
+  "HasCASL - Algebraic Specification + Functional Programming = Environment for Formal Software Development\n\
+  \This logic is based on the partial lambda calculus,\n\
+  \and features subsorting, overloading and type class polymorphism\n\
+  \See the HasCASL summary and further papers,\n\
   \available at http://www.tzi.de/cofi/HasCASL"
 
 basicSpecTc, envTc, senTc, symbolTc, rawSymbolTc, 

@@ -2,6 +2,9 @@
 
 module GUI.ShowLogicGraph
 where
+
+import Debug.Trace
+import Common.PrettyPrint
  
 -- for graph display
 import DaVinciGraph
@@ -200,11 +203,11 @@ showLogicGraph
 	         subNodeType <- newNodeType subLogicG subNodeTypeParms
 	         
 	         subNodeList <- mapM (newNode subLogicG subNodeType) listG_Sublogics 
-                                   
+                 putStrLn (show (length subNodeList)                  )
                  let 
-                     slAndNodes = Map.fromList (zip listG_Sublogics subNodeList)
+                     slAndNodes = zip listG_Sublogics subNodeList
                      lookupSublogic(g_sl) = 
-                          fromJust (Map.lookup (g_sl) slAndNodes)
+                          fromJust (lookup (g_sl) slAndNodes)
                      subArcMenu = LocalMenu( Menu Nothing [])
 		     subArcTypeParms = subArcMenu $$$
 				       Color "green" $$$
@@ -223,3 +226,4 @@ showLogicGraph
 
 
 showLG = showLogicGraph daVinciSort
+

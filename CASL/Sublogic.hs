@@ -66,7 +66,7 @@ module CASL.Sublogic ( -- * datatypes
                  ) where
 
 
-import Debug.Trace
+--import Debug.Trace
 
 import Data.Maybe
 import qualified Common.Lib.Map as Map
@@ -95,7 +95,7 @@ data CASL_Sublogics = CASL_SL
                         has_eq::Bool,    -- equality
                         has_pred::Bool,  -- predicates
                         which_logic::CASL_Formulas
-                      } deriving (Show,Ord,Eq)
+                      } deriving (Show,Eq)
 
 -----------------------------------------------------------------------------
 -- Special sublogics elements
@@ -212,7 +212,7 @@ sublogics_name x = [   ( if (has_sub  x) then "Sub" else "")
 ------------------------------------------------------------------------------
 
 formulas_max :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
-formulas_max x y = trace ("[formulas_max, x] "++show x++"\n [formulas_max, y] "++show y++"\n") (if (x<y) then y else x)
+formulas_max x y = if (x<y) then y else x
 
 formulas_min :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
 formulas_min x y = if (x<y) then x else y
@@ -232,6 +232,9 @@ sublogics_min a b = CASL_SL (has_sub  a && has_sub  b)
                             (has_eq   a && has_eq   b)
                             (has_pred a && has_pred b)
                             (formulas_min (which_logic a) (which_logic b))
+
+instance Ord CASL_Sublogics where
+  x <= y = sublogics_min x y == x
 
 ------------------------------------------------------------------------------
 -- Helper functions
@@ -469,7 +472,7 @@ sl_op_attr :: OP_ATTR f -> CASL_Sublogics
 sl_op_attr (Unit_op_attr t) = sl_term t
 -- sl_op_attr Assoc_op_attr = need_??
 -- sl_op_attr Comm_op_attr = need_??
-sl_op_attr _ = bottom
+sl_op_attr _ = need_eq
 
 sl_op_type :: OP_TYPE -> CASL_Sublogics
 sl_op_type (Partial_op_type _ _ _) = need_part
@@ -509,15 +512,14 @@ sl_formula :: FORMULA f -> CASL_Sublogics
 sl_formula f = sublogics_max (get_logic f) (sl_form f)
 
 sl_form :: FORMULA f -> CASL_Sublogics
-sl_form (Quantification Universal _ f _) = sl_form f
-sl_form (Quantification _ _ f _) = need_fol
+sl_form (Quantification _ _ f _) = sl_form f
 sl_form (Conjunction l _) = comp_list $ map sl_form l
-sl_form (Disjunction l _) = need_fol
+sl_form (Disjunction l _) = comp_list $ map sl_form l
 sl_form (Implication f g _ _) = sublogics_max (sl_form f) (sl_form g)
 sl_form (Equivalence f g _) = sublogics_max (sl_form f) (sl_form g)
-sl_form (Negation f _) = need_fol
+sl_form (Negation f _) = bottom
 sl_form (True_atom _) = bottom
-sl_form (False_atom _) = need_fol
+sl_form (False_atom _) = bottom
 sl_form (Predication _ l _) = sublogics_max need_pred
                               (comp_list $ map sl_term l)
 sl_form (Definedness t _) = sl_term t
@@ -526,6 +528,7 @@ sl_form (Strong_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
 sl_form (Membership t _ _) = sublogics_max need_sub (sl_term t)
 sl_form (Mixfix_formula t) = sl_term t
 sl_form (Unparsed_formula _ _) = bottom
+sl_form (Sort_gen_ax _ _) = need_cons
 
 sl_symb_items :: SYMB_ITEMS -> CASL_Sublogics
 sl_symb_items (Symb_items k l _) = sublogics_max (sl_symb_kind k)

@@ -247,12 +247,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
 
 -- sublogics
 
-class (Eq l, Show l) => LatticeWithTop l where
+class (Ord l, Show l) => LatticeWithTop l where
   meet, join :: l -> l -> l
   top :: l
-
-(<<=) :: LatticeWithTop l => l -> l -> Bool
-a <<= b = meet a b == b 
 
 -- a dummy instance 
 instance LatticeWithTop () where
