@@ -28,6 +28,7 @@ import Logic.Logic
 import Common.AnnoState(emptyAnnos)
 import Data.Dynamic
 import Control.Monad.State
+import Common.Lib.Map as Map
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -66,7 +67,11 @@ instance Syntax HasCASL BasicSpec
 	 parse_symb_items HasCASL = Just(toParseFun symbItems ())
 	 parse_symb_map_items HasCASL = Just(toParseFun symbMapItems ())
 
-instance Category HasCASL Sign Morphism  
+instance Category HasCASL Sign Morphism where 
+    ide HasCASL _ = ()
+    comp HasCASL _ _ = Just ()
+    dom HasCASL _ = initialEnv
+    cod HasCASL _ = initialEnv
 
 instance Sentences HasCASL Sentence () Sign Morphism Symbol
 
@@ -75,10 +80,15 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
                Sign 
                Morphism 
                Symbol RawSymbol where
-    basic_analysis HasCASL = Just ( \ (b, e, a) ->
+    basic_analysis HasCASL = Just ( \ (b, e, _) ->
 		let ne = snd $ (runState (anaBasicSpec b)) e 
 		    in return (ne, initialEnv, [])) 
     signature_union HasCASL = merge
+    empty_signature HasCASL = initialEnv
+    stat_symb_map_items HasCASL _ = return $ Map.single () ()
+    induced_from_to_morphism HasCASL _ _ _ = return ()
+    induced_from_morphism HasCASL _ _ = return ()
+    morphism_union HasCASL _ _ = return ()
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
