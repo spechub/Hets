@@ -515,7 +515,7 @@ hideTheoremShift isAutomatic proofStatus@(globalContext,libEnv,history,dGraph)=
      return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
 
   where
-    hidingThmEdges = filter isHidingThm (labEdges dGraph)
+    hidingThmEdges = filter isUnprovenHidingThm (labEdges dGraph)
 
 
 {- auxiliary method for hideTheoremShift -}
@@ -914,43 +914,47 @@ isProvenGlobalThm :: LEdge DGLinkLab -> Bool
 isProvenGlobalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
     (GlobalThm (Proven _) _ _) -> True
-    otherwise -> False
+    _ -> False
 
 isUnprovenGlobalThm :: LEdge DGLinkLab -> Bool
 isUnprovenGlobalThm (_,_,edgeLab) = 
   case dgl_type edgeLab of
     (GlobalThm Static.DevGraph.Open _ _) -> True
-    otherwise -> False
+    _ -> False
 
 isProvenLocalThm :: LEdge DGLinkLab -> Bool
 isProvenLocalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
     (LocalThm (Proven _) _ _) -> True
-    otherwise -> False
+    _ -> False
 
 isUnprovenLocalThm :: LEdge DGLinkLab -> Bool
 isUnprovenLocalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
     (LocalThm (Static.DevGraph.Open) _ _) -> True
-    otherwise -> False
+    _ -> False
 
 isHidingDef :: LEdge DGLinkLab -> Bool
 isHidingDef (_,_,edgeLab) =
   case dgl_type edgeLab of
     HidingDef -> True
-    otherwise -> False
+    _ -> False
 
 isHidingThm :: LEdge DGLinkLab -> Bool
-isHidingThm (_,_,edgeLab) =
-  case dgl_type edgeLab of
-    (HidingThm _ _) -> True
-    otherwise -> False
+isHidingThm edge = isProvenHidingThm edge || isUnprovenHidingThm edge
+
 
 isProvenHidingThm :: LEdge DGLinkLab -> Bool
 isProvenHidingThm (_,_,edgeLab) =
   case dgl_type edgeLab of
     (HidingThm _ (Proven _)) -> True
-    otherwise -> False
+    _ -> False
+
+isUnprovenHidingThm :: LEdge DGLinkLab -> Bool
+isUnprovenHidingThm (_,_,edgeLab) =
+  case dgl_type edgeLab of
+    (HidingThm _ Static.DevGraph.Open) -> True
+    _ -> False
 
 -- ----------------------------------------------------------------------------
 -- other methods on edges
