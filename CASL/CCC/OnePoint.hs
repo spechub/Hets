@@ -25,17 +25,22 @@
            using variables of sorts outside srts
            using operation symbols from ops
          Algorithm:
-         construct a list of "inhabited" sorts
-         initially, the list is empty
+         construct a list L of "inhabited" sorts
+         initially, the list L is empty
          iteration step:
            for each operation symbol in ops, such that
               all argument sorts (opArgs) 
-                 are either inhabited or are outside srts
-              add the results sort (opRes) to the list of inhabited sorts
+                 are either in the list L or are outside srts
+              add the results sort (opRes) to the list L of inhabited sorts
          start with initial list, and iterate until iteration is stable
          check whether srts is a sublist of the list resulting from the iteration 
+
+
+    iterateInhabited l =
+    if l==newL then newL else iterateInhabited newL
+    where 
+    newL = 
  
-   
 -}
 
 module CASL.CCC.OnePoint where
@@ -98,7 +103,7 @@ evaluateOnePoint m fs =
 {-
 evaluateOnePoint :: Morphism f e m-> [FORMULA f] -> Maybe Bool
 evaluateOnePoint m fs = do
-     p <- mapM (evaluateOnePointFORMULA m) fs
+     p <- mapM (evaluateOnePointFORMULA (imageOfMorphism m)) fs
      return (all id p)
 -}
 
@@ -112,7 +117,7 @@ evaluateOnePointFORMULA sig (Conjunction fs _)=
      in if elem (Just False) p then Just False
         else if elem Nothing p then Nothing
                                else Just True  
-                  
+                                 
 evaluateOnePointFORMULA sig (Disjunction fs _)=
       let p=[evaluateOnePointFORMULA sig f|f<-fs]
       in if elem (Just True) p then Just True
@@ -125,7 +130,8 @@ evaluateOnePointFORMULA sig (Implication f1 f2 _ _)=
         in if p1==(Just False) || p2==(Just True) then Just True
            else if p1==(Just True) && p2==(Just False) then Just False
                                                        else Nothing  
-evaluateOnePointFORMULA sig (Equivalence f1 f2 pos) =
+                                                         
+evaluateOnePointFORMULA sig (Equivalence f1 f2 _) =
          let p1=evaluateOnePointFORMULA sig f1 
              p2=evaluateOnePointFORMULA sig f2
          in if p1==Nothing || p2==Nothing then Nothing
@@ -138,54 +144,68 @@ evaluateOnePointFORMULA sig (Negation f _)=
        Just False ->Just True
        _ -> Nothing
    
+evaluateOnePointFORMULA _ (True_atom _)= Just True
 
-evaluateOnePointFORMULA sig (True_atom _)= Just True
+evaluateOnePointFORMULA _ (False_atom _)= Just False
 
-evaluateOnePointFORMULA sig (False_atom _)= Just False
-
-evaluateOnePointFORMULA sig (Predication pred_symb ts _)=
+evaluateOnePointFORMULA sig (Predication pred_symb _ _)=
      case pred_symb of
-       Pred_name pname ->  Nothing
-       Qual_pred_name pname ptype pos ->
+       Pred_name _ ->  Nothing
+       Qual_pred_name pname ptype _ ->
                 case Map.lookup pname (predMap sig) of
                   Nothing -> Just True
                   Just ptypes -> 
                     if toPredType ptype `Set.member` ptypes then Nothing
                       else Just True 
        
-
-evaluateOnePointFORMULA sig (Definedness t _)=
-     let Sorted_term _ sort _=t
-     in case Set.member sort (sortSet sig) of
-           True->Nothing
-           False->Just True  
+evaluateOnePointFORMULA sig (Definedness (Sorted_term _ sort _) _)=
+      case Set.member sort (sortSet sig) of
+            True -> Nothing
+            False -> Just True  
     
-evaluateOnePointFORMULA sig (Existl_equation t1 t2 _)=
-     let Sorted_term term1 sort1 pos1=t1
-         Sorted_term term2 sort2 pos2=t2
-     in if (Set.member sort1 (sortSet sig)==False)
-             &&(Set.member sort2 (sortSet sig)==False) then Just True
+evaluateOnePointFORMULA sig (Existl_equation (Sorted_term _ sort1 _) (Sorted_term _ sort2 _) _)=
+        if (Set.member sort1 (sortSet sig)==False)
+             && (Set.member sort2 (sortSet sig)==False) then Just True
         else Nothing 
 
-evaluateOnePointFORMULA sig (Strong_equation t1 t2 _)=
-     let Sorted_term term1 sort1 pos1=t1
-         Sorted_term term2 sort2 pos2=t2
-     in if (Set.member sort1 (sortSet sig)==False)
-             &&(Set.member sort2 (sortSet sig)==False) then Just True
+evaluateOnePointFORMULA sig (Strong_equation (Sorted_term _ sort1 _) (Sorted_term _ sort2 _) _)=
+        if (Set.member sort1 (sortSet sig)==False)
+             && (Set.member sort2 (sortSet sig)==False) then Just True
         else Nothing 
 
--- todo: auc prüfen, ob Sorte von t in sortSet sig     
-evaluateOnePointFORMULA sig (Membership t sort _)
-     |Set.member sort (sortSet sig)==False = Just True
-     |otherwise= Nothing
+-- todo: auc prüfen, ob Sorte von t in sortSet sig     
+evaluateOnePointFORMULA sig (Membership (Sorted_term _ sort1 _) sort2 _)=
+        if (Set.member sort1 (sortSet sig)==False)
+             && (Set.member sort2 (sortSet sig)==False) then Just True
+        else Nothing 
  
-evaluateOnePointFORMULA sig (Mixfix_formula _)= error "Fehler Mixfix_formula"
+evaluateOnePointFORMULA _ (Mixfix_formula _)= error "Fehler Mixfix_formula"
 
-evaluateOnePointFORMULA sig (Unparsed_formula _ _)= error "Fehler Unparsed_formula"
+evaluateOnePointFORMULA _ (Unparsed_formula _ _)= error "Fehler Unparsed_formula"
 
-evaluateOnePointFORMULA sig (ExtFORMULA _)=error "Fehler ExtFORMULA"
+evaluateOnePointFORMULA sig (Sort_gen_ax constrs)=
+      let (srts,ops,_)=recover_Sort_gen_ax constrs
+          sorts = sortSet sig
+          argsAndres=concat $ map (\os-> case os of
+                                          Op_name _->[]
+                                          Qual_op_name _ ot _->
+                                            case ot of
+                                             Total_op_type args res _->[(args,res)]
+                                             Partial_op_type args res _->[(args,res)]) ops
+          iterateInhabited l =
+	            if l==newL then newL else iterateInhabited newL
+		             where newL =foldr (\ (as,rs) l'->
+                                                  if (all (\s->elem s l') as)
+                                                      && (not (elem rs l'))then rs:l'
+					          else l') l argsAndres 
+          inhabited = iterateInhabited []          
+      in if any (\s->Set.member s sorts) srts then Nothing
+         else if all (\s->elem s inhabited) srts then Just True
+              else Nothing  
+                       
+evaluateOnePointFORMULA _ (ExtFORMULA _)=error "Fehler ExtFORMULA"
 
-evaluateOnePointFORMULA _ _=error "Fehler" -- False?    
+evaluateOnePointFORMULA _ _=error "Fehler" -- or Just False   
 
 -- | Compute the image of a signature morphism
 imageOfMorphism :: Morphism f e m  -> Sign f e
@@ -207,23 +227,26 @@ imageOfMorphism m =
                                  Just id_pt -> insertPred id_pt l') l pts)        
                          Map.empty (predMap src)              
             }
-  where sig = mtarget m
-        src = msource m
-        sortMap = sort_map m
-        funMap = fun_map m
-        insertOp (ident,ot) opM = 
-          case Map.lookup ident opM of
-            Nothing -> Map.insert ident (Set.single ot) opM
-            Just ots -> Map.insert ident (Set.insert ot ots) opM
-        pMap = pred_map m
-        insertPred (ident,pt) predM = 
-          case Map.lookup ident predM of
-            Nothing -> Map.insert ident (Set.single pt) predM
-            Just pts -> Map.insert ident (Set.insert pt pts) predM
+    where sig = mtarget m
+          src = msource m
+          sortMap = sort_map m
+          funMap = fun_map m
+          insertOp (ident,ot) opM = 
+            case Map.lookup ident opM of
+              Nothing -> Map.insert ident (Set.single ot) opM
+              Just ots -> Map.insert ident (Set.insert ot ots) opM
+          pMap = pred_map m
+          insertPred (ident,pt) predM = 
+            case Map.lookup ident predM of
+              Nothing -> Map.insert ident (Set.single pt) predM
+              Just pts -> Map.insert ident (Set.insert pt pts) predM
 
 -- | Test whether a signature morphism adds new supersorts
 addsNewSupersorts :: Morphism f e m -> Bool
-addsNewSupersorts = error "addsNewSupersorts not yet implemented"
+addsNewSupersorts m = 
+    Set.any (\s->not $ Set.subset (supersortsOf s sig) sorts) sorts
+       where sig=imageOfMorphism m
+             sorts=sortSet sig   
 {-
 check: is there a sort not in the image of the morphism, that is
 simultaneously s supersort of a sort that  is in the image.
