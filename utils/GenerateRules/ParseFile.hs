@@ -4,14 +4,8 @@ import Parsec
 import ParseHeader
 
 type Modulename = String
---type Data   = String
 
 type Import = String
--- data Import = Imp { modulename :: String,
--- 		    import_list :: [String],
-		    
-
--- }
 
 inputFile :: Parser ([Data],[Import])
 inputFile = do (ds,is) <- dataOrImport ([],[])
@@ -51,29 +45,24 @@ dataType = do try (string "data") <|> (string "newtype")
               char '='
               return d 
 	      
-{-
-identifier :: Parser String
-identifier = do x <- upper
-                xs <- many (alphaNum <|> oneOf "_-.,")
-		return (x:xs)
-
-comment :: Parser ()
-comment = do string "{-" 
-	     manyTill anyChar (try (string "-}"))
-	     return ()
-	  <|>
-          do string "--"
-             manyTill anyChar (try newline)
-	     return ()
--}
 importData :: Parser String
 importData = do string "import"
                 skipMany1 space
-                qual <- option "" (try (do{string "qualified";spaces;return "qualified "})) 
+                qual <- option "" (try (do string "qualified"
+					   spaces
+                                           return "qualified ")) 
                 d <- identifier
-                f <- option "" (try (do{spaces;b <- between (char '(') (char ')') (many1 (noneOf "()"));return ("("++b++")")}))
-                as <- option "" (try (do{spaces;string "as";spaces;c<-identifier;return (" as "++c)}))  
-                return (qual++d++as) -- orig: qual++d++f++as
+                _f <- option "" (try (do spaces
+				         b <- between (char '(') (char ')') 
+				              (many1 (noneOf "()"))
+				         return ("("++b++")")))
+                as <- option "" (try (do
+				      spaces
+				      string "as"
+				      spaces
+				      c<-identifier
+				      return (" as "++c)))  
+                return (qual++d++as)
   
 
 
