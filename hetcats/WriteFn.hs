@@ -19,7 +19,11 @@ import System.IO
 import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN()) 
 import Syntax.GlobalLibraryAnnotations
+import Version
 import Common.ConvertGlobalAnnos
+import Common.ATerm.Lib
+
+
 -- for debugging
 
 {---
@@ -82,4 +86,21 @@ write_casl_latex opt oup ld =
             hPutStr dout $ printLIB_DEFN_debugLatex ld
             hClose dout)
        return ()
+
+writeShATermFile :: (ATermConvertible a) => FilePath -> a -> IO ()
+writeShATermFile fp atcon = writeFile fp hetsstr 
+                            where
+                            hetsstr = "hets("++hetcats_version++","++ atermstr ++ ")"
+                            atermstr = writeSharedATerm $ fst $ toShATerm emptyATermTable atcon
+
+readShATermFile :: (ATermConvertible a) => FilePath -> IO a
+readShATermFile fp = do str <- readFile fp
+                        return $ fromShATerm $ readATerm str                        
+                                         
+
+toShATermString :: (ATermConvertible a) => a -> String
+toShATermString atcon = "hets("++hetcats_version++","++ atermstr ++ ")"
+                        where 
+                        atermstr = writeSharedATerm $ fst $ toShATerm emptyATermTable atcon
+
 
