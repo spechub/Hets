@@ -47,6 +47,9 @@ import Common.PPUtils
 import Common.Result
 import Common.Lib.Pretty
 
+
+-- * Types for structured specification analysis
+
 -- ??? Some info about the theorems already proved for a node
 --     should be added
 --      or should it be kept separately?
@@ -242,9 +245,8 @@ type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
 
 
 -- * Types for architectural and unit specification analysis
-
--- ** Basic types 
 -- (as defined for basic static semantics in Chap. III:5.1)
+
 type ParUnitSig = ([NodeSig], NodeSig)
 
 data UnitSig = Unit_sig NodeSig
@@ -262,63 +264,10 @@ type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
 
--- ** Additional types 
--- (as defined for extended static semantics in Chap. III:5.6.1)
-data DiagNodeLab = DiagNode { dn_sig :: NodeSig } 
-		   deriving Show
-emptyDiagNodeLab :: AnyLogic -> DiagNodeLab
-emptyDiagNodeLab l = DiagNode { dn_sig = EmptyNode l }
-
-data DiagLinkLab = DiagLink { dl_morphism :: GMorphism }
-		   deriving (Eq, Show)
-
-type BasedParUnitSig = (DiagNodeSig, ParUnitSig)
-
-type Diag = Diagram DiagNodeLab DiagLinkLab
-emptyDiag :: Diag
-emptyDiag = Graph.empty
-
-data DiagNodeSig = Diag_node_sig Node NodeSig
-		 | Empty_node AnyLogic
-		   deriving Show
-emptyDiagNodeSig :: AnyLogic -> DiagNodeSig
-emptyDiagNodeSig l = Empty_node l
-
--- | Return a signature stored within given diagram node sig
-getSigFromDiag :: DiagNodeSig -> NodeSig
-getSigFromDiag (Diag_node_sig _ ns) = ns
-getSigFromDiag (Empty_node l) = EmptyNode l
-
-data BasedUnitSig = Based_unit_sig DiagNodeSig 
-		  | Based_par_unit_sig BasedParUnitSig
-		    deriving Show
-
-type StBasedUnitCtx = Map.Map SIMPLE_ID BasedUnitSig
-emptyStBasedUnitCtx :: StBasedUnitCtx
-emptyStBasedUnitCtx = Map.empty
-
--- Since Ps and Bs in the definition of ExtStUnitCtx have disjoint domains
--- we can merge them into a single mapping represented by StBasedUnitCtx.
-type ExtStUnitCtx = (StBasedUnitCtx, Diag)
-emptyExtStUnitCtx :: ExtStUnitCtx
-emptyExtStUnitCtx = (emptyStBasedUnitCtx, emptyDiag)
-
--- | A mapping from extended to basic static unit context
-ctx :: ExtStUnitCtx -> StUnitCtx
-ctx (buc, _) = 
-    let ctx' [] _ = emptyStUnitCtx
-	ctx' (id : ids) buc =
-	    let uctx = ctx' ids buc
-	    in case Map.lookup id buc of
-	            Just (Based_unit_sig (Diag_node_sig _ nsig)) 
-			-> Map.insert id (Sig nsig) uctx
-     		    Just (Based_par_unit_sig ((Diag_node_sig _ nsig), usig)) 
-			-> Map.insert id (Imp_unit_sig (nsig, Par_unit_sig usig)) uctx
-		    _ -> uctx -- this should never be the case
-    in ctx' (Map.keys buc) buc
-
 type ArchSig = (StUnitCtx, UnitSig)
 
+
+-- * Types for global and library environments
 
 data GlobalEntry = SpecEntry ExtGenSig 
                  | ViewEntry ExtViewSig
