@@ -1,5 +1,5 @@
-This README belongs to a HetCATS release (and does not apply to
-sources directly obtained via cvs.
+This README belongs to a Hets release (and does not apply to
+sources directly obtained via cvs).
 
 The aim of this release is a binary "hets" that is able to analyse
 heterogeneous and in particular CASL specifications.
@@ -39,6 +39,6 @@ If you need to rebuild the hets binary follow the instructions in INSTALL
 (This README belongs a to release created by "make release", in case
 that you obtained the HetCATS sources as CVS tree)
 
-The heterogeneous CASL tool set "HetCATS" is mainly maintained by
+The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (maeder@tzi.de) and Till Mossakowski
 (till@tzi.de). The mailing list is hets@tzi.de.
