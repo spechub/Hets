@@ -84,7 +84,7 @@ defaultHetcatsOpts =
 	  , intype   = ATerm NonBAF
 	  , outdir = "."
 	    -- ...or like cats: same as that of the input file
-	    -- might be done with an extra constructor
+	    -- might be done with an extra constructor?
 	  , outtypes = [HetCASLOut OutASTree Ascii]
             {- better default options, but 
 	    the underlying functions are not yet implemented:
@@ -286,23 +286,9 @@ hetcatsOpts argv =
     case (getOpt Permute options argv) of
         (opts,non_opts,[]) -> do withOpts <- formOpts opts
 				 withIns  <- formInFiles non_opts
-				 return $ (withIns . withOpts) 
+				 return $ (withOpts . withIns) 
 					defaultHetcatsOpts
         (_,_,errs) -> fail (concat errs ++ hetsUsage)
-
--- TODO!
-formInFiles :: [String] -> IO (HetcatsOpts -> HetcatsOpts)
-formInFiles fs = do ifs <- checkInFiles fs
-		    case ifs of
-			     [x] -> return (inFile x)
-			     []  -> return $ 
-				    error' "No valid input file specified"
-			     _   -> return $ error'
-				    "Only one input file may be specified at a time"
--- at least for now - will be implemented later
-    where
-    inFile x opts = opts { infile = x }
-    error' e = (\_ -> hetsError User e)
 
 -- TODO: implement some kind of sequence...
 formOpts :: [Flag] -> IO (HetcatsOpts -> HetcatsOpts)
@@ -315,13 +301,42 @@ formOpts fs = do if (hasHelp fs)
 				      ++ hetcats_version)
 			    exitWith ExitSuccess
 		    else return () -- fall through
-		 fs' <- return $ (collectOutTypes . collectVerbosity) fs
-		 checkOutDirs fs'
-		 return (\x -> x) -- TODO!
+		 fs' <- return $ (collectOutTypes
+				  . collectVerbosity
+				  -- collect some more
+				 ) fs
+		 outDirs <- checkOutDirs fs'
+		 return $ extractOpts fs'
     where
     hasVersion xs = Version `elem` xs
     hasHelp xs = Help `elem` xs
 
+extractOpts :: [Flag] -> HetcatsOpts -> HetcatsOpts
+extractOpts ((Verbose x):xs)  opts = opts
+extractOpts ((Version):xs)    opts = opts
+extractOpts ((Help):xs)       opts = opts
+extractOpts ((InType x):xs)   opts = opts { intype = x }
+extractOpts ((OutDir x):xs)   opts = opts { outdir = x }
+extractOpts ((OutTypes x):xs) opts = opts { outtypes = x }
+extractOpts ((Analysis x):xs) opts = opts { analysis = x }
+--extractOpts ((Pretty x):xs)   opts = ... ?
+extractOpts ((LibDir x):xs)   opts = opts { libdir = x }
+extractOpts [] opts = opts
+extractOpts _ _ = hetsError Intern "Unknown Error in extractOpts"
+
+-- TODO!
+formInFiles :: [String] -> IO (HetcatsOpts -> HetcatsOpts)
+formInFiles fs = do ifs <- checkInFiles fs
+		    case ifs of
+			     [x] -> return $ inFile x
+			     []  -> return $ 
+				    error' "No valid input file specified"
+			     _   -> return $ error'
+			      "Only one input file may be specified at a time"
+-- at least for now - more will be implemented later
+    where
+    inFile x opts = opts { infile = x }
+    error' e = (\_ -> hetsError User e)
 
 -- auxiliary functions: FileSystem interaction --
 
