@@ -247,6 +247,20 @@ anaType (mk, t) tm =
        newk <- inferKind mk newTy tm
        return (newk, newTy)
 
+generalize :: TypeScheme -> Result TypeScheme
+generalize (TypeScheme newArgs (q :=> newTy) p) = do
+ 	       let fvs = varsOf newTy
+		   ts = zipWith ( \ (TypeArg i k _ _) n -> 
+				  TypeName i k n) fvs [-1, -2..]
+		   m = Map.fromList $ zip fvs ts
+		   qTy = q :=> repl m newTy
+                   ds = unboundTypevars newArgs newTy
+	       if null ds then
+	          return $ TypeScheme newArgs qTy p
+	          else if null newArgs then 
+		       return $ TypeScheme fvs qTy p
+		  else Result ds Nothing
+
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 
     if null ps then mkBracketToken k [nullPos]

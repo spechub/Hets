@@ -76,10 +76,10 @@ anaTypeItems ga gk inst l = do
     addDataSen tys
     return rl
 
-addDataSen :: [(Id, Type)] -> State Env ()
+addDataSen :: [DataPat] -> State Env ()
 addDataSen tys = do 
     tm <- gets typeMap
-    let tis = map fst tys
+    let tis = map ( \ (i, _, _) -> i) tys
         ds = foldr ( \ i dl -> case Map.lookup i tm of 
 		     Nothing -> dl
 		     Just ti -> case typeDefn ti of
@@ -96,7 +96,7 @@ ana1TypeItem (Datatype d) =
 ana1TypeItem t = return $ Just t 
 
 -- | analyse a 'TypeItem'
-anaTypeItem :: GlobalAnnos -> GenKind -> Instance -> [(Id, Type)] -> TypeItem 
+anaTypeItem :: GlobalAnnos -> GenKind -> Instance -> [DataPat] -> TypeItem 
 	    -> State Env TypeItem
 anaTypeItem _ _ inst _ (TypeDecl pats kind ps) = 
     do ak <- anaKind kind
@@ -200,7 +200,7 @@ anaTypeItem _ _ inst _ t@(AliasType pat mk sc ps) =
 				    fullKind = typeArgsListToKind nAs ik
 				    allSc = TypeScheme allArgs qty qs
     			        checkUniqueTypevars allArgs
-			        gPty <- generalize allSc
+			        gPty <- fromResult $ const $ generalize allSc
 				case gPty of 
 				  Nothing -> return $ AliasType 
 					     (TypePattern i [] [])
@@ -245,9 +245,9 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
 			  Just _ -> Just $ DatatypeDecl (TypePattern i nAs []) 
 				    k alts newDerivs ps
 
-dataPatToType :: DatatypeDecl -> (Id, Type)
+dataPatToType :: DatatypeDecl -> DataPat
 dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) =
-     (i, typeIdToType i nAs k)
+     (i, nAs, k)
 dataPatToType _ = error "dataPatToType"
 
 -- | add a supertype to a given type id
@@ -264,18 +264,18 @@ addSuperType t i =
 	       else putTypeMap $ Map.insert i 
 			(TypeInfo ok ks (t:sups) defn) tm
 
-addDataSubtype :: Type -> Type -> State Env ()
+addDataSubtype :: DataPat -> Type -> State Env ()
 addDataSubtype dt st = 
     case st of 
-    TypeName i _ _ -> addSuperType dt i 
+    TypeName i _ _ -> addSuperType (typeIdToType dt) i 
     _ -> addDiags [mkDiag Warning "data subtype ignored" st]
 
 -- | analyse a 'DatatypeDecl'
-anaDatatype :: GenKind -> Instance -> [(Id, Type)] 
+anaDatatype :: GenKind -> Instance -> [DataPat] 
 	    -> DatatypeDecl -> State Env DatatypeDecl
 anaDatatype genKind inst tys
        d@(DatatypeDecl (TypePattern i nAs _) k alts _ _) = 
-    do let dt = snd $ dataPatToType d
+    do let dt = dataPatToType d
 	   fullKind = typeArgsListToKind nAs k
        tm <- gets typeMap
        mapM_ (addTypeVarDecl False) nAs
@@ -292,15 +292,22 @@ anaDatatype genKind inst tys
 	       Nothing -> return ()
 	       Just c -> do
 	           let ty = TypeScheme nAs ([] :=> getConstrType dt p tc) []
-	           addOpId c ty [] (ConstructData i)
-	           mapM_ ( \ (Select ms ts pa) -> case ms of 
-			   Just s -> addOpId s (TypeScheme nAs 
-				      ([] :=> getSelType dt pa ts) []) 
-			               [] $ SelectData [ConstrInfo c ty] i
+		   msc <- fromResult $ const $ generalize ty 
+		   case msc of 
+		     Nothing -> return ()
+		     Just sc -> do 
+		       addOpId c sc [] (ConstructData i) 
+	               mapM_ ( \ (Select ms ts pa) -> case ms of 
+			   Just s -> do 
+			      ssc <- fromResult $ const $ getSelType dt pa ts
+			      case ssc of 
+			         Nothing -> return Nothing
+			         Just selSc -> addOpId s selSc []
+			               $ SelectData [ConstrInfo c sc] i
 			   Nothing -> return Nothing) $ concat sels) newAlts
 	   let de = DataEntry Map.empty i genKind nAs newAlts
            addTypeId True (DatatypeDefn de) inst fullKind i
-	   appendSentences $ makeDataSelEqs de
+	   appendSentences $ makeDataSelEqs de k
            return d 
 anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"
 

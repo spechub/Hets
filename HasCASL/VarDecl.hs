@@ -67,22 +67,8 @@ anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
        putTypeMap tm       -- forget local variables 
        case mt of 
            Nothing -> return Nothing
-	   Just newTy -> generalize $ TypeScheme newArgs (q :=> newTy) p
-
-generalize :: TypeScheme -> State Env (Maybe TypeScheme)
-generalize (TypeScheme newArgs (q :=> newTy) p) = do
- 	       let fvs = varsOf newTy
-		   ts = zipWith ( \ (TypeArg i k _ _) n -> 
-				  TypeName i k n) fvs [-1, -2..]
-		   m = Map.fromList $ zip fvs ts
-		   qTy = q :=> repl m newTy
-                   ds = unboundTypevars newArgs newTy
-	       if null ds then
-	          return $ Just $ TypeScheme newArgs qTy p
-	          else if null newArgs then 
-		       return $ Just $ TypeScheme fvs qTy p
-		  else do addDiags ds
-                          return Nothing
+	   Just newTy -> fromResult $ const $ generalize 
+			 $ TypeScheme newArgs (q :=> newTy) p
 
 anaKind :: Kind -> State Env Kind
 anaKind k = toState star $ anaKindM k

@@ -45,11 +45,12 @@ mkApplTerm trm args = if null args then trm
        else mkApplTerm (ApplTerm trm (head args) []) $ tail args
 
 -- | get the type of a constructor with given curried argument types
-getConstrType :: Type -> Partiality -> [Type] -> Type
+getConstrType :: DataPat -> Partiality -> [Type] -> Type
 getConstrType dt p ts = (case p of 
      Total -> id 
      Partial -> addPartiality ts) $
-		       foldr ( \ c r -> FunType c FunArr r [] ) dt ts
+		       foldr ( \ c r -> FunType c FunArr r [] ) 
+			     (typeIdToType dt) ts
 
 -- | make function arrow partial after some arguments
 addPartiality :: [a] -> Type -> Type
@@ -75,16 +76,17 @@ getPartiality as t = case t of
    LazyType _ _ -> if null as then Partial else error "getPartiality"
    _ -> Total
 
+type DataPat = (Id, [TypeArg], Kind)
 
 -- | compute the type given by the input
-typeIdToType :: Id -> [TypeArg] -> Kind -> Type
-typeIdToType i nAs k = let      
+typeIdToType :: DataPat -> Type
+typeIdToType (i, nAs, k) = let      
     fullKind = typeArgsListToKind nAs k
     ti = TypeName i fullKind 0
-    mkType _ ty [] = ty
-    mkType n ty ((TypeArg ai ak _ _): rest) =
-	mkType (n-1) (TypeAppl ty (TypeName ai ak n)) rest
-    in mkType (-1) ti nAs
+    mkType ty [] = ty
+    mkType ty ((TypeArg ai ak _ _): rest) =
+	mkType (TypeAppl ty (TypeName ai ak 1)) rest
+    in mkType ti nAs
 
 -- | extent a kind to expect further type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind

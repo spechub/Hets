@@ -43,50 +43,51 @@ genSelVars _ [] = []
 genSelVars n (ts:sels)  = 
     genTuple n 1 ts : genSelVars (n + 1) sels
 
-makeSelTupleEqs :: Type -> [TypeArg] -> Term -> Int -> Int -> [Selector]
-		-> [Named Term]
-makeSelTupleEqs dt args ct n m (Select mi ty p : sels) = 
-    (case mi of
-    Nothing -> []
-    Just i -> let sc = TypeScheme args ([] :=> getSelType dt p ty) [] 
+makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
+makeSelTupleEqs dt@(_, args, _) ct n m (Select mi ty p : sels) = 
+    let Result _ msc = getSelType dt p ty in
+    (case (mi, msc) of
+    (Just i, Just sc) -> let
 		  vt = QualVar $ mkSelVar n m ty
 		  eq = mkEqTerm eqId [] (mkApplTerm (mkOpTerm i sc) [ct]) vt
-              in [NamedSen ("ga_select_" ++ show i) eq])
-    ++ makeSelTupleEqs dt args ct n (m + 1) sels
-makeSelTupleEqs _ _ _ _ _ [] = []
+              in [NamedSen ("ga_select_" ++ show i) eq]
+    _ -> [])
+    ++ makeSelTupleEqs dt ct n (m + 1) sels
+makeSelTupleEqs _ _ _ _ [] = []
 
-makeSelEqs :: Type -> [TypeArg] -> Term -> Int -> [[Selector]] 
-           -> [Named Term]
-makeSelEqs dt args ct n (sel:sels) = 
-    makeSelTupleEqs dt args ct n 1 sel 
-    ++ makeSelEqs dt args ct (n + 1) sels 
-makeSelEqs _ _ _ _ _ = []
+makeSelEqs :: DataPat -> Term -> Int -> [[Selector]] -> [Named Term]
+makeSelEqs dt ct n (sel:sels) = 
+    makeSelTupleEqs dt ct n 1 sel 
+    ++ makeSelEqs dt ct (n + 1) sels 
+makeSelEqs _ _ _ _ = []
 
-makeAltSelEqs :: Type -> [TypeArg] -> AltDefn -> [Named Term]
-makeAltSelEqs dt args (Construct mc ts p sels) = 
+makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
+makeAltSelEqs dt@(_, args, _) (Construct mc ts p sels) = 
     case mc of
     Nothing -> []
     Just c -> let sc = TypeScheme args ([] :=> getConstrType dt p ts) [] 
+		  Result _ msc = generalize sc
+		  newSc = maybe sc id msc
 		  vars = genSelVars 1 sels 
 		  as = map ( \ vs -> mkTupleTerm (map QualVar vs) []) vars
-		  ct = mkApplTerm (mkOpTerm c sc) as
+		  ct = mkApplTerm (mkOpTerm c newSc) as
               in map (mapNamed (mkForall (map GenTypeVarDecl args
 				  ++ map GenVarDecl (concat vars))))
-	         $ makeSelEqs dt args ct 1 sels
+	         $ makeSelEqs dt ct 1 sels
 
-makeDataSelEqs :: DataEntry -> [Named Sentence]
-makeDataSelEqs (DataEntry _ i _ args alts) =
+makeDataSelEqs :: DataEntry -> Kind -> [Named Sentence]
+makeDataSelEqs (DataEntry _ i _ args alts) k =
     map (mapNamed Formula) $  
-    concatMap (makeAltSelEqs (typeIdToType i args star) args) alts
+    concatMap (makeAltSelEqs(i, args, k)) alts
 
-anaAlts :: [(Id, Type)] -> Type -> [Alternative] -> TypeMap -> Result [AltDefn]
+anaAlts :: [DataPat] -> DataPat -> [Alternative] -> TypeMap -> Result [AltDefn]
 anaAlts tys dt alts tm = 
     do l <- mapM (anaAlt tys dt tm) alts
        Result (checkUniqueness $ catMaybes $ 
 	       map ( \ (Construct i _ _ _) -> i) l) $ Just ()
        return l
 
-anaAlt :: [(Id, Type)] -> Type -> TypeMap -> Alternative -> Result AltDefn 
+anaAlt :: [DataPat] -> DataPat -> TypeMap -> Alternative -> Result AltDefn 
 anaAlt _ _ tm (Subtype ts _) = 
     do l <- mapM ( \ t -> anaType (Just star, t) tm) ts
        return $ Construct Nothing (map snd l) Partial []
@@ -97,13 +98,13 @@ anaAlt tys dt tm (Constructor i cs p _) =
 		map ( \ (Select s _ _) -> s ) $ concat sels) $ Just ()
        return $ Construct (Just i) (map fst newCs) p sels
 
-anaComps :: [(Id, Type)] -> Type -> TypeMap -> [Component]
+anaComps :: [DataPat] -> DataPat -> TypeMap -> [Component]
 	 -> Result (Type, [Selector]) 
 anaComps tys rt tm cs =
     do newCs <- mapM (anaComp tys rt tm) cs
        return (mkProductType (map fst newCs) [], map snd newCs)
 
-anaComp :: [(Id, Type)] -> Type -> TypeMap -> Component 
+anaComp :: [DataPat] -> DataPat -> TypeMap -> Component 
 	-> Result (Type, Selector)
 anaComp tys rt tm (Selector s p t _ _) =
     do ct <- anaCompType tys rt t tm
@@ -112,21 +113,23 @@ anaComp tys rt tm (NoSelector t) =
     do ct <- anaCompType tys rt t tm
        return  (ct, Select Nothing ct Partial)
 
-getSelType :: Type -> Partiality -> Type -> Type
-getSelType dt p rt = (case p of 
+getSelType :: DataPat -> Partiality -> Type -> Result TypeScheme
+getSelType dp@(_, args, _) p rt = let dt = typeIdToType dp in 
+    generalize $ TypeScheme args ([] :=> (case p of 
     Partial -> addPartiality [dt]
-    Total -> id) $ FunType dt FunArr rt []
+    Total -> id) (FunType dt FunArr rt [])) []
 
-anaCompType :: [(Id, Type)] -> Type -> Type -> TypeMap -> Result Type
-anaCompType tys dt t tm = do
+anaCompType :: [DataPat] -> DataPat -> Type -> TypeMap -> Result Type
+anaCompType tys (_, as, _) t tm = do
     (_, ct) <- anaType (Just star, t) tm
-    let ds = unboundTypevars (varsOf dt) ct 
+    let ds = unboundTypevars as ct 
     if null ds then return () else Result ds Nothing
     mapM (checkMonomorphRecursion ct tm) tys
     return ct
  
-checkMonomorphRecursion :: Type	-> TypeMap -> (Id, Type) -> Result ()
-checkMonomorphRecursion t tm (i, rt) = 
+checkMonomorphRecursion :: Type	-> TypeMap -> DataPat -> Result ()
+checkMonomorphRecursion t tm p@(i, _, _) = 
+    let rt = typeIdToType p in
     if occursIn tm i t then 
        if equalSubs tm t rt then return ()
        else Result [Diag Error  ("illegal polymorphic recursion" 

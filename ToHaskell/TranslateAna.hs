@@ -107,7 +107,8 @@ getAliasType :: TypeScheme -> HsType
 getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 
 -- | Translation of an alternative constructor for a datatype definition.
-translateAltDefn :: Env -> Type -> [TypeArg] -> IdMap -> AltDefn -> [HsConDecl]
+translateAltDefn :: Env -> DataPat -> [TypeArg] -> IdMap -> AltDefn 
+		 -> [HsConDecl]
 translateAltDefn env dt args im (Construct muid origTs p _) = 
     let ts = map (mapType im) origTs in
     case muid of
@@ -118,15 +119,14 @@ translateAltDefn env dt args im (Construct muid origTs p _) =
 
 translateDt :: Env -> DataEntry -> Named HsDecl
 translateDt env (DataEntry im i _ args alts) = 
-   	 let j = Map.findWithDefault i i im
-	     dt = typeIdToType j args star
-	     hsname = mkHsIdent UpperId j in
+   	 let j = Map.findWithDefault i i im in
          NamedSen ("ga_" ++ showId j "") $
          HsDataDecl nullLoc
 	               [] -- empty HsContext
-	               hsname
+	               (mkHsIdent UpperId j)
 		       (map getArg args) -- type arguments
-		       (concatMap (translateAltDefn env dt args im) alts)
+		       (concatMap (translateAltDefn env (j, args, star)
+				   args im) alts)
 		       derives
 
 

@@ -514,7 +514,7 @@ instance PrintLaTeX TypeDefn where
     printLatex0 ga (DatatypeDefn de)  = text " \\%[" <>
 	printLatex0 ga de <> text "]\\%"
 
-printAltDefn :: GlobalAnnos -> Type -> AltDefn -> Doc
+printAltDefn :: GlobalAnnos -> DataPat -> AltDefn -> Doc
 printAltDefn ga dt (Construct mi ts p sels) = case mi of 
         Just i -> printLatex0 ga i <+> colon 
 		  <+> printLatex0 ga (getConstrType dt p ts) 
@@ -565,7 +565,8 @@ instance PrintLaTeX DataEntry where
 	printGenKind k <> hc_sty_plain_keyword typeS <+> printLatex0 ga i 
 	     <> hcat (map (parens . printLatex0 ga) args)
 	    <+> (hc_sty_axiom defnS $$ 
-		 vcat (map (printAltDefn ga $ typeIdToType i args star) alts))
+		 vcat (map (printAltDefn ga (i, args, star))
+		       alts))
 	$$ nest 2 (noPrint (Map.isEmpty im) 
 	   (hc_sty_plain_keyword withS <+> hc_sty_plain_keyword (typeS ++ sS) 
 		   <+> printMap0 ga (hc_sty_axiom mapsTo) im))

@@ -51,7 +51,7 @@ instance PrettyPrint TypeDefn where
     printText0 ga (DatatypeDefn dd)  = 
 	text " %[" <> printText0 ga dd <> text "]%"
 
-printAltDefn :: GlobalAnnos -> Type -> AltDefn -> Doc
+printAltDefn :: GlobalAnnos -> DataPat -> AltDefn -> Doc
 printAltDefn ga dt (Construct mi ts p sels) = case mi of 
         Just i -> hang (printText0 ga i <+> colon 
 			<+> printText0 ga (getConstrType dt p ts))
@@ -102,8 +102,7 @@ instance PrettyPrint DataEntry where
     printText0 ga (DataEntry im i k args alts) = hang
 	(printGenKind k <> text typeS <+> printText0 ga i 
 		  <> hcat (map (parens . printText0 ga) args))
-          2 (text defnS <+> vcat (map (printAltDefn ga $ 
-					typeIdToType i args star) alts))
+          2 (text defnS <+> vcat (map (printAltDefn ga (i, args, star)) alts))
 	$$ nest 2 (noPrint (Map.isEmpty im) 
 	   (text withS <+> text (typeS ++ sS) <+> printText0 ga im))
 		       
