@@ -84,6 +84,8 @@
 % \AX prints its argument in math modus
 \newcommand{\Ax}[1]{\ensuremath{##1}}%
 
+\newcommand{\ANNOTEWORD}[1]{\%\KW{##1}}
+
 %%%%% Heng todo:
 %% Makros aus casl.sty definieren
 \newcommand{\LBRACE}            {\{}
@@ -106,9 +108,9 @@
 \newcommand{\REVEAL}            {\KW{reveal}}
 \newcommand{\WITH}              {\KW{with}}
 \newcommand{\THEN}              {\KW[view]{then}} % hetcasl_keyword
-%\newcommand{\THENCONS}          {\THEN~\ANNOTEWORD{cons}}
-%\newcommand{\THENDEF}           {\THEN~\ANNOTEWORD{def}}
-%\newcommand{\THENIMPLIES}       {\THEN~\ANNOTEWORD{implies}}
+\newcommand{\THENCONS}          {\THEN~\ANNOTEWORD{cons}}
+\newcommand{\THENDEF}           {\THEN~\ANNOTEWORD{def}}
+\newcommand{\THENIMPLIES}       {\THEN~\ANNOTEWORD{implies}}
 \newcommand{\AND}               {\KW{and}}
 \newcommand{\LOCAL}             {\KW{local}}
 \newcommand{\THENLOCAL}         {\THEN~\LOCAL}
