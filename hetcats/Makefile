@@ -43,7 +43,9 @@ ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),bin_clean)
 ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
+ifneq ($(MAKECMDGOALS),distclean)
 include sources_hetcats.mk
+endif
 endif
 endif
 endif
@@ -62,50 +64,49 @@ drifted_files = ../AS_Architecture.hs ../AS_Library.hs ../AS_Annotation.hs\
 #.PRECIOUS: sources_hetcats.mk
 
 hetcats: $(objects)
-	rm -f $@
+	$(RM) $@
 	$(HC) -o $@ $(HC_OPTS) $(objects)
 
 hetcats-make: hetcats.hs ../utils/create_sources.pl $(drifted_files)
-	rm -f hetcats-make sources_hetcats.mk
+	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hetcats $< $(HC_OPTS) 2>&1 | tee hetcats-make && \
          $(PERL) ../utils/create_sources.pl hetcats-make sources_hetcats.mk
 
 ###############
 ### clean up
 
-### removes *.hi and *.o in all include directories and the binary 'hetcats'
+### removes *.hi and *.o in all include directories
 clean:
-	THIS_DIR=`pwd`;\
-         for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
-         cd $$p ; rm -f *.hi *.o ; cd $$THIS_DIR;\
-         done; \
-         unset p THIS_DIR
+	for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
+	(cd $$p ; $(RM) *.hi *.hi.bak *.o) ; done
 
-### additionally removes binarys
+### additionally removes binaries
 bin_clean: clean
-	rm -f hetcats
-	rm -f capa
-	rm -f hacapa
+	$(RM) hetcats
+	$(RM) capa
+	$(RM) hacapa
 
 ### additonally removes *.d (dependency files) in every include directory
 ### also delete *.d.bak (dependency file backups)
 d_clean: clean
-	THIS_DIR=`pwd`;\
-         for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
-         cd $$p ; rm -f *.d *.d.bak ; cd $$THIS_DIR;\
-         done; \
-         unset p THIS_DIR
+	for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
+	(cd $$p ; $(RM) *.d *.d.bak) ; done
 
 ### additionally removes the files that define the sources-variable
 real_clean: d_clean bin_clean
-	rm -f hetcats-make sources_hetcats.mk
+	$(RM) hetcats-make sources_hetcats.mk
+
+### additionally removes files created by DrIFT
+distclean: real_clean
+	$(RM) $(drifted_files)
+
 ####################################################################
 ### test targets
 ####################################################################
 
 ### a parser to test annotation parser and Id parsers
 test_parser: ../test_parser.hs $(drifted_files)
-	rm -f $@
+	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS) 
 
 ### interactive
@@ -115,13 +116,13 @@ ghci:
 ### christian's target
 ### CASL parser
 capa: ../CASL/Main.hs $(drifted_files)
-	rm -f $@
+	$(RM) $@
 	$(HC) --make -Wall -fno-warn-missing-signatures -o $@ $< $(HC_OPTS)
 	\cp -p $@ ../CASL/$@ 
 
 ### HasCASL parser
 hacapa: ../HasCASL/Main.hs $(drifted_files)
-	rm -f $@
+	$(RM) $@
 	$(HC) --make -Wall -fno-warn-missing-signatures -o $@ $< $(HC_OPTS)
 	\cp -p $@ ../HasCASL/$@ 
 
@@ -168,10 +169,12 @@ ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
+ifneq ($(MAKECMDGOALS),distclean)
 ## include every .d file in INCLUDE_PATH
 -include $(objects:.o=.d)
 
 sources_hetcats.mk: hetcats-make Version.hs
+endif
 endif
 endif
 endif
