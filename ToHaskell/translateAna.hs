@@ -24,6 +24,7 @@ main = do l <- getArgs
 	     do s <- readFile $ head l
 		let r = runParser hParser emptyAnnos (head l) s 
 	        case r of 
+		       --Right x -> putStrLn $ show x
 		       Right x -> putStrLn $ prettyPrint x
 		       Left err -> putStrLn $ show err
 	     else putStrLn "missing argument"

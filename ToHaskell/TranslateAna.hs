@@ -14,6 +14,9 @@ import Common.Token
 import Common.AnnoState
 import Common.PPUtils
 
+-- Positionsangaben in den erzeugten Haskelldatenstrukturen sind
+-- grundsätzlich falsch (werden evtl. nicht benötigt)
+
 idToHaskell :: AParser WrapString
 idToHaskell = fmap (WrapString . translateId) parseId 
 
@@ -41,31 +44,33 @@ translateTypeMap m = concat $ map translateData (assocs m)
 -- muss translateData eine Liste von HsDecl's oder eine HsDecl liefern?
 translateData :: (TypeId, TypeInfo) -> [HsDecl]
 translateData (tid,info) = 
-  case (typeDefn info) of
-    NoTypeDefn ->  -- z.B. bei sorts, was wird daraus?
-        [(HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
-	            [] -- HsContext
-	            (HsIdent (translateIdWithType UpperId tid))
-		    [] -- [HsName]
-		    [(HsConDecl 
-                       (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
-                       (HsIdent (translateIdWithType UpperId tid))
-		       [])
-		    ]
-		    [] -- [HsQName]  (für deriving) woher?
-	 )]
-    Supertype _ _ _ -> [] -- Was wird daraus in Haskell? -> ignorieren
-    DatatypeDefn _ _ altDefns -> 
-	[(HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
-	            [] -- HsContext
-	            (HsIdent (translateIdWithType UpperId tid))
-		    [] -- [HsName]
-		    (map translateAltDefn altDefns) -- [HsConDecl] 
-		    [] -- [HsQName]  (für deriving) woher?
-	 )]
-    AliasTypeDefn _ts -> []  -- [(translateTypeScheme _ts)] ?
-    TypeVarDefn -> [] -- ?
--- Achtung: falsche Positionsangabe
+  let hsname = (HsIdent (translateIdWithType UpperId tid))
+      srcloc = (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+  in case (typeDefn info) of
+       NoTypeDefn ->  -- z.B. bei sorts, was wird daraus?
+          [(HsDataDecl srcloc
+	               [] -- empty HsContext
+	               hsname
+		       [] -- [HsName] no type arguments
+		       [(HsConDecl srcloc hsname [])]
+		       [] -- [HsQName]  (für deriving) woher?
+	   )]
+       Supertype _ _ _ -> [] -- Was wird daraus in Haskell? -> ignorieren
+       DatatypeDefn _ typeargs altDefns -> 
+ 	  [(HsDataDecl srcloc
+	               [] -- empty HsContext
+	               hsname
+		       (getDataArgs typeargs) -- type arguments
+		       (map translateAltDefn altDefns) -- [HsConDecl] 
+		       [] -- [HsQName]  (für deriving) woher?
+	   )]
+       AliasTypeDefn ts -> 
+	  [(HsTypeDecl srcloc
+	               hsname
+	               (getAliasArgs ts)
+	               (getAliasType ts)
+	   )]
+       TypeVarDefn -> [] -- ?
 
 translateAltDefn :: AltDefn -> HsConDecl
 translateAltDefn (Construct uid ts _ _sel) = 
@@ -74,8 +79,24 @@ translateAltDefn (Construct uid ts _ _sel) =
 	      (getArgTypes ts)
 
 getArgTypes :: [Type] -> [HsBangType]
-getArgTypes _ts = []
+getArgTypes ts = map getArgType ts
 
+getDataArgs :: [TypeArg] -> [HsName]
+getDataArgs = map getAliasArg
+
+getArgType :: Type -> HsBangType
+getArgType t = HsUnBangedTy (translateType t)
+    
+getAliasArgs :: TypeScheme -> [HsName]
+getAliasArgs (TypeScheme arglist (_plist :=> _t) _poslist) = 
+    map getAliasArg arglist
+
+getAliasArg :: TypeArg -> HsName
+getAliasArg (TypeArg tid _ _ _) = (HsIdent (translateIdWithType LowerId tid))
+-- ist UpperId oder LowerId hier richtig?
+
+getAliasType :: TypeScheme -> HsType
+getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 -------------------------------------------------------------------------
 -- Translation of functions
 -------------------------------------------------------------------------
@@ -85,21 +106,27 @@ translateAssumps m = concat $ map translateAssump (assocs m)
 
 translateAssump :: (Id,[OpInfo]) -> [HsDecl]
 translateAssump (_, []) = []
-translateAssump (i, (x:xs)) = ((translateSignature i x):
+translateAssump (i, (x:xs)) = ((translateSignature i x) ++
                                (translateAssump (i, xs)))
 
-translateSignature :: Id -> OpInfo -> HsDecl
+translateSignature :: Id -> OpInfo -> [HsDecl]
 translateSignature i opinf = 
-  HsTypeSig (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
-             [(HsIdent (translateIdWithType LowerId i))]
-             (translateTypeScheme (opType opinf))
--- Achtung: falsche Positionsangabe
+  let res = [HsTypeSig (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
+                       [(HsIdent (translateIdWithType LowerId i))]
+                       (translateTypeScheme (opType opinf))]
+  in case (opDefn opinf) of
+    NoOpDefn -> res
+    ConstructData _ -> []
+    SelectData _ _ -> []
+    Definition _term -> [] -- Term zu HsFunBind/HsPatBind übersetzen!! 
+    VarDefn -> res
 
 translateTypeScheme :: TypeScheme -> HsQualType
 translateTypeScheme (TypeScheme _arglist (_plist :=> t) _poslist) = 
   HsQualType [] (translateType t)
--- Context aus plist?
--- arglist für alias-Type (\, lambda)
+-- Context aus plist (wird im Moment noch nicht benutzt)
+-- arglist beachten (wird an anderr Stelle gemacht; 
+--                   evtl. Signatur zu Type -> HsQualType ändern??)
 
 translateType :: Type -> HsType
 translateType t = case t of
@@ -113,7 +140,7 @@ translateType t = case t of
   TypeAppl t1 t2 -> HsTyApp (translateType t1) (translateType t2)
   TypeName tid _kind n -> 
       if n > 0 then
-	 HsTyVar (HsIdent (translateIdWithType LowerId tid))
+	 HsTyVar (HsIdent (translateIdWithType LowerId tid)) -- Upper/LowerId?
       else
          HsTyCon (UnQual (HsIdent (translateIdWithType UpperId tid)))
 --Missing: Übersetzung der Kind's             
@@ -159,10 +186,10 @@ Ersatzzeichen für reservierte Zeichen und für Symbole:
 ------------------------------------------------------------------------}
 
 translateIdWithType :: IdCase -> Id -> String
-translateIdWithType ty (Id tlist _idlist _poslist) = 
-  let s = translateId (Id tlist _idlist _poslist)
+translateIdWithType ty (Id tlist idlist _poslist) = 
+  let s = translateId (Id tlist idlist _poslist)
   in if ty == UpperId then
-        if isLower $ head $ tokStr $ head tlist then
+        if (isLower $ head $ tokStr $ head tlist) || (head s == '_') then
 	  "A_" ++ s
 	else firstDigit s
      else -- if ty == LowerId then
