@@ -26,7 +26,7 @@ import qualified Common.Lib.Map as Map
 
 import Static.DevGraph
 import ATC.DevGraph
-import Common.SimpPretty (SDoc, TextDetails(..), fullRender)
+import Common.SimpPretty (writeFileSDoc)
 -- for debugging
 import Debug.Trace
 
@@ -97,17 +97,7 @@ writeShATermFile fp atcon = writeFile fp $ toShATermString atcon
 
 writeShATermFileSDoc :: (ATermConvertible a) => FilePath -> a -> IO ()
 writeShATermFileSDoc fp atcon =
-    do let sDoc = writeSharedATermSDoc (versionedATermTable atcon)
-       h <- openFile fp WriteMode
-       hPutSDoc h sDoc
-       hClose h
-
-hPutSDoc :: Handle -> SDoc -> IO ()
-hPutSDoc h sd = fullRender hPutTD (return ()) sd
-    where hPutTD :: TextDetails -> IO () -> IO ()
-	  hPutTD td io = case td of
-			 Chr  c -> hPutChar h c >> io
-			 Str  s -> hPutStr  h s >> io
+   writeFileSDoc fp $ writeSharedATermSDoc (versionedATermTable atcon)
 
 versionedATermTable :: (ATermConvertible a) => a -> ATermTable
 versionedATermTable atcon =     

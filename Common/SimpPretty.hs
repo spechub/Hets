@@ -54,7 +54,7 @@ module Common.SimpPretty (
 
 	-- * Rendering documents
 
-	render, fullRender,
+	render, fullRender,writeFileSDoc,
 
         TextDetails(..)
 
@@ -62,6 +62,7 @@ module Common.SimpPretty (
 
 
 import Prelude
+import System.IO
 
 infixl 6 <> 
 
@@ -175,6 +176,15 @@ beside p q2 = beside (reduceSDoc p) q2
 -- ---------------------------------------------------------------------------
 -- Displaying the best layout
 
+writeFileSDoc :: FilePath -> SDoc -> IO ()
+writeFileSDoc fp sd =
+     do h <- openFile fp WriteMode
+	fullRender (hPutTD h) (return ()) sd
+	hClose h
+    where hPutTD :: Handle -> TextDetails -> IO () -> IO ()
+	  hPutTD h td io = case td of
+			 Chr  c -> hPutChar h c >> io
+			 Str  s -> hPutStr  h s >> io
 
 render doc       = showSDoc doc ""
 
