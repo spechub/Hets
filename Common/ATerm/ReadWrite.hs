@@ -309,7 +309,7 @@ writeTAF' at tbl =
         case writeTAFs at as tbl of
         (WS tbl' kidsAnn) ->
                  -- don't use showInt: can't show negative numbers
-              WS tbl' $ dlConcat (Doc_len (integer i) (length (show i))) 
+              WS tbl' $ dlConcat (integerDoc i)
                                  (parenthesiseAnnS kidsAnn)
 
 dlConcat :: Doc_len -> Doc_len -> Doc_len               
@@ -338,6 +338,9 @@ writeTAFs at inds tbl = writeTAFs' inds (WS tbl $ Doc_len empty 0)
           wT :: WriteTable -> Int -> Write_struct
           wT t i = writeTAF (getATermByIndex1 i at) t
 
+integerDoc :: Integer -> Doc_len
+integerDoc i = let s = show i in Doc_len (text s) $ length s
+
 writeATermAux :: String -> [ShowS] -> ShowS
 writeATermAux c [] = showString c
 writeATermAux c ts = showString c . parenthesise (commaSep ts)
@@ -361,7 +364,7 @@ parenthesiseAnn str = showChar '{' . str . showChar '}'
 
 bracketS, parenthesiseS, parenthesiseAnnS :: Doc_len -> Doc_len
 bracketS         (Doc_len d dl) 
-    | dl == 0 = Doc_len (brackets empty) 2
+    | dl == 0 = Doc_len (text "[]") 2
     | otherwise = Doc_len (brackets d) (dl+2)
 parenthesiseS    s@(Doc_len d dl) 
     | dl == 0 = s
