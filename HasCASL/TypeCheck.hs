@@ -175,8 +175,7 @@ inferAppl ps mt t1 t2 = do
                 putLocalVars $ Map.map (subst sf) vs
                 args1 <- infer (Just sfty) t2 >>= reduce False
                 putLocalVars $ Map.map (subst sf) vs            
-                args2 <- infer (Just $  FunType logicalType 
-                                         PFunArr sfty ps) t2 >>= reduce False
+                args2 <- infer (Just $ liftType sfty ps) t2 >>= reduce False
                 putLocalVars vs
                 let args = args2 ++ args1
                     combs2 = map ( \ (sa, ca, _, ta) ->
@@ -256,20 +255,20 @@ infer mt trm = do
             else inferAppl ps mt (ResolvedMixTerm i [] ps)
                  $ mkTupleTerm ts ps
         ApplTerm t1 t2 ps -> inferAppl ps mt t1 t2
-        TupleTerm ts ps -> 
-            case mt of 
-            Nothing -> do                   
+        TupleTerm ts ps -> if null ts then return 
+            [(eps, case mt of 
+              Nothing -> noC
+              Just ty -> insertC (Subtyping logicalType ty) noC,
+              logicalType, trm)]
+            else do
                 ls <- checkList (map (const Nothing) ts) ts 
                 return $ map ( \ (su, cs, tys, trms) ->
-                                   (su, cs, mkProductType tys ps, 
-                                    mkTupleTerm trms ps)) ls
-            Just ty -> do 
-                ls <- checkList (map (const Nothing) ts) ts 
-                return $ map ( \ (su, cs, tys, trms) ->
-                               let nTy = mkProductType tys ps in
-                                   (su, insertC (Subtyping nTy
-                                                $ subst su ty) cs, nTy,
-                                    mkTupleTerm trms ps)) ls
+                    let nTy = mkProductType tys ps in
+                               (su, case mt of 
+                                Nothing -> cs
+                                Just ty -> insertC (Subtyping nTy
+                                                   $ subst su ty) cs, nTy,
+                                mkTupleTerm trms ps)) ls
         TypedTerm t qual ty ps -> do 
             case qual of 
                 OfType -> do
