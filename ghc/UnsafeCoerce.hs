@@ -12,7 +12,10 @@ Portability :  portable
 
 module UnsafeCoerce where
 
-import GHC.Exts(unsafeCoerce#)
+import GHC.Exts
 
 unsafeCoerce :: a -> b
 unsafeCoerce = unsafeCoerce#
+
+unsafePtrEq :: a -> a -> Bool
+unsafePtrEq a b = (unsafeCoerce# a) `eqAddr#` (unsafeCoerce# b)
