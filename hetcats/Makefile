@@ -21,7 +21,7 @@ HC         = ghc
 PERL       = perl
 DRIFT      = $(PERL) ../utils/DrIFT
 
-HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall -fno-warn-missing-signatures
+HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package util -package data
 
