@@ -145,7 +145,7 @@ minExpFORMULA sign formula
                 [] -> pplain_error (Unparsed_term "<error>" [])
                    (ptext "No correct typing for " <+> printText term)
                    (Id.headPos pos)
-                (t:_):[]   -> return t                          -- :: TERM
+                (_:_):_   -> return $ head $ head $ term         -- :: TERM
         -- BEWARE! Oversimplified disambiguation!
                 --(_:_):[]   -> return head $ head term           -- :: TERM
                 _       -> pplain_error (Unparsed_term "<error>" [])
@@ -191,8 +191,8 @@ minExpFORMULA_pred sign predicate terms pos = do
                    (ptext "No correct typing for " <+> printText ps)
                    (Id.headPos pos)
         -- BEWARE! Oversimplified disambiguation!
-            (p:_):[] -> return p
-            --(_:_):_ -> return $ head $ head ps
+            --(p:_):[] -> return p
+            (_:_):_ -> return $ head $ head ps
             _   -> pplain_error (PredType [], terms)
                    (ptext "Cannot disambiguate2! Term: " 
                     <+> (printText (predicate, terms))
@@ -250,8 +250,8 @@ minExpFORMULA_eq sign eq term1 term2 pos = do
                (ptext "No correct typing for " <+> printText (eq term1 term2 pos))
                (Id.headPos pos)
         -- BEWARE! Oversimplified disambiguation!
-        --([t1,t2]:_)       -> return $ eq t1 t2 pos
-        ([t1,t2]:[])       -> return $ eq t1 t2 pos
+        ([t1,t2]:_)       -> return $ eq t1 t2 pos
+        --([t1,t2]:[])       -> return $ eq t1 t2 pos
         _               -> pplain_error (eq term1 term2 pos)
             (ptext "Cannot disambiguate3! Possible Expansions: "
              <+> (printText exps1) $$ (printText exps2)) (Id.headPos pos)
