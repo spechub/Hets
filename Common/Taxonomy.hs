@@ -13,15 +13,7 @@ of taxonomy graphs.
 
 -}
 
-
 module Common.Taxonomy where
-
-
-import Common.Result
 
 data TaxoGraphKind = KSubsort | KConcept 
      deriving (Show,Enum,Eq)
-
-withErrorToResult :: Either String a -> Result a
-withErrorToResult = 
-    either (\err -> fail err) (\x -> return x) 
