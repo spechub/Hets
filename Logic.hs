@@ -43,7 +43,9 @@
    (interface to provers)
 
    Todo:
-   Should annotations be globally fixed?
+   Errors (via Monad)
+   ATerm, XML
+   ID auslagern
    Sublanguages more abstractly (lattice)
    Weak amalgamability
 -}
@@ -180,6 +182,10 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
           id -> symb_map_items, id -> anno,
           id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
        where
+         logic_name :: id -> String
+
+         -- sentence translation
+         map_sen :: id -> morphism -> sentence -> sentence
 
          -- static analysis of basic specifications and symbol maps
          basic_analysis :: id -> 
@@ -267,7 +273,8 @@ data (Logic id1
   LogicRepr id1 basic_spec1 sentence1 symb_items1 symb_map_items1 anno1 sign1 morphism1 symbol1 raw_symbol1
             id2 basic_spec2 sentence2 symb_items2 symb_map_items2 anno2 sign2 morphism2 symbol2 raw_symbol2
      =
-     LogicRepr {source :: id1,
+     LogicRepr {repr_name :: String,
+                source :: id1,
                 target :: id2,
                 map_basic_spec :: basic_spec1->basic_spec2,
                 map_sentence :: sign1 -> sentence1 -> Maybe sentence2, -- also cover semi-representations
@@ -278,4 +285,3 @@ data (Logic id1
                 map_symbol :: symbol1 -> symbol2
                }
 
--- Composition of representations is defined in LogicGraph

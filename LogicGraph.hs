@@ -24,6 +24,9 @@ module LogicGraph where
 
 import Logic
 
+
+-- Existential types for logics and representations
+
 data AnyLogic = forall id
         basic_spec sentence symb_items symb_map_items anno
         sign morphism symbol raw_symbol .
@@ -54,13 +57,15 @@ data Translation = forall id1 as1 id2 as2 . (Language id1 as1, Language id2 as2)
 
 idtrans i = T i id i
 
-comptrans :: AnyRepresentation -> AnyRepresentation -> Maybe AnyRepresentation
-comptrans (T i_src1 (t1::as_src1->as_tar1) i_tar1) (T i_src2 (t2::as_src2->as_tar2) i_tar2) =
+comp_repr :: AnyRepresentation -> AnyRepresentation -> Maybe AnyRepresentation
+comp_repr (
+
+T i_src1 (t1::as_src1->as_tar1) i_tar1) (T i_src2 (t2::as_src2->as_tar2) i_tar2) =
       case    ((Dynamic.fromDynamic (Dynamic.toDyn t2))::Maybe (as_tar1->as_tar2)) of
         Just t -> Just (T i_src1 (t . t1) i_tar2)
         Nothing -> Nothing 
 
 -}
 
-the_logic_list :: [(String,AnyLogic)] = []
-the_representation_list :: [(String,AnyRepresentation)] = []
+the_logic_list :: [AnyLogic] = []
+the_representation_list :: [AnyRepresentation] = []
