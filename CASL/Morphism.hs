@@ -19,7 +19,6 @@ the qualification only applies to __+__ !
 
 module CASL.Morphism where
 
-import CASL.StaticAna
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import Common.Id
@@ -94,8 +93,8 @@ makeTotal Total t = t { opKind = Total }
 makeTotal _ t = t
 
 mapOpSym :: Sort_map -> Fun_map -> (Id,OpType) -> Maybe (Id,OpType)
-mapOpSym sMap fMap (id,ot) = do
-  (id',k) <- Map.lookup (id,ot) fMap
+mapOpSym sMap fMap (i,ot) = do
+  (id',k) <- Map.lookup (i,ot) fMap
   return (id',mapOpTypeK sMap k ot)
 
 -- | Check if two OpTypes are equal except from totality or partiality
@@ -106,8 +105,8 @@ mapPredType :: Sort_map -> PredType -> PredType
 mapPredType sorts t = t { predArgs = map (mapSort sorts) $ predArgs t }
 
 mapPredSym :: Sort_map -> Pred_map -> (Id,PredType) -> Maybe (Id,PredType)
-mapPredSym sMap fMap (id,pt) = do
-  id' <- Map.lookup (id,pt) fMap
+mapPredSym sMap fMap (i,pt) = do
+  id' <- Map.lookup (i,pt) fMap
   return (id',mapPredType sMap pt)
 
 embedMorphism :: Sign -> Sign -> Morphism
@@ -181,8 +180,8 @@ idToRaw x = AnID x
 
 rawSymName :: RawSymbol -> SORT
 rawSymName (ASymbol sym) = symName sym
-rawSymName (AnID id) = id
-rawSymName (AKindedId _ id) = id
+rawSymName (AnID i) = i
+rawSymName (AKindedId _ i) = i
 
 symOf :: Sign -> SymbolSet
 symOf sigma = 
@@ -264,7 +263,7 @@ typedSymbKindToRaw k idt t =
 
 symbMapToMorphism :: Sign -> Sign -> SymbolMap -> Result Morphism
 symbMapToMorphism sigma1 sigma2 smap = do
-  sort_map1 <- Set.fold mapSort (return Map.empty) (sortSet sigma1)
+  sort_map1 <- Set.fold mapMSort (return Map.empty) (sortSet sigma1)
   fun_map1 <- Map.foldWithKey mapFun (return Map.empty)  (opMap sigma1)
   pred_map1 <- Map.foldWithKey mapPred (return Map.empty) (predMap sigma1)
   return (Morphism { msource = sigma1,
@@ -273,40 +272,42 @@ symbMapToMorphism sigma1 sigma2 smap = do
              fun_map = fun_map1,
              pred_map = pred_map1})
   where
-  mapSort s m = do
+  mapMSort s m = do
     m1 <- m 
     sym <- maybeToResult nullPos 
              ("symbMapToMorphism - Could not map sort "++showPretty s "")
-             $ Map.lookup (Symbol {symName = s, symbType = SortAsItemType}) smap
+             $ Map.lookup (Symbol {symName = s, 
+				   symbType = SortAsItemType}) smap
     return (Map.insert s (symName sym) m1)
-  mapFun id ots m = Set.fold (insFun id) m ots
-  insFun id ot m = do
+  mapFun i ots m = Set.fold (insFun i) m ots
+  insFun i ot m = do
     m1 <- m
     sym <- maybeToResult nullPos 
-             ("symbMapToMorphism - Could not map op "++showPretty id "")
-             $ Map.lookup (Symbol {symName = id, symbType = OpAsItemType ot}) smap
+             ("symbMapToMorphism - Could not map op "++showPretty i "")
+             $ Map.lookup (Symbol {symName = i, 
+				   symbType = OpAsItemType ot}) smap
     k <- case symbType sym of
-        OpAsItemType ot -> return $ opKind ot
+        OpAsItemType oty -> return $ opKind oty
         _ -> plain_error Total
               ("symbMapToMorphism - Wrong result symbol type for op"
-               ++showPretty id "") nullPos 
-    return (Map.insert (id,ot) (symName sym,k) m1)
-  mapPred id pts m = Set.fold (insPred id) m pts
-  insPred id pt m = do
+               ++showPretty i "") nullPos 
+    return (Map.insert (i, ot) (symName sym,k) m1)
+  mapPred i pts m = Set.fold (insPred i) m pts
+  insPred i pt m = do
     m1 <- m
     sym <- maybeToResult nullPos 
-             ("symbMapToMorphism - Could not map pred "++showPretty id "")
-             $ Map.lookup (Symbol {symName = id, symbType = PredAsItemType pt}) 
+             ("symbMapToMorphism - Could not map pred "++showPretty i "")
+             $ Map.lookup (Symbol {symName = i, symbType = PredAsItemType pt}) 
                smap
     case symbType sym of
-        PredAsItemType ot -> return ()
+        PredAsItemType _ot -> return ()
         _ -> plain_error ()
               ("symbMapToMorphism - Wrong result symbol type for pred"
-               ++showPretty id "") nullPos 
-    return (Map.insert (id,pt) (symName sym) m1)
+               ++showPretty i "") nullPos 
+    return (Map.insert (i, pt) (symName sym) m1)
       
 morphismToSymbMap :: Morphism -> SymbolMap
-morphismToSymbMap (Morphism src _ sorts ops preds) =
+morphismToSymbMap (Morphism _src _ sorts ops preds) =
   let
     sortSymMap = 
       Map.foldWithKey
@@ -348,11 +349,11 @@ idMor sigma =
     sort_map = Set.fold (\s -> Map.insert s s) Map.empty (sortSet sigma),
     fun_map =
       Map.foldWithKey 
-        (\id ts m -> Set.fold (\t -> Map.insert (id,t) (id,opKind t)) m ts) 
+        (\i ts m -> Set.fold (\t -> Map.insert (i, t) (i, opKind t)) m ts) 
         Map.empty (opMap sigma),
     pred_map = 
       Map.foldWithKey
-        (\id ts m -> Set.fold (\t -> Map.insert (id,t) id) m ts) 
+        (\i ts m -> Set.fold (\t -> Map.insert (i, t) i) m ts) 
         Map.empty (predMap sigma)
             }
 
@@ -369,14 +370,15 @@ compose mor1 mor2 =
     else Nothing
   where
   mapOpId :: (Id, OpType) -> (Id,FunKind) -> (Id,FunKind)
-  mapOpId (id,t) (id1,k1) =
+  mapOpId (_i,t) (id1,_k1) =
     Map.find (id1,mapOpType (sort_map mor1) t) (fun_map mor2)
   mapPredId :: (Id, PredType) -> Id -> Id
-  mapPredId (id,t) id1 =
+  mapPredId (_i,t) id1 =
     Map.find (id1,mapPredType (sort_map mor1) t) (pred_map mor2)
   -- ??? dangerous use of Map.find here (may lead to call of error!)
 
 
+legalSign :: Sign -> Bool
 legalSign sigma =
   Map.foldWithKey (\s sset b -> b && legalSort s && Set.all legalSort sset)
                   True (Rel.toMap (sortRel sigma))
@@ -392,6 +394,7 @@ legalSign sigma =
                         && all legalSort (opArgs t) 
         legalPredType t = all legalSort (predArgs t) 
 
+legalMor :: Morphism -> Bool
 legalMor mor =
   legalSign sigma1
   && legalSign sigma2
@@ -433,11 +436,12 @@ sigInclusion sigma1 sigma2 =
            $$ ptext "Singature 2:" $$ printText sigma2)
            nullPos
 
+morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion mor1 mor2 = do
   let src = msource mor1 `addSig` msource mor2
       tar = mtarget mor1 `addSig` mtarget mor2
       smap = sort_map mor1 `Map.union` sort_map mor2
-      fmap = fun_map mor1 `Map.union` fun_map mor2
+      omap = fun_map mor1 `Map.union` fun_map mor2
       pmap = pred_map mor1 `Map.union` pred_map mor2
   when (not (sort_map mor2 `Map.subset` smap))
     (pplain_error () 
@@ -446,12 +450,12 @@ morphismUnion mor1 mor2 = do
         <+> printText (Set.fromList
                (sort_map mor1 `Map.differentKeys` sort_map mor2)))
       nullPos)
-  when (not (fun_map mor2 `Map.subset` fmap))
+  when (not (fun_map mor2 `Map.subset` omap))
     (pplain_error () 
       (ptext "Incompatible signature morphisms."
         $$ ptext "The following operations are mapped differently"
         <+> printText (Set.fromList
-              (map (\(id,ot) -> idToOpSymbol id ot)
+              (map (\(i,ot) -> idToOpSymbol i ot)
                 (fun_map mor1 `Map.differentKeys` fun_map mor2))))
       nullPos)
   when (not (pred_map mor2 `Map.subset` pmap))
@@ -459,13 +463,13 @@ morphismUnion mor1 mor2 = do
       (ptext "Incompatible signature morphisms."
         $$ ptext "The following predicates are mapped differently"
         <+> printText (Set.fromList
-              (map (\(id,pt) -> idToPredSymbol id pt)
+              (map (\(i,pt) -> idToPredSymbol i pt)
                 (pred_map mor1 `Map.differentKeys` pred_map mor2))))
       nullPos)
   return $ Morphism { msource = src,
                       mtarget = tar,
                       sort_map = smap, 
-                      fun_map = fmap, 
+                      fun_map = omap, 
                       pred_map = pmap }
 
 instance PrettyPrint Symbol where
@@ -479,7 +483,7 @@ instance PrettyPrint Symbol where
 instance PrettyPrint SymbType where
   printText0 ga (OpAsItemType ot) = printText0 ga ot
   printText0 ga	(PredAsItemType pt) = printText0 ga pt
-  printText0 ga	SortAsItemType = empty 
+  printText0 _ SortAsItemType = empty 
 
 instance PrettyPrint Kind where
   printText0 _ SortKind = ptext "sort"
@@ -490,8 +494,8 @@ instance PrettyPrint Kind where
 instance PrettyPrint RawSymbol where
   printText0 ga rsym = case rsym of
     ASymbol sy -> printText0 ga sy
-    AnID id -> printText0 ga id
-    AKindedId k id -> printText0 ga k <+> printText0 ga id
+    AnID i -> printText0 ga i
+    AKindedId k i -> printText0 ga k <+> printText0 ga i
 
 
 instance PrettyPrint Morphism where
@@ -513,7 +517,7 @@ instance PrettyPrint Morphism where
          print_sort_map (s1,s2) = 
            printText0 ga s1 <+> ptext "|->" <+> printText0 ga s2
          ops = map print_op_map (Map.toList $ fun_map mor)
-         print_op_map ((id1,ot),(id2,kind)) = 
+         print_op_map ((id1,ot),(id2,_kind)) = 
            printText0 ga (Qual_op_name id1 (toOP_TYPE ot) [])
            <+> ptext "|->" <+> 
            printText0 ga id2
