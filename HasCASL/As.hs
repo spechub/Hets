@@ -19,7 +19,7 @@ data BasicSpec = BasicSpec [Annoted BasicItem]
 
 data BasicItem = SigItems SigItems
                | ProgItems [Annoted ProgEq] [Pos]
-               -- pos "program", ";"s
+               -- pos "program", dots
                | ClassItems Instance [Annoted ClassItem] [Pos]
                -- pos "class", ";"s
                | GenVarItems [GenVarDecl] [Pos]

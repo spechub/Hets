@@ -16,7 +16,7 @@ import Pretty
 import PrettyPrint
 
 commas l = hcat $ punctuate comma (map printText0 l)
-semis l = hcat $ punctuate semi (map printText0 l)
+semis l = cat $ punctuate semi (map printText0 l)
 
 instance PrettyPrint TypePattern where 
     printText0(TypePattern name args _) = printText0(name) 
@@ -170,10 +170,10 @@ instance PrettyPrint GenVarDecl where
     printText0(GenVarDecl v) = printText0 v
     printText0(GenTypeVarDecl tv) = printText0 tv
 
-instance PrettyPrint TypeArg where
- printText0(TypeArg v e k _) = case k of Comma -> printText0 v <> comma
-					 _ -> printText0 v <+> colon 
-					      <+> printText0 e
+instance PrettyPrint TypeArg where 
+    printText0 (TypeArg v c k _) = printText0 v <>
+				   case k of Comma -> comma
+					     _ -> colon <> printText0 c
 
 instance PrettyPrint Variance where 
     printText0 CoVar = text plusS
@@ -204,4 +204,141 @@ instance PrettyPrint Types where
 
 instance PrettyPrint InstOpName where
     printText0 (InstOpName n l) = printText0 n <> hcat(map printText0 l)
+
+------------------------------------------------------------------------
+-- item stuff
+------------------------------------------------------------------------
+instance PrettyPrint PseudoType where 
+    printText0 (SimplePseudoType t) = printText0 t
+    printText0 (PseudoType l t _) = text lamS <+> hcat(map printText0 l)
+				<+> text dotS <+> printText0 t
+
+instance PrettyPrint TypeArgs where
+    printText0 (TypeArgs l _) = semis l
+
+instance PrettyPrint TypeVarDecls where 
+    printText0 (TypeVarDecls l _) = Pretty.brackets $ semis l
+
+instance PrettyPrint BasicSpec where 
+    printText0 (BasicSpec l) = vcat (map printText0 l)
+
+dots l = text dotS <+> cat(punctuate (text " . ") (map printText0 l) )
+
+instance PrettyPrint ProgEq where
+    printText0 = printEq0 equalS
+
+instance PrettyPrint BasicItem where 
+    printText0 (SigItems s) = printText0 s
+    printText0 (ProgItems l _) = text programS <+> dots l
+    printText0 (ClassItems i l _) = text classS <+> printText0 i
+			       <+> semis l
+    printText0 (GenVarItems l _) = text varS <+> semis l
+    printText0 (FreeDatatype l _) = text freeS <+> text typeS 
+				    <+> semis l
+    printText0 (GenItems l _) = text generatedS <+> braces (semis l)
+    printText0 (LocalVarAxioms vs fs _) = text forallS 
+			       <+> semis vs
+			       <+> dots fs
+    printText0 (AxiomItems fs _) = dots fs
+
+instance PrettyPrint SigItems where 
+    printText0 (TypeItems i l _) = text typeS <+> printText0 i <+> semis l
+    printText0 (OpItems l _) = text opS <+> semis l
+    printText0 (PredItems l _) = text predS <+> semis l
+
+instance PrettyPrint Instance where
+    printText0 Instance = text instanceS
+    printText0 _ = empty
+		      
+instance PrettyPrint ClassItem where 
+    printText0 (ClassItem d l _) = printText0 d $$ braces (semis l)
+
+instance PrettyPrint ClassDecl where 
+    printText0 (ClassDecl l _) = commas l
+    printText0 (SubclassDecl l s _) = commas l <+> text lessS <+> printText0 s
+    printText0 (ClassDefn n c _) =  printText0 n 
+			       <+> text equalS 
+			       <+> printText0 c
+    printText0 (DownsetDefn c v t _) = printText0 c
+			       <+> text equalS 
+			       <+> braces (printText0 v 
+					   <+> text dotS
+					   <+> printText0 v 
+					   <+> text lessS
+					   <+> printText0 t)
+instance PrettyPrint TypeItem where 
+    printText0 (TypeDecl l k _) = commas l <+> colon <+> printText0 k
+    printText0 (SubtypeDecl l t _) = commas l <+> text lessS <+> printText0 t
+    printText0 (IsoDecl l _) = cat(punctuate (text " = ") (map printText0 l) )
+    printText0 (SubtypeDefn p v t f _) = printText0 p
+			       <+> text equalS 
+			       <+> braces (printText0 v 
+					   <+> colon
+					   <+> printText0 t 
+					   <+> text dotS
+					   <+> printText0 f)
+    printText0 (AliasType p k t _) =  printText0 p
+				       <+> colon
+				       <+> printText0 k
+				       <+> text assignS
+				       <+> printText0 t
+    printText0 (Datatype t) = printText0 t
+
+instance PrettyPrint OpItem where 
+    printText0 (OpDecl l t as _) = commas l <+> colon
+				   <+> (printText0 t
+					<> (if null as then empty else comma)
+					<> commas as)
+    printText0 (OpDefn n ps s p t _) = (printText0 n <> hcat (map printText0 ps))
+			    <+> (colon <> if p == Partial 
+				 then text quMark else empty)
+ 			    <+> printText0 s 
+			    <+> text equalS
+			    <+> printText0 t
+
+instance PrettyPrint PredItem where 
+    printText0 (PredDecl l t _) = commas l <+> colon <+> printText0 t
+    printText0 (PredDefn n ps f _) = (printText0 n <> hcat (map printText0 ps))
+				     <+> text equivS
+				     <+> printText0 f
+
+instance PrettyPrint BinOpAttr where 
+    printText0 Assoc = text assocS
+    printText0 Comm = text commS
+    printText0 Idem = text idemS
+
+instance PrettyPrint OpAttr where 
+    printText0 (BinOpAttr a _) = printText0 a
+    printText0 (UnitOpAttr t _) = text unitS <+> printText0 t
+
+instance PrettyPrint DatatypeDecl where 
+    printText0 (DatatypeDecl p k as d _) = printText0 p
+				  <+> colon
+				  <+> printText0 k
+				  <+> text defnS
+				  <+> vcat(punctuate (text " | ") 
+					   (map printText0 as))
+				  <+> case d of { Nothing -> empty
+						; Just c -> text derivingS
+						  <+> printText0 c
+						}
+
+instance PrettyPrint Alternative where 
+    printText0 (Constructor n cs p _) = printText0 n <> hcat (map printText0 cs)
+					<> (case p of {Partial -> text quMark;
+						       _ -> empty})
+    printText0 (Subtype l _) = text typeS <+> commas l
+
+instance PrettyPrint Components where 
+    printText0 (Selector n p t k _) = printText0 n 
+				<> case k of {Comma -> comma;
+					      _ -> (colon <> 
+					       case p of { Partial ->text quMark;
+							   _ -> empty }) 
+					      <+> printText0 t }
+    printText0 (NoSelector t) = printText0 t
+    printText0 (NestedComponents l _) = parens $ semis l
+
+instance PrettyPrint OpName where 
+    printText0 (OpName n ts) = printText0 n <+> hcat(map printText0 ts)
 

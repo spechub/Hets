@@ -1,5 +1,6 @@
 module Main where
 
+import ParseItem
 import ParseTerm
 import PrintAs
 import HToken
@@ -20,7 +21,7 @@ main = do {l <- getArgs;
 	   else if opt == "term" then checkLines term file
 	   else if opt == "typepattern" then checkLines typePattern file
 	   else if opt == "pattern" then checkLines pattern file
---	   else if opt == "items" then parseSpec file
+	   else if opt == "items" then parseSpec file
 	   else print ("unknown option: " ++ opt) 
 	  }
 
@@ -39,11 +40,10 @@ parseLine p line n = let pos = setSourceLine (initialPos "") n
 				     }
 		     in result (parse parser "" line)
 
-{-
+
 parseSpec fileName =  do { r <- parseFromFile basicSpec fileName
 			 ; putStrLn (result r)
 			 }
--}	
    
 result r = case r of Left err -> "parse error at " ++ show err ++ "\n"
 		     Right x  -> render (printText0 x)

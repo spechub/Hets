@@ -488,15 +488,71 @@ progItems = do p <- pluralKeyword programS
 annotedProgEq = bind appendAnno (annoParser (patternTermPair True equalS))
 		lineAnnos
 
-
 basicItems = fmap SigItems sigItems
 	     <|> classItems
 	     <|> progItems
 	     <|> generatedItems
              <|> freeDatatype
-{-
-             <|> do { v <- pluralKeyword varS
-                    ; (vs, ps) <- varItems
-                    ; return (Var_items vs (map tokPos (v:ps)))
-:
--}
+	     <|> genVarItem
+             <|> forallItem
+             <|> dotFormulae
+             <|> axiomItems
+
+axiomItems =     do { a <- pluralKeyword axiomS
+                    ; (fs, ps, ans) <- itemAux (fmap TermFormula term)
+                    ; return (AxiomItems (zipWith 
+                                           (\ x y -> Annoted x [] [] y) 
+                                           fs ans) (map tokPos (a:ps)))
+                    }
+
+forallItem =     do { f <- asKey forallS 
+                    ; (vs, ps) <- genVarDecls `separatedBy` semiT 
+                    ; AxiomItems fs ds <- dotFormulae
+                    ; return (LocalVarAxioms (concat vs) fs 
+			      (map tokPos (f:ps) ++ ds))
+                    }
+
+
+genVarItem = do { v <- pluralKeyword varS
+                ; (vs, ps) <- genVarItems
+                ; return (GenVarItems vs (map tokPos (v:ps)))
+                }
+
+
+dotFormulae = do { d <- dotT
+                 ; (fs, ds) <- aFormula `separatedBy` dotT
+                 ; let ps = map tokPos (d:ds) in 
+                   if null (r_annos(last fs)) then  
+                   do { (m, an) <- optSemi
+                      ; case m of 
+                        { Nothing -> return (AxiomItems fs ps)
+                        ; Just t -> return (AxiomItems 
+                               (init fs ++ [appendAnno (last fs) an])
+                               (ps ++ [tokPos t]))
+                        }
+                      }
+                   else return (AxiomItems fs ps)
+                 }
+
+genVarItems = 
+           do { vs <- genVarDecls
+              ; do { s <- semiT
+                   ; do { tryItemEnd startKeyword
+                        ; return (vs, [s])
+                        }
+                     <|> 
+                     do { (ws, ts) <- genVarItems
+                        ; return (vs++ws, s:ts)
+                        }
+                   }
+                <|>
+                return (vs, [])
+              }
+
+aFormula = bind appendAnno (annoParser (fmap TermFormula term)) lineAnnos
+
+basicSpec = (oBraceT >> cBraceT >> return (BasicSpec []))
+            <|> 
+            fmap BasicSpec (many1 aBasicItems)
+
+aBasicItems = bind (\ x y -> Annoted y [] x []) annos basicItems

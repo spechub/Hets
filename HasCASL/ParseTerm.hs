@@ -87,7 +87,7 @@ idToken = pToken (scanQuotedChar <|> scanDotWords
 		  scanAnySigns)
 
 typeToken :: GenParser Char st Type
-typeToken = fmap TypeToken (pToken (toKey typeS <|> scanWords <|> placeS <|> 
+typeToken = fmap TypeToken (pToken (scanWords <|> placeS <|> 
 				    reserved (hascasl_type_ops ++
 					      formula_ops ++
 					      hascasl_reserved_ops)
