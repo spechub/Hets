@@ -12,34 +12,33 @@ Portability :  portable
 
 module HasCASL.RawSym where
 
-import HasCASL.HToken
 import HasCASL.As
+import HasCASL.Le
 import HasCASL.Symbol
 import HasCASL.SymbItem
+import HasCASL.TypeAna
+import HasCASL.OpDecl
+import HasCASL.Unify
+import HasCASL.TypeCheck
 import Common.Id
-import Common.Keywords
 import Common.Result
 import Common.PrettyPrint
 import Common.Lib.Pretty
+import Common.Lib.State
 import qualified Common.Lib.Map as Map
 
-data RawSymbol = ASymbol Symbol | AnID Id | AKindedId SymbKind Id
+data RawSymbol = AnID Id | AKindedId SymbKind Id 
+	       | AQualId Id SymbolType
     	         deriving (Show, Eq, Ord)
 
 -- note that the type of a raw symbol is not analysed!
 
 instance PrettyPrint RawSymbol where
   printText0 ga rs = case rs of
-      ASymbol s -> printText0 ga s
       AnID i -> printText0 ga i
-      AKindedId k i -> text (case k of 
-           SK_type -> typeS
-           SK_sort -> sortS			     
-           SK_op -> opS 
-	   SK_fun -> funS
-	   SK_pred -> predS
-           SK_class -> classS
-	   Implicit -> "") <+> printText0 ga i
+      AKindedId k i -> printSK k <> printText0 ga i
+      AQualId i t -> printSK (symbTypeToKind t) <> printText0 ga i <+> colon 
+		       <+> printText0 ga t
 
 type RawSymbolMap = Map.Map RawSymbol RawSymbol
 
@@ -47,9 +46,9 @@ idToRaw :: Id -> RawSymbol
 idToRaw x = AnID x
 
 rawSymName :: RawSymbol -> Id
-rawSymName (ASymbol sym) = symName sym
 rawSymName (AnID i) = i
 rawSymName (AKindedId _ i) = i
+rawSymName (AQualId i _) = i
 
 symbTypeToKind :: SymbolType -> SymbKind
 symbTypeToKind (OpAsItemType _)    = SK_op
@@ -57,7 +56,7 @@ symbTypeToKind (TypeAsItemType _)  = SK_type
 symbTypeToKind (ClassAsItemType _) = SK_class
 
 symbolToRaw :: Symbol -> RawSymbol
-symbolToRaw sym = ASymbol sym
+symbolToRaw sym = AQualId (symName sym) $ symType sym
 
 statSymbMapItems :: [SymbMapItems] -> Result RawSymbolMap
 statSymbMapItems sl = do 
@@ -89,7 +88,7 @@ symbToRaw :: SymbKind -> Symb -> Result RawSymbol
 symbToRaw k (Symb idt mt _)     = case mt of 
     Nothing -> return $ symbKindToRaw k idt
     Just (SymbType sc@(TypeScheme vs (_ :=> t) _)) -> 
-	let r = return $ ASymbol $ idToOpSymbol idt (TySc sc)
+	let r = return $ AQualId idt $ OpAsItemType sc
 	    rk = if null vs then Nothing else 
 		 convertTypeToKind t 
 	    rrk = maybeToResult (getMyPos t) 
@@ -97,12 +96,12 @@ symbToRaw k (Symb idt mt _)     = case mt of
 	in case k of 
 	      SK_op -> r
 	      SK_fun -> r
-	      SK_pred -> return $ ASymbol $ idToOpSymbol idt $ 
-			 TySc $ predTypeScheme sc
+	      SK_pred -> return $ AQualId idt $ OpAsItemType
+			 $ predTypeScheme sc
 	      SK_class -> do ck <- rrk
-			     return $ ASymbol $ idToClassSymbol idt ck
+			     return $ AQualId idt $ ClassAsItemType ck
 	      _ -> do ck <- rrk
-		      return $ ASymbol $ idToTypeSymbol idt ck
+		      return $ AQualId idt $ TypeAsItemType ck
 
 convertTypeToKind :: Type -> Maybe Kind
 convertTypeToKind (FunType t1 FunArr t2 ps) = 
@@ -150,15 +149,29 @@ matchSymb sy rsy = let ty = symType sy in
        (case rsy of 
 		AnID _ -> True
 		AKindedId k _ -> symbTypeToKind ty == k
-		ASymbol sy2 -> matchSymbType ty $ symType sy2)
+		AQualId _ t -> matchSymbType (symEnv sy) ty t)
 
-matchSymbType :: SymbolType -> SymbolType -> Bool
-matchSymbType t1 t2 = 
+anaSymbolType :: SymbolType -> State Env (Maybe SymbolType)
+anaSymbolType t = 
+    case t of 
+    ClassAsItemType k -> do ak <- anaKindM k
+			    return $ fmap ClassAsItemType ak
+    TypeAsItemType k -> do ak <- anaKindM k
+			   return $ fmap TypeAsItemType ak
+    OpAsItemType sc -> do as <- anaTypeScheme sc
+			  return $ fmap OpAsItemType as	
+
+matchSymbType :: Env -> SymbolType -> SymbolType -> Bool
+matchSymbType e t1 t2 = 
+    let mt = evalState (anaSymbolType t2) e {typeMap = addUnit $ typeMap e}
+	in case mt of 
+    Nothing -> False
+    Just t -> compSymbType (typeMap e) t1 t
+
+compSymbType :: TypeMap -> SymbolType -> SymbolType -> Bool
+compSymbType tm t1 t2 = 
     case (t1, t2) of 
-    (ClassAsItemType k1, ClassAsItemType k2) -> 
-	k1 == k2
-    (TypeAsItemType k1, TypeAsItemType k2) -> 
-	k1 == k2
-    (OpAsItemType s1, OpAsItemType s2) -> 
-	True -- s1 == s2 -- here s2 needs to be analysed before 
+    (ClassAsItemType k1, ClassAsItemType k2) -> k1 == k2
+    (TypeAsItemType k1, TypeAsItemType k2) -> k1 == k2
+    (OpAsItemType s1, OpAsItemType s2) -> isUnifiable tm 0 s1 s2
     _ -> False

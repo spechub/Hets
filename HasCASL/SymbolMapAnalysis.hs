@@ -29,6 +29,7 @@ import HasCASL.Morphism
 import HasCASL.ClassAna
 import HasCASL.Unify
 import HasCASL.VarDecl
+import HasCASL.OpDecl
 import Common.Id
 import Common.Result
 import Common.Lib.State
@@ -52,10 +53,10 @@ inducedFromMorphism rmap sigma = do
       matchesND rsy sy = 
         sy `matchSymb` rsy && 
         case rsy of
-          ASymbol _ -> True
+          AQualId _ _ -> True
           -- unqualified raw symbols need some matching symbol
           -- that is not directly mapped
-          _ -> Map.lookup (ASymbol sy) rmap == Nothing
+          _ -> Map.lookup (AQualId (symName sy) $ symType sy) rmap == Nothing
   -- ... if not, generate an error
   if Set.isEmpty incorrectRsyms then return () else
     pplain_error ()
@@ -72,7 +73,7 @@ inducedFromMorphism rmap sigma = do
                   return $ Map.insert s s' m1) 
               (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
-  op_Map <- Map.foldWithKey (opFun rmap srcTypeMap myTypeIdMap)
+  op_Map <- Map.foldWithKey (opFun rmap sigma myTypeIdMap)
               (return Map.empty) (assumps sigma)
   -- compute target signature
   let tarTypeMap = Map.foldWithKey ( \ i k m -> 
@@ -96,7 +97,7 @@ mapTypeDefn im ti =
 typeFun :: RawSymbolMap -> Id -> Kind -> Result Id
 typeFun rmap s k = do
     let rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
-               [ASymbol $ idToTypeSymbol s k, AnID s, AKindedId SK_type s]
+               [AQualId s $ TypeAsItemType k, AnID s, AKindedId SK_type s]
     -- rsys contains the raw symbols to which s is mapped to
     case Set.size rsys of
           0 -> return s  -- use default = identity mapping
@@ -107,12 +108,12 @@ typeFun rmap s k = do
                  nullPos
 
 -- | compute mapping of functions
-opFun :: RawSymbolMap -> TypeMap -> IdMap -> Id -> OpInfos 
+opFun :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfos 
       -> Result FunMap -> Result FunMap
-opFun rmap tm type_Map i ots m = 
+opFun rmap e type_Map i ots m = 
     -- first consider all directly mapped profiles
-    let (ots1,m1) = foldr (directOpMap rmap tm type_Map i) (Set.empty,m) 
-		    $ opInfos ots
+    let (ots1,m1) = foldr (directOpMap rmap e type_Map i) 
+		    (Set.empty, m) $ opInfos ots
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
        (Just rsy1, Just rsy2) -> 
@@ -124,48 +125,52 @@ opFun rmap tm type_Map i ots m =
                )
                nullPos
        (Just rsy, Nothing) -> 
-          Set.fold (insertmapOpSym tm type_Map i rsy) m1 ots1
+          Set.fold (insertmapOpSym e type_Map i rsy) m1 ots1
        (Nothing, Just rsy) -> 
-          Set.fold (insertmapOpSym tm type_Map i rsy) m1 ots1
+          Set.fold (insertmapOpSym e type_Map i rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
        (Nothing,Nothing) -> Set.fold (unchangedOpSym type_Map i) m1 ots1
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
-directOpMap :: RawSymbolMap -> TypeMap -> IdMap -> Id -> OpInfo 
+directOpMap :: RawSymbolMap -> Env -> IdMap -> Id -> OpInfo 
 	    -> (Set.Set TySc, Result FunMap) -> (Set.Set TySc, Result FunMap)
-directOpMap rmap tm type_Map i oi (ots,m) = let ot = TySc $ opType oi in
-      case Map.lookup (ASymbol (idToOpSymbol i ot)) rmap of
+directOpMap rmap e type_Map i oi (ots,m) = let ot = opType oi in
+    case Map.lookup (AQualId i $ OpAsItemType ot) rmap of
         Just rsy -> 
-          (ots,insertmapOpSym tm type_Map i rsy ot m)
-        Nothing -> (Set.insert ot ots,m)
+          (ots, insertmapOpSym e type_Map i rsy (TySc ot) m)
+        Nothing -> (Set.insert (TySc ot) ots, m)
     -- map op symbol (id,ot) to raw symbol rsy
-mapOpSym :: TypeMap -> IdMap -> Id -> TySc -> RawSymbol 
+mapOpSym :: Env -> IdMap -> Id -> TySc -> RawSymbol 
 	     -> Result (Id, TySc)
-mapOpSym tm type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
+mapOpSym e type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
       case rsy of
-      ASymbol (Symbol id' (OpAsItemType sc2@(TySc ot'))) ->
-        if isUnifiable (addUnit tm) 0 sc ot'
-           then return (id', sc2)
-           else pplain_error (i, sc1)
-             (ptext "Operation symbol " <+> printText (idToOpSymbol i sc1) 
-              <+> ptext "is mapped to type" <+>  printText ot'
-              <+> ptext "but should be mapped to type" <+>  
-              printText sc 
-             )
-             nullPos
       AnID id' -> return (id', sc1)
       AKindedId SK_op id' -> return (id', sc1)
+      AQualId id' (OpAsItemType ot') ->
+        let (mt, ds) = runState (anaTypeScheme ot') e 
+		 {typeMap = addUnit $ typeMap e} 
+        in case mt of 
+           Nothing -> Result (envDiags ds) $ Just (i, sc1)
+	   Just nt -> if isUnifiable (typeMap ds) 0 sc nt
+		   then return (id', TySc ot')
+		   else pplain_error (i, sc1)
+			    (ptext "Operation symbol " 
+			     <+> printText (AQualId i $ OpAsItemType sc) 
+			     <+> ptext "is mapped to type" <+>  printText ot'
+			     <+> ptext "but should be mapped to type" <+>  
+			     printText sc) nullPos
       _ -> pplain_error (i, sc1)
-               (ptext "Operation symbol " <+> printText (idToOpSymbol i sc1)
-                <+> ptext" is mapped to symbol of wrong kind:" 
+               (ptext "Operation symbol "
+                <+> printText (AQualId i $ OpAsItemType sc) 
+		<+> ptext" is mapped to symbol of wrong kind:" 
                 <+> printText rsy) 
                nullPos
     -- insert mapping of op symbol (id, ot) to raw symbol rsy into m
-insertmapOpSym :: TypeMap -> IdMap -> Id -> RawSymbol -> TySc
+insertmapOpSym :: Env -> IdMap -> Id -> RawSymbol -> TySc
 	       -> Result FunMap -> Result FunMap
-insertmapOpSym tm type_Map i rsy ot m = do  
+insertmapOpSym e type_Map i rsy ot m = do  
       m1 <- m        
-      (id',kind') <- mapOpSym tm type_Map i ot rsy
+      (id',kind') <- mapOpSym e type_Map i ot rsy
       return (Map.insert (i, ot) (id',kind') m1)
     -- insert mapping of op symbol (id,ot) to itself into m
 unchangedOpSym :: IdMap -> Id -> TySc -> Result FunMap -> Result FunMap
@@ -223,11 +228,11 @@ extendSymbMap tm akmap sym1 sym2 =
   if case (symType sym1, symType sym2) of 
     (ClassAsItemType k1, ClassAsItemType k2) -> rawKind k1 == rawKind k2
     (TypeAsItemType k1, TypeAsItemType k2) ->  rawKind k1 == rawKind k2
-    (OpAsItemType sc1@(TySc _), OpAsItemType (TySc ot2)) ->
+    (OpAsItemType ot1, OpAsItemType ot2) ->
 	  let TySc sc2 = 
 		  mapTySc (Map.foldWithKey ( \ s1 s2 m ->
 				Map.insert (symName s1) (symName s2) m)
-			        Map.empty akmap) sc1 
+			        Map.empty akmap) $ TySc ot1 
 	      in isUnifiable tm 0 ot2 sc2
     _ -> False
   then Just $ Map.insert sym1 sym2 akmap

@@ -169,18 +169,18 @@ symbMapToMorphism sigma1 sigma2 smap = do
     return (Map.insert i (symName sym) m1)
   myAsMap i (OpInfos ots) m = foldr (insFun i) m ots
   insFun i ot m = do
-    let osc = TySc $ opType ot
+    let osc = opType ot
     m1 <- m
     sym <- maybeToResult nullPos 
              ("symbMapToMorphism - Could not map op "++showId i "")
              $ Map.lookup (Symbol { symName = i
 				  , symType = OpAsItemType osc}) smap
     k <- case symType sym of
-        OpAsItemType sc -> return sc
-        _ -> plain_error osc
+        OpAsItemType sc -> return $ TySc sc
+        _ -> plain_error (TySc osc)
               ("symbMapToMorphism - Wrong result symbol type for op"
                ++showId i "") nullPos 
-    return (Map.insert (i, osc) (symName sym,k) m1)
+    return (Map.insert (i, TySc osc) (symName sym, k) m1)
 
 legalEnv :: Env -> Bool
 legalEnv _ = True -- maybe a closure test?
@@ -239,16 +239,18 @@ showFun (i, TySc ty) = showId i . (" : " ++) . showPretty ty
 morphismToSymbMap :: Morphism -> SymbolMap
 morphismToSymbMap mor = 
   let
-    tm = typeMap $ msource mor 
+    src = msource mor
+    tar = mtarget mor
+    tm = typeMap src
     typeSymMap = 
       Map.foldWithKey
          ( \ s1 s2 m -> let k = typeKind $ 
 	                        Map.findWithDefault starTypeInfo s1 tm 
-	   in Map.insert (idToTypeSymbol s1 k) (idToTypeSymbol s2 k) m)
+	   in Map.insert (idToTypeSymbol src s1 k) (idToTypeSymbol tar s2 k) m)
          Map.empty $ 
          typeIdMap mor
    in Map.foldWithKey
-         ( \ (id1,t1) (id2,t2) m -> 
-             Map.insert (idToOpSymbol id1 t1) 
-                        (idToOpSymbol id2 t2) m)
+         ( \ (id1, TySc t1) (id2, TySc t2) m -> 
+             Map.insert (idToOpSymbol src id1 t1) 
+                        (idToOpSymbol tar id2 t2) m)
          typeSymMap $ funMap mor 
