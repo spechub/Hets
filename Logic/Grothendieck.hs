@@ -618,8 +618,7 @@ translateG_l_sentence_list (GMorphism cid sign1 morphism2)
   let tlid = targetLogic cid
   --(sigma2,_) <- map_sign cid sign1
   sens' <- coerce lid (sourceLogic cid) sens
-  sens'' <- maybeToResult nullPos "Could not map sentences" 
-              $ sequence $ map (mapNamedM (map_sentence cid sign1)) $ sens'
+  let sens'' = mapMaybe (mapNamedM (map_sentence cid sign1)) $ sens'
   sens''' <- sequence $ map (mapNamedM (map_sen tlid morphism2)) $ sens''
   return (G_l_sentence_list tlid sens''')
 

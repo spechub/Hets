@@ -63,6 +63,7 @@ import Common.Lib.Graph
 import Common.Lib.Set (fromList)
 import qualified Common.Lib.Map as Map
 import List(nub)
+import Data.Maybe
 import Common.Id
 import Common.AS_Annotation
 import Syntax.AS_Library
@@ -881,9 +882,7 @@ basicInferenceNode lg (ln,node)
 {-    axs'' <- resToIORes
                  $ maybeToResult nullPos "Could not map sentences"
                  $ mapM (mapNamedM (map_sentence cid sign')) axs' -}
-    goals'' <- resToIORes
-                 $ maybeToResult nullPos "Could not map sentences"
-                 $ mapM (mapNamedM (map_sentence cid sign')) goals'
+    let goals'' = mapMaybe (mapNamedM (map_sentence cid sign')) goals'
     -- compute name of theory
     ctx <- resToIORes 
                 $ maybeToResult nullPos ("Could node find node "++show node)

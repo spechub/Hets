@@ -69,7 +69,7 @@ class (Language cid,
     map_sign cid sign = map_theory cid (sign,[])
     map_theory cid (sign,sens) = do
        (sign',sens') <- map_sign cid sign
-       sens'' <- mapM (mapNamedM (map_sentence cid sign)) sens
+       let sens'' = mapMaybe (mapNamedM (map_sentence cid sign)) sens
        return (sign',sens'++sens'')
     map_morphism :: cid -> morphism1 -> Maybe morphism2
     map_sentence :: cid -> sign1 -> sentence1 -> Maybe sentence2
