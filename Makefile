@@ -49,7 +49,7 @@ HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 DRIFT_OPTS  = +RTS -K10m -RTS
 
 ### list of directories to run checks in
-TESTDIRS    = Common CASL HasCASL
+TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples
 
 
 ####################################################################
@@ -152,7 +152,7 @@ hets-opt: hetcats/Version.hs
 	$(MAKE) hets-optimized
 
 hets-optimized:
-	$(HC) --make -O2 -o hets hets.hs $(HC_OPTS) 2>&1 | tee hetcats-make
+	$(HC) --make -O -o hets hets.hs $(HC_OPTS) 2>&1 | tee hetcats-make
 	strip hets 
 
 hets-old: $(objects)
