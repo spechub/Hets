@@ -27,11 +27,15 @@ are also not renamed in DatatypeSens, because they are not used)
 
 
 
+types:
+types in downset should be monomorph. Subtype definitions should have
+a monomorph supertype
+
+
+
 terms: 
 polymorphic (and constrained) let bindings are not supported
 yet, because variables are monomorph
-
-a wild card pattern can be given by a single underscore
 
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).
@@ -49,14 +53,12 @@ misc:
 hiding of sub- or supertypes is a problem, with respect to dependent
 operations. (SymbolMapAnalysis.hs)
 
-Try to get rid of expandAlias in Unify.hs (only needed for SymbolMapAnalysis)
-
 
 
 
 CASL:
 Overload.hs should generated Applications for constants rather than
-Var_decls
+Var_decls (partially implemented)
 
 convert TERM to Mixfix_bracketed terms and use printText0 rather than
 showTerm from ShowMixfix
