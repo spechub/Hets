@@ -107,6 +107,7 @@ docs/index.html: $(doc_sources)
 clean:
 	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
 	(cd $$p ; $(RM) *.hi *.hi.bak *.o) ; done
+	$(RM) AS_*.hs
 
 ### additionally removes binaries
 bin_clean: clean
@@ -138,6 +139,7 @@ real_clean: d_clean bin_clean
 distclean: real_clean
 	$(RM) hetcats/Version.hs
 	$(RM) $(drifted_files)
+	$(RM) Haskell/Language/Parser.hs
 
 ####################################################################
 ### test targets
