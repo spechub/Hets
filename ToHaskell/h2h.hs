@@ -21,7 +21,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.PrettyPrint
 
-import ToHaskell.FromHasCASL
+import Comorphisms.HasCASL2Haskell
 
 import Haskell.HatAna
 
