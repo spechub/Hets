@@ -37,7 +37,9 @@ import HasCASL.Morphism
 -- | The identity of the comorphism
 data CASL2HasCASL = CASL2HasCASL deriving (Show)
 instance Language CASL2HasCASL -- default definition is okay
-
+tycon_CASL2HasCASL = mkTyCon "G_sign"
+instance Typeable CASL2HasCASL where
+  typeOf _ = mkAppTy tycon_CASL2HasCASL []
 instance Comorphism CASL2HasCASL
                CASL CASL.Sublogic.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
