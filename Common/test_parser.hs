@@ -6,7 +6,9 @@ import Data.List
 import Common.Lib.Parsec
 import qualified Common.CaslLanguage as L(casl_id, semi, whiteSpace)
 import Common.Anno_Parser
+import Common.Lib.Pretty
 import Common.PrettyPrint
+import Common.AS_Annotation
 import Common.GlobalAnnotationsFunctions
 
 import Common.Id
@@ -143,6 +145,8 @@ main = do { as <- getArgs
 			    ; return ()
 			    }
 
+instance PrettyPrint [Annotation] where
+    printText0 ga = vcat . map (printText0 ga)
 	      
 testId = testPL (sepBy L.casl_id L.semi) 
 	 "__++__ ; __+*[y__,a_l'__,4]__ ; {__}[__] ; __a__b[__z]" 
