@@ -29,8 +29,7 @@ INSTALLDIR = /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.s
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
-INLINEAXIOMS_deps = utils/InlineAxioms/*hs CASL/AS_Basic_CASL.hs \
-	Modal/AS_Modal.hs Common/AS_Annotation.hs
+INLINEAXIOMS_deps = utils/InlineAxioms/*hs $(derived_sources)
 
 HC         = ghc
 PERL       = perl
