@@ -81,7 +81,6 @@ Proofs/                     Heterogeneous proof engine (Till Mossakowski/Jorina 
 Static/                     Heterogeneous development graphs and static analysis  (Till Mossakowski/Maciek Makowski)
 Syntax/                     Heterogeneous syntax and parsing (Till Mossakowski, Christian Maeder)
 ToHaskell/                  translation to Haskell (Christian Maeder)
-                             should be moved to Comorphisms
 utils/                      Utilities
 utils/DrIFT-src/              DrIFT (for polytpyic conversion functions) (Klaus Luettich)
 utils/GenerateRules/          generate files to be DRIFTed (Klaus Luettich)
