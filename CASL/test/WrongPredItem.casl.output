@@ -19,4 +19,4 @@ unexpected "?"
 expecting casl char, underline word, "{", "[", __, [<id>,...,<id>], "%%", "%{", "%(", "%", ",", "<=>" or "("
 
 pred a() <=> %()%
-	     e
+             e

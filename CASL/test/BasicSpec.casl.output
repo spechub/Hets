@@ -195,13 +195,13 @@ generated type s ::= sort s2, s1 | c | c(a; a, b:t; d:t) | c(a)?
 generated
     {pred __<__ : a * a
      ops a : b;
-	 c : b
+         c : b
      sorts s, t < s
      type s ::= sort s2, s1
-	      | c
-	      | c(a)
-	      | c(a; a, b:t; d:t)
-	      | c(a)? %(bla1)%}
+              | c
+              | c(a)
+              | c(a; a, b:t; d:t)
+              | c(a)? %(bla1)%}
 %(sort)%
 sorts %(after-sort)%
       s; %(bla2)%
@@ -214,10 +214,10 @@ vars a:t; a, b:s
 %(bla8-ignored)%
 %(type)%
 type t ::= %(c)%
-	   c %(c)%
-	 | e %(e)%
-	 | d %(9)%
-	   %(axiom)%
+           c %(c)%
+         | e %(e)%
+         | d %(9)%
+           %(axiom)%
 . a = a %(a1)%
 . a = a %(a2)%
 %(formula)%
@@ -233,7 +233,7 @@ op __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__ : s * s -> s
 ops 'a', '\"', '\\', '\n', '\000', '\255', '\x00', '\xFF', '\o000',
     '\o377', '^', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
     'ß', '!', '§', '$', '&', '/', '(', ')', '=', '?', '\\'
-	: s
+        : s
     %%characters
 ops 1, 2, 3, 4 : s;
     - : s -> s;
@@ -282,12 +282,12 @@ preds c : s * s;
 pred c(x, y :s; z :t) <=> false
 type Data1 ::= a | b | c
 type Data2 ::= Cons21(Data1; Data2)
-	     | Cons22(Data2; Data1)
-	     | sort Data1
+             | Cons22(Data2; Data1)
+             | sort Data1
 type Data3 ::= Cons31(sel1:?Data1; sel2:?Data2)
-	     | Cons32(sel2:?Data2; sel1:?Data1)
+             | Cons32(sel2:?Data2; sel1:?Data1)
 type Data4 ::= Cons41(sel1:?Data1; sel2:?Data2)?
-	     | Cons42(sel2:?Data2; sel1:?Data1)?
+             | Cons42(sel2:?Data2; sel1:?Data1)?
 sorts Data1, Data2, Data3
 types Tree ::= Leaf(Data1) | Forest;
       Forest ::= Nil | Cons(Tree; Forest)
@@ -297,7 +297,7 @@ generated type Set ::= Mt | Add(Data1; Set)
 generated
     {sort nat
      ops 0 : nat;
-	 succ : nat -> nat}
+         succ : nat -> nat}
 sort s < t
 ops f, g : s ->? s;
     g : s -> t;
@@ -319,8 +319,8 @@ var x:s
 forall x:s
 . not p /\ not q (x) /\ (q (x)) <=>
       exists x:s
-	  . not p \/ not q (x) \/ (q (x)) <=>
-		exists! x:s . not p /\ not q (x) /\ (q (x))
+          . not p \/ not q (x) \/ (q (x)) <=>
+                exists! x:s . not p /\ not q (x) /\ (q (x))
 . def f (x)
 . f (x) =e= g (x)
 . f (x) = g (x)
@@ -806,15 +806,15 @@ ops ' ': Char = '\032'; %(printable_32)%
     'þ': Char = '\254'; %(printable_254)%
     'ÿ': Char = '\255' %(printable_255)%
 preds isLetter(c :Char) <=> ((ord ('A') <= ord (c))
-			     /\ (ord (c) <= ord ('Z')))
-			    \/ ((ord ('a') <= ord (c)) /\ (ord (c) <= ord ('z')));
+                             /\ (ord (c) <= ord ('Z')))
+                            \/ ((ord ('a') <= ord (c)) /\ (ord (c) <= ord ('z')));
       %(isLetter_def)%
       isDigit(c :Char) <=> (ord ('0') <= ord (c))
-			   /\ (ord (c) <= ord ('9'));
+                           /\ (ord (c) <= ord ('9'));
       %(isDigit_def)%
       isPrintable(c :Char) <=> ((ord (' ') <= ord (c))
-				/\ (ord (c) <= ord ('~')))
-			       \/ ((ord (' ') <= ord (c)) /\ (ord (c) <= ord ('ÿ')))
+                                /\ (ord (c) <= ord ('~')))
+                               \/ ((ord (' ') <= ord (c)) /\ (ord (c) <= ord ('ÿ')))
       %(isPrintable_def)%
 %% alternative definition of characters as '\o ppp',
 %% where p in {0,1,...,7} :
