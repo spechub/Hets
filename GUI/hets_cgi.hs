@@ -191,7 +191,8 @@ anaInput contents showS outputfiles =
 		| length rb == 1 && hb = 
 			("ASCII code:", ra):(selectOut rb libDefn ra rt)
 		| length rb == 0 && hb = 
-		      	("LaTeX code:", rt):(selectOut rb libDefn ra rt) 
+		        ("LaTeX code:", ""):(selectOut rb libDefn ra rt)
+		      	-- ("LaTeX code:", rt):(selectOut rb libDefn ra rt) 
 		| otherwise = selectOut rb libDefn ra rt
 
 -- Print the result		    
@@ -234,14 +235,17 @@ printR str result selectedBoxes outputFiles =
 			printRes (isTree, False, isTex) outputfiles rR
 			else if isTex then
 			        do
-				p $ i(do  text "You can here the " 
+				p $ i(do text "You can here the "
+				         hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
+						       (drop 24 (outputfiles++".pp.tex")))) $ text "LaTeX file" 
+				         text " download. For compiling the LaTeX output, you need " 
+				         hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hetcasl.sty") $ text "hetcasl.sty" 
+				         text "."
+				     )
+				p $ i(do  text "You can also the " 
 				          hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
 						       (drop 24 (outputfiles++".pdf")))) $ text "PDF file" 
-				          text " download. The file will be deleted after 30 minutes.\n" 
-				     )
-				p $ i( do  text "For compiling the LaTeX output, you need " 
-				           hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hetcasl.sty") $ text "hetcasl.sty" 
-				           text "."
+				          text " download. All files will be deleted after 30 minutes.\n" 
 				     )
 				printRes (isTree, isEnv, False) outputfiles rR
 				else printRes (isTree, isEnv, isTex) outputfiles rR
