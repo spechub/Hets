@@ -172,7 +172,7 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 	     -> Result (NodeSig, DGraph)
 -- ^ returns 1. the target signature of the morphism and 2. the resulting DGraph
 extendDGraph _ n@(EmptyNode _) _ _ =
-    do fatal_error "Trying to add a morphism originating from an empty node" nullPos
+    do fatal_error "Internal error: trying to add a morphism originating from an empty node" nullPos
 extendDGraph dg (NodeSig (n, G_sign lid _)) morph orig =
     let targetSig = cod Grothendieck morph
         nodeContents = DGNode {dgn_name = Nothing,
@@ -186,6 +186,31 @@ extendDGraph dg (NodeSig (n, G_sign lid _)) morph orig =
 	dg' = insNode (node, nodeContents) dg
 	dg'' = insEdge (n, node, linkContents) dg'
     in do return (NodeSig (node, targetSig), dg'')
+
+
+-- | Extend the development graph with given morphism pointing to 
+-- given NodeSig
+extendDGraphRev :: DGraph    -- ^ the development graph to be extended
+	     -> NodeSig   -- ^ the NodeSig to which the morphism points
+	     -> GMorphism -- ^ the morphism to be inserted
+	     -> DGOrigin  
+	     -> Result (NodeSig, DGraph)
+-- ^ returns 1. the source signature of the morphism and 2. the resulting DGraph
+extendDGraphRev _ n@(EmptyNode _) _ _ =
+    do fatal_error "Internal error: trying to add a morphism pointing to an empty node" nullPos
+extendDGraphRev dg (NodeSig (n, G_sign lid _)) morph orig =
+    let sourceSig = dom Grothendieck morph
+        nodeContents = DGNode {dgn_name = Nothing,
+			       dgn_sign = sourceSig,
+			       dgn_sens = G_l_sentence_list lid [],			       
+			       dgn_origin = orig}
+	linkContents = DGLink {dgl_morphism = morph,
+			       dgl_type = GlobalDef, -- TODO: other type
+			       dgl_origin = orig}
+	[node] = newNodes 0 dg
+	dg' = insNode (node, nodeContents) dg
+	dg'' = insEdge (node, n, linkContents) dg'
+    in do return (NodeSig (node, sourceSig), dg'')
 
 
 data ExtNodeSig = ExtNodeSig (Node,G_ext_sign) | ExtEmptyNode AnyLogic
