@@ -18,8 +18,8 @@ import Id
 -- DATA, CHANNEL & PROCESS Def.
 ----------------------------------------------------------------------------
 
-data NAMED_CSP_CASL_C_SPEC =  Named_csp_casl_spec SPEC_NAME CSP_CASL_C_SPEC
-		   deriving (Show,Eq)
+--data NAMED_CSP_CASL_C_SPEC =  Named_csp_casl_spec SPEC_NAME CSP_CASL_C_SPEC
+--		   deriving (Show,Eq)
 
 data CSP_CASL_C_SPEC = Csp_casl_c_spec DATA_DEFN CHANNEL_DECL PROCESS_DEFN
 		   deriving (Show,Eq)
