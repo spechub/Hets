@@ -34,11 +34,40 @@ documentation
 Mingyi (Till)
 ************************************************
 
-Test auf Einpunkt-Modell
-   (ein Datenelement, wahre Prädikate, totale Funktionen)
-   siehe ccc/OnePoint.hs
-
 port CCC to Haskell
+
+Funktionen imageOfMorphism und inhabited 
+  von OnePoint.hs in eigenes Modul verschieben: Modul SignFuns.hs
+  mit "cvs add SigFuns.hs" einchecken
+
+New module FreeTypes.hs:
+
+"free datatypes and recursive equations are consistent"
+
+checkFreeType :: Morphism f e m -> [FORMULA f] -> Maybe Bool
+Just True => Yes, is consistent
+Just False => No, is inconsistent
+Nothing => don't know
+
+call the symbols in the image of the signature morphism "new"
+
+- each new sort must be a free type,
+  i.e. it must occur in a sort generation constraint that is marked as free
+     (Sort_gen_ax constrs True)
+     such that the sort is in srts, where (srts,ops,_)=recover_Sort_gen_ax constrs
+    if not, output "don't know"
+  and there must be one term of that sort (inhabited)
+    if not, output "no"
+- group the axioms according to their leading operation/predicate symbol,
+  i.e. the f resp. the p in
+  forall x_1:s_n .... x_n:s_n . f(t_1,...,t_m)=t
+                                Application  Strong_equation
+  forall x_1:s_n .... x_n:s_n . p(t_1,...,t_m)<=>phi
+                               Predication    Equivalence
+  if there are axioms not being of this form, output "don't know"
+
+
+
 
 ************************************************
 Zicheng (Till)
