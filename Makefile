@@ -41,7 +41,7 @@ HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 
 ### list of directories to run checks in
-TESTDIRS    = CASL HasCASL test
+TESTDIRS    = Common/test CASL HasCASL ToHaskell test
 
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
@@ -130,7 +130,8 @@ clean: bin_clean
 ### remove binaries
 bin_clean: 
 	$(RM) hets
-	$(RM) test_parser
+	$(RM) Common/annos
+	$(RM) Common/test_parser
 	$(RM) CASL/capa
 	$(RM) HasCASL/hacapa
 	$(RM) Haskell/hapa
@@ -173,6 +174,12 @@ distclean: real_clean
 test_parser: Common/test_parser
 
 Common/test_parser: Common/test_parser.hs Common/AS_Annotation.der.hs
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS) 
+
+annos: Common/annos
+
+Common/annos: Common/annos.hs Common/AS_Annotation.der.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS) 
 
