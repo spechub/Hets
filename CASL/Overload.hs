@@ -14,11 +14,11 @@
 
 -- does anyone ever need anything else from here??
 module CASL.Overload (
-    overloadResolution          -- :: Sign -> [Sentence] -> Result [Sentence]
+    overloadResolution          -- :: Sign -> [FORMULA] -> Result [FORMULA]
     ) where
 
-import CASL.StaticAna           -- Sign/Env, Sentence, OpType
-import CASL.AS_Basic_CASL       -- TERM, SORT, VAR, OP_{NAME,SYMB}
+import CASL.Sign                -- Sign/Env OpType
+import CASL.AS_Basic_CASL       -- FORMULA, TERM, SORT, VAR, OP_{NAME,SYMB}
 import Common.Result            -- Result
 
 import qualified Common.Lib.Map as Map
@@ -33,7 +33,7 @@ import Data.List                ( partition )
     Idee: 
     - global Infos aus Sign berechnen + mit durchreichen
       (connected compenents, s.u.)
-    - rekursiv in Sentence absteigen, bis atomare Formel erreicht wird
+    - rekursiv in FORMULA absteigen, bis atomare Formel erreicht wird
     - atomaren Formeln mit minExpTerm behandeln
 
 -}
@@ -41,39 +41,39 @@ import Data.List                ( partition )
 {-----------------------------------------------------------
     Overload Resolution
 -----------------------------------------------------------}
-{- expand all sentences to be fully qualified, then return them if there is no
+{- expand all formulae to be fully qualified, then return them if there is no
    ambiguity -}
-overloadResolution :: Sign -> [Sentence] -> Result [Sentence]
+overloadResolution :: Sign -> [FORMULA] -> Result [FORMULA]
 overloadResolution sign
-    = mapM (minExpSentence sign)
+    = mapM (minExpFORMULA sign)
 
 {-----------------------------------------------------------
-    Minimal Expansions of a Sentence
+    Minimal Expansions of a FORMULA
 -----------------------------------------------------------}
-minExpSentence :: Sign -> Sentence -> Result Sentence
-minExpSentence sign sentence
-    = case sentence of
+minExpFORMULA :: Sign -> FORMULA -> Result FORMULA
+minExpFORMULA sign formula
+    = case formula of
         -- Trivial Atom         -> Return untouched
-        True_atom _     -> return sentence                      -- :: Sentence
-        False_atom _    -> return sentence                      -- :: Sentence
-        -- Atomic Sentence      -> Check for Ambiguities
+        True_atom _     -> return formula                      -- :: FORMULA
+        False_atom _    -> return formula                      -- :: FORMULA
+        -- Atomic FORMULA      -> Check for Ambiguities
         Predication predicate terms _ ->
-            minExpSentence_pred sign predicate terms            -- :: Sentence
+            minExpFORMULA_pred sign predicate terms            -- :: FORMULA
         Definedness term pos            -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- is_unambiguous t                             -- :: TERM
-            return $ Definedness t' pos                         -- :: Sentence
+            return $ Definedness t' pos                         -- :: FORMULA
         Existl_equation term1 term2 pos -> do
             t1  <- minExpTerm sign term1                        -- :: [[TERM]]
             t2  <- minExpTerm sign term2                        -- :: [[TERM]]
             -- find common supersort for each combination of equivs
-            return $ Existl_equation term1 term2 pos                  -- :: Sentence
+            return $ Existl_equation term1 term2 pos                  -- :: FORMULA
         -- FIXME: check whether sorts of terms match
         Strong_equation term1 term2 pos -> do
             t1  <- minExpTerm sign term1                        -- :: [[TERM]]
             t2  <- minExpTerm sign term2                        -- :: [[TERM]]
             -- find common supersort for each combination of equivs
-            return $ Strong_equation term1 term2 pos                  -- :: Sentence
+            return $ Strong_equation term1 term2 pos                  -- :: FORMULA
         -- FIXME: check whether sorts of terms match
         Membership term sort pos        -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
@@ -83,18 +83,18 @@ minExpSentence sign sentence
                     . term_sort                                 -- :: SORT
                     . head) t                                   -- :: TERM
             t'' <- is_unambiguous t'                            -- :: [[TERM]]
-            return $ Membership t'' sort pos                    -- :: Sentence
-        -- Unparsed Sentence    -> Error in Parser, Bail out!
+            return $ Membership t'' sort pos                    -- :: FORMULA
+        -- Unparsed FORMULA    -> Error in Parser, Bail out!
         Mixfix_formula term             -> error
             $ "Parser Error: Unparsed `Mixfix_formula' received: "
             ++ (show term)
         Unparsed_formula string _       -> error
             $ "Parser Error: Unparsed `Unparsed_formula' received: "
             ++ (show string)
-        -- "Other" Sentence     -> Unknown Error, Bail out!
+        -- "Other" FORMULA     -> Unknown Error, Bail out!
         _                               -> error
-            $ "Internal Error: Unknown type of Sentence received: "
-            ++ (show sentence)
+            $ "Internal Error: Unknown type of FORMULA received: "
+            ++ (show formula)
     where
         is_unambiguous          :: [[TERM]] -> Result TERM
         is_unambiguous term      = do
@@ -107,8 +107,8 @@ minExpSentence sign sentence
 {-----------------------------------------------------------
     Minimal Expansions of a Predicate Application Term
 -----------------------------------------------------------}
-minExpSentence_pred :: Sign -> PRED_SYMB -> [TERM] -> Result Sentence
-minExpSentence_pred sign predicate terms = do
+minExpFORMULA_pred :: Sign -> PRED_SYMB -> [TERM] -> Result FORMULA
+minExpFORMULA_pred sign predicate terms = do
     expansions          <- mapM
         (minExpTerm sign) terms                 -- ::        [[[TERM]]]
     permuted_exps       <- return
@@ -138,9 +138,9 @@ minExpSentence_pred sign predicate terms = do
                 $ "Cannot disambiguate! Term: " ++ (show (predicate, terms))
                 ++ "\n  Possible Expansions: " ++ (show ps)
 
-        qualify_pred    :: (PredType, [TERM]) -> Sentence
+        qualify_pred    :: (PredType, [TERM]) -> FORMULA
         qualify_pred (pred', terms')
-            = (Predication                                      -- :: Sentence
+            = (Predication                                      -- :: FORMULA
                 (Qual_pred_name name (toPRED_TYPE pred') [])    -- :: PRED_SYMB
                 terms'                                          -- :: [TERM]
                 [])                                             -- :: [Pos]
