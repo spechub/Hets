@@ -21,6 +21,7 @@ import Common.Keywords
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
+import CASL.ATC_CASL
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -43,7 +44,7 @@ data M_SIG_ITEM =
 -- type ModalFORMULA = FORMULA M_FORMULA
 
 data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM M_FORMULA)
-             deriving (Eq, Show)
+             deriving (Eq, Ord, Show)
 
 data M_FORMULA = 
 	       Box MODALITY (FORMULA M_FORMULA) [Pos]
@@ -52,7 +53,7 @@ data M_FORMULA =
 	     | Diamond MODALITY (FORMULA M_FORMULA) [Pos]
                -- The identifier and the term specify the kind of the modality
                -- pos: "<>"
-             deriving (Eq, Show)
+             deriving (Eq, Ord, Show)
 
 modalityS, modalitiesS, flexibleS, rigidS, termS, emptyS :: String 
 modalityS = "modality"

@@ -13,6 +13,7 @@ Portability :  portable
 module Modal.Logic_Modal where
 
 import Modal.AS_Modal
+import Modal.ModalSign
 import Common.AS_Annotation
 import Common.AnnoState(emptyAnnos)
 import Common.Lib.Parsec
@@ -22,37 +23,38 @@ import CASL.Sign
 import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
+import CASL.Logic_CASL
+import CASL.AS_Basic_CASL
+import CASL.MapSentence
+import Modal.ATC_Modal
+import Modal.LaTeX_Modal
 import Data.Dynamic
 
 data Modal = Modal deriving Show
 
 instance Language Modal  -- default definition is okay
 
-type ModalSign = Sign M_FORMULA ModalSign
+type MSign = Sign M_FORMULA ModalSign
 type ModalMor = Morphism M_FORMULA ModalSign ()
+type ModalFORMULA = FORMULA M_FORMULA
 
-dummy :: a -> b -> ()
-dummy _ _ = ()
+tc_M_FORMULA, tc_M_SIG_ITEM, tc_M_BASIC_ITEM, modalSignTc :: TyCon
 
--- Typeable instance
-tc_BASIC_SPEC, tc_SYMB_ITEMS, tc_SYMB_MAP_ITEMS, casl_SublocigsTc,
-	     sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc :: TyCon
+tc_M_FORMULA     = mkTyCon "Modal.AS_Modal.M_FORMULA"
+tc_M_SIG_ITEM    = mkTyCon "Modal.AS_Modal.M_SIG_ITEM"
+tc_M_BASIC_ITEM  = mkTyCon "Modal.AS_Modal.M_BASIC_ITEM"
+modalSignTc      = mkTyCon "Modal.ModalSign.ModalSign"
 
-tc_M_BASIC_SPEC     = mkTyCon "Modal.AS_Basic_Modal.Morphism.BASIC_SPEC"
-sentenceTc       = mkTyCon "Modal.AS_Modal.ModalFORMULA"
-signTc           = mkTyCon "Modal.Morphism.ModalSign"
-morphismTc       = mkTyCon "Modal.Morphism.ModalMor"
-
-instance Typeable M_BASIC_SPEC where
-  typeOf _ = mkAppTy tc_M_BASIC_SPEC []
-instance Typeable ModalFORMULA where
-  typeOf _ = mkAppTy sentenceTc []
+instance Typeable M_FORMULA where
+  typeOf _ = mkAppTy tc_M_FORMULA []
+instance Typeable M_SIG_ITEM where
+  typeOf _ = mkAppTy tc_M_SIG_ITEM []
+instance Typeable M_BASIC_ITEM where
+  typeOf _ = mkAppTy tc_M_BASIC_ITEM []
 instance Typeable ModalSign where
-  typeOf _ = mkAppTy signTc []
-instance Typeable ModalMor where
-  typeOf _ = mkAppTy morphismTc []
+  typeOf _ = mkAppTy modalSignTc []
 
-instance Category Modal ModalSign ModalMor  
+instance Category Modal MSign ModalMor  
     where
          -- ide :: id -> object -> morphism
 	 ide Modal = idMor dummy
@@ -68,7 +70,7 @@ instance Category Modal ModalSign ModalMor
 
 -- abstract syntax, parsing (and printing)
 
-instance Syntax Modal ModalBasicSpec
+instance Syntax Modal M_BASIC_SPEC
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec Modal = Nothing
@@ -77,7 +79,7 @@ instance Syntax Modal ModalBasicSpec
 
 -- Modal logic
 
-instance Sentences Modal ModalFORMULA () ModalSign ModalMor Symbol where
+instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
       map_sen Modal = mapSen
       parse_sentence Modal = Nothing
       sym_of Modal = symOf
@@ -86,9 +88,9 @@ instance Sentences Modal ModalFORMULA () ModalSign ModalMor Symbol where
       provers Modal = [] 
       cons_checkers Modal = []
 
-instance StaticAnalysis Modal ModalBasicSpec ModalFORMULA ()
+instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
-               ModalSign 
+               MSign 
                ModalMor 
                Symbol RawSymbol where
          basic_analysis Modal = Just $ basicAnalysis 
@@ -97,13 +99,13 @@ instance StaticAnalysis Modal ModalBasicSpec ModalFORMULA ()
          stat_symb_items Modal = statSymbItems
 	 ensures_amalgamability Modal _ = fail "ensures_amalgamability nyi" -- ???
 
-         sign_to_basic_spec Modal _sigma _sens = M_Basic_spec [] -- ???
+         sign_to_basic_spec Modal _sigma _sens = Basic_spec [] -- ???
 
          symbol_to_raw Modal = symbolToRaw
          id_to_raw Modal = idToRaw
-         matches Modal = Modal.Morphism.matches
+         matches Modal = CASL.Morphism.matches
          
-         empty_signature Modal = emptySign ()
+         empty_signature Modal = emptySign emptyModalSign
          signature_union Modal sigma1 sigma2 = 
            return $ addSig sigma1 sigma2
          morphism_union Modal = morphismUnion (const id)
@@ -115,12 +117,12 @@ instance StaticAnalysis Modal ModalBasicSpec ModalFORMULA ()
          induced_from_morphism Modal = inducedFromMorphism dummy
          induced_from_to_morphism Modal = inducedFromToMorphism dummy
 
-instance Logic Modal Modal.Sublogic.Modal_Sublogics
-               ModalBasicSpec ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               ModalSign 
+instance Logic Modal ()
+               M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               MSign 
                ModalMor
                Symbol RawSymbol () where
-         sublogic_names Modal = ["Modal"]
+         sublogic_names Modal _ = ["Modal"]
          all_sublogics Modal = [()]
 
          data_logic Modal = Nothing
