@@ -1,0 +1,246 @@
+Plan and priority list for CoFI tool activities
+
+
+
+************************************************
+Sonja (Till)
+************************************************
+
+Haskell parser für XHaskell erweitern
+Dimplom: Encoding for HasCASL in Isabelle/HOL(CF)
+
+************************************************
+Jorina (Till)
+************************************************
+
+development graph calculus
+
+************************************************
+Martin (Till)
+************************************************
+
+type check for CASL
+
+if a subterm is not typeable at all, output it
+
+
+************************************************
+Mingyia (Till)
+************************************************
+
+************************************************
+Zicheng (Till)
+************************************************
+
+port CCC to Haskell
+
+************************************************
+Heng (Klaus)
+************************************************
+
+LaTeX pretty printer
+
+************************************************
+Christian
+************************************************
+
+Sprachdesign HasCASL
+  Verhältnis von Parametrisierung und Polymorphie/Typklassen
+
+Static analysis for HasCASL
+  Subsorting
+  Symbol map analysis
+
+Weak amalgamation analysis
+
+Instantiate Transformation Application system for HasCASL
+Automatic generation of Haskell (for a HasCASL subset)
+Proofs in HasCASL
+Case study
+Sönke Magnussen kontaktieren (der arbeitet mit Has-CASL-ähnlicher Sprache)
+
+
+************************************************
+Klaus
+************************************************
+
+visualization of "taxonomy" of CASL signatures
+  (subsorts = inheritance, unary preds = concepts, binary preds = relations)
+Recognize guarded fragment of CASL:
+  G ::= forall x . At(x) => G      where At is a conjunction of atoms
+      | exists x . At(x) /\ G
+Joost Visser wg. ATerms in Haskell => neues Repository
+
+************************************************
+Markus, Lutz
+************************************************
+
+Beweise in Isabelle
+CASL consistency checker
+Weitere %implies-Annotationen zu den Basic Datatypes hinzufuegen
+  (Vorbild: Larch-Handbuch)
+Simpsets/Taktiken fuer Minimierung der ueberladenen Typen entwickeln
+Parser and static analysis for CSP-CASL 
+
+************************************************
+Christoph
+************************************************
+
+CASL consistency checker
+IsaWin: support CASL-libraries
+
+************************************************
+Maciek
+************************************************
+
+Static analysis of architectural specs
+
+************************************************
+Till
+************************************************
+
+try out WADT 04 example:
+- coding to Isabelle: translate sort gen constraints
+- translation of sort gen constraints along CASL sig mors
+- translation of sentences CASL->HasCASL (Christian)
+- translation of sentences along HasCASL sig mors (Christian)
+- remove / in thy names
+- problem with Ids starting with __ (look at Isabelle's lexis)
+- correct display of sublogis
+- improve display of HasCASL sigs + mors (Christian)
+- correct MAYA: glob decomp: some links are not found (Jorina)
+
+Modal logics: modal logic, temporal logic, mu calculus
++ translations (e.g. modal to FOL)
+
+Isabelle: (ask Christoph)
+correct show theory
+Keep proofs and lemmas in .thy files
+prove local thm link (=> green)
+better interaction between Isabelle instance (for one node)
+  + selection of single goals that are proved
+CASL-like syntax
+CASL annotation for lemmas that should be used in proof
+
+Remove warnings
+
+Different types of logic translations
+Improve Static analysis of structured specs
+Development graph calculus, Strategies for DG rules
+Management of change
+Integrate provers
+  Otter model checker
+  modal logic: IRIT, Toulouse. Tableaux prover LOTREC, Andreas Herzig
+  Renate Schmidt, Manchester: uses FOL prover for description logic
+                              (as efficient as DL-specific tools!)
+  Look at PROSPER toolkit
+  consistency: see IJCAR-workshop on non-provability in Cork
+  IJCAR workshop about logical frameworks and meta-languages
+Integrate CCC
+Encodings
+
+
+Errors:
+Test suite (Christian's mail)
+Klaus' wayfinding example
+
+UniForM workbench:
+first steps towards CASL instance, using ATerms and re-using MMISS instance
+variants for specs (needed for DOLCE: CASL variant, DL variant, ...)
+
+Integration of MAYA and Isabelle/HOL (global HOL-Coding of
+  Grothendieck logic)
+  + for TAS: reflection of HOL in HOL, to be composed with encodings
+    (i.e. signatures, axioms, signature morphisms in HOL, 
+          re-use ML signatures) (Einar)
+
+Display Specs as daVinci subgraphs
+
+User interface
+--------------
+Logic graph window
+Input text window
+Development graph window
+Prover windows
+
+
+************************************************
+FOR STUDENTS
+************************************************
+
+Emacs mode
+HetCATS Web interface (cf. CATS/web_interface2.sml)
+CCC ?
+Packaging of installation
+integrate QuickCheck
+XML interface
+GUI (vgl. VSE)
+increase performance
+
+++++++++++++++++++++++++++++++++++++++++++++++++
+Remaining things
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+Mark-Oliver Stehr, Hamburg cf. HOL-Nurpl-Translation in Maude
+    Coq, PTT in Maude
+
+Proof general interface (1 day)
+
+Test Maya with basic datatypes
+
+Verbesserung der Fehlermeldungen
+
+Improve encoding: CATS/basic_encode.sml (3 days)
+More HOL-theories: CATS/HOL-CASL/struct_encode.sml (2 days)
+Renamings in hide-elimination: CATS/struct_encode.sml, CATS//flatten.sml (1 week)
+Example of Agnes und Frank: proofs in HOL-CASL (2 days)
+Term input+errors in cmd line interface: CATS/casl/casl.sml (1 day)
+Examples for cond rewriting -> Christophe
+Doku: VSE-Prover, VSE-Method VSE-demo in Bremen?
+Adapt more stuff from isabelle/src/HOL/Tools/datatype_package.ML (2 weeks)
+Eigene IsaWin-Instanz mit CASL-RS statt HOL-RS
+HOL-CASL Simplifier: CATS/HOL-CASL/simplifier.sml (1 week)
+HOL-CASL tactics: CATS/HOL-CALS/tactic.sml (2 days)
+HOL-CASL encoding: CATS/HOL-CASL/basic_encode.sml (1 day)
+Encoding of structured free (3 days)
+Encoding of structured cofree (2 weeks)
+Eingabesyntax als Mix zwischen CASL und HOL (3 days)
+Adapt Isabelle unions to CASL unions (1 week)
+IsaWin git/src/isa_ext/casl_thy.sml (1 week)
+Generate Proof obligations (1 week)
+Add renaming to Isabelle kernel (2 months)
+
+Basic datatypes CASL-lib/Basic/basic.casl
+Repository mit korrekten und fehlerhaften Specs
+
+HetCATS User manual, Doku fuer Environments (2 weeks)
+
+Conversion ASF/SDF-Parser -> abstract syntax (in Haskell)
+Comparsion of parsers (ML-yacc parser, SDF-Parser)
+
+Conversion-Tool CASL 1.0 => CASL 1.0.1 komplettieren
+PVS anbinden (Kooperation mit Cachan?)
+
+Portations: Intel-Solaris, Mac OS-10 (2 weeks)
+(X)Emacs mode for CASL, hide Display Annotations (2 weeks) -> Raffael Sturm
+
+Views on CASL specs: CATS/viewer.sml (2 weeks)
+Uebersetzung von CASL-LaTeX-Spezifikationen nach ASCII
+Module graph CATS/module_graph.sml (1 week) -> Maya?
+ATerms via XML: CATS/aterms.sml (2 weeks)
+
+Neues Tool-Schaubild auf Web-Seiten veröffentlichen
+
+Library management: CATS/lib_ana.sml (2 weeks)
+Version management/Uniform Workbench: CATS/lib_ana.sml (2 months)
+
+
+
+
+{- This does not work due to needed ordering:
+instance Functor Set where
+  fmap = mapSet
+instance Monad Set where
+  return = unitSet
+  m >>= k          = unionManySets (setToList (fmap k m))
+-}
