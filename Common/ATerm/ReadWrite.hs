@@ -82,7 +82,7 @@ readAT at str@(c:cs)
                  ((at',kids), str'')  = readParenATs at (dropSpaces str')
                  ((at'',ann), str''') = readAnn at' (dropSpaces str'')
              in (addATerm (ShAAppl c' kids ann) at'', str''')
-  | otherwise              = error $ error_aterm (take 5 str) 
+  | otherwise              = error $ error_aterm (take 6 str) 
 readAT _ []                = error "readATerm: empty string"  
 
 
@@ -110,7 +110,7 @@ readATs1 at par str     =  let ((at',t),str')    = readAT   at
 readATs' :: ATermTable -> Char -> String -> ((ATermTable,[Int]),String) 
 readATs' at par (',':str)  = readATs1 at par (dropSpaces str)
 readATs' at par s@(p:str)  | par == p  = ((at,[]),str)
-                           | otherwise = error (error_paren (take 5 s))
+                           | otherwise = error (error_paren (take 6 s))
 readATs' _ _ [] = error "readATs': empty string"
 
 readAnn :: ATermTable -> String -> ((ATermTable,[Int]),String)
@@ -156,7 +156,7 @@ readTAF at str@(x:xs) tbl l
            case addATermNoFullSharing (ShAAppl c kids ann) at'' of
            (at_t,ai) -> let l''' = l' + l''+ length c in
               (RTS at_t str''' (condAddRElement ai l''' tbl'') l''', ai)
-  | otherwise             = error $ error_saterm (take 5 str)
+  | otherwise             = error $ error_saterm (take 6 str)
 readTAF _ [] _ _ = error "readTAF: empty string"
 
 readParenTAFs :: ATermTable -> String -> ReadTable 
@@ -183,7 +183,7 @@ readTAFs' :: ATermTable -> Char -> String -> ReadTable -> Int
                         -> (ReadTAFStruct, [Int])
 readTAFs' at par (',':str) tbl l = readTAFs1 at par (dropSpaces str) tbl (l+1)
 readTAFs' at par s@(p:str) tbl l | par == p  = (RTS at str tbl (l+1), [])
-                                 | otherwise = error $ error_paren (take 5 s)
+                                 | otherwise = error $ error_paren (take 6 s)
 readTAFs' _ _ [] _ _ = error "readTAFs': empty string"
 
 readAnnTAF :: ATermTable -> String -> ReadTable -> Int 
@@ -466,12 +466,11 @@ abbrev i = case mkAbbrev i of (str, l) -> ('#' : str, l)
 -- error messages --------------------
 
 error_paren, error_aterm, error_saterm :: String -> String
-error_paren s = "Can't parse '" ++ [head s] ++ 
+error_paren s = "Can't parse '" ++ take 1 s ++ 
     "',expecting \",\" or matching parenthesis" ++
-    "\nFollowing characters are:" ++ tail s
-error_aterm s = "Can't parse '" ++ [head s] ++ 
-    "', expecting ATermAppl, ATermList or ATermInt" ++ 
-    "\nFollowing characters are:" ++ tail s
-error_saterm s = "Can't parse '" ++ [head s] ++ 
-    "', expecting Abbreviate, ATermAppl, ATermList or ATermInt" ++
-    "\nFollowing characters are:" ++ tail s
+    "\nFollowing characters are:" ++ drop 1 s
+error_aterm s = "Can't parse '" ++ s ++ 
+    "', expecting ATermAppl, ATermList or ATermInt"
+error_saterm s = "Can't parse '" ++ s ++ 
+    "', expecting Abbreviate, ATermAppl, ATermList or ATermInt"
+
