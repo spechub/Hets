@@ -53,8 +53,6 @@ instance Show State where
 	where first = take (length v - length d) v
 	      v = getTokenList True r
 
-instance (Show a) => Show (Set a) where
-    showsPrec _ = shows . setToList
 
 commaTok, parenTok, termTok :: Token
 commaTok = mkSimpleId "," -- for list elements 
@@ -119,43 +117,43 @@ getListBrackets (Id b _ _) =
 	     else filter (not . isPlace) rest
     in (b1, b2)
 
-listStates :: GlobalAnnos -> Int -> Set State
+listStates :: GlobalAnnos -> Int -> [State]
 -- no empty list (can be written down directly)
 listStates g i = 
     let listState toks = State listId [] [] toks i
     in case list_lit (literal_annos g) of
-		Nothing -> emptySet
+		Nothing -> []
 		Just (bs, c, _) -> 
 		    let (b1, b2) = getListBrackets bs
 			el = b1++b2
-		        ls = mkSet [ listState (b1 ++ [termTok] ++ b2) 
+		        ls = [ listState (b1 ++ [termTok] ++ b2) 
 			     , listState (b1 ++ [termTok, commaTok] ++ b2)]
 		     in if c == Id el [] [] then ls 
 		        -- don't put in empty list twice
-			else ls `addToSet` listState el 
+			else listState el : ls
 
 -- these are the possible matches for the nonterminal TERM
 -- the same states are used for the predictions  
 
-initialState :: GlobalAnnos -> Set Id -> Int -> Set State
+initialState :: GlobalAnnos -> [Id] -> Int -> [State]
 initialState g is i = 
     let mkTokState toks = State (Id toks [] []) [] [] toks i
-    in mapSet (mkApplState i) is `union` 
-       mapSet (mkState i) is `union` 
-       listStates g i `addToSet` 
-       mkTokState [parenTok] `addToSet`
-       mkTokState [termTok, colonTok] `addToSet`
-       mkTokState [termTok, asTok] `addToSet`
-       mkTokState [varTok] `addToSet`
-       mkTokState [opTok] `addToSet`
-       mkTokState [opTok, parenTok] `addToSet`
-       mkTokState [predTok] `addToSet`
-       mkTokState [predTok, parenTok]
+    in mkTokState [parenTok] : 
+       mkTokState [termTok, colonTok] :
+       mkTokState [termTok, asTok] :
+       mkTokState [varTok] :
+       mkTokState [opTok] :
+       mkTokState [opTok, parenTok] :
+       mkTokState [predTok] :
+       mkTokState [predTok, parenTok] :
+       listStates g i ++
+       map (mkState i) is ++ 
+       map (mkApplState i) is
 
-type ParseMap = FiniteMap Int (Set State)
+type ParseMap = FiniteMap Int [State]
 
-lookUp :: (Ord key) => FiniteMap key (Set a) -> key -> Set a
-lookUp m i = lookupWithDefaultFM m emptySet i
+lookUp :: (Ord key) => FiniteMap key [a] -> key -> [a]
+lookUp m i = lookupWithDefaultFM m [] i
 
 -- match (and shift) a token (or partially finished term)
 
@@ -170,7 +168,7 @@ scan trm i m =
           Mixfix_qual_pred _ -> predTok
           _ -> varTok
   in
-    addToFM m (i+1) (mkSet $ 
+    addToFM m (i+1) ( 
        foldr (\ (State o b a ts k) l ->
 	      if null ts || head ts /= t then l 
 	      else let p = tokPos t : b in 
@@ -186,7 +184,7 @@ scan trm i m =
 	      else if t == colonTok || t == asTok then
 	             (State o b [mkTerm $ head a] [] k) : l
 	           else (State o p a (tail ts) k) : l) [] 
-	      (setToList $ lookUp m i))
+	      (lookUp m i))
      where mkTerm t1 = case trm of 
 	                  Mixfix_sorted_term s ps -> Sorted_term t1 s ps
 	                  Mixfix_cast s ps -> Cast t1 s ps
@@ -219,11 +217,10 @@ isRightArg (Id ts _ _) n = n == (length $ filter isPlace ts) -
 	  
 filterByPrec :: GlobalAnnos -> State -> State -> Bool
 filterByPrec _ _ (State _ _ _ [] _) = False 
-filterByPrec g (State argIde _ _ _ _) (State opIde _ args (hd:ts) _) = 
+filterByPrec g (State argIde _ _ _ _) (State opIde _ args (hd:_) _) = 
        if hd == termTok then 
 	  if opIde == listId || argIde == listId then True
-	  else if not (null ts) && head ts == commaTok then True
-	       else let n = length args in
+	  else let n = length args in
 		    if isLeftArg opIde n then 
 		       if isPostfix opIde && (isPrefix argIde
 					      || isInfix argIde) then False
@@ -338,7 +335,7 @@ collectArg g m s@(State _ _ _ _ k) =
 	 State o b (asListAppl g s : a) 
 	 (tail ts) k1)
     $ filter (filterByPrec g s)
-    $ setToList $ lookUp m k
+    $ lookUp m k
 
 compl :: GlobalAnnos -> ParseMap -> [State] -> [State]
 compl g m l = 
@@ -350,32 +347,32 @@ complRec g m l = let l1 = compl g m l in
     if null l1 then l else complRec g m l1 ++ l
 
 complete :: GlobalAnnos -> Int  -> ParseMap -> ParseMap
-complete g i m = addToFM m i $ mkSet $ complRec g m $ setToList $ lookUp m i 
+complete g i m = addToFM m i $ complRec g m $ lookUp m i 
 
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
 
-predict :: GlobalAnnos -> Set Id -> Int -> ParseMap -> ParseMap
-predict g is i m = if any (\ (State _ _ _ ts _) -> not (null ts) 
+predict :: GlobalAnnos -> [Id] -> Int -> ParseMap -> ParseMap
+predict g is i m = if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts) 
 			 && head ts == termTok) 
-		 (setToList $ lookUp m i)
-		 then addToFM_C union m i (initialState g is i)
+		 (lookUp m i)
+		 then addToFM_C (++) m i (initialState g is i)
 		 else m 
 
 type Chart = (Int, [Diagnosis], ParseMap)
 
-nextState :: GlobalAnnos -> Set Id -> TERM -> Chart -> Chart
+nextState :: GlobalAnnos -> [Id] -> TERM -> Chart -> Chart
 nextState g is trm (i, ds, m) = 
     let m1 = complete g (i+1) $
 		 scan trm i $
 		 predict g is i m
-    in if isEmptySet (lookUp m1 (i+1)) && null ds
+    in if null (lookUp m1 (i+1)) && null ds
 		    then (i+1, Error ("unexpected term or token: " 
 				      ++ show (printText0 g trm))
 			       (posOfTerm trm) : ds, m)
        else (i+1, ds, m1)
 
-iterateStates :: GlobalAnnos -> Set Id -> Set Id -> [TERM] -> Chart -> Chart
+iterateStates :: GlobalAnnos -> [Id] -> [Id] -> [TERM] -> Chart -> Chart
 iterateStates g ops preds terms c@(i, ds, m) = 
     let self = iterateStates g ops preds 
         resolveTerm = resolveMixfix g ops preds False
@@ -438,13 +435,14 @@ getAppls :: GlobalAnnos -> Int -> ParseMap -> [TERM]
 getAppls g i m = 
     map (asListAppl g) $ 
 	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
-	     setToList $ lookUp m i
+	     lookUp m i
 
-resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
+resolveMixfix :: GlobalAnnos -> [Id] -> [Id] -> Bool -> TERM -> Result TERM
 resolveMixfix g ops preds mayBeFormula trm =
     let (i, ds, m) = iterateStates g ops preds [trm] 
 		     (0, [], unitFM 0 $ initialState g 
-		      (if mayBeFormula then ops `union` preds else ops) 0)
+		      (if mayBeFormula then setToList $
+		       mkSet (ops ++ preds) else ops) 0)
         ts = getAppls g i m
     in if null ts then if null ds then 
                         non_fatal_error trm ("no resolution for term: "
@@ -458,7 +456,7 @@ resolveMixfix g ops preds mayBeFormula trm =
 			 $ map (show . printText0 g) 
 			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
 
-resolveFormula :: GlobalAnnos -> Set Id -> Set Id -> FORMULA -> Result FORMULA
+resolveFormula :: GlobalAnnos -> [Id] -> [Id] -> FORMULA -> Result FORMULA
 resolveFormula g ops preds frm =
     let self = resolveFormula g ops preds 
 	resolveTerm = resolveMixfix g ops preds False in
@@ -511,7 +509,7 @@ resolveFormula g ops preds frm =
                             else updFormulaPos (head ps) (last ps) p
 		 Application (Op_name ide) args ps -> 
 		     let p = Predication (Pred_name ide) args ps in
-		     if ide `elementOf` preds then return p
+		     if ide `elem` preds then return p
 		     else non_fatal_error p 
 		          ("not a predicate: " ++ showId ide "")
 			  (posOfTerm t)
