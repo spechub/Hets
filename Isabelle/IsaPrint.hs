@@ -91,7 +91,7 @@ instance Show TypeSig where
             ++"\n"++rest
 
 instance Show Term where
-  show = showTerm
+  show = outerShowTerm
 
 showTerm :: Term -> String
 showTerm (Const (c,_)) = c
@@ -109,6 +109,17 @@ showTerm t = show(toPrecTree t)
 showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var typ term =
   (s++sp++showTerm var++" :: "++show typ++" . "++showTerm term)
+
+outerShowTerm :: Term -> String
+outerShowTerm (Const ("All",_) `App` Abs (v,ty,t)) = 
+  outerShowQuant "!!" v ty t
+outerShowTerm (Const ("op -->",_) `App` t1 `App` t2) =
+  showTerm t1 ++ " ==> " ++ showTerm t2
+outerShowTerm t = showTerm t
+
+outerShowQuant :: String -> Term -> Typ -> Term -> String
+outerShowQuant s var typ term =
+  (s++sp++showTerm var++" :: "++show typ++" . "++outerShowTerm term)
 
 
 {-   
