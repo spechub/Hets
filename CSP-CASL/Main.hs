@@ -15,11 +15,11 @@
 module Main where
 
 import Parse_hugo
-import Parsec
-import IO
-import System
+import Common.Lib.Parsec
+import System.IO
+import System.Environment
 
-import AnnoState
+import Common.AnnoState
 
 run :: Show a => AParser a -> String -> IO ()
 run p input

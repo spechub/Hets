@@ -11,8 +11,8 @@
 
 module AS_CSP_CASL where
 
-import AS_Basic_CASL
-import Id
+import CASL.AS_Basic_CASL
+import Common.Id
 
 ----------------------------------------------------------------------------
 -- Specifications

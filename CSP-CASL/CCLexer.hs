@@ -13,13 +13,13 @@ module CCLexer where
 
 import CCKeywords
 
--- import Parsec
-import Id (Token(..))
+-- import Common.Lib.Parsec
+import Common.Id (Token(..))
 
--- import Lexer
+-- import Common.Lexer
 
-import ItemList (asKey)
-import AnnoState
+import CASL.ItemList (asKey)
+import Common.AnnoState
 
 ----------------------------------------------------------------------------
 -- Parser for csp-casl-keywords

@@ -15,21 +15,19 @@ module Parse_hugo where
 --import CCKeywords
 
 import AS_CSP_CASL
-import AS_Basic_CASL(OP_NAME)
+import CASL.AS_Basic_CASL(OP_NAME)
 import CCToken
 import CCLexer
 
-import Prelude
-import Parsec
+import Common.Lib.Parsec
 
-import Id (Token(..))
-import Token
-import Lexer(separatedBy)
-import Parse_AS_Basic
-import Formula
+import Common.Id (Token(..))
+import Common.Token
+import Common.Lexer(separatedBy)
+import CASL.Parse_AS_Basic
+import CASL.Formula
 
-import AnnoState
---import AS_Basic_CASL
+import Common.AnnoState
 
 ----------------------------------------------------------------------------
 -- Parsers for CSP-CASL-specifications

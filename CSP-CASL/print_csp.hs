@@ -15,15 +15,15 @@
 module Main where
 
 import Parse_hugo
-import Parsec
-import IO
-import System
-import PrettyPrint
-import Pretty
+import Common.Lib.Parsec
+import System.IO
+import System.Environment
+import Common.PrettyPrint
+import Common.Lib.Pretty
 import Print_AS_CSP_CASL
-import GlobalAnnotationsFunctions(emptyGlobalAnnos)
+import Common.GlobalAnnotationsFunctions(emptyGlobalAnnos)
 
-import AnnoState
+import Common.AnnoState
 
 run :: PrettyPrint a => AParser a -> String -> IO ()
 run p input

@@ -13,14 +13,14 @@ module CCToken
 
 where
 {-import Id (Id(Id), Token(..), Pos, toPos, isPlace)-}
-import Id (Token(..))
-import Token
-import Lexer
+import Common.Id (Token(..))
+import Common.Token
+import Common.Lexer
 import CCKeywords
 
---import Parsec
+--import Common.Lib.Parsec
 
-import AnnoState
+import Common.AnnoState
 
 csp_casl_reserved_words :: [String]
 csp_casl_reserved_words = casl_reserved_words ++
