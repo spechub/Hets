@@ -13,17 +13,18 @@
 -}
 
 module CASL.Overload (
-    overloadResolution  -- :: Sign -> [Sentence] -> Result [Sentence]
+    overloadResolution          -- :: Sign -> [Sentence] -> Result [Sentence]
     ) where
 
-import CASL.StaticAnalysis -- Sign = Env
-import CASL.AS_Basic -- FORMULA
-import Common.Result -- Result
+import CASL.StaticAna           -- Sign = Env
+import CASL.AS_Basic_CASL       -- FORMULA, TERM, SORT et al
+import Common.Result            -- Result
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Id      as Id
+import Data.List(partition)
 
 {-
 
@@ -44,25 +45,27 @@ TODO: All das hier implementieren und testen :D
    ambiguity -}
 overloadResolution :: Sign -> [Sentence] -> Result [Sentence]
 overloadResolution sign sentences
-    = do expandedSentences <- map (minExpSentence sign) sentences
+    = --do expandedSentences <- map (minExpSentence sign) sentences
+         return sentences
          -- check ambiguities, generate errors for them
+-- TODO FIXME dies ist ein DUMMY
 
 {-----------------------------------------------------------
     Extract Atomic Sentences from (general) Sentences
 -----------------------------------------------------------}
-getAtoms :: Sentence -> [Sentence]
-getAtoms sentence
-    = case sentence of
-        -- Non-Atomic Sentences -> Descend and Extract
-        Quantification _ _ sentence' _ -> getAtoms sentence'
-        Conjunction sentences _        -> getAllAtoms sentences
-        Disjunction sentences _        -> getAllAtoms sentences
-        Implication sent1 sent2 _      -> getAllAtoms [sent1, sent2]
-        Equivalence sent1 sent2 _      -> getAllAtoms [sent1, sent2]
-        Negation sentence' _           -> getAtoms sentence'
-        -- Atomic Sentences -> Wrap and Return
-        _                              -> [sentence]
-    where getAllAtoms = concat . map getAtoms
+--getAtoms :: Sentence -> [Sentence]
+--getAtoms sentence
+--    = case sentence of
+--        -- Non-Atomic Sentences -> Descend and Extract
+--        Quantification _ _ sentence' _ -> getAtoms sentence'
+--        Conjunction sentences _        -> getAllAtoms sentences
+--        Disjunction sentences _        -> getAllAtoms sentences
+--        Implication sent1 sent2 _      -> getAllAtoms [sent1, sent2]
+--        Equivalence sent1 sent2 _      -> getAllAtoms [sent1, sent2]
+--        Negation sentence' _           -> getAtoms sentence'
+--        -- Atomic Sentences -> Wrap and Return
+--        _                              -> [sentence]
+--    where getAllAtoms = concat . map getAtoms
 
 {-----------------------------------------------------------
     Minimal Expansion of a Sentence -- TODO: implement :o)
@@ -70,22 +73,22 @@ getAtoms sentence
 minExpSentence :: Sign -> Sentence -> Result [[Sentence]]
 minExpSentence sign sentence
     = case sentence of
-        -- Atomic Sentences -> Calculate minimal Expansion 
-        True_atom _                    -> [["True", "_bool"]]
-        False_atom _                   -> [["False", "_bool"]]
-        Predication PRED_SYMB [TERM] _ -> -- predicate application
-        Definedness TERM _             -> -- see till's mail
-        Existl_equation TERM TERM _    -> -- see till's mail
-        Strong_equation TERM TERM _    -> -- see till's mail
-        Membership TERM SORT _         -> -- like in 'forall n in Nat'?
-        -- Unparsed Sentences -> Parser Error, Bail out!
-        Mixfix_formula term            ->
-            error $ "Parser Error: Unparsed `Mixfix_formula' received: "
-                    ++ (show term)
-        Unparsed_formula string _      -> 
-            error $ "Parser Error: Unparsed `Unparsed_formula' received: "
-                    ++ string
-        -- Non-Atomic Sentences -> getAtoms Error, Bail out!
+        -- -- Atomic Sentences -> Calculate minimal Expansion 
+        -- True_atom _                    -> -- True
+        -- False_atom _                   -> -- False
+        -- Predication PRED_SYMB [TERM] _ -> -- predicate application
+        -- Definedness TERM _             -> -- see till's mail
+        -- Existl_equation TERM TERM _    -> -- see till's mail
+        -- Strong_equation TERM TERM _    -> -- see till's mail
+        -- Membership TERM SORT _         -> -- like in 'forall n in Nat'?
+        -- -- Unparsed Sentences -> Error in Parser, Bail out!
+        -- Mixfix_formula term            ->
+        --     error $ "Parser Error: Unparsed `Mixfix_formula' received: "
+        --             ++ (show term)
+        -- Unparsed_formula string _      ->
+        --     error $ "Parser Error: Unparsed `Unparsed_formula' received: "
+        --             ++ string
+        -- -- Non-Atomic Sentences -> Error in getAtoms, Bail out!
         _                              ->
             error $ "Internal Error: Unknown type of Sentence received: "
                     ++ (show sentence)
@@ -94,170 +97,201 @@ minExpSentence sign sentence
     Minimal Expansion of a Term
 -----------------------------------------------------------}
 minExpTerm :: Sign -> TERM -> Result [[TERM]]
-minExpTerm sign term
-    = case term of
+minExpTerm sign term'
+    = case term' of
         Simple_id var
             -> minExpTerm_simple sign var
         Qual_var var sort _
-            -> -- qualified term
+            -> minExpTerm_qual sign var sort
         Application op terms _
-            -> -- op application
+            -> minExpTerm_op sign op terms
         Sorted_term term sort _
-            -> -- qualified term
-               -- wie unterscheidet sich das von Qual_var???
+            -> minExpTerm_sorted sign term sort
         Cast term sort _
-            -> -- cast ?
+            -> error $ "not implemented ... yet"        -- cast ?
         Conditional term1 formula term2 _
-            -> -- conditional ?
+            -> error $ "not implemented ... yet"        -- conditional ?
         Unparsed_term string _
-            -> error $ "Parser Error: Unparsed `Unparsed_term' found: "
+            -> error $ "minExpTerm: Parser Error - Unparsed `Unparsed_term' "
                ++ string
-        _   -> error $ "Parser Error: Unparsed `Mixfix' term found: "
-               ++ (show term)
+        _   -> error $ "minExpTerm: Parser Error - Unparsed `Mixfix' term "
+               ++ (show term')
 
 {-----------------------------------------------------------
     Minimal Expansion of a Simple_id Term
 -----------------------------------------------------------}
-minExpTerm_simple :: Sign -> SIMPLE_ID -> Result [[TERM]]
-minExpTerm_simple sign var
-    = do
-        -- is_const :: OpType -> Bool
-        let is_const = null . opArgs            -- list of args is empty
-            = 1 == Set.size                     -- True if s is the only member
-                (Set.intersection sorts         -- intersect with current sorts
-                    (subsortsOf s sign))        -- find subsorts
-        -- vars :: Set.Set SORT
-        let vars = case Map.lookup var (varMap sign) of
-            Nothing    -> Set.empty
-            Just vars' -> vars'
-        -- ops :: Set.Set SORT
-        let ops = case Map.lookup (simpleIdToId var) (opMap sign) of
-            Nothing    -> Set.empty
-            Just ops'  ->
-                Set.fromList                    -- convert back into Set
-                    $ map opRes                 -- get result of each op
-                    $ Set.elems                 -- convert Set to list
-                    $ Set.filter is_const ops'  -- find const ops
-        -- all_sorts :: Set.Set SORT
-        let all_sorts = Set.union vars ops
-        -- no_lesser_sort :: (Set.Set SORT) -> SORT -> Bool
-        let no_lesser_sort sorts s
-        -- least_sorts :: Set.Set SORT
-        let least_sorts
-            = Set.filter (no_lesser_sort all_sorts) all_sorts
-        -- TODO: merge var into this process somewhere
-        return qualifyTerms                     -- merge into qualified Term
-            $ equivalence_Classes leqF           -- divide into equiv. classes
-            $ Set.toList least_sorts            -- convert to List
+minExpTerm_simple :: Sign -> Id.SIMPLE_ID -> Result [[TERM]]
+minExpTerm_simple sign var = do
+    vars        <- return
+        $ Map.findWithDefault                   -- :: Set.Set SORT
+            Set.empty var (varMap sign)
+    ops'        <- return
+        $ Map.findWithDefault                   -- :: Set.Set SORT
+            Set.empty name (opMap sign)
+    ops         <- return
+        $ (Set.fromList                         -- :: Set.Set SORT
+           . (map opRes)                        -- :: [SORT]
+           . Set.toList                         -- :: [SORT]
+           . (Set.filter is_const_op))          -- :: Set.Set SORT
+            ops'                                -- :: Set.Set SORT
+        -- maybe use Set.fold instead of List.map?
+    cs          <- return
+        $ Set.union vars ops                    -- :: Set.Set SORT
+    least       <- return
+        $ Set.filter (is_least_sort cs) cs      -- :: Set.Set SORT
+    return
+        $ qualifyTerms                          -- :: [[TERM]]
+        $ (equivalence_Classes leqF)            -- :: [[(TERM, SORT)]]
+        $ map pair_with_id                      -- :: [(TERM, SORT)]
+        $ Set.toList least                      -- :: [SORT]
+    where
+        name                    :: Id.Id
+        name                     = Id.simpleIdToId var
+        is_const_op             :: OpType -> Bool
+        is_const_op op           = (null . opArgs) op
+        is_least_sort           :: Set.Set SORT -> SORT -> Bool
+        is_least_sort ss s
+            = Set.size (Set.intersection ss (subsortsOf s sign)) == 1
+        pair_with_id            :: SORT -> (TERM, SORT)
+        pair_with_id sort        = ((Simple_id var), sort)
 
 {-----------------------------------------------------------
     Minimal Expansion of a Qual_var Term
 -----------------------------------------------------------}
 minExpTerm_qual :: Sign -> VAR -> SORT -> Result [[TERM]]
-minExpTerm_qual sign var sort
-    = do
-        -- expandedVar :: [[TERM]]
-        expandedVar <- minExpTerm_simple sign var
-        -- selectExpansions :: [TERM] -> [(TERM, SORT)]
-        let selectExpansions c                  -- foreach c in expandedVar
-            = [ ((Simple_id var), sort) |       -- choose {(var, sort)}
-                sorted <- c,                    -- foreach sorted Term in c
-                fits sorted ]                   -- if it fits var and sort
-        -- fits :: TERM -> Bool
-        let fits (Sorted_term (Simple_id v) s _)
-            = (v == var) && (s <= sort)         -- if var eq and sort leq
-        let fits _ = False                      -- TODO: this shouldn't happen
-        return qualifyTerms                     -- merge into qualified Term
-            $ map selectExpansions expandedVar  -- choose Set foreach Expansion
+minExpTerm_qual sign var sort = do
+    expandedVar <- minExpTerm_simple sign var   -- :: [[TERM]]
+    return
+        $ qualifyTerms                          -- :: [[TERM]]
+        $ map selectExpansions expandedVar      -- :: [[(TERM, SORT)]]
+    where
+        fits                    :: TERM -> Bool
+        fits term                = case term of
+            (Sorted_term (Simple_id var') sort' _)
+                -> (var == var') && (sort == sort')
+            _   -> error "minExpTerm: unsorted TERM after expansion"
+        selectExpansions        :: [TERM] -> [(TERM, SORT)]
+        selectExpansions c
+            = [ ((Simple_id var), sort) |       -- :: (TERM, SORT)
+                sorted <- c,                    -- :: TERM
+                fits sorted ]                   -- :: Bool
 
 {-----------------------------------------------------------
     Minimal Expansion of a Sorted_term Term
 -----------------------------------------------------------}
 minExpTerm_sorted :: Sign -> TERM -> SORT -> Result [[TERM]]
-minExpTerm_sorted sign term sort
-    = do
-        -- expandedTerm :: [[TERM]]
-        expandedTerm <- minExpTerm sign term
-        -- selectExpansions :: [TERM] -> [(TERM, SORT)]
-        let selectExpansions c                  -- foreach c in expandedTerm
-            = [ (term, sort) |                  -- choose {(term, sort)}
-                sorted <- c,                    -- foreach sorted Term in c
-                fits sorted ]                   -- if it fits term and sort
-        let fits (Sorted_term t s _)
-            = (t == term) && (s <= sort)        -- if term eq and sort leq
-        let fits _ = False                      -- TODO this shouldn't happen
-        return qualifyTerms                     -- merge into qualified Term
-            $ map selectExpansions expandedTerm -- choose Set foreach Expansion
+minExpTerm_sorted sign term sort = do
+    expandedTerm <- minExpTerm sign term        -- :: [[TERM]]
+    return
+        $ qualifyTerms                          -- :: [[TERM]]
+        $ map selectExpansions expandedTerm     -- :: [[(TERM, SORT)]]
+    where
+        fits                    :: TERM -> Bool
+        fits term'               = case term' of
+            (Sorted_term term'' sort' _)
+                -> (term == term'') && (sort == sort')
+            _   -> error "minExpTerm: unsorted TERM after expansion"
+        selectExpansions        :: [TERM] -> [(TERM, SORT)]
+        selectExpansions c
+            = [ (term, sort) |                  -- :: (TERM, SORT)
+                sorted <- c,                    -- :: TERM
+                fits sorted ]                   -- :: Bool
 
 {-----------------------------------------------------------
     Minimal Expansion of a Function Application Term
 -----------------------------------------------------------}
 minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> Result [[TERM]]
-minExpTerm_op sign op terms
-    = do
-        -- ops :: [OP_SYMB]
-        let ops = Map.toList (opMap sign)
-        -- expansions :: [[[TERM]]]
-        expansions <- mapM (minExpTerm sign) terms
-        -- permuted_exps :: [[[TERM]]]
-        let permuted_exps = permute expansions
-        -- profiles :: [[(OP_SYMB, [TERM])]]
-        let profiles = map get_profile permuted_exps
-        -- P :: [[(OP_SYMB, [TERM])]]
-        let P = concat $ map (equivalence_Classes op_eq) profiles
-        -- P' :: [[(OP_SYMB, [TERM])]]
-        let P' = map (minimize sign) P
-        return qualifyTerms $ qualifyOps P'
+minExpTerm_op sign op terms = do
+    expansions          <- mapM
+        (minExpTerm sign) terms                 -- :: [[[TERM]]]
+    permuted_exps       <- return
+        $ permute expansions                    -- :: [[[TERM]]]
+    profiles            <- return
+        $ map get_profile permuted_exps         -- :: [[(OpType, [TERM])]]
+    p                   <- return
+        $ (concat                               -- :: [[(OpType, [TERM])]]
+           . (map (equivalence_Classes op_eq))) -- :: [[[(OpType, [TERM])]]]
+            profiles                            -- :: [[(OpType, [TERM])]]
+    p'                  <- return
+        $ map (minimize sign) p                 -- :: [[(OpType, [TERM])]]
+    return
+        $ qualifyTerms                          -- :: [[TERM]]
+        $ qualifyOps p'                         -- :: [[(TERM, SORT)]]
     where
-        -- op_eq :: (OP_SYMB, [TERM]) -> (OP_SYMB, [TERM]) -> Bool
-        op_eq (op1,ts1) (op2,ts2)
-            = let w1 = op_terms op1                             -- :: [SORT]
-                  w2 = op_terms op2                             -- :: [SORT]
-                  s1 = map term_sort ts1                        -- :: [SORT]
-                  s2 = map term_sort ts2                        -- :: [SORT]
-                  b1 = zipped_all (leq_SORT sign) s1 w1         -- ::  Bool
-                  b2 = zipped_all (leq_SORT sign) s2 w2         -- ::  Bool
-                  ops_equal = op1 == op2                        -- ::  Bool
-                  ops_equiv = op1 leqF op2                      -- ::  Bool
-                  -- TODO: leqF fehlt noch!
-                  types_equal = all ( zipWith (==) ts1 ts2 )    -- ::  Bool
-              in b1 && b2 && (ops_equal || (ops_equiv && types_equal))
-        -- get_profile :: [[TERM]] -> [(OP_SYMB, [TERM])]
+        name            :: OP_NAME
+        name             = op_name op
+        ops             :: [OpType]
+        ops              = Set.toList
+            $ Map.find name $ (opMap sign)
+        op_name         :: OP_SYMB -> OP_NAME
+        op_name op'      = case op' of
+            (Op_name name')             -> name'
+            (Qual_op_name name' _ _)    -> name'
+        term_sort       :: TERM -> SORT
+        term_sort term'  = case term' of
+            (Sorted_term _ sort _ )     -> sort
+            _                           -> error                -- unlikely
+                "minExpTerm: unsorted TERM after expansion"
+        qualifyOps      :: [[(OpType, [TERM])]] -> [[(TERM, SORT)]]
+        qualifyOps       = map (map qualify_op)
+        qualify_op      :: (OpType, [TERM]) -> (TERM, SORT)
+        qualify_op (op', terms')
+            = ( (Application                                    -- ::  TERM
+                    (Qual_op_name                               -- :: OP_SYMB
+                        name                                    -- :: OP_NAME
+                        (toOP_TYPE op')                         -- :: OP_TYPE
+                        [])                                     -- :: [Pos]
+                    terms'                                      -- :: [TERM]
+                    [])                                         -- :: [Pos]
+              , (opRes op') )                                   -- ::  SORT
+        get_profile :: [[TERM]] -> [(OpType, [TERM])]
         get_profile cs
-            = [ (op', ts) | op' <- ops, ts <- (permute cs),
-                (op_name op') == (op_name op),
-                zipped_all (leq_SORT sign) (map term_sort ts) (op_terms op') ]
-        -- qualifyOps :: [[(OP_SYMB, [TERM])]] -> [[(TERM, SORT)]]
-        qualifyOps = map (map qualify_op)
-        -- qualify_op :: (OP_SYMB, [TERM]) -> (TERM, SORT)
-        qualify_op (op, terms) = ((Application op terms []), (op_result op))
+            = [ (op', ts) |
+                op' <- ops,                                     -- :: OpType
+                ts <- (permute cs),                             -- :: [TERM]
+                zipped_all (leq_SORT sign)                      -- ::  Bool
+                    (map term_sort ts)                          -- :: [SORT]
+                    (opArgs op') ]                              -- :: [SORT]
+        op_eq :: (OpType, [TERM]) -> (OpType, [TERM]) -> Bool
+        op_eq (op1,ts1) (op2,ts2)
+            = let   w1 = opArgs op1                             -- :: [SORT]
+                    w2 = opArgs op2                             -- :: [SORT]
+                    s1 = map term_sort ts1                      -- :: [SORT]
+                    s2 = map term_sort ts2                      -- :: [SORT]
+                    b1 = zipped_all (leq_SORT sign) s1 w1       -- ::  Bool
+                    b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
+                    ops_equal = (op1 == op2)                    -- ::  Bool
+                    ops_equiv = op1 `leqF` op2                  -- ::  Bool
+                    types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
+                in b1 && b2 && (ops_equal || (ops_equiv && types_equal))
 
 {-----------------------------------------------------------
     Divide a Set (list) into equivalence classes w.r.to eq
 -----------------------------------------------------------}
-equivalence_Classes :: (a -> a -> Bool) -> [a] -> [[a]]
-equivalence_Classes _ [] = []
-equivalence_Classes eq (x:l)
-    = let (xs, ys) = partition (eq x) l
-           xs'     = (x:xs)
-      in xs':(equiv eq ys)
-      -- komplexere Implementation: siehe unten, Till's SML-version...
+-- also look below for Till's SML-version of this
+equivalence_Classes         :: (a -> a -> Bool) -> [a] -> [[a]]
+equivalence_Classes _ []     = []
+equivalence_Classes eq (x:l) = xs':(equivalence_Classes eq ys)
+    where
+        (xs, ys) = partition (eq x) l
+        xs'      = (x:xs)
 
 {-----------------------------------------------------------
     Transform a list [l1,l2, ... ln] to (in sloppy notation)
     [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
 -----------------------------------------------------------}
-permute       :: [[a]] -> [[a]]
+permute      :: [[a]] -> [[a]]
 permute []    = [[]]
 permute [x]   = map (\y -> [y]) x
 permute (x:l) = concat (map (distribute (permute l)) x)
-    where distribute perms y = map ((:) y) perms
+    where
+        distribute perms y = map ((:) y) perms
 
 {-----------------------------------------------------------
-    Like 'all (zipWith p as bs)',
+    Like 'and (zipWith p as bs)',
     but must return False if lengths don't match
 -----------------------------------------------------------}
-zipped_all                 :: (a -> b -> Bool) -> [a] -> [b] -> Bool
+zipped_all                :: (a -> b -> Bool) -> [a] -> [b] -> Bool
 zipped_all _ []     []     = True
 zipped_all p (a:as) (b:bs) = (p a b) && (zipped_all p as bs)
 zipped_all _  _      _     = False
@@ -267,51 +301,27 @@ zipped_all _  _      _     = False
     from each (TERM, SORT) tuple
 -----------------------------------------------------------}
 qualifyTerms :: [[(TERM, SORT)]] -> [[TERM]]
-qualifyTerms = map (map qualify_term)
-    where qualify_term term sort = Sorted_term sort term []
+qualifyTerms  = map (map qualify_term)
+    where
+        qualify_term       :: (TERM, SORT) -> TERM
+        qualify_term (t, s) = Sorted_term t s []
 
 {-----------------------------------------------------------
     For each C in P (see above), let C' choose _one_
     f:s \in C for each s minimal such that f:s \in C
 -----------------------------------------------------------}
-minimize :: Sign -> [(OP_SYMB, [TERM])] -> [(OP_SYMB, [TERM])]
-minimize sign ops_n_terms = concat $ map least ops_n_terms
+minimize :: Sign -> [(OpType, [TERM])] -> [(OpType, [TERM])]
+minimize sign ops_n_terms
+    = concat $ map reduce ops_n_terms
     where
-        -- results :: Set.Set SORT
-        results = Set.fromList (map (op_result . fst) ops_n_terms)
-        -- reduce :: (OP_SYMB, [TERM]) -> [(OP_SYMB, [TERM])]
-        reduce x@(op,_) = if (least (op_result op) results) then [x] else []
-        -- least :: SORT -> Set.Set SORT -> Bool
-        least s ss = 1 == Set.size (Set.intersection ss (subsortsOf s sign))
-
-{-----------------------------------------------------------
-    These are used by minExpTerm_op only,
-    maybe souldn't be global anyway...
------------------------------------------------------------}
-op_name                         :: OP_SYMB -> OP_NAME
-op_name (Op_name name)          = name
-op_name (Qual_op_name name _ _) = name
-
-op_type                         :: OP_SYMB -> Maybe OP_TYPE
-op_type (Qual_op_name _ t _)    = Just t
-op_type _                       = Nothing
-
-op_terms                        :: OP_SYMB -> [SORT]
-op_terms op                     = case (op_type op) of
-    Just (Total_op_type sorts _ _)      -> sorts
-    Just (Partial_op_type sorts _ _)    -> sorts
-    Nothing             -> error "Critical: Unqualified Op in op_terms!"
-
-op_result                       :: OP_SYMB -> SORT
-op_result op                    = case (op_type op) of
-    Just (Total_op_type _ sort _)       -> sort
-    Just (Partial_op_type _ sort _)     -> sort
-    Nothing             -> error "Critical: Unqualified Op in op_result!"
-
-term_sort                       :: TERM -> SORT
-term_sort (Sorted_term _ s _)   = s
-term_sort _                     = error "Critical: Unsorted Term in term_sort!"
-{------------------------- done? --------------------------}
+        results        :: Set.Set SORT
+        results         = Set.fromList (map (opRes . fst) ops_n_terms)
+        lesserSorts    :: SORT -> Set.Set SORT
+        lesserSorts s   = Set.intersection results (subsortsOf s sign)
+        leastSort      :: SORT -> Bool
+        leastSort s     = Set.size (lesserSorts s) == 1
+        reduce         :: (OpType, [TERM]) -> [(OpType, [TERM])]
+        reduce x@(op,_) = if (leastSort (opRes op)) then [x] else []
 
 {-----------------------------------------------------------
     Return True if s1 <= s2
@@ -322,8 +332,10 @@ leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
 
 
 leqF :: a -> a -> Bool -- Funktionsgleichheit
+leqF _ _ = True
 
 leqP :: a -> a -> Bool -- Praedikatsgleichheit
+leqP _ _ = True
 
 
 {-
