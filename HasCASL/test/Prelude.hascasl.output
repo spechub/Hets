@@ -33,7 +33,7 @@ program tt : forall s : Type .  s ->? Unit = \ x : s . ()
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
 type __->__ : Type- -> Type+ -> Type
-type __->__ < s ->? t
+type __->__(s : Type)(t : Type) < s ->? t
 %% total functions
 op __res__ : s × t ->? s = (var x : s)
 op fst : s × t ->? s = (var x : s)
@@ -103,12 +103,12 @@ type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
 %% Pcont
 type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
-type __-->?__ < c ->? d
+type __-->?__(c : Cpo)(d : Cpo) < c ->? d
 program f <<= [c -->? d] g =
 	all (\ x : c . def (f x) impl f (x) <<= g (x))
 %% Tcont
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
-type __-->__ < c -->? d
+type __-->__(c : Cpo)(d : Cpo) < c -->? d
 var f : c --> d; g : c --> d
 program __<<=__ : forall c : Cpo .  c × c ->? Unit (f : _var_103,
 						    g : _var_104)
@@ -255,6 +255,8 @@ Error (line 75, column 15) unexpected term 'x res eq (x, y)'
 Error (line 0, column 0) undeclared type '_var_46'
 Error (line 75, column 44) unexpected term 'y res eq (x, y)'
 Warning (line 85, column 6) redeclared type 's'
+Error (line 85, column 6) merge: TypeVarDefn of 's'
+
 Error (line 87, column 9) no match for 'all'
 Error (line 87, column 9) no type match for 'all (p : s ->? Unit)'
 Error (line 87, column 9) no typing for 'all(p : s ->? Unit) : Unit ->? Unit'

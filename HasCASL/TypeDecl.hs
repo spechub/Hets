@@ -44,8 +44,8 @@ addSuperType t i =
 					      (TypeInfo ok ks (t:sups) defn)
 					      tk
 
-idsToTypePatterns :: [Maybe Id] -> [TypePattern]
-idsToTypePatterns mis = map ( \ i -> TypePattern i [] [] ) 
+idsToTypePatterns :: [Maybe (Id, [TypeArg])] -> [TypePattern]
+idsToTypePatterns mis = map ( \ (i, as) -> TypePattern i as [] ) 
 			 $ catMaybes mis
 
 anaFormula :: GlobalAnnos -> Annoted Term -> State Env (Maybe (Annoted Term))
@@ -157,30 +157,38 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs ps) =
        checkKinds pat star k
        cs <- mapM anaClassId derivs
        let jcs = catMaybes cs
-       mapM (checkKinds pat star) jcs
-       let newDerivs = foldr( \ ck l -> case ck of 
+           newDerivs = foldr( \ ck l -> case ck of 
 				           ClassKind ci _ -> ci:l
 				           _ -> l) [] jcs
            Result ds m = convertTypePattern pat
        addDiags ds
+       mapM_ (checkKinds pat star) jcs
        case m of 
 	      Nothing -> return $ DatatypeDecl pat k [] newDerivs ps
-	      Just (i, as) -> 
-		  do let dt = TypeName i (typeArgsListToKind as k) 0
-                     newAlts <- anaAlts dt 
+	      Just (i, as) -> do 
+	          newAs <- mapM anaTypeVarDecl as
+		  let nAs = catMaybes newAs
+                      fullKind = typeArgsListToKind nAs k
+		      ti = TypeName i fullKind 0
+		      mkType ty [] = ty
+		      mkType ty ((TypeArg ai ak _ _): rest) =
+			  mkType (TypeAppl ty (TypeName ai ak 1)) rest
+		      dt = mkType ti nAs
+                  newAlts <- anaAlts dt
 				$ map item alts
-		     mapM_ ( \ (Construct c tc p sels) -> do
-			     let ty = simpleTypeScheme $ getConstrType dt p tc
+		  mapM_ ( \ (Construct c tc p sels) -> do
+			     let ty = TypeScheme nAs 
+			                   ([] :=> getConstrType dt p tc) []
 			     addOpId c ty
 			                [] (ConstructData i)
 			     mapM_ ( \ (Select s ts pa) -> 
-				     addOpId s (simpleTypeScheme $ 
-						getSelType dt pa ts) 
+				     addOpId s (TypeScheme nAs 
+					 ([] :=> getSelType dt pa ts) []) 
 				     [] (SelectData [ConstrInfo c ty] i)
 			           ) sels) newAlts
-		     mi <- addTypePattern (DatatypeDefn genKind [] newAlts) 
-			   inst k (i, as)
-		     return $ DatatypeDecl (TypePattern i as []) k 
+		  mi <- addTypeId (DatatypeDefn genKind nAs newAlts) 
+			   inst fullKind i
+		  return $ DatatypeDecl (TypePattern i nAs []) k 
 			    (case mi of Nothing -> [] 
 			                Just _ -> alts)
 			    newDerivs ps
@@ -206,12 +214,16 @@ anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
 
 -- | add a type pattern 
 addTypePattern :: TypeDefn -> Instance -> Kind -> (Id, [TypeArg])  
-	       -> State Env (Maybe Id) -- , [TypeArg]))
+	       -> State Env (Maybe (Id, [TypeArg]))
 
 addTypePattern defn inst kind (i, as) =
     do newAs <- mapM anaTypeVarDecl as 
-       let fullKind = typeArgsListToKind (catMaybes newAs) kind
-       addTypeId defn inst fullKind i
+       let nAs = catMaybes newAs
+           fullKind = typeArgsListToKind nAs kind
+       mId <- addTypeId defn inst fullKind i
+       return $ case mId of 
+		Nothing -> Nothing
+		Just newId -> Just (newId, nAs)
 
 -- | extent a kind to expect further type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind

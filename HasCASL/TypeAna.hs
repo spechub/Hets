@@ -258,7 +258,7 @@ checkFunKind mk t1 t2 k1 =
 	Downset _ _ k _ -> checkFunKind mk t1 t2 k
 	ExtKind k _ _ -> checkFunKind mk t1 t2 k
 	_ -> do addDiags [mkDiag Error 
-				 "expected higher order kind for type" t1]
+				 "unexpected type argument" t2]
 	        return Nothing
 
 inferKind :: Maybe Kind -> Type -> State Env (Maybe Kind)

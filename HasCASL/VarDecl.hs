@@ -37,7 +37,6 @@ putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 
 -- | store type id and check the kind
 addTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env (Maybe Id)
--- type args not yet considered for kind construction 
 addTypeId defn _ kind i = 
     do let nk = rawKind kind
        if placeCount i <= kindArity TopLevel nk then
@@ -56,13 +55,18 @@ addTypeKind d i k =
 			 (TypeInfo rk [k] [] d) tk
 	      Just (TypeInfo ok ks sups defn) -> 
 		  if rk == ok
-			then if k `elem` ks then
-			     addDiags [mkDiag Warning 
-				 "redeclared type" i]
-				 else putTypeMap $ Map.insert i 
-					 (TypeInfo ok (mkIntersection (k:ks)) 
-					  sups defn) tk
-			else addDiags $ diffKindDiag i ok rk 
+		     then do if k `elem` ks then
+			        addDiags [mkDiag Warning 
+					  "redeclared type" i]
+				else return ()
+			     let insts = if k `elem` ks then ks else
+					mkIntersection (k:ks)
+				 Result ds mDef = merge defn d
+		             case mDef of
+			         Just newDefn -> putTypeMap $ Map.insert i 
+					 (TypeInfo ok insts sups newDefn) tk
+				 Nothing -> addDiags $ map (improveDiag i) ds
+		     else addDiags $ diffKindDiag i ok rk 
 
 -- | analyse a type argument and look up a missing kind
 anaTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
@@ -119,12 +123,11 @@ partitionOpId as tm c i sc =
 -- | storing an operation
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn 
 	-> State Env (Maybe UninstOpId)
-addOpId i (TypeScheme vs (ps :=> newTy) qs) attrs defn = 
+addOpId i sc attrs defn = 
     do as <- gets assumps
        tm <- gets typeMap
        c <- gets counter
-       let sc = TypeScheme vs (ps :=> newTy) qs
-           (l,r) = partitionOpId as tm c i sc
+       let (l,r) = partitionOpId as tm c i sc
 	   oInfo = OpInfo sc attrs defn 
        if null l then do putAssumps $ Map.insert i 
 					(OpInfos (oInfo : r )) as

@@ -94,8 +94,8 @@ instance Mergeable TypeDefn where
 	    (TypeVarDefn, TypeVarDefn) -> return d1
 	    (TypeVarDefn, _) -> fail "merge: TypeVarDefn"
 	    (_, TypeVarDefn) -> fail "merge: TypeVarDefn"
-	    (NoTypeDefn, AliasTypeDefn _) -> fail "merge: AliasTypeDefn" 
-	    (AliasTypeDefn _, NoTypeDefn) -> fail "merge: AliasTypeDefn"
+--	    (NoTypeDefn, AliasTypeDefn _) -> fail "merge: AliasTypeDefn" 
+--	    (AliasTypeDefn _, NoTypeDefn) -> fail "merge: AliasTypeDefn"
 	    (NoTypeDefn, _) -> return d2
 	    (_, NoTypeDefn) -> return d1
 	    (_, _) -> if d1 == d2 then return d1 else

@@ -1,0 +1,39 @@
+var a : Type+
+type List(a : Type+)
+free type List(a : Type+) ::= Nil | 
+			      Cons (head:a; tail:List a)
+%% Type Constructors -----------------------------------------------------
+List : Type+ -> Type %[free type __ a : Type+ ::=
+			    Nil : -> __
+			    Cons : a × (List)(a) -> __ (head : a)(tail : (List)(a))]%
+Pred : Type -> Type := \ a : Type . a ->? Unit
+Unit : Type := Unit
+__-->__ : Type- -> Type+ -> Type
+__-->?__ : Type- -> Type+ -> Type
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+__×__ : Type+ -> Type+ -> Type
+a : Type+ %(var)%
+%% Assumptions -----------------------------------------------------------
+Cons : forall a : Type+ .  a ×
+			   (List)(a) -> (List)(a) %(construct List)%
+Nil : forall a : Type+ .  (List)(a) %(construct List)%
+__/\__ : Unit × Unit ->? Unit
+__<=>__ : Unit × Unit ->? Unit
+__=__ : forall a : Type .  a × a ->? Unit
+__=>__ : Unit × Unit ->? Unit
+__=e=__ : forall a : Type .  a × a ->? Unit
+__\/__ : Unit × Unit ->? Unit
+def__ : forall a : Type .  a ->? Unit
+head : forall a : Type+ .  (List)(a) -> a %(select from List constructed by
+					 Cons : forall a : Type+ .  a × (List)(a) -> (List)(a))%
+if__then__else__ : forall a : Type .  Unit × a × a ->? a
+not__ : Unit ->? Unit
+tail : forall a : Type+ .  (List)(a) -> (List)(a) %(select from List constructed by
+						 Cons : forall a : Type+ .  a ×
+									    (List)(a) -> (List)(a))%
+%% Diagnostics -----------------------------------------------------------
+Hint (line 1, column 5) is type variable 'a'
+Warning (line 2, column 11) redeclared type 'a'
+Warning (line 3, column 16) redeclared type 'a'
+Warning (line 3, column 11) redeclared type 'List'

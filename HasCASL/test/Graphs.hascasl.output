@@ -1,0 +1,193 @@
+var S : Type; T : Type
+type Bool; Pred : Type -> Type := \ S : Type . S ->? Unit;
+     Set : Type -> Type := \ S : Type . S ->? Unit
+op true, false : Bool
+op emptySet : forall S : Type .  S ->? Unit;
+   {__} : forall S : Type .  S -> S ->? Unit;
+   __isIn__ : forall S : Type .  S × (S ->? Unit) ->? Unit;
+   __subset__ : forall S : Type .  (S ->? Unit) ×
+				   (S ->? Unit) ->? Unit;
+   __union__, __intersection__,
+   __\\__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit;
+   __disjoint__ : forall S : Type .  (S ->? Unit) ×
+				     (S ->? Unit) ->? Unit;
+   __*__ : forall S : Type;
+		  T : Type .  (S ->? Unit) -> (T ->? Unit) -> S × T ->? Unit;
+   __disjointUnion__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ×
+									  Bool ->? Unit;
+   inl, inr : forall S : Type .  S -> S × Bool
+forall x : S; x' : S; y : T; s : S ->? Unit; s' : S ->? Unit;
+       t : T ->? Unit
+. (op not__ : Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								(S ->? Unit) ->? Unit) ((var x : S),
+											(op emptySet : forall S : Type .  S ->? Unit)))
+. (op __<=>__ : Unit ×
+		Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								  (S ->? Unit) ->? Unit) ((var x : S),
+											  (op {__} : forall S : Type .  S -> S ->? Unit) (var x' : S)),
+				(op __=__ : forall a : Type .  a × a ->? Unit) ((var x : S),
+										(var x' : S)))
+. (op __<=>__ : Unit ×
+		Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								  (S ->? Unit) ->? Unit) ((var x : S),
+											  (var s : S ->? Unit)),
+				(var s : S ->? Unit) (var x : S))
+. (op __<=>__ : Unit ×
+		Unit ->? Unit) ((op __subset__ : forall S : Type .  (S ->? Unit) ×
+								    (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
+											    (var s' : S ->? Unit)),
+				forall x : S . x isIn s => x isIn s')
+. (op __=__ : forall a : Type .  a ×
+				 a ->? Unit) ((op inl : forall S : Type .  S -> S ×
+										Bool) (var x : S),
+					      ((var x : S), (op false : Bool)))
+. (op __=__ : forall a : Type .  a ×
+				 a ->? Unit) ((op inr : forall S : Type .  S -> S ×
+										Bool) (var x : S),
+					      ((var x : S), (op true : Bool)))
+%% Type Constructors -----------------------------------------------------
+Bool : Type
+Pred : Type -> Type := \ a : Type . a ->? Unit
+S : Type %(var)%
+Set : Type -> Type := \ S : Type . S ->? Unit
+T : Type %(var)%
+Unit : Type := Unit
+__-->__ : Type- -> Type+ -> Type
+__-->?__ : Type- -> Type+ -> Type
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+__×__ : Type+ -> Type+ -> Type
+%% Assumptions -----------------------------------------------------------
+__*__ : forall S : Type;
+	       T : Type .  (S ->? Unit) -> (T ->? Unit) -> S × T ->? Unit
+__/\__ : Unit × Unit ->? Unit
+__<=>__ : Unit × Unit ->? Unit
+__=__ : forall a : Type .  a × a ->? Unit
+__=>__ : Unit × Unit ->? Unit
+__=e=__ : forall a : Type .  a × a ->? Unit
+__\/__ : Unit × Unit ->? Unit
+__\\__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit
+__disjoint__ : forall S : Type .  (S ->? Unit) ×
+				  (S ->? Unit) ->? Unit
+__disjointUnion__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ×
+								       Bool ->? Unit
+__intersection__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit
+__isIn__ : forall S : Type .  S × (S ->? Unit) ->? Unit
+__subset__ : forall S : Type .  (S ->? Unit) ×
+				(S ->? Unit) ->? Unit
+__union__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit
+def__ : forall a : Type .  a ->? Unit
+emptySet : forall S : Type .  S ->? Unit
+false : Bool
+if__then__else__ : forall a : Type .  Unit × a × a ->? a
+inl : forall S : Type .  S -> S × Bool
+inr : forall S : Type .  S -> S × Bool
+not__ : Unit ->? Unit
+true : Bool
+{__} : forall S : Type .  S -> S ->? Unit
+%% Sentences -------------------------------------------------------------
+(op not__ : Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+							      (S ->? Unit) ->? Unit) ((var x : S),
+										      (op emptySet : forall S : Type .  S ->? Unit))) %()%
+(op __<=>__ : Unit ×
+	      Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								(S ->? Unit) ->? Unit) ((var x : S),
+											(op {__} : forall S : Type .  S -> S ->? Unit) (var x' : S)),
+			      (op __=__ : forall a : Type .  a × a ->? Unit) ((var x : S),
+									      (var x' : S))) %()%
+(op __<=>__ : Unit ×
+	      Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								(S ->? Unit) ->? Unit) ((var x : S),
+											(var s : S ->? Unit)),
+			      (var s : S ->? Unit) (var x : S)) %()%
+(op __<=>__ : Unit ×
+	      Unit ->? Unit) ((op __subset__ : forall S : Type .  (S ->? Unit) ×
+								  (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
+											  (var s' : S ->? Unit)),
+			      forall x : S . x isIn s => x isIn s') %()%
+(op __=__ : forall a : Type .  a ×
+			       a ->? Unit) ((op inl : forall S : Type .  S -> S ×
+									      Bool) (var x : S),
+					    ((var x : S), (op false : Bool))) %()%
+(op __=__ : forall a : Type .  a ×
+			       a ->? Unit) ((op inr : forall S : Type .  S -> S ×
+									      Bool) (var x : S),
+					    ((var x : S), (op true : Bool))) %()%
+%% Diagnostics -----------------------------------------------------------
+Hint (line 1, column 6) is type variable 'S'
+Hint (line 1, column 8) is type variable 'T'
+Warning (line 3, column 18) redeclared type 'S'
+Warning (line 3, column 8) redeclared type 'Pred'
+Error (line 3, column 8) merge: TypeDefn of 'Pred'
+
+Warning (line 4, column 17) redeclared type 'S'
+Error (line 20, column 39) ambiguous mixfix term
+	(__isIn__)(x, (__=>__)(s, (__isIn__)(x, s')))
+	(__=>__)((__isIn__)(x, s), (__isIn__)(x, s'))
+	(__isIn__)((__=>__)((__isIn__)(x, s), x), s')
+Error (line 20, column 37) unexpected term 'x isIn s => x isIn s''
+Error (line 21, column 7) ambiguous mixfix term
+	(__isIn__)(x,
+	   (__<=>__)((__union__)(s, s'),
+		     (__isIn__)(x, (__\/__)(s, (__isIn__)(x, s')))))
+	(__<=>__)((__isIn__)(x, (__union__)(s, s')),
+	  (__isIn__)(x, (__\/__)(s, (__isIn__)(x, s'))))
+	(__isIn__)((__<=>__)((__isIn__)(x, (__union__)(s, s')), x),
+	   (__\/__)(s, (__isIn__)(x, s')))
+	(__\/__)((__isIn__)(x,
+		    (__<=>__)((__union__)(s, s'), (__isIn__)(x, s))),
+	 (__isIn__)(x, s'))
+	(__isIn__)((__<=>__)((__isIn__)(x, (__union__)(s, s')),
+		     (__isIn__)(x, (__\/__)(s, x))),
+	   s')
+Error (line 22, column 7) ambiguous mixfix term
+	(__isIn__)(x,
+	   (__<=>__)((__intersection__)(s, s'),
+		     (__isIn__)(x, (__/\__)(s, (__isIn__)(x, s')))))
+	(__<=>__)((__isIn__)(x, (__intersection__)(s, s')),
+	  (__isIn__)(x, (__/\__)(s, (__isIn__)(x, s'))))
+	(__isIn__)((__<=>__)((__isIn__)(x, (__intersection__)(s, s')), x),
+	   (__/\__)(s, (__isIn__)(x, s')))
+	(__/\__)((__isIn__)(x,
+		    (__<=>__)((__intersection__)(s, s'), (__isIn__)(x, s))),
+	 (__isIn__)(x, s'))
+	(__isIn__)((__<=>__)((__isIn__)(x, (__intersection__)(s, s')),
+		     (__isIn__)(x, (__/\__)(s, x))),
+	   s')
+Error (line 23, column 7) ambiguous mixfix term
+	(__isIn__)(x,
+	   (__<=>__)((__\\__)(s, s'),
+		     (__isIn__)(x, (__/\__)(s, (__isIn__)((not__)(x), s')))))
+	(__<=>__)((__isIn__)(x, (__\\__)(s, s')),
+	  (__isIn__)(x, (__/\__)(s, (__isIn__)((not__)(x), s'))))
+	(__isIn__)((__<=>__)((__isIn__)(x, (__\\__)(s, s')), x),
+	   (__/\__)(s, (__isIn__)((not__)(x), s')))
+	(__/\__)((__isIn__)(x,
+		    (__<=>__)((__\\__)(s, s'), (__isIn__)(x, s))),
+	 (__isIn__)((not__)(x), s'))
+	(__isIn__)((__<=>__)((__isIn__)(x, (__\\__)(s, s')),
+		     (__isIn__)(x, (__/\__)(s, (not__)(x)))),
+	   s')
+Error (line 24, column 7) ambiguous mixfix term
+	(__disjoint__)(s,
+	       (__<=>__)(s', (__intersection__)(s, (__=__)(s', emptySet))))
+	(__<=>__)((__disjoint__)(s, s'),
+	  (__intersection__)(s, (__=__)(s', emptySet)))
+	(__intersection__)((__disjoint__)(s, (__<=>__)(s', s)),
+		   (__=__)(s', emptySet))
+	(__=__)((__disjoint__)(s,
+		       (__<=>__)(s', (__intersection__)(s, s'))),
+	emptySet)
+Error (line 25, column 11) ambiguous mixfix term
+	(__isIn__)((x, y),
+	   (__*__)(s,
+		   (__isIn__)((__<=>__)(t, x), (__/\__)(s, (__isIn__)(y, t)))))
+	(__*__)((__isIn__)((x, y), s),
+	(__isIn__)((__<=>__)(t, x), (__/\__)(s, (__isIn__)(y, t))))
+	(__<=>__)((__isIn__)((x, y), (__*__)(s, t)),
+	  (__isIn__)(x, (__/\__)(s, (__isIn__)(y, t))))
+	(__isIn__)((__<=>__)((__isIn__)((x, y), (__*__)(s, t)), x),
+	   (__/\__)(s, (__isIn__)(y, t)))
+	(__/\__)((__isIn__)((x, y),
+		    (__*__)(s, (__isIn__)((__<=>__)(t, x), s))),
+	 (__isIn__)(y, t))
