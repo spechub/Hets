@@ -112,9 +112,10 @@ import Foreign
                               check recursively the arguments of constructor in each group
   - return (Just True)
 -}
-checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] 
-   -> Result (Maybe Bool)
-checkFreeType m fsn 
+checkFreeType :: (PrettyPrint f, Eq f) => 
+                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)] 
+                  -> Result (Maybe Bool)
+checkFreeType (sig,sens) m fsn 
 #ifdef UNI_PACKAGE
        | Set.any (\s->not $ elem s srts) newSorts =
                    let (Id _ _ ps) = head $ filter (\s->not $ elem s srts) newL

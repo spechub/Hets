@@ -181,7 +181,8 @@ class (Category lid sign morphism, Ord sentence,
       provers :: lid -> [Prover sign sentence proof_tree symbol]
       cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
-      consCheck :: lid -> morphism -> [Named sentence] -> Result (Maybe Bool)
+      consCheck :: lid -> (sign,[Named sentence]) -> 
+                       morphism -> [Named sentence] -> Result (Maybe Bool)
       -- default implementations
       parse_sentence _ = Nothing
       print_named _ = printText0

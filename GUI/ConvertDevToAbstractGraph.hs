@@ -731,16 +731,23 @@ showProofStatusOfThm descr Nothing =
 
 {- check consistency of the edge -}
 checkconsistencyOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
-checkconsistencyOfEdge _ (ref,_,_,_,_,_) (Just (_,target,linklab)) = do 
-  (_,_,_,dgraph) <- readIORef ref
-  let dgnode = lab' (context target dgraph)
-  case dgnode of
+checkconsistencyOfEdge _ (ref,_,_,_,_,_) (Just (source,target,linklab)) = do 
+  (_,libEnv,_,dgraph) <- readIORef ref
+  let dgtar = lab' (context target dgraph)
+  case dgtar of
     (DGNode name _ (G_l_sentence_list lid sens) _) -> do   
       GMorphism cid sign1 morphism2 <- return $ dgl_morphism linklab
       let morphism2' = case coerce (targetLogic cid) lid morphism2 of
            Just m -> m
            _ -> error "checkconsistencyOfEdge: wrong logic"
-          res = consCheck lid morphism2' sens
+      let th = case computeTheory libEnv dgraph source of
+                Res.Result _ (Just th1) -> th1
+                _ -> error "checkconsistencyOfEdge: computeTheory"
+      G_theory lid1 sign1 sens1 <- return th
+      let (sign2,sens2) = case coerce lid1 lid (sign1,sens1) of
+           Just m -> m
+           _ -> error "checkconsistencyOfEdge: wrong logic"   
+      let res = consCheck lid (sign2,sens2) morphism2' sens
       createTextDisplay "Result of consistency check" 
            (show res) [size(50,50)]
 
