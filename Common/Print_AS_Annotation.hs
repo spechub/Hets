@@ -21,7 +21,7 @@ import Common.AS_Annotation
 
 import Common.GlobalAnnotations
 
-import Common.Id (Id(..))
+import Common.Id
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Lexer(whiteChars)
@@ -36,11 +36,15 @@ instance PrettyPrint Annotation where
 		    <> (if all (`elem` whiteChars) str 
 			then empty else ptext str)
 		Group_anno strs -> 
-		    let lns = vcat $ map ptext strs in
-		    case aw of 
-			    Comment_start -> ptext "%{" <> lns <> ptext "}%"
-			    Annote_word w -> ptext ("%" ++ w ++ "(")
-					 <> lns <> ptext ")%"    
+		    let docs = map ptext strs
+			(o, c) = case aw of 
+			    Comment_start -> (ptext "%{",  ptext "}%")
+			    Annote_word w -> (ptext ("%" ++ w ++ "("), 
+					      ptext ")%")
+			in if null docs then empty
+			   else if isSingle docs then o <> head docs <> c
+			   else vcat ((o <> head docs):
+				      tail(init docs) ++ [last docs <> c])
     printText0 ga (Display_anno aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = fcat $ punctuate space $ map printPair $ filter nullSnd ab
