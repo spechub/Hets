@@ -102,9 +102,10 @@ writeShATermFileSDoc fp atcon =
 
 versionedATermTable :: (ATermConvertible a) => a -> ATermTable
 versionedATermTable atcon =     
-    let (att0,versionnr) = toShATerm emptyATermTable hetcats_version
-	(att1,aterm) = {- seq att0 $-} toShATerm att0 atcon
-    in {-seq att1 $-} fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
+    let (att0,versionnr) = 
+            {-# SCC "att0" #-} toShATerm emptyATermTable hetcats_version
+	(att1,aterm) = {-# SCC "att1" #-} toShATerm att0 atcon
+    in {-# SCC "att3" #-} fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
                            
 toShATermString :: (ATermConvertible a) => a -> String
 toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
@@ -122,6 +123,4 @@ writeFileInfo opts file ln lenv =
     Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
     Just gctx -> do
       let envFile = rmSuffix file ++ ".env"
-      return ()
-      --writeFile (envFile++"-string") (show gctx)
-      --putIfVerbose opts 1 ("Writing "++envFile); globalContexttoShATerm envFile gctx
+      putIfVerbose opts 1 ("Writing "++envFile); globalContexttoShATerm envFile gctx
