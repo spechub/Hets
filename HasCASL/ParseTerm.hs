@@ -41,7 +41,9 @@ quColon = do c <- colT
 -----------------------------------------------------------------------------
 -- universe is just a special className ("Type")
 parseClass :: GenParser Char st Class
-parseClass = fmap ClassName className
+parseClass = fmap (\c -> if tokStr c == "Type" 
+		   then Universe $ tokPos c 
+		   else ClassName c) className
              <|> 
 	     do o <- oParenT
 		(cs, ps) <- parseClass `separatedBy` commaT
@@ -213,7 +215,9 @@ genVarDecls = do (vs, ps) <- var `separatedBy` commaT
 						     -> head ts) vs) ps)
 		    else 
 		    fmap (map GenVarDecl) (varDeclType vs ps)
-    where isSimpleId (Id ts _ _) = null (tail ts) && head (tokStr (head ts)) 
+
+isSimpleId :: Id -> Bool
+isSimpleId (Id ts _ _) = null (tail ts) && head (tokStr (head ts)) 
 			 `elem` caslLetters
 				 
 -----------------------------------------------------------------------------
