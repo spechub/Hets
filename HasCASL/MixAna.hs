@@ -11,9 +11,10 @@ Mixfix analysis of terms, adapted from the CASL analysis
 
 -}
 
-module HasCASL.MixAna where 
+module HasCASL.MixAna (resolveTerm) where 
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.PrintAs
 import HasCASL.Le
 import Common.AS_Annotation
@@ -26,7 +27,6 @@ import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Control.Monad
 import Common.Lib.State
-import qualified Char as C
 import Data.Maybe(mapMaybe)
 import HasCASL.Unify
 
@@ -88,9 +88,14 @@ litId	     = mkRuleId [litTok]
 mkState :: Int -> (Id, OpInfo) -> State Int PState 
 mkState i (ide, info) = 
     do let sc = opType info
-	   side = stripFinalPlaces ide
        t <- freshInst sc
-       return $ PState side sc t [] [] (getTokenList termStr side) i
+       let stripped = case t of 
+			     FunType t1 _ _ _ -> 
+				 case t1 of 
+					 ProductType _ _ -> ide
+					 _ -> stripFinalPlaces ide
+			     _ -> stripFinalPlaces ide
+       return $ PState stripped sc t [] [] (getTokenList termStr stripped) i
 
 mkApplState :: Int -> (Id, OpInfo) -> State Int PState 
 mkApplState i (ide, info) =     
@@ -287,21 +292,46 @@ expandType tm oldT =
 
 addArgState :: PState -> PState -> PState
 addArgState arg op = op { ruleArgs = stateToAppl arg : ruleArgs op }
+
+mkTupleTerm :: TypeMap -> [Type] -> PState -> PState 
+	    -> [Term] -> [Term] -> Type -> Maybe PState
+mkTupleTerm tm types arg op prevTerms prevArgs argType =
+    let n = length prevTerms 
+	fini = n + 1 == length types in
+    if n >= length types then Nothing 
+    else do s <- maybeResult $ unify tm (types !! n) $ ruleType arg
+	    let singleArg = stateToAppl arg
+                argTerms = (if fini then reverse else id)
+			   (singleArg : prevTerms)
+		argTerm = if fini then if n == 0 then singleArg 
+			               else TupleTerm argTerms (posList arg) 
+			  else MixfixTerm argTerms
+                newType = subst s (if fini then argType else
+				  FunType (ProductType types []) 
+				  PFunArr argType [])
+	    return op { ruleArgs = argTerm : prevArgs
+		      , ruleType = newType }
  
 filterByType :: ParseMap -> PState -> PState -> Maybe PState
 filterByType cm argState opState =
-    let tm = typeAliases cm in
-    if ruleId opState == applId && null (ruleArgs opState) then 
+    let tm = typeAliases cm 
+	prevArgs = ruleArgs opState in
+    if ruleId opState == applId && null prevArgs then 
        Just (addArgState argState opState) { ruleType = ruleType argState }
     else 
     case expandType tm $ ruleType opState of
-		FunType t1 _ t2 _ -> 
+		(FunType t1 _ t2 _) -> 
 		    case expandType tm t1 of 
-		    argType -> 
-			do s <- maybeResult $ unify tm argType
-				$ ruleType argState
-			   return (addArgState argState opState) 
-				      {ruleType = subst s t2}
+		    ProductType ts _ -> 
+			let (prevTerms, restArgs) = 
+				if null prevArgs then ([], []) 
+				else case head prevArgs of
+				MixfixTerm trms -> (trms, tail prevArgs)
+				_ -> ([], prevArgs) in
+			mkTupleTerm tm ts argState opState 
+				    prevTerms restArgs t2
+		    expType -> mkTupleTerm tm [expType] argState opState 
+			       [] prevArgs t2
 		TypeName _ _ v -> if v == 0 then Nothing
 				  else Just $ addArgState argState opState
 		_ -> Nothing
@@ -401,12 +431,13 @@ resolve g ops p trm =
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
 					     ++ showPretty trm "")
-					    (nullPos)
+					    (posOfTerm trm)
 		       else Result ds (Just trm)
        else if null $ tail ts then Result ds (Just (head ts))
-	    else Result (Diag Error ("ambiguous mixfix term\n\t" ++ 
+	    else Result (Diag Error ("ambiguous mixfix term: " ++ 
+				     showPretty trm "\n\t" ++ 
 			 (concatMap ( \ t -> showPretty t "\n\t" )
-			 $ take 5 ts)) (nullPos) : ds) (Just trm)
+			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
 
 resolveTerm ::  Term -> State Env (Result Term)
 resolveTerm t = 

@@ -113,6 +113,6 @@ Hint (line 190, column 13) not a class 'c --> d'
 Hint (line 190, column 13) not a class 'c --> d'
 FatalError (line 192, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
 Error (line 198, column 3) unexpected mixfix token 'all'
-Error (line 0, column 0) no resolution for term: Y (\ x : c -->? p .! x)
+Error (line 201, column 27) no resolution for term: Y (\ x : c -->? p .! x)
 Hint (line 11, column 11) type 'bool' is not unifiable with 'logical'
 Hint (line 11, column 11) type 'bool' is not unifiable with 'logical'

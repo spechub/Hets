@@ -139,7 +139,13 @@ instance PrettyPrint Term where
 			<+> colon
 			<+> printText0 ga t
     printText0 ga (ApplTerm t1 t2 _) = printText0 ga t1
-			<+> parens (printText0 ga t2)
+			<+> (case t2 of 
+			     QualVar _ _ _ -> id 
+			     QualOp _ _ _ -> id 
+			     TupleTerm _ _ -> id
+			     BracketTerm Parens _ _ -> id
+			     TermToken _ -> id
+			     _ -> parens) (printText0 ga t2)
     printText0 ga (TupleTerm ts _) = parens $ commaT_text ga ts 
     printText0 ga (TypedTerm term q typ _) = printText0 ga term
 			  <+> printText0 ga q

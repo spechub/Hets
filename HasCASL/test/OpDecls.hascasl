@@ -1,8 +1,14 @@
-type s
+type s, t
 
 op a, b  : s
 
-op __ + __ : s  -> s -> s, idem, assoc, comm;
+%% op __ + __ : s  -> s -> s, idem, assoc, comm;
+
+op __ + __ : s * s -> s
+op __ + __ : t * t -> t
+op __ + __ : t -> t -> t
+
+%% op a,b : t
 
 op c : s = a + b
 
