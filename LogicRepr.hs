@@ -77,6 +77,19 @@ instance (Logic lid1 sublogics1
            coerce (target r1) (target r2) (target_sublogic r1) ==
              Just  (target_sublogic r2)
 
+instance (Logic lid1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+      Logic lid2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
+    Show (LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
+  where
+  show r = show (source r) ++ " -> " ++ show (target r)
+
 id_repr :: 
      Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -98,7 +111,7 @@ id_repr lid =
                                     -- corresponding symbol translation
                                     Just),  
                 map_morphism = Just,
-                map_sentence = \sigma -> Just,
+                map_sentence = \_sigma -> Just,
                 map_symbol = single
                }
 

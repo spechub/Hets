@@ -183,6 +183,10 @@ data G_sublogics = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
         G_sublogics lid sublogics 
 
+instance Show G_sublogics where
+    show (G_sublogics _ l) = show l
+
+
 data G_morphism = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
@@ -191,6 +195,8 @@ data G_morphism = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
         G_morphism lid morphism
 
+instance Show G_morphism where
+    show (G_morphism _ l) = show l
 
 
 ----------------------------------------------------------------
@@ -297,22 +303,25 @@ data Grothendieck = Grothendieck deriving Show
 
 instance Language Grothendieck where
 
+instance Show GMorphism where
+    show (GMorphism _ _ r s m) = show r ++ "(" ++ show s ++ ")" ++ show m
+ 
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma) = 
     GMorphism lid lid (id_repr lid) sigma (ide lid sigma)
   comp _ 
       (GMorphism lid1 lid2 r1 sigma1 mor1) 
-      (GMorphism lid3 lid4 r2 sigma2 mor2) =
+      (GMorphism lid3 lid4 r2 _sigma2 mor2) =
     do r2' <- coerce lid2 lid3 r2 
        r3 <- comp_repr r1 r2'
        mor1' <- coerce lid2 lid3 mor1
        mor1'' <- map_morphism r2 mor1' 
        mor <- comp lid4 mor2 mor1''
        return (GMorphism lid1 lid4 r3 sigma1 mor)
-  dom _ (GMorphism lid1 lid2 r sigma mor) = G_sign lid1 sigma
-  cod _ (GMorphism lid1 lid2 r sigma mor) = G_sign lid2 (cod lid2 mor)
+  dom _ (GMorphism lid1 _lid2 _r sigma _mor) = G_sign lid1 sigma
+  cod _ (GMorphism _lid1 lid2 _r _sigma mor) = G_sign lid2 (cod lid2 mor)
   legal_obj _ (G_sign lid sigma) = legal_obj lid sigma 
-  legal_mor _ (GMorphism lid1 lid2 r sigma mor) =
+  legal_mor _ (GMorphism _lid1 lid2 r sigma mor) =
      legal_mor lid2 mor && case map_sign r sigma of
         Just (sigma',_) -> sigma' == cod lid2 mor
         Nothing -> False
@@ -333,6 +342,7 @@ homogeneousGsigManyUnion :: Pos -> [G_sign] -> Result G_sign
 homogeneousGsigManyUnion pos [] =
   fatal_error "homogeneous union of emtpy list of signatures" pos
 homogeneousGsigManyUnion pos (G_sign lid sigma : gsigmas) = do
+
   sigmas <- let coerce_lid (G_sign lid1 sigma1) = 
                     rcoerce lid lid1 pos sigma1
              in sequence (map coerce_lid gsigmas)
@@ -358,4 +368,4 @@ homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
   return (G_morphism lid bigMor)
 
 inclusion :: G_sign -> G_sign -> GMorphism
-inclusion (G_sign lid1 sigma1) (G_sign lid2 sigma2) = undefined
+inclusion (G_sign _lid1 _sigma1) (G_sign _lid2 _sigma2) = error "inclusion"

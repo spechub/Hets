@@ -59,7 +59,7 @@ import Graph
 import Result
 --import Parsec
 import Prover -- for one half of class Sentences
-
+-- import IOExts(trace)
 import PrettyPrint
 
 -- for coercion used in Grothendieck.hs and Analysis modules
@@ -81,12 +81,12 @@ class Show lid => Language lid where
     language_name i = show i
 
 -- (a bit unsafe) coercion using the language name
-coerce :: (Language lid1, Language lid2) => lid1 -> lid2 -> a -> Maybe b
+coerce :: (Language lid1, Language lid2, Show a) => lid1 -> lid2 -> a -> Maybe b
 coerce i1 i2 a = if language_name i1 == language_name i2 then 
 		 (Just $ unsafeCoerce a) else Nothing
 
-rcoerce :: (Language lid1, Language lid2) => lid1 -> lid2 -> Pos-> a -> Result b
-rcoerce i1 i2 pos a =
+rcoerce :: (Language lid1, Language lid2, Show a) => lid1 -> lid2 -> Pos-> a -> Result b
+rcoerce i1 i2 pos a = 
   maybeToResult pos 
                 ("Logic "++ language_name i1 ++ " expected, but "
                             ++ language_name i2++" found")
@@ -96,7 +96,7 @@ rcoerce i1 i2 pos a =
 -- i.e. we need equality
 -- Should we allow arbitrary composition graphs and build paths?
 
-class (Language lid, Eq sign, Show sign, Eq morphism) => 
+class (Language lid, Eq sign, Show sign, Eq morphism, Show morphism) => 
       Category lid sign morphism | lid -> sign, lid -> morphism where
          ide :: lid -> sign -> morphism
          comp :: lid -> morphism -> morphism -> Maybe morphism
@@ -196,7 +196,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
 
 -- sublogics
 
-class Ord l => LatticeWithTop l where
+class (Ord l, Show l) => LatticeWithTop l where
   meet, join :: l -> l -> l
   top :: l
 
