@@ -178,6 +178,23 @@ instance PrettyPrint G_ext_sign where
 langNameExtSig :: G_ext_sign -> String
 langNameExtSig (G_ext_sign lid _ _) = language_name lid
 
+-- | Grothendieck theories
+data G_theory = forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+  G_theory lid sign [Named sentence]
+
+-- | compute sublogic of a theory
+sublogicOfTh :: G_theory -> G_sublogics
+sublogicOfTh (G_theory lid sigma sens) =
+  let sub = foldr Logic.Logic.join 
+                  (min_sublogic_sign lid sigma)
+                  (map (min_sublogic_sentence lid . sentence) sens)
+   in G_sublogics lid sub
+
 -- | Grothendieck symbols
 data G_symbol = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -258,7 +275,7 @@ instance Typeable G_sublogics where
   typeOf _ = mkTyConApp tyconG_sublogics []
 
 instance Show G_sublogics where
-    show (G_sublogics _ l) = show l
+    show (G_sublogics lid sub) = show lid++"."++show sub
 
 instance Eq G_sublogics where
     (G_sublogics lid1 l1) == (G_sublogics lid2 l2) =
@@ -377,7 +394,8 @@ lookupComorphism coname logicGraph = do
          l <- maybe (fail ("Cannot find logic "++logic)) return
                  $ Map.lookup logic (logics logicGraph)
          case l of
-           Logic lid -> return $ Comorphism $ IdComorphism lid
+           Logic lid -> 
+            return $ Comorphism $ IdComorphism lid (top_sublogic lid)
       _ -> maybe (fail ("Cannot find logic comorphism "++name)) return
              $ Map.lookup name (comorphisms logicGraph)
 
@@ -460,7 +478,7 @@ instance PrettyPrint GMorphism where
 
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma) = 
-    GMorphism (IdComorphism lid) sigma (ide lid sigma)
+    GMorphism (IdComorphism lid (top_sublogic lid)) sigma (ide lid sigma)
   comp _ 
        (GMorphism r1 sigma1 mor1) 
        (GMorphism r2 _sigma2 mor2) = 
@@ -490,7 +508,7 @@ instance Category Grothendieck G_sign GMorphism where
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed :: G_morphism -> GMorphism
 gEmbed (G_morphism lid mor) =
-  GMorphism (IdComorphism lid) (dom lid mor) mor
+  GMorphism (IdComorphism lid (top_sublogic lid)) (dom lid mor) mor
 
 -- | heterogeneous union of two Grothendieck signatures
 --   the left signature determines the result logic
@@ -556,7 +574,7 @@ ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
      if ln1==ln2 then do
        sigma2' <- rcoerce lid1 lid2 (newPos "s" 0 0) sigma2
        mor <- inclusion lid1 sigma1 sigma2'
-       return (GMorphism (IdComorphism lid1) sigma1 mor)
+       return (GMorphism (IdComorphism lid1 (top_sublogic lid1)) sigma1 mor)
       else case Map.lookup (ln1,ln2) (inclusions logicGraph) of 
            Just (Comorphism i) -> do
 	      sigma1' <- rcoerce lid1 (sourceLogic i) (newPos "u" 0 0) sigma1
@@ -613,11 +631,11 @@ flatG_l_sentence_list (gl:gls) = foldM joinG_l_sentence_list gl gls
 
 
 -- | Find all (composites of) comorphisms starting from a given logic
-findComorphismPaths :: LogicGraph -> AnyLogic -> [AnyComorphism]
-findComorphismPaths lg (Logic lid) = 
+findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
+findComorphismPaths lg (G_sublogics lid sub) = 
   List.nub $ map fst $ iterateComp (0::Int) [(idc,[idc])]
   where
-  idc = Comorphism (IdComorphism lid)
+  idc = Comorphism (IdComorphism lid sub)
   coMors = Map.elems $ comorphisms lg
   -- compute possible compositions, but only up to depth 5
   iterateComp n (l::[(AnyComorphism,[AnyComorphism])]) =

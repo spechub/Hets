@@ -73,26 +73,24 @@ class (Language cid,
           -- - but these are spans!
     map_symbol :: cid -> symbol1 -> Set symbol2
 
-data IdComorphism lid  = 
-     IdComorphism lid deriving Show
+data IdComorphism lid sublogics = 
+     IdComorphism lid sublogics deriving Show
 idComorphismTc :: TyCon
 idComorphismTc = mkTyCon "Logic.Comorphism.IdComorphism"
-instance Typeable (IdComorphism lid) where 
+instance Typeable (IdComorphism lid sub) where 
   typeOf _ = mkTyConApp idComorphismTc []
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree =>
-         Language (IdComorphism lid) where
-           language_name (IdComorphism lid) = 
-             "id_"++language_name lid
+         Language (IdComorphism lid sublogics) where
+           language_name (IdComorphism lid sub) = 
+             "id_"++language_name lid++"."++show sub
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree =>
-         Comorphism (IdComorphism lid) --sublogics
-          --basic_spec sentence symb_items symb_map_items
-          --sign morphism symbol raw_symbol proof_tree)
+         Comorphism (IdComorphism lid sublogics)
           lid sublogics
           basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree
@@ -100,10 +98,10 @@ instance Logic lid sublogics
           basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree 
          where
-           sourceLogic (IdComorphism lid) = lid
-           targetLogic (IdComorphism lid) = lid
-           sourceSublogic _ = top
-           targetSublogic _ = top
+           sourceLogic (IdComorphism lid sub) = lid
+           targetLogic (IdComorphism lid sub) = lid
+           sourceSublogic (IdComorphism lid sub) = sub
+           targetSublogic (IdComorphism lid sub) = sub
            map_sign _ = \sigma -> Just(sigma,[])
            map_morphism _ = Just
            map_sentence _ = \_ -> Just

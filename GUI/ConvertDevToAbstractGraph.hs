@@ -563,24 +563,24 @@ getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
   (_libname, node) <- 
         Res.maybeToResult nullPos ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
-  gPair <- computeTheory libEnv dgraph node
-  return (node, gPair)
+  gth <- computeTheory libEnv dgraph node
+  return (node, gth)
     ) of
   Res.Result [] (Just (n, gp)) ->  
     displayTheory "Theory" n dgraph gp
   Res.Result diags _ -> showDiags defaultHetcatsOpts diags
 
-printTheory :: (G_sign, G_l_sentence_list) -> String
-printTheory (G_sign _lid sign, G_l_sentence_list lid' sens) =
+printTheory :: G_theory -> String
+printTheory (G_theory lid sign sens) =
    let shownsens = concatMap ((flip shows "\n\n") . 
-		    print_named lid' emptyGlobalAnnos) sens
+		    print_named lid emptyGlobalAnnos) sens
     in showPretty sign "\n\n\n" ++ shownsens
 
-displayTheory :: String -> Node -> DGraph -> (G_sign, G_l_sentence_list) 
+displayTheory :: String -> Node -> DGraph -> G_theory
 	      -> IO ()
-displayTheory ext node dgraph gPair =
+displayTheory ext node dgraph gth =
     let dgnode = lab' (context node dgraph)
-        str = printTheory gPair in case dgnode of
+        str = printTheory gth in case dgnode of
            (DGNode name (G_sign _ _) _ _) ->
               let title = case name of
                    Nothing -> ext
@@ -606,9 +606,9 @@ translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
    return (node,th) ) of
   Res.Result [] (Just (node,th)) -> do
     Res.Result diags _ <-  Res.ioresToIO(
-      do (G_sign lid sign,G_l_sentence_list lid' sens) <- return th
+      do G_theory lid sign sens <- return th
          -- find all comorphism paths starting from lid
-         let paths = findComorphismPaths logicGraph (Logic lid)
+         let paths = findComorphismPaths logicGraph (sublogicOfTh th)
          -- let the user choose one
          sel <- Res.ioToIORes $ listBox "Choose a logic translation"
                    (map show paths)
@@ -620,14 +620,14 @@ translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
          let lidS = sourceLogic cid
              lidT = targetLogic cid
          sign' <- Res.resToIORes $ rcoerce lidS lid nullPos sign
-         sens' <- Res.resToIORes $ rcoerce lidS lid' nullPos sens
+         sens' <- Res.resToIORes $ rcoerce lidS lid nullPos sens
          -- translate theory along chosen comorphism
          (sign'',sens1) <- 
              Res.resToIORes $ Res.maybeToResult 
                                 nullPos "Could not map theory"
                         $ map_theory cid (sign',sens')
          Res.ioToIORes $ displayTheory "Translated theory" node dgraph 
-            (G_sign lidT sign'', G_l_sentence_list lidT sens1)
+            (G_theory lidT sign'' sens1)
      )
     showDiags defaultHetcatsOpts diags
     return ()
@@ -642,15 +642,11 @@ getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
     Just (libname, node) -> 
       let dgnode = lab' (context node dgraph)
           name = case dgnode of
-                       (DGNode name (G_sign _ _) _ _) -> name
+                       (DGNode name _ _ _) -> name
                        _ -> Nothing
        in case computeTheory libEnv dgraph node of
-        Res.Result _ (Just (G_sign lid sigma,G_l_sentence_list lid' sens)) ->
-                let sens' = fromJust $ coerce lid lid' (map sentence sens)
-                    logstr = (language_name lid ++ "." 
-			      ++ head (sublogic_names lid 
-				       (foldr Logic.Logic.join (min_sublogic_sign lid sigma)
-                                              (map (min_sublogic_sentence lid) sens'))))
+        Res.Result _ (Just th) ->
+                let logstr = show $ sublogicOfTh th
                     title = case name of
                      Nothing -> "Sublogic"
                      Just n -> "Sublogic of "++showPretty n ""

@@ -793,7 +793,7 @@ calculateMorphismOfPathWithStart dg (n,[]) = do
 calculateMorphismOfPathWithStart _ (_,p) = calculateMorphismOfPath p
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
-computeTheory :: LibEnv -> DGraph -> Node -> Result (G_sign,G_l_sentence_list) 
+computeTheory :: LibEnv -> DGraph -> Node -> Result G_theory 
 computeTheory libEnv dg n = do
   let  paths = reverse $ getAllLocGlobDefPathsTo dg n []
          -- reverse needed to have a "bottom up" ordering
@@ -803,11 +803,14 @@ computeTheory libEnv dg n = do
             $ mapM (getSentenceList libEnv dg . fst) paths
   sens' <- mapM (uncurry translateG_l_sentence_list) 
             $ zip mors sens
-  sens'' <- maybeToResult nullPos "Logic mismatch for sentences"
+  G_l_sentence_list lid1 sens'' <- 
+        maybeToResult nullPos "Logic mismatch for sentences"
               $ flatG_l_sentence_list sens'
-  sig <- maybeToResult nullPos "Could not calculate signature of node"
+  G_sign lid2 sig <- 
+        maybeToResult nullPos "Could not calculate signature of node"
               $ getSignature libEnv dg n
-  return (sig,sens'') 
+  sens''' <- rcoerce lid1 lid2 nullPos sens''
+  return $ G_theory lid2 sig sens''' 
 
 -- ---------------
 -- basic inference
@@ -820,13 +823,12 @@ getGoals libEnv dg (n,_,edge) = do
   let mor = dgl_morphism edge
   translateG_l_sentence_list mor sens
 
-getProvers :: LogicGraph -> AnyLogic -> [(G_prover,AnyComorphism)]
-getProvers lg (Logic lid) =
+getProvers :: LogicGraph -> G_sublogics -> [(G_prover,AnyComorphism)]
+getProvers lg gsub =
   [(G_prover (targetLogic cid) p,Comorphism cid) | 
         Comorphism cid <- cms,
-        language_name (sourceLogic cid) == language_name lid,
         p <- provers (targetLogic cid)]
-  where cms = findComorphismPaths lg (Logic lid)
+  where cms = findComorphismPaths lg gsub
 
 
 selectProver :: [(G_prover,AnyComorphism)] -> IOResult (G_prover,AnyComorphism)
@@ -847,21 +849,24 @@ basicInferenceNode :: LogicGraph -> (LIB_NAME,Node) -> ProofStatus
 basicInferenceNode lg (ln,node) 
          proofStatus@(globalContext,libEnv,history,dGraph) =
   ioresToIO (do 
-    (G_sign lid1 sign,G_l_sentence_list lid2 axs) <- 
+    G_theory lid1 sign axs <- 
          resToIORes $ computeTheory libEnv dGraph node
     let inEdges = inn dGraph node
         localEdges = filter isUnprovenLocalThm inEdges
     goalslist <- resToIORes $ mapM (getGoals libEnv dGraph) localEdges
     G_l_sentence_list lid3 goals <- 
-      if null goalslist then return $ G_l_sentence_list lid2 [] 
-        else resToIORes (maybeToResult nullPos "Logic mismatch for proof goals" 
+      if null goalslist then return $ G_l_sentence_list lid1 [] 
+        else resToIORes (maybeToResult nullPos 
+                                  "Logic mismatch for proof goals" 
                                   (flatG_l_sentence_list goalslist))
-    let provers = getProvers lg (Logic lid1)
+    goals1 <- resToIORes $ rcoerce lid1 lid3 nullPos goals
+    let provers = getProvers lg $ sublogicOfTh $ 
+                            (G_theory lid1 sign (axs++goals1))
     (G_prover lid4 p,Comorphism cid) <- selectProver provers
     let lidS = sourceLogic cid
         lidT = targetLogic cid
     sign' <- resToIORes $ rcoerce lidS lid1 nullPos sign
-    axs' <- resToIORes $ rcoerce lidS lid2 nullPos axs
+    axs' <- resToIORes $ rcoerce lidS lid1 nullPos axs
     goals' <- resToIORes $ rcoerce lidS lid3 nullPos goals
     p' <- resToIORes $ rcoerce lidT lid4 nullPos p
     -- Borrowing: translate theory and goal

@@ -114,8 +114,13 @@ outerShowTerm :: Term -> String
 outerShowTerm (Const ("All",_) `App` Abs (v,ty,t)) = 
   outerShowQuant "!!" v ty t
 outerShowTerm (Const ("op -->",_) `App` t1 `App` t2) =
-  showTerm t1 ++ " ==> " ++ outerShowTerm t2
+  showTerm t1 ++ " ==> " ++ outerShowTerm1 t2
 outerShowTerm t = showTerm t
+
+outerShowTerm1 :: Term -> String
+outerShowTerm1 (Const ("op -->",_) `App` t1 `App` t2) =
+  showTerm t1 ++ " ==> " ++ outerShowTerm1 t2
+outerShowTerm1 t = showTerm t
 
 outerShowQuant :: String -> Term -> Typ -> Term -> String
 outerShowQuant s var typ term =

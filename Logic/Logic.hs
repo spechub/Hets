@@ -310,6 +310,9 @@ class (StaticAnalysis lid
 	 proj_sublogic_epsilon li _ s = ide li s
          proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
 	 proj_sublogic_symbol _ _ _ = Nothing
+
+         top_sublogic :: lid -> sublogics
+         top_sublogic _ = top
  
 ----------------------------------------------------------------
 -- Existential type covering any logic
