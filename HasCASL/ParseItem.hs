@@ -29,11 +29,13 @@ import HasCASL.ParseTerm
 
 hasCaslItemList :: String -> AParser b
 		-> ([Annoted b] -> [Pos] -> a) -> AParser a
-hasCaslItemList = auxItemList hasCaslStartKeywords
+hasCaslItemList kw ip constr = 
+    do p <- pluralKeyword kw
+       auxItemList hasCaslStartKeywords [p] ip constr	      
 
-hasCaslItemAux :: AParser a 
-	       -> AParser ([a], [Token], [[Annotation]])
-hasCaslItemAux = itemAux hasCaslStartKeywords
+hasCaslItemAux :: [Token] -> AParser b 
+	       -> ([Annoted b] -> [Pos] -> a) -> AParser a
+hasCaslItemAux ps = auxItemList hasCaslStartKeywords ps
 
 -- * parsing type items
 
@@ -120,10 +122,7 @@ typeItem = do s <- typePattern;
 		    return (TypeDecl [s] star [])
 
 typeItemList :: [Token] -> Instance -> AParser SigItems
-typeItemList ps k = 
-    do (vs, ts, ans) <- hasCaslItemAux (annoParser typeItem)
-       let r = zipWith appendAnno vs ans 
-       return (TypeItems k r (map tokPos (ps++ts)))
+typeItemList ps k = hasCaslItemAux ps typeItem $ TypeItems k
 
 typeItems :: AParser SigItems
 typeItems = do p <- pluralKeyword typeS
@@ -246,10 +245,7 @@ classItem = do c <- classDecl
 		  return (ClassItem c [] [])
 
 classItemList :: [Token] -> Instance -> AParser BasicItem
-classItemList ps k = 
-    do (vs, ts, ans) <- hasCaslItemAux (annoParser classItem)
-       let r = zipWith appendAnno vs ans 
-       return (ClassItems k r (map tokPos (ps++ts)))
+classItemList ps k = hasCaslItemAux ps classItem $ ClassItems k
 
 classItems :: AParser BasicItem
 classItems = do p <- asKey (classS ++ "es") <|> asKey classS
@@ -420,11 +416,7 @@ freeDatatype =   do f <- asKey freeS
 progItems = hasCaslItemList programS (patternTermPair [equalS] 
 				      (WithIn, []) equalS) ProgItems
 
-axiomItems =     do a <- pluralKeyword axiomS
-                    (fs, ps, ans) <- hasCaslItemAux term
-                    return (AxiomItems [] (zipWith 
-                                           (\ x y -> Annoted x [] [] y) 
-                                           fs ans) (map tokPos (a:ps)))
+axiomItems = hasCaslItemList axiomS term $ AxiomItems []
 
 forallItem =     do f <- forallT
                     (vs, ps) <- genVarDecls `separatedBy` anSemi 
