@@ -27,6 +27,8 @@ module Common.GlobalAnnotationsFunctions
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.Print_AS_Annotation
+import Common.PrettyPrint
 
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Map as Map
@@ -49,21 +51,27 @@ store_prec_annos pgr = Rel.transClosure .
 			     foldr ( \ hi p2 -> 
 				     if li == hi then error 
 				     ("prec_anno with equal ids: " ++
-				      show li ++ " < " ++ show hi)
-				     else if Rel.transMember hi li p2 then
-				     error ("prec_anno conflict: " ++
-					    show li ++ " < " ++ show hi ++
-					    "\n" ++ show p2)
-				     else 
+				      showId li " < " ++ showId hi "") else 
 				     case prc of 
-				     Lower -> Rel.insert li hi p2
+				     Lower -> if Rel.transMember hi li p2 then
+				       error ("prec_anno conflict: " ++
+					     showId li " < " ++ showId hi "\n" 
+					     ++ showRel p2 "")
+				       else Rel.insert li hi p2
 				     BothDirections -> 
-				           Rel.insert hi li (Rel.insert 
-							     li hi p2)
+				         let p3 = Rel.transClosure p2 in
+				         case precRel p3 hi li of
+				         NoDirection -> Rel.insert hi li 
+				               (Rel.insert li hi p3)
+				         BothDirections -> p3
+				         _ -> error ("prec_anno conflict: " ++
+					    showId li " <> " ++ showId hi "\n" 
+					     ++ showRel p2 "")
 				     _ -> error "prec_anno relation")
 			     p1 hIds)
 	              p0 lIds
 	    _ -> p0 ) pgr  
+    where showRel r = showSepList (showString "\n") showIdPair $ Rel.toList r  
 
 precRel :: PrecedenceGraph -- ^ Graph describing the precedences
 	-> Id -- ^ x oID (y iid z) -- outer id
@@ -111,7 +119,7 @@ store_display_annos =
 			let oldStr = Map.findWithDefault str df tab in 
 			if oldStr == str then  
 			Map.insert df str tab
-			else error ("conflict: " ++ show an)
+			else error ("conflict: " ++ showPretty an "")
 		      ) t sxs) m
 	    _ -> m )
 
@@ -123,7 +131,7 @@ getLiteralType ga i =
 
 store_literal_map :: LiteralMap -> [Annotation] -> LiteralMap
 store_literal_map = 
-    foldr ( \ a m -> let err = error ("conflict: " ++ show a) in
+    foldr ( \ a m -> let err = error ("conflict: " ++ showPretty a "") in
 	    case a of 
 	    Number_anno id1 _ -> 
 	        let oc = Map.findWithDefault Number id1 m
@@ -160,17 +168,21 @@ store_literal_annos la ans =
 	      , float_lit  = setFloatLit  (float_lit la)  ans
 	      }
 
+showIdPair :: (Id, Id) -> ShowS
+showIdPair (i1, i2) = showId i1 . showString "," . showId i2
+
 setStringLit :: Maybe (Id,Id) -> [Annotation] -> Maybe (Id,Id)
 setStringLit = 
     foldr ( \ a m ->
             case a of 
             String_anno id1 id2 _ ->
+	        let q = (id1, id2) in
                 case m of 
-                Nothing -> Just (id1, id2)
+                Nothing -> Just q
                 Just p -> 
-                    if (id1, id2) == p then m
-                    else error ("conflict %string " ++ showId id1 "," 
-                                ++ showId id2 " and " ++ show p)
+                    if q == p then m
+                    else error ("conflict %string " ++ showIdPair q
+                                " and " ++ showIdPair p "")
             _ -> m )
 
 setFloatLit :: Maybe (Id,Id) -> [Annotation] -> Maybe (Id,Id)
@@ -178,13 +190,14 @@ setFloatLit =
     foldr ( \ a m ->
 	    case a of 
 	    Float_anno id1 id2 _ ->
+	        let q = (id1, id2) in
 	        case m of 
-	        Nothing -> Just (id1, id2)
-	        Just p -> 
-	            if (id1, id2) == p then m
-	            else error ("conflict %floating " ++ showId id1 "," 
-				++ showId id2 " and " ++ show p)
-	    _ -> m )
+                Nothing -> Just q
+                Just p -> 
+                    if q == p then m
+                    else error ("conflict %floating " ++ showIdPair q
+                                " and " ++ showIdPair p "")
+            _ -> m )
 
 setNumberLit :: Maybe Id -> [Annotation] -> Maybe Id
 setNumberLit =
@@ -196,7 +209,7 @@ setNumberLit =
 	        Just id2 -> 
 	            if id1 == id2 then m
 	            else error ("conflict %number " ++ showId id1 " and " 
-	                  ++ show id2)
+	                  ++ showId id2 "")
 	    _ -> m )
 
 setListLit :: Set.Set (Id,Id,Id) -> [Annotation] -> Set.Set (Id,Id,Id)
@@ -204,13 +217,14 @@ setListLit =
     foldr ( \ a s ->
             case a of 
             List_anno id1 id2 id3 _ ->
-                    let cs = Set.filter ( \ ( o1, o2, o3) -> 
-                                 o1 == id1 || o2 == id2 || o3 == id3) s in
-                    if Set.isEmpty cs then Set.insert (id1, id2, id3) s 
-                    else error ("conflict %list " ++ showId id1 "," 
-                                ++ showId id2 "'" ++ showId id3 " and " 
-                                ++ show (Set.findMin cs))
+                    let p = (id1, id2, id3)
+	                cs = Set.filter ((==) p) s in
+                    if Set.isEmpty cs then Set.insert p s 
+                    else error ("conflict" ++ showTriple p ++ 
+                                " and" ++ showTriple (Set.findMin cs))
             _ -> s )
+    where showTriple (i1, i2, i3) = " %list " ++ showId i1 "," 
+                                ++ showId i2 "," ++ showId i3 "" 
 
 -------------------------------------------------------------------------
 
