@@ -39,23 +39,7 @@ import Data.Maybe
 assert :: Bool -> a -> a
 assert b a = if b then a else error ("assert")
 
-data RuleKind = LogOp | RelOp | PredOp Id | InfixOp Id | OtherOp Id | ApplOp 
-	      | TupleOp | WhenOp | AtomOp
-
-idToRuleKind :: Set.Set Id -> Id -> RuleKind 
-idToRuleKind ps i = if Set.member i builtinLogIds then LogOp
-	      else if Set.member i builtinRelIds then RelOp
-	      else if Set.member i ps then PredOp i
-	      else if isInfix i then
-			   if i == applId then ApplOp
-			   else if i == whenElse then WhenOp
-			   else InfixOp i
-	      else if i `elem` [parenId, exprId, unknownId] 
-		   then AtomOp
-		   else if i `elem` [tupleId, unitId] then TupleOp
-		   else OtherOp i
-
-type Rule = (Id, RuleKind, [Token])
+type Rule = (Id, Int, [Token])
 
 trueId :: Id
 trueId = mkId [mkSimpleId trueS]
@@ -106,26 +90,27 @@ builtinLogIds :: Set.Set Id
 builtinLogIds = Set.fromDistinctAscList 
 		 [andId, eqvId, implId, orId, infixIf, notId] 
 
-addBuiltins :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> GlobalAnnos
-addBuiltins ga opIds predIds = 
+addBuiltins :: GlobalAnnos -> GlobalAnnos
+addBuiltins ga = 
     let ass = assoc_annos ga
 	newAss = Map.union ass $ Map.fromList 
 		 [(applId, ALeft), (andId, ALeft), (orId, ALeft), 
 		  (implId, ARight), (infixIf, ALeft), 
 		  (whenElse, ARight)]
 	precs = prec_annos ga
-	relIds = (Set.filter isInfix predIds Set.\\ builtinLogIds) `Set.union` 
-		 builtinRelIds
+        pMap = Rel.toMap precs		
+        opIds = Set.unions (Set.fromDistinctAscList (Map.keys pMap)
+			    :Map.elems pMap)
 	opIs = Set.toList ((((Set.filter isInfix opIds)
-		Set.\\ relIds) Set.\\ builtinLogIds) 
+		Set.\\ builtinRelIds) Set.\\ builtinLogIds) 
 	        Set.\\ Set.fromDistinctAscList [applId, whenElse])
 
 	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
 		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
 		 (andId, notId), (orId, notId)]
 
-        rels1 = map ( \ i -> (notId, i)) $ Set.toList relIds
-	rels2 = map ( \ i -> (i, whenElse)) $ Set.toList relIds
+        rels1 = map ( \ i -> (notId, i)) $ Set.toList builtinRelIds
+	rels2 = map ( \ i -> (i, whenElse)) $ Set.toList builtinRelIds
 	ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
 	ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
 	newPrecs = foldr (\ (a, b) p -> if Rel.member b a p then p else 
@@ -134,14 +119,37 @@ addBuiltins ga opIds predIds =
     in ga { assoc_annos = newAss
 	  , prec_annos = Rel.transClosure newPrecs }
 
-initTermRules :: Set.Set Id -> Set.Set Id -> [Rule]
-initTermRules ps is = 
-    (map ( \ i -> mixRule (idToRuleKind ps i) i) 
+opKindFilter :: Int -> Int -> Int -> Maybe Bool
+opKindFilter relPrec arg op = 
+    if op < arg then Just True
+       else if arg < op && (op <= relPrec || arg < relPrec) then Just False 
+	    else Nothing
+
+mkPrecIntMap :: Rel.Rel Id -> PrecMap
+mkPrecIntMap r = 
+    let t = Rel.topSort r
+	l = length t
+	m = foldr ( \ (n, s) m1 -> 
+		    Set.fold ( \ i m2 ->Map.insert i n m2)  m1 s)
+		 Map.empty $ zip [1..l] t
+	in (m, Map.find eqId m, l)
+
+getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
+getIdPrec (pm, r, m) ps i = Map.findWithDefault 
+    (if Set.member i ps then r
+     else if begPlace i || endPlace i then 
+             if i == applId then m + 1
+             else m
+          else m + 2) i pm 
+					 
+initTermRules ::  (PrecMap, Set.Set Id) -> Set.Set Id -> [Rule]
+initTermRules (pm, ps) is = 
+    (map ( \ i -> mixRule (getIdPrec pm ps i) i) 
 	    (Set.toList
 	     (Set.fromDistinctAscList 
 	      [unitId, parenId, tupleId, exprId, typeId, applId] 
 	      `Set.union` is))) ++
-    (map ( \ i -> (protect i, idToRuleKind ps i, getPlainTokenList i)) 
+    (map ( \ i -> (protect i, getIdPrec pm ps i, getPlainTokenList i)) 
 	    (filter isMixfix $ Set.toList is))
 
 addType :: Term -> Term -> Term
@@ -149,10 +157,7 @@ addType (TypedTerm _ qual ty ps) t = TypedTerm t qual ty ps
 addType (MixInTerm ty ps) t = TypedTerm t InType ty ps 
 addType _ _ = error "addType"
 
-opKindFilter :: PrecedenceGraph -> RuleKind -> RuleKind -> Maybe Bool
-opKindFilter prec arg op = Nothing
-
-toMixTerm :: Id -> RuleKind -> [Term] -> [Pos] -> Term
+toMixTerm :: Id -> Int -> [Term] -> [Pos] -> Term
 toMixTerm ide _ ar qs = 
     if ide == applId then assert (length ar == 2) $
        let [op, arg] = ar in ApplTerm op arg qs
@@ -160,7 +165,7 @@ toMixTerm ide _ ar qs =
 	 mkTupleTerm ar qs
     else ResolvedMixTerm ide ar qs
 
-type TermChart = Chart Term RuleKind
+type TermChart = Chart Term Int
 
 -- | find information for qualified operation
 findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> Type -> Maybe OpInfo
@@ -171,8 +176,9 @@ iterateCharts :: GlobalAnnos -> [Term] -> TermChart
 	      -> State Env TermChart
 iterateCharts ga terms chart = 
     do e <- get
-       let self = iterateCharts ga  
-	   oneStep = nextChart addType (opKindFilter $ prec_annos ga) 
+       let ((_, relId, _), _) = preIds e
+           self = iterateCharts ga  
+	   oneStep = nextChart addType (opKindFilter relId)
 		     toMixTerm ga chart
 	   as = assumps e
 	   tm = typeMap e
@@ -380,15 +386,12 @@ resolveConstrPattern ga pat =
        putAssumps as
        return mp
 
-initPatternRules :: Set.Set Id -> [Id] -> [Rule]
-initPatternRules ps is = 
-    (tupleId, TupleOp, getTokenPlaceList tupleId) :
-    (parenId, AtomOp, getTokenPlaceList parenId) :
-    (unknownId, AtomOp, getTokenPlaceList unknownId) : 
-    (applId, ApplOp, getTokenPlaceList applId) : 
-    (exprId, AtomOp, getTokenPlaceList exprId) :
-    map ( \ i -> (i, idToRuleKind ps i, getTokenPlaceList i )) is ++
-    map ( \ i -> (protect i, idToRuleKind ps i, 
+initPatternRules :: (PrecMap, Set.Set Id) -> [Id] -> [Rule]
+initPatternRules (pm, ps) is = 
+    map ( \ i -> mixRule (getIdPrec pm ps i) i) 
+	    ([parenId, tupleId, exprId, unknownId, applId] 
+	     ++ is) ++
+    map ( \ i -> (protect i, getIdPrec pm ps i,
 		  getPlainTokenList i )) (filter isMixfix is)
 
 addPatternType :: Pattern -> Pattern -> Pattern
@@ -407,7 +410,7 @@ mkPatAppl op arg qs =
 		TypedPattern (mkPatAppl p arg qs) ty ps
 	    _ -> error ("mkPatAppl: " ++ show op)
 
-toPat :: Id -> RuleKind -> [Pattern] -> [Pos] -> Pattern
+toPat :: Id -> Int -> [Pattern] -> [Pos] -> Pattern
 toPat i _ ar qs = 
     if i == applId then assert (length ar == 2) $
 	   let [op, arg] = ar in mkPatAppl op arg qs
@@ -421,12 +424,12 @@ toPat i _ ar qs =
 	     else if isSingle ar then [head ar] 
 	     else [mkTuplePattern ar qs]) qs
 
-type PatChart = Chart Pattern RuleKind
+type PatChart = Chart Pattern Int
 
 iterPatCharts :: GlobalAnnos -> [Pattern] -> PatChart -> State Env PatChart
 iterPatCharts ga pats chart= 
     let self = iterPatCharts ga
-	oneStep = nextChart addPatternType (opKindFilter $ prec_annos ga) 
+	oneStep = nextChart addPatternType (opKindFilter 0)
 		  toPat ga chart
     in if null pats then return chart
        else 
