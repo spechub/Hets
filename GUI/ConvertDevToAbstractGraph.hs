@@ -59,6 +59,8 @@ import Data.Maybe
 import List(nub)
 import Control.Monad
 
+import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
+
 import Debug.Trace
 
 {- Maps used to track which node resp edge of the abstract graph
@@ -324,6 +326,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
 		    createLocalMenuButtonShowSignature convRef dGraph,
 		    createLocalMenuButtonShowTheory gInfo convRef dGraph,
 		    createLocalMenuButtonTranslateTheory gInfo convRef dGraph,
+		    createLocalMenuTaxonomy gInfo convRef dGraph,
 		    createLocalMenuButtonShowSublogic gInfo convRef dGraph,
                     createLocalMenuButtonShowNodeOrigin convRef dGraph,
                     createLocalMenuButtonProveAtNode gInfo convRef dGraph,
@@ -348,6 +351,7 @@ createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
 		     createLocalMenuButtonShowSignature convRef dGraph,
  		     createLocalMenuButtonShowTheory gInfo convRef dGraph,
 		     createLocalMenuButtonTranslateTheory gInfo convRef dGraph,
+		     createLocalMenuTaxonomy gInfo convRef dGraph,
  		     createLocalMenuButtonShowSublogic gInfo convRef dGraph,
                      createLocalMenuButtonProveAtNode gInfo convRef dGraph,
                      createLocalMenuButtonCCCAtNode gInfo convRef dGraph,
@@ -401,6 +405,31 @@ createLocalMenuButtonShowTheory (proofStatus,_,_,_,_,_) =
   createMenuButton "Show theory" (getTheoryOfNode proofStatus)
 createLocalMenuButtonTranslateTheory (proofStatus,_,_,_,_,_) = 
   createMenuButton "Translate theory" (translateTheoryOfNode proofStatus)
+
+
+{- | 
+   create a sub Menu for taxonomy visualisation
+   (added by KL)
+-}
+--createLocalMenuTaxonomy :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
+--                     DGraph -> IO ()
+createLocalMenuTaxonomy (proofStatus,_,_,_,_,_) convRef dGraph =
+      (Menu (Just "Taxonomy graphs")
+       [createMenuButton "Subsort graph" 
+	       (passTh displaySubsortGraph) convRef dGraph,
+	createMenuButton "Concept graph"
+	       (passTh displayConceptGraph) convRef dGraph])
+    where passTh displayFun descr ab2dgNode dgraph =
+	      do r <- lookupTheoryOfNode proofStatus 
+                                         descr ab2dgNode dgraph
+		 case r of
+		  Res.Result [] (Just (n, gth)) -> 
+		      displayFun (showPretty n "") gth
+		  Res.Result diags _ -> 
+		     showDiags defaultHetcatsOpts diags
+ 
+
+
 createLocalMenuButtonShowSublogic (proofStatus,_,_,_,_,_) = 
   createMenuButton "Show sublogic" (getSublogicOfNode proofStatus)
 createLocalMenuButtonShowNodeOrigin  = 
@@ -556,12 +585,12 @@ getSignatureOfNode descr ab2dgNode dgraph =
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
 
-
-{- outputs the theory of a node in a window;
-used by the node menu defined in initializeGraph-}
-getTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
-                     DGraph -> IO()
-getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
+{- | 
+   fetches the theory from a node inside the IO Monad  
+   (added by KL based on code in getTheoryOfNode) -}
+lookupTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
+                      DGraph -> IO (Res.Result (Node,G_theory))
+lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
  (_,libEnv,_,_) <- readIORef proofStatusRef
  case (do
   (_libname, node) <- 
@@ -570,6 +599,15 @@ getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
   gth <- computeTheory libEnv dgraph node
   return (node, gth)
     ) of
+   r -> return r
+
+{- outputs the theory of a node in a window;
+used by the node menu defined in initializeGraph-}
+getTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
+                     DGraph -> IO()
+getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
+ r <- lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph
+ case r of
   Res.Result [] (Just (n, gth)) ->  
     displayTheory "Theory" n dgraph gth
   Res.Result diags _ -> showDiags defaultHetcatsOpts diags
