@@ -20,11 +20,13 @@
 module ATC_sml_cats (from_sml_ATerm,read_sml_ATerm) where
 
 -- for debugging only
-import IOExts (trace)
+--import IOExts (trace)
 
 import List (isPrefixOf)
 
 import ATermLib
+
+import Utils
 
 import Id
 import AS_Annotation
@@ -106,7 +108,7 @@ instance ATermConvertible Annotation where
         case aterm of
             (AAppl "comment-line" [ aa ])  ->
                 let
-                aa' = fromATerm (getATermByIndexSp1 aa att)
+                aa' = chomp $ fromATerm (getATermByIndexSp1 aa att)
                 ab' = pos_l
                 in (Comment_line aa' ab')
             (AAppl "comment" [ aa ])  ->
@@ -115,7 +117,8 @@ instance ATermConvertible Annotation where
                 ab' = pos_l
                 in (Comment_group aa' ab')
             (AAppl "unparsed-anno" [ aa ])  ->
-		parse_anno pos_l (fromATerm (getATermByIndexSp1 aa att))
+		parse_anno pos_l 
+		   (fromATerm (getATermByIndexSp1 aa att))
             (AAppl "annote-line" [ aa,ab ])  ->
                 let
                 aa' = fromATerm (getATermByIndexSp1 aa att)
@@ -132,7 +135,7 @@ instance ATermConvertible Annotation where
                 let
                 aa' = fromATerm (getATermByIndexSp1 aa att)
                 ab' = parse_disp_anno aa' pos_l 
-				      (fromATerm (getATermByIndexSp1 ab att))
+		           (chomp $ fromATerm (getATermByIndexSp1 ab att))
                 in ab'
             (AAppl "string-anno" [ aa,ab ])  ->
                 let
