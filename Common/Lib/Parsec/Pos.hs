@@ -64,7 +64,6 @@ updatePosChar pos@(SourcePos name line column) c
     = forcePos $
       case c of
         '\n' -> SourcePos name (line+1) 1
-        '\r' -> SourcePos name (line+1) 1
         '\t' -> SourcePos name line (column + 8 - ((column-1) `mod` 8))
         _    -> SourcePos name line (column + 1)
         
