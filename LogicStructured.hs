@@ -6,12 +6,7 @@
 ------------------------------------------------------------------------------
 {- todo:
 
-  Hochziehen auf strukturierte Ebene
-    Maybe(existentiellen Typ G_sublogics aus Grothendieck.hs) verwenden
-    AS_Structured.hs, AS_Arch.hs, AS_Library.hs
-    Funktionen aus Logic_CASL.hs bzw. Logic.hs verwenden
-    Nur für homogene Specs das jeweilige Maximum berechnen
-      (Vergleich von Logic-ids mit language_name), ansonsten Nothing
+  Anpassung für logic_code
 
 -}
 
@@ -31,22 +26,30 @@ import qualified AS_Library
 import AS_Annotation
 import Logic
 import Grothendieck
+import Dynamic
 
-{-
-top_logics :: G_sublogics -> G_sublogics -> Maybe G_sublogics
-top_logics (G_sublogics a al) (G_sublogics b bl) =
+coerce1 :: (Typeable a, Typeable b) => a -> Maybe b
+coerce1 = fromDynamic . toDyn
+
+top_logics :: Maybe G_sublogics -> Maybe G_sublogics -> Maybe G_sublogics
+top_logics Nothing _ = Nothing
+top_logics _ Nothing = Nothing
+top_logics (Just (G_sublogics a (al::sublogics))) (Just (G_sublogics b bl)) =
   if ((language_name a)==(language_name b)) then
-    Just (G_sublogics a (meet al bl))
+    case coerce1 bl::Maybe sublogics of
+      Just bl1 -> Just (G_sublogics a (meet al bl1))
+      Nothing -> Nothing
   else
     Nothing
--}
 
+{-
 -- FIXME
 -- dummy version of above function
 top_logics :: Maybe G_sublogics -> Maybe G_sublogics -> Maybe G_sublogics
 top_logics Nothing _ = Nothing
 top_logics _ Nothing = Nothing
 top_logics (Just a) (Just b) = Just a
+-}
 
 map_logics :: [Maybe G_sublogics] -> Maybe G_sublogics
 map_logics [] = Nothing

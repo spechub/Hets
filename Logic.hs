@@ -63,6 +63,8 @@ import Prover -- for one half of class Sentences
 
 import PrettyPrint
 
+import Dynamic
+
 -- for coercion used in LogicGraph.hs and Grothendieck.hs
 import GlaExts(unsafeCoerce#)
 
@@ -194,7 +196,7 @@ class Ord l => LatticeWithTop l where
 class (StaticAnalysis id 
         basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol,
-       LatticeWithTop sublogics) =>
+       LatticeWithTop sublogics, Typeable sublogics) =>
       Logic id sublogics
         basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol 

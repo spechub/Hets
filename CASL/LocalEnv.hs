@@ -169,14 +169,14 @@ type Fun_map =  FiniteMap Id [(OpType, Id, Bool)]
                            total -}
 type Pred_map = FiniteMap Id [(PredType,Id)]
 
-instance (Show a,Show b,Ord a) => Show (FiniteMap a b) where
-  showsPrec _ = shows . fmToList
+--instance (Show a,Show b,Ord a) => Show (FiniteMap a b) where
+--  showsPrec _ = shows . fmToList
 
 data Morphism = Morphism {msource,mtarget :: Sign,
                           sort_map :: Sort_map, 
                           fun_map :: Fun_map, 
                           pred_map :: Pred_map}
-                         deriving (Eq,Show)
+                         deriving Eq -- (Eq,Show)
 
 embedMorphism :: Sign -> Sign -> Morphism
 embedMorphism a b =

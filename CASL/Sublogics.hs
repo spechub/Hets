@@ -7,35 +7,8 @@
 {- todo:
 
   [Pos] in LocalEnv.SortDefn -> Christian Maeder fragen
-  What if Datatype is removed (only situation where a sort can be removed
-  entirely) but preds or Sort_map still exist?  -> in Sort_decl umwandeln
-
-  all_sublogics :: id -> [sublogics]
-  Sublogic ggf. hochsetzen (für subsorted atomic logic)
-  Morphism umstellen, in Zusammenarbeit mit Klaus
-
-  für pr_epsilon:
-  Einbettungs-Signaturmorphismus, ueber Funktion in LocalEnv.hs
-  Frage: Konstruktoren/Selektoren in fun_map?
 
   Testen mit hetcats/hetcats.hs (Klaus kontakten)
-
-Korrespondenz abstrakt-konkret:
-  class Logic id sublogics
-        basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol 
-
-  instance Logic CASL Sublogics.CASL_Sublogics
-               BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
-	       LocalEnv Sign 
-	       String -- morphism 
-	       Symbol RawSymbol 
-
-  Weitere Instanzen mit HasCASL, CASL-LTL etc.
-    (nur sich selbst als Sublogic)
-  Logic-Representations (Sublogic immer = top)
-
-  Alles zusammenfassen in LogicGraph.hs
 
 -}
 
@@ -125,8 +98,6 @@ sublogics_all = filter (not . adjust_check) $
                 [CASL_SL True  False False False False Atomic,
                  CASL_SL False False False False False Atomic]
 
--- CHECK
--- is there a possibility to have a record selector as argument?
 morph_part :: [CASL_Sublogics] -> [CASL_Sublogics]
 morph_part [] = []
 morph_part (h:t) = [h{ has_part = True }] ++ (morph_part t) ++
@@ -877,8 +848,7 @@ pr_datatype_decl l (Datatype_decl s a p) =
                    else
                      Just (Datatype_decl s res pos)
 
--- CHECK
--- does the Subsorts alternative declare the named sorts?
+
 pr_alternative :: CASL_Sublogics -> ALTERNATIVE -> Maybe ALTERNATIVE
 pr_alternative l (Total_construct n c p) =
                let
