@@ -16,32 +16,32 @@
 -}
 
 {- TODO:
-     - Posix Spezifikation zu command line interfaces \/
-     - Dokumentation zu System.Console.GetOpt vom ghc \/
-     - Flag und HetCATSOpts Datentyp anpassen \/
+     - Flag und HetCATSOpts Datentyp anpassen
      - options Liste erweitern 
-     - parse funktionen schreiben \/
+     - parse funktionen schreiben
      - form_opt_rec anpassen 
-     - perm_infile und check_in_file implemetieren \/
+     - mehrere infiles zulassen
+     - OutputDir: fuer jedes infile OutDir defaultmaessig auf basename des infiles setzen
 -}
 
 {- Optionen:
 
 Usage: hetcats [OPTION...] file ... file
-  -v[Int]  --verbose[=Int]      chatty output on stderr
-  -V       --version            show version number
-  -h       --help               show usage information
-  -i ITYPE  --input-type=ITYPE  ITYPE of input file: casl|het|tree.gen_trm
-  -p       --just-parse         just parse -- skip analysis
-  -O DIR   --output-dir=DIR     output DIR
-  -o OTYPES  --output-types=OTYPES  select OTYPES of output files
-  -l id    --output-logic=id    select output logic and optional logic coding
-  -L DIR   --casl-libdir=DIR    CASL library directory
-  -w --width tex=10cm het=75
+  -v[Int]   --verbose[=Int]       chatty output on stderr
+  -V        --version             show version number
+  -h        --help                show usage information
+  -i ITYPE  --input-type=ITYPE    ITYPE of input file: casl|het|tree.gen_trm
+  -p        --just-parse          just parse -- skip analysis
+  -O DIR    --output-dir=DIR      output DIR
+  -o OTYPES --output-types=OTYPES select OTYPES of output files
+  -l id     --output-logic=id     select output logic and optional logic coding
+  -L DIR    --casl-libdir=DIR     CASL library directory
+  -w        --width tex=10cm het=75 
 
 OTYPES is a comma separated list of OTYPE
-OTYPE is (pp.(het|tex|html))|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)|
-         (graph.(dot|ps|davinci))
+OTYPE is (pp.(het|tex|html))
+         |(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)
+         |(graph.(dot|ps|davinci))
          (default: dg.taf)
 -}
 
@@ -74,7 +74,28 @@ data HetcatsOpts =
 	  , analysis :: Bool      -- False if analysis should be skipped
 	  , libdir   :: FilePath  -- CASL library directory
 	  , rawoptions :: [Flag]
-	  } deriving (Show,Eq)
+	  }
+    deriving (Eq)
+
+instance Show HetcatsOpts where
+    show opts =    "--verbose="       ++ show (verbose opts)
+		++ " --input-type="   ++ showInType
+		++ " --output-types=" ++ showOutType
+		++ " --output-dir="   ++ (outdir opts)
+		++ showAnalysis
+		++ " --casl-libdir="  ++ (libdir opts)
+		++ " " ++ showInFiles
+	where
+	showInType = show (intype opts)
+	showOutType = joinWith ',' $ map show (outtypes opts)
+	showAnalysis
+	    | analysis opts = ""
+	    | otherwise     = " --just-parse"
+	showInFiles  = infile opts
+-- these might be used when multiple infiles are implemented
+--	showInType = joinWith ' ' (map show (intype opts))
+--	showInFiles  = joinWith ' ' (infile opts)
+
 
 {- | the default HetcatsOpts, used when nothing else is specified -}
 defaultHetcatsOpts :: HetcatsOpts
@@ -119,12 +140,12 @@ options =
       "print version number and exit"
     , Option ['h'] ["help", "usage"] (NoArg Help)
       "print usage information and exit"
-    , Option ['i'] ["input-type"]  (ReqArg parseInputType "TYPE")
-      "TYPE of input file: tree.gen_trm(_baf)? | het(casl)? | casl"
+    , Option ['i'] ["input-type"]  (ReqArg parseInputType "ITYPE")
+      "ITYPE of input file: \n\t(tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?"
     , Option ['O'] ["output-dir"]  (ReqArg parseOutputDir "DIR")
       "destination directory for output files"
-    , Option ['o'] ["output-types"] (ReqArg parseOutputTypes "TYPE")
-      "TYPE of output files: hetcasl-latex | hetcasl-ascii | global-env"
+    , Option ['o'] ["output-types"] (ReqArg parseOutputTypes "OTYPES")
+      "OTYPES of output files, a comma seperated list of OTYPE\n\tOTYPE is (pp.(het|tex|html))\n\t\t|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)\n\t\t|(graph.(dot|ps|davinci))\n\t\t(default: dg.taf)"
     , Option ['p'] ["just-parse"]  (NoArg (Analysis False))
       "skip static analysis - just parse"
     , Option ['L'] ["casl-libdir"]  (ReqArg parseLibDir "DIR")
@@ -141,7 +162,7 @@ data ErrorSource = User | Intern
 -- valid types of input
 data InType = ATerm ATType | ASTree ATType | CASLIn | HetCASLIn
 	      deriving (Show, Eq)
--- was: SML_Gen_ATerm
+-- ATerm was: SML_Gen_ATerm
 
 -- valid types of ATerms: baf or non-baf ATerms
 data ATType = BAF | NonBAF
@@ -187,8 +208,7 @@ parseVerbosity (Just s)
     error' = hetsError User (s ++ " is not a valid INT")
 
 -- parse the input type 
--- TODO: this one is _ugly_ ...
--- ... but this seems to be the easiest way
+-- TODO: maybe this can be implemented via 'instance Read InType'?
 parseInputType :: String -> Flag
 parseInputType "casl"             = InType CASLIn
 parseInputType "hetcasl"          = InType HetCASLIn
@@ -253,11 +273,6 @@ parseOType s
     getGraphType "ps"      = Just PostScript
     getGraphType "davinci" = Just Davinci
     getGraphType _         = Nothing
-{-    getOutFormat s  
-	| "nax." `isPrefixOf` s = 
-	    parseOType' (getOutFormat' $ drop 4 s) (True)
-	| otherwise             = 
-	    parseOType' (getOutFormat' s) (False) -} -- too confusing ;)
     getOutFormat "het"  = Just Ascii
     getOutFormat "taf"  = Just Term
     getOutFormat "trm"  = Just Taf
@@ -307,10 +322,10 @@ formOpts fs = do if (hasHelp fs)
 		    else return () -- fall through
 		 fs' <- return $ (collectOutTypes
 				  . collectVerbosity
-				  -- collect some more
+				  -- collect some more here?
 				 ) fs
-		 outDirs <- checkOutDirs fs'
-		 return $ extractOpts fs'
+		 fs'' <- collectOutDirs fs'
+		 return $ extractOpts fs''
     where
     hasVersion xs = Version `elem` xs
     hasHelp xs = Help `elem` xs
@@ -328,7 +343,6 @@ extractOpts ((LibDir x):xs)   opts = extractOpts xs opts { libdir = x }
 extractOpts [] opts = opts
 extractOpts _ _ = hetsError Intern "Unknown Error in extractOpts"
 
--- TODO!
 formInFiles :: [String] -> IO (HetcatsOpts -> HetcatsOpts)
 formInFiles fs = do ifs <- checkInFiles fs
 		    case ifs of
@@ -337,10 +351,10 @@ formInFiles fs = do ifs <- checkInFiles fs
 				    error' "No valid input file specified"
 			     _   -> return $ error'
 			      "Only one input file may be specified at a time"
--- at least for now - more will be implemented later
     where
     inFile x opts = opts { infile = x }
     error' e = (\_ -> hetsError User e)
+
 
 -- auxiliary functions: FileSystem interaction --
 
@@ -352,42 +366,42 @@ checkInFiles = filterM checkInFile
 checkInFile :: FilePath -> IO Bool
 checkInFile file = do exists <- doesFileExist file
 		      perms  <- catch (getPermissions file)
-				(\_ -> return
- 				 (Permissions { readable = False
-					      , writable = False
-					      , executable = False
-					      , searchable = False
-					      } ))
+				(\_ -> return noPerms)
 		      if (exists && (readable perms))
 			 then return True
 			 else return False
 
 -- sanity check for all output directories
-checkOutDirs :: [Flag] -> IO [FilePath]
-checkOutDirs = (filterM checkOutDir) . (map extrOutDir) . (filter isOutDir)
+checkOutDirs :: [Flag] -> IO [Flag]
+checkOutDirs fs = 
+    do ods <- ((filterM checkOutDir) . (map extrOutDir)) fs
+       if null ods
+	  then return []
+	  else return $ [OutDir $ head ods]
     where
-    isOutDir (OutDir _ ) = True
-    isOutDir _           = False
+--    isOutDir (OutDir _ ) = True
+--    isOutDir _           = False
     extrOutDir (OutDir x) = x
-    extrOutDir _          = hetsError Intern "error in checkOutDirs"
+    extrOutDir _          = hetsError Intern "Unknown error in checkOutDirs"
 
 -- sanity check for a single output directory
 checkOutDir :: String -> IO Bool
 checkOutDir file = do exists <- doesDirectoryExist file
 		      perms  <- catch (getPermissions file)
-				(\_ -> return
-				 (Permissions { readable = False
-					      , writable = False
-					      , executable = False
-					      , searchable = False
-					      } ))
+				(\_ -> return noPerms)
 		      if (exists && (writable perms))
 			 then return True
 			 else return False
 
+noPerms :: Permissions
+noPerms = Permissions { readable = False
+		      , writable = False
+		      , executable = False
+		      , searchable = False
+		      }
+
 
 -- auxiliary functions: collect flags -- 
--- should work kinda like sorting -- TODO!
 
 collectVerbosity :: [Flag] -> [Flag]
 collectVerbosity fs =
@@ -411,6 +425,15 @@ collectOutTypes fs =
     concatOTypes os (OutTypes ot) = os ++ ot
     concatOTypes _ _ = hetsError Intern "Unknown Error in collectOutTypes"
 
+collectOutDirs :: [Flag] -> IO [Flag]
+collectOutDirs fs =
+    do let (ods,fs') = partition isOutDir fs
+       ods' <- checkOutDirs ods
+       return $ ods' ++ fs'
+    where
+    isOutDir (OutDir _) = True
+    isOutDir _          = False
+
 
 -- auxiliary functions: error messages --
 
@@ -426,27 +449,13 @@ hetsUsage :: String
 hetsUsage = usageInfo header options
     where header = "Usage: hetcats [OPTION...] file"
 
--- prints all recognized Options
+-- prints a list of all recognized options passed to the command line
 -- non really an error Message, but anyway...
 printOpts :: HetcatsOpts -> IO ()
 printOpts opts = 
-    let optString = "user called: hets"
-		    ++ " --verbose="      ++ show (verbose opts)
-		    ++ " --input-type="   ++ showInType
-		    ++ " --output-types=" ++ showOutType
-		    ++ " --output-dir="   ++ (outdir opts)
-		    ++ showAnalysis
-		    ++ " --casl-libdir="  ++ (libdir opts)
-		    ++ " " ++ showInFiles
-	showInType = show (intype opts)
-	showOutType = joinWith ',' (map show (outtypes opts))
-	showAnalysis
-	    | analysis opts = ""
-	    | otherwise     = " --just-parse"
-	showInFiles  = infile opts -- there's only one infile yet
---	showInType = joinWith ' ' (map show (intype opts))
---	showInFiles  = joinWith ' ' (infile opts)
+    let optString = "user called: hets " ++ (show opts)
     in putStrLn optString
+
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 {-
