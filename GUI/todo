@@ -9,9 +9,10 @@ Jorina
   Ausgaben (show spec etc.) in eigenes Fenster, mittels htk
     (George oder Christoph fragen)
 
-  lokale Links anders darstellen (gepunktet?)
+(X)  lokale Links anders darstellen (gepunktet?)
+  \--> Dashed
 
-  Knoten sind auch von sich selbst locally reachable
+(X)  Knoten sind auch von sich selbst locally reachable
    => bei Global Decomposition immer auch ein lokaler Link
       von ursprünglichem Source zu Target
 
