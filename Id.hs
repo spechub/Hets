@@ -161,14 +161,14 @@ class PosItem a where
     up_pos_err  :: String -> a
     up_pos_err fn = 
 	error ("function \"" ++ fn ++ "\" is not implemented")
-    up_pos _ _   = up_pos_err "up_pos"
-    up_pos_l _ _ = up_pos_err "up_pos_l"
-    get_pos   _ = error "function \"get_pos\" not implemented" 
-    get_pos_l _ = error "function \"get_pos_l\" not implemented"    
+    up_pos _    = id
+    up_pos_l _  = id
+    get_pos   _ = Nothing
+    get_pos_l _ = Nothing
     
 -------------------------------------------------------------------------
 
--- Two fine instances, DrIFTed but handcopied
+-- Two fine instances, DrIFTed but handcopied and extended
 instance PosItem Token where
     up_pos fn1 (Token aa ab) = (Token aa (fn1 ab))
     get_pos (Token _ ab) = Just ab
@@ -176,3 +176,4 @@ instance PosItem Token where
 instance PosItem Id where
     up_pos_l fn1 (Id aa ab ac) = (Id aa ab (fn1 ac))
     get_pos_l (Id _ _ ac) = Just ac
+    get_pos = Just . posOfId
