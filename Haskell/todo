@@ -1,67 +1,14 @@
 Hatchet einbinden
 
 In neuem Modul (Haskell2DG):
-- insImports mit Resultat IO DGraph, oder besser: IO (LIB_NAME,LibEnv)
-  importierte Module mit anaHaskellFile behandeln (rekursiv)
-  Für jedes importierte Modul erhält man (ln,lenv) => mit lookup (ln,lenv)
-   erhält man einen GlobalContext  = (GlobalAnnos,GlobalEnv,DGraph)
-  DGraphen der importierten Module vereinigen zu großem DGraph G
-  Knoten aus den GlobalEnvs sind die Hauptknoten der importierten
-  Module. Von da aus Links zu Knoten für Hauptmodul legen (als Erweiterung von G).
 
 - bevor ein importiertes Modul rekursiv mit anaHaskellFile bearbeitet wird,
   zunächst gucken, ob es schon im LibEnv verzeichnet ist, dann kann
   anaHaskellFile entfallen, stattdessen direkt Infos aus LibEnv rausholen
 
 - globale Einbindung: siehe Kommentare zu processFile in hets.hs
-LibEnv: pro Modul (inkl. Hauptmodul) ein GlobalContext
-
-GlobalContext:
-GlobalAnnos können erstmal leer sein, weil es in Haskell da nichts
-vergleichbares gibt. (Evtl. könnten später die Deklarationen von
-Infix-Operatoren und Prioritäten da rein kommen).
-Das GlobalEnv ordnet in CASL jeder Spezifikation einen Knoten
-im DGraph zu. Allerdings haben wir bei Haskell pro File nur eine
-"Spezifikation" (nämlich das Programm-Modul). Also muss das GlobalEnv
-hier einfach nur einen Eintrag haben, der dem Namen des Programm-Moduls
-den Knoten des Programm-Moduls im DGraph zuordnet. Das kannst du
-erzeugen mit
-
-Map.insert name (SpecEntry (imp,params,parsig,body)) Map.empty
-
-wobei name der Namen des Programm-Moduls ist, und
-imp = EmptyNode und parsig als empty_signature Haskell gewählt werden können,
-und params = []. body = NodeSig(n,sig), wobei n der Knoten im Entwicklungsgraph
-und sig die Signatur ist (beides jeweils die für das Programm-Modul).
-
-
-- top level Funktion wie die aus Static/AnalysisLibrary.hs
-anaHaskellFile :: HetcatsOpts -> String -- filename
-              -> IO (Maybe (LIB_NAME, -- filename
-                            HsModule, -- as tree
-                            DGraph, -- development graph
-                            LibEnv -- DGraphs für importierte Module
-                           ))
-- Datentyp anlegen für HaskellEnv (Resultat von tiModule)
-- anaHaskellFile benötigt Funktion, die ein HaskellEnv in einen
-  DGraph konvertiert (siehe Statc/DevGaph.hs)
-  Graph-Bibliothek (functional graph library, fgl): Common/Lib/Graph
-  Knoten: sind die Haskell-Module
-    dgn_name = Modulname
-    dgn_sign = Signatur (HsDecls)
-    dgn_sens = Programmdefs
-    dgn_origin = DGBasic (bei keinen Importen)
-               = DGExtension (bei Importen)
-  Kanten: entlang der Modul-Importe (d.h. vom importierten zum Importeur)
-   dgl_morphism = ()  (siehe Logic_Haskell.hs)
-   dgl_type = GlobalDef, wenn nichts versteckt wird
-            = HidingDef, wenn etwas versteckt wird
-   dgl_origin = DGExtension
-
-ATerm-Instanzen: Klaus fragen
 
 In Logic_Haskell.hs: 
-- empty_signature implementieren: "alles leer" (ohne Prelude)
 - importierte Module müssen nicht eingelesenw werden, 
     stattdessen übergebene sig benutzen
 - Funktion(Konstante) für Prelude-Signatur bereitstellen
