@@ -29,8 +29,7 @@ import Common.Lexer((<<))
 
 import qualified CASL.Sublogics
 import qualified CASL.Static
-
-import Data.Dynamic
+import CASL.SymbolAnalysis
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -93,8 +92,8 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
                Morphism 
                Symbol RawSymbol where
          basic_analysis CASL = Just CASL.Static.basicAnalysis
-         stat_symb_map_items CASL = CASL.Static.statSymbMapItems
-         stat_symb_items CASL = CASL.Static.statSymbItems
+         stat_symb_map_items CASL = statSymbMapItems
+         stat_symb_items CASL = statSymbItems
          -- ensures_amalgamability :: id
          --   -> (Diagram Sign Morphism, Node, Sign, LEdge Morphism, Morphism)
          --   -> Result (Diagram Sign Morphism)
@@ -102,12 +101,12 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
 
          sign_to_basic_spec CASL _sigma _sens = Basic_spec []
 
-         symbol_to_raw CASL = CASL.Static.symbolToRaw
-         id_to_raw CASL = CASL.Static.idToRaw
-         sym_of CASL = CASL.Static.symOf
-         symmap_of CASL = CASL.Static.symmapOf
-         matches CASL = CASL.Static.matches
-         sym_name CASL = CASL.Static.symName
+         symbol_to_raw CASL = symbolToRaw
+         id_to_raw CASL = idToRaw
+         sym_of CASL = symOf
+         symmap_of CASL = symmapOf
+         matches CASL = CASL.SymbolAnalysis.matches
+         sym_name CASL = symName
          
          -- add_sign :: id -> Sign -> Sign -> Sign
 	 add_sign CASL s1 s2 = s1 {getMap = union (getMap s1) (getMap s2)}
@@ -117,7 +116,7 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          -- final_union :: id -> Sign -> Sign -> Result Sign
 	 final_union CASL s1 s2 = return $ 
 	          s1 {getMap = union (getMap s1) (getMap s2)}
-         is_subsig CASL = CASL.Static.isSubSig
+         is_subsig CASL = isSubSig
          cogenerated_sign CASL _rsys sigma = return (ide CASL sigma)
          generated_sign CASL _rsys sigma = return (ide CASL sigma)
          -- generated_sign, cogenerated_sign :: id -> [RawSymbol]

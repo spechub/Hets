@@ -36,9 +36,7 @@ module CASL.Static {-( basicAnalysis, statSymbMapItems, statSymbItems,
 
 import Data.Maybe
 import Control.Monad(foldM) -- instead of foldResult
-import Common.Lib.Map hiding (map, filter)
-import Prelude hiding (lookup)
-import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -64,7 +62,7 @@ data LocalEnv = Env { getGA     :: GlobalAnnos,
 
 data SigLocalEnv = SigEnv { localEnv  :: LocalEnv,
                             selectors :: [Annoted OpItem],
-                            w         :: Map Symbol [Symbol],
+                            w         :: Map.Map Symbol [Symbol],
                             flag      :: Bool }
 
 data Annotations = Annotations { annosOptPos :: [Pos],
@@ -87,7 +85,7 @@ toAnnoted :: a ->Annotations -> Annoted a
 toAnnoted a (Annotations x y z) = Annoted a x y z
 
 toSigLocalEnv :: LocalEnv -> SigLocalEnv
-toSigLocalEnv env = SigEnv env [] empty False
+toSigLocalEnv env = SigEnv env [] Map.empty False
 
 emptyLocalEnv :: LocalEnv
 emptyLocalEnv =
@@ -120,8 +118,8 @@ emptyAnnos :: Annoted ()
 emptyAnnos = noAnnos ()
 
 annoFilter :: Annotation -> Maybe Annotation
-annoFilter x = case x of Label _ _ -> Just x;
-                                 _ -> Nothing
+annoFilter x = case x of Label _ _ -> Just x
+                         _ -> Nothing
 
 cloneAnnoFormula :: Annoted a -> b -> Annoted b
 cloneAnnoFormula a b = Annoted b [] (mapMaybe annoFilter $ l_annos a)
@@ -217,12 +215,11 @@ tokPos_OP_ITEM = tokPos_SORT_ITEM
 someLabel :: String -> Annoted a -> String
 someLabel def x =
   let
-    labels = filter (\y -> case y of (Label _ _) -> True;
-                                               _ -> False)
-                    ((l_annos x)++(r_annos x))
+    labels = filter isLabel
+                    (l_annos x ++ r_annos x)
   in
-    case labels of ((Label s _):_) -> concat s;
-                                 _ -> def
+    case labels of (Label s _ : _) -> concat s
+                   _ -> def
 
 toLabel :: Show a => a -> String
 toLabel x = toASCII $ show x
@@ -323,7 +320,7 @@ chainPos env f items positions addPos toStrFun =
 hasElem :: Sign -> (Id -> SigItem -> Bool) -> Id -> Bool
 hasElem sigma f idt =
   let
-    res = lookup idt (getMap sigma)
+    res = Map.lookup idt (getMap sigma)
   in
     if (isJust res) then
       or $ map (f idt) (fromJust res)
@@ -333,7 +330,7 @@ hasElem sigma f idt =
 getElem :: Sign -> (Id -> SigItem -> Bool) -> Id -> Maybe SigItem
 getElem sigma f idt =
   if (hasElem sigma f idt) then
-    Just (head $ filter (f idt) $ fromJust $ lookup idt $ getMap sigma)
+    Just (head $ filter (f idt) $ fromJust $ Map.lookup idt $ getMap sigma)
   else
     Nothing
 
@@ -395,13 +392,13 @@ getPred sigma idt = fromJust $ lookupPred sigma idt
 updateSigItem :: Sign -> Id -> SigItem -> Sign
 updateSigItem sigma idt itm =
   let
-    res = lookup idt $ getMap sigma
+    res = Map.lookup idt $ getMap sigma
     new = if (isNothing res) then
             [itm]
           else
              [ x | x<-(fromJust res), x /= itm ] ++ [itm]
   in
-    sigma { getMap = insert idt new (getMap sigma)}
+    sigma { getMap = Map.insert idt new (getMap sigma)}
 
 ------------------------------------------------------------------------------
 -- functions for SortItem generation and modification
@@ -950,7 +947,7 @@ ana_DATATYPE_DECL sigma' sigma decl@(Annoted (Datatype_decl s alternative_list
                              (map item alternatives)
      let defn  = let
                    gen_items = concat $ map (\(x,y) -> x:y)
-                                            (toList $ w delta)
+                                            (Map.toList $ w delta)
                  in
                    Datatype alternatives Loose gen_items pos
      return delta { localEnv = (localEnv delta)
@@ -1041,11 +1038,11 @@ ana_axiom_items sigma f pos =
 checkSortsExist :: Sign -> Pos -> Result ()
 checkSortsExist sigma pos =
   let
-    _sorts = filter (\x -> case x of ASortItem _ -> True;
-                                               _ -> False)
-                    (concat $ map snd $ toList $ getMap sigma)
+    sorts = filter ( \ x -> case x of ASortItem _ -> True
+                                      _ -> False)
+                    (concat $ map snd $ Map.toList $ getMap sigma)
   in 
-    if (null _sorts) then
+    if (null sorts) then
       fatal_error "sort-gen did not declare any sorts" pos
     else
       return ()
@@ -1096,66 +1093,14 @@ basicAnalysis (_spec,_sigma,_ga) = return(emptySign,emptySign,[])
      let delta  = signDiff sigma' sigma
      return (delta, sigma', flattenSentences $ getPsi env)
 -}
-------------------------------------------------------------------------------
---
---                             Static Analysis
---                         Signature computations
---
-------------------------------------------------------------------------------
-
 -- FIXME
 --
 signDiff :: Sign -> Sign -> Sign
-signDiff a b = emptySign {getMap = getMap a `difference` getMap b }
-
-checkItem :: Sign -> (Id,SigItem) -> Bool
-checkItem sigma (idt,si) =
-  let
-    res   = lookup idt $ getMap sigma
-    items = if (isJust res) then
-              fromJust res
-            else
-              []
-  in
-    si `elem` items
-
-unfoldSigItems :: (Id, [SigItem]) -> [(Id, SigItem)]
-unfoldSigItems (_,[])    = []
-unfoldSigItems (idt,h:t) = (idt,h):(unfoldSigItems (idt,t))
-
-isSubSig :: Sign -> Sign -> Bool
-isSubSig sub super =
-  and $ map (checkItem super) $ concat $ map unfoldSigItems
-      $ toList $ getMap sub
+signDiff a b = emptySign {getMap = getMap a `Map.difference` getMap b }
 
 ------------------------------------------------------------------------------
---
---                             Static Analysis
---                             Symbol functions
---
+-- some symbols
 ------------------------------------------------------------------------------
-
-symbTypeToKind :: SymbType -> Kind
-symbTypeToKind (OpAsItemType _) = FunKind
-symbTypeToKind (PredType _)     = PredKind
-symbTypeToKind (CASL.Sign.Sort)      = SortKind
-
-symbolToRaw :: Symbol -> RawSymbol
-symbolToRaw (Symbol idt typ) = AKindedId (symbTypeToKind typ) idt
-
-idToRaw :: Id -> RawSymbol
-idToRaw x = AnID x
-
-sigItemToSymbol :: SigItem -> Symbol
-sigItemToSymbol (ASortItem s) = Symbol (sortId $ item s) CASL.Sign.Sort
-sigItemToSymbol (AnOpItem  o) = Symbol (opId $ item o)
-                                       (OpAsItemType (opType $ item o))
-sigItemToSymbol (APredItem p) = Symbol (predId $ item p)
-                                       (PredType (predType $ item p))
-				       
-symOf :: Sign -> Set.Set Symbol
-symOf sigma = Set.fromList $ map sigItemToSymbol 
-	      $ concat $ elems $ getMap sigma
 
 idToSortSymbol :: Id -> Symbol
 idToSortSymbol idt = Symbol idt CASL.Sign.Sort
@@ -1166,77 +1111,3 @@ idToOpSymbol idt typ = Symbol idt (OpAsItemType typ)
 idToPredSymbol :: Id -> PredType -> Symbol
 idToPredSymbol idt typ = Symbol idt (PredType typ)
 
-funMapEntryToSymbol :: Sign -> (Id,[(OpType,Id,Bool)]) -> [(Symbol,Symbol)]
-funMapEntryToSymbol _ (_,[]) = []
-funMapEntryToSymbol sigma (idt,(typ,newId,_):t) =
-  let
-    origType = opType $ item $ getOp sigma idt
-  in
-    (idToOpSymbol idt origType,idToOpSymbol newId typ):
-    (funMapEntryToSymbol sigma (idt,t)) 
-
-predMapEntryToSymbol :: Sign -> (Id,[(PredType,Id)]) -> [(Symbol,Symbol)]
-predMapEntryToSymbol _ (_,[]) = []
-predMapEntryToSymbol sigma (idt,(typ,newId):t) =
-  let
-    origType = predType $ item $ getPred sigma idt
-  in
-    (idToPredSymbol idt origType,idToPredSymbol newId typ):
-    (predMapEntryToSymbol sigma (idt,t))
-
-symmapOf :: Morphism -> Map Symbol Symbol
-symmapOf (Morphism src _ sorts funs preds) =
-  let
-    sortMap = fromList $ zip (map idToSortSymbol $ keys sorts)
-                             (map idToSortSymbol $ elems sorts)
-    funMap  = fromList $ concat $ map (funMapEntryToSymbol src)
-                                      (toList funs)
-    predMap = fromList $ concat $ map (predMapEntryToSymbol src)
-                                      (toList preds)
-  in
-    foldl union empty [sortMap,funMap,predMap]
-
-matches :: Symbol -> RawSymbol -> Bool
-matches x                            (ASymbol y)              =  x==y
-matches (Symbol idt _)                (AnID di)               = idt==di
-matches (Symbol idt CASL.Sign.Sort)        (AKindedId SortKind di) = idt==di
-matches (Symbol idt (OpAsItemType _)) (AKindedId FunKind di)  = idt==di
-matches (Symbol idt (PredType _))     (AKindedId PredKind di) = idt==di
-matches _                            _                        = False
-
-symName :: Symbol -> Id
-symName (Symbol idt _) = idt
-
-statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result (Map RawSymbol RawSymbol)
-statSymbMapItems sl =  return (fromList $ concat $ map s1 sl)
-  where
-  s1 (Symb_map_items kind l _) = map (symbOrMapToRaw kind) l
- 
-  
-symbOrMapToRaw :: SYMB_KIND -> SYMB_OR_MAP -> (RawSymbol,RawSymbol)
-symbOrMapToRaw k (Symb s) = (symbToRaw k s,symbToRaw k s)
-symbOrMapToRaw k (Symb_map s t _) = (symbToRaw k s,symbToRaw k t)
-
-statSymbItems :: [SYMB_ITEMS] -> Result [RawSymbol]
-statSymbItems sl = 
-  return (concat (map s1 sl))
-  where s1 (Symb_items kind l _) = map (symbToRaw kind) l
-
-symbToRaw :: SYMB_KIND -> SYMB -> RawSymbol
-symbToRaw k (Symb_id idt)     = symbKindToRaw k idt
-symbToRaw k (Qual_id idt _ _) = symbKindToRaw k idt
-
-symbKindToRaw :: SYMB_KIND -> Id -> RawSymbol
-symbKindToRaw Implicit     idt = AnID idt
-symbKindToRaw (Sorts_kind) idt = AKindedId SortKind idt
-symbKindToRaw (Ops_kind)   idt = AKindedId FunKind  idt
-symbKindToRaw (Preds_kind) idt = AKindedId PredKind idt
-
-typeToRaw :: SYMB_KIND -> TYPE -> Id -> RawSymbol
-typeToRaw _ (O_type _) idt = AKindedId FunKind  idt
-typeToRaw _ (P_type _) idt = AKindedId PredKind idt
-typeToRaw k (A_type _) idt = symbKindToRaw k idt
-
-------------------------------------------------------------------------------
--- THE END
-------------------------------------------------------------------------------
