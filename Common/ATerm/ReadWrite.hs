@@ -12,9 +12,7 @@ module Common.ATerm.ReadWrite (
 
 	readATerm,
 	writeATerm,
-	writeSharedATerm,
-
-	module Common.ATerm.AbstractSyntax
+	writeSharedATerm
 
 ) where
 
@@ -42,7 +40,6 @@ import Common.ATerm.AbstractSyntax
 -- added by KL
 import Data.Char
 
-import Common.Lib.Map
 import Data.List
 --- From String to ATerm ------------------------------------------------------
 
