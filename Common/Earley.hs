@@ -67,8 +67,8 @@ setPlainIdePos (Id ts cs _) ps =
 	     (front, ps2) = setToksPos toks ps
 	     (newCs, ps3, ps4) = foldl ( \ (prevCs, seps, restPs) a -> 
 				  let (c1, qs) = setPlainIdePos a restPs
-				  in (c1: prevCs, head qs : seps, ttail qs))
-			   ([], [head ps2], ttail ps2) cs
+				  in (c1: prevCs, heada 20 qs : seps, ttail qs))
+			   ([], [heada 21 ps2], ttail ps2) cs
 	     (newPls, ps7) = setToksPos pls ps4
            in (Id (front ++ newPls) (reverse newCs) (reverse ps3), ps7)
 
@@ -172,7 +172,7 @@ listId :: (Id, Id) -> Id
 listId (f,c) = Id [listTok] [f,c] []
 
 isListId :: Id -> Bool
-isListId (Id ts cs _) = not (null ts) && head ts == listTok 
+isListId (Id ts cs _) = not (null ts) && heada 22 ts == listTok 
 			&& assert (length cs == 2) True
 
 -- | interpret placeholders as literal places
@@ -184,12 +184,12 @@ unProtect (Id _ [i] _) = i
 unProtect _ = error "unProtect"
 
 isProtected :: Id -> Bool
-isProtected (Id ts cs _) = not (null ts) && head ts == protectTok
+isProtected (Id ts cs _) = not (null ts) && heada 23 ts == protectTok
 			   && isSingle cs
 
 -- | test if an 'unknownId' was matched
 isUnknownId :: Id -> Bool
-isUnknownId (Id ts _ _) = not (null ts) && head ts == unknownTok
+isUnknownId (Id ts _ _) = not (null ts) && heada 24 ts == unknownTok
 
 -- | get unknown token from an 'unknownId'
 unToken :: Id -> Token
@@ -229,7 +229,7 @@ asListAppl toExpr i b ra br =
 	     || i == exprId 
 	     || i == parenId
 	     || i == varId
-	     then assert (isSingle ra) $ head ra
+	     then assert (isSingle ra) $ heada 25 ra
     else toExpr (if isProtected i then unProtect i else i) b ra br
 
 -- | construct the list rules
@@ -266,10 +266,10 @@ scanItem addType ks (trm, t) p =
           let tt = tail ts
 	      r = q { rest = tt }
 	      in
-	  if head ts == t then 
+	  if heada 26 ts == t then 
 	       if t == commaTok then
 		  assert (not $ null tt) $ 
-		  if head tt == termTok then
+		  if heada 27 tt == termTok then
 	       -- tuple or list elements separator 
 		  [ r, q { rest = termTok : ts } ]
 	          else [r] 
@@ -277,7 +277,7 @@ scanItem addType ks (trm, t) p =
 		   [r { args = trm : args p }]
               else if t == typeTok then 
 		   assert (null tt && isSingle as) $
-		   [q { rest = [], args = [addType trm $ head as] }]
+		   [q { rest = [], args = [addType trm $ heada 28 as] }]
 	      else [r]
 	  else if Set.isEmpty ks then []
 	       else if isUnknownId ide
@@ -350,7 +350,7 @@ mkExpr toExpr itm =
 	inf =  info itm
 	as = reverse $ args itm
 	in (asListAppl toExpr ide inf as qs, 
-	    if null ps then nullPos else head ps)
+	    if null ps then nullPos else heada 29 ps)
 
 reduce :: GlobalAnnos -> Table a b -> [Id] -> (b -> b -> Maybe Bool) 
        -> ToExpr a b -> Item a b -> [Item a b]
@@ -358,14 +358,14 @@ reduce ga table rs filt toExpr itm =
     map (addArg ga toExpr itm)
 	$ filter ( \ oi ->  let ts = rest oi in
 		   if null ts then False
-		   else if head ts == termTok
+		   else if heada 30 ts == termTok
 		   then checkPrecs filt ga rs itm oi
 		   else False )
 	$ lookUp table $ index itm
 
 -- | 'Id' starts with a 'place'
 begPlace :: Id -> Bool
-begPlace (Id toks _ _) = not (null toks) && isPlace (head toks)
+begPlace (Id toks _ _) = not (null toks) && isPlace (heada 31 toks)
 
 -- | 'Id' ends with a 'place'
 endPlace :: Id -> Bool
@@ -457,7 +457,7 @@ complete filt toExpr ga table rs items =
 predict :: [Item a b] -> [Item a b] -> [Item a b]
 predict rs items =
     if any ( \ p -> let ts = rest p in
-	    not (null ts) && head ts == termTok) items 
+	    not (null ts) && heada 32 ts == termTok) items 
     then rs ++ items
     else items
 
@@ -546,16 +546,16 @@ getResolved pp p toExpr st =
 					filter (not . null . posList) expected
 			      (pos, errs) = if null withpos then (p, expected) 
 					    else (last $ sort $ map 
-						  (head . posList) withpos
+						  (heada 33 . posList) withpos
 						  , withpos)
 			      q = if pos == nullPos then p else pos
 			      in Result (Diag Error 
 			       ("expected further mixfix token: " 
 				++ show (take 5 $ nub 
-					$ map (tokStr . head . rest) 
+					$ map (tokStr . heada 34 . rest) 
 					 errs)) q : ds) Nothing
 		       else if null $ tail result then
-			    let har = head result 
+			    let har = heada 35 result 
 				ams = ambigs har
 				ambAs = mkAmbigs toExpr har
 				res = Just $ fst $ mkExpr toExpr har
@@ -576,3 +576,5 @@ showAmbigs pp p as =
 		showSepList (showString "\n\t") pp
 		(take 5 as) "") $ firstPos as [p]
 
+heada n [] = error ("head of empty list #" ++ show n)
+heada _ l = head l

@@ -117,11 +117,11 @@ minExpFORMULA sign formula
             minExpFORMULA_eq sign Strong_equation term1 term2 pos
         Membership term sort pos        -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
-            t'  <- return
-                $ filter (                                      -- :: [[TERM]]
-                    (leq_SORT sign sort)                        -- :: Bool
-                    . term_sort                                 -- :: SORT
-                    . head) t                                   -- :: TERM
+            t'  <- let leq_term [] = False
+                       leq_term (t1:_) =
+                        leq_SORT sign sort $ term_sort t1 
+                    in return $ filter leq_term t                   -- :: TERM
+                
             t'' <- is_unambiguous t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
         -- Unparsed FORMULA    -> Error in Parser, Bail out!
