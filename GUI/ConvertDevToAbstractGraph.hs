@@ -87,6 +87,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
+  subtreeEvent <- newIORef (-1)
+  ioRefVisibleNodes <- newIORef [(Common.Lib.Graph.nodes dGraph)]
   let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
       actGraphInfo = graphInfo graphMem
 --  graphId <- newIORef 0
@@ -110,16 +112,34 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
                [("spec",
                  Ellipse $$$ Color "Magenta"
 		 $$$ ValueTitle (\ (s,_,_) -> return s) 
-                 $$$ LocalMenu 
-                    (Button "Show spec" 
+                 $$$ LocalMenu (Menu (Just "node menu")
+                   [(Button "Show spec" 
                       (\ (name,descr,gid) ->
                         do convMaps <- readIORef convRef
                            showSpec descr
 		                    (abstr2dgNode convMaps)
 		                    dGraph
 		           return ()
-                      ))
-                 $$$ emptyNodeTypeParms 
+                       )
+	            ),
+		    (Button "Show just subtree"
+		      (\ (name,descr,gid) ->
+		        do convMaps <- readIORef convRef
+                           visibleNodes <- readIORef ioRefVisibleNodes
+			   (eventDescr,newVisibleNodes,errorMsg) <- showJustSubtree ioRefGraphMem
+									 descr gid convMaps visibleNodes
+		           case errorMsg of
+		             Nothing -> do writeIORef subtreeEvent eventDescr
+					   writeIORef ioRefVisibleNodes newVisibleNodes
+		                          -- writeIORef convRef newConvMaps
+		                           redisplay gid actGraphInfo
+		                           return()
+		             Just text -> do putStrLn text
+	                                     redisplay gid actGraphInfo
+		                             return()                            
+		      )
+                    )])
+                  $$$ emptyNodeTypeParms 
                      :: DaVinciNodeTypeParms (String,Int,Int)),
                 ("internal",
                  Ellipse $$$ Color "Grey"
@@ -339,14 +359,50 @@ showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps =
 
     where libname2dgMap = libname2dg convMaps
 
+-- ###################################################################
+-- returntype festlegen
+showJustSubtree:: IORef GraphMem -> Descr -> Descr -> ConversionMaps -> [[Node]]-> IO (Descr, [[Node]], Maybe String)
+showJustSubtree ioRefGraphMem descr abstractGraph convMaps visibleNodes =
+  case Map.lookup descr (abstr2dgNode convMaps) of
+    Just (libname,parentNode) ->
+      case Map.lookup libname libname2dgMap of
+	Just (_,dgraph,_) -> 
+	  do let -- allDgNodes = Common.Lib.Graph.nodes dgraph
+                 allNodes = getNodeDescriptors (head visibleNodes) libname convMaps -- allDgNodes libname convMaps
+                 dgNodesOfSubtree = getNodesOfSubtree dgraph parentNode
+                 -- the selected node (parentNode) shall not be hidden either,
+                 -- and we already know its descriptor (descr)
+		 nodesOfSubtree = descr:(getNodeDescriptors dgNodesOfSubtree libname convMaps)
+	         nodesToHide = filter (notElemR nodesOfSubtree) allNodes
+	     graphMem <- readIORef ioRefGraphMem
+	     (Result eventDescr errorMsg) <- hidenodes abstractGraph nodesToHide (graphInfo graphMem)
+	     return (eventDescr, (nodesOfSubtree:visibleNodes), errorMsg)
+{-	     case errorMsg of 
+	       Just text -> return (-1,text)
+	       Nothing -> return (eventDescr,
+			  return convMaps-}
+        Nothing ->
+	    error ("Selected node belongs to unknown library: " ++ (show libname))
+    Nothing ->
+      error ("there is no node with the descriptor "
+	         ++ show descr)
+
+    where libname2dgMap = libname2dg convMaps
 
 
 
+getNodeDescriptors :: [Node] -> LIB_NAME -> ConversionMaps -> [Descr]
+getNodeDescriptors [] _ _ = []
+getNodeDescriptors (node:nodelist) libname convMaps =
+  case Map.lookup (libname,node) (dg2abstrNode convMaps) of
+    Just descr -> descr:(getNodeDescriptors nodelist libname convMaps)
+    Nothing -> error ("There is no descriptor for dgnode " ++ (show node))
 
 
+getNodesOfSubtree :: DGraph -> Node -> [Node]
+getNodesOfSubtree dgraph node = (concat (map (getNodesOfSubtree dgraph) predOfNode))++predOfNode
 
+    where predOfNode = pre dgraph node
 
-
-
-
-
+notElemR :: Eq a => [a] -> a -> Bool
+notElemR list element = notElem element list
