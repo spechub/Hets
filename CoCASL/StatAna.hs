@@ -149,9 +149,9 @@ getCoConsType s c =
 
 getCoCompType :: SORT -> COCOMPONENTS -> [(Maybe Id, OpType)]
 getCoCompType s (CoSelect l (Total_op_type args res _) _) = 
-    map (\ i -> (Just i, OpType Total (s:args) res)) l
+    map (\ i -> (Just i, OpType Total (args++[s]) res)) l
 getCoCompType s (CoSelect l (Partial_op_type args res _) _) = 
-    map (\ i -> (Just i, OpType Partial (s:args) res)) l
+    map (\ i -> (Just i, OpType Partial (args++[s]) res)) l
 
 coselForms :: (Maybe Id, OpType, [COCOMPONENTS]) -> [Named (FORMULA f)]
 coselForms x = 
