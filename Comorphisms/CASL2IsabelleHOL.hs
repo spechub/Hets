@@ -334,7 +334,7 @@ transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence
 mapSen trFrom sign phi = 
-  Sentence {senTerm = transFORMULA sign trFrom (stripQuant phi)}
+  Sentence {senTerm = transFORMULA sign trFrom phi}
 
 
 transFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e 
