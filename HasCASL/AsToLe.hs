@@ -116,9 +116,10 @@ anaClassDecls (ClassDefn ci syncl _) =
     do scls@(Intersection icls _) <- anaClassAppl syncl
        anaClassDecl [] scls ci
 
-anaClassDecls (DownsetDefn ci tv _ _) = 
-    do anaClassDecl [] universe ci
-       appendDiags [Diag Warning "definition currently ignored" (tokPos tv)]
+anaClassDecls (DownsetDefn ci tv t _) = 
+    do Result ds (Just newT) <- anaType t 
+       anaClassDecl [] (Downset newT) ci
+       appendDiags ds
 	       
 anaClassName :: Bool -> ClassName -> State Env (Result [ClassName])
 -- True: declare the class
@@ -159,61 +160,68 @@ anaClassAppl c =
        return ca
 
 anaClassDecl :: [ClassName] -> Class -> ClassName -> State Env ()
-anaClassDecl cs cdef@(Intersection is ps) ci = 
+anaClassDecl cs cdef ci = 
     if tokStr ci == "Type" then 
-       appendDiags [Diag Error "illegal universe class declaration" (tokPos ci)]
+       appendDiags [Diag Error 
+		    "illegal universe class declaration" (tokPos ci)]
     else 
     do ce <- getClassEnv
        case lookupFM ce ci of 
 	    Nothing -> putClassEnv $ defCEntry ce ci 
 				 cs cdef
-	    Just info -> 
-		let getSups = allSuperClasses ce
-		    checkCycle = (ci `elem`) . fst
-		    scs = zip (map getSups cs) cs
-		    (scycs, sOk) = partition checkCycle scs
-		    oldCs = superClasses info
-		    iss = zip (map getSups is) is
-		    (icycs, iOk) = partition checkCycle iss
-		    Intersection oldIs qs = classDefn info
-		    defCs = map snd sOk
-		    newCs = nub $ defCs ++ oldCs
-		    defIs = map snd iOk
-		    newIs = Intersection (nub $ defIs ++ oldIs) 
-			       (ps ++ qs)
-		    cycles = map snd $ scycs ++ icycs
-		in do appendDiags [Diag Warning ("repeated class '"
-					++ tokStr ci ++ "'") 
-			      $ tokPos ci]
-		      if not $ null cycles then
-			      appendDiags 
-			      [Diag Error 
-			       ("cyclic class relation via '"
-				      ++ showClassList cycles "'")
-			      $ tokPos (head cycles)]
-			   else return ()  
+	    Just info -> do 
+	      appendDiags [Diag Warning ("redeclared class '"
+					 ++ tokStr ci ++ "'") 
+			  $ tokPos ci]
+	      let oldCs = superClasses info
+		  oldDefn = classDefn info in
+		if null cs then 
+		   do newDefn <- mergeDefn ce ci oldDefn cdef
 		      putClassEnv $ addToFM ce ci 
-				  (info { superClasses = newCs, 
-					  classDefn = newIs })
-		      let ds = filter (`elem` oldCs) defCs in
-			    if null ds then return ()
-			       else appendDiags 
-					[Diag Warning 
-					 ("repeated superclass '"
-					  ++ showClassList ds "'")
-					$ tokPos (head ds)]
-		      if null oldIs then return ()
-			     else appendDiags
-					[Diag Warning 
-					 ("merged definition '"
-					  ++ showClassList defIs "'")
-					$ tokPos (head defIs)]
+				  info { classDefn = newDefn }
+		else 
+		   do newCs <- getLegalSuperClasses ce ci oldCs cs
+		      putClassEnv $ addToFM ce ci 
+				  info { superClasses = newCs }
+ 
+getLegalSuperClasses ce ci oldCs cs =
+    let scs = zip (map (allSuperClasses ce) cs) cs
+	(scycs, sOk) = partition ((ci `elem`) . fst) scs
+	defCs = map snd sOk
+	newCs = nub $ defCs ++ oldCs
+	cycles = map snd scycs
+        dubs = filter (`elem` oldCs) defCs
+    in do if null cycles then return ()
+	     else appendDiags 
+		      [Diag Error 
+		       ("cyclic class relation via '"
+			++ showClassList cycles "'")
+		      $ tokPos (head cycles)]
+	  if null dubs then return ()
+	     else appendDiags 
+		      [Diag Warning 
+		       ("repeated class '"
+			++ showClassList dubs "'")
+		      $ tokPos (head dubs)]
+	  return newCs
 
-anaClassDecl _ (Downset t) ci = 
-    do anaType t 
-       appendDiags [Diag Error
-		    ("ignored downset for '" ++ tokStr ci ++ "'")
-		    $ posOfType t]
+mergeDefn _ ci (Downset oldT) c@(Downset t) =
+    do if eqType oldT t then return () 
+	  else incompatibleClassRedeclaration ci
+       return c
+
+mergeDefn ce ci (Intersection oldIs qs) (Intersection is ps) =
+    do iss <- getLegalSuperClasses ce ci oldIs is
+       return $ Intersection iss $ ps ++ qs
+
+mergeDefn _ ci _ c =
+    do incompatibleClassRedeclaration ci
+       return c
+
+incompatibleClassRedeclaration ci =
+    appendDiags [Diag Warning 
+		 ("incompatible redeclaration of '" ++ tokStr ci ++ "'")
+		 $ tokPos ci]
 
 -- ----------------------------------------------------------------------------
 -- TypeItem

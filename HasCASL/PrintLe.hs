@@ -17,23 +17,29 @@ import Pretty
 import FiniteMap
 import Keywords
 import GlobalAnnotations
+import Set 
+
+instance PrettyPrint a => PrettyPrint (Set a) where
+    printText0 ga s = braces $ commas ga $ setToList s
 
 noPrint :: Bool -> Doc -> Doc
 noPrint b d = if b then empty else d
 
 instance PrettyPrint ClassInfo where
-    printText0 ga (ClassInfo _ sups defn@(Intersection defns _) insts) =
+    printText0 ga (ClassInfo _ sups defn insts) =
+	let noDefn = case defn of 
+		    Intersection defns _ -> null defns
+		    Downset _ -> False in
 	(noPrint (null sups)
 	   (ptext lessS <+> if null $ tail sups 
 	    then printText0 ga $ head sups
 	    else parens (commas ga sups))
-	<> noPrint (null sups || null defns) space
-	<> noPrint (null defns)
+	<> noPrint (null sups || noDefn) space
+	<> noPrint noDefn
 	   (ptext equalS <+> printText0 ga defn)
 	) $$ noPrint (null insts) 
              (ptext "Instances" $$ 
 	      vcat (map (printText0 ga) insts))
-    printText0 _ _ = error "PrintLe.printText0 for ClassInfo"
 
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
 printList0 ga l = noPrint (null l)
@@ -57,6 +63,7 @@ instance PrettyPrint Env where
     printText0 ga e = printText0 ga (classEnv e)
 	$$ ptext "Type Constructors"
 	$$ printText0 ga (typeKinds e)
+        $$ ptext "Type Variables" <+> printText0 ga (typeVars e)
 	$$ ptext "Assumptions"
         $$ printText0 ga (assumps e)  
 	$$ vcat (map (printText ga) (reverse $ envDiags e))

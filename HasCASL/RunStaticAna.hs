@@ -38,3 +38,5 @@ runAna s = snd $ (runState (ana s)) initialEnv
 
 printEnv :: Env -> IO ()
 printEnv e = putStrLn $ render $ printText0 emptyGlobalAnnos e 
+
+main = readFile "B1.casl" >>= printEnv . runAna

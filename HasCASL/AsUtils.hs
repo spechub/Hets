@@ -19,6 +19,12 @@ import MonadState
 import Set
 import Result
 
+-- ---------------------------------------------------------------------
+instance Show a => Show (Set a) where
+    showsPrec _ s = showString "{" 
+		. showSepList (showString ",") shows (setToList s)
+		. showString "}"
+
 anaList :: Monad m => (a -> m (Result b)) -> [a] -> m (Result [b])
 anaList f l = 
     do rs <- mapM f l
@@ -33,12 +39,6 @@ anaList f l =
 		   (if any (FatalError == ) (map diagKind ds) then ds
 		    else failErr : ds) 
 		  Nothing
-
--- ---------------------------------------------------------------------
-instance Show a => Show (Set a) where
-    showsPrec _ s = showString "{" 
-		. showSepList (showString ",") shows (setToList s)
-		. showString "}"
 
 -- ---------------------------------------------------------------------
 kindArity :: Kind -> Int
