@@ -399,9 +399,9 @@ codGrothendieck (GMorphism cid _sigma mor) =
    where lid = targetLogic cid
 
 gEmbed :: G_morphism -> GMorphism
-gEmbed _ = error "gEmbed"
---gEmbed (G_morphism lid mor) =
---  GMorphism lid lid (id_Comorphism lid) (dom lid mor) mor
+--gEmbed _ = error "gEmbed"
+gEmbed (G_morphism lid mor) =
+  GMorphism (IdComorphism lid) (dom lid mor) mor -- ???
 
 -- homogeneous Union of two Grothendieck signatures
 homogeneousGsigUnion :: Pos -> G_sign -> G_sign -> Result G_sign
@@ -445,9 +445,5 @@ homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
 -}
 
 inclusion :: G_sign -> G_sign -> GMorphism
-inclusion (G_sign _lid1 _sigma1) (G_sign _lid2 _sigma2) = error "inclusion"
-
-
-
-
-
+inclusion gsigma1 gsigma2 = 
+  ide Grothendieck gsigma1 -- ???
