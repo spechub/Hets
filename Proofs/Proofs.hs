@@ -548,10 +548,10 @@ hideTheoremShiftAux :: LibEnv -> DGraph -> ([DGRule],[DGChange])
 hideTheoremShiftAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 hideTheoremShiftAux
            libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) = 
-  if null (findProofBasisForHideTheoremShift consGlobThmsFromTgt globThmsFromSrc (morphism,hidingMorphism)) then
+  if null (findProofBasisForHideTheoremShift dgraph ledge) then --consGlobThmsFromTgt globThmsFromSrc (morphism,hidingMorphism)) then
     hideTheoremShiftAux libEnv dgraph (rules,changes) list
    else 
-    hideTheoremShiftAux libEnv newDgraph (newRules,newChanges) list
+    error "it worked" --hideTheoremShiftAux libEnv newDgraph (newRules,newChanges) list
 
 
   where
@@ -575,9 +575,71 @@ hideTheoremShiftAux
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
 
-findProofBasisForHideTheoremShift :: [LEdge DGLinkLab] -> [LEdge DGLinkLab] -> (GMorphism,GMorphism) -> [LEdge DGLinkLab]
-findProofBasisForHideTheoremShift [] _ _ = []
-findProofBasisForHideTheoremShift consEdges edges (morphism, hidingMorphism)
+findProofBasisForHideTheoremShift :: DGraph -> LEdge DGLinkLab
+				  -> [LEdge DGLinkLab]
+findProofBasisForHideTheoremShift dgraph (src,tgt,edgelab) =
+  if (null pathPairsFilteredByMorphism) then ([]::[LEdge DGLinkLab])
+   else (fst (head pathPairsFilteredByMorphism))
+	 ++(snd (head pathPairsFilteredByMorphism))
+
+   where
+    myShow :: [LEdge DGLinkLab] -> String
+    myShow = myShowAux False
+    myShowAux :: Bool -> [LEdge DGLinkLab] -> String
+    myShowAux _ [] = ""
+    myShowAux True paths = "BEGIN OF PATH #o#o#o# " ++ (myShowAux False paths)
+    myShowAux False ((src,tgt,edgelab):path) =
+      ">> EDGE:\nsrc = " ++ (show src) ++ "\ntgt = "++ (show tgt) ++ "\ntype = " ++ (show (dgl_type edgelab)) ++ "\norigin = "++ (show (dgl_origin edgelab)) ++ "\n\n- - - - - - - - - - - -\n" ++ (myShow path)
+    
+    pathsFromSrc = getAllPathsFrom dgraph src
+    pathsFromTgt = getAllPathsFrom dgraph tgt
+    possiblePathPairs = selectPathPairs pathsFromSrc pathsFromTgt
+    (HidingThm hidingMorphism _) = (dgl_type edgelab)
+    morphism = dgl_morphism edgelab
+    pathPairsFilteredByMorphism 
+	= filterPairsByResultingMorphisms possiblePathPairs
+	  hidingMorphism morphism
+
+selectPathPairs :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
+		-> [([LEdge DGLinkLab],[[LEdge DGLinkLab]])]
+selectPathPairs [] _ = []
+selectPathPairs _ [] = []
+selectPathPairs paths1 paths2 =
+  [(p1,  [p2| p2 <- paths2, haveSameTgt (last p1) (last p2) ] )| p1 <- paths1]
+  
+  where
+    haveSameTgt :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
+    haveSameTgt (_,tgt1,_) (_,tgt2,_) = tgt1 == tgt2
+
+filterPairsByResultingMorphisms :: [([LEdge DGLinkLab],[[LEdge DGLinkLab]])] 
+				-> GMorphism -> GMorphism
+				-> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
+filterPairsByResultingMorphisms [] _ _ = []
+filterPairsByResultingMorphisms (pair:pairs) morph1 morph2 =
+  [((fst pair),path)| path <- suitingPaths]
+	  ++ (filterPairsByResultingMorphisms pairs morph1 morph2)
+
+  where
+    compMorph1
+	= compMaybeMorphisms (calculateMorphismOfPath (fst pair)) (Just morph1)
+    suitingPaths = if (compMorph1 /= Nothing) then
+		      [path |path <- (snd pair),
+		       (compMaybeMorphisms (calculateMorphismOfPath path)
+		                           (Just morph2))
+   		       == compMorph1]
+		    else []
+
+compMaybeMorphisms :: Maybe GMorphism -> Maybe GMorphism -> Maybe GMorphism
+compMaybeMorphisms morph1 morph2 =
+  case (morph1, morph2) of
+    (Just m1, Just m2) -> resultToMaybe $ compHomInclusion m1 m2 
+    otherwise -> Nothing
+
+-- OLD selection of proofBasis
+
+old_findProofBasisForHideTheoremShift :: [LEdge DGLinkLab] -> [LEdge DGLinkLab] -> (GMorphism,GMorphism) -> [LEdge DGLinkLab]
+old_findProofBasisForHideTheoremShift [] _ _ = []
+old_findProofBasisForHideTheoremShift consEdges edges (morphism, hidingMorphism)
   | not (null provenTuples) = headTupleToList provenTuples
   | not (null tuplesFirstEdgeProven) = headTupleToList tuplesFirstEdgeProven
   | not (null tuplesSecondEdgeProven) = headTupleToList tuplesSecondEdgeProven
@@ -788,6 +850,22 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
 	[(edge, source)| edge@(source,_,_) <- edgesOfTypes, source /= src]
 
 
+getAllPathsFrom :: DGraph -> Node -> [[LEdge DGLinkLab]]
+getAllPathsFrom = getAllPathsFromAux []
+
+getAllPathsFromAux :: [LEdge DGLinkLab] -> DGraph -> Node
+		   -> [[LEdge DGLinkLab]]
+getAllPathsFromAux path dgraph src =
+  [path ++ [edge]| edge <- edgesFromSrc, notElem edge path]
+    ++(concat
+        [getAllPathsFromAux (path ++ [edge]) dgraph nextSrc| 
+	 (edge,nextSrc) <- nextStep])
+
+  where
+    edgesFromSrc = out dgraph src
+    nextStep = [(edge,tgt)| edge@(_,tgt,_) <- edgesFromSrc,
+		tgt /= src && notElem edge path] 
+
 -- removes all edges that are not of the given types
 filterByTypes :: [LEdge DGLinkLab -> Bool] -> [LEdge DGLinkLab]
 	      -> [LEdge DGLinkLab]
@@ -807,7 +885,9 @@ calculateMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
   case maybeMorphismOfFurtherPath of
     Nothing -> if null furtherPath then Just morphism else Nothing
     Just morphismOfFurtherPath ->
-           resultToMaybe $ compHomInclusion morphism morphismOfFurtherPath
+      case resultToMaybe $ compHomInclusion morphism morphismOfFurtherPath of
+        Just m -> Just m
+        Nothing -> error ("morph: "++(show morphism)++"\n\nmorphOfFurtherPath: "++(show morphismOfFurtherPath))
 
   where
     morphism = dgl_morphism edgeLab
