@@ -42,12 +42,12 @@ Currently, no further functions seem to be necessary:
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap
 		      , transMember, transClosure, fromList, toList
-                      , image, restrict, toSet, fromSet) where
+                      , image, restrict, toSet, fromSet, topSort) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
-newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
+data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
 
 -- | the empty relation
 empty :: Rel a
@@ -135,9 +135,40 @@ restrict r s =
  Conversion from/to sets (Added by T.M.)
 --------------------------------------------------------------------}
 toSet :: (Ord a) => Rel a -> Set.Set (a, a)
-toSet = Map.foldWithKey (\a ra -> Set.fold (\b -> (Set.insert (a,b) .) ) id ra) Set.empty 
-        . toMap
+toSet = Map.foldWithKey 
+	( \ a ra -> Set.fold ( \ b -> (Set.insert (a,b) .) ) id ra) 
+	Set.empty . toMap
 
 fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
 fromSet = Rel .
           Set.fold (\(a,b) -> Map.setInsert a b) Map.empty
+
+-- pre: transitively closed 
+topSort :: Ord a => Rel a -> [Set.Set a] 
+topSort r@(Rel m) = 
+    if isEmpty r then []
+    else let es = Set.unions $ Map.elems m
+	     ms = (Set.fromDistinctAscList $ Map.keys m) Set.\\ es
+    in if Set.isEmpty ms then 
+       let (a, cyc, restRel) = removeCycle r in
+	   map ( \ s -> if Set.member a s then 
+		 Set.union s cyc else s) $ topSort restRel
+	   else ms : topSort (Rel $ Set.fold Map.delete m ms)
+
+removeCycle :: Ord a => Rel a -> (a, Set.Set a, Rel a)
+removeCycle r@(Rel m) = 
+    let cycles = Map.filterWithKey Set.member m in
+	if Map.isEmpty cycles then error "removeCycle"
+	   else let (a, os) = Map.findMin cycles
+		    cs = Set.fold ( \ e s -> 
+		            if member e a r then 
+				    Set.insert e s else s) Set.empty os
+		    m1 = Map.map (Set.image ( \ e -> 
+					      if Set.member e cs then 
+					      a else e)) m 
+		    rs = Set.delete a $ Map.foldWithKey ( \ k v s -> 
+				 if Set.member k cs then 
+					Set.union v s else s) Set.empty m1
+	    in (a, cs, Rel $ Map.insert a rs $ Set.fold Map.delete m1 cs)
+
+	        
