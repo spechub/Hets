@@ -48,7 +48,6 @@ import CASL.Sign
 import Common.Result
 import CASL.Latin
 import Common.Utils
-import Logic.Logic ( EndoMap )
 
 ------------------------------------------------------------------------------
 --
@@ -1214,7 +1213,7 @@ predMapEntryToSymbol sigma (idt,(typ,newId):t) =
     (idToPredSymbol idt origType,idToPredSymbol newId typ):
     (predMapEntryToSymbol sigma (idt,t))
 
-symmapOf :: Morphism -> EndoMap Symbol
+symmapOf :: Morphism -> Map Symbol Symbol
 symmapOf (Morphism src _ sorts funs preds) =
   let
     sortMap = fromList $ zip (map idToSortSymbol $ keys sorts)
@@ -1237,7 +1236,7 @@ matches _                            _                        = False
 symName :: Symbol -> Id
 symName (Symbol idt _) = idt
 
-statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result (EndoMap RawSymbol)
+statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result (Map RawSymbol RawSymbol)
 statSymbMapItems sl =  return (fromList $ concat $ map s1 sl)
   where
   s1 (Symb_map_items kind l _) = map (symbOrMapToRaw kind) l
