@@ -31,7 +31,7 @@ import Common.AS_Annotation (Named)
 
 -- Haskell
 import Haskell.Logic_Haskell as LH
-import Haskell.HatParser as HatParser
+import Haskell.HatParser as HatParser hiding (HsType)
 import Haskell.HatAna as HatAna
 
 -- Isabelle
