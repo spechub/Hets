@@ -3,17 +3,23 @@
 import CASL.Sublogic
 
 instance ATermConvertible Morphism where
-    toShATerm att0 (Morphism msource mtarget)=
-	let (att1,i1) = toShATerm att0 msource
-            (att2,i2) = toShATerm att1 mtarget           
-            lat = [i1,i2]
-	in addATerm (ShAAppl "Morphism"  lat []) att2
+    toShATerm att0 (Morphism aa bb cc dd ee)=
+	let (att1,i1) = toShATerm att0 aa
+            (att2,i2) = toShATerm att1 bb
+            (att3,i3) = toShATerm att1 cc
+            (att4,i4) = toShATerm att1 dd
+            (att5,i5) = toShATerm att1 ee
+            lat = [i1,i2,i3,i4,i5]
+	in addATerm (ShAAppl "Morphism"  lat []) att5
     fromShATerm att =
 	case aterm of
-	    (ShAAppl "Morphism" [i1,i2 ] _) ->
-		let msource = fromShATerm $ getATermByIndex1 i1 att 
-		    mtarget = fromShATerm $ getATermByIndex1 i2 att 
-                in (Morphism msource mtarget)
+	    (ShAAppl "Morphism" [i1,i2,i3,i4,i5 ] _) ->
+		let aa = fromShATerm $ getATermByIndex1 i1 att 
+		    bb = fromShATerm $ getATermByIndex1 i2 att 
+		    cc = fromShATerm $ getATermByIndex1 i3 att 
+		    dd = fromShATerm $ getATermByIndex1 i4 att 
+		    ee = fromShATerm $ getATermByIndex1 i5 att 
+                in (Morphism aa bb cc dd ee)
 	where
 	    aterm = getATerm att
 
