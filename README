@@ -1,0 +1,46 @@
+This README belongs a to HetCATS release (and does not apply to
+sources directly obtained via cvs.
+
+The aim of this release is a binary "hets" that is able to analyse
+heterogeneous and in particular CASL specifications.
+
+The output of hets, if the input is successfully accepted, can be
+displayed by "daVinci".
+
+daVinci is maintained by b-novative and b-novative holds all rights.
+This release may be accompanied with free binary releases of daVinci
+Version 2.1, but daVinci 2.1 is no longer supported or maintained!
+However, you are encouraged to obtain the latest version of daVinci
+Presenter (currently 3.0.5) from http://www.b-novative.com that is
+free for academic purposes.
+
+Linux: the linux binary release of daVinci 2.1 relies on the old
+shlibs5 that must be installed on your system (if ./daVinci cannot be
+found/executed, then shlibs5 are missing)
+
+Solaris: the solaris binary release of daVinci 2.1 should work without
+problems
+
+Macintosh (Darwin): there is no release of daVinci for Macintosh, but
+b-novative may have one in the mean time
+
+For best quality, get the latest version of daVinci from b-novative.
+
+For hets to find daVinci, the environment variables DAVINCIHOME and
+UNIDAVINCI must be set to the installation directory of daVinci and to
+the actual executable, respectively. 
+
+export DAVINCIHOME=<path>/daVinci_V2.1
+export UNIDAVINCI=<path>/daVinci_V2.1/daVinci
+
+A typical call of hets is then: <path>/hets -g Basic/Numbers.casl
+
+If you need to rebuild the hets binary follow the instructions in INSTALL
+(This README belongs a to release created by "make release", in case
+that you obtained the HetCATS sources as CVS tree)
+
+The heterogeneous CASL tool set "HetCATS" is mainly maintained by Klaus
+Lüttich (luettich@tzi.de), Christian Maeder (maeder@tzi.de), and Till
+Mossakowski (till@tzi.de). The mailing list is hets@tzi.de.
+
+
