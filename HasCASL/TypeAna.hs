@@ -153,28 +153,112 @@ mkTypeIdPlace ty =  case ty of
     _ -> mkError "no place" ty
 
 -- ---------------------------------------------------------------------------
+-- compare types
+-- ---------------------------------------------------------------------------
+
+getKindAppl :: Kind -> [a] -> [(Kind, [Kind])]
+getKindAppl k args = if null args then [(k, [])] else
+    case k of 
+    FunKind k1 k2 _ -> let ks = getKindAppl k2 (tail args)
+                       in map ( \ (rk, kargs) -> (rk, k1 : kargs)) ks
+    Intersection l _ ->
+	concatMap (flip getKindAppl args) l
+    ExtKind ek _ _ -> getKindAppl ek args
+    ClassKind _ ck -> getKindAppl ck args
+    Downset _ _ dk _ -> getKindAppl dk args
+    _ -> error ("getKindAppl " ++ show k)
+
+getTypeAppl :: TypeMap -> Type -> (Type, [Type])
+getTypeAppl tm ty = let (t, args) = getTyAppl ty in
+   (t, reverse args) where
+    getTyAppl typ = case typ of
+	TypeAppl t1 t2 -> let (t, args) = getTyAppl t1 in (t, t2 : args)
+	ExpandedType _ t -> getTyAppl t
+	LazyType t _ -> getTyAppl t
+	KindedType t _ _ -> getTyAppl t
+	ProductType ts ps -> 
+	    let Result _ mk = getIdKind tm productId
+	    in case mk of
+	    Just k -> 
+                let rk = toIntersection (map fst $ getKindAppl k [typ,typ]) ps
+                in case ts of 
+		[t1,t2] -> (TypeName productId k 0, [t2, t1])
+		[] -> (TypeName productId rk 0, [])
+		[_] -> error "getTyAppl productType"
+		t:rt -> (TypeName productId k 0, [ProductType rt ps, t])
+	    _ -> error "getTyAppl productId"
+	FunType t1 a t2 _ -> 
+	    let i = arrowId a
+		Result _ mk = getIdKind tm i in
+	    case mk of
+	    Just k -> (TypeName i k 0, [t2, t1])
+	    _ -> error "getTyAppl arrowId"
+	_ -> (typ, [])
+
+mkTypeAppl :: Type -> [Type] -> Type
+mkTypeAppl t as = 
+    if null as then t else mkTypeAppl (TypeAppl t $ head as) $ tail as
+    
+lesserType :: TypeMap -> Type -> Type -> Bool    
+lesserType tm t1 t2 = case t1 of
+    ExpandedType _ t -> lesserType tm t t2
+    _ -> case t2 of 
+        ExpandedType _ t -> lesserType tm t1 t
+        _ -> let (top1, as1) = getTypeAppl tm t1
+                 (top2, as2) = getTypeAppl tm t2 in
+            case (top1, top2) of   
+            (TypeName i1 k1 _, TypeName i2 k2 _) ->
+                let rk = rawKind k1
+                    kindArgs k as = if null as then []
+                        else case k of 
+                              FunKind ka kr _ -> ka : kindArgs kr (tail as)
+                              _ -> []
+                    kas = kindArgs rk as1
+                    ts1 = filter (/= top1) $ superTypes $ Map.findWithDefault 
+                               starTypeInfo i1 tm                
+                    l1 = length as1
+                in if i1 == i2 then
+                       if rawKind k2 == rk && l1 == length as2
+                          && length kas == l1 then
+                                 and $ zipWith (\ k (ta1, ta2) -> 
+                                  let b1 = lesserType tm ta1 ta2
+                                      b2 = lesserType tm ta2 ta1
+                                  in case k of 
+                                  ExtKind _ CoVar _ -> b1
+                                  ExtKind _ ContraVar _ -> b2
+                                  _ -> b1 && b2) kas
+                                 $ zip as1 as2
+                       else error ("lesserType: expected length " ++
+                                   shows l1 " and kind " ++ 
+                                   showPretty rk "")
+                   else any (\ st -> lesserType tm (mkTypeAppl st as1) t2) ts1
+            _ -> error ("lesserType: " ++ showPretty top1 " < " 
+                        ++ showPretty top2 "")
+
+-- ---------------------------------------------------------------------------
 -- compare kinds
 -- ---------------------------------------------------------------------------
 
-lesserKind :: Kind -> Kind -> Bool
-lesserKind k1 k2 = 
+lesserKind :: TypeMap -> Kind -> Kind -> Bool
+lesserKind tm k1 k2 = 
     case (k1, k2) of 
     (MissingKind, _) -> error "lesserKind1"
     (_, MissingKind) -> error "lesserKind2"
-    (_, Intersection l2@(_:_) _) -> and $ map (lesserKind k1) l2
-    (Intersection l1@(_:_) _, _) -> or $ map (flip lesserKind k2) l1
+    (_, Intersection l2@(_:_) _) -> and $ map (lesserKind tm k1) l2
+    (Intersection l1@(_:_) _, _) -> or $ map (flip (lesserKind tm) k2) l1
     (ExtKind ek1 v1 _, ExtKind ek2 v2 _) -> 
-	(v1 == v2) && lesserKind ek1 ek2
-    (_, ExtKind ek2 _ _) -> lesserKind k1 ek2
+	(v1 == v2) && lesserKind tm ek1 ek2
+    (_, ExtKind ek2 _ _) -> lesserKind tm k1 ek2
     (ExtKind _ _ _, _) -> False
     (Intersection [] _, Intersection [] _) -> True
     (Intersection [] _, _) -> False
-    (Downset _ t1 k _,  Downset _ t2 _ _) -> t1 == t2 || lesserKind k k2
-    (Downset _ _ k _, _) -> lesserKind k k2
-    (ClassKind c1 k,  ClassKind c2 _) -> c1 == c2 || lesserKind k k2
-    (ClassKind _ k, _) -> lesserKind k k2
+    (Downset _ t1 k _,  Downset _ t2 _ _) -> lesserType tm t1 t2 
+                                             || lesserKind tm k k2
+    (Downset _ _ k _, _) -> lesserKind tm k k2
+    (ClassKind c1 k,  ClassKind c2 _) -> c1 == c2 || lesserKind tm k k2
+    (ClassKind _ k, _) -> lesserKind tm k k2
     (FunKind ek rk _, FunKind ek2 rk2 _) -> 
-	lesserKind rk rk2 && lesserKind ek2 ek
+	lesserKind tm rk rk2 && lesserKind tm ek2 ek
     (FunKind _ _ _, _) -> False
 
 
@@ -183,12 +267,12 @@ lesserKind k1 k2 =
 -- ---------------------------------------------------------------------------
 
 checkMaybeKinds :: (PosItem a, PrettyPrint a) => 
-              a -> Maybe Kind -> Kind -> Result Kind
-checkMaybeKinds a mk1 k2 =
+              TypeMap -> a -> Maybe Kind -> Kind -> Result Kind
+checkMaybeKinds tm a mk1 k2 =
     case mk1 of
            Nothing -> return k2
-	   Just k1 -> if lesserKind k1 k2 then return k1
-		      else if lesserKind k2 k1 then return k2
+	   Just k1 -> if lesserKind tm k1 k2 then return k1
+		      else if lesserKind tm k2 k1 then return k2
 		      else Result (diffKindDiag a k1 k2) Nothing
 
 checkFunKind :: Maybe Kind -> Type -> Type -> Kind -> TypeMap -> Result Kind
@@ -196,7 +280,7 @@ checkFunKind mk t1 t2 k1 tm =
     case k1 of 
 	FunKind fk ak _ -> do 
 	    inferKind (Just fk) t2 tm
-	    checkMaybeKinds (TypeAppl t1 t2) mk ak 
+	    checkMaybeKinds tm (TypeAppl t1 t2) mk ak 
 	Intersection l@(_:_) ps -> do
 	    ml <- mapM ( \ k -> checkFunKind mk t1 t2 k tm) l
 	    return $ toIntersection ml ps
@@ -209,7 +293,7 @@ inferKind :: Maybe Kind -> Type -> TypeMap -> Result Kind
 inferKind mk ty tm = case ty of 
     TypeName i _ _ -> do 
        m <- getIdKind tm i
-       checkMaybeKinds i mk m
+       checkMaybeKinds tm i mk m
     TypeAppl t1 t2 -> do 
        k1 <- inferKind Nothing t1 tm
        checkFunKind mk t1 t2 k1 tm
@@ -219,7 +303,7 @@ inferKind mk ty tm = case ty of
        fk <- getIdKind tm i
        let tn = TypeName i fk 0
        inferKind mk (TypeAppl (TypeAppl tn t1) t2) tm
-    ProductType ts _ -> if null ts then checkMaybeKinds ty mk star else
+    ProductType ts _ -> if null ts then checkMaybeKinds tm ty mk star else
          do pk <- getIdKind tm productId
 	    let tn = TypeName productId pk 0
 		mkAppl [t1] = t1
@@ -229,7 +313,7 @@ inferKind mk ty tm = case ty of
     LazyType t _ -> inferKind mk t tm
     KindedType t k _ -> do
        mk2 <- inferKind (Just k) t tm
-       checkMaybeKinds t mk mk2
+       checkMaybeKinds tm t mk mk2
     _ -> mkError "unresolved type" ty
 
 getIdKind :: TypeMap -> Id -> Result Kind

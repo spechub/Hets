@@ -93,7 +93,7 @@ typeCheck mt trm =
 	  else if null $ tail alts then do
 	       tm <- gets typeMap
 	       let (s, cs, _, t) = head alts
-		   (ds, rcs) = simplify tm noC cs 
+		   (ds, rcs) = simplify tm cs 
 		   es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
 	       addDiags(es ++ map ( \ c -> 
 		      mkDiag Error "unresolved constraint" c)
