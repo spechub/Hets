@@ -109,6 +109,7 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 CASL/Sublogic.hs \
                 CASL/Morphism.hs CASL/Sign.hs CASL/AS_Basic_CASL.der.hs \
                 HasCASL/As.hs HasCASL/Le.hs HasCASL/Morphism.hs \
+                HasCASL/Sublogic.hs \
                 Modal/AS_Modal.hs Modal/ModalSign.hs \
                 CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs \
                 CspCASL/AS_CSP_CASL.hs \
