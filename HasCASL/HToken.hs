@@ -1,11 +1,15 @@
 
-{- HetCATS/HasCASL/HToken.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
    
    parser for HasCASL IDs
-   adapted from HetCATS/CASL/Token.hs, v 1.9
+   extending "Common.Keywords" and "Common.Token" 
 -}
 
 module HasCASL.HToken where
@@ -13,8 +17,7 @@ module HasCASL.HToken where
 import Common.Id
 import Common.Keywords
 import Common.Lexer
-import Common.Token(casl_reserved_ops, casl_reserved_words
-	    , start, comps, mixId)
+import Common.Token
 import Common.Lib.Parsec
 
 
