@@ -11,10 +11,9 @@ import ParsecCombinator
 import ParsecChar
 -}
 
--- special = "\"%(),;[]_{}"
-
-newlineChars = "\n\r"
-
+-- ----------------------------------------------
+-- casl letters
+-- ----------------------------------------------
 caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++ 
               ['\192' .. '\207'] ++ -- \208 ETH 
               ['\209' .. '\214'] ++ -- \215 times
@@ -24,41 +23,31 @@ caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++
               ['\248' .. '\253'] ++ -- \245 thorn
               ['\255'] 
 
-blankChars = "\t\v\f \160" -- non breaking space
+caslLetter :: Parser Char
+caslLetter = oneOf caslLetters <?> "casl letter"
 
-signChars = "!#$&*+-./:<=>?@\\^|~\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
-
--- see http://www.htmlhelp.com/reference/charset/
---    \172 neg
---    \183 middle dot
---    \215 times 
-
-isWhitespace t = t `elem` (newlineChars ++ blankChars)
-isSign brackets t = t `elem` (brackets ++ signChars)
-
-getDot = oneOf ".\183"
-getUnderline = char '_'
-
-prime, caslLetter :: Parser Char
-prime = char '\''
-caslLetter = oneOf caslLetters
+prime = char '\'' -- also used for quoted chars
 
 scanLPD :: Parser Char
 scanLPD = caslLetter <|> digit <|> prime
 
-scanWord :: Parser String
-scanWord = many1 scanLPD
-getNumber = many1 digit
+-- ----------------------------------------------
+-- parsec/Monad extension
+infixr 1 <:>
 
-scanLetterWord = do { t <- caslLetter; 
-		      ts <- many scanLPD;
-                      return (t:ts)
-		    }
+-- (<:>) :: GenParser tok st a -> GenParser tok st [a] -> GenParser tok st [a]
+(<:>) :: (Monad m) => m a -> m [a] -> m [a]
+(<:>) p1 p2 = do { e <- p1; l <- p2; return (e:l) } 
 
-scanUnderlineWord = try(do { u <- getUnderline;
-			     t <- scanWord <?> "word";
-			     return (u:t)
-			   })
+-- ----------------------------------------------
+-- casl words
+-- ----------------------------------------------
+
+scanLetterWord = try caslLetter <:> many scanLPD
+
+scanUnderlineWord = try(char '_') <:> many1 scanLPD
+
+-- excluded or "casl-builtin" ids in terms and formulae
 casl_reserved_words = 
     "and arch as assoc axiom axioms closed comm end " ++
     "exists fit forall free from generated get given " ++
@@ -66,74 +55,90 @@ casl_reserved_words =
     "result reveal sort sorts spec then to type types " ++
     "unit units var vars version view with within"
 
-
 scanWords :: Parser String
-scanWords = do { t <- scanLetterWord;
-                 ts <- (many scanUnderlineWord);
-		 let r = concat (t : ts) in
+scanWords = do { ws <- scanLetterWord <:> many scanUnderlineWord;
+		 let r = concat ws in
 		 if r `elem` (words casl_reserved_words)
 		 then unexpected "casl keyword"
                  else return r
 	       } <?> "words"
 
+scanDotWords = try (char '.') <:> scanWords <?> "dot-words"
 
-scanDotWords = do { d <- char '.';
-                    ws <- scanWords;
-		    return (d:ws)
-	       } <?> "dot-words"
+-- ----------------------------------------------
+-- no-bracket-signs
+-- ----------------------------------------------
+signChars = "!#$&*+-./:<=>?@\\^|~\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
 
+-- see http://www.htmlhelp.com/reference/charset/
+--    \172 neg
+--    \183 middle dot
+--    \215 times 
 
 casl_reserved_ops = ": :? ::= . · | |-> -> ->? "
 
-scanSigns = do { r <- many1 (oneOf signChars);
+scanSigns = try (string "=e=") <|>
+	    do { r <- many1 (oneOf signChars);
 		 if r `elem` (words casl_reserved_ops)
 		 then unexpected "casl symbol"
 		 else return r
 	       } <?> "signs"
 
-scanDigit = do { d <- digit;
-		 return [d]
-	       } 
+-- ----------------------------------------------
+-- parsec/Functor extension
+single :: (Functor f) => f a -> f [a]
+single p = fmap (:[]) p 
 
-scanSndPrime p = prime <?> "matching prime for prime at " ++ show p
-
-scanQuotedChar = do { s <- between prime prime (caslChar <|> string "\"");
-		      return ("'" ++ s ++ "'") 
-                    } <?> "quoted char"
-
-caslChar = escapeChar <|> printable
-escapeChar = do { char '\\';
-		  s <- simpleEscape <|> decEscape <|> hexEscape <|> octEscape;
-		  return ('\\':s)
-		}
-
-simpleEscape = fmap (\x->[x]) (oneOf "'\"\\ntrvbfa?")
-
+-- see ParsecToken.number
 value base s = foldl (\x d -> base*x + toInteger (digitToInt d)) 0 s
+
+-- ----------------------------------------------
+-- casl escape chars for quoted chars and literal strings
+-- ----------------------------------------------
+
+simpleEscape = single (oneOf "'\"\\ntrvbfa?")
 
 decEscape = do { s <- count 3 digit;
 		 if value 10 s <= 255 then return s
 	         else unexpected "decimal escape code (> 255)"
 	       }
-hexEscape = do { char 'x';
-		 s <- count 2 hexDigit; -- cannot be too big
-		 return ('x':s)
-	       }
+hexEscape = char 'x' <:> count 2 hexDigit -- cannot be too big
 
-octEscape = do { char 'o';
+octEscape = do { c <- char 'o';
 		 s <- count 3 octDigit;
-		 if value 8 s <= 255 then return ('o':s)
+		 if value 8 s <= 255 then return (c:s)
 	         else unexpected "octal escape code (> o377)"
 	       }
 
-printable = fmap (\x->[x]) (satisfy (\c -> (c /= '\'')  && (c /= '"') 
+escapeChar = char '\\' <:> 
+	     (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)
+
+-- ----------------------------------------------
+-- chars for quoted chars and literal strings
+-- ----------------------------------------------
+
+printable = single (satisfy (\c -> (c /= '\'')  && (c /= '"') 
 			      && (c /= '\\') && (c > '\026')))
+
+caslChar = escapeChar <|> printable
+
+
+scanQuotedChar = do { s <- between prime prime (caslChar <|> string "\"");
+		      return ("'" ++ s ++ "'") 
+                    } <?> "quoted char"
+
 
 dblquote = char '"'
 
 scanString = do { s <- between dblquote dblquote (caslChar <|> string "'");
 		  return ("\"" ++ s ++ "\"")
 		} <?> "literal string"
+
+-- ----------------------------------------------
+-- digit, number, fraction, float
+-- ----------------------------------------------
+
+getNumber = many1 digit
 
 scanFloat = do { n1 <- getNumber <?> "number, fraction or float";
 		 n3 <- option n1 
@@ -154,60 +159,14 @@ scanFloat = do { n1 <- getNumber <?> "number, fraction or float";
 		 else return n5
 	       }
 
-scanEEqual = string "=e="
+scanDigit = single digit
 
-skip p = do {t <- p ; skipMany(satisfy isWhitespace); return t}
 
-scToken = scanWords <|> scanDigit <|> scanQuotedChar <|>
-	       try scanDotWords <|> try scanEEqual <|> scanSigns
+-- ----------------------------------------------
+-- comments and label
+-- ----------------------------------------------
 
-setTokPos :: SourcePos -> String -> Token
-setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
-
-makeToken parser = skip(do { p <- getPosition;
-		             s <- parser;
-			     return (setTokPos p s)
-			   })
-
-noBracketToken = makeToken scToken
-
-scanPlace = makeToken((string "__") <?> "place")
-
-scanMixLeaf = makeToken(try scanFloat <|> scanString <|> scToken)
-
--- tokens and Ids with brackets
-
-bracketToken = makeToken (scToken <|> fmap (\x->[x]) (oneOf "{}[]"))
-
-placeTokenId = do { p <- fmap TokId scanPlace;
-                    option [p] 
-		    (do { t <- compId;
-			  return [p,t]
-			});
-		  }
-
-placeTokenIds = fmap concat (many1 placeTokenId)
-
-comps  = between (skip (char '[')) (skip (char ']')) 
-	 (sepBy1 mixId (skip (char ',')))
-
-compId = do { b <- fmap TokId bracketToken;
-	      option b (do {cs <- comps; return (CompId b cs)})
-	    }
-		  
-mixId = (do { l <- option [] (fmap (\x->[x]) compId);
-	      ls <- option [] placeTokenIds;
-	      let cs = l ++ ls in
-              if length cs == 0 then unexpected "missing id"
-	      else if length cs == 1 then return (head cs)
-	      else return (MixId cs)
-	    })
-	     
-scanSortToken = string "sort" >> option (' ') (char 's')
-		
-isSigStartKeyword s = s `elem` (words "sort sorts op ops pred preds type types var vars axiom axioms forall free generated .") 
-
--- comments and annotations
+newlineChars = "\n\r"
 
 textLine = many (noneOf newlineChars)
 eol = (eof >> return '\n') <|> oneOf newlineChars
@@ -224,10 +183,26 @@ middleText c = many ((satisfy (/=c)) <|> notEndText c)
 comment o c = between (try (string ("%" ++ [o]))) (string (c : "%")) 
 	     (middleText c)
 
-commentOut = comment '[' ']'
+commentOut = comment '[' ']' 
 commentGroup = comment '{' '}'
 label = comment '(' ')'
 
+-- ----------------------------------------------
+-- skip whitespaces and comment out
+-- ----------------------------------------------
+
+blankChars = "\t\v\f \160" -- non breaking space
+
+skip p = do {t <- p ; 
+	     skipMany(single (oneOf (newlineChars ++ blankChars)) 
+		      <|> commentOut);
+	     return t}
+
+-- ----------------------------------------------
+-- annotations starting with %word
+-- ----------------------------------------------
+
+-- starting with %word
 annote = 
     do { w <- try ((char '%') >> scanWords);
          (do { try(char '(');
@@ -241,6 +216,82 @@ annote =
 		 })
        }
 
+ann = annote <|> label <|> commentGroup <|> commentLine
+
+-- ----------------------------------------------
+-- no-bracket-token, literal or place (for terms)
+-- ----------------------------------------------
+
+setTokPos :: SourcePos -> String -> Token
+setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
+
+makeToken parser = skip(do { p <- getPosition;
+		             s <- parser;
+			     return (setTokPos p s)
+			   })
+
+scanPlace = (string "__") <?> "place"
+
+scToken = scanWords <|> scanDigit <|> scanQuotedChar <|>
+	       scanDotWords
+
+scanMixLeaf = makeToken(try scanFloat <|> scanString 
+			<|> scToken <|> scanSigns <|> scanPlace)
+
+-- ----------------------------------------------
+-- bracket-token (for ids)
+-- ----------------------------------------------
+
+placeToken = fmap TokId (makeToken scanPlace)
+
+brackets = "{}[]"
+
+-- bracket signs must not be separated by spaces
+bracketSigns = fmap concat (many1 (scanSigns 
+				   <|> single (oneOf brackets) 
+				   <?> "bracket signs"))
+
+bracketToken = fmap TokId (makeToken (scToken <|> bracketSigns))
+
+-- several tokens between places are currently not allowed
+placeTokenId = do { p <- placeToken;
+                    option [p] 
+		    (do { t <- compId;
+			  return [p,t]
+			});
+		  }
+
+placeTokenIds = fmap concat (many1 placeTokenId)
+
+comps  = between (skip (char '[')) (skip (char ']')) 
+	 (sepBy1 mixId (skip (char ',')))
+
+compId = do { b <- bracketToken;
+	      option b (do {cs <- comps; return (CompId b cs)})
+	    }
+		  
+-- balanced brackets
+balanced = many (noneOf brackets
+		 <|>
+		 between (char '[')(char ']') balanced
+                 <|>			    
+		 between (char '{')(char '}') balanced) >> return ' ' 
+
+isBalanced t = case parse (balanced >> eof) "" t of {Right _ -> True; _ -> False}
+
+mixId = (do { l <- option [] (single compId);
+	      ls <- option [] placeTokenIds;
+	      let cs = l ++ ls in
+	      if isBalanced (show (MixId cs)) then
+	      (if length cs == 0 then unexpected "missing id"
+	       else if length cs == 1 then return (head cs)
+	       else return (MixId cs))
+	      else unexpected "unbalanced brackets id" 
+	    })
+
+-- a compound list after the last place is still missing
+
+		
 
 
 
