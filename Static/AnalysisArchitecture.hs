@@ -476,7 +476,7 @@ assertAmalgamability :: Pos                  -- ^ the position (for diagnostics)
 		     -> [LEdge DiagLinkLab]  -- ^ the sink
 		     -> Result ()
 assertAmalgamability pos diag sink =
-    do ensAmalg <- homogeneousEnsuresAmalgamability diag sink
+    do ensAmalg <- homogeneousEnsuresAmalgamability pos diag sink
        case ensAmalg of
             Yes -> return ()
 	    No msg -> plain_error () ("Amalgamability is not ensured: " ++ msg) pos
@@ -484,18 +484,19 @@ assertAmalgamability pos diag sink =
 
 
 -- | Check the amalgamability assuming common logic for whole diagram
-homogeneousEnsuresAmalgamability :: Diag                -- ^ the diagram to be checked
+homogeneousEnsuresAmalgamability :: Pos                 -- ^ the position (for diagnostics)
+				 -> Diag                -- ^ the diagram to be checked
 				 -> [LEdge DiagLinkLab] -- ^ the sink
 				 -> Result Amalgamates
-homogeneousEnsuresAmalgamability diag sink =
-    do let (_,_,edgeLab) = case sink of
-                 [] -> error "homogeneousEnsuresAmalgamability: Empty sink"
-                 lab:_ -> lab
-           sig = cod Grothendieck (dl_morphism edgeLab)
-       G_sign lid _ <- return sig
-       hDiag <- homogeniseDiagram lid diag
-       hSink <- homogeniseEdges lid sink
-       ensures_amalgamability lid (hDiag, hSink, (diagDesc diag))
+homogeneousEnsuresAmalgamability pos diag sink =
+    do case sink of  
+		 [] -> plain_error DontKnow "homogeneousEnsuresAmalgamability: Empty sink" pos
+                 lab:_ -> do let (_,_,edgeLab) = lab
+			         sig = cod Grothendieck (dl_morphism edgeLab)
+			     G_sign lid _ <- return sig
+			     hDiag <- homogeniseDiagram lid diag
+			     hSink <- homogeniseEdges lid sink
+			     ensures_amalgamability lid (hDiag, hSink, (diagDesc diag))
 
 
 -- | Get a position within the source file of a UNIT-TERM
