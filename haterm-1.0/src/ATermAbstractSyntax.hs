@@ -61,9 +61,12 @@ getATermFull at =
     where conv t = getATermFull (getATermByIndexSp1 t at)
 
 getATermSp :: ATermTable -> ATerm -> Maybe ATerm
-getATermSp at (AAppl s [])   = let aterm@(AAppl s' _) = getATerm at
-			       in if s == s' then Just aterm
-				  else Nothing
+getATermSp at (AAppl s [])   = case getATerm at of 
+			       aterm@(AAppl s' _) ->
+			              if s == s' then Just aterm
+				      else Nothing
+			       _ -> error $ "*** getATermSp: " ++
+				            (show $ getATermFull at)
 getATermSp at (AAppl s [t']) = let (AAppl s' ts) = getATerm at
 				   mat = case ts of
 					 [t]  -> Just (getATermByIndexSp1 t at)
