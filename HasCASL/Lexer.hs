@@ -16,7 +16,7 @@ signChars = "!#$&*+-./:<=>?@\\^|~" ++ "¡¢£§©¬°±²³µ¶·¹¿×÷"
 -- "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
 -- \172 neg \183 middle dot \215 times 
 
-scanAnySigns = many1 (oneOf signChars) <?> "signs"
+scanAnySigns = many1 (oneOf signChars <?> "sign") <?> "signs"
 
 scanPlace = try (string place) <?> "place"
 
@@ -35,7 +35,7 @@ caslLetter = oneOf caslLetters <?> "casl letter"
 prime = char '\'' -- also used for quoted chars
 
 scanLPD :: Parser Char
-scanLPD = caslLetter <|> digit <|> prime
+scanLPD = caslLetter <|> digit <|> prime <?> "casl char"
 
 -- ----------------------------------------------
 -- Monad/Functor extensions
@@ -70,12 +70,21 @@ flat = fmap concat
 
 notFollowedWith :: (Show b) => GenParser tok st a 
 		-> GenParser tok st b -> GenParser tok st a
-p `notFollowedWith` q = do { x <- p 
-			   ; try ((q >>= unexpected . show) <|> return x)
+p `notFollowedWith` q = do { x <- p
+                           ; try (do { c <- q
+				     ; consumeNothing
+				     ; unexpected (show c) 
+				     }
+				  <|> return x)
+{-
+                           ; y <- lookAhead (option Nothing (fmap Just (try q)))
+			   ; case y of Nothing -> return x
+			               Just z -> unexpected (show z)
+-}
 			   }
 
 followedWith :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
-p `followedWith` q = p `followedBy` lookAhead q
+p `followedWith` q = try (p `followedBy` lookAhead q)
 
 begDoEnd :: (Monad f, Functor f) => f a -> f [a] -> f a -> f [a]
 begDoEnd open p close = (open <:> p) <++> single close  
@@ -94,14 +103,14 @@ p `checkWith` f = do { x <- p
 
 scanLetterWord = caslLetter <:> many scanLPD <?> "letter word"
 
-singleUnderline = try (char '_' `followedWith` scanLPD)
+singleUnderline = char '_' `followedWith` scanLPD
 
 scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "underline word"
 
 scanAnyWords :: Parser String
 scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord) <?> "words"
 
-scanDot = try (char '.' `followedWith` caslLetter)
+scanDot = char '.' `followedWith` caslLetter
 
 scanDotWords = scanDot <:> scanAnyWords <?> "dot-words"
 
@@ -115,12 +124,12 @@ value base s = foldl (\x d -> base*x + (digitToInt d)) 0 s
 
 simpleEscape = single (oneOf "'\"\\ntrvbfa?")
 
-decEscape = (count 3 digit) `checkWith` (\s -> value 10 s <= 255)
+decEscape = count 3 digit `checkWith` (\s -> value 10 s <= 255)
 
 hexEscape = char 'x' <:> count 2 hexDigit -- cannot be too big
 
 octEscape = char 'o' <:> 
-	    ((count 3 octDigit) `checkWith`(\s -> value 8 s <= 255))
+	    (count 3 octDigit `checkWith` (\s -> value 8 s <= 255))
 
 escapeChar = char '\\' <:> 
 	     (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)

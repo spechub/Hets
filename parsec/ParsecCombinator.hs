@@ -141,5 +141,6 @@ lookAhead :: GenParser tok st a -> GenParser tok st a
 lookAhead p         = do{ state <- getParserState
                         ; x <- p
                         ; setParserState state
+                        ; consumeNothing
                         ; return x
                         }

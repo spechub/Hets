@@ -31,6 +31,7 @@ module ParsecPrim( -- operators: label a parser, alternative
                    , getPosition, setPosition
                    , getInput, setInput                   
                    , getParserState, setParserState 
+				   , consumeNothing
                  ) where
 
 import ParsecPos
@@ -194,6 +195,10 @@ instance Monad (GenParser tok st) where
 parsecReturn :: a -> GenParser tok st a
 parsecReturn x
   = Parser (\state -> Empty (Ok x state (unknownError state)))   
+
+consumeNothing :: GenParser tok st ()
+consumeNothing
+  = Parser (\state -> Consumed (Ok () state (unknownError state)))   
 
 parsecBind :: GenParser tok st a -> (a -> GenParser tok st b) -> GenParser tok st b
 parsecBind (Parser p) f

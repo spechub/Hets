@@ -62,35 +62,30 @@ uu = makeToken (scanPlace)
 -- simple id
 sid = makeToken (otherToken <|> scanSigns <|> scanWords <?> "simple-id")
 
+singleId = single (sid `notFollowedWith` sid) 
+
 curly =  begDoEnd ocb iList ccb
 noComp = begDoEnd obr iList cbr 
 
-singleId = single (sid `notFollowedWith` sid) 
+iList =  flat (many (many1 uu
+	             <|> singleId 
+                     <|> curly
+	             <|> noComp)) <?> "mix-id-tokens" 
 
-iList =  fmap concat (many (many1 uu
-	          <|> singleId 
-                  <|> curly
-	          <|> noComp)) 
+afterPlace =  (curly <|> noComp <|> singleId <?> "token") <++>
+		 flat (many (curly <|> singleId <?> "mix-id-token"))
 
-afterPlace =  (curly <|> noComp <|> singleId) <++>
-		 flat (many (curly <|> singleId))
+middle = many1 uu <++> option [] afterPlace  
 
-middle = many1 uu <++> option [] afterPlace  <?> "mix-id"
+tokStart = afterPlace <++> flat (many middle)
 
-start = many uu <++>
-	option [] (afterPlace <++> flat (many middle))
-
-checkStart = do { l <- start
-		; if length l > 1 || (length l == 1 && not(isPlace(head l)))
-		  then return l
-		  else unexpected ("empty identifier " ++ show (Id l []))
-		}
-	     <?> "id"
+start = tokStart <|> (uu <:> (tokStart <|> (many1 uu <++> option [] tokStart)))
+        <?> "mix-id"
 
 comps = between obr cbr
 	(sepBy1 parseId (skip (char ','))) <?> "[<id>,...,<id>]"
 
-parseId = do { l <- checkStart
+parseId = do { l <- start
              ; if isPlace (last l) then return (Id l [])
 	       else (do { c <- option [] comps
 			; u <- many uu
