@@ -12,6 +12,8 @@
 
 module Print_AS_Annotation where
 
+import Char (isSpace)
+
 import AS_Annotation
 
 import GlobalAnnotations
@@ -29,10 +31,8 @@ instance PrettyPrint Annotation where
     printText0 _ (Comment_group aa _) =
 	let aa' = vcat $ map ptext aa
 	in ptext "%{" <> aa' <> ptext "}%"
-    printText0 ga (Annote_line aa ab _) =
-	let aa' = printText0 ga aa
-	    ab' = printText0 ga ab
-	in ptext "%" <> aa' <+> ab' -- <> ptext "\n"
+    printText0 _ (Annote_line aa ab _) =
+	printLine (ptext aa) $ if all isSpace ab then empty else ptext ab
     printText0 ga (Annote_group aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = vcat $ map ptext ab
@@ -88,17 +88,31 @@ instance PrettyPrint Annotation where
 	hc_sty_comment (   hc_sty_small_keyword "\\%\\%" 
 			<> casl_comment_latex (escape_latex aa)) 
 	   -- <> ptext "\n"
-    printLatex0 _ (Comment_group aa _) =
-	let aa' = 
+    printLatex0 _ (Comment_group ls _) =
+	case ls of
+	[]     -> hc_sty_comment (hc_sty_small_keyword "\\%\\{" <\\+> 
+				  hc_sty_small_keyword "\\}\\%")
+	[x]    -> hc_sty_comment (hc_sty_small_keyword "\\%\\{" <>
+				  conv x <>
+				  hc_sty_small_keyword "\\}\\%")
+	(x:xs) -> vcat (hc_sty_comment (hc_sty_small_keyword "\\%\\{" <>
+					conv x)
+			  :map (hc_sty_comment . conv') xs) 
+		  <> hc_sty_comment (hc_sty_small_keyword "\\}\\%")
+	where conv  = casl_comment_latex . escape_latex
+	      conv' s = casl_comment_latex "~~~~" <> conv s
+	{- let aa' = 
 	      map (casl_comment_latex . escape_latex) aa
 	    (first_l,rem_ls) = case aa' of
 			       [] -> (empty,[])
 			       _  -> (head aa',tail aa')
-	in hc_sty_comment $ 
+	in hc_sty_comment $ -- TODO: Correct this!!
 	   cat [hc_sty_small_keyword "\\%\\{"<> first_l,
-		nest 6 (vcat rem_ls)] <> hc_sty_small_keyword "\\}\\%"
+		nest 6 (vcat rem_ls)] <> hc_sty_small_keyword "\\}\\%" -}
     printLatex0 _ (Annote_line aa ab _) =
-	printLatexLine aa $ casl_annotation_latex (escape_latex ab)
+	printLatexLine aa $ if all isSpace ab 
+		            then empty 
+		            else casl_annotation_latex (escape_latex ab)
     printLatex0 _ga (Annote_group aa ab _) =
 	printLatexGroup aa $ 
 			vcat $ map (casl_annotation_latex . escape_latex) ab
@@ -193,11 +207,13 @@ printLatexGroup kw grp =
 		       <> hc_sty_small_keyword ")\\%")
 
 printLine :: Doc -> Doc -> Doc
-printLine key line = ptext "%" <> key <+> line -- <> ptext "\n"
+printLine key line = if isEmpty line then pkey else pkey <+> line
+    where pkey = ptext "%" <> key
 
 printLatexLine :: String -> Doc -> Doc
 printLatexLine kw line = 
-    hc_sty_annotation (hc_sty_small_keyword ("\\%"++kw) <\+> line)
+    hc_sty_annotation (if isEmpty line then kw_d else kw_d <\+> line)
+    where kw_d = hc_sty_small_keyword ("\\%"++kw)
 
 instance PrettyPrint [Annotation] where
     printText0 ga l = (vcat $ map (printText0 ga) l) -- <> ptext "\n"
