@@ -17,7 +17,6 @@ import Common.Token
 import HasCASL.HToken
 import HasCASL.As
 import Common.Lib.Parsec
-import qualified Common.Lib.Set as Set
 
 noQuMark :: String -> AParser Token
 noQuMark s = try $ asKey s << notFollowedBy (char '?')
@@ -40,66 +39,56 @@ quColon = do c <- colT
 -- kind
 -----------------------------------------------------------------------------
 -- universe is just a special classId ("Type")
-parseClassId :: AParser Class
+parseClassId :: AParser Kind
 parseClassId = fmap (\c -> if showId c "" == "Type" 
-		   then Intersection Set.empty [posOfId c]
-		   else Intersection (Set.single c) []) classId
+		   then Universe [posOfId c]
+		   else ClassKind c MissingKind) classId
 
-parseClass :: AParser Class
-parseClass = parseClassId
+parseSimpleKind :: AParser Kind
+parseSimpleKind = parseClassId
              <|> 
 	     do o <- oParenT
-		(cs, ps) <- parseClass `separatedBy` anComma
+		(cs, ps) <- kind `separatedBy` anComma
 		c <- cParenT
-		return (Intersection (Set.unions $ map iclass cs) 
-			(toPos o ps c))
+		return (if isSingle cs then head cs else
+			Intersection cs	(toPos o ps c))
+             <|>
+	     do o <- oBraceT
+	        i <- pToken scanWords
+		d <- dotT
+		j <- asKey (tokStr i)
+		l <- lessT
+		t <- parseType
+		p <- cBraceT
+		return (Downset (Just i) t MissingKind 
+			(map tokPos [o,d,j,l,p])) 
 
-parsePlainClass :: AParser Kind
-parsePlainClass =
-             do ci <- parseClassId 
-		return $ ExtClass ci InVar []
-             <|> 
-	     do o <- oParenT
-		f <- funKind
-		case f of 
-		  ExtClass k InVar _ -> do
-		      p <- anComma
-		      (cs, ps) <- parseClass `separatedBy` anComma
-		      c <- cParenT
-		      return $ ExtClass (Intersection 
-				 (Set.unions $ map iclass (k:cs)) 
-					    (toPos o (p:ps) c))
-		                         InVar []
-		    <|> do cParenT >> return f
-		  _ ->  cParenT >> return f
+parseExtKind :: AParser ExtKind
+parseExtKind = do k <- parseSimpleKind
+	          do s <- plusT
+		     return (ExtKind k CoVar [tokPos s])
+                   <|>
+		   do m <- minusT
+		      return (ExtKind k ContraVar [tokPos m])
+                   <|> return (ExtKind k InVar [])
 
-extClass :: AParser Kind
-extClass = do c <- parsePlainClass
-	      case c of 
-		  ExtClass k InVar _ -> 
-		      do s <- plusT
-			 return (ExtClass k CoVar [tokPos s])
-		      <|> do s <- minusT
-			     return (ExtClass k ContraVar [tokPos s])
-		      <|> return (ExtClass k InVar [])
-		  _ -> return c
-
-noExtKind :: Kind -> AParser Kind
-noExtKind k = case k of 
-		     ExtClass _ CoVar _ -> err
-		     ExtClass _ ContraVar _ -> err
-		     _ -> return k
-    where  err = unexpected "variance of result kind"
-
-funKind, kind :: AParser Kind
-funKind = 
-    do k1 <- extClass
+kind :: AParser Kind
+kind = 
+    do k1 <- parseExtKind
        do a <- asKey funS
 	  k2 <- kind
-	  return $ KindAppl k1 k2 $ [tokPos a]
-        <|> return k1
+	  return (FunKind k1 k2 $ [tokPos a])
+        <|> case k1 of
+	    ExtKind k InVar _  -> return k
+	    _  -> unexpected "variance of kind"
 
-kind = funKind >>= noExtKind
+extKind :: AParser ExtKind
+extKind = 
+    do k1 <- parseExtKind
+       do a <- asKey funS
+	  k2 <- kind
+	  return (ExtKind (FunKind k1 k2 $ [tokPos a]) InVar [])
+        <|> return k1
 
 -----------------------------------------------------------------------------
 -- type
@@ -213,18 +202,19 @@ varDeclDownSet vs ps =
 		    do l <- lessT
 		       t <- parseType
 		       return (makeTypeVarDecls vs ps 
-			       (ExtClass (Downset t) InVar []) (tokPos l))
+			       (ExtKind (Downset Nothing t MissingKind []) 
+				InVar [])(tokPos l))
 
 typeVarDecls :: AParser [TypeArg]
 typeVarDecls = do (vs, ps) <- typeVar `separatedBy` anComma
 		  do   c <- colT
-		       t <- kind
+		       t <- extKind
 		       return (makeTypeVarDecls vs ps t (tokPos c))
 		    <|> varDeclDownSet vs ps
 		    <|> return (makeTypeVarDecls vs ps 
-				star nullPos)
+				(ExtKind star InVar []) nullPos)
 
-makeTypeVarDecls :: [TypeId] -> [Token] -> Kind -> Pos -> [TypeArg]
+makeTypeVarDecls :: [TypeId] -> [Token] -> ExtKind -> Pos -> [TypeArg]
 makeTypeVarDecls vs ps cl q = 
     zipWith (\ v p -> 
 	     TypeArg v cl Comma [tokPos p])
@@ -257,19 +247,20 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` anComma
                    if let isInVar(_, InVar, _) = True
 			  isInVar(_,_,_) = False
 		      in all isInVar ts then 
-		      do k <- funKind
+		      do k <- extKind
 			 return (makeTypeArgs ts ps [tokPos c] k)
-		      else do k <- parseClass
+		      else do k <- kind
 			      return (makeTypeArgs ts ps [tokPos c] 
-				      (ExtClass k InVar []))
+				      (ExtKind k InVar []))
 	        <|> 
 	        do l <- lessT
 		   t <- parseType
 		   return (makeTypeArgs ts ps [tokPos l]
-			   (ExtClass (Downset t) InVar []))
-		<|> return (makeTypeArgs ts ps [] star)
-		where mergeVariance k (ExtClass e InVar _) (t, v, ps) p =
-			  TypeArg t (ExtClass e v [ps]) k p
+			   (ExtKind (Downset Nothing t MissingKind []) 
+			    InVar []))
+		<|> return (makeTypeArgs ts ps [] (ExtKind star InVar []))
+		where mergeVariance k (ExtKind e InVar _) (t, v, ps) p =
+			  TypeArg t (ExtKind e v [ps]) k p
 		      mergeVariance k e (t, _, _) p = 
 			  TypeArg t e k p 
 		      makeTypeArgs ts ps q e = 
@@ -461,7 +452,7 @@ varTerm o = do v <- asKey varS
 	       return (QualVar i t (toPos o [v, c] p))
 
 qualOpName :: Token -> AParser Term
-qualOpName o = do { v <- asKey opS
+qualOpName o = do { v <- asKey opS <|> asKey functS
 		  ; i <- instOpId
  	          ; (c, t) <- partialTypeScheme
 		  ; p <- cParenT

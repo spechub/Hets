@@ -15,7 +15,6 @@ module HasCASL.AsUtils where
 import HasCASL.As
 import HasCASL.PrintAs -- to reexport instances
 import Common.Id
-import Common.Lib.Set
 import Common.PrettyPrint
 
 -- | generate a comparison string 
@@ -30,17 +29,13 @@ instance PosItem Kind where
 posOfKind :: Kind -> Pos
 posOfKind k = 
     case k of 
-    KindAppl k1 k2 ps -> firstPos [k1,k2] ps 
-    ExtClass c _ ps -> firstPos [c] ps
-
-instance PosItem Class where
-    get_pos = Just . posOfClass
-
-posOfClass :: Class -> Pos 
-posOfClass c = 
-    case c of
-    Downset t -> posOfType t
-    Intersection is ps -> firstPos (toList is) ps
+    Universe ps -> if null ps then nullPos else head ps
+    MissingKind -> nullPos
+    ClassKind c _ -> posOfId c
+    Downset _ t _ ps -> firstPos [t] ps 
+    Intersection ks ps -> firstPos ks ps
+    FunKind k1 _ ps -> firstPos [k1] ps 
+    ExtKind ek _ ps -> firstPos [ek] ps
 
 -- ---------------------------------------------------------------------
 

@@ -18,13 +18,42 @@ import HasCASL.HToken
 import Common.Lib.Pretty
 import Common.Id
 import Common.PPUtils
-import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.GlobalAnnotations(GlobalAnnos)
 
 -- | short cut for: if b then empty else d
 noPrint :: Bool -> Doc -> Doc
 noPrint b d = if b then empty else d
+
+instance PrettyPrint Variance where 
+    printText0 _ CoVar = text plusS
+    printText0 _ ContraVar = text minusS
+    printText0 _ InVar = empty
+
+instance PrettyPrint Kind where
+    printText0 _ (Universe _) = text "Type"
+    printText0 _ MissingKind = space
+    printText0 ga (ClassKind ci _) = printText0 ga ci
+    printText0 ga (Downset mt t _ _) =
+	let tok = case mt of 
+		  Nothing -> text "_" 
+		  Just x -> text (tokStr x) <+> text dotS <+> text (tokStr x)
+	    in braces (tok <+>
+		       text lessS <+> printText0 ga t)
+    printText0 ga (Intersection ks _) = printList0 ga ks
+    printText0 ga (FunKind k1 k2 _) = 
+			  (case k1 of 
+				  ExtKind (FunKind _ _ _) InVar _ -> parens
+				  FunKind _ _ _ -> parens
+				  _ -> id) (printText0 ga k1)
+			  <+> text funS 
+			  <+> printText0 ga k2
+    printText0 ga (ExtKind k v _) = 
+	(case v of
+	       InVar -> id 
+	       _ -> case k of
+		    FunKind _ _ _ -> parens
+		    _ -> id) (printText0 ga k) <> printText0 ga v
 
 instance PrettyPrint TypePattern where 
     printText0 ga (TypePattern name args _) = printText0 ga name
@@ -41,16 +70,13 @@ bracket b t = let (o,c) = getBrackets b in ptext o <> t <> ptext c
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 printKind :: GlobalAnnos -> Kind -> Doc
 printKind ga kind = case kind of 
-			      ExtClass (Intersection s _) InVar _ -> 
-				  if Set.isEmpty s then empty else erg
-			      _ -> erg
-		    where erg = space <> colon <+> printText0 ga kind
+		    Universe _ -> empty
+		    Downset Nothing t _ _ -> 
+			space <> text lessS <+> printText0 ga t
+		    _ -> space <> colon <+> printText0 ga kind
 
 instance PrettyPrint Type where 
     printText0 ga (TypeName name _k _i) = printText0 ga name 
---					<> printKind ga k
---    					<> if i == 0 then empty 
---					   else parens (int i)
     printText0 ga (TypeAppl t1 t2) = parens (printText0 ga t1) 
     			  <> parens (printText0 ga t2) 
     printText0 ga (TypeToken t) = printText0 ga t
@@ -112,11 +138,7 @@ instance PrettyPrint Partiality where
     printText0 _ Total = text exMark
 
 instance PrettyPrint Arrow where 
-    printText0 _ FunArr = text funS
-    printText0 _ PFunArr = text pFun
-    printText0 _ ContFunArr = text contFun
-    printText0 _ PContFunArr = text pContFun 
-
+    printText0 _ a = text $ show a
 
 instance PrettyPrint Quantifier where 
     printText0 _ Universal = text forallS
@@ -229,33 +251,12 @@ instance PrettyPrint TypeArg where
     printText0 ga (TypeArg v c _ _) = printText0 ga v <+> colon 
 				      <+> printText0 ga c
 
-instance PrettyPrint Variance where 
-    printText0 _ CoVar = text plusS
-    printText0 _ ContraVar = text minusS
-    printText0 _ InVar = empty
-
-instance PrettyPrint Kind where
-    printText0 ga (ExtClass k v _) = printText0 ga k
-						 <> printText0 ga v 
-    printText0 ga (KindAppl k1 k2 _) = 
-			  (case k1 of 
-				  KindAppl _ _ _ -> parens
-				  _ -> id) (printText0 ga k1)
-			  <+> text funS 
-			  <+> printText0 ga k2
-
 -- | don't print an empty list and put parens around longer lists
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
 printList0 ga l =  case l of 
 	   []  -> empty
 	   [x] -> printText0 ga x
 	   _   -> parens $ commaT_text ga l
-
-instance PrettyPrint Class where 
-    printText0 ga (Downset t) = braces $ 
-				text "_" <+> text lessS <+> printText0 ga t
-    printText0 ga (Intersection c _) = if Set.isEmpty c then ptext "Type"
-			   else printList0 ga $ Set.toList c
 
 instance PrettyPrint InstOpId where
     printText0 ga (InstOpId n l _) = printText0 ga n 
@@ -293,6 +294,7 @@ instance PrettyPrint BasicItem where
 			       $$ vcat (map 
 					 (\x -> text dotS <+> printText0 ga x) 
 					 fs)
+    printText0 ga (Internal l _) = text internalS <+> braces (semiT_text ga l)
 
 instance PrettyPrint SigItems where 
     printText0 ga (TypeItems i l _) = text typeS <+> printText0 ga i 
@@ -309,22 +311,8 @@ instance PrettyPrint ClassItem where
 				      else braces (semiT_text ga l)
 
 instance PrettyPrint ClassDecl where 
-    printText0 ga (ClassDecl l k _) = commaT_text ga l <> printKind ga k
-    printText0 ga (SubclassDecl l k s _) = commaT_text ga l 
-			                   <> printKind ga k
-					   <+> text lessS 
-					   <+> printText0 ga s
-    printText0 ga (ClassDefn n k c _) =  printText0 ga n 
-                               <> printKind ga k
-			       <+> text equalS 
-			       <+> printText0 ga c
-    printText0 ga (DownsetDefn c v t _) =
-	let pv = printText0 ga v in 
-			       printText0 ga c
-			       <> text equalS 
-			       <> braces (pv <> text dotS <> pv
-					   <> text lessS
-					       <+> printText0 ga t)
+    printText0 ga (ClassDecl l k _) = commaT_text ga l 
+				      <+> text lessS <+> printText0 ga k
 
 instance PrettyPrint Vars where
     printText0 ga (Var v) = printText0 ga v
@@ -381,9 +369,9 @@ instance PrettyPrint DatatypeDecl where
 				  <+> text defnS
 				  <+> vcat(punctuate (text " | ") 
 					   (map (printText0 ga) as))
-				  <+> case d of Nothing -> empty
-						Just c -> text derivingS
-							  <+> printText0 ga c
+				  <+> case d of [] -> empty
+						_ -> text derivingS
+							  <+> commaT_text ga d
 
 instance PrettyPrint Alternative where 
     printText0 ga (Constructor n cs p _) = printText0 ga n 

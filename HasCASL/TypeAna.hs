@@ -7,7 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   analyse types
+   analyse classes and types
 -}
 
 module HasCASL.TypeAna where
@@ -20,10 +20,53 @@ import HasCASL.Unify
 import Data.List
 import Data.Maybe
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Result
 import Common.Lib.State
+import Common.PrettyPrint
+
+-- --------------------------------------------------------------------------
+-- kind analysis
+-- --------------------------------------------------------------------------
+
+toKind :: Maybe Kind -> Kind 
+toKind mk = case mk of Nothing -> star
+		       Just k -> k
+
+anaKind :: Kind -> State Env Kind
+anaKind k = fmap toKind (anaKindM k)
+
+anaKindM :: Kind -> State Env (Maybe Kind)
+anaKindM k = 
+    case k of
+    Universe _  -> return (Just k)
+    MissingKind -> return Nothing
+    Downset v t _ ps -> do (rk, mt) <- anaType (Nothing, t) 
+			   case mt of
+				  Nothing -> return Nothing
+				  Just newT -> return $ Just $ 
+					       Downset v newT rk ps
+    ClassKind ci _ -> anaClassId ci
+    Intersection ks ps -> do mks <- mapM anaKindM ks
+			     let newKs = mkIntersection $ catMaybes mks 
+                             if null newKs then return Nothing
+			        else let ds = checkIntersection 
+						 (rawKind $ head newKs)
+						 $ tail newKs
+				     in if null ds then 
+					return $ Just $ if isSingle newKs 
+					       then head newKs 
+					       else Intersection newKs ps
+					else do addDiags ds
+						return Nothing
+    FunKind k1 k2 ps -> do m1 <- anaKindM k1
+			   m2 <- anaKindM k2 
+			   return $ do k3 <- m1
+				       k4 <- m2
+				       return $ FunKind k3 k4 ps
+    ExtKind ek v ps -> do m <- anaKindM ek
+			  return $ do nk <- m
+				      return $ ExtKind nk v ps
 
 data ApplMode = OnlyArg | TopLevel 
 
@@ -100,92 +143,201 @@ mkTypeConstrAppls _ (FunType t1 a t2 ps) =
 	       return $ Just $ FunType newT1 a newT2 ps
 	   _ -> return Nothing
 
-expandApplKind :: Class -> State Env Kind
-expandApplKind c = 
-    case c of
-    Intersection s _ -> if Set.isEmpty s then return star else
-        do mk <- anaClassId  $ Set.findMin s
-           case mk of 
-	       Just k -> case k of 
-		   ExtClass c2 _ _ -> expandApplKind c2
-		   _ -> return k
-	       Nothing -> error "expandApplKind"
-    _ -> return star
+-- ---------------------------------------------------------------------------
+-- compare kinds
+-- ---------------------------------------------------------------------------
 
-inferKind :: Type -> State Env Kind
-inferKind (TypeName i _ _) = do j <- getIdKind i
-				return j
-inferKind (TypeAppl t1 t2) = 
-    do mk1 <- inferKind t1 
-       case mk1 of 
-		KindAppl k1 k2 _ -> do checkTypeKind t2 k1
-				       return k2
-		ExtClass c _ _ -> 
-			   do k <- expandApplKind c 
-			      case k of
-			            KindAppl k1 k2 _ -> do checkTypeKind t2 k1
-							   return k2
-				    _ -> do addDiags
-					       [mkDiag Error 
-						"incompatible kind of type" 
-						t1] 
-					    return star
-inferKind (FunType t1 _ t2 _) = 
-    do checkTypeKind t1 star 
-       checkTypeKind t2 star
+lesserKind :: Kind -> Kind -> Bool
+lesserKind k1 k2 = 
+    case (k1, k2) of 
+    (MissingKind, _) -> error "lesserKind1"
+    (_, MissingKind) -> error "lesserKind2"
+    (_, Intersection l2 _) -> and $ map (lesserKind k1) l2
+    (Intersection l1 _, _) -> or $ map ( \ k -> lesserKind k k2) l1
+    (ExtKind ek1 v1 _, ExtKind ek2 v2 _) -> 
+	(v1 == InVar || v1 == v2) && lesserKind ek1 ek2
+    (_, ExtKind ek2 _ _) -> lesserKind k1 ek2
+    (ExtKind ek1 v1 _, _) -> v1 == InVar && lesserKind ek1 k2
+    (Universe _, Universe _) -> True
+    (Universe _, _) -> False
+    (Downset _ t1 k _,  Downset _ t2 _ _) -> t1 == t2 || lesserKind k k2
+    (Downset _ _ k _, _) -> lesserKind k k2
+    (ClassKind c1 k,  ClassKind c2 _) -> c1 == c2 || lesserKind k k2
+    (ClassKind _ k, _) -> lesserKind k k2
+    (FunKind ek rk _, FunKind ek2 rk2 _) -> 
+	lesserKind rk rk2 && lesserKind ek2 ek
+    (FunKind _ _ _, _) -> False
+
+-- ---------------------------------------------------------------------------
+-- infer raw kind
+-- ---------------------------------------------------------------------------
+
+inferRawKind :: Type -> State Env Kind
+inferRawKind (TypeName i _ _) = getIdRawKind i
+
+inferRawKind (TypeAppl t1 t2) = 
+    do k1 <- inferRawKind t1 
+       case k1 of
+	       FunKind fk ak _ -> do checkTypeRawKind t2 fk
+				     return ak
+	       _ -> do addDiags [mkDiag Error 
+				 "incompatible kind of type" t1] 
+		       return k1
+
+inferRawKind (FunType t1 _ t2 _) = 
+    do checkTypeRawKind t1 star 
+       checkTypeRawKind t2 star
        return star 
-inferKind (ProductType ts _) = 
-    do mapM_ ( \ t -> checkTypeKind t star) ts 
+inferRawKind (ProductType ts _) = 
+    do mapM_ ( \ t -> checkTypeRawKind t star) ts 
        return star 
-inferKind (LazyType t _) = 
-    do checkTypeKind t star
+inferRawKind (LazyType t _) = 
+    do checkTypeRawKind t star
        return star 
-inferKind (TypeToken t) = getIdKind $ simpleIdToId t
-inferKind (KindedType t k _) =
-    do checkTypeKind t k
+inferRawKind (TypeToken t) = getIdRawKind $ simpleIdToId t
+inferRawKind (KindedType t k _) =
+    do checkTypeRawKind t k
        return k
-inferKind t =
+inferRawKind t =
     do addDiags [mkDiag Error "unresolved type" t] 
        return star
 
-checkTypeKind :: Type -> Kind -> State Env ()
-checkTypeKind t j = do k <- inferKind t 
-		       checkKinds t j k
+checkTypeRawKind :: Type -> Kind -> State Env ()
+checkTypeRawKind t j = 
+    case j of 
+    ExtKind ek _ _ -> checkTypeRawKind t ek
+    _ -> do k <- inferRawKind t
+	    if k == j then return () else addDiags $ diffKindDiag t j k
 
-getIdKind :: Id -> State Env Kind
-getIdKind i = 
+getIdRawKind :: Id -> State Env Kind
+getIdRawKind i = 
     do tk <- gets typeMap
-       let m = getKind tk i
+       let m = getRawKind tk i
        case m of
 	    Nothing -> do addDiags [mkDiag Error "undeclared type" i]
-                          return star
+			  return star
 	    Just k -> return k
+
+getRawKind :: TypeMap -> Id -> Maybe Kind
+getRawKind tk i = 
+       case Map.lookup i tk of
+       Nothing -> Nothing
+       Just (TypeInfo k _ _ _) -> Just k
+
+-- ---------------------------------------------------------------------------
+-- infer kind
+-- ---------------------------------------------------------------------------
+
+checkMaybeKinds :: (PosItem a, PrettyPrint a) => 
+              a -> Maybe Kind -> Maybe Kind -> State Env (Maybe Kind)
+checkMaybeKinds a mk1 mk2 =
+    case mk1 of
+           Nothing -> return mk2
+	   Just k1 -> case mk2 of 
+	       Nothing -> return mk1
+	       Just k2 -> 
+		   if lesserKind k1 k2 then return mk1
+		      else if lesserKind k2 k1 then return mk2
+		      else do addDiags $ diffKindDiag a k1 k2
+			      return Nothing
+
+checkFunKind :: Maybe Kind -> Type -> Type -> Kind -> State Env (Maybe Kind)
+checkFunKind mk t1 t2 k1 = 
+    case k1 of 
+	FunKind fk ak _ -> do 
+	    mk2 <- inferKind (Just fk) t2
+	    case mk2 of 
+		Nothing -> return mk
+		Just _ -> checkMaybeKinds (TypeAppl t1 t2) mk (Just ak)
+	Intersection l ps -> do
+	    ml <- mapM (checkFunKind mk t1 t2) l
+	    let ks = mkIntersection $ catMaybes ml
+	    return $ if null ks then Nothing else if isSingle ks then
+	       Just $ head ks else Just $ Intersection ks ps
+	ClassKind _ k -> checkFunKind mk t1 t2 k
+	Downset _ _ k _ -> checkFunKind mk t1 t2 k
+	ExtKind k _ _ -> checkFunKind mk t1 t2 k
+	_ -> do addDiags [mkDiag Error 
+				 "expected higher order kind for type" t1]
+	        return Nothing
+
+inferKind :: Maybe Kind -> Type -> State Env (Maybe Kind)
+inferKind mk (TypeName i _ _) = 
+    do m <- getIdKind i 
+       checkMaybeKinds i mk m
+
+inferKind mk (TypeAppl t1 t2) = 
+    do mk1 <- inferKind Nothing t1 
+       case mk1 of 
+	   Nothing -> return mk
+	   Just k1 -> checkFunKind mk t1 t2 k1
+
+inferKind mk (FunType t1 a t2 _) = 
+    do let i = arrowId a
+       mfk <- getIdKind i
+       let fk = case mfk of Nothing -> funKind
+			    Just k -> k
+           tn = TypeName i fk 0
+       inferKind mk (TypeAppl (TypeAppl tn t1) t2)
+
+inferKind mk t@(ProductType ts _) = 
+    if null ts then checkMaybeKinds t mk (Just star)
+    else do mpk <- getIdKind productId
+	    let pk = case mpk of Nothing -> prodKind
+				 Just k -> k
+		tn = TypeName productId pk 0
+		mkAppl [t1] = t1
+		mkAppl (t1:tr) = TypeAppl (TypeAppl tn t1) $ mkAppl tr
+		mkAppl [] = error "inferKind: mkAppl"
+            inferKind mk $ mkAppl ts
+inferKind mk (LazyType t _) = 
+    do inferKind mk t
+inferKind mk (KindedType t k _) =
+    do mk2 <- inferKind (Just k) t
+       checkMaybeKinds t mk mk2
+inferKind _ t =
+    do addDiags [mkDiag Error "unresolved type" t] 
+       return Nothing
+
+getIdKind :: Id -> State Env (Maybe Kind)
+getIdKind i = 
+    do tk <- gets typeMap
+       let m = getKind tk i 
+       case m of
+	    Nothing -> do addDiags [mkDiag Error "undeclared type" i]
+	    Just _ -> return ()
+       return m
 
 getKind :: TypeMap -> Id -> Maybe Kind
 getKind tk i = 
        case Map.lookup i tk of
        Nothing -> Nothing
-       Just (TypeInfo k _ _ _) -> Just k
+       Just (TypeInfo _ l _ _) -> Just $  
+	   if null l then Universe [] else 
+	      if isSingle l then head l else Intersection l []
 
+-- ---------------------------------------------------------------------------
 isTypeVar :: TypeMap -> Id -> Bool
 isTypeVar tk i = 
        case Map.lookup i tk of
        Just (TypeInfo _ _ _ TypeVarDefn) -> True
        _ -> False
 
-anaType :: (Kind, Type) -> State Env (Kind, Maybe Type)
-anaType (k, t) = 
+anaType :: (Maybe Kind, Type) -> State Env (Kind, Maybe Type)
+anaType (mk, t) = 
     do mT <- mkTypeConstrAppls TopLevel t
        tm <- gets typeMap
        case mT of 
             Nothing -> return (star, mT)
 	    Just nt -> do let (newT,_) = expandAlias tm nt
-			  newK <- inferKind newT 
-			  checkKinds newT newK k
+			  newK <- inferRawKind newT 
+			  case mk of 
+				  Nothing -> return ()
+				  Just k -> checkKinds newT newK k
 			  return (newK, Just newT)
 
 anaStarType :: Type -> State Env (Maybe Type)
-anaStarType t = fmap snd $ anaType (star, t)
+anaStarType t = fmap snd $ anaType (Just star, t)
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 

@@ -16,7 +16,6 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Named
 import Common.Result
 import HasCASL.As
@@ -27,6 +26,7 @@ import HasCASL.OpDecl
 import HasCASL.TypeDecl
 import HasCASL.TypeCheck
 import Data.Maybe
+import Data.List
 
 -- | basic analysis
 basicAnalysis :: (BasicSpec, Env, GlobalAnnos) -> 
@@ -48,10 +48,10 @@ diffEnv e1 e2 =
 -- | compute difference of class infos
 diffClass :: ClassInfo -> ClassInfo -> Maybe ClassInfo
 diffClass c1 c2 = 
-    let diff = Set.difference (superClasses c1) (superClasses c2)
-    in if Set.isEmpty diff
+    let diff = classKinds c1 \\ classKinds c2
+    in if null diff
        then Nothing
-       else Just c1 { superClasses = diff }
+       else Just c1 { classKinds = diff }
 
 -- | compute difference of type infos
 diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
@@ -106,6 +106,9 @@ anaBasicItem ga (AxiomItems decls fs ps) =
            sens = map ( \ f -> NamedSen (getRLabel f) $ item f) newFs 
        appendSentences sens
        return $ AxiomItems (catMaybes ds) newFs ps
+anaBasicItem ga (Internal l ps) = 
+    do ul <- mapAnM (anaBasicItem ga) l
+       return $ Internal ul ps
 
 -- | add sentences
 appendSentences :: [Named Term] -> State Env ()

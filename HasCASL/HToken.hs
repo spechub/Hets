@@ -31,7 +31,7 @@ pContFun = minusS ++ pFun
 lamS = "\\"
 asP = "@"
 
-classS, programS, instanceS, caseS, ofS, letS, derivingS :: String
+internalS, classS, programS, instanceS, caseS, ofS, letS, derivingS :: String
 classS = "class"
 programS = "program"
 instanceS = "instance"
@@ -39,6 +39,10 @@ caseS = "case"
 ofS = "of"
 letS = "let"
 derivingS = "deriving"
+internalS = "internal"
+
+functS :: String -- funS is already defined 
+functS = "fun"
 
 -- ----------------------------------------------
 -- hascasl keyword handling
@@ -51,7 +55,8 @@ hascasl_type_ops = [funS, pFun, contFun, pContFun, prodS, timesS, quMark]
 
 hascasl_reserved_words :: [String]
 hascasl_reserved_words = 
-    [classS, instanceS, programS, caseS, ofS, letS, derivingS] 
+    [functS, functS ++ sS, classS, classS ++ "es", instanceS, instanceS ++ sS,
+     programS, programS ++ sS, caseS, ofS, letS, derivingS, internalS] 
 			 ++ casl_reserved_words
 
 scanWords, scanSigns :: GenParser Char st String

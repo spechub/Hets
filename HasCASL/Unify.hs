@@ -96,14 +96,8 @@ eps :: Subst
 eps = Map.empty
 
 instance Ord TypeArg where
-    TypeArg v1 k1 _ _ <= TypeArg v2 k2 _ _
-	= (v1, k1) <= (v2, k2)
-
-instance Ord Kind where
--- only for expanded kinds
-    KindAppl k1 k2 _ <= KindAppl k3 k4 _ = (k1, k2) <= (k3, k4)
-    KindAppl _ _ _ <= ExtClass _ _ _ = False
-    ExtClass _ _ _ <= _ = True 
+    TypeArg v1 _ _ _ <= TypeArg v2 _ _ _
+	= v1 <= v2
 
 class Unifiable a where
     subst :: Subst -> a -> a

@@ -14,7 +14,6 @@ module HasCASL.Le where
 
 import HasCASL.As
 import Common.Lib.Map as Map
-import Common.Lib.Set as Set
 import Common.Result
 import Common.Lib.State
 import Common.Named
@@ -23,13 +22,8 @@ import Common.Named
 -- classInfo
 -----------------------------------------------------------------------------
 
-data ClassInfo = ClassInfo { superClasses :: Set ClassId
-                           , classKind :: Kind
-			   , classDefn :: Maybe Class
+data ClassInfo = ClassInfo { classKinds :: [Kind] -- superKinds
 			   } deriving (Show, Eq)
-
-newClassInfo :: ClassInfo
-newClassInfo = ClassInfo Set.empty star Nothing
 
 -----------------------------------------------------------------------------
 

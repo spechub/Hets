@@ -89,6 +89,9 @@ symbKind = try(
         do q <- pluralKeyword opS 
 	   return (SK_op, q)
         <|>
+        do q <- pluralKeyword functS 
+	   return (SK_op, q)
+        <|>
         do q <- pluralKeyword predS 
 	   return (SK_pred, q)
         <|>

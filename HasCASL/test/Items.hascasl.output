@@ -1,7 +1,7 @@
 type ** : Type -> Type -> Type
 var a : {_ < c}
 var {a} : c -> d
-class Monad : Type -> Type
+class Monad < Type -> Type
 type a : Monad := \ t : Type . t -> t
 free type Term ::= Var Variable | 
 		   Lam Variable Term | 

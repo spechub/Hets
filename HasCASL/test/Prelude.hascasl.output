@@ -1,6 +1,6 @@
 %% predefined universe containing all types, 
 %% superclass of all other classes
-class Type
+class Type < Type
 var s : Type; t : Type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% invisible type "Unit" for formulae
@@ -123,24 +123,22 @@ free type bool ::= true |
 type bool : Flatcpo
 type nat : Flatcpo
 %% Classes ---------------------------------------------------------------
-Cpo
+Cpo < Type
 Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
 ? : Type -> Type := \ t : Type . Unit ->? t
-Pred : (Type -> Type, Type- -> Type) := \ a : Type . a ->? Unit
-Unit : (Type, Pcpo) := Unit
-__ : (Type- -> Type+ -> Type, Cpo- -> Pcpo+ -> Pcpo,
-      Cpo- -> Cpo+ -> Cpo, Cpo- -> Cpo+ -> Pcpo, Pcpo+ -> Pcpo+ -> Pcpo,
-      Cpo+ -> Cpo+ -> Cpo, Type+ -> Type+ -> Type+ -> Type,
-      Type+ -> Type+ -> Type)
-bool : (Type, Flatcpo) %[free type __ ::=
-			      true : -> __
-			      false : -> __]%
-c : (Cpo, Type) < (c -->? d, c ->? d) %(var)%
+Pred : Type -> Type := \ a : Type . a ->? Unit
+Unit : Pcpo := Unit
+__ : (Cpo- -> Pcpo+ -> Pcpo, Cpo- -> Cpo+ -> Cpo,
+      Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type)
+bool : Flatcpo %[free type __ ::=
+		      true : -> __
+		      false : -> __]%
+c : Cpo < (c -->? d, c ->? d) %(var)%
 d : Cpo %(var)%
 f : Flatcpo %(var)%
-nat : (Type, Flatcpo)
+nat : Flatcpo
 p : Pcpo %(var)%
 s : Type < (? s, s ->? t) %(var)%
 t : Type %(var)%
@@ -192,18 +190,33 @@ Error (line 4, column 7) illegal universe class declaration 'Type'
 Hint (line 6, column 5) is type variable 's'
 Hint (line 6, column 7) is type variable 't'
 Warning (line 11, column 6) redeclared type 'Unit'
+Error (line 14, column 34) incompatible kind of: t
+  expected: Type
+     found: Type-
+
 Error (line 14, column 44) incompatible kind of: t ->? Unit
   expected: Type
      found: Type -> Type
 
-Warning (line 15, column 16) redeclared type 't'
+Error (line 14, column 44) incompatible kind of: t ->? Unit
+  expected: Type -> Type
+     found: Type- -> Type
+
+Error (line 14, column 6) incompatible kind of: Pred
+  expected: Type -> Type
+     found: Type- -> Type
+
 Error (line 22, column 8) wrong type scheme of '__=__'
   expected: forall a : Type .  a × a ->? Unit
      found: forall s : Type .  s × s ->? Unit
 
+Error (line 30, column 6) incompatible kind of: __
+  expected: Type- -> Type+ -> Type
+     found: Type+ -> Type+ -> Type
+
 Error (line 31, column 6) incompatible kind of: __
-  expected: Type -> Type -> Type -> Type
-     found: Type -> Type -> Type
+  expected: Type- -> Type+ -> Type
+     found: Type+ -> Type+ -> Type+ -> Type
 
 Error (line 46, column 11) unexpected mixfix token: und
 Error (line 46, column 9) unexpected pattern '__ und __ (x, y : Unit)'
@@ -264,7 +277,6 @@ Error (line 103, column 9) no typing for 'neg(r : Unit ->? Unit) : Unit ->? Unit
 Error (line 108, column 51) unexpected mixfix token: impl
 Error (line 108, column 22) unexpected mixfix token: all
 Error (line 108, column 3) unexpected mixfix token: all
-Warning (line 115, column 13) redundant universe class
 Hint (line 117, column 5) is type variable 'c'
 Error (line 121, column 3) unexpected mixfix token: all
 Error (line 122, column 31) unexpected mixfix token: und
@@ -289,11 +301,19 @@ Error (line 150, column 15) unexpected mixfix token: [
 Hint (line 153, column 5) is type variable 'c'
 Warning (line 153, column 5) redeclared type 'c'
 Hint (line 153, column 8) is type variable 'd'
+Error (line 155, column 15) incompatible kind of: __
+  expected: Type- -> Type+ -> Type
+     found: Type+ -> Type+ -> Type
+
 Error (line 0, column 0) undeclared type '_var_75'
 Error (line 0, column 0) undeclared type '_var_76'
 Error (line 0, column 0) undeclared type '_var_77'
 Error (line 0, column 0) undeclared type '_var_78'
 Error (line 159, column 45) unexpected mixfix token: und
+Error (line 162, column 15) incompatible kind of: __
+  expected: Type- -> Type+ -> Type
+     found: Type+ -> Type+ -> Type
+
 Error (line 170, column 4) expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 Error (line 171, column 35) unexpected mixfix token: und
 Error (line 174, column 45) unexpected mixfix token: +
@@ -317,7 +337,6 @@ Error (line 170, column 20) no typing for '(__=__)(__ in c -->? d,
 						       (sup (\ n : nat .! f (s (n + m))),
 							f (sup (s))))))'
 Error (line 176, column 16) unexpected mixfix token: [
-Warning (line 181, column 7) redeclared type 'c'
 Error (line 182, column 4) expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 Error (line 182, column 46) ambiguous mixfix term
 	def f x

@@ -70,26 +70,13 @@ instance Mergeable a => Mergeable (Maybe a) where
 							   return $ Just v
 
 instance Mergeable ClassInfo where
-    merge c1 c2 = do k <- merge (classKind c1) (classKind c2)
-		     d <- merge (classDefn c1) (classDefn c2)
-		     let s1 = superClasses c1
-			 s2 = superClasses c2
-		     if s1 == s2 then 
-			return $ ClassInfo s1 k d 
+    merge c1 c2 = if c1 == c2 then 
+			return c1
 			else fail "merge: non-equal super classes"
 
 instance Mergeable Kind where
     merge k1 k2 = if k1 == k2 then return k1
 		  else fail "merge: non-equal kinds"
-
-instance Mergeable Class where
-    merge c1@(Downset t1) (Downset t2) =
-	if t1 == t2 then return c1
-	   else fail "inconsistent downset"
-    merge c1@(Intersection i1 _) (Intersection i2 _) =
-       if i1 == i2 then return c1
-	  else fail "inconsistent intersection class" 
-    merge _ _ = fail "inconsistent class redefinition"
 
 mergeList :: Eq a => [a] -> [a] -> Result [a]
 mergeList l1 l2 = return $ nub (l1 ++ l2)

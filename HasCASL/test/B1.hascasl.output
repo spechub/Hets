@@ -1,18 +1,18 @@
-class b, c, d, e, f, g
+class b, c, d, e, f, g < Type
 class Type < Type
-class Type
-class Type
-class d < a
+class Type < Type
+class Type < Type
+class d < Type
 class a < (d, e, g)
 class a < d
 class a < a
-class a
-class b
-class d
+class a < b
+class b < (c, d, e)
+class d < d
 type t : a
-class h = (a, b)
-class h = (a, b)
-class j={v.v< t}
+class h < (a, b)
+class h < c
+class j < {v . v < t}
 type a, [ : a -> b
 var x : a; y : Type; x : y
 var
@@ -20,22 +20,22 @@ var x : b
 var x : {_ < t}
 type a : b
 %% Classes ---------------------------------------------------------------
-a < (e, g)
-b
-c
-d < a
-e
-f
-g
-h = (a, b)
-j = {_ < t}
+a < (b, d, e, g)
+b < (c, d, e)
+c < Type
+d < Type
+e < Type
+f < Type
+g < Type
+h < (c, a, b)
+j < {v . v < t}
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 [ : a -> b
-a : (a -> b, b)
+a : a -> b
 t : a
-x : (a, {_ < t}, b) %(var)%
+x : ({_ < t}, b, a) %(var)%
 y : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit × Unit ->? Unit
@@ -49,34 +49,25 @@ if__then__else__ : forall a : Type .  Unit × a × a ->? a
 not__ : Unit ->? Unit
 x : y %(var)%
 %% Diagnostics -----------------------------------------------------------
-Warning (line 3, column 14) redundant universe class
 Error (line 3, column 7) illegal universe class declaration 'Type'
 Error (line 4, column 7) illegal universe class declaration 'Type'
 Error (line 6, column 7) illegal universe class declaration 'Type'
-Warning (line 8, column 11) implicit declaration of superclass 'a'
+Error (line 8, column 11) undeclared class 'a'
 Warning (line 8, column 7) redeclared class 'd'
 Error (line 10, column 24) undeclared class 'h'
-Warning (line 10, column 7) redeclared class 'a'
-Error (line 10, column 12) cyclic class relation via 'd'
 Warning (line 12, column 7) redeclared class 'a'
-Error (line 12, column 11) cyclic class relation via 'd'
 Warning (line 15, column 7) redeclared class 'a'
-Error (line 15, column 11) cyclic class relation via 'a'
+Error (line 15, column 7) cyclic class 'a'
 Warning (line 17, column 7) redeclared class 'a'
-Error (line 17, column 7) class cannot become an alias class 'a'
 Warning (line 18, column 7) redeclared class 'b'
-Error (line 18, column 7) class cannot become an alias class 'b'
 Warning (line 20, column 7) redeclared class 'd'
-Error (line 20, column 7) class cannot become an alias class 'd'
+Error (line 20, column 7) cyclic class 'd'
 Warning (line 25, column 7) redeclared class 'h'
-Error (line 25, column 7) inconsistent intersection class of 'h'
-
 Hint (line 31, column 5) is type variable 'x'
 Hint (line 31, column 12) is type variable 'y'
 Error (line 33, column 9) unknown type 's'
 Hint (line 35, column 5) is type variable 'x'
-Warning (line 37, column 9) unchecked type 't'
 Error (line 39, column 6) incompatible kind of: a
-  expected: Type
-     found: Type -> Type
+  expected: Type -> Type
+     found: Type
 

@@ -3,14 +3,14 @@ class b < a     %% cycle
 class c < d
 class d < e
 class e < c     %% indirect cycle
-class h = g     %% no implicit declaration
+class h : g     %% no implicit declaration
 class g
-class g = (a,b) %% g is already real class
-class i = (g,a)  
+class g : (a,b) %% g is already real class
+class i : (g,a)  
 class g < (a,i) %% cycle via i = g
 class i         %% i is already alias class 
-class i = (a,g) %% ok
-class i = b     %% wrong redefinition
+class i : (a,g) %% ok
+class i : b     
 var t : Type
-class i = { x . x < t } %% wrong redefinition
+class i : { x . x < t } 
 

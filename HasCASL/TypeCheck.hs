@@ -58,11 +58,11 @@ bList = (defId, defType) : (notId, notType) : (ifThenElse, ifType) :
 addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, d) m -> 
 		 Map.insertWith ( \ _ old -> old) i
-			 (TypeInfo k [] [] d) m) tm
+			 (TypeInfo k [k] [] d) m) tm
 	      [(simpleIdToId $ mkSimpleId "Unit",
 	        star, AliasTypeDefn $ simpleTypeScheme logicalType), 
 	       (simpleIdToId $ mkSimpleId "Pred", 
-		KindAppl star star [],
+		FunKind star star [],
 		AliasTypeDefn defType)]
 
 addOps :: Assumps -> Assumps

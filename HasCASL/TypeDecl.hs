@@ -155,12 +155,13 @@ anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env DatatypeDecl
 anaDatatype genKind inst (DatatypeDecl pat kind alts derivs ps) =
     do k <- anaKind kind
        checkKinds pat star k
-       newDerivs <- case derivs of 
-		   Just c -> do (dk, newC) <- anaClass c
-				checkKinds newC star dk
-				return $ Just newC
-		   Nothing -> return Nothing
-       let Result ds m = convertTypePattern pat
+       cs <- mapM anaClassId derivs
+       let jcs = catMaybes cs
+       mapM (checkKinds pat star) jcs
+       let newDerivs = foldr( \ ck l -> case ck of 
+				           ClassKind ci _ -> ci:l
+				           _ -> l) [] jcs
+           Result ds m = convertTypePattern pat
        addDiags ds
        case m of 
 	      Nothing -> return $ DatatypeDecl pat k [] newDerivs ps
@@ -188,8 +189,8 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs ps) =
 anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, Maybe TypeScheme)
 anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
     do k <- case mk of 
-	    Nothing -> return star
-	    Just j -> anaKind j
+	    Nothing -> return Nothing
+	    Just j -> anaKindM j
        tm <- gets typeMap    -- save global variables  
        mapM_ anaTypeVarDecl tArgs
        (sk, mt) <- anaType (k, ty)
@@ -207,7 +208,7 @@ typeArgsListToKind :: [TypeArg] -> Kind -> Kind
 typeArgsListToKind tArgs k = 
     if null tArgs then k
        else typeArgsListToKind (init tArgs) 
-	    (KindAppl (( \ (TypeArg _ xk _ _) -> xk) $ last tArgs) k []) 
+	    (FunKind (( \ (TypeArg _ xk _ _) -> xk) $ last tArgs) k []) 
 
 -- | convert mixfix type patterns to ids
 convertTypePatterns :: [TypePattern] -> Result [Id]

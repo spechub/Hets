@@ -18,7 +18,6 @@ import Common.AnnoState
 import HasCASL.HToken
 import HasCASL.As
 import Common.Lib.Parsec
-import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 import HasCASL.ParseTerm
 
@@ -231,10 +230,10 @@ dataDef t k l =
        let aa = Annoted v [] a b:as 
 	   qs = map tokPos (l++c:ps)
        do d <- asKey derivingS
-	  cl <- parseClass
-	  return (Datatype (DatatypeDecl t k aa (Just cl)
-			    (qs ++ [tokPos d])))
-	 <|> return (Datatype (DatatypeDecl t k aa Nothing qs))
+	  (cs, cps) <- classId `separatedBy` anComma
+	  return (Datatype (DatatypeDecl t k aa cs
+			    (qs ++ [tokPos d] ++ map tokPos cps)))
+	 <|> return (Datatype (DatatypeDecl t k aa [] qs))
     where aAlternative = bind (\ a an -> Annoted a [] [] an)  
 			 alternative annos
 
@@ -254,43 +253,11 @@ dataItems = hasCaslItemList typeS dataItem FreeDatatype
 -- classItem
 -----------------------------------------------------------------------------
 
-subClassDecl :: [ClassId] -> Kind -> [Token] -> AParser ClassDecl
-subClassDecl l k p = 
-    do t <- lessT
-       s <- parseClass
-       return (SubclassDecl l k s (map tokPos (p++[t])))
-
-isoClassDecl :: ClassId -> Kind -> [Token] -> AParser ClassDecl
-isoClassDecl s k ps = 
-    do e <- equalT
-       do o <- oBraceT
-	  if null ps && (case k of ExtClass (Intersection cs _) InVar _ -> 
-			                                    Set.isEmpty cs
-			           _ -> False)
-	     then do i <- pToken scanWords
-		     d <- dotT
-		     j <- asKey (tokStr i)
-		     l <- lessT
-		     t <- parseType
-		     p <- cBraceT
-		     return (DownsetDefn s i t (map tokPos [e,o,d,j,l,p])) 
-	     else unexpected "kind annotation"
-	 <|> do c <- parseClass
-	        return (ClassDefn s k c $ map tokPos (ps ++[e]))
-
 classDecl :: AParser ClassDecl
-classDecl = do   (is, cs) <- classId `separatedBy` anComma
-		 (ps, k) <- option ([], star) $ bind  (,) (single colT) kind 
-		 if isSingle is then 
-		    subClassDecl is k (cs++ps)
-		    <|>
-                    isoClassDecl (head is) k ps
-		    <|>
-		    return (ClassDecl is k $ map tokPos (cs++ps))
-		   else 
-		    subClassDecl is k (cs++ps)
-		    <|>
-		    return (ClassDecl is k $ map tokPos (cs++ps))
+classDecl = 
+    do (is, cs) <- classId `separatedBy` anComma
+       (ps, k) <- option ([], star) $ bind  (,) (single (colT <|> lessT)) kind 
+       return (ClassDecl is k $ map tokPos (cs++ps))
 
 classItem :: AParser ClassItem
 classItem = do c <- classDecl
@@ -393,6 +360,7 @@ opItem = do (os, ps) <- opId `separatedBy` anComma
 
 opItems :: AParser SigItems
 opItems = hasCaslItemList opS opItem OpItems
+	  <|> hasCaslItemList functS opItem OpItems
 
 -----------------------------------------------------------------------------
 -- predItem
@@ -470,7 +438,7 @@ genVarItems =
 -----------------------------------------------------------------------------
 
 freeDatatype, progItems, axiomItems, forallItem, genVarItem, dotFormulae, 
-  basicItems :: AParser BasicItem
+  basicItems, internalItems :: AParser BasicItem
 
 freeDatatype =   do f <- asKey freeS
                     FreeDatatype ds ps <- dataItems
@@ -511,6 +479,13 @@ dotFormulae = do d <- dotT
     where aFormula = bind appendAnno 
 		     (annoParser term) lineAnnos
 
+internalItems = 
+    do i <- asKey internalS
+       o <- oBraceT 
+       is <- annosParser basicItems
+       p <- cBraceT
+       return (Internal is $ toPos i [o] p) 
+
 basicItems = fmap SigItems sigItems
 	     <|> classItems
 	     <|> progItems
@@ -520,6 +495,7 @@ basicItems = fmap SigItems sigItems
              <|> forallItem
              <|> dotFormulae
              <|> axiomItems
+	     <|> internalItems
 
 basicSpec :: AParser BasicSpec
 basicSpec = (fmap BasicSpec $ annosParser basicItems)

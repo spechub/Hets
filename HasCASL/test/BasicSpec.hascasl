@@ -2,13 +2,13 @@ class Type
 
 var t:Type
 
-class TYPE = Type; TYPE={x.x < t}
+class TYPE : {x.x < t}
 
 type Pred __ : Type- -> Type; Unit:TYPE
 
 
 class a, b, c
-class a, b, c <d; a=b
+class a, b, c <d; a:b
 
 type s:c
 

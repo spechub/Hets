@@ -1,26 +1,26 @@
 var s,t: Type;
 
-class b = { x . x < s}  %% assume s < t
+class b : { x . x < s}  %% assume s < t
 
-class a = { x . x < t} 
+class a : { x . x < t} 
 
-class a < b        %% a is an alias class
+class a < b        
 
-class a = {y . y < t }  %% ok (but only for simple tokens)
+class a : {y . y < t }  %% ok (but only for simple tokens)
 
-class a = {y . y < s }  %% wrong redefinition
+class a : {y . y < s }  
 
 class c,d
 
-class a = (c,d)      %% wrong redefinition
+class a : (c,d)    
 
-class e = a          %% ok intersection
+class e : a          %% ok
 
 class h < e          %% ok 
 
 class h < (a,b)      %% ok 
 
-class e = { x . x < t }  %% wrong because e is intersection class
+class e : { x . x < t }  
  
  
 

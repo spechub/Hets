@@ -1,9 +1,9 @@
-class Type
+class Type < Type
 var t : Type
-class TYPE = Type; TYPE = Type
+class TYPE < {x . x < t}
 type Pred : Type- -> Type; Unit : TYPE
-class a, b, c
-class a, b, c < d; a
+class a, b, c < Type
+class a, b, c < Type; a < b
 type s : c
 op tt : s ->? Unit
 var x : s
@@ -39,11 +39,10 @@ type Data4 ::= Cons41 (sel1:? Data1; sel2:? Data2) ? |
 forall x : s
 forall x : s
 %% Classes ---------------------------------------------------------------
-TYPE = Type
-a < d
-b < d
-c < d
-d
+TYPE < {x . x < t}
+a < b
+b < Type
+c < Type
 %% Type Constructors -----------------------------------------------------
 Data1 : Type %[type __ ::=
 	       a : -> __
@@ -56,9 +55,9 @@ Data3 : Type %[type __ ::=
 Data4 : Type %[type __ ::=
 	       Cons41 : Data1 × Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
 	       Cons42 : Data2 × Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
-Pred : (Type -> Type, Type- -> Type) := \ a : Type . a ->? Unit
-Unit : (Type, TYPE) := Unit
-s : (c, Type) < ? s
+Pred : Type -> Type := \ a : Type . a ->? Unit
+Unit : TYPE := Unit
+s : c < ? s
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 Cons31 : Data1 × Data2 -> Data3 %(construct Data3)%
@@ -98,15 +97,15 @@ tt : s ->? Unit = \ x : s . ()
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration 'Type'
 Hint (line 3, column 5) is type variable 't'
-Warning (line 5, column 20) redeclared class 'TYPE'
-Error (line 5, column 20) inconsistent class redefinition of 'TYPE'
+Error (line 7, column 6) incompatible kind of: Pred
+  expected: Type -> Type
+     found: Type- -> Type
 
-Warning (line 11, column 16) implicit declaration of superclass 'd'
+Error (line 11, column 16) undeclared class 'd'
 Warning (line 11, column 7) redeclared class 'a'
 Warning (line 11, column 10) redeclared class 'b'
 Warning (line 11, column 13) redeclared class 'c'
 Warning (line 11, column 19) redeclared class 'a'
-Error (line 11, column 19) class cannot become an alias class 'a'
 Error (line 20, column 12) unexpected mixfix token: res
 Error (line 20, column 10) unexpected pattern '__ res __ (x : s, y : t)'
 Error (line 20, column 37) unexpected mixfix token: x
@@ -133,7 +132,6 @@ Error (line 37, column 3) no typing for 'ex(p : ? s) : ? Unit'
 Error (line 40, column 7) unexpected mixfix token: )
 Error (line 40, column 3) unexpected pattern 'ff ()'
 Error (line 40, column 20) unexpected mixfix token: all
-Warning (line 57, column 11) redeclared type 's'
 Error (line 61, column 36) unknown type 'Data2'
 Error (line 61, column 52) unknown type 'Data2'
 Warning (line 61, column 73) data subtype ignored

@@ -1,6 +1,6 @@
-parse error at (line 1, column 13):
+parse error at (line 1, column 9):
 unexpected "="
-expecting [<id>,...,<id>], "{", "%%", "%{", "%(", "%", ";", "sort", "op", "pred", "type", "classes", "class", "program", "generated", "free", "var", "forall", dot, "axiom" or end of input
+expecting [<id>,...,<id>], "%%", "%{", "%(", "%", ",", ":", "<", "{", ";", "sort", "op", "fun", "pred", "type", "classes", "class", "program", "generated", "free", "var", "forall", dot, "axiom", "internal" or end of input
 
 parse error at (line 2, column 9):
 unexpected end of input
@@ -22,8 +22,9 @@ parse error at (line 6, column 6):
 unexpected end of input
 expecting casl sign, "{", __, "%%", "%{", "%(", "%", ",", ":" or "<"
 
-parse error at (line 7, column 19):
-unexpected kind annotation
+parse error at (line 7, column 16):
+unexpected "="
+expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", "{", ";", "sort", "op", "fun", "pred", "type", "classes", "class", "program", "generated", "free", "var", "forall", dot, "axiom", "internal" or end of input
 
 parse error at (line 8, column 17):
 unexpected list of type arguments

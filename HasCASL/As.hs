@@ -17,8 +17,9 @@ Portability :  portable
 module HasCASL.As where
 
 import Common.Id
+import Common.Keywords
 import Common.AS_Annotation 
-import Common.Lib.Set
+import HasCASL.HToken
 
 data BasicSpec = BasicSpec [Annoted BasicItem]
                   deriving (Show, Eq)
@@ -37,6 +38,8 @@ data BasicItem = SigItems SigItems
                -- or "generated" "type" ";"s
                | AxiomItems [GenVarDecl] [Annoted Term] [Pos]
                -- pos "forall" (if GenVarDecl not empty), dots 
+	       | Internal [Annoted BasicItem] [Pos]
+	       -- pos "internal" "{", ";"s, "}"
                  deriving (Show, Eq)
 
 data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
@@ -54,14 +57,33 @@ data ClassItem = ClassItem ClassDecl [Annoted BasicItem] [Pos]
 
 data ClassDecl = ClassDecl [ClassId] Kind [Pos]
                -- pos ","s
-               | SubclassDecl [ClassId] Kind Class [Pos]
-               -- pos ","s, "<"
-               | ClassDefn ClassId Kind Class [Pos]
-               -- pos "="
-               | DownsetDefn ClassId Token Type [Pos] 
-	       -- pos " =" "{", dot, "<", typeVar,  "}"
                  deriving (Show, Eq)
                           
+data Variance = CoVar | ContraVar | InVar deriving (Show, Eq, Ord)
+
+type ExtKind = Kind
+
+data Kind = Universe [Pos]
+          | MissingKind 
+          | Downset (Maybe Token) Type Kind [Pos]
+	  | ClassKind ClassId Kind
+	  | Intersection [Kind] [Pos]
+	  | FunKind ExtKind Kind [Pos]
+	    -- pos "->" 
+	  | ExtKind Kind Variance [Pos]
+	     -- pos "+" or "-" 
+	    deriving Show
+type RawKind = Kind
+
+star, starPlus, funKind, prodKind :: RawKind
+star = Universe []
+
+starPlus = ExtKind star CoVar []
+
+funKind = FunKind (ExtKind star ContraVar [])
+	     (FunKind starPlus star []) []
+prodKind = FunKind starPlus (FunKind starPlus star []) []
+
 data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos ","s
                | SubtypeDecl [TypePattern] Type [Pos]
@@ -87,7 +109,7 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
 		 -- pos "(", ")"
                    deriving (Show, Eq)
 
-data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor)
+data Type = TypeName TypeId ExtKind Int  -- (Int == 0 means constructor)
 	  | TypeAppl Type Type
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
@@ -104,7 +126,19 @@ data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor)
             deriving (Show)
 
 data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
-             deriving (Show, Eq, Ord)
+             deriving (Eq, Ord)
+
+instance Show Arrow where
+    show FunArr = funS
+    show PFunArr = pFun
+    show ContFunArr = contFun
+    show PContFunArr = pContFun 
+
+arrowId :: Arrow -> Id
+arrowId a = Id (map mkSimpleId [place, show a, place]) [] []
+
+productId :: Id
+productId = Id (map mkSimpleId [place, timesS, place]) [] []
 
 data Pred = IsIn ClassId [Type]
               deriving (Show, Eq)
@@ -149,7 +183,7 @@ data DatatypeDecl = DatatypeDecl
                     TypePattern 
 		    Kind
                     [Annoted Alternative] 
-                    (Maybe Class) 
+                    [ClassId]
                     [Pos] 
 		     -- pos "::=", "|"s, "deriving"
 		     deriving (Show, Eq)
@@ -237,7 +271,7 @@ data SeparatorKind = Comma | Other deriving (Show)
 data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show)
 	       -- pos "," or ":" 
 
-data TypeArg = TypeArg TypeId Kind SeparatorKind [Pos]
+data TypeArg = TypeArg TypeId ExtKind SeparatorKind [Pos]
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
 	       deriving (Show)
 
@@ -245,28 +279,6 @@ data GenVarDecl = GenVarDecl VarDecl
 		| GenTypeVarDecl TypeArg
 		  deriving (Show, Eq)
 
--- ----------------------------------------------------------------------------
--- class
--- ----------------------------------------------------------------------------
-
-data Variance = CoVar | ContraVar | InVar deriving (Show, Eq, Ord)
-
-data Kind = ExtClass Class Variance [Pos]
-	     -- pos "+" or "-" 
-	    | KindAppl Kind Kind [Pos]
-	    -- pos "->" 
-	    deriving (Show)
-
-data Class = Downset Type   -- not parsed directly
-	   | Intersection { iclass :: Set ClassId, classPos :: [Pos] }  
-	   -- pos "(", ","s, ")"
-	     deriving (Show)
-
-universe :: Class
-universe = Intersection empty []
-
-star :: Kind
-star = ExtClass universe InVar []
 
 -- ----------------------------------------------------------------------------
 -- op names
@@ -290,15 +302,35 @@ type ClassId = Id -- TOKEN-ID (one token with compound list, like CASL sorts)
 -- equality instances while ignoring positions
 -- ----------------------------------------------------------------------------
 
-instance Eq Class where
-    Intersection i1 _ == Intersection i2 _ = i1 == i2
-    Downset t1 == Downset t2 = t1 == t2
+instance Eq Kind where
+    Universe _ == Universe _= True
+    MissingKind == MissingKind = True
+    Downset _ t1 _ _ == Downset _ t2 _ _ = t1 == t2
+    ClassKind i1 _ == ClassKind i2 _ = i1 == i2
+    Intersection ks1 _ == Intersection ks2 _ = ks1 == ks2
+    FunKind p1 c1 _ == FunKind p2 c2 _ = (p1, c1) == (p2, c2)
+    ExtKind c1 v1 _ == ExtKind c2 v2 _ = (c1, v1) == (c2, v2)
     _ == _ = False
 
-instance Eq Kind where
-    ExtClass c1 v1 _ == ExtClass c2 v2 _ = (c1, v1) == (c2, v2)
-    KindAppl p1 c1 _ == KindAppl p2 c2 _ = (p1, c1) == (p2, c2)
-    _ == _ = False
+instance Ord Kind where
+    Universe _ <= _ = True
+    MissingKind <= MissingKind = True
+    Downset _ t1 _ _ <= Downset _ t2 _ _ = t1 <= t2
+    ClassKind i1 _ <= ClassKind i2 _ = i1 <= i2
+    Intersection ks1 _ <= Intersection ks2 _ = ks1 <= ks2
+    FunKind p1 c1 _ <= FunKind p2 c2 _ = (p1, c1) <= (p2, c2)
+    ExtKind c1 v1 _ <= ExtKind c2 v2 _ = (c1, v1) <= (c2, v2)
+    _ <= Universe _ = False 
+    MissingKind <= _ = True
+    _ <= MissingKind = False
+    Downset _ _ _ _ <= _ = True
+    _ <= Downset _ _ _ _ = False
+    ClassKind _ _ <= _ = True
+    _ <= ClassKind _ _ = False
+    Intersection _ _ <= _ = True
+    _ <= Intersection _ _ = False
+    ExtKind _ _ _ <= _ = True
+    _ <= ExtKind _ _ _ = False
 
 instance Eq Type where 
     TypeName i1 k1 v1 == TypeName i2 k2 v2 = (i1, k1, v1) == (i2, k2, v2)
@@ -311,6 +343,33 @@ instance Eq Type where
     ProductType l1 _ == ProductType l2 _ = l1 == l2
     FunType f1 a1 g1 _ == FunType f2 a2 g2 _ = (f1, a1, g1) == (f2, a2, g2)
     _ == _ = False
+
+instance Ord Type where
+    TypeName i1 k1 v1 <= TypeName i2 k2 v2 = (i1, k1, v1) <= (i2, k2, v2)
+    TypeAppl f1 a1 <= TypeAppl f2 a2 = (f1, a1) <= (f2, a2)
+    TypeToken t1 <= TypeToken t2 = t1 <= t2
+    BracketType b1 l1 _ <= BracketType b2 l2 _ = (b1, l1) <= (b2, l2)
+    KindedType t1 k1 _ <= KindedType t2 k2 _ = (t1, k1) <= (t2, k2)
+    MixfixType l1 <= MixfixType l2 = l1 <= l2
+    LazyType t1 _ <= LazyType t2 _ = t1 <= t2 
+    ProductType l1 _ <= ProductType l2 _ = l1 <= l2
+    FunType f1 a1 g1 _ <= FunType f2 a2 g2 _ = (f1, a1, g1) <= (f2, a2, g2)
+    TypeName _ _ _ <= _ = True
+    _ <= TypeName _ _ _ = False
+    TypeAppl _ _ <= _ = True 
+    _ <= TypeAppl _ _ = False
+    TypeToken _ <= _ = True
+    _ <= TypeToken _ = False
+    BracketType _ _ _ <= _ = True
+    _ <= BracketType _ _ _ = False
+    KindedType _ _ _ <= _ = True
+    _ <= KindedType _ _ _ = False
+    MixfixType _ <= _ = True
+    _ <= MixfixType _ = False
+    LazyType _ _<= _ = True
+    _ <= LazyType _ _ = False
+    ProductType _ _<= _ = True
+    _ <= ProductType _ _ = False
 
 instance Eq TypeArg where
     TypeArg i1 k1 _ _ == TypeArg i2 k2 _ _ = (i1, k1) == (i2, k2)

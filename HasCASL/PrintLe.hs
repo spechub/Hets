@@ -21,19 +21,12 @@ import Data.Maybe
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.Lib.Pretty as Pretty
-import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Keywords
 
 instance PrettyPrint ClassInfo where
-    printText0 ga (ClassInfo sups k defn) =
-        noPrint (case k of ExtClass (Intersection s []) InVar _ -> 
-		                       Set.isEmpty s
-		           _ -> False) (space <> printKind ga k)
-	<> noPrint (isNothing defn)
-	   (space <> ptext equalS <+> printText0 ga defn)
-	<> noPrint (Set.isEmpty sups)
-	   (space <> ptext lessS <+> printList0 ga (Set.toList sups))
+    printText0 ga (ClassInfo ks) =
+	   space <> ptext lessS <+> printList0 ga ks
 
 instance PrettyPrint TypeDefn where
     printText0 _ NoTypeDefn = empty
@@ -71,8 +64,8 @@ instance PrettyPrint Selector where
 			     Total -> colon) <+> printText0 ga t
 
 instance PrettyPrint TypeInfo where
-    printText0 ga (TypeInfo k ks sups defn) =
-	space <> colon <+> printList0 ga (k:ks) 
+    printText0 ga (TypeInfo _ ks sups defn) =
+	space <> colon <+> printList0 ga ks
 	<> noPrint (null sups)
 	   (space <> ptext lessS <+> printList0 ga sups)
         <> printText0 ga defn

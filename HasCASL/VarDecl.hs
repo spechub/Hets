@@ -16,7 +16,6 @@ module HasCASL.VarDecl where
 import HasCASL.As
 import HasCASL.ClassAna
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Id
 import HasCASL.Le
 import Data.Maybe
@@ -40,7 +39,7 @@ putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 addTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env (Maybe Id)
 -- type args not yet considered for kind construction 
 addTypeId defn _ kind i = 
-    do nk <- expandKind kind
+    do let nk = rawKind kind
        if placeCount i <= kindArity TopLevel nk then
 	  do addTypeKind defn i kind
 	     return $ Just i 
@@ -58,18 +57,19 @@ addTypeKind d i k =
 addSingleTypeKind :: TypeDefn -> Id -> Kind -> State Env () 
 addSingleTypeKind d i k = 
     do tk <- gets typeMap
+       let rk = rawKind k
        case Map.lookup i tk of
 	      Nothing -> putTypeMap $ Map.insert i 
-			 (TypeInfo k [] [] d) tk
+			 (TypeInfo rk [k] [] d) tk
 	      Just (TypeInfo ok ks sups defn) -> 
-		  -- check with merge
-		  do checkKinds i k ok
-		     if any (==k) (ok:ks)
-			then addDiags [mkDiag Warning 
+		  if rk == ok
+			then if k `elem` ks then
+			     addDiags [mkDiag Warning 
 				 "redeclared type" i]
 				 else putTypeMap $ Map.insert i 
-					 (TypeInfo ok
-					       (k:ks) sups defn) tk
+					 (TypeInfo ok (mkIntersection (k:ks)) 
+					  sups defn) tk
+			else addDiags $ diffKindDiag i ok rk 
 
 -- | analyse a type argument
 anaTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
@@ -85,14 +85,21 @@ addTypeVarDecl ta@(TypeArg t k _ _) =
 
 -- | compute arity from a 'Kind'
 kindArity :: ApplMode -> Kind -> Int
-kindArity m (KindAppl k1 k2 _) =
-    case m of 
-	       TopLevel -> kindArity OnlyArg k1 + 
-			   kindArity TopLevel k2
-	       OnlyArg -> 1
-kindArity m (ExtClass _ _ _) = case m of
-			     TopLevel -> 0
-			     OnlyArg -> 1
+kindArity m k = 
+    case k of 
+    FunKind k1 k2 _ -> case m of 
+		       TopLevel -> kindArity OnlyArg k1 + 
+				   kindArity TopLevel k2
+		       OnlyArg -> 1
+    Universe _ -> case m of
+		  TopLevel -> 0
+		  OnlyArg -> 1
+    ClassKind _ ck -> kindArity m ck
+    Downset _ _ dk _ -> kindArity m dk
+    Intersection (k1:_) _ -> kindArity m k1
+    ExtKind ek _ _ -> kindArity m ek
+    _ -> error "kindArity"
+
 
 -- ---------------------------------------------------------------------------
 -- for storing selectors and constructors
@@ -145,37 +152,29 @@ anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = 
     anaTypeVarDecl t >>= (return . fmap GenTypeVarDecl)
 
-convertTypeToClass :: Type -> State Env (Maybe Class)
-convertTypeToClass (TypeToken t) = 
-       if tokStr t == "Type" then return $ Just universe else do
-          let ci = simpleIdToId t
-	  e <- get					       
-	  mk <- anaClassId ci
-	  case mk of 
-		  Nothing -> do put e
-				return Nothing
-		  _ -> return $ Just $ Intersection  (Set.single ci) []
-convertTypeToClass (BracketType Parens ts ps) = 
-       do cs <- mapM convertTypeToClass ts
-	  if all isJust cs then 
-	     return $ Just $ Intersection (Set.unions $ map iclass $ 
-				    catMaybes cs) ps
-	     else return Nothing
-
-convertTypeToClass _ = 
-    do return Nothing
-
 convertTypeToKind :: Type -> State Env (Maybe Kind)
 convertTypeToKind (FunType t1 FunArr t2 ps) = 
     do mk1 <- convertTypeToKind t1
        mk2 <- convertTypeToKind t2
        case (mk1, mk2) of
-           (Just k1, Just k2) -> return $ Just $ KindAppl k1 k2 ps
+           (Just k1, Just k2) -> case k2 of 
+	       ExtKind _ _ _ -> return Nothing
+	       _ -> return $ Just $ FunKind k1 k2 ps
 	   _ -> return Nothing
 
+convertTypeToKind (BracketType Parens [] _) = 
+    return Nothing
 convertTypeToKind (BracketType Parens [t] _) = 
-    do convertTypeToKind t
-
+    convertTypeToKind t
+convertTypeToKind (BracketType Parens ts ps) = 
+       do cs <- mapM convertTypeToKind ts
+	  if all isJust cs then 
+	     do let k:ks = catMaybes cs 
+		    rk = rawKind k
+		if all ((==rk) . rawKind) ks then
+		   return $ Just $ Intersection (k:ks) ps
+		   else return Nothing
+	     else return Nothing
 convertTypeToKind (MixfixType [t1, TypeToken t]) = 
     let s = tokStr t 
 	v = case s of 
@@ -184,13 +183,21 @@ convertTypeToKind (MixfixType [t1, TypeToken t]) =
 		   _ -> InVar
     in case v of 
 	      InVar -> do return Nothing
-	      _ -> do mk1 <- convertTypeToClass t1
+	      _ -> do mk1 <- convertTypeToKind t1
 		      case mk1 of 
-			  Just k1 -> return $ Just $ ExtClass k1 v [tokPos t]
+			  Just k1 -> return $ Just $ ExtKind k1 v [tokPos t]
 			  _ -> return Nothing
-convertTypeToKind t = 
-    do mc <- convertTypeToClass t
-       return $ fmap ( \ c -> ExtClass c InVar []) mc
+convertTypeToKind(TypeToken t) = 
+       if tokStr t == "Type" then return $ Just $ Universe [tokPos t] else do
+          let ci = simpleIdToId t
+	  e <- get					       
+	  mk <- anaClassId ci
+	  case mk of 
+		  Nothing -> do put e
+				return Nothing
+		  Just k -> return $ Just $ ClassKind ci k
+convertTypeToKind _ = 
+    do return Nothing
 
 optAnaVarDecl :: VarDecl -> State Env (Maybe GenVarDecl)
 optAnaVarDecl vd@(VarDecl v t s q) = 

@@ -1,4 +1,4 @@
-class a, b, c, d
+class a, b, c, d < Type
 type r, s, t
 type [, { : a -> b
 var
@@ -19,10 +19,10 @@ type s1, r1, t1 < t
 type s2 = r2 = t2
 type s3
 %% Classes ---------------------------------------------------------------
-a
-b
-c
-d
+a < Type
+b < Type
+c < Type
+d < Type
 %% Type Constructors -----------------------------------------------------
 List : a -> b
 Pred : Type -> Type := \ a : Type . a ->? Unit

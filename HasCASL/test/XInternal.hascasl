@@ -1,0 +1,8 @@
+internal {
+type s, t
+
+funs o,q : s -> t
+
+. o = q
+
+}

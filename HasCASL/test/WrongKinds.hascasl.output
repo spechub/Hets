@@ -1,13 +1,13 @@
 parse error at (line 1, column 2):
 unexpected ")"
-expecting words or "("
+expecting words, "(" or "{"
 
 parse error at (line 2, column 3):
-unexpected variance of result kind
+unexpected variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
 parse error at (line 3, column 4):
-unexpected variance of result kind
+unexpected variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
 parse error at (line 4, column 2):
@@ -15,61 +15,52 @@ unexpected "*"
 expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
 
 parse error at (line 5, column 6):
-unexpected variance of result kind
+unexpected variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 6, column 7):
-unexpected "-"
-expecting "%%", "%{", "%(", "%", "->" or end of input
+parse error at (line 6, column 8):
+unexpected variance of kind
+expecting "%%", "%{", "%(", "%" or "->"
 
 parse error at (line 7, column 7):
 unexpected "*"
 expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
 
 parse error at (line 8, column 5):
-unexpected "*"
-expecting "%%", "%{", "%(", "%", "->" or ")"
-
-parse error at (line 9, column 10):
-unexpected variance of result kind
+unexpected variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 10, column 10):
-unexpected "+"
-expecting "%%", "%{", "%(", "%", "->" or end of input
+parse error at (line 9, column 10):
+unexpected variance of kind
+expecting "%%", "%{", "%(", "%" or "->"
+
+parse error at (line 10, column 11):
+unexpected variance of kind
+expecting "%%", "%{", "%(", "%" or "->"
 
 parse error at (line 11, column 7):
-unexpected variance of result kind
+unexpected variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
 parse error at (line 12, column 7):
-unexpected variance of result kind
+unexpected variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 13, column 5):
-unexpected "-"
-expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "," or ")"
-
+(a, b -> c)
 parse error at (line 14, column 4):
-unexpected ","
-expecting "%%", "%{", "%(", "%", "->" or ")"
+unexpected variance of kind
+expecting "%%", "%{", "%(", "%" or "->"
 
 parse error at (line 15, column 2):
 unexpected "*"
 expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
 
 parse error at (line 16, column 4):
-unexpected variance of result kind
+unexpected variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 17, column 7):
-unexpected "+"
-expecting "%%", "%{", "%(", "%", "->" or end of input
-
-parse error at (line 18, column 9):
-unexpected "+"
-expecting "%%", "%{", "%(", "%", "->" or end of input
-
+(a -> b)+ -> c
+(a- -> b)+ -> c
 parse error at (line 19, column 2):
 unexpected "*"
 expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
@@ -79,16 +70,16 @@ unexpected "*"
 expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", "," or ")"
 
 parse error at (line 21, column 5):
-unexpected "*"
-expecting "%%", "%{", "%(", "%", "->" or ")"
+unexpected variance of kind
+expecting "%%", "%{", "%(", "%" or "->"
 
 parse error at (line 22, column 5):
-unexpected "*"
-expecting "%%", "%{", "%(", "%", "->" or ")"
+unexpected variance of kind
+expecting "%%", "%{", "%(", "%" or "->"
 
 parse error at (line 23, column 5):
-unexpected "*"
-expecting "%%", "%{", "%(", "%", "->" or ")"
+unexpected variance of kind
+expecting "%%", "%{", "%(", "%" or "->"
 
 parse error at (line 24, column 7):
 unexpected "*"

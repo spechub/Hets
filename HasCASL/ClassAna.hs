@@ -7,7 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   analyse given classes
+   auxiliary functions for raw kinds
 -}
 
 module HasCASL.ClassAna where
@@ -20,28 +20,8 @@ import Data.List
 import Data.Maybe
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import Common.Result
-
--- ---------------------------------------------------------------------------
--- analyse class
--- ---------------------------------------------------------------------------
-
--- transitiv super classes 
--- PRE: all superclasses and defns must be defined in ClassEnv
--- and there must be no cycle!
-
--- | get all superclass ids 
-allSuperClasses :: ClassMap -> ClassId -> Set.Set ClassId
-allSuperClasses ce ci = 
-    let recurse = Set.unions . map (allSuperClasses ce) in
-    case Map.lookup ci ce of 
-    Just info -> (case classDefn info of 
-                        Just (Intersection cis _) -> recurse $ Set.toList cis
-                        _ -> Set.single ci)
-                 `Set.union` recurse (Set.toList $ superClasses info)
-    Nothing -> error "allSuperClasses"
 
 anaClassId :: ClassId -> State Env (Maybe Kind)
 anaClassId ci = 
@@ -49,84 +29,95 @@ anaClassId ci =
        case Map.lookup ci cMap of
 	    Nothing -> do addDiags [mkDiag Error "undeclared class" ci]
 			  return Nothing
-	    Just i -> return $ Just $ classKind i
+	    Just (ClassInfo l) ->  return $ Just $ ClassKind ci $ 
+				   toIntersection l
 
-expandKind :: Kind -> State Env Kind
-expandKind (ExtClass c _ _) = 
+toIntersection :: [Kind] -> Kind
+toIntersection l = case mkIntersection l of
+			  [] -> star
+			  [h] -> h
+			  is -> Intersection is []
+
+mkIntersection :: [Kind] -> [Kind]
+mkIntersection = delete star . nub .
+		     concatMap ( \ k -> case k of
+				 Intersection lk _ -> mkIntersection lk
+			         _ -> [k]) 
+
+rawKind :: Kind -> RawKind
+rawKind c = 
     case c of
-    Intersection s _ ->
-	if Set.isEmpty s then return star else
-	   do mk <- anaClassId $ Set.findMin s
-	      case mk of
-	           Just k -> return k
-		   _ -> error "expandKind"
-    _ -> return star
+    Universe _ -> c
+    MissingKind -> error "rawKind1"
+    ClassKind _ rk -> rawKind rk
+    Downset _ _ rk _ -> rawKind rk
+    Intersection l _ -> if null l then error "rawKind2"
+					      else rawKind $ head l
+    FunKind e k ps  -> FunKind (rawKind e) (rawKind k) ps
+    ExtKind k InVar _ -> rawKind k
+    ExtKind k v ps -> ExtKind (rawKind k) v ps 
 
-expandKind (KindAppl k1 k2 ps) = 
-    do k3 <- expandKind k1
-       k4 <- expandKind k2
-       return $ KindAppl k3 k4 ps
-    
-anaClass :: Class -> State Env (Kind, Class)
-anaClass ic@(Intersection s ps) =
-    do l <- mapM ( \ ci -> do mki <- anaClassId ci
-		              case mki of 
-		                   Nothing -> return []
-		                   Just ki -> return [(ki, ci)]
-		 ) $ Set.toList s
-       let (ks, restCs) = unzip (concat l)
-	   k = if null ks then star else head ks
-       mapM ( \ ki -> 
-			 checkKinds ic k ki) ks
-       return (k, Intersection (Set.fromList restCs) ps)
+checkIntersection :: RawKind -> [Kind] -> [Diagnosis]
+checkIntersection _ [] = []
+checkIntersection k (f:r) = 
+	case k == rawKind f of 
+	False -> 
+	      Diag Error ("incompatible kind of: " ++ showPretty f "" 
+		++  "\n  for raw kind: " ++ showPretty k "")
+	      (posOf [f]) : checkIntersection k r
+	True -> checkIntersection k r
 
-anaClass (Downset t) = 
-    do addDiags [downsetWarning t] 
-       return (star, Downset t)
-
-downsetWarning :: Type -> Diagnosis
-downsetWarning t = mkDiag Warning "unchecked type" t
-
--- ---------------------------------------------------------------------------
--- analyse kind
--- ---------------------------------------------------------------------------
-
-anaKind :: Kind -> State Env Kind
-anaKind (KindAppl k1 k2 p) = 
-    do k1e <- anaKind k1 
-       k2e <- anaKind k2
-       return $ KindAppl k1e k2e p
-anaKind (ExtClass k v p) = 
-    do (_, c) <- anaClass k
-       return $ ExtClass c v p
-
--- ---------------------------------------------------------------------
--- comparing kinds 
--- ---------------------------------------------------------------------
-
-checkKinds :: (PosItem a, PrettyPrint a) => 
-	      a -> Kind -> Kind -> State Env ()
-checkKinds p k1 k2 =
-    do k3 <- expandKind k1
-       k4 <- expandKind k2
-       addDiags (eqKindDiag p k3 k4)
-       return ()
-
-eqKindDiag :: (PosItem a, PrettyPrint a) => a -> Kind -> Kind -> [Diagnosis]
-eqKindDiag a k1 k2 = 
-    if eqKind k1 k2 then []
-       else [ Diag Error
+diffKindDiag :: (PosItem a, PrettyPrint a) => 
+		 a -> RawKind -> RawKind -> [Diagnosis]
+diffKindDiag a k1 k2 = 
+           [ Diag Error
 	      ("incompatible kind of: " ++ showPretty a "" ++ expected k1 k2)
 	    $ posOf [a] ]
 
-indent :: Int -> ShowS -> ShowS
-indent i s = showString $ concat $ 
-	     intersperse ('\n' : replicate i ' ') (lines $ s "")
+minKind :: Bool -> RawKind -> RawKind -> Maybe RawKind
+minKind b k1 k2 = 
+    case k1 of 
+	    FunKind ek1 k3 ps -> 
+		case k2 of
+			FunKind ek2 k4 qs ->
+			    do ek <- minKind (not b) ek1 ek2
+			       k <- minKind b k3 k4 
+			       return $ FunKind ek k (ps++qs)
+		        ExtKind _ _ _ -> minKind b (ExtKind k1 InVar []) k2
+			_ -> Nothing
+	    Universe ps -> case k2 of
+			 Universe qs -> Just $ Universe (ps ++ qs)
+		         ExtKind _ _ _ -> minKind b (ExtKind k1 InVar []) k2
+			 _ -> Nothing
+	    ExtKind k3 v1 ps -> case k2 of
+	         ExtKind k4 v2 qs -> do 
+		       k <- minKind b k3 k4
+		       v <- (if b then minVar else maxVar) v1 v2
+		       return $ ExtKind k v (ps ++ qs)
+		 _ -> minKind b k1 (ExtKind k2 InVar [])
+	    _ -> error "minKind"
 
-eqKind :: Kind -> Kind -> Bool
-eqKind (KindAppl p1 c1 _) (KindAppl p2 c2 _) =
-    eqKind p1 p2 && eqKind c1 c2
-eqKind (ExtClass _ _ _) (ExtClass _ _ _) = True
-eqKind _ _ = False
+maxVar, minVar :: Variance -> Variance -> Maybe Variance
+maxVar v InVar = Just v
+maxVar InVar v = Just v
+maxVar v1 v2 = if v1 == v2 then Just v1 else Nothing
 
--- ---------------------------------------------------------------------
+minVar v1 v2 = if v1 == v2 then Just v1 else Just InVar
+
+checkKinds :: (PosItem a, PrettyPrint a) => 
+              a -> Kind -> Kind -> State Env ()
+checkKinds p k1 k2 =
+    do let k3 = rawKind k1
+           k4 = rawKind k2
+       if k3 == k4 then return ()
+	  else addDiags $ diffKindDiag p k1 k2
+
+cyclicClassId :: ClassId -> Kind -> Bool
+cyclicClassId ci k =
+    case k of
+	   FunKind k1 k2 _ -> cyclicClassId ci k1 || cyclicClassId ci k2
+	   ExtKind ek _ _ -> cyclicClassId ci ek
+	   ClassKind cj ck -> cj == ci || cyclicClassId ci ck
+	   Downset _ _ dk _ -> cyclicClassId ci dk
+	   Intersection l _ -> any (cyclicClassId ci) l
+	   _ -> False

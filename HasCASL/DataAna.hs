@@ -18,7 +18,6 @@ import Common.Id
 import Common.Lib.State
 import Common.Result
 import HasCASL.Le
-import HasCASL.ClassAna
 import HasCASL.TypeAna
 import Data.Maybe
 
