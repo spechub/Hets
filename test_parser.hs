@@ -13,6 +13,8 @@ import Id
 import AS_Annotation
 import Token
 
+import Print_HetCASL
+
 -- import Prepositional
 
 -- # import LogicGraph
@@ -36,7 +38,7 @@ parseFile par name = do { inp <- readFile name
 			  Left err -> do{ putStr "parse error at "
 					; print err
 					}
-			  Right x  -> print x
+			  Right x  -> print $ printText0_eGA x
 			}
     where parL p = do { whiteSpace
 		      ; res <- p 
