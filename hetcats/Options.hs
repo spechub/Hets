@@ -33,7 +33,9 @@ Usage: hetcats [OPTION...] file ... file
   -o OTYPES --output-types=OTYPES select OTYPES of output files
   -l id     --output-logic=id     select output logic and optional logic coding
   -L DIR    --casl-libdir=DIR     CASL library directory
+  -r STRING --raw=STRING          raw options for the pretty-printer
   -w        --width tex=10cm het=75 
+ -- or something else for width/papersize etc?
 
 OTYPES is a comma separated list of OTYPE
 OTYPE is (pp.(het|tex|html))
@@ -50,7 +52,7 @@ import Common.Utils
 import System.Directory
 import System.Exit
 
--- import Data.Char (isSpace) -- unused...
+-- import Data.Char (isSpace)
 import Data.List
 
 import Control.Monad (filterM)
@@ -70,7 +72,7 @@ data HetcatsOpts =
 	  , outtypes :: [OutType] -- list of output types to be generated
 	  , analysis :: Bool      -- False if analysis should be skipped
 	  , libdir   :: FilePath  -- CASL library directory
-	  , rawoptions :: [Flag]
+	  , rawoptions :: [RawOpt] -- raw options for the pretty printer
 	  }
     deriving (Eq)
 
@@ -81,6 +83,7 @@ instance Show HetcatsOpts where
 		++ " --output-dir="   ++ (outdir opts)
 		++ showAnalysis
 		++ " --casl-libdir="  ++ (libdir opts)
+		++ showRaw (rawoptions opts)
 		++ " " ++ showInFiles
 	where
 	showInType = show (intype opts)
@@ -89,6 +92,9 @@ instance Show HetcatsOpts where
 	    | analysis opts = ""
 	    | otherwise     = " --just-parse"
 	showInFiles  = infile opts
+	showRaw = joinWith ' ' . (map showRaw')
+	showRaw' (RawAscii s) = " --raw=ascii=" ++ s
+	showRaw' (RawLatex s) = " --raw=latex=" ++ s
 -- these might be used when multiple infiles are implemented
 --	showInType = joinWith ' ' (map show (intype opts))
 --	showInFiles  = joinWith ' ' (infile opts)
@@ -120,9 +126,8 @@ data Flag = Verbose  Int         -- how verbose shall we be?
 	  | OutDir   FilePath    -- destination directory for output files
 	  | OutTypes [OutType]   -- types of output to generate
 	  | Analysis Bool        -- to analyse or not to analyse
---	  | Analysis [AnaFlag]   -- might as well be a Bool...
-	  | Pretty   [String]    -- options passed to the pretty-printer
 	  | LibDir   FilePath    -- CASL library directory
+	  | Raw      [RawOpt]    -- raw options passed on to the pretty-printer
 	    deriving (Show,Eq)
 
 {- | 'options' describes all available options and generates usage information
@@ -145,6 +150,8 @@ options =
       "skip static analysis - just parse"
     , Option ['L'] ["casl-libdir"]  (ReqArg parseLibDir "DIR")
       "CASL library directory"
+    , Option ['r'] ["raw"] (ReqArg parseRawOpts "String")
+      "raw options passed on to the pretty-printer\n\tprepend with (ascii|text|(la)?tex)= to specify the target pretty-printer"
     ]
 
 
@@ -188,6 +195,11 @@ data HetOutFormat = Ascii | Term | Taf | Html | Xml
 -- valid types of graphs
 data GraphType = Dot | PostScript | Davinci
 		 deriving (Show, Eq)
+
+-- valid types of Raw Options
+data RawOpt = RawAscii String | RawLatex String
+	      deriving (Show, Eq)
+-- raw options for Html|Xml Parser?
 
 
 -- parser functions returning Flags --
@@ -279,6 +291,17 @@ parseOType s
 		    (Just t) -> Just (typ t)
 		    Nothing  -> Nothing
 
+-- parse raw options
+parseRawOpts :: String -> Flag
+parseRawOpts s 
+    | "ascii=" `isPrefixOf` s = Raw $ [RawAscii (drop 6 s)]
+    | "text="  `isPrefixOf` s = Raw $ [RawAscii (drop 5 s)]
+    | "latex=" `isPrefixOf` s = Raw $ [RawLatex (drop 6 s)]
+    | "tex="   `isPrefixOf` s = Raw $ [RawLatex (drop 4 s)]
+    | otherwise = error'
+    where
+    error' = hetsError User "raw options must be prepended with \"ascii=\" or \"latex=\" to identify the target pretty-printer"
+
 -- parse the output directory 
 parseOutputDir :: String -> Flag
 parseOutputDir s = OutDir s
@@ -323,6 +346,7 @@ formOpts fs = do if (hasHelp fs)
 		    else return () -- fall through
 		 fs' <- return $ (collectOutTypes
 				  . collectVerbosity
+				  . collectRawOpts
 				  -- collect some more here?
 				 ) fs
 		 fs'' <- collectOutDirs fs'
@@ -339,8 +363,8 @@ extractOpts ((InType x):xs)   opts = extractOpts xs opts { intype = x }
 extractOpts ((OutDir x):xs)   opts = extractOpts xs opts { outdir = x }
 extractOpts ((OutTypes x):xs) opts = extractOpts xs opts { outtypes = x }
 extractOpts ((Analysis x):xs) opts = extractOpts xs opts { analysis = x }
---extractOpts ((Pretty x):xs)   opts = ... ?
 extractOpts ((LibDir x):xs)   opts = extractOpts xs opts { libdir = x }
+extractOpts ((Raw x):xs)      opts = extractOpts xs opts { rawoptions = x }
 extractOpts [] opts = opts
 extractOpts _ _ = hetsError Intern "Unknown Error in extractOpts"
 
@@ -380,8 +404,6 @@ checkOutDirs fs =
 	  then return []
 	  else return $ [OutDir $ head ods]
     where
---    isOutDir (OutDir _ ) = True
---    isOutDir _           = False
     extrOutDir (OutDir x) = x
     extrOutDir _          = hetsError Intern "Unknown error in checkOutDirs"
 
@@ -437,6 +459,19 @@ collectOutDirs fs =
     where
     isOutDir (OutDir _) = True
     isOutDir _          = False
+
+collectRawOpts :: [Flag] -> [Flag]
+collectRawOpts fs =
+    let (rfs,fs') = partition isRawOpt fs
+	raws = foldl concatRawOpts [] rfs
+	raws' = if (null raws) then [] else [(Raw raws)]
+    in raws' ++ fs'
+    where
+    isRawOpt (Raw _) = True
+    isRawOpt _       = False
+    concatRawOpts os (Raw ot) = os ++ ot
+    concatRawOpts _ _ = hetsError Intern "Unknown Error in collectRawOpts"
+
 
 
 -- auxiliary functions: error messages --
