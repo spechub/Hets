@@ -19,7 +19,6 @@ import Logic.Comorphism
 import Common.Id
 import qualified Common.Lib.Map as Map
 import Common.Lib.Set as Set
-import Data.Dynamic
 import Data.List
 import Common.PrettyPrint
 import Common.AS_Annotation (Named, mapNamedM)
@@ -41,12 +40,6 @@ import Isabelle.IsaPrint
 data CASL2IsabelleHOL = CASL2IsabelleHOL deriving (Show)
 
 instance Language CASL2IsabelleHOL -- default definition is okay
-
-tycon_CASL2IsabelleHOL :: TyCon
-tycon_CASL2IsabelleHOL = mkTyCon "G_sign"
-
-instance Typeable CASL2IsabelleHOL where
-  typeOf _ = mkAppTy tycon_CASL2IsabelleHOL []
 
 instance Comorphism CASL2IsabelleHOL
                CASL CASL.Sublogic.CASL_Sublogics

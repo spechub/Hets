@@ -18,7 +18,6 @@ import Logic.Logic
 import Logic.Comorphism
 import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
-import Data.Dynamic
 
 -- CASL
 import CASL.Logic_CASL 
@@ -36,12 +35,6 @@ import Modal.ModalSign
 data CASL2Modal = CASL2Modal deriving (Show)
 
 instance Language CASL2Modal -- default definition is okay
-
-tycon_CASL2Modal :: TyCon
-tycon_CASL2Modal = mkTyCon "Comorphism.CASL2Modal.CASL2Modal"
-
-instance Typeable CASL2Modal where
-  typeOf _ = mkAppTy tycon_CASL2Modal []
 
 instance Comorphism CASL2Modal
                CASL CASL_Sublogics

@@ -19,7 +19,6 @@ import Logic.Comorphism
 import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Data.Dynamic
 
 import HasCASL.Logic_HasCASL
 import HasCASL.As
@@ -37,12 +36,6 @@ import Haskell.Hatchet.AnnotatedHsSyn
 data HasCASL2Haskell = HasCASL2Haskell deriving Show
 
 instance Language HasCASL2Haskell -- default definition is okay
-
-tycon_HasCASL2Haskell :: TyCon
-tycon_HasCASL2Haskell = mkTyCon "Comorphisms.HasCASL2Haskell.HasCASL2Haskell"
-
-instance Typeable HasCASL2Haskell where
-  typeOf _ = mkAppTy tycon_HasCASL2Haskell []
 
 instance Comorphism HasCASL2Haskell
                HasCASL ()

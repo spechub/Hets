@@ -20,7 +20,6 @@ import Common.Id
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Data.Dynamic
 
 -- CASL
 import CASL.Logic_CASL 
@@ -41,12 +40,6 @@ import HasCASL.Morphism
 data CASL2HasCASL = CASL2HasCASL deriving (Show)
 
 instance Language CASL2HasCASL -- default definition is okay
-
-tycon_CASL2HasCASL :: TyCon
-tycon_CASL2HasCASL = mkTyCon "Comorphism.CASL2HasCASL.CASL2HasCASL"
-
-instance Typeable CASL2HasCASL where
-  typeOf _ = mkAppTy tycon_CASL2HasCASL []
 
 instance Comorphism CASL2HasCASL
                CASL CASL_Sublogics
