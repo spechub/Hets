@@ -12,7 +12,7 @@ import Pretty
 import List (partition,isSuffixOf,sort, groupBy, sortBy)
 import qualified System
 import IO hiding(try)
-import GetOpt
+import System.Console.GetOpt
 import Monad(unless)
 import RuleUtils(Rule,Tag)
 import Version
