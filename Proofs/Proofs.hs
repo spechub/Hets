@@ -53,6 +53,7 @@ todo for Jorina:
 
 module Proofs.Proofs where
 
+import Data.Typeable
 import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
@@ -430,6 +431,43 @@ isSameTranslationAux sens mor1 mor2 =
   where
     maybeSens1 = translateG_l_sentence_list mor1 sens
     maybeSens2 = translateG_l_sentence_list mor2 sens
+
+-- ----------------------------------------------
+-- local subsumption
+-- ----------------------------------------------
+
+locSubsume :: ProofStatus -> ProofStatus
+locSubsume proofStatus@(globalContext,libEnv,history,dGraph) =
+  undefined --  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
+
+  where
+    localThmEdges = filter isUnprovenLocalThm (labEdges dGraph)
+    result = locSubsumeAux libEnv dGraph ([],[]) localThmEdges
+ --   nextDGraph = fst result
+ --   nextHistoryElem = snd result
+
+locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
+	            -> (DGraph,([DGRule],[DGChange]))
+locSubsumeAux libEnv dgraph historyElement [] = (dgraph, historyElement)
+locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+  case errSrc of
+    Nothing ->
+      case errTgt of
+        Nothing -> -- -------------------------------------------------------
+                   -- hier weitermachen: das Ergebnis des coerce auswerten...
+                   -- -------------------------------------------------------
+	    undefined -- coerceTheories theorySrc theoryTgt
+        Just _ -> locSubsumeAux libEnv dgraph (rules,changes) list
+    Just _ -> locSubsumeAux libEnv dgraph (rules,changes) list
+
+  where
+    (Result theorySrc errSrc)--(G_theory lidSrc signSrc sensSrc) errSrc)
+        = computeTheory libEnv dgraph src
+    (Result theoryTgt errTgt) = computeTheory libEnv dgraph tgt
+
+coerceTheories :: (Typeable b) => G_theory -> G_theory -> (Result b)
+coerceTheories (G_theory lid1 sign1 sens1) (G_theory lid2 sign2 sens2)
+    = rcoerce lid1 lid2 nullPos sign2
 
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
