@@ -17,9 +17,11 @@ module Comorphisms.CASL2IsabelleHOL where
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
+import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
 import Common.Lib.Set as Set
-import Data.List
+import Data.List as List
+import Data.Maybe
 import Common.PrettyPrint
 import Common.AS_Annotation (Named, mapNamedM)
 import Debug.Trace
@@ -85,6 +87,7 @@ transSignature sign =
                                    Map.empty
                                    (predMap sign))
                   (opMap sign),
+    dataTypeTab = makeDtDefs sign $ sentences sign,
     syn = () },
      [] )  -- for now, no sentences
   where 
@@ -101,6 +104,22 @@ transSignature sign =
       foldl (\m1 (t,i) -> Map.insert (showIsaI pred i) (transPredType t) m1) m 
             (zip (Set.toList ts) [1..size ts])
  
+makeDtDefs :: CASLSign -> [Named CASLFORMULA] -> [[(Typ,[(String,[Typ])])]]
+makeDtDefs sign = mapMaybe $ makeDtDef sign
+
+makeDtDef :: CASLSign -> Named CASLFORMULA -> Maybe [(Typ,[(String,[Typ])])]
+makeDtDef sign (NamedSen _ (Sort_gen_ax constrs True)) =
+  Just(map makeDt srts)
+  where 
+  (srts,ops,maps) = recover_Sort_gen_ax constrs
+  makeDt s = (transSort s, map makeOp (List.filter (hasSort s) ops))
+  makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
+  hasSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
+  hasSort _ _ = error "CASL2IsabelleHOL : hasSort"
+  transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
+  transArgs _ = error "CASL2IsabelleHOL : transArgs"
+makeDtDef _ _ = Nothing
+
 transSort :: SORT -> Typ
 transSort s = Type(showIsa s,[])
 

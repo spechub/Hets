@@ -191,6 +191,7 @@ instance Show TypeSig where
 data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
                    tsig :: TypeSig,
                    constTab :: Map.Map String Typ,
+                   dataTypeTab :: [[(Typ,[(String,[Typ])])]],
                    syn :: Syntax
                  }
              deriving (Eq)
@@ -199,18 +200,30 @@ emptySign :: Sign
 emptySign = Sign { baseSig = "Pure",
                    tsig = emptyTypeSig,
                    constTab = Map.empty,
+                   dataTypeTab = [],
                    syn = () }
 
 instance Show Sign where
   show sig =
     baseSig sig ++":\n"++
-    shows (tsig sig) 
-      (showsConstTab (constTab sig))
+    shows (tsig sig) (showDataTypeDefs (dataTypeTab sig))
+      ++ (showsConstTab (constTab sig))
     where
     showsConstTab tab =
      if Map.isEmpty tab then ""
       else "consts\n" ++ Map.foldWithKey showConst "" tab
     showConst c t rest = show c ++ " :: " ++ "\"" ++ show t ++ "\"\n" ++ rest
+    showDataTypeDefs dtDefs = concat $ map showDataTypeDef dtDefs
+    showDataTypeDef [] = ""
+    showDataTypeDef (dt:dts) = 
+       "datatype " ++ showDataType dt
+       ++ (concat $ map (("and "++) . showDataType) dts)
+    showDataType (t,op:ops) =
+       show t ++ " = " ++ showOp op 
+       ++ (concat $ map ((" | "++) . showOp) ops)
+    showOp (opname,args) =
+       opname ++ (concat $ map (((" ")++) . show) args)
+
 
 instance PrettyPrint Sign where
     printText0 _ = ptext . show
