@@ -287,19 +287,19 @@ spAnnotedPrint pf pAn beside_ keyw ai =
 		                xs     -> (Nothing,xs)
  	      (san,anno)   = case msa of
 		               Nothing -> (empty, empty)
-		               Just a  -> (pAn a, checkAnno a keyw beside_ (pAn a)) 
+		               Just a  -> (pAn a, checkAnno a (pAn a)) 
               as'          = if null as then empty else vcat $ map pAn as 
 	                 -- Todo: indent annos
           in  case (render keyw) of
                 "\\THEN" | not $ isEmpty anno  -> anno $+$ as' $+$ i'
-                keyw'                         -> keyw `beside_` san $+$ as' $+$ i'
-    where checkAnno an keyword beside_ san = 
+                keyw'                          -> keyw `beside_` san $+$ as' $+$ i'
+    where checkAnno an san'= 
             case an of 
                  Semantic_anno anno _ ->
                           case anno of 
-                                SA_cons -> sp_text 0 "\\THENCONS"
-                                SA_def  -> sp_text 0 "\\THENDEF"
-				SA_implies -> sp_text 0 "\\THENIMPLIES"
-				SA_mono  -> sp_text 0 "\\THENMONO"
-				SA_implied -> sp_text 0 "\\THENIMPLIED"
-				anno'  -> keyword `beside_` san
+                                SA_cons     -> sp_text 0 "\\THENCONS"
+                                SA_def      -> sp_text 0 "\\THENDEF"
+				SA_implies  -> sp_text 0 "\\THENIMPLIES"
+				SA_mono     -> sp_text 0 "\\THENMONO"
+				anno'       -> keyw `beside_` san'
+                 an' -> keyw `beside_` san'                 
