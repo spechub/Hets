@@ -65,7 +65,7 @@ import Common.Result
 import Common.AS_Annotation
 import Logic.Prover -- for one half of class Sentences
 
-import Common.PrintLaTeX
+import Common.PrettyPrint
 import Data.Dynamic
 
 -- for coercion used in Grothendieck.hs and Analysis modules
@@ -149,15 +149,16 @@ class (Language lid, PrintLaTeX basic_spec,
          parse_symb_map_items :: lid -> Maybe(ParseFun symb_map_items)
 
          fromShATerm_basic_spec :: lid -> ATermTable -> basic_spec
-	 fromShATerm_basic_spec lid att = fromShATerm att
+	 fromShATerm_basic_spec _ att = fromShATerm att
          fromShATerm_symb_items :: lid -> ATermTable -> symb_items
-         fromShATerm_symb_items lid att = fromShATerm att
+         fromShATerm_symb_items _ att = fromShATerm att
          fromShATerm_symb_map_items :: lid -> ATermTable -> symb_map_items
-         fromShATerm_symb_map_items lid att = fromShATerm att
+         fromShATerm_symb_map_items _ att = fromShATerm att
 	 fromShATerm_symb_items_list :: lid -> ATermTable -> [symb_items]
-         fromShATerm_symb_items_list lid att = fromShATerm att
-         fromShATerm_symb_map_items_list :: lid -> ATermTable -> [symb_map_items]
-         fromShATerm_symb_map_items_list lid att = fromShATerm att
+         fromShATerm_symb_items_list _ att = fromShATerm att
+         fromShATerm_symb_map_items_list 
+	     :: lid -> ATermTable -> [symb_map_items]
+         fromShATerm_symb_map_items_list _ att = fromShATerm att
 	 				      
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
@@ -182,21 +183,21 @@ class (Category lid sign morphism, Eq sentence, Show sentence, PrintLaTeX sign,
       cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
       fromShATerm_sentence :: lid -> ATermTable -> sentence
-      fromShATerm_sentence lid att = fromShATerm att
+      fromShATerm_sentence _ att = fromShATerm att
       fromShATerm_symbol :: lid -> ATermTable -> symbol
-      fromShATerm_symbol lid att = fromShATerm att
+      fromShATerm_symbol _ att = fromShATerm att
       fromShATerm_sign :: lid -> ATermTable -> sign
-      fromShATerm_sign lid att = fromShATerm att
+      fromShATerm_sign _ att = fromShATerm att
       fromShATerm_sign_list :: lid -> ATermTable -> [sign]
-      fromShATerm_sign_list lid att = fromShATerm att
+      fromShATerm_sign_list _ att = fromShATerm att
       fromShATerm_morphism :: lid -> ATermTable -> morphism
-      fromShATerm_morphism lid att = fromShATerm att
+      fromShATerm_morphism _ att = fromShATerm att
       fromShATerm_proof_tree :: lid -> ATermTable -> proof_tree
-      fromShATerm_proof_tree lid att = fromShATerm att
+      fromShATerm_proof_tree _ att = fromShATerm att
       fromShATerm_l_sentence_list :: lid -> ATermTable -> [Named sentence]
-      fromShATerm_l_sentence_list lid att = fromShATerm att
+      fromShATerm_l_sentence_list _ att = fromShATerm att
       fromShATerm_diagram :: lid -> ATermTable -> Diagram sign morphism
-      fromShATerm_diagram lid att = fromShATerm att
+      fromShATerm_diagram _ att = fromShATerm att
 
 -- static analysis
 
@@ -314,7 +315,7 @@ class (StaticAnalysis lid
          proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
 
          fromShATerm_sublogics :: lid -> ATermTable -> sublogics
-         fromShATerm_sublogics lid att = fromShATerm att
+         fromShATerm_sublogics _ att = fromShATerm att
  
 ----------------------------------------------------------------
 -- Existential type covering any logic
@@ -338,7 +339,7 @@ instance Eq AnyLogic where
 ----------------------------------------------------------------
 
 namedTc :: TyCon
-namedTc = mkTyCon "Common.Named.Named"
+namedTc = mkTyCon "Common.AS_Annotation.Named"
 
 instance Typeable s => Typeable (Named s) where 
   typeOf s = mkAppTy namedTc [typeOf ((undefined :: Named a -> a) s)]
