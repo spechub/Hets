@@ -337,14 +337,15 @@ reduce ga table filt toExpr item =
 reduceCompleted :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
 		-> ToExpr a b -> [Item a b] -> [Item a b]
 reduceCompleted ga table filt toExpr = 
-    concatMap (reduce ga table filt toExpr) . filter (null . rest)
+    foldr mergeItems [] . map (reduce ga table filt toExpr) . 
+	  filter (null . rest)
 
 recReduce :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
 	  -> ToExpr a b	-> [Item a b] -> [Item a b]
 recReduce ga table filt toExpr items = 
     let reduced = reduceCompleted ga table filt toExpr items 
 	in if null reduced then items
-	   else recReduce ga table filt toExpr reduced ++ items
+	   else recReduce ga table filt toExpr reduced `mergeItems` items
 
 complete :: (b -> b -> Maybe Bool) -> ToExpr a b -> GlobalAnnos 
 	 -> Table a b -> [Item a b] -> [Item a b]
@@ -361,24 +362,25 @@ predict rs items =
     then rs ++ items
     else items
 
-equivItem :: Item a b -> Item a b -> Bool
-equivItem i1 i2 = (index i1, rest i1, rule i1) 
-		  == (index i2, rest i2, rule i2)
-
 ordItem :: Item a b -> Item a b -> Ordering
 ordItem i1 i2 = 
     compare (index i1, rest i1, rule i1)
 		(index i2, rest i2, rule i2)
 
-flatItems :: [Item a b] -> Item a b
-flatItems (i:is) = 
-    if null is 
-    then i
-    else i { ambigArgs = map args (i:is) }
-flatItems [] = error "flatItems: empty list"
+ambigItems :: Item a b -> Item a b -> Item a b
+ambigItems i1 i2 = let as = ambigArgs i1 ++ ambigArgs i2 in
+		       i1 { ambigArgs = if null as then 
+			    [args i1, args i2] else as }
 
-packAmbigs :: [Item a b] -> [Item a b]
-packAmbigs = map flatItems . groupBy equivItem
+mergeItems :: [Item a b] -> [Item a b] -> [Item a b]
+mergeItems [] i2 = i2
+mergeItems i1 [] = i1
+mergeItems (i1:r1) (i2:r2) = 
+    case ordItem i1 i2 of
+    LT -> i1 : mergeItems r1 (i2:r2)
+    EQ -> ambigItems i1 i2 : mergeItems r1 r2
+    GT -> i2 : mergeItems (i1:r1) r2
+
 
 -- | the whole state for mixfix resolution 
 data Chart a b = Chart { prevTable :: Table a b
@@ -406,9 +408,8 @@ nextChart addType filt toExpr ga st term@(_, tok) =
 	st { prevTable = nextTable
 	   , currIndex = nextIdx
 	   , currItems =  predict (map (mkItem nextIdx) $ rules st)
-	   $ packAmbigs
-	   $ sortBy ordItem
-	   $ complete filt toExpr ga nextTable scannedItems
+	   $ complete filt toExpr ga nextTable 
+	   $ sortBy ordItem scannedItems
 	   , solveDiags = (if null scannedItems then 
 		      [Diag Error ("unexpected mixfix token: " ++ tokStr tok)
 		      $ tokPos tok]
@@ -428,7 +429,7 @@ initChart ruleS knownS= Chart { prevTable = Map.empty
 			, solveDiags = [] }
 
 -- | extract resolved result
-getResolved :: (a -> ShowS) -> Pos -> ToExpr a b -> Chart a b 
+getResolved :: PosItem a => (a -> ShowS) -> Pos -> ToExpr a b -> Chart a b 
 	    -> Result a
 getResolved pp p toExpr st = 
     let items = filter ((currIndex st/=) . index) $ currItems st 
@@ -469,9 +470,9 @@ getResolved pp p toExpr st =
 		       else Result ((showAmbigs pp p $
 			    map (fst . mkExpr toExpr) result) : ds) Nothing 
 				   
-showAmbigs :: (a -> ShowS) -> Pos -> [a] -> Diagnosis
+showAmbigs :: PosItem a => (a -> ShowS) -> Pos -> [a] -> Diagnosis
 showAmbigs pp p as = 
     Diag Error ("ambiguous mixfix term\n\t" ++ 
 		showSepList (showString "\n\t") pp
-		(take 5 as) "") p
+		(take 5 as) "") $ firstPos as [p]
 

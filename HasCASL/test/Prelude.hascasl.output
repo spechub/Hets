@@ -247,12 +247,12 @@ Error (line 65, column 18) ambiguous mixfix term
 Error (line 65, column 59) unexpected mixfix token: und
 Error (line 65, column 18) unexpected term 'def (x res y)'
 Error (line 65, column 52) unexpected term '(def y) und (def x)'
-Error (line 75, column 15) ambiguous mixfix term
-	(__res__)(x, eq) (x, y)
+Error (line 75, column 17) ambiguous mixfix term
 	(__res__)(x, eq (x, y))
-Error (line 75, column 44) ambiguous mixfix term
-	(__res__)(y, eq) (x, y)
+	(__res__)(x, eq) (x, y)
+Error (line 75, column 46) ambiguous mixfix term
 	(__res__)(y, eq (x, y))
+	(__res__)(y, eq) (x, y)
 Error (line 0, column 0) undeclared type '_var_45'
 Error (line 75, column 15) unexpected term 'x res eq (x, y)'
 Error (line 0, column 0) undeclared type '_var_46'
@@ -292,8 +292,8 @@ Error (line 123, column 3) unexpected mixfix token: all
 Error (line 125, column 55) unexpected mixfix token: Suc
 Error (line 125, column 32) unexpected mixfix token: all
 Error (line 126, column 50) ambiguous mixfix term
-	(__<<=__)(s n, x)
 	s ((__<<=__)(n, x))
+	(__<<=__)(s n, x)
 Error (line 126, column 38) unexpected mixfix token: all
 Error (line 131, column 42) unexpected mixfix token: isBound
 Error (line 130, column 32) unexpected mixfix token: impl

@@ -1241,3 +1241,4 @@ Error (line 266, column 16) unknown sort 'a'
 Error (line 261, column 9) ambiguous mixfix term
 	__*__(i,__-__(q,__*__(j,p)))
 	__-__(__*__(i,q),__*__(j,p))
+	__*__(__*__(i,__-__(q,j)),p)

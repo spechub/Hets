@@ -1,2 +1,2 @@
 Error (line 1, column 21) unexpected mixfix token: ab
-Error (line 2, column 9) expected further mixfix token: ["!","!=","(","(__)","(op )"]
+Error (line 2, column 9) expected further mixfix token: [":","!=","/=","<","<="]
