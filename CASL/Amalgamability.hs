@@ -27,29 +27,17 @@ module CASL.Amalgamability(-- * Types
 
 
 import CASL.AS_Basic_CASL
---import CASL.LaTeX_CASL
---import CASL.Parse_AS_Basic
---import CASL.SymbolParser
---import CASL.MapSentence
---import Common.AS_Annotation
---import Common.AnnoState(emptyAnnos)
 import Common.Id
 import Common.Lib.Graph
 import qualified Common.Lib.Map as Map
---import Common.Lib.Parsec
 import Common.Lib.Pretty
 import Common.Lib.Rel
 import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.Result
 import Logic.Logic
---import CASL.ATC_CASL
---import CASL.Sublogic
 import CASL.Sign
---import CASL.StaticAna
 import CASL.Morphism
---import CASL.SymbolMapAnalysis
---import Data.Dynamic
 import List
 
 -- Exported types
@@ -451,6 +439,45 @@ cong_0 diag simeq =
     in rel'''
 
 
+-- | Compute the set Adm_\simeq if it's finite.
+finiteAdm_simeq :: [DiagEmb]         -- ^ the embeddings
+		-> EquivRel DiagSort -- ^ the \simeq relation that defines admissibility
+		-> Maybe [DiagEmbWord]
+-- ^ returns the computed set or Nothing if it's infinite
+finiteAdm_simeq embs simeq =
+    let -- generate the list of the words over given alphabet
+	-- with given suffix
+        embWords' suff@(e : _) embs pos | pos >= length embs = Just [suff]
+					| otherwise = 
+	    let emb = embs !! pos
+		mws1 = if admissible simeq emb e
+		         then if any (\emb' -> emb' == emb) suff
+			        then Nothing
+			        else embWords' (emb : suff) embs 0
+		         else Just []
+		mws2 = case mws1 of
+			    Nothing -> Nothing
+			    Just _ -> embWords' suff embs (pos + 1)
+	    in case mws1 of 
+		    Nothing -> Nothing
+		    Just ws1 -> case mws2 of 
+				     Nothing -> Nothing
+				     Just ws2 -> Just (ws1 ++ ws2)
+	embWords' [] embs pos | pos >= length embs = Just []
+	embWords' [] embs pos | otherwise = 
+	    let emb = embs !! pos
+		mws1 = embWords' [emb] embs 0
+		mws2 = case mws1 of
+			    Nothing -> Nothing
+		            Just _ -> embWords' [] embs (pos + 1)
+	    in case mws1 of
+		    Nothing -> Nothing
+		    Just ws1 -> case mws2 of 
+				     Nothing -> Nothing
+				     Just ws2 -> Just (ws1 ++ ws2)
+    in embWords' [] embs 0
+
+
 {-
 -- TODO: this code will be used to compute \cong relation
     let -- domCodEqual: check that domains and codomains of given words are equal
@@ -522,5 +549,11 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) =
 			  -- warning DontKnow ("cong_0: " ++ (showPretty c0 "")) nullPos -- test
 		          case subRelation ct0 c0 of
 		               Nothing -> do return Yes
-			       Just _ -> return DontKnow -- TODO
+			       Just _ -> do let em = embs diag
+					        mas = finiteAdm_simeq em s
+					    -- 3. Check if the set Adm_\simeq is finite.
+					    case mas of 
+						 Just as -> do --warning DontKnow ("Adm_simeq: " ++ (showPretty as "")) nullPos -- test
+							       return DontKnow -- TODO
+						 Nothing -> return DontKnow -- TODO
 
