@@ -1081,7 +1081,7 @@ computeTheory libEnv dg n = do
         maybeToResult nullPos "Could not calculate signature of node"
               $ getSignature libEnv dg n
   sens''' <- rcoerce lid1 lid2 nullPos sens''
-  return $ G_theory lid2 sig sens''' 
+  return $ G_theory lid2 sig (nub sens''')
 
 -- ---------------
 -- basic inference
