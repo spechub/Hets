@@ -16,34 +16,24 @@ Portability :  non-portable(Logic)
 
 -}
 
-module Haskell.Logic_Haskell (Haskell(..), empty_signature) where
+module Haskell.Logic_Haskell (Haskell(..), empty_signature, preludeSign) where
 
-import Logic.ParsecInterface    (toParseFun)
-import Logic.Logic              {-(Language,
-                                 Category,
-                                 Syntax,
-                                 Sentences,
-                                 StaticAnalysis,
-                                 Logic,
-                                 parse_basic_spec,
-                                 parse_symb_items,
-                                 parse_symb_map_items,
-                                 basic_analysis,
-                                 empty_signature,
-                                 signature_union,
-                                 data_logic,
-                                 sublogic_names,
-                                 inclusion)-}
 import Data.Dynamic            
-import Haskell.ATC_Haskell      -- generated ATerm conversions
 
-import System.IO.Unsafe (unsafePerformIO)
-import Haskell.Hatchet.MultiModule (readModuleInfo)
+import Common.Result                     (Result (..))
+import Common.PrettyPrint
+
+import Haskell.ATC_Haskell      -- generated ATerm conversions
+import Haskell.PrintModuleInfo
+import Haskell.HatParser                 (HsDecls,
+                                          hatParser)
+import Haskell.HaskellUtils              (extractSentences)
+import Haskell.ExtHaskellCvrt            (cvrtHsModule)
+
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
                                           joinModuleInfo,
                                           getTyconsMembers,
-                                          getInfixDecls,
-                                          emptyModuleInfo)
+                                          getInfixDecls)
 import Haskell.Hatchet.TIHetsModule          (tiModule)
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl (..),
                                           AModule (..))
@@ -57,19 +47,13 @@ import Haskell.Hatchet.HaskellPrelude    (preludeDefs,
                                           preludeInfixDecls,
                                           preludeSynonyms)
 import Haskell.Hatchet.SynConvert        (toAHsModule)
-import Haskell.Hatchet.Type              (assumpToPair)
 import Haskell.Hatchet.Utils             (getAModuleName)
 import Haskell.Hatchet.HsParsePostProcess (fixFunBindsInModule)
 import Haskell.Hatchet.HsSyn             (HsModule (..), HsDecl,
                                           Module (..))
-import Haskell.HatParser                 (HsDecls,
-                                          hatParser)
-import Haskell.HaskellUtils              (extractSentences)
-import Common.Result                     (Result (..))
-import Common.Lib.Pretty
-import Common.PrettyPrint
+import Haskell.Hatchet.Type              (assumpToPair)
 
-import Haskell.ExtHaskellCvrt            (cvrtHsModule)
+import Logic.Logic             
 
 moduleInfoTc, hsDeclTc, aHsDeclTc :: TyCon
 moduleInfoTc   = mkTyCon "Haskell.Hatchet.MultiModuleBasics.ModuleInfo"
@@ -82,34 +66,6 @@ instance Typeable HsDecl where
     typeOf _ = mkTyConApp hsDeclTc []
 instance Typeable AHsDecl where
     typeOf _ = mkTyConApp aHsDeclTc []
-
-
-instance PrettyPrint ModuleInfo where
-  printText0 _ modInfo = text "Module name" 
-                                <+> text (show (moduleName modInfo)) 
-                                <> comma
-                          $+$ text "Variable Assumptions" 
-                                <+> text (show (varAssumps modInfo))
-                                <> comma
-                          $+$ text "Data Constructor Assumptions" 
-                                <+> text (show (dconsAssumps modInfo))
-                                <> comma
-                          $+$ text "Class Hierarchy" 
-                                <+> text (show (classHierarchy modInfo))
-                                <> comma
-                          $+$ text "Kinds" 
-                                <+> text (show (kinds modInfo))
-                                <> comma
-                          $+$ text "Synonyms" 
-                                <+> text (show (synonyms modInfo))
-                                <> comma
-                          $+$ text "Infix Declarations" 
-                                <+> text (show (infixDecls modInfo))
-                                <> comma
-                          $+$ text "Type Constructor Members" 
-                                <+> text (show (tyconsMembers modInfo))
-                                <> comma
-
 
 instance PrintLaTeX ModuleInfo where
   printLatex0 = printText0
@@ -136,7 +92,7 @@ type SYMB_MAP_ITEMS = ()
 instance Syntax Haskell HsDecls
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec Haskell = Just(toParseFun hatParser ())
+         parse_basic_spec Haskell = Just hatParser
 	 parse_symb_items Haskell = Nothing
 	 parse_symb_map_items Haskell = Nothing
 
@@ -144,10 +100,7 @@ type Haskell_Sublogics = ()
 
 type Sentence = AHsDecl
 instance Ord AHsDecl where
-  compare x y = error "Haskell.Logic_Haskell: compare for AHsDecl"
-
-instance PrettyPrint Sentence where
-  printText0 _ = ptext . show
+  compare _x _y = error "Haskell.Logic_Haskell: compare for AHsDecl"
 
 type Symbol = ()
 type RawSymbol = ()
@@ -201,10 +154,8 @@ instance StaticAnalysis Haskell HsDecls
                       kinds = emptyEnv,
                       infixDecls = [],
                       synonyms = [] }
---          empty_signature Haskell = emptyModuleInfo
     signature_union Haskell sig1 sig2 = return (joinModuleInfo sig1 sig2)
     inclusion Haskell _ _ = return ()
---    sublogic_names Haskell _ = ["Haskell"]
     basic_analysis Haskell = Just(basicAnalysis)
       where basicAnalysis (basicSpec, sig, _) = 	            
              let basicMod = cvrtHsModule (HsModule (Module "Anonymous") 
@@ -221,7 +172,7 @@ instance StaticAnalysis Haskell HsDecls
    		  dataConEnv,
    		  newClassHierarchy,
    		  newKindInfoTable,
-   		  moduleIds,
+   		  _moduleIds,
    		  moduleRenamed,
    		  moduleSynonyms) = tiModule [] annotatedSyntax sig
   		 modInfo = ModuleInfo {
