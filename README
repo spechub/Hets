@@ -3,13 +3,11 @@ sources directly obtained via cvs).
 
 The subject of this release is a binary "hets" that is able to analyse
 heterogeneous and in particular CASL specifications.
+The sources need to be compiled with ghc Glasgow Haskell Compiler
+(www.haskell.org/ghc).
+
 The output of hets, if the input is successfully accepted, can be
 displayed by "daVinci".
-
-SYSTEM requirements:
-- A Linux, Solaris or Macintosh OS-X machine with 64 MB RAM
-- Tcl/Tk
-- daVinci (comes with this distribution)
 
 daVinci is maintained by b-novative and b-novative holds all rights.
 This release may be accompanied with free binary releases of daVinci
@@ -30,11 +28,6 @@ b-novative may have one in the mean time
 
 For best quality, get the latest version of daVinci from b-novative.
 
-INSTALLATION:
-
-You can either copy the folder Hets to your local file system, 
-or directly start from the CD-ROM.
-
 For hets to find daVinci, the environment variables DAVINCIHOME and
 UNIDAVINCI must be set to the installation directory of daVinci and to
 the actual executable, respectively. 
@@ -44,11 +37,9 @@ export UNIDAVINCI=<path>/daVinci_V2.1/daVinci
 
 A typical call of hets is then: <path>/hets -g Basic/Numbers.casl
 
-HETS SOURCES:
-
-If you need to rebuild the hets binary follow the instructions in INSTALL.
-The sources need to be compiled with ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc).
+If you need to rebuild the hets binary follow the instructions in INSTALL
+(This README belongs a to release created by "make release", in case
+that you obtained the HetCATS sources as CVS tree)
 
 The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (maeder@tzi.de) and Till Mossakowski
@@ -57,54 +48,33 @@ Christian Maeder (maeder@tzi.de) and Till Mossakowski
 Files in the Tools/Hets/src directory:
 --------------------------------------
 
-README                        This file
-hets                          Hets binary
-UserGuide.ps                  Hets documentaion
-docs/                         Overview and index for Hets sources
-src/                          Hets sources
-src/ATC/                        Conversion from and to ATerms (specific)
-src/ATC/doc/                      documentation
-src/aterm_conv/                 ATerm Conversion
-src/CASL/                       Instance of Logic: CASL
-src/CASL/doc/                     documentation
-src/CASL/test/                    test examples
-src/Common/                     Modules common to all logics
-src/Common/ATerm/                 Conversion from and to ATerms (general)
-src/Common/doc/                   Documentation
-src/Common/Lib/                   Third-party modules
-src/Common/Lib/Graph/               Functional Graph Library
-src/Common/Lib/Parsec/              Parsec combinator parser
-src/Common/test/                  Text examples
-src/Comorphisms/                Comorphisms of the logic graph
-src/CspCASL/                    Instance of Logic: CspCASL
-src/CspCASL/Doku/                 documentation
-src/docs/                       Haddock documentation 
-src/ghc/                        Some ghc-specific stuff 
-src/GUI/                        GUI for displaying development graphs
-src/HasCASL/                    Instance of Logic: HasCASL
-src/HasCASL/doc/                  documentation
-src/HasCASL/test/                 text examples
-src/Haskell/                    Instance of Logic: Haskell
-src/Haskell/Hatchet/              Static anaylsis of Haskell
-src/Haskell/Language/             Haskell syntax in Haskell
-src/Haskell/Language/Haskell/
-src/haterm-1.0/                 ATerm Conversion
-src/haterm-1.0/ac-macros/
-src/haterm-1.0/src/
-src/hetcats/                    Command line interface
-src/hugs/                       Some hugs-specific stuff
-src/Logic/                      Infrastructure for logic independence
-src/mini/                       Some toy version of Hets, used in a paper
-src/Modal/                      Instance of logic: modal logic
-src/parsec/                     ??
-src/pretty/                     ??
-src/Proofs/                     Heterogeneous proof engine
-src/Static/                     Heterogeneous development graphs and static analysis
-src/Syntax/                     Heterogeneous syntax and parsing
-src/test/                       Text examples
-src/ToHaskell/                  Translation from HasCASL to Haskell
-src/utils/                      Utilities
-src/utils/AG-src/                 Static analyser generator (not used by Hets)
-src/utils/DrIFT-src/              DrIFT (for polytpyic conversion functions)
-src/utils/GenerateRules/          
-src/utils/hd-lib/                 
+LICENCE.txt                 Licence information (english)
+LIZENZ.txt                  Licence information (german)
+INSTALL                     Installation and compilation instructions
+Makefile                    GNU-Makefile to compile sources
+README                      This file
+hets.hs                     Top-level Haskell module for hets
+version_nr
+ATC/                        Conversion from and to ATerms (specific)
+CASL/                       Instance of Logic: CASL
+Common/                     Modules common to all logics
+Common/ATerm/                 Conversion from and to ATerms (general)
+Common/Lib/                   Third-party modules
+Common/Lib/Parsec/              Parsec combinator parser
+Comorphisms/                Comorphisms of the logic graph
+CspCASL/                    Instance of Logic: CspCASL
+ghc/                        Some ghc-specific stuff 
+GUI/                        GUI for displaying development graphs
+HasCASL/                    Instance of Logic: HasCASL
+Haskell/                    Instance of Logic: Haskell
+Haskell/Hatchet/              Static anaylsis of Haskell
+Haskell/Language/             Haskell syntax in Haskell
+hetcats/                    Command line interface
+hugs/                       Some hugs-specific stuff
+Logic/                      Infrastructure for logic independence
+Proofs/                     Heterogeneous proof engine
+Static/                     Heterogeneous development graphs and static analysis
+Syntax/                     Heterogeneous syntax and parsing
+utils/                      Utilities
+utils/DrIFT-src/              DrIFT (for polytpyic conversion functions)
+utils/GenerateRules/          generate files to be DRIFTed 
