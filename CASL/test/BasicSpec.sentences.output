@@ -1,6 +1,15 @@
 [ forall X1:Nat
       . (op pre : Nat ->? Nat)((op suc : Nat -> Nat)(X1 : Nat) : Nat) : Nat =
 	    X1 : Nat %(ga_selector_pre)%,
+  forall X1:Nat; Y1:Nat
+      . (op suc : Nat -> Nat)(X1 : Nat) : Nat =
+	    (op suc : Nat -> Nat)(Y1 : Nat) : Nat <=>
+	    X1 : Nat = Y1 : Nat %(ga_injective_suc)%,
+  forall Y1:Nat
+      . not (op 0 : Nat) : Nat =
+		(op suc : Nat -> Nat)(Y1 : Nat) : Nat %(ga_disjoint_0_suc)%,
+  forall
+      . not def (op pre : Nat ->? Nat)((op 0 : Nat) : Nat) : Nat %(ga_selector_undef_pre_0)%,
   generated{sort Nat; op 0 : Nat;
 		      op suc : Nat -> Nat} %(ga_generated_Nat)%,
   forall m, n, r, s:Nat
@@ -147,6 +156,26 @@
   forall
       . (op 1 : Pos) : Pos =
 	    (op suc : Nat -> Nat)(0 : Nat) : Nat %(Nat_1_as_Pos_def)%,
+  forall x:Nat; y:Nat
+      . (op max : Int * Int -> Int)(x : Nat, y : Nat) : Int =
+	    (op max : Int * Int -> Int)(y : Nat,
+					x : Nat) : Int %(ga_comm_max)%,
+  forall x:Nat; y:Nat
+      . (op min : Int * Int -> Int)(x : Nat, y : Nat) : Int =
+	    (op min : Int * Int -> Int)(y : Nat,
+					x : Nat) : Int %(ga_comm_min)%,
+  forall x:Nat; y:Nat; z:Nat
+      . (op max : Int * Int -> Int)(x : Nat,
+				    (op max : Int * Int -> Int)(y : Nat, z : Nat) : Int) : Int =
+	    (op max : Int * Int -> Int)((op max : Int * Int -> Int)(x : Nat,
+								    y : Nat) : Int,
+					z : Nat) : Int %(ga_assoc_max)%,
+  forall x:Nat; y:Nat; z:Nat
+      . (op min : Int * Int -> Int)(x : Nat,
+				    (op min : Int * Int -> Int)(y : Nat, z : Nat) : Int) : Int =
+	    (op min : Int * Int -> Int)((op min : Int * Int -> Int)(x : Nat,
+								    y : Nat) : Int,
+					z : Nat) : Int %(ga_assoc_min)%,
   forall x, m, n, r, s, t:Nat; p:Pos
       . (op min : Int * Int -> Int)(m : Nat, 0 : Int) : Int =
 	    0 : Int %(Nat_min_0)%,
@@ -519,6 +548,36 @@
       . (op a : s -> t)((op c : a * t * t * t -> s)(X1 : a, X2 : t,
 						    X3 : t, X4 : t) : s) : t =
 	    X2 : t %(ga_selector_a)%,
+  forall X1:a; Y1:a
+      . (op c : a -> s)(X1 : a) : s = (op c : a -> s)(Y1 : a) : s <=>
+	    X1 : a = Y1 : a %(ga_injective_c)%,
+  forall X1:a; X2:t; X3:t; X4:t; Y1:a; Y2:t; Y3:t; Y4:t
+      . (op c : a * t * t * t -> s)(X1 : a, X2 : t, X3 : t, X4 : t) : s =
+	    (op c : a * t * t * t -> s)(Y1 : a, Y2 : t, Y3 : t, Y4 : t) : s <=>
+	    X1 : a = Y1 : a
+	    /\ X2 : t = Y2 : t
+	    /\ X3 : t = Y3 : t
+	    /\ X4 : t = Y4 : t %(ga_injective_c)%,
+  forall X1:a; X2:t; X3:t; X4:t; Y1:a
+      . not (op c : a * t * t * t -> s)(X1 : a, X2 : t, X3 : t,
+					X4 : t) : s =
+		(op c : a -> s)(Y1 : a) : s %(ga_disjoint_c_c)%,
+  forall Y1:a
+      . not (op c : s) =
+		(op c : a ->? s)((var Y1 : a)) %(ga_disjoint_c_c)%,
+  forall Y1:a; Y2:t; Y3:t; Y4:t
+      . not (op c : s) =
+		(op c : a * t * t * t -> s)((var Y1 : a), (var Y2 : t),
+					    (var Y3 : t), (var Y4 : t)) %(ga_disjoint_c_c)%,
+  forall X1:a
+      . not def (op d : s -> t)((op c : a -> s)(X1 : a) : s) : t %(ga_selector_undef_d_c)%,
+  forall . not def <error> %(ga_selector_undef_d_c)%,
+  forall X1:a
+      . not def (op b : s -> s)((op c : a -> s)(X1 : a) : s) : s %(ga_selector_undef_b_c)%,
+  forall . not def <error> %(ga_selector_undef_b_c)%,
+  forall X1:a
+      . not def (op a : s -> t)((op c : a -> s)(X1 : a) : s) : t %(ga_selector_undef_a_c)%,
+  forall . not def <error> %(ga_selector_undef_a_c)%,
   generated{sort s; op c : s; op c : a ->? s;
 		    op c : a * t * t * t -> s} %(ga_generated_s)%,
   forall X1:a; X2:t; X3:t; X4:t
@@ -556,6 +615,36 @@
   def <error> %()%, def <error> %()%,
   def (op __@@__ : Nat * Nat -> Nat)(1 : Nat, 2 : Nat) : Nat %()%,
   forall x:b . (x : b in a) <=> true %()%,
+  forall x:s; y:s; z:s
+      . (op c : s * s -> s)(x : s,
+			    (op c : s * s -> s)(y : s, z : s) : s) : s =
+	    (op c : s * s -> s)((op c : s * s -> s)(x : s, y : s) : s,
+				z : s) : s %(ga_assoc_c)%,
+  forall x:s; y:s
+      . (op c : s * s -> s)(x : s, y : s) : s =
+	    (op c : s * s -> s)(y : s, x : s) : s %(ga_comm_c)%,
+  forall x:s
+      . (op c : s * s -> s)(x : s, x : s) : s = x : s %(ga_idem_c)%,
+  forall x:s
+      . (op c : s * s -> s)(x : s, a : s) : s =
+	    x : s %(ga_right_unit_c)%,
+  forall x:s
+      . (op c : s * s -> s)(a : s, x : s) : s = x : s %(ga_left_unit_c)%,
+  forall x:s; y:s; z:s
+      . (op c : s * s -> s)(x : s,
+			    (op c : s * s -> s)(y : s, z : s) : s) : s =
+	    (op c : s * s -> s)((op c : s * s -> s)(x : s, y : s) : s,
+				z : s) : s %(ga_assoc_c)%,
+  forall x:s; y:s
+      . (op c : s * s -> s)(x : s, y : s) : s =
+	    (op c : s * s -> s)(y : s, x : s) : s %(ga_comm_c)%,
+  forall x:s
+      . (op c : s * s -> s)(x : s, x : s) : s = x : s %(ga_idem_c)%,
+  forall x:s
+      . (op c : s * s -> s)(x : s, a : s) : s =
+	    x : s %(ga_right_unit_c)%,
+  forall x:s
+      . (op c : s * s -> s)(a : s, x : s) : s = x : s %(ga_left_unit_c)%,
   forall . (op a : Data1) : Data1 = a : Data1 %()%,
   forall x, y:s; z:t
       . (op c : s * s * s -> s)(x : s, y : s, z : t) : s = a : s %()%,
@@ -604,6 +693,15 @@
 						 Data1 ->? Data4)(X1 : Data2,
 								  X2 : Data1) : Data4) : Data2 =
 	    X1 : Data2 %(ga_selector_sel2)%,
+  forall X1:Data1; X2:List; Y1:Data1; Y2:List
+      . (op Cons : Data1 * List -> List)(X1 : Data1, X2 : List) : List =
+	    (op Cons : Data1 * List -> List)(Y1 : Data1, Y2 : List) : List <=>
+	    X1 : Data1 = Y1 : Data1
+	    /\ X2 : List = Y2 : List %(ga_injective_Cons)%,
+  forall Y1:Data1; Y2:List
+      . not (op Nil : List) : List =
+		(op Cons : Data1 * List -> List)(Y1 : Data1,
+						 Y2 : List) : List %(ga_disjoint_Nil_Cons)%,
   generated{sort List; op Cons : Data1 * List -> List;
 		       op Nil : List} %(ga_generated_List)%,
   generated{sort Set; op Add : Data1 * Set -> Set;
@@ -671,6 +769,9 @@
 			    /\ not (pred q : s)(x : s)
 			    /\ (pred q : s)(x : s) %()%,
   true %()%,
+  forall
+      . not (op True : Boolean) : Boolean =
+		(op False : Boolean) : Boolean %(ga_disjoint_True_False)%,
   generated{sort Boolean; op False : Boolean;
 			  op True : Boolean} %(ga_generated_Boolean)%,
   forall x, y, z:Boolean
@@ -2827,10 +2928,23 @@
   forall . (op '\f' : Char) : Char = FF : Char %(slash_f)%,
   forall . (op '\a' : Char) : Char = BEL : Char %(slash_a)%,
   forall . (op '\?' : Char) : Char = '?' : Char %(slash_quest)%,
+  forall x:a; y:a; z:a
+      . (op __||__ : a * a -> a)(x : a,
+				 (op __||__ : a * a -> a)(y : a, z : a) : a) : a =
+	    (op __||__ : a * a -> a)((op __||__ : a * a -> a)(x : a,
+							      y : a) : a,
+				     z : a) : a %(ga_assoc___||__)%,
   (op __||__ : a * a -> a)((op __||__ : a * a -> a)(b : a,
 						    b : a) : a,
 			   b : a) : a =
       b : a %()% ]
+*** Error , No correct typing for  (op c : s) = (op c : a ->? s)((var Y1 : a))
+*** Error , No correct typing for  (op c : s) =
+			   (op c : a * t * t * t -> s)((var Y1 : a), (var Y2 : t),
+						       (var Y3 : t), (var Y4 : t))
+*** Error , No correct typing for 
+*** Error , No correct typing for 
+*** Error , No correct typing for 
 *** Error 343.36, No correct typing for 
 *** Error 343.20, No correct typing for 
 *** Error 343.5, No correct typing for 

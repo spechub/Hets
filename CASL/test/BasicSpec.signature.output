@@ -1209,6 +1209,13 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
+*** Error , No correct typing for  (op c : s) = (op c : a ->? s)((var Y1 : a))
+*** Error , No correct typing for  (op c : s) =
+			   (op c : a * t * t * t -> s)((var Y1 : a), (var Y2 : t),
+						       (var Y3 : t), (var Y4 : t))
+*** Error , No correct typing for 
+*** Error , No correct typing for 
+*** Error , No correct typing for 
 *** Error 343.36, No correct typing for 
 *** Error 343.20, No correct typing for 
 *** Error 343.5, No correct typing for 

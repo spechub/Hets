@@ -273,10 +273,11 @@ ana_OP_ITEM :: GlobalAnnos -> Annoted OP_ITEM -> State Sign (Annoted OP_ITEM)
 ana_OP_ITEM ga aoi = 
     case item aoi of 
     Op_decl ops ty il ps -> 
-	do mapM_ (addOp $ toOpType ty) ops
-	   ul <- mapM (ana_OP_ATTR ga) il
+	do let oty = toOpType ty
+           mapM_ (addOp oty) ops
+	   ul <- mapM (ana_OP_ATTR ga oty ops) il
 	   if Assoc_op_attr `elem` il then
-	      mapM_ (addAssocOp $ toOpType ty) ops
+	      mapM_ (addAssocOp oty) ops
 	      else return ()
 	   return aoi {item = Op_decl ops ty (catMaybes ul) ps}
     Op_defn i par at ps -> 
@@ -316,8 +317,11 @@ headToType (Partial_op_head args r ps) =
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
-ana_OP_ATTR :: GlobalAnnos -> OP_ATTR -> State Sign (Maybe OP_ATTR)
-ana_OP_ATTR ga oa = 
+ana_OP_ATTR :: GlobalAnnos -> OpType -> [Id] -> OP_ATTR 
+	    -> State Sign (Maybe OP_ATTR)
+ana_OP_ATTR ga ty ois oa = 
+    let sty = toOP_TYPE ty
+	rty = opRes ty in
     case oa of 
     Unit_op_attr t ->
 	do ops <- allOpIds
@@ -325,8 +329,67 @@ ana_OP_ATTR ga oa =
 	   newGa <- addAssocs ga
 	   let Result ds mt = resolveMixfix newGa ops preds False t
 	   addDiags ds
-	   return $ fmap Unit_op_attr mt
-    _ -> return $ Just oa
+	   case mt of 
+	     Nothing -> return Nothing
+	     Just e -> do 
+               addSentences $ map (makeUnit True e ty) ois
+               addSentences $ map (makeUnit False e ty) ois
+	       return $ Just $ Unit_op_attr e
+    Assoc_op_attr -> do
+      let ns = map mkSimpleId ["x", "y", "z"]
+	  vs = map ( \ v -> Var_decl [v] rty []) ns
+	  [v1, v2, v3] = map ( \ v -> Qual_var v rty []) ns
+	  makeAssoc i = let qi = Qual_op_name i sty [] in 
+	    NamedSen ("ga_assoc_" ++ showId i "") $
+	    Quantification Universal vs
+	    (Strong_equation 
+	     (Application qi [v1, Application qi [v2, v3] []] [])
+	     (Application qi [Application qi [v1, v2] [], v3] [])
+	    []) []
+      addSentences $ map makeAssoc ois
+      return $ Just oa
+    Comm_op_attr -> do 
+      let ns = map mkSimpleId ["x", "y"]
+	  atys = opArgs ty 
+	  vs = zipWith ( \ v t -> Var_decl [v] t [] ) ns atys
+	  args = map toQualVar vs
+	  makeComm i = let qi = Qual_op_name i sty [] in
+	    NamedSen ("ga_comm_" ++ showId i "") $
+	    Quantification Universal vs
+	    (Strong_equation  
+	     (Application qi args [])
+	     (Application qi (reverse args) [])
+	     []) []
+      case atys of 
+         [_,_] -> addSentences $ map makeComm ois
+	 _ -> addDiags [Diag Error "expecting two arguments for commutativity" 
+		       $ posOfId rty]
+      return $ Just oa
+    Idem_op_attr -> do 
+      let v = mkSimpleId "x"
+	  vd = Var_decl [v] rty []
+	  qv = toQualVar vd
+	  makeIdem i = NamedSen ("ga_idem_" ++ showId i "") $
+	    Quantification Universal [vd]
+	    (Strong_equation  
+	     (Application (Qual_op_name i sty []) [qv, qv] [])
+	     qv []) []
+      addSentences $ map makeIdem ois
+      return $ Just oa
+
+makeUnit :: Bool -> TERM -> OpType -> Id -> Named FORMULA
+makeUnit b t ty i =
+    let lab = "ga_" ++ (if b then "right" else "left") ++ "_unit_"
+	      ++ showId i ""
+	v = mkSimpleId "x"
+	vty = opRes ty
+	qv = Qual_var v vty []
+	args = [qv, t] 
+	rargs = if b then args else reverse args
+    in NamedSen lab $ Quantification Universal [Var_decl [v] vty []]
+		     (Strong_equation 
+		      (Application (Qual_op_name i (toOP_TYPE ty) []) rargs [])
+		      qv []) []
 
 ana_PRED_ITEM :: GlobalAnnos -> Annoted PRED_ITEM 
 	      -> State Sign (Annoted PRED_ITEM)
@@ -383,8 +446,7 @@ instance PosItem Component where
 
 -- | return list of constructors 
 ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State Sign [Component]
-ana_DATATYPE_DECL _gk (Datatype_decl s al _) = 
--- GenKind currently unused 
+ana_DATATYPE_DECL gk (Datatype_decl s al _) = 
     do ul <- mapM (ana_ALTERNATIVE s . item) al
        let constr = catMaybes ul
            cs = map fst constr		    
@@ -396,8 +458,66 @@ ana_DATATYPE_DECL _gk (Datatype_decl s al _) =
 		      ("total selectors '" ++ showSepList (showString ",")
 		       showPretty (Set.toList totalSels) 
 		       "'\n\tmust appear in alternative") c) wrongConstr
+       case gk of 
+         Free -> do 
+	   let allts = map item al
+	       alts = filter ( \ a -> case a of 
+			       Subsorts _ _ -> False
+			       _ -> True) allts
+	       comps = map (getConsType s) alts
+	       ttrips = map (( \ (a, vs, t, ses) -> (a, vs, t, catSels ses))
+			       . selForms1 "X" ) comps 
+	       sels = concatMap ( \ (_, _, _, ses) -> ses) ttrips
+	   addSentences $ map makeInjective 
+			    $ filter ( \ (_, _, ces) -> not $ null ces) 
+			      comps
+	   addSentences $ makeDisjoint comps 
+	   addSentences $ catMaybes $ concatMap 
+			     ( \ ses -> 
+			       map (makeUndefForm ses) ttrips) sels
+	 _ -> return ()
        return cs
 
+makeInjective :: (Id, OpType, [COMPONENTS]) -> Named FORMULA
+makeInjective a = 
+    let (c, v1, t1, _) = selForms1 "X" a
+	(_, v2, t2, _) = selForms1 "Y" a
+    in NamedSen ("ga_injective_" ++ showId c "") $
+       Quantification Universal (v1 ++ v2) 
+       (Equivalence (Strong_equation t1 t2 [])
+	(let ces = zipWith ( \ w1 w2 -> Strong_equation 
+			     (toQualVar w1) (toQualVar w2) []) v1 v2
+	 in if isSingle ces then head ces else Conjunction ces [])
+	[]) []
+
+makeDisjoint :: [(Id, OpType, [COMPONENTS])] -> [Named FORMULA]
+makeDisjoint [] = []
+makeDisjoint (a:as) = map (makeDisj a) as ++ makeDisjoint as
+makeDisj :: (Id, OpType, [COMPONENTS]) -> (Id, OpType, [COMPONENTS])
+	    -> Named FORMULA
+makeDisj a1 a2 = 
+    let (c1, v1, t1, _) = selForms1 "X" a1
+	(c2, v2, t2, _) = selForms1 "Y" a2
+    in NamedSen ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "") $
+       Quantification Universal (v1 ++ v2) 
+       (Negation (Strong_equation t1 t2 []) []) []
+
+catSels :: [(Maybe Id, OpType)] -> [(Id, OpType)]
+catSels =  map ( \ (m, t) -> (fromJust m, t)) . 
+		 filter ( \ (m, _) -> isJust m)
+
+makeUndefForm :: (Id, OpType) -> (Id, [VAR_DECL], TERM, [(Id, OpType)])
+	      -> Maybe (Named FORMULA)
+makeUndefForm (s, ty) (i, vs, t, sels) = 
+    if any ( \ (se, ts) -> s == se && opRes ts == opRes ty ) sels
+    then Nothing else
+       Just $ NamedSen ("ga_selector_undef_" ++ showId s "_" 
+			++ showId i "") $
+              Quantification Universal vs 
+	      (Negation 
+	       (Definedness
+		(Application (Qual_op_name s (toOP_TYPE ty) []) [t] [])
+		[]) []) []
 
 getConsType :: SORT -> ALTERNATIVE -> (Id, OpType, [COMPONENTS])
 getConsType s c = 
@@ -415,35 +535,41 @@ getCompType s (Partial_select l cs _) =
     map (\ i -> (Just i, OpType Partial [s] cs)) l
 getCompType s (Sort cs) = [(Nothing, OpType Partial [s] cs)]
 
-genSelVars :: Int -> [(Maybe Id, OpType)] -> [VAR_DECL]
-genSelVars _ [] = []
-genSelVars n ((_, ty):rs)  = 
-    Var_decl [mkSelVar n] (opRes ty) [] : genSelVars (n+1) rs
+genSelVars :: String -> Int -> [(Maybe Id, OpType)] -> [VAR_DECL]
+genSelVars _ _ [] = []
+genSelVars str n ((_, ty):rs)  = 
+    Var_decl [mkSelVar str n] (opRes ty) [] : genSelVars str (n+1) rs
 
-mkSelVar :: Int -> Token
-mkSelVar n = mkSimpleId ("X" ++ show n)
+mkSelVar :: String -> Int -> Token
+mkSelVar str n = mkSimpleId (str ++ show n)
 
-makeSelForms :: [VAR_DECL] -> TERM 
-	     -> Int -> [(Maybe Id, OpType)] -> [Named FORMULA]
-makeSelForms _ _ _ [] = []
-makeSelForms vs t n ((mi, ty):rs) =
+makeSelForms :: Int -> (Id, [VAR_DECL], TERM, [(Maybe Id, OpType)])
+	     -> [Named FORMULA]
+makeSelForms _ (_, _, _, []) = []
+makeSelForms n (i, vs, t, (mi, ty):rs) =
     (case mi of 
 	    Nothing -> []
-	    Just i -> [NamedSen ("ga_selector_" ++ showId i "")
+	    Just j -> [NamedSen ("ga_selector_" ++ showId j "")
 	             $ Quantification Universal vs 
 		      (Strong_equation 
-		       (Application (Qual_op_name i (toOP_TYPE ty) []) [t] [])
-		       (Qual_var (mkSelVar n) (opRes ty) []) []) []]
-    )  ++ makeSelForms vs t (n+1) rs
+		       (Application (Qual_op_name j (toOP_TYPE ty) []) [t] [])
+		       (Qual_var (mkSelVar "X" n) (opRes ty) []) []) []]
+    )  ++ makeSelForms (n+1) (i, vs, t, rs)
 
+selForms1 :: String -> (Id, OpType, [COMPONENTS]) 
+	  -> (Id, [VAR_DECL], TERM, [(Maybe Id, OpType)])
+selForms1 str (i, ty, il) =
+    let cs = concatMap (getCompType $ opRes ty) il
+	vs = genSelVars str 1 cs 
+    in (i, vs, Application (Qual_op_name i (toOP_TYPE ty) [])
+	    (map toQualVar vs) [], cs)
+
+toQualVar :: VAR_DECL -> TERM
+toQualVar (Var_decl v s ps) = 
+    if isSingle v then Qual_var (head v) s ps else error "toQualVar"
 
 selForms :: (Id, OpType, [COMPONENTS]) -> [Named FORMULA]
-selForms (i, ty, il) =
-    let cs = concatMap (getCompType $ opRes ty) il
-	vs = genSelVars 1 cs
-	t = Application (Qual_op_name i (toOP_TYPE ty) [])
-	    (map ( \ (Var_decl v s _) -> Qual_var (head v) s []) vs) []
-    in makeSelForms vs t 1 cs 
+selForms = makeSelForms 1 . selForms1 "X"
  
 -- | return the constructor and the set of total selectors 
 ana_ALTERNATIVE :: SORT -> ALTERNATIVE 
