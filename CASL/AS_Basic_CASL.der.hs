@@ -209,21 +209,24 @@ recover_Sort_gen_ax constrs =
      then (sorts,map fst (concat (map opSymbs constrs)),[])
      -- otherwise, we have to introduce new sorts for the indices
      -- and afterwards rename them into the sorts they denote
-     else (map indSort indices,map indOp indOps1,map sortMap indSorts)
+     else (map indSort1 indices,map indOp indOps1,map sortMap indSorts)
   where 
   sorts = map newSort constrs
   indices = [0..length sorts-1]
   indSorts = zip indices sorts
-  indSort i = origSort $ head (drop i constrs)
-  sortMap (i,s) = (indSort i,s) 
+  indSort (i,s) = if i<0 then s else indSort1 i
+  indSort1 i = origSort $ head (drop i constrs)
+  sortMap (i,s) = (indSort1 i,s) 
   indOps = zip indices (map opSymbs constrs)
   indOps1 = concat (map (\(i,ops) -> map ((,) i) ops) indOps)
-  indOp (res,(Qual_op_name on (Total_op_type _ _ pos1) pos,args)) =
+  indOp (res,(Qual_op_name on (Total_op_type args1 res1 pos1) pos,args)) =
      Qual_op_name on 
-         (Total_op_type (map indSort args) (indSort res) pos1) pos
-  indOp (res,(Qual_op_name on (Partial_op_type _ _ pos1) pos,args)) =
+         (Total_op_type (map indSort (zip args args1)) 
+                        (indSort (res,res1)) pos1) pos
+  indOp (res,(Qual_op_name on (Partial_op_type args1 res1 pos1) pos,args)) =
      Qual_op_name on 
-         (Partial_op_type (map indSort args) (indSort res) pos1) pos
+         (Partial_op_type (map indSort (zip args args1)) 
+                          (indSort (res,res1)) pos1) pos
   indOp _ = error 
       "CASL/AS_Basic_CASL: Internal error: Unqualified OP_SYMB in Sort_gen_ax"
 

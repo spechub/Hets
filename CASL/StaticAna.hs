@@ -184,7 +184,7 @@ toSortGenAx ps (sorts, ops) = do
 		      (toOP_TYPE $ compType c) []) $ Set.toList ops
         resType _ (Op_name _) = False
         resType s (Qual_op_name _ t _) = res_OP_TYPE t ==s
-        getIndex s = maybe 0 id $ findIndex (==s) sortList
+        getIndex s = maybe (-1) id $ findIndex (==s) sortList
         addIndices (Op_name _) = 
           error "CASL/StaticAna: Internal error in function addIndices"
         addIndices os@(Qual_op_name _ t _) = 
