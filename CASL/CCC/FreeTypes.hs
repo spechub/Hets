@@ -51,7 +51,7 @@ checkFreeType m fsn
        | any id $ map find_ot id_ots ++ map find_pt id_pts = Nothing
        | not $ and $ map checkTerm leadingTerms = Nothing                 
        | not $ and $ map checkVar leadingTerms = Nothing 
-       | not $ checkPatterns leadingPatterns = Nothing             --  1,2             
+       | not $ checkPatterns leadingPatterns = Nothing            
        | otherwise = Just True
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
          fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
