@@ -1,7 +1,8 @@
 module Lexer ( bind, (<<), (<:>), (<++>), begDoEnd, flat, single
+	     , separatedBy
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
-	     , skip, ann, keyWord, keySign, signChars, caslLetters
+	     , skip, ann, keyWord, keySign, toKey
 	     ) where
 
 import Char (digitToInt)
@@ -86,6 +87,16 @@ p `checkWith` f = do { x <- p
 		     ; if f x then return x else 
 		       consumeNothing >> unexpected (show x)
 		     }
+
+separatedBy :: Parser a -> Parser b -> Parser ([a], [b])
+
+p `separatedBy`  s = do { r <- p
+			; option ([r], []) 
+			  (do { t <- s
+                              ; (es, ts) <- separatedBy p s
+                              ; return (r:es, t:ts)
+                              })
+			}
 
 -- ----------------------------------------------
 -- casl words
@@ -197,5 +208,15 @@ annote = try(char '%' <:> scanAnyWords) <++>
 ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
       <?> "annotation"
 
+-- ----------------------------------------------
+-- keywords WORDS or NO-BRACKET-SIGNS 
+-- ----------------------------------------------
+
+keyWord :: Parser a -> Parser a
 keyWord p = try(p << notFollowedBy scanLPD)
+keySign :: Parser a -> Parser a
 keySign p = try(p << notFollowedBy (oneOf signChars))
+
+toKey s = let p = string s in 
+              if last s `elem` signChars then keySign p 
+		 else keyWord p

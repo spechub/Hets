@@ -1,11 +1,13 @@
 -- $Header$
-module Token ( scanTermWords, scanTermSigns, makeToken
-	     , skipChar, opBrkt, clBrkt, oBrace, cBrace, uu, comma
-	     , parseId, sortId
+module Token ( scanWords, scanSigns, makeToken, asKey
+	     , sepChar, opBrkt, clBrkt, oBrace, cBrace, uu, comma
+	     , parseId, sortId, varId, colonChar, equalStr, lessStr
+	     , partialSuffix, totalFunArrow, partialFunArrow 
+	     , totalFunArrow, productSign, altProductSign
 	     ) where
 
 import Lexer
-import Id (Id(Id), Token(Token), place, isPlace)
+import Id (Id(Id), Token(..), Pos, place, isPlace)
 import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
 import ParsecPrim (Parser, (<?>), (<|>), getPosition, many, try)
 import ParsecCombinator (many1, option, sepBy1)
@@ -53,16 +55,18 @@ setTokPos p s = Token s (sourceLine p, sourceColumn p)
 
 makeToken parser = skip(bind setTokPos getPosition parser)
 
-skipChar = makeToken . single . char
+sepChar = makeToken . single . char
+
+asKey = makeToken . toKey
 
 -- ----------------------------------------------
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
-opBrkt = skipChar '[' <?> "" -- don't convey confusing mix-id tokens
-clBrkt = skipChar ']'
-oBrace = skipChar '{' <?> ""
-cBrace = skipChar '}'
+opBrkt = sepChar '[' <?> "" -- don't convey confusing mix-id tokens
+clBrkt = sepChar ']'
+oBrace = sepChar '{' <?> ""
+cBrace = sepChar '}'
 uu = makeToken (try (string place) <?> "place")
 
 -- simple id (but more than only words)
@@ -105,23 +109,27 @@ tokStart = afterPlace <++> flat (many middle)
 start = tokStart <|> uu <:> (tokStart <|> many1 uu <++> option [] tokStart)
         <?> "id"
 
-comma = skipChar ','
+comma = sepChar ','
 
 -- ----------------------------------------------
 -- Mixfix Ids
 -- ----------------------------------------------
 
 -- a compound list
-comps = opBrkt >> parseId `sepBy1` comma << clBrkt
-	<?> "[<id>,...,<id>]"
+comps :: Parser ([Id], [Pos])
+comps = do { o <- opBrkt 
+	   ; (is, cs) <- parseId `separatedBy` comma
+	   ; c <- clBrkt
+	   ; return (is, tokPos o : map tokPos cs ++ [tokPos c])
+	   } <?> "[<id>,...,<id>]"
 
 -- a compound list does not follow a place
 -- but after a compound list further places may follow
 parseId = do { l <- start
-             ; if isPlace (last l) then return (Id l [])
-	       else (do { c <- option [] comps
+             ; if isPlace (last l) then return (Id l [] [])
+	       else (do { (c, p) <- option ([], []) comps
 			; u <- many uu
-			; return (Id (l++u) c)
+			; return (Id (l++u) c p)
 			})
 	     }
 
@@ -130,6 +138,7 @@ parseId = do { l <- start
 -- ----------------------------------------------
 
 -- at least some no-bracket-signs should be disallowed for sorts
+colonChar = ':'
 equalStr = "="
 lessStr = "<"
 partialSuffix = "?"
@@ -139,13 +148,19 @@ productSign = "*"
 altProductSign = "\215"
 
 isSortId (t) = 
-        show t `notElem` 
-          [equalStr, lessStr, totalFunArrow, partialSuffix,
-	   partialFunArrow, productSign, altProductSign]
+        tokStr t `notElem` 
+          [[colonChar], equalStr, lessStr, productSign, altProductSign, 
+	   partialSuffix, totalFunArrow, partialFunArrow]
 
 -- sortIds are Ids without places, but possibly compound ids
 -- only (the above) simple ids are taken here (brackets/braces are illegal) 
 sortId = do { s <- sid `checkWith` isSortId
-	    ; c <- option [] comps
-	    ; return (Id [s] c)
+	    ; (c, p) <- option ([], []) comps
+	    ; return (Id [s] c p)
 	    }
+
+-- ----------------------------------------------
+-- SORT Ids
+-- ----------------------------------------------
+-- no compound ids (just a token) 
+varId = sid
