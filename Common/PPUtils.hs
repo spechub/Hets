@@ -103,14 +103,14 @@ listSep_text separator ga = fsep . punctuate separator . map (printText0 ga)
 
 semiAnno_text :: (PrettyPrint a) => 
 		 GlobalAnnos -> [Annoted a] -> Doc
-semiAnno_text ga l = noPrint (null l)
+semiAnno_text ga l = if null l then empty else
 		     (vcat $ map (pf' True)
 		      (init l) ++ [pf' False (last l)])
     where pfga as = vcat $ map (printText0 ga) as
 	  pf' printSemi a_item =
 	         pfga (l_annos a_item)
 			$$ printText0 ga (item a_item)
-			       <> noPrint (not printSemi) semi
+			       <> (if printSemi then semi else empty)
 			       <+> pfga (r_annos a_item)
 
 --------------------------------------------------------------------
@@ -131,14 +131,14 @@ listSep_latex separator ga = fsep_latex . punctuate separator .
 
 semiAnno_latex :: (PrettyPrint a) => 
 		  GlobalAnnos -> [Annoted a] -> Doc
-semiAnno_latex ga l = noPrint (null l)
+semiAnno_latex ga l = if null l then empty else
 		   (vcat $ map (pf' True)
 		              (init l) ++ [pf' False (last l)])
     where pfga as = vcat $ map (printLatex0 ga) as
 	  pf' printSemi a_item =
 	         pfga (l_annos a_item)
 			$$ printLatex0 ga (item a_item)
-			   <> noPrint (not printSemi) semi_latex 
+			   <> (if printSemi then semi_latex else empty)
 			       <\+> pfga (r_annos a_item)
 
 hc_sty_casl_keyword :: String -> Doc

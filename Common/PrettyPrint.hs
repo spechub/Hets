@@ -14,8 +14,7 @@
 -}
 
 module Common.PrettyPrint 
-    ( noPrint
-    , showPretty
+    ( showPretty
     , renderLatex
     , debugRenderLatex
     , renderText 
@@ -24,7 +23,6 @@ module Common.PrettyPrint
     , startTab, endTab, setTab
     , printToken_latex
     , setTabWithSpaces
---, module PrettyPrint
     ) 
     where
 
@@ -42,10 +40,6 @@ import Common.LaTeX_funs
 class Show a => PrettyPrint a where
     printLatex0, printText0 :: GlobalAnnos -> a -> Doc
     printLatex0 ga a = printText0 ga a
-
--- shortcut
-noPrint :: Bool -> Doc -> Doc
-noPrint b d = if b then empty else d
 
 -- | a more pretty alternative for shows
 showPretty :: PrettyPrint a => a -> ShowS
