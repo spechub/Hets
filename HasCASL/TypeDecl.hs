@@ -243,7 +243,7 @@ convertTypePattern t =
 -- and should be ignored to avoid different Ids "Pred" and "Pred__"
 
 typePatternToTokens :: TypePattern -> [Token]
-typePatternToTokens (TypePattern ti _ _) = getTokenList place ti
+typePatternToTokens (TypePattern ti _ _) = getPlainTokenList ti
 typePatternToTokens (TypePatternToken t) = [t]
 typePatternToTokens (MixfixTypePattern ts) = concatMap typePatternToTokens ts
 typePatternToTokens (BracketTypePattern pk ts ps) =

@@ -59,7 +59,7 @@ instance Eq (PState a) where
 instance Show (PState a) where
     showsPrec _ p = 
 	let d = restRule p
-	    v = getTokenList place (ruleId p)
+	    v = getPlainTokenList (ruleId p)
 	    first = take (length v - length d) v
 	    Index i = stateNo p 
 	    in showChar '{' 
@@ -122,7 +122,7 @@ mkPlainApplState :: Index -> (Id, OpInfo) -> State Int (PState a)
 mkPlainApplState i (ide, info) =     
     do let sc = opType info
        t <- freshInst sc
-       return $ mkPState i ide sc t $ getTokenList place ide
+       return $ mkPState i ide sc t $ getPlainTokenList ide
 
 listToken :: Token 
 listToken = mkSimpleId "[]"
@@ -146,7 +146,7 @@ listStates g i =
 	     let (b1, b2, cs) = getListBrackets bs 
 		 e = Id (b1 ++ b2) cs [] in
 	     (if e == n then [] -- add b1 ++ b2 if its not yet included by n
-	      else [listState c $ getTokenList place e]) ++
+	      else [listState c $ getPlainTokenList e]) ++
                    [listState c (b1 ++ [termTok] ++ b2) 
 		   , listState c (b1 ++ [termTok, commaTok] ++ b2)]
 		   ) $ Set.toList lists
@@ -289,7 +289,7 @@ toAppl g s = let i = ruleId s in
            let Id _ [f] _ = i
 	       ListCons b c = getLiteralType g f
 	       (b1, _, _) = getListBrackets b
-	       cl = length $ getTokenList place b
+	       cl = length $ getPlainTokenList b
                nb1 = length b1
                ra = reverse $ ruleArgs s
                na = length ra
