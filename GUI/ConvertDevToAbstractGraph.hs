@@ -212,19 +212,19 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("proventhm",
                    Solid $$$ Color "Green"
-		   $$$ createLocalEdgeMenu 
+		   $$$ createLocalEdgeMenuThmEdge
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unproventhm",
                    Solid $$$ Color "Red" 
-		   $$$ createLocalEdgeMenu
+		   $$$ createLocalEdgeMenuThmEdge
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localproventhm",
                    Dashed $$$ Color "Green" 
-		   $$$ createLocalEdgeMenu
+		   $$$ createLocalEdgeMenuThmEdge
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localunproventhm",
                    Dashed $$$ Color "Red" 
-		   $$$ createLocalEdgeMenu
+		   $$$ createLocalEdgeMenuThmEdge
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   -- > ######### welche Farbe fuer reference ##########
                   ("reference",
@@ -399,6 +399,13 @@ createLocalEdgeMenu =
 		createLocalMenuButtonShowOriginOfEdge]
 	      )
 
+createLocalEdgeMenuThmEdge =
+   LocalMenu (Menu (Just "thm egde menu")
+              [createLocalMenuButtonShowMorphismOfEdge,
+		createLocalMenuButtonShowOriginOfEdge,
+	        createLocalMenuButtonShowProofStatusOfThm]
+	      )
+
 createLocalMenuButtonShowMorphismOfEdge = 
   (Button "Show morphism" 
                       (\ (_,descr,maybeLEdge)  -> 
@@ -412,6 +419,13 @@ createLocalMenuButtonShowOriginOfEdge =
 	   do showOriginOfEdge descr maybeLEdge
 	      return ()
 	  ))
+
+createLocalMenuButtonShowProofStatusOfThm =
+   (Button "Show proof base"
+        (\ (_,descr,maybeLEdge) ->
+          do showProofStatusOfThm descr maybeLEdge
+	     return ()
+	 ))
   
 -- ------------------------------
 -- end of local menu definitions
@@ -476,6 +490,24 @@ showOriginOfEdge _ (Just (_,_,linklab)) =
 showOriginOfEdge descr Nothing =
     putStrLn ("edge "++(show descr)++" has no corresponding edge"
 		++ "in the development graph")
+
+{- prints the proof base of the edge -}
+showProofStatusOfThm :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
+showProofStatusOfThm _ (Just ledge) =
+    putStrLn (show (getProofStatusOfThm ledge))
+showProofStatusOfThm descr Nothing =
+    putStrLn ("edge "++(show descr)++" has no corresponding edge"
+		++ "in the development graph")
+
+
+getProofStatusOfThm :: (LEdge DGLinkLab) -> ThmLinkStatus
+getProofStatusOfThm (_,_,label) =
+  case (dgl_type label) of
+    (LocalThm proofStatus _ _) -> proofStatus
+    (GlobalThm proofStatus _ _) -> proofStatus
+    (HidingThm _ proofStatus) -> proofStatus -- richtig?
+--  (FreeThm GMorphism Bool) - keinen proofStatus?
+    otherwise -> error "the given edge is not a theorem"
 
 {- converts the nodes of the development graph, if it has any,
 and returns the resulting conversion maps

@@ -208,19 +208,14 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
      globSubsumeAux dGraph (rules,changes) list
    else 
      globSubsumeAux (insEdge newEdge (delLEdge ledge dGraph)) (newRules,newChanges) list
---existsProvenGlobPathOfMorphismBetween dGraph morphism src tgt
-    -- then
-      -- globSubsumeAux (insEdge newEdge (delLEdge ledge dGraph)) (newRules,newChanges) list
-     --else
-       --globSubsumeAux dGraph (rules,changes) list
+
   where
     morphism = dgl_morphism edgeLab
-  --  auxGraph = delLEdge ledge dGraph
     allPaths = getAllProvenGlobPathsOfMorphismBetween dGraph morphism src tgt
     proofBasis =
       case allPaths of
         [] -> []
-        (path:paths) -> [] -- @@ hier weitermachen -- map getLabelOfEdge path
+        (path:paths) -> map getLabelOfEdge path
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (src,
 	       tgt,
@@ -229,15 +224,13 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 				   conservativity conservStatus),
 		       dgl_origin = DGProof}
                )
-    --newGraph = insEdge newEdge auxGraph
     newRules = (GlobSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
 
--- @@Todo: label von Kanten bestimmen@@
---getLabelOfEdge :: (LEdge b) -> b
---getLabelOfEdge (LEdge label) = label
-
+{- returns the DGLinkLab of the given LEdge -}
+getLabelOfEdge :: (LEdge b) -> b
+getLabelOfEdge (_,_,label) = label
 
 -- ------------------
 -- local subsumption
@@ -294,7 +287,6 @@ locDecompAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
 existsProvenGlobPathOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
 				    -> Bool
 existsProvenGlobPathOfMorphismBetween dgraph morphism src tgt =
-  -- @@@ zum Testen: not (null (concat allDefPathsBetween))
   elem morphism filteredMorphismsOfProvenPaths
 
     where
@@ -512,7 +504,7 @@ addToAll element (list:lists) = (element:list):(addToAll element lists)
 -- removes all edges that are not of the given types
 filterByTypes :: [LEdge DGLinkLab -> Bool] -> [LEdge DGLinkLab]
 	      -> [LEdge DGLinkLab]
-filterByTypes [] edges = edges
+filterByTypes [] edges = []
 filterByTypes (isType:typeChecks) edges =
   (filter isType edges)++(filterByTypes typeChecks edges)
 
