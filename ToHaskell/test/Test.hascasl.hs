@@ -25,8 +25,8 @@ f = undefined
 s1 :: AT -> A__Int
  
 s2 :: AT -> B
-s1 (A (x_11_11, x_11_12)) = x_11_11
-s2 (A (x_11_11, x_11_12)) = x_11_12
  
 data AT = A !(A__Int, B)
         deriving (Show, Eq, Ord)
+s2 (A (x_11_11, x_11_12)) = x_11_12
+s1 (A (x_11_11, x_11_12)) = x_11_11

@@ -10,10 +10,10 @@ g = undefined
 head :: List a -> a
  
 tail :: List a -> List a
-head (Cons (x_11_11, x_11_12)) = x_11_11
-tail (Cons (x_11_11, x_11_12)) = x_11_12
+f x = x
  
 data List a = Nil
             | Cons !(a, List a)
             deriving (Show, Eq, Ord)
-f x = x
+tail (Cons (x_11_11, x_11_12)) = x_11_12
+head (Cons (x_11_11, x_11_12)) = x_11_11

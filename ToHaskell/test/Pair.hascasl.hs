@@ -15,10 +15,10 @@ a__fst :: Pair -> A__a
 g :: Pair -> A__a
  
 a__snd :: Pair -> A__b
-a__fst (Pair (x_11_11, x_11_12)) = x_11_11
-a__snd (Pair (x_11_11, x_11_12)) = x_11_12
+g (Pair (a, b)) = a
+f (a, b) = Pair (a, b)
  
 data Pair = Pair !(A__a, A__b)
           deriving (Show, Eq, Ord)
-f (a, b) = Pair (a, b)
-g (Pair (a, b)) = a
+a__snd (Pair (x_11_11, x_11_12)) = x_11_12
+a__fst (Pair (x_11_11, x_11_12)) = x_11_11

@@ -13,21 +13,21 @@ neg :: A__Bool -> A__Bool
 vee :: (A__Bool, A__Bool) -> A__Bool
  
 wedge :: (A__Bool, A__Bool) -> A__Bool
- 
-data A__Bool = A__True
-             | A__False
-             deriving (Show, Eq, Ord)
-neg x
-  = case x of
-        A__False -> A__True
-        A__True -> A__False
+ne (x, y) = wedge (vee (x, y), neg (wedge (x, y)))
+eq (x, y) = wedge (le (x, y), le (y, x))
+le (x, y) = vee (neg x, y)
+vee (x, y) = neg (wedge (neg x, neg y))
 wedge (x, y)
   = case (x, y) of
         (A__False, A__False) -> A__False
         (A__True, A__False) -> A__False
         (A__False, A__True) -> A__False
         (A__True, A__True) -> A__True
-vee (x, y) = neg (wedge (neg x, neg y))
-le (x, y) = vee (neg x, y)
-eq (x, y) = wedge (le (x, y), le (y, x))
-ne (x, y) = wedge (vee (x, y), neg (wedge (x, y)))
+neg x
+  = case x of
+        A__False -> A__True
+        A__True -> A__False
+ 
+data A__Bool = A__True
+             | A__False
+             deriving (Show, Eq, Ord)

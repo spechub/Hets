@@ -22,6 +22,6 @@ x = undefined
  
 y :: A__t
 y = undefined
-a__snd (x, y) = y
-b = a
 c = a__snd (x, y)
+b = a
+a__snd (x, y) = y
