@@ -169,7 +169,7 @@ public class OWLToATerm implements OWLValidationConstants {
 			FileOutputStream stream = new FileOutputStream( file, true );
 			renderer.renderOntology( ontology, writer );
 			result = ATermUtils.term( writer.toString() );
-			result.writeToTextFile( stream );		    
+			result.writeToSharedTextFile( stream );		    
 			
 			// System.out.println(result);
 		    // pw.close();
