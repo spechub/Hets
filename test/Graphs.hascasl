@@ -6,7 +6,15 @@ version 0.9
 
 %left_assoc __intersection__  %[ Should go to StructuredDatatypes ]%
 
-%%prec {__<=>__} < {__/\__}
+%prec {__<=>__} < {__=>__}
+%prec {__=>__} < {__/\__, __\/__}
+%right_assoc __=>__
+%left_assoc __/\__, __\/__
+%prec {__/\__, __\/__} < {__=__, __=!=__}
+%prec {__/\__, __\/__} < {__isIn__, __subset__, __disjoint__}
+%prec({__isIn__, __subset__, __disjoint__} 
+		 < {__union__, __intersection__, __\\__, __*__, 
+		    __disjointUnion__} )%
 
 %%from Basic/StructuredDatatypes get List
 %%from Basic/Numbers get Nat
@@ -50,8 +58,7 @@ spec Set = Bool and InternalLogic and Extensionality then
   forall x,x':S; y:T; s,s':Set S; t:Set(T) 
   . not x isIn emptySet
   . (x isIn {x'}) <=> (x=x')
-  . (x isIn s)
-  . (s x)
+  . (x isIn s) <=> (s x)
   . (s subset s') <=> (forall x:S . (x isIn s) => (x isIn s'))
   . (x isIn (s union s')) <=> ((x isIn s) \/ (x isIn s'))
   . (x isIn (s intersection s')) <=> ((x isIn s) /\ (x isIn s'))

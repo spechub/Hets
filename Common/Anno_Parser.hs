@@ -1,12 +1,16 @@
 
-{- HetCATS/Anno_Parser.hs
-   $Id$
-   Authors: Klaus Lüttich, Christian Maeder
-   Year:   2002/2003
+{- |
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    This file implements parsers for annotations and annoted items.
 
-   used Lexer, Keywords and Token rather than CaslLanguage 
+   uses Lexer, Keywords and Token rather than CaslLanguage 
 -}
 
 module Common.Anno_Parser where
@@ -14,18 +18,20 @@ module Common.Anno_Parser where
 import Common.Lib.Parsec hiding (label)
 import Common.Lib.Parsec.Error
 import Common.Lib.Parsec.Pos
--- import Common.Lib.Parsec.Perm
 
 import Common.Lexer
 import Common.Token
 import Common.ListBrackets
--- import CaslLanguage
+
 import Common.Id
 import Common.AS_Annotation
 import Data.Maybe(fromJust)
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
+
+some_id :: GenParser Char st Id
+some_id = mixId keys keys where keys = ([], [])
 
 charOrEof :: Char -> GenParser Char st ()
 charOrEof c = (char c >> return ()) <|> eof
@@ -104,7 +110,7 @@ annotations = many annotation
 -----------------------------------------
 
 commaIds :: GenParser Char st [Id]
-commaIds = commaSep1 casl_id 
+commaIds = commaSep1 some_id 
 
 parse_anno :: Annotation -> SourcePos -> Either ParseError Annotation
 parse_anno anno sp = 
@@ -152,15 +158,15 @@ prec_anno = do left_ids <- braces commaIds
 			  [] 
 
 number_anno   = 
-    do n <- casl_id
+    do n <- some_id
        return $ Number_anno n []
 
 list_anno     = do 
     bs <- caslListBrackets 
     p <- commaT
-    ni <- casl_id 
+    ni <- some_id 
     q <- commaT
-    ci <- casl_id
+    ci <- some_id
     return $ List_anno bs ni ci (toPos p [] q)
 
 string_anno   = literal_2ids_anno String_anno
@@ -170,13 +176,13 @@ floating_anno = literal_2ids_anno Float_anno
 literal_2ids_anno :: (Id -> Id -> [Pos] -> Annotation) 
 	        -> GenParser Char st Annotation
 literal_2ids_anno con = 
-    do i1 <- casl_id
+    do i1 <- some_id
        p <- commaT
-       i2 <- casl_id
+       i2 <- some_id
        return $ con i1 i2 [tokPos p]
 
 display_anno :: GenParser Char st Annotation
-display_anno = do ident <- casl_id
+display_anno = do ident <- some_id
 		  tls <- many $ foldl1 (<|>) $ map disp_symb 
 			 display_format_table
 		  return (Display_anno ident tls [])
