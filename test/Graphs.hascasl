@@ -12,6 +12,7 @@ version 0.9
 		    __disjointUnion__} )%
 
 %prec {__+__} < {__*__,__div__}
+%prec {__=__} < {__o__}
 
 %%from Basic/StructuredDatatypes get List
 %%from Basic/Numbers get Nat
@@ -46,9 +47,9 @@ spec Category =
       id : Ob -> Mor;
       __o__ : Mor*Mor ->? Mor;
   forall f,g,h : Mor; a,b:Ob
-  . def f o g <=> cod g = dom f
-  . def f o g => dom f o g = dom g
-  . def f o g => cod f o g = cod f
+  . def (f o g) <=> cod g = dom f
+  . def (f o g) => dom (f o g) = dom g
+  . def (f o g) => cod (f o g) = cod f
   . f o (g o h) = (f o g) o h
   . f o id(dom f) = f
   . id(cod f) o f = f
@@ -66,23 +67,25 @@ then
   ops __coproduct__ : Ob * Ob -> Ob;
       inl,inr : Ob * Ob -> Mor;
       [__!__] : Mor * Mor ->? Mor
-  pred __mediates__ (h:Mor) ((f,g):Mor*Mor) <=> 
-     h :: (dom f) coproduct (dom g) -> cod f
-     /\ h o inl (dom f) (dom g) = f
-     /\ h o inr (dom f) (dom g) = g
+  pred __ :: __ --> __ : Mor * Ob * Ob 
+  pred __mediates__ (h:Mor;p:Mor*Mor) <=>
+     let (f,g) = p in  
+     h :: (dom f) coproduct (dom g) --> cod f
+     /\ h o inl (dom f, dom g) = f
+     /\ h o inr (dom f, dom g) = g ;
   forall a,b,c : Ob; f,g,h : Mor
-  . inl a b :: a --> a coproduct b
-  . inr a b :: b --> a coproduct b
+  . inl (a, b) :: a --> (a coproduct b)
+  . inr (a, b) :: b --> (a coproduct b)
   . def [f!g] <=> dom f = a /\ dom g = b /\ cod f = cod g
   . [f!g] mediates (f,g)
-  . h mediates (f,g) => h = [f!g]
+  . (h mediates (f,g)) => h = [f!g]
 end
 
 
 spec Coequalizer[Category] = 
   ExtCategory[Category]
 then
-  ops ...
+{} %%  ops ...
 end
 
 
@@ -90,7 +93,7 @@ spec Pushout[Category] =
   ExtCategory[Category]
 then
   op pushout : Mor * Mor ->? (Mor * Mor * (Mor * Mor ->? Mor))
-  pred __mediates__ (m:Mor) ((f,g,h,k):Mor*Mor) <=> 
+  pred __mediates__ (m:Mor) (f,g,h,k:Mor) <=> 
           m o f = h /\ m o g = k
   forall f,g,h,k : Mor
   . def pushout(f,g) <=> dom f = dom g
@@ -134,7 +137,7 @@ spec CoproductShape =
   Category
 then
   type CPDiagram := Ob * Ob;
-       CPCocone := {(h,k) : Mor * Mor . cod h = cod k}
+       CPCocone = {(h,k) : Mor * Mor . cod h = cod k}
   pred __isCoconeFor__ : POCoCone * PODiagram
   . ((h,k) as POCocone) isCoconeFor (a,b)  
        <=> dom h = a /\ dom k = b
@@ -160,7 +163,7 @@ then
        <=> k o f = k o g
 end
 
-view CPShape : Shape -> CoproductShape =
+view CPShape : Shape to CoproductShape =
   Diagram |-> CPDiagram, CoCone |-> CPCocone
 end
 
@@ -168,7 +171,7 @@ spec Coproduct[Category] =
   Colimit[Category][view CPShape]
 end
 
-view CEShape : Shape -> CoequalizerShape =
+view CEShape : Shape to CoequalizerShape =
   Diagram |-> CEDiagram, CoCone |-> CECocone
 end
 
@@ -176,7 +179,7 @@ spec Coequalizer[Category] =
   Colimit[Category][view CEShape]
 end
 
-view POShape : Shape -> PushoutShape =
+view POShape : Shape to PushoutShape =
   Diagram |-> PODiagram, CoCone |-> POCocone
 end
 
@@ -185,10 +188,10 @@ spec Pushout[Category] =
 end
 
 view PushoutAsCoequalizerOfCoproduct :
-  Pushout[Category] ->
-  Coproduct[Category] and Coequalizer[Category] and
-  { %% construction of pushouts from coquealizers + coproducts
-  }
+  Pushout[Category] to
+  {Coproduct[Category] and Coequalizer[Category]}%% and
+  %%{ %% construction of pushouts from coquealizers + coproducts
+  %%}
 end
 
 
@@ -277,15 +280,15 @@ spec SetCategory =
 then
   type SetS := Set S
   type MapS := Set S * Map S * Set S
-  ops dom (a,f,b):MapS = a
-      cod (a,f,b):MapS = b
+  ops dom (a:Set S;f:Map S;b :Set S):Set S = a;
+      cod (a:Set S;f:Map S;b :Set S):Set S = b
       __o__ : MapS * MapS ->? MapS
   forall a,b,c : SetS; f,g : MapS
   . def f o g <=> cod g = dom f
   . (b,g,c) o (a,f,b) = (a,g o f,c)
 end
 
-view CategoryofSets : Category -> SetCategory =
+view CategoryofSets : Category to SetCategory =
      Ob |-> SetS, Mor |-> MapS, __o__, dom, cod
 end
 
@@ -346,7 +349,7 @@ end
    We also specify the mediating morphisms that exist by the
    respective (co)universal properties of the constructions. }%
 spec AbstractSetConstructions[SetRepresentation] given Map = %def
-  spec SetCategory
+  SetCategory
 then
   ops __*__,__coproduct__ : SetS * SetS -> SetS;
       %% the mediating morphisms for (co)products depend on two morphisms
@@ -370,7 +373,7 @@ then
   . s1 coproduct s2 = (image inl s1) union (image inr s2)
   . [(a,f,c)!(b,g,c)] = 
       (a coproduct b, 
-       \ y -> case y of (inl x) -> f x
+       \ y . case y of (inl x) -> f x |
                         (inr x) -> g x,
        c)
   . def left x <=> x isIn range inl
@@ -383,7 +386,7 @@ end
 
 
 view SetCoproducts [SetRepresentation] given Map : 
-        Coproduct[Category] -> AbstractSetConstructions[SetRepresentation] =
+        Coproduct[Category] to AbstractSetConstructions[SetRepresentation] =
      Ob |-> SetS, Mor |-> MapS, __o__, dom, cod,
      __coproduct__, inj, inl, [__!__]
 end     
