@@ -10,16 +10,6 @@ version 0.1
 
 %[logic HasCASL]%
 
-spec Nat = {}
-
-spec List = {}
-
-spec FiniteSet = {}
-
-spec InternalLogic = {}
-
-spec Recursion = InternalLogic then {}
-
   spec Transitivity = 
 {}%[  vars t,u : Type
   ops __subset__ : Pred(Pred(u) * Pred(u)); 
@@ -72,7 +62,7 @@ spec Step =
 op step : State ->? State
 ]%
 
-spec Iterate[Step] = Nat then
+spec Iterate[Step] = 
 {}%[op iterate : Nat -> State ->? State
 forall n : Nat; s : State
 . iterate 0 s = s 
@@ -106,7 +96,7 @@ forall e: Expr; t: Nat
 
 view TimeRefine : EvalByExecution to EvalByTimedExec 
 
-spec Term = FiniteSet then 
+spec Term = 
 {}%[type Variable  %% unspecified  
   %[free type Term ::=    Var Variable | 
                         Lam Variable Term | 
@@ -129,7 +119,7 @@ then %implies
   . isClosed(Lam x b) => isClosed(subst a x b)
 ]%
 
-  spec LeftReduction = Term and Transitivity and Recursion then 
+  spec LeftReduction = Term and Transitivity then 
 {}%[  op leftRed: ClosedTerm ->? ClosedTerm
   program leftRed (App (App f a) c) = App (leftRed (App f a))c;
      leftRed(App (Lam x b)(App f a)) = 
@@ -159,7 +149,7 @@ forall e : Env; x: Variable; c: Clos; t: Term
 type Clos = {c: TermEnv. def(real c)}
 ]%
 
-spec Dump = Closure and {List with [], __::__} and Recursion then 
+spec Dump = Closure then 
 {}%[free type ExtTerm ::= Aps | type Term 
 type Control := List ExtTerm    %% synonyms                  
 type Stack := List Clos              
@@ -174,7 +164,7 @@ step(((Clos(Lam x b) e_0) :: v :: s, e, Aps :: c) :: d) =
 step((v :: [], e_0, []) :: (s, e, c) :: d) = (v :: s, e, c) :: d %(return)%
 ]%
 
-spec Repeat[Step] = Recursion and Nat then 
+spec Repeat[Step] = 
 {}%[ops repeat : (State -> Bool) -> State ->? State
     count : (State -> Bool) -> State ->? Nat
 program repeat p s = IF p s THEN s else repeat p(step s); 
