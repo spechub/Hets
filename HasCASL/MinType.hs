@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-choose one (or more) minimal/maximal typings
+choose one (or more) minimal or maximal typings
 
 -}
 
