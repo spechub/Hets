@@ -6,15 +6,12 @@
 /**
  * @author jiang
  *
- * TODO To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Style - Code Templates
  */
 
 import org.semanticweb.owl.model.OWLOntology;
 // import org.semanticweb.owl.io.Renderer;
 import org.semanticweb.owl.io.Parser;
-import org.mindswap.pellet.utils.*;
-
+// import org.mindswap.pellet.utils.*;
 // import gnu.getopt.LongOpt;
 // import gnu.getopt.Getopt;
 // import org.semanticweb.owl.util.OWLConnection;
@@ -71,7 +68,6 @@ public class OWL2ATerm implements OWLValidationConstants {
 		ATermFactory factory = new PureFactory();
 
 		// BasicConfigurator.configure();
-
 
 		try {
 
@@ -140,9 +136,9 @@ public class OWL2ATerm implements OWLValidationConstants {
 			final String Full = "Full";
 			PelletLoader ploader = new PelletLoader(new KnowledgeBase());
 			ATermFactory factory = new PureFactory();
-			List atermList = new ArrayList();       // List of ATermAppl
+			// List atermList = new ArrayList();       // List of ATermAppl
 			ATermList alist = factory.makeList();
-			AFun validation = factory.makeAFun("empty", 0, true);
+			AFun validation = factory.makeAFun("mixer", 0, true);
 			ATerm result;
 			
 			// Validation as ATerm appended in ATermList.
@@ -157,50 +153,67 @@ public class OWL2ATerm implements OWLValidationConstants {
 					 validation = factory.makeAFun(Full, 0, true);
 					 break;
 			}
-			atermList.add(factory.makeAppl(validation));
-    
+			// atermList.add(factory.makeAppl(validation));
+			alist = factory.makeList(factory.makeAppl(validation), alist);
+			
 			// Warning message
 			for(Iterator it = message.iterator(); it.hasNext();){
-				atermList.add(factory.makeAppl(factory.makeAFun((String) it.next(), 0, true)));
+				//atermList.add(factory.makeAppl(factory.makeAFun((String) it.next(), 0, true)));
+				alist = factory.makeList(factory.makeAppl(factory.makeAFun((String) it.next(), 0, true)),alist);
 			}
 			
 			// Load the current OWL ontology
 			ploader.load(ontology);
+			
+			// Annotations
+			// Set annotations = ontology.getAnnotations();
 			
 			// Axioms
 			Set cas = ontology.getClassAxioms();
 			Set ias = ontology.getIndividualAxioms();
 			Set pas = ontology.getPropertyAxioms();
 			
+			/*
+			if(annotations != null){
+				for(Iterator aIt = annotations.iterator(); aIt.hasNext();){
+					alist = factory.makeList(ploader.term((OWLAnnotationInstance) aIt.next()), alist);
+				}
+			}
+			*/
+			
 			if(cas != null){
 				for(Iterator classIt = cas.iterator(); classIt.hasNext();){
-					atermList.add(ploader.term((OWLClassAxiom) classIt.next()));
+					// atermList.add(ploader.term((OWLClassAxiom) classIt.next()));
+					alist = factory.makeList(ploader.term((OWLClassAxiom) classIt.next()), alist);
 				}
 			}
 			
 			if(ias != null){
 				 for(Iterator indivIt = ias.iterator(); indivIt.hasNext();){
-					atermList.add(ploader.term((OWLIndividualAxiom) indivIt.next()));
+					// atermList.add(ploader.term((OWLIndividualAxiom) indivIt.next()));
+				 	alist = factory.makeList(ploader.term((OWLIndividualAxiom) indivIt.next()), alist);
 				 }
 			}
 
 			if(pas != null){
 				for(Iterator propIt = pas.iterator(); propIt.hasNext();){
-					atermList.add(ploader.term((OWLPropertyAxiom) propIt.next()));
+					// atermList.add(ploader.term((OWLPropertyAxiom) propIt.next()));
+					alist = factory.makeList(ploader.term((OWLPropertyAxiom) propIt.next()), alist);
 				}
 			}
 
+			/*
 			ATerm[] atermArray = new ATerm[atermList.size()];
 			
 			int i = 0;
 			for(Iterator it = atermList.iterator(); it.hasNext();){
 				atermArray[i++] = (ATerm) it.next();
 			}
-
 			alist = ATermUtils.makeList(atermArray);
-
+			*/
+			
 			// System.out.println(atermList.toString());
-		    return alist;
+		    return alist.reverse();
 
 		} catch (Exception e) {
 			System.out.println(e);	
