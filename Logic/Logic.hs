@@ -216,6 +216,11 @@ class (Ord l, Show l) => LatticeWithTop l where
   meet, join :: l -> l -> l
   top :: l
 
+-- a dummy instance 
+instance LatticeWithTop () where
+  meet _ _ = ()
+  join _ _ = ()
+  top = ()
 
 -- logics
 
