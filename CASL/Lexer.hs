@@ -181,12 +181,14 @@ caslChar :: GenParser Char st String
 caslChar = escapeChar <|> printable
 
 scanQuotedChar :: GenParser Char st String
-scanQuotedChar = (caslChar <|> string "\"") `enclosedBy` prime 
-		 <?> "quoted char"
+scanQuotedChar = (caslChar <|> (char '"' >> return "\\\"")) 
+		 `enclosedBy` prime <?> "quoted char"
+
+-- convert '"' to '\"' and "'" to "\'" (no support for ''')
 
 scanString :: GenParser Char st String
-scanString = flat (many (caslChar <|> string "'")) `enclosedBy` char '"'
-	     <?> "literal string"
+scanString = flat (many (caslChar <|> (char '\'' >> return "\\\'"))) 
+	     `enclosedBy` char '"' <?> "literal string"
 
 -- ----------------------------------------------
 -- digit, number, fraction, float
