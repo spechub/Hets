@@ -41,7 +41,7 @@ Portability :  non-portable(Logic)
 -- Export declarations
 -----------------------------------------------------------------------------
 
-module LogicStructured ( -- SPEC_DEFN -> Maybe G_Sublogics
+module Static.LogicStructured ( -- SPEC_DEFN -> Maybe G_Sublogics
                          min_sublogic_spec_defn,
                          
                          -- VIEW_DEFN -> Maybe G_Sublogics
