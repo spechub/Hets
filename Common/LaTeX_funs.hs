@@ -350,6 +350,8 @@ casl_comment_latex s      = sp_text (comment_width s)    s
 casl_structid_latex s     = sp_text (structid_width s)   s
 casl_axiom_latex s        = sp_text (axiom_width s)      s
 casl_normal_latex s       = sp_text (normal_width s)     s
+
+
 hc_sty_keyword :: Maybe String -> String -> Doc
 hc_sty_keyword mfkw kw = 
     latex_macro "\\KW"<>fkw_doc<>latex_macro "{"<>kw_doc<> latex_macro "}"
@@ -363,7 +365,12 @@ hc_sty_plain_keyword :: String -> Doc
 hc_sty_plain_keyword = hc_sty_keyword Nothing
 
 hc_sty_hetcasl_keyword :: String -> Doc
-hc_sty_hetcasl_keyword = hc_sty_keyword (Just "view")
+hc_sty_hetcasl_keyword str = 
+    case str of
+    "then" -> sp_t "\\THEN"
+    str'   -> hc_sty_keyword (Just "view") str'
+    where sp_t s = sp_text (keyword_width str) s
+
 
 hc_sty_small_keyword :: String -> Doc
 hc_sty_small_keyword kw = 

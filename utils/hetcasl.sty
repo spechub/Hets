@@ -83,6 +83,30 @@
 \newcommand{\Id}[1]{\textit{##1}}%
 % \AX prints its argument in math modus
 \newcommand{\Ax}[1]{\ensuremath{##1}}%
+%%%%% Xavier todo:
+%% Makros aus casl.sty definieren
+\newcommand{\LBRACE}            {\{}
+\newcommand{\FREE}              {\KW{free}} %plain_keyword
+\newcommand{\THEN}              {\KW[view]{then}} % hetcasl_keyword
+\newcommand{\GENERATEDTYPE}     {\KW{generated~type}}
+\newcommand{\ASSOC}             {\Id{assoc}}
+\newcommand{\EXISTS}            {\Ax{\exists}}
+%%%% SORT, OP, PRED : drei Varianten 
+\newcommand{\KWC}[2][preds]{%
+\ifthenelse{\equal{##1}{KW}}%
+{%KW as parameter
+\KW[preds]{##2}}%
+{% else to KW as parameter
+\ifthenelse{\equal{##1}{ID}}%
+{%ID as parameter
+\Id{##2}}
+{% else to ID as parameter
+\KW[preds]{##2}}}%
+}%% end of KWC definition
+\newcommand{\SORT}[1][preds]{\KWC[##1]{sort}}
+%% 1. mit \KWC[preds]{} default
+%% 2. mit \KWC[KW]{} 
+%% 3. mit \KWC[ID]{}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % starting a library
 \newcommand{\library}[1]{\textbf{library}\ \textsc{##1}\ } 
