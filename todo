@@ -139,7 +139,8 @@ basic_analysis lid        "Analysis of basic specifications"
 data_logic lid            "is a process logic"
 
 Ausgaben:
-map (sublogic_names lid)  (all_sublogics lid)
+map (sublogic_names lid)  (all_sublogics lid) 
+   -- später besser als eigener Menüpunkt ==> eigener Graph
 map prover_name (provers lid)    -- aus Logic/Provers.hs
 map cons_checker_name (cons_checkers lid)
 
