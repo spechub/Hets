@@ -101,12 +101,12 @@ lineAnnos :: AParser st [Annotation]
 lineAnnos = addLineAnnos >> getAnnos
 
 -- | optional semicolon followed by annotations on consecutive lines
-optSemi :: AParser st (Maybe Token, [Annotation])
+optSemi :: AParser st ([Token], [Annotation])
 optSemi = do (a1, s) <- try $ bind (,) annos Common.Lexer.semiT
              a2 <- lineAnnos                         
-             return (Just s, a1 ++ a2)
+             return ([s], a1 ++ a2)
           <|> do a <- lineAnnos
-                 return (Nothing, a)
+                 return ([], a)
 
 -- | succeeds if the previous item is finished 
 tryItemEnd :: [String] -> AParser st ()
@@ -165,13 +165,10 @@ itemAux :: [String] -> AParser st a
 itemAux startKeywords itemParser = 
     do a <- itemParser
        (m, an) <- optSemi
-       case m of Nothing -> return ([a], [], [an])
-                 Just t -> do tryItemEnd startKeywords
-			      return ([a], [t], [an])
-	                   <|> 
-	                   do (as, ts, ans) <- itemAux startKeywords itemParser
-			      return (a:as, t:ts, an:ans)
-
+       let r =  return ([a], [], [an])
+       if null m then r else (tryItemEnd startKeywords >> r) <|> 
+	  do (ergs, ts, ans) <- itemAux startKeywords itemParser
+	     return (a:ergs, m++ts, an:ans)
 
 -- | collect preceding and trailing annotations
 wrapAnnos :: AParser st a -> AParser st a

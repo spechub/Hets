@@ -434,11 +434,9 @@ dotFormulae = do d <- dotT
                  let ps = map tokPos (d:ds)
                  if null (r_annos(last fs)) then  
                    do (m, an) <- optSemi
-                      case m of 
-                        Nothing -> return (AxiomItems [] fs ps)
-                        Just t -> return (AxiomItems []
+                      return (AxiomItems []
                                (init fs ++ [appendAnno (last fs) an])
-                               (ps ++ [tokPos t]))
+                               (ps ++ map tokPos m))
                    else return (AxiomItems [] fs ps)
     where aFormula = bind appendAnno 
                      (annoParser term) lineAnnos

@@ -111,9 +111,7 @@ dotFormulae ks =
        (m, an) <- optSemi
        let ps = map tokPos (d:ds) 
 	   ns = init fs ++ [appendAnno (last fs) an]
-       case m of 
-           Nothing -> return $ Axiom_items ns ps
-	   Just t -> return $ Axiom_items ns (ps ++ [tokPos t])
+       return $ Axiom_items ns (ps ++ map tokPos m)
 
 aFormula  :: AParsable f => [String] -> AParser st (Annoted (FORMULA f))
 aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos
