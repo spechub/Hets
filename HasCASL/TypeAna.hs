@@ -14,7 +14,7 @@ import AsUtils
 import GlobalAnnotationsFunctions(emptyGlobalAnnos)
 import Id
 import Le
-import List(nub, sort)
+import List
 import Maybe
 import MonadState
 import Pretty
@@ -27,12 +27,33 @@ import Result
 -- analyse class
 -- ---------------------------------------------------------------------------
 
+-- transitiv super classes 
+-- PRE: all superclasses and defns must be defined in ClassEnv
+-- and there must be no cycle!
+allSuperClasses :: ClassMap -> ClassId -> [ClassId]
+allSuperClasses ce ci = 
+    let recurse = nub . concatMap (allSuperClasses ce) in
+    case lookupFM ce ci of 
+    Just info -> nub $ ci:
+                      (case classDefn info of 
+		       Nothing -> []
+		       Just (Intersection cis _) -> recurse cis
+		       Just _ -> [])
+		       ++ recurse (superClasses info)
+    Nothing -> error "allSuperClasses"
 
-resolveClassSyns :: ClassSyns -> ClassId -> [ClassId]
-resolveClassSyns cSyns ci = 
-    case lookupFM cSyns ci of 
-    Nothing -> [ci] 
-    Just cs -> sort $ nub $ concatMap (resolveClassSyns cSyns) cs
+resolveClassSyn :: ClassMap -> ClassId -> [ClassId]
+resolveClassSyn cMap ci = 
+    case lookupFM cMap ci of 
+    Nothing -> error "resolveClassSyn"
+    Just info -> case classDefn info of 
+		      Nothing -> [ci]
+		      Just (Intersection cis _) -> resolveClassSyns cMap cis
+		      Just _ -> []
+
+resolveClassSyns :: ClassMap -> [ClassId] -> [ClassId]
+resolveClassSyns cSyns cis = nub $ 
+			      concatMap (resolveClassSyn cSyns) cis
 
 anaClassId :: ClassMap -> ClassId -> [Diagnosis]
 -- True: declare the class
@@ -48,8 +69,8 @@ anaClass (Intersection cs ps) =
        let l = zip (map (anaClassId cMap) cs) cs
 	   restCs = map snd $ filter (\ (x, _) -> null x) l  
 	   ds = concatMap fst l 
-	   in do appendDiags ds 
-		 return $ Intersection restCs ps 
+       appendDiags ds 
+       return $ Intersection restCs ps 
 
 anaClass (Downset t) = 
     do newT <- anaType t
@@ -98,6 +119,10 @@ checkTypeKind i k =
 						  showPretty (head ks)) "")
 					$ posOfKind k ]
 
+indent :: Int -> ShowS -> ShowS
+indent i s = showString $ concat $ 
+	     intersperse ('\n' : replicate i ' ') (lines $ s "")
+
 anaTypeId :: Id -> State Env Type
 anaTypeId i = 
     do tk <- getTypeKinds
@@ -110,7 +135,7 @@ anaTypeId i =
 	   Just ks -> return $ TypeConstrAppl i 0 (head ks) [] []
 
 anaType :: Type -> State Env Type
-anaType (t@(TypeConstrAppl i v k ts _)) =
+anaType (t@(TypeConstrAppl i v k ts _)) = do
     let e1 = if length ts > kindArity k then
 	     [Diag Error ("too many type arguments:\n" ++
 	       indent 2 (showPretty t) "")
@@ -120,9 +145,9 @@ anaType (t@(TypeConstrAppl i v k ts _)) =
 	      ("too many type arguments:\n" ++
 	       indent 2 (showPretty t) "")
 	      (posOfType t)] else []
-    in do ds <- checkTypeKind i k
-	  appendDiags $ e1 ++ e2 ++ ds
-	  return t
+    ds <- checkTypeKind i k
+    appendDiags $ e1 ++ e2 ++ ds
+    return t
 
 anaType (TypeToken t) = 
     anaTypeId $ simpleIdToId t
@@ -131,13 +156,12 @@ anaType (BracketType Parens ts ps) =
     do newTs <- mapM anaType ts
        return $ ProductType newTs ps
 
-anaType (BracketType b ts ps) =
+anaType (BracketType b ts ps) = do
     let toks@[o,c] = mkBracketToken b ps 
 	i = if null ts then Id toks [] [] 
 	    else Id [o, Token place $ posOfType $ head ts, c] [] []
-    in
-    do newT <- anaTypeId i
-       if null ts then return newT
+    newT <- anaTypeId i
+    if null ts then return newT
 	  else do args <- mapM anaType ts
 		  case newT of
 			   TypeConstrAppl _ _ k _ _ -> 

@@ -12,30 +12,24 @@ module PrintLe where
 import As
 import PrintAs
 import Le
+import Maybe
 import PrettyPrint
 import Pretty
 import FiniteMap
 import Keywords
 import GlobalAnnotations
-import Set 
-
-instance PrettyPrint a => PrettyPrint (Set a) where
-    printText0 ga s = braces $ commas ga $ setToList s
 
 noPrint :: Bool -> Doc -> Doc
 noPrint b d = if b then empty else d
 
 instance PrettyPrint ClassInfo where
     printText0 ga (ClassInfo _ sups defn insts) =
-	let noDefn = case defn of 
-		    Intersection defns _ -> null defns
-		    Downset _ -> False in
 	(noPrint (null sups)
 	   (ptext lessS <+> if null $ tail sups 
 	    then printText0 ga $ head sups
 	    else parens (commas ga sups))
-	<> noPrint (null sups || noDefn) space
-	<> noPrint noDefn
+	<> noPrint (null sups || isNothing defn) space
+	<> noPrint (isNothing defn)
 	   (ptext equalS <+> printText0 ga defn)
 	) $$ noPrint (null insts) 
              (ptext "Instances" $$ 
@@ -59,8 +53,15 @@ instance PrettyPrint [Kind] where
 instance PrettyPrint [TypeScheme] where
     printText0 = printList0
 
+instance PrettyPrint [ClassId] where
+    printText0 = printList0
+
+instance PrettyPrint a => PrettyPrint (Maybe a) where
+    printText0 _ Nothing = empty
+    printText0 ga (Just c) =  printText0 ga c
+
 instance PrettyPrint Env where
-    printText0 ga e = printText0 ga (classEnv e)
+    printText0 ga e = printText0 ga (classMap e)
 	$$ ptext "Type Constructors"
 	$$ printText0 ga (typeKinds e)
         $$ ptext "Type Variables" <+> printText0 ga (typeVars e)
@@ -68,14 +69,3 @@ instance PrettyPrint Env where
         $$ printText0 ga (assumps e)  
 	$$ vcat (map (printText ga) (reverse $ envDiags e))
 
-{-
-showEnv e = showMap ((++) . tokStr) showClassItem (classEnv e) .
-	    showString "\nType Constructors\n" .
-	    showMap showId (showSepList (showString ", ") showKind)
-		    (typeKinds e) .
-	    showString "\nAssumptions\n" .
-	    showMap showId (showSepList (showString ", ") showScheme) 
-		    (assumps e) .
-	    showChar '\n' .
-	    showList (reverse $ envDiags e)
--}

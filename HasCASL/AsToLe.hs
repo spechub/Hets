@@ -12,13 +12,13 @@ module AsToLe where
 import AS_Annotation
 import As
 import AsUtils
+import ClassDecl
 import Le
 import Id
 import Monad
 import MonadState
 import FiniteMap
 import Result
-import List(nub, partition)
 import Maybe
 import ParseTerm(isSimpleId)
 import MixfixParser(getTokenList, expandPos)
@@ -53,28 +53,31 @@ anaGenVarDecl :: GenVarDecl -> State Env ()
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 
-convertTypeToClass :: Type -> State Env (Result Class)
-convertTypeToClass (TypeToken t) = 
-    do if tokStr t == "Type" then return $ Result [] (Just $ universe) else 
-	  do Result ds (Just cs) <- anaClassName False (simpleIdToId t) 
-	     if null cs then return $ Result ds Nothing
-		else return $ Result ds (Just $ Intersection cs [])  
+convertTypeToClass :: ClassMap -> Type -> Result Class
+convertTypeToClass cMap (TypeToken t) = 
+       if tokStr t == "Type" then Result [] (Just $ universe) else 
+	  let ci = simpleIdToId t
+	      ds = anaClassId cMap ci
+	      in if null ds then 
+		 Result [] (Just $ Intersection [ci] [])
+		 else Result ds Nothing
 
-convertTypeToClass (BracketType Parens ts ps) = 
-    do is <- mapM convertTypeToClass ts
-       let mis = map maybeResult is
+convertTypeToClass cMap (BracketType Parens ts ps) = 
+       let is = map (convertTypeToClass cMap) ts
+	   mis = map maybeResult is
 	   ds = concatMap diags is
-	   in if all isJust mis then return $ Result ds 
+	   in if all isJust mis then Result ds 
 	      (Just $ Intersection (concatMap (iclass . fromJust) mis) ps)
-	      else return $ Result ds Nothing
+	      else Result ds Nothing
 
-convertTypeToClass _ = return $ Result [] Nothing
+convertTypeToClass _ _ = Result [] Nothing
 
 optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
 optAnaVarDecl vd@(VarDecl v t _ _) = 
     if isSimpleId v then
-       do Result ds mc <- convertTypeToClass t
-	  case mc of
+       do cMap <- getClassMap 
+	  let Result _ mc = convertTypeToClass cMap t 
+	      in case mc of
 	       Just c -> addTypeKind v (Kind [] c [])
 	       Nothing -> anaVarDecl vd
     else anaVarDecl vd
@@ -82,7 +85,7 @@ optAnaVarDecl vd@(VarDecl v t _ _) =
 anaVarDecl(VarDecl v oldT _ p) = 
 		   do t <- anaType oldT
 		      as <- getAssumps
-		      let l = lookUp as v 
+		      let l = lookupWithDefaultFM as [] v 
 			  ts = SimpleTypeScheme t in 
 			  if ts `elem` l then 
 			     appendDiags 
@@ -96,112 +99,23 @@ anaTypeVarDecl(TypeVarDecl t k _ _) =
     do nk <- anaKind k
        addTypeKind t k
        addTypeVar t
--- ------------------------------------------------------------------------------ As.ClassItem
+-- ------------------------------------------------------------------------------ ClassItem
 -- ----------------------------------------------------------------------------
 
-anaAnnotedClassItem :: Instance -> Annoted As.ClassItem -> State Env ()
+anaAnnotedClassItem :: Instance -> Annoted ClassItem -> State Env ()
 anaAnnotedClassItem _ aci = 
-    let As.ClassItem d l _ = item aci in
+    let ClassItem d l _ = item aci in
     do anaClassDecls d 
        mapM_ anaAnnotedBasicItem l
-
-anaClassDecls :: ClassDecl -> State Env ()
-anaClassDecls (ClassDecl cls _) = 
-    mapM_ (anaClassDecl [] universe) cls
-
-anaClassDecls (SubclassDecl cls supcl _) =
-    do Intersection scls _ <- anaSuperClass supcl
-       mapM_ (anaClassDecl scls universe) cls
-
-anaClassDecls (ClassDefn ci syncl _) =
-    do scls@(Intersection icls _) <- anaClassAppl syncl
-       anaClassDecl [] scls ci
-
-anaClassDecls (DownsetDefn ci _ t _) = 
-    do newT <- anaType t 
-       anaClassDecl [] (Downset newT) ci
-
-anaSuperClass :: Class -> State Env Class
-anaSuperClass c =
-    anaClass True c 
-
-anaClassDecl :: [ClassName] -> Class -> ClassName -> State Env ()
-anaClassDecl cs cdef ci = 
-    if showId ci "" == "Type" then 
-       appendDiags [Diag Error 
-		    "illegal universe class declaration" (posOfId ci)]
-    else 
-    do ce <- getClassEnv
-       case lookupFM ce ci of 
-	    Nothing -> putClassEnv $ defCEntry ce ci 
-				 cs cdef
-	    Just info -> do 
-	      appendDiags [Diag Warning ("redeclared class '"
-					 ++ showId ci "'") 
-			  $ posOfId ci]
-	      let oldCs = superClasses info
-		  oldDefn = classDefn info in
-		if null cs then 
-		   do newDefn <- mergeDefn ce ci oldDefn cdef
-		      putClassEnv $ addToFM ce ci 
-				  info { classDefn = newDefn }
-		else 
-		   do newCs <- getLegalSuperClasses ce ci oldCs cs
-		      putClassEnv $ addToFM ce ci 
-				  info { superClasses = newCs }
- 
-getLegalSuperClasses :: ClassEnv -> ClassName -> [ClassName] 
-		     -> [ClassName] -> State Env [ClassName]
-getLegalSuperClasses ce ci oldCs cs =
-    let scs = zip (map (allSuperClasses ce) cs) cs
-	(scycs, sOk) = partition ((ci `elem`) . fst) scs
-	defCs = map snd sOk
-	newCs = nub $ defCs ++ oldCs
-	cycles = map snd scycs
-        dubs = filter (`elem` oldCs) defCs
-    in do if null cycles then return ()
-	     else appendDiags 
-		      [Diag Error 
-		       ("cyclic class relation via '"
-			++ showClassList cycles "'")
-		      $ posOfId (head cycles)]
-	  if null dubs then return ()
-	     else appendDiags 
-		      [Diag Warning 
-		       ("repeated class '"
-			++ showClassList dubs "'")
-		      $ posOfId (head dubs)]
-	  return newCs
-
-
-mergeDefn :: ClassEnv -> ClassName -> Class -> Class -> State Env Class 
-mergeDefn _ ci (Downset oldT) c@(Downset t) =
-    do if eqType oldT t then return () 
-	  else incompatibleClassRedeclaration ci
-       return c
-
-mergeDefn ce ci (Intersection oldIs qs) (Intersection is ps) =
-    do iss <- getLegalSuperClasses ce ci oldIs is
-       return $ Intersection iss $ ps ++ qs
-
-mergeDefn _ ci _ c =
-    do incompatibleClassRedeclaration ci
-       return c
-
-incompatibleClassRedeclaration :: ClassName -> State Env ()
-incompatibleClassRedeclaration ci =
-    appendDiags [Diag Warning 
-		 ("incompatible redeclaration of '" ++ showId ci "'")
-		 $ posOfId ci]
 
 -- ----------------------------------------------------------------------------
 -- TypeItem
 -- ----------------------------------------------------------------------------
 
-anaAnnotedTypeItem :: Instance -> Annoted As.TypeItem -> State Env ()
+anaAnnotedTypeItem :: Instance -> Annoted TypeItem -> State Env ()
 anaAnnotedTypeItem inst i = anaTypeItem inst $ item i
 
-anaTypeItem :: Instance -> As.TypeItem -> State Env ()
+anaTypeItem :: Instance -> TypeItem -> State Env ()
 anaTypeItem inst (TypeDecl pats kind _) = 
     do k <- anaKind kind
        mapM_ (anaTypePattern inst k) pats 
@@ -292,12 +206,12 @@ addTypeKind :: Id -> Kind -> State Env ()
 addTypeKind t k = 
     do tk <- getTypeKinds
        case lookupFM tk t of
-            Just _ -> appendDiags [Diag Warning 
-				   ("shadowing type '" 
-				    ++ showId t "'") 
-				  $ posOfId t]
-	    _ -> return ()
-       putTypeKinds $ addToFM tk t k
+            Just ks -> do appendDiags [Diag Warning 
+				       ("shadowing type '" 
+					++ showId t "'") 
+				      $ posOfId t]
+			  putTypeKinds $ addToFM tk t (k:ks)
+	    _ -> putTypeKinds $ addToFM tk t [k]
 
 {- 
 -- add instances later on
