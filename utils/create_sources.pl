@@ -7,7 +7,7 @@ my $IN;
 
 if(@ARGV == 2) {
 if (open IN, "<$ARGV[0]") {
-	$OUT = *IN;
+	$IN = *IN;
     } else {
 	print "error while oppening input file: $ARGV[0]\n";
 	exit 2;
@@ -46,6 +46,7 @@ if($ready) {
 sources = ', join(' ', @sources), "\n";
 } else {
     print STDERR "Error: Couldn't create sources!!\n";
+    #print $ready;
     system qw(rm -f),$ARGV[0],$ARGV[1];
     exit 7;
 }
