@@ -46,6 +46,12 @@ import Logic.Grothendieck
 import Logic.Logic
 
 import Common.PrettyPrint
+import Common.AS_Annotation
+import qualified Common.Result as Result
+
+import Comorphisms.CASL2IsabelleHOL -- ??? Only preliminarily
+import CASL.Logic_CASL
+import Logic.Comorphism
 
 
 {- Maps used to track which node resp edge of the abstract graph
@@ -279,6 +285,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
                  $$$ LocalMenu (Menu (Just "node menu")
                    [--createLocalMenuButtonShowSpec convRef dGraph,
 		    createLocalMenuButtonShowSignature convRef dGraph,
+		    createLocalMenuButtonShowTheory convRef dGraph,
 		    createLocalMenuButtonShowSublogic convRef dGraph,
                     createLocalMenuButtonShowNodeOrigin convRef dGraph,
 		    createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents 
@@ -358,7 +365,7 @@ createLocalMenuButtonShowTheory convRef dgraph =
                     (Button "Show theory" 
                       (\ (name,descr,gid) ->
                         do convMaps <- readIORef convRef
-                           getSignatureOfNode descr
+                           getTheoryOfNode descr
 		                              (abstr2dgNode convMaps)
 		                              dgraph
 		           return ()
@@ -514,6 +521,32 @@ getSignatureOfNode descr ab2dgNode dgraph =
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
 
+{- outputs the theory of a node in the bash;
+used by the node menu defined in initializeGraph-}
+getTheoryOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
+getTheoryOfNode descr ab2dgNode dgraph = case (do
+  (libname, node) <- Map.lookup descr ab2dgNode 
+  (G_sign lid sign,G_l_sentence_list lid' sens) <- computeTheory dgraph node
+  sens1 <- Result.resultToMaybe $ rcoerce lid' CASL nullPos sens 
+  sign1 <- Result.resultToMaybe $ rcoerce lid CASL nullPos sign 
+  sens' <- sequence $ map (mapNamedM (map_sentence CASL2IsabelleHOL sign1)) sens1
+  sign' <- map_sign CASL2IsabelleHOL sign1
+  return (node,showPretty sign' "\n" ++ showPretty sens' "") 
+    ) of
+  Just (node,str) ->  
+      do let dgnode = lab' (context node dgraph)
+	 case dgnode of
+           (DGNode name (G_sign _ sig) _ _) ->
+              let title = case name of
+                   Nothing -> "Theory"
+                   Just n -> "Theory of "++showPretty n ""
+               in createTextDisplay title str [size(50,50)]
+              --putStrLn ((showPretty sig) "\n")
+           (DGRef _ _ _) -> error 
+			    "nodes of type dg_ref do not have a signature"
+  Nothing -> error ("node with descriptor "
+                      ++ (show descr) 
+                      ++ " has no corresponding node in the development graph")
 
 {- outputs the sublogic of a node in the bash;
 used by the node menu defined in initializeGraph-}

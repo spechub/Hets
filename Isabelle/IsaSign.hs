@@ -109,8 +109,11 @@ instance Ord Sentence where
 instance Show Sentence where
   show s = show (senTerm s)
 
+instance PrettyPrint Sentence where
+    printText0 _ = ptext . show
+
 instance PrettyPrint Sign where
-    printText0 _ sig = ptext (show sig)
+    printText0 _ = ptext . show
 
 instance PrintLaTeX Sign where
     printLatex0 = printText0
