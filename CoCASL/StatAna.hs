@@ -11,7 +11,7 @@ Portability :  portable
 -}
 
 {- todo:
-  correct map_C_FORMULA
+  correct map_C_FORMULA, getCoDataGenSig
 -}
 
 module CoCASL.StatAna where
@@ -83,6 +83,7 @@ minExpForm ga s form =
                f1 <- res f
 	       f2 <- minExpFORMULA minExpForm ga s f1
 	       return $ Diamond nm f2 ps
+        phi -> return phi
 
 ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
 ana_C_SIG_ITEM ga mi = 
@@ -240,7 +241,7 @@ ana_C_BASIC_ITEM ga bi = do
            closeSubsortRel 
 	   return bi
     CoSort_gen al ps ->
-	do (gs,ul) <- ana_Generated ana_C_SIG_ITEM ga al
+	do (gs,ul) <- ana_CoGenerated ana_C_SIG_ITEM ga al
 	   toCoSortGenAx ps False 
                 (Set.unions $ map fst gs, Set.unions $ map snd gs)
 	   return $ CoSort_gen ul ps
@@ -255,18 +256,31 @@ toCoSortGenAx ps isFree (sorts, ops) = do
         resType s (Qual_op_name _ t _) = res_OP_TYPE t ==s
         getIndex s = maybe (-1) id $ findIndex (==s) sortList
         addIndices (Op_name _) = 
-          error "CASL/StaticAna: Internal error in function addIndices"
+          error "CoCASL/StaticAna: Internal error in function addIndices"
         addIndices os@(Qual_op_name _ t _) = 
             (os,map getIndex $ args_OP_TYPE t)
         collectOps s = 
           Constraint s (map addIndices $ filter (resType s) opSyms) s
         constrs = map collectOps sortList
-        f =  ExtFORMULA $ CoSort_gen_ax constrs isFree
+        f = ExtFORMULA $ CoSort_gen_ax constrs isFree
     if null sortList then 
-       addDiags[Diag Error "missing cogenerated sort" (headPos ps)]
-       else return ()
+              addDiags[Diag Error "missing cogenerated sort" (headPos ps)]
+              else return ()
     addSentences [NamedSen ("ga_cogenerated_" ++ 
  			 showSepList (showString "_") showId sortList "") f]
+
+ana_CoGenerated as ga al = do
+   ul <- mapAnM (ana_SIG_ITEMS as ga Generated) al
+   return (map (getCoGenSig . item) ul,ul)
+   
+getCoGenSig :: SIG_ITEMS C_SIG_ITEM C_FORMULA 
+                -> (Set.Set Id, Set.Set Component)
+getCoGenSig si = case si of 
+      Sort_items al _ -> (Set.unions (map (getSorts . item) al), Set.empty)
+      Op_items al _ -> (Set.empty, Set.unions (map (getOps . item) al))
+      Datatype_items dl _ -> getDataGenSig dl
+      Ext_SIG_ITEMS (CoDatatype_items dl _) -> getCoDataGenSig dl
+      _ -> (Set.empty, Set.empty)
 
 getCoDataGenSig :: [Annoted CODATATYPE_DECL] -> (Set.Set Id, Set.Set Component)
 getCoDataGenSig dl = 
@@ -306,5 +320,6 @@ map_C_FORMULA mor frm =
 	       newF <- mapSen map_C_FORMULA mor f
 	       newM <- mapMod m 
 	       return $ Diamond newM newF ps 
+           phi -> return phi
 
 

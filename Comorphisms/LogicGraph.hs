@@ -47,6 +47,7 @@ import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2Haskell
 import Comorphisms.CASL2IsabelleHOL
 import Comorphisms.CASL2Modal
+import Comorphisms.CASL2CoCASL
 import Comorphisms.HasCASL2IsabelleHOL
 import qualified Common.Lib.Map as Map
 import CASL.ATC_CASL
@@ -65,7 +66,8 @@ addInclusionNames c@(Comorphism cid) =
 
 inclusionList :: [AnyComorphism]
 inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2Haskell,
-                 Comorphism CASL2IsabelleHOL, Comorphism CASL2Modal, Comorphism HasCASL2IsabelleHOL]
+                 Comorphism CASL2IsabelleHOL, Comorphism CASL2Modal, 
+                 Comorphism CASL2CoCASL, Comorphism HasCASL2IsabelleHOL]
 
 comorphismList :: [AnyComorphism]
 comorphismList = inclusionList ++ [Comorphism CASL2PCFOL]

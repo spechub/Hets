@@ -108,7 +108,7 @@ instance PrettyPrint MODALITY where
     printText0 ga (Term_mod t) = printText0 ga t
 
 instance PrettyPrint CoCASLSign where
-    printText0 ga s = ptext "printing of CoCASLSign not yet implemented"
+    printText0 ga s = empty
 
 instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 ga Nothing = empty
