@@ -9,6 +9,11 @@
    from 25 March 2001
 
    C.2.2 Structured Specifications
+
+   todo:
+    fixing of details concerning annos
+    logic translations
+    arch specs
 -}
 
 module Parse_AS_Structured where
@@ -149,7 +154,8 @@ parseItemsMap :: GenParser Char AnyLogic (G_symb_map_items_list, [Token])
 parseItemsMap = 
    do Logic id <- getState
       (cs, ps) <- callParser (parse_symb_map_items id) (language_name id) "symbol maps"
-                      `separatedBy` commaT
+                      `separatedBy` commaT 
+            -- ??? should be plainComma, but does not work for reveal s,t!
       return (G_symb_map_items_list id cs, ps)
 
 
@@ -255,9 +261,12 @@ specD l = do (p,sp) <- try (do p <- asKey freeS
       <|> specE l
        
 specE :: LogicGraph -> GenParser Char AnyLogic SPEC
-specE l = groupSpec l
-      <|> basicSpec l
+specE l = do lookAhead (try (oBraceT >> cBraceT)) -- avoid overlap with group spec
+             basicSpec l        
+      <|> groupSpec l
       <|> logicSpec l
+      <|> basicSpec l
+
 
 
 callParser p name itemType = do
@@ -283,14 +292,29 @@ basicSpec l = do Logic id <- getState
 
 
 logicSpec :: LogicGraph -> GenParser Char AnyLogic SPEC
-logicSpec l = undefined {-do
-   log <- parseLogic
-                        name <- many1 alphaNum;
-                        setState (case lookup name logics of
-                          Nothing -> error ("logic "++name++" unknown")
-                          Just id -> id); 
-                        spaces; return (\x->x) } )],
--}
+logicSpec l = do
+   s1 <- asKey logicS
+   log <- logicName
+   let Logic_name t _ = log
+   s2 <- asKey ":"
+   setState (lookupLogic log l) 
+   sp <- annoParser (specE l)
+   return (Qualified_spec log sp (map tokPos [s1,t,s2]))
+
+
+lookupLogic (Logic_name log sublog) (logics,_) =
+  case find (\(Logic id) -> language_name id == tokStr log) logics of
+    Nothing -> error ("logic "++tokStr log++" unknown")
+    Just (Logic id) -> 
+      case sublog of
+        Nothing -> Logic id
+        Just s ->
+         case find (\sub -> tokStr s `elem` sublogic_names id sub) 
+                   (all_sublogics id) of
+            Nothing -> error ("sublogic "++tokStr s++
+                              " in logic "++tokStr log++" unknown")
+            Just sub -> Logic id  -- ??? can we throw away sublogic?
+
 
 aSpec l = annoParser2 (spec l)
 
@@ -381,7 +405,14 @@ libItem l = -- spec defn
        s2 <- asKey getS
        (il,ps) <- itemNameOrMap `separatedBy` commaT
        q <- optEnd
-       return (Download_items ln il (map tokPos ([s1,s2]++ps++ Maybe.maybeToList q)))
+       return (Download_items ln il 
+                (map tokPos ([s1,s2]++ps++ Maybe.maybeToList q)))
+  <|> -- logic
+    do s1 <- asKey logicS
+       log <- logicName
+       let Logic_name t _ = log
+       setState (lookupLogic log l) 
+       return (Logic_decl log (map tokPos [s1,t]))
 
 viewType l = do sp1 <- annoParser (groupSpec l)
                 s <- asKey toS
@@ -428,9 +459,11 @@ library l = do skip
 -- Testing
 -------------------------------------------------------------
 
+logicGraph = ([Logic CASL],[])
+
 parseSPEC fname =
   do input <- readFile fname
-     case runParser (do x <- spec ([],[])
+     case runParser (do x <- spec logicGraph
                         s1<-getInput
                         return (x,s1))
                (Logic CASL) fname input of
@@ -439,7 +472,7 @@ parseSPEC fname =
 
 parseLib fname =
   do input <- readFile fname
-     case runParser (do x <- library ([],[])
+     case runParser (do x <- library logicGraph
                         s1<-getInput
                         return (x,s1))
                (Logic CASL) fname input of
