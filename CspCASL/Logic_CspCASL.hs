@@ -37,7 +37,6 @@ import CspCASL.Parse_hugo
 import CspCASL.Print_AS_CSP_CASL
 
 import CASL.AS_Basic_CASL
-import CASL.SymbolParser
 import CASL.Logic_CASL
 
 import Logic.ParsecInterface
@@ -48,8 +47,9 @@ import Common.Lib.Map
 import Logic.Logic
 import Common.Lexer((<<))
 
-import qualified CASL.Sublogics
-import qualified CASL.Static
+import qualified CASL.Sublogic
+import CASL.StaticAna
+import CASL.SymbolParser
 
 import Data.Dynamic
 
