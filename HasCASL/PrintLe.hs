@@ -1,10 +1,13 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder  and Uni Bremen 2002-2003
 
-{- HetCATS/HasCASL/PrintLe.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
-   
-   printing Le data types
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  non-portable (instances for lists) 
+
+pretty printing a HasCASL environment
+
 -}
 
 module HasCASL.PrintLe where
