@@ -29,6 +29,8 @@ module ToHaskell.TranslateAna (
        , translateData
        , translateAltDefn
        , translateRecord
+       -- * Translation of type argument
+       , getArg
        ) where
 
 import HasCASL.As
