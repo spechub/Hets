@@ -74,11 +74,13 @@ instance Eq Id where
 instance Ord Id where
     Id tops1 ids1 _ <= Id tops2 ids2 _ = tops1 <= tops2 && ids1 <= ids2
 
+noShow :: Bool -> ShowS -> ShowS
+noShow b s = if b then id else s
+
 showIds :: [Id] -> ShowS
-showIds is = if null is then id 
-	     else showString "[" 
-		      . showSepList (showString ",") showId is
-		      . showString "]"
+showIds is = noShow (null is) $ showString "[" 
+	     . showSepList (showString ",") showId is
+	     . showString "]"
 
 showId :: Id -> ShowS
 showId (Id ts is _) = 
