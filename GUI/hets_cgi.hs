@@ -76,7 +76,7 @@ page1 title1 =
       h1 $ text title1
       p (do text "Enter a "
 	    hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/index_e.htm") $ 
-	           text "HetCASL")
+	          (text "HetCASL")
             text " specification or library in the input zone, then press SUBMIT:")
       -- Input field
       input   <- p (makeTextarea "" (attr "rows" "22" ## attr "cols" "68"))
