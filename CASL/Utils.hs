@@ -7,19 +7,19 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-module to store utillities for CASL and ist Comorphisms
+module to store utilities for CASL and its comorphisms
 
 -}
 
 module CASL.Utils where
 
-import Maybe (isJust,fromJust)
+import Data.Maybe (isJust,fromJust)
 
 import CASL.AS_Basic_CASL
 
 -- |
 -- replacePropPredication replaces a propositional predication of a
--- given symbol with an also given Formula. Optionally a given variable
+-- given symbol with an also given formula. Optionally a given variable
 -- is replaced in the predication of another predicate symbol with a
 -- given term, the variable must occur in the first argument position
 -- of the predication.
@@ -47,13 +47,14 @@ replacePropPredication mTerm pSymb frmIns frmToChn =
 	    case arg1 of
 	    Sorted_term (Qual_var v1 _ _) _ _ 
 		| v1 == var -> Predication qpn (term:args) ps 
-	    _ -> error "Modal2CASL: replacePropPredication: unknown term to replace"
+	    _ -> error "replacePropPredication: unknown term to replace"
           where (pSymbT,var,term) = fromJust mTerm 
     p@(Predication _ _ _) -> p 
-    _ -> error "Modal2CASL: replacePropPredication: unknown formula to replace"
+    _ -> error "replacePropPredication: unknown formula to replace"
 
 -- | 
--- noMixfixF checks a 'FORMULA' f for Mixfix_*. A logic specific helper has to be provided for checking the 'f'.
+-- noMixfixF checks a 'FORMULA' f for Mixfix_*. 
+-- A logic specific helper has to be provided for checking the 'f'.
 
 noMixfixF :: (Show f) => (f -> Bool) -> FORMULA f -> Bool
 noMixfixF cef form = 
@@ -79,7 +80,8 @@ noMixfixF cef form =
     _ -> True -- {True,False}_atom
 
 -- | 
--- noMixfixT checks a 'TERM' f for Mixfix_*. A logic specific helper has to be provided for checking the 'f'.
+-- noMixfixT checks a 'TERM' f for Mixfix_*. 
+-- A logic specific helper has to be provided for checking the 'f'.
     
 noMixfixT :: (Show f) => (f -> Bool) -> TERM f -> Bool
 noMixfixT cef term = 
