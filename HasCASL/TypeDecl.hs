@@ -24,6 +24,7 @@ import Common.Lib.State
 import Data.Maybe
 import Data.List
 
+import qualified Common.Lib.Map as Map
 import Common.Result
 import Common.GlobalAnnotations
 import HasCASL.ClassAna
@@ -231,6 +232,24 @@ dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) = let
     in (i, mkType ti nAs)
 dataPatToType _ = error "dataPatToType"
 
+-- | add a supertype to a given type id
+addSuperType :: Type -> Id -> State Env ()
+addSuperType t i =
+    do tk <- gets typeMap
+       if occursIn tk i $ unalias tk t then 
+	  addDiags [mkDiag Error "cyclic super type" t]
+	  else case Map.lookup i tk of
+	      Nothing -> return () -- previous error
+	      Just (TypeInfo ok ks sups defn) -> 
+				putTypeMap $ Map.insert i 
+					      (TypeInfo ok ks (t:sups) defn)
+					      tk
+addDataSubtype :: Type -> Type -> State Env ()
+addDataSubtype dt st = 
+    case st of 
+    TypeName i _ _ -> addSuperType dt i 
+    _ -> addDiags [mkDiag Warning "data subtype ignored" st]
+
 -- | analyse a 'DatatypeDecl'
 anaDatatype :: GenKind -> Instance -> [(Id, Type)] 
 	    -> DatatypeDecl -> State Env DatatypeDecl
@@ -238,9 +257,16 @@ anaDatatype genKind inst tys
        d@(DatatypeDecl (TypePattern i nAs _) k alts _ _) = 
     do let dt = snd $ dataPatToType d
 	   fullKind = typeArgsListToKind nAs k
+	   (calts, subats) = partition ( \ a -> case a of 
+					Subtype _ _ -> False
+					_ -> True) $ map item alts
+	   subts = concatMap (  \ (Subtype ts _) -> ts) subats   
        tm <- gets typeMap
        mapM_ (addTypeVarDecl False) nAs
-       newAlts <- anaAlts tys dt $ map item alts
+       newAlts <- anaAlts tys dt calts
+       newTs <- mapM anaStarType subts
+       putTypeMap tm
+       mapM_ (addDataSubtype dt) (catMaybes newTs)
        mapM_ ( \ (Construct c tc p sels) -> do
 			     let ty = TypeScheme nAs 
 			                   ([] :=> getConstrType dt p tc) []
@@ -251,7 +277,6 @@ anaDatatype genKind inst tys
 					 ([] :=> getSelType dt pa ts) []) 
 				     [] (SelectData [ConstrInfo c ty] i)
 			           ) sels) newAlts
-       putTypeMap tm
        addTypeId True (DatatypeDefn genKind nAs newAlts) inst fullKind i
        return d 
 anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"

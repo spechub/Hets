@@ -45,10 +45,10 @@ a < b
 b < Type
 c < Type
 %% Type Constructors -----------------------------------------------------
-Data1 : Type %[type __ ::=
-	       a : -> __
-	       b : -> __
-	       c : -> __]%
+Data1 : Type < Data2 %[type __ ::=
+		       a : -> __
+		       b : -> __
+		       c : -> __]%
 Data2 : Type %[type __ ::=
 	       Cons21 : Data1 ×
 			Data2 -> __ (%(Data2.Cons21.sel_[1,1])% :? Data1)(%(Data2.Cons21.sel_[2,1])% :? Data2)

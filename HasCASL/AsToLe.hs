@@ -41,6 +41,20 @@ basicAnalysis (b, e, ga) =
         in Result (reverse $ envDiags ne) $ 
            Just (nb, diffEnv ce e, ce, reverse $ sentences ne) 
 
+-- | is the signature empty?
+isEmptyEnv :: Env -> Bool
+isEmptyEnv e = Map.isEmpty (classMap e)
+	       && Map.isEmpty (typeMap e)
+	       && Map.isEmpty (assumps e)
+
+-- | is the first argument a subsignature of the second?
+isSubEnv :: Env -> Env -> Bool
+isSubEnv e1 e2 = isEmptyEnv (diffEnv e1 e2)
+
+-- a rough equality
+instance Eq Env where 
+    e1 == e2 = isSubEnv e1 e2 && isSubEnv e2 e1
+
 -- | compute difference of signatures 
 diffEnv :: Env -> Env -> Env
 diffEnv e1 e2 = let tm = typeMap e2 in
@@ -57,10 +71,6 @@ diffClass _ _ = Nothing
 -- | compute difference of type infos
 diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
 diffType _ _ = Nothing
-
--- | Check if two OpTypes are equal except from totality or partiality
-compatibleOpTypes :: TypeScheme -> TypeScheme -> Bool
-compatibleOpTypes = isUnifiable Map.empty 0
 
 -- | compute difference of overloaded operations
 diffAss :: TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos

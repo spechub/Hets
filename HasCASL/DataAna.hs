@@ -21,10 +21,10 @@ import qualified Common.Lib.Map as Map
 import Common.Result
 import HasCASL.Le
 import HasCASL.TypeAna
-import HasCASL.VarDecl
 import HasCASL.AsUtils
 import HasCASL.Unify
 import Data.Maybe
+
 
 anaAlts :: [(Id, Type)] -> Type -> [Alternative] -> State Env [AltDefn]
 anaAlts tys dt alts = 
@@ -33,30 +33,8 @@ anaAlts tys dt alts =
        addDiags (checkUniqueness $ map ( \ (Construct i _ _ _) -> i) l) 
        return l
 
--- | add a supertype to a given type id
-addSuperType :: Type -> Id -> State Env ()
-addSuperType t i =
-    do tk <- gets typeMap
-       if occursIn tk i t then 
-	  addDiags [mkDiag Error "cyclic super type" t]
-	  else case Map.lookup i tk of
-	      Nothing -> return () -- previous error
-	      Just (TypeInfo ok ks sups defn) -> 
-				putTypeMap $ Map.insert i 
-					      (TypeInfo ok ks (t:sups) defn)
-					      tk
-addDataSubtype :: Type -> Type -> State Env ()
-addDataSubtype dt st = 
-    case st of 
-    TypeName i _ _ -> addSuperType dt i 
-    _ -> addDiags [mkDiag Warning "data subtype ignored" st]
-
 anaAlt :: [(Id, Type)] -> Type -> Alternative -> State Env [AltDefn] 
-anaAlt _ dt (Subtype ts _) = 
-    do newTs <- mapM anaStarType ts
-       mapM_ (addDataSubtype dt) (catMaybes newTs)
-       return []
-
+anaAlt _ _ (Subtype _ _) = return []
 anaAlt tys dt (Constructor i cs p _) = 
     do newCs <- mapM (anaComps i tys dt) $ zip cs $ map (:[]) [1..]
        let mts = map fst newCs
@@ -132,8 +110,14 @@ anaCompType tys dt t = do
 checkMonomorphRecursion :: Type	-> (Id, Type) -> State Env Bool
 checkMonomorphRecursion t (i, rt) = do 
     tm <- gets typeMap
-    if occursIn tm i t then 
-       if t == rt then return True
+    if occursIn tm i $ unalias tm t then 
+       if t == rt || t `elem` superTypes 
+	      (Map.findWithDefault starTypeInfo i tm)
+          || (case t of 
+	      TypeName j _ _ -> rt `elem` superTypes 
+			       (Map.findWithDefault starTypeInfo j tm)
+	      _ -> False)
+	  then return True
        else do addDiags [Diag Error  ("illegal polymorphic recursion" 
 				      ++ expected rt t) $ getMyPos t]
 	       return False

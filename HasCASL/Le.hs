@@ -107,7 +107,7 @@ data Env = Env { classMap :: ClassMap
 	       , envDiags :: [Diagnosis]
 	       , preIds :: (PrecMap, Set.Set Id)
 	       , counter :: Int
-	       } deriving (Show, Eq)
+	       } deriving Show
 
 initialEnv :: Env
 initialEnv = Env Map.empty Map.empty Map.empty [] [] 

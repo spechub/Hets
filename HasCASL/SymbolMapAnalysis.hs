@@ -21,6 +21,7 @@ module HasCASL.SymbolMapAnalysis
 
 import HasCASL.As
 import HasCASL.Le
+import HasCASL.AsToLe
 import HasCASL.Symbol
 import HasCASL.Morphism
 import HasCASL.ClassAna

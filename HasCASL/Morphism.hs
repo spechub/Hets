@@ -245,9 +245,6 @@ compMor m1 m2 =
       }
    else Nothing
 
-isSubEnv :: Env -> Env -> Bool
-isSubEnv e1 e2 = diffEnv e1 e2 == initialEnv
-
 inclusionMor :: Env -> Env -> Result Morphism
 inclusionMor e1 e2 =
   if isSubEnv e1 e2
