@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
-CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:$(INCLUDE_PATH):Haskell/Hatchet
+CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
 ## set ghc imports properly for your system
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.2/imports:${GHC_IMPORTS}'
 
@@ -284,7 +284,7 @@ real_clean: bin_clean lib_clean
 distclean: real_clean clean_genRules d_clean
 	$(RM) hetcats/Version.hs
 	$(RM) $(drifted_files)
-	$(RM) $(happy_files)
+#	$(RM) $(happy_files)
 
 ####################################################################
 ### test targets
