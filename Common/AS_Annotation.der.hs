@@ -192,13 +192,13 @@ emptyName x = NamedSen { senName = "", sentence = x}
 
 -- | extending sentence maps to maps on labelled sentences
 mapNamed :: (s->t) -> Named s -> Named t
-mapNamed f x = x{sentence = f $ sentence x}
+mapNamed f (NamedSen n x) = NamedSen n $ f x
 
 -- | extending sentence maybe-maps to maps on labelled sentences
 mapNamedM :: Monad m => (s-> m t) -> Named s -> m (Named t)
-mapNamedM f x = do
-  y <- f $ sentence x 
-  return x{sentence = y}
+mapNamedM f (NamedSen n x) = do
+  y <- f x 
+  return $ NamedSen n y
 
 instance Ord s => Ord (Named s) where
   compare (NamedSen n1 s1) (NamedSen n2 s2) = compare (n1,s1) (n2,s2)
@@ -207,7 +207,7 @@ instance Ord s => Ord (Named s) where
 mapAnM :: (Monad m) => (a -> m b) -> [Annoted a] -> m [Annoted b]
 mapAnM f al = 
     do il <- mapM (f . item) al
-       return $ zipWith ( \ a i -> a { item = i }) al il
+       return $ zipWith (flip replaceAnnoted) al il
 		
 -- | replace the 'item'
 replaceAnnoted :: b -> Annoted a -> Annoted b

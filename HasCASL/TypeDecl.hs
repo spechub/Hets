@@ -60,7 +60,7 @@ anaVars (VarTuple vs _) t =
 mapAnMaybe :: (Monad m) => (a -> m (Maybe b)) -> [Annoted a] -> m [Annoted b]
 mapAnMaybe f al = 
     do il <- mapAnM f al
-       return $ map ( \ a -> a { item = fromJust $ item a }) $ 
+       return $ map ( \ a -> replaceAnnoted (fromJust $ item a) a) $ 
               filter (isJust . item) il 
 
 anaTypeItems :: GlobalAnnos -> GenKind -> Instance -> [Annoted TypeItem] 
