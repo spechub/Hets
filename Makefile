@@ -12,7 +12,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ghc:hetcats:fgl
+INCLUDE_PATH = ghc:hetcats:fgl:hxt
 COMMONLIB_PATH = Common/Lib:Common/ATerm:fgl/Data/Graph:fgl/Data/Graph/Inductive:fgl/Data/Graph/Inductive/Aux:fgl/Data/Graph/Inductive/Monad:fgl/Data/Graph/Inductive/Query
 CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet:Taxonomy:$(PFE_PATHS)
 
