@@ -21,6 +21,7 @@ import CASL.MixfixParser
 import CASL.StaticAna
 import CASL.Utils
 import CASL.AS_Basic_CASL
+import CASL.ShowMixfix
 import CASL.Overload
 
 import Common.AS_Annotation
@@ -31,25 +32,37 @@ import Common.Lib.State
 import Common.Id
 import Common.Result
 
+
 basicModalAnalysis :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
 		       Sign M_FORMULA ModalSign, GlobalAnnos)
 		   -> Result (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
 			      Sign M_FORMULA ModalSign,
 			      Sign M_FORMULA ModalSign,
 			      [Named (FORMULA M_FORMULA)])
-basicModalAnalysis = basicAnalysis resolveM_FORMULA noExtMixfixM minExpForm
+basicModalAnalysis = basicAnalysis mapM_FORMULA 
+                     resolveM_FORMULA noExtMixfixM minExpForm
                      ana_M_BASIC_ITEM ana_M_SIG_ITEM diffModalSign
+
+mapMODALITY :: MODALITY -> MODALITY
+mapMODALITY m = case m of 
+    Term_mod t -> Term_mod $ mapTerm mapM_FORMULA t
+    _ -> m
+
+mapM_FORMULA :: M_FORMULA -> M_FORMULA
+mapM_FORMULA (BoxOrDiamond b m f ps) = 
+    BoxOrDiamond b (mapMODALITY m) (mapFormula mapM_FORMULA f) ps
 
 resolveMODALITY :: MixResolve MODALITY
 resolveMODALITY ga ids m = case m of 
-    Term_mod t -> fmap Term_mod $ resolveMixTrm resolveM_FORMULA ga ids t
+    Term_mod t -> fmap Term_mod $ resolveMixTrm mapM_FORMULA 
+                  resolveM_FORMULA ga ids t
     _ -> return m
 
 resolveM_FORMULA :: MixResolve M_FORMULA
 resolveM_FORMULA ga ids cf = case cf of 
    BoxOrDiamond b m f ps -> do 
        nm <- resolveMODALITY ga ids m
-       nf <- resolveMixFrm resolveM_FORMULA ga ids f
+       nf <- resolveMixFrm mapM_FORMULA resolveM_FORMULA ga ids f
        return $ BoxOrDiamond b nm nf ps
 
 noExtMixfixM :: M_FORMULA -> Bool
@@ -94,7 +107,8 @@ ana_M_SIG_ITEM :: Ana M_SIG_ITEM M_FORMULA ModalSign
 ana_M_SIG_ITEM ga mi = 
     case mi of 
     Rigid_op_items r al ps -> 
-        do ul <- mapM (ana_OP_ITEM resolveM_FORMULA noExtMixfixM ga) al 
+        do ul <- mapM (ana_OP_ITEM mapM_FORMULA resolveM_FORMULA 
+                       noExtMixfixM ga) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Op_decl ops ty _ _ -> 
@@ -105,7 +119,8 @@ ana_M_SIG_ITEM ga mi =
                _ -> return ()
            return $ Rigid_op_items r ul ps
     Rigid_pred_items r al ps -> 
-        do ul <- mapM (ana_PRED_ITEM resolveM_FORMULA noExtMixfixM ga) al 
+        do ul <- mapM (ana_PRED_ITEM mapM_FORMULA 
+                       resolveM_FORMULA noExtMixfixM ga) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Pred_decl ops ty _ -> 
@@ -171,7 +186,8 @@ ana_FORMULA b ga f =
            ops <- gets formulaIds
            preds <- gets allPredIds
            newGa <- gets $ addAssocs ga
-           let Result es m = resolveFormula resolveM_FORMULA newGa ops preds f
+           let Result es m = resolveFormula mapM_FORMULA 
+                             resolveM_FORMULA newGa ops preds f
            addDiags es
            e <- get
            phi <- case m of  

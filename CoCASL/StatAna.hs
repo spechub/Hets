@@ -28,11 +28,13 @@ import CoCASL.CoCASLSign
 import CASL.Sign
 import CASL.MixfixParser
 import CASL.Utils
+import CASL.ShowMixfix
 import CASL.StaticAna
 import CASL.AS_Basic_CASL
 import CASL.Overload
 
 import Common.AS_Annotation
+import Common.GlobalAnnotations
 import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import Common.Id
@@ -43,17 +45,41 @@ import Data.List
 
 type CSign = Sign C_FORMULA CoCASLSign
 
+basicCoCASLAnalysis :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
+		       Sign C_FORMULA CoCASLSign, GlobalAnnos)
+		   -> Result (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
+			      Sign C_FORMULA CoCASLSign,
+			      Sign C_FORMULA CoCASLSign,
+			      [Named (FORMULA C_FORMULA)])
+basicCoCASLAnalysis = basicAnalysis mapC_FORMULA resolveC_FORMULA 
+                                 noExtMixfixCo minExpForm
+                               ana_C_BASIC_ITEM ana_C_SIG_ITEM diffCoCASLSign
+
+mapMODALITY :: MODALITY -> MODALITY
+mapMODALITY m = case m of 
+    Term_mod t -> Term_mod $ mapTerm mapC_FORMULA t
+    _ -> m
+
+mapC_FORMULA :: C_FORMULA -> C_FORMULA
+mapC_FORMULA cf =  case cf of 
+   BoxOrDiamond b m f ps -> let
+       nm = mapMODALITY m
+       nf = mapFormula mapC_FORMULA f
+       in BoxOrDiamond b nm nf ps
+   _ -> cf
+
 resolveMODALITY :: MixResolve MODALITY
 resolveMODALITY ga ids m = case m of 
-    Term_mod t -> fmap Term_mod $ resolveMixTrm resolveC_FORMULA ga ids t
+    Term_mod t -> 
+        fmap Term_mod $ resolveMixTrm mapC_FORMULA resolveC_FORMULA ga ids t
     _ -> return m
 
 resolveC_FORMULA :: MixResolve C_FORMULA
 resolveC_FORMULA ga ids cf = case cf of 
    BoxOrDiamond b m f ps -> do 
        nm <- resolveMODALITY ga ids m
-       nf <- resolveMixFrm resolveC_FORMULA ga ids f
-       return $ BoxOrDiamond b  nm nf ps
+       nf <- resolveMixFrm mapC_FORMULA resolveC_FORMULA ga ids f
+       return $ BoxOrDiamond b nm nf ps
    _ -> error "resolveC_FORMULA"
 
 noExtMixfixCo :: C_FORMULA -> Bool
@@ -281,7 +307,7 @@ ana_CoGenerated :: Ana C_SIG_ITEM C_FORMULA e
                 -> Ana ([(Set.Set Id, Set.Set Component)], 
                         [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)]) C_FORMULA e
 ana_CoGenerated anaf ga (_, al) = do
-   ul <- mapAnM (ana_SIG_ITEMS resolveC_FORMULA 
+   ul <- mapAnM (ana_SIG_ITEMS mapC_FORMULA resolveC_FORMULA 
                  noExtMixfixCo anaf ga Generated) al
    return (map (getCoGenSig . item) ul,ul)
    
