@@ -63,14 +63,14 @@ parseSimpleKind = parseClassId
 		return (Downset (Just i) t MissingKind 
 			(map tokPos [o,d,j,l,p])) 
 
-parseExtKind :: AParser ExtKind
+parseExtKind :: AParser Kind
 parseExtKind = do k <- parseSimpleKind
 	          do s <- plusT
 		     return (ExtKind k CoVar [tokPos s])
                    <|>
 		   do m <- minusT
 		      return (ExtKind k ContraVar [tokPos m])
-                   <|> return (ExtKind k InVar [])
+                   <|> return k
 
 kind :: AParser Kind
 kind = 
@@ -79,15 +79,17 @@ kind =
 	  k2 <- kind
 	  return (FunKind k1 k2 $ [tokPos a])
         <|> case k1 of
+	    ExtKind _ CoVar _ -> unexpected "co-variance of kind"
+	    ExtKind _ ContraVar _ -> unexpected "contra-variance of kind"
 	    ExtKind k InVar _  -> return k
-	    _  -> unexpected "variance of kind"
+	    _ -> return k1
 
-extKind :: AParser ExtKind
+extKind :: AParser Kind
 extKind = 
     do k1 <- parseExtKind
        do a <- asKey funS
 	  k2 <- kind
-	  return (ExtKind (FunKind k1 k2 $ [tokPos a]) InVar [])
+	  return (FunKind k1 k2 $ [tokPos a])
         <|> return k1
 
 -----------------------------------------------------------------------------
@@ -202,8 +204,8 @@ varDeclDownSet vs ps =
 		    do l <- lessT
 		       t <- parseType
 		       return (makeTypeVarDecls vs ps 
-			       (ExtKind (Downset Nothing t MissingKind []) 
-				InVar [])(tokPos l))
+			       (Downset Nothing t MissingKind []) 
+				(tokPos l))
 
 typeVarDecls :: AParser [TypeArg]
 typeVarDecls = do (vs, ps) <- typeVar `separatedBy` anComma
@@ -212,7 +214,7 @@ typeVarDecls = do (vs, ps) <- typeVar `separatedBy` anComma
 		       return (makeTypeVarDecls vs ps t (tokPos c))
 		    <|> varDeclDownSet vs ps
 		    <|> return (makeTypeVarDecls vs ps 
-				(ExtKind star InVar []) nullPos)
+				star nullPos)
 
 makeTypeVarDecls :: [TypeId] -> [Token] -> ExtKind -> Pos -> [TypeArg]
 makeTypeVarDecls vs ps cl q = 
@@ -250,15 +252,14 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` anComma
 		      do k <- extKind
 			 return (makeTypeArgs ts ps [tokPos c] k)
 		      else do k <- kind
-			      return (makeTypeArgs ts ps [tokPos c] 
-				      (ExtKind k InVar []))
+			      return (makeTypeArgs ts ps [tokPos c] k)
 	        <|> 
 	        do l <- lessT
 		   t <- parseType
 		   return (makeTypeArgs ts ps [tokPos l]
-			   (ExtKind (Downset Nothing t MissingKind []) 
-			    InVar []))
-		<|> return (makeTypeArgs ts ps [] (ExtKind star InVar []))
+			   $ Downset Nothing t MissingKind []) 
+
+		<|> return (makeTypeArgs ts ps [] star)
 		where mergeVariance k (ExtKind e InVar _) (t, v, ps) p =
 			  TypeArg t (ExtKind e v [ps]) k p
 		      mergeVariance k e (t, _, _) p = 
