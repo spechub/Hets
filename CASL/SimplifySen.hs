@@ -101,6 +101,7 @@ anaTerm minF simpF signA term =
                         Cast _ _ p -> p
                         Conditional _ _ _ p -> p
                         Simple_id tok -> filter (/=nullPos) [tokPos tok]
+                        Qual_var _ _ p -> p
                         _ -> error ("Error in anaTerm " ++ show term)
         rtc = rmTypesT minF simpF signA term
     in case maybeResult $ minExpTerm minF emptyGlobalAnnos signA rtc of
