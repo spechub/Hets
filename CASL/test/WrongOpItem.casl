@@ -1,1 +1,2 @@
 op a : a -> b -> c
+op e: a=e=e

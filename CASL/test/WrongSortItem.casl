@@ -1,2 +1,3 @@
 sort a > b
 sorts a=b=c=d; %()% b={a:s.b};  %()% op
+sorts d=e=f  %% because of =e=

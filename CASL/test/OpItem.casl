@@ -12,3 +12,4 @@ op a:b , assoc, comm, idem, assoc, unit 1, unit -, assoc
 op a(a:b;a:b; a,b:c):? b = e
 ops a,bc,d, e:a->?b, assoc,idem, comm
 op a :? b
+op e: a=e==e
