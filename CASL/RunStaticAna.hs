@@ -41,10 +41,12 @@ runAna ga =
 
 localAna :: GlobalAnnos -> BASIC_SPEC () () () -> Result (Sign () ())
 localAna ga bs = 
-    let Result ds (Just (_newBs, difSig, _accSig, _sents)) = 
+    let Result ds ms = 
             basicCASLAnalysis (bs, emptySign () , ga)
         es = filter ((<= Error)  . diagKind) ds
-        in Result es $ Just difSig
+        in case ms of 
+           Just (_newBs, difSig, _accSig, _sents) -> Result es $ Just difSig
+           Nothing -> Result ds Nothing
 
 getSign :: GlobalAnnos -> AParser () (Result (Sign () ()))
 getSign ga = 
@@ -53,10 +55,12 @@ getSign ga =
 
 props :: GlobalAnnos -> BASIC_SPEC () () () -> Result [Named (FORMULA ())]
 props ga bs = 
-    let Result ds (Just (_newBs, _difSig, _accSig, sents)) = 
+    let Result ds ms = 
             basicCASLAnalysis (bs, emptySign (), ga)
         es = filter ((<= Error)  . diagKind) ds
-        in Result es $ Just sents
+        in case ms of 
+           Just (_newBs, _difSig, _accSig, sents) -> Result es $ Just sents
+           Nothing -> Result ds Nothing
 
 getProps :: GlobalAnnos -> AParser () (Result [Named (FORMULA ())])
 getProps ga = 
