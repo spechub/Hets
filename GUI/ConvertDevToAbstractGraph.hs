@@ -110,7 +110,6 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
--- ### noch ueberarbeiten...
   ioRefProofStatus <- newIORef (globContext,
 		                [([]::[DGRule], []::[DGChange])],
 				dGraph)
@@ -136,7 +135,21 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 			      descr <- readIORef event
                               showIt gid descr actGraphInfo
                               redisplay gid actGraphInfo
-                              return ()    )]),
+                              return ()    ),
+		  Button "Proofs _ temp"
+			  (do proofStatus <- readIORef ioRefProofStatus
+			      let newProofStatus@(_,history,_) =
+			            globSubsume proofStatus
+			      writeIORef ioRefProofStatus newProofStatus
+			      descr <- readIORef event
+			      convMaps <- readIORef convRef
+			      (newDescr,newConvMaps)
+			         <- applyChanges gid ln actGraphInfo descr 
+		                      convMaps history
+		              writeIORef event newDescr
+		              writeIORef convRef newConvMaps
+		              redisplay gid actGraphInfo
+		              return ()    ) ]),
 
 	        GlobalMenu(Menu (Just "proofs")
                   [Button "Global Subsumption"
@@ -584,11 +597,6 @@ notElemR list element = notElem element list
 
 
 -- ################ einbindung von proofs.hs ############
-doGlobSubsume :: ConversionMaps -> Descr -> GraphInfo -> IO ()
-doGlobSubsume convMaps gid actGraphInfo = undefined
-{- den DGraph aus den convMaps holen, globSubsume drauf aufrufen
-anhand der History den AbstrGraph anpassen -}
-
 applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> ConversionMaps
 	          -> [([DGRule],[DGChange])]
 		  -> IO (Descr, ConversionMaps)
@@ -604,27 +612,58 @@ applyChanges gid libname graphInfo eventDescr convMaps history =
 applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> Descr
 		  -> ConversionMaps -> [DGChange]
 	          -> IO (Descr, ConversionMaps)
-applyChangesAux _ _ _ eventDescr convMaps [] = return (eventDescr, convMaps)
+applyChangesAux _ _ _ eventDescr convMaps [] = return (eventDescr+1, convMaps)
 applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
   case change of
-    InsertNode lNode -> undefined
-    DeleteNode node -> undefined
-    InsertEdge lEdge -> undefined -- edge neu erzeugen, eventDescr neu holen
- -- da der alte für die erzeugte edge verwendet wurde
+    InsertNode lNode -> error "insert node not yet implemented"
+    DeleteNode node -> error "delete node not yet implemented"
+    InsertEdge (src,tgt,edgeLab) ->
+      do let dgEdge = (libname, (src,tgt))
+	 (Result descr error) <- 
+            addlink gid (getDGLinkType (dgl_type edgeLab)) "" src tgt graphInfo
+         case error of
+	   Nothing ->
+	     do let newConvMaps = convMaps 
+                      {dg2abstrEdge =
+		         Map.insert dgEdge descr (dg2abstrEdge convMaps),
+	               abstr2dgEdge =
+		         Map.insert descr dgEdge (abstr2dgEdge convMaps)}
+ 	        applyChangesAux gid libname graphInfo (descr+1)
+				 newConvMaps changes
+	   Just _ -> 
+-- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
+-- Momentane Lösung: ignorieren...
+	     applyChangesAux gid libname graphInfo eventDescr
+			         convMaps changes
     DeleteEdge (src,tgt,_) ->
-       case Map.lookup (libname, (src,tgt)) (dg2abstrEdge convMaps) of
-         Just edge ->
-           do -- woher das graphMem nehmen?!
-              -- dellink gid edge graphInfo
- 	      applyChangesAux gid libname graphInfo eventDescr convMaps changes
-	 Nothing -> error ("applyChangesAux: deleted edge of development "
-                      ++ "graph does not exist in abstraction graph")
-    
+      do let dgEdge = (libname, (src,tgt))
+             dg2abstrEdgeMap = dg2abstrEdge convMaps 
+         case Map.lookup dgEdge dg2abstrEdgeMap of
+            Just abstrEdge ->
+              do dellink gid abstrEdge graphInfo
+	         let newConvMaps = convMaps 
+		       {dg2abstrEdge = Map.delete dgEdge dg2abstrEdgeMap,
+		        abstr2dgEdge = 
+			  Map.delete abstrEdge (abstr2dgEdge convMaps)}
+ 	         applyChangesAux gid libname graphInfo eventDescr
+				 newConvMaps changes
+	    Nothing -> error ("applyChangesAux: deleted edge of development "
+                         ++ "graph does not exist in abstraction graph")
+
 
 {- data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode Node 
               | InsertEdge (LEdge DGLinkLab)
               | DeleteEdge (LEdge DGLinkLab)
 convMaps {dg2abstrNode = Map.insert (libname, node) newDescr (dg2abstrNode convMaps)
+
+
+convMaps {dg2abstrEdge = Map.insert (libname, (src,tar))
+				                     newDescr
+				                     (dg2abstrEdge convMaps),
+                                 abstr2dgEdge = Map.insert newDescr
+				                     (libname, (src,tar))
+				                     (abstr2dgEdge convMaps)}
+
 
 -}

@@ -114,7 +114,7 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
    else (globalContext, nextHistoryElem:history, nextDGraph)
 
   where
-    globalThmEdges = filter isGlobalThm (labEdges dGraph)
+    globalThmEdges = filter isUnprovenGlobalThm (labEdges dGraph)
     result = globSubsumeAux dGraph ([],[]) globalThmEdges
     nextDGraph = fst result
     nextHistoryElem = snd result
@@ -127,17 +127,19 @@ zur "Verarbeitung" an Hilfsfunktion weitergeben
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
-globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsDefPath dGraph source target
+globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsDefPathOfSameMorphism dGraph morphism source target
      then -- kante aus Graph löschen, stattdessen def einfügen
        globSubsumeAux newGraph (rules,changes) list
      else
        globSubsumeAux dGraph (rules,changes) list
   where
+    morphism = dgl_morphism edgeLab
     auxGraph = delLEdge ledge dGraph
+    (GlobalThm _ conservativity) = (dgl_type edgeLab)
     newEdge = (source,
 	       target,
-	       DGLink {dgl_morphism = dgl_morphism edgeLab,
-		       dgl_type = GlobalDef,
+	       DGLink {dgl_morphism = morphism,
+		       dgl_type = (GlobalThm True conservativity),
 		       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge auxGraph
@@ -148,27 +150,65 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
 falls ja: kante löschen, stattdessen GlobalDef von source nach target einfügen
 falls nein: nichts tun
 mit den übrigen kanten weitermachen -}
+{-
+existsDefPath :: DGraph -> GMorphism -> Node -> Node -> Bool
+existsDefPath dGraph morphism src tgt =
+  existsDefPathAux dGraph morphism [] (src:[]) tgt
 
-existsDefPath :: DGraph -> Node -> Node -> Bool
-existsDefPath = undefined
-{- -}
 
-existsDefPathAux :: DGraph  -> [Node] -> Node -> Bool
-existsDefPathAuy _ [] _ = False
-existsDefPathAux dGraph sourceNodes target =
-  if elem target sourceNodes then True
+existsDefPathAux :: DGraph  -> GMorphism -> [LEdge DGLinkLab] 
+		 -> [Node] -> Node -> Bool
+existsDefPathAux _ _ _ [] _ = False
+existsDefPathAux dGraph morphism path nodes target =
+
+  if (elem target nodes) and (morphism == (calculateMorphism path edge))then True
    else existsDefPathAux dGraph sucNodes target
   where
     outGoingEdges = concatMap (out dGraph) sourceNodes
     globalDefEdges = filter isGlobalDef outGoingEdges
     sucNodes = map getTargetNode globalDefEdges
 
+
+
+BBBB AAAA U  U SSSS TTTTT EEEE L    L    EEEE
+B  B A  A U  U S      T   E    L    L    E   
+BBBB AAAA U  U SSSS   T   EEEE L    L    EEEE
+B  B A  A U  U    S   T   E    L    L    E   
+BBBB A  A UUUU SSSS   T   EEEE LLLL LLLL EEEE
+
+-}
+
+-- existsDefPathOfSameMorphism :: DGraph -> GMorphism -> Node -> Node -> True
+existsDefPathOfSameMorphism dgraph morphism src tgt =
+  undefined
+
+  where 
+    outGoingEdges = out dgraph src
+    globalDefEdges = filter isGlobalDef outGoingEdges
+    defEdgesToTgt = [edge| edge <- globalDefEdges, tgt == getTargetNode edge]
+
+
+
+
+
+
+--getMorphismOfPath :: [LEdge DGLinkLab] -> GMorphism -> GMorphism
+getMorphismOfPath [] morphism = morphism
+getMorphismOfPath path@((src,tgt,edgeLab):furtherPath) morphism =
+  getMorphismOfPath furtherPath newMorphism
+
+  where newMorphism = calculateMorphism (dgl_type edgeLab) morphism
+
+--calculateMorphism :: GMorphism -> GMorphism -> GMorphism
+calculateMorphism morph1 morph2 = error "calculateMorphism not yet implemented"
+
+
 getTargetNode :: LEdge DGLinkLab -> Node
 getTargetNode (_,target,_) = target
 
-isGlobalThm :: LEdge DGLinkLab -> Bool
-isGlobalThm (_,_,edgeLab) = case dgl_type edgeLab of
-  (GlobalThm _ _) -> True
+isUnprovenGlobalThm :: LEdge DGLinkLab -> Bool
+isUnprovenGlobalThm (_,_,edgeLab) = case dgl_type edgeLab of
+  (GlobalThm False _) -> True
   otherwise -> False
 
 isGlobalDef ::LEdge DGLinkLab -> Bool
