@@ -1,4 +1,3 @@
-
 # hetcats/Makefile
 # $Id$
 # Author: Klaus Lüttich
@@ -140,6 +139,9 @@ apache_doc:
 	$(MAKE) hetcats-make
 	$(RM) docs/*.html 
 	$(MAKE) doc
+	$(MAKE) post_doc4apache
+
+post_doc4apache:
 	$(PERL) utils/post_process_docs.pl docs \
             'Common.Lib.Map.html:Common.Lib._Map.html'
 	mv docs/* a-docs/
