@@ -41,19 +41,13 @@ __×__ : Type+ -> Type+ -> Type
 a : Type+ %(var)%
 b : Type %(var)%
 even : Type+ -> Type %[free type __ a : Type+ ::=
-			    rek : odd a -> __ (%(even a.rek.sel_[1,1])% :? odd a)]%
+			    rek : odd a -> __]%
 even2 : Type+ -> Type %[free type __ a : Type+ ::=]%
 odd : Type+ -> Type %[free type __ a : Type+ ::=
-			   rek : even a -> __ (%(odd a.rek.sel_[1,1])% :? even a)]%
+			   rek : even a -> __]%
 odd2 : Type+ -> Type %[free type __ a : Type+ ::=
-			    rek : even2 a -> __ (%(odd2 a.rek.sel_[1,1])% :? even2 a)]%
+			    rek : even2 a -> __]%
 %% Assumptions -----------------------------------------------------------
-%(even a.rek.sel_[1,1])% : forall a : Type+ .  even a ->? odd a %(select from even constructed by
-							       rek : forall a : Type+ .  odd a -> even a)%
-%(odd a.rek.sel_[1,1])% : forall a : Type+ .  odd a ->? even a %(select from odd constructed by
-							      rek : forall a : Type+ .  even a -> odd a)%
-%(odd2 a.rek.sel_[1,1])% : forall a : Type+ .  odd2 a ->? even2 a %(select from odd2 constructed by
-								 rek : forall a : Type+ .  even2 a -> odd2 a)%
 Branch : forall a : Type+ .  Tree a ×
 			     Tree2 a -> Tree2 a %(construct Tree2)%
        : forall a : Type+ .  Tree a ×
