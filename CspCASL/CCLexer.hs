@@ -1,35 +1,28 @@
-{- **********************************************************************
+{- |
+Module      :  $Header$
+Copyright   :  (c)  Daniel Pratsch and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
 
-   $Source$
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
-   $Date$
-   $Revision$
-   Author: Daniel Pratsch (Last modification by $Author$)
 
-  ************************************************************************** 
+parser for CSP-CASL keywords
+
 -}
 
 module CspCASL.CCLexer where
 
 import CspCASL.CCKeywords
-
--- import Common.Lib.Parsec
 import Common.Id (Token(..))
-
--- import Common.Lexer
-
-import CASL.ItemList (asKey)
 import Common.AnnoState
-
-----------------------------------------------------------------------------
--- Parser for csp-casl-keywords
-----------------------------------------------------------------------------
  
-ccspecT, dataT, endT, channelT, processT, equalT, letT, inT, skipT, stopT, 
+ccspecT, dataT, endT, channelT, processT, letT, inT, skipT, stopT, 
   ifT, thenT, elseT, whenT, varT, multiPreT, prefixT, oRBracketT, 
-  cRBracketT, oSBracketT, cSBracketT, sendT, receiveT, extChoiceT, commaT, 
+  cRBracketT, oSBracketT, cSBracketT, sendT, receiveT, extChoiceT, 
   intChoiceT, synParaT, interParaT, oAlPaT, cAlPaT, oGenPaT, mGenPaT, 
-  semicolonT, cGenPaT, hidingT, oRenamingT, cRenamingT, colonT, chanRenT 
+  semicolonT, cGenPaT, hidingT, oRenamingT, cRenamingT, chanRenT 
             :: AParser Token
 
 ccspecT     = asKey ccspecS
@@ -37,7 +30,6 @@ dataT       = asKey dataS
 endT        = asKey endS
 channelT    = asKey channelS
 processT    = asKey processS
-equalT      = asKey equalS
 letT        = asKey letS 
 inT         = asKey inS  
 skipT       = asKey skipS
@@ -67,7 +59,5 @@ oRenamingT  = asKey oRenamingS
 cRenamingT  = asKey cRenamingS
 sendT       = asKey sendS
 receiveT    = asKey receiveS
-commaT      = asKey commaS
-colonT      = asKey colonS
 semicolonT  = asKey semicolonS
 chanRenT    = asKey chanRenS 

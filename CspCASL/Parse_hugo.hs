@@ -1,18 +1,18 @@
-{- **********************************************************************
+{- |
+Module      :  $Header$
+Copyright   :  (c)  Daniel Pratsch and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
 
-   $Source$
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
-   $Date$
-   $Revision$
-   Author: Daniel Pratsch (Last modification by $Author$)
 
-  ************************************************************************** 
+parser for CSP-CASL
+
 -}
 
-
 module CspCASL.Parse_hugo where
-
---import CspCASL.CCKeywords
 
 import CspCASL.AS_CSP_CASL
 import CASL.AS_Basic_CASL(OP_NAME)

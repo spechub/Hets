@@ -1,12 +1,15 @@
-{- **********************************************************************
+{- |
+Module      :  $Header$
+Copyright   :  (c)  Daniel Pratsch and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
 
-   $Source$
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
-   $Date$
-   $Revision$
-   Author: Daniel Pratsch (Last modification by $Author$)
 
-  ************************************************************************** 
+abstract syntax of CSP-CASL
+
 -}
 
 module CspCASL.AS_CSP_CASL where

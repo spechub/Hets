@@ -1,21 +1,18 @@
-{- **********************************************************************
+{- |
+Module      :  $Header$
+Copyright   :  (c)  Daniel Pratsch and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
 
-   $Source$
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+  
 
-   $Date$
-   $Revision$
-   Author: Daniel Pratsch (Last modification by $Author$)
+CSP-CASL keywords 
 
-  ************************************************************************** 
 -}
 
 module CspCASL.CCKeywords where
-
-import Prelude(String)
-
-----------------------------------------------------------------------------
--- csp-casl keywords
-----------------------------------------------------------------------------
 
 ccspecS, dataS, channelS, processS, endS, equalS, letS, inS, semicolonS, 
   commaS, colonS, skipS, stopS, ifS, thenS, elseS, whenS, varS, oRBracketS, 

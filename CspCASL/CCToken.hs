@@ -1,25 +1,26 @@
-{- **********************************************************************
+{- |
+Module      :  $Header$
+Copyright   :  (c)  Daniel Pratsch and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
 
-   $Source$
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
-   $Date$
-   $Revision$
-   Author: Daniel Pratsch (Last modification by $Author$)
 
-  ************************************************************************** 
+parser for CSP-CASL simple ids 
+
 -}
+
 
 module CspCASL.CCToken 
 
 where
-{-import Id (Id(Id), Token(..), Pos, toPos, isPlace)-}
+
 import Common.Id (Token(..))
 import Common.Token
 import Common.Lexer
 import CspCASL.CCKeywords
-
---import Common.Lib.Parsec
-
 import Common.AnnoState
 
 csp_casl_reserved_words :: [String]

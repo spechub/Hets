@@ -1,8 +1,13 @@
 
-{- HetCATS/CspCASL/Logic_CspCASL.hs
-   $Id$
-   Authors: Markus Roggenbach, Till Mossakowski
-   Year:    2003
+{- |
+Module      :  $Header$
+Copyright   :  (c)  Markus Roggenbach, Till Mossakowski and Uni Bremen 2003
+Licence     :  All rights reserved.
+
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  non-portable
+
 
    Here is the place where the class Logic is instantiated for CspCASL.
    Also the instances for Syntax an Category.
@@ -91,7 +96,7 @@ instance LatticeWithTop () where
 
 -- CspCASL logic
 
-instance Sentences CspCASL () () () () () where
+instance Sentences CspCASL () () () () ()
 
 instance StaticAnalysis CspCASL Basic_CSP_CASL_C_SPEC () ()
                SYMB_ITEMS SYMB_MAP_ITEMS
