@@ -6,7 +6,18 @@ version 0.1
 
 %[from Basic/StructuredDatatypes get List]%
 
+
 logic HasCASL
+
+spec Nat = {}
+
+spec List = {}
+
+spec FiniteSet = {}
+
+spec InternalLogic = {}
+
+spec Recursion = InternalLogic then {}
 
   spec Transitivity = 
   vars t,u : Type
@@ -86,9 +97,9 @@ view TimeRefine : EvalByExecution to EvalByTimedExec
 
 spec Term = FiniteSet then 
 type Variable  %% unspecified  
-  %[free type Term ::=    Var Variable | 
+  free type Term ::=    Var Variable | 
                         Lam Variable Term | 
-                        App Term Term ]%
+                        App Term Term
   ops fv : Term -> FiniteSet Variable ;
       isClosed: Pred Term  
   forall x:Variable; t, f, a: Term  
@@ -105,7 +116,7 @@ then %implies
   forall x: Variable; b: Term; a : ClosedTerm
   . isClosed(Lam x b) => isClosed(subst a x b)
 
-  spec LeftReduction = TermAndTransitivityAndRecursion then 
+  spec LeftReduction = Term and Transitivity and Recursion then 
   op leftRed: ClosedTerm ->? ClosedTerm
   program leftRed (App (App f a) c) = App (leftRed (App f a))c;
      leftRed(App (Lam x b)(App f a)) = 
@@ -121,9 +132,8 @@ view TermReduction : Reduction to LeftReduction =
   sort Expr |-> ClosedTerm
 
 spec Closure = Term then 
-%[free types Env ::= Empty | Add Variable Clos Env ;
+free types Env ::= Empty | Add Variable Clos Env ;
            TermEnv ::= Clos Term Env
-]%
 ops lookup : Env -> Variable ->? Clos;
     remove: Env -> Variable ->? Env;
     real : TermEnv ->? ClosedTerm
