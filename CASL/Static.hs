@@ -109,6 +109,12 @@ myShowList (h:t) = "'" ++ (show h) ++ "', " ++ (myShowList t)
 cloneAnnos :: Annoted a -> b -> Annoted b
 cloneAnnos a b = a { item = b }
 
+labelAnno :: String -> b -> Annoted b
+labelAnno name itm = Annoted itm [] [] [Label [name] []]
+
+noAnnos :: a -> Annoted a
+noAnnos itm = Annoted itm [] [] []
+
 annoFilter :: Annotation -> Maybe Annotation
 annoFilter x = case x of Label _ _ -> Just x;
                                  _ -> Nothing
@@ -181,6 +187,25 @@ tokPos_local_var_axioms (h:t) = Key:(replicate (length t) Key)
 tokPos_axiom_items :: [Pos] -> [TokenKind]
 tokPos_axiom_items = tokPos_local_var_axioms
 
+tokPos_select :: [Pos] -> [TokenKind]
+tokPos_select = tokPos_pred_decl
+
+tokPos_construct :: [Pos] -> [TokenKind]
+tokPos_construct = tokPos_SORT_ITEM
+
+tokPos_subsorts :: [Pos] -> [TokenKind]
+tokPos_subsorts [] = []
+tokPos_subsorts (h:t) = Key:(replicate (length t) Comma)
+
+tokPos_DATATYPE_DECL :: [Pos] -> [TokenKind]
+tokPos_DATATYPE_DECL l = replicate (length l) Key
+
+tokPos_datatype_items :: [Pos] -> [TokenKind]
+tokPos_datatype_items = tokPos_SORT_ITEM
+
+tokPos_OP_ITEM :: [Pos] -> [TokenKind]
+tokPos_OP_ITEM = tokPos_SORT_ITEM
+
 ------------------------------------------------------------------------------
 -- functions to generate labels
 ------------------------------------------------------------------------------
@@ -215,8 +240,44 @@ toVarDecls :: SortId -> [ExtPos] -> [VAR] -> [VarDecl]
 toVarDecls sort p v = map (uncurry (toVarDecl sort))
                           (zip (extendList emptyExtPos v p) v)
 
+typeToVarDecl :: OpType -> [VarDecl]
+typeToVarDecl t = map (\(s,v) -> VarDecl v s (ListPos Key emptyPos))
+                  $ zip (opArgs t) $ map mkSimpleId $ map (\x -> "x" ++ x)
+                  $ map show $ [1..(length $ opArgs t)]
+
 toVarId :: VarDecl -> Term
 toVarId v = VarId (simpleIdToId $ varId v) (varSort v) Inferred []
+
+opToApplSentence :: OpItem -> [NamedSentence]
+opToApplSentence itm =
+  let
+    name   = case (opId itm) of Id [x] [] [] -> (case x
+                                                   of Token name _ -> name;
+                                                                 _ -> "");
+                                           _ -> ""
+    optype = opType itm
+    vars   = typeToVarDecl optype
+    terms  = map toVarId vars
+    res    = opRes optype
+  in
+    [NamedSen name
+     (Axiom (noAnnos (AxiomDecl vars (ElemTest (OpAppl (opId itm) optype terms
+                                               Inferred []) res []) [])))]
+
+toGenItems :: [OpItem] -> [Pos] -> NamedSentence
+toGenItems ops pos = NamedSen ""
+                     (GenItems (map (\x -> Symbol (opId x)
+                                          (OpAsItemType (opType x))) ops) pos)
+
+toFunKind :: Bool -> FunKind
+toFunKind False = Partial
+toFunKind _     = Total
+
+sortToSymbol :: SortId -> Symbol
+sortToSymbol s = Symbol s Sign.Sort
+
+opTypeIdToSymbol :: OpType -> Id -> Symbol
+opTypeIdToSymbol typ id = Symbol id (OpAsItemType typ)
 
 toNamedSentence :: [VarDecl] -> String -> Annoted Formula -> NamedSentence
 toNamedSentence vars str f =
@@ -246,9 +307,8 @@ foldlTwo def f init a b = foldl (\st (x, y) -> f st x y) init
 foldPos :: (Sign -> a -> ExtPos -> Sign) -> Sign -> [a] -> [ExtPos] -> Sign
 foldPos f sigma a pos = foldlTwo emptyExtPos f sigma a pos
 
-chainPos :: LocalEnv -> (LocalEnv -> a -> ExtPos -> Result LocalEnv)
-            -> [a] -> [ExtPos] -> [Pos] -> ([Pos] -> [TokenKind])
-            -> Result LocalEnv
+chainPos :: b -> (b -> a -> ExtPos -> Result b) -> [a] -> [ExtPos] -> [Pos]
+            -> ([Pos] -> [TokenKind]) -> Result b
 chainPos env f items positions addPos toStrFun =
   foldTwo env emptyExtPos f items (positions ++ (zip addPos (toStrFun addPos)))
 
@@ -458,6 +518,14 @@ updatePredItem name ann typ defn sigma id pos =
              cloneAnnos ann (PredItem id typ defn ppos [])
   in
     updateSigItem sigma id (APredItem new)
+
+------------------------------------------------------------------------------
+-- OpItem generation
+------------------------------------------------------------------------------
+
+updateOpItem :: Filename -> Annoted a -> OpType -> Maybe OpDefn -> Sign
+                -> Id -> ExtPos -> Sign
+updateOpItem name ann typ defn sigma id pos = sigma
 
 ------------------------------------------------------------------------------
 --
@@ -687,16 +755,180 @@ ana_PRED_ITEM sigma _itm _pos =
                               (toExtPos (Just _pos) _p tokPos_pred_defn)
 
 ------------------------------------------------------------------------------
+-- OP-ITEMS
+------------------------------------------------------------------------------
+
+ana_OP_ITEM :: LocalEnv -> Annoted OP_ITEM -> ExtPos -> Result LocalEnv
+ana_OP_ITEM sigma _itm _pos =
+  return sigma
+
+------------------------------------------------------------------------------
+-- DATATYPE-ITEMS
+------------------------------------------------------------------------------
+
+ana_sig_COMPONENTS' :: LocalEnv -> SortId -> [Id] -> SortId -> [SortId]
+                      -> Result (LocalEnv, [SortId])
+ana_sig_COMPONENTS' sigma s f_n s' w' =
+  return
+       (sigma { getSign = foldPos
+                           (updateOpItem (getName sigma) (noAnnos s')
+                                         (OpType Partial [s'] s) Nothing)
+                                         (getSign sigma) f_n [] },
+        w'++[s'])
+
+ana_sig_COMPONENTS :: SortId -> (LocalEnv, [SortId]) -> COMPONENTS
+                      -> Result (LocalEnv, [SortId])
+ana_sig_COMPONENTS s (sigma,_s) _c =
+  let
+    (f_n,s') = case _c of Total_select   _a _b _ -> (_a,_b);
+                          Partial_select _a _b _ -> (_a,_b);
+                          AS_Basic_CASL.Sort  _a -> ([],_a)
+  in
+    ana_sig_COMPONENTS' sigma s f_n s' _s
+
+ana_sig_ALTERNATIVE :: SortId -> Id -> LocalEnv -> [COMPONENTS]
+                       -> Result LocalEnv
+ana_sig_ALTERNATIVE s f sigma _cl =
+  do (delta,s_n) <- foldResult (sigma,[]) (ana_sig_COMPONENTS s) _cl
+     return delta
+              { getSign = updateOpItem (getName sigma) (noAnnos s)
+                                       (OpType Total s_n s) Nothing
+                                       (getSign sigma) f emptyExtPos }
+                                       
+
+ana_sig_DATATYPE_DECL :: LocalEnv -> SortId -> [Annoted ALTERNATIVE]
+                         -> Result LocalEnv
+ana_sig_DATATYPE_DECL sigma s _alt =
+  let
+    _sigma = sigma { getSign = updateSortItem (getName sigma) (noAnnos s)
+                               Nothing (getSign sigma) s emptyExtPos }
+    _getComps = (\x -> case (item x)
+                         of Total_construct _id _cl _   -> Just (_id,_cl);
+                            Partial_construct _id _cl _ -> Just (_id,_cl);
+                            Subsorts _ _                -> Nothing)
+    _alist = mapMaybe _getComps _alt
+  in
+    foldResult _sigma (\st x -> ana_sig_ALTERNATIVE s (fst x) st (snd x))
+               _alist
+
+ana_sig_datatype_items :: LocalEnv -> Annoted DATATYPE_DECL
+                          -> Result LocalEnv
+ana_sig_datatype_items sigma _dd =
+  let
+    (s,_alt) = case (item _dd) of Datatype_decl _a _b _ -> (_a,_b)
+  in
+    do ana_sig_DATATYPE_DECL sigma s _alt
+
+ana_COMPONENTS' :: (LocalEnv, LocalEnv) -> Annoted DATATYPE_DECL -> SortId
+                   -> SortId -> [Id] -> Bool -> ExtPos -> [ExtPos] ->
+                   [SortId] -> Result (LocalEnv, LocalEnv, OpType, [SortId])
+ana_COMPONENTS' (sigma, sigma') _ann s s' f_n _total _pos _p w' =
+  do checkSortExists sigma (fst _pos) s'
+     let _t = OpType (toFunKind _total) [s'] s
+     return (case f_n of [] -> (sigma,sigma',_t,w'++[s']);
+                          _ -> (sigma,sigma' { getSign = foldPos (updateOpItem
+                                (getName sigma') _ann _t Nothing)
+                                (getSign sigma') f_n _p },_t,w'++[s']))
+
+ana_COMPONENTS :: Annoted DATATYPE_DECL -> SortId
+                  -> (LocalEnv, LocalEnv, [([Id], OpType)], [SortId])
+                  -> COMPONENTS -> ExtPos ->
+                  Result (LocalEnv, LocalEnv, [([Id], OpType)], [SortId])
+ana_COMPONENTS _ann s (sigma, sigma',_ws,_w') _c _pos =
+  let
+    (_total,f_n,s',_p) =
+      case _c of Total_select _ids _s' _p   -> (True,_ids,_s',_p);
+                 Partial_select _ids _s' _p -> (False,_ids,_s',_p);
+                 AS_Basic_CASL.Sort _s'     -> (True,[],_s',[])
+    _pos' = toExtPos (Just _pos) _p tokPos_select
+  in
+    do (delta,delta',_t,w') <- ana_COMPONENTS' (sigma,sigma') _ann s s' f_n
+                                               _total _pos _pos' []
+       return (delta,delta',_ws++[(f_n,_t)],_w'++w')
+
+ana_ALTERNATIVE :: (LocalEnv, LocalEnv, FiniteMap Symbol [Symbol], Bool)
+                   -> Annoted DATATYPE_DECL -> SortId -> Bool -> Id
+                   -> [COMPONENTS] -> ExtPos -> [Pos] ->
+                   Result (LocalEnv, LocalEnv, FiniteMap Symbol [Symbol],
+                           Bool)
+ana_ALTERNATIVE (sigma,sigma',w,flag) _ann s _total f _comps _pos _p =
+  do (delta,delta',_ws,w') <- chainPos (sigma,sigma',[],[])
+                              (ana_COMPONENTS _ann s)
+                              _comps [] _p tokPos_construct
+     let _t = OpType (toFunKind _total) w' s
+     let _w = concat $ map (\(o,typ) -> map (\id -> opTypeIdToSymbol typ id) o)
+                           _ws
+     return (delta { getSign = updateOpItem (getName delta) _ann _t
+                               (Just (Constr (sortToSymbol s))) (getSign delta)
+                               f _pos },delta',
+                     addToFM_C (++) w (opTypeIdToSymbol _t f) _w,
+                     flag)
+
+ana_subsorts :: (LocalEnv, LocalEnv, FiniteMap Symbol [Symbol])
+                -> SortId -> [SortId] -> [Pos] ->
+                Result (LocalEnv, LocalEnv, FiniteMap Symbol [Symbol], Bool)
+ana_subsorts (sigma,sigma',w) s s_n _p =
+  do chainPos () (\_ s' _pos -> checkSortExists sigma (fst _pos) s') s_n []
+              _p tokPos_subsorts
+     return (sigma { getSign = foldl (addSubsort s) (getSign sigma) s_n },
+             sigma',w,True)
+
+ana_DATATYPE_DECL :: SortId -> Annoted DATATYPE_DECL
+                     -> (LocalEnv, LocalEnv, FiniteMap Symbol [Symbol], Bool)
+                     -> Annoted ALTERNATIVE -> ExtPos ->
+                     Result (LocalEnv, LocalEnv, FiniteMap Symbol [Symbol],
+                             Bool)
+ana_DATATYPE_DECL s _ann (sigma,sigma',w,flag) _alt _pos =
+  case (item _alt) of
+    Total_construct _id _comps _p   -> ana_ALTERNATIVE (sigma,sigma',w,flag)
+                                       _ann s True _id _comps _pos _p;
+    Partial_construct _id _comps _p -> ana_ALTERNATIVE (sigma,sigma',w,flag)
+                                       _ann s False _id _comps _pos _p;
+    Subsorts s_n _p                 -> ana_subsorts (sigma,sigma',w)
+                                       s s_n _p
+ 
+ana_datatype_items' :: (LocalEnv, LocalEnv, FiniteMap Symbol [Symbol], Bool)
+                       -> Annoted DATATYPE_DECL -> ExtPos ->
+                       Result (LocalEnv, LocalEnv, FiniteMap Symbol [Symbol],
+                               Bool)
+ana_datatype_items' (sigma,sigma',w,flag) _dd _pos =
+  let
+    (s,_alt,_p) = case (item _dd) of Datatype_decl _a _b _c -> (_a,_b,_c)
+    _sigma      = sigma { getSign = updateSortItem (getName sigma)
+                                    (noAnnos _dd) Nothing
+                                    (getSign sigma) s _pos }
+  in
+    chainPos (_sigma,sigma',w,flag) (ana_DATATYPE_DECL s _dd) _alt [_pos] _p
+             tokPos_DATATYPE_DECL
+
+ana_datatype_items :: LocalEnv -> [Annoted DATATYPE_DECL] -> [Pos] ->
+                      Result (LocalEnv, LocalEnv, FiniteMap Symbol [Symbol],
+                              Bool)
+ana_datatype_items sigma _dd _pos =
+  do sigma' <- foldResult sigma ana_sig_datatype_items _dd
+     chainPos (sigma,sigma',emptyFM,False) ana_datatype_items' _dd [] _pos
+              tokPos_datatype_items
+
+------------------------------------------------------------------------------
 -- SIG-ITEMS
 ------------------------------------------------------------------------------
 
-ana_SIG_ITEMS :: LocalEnv -> SIG_ITEMS -> Result LocalEnv
-ana_SIG_ITEMS sigma (Sort_items _l _p)    = chainPos sigma ana_SORT_ITEM _l
-                                                     [] _p tokPos_SORT_ITEM
-ana_SIG_ITEMS sigma (Op_items _ _p)       = return sigma
-ana_SIG_ITEMS sigma (Pred_items _l _p)    = chainPos sigma ana_PRED_ITEM _l
-                                                     [] _p tokPos_PRED_ITEM
-ana_SIG_ITEMS sigma (Datatype_items _ _p) = return sigma
+ana_SIG_ITEMS :: (LocalEnv, LocalEnv) -> SIG_ITEMS
+                 -> Result (LocalEnv, LocalEnv)
+ana_SIG_ITEMS (sigma,_) _itm =
+  case _itm of
+    Sort_items _l _p     -> do _res <- chainPos sigma ana_SORT_ITEM _l [] _p
+                                                tokPos_SORT_ITEM
+                               return (_res,_res);
+    Op_items _l _p       -> do _res <- chainPos sigma ana_OP_ITEM _l [] _p
+                                                tokPos_OP_ITEM
+                               return (_res,_res);
+    Pred_items _l _p     -> do _res <- chainPos sigma ana_PRED_ITEM _l [] _p
+                                                tokPos_PRED_ITEM
+                               return (_res,_res);
+    Datatype_items _l _p -> do (_res,_res',_,_) <- ana_datatype_items
+                                                   sigma _l _p
+                               return (_res,_res')
 
 ------------------------------------------------------------------------------
 -- VAR-DECL
@@ -745,15 +977,72 @@ ana_axiom_items sigma _f _pos =
   chainPos sigma ana_local_var_axioms' _f [] _pos tokPos_axiom_items
 
 ------------------------------------------------------------------------------
+-- SORT-GEN
+------------------------------------------------------------------------------
+
+checkSortsExist :: Sign -> Pos -> Result ()
+checkSortsExist sigma _pos =
+  let
+    _sorts = filter (\x -> case x of ASortItem _ -> True;
+                                               _ -> False)
+                    (concat $ map snd $ fmToList $ getMap sigma)
+  in 
+    if (null _sorts) then
+      fatal_error "sort-gen did not declare any sorts" _pos
+    else
+      return ()
+
+toGenEmbedLabel :: SortId -> SortId -> String
+toGenEmbedLabel s s' = "ga_embedding_" ++ (toLabel s) ++ "_" ++ (toLabel s')
+
+toGenProjLabel :: SortId -> SortId -> String
+toGenProjLabel s s' = "ga_projection_" ++ (toLabel s) ++ "_" ++ (toLabel s')
+
+toEmAndPr :: LocalEnv -> Pos -> [OpItem]
+toEmAndPr delta' pos =
+  let
+    _embed = let
+               _sit = (\x -> ASortItem (noAnnos (SortItem x emptySortRels
+                                     Nothing (toItemPos "" emptyExtPos) [])))
+               _rem = (\x -> case x of ASortItem s -> Just (item s);
+                                                 _ -> Nothing)
+               _all = foldFM (\id itm l -> (mapMaybe _rem
+                                           (filter ((==) (_sit id)) itm))
+                                           ++l) [] (getMap $ getSign delta')
+             in
+               concat $ map (\x -> map ((\i j -> (i,j)) (sortId x))
+                            (allsupersrts $ sortRels x)) _all
+    em     = (\(s,s') -> OpItem (simpleIdToId $ mkSimpleId $ (toGenEmbedLabel
+                                 s s')) (OpType Total [s] s') [] Nothing
+                                 (ItemPos "" Key []) [])
+    pr     = (\(s,s') -> OpItem (simpleIdToId $ mkSimpleId  $ (toGenProjLabel
+                                 s s')) (OpType Partial [s'] s) [] Nothing
+                                 (ItemPos "" Key []) [])
+  in
+    (map em _embed) ++ (map pr _embed)
+
+ana_sort_gen :: LocalEnv -> [Annoted SIG_ITEMS] -> [Pos] -> Result LocalEnv
+ana_sort_gen sigma _si _pos =
+  do let _pos' = if (null _pos) then emptyPos else (head _pos)
+     (delta,delta') <- foldResult (sigma, sigma) ana_SIG_ITEMS (map item _si)
+     checkSortsExist (getSign delta) _pos'
+     let f = toEmAndPr delta' _pos'
+     return delta' { getPsi = addNamedSentences (getPsi delta')
+                              ((toGenItems f _pos):
+                               (concat $ map opToApplSentence f)) }
+
+------------------------------------------------------------------------------
 -- BASIC-ITEMS
 ------------------------------------------------------------------------------
 
 ana_BASIC_ITEMS :: LocalEnv -> Annoted BASIC_ITEMS -> Result LocalEnv
 ana_BASIC_ITEMS sigma _itm =
   case (item _itm) of
-    (Sig_items _s)              -> ana_SIG_ITEMS sigma _s;
+    (Sig_items _s)              -> do (_res,_) <- ana_SIG_ITEMS (sigma,sigma)
+                                                  _s
+                                      return _res;
     (Free_datatype _l _p)       -> return sigma;
-    (Sort_gen _s _p)            -> return sigma;
+    (Sort_gen _s _p)            -> ana_sort_gen sigma _s _p;
     (Var_items _v _p)           -> ana_VAR_ITEMS sigma _v _p;
     (Local_var_axioms _v _f _p) -> ana_local_var_axioms sigma _v
                                    ((head _p):(take ((length _v)-1) _p))
