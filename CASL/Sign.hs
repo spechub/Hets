@@ -240,8 +240,8 @@ checkSorts s =
 
 addSubsort :: SORT -> SORT -> State (Sign f e) ()
 addSubsort super sub = 
-    do e <- get
-       checkSorts [super, sub] 
+    do checkSorts [super, sub] 
+       e <- get
        put e { sortRel = Rel.insert sub super $ sortRel e }
 
 closeSubsortRel :: State (Sign f e) ()
