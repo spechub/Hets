@@ -16,6 +16,8 @@ Portability :  portable
 
 module Modal.StatAna where
 
+--import Debug.Trace
+
 import Modal.AS_Modal
 import Modal.Print_AS
 import Modal.ModalSign
@@ -196,7 +198,7 @@ ana_M_FORMULA b phi@(Quantification _ _ phi1 pos) =
   if b then ana_M_FORMULA b phi1
     else anaError phi pos
 ana_M_FORMULA _ phi@(Predication _ _ pos) =
-  anaError phi pos
+  return phi -- should lookup predicate!
 ana_M_FORMULA _ phi@(Definedness _ pos) =
   anaError phi pos
 ana_M_FORMULA _ phi@(Existl_equation _ _ pos) =
@@ -206,7 +208,8 @@ ana_M_FORMULA _ phi@(Strong_equation _ _ pos) =
 ana_M_FORMULA _ phi@(Membership _ _ pos) =
   anaError phi pos
 ana_M_FORMULA _ phi@(Mixfix_formula _) =
-  anaError phi [nullPos]
+  return phi -- should do mixfix analysis and lookup predicate!
+  -- anaError phi [nullPos]
 ana_M_FORMULA _ phi@(Unparsed_formula _ pos) =
   anaError phi pos
 ana_M_FORMULA _ phi@(Sort_gen_ax _) =
