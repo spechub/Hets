@@ -22,7 +22,6 @@ import AS_Basic_CASL
 import AS_Annotation
 import Maybe
 import Parsec
-import Token
 import Formula
 import SortItem
 import OpItem
@@ -92,7 +91,7 @@ dotFormulae = do d <- dotT
 			Nothing -> return (Axiom_items ns ps)
 			Just t -> return (Axiom_items ns
 			       (ps ++ [tokPos t]))
-    where aFormula = bind appendAnno (annoParser formula) getLineAnnos
+    where aFormula = bind appendAnno (annoParser formula) lineAnnos
 
 
 -- ------------------------------------------------------------------------

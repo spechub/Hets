@@ -8,7 +8,7 @@ expecting "?", words, "__", "(", "{" or "["
 
 parse error at (line 3, column 6):
 unexpected "*"
-expecting "?", words, "__", "(", "{" or "["
+expecting "%%", "%{", "%(", "%", "?", words, "__", "(", "{" or "["
 
 parse error at (line 4, column 1):
 unexpected "*"
@@ -32,11 +32,11 @@ expecting "?", words, "__", "(", "{" or "["
 
 parse error at (line 9, column 3):
 unexpected end of input
-expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", ":", cross, "->", "->?", "-->", "-->?", "," or ")"
+expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", "," or ")"
 
 parse error at (line 10, column 2):
 unexpected ")"
-expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", ":", cross, "->", "->?", "-->", "-->?" or end of input
+expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?" or end of input
 
 parse error at (line 11, column 5):
 unexpected "->"
@@ -68,7 +68,7 @@ expecting "?", words, "__", signs, "(", "{" or "["
 
 parse error at (line 18, column 7):
 unexpected ")"
-expecting "?", words, "__", signs, "(", "{", "[", ":", cross, "->", "->?", "-->", "-->?" or end of input
+expecting "?", words, "__", signs, "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?" or end of input
 
 parse error at (line 19, column 9):
 unexpected ")"
@@ -76,17 +76,17 @@ expecting "?", words, "__", signs, "(", "{" or "["
 
 parse error at (line 20, column 11):
 unexpected end of input
-expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", ":", cross, "->", "->?", "-->", "-->?", "," or ")"
+expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", "," or ")"
 
 parse error at (line 21, column 3):
 unexpected "->", "?" or "-"
-expecting "?", words, "__", "(", "{", "[", ":", cross, "->?", "-->", "-->?" or end of input
+expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->?", "-->", "-->?" or end of input
 
 parse error at (line 22, column 3):
 unexpected "->", "?" or "-"
-expecting "?", words, "__", "(", "{", "[", ":", cross, "->?", "-->", "-->?" or end of input
+expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->?", "-->", "-->?" or end of input
 
 parse error at (line 23, column 4):
 unexpected "->", "?" or "-"
-expecting "?", words, "__", "(", "{", "[", ":", cross, "->?", "-->", "-->?" or end of input
+expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->?", "-->", "-->?" or end of input
 

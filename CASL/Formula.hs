@@ -47,6 +47,7 @@ import Lexer
 import Token
 import AS_Basic_CASL
 import Parsec
+import ItemList
 
 simpleTerm :: [String] -> AParser TERM
 simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString 
@@ -90,7 +91,7 @@ castedTerm = do c <- asT
 
 terms :: [String] -> AParser ([TERM], [Pos])
 terms k = 
-    do (ts, ps) <- whenTerm k `separatedBy` commaT
+    do (ts, ps) <- whenTerm k `separatedBy` anComma
        return (ts, map tokPos ps)
 
 qualVarName, qualOpName :: Pos -> AParser TERM
@@ -177,7 +178,7 @@ quantFormula k =
 	       (p: map tokPos ps ++[tokPos d]))
 
 varDecl :: AParser VAR_DECL
-varDecl = do (vs, ps) <- varId `separatedBy` commaT
+varDecl = do (vs, ps) <- varId `separatedBy` anComma
 	     c <- colonT
 	     s <- sortId
 	     return (Var_decl vs s (map tokPos ps ++[tokPos c]))

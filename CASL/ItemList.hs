@@ -19,6 +19,29 @@ import Parsec
 import Token
 import List(delete)
 
+asKey :: String -> AParser Token
+asKey s = try (addAnnos >> pToken (toKey s)) << addAnnos
+
+anComma, semiT :: AParser Token
+anComma = try (addAnnos >> Lexer.commaT) << addAnnos
+commaT :: AParser Token
+commaT = anComma
+
+asSep s = try (addAnnos >> asSeparator s) << addAnnos
+
+semiT = asSep ";"
+
+equalT, colonT, lessT, dotT :: AParser Token
+equalT = asKey equalS
+colonT = asKey colonS
+lessT = asKey lessS
+dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
+
+asT, barT, forallT :: AParser Token
+asT = asKey asS
+barT = asKey barS
+forallT = asKey forallS
+
 -- ----------------------------------------------
 -- annotations
 -- ----------------------------------------------
@@ -32,7 +55,7 @@ optSemi :: AParser (Maybe Token, [Annotation])
 optSemi = do addAnnos
              l <- getLineAnnos
 	     a <- getAnnos 
-	     do s <- semiT
+	     do s <- asSeparator ";" 
 		addAnnos
 		l2 <- getLineAnnos
 		return (Just s, l ++ a ++ l2)

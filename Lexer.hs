@@ -276,33 +276,31 @@ toKey s = let p = string s in
 		 else if last s `elem` signChars then keySign p 
 		      else keyWord p
 
-asKey :: String -> GenParser Char st Token
-asKey = pToken . toKey
+asSeparator :: String -> GenParser Char st Token
+asSeparator = pToken . string
 
-commaT, semiT, oBracketT, cBracketT :: GenParser Char st Token
-oBraceT, cBraceT, oParenT, cParenT, placeT :: GenParser Char st Token
+commaT :: GenParser Char st Token
+commaT = asSeparator ","
 
-commaT = asKey ","
-semiT = asKey ";"
+oBraceT, cBraceT :: GenParser Char st Token
+oBraceT = asSeparator "{" 
+cBraceT = asSeparator "}"
 
-oBracketT = asKey "["
-cBracketT = asKey "]"
-oBraceT = asKey "{" 
-cBraceT = asKey "}"
-oParenT = asKey "("
-cParenT = asKey ")"
+oBracketT, cBracketT, oParenT, cParenT :: GenParser Char st Token
+oBracketT = asSeparator "["
+cBracketT = asSeparator "]"
+oParenT = asSeparator "("
+cParenT = asSeparator ")"
 
-brackets, parens, braces :: GenParser Char st a -> GenParser Char st a
-brackets p = oBracketT >> p << cBracketT
-parens p = oParenT >> p << cParenT 
+braces :: GenParser Char st a -> GenParser Char st a
 braces p = oBraceT >> p << cBraceT
 
-commaSep1, semiSep1 :: GenParser Char st a -> GenParser Char st [a]
+commaSep1 :: GenParser Char st a -> GenParser Char st [a]
 commaSep1 p = fmap fst $ separatedBy p commaT
-semiSep1 p = fmap fst $ separatedBy p semiT
 
 placeS :: GenParser Char st String
 placeS = string place
 
+placeT :: GenParser Char st Token
 placeT = pToken (try (placeS) <?> place)
 

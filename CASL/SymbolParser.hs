@@ -46,7 +46,7 @@ opOrPredType =
 
 symbMap :: GenParser Char st SYMB_OR_MAP
 symbMap =   do s <- symb
-	       do   f <- asKey mapsTo
+	       do   f <- pToken $ toKey mapsTo
 		    t <- symb
 		    return (Symb_map s t [tokPos f])
 		  <|> return (Symb s)

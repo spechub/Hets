@@ -45,6 +45,8 @@ import Print_HetCASL
 -- annotation adapter
 ------------------------------------------------------------------------
 
+asKey = pToken . toKey 
+
 -- skip to leading annotation and read many
 annos :: GenParser Char st [Annotation]
 annos = skip >> many (annotationL << skip)

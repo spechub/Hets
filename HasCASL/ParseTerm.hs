@@ -18,6 +18,7 @@ import Token
 import HToken
 import As
 import Parsec
+import ItemList
 
 noQuMark :: String -> AParser Token
 noQuMark s = try $ asKey s << notFollowedBy (char '?')
@@ -49,7 +50,7 @@ parseClass :: AParser Class
 parseClass = parseClassId
              <|> 
 	     do o <- oParenT
-		(cs, ps) <- parseClass `separatedBy` commaT
+		(cs, ps) <- parseClass `separatedBy` anComma
 		c <- cParenT
 		return (Intersection (nub $ concatMap iclass cs) 
 			(toPos o ps c))
@@ -62,8 +63,8 @@ parsePlainClass =
 		f <- funKind
 		case f of 
 		  PlainClass k -> do
-		      p <- commaT
-		      (cs, ps) <- parseClass `separatedBy` commaT
+		      p <- anComma
+		      (cs, ps) <- parseClass `separatedBy` anComma
 		      c <- cParenT
 		      return $ PlainClass $ Intersection 
 				 (nub $ concatMap iclass (k:cs)) 
@@ -115,7 +116,7 @@ typeToken = fmap TypeToken (pToken (scanWords <|> placeS <|>
 
 mkBraces :: AParser a -> ([a] -> [Pos] -> b) 
        -> AParser b
-mkBraces p c = bracketParser p oBraceT cBraceT commaT c
+mkBraces p c = bracketParser p oBraceT cBraceT anComma c
 
 data TokenMode = AnyToken
                | NoToken String   
@@ -135,7 +136,7 @@ primTypeOrId, typeOrId :: AParser Type
 primTypeOrId = fmap TypeToken idToken
 	       <|> mkBraces typeOrId (BracketType Braces)
 	       <|> mkBrackets typeOrId (BracketType Squares)
-	       <|> bracketParser typeOrId oParenT cParenT commaT
+	       <|> bracketParser typeOrId oParenT cParenT anComma
 		       (BracketType Parens)
 	       
 typeOrId = do ts <- many1 primTypeOrId
@@ -153,7 +154,7 @@ kindAnno t = do c <- colT
 
 primType, lazyType, mixType, prodType, funType :: AParser Type
 primType = typeToken 
-	   <|> bracketParser parseType oParenT cParenT commaT 
+	   <|> bracketParser parseType oParenT cParenT anComma 
 		   (BracketType Parens)
 	   <|> mkBraces parseType (BracketType Braces)
            <|> mkBrackets typeOrId (BracketType Squares)
@@ -199,7 +200,7 @@ parseType = funType
 -----------------------------------------------------------------------------
 
 varDecls :: AParser [VarDecl]
-varDecls = do (vs, ps) <- var `separatedBy` commaT
+varDecls = do (vs, ps) <- var `separatedBy` anComma
 	      varDeclType vs ps
 
 varDeclType :: [Var] -> [Token] -> AParser [VarDecl]
@@ -219,7 +220,7 @@ varDeclDownSet vs ps =
 			       (PlainClass (Downset t)) (tokPos l))
 
 typeVarDecls :: AParser [TypeArg]
-typeVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
+typeVarDecls = do (vs, ps) <- typeVar `separatedBy` anComma
 		  do   c <- colT
 		       t <- kind
 		       return (makeTypeVarDecls vs ps t (tokPos c))
@@ -235,7 +236,7 @@ makeTypeVarDecls vs ps cl q =
 		++ [TypeArg (last vs) cl Other [q]]
 
 genVarDecls:: AParser [GenVarDecl]
-genVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
+genVarDecls = do (vs, ps) <- typeVar `separatedBy` anComma
 		 fmap (map GenVarDecl) (varDeclType vs ps)
 		      <|> fmap (map GenTypeVarDecl)
 			       (varDeclDownSet vs ps)
@@ -254,7 +255,7 @@ extTypeVar = do t <- restrictedVar [lessS, plusS, minusS]
 		  <|> return (t, InVar, nullPos)
 
 typeArgs :: AParser [TypeArg]
-typeArgs = do (ts, ps) <- extTypeVar `separatedBy` commaT
+typeArgs = do (ts, ps) <- extTypeVar `separatedBy` anComma
 	      do   c <- colT
                    if let isInVar(_, InVar, _) = True
 			  isInVar(_,_,_) = False
@@ -335,7 +336,7 @@ primPattern b = tokenPattern b
 			(BracketPattern Parens)
 
 patterns :: AParser Pattern
-patterns = do (ts, ps) <- pattern `separatedBy` commaT
+patterns = do (ts, ps) <- pattern `separatedBy` anComma
 	      let tp = if length ts == 1 then head ts 
 		       else TuplePattern ts (map tokPos ps)
 		  in return tp
@@ -435,7 +436,7 @@ parenTerm = do o <- oParenT
 		 <|> 
 		 qualPredName o
 		 <|>
-		 do (ts, ps) <- option ([],[]) (term `separatedBy` commaT)
+		 do (ts, ps) <- option ([],[]) (term `separatedBy` anComma)
 		    p <- cParenT
 		    return (BracketTerm Parens ts (toPos o ps p))
 		     		

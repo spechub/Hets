@@ -4,15 +4,15 @@ expecting [<id>,...,<id>], "{", "%%", "%{", "%(", "%", ";", "sort", "op", "pred"
 
 parse error at (line 2, column 9):
 unexpected end of input
-expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", ":", cross, "->", "->?", "-->", "-->?" or "="
+expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?" or "="
 
 parse error at (line 3, column 5):
 unexpected "?"
-expecting casl char, underline word, "{", __, [<id>,...,<id>], "[", ",", "(" or ":?"
+expecting casl char, underline word, "{", __, [<id>,...,<id>], "[", "%%", "%{", "%(", "%", ",", "(" or ":?"
 
 parse error at (line 4, column 6):
 unexpected "+"
-expecting casl char, underline word, "{", __, ",", ":" or "<"
+expecting casl char, underline word, "{", __, "%%", "%{", "%(", "%", ",", ":" or "<"
 
 parse error at (line 5, column 5):
 unexpected "<"
@@ -20,5 +20,5 @@ expecting id
 
 parse error at (line 6, column 6):
 unexpected end of input
-expecting casl sign, "{", __, ",", ":" or "<"
+expecting casl sign, "{", __, "%%", "%{", "%(", "%", ",", ":" or "<"
 

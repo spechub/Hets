@@ -37,8 +37,8 @@ hasCaslItemAux = itemAux hasCaslStartKeywords
 -- ------------------------------------------------------------------------
 
 commaTypeDecl :: TypePattern -> AParser TypeItem
-commaTypeDecl s = do { c <- commaT 
-		     ; (is, cs) <- typePattern `separatedBy` commaT
+commaTypeDecl s = do { c <- anComma 
+		     ; (is, cs) <- typePattern `separatedBy` anComma
 		     ; let l = s : is 
 		           p = c : cs
 		       in
@@ -169,7 +169,7 @@ pseudoTypeDef t k l =
 -----------------------------------------------------------------------------
 
 component :: AParser [Components]
-component = do { (is, cs) <- uninstOpId `separatedBy` commaT
+component = do { (is, cs) <- uninstOpId `separatedBy` anComma
                ; if length is == 1 then
                  compType is cs 
                  <|> return [NoSelector (mkType(head is))]
@@ -191,7 +191,7 @@ tupleComponent =
 	  c <- cParenT
 	  return (NestedComponents (concat cs) (toPos o ps c))
         <|> 
-        do (cs, ps) <- tupleComponent `separatedBy` commaT
+        do (cs, ps) <- tupleComponent `separatedBy` anComma
 	   c <- cParenT
 	   return (NestedComponents cs (toPos o ps c))
 		      
@@ -212,7 +212,7 @@ compType is cs = do { c <- colT
 
 alternative :: AParser Alternative
 alternative = do { s <- pluralKeyword sortS <|> pluralKeyword typeS
-                 ; (ts, cs) <- parseType `separatedBy` commaT
+                 ; (ts, cs) <- parseType `separatedBy` anComma
                  ; return (Subtype ts (map tokPos (s:cs)))
                  }
               <|> 
@@ -279,7 +279,7 @@ isoClassDecl s =
        }
 
 classDecl :: AParser ClassDecl
-classDecl = do   (is, cs) <- classId `separatedBy` commaT
+classDecl = do   (is, cs) <- classId `separatedBy` anComma
 		 if length is == 1 then 
 		    subClassDecl (is, cs)
 		    <|>
@@ -351,8 +351,8 @@ opAttr = do a <- asKey assocS
 opDecl :: [OpId] -> [Token] -> AParser OpItem
 opDecl os ps = do c <- colT
 		  t <- typeScheme
-		  do   d <- commaT
-		       (as, cs) <- opAttr `separatedBy` commaT
+		  do   d <- anComma
+		       (as, cs) <- opAttr `separatedBy` anComma
 		       return (OpDecl os t as (map tokPos (ps++[c,d]++cs))) 
 		    <|> return (OpDecl os t [] (map tokPos (ps++[c])))
 
@@ -360,8 +360,8 @@ opDeclOrDefn :: OpId -> AParser OpItem
 opDeclOrDefn o = 
     do c <- colT
        t <- typeScheme
-       do   d <- commaT
-	    (as, cs) <- opAttr `separatedBy` commaT
+       do   d <- anComma
+	    (as, cs) <- opAttr `separatedBy` anComma
 	    return (OpDecl [o] t as (map tokPos ([c,d]++cs))) 
 	 <|> do e <- equalT
 		f <- term 
@@ -383,7 +383,7 @@ opDeclOrDefn o =
        return (OpDefn o [] (SimpleTypeScheme t) Partial f (toPos c [] e))
 
 opItem :: AParser OpItem
-opItem = do (os, ps) <- opId `separatedBy` commaT
+opItem = do (os, ps) <- opId `separatedBy` anComma
 	    if length os == 1 then
 		    opDeclOrDefn (head os)
 		    else opDecl os ps
@@ -408,7 +408,7 @@ predDefn o = do ps <- many (bracketParser patterns oParenT cParenT semiT
 		return (PredDefn o ps (TermFormula f) [tokPos e]) 
 
 predItem :: AParser PredItem
-predItem = do (os, ps) <- opId `separatedBy` commaT
+predItem = do (os, ps) <- opId `separatedBy` anComma
 	      if length os == 1 then 
 		 predDecl os ps
 		 <|> 

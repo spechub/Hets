@@ -61,13 +61,7 @@ TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR
    The IDs within the compound list may surely be compound IDs again.
 -}
 
-module Token ( casl_reserved_ops, casl_reserved_words
-             , formula_ops, formula_words
-	     , casl_reserved_fops, casl_reserved_fwords
-	     , equalT, colonT, colonST, quMarkT, lessT, dotT, crossT
-	     , asT, barT, forallT, casl_id
-             , start, comps, mixId, parseId, sortId, varId) 
-    where
+module Token where
 
 import Keywords
 import Lexer
@@ -77,20 +71,6 @@ import Parsec
 -- ----------------------------------------------
 -- keyword tokens
 -- ----------------------------------------------
-
-equalT, colonT, colonST, quMarkT, lessT, dotT, crossT :: GenParser Char st Token
-equalT = asKey equalS
-colonT = asKey colonS
-colonST = pToken (string colonS) -- if "?" may immediately follow as in ":?" 
-quMarkT = asKey quMark
-lessT = asKey lessS
-dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
-crossT = try(asKey prodS <|> asKey timesS) <?> "cross"
-
-asT, barT, forallT :: GenParser Char st Token
-asT = asKey asS
-barT = asKey barS
-forallT = asKey forallS
 
 -- ----------------------------------------------
 -- casl keyword handling
@@ -221,3 +201,17 @@ sortId = do s <- varId
 	    (c, p) <- option ([], []) 
 		      (comps (casl_reserved_fops, casl_reserved_fwords))
 	    return (Id [s] c p)
+
+-- ----------------------------------------------
+-- Tokens 
+-- ----------------------------------------------
+
+quMarkT :: GenParser Char st Token
+quMarkT = pToken $ toKey quMark
+
+-- if "?" may immediately follow as in ":?" 
+colonST :: GenParser Char st Token
+colonST = pToken (string colonS)
+
+crossT :: GenParser Char st Token
+crossT = try (pToken (toKey prodS <|> toKey timesS) <?> "cross")

@@ -30,8 +30,8 @@ import ItemList
 -- ------------------------------------------------------------------------
 
 commaSortDecl :: Id -> AParser SORT_ITEM
-commaSortDecl s = do c <- commaT 
-		     (is, cs) <- sortId `separatedBy` commaT
+commaSortDecl s = do c <- anComma
+		     (is, cs) <- sortId `separatedBy` anComma
 		     let l = s : is 
 		         p = tokPos c : map tokPos cs in
 		       subSortDecl (l, p) <|> return (Sort_decl l p)

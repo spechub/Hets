@@ -164,10 +164,11 @@ forall m : Int;
 . m quot n = sign (m) * sign (n) * (abs (m) quot abs (n))
   %(Int_quot_def)%
 . m rem n = sign (m) * sign (n) * (abs (m) rem abs (n))
+  forall m : Int; n : Int; r : Int; a : Nat; b : Nat . def (a -? b)
+						       => a -? b = a - b
   %(Int_rem_def)%
-%% then %implies
-forall m : Int; n : Int; r : Int; a : Nat; b : Nat
-. def (a -? b) => a -? b = a - b %(Int_Nat_sub_compat)%
+  %% then %implies
+  %(Int_Nat_sub_compat)%
 . m = sign (m) * abs (m) %(Int_abs_decomp)%
 . odd (m) <=> odd (abs (m)) %(Int_odd_alt)%
 . m /? n = r <=> not n = 0 /\ n * r = n %(Int_divide_dom1)%
@@ -217,10 +218,12 @@ forall p : Pos;
 . x ^ suc (n) = x * x ^ n %(Rat_power_suc)%
 . x ^ (- p) = 1 / (x ^ p) %(Rat_power_neg)%
 . min (x,y) = x when x <= y else y %(Rat_min_def)%
-. max (x,y) = y when x <= y else x %(Rat_max_def)%
-%% then %implies
-forall i : Int; j : Int; p : Pos; q : Pos
-. (i / p) - (j / q) = (i * q - j * p) / (p * q) %(Rat_sub_rule)%
+. max (x,y) = y when x <= y else x
+  forall i : Int; j : Int; p : Pos; q : Pos . (i / p) - (j / q) =
+					      (i * q - j * p) / (p * q)
+  %(Rat_max_def)%
+  %% then %implies
+  %(Rat_sub_rule)%
 . (i / p) / (j / q) = (i / p) * (q / j) if not j = 0
   %(Rat_divide_rule)%
 pred __<__ : a × a

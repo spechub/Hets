@@ -47,7 +47,7 @@ aAlternative = do a <- alternative
 
 alternative :: AParser ALTERNATIVE
 alternative = do s <- pluralKeyword sortS
-		 (ts, cs) <- sortId `separatedBy` commaT
+		 (ts, cs) <- sortId `separatedBy` anComma
 		 return (Subsorts ts (map tokPos (s:cs)))
               <|> 
               do i <- parseId
@@ -67,7 +67,7 @@ isSortId (Id is _ _) = length is == 1 && not (null (tokStr (head is)))
 		       && head (tokStr (head is)) `elem` caslLetters
 
 component :: AParser COMPONENTS
-component = do (is, cs) <- parseId `separatedBy` commaT
+component = do (is, cs) <- parseId `separatedBy` anComma
 	       if length is == 1 && isSortId (head is) then
 		 compSort is cs 
 		 <|> return (Sort (head is))

@@ -71,7 +71,7 @@ toHead c (Partial_op_type [] s _) = Partial_op_head [] s [c]
 toHead _ _ = error "toHead got non-empty argument type"
 
 opItem :: AParser OP_ITEM 
-opItem = do (os, cs)  <- parseId `separatedBy` commaT
+opItem = do (os, cs)  <- parseId `separatedBy` anComma
 	    if length os == 1 then 
 	      do c <- colonST
 		 t <- opType
@@ -94,8 +94,8 @@ opBody o h = do e <- equalT
 		return (Op_defn o h (Annoted t [] a []) [tokPos e])
 	  
 opAttrs :: [OP_NAME] -> OP_TYPE -> [Token] -> AParser OP_ITEM
-opAttrs os t c = do q <- commaT 
-		    (as, cs) <- opAttr `separatedBy` commaT
+opAttrs os t c = do q <- anComma 
+		    (as, cs) <- opAttr `separatedBy` anComma
 		    let ps = sort (map tokPos (c ++ map snd as ++ (q:cs)))
 		      in return (Op_decl os t (map fst as) ps)
                  <|> return (Op_decl os t [] (map tokPos c)) 
@@ -109,7 +109,7 @@ opItems = itemList opS opItem Op_items
 -- ----------------------------------------------------------------------
 
 predItem :: AParser PRED_ITEM 
-predItem = do (ps, cs)  <- parseId `separatedBy` commaT
+predItem = do (ps, cs)  <- parseId `separatedBy` anComma
 	      if length ps == 1 then
 		predBody (head ps) (Pred_head [] [])
 		<|> 
