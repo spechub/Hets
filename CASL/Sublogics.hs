@@ -34,10 +34,10 @@ import LocalEnv
 -- datatypes for CASL sublogics
 ------------------------------------------------------------------------------
 
-data CASL_Formulas = FOL     -- first-order logic
-                   | GHorn   -- generalized positive conditional logic
+data CASL_Formulas = Atomic  -- atomic logic
                    | Horn    -- positive conditional logic
-                   | Atomic  -- atomic logic
+                   | GHorn   -- generalized positive conditional logic
+                   | FOL     -- first-order logic
                    deriving (Show,Ord,Eq)
 
 data CASL_Sublogics = CASL_SL
@@ -111,22 +111,10 @@ sublogics_name x = ( if (has_sub x) then "Sub" else "" ) ++
 ------------------------------------------------------------------------------
 
 formulas_max :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
-formulas_max FOL _    = FOL
-formulas_max _ FOL    = FOL
-formulas_max GHorn _  = GHorn
-formulas_max _ GHorn  = GHorn
-formulas_max Horn _   = Horn
-formulas_max _ Horn   = Horn
-formulas_max _ _ = Atomic
+formulas_max x y = if (x<y) then y else x
 
 formulas_min :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
-formulas_min Atomic _ = Atomic
-formulas_min _ Atomic = Atomic
-formulas_min Horn _   = Horn
-formulas_min _ Horn   = Horn
-formulas_min GHorn _  = GHorn
-formulas_min _ GHorn  = GHorn
-formulas_min _ _      = FOL
+formulas_min x y = if (x<y) then x else y
 
 sublogics_max :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
 sublogics_max (CASL_SL a1 b1 c1 d1 e1 l1) (CASL_SL a2 b2 c2 d2 e2 l2)
@@ -452,10 +440,28 @@ sl_genitems :: GenItems -> CASL_Sublogics
 sl_genitems l = comp_list ((map sl_symbol) l)
 
 sl_symb_items :: SYMB_ITEMS -> CASL_Sublogics
-sl_symb_items _ = top
+sl_symb_items (Symb_items k l _) = sublogics_max (sl_symb_kind k)
+                                   (comp_list ((map sl_symb) l))
+
+sl_symb_kind :: SYMB_KIND -> CASL_Sublogics
+sl_symb_kind (Preds_kind) = need_pred
+sl_symb_kind _ = bottom
+
+sl_symb :: SYMB -> CASL_Sublogics
+sl_symb (Symb_id _) = bottom
+sl_symb (Qual_id _ t _) = sl_type t
+
+sl_type :: TYPE -> CASL_Sublogics
+sl_type (O_type t) = sl_op_type t
+sl_type (P_type _) = need_pred
 
 sl_symb_map_items :: SYMB_MAP_ITEMS -> CASL_Sublogics
-sl_symb_map_items _ = top
+sl_symb_map_items (Symb_map_items k l _) = sublogics_max (sl_symb_kind k)
+                                          (comp_list ((map sl_symb_or_map) l))
+
+sl_symb_or_map :: SYMB_OR_MAP -> CASL_Sublogics
+sl_symb_or_map (Symb s) = sl_symb s
+sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
 
 sl_sign :: Sign -> CASL_Sublogics
 sl_sign (SignAsList l) = comp_list ((map sl_sigitem) l)
