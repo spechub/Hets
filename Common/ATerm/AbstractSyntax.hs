@@ -50,7 +50,7 @@ data ShATerm = ShAAppl String [Int] [Int]
              | ShAInt  Integer      [Int]  
                deriving (Eq,Ord)
 
-data ATermTable = ATT (Map.Map ShATerm Int) (DMap.Map Int ShATerm) Int
+data ATermTable = ATT (Map.Map ShATerm Int) !(DMap.Map Int ShATerm) Int
 
 emptyATermTable :: ATermTable
 emptyATermTable =  ATT (Map.empty hash) DMap.empty (-1)
