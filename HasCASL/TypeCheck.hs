@@ -54,16 +54,19 @@ bList :: [(Id, TypeScheme)]
 bList = (defId, defType) : (notId, notType) : (ifThenElse, ifType) :
         map ( \ e -> (e, eqType)) [eqId, exEq] ++
 	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId]
-	    
+
 addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, d) m -> 
 		 Map.insertWith ( \ _ old -> old) i
-			 (TypeInfo k [k] [] d) m) tm
-	      [(simpleIdToId $ mkSimpleId "Unit",
-	        star, AliasTypeDefn $ simpleTypeScheme logicalType), 
-	       (simpleIdToId $ mkSimpleId "Pred", 
+			 (TypeInfo k [k] [] d) m) tm $
+	      (simpleIdToId $ mkSimpleId "Unit",
+	        star, AliasTypeDefn $ simpleTypeScheme logicalType)
+	      : (simpleIdToId $ mkSimpleId "Pred", 
 		FunKind star star [],
-		AliasTypeDefn defType)]
+		AliasTypeDefn defType)
+	      : (productId, prodKind, NoTypeDefn)
+	      : map ( \ a -> (arrowId a, funKind, NoTypeDefn)) 
+		[FunArr, PFunArr, ContFunArr, PContFunArr]
 
 addOps :: Assumps -> Assumps
 addOps as = foldr ( \ (i, sc) m -> 

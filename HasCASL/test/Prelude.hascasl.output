@@ -132,6 +132,11 @@ Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Pcpo := Unit
 __ : (Cpo- -> Pcpo+ -> Pcpo, Cpo- -> Cpo+ -> Cpo,
       Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type)
+__-->__ : Type- -> Type+ -> Type
+__-->?__ : Type- -> Type+ -> Type
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+__×__ : Type+ -> Type+ -> Type
 bool : Flatcpo %[free type __ ::=
 		      true : -> __
 		      false : -> __]%
@@ -194,9 +199,9 @@ Error (line 14, column 34) incompatible kind of: t
   expected: Type
      found: Type-
 
-Error (line 14, column 44) incompatible kind of: t ->? Unit
-  expected: Type
-     found: Type -> Type
+Error (line 14, column 44) incompatible kind of: ((__->?__)(t))(Unit)
+  expected: Type -> Type
+     found: Type
 
 Error (line 14, column 44) incompatible kind of: t ->? Unit
   expected: Type -> Type
@@ -206,6 +211,7 @@ Error (line 14, column 6) incompatible kind of: Pred
   expected: Type -> Type
      found: Type- -> Type
 
+Warning (line 15, column 16) redeclared type 't'
 Error (line 22, column 8) wrong type scheme of '__=__'
   expected: forall a : Type .  a × a ->? Unit
      found: forall s : Type .  s × s ->? Unit

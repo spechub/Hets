@@ -330,11 +330,10 @@ anaType (mk, t) =
        case mT of 
             Nothing -> return (star, mT)
 	    Just nt -> do let (newT,_) = expandAlias tm nt
-			  newK <- inferRawKind newT 
-			  case mk of 
-				  Nothing -> return ()
-				  Just k -> checkKinds newT newK k
-			  return (newK, Just newT)
+			  newMk <- inferKind mk newT 
+			  return (case newMk of 
+				 Nothing -> star
+				 Just aK -> aK, Just newT)
 
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = fmap snd $ anaType (Just star, t)

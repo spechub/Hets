@@ -57,6 +57,11 @@ Data4 : Type %[type __ ::=
 	       Cons42 : Data2 × Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : TYPE := Unit
+__-->__ : Type- -> Type+ -> Type
+__-->?__ : Type- -> Type+ -> Type
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+__×__ : Type+ -> Type+ -> Type
 s : c < ? s
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------

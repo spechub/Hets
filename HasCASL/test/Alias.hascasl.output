@@ -4,6 +4,11 @@ type MyPred : Type := \ s : Type . s ->? Unit
 MyPred : Type := \ s : Type . s ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
+__-->__ : Type- -> Type+ -> Type
+__-->?__ : Type- -> Type+ -> Type
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+__×__ : Type+ -> Type+ -> Type
 s : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit × Unit ->? Unit

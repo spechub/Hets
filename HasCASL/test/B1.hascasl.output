@@ -33,6 +33,11 @@ j < {v . v < t}
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 [ : a -> b
+__-->__ : Type- -> Type+ -> Type
+__-->?__ : Type- -> Type+ -> Type
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+__×__ : Type+ -> Type+ -> Type
 a : a -> b
 t : a
 x : ({_ < t}, b, a) %(var)%

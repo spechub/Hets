@@ -32,6 +32,11 @@ i < ({x . x < t}, b, a, g)
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
+__-->__ : Type- -> Type+ -> Type
+__-->?__ : Type- -> Type+ -> Type
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+__×__ : Type+ -> Type+ -> Type
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit × Unit ->? Unit
