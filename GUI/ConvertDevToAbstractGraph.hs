@@ -110,93 +110,26 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
                               showIt gid descr actGraphInfo
                               redisplay gid actGraphInfo
                               return ()    )])]
-               [("spec",
-                 Ellipse $$$ Color "Magenta"
-		 $$$ ValueTitle (\ (s,_,_) -> return s) 
-                 $$$ LocalMenu (Menu (Just "node menu")
-                   [(Button "Show spec" 
-                      (\ (name,descr,gid) ->
-                        do convMaps <- readIORef convRef
-                           showSpec descr
-		                    (abstr2dgNode convMaps)
-		                    dGraph
-		           return ()
-                       )
-	            ),
-		    (Button "Show just subtree"
-		      (\ (name,descr,gid) ->
-		        do subtreeEvents <- readIORef ioRefSubtreeEvents
-		           case Map.lookup descr subtreeEvents of
-                             Just _ -> putStrLn ("it is already just the subtree of node " ++ (show descr) ++" shown")
-		             Nothing -> 
-                               do convMaps <- readIORef convRef
-                                  visibleNodes <- readIORef ioRefVisibleNodes
-			          (eventDescr,newVisibleNodes,errorMsg) <- showJustSubtree ioRefGraphMem
-				 	    				    descr gid convMaps visibleNodes
-		                  case errorMsg of
-		                    Nothing -> do let newSubtreeEvents = Map.insert descr eventDescr subtreeEvents
-                                                  writeIORef ioRefSubtreeEvents newSubtreeEvents
-					          writeIORef ioRefVisibleNodes newVisibleNodes
-		                                  redisplay gid actGraphInfo
-		                                  return()
-		                    Just text -> do putStrLn text
-		                                    return()                            
-		      )
-                    ),
-		    (Button "undo show just subtree"
-		      (\ (name,descr,gid) ->
-		        do visibleNodes <- readIORef ioRefVisibleNodes
-                           case (tail visibleNodes) of
-                             [] -> do putStrLn "Complete graph is already shown"
-                                      return()
-                             newVisibleNodes@(x:xs) ->
-                               do subtreeEvents <- readIORef ioRefSubtreeEvents
-                                  case Map.lookup descr subtreeEvents of
-                                    Just hide_event -> 
-		                      do showIt gid hide_event actGraphInfo
-                                         writeIORef ioRefSubtreeEvents (Map.delete descr subtreeEvents)
-                                         writeIORef ioRefVisibleNodes newVisibleNodes
-		                         redisplay gid actGraphInfo
-		                         return ()
-		                    Nothing -> do putStrLn "undo not possible"
-		                                  return()
-                      )
-		    )])
-                  $$$ emptyNodeTypeParms 
-                     :: DaVinciNodeTypeParms (String,Int,Int)),
-                ("internal",
-                 Ellipse $$$ Color "Grey"
-		 $$$ ValueTitle (\ (s,_,_) -> return "")
-                 $$$ LocalMenu 
-                    (Button "Show spec" 
-                      (\ (name,descr,gid) ->
-                        do convMaps <- readIORef convRef
-                           showSpec descr (abstr2dgNode convMaps) dGraph
-                           return ()
-                      ))
-                 $$$ emptyNodeTypeParms
-                     :: DaVinciNodeTypeParms (String,Int,Int)), 
-                ("dg_ref",
-                 Box $$$ Color "SteelBlue"
-		 $$$ ValueTitle (\ (s,_,_) -> return s)
-		 $$$ LocalMenu
-		     (Button "Show referenced library"
-		     (\ (name,descr,gid) ->
-		        do convMaps <- readIORef convRef
-                           --g <- readIORef graphId
-		           (refDescr, newGraphInfo, refConvMaps) <- showReferencedLibrary ioRefGraphMem descr
-		                              gid
-		                              actGraphInfo
-		                              convMaps
-		           
---writeIORef convRef newConvMaps
-                           writeIORef ioRefGraphMem graphMem{graphInfo = newGraphInfo, nextGraphId = refDescr +1}
-                           redisplay refDescr newGraphInfo
-		          -- redisplay gid graphInfo
-		           return ()
-		     ))
-                 $$$ emptyNodeTypeParms
-                     :: DaVinciNodeTypeParms (String,Int,Int)) ]
+               [("spec", 
+		 createLocalMenuNodeTypeSpec "Magenta" convRef dGraph
+                              ioRefSubtreeEvents ioRefVisibleNodes
+                                  actGraphInfo ioRefGraphMem
+                ),
+                ("locallyEmpty_spec", 
+		 createLocalMenuNodeTypeSpec "Violet" convRef dGraph
+                                          ioRefSubtreeEvents ioRefVisibleNodes
+                                              actGraphInfo ioRefGraphMem),
+                ("internal", 
+		 createLocalMenuNodeTypeInternal "Grey" convRef dGraph
+                ),
+		("locallyEmpty_internal", 
+		 createLocalMenuNodeTypeInternal "LightGrey" convRef dGraph),
+                ("dg_ref", 
+		 createLocalMenuNodeTypeDgRef "SteelBlue" convRef actGraphInfo ioRefGraphMem graphMem 
+                 ),
+		("locallyEmpty_dg_ref", 
+		 createLocalMenuNodeTypeDgRef "LightSteelBlue" convRef actGraphInfo ioRefGraphMem graphMem 
+                 ) ]
                  [("globaldef",
                    Solid 
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
@@ -238,6 +171,108 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
   graphMem'<- readIORef ioRefGraphMem
   return (descr,graphInfo graphMem',convRef)
 
+-- *************************************************************
+-- methods to create the local menus of the different nodetypes
+-- *************************************************************
+
+-- local menu for the nodetypes spec and locallyEmpty_spec
+createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents ioRefVisibleNodes actGraphInfo ioRefGraphMem =
+                 Ellipse $$$ Color color
+		 $$$ ValueTitle (\ (s,_,_) -> return s) 
+                 $$$ LocalMenu (Menu (Just "node menu")
+                   [createLocalMenuButtonShowSpec convRef dGraph,
+		    (Button "Show just subtree"
+		      (\ (name,descr,gid) ->
+		        do subtreeEvents <- readIORef ioRefSubtreeEvents
+		           case Map.lookup descr subtreeEvents of
+                             Just _ -> putStrLn ("it is already just the subtree of node " ++ (show descr) ++" shown")
+		             Nothing -> 
+                               do convMaps <- readIORef convRef
+                                  visibleNodes <- readIORef ioRefVisibleNodes
+			          (eventDescr,newVisibleNodes,errorMsg) <- showJustSubtree ioRefGraphMem
+				 	    				    descr gid convMaps visibleNodes
+		                  case errorMsg of
+		                    Nothing -> do let newSubtreeEvents = Map.insert descr eventDescr subtreeEvents
+                                                  writeIORef ioRefSubtreeEvents newSubtreeEvents
+					          writeIORef ioRefVisibleNodes newVisibleNodes
+		                                  redisplay gid actGraphInfo
+		                                  return()
+		                    Just text -> do putStrLn text
+		                                    return()                            
+		      )
+                    ),
+		    (Button "undo show just subtree"
+		      (\ (name,descr,gid) ->
+		        do visibleNodes <- readIORef ioRefVisibleNodes
+                           case (tail visibleNodes) of
+                             [] -> do putStrLn "Complete graph is already shown"
+                                      return()
+                             newVisibleNodes@(x:xs) ->
+                               do subtreeEvents <- readIORef ioRefSubtreeEvents
+                                  case Map.lookup descr subtreeEvents of
+                                    Just hide_event -> 
+		                      do showIt gid hide_event actGraphInfo
+                                         writeIORef ioRefSubtreeEvents (Map.delete descr subtreeEvents)
+                                         writeIORef ioRefVisibleNodes newVisibleNodes
+		                         redisplay gid actGraphInfo
+		                         return ()
+		                    Nothing -> do putStrLn "undo not possible"
+		                                  return()
+                      )
+		    )])
+                  $$$ emptyNodeTypeParms 
+                     :: DaVinciNodeTypeParms (String,Int,Int)
+
+-- local menu for the nodetypes internal and locallyEmpty_internal
+createLocalMenuNodeTypeInternal color convRef dGraph =
+                 Ellipse $$$ Color color
+		 $$$ ValueTitle (\ (s,_,_) -> return "")
+                 $$$ LocalMenu 
+                    (createLocalMenuButtonShowSpec convRef dGraph)
+                 $$$ emptyNodeTypeParms
+                     :: DaVinciNodeTypeParms (String,Int,Int)
+
+-- local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
+createLocalMenuNodeTypeDgRef color convRef actGraphInfo ioRefGraphMem graphMem = 
+                 Box $$$ Color color
+		 $$$ ValueTitle (\ (s,_,_) -> return s)
+		 $$$ LocalMenu
+		     (Button "Show referenced library"
+		     (\ (name,descr,gid) ->
+		        do convMaps <- readIORef convRef
+                           --g <- readIORef graphId
+		           (refDescr, newGraphInfo, refConvMaps) <- showReferencedLibrary ioRefGraphMem descr
+		                              gid
+		                              actGraphInfo
+		                              convMaps
+		           
+--writeIORef convRef newConvMaps
+                           writeIORef ioRefGraphMem graphMem{graphInfo = newGraphInfo, nextGraphId = refDescr +1}
+                           redisplay refDescr newGraphInfo
+		          -- redisplay gid graphInfo
+		           return ()
+		     ))
+                 $$$ emptyNodeTypeParms
+                     :: DaVinciNodeTypeParms (String,Int,Int)
+
+
+-- menu button for local menus to show the spec of a node
+createLocalMenuButtonShowSpec convRef dGraph =
+                    (Button "Show spec" 
+                      (\ (name,descr,gid) ->
+                        do convMaps <- readIORef convRef
+                           showSpec descr
+		                    (abstr2dgNode convMaps)
+		                    dGraph
+		           return ()
+                       )
+	            )
+
+-- ******************************
+-- end of local menu definitions
+-- ******************************
+
+
 showSpec descr convMap dgraph =
   case Map.lookup descr convMap of
    Nothing -> return ()
@@ -277,8 +312,9 @@ convertNodesAux :: ConversionMaps -> Descr -> GraphInfo ->
 		     [LNode DGNode] -> LIB_NAME -> IO ConversionMaps
 convertNodesAux convMaps descr graphInfo [] libname = return convMaps
 convertNodesAux convMaps descr graphInfo ((node,dgnode):lNodes) libname = 
-  do Result newDescr err <- addnode descr
-			        (getDGNodeType dgnode)
+  do nodetype <- (getDGNodeType dgnode)
+     Result newDescr err <- addnode descr
+			        nodetype
 				(getDGNodeName dgnode)
 				graphInfo
      --putStrLn (maybe "" id err)
@@ -296,14 +332,19 @@ getDGNodeName dgnode =
     Nothing -> ""
 
 -- gets the type of a development graph edge as a string
-getDGNodeType :: DGNode -> String
+getDGNodeType :: DGNode -> IO String
 getDGNodeType dgnode =
-  case isDGRef dgnode of
-    True -> "dg_ref"
-    False -> case get_dgn_name dgnode of
-               Just _ -> "spec"
-               Nothing -> "internal"
+  do let nodetype = getDGNodeTypeAux dgnode
+     case (isDGRef dgnode) of
+       True -> return (nodetype++"dg_ref")
+       False -> case get_dgn_name dgnode of
+                  Just _ -> return (nodetype++"spec")
+                  Nothing -> return (nodetype++"internal")
     
+getDGNodeTypeAux :: DGNode -> String
+getDGNodeTypeAux dgnode = if (locallyEmpty dgnode) then "locallyEmpty_"
+                           else ""
+
 getDGLinkType :: DGLinkType -> String
 getDGLinkType LocalDef = "def"
 getDGLinkType GlobalDef = "globaldef"
