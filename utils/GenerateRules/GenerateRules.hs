@@ -1,3 +1,8 @@
+{-
+  author: Felix Reckers
+  date: 2003
+-}
+
 module Main where
 
 import System.Console.GetOpt
@@ -44,7 +49,8 @@ genRules flags file = do inp <- readFile file
 			 fps <- getPaths flags 
 			 (rule,dir) <- getRuleAndDir flags
 			 headers <- mapM readFile fps
-			 writeFile (dir ++ "/" ++ fileWP ++ ".der.hs") $ 
+			 writeFile (if (dirname file /= dir) then (dir ++ "/" ++ fileWP ++ ".der.hs") 
+                                    else (dir ++ "/"++ "ATC_"++dir++".der.hs"))  $ 
                                 fileHead ++ "\n\nmodule " ++ dir ++ "." ++ fileWP 
                                 ++ " where\n\nimport " ++ name 
                                 ++ "\nimport Common.ATerm.Lib\n" ++ 
