@@ -12,6 +12,36 @@
 
    A record datatype for fast and easy access and modification \/
    extension of the options. 
+
+   TODO:
+     - Posix Spezifikation zu command line interfaces
+     - Dokumentation zu GetOpt im package util vom ghc
+     - Flag und HetCATSOpts Datentyp anpassen
+     - options Liste erweitern
+     - parse funktionen schreiben
+     - form_opt_rec anpassen
+     - perm_infile und check_in_file implemetieren
+
+   Optionen:
+
+Usage: hetcats [OPTION...] file ... file
+  -v[Int]  --verbose[=Int]      chatty output on stderr
+  -V       --version            show version number
+  -h       --help               show usage information
+  -i ITYPE  --input-type=ITYPE    ITYPE of input file: casl | het | tree.gen_trm
+  -p       --just-parse         just parse -- no analysis
+  -O DIR   --output-dir=DIR     output DIR
+  -o OTYPES  --output-types=OTYPES  select OTYPES of output files
+  -l id id? --output-logic=id id?  select output logic and optional logic coding
+  -L DIR   --casl-libdir=DIR    CASL library directory
+
+  -w --width tex=10cm het=75
+OTYPES is a comma separated list of OTYPE
+OTYPE is (pp.(het|tex|html))|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)|
+         (graph.(dot|ps|davinci))
+         (default: dg.taf)
+
+
 -}
 
 module Options where
@@ -126,7 +156,7 @@ form_opt_rec flags inp_files =
 perm_in_file :: FilePath -> [FilePath]
 perm_in_file f = [f]
 
--- check if the on of the possible files exists and is readable
+-- check if one of the possible files exists and is readable
 -- TODO: implement check_in_file
 check_in_file :: FilePath -> IO FilePath
 check_in_file = return . head . perm_in_file
