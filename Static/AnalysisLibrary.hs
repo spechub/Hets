@@ -122,7 +122,7 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
 	     -- the conversion/reading might yield an error that
 	     -- should be caught here
 	     (dias2, mLibEnv) <- 
-	           maybe (do ioresToIO $ showDiags1 opts (resToIORes (Result dias mgc))
+	           maybe (do showDiags opts dias
 		             anaLibFile' fname dias)
                        (\ gc@(_,_,dgraph) -> do 
 		          if outputToStdout opts then
