@@ -10,12 +10,14 @@ import ParseTerm
 import System
 
 main = do {l <- getArgs;
-	   if length l < 2 then print "usage: main {id,type,term} <filename>"
+	   if length l < 2 then print 
+	   "usage: main {id,type,term,items} <filename>"
 	   else let option = head l 
 	            file = head (tail l)
 	   in if option == "id" then checkLines parseId file
 	   else if option == "type" then checkLines parseType file
 	   else if option == "term" then checkLines parseTerm file
+	   else if option == "items" then parseSpec file
 	   else print ("unknown option: " ++ option) 
 	  }
 
@@ -35,7 +37,7 @@ parseLine p line n = let pos = setSourceLine (initialPos "") n
 		     in result (parse parser "" line)
 
 
-parseSpec fileName =  do { r <- parseFromFile (basicSpec empty) fileName
+parseSpec fileName =  do { r <- parseFromFile (basicSpec []) fileName
 			 ; putStrLn (result r)
 			 }
 	   

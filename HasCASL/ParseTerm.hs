@@ -26,11 +26,10 @@ varDecl t = do { l <- separatedBy (const varId) comma t
 	       ; return (makeDecl r l)
  	       }
 
-semi = skipChar ';'
-
 varDecls :: Token -> Parser [Decl]
 varDecls t = fmap (concat . map snd) (separatedBy varDecl semi t)
 
+parseDecls = varDecls
 -- ----------------------------------------------
 -- no-bracket-token, literal or place (for terms)
 -- ----------------------------------------------
@@ -78,13 +77,16 @@ terms t = do { l <- separatedBy (const mixTerm) comma t
 isPartialId (PartialType _) = True
 isPartialId _ = False
 
+isColon c = showTok c == [colonChar]
+
+parsePartialType c = funType c `checkWith` \t -> isColon c || isPartialId t
+
 qualName = do { w <- makeToken 
 		     (toKey varStr <|> toKey opStr <|> toKey predStr)
 	      ; i <- parseId
 	      ; c <- partialColon `checkWith` \c -> showTok w == opStr
-		|| not (isPartialColon c)
-	      ; t <- funType c `checkWith` \t -> not (isPartialColon c) 
-		||  isPartialId t
+		|| showTok c == ":"
+	      ; t <- parsePartialType c
 	      ; let s = showTok w 
 		    ty = if s == predStr then predicate t else t 
 		    l = if s == varStr then 1 else 0 
@@ -128,7 +130,8 @@ isLambda _ = False
 
 quantTerm = do { q <- try (makeToken quant)
 	       ; v <- varDecls q
-	       ; d <- makeToken getDot `checkWith` \d -> length (showTok d) == 1
+	       ; d <- makeToken (keySign getDot) `checkWith` 
+		 \d -> length (showTok d) == 1
 		 || isLambda (binder q) 
                ; t <- mixTerm
 	       ; let b = binder q

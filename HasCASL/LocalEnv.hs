@@ -39,7 +39,7 @@ showSortItem (SortItem decl rels def an) =
     shows decl . showChar ' ' . showParen True (shows rels)
 	  . showChar ' ' . (case def of Nothing -> showString ""
 				        Just x -> showParen True (shows x))
-	  . showString (unwords an) . showChar '\n'
+	  . showString (unwords an)
 
 instance Show SortItem where
     showsPrec _ = showSortItem
@@ -61,11 +61,46 @@ data OpDefn = Definition Term
             | Selector SortId [ConsSymb] SelSymb
 	      deriving (Show,Eq)
 
-data OpItem = OpItem Decl [OpAttr] (Maybe OpDefn) [Anno]
-	        deriving (Show,Eq)      
+data OpItem = OpItem { opDecl :: Decl
+		     , opAttrs :: [OpAttr]
+		     , opDefn :: (Maybe OpDefn)
+		     , opAn :: [Anno]
+		     } deriving (Show,Eq)      
 
 type Axiom = Term        -- synonyms
 -- "local-var-axioms" are a special Term "forall V1,...,V2. F1 /\ F2 /\ ...
+
+data AnItem = ASortItem SortItem
+	    | AnOpItem OpItem
+	    | AVarDecl VarDecl
+	    | AnAxiom Axiom
+	    | BeginGen | EndGen
+
+showItem(ASortItem s) = shows s
+showItem(AnOpItem o) = shows o
+showItem(AVarDecl d) = shows d
+showItem(AnAxiom t) = shows t
+showItem BeginGen = showString "generated{"
+showItem EndGen = showString "}%[generated]%"
+
+instance Show AnItem where
+	showsPrec _ = showItem
+	showList = showSepList (showChar '\n') shows 
+
+updateAn :: AnItem -> [Anno] -> AnItem
+updateAn(ASortItem s) an = ASortItem (s {sortAn = an})
+updateAn(AnOpItem o) an = AnOpItem (o {opAn = an})
+updateAn(AVarDecl d) an = AVarDecl (d {declAn = an})
+updateAn(AnAxiom (Annotated t _)) an = AnAxiom (Annotated t an)
+updateAn(AnAxiom t) an = AnAxiom (Annotated t an)
+
+type Ast = [AnItem]
+
+addAn :: Ast -> [Anno] -> Ast
+addAn [] an = []
+addAn (EndGen:r) an = EndGen : addAn r an
+addAn (BeginGen:r) an = BeginGen : addAn r an
+addAn (h:r) an = updateAn h an : r
 
 data Env = Env { sorts :: [SortItem] 
 	       , ops :: [OpItem]
@@ -79,5 +114,23 @@ showEnv (Env s o v a g) =
 
 instance Show Env where
     showsPrec _ = showEnv
+
+addToLastGenItem :: Env -> Symb -> Env
+addToLastGenItem (Env s o v a (h:r)) i = 
+    Env s o v a ((i:h):r)
+
+toEnv _ env [] = env
+toEnv _ env (BeginGen:r)  = toEnv True (env {generates = [] : generates env}) r
+toEnv _ env (EndGen:r)  = toEnv False env r
+toEnv b env ((ASortItem s):r) = 
+    let i = symb (sortDecl s)
+	env' = if b then addToLastGenItem env i else env
+    in toEnv b (env' {sorts = s : sorts env'}) r
+toEnv b env ((AnOpItem o):r) = 
+    let i = symb (opDecl o)
+	env' = if b then addToLastGenItem env i else env
+    in toEnv b (env' {ops = o : ops env'}) r
+toEnv b env ((AVarDecl v):r) = toEnv b (env {vars = v : vars env}) r
+toEnv b env ((AnAxiom a):r) = toEnv b (env {axioms = a : axioms env}) r
 
 empty = Env [] [] [] [] []

@@ -12,7 +12,7 @@ data Symb = Symb { symbId :: Id
 
 showSymb :: Symb -> ShowS
 showSymb (Symb i Unknown) = shows i
--- showSymb (Symb i Sort) = shows i
+showSymb (Symb i Sort) = shows i
 showSymb (Symb i (PartialType v)) = 
     showSign i . showSignStr (colonChar:partialSuffix) . shows v
 showSymb (Symb i t) = showSign i . showSignStr [colonChar] . shows t
@@ -29,6 +29,7 @@ type DeclNotation = Keyword
 
 type Anno = String
 
+showAnnotation :: [Anno] -> ShowS
 showAnnotation [] = showString "" 
 showAnnotation an = showChar ';' . showString (unwords an) . showChar '\n'
 
@@ -93,7 +94,7 @@ data Binder = Lambda Totality | ArgDecl | SupersortVar
 showBinder (Lambda Partial) = showSignStr lamStr     
 showBinder (Lambda Total) = showSignStr (lamStr ++ totalSuffix)
 showBinder ArgDecl = showSignStr "(...):" 
-showBinder SupersortVar = showSignStr "{.|..}"
+showBinder SupersortVar = showSignStr "{....}"
 showBinder Forall = showSignStr allStr
 showBinder Exists = showSignStr exStr
 showBinder ExistsUnique = showSignStr (exStr ++ totalSuffix)
@@ -142,7 +143,7 @@ showTerm (Binding ArgDecl decls (Typed term co t)) =
 		  . showSign t . showSignStr "=" . showSign term  
 
 showTerm (Binding SupersortVar decls term) = 
-    showSignStr "{" . showSign decls . showSignStr "|"
+    showSignStr "{" . showSign decls . showSignStr "\183"
 		   . showSign term . showString "}"
     
 showTerm (Binding (Lambda Total) decls term) = 

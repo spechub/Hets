@@ -1,6 +1,6 @@
 module Token ( scanTermWords, scanTermSigns, otherToken, makeToken
-	     , skipChar, opBrkt, clBrkt, oBrace, cBrace, uu, comma
-	     , parseId
+	     , skipChar, opBrkt, clBrkt, oBrace, cBrace, uu, comma, semi
+	     , parseId, casl_reserved_words
 	     ) where
 
 import Lexer
@@ -95,6 +95,7 @@ start = tokStart <|> uu <:> (tokStart <|> many1 uu <++> option [] tokStart)
         <?> "id"
 
 comma = skipChar ','
+semi = skipChar ';'
 
 comps = opBrkt >> parseId `sepBy1` comma << clBrkt
 	<?> "[<id>,...,<id>]"
@@ -106,3 +107,4 @@ parseId = do { l <- start
 			; return (Id (l++u) c)
 			})
 	     }
+

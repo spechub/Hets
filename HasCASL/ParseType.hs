@@ -16,12 +16,15 @@ separatedBy p s t = do { r <- p t
 		       ; return ((t, r) : l) 
 		       }
 
-isMixIdOrCross (Id ts cs) = not (null (tail ts))
-			    || show ts `elem` [productSign, altProductSign]
+isMixIdOrCross (Id ts cs) = 
+    not (null (tail ts)) || 
+	show ts `elem` ["<", productSign, altProductSign]
 
 isPartialColon t = showTok t == colonChar : partialSuffix 
 
-typeId c = do { i <- parseId  `checkWith` (not . isMixIdOrCross)
+sortId = parseId  `checkWith` (not . isMixIdOrCross)
+
+typeId c = do { i <- sortId
 	      ; if isPartialColon c then 
 		return (PartialType i) 
 		else return (Type i [])

@@ -1,26 +1,11 @@
 sort a = {a : b | a =e= b } 
-sort a = {a : b | a = e= b } 
-sort a = {x : b | (a = b) } 
-sort a = {x : b | (a, =, b) } 
-sort a = {x : b | (var y : b__a) } 
-sort a = {x : b | (op y : b__a) } 
-sort a = {x : b | (pred y : b__a) } 
-sort a = {a : b | a =e=< b }
-sort a = {x : b | ys as b}
-sort a = {x : b | (pred y : b__a) } 
-sort a = {x : b | (predy y : b__a) } 
-sort a = {x : b | (predy : b__a) } 
-sort a = {x : b | (predy : b__a) } 
-sort a = {x : b | exists1 (predy :: b__a) } 
-sort a = {x : b | exists predy : b__a . a } 
-
-
 
 sorts a ; %(bla)% c %{bla2}% 
 %[fdg]% %%
 sorts a < b %(dafasdf)%
 
 sorts a, b,c, d < e
-sorts a=b=c={}; %()%
-	b={a:s|b};
-sorts -__k __ = ==[__ __]__ = {} ; a={};d={}
+sorts a=b=c=d; %()%
+	b={a:s.b};
+sorts aa = bb = cc ; a=b ;d=c
+;op
