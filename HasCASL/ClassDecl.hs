@@ -128,6 +128,8 @@ mergeDefns ci (Intersection oldIs _) (Intersection is _) =
 	  then return ()
 	  else wrongClassDecl ci
 
+-- subclasses in an intersection type should be removed as well 
+
 mergeDefns ci _ _ = wrongClassDecl ci
 
 

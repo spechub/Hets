@@ -34,12 +34,11 @@ allSuperClasses :: ClassMap -> ClassId -> [ClassId]
 allSuperClasses ce ci = 
     let recurse = nub . concatMap (allSuperClasses ce) in
     case lookupFM ce ci of 
-    Just info -> nub $ ci:
-                      (case classDefn info of 
-		       Nothing -> []
-		       Just (Intersection cis _) -> recurse cis
-		       Just _ -> [])
-		       ++ recurse (superClasses info)
+    Just info -> nub $ (case classDefn info of 
+			Nothing -> [ci]
+			Just (Intersection cis _) -> recurse cis
+			Just _ -> [ci])
+		 ++ recurse (superClasses info)
     Nothing -> error "allSuperClasses"
 
 resolveClassSyn :: ClassMap -> ClassId -> [ClassId]
@@ -49,7 +48,9 @@ resolveClassSyn cMap ci =
     Just info -> case classDefn info of 
 		      Nothing -> [ci]
 		      Just (Intersection cis _) -> resolveClassSyns cMap cis
-		      Just _ -> []
+		      Just _ -> [ci]
+
+-- downsets should be expanded to a unique type string
 
 resolveClassSyns :: ClassMap -> [ClassId] -> [ClassId]
 resolveClassSyns cSyns cis = nub $ 
