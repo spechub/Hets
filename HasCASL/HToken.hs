@@ -126,3 +126,5 @@ typeId = mixId (hascasl_type_ops ++ hascasl_reserved_ops)
 -- no compound ids (just a word) 
 typeVarId :: GenParser Char st Token
 typeVarId = pToken scanWords
+
+classId = typeVarId

@@ -19,6 +19,7 @@ BASIC-ITEMS     ::= axiom/axioms AXIOM ;...; AXIOM ;/
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SIG-ITEMS       ::= sort/sorts SORT-ITEM ; ... ; SORT-ITEM
+		  | type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
 		  | type/types TYPE-ITEM ; ... ; TYPE-ITEM ;/
                   | type instance/instances TYPE-ITEM ; ... ; TYPE-ITEM ;/
                   | op/ops OP-ITEM ; ... ; OP-ITEM ;/
@@ -32,7 +33,6 @@ SORT-ITEM       ::= TYPE-PATTERN , ... , TYPE-PATTERN
 TYPE-ITEM       ::= SORT-ITEM
                   | TYPE-PATTERN , ... , TYPE-PATTERN : KIND
                   | TYPE-PATTERN := PSEUDOTYPE
-                  | DATATYPE-DECL
 
 TYPE-PATTERN      ::= TYPE-NAME 
                     | TYPE-NAME (TYPE-ARGS) ... (TYPE-ARGS)
@@ -76,7 +76,6 @@ CLASS-ITEM      ::= CLASS-DECL
 CLASS-DECL      ::= CLASS-NAME , ... , CLASS-NAME
                   | CLASS-NAME , ... , CLASS-NAME < CLASS
                   | CLASS-NAME = CLASS
-                  | CLASS-NAME = ... = CLASS-NAME
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
