@@ -1,10 +1,9 @@
 module Main where
 
 import System
-import Options
-import Common.Utils
 import Syntax.AS_Library
 import Common.ATerm.Lib
+import Common.Result
 import ATC.AS_Library
 import ATC.Sml_cats
 import WriteFn
@@ -27,6 +26,7 @@ readWriteATerm ld  = let  att1 = fst $ toShATerm emptyATermTable ld
 
 readWriteATerm' :: LIB_DEFN -> LIB_DEFN
 readWriteATerm' ld  = let  str = toShATermString ld
-                      in fromShATermString str
+                      in maybe (error "readWriteATerm'")
+			 id $ maybeResult $ fromShATermString str
 
 
