@@ -1,7 +1,12 @@
+- Named AHsDecls?
 
-- Wie werden die "Richtungen" der Kanten ausgedrueckt?
+- Was macht newNodes?
 
-- Wie ist G_sign etc. aus Logic.Grothendiek zu verstehen?
+- Hauptmodul als ersten Knoten? 
+  Importierte als folgende Knoten? 
+  Woher sign und sen fuer importierte?
 
-- Was sind Named sentences in Haskell?
+- in hasEnv2DG: ModuleInfo nur unvollstaendig
+
+
 
