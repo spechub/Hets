@@ -15,13 +15,11 @@ import Common.Lexer
 import Modal.AS_Modal
 import Common.AS_Annotation
 import Common.Lib.Parsec
-import CASL.ItemList
 
 -- aus CASL, kann bleiben
 basicSpec :: AParser BASIC_SPEC
-basicSpec = (fmap Basic_spec $ many1 $ 
-	    try $ annoParser basicItems)
-            <|> try (oBraceT >> cBraceT >> return (Basic_spec []))
+basicSpec = (fmap Basic_spec $ annosParser basicItems)
+            <|> (oBraceT >> cBraceT >> return (Basic_spec []))
 
 basicItems :: AParser BASIC_ITEMS
 basicItems = fmap Sig_items sigItems
