@@ -16,7 +16,8 @@ INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
 CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
 ## set ghc imports properly for your system
-DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.2/imports:${GHC_IMPORTS}'
+GHC_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
+DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${GHC_IMPORTS}'
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
@@ -46,6 +47,7 @@ DRIFT_OPTS  = +RTS -K10m -RTS
 
 ### list of directories to run checks in
 TESTDIRS    = Common CASL HasCASL
+
 
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
