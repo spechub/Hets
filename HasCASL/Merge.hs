@@ -181,10 +181,10 @@ mergeConstrInfos :: TypeMap -> [ConstrInfo] -> [ConstrInfo]
 mergeConstrInfos _ [] c2 = return c2
 mergeConstrInfos tm (c : r) c2 =
     do c3 <- mergeConstrInfos tm r c2
-       let cs = filter (isUnifiable tm 0 (constrType c) . constrType) c2
-       if null cs then 
-	   return (c : c3)
-	   else return c3
+       if any ( \ d -> isUnifiable tm 0 (constrType c) (constrType d)
+		       && constrId c == constrId d) c2 
+           then return c3
+	   else return (c : c3)
 
 instance Mergeable Term where
     merge t1 t2 = if t1 == t2 then return t1 
