@@ -17,6 +17,7 @@ module Comorphisms.CASL2HasCASL where
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
+import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Data.Dynamic
@@ -32,6 +33,7 @@ import HasCASL.Logic_HasCASL
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.Builtin
+import HasCASL.VarDecl
 import HasCASL.Unify
 import HasCASL.Symbol
 import HasCASL.SymbItem
@@ -88,33 +90,28 @@ fromOpType ot ok =
     in simpleTypeScheme $ if null args then res 
        else FunType arg arrow res []
 
-trOpType :: OpType -> OpInfo
-trOpType ot = OpInfo { opType = fromOpType ot (opKind ot),
-		       opAttrs = [],
-		       opDefn = NoOpDefn Op }
-
 fromPredType :: PredType -> TypeScheme
 fromPredType pt = 
     let args = map toType $ predArgs pt
         arg = mkProductType args []
     in simpleTypeScheme $ if null args then logicalType else predType arg
 
-trPredType :: PredType -> OpInfo
-trPredType pt = OpInfo { opType = fromPredType pt,
-		         opAttrs = [],
-		         opDefn = NoOpDefn Pred }
-
 mapSig :: Sign f e -> Env
-mapSig sign = initialEnv { 
-    classMap = Map.empty,
-    typeMap = Map.fromList $ map 
-       (\s -> (s, starTypeInfo 
-	       { superTypes = map toType $ Set.toList $ supersortsOf s sign
-	       })) $ Set.toList $ sortSet sign,
-    assumps = Map.map OpInfos $ Map.unionWith (++) opmap predmap }
-  where
-    opmap   = Map.map (map trOpType . Set.toList) $ opMap sign 
-    predmap = Map.map (map trPredType . Set.toList) $ predMap sign
+mapSig sign = 
+    let f1 = concatMap ( \ (i, s) -> 
+		   map ( \ ty -> (i, fromOpType ty (opKind ty), NoOpDefn Op))
+			 $ Set.toList s) $ Map.toList $ opMap sign
+	f2 = concatMap ( \ (i, s) -> 
+		   map ( \ ty -> (i, fromPredType ty, NoOpDefn Pred))
+			 $ Set.toList s) $ Map.toList $ predMap sign
+     in execState (mapM_ ( \ (i, sc, defn) -> addOpId i sc [] defn)
+		   (f2 ++ f1))
+     initialEnv { classMap = Map.empty,
+		  typeMap = Map.fromList $ map 
+		  ( \ s -> (s, starTypeInfo 
+			    { superTypes = map toType 
+			    $ Set.toList $ supersortsOf s sign
+			    })) $ Set.toList $ sortSet sign }
 
 mapMor :: CasM.Morphism f e m -> Morphism
 mapMor m = let tm = CasM.sort_map m 
