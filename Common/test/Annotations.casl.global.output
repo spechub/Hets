@@ -34,14 +34,14 @@
 %floating __frac__, __exp__
 *** Hint 1.1, ignoring annotation '%% many legal annotations for testing purposes'
 *** Hint 2.1, ignoring annotation '%{group comment 
-%{
-  over many lines
-%% } % }%'
+  %{
+    over many lines
+  %% } % }%'
 *** Hint 7.1, ignoring annotation '%%line comment starting immidiately after %%containing %{ }% , ending in %%'
 *** Hint 11.1, ignoring annotation '%(one_line_label)%'
 *** Hint 13.1, ignoring annotation '%(multi 
-  line
-  label)%'
+    line
+    label)%'
 *** Hint 26.1, ignoring annotation '%% one word annotes '
 *** Hint 27.1, ignoring annotation '%implies'
 *** Hint 28.1, ignoring annotation '%def'

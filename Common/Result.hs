@@ -33,7 +33,7 @@ maxdiags = 20
 
 -- | severness of diagnostic messages
 data DiagKind = FatalError | Error | Warning | Hint | Debug 
-              | MessageW -- ^ used for collection of messages in the Web interface
+              | MessageW -- ^ used for messages in the Web interface
                 deriving (Eq, Ord, Show)
 
 -- | a diagnostic message with a position
@@ -44,13 +44,25 @@ data Diagnosis = Diag { diagKind :: DiagKind
 
 -- | construct a message for a printable item that carries a position
 mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
-mkDiag k s a =
-    Diag k (s ++ " '" ++ showPretty a "'") $ getMyPos a 
+mkDiag k s a = let q = char '\'' in
+    Diag k (s ++ show (space <> q <> nest 2 (printText a) <> q)) $ getMyPos a
+
+-- | check whether a diagnosis is an error
+isErrorDiag :: Diagnosis -> Bool
+isErrorDiag d = case diagKind d of
+                FatalError -> True
+                Error -> True
+                _ -> False
 
 -- | Check whether a diagnosis list contains errors
 hasErrors :: [Diagnosis] -> Bool
-hasErrors = any (\d -> diagKind d `elem` [FatalError,Error])
+hasErrors = any isErrorDiag
 
+-- | adjust a null position of a diagnosis
+adjustDiagPos :: Pos -> Diagnosis -> Diagnosis
+adjustDiagPos p d = let o = diagPos d in 
+   d {diagPos = if o == nullPos then p else o}
+ 
 -- ---------------------------------------------------------------------
 -- uniqueness check
 -- ---------------------------------------------------------------------
@@ -190,10 +202,10 @@ maybePlainError def p s m =
 resultToMaybe :: Result a -> Maybe a
 resultToMaybe (Result ds val) = if hasErrors ds then Nothing else val
 
+-- | adjust positions of diagnoses
 adjustPos :: Pos -> Result a -> Result a
 adjustPos p r =
-  r {diags = map (\d -> d {diagPos = let o = diagPos d in 
-                           if o == nullPos then p else o}) (diags r)}
+  r {diags = map (adjustDiagPos p) $ diags r}
 
 -- | Propagate errors using the error function
 propagateErrors :: Result a -> a
@@ -206,6 +218,7 @@ propagateErrors r =
 -- instances for Result
 -- ---------------------------------------------------------------------
 
+-- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String
 showErr err
     = showPos (errorPos err) ":" ++ 
@@ -237,8 +250,7 @@ instance PrettyPrint a => PrettyPrint (Result a) where
 -- debugging
 -- ---------------------------------------------------------------------
 
-debug :: PrettyPrint a => Int -> (String,a) -> Result ()
-debug n (s,a) =
-  warning () (show (ptext ("Debug point " ++ show n) 
-                    $$ ptext ("Variable "++s++":") <+> printText a))
-          nullPos
+debug :: (PosItem a, PrettyPrint a) => Int -> (String, a) -> Result ()
+debug n (s, a) = Result [mkDiag Debug 
+                         (" point " ++ show n ++ "\nVariable "++s++":\n") a ]
+                 $ Just ()
