@@ -21,9 +21,10 @@ filterDecls (decl:decls) =
        (AHsDefaultDecl _ _) -> filterDecls decls
        (AHsInfixDecl _ _ _ _) -> filterDecls decls
        (AHsTypeSig _ _ _) -> filterDecls decls           -- skip: no sentences
-       (AHsFunBind matches) -> ( NamedSen { senName = funName matches, sentence = decl } )
-                             :(filterDecls decls)
-       (AHsPatBind _ pat _ _) -> ( NamedSen { senName = patName pat, sentence = decl } ):(filterDecls decls)
+       (AHsFunBind matches) -> ( NamedSen { senName = (show (1+(length decls))) ++ (funName matches), 
+                                            sentence = decl } ):(filterDecls decls)
+       (AHsPatBind _ pat _ _) -> ( NamedSen { senName =  (show (1+(length decls))) ++ (patName pat), 
+                                              sentence = decl } ):(filterDecls decls)
      where funName ((AHsMatch _ name _ _ _):rest) = show name
            patName pat =
              case pat of
