@@ -47,6 +47,7 @@ Usage: hets [OPTION...] file ... file
             OTYPE is (pp.(het|tex|html))
             |(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)
             |(graph.(dot|ps|davinci))
+	    |env
             (default: dg.taf)
 ?  -l id     --output-logic=id     select output logic and optional logic coding
                 mit Parsec (Token.simpleId) parsen
@@ -175,6 +176,7 @@ data ATType = BAF | NonBAF
 data OutType = PrettyOut PrettyType 
              | HetCASLOut HetOutType HetOutFormat
              | GraphOut GraphType
+	     | EnvOut
                deriving (Show, Eq)
 
 -- | 'PrettyType' describes the type of Output we want the Pretty-Printer 
@@ -228,7 +230,7 @@ options =
     , Option ['O'] ["output-dir"]  (ReqArg (\x -> OutDir x) "DIR")
       "destination directory for output files"
     , Option ['o'] ["output-types"] (ReqArg parseOutTypes "OTYPES")
-      "OTYPES of output files, a comma seperated list of OTYPE\n\tOTYPE is (pp.(het|tex|html))\n\t\t|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)\n\t\t|(graph.(dot|ps|davinci))\n\t\t(default: dg.taf)"
+      "OTYPES of output files, a comma seperated list of OTYPE\n\tOTYPE is (pp.(het|tex|html))\n\t\t|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)\n\t\t|(graph.(dot|ps|davinci))\n\t\t|env\n\t\t(default: dg.taf)"
     , Option ['p'] ["just-parse"]  (NoArg (Analysis Skip))
       "skip static analysis - just parse"
     , Option ['s'] ["just-structured"]  (NoArg (Analysis Structured))
@@ -344,6 +346,7 @@ parseOutType s
     | "dg."    `isPrefixOf` s =
         parseOutType' (parseOutFormat $ drop 3 s)
                       (HetCASLOut $ OutDGraph Full False)
+    | s == "env" = Just EnvOut
     | otherwise               = Nothing
     where
     parsePrettyType "het"  = Just PrettyAscii
