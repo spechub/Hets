@@ -53,12 +53,13 @@ preludeInfixDecls
                     ident "div", ident "mod", sym ":%", sym "%"],
        6 `toLeft` [sym "+", sym "-"],
        5 `toRight` [sym "++", sym ":"], 
-       4 `noSide`  [sym "==", sym "/=", sym "<", sym "<=",
+       4 `noSide`  [sym "==", sym "/=", sym "<", sym "<=", sym "===",
                    sym ">=", sym ">", ident "elem", ident "notElem"],
-       3 `toRight` [sym "&&"],
-       2 `toRight` [sym "||"],
+       3 `toRight` [sym "&&", sym "/\\"],
+       2 `toRight` [sym "||", sym "\\/"],
        1 `toLeft`  [sym ">>", sym ">>="],
-       1 `toRight` [sym "=<<"],
+       1 `toRight` [sym "=<<", sym "==>"],
+       1 `noSide`  [sym "<=>"],
        0 `toRight` [sym "$", sym "$!", ident "seq"]]
    where 
    sym name = AQual (AModule "Prelude") (AHsSymbol name)
@@ -73,6 +74,7 @@ preludeInfixDecls
 tyconsMembersHaskellPrelude :: [(AHsName, [AHsName])]
 tyconsMembersHaskellPrelude
     = ["Bool"     <== ["True", "False"],
+       (qualL "Logical", map qualL ["T", "F"]),
        "Maybe"    <== ["Nothing", "Just"],
        "Either"   <== ["Left", "Right"],
        "Ordering" <== ["LT", "EQ", "GT"],
@@ -80,6 +82,7 @@ tyconsMembersHaskellPrelude
        "[]"       <=* [":"]
       ] 
     where
+    qualL name =  AQual (AModule "Logical") (AHsIdent name)
     qual name = AQual (AModule "Prelude") (AHsIdent name)
     qualsym name = AQual (AModule "Prelude") (AHsSymbol name)
     qualspec name = AQual (AModule "Prelude") (AHsSpecial name)
@@ -824,7 +827,32 @@ preludeDefs
               (TGen 0 `fn` TGen 0 `fn` TGen 0))),
      (AQual (AModule "Prelude") (AHsSymbol "*")) :>: (Forall [Star]
              ([isIn1 cNum (TGen 0)] :=>
-              (TGen 0 `fn` TGen 0 `fn` TGen 0)))]
+              (TGen 0 `fn` TGen 0 `fn` TGen 0))),
+
+     (AQual (AModule "Logical") (AHsSymbol "\\/")) :>: (Forall [Star]
+             ([] :=>
+              (tLogical `fn` tLogical `fn` tLogical))),
+     (AQual (AModule "Logical") (AHsSymbol "/\\")) :>: (Forall [Star]
+             ([] :=>
+              (tLogical `fn` tLogical `fn` tLogical))),
+     (AQual (AModule "Logical") (AHsSymbol "==>")) :>: (Forall [Star]
+             ([] :=>
+              (tLogical `fn` tLogical `fn` tLogical))),
+     (AQual (AModule "Logical") (AHsSymbol "<=>")) :>: (Forall [Star]
+             ([] :=>
+              (tLogical `fn` tLogical `fn` tLogical))),
+     (AQual (AModule "Logical") (AHsSymbol "===")) :>: (Forall [Star]
+             ([] :=>
+              (TGen 0 `fn` TGen 0 `fn` tLogical))),
+     (AQual (AModule "Logical") (AHsIdent "allof")) :>: (Forall [Star]
+             ([] :=>
+              ((TGen 0 `fn` tLogical) `fn` tLogical))),
+     (AQual (AModule "Logical") (AHsIdent "exone")) :>: (Forall [Star]
+             ([] :=>
+              ((TGen 0 `fn` tLogical) `fn` tLogical))),
+     (AQual (AModule "Logical") (AHsIdent "ex")) :>: (Forall [Star]
+             ([] :=>
+              ((TGen 0 `fn` tLogical) `fn` tLogical)))]
 
 
 preludeDataCons :: [Assump] 
@@ -862,6 +890,8 @@ tShowS
 
 tBool
  = TCon (Tycon (AQual (AModule "Prelude") (AHsIdent "Bool")) Star)
+tLogical
+ = TCon (Tycon (AQual (AModule "Logical") (AHsIdent "Logical")) Star)
 falseCfun
  = (AQual (AModule "Prelude") (AHsIdent "False")) :>: (Forall []
                  ([] :=> 
@@ -2216,6 +2246,9 @@ instsShow
     mkInst []
      ([] :=> 
       isIn1 cShow tBool),
+    mkInst []
+     ([] :=> 
+      isIn1 cShow tLogical),
     mkInst [Star]
      ([isIn1 cShow (TGen 0)] :=> 
       isIn1 cShow (TAp tMaybe (TGen 0))),
