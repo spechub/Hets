@@ -13,7 +13,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCASL:../aterm_conv:../ghc:../Modal:../Haskell
+INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCASL:../aterm_conv:../ghc:../Modal:../Haskell:../GUI
 
 HC         = ghc
 PERL       = perl
@@ -173,6 +173,17 @@ wrap: ../Haskell/wrap
 hetpa: ../hetpa.hs $(drifted_files) ../*.hs 
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### HetCASL parser
+hetana: ../hetana.hs $(drifted_files) ../*.hs 
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### HetCASL with dev graph
+hetdg: ../GUI/hetdg.hs $(drifted_files) ../*.hs 
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)  -package-conf /home/till/CASL/uni/uni-package.conf  -package uni-davinci -package uni-server
+
 
 ### run tests in other directories
 check: hetcats

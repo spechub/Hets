@@ -63,16 +63,17 @@ import AS_Annotation
 import GlobalAnnotations
 import Result
 import Id
-import Set
+import FiniteSet
 import FiniteMap
+import List
 
 lookupNode n dg = lab' $ context n dg
 
-setFilter p s = mkSet (filter p (setToList s))
-setAny p s = any p (setToList s)
-s1 `disjoint` s2 = s1 `intersect` s2 == emptySet
+setFilter p s = fromList (List.filter p (toList s))
+setAny p s = any p (toList s)
+s1 `disjoint` s2 = s1 `intersection` s2 == FiniteSet.empty
 
-domFM m = mkSet (keysFM m)
+domFM m = fromList (keysFM m)
 
 ana_SPEC :: GlobalAnnos -> GlobalEnv -> DGraph -> NodeSig 
               -> Maybe SIMPLE_ID -> SPEC
@@ -284,8 +285,8 @@ ana_restr1 dg (G_sign lid sigma) (GMorphism lid1 lid2 r sigma1 mor)
   sis1 <- rcoerce lid1 lid' pos sis'
   rsys <- stat_symb_items lid1 sis1
   let sys = sym_of lid1 sigma1
-  let sys' = filter (\sy -> any (\rsy -> matches lid1 sy rsy) rsys) 
-                    (setToList sys)
+  let sys' = List.filter (\sy -> any (\rsy -> matches lid1 sy rsy) rsys) 
+                    (toList sys)
 --     if sys' `disjoint` () then return ()
 --      else plain_error () "attempt to hide symbols from the local environment" pos
   mor1 <- cogenerated_sign lid1 sys' sigma1
@@ -323,14 +324,14 @@ ana_RESTRICTION dg gSigma@(G_sign lid sigma) gSigma'@(G_sign lid' sigma')
      sis' <- rcoerce lid1 lid' (head (pos++nullPosList)) sis
      rmap <- stat_symb_map_items lid' sis'
      let sys'' = 
-          mkSet
-           [sy | sy <- setToList sys', rsy <- keysFM rmap, matches lid' sy rsy]
+          fromList
+           [sy | sy <- toList sys', rsy <- keysFM rmap, matches lid' sy rsy]
      sys1 <- rcoerce lid lid' (head (pos++nullPosList)) sys
         -- ??? this is too simple in case that local env is translated
         -- to a different logic
      if sys1 `disjoint` sys'' then return ()
       else plain_error () "attempt to hide symbols from the local environment" (head (pos++nullPosList))
-     mor1 <- generated_sign lid' (setToList (sys1 `union` sys'')) sigma'
+     mor1 <- generated_sign lid' (toList (sys1 `FiniteSet.union` sys'')) sigma'
      mor2 <- induced_from_morphism lid' rmap (dom lid' mor1)
      return (gEmbed (G_morphism lid' mor1),
              Just (gEmbed (G_morphism lid' mor2)))
