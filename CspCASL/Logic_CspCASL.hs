@@ -113,6 +113,8 @@ instance StaticAnalysis CspCASL Basic_CSP_CASL_C_SPEC () ()
          empty_signature CspCASL = emptyCSPSign
          inclusion CspCASL = sigInclusion computeExt isInclusion
          is_subsig CspCASL = isSubSig isInclusion
+         signature_union CspCASL sigma1 sigma2 = 
+           return $ addSig (\e _ -> e) sigma1 sigma2 -- ???
 
 instance Logic CspCASL ()
                Basic_CSP_CASL_C_SPEC () SYMB_ITEMS SYMB_MAP_ITEMS
