@@ -51,13 +51,8 @@ import Haskell.Hatchet.TidyModule (tidyModule,
 
 import Haskell.Hatchet.Class    (ClassHierarchy)
 
-import Haskell.Hatchet.Env      (listToEnv,
-                                 getNamesFromEnv,
-                                 Env,
-                                 envToList,
-                                 pprintEnv,
-                                 joinEnv,
-                                 showEnv)
+import Haskell.Hatchet.Env      (Env,
+                                 listToEnv)
 
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo(..))
 
@@ -69,26 +64,34 @@ import Static.DevGraph
 
 import Syntax.AS_Library
 
-import GHC.IOBase
+import Haskell.Hatchet.AnnotatedHsSyn
+
+import Logic.Grothendieck
+
+import Common.Lib.Graph
+
+import Common.Id
+
+-- import Haskell.Logic_Haskell
+
+data Haskell = Haskell deriving (Show)
 
 -- - Datentyp anlegen für HaskellEnv (Resultat von tiModule)
 data HaskellEnv = HasEnv Timing              -- timing values for each stage
-                         (Env Scheme)          -- output variable assumptions (may be local, and pattern variables) 
-                         (Env Scheme)          -- output data cons assumptions 
+                         (Env Scheme)        -- output variable assumptions (may be local, and pattern variables) 
+                         (Env Scheme)        -- output data cons assumptions 
                          ClassHierarchy      -- output class Hierarchy 
                          KindEnv             -- output kinds 
                          IdentTable          -- info about identifiers in the module
                          AHsModule           -- renamed module 
-                         [AHsDecl]          -- synonyms defined in this module
+                         [AHsDecl]           -- synonyms defined in this module
 
 
 anaHaskellFile :: HetcatsOpts -> String -> IO (Maybe (LIB_NAME, -- filename
                                                       HsModule, -- as tree
-                                                      String, --DGraph, -- development graph
-                                                      LibEnv -- DGraphs für importierte Module 
+                                                      DGraph,   -- development graph
+                                                      LibEnv    -- DGraphs für importierte Module 
                                                       ))
-anaHaskellFile ho s = returnIO Nothing
-
 anaHaskellFile opts srcFile = 
    do
      src <- readFile srcFile
@@ -141,9 +144,73 @@ anaHaskellFile opts srcFile =
      --in 
      return (Just(Lib_id(Indirect_link srcFile []), moduleSyntax, hasEnv2DG hasEnv, hasEnv2LG hasEnv))
 
+hasEnv2DG :: HaskellEnv -> DGraph
+hasEnv2DG (HasEnv 
+             _
+             moduleEnv
+             dataConEnv
+             classHier
+             kindInfoTable
+             moduleIds
+             (AHsModule name exps imps decls)
+             moduleSynonyms) =
 
-hasEnv2DG :: HaskellEnv -> String -- DGraph
-hasEnv2DG he = ""
+               let modInfo = ModuleInfo {
+                     moduleName = name,
+                     varAssumps = moduleEnv,
+                     dconsAssumps = dataConEnv,
+                     classHierarchy = classHier,
+                     kinds = kindInfoTable,
+                     synonyms = moduleSynonyms,
+                     infixDecls = [],
+                     tyconsMembers = [] }
+                   mod = AHsModule name exps imps decls
+               in
+                   hsMod2DG mod modInfo
+
+hsMod2DG :: AHsModule -> ModuleInfo -> DGraph
+hsMod2DG (AHsModule name _ imps decls) modInfo = 
+       let node_contents  | imps == [] =
+                             DGNode {
+                               dgn_name = aHsMod2SimpleId name,
+                               dgn_sign = G_sign Haskell modInfo,
+                               dgn_sens = G_l_sentence Haskell [],
+                               dgn_origin = DGBasic }
+                          | otherwise =
+                             DGNode {
+                               dgn_name = aHsMod2SimpleId name,
+                               dgn_sign = G_sign Haskell modInfo,
+                               dgn_sens = G_l_sentence Haskell [],
+                               dgn_origin = DGExtension }
+           dg = buildGr []
+           [node] = newNodes 0 dg
+           dg' = insNode (node,node_contents) dg
+           link = createDGLink imps
+           dg'' = insEdge (node,node,link) dg'
+        in
+           buildGr []
+
+createDGLink :: [AHsImportDecl] -> DGLinkLab
+createDGLink _ = DGLink  {
+                  dgl_morphism = (),
+                  dgl_type = GlobalDef,
+                  dgl_origin = DGExtension }
+
+aHsMod2SimpleId :: AModule -> Maybe SIMPLE_ID
+aHsMod2SimpleId (AModule name) = Just (Token { tokStr = name, tokPos = nullPos })
+                              
+
+-- newtype AModule = AModule String
+--   deriving (Eq,Ord,Show)
+
+-- data AHsModule = AHsModule AModule (Maybe [AHsExportSpec])
+--                          [AHsImportDecl] [AHsDecl]
+--   deriving Show
+
+-- data AHsImportDecl
+-- 	 = AHsImportDecl ASrcLoc AModule Bool (Maybe AModule)
+-- 	                (Maybe (Bool,[AHsImportSpec]))
+--   deriving (Eq,Show)
 
 hasEnv2LG :: HaskellEnv -> LibEnv
 hasEnv2LG _ = emptyLibEnv
@@ -157,17 +224,3 @@ parseHsSource s = case parse s (SrcLoc 1 1) 0 [] of
                       Ok state e -> e
                       Failed err -> error err
 
--- - anaHaskellFile benötigt Funktion, die ein HaskellEnv in einen
---   DGraph konvertiert (siehe Statc/DevGaph.hs)
---   Graph-Bibliothek (functional graph library, fgl): Common/Lib/Graph
---   Knoten: sind die Haskell-Module
---     dgn_name = Modulname
---     dgn_sign = Signatur (HsDecls)
---     dgn_sens = Programmdefs
---     dgn_origin = DGBasic (bei keinen Importen)
---                = DGExtension (bei Importen)
---   Kanten: entlang der Modul-Importe (d.h. vom importierten zum Importeur)
---    dgl_morphism = ()  (siehe Logic_Haskell.hs)
---    dgl_type = GlobalDef, wenn nichts versteckt wird
---             = HidingDef, wenn etwas versteckt wird
---    dgl_origin = DGExtension
