@@ -208,12 +208,14 @@ ana_LIB_ITEM :: LogicGraph -> AnyLogic -> HetcatsOpts
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l  
              (Spec_defn spn gen asp pos) = do
   let just_struct = analysis opts == Structured
-  ioToIORes (putIfVerbose opts 1  ("Analyzing spec " ++ showPretty spn ""))
+      analyseMessage = "Analyzing spec " ++ showPretty spn ""
+  ioToIORes (putIfVerbose opts 1  analyseMessage)
   (gen',(imp,params,parsig,allparams),dg') <- 
      resToIORes (ana_GENERICITY lgraph gctx l just_struct gen)
   (sp',body,dg'') <- 
      resToIORes (ana_SPEC lgraph (gannos,genv,dg') 
                           allparams (Just spn) just_struct (item asp))
+  resToIORes $ message () analyseMessage
   let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
   if Map.member spn genv 
    then resToIORes (plain_error (libItem',gctx,l,libenv)

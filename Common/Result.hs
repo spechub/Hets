@@ -33,6 +33,7 @@ maxdiags = 20
 
 -- | severness of diagnostic messages
 data DiagKind = FatalError | Error | Warning | Hint | Debug 
+	      | MessageW -- ^ used for collection of messages in the Web interface
 		deriving (Eq, Ord, Show)
 
 -- | a diagnostic message with a position
@@ -162,6 +163,9 @@ hint x s p = Result [Diag Hint s p] $ Just x
 phint :: a -> Doc -> Pos -> Result a
 phint x s p = hint x (show s) p
 
+-- | add a message
+message :: a -> String -> Result a
+message x m = Result [Diag MessageW m nullPos] $ Just x
 
 -- | add a fatal error message to a failure (Nothing)
 maybeToResult :: Pos -> String -> Maybe a -> Result a

@@ -566,7 +566,7 @@ showDiags opts ds = do
         relevantDiagKind Warning = (verbose opts) >= 1
         relevantDiagKind Hint = (verbose opts) >= 2
         relevantDiagKind Debug  = (verbose opts) >= 3
-
+        relevantDiagKind MessageW = False
 
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags1 :: HetcatsOpts -> IOResult a -> IOResult a
@@ -584,3 +584,6 @@ showDiags1 opts res = do
         relevantDiagKind Warning = (verbose opts) >= 1
         relevantDiagKind Hint = (verbose opts) >= 2
         relevantDiagKind Debug  = (verbose opts) >= 3
+        relevantDiagKind MessageW = False
+
+
