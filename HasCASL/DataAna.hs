@@ -16,15 +16,13 @@ module HasCASL.DataAna where
 import HasCASL.As
 import Common.Id
 import Common.Lib.State
-import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Result
 import HasCASL.Le
 import HasCASL.TypeAna
 import HasCASL.AsUtils
 import HasCASL.Unify
 import Data.Maybe
-import Data.List
-
 
 anaAlts :: [(Id, Type)] -> Type -> [Alternative] -> State Env [AltDefn]
 anaAlts tys dt alts = 
@@ -123,7 +121,8 @@ checkMonomorphRecursion t (i, rt) = do
 
 unboundTypevars :: [TypeArg] -> Type -> State Env (Maybe Type)
 unboundTypevars args ct = do 
-    let restVars = varsOf ct \\ args
+    let restVars = Set.toList 
+		   (Set.fromList (varsOf ct) Set.\\ (Set.fromList args))
     if null restVars then do return $ Just ct
        else do addDiags [Diag Error ("unbound type variable(s)\n\t"
 				     ++ showSepList ("," ++) showPretty 
