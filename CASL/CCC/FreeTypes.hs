@@ -10,13 +10,13 @@
 
 -}
 {- todo
-  add diagnostic messages. Change result type to Result (Maybe Bool) (see Common/Result.hs,
-  function warning, extract pos from FORMULA or TERM, take the head of the list [pos]).
-  i.e. instead of Just False, return
-     warning (Just False) "sort s is not inhabited" pos
-  similarly for Nothing
-  instead of Just True, take
-     return (Just True)
+  automatic termination proof
+  look at
+  http://www.dsic.upv.es/~slucas/csr/termination/muterm/
+  topic: prove termination of rewriting
+
+  write interface to mu-term system 
+
 
   extend function checkFreeType by
   for each axiom, let f be the function/predicate application of the
