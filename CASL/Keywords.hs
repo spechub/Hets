@@ -1,4 +1,4 @@
-
+{-# OPTIONS -fno-warn-missing-signatures #-}
 {- HetCATS/CASL/Keywords.hs
    $Id$
    Authors: Christian Maeder
@@ -14,98 +14,80 @@
 
 module Keywords where
 
+import Prelude(String)
 -- ----------------------------------------------
 -- casl special strings 
 -- ----------------------------------------------
 
-exMark = "!" -- in "exists!"
-quMark = "?"
-funS = "->"
-prodS = "*"
-timesS = "\215"
-lessS = "<"
-colonS = ":"
+exMark :: String = "!" -- in "exists!"
+quMark :: String = "?"
+funS :: String = "->"
+prodS :: String = "*"
+timesS :: String = "\215"
+lessS :: String = "<"
+colonS :: String = ":"
 
 -- ----------------------------------------------
 -- casl keywords
 -- ----------------------------------------------
 
-dotS = "."
-cDot = "\183"
-barS = "|"
-mapsTo = "|->"
-defnS = "::="
-casl_reserved_ops :: [String]
-casl_reserved_ops = [colonS, colonS++quMark, defnS, dotS, cDot, barS, mapsTo]
+dotS :: String = "."
+cDot :: String = "\183"
+barS :: String = "|"
+mapsTo :: String = "|->"
+defnS :: String = "::="
 
-equalS = "="
-exEqual = "=e="  -- unusual keyword 
-implS = "=>"
-equivS = "<=>"
-negS = "\172"
-lAnd = "/\\"   -- logical and/or
-lOr = "\\/"
+equalS :: String = "="
+exEqual :: String = "=e="  -- unusual keyword 
+implS :: String = "=>"
+equivS :: String = "<=>"
+negS :: String = "\172"
+lAnd :: String = "/\\"   -- logical and/or
+lOr :: String = "\\/"
 
--- these signs are legal in terms, but illegal in declarations
-formula_ops :: [String]
-formula_ops = [equalS, implS, equivS, lOr, lAnd, negS] 
+defS :: String = "def"
+elseS :: String = "else"
+falseS :: String = "false"
+ifS :: String = "if"
+notS :: String = "not"
+trueS :: String = "true"
+whenS :: String = "when"
 
-defS = "def"
-elseS = "else"
-falseS = "false"
-ifS = "if"
-notS = "not"
-trueS = "true"
-whenS = "when"
-
--- these words are legal in terms, but illegal in declarations
-formula_words = [defS, elseS, ifS, whenS, falseS, notS, trueS]
-
-andS = "and"
-archS = "arch"
-asS = "as"
-assocS = "assoc"
-axiomS = "axiom"
-sS = "s" 
-varS = "var"
-predS = "pred"
-opS = "op"
-closedS = "closed"
-commS = "comm"
-endS = "end"
-existsS = "exists"
-forallS = "forall"
-fitS = "fit"
-freeS = "free"
-fromS = "from"
-generatedS = "generated"
-getS = "get"
-givenS = "given" 
-hideS = "hide"
-idemS = "idem"
-inS = "in"
-lambdaS = "lambda"
-libraryS = "library"
-localS = "local"
-resultS = "result"
-revealS = "reveal" 
-sortS = "sort"
-specS = "spec"
-thenS = "then"
-toS = "to"
-typeS = "type"
-unitS = "unit"
-versionS = "version"
-viewS = "view"
-withS = "with"
-withinS = "within"
-
--- letter keywords
-casl_reserved_words :: [String]
-casl_reserved_words =
-    [andS, archS, asS, assocS, axiomS, axiomS ++ sS, closedS, commS, endS, 
-    existsS, fitS, forallS, freeS, fromS, generatedS, getS, givenS,
-    hideS, idemS, inS, lambdaS, libraryS, localS, 
-    opS, opS ++ sS, predS, predS ++ sS, resultS, revealS, sortS, 
-    sortS ++ sS, specS, thenS, toS, typeS, typeS ++ sS, 
-    unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
+andS :: String = "and"
+archS :: String = "arch"
+asS :: String = "as"
+assocS :: String = "assoc"
+axiomS :: String = "axiom"
+sS :: String = "s" 
+varS :: String = "var"
+predS :: String = "pred"
+opS :: String = "op"
+closedS :: String = "closed"
+commS :: String = "comm"
+endS :: String = "end"
+existsS :: String = "exists"
+forallS :: String = "forall"
+fitS :: String = "fit"
+freeS :: String = "free"
+fromS :: String = "from"
+generatedS :: String = "generated"
+getS :: String = "get"
+givenS :: String = "given" 
+hideS :: String = "hide"
+idemS :: String = "idem"
+inS :: String = "in"
+lambdaS :: String = "lambda"
+libraryS :: String = "library"
+localS :: String = "local"
+resultS :: String = "result"
+revealS :: String = "reveal" 
+sortS :: String = "sort"
+specS :: String = "spec"
+thenS :: String = "then"
+toS :: String = "to"
+typeS :: String = "type"
+unitS :: String = "unit"
+versionS :: String = "version"
+viewS :: String = "view"
+withS :: String = "with"
+withinS :: String = "within"

@@ -30,12 +30,15 @@ TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR
    SIMPLE-TOKEN ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR   
                   | NO-BRACKET-SIGNS
   
-   SIGNS = BRACKETS SIMPLE-TOKEN BRACKETS ... BRACKETS SIMPLE-TOKEN
-         | BRACKETS SIMPLE-TOKEN BRACKETS ... BRACKETS SIMPLE-TOKEN BRACKETS
-	 | SIMPLE-TOKEN BRACKETS ... BRACKETS SIMPLE-TOKEN
-	 | SIMPLE-TOKEN BRACKETS ... BRACKETS SIMPLE-TOKEN BRACKETS
-	 | BRACKETS
-	 | SIMPLE-TOKEN
+   STB ::= SIMPLE-TOKEN BRACKETS
+   BST ::= BRACKETS SIMPLE-TOKEN
+  
+   SIGNS ::= BRACKETS 
+           | BRACKETS STB ... STB
+           | BRACKETS STB ... STB SIMPLE-TOKEN
+           | SIMPLE-TOKEN
+           | SIMPLE-TOKEN BST ... BST 
+           | SIMPLE-TOKEN BST ... BST BRACKETS
 
    A SIMPLE-TOKEN followed by "[" outside nested brackets 
    will be taken as the beginning of a compound list.
@@ -58,7 +61,9 @@ TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR
    The IDs within the compound list may surely be compound IDs again.
 -}
 
-module Token (scanWords, scanSigns, parseId, sortId, varId) 
+module Token ( casl_reserved_ops, casl_reserved_words
+             , formula_ops, formula_words
+             , scanWords, scanSigns, parseId, sortId, varId) 
     where
 
 import Keywords
@@ -71,39 +76,67 @@ import ParsecCombinator (many1, option)
 -- casl keyword handling
 -- ----------------------------------------------
 
+casl_reserved_ops :: [String]
+casl_reserved_ops = [colonS, colonS++quMark, defnS, dotS, cDot, barS, mapsTo]
+
+scanTermSigns :: GenParser Char st String
 scanTermSigns = reserved casl_reserved_ops scanAnySigns
 
+-- these signs are legal in terms, but illegal in declarations
+formula_ops :: [String]
+formula_ops = [equalS, implS, equivS, lOr, lAnd, negS] 
+
+scanSigns :: GenParser Char st String
 scanSigns = reserved formula_ops scanTermSigns
 
+-- letter keywords
+casl_reserved_words :: [String]
+casl_reserved_words =
+    [andS, archS, asS, assocS, axiomS, axiomS ++ sS, closedS, commS, endS, 
+    existsS, fitS, forallS, freeS, fromS, generatedS, getS, givenS,
+    hideS, idemS, inS, lambdaS, libraryS, localS, 
+    opS, opS ++ sS, predS, predS ++ sS, resultS, revealS, sortS, 
+    sortS ++ sS, specS, thenS, toS, typeS, typeS ++ sS, 
+    unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
+
+scanTermWords :: GenParser Char st String
 scanTermWords = reserved casl_reserved_words scanAnyWords 
 
-scanWords = reserved formula_words scanTermWords
+-- these words are legal in terms, but illegal in declarations
+formula_words :: [String]
+formula_words = [defS, elseS, ifS, whenS, falseS, notS, trueS]
 
+scanWords :: GenParser Char st String
+scanWords = reserved formula_words scanTermWords
 
 -- ----------------------------------------------
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
-
 -- simple id (but more than only words)
+sid :: GenParser Char st Token
 sid = pToken (scanQuotedChar <|> scanDotWords 
 		 <|> scanDigit <|> scanSigns 
 		 <|> scanWords <?> "simple-id")
 
 -- balanced mixfix-components {...}, [...]
+braced, noComp :: GenParser Char st [Token]
 braced = begDoEnd oBraceT innerList cBraceT
 noComp = begDoEnd oBracketT innerList cBracketT
 
 -- alternating sid and other mixfix components (including places)
 -- no two sid stand side by side
+innerMix1, innerMix2 :: GenParser Char st [Token]
 innerMix1 = sid <:> option [] innerMix2
 innerMix2 = flat (many1 (braced <|> noComp <|> many1 placeT))
             <++> option [] innerMix1
 
 -- ingredients starting either with an sid or brackets, braces or place 
+innerList :: GenParser Char st [Token]
 innerList =  option [] (innerMix1 <|> innerMix2 <?> "token")
 
 -- a mixfix component starting with an sid (outside innerList)
+topMix1, topMix2, topMix3 :: GenParser Char st [Token]
 topMix1 = sid <:> option [] topMix2
 
 -- following an sid only braced mixfix-components are acceptable
@@ -113,6 +146,7 @@ topMix2 = flat (many1 braced) <++> option [] topMix1
 -- square brackets (as mixfix component) are ok following a place 
 topMix3 = noComp <++> flat (many braced) <++> option [] topMix1
 
+afterPlace, middle, tokStart :: GenParser Char st [Token]
 afterPlace = topMix1 <|> topMix2 <|> topMix3
 
 -- places and something balanced possibly including places as well  
@@ -122,6 +156,7 @@ middle = many1 placeT <++> option [] afterPlace
 tokStart = afterPlace <++> flat (many middle)
 
 -- at least two places on its own or a non-place possibly preceded by places 
+start :: GenParser Char st [Token]
 start = tokStart <|> placeT <:> (tokStart <|> 
 				 many1 placeT <++> option [] tokStart)
         <?> "id"
@@ -132,22 +167,21 @@ start = tokStart <|> placeT <:> (tokStart <|>
 
 -- a compound list
 comps :: GenParser Char st ([Id], [Pos])
-comps = do { o <- oBracketT 
-	   ; (is, cs) <- parseId `separatedBy` commaT
-	   ; c <- cBracketT
-	   ; return (is, tokPos o : map tokPos cs ++ [tokPos c])
-	   } <?> "[<id>,...,<id>]"
+comps = do o <- oBracketT 
+	   (is, cs) <- parseId `separatedBy` commaT
+	   c <- cBracketT
+	   return (is, tokPos o : map tokPos cs ++ [tokPos c])
+	<?> "[<id>,...,<id>]"
 
 -- a compound list does not follow a place
 -- but after a compound list further places may follow
 parseId :: GenParser Char st Id
-parseId = do { l <- start
-             ; if isPlace (last l) then return (Id l [] [])
-	       else (do { (c, p) <- option ([], []) comps
-			; u <- many placeT
-			; return (Id (l++u) c p)
-			})
-	     }
+parseId = do l <- start
+             if isPlace (last l) then return (Id l [] [])
+	       else (do (c, p) <- option ([], []) comps
+			u <- many placeT
+			return (Id (l++u) c p)
+		    )
 
 -- ----------------------------------------------
 -- SORT Ids
@@ -158,10 +192,9 @@ parseId = do { l <- start
 
 -- sortIds are words, but possibly compound ids
 sortId :: GenParser Char st Id
-sortId = do { s <- pToken scanWords
-	    ; (c, p) <- option ([], []) comps
-	    ; return (Id [s] c p)
-	    }
+sortId = do s <- pToken scanWords
+	    (c, p) <- option ([], []) comps
+	    return (Id [s] c p)
 
 -- ----------------------------------------------
 -- VAR Ids

@@ -38,16 +38,19 @@ import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
 -- ----------------------------------------------
 -- no-bracket-signs
 -- ----------------------------------------------
+signChars :: String
 signChars = "!#$&*+-./:<=>?@\\^|~" ++ "°¢£ß©¨∞±≤≥µ∂∑πø◊˜"
 
 -- "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
 -- \172 neg \183 middle dot \215 times 
 
+scanAnySigns :: GenParser Char st String
 scanAnySigns = many1 (oneOf signChars <?> "casl sign") <?> "signs"
 
 -- ----------------------------------------------
 -- casl letters
 -- ----------------------------------------------
+caslLetters :: String
 caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++ 
 	      "¿¡¬√ƒ≈∆«»… ÀÃÕŒœ—“”‘’÷ÿŸ⁄€‹›ﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ¯˘˙˚¸˝ˇ"
 
@@ -57,6 +60,7 @@ caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++
 caslLetter :: GenParser Char st Char
 caslLetter = oneOf caslLetters <?> "casl letter"
 
+prime :: GenParser Char st Char
 prime = char '\'' -- also used for quoted chars
 
 scanLPD :: GenParser Char st Char
@@ -106,36 +110,38 @@ p `enclosedBy` q = begDoEnd q p q
 
 checkWith :: (Show a) => GenParser tok st a -> (a -> Bool) 
 	  -> GenParser tok st a
-p `checkWith` f = do { x <- p
-		     ; if f x then return x else 
+p `checkWith` f = do x <- p
+		     if f x then return x else 
 		       consumeNothing >> unexpected (show x)
-		     }
 
 separatedBy :: GenParser tok st a -> GenParser tok st b 
 	    -> GenParser tok st ([a], [b])
-p `separatedBy`  s = do { r <- p
-			; option ([r], []) 
-			  (do { t <- s
-                              ; (es, ts) <- separatedBy p s
-                              ; return (r:es, t:ts)
-                              })
-			}
+p `separatedBy`  s = do r <- p
+			option ([r], []) 
+			  (do t <- s
+                              (es, ts) <- separatedBy p s
+                              return (r:es, t:ts))
 
 -- ----------------------------------------------
 -- casl words
 -- ----------------------------------------------
 
+scanLetterWord :: GenParser Char st String
 scanLetterWord = caslLetter <:> many scanLPD <?> "letter word"
 
+singleUnderline :: GenParser Char st Char
 singleUnderline = char '_' `followedWith` scanLPD
 
+scanUnderlineWord :: GenParser Char st String
 scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "underline word"
 
 scanAnyWords :: GenParser Char st String
 scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord) <?> "words"
 
+scanDot :: GenParser Char st Char
 scanDot = char '.' `followedWith` caslLetter
 
+scanDotWords :: GenParser Char st String
 scanDotWords = scanDot <:> scanAnyWords <?> "dot-words"
 
 -- ----------------------------------------------
@@ -146,15 +152,20 @@ scanDotWords = scanDot <:> scanAnyWords <?> "dot-words"
 value :: Int -> String -> Int
 value base s = foldl (\x d -> base*x + (digitToInt d)) 0 s
 
+simpleEscape :: GenParser Char st String
 simpleEscape = single (oneOf "'\"\\ntrvbfa?")
 
+decEscape :: GenParser Char st String
 decEscape = count 3 digit `checkWith` \s -> value 10 s <= 255
 
+hexEscape :: GenParser Char st String
 hexEscape = char 'x' <:> count 2 hexDigit -- cannot be too big
 
+octEscape :: GenParser Char st String
 octEscape = char 'o' <:> 
 	    count 3 octDigit `checkWith` \s -> value 8 s <= 255
 
+escapeChar :: GenParser Char st String
 escapeChar = char '\\' <:> 
 	     (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)
 
@@ -162,13 +173,18 @@ escapeChar = char '\\' <:>
 -- chars for quoted chars and literal strings
 -- ----------------------------------------------
 
+printable :: GenParser Char st String
 printable = single (satisfy (\c -> (c /= '\'')  && (c /= '"') 
 			      && (c /= '\\') && (c > '\026')))
 
+caslChar :: GenParser Char st String
 caslChar = escapeChar <|> printable
 
-scanQuotedChar = (caslChar <|> string "\"") `enclosedBy` prime <?> "quoted char"
+scanQuotedChar :: GenParser Char st String
+scanQuotedChar = (caslChar <|> string "\"") `enclosedBy` prime 
+		 <?> "quoted char"
 
+scanString :: GenParser Char st String
 scanString = flat (many (caslChar <|> string "'")) `enclosedBy` char '"'
 	     <?> "literal string"
 
@@ -176,8 +192,10 @@ scanString = flat (many (caslChar <|> string "'")) `enclosedBy` char '"'
 -- digit, number, fraction, float
 -- ----------------------------------------------
 
+getNumber :: GenParser Char st String
 getNumber = many1 digit
 
+scanFloat :: GenParser Char st String
 scanFloat = getNumber <++> option "" 
 	     (char '.' <:> getNumber
 	      <++> option "" 
@@ -191,8 +209,10 @@ scanDigit = single digit
 -- nested comment outs
 -- ----------------------------------------------
 
+notEndText :: Char -> GenParser Char st Char
 notEndText c = try (char c << notFollowedBy (char '%'))
 
+nestCommentOut :: GenParser Char st Char
 nestCommentOut = try (string "%[") >> 
 		 many (noneOf "]%" 
 		       <|> notEndText ']'
@@ -204,6 +224,7 @@ nestCommentOut = try (string "%[") >>
 -- skip whitespaces and nested comment out
 -- ----------------------------------------------
 
+newlineChars, blankChars :: String
 newlineChars = "\n\r"
 blankChars = "\t\v\f \160" -- non breaking space
 
@@ -212,14 +233,14 @@ skip = skipMany(oneOf (newlineChars ++ blankChars)
 		       <|> nestCommentOut <?> "") >> return () 
 
 -- only skip to an annotation if it's on the same line
-skipSmart = do {p <- getPosition
-	       ; try (do { skip
-			 ; q <- getPosition
-			 ; if sourceLine q == sourceLine p then return ()
+skipSmart :: GenParser Char st ()
+skipSmart = do p <- getPosition
+	       try (do skip
+		       q <- getPosition
+		       if sourceLine q == sourceLine p then return ()
 			   else notFollowedBy (char '%') >> return ()
-			 })
+		   )
 		<|> return ()
-	       }
 
 -- ----------------------------------------------
 -- keywords WORDS or NO-BRACKET-SIGNS 
@@ -248,6 +269,7 @@ pluralKeyword :: String -> GenParser Char st Token
 pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
 
 -- check for keywords (depending on lexem class)
+toKey :: String -> GenParser Char st String
 toKey s = let p = string s in 
 	      if last s `elem` "[]{}(),;" then p 
 		 else if last s `elem` signChars then keySign p 
@@ -255,6 +277,9 @@ toKey s = let p = string s in
 
 asKey :: String -> GenParser Char st Token
 asKey = pToken . toKey
+
+commaT, semiT, oBracketT, cBracketT :: GenParser Char st Token
+oBraceT, cBraceT, oParenT, cParenT, placeT :: GenParser Char st Token
 
 commaT = asKey ","
 semiT = asKey ";"
@@ -266,6 +291,8 @@ cBraceT = asKey "}"
 oParenT = asKey "("
 cParenT = asKey ")"
 
+placeS :: GenParser Char st String
 placeS = string place
+
 placeT = pToken (try (placeS) <?> place)
 

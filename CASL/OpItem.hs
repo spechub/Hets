@@ -27,23 +27,25 @@ import SortItem
 import List
 
 -- stupid cast
+argDecl :: GenParser Char st ARG_DECL
 argDecl = fmap (\(Var_decl vs s ps) -> Arg_decl vs s ps) varDecl
 
 -- non-empty
-predHead = do { o <- oParenT
-	      ; (vs, ps) <- argDecl `separatedBy` semiT
-	      ; p <- cParenT
-	      ; return (Pred_head vs (map tokPos (o:ps++[p])))
-	      }
+predHead :: GenParser Char st PRED_HEAD
+predHead = do o <- oParenT
+	      (vs, ps) <- argDecl `separatedBy` semiT
+	      p <- cParenT
+	      return (Pred_head vs (map tokPos (o:ps++[p])))
 
-opHead = do { Pred_head vs ps <- predHead
-	    ; c <- colonST
-	    ; (b, s, _) <- opSort
-	    ; let qs = ps ++ [tokPos c] in 
+opHead :: GenParser Char st OP_HEAD
+opHead = do Pred_head vs ps <- predHead
+	    c <- colonST
+	    (b, s, _) <- opSort
+	    let qs = ps ++ [tokPos c] in 
 	      return (if b then Partial_op_head vs s qs
-	         else Total_op_head vs s qs)
-	    }
+	              else Total_op_head vs s qs)
 
+opAttr :: GenParser Char st (OP_ATTR, Token)
 opAttr =    do p <- asKey assocS
 	       return (Assoc_op_attr, p)
 	    <|> 
@@ -57,51 +59,48 @@ opAttr =    do p <- asKey assocS
 	       t <- term
 	       return (Unit_op_attr t, p)
 
+isConstant :: OP_TYPE -> Bool
 isConstant(Total_op_type [] _ _) = True
 isConstant(Partial_op_type [] _ _) = True
 isConstant _ = False
 
+toHead :: Pos -> OP_TYPE -> OP_HEAD
 toHead c (Total_op_type [] s _) = Total_op_head [] s [c] 
 toHead c (Partial_op_type [] s _) = Partial_op_head [] s [c] 
 toHead _ _ = error "toHead got non-empty argument type"
 
 opItem :: GenParser Char st OP_ITEM 
-opItem = do { (os, cs)  <- parseId `separatedBy` commaT
-	    ; if length os == 1 then 
-	      do { c <- colonST
-		 ; t <- opType
-		 ; if isConstant t then 
+opItem = do (os, cs)  <- parseId `separatedBy` commaT
+	    if length os == 1 then 
+	      do c <- colonST
+		 t <- opType
+		 if isConstant t then 
 		   opBody (head os) (toHead (tokPos c) t)
 		   <|> opAttrs os t [c]  -- this always succeeds
 		   else opAttrs os t [c]
-		 }
 	      <|>
-	      do { h <- opHead
-		 ; opBody (head os) h
-		 }
+	      do h <- opHead
+		 opBody (head os) h
 	      else
-	      do { c <- colonST
-		 ; t <- opType
-		 ; opAttrs os t (cs++[c])
-		 }
-	    }
+	      do c <- colonST
+		 t <- opType
+		 opAttrs os t (cs++[c])
 
-opBody o h = do { e <- equalT
-		; a <- annos
-		; t <- term
-		; return (Op_defn o h (Annoted t [] a []) [tokPos e])
-		}
+opBody :: OP_NAME -> OP_HEAD -> GenParser Char st OP_ITEM
+opBody o h = do e <- equalT
+		a <- annos
+		t <- term
+		return (Op_defn o h (Annoted t [] a []) [tokPos e])
 	  
-
-opAttrs os t c = do { q <- commaT 
-		    ; (as, cs) <- opAttr `separatedBy` commaT
-		    ; let ps = sort (map tokPos (c ++ map snd as ++ (q:cs)))
+opAttrs :: [OP_NAME] -> OP_TYPE -> [Token] -> GenParser Char st OP_ITEM
+opAttrs os t c = do q <- commaT 
+		    (as, cs) <- opAttr `separatedBy` commaT
+		    let ps = sort (map tokPos (c ++ map snd as ++ (q:cs)))
 		      in return (Op_decl os t (map fst as) ps)
-		    }
                  <|> return (Op_decl os t [] (map tokPos c)) 
 
 -- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"  		
-
+opItems :: GenParser Char st SIG_ITEMS
 opItems = itemList opS opItem Op_items
 
 -- ----------------------------------------------------------------------
@@ -109,28 +108,26 @@ opItems = itemList opS opItem Op_items
 -- ----------------------------------------------------------------------
 
 predItem :: GenParser Char st PRED_ITEM 
-predItem = do { (ps, cs)  <- parseId `separatedBy` commaT
-	      ; if length ps == 1 then
+predItem = do (ps, cs)  <- parseId `separatedBy` commaT
+	      if length ps == 1 then
 		predBody (head ps) (Pred_head [] [])
 		<|> 
-		do { h <- predHead
-		   ; predBody (head ps) h
-		   }
+		do h <- predHead
+		   predBody (head ps) h
 		<|> 
 		predTypeCont ps cs
 		else predTypeCont ps cs
-	      }
 		
-		
-predBody p h = do { e <- asKey equivS
-		  ; a <- annos
-		  ; f <- formula
-		  ; return (Pred_defn p h (Annoted f [] a []) [tokPos e])
-		  }
+predBody :: PRED_NAME -> PRED_HEAD -> GenParser Char st PRED_ITEM	
+predBody p h = do e <- asKey equivS
+		  a <- annos
+		  f <- formula
+		  return (Pred_defn p h (Annoted f [] a []) [tokPos e])
 
-predTypeCont ps cs = do { c <- colonT
-			; t <- predType
-			; return (Pred_decl ps t (map tokPos (cs++[c])))
-			}
+predTypeCont :: [PRED_NAME] -> [Token] -> GenParser Char st PRED_ITEM	
+predTypeCont ps cs = do c <- colonT
+			t <- predType
+			return (Pred_decl ps t (map tokPos (cs++[c])))
 
+predItems :: GenParser Char st SIG_ITEMS
 predItems = itemList predS predItem Pred_items
