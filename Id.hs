@@ -66,6 +66,7 @@ isPlace (Token t _) = t == place
 data Id = Id [TokenOrPlace] [Id] [Pos] 
                                  -- pos of "[", commas, "]" 
 	  deriving (Show)
+-- for pretty printing see PrettyPrint.hs
 
 instance Eq Id where
     Id tops1 ids1 _ == Id tops2 ids2 _ = tops1 == tops2 && ids1 == ids2
@@ -86,7 +87,17 @@ splitMixToken :: [Token] -> ([Token],[Token])
 splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 	      (reverse toks, reverse pls)
 
--- for pretty printing see PrettyPrint.hs
+-- compute a meaningful single position for diagnostics
+
+posOfId :: Id -> Pos
+posOfId (Id [] _ _) = error "Id.posOfId"
+posOfId (Id ts _ _) = let l = dropWhile isPlace ts 
+		      in if null l then -- for invisible "__ __" (only places)
+			   let h = head ts 
+			       (lin, col) = tokPos h
+			       in (lin, col + length (tokStr h))
+			 else tokPos $ head l
+
 -- Simple Ids
 
 type SIMPLE_ID = Token

@@ -415,14 +415,6 @@ iterateStates g ops preds terms c@(i, ds, m) =
 	    t ->  self (tail terms) (nextState g ops t c)
   where expand = expandPos Mixfix_token 
 
-posOfId :: Id -> Pos
-posOfId (Id ts _ _) = let l = dropWhile isPlace ts 
-		      in if null l then 
-			   let h = head ts 
-			       (lin, col) = tokPos h
-			       in (lin, col + length (tokStr h))
-			 else tokPos $ head l
-
 posOfTerm :: TERM -> Pos
 posOfTerm trm =
     case trm of
