@@ -79,8 +79,8 @@ instance PrettyPrint Annotation where
 	printLine (ptext "def") empty
     printText0 ga (Conservative _) =
 	printLine (ptext "cons") empty
-
-
+    printText0 ga (Monomorph _) =
+	printLine (ptext "mono") empty
 printGroup :: Doc -> Doc -> Doc
 printGroup key grp = ptext "%" <> key <> ptext "(" <+> grp <> ptext ")%"
 
