@@ -45,19 +45,19 @@ a < b
 b < Type
 c < Type
 %% Type Constructors -----------------------------------------------------
-Data1 : Type < Data2 %[type __ ::=
-                       a : -> __
-                       b : -> __
-                       c : -> __]%
-Data2 : Type %[type __ ::=
-               Cons21 : Data1 * Data2 -> __
-               Cons22 : Data2 * Data1 -> __]%
-Data3 : Type %[type __ ::=
-               Cons31 : Data1 * Data2 -> __ (sel1 :? Data1)(sel2 :? Data2)
-               Cons32 : Data2 * Data1 -> __ (sel2 :? Data2)(sel1 :? Data1)]%
-Data4 : Type %[type __ ::=
-               Cons41 : Data1 * Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
-               Cons42 : Data2 * Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
+Data1 : Type < Data2 %[type Data1 ::=
+                                  a : -> __
+                                  b : -> __
+                                  c : -> __]%
+Data2 : Type %[type Data2 ::=
+                          Cons21 : Data1 * Data2 -> __
+                          Cons22 : Data2 * Data1 -> __]%
+Data3 : Type %[type Data3 ::=
+                          Cons31 : Data1 * Data2 -> __ (sel1 :? Data1)(sel2 :? Data2)
+                          Cons32 : Data2 * Data1 -> __ (sel2 :? Data2)(sel1 :? Data1)]%
+Data4 : Type %[type Data4 ::=
+                          Cons41 : Data1 * Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
+                          Cons42 : Data2 * Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : TYPE := Unit
 __*__ : Type+ -> Type+ -> Type
@@ -109,21 +109,21 @@ tt : s ->? Unit %(op)% = \ (var x : s) . ()
 program (pred tt : s) = \ (var x : s) . () %(pe_tt)%
 (fun __=__[t] : forall a : Type . a * a ->? Unit)
   (var x : t, var y : t)
-type Data1 (|-> Data1) ::=
-                       a : -> __
-                       b : -> __
-                       c : -> __ %(ga_Data1)%
-type Data2 (|-> Data2) ::=
-                       Cons21 : Data1 * Data2 -> __
-                       Cons22 : Data2 * Data1 -> __ %(ga_Data2)%
-type Data3 (|-> Data3) ::=
-                       Cons31 : Data1 * Data2 -> __ (sel1 :? Data1)(sel2 :? Data2)
-                       Cons32 : Data2 *
-                                Data1 -> __ (sel2 :? Data2)(sel1 :? Data1) %(ga_Data3)%
-type Data4 (|-> Data4) ::=
-                       Cons41 : Data1 * Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
-                       Cons42 : Data2 *
-                                Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1) %(ga_Data4)%
+type Data1 ::=
+           a : -> __
+           b : -> __
+           c : -> __ %(ga_Data1)%
+type Data2 ::=
+           Cons21 : Data1 * Data2 -> __
+           Cons22 : Data2 * Data1 -> __ %(ga_Data2)%
+type Data3 ::=
+           Cons31 : Data1 * Data2 -> __ (sel1 :? Data1)(sel2 :? Data2)
+           Cons32 : Data2 *
+                    Data1 -> __ (sel2 :? Data2)(sel1 :? Data1) %(ga_Data3)%
+type Data4 ::=
+           Cons41 : Data1 * Data2 ->? __ (sel1 :? Data1)(sel2 :? Data2)
+           Cons42 : Data2 *
+                    Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1) %(ga_Data4)%
 (fun true : Unit)
 %% Diagnostics -----------------------------------------------------------
 *** Error 1.7, illegal universe class declaration 'Type'

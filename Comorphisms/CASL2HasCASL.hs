@@ -34,7 +34,7 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.VarDecl
-import HasCASL.DataAna
+import HasCASL.AsUtils
 import HasCASL.Unify
 import HasCASL.Morphism
 import HasCASL.Sublogic as HasSub
@@ -97,12 +97,11 @@ mapTheory (sig, sents) =
         dts = concatMap ( \ ns -> case sentence ns of
 			  DatatypeSen ds -> ds
 			  _ ->  []) newSents
-	tMap = foldr ( \ (DatatypeConstr i j _ _ _) m ->
-		      Map.insert i j m) Map.empty dts
-	constr = concatMap ( \ (DatatypeConstr _ j _ _ alts) ->
+	constr = concatMap ( \ (DataEntry im i _ _ alts) ->
+			 let j = Map.findWithDefault i i im in
 			 map ( \ (Construct o args p _sels) ->
 			       (o, j, getConstrType (TypeName j star 0) p
-				     $ map (mapType tMap) args)) alts) dts
+				     $ map (mapType im) args)) alts) dts
 	newEnv = execState (mapM_ ( \ (o, j, ty) -> 
 				    addOpId o (simpleTypeScheme ty) [] 
 				    $ ConstructData j) constr) env
@@ -160,13 +159,12 @@ toSentence sig f = case f of
    Cas.Sort_gen_ax cs b -> let 
        (sorts, ops, smap) = Cas.recover_Sort_gen_ax cs
        genKind = if b then Free else Generated
-       getSort s = maybe s id $ lookup s smap
        mapPart :: FunKind -> Partiality
        mapPart cp = case cp of
 		CASL.Sign.Total -> HasCASL.As.Total
                 CASL.Sign.Partial -> HasCASL.As.Partial
        in DatatypeSen 
-          $ map ( \ s -> DatatypeConstr s (getSort s) genKind []
+          $ map ( \ s -> DataEntry (Map.fromList smap) s genKind []
                           (map ( \ (i, t, ps) -> 
 			       let args = opArgs t in 
 			       Construct i 

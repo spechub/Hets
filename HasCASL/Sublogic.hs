@@ -705,12 +705,16 @@ sl_typeInfo t = sublogics_max (comp_list $ map sl_type (superTypes t))
 sl_typeDefn :: TypeDefn -> HasCASL_Sublogics
 sl_typeDefn (Supertype _ ts t) = 
   sublogics_max (sl_typeScheme ts) (sl_term t)
-sl_typeDefn (DatatypeDefn _ l m) =
-  sublogics_max (comp_list $ map sl_typeArg l)
-                (comp_list $ map sl_altDefn m)
+sl_typeDefn (DatatypeDefn de) = sl_dataEntry de
 sl_typeDefn (AliasTypeDefn t) = sl_typeScheme t
 sl_typeDefn (TypeVarDefn) = need_polymorphism
 sl_typeDefn _ = bottom
+
+
+sl_dataEntry :: DataEntry -> HasCASL_Sublogics
+sl_dataEntry (DataEntry _ _ _ l m) = 
+  sublogics_max (comp_list $ map sl_typeArg l)
+                (comp_list $ map sl_altDefn m)
 
 
 sl_opInfos :: OpInfos -> HasCASL_Sublogics
@@ -739,13 +743,8 @@ sl_sentence :: Sentence -> HasCASL_Sublogics
 sl_sentence (Formula t) = sl_term t
 sl_sentence (ProgEqSen _ ts pq) = 
   sublogics_max (sl_typeScheme ts) (sl_progEq pq)
-sl_sentence (DatatypeSen l) = comp_list $ map sl_datatypeDefn l
+sl_sentence (DatatypeSen l) = comp_list $ map sl_dataEntry l
 
-
-sl_datatypeDefn :: DatatypeDefn -> HasCASL_Sublogics
-sl_datatypeDefn (DatatypeConstr _ _ _ l m) =
-  sublogics_max (comp_list $ map sl_typeArg l)
-                (comp_list $ map sl_altDefn m)
 
 sl_altDefn :: AltDefn -> HasCASL_Sublogics
 sl_altDefn (Construct _ l p m) =

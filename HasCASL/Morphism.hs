@@ -18,16 +18,14 @@ import HasCASL.AsToLe
 import HasCASL.Unify
 import HasCASL.Symbol
 import HasCASL.MapTerm
-import HasCASL.TypeDecl
-import HasCASL.DataAna
+import HasCASL.AsUtils
+
 import Common.Id
 import Common.Keywords
 import Common.Result
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
-
-type IdMap = Map.Map Id Id
 
 type FunMap = Map.Map (Id, TySc) (Id, TySc)
 
@@ -78,32 +76,27 @@ mapSen :: Morphism -> Term -> Term
 mapSen m = let tm = typeIdMap m in 
        mapTerm (mapFunSym tm (funMap m), mapType tm)
 
-mapDatatypeDefn :: Morphism -> IdMap -> DatatypeDefn -> DatatypeDefn
-mapDatatypeDefn m tm (DatatypeConstr i j k args alts) = 
-    let tim = typeIdMap m
-	rtm = Map.difference tim tm
-	-- do not rename the types in the data type mapping
-    in DatatypeConstr i (Map.findWithDefault j j tim)
-		   k args $ map (mapAlt m tm rtm args $ TypeName j
-				 (typeArgsListToKind args star) 0) alts
+mapDataEntry :: Morphism -> DataEntry -> DataEntry
+mapDataEntry m (DataEntry tm i k args alts) = 
+    let tim = compIdMap tm $ typeIdMap m
+    in DataEntry tim i k args $ map 
+	   (mapAlt m tim args $ 
+	    TypeName (Map.findWithDefault i i tim) 
+	    (typeArgsListToKind args star) 0) alts
 
-mapAlt :: Morphism -> IdMap -> IdMap -> [TypeArg] -> Type -> AltDefn -> AltDefn
-mapAlt m tm rtm args dt (Construct i ts p sels) = 
+mapAlt :: Morphism -> IdMap -> [TypeArg] -> Type -> AltDefn -> AltDefn
+mapAlt m tm args dt (Construct i ts p sels) = 
     let sc = TypeScheme args 
 	     ([] :=> getConstrType dt p (map (mapType tm) ts)) []
-	(j, _) = mapFunSym (typeIdMap m) (funMap m) (i, sc)
-    in Construct j (map (mapType rtm) ts) p sels
-       -- not change (unused) selectors and (alas) partiality 
-
-getDTMap :: [DatatypeDefn] -> IdMap 
-getDTMap = foldr ( \ (DatatypeConstr i j _ _ _) m -> 
-		   if i == j then m else
-		   Map.insert i j m) Map.empty 
+	(j, TypeScheme _ (_ :=> ty) _) = 
+	    mapFunSym (typeIdMap m) (funMap m) (i, sc)
+    in Construct j ts (getPartiality ts ty) sels
+       -- do not change (unused) selectors
 
 mapSentence :: Morphism -> Sentence -> Result Sentence
 mapSentence m s = return $ case s of 
    Formula t -> Formula $ mapSen m t 
-   DatatypeSen td -> DatatypeSen $ map (mapDatatypeDefn m $ getDTMap td) td
+   DatatypeSen td -> DatatypeSen $ map (mapDataEntry m) td
    ProgEqSen i sc pe ->
        let tm = typeIdMap m 
 	   fm = funMap m 
@@ -128,15 +121,19 @@ embedMorphism = mkMorphism
 ideMor :: Env -> Morphism
 ideMor e = embedMorphism e e
 
+compIdMap :: IdMap -> IdMap -> IdMap
+compIdMap im1 im2 = Map.foldWithKey ( \ i j -> 
+		       Map.insert i $ Map.findWithDefault j j im2)
+			     im2 $ im1
+
 compMor :: Morphism -> Morphism -> Maybe Morphism
 compMor m1 m2 = 
   if isSubEnv (mtarget m1) (msource m2) then 
       let tm2 = typeIdMap m2 
 	  fm2 = funMap m2 in Just 
       (mkMorphism (msource m1) (mtarget m2))
-      { typeIdMap = Map.foldWithKey ( \ i j -> 
-		       Map.insert i $ Map.findWithDefault j j tm2)
-			     tm2 $ typeIdMap m1
+      { classIdMap = compIdMap (classIdMap m1) $ classIdMap m2
+      , typeIdMap = compIdMap (typeIdMap m1) tm2
       , funMap = Map.foldWithKey ( \ p1 p2 -> 
 		       Map.insert p1
 		       $ mapFunEntry tm2 fm2 p2) fm2 $ funMap m1

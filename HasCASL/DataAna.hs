@@ -25,7 +25,6 @@ import HasCASL.AsUtils
 import HasCASL.Unify
 import Data.Maybe
 
-
 anaAlts :: [(Id, Type)] -> Type -> [Alternative] -> State Env [AltDefn]
 anaAlts tys dt alts = 
     do ll <- mapM (anaAlt tys dt) alts
@@ -46,23 +45,6 @@ anaAlt tys dt (Constructor i cs p _) =
 	     return [con]
 	  else return []
 
-getConstrType :: Type -> Partiality -> [Type] -> Type
-getConstrType dt p = addPartiality p .
-		       foldr ( \ c r -> FunType c FunArr r [] ) dt 
-
-
-addPartiality :: Partiality -> Type -> Type
-addPartiality Total t = t		 
-addPartiality Partial t = makePartial t		 
-
-makePartial :: Type -> Type
-makePartial t =
-    case t of 
-	   FunType t1 a t2 ps ->
-	       case t2 of 
-		       FunType _ _ _ _ -> FunType t1 a (makePartial t2) ps
-		       _ -> FunType t1 PFunArr t2 ps
-	   _ -> LazyType t []  
 
 anaComps :: [(Id, Type)] -> Type -> [Component]
 	-> State Env (Maybe Type, [Selector]) 
@@ -85,7 +67,9 @@ anaComp tys rt (NoSelector t) =
        return  (mt, [])
 
 getSelType :: Type -> Partiality -> Type -> Type
-getSelType dt p rt = addPartiality p $ FunType dt FunArr rt []
+getSelType dt p rt = (case p of 
+    Partial -> addPartiality [dt]
+    Total -> id) $ FunType dt FunArr rt []
 
 anaCompType :: [(Id, Type)] -> Type -> Type -> State Env (Maybe Type)
 anaCompType tys dt t = do

@@ -94,10 +94,7 @@ translateTypeInfo (tid,info) =
 	   [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
        AliasTypeDefn ts -> 
 	   [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
-       DatatypeDefn _ args alts -> 
-	   [HsDataDecl nullLoc [] hsname
-		       (map getArg args) -- type arguments
-		       (map (translateAltDefn Map.empty) alts) derives]
+       DatatypeDefn de -> [sentence $ translateDt de] 
        _ -> [] -- ignore others
 
 
@@ -327,15 +324,16 @@ translateProgEq as tm (ProgEq pat t _) =
 	  _ -> error ("translateLetProgEq: non-unique id: " ++ show pat)
     Nothing -> error ("translateLetProgEq: no toplevel id: " ++ show pat)
 
-translateDt :: IdMap -> DatatypeDefn -> Named HsDecl
-translateDt tm (DatatypeConstr _ j _ args alts) = 
-   	 let hsname = HsIdent $ translateIdWithType UpperId j in
+translateDt :: DataEntry -> Named HsDecl
+translateDt (DataEntry im i _ args alts) = 
+   	 let j = Map.findWithDefault i i im
+	     hsname = HsIdent $ translateIdWithType UpperId j in
          NamedSen ("ga_" ++ showId j "") $
          HsDataDecl nullLoc
 	               [] -- empty HsContext
 	               hsname
 		       (map getArg args) -- type arguments
-		       (map (translateAltDefn tm) alts) -- [HsConDecl] 
+		       (map (translateAltDefn im) alts) -- [HsConDecl] 
 		       derives
 
 translateSentence ::  Env -> Named Sentence -> [Named HsDecl] 
@@ -343,7 +341,7 @@ translateSentence env sen =
     let as = assumps env
 	tm = typeMap env
     in case sentence sen of
-    DatatypeSen dt -> map (translateDt $ getDTMap dt) dt
+    DatatypeSen dt -> map translateDt dt
     ProgEqSen _ _ pe -> [NamedSen (senName sen) 
 			$ translateProgEq as tm pe]
     _ -> []

@@ -131,9 +131,9 @@ __-->__ : (Cpo- -> Pcpo+ -> Pcpo, Cpo- -> Cpo+ -> Cpo,
 __-->?__ : (Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type) < c ->? d
 __->__ : Type- -> Type+ -> Type < s ->? t
 __->?__ : Type- -> Type+ -> Type
-bool : Flatcpo %[free type __ ::=
-                      true : -> __
-                      false : -> __]%
+bool : Flatcpo %[free type bool ::=
+                                true : -> __
+                                false : -> __]%
 c : Cpo %(var)%
 d : Cpo %(var)%
 f : Flatcpo %(var)%
@@ -186,9 +186,9 @@ program (op tt[_var_4] : forall s : Type . Pred s) =
      (pred eq[_var_36] : forall s : Type . s * s)
        (var x : _var_36, var x : _var_36),
    op tt[_var_36] : forall s : Type . Pred s)
-free type bool (|-> bool) ::=
-                          true : -> __
-                          false : -> __ %(ga_bool)%
+free type bool ::=
+               true : -> __
+               false : -> __ %(ga_bool)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 4.7, illegal universe class declaration 'Type'
 *** Hint 6.5, is type variable 's'

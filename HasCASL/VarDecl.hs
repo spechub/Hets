@@ -117,7 +117,7 @@ addTypeKind warn d i k =
 					mkIntersection (k:ks)
 				 Result ds mDef = mergeTypeDefn tk c defn d
 			     if warn && isKnownInst && case (defn, d) of 
-			         (PreDatatype, DatatypeDefn _ _ _) -> False
+			         (PreDatatype, DatatypeDefn _) -> False
 			         _ -> True
 				then
 			        addDiags [mkDiag Hint 

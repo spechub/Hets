@@ -17,6 +17,44 @@ import HasCASL.PrintAs -- to reexport instances
 import Common.Id
 import Common.PrettyPrint
 
+-- | get the type of a constructor with given curried argument types
+getConstrType :: Type -> Partiality -> [Type] -> Type
+getConstrType dt p ts = (case p of 
+     Total -> id 
+     Partial -> addPartiality ts) $
+		       foldr ( \ c r -> FunType c FunArr r [] ) dt ts
+
+-- | make function arrow partial after some arguments
+addPartiality :: [a] -> Type -> Type
+addPartiality as t = case as of 
+        [] -> LazyType t []
+	_ : rs -> case t of 
+	   FunType t1 a t2 ps -> if null rs then FunType t1 PFunArr t2 ps 
+	       else FunType t1 a (addPartiality rs t2) ps
+	   _ -> error "addPartiality"
+
+-- | get the partiality from a constructor type 
+-- with a given number of curried arguments
+getPartiality :: [a] -> Type -> Partiality
+getPartiality as t = case t of
+   KindedType ty _ _ -> getPartiality as ty
+   FunType _ a t2 _ -> case as of 
+     [] -> Total
+     [_] -> case a of 
+	    PFunArr  -> Partial
+	    PContFunArr -> Partial
+	    _ -> Total
+     _:rs -> getPartiality rs t2
+   LazyType _ _ -> if null as then Partial else error "getPartiality"
+   _ -> Total
+
+-- | extent a kind to expect further type arguments
+typeArgsListToKind :: [TypeArg] -> Kind -> Kind
+typeArgsListToKind tArgs k = 
+    if null tArgs then k
+       else typeArgsListToKind (init tArgs) 
+	    (FunKind (( \ (TypeArg _ xk _ _) -> xk) $ last tArgs) k []) 
+
 -- | generate a comparison string 
 expected :: PrettyPrint a => a -> a -> String
 expected a b = 
@@ -101,7 +139,7 @@ posOfTerm trm =
     CaseTerm t _ ps -> firstPos [t] ps 
     LetTerm _ _ t ps -> firstPos [t] ps
     TermToken t -> tokPos t
-    MixTypeTerm q t ps -> firstPos [t] ps
+    MixTypeTerm _ t ps -> firstPos [t] ps
     MixfixTerm ts -> posOf ts
     BracketTerm _ ts ps -> firstPos ts ps 
     AsPattern p1 p2 ps -> firstPos [p1, p2] ps

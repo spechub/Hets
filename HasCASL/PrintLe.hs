@@ -47,11 +47,8 @@ instance PrettyPrint TypeDefn where
 					   <+> printText0 ga t 
 					   <+> text dotS
 					   <+> printText0 ga f)
-    printText0 ga (DatatypeDefn k args alts)  = text " %[" <>
-	printGenKind k <> (text typeS <+> text place 
-		   <+> printList0 ga args 
-		 <+> text defnS $$ 
-		 vcat (map (printText0 ga) alts)) <> text "]%"
+    printText0 ga (DatatypeDefn dd)  = 
+	text " %[" <> printText0 ga dd <> text "]%"
 
 instance PrettyPrint AltDefn where
     printText0 ga (Construct i ts p sels) = 
@@ -104,14 +101,14 @@ instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 _ Nothing = empty
     printText0 ga (Just c) =  printText0 ga c
 
-instance PrettyPrint DatatypeDefn where 
-    printText0 ga (DatatypeConstr i1 i2 k args alts) =  
-	printGenKind k <> text typeS 
-		       <+> printText0 ga i1 <+> parens 
-			       (text mapsTo <+> printText0 ga i2)
-			       <+> (printList0 ga args 
+instance PrettyPrint DataEntry where 
+    printText0 ga (DataEntry im i k args alts) =  
+	printGenKind k <> text typeS <+> printText0 ga i 
+			 <+> (printList0 ga args 
 				       <+> text defnS $$ 
 					   vcat (map (printText0 ga) alts))
+	$$ nest 2 (if Map.isEmpty im then empty else 
+	   text withS <+> text (typeS ++ sS) <+> printText0 ga im)
 		       
 instance PrettyPrint Sentence where 
     printText0 ga s = case s of

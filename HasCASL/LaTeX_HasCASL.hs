@@ -12,13 +12,8 @@ Portability :  portable
 
 module HasCASL.LaTeX_HasCASL where
 
-import Debug.Trace
-
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.RawSym
-import HasCASL.SymbItem
-import HasCASL.Symbol
 import HasCASL.Morphism
 import Common.PrettyPrint
 
@@ -227,10 +222,10 @@ printTerm ga b trm =
 	       MixTypeTerm _ _ _ -> id
                _ -> ppParen)
       $ case trm of
-        QualVar v t _ -> printLatex0 ga v
+        QualVar v _t _ -> printLatex0 ga v
                          {-sep [hc_sty_axiom varS <+> printLatex0 ga v,
 			      colon <+> printLatex0 ga t]-}
-        QualOp br n t _ -> printLatex0 ga n
+        QualOp _br n _t _ -> printLatex0 ga n
                            {-sep [printLatex0 ga br <+> printLatex0 ga n,
 			        colon <+> printLatex0 ga 
 				(if isPred br then unPredTypeScheme t else t)]-}
@@ -240,7 +235,7 @@ printTerm ga b trm =
 	    [t] -> printLatex0 ga n <> printTerm ga True t
 	    _ -> printLatex0 ga n <> 
 		 parens (commaT ts)
-        ApplTerm t1 t2 pos -> 
+        ApplTerm t1 t2 _ -> 
           case (findMixfixOp t1,t2) of
             (Just (Id toks [] _), TupleTerm ts _) -> 
                if length (filter isPlace toks) == length ts
@@ -514,11 +509,8 @@ instance PrintLaTeX TypeDefn where
 					   <+> printLatex0 ga t 
 					   <+> hc_sty_axiom "\\bullet"
 					   <+> printLatex0 ga f)
-    printLatex0 ga (DatatypeDefn k args alts)  = text " \\%[" <>
-	printGenKind k <> (text typeS <+> text "\\_" 
-		   <+> printList0 ga args 
-		 <+> hc_sty_axiom defnS $$ 
-		 vcat (map (printLatex0 ga) alts)) <> text "]\\%"
+    printLatex0 ga (DatatypeDefn de)  = text " \\%[" <>
+	printLatex0 ga de <> text "]\\%"
 
 instance PrintLaTeX AltDefn where
     printLatex0 ga (Construct i ts p sels) = 
@@ -571,42 +563,43 @@ instance PrintLaTeX a => PrintLaTeX (Maybe a) where
     printLatex0 _ Nothing = empty
     printLatex0 ga (Just c) =  printLatex0 ga c
 
-instance PrintLaTeX DatatypeDefn where 
-    printLatex0 ga (DatatypeConstr i1 i2 k args alts) =  
-	printGenKind k <> hc_sty_plain_keyword typeS 
-		       <+> printLatex0 ga i1 <+> parens 
-			       (hc_sty_axiom "\\mapsto" <+> printLatex0 ga i2)
-			       <+> (printList0 ga args 
+instance PrintLaTeX DataEntry where 
+    printLatex0 ga (DataEntry im i k args alts) =  
+	printGenKind k <> hc_sty_plain_keyword typeS <+> printLatex0 ga i 
+			 <+> (printList0 ga args 
 				       <+> hc_sty_axiom defnS $$ 
 					   vcat (map (printLatex0 ga) alts))
-		       
+	$$ nest 2 (if Map.isEmpty im then empty else 
+	   hc_sty_plain_keyword withS <+> hc_sty_plain_keyword (typeS ++ sS) 
+		   <+> printMap0 ga (hc_sty_axiom mapsTo) im)
+
 instance PrintLaTeX Sentence where 
     printLatex0 ga s = case s of
         Formula t -> printLatex0 ga t
 	DatatypeSen ls -> vcat (map (printLatex0 ga) ls)
-        ProgEqSen _ _ pe -> hc_sty_plain_keyword programS <+> printLatex0 ga pe
+        ProgEqSen _ _ pe -> hc_sty_plain_keyword programS 
+			    <+> printLatex0 ga pe
  
 instance PrintLaTeX Env where
     printLatex0 ga (Env{classMap=cm, typeMap=tm, 
-		       assumps=as, sentences=se, envDiags=ds}) = 
+		       assumps=as, sentences=se, envDiags=_ds}) = 
 	noPrint (Map.isEmpty cm) (header "Classes")
-	$$ printMap0 ga cm
+	$$ printMap0 ga empty cm
 	$$ noPrint (Map.isEmpty tm) (header "Type Constructors")
-	$$ printMap0 ga tm
+	$$ printMap0 ga empty tm
 	$$ noPrint (Map.isEmpty as) (header "Assumptions")
-        $$ printMap0 ga as
+        $$ printMap0 ga empty as
 	$$ noPrint (null se) (header "Sentences")
         $$ vcat (map (printLatex0 ga) se)
 --	$$ noPrint (null ds) (header "Diagnostics")
 --	$$ vcat (map (printLatex0 ga) $ reverse ds)
 	where header s =  text "\\%\\%" <+> text s 
 			  <+> text (replicate (70 - length s) '-')
-	      printMap0 :: (PrintLaTeX a, Ord a, PrintLaTeX b)  
-			   => GlobalAnnos -> Map.Map a b -> Doc
-	      printMap0 g m =
-		  let l = Map.toList m in
-			  vcat(map (\ (a, b) -> printLatex0 g a 
-				    <> printLatex0 g b) l)
+
+printMap0 :: (PrintLaTeX a, Ord a, PrintLaTeX b)  
+			   => GlobalAnnos -> Doc -> Map.Map a b -> Doc
+printMap0 g d m =let l = Map.toList m in
+    vcat(map (\ (a, b) -> printLatex0 g a <> d <> printLatex0 g b) l)
 
 instance PrintLaTeX SymbolType where
     printLatex0 ga t = case t of 

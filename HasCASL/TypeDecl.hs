@@ -28,6 +28,7 @@ import Common.GlobalAnnotations
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassAna
+import HasCASL.AsUtils
 import HasCASL.Unify
 import HasCASL.TypeAna
 import HasCASL.DataAna
@@ -84,8 +85,7 @@ addDataSen tys = do
         ds = foldr ( \ i dl -> case Map.lookup i tm of 
 		     Nothing -> dl
 		     Just ti -> case typeDefn ti of
-		                DatatypeDefn k args alts -> 
-		                     DatatypeConstr i i k args alts : dl
+		                DatatypeDefn dd -> dd : dl
 		                _ -> dl) [] tis
 	sen = NamedSen ("ga_" ++ showSepList (showString "_") showId tis "") 
 	      $ DatatypeSen ds
@@ -297,7 +297,8 @@ anaDatatype genKind inst tys
 					 ([] :=> getSelType dt pa ts) []) 
 				     [] (SelectData [ConstrInfo c ty] i)
 			           ) sels) newAlts
-       addTypeId True (DatatypeDefn genKind nAs newAlts) inst fullKind i
+       addTypeId True (DatatypeDefn $ 
+	   DataEntry Map.empty i genKind nAs newAlts) inst fullKind i
        return d 
 anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"
 
@@ -335,13 +336,6 @@ addTypePattern defn inst kind (i, as) =
        return $ case mId of 
 		Nothing -> Nothing
 		Just newId -> Just (newId, nAs)
-
--- | extent a kind to expect further type arguments
-typeArgsListToKind :: [TypeArg] -> Kind -> Kind
-typeArgsListToKind tArgs k = 
-    if null tArgs then k
-       else typeArgsListToKind (init tArgs) 
-	    (FunKind (( \ (TypeArg _ xk _ _) -> xk) $ last tArgs) k []) 
 
 -- | convert type patterns
 convertTypePatterns :: [TypePattern] -> Result [(Id, [TypeArg])]

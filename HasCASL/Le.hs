@@ -43,10 +43,15 @@ data AltDefn = Construct UninstOpId [Type] Partiality [Selector]
 data Selector = Select UninstOpId Type Partiality -- only result type
                 deriving (Show, Eq, Ord) 
 
+type IdMap = Map.Map Id Id
+
+data DataEntry = DataEntry IdMap TypeId GenKind [TypeArg] [AltDefn]
+		  deriving (Show, Eq, Ord)
+
 data TypeDefn = NoTypeDefn
               | PreDatatype     -- auxiliary entry for DatatypeDefn
               | Supertype Vars TypeScheme Term 
-              | DatatypeDefn GenKind [TypeArg] [AltDefn]
+              | DatatypeDefn DataEntry
               | AliasTypeDefn TypeScheme
               | TypeVarDefn deriving (Show, Eq)
 
@@ -61,11 +66,8 @@ isTypeVarDefn t = case typeDefn t of
                   TypeVarDefn -> True
                   _           -> False
 
-data DatatypeDefn = DatatypeConstr TypeId TypeId GenKind [TypeArg] [AltDefn]
-		  deriving (Show, Eq, Ord)
-
 data Sentence = Formula Term
-              | DatatypeSen [DatatypeDefn]
+              | DatatypeSen [DataEntry]
               | ProgEqSen UninstOpId TypeScheme ProgEq
 	        deriving (Show, Eq, Ord)
  

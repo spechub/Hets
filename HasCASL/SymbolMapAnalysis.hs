@@ -22,14 +22,13 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.AsToLe
-import HasCASL.SymbItem
 import HasCASL.Symbol
 import HasCASL.RawSym
 import HasCASL.Morphism
 import HasCASL.ClassAna
+import HasCASL.MapTerm
 import HasCASL.Unify
 import HasCASL.VarDecl
-import HasCASL.OpDecl
 import Common.Id
 import Common.Result
 import Common.Lib.State
@@ -60,9 +59,9 @@ inducedFromMorphism rmap sigma = do
   -- ... if not, generate an error
   if Set.isEmpty incorrectRsyms then return () else
     pplain_error ()
-       (ptext "the following symbols:"
+       (text "the following symbols:"
         <+> printText incorrectRsyms 
-        $$ ptext "are already mapped directly or do not match with signature"
+        $$ text "are already mapped directly or do not match with signature"
         $$ printText sigma) nullPos
   -- compute the sort map (as a Map)
   myTypeIdMap <- foldr
@@ -74,7 +73,7 @@ inducedFromMorphism rmap sigma = do
   -- compute the op map (as a Map)
   let tarTypeMap = addUnit $ Map.foldWithKey ( \ i k m -> 
 			       Map.insert (Map.findWithDefault i i myTypeIdMap)
-					  (mapTypeDefn myTypeIdMap k) m)
+					  (mapTypeInfo myTypeIdMap k) m)
 	                    Map.empty srcTypeMap
   op_Map <- Map.foldWithKey (opFun rmap sigma tarTypeMap myTypeIdMap)
               (return Map.empty) (assumps sigma)
@@ -88,9 +87,22 @@ inducedFromMorphism rmap sigma = do
 	     { typeIdMap = myTypeIdMap
 	     , funMap = op_Map }
 
-mapTypeDefn :: IdMap -> TypeInfo -> TypeInfo 
-mapTypeDefn im ti = 
-    ti { superTypes = map (mapType im) $ superTypes ti }
+mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo 
+mapTypeInfo im ti = 
+    ti { superTypes = map (mapType im) $ superTypes ti 
+       , typeDefn = mapTypeDefn im $ typeDefn ti }
+
+mapTypeDefn :: IdMap -> TypeDefn -> TypeDefn
+mapTypeDefn im td = 
+    case td of 
+    DatatypeDefn (DataEntry tm i k args alts) -> 
+	DatatypeDefn (DataEntry (compIdMap tm im) i k args alts)
+    AliasTypeDefn sc -> AliasTypeDefn $ mapTypeScheme im sc
+    Supertype vs sc t -> 
+	Supertype vs (mapTypeScheme im sc)
+	      $ mapTerm (id, mapType im) t
+    _ -> td
+
 
 -- | compute type mapping
 typeFun :: RawSymbolMap -> Id -> Kind -> Result Id
@@ -102,8 +114,8 @@ typeFun rmap s k = do
           0 -> return s  -- use default = identity mapping
           1 -> return $ rawSymName $ Set.findMin rsys -- take the unique rsy
           _ -> pplain_error s  -- ambiguity! generate an error 
-                 (ptext "type: " <+> printText s 
-                  <+> ptext "mapped ambiguously:" <+> printText rsys)
+                 (text "type: " <+> printText s 
+                  <+> text "mapped ambiguously:" <+> printText rsys)
                  nullPos
 
 -- | compute mapping of functions
@@ -118,9 +130,9 @@ opFun rmap e tm type_Map i ots m =
        (Just rsy1, Just rsy2) -> 
           do m' <- m
              pplain_error m'
-               (ptext "Operation" <+> printText i
-                <+> ptext "is mapped twice:"
-                <+> printText rsy1 <+> ptext "," <+> printText rsy2
+               (text "Operation" <+> printText i
+                <+> text "is mapped twice:"
+                <+> printText rsy1 <+> text "," <+> printText rsy2
                )
                nullPos
        (Just rsy, Nothing) -> 
@@ -153,15 +165,15 @@ mapOpSym e tm type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in
 	   Just nt -> if isUnifiable (typeMap ds) 0 sc nt
 		   then return (id', TySc ot')
 		   else pplain_error (i, sc1)
-			    (ptext "Operation symbol " 
+			    (text "Operation symbol " 
 			     <+> printText (AQualId i $ OpAsItemType sc) 
-			     <+> ptext "is mapped to type" <+>  printText ot'
-			     <+> ptext "but should be mapped to type" <+>  
+			     <+> text "is mapped to type" <+>  printText ot'
+			     <+> text "but should be mapped to type" <+>  
 			     printText sc) nullPos
       _ -> pplain_error (i, sc1)
-               (ptext "Operation symbol "
+               (text "Operation symbol "
                 <+> printText (AQualId i $ OpAsItemType sc) 
-		<+> ptext" is mapped to symbol of wrong kind:" 
+		<+> text" is mapped to symbol of wrong kind:" 
                 <+> printText rsy) 
                nullPos
     -- insert mapping of op symbol (id, ot) to raw symbol rsy into m
@@ -299,12 +311,12 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
    -- yes => we are done
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
-   else {- pfatal_error (ptext "No symbol mapping for "
+   else {- pfatal_error (text "No symbol mapping for "
            $$ printText rmap 
-	   $$ ptext "sigma1" $$ printText sigma1
-	   $$ ptext "inducedFromMorphism sigma1" $$ printText (mtarget mor1)
-	   $$ ptext "to sigma2" $$ printText sigma2
-	   $$ ptext "difference" $$ printText (diffEnv (mtarget mor1) sigma2))
+	   $$ text "sigma1" $$ printText sigma1
+	   $$ text "inducedFromMorphism sigma1" $$ printText (mtarget mor1)
+	   $$ text "to sigma2" $$ printText sigma2
+	   $$ text "difference" $$ printText (diffEnv (mtarget mor1) sigma2))
 	      nullPos -}
         inducedFromToMorphism2 rmap sigma1 sigma2
 
@@ -323,13 +335,13 @@ inducedFromToMorphism2 rmap sigma1 sigma2 = do
      case Map.lookup (True,0) posmap2 of
        Nothing -> return ()
        Just syms -> pfatal_error
-         (ptext "No symbol mapping for "
+         (text "No symbol mapping for "
            <+> printText (Set.fromList $ map fst syms)) nullPos
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
      smap1 <- case smap of
                  Nothing -> pfatal_error
-			    (ptext "No signature morphism for symbol map"
+			    (text "No signature morphism for symbol map"
 			     $$ text "rmap" $$ printText rmap
 			     $$ text "sigma1" $$ printText sigma1
 			     $$ text "sigma2" $$ printText sigma2)
@@ -380,9 +392,9 @@ tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
          (Nothing,Just smap) -> return (Just smap)
          (Just smap1,Just smap2) -> 
             fail $ shows 
-             (ptext "Ambiguous symbol map" $$ 
-              ptext "Map1" <+> printText smap1 $$
-              ptext "Map2" <+> printText smap2) 
+             (text "Ambiguous symbol map" $$ 
+              text "Map1" <+> printText smap1 $$
+              text "Map2" <+> printText smap2) 
             ""
 
 -- | reveal the symbols in the set
