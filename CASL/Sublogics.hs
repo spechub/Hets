@@ -235,8 +235,8 @@ mb f (Just x) = f x
 
 -- adjust illegal combination "subsorting with atomic logic"
 adjust_logic :: CASL_Sublogics -> CASL_Sublogics
-adjust_logic x = if (adjust_check x) then
-                   sublogics_max need_horn x
+adjust_logic x = if (adjust_check x) then 
+                   x { which_logic = Horn }
                  else
                    x
 
@@ -263,12 +263,18 @@ topn 0 l     = []
 topn n []    = []
 topn n (h:t) = h:(topn (n-1) t)
 
-mapPos :: [Pos] -> (a -> Maybe b) -> [a] -> ([b],[Pos])
-mapPos p f l = let
-                 res = mapMaybe f l
-                 pos = mapMaybePos p f l
-               in
-                 (res,pos)
+-- map with partial function f on Maybe type
+--  will remove elements from given Pos list for elements of [a]
+--  where f returns Nothing
+--  given number of elements from the beginning of [Pos] are always
+--  kept
+mapPos :: Int -> [Pos] -> (a -> Maybe b) -> [a] -> ([b],[Pos])
+mapPos c p f l = let
+                   pp  = tln c p
+                   res = mapMaybe f l
+                   pos = mapMaybePos pp f l
+                 in
+                   (res,(topn c p)++pos)
 
 ------------------------------------------------------------------------------
 -- functions to analyse formulae
@@ -785,9 +791,9 @@ pr_basic_spec l (Basic_spec s) =
     ret   = if (adds==[]) then
               items
             else
-              items ++ [Annoted (Sig_items (Sort_items
-                        [Annoted (Sort_decl adds []) [] [] []] []))
-                        [] [] [] ]
+              [Annoted (Sig_items (Sort_items
+               [Annoted (Sort_decl adds []) [] [] []] []))
+               [] [] [] ] ++ items
   in
     Basic_spec ret
 
@@ -800,12 +806,12 @@ pr_basic_items l (Sig_items s) =
                  (Just (Sig_items (fromJust res)),lst)
 pr_basic_items l (Free_datatype d p) =
                let
-                 (res,pos) = mapPos (tln 2 p)
+                 (res,pos) = mapPos 2 p
                                     (pr_annoted l pr_datatype_decl) d
                  lst = pr_lost_dt l ((map item) d)
                in
                  if (res==[]) then (Nothing,lst) else
-                 (Just (Free_datatype res ((topn 2 p) ++ pos)),lst)
+                 (Just (Free_datatype res pos),lst)
 pr_basic_items l (Sort_gen s p) =
                if (has_cons l) then
                  let
@@ -820,14 +826,14 @@ pr_basic_items l (Sort_gen s p) =
 pr_basic_items l (Var_items v p) = (Just (Var_items v p),[])
 pr_basic_items l (Local_var_axioms v f p) =
                let
-                 (res,pos) = mapPos (tln (length v) p)
+                 (res,pos) = mapPos (length v) p
                                     (pr_annoted l pr_formula) f
                in
                  if (res==[]) then (Nothing,[]) else
-                 (Just (Local_var_axioms v res ((topn (length v) p)++pos)),[])
+                 (Just (Local_var_axioms v res pos),[])
 pr_basic_items l (Axiom_items f p) =
                let
-                 (res,pos) = mapPos p (pr_annoted l pr_formula) f
+                 (res,pos) = mapPos 0 p (pr_annoted l pr_formula) f
                in
                  if (res==[]) then (Nothing,[]) else
                  (Just (Axiom_items res pos),[])
@@ -835,21 +841,21 @@ pr_basic_items l (Axiom_items f p) =
 pr_datatype_decl :: CASL_Sublogics -> DATATYPE_DECL -> Maybe DATATYPE_DECL
 pr_datatype_decl l (Datatype_decl s a p) = 
                  let
-                   (res,pos) = mapPos (tln 1 p)
+                   (res,pos) = mapPos 1 p
                                (pr_annoted l pr_alternative) a
                  in
                    if (res==[]) then Nothing else
-                   Just (Datatype_decl s res ((topn 1 p) ++ pos))
+                   Just (Datatype_decl s res pos)
 
 -- CHECK
 -- does the Subsorts alternative declare the named sorts?
 pr_alternative :: CASL_Sublogics -> ALTERNATIVE -> Maybe ALTERNATIVE
 pr_alternative l (Total_construct n c p) =
                let
-                 (res,pos) = mapPos (tln 1 p) (pr_components l) c
+                 (res,pos) = mapPos 1 p (pr_components l) c
                in
                  if (res==[]) then Nothing else
-                 Just (Total_construct n res ((topn 1 p) ++ pos))
+                 Just (Total_construct n res pos)
 pr_alternative l (Partial_construct n c p) =
              if ((has_part l)==True) then
                Just (Partial_construct n c p)
@@ -886,18 +892,18 @@ pr_symbol l s = pr_check l sl_symbol s
 pr_sig_items :: CASL_Sublogics -> SIG_ITEMS -> (Maybe SIG_ITEMS,[SORT])
 pr_sig_items l (Sort_items s p) =
              let
-               (res,pos) = mapPos (tln 1 p)
+               (res,pos) = mapPos 1 p
                                   (pr_annoted l pr_sort_item) s
              in
                if (res==[]) then (Nothing,[]) else
-               (Just (Sort_items res ((topn 1 p) ++ pos)),[])
+               (Just (Sort_items res pos),[])
 pr_sig_items l (Op_items o p) =
              let
-               (res,pos) = mapPos (tln 1 p)
+               (res,pos) = mapPos 1 p
                                   (pr_annoted l pr_op_item) o
              in
                if (res==[]) then (Nothing,[]) else
-               (Just (Op_items res ((topn 1 p) ++ pos)),[])
+               (Just (Op_items res pos),[])
 pr_sig_items l (Pred_items i p) =
              if (has_pred l) then
                (Just (Pred_items i p),[])
@@ -905,12 +911,12 @@ pr_sig_items l (Pred_items i p) =
                (Nothing,[])
 pr_sig_items l (Datatype_items d p) =
              let
-               (res,pos) = mapPos (tln 1 p)
+               (res,pos) = mapPos 1 p
                            (pr_annoted l pr_datatype_decl) d
                lst = pr_lost_dt l ((map item) d)
              in
                if (res==[]) then (Nothing,lst) else
-               (Just (Datatype_items res ((topn 1 p) ++ pos)),lst)
+               (Just (Datatype_items res pos),lst)
 
 pr_op_item :: CASL_Sublogics -> OP_ITEM -> Maybe OP_ITEM
 pr_op_item l i = pr_check l sl_op_item i
@@ -936,10 +942,10 @@ pr_symb_items l1 (Symb_items k s p) =
             in
               if (in_x l k sl_symb_kind) then
                 let
-                  (res,pos) = mapPos (tln 1 p) (pr_symb l) s
+                  (res,pos) = mapPos 1 p (pr_symb l) s
                 in
                   if (res==[]) then Nothing else
-                  Just (Symb_items k res ((topn 1 p) ++ pos))
+                  Just (Symb_items k res pos)
               else
                 Nothing
 
@@ -950,10 +956,10 @@ pr_symb_map_items l1 (Symb_map_items k s p) =
                 in
                   if (in_x l k sl_symb_kind) then
                     let
-                      (res,pos) = mapPos (tln 1 p) (pr_symb_or_map l) s
+                      (res,pos) = mapPos 1 p (pr_symb_or_map l) s
                     in
                       if (res==[]) then Nothing else
-                      Just (Symb_map_items k res ((topn 1 p) ++ pos))
+                      Just (Symb_map_items k res pos)
                   else
                     Nothing
 
