@@ -11,6 +11,9 @@ Portability :  non-portable(overlapping-instances)
 
    Printing functions for Isabelle logic.
 -}
+{-
+  todo: brackets in (? x . p x) ==> q
+-}
 
 module Isabelle.IsaPrint where
 

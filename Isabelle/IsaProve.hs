@@ -10,6 +10,9 @@ Portability :  portable
 
    Interface for Isabelle theorem prover.
 -}
+{-
+  todo: thy files in subdir
+-}
 
 module Isabelle.IsaProve where
 
@@ -27,6 +30,8 @@ import Configuration
 
 import System.Posix.IO
 import ChildProcess
+import Directory
+import System
 
 isabelleProver :: Prover Sign Sentence () ()
 isabelleProver =
@@ -40,8 +45,31 @@ isabelleProver =
 isaProve :: String -> (Sign,[Named Sentence]) -> [Named Sentence] 
               -> IO([Proof_status Sentence ()])
 isaProve thName (sig,axs) goals = do
-  writeFile (thName++".thy") showTheory 
-  isa <- newChildProcess "/home/linux-bkb/bin/Isabelle" [arguments (["/home/cofi/sonja/HetCATS/Comorphisms/MainHC.thy"]++[thName++".thy"])]
+  let fileName = thName++".thy"
+      origName = thName++".orig.thy"
+      patchName = thName++".patch"
+  ex <- doesFileExist fileName
+  exorig <- doesFileExist origName
+  case (ex,exorig) of
+    (True,True) -> do 
+             putStrLn ("diff -u "++origName++" "++fileName++" > "++patchName)
+             system ("diff -u "++origName++" "++fileName++" > "++patchName)
+             writeFile fileName showTheory 
+             putStrLn ("cp "++fileName++" "++origName)
+             system ("cp "++fileName++" "++origName)
+             putStrLn ("patch -u "++fileName++" "++patchName)
+             system ("patch -u "++fileName++" "++patchName)
+             return ()
+    (True,False) -> do
+             system ("cp "++fileName++" "++fileName++".old")
+             writeFile fileName showTheory 
+             system ("cp "++fileName++" "++origName)
+             return ()
+    (False,_) -> do
+             writeFile fileName showTheory 
+             system ("cp "++fileName++" "++origName)
+             return ()
+  isa <- newChildProcess "/home/linux-bkb/bin/Isabelle" [arguments ({-["/home/cofi/sonja/HetCATS/Comorphisms/MainHC.thy"]++ -} [fileName])]
 --  writeFile (thName++".thy") (showTheory (writeTo isa))
   msgs <- readProofs isa
   closeChildProcessFds isa
