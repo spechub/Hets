@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.PrettyPrint.HughesPJ
+-- Module      :  Common.Lib.Pretty
 -- Copyright   :  (c) The University of Glasgow 2001
 -- License     :  BSD-style (see the file libraries/base/LICENSE)
 -- 
@@ -167,7 +167,7 @@ Relative to John's original paper, there are the following new features:
         Use of unboxed data types to speed up the implementation
 -}
 
-module Text.PrettyPrint.HughesPJ (
+module Common.Lib.Pretty (
 
 	-- * The document type
         Doc,            -- Abstract
