@@ -1,7 +1,7 @@
 # $Header$
 
 call:
-	ghc-call
+	./ghc-call
 
 %: 
 	(cd test; $(MAKE) $@)
