@@ -10,13 +10,6 @@ Portability :  portable
    static analysis of modal logic parts
 -}
 
-{- todo:
-   check quantifiers (sorts, variables in body) in ana_M_FORMULA
-   * MixfixAnalysis must be done in resolveMixfix not in minExpFormula,
-     for correct generation of AS after analysis!!
-
--}
-
 module Modal.StatAna where
 
 import Modal.AS_Modal
@@ -33,6 +26,7 @@ import CASL.MapSentence
 
 import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import Common.Id
 import Common.Result
@@ -132,44 +126,49 @@ addRigidPred ty i m = return
 
 ana_M_BASIC_ITEM :: Ana M_BASIC_ITEM M_FORMULA ModalSign
 ana_M_BASIC_ITEM ga bi = do
-    e <- get
-    ops <- gets allOpIds
-    preds <- gets allPredIds 
-    newGa <- gets $ addAssocs ga
-    let is = mkIdSet ops preds
     case bi of
         Simple_mod_decl al fs ps -> do
-            newFs <- mapAnM (resultToState (ana_FORMULA False newGa is)) fs 
+            mapM_ ((updateExtInfo . preAddModId) . item) al
+            newFs <- mapAnM (ana_FORMULA False ga) fs 
             mapM_ ((updateExtInfo . addModId newFs) . item) al
             return $ Simple_mod_decl al newFs ps
         Term_mod_decl al fs ps -> do
-            newFs <- mapAnM (resultToState (ana_FORMULA True newGa is)) fs 
-            mapM_ ((updateExtInfo . addModSort newFs e) . item) al
+            e <- get
+            mapM_ ((updateExtInfo . preAddModSort e) . item) al
+            newFs <- mapAnM (ana_FORMULA True ga) fs 
+            mapM_ ((updateExtInfo . addModSort newFs) . item) al
             return $ Term_mod_decl al newFs ps
 
 resultToState :: (a -> Result a) -> a -> State (Sign f e) a
 resultToState f a = do 
     let r =  f a 
-    addDiags $ reverse $ diags r
+    addDiags $ diags r
     case maybeResult r of
         Nothing -> return a
         Just b -> return b
 
-addModId :: [AnModFORM] -> SIMPLE_ID -> ModalSign -> Result ModalSign
-addModId frms i m = 
+preAddModId :: SIMPLE_ID -> ModalSign -> Result ModalSign
+preAddModId i m = 
     let ms = modies m in 
     if Map.member i ms then 
        Result [mkDiag Hint "repeated modality" i] $ Just m
-       else return m { modies = Map.insert i frms ms }
+       else return m { modies = Map.insert i [] ms }
 
-addModSort :: [AnModFORM] -> 
-              Sign M_FORMULA ModalSign -> SORT -> ModalSign -> Result ModalSign
-addModSort frms e i m = 
+addModId :: [AnModFORM] -> SIMPLE_ID -> ModalSign -> Result ModalSign
+addModId frms i m = return m { modies = Map.insert i frms $ modies m }
+
+preAddModSort :: Sign M_FORMULA ModalSign -> SORT -> ModalSign 
+              -> Result ModalSign
+preAddModSort e i m = 
     let ms = termModies m
         ds = hasSort e i 
     in if Map.member i ms || not (null ds) then 
        Result (mkDiag Hint "repeated term modality" i : ds) $ Just m
-       else return m { termModies = Map.insert i frms ms }
+       else return m { termModies = Map.insert i [] ms }
+
+addModSort :: [AnModFORM] -> SORT -> ModalSign -> Result ModalSign
+addModSort frms i m = 
+       return m { termModies = Map.insert i frms $ termModies m }
 
 map_M_FORMULA :: MapSen M_FORMULA ModalSign ()
 map_M_FORMULA mor frm =
@@ -187,65 +186,76 @@ map_M_FORMULA mor frm =
                newM <- mapMod m 
                return $ Diamond newM newF ps 
 
-ana_FORMULA :: Bool -> MixResolve (FORMULA M_FORMULA)
-ana_FORMULA b ga is phi = do 
-   f <- ana_M_FORMULA b phi
-   resolveMixFrm resolveM_FORMULA ga is f
+ana_FORMULA :: Bool -> Ana (FORMULA M_FORMULA) M_FORMULA ModalSign
+ana_FORMULA b ga f = 
+    if isPropForm b f then do
+           let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
+           pm <- gets predMap
+           mapM_ (addPred $ PredType []) ps
+           ops <- gets formulaIds
+           preds <- gets allPredIds
+           newGa <- gets $ addAssocs ga
+           let Result es m = resolveFormula resolveM_FORMULA newGa ops preds f
+           addDiags es
+           e <- get
+           phi <- case m of  
+               Nothing -> return f
+               Just r -> resultToState (minExpFORMULA minExpForm ga e) r
+           e2 <- get
+           put e2 {predMap = pm}
+           return phi
+    else do addDiags [mkDiag Error 
+               "Modality declarations may only contain propositional axioms"
+                f] >> return f
 
-ana_M_FORMULA :: Bool -> FORMULA M_FORMULA -> Result (FORMULA M_FORMULA)
-ana_M_FORMULA b (Conjunction phis pos) = do
-  phis' <- mapM (ana_M_FORMULA b) phis
-  return (Conjunction phis' pos)
-ana_M_FORMULA b (Disjunction phis pos) = do
-  phis' <- mapM (ana_M_FORMULA b) phis
-  return (Disjunction phis' pos)
-ana_M_FORMULA b (Implication phi1 phi2 b1 pos) = do
-  phi1' <- ana_M_FORMULA b phi1
-  phi2' <- ana_M_FORMULA b phi2
-  return (Implication phi1' phi2' b1 pos)
-ana_M_FORMULA b (Equivalence phi1 phi2 pos) = do
-  phi1' <- ana_M_FORMULA b phi1
-  phi2' <- ana_M_FORMULA b phi2
-  return (Equivalence phi1' phi2' pos)
-ana_M_FORMULA b (Negation phi pos) = do
-  phi' <- ana_M_FORMULA b phi
-  return (Negation phi' pos)
-ana_M_FORMULA _ phi@(True_atom _) = return phi
-ana_M_FORMULA _ phi@(False_atom _) = return phi
-ana_M_FORMULA _ (Mixfix_formula (Mixfix_token ident)) = 
-  return (Predication (Qual_pred_name (mkId [ident]) 
-              (Pred_type [] []) []) 
-              [] [])
-ana_M_FORMULA b (ExtFORMULA (Box m phi pos)) = do
-  phi' <- ana_M_FORMULA b phi
-  return(ExtFORMULA (Box m phi' pos))
-ana_M_FORMULA b (ExtFORMULA (Diamond m phi pos)) = do
-  phi' <- ana_M_FORMULA b phi
-  return(ExtFORMULA (Diamond m phi' pos))
-ana_M_FORMULA b phi@(Quantification q vs phi1 pos) = 
-  if b then do phi2 <- ana_M_FORMULA b phi1
-               return $ Quantification q vs phi2 pos
-    else anaError phi pos
-ana_M_FORMULA _ phi@(Predication _ _ _pos) =
-  return phi 
-ana_M_FORMULA _ phi@(Definedness _ pos) =
-  anaError phi pos
-ana_M_FORMULA _ phi@(Existl_equation _ _ pos) =
-  anaError phi pos
-ana_M_FORMULA _ phi@(Strong_equation _ _ pos) =
-  anaError phi pos
-ana_M_FORMULA _ phi@(Membership _ _ pos) =
-  anaError phi pos
-ana_M_FORMULA _ phi@(Mixfix_formula _) =
-  return phi 
-ana_M_FORMULA _ phi@(Unparsed_formula _ pos) =
-  anaError phi pos
-ana_M_FORMULA _ phi@(Sort_gen_ax _ _) =
-  anaError phi [nullPos]
+getFormPredToks :: FORMULA M_FORMULA -> Set.Set Token
+getFormPredToks frm = case frm of
+    Quantification _ _ f _ -> getFormPredToks f
+    Conjunction fs _ -> Set.unions $ map getFormPredToks fs
+    Disjunction fs _ -> Set.unions $ map getFormPredToks fs
+    Implication f1 f2 _ _ -> 
+        Set.union (getFormPredToks f1) $ getFormPredToks f2
+    Equivalence f1 f2 _  -> 
+        Set.union (getFormPredToks f1) $ getFormPredToks f2
+    Negation f _ -> getFormPredToks f
+    Mixfix_formula (Mixfix_token t) -> Set.single t
+    Mixfix_formula t -> getTermPredToks t
+    ExtFORMULA (Box _ f _) -> getFormPredToks f
+    ExtFORMULA (Diamond _ f _) -> getFormPredToks f
+    Predication _ ts _ -> Set.unions $ map getTermPredToks ts
+    Definedness t _ -> getTermPredToks t
+    Existl_equation t1 t2 _ -> 
+        Set.union (getTermPredToks t1) $ getTermPredToks t2
+    Strong_equation t1 t2 _ -> 
+        Set.union (getTermPredToks t1) $ getTermPredToks t2
+    Membership t _ _ -> getTermPredToks t
+    _ -> Set.empty
 
-anaError :: a -> [Pos] -> Result a
-anaError phi pos = 
-   plain_error phi 
-     "Modality declarations may only contain propositional axioms"
-     (headPos pos)
+getTermPredToks :: TERM M_FORMULA -> Set.Set Token
+getTermPredToks trm = case trm of
+    Application _ ts _ -> Set.unions $ map getTermPredToks ts
+    Sorted_term t _ _ -> getTermPredToks t
+    Cast t _ _ -> getTermPredToks t
+    Conditional t1 f t2 _ -> Set.union (getTermPredToks t1) $
+        Set.union (getFormPredToks f) $ getTermPredToks t2                   
+    Mixfix_term ts -> Set.unions $ map getTermPredToks ts
+    Mixfix_parenthesized ts _ -> Set.unions $ map getTermPredToks ts
+    Mixfix_bracketed ts _ -> Set.unions $ map getTermPredToks ts
+    Mixfix_braced ts _ -> Set.unions $ map getTermPredToks ts
+    _ -> Set.empty
 
+isPropForm :: Bool -> FORMULA M_FORMULA -> Bool
+isPropForm b frm = case frm of
+    Quantification _ _ f _ -> b && isPropForm b f
+    Conjunction fs _ -> all (isPropForm b) fs
+    Disjunction fs _ -> all (isPropForm b) fs
+    Implication f1 f2 _ _ -> isPropForm b f1 && isPropForm b f2
+    Equivalence f1 f2 _  -> isPropForm b f1 && isPropForm b f2
+    Negation f _ -> isPropForm b f
+    Mixfix_formula _ -> True
+    ExtFORMULA (Box _ f _) -> isPropForm b f
+    ExtFORMULA (Diamond _ f _) -> isPropForm b f
+    Predication _ _ _ -> True
+    False_atom _ -> True
+    True_atom _ -> True
+    _ -> False
