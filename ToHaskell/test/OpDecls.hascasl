@@ -1,17 +1,7 @@
 type s, t
 
-op a, b  : s
+op __ + __ : s * s -> t
 
-%% op __ + __ : s  -> s -> s, idem, assoc, comm;
+op x:s
 
-op __ + __ : t * t -> t
-op __ + __ : t -> t -> t
-op __ + __ : s * s -> s
-
-%%op a,b : t
-
-%%op c : s = a + b
-
-var x:s
-
-op y:s = (var x:s) + (var x:s)
+op y:t = (op x:s) + (op x:s)
