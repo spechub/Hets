@@ -562,7 +562,7 @@ restrictOps sym1 sym2 posmap =
     _ -> ([],[])
 
 -- the main function
-inducedFromToMorphism :: (PrettyPrint f, PrettyPrint e) =>
+inducedFromToMorphism :: (PrettyPrint f, PrettyPrint e, PrettyPrint m) =>
 			 Ext f e m -> RawSymbolMap -> Sign f e -> Sign f e 
 		      -> Result (Morphism f e m)
 inducedFromToMorphism extEm rmap sigma1 sigma2 = do
@@ -573,7 +573,11 @@ inducedFromToMorphism extEm rmap sigma1 sigma2 = do
    -- yes => we are done
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
-   else do  -- 2. Compute initial posmap, using all possible mappings of symbols
+   else if Set.size (symOf sigma1) == 1 && Set.size (symOf sigma2) == 1 then
+        return mor1 { sort_map = Map.single
+        (symName $ Set.findMin $ symOf sigma1) 
+                   (symName $ Set.findMin $ symOf sigma2) }   
+   else do -- 2. Compute initial posmap, using all possible mappings of symbols
      let symset1 = symOf sigma1
          symset2 = symOf sigma2
          addCard sym s = (s,(postponeEntry sym s,Set.size s))
@@ -594,10 +598,13 @@ inducedFromToMorphism extEm rmap sigma1 sigma2 = do
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
      smap1 <- case smap of
-                 Nothing -> fail "No signature morphism for symbol map\n(try with option -v3 to get some hints)"
+                 Nothing -> fail "No signature morphism for symbol map found"
                  Just x -> return x
      -- 9./10. compute and return the resulting morphism
-     symbMapToMorphism extEm sigma1 sigma2 smap1
+     rm <- symbMapToMorphism extEm sigma1 sigma2 smap1
+     pwarning rm (
+        text "please check if the following morphism matches your intention"
+        $$ printText rm) nullPos
      where
      -- 4. recursive depth first function
      -- ambiguous map leads to fatal error (similar to exception)
