@@ -11,8 +11,8 @@ Portability :  portable
     
   This module provides the sublogic functions (as required by Logic.hs) for
   HasCASL. The functions allow to compute the minimal sublogics needed by a
-  given element, to check whether an item is part of a given sublogic, and to
-  project an element into a given sublogic.
+  given element, to check whether an item is part of a given sublogic, and --
+  not yet -- to project an element into a given sublogic.
 
 -}
 
@@ -31,7 +31,7 @@ module HasCASL.Sublogic ( -- * datatypes
                    sublogics_name,
                    
                    -- * list of all sublogics
---                   sublogics_all,
+                   sublogics_all,
 
                    -- * checks if element is in given sublogic
                    in_basicSpec,
@@ -64,9 +64,6 @@ module HasCASL.Sublogic ( -- * datatypes
 
 import Data.Maybe
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
-import Common.Id
 import Common.AS_Annotation
 import HasCASL.As
 import HasCASL.Le
@@ -154,6 +151,8 @@ need_type_classes = bottom { has_type_classes = True }
 need_polymorphism :: HasCASL_Sublogics
 need_polymorphism = bottom { has_polymorphism = True }
 
+-- minimal sublogic with type constructors
+--
 need_type_constructors :: HasCASL_Sublogics
 need_type_constructors = bottom { has_type_constructors = True }
 
@@ -173,54 +172,39 @@ need_hol = bottom { which_logic = HOL }
 -- Functions to generate a list of all sublogics for HasCASL
 -----------------------------------------------------------------------------
 
-{-
-[HasCASL_SL {has_sub = sub,
-             has_part = part, 
-             ...}
- sub <- [False,True],
- part <- [False,True],
- .... ]
--}
--- conversion from Int in [0..127] range to HasCASL_Sublogics
-
-boolFromInt :: Int -> Bool
-boolFromInt 0 = False
-boolFromInt _ = True
-
-formulasFromInt :: Int -> HasCASL_Formulas
-formulasFromInt 0 = Atomic
-formulasFromInt 1 = Horn
-formulasFromInt 2 = GHorn
-formulasFromInt _ = FOL
-
--- sublogicFromInt :: Int -> HasCASL_Sublogics
--- sublogicFromInt i =
---   let
---     divmod = (\x y -> (div x y,mod x y))
---     (f,fr) = divmod i  32
---     (e,er) = divmod fr 16
---     (d,dr) = divmod er 8
---     (c,cr) = divmod dr 4
---     (b,a)  = divmod cr 2
---   in
---     HasCASL_SL (boolFromInt a) (boolFromInt b) (boolFromInt c) (boolFromInt d)
---             (boolFromInt e) (formulasFromInt f)
-
--- all elements
--- create a list of all HasCASL sublogics by generating all possible
--- feature combinations and then filtering illegal ones out
---
--- sublogics_all :: [HasCASL_Sublogics]
--- sublogics_all = filter (not . adjust_check) $ map sublogicFromInt [0..127]
+sublogics_all :: [HasCASL_Sublogics]
+sublogics_all = [HasCASL_SL {has_sub = sub,
+                             has_part = part, 
+                             has_eq = eq,
+                             has_pred = pre,
+                             has_ho = ho,
+                             has_type_classes = tyCl,
+                             has_polymorphism = poly,
+                             has_type_constructors = tyCon,
+                             which_logic = logic}
+                  | sub <- [False,True],
+                    part <- [False,True],
+                    eq <- [False,True],
+                    pre <- [False,True],
+                    ho <- [False,True],
+                    tyCl <- [False,True],
+                    poly <- [False,True],
+                    tyCon <- [False,True],
+                    logic <- [Atomic, Horn, GHorn, FOL, HOL] ]
 
 ------------------------------------------------------------------------------
 -- Conversion functions (to String)
 ------------------------------------------------------------------------------
 
+-- "formulas_name :: has_pred -> has_ho -> which_logic -> String"
 formulas_name :: Bool -> Bool -> HasCASL_Formulas -> String
-formulas_name True  True  FOL    = "HOL"
+formulas_name True  True  HOL    = "HOL"
+formulas_name True  False HOL    = "HOL"  -- ?!
+formulas_name False True  HOL    = "HOL"
+formulas_name False False HOL    = "HOL"  -- ?!
+formulas_name True  True  FOL    = "HOL"  -- ?!
 formulas_name True  False FOL    = "FOL"
-formulas_name False True  FOL    = "HO-FOAlg"
+formulas_name False True  FOL    = "HO-FOAlg"  -- ?!
 formulas_name False False FOL    = "FOAlg"
 formulas_name True  True  GHorn  = "HO-GHorn"
 formulas_name True  False GHorn  = "GHorn"
@@ -288,20 +272,6 @@ sublogics_min a b = HasCASL_SL
 comp_list :: [HasCASL_Sublogics] -> HasCASL_Sublogics
 comp_list l = foldl sublogics_max bottom l
 
--- adjust illegal combination "subsorting with atomic logic"
---
--- adjust_logic :: HasCASL_Sublogics -> HasCASL_Sublogics
--- adjust_logic x = if (adjust_check x) then 
---                    x { which_logic = Horn }
---                  else
---                    x
-
--- check for illegal combination "subsorting with atomic logic"
---
--- adjust_check :: HasCASL_Sublogics -> Bool
--- adjust_check x = (has_sub x) && (which_logic x == Atomic)
-
-
 ------------------------------------------------------------------------------
 -- Functions to analyse formulae
 ------------------------------------------------------------------------------
@@ -323,31 +293,39 @@ comp_list l = foldl sublogics_max bottom l
 --
 is_atomic_t :: Term -> Bool
 is_atomic_t (QuantifiedTerm q _ t _) = (is_atomic_q q) && (is_atomic_t t)
-is_atomic_t (ApplTerm (QualOp Fun (InstOpId id _ _) typ _) (TupleTerm terms _) _) =
+is_atomic_t (ApplTerm (QualOp Fun (InstOpId i _ _) t _) (TupleTerm ts _) _) =
  -- P-Conjunction and ExEq
-      (((id == andId)    && (and $ map is_atomic_t terms)) || (id == exEq))
-   && (typ == logType) 
-   && (not (null terms)) 
-is_atomic_t (QualOp Fun  (InstOpId id _ _) typ _) = (id == trueId) && (typ == logType)
+      (((i == andId) 
+         && (and $ map is_atomic_t ts))
+       || (i == exEq))
+   && (t == logType) 
+   && (not (null ts)) 
+is_atomic_t (QualOp Fun  (InstOpId i _ _) t _) = 
+     (i == trueId)
+  && (t == logType)
 --is_atomic_t (Predication _ _ _) = True
-is_atomic_t (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) term _) = (id == defId) && (typ == logType)
+is_atomic_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) _ _) =
+     (i == defId)
+  && (t == logType)
 is_atomic_t _ = False
 
 -- QUANTIFIER
 --
 is_atomic_q :: Quantifier -> Bool
 is_atomic_q (Universal) = True
-is_atomic_q _ = False
+is_atomic_q _           = False
 
 -- Positive Conditional Logic (subsection 3.2 in the paper)
 
 -- FORMULA
 --
 is_horn_t :: Term -> Bool
-is_horn_t (QuantifiedTerm q _ f _) = (is_atomic_q q) && (is_horn_t f)
-is_horn_t (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) (TupleTerm f _) _) = 
-     (id == implId)
-  && (typ == logType)
+is_horn_t (QuantifiedTerm q _ f _) = 
+     (is_atomic_q q)
+  && (is_horn_t f)
+is_horn_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm f _) _) = 
+     (i == implId)
+  && (t == logType)
   && (is_horn_p_conj (head f))
   && (is_horn_a (last f))
 is_horn_t _ = False
@@ -355,34 +333,39 @@ is_horn_t _ = False
 -- P-CONJUNCTION
 --
 is_horn_p_conj :: Term -> Bool
-is_horn_p_conj (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) (TupleTerm terms _) _) =
-      (id == andId)
-   && (typ == logType) 
-   && (not (null terms)) 
-   && (and $ map is_horn_a terms)
+is_horn_p_conj (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm ts _) _) =
+      (i == andId)
+   && (t == logType) 
+   && (not (null ts)) 
+   && (and $ map is_horn_a ts)
 is_horn_p_conj _ = False
 
 -- ATOM
 --
 is_horn_a :: Term -> Bool
-is_horn_a (QualOp Fun  (InstOpId id _ _) typ _) = (id == trueId) && (typ == logType)
+is_horn_a (QualOp Fun  (InstOpId i _ _) t _) =
+     (i == trueId)
+  && (t == logType)
 -- is_horn_a (Predication _ _ _) = True
-is_horn_a (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) term _) = (id == defId) && (typ == logType)
-is_horn_a (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) _ _) =
-      ((id == exEq) || (id == eqId))
-   && (typ == logType) 
+is_horn_a (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) _ _) =
+     ((i == defId)
+       || (i == exEq)
+       || (i == eqId))
+  && (t == logType)
 --is_horn_a (Membership _ _ _) = True
 is_horn_a _ = False
 
 -- P-ATOM
 --
 is_horn_p_a :: Term -> Bool
-is_horn_p_a (QualOp Fun  (InstOpId id _ _) typ _) = (id == trueId) && (typ == logType)
+is_horn_p_a (QualOp Fun  (InstOpId i _ _) t _) =
+     (i == trueId)
+  && (t == logType)
 -- is_horn_p_a (Predication _ _ _) = True
-is_horn_p_a (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) term _) = (id == defId) && (typ == logType)
-is_horn_p_a (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) _ _) =
-      (id == exEq) 
-   && (typ == logType) 
+is_horn_p_a (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) _ _) = 
+     ((i == defId)
+       || (i == exEq))
+  && (t == logType)
 -- is_horn_p_a (Membership _ _ _) = True
 is_horn_p_a _ = False
 
@@ -392,27 +375,22 @@ is_horn_p_a _ = False
 --
 is_ghorn_t :: Term -> Bool
 is_ghorn_t (QuantifiedTerm q _ t _) = (is_atomic_q q) && (is_ghorn_t t)
-is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) (TupleTerm terms _) _)=
-      (id == andId)
-   && (typ == logType) 
-   && (not (null terms)) 
-   && ((is_ghorn_c_conj terms) || (is_ghorn_f_conj terms))
-is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) (TupleTerm f _) _) = 
-     (id == implId)
-  && (typ == logType)
-  && (is_ghorn_prem (head f))
-  && (is_ghorn_conc (last f))
-is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) (TupleTerm f _) _) = 
-     (id == eqvId)
-  && (typ == logType)
-  && (is_ghorn_prem (head f))
-  && (is_ghorn_prem (last f))
-is_ghorn_t (QualOp Fun  (InstOpId id _ _) typ _) = (id == trueId) && (typ == logType)
+is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm f _) _) = 
+     (t == logType)
+  && (((i == andId) && (not (null f)) &&  ((is_ghorn_c_conj f) || (is_ghorn_f_conj f)))
+      ||
+      ((i == implId) && (is_ghorn_prem (head f)) && (is_ghorn_conc (last f)))
+      ||
+      ((i == eqvId) && (is_ghorn_prem (head f)) && (is_ghorn_prem (last f))))
+is_ghorn_t (QualOp Fun  (InstOpId i _ _) t _) =
+     (i == trueId)
+  && (t == logType)
 -- is_ghorn_t (Predication _ _ _) = True
-is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) term _) = (id == defId) && (typ == logType)
-is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) _ _) =
-      ((id == exEq) || (id == eqId))
-   && (typ == logType) 
+is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) _ _) = 
+     ((i == defId)
+       || (i == exEq) 
+       || (i == eqId))
+  && (t == logType)
 -- is_ghorn_t (Membership _ _ _) = True
 is_ghorn_t _ = False
 
@@ -429,45 +407,43 @@ is_ghorn_f_conj t = (not(null t)) && (and ((map is_ghorn_t) t))
 -- P-CONJUNCTION
 --
 is_ghorn_p_conj :: [Term] -> Bool
-is_ghorn_p_conj t = (not(null t)) && (and ((map is_ghorn_prem) t))
+is_ghorn_p_conj t = (not(null t)) && (and (map is_ghorn_prem t))
 
 -- PREMISE
 --
 is_ghorn_prem :: Term -> Bool
-is_ghorn_prem (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) (TupleTerm terms _) _) =
-      (id == andId)
-   && (typ == logType) 
-   && (not (null terms)) 
-   && (is_ghorn_p_conj terms)
+is_ghorn_prem (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm ts _) _) =
+     (i == andId)
+  && (t == logType) 
+  && (not (null ts)) 
+  && (is_ghorn_p_conj ts)
 is_ghorn_prem x = is_horn_p_a x
 
 -- CONCLUSION
 --
 is_ghorn_conc :: Term -> Bool
-is_ghorn_conc (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) (TupleTerm terms _) _) =
-      (id == andId)
-   && (typ == logType) 
-   && (not (null terms)) 
-   && (is_ghorn_c_conj terms)
+is_ghorn_conc (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm ts _) _) =
+     (i == andId)
+  && (t == logType) 
+  && (not (null ts)) 
+  && (is_ghorn_c_conj ts)
 is_ghorn_conc x = is_horn_a x
+
+is_fol_t :: Term -> Bool
+is_fol_t _ = False
 
 -- compute logic of a formula by checking all logics in turn
 --
 get_logic :: Term -> HasCASL_Sublogics
-get_logic f = if (is_atomic_t f) then bottom else
-              if (is_horn_t f) then need_horn else
-              if (is_ghorn_t f) then need_ghorn else
-              need_fol
+get_logic t = if (is_atomic_t t) then bottom else
+                if (is_horn_t t) then need_horn else
+                  if (is_ghorn_t t) then need_ghorn else
+                    if (is_fol_t t) then need_fol else
+                      need_hol
 
--- for the formula inside a subsort-defn
---
-get_logic_sd :: Term -> HasCASL_Sublogics
-get_logic_sd f = if (is_horn_p_a f) then need_horn else
-                 if (is_ghorn_prem f) then need_ghorn else
-                 need_fol
 
 ------------------------------------------------------------------------------
--- Functions to compute minimal sublogic for a given element, these work
+-- Functions to compute minimal sublogic for a given element; these work
 -- by recursing into all subelements
 ------------------------------------------------------------------------------
 
@@ -475,42 +451,50 @@ sl_basicSpec :: BasicSpec -> HasCASL_Sublogics
 sl_basicSpec (BasicSpec l) = comp_list $ map sl_basicItem
                                        $ map item l
 
+
 sl_basicItem :: BasicItem -> HasCASL_Sublogics
 sl_basicItem (SigItems l) = sl_sigItems l
 sl_basicItem (ProgItems l _) = comp_list $ map sl_progEq
-                                          $ map item l
-sl_basicItem (ClassItems i l _) = sublogics_max need_type_classes
-                                     (comp_list $ map sl_classItem
-                                                $ map item l)
+                                         $ map item l
+sl_basicItem (ClassItems _ l _) = sublogics_max need_type_classes
+                                    (comp_list $ map sl_classItem
+                                               $ map item l)
 sl_basicItem (GenVarItems l _) = comp_list $ map sl_genVarDecl l
 sl_basicItem (FreeDatatype l _) = comp_list $ map sl_datatypeDecl
-                                             $ map item l
-sl_basicItem (GenItems l _) = -- sublogics_max need_cons
-                                (comp_list $ map sl_sigItems
-                                           $ map item l)
+                                            $ map item l
+sl_basicItem (GenItems l _) = (comp_list $ map sl_sigItems
+                                         $ map item l)
 sl_basicItem (AxiomItems l m _) = sublogics_max
                                      (comp_list $ map sl_genVarDecl l)
                                      (comp_list $ map sl_term
                                                 $ map item m)
 sl_basicItem (Internal l _) = comp_list $ map sl_basicItem 
-                                         $ map item l
+                                        $ map item l
+
 
 sl_sigItems :: SigItems -> HasCASL_Sublogics
 sl_sigItems (TypeItems i l _) = sublogics_max (sl_instance i)
                                   (comp_list $ map sl_typeItem
                                              $ map item l)
-sl_sigItems (OpItems _ l _) = comp_list $ map sl_opItem $ map item l
+sl_sigItems (OpItems b l _) = sublogics_max (sl_opBrand b)
+                                (comp_list $ map sl_opItem 
+                                           $ map item l)
+
 
 sl_opBrand :: OpBrand -> HasCASL_Sublogics
+sl_opBrand (Pred) = need_pred
 sl_opBrand _ = bottom
+
 
 sl_instance :: Instance -> HasCASL_Sublogics
 sl_instance (Instance) = need_type_classes
 sl_instance _ = bottom
 
+
 sl_classItem :: ClassItem -> HasCASL_Sublogics
 sl_classItem (ClassItem _ l _) = comp_list $ map sl_basicItem 
                                            $ map item l
+
 
 sl_typeItem :: TypeItem -> HasCASL_Sublogics
 sl_typeItem (TypeDecl l _ _) = comp_list $ map sl_typePattern l
@@ -519,7 +503,10 @@ sl_typeItem (SubtypeDecl l _ _) = sublogics_max need_sub
 sl_typeItem (IsoDecl l _) = sublogics_max need_sub
                               (comp_list $ map sl_typePattern l)
 sl_typeItem (SubtypeDefn tp _ t term _) = 
-  comp_list [(sl_typePattern tp), (sl_type t), (sl_term (item term))]
+  comp_list [need_sub, 
+             (sl_typePattern tp), 
+             (sl_type t), 
+             (sl_term (item term))]
 sl_typeItem (AliasType tp _ ts _) = sublogics_max (sl_typePattern tp)
                                                   (sl_typeScheme ts)
 sl_typeItem (Datatype dDecl) = sl_datatypeDecl dDecl
@@ -529,15 +516,18 @@ sl_typePattern :: TypePattern -> HasCASL_Sublogics
 sl_typePattern (TypePattern _ l _) = comp_list $ map sl_typeArg l
 sl_typePattern (MixfixTypePattern l) = comp_list $ map sl_typePattern l
 sl_typePattern (BracketTypePattern _ l _) = comp_list $ map sl_typePattern l
-sl_typePattern (TypePatternArg ta _) = sl_typeArg ta
+sl_typePattern (TypePatternArg _ _) = need_polymorphism
 sl_typePattern _ = bottom
 
 
 sl_type :: Type -> HasCASL_Sublogics
+sl_type (TypeName _ _ 0) = need_type_constructors
 sl_type (TypeAppl t1 t2) = sublogics_max (sl_type t1) (sl_type t2)
 sl_type (BracketType _ l _) = comp_list $ map sl_type l
 sl_type (KindedType t _ _) = sl_type t
 sl_type (MixfixType l) = comp_list $ map sl_type l
+sl_type (LazyType t _) = sublogics_max need_type_constructors
+                                       (sl_type t)
 sl_type (ProductType l _) = comp_list $ map sl_type l
 sl_type (FunType t1 a t2 _) = 
   comp_list [(sl_type t1), (sl_arrow a), (sl_type t2)]
@@ -552,22 +542,27 @@ sl_arrow _ = bottom
 
 sl_typeScheme :: TypeScheme -> HasCASL_Sublogics
 sl_typeScheme (TypeScheme l (p :=> t) _) = 
-  comp_list [(comp_list $ map sl_typeArg l), (sl_type t), 
+  comp_list [(comp_list $ map sl_typeArg l), 
+             (sl_type t), 
              (comp_list $ map sl_pred p)]
 
 
 sl_pred :: Pred -> HasCASL_Sublogics
 sl_pred (IsIn _ l) = sublogics_max need_type_classes 
-                                         (comp_list $ map sl_type l)
+                       (comp_list $ map sl_type l)
 
 
 sl_opItem :: OpItem -> HasCASL_Sublogics
 sl_opItem (OpDecl l t m _) = 
   comp_list [(comp_list $ map sl_opId l),
-             (sl_typeScheme t), (comp_list $ map sl_opAttr m)]
-sl_opItem (OpDefn i vd ts p t _) =
-  comp_list [(sl_opId i), (comp_list $ map sl_varDecl (concat vd)),
-             (sl_typeScheme ts), (sl_partiality p), (sl_term t)]
+             (sl_typeScheme t), 
+             (comp_list $ map sl_opAttr m)]
+sl_opItem (OpDefn i v ts p t _) =
+  comp_list [(sl_opId i), 
+             (comp_list $ map sl_varDecl (concat v)),
+             (sl_typeScheme ts), 
+             (sl_partiality p), 
+             (sl_term t)]
 
 
 sl_partiality :: Partiality -> HasCASL_Sublogics
@@ -581,19 +576,22 @@ sl_opAttr _ = bottom
 
 
 sl_datatypeDecl :: DatatypeDecl -> HasCASL_Sublogics
-sl_datatypeDecl (DatatypeDecl t _ l [] _) =
-  comp_list $ map sl_alternative $ map item l
 sl_datatypeDecl (DatatypeDecl t _ l c _) =
-  sublogics_max need_type_classes
-                (comp_list $ map sl_alternative $ map item l)
+  if (null c) then sublogics_max (sl_typePattern t)
+                                 (comp_list $ map sl_alternative 
+                                            $ map item l)
+    else comp_list [need_type_classes, 
+                   (sl_typePattern t),
+                   (comp_list $ map sl_alternative $ map item l)]
 
 
 sl_alternative :: Alternative -> HasCASL_Sublogics
 sl_alternative (Constructor _ l p _) =  
- sublogics_max (sl_partiality p)
-               (comp_list $ map sl_component (concat l))
+ comp_list [need_type_constructors,
+            (sl_partiality p),
+            (comp_list $ map sl_component (concat l))]
 sl_alternative (Subtype l _) = sublogics_max need_sub
-                                             (comp_list $ map sl_type l)
+                                 (comp_list $ map sl_type l)
 
 
 sl_component :: Component -> HasCASL_Sublogics
@@ -608,18 +606,19 @@ sl_term t = sublogics_max (get_logic t) (sl_t t)
 
 sl_t :: Term -> HasCASL_Sublogics
 sl_t (QualVar _ t _) = sl_type t
+sl_t (QualOp b i t _) =
+  comp_list [(sl_opBrand b),
+             (sl_instOpId i),
+             (sl_typeScheme t)]
 --sl_t (ResolvedMixTerm _ l _) = comp_list $ map sl_t l
 sl_t (ApplTerm t1 t2 _) = sublogics_max (sl_t t1) (sl_t t2)
-sl_t (ApplTerm (QualOp Fun  (InstOpId id _ _) typ _) (TupleTerm l _) _) =
-  if ((id == exEq) || (id == eqId)) then 
-    sublogics_max need_eq (comp_list $ map sl_t l)
-      else comp_list $ map sl_t l
 sl_t (TupleTerm l _) = comp_list $ map sl_t l
-sl_t (TypedTerm term _ typ _) = sublogics_max (sl_t term) (sl_type typ)
+sl_t (TypedTerm t _ ty _) = sublogics_max (sl_t t) (sl_type ty)
 sl_t (QuantifiedTerm _ l t _) = sublogics_max (sl_t t)
                                  (comp_list $ map sl_genVarDecl l)
 sl_t (LambdaTerm l p t _) = 
-  comp_list [(comp_list $ map sl_pattern l), (sl_partiality p),
+  comp_list [(comp_list $ map sl_pattern l),
+             (sl_partiality p),
              (sl_t t)]
 sl_t (CaseTerm t l _) = sublogics_max (sl_t t)
                           (comp_list $ map sl_progEq l)
@@ -642,24 +641,30 @@ sl_varDecl :: VarDecl -> HasCASL_Sublogics
 sl_varDecl (VarDecl _ t _ _) = sl_type t
 
 sl_typeArg :: TypeArg -> HasCASL_Sublogics
-sl_typeArg (TypeArg _ _ _ _) = bottom
+sl_typeArg (TypeArg _ _ _ _) = need_polymorphism
 
 sl_genVarDecl :: GenVarDecl -> HasCASL_Sublogics
 sl_genVarDecl (GenVarDecl v) = sl_varDecl v
-sl_genVarDecl (GenTypeVarDecl t) = sl_typeArg t
+sl_genVarDecl (GenTypeVarDecl _) = need_polymorphism
 
 sl_opId :: OpId -> HasCASL_Sublogics
 sl_opId (OpId _ l _) = comp_list $ map sl_typeArg l
 
+sl_instOpId :: InstOpId -> HasCASL_Sublogics
+sl_instOpId (InstOpId i l _) =
+  if ((i == exEq) || (i == eqId))
+    then sublogics_max need_eq (comp_list $ map sl_type l)
+      else comp_list $ map sl_type l
+
 
 sl_symbItems :: SymbItems -> HasCASL_Sublogics
 sl_symbItems (SymbItems k l _ _) = sublogics_max (sl_symbKind k)
-                                   (comp_list $ map sl_symb l)
+                                     (comp_list $ map sl_symb l)
 
 
 sl_symbMapItems :: SymbMapItems -> HasCASL_Sublogics
 sl_symbMapItems (SymbMapItems k l _ _) = sublogics_max (sl_symbKind k)
-                                          (comp_list $ map sl_symbOrMap l)
+                                           (comp_list $ map sl_symbOrMap l)
 
 
 sl_symbKind :: SymbKind -> HasCASL_Sublogics
@@ -679,15 +684,8 @@ sl_symbType (SymbType t) = sl_typeScheme t
 
 sl_symbOrMap :: SymbOrMap -> HasCASL_Sublogics
 sl_symbOrMap (SymbOrMap s Nothing _) = sl_symb s
-sl_symbOrMap (SymbOrMap s (Just t) _) = sublogics_max (sl_symb s) (sl_symb t)
-
--- sl_symb_items_list :: SYMB_ITEMS_LIST -> HasCASL_Sublogics
--- sl_symb_items_list (Symb_items_list l _) = comp_list $ map sl_symb_items l
-
-
--- sl_symb_map_items_list :: SYMB_MAP_ITEMS_LIST -> HasCASL_Sublogics
--- sl_symb_map_items_list (Symb_map_items_list l _) = 
---     comp_list $ map sl_symb_map_items l
+sl_symbOrMap (SymbOrMap s (Just t) _) = 
+  sublogics_max (sl_symb s) (sl_symb t)
 
 
 -- the maps have no influence since all sorts,ops,preds in them
@@ -697,20 +695,78 @@ sl_symbOrMap (SymbOrMap s (Just t) _) = sublogics_max (sl_symb s) (sl_symb t)
 
 sl_env :: Env -> HasCASL_Sublogics
 sl_env e = 
-    let classes = if Map.isEmpty $ classMap e then bottom else need_type_classes
-	in sublogics_max classes bottom
+    let classes = if Map.isEmpty $ classMap e 
+                    then bottom else need_type_classes
+        types = comp_list $ map sl_typeInfo (Map.elems (typeMap e))
+        ops = comp_list $ map sl_opInfos (Map.elems (assumps e))
+	in comp_list [classes, types, ops]
+
+
+sl_typeInfo :: TypeInfo -> HasCASL_Sublogics
+sl_typeInfo t = sublogics_max (comp_list $ map sl_type (superTypes t))
+                              (sl_typeDefn (typeDefn t))
+
+
+sl_typeDefn :: TypeDefn -> HasCASL_Sublogics
+sl_typeDefn (Supertype _ ts t) = 
+  sublogics_max (sl_typeScheme ts) (sl_term t)
+sl_typeDefn (DatatypeDefn _ l m) =
+  sublogics_max (comp_list $ map sl_typeArg l)
+                (comp_list $ map sl_altDefn m)
+sl_typeDefn (AliasTypeDefn t) = sl_typeScheme t
+sl_typeDefn (TypeVarDefn) = need_polymorphism
+sl_typeDefn _ = bottom
+
+
+sl_opInfos :: OpInfos -> HasCASL_Sublogics
+sl_opInfos o = comp_list $ map sl_opInfo (opInfos o)
+
+
+sl_opInfo :: OpInfo -> HasCASL_Sublogics
+sl_opInfo o = comp_list [(sl_typeScheme (opType o)),
+                         (comp_list $ map sl_opAttr (opAttrs o)),
+                         (sl_opDefn (opDefn o))]
+
+
+sl_opDefn :: OpDefn -> HasCASL_Sublogics
+sl_opDefn (NoOpDefn b) = sl_opBrand b
+sl_opDefn (SelectData l _) = comp_list $ map sl_constrInfo l
+sl_opDefn (Definition b t) =
+  sublogics_max (sl_opBrand b) (sl_term t)
+sl_opDefn _ = bottom
+
+
+sl_constrInfo :: ConstrInfo -> HasCASL_Sublogics
+sl_constrInfo c = sl_typeScheme (constrType c)
+
 
 sl_sentence :: Sentence -> HasCASL_Sublogics
 sl_sentence (Formula t) = sl_term t
-sl_sentence (ProgEqSen _ ts pq) = sublogics_max (sl_typeScheme ts) (sl_progEq pq)
-sl_sentence _ = bottom
+sl_sentence (ProgEqSen _ ts pq) = 
+  sublogics_max (sl_typeScheme ts) (sl_progEq pq)
+sl_sentence (DatatypeSen l) = comp_list $ map sl_datatypeDefn l
 
--- data Sentence = Formula Term
---               | DatatypeSen [DatatypeDefn]
---               | ProgEqSen UninstOpId TypeScheme ProgEq
+
+sl_datatypeDefn :: DatatypeDefn -> HasCASL_Sublogics
+sl_datatypeDefn (DatatypeConstr _ _ _ l m) =
+  sublogics_max (comp_list $ map sl_typeArg l)
+                (comp_list $ map sl_altDefn m)
+
+sl_altDefn :: AltDefn -> HasCASL_Sublogics
+sl_altDefn (Construct _ l p m) =
+  comp_list [need_type_constructors,
+             (comp_list $ map sl_type l),
+             (sl_partiality p),
+             (comp_list $ map sl_selector m)]
+
+sl_selector :: Selector -> HasCASL_Sublogics
+sl_selector (Select _ t p) = sublogics_max (sl_type t)
+                                           (sl_partiality p)
+
 
 sl_morphism :: Morphism -> HasCASL_Sublogics
 sl_morphism m = sublogics_max (sl_env $ msource m) (sl_env $ mtarget m)
+
 
 sl_symbol :: Symbol -> HasCASL_Sublogics
 sl_symbol (Symbol _ t e) = 
@@ -742,10 +798,13 @@ sl_in given new = (nimpl (has_sub  given) (has_sub  new)) &&
                   (nimpl (has_part given) (has_part new)) &&
                   (nimpl (has_eq   given) (has_eq   new)) &&
                   (nimpl (has_pred given) (has_pred new)) &&
-                  (nimpl (has_polymorphism given) (has_polymorphism new)) &&
-                  (nimpl (has_ho given) (has_ho new)) &&
-                  (nimpl (has_type_classes given) (has_type_classes new)) &&
-                  (nimpl (has_type_constructors given) (has_type_constructors new)) &&
+                  (nimpl (has_polymorphism given) 
+                                  (has_polymorphism new)) &&
+                  (nimpl (has_ho   given) (has_ho   new)) &&
+                  (nimpl (has_type_classes given) 
+                                  (has_type_classes new)) &&
+                  (nimpl (has_type_constructors given) 
+                             (has_type_constructors new)) &&
                   ((which_logic given) >= (which_logic new))
 
 in_x :: HasCASL_Sublogics -> a -> (a -> HasCASL_Sublogics) -> Bool
