@@ -96,11 +96,12 @@ openParenTok = mkSimpleId "("
 closeParenTok = mkSimpleId ")"
 parenTok = mkSimpleId "()" -- unique indicator
 
-colonTok, asTok, varTok, opTok :: Token
+colonTok, asTok, varTok, opTok, predTok :: Token
 colonTok = mkSimpleId ":"
 asTok = mkSimpleId "as"
 varTok = mkSimpleId "(var)"
 opTok = mkSimpleId "(op)"
+predTok = mkSimpleId "(pred)"
 
 parenToks :: [Token]
 parenToks = [openParenTok, closeParenTok]
@@ -154,9 +155,9 @@ initialState g is i =
        mkTokState i [placeTok, asTok] `addToSet`
        mkTokState i [varTok] `addToSet`
        mkTokState i [opTok] `addToSet`
-       mkTokState i (opTok:parenToks)
-
--- qualified names not handled yet
+       mkTokState i (opTok:parenToks) `addToSet`
+       mkTokState i [predTok] `addToSet`
+       mkTokState i (predTok:parenToks)
 
 listId :: Id
 -- unique id (usually "[]" yields two tokens)
@@ -184,7 +185,9 @@ scan trm i m =
 	  Mixfix_sorted_term _ _ -> colonTok
 	  Mixfix_cast _ _ -> asTok
           Mixfix_parenthesized _ _ -> parenTok
-          _ -> error "scan"
+	  Application _ _ _ -> opTok
+          Mixfix_qual_pred _ -> predTok
+          _ -> varTok
   in
     addToFM m (i+1) (mkSet $ 
        foldr (\ (State o b a ts k) l ->
@@ -196,6 +199,8 @@ scan trm i m =
                      : (State o True a (placeTok : tail ts) k) : l
               else if t == parenTok then
                      (State o b (a ++ termArgs) (tail ts) k) : l
+              else if t == varTok || t == opTok || t == predTok then
+                     (State o b [trm] (tail ts) k) : l
 	      else if t == colonTok || t == asTok then
 	             if null a then l else 
 	                (State o b [mkTerm $ head a] [] k) : l
@@ -248,7 +253,26 @@ isRightArg (Id ts _ _) n = n == (length $ filter isPlace ts) -
 	      (length $ takeWhile isPlace (reverse ts))
 	  
 stateToAppl :: State -> TERM
-stateToAppl (State i _ a _ _) = asAppl i (reverse a) nullPos
+stateToAppl (State i _ a _ _) = 
+    let vs = getTokenList i 
+        ar = reverse a
+    in if length ar == 1 && 
+           (vs == [placeTok, colonTok] 
+	   || vs == [placeTok, asTok] 
+	   || vs == [varTok] 
+           || vs == [opTok]
+           || vs == [predTok])
+       then head ar
+       else if vs == parenToks 
+	    then Mixfix_parenthesized ar []
+	    else if head vs == opTok -- plus arguments
+		 then let Application q _ ps = head ar
+                      in Application q (tail ar) ps 
+		 else if head vs == predTok 
+		      then Mixfix_term [head ar, 
+					Mixfix_parenthesized 
+					(tail ar) []] 
+                      else asAppl i ar nullPos
 
 asListAppl :: GlobalAnnos -> State -> TERM
 asListAppl g s@(State i _ a _ _) =
@@ -313,9 +337,10 @@ posOfTerm trm =
 		   Just l -> if null l then nullPos else head l
 
 
-mkChart :: GlobalAnnos -> Set Id -> [TERM] -> Chart
-mkChart g is terms = iterateStates g is terms 
-		     (0, [], unitFM 0 $ initialState g is 0)
+mkChart :: GlobalAnnos -> Set Id -> Set Id -> [TERM] -> Chart
+mkChart g ops preds terms = iterateStates g ops terms 
+		     (0, [], unitFM 0 $ initialState g 
+		      (ops `union` preds) 0)
 
 getAppls :: GlobalAnnos -> Int -> ParseMap -> [TERM]
 getAppls g i m = 
@@ -325,30 +350,44 @@ getAppls g i m =
 
 parseMixfix :: GlobalAnnos -> Set Id -> [TERM] -> [TERM]
 parseMixfix g is terms =
-    let (i, _, m) = mkChart g is terms
+    let (i, _, m) = mkChart g is emptySet terms
     in  getAppls g i m
+
+resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> TERM -> Result TERM
+resolveMixfix g ops preds trm =
+    let (i, ds, m) = mkChart g ops preds [trm]
+        ts = getAppls g i m
+    in if null ts then Result ds Nothing
+       else if length ts > 1 then 
+	    non_fatal_error trm ("ambiguous mixfix term\n\t" ++ 
+			 (concat  
+			 $ intersperse "\n\t" 
+			 $ map (show . printText0 g) 
+			 $ take 5 ts)) (posOfTerm trm)
+	    else return $ head ts
+
+-- resolveFormula :: 
 
 -- start testing
 
-testTokens l r t = 
+testTerm l r t = 
     let g = addGlobalAnnos emptyGlobalAnnos 
 			 $ map (parseString annotationL) l
-	in map (printText g)
-		$ parseMixfix g (mkSet $ map (parseString parseId) r)
-		      (map (\ c -> Mixfix_token . mkSimpleId 
-			   $ if c == '_' then place else [c]) t)
+	in printText g
+		$ resolveMixfix g (mkSet $ map (parseString parseId) r)
+		      emptySet (parseString term t)
 
 myAnnos = [ "%prec({__+__} < {__*__})%", "%prec({__*__} < {__^__})%"
 	  , "%left_assoc(__+__)%"
 	  , "%list([__], [], __::__)%"]
 
 myIs = ["__^__", "__*__", "__+__", "[__]", "____p", "q____","____x____",
-        "{____}",
+        "{____}","__-__",
 	"x", "0", "1", "2", "3", "4", "5", "a", "b", "-__", "__!"]
 
-myTokens = "4*x^4+3*x^3+2*x^2+1*x^1+0*x^0"
+polynom = "4*x^4+3*x^3+2*x^2+1*x^1+0*x^0"
 
-testAppl = testTokens myAnnos myIs myTokens
+testAppl t = testTerm myAnnos myIs t 
 
 -- --------------------------------------------------------------- 
 -- convert literals 
@@ -436,20 +475,20 @@ convertMixfixToken ga t =
      if isString t then 
 	case string_lit ga of
 	Nothing -> err "string"
-        Just (c, f) -> erg $ makeStringTerm c f t
---     else if isChar t then erg $ asAppl (Id [t] [] []) [] (tokPos t) 
+        Just (c, f) -> return $ makeStringTerm c f t
      else if isNumber t then 
 	  case number_lit ga of
 	  Nothing -> err "number"
 	  Just f -> if isFloating t then
 		        case float_lit ga of
 			Nothing -> err "floating"
-			Just (d, e) -> erg $ makeFloatTerm f d e t
-		    else erg $ makeNumberTerm f t
-     else erg $ Mixfix_token t
-    where err s = Result([Error ("missing %" ++ s ++ " annotation") (tokPos t)],
-			 Just (Mixfix_token t))
-          erg r = Result([], Just r) 
+			Just (d, e) -> return $ makeFloatTerm f d e t
+		    else return $ makeNumberTerm f t
+     else return te
+    where te =  Mixfix_token t
+          err s = non_fatal_error te
+		  ("missing %" ++ s ++ " annotation") (tokPos t)
+
 
 
 
