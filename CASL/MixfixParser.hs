@@ -47,24 +47,10 @@ data State = State Id
 		   Int      -- index into the ParseMap/input string
 
 instance Eq State where
-    State r1 _ _ t1 p1 == State r2 _ _ t2 p2 =
-	r1 == r2 && t1 == t2 && p1 == p2
+    State r1 _ _ t1 p1 == State r2 _ _ t2 p2 = (r1, t1, p1) == (r2, t2, p2)
 
 instance Ord State where
-    State r1 _ _ t1 p1 <= State r2 _ _ t2 p2 =
-	if r1 == r2 then
-	       if t1 == t2 then p1 <= p2
-	       else t1 <= t2
-	else r1 <= r2
-
-instance Show State where
-    showsPrec _ (State r _ _ d p) = showChar '{' 
-				 . showSepList (showString "") showTok first
-				 . showChar '.' 
-				 . showSepList (showString "") showTok d
-				 . shows p . showChar '}'
-	where first = take (length v - length d) v
-	      v = getTokenList place r
+    State r1 _ _ t1 p1 <= State r2 _ _ t2 p2 = (r1, t1, p1) <= (r2, t2, p2)
 
 termStr :: String
 termStr = "(T)"
@@ -637,9 +623,3 @@ convertMixfixToken ga t =
     where te =  Mixfix_token t
           err s = ([Diag Error ("missing %" ++ s ++ " annotation") (tokPos t)]
 		  , te)
-
-
-
-
-
-
