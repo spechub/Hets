@@ -91,7 +91,31 @@ data Annotation = -- | constructor for comments or unparsed annotes
 		| Semantic_anno Semantic_anno [Pos] 
 		-- position information for annotations is provided 
 		-- by every annotation
-		  deriving (Show,Eq)
+		  deriving (Show)
+
+
+instance Eq Annotation where
+      Unparsed_anno aw1 at1 _ == Unparsed_anno aw2 at2 _
+	  = (aw1,at1)==(aw2,at2) 
+      Display_anno i1 x1 _ == Display_anno i2 x2 _ 
+	  = (i1,x1)==(i2,x2) 
+      List_anno i1 i2 i3 _ == List_anno i4 i5 i6 _ 
+	  = (i1,i2,i3)==(i4,i5,i6)
+      Number_anno i1 _ == Number_anno i2 _ 
+	  = i1==i2
+      Float_anno  i1 i2 _ == Float_anno i3 i4 _ 
+	  = (i1,i2)==(i3,i4)
+      String_anno i1 i2 _ == String_anno i3 i4 _ 
+	  = (i1,i2)==(i3,i4)
+      Prec_anno pr1 i1 i2 _ == Prec_anno pr2 i3 i4 _ 
+	  = (pr1,i1,i2)==(pr2,i3,i4)
+      Assoc_anno ae1 i1 _ == Assoc_anno ae2 i2 _
+	  = (ae1,i1) == (ae2,i2)
+      Label str1 _ == Label str2 _
+	  = str1 == str2
+      Semantic_anno sa1 _ == Semantic_anno sa2 _ 
+	  = sa1 == sa2 
+      _ == _ = False
 
 -- | an item wrapped in preceeding (left 'l_annos') 
 -- and following (right 'r_annos') annotations.
