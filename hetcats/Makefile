@@ -58,12 +58,13 @@ hetcats: $(objects)
 	$(HC) -o $@ $(HC_OPTS) $(objects)
 
 hetcats-make: hetcats.hs ../utils/create_sources.pl $(drifted_files)
-	rm -f hetcats
-	$(HC) --make -o hetcats $< $(HC_OPTS) 2>&1 | tee hetcats-make
-	$(PERL) ../utils/create_sources.pl < hetcats-make > sources_hetcats.mk
+	rm -f hetcats-make sources_hetcats.mk
+	$(HC) --make -o hetcats $< $(HC_OPTS) 2>&1 | tee hetcats-make && \
+         $(PERL) ../utils/create_sources.pl hetcats-make sources_hetcats.mk
 ###############
 ### clean up
 .PHONY : clean d_clean real_clean
+
 ### removes *.hi and *.o in all include directories and the binary 'hetcats'
 clean:
 	rm -f hetcats
@@ -72,6 +73,7 @@ clean:
          cd $$p ; rm -f *.hi *.o ; cd $$THIS_DIR;\
          done; \
          unset p THIS_DIR
+
 ### additonally removes *.d (dependency files) in every include directory
 d_clean: clean
 	THIS_DIR=`pwd`;\
@@ -79,6 +81,7 @@ d_clean: clean
          cd $$p ; rm -f *.d ; cd $$THIS_DIR;\
          done; \
          unset p THIS_DIR
+
 ### additionally removes the files that define the sources-variable
 real_clean: d_clean 
 	rm -f hetcats-make sources_hetcats.mk
