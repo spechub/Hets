@@ -17,7 +17,6 @@ import Common.Result
 import Comorphisms.LogicGraph
 import Logic.Logic
 import ATC.Comorphism
-import ATC.Named
 import Logic.Logic
 import Logic.Comorphism
 import ATC.Graph
