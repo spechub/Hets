@@ -50,8 +50,8 @@ instance PrettyPrint LIB_ITEM where
 	    -- ac' = printText0 ga ac
 	    (frm,to) = case ac of 
 		       AS_Struct.View_type vaa vab _ -> 
-			   (condBracesGroupSpec printText0 ga vaa, 
-			    condBracesGroupSpec printText0 ga vab)
+			   (condBracesGroupSpec printText0 ("{","}") ga vaa, 
+			    condBracesGroupSpec printText0 ("{","}") ga vab)
 	    ad' = sep $ punctuate comma $ map (printText0 ga) ad
 	    eq' = if null ad then empty else equals
 	in (hang (hang (hang (hang (ptext "view" <+> aa' <+> ab') 

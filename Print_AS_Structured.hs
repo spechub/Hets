@@ -36,11 +36,11 @@ instance PrettyPrint SPEC where
     printText0 ga (Basic_spec aa) =
 	nest 4 $ printText0 ga aa
     printText0 ga (Translation aa ab) =
-	let aa' = condBracesTransReduct printText0 ga aa
+	let aa' = condBracesTransReduct printText0 ("{","}") ga aa
 	    ab' = printText0 ga ab
 	in hang aa' 4 ab'
     printText0 ga (Reduction aa ab) =
-	let aa' = condBracesTransReduct printText0 ga aa
+	let aa' = condBracesTransReduct printText0 ("{","}") ga aa
 	    ab' = printText0 ga ab
 	in hang aa' 4 ab'
     printText0 ga (Union aa _) = 
@@ -48,7 +48,7 @@ instance PrettyPrint SPEC where
 	where intersperse' [] = [] 
 	      intersperse' (x:xs) =
 		  (printText0 ga x):
-		  map (\y -> ptext "and" $$ condBracesAnd printText0 ga y) xs
+		  map (\y -> ptext "and" $$ condBracesAnd printText0 ("{","}") ga y) xs
     printText0 ga (Extension aa _) =
 	fsep $ printList aa
 	       -- intersperse (ptext "then") $ map (printText0 ga) aa
@@ -57,19 +57,20 @@ instance PrettyPrint SPEC where
 		  (printText0 ga x):
 		    map (spAnnotedPrint printText0 ga (ptext "then")) xs
     printText0 ga (Free_spec aa _) =
-	hang (ptext "free") 5 $ condBracesGroupSpec printText0 ga aa
+	hang (ptext "free") 5 $ condBracesGroupSpec printText0 ("{","}") ga aa
     printText0 ga (Local_spec aa ab _) =
-	let aa' = condBracesWithin printText0 ga aa
-	    ab' = condBracesWithin printText0 ga ab
+	let aa' = condBracesWithin printText0 ("{","}") ga aa
+	    ab' = condBracesWithin printText0 ("{","}") ga ab
 	in (hang (ptext "local") 4 aa') $$ 
 	   (hang (ptext "within") 4 ab')
     printText0 ga (Closed_spec aa _) =
-	hang (ptext "closed") 4 $ condBracesGroupSpec printText0 ga aa
+	hang (ptext "closed") 4 $ 
+	     condBracesGroupSpec printText0 ("{","}") ga aa
     printText0 ga (Group aa _) =
 	printText0 ga aa
     printText0 ga (Spec_inst aa ab) =
 	let aa' = printText0 ga aa
-	    ab' = print_fit_arg_list printText0 ga ab
+	    ab' = print_fit_arg_list printText0 ("[","]") ga ab
 	in nest 4 (hang aa' 4 ab')
     printText0 ga (Qualified_spec ln asp _) =
 	ptext "logic" <+> (printText0 ga ln) <> colon $$ (printText0 ga asp)
@@ -111,7 +112,7 @@ instance PrettyPrint SPEC where
 	lbrace $+$ printText ga aa $$ rbrace
     printText ga (Spec_inst aa ab) =
 	let aa' = printText ga aa
-	    ab' = print_fit_arg_list printText ga ab
+	    ab' = print_fit_arg_list printText ("[","]") ga ab
 	in nest 4 (hang aa' 4 ab')
     printText ga (Qualified_spec ln asp _) =
 	ptext "logic" <+> (printText ga ln) <> colon $$ (printText ga asp)
@@ -198,7 +199,7 @@ instance PrettyPrint IMPORTED where
     printText0 ga (Imported aa) =
 	if null aa then empty 
 	else ptext "given" <+> (fsep $ punctuate comma $ 
-				         map (condBracesGroupSpec printText0 ga) aa)
+				         map (condBracesGroupSpec printText0 ("{","}") ga) aa)
 
 instance PrettyPrint FIT_ARG where
     printText0 ga (Fit_spec aa ab _) =
@@ -212,7 +213,7 @@ instance PrettyPrint FIT_ARG where
 	in aa' <+> if null' then empty else hang (ptext "fit") 4 ab'
     printText0 ga (Fit_view aa ab _ ad) =
 	let aa' = printText0 ga aa
-	    ab' = print_fit_arg_list printText0 ga ab
+	    ab' = print_fit_arg_list printText0 ("[","]") ga ab
 	    ad' = printText0 ga ad
 	in ad' $$ hang (ptext "view" <+> aa') 4 ab'
 
@@ -268,44 +269,49 @@ instance PrettyPrint Logic_name where
 -----------------------------------------------
 
 print_fit_arg_list:: (GlobalAnnos -> (Annoted FIT_ARG) -> Doc) -> 
+		     (String,String) ->
 		     GlobalAnnos -> [Annoted FIT_ARG] -> Doc
-print_fit_arg_list _ _ [] = empty
-print_fit_arg_list pf ga [fa] = sp_brackets $ pf ga fa
-print_fit_arg_list pf ga fas = 
-    sep $ map (sp_brackets . (pf ga)) fas
+print_fit_arg_list _ _ _ [] = empty
+print_fit_arg_list pf (lb,rb) ga [fa] = sp_between lb rb $ pf ga fa
+print_fit_arg_list pf (lb,rb) ga fas = 
+    sep $ map ((sp_between lb rb) . (pf ga)) fas
 
 condBracesGroupSpec :: (GlobalAnnos -> (Annoted SPEC) -> Doc) -> 
+		       (String,String) ->
 		       GlobalAnnos -> (Annoted SPEC) -> Doc
-condBracesGroupSpec pf ga as =
+condBracesGroupSpec pf (lb,rb) ga as =
     case skip_Group $ item as of
 		 Spec_inst _ _ -> as'
-		 _             -> sp_braces as'
+		 _             -> sp_between lb rb as'
     where as' = pf ga as
 
 condBracesTransReduct :: (GlobalAnnos -> (Annoted SPEC) -> Doc) -> 
-			 GlobalAnnos -> (Annoted SPEC) -> Doc
-condBracesTransReduct pf ga as =
+		       (String,String) ->
+		       GlobalAnnos -> (Annoted SPEC) -> Doc
+condBracesTransReduct pf (lb,rb) ga as =
     case skip_Group $ item as of
-		 Extension _ _    -> sp_braces as'
-		 Union _ _        -> sp_braces as'
-		 Local_spec _ _ _ -> sp_braces as'
+		 Extension _ _    -> sp_between lb rb as'
+		 Union _ _        -> sp_between lb rb as'
+		 Local_spec _ _ _ -> sp_between lb rb as'
 		 _                -> as'
     where as' = pf ga as
 
 condBracesWithin :: (GlobalAnnos -> (Annoted SPEC) -> Doc) -> 
+		    (String,String) ->
 		    GlobalAnnos -> (Annoted SPEC) -> Doc
-condBracesWithin pf ga as =
+condBracesWithin pf (lb,rb) ga as =
     case skip_Group $ item as of
-		 Extension _ _    -> sp_braces as'
-		 Union _ _        -> sp_braces as'
+		 Extension _ _    -> sp_between lb rb as'
+		 Union _ _        -> sp_between lb rb as'
 		 _                -> as'
     where as' = pf ga as
 
 condBracesAnd :: (GlobalAnnos -> (Annoted SPEC) -> Doc) -> 
+		 (String,String) ->
 		 GlobalAnnos -> (Annoted SPEC) -> Doc
-condBracesAnd pf ga as =
+condBracesAnd pf (lb,rb) ga as =
     case skip_Group $ item as of
-		 Extension _ _    -> sp_braces as'
+		 Extension _ _    -> sp_between lb rb as'
 		 _                -> as'
     where as' = pf ga as
 
