@@ -1,8 +1,7 @@
-
 {- |
 
    Module      :  $Header$
-   Copyright   :  (c) Christian Maeder, Klaus Lüttich and Uni Bremen 2002-2003
+   Copyright   :  (c) Christian Maeder, Klaus Lüttich, Carsten Fischer and Uni Bremen 2002-2003
    Licence     :  All rights reserved.
 
 
@@ -13,17 +12,12 @@
    Some functions for building and accessing the datastructures 
    of GlobalAnnotations. 
 
-   todo: yield a proper result instead of runtime errors for conflicts
+   todo: partition annotations 
+   and report diagnostics for non-global annotations 
 
 -}
 
-module Common.AnalyseAnnos
-    ( emptyGlobalAnnos, addGlobalAnnos
-    , precRel, isLAssoc, isRAssoc, isAssoc, getLiteralType
-    , store_prec_annos, store_assoc_annos
-    , getListBrackets, listBrackets
-    ) 
-    where
+module Common.AnalyseAnnos where
 
 import Common.Id
 import Common.AS_Annotation
@@ -37,10 +31,11 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
+-- | add global annotations
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> Result GlobalAnnos
 addGlobalAnnos ga annos = 
-    do n_prec_annos <- store_prec_annos (prec_annos  ga)   annos
-       n_assoc_annos <- store_assoc_annos (assoc_annos ga)   annos
+    do n_prec_annos <- store_prec_annos (prec_annos  ga) annos
+       n_assoc_annos <- store_assoc_annos (assoc_annos ga) annos
        n_display_annos <- store_display_annos (display_annos ga) annos
        n_literal_annos <- store_literal_annos (literal_annos ga) annos
        n_literal_map <- store_literal_map (literal_map ga) annos
@@ -51,7 +46,7 @@ addGlobalAnnos ga annos =
 		 , literal_annos = n_literal_annos
 		 , literal_map = n_literal_map}
   
-
+-- | add precedences 
 store_prec_annos :: PrecedenceGraph -> [Annotation] -> Result PrecedenceGraph
 store_prec_annos pgr ans = fmap Rel.transClosure $
     foldM ( \ p0 an -> case an of 
@@ -89,20 +84,7 @@ store_prec_annos pgr ans = fmap Rel.transClosure $
 	    _ -> return p0) pgr ans
     where showRel r = showSepList (showString "\n") showIdPair $ Rel.toList r
 
- 
-precRel :: PrecedenceGraph -- ^ Graph describing the precedences
-	-> Id -- ^ x oID (y iid z) -- outer id
-	-> Id -- ^ x oid (y iID z) -- inner id
-	-> PrecRel
--- a 'Lower' corresponds to %prec {out_id} < {in_id} 
-precRel pg out_id in_id =
-    case (Rel.member in_id out_id pg, Rel.member out_id in_id pg) of
-    (False,True)  -> Lower
-    (True,False)  -> Higher
-    (True,True)   -> BothDirections
-    (False,False) -> NoDirection
-
----------------------------------------------------------------------------
+-- | add associative ids
 store_assoc_annos :: AssocMap ->  [Annotation] -> Result AssocMap
 store_assoc_annos
     = foldM ( \ am0 an ->
@@ -119,20 +101,7 @@ store_assoc_annos
 		                $ Just am1 ) am0 is
 	      _ -> return am0 )
 
-isLAssoc :: AssocMap -> Id -> Bool
-isLAssoc = isAssoc ALeft
-
-isRAssoc :: AssocMap -> Id -> Bool
-isRAssoc = isAssoc ARight
-
-isAssoc :: AssocEither -> AssocMap -> Id -> Bool
-isAssoc ae amap i =
-    case Map.lookup i amap of
-    Nothing  -> False
-    Just ae' -> ae' == ae 
-
----------------------------------------------------------------------------
-
+-- | add display annotations
 store_display_annos :: DisplayMap -> [Annotation] -> Result DisplayMap
 store_display_annos = 
     foldM ( \ m an -> 
@@ -149,12 +118,8 @@ store_display_annos =
                   return $ Map.insert i dm m  
 	    _ -> return m )
 
-----------------------------------------------------------------------
-
-getLiteralType ::  GlobalAnnos -> Id -> LiteralType
-getLiteralType ga i = 
-    Map.findWithDefault NoLiteral i $ literal_map ga
-
+-- | add literal annotation to 'LiteralMap'
+-- and check for overlapping ids
 store_literal_map :: LiteralMap -> [Annotation] -> Result LiteralMap
 store_literal_map = 
     foldM ( \ m a -> 
@@ -195,6 +160,8 @@ store_literal_map =
 	                                 $ Just m
 	    _ -> return m )
 
+-- | add literal annotation to 'LiteralAnnos'
+-- and check for contradictions
 store_literal_annos :: LiteralAnnos -> [Annotation] -> Result LiteralAnnos
 store_literal_annos la ans = 
     do n_string_lit <- setStringLit (string_lit la) ans
@@ -207,9 +174,11 @@ store_literal_annos la ans =
 		 , float_lit  = n_float_lit
 		 }
 
+-- | shortcut to show errors in 'setStringLit' and  'setFloatLit'
 showIdPair :: (Id, Id) -> ShowS
 showIdPair (i1, i2) = showId i1 . showString "," . showId i2
 
+-- | add (and check for uniqueness) string annotations
 setStringLit :: Maybe (Id,Id) -> [Annotation] -> Result (Maybe (Id,Id))
 setStringLit = 
     foldM ( \ m a ->
@@ -226,6 +195,7 @@ setStringLit =
                                   " and " ++ showIdPair p "") id1] $ Just m
             _ -> return m )
 
+-- | add (and check for uniqueness) floating annotations
 setFloatLit :: Maybe (Id,Id) -> [Annotation] -> Result (Maybe (Id,Id))
 setFloatLit = 
     foldM ( \ m a ->
@@ -242,6 +212,7 @@ setFloatLit =
                                   " and " ++ showIdPair p "") id1] $ Just m
             _ -> return m )
 
+-- | add (and check for uniqueness) number annotations
 setNumberLit :: Maybe Id -> [Annotation] -> Result (Maybe Id)
 setNumberLit =
     foldM ( \ m a -> 
@@ -256,6 +227,7 @@ setNumberLit =
 				  ++ showId id2 "") id1] $ Just m
 	    _ -> return m )
 
+-- | add (and check for consistency) (possibly several) list annotations
 setListLit :: Set.Set (Id,Id,Id) -> [Annotation] -> Result (Set.Set (Id,Id,Id))
 setListLit = 
     foldM ( \ s a ->
@@ -271,22 +243,4 @@ setListLit =
             _ -> return s )
     where showTriple (i1, i2, i3) = " %list " ++ showId i1 "," 
                                 ++ showId i2 "," ++ showId i3 "" 
-
--------------------------------------------------------------------------
-
-getListBrackets :: Id -> ([Token], [Token], [Id])
-getListBrackets (Id b cs _) = 
-    let (b1, rest) = break isPlace b
-	b2 = if null rest then [] 
-	     else filter (not . isPlace) rest
-    in (b1, b2, cs)
-
-listBrackets :: GlobalAnnos -> Id -> Id
-listBrackets g i = 
-    case Map.findWithDefault Number i $ literal_map g of
-    ListNull b -> b
-    ListCons b _ -> b
-    _ -> error "listBrackets"
-
--------------------------------------------------------------------------
 

@@ -1,14 +1,11 @@
-
-{- HetCATS/PrettyPrint.hs
-   $Id$
-   Author: Klaus Lüttich
-   Year:   2002
--}
-{- | 
+{- |
+   Module      :  $Header$
+   Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003 
+   Licence     :  All rights reserved.
    
    Maintainer  :  hets@tzi.de
    Stability   :  provisional
-   Portability :  non-portable (import Control.Monad.State)
+   Portability :  portable
 
    This class needs to be instantiated for every datastructure in AS_*
    for LaTeX and isolatin-1 pretty printing. It is only neccessary to
@@ -393,7 +390,7 @@ instance PrettyPrint Id where
 
 printId :: (GlobalAnnos -> Token -> Doc)
 	   -> GlobalAnnos -> Id -> Doc
-printId pf ga (Id tops ids ps) =
+printId pf ga (Id tops ids _) =
     let glue_tok = hcat . map (pf ga)
 	in if null ids then glue_tok tops 
 	   else let (toks, places) = splitMixToken tops

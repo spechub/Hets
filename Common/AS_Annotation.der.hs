@@ -117,39 +117,6 @@ instance Eq Annotation where
 	  = sa1 == sa2 
       _ == _ = False
 
--- | an item wrapped in preceeding (left 'l_annos') 
--- and following (right 'r_annos') annotations.
--- 'opt_pos' should carry the position of an optional semicolon
--- following a formula (but is currently unused).
-data Annoted a = Annoted { item::a, opt_pos :: [Pos]
-			 , l_annos, r_annos::[Annotation]}
-		 deriving (Show, Eq) 
-
--- | change the 'item'
-mapAnnoted :: (a -> b) -> Annoted a -> Annoted b
-mapAnnoted f (Annoted i o l r) = Annoted (f i) o l r
-
--- | replace the 'item'
-replaceAnnoted :: b -> Annoted a -> Annoted b
-replaceAnnoted x (Annoted _ o l r) = Annoted x o l r
-
--- | add further following annotations
-appendAnno :: Annoted a -> [Annotation] -> Annoted a
-appendAnno (Annoted x p l r) y = Annoted x p l (r++y)
-
--- | put together preceding annotations and an item
-addLeftAnno :: [Annotation] -> a -> Annoted a
-addLeftAnno l i = Annoted i [] l []
-
--- | get the label following (or to the right of) an 'item'
-getRLabel :: Annoted a -> String
-getRLabel a = let ls = filter isLabel (r_annos a) in
-		  if null ls then "" else 
-		     let Label l _ = head ls 
-			 in if null l then "" else head l
-			    -- might be a multiline label
-                            -- maybe remove white spaces
-
 -- | 
 -- 'isLabel' tests if the given 'Annotation' is a label
 -- (a 'Label' typically follows a formula)
@@ -177,3 +144,37 @@ isComment c = case c of
 isAnnote :: Annotation -> Bool
 isAnnote = not . isComment
 
+-- | an item wrapped in preceeding (left 'l_annos') 
+-- and following (right 'r_annos') annotations.
+-- 'opt_pos' should carry the position of an optional semicolon
+-- following a formula (but is currently unused).
+data Annoted a = Annoted { item::a, opt_pos :: [Pos]
+			 , l_annos, r_annos::[Annotation]}
+		 deriving (Show, Eq) 
+
+-- | process all items and wrap matching annotations around the results 
+mapAnM :: (Monad m) => (a -> m b) -> [Annoted a] -> m [Annoted b]
+mapAnM f al = 
+    do il <- mapM (f . item) al
+       return $ zipWith ( \ a i -> a { item = i }) al il
+		
+-- | replace the 'item'
+replaceAnnoted :: b -> Annoted a -> Annoted b
+replaceAnnoted x (Annoted _ o l r) = Annoted x o l r
+
+-- | add further following annotations
+appendAnno :: Annoted a -> [Annotation] -> Annoted a
+appendAnno (Annoted x p l r) y = Annoted x p l (r++y)
+
+-- | put together preceding annotations and an item
+addLeftAnno :: [Annotation] -> a -> Annoted a
+addLeftAnno l i = Annoted i [] l []
+
+-- | get the label following (or to the right of) an 'item'
+getRLabel :: Annoted a -> String
+getRLabel a = let ls = filter isLabel (r_annos a) in
+		  if null ls then "" else 
+		     let Label l _ = head ls 
+			 in if null l then "" else head l
+			    -- might be a multiline label
+                            -- maybe remove white spaces
