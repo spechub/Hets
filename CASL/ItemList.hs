@@ -64,8 +64,25 @@ startKeyword :: [String]
 startKeyword = dotS:cDot:
 		   (delete existsS casl_reserved_words)
 
+appendAnno :: Annoted a -> [Annotation] -> Annoted a
+appendAnno (Annoted x p l r) y = Annoted x p l (r++y)
+
+addLeftAnno :: [Annotation] -> a -> Annoted a
+addLeftAnno l i = Annoted i [] l []
+
 annoParser :: GenParser Char st a -> GenParser Char st (Annoted a)
-annoParser parser = bind (\x y -> Annoted y [] x []) annos parser
+annoParser parser = bind addLeftAnno annos parser
+
+annosParser :: GenParser Char st a -> GenParser Char st [Annoted a]
+annosParser parser = do (as, is) <- annos `separatedBy` parser
+			if null is then unexpected ("empty item list")
+			   else let bs = zipWith addLeftAnno (init as) is
+				in return (init bs ++ 
+					   [appendAnno (last bs) (last as)])
+
+itemList :: String -> GenParser Char st b
+               -> ([Annoted b] -> [Pos] -> a) -> GenParser Char st a
+itemList = auxItemList startKeyword
 
 auxItemList :: [String] -> String -> GenParser Char st b
                -> ([Annoted b] -> [Pos] -> a) -> GenParser Char st a
@@ -75,13 +92,6 @@ auxItemList startKeywords keyword parser constr =
        (vs, ts, ans) <- itemAux startKeywords (annoParser parser)
        let r = zipWith appendAnno vs ans in 
 	   return (constr r (map tokPos (p:ts)))
-
-itemList :: String -> GenParser Char st b
-               -> ([Annoted b] -> [Pos] -> a) -> GenParser Char st a
-itemList = auxItemList startKeyword
-
-appendAnno :: Annoted a -> [Annotation] -> Annoted a
-appendAnno (Annoted x p l r) y = Annoted x p l (r++y)
 
 itemAux :: [String] -> GenParser Char st a 
 	-> GenParser Char st ([a], [Token], [[Annotation]])

@@ -54,7 +54,7 @@ forall m, n, r, s:Nat
 . 8 = suc (7) %(Nat_8_def)%
 . 9 = suc (8) %(Nat_9_def)%
 . m @@ n = (m * suc (9)) + n %(Nat_decimal_def)%
-%% then %def
+  %% then %def
 sort Pos = {p : Nat . p > 0}
 ops 1: Pos = suc (0); %(Nat_1_as_Pos_def)%
     __*__ : Pos * Pos -> Pos;
@@ -73,11 +73,11 @@ forall x, m, n, r, s, t:Nat; p:Pos
 . (r + s) * t = (r * t) + (s * t) %(Nat_distr)%
 . max (m, 0) = m %(Nat_max_unit)%
 . min (m, 0) = 0 %(Nat_min_0)%
-%% end
+  %% end
 generated type Int ::= __-__(Nat; Nat)
 forall a, b, c, d:Nat
 . a - b = c - d <=> a + d = c + b %(Int_equality)%
-%% then
+  %% then
 sort Nat < Int
 forall a:Nat
 . a = a - 0 %(Int_Nat_embedding)%
@@ -122,7 +122,7 @@ forall m, n, r, s:Int; a, b, c, d:Nat
   %(Int_quot_def)%
 . m rem n = sign (m) * sign (n) * (abs (m) rem abs (n))
   %(Int_rem_def)%
-%% then %implies
+  %% then %implies
 forall m, n, r:Int; a, b:Nat
 . (def (a -? b)) => a -? b = a - b %(Int_Nat_sub_compat)%
 . m = sign (m) * abs (m) %(Int_abs_decomp)%
@@ -135,14 +135,14 @@ forall m, n, r:Int; a, b:Nat
 . (def (m quot n)) <=> not n = 0 %(Int_quot_dom)%
 . (def (m rem n)) <=> not n = 0 %(Int_rem_dom)%
 . not n = 0 => m = (m quot n) * n + (m rem n) %(Int_quot_rem)%
-%% end
+  %% end
 generated type Rat ::= __/__(Int; Pos)
 forall i, j:Int; p, q:Pos
 . i / p = j / q <=> i * q = j * p %(Rat_equality)%
 sort Int < Rat
 forall i:Int
 . i / 1 = i %(embeddingIntToRat)%
-%% then
+  %% then
 preds __<=__, __<__, __>=__, __>__ : Rat * Rat
 ops 0, 1 : Rat;
     __+__, __-__, __*__ : Rat * Rat -> Rat;
@@ -168,7 +168,7 @@ forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
 . x ^ (- p) = 1 / (x ^ p) %(Rat_power_neg)%
 . min (x, y) = x when x <= y else y %(Rat_min_def)%
 . max (x, y) = y when x <= y else x %(Rat_max_def)%
-%% then %implies
+  %% then %implies
 forall i, j:Int; p, q:Pos
 . (i / p) - (j / q) = (i * q - j * p) / (p * q) %(Rat_sub_rule)%
 . not j = 0 => (i / p) / (j / q) = (i / p) * (q / j)
@@ -197,7 +197,7 @@ generated
      ops a : b;
 	 c : b
      sorts s, t < s
-     type s ::= sort s2, s1 | c | c(a; a, b:t; d:t) | c(a)?}
+     type s ::= sort s2, s1 | c | c(a; a, b:t; d:t) | c(a)? %(bla1)%}
 %(sort)%
 sorts %(after-sort)%
       s; %(bla2)%
@@ -352,7 +352,7 @@ forall n:Nat; c:Char
 . (def chr (n)) <=> (n <= 255) %(chr_dom)%
 . chr (ord (c)) = c %(chr_def)%
 . (n <= 255) => ord (chr (n)) = n %(ord_def)%
-%% definition of individual characters:
+  %% definition of individual characters:
 ops '\000': Char = chr (0); %(slash_000)%
     '\001': Char = chr (1); %(slash_001)%
     '\002': Char = chr (2); %(slash_002)%
@@ -1375,3 +1375,4 @@ ops '\n': Char = NL; %(slash_n)%
     '\f': Char = FF; %(slash_f)%
     '\a': Char = BEL; %(slash_a)%
     '\?': Char = '?' %(slash_quest)%
+%(bla2)%

@@ -291,6 +291,7 @@ pred __ < __ : a * a
 op a: b; c: b
 sort s, t < s ;
 type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
+%(bla1)%
 }
 
 %(sort)%
@@ -1479,3 +1480,5 @@ forall x:s.e
           '\f' : Char = FF;              %(slash_f)%
           '\a' : Char = BEL;             %(slash_a)%
           '\?' : Char = '?';             %(slash_quest)%
+
+%(bla2)%

@@ -50,10 +50,9 @@ basicItems = fmap Sig_items sigItems
 		      <|> 
 		      do o <- oBraceT
 			 a <- annos
-			 i:is <- many1 sigItems
+			 is <- annosParser sigItems
 			 c <- cBraceT
-			 return (Sort_gen ((Annoted i [] a [])  
-					   : map (\x -> Annoted x [] [] []) is)
+			 return (Sort_gen is
 				   (toPos g [o] c)) 
 	     <|> do v <- pluralKeyword varS
 		    (vs, ps) <- varItems
@@ -86,15 +85,13 @@ varItems = do v <- varDecl
 dotFormulae :: GenParser Char st BASIC_ITEMS
 dotFormulae = do d <- dotT
 		 (fs, ds) <- aFormula `separatedBy` dotT
-		 let ps = map tokPos (d:ds) in 
-		   if null (r_annos(last fs)) then  
-		   do (m, an) <- optSemi
-		      case m of 
-			Nothing -> return (Axiom_items fs ps)
-			Just t -> return (Axiom_items 
-			       (init fs ++ [appendAnno (last fs) an])
+		 (m, an) <- optSemi
+		 let ps = map tokPos (d:ds) 
+		     ns = init fs ++ [appendAnno (last fs) an]
+		     in case m of 
+			Nothing -> return (Axiom_items ns ps)
+			Just t -> return (Axiom_items ns
 			       (ps ++ [tokPos t]))
-		   else return (Axiom_items fs ps)
     where aFormula = bind appendAnno (annoParser formula) lineAnnos
 
 
@@ -103,7 +100,5 @@ dotFormulae = do d <- dotT
 -- ------------------------------------------------------------------------
 
 basicSpec :: GenParser Char st BASIC_SPEC
-basicSpec = -- (oBraceT >> cBraceT >> return (Basic_spec []))
-	    -- <|> 
-	    fmap Basic_spec (many1 aBasicItems)
-    where aBasicItems = bind (\ x y -> Annoted y [] x []) annos basicItems
+basicSpec = fmap Basic_spec $ annosParser basicItems
+
