@@ -2,11 +2,12 @@ module ToHaskell.TranslateAna where
 
 import HasCASL.As
 import HasCASL.Le
+import HasCASL.Unify
 import Haskell.Language.Syntax
 --import Common.AS_Annotation
 import Common.Id
 --import Common.Lib.Parsec.Pos
-import Common.Lib.Map as Map hiding (map)
+import qualified Common.Lib.Map as Map hiding (map)
 import Common.Lexer
 import Data.Char
 import Data.List
@@ -23,7 +24,7 @@ import Common.PPUtils
 nullLoc :: SrcLoc
 nullLoc = SrcLoc "" 1 1
 
--- undefinierte Funktion
+-- undefinierte Funktion, erwartet den Funktionsnamen als Parameter
 functionUndef :: String -> HsDecl
 functionUndef s = 
     HsPatBind nullLoc
@@ -32,7 +33,7 @@ functionUndef s =
 	      []
 
 -------------------------------------------------------------------------
--- Funktion zum Aufruf des Parsers
+-- Funktion zum Aufruf des Parsers fuer ID's
 -------------------------------------------------------------------------
 
 idToHaskell :: AParser WrapString
@@ -44,18 +45,16 @@ idToHaskell = fmap (WrapString . translateId) parseId
 
 translateAna :: Env -> HsModule
 --translateAna env = error (show env)
-translateAna env = HsModule nullLoc (Module "HasCASLModul") 
-		   Nothing -- Maybe[HsExportSpec]
-		   [(HsImportDecl nullLoc
-		                 (Module "Prelude") 
-                                 False 
-		                 Nothing 
-		                 (Just (False,[HsIAbs (HsIdent "undefined")])))]
-
-
---HsIThingWith (HsIdent "Prelude") [(HsVarName (HsIdent "undefined"))]])))]
-                   ((translateTypeMap (typeMap env)) ++ 
-                    (translateAssumps (assumps env)))   -- [HsDecl]
+translateAna env = 
+    HsModule nullLoc (Module "HasCASLModul") 
+	     Nothing -- Maybe[HsExportSpec]
+	     [(HsImportDecl nullLoc
+	                    (Module "Prelude") 
+                            False 
+	                    Nothing 
+		            (Just (False,[HsIVar (HsIdent "undefined")])))]
+             ((translateTypeMap (typeMap env)) ++ 
+             (translateAssumps (assumps env) (typeMap env)))   -- [HsDecl]
 -- Achtung: env enthält noch andere zu übersetzende Argumente 
 -- (z.B. classMap, sentences) !!
 
@@ -64,7 +63,7 @@ translateAna env = HsModule nullLoc (Module "HasCASLModul")
 -------------------------------------------------------------------------
 
 translateTypeMap :: TypeMap -> [HsDecl]
-translateTypeMap m = concat $ map translateData (assocs m)
+translateTypeMap m = concat $ map translateData (Map.assocs m)
 
 -- muss translateData eine Liste von HsDecl's oder eine HsDecl liefern?
 translateData :: (TypeId, TypeInfo) -> [HsDecl]
@@ -139,20 +138,33 @@ getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 -- Translation of functions
 -------------------------------------------------------------------------
 
-translateAssumps :: Assumps -> [HsDecl]
-translateAssumps as = concat $ map translateAssump $ distinctOpIds $ assocs as
+translateAssumps :: Assumps -> TypeMap -> [HsDecl]
+translateAssumps as tm = 
+  concat $ map (translateAssump as tm) $ distinctOpIds $ Map.toList as
 
 -- Funktion, die evtl. überladenen Operationen eindeutige Namen gibt
-distinctOpIds :: [(Id,[OpInfo])] -> [(DistinctOpId,[OpInfo])]
-distinctOpIds = undefined
+distinctOpIds :: [(Id,[OpInfo])] -> [(DistinctOpId, OpInfo)]
+distinctOpIds [] = []
+distinctOpIds ((i,info):(idInfoList)) = 
+  let len = length info in
+  if len == 0 then
+     distinctOpIds idInfoList
+  else 
+     if len == 1 then
+        ((i,head info):(distinctOpIds (idInfoList)))
+     else -- if len > 1
+        ((newName i len,head info):(distinctOpIds((i,tail info):(idInfoList))))
 
-translateAssump :: (Id,[OpInfo]) -> [HsDecl]
-translateAssump (_, []) = []
-translateAssump (i, (x:xs)) = ((translateSignature i x) ++
-                               (translateAssump (i, xs)))
+-- Durchnummerierung von überladenen Funktionsnamen
+newName :: Id -> Int -> Id
+newName (Id tlist idlist poslist) len = 
+  let newTok = (Token (show len) nullPos) 
+  in (Id (tlist ++ [newTok]) idlist poslist)
 
-translateSignature :: Id -> OpInfo -> [HsDecl]
-translateSignature i opinf = 
+-- uebersetzt eindeutig benannte Funktionen
+-- (Funktionsdeklarationen und -definitionen)
+translateAssump :: Assumps -> TypeMap -> (DistinctOpId,OpInfo) -> [HsDecl]
+translateAssump as tm (i, opinf) = 
   let fname = translateIdWithType LowerId i
       res = HsTypeSig nullLoc
                        [(HsIdent fname)]
@@ -161,7 +173,7 @@ translateSignature i opinf =
     NoOpDefn -> [res, (functionUndef fname)]
     ConstructData _ -> []
     SelectData _ _ -> []
-    Definition term -> (translateFunDef i (opType opinf) term)
+    Definition term -> (translateFunDef as tm i (opType opinf) term)
                         -- zu HsFunBind übersetzen!! 
     VarDefn -> []
 
@@ -190,12 +202,12 @@ translateType t = case t of
 --Missing: Übersetzung der Kind's    
 
 -- translateFunDef liefert idealerweise eine HsTypSig und ein HsFunBind
-translateFunDef :: Id -> TypeScheme -> Term -> [HsDecl]
-translateFunDef i _ts term = 
+translateFunDef :: Assumps -> TypeMap -> Id -> TypeScheme -> Term -> [HsDecl]
+translateFunDef as tm i _ts term = 
   [HsFunBind [HsMatch nullLoc
 	             (HsIdent (translateIdWithType LowerId i)) --HsName
 	             (getPattern term) -- [HsPat]
-	             (getRhs term) -- HsRhs
+	             (getRhs as tm term) -- HsRhs
 	             [] -- {-where-} [HsDecl]
 	     ]
    ]
@@ -203,11 +215,11 @@ translateFunDef i _ts term =
 getPattern :: Term -> [HsPat]
 getPattern _t = []
 
-getRhs :: Term -> HsRhs
-getRhs t = HsUnGuardedRhs (translateTerm t) 
+getRhs :: Assumps -> TypeMap -> Term -> HsRhs
+getRhs as tm t = HsUnGuardedRhs (translateTerm as tm t) 
 
-translateTerm :: Term -> HsExp --HsFunBind
-translateTerm t = case t of
+translateTerm :: Assumps -> TypeMap -> Term -> HsExp --HsFunBind
+translateTerm as tm t = case t of
   --CondTerm _t1 _form _t2 _pos -> [] -- -> HsIf
   --HsIf HsExp HsExp HsExp, wie passt das zusammen?
 
@@ -216,11 +228,26 @@ translateTerm t = case t of
       -- Was wird mit dem Typ gemacht?
       -- HsVar kann mit Modul qualifiziert sein, woher?
 
-  --QualOp _opid _ts _pos -> [] -- -> ??
+  -- zur id der opid muss der evtl. umbenannte eindeutige Name gefunden werden
+  -- hierzu muss ts mit den TypeSchemes aus Assumps auf Unifizierbarkeit
+  -- geprueft werden; hierzu benoetigt man die Assumps und die TypeMap;
+  -- data OpId = OpId UninstOpId [TypeArg] [Pos]
+  -- als Ergebnis erhaelt man HsApp (translateTerm t1) (translateTerm t2)
+  -- wobei t1 und t2 in den TypeArg von der opid enthalten sind
+  QualOp (InstOpId uid types _) ts _pos -> 
+  -- zunaechst alle TypeSchemes aus den Assumps mit dem gegebenen vergleichen,
+  -- bei passendem TupeScheme die id (also denSchluessel) als HsExp
+  -- fuer den ersten Ausdruck der HsApp verwenden
+    let fittingAs = Map.filter (canUnify tm ts) as 
+    in if Map.size fittingAs == 1 then
+          -- gut, eine Uebereinstimmung -> HsApp basteln
+          let oid = head $ Map.keys $ fittingAs
+          in HsApp (HsVar (UnQual (HsIdent (translateIdWithType LowerId oid))))
+                   (translateTypes types)
+       else error "problem with finding opid"
+  ApplTerm t1 t2 _pos -> HsApp(translateTerm as tm t1)(translateTerm as tm t2)
 
-  ApplTerm t1 t2 _pos -> HsApp (translateTerm t1) (translateTerm t2)
-
-  TupleTerm ts _pos -> HsTuple (map translateTerm ts)
+  TupleTerm ts _pos -> HsTuple (map (translateTerm as tm) ts)
 
   --TypedTerm _t1 _tqual _ty _pos -> [] -- -> ??
 
@@ -229,18 +256,26 @@ translateTerm t = case t of
   LambdaTerm pats _part t1 _pos -> 
       HsLambda nullLoc
                (translatePattern pats)
-	       (translateTerm t1)
+	       (translateTerm as tm t1)
 
   CaseTerm t1 progeqs _pos -> 
-      HsCase (translateTerm t1) (translateCaseProgEqs progeqs)
+      HsCase (translateTerm as tm t1) (translateCaseProgEqs progeqs)
 
   LetTerm progeqs t1 _pos -> 
-      HsLet (translateProgEqs progeqs) (translateTerm t1)
+      HsLet (translateProgEqs progeqs) (translateTerm as tm t1)
 
   TermToken _ttok -> error ("unexpected term (TermToken): " ++ show t)
   MixfixTerm _ts -> error ("unexpected term (MixfixTerm): " ++ show t)
   BracketTerm _ _ _ -> error ("unexpected term (BracketTerm): " ++ show t)
   _ -> error ("translateTerm not finished; Term: " ++ show t)
+
+canUnify :: TypeMap -> TypeScheme -> [OpInfo] -> Bool
+canUnify tm ts infos = or $ map (isUnifiable tm 0 ts) (map opType infos)
+
+-- uebersetzt die Typen aus InstOpId zu Expressions 
+-- (fuer die zweite Expression fuer die HsApp aus einer QualOp)
+translateTypes :: [Type] -> HsExp
+translateTypes = error "Types for QualOp not yet translated"
 
 --Uebersetzung der Liste von Pattern aus HasCASL-Lambdaterm
 translatePattern :: [Pattern] -> [HsPat]
@@ -299,7 +334,7 @@ subPlace :: String
 subPlace = "_2"
 
 symbolMapping :: Char -> String
-symbolMapping c = findWithDefault [c] c symbolMap
+symbolMapping c = Map.findWithDefault [c] c symbolMap
 
 {-symbolMapping :: Char -> String
 symbolMapping c = case c of 
@@ -358,8 +393,8 @@ translateCompound ids = "_C" ++
                         (concat $ intersperse "_k" $ map translateId ids) ++
                         "_J"
 
-symbolMap :: Map Char String
-symbolMap = fromList symbolTable
+symbolMap :: Map.Map Char String
+symbolMap = Map.fromList symbolTable
 
 symbolTable :: [(Char,String)]
 symbolTable = 
