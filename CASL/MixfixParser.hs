@@ -188,6 +188,12 @@ iterateCharts par extR g ids terms c =
                 self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
             t@(Mixfix_qual_pred (Qual_pred_name _ _ (p:_))) -> 
                 self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
+            Sorted_term t s ps -> 
+                   let Result mds v = resolveTerm t
+                       tNew = Sorted_term (case v of Nothing -> t
+                                                     Just x -> x) s ps
+                       c2 = self (tail terms) (oneStep (tNew, varTok))
+                   in mixDiags mds c2
             _ -> error "iterateCharts"
 
 mkIdSet :: Set.Set Id -> Set.Set Id -> IdSet
