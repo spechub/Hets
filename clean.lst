@@ -30,6 +30,7 @@ Common/Lib/Parsec/Expr.hs
 Common/Lib/Parsec/Language.hs
 Common/Lib/Parsec/Perm.hs
 Common/Lib/Parsec/Token.hs
+Common/Lib/RelCheck.hs
 Common/Lib/Text
 Common/test
 
