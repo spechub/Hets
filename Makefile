@@ -219,7 +219,7 @@ post_doc4apache:
 ###############################
 ### release management
 
-derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs $(inline_axiom_files)
+derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs $(inline_axiom_files) Modal/ModalSystems.hs
 
 utils/DrIFT: $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT && \
@@ -229,9 +229,6 @@ utils/genRules: $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
          $(HC) --make '-i../..:../DrIFT-src' -package text GenerateRules.hs -o ../genRules && \
          strip ../genRules)
-
-Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in utils/genTransMFormFunc.pl
-	$(PERL) utils/genTransMFormFunc.pl $< $@
 
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs \
@@ -449,6 +446,11 @@ hets.hs: hetcats/Version.hs
 
 %.d : %.lhs
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
+
+## rule for Modal/ModalSystems.hs needed for ModalLogic Translation
+Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in utils/genTransMFormFunc.pl $(INLINEAXIOMS)
+	$(PERL) utils/genTransMFormFunc.pl $< $@
+
 
 ####################################################################
 ## Setting a global search path (for dependency files)
