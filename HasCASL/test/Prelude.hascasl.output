@@ -56,6 +56,11 @@ x1 : c %(var)%
 x2 : c %(var)%
 y1 : d %(var)%
 y2 : d %(var)%
+%% Sentences -------------------------------------------------------------
+(op __=__ : s × s ->? Unit) ((op fst : s), (op __res__ : s)) %()%
+(op __=__ : s × s ->? Unit) (\ x : s . (op eq : s ×
+						s ->? Unit) (((op x : s), (op x : s))),
+			     (op tt : (Pred)(s))) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 4, column 7) illegal universe class declaration
 Warning (line 15, column 16) redeclared type 't'

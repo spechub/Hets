@@ -43,7 +43,7 @@ op y : s = (op a : s) <= (var x : s) <= (a : s)
 
 op z : s = ( x as s) + ((x as t) as s)
 
-. x in s
+. x in s %(bla_label)%
 
 . x in t
 

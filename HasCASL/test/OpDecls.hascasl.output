@@ -33,6 +33,9 @@ y : s = (op __<=__<=__ : s × s × s -> s) ((op a : s), (var x : s),
 					  (op a : s) : s)
 z : s = (op __+__ : s × s -> s) ((op x : s) as s,
 				 (op x : s) as t as s)
+%% Sentences -------------------------------------------------------------
+(op x : s) in s %(bla_label)%
+(op x : s) in t %()%
 %% Diagnostics -----------------------------------------------------------
 Hint (line 7, column 14) type 't' is not unifiable with 's'
 Hint (line 8, column 14) type 't' is not unifiable with 't × t'

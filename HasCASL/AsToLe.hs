@@ -17,12 +17,11 @@ import Common.Id
 import qualified Common.Lib.Set as Set
 import HasCASL.Le
 import Data.Maybe
-import Control.Monad
 import Common.Lib.State
-import HasCASL.OpDecl
+import Common.Named
 import Common.Result
 import Common.PrettyPrint
-import HasCASL.PrintAs
+import HasCASL.OpDecl
 import HasCASL.TypeDecl
 import HasCASL.MixAna
 import HasCASL.Reader
@@ -51,12 +50,22 @@ anaBasicItem (AxiomItems decls fs _) =
     do tm <- gets typeMap -- save type map
        as <- gets assumps -- save vars
        mapM_ anaGenVarDecl decls
-       ds <- mapM (( \ (TermFormula t) -> resolveTerm logicalType  t ) 
-		   . item) fs
-       appendDiags $ concatMap diags ds
+       ds <- mapM (( \ (TermFormula t) -> 
+		     resolveTerm logicalType t ) . item) fs
        putTypeMap tm -- restore 
        putAssumps as -- restore
-       -- store the formulae
+       appendDiags $ concatMap diags ds
+       let sens = concat $ zipWith ( \ r f -> 
+			    case maybeResult r of 
+			    Just t -> [NamedSen (getRLabel f) $ TermFormula t]
+			    Nothing -> [] ) ds fs
+       appendSentences sens
+
+appendSentences :: [Named Formula] -> State Env ()
+appendSentences fs =
+    if null fs then return () else
+    do e <- get
+       put $ e {sentences = sentences e ++ fs}
 
 anaSigItems :: GenKind -> SigItems -> State Env ()
 anaSigItems gk (TypeItems inst l _) = mapM_ (anaTypeItem gk inst) $ map item l
