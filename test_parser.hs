@@ -3,15 +3,17 @@ module Main where
 import System
 import List
 
-import Parsec
+import Common.Lib.Parsec
 import qualified CaslLanguage as L(casl_id, semi, whiteSpace)
 import Anno_Parser
+import PrettyPrint
+import GlobalAnnotationsFunctions
 
 import Id
 
 import Token(parseId)
 
-import Print_HetCASL
+-- import Print_HetCASL
 
 -- import Prepositional
 
@@ -36,7 +38,7 @@ parseFile par name = do { inp <- readFile name
 			  Left err -> do{ putStr "parse error at "
 					; print err
 					}
-			  Right x  -> print $ printText0_eGA x
+			  Right x  -> print $ printText0 emptyGlobalAnnos x
 			}
     where parL p = do { L.whiteSpace
 		      ; res <- p 

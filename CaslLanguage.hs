@@ -1,7 +1,7 @@
 module CaslLanguage where
-import Parsec
-import qualified ParsecToken as P
-import ParsecLanguage (emptyDef)
+import Common.Lib.Parsec
+import qualified Common.Lib.Parsec.Token as P
+import Common.Lib.Parsec.Language (emptyDef)
 
 import Id
 
