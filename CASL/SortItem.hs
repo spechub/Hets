@@ -53,14 +53,15 @@ isoDecl ks s =
 subSortDefn :: AParsable f => [String] -> (Id, Pos) -> AParser st (SORT_ITEM f)
 subSortDefn ks (s, e) = 
     do a <- annos
-       o <- oBraceT
+       o <- oBraceT << addAnnos
        v <- varId ks
-       c <- colonT
+       c <- colonT 
        t <- sortId ks
        d <- dotT
        f <- formula ks
+       a2 <- annos
        p <- cBraceT
-       return $ Subsort_defn s v t (Annoted f [] a []) 
+       return $ Subsort_defn s v t (Annoted f [] a a2) 
 		  (e: map tokPos [o, c, d, p])
 
 subSortDecl :: [String] -> ([Id], [Pos]) -> AParser st (SORT_ITEM f)
@@ -82,18 +83,16 @@ sortItem ks =
 datatype :: [String] -> AParser st DATATYPE_DECL
 datatype ks = 
     do s <- sortId ks
-       addAnnos
        e <- asKey defnS
-       addAnnos
        a <- getAnnos
-       (Annoted v _ _ b:as, ps) <- aAlternative ks `separatedBy` barT
-       return (Datatype_decl s (Annoted v [] a b:as) 
+       (Annoted v _ _ b:alts, ps) <- aAlternative ks `separatedBy` barT
+       return (Datatype_decl s (Annoted v [] a b:alts) 
 			(map tokPos (e:ps)))
 
 aAlternative :: [String] -> AParser st (Annoted ALTERNATIVE)
 aAlternative ks = 
     do a <- alternative ks
-       an <- annos
+       an <- lineAnnos
        return (Annoted a [] [] an)
 
 alternative :: [String] -> AParser st ALTERNATIVE
@@ -103,11 +102,11 @@ alternative ks =
        return (Subsorts ts (map tokPos (s:cs)))
     <|> 
     do i <- consId ks
-       do   o <- oParenT
+       do   o <- wrapAnnos oParenT
 	    (cs, ps) <- component ks `separatedBy` anSemi
-	    c <- cParenT
+	    c <- addAnnos >> cParenT
 	    let qs = toPos o ps c 
-            do   q <- quMarkT
+            do   q <- try (addAnnos >> quMarkT)
 		 return (Partial_construct i cs (qs++[tokPos q]))
 	      <|> return (Total_construct i cs qs)
 	 <|> return (Total_construct i [] [])
@@ -126,7 +125,7 @@ component ks =
 
 compSort :: [String] -> [OP_NAME] -> [Token] -> AParser st COMPONENTS
 compSort ks is cs = 
-    do c <- colonST
+    do c <- anColon
        (b, t, _) <- opSort ks
        let p = map tokPos (cs++[c]) 
        return $ if b then Partial_select is t p

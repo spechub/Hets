@@ -80,7 +80,8 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
 		      do o <- oBraceT
 			 is <- annosParser (sigItems ks)
 			 c <- cBraceT
-			 return (Sort_gen is
+                         a <- lineAnnos 
+			 return (Sort_gen (init is ++ [appendAnno (last is) a])
 				   (toPos g [o] c)) 
 	     <|> do v <- pluralKeyword varS
 		    (vs, ps) <- varItems ks
@@ -96,7 +97,7 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
 varItems :: [String] -> AParser st ([VAR_DECL], [Token])
 varItems ks = 
     do v <- varDecl ks
-       do s <- try (addAnnos >> Common.Lexer.semiT << addLineAnnos)
+       do s <- try (addAnnos >> Common.Lexer.semiT) << addLineAnnos
 	  do   tryItemEnd (ks ++ startKeyword)
 	       return ([v], [s])
 	    <|> do (vs, ts) <- varItems ks

@@ -1,6 +1,6 @@
 parse error at 1.12:
 unexpected "-"
-expecting casl char, "_", "[" or ")"
+expecting casl char, "_", "[", "%" or ")"
 
 parse error at 2.1:
 unexpected "="
@@ -50,30 +50,30 @@ unexpected "="
 expecting "%", "true", "false", "def", "not", "(", quantifier, "{", "[" or id/literal
 
 parse error at 14.6:
-unexpected "="
-expecting casl char, "_", "(", "{", "[", id/literal, "%", ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
+unexpected = or "="
+expecting casl char, "_", casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
 
 parse error at 15.6:
-unexpected "="
-expecting "(", "{", "[", id/literal, "%", ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
+unexpected = or "="
+expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
 
 parse error at 16.6:
-unexpected "="
-expecting casl char, "_", "(", "{", "[", id/literal, "%", ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
+unexpected = or "="
+expecting casl char, "_", casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "/\\", "\\/", "=>", "if", "<=>" or end of input
 
 parse error at 17.5:
-unexpected "<=>" or "<"
-expecting casl char, "_", "(", "{", "[", id/literal, "%", ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "=>" or end of input
+unexpected <=>, "<=>" or "<"
+expecting casl char, "_", casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "=>" or end of input
 
 parse error at 18.8:
-unexpected "<=>" or "<"
-expecting "(", "{", "[", id/literal, "%", ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "if" or end of input
+unexpected <=>, "<=>" or "<"
+expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "if" or end of input
 
 parse error at 19.8:
-unexpected "\\/" or "\\"
-expecting "(", "{", "[", id/literal, "%", ":", "as", "when", "=e=", "=", "in", "/\\", "=>", "if", "<=>" or end of input
+unexpected \/, "\\/" or "\\"
+expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "=>", "if", "<=>" or end of input
 
 parse error at 20.8:
-unexpected "=>", ">" or "="
-expecting "(", "{", "[", id/literal, "%", ":", "as", "when", "=e=", "in", "/\\", "\\/", "if" or end of input
+unexpected =>, "=>", ">" or "="
+expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "in", "/\\", "\\/", "if" or end of input
 

@@ -213,7 +213,7 @@ type t ::= %(c)%
            c %(c)%
          | e %(e)%
          | d %(9)%
-           %(axiom)%
+%(axiom)%
 . a = a %(a1)%
 . a = a %(a2)%
 %(formula)%

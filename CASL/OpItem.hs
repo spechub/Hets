@@ -39,15 +39,15 @@ argDecl = fmap (\(Var_decl vs s ps) -> Arg_decl vs s ps) . varDecl
 -- non-empty
 predHead :: [String] -> AParser st PRED_HEAD
 predHead ks = 
-    do o <- oParenT
+    do o <- wrapAnnos oParenT
        (vs, ps) <- argDecl ks `separatedBy` anSemi
-       p <- cParenT
+       p <- addAnnos >> cParenT
        return $ Pred_head vs $ map tokPos (o:ps++[p])
 
 opHead :: [String] -> AParser st OP_HEAD
 opHead ks = 
     do Pred_head vs ps <- predHead ks
-       c <- colonST
+       c <- anColon
        (b, s, _) <- opSort ks
        let qs = ps ++ [tokPos c]
        return $ if b then Partial_op_head vs s qs
@@ -81,7 +81,7 @@ opItem :: AParsable f => [String] -> AParser st (OP_ITEM f)
 opItem ks = 
     do (os, cs)  <- parseId ks `separatedBy` anComma
        if isSingle os then 
-	      do c <- colonST
+	      do c <- anColon
 		 t <- opType ks
 		 if isConstant t then 
 		   opBody ks (head os) (toHead (tokPos c) t)
@@ -91,7 +91,7 @@ opItem ks =
 	      do h <- opHead ks
 		 opBody ks (head os) h
 	      else
-	      do c <- colonST
+	      do c <- anColon
 		 t <- opType ks
 		 opAttrs ks os t (cs++[c])
 

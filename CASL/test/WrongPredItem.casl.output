@@ -8,7 +8,7 @@ expecting "{", "[", __, "%", ",", "<=>", "(" or ":"
 
 parse error at 3.8:
 unexpected ")"
-expecting words
+expecting "%" or words
 
 parse error at 4.8:
 unexpected "#"

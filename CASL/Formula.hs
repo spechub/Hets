@@ -43,7 +43,7 @@ Portability :  portable
    keywords
 -}
 
-module CASL.Formula (term, formula, restrictedTerm, restrictedFormula
+module CASL.Formula (term, formula, restrictedTerm, restrictedFormula, anColon
 	       , varDecl, opSort, opFunSort, opType, predType, predUnitType)
     where
 
@@ -62,14 +62,20 @@ simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString
 		       <|>  reserved (k ++ casl_reserved_fops) scanAnySigns
 		       <|>  placeS <?> "id/literal" )) 
 
+restTerms :: (AParsable f) => [String] -> AParser st [TERM f]
+restTerms k = (tryItemEnd startKeyword >> return []) <|> 
+              bind (:) (restTerm k) (restTerms k)
+              <|> return []
+
 startTerm, restTerm, mixTerm, whenTerm :: AParsable f => [String] 
 				       -> AParser st (TERM f)
-startTerm k = parenTerm <|> braceTerm <|> bracketTerm <|> simpleTerm k
+startTerm k = 
+    parenTerm <|> braceTerm <|> bracketTerm <|> try (addAnnos >> simpleTerm k)
 
 restTerm k = startTerm k <|> typedTerm k <|> castedTerm k
 
 mixTerm k = 
-    do l <- startTerm k <:> many (restTerm k)
+    do l <- startTerm k <:> restTerms k
        return (if isSingle l then head l else Mixfix_term l)
 
 whenTerm k = 
@@ -86,6 +92,9 @@ term = whenTerm
 
 restrictedTerm :: AParsable f => [String] -> AParser st (TERM f)
 restrictedTerm = whenTerm 
+
+anColon :: AParser st Token
+anColon = wrapAnnos colonST
 
 typedTerm, castedTerm :: [String] -> AParser st (TERM f)
 typedTerm k = 
@@ -108,15 +117,15 @@ qualVarName o =
     do v <- asKey varS
        i <- varId []
        c <- colonT 
-       s <- sortId []
+       s <- sortId [] << addAnnos
        p <- cParenT
        return $ Qual_var i s $ toPos o [v, c] p
 
 qualOpName o = 
     do v <- asKey opS
        i <- parseId []
-       c <- colonST 
-       t <- opType []
+       c <- anColon
+       t <- opType [] << addAnnos
        p <- cParenT
        return $ Application (Qual_op_name i t $ toPos o [v, c] p) [] []
 
@@ -146,34 +155,33 @@ opType k =
 
 parenTerm, braceTerm, bracketTerm :: AParsable f => AParser st (TERM f)
 parenTerm = 
-    do o <- oParenT
+    do o <- wrapAnnos oParenT
        qualVarName o <|> qualOpName o <|> qualPredName o <|> 
           do (ts, ps) <- terms []
-	     c <- cParenT
+	     c <- addAnnos >> cParenT
 	     return (Mixfix_parenthesized ts $ toPos o ps c)
 
 braceTerm = 
-    do o <- oBraceT
+    do o <- wrapAnnos oBraceT
        (ts, ps) <- option ([], []) $ terms []
-       c <- cBraceT 
+       c <- addAnnos >> cBraceT 
        return $ Mixfix_braced ts $ toPos o ps c
 
 bracketTerm = 
-    do o <- oBracketT
+    do o <- wrapAnnos oBracketT
        (ts, ps) <- option ([], []) $ terms []
-       c <- cBracketT 
+       c <- addAnnos >> cBracketT 
        return $ Mixfix_bracketed ts $ toPos o ps c
 
 quant :: AParser st (QUANTIFIER, Token)
-quant = try(
-        do q <- asKey (existsS++exMark)
+quant = do q <- asKey (existsS++exMark)
 	   return (Unique_existential, q)
         <|>
         do q <- asKey existsS
 	   return (Existential, q)
         <|>
         do q <- forallT
-	   return (Universal, q))
+	   return (Universal, q)
         <?> "quantifier"
        
 quantFormula :: AParsable f => [String] -> AParser st (FORMULA f)
@@ -208,21 +216,21 @@ qualPredName o =
     do v <- asKey predS
        i <- parseId []
        c <- colonT 
-       s <- predType []
+       s <- predType [] << addAnnos
        p <- cParenT
        return $ Mixfix_qual_pred $ Qual_pred_name i s $ toPos o [v, c] p
 
 parenFormula :: AParsable f => [String] -> AParser st (FORMULA f)
 parenFormula k = 
-    do o <- oParenT
+    do o <- oParenT << addAnnos
        do q <- qualPredName o <|> qualVarName o <|> qualOpName o
-	  l <- many $ restTerm []  -- optional arguments
+	  l <- restTerms []  -- optional arguments
 	  termFormula k (if null l then q else
 				      Mixfix_term (q:l))
-         <|> do f <- impFormula []
+         <|> do f <- impFormula [] << addAnnos
 		case f of Mixfix_formula t -> 
 				     do c <- cParenT
-					l <- many $ restTerm k
+					l <- restTerms k
 					let tt = Mixfix_parenthesized [t]
 					           (toPos o [] c)
 					    ft = if null l then tt 
@@ -232,18 +240,18 @@ parenFormula k =
 			  _ -> cParenT >> return f 
 
 termFormula :: AParsable f => [String] -> (TERM f) -> AParser st (FORMULA f)
-termFormula k t =  do e <- asKey exEqual
+termFormula k t =  do e <- try (asKey exEqual)
 		      r <- whenTerm k
 		      return (Existl_equation t r [tokPos e])
                    <|>
 		   do try (string exEqual)
 		      unexpected ("sign following " ++ exEqual)
                    <|>
-		   do e <- equalT
+		   do e <- try equalT
 		      r <- whenTerm k
 		      return (Strong_equation t r [tokPos e])
                    <|>
-		   do e <- asKey inS
+		   do e <- try (asKey inS)
 		      s <- sortId k
 		      return (Membership t s [tokPos e])
 		   <|> return (Mixfix_formula t)
