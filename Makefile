@@ -242,7 +242,7 @@ apache_doc:
 	$(MAKE) hets-opt
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
-	$(MAKE) clean
+	$(MAKE) o_clean
 	$(MAKE) hets.cgi
 
 post_doc4apache:
@@ -349,8 +349,10 @@ $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
 ###############
 ### clean up
 
+clean: bin_clean o_clean
+
 ### removes *.hi and *.o in all include directories
-clean: bin_clean
+o_clean:
 	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
 	(cd $$p ; $(RM) *.hi *.o *.hspp) ; done
 
