@@ -753,8 +753,12 @@ theoremHideShift proofStatus@(globalContext,libEnv,history,dgraph) = do
   let allNodes = nodes dgraph
       (leaves,nonLeaves)
 	  = splitByProperty allNodes (hasIngoingHidingDef dgraph)
+      cs = [context l dgraph|l<- leaves]
+      labs = [lab' c|c <- cs]
   (auxGraph,changes) <- handleLeaves dgraph leaves
-  (finalGraph,furtherChanges) <- handleNonLeaves dgraph nonLeaves
+--  (finalGraph,furtherChanges) <- handleNonLeaves dgraph nonLeaves
+  let furtherChanges = []
+      finalGraph = auxGraph
   return (globalContext, libEnv,
 	  ([TheoremHideShift],furtherChanges++changes):history, finalGraph)
 
@@ -792,33 +796,46 @@ convertToNf dgraph node = do
   let dgnodelab = lab' (context node dgraph)
       sign = dgn_sign dgnodelab
       [newNode] = newNodes 0 dgraph
-      newDgnode = (newNode, 
-		   DGNode {dgn_name = dgn_name dgnodelab,
+  let newDgnode = (newNode, 
+		   DGNode {dgn_name = makeName (mkSimpleId "Hallo"), --dgn_name dgnodelab,
 			   dgn_sign = sign,
 			   dgn_sens = dgn_sens dgnodelab,
-			   dgn_nf = Just node,
+			   dgn_nf = Just newNode,
 			   dgn_sigma = Just (ide Grothendieck sign),
 			   dgn_origin = DGProof
 			  })
       auxGraph = insNode newDgnode dgraph
   (finalGraph,changes) <- adoptEdges auxGraph node newNode
+  putStrLn ("convertToNf changes: <" ++ (concat (map show changes)) ++ ">")
   return (delNode node finalGraph,
 	  [InsertNode newDgnode] ++ changes ++ [DeleteNode (node,dgnodelab)])
 
 
 adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
 adoptEdges dgraph oldNode newNode = do
-  (auxGraph, changes) <- adoptIngoingEdges dgraph oldNode newNode
-  (finalGraph, furtherChanges) <- adoptOutgoingEdges auxGraph oldNode newNode
+  let ingoingEdges = inn dgraph oldNode
+      (auxGraph, changes) = adoptEdgesAux dgraph ingoingEdges newNode True
+-- hier weitermachen: out auxGraph oldNode geht nicht
+-- daher muss verhindert werden, dass in den outgoingEdges welche der
+-- ingoingEdges enthalten sind.
+      outgoingEdges = out dgraph oldNode
+      (finalGraph, furtherChanges) 
+	  = adoptEdgesAux auxGraph outgoingEdges newNode False
   return (finalGraph, changes ++ furtherChanges)
 
 
-adoptIngoingEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
-adoptIngoingEdges dgraph oldNode newNode = undefined
+adoptEdgesAux :: DGraph -> [LEdge DGLinkLab] -> Node -> Bool
+		     -> (DGraph,[DGChange])
+adoptEdgesAux dgraph [] _ _ = (dgraph,[])
+adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
+  (finalGraph, [DeleteEdge oldEdge,InsertEdge newEdge]++furtherChanges)
 
-
-adoptOutgoingEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
-adoptOutgoingEdges dgraph oldNode newNode = undefined
+  where
+    newEdge = if areIngoingEdges then (src,node,edgelab)
+	        else (node,tgt,edgelab)
+    auxGraph = insEdge newEdge (delLEdge oldEdge auxGraph)
+    (finalGraph,furtherChanges) 
+	= adoptEdgesAux auxGraph list node areIngoingEdges
 
 
 handleNonLeaves :: DGraph -> [Node] -> IO (DGraph,[DGChange])
