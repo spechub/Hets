@@ -709,13 +709,16 @@ basicAnalysis par extR extC mef ab as dif (bs, inSig, ga) = do
         sents = reverse $ sentences accSig
         cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
         diff = diffSig cleanSig inSig 
-            { extendedInfo = dif (extendedInfo accSig) $ extendedInfo inSig } 
-    Result ds (Just ()) -- insert diags
-    checked_sents <- overloadResolution mef ga accSig sents
+            { extendedInfo = dif (extendedInfo accSig) $ extendedInfo inSig }
+        msents = map (mapNamed $ minExpFORMULA mef ga accSig) sents
+        es = concatMap (diags . sentence) msents
+        csents = map (mapNamed $ fromJust . maybeResult) 
+                 $ filter (isJust . maybeResult . sentence) msents
+    Result (ds ++ es) (Just ()) -- insert diags
     return ( newBs
            , diff
            , cleanSig
-           , checked_sents ) 
+           , csents ) 
 
 basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
                   -> Result (BASIC_SPEC () () (), Sign () (), 
