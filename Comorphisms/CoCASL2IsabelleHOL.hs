@@ -71,8 +71,9 @@ sigTrCoCASL _ _ = id
 -- | extended formula translation for CoCASL
 formTrCoCASL :: FormulaTranslator C_FORMULA CoCASLSign
 formTrCoCASL sign (CoSort_gen_ax sorts ops _) = 
-  foldr (quantifyIsa "All") phi predDecls
+  foldr (quantifyIsa "All") phi (predDecls++[("u",ts),("v",ts)])
   where
+  ts = transSort $ head sorts
   -- phi expresses: all bisimulations are the equality
   phi = prems `binImpl` concls
   -- indices and predicates for all involved sorts
@@ -117,12 +118,13 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
           in foldr (quantifyIsa "All") chi varDecls
         prem1 = conj (map premSel sels)
         concl1 = var (rvar i) `App` var "x" `App` var "y"
-        psi = prem1 `binImpl` concl1
+        psi = concl1 `binImpl` prem1
         typS = transSort s
      in foldr (quantifyIsa "All") psi [("x",typS),("y",typS)]
   -- conclusion: all relations are the equality
   concls = conj (map concl (zip sorts indices))
-  concl (s,i::Int) = binEq (var (rvar i)) (Const("op =",dummyT))
+  concl (s,i::Int) = binImpl (var (rvar i) `App` var "u" `App` var "v") 
+                             (binEq (var "u") (var "v"))
 formTrCoCASL sign (Box mod phi _) = 
    trace "WARNING: ignoring modal forumla" 
           $ true
