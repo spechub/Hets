@@ -53,7 +53,7 @@ best done by adding and removing.
 
 \texttt{cvs log MyFile} gives an overview of all revisions. An old
 version, i.e. the initial revision 1.1, may be viewed using the
-\texttt{-p} and \texttt{-r} options. (If you forget \texttt{-p} the
+\texttt{-p} and \texttt{-r} options. (If you forget \texttt{-p}, then the
 current revision will change.)
 
 \begin{verbatim}
@@ -66,25 +66,39 @@ When you no longer work with the repository, you may release it:
 cvs release HetCATS
 \end{verbatim}
 
-\subsection{Using Hugs}
+\subsection{Using hugs}
 
-It is also possible to use hugs (version of Nov. 2002) instead of ghc.
-A binary for Solaris is currently available under
-\texttt{/home/maeder/bin/hugs}.  The environment variable
-\texttt{HUGSFLAGS} (one line) is given in my \texttt{.bashrc} as follows:
+It is also possible to use \texttt{hugs} (version of Nov. 2002) instead of
+\texttt{ghc}.  The environment variable \texttt{HUGSFLAGS} (one line) can be
+given (in your \texttt{\~{}/.bashrc} file) as follows:
 
 \begin{verbatim}
-HCAT=/home/maeder/haskell/HetCATS
-HLIB=/home/maeder/lib/hugs/lib
+HCAT=/home/$USER/haskell/HetCATS
 
 export HUGSFLAGS="-98 +o -h20M\
-  -P$HCAT:$HCAT/hugs:$HCAT/parsec:$HCAT/pretty:$HCAT/haterm-1.0/src:\
-    $HCAT/aterm_conv:$HCAT/fgl:$HCAT/CASL:$HCAT/HasCASL:\
-    $HLIB:$HLIB/exts:$HLIB/hugs\
+  -P.:$HCAT:$HCAT/hugs:$HCAT/parsec:$HCAT/pretty:$HCAT/haterm-1.0/src:\
+    $HCAT/aterm_conv:$HCAT/fgl:$HCAT/CASL:$HCAT/HasCASL:$HCAT/Haskell:\
+    {Hugs}/libraries:{Hugs}/oldlib\
   -E\"emacsclient +%d %s\""
 \end{verbatim}
 
 The variable \texttt{HCAT} must be set to your own \texttt{HetCATS} directory.
+
+\subsection{Using ghci}
+
+When using \texttt{ghci} it is a good idea to create a file
+\texttt{\~{}/.ghci} with the following contents:
+
+\begin{verbatim}
+:set -fglasgow-exts -Wall -package data 
+:set -i.:<further paths>
+\end{verbatim}
+
+The ``further paths'' (after \texttt{-i}) are those as for \texttt{HUGSFLAGS}
+(after \texttt{-P}), but environment variables must not be used and hugs
+libraries should be omitted. Instead of \texttt{\$HCAT/hugs} the
+\texttt{HetCATS/ghc} directory should be included.
+
 
 \section{Getting started}
 
@@ -111,8 +125,9 @@ instances (of class \texttt{PosItem}) derived by DrIFT (a in
 
 \subsection{Compiling the CASL parser}
 
-\texttt{cd HetCATS/CASL} and call \texttt{./ghc-call} (a script that
-contains all necessary ghc options and parameters). An alternative is to call \texttt{gmake capa} in (almost) any directory with a \texttt{Makefile}.
+\texttt{cd HetCATS/CASL} and call \texttt{./ghc-call} (a script that contains
+all necessary ghc options and parameters). An alternative is to call
+\texttt{gmake capa} in (almost) any directory with a \texttt{Makefile}.
 
 This creates a binary called \texttt{capa} that can parse (and pretty
 print) ``Basic Specification with Subsorts'' of the CASL Summary
@@ -120,7 +135,7 @@ version 1.0.1 \\ (www.brics.dk/Projects/CoFI/Documents/CASL/Summary/).
 
 Structured specifications can not be parsed yet.
 
-Note: if module \texttt{AS\_Basic\_CASL} can not be found
+Note: if module \texttt{AS\_Basic\_CASL} can not be found, then
 \texttt{AS\_Basic\_CASL.hs} was not ``drifted'' (see above). Most
 \texttt{AS\_*} files have extension \texttt{.der.hs} and need to
 be drifted.
@@ -143,14 +158,19 @@ by \texttt{./runcheck.sh ./capa.lhs}.
 
 \texttt{Wrong*.casl} files contain wrong CASL code and should produce
 error messages. Apart from extra tests, correct (\texttt{Bla.casl})
-and wrong files (\texttt{WrongBla.casl}) are tested. The number e of
-``\texttt{error}'' occurrences (in the produced output) is compared to the
-number of input lines. If e is zero or is equal to the number of lines
-then the test is silently regarded as OK, otherwise an additional message
-is produced that can be ignored provided the internal call to
-\texttt{diff} succeeded and ``\texttt{passed}'' was emitted.
+and wrong files (\texttt{WrongBla.casl}) are tested. If a \texttt{diff}
+with the expected output fails, then also the number of
+``\texttt{error}'' occurrences (in the produced output) is counted. For a
+successful comparison a ``\texttt{passed}'' is emitted.
 
-Calling ``\texttt{./runcheck.sh ./capa set}'' will update the \texttt{*.output} files (and a subsequent \texttt{./runcheck.sh ./capa} should always pass).
+Calling ``\texttt{./runcheck.sh ./capa set}'' will update the
+\texttt{*.output} files (and a subsequent \texttt{./runcheck.sh ./capa} should
+always pass). 
+
+Alternatively, all checks can be preformed by \texttt{make check} and
+resetting the output files by \texttt{make output}. With \texttt{cvs up} or
+\texttt{cvs diff} changes can be compared to checked-in versions of output
+files.
 
 \section{Structure of source files}
 
@@ -166,7 +186,7 @@ Calling ``\texttt{./runcheck.sh ./capa set}'' will update the \texttt{*.output} 
   analysis. (It declares an existential type.)
 \item[MixfixParser.hs] uses precedence and associativity to resolve
   mixfix terms (and formulae). Also \%list, \%string, \%number and
-  \%floating annotations are resolved. 
+  \%floating annotations are resolved 
 \item[AS\_Basic\_CASL.hs] defines the abstract syntax tree for CASL
 \item[Print\_AS\_Basic.hs] pretty prints data types of
   \texttt{AS\_Basic\_CASL.hs}
@@ -177,12 +197,19 @@ Calling ``\texttt{./runcheck.sh ./capa set}'' will update the \texttt{*.output} 
 \item[SortItem.hs] parser \texttt{sortItem(s)} (requires \texttt{Formula.hs} for subsort definitions)
 \item[ItemList.hs] parses items (separated by semicolons) generically
   (\texttt{itemList}) and annotations between or following these
-  items. It depends on \texttt{annotationL} from
-  \texttt{HetCATS/Anno\_Parser.hs}.
-\item[SymbolParser.hs] parses symbols and symbol maps that are not
-  needed for basic specs but for heterogeneous structured
-  specifications only (see \texttt{Logic\_CASL.hs})
+  items. 
+\item[SymbolParser.hs] parses symbols and symbol maps that are not needed for
+  basic specs but for heterogeneous structured specifications only (see
+  \texttt{Logic\_CASL.hs}). These parsers do not deal with annotations,
+  currently
 \item[Formula.hs] parser \texttt{term} and \texttt{formula}
+\item[AnnoState.hs] supplies a user state for most parsers to
+  collect annotations
+\end{description}
+
+The following files have been moved to the parent directory.
+
+\begin{description}
 \item[Token.hs] generic parser for mixfix ids and some keyword parsers
   (reused in \texttt{HetCATS/HasCASL}). The haskell data types
   \texttt{Token} and \texttt{Id} are defined in \texttt{HetCATS/Id.hs}!
@@ -208,7 +235,8 @@ don't include this package instead of the subdirectories
 
 \texttt{PrettyPrint.hs} supplies an instance for \texttt{Id}. The
 instance for annotations is given in \texttt{Print\_AS\_Annotation.hs}.
-\texttt{CASL/Print\_AS\_Basic} further imports \texttt{PPUtils.hs}.
+\texttt{CASL/Print\_AS\_Basic} further imports
+\texttt{PPUtils.hs}. (Pretty printing requires ``glasgow extensions''.)
 
 \texttt{GlobalAnnotations.hs} contains the \texttt{PrecedenceGraph} and
 imports \texttt{FiniteMap} from the Haskell (\texttt{package -data})
@@ -233,11 +261,10 @@ subdirectory. \texttt{Parsec.hs} simply re-exports parts from
 \texttt{ParsecChar.hs}, \texttt{ParsecError.hs} and
 \texttt{ParsecPos.hs}
 
-\texttt{Anno\_Parser.hs} has its own parser for mixfix \texttt{Id}s based on
-\texttt{CaslLanguage.hs} that in turn is based on
-\texttt{parsec/ParsecToken.hs} and \texttt{parsec/ParsecLanguage.hs}.
-\texttt{Anno\_Parser.hs} further uses \texttt{parsec/ParsecPerm.hs}
-and \texttt{Utils.hs}.
+\texttt{Anno\_Parser.hs} uses the mixfix ids from \texttt{Token.hs}.
+(\texttt{CaslLanguage.hs} that is based on \texttt{parsec/ParsecToken.hs} and
+\texttt{parsec/ParsecLanguage.hs} supplies an alternative parser for ids.)
+\texttt{Anno\_Parser.hs} further uses \texttt{parsec/ParsecPerm.hs}.
 
 \subsubsection*{Other \texttt{*.hs} files in \texttt{HetCATS/CASL}}
 
@@ -273,7 +300,9 @@ have been mentioned above.
 \item[CASL] see \ref{sec:casl} (Christian)
 \item[CSP-CASL] Markus
 \item[HasCASL] Christian
+\item[Haskell] Christian
 \item[Lottery] Markus
+\item[Modal] Markus
 \item[aterm\_conv] converts sml-CATS ATerms (Klaus)
 \item[haterm-1.0/src] the adapted ATerm library (Klaus)
 \item[doc] for documentations like this one
@@ -296,36 +325,34 @@ printers \texttt{Print\_AS\_*.hs} are given.
 \item[GlobalEnv.hs] Global environment (Till)
 \item[GlobalLibraryAnnotations.hs] extends \texttt{GlobalAnnotationsFunctions} and \texttt{AS\_Library}
 \item[Grothendieck.hs] supplies the heterogeneous (existential) data
-  types for structured specifications
+  types for structured specifications. (It does not go through \texttt{hugs}.)
 \item[Logic.hs] defines the (very big) class \texttt{Logic} for the
-  types in \texttt{Grothendieck}. It exploits \texttt{functional
+  types in \texttt{Grothendieck}. It exploits \emph{functional
     dependencies}!
 \item[LogicRepr.hs] is an extension of \texttt{Logic.hs} and includes
-  composition of logic representation (not used?)
+  composition of logic representation
 \item[LogicGraph.hs] gives a graph of logic representations (not used?)
 \item[LogicStructured.hs] has something to do with sublogics (Pascal, Till?)
-\item[P\_user\_state.hs] is intended (as user state of parsec
-  combinators) for heterogeneous parsing (Klaus)
 \item[Parse\_AS\_Structured.hs] is the unfinished start of a heterogeneous
   parser without user state (Christian)
 \item[Print\_HetCASL.hs] applies functions from \texttt{Print\_AS\_Library}
 \item[Prover.hs] is one subdivision of \texttt{Logic.hs}
 \item[test\_parser.hs] contains a \texttt{main} to test the differences
   between the two \texttt{Id} parsers (from Christian's
-  \texttt{CASL/Token.hs} and Klaus's \texttt{Anno\_Parser.hs}).
+  \texttt{CASL/Token.hs} and Klaus's \texttt{CaslLanguage.hs})
+\item[ParsecInterface] a wrapper for parsers for a logic
+\item[Parse\_AS\_Structured.hs] contains then heterogenous parser
+\item[hetpa.hs] contains a \texttt{main} for heterogenous parsing
+\item[FiniteSet.hs] a copy of Daan Leijen's \texttt{ddata/Set.hs} 
 \end{description}
 
-The other files \texttt{AS\_Annotation.der.hs},
-\texttt{CaslLanguage.hs}, \texttt{Id.hs}, \texttt{Result.hs},
-\texttt{GraphUtils.hs}, \texttt{PPUtils.hs}, \texttt{PrettyPrint.hs},
-\texttt{Print\_AS\_Annotation} and \texttt{Utils.hs} have been mentioned in 
+The other files have been mentioned in the previous
 Section \ref{sec:casl}.
-
 
 \subsection{Directory \texttt{HetCATS/HasCASL}}
 
-HasCASL relies on \texttt{CASL/Keywords.hs}, \texttt{CASL/Lexer.hs},
-\texttt{CASL/Token.hs} and \texttt{CASL/RunParsers.hs} (for testing
+HasCASL relies on \texttt{Keywords.hs}, \texttt{Lexer.hs},
+\texttt{Token.hs} and \texttt{CASL/RunParsers.hs} (for testing
 purposes in \texttt{Main.hs}). Form the top-level directory also stuff
 for annotations (i.e.\ \texttt{Anno\_Parser.hs}) is used.
 
@@ -346,6 +373,12 @@ script \texttt{runcheck.sh}. The binary produced by \texttt{ghc-call}
 is named \texttt{hacapa}.
 
 For further documentation see \texttt{HasCASL/doc/}. 
+
+\subsection{Directory \texttt{HetCATS/Haskell}}
+
+Also Haskell itself is supposed to become an instance of the heterogenous
+parser. There is a copy of the \texttt{ghc} library \texttt{haskell-src}
+\texttt{Language/Haskell} and a wrapper for it.
 
 \end{document}
 
