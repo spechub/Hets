@@ -194,6 +194,7 @@ Christian
 "free type Pair[S,T] ::= pair(first :S; second: T)" cannot be
 translated from CASL to Haskell, because generated selector variables
 become identical positions and are not distinguished by programmatica
+(letting Eq,Ord derive in base/defs/UniqueNames.hs does not work!)
 
 check for superfluous quantifications in HasCASL's function types
 (sonja's bug)
