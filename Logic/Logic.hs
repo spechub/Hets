@@ -61,9 +61,11 @@ import Common.GlobalAnnotations
 import Common.Lib.Set
 import Common.Lib.Map
 import Common.Lib.Graph
+import Common.Lib.Pretty
 import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
+import Common.Print_AS_Annotation
 import Logic.Prover -- for one half of class Sentences
 
 import Common.PrettyPrint
@@ -175,6 +177,8 @@ class (Category lid sign morphism, Ord sentence,
          -- parsing of sentences
       parse_sentence :: lid -> Maybe (sign -> String -> Result sentence)
            -- is a term parser needed as well?
+      print_named :: lid -> GlobalAnnos -> Named sentence -> Doc
+           -- print a sentence with comments
       sym_of :: lid -> sign -> Set symbol
       symmap_of :: lid -> morphism -> EndoMap symbol
       sym_name :: lid -> symbol -> Id 
@@ -183,6 +187,7 @@ class (Category lid sign morphism, Ord sentence,
 			      (TheoryMorphism sign sentence morphism)] 
       -- default implementations
       parse_sentence _ = Nothing
+      print_named _ = printText0
       provers _ = []
       cons_checkers _ = []
 
