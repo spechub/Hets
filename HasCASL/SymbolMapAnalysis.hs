@@ -76,7 +76,7 @@ inducedFromMorphism rmap sigma = do
   -- compute target signature
   let tarTypeMap = Map.foldWithKey ( \ i k m -> 
 			       Map.insert (Map.findWithDefault i i myTypeIdMap)
-					  k m)
+					  (mapTypeDefn myTypeIdMap k) m)
 	                    Map.empty srcTypeMap
       sigma' = Map.foldWithKey (mapOps myTypeIdMap op_Map) sigma
 	       { typeMap = addUnit tarTypeMap, assumps = Map.empty }
@@ -87,7 +87,25 @@ inducedFromMorphism rmap sigma = do
 	     { typeIdMap = myTypeIdMap
 	     , funMap = op_Map }
 
- -- to a Fun_map, add evering resulting from mapping (id,ots) according to rmap
+mapTypeDefn :: IdMap -> TypeInfo -> TypeInfo 
+mapTypeDefn im ti = 
+    ti { superTypes = map (mapType im) $ superTypes ti }
+
+-- | compute type mapping
+typeFun :: RawSymbolMap -> Id -> Kind -> Result Id
+typeFun rmap s k = do
+    let rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
+               [ASymbol $ idToTypeSymbol s k, AnID s, AKindedId SK_type s]
+    -- rsys contains the raw symbols to which s is mapped to
+    case Set.size rsys of
+          0 -> return s  -- use default = identity mapping
+          1 -> return $ rawSymName $ Set.findMin rsys -- take the unique rsy
+          _ -> pplain_error s  -- ambiguity! generate an error 
+                 (ptext "type: " <+> printText s 
+                  <+> ptext "mapped ambiguously:" <+> printText rsys)
+                 nullPos
+
+-- | compute mapping of functions
 opFun :: RawSymbolMap -> TypeMap -> IdMap -> Id -> OpInfos 
       -> Result FunMap -> Result FunMap
 opFun rmap tm type_Map i ots m = 
@@ -163,20 +181,6 @@ mapOps type_Map op_Map i ots e =
 	    in execState (addOpId id' sc' [] (NoOpDefn Op)) e')
     e $ opInfos ots
  
--- | compute type mapping
-typeFun :: RawSymbolMap -> Id -> Kind -> Result Id
-typeFun rmap s k = do
-    let rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
-               [ASymbol $ idToTypeSymbol s k, AnID s, AKindedId SK_type s]
-    -- rsys contains the raw symbols to which s is mapped to
-    case Set.size rsys of
-          0 -> return s  -- use default = identity mapping
-          1 -> return $ rawSymName $ Set.findMin rsys -- take the unique rsy
-          _ -> pplain_error s  -- ambiguity! generate an error 
-                 (ptext "type: " <+> printText s 
-                  <+> ptext "mapped ambiguously:" <+> printText rsys)
-                 nullPos
-
 -- Some auxiliary functions for inducedFromToMorphism
 testMatch :: RawSymbolMap -> Symbol -> Symbol -> Bool
 testMatch rmap sym1 sym2 =
@@ -185,6 +189,9 @@ testMatch rmap sym1 sym2 =
   match1 rsy1 rsy2 b = b && ((sym1 `matchSymb` rsy1) <= (sym2 `matchSymb`rsy2))
 
 canBeMapped :: RawSymbolMap -> Symbol -> Symbol -> Bool
+canBeMapped rmap sym1@(Symbol {symbType = ClassAsItemType _k1}) 
+                 sym2@(Symbol {symbType = ClassAsItemType _k2}) = 
+   testMatch rmap sym1 sym2
 canBeMapped rmap sym1@(Symbol {symbType = TypeAsItemType _k1}) 
                  sym2@(Symbol {symbType = TypeAsItemType _k2}) = 
    testMatch rmap sym1 sym2
@@ -200,18 +207,15 @@ preservesName sym1 sym2 = symName sym1 == symName sym2
 -- try to extend a symbol map with a yet unmapped symbol
 extendSymbMap :: TypeMap -> SymbolMap -> Symbol -> Symbol -> Maybe SymbolMap
 extendSymbMap tm akmap sym1 sym2 =
-  if case symbType sym1 of 
-    TypeAsItemType k1 -> case symbType sym2 of 
-       TypeAsItemType k2 -> rawKind k1 == rawKind k2
-       _ -> False 
-    OpAsItemType sc1@(TySc _) -> case symbType sym2 of
-      OpAsItemType (TySc ot2) -> 
+  if case (symbType sym1, symbType sym2) of 
+    (ClassAsItemType k1, ClassAsItemType k2) -> rawKind k1 == rawKind k2
+    (TypeAsItemType k1, TypeAsItemType k2) ->  rawKind k1 == rawKind k2
+    (OpAsItemType sc1@(TySc _), OpAsItemType (TySc ot2)) ->
 	  let TySc sc2 = 
 		  mapTySc (Map.foldWithKey ( \ s1 s2 m ->
 				Map.insert (symName s1) (symName s2) m)
 			        Map.empty akmap) sc1 
 	      in isUnifiable tm 0 ot2 sc2
-      _ -> False
     _ -> False
   then Just $ Map.insert sym1 sym2 akmap
   else Nothing
@@ -278,12 +282,23 @@ inducedFromToMorphism rmap sigma1 sigma2 = do
    -- yes => we are done
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
-   else do  -- 2. Compute initial posmap, using all possible mappings of symbols
+   else {- pfatal_error (ptext "No symbol mapping for "
+           $$ printText rmap 
+	   $$ ptext "sigma1" $$ printText sigma1
+	   $$ ptext "inducedFromMorphism sigma1" $$ printText (mtarget mor1)
+	   $$ ptext "to sigma2" $$ printText sigma2
+	   $$ ptext "difference" $$ printText (diffEnv (mtarget mor1) sigma2))
+	      nullPos -}
+        inducedFromToMorphism2 rmap sigma1 sigma2
+
+inducedFromToMorphism2 :: RawSymbolMap -> Env -> Env -> Result Morphism
+inducedFromToMorphism2 rmap sigma1 sigma2 = do
+  -- 2. Compute initial posmap, using all possible mappings of symbols
      let symset1 = symOf sigma1
          symset2 = symOf sigma2
          addCard sym s = (s,(postponeEntry sym s,Set.size s))
          ins1 sym = Map.insert sym
-                       (addCard sym $ Set.filter (canBeMapped rmap sym) symset2)
+                    (addCard sym $ Set.filter (canBeMapped rmap sym) symset2)
          posmap1 = Set.fold ins1 Map.empty symset1
          ins2 sym1 (symset,card) = Map.listInsert card (sym1,symset)
          posmap2 = Map.foldWithKey ins2 Map.empty posmap1
