@@ -10,14 +10,14 @@
 -}
 
 
-module Parse_hugo where
+module CspCASL.Parse_hugo where
 
---import CCKeywords
+--import CspCASL.CCKeywords
 
-import AS_CSP_CASL
+import CspCASL.AS_CSP_CASL
 import CASL.AS_Basic_CASL(OP_NAME)
-import CCToken
-import CCLexer
+import CspCASL.CCToken
+import CspCASL.CCLexer
 
 import Common.Lib.Parsec
 

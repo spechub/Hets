@@ -9,14 +9,14 @@
   ************************************************************************** 
 -}
 
-module CCToken 
+module CspCASL.CCToken 
 
 where
 {-import Id (Id(Id), Token(..), Pos, toPos, isPlace)-}
 import Common.Id (Token(..))
 import Common.Token
 import Common.Lexer
-import CCKeywords
+import CspCASL.CCKeywords
 
 --import Common.Lib.Parsec
 

@@ -9,7 +9,7 @@
   ************************************************************************** 
 -}
 
-module CCKeywords where
+module CspCASL.CCKeywords where
 
 import Prelude(String)
 

@@ -9,9 +9,9 @@
   ************************************************************************** 
 -}
 
-module CCLexer where
+module CspCASL.CCLexer where
 
-import CCKeywords
+import CspCASL.CCKeywords
 
 -- import Common.Lib.Parsec
 import Common.Id (Token(..))

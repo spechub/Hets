@@ -1,6 +1,6 @@
-module Print_AS_CSP_CASL where
+module CspCASL.Print_AS_CSP_CASL where
 
-import AS_CSP_CASL
+import CspCASL.AS_CSP_CASL
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import CASL.Print_AS_Basic

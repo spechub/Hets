@@ -14,7 +14,7 @@
 --------------------------------------------------------}
 module Main where
 
-import Parse_hugo
+import CspCASL.Parse_hugo
 import Common.Lib.Parsec
 import System.IO
 import System.Environment

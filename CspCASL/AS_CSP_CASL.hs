@@ -9,7 +9,7 @@
   ************************************************************************** 
 -}
 
-module AS_CSP_CASL where
+module CspCASL.AS_CSP_CASL where
 
 import CASL.AS_Basic_CASL
 import Common.Id
