@@ -21,6 +21,9 @@ import Isabelle.IsaProve
 import Logic.Logic
 import Common.Result
 import Common.Id
+import Common.Lib.Pretty
+import Common.AS_Annotation
+import Common.PrettyPrint
 import ATC.IsaSign
 
 -- a dummy datatype for the LogicGraph and for identifying the right
@@ -69,6 +72,9 @@ instance Logic.Logic.Syntax Isabelle () () ()
 
 instance Sentences Isabelle Sentence () Sign () ()  where
       map_sen Isabelle _morphism s = return s
+      print_named Isabelle ga (NamedSen lab sen) = 
+	(if null lab then empty 
+	else text lab <+> colon <> space) <> printText0 ga sen
       parse_sentence Isabelle = Nothing
       provers Isabelle = [isabelleProver] 
       cons_checkers Isabelle = []
