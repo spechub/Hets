@@ -5,7 +5,7 @@ module CASL.Sign where
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.Map hiding (map, filter)
-import Common.Lib.Graph
+import Common.Lib.Rel
 import Data.List(intersperse)
 import Data.Maybe(mapMaybe)
 import Data.Dynamic
@@ -181,15 +181,15 @@ instance Eq SigItem where
 -- lost are unused global vars
 -- (and annotations for several ITEMS)
 
-data Sign = SignAsMap { getMap   :: (Map Id [SigItem]),
-                        getGraph :: (Graph SortId ()) }
+data Sign = SignAsMap { getMap   :: Map Id [SigItem]
+                      , getGraph :: Rel SortId }
 	  deriving Show
 
 instance Eq Sign where
   (==) (SignAsMap m _) (SignAsMap n _) = n==m
 
 emptySign :: Sign
-emptySign = SignAsMap Common.Lib.Map.empty Common.Lib.Graph.empty
+emptySign = SignAsMap Common.Lib.Map.empty Common.Lib.Rel.empty
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
     	         deriving (Show, Eq, Ord)

@@ -31,12 +31,10 @@ import Common.Print_AS_Annotation
 import Common.PrettyPrint
 import Common.GlobalAnnotations
 
-import Common.Lib.Graph
-import Common.GraphUtils
+import Common.Lib.Rel as Rel
 import Common.Lib.Map hiding (filter, map)
 
 import Prelude hiding (lookup)
-import Data.List (nub,mapAccumL)
 import Data.Maybe (fromJust)
 
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> GlobalAnnos
@@ -50,52 +48,37 @@ addGlobalAnnos ga annos =
 		                    (literal_map ga') (literal_annos ga') }
 
 store_prec_annos :: PrecedenceGraph -> [Annotation] -> PrecedenceGraph
-store_prec_annos (nm,pgr) ans = 
-    let pans = filter (\an -> case an of
-		              Prec_anno _ _ _ _ -> True
-        		      _                 -> False) ans
-	ids        = nub $ concatMap allPrecIds pans
-	id_nodes   = zip (newNodes (length ids) pgr) ids
-	node_map   = nm `union` fromList (map (\(x,y) -> (y,x)) id_nodes)
-	the_edges  = concat $ (\(_,l) -> l) $ 
-		     mapAccumL (labelEdges (+1)) 1 $ 
-			            map (mkNodePairs node_map) pans
-    in (node_map,
-        reflexiveClosure (-5) $ transitiveClosure (-3) $ 
-			         insEdges the_edges $ insNodes id_nodes pgr)
-	
-mkNodePairs :: Map Id Node -> Annotation -> [(Node,Node)]
-mkNodePairs nmap pan = 
-    map (\(s,t) -> (lookup' s,lookup' t)) $ mkPairs pan
-    where lookup' i = case lookup i nmap of
-		      Just n  -> n
-		      Nothing -> error $ "no node for " ++ show i
-
-mkPairs :: Annotation -> [(Id,Id)]
-mkPairs (Prec_anno True  ll rl _) = concatMap ((zip ll) . repeat) rl
-mkPairs (Prec_anno False ll rl _) = concatMap ((zip ll) . repeat) rl ++
-				    concatMap ((zip rl) . repeat) ll
-mkPairs _ = error "unsupported annotation"
+store_prec_annos pgr = transClosure . 
+    foldr ( \ an p0  -> case an of 
+	    Prec_anno less lIds hIds _ -> 
+	             foldr ( \ li p1 -> 
+			     foldr ( \ hi p2 -> 
+				     if li == hi then error 
+				     ("prec_anno with equal ids: " ++
+				      show li ++ " < " ++ show hi)
+				     else if transMember hi li p2 then
+				     error ("prec_anno conflict: " ++
+					    show li ++ " < " ++ show hi ++
+					    "\n" ++ show p2)
+				     else 
+				     let p3 = Rel.insert li hi p2 in
+				     if less then p3 else
+				     Rel.insert hi li p3) 
+			     p1 hIds)
+	              p0 lIds
+	    _ -> p0 ) pgr  
 
 precRel :: PrecedenceGraph -- ^ Graph describing the precedences
 	-> Id -- ^ x oID (y iid z) -- outer id
 	-> Id -- ^ x oid (y iID z) -- inner id
 	-> PrecRel
-precRel (imap,g) out_id in_id =
-    case (o_n `inSuc` i_n,o_n `inPre` i_n) of
+-- a 'Lower' corresponds to %prec {out_id} < {in_id} 
+precRel pg out_id in_id =
+    case (Rel.member in_id out_id pg, Rel.member out_id in_id pg) of
     (False,True)  -> Lower
     (True,False)  -> Higher
     (True,True)   -> ExplGroup BothDirections
     (False,False) -> ExplGroup NoDirection
-    where i_n = lookup in_id imap
-	  o_n = lookup out_id imap
-	  mn1 `inSuc` mn2 = inRel (suc g) mn1 mn2
-	  mn1 `inPre` mn2 = inRel (pre g) mn1 mn2
-	  inRel rel mn1 mn2 = case mn1 of 
-			      Nothing -> False
-			      Just n1 -> case mn2 of
-					 Nothing -> False
-					 Just n2 -> n1 `elem` rel n2
 
 ---------------------------------------------------------------------------
 

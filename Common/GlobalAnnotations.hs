@@ -17,7 +17,7 @@ module Common.GlobalAnnotations where
 
 import Common.Id
 
-import Common.Lib.Graph
+import Common.Lib.Rel
 import Common.Lib.Map
 
 data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
@@ -28,8 +28,7 @@ data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
 		      } deriving (Show)
 
 emptyGlobalAnnos :: GlobalAnnos
-emptyGlobalAnnos = GA { prec_annos    = (Common.Lib.Map.empty, 
-					 Common.Lib.Graph.empty)
+emptyGlobalAnnos = GA { prec_annos    = Common.Lib.Rel.empty
 		      , assoc_annos   = Common.Lib.Map.empty
 		      , display_annos = Common.Lib.Map.empty
 		      , literal_annos = emptyLiteralAnnos
@@ -43,7 +42,7 @@ emptyLiteralAnnos = LA { string_lit  = Nothing
 			, float_lit  = Nothing
 			}
 
-type PrecedenceGraph = (Map Id Node,Graph Id Int)
+type PrecedenceGraph = Rel Id
 
 data PrecRel = Higher | Lower | ExplGroup Direct
 	       deriving (Show)
