@@ -17,62 +17,20 @@ import HToken
 import As
 import Parsec
 import AS_Annotation
-import Anno_Parser(annotationL)
 import ParseTerm
+import ItemList(annos, annoParser, appendAnno, lineAnnos
+	       ,optSemi, auxItemList, itemAux, tryItemEnd) 
 
------------------------------------------------------------------------------
--- annotations
------------------------------------------------------------------------------
+hasCaslStartKeywords :: [String]
+hasCaslStartKeywords = dotS:cDot: hascasl_reserved_words
 
--- annotations on one line
-lineAnnos :: GenParser Char st [Annotation]
-lineAnnos = do { p <- getPosition
-	       ; do { a <- annotationL  
-		    ; skip
-		    ; q <- getPosition
-		    ; if sourceLine q == sourceLine p then
-		      do { l <- lineAnnos
-			 ; return (a:l)
-			 }
-		      else return [a]
-		    }
-		 <|> return []
-	       }
+hasCaslItemList :: String -> GenParser Char st b
+		-> ([Annoted b] -> [Pos] -> a) -> GenParser Char st a
+hasCaslItemList = auxItemList hasCaslStartKeywords
 
--- optional semicolon followed by annotations on the same line
-optSemi :: GenParser Char st (Maybe Token, [Annotation])
-optSemi = bind (,) (option Nothing (fmap Just semiT)) lineAnnos
-
-annoParser :: GenParser Char st b -> GenParser Char st (Annoted b)
-annoParser parser = bind (\x y -> Annoted y [] x []) annos parser
-
-itemList :: String -> GenParser Char st b -> ([Annoted b] -> [Pos] -> a) 
-	 -> GenParser Char st a
-itemList keyword parser constr =
-    do { p <- pluralKeyword keyword
-       ; (vs, ts, ans) <- itemAux (annoParser parser)
-       ; let r = zipWith appendAnno vs ans 
-	 in return (constr r (map tokPos (p:ts)))
-       }
-
-appendAnno :: Annoted a -> [Annotation] -> Annoted a
-appendAnno (Annoted x p l r) y =  Annoted x p l (r++y)
-
-itemAux :: GenParser Char st a 
-	-> GenParser Char st ([a], [Token], [[Annotation]])
-itemAux itemParser = 
-    do { a <- itemParser
-       ; (m, an) <- optSemi
-       ; case m of { Nothing -> return ([a], [], [an])
-                   ; Just t -> do { tryItemEnd startKeyword
-				  ; return ([a], [t], [an])
-				  }
-	                        <|> 
-	                        do { (as, ts, ans) <- itemAux itemParser
-				   ; return (a:as, t:ts, an:ans)
-				   }
-		   }
-       }
+hasCaslItemAux :: GenParser Char st a 
+	       -> GenParser Char st ([a], [Token], [[Annotation]])
+hasCaslItemAux = itemAux hasCaslStartKeywords
 
 -- ------------------------------------------------------------------------
 -- sortItem
@@ -144,7 +102,7 @@ sortItem = do { s <- typePattern;
 		  } 		
 
 sortItems :: GenParser Char st SigItems
-sortItems = itemList sortS sortItem (TypeItems Plain)
+sortItems = hasCaslItemList sortS sortItem (TypeItems Plain)
 
 typeItem :: GenParser Char st TypeItem
 typeItem = do { s <- typePattern;
@@ -165,7 +123,7 @@ typeItem = do { s <- typePattern;
 
 typeItemList :: [Token] -> Instance -> GenParser Char st SigItems
 typeItemList ps k = 
-    do { (vs, ts, ans) <- itemAux (annoParser typeItem)
+    do { (vs, ts, ans) <- hasCaslItemAux (annoParser typeItem)
        ; let r = zipWith appendAnno vs ans 
 	 in return (TypeItems k r (map tokPos (ps++ts)))
        }
@@ -291,7 +249,7 @@ dataItem = do t <- typePattern
 		       return d
 
 dataItems :: GenParser Char st BasicItem
-dataItems = itemList typeS dataItem FreeDatatype
+dataItems = hasCaslItemList typeS dataItem FreeDatatype
 
 -----------------------------------------------------------------------------
 -- classItem
@@ -348,7 +306,7 @@ classItem = do c <- classDecl
 
 classItemList :: [Token] -> Instance -> GenParser Char st BasicItem
 classItemList ps k = 
-    do { (vs, ts, ans) <- itemAux (annoParser classItem)
+    do { (vs, ts, ans) <- hasCaslItemAux (annoParser classItem)
        ; let r = zipWith appendAnno vs ans 
 	 in return (ClassItems k r (map tokPos (ps++ts)))
        }
@@ -433,7 +391,7 @@ opItem = do (os, ps) <- opId `separatedBy` commaT
 		    else opDecl os ps
 
 opItems :: GenParser Char st SigItems
-opItems = itemList opS opItem OpItems
+opItems = hasCaslItemList opS opItem OpItems
 
 -----------------------------------------------------------------------------
 -- predItem
@@ -460,7 +418,7 @@ predItem = do (os, ps) <- opId `separatedBy` commaT
 		 else predDecl os ps 
 
 predItems :: GenParser Char st SigItems
-predItems = itemList predS predItem PredItems
+predItems = hasCaslItemList predS predItem PredItems
 
 -----------------------------------------------------------------------------
 -- sigItem
@@ -502,7 +460,7 @@ genVarItems :: GenParser Char st ([GenVarDecl], [Token])
 genVarItems = 
            do { vs <- genVarDecls
               ; do { s <- semiT
-                   ; do { tryItemEnd startKeyword
+                   ; do { tryItemEnd hasCaslStartKeywords
                         ; return (vs, [s])
                         }
                      <|> 
@@ -526,10 +484,11 @@ freeDatatype =   do { f <- asKey freeS
                     ; return (FreeDatatype ds (tokPos f : ps))
                     }
 
-progItems = itemList programS (patternTermPair True True equalS) ProgItems
+progItems = hasCaslItemList programS (patternTermPair True True equalS) 
+	    ProgItems
 
 axiomItems =     do { a <- pluralKeyword axiomS
-                    ; (fs, ps, ans) <- itemAux (fmap TermFormula term)
+                    ; (fs, ps, ans) <- hasCaslItemAux (fmap TermFormula term)
                     ; return (AxiomItems [] (zipWith 
                                            (\ x y -> Annoted x [] [] y) 
                                            fs ans) (map tokPos (a:ps)))

@@ -16,8 +16,6 @@ import Token
 import HToken
 import As
 import Parsec
-import AS_Annotation
-import Anno_Parser(annotationL)
 
 noQuMark :: String -> GenParser Char st Token
 noQuMark s = try $ asKey s << notFollowedBy (char '?')
@@ -564,28 +562,6 @@ caseTerm b =
 	      o <- asKey ofS
 	      (ts, ps) <- patternTermPair False b funS `separatedBy` barT
 	      return (CaseTerm t ts (map tokPos (c:o:ps)))
-
------------------------------------------------------------------------------
--- annos and lookahead after ";"
------------------------------------------------------------------------------
--- skip to leading annotation and read many
-annos :: GenParser Char st [Annotation]
-annos = skip >> many (annotationL << skip)
-
-tryItemEnd :: [String] -> GenParser Char st ()
-tryItemEnd l = 
-    try (do { c <- lookAhead (annos >> 
-                              (single (oneOf "\"([{")
-                               <|> placeS
-                               <|> scanAnySigns
-                               <|> many scanLPD))
-            ; if null c || c `elem` l then return () else unexpected c
-            })
-
-
--- "axiom/axioms ... ; exists ... " is not supported 
-startKeyword :: [String]
-startKeyword = dotS:cDot: hascasl_reserved_words
 
 -----------------------------------------------------------------------------
 -- let-term
