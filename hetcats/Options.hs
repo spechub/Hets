@@ -460,7 +460,6 @@ hetcatsOpts argv =
       isUni ('-':'-':'u':'n':'i':_) = True
       isUni _ = False
       seq' x = seq x x
-      seqL = map seq'
    in case (getOpt Permute options argv') of
         (opts,non_opts,[]) ->
             do flags <- checkFlags opts
@@ -550,8 +549,9 @@ collectVerbosity fs =
         verbosity = (sum . map (\(Verbose x) -> x)) vs
         isVerb (Verbose _) = True
         isVerb _           = False
-        vfs = (Verbose (verbosity+1)):fs'
-    in if (Quiet `elem` fs') then fs' else vfs
+        vfs = Verbose verbosity : fs'
+    in if (Quiet `elem` fs') then Verbose 0 : fs' else
+       if null vs then Verbose 1 : fs' else vfs
 
 collectOutTypes :: [Flag] -> [Flag]
 collectOutTypes fs =
@@ -605,32 +605,25 @@ doIfVerbose opts level func =
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags :: HetcatsOpts -> [Diagnosis] -> IO()
 showDiags opts ds = do
-  sequence $ map (putStrLn . show) -- take maxdiags
-           $ filter (relevantDiagKind . diagKind) ds
-  return ()
-  where relevantDiagKind FatalError = True
-        relevantDiagKind Error = True
-        relevantDiagKind Warning = (verbose opts) >= 1
-        relevantDiagKind Hint = (verbose opts) >= 2
-        relevantDiagKind Debug  = (verbose opts) >= 3
-        relevantDiagKind MessageW = False
+    ioresToIO $ showDiags1 opts $ resToIORes $ Result ds Nothing
+    return ()
 
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags1 :: HetcatsOpts -> IOResult a -> IOResult a
 showDiags1 opts res = do
   if outputToStdout opts
-     then do Result diags res' <- ioToIORes $ ioresToIO res 
+     then do Result ds res' <- ioToIORes $ ioresToIO res 
              ioToIORes $ sequence $ map (putStrLn . show) -- take maxdiags
-                       $ filter (relevantDiagKind . diagKind) diags
+                       $ filter (relevantDiagKind . diagKind) ds
              case res' of
                Just res'' -> return res''
                Nothing    -> resToIORes $ Result [] Nothing
      else res
   where relevantDiagKind FatalError = True
         relevantDiagKind Error = True
-        relevantDiagKind Warning = (verbose opts) >= 1
-        relevantDiagKind Hint = (verbose opts) >= 2
-        relevantDiagKind Debug  = (verbose opts) >= 3
+        relevantDiagKind Warning = (verbose opts) >= 2
+        relevantDiagKind Hint = (verbose opts) >= 3
+        relevantDiagKind Debug  = (verbose opts) >= 4
         relevantDiagKind MessageW = False
 
 
