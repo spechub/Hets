@@ -15,6 +15,8 @@
 -}
 
 {- TODO:
+    -- Check for -G Option -- if given, set OutTypes to [] and Ana to Basic
+    just Maybe: 
     -- implement Read instance for some (all?) Types of Flags
     -- parse the input type via 'instance Read InType'?
     -- there's got to be a better way to realize parseOutType...
@@ -29,6 +31,7 @@ Usage: hetcats [OPTION...] file ... file
   -q        --quiet               no output to stderr
   -V        --version             print version number and exit
   -g        --gui                 use graphical user interface
+  -G        --only-gui            use graphical user interface ONLY!
   -h        --help, --usage       print usage information and exit
   -i ITYPE  --input-type=ITYPE    ITYPE of input file: 
             (tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?
@@ -69,7 +72,7 @@ import System.Console.GetOpt
 -- | 'HetcatsOpts' is a record set of all options received from the command line
 data HetcatsOpts = 
     HcOpt { analysis :: AnaType    -- Skip | Structured | Basic
-          , gui      :: Bool       -- True when Output is shown in a GUI
+          , gui      :: GuiType    -- True when Output is shown in a GUI
           , infiles  :: [FilePath] -- files to be read
           , intype   :: InType     -- type of the file to be read
           , libdir   :: FilePath   -- CASL library directory
@@ -94,7 +97,9 @@ instance Show HetcatsOpts where
         showAnalysis x = case x of  Skip -> " --just-parse"
                                     Structured -> " --just-structured"
                                     Basic -> ""
-        showGui x = if x then " --gui" else ""
+        showGui x = case x of Only -> " -- only-gui"
+                              Also -> " --gui"
+                              Not  -> ""
         showInFiles  = joinWith ' '
         showOutTypes = joinWith ',' . map show
         showRaw = joinWith ' ' . map showRaw'
@@ -120,7 +125,7 @@ makeOpts _     x           = hetsError Intern ("unrecognized Flag: " ++ (show x)
 defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
     HcOpt { analysis = Basic
-          , gui      = False
+          , gui      = Not
           , infiles  = []
           , intype   = GuessIn
           , libdir   = ""
@@ -134,7 +139,7 @@ defaultHetcatsOpts =
 
 -- | every 'Flag' describes a raw option
 data Flag = Analysis AnaType     -- to analyse or not to analyse
-          | Gui      Bool        -- show Output in GUI
+          | Gui      GuiType     -- show Output in GUI
           | Help                 -- print usage message
           | InType   InType      -- type of input file
           | LibDir   FilePath    -- CASL library directory
@@ -148,6 +153,10 @@ data Flag = Analysis AnaType     -- to analyse or not to analyse
 
 -- | 'AnaType' describes the type of analysis we want performed
 data AnaType = Basic | Structured | Skip
+               deriving (Show, Eq)
+
+-- | 'GuiType' determines if we want the GUI shown
+data GuiType = Only | Also | Not
                deriving (Show, Eq)
 
 -- | 'InType' describes the type of input the infile contains
@@ -202,8 +211,10 @@ options =
       "chatty output to stderr"
     , Option ['q'] ["quiet"] (NoArg Quiet)
       "no output at all to stderr. overrides --verbose!"
-    , Option ['g'] ["gui"] (NoArg (Gui True))
+    , Option ['g'] ["gui"] (NoArg (Gui Also))
       "show graphical output in a GUI window"
+    , Option ['G'] ["only-gui"] (NoArg (Gui Only))
+      "show graphical output in a GUI window - don't write Output to file"
     , Option ['V'] ["version"] (NoArg Version)
       "print version number and exit"
     , Option ['h'] ["help", "usage"] (NoArg Help)
@@ -439,7 +450,9 @@ collectOutTypes fs =
         isOType _            = False
         otypes = foldl concatOTypes [] ots
         concatOTypes = (\os (OutTypes ot) -> os ++ ot)
-    in if (null otypes) then fs' else ((OutTypes otypes):fs')
+    in if ((null otypes) || ((Gui Only) `elem` fs'))
+        then fs'
+        else ((OutTypes otypes):fs')
 
 collectRawOpts :: [Flag] -> [Flag]
 collectRawOpts fs =

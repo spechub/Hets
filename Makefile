@@ -26,7 +26,7 @@ HADDOCK    = haddock
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
 HC_INCLUDE = -i$(INCLUDE_PATH)
-HC_PACKAGE = 
+HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci -package uni-server
 
 AG_FLAGS   = -mdcfs
 
