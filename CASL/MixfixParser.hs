@@ -18,34 +18,21 @@ import Set
 import Lexer (caslChar)
 import ParsecPrim
 import qualified Char as C
-import List(intersperse, partition)
+import List(intersperse)
 
 
 -- Earley Algorithm
--- the single non-terminal (forall terms) will be "()"
 
-nT = Token "()" nullPos
-isNT (Token s _) =  s == "()"
-
--- all ids are duplicate replacing "__" with "()"
+-- after matching one place literally all places must match literally
 
 data State = State { rule :: Id
+                   , matchPlace :: Maybe Bool -- still open, true or false
 		   , dotPos :: [Token]
 		   , rulePos :: Int
 		   } deriving (Eq, Ord)
 
 prefix :: Id -> Bool
 prefix (Id ts _ _) = if null ts then False else not $ isPlace $ head ts
-
-placeToNT :: Id -> Id
-placeToNT (Id ts cs ps) = Id (map (\t -> if isPlace t then nT else t) ts) cs ps
-
-initialState :: Set Id -> (Set Id, FiniteMap Int (Set State))
-initialState is = let (ps, ms) = partition prefix $ setToList is
-		      mis = map placeToNT ms
-		      pis = map placeToNT ps
-                      states = map (\i -> State i (getTokenList i) 0) mis
-		  in (mkSet $ ps ++ pis ++ ms ++ mis, unitFM 0 (mkSet states))
 
 getTokenList :: Id -> [Token]
 getTokenList (Id ts cs _) = 
@@ -55,23 +42,39 @@ getTokenList (Id ts cs _) =
 	      (map getTokenList cs)) ++ [Token "]" nullPos]
     in reverse toks ++ cts ++ reverse pls
 
-{-
-predict :: [Id] -> State -> [State]
-predict is (State ts d p _) =
-    if isPlace (ts !! d) then 
-       map (\i -> State (getTokenList i) 0 p p) 
-	       (filter prefix is) 
-    else []
+initialState :: Set Id -> FiniteMap Int (Set State)
+initialState is = let ms = filter (not . prefix) $ setToList is
+                      states = map (\i -> State i Nothing (getTokenList i) 0) ms
+		  in unitFM 0 (mkSet states)
 
-scan :: Token -> State -> [State]
-scan i (State ts d p k) = 
-    if ts !! d == i then [State ts (d+1) (p+1) k] else []
+dontMatchPlace, mayMatchNT :: Maybe Bool -> Bool
+dontMatchPlace Nothing = False
+dontMatchPlace (Just x) = not x 
+mayMatchNT Nothing = True
+mayMatchNT (Just x) = not x 
 
-complete :: State -> State -> [State]
-complete (State ts1 d1 p1 _) (State ts2 d2 p2 k2) =
-    if d1 >= length ts1 && isPlace (ts2 !! d2) && p2 <= p1
-       then [State ts2 (d2+1) p1 k2] else []
--}
+scan :: Token -> Int -> FiniteMap Int (Set State) -> FiniteMap Int (Set State)
+scan t i m = 
+    addToFM m (i+1) (mkSet $ 
+       foldr (\ (State o b ts k) l ->
+	      if null ts || head ts /= t || isPlace t && dontMatchPlace b then l 
+	      else (State o (if isPlace t then Just True else b) 
+		    (tail ts) k) : l) [] 
+	      (setToList $ lookUp m i))
+
+lookUp :: (Ord key) => FiniteMap key (Set a) -> key -> Set a
+lookUp m i = lookupWithDefaultFM m emptySet i
+
+complete :: PrecedenceGraph -> FiniteMap Int (Set State) -> [State] -> [State]
+complete g m l = 
+  let
+    l1 = filter (\ (State _ _ ts _) -> null ts) l
+    ll2 = map (\ (State _ _ _ k) -> setToList $ lookUp m k) l1
+    ll3 = map (filter (\ (State _ b ts _) -> not (null ts) 
+		       && isPlace (head ts) && mayMatchNT b)) ll2
+    ll4 = map (map (\ (State o _ ts k) -> State o (Just False) (tail ts) k)) ll3
+  in concat ll4
+
 -- --------------------------------------------------------------- 
 -- convert literals 
 -- --------------------------------------------------------------- 
