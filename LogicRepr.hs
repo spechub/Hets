@@ -27,14 +27,14 @@ import Maybe(catMaybes)
 
 data (Logic id1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
-        local_env1 sign1 morphism1 symbol1 raw_symbol1,
+        sign1 morphism1 symbol1 raw_symbol1,
       Logic id2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
-        local_env2 sign2 morphism2 symbol2 raw_symbol2) =>
+        sign2 morphism2 symbol2 raw_symbol2) =>
   LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                local_env1 sign1 morphism1 symbol1 raw_symbol1
+                sign1 morphism1 symbol1 raw_symbol1
             id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                local_env2 sign2 morphism2 symbol2 raw_symbol2
+                sign2 morphism2 symbol2 raw_symbol2
      =
      LogicRepr {repr_name :: String,
                 source :: id1, source_sublogic :: sublogics1,
@@ -61,29 +61,29 @@ data (Logic id1 sublogics1
 comp_repr :: 
      (Logic id1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
-        local_env1 sign1 morphism1 symbol1 raw_symbol1,
+        sign1 morphism1 symbol1 raw_symbol1,
       Logic id2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
-        local_env2 sign2 morphism2 symbol2 raw_symbol2,
+        sign2 morphism2 symbol2 raw_symbol2,
       Logic id3 sublogics3
         basic_spec3 sentence3 symb_items3 symb_map_items3 
-        local_env3 sign3 morphism3 symbol3 raw_symbol3
+        sign3 morphism3 symbol3 raw_symbol3
      ) =>
      LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                local_env1 sign1 morphism1 symbol1 raw_symbol1
+                sign1 morphism1 symbol1 raw_symbol1
             id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                local_env2 sign2 morphism2 symbol2 raw_symbol2
+                sign2 morphism2 symbol2 raw_symbol2
 
  ->  LogicRepr id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                local_env2 sign2 morphism2 symbol2 raw_symbol2
+                sign2 morphism2 symbol2 raw_symbol2
             id3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                local_env3 sign3 morphism3 symbol3 raw_symbol3
+                sign3 morphism3 symbol3 raw_symbol3
 
  ->  Maybe (
      LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                local_env1 sign1 morphism1 symbol1 raw_symbol1
+                sign1 morphism1 symbol1 raw_symbol1
             id3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                local_env3 sign3 morphism3 symbol3 raw_symbol3 )
+                sign3 morphism3 symbol3 raw_symbol3 )
 
 comp_repr r1 r2 = if target_sublogic r1 <= source_sublogic r2 then
    Just(LogicRepr{ 
