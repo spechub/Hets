@@ -21,7 +21,7 @@ module Common.GlobalAnnotationsFunctions
     ( emptyGlobalAnnos, addGlobalAnnos
     , precRel, isLAssoc, isRAssoc, isAssoc, isLiteral, getLiteralType
     , store_prec_annos, store_assoc_annos
-    , nullStr, nullList, bracketList
+    , nullStr, nullList, getListBrackets, listBrackets
     ) 
     where
 
@@ -281,11 +281,11 @@ sameIds (Number_anno lid1 _) (Number_anno rid1 _) =
     lid1==rid1 
 sameIds a1 a2 =
     error $ "*** wrong annotation combination for GAF.sameIds:\n"
-	  ++ spp a1 ++ spp a2
+	  ++ spp a1 ++ "\n" ++ spp a2
     where spp a = show $ printText0 emptyGlobalAnnos a
 -------------------------------------------------------------------------
 
-nullStr, nullList, bracketList :: GlobalAnnos -> Id		 
+nullStr, nullList :: GlobalAnnos -> Id		 
 nullStr ga = case string_lit $ literal_annos ga of
 	     Just (n,_) -> n
 	     Nothing    -> error "nullStr Id not found"
@@ -294,9 +294,20 @@ nullList ga = case list_lit $ literal_annos ga of
 	      Just (_,n,_) -> n
 	      Nothing    -> error "nullList Id not found"
 
-bracketList ga = case list_lit $ literal_annos ga of
-	      Just (b,_,_) -> b
-	      Nothing    -> error "bracketList Id not found"
+---------------------------------------------------------------------------
+
+getListBrackets :: Id -> ([Token], [Token])
+getListBrackets (Id b _ _) = 
+    let (b1, rest) = break isPlace b
+	b2 = if null rest then [] 
+	     else filter (not . isPlace) rest
+    in (b1, b2)
+
+listBrackets :: GlobalAnnos -> ([Token], [Token])
+listBrackets g = 
+    case list_lit $ literal_annos g of
+		Nothing -> ([], [])
+		Just (bs, _, _) -> getListBrackets bs
 
 -------------------------------------------------------------------------
 
@@ -305,5 +316,5 @@ bracketList ga = case list_lit $ literal_annos ga of
 annotationConflict :: String -> [Annotation] -> a
 annotationConflict tp ans = 
     error $ ("*** conflicting %"++ tp ++ " annotations:\n"
-	      ++ show (printText0 emptyGlobalAnnos ans))
+	      ++  show (printText0 emptyGlobalAnnos ans))
 

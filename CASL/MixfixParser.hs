@@ -15,8 +15,7 @@
                that stores the local ambiguity
 -}
 
-module CASL.MixfixParser ( resolveFormula, resolveMixfix
-		    , listBrackets, isLitToken )
+module CASL.MixfixParser ( resolveFormula, resolveMixfix)
     where 
 import CASL.AS_Basic_CASL 
 import Common.GlobalAnnotations
@@ -76,19 +75,6 @@ mkApplState i ide = State ide [] []
 listId :: Id
 -- unique id (usually "[]" yields two tokens)
 listId = Id [mkSimpleId "[]"] [] []
-
-getListBrackets :: Id -> ([Token], [Token])
-getListBrackets (Id b _ _) = 
-    let (b1, rest) = break isPlace b
-	b2 = if null rest then [] 
-	     else filter (not . isPlace) rest
-    in (b1, b2)
-
-listBrackets :: GlobalAnnos -> ([Token], [Token])
-listBrackets g = 
-    case list_lit (literal_annos g) of
-		Nothing -> ([], [])
-		Just (bs, _, _) -> getListBrackets bs
 
 listStates :: GlobalAnnos -> Int -> [State]
 -- no empty list (can be written down directly)

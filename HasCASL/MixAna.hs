@@ -18,9 +18,9 @@ import HasCASL.AsUtils()
 import HasCASL.Le
 import Common.GlobalAnnotations
 import Common.GlobalAnnotationsFunctions
-import CASL.MixfixParser
 import Common.Result
 import Common.Id
+import Common.Lexer
 import qualified Common.Lib.Map as Map
 import Control.Monad
 import Control.Monad.State

@@ -23,13 +23,13 @@ a b p
 q a b
 B [ b ]
 B[a[c,d],b]
-[a, [c, d], b]
-[a[c,d], b]
+[ a, [ c, d ], b ]
+[ a[c,d], b ]
 a B[a[c,d],b] b
 while while a do b od do c od
 while while a do b od do while c do d od od
 { a { b c } }
-[a, A 0 B]
+[ a, A 0 B ]
 A A 0 B B
 b + A 0 B + b
 - A 0 B

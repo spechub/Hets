@@ -23,8 +23,7 @@ import Common.Id
 import CASL.AS_Basic_CASL
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions (precRel,isLAssoc,isRAssoc
-				  ,nullStr,nullList,bracketList)
+import Common.GlobalAnnotationsFunctions hiding (isLiteral)
 import CASL.LiteralFuns
 
 import Common.Print_AS_Annotation
@@ -737,13 +736,9 @@ print_Literal pf parens_fun
 			      ex_d  = p_l ex_i ex_t
 			  in bas_d <> e_doc <> ex_d
     | isList   ga li ts = let list_body = commaT_fun ga $ listElements li
-			      tops = case bracketList ga of
-				     Id topsi [] _ -> topsi
-				     _  -> error 
-					   "malformed bracket id for lists"
-			      fill top = if isPlace top then list_body
-					 else pf ga top
-			  in hcat $ map fill tops
+			      (openL, closeL) = listBrackets ga
+			  in hcat(map (pf ga) openL) <+> list_body 
+			     <+> hcat(map (pf ga) closeL)
     | isString ga li ts = pf ga $ 
 			  (\s -> let r = '"':(s ++ "\"") in seq r r) $ 
 			  concatMap convCASLChar $ toksString li
