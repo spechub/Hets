@@ -17,6 +17,7 @@
 
 module GUI.ConvertDevToAbstractGraph where
 
+import Proofs.Proofs
 import Static.DevGraph
 import GUI.AbstractGraphView
 import DaVinciGraph
