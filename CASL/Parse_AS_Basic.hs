@@ -60,8 +60,11 @@ basicItems = fmap Sig_items sigItems
 		    return (Var_items vs (map tokPos (v:ps)))
 	     <|> do f <- forallT 
 		    (vs, ps) <- varDecl `separatedBy` semiT 
-		    Axiom_items fs ds <- dotFormulae
-		    return (Local_var_axioms vs fs (map tokPos (f:ps) ++ ds))
+		    a <- annos
+		    Axiom_items ((Annoted ft qs as rs):fs) ds <- dotFormulae
+		    let aft = Annoted ft qs (a++as) rs
+		        in return (Local_var_axioms vs (aft:fs) 
+				   (map tokPos (f:ps) ++ ds))
 	     <|> dotFormulae
              <|> do a <- pluralKeyword axiomS
 		    (fs, ps, ans) <- itemAux startKeyword formula
