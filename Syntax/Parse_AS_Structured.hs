@@ -267,6 +267,7 @@ specE :: (AnyLogic, LogicGraph) -> AParser SPEC
 specE l = do lookAhead (try (oBraceT >> cBraceT)) 
                        -- avoid overlap with group spec
              basicSpec l        
+      <|> logicSpec l
       <|> do lookAhead (oBraceT <|> ((simpleId << annos) 
 				     `followedWith`
 				     (asKey withS <|> asKey hideS
@@ -280,7 +281,6 @@ specE l = do lookAhead (try (oBraceT >> cBraceT))
 				      <|> (eof >> return (Token "" nullPos)))
 				    ))
 	     groupSpec l
-      <|> logicSpec l
       <|> basicSpec l
 
 
