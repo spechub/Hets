@@ -16,7 +16,6 @@ module HasCASL.SymbolMapAnalysis
     ( inducedFromMorphism
     , inducedFromToMorphism
     , cogeneratedSign
-    , finalUnion
     )  where
 
 import HasCASL.As
@@ -371,7 +370,3 @@ cogeneratedSign symset sigma = do
   symset0 = symOf sigma   -- 1. 
   symset1 = Set.fold revealSym symset0 symset  -- 3. 
   revealSym sy symset1 = Set.delete sy symset1
-
-finalUnion :: Env -> Env -> Result Env
-finalUnion sigma1 sigma2 = merge sigma1 sigma2 
-  -- ???  Finality check not yet implemented

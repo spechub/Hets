@@ -172,8 +172,16 @@ mapFunSym tm fm (i, sc) = do
       -- unify sc2 with sc1 later
   return (newI, sc2)
 
-instance Mergeable Env where
-    merge e1 e2 =
+mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
+mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = fmap OpInfos $  
+    foldM ( \ l o -> 
+	   let (es, us) = partition (isUnifiable tm c (opType o) . opType) l
+	   in if null es then return (o:l)
+	      else do r <- mergeOpInfo tm c (head es) o
+	              return (r : us)) l1 l2 
+
+mergeEnv :: Env -> Env -> Result Env
+mergeEnv e1 e2 =
 	do cMap <- merge (classMap e1) $ classMap e2
 	   let m = max (counter e1) $ counter e2
 	   tMap <- mergeMap (mergeTypeInfo Map.empty 0) 
@@ -290,18 +298,10 @@ legalMor m = let s = msource m
 	     && all ((`elem` (Map.keys $ assumps t)) . fst)
 		(Map.elems fs)
 
-mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
-mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = fmap OpInfos $  
-    foldM ( \ l o -> 
-	   let (es, us) = partition (isUnifiable tm c (opType o) . opType) l
-	   in if null es then return (o:l)
-	      else do r <- mergeOpInfo tm c (head es) o
-	              return (r : us)) l1 l2 
-
 morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = 
-    do s <- merge (msource m1) $ msource m2
-       t <- merge (mtarget m1) $ mtarget m2
+    do s <- mergeEnv (msource m1) $ msource m2
+       t <- mergeEnv (mtarget m1) $ mtarget m2
        return (mkMorphism s t) 
 		  { typeIdMap = Map.union (typeIdMap m1) $ typeIdMap m2
 		  , funMap = Map.union (funMap m1) $ funMap m2 }

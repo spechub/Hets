@@ -91,7 +91,6 @@ instance Category HasCASL Env Morphism where
     legal_obj HasCASL e = legalEnv e
     legal_mor HasCASL m = legalMor m
 
-
 instance Sentences HasCASL Term () Env Morphism Symbol
 
 instance StaticAnalysis HasCASL BasicSpec Term ()
@@ -100,7 +99,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
                Morphism 
                Symbol RawSymbol where
     basic_analysis HasCASL = Just basicAnalysis 
-    signature_union HasCASL = merge
+    signature_union HasCASL = mergeEnv
     empty_signature HasCASL = initialEnv
     induced_from_to_morphism HasCASL = inducedFromToMorphism
     induced_from_morphism HasCASL = inducedFromMorphism
@@ -108,7 +107,6 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     inclusion HasCASL = inclusionMor
 
     cogenerated_sign HasCASL = cogeneratedSign
---    generated_sign HasCASL = generatedSign
 
     stat_symb_map_items HasCASL = statSymbMapItems
     stat_symb_items HasCASL = statSymbItems
@@ -119,7 +117,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     sym_of HasCASL = symOf -- \ _ -> Set.empty
     symmap_of HasCASL = morphismToSymbMap
 
-    final_union HasCASL = finalUnion
+    final_union HasCASL = mergeEnv
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Term SymbItems SymbMapItems
