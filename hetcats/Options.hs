@@ -18,10 +18,7 @@
 {- TODO:
      - Flag und HetCATSOpts Datentyp anpassen
      - options Liste erweitern 
-     - parse funktionen schreiben
-     - form_opt_rec anpassen 
      - mehrere infiles zulassen
-     - OutputDir: fuer jedes infile OutDir defaultmaessig auf basename des infiles setzen
 -}
 
 {- Optionen:
@@ -59,8 +56,6 @@ import Data.List
 import Control.Monad (filterM)
 
 import System.Console.GetOpt
-
-import Debug.Trace
 
 
 -- main Datatypes --
@@ -274,8 +269,8 @@ parseOType s
     getGraphType "davinci" = Just Davinci
     getGraphType _         = Nothing
     getOutFormat "het"  = Just Ascii
-    getOutFormat "taf"  = Just Term
-    getOutFormat "trm"  = Just Taf
+    getOutFormat "taf"  = Just Taf
+    getOutFormat "trm"  = Just Term
     getOutFormat "html" = Just Html
     getOutFormat "xml"  = Just Xml
     getOutFormat _      = Nothing
