@@ -41,7 +41,8 @@ mergeGlobalAnnos ga1 ga2 = addGlobalAnnos ga1 $ convertGlobalAnnos ga2
 
 c_prec::PrecedenceGraph->[Annotation]
 c_prec pg = let erg = Rel.toList pg 
-            in  map ( \ (x,y) -> Prec_anno (precRel pg x y) [x] [y] []) erg  
+            in  map ( \ (x,y) -> Prec_anno (precRel pg x y) [x] [y] []) 
+		    $ filter ( \ (x, y) -> x /= y) erg  
 
 c_assoc::AssocMap->[Annotation]
 c_assoc am = 
