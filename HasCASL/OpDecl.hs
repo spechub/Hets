@@ -59,6 +59,17 @@ filterVars = filterAssumps ( \ o -> case opDefn o of
 			    VarDefn -> False
 			    _ -> True)
 
+patternsToType :: [Pattern] -> Type -> Type
+patternsToType [] t = t
+patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr 
+			  (patternsToType ps t) []
+
+tuplePatternToType :: Pattern -> Type
+tuplePatternToType (PatternVar (VarDecl _ t _ _)) = t
+tuplePatternToType (TuplePattern ps qs) = 
+    ProductType (map tuplePatternToType ps) qs
+tuplePatternToType _ = error "tuplePatternToType"
+
 anaOpItem :: GlobalAnnos -> OpItem -> State Env OpItem
 anaOpItem ga (OpDecl is sc attr ps) = 
     do mSc <- anaTypeScheme sc
@@ -78,21 +89,23 @@ anaOpItem ga (OpDefn o pats sc partial trm ps) =
        putAssumps $ filterVars as
        mapM_ anaVarDecl bs
        case mSc of 
-		Just newSc -> do 
+		Just newSc@(TypeScheme tArgs (qu :=> _) qs) -> do 
 		    ty <- toEnvState $ freshInst newSc
-		    mt <- resolveTerm ga ty trm
+		    mt <- resolve ga (Just ty) trm
 		    putAssumps as
 		    case mt of 
 			      Nothing -> return $ OpDefn op pats 
 					     newSc partial trm ps
-			      Just lastTrm -> 
-				  do addOpId i newSc [] $ Definition 
+			      Just (newTy, lastTrm) -> do 
+			          let lastSc = TypeScheme tArgs 
+					  (qu :=> patternsToType pats newTy) qs
+				  addOpId i lastSc [] $ Definition 
 				         $ case (pats, partial) of 
 					       ([], Total) -> lastTrm
 					       _ -> LambdaTerm pats partial 
 						    lastTrm ps
-				     return $ OpDefn op pats 
-					    newSc partial lastTrm ps
+				  return $ OpDefn op [] lastSc
+					   partial lastTrm ps
 		Nothing -> do 
 		    mt <- resolve ga Nothing trm
 		    putAssumps as

@@ -35,11 +35,10 @@ program __ und __ (x, y : Unit) : Unit = ()
 type __->__ : Type- -> Type+ -> Type
 type s->t < s ->? t
 %% total functions
-op __res__(x : s, y : t) : s = (var x : s)
-op fst(x : s, y : t) : s = (var x : s)
+op __res__ : s × t ->? s = (var x : s)
+op fst : s × t ->? s = (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
-. (op __=__ : s × s ->? Unit) ((op fst : s), (op __res__ : s))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 op eq : s × s ->? Unit
@@ -140,14 +139,14 @@ __=__ : s × s ->? Unit
 __=>__ : Unit × Unit ->? Unit
 __\/__ : Unit × Unit ->? Unit
 __if__ : Unit × Unit ->? Unit
-__res__ : s = \ (x : s, y : t) .! (var x : s)
+__res__ : s × t ->? s = \ (x : s, y : t) .! (var x : s)
 bottom : p
 def : (Pred)(s) = \ x : _var_34 . ()
 eq : s × s ->? Unit
 f : c --> d %(var)%
 false : bool %(construct bool)%
       : Unit ->? Unit
-fst : s = \ (x : s, y : t) .! (var x : s)
+fst : s × t ->? s = \ (x : s, y : t) .! (var x : s)
 g : c --> d %(var)%
 not : Unit ->? Unit
 sup : (nat -> c) ->? c
@@ -159,8 +158,6 @@ x1 : c %(var)%
 x2 : c %(var)%
 y1 : d %(var)%
 y2 : d %(var)%
-%% Sentences -------------------------------------------------------------
-(op __=__ : s × s ->? Unit) ((op fst : s), (op __res__ : s)) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 4, column 7) illegal universe class declaration 'Type'
 Error (line 14, column 44) incompatible kind of: t ->? Unit
@@ -176,7 +173,9 @@ Error (line 60, column 32) unexpected mixfix token 'y'
 Error (line 65, column 22) unexpected mixfix token '('
 FatalError (line 65, column 18) no resolution for '(\ (x : s, y : t) . def (x res y)) =
 (\ (x : s, y : t) . (def y) und (def x))'
+Error (line 66, column 7) unexpected mixfix token '='
 FatalError (line 74, column 11) no resolution for '(\ x : s . eq (x, x)) = tt'
+Error (line 75, column 17) unexpected mixfix token 'res'
 FatalError (line 75, column 15) no resolution for '(\ (x, y : s) . x res eq (x, y)) = (\ (x, y : s) . y res eq (x, y))'
 Warning (line 85, column 6) redeclared type 's'
 Error (line 87, column 13) unexpected mixfix token '('
