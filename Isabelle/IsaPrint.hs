@@ -6,7 +6,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  non-portable(overlapping-instances)
+Portability :  portable
 
    Printing functions for Isabelle logic.
 -}

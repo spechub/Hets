@@ -1,8 +1,3 @@
- {- list of datatype definitions
-    each of these consists of a list of (mututally recursive) datatypes
-    each datatype consists of its name (Typ) and a list of constructors
-    each constructor consists of its name (String) and list of argument types
- -}                      
 {- |
 Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
@@ -16,6 +11,12 @@ Portability :  portable
    Data structures for Isabelle sigantures and theories.
    Adapted from Isabelle.
 -}
+
+ {- list of datatype definitions
+    each of these consists of a list of (mututally recursive) datatypes
+    each datatype consists of its name (Typ) and a list of constructors
+    each constructor consists of its name (String) and list of argument types
+ -}                      
 
 module Isabelle.IsaSign where
 
