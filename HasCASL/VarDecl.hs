@@ -112,11 +112,13 @@ partitionOpId as tm c i sc =
 -- | storing an operation
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn 
 	-> State Env (Maybe UninstOpId)
-addOpId i sc attrs defn = 
+addOpId i (TypeScheme vs (ps :=> ty) qs) attrs defn = 
     do as <- gets assumps
        tm <- gets typeMap
        c <- gets counter
-       let (l,r) = partitionOpId as tm c i sc
+       let (newTy, _) = expandAlias tm ty
+	   sc = TypeScheme vs (ps :=> newTy) qs
+           (l,r) = partitionOpId as tm c i sc
 	   oInfo = OpInfo sc attrs defn 
        if null l then do putAssumps $ Map.insert i 
 					(OpInfos (oInfo : r )) as

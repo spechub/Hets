@@ -182,7 +182,7 @@ expandAlias tm t =
     let (ps, as, ta, b) = expandAliases tm t in
        if b && length ps == length as then
 	  (subst (Map.fromList (zip ps $ reverse as)) ta, b)
-	  else (t, False)
+	  else (ta, b)
 
 expandAliases :: TypeMap -> Type -> ([TypeArg], [Type], Type, Bool)
 expandAliases tm t@(TypeName i _ _) =
@@ -193,9 +193,27 @@ expandAliases tm t@(TypeName i _ _) =
 	    _ -> ([], [], t, False)
 
 expandAliases tm t@(TypeAppl t1 t2) =
-    let (ps, as, ta, b) = expandAliases tm t1 in
-       if b then 
-	  (ps, t2:as, ta, b)  -- reverse later on
-	  else ([], [], t, False)
+    let (ps, as, ta, b) = expandAliases tm t1 
+	(t3, b2) = expandAlias tm t2
+	in if b then 
+	  (ps, t3:as, ta, b)  -- reverse later on
+	  else ([], [], TypeAppl t1 t3, b2)
+
+expandAliases tm (FunType  t1 a t2 ps) =
+    let (t3, b1) = expandAlias tm t1 
+	(t4, b2) = expandAlias tm t2
+	in ([], [], FunType  t3 a t4 ps, b1 || b2)
+
+expandAliases tm (ProductType ts ps) =
+    let tls = map (expandAlias tm) ts 
+	in ([], [], ProductType (map fst tls) ps, any snd tls)
+
+expandAliases tm (LazyType t ps) =
+    let (newT, b) = expandAlias tm t 
+	in ([], [], LazyType newT ps, b)
+
+expandAliases tm (KindedType t k ps) =
+    let (newT, b) = expandAlias tm t 
+	in ([], [], KindedType newT k ps, b)
 
 expandAliases _ t = ([], [], t, False)
