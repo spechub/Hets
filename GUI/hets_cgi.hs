@@ -74,7 +74,10 @@ page1 :: String -> WithHTML x CGI ()
 page1 title1 =
     do    
       h1 $ text title1
-      p (text "Enter a CASL 1.0.1 specification or library in the input zone, then press SUBMIT:")
+      p (do text "Enter a "
+	    hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/index_e.htm") $ 
+	           text "HetCASL")
+            text " specification or library in the input zone, then press SUBMIT:")
       -- Input field
       input   <- p (makeTextarea "" (attr "rows" "22" ## attr "cols" "68"))
       -- check box
