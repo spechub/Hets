@@ -333,8 +333,8 @@ ana_ALTERNATIVE s c =
     Subsorts ss _ ->
 	do mapM_ (addSubsort s) ss
     where compSort :: COMPONENTS -> [SORT]
-	  compSort (Total_select l cs _) = replicate (length l) cs
-	  compSort (Partial_select l cs _) = replicate (length l) cs
+	  compSort (Total_select l cs _) = map (const cs) l
+	  compSort (Partial_select l cs _) = map (const cs) l
 	  compSort (Sort cs) = [cs]
  
 ana_COMPONENTS :: SORT -> COMPONENTS -> State Env ()
