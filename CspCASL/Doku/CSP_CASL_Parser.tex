@@ -33,7 +33,7 @@
 
 \author{Daniel Pratsch $<$coldsky@tzi.de$>$\\
          Markus Roggenbach $<$roba@tzi.de$>$} 
-\title{CSP-CASL Parser -- Systemdokumentation}
+\title{{\bf {\sc Csp-Casl} parser -- System documentation}}
 \date{\today}
 
 \begin{document}
@@ -42,11 +42,66 @@
 
 \tableofcontents
 
-\section{Systemvoraussetzungen}
+\section{Introduction}
 
-Der CSP-CASL Parser wird relativ zu HetCATS programmiert. Für die
-Systemumgebunt heißt das: Das CSP-CASL Verzeichnis ist direktes
-Unterverzeichnis von HetCATS.
+This is the documentation for the {\sc Csp-Casl} parser. A detailed documentation of the {\sc Csp-Casl} language can be found at:
+
+\subsection{System requirements}
+
+The {\sc Csp-Casl} parser is being programmed as a part of {\tt Hets} and uses relative paths within the directory structure of {\tt Hets}. 
+Consequently, the directory containing the {\sc Csp-Casl} parser has to be a direct subdirectory of {\tt Hets}. No special characters 
+are allowed, the name '{\tt CspCASL}' may/should not be altered. 
+
+\subsection{Compiling}
+
+To compile the sources, follow this steps:
+\begin{enumerate}
+\item The newest version of {\bf ghc} has to be correctly installed (currently version is 5.04.2).\\
+{\bf GNU make}, {\tt /usr/local/bin/perl} and {\tt /usr/local/bin/bash} are required, too.
+\item All required sources must have been checked out using '{\tt cvs up -Pd}' in the top\\
+directory {\tt HetCATS(Hets)}, followed by 
+\item '{\tt make distclean}' for Linux and '{\tt gmake distclean}' for Solaris users to clean up, then
+\item '{\tt make hets} ' for Linux and '{\tt gmake hets}' for Solaris users to generate needed\\
+components for our parser. ({\it AnnoState} etc.)
+\item '{\tt cd CspCASL}' and call the script '{\tt ghc-call}', which calls {\bf ghc} with the needed options.
+\end{enumerate}
+If no error occured, the executable '{\tt c3po}' was created.   
+
+\section{Usage and testing}
+
+To parse a {\sc Csp-Casl} specification, just enter
+\begin{quote}
+'{\tt c3po testfile.csp-casl}'. 
+\end{quote}
+To parse multiple {\sc Csp-Casl} specifications, add the names: 
+\begin{quote}
+'{\tt c3po t1.csp-casl t2.csp-casl} (...)'
+\end{quote}
+For testing reasons, a script named '{\tt tests}' can be called, which will parse all files in the same directory with the suffix '{\tt csp-casl}'.   
+
+\section{Structure of source files}
+
+\subsection{Top-level directory {\tt Hets} \&  {\tt Hets/CASL}}
+
+{\sc Csp-Casl} depends primary on {\sc Casl}, which depends on many other sources of {\tt Hets}. For detailed information about {\sc Casl}, you can find the documentation here:
+\begin{quote}
+Path/to/CASL-doc
+\end{quote}
+For detailed information about {\tt Hets}, you can find the documentation here:
+\begin{quote}
+Path/to/Hets-doc
+\end{quote}
+
+\subsection{Directory {\tt Hets/CspCasl}} 
+
+{\bf Parser related files}\\
+{\bf Main.hs} calls the parser for all files listed in the argument\\
+{\bf AS\_CSP\_CASL.hs} defines the abstract syntax tree for {\sc Csp-Casl}\\
+{\bf Parse\_hugo.hs} top-level parsers for basic and named {\sc Csp-Casl}-specs\\
+{\bf CCKeywords.hs} {\sc Csp-Casl} keywords defined as strings to provide consistent keyword usage\\
+{\bf CCLexer.hs} Parser for the {\sc Csp-Casl} keywords\\
+{\bf CCToken.hs} Parser for reserved keywords, var and channelName, supports for the top-level parsers
+
 
 \begin{appendix}
 
