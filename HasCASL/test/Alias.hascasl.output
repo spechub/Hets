@@ -1,6 +1,20 @@
 var s : Type
-type MyPred(s :  ) : Type := \ s : Type . s ->? Unit
+type MyPred : Type -> Type := \ s : Type . s ->? Unit
+type MyAlias : Type -> Type := \ t : Type . t ->? Unit
+type a1 : Type -> Type -> Type := \ (a : Type)
+				    (b : Type) . a -> b -> Unit
+type a1 : Type -> Type -> Type := \ (a : Type)
+				    (b : Type) . a -> b -> Unit
+type a1 : Type -> Type -> Type := \ (a : Type)
+				    (b : Type) . a -> b -> Unit
+type a2 : Type -> Type -> Type := \ (a : Type)
+				    (b : Type) . a -> Unit
+type a3 : Type -> Type -> Type := \ (a : Type)
+				    (a : Type) . a -> Unit
+type a4 : Type -> Type -> Type := \ (a : Type)
+				    (a : Type) . a -> Unit
 %% Type Constructors -----------------------------------------------------
+MyAlias : Type -> Type := \ t : Type . t ->? Unit
 MyPred : Type -> Type := \ s : Type . s ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
@@ -9,7 +23,15 @@ __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
+a : Type %(var)%
+a1 : Type -> Type -> Type := \ (a : Type)
+			       (b : Type) . a -> b -> Unit
+a2 : Type -> Type -> Type := \ (a : Type)(b : Type) . a -> Unit
+a3 : Type -> Type -> Type := \ (a : Type)(a : Type) . a -> Unit
+a4 : Type -> Type -> Type := \ (a : Type)(a : Type) . a -> Unit
+b : Type %(var)%
 s : Type %(var)%
+t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit × Unit ->? Unit
 __<=>__ : Unit × Unit ->? Unit
@@ -23,3 +45,15 @@ not__ : Unit ->? Unit
 %% Diagnostics -----------------------------------------------------------
 Hint (line 1, column 5) is type variable 's'
 Warning (line 2, column 13) redeclared type 's'
+Warning (line 6, column 15) redeclared type 'a'
+Warning (line 6, column 19) redeclared type 'b'
+Warning (line 6, column 6) redeclared type 'a1'
+Warning (line 7, column 9) redeclared type 'a'
+Warning (line 7, column 16) redeclared type 'b'
+Warning (line 7, column 6) redeclared type 'a1'
+Warning (line 9, column 15) redeclared type 'a'
+Warning (line 9, column 19) redeclared type 'b'
+Warning (line 11, column 15) redeclared type 'a'
+Warning (line 11, column 19) redeclared type 'a'
+Warning (line 13, column 9) redeclared type 'a'
+Warning (line 13, column 11) redeclared type 'a'

@@ -16,7 +16,6 @@ module HasCASL.TypeDecl where
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassAna
-import HasCASL.Unify
 import qualified Common.Lib.Map as Map
 import Common.Lexer
 import Common.Id
@@ -134,17 +133,22 @@ anaTypeItem ga _ inst (SubtypeDefn pat v t f ps) =
 anaTypeItem _ _ inst (AliasType pat mk sc ps) = 
     do let Result ds m = convertTypePattern pat
        addDiags ds
-       (ik, mt) <- anaPseudoType mk sc
        case m of 
-	      Just i -> case mt of 
-		  Nothing -> return $ TypeDecl [] star ps
-		  Just nsc -> do let newPty = generalize nsc
-				 addTypePattern (AliasTypeDefn newPty) 
-						inst ik i 
-				 return $ AliasType 
-					    (TypePattern (fst i) (snd i)[])
-					   (Just ik) newPty ps
-	      _ -> return $ TypeDecl [] star ps
+	      Nothing -> return $ AliasType pat mk sc ps
+	      Just (i, as) -> do 
+	          newAs <- mapM anaTypeVarDecl as 
+                  (ik, mt) <- anaPseudoType mk sc
+		  let nAs = catMaybes newAs
+		      newPat = TypePattern i nAs []
+		  case mt of 
+			  Nothing -> return $ AliasType newPat mk sc ps
+			  Just (TypeScheme args qty qs) -> do 
+			      let newPty = TypeScheme (nAs++args) qty qs
+				  fullKind = typeArgsListToKind nAs ik
+			      addTypeId (AliasTypeDefn newPty) 
+						inst fullKind i 
+			      return $ AliasType (TypePattern i [] [])
+				     (Just fullKind) newPty ps
 
 anaTypeItem _ gk inst (Datatype d) = 
     do newD <- anaDatatype gk inst d 
