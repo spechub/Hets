@@ -293,24 +293,23 @@ existsDefPathOfMorphismAux dgraph morphism tgt path src =
 existsDefPathOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
 				    -> Bool
 existsDefPathOfMorphismBetween dgraph morphism src tgt =
+  -- zum Testen: not (null (concat allDefPathsBetween))
   elem morphism filteredMorphismsOfDefPaths
 
     where
       allDefPathsBetween = getAllDefPathsBetween dgraph src tgt
-			     ([]::[LEdge DGLinkLab]) ([]::[[LEdge DGLinkLab]])
+			     ([]::[LEdge DGLinkLab])
       morphismsOfDefPaths = 
 	  map calculateMorphismOfPath allDefPathsBetween
       filteredMorphismsOfDefPaths = getFilteredMorphisms morphismsOfDefPaths 
 
 getAllDefPathsBetween :: DGraph -> Node -> Node -> [LEdge DGLinkLab]
-		           -> [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
-getAllDefPathsBetween dgraph src tgt path allPaths =
-  if null inGoingEdges then allPaths
-   else [edge:path| edge <- defEdgesFromSrc]
+		           -> [[LEdge DGLinkLab]]
+getAllDefPathsBetween dgraph src tgt path =
+  [edge:path| edge <- defEdgesFromSrc]
            ++ (concat 
-                [getAllDefPathsBetween dgraph src nextTgt (edge:path) allPaths|
+                [getAllDefPathsBetween dgraph src nextTgt (edge:path)|
                 (edge,nextTgt) <- nextStep] )
-	   ++ allPaths
 
   where
     inGoingEdges = inn dgraph tgt
