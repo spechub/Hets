@@ -1,6 +1,8 @@
 -- stub module to add your own rules.
 module UserRules where
 
+-- import IOExts (trace)
+
 import List (nub,intersperse,mapAccumL)
 import Char (isUpper)
 import StandardRules(Rule,Tag) -- gives some examples 
@@ -38,6 +40,7 @@ type Rule = (Tag, Data->Doc)
 userRules :: [Rule]
 userRules = [("Binary", binary),
              ("Term", termfn),
+	     ("Typeable",typeablefn),
              ("ATermConvertible", atermfn),
 	     ("UpPos",updateposfn),
 	     ("PrintTemplate",printfn),
@@ -77,6 +80,15 @@ doublequote str
 
 
 
+-- Typeable derivation taken from jDrIFT-1 
+
+typeablefn :: Data -> Doc
+typeablefn  dat  = tcname <+> equals <+> text "mkTyCon" <+> text (doublequote $ name dat) $$
+    instanceheader "Typeable" dat $$ block (
+        [text "typeOf _ = mkAppTy"  <+> tcname <+> text "[]"]) where
+    tcname = text ("_tc_" ++ (name dat)  ++ "Tc")
+
+-- end of Typeable derivation
 
 -- begin here for Binary derivation
 
@@ -263,9 +275,18 @@ updateposfn dat =
 makeUpPosFn fname tp hasPos body =
     if hasPos then
        let 
-           cvs  = head (mknss [body] namesupply)
-	   cvs' = map (appFn tp (text "fn1")) (zip cvs (types body))
-       in hang (text fname <+> text "fn1" <+> ppCons cvs body <+> text "=") 
+           cvs   = head (mknss [body] namesupply)
+	   cvs'  = map (appFn tp (text "fn1")) (zip cvs (types body))
+{-	   hasTP = trace (show cvs' ++ " : (" 
+			  ++ show hasTP' ++ "," 
+			  ++ show (types body) ++ ")") $ hasTP' -}
+	   hasTP = any (== tp) $ types body
+       in hang (text fname <+> 
+		(if hasTP then 
+		    text "fn1" 
+		 else
+		    text "_"
+		) <+> ppCons cvs body <+> text "=") 
 	       4
 	       (ppCons cvs' body)
     else
