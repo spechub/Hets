@@ -76,7 +76,8 @@ instance PrettyPrint UNIT_DECL_DEFN where
 instance PrettyPrint UNIT_SPEC where
     printText0 ga (Unit_type aa ab _) =
 	let aa' = fsep $ punctuate (ptext " * ") $ 
-			 map (condBracesGroupSpec printText0 sp_braces ga) aa
+			 map (condBracesGroupSpec printText0 
+			                   braces Nothing ga) aa
 	    ab' = printText0 ga ab
 	in if null aa then ab' else aa' <+> ptext "->" <+> ab'
     printText0 ga (Spec_name aa) =
@@ -92,7 +93,7 @@ instance PrettyPrint UNIT_SPEC where
     printLatex0 ga (Unit_type aa ab _) =
 	let aa' = fsep $ punctuate (ptext " * ") $ 
 			 map (condBracesGroupSpec printLatex0 
-			         sp_braces_latex ga) 
+			         braces_latex Nothing ga) 
 			     aa
 	    ab' = printLatex0 ga ab
 	in if null aa then ab' else aa' <+> ptext "->" <+> ab'
