@@ -209,7 +209,7 @@ getTokenPlaceList :: Id -> [Token]
 getTokenPlaceList = getTokenList termStr
 
 -- | construct a rule for a mixfix
-mixRule :: b -> Id -> (Id, b, [Token])
+mixRule :: Int -> Id -> Rule
 mixRule b i = (i, b, getTokenPlaceList i)
 
 asListAppl :: ToExpr a -> Id -> [a] -> [Pos] -> a
@@ -227,7 +227,7 @@ asListAppl toExpr i ra br =
     else toExpr i ra br
 
 -- | construct the list rules
-listRules :: b -> GlobalAnnos -> [(Id, b, [Token])]
+listRules :: Int -> GlobalAnnos -> [Rule]
 listRules inf g = 
     let lists = list_lit $ literal_annos g
         listRule co toks = (listId co, inf, toks)
@@ -249,8 +249,7 @@ lookUp ce k = Map.findWithDefault [] k ce
 type Knowns = Set.Set String
 
 -- | recognize next token (possible introduce new tuple variable)
-scanItem :: (a -> a -> a) -> Knowns -> (a, Token) -> Item a
-	  -> [Item a] 
+scanItem :: (a -> a -> a) -> Knowns -> (a, Token) -> Item a -> [Item a] 
 scanItem addType ks (trm, t) p =
     let ts = rest p
 	as = args p
@@ -279,8 +278,7 @@ scanItem addType ks (trm, t) p =
 	       [r { rule = mkId [unknownTok, t]}]
 	       else []
 
-scan :: (a -> a -> a) -> Knowns -> (a, Token) -> [Item a]
-     -> [Item a] 
+scan :: (a -> a -> a) -> Knowns -> (a, Token) -> [Item a] -> [Item a] 
 scan f ks term = concatMap (scanItem f ks term)
 
 mkAmbigs :: ToExpr a -> Item a -> [a]
@@ -349,14 +347,13 @@ mkExpr toExpr itm =
 
 type Filt = Int -> Int -> Maybe Bool
 
-reduce :: GlobalAnnos -> Table a -> [Id] -> Filt 
-       -> ToExpr a -> Item a -> [Item a]
-reduce ga table rs filt toExpr itm = 
+reduce :: GlobalAnnos -> Table a -> Filt -> ToExpr a -> Item a -> [Item a]
+reduce ga table filt toExpr itm = 
     map (addArg ga toExpr itm)
 	$ filter ( \ oi ->  let ts = rest oi in
 		   if null ts then False
 		   else if head ts == termTok
-		   then checkPrecs filt ga rs itm oi
+		   then checkPrecs filt ga itm oi
 		   else False )
 	$ lookUp table $ index itm
 
@@ -376,15 +373,10 @@ isLeftArg op num = begPlace op && num == 0
 isRightArg :: Id -> Int -> Bool
 isRightArg op num = endPlace op && num + 1 == placeCount op
 
-joinRIds, joinLIds :: Id -> Id -> Id
-joinRIds (Id ts1 _ _) (Id ts2 cs ps) = Id (init ts1 ++ ts2) cs ps 
-joinLIds (Id ts1 _ _) (Id ts2 cs ps) = Id (ts1 ++ tail ts2) cs ps 
-
 -- | check precedences of an argument and a top-level operator.
 -- (The 'Int' is the number of current arguments of the operator.)
-checkPrecs :: Filt -> GlobalAnnos 
-	   -> [Id] -> Item a -> Item a -> Bool
-checkPrecs filt ga rs argItem opItem =
+checkPrecs :: Filt -> GlobalAnnos -> Item a -> Item a -> Bool
+checkPrecs filt ga argItem opItem =
     let op = rule opItem
 	opPrec = info opItem
 	arg = rule argItem
@@ -393,7 +385,6 @@ checkPrecs filt ga rs argItem opItem =
         assocs = assoc_annos ga
 	num = length $ args opItem in
     if isLeftArg op num then 
-          if isNonCompound arg && joinLIds arg op `elem` rs then False else 
 	  case filt argPrec opPrec of 
 	   Just b -> b     
            Nothing ->
@@ -412,7 +403,6 @@ checkPrecs filt ga rs argItem opItem =
 			(_, False) -> False
 	    else True
 	 else if isRightArg op num then
-	      if isNonCompound op && joinRIds op arg `elem` rs then False else
 	      case filt argPrec opPrec of 
 	        Just b -> b     
                 Nothing -> let larg = lWeight argItem in 
@@ -431,25 +421,22 @@ checkPrecs filt ga rs argItem opItem =
 		 else True
 	 else True
 
-reduceCompleted :: GlobalAnnos -> Table a -> [Id] 
-		-> Filt -> ToExpr a 
+reduceCompleted :: GlobalAnnos -> Table a -> Filt -> ToExpr a 
 		-> [Item a] -> [Item a]
-reduceCompleted ga table rs filt toExpr = 
-    foldr mergeItems [] . map (reduce ga table rs filt toExpr) . 
+reduceCompleted ga table filt toExpr = 
+    foldr mergeItems [] . map (reduce ga table filt toExpr) . 
 	  filter (null . rest)
 
-recReduce :: GlobalAnnos -> Table a -> [Id] -> Filt 
-	  -> ToExpr a	-> [Item a] -> [Item a]
-recReduce ga table rs filt toExpr items = 
-    let reduced = reduceCompleted ga table rs filt toExpr items 
+recReduce :: GlobalAnnos -> Table a -> Filt -> ToExpr a -> [Item a] -> [Item a]
+recReduce ga table filt toExpr items = 
+    let reduced = reduceCompleted ga table filt toExpr items 
 	in if null reduced then items
-	   else recReduce ga table rs filt toExpr reduced `mergeItems` items
+	   else recReduce ga table filt toExpr reduced `mergeItems` items
 
-complete :: Filt -> ToExpr a -> GlobalAnnos 
-	 -> Table a -> [Id] -> [Item a] -> [Item a]
-complete filt toExpr ga table rs items = 
-    let reducedItems = recReduce ga table rs filt toExpr $ 
-		       reduceCompleted ga table rs filt toExpr items 
+complete :: Filt -> ToExpr a -> GlobalAnnos -> Table a -> [Item a] -> [Item a]
+complete filt toExpr ga table items = 
+    let reducedItems = recReduce ga table filt toExpr $ 
+		       reduceCompleted ga table filt toExpr items 
 	in reducedItems
 	   ++ items
 
@@ -507,7 +494,7 @@ nextChart addType filt toExpr ga st term@(_, tok) =
 	st { prevTable = nextTable
 	   , currIndex = nextIdx
 	   , currItems =  predict (map (mkItem nextIdx) rs)
-	   $ complete filt toExpr ga nextTable (map ( \ (i, _, _) -> i) rs)
+	   $ complete filt toExpr ga nextTable
 	   $ sortBy ordItem scannedItems
 	   , solveDiags = (if null scannedItems then 
 		      [Diag Error ("unexpected mixfix token: " ++ tokStr tok)
@@ -573,4 +560,3 @@ showAmbigs pp p as =
     Diag Error ("ambiguous mixfix term\n\t" ++ 
 		showSepList (showString "\n\t") pp
 		(take 5 as) "") p
-
