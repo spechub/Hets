@@ -152,6 +152,18 @@ cpp_sources = ./Isabelle/Logic_Isabelle.hs \
 
 doc_sources = $(filter-out $(cpp_sources) ,$(sources)) \
                $(patsubst %.hs, %.hspp, $(cpp_sources))
+
+# some modules from uni for haddock
+# if uni/server is included also HaXml sources are needed
+uni_sources = $(wildcard ../uni/davinci/haddock/*.hs) \
+  $(wildcard ../uni/graphs/haddock/*.hs) \
+  ../uni/htk/toplevel/HTk.hs \
+  $(wildcard ../uni/htk/haddock/*/*.hs) \
+  $(wildcard ../uni/events/haddock/*.hs) \
+  $(wildcard ../uni/reactor/haddock/*.hs) \
+  $(wildcard ../uni/util/haddock/*.hs) \
+  $(wildcard ../uni/posixutil/haddock/*.hs)
+
 ####################################################################
 ### targets
 
@@ -205,12 +217,13 @@ count: $(sources)
 ### Documentation via haddock
 doc: docs/index.html
 
-# index for prelude is missing
+# generate haddock documentation with links to sources
 docs/index.html: $(doc_sources)
-	$(HADDOCK) $(doc_sources) -o docs -h -v \
-          -i docs/base.haddock -i docs/parsec.haddock \
+	$(HADDOCK) $(doc_sources) $(uni_sources) -o docs -h -v \
+          -i docs/base.haddock -i docs/parsec.haddock -s ../ \
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
+# sources are not copied here
 apache_doc:
 	$(RM) docs/*.*
 	cvs up -d
