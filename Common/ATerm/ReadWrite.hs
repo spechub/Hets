@@ -235,6 +235,8 @@ spanNotQuote' []		= ([],[])
 spanNotQuote' xs@('"':_xs')  	= ([],xs)
 spanNotQuote' ('\\':'"':xs')	= case spanNotQuote' xs' of
                                   (ys,zs) -> ('\\':'"':ys,zs) 
+spanNotQuote' ('\\':'\\':xs')	= case spanNotQuote' xs' of
+                                  (ys,zs) -> ('\\':'\\':ys,zs) 
 spanNotQuote' (x:xs')	= case spanNotQuote' xs' of
 			       (ys,zs) -> (x:ys,zs) 
 
