@@ -34,7 +34,7 @@ import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
-import CASL.Sublogic
+import CASL.Sublogic hiding (bottom)
 import CASL.Overload
 import List (nub,delete)
 import Common.ListUtils

@@ -27,9 +27,19 @@ module CASL.Sublogic ( -- * datatypes
                    sublogics_max,
                    sublogics_min,
 
+                   -- * functions for the creation of minimal sublogics
+                   bottom,
+                   need_sub,
+                   need_part,
+                   need_cons,
+                   need_eq,
+                   need_pred,
+                   need_horn,
+                   need_ghorn,
+                   need_fol,
                    -- * functions for Logic instance
                    
-                   -- * sublogic to string converstion
+                   -- * sublogic to string conversion
                    sublogics_name,
                    
                    -- * list of all sublogics
@@ -82,18 +92,18 @@ import CASL.Morphism
 -- | Datatypes for CASL sublogics
 ------------------------------------------------------------------------------
 
-data CASL_Formulas = Atomic  -- atomic logic
-                   | Horn    -- positive conditional logic
-                   | GHorn   -- generalized positive conditional logic
-                   | FOL     -- first-order logic
+data CASL_Formulas = Atomic  -- ^ atomic logic
+                   | Horn    -- ^ positive conditional logic
+                   | GHorn   -- ^ generalized positive conditional logic
+                   | FOL     -- ^ first-order logic
                    deriving (Show,Ord,Eq)
 
 data CASL_Sublogics = CASL_SL
-                      { has_sub::Bool,   -- subsorting
-                        has_part::Bool,  -- partiality
-                        has_cons::Bool,  -- sort generation contraints
-                        has_eq::Bool,    -- equality
-                        has_pred::Bool,  -- predicates
+                      { has_sub::Bool,   -- ^ subsorting
+                        has_part::Bool,  -- ^ partiality
+                        has_cons::Bool,  -- ^ sort generation contraints
+                        has_eq::Bool,    -- ^ equality
+                        has_pred::Bool,  -- ^ predicates
                         which_logic::CASL_Formulas
                       } deriving (Show,Eq)
 
@@ -211,19 +221,13 @@ sublogics_name x = [   ( if (has_sub  x) then "Sub" else "")
 -- min/join and max/meet functions
 ------------------------------------------------------------------------------
 
-formulas_max :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
-formulas_max x y = if (x<y) then y else x
-
-formulas_min :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
-formulas_min x y = if (x<y) then x else y
-
 sublogics_max :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
 sublogics_max a b = CASL_SL (has_sub  a || has_sub  b)
                             (has_part a || has_part b)
                             (has_cons a || has_cons b)
                             (has_eq   a || has_eq   b)
                             (has_pred a || has_pred b)
-                            (formulas_max (which_logic a) (which_logic b))
+                            (max (which_logic a) (which_logic b))
 
 sublogics_min :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
 sublogics_min a b = CASL_SL (has_sub  a && has_sub  b)
@@ -231,11 +235,11 @@ sublogics_min a b = CASL_SL (has_sub  a && has_sub  b)
                             (has_cons a && has_cons b)
                             (has_eq   a && has_eq   b)
                             (has_pred a && has_pred b)
-                            (formulas_min (which_logic a) (which_logic b))
+                            (min (which_logic a) (which_logic b))
 
 instance Ord CASL_Sublogics where
   x <= y = sublogics_min x y == x
-
+  
 ------------------------------------------------------------------------------
 -- Helper functions
 ------------------------------------------------------------------------------
@@ -303,6 +307,42 @@ mapPos c p f l = let
    given as a comment before each function.
 --------------------------------------------------------------------------- -}
 
+sl_form_level :: (Bool,Bool) -> FORMULA f -> CASL_Sublogics
+sl_form_level (isCompound,leftImp) phi =
+ case phi of
+  (Quantification q _ f _) -> 
+    if is_atomic_q q 
+    then sl_form_level (isCompound,leftImp) f 
+    else need_fol
+  (Conjunction l _) -> comp_list $ map (sl_form_level (True,leftImp)) l
+  (Disjunction l _) -> need_fol
+  (Implication l1 l2 _ _) -> 
+   if leftImp 
+   then need_fol
+   else comp_list [sl_form_level (True,True) l1,
+                   sl_form_level (True,False) l2,
+                   if isCompound 
+		   then need_ghorn 
+		   else need_horn]
+  (Equivalence l1 l2 _) -> 
+    if leftImp
+    then need_fol
+    else comp_list [sl_form_level (True,True) l1,
+                    sl_form_level (True,True) l2,
+                    need_ghorn]
+  (Negation f _) -> need_fol
+  (True_atom _) -> bottom
+  (False_atom _) -> need_fol
+  (Predication _ _ _) -> bottom
+  (Definedness _ _) -> bottom
+  (Existl_equation _ _ _) -> bottom
+  (Strong_equation _ _ _) -> if leftImp then need_fol else need_horn
+  (Membership _ _ _) -> bottom
+  (Sort_gen_ax _ _) -> bottom
+  (ExtFORMULA _) -> undefined
+  _ -> error "CASL.Sublogic.sl_form_level: illegal FORMULA type"
+
+{-
 -- Atomic Logic (subsection 3.4 of the paper)
 
 -- FORMULA, P-ATOM
@@ -316,13 +356,14 @@ is_atomic_f (Predication _ _ _) = True
 is_atomic_f (Definedness _ _) = True
 is_atomic_f (Existl_equation _ _ _) = True
 is_atomic_f _ = False
-
+-}
 -- QUANTIFIER
 --
 is_atomic_q :: QUANTIFIER -> Bool
 is_atomic_q (Universal) = True
 is_atomic_q _ = False
 
+{-
 -- Positive Conditional Logic (subsection 3.2 in the paper)
 
 -- FORMULA
@@ -403,20 +444,25 @@ is_ghorn_conc :: FORMULA f -> Bool
 is_ghorn_conc (Conjunction l _) = is_ghorn_c_conj l
 is_ghorn_conc x = is_horn_a x
 
+-}
 -- compute logic of a formula by checking all logics in turn
 --
 get_logic :: FORMULA f -> CASL_Sublogics
-get_logic f = if (is_atomic_f f) then bottom else
+get_logic = sl_form_level (False,False)
+
+{- if (is_atomic_f f) then bottom else
               if (is_horn_f f) then need_horn else
               if (is_ghorn_f f) then need_ghorn else
               need_fol
+-}
 
 -- for the formula inside a subsort-defn
 --
 get_logic_sd :: FORMULA f -> CASL_Sublogics
-get_logic_sd f = if (is_horn_p_a f) then need_horn else
+get_logic_sd f = sublogics_max need_horn $ sl_form_level (False,False) f
+{- get_logic_sd f = if (is_horn_p_a f) then need_horn else
                  if (is_ghorn_prem f) then need_ghorn else
-                 need_fol
+                 need_fol -}
 
 ------------------------------------------------------------------------------
 -- Functions to compute minimal sublogic for a given element, these work
