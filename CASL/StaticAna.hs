@@ -659,7 +659,8 @@ ana_ALTERNATIVE :: SORT -> ALTERNATIVE
 ana_ALTERNATIVE s c = 
     case c of 
     Subsorts ss _ ->
-        do mapM_ (addSubsort s) ss
+        do checkSorts ss
+           mapM_ (addSubsort s) ss
            return Nothing
     _ -> do let [cons@(i, ty, il)] = getConsType s c
             addOp ty i
