@@ -17,7 +17,11 @@
 
 use strict;
 
-exit 5 if @ARGV < 3;
+my $DEBUG = $ENV{'DEBUG'};
+
+unless($DEBUG) {
+    exit 5 if @ARGV < 3;
+}
 
 my $logfile = shift @ARGV;
 my $success_cmd = shift @ARGV;
@@ -64,6 +68,7 @@ if ($fail == 0) {
 	    };
 	# lines that should occur
 	m/^cvs update:/o && do {$test_vars{'cvs_updated'}++;};
+	m/^CVS exited with:\s+(\d+)/o && do {$test_vars{'cvs_exit_code'} = $1};
 	m/^rm -f /o && do {$test_vars{'cleaning_started'}++;};
 	m/^perl utils\/build_version/o && 
 	    do {$test_vars{'version build'}++;};
@@ -95,17 +100,23 @@ if ($fail == 0) {
 	$report .= "no HTML file was modified\n";
 	$fail ++;
     }
-
+    unless (exists $test_vars{'cvs_exit_code'} &&
+	    $test_vars{'cvs_exit_code'} == 0) {
+	$report .= "CVS exited abnormally with code: $test_vars{'cvs_exit_code'}\n";
+	$fail ++;
+    }
 }
 
 # send report as mail
 if ($fail > 0) {
     print STDERR "\n$fail test(s) failed -- sending Mail with report:\n\n$report\n";
-    open MAIL, "| /usr/bin/mail -i -n -s 'Error Report of make apache_doc' $email_address";
- print MAIL "$fail tests failed!\n\nSee following report for details:\n\n$report\n";
-    print MAIL "\nTail of $logfile:\n",`/usr/bin/tail -30 $logfile`,"\n";
-    close MAIL;
-} 
+    unless($DEBUG) { 
+	open MAIL, "| /usr/bin/mail -i -n -s 'Error Report of make apache_doc' $email_address";
+	print MAIL "$fail tests failed!\n\nSee following report for details:\n\n$report\n";
+	print MAIL "\nTail of $logfile:\n",`/usr/bin/tail -30 $logfile`,"\n";
+	close MAIL;
+    }
+}
 
 # compilation complete?
 if ($report !~ m/An error during compiling 'hets' occured./o) {
