@@ -232,8 +232,10 @@ translatePattern :: Env -> Pattern -> HsPat
 translatePattern env pat = case pat of
       QualVar (VarDecl v ty _ _) -> 
 	  if show v == "_" then HsPWildCard else
-	  let (LowerId, UnQual i) = translateId env v $ simpleTypeScheme ty
-	      in HsPVar i
+	  let (c, UnQual i) = translateId env v $ simpleTypeScheme ty
+	      in case c of 
+		 LowerId -> HsPVar i
+		 _ -> error ("unexpected constructor as variable: " ++ show v) 
       QualOp _ (InstOpId uid _t _p) sc _ -> 
         let (_, ui) = translateId env uid sc
 	in HsPApp ui []
@@ -250,9 +252,11 @@ translatePattern env pat = case pat of
                                  --the type is implicit
       --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
       AsPattern (VarDecl v ty _ _) p _ -> 
-	    let (LowerId, UnQual i) = translateId env v $ simpleTypeScheme ty
+	    let (c, UnQual i) = translateId env v $ simpleTypeScheme ty
 		hp = translatePattern env p
-	    in HsPAsPat i hp
+	    in case c of 
+	       LowerId ->  HsPAsPat i hp
+	       _ -> error ("unexpected constructor as @-variable: " ++ show v)
       _ -> error ("translatePattern: unexpected pattern: " ++ show pat)
 
 
