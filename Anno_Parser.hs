@@ -100,6 +100,7 @@ parse_anno anno sp = case anno of
 			 "def"     -> semantic_anno Definitional kw as sp pos
 			 "implies" -> semantic_anno Implies      kw as sp pos
 			 "cons"    -> semantic_anno Conservative kw as sp pos
+			 "mono"    -> semantic_anno Monomorph    kw as sp pos
 			 otherwise -> parse_anno (Annote_group kw [as] pos) sp
 			) 
 		     Annote_group kw as pos -> 
@@ -184,7 +185,7 @@ display_anno = do ident <- casl_id
 					(lookAhead (string "%")))
 				       <|>
 				       eof)
-				    ; return (symb,str)
+				    ; return (symb,chomp str)
 				    }
 				) where ready_symb = "%"++sym
 
@@ -194,3 +195,11 @@ semantic_anno anno kw as sp pos =
        Right (anno pos)
     else 
        Left (newErrorMessage (Expect("only whitespaces after %" ++ kw)) sp)
+-- a little helper ------------------------------------------------
+--- like the chomp from Perl --------------------------------------
+{- chomp removes trailing newlines if any -}
+chomp :: String -> String
+chomp s = reverse . chomp' . reverse $ s
+    where chomp' [] = []
+	  chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
+			    | otherwise = xs
