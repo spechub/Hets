@@ -14,16 +14,15 @@ import Logic
 
 comment = commentLine <|> commentGroup
 
-commentLine = do { try (string "%%")
-		 ; line <- manyTill anyChar (lookAhead newline)  
-		 ; return (Comment_line line [])
-		 }
-
-commentGroup = do { try (string "%{")
-		  ; text_lines <- manyTill (anyChar) 
-		    (try (string "}%"))
-		  ; return (Comment_group (lines text_lines) [])
-		  }
+commentLine = do try (string "%%")
+		 line <- manyTill anyChar (newline <|> (eof >> return '\n'))  
+		 return (Comment_line line [])
+		 
+commentGroup = do try (string "%{")
+		  text_lines <- manyTill anyChar (try (string "}%"))
+		  sp <- getPosition
+		  return (Comment_group (lines text_lines) [c sp])
+    where c sp = (\(l,c) -> (l,c-2)) (convToPos sp)
 
 annote = Anno_Parser.label <|> 
 	 do start_source_pos <- getPosition
@@ -51,33 +50,29 @@ annote = Anno_Parser.label <|>
 	      otherwise -> return pa
 -}
 
-label = do { try(string "%(")
-	   ; label_lines <- manyTill anyChar (string ")%")
-	   ; return (Label (lines label_lines) [])
-	   }
+label = do try(string "%(")
+	   label_lines <- manyTill anyChar (string ")%")
+	   sp <- getPosition
+	   return (Label (lines label_lines) [c sp])
+    where c sp = (\(l,c) -> (l,c-2)) (convToPos sp)
 
-anno_ident = do { string "%"
-		; ident <- casl_words
-		; return ident 
-		}
+anno_ident = do string "%"
+		ident <- casl_words
+		return ident 
 
-annote_group id = do { char '(' -- ) 
-		     ; annote_lines 
-		       <- manyTill (anyChar) (string ")%")
-		     ; return (Annote_group id (lines annote_lines) [])
-		     }
+annote_group id = do char '(' -- ) 
+		     annote_lines <- manyTill anyChar (string ")%")
+		     return (Annote_group id (lines annote_lines) [])
 
-annote_line id = do { anno <- (do { char ' '
-				  ; annote_line 
-				    <- manyTill anyChar (lookAhead newline)
-				  ; return (Annote_line id annote_line [])
-				  } 
+annote_line id = do anno <- do char ' '
+			       annote_line <- manyTill anyChar 
+			                               (newline <|>
+							(eof >> return '\n'))
+			       return (Annote_line id annote_line [])
 			       -- AnnoteWord (%implies ...)
-			       <|> do { newline
-				      ; return (Annote_line id "" [])
-				      })
-		    ; return(anno)
-		    }
+			    <|> do newline
+				   return (Annote_line id "" [])
+		    return(anno)
 
 annotations = many (do start_source_pos <- getPosition
 		       anno <- (comment <|> annote)
@@ -85,7 +80,8 @@ annotations = many (do start_source_pos <- getPosition
 		       whiteSpace -- cause all parsers above are not lexeme
 		       return (add_pos anno (convToPos start_source_pos))
 		    )
-    where add_pos an p = an
+    where add_pos an p = up_pos_l (\l -> p:l) an
+
 -----------------------------------------
 -- parser for the contents of annotations
 -----------------------------------------
