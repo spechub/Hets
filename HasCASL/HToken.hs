@@ -93,12 +93,6 @@ hconsId :: GenParser Char st Id
 hconsId = mixId (barS:hascasl_reserved_ops, hascasl_reserved_words) 
 	  hcKeys
 
--- | mixfix and compound type 'Id' (more signs excluded) 
-typeId :: GenParser Char st Id
-typeId = mixId (assignS:lessS:equalS:barS:hascasl_type_ops
-		++hascasl_reserved_ops, 
-		hascasl_reserved_words) hcKeys
-
 -- | simple 'Id' without compound list (only a words)
 typeVar :: GenParser Char st Id
 typeVar = do s <- pToken scanHCWords
