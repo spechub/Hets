@@ -238,7 +238,7 @@ toSet = Set.fromDistinctAscList . toList
 -- | convert a set of ordered pairs to a relation 
 fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
 fromSet s = close $ fromAscList $ Set.toList s where
-                -- | convert a sorted list of ordered pairs to a relation 
+    -- | convert a sorted list of ordered pairs to a relation 
     fromAscList :: (Ord a) => [(a, a)] -> Rel a
     fromAscList = Rel . Map.fromDistinctAscList 
                   . map ( \ l -> (fst (head l), 
