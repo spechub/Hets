@@ -897,32 +897,34 @@ ensuresAmalgamability :: Options.HetcatsOpts   -- ^ program options
 		      -> Diagram String String -- ^ the diagram containing descriptions of nodes and edges
 		      -> Result Amalgamates
 ensuresAmalgamability opts diag sink desc = 
-    do let -- aux. functions that help printing out diagnostics
-           getNodeSig _ [] = emptySign () -- this should never be the case
-	   getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
-	   lns = labNodes diag
-           formatOp (id, t) = renderText Nothing (printText id) ++ " :" ++ renderText Nothing (printText t)
-           formatPred (id, t) = renderText Nothing (printText id) ++ " : " ++ renderText Nothing (printText t)
-	   formatSig n = case find (\(n', d) -> n' == n && d /= "") (labNodes desc) of
+    do if Options.caslAmalg opts == [] then return (DontKnow "Skipping amalgamability check")
+         else       
+          do let -- aux. functions that help printing out diagnostics
+              getNodeSig _ [] = emptySign () -- this should never be the case
+	      getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
+	      lns = labNodes diag
+	      formatOp (id, t) = renderText Nothing (printText id) ++ " :" ++ renderText Nothing (printText t)
+	      formatPred (id, t) = renderText Nothing (printText id) ++ " : " ++ renderText Nothing (printText t)
+	      formatSig n = case find (\(n', d) -> n' == n && d /= "") (labNodes desc) of
 			      Just (_, d) -> d 
 			      Nothing -> renderText Nothing (printText (getNodeSig n lns))
-           -- and now the relevant stuff
-           s = {-trace ("Diagram: " ++ showPretty diag "\n Sink: " ++ showPretty sink "")-} simeq diag
-	   st = simeq_tau sink
-       -- 1. Check the inclusion (*). If it doesn't hold, the specification is
-       -- incorrect.
-       case subRelation st s of
-	    Just (ns1, ns2) -> let sortString1 = renderText Nothing (printText (snd ns1)) ++
+	      -- and now the relevant stuff
+	      s = {-trace ("Diagram: " ++ showPretty diag "\n Sink: " ++ showPretty sink "")-} simeq diag
+	      st = simeq_tau sink
+             -- 1. Check the inclusion (*). If it doesn't hold, the specification is
+             -- incorrect.
+             case subRelation st s of
+	      Just (ns1, ns2) -> let sortString1 = renderText Nothing (printText (snd ns1)) ++
 					     " in\n\n" ++ formatSig (fst ns1) ++ "\n\n"
-				   sortString2 = renderText Nothing (printText (snd ns2)) ++
+				     sortString2 = renderText Nothing (printText (snd ns2)) ++
 					     " in\n\n" ++ formatSig (fst ns2) ++ "\n\n"
-	                       in do return (No ("\nsorts " ++ sortString1 ++ "and " ++ sortString2 ++ "might be different"))
-	    Nothing -> 
-              do let sop = simeqOp diag
-		     sopt = simeqOp_tau sink
+	                         in do return (No ("\nsorts " ++ sortString1 ++ "and " ++ sortString2 ++ "might be different"))
+	      Nothing -> 
+               do let sop = simeqOp diag
+		      sopt = simeqOp_tau sink
                  -- 2. Check sharing of operations. If the check fails, the specification is
 		 -- incorrect
-                 case subRelation sopt sop of
+                  case subRelation sopt sop of
 		      Just (nop1, nop2) -> let opString1 = formatOp (snd nop1) ++
 							   " in\n\n" ++ formatSig (fst nop1) ++ "\n\n"
 					       opString2 = formatOp (snd nop2) ++
@@ -979,14 +981,14 @@ ensuresAmalgamability opts diag sink desc =
                                                                                                 in do return (No ("embedding paths \n    " ++ word1 ++
 										  		                  "\nand\n    " ++ word2 ++ "\nmight be different"))
 							                       Nothing -> do return Yes 
-								       else return DontKnow
+								       else return defaultDontKnow
 						    Nothing -> do let cR = congR diag s si
 							       -- 6. Check the restricted cell condition. If it holds then the
 							       -- specification is correct. Otherwise proof obligations need to 
 							       -- be generated.
 								  if any (== Options.Cell) (Options.caslAmalg opts)
 								     then case subRelation cct cR of 
-								            Just _ -> do return DontKnow -- TODO: generate proof obligations
+								            Just _ -> do return defaultDontKnow -- TODO: generate proof obligations
 								            Nothing -> do return Yes
-								     else return DontKnow
+								     else return defaultDontKnow
 
