@@ -45,7 +45,7 @@ true : Unit %(Fun)%
 x : s %(Op)%
 y : t %(Op)%
 %% Diagnostics -----------------------------------------------------------
-*** Error 6.10, different terms of 'snd'
+*** Warning 6.10, different terms of 'snd'
 	\ (x : s, y : t) . (var y : t)
 	\ (x : s, y : t) . (var y : t) : t
 	

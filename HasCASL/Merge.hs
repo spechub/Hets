@@ -188,7 +188,7 @@ mergeConstrInfos tm (c : r) c2 =
 
 instance Mergeable Term where
     merge t1 t2 = if t1 == t2 then return t1 
-		  else fail ("different terms\n\t" 
+		  else warning t1 ("different terms\n\t" 
 			     ++ showPretty t1 "\n\t"
-			     ++ showPretty t2 "\n\t")
+			     ++ showPretty t2 "\n\t") nullPos
 
