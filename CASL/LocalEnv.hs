@@ -151,12 +151,12 @@ getLabel (GenItems l _) = let srts = filter (\x ->
 				      (map (show . symbId) srts))
 
 type Sort_map = FiniteMap Id Id
-type Fun_map =  FiniteMap Id [(OpType, Id, bool)] 
+type Fun_map =  FiniteMap Id [(OpType, Id, Bool)] 
 			{- The third field is true iff the target symbol is
                            total -}
 type Pred_map = FiniteMap Id [(PredType,Id)]
 
-type Morphism = Morphism {msource,mtarget :: Sign,
+data Morphism = Morphism {msource,mtarget :: Sign,
                           sort_map :: Sort_map, 
                           fun_map :: Fun_map, 
                           pred_map :: Pred_map}
