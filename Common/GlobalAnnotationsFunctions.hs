@@ -31,10 +31,9 @@ import Common.Print_AS_Annotation
 import Common.PrettyPrint
 import Common.GlobalAnnotations
 
-import Common.Lib.Rel as Rel
-import Common.Lib.Map hiding (filter, map)
+import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.Map as Map
 
-import Prelude hiding (lookup)
 import Data.Maybe (fromJust)
 
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> GlobalAnnos
@@ -48,7 +47,7 @@ addGlobalAnnos ga annos =
 		                    (literal_map ga') (literal_annos ga') }
 
 store_prec_annos :: PrecedenceGraph -> [Annotation] -> PrecedenceGraph
-store_prec_annos pgr = transClosure . 
+store_prec_annos pgr = Rel.transClosure . 
     foldr ( \ an p0  -> case an of 
 	    Prec_anno less lIds hIds _ -> 
 	             foldr ( \ li p1 -> 
@@ -56,7 +55,7 @@ store_prec_annos pgr = transClosure .
 				     if li == hi then error 
 				     ("prec_anno with equal ids: " ++
 				      show li ++ " < " ++ show hi)
-				     else if transMember hi li p2 then
+				     else if Rel.transMember hi li p2 then
 				     error ("prec_anno conflict: " ++
 					    show li ++ " < " ++ show hi ++
 					    "\n" ++ show p2)
@@ -83,7 +82,7 @@ precRel pg out_id in_id =
 ---------------------------------------------------------------------------
 
 store_assoc_annos :: AssocMap ->  [Annotation] -> AssocMap
-store_assoc_annos am ans = am `union` fromList assos
+store_assoc_annos am ans = am `Map.union` Map.fromList assos
     where assos = concat $ map conn $ filter assocA ans
 	  conn (Lassoc_anno is _) = map (conn' ALeft)  is
 	  conn (Rassoc_anno is _) = map (conn' ARight) is
@@ -102,7 +101,7 @@ isRAssoc = isAssoc ARight
 
 isAssoc :: AssocEither -> AssocMap -> Id -> Bool
 isAssoc ae amap i =
-    case lookup i amap of
+    case Map.lookup i amap of
     Nothing              -> False
     Just ae' | ae' == ae -> True
 	     | otherwise -> False
@@ -110,7 +109,7 @@ isAssoc ae amap i =
 ---------------------------------------------------------------------------
 
 store_display_annos :: DisplayMap -> [Annotation] -> DisplayMap
-store_display_annos dm ans = dm `union` fromList disps
+store_display_annos dm ans = dm `Map.union` Map.fromList disps
     where disps = map conn $ filter displayA ans
 	  conn (Display_anno i sxs _) = (i,sxs)
 	  conn _ = error "filtering isn't implemented correct"
@@ -123,7 +122,7 @@ store_display_annos dm ans = dm `union` fromList disps
 
 up_literal_map :: LiteralMap -> LiteralAnnos -> LiteralMap
 up_literal_map lmap la =
-    let oids = toList lmap
+    let oids = Map.toList lmap
 	(sids,rem_str) = case string_lit la of
 			 Nothing      -> ([],False)
 			 Just (i1,i2) -> ([(i1,StringCons),(i2,StringNull)],
@@ -156,17 +155,17 @@ up_literal_map lmap la =
 		   map fst $ filter (\(_,x) ->    x == Floating 
 					       || x == Fraction) oids  
 		 else [])
-    in (foldr delete lmap remids) `union` 
-       fromList (lids ++ fids ++ nid ++ sids)
+    in (foldr Map.delete lmap remids) `Map.union` 
+       Map.fromList (lids ++ fids ++ nid ++ sids)
 
 isLiteral :: LiteralMap -> Id -> Bool
-isLiteral lmap i = case lookup i lmap of
+isLiteral lmap i = case Map.lookup i lmap of
 		   Just _  -> True
 		   Nothing -> False
 
 getLiteralType :: LiteralMap -> Id -> LiteralType
 getLiteralType lmap i =
-    case lookup i lmap of
+    case Map.lookup i lmap of
     Just t  -> t
     Nothing -> error $ show i ++ " is not a literal id"
 

@@ -8,8 +8,10 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
     
-supply a simple data type for precedence or subsort relations 
-based on a (hidden) map of sets 
+
+supply a simple data type for (precedence or subsort) relations. A
+relation is conceptually a set of (ordered) pairs (see 'toList' and
+'fromList'). But the hidden implementation is based on a map of sets.
 
 'Rel a' replaces a directed graph with unique node labels (Ord a) and
 unlabelled edges (without multiplicity higher than one).
@@ -24,21 +26,27 @@ the full transitive closure. A further 'insert', however,
 may destroy the closedness property of a relation.
 
 Currently, no further functions seem to be necessary: 
-- reflexive closure 
-- filtering, mapping
+
 - deletion
+
+- filtering, mapping
+
+- transposing
+
+- reflexive closure (for a finite domain)
+
 - computing a minimal relation whose transitive closure 
-  covers a given relation 
+  covers a given relation
 
 -}
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member
-		      , transMember, transClosure) where
+		      , transMember, transClosure, fromList, toList) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
-newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Show
+newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving (Eq, Ord)
 
 empty :: Rel a
 empty = Rel Map.empty
@@ -74,3 +82,13 @@ transMember a b r = Set.member b $ getTAdjs r Set.empty $ Set.single a
 
 transClosure ::  Ord a => Rel a -> Rel a
 transClosure r = Rel $ Map.map ( \ s -> getTAdjs r s s) $ toMap r
+
+fromList :: Ord a => [(a, a)] -> Rel a
+fromList = foldr (\ (a, b) r -> insert a b r ) empty
+
+toList ::  Ord a => Rel a -> [(a, a)]
+toList = concatMap (\ (a , bs) -> zip (repeat a) (Set.toList bs)) 
+	 . Map.toList . toMap
+
+instance (Show a, Ord a) => Show (Rel a) where
+    show = show . Set.fromList . toList

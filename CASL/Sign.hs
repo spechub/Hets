@@ -4,8 +4,8 @@ module CASL.Sign where
 
 import Common.Id
 import Common.AS_Annotation
-import Common.Lib.Map hiding (map, filter)
-import Common.Lib.Rel
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Rel as Rel
 import Data.List(intersperse)
 import Data.Maybe(mapMaybe)
 import Data.Dynamic
@@ -181,15 +181,15 @@ instance Eq SigItem where
 -- lost are unused global vars
 -- (and annotations for several ITEMS)
 
-data Sign = SignAsMap { getMap   :: Map Id [SigItem]
-                      , getGraph :: Rel SortId }
+data Sign = SignAsMap { getMap   :: Map.Map Id [SigItem]
+                      , getGraph :: Rel.Rel SortId }
 	  deriving Show
 
 instance Eq Sign where
   (==) (SignAsMap m _) (SignAsMap n _) = n==m
 
 emptySign :: Sign
-emptySign = SignAsMap Common.Lib.Map.empty Common.Lib.Rel.empty
+emptySign = SignAsMap Map.empty Rel.empty
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
     	         deriving (Show, Eq, Ord)
@@ -214,11 +214,11 @@ getLabel (GenItems l _) = let srts = filter (\x ->
 				 (intersperse "__" 
 				      (map (show . symbId) srts))
 
-type Sort_map = Map Id Id
-type Fun_map =  Map Id [(OpType, Id, Bool)] 
+type Sort_map = Map.Map Id Id
+type Fun_map =  Map.Map Id [(OpType, Id, Bool)] 
 			{- The third field is true iff the target symbol is
                            total -}
-type Pred_map = Map Id [(PredType,Id)]
+type Pred_map = Map.Map Id [(PredType,Id)]
 
 data Morphism = Morphism {msource,mtarget :: Sign,
                           sort_map :: Sort_map, 
@@ -233,7 +233,7 @@ data Morphism = Morphism {msource,mtarget :: Sign,
 embedMorphism :: Sign -> Sign -> Morphism
 embedMorphism a b =
   let
-    l     = case a of (SignAsMap x _) -> concat $ map snd $ toList x
+    l     = case a of (SignAsMap x _) -> concat $ map snd $ Map.toList x
     slist = map (\x -> (x,x)) $ map sortId $ map item $
             mapMaybe (\x -> case x of (ASortItem s) -> Just s;
                                                   _ -> Nothing) l
@@ -244,7 +244,7 @@ embedMorphism a b =
             map item $ mapMaybe (\x -> case x of (APredItem p) -> Just p;
                                                              _ -> Nothing) l
   in
-    Morphism a b (fromList slist) (fromList flist) (fromList plist)
+    Morphism a b (Map.fromList slist) (Map.fromList flist) (Map.fromList plist)
 
 -- Typeable instance
 sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc 
