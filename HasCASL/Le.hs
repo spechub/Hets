@@ -11,6 +11,7 @@ module Le where
 
 import Id
 import Set
+import FiniteMap
 
 type TypeId = Id
 
@@ -50,6 +51,21 @@ data ExtClass = ExtClass Class Variance
 star :: Kind
 star = Star $ ExtClass Universe InVar
 
+type ClassInst    = ([Id], [Inst]) -- super classes and instances
+type Inst     = Qual Pred
+
+-----------------------------------------------------------------------------
+
+type ClassEnv = FiniteMap Id ClassInst
+
+super     :: ClassEnv -> Id -> [Id]
+super ce i = case lookupFM ce i of Just (is, _) -> is
+				   Nothing -> []
+
+insts     :: ClassEnv -> Id -> [Inst]
+insts ce i = case lookupFM ce i of Just (_, its) -> its
+				   Nothing -> []
+
 -----------------------------------------------------------------------------
 -- Types
 -----------------------------------------------------------------------------
@@ -70,6 +86,8 @@ data Qual t = [Pred] :=> t
 
 data Scheme = Scheme [Kind] (Qual Type)
               deriving Eq
+
+type Assumps = FiniteMap Id [Scheme]
 
 -----------------------------------------------------------------------------
 -- Symbols

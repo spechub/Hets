@@ -47,7 +47,7 @@ toPos :: Token -> [Token] -> Token -> [Pos]
 toPos o l c = map tokPos (o:l++[c])
 
 showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
-showSepList _ _ [] = showString ""
+showSepList _ _ [] = id
 showSepList _ f [x] = f x
 showSepList s f (x:r) = f x . s . showSepList s f r
 
@@ -77,10 +77,10 @@ instance Ord Id where
 showId :: Id -> ShowS
 showId (Id ts is _) = 
 	let (toks, places) = splitMixToken ts 
-            comps = if null is then showString "" else 
+            comps = if null is then id else 
                   showString "[" . showSepList (showString ",") showId is
 		  . showString "]"
-	    showToks = showSepList (showString "") showTok
+	    showToks = showSepList id showTok
 	in  showToks toks . comps . showToks places
 
 splitMixToken :: [Token] -> ([Token],[Token])

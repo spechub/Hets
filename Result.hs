@@ -61,7 +61,7 @@ instance Show Diagnosis where
 				 showsPrec 0 l .
 				 showString " at char " .
 				 showsPrec 0 c) ": "
-    showList [] = showString ""
+    showList [] = id
     showList [d] = showsPrec 0 d
     showList (d:ds) = showsPrec 0 d . showString "\n" . showList ds
 

@@ -309,11 +309,6 @@ instance Instantiate t => Instantiate (Qual t) where
 instance Instantiate Pred where
   inst ts (IsIn c t) = IsIn c (inst ts t)
 
-type Assumps = FiniteMap Id [Scheme]
-
-lookUp :: Ord a => FiniteMap a [b] -> a -> [b]
-lookUp ce = lookupWithDefaultFM ce [] 
-
 type TIL = StateT (Subst, Int) []
 
 newTVar    :: Le.Kind -> TIL Le.Type
