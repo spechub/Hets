@@ -16,7 +16,7 @@ lineParser, fileParser :: [(String, StringParser)]
 lineParser = [("MixIds", fromAParser $ parseId []),
 	      ("VarIds", fromAParser $ varId []),
 	      ("SortIds", fromAParser $ sortId []),
-	      ("Annos", fromAParser annotation)]
+	      ("Annos", fromAParser annotationL)]
 
 fileParser = [("Annotations", \ ga -> fmap (show . vcat . map 
 					    (printText0 ga)) 
