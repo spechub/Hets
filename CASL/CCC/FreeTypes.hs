@@ -47,7 +47,7 @@ checkFreeType m fs
        | (any id $ map (\s->elem s sorts) $ ops_sorts++preds_sorts) =Nothing
        | not $ and $ map checkTerm leadingTerms =Nothing
        | not $ and $ map checkVar leadingTerms =Nothing 
---     |  =Nothing
+--     | not $ and $ map checkPatterns leadingPatterns=Nothing
        | otherwise = Just True
    where sig = imageOfMorphism m
          sorts= Set.toList (sortSet sig)
@@ -82,6 +82,11 @@ checkFreeType m fs
                                            check (p:ps)=if elem p ps then False
                                                         else check ps
                                        in check ts
+         leadingPatterns=map (\l-> case l of
+                                     Just (Left (Application _ ts _))->ts
+                                     Just (Right (Predication _ ts _))->ts) $ 
+                         map leading_Term_Predication fs
+         checkPatterns ts=
 
      
 {-
