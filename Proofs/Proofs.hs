@@ -39,7 +39,6 @@ todo for Jorina:
 
 
    todo:
-   - Identitäts-Pfeile bei local decomp (ähnlich wir bei GlobSubsume)
    - bei GlobDecomp hinzufügen:
      zusätzlich alle Pfade K<--theta-- M --sigma-->N in den aktuellen 
      Knoten N, die mit einem HidingDef anfangen, und danach nur GlobalDef
@@ -167,7 +166,8 @@ globDecompForOneEdge dgraph edge =
   globDecompForOneEdgeAux dgraph edge [] paths
   
   where
-    pathsToSource = getAllLocGlobDefPathsTo dgraph (getSourceNode edge) []
+    pathsToSource
+      = getAllLocOrHideGlobDefPathsTo dgraph (getSourceNode edge) []
     paths = [(node, path++(edge:[]))| (node,path) <- pathsToSource]
 
 {- auxiliary funktion for globDecompForOneEdge (above)
@@ -204,16 +204,25 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
    else globDecompForOneEdgeAux newGraph edge newChanges list
 
   where
-    morphism = case calculateMorphismOfPath path of
+    isHiding = not (null path) && isHidingDef (head path)
+    morphismPath = if isHiding then tail path else path
+    morphism = case calculateMorphismOfPath morphismPath of
                  Just morph -> morph
                  Nothing ->
-		   error "globDecomp: could not determine morphism of new edge"
-    newEdge = (node,
-	       target,
-	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (LocalThm (Static.DevGraph.Open)
-				   None (Static.DevGraph.Open)),
-		       dgl_origin = DGProof}
+	           error "globDecomp: could not determine morphism of new edge"
+    newEdge = if isHiding then hidingEdge else localEdge
+    hidingEdge = 
+       (node,
+        target,
+        DGLink {dgl_morphism = morphism,
+                dgl_type = (HidingThm (dgl_morphism (getLabelOfEdge (head path))) (Static.DevGraph.Open)),
+                dgl_origin = DGProof})
+    localEdge = (node,
+	         target,
+	         DGLink {dgl_morphism = morphism,
+		         dgl_type = (LocalThm (Static.DevGraph.Open)
+			  	     None (Static.DevGraph.Open)),
+		         dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge dgraph
     newChanges = ((InsertEdge newEdge):changes)
@@ -394,13 +403,25 @@ filterPathsByMorphism morphism paths =
 
 
 {- returns a list of all paths to the given node
+   that consist of globalDef edge only
+   or
+   that consist of a localDef or hidingDef edge
+   followed by any number of globalDef edges -}
+getAllLocOrHideGlobDefPathsTo :: DGraph -> Node -> [LEdge DGLinkLab]
+			      -> [(Node, [LEdge DGLinkLab])]
+getAllLocOrHideGlobDefPathsTo =
+    getAllGlobDefPathsBeginningWithTypesTo
+	([isLocalDef, isHidingDef]::[LEdge DGLinkLab -> Bool])
+
+{- returns a list of all paths to the given node
    that consist of globalDef edges only
    or
    that consist of a localDef edge followed by any number of globalDef edges -}
 getAllLocGlobDefPathsTo :: DGraph -> Node -> [LEdge DGLinkLab]
 			      -> [(Node, [LEdge DGLinkLab])]
-getAllLocGlobDefPathsTo dgraph node path =
-  (node,path):(locGlobPaths ++
+getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo 
+			      ([isLocalDef]::[LEdge DGLinkLab -> Bool])
+{-  (node,path):(locGlobPaths ++
     (concat (
       [getAllLocGlobDefPathsTo dgraph (getSourceNode edge) path| 
        (_, path@(edge:edges)) <- globalPaths]))
@@ -412,6 +433,30 @@ getAllLocGlobDefPathsTo dgraph node path =
     localEdges = [edge| edge <- filter isLocalDef inEdges, notElem edge path]
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     locGlobPaths = [(getSourceNode edge, (edge:path))| edge <- localEdges]
+-}
+
+{- returns a list of all paths to the given node
+   that consist of globalDef edges only
+   or
+   that consist of an edge of one of the given types
+   followed by any number of globalDef edges -}
+getAllGlobDefPathsBeginningWithTypesTo :: [LEdge DGLinkLab -> Bool] -> DGraph -> Node -> [LEdge DGLinkLab]
+			      -> [(Node, [LEdge DGLinkLab])]
+getAllGlobDefPathsBeginningWithTypesTo types dgraph node path =
+  (node,path):(typeGlobPaths ++
+    (concat ( [getAllGlobDefPathsBeginningWithTypesTo
+                   types dgraph (getSourceNode edge) path |
+                       (_, path@(edge:edges)) <- globalPaths])
+    )
+   )
+
+  where
+    inEdges = inn dgraph node
+    globalEdges = [edge| edge <- filter isGlobalDef inEdges, notElem edge path]
+    edgesOfTypes 
+        = [edge| edge <- filterByTypes types inEdges, notElem edge path]
+    globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
+    typeGlobPaths = [(getSourceNode edge, (edge:path))| edge <- edgesOfTypes]
 
 
 {- returns all paths consisting of global edges only
@@ -581,6 +626,12 @@ isLocalDef :: LEdge DGLinkLab -> Bool
 isLocalDef (_,_,edgeLab) =
   case dgl_type edgeLab of
     LocalDef -> True
+    otherwise -> False
+
+isHidingDef :: LEdge DGLinkLab -> Bool
+isHidingDef (_,_,edgeLab) =
+  case dgl_type edgeLab of
+    HidingDef -> True
     otherwise -> False
 
 -- ----------------------------------------------------------------------------
