@@ -492,12 +492,13 @@ axiomItems =     do { a <- pluralKeyword axiomS
                                            fs ans) (map tokPos (a:ps)))
                     }
 
-forallItem =     do { f <- forallT
-                    ; (vs, ps) <- genVarDecls `separatedBy` semiT 
-                    ; AxiomItems [] fs ds <- dotFormulae
-                    ; return (AxiomItems (concat vs) fs 
-			      (map tokPos (f:ps) ++ ds))
-                    }
+forallItem =     do f <- forallT
+                    (vs, ps) <- genVarDecls `separatedBy` semiT 
+		    a <- annos
+		    AxiomItems _ ((Annoted ft qs as rs):fs) ds <- dotFormulae
+		    let aft = Annoted ft qs (a++as) rs
+		        in return (AxiomItems (concat vs) (aft:fs) 
+				   (map tokPos (f:ps) ++ ds))
 
 genVarItem = do { v <- pluralKeyword varS
                 ; (vs, ps) <- genVarItems
