@@ -37,8 +37,9 @@ module Common.ATerm.AbstractSyntax
     )
     where
 
-import qualified Common.DFiniteMap as Map
-import qualified Common.DFiniteMap as DMap
+import qualified Common.ATerm.HashMap as Map
+import qualified IntMap as DMap
+import Data.Char(ord)
 
 data ATerm = AAppl String [ATerm] [ATerm]
            | AList [ATerm]        [ATerm]
@@ -50,7 +51,7 @@ data ShATerm = ShAAppl String [Int]  [Int]
 	     | ShAInt  Integer       [Int]  
 	       deriving (Eq,Ord)
 
-data ATermTable = ATT (Map.Map ShATerm Int) (DMap.Map Int ShATerm) Int
+data ATermTable = ATT (Map.Map ShATerm Int) (DMap.IntMap ShATerm) Int
 
 lookupInsert :: Ord k => k -> v -> Map.Map k v -> (Maybe v, Map.Map k v)
 lookupInsert k v m = case Map.lookup k m of 
@@ -58,7 +59,24 @@ lookupInsert k v m = case Map.lookup k m of
 		     mv -> (mv, m) 
 
 emptyATermTable :: ATermTable
-emptyATermTable =  ATT Map.empty DMap.empty (-1)
+emptyATermTable =  ATT (Map.empty hash) DMap.empty (-1)
+
+prime :: Int
+prime = 1500007
+
+hashIntList :: [Int] -> Int
+hashIntList = foldl f 0
+  where f m i = (i + m) `rem` prime
+
+hashString :: String -> Int
+hashString = foldl f 0
+  where f m c = ord c + (m * 128) `rem` prime
+
+hash :: ShATerm -> Int
+hash st = case st of
+	  ShAAppl s is _ -> hashString s + hashIntList is
+	  ShAList is _ -> hashIntList is
+	  ShAInt i _ -> fromInteger (i `rem` toInteger prime)
 
 addATermNoFullSharing :: ShATerm -> ATermTable -> (ATermTable,Int)
 addATermNoFullSharing t (ATT a_iDFM i_aDFM i1) = 
