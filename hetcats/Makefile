@@ -30,7 +30,9 @@ HC_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),real_clean)
 include sources_hetcats.mk
+endif
 endif
 
 objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
@@ -63,6 +65,8 @@ clean:
          done; \
          unset p THIS_DIR
 
+real_clean: clean
+	rm -f hetcats-make sources_hetcats.mk
 
 ### test targets
 test_parser: ../test_parser.hs $(drifted_files)
@@ -107,9 +111,10 @@ test_parser: ../test_parser.hs $(drifted_files)
 ## Setting a global search path (for dependency files)
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),real_clean)
 ## include every .d file in INCLUDE_PATH
 -include $(objects:.o=.d)
 
 sources_hetcats.mk: hetcats-make
 endif
-
+endif
