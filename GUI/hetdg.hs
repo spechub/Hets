@@ -32,13 +32,15 @@ import GUI.ConvertDevToAbstractGraph
 import GUI.AbstractGraphView
 import Options
 
+import Static.DevGraph
+
 import Data.Char
 import DaVinciGraph
 import GraphDisp
 import Data.IORef
 
 proceed fname showdg = do
-  res <- anaFile logicGraph defaultLogic defaultHetcatsOpts fname 
+  res <- anaFile logicGraph defaultLogic defaultHetcatsOpts emptyLibEnv fname 
   case res of
     Just (ln,_,dg,libenv) -> 
       if showdg then do
