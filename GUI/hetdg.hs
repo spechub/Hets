@@ -3,7 +3,7 @@ module Main
 where
 
 import System.Environment
-import Syntax.LogicGraph
+import Logic.LogicGraph
 import Static.AnalysisLibrary
 import System.IO
 import Static.DotGraph
