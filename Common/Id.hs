@@ -138,19 +138,28 @@ expandPos f (o, c) ts ps =
 		(zipWith Token (o : commas n) ps1)
 	  in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
 	    		    
+
 -- | reconstruct the token list of an 'Id'
 -- including square brackets and commas of (nested) compound lists.
 -- Replace top-level places with the input String 
--- that may be the 'place' itself
+getPlainTokenList :: Id -> [Token]
+getPlainTokenList (Id ts cs ps) = 
+    if null cs then ts else 
+       let (toks, pls) = splitMixToken ts in
+	   toks ++ getCompoundTokenList cs ps ++ pls
+
+-- | reconstruct tokens of compound list  
+getCompoundTokenList :: [Id] -> [Pos] -> [Token]
+getCompoundTokenList cs ps = concat $ expandPos (:[]) ("[", "]") 
+	      -- although positions will be replaced (by scan)
+			     (map getPlainTokenList cs) ps
+
 getTokenList :: String -> Id -> [Token]
 getTokenList placeStr (Id ts cs ps) = 
-    let (toks, pls) = splitMixToken ts 
-        cts = if null cs then [] else concat 
-	      $ expandPos (:[]) ("[", "]") (map (getTokenList place) cs) ps
-	      -- although positions will be replaced (by scan)
-        convert =  map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
-    in if placeStr == place then toks ++ cts ++ pls -- optimized for place
-       else convert toks ++ cts ++ convert pls
+    let convert =  map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
+    in if null cs then convert ts else 
+       let (toks, pls) = splitMixToken ts in
+	   convert toks ++ getCompoundTokenList cs ps ++ convert pls
 
 -- | compute a meaningful single position from an 'Id' for diagnostics 
 posOfId :: Id -> Pos
