@@ -1,3 +1,4 @@
 ghc --make -fglasgow-exts -Wall -i:.. translate.hs -o translate
+ghc --make -fglasgow-exts -Wall -i:.. translateAna.hs -o translateAna
 
 

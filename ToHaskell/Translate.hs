@@ -17,13 +17,14 @@ translate (BasicSpec annotedBasicItems) =
 
 -------------------------------------------------------------
 translateBasicItems :: [Annoted BasicItem] -> [HsDecl]
-translateBasicItems [] = []
-translateBasicItems (bi:bis) = 
-          ((translateBasicItem (item bi))++(translateBasicItems bis))
+translateBasicItems ilist = concat $ map translateBasicItem ilist
+--translateBasicItems [] = []
+--translateBasicItems (bi:bis) = 
+--          ((translateBasicItem (item bi))++(translateBasicItems bis))
 
-translateBasicItem :: BasicItem -> [HsDecl]
+translateBasicItem :: Annoted BasicItem -> [HsDecl]
 translateBasicItem i = 
-  case i of
+  case (item i) of
     SigItems si -> translateSigItems si
     ProgItems eqList _posList -> translateProgEqs eqList
     _ -> error ("translateBasicItem: " ++ show i)

@@ -1,1 +1,5 @@
-program f a = C  c
+sort b
+free type A ::= A b
+%%ops f,g : A * B -> C
+
+
