@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
@@ -20,12 +20,16 @@ import HasCASL.VarDecl
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.MixAna
+import HasCASL.MapTerm
 import qualified Common.Lib.Map as Map
 import Common.Id
 import Common.Result
 import Common.GlobalAnnotations
 import Common.Lib.State
 import Data.Maybe
+
+substTerm :: Subst -> Term -> Term
+substTerm s = mapTerm (id, subst s)
 
 resolveTerm :: GlobalAnnos -> Maybe Type -> Term -> State Env (Maybe Term)
 resolveTerm ga mt trm = do
@@ -43,10 +47,15 @@ checkPattern ga pat = do
 		  (np, _) <- extractBindings p 
 		  typeCheck inferPat Nothing np
 
-instantiate :: OpInfo -> State Env (Type, OpInfo)
+freshInstList :: TypeScheme -> State Int (Type, [Type])
+freshInstList (TypeScheme tArgs (_ :=> t) _) = 
+    do m <- mkSubst tArgs 
+       return (subst (Map.fromList m) t, map snd m)
+
+instantiate :: OpInfo -> State Env (Type, [Type], OpInfo)
 instantiate oi = do
-     ty <- toEnvState $ freshInst $ opType oi
-     return (ty, oi)
+     (ty, inst) <- toEnvState $ freshInstList $ opType oi
+     return (ty, inst, oi)
 
 lookupError :: Type -> [OpInfo] -> String
 lookupError ty ois = 
@@ -75,13 +84,13 @@ typeCheck inf mt trm =
 	  do addDiags [mkDiag Error "no typing for" trm]
 	     return Nothing
 	  else if null $ tail alts then
-	       let (_,_,t) = head alts in
-		   return $ Just t
+	       let (s,_,t) = head alts in
+		   return $ Just $ substTerm s t
 	  else do addDiags [Diag Error 
 			 ("ambiguous typings \n  " ++
 			  showSepList ("\n  "++) 
 			  showPrettyWithPos 
-			  (take 5 $ map ( \ (_,_,t) -> t) alts) "")
+			  (take 5 $ map ( \ (s,_,t) -> substTerm s t) alts) "")
 			    $ getMyPos trm]
 	          return Nothing
 
@@ -133,25 +142,30 @@ infer mt trm = do
 		Nothing -> return []
 		Just s -> let ty = (subst s t) in 
 			      return [(s, ty, QualVar v ty ps)] 
-	QualOp b io sc ps -> do
-	    ty <- toEnvState $ freshInst sc
-	    let Result ds ms = mUnify ty
+	QualOp b (InstOpId i ts qs) sc ps -> do
+	    (ty, inst) <- toEnvState $ freshInstList sc
+	    let Result ds ms = mgu tm (mt, if null ts then inst else ts) 
+			       (Just ty, inst)
 	    uniDiags ds 
 	    case ms of 
 		Nothing -> return []
-		Just s -> return [(s, subst s ty, QualOp b io sc ps)]
+		Just s -> return [(s, subst s ty, QualOp b 
+				   (InstOpId i (map (subst s) inst) qs)
+				   sc ps)]
 	ResolvedMixTerm i ts ps ->
 	    if null ts then do 
 	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
 	       insts <- mapM instantiate ois 
 	       ls <- case mt of 
-		     Nothing -> return $ map ( \ (ty, oi) 
-					      -> (eps, ty, oi)) insts
+		     Nothing -> return $ map ( \ (ty, is, oi) 
+					      -> (eps, ty, is, oi)) insts
 		     Just inTy -> do 
-                         let rs = concatMap ( \ (ty, oi) ->
+                         let rs = concatMap ( \ (ty, is, oi) ->
 				  let Result _ ms = mgu tm inTy ty in
 				  case ms of Nothing -> []
-					     Just s -> [(s, ty, oi)]) insts
+					     Just s -> [(s, ty, 
+							 map (subst s) is
+							, oi)]) insts
 			 if null rs then 
 			    addDiags [Diag Hint
 			       ("no type match for: " ++ showId i "\n"
@@ -159,7 +173,7 @@ infer mt trm = do
 			       (posOfId i) ]
 		            else return ()
 			 return rs
-	       return $ map ( \ (s, ty, oi) -> 
+	       return $ map ( \ (s, ty, is, oi) -> 
 			      case opDefn oi of
 			      VarDefn -> (s, ty, QualVar i ty ps)
 			      x -> let br = case x of
@@ -167,7 +181,7 @@ infer mt trm = do
 				            Definition b _ -> b
 				            _ -> Op in 
 				      (s, ty, 
-				       QualOp br (InstOpId i [] [])
+				       QualOp br (InstOpId i is [])
 						  (opType oi) ps)) ls
 	    else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)
 		 (mkTupleTerm ts ps) ps

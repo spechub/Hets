@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (MonadState)
     
@@ -37,6 +37,26 @@ addDiags ds =
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = do mp <- fromResult (anaType (Just star, t) . typeMap)
 		   return $ fmap snd mp
+
+anaInstTypes :: [Type] -> State Env [Type]
+anaInstTypes ts = if null ts then return []
+   else do mp <- fromResult (anaType (Nothing, head ts) . typeMap)
+	   rs <- anaInstTypes $ tail ts
+	   return $ case mp of
+		   Nothing -> rs
+		   Just (_, ty) -> ty:rs
+
+anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
+anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
+    do tm <- gets typeMap    -- save global variables  
+       mArgs <- mapM anaTypeVarDecl tArgs
+       let newArgs = catMaybes mArgs  
+       checkUniqueTypevars newArgs
+       mt <- anaStarType ty
+       putTypeMap tm       -- forget local variables 
+       case mt of 
+           Nothing -> return Nothing
+	   Just newTy -> return $ Just $ TypeScheme newArgs (q :=> newTy) p
 
 anaKind :: Kind -> State Env Kind
 anaKind k = toState star $ anaKindM k

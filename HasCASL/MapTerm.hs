@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
     
@@ -35,7 +35,11 @@ mapTerm m t = case t of
    LetTerm b es te ps ->
        LetTerm b (map (mapEq m) es) (mapTerm m te) ps
    AsPattern v pa ps -> AsPattern v (mapTerm m pa) ps
-   _ -> error "mapTerm"
+   TermToken _ -> t
+   MixfixTerm ts -> MixfixTerm $ map (mapTerm m) ts
+   BracketTerm b ts ps -> BracketTerm b (map (mapTerm m) ts) ps
+   MixTypeTerm q ty ps -> MixTypeTerm q (snd m ty) ps  
+   ResolvedMixTerm i ts ps -> ResolvedMixTerm i (map (mapTerm m) ts) ps
 
 mapGenVar :: (Type -> Type) -> GenVarDecl -> GenVarDecl
 mapGenVar m (GenVarDecl vd) = GenVarDecl $ mapVar m vd

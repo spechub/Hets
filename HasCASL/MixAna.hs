@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
@@ -49,9 +49,9 @@ addType _ _ = error "addType"
 type TermChart = Chart Term
 
 -- | find information for qualified operation
-findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> Type -> Maybe OpInfo
-findOpId as tm c i ty = listToMaybe $ fst $
-			partitionOpId as tm c i $ TypeScheme [] ([] :=> ty) []
+findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> TypeScheme 
+	 -> Maybe OpInfo
+findOpId as tm c i sc = listToMaybe $ fst $ partitionOpId as tm c i sc
 
 iterateCharts :: GlobalAnnos -> [Term] -> TermChart 
 	      -> State Env TermChart
@@ -82,25 +82,25 @@ iterateCharts ga terms chart =
 		       case mTyp of 
 			   Nothing -> recurse t
 			   Just nTyp -> do 
-			       let mi = findOpId as tm (counter e) v nTyp
+			       let mi = findOpId as tm (counter e) v 
+					$ simpleTypeScheme nTyp
 			       case mi of     
 			            Nothing -> addDiags [mkDiag Error 
 						  "value not found" v]
 				    _ -> return ()
 			       recurse $ QualVar v nTyp ps
-		    QualOp b io@(InstOpId v _ _) 
-			       (TypeScheme rs (qs :=> typ) ss) ps -> do 
-		       mTyp <- anaStarType typ
-		       case mTyp of 
+		    QualOp b (InstOpId v ts qs) sc ps -> do 
+		       mSc <- anaTypeScheme sc
+                       newTs <- anaInstTypes ts    
+		       case mSc of 
 			   Nothing -> recurse t
-			   Just nTyp -> do 
-		               let mi = findOpId as tm (counter e) v nTyp
+			   Just nSc -> do 
+		               let mi = findOpId as tm (counter e) v nSc
 			       case mi of     
 			            Nothing -> addDiags [mkDiag Error 
 						  "value not found" v]
 				    _ -> return ()
-			       recurse $ QualOp b io 
-					(TypeScheme rs (qs :=> nTyp) ss) ps
+			       recurse $ QualOp b (InstOpId v newTs qs) nSc ps
 		    QuantifiedTerm quant decls hd ps -> do 
 		       newDs <- mapM anaGenVarDecl decls
 		       mt <- resolve ga hd

@@ -26,9 +26,11 @@ type  : Type+ -> Type+ -> Type+ -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : forall s : Type . Pred s
 var x : s
-program (op def : forall s : Type . Pred s) = \ (var x : s) . ()
+program (op def[_var_1] : forall s : Type . Pred s) =
+            \ (var x : s) . ()
         %% def is also total (identical to tt) 
-program (op tt : forall s : Type . Pred s) = \ (var x : s) . ()
+program (op tt[_var_4] : forall s : Type . Pred s) =
+            \ (var x : s) . ()
         %% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -39,18 +41,19 @@ op __res__ : s * t ->? s = (var x : s)
 op fst : s * t ->? s = (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
-. (pred __=__ : forall a : Type . a * a)
+. (pred __=__[s * t ->? _var_18] : forall a : Type . a * a)
     (\ (var x : s, var y : t) . def (x res y),
      \ (var x : s, var y : t) . (def y) und (def x))
-. (pred __=__ : forall a : Type . a * a)
+. (pred __=__[s * t ->? s] : forall a : Type . a * a)
     (op fst : s * t ->? s, op __res__ : s * t ->? s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred eq : forall s : Type . s * s
-. (pred __=__ : forall a : Type . a * a)
-    (\ (var x : s) .
-       (pred eq : forall s : Type . s * s)(var x : s, var x : s),
-     op tt : forall s : Type . Pred s)
+. (pred __=__[_var_36 ->? Unit] : forall a : Type . a * a)
+    (\ (var x : _var_36) .
+       (pred eq[_var_36] : forall s : Type . s * s)
+         (var x : _var_36, var x : _var_36),
+     op tt[_var_36] : forall s : Type . Pred s)
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit." 
 %% where "bla" is never used, but only "()" instead
@@ -87,8 +90,8 @@ class instance Flatcpo < Cpo
 var c : Cpo; d : Cpo
 type instance __*__ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
-program (pred __<<=__ : forall c : Cpo . c * c)
-          ((var x1 : _var_62, var y1 : _var_63),
+program (pred __<<=__[_var_64 * _var_65] : forall c : Cpo . c * c)
+          ((var x1 : _var_64, var y1 : _var_65),
            (var x2 : _var_64, var y2 : _var_65))
           = (x1 <<= x2) und (y1 <<= y2)
 type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
@@ -102,8 +105,8 @@ program f <<= [c -->? d] g =
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 type __-->__(c : Cpo)(d : Cpo) < c -->? d
 var f : c --> d; g : c --> d
-program (pred __<<=__ : forall c : Cpo . c * c)
-          (var f : _var_87, var g : _var_88)
+program (pred __<<=__[_var_88] : forall c : Cpo . c * c)
+          (var f : _var_88, var g : _var_88)
           = f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op Y : (p -->? p) --> p
@@ -169,15 +172,16 @@ true : bool %(construct bool)%
      : Unit %(fun)%
 tt : forall s : Type . Pred s %(op)% = \ (var x : s) . ()
 %% Sentences -------------------------------------------------------------
-(pred __=__ : forall a : Type . a * a)
+(pred __=__[s * t ->? _var_18] : forall a : Type . a * a)
   (\ (var x : s, var y : t) . def (x res y),
    \ (var x : s, var y : t) . (def y) und (def x)) %()%
-(pred __=__ : forall a : Type . a * a)
+(pred __=__[s * t ->? s] : forall a : Type . a * a)
   (op fst : s * t ->? s, op __res__ : s * t ->? s) %()%
-(pred __=__ : forall a : Type . a * a)
-  (\ (var x : s) .
-     (pred eq : forall s : Type . s * s)(var x : s, var x : s),
-   op tt : forall s : Type . Pred s) %()%
+(pred __=__[_var_36 ->? Unit] : forall a : Type . a * a)
+  (\ (var x : _var_36) .
+     (pred eq[_var_36] : forall s : Type . s * s)
+       (var x : _var_36, var x : _var_36),
+   op tt[_var_36] : forall s : Type . Pred s) %()%
 %% Diagnostics -----------------------------------------------------------
 *** Error 4.7, illegal universe class declaration 'Type'
 *** Hint 6.5, is type variable 's'
@@ -290,8 +294,8 @@ tt : forall s : Type . Pred s %(op)% = \ (var x : s) . ()
 *** Hint 153.5, is type variable 'c'
 *** Hint 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
-*** Error , unknown type '_var_62'
-*** Error , unknown type '_var_63'
+*** Error , unknown type '_var_64'
+*** Error , unknown type '_var_65'
 *** Error , unknown type '_var_64'
 *** Error , unknown type '_var_65'
 *** Error 159.34, unexpected mixfix token: x1
@@ -329,7 +333,7 @@ tt : forall s : Type . Pred s %(op)% = \ (var x : s) . ()
 	def(f)(x)
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
-*** Error , unknown type '_var_87'
+*** Error , unknown type '_var_88'
 *** Error , unknown type '_var_88'
 *** Error 186.20, unexpected mixfix token: f
 *** Error 190.9, incompatible kind of: p -->? p

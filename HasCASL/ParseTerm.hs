@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
    
@@ -478,12 +478,10 @@ lamPattern =
 -- | an 'uninstOpId' possibly followed by types ('parseType') in brackets 
 -- and further places ('placeT')
 instOpId :: AParser InstOpId
-instOpId = do i@(Id is cs ps) <- uninstOpId
-	      if isPlace (last is) then return (InstOpId i [] []) 
-		   else do (ts, qs) <- option ([], [])
+instOpId = do i <- uninstOpId
+	      (ts, qs) <- option ([], [])
 				       (mkBrackets parseType (,))
-			   u <- many placeT
-			   return (InstOpId (Id (is++u) cs ps) ts qs)
+	      return (InstOpId i ts qs)
 
 {- | 'Token's that may occur in 'Term's including literals
    'scanFloat', 'scanString' but excluding 'ifS', 'whenS' and 'elseS'

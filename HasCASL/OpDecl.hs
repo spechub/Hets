@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
@@ -123,18 +123,6 @@ anaOpId br sc attrs o =
     do let (OpId i _ _, newSc) = getUninstOpId sc o
        mo <- addOpId i newSc attrs $ NoOpDefn br 
        return $ fmap (const o) mo
-
-anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
-anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
-    do tm <- gets typeMap    -- save global variables  
-       mArgs <- mapM anaTypeVarDecl tArgs
-       let newArgs = catMaybes mArgs  
-       checkUniqueTypevars newArgs
-       mt <- anaStarType ty
-       putTypeMap tm       -- forget local variables 
-       case mt of 
-           Nothing -> return Nothing
-	   Just newTy -> return $ Just $ TypeScheme newArgs (q :=> newTy) p
 
 -- ----------------------------------------------------------------------------
 -- ProgEq

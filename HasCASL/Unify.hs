@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
@@ -81,7 +81,7 @@ asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 freshInst :: TypeScheme -> State Int Type
 freshInst (TypeScheme tArgs (_ :=> t) _) = 
     do m <- mkSubst tArgs 
-       return $ subst m t
+       return $ subst (Map.fromList m) t
 
 freshVar :: State Int Id 
 freshVar = 
@@ -89,14 +89,13 @@ freshVar =
        put (c + 1)
        return $ simpleIdToId $ mkSimpleId ("_var_" ++ show c)
 
-mkSingleSubst :: TypeArg -> State Int Subst
+mkSingleSubst :: TypeArg -> State Int (TypeArg, Type)
 mkSingleSubst tv@(TypeArg _ k _ _) =
     do ty <- freshVar
-       return $ Map.single tv $ TypeName ty k 1
+       return (tv, TypeName ty k 1)
 
-mkSubst :: [TypeArg] -> State Int Subst
-mkSubst tas = do ms <- mapM mkSingleSubst tas
-		 return $ Map.unions ms
+mkSubst :: [TypeArg] -> State Int [(TypeArg, Type)]
+mkSubst tas = mapM mkSingleSubst tas
  		   
 type Subst = Map.Map TypeArg Type
 
