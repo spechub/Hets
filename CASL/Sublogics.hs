@@ -24,8 +24,9 @@
 -- Export declarations
 -----------------------------------------------------------------------------
 
-module Sublogics ( -- datatype
+module Sublogics ( -- datatypes
                    CASL_Sublogics(..),
+                   CASL_Formulas(..),
 
                    -- functions for LatticeWithTop instance
                    top,
@@ -155,50 +156,37 @@ need_fol = bottom { which_logic = FOL }
 -- Functions to generate a list of all sublogics for CASL
 -----------------------------------------------------------------------------
 
+-- conversion from Int in [0..127] range to CASL_Sublogics
+
+boolFromInt :: Int -> Bool
+boolFromInt 0 = False
+boolFromInt _ = True
+
+formulasFromInt :: Int -> CASL_Formulas
+formulasFromInt 0 = Atomic
+formulasFromInt 1 = Horn
+formulasFromInt 2 = GHorn
+formulasFromInt _ = FOL
+
+sublogicFromInt :: Int -> CASL_Sublogics
+sublogicFromInt x =
+  let
+    divmod = (\x y -> (div x y,mod x y))
+    (f,fr) = divmod x  32
+    (e,er) = divmod fr 16
+    (d,dr) = divmod er 8
+    (c,cr) = divmod dr 4
+    (b,a)  = divmod cr 2
+  in
+    CASL_SL (boolFromInt a) (boolFromInt b) (boolFromInt c) (boolFromInt d)
+            (boolFromInt e) (formulasFromInt f)
+
 -- all elements
 -- create a list of all CASL sublogics by generating all possible
 -- feature combinations and then filtering illegal ones out
 --
 sublogics_all :: [CASL_Sublogics]
-sublogics_all = filter (not . adjust_check) $
-                morph_logic $ morph_part $ morph_cons $ morph_eq $ morph_pred
-                [bottom, bottom { has_sub = True }]
-
--- The following generate permutations for all sublogic features,
--- this is done by taking a list of already generated sublogics and
--- creating one version of each element with the feature in question
--- turned off and one with it turned on.
--- This generates all possible permutations when chained together.
--- There is no function morph_sub because the two elements for that
--- feature are used as a seed for permuting the other features (above).
-
-morph_part :: [CASL_Sublogics] -> [CASL_Sublogics]
-morph_part [] = []
-morph_part (h:t) = [h{ has_part = True }] ++ (morph_part t) ++
-                   [h{ has_part = False }]              
-
-morph_cons :: [CASL_Sublogics] -> [CASL_Sublogics]
-morph_cons [] = []
-morph_cons (h:t) = [h{ has_cons = True }] ++ (morph_cons t) ++
-                   [h{ has_cons = False }]              
-
-morph_eq :: [CASL_Sublogics] -> [CASL_Sublogics]
-morph_eq [] = []
-morph_eq (h:t) = [h{ has_eq = True }] ++ (morph_eq t) ++
-                 [h{ has_eq = False }]              
-
-morph_pred :: [CASL_Sublogics] -> [CASL_Sublogics]
-morph_pred [] = []
-morph_pred (h:t) = [h{ has_pred = True }] ++ (morph_pred t) ++
-                   [h{ has_pred = False }]              
-
-morph_logic :: [CASL_Sublogics] -> [CASL_Sublogics]
-morph_logic [] = []
-morph_logic (h:t) = [h{ which_logic = Atomic}] ++
-                    [h{ which_logic = Horn}]   ++
-                    [h{ which_logic = GHorn}]  ++
-                    [h{ which_logic = FOL}]    ++
-                    (morph_logic t)
+sublogics_all = filter (not . adjust_check) $ map sublogicFromInt [0..127]
 
 ------------------------------------------------------------------------------
 -- Conversion functions (to String)
@@ -718,8 +706,10 @@ sl_sortitem (SortItem _ r d _ _) = sublogics_max (sl_sortrels r)
                                                  (mb sl_sortdefn d)
 
 sl_sortdefn :: SortDefn -> CASL_Sublogics
-sl_sortdefn (SubsortDefn _ f _) = sublogics_max (sl_Formula f)
-                                                (get_Logic_sd f)
+sl_sortdefn (SubsortDefn _ f _) = comp_list [need_sub,sl_Formula f,
+                                             get_Logic_sd f]
+sl_sortdefn (Datatype l _ i _) = comp_list ((map sl_Alternative $ map item l)
+                                            ++ (map sl_symbol i))
 
 sl_sortrels :: SortRels -> CASL_Sublogics
 sl_sortrels (SortRels [] [] [] []) = bottom
