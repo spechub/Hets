@@ -22,6 +22,8 @@ op g : s * s = (a, b)
 
 op h : s = (__ + __) (a, b)
 
+op i : s = (__ + __) (a : s, b : s)
+
 
 op incr : s -> s
 

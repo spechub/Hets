@@ -146,13 +146,7 @@ findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> Type -> Maybe OpInfo
 findOpId as tm c i ty = listToMaybe $ fst $
 			partitionOpId as tm c i $ TypeScheme [] ([] :=> ty) []
 
-filterOps :: Assumps -> Assumps
-filterOps = filterAssumps ( \ o -> case opDefn o of
-			    ConstructData _ -> True
-			    VarDefn -> True
-			    _ -> False)
-
-iterStates :: GlobalAnnos -> Type -> [Term] 
+iterStates :: GlobalAnnos -> Maybe Type -> [Term] 
 	   -> State (Env, ParseMap Term) ()
 iterStates ga ty terms = 
     do (e, pm) <- get
@@ -195,10 +189,8 @@ iterStates ga ty terms =
 		do let (mTyp, e1) = runState (anaStarType typ) e 
                        (mtt, e2) = runState
 			   (case tqual of 
-			        OfType -> case mTyp of 
-			             Nothing -> resolveAny ga hd
-			             Just nTyp -> resolve ga (nTyp, hd)
-			        _ -> resolveAny ga hd) e1
+			        OfType -> resolve ga mTyp hd
+			        _ -> resolve ga Nothing hd) e1
 	           put (e2, pm)			       
 		   case mtt of  
 		       Just (_, ttt) -> 
@@ -214,7 +206,8 @@ iterStates ga ty terms =
 	    QuantifiedTerm quant decls hd ps ->
 		do let (mDecls, e1) = runState (mapM anaGenVarDecl decls) e
 		       newDecls = catMaybes mDecls
-		   let (mtt, e2) = runState (resolve ga (logicalType, hd)) e1
+		   let (mtt, e2) = runState (resolve ga 
+					     (Just logicalType) hd) e1
 	           put (e2 { typeMap = tm, assumps = as }, pm)
 		   case mtt of 
 	               Just (_, tt) -> 
@@ -223,14 +216,14 @@ iterStates ga ty terms =
 	                      self (tail terms) 
 	               Nothing -> return ()
 	    LambdaTerm decls part hd ps -> 
-		do let (mDecls, e0) = runState (mapM (resolvePattern ga) 
-						decls) e 
-				      { assumps = filterOps as }
+		do let (mDecls, e0) = runState (mapM 
+						(resolveConstrPattern ga 
+						 Nothing) decls) e 
 		       newDecls = map snd $ catMaybes mDecls
 		       vDecls = concatMap extractBindings newDecls
 		       (_, e1) = runState (mapM_ addVarDecl vDecls) e0 
 				 { assumps = as }
-                   let (mtt, e2) = runState (resolveAny ga hd) e1 
+                   let (mtt, e2) = runState (resolve ga Nothing hd) e1 
 	           put (e2 {assumps = as}, pm)
 		   case mtt of 
 	               Just (typ, tt) -> 
@@ -239,7 +232,7 @@ iterStates ga ty terms =
 	                      self (tail terms) 
 	               Nothing -> return () 
 	    CaseTerm hd eqs ps -> 
- 		do let (mtt, e2) = runState (resolveAny ga hd) e
+ 		do let (mtt, e2) = runState (resolve ga Nothing hd) e
                        ((_,rTyp,newEqs), e3) = runState 
 		            (resolveCaseEqs ga (case mtt of
 						Nothing -> Nothing
@@ -253,7 +246,7 @@ iterStates ga ty terms =
 	               _ -> return ()
 	    LetTerm eqs hd ps ->
 		do let (newEqs, e1) = runState (resolveLetEqs ga eqs) e
-		       (mtt, e2) = runState (resolveAny ga hd) e1
+		       (mtt, e2) = runState (resolve ga Nothing hd) e1
 	           put (e2 {assumps = as}, pm)			       
 		   case mtt of 
 		       Just (typq, tt) -> 
@@ -278,14 +271,15 @@ getLastType pm =
 	      lookUp (parseMap pm) $ lastIndex pm
     in if null tys then error "getLastType" else head tys
 
-resolveToParseMap :: GlobalAnnos -> Type -> Term -> State Env (ParseMap Term)
-resolveToParseMap ga ty trm =
+resolveToParseMap :: GlobalAnnos -> Maybe Type -> Term 
+		  -> State Env (ParseMap Term)
+resolveToParseMap ga mty trm =
     do as <- gets assumps
        initStates <- toEnvState (initialState ga as startIndex) 
        let pm = ParseMap { lastIndex = startIndex
 			, parseMap = Map.single startIndex initStates }
        e <- get 
-       let (e2, pm2) = execState (iterStates ga ty [trm]) (e, pm)
+       let (e2, pm2) = execState (iterStates ga mty [trm]) (e, pm)
        put e2
        return pm2
 
@@ -298,11 +292,13 @@ checkResultType tm t pm =
 		 $ lookUp m i) m }
 
 resolveFromParseMap :: (PosItem a, PrettyPrint a) => (PState a -> a) 
-		    -> (Type, a) -> ParseMap a -> State Env (Maybe (Type, a))
-resolveFromParseMap f (ty, a) pm0 =
+		    -> Maybe Type -> a -> ParseMap a 
+		    -> State Env (Maybe (Type, a))
+resolveFromParseMap f mty a pm0 =
     do tm <- gets typeMap
        let i = lastIndex pm0
-           pm = checkResultType tm ty pm0
+           pm = case mty of Nothing -> pm0
+			    Just ty -> checkResultType tm ty pm0
 	   ts = map f $ getAppls pm
        if null ts then do if (null $ lookUp (parseMap pm0) i) 
 				 || i == startIndex
@@ -317,33 +313,26 @@ resolveFromParseMap f (ty, a) pm0 =
 				  $ take 5 ts) ++ "for" ) a]
 		       return Nothing
 
-resolve :: GlobalAnnos -> (Type, Term) -> State Env (Maybe (Type, Term))
-resolve ga (ty, trm) =
-    do pm <- resolveToParseMap ga ty trm
-       resolveFromParseMap (toAppl ga) (ty, trm) pm 
+resolve :: GlobalAnnos -> Maybe Type -> Term -> State Env (Maybe (Type, Term))
+resolve ga mty trm =
+    do pm <- resolveToParseMap ga mty trm
+       resolveFromParseMap (toAppl ga) mty trm pm 
 
 resolveTerm :: GlobalAnnos -> Type -> Term -> State Env (Maybe Term)
 resolveTerm ga ty trm = 
-    do mr <- resolve ga (ty, trm)	    
+    do mr <- resolve ga (Just ty) trm	    
        return $ fmap snd mr 
-
-resolveAny :: GlobalAnnos -> Term -> State Env (Maybe (Type, Term))
-resolveAny ga trm =
-    do tvar <- toEnvState freshVar
-       resolve ga (TypeName tvar star 1, trm)
 
 resolveCaseEq :: GlobalAnnos -> (Maybe Type) -> (Maybe Type) -> ProgEq -> 
 		 State Env (Maybe Type, Maybe Type, Maybe ProgEq)
 resolveCaseEq ga mTyPat mTyTrm (ProgEq p t ps) = 
-    do mtp <- case mTyPat of Just ty -> resolvePat ga (ty, p)
-			     Nothing -> resolvePattern ga p
+    do mtp <- resolveConstrPattern ga mTyPat p
        case mtp of 
            Nothing -> return (mTyPat, mTyTrm, Nothing)
 	   Just (newTyPat, newP) -> do
 	        as <- gets assumps 
 		mapM addVarDecl $ extractBindings newP 
-	        mtt <- case mTyTrm of Just ty -> resolve ga (ty, t)
-				      Nothing -> resolveAny ga t 
+	        mtt <- resolve ga mTyTrm t
 		putAssumps as 
 		case mtt of 
 		    Nothing -> return (Just newTyPat, mTyTrm, Nothing)
@@ -364,14 +353,14 @@ resolveCaseEqs ga mTyPat mTyTrm (eq:rt) =
 resolveLetEqs :: GlobalAnnos -> [ProgEq] -> State Env [ProgEq]
 resolveLetEqs _ [] = return []
 resolveLetEqs ga (ProgEq pat trm ps : rt) = 
-    do mPat <- resolvePattern ga pat
+    do mPat <- resolveConstrPattern ga Nothing pat
        case mPat of 
-	   Nothing -> do resolveAny ga trm
+	   Nothing -> do resolve ga Nothing trm
 			 resolveLetEqs ga rt
 	   Just (ty, newPat) -> do 
 	       as <- gets assumps
 	       mapM addVarDecl $ extractBindings newPat
-	       mTrm <- resolve ga (ty, trm)
+	       mTrm <- resolve ga (Just ty) trm
 	       case mTrm of
 	           Nothing -> resolveLetEqs ga rt 
 		   Just (tyTrm, newTrm) -> do 
@@ -457,11 +446,11 @@ nextPatState ga knowns (ty, trm) =
        completeScanPredict ga knowns (ty, trm) patFromState patToToken
 			       $ initialPatState as
 
-iterPatStates :: GlobalAnnos -> Knowns -> Type -> [Pattern] 
+iterPatStates :: GlobalAnnos -> Knowns -> Maybe Type -> [Pattern] 
 	      -> State (Env, ParseMap Pattern) ()
-iterPatStates ga knowns ty pats = 
+iterPatStates ga knowns mty pats = 
     do (e, pm) <- get 
-       let self = iterPatStates ga knowns ty
+       let self = iterPatStates ga knowns mty
        if null pats then return ()
 	  else case head pats of
             MixfixPattern ts -> self (ts ++ tail pats)
@@ -469,9 +458,8 @@ iterPatStates ga knowns ty pats =
 	       (expandPos PatternToken (getBrackets b) ts ps ++ tail pats)
 	    TypedPattern hd typ ps -> 
 		do let (mTyp, e1) = runState (anaStarType typ) e  
-		       (mtt, e2) = runState (case mTyp of 
-				   Nothing -> resolvePattern ga hd
-				   Just nTyp -> resolvePat ga (nTyp, hd)) e1
+		       (mtt, e2) = runState (resolveTargetPattern 
+					     ga mTyp hd) e1
 		   put (e2, pm)
 		   case mtt of  
 			Just (_, ttt) -> 
@@ -490,9 +478,9 @@ getKnowns :: Id -> Knowns
 getKnowns (Id ts cs _) = Set.union (Set.fromList (map tokStr ts)) $ 
 			 Set.unions (map getKnowns cs) 
 
-resolvePatToParseMap :: GlobalAnnos -> Type -> Pattern 
+resolvePatToParseMap :: GlobalAnnos -> Maybe Type -> Pattern 
 		     -> State Env (ParseMap Pattern)
-resolvePatToParseMap ga ty trm = 
+resolvePatToParseMap ga mty trm = 
     do as <- gets assumps 
        initStates <- toEnvState $ initialPatState as startIndex
        let ids = Map.keys as 
@@ -500,30 +488,40 @@ resolvePatToParseMap ga ty trm =
 			       (tokStr inTok : map (:[]) "{}[](),"))
 		    $ Set.unions $ map getKnowns ids
        e <- get
-       let (e2, pm2) = execState (iterPatStates ga knowns ty [trm]) 
+       let (e2, pm2) = execState (iterPatStates ga knowns mty [trm]) 
 			    (e, ParseMap 
 			     { lastIndex = startIndex
 			     , parseMap = Map.single startIndex initStates })
        put e2
        return pm2
 
-resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe (Type, Pattern))
-resolvePattern ga trm =
-    do tvar <- toEnvState freshVar
-       resolvePat ga (TypeName tvar star 1, trm)
+filterOps :: Assumps -> Assumps
+filterOps = filterAssumps ( \ o -> case opDefn o of
+			    ConstructData _ -> True
+			    VarDefn -> True
+			    _ -> False)
 
-resolvePat :: GlobalAnnos -> (Type, Pattern) 
+resolveConstrPattern :: GlobalAnnos -> Maybe Type -> Pattern 
+		     -> State Env (Maybe (Type, Pattern))
+resolveConstrPattern ga mty pat = 
+    do as <- gets assumps
+       putAssumps $ filterOps as
+       m <- resolveTargetPattern ga mty pat
+       putAssumps as
+       return m
+
+resolveTargetPattern :: GlobalAnnos  -> Maybe Type -> Pattern 
 	   -> State Env (Maybe (Type, Pattern))
-resolvePat ga (ty, trm) =
-    do pm <- resolvePatToParseMap ga ty trm
-       mr <- resolveFromParseMap patFromState (ty, trm) pm
+resolveTargetPattern ga mty pat =
+    do pm <- resolvePatToParseMap ga mty pat
+       mr <- resolveFromParseMap patFromState mty pat pm
        case mr of
 	   Nothing -> return Nothing
-	   Just (newTy, pat) -> 
+	   Just (newTy, newPat) -> 
 	       do e <- get
                   let (r, (c, _, ds)) = 
 			  runState (specializePatVars
-				    (typeMap e) (newTy, pat)) 
+				    (typeMap e) (newTy, newPat)) 
 				       (counter e, Map.empty, [])
 		  put e { counter = c }
 		  if null ds then return $ Just r

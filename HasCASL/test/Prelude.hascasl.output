@@ -26,9 +26,9 @@ type __*__*__ : Type+ -> Type+ -> Type+ -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : (Pred)(s)
 var x : s
-program def : (Pred)(s) = \ x : _var_36 . ()
+program def : (Pred)(s) = \ x : _var_34 . ()
 	%% def is also total (identical to tt) 
-program tt : (Pred)(s) = \ x : _var_93 . ()
+program tt : (Pred)(s) = \ x : _var_88 . ()
 	%% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -142,7 +142,7 @@ __\/__ : Unit × Unit ->? Unit
 __if__ : Unit × Unit ->? Unit
 __res__ : s = \ (x : s, y : t) .! (var x : s)
 bottom : p
-def : (Pred)(s) = \ x : _var_36 . ()
+def : (Pred)(s) = \ x : _var_34 . ()
 eq : s × s ->? Unit
 f : c --> d %(var)%
 false : bool %(construct bool)%
@@ -153,7 +153,7 @@ not : Unit ->? Unit
 sup : (nat -> c) ->? c
 true : bool %(construct bool)%
      : Unit ->? Unit
-tt : (Pred)(s) = \ x : _var_93 . ()
+tt : (Pred)(s) = \ x : _var_88 . ()
 x : s %(var)%
 x1 : c %(var)%
 x2 : c %(var)%

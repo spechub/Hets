@@ -37,7 +37,7 @@ anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) =
        case mTy of 
 	     Nothing -> do addDiags [mkDiag Error 
 				     "unexpected type of operation" ty]
-			   mt <- resolveAny ga trm
+			   mt <- resolve ga Nothing trm
 			   putTypeMap tm
 			   case mt of 
 				   Nothing -> return Nothing
@@ -94,7 +94,7 @@ anaOpItem ga (OpDefn o pats sc partial trm ps) =
 				     return $ OpDefn op pats 
 					    newSc partial lastTrm ps
 		Nothing -> do 
-		    mt <- resolveAny ga trm
+		    mt <- resolve ga Nothing trm
 		    putAssumps as
 		    return $ OpDefn op pats extSc partial 
 			      (case mt of Nothing -> trm
@@ -132,15 +132,13 @@ anaProgEq :: GlobalAnnos -> ProgEq -> State Env ProgEq
 anaProgEq ga pe@(ProgEq pat trm qs) =
     do as <- gets assumps
        putAssumps $ filterVars as
-       mp <- resolvePattern ga pat
+       mp <- resolveTargetPattern ga Nothing pat
        let exbs = case mp of 
 			Nothing -> []
 			Just (_, newPat) -> extractBindings newPat
        checkUniqueVars exbs
        mapM_ addVarDecl exbs
-       mt <- case mp of 
-		     Nothing -> resolveAny ga trm
-		     Just (ty, _) -> resolve ga (ty, trm)
+       mt <- resolve ga (fmap fst mp) trm
        putAssumps as
        case (mt, mp) of 
 	    (Just (_, newTerm), Just (_, newPat))  ->
