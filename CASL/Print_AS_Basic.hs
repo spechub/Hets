@@ -31,7 +31,7 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 
-import Debug.Trace
+--import Debug.Trace
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
@@ -88,7 +88,7 @@ printFormulaOfModalSign ga f =
 printAnnotedFormula_Text0 :: PrettyPrint f => 
 			     GlobalAnnos -> Bool ->  Annoted (FORMULA f) -> Doc
 printAnnotedFormula_Text0 ga withDot (Annoted i _ las ras) =
-        let i'   = trace (show i) $ 
+        let i'   = -- trace (show i) $ 
 		 (if withDot then (char '.' <+>) else id) $  
 		 printFORMULA ga i
 	    las' = if not $ null las then 
