@@ -161,7 +161,7 @@ scanEEqual = string "=e="
 skip p = do {t <- p ; skipMany(satisfy isWhitespace); return t}
 
 scToken = scanWords <|> scanDigit <|> scanQuotedChar <|>
-	       (try scanDotWords) <|> (try scanEEqual) <|> scanSigns
+	       try scanDotWords <|> try scanEEqual <|> scanSigns
 
 setTokPos :: SourcePos -> String -> Token
 setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
@@ -174,9 +174,14 @@ makeToken parser = skip(do { p <- getPosition;
 			   })
 
 noBracketToken = makeToken scToken
-bracketToken = makeToken (scToken <|> fmap (\x->[x]) (oneOf "{}[]"))
 
 scanPlace = makeToken((string "__") <?> "place")
+
+scanMixLeaf = makeToken(try scanFloat <|> scanString <|> scToken)
+
+-- tokens and Ids with brackets
+
+bracketToken = makeToken (scToken <|> fmap (\x->[x]) (oneOf "{}[]"))
 
 placeTokenId = do { p <- fmap TokId scanPlace;
                     option [p] 
@@ -206,6 +211,39 @@ scanSortToken = string "sort" >> option (' ') (char 's')
 		
 isSigStartKeyword s = s `elem` (words "sort sorts op ops pred preds type types var vars axiom axioms forall free generated .") 
 
+-- comments and annotations
+
+textLine = many (noneOf newlineChars)
+eol = (eof >> return '\n') <|> oneOf newlineChars
+
+commentLine = between (try (string "%%")) eol textLine
+
+notEndText c = try(do { char c;
+			notFollowedBy (char '%');
+			return c;
+		      }) <?> ""
+
+middleText c = many ((satisfy (/=c)) <|> notEndText c) 
+
+comment o c = between (try (string ("%" ++ [o]))) (string (c : "%")) 
+	     (middleText c)
+
+commentOut = comment '[' ']'
+commentGroup = comment '{' '}'
+label = comment '(' ')'
+
+annote = 
+    do { w <- try ((char '%') >> scanWords);
+         (do { try(char '(');
+		   t <- middleText ')';
+	       string ")%";
+	       return ("%" ++ w ++ "(" ++ t ++ ")%")
+	     })  
+	 <|> (do { t <- textLine;
+                   eol; 
+		   return ("%" ++ w ++ t)
+		 })
+       }
 
 
 
