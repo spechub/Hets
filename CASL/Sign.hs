@@ -42,7 +42,7 @@ data Sign f e = Sign { sortSet :: Set.Set SORT
                , opMap :: OpMap
                , assocOps :: OpMap
                , predMap :: Map.Map Id (Set.Set PredType)
-               , varMap :: Map.Map SIMPLE_ID (Set.Set SORT)
+               , varMap :: Map.Map SIMPLE_ID SORT
                , sentences :: [Named (FORMULA f)]        
                , envDiags :: [Diagnosis]
                , extendedInfo :: e
@@ -237,8 +237,8 @@ addVar :: SORT -> SIMPLE_ID -> State (Sign f e) ()
 addVar s v = 
     do e <- get
        let m = varMap e
-           l = Map.findWithDefault Set.empty v m
-       if Set.member s l then 
-          addDiags [mkDiag Hint "redeclared var" v] 
-          else put e { varMap = Map.insert v (Set.insert s l) m }
+       case Map.lookup v m of
+          Just _ -> addDiags [mkDiag Warning "variable shadowed" v] 
+          Nothing -> return ()
+       put e { varMap = Map.insert v s m }
 

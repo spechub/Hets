@@ -347,8 +347,6 @@ legalSign sigma =
               True (opMap sigma)
   && Map.fold (\ts b -> b && Set.all legalPredType ts) 
               True (predMap sigma)
-  && Map.fold (\sset b -> b && Set.all legalSort sset) 
-              True (varMap sigma)
   where sorts = sortSet sigma
         legalSort s = Set.member s sorts
         legalOpType t = legalSort (opRes t) 
