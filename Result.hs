@@ -40,6 +40,11 @@ non_fatal_error x s p = Result [Error s p] $ Just x
 warning :: a -> String -> Pos -> Result a
 warning x s p = Result [Warning s p] $ Just x  
 
+foldResult :: b -> (b -> a -> Result b) -> [a] -> Result b
+foldResult prevResult f []    = return prevResult
+foldResult prevResult f (h:t) = do newResult <- f prevResult h
+                                   foldResult newResult f t
+
 instance Show Diagnosis where
     showsPrec _ d = case d of
 		    Error s p      -> 
