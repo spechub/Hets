@@ -17,15 +17,16 @@ runcheck ()
 	then
 	    if diff -w temp $4 >& /dev/null 
 	    then echo " passed"
-            else echo " failed diff with $4"
-	    fi
-	    if [ "$5" = "set" ] 
-	    then cat temp > $4
-	    fi
-	    declare -i b=`getFirstDigits $3`
-            if [ "$a" -ne 0 -a "$a" -ne "$b" ]
-            then echo " $a errors for $b input lines"
- 	    fi 
+            else 
+		echo " failed diff with $4"
+		if [ "$5" = "set" ] 
+		    then cat temp > $4
+		fi
+		declare -i b=`getFirstDigits $3`
+		if [ "$a" -ne 0 -a "$a" -ne "$b" ]
+		    then echo " $a errors for $b input lines"
+		fi 
+	    fi	
         else 
 	    echo " missing comparison file $4 (newly created)" 
             cat temp > $4
