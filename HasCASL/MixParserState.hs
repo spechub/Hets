@@ -25,7 +25,10 @@ import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import Data.Maybe
 import HasCASL.Unify
-import Control.Exception (assert)
+-- import Control.Exception (assert)
+
+assert :: Bool -> a -> a
+assert b a = if b then a else error ("assert")
 
 -- avoid confusion with the variable counter Int
 newtype Index = Index Int deriving (Eq, Ord, Show)

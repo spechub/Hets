@@ -29,7 +29,7 @@ import HasCASL.TypeAna
 import HasCASL.VarDecl
 import HasCASL.MixParserState
 import Data.Maybe
-import Control.Exception(assert)
+-- import Control.Exception(assert)
 
 -- import Debug.Trace
 
