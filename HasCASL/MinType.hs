@@ -39,10 +39,8 @@ typeNub tm f l = case l of
 
 eqTerm :: Term -> Term -> Bool
 eqTerm t1 t2 = case (t1, t2) of
-     (TypedTerm t OfType _ _, _) -> eqTerm t t2 
-     (_, TypedTerm t OfType _ _) -> eqTerm t1 t
-     (TypedTerm t AsType _ _, _) -> eqTerm t t2 
-     (_, TypedTerm t AsType _ _) -> eqTerm t1 t
+     (TypedTerm t _ _ _, _) -> eqTerm t t2 
+     (_, TypedTerm t _ _ _) -> eqTerm t1 t
      (QualVar (VarDecl v1 _s1 _ _), QualVar (VarDecl v2 _s2 _ _)) -> 
          v1 == v2 -- (s1 == s2 || liftType s1 [] == s2 || s1 == liftType s2 [])
      (QualOp _ (InstOpId i1 _ _) _ _, QualOp _ (InstOpId i2 _ _) _ _) -> 
