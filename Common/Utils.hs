@@ -67,9 +67,10 @@ fileparse sufs fp = let (path,base) = stripDir fp
                     in (base',path,suf) 
 
 stripDir :: FilePath -> (FilePath,FilePath)
-stripDir fp = 
-    let fp' = if ('/' `elem` fp) then fp else ("./" ++ fp)
-    in (\(x,y) -> (reverse y, reverse x)) (break (== '/') (reverse fp'))
+stripDir fp = (\(x,y) -> (reverse y, reverse' x)) 
+	      (break (== '/') (reverse fp))
+    where reverse' "" = "."
+	  reverse' x  = reverse x
 
 stripSuffix :: [String] -> FilePath -> (FilePath,Maybe String)
 stripSuffix suf fp = case filter justs $ map (stripSuf fp) suf of
