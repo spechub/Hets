@@ -18,7 +18,7 @@ module Common.ATerm.AbstractSyntax
      ShATerm(..),
      ATermTable,
      emptyATermTable,
-     addATerm,addATerm1,
+     addATerm,addATerm1,addATermNoFullSharing,
      getATerm,getATermFull,
      getATermIndex,getTopIndex,
      getATermByIndex,getATermByIndex1,
@@ -26,14 +26,10 @@ module Common.ATerm.AbstractSyntax
     )  
     where
 
-import Data.FiniteMap
-import GHC.Read
-import GHC.Show
+import qualified Common.Lib.Map as Map
 import List
-{-
-import Text.ParserCombinators.ReadPrec
-import qualified Text.Read.Lex as L
--}
+import Control.Exception (assert)
+
 data ATerm = AAppl String [ATerm] [ATerm]
            | AList [ATerm]        [ATerm]
            | AInt  Integer        [ATerm]
@@ -44,73 +40,87 @@ data ShATerm = ShAAppl {-# UNPACK #-} !String {-# UNPACK #-} ![Int] ![Int]
 	     | ShAInt  {-# UNPACK #-} !Integer       ![Int]  
 	       deriving (Read,Show,Eq,Ord)
 
-data ATermTable = ATT (FiniteMap ShATerm Int) (FiniteMap Int ShATerm) 
+data ATermTable = ATT (Map.Map ShATerm Int) (Map.Map Int ShATerm) 
                       {-# UNPACK #-} !Int
 
-{-instance Show ATermTable where
-    showsPrec _ (ATT fm1 fm2 i) = 
-	showString "ATT " . shows (fmToList fm1) . showChar ' ' . shows (fmToList fm2) . showChar ' ' . shows i
+data ShChoice = Full | NoFull 
 
-instance Read ATermTable where
-    readPrec =
-      parens (prec appPrec (
-        do L.Ident "ATT" <- lexP
-           x              <- step readPrec
-           y              <- step readPrec
-           z              <- step readPrec
-           return (ATT (listToFM x) (listToFM y) z)))
--}
 emptyATermTable :: ATermTable
-emptyATermTable =  ATT emptyFM emptyFM 0
+emptyATermTable =  ATT Map.empty Map.empty 0
+
+addATermNoFullSharing :: ShATerm -> ATermTable -> (ATermTable,Int)
+addATermNoFullSharing = addATerm' NoFull
 
 addATerm :: ShATerm -> ATermTable -> (ATermTable,Int)
-addATerm t tbl = 
-  if ind == -1 then addATerm' tbl else (tbl,ind)
-    where
-    ind = getATermIndex t tbl 
-    addATerm' (ATT a_iFM i_aFM i1) = 
-	      if elemFM i1 i_aFM then
-		 error err_destruct_up 
-	      else
-	      case t of 
-	      ShAAppl _ inds anns -> check inds anns
-	      ShAList   inds anns -> check inds anns
-	      ShAInt  _      anns -> check anns []
-	where shorter = all (<i1)
-	      check is as = 
-		  if shorter is && shorter as
-		  then (ATT (addToFM a_iFM t i1) 
-			    (addToFM i_aFM i1 t) (i1+1),i1)
-		  else error ("inconsistent addATerm call: " ++ show t)
+addATerm = addATerm' Full
+
+addATerm' :: ShChoice -> ShATerm -> ATermTable -> (ATermTable,Int)
+addATerm' cho t (ATT a_iDFM i_aDFM i1) = 
+        -- asserts are only checked without optimization
+        assert (not (Map.member i1 i_aDFM)) (
+           assert (consistent)
+	     (case cho of
+	      Full -> insertFull
+	      NoFull -> insertNoFull))
+    where insertFull =
+             (let (mayInd,dfm1) = {-# SCC "fm1_f" #-} 
+                         Map.insertLookupWithKey (\_ _ y -> y)  
+                             t i1 a_iDFM
+	          -- here we get Just index, if there is already a
+	          -- mapping of t to i1 otherwise we get Nothing and
+	          -- the new relation is defined.
+                  dfm2 = {-# SCC "fm2_f" #-} 
+	                 maybe (Map.insert i1 t i_aDFM) 
+	                       -- mapping not defined => set it
+	                       (\_->i_aDFM) 
+	                       -- otherwise return unchanged map
+                               mayInd
+	          (newATT_ind,return_ind) = 
+	             -- calculate new indices for ATT and the Term as well
+	             -- Nothing means old ATT index i1 is now mapped to t
+                     --   and new ATT index is (i1+1)
+                     -- Just means leave ATT index i1 unchanged 
+                     --   and t has already index old index
+                     maybe (i1+1,i1) (\old_ind->(i1,old_ind)) mayInd
+              in (ATT dfm1 dfm2 newATT_ind,return_ind))
+          insertNoFull = 
+             (let dfm1 = {-# SCC "fm1_nf" #-} 
+                         Map.insertWithKey 
+                             (\_ _ _ -> error ("destructive update with: "
+                                                ++ show t))  
+                             t i1 a_iDFM
+                  dfm2 = {-# SCC "fm2_nf" #-} Map.insert i1 t i_aDFM
+              in (ATT dfm1 dfm2 (i1+1),i1))
+
+          shorter = all (<i1)
+	  check is as = (shorter is && shorter as)
+	  consistent = case t of 
+                       ShAAppl  _ inds anns -> check inds anns
+		       ShAList    inds anns -> check inds anns
+		       ShAInt _        anns -> check anns []
 
 addATerm1 :: ShATerm -> ATermTable -> ATermTable
 addATerm1 t tbl = fst $ addATerm t tbl 
 
-
-{-
-hasATerm :: ShATerm -> ATermTable -> Bool
-hasATerm t (a_iFM,_,_) = elemFM t a_iFM 
--}
-
 getATerm :: ATermTable -> ShATerm
 getATerm (ATT _ i_aFM i) = 
-    lookupWithDefaultFM i_aFM (ShAInt (-1) []) (i-1)
+    Map.findWithDefault (ShAInt (-1) []) (i-1) i_aFM
 
 getTopIndex :: ATermTable -> Int
 getTopIndex (ATT _ _ i) = i-1
 
 getReferencingATerms :: ATermTable -> Int -> Int -> [[ShATerm]]
-getReferencingATerms att@(ATT fm _ _) depth i 
+getReferencingATerms att@(ATT dfm _ _) depth i 
     | depth <= 0 = []
     | otherwise = 
-	let ats = nub $ keysFM $ filterFM (\at _ -> case at of
-	                          ShAAppl _ inds _ -> i `elem` inds
-	                          _  -> False) fm
-	    get (ShAAppl _ inds _) = 
-		concatMap (getReferencingATerms att (depth-1)) inds
-	    get _ = 
-		error ("something in getReferencingATerms went realy wrong")
-	in [ats] ++ if depth - 1  > 1 then concatMap get ats else [[]]
+	let ats = nub $ Map.keys $ Map.filterWithKey (\at _ -> case at of
+                                  ShAAppl _ inds _ -> i `elem` inds
+                                  _  -> False) dfm
+            get (ShAAppl _ inds _) = 
+                concatMap (getReferencingATerms att (depth-1)) inds
+            get _ = 
+                error ("something in getReferencingATerms went realy wrong")
+        in [ats] ++ if depth - 1  > 1 then concatMap get ats else [[]]
 
 getATermFull :: ATermTable -> ATerm
 getATermFull at = 
@@ -144,13 +154,14 @@ toATermTable at = fst $ addToTable at emptyATermTable
         in (att2,i:is)
 
 getATermIndex :: ShATerm -> ATermTable -> Int
-getATermIndex t (ATT a_iFM _ _) = lookupWithDefaultFM a_iFM (-1) t
+getATermIndex t (ATT a_iDFM _ _) = Map.findWithDefault (-1) t a_iDFM
 
 getATermByIndex :: Int -> ATermTable -> (ATermTable,ShATerm)
-getATermByIndex i (ATT a_iFM i_aFM _) = 
-    (ATT a_iFM i_aFM (i+1),
-     lookupWithDefaultFM i_aFM
-         (error "getATermByIndex: No entry for ATerm in ATermTable") i) 
+getATermByIndex i (ATT a_iDFM i_aDFM _) = 
+    (ATT a_iDFM i_aDFM (i+1),
+     Map.findWithDefault
+         (error "getATermByIndex: No entry for ATerm in ATermTable") i
+         i_aDFM) 
 
 getATermByIndex1 :: Int -> ATermTable -> ATermTable
 getATermByIndex1 i at = fst $ getATermByIndex i at
