@@ -46,7 +46,7 @@ INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs Common/ListUtils.hs \
     Common/GlobalAnnotations.hs Common/PrettyPrint.hs \
     Common/Print_AS_Annotation.hs Common/PPUtils.hs CASL/LiteralFuns.hs \
     CASL/Print_AS_Basic.hs Common/AnnoState.hs CASL/Formula.hs \
-    CASL/OpItem.hs CASL/SortItem.hs Common/Result.hs \
+    CASL/OpItem.hs CASL/SortItem.hs CASL/Inject.hs Common/Result.hs \
     Common/ConvertLiteral.hs Common/Earley.hs CASL/MixfixParser.hs \
     CASL/Parse_AS_Basic.hs CASL/Sign.hs CASL/Overload.hs \
     CASL/StaticAna.hs Modal/AS_Modal.hs Modal/Parse_AS.hs \
