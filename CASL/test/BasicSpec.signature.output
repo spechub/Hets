@@ -1215,6 +1215,8 @@ pred q : s
 *** Error 342.39, No correct typing for  (1 @@ 2) ::: (3 @@ 4)
 *** Error 342.26, No correct typing for  (1 @@ 2) E -(3 @@ 4)
 *** Error 342.14, No correct typing for  (1 @@ 2) E (3 @@ 4)
+*** Error , No correct typing for 
+*** Error , No correct typing for 
 *** Error 261.9, ambiguous mixfix term
 	__*__(i,__-__(q,__*__(j,p)))
 	__-__(__*__(i,q),__*__(j,p))
@@ -1261,5 +1263,3 @@ pred q : s
 *** Error 304.6, unknown sort 'b'
 *** Error 305.6, unknown sort 'd'
 *** Error 351.11, wrong number of places '__and'__'
-*** Error 426.26, not a predicate: e
-*** Error 427.12, not a predicate: e

@@ -49,7 +49,7 @@ multiArgsId = mkId (getPlainTokenList exprId ++
 				 getPlainTokenList tupleId)
 
 initRules ::  GlobalAnnos -> IdSet -> [Rule]
-initRules ga (opS, predS, _) = 
+initRules ga (opS, predS) = 
     let ops = Set.toList opS
 	preds = Set.toList predS
     in concat [ mkRule typeId :
@@ -113,7 +113,7 @@ toAppl ide ar qs =
 		 _ -> error "stateToAppl"
 	    else asAppl ide ar qs
 
-type IdSet = (Set.Set Id, Set.Set Id, Set.Set Id)
+type IdSet = (Set.Set Id, Set.Set Id)
 
 addType :: TERM f -> TERM f -> TERM f
 addType tt t = 
@@ -187,7 +187,7 @@ iterateCharts g ids terms c =
 mkIdSet :: Set.Set Id -> Set.Set Id -> IdSet
 mkIdSet ops preds = 
     let both = Set.intersection ops preds in
-	(ops, Set.difference preds both, preds)
+	(ops, Set.difference preds both)
 
 resolveMixfix :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> TERM f 
 	      -> Result (TERM f)
@@ -208,7 +208,7 @@ resolveFormula g ops preds f =
 	in if null ds then r else Result ds Nothing
 
 resolveMixFrm :: GlobalAnnos -> IdSet-> FORMULA f -> Result (FORMULA f)
-resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
+resolveMixFrm g ids@(ops, onlyPreds) frm =
     let self = resolveMixFrm g ids 
 	resolveTerm = resolveMixTrm g ids in
     case frm of 
@@ -216,7 +216,7 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
 	   let varIds = Set.fromList $ concatMap (\ (Var_decl va _ _) -> 
 			       map simpleIdToId va) vs
 	       newIds = (Set.union ops varIds,
-			 (Set.\\) onlyPreds varIds, preds)
+			 (Set.\\) onlyPreds varIds)
            in   
 	   do fNew <- resolveMixFrm g newIds fOld 
 	      return $ Quantification q vs fNew ps
@@ -260,12 +260,7 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
          where mkPredication t = 
 	         case t of 
 		 Application (Op_name ide) as ps -> 
-		     let p = Predication (Pred_name ide) as ps in
-		     if ide `Set.member` preds 
-		     then return p else 
-			  plain_error p 
-		          ("not a predicate: " ++ showId ide "")
-			  (posOfId ide)
+		     return $ Predication (Pred_name ide) as ps
 		 Mixfix_qual_pred qide ->
 		  return $ Predication qide [] []
 		 Mixfix_term [Mixfix_qual_pred qide, 

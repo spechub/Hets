@@ -2866,7 +2866,7 @@
                           op True : Boolean} %(ga_generated_Boolean)%,
   not (op True : Boolean) : Boolean =
           (op False : Boolean) : Boolean %(ga_disjoint_True_False)%,
-  true,
+  forall x:s . (pred e : ()), true, exists! x:s . (pred e : ()),
   forall x:s
       . not (pred p : ())
         /\ not (pred q : s)((var x : s) : s)
@@ -3840,6 +3840,8 @@
 *** Error 342.39, No correct typing for  (1 @@ 2) ::: (3 @@ 4)
 *** Error 342.26, No correct typing for  (1 @@ 2) E -(3 @@ 4)
 *** Error 342.14, No correct typing for  (1 @@ 2) E (3 @@ 4)
+*** Error , No correct typing for 
+*** Error , No correct typing for 
 *** Error 261.9, ambiguous mixfix term
 	__*__(i,__-__(q,__*__(j,p)))
 	__-__(__*__(i,q),__*__(j,p))
@@ -3886,5 +3888,3 @@
 *** Error 304.6, unknown sort 'b'
 *** Error 305.6, unknown sort 'd'
 *** Error 351.11, wrong number of places '__and'__'
-*** Error 426.26, not a predicate: e
-*** Error 427.12, not a predicate: e

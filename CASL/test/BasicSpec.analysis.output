@@ -329,7 +329,9 @@ forall x:s
 . def {}
 . def { x }
 . true
+. exists! x:s . e
 forall x:s
+. e
 free type Boolean ::= True | False
 ops Not__ : Boolean -> Boolean;
     __And__, __Or__ : Boolean * Boolean -> Boolean
@@ -1375,8 +1377,6 @@ op b : a
 . (b || b) || b = b
 *** Hint 1486.6, redeclared sort 'a'
 *** Hint 811.11, redeclared op '' ''
-*** Error 427.12, not a predicate: e
-*** Error 426.26, not a predicate: e
 *** Hint 404.7, redeclared var 'x'
 *** Hint 395.9, redeclared sort 's'
 *** Hint 395.11, redeclared sort 't'
