@@ -33,6 +33,7 @@ import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.CCC.FreeTypes
 import Data.Dynamic
+import Common.DynamicUtils 
 
 import CASL.CCC.OnePoint
 

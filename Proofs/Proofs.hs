@@ -103,6 +103,7 @@ data DGRule =
  | LocalInference
  | BasicInference Edge BasicProof
  | BasicConsInference Edge BasicConsProof
+   deriving (Eq, Show)
 
 data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode Node 
@@ -121,7 +122,21 @@ data BasicProof =
      |  Conjectured
      |  Handwritten
 
+instance Eq BasicProof where
+  Guessed == Guessed = True
+  Conjectured == Conjectured = True
+  Handwritten == Handwritten = True
+  BasicProof lid1 p1 == BasicProof lid2 p2 =
+    coerce lid1 lid2 p1 == Just p2
+
+instance Show BasicProof where
+  show (BasicProof lid1 p1) = show p1
+  show Guessed = "Guessed"
+  show Conjectured = "Conjectured"
+  show Handwritten = "Handwritten"
+
 data BasicConsProof = BasicConsProof -- more detail to be added ...
+     deriving (Eq, Show)
 
 {- todo: implement apply for GlobDecomp and Subsumption 
    the list of DGChage must be constructed in parallel to the

@@ -13,7 +13,9 @@ Portability :  portable
 -}
 
 module Logic.Prover where
+import Common.DynamicUtils 
 import Common.AS_Annotation (Named)
+import Data.Dynamic
 
 -- theories and theory morphisms
 
@@ -40,6 +42,7 @@ data Proof_status sen proof_tree = Open sen
                                String, -- name of prover
                                proof_tree,
                                Tactic_script)
+     deriving (Eq, Show)
 
 data Prover sign sen proof_tree symbol = 
      Prover { prover_name :: String,
@@ -66,3 +69,14 @@ data Cons_checker morphism =
                    cons_checker_sublogic :: String,
                    cons_check :: morphism -> IO(Bool, Tactic_script)
                   }
+
+
+tcProof_status :: TyCon
+tcProof_status      = mkTyCon "Logic.Prover.Proof_status"
+
+instance (Typeable sen, Typeable proof_tree) 
+    => Typeable (Proof_status sen proof_tree) where
+  typeOf b = mkTyConApp tcProof_status
+             [typeOf $ (undefined :: Proof_status sen proof_tree -> sen) b,
+              typeOf $ (undefined :: Proof_status sen proof_tree -> proof_tree) b]
+

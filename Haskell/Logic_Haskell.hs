@@ -18,6 +18,7 @@ Portability :  non-portable(Logic)
 module Haskell.Logic_Haskell (Haskell(..)) where
 
 import Data.Dynamic            
+import Common.DynamicUtils 
 
 import Common.Result                     (Result (..))
 import Common.PrettyPrint

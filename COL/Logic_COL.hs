@@ -33,6 +33,7 @@ import CASL.MapSentence
 import CASL.SymbolParser
 import Logic.Logic
 import Data.Dynamic
+import Common.DynamicUtils 
 
 data Modal = Modal deriving Show
 

@@ -32,6 +32,7 @@ import HasCASL.MapTerm
 import HasCASL.Sublogic
 import Logic.Logic
 import Data.Dynamic
+import Common.DynamicUtils 
 import Common.Result
 
 -- type HasCASL_Sublogics = ()

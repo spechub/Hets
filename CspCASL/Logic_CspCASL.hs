@@ -45,6 +45,7 @@ import CASL.Logic_CASL(CASL(CASL))
 
 import Logic.Logic
 import Data.Dynamic
+import Common.DynamicUtils 
 
 
 

@@ -16,6 +16,7 @@ Portability :  portable
 module Isabelle.Logic_Isabelle where
 
 import Data.Dynamic
+import Common.DynamicUtils 
 
 import Isabelle.IsaSign
 import Isabelle.IsaPrint

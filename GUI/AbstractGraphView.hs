@@ -33,6 +33,7 @@ import Data.List(nub)
 
 import Data.IORef
 import Data.Dynamic
+import Common.DynamicUtils 
 
 tyconDGLinkLab :: TyCon
 tyconDGLinkLab = mkTyCon "Static.DevGraph.DGLinkLab"

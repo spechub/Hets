@@ -71,6 +71,7 @@ import Logic.Prover -- for one half of class Sentences
 
 import Common.PrettyPrint
 import Data.Dynamic
+import Common.DynamicUtils 
 
 -- for coercion used in Grothendieck.hs and Analysis modules
 
@@ -159,7 +160,7 @@ class (Category lid sign morphism, Ord sentence,
        Ord symbol, 
        PrintTypeConv sign, PrintTypeConv morphism,
        PrintTypeConv sentence, PrintTypeConv symbol,
-       ATermConvertible proof_tree, Typeable proof_tree)
+       Eq proof_tree, Show proof_tree, ATermConvertible proof_tree, Typeable proof_tree)
     => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence, lid -> sign, lid -> morphism,
           lid -> symbol, lid -> proof_tree
@@ -350,8 +351,6 @@ instance Typeable AnyLogic where
 ----------------------------------------------------------------
 -- Typeable instances
 ----------------------------------------------------------------
-mkTyConApp :: TyCon -> [TypeRep] -> TypeRep
-mkTyConApp = mkAppTy
 
 proverTc :: TyCon
 proverTc      = mkTyCon "Logic.Prover.Prover"
