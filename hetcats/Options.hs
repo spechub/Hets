@@ -86,6 +86,7 @@ data HetcatsOpts =
           , rawopts  :: [RawOpt]   -- raw options for the pretty printer
           , verbose  :: Int        -- greater than null to turn verbosity on
 	  , defLogic :: String     -- initial logic 
+	  , web      :: WebType    -- Web Interface
           }
     deriving (Eq)
 
@@ -122,6 +123,7 @@ makeOpts opts (LibDir x)   = opts { libdir = x }
 makeOpts opts (OutDir x)   = opts { outdir = x }
 makeOpts opts (OutTypes x) = opts { outtypes = x }
 makeOpts opts (Raw x)      = opts { rawopts = x }
+makeOpts opts (Web x)      = opts { web = x }
 makeOpts opts (Verbose x)  = opts { verbose = x }
 makeOpts opts (DefaultLogic x) = opts { defLogic = x }
 makeOpts opts _    = opts -- skipped
@@ -132,6 +134,7 @@ defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
     HcOpt { analysis = Basic
           , gui      = Not
+	  , web      = No
           , infiles  = []
           , intype   = GuessIn
           , libdir   = ""
@@ -156,6 +159,7 @@ data Flag = Analysis AnaType     -- to analyse or not to analyse
           | Raw      [RawOpt]    -- raw options passed on to the pretty-printer
           | Verbose  Int         -- how verbose shall we be?
           | Version              -- print version number
+	  | Web      WebType     -- show output in web
 	  | DefaultLogic String  -- default logic to start with
             deriving (Show,Eq)
 
@@ -168,7 +172,7 @@ data GuiType = Only | Also | Not
                deriving (Show, Eq)
 
 -- | 'InType' describes the type of input the infile contains
-data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | HaskellIn | GuessIn
+data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | WebIn | HetCASLIn | HaskellIn | GuessIn
               deriving (Show, Eq)
 
 -- | 'ATType' describes distinct types of ATerms
@@ -203,6 +207,10 @@ data HetOutFormat = OutAscii | OutTerm | OutTaf | OutHtml | OutXml
 data GraphType = Dot | PostScript | Davinci
                  deriving (Show, Eq)
 
+-- | 'WebType'
+data WebType = Yes | No
+	       deriving (Show, Eq)
+
 -- | 'RawOpt' describes the options we want to be passed to the Pretty-Printer
 data RawOpt = RawAscii String | RawLatex String
               deriving (Show, Eq)
@@ -224,6 +232,8 @@ options =
       "no output at all to stderr. overrides --verbose!"
     , Option ['g'] ["gui"] (NoArg (Gui Also))
       "show graphical output in a GUI window"
+    , Option ['w'] ["web"] (NoArg (Web Yes))
+      "show Web Interface"
     , Option ['G'] ["only-gui"] (NoArg $ Gui Only)
       "show graphical output in a GUI window - don't write Output to file"
     , Option ['V'] ["version"] (NoArg Version)
@@ -263,6 +273,7 @@ inTypes :: [(String,(InType,Bool))]
 inTypes = [("casl",(CASLIn,True)),
            ("het",(HetCASLIn,True)),
            ("hs",(HaskellIn,True)),
+	   ("web",(WebIn,True)),
            ("gen_trm",(ATermIn NonBAF,False)),
            ("tree.gen_trm",(ATermIn NonBAF,False)),
            ("gen_trm.baf",(ATermIn BAF,False)),
