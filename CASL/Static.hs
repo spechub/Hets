@@ -104,6 +104,10 @@ hasSigSortItem :: Id -> SigItem -> Bool
 hasSigSortItem id (ASortItem s) = (sortId $ item s)==id
 hasSigSortItem _ _ = False
 
+fromSigSortItem :: Maybe SigItem -> Maybe (Annoted SortItem)
+fromSigSortItem (Just (ASortItem s)) = Just s
+fromSigSortItem _ = Nothing
+
 hasSort :: Sign -> SortId -> Bool
 hasSort sigma id = hasElem sigma hasSigSortItem id
 
@@ -111,7 +115,7 @@ getSort :: Sign -> SortId -> Maybe SigItem
 getSort sigma id = getElem sigma hasSigSortItem id
 
 hasSigOpItem :: Id -> SigItem -> Bool
-hasSigOpItem id (AnOpItem o) = (sortId $ item o)==id
+hasSigOpItem id (AnOpItem o) = (opId $ item o)==id
 hasSigOpItem _ _ = False
 
 hasOp :: Sign -> Id -> Bool
@@ -121,7 +125,7 @@ getOp :: Sign -> Id -> Maybe SigItem
 getOp sigma id = getElem sigma hasSigOpItem id
 
 hasSigPredItem :: Id -> SigItem -> Bool
-hasSigPredItem id (APredItem p) = (sortId $ item p)==id
+hasSigPredItem id (APredItem p) = (predId $ item p)==id
 hasSigPredItem _ _ = False
 
 hasPred :: Sign -> Id -> Bool
@@ -140,14 +144,14 @@ mergeAnnoted a b = b { opt_pos = (opt_pos a) ++ (opt_pos b),
 
 addSuper :: SortRels -> Maybe SortId -> SortRels
 addSuper x Nothing = x
-addSuper x (Just id) = x { supersorts = id:(supersorts x),
-                           allsupersrts = id:(allsupersrts x) }
+addSuper x (Just id) = x { supersorts = relAdd (supersorts x) [id],
+                           allsupersrts = relAdd (allsupersrts x) [id] }
 
 addSortItem :: Annoted a -> Sign -> SortId -> Maybe SortId -> Maybe SortDefn
                -> Pos -> String -> Sign
 addSortItem ann sigma id super defn kwpos kw =
   let
-    res = getSort (getMap sigma) id
+    res = fromSigSortItem $ getSort sigma id
     pos = ItemPos kw (getTokenKind kw) [kwpos]
   in
     if (isJust res) then
@@ -159,12 +163,12 @@ addSortItem ann sigma id super defn kwpos kw =
                     sortRels = addSuper (sortRels old) super,
                     altSorts = (altSorts old) ++ [sortPos old] }
       in
-        updateSigItem sigma id $ mergeAnnoted itm $ copyAnnoted ann new
+        updateSigItem sigma id (ASortItem (copyAnnoted ann new))
     else
       let
         new = SortItem id (addSuper newRels super) defn pos []
       in
-        updateSigItem sigma id $ copyAnnoted ann new
+        updateSigItem sigma id (ASortItem (copyAnnoted ann new))
 
 updateSigItem :: Sign -> Id -> SigItem -> Sign
 updateSigItem (SignAsMap m g) id itm =
@@ -172,25 +176,27 @@ updateSigItem (SignAsMap m g) id itm =
     res = lookupFM m id
   in
     if (isNothing res) then
-      addToFM m id [itm]
+      SignAsMap (addToFM m id [itm]) g
     else
       let
         lst = fromJust res
         new = [ x | x<-lst, x /= itm ] ++ [itm]
       in
-        addToFM m id new
+        SignAsMap (addToFM m id new) g
 
 addSubSort :: Bool -> SortId -> Sign -> SortId -> Sign
 addSubSort direct sub sigma super =
   let
-    res = fromJust $ getSort (getMap sigma) super
-    old = item res
+    res = fromJust $ fromSigSortItem $ getSort sigma super
+    ol  = item res
+    old = sortRels ol
     new = if (direct) then
-            old { subsorts = relAdd (subsorts old) sub,
-                  allsubsrts = relAdd (allsubsrts old) sub }
+            old { subsorts = relAdd (subsorts old) [sub],
+                  allsubsrts = relAdd (allsubsrts old) [sub] }
           else
-            old { allsubsrts = relAdd (allsubsrts old) sub }
-    s'  = updateSigItem super (res { item = new })
+            old { allsubsrts = relAdd (allsubsrts old) [sub] }
+    ne  = ol { sortRels = new }
+    s'  = updateSigItem sigma super (ASortItem (res { item = ne }))
     s'' = chain s' (addSubSort False sub) (allsupersrts old)
   in
     chain s'' (addSuperSorts (allsupersrts old)) (allsubsrts old)
@@ -198,23 +204,25 @@ addSubSort direct sub sigma super =
 addSuperSorts :: [SortId] -> Sign -> SortId -> Sign
 addSuperSorts supers sigma sub =
   let
-    res = fromJust $ getSort (getMap sigma) sub
-    old = item res
+    res = fromJust $ fromSigSortItem $ getSort sigma sub
+    ol  = item res
+    old = sortRels ol
     new = old { allsupersrts = relAdd (allsupersrts old) supers }
+    ne  = ol { sortRels = new }
   in
-    updateSigItem sub (res { item = new })
+    updateSigItem sigma sub (ASortItem (res { item = ne }))
 
-chainPos' :: Sign -> (Sign -> a -> Pos -> String -> (Maybe Sign, Maybe Err))
+chainPos' :: Sign -> (Sign -> a -> (Pos, String) -> (Maybe Sign, Maybe Err))
             -> [a] -> [(Pos,String)] -> Maybe Err -> (Maybe Sign, Maybe Err)
 chainPos' sigma f [] [] e = (Just sigma, e)
 chainPos' sigma f [] (h::t) e = (Just sigma, e) 
 chainPos' sigma f (a:as) ((p,tok):ps) e =
   let
-    (res,err) = f a p
+    (res,err) = f sigma a (p,tok)
     err_sum   = addFromMaybe err e
   in
     if (isJust res) then
-      chainPos' (fromJust res) f as ps tok err_sum
+      chainPos' (fromJust res) f as ps err_sum
     else
       (Nothing, err_sum)
 
@@ -228,11 +236,11 @@ chainPos' sigma f (a:as) ((p,tok):ps) e =
 --    pos: position list that comes with itm
 --     pf: function that can turn the position into tokens
 --
-chainPos :: Sign -> (Sign -> a -> Pos -> String -> (Maybe Sign, Maybe Err))
+chainPos :: Sign -> (Sign -> a -> (Pos, String) -> (Maybe Sign, Maybe Err))
             -> [a] -> [(Pos, String)] -> [Pos] -> ([Pos] -> [String])
             -> (Maybe Sign, Maybe Err)
 chainPos sigma f itm ps pos pf =
-  chainPos' f itm (ps ++ (zip pos (pf pos))) Nothing
+  chainPos' sigma f itm (ps ++ (zip pos (pf pos))) Nothing
 
 chain :: Sign -> (Sign -> a -> Sign) -> [a] -> Sign
 chain sigma f l = foldl f sigma l
@@ -257,7 +265,7 @@ str_pos_Sort_decl :: [Pos] -> [String]
 str_pos_Sort_decl = genComma
 
 str_pos_Subsort_decl :: [Pos] -> [String]
-str_pos_Subsort_decl l = (genComma $ init l) : ["<"]
+str_pos_Subsort_decl l = (genComma $ init l) ++ ["<"]
 
 str_pos_Subsort_defn :: [Pos] -> [String]
 str_pos_Subsort_defn _ = ["=","{",":",".","}"]
@@ -265,22 +273,22 @@ str_pos_Subsort_defn _ = ["=","{",":",".","}"]
 add_Sort_items :: Sign -> SIG_ITEMS -> (Maybe Sign, Maybe Err)
 add_Sort_items sigma (Sort_items l p) = chainPos sigma add_SORT_ITEM l 
                                               [] p str_pos_SORT_ITEM
-add_Sort_items _ (Op_items _ _) = (Nothing, illArg add_Sort_items "Op_items")
-add_Sort_items _ (Pred_items _ _) = (Nothing, illArg add_Sort_items "Pred_items")
-add_Sort_items _ (Datatype_items _ _) = (Nothing, illArg add_Sort_items "Datatype_items")
+add_Sort_items _ (Op_items _ p) = (Nothing, illArg (head p) "add_Sort_items" "Op_items")
+add_Sort_items _ (Pred_items _ p) = (Nothing, illArg (head p) "add_Sort_items" "Pred_items")
+add_Sort_items _ (Datatype_items _ p) = (Nothing, illArg (head p) "add_Sort_items" "Datatype_items")
 
 val_Sort_decl :: Sign -> SORT -> (Pos, String) -> Maybe Err
 val_Sort_decl sigma s _ = Nothing
 
 addf_Sort_decl :: Annoted SORT_ITEM -> Sign -> SORT -> (Pos, String) -> (Maybe Sign, Maybe Err)
 addf_Sort_decl ann sigma id (pos,tok) =
-    addSortItem ann sigma id Nothing pos tok
+    (Just (addSortItem ann sigma id Nothing Nothing pos tok), Nothing)
 
 add_decl :: Sign -> a -> (Pos, String)
             -> (Sign -> a -> (Pos, String) -> (Maybe Sign, Maybe Err))
             -> (Sign -> a -> (Pos, String) -> Maybe Err)
             -> (Maybe Sign, Maybe Err)
-add_decl sigma itm addf valf startpos =
+add_decl sigma itm startpos addf valf =
   let
     val   = valf sigma itm startpos
     fatal = if (isJust val) then
@@ -288,29 +296,29 @@ add_decl sigma itm addf valf startpos =
                 else
               False
     (res,err2) = if fatal then (Nothing, Nothing) else
-                               Just (addf sigma itm startpos)
+                               addf sigma itm startpos
   in
     if fatal then
       (Nothing, val)
     else
       (res,addFromMaybe val err2)
 
-add_Sort_decl :: Sign -> SORT -> (Pos, String) -> (Maybe Sign, Maybe Err)
-add_Sort_decl sigma itm pos = add_decl sigma itm pos addf_Sort_decl
-                                                      val_Sort_decl
+add_Sort_decl :: Annoted SORT_ITEM -> Sign -> SORT -> (Pos, String) -> (Maybe Sign, Maybe Err)
+add_Sort_decl ann sigma itm pos = add_decl sigma itm pos
+                                  (addf_Sort_decl ann) val_Sort_decl
 
 addf_Subsort_decl :: Annoted SORT_ITEM -> SORT -> Sign -> SORT -> (Pos, String)
                      -> (Maybe Sign, Maybe Err)
 addf_Subsort_decl ann super sigma sub (pos,tok) =
   let
-    (res,err) = addSortItem ann sigma sub Nothing (pos,tok)
+    res = addSortItem ann sigma sub (Just super) Nothing pos tok
   in
-    addSubSort True sub (fromJust res) super
+    (Just (addSubSort True sub res super), Nothing)
 
-val_Subsort_decl :: SORT -> Pos -> Sign -> SORT -> (Pos, String) -> Maybe Err
-val_Subsort_decl super _ sub pos =
+val_Subsort_decl :: SORT -> Sign -> SORT -> (Pos, String) -> Maybe Err
+val_Subsort_decl super _ sub (pos,tok) =
   if (super==sub) then
-    mkErr False pos ("subsort not distinct from supersort ("++(show sub)++")")
+    mkErr True pos ("subsort not distinct from supersort ("++(show sub)++")")
   else
     Nothing
 
@@ -320,17 +328,31 @@ add_Subsort_decl elem s sigma itm pos = add_decl sigma itm pos
                                          (addf_Subsort_decl elem s)
                                          (val_Subsort_decl s)
 
-addf_Subsort_defn :: Annoted SORT_ITEM -> SORT -> [Pos] -> Sign ->
-                     SORT -> [(Pos, String)] -> (Maybe Sign, Maybe Err)
-addf_Subsort_defn ann sub p sigma super pos =
-  addf_Subsort_decl ann super sigma sub []
+toVarDecl :: VAR -> SortId -> Pos -> VarDecl
+toVarDecl var id pos = VarDecl var id (ListPos Colon pos)
+
+-- FIXME
+--
+toFormula :: Annoted FORMULA -> Formula
+toFormula _ = TrueAtom []
+
+addf_Subsort_defn :: Annoted SORT_ITEM -> SORT -> VAR -> [Pos] ->
+                     Annoted FORMULA -> Sign -> SORT -> (Pos, String)
+                     -> (Maybe Sign, Maybe Err)
+addf_Subsort_defn ann sub var p f sigma super (pos,tok) =
+  let
+    colpos = head $ drop 2 p
+    defn   = SubsortDefn (toVarDecl var super colpos) (toFormula f) p
+    res    = addSortItem ann sigma sub (Just super) (Just defn) pos tok
+  in
+    (Just (addSubSort True sub res super), Nothing)
 
 varFreeInFormula :: Sign -> VAR -> FORMULA -> Bool
 varFreeInFormula sigma var f = True
 
 val_Subsort_defn :: SORT -> VAR -> Annoted FORMULA -> Sign ->
                     SORT -> (Pos, String) -> (Maybe Err)
-val_Subsort_defn sub var f sigma super (pos,tok) =
+val_Subsort_defn super var f sigma sub (pos,tok) =
   let 
     super_ex = hasSort sigma super
     distinct = sub/=super
@@ -345,59 +367,58 @@ val_Subsort_defn sub var f sigma super (pos,tok) =
     addFromMaybe err1 $ addFromMaybe err2 err3
 
 add_Subsort_defn :: Annoted SORT_ITEM -> Sign -> SORT -> VAR -> SORT ->
-                    (Annoted FORMULA) -> [(Pos, String)] -> [Pos] ->
-                    ([Pos] -> [String]) -> (Maybe Sign, Maybe Err)
-add_Subsort_defn itm sigma sub var super f pos p pf =
-  let
-    ps = pos ++ (zip p (pf p))
-  in
-    add_decl sigma sub (head ps) (addf_Subsort_defn super ps)
-                                 (val_Subsort_defn super var f)
+                    (Annoted FORMULA) -> (Pos, String) -> [Pos]
+                    -> (Maybe Sign, Maybe Err)
+add_Subsort_defn itm sigma sub var super f pos p =
+    add_decl sigma sub pos (addf_Subsort_defn itm super var p f)
+                            (val_Subsort_defn super var f)
 
 relAdd :: [SortId] -> [SortId] -> [SortId]
-relAdd x y = x ++ [ z | z<-y, not elem z x ]
+relAdd x y = x ++ [ z | z<-y, not $ elem z x ]
 
-addIsos :: Sign -> SORT -> [SORT] -> Sign
-addIsos sigma iso isos =
+addIsos :: [SORT] -> Sign -> SORT -> Sign
+addIsos isos sigma iso =
   let
     others = [ x | x<-isos, x/=iso ]
-    res    = fromJust $ getSort (getMap sigma) iso
-    old    = item res
+    res    = fromJust $ fromSigSortItem $ getSort sigma iso
+    ol     = item res
+    old    = sortRels ol
     new    = old { subsorts = relAdd (subsorts old) others,
                    supersorts = relAdd (supersorts old) others,
                    allsubsrts = relAdd (allsubsrts old) others,
                    allsupersrts = relAdd (allsupersrts old) others }
+    ne     = ol { sortRels = new }
   in
-    updateSigItem sigma (sortId old) (res { item = new })
+    updateSigItem sigma iso (ASortItem (res { item = ne }))
 
-add_Iso_decl :: Annoted SORT_ITEM -> [SORT] -> Sign -> SORT -> (Pos, String)
-                -> (Maybe Sign, Maybe Err)
+add_Iso_decl :: Annoted SORT_ITEM -> Sign -> [SORT] -> (Pos, String)
+                -> [Pos] -> (Maybe Sign, Maybe Err)
 add_Iso_decl ann sigma isos pos p =
   let
-    (res, err) = chainPos sigma (add_Sort_decl ann) isos pos p
+    (res, err) = chainPos sigma (add_Sort_decl ann) isos [pos] p
                           str_pos_Iso_decl
   in
     if (isJust res) then
       let
         all = foldl (addIsos isos) (fromJust res) isos
       in
-        (all, err)
+        (Just all, err)
     else
       (res, err)
 
 str_pos_Iso_decl :: [Pos] -> [String]
 str_pos_Iso_decl = genColon
 
-add_SORT_ITEM :: Sign -> Annoted SORT_ITEM -> [(Pos, String)]
+add_SORT_ITEM :: Sign -> Annoted SORT_ITEM -> (Pos, String)
                  -> (Maybe Sign, Maybe Err)
 add_SORT_ITEM sigma itm pos =
     case (item itm) of
-             (Sort_decl l p) -> chainPos sigma (add_Sort_decl itm) l pos p
+             (Sort_decl l p) -> chainPos sigma (add_Sort_decl itm) l [pos] p
                                            str_pos_Sort_decl;
              (Subsort_decl l s p) -> chainPos sigma (add_Subsort_decl itm s) l
-                                              pos p str_pos_Subsort_decl;
+                                              [pos] p str_pos_Subsort_decl;
              (Subsort_defn s v t f p) -> add_Subsort_defn itm sigma s v t f
-                                 pos p str_pos_Subsort_defn;
+                                 pos p;
              (Iso_decl l p) -> add_Iso_decl itm sigma l pos p
 
 ------------------------------------------------------------------------------
