@@ -90,7 +90,8 @@ addVar s v =
 
 addOp :: OpType -> Id -> State Env ()
 addOp ty i = 
-    do e <- get
+    do mapM_ checkSort (opRes ty : opArgs ty)
+       e <- get
        let m = opMap e
            l = Map.findWithDefault Set.empty i m
        addDiags $ if ty `Set.member` l then 
@@ -99,7 +100,8 @@ addOp ty i =
 
 addPred :: PredType -> Id -> State Env ()
 addPred ty i = 
-    do e <- get
+    do mapM_ checkSort $ predArgs ty
+       e <- get
        let m = predMap e
            l = Map.findWithDefault Set.empty i m
        addDiags $ if ty `Set.member` l then 

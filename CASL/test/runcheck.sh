@@ -23,3 +23,4 @@ do
     runwrongcheck $i casl
 done
 
+runchecker analysis BasicSpec.casl BasicSpec.analysis.output
