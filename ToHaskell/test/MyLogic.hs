@@ -1,7 +1,19 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  maeder@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
+   for the execution of translated HasCASL program equations
+-}
+
 module MyLogic (_2_S_B_2, _2_L_E_G_2, _2_E_2
 	       , _2_E_G_2, _2_Ee_E_2, _2_B_S_2
 	       , _2if_2, _2when_2else_2, if_2then_2else_2
-	       , not_2, true, false) where
+	       , not_2, true, false, def_2) where
 
 _2_S_B_2 :: (Bool, Bool) -> Bool
 _2_S_B_2 = uncurry (&&)
@@ -32,6 +44,9 @@ if_2then_2else_2 (a, b, c) = if a then b else c
  
 not_2 :: Bool -> Bool
 not_2 = not
+
+def_2 :: a -> Bool
+def_2 a = a `seq` True
  
 false :: Bool
 false = False
