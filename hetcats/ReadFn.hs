@@ -16,16 +16,30 @@ import Options
 import ATC.Sml_cats
 import Syntax.AS_Library
 
-read_LIB_DEFN :: HetcatsOpts -> IO LIB_DEFN
-read_LIB_DEFN opt = read_sml_ATerm (infile opt)
-{-
-  putStrLn ("Reading " ++ fname)
-  case intype opt of
-    ATermIn _ -> do read_sml_ATerm (infile opt)
-                              
-    HetCASLIn -> do
-     input <- readFile fname
-     let ast = case runParser (library logicGraph) defaultLogic fname input of
-                 Left err -> error (show err)
-                 Right ast -> ast
--}
+import Syntax.Parse_AS_Structured
+import Common.Lib.Parsec
+import Logic.LogicGraph
+
+read_LIB_DEFN :: HetcatsOpts -> FilePath -> IO LIB_DEFN
+read_LIB_DEFN opt file = 
+    do putStrLn ("Reading " ++ file)
+       ld <- case (guess (intype opt)) of
+         ATermIn _  -> read_sml_ATerm file
+         ASTreeIn _ -> error "Abstract Syntax Trees aren't implemented yet"
+	 CASLIn     -> 
+	     do
+	     input <- readFile file
+	     case runParser (library logicGraph) defaultLogic file input of
+	       Left err  -> error (show err)
+	       Right ast -> return ast
+	 HetCASLIn  -> 
+	     do
+	     input <- readFile file
+	     case runParser (library logicGraph) defaultLogic file input of
+	       Left err  -> error (show err)
+	       Right ast -> return ast
+	 _          -> error "Unknown InType wanted in read_LIB_DEFN"
+       return ld
+    where
+    guess GuessIn = guessInType file
+    guess itype   = itype
