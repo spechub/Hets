@@ -106,7 +106,7 @@ anaProdClass (ProdClass l p) =
 
 eqKindDiag :: Kind -> Kind -> [Diagnosis]
 eqKindDiag k1 k2 = 
-    if eqKind k1 k2 then []
+    if eqKind Compatible k1 k2 then []
        else [ Diag Error
 	      ("incompatible kinds\n" ++ 
 	       indent 2 (showPretty k1 . 
@@ -133,7 +133,7 @@ anaTypeId i =
        case lookupFM tk i of
            Nothing -> do
 		      appendDiags [Diag Error 
-				   ("unidentified type '" ++ showId i "'")
+				   ("undeclared type '" ++ showId i "'")
 				   (posOfId i)]
 		      return (TypeConstrAppl i 0 nullKind [] []) 
 	   Just ks -> return $ TypeConstrAppl i 0 (head ks) [] []
@@ -146,9 +146,9 @@ anaType (t@(TypeConstrAppl i v k ts _)) = do
 	      (posOfType t)] else []
 	e2 = if v > 0 then 
 	     [Diag Error 
-	      ("too many type arguments:\n" ++
-	       indent 2 (showPretty t) "")
-	      (posOfType t)] else []
+	      ("uninstantiated generic variable " ++
+	       showId i "")
+	      (posOfId i)] else []
     ds <- checkTypeKind i k
     appendDiags $ e1 ++ e2 ++ ds
     return t
@@ -210,7 +210,7 @@ anaType (FunType t1 a t2 ps) =
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 
-    if null ps then error "mkBracketToken"
+    if null ps then mkBracketToken k [nullPos]
        else zipWith Token (getBrackets k) [head ps, last ps] 
 
 getBrackets :: BracketKind -> [String]
@@ -218,8 +218,6 @@ getBrackets k =
     case k of Parens -> ["(", ")"]
 	      Squares -> ["[", "]"]
 	      Braces -> ["{", "}"]
-
-
 
 -- --------------------------------------------------------------------------
 showPretty :: PrettyPrint a => a -> ShowS
@@ -251,29 +249,32 @@ posOfClass (Intersection is ps) =
     if null ps then if null is then nullPos else posOfId $ head is
        else head ps
 
-eqKind :: Kind -> Kind -> Bool
-eqKind (Kind p1 c1 _) (Kind p2 c2 _) =
-    eqListBy eqProdClass p1 p2 && eqClass c1 c2
+data EqMode = Compatible | SameSyntax
+
+eqKind :: EqMode -> Kind -> Kind -> Bool
+eqKind emod (Kind p1 c1 _) (Kind p2 c2 _) =
+    eqListBy (eqProdClass emod) p1 p2 && 
+    case emod of Compatible -> True
+		 SameSyntax -> eqClass c1 c2
 
 eqListBy :: (a -> a -> Bool) -> [a] -> [a] -> Bool
 eqListBy _ [] [] = True
 eqListBy f (h1:t1) (h2:t2) = f h1 h2 && eqListBy f t1 t2
 eqListBy _ _ _ = False
 
-eqProdClass :: ProdClass -> ProdClass -> Bool
-eqProdClass (ProdClass s1 _) (ProdClass s2 _) =
-    eqListBy eqExtClass s1 s2
+eqProdClass :: EqMode -> ProdClass -> ProdClass -> Bool
+eqProdClass emod (ProdClass s1 _) (ProdClass s2 _) =
+    eqListBy (eqExtClass emod) s1 s2
 
-eqExtClass :: ExtClass -> ExtClass -> Bool
-eqExtClass (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
-    eqClass c1 c2 && v1 == v2
-eqExtClass (KindArg k1) (KindArg k2) = eqKind k1 k2
-eqExtClass _ _ = False
+eqExtClass :: EqMode -> ExtClass -> ExtClass -> Bool
+eqExtClass emod (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
+    case emod of Compatible -> True
+		 SameSyntax -> eqClass c1 c2 && v1 == v2
+eqExtClass emod (KindArg k1) (KindArg k2) = eqKind emod k1 k2
+eqExtClass _ _ _ = False
 
 eqClass :: Class -> Class -> Bool
 eqClass(Intersection i1 _) (Intersection i2 _) = i1 == i2
-eqClass (Downset t1) (Downset t2) = eqType t1 t2
+eqClass (Downset t1) (Downset t2) = t1 == t2
 eqClass _ _ = False
 
-eqType :: Type -> Type -> Bool
-eqType = error "eqType nyi"
