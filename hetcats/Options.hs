@@ -154,9 +154,11 @@ data OutType = PrettyPrint PrettyType
 data PrettyType = PrettyAscii | PrettyLatex | PrettyHtml
 		  deriving (Show, Eq)
 
-data HetOutType = OutASTree | OutGraph
+data HetOutType = OutASTree | OutDGraph Flattening Bool
 		  deriving (Show, Eq)
-		  -- f vs. h ? -- nax ?
+
+data Flattening = Flattened | HidingOutside | Full
+		  deriving (Show, Eq)
 
 data HetOutFormat = Ascii | Term | Taf | Html | Xml
 		    deriving (Show, Eq)
@@ -206,12 +208,12 @@ parseOutputTypes s = OutTypes []
     | "graph." `isPrefixOf` s = OutType Graph getGraphType (drop 6 s)
     | "ast."   `isPrefixOf` s = OutType HetCASLOut OutASTree getOutFormat
 				(drop 4 s)
-    | "fdg."   `isPrefixOf` s = OutType HetCASLOut $ OutGraph $ getOutFormat
-				(drop 4 s)
-    | "hdg."   `isPrefixOf` s = OutType HetCASLOut $ OutGraph $ getOutFormat
-				(drop 4 s)
-    | "dg."    `isPrefixOf` s = OutType HetCASLOut $ OutGraph $ getOutFormat
-				(drop 3 s)
+    | "fdg."   `isPrefixOf` s = OutType HetCASLOut $ OutGraph Flattened
+    $ getOutFormat (drop 4 s)
+    | "hdg."   `isPrefixOf` s = OutType HetCASLOut $ OutGraph HidingOutside
+    $ getOutFormat (drop 4 s)
+    | "dg."    `isPrefixOf` s = OutType HetCASLOut $ OutGraph Full
+    $ getOutFormat (drop 3 s)
     | otherwise               = error' s
     where
     getPrettyType "het"  = PrettyAscii
@@ -223,8 +225,8 @@ parseOutputTypes s = OutTypes []
     getGraphType "davinci" = Davinci
     getGraphType _         = error' s
     getOutFormat s
-	| "nax." `isPrefixOf` s = getOutFormat' (drop 4 s)
-	| otherwise = getOutFormat' s
+	| "nax." `isPrefixOf` s = True  $ getOutFormat' (drop 4 s)
+	| otherwise             = False $ getOutFormat' s
     getOutFormat' "het"  = Ascii
     getOutFormat' "taf"  = Term
     getOutFormat' "trm"  = Taf
