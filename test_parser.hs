@@ -1,5 +1,6 @@
 module Main where
 import Parsec
+import ParsecPerm
 import CaslLanguage
 import Anno_Parser
 
@@ -16,6 +17,19 @@ testPL par inp = testP (do { whiteSpace
 			   ; eof
 			   ; return res
 			   } ) inp
+
+parseFile par name = do { inp <- readFile name
+			;  case (parse (parL par) name inp) of
+			  Left err -> do{ putStr "parse error at "
+					; print err
+					}
+			  Right x  -> print x
+			}
+    where parL p = do { whiteSpace
+		      ; res <- p 
+		      ; eof
+		      ; return res
+		      }
 
 testFile par name = do { inp <- readFile name
 		       ; sequence (map (testLine par) (lines inp))
