@@ -13,10 +13,112 @@
 
 module CASL.Overload where
 
-{-
-todo:
+import CASL.StaticAnalysis -- Sign, Sentence = FORMULA
+import CASL.AS_Basic -- FORMULA
+import Common.Result -- Result
 
-overloadResolution :: Sign -> [Sentence] -> Result [Sentence]
+{-
+TODO: All das hier implementieren und testen :D
+-}
+
+-- overloadResolution :: Sign -> [Sentence] -> [Sentence] -- Result [Sentence]
+-- overloadResolution sign sents =
+--     [ minExpTerm sign atom | atom <- (concat $ map getAtoms sents) ]
+-- -- TODO: das hier in Result  verpacken und natuerlich vorher auf
+-- -- Fehler pruefen
+-- -- ... und natuerlich voerher sinnvollerweise implementieren :)
+
+-- -- Nimmt Formulae auseinander und gibt eine Liste der
+-- -- zugrundeliegenden atomaren Formulae zurueck.
+-- -- Idee: nimmt eine zusammengesetzte Formel auseinander und durchsucht
+-- -- die erhaltenen Formeln weiter nach Atomen.
+-- -- Nicht-zusammengesetzte Formeln sind atomar und werden (in eine
+-- -- Liste verpackt) zurueckgegeben.
+-- getAtoms :: Sentence -> [Sentence]
+-- getAtoms sentence =
+--     case sentence of
+--         Quantification _ _ sent' _ -> getAtoms sent'
+--         Conjunction sents _        -> concat $ map getAtoms sents
+--         Disjunction sents _        -> concat $ map getAtoms sents
+--         Implication s1 s2 _        -> concat [getAtoms s1, getAtoms s2]
+--         Equivalence s1 s2 _        -> concat [getAtoms s1, getAtoms s2]
+--         Negation sent' _           -> getAtoms sent'
+--         _                          -> [sentence]
+-- -- na, ob das wohl soweit stimmt... ?
+
+-- -- das hier ist die, die eine Formel erwartet - ich muss noch pruefen,
+-- -- ob sich das lohnt oder ob ich nicht die Terme selbst direkt
+-- -- weiterreichen sollte ... andererseite hab ich das Gefuehl, dass
+-- -- dann einige Sachen fehlen wuerden...
+-- minExpTerm :: Sign -> Sentence -> [[Sentence]]
+-- -- Ergebnistyp: Aequivalanzklassen von irgendwas...
+-- minExpTerm sign sentence =
+--     case sentence of
+-- 	True_atom [Pos] -> 
+-- 	False_atom [Pos] -> 
+-- 	Predication PRED_SYMB [TERM] [Pos] -> 
+-- 	Definedness TERM [Pos] -> 
+-- 	Existl_equation TERM TERM [Pos] -> 
+-- 	Strong_equation TERM TERM [Pos] -> 
+-- 	Membership TERM SORT [Pos] -> 
+-- 	Mixfix_formula TERM  -> 
+--         Unparsed_formula String [Pos] -> 
+--         _ -> 
+-- -- so ... und was fang ich jetzt damit an? -- Tja, das ist hier die Frage
+
+-- -- die hier, alternativ, nimmt einen Term und zerlegt/erweitert
+-- -- diesen. Das sollte bewirken, dass ich direkt ueber den fuer den
+-- -- algo relevanten Typen eine Fallunterscheidung machen kann und somit
+-- -- eine rekursionsebene spare, wenn ich terme direkt runterwerfe. In
+-- -- jedem fall brauche ich diese funktion, als haupt-finktion oder als
+-- -- helfer, damit ich die unterschiedlichen Terme einfach unterscheiden
+-- -- kann.
+-- -- wobei mir gerade auffaellt, dass ich die fallunterscheidung auch
+-- -- direkt als pattern-matching gemacht haben koennte, also:
+-- -- TODO: case .. of umschreiben als pattern-matching
+-- minExpTerm_ :: Sign -> TERM -> [[TERM]]
+-- minExpTerm_ sign term =
+--     case term of
+--               Simple_id var ->
+--                   let
+--                   consts = [ (var,sort) | 
+--                              (var',sort) <- (varMap sign), 
+--                              var' == var
+--                            ]
+--                   funcs = [ (var,sort) |
+--                             (var',sort) <- (opMap sign),
+--                             var' == var
+--                           ]
+--                   in equiv leqn_f $ minimize $ consts ++ funcs
+--               Qual_var var sort _ ->
+--                   let
+--                   met_t = minExpTerm_ sign var
+--                   met_ts c = [ (t,s) | (t,s') <- c, s' <= s ]
+--                   met_ts' = map met_ts met_t
+--                   in met_ts'
+--               Sorted_term term sort _ ->
+--                   let
+--                   met_t = minExpTerm_ sign var
+--                   met_ts c = [ (t,s) | (t,s') <- c, s' <= s ]
+--                   met_ts' = map met_ts met_t
+--                   in met_ts'
+--                   -- oder ist da ein Unterschied, den ich beachten muss?
+--               Application op terms _ -> [[]]
+--               -- das gilt, nehme ich an, auch als Fall fuer
+--               -- Praedikat-Applikation? dafuer sehe ich naemlich
+--               -- ansonsten keinen anderen...
+--               Cast term sort _ -> [[]]
+--               Conditional term formula term _ -> [[]]
+--               -- da muss ich dann wohl wieder die formel in atome zerlegen?
+--               Unparsed_term str _ -> [[]] 
+--               -- na was fuer den Fall wohl richtig sein soll...
+--               _ -> [[]]
+--               -- Das muss dann wohl ein Mixfix sein ...
+--               -- was auch immer zum Henker das sein mag.
+--               -- naja, find ich schon noch raus... ^^
+
+
+{-
 Idee: 
 - global Infos aus Sign berechnen + mit durchreichen
   (connected compenents, s.u.)
@@ -64,9 +166,38 @@ fun get_conn_components (env:local_env) : local_env1 =
 		      Symtab_id.map (compute_conn_components (leqP env)) preds) )
 	end
 
+---
+
+Sign == Env and looks like this:
+data Env = Env { sortSet :: Set.Set SORT
+	       , sortRel :: Rel.Rel SORT	 
+               , opMap :: Map.Map Id (Set.Set OpType)
+	       , predMap :: Map.Map Id (Set.Set PredType)
+               , varMap :: Map.Map SIMPLE_ID (Set.Set SORT)
+	       , sentences :: [Named FORMULA]	 
+	       , envDiags :: [Diagnosis]
+	       } deriving (Show, Eq)
+
+
+Sentence == FORMULA
+siehe AS_Basic fuer FORMULA, TERM und alle darin verwandten Typen
+
+Result is a Monad and looks like this:
+-- | The 'Result' monad.  
+-- A failing 'Result' should include a 'FatalError' message.
+-- Otherwise diagnostics should be non-fatal.
+data Result a = Result { diags :: [Diagnosis]
+	               , maybeResult :: (Maybe a)
+		       } deriving (Show)
+
+instance Functor Result where
+    fmap f (Result errs m) = Result errs $ fmap f m
+ 
+instance Monad Result where
+  return x = Result [] $ Just x
+  Result errs Nothing >>= _ = Result errs Nothing
+  Result errs1 (Just x) >>= f = Result (errs1++errs2) y
+     where Result errs2 y = f x
+  fail s = fatal_error s nullPos
+
 -}
-
-import CASL.StaticAnalysis -- Sign, Sentence = FORMULA
-import CASL.AS_Basic -- FORMULA
-import Common.Result
-
