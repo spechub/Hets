@@ -18,8 +18,9 @@ Portability :  non-portable (via Logic)
 
    Todo:
    Weak amalgamability, also for comorphisms
-   comorphism maps
+   comorphism modifications
    comorphisms out of sublogic relationships
+   restrictions of comorphisms to sublogics
 -}
 
 module Logic.Comorphism where
@@ -49,10 +50,17 @@ class (Language cid,
              | cid -> lid1, cid -> lid2
 
   where
+    -- source and target logic and sublogic
+    -- the source sublogic is the maximal one for which the comorphism works
+    -- the target sublogic is the resulting one
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
     targetLogic :: cid -> lid2
     targetSublogic :: cid -> sublogics2
+    -- finer information of target sublogics corresponding to source sublogics
+    mapSublogic :: cid -> sublogics1 -> sublogics2
+    -- default implementation
+    mapSublogic cid _ = targetSublogic cid
     -- the translation functions are partial 
     -- because the target may be a sublanguage
     -- map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
