@@ -34,7 +34,7 @@ module Common.ATerm.Conversion(
 
 import Common.ATerm.AbstractSyntax
 import Common.ATerm.ReadWrite
-import List (find,mapAccumL)
+import List (mapAccumL)
 import qualified Common.Lib.Map as Map hiding (map)
 import qualified Common.Lib.Set as Set 
 import qualified Common.Lib.Rel as Rel
@@ -69,10 +69,10 @@ class ATermConvertible t where
 	where (at',inds) = mapAccumL toShATerm at ts
     fromShATermList at = 
 	case aterm of 
-	ShAList ats _ ->  map conv ats
+	ShAList ats _ ->  map con ats
 	_           -> fromShATermError "[a]" aterm
 	where aterm  = getATerm at
-	      conv i = fromShATerm (getATermByIndex1 i at)
+	      con i = fromShATerm (getATermByIndex1 i at)
 
 
 toATermString :: ATermConvertible a => a -> String
@@ -86,14 +86,14 @@ fromATermString s 	 = fromShATerm (readATerm s)
 
 fromATermError :: String -> ATerm -> a
 fromATermError t u = error ("Cannot convert ATerm to "++t++": "++(err u))
-    where err u = case u of 
+    where err te = case te of 
 		  AAppl s _ _ -> "!AAppl "++s
 		  AList _ _   -> "!AList"
 		  _           -> "!AInt"
 
 fromShATermError :: String -> ShATerm -> a
 fromShATermError t u = error ("Cannot convert ShATerm to "++t++": "++(err u))
-    where err u = case u of 
+    where err te = case te of 
 		  ShAAppl s l _ -> "!ShAAppl "++s 
 				   ++ " ("++show (length l)++")"
 		  ShAList l _   -> "!ShAList"
@@ -232,7 +232,7 @@ conv ('\"':sr) = case reverse sr of
 conv _         = error "String doesn't begin with '\"'"
 
 instance (ATermConvertible a) => ATermConvertible (Maybe a) where
-    toATerm maybe = case maybe of
+    toATerm mb = case mb of
                      Nothing -> (AAppl "Nothing" [] [])
                      (Just x)  -> let x' = toATerm x
                                   in (AAppl "Just" [x'] [])
@@ -241,39 +241,62 @@ instance (ATermConvertible a) => ATermConvertible (Maybe a) where
                      (AAppl "Just" [x] _) -> let x' = fromATerm x
 					     in (Just x')
 		     _ -> fromATermError "Maybe" at
-    toShATerm att maybe = case maybe of
+    toShATerm att mb = case mb of
                      Nothing -> addATerm (ShAAppl "Nothing" [] []) att
                      (Just x)  -> let (att1,x') = toShATerm att x
                                   in addATerm (ShAAppl "Just" [x'] []) att1
     fromShATerm att = case aterm of
                        (ShAAppl "Nothing" [] _) -> Nothing
-                       (ShAAppl "Just" [x] _) -> let x' = fromShATerm (getATermByIndex1 x att)
-                                                 in (Just x')
+                       (ShAAppl "Just" [x] _) -> 
+			   let x' = fromShATerm (getATermByIndex1 x att)
+                           in (Just x')
+		       _      -> fromShATermError "Maybe" aterm
                       where aterm = getATerm att
 
 instance (Ord a, ATermConvertible a, ATermConvertible b) => ATermConvertible (Map.Map a b) where
-    toATerm fm       = toATerm (Map.toList fm)
-    fromATerm at     = Map.fromList $ fromATerm at
+    toATerm fm       = let ml = toATerm (Map.toList fm)
+		       in (AAppl "Map" [ml] [])
+    fromATerm at     = case at of
+		       (AAppl "Map" [ml] []) -> Map.fromList $ fromATerm ml
+		       _ -> fromATermError "Map" at
     toShATerm att fm = let (att1,i) = toShATerm att $ Map.toList fm 
-                       in addATerm (ShAAppl "Map" [i] []) att1
+                       in seq att1 $ addATerm (ShAAppl "Map" [i] []) att1
     fromShATerm att  = case aterm of
 		       (ShAAppl "Map" [i] []) -> 
 			   let l = fromShATerm (getATermByIndex1 i att)
 		           in Map.fromList l
-		       u     -> fromShATermError "Map.Map" u
+		       u     -> fromShATermError "Map" u
 		       where aterm = getATerm att
 
 instance (Ord a,ATermConvertible a) => ATermConvertible (Set.Set a) where
-    toATerm set = toATerm (Set.toList set)
-    fromATerm at     = Set.fromList $ fromATerm at
-    toShATerm att set = toShATerm att $ Set.toList set 
-    fromShATerm att  = Set.fromList $ fromShATerm att
+    toATerm set       = let ml = toATerm (Set.toList set)
+		        in (AAppl "Set" [ml] [])
+    fromATerm at     = case at of
+		       (AAppl "Set" [ml] []) -> Set.fromList $ fromATerm ml
+		       _ -> fromATermError "Set" at
+    toShATerm att set = let (att1,i) = toShATerm att $ Set.toList set
+                        in seq att1 $ addATerm (ShAAppl "Set" [i] []) att1
+    fromShATerm att  = case aterm of
+		       (ShAAppl "Set" [i] []) -> 
+			   let l = fromShATerm (getATermByIndex1 i att)
+		           in Set.fromList l
+		       u     -> fromShATermError "Set" u
+		       where aterm = getATerm att
 
 instance (Ord a,ATermConvertible a) => ATermConvertible (Rel.Rel a) where
-    toATerm set = toATerm (Rel.toList set)
-    fromATerm at     = Rel.fromList $ fromATerm at
-    toShATerm att set = toShATerm att $ Rel.toList set 
-    fromShATerm att  = Rel.fromList $ fromShATerm att
+    toATerm rel       = let ml = toATerm (Rel.toList rel)
+		        in (AAppl "Rel" [ml] [])
+    fromATerm at     = case at of
+		       (AAppl "Rel" [ml] []) -> Rel.fromList $ fromATerm ml
+		       _ -> fromATermError "Rel" at
+    toShATerm att set = let (att1,i) = toShATerm att $ Rel.toList set
+                        in seq att1 $ addATerm (ShAAppl "Rel" [i] []) att1
+    fromShATerm att  = case aterm of
+		       (ShAAppl "Rel" [i] []) -> 
+			   let l = fromShATerm (getATermByIndex1 i att)
+		           in Rel.fromList l
+		       u     -> fromShATermError "Rel" u
+		       where aterm = getATerm att
 
 {-    toATerm set = case set of
                    (Tip) -> AAppl "Tip" [] []
@@ -314,11 +337,11 @@ instance ATermConvertible a => ATermConvertible [a] where
     fromShATerm att  = fromShATermList att
 
 instance ATermConvertible () where
-    toATerm x = AAppl "UNIT" [] []
+    toATerm _ = AAppl "UNIT" [] []
     fromATerm at = case at of
                     (AAppl "UNIT" [] _) -> ()
                     _               -> fromATermError "()" at
-    toShATerm att x = addATerm (ShAAppl "UNIT" [] []) att
+    toShATerm att _ = addATerm (ShAAppl "UNIT" [] []) att
     fromShATerm att = case at of
                        (ShAAppl "UNIT" [] _) -> ()
                        _                 -> fromShATermError "()" at
