@@ -13,7 +13,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCASL:../aterm_conv:../ghc
+INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCASL:../aterm_conv:../ghc:../Modal
 
 HC         = ghc
 PERL       = perl
