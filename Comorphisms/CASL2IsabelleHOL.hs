@@ -115,7 +115,7 @@ transTheory trSig trForm (sign,sens) =
     dataTypeTab = dtDefs },      
      map (mapNamed (mapSen trForm sign)) sens)  -- for now, no new sentences
   where 
-    dtDefs = makeDtDefs sign $ sens
+    dtDefs = topoSort (makeDtDefs sign $ sens)
     dtTypes = map ((\(Type s _ _) -> s).fst) $ concat dtDefs
     insertOps op ts m = 
      if Set.size ts == 1 
@@ -136,11 +136,9 @@ transTheory trSig trForm (sign,sens) =
 deleteDtTypes dtDef (a,b) = (a, Set.fromList(List.filter (isNotIn dtDef a) (Set.toList b)))
 
 --test if there is an entry in dtDef which has the constructor a and the arguments (opArgs b) 
-isNotIn [[]]        _ _ = True == True
-isNotIn ([]:cs)     _ _ = True == True
-isNotIn ((d:ds):cs) a b = (isSameConst (showIsa a) args const == False)  
+isNotIn ((d:_):_) a b = (isSameConst (showIsa a) args const == False)  
     where
-    (OpType {opArgs = args, opRes = res}) = b
+    (OpType {opArgs = args}) = b
     (typ, const) = d
     isSameConst _ _    ([]) = False
     isSameConst a args (e:es) = ((a == (fst e)) && hasArgs args (snd e)) 
@@ -150,6 +148,93 @@ isNotIn ((d:ds):cs) a b = (isSameConst (showIsa a) args const == False)
     hasArgs _  [] = False
     hasArgs (arg1:args1) (arg2:args2) = (showIsa arg1 == (typeId arg2)) 
 					         && hasArgs args1 args2
+isNotIn _ _ _ = True == True
+
+-- toptSort 
+-- A(i) = [[j]] with definition of datatype i needs j
+-- inI(i) = [n] i is needed by n other definions
+-- (1) L<-[]
+-- (2) for i=1 to n do inI(i)<-0 od;
+-- (3) for i=1 to n do 
+-- (4)   for (j elem A(i)) do inI(j)<-inI(j) + 1 od
+-- (5) od;
+-- (6) for i=1 to n do 
+-- (7)   if inI(i) = 0  then i:L fi 
+-- (8) od; 
+-- (9) while L != [] do
+--(10)   v <- head(L)
+--(11)   L <- tail(L)
+--(12)   sortedList <- sortedList ++ v
+--(13)   for (w elem A(v)) do
+--(14)       inI(w) <- inI(w) - 1
+--(15)       if inI(w)=0 then L<- L++w fi
+--(16)   od;
+--(17) od;
+topoSort [] = []
+topoSort dts = whileL (collectL inI_ 1) inI_ adI_ dts
+    where 
+    (inI_, adI_) =  makeLists [] dts 1 (map (\s -> 0) dts) (map (\s -> [0]) dts)
+    -- generate both A- and inI-list
+    makeLists :: [[(Typ, [(a, [Typ])])]] -> [[(Typ, [(a, [Typ])])]] -> 
+		 Int -> [Int] -> [[Int]] -> ([Int], [[Int]])
+    makeLists _ [] _ inI ad = (inI, ad)
+    makeLists as1 (a:as2) n inI ad = 
+	if (snd (findIn as1 a n [])) == True then
+	   makeLists (concat [as1, [a]]) as2 (n+1)  updateIn1 updateAdj1
+	else 
+	   if (snd (findIn as2 a n [])) == True then
+	      makeLists (concat [as1,[a]]) as2 (n+1) updateIn2 updateAdj2
+           else makeLists (concat [as1, [a]]) as2 (n+1) inI ad
+        where 
+	updateAdj1 = updateAdj ad (fst (findIn as1 a n [])) 0
+	updateAdj2 = updateAdj ad (fst (findIn as2 a n [])) n
+        updateIn1  = updateIn inI (count (fst (findIn as1 a n []))) n 
+        updateIn2  = updateIn inI (count (fst (findIn as1 a n [])) + 
+				   count (fst (findIn as2 a n []))) n
+    -- is Type a in the list (b:bs)
+    findIn :: [[(Typ, [(a, [Typ])])]] -> [(Typ, [(a, [Typ])])] -> Int -> [Int]-> ([Int], Bool) 
+    findIn [] _ _ l = (if (sum l) > 0 then (l, True) else ([], False))			     
+    findIn (b:bs) a n l = findIn bs a n (concat [l, list])
+        where
+	list = map (compareTypes n (getType (head b))) (concat (getUsedTypes (snd (head a))))
+    compareTypes n t1 t2 = if t1 == t2 then n else 0
+    -- returns the typename of a
+    getType a = let (Type d _ _) = fst a in d
+    -- returns all used types
+    getUsedTypes [] = []
+    getUsedTypes (b:bs) = (getUsedType (snd b)) :(getUsedTypes bs)
+    getUsedType  [] = []
+    getUsedType  (c:cs) = let (Type d _ _) = c in d :(getUsedType cs) 
+    updateAdj :: [[a]] -> [a] -> Int -> [[a]]
+    updateAdj (ad:ads) (c:cs) 0 = (c:ad):(updateAdj ads cs 0)   
+    updateAdj (ad:ads) cs n = ad:(updateAdj ads cs (n-1))
+    updateAdj ad _ _ = ad
+    count as = length (List.filter (> 0) as)
+    updateIn (inI:inIs) c 1 = c:inIs 	       
+    updateIn (inI:inIs) c n = inI:(updateIn inIs c (n-1)) 
+    -- Lines 6-8		      
+    collectL [] _ = []
+    collectL (inI:inIs) i = if inI == 0 then i:(collectL inIs (i+1)) else (collectL inIs (i+1))
+
+    -- Lines 9-16
+    whileL [] _ _ _ = []
+    whileL (l:ls) inI adI dtDefs = (selElemAt l dtDefs) :(whileL newLs newInIs adI dtDefs)
+        where 
+	newLs = concat [ls, snd(updateInI2 (selElemAt l adI) inI 1 [] [])]
+        newInIs = fst(updateInI2 (selElemAt l adI) inI 1 [] [])
+        updateInI2 _  []  _ newL ins = (reverse ins, reverse newL)
+	updateInI2 [] inI _ _ _   = (inI, [])
+	updateInI2 listOfInd (inI:inIs) n newL ins =
+	         if n `elem` listOfInd then 
+		    if (inI-1) == 0 then
+		       updateInI2 listOfInd inIs (n+1) (n:newL) ((inI-1):ins)
+	            else 
+		       updateInI2 listOfInd inIs (n+1) newL ((inI-1):ins)
+                 else updateInI2 listOfInd inIs (n+1) newL (inI:ins)
+    -- get the l-th value from the list 
+    selElemAt :: Int -> [a] -> a
+    selElemAt 1 (dt:dts) = dt				       
+    selElemAt l (dt:dts) = selElemAt (l-1) dts    
 
 makeDtDefs :: CASL.Sign.Sign f e -> [Named (FORMULA f)] 
                -> [[(Typ,[(String,[Typ])])]]
