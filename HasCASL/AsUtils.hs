@@ -87,3 +87,22 @@ posOfType ty =
     FunType t1 _ t2 ps -> firstPos [t1,t2] ps
 
 -- ---------------------------------------------------------------------
+instance PosItem Term where
+    get_pos = Just . posOfTerm
+
+posOfTerm :: Term -> Pos
+posOfTerm trm =
+    case trm of
+    CondTerm t1 _ t2 ps -> firstPos [t1, t2] ps
+    QualVar v _ ps -> firstPos [v] ps
+    QualOp (InstOpId i _ ps) _ qs -> firstPos [i] (ps++qs) 
+    ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
+    TupleTerm ts ps -> firstPos ts ps 
+    TypedTerm t _ _ ps -> firstPos [t] ps 
+    QuantifiedTerm _ _ t ps -> firstPos [t] ps 
+    LambdaTerm _ _ t ps -> firstPos [t] ps 
+    CaseTerm t _ ps -> firstPos [t] ps 
+    LetTerm _ t ps -> firstPos [t] ps
+    TermToken t -> tokPos t
+    MixfixTerm ts -> posOf ts
+    BracketTerm _ ts ps -> firstPos ts ps 
