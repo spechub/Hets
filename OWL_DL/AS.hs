@@ -13,7 +13,9 @@ Portability :  portable
 
 module OWL_DL.AS where
 
-type URIreference = String
+import Text.XML.HXT.DOM.XmlTreeTypes
+
+type URIreference = QName
 
 type DatatypeID = URIreference
 type ClassID = URIreference
@@ -25,11 +27,14 @@ type AnnotationPropertyID = URIreference
 type OntologyPropertyID = URIreference
 
 -- | Data structur for Ontologies
-data Ontology = Ontology (Maybe OntologyID) [Directive]
+data Ontology = Ontology (Maybe OntologyID) [Directive] [NTree XNode]
                 deriving (Show, Eq)
 data Directive = Anno Annotation | Ax Axiom | Fc Fact
                  deriving (Show, Eq)
-data Annotation = URIAnnotation 
+data Annotation = OntAnnotation
+                         OntologyPropertyID
+                         OntologyID
+                | URIAnnotation 
                          AnnotationPropertyID 
                          URIreference
                 | DLAnnotation 
