@@ -1,3 +1,4 @@
+ATC/doc
 ATC/ATCTest.hs
 ATC/ATCTest2.hs
 
@@ -44,6 +45,7 @@ CspCASL/tests
 GUI/hetdg.hs
 GUI/todo
 
+HasCASL/Makefile
 HasCASL/RunMixfixParser.hs
 HasCASL/RunStaticAna.hs
 HasCASL/doc/StaticAna.tex
@@ -63,7 +65,7 @@ Haskell/todo
 Haskell/wrap.lhs
 
 Haskell/Hatchet/Main.hs
-Haskell/Language/Haskell
+Haskell/Language
 Lottery
 Modal
 Static/hetana.hs
@@ -71,6 +73,7 @@ Syntax/hetpa.hs
 ToHaskell/Makefile
 ToHaskell/Translate.hs
 ToHaskell/check
+ToHaskell/example
 ToHaskell/ghc-call
 ToHaskell/hacapa.txt
 ToHaskell/runcheck.sh
@@ -89,13 +92,18 @@ hetcats/Algebra_I.tree.gen_trm
 hetcats/README
 
 doc
+ideas
 mini
 parsec
 pretty
 test
+todo
 
+utils/DrIFT
 utils/ag
+utils/cp_binary.mk
 utils/examine_doc_log.pl
+utils/genRules
 utils/haddock
 utils/haddock.solaris
 utils/AG-src
