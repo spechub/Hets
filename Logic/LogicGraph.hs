@@ -35,6 +35,7 @@ import Haskell.Logic_Haskell
 import CspCASL.Logic_CspCASL
 import Comorphisms.CASL2HasCASL
 import qualified Common.Lib.Map as Map
+import CASL.ATC_CASL
 
 logicList :: ([AnyLogic],[AnyComorphism])
 logicList = ([Logic CASL, Logic HasCASL, Logic Haskell, Logic CspCASL],
@@ -55,3 +56,11 @@ defaultLogic = Logic CASL
 lookupLogic_in_LG :: String -> String -> AnyLogic
 lookupLogic_in_LG errorPrefix logname =
     lookupLogic errorPrefix (logname) logicGraph
+
+lookupComorphism_in_LG :: String -> String -> AnyComorphism
+lookupComorphism_in_LG error_prefix coname =
+    lookupComorphism error_prefix coname logicGraph
+
+
+
+
