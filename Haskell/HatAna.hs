@@ -5,13 +5,11 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  non-portable(Logic)
-
-   Here is the place where the class Logic is instantiated for Haskell.
-   Also the instances for Syntax an Category.
+Portability :  portable
 
    todo:
-     - writing real functions
+     - write difference function for ModuleInfos
+     - include Prelude (or undefined) during type inference
 
 -}
 
