@@ -85,6 +85,8 @@ type Morphism = ()
 
 instance Category Haskell Sign Morphism where
   dom Haskell _ = empty_signature Haskell
+  ide Haskell _ = ()
+  comp Haskell _ _ = Just ()
 
 -- abstract syntax, parsing (and printing)
 
