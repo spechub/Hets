@@ -26,7 +26,7 @@ module Logic.Comorphism where
 
 import Logic.Logic
 import Common.Lib.Set
-import Data.Maybe(catMaybes)
+import Data.Maybe
 import Data.Dynamic
 
 import Common.ATerm.Lib
@@ -46,14 +46,8 @@ class (Language cid, Typeable cid,
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-             | cid -> lid1, cid -> lid2, 
-               cid -> sublogics1, cid -> basic_spec1, cid -> sentence1, 
-               cid -> symb_items1, cid -> symb_map_items1, cid -> sign1, 
-               cid -> morphism1, cid -> symbol1, cid -> raw_symbol1, 
-               cid -> proof_tree1, cid -> sublogics2, cid -> basic_spec2, 
-               cid -> sentence2, cid -> symb_items2, 
-               cid -> symb_map_items2, cid -> sign2, cid -> morphism2, 
-               cid -> symbol2, cid -> raw_symbol2, cid -> proof_tree2
+             | cid -> lid1, cid -> lid2
+
   where
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
@@ -71,9 +65,9 @@ class (Language cid, Typeable cid,
           -- - but these are spans!
     map_symbol :: cid -> symbol1 -> Set symbol2
     fromShATerm_sign1 :: (ATermConvertible sign) => cid -> ATermTable -> sign
-    fromShATerm_sign1 cid att = fromShATerm att
+    fromShATerm_sign1 _ att = fromShATerm att
     fromShATerm_morphism2 :: (ATermConvertible morphism) => cid -> ATermTable -> morphism
-    fromShATerm_morphism2 cid att = fromShATerm att
+    fromShATerm_morphism2 _ att = fromShATerm att
 
 
 data IdComorphism lid  = 
@@ -81,8 +75,7 @@ data IdComorphism lid  =
 idComorphismTc :: TyCon
 idComorphismTc = mkTyCon "Logic.Comorphism.IdComorphism"
 instance Typeable (IdComorphism lid) where 
-  typeOf s = mkAppTy idComorphismTc []
-                --[typeOf ((undefined :: IdComorphism a -> a) s)]
+  typeOf _ = mkAppTy idComorphismTc []
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -114,38 +107,12 @@ instance Logic lid sublogics
            map_symbol _ = single
 
 
-data (Comorphism cid1
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2, 
-          Comorphism cid2
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-            lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 proof_tree3) =>
-     CompComorphism cid1
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1 
-            cid2
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-            lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 proof_tree3 = 
-     CompComorphism cid1 cid2 deriving (Show)
+data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show
+
 tyconCompComorphism :: TyCon
 tyconCompComorphism = mkTyCon "Logic.Comorphism.CompComorphism"
-instance Typeable (CompComorphism cid1
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            cid2
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-            lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 proof_tree3) where
+instance Typeable (CompComorphism cid1 cid2) where
   typeOf _ = mkAppTy tyconCompComorphism []
-
-
 
 instance (Comorphism cid1
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -153,45 +120,31 @@ instance (Comorphism cid1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2, 
           Comorphism cid2
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+            lid4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
+                sign4 morphism4 symbol4 raw_symbol4 proof_tree4
             lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3)
-          => Language (CompComorphism cid1
-              lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-              cid2
-              lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-              lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 proof_tree3) where
+          => Language (CompComorphism cid1 cid2) where
    language_name (CompComorphism cid1 cid2) = 
      language_name cid1++";"
      ++language_name cid2
 
+
 instance (Comorphism cid1
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2, 
           Comorphism cid2
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+            lid4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
+                sign4 morphism4 symbol4 raw_symbol4 proof_tree4
             lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3)
-          => Comorphism (CompComorphism cid1
-              lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-              cid2
-              lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-              lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 proof_tree3) 
+          => Comorphism (CompComorphism cid1 cid2)
               lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
               sign1 morphism1 symbol1 raw_symbol1 proof_tree1
               lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-              sign3 morphism3 symbol3 raw_symbol3 proof_tree3
-             where
+              sign3 morphism3 symbol3 raw_symbol3 proof_tree3 where
    sourceLogic (CompComorphism cid1 _) = 
      sourceLogic cid1
    targetLogic (CompComorphism _ cid2) = 
@@ -204,18 +157,25 @@ instance (Comorphism cid1
        \si1 se1 -> 
          do (si2,_) <- map_sign cid1 si1
             se2 <- map_sentence cid1 si1 se1 
-            map_sentence cid2 si2 se2
+	    (si2', se2') <- coerce (targetLogic cid1) (sourceLogic cid2) 
+			    (si2, se2)
+            map_sentence cid2 si2' se2'
    map_sign (CompComorphism cid1 cid2) = 
        \si1 -> 
          do (si2, se2s) <- map_sign cid1 si1
-            (si3, se3s) <- map_sign cid2 si2 
+            (si2', se2s') <- coerce (targetLogic cid1) (sourceLogic cid2) 
+			     (si2, se2s)
+            (si3, se3s) <- map_sign cid2 si2' 
             return (si3, se3s ++ catMaybes
-                          (map (map_sentence cid2 si2) se2s))
+                          (map (map_sentence cid2 si2') se2s'))
 
-   map_morphism (CompComorphism cid1 cid2) = \ m1 -> map_morphism cid1 m1 
-                             >>=  map_morphism cid2
+   map_morphism (CompComorphism cid1 cid2) = \ m1 -> 
+       do m2 <- map_morphism cid1 m1 
+	  m3 <- coerce (targetLogic cid1) (sourceLogic cid2) m2
+          map_morphism cid2 m3
 
-   map_symbol (CompComorphism cid1 cid2) = \ s1 -> unions
-		(map (map_symbol cid2) 
+   map_symbol (CompComorphism cid1 cid2) = \ s1 -> 
+         let mycast = fromJust . coerce (targetLogic cid1) (sourceLogic cid2)
+	 in unions
+		(map (map_symbol cid2 . mycast) 
                  (toList (map_symbol cid1 s1)))
- 

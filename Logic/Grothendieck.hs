@@ -285,17 +285,13 @@ data AnyComorphism = forall cid lid1 sublogics1
 
 -- | Compose comorphisms
 compComorphism :: AnyComorphism -> AnyComorphism -> Result AnyComorphism
-compComorphism (Comorphism cid1) (Comorphism cid2) = do
-    let lid1 = sourceLogic cid1
-        lid2 = targetLogic cid1
-        lid3 = sourceLogic cid2
-    ComorphismAux cid1' _ _ _ _ <- 
-      maybeToResult 
-        nullPos 
-        ("Cannot compose comorphisms "++language_name cid1++
-         " with "++language_name cid2)
-        (coerce lid2 lid3 $ ComorphismAux cid1 lid1 lid2 undefined undefined)
-    return (Comorphism (CompComorphism cid1' cid2))
+compComorphism (Comorphism cid1) (Comorphism cid2) =
+    if language_name (targetLogic cid1) == 
+       language_name (sourceLogic cid2) then 
+       Result [] $ Just $ Comorphism (CompComorphism cid1 cid2)
+    else Result [Diag FatalError 
+		 ("Cannot compose comorphisms "++language_name cid1++
+		  " with "++language_name cid2) nullPos] Nothing
 
 -- | Logic graph
 data LogicGraph = LogicGraph {
@@ -390,30 +386,22 @@ data GMorphism = forall cid lid1 sublogics1
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
   GMorphism cid sign1 morphism2 
 
-
 instance Eq GMorphism where
-  (GMorphism cid1 sigma1 mor1) == 
-   (GMorphism cid2 sigma2 mor2)
-     = maybe False id
-       (do s <- coerce cid1 cid2 "x"
-           return (s==Just "x")
-           sigma2' <- coerce (sourceLogic cid1) (sourceLogic cid2) sigma2
-           mor2' <- coerce (targetLogic cid1) (targetLogic cid2) mor2
-           return (sigma1 == sigma2' && mor1==mor2'))
-
+  GMorphism cid1 sigma1 mor1 == GMorphism cid2 sigma2 mor2
+     = coerce cid1 cid2 (sigma1, mor1) == Just (sigma2, mor2)
 
 data Grothendieck = Grothendieck deriving Show
 
 instance Language Grothendieck
-
 
 instance Show GMorphism where
     show (GMorphism cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
  
 instance PrettyPrint GMorphism where
     printText0 ga (GMorphism cid s m) = 
-      ptext (show cid) <+> ptext ":" <+> ptext (show (sourceLogic cid)) <+>
-      ptext "->" <+> ptext (show (targetLogic cid)) <+>
+      ptext (show cid) 
+      <+> -- ptext ":" <+> ptext (show (sourceLogic cid)) <+>
+      -- ptext "->" <+> ptext (show (targetLogic cid)) <+>
       ptext "(" <+> printText0 ga s <+> ptext ")" 
       $$
       printText0 ga m
@@ -510,22 +498,21 @@ homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
 ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
-  do let ln1 = language_name lid1
-         ln2 = language_name lid2
+     let ln1 = language_name lid1
+         ln2 = language_name lid2 in
      if ln1==ln2 then do
        sigma2' <- rcoerce lid1 lid2 (newPos "s" 0 0) sigma2
        mor <- inclusion lid1 sigma1 sigma2'
        return (GMorphism (IdComorphism lid1) sigma1 mor)
-      else do
-       Comorphism i <- 
-         maybeToResult (newPos "t" 0 0) 
-                       ("No inclusion from "++ln1++" to "++ln2++" found")  
-                       (Map.lookup (ln1,ln2) (inclusions logicGraph))
-       sigma1' <- rcoerce lid1 (sourceLogic i) (newPos "u" 0 0) sigma1
-       sigma2' <- rcoerce lid2 (targetLogic i) (newPos "v" 0 0) sigma2
-       (sigma1'',_) <- 
-         maybeToResult (newPos "w" 0 0) "ginclusion: signature map failed" 
+      else case Map.lookup (ln1,ln2) (inclusions logicGraph) of 
+           Just (Comorphism i) -> do
+	      sigma1' <- rcoerce lid1 (sourceLogic i) (newPos "u" 0 0) sigma1
+              (sigma1'',_) <- maybeToResult (newPos "w" 0 0) 
+                    "ginclusion: signature map failed" 
                        (map_sign i sigma1')
-       mor <- inclusion (targetLogic i) sigma1'' sigma2'
-       return (GMorphism i sigma1' mor)
-
+              sigma2' <- rcoerce lid2 (targetLogic i) (newPos "v" 0 0) sigma2
+              mor <- inclusion (targetLogic i) sigma1'' sigma2'
+              return (GMorphism i sigma1' mor)
+	   Nothing -> Result [Diag FatalError 
+			 ("No inclusion from "++ln1++" to "++ln2++" found")
+                         (newPos "t" 0 0)] Nothing 
