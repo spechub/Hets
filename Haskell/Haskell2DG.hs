@@ -56,6 +56,7 @@ import Common.Id                 (Token (..),
                                   nullPos)
 import Haskell.Logic_Haskell     (Haskell (..))
 import Haskell.HaskellUtils      (extractSentences)
+import Haskell.ExtHaskellCvrt    (cvrtHsModule)
 import qualified Common.Lib.Map as Map
 import Common.GlobalAnnotations  (emptyGlobalAnnos)
 
@@ -77,7 +78,7 @@ anaHaskellFileAux :: String -> -- DGraph ->
                                   DGraph, LibEnv))
 anaHaskellFileAux srcFile =
   do 
-     moduleSyntax <- parseFile srcFile
+     moduleSyntax <- fmap cvrtHsModule $ parseFile srcFile
      (absSyn, modInfo, le) <- typeInference moduleSyntax
      let libName = Lib_id(Indirect_link srcFile [])
     -- convert HaskellEnv to DGraph, build up corresponding LibEnv
