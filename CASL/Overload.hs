@@ -48,23 +48,6 @@ overloadResolution sign
     = mapM (minExpSentence sign)
 
 {-----------------------------------------------------------
-    Extract Atomic Sentences from (general) Sentences
------------------------------------------------------------}
---getAtoms :: Sentence -> [Sentence]
---getAtoms sentence
---    = case sentence of
---        -- Non-Atomic Sentences -> Descend and Extract
---        Quantification _ _ sentence' _ -> getAtoms sentence'
---        Conjunction sentences _        -> getAllAtoms sentences
---        Disjunction sentences _        -> getAllAtoms sentences
---        Implication sent1 sent2 _      -> getAllAtoms [sent1, sent2]
---        Equivalence sent1 sent2 _      -> getAllAtoms [sent1, sent2]
---        Negation sentence' _           -> getAtoms sentence'
---        -- Atomic Sentences -> Wrap and Return
---        _                              -> [sentence]
---    where getAllAtoms = concat . map getAtoms
-
-{-----------------------------------------------------------
     Minimal Expansions of a Sentence
 -----------------------------------------------------------}
 minExpSentence :: Sign -> Sentence -> Result Sentence
@@ -74,24 +57,25 @@ minExpSentence sign sentence
         True_atom _     -> return sentence                      -- :: Sentence
         False_atom _    -> return sentence                      -- :: Sentence
         -- Atomic Sentence      -> Check for Ambiguities
-        Predication predicate terms pos -> do
-                ts <- mapM choose_unambiguous terms             -- :: [TERM]
-                return $ Predication predicate ts pos           -- :: Sentence
-        -- FIXME: This is the trivial implememtation, not the full one
+        Predication predicate terms _ ->
+            minExpSentence_pred sign predicate terms            -- :: Sentence
         Definedness term pos            -> do
-                t <- choose_unambiguous term                    -- :: TERM
-                return $ Definedness t pos                      -- :: Sentence
+            t <- choose_unambiguous term                        -- :: TERM
+            return $ Definedness t pos                          -- :: Sentence
         Existl_equation term1 term2 pos -> do
-                t1 <- choose_unambiguous term1                  -- :: TERM
-                t2 <- choose_unambiguous term2                  -- :: TERM
-                return $ Existl_equation t1 t2 pos              -- :: Sentence
+            t1 <- choose_unambiguous term1                      -- :: TERM
+            t2 <- choose_unambiguous term2                      -- :: TERM
+            return $ Existl_equation t1 t2 pos                  -- :: Sentence
+        -- FIXME: check whether sorts of terms match
         Strong_equation term1 term2 pos -> do
-                t1 <- choose_unambiguous term1                  -- :: TERM
-                t2 <- choose_unambiguous term2                  -- :: TERM
-                return $ Strong_equation t1 t2 pos              -- :: Sentence
+            t1 <- choose_unambiguous term1                      -- :: TERM
+            t2 <- choose_unambiguous term2                      -- :: TERM
+            return $ Strong_equation t1 t2 pos                  -- :: Sentence
+        -- FIXME: check whether sorts of terms match
         Membership term sort pos        -> do
-                t <- choose_unambiguous term                    -- :: TERM
-                return $ Membership t sort pos                  -- :: Sentence
+            t <- choose_unambiguous term                        -- :: TERM
+            return $ Membership t sort pos                      -- :: Sentence
+        -- FIXME: check whether term matches sort
         -- Unparsed Sentence    -> Error in Parser, Bail out!
         Mixfix_formula term             -> error
             $ "Parser Error: Unparsed `Mixfix_formula' received: "
@@ -114,6 +98,71 @@ minExpSentence sign sentence
                     ++ "\n  Possible Expansions: " ++ (show expansions)
 
 {-----------------------------------------------------------
+    Minimal Expansions of a Predicate Application Term
+-----------------------------------------------------------}
+minExpSentence_pred :: Sign -> PRED_SYMB -> [TERM] -> Result Sentence
+minExpSentence_pred sign predicate terms = do
+    expansions          <- mapM
+        (minExpTerm sign) terms                 -- ::        [[[TERM]]]
+    permuted_exps       <- return
+        $ permute expansions                    -- ::        [[[TERM]]]
+    profiles            <- return
+        $ map get_profile permuted_exps         -- ::  [[(PredType, [TERM])]]
+    p                   <- return
+        $ concat                                -- ::  [[(PredType, [TERM])]]
+        $ map (equivalence_Classes pred_eq)     -- :: [[[(PredType, [TERM])]]]
+          profiles                              -- ::  [[(PredType, [TERM])]]
+    p'                  <- return $ choose p    -- ::    (PredType, [TERM])
+    return $ qualify_pred p'
+    where
+        name            :: PRED_NAME
+        name             = pred_name predicate
+        preds           :: [PredType]
+        preds            = Set.toList
+            $ Map.find name $ (predMap sign)
+        pred_name       :: PRED_SYMB -> PRED_NAME
+        pred_name pred'  = case pred' of
+            (Pred_name name')           -> name'
+            (Qual_pred_name name' _ _)  -> name'
+        term_sort       :: TERM -> SORT
+        term_sort term'  = case term' of
+            (Sorted_term _ sort _ )     -> sort
+            _                           -> error                -- unlikely
+                "minExpTerm: unsorted TERM after expansion"
+        choose          :: [[(PredType, [TERM])]] -> (PredType, [TERM])
+        choose ps        = case ps of
+            [_] -> head $ head ps
+            _   -> error
+                $ "Cannot disambiguate! Term: " ++ (show (predicate, terms))
+                ++ "\n  Possible Expansions: " ++ (show ps)
+
+        qualify_pred    :: (PredType, [TERM]) -> Sentence
+        qualify_pred (pred', terms')
+            = (Predication                                      -- :: Sentence
+                (Qual_pred_name name (toPRED_TYPE pred') [])    -- :: PRED_SYMB
+                terms'                                          -- :: [TERM]
+                [])                                             -- :: [Pos]
+        get_profile     :: [[TERM]] -> [(PredType, [TERM])]
+        get_profile cs
+            = [ (pred', ts) |
+                pred' <- preds,                                 -- :: OpType
+                ts <- (permute cs),                             -- :: [TERM]
+                zipped_all (leq_SORT sign)                      -- ::  Bool
+                    (map term_sort ts)                          -- :: [SORT]
+                    (predArgs pred') ]                          -- :: [SORT]
+        pred_eq         :: (PredType, [TERM]) -> (PredType, [TERM]) -> Bool
+        pred_eq (pred1,ts1) (pred2,ts2)
+            = let   w1 = predArgs pred1                         -- :: [SORT]
+                    w2 = predArgs pred2                         -- :: [SORT]
+                    s1 = map term_sort ts1                      -- :: [SORT]
+                    s2 = map term_sort ts2                      -- :: [SORT]
+                    b1 = zipped_all (leq_SORT sign) s1 w1       -- ::  Bool
+                    b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
+                    preds_equal = (pred1 == pred2)              -- ::  Bool
+                    preds_equiv = pred1 `leqP` pred2            -- ::  Bool
+                    types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
+                in b1 && b2 && (preds_equal || (preds_equiv && types_equal))
+{-----------------------------------------------------------
     Minimal Expansions of a Term
 -----------------------------------------------------------}
 minExpTerm :: Sign -> TERM -> Result [[TERM]]
@@ -131,6 +180,7 @@ minExpTerm sign term'
             -> minExpTerm_cast sign term sort
         Conditional term1 formula term2 _
             -> error $ "not implemented ... yet"        -- conditional ?
+        -- FIXME: implement conditionals
         Unparsed_term string _
             -> error $ "minExpTerm: Parser Error - Unparsed `Unparsed_term' "
                ++ string
@@ -256,14 +306,11 @@ minExpTerm_op sign op terms = do
         qualifyOps       = map (map qualify_op)
         qualify_op      :: (OpType, [TERM]) -> (TERM, SORT)
         qualify_op (op', terms')
-            = ( (Application                                    -- ::  TERM
-                    (Qual_op_name                               -- :: OP_SYMB
-                        name                                    -- :: OP_NAME
-                        (toOP_TYPE op')                         -- :: OP_TYPE
-                        [])                                     -- :: [Pos]
-                    terms'                                      -- :: [TERM]
-                    [])                                         -- :: [Pos]
-              , (opRes op') )                                   -- ::  SORT
+            = ((Application                                     -- ::  TERM
+                (Qual_op_name name (toOP_TYPE op') [])          -- :: OP_SYMB
+                terms'                                          -- :: [TERM]
+                [])                                             -- :: [Pos]
+              , (opRes op'))                                    -- ::  SORT
         get_profile     :: [[TERM]] -> [(OpType, [TERM])]
         get_profile cs
             = [ (op', ts) |
@@ -300,7 +347,7 @@ minExpTerm_cast sign term sort = do
     where
         term_sort       :: TERM -> SORT
         term_sort term'  = case term' of
-            (Sorted_term _ sort _ )     -> sort
+            (Sorted_term _ sort' _ )    -> sort'
             _                           -> error        -- unlikely
                 "minExpTerm: unsorted TERM after expansion"
 
