@@ -98,8 +98,8 @@ emptyExtPos = (emptyPos, Key)
 flattenSentences :: Sentences -> [(String, Sentence)]
 flattenSentences sens = map (\x -> (senName x,sentence x)) (sentences sens)
 
-addNamedSentence :: Sentences -> NamedSentence -> Sentences
-addNamedSentence (Sentences l) s = Sentences (setAddOne l s)
+addNamedSentences :: Sentences -> [NamedSentence] -> Sentences
+addNamedSentences (Sentences s) l = Sentences (setAdd s l)
 
 myShowList :: Show a => [a] -> String
 myShowList []    = "[]"
@@ -173,6 +173,13 @@ tokPos_PRED_ITEM = tokPos_SORT_ITEM
 
 tokPos_VAR_ITEM :: [Pos] -> [TokenKind]
 tokPos_VAR_ITEM = tokPos_SORT_ITEM
+
+tokPos_local_var_axioms :: [Pos] -> [TokenKind]
+tokPos_local_var_axioms []    = []
+tokPos_local_var_axioms (h:t) = Key:(replicate (length t) Key)
+
+tokPos_axiom_items :: [Pos] -> [TokenKind]
+tokPos_axiom_items = tokPos_local_var_axioms
 
 ------------------------------------------------------------------------------
 -- functions to generate labels
@@ -531,8 +538,7 @@ ana_subsort_defn sigma _itm s v s' f _pos =
        delta    <- ana_subsort_decl sigma _itm (Just _defn) [s] s' _pos
        _f'      <- ana_FORMULA delta { getGlobal = emptyGlobal } f'
        let phi   = toNamedSentence [] (someLabel (subsortLabel s s') f) _f'
-       return delta { getPsi = Sentences
-                               ((sentences $ getPsi delta) ++ [phi]) }
+       return delta { getPsi = addNamedSentences (getPsi delta) [phi] }
 
 ------------------------------------------------------------------------------
 -- ISO-DECL
@@ -587,17 +593,20 @@ ana_SORT_ITEM sigma _itm _pos =
 -- PRED-DECL
 ------------------------------------------------------------------------------
 
-ana_PRED_TYPE :: LocalEnv -> PredType -> PRED_TYPE -> ExtPos 
+ana_PRED_TYPE' :: LocalEnv -> PredType -> PRED_TYPE -> ExtPos 
                  -> Result PredType
-ana_PRED_TYPE sigma w (Pred_type [] _) _pos = return w
-ana_PRED_TYPE sigma w (Pred_type (s_n:_t) _) _pos =
+ana_PRED_TYPE' sigma w (Pred_type [] _) _pos = return w
+ana_PRED_TYPE' sigma w (Pred_type (s_n:_t) _) _pos =
   do checkSortExists sigma (fst _pos) s_n
-     ana_PRED_TYPE sigma (w++[s_n]) (Pred_type _t []) _pos
+     ana_PRED_TYPE' sigma (w++[s_n]) (Pred_type _t []) _pos
+
+ana_PRED_TYPE :: LocalEnv -> PRED_TYPE -> ExtPos -> Result PredType
+ana_PRED_TYPE sigma _t _pos = ana_PRED_TYPE' sigma [] _t _pos
 
 ana_pred_decl :: LocalEnv -> Annoted PRED_ITEM -> [PRED_NAME] -> PRED_TYPE
                  -> [ExtPos] -> Result LocalEnv
 ana_pred_decl sigma _itm p_n _t _pos =
-  do w <- ana_PRED_TYPE sigma [] _t (head _pos)
+  do w <- ana_PRED_TYPE sigma _t (head _pos)
      let delta = foldPos (updatePredItem (getName sigma) _itm w Nothing)
                          (getSign sigma) p_n _pos
      return sigma { getSign = delta }
@@ -632,20 +641,23 @@ checkQualVarsUnique _pos a b =
   else
     fatal_error "overlapping variable names" _pos
 
-ana_ARG_DECL_list :: LocalEnv -> ([VarDecl],[SortId]) -> [ARG_DECL]
+ana_ARG_DECL_list' :: LocalEnv -> ([VarDecl],[SortId]) -> [ARG_DECL]
                -> Result ([VarDecl],[SortId])
-ana_ARG_DECL_list sigma (x_s_n,w) [] = return (x_s_n,w)
-ana_ARG_DECL_list sigma (x_s_n,w) ((Arg_decl _v _s _pos):_t) =
+ana_ARG_DECL_list' sigma (x_s_n,w) [] = return (x_s_n,w)
+ana_ARG_DECL_list' sigma (x_s_n,w) ((Arg_decl _v _s _pos):_t) =
   do let _extPos = zip _pos (tokPos_ARG_DECL _pos)
      (x_n,s) <- ana_ARG_DECL sigma _v _s _extPos
      let _qual = toVarDecls s _extPos x_n
      checkQualVarsUnique (head _pos) x_s_n _qual
-     ana_ARG_DECL_list sigma (x_s_n ++ _qual,w ++ [s]) _t
+     ana_ARG_DECL_list' sigma (x_s_n ++ _qual,w ++ [s]) _t
+
+ana_ARG_DECL_list :: LocalEnv -> [ARG_DECL] -> Result ([VarDecl],[SortId])
+ana_ARG_DECL_list sigma _ad = ana_ARG_DECL_list' sigma ([],[]) _ad
 
 ana_pred_defn :: LocalEnv -> Annoted PRED_ITEM -> PRED_NAME -> PRED_HEAD
                  -> Annoted FORMULA -> [ExtPos] -> Result LocalEnv
 ana_pred_defn sigma _ann p (Pred_head _ad _pos') _f _pos =
-  do (_x_s_n,w) <- ana_ARG_DECL_list sigma ([],[]) _ad
+  do (_x_s_n,w) <- ana_ARG_DECL_list sigma _ad
      let _delta' = updatePredItem (getName sigma) _ann w Nothing
                                   (getSign sigma) p (head _pos)
      phi        <- ana_no_anno_FORMULA (sigma { getSign = _delta',
@@ -654,13 +666,13 @@ ana_pred_defn sigma _ann p (Pred_head _ad _pos') _f _pos =
      let delta   = updatePredItem (getName sigma) _ann w (Just _defn)
                                   _delta' p (head _pos)
      return sigma { getSign = delta,
-                    getPsi   = Sentences ((sentences $ getPsi sigma) ++
+                    getPsi   = addNamedSentences (getPsi sigma)
                                [toNamedSentence [] (someLabel
                                (predDefnLabel p (_x_s_n)) _f)
                                (cloneAnnos _f (Quantified Forall _x_s_n
                                (Connect EquivOp [PredAppl p w
                                (map toVarId _x_s_n) Inferred [],phi]
-                               [])[]))]) }
+                               [])[]))] }
 
 ------------------------------------------------------------------------------
 -- PRED-ITEM
@@ -707,6 +719,32 @@ ana_VAR_ITEMS sigma _v _pos =
   chainPos sigma ana_VAR_DECL _v [] _pos tokPos_VAR_ITEM
 
 ------------------------------------------------------------------------------
+-- LOCAL-VAR-AXIOMS
+------------------------------------------------------------------------------
+
+ana_local_var_axioms' :: LocalEnv -> Annoted FORMULA -> ExtPos ->
+                         Result LocalEnv
+ana_local_var_axioms' sigma _f _pos =
+  do _phi     <- ana_FORMULA sigma _f
+     let _phi' = toNamedSentence (global $ getGlobal sigma)
+                                 (someLabel "" _phi) _phi
+     return sigma { getPsi = addNamedSentences (getPsi sigma) [_phi'] }
+
+ana_local_var_axioms :: LocalEnv -> [VAR_DECL] -> [Pos] ->
+                        [Annoted FORMULA] -> [Pos] -> Result LocalEnv
+ana_local_var_axioms sigma _v _vpos _f _apos =
+  do _delta <- ana_VAR_ITEMS sigma _v _vpos
+     chainPos _delta ana_local_var_axioms' _f [] _apos tokPos_local_var_axioms
+
+------------------------------------------------------------------------------
+-- AXIOM-ITEMS
+------------------------------------------------------------------------------
+
+ana_axiom_items :: LocalEnv -> [Annoted FORMULA] -> [Pos] -> Result LocalEnv
+ana_axiom_items sigma _f _pos =
+  chainPos sigma ana_local_var_axioms' _f [] _pos tokPos_axiom_items
+
+------------------------------------------------------------------------------
 -- BASIC-ITEMS
 ------------------------------------------------------------------------------
 
@@ -717,8 +755,10 @@ ana_BASIC_ITEMS sigma _itm =
     (Free_datatype _l _p)       -> return sigma;
     (Sort_gen _s _p)            -> return sigma;
     (Var_items _v _p)           -> ana_VAR_ITEMS sigma _v _p;
-    (Local_var_axioms _v _f _p) -> return sigma;
-    (Axiom_items _f _p)         -> return sigma
+    (Local_var_axioms _v _f _p) -> ana_local_var_axioms sigma _v
+                                   ((head _p):(take ((length _v)-1) _p))
+                                   _f (drop (length _v) _p);
+    (Axiom_items _f _p)         -> ana_axiom_items sigma _f _p
 
 ------------------------------------------------------------------------------
 -- BASIC-SPEC
