@@ -40,7 +40,8 @@ import Control.Monad
 import Data.Maybe
 
 {-
-inducedFromMorphism :: RawSymbolMap -> Sign -> Result Morphism
+inducedFromMorphism :: Analyzable lid b s f e => 
+                RawSymbolMap -> Sign lid b s f e -> Result (Morphism lid b s f e)
 
 Here is Bartek Klin's algorithm that has benn used for CATS. 
 Our algorithm deviates from it. The exact details need to be checked.
@@ -104,8 +105,9 @@ Output: morphims "Mrph": Sigma1 -> "Sigma2".
 10. Compute transitive closure of subsorting relation in Sigma2.
 -}
 
-inducedFromMorphism :: RawSymbolMap -> Sign -> Result Morphism
-inducedFromMorphism rmap sigma = do
+inducedFromMorphism :: Analyzable lid b s f e => 
+           RawSymbolMap -> Sign lid b s f e -> Result (Morphism lid b s f e)
+inducedFromMorphism rmap (sigma::Sign lid b s f e) = do
   -- ??? Missing: check preservation of overloading relation
   -- first check: do all source raw symbols match with source signature?
   let syms = symOf sigma
@@ -144,7 +146,8 @@ inducedFromMorphism rmap sigma = do
               (return Map.empty) (predMap sigma)
   -- compute target signature
   let sigma' = 
-        emptySign {sortSet = Set.image (mapSort sort_Map) sortsSigma,
+        (emptySign :: Sign lid b s f e)
+            {sortSet = Set.image (mapSort sort_Map) sortsSigma,
              sortRel = Rel.transClosure $ 
                          Rel.image (mapSort sort_Map) (sortRel sigma),
              opMap = Map.foldWithKey (mapOps sort_Map op_Map) 
@@ -316,7 +319,8 @@ inducedFromMorphism rmap sigma = do
       in Map.setInsert id' pt' m1
 
 {-
-inducedFromToMorphism :: RawSymbolMap -> Sign -> Sign -> Result Morphism
+inducedFromToMorphism :: Analyzable lid b s f e => 
+                RawSymbolMap -> Sign lid b s f e -> Sign lid b s f e -> Result (Morphism lid b s f e)
 
 Algorithm adapted from Bartek Klin's algorithm for CATS.
 
@@ -509,7 +513,8 @@ restrictPosMap symset1 symset2 posmap =
 
 -- for each sub/supersort s of sym1 in sigma1, restrict the possible
 -- mappings of s in posmap to sub/supersorts of sym2 in sigma2
-restrictSorts :: Symbol -> Symbol -> Sign -> Sign -> PosMap -> PosMap
+restrictSorts :: Analyzable lid b s f e => 
+                Symbol -> Symbol -> Sign lid b s f e -> Sign lid b s f e -> PosMap -> PosMap
 restrictSorts sym1 sym2 sigma1 sigma2 posmap = 
   restrictPosMap subsyms1 subsyms2
     $ restrictPosMap supersyms1 supersyms2 posmap
@@ -556,7 +561,8 @@ restrictOps sym1 sym2 posmap =
     _ -> ([],[])
 
 -- the main function
-inducedFromToMorphism :: RawSymbolMap -> Sign -> Sign -> Result Morphism
+inducedFromToMorphism :: Analyzable lid b s f e => 
+                RawSymbolMap -> Sign lid b s f e -> Sign lid b s f e -> Result (Morphism lid b s f e)
 inducedFromToMorphism rmap sigma1 sigma2 = do
   --debug 3 ("rmap",rmap)
   -- 1. use rmap to get a renaming...
@@ -681,8 +687,9 @@ Output: signature "Sigma1"<=Sigma.
 7. return the inclusion of sigma1 into sigma.
 -}
 
-generatedSign :: SymbolSet -> Sign -> Result Morphism
-generatedSign sys sigma = do
+generatedSign :: Analyzable lid b s f e => 
+                SymbolSet -> Sign lid b s f e -> Result (Morphism lid b s f e)
+generatedSign sys (sigma::Sign lid b s f e) = do
   if not (sys `Set.subset` symset)   -- 2.
    then pfatal_error 
          (ptext "Revealing: The following symbols" 
@@ -691,7 +698,7 @@ generatedSign sys sigma = do
    else return $ embedMorphism sigma2 sigma    -- 7.
   where
   symset = symOf sigma   -- 1. 
-  sigma1 = Set.fold revealSym emptySign sys  -- 4. 
+  sigma1 = Set.fold revealSym (emptySign::Sign lid b s f e) sys  -- 4. 
   revealSym sy sigma1 = case symbType sy of  -- 4.1.
     SortAsItemType ->      -- 4.1.1.
       sigma1 {sortSet = Set.insert (symName sy) $ sortSet sigma1}
@@ -726,7 +733,8 @@ Output: signature "Sigma1"<=Sigma.
 5. return the inclusion of sigma1 into sigma.
 -}
 
-cogeneratedSign :: SymbolSet -> Sign -> Result Morphism
+cogeneratedSign :: Analyzable lid b s f e => 
+                SymbolSet -> Sign lid b s f e -> Result (Morphism lid b s f e)
 cogeneratedSign symset sigma = do
   if not (symset `Set.subset` symset0)   -- 2.
    then pfatal_error 
@@ -749,6 +757,7 @@ cogeneratedSign symset sigma = do
   profileContains s (OpAsItemType ot) = s `elem` (opRes ot:opArgs ot)
   profileContains s (PredAsItemType pt) = s `elem` (predArgs pt)
 
-finalUnion :: Sign -> Sign -> Result Sign
+finalUnion :: Analyzable lid b s f e => 
+              Sign lid b s f e -> Sign lid b s f e -> Result (Sign lid b s f e)
 finalUnion sigma1 sigma2 = return $ addSig sigma1 sigma2 
   -- ???  Finality check not yet implemented

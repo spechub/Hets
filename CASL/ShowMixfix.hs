@@ -15,12 +15,13 @@ module CASL.ShowMixfix (showTerm, showFormula) where
 import CASL.AS_Basic_CASL
 import Common.Id
 import Common.Keywords
+import Common.AnnoState
 
 bl :: ShowS
 bl = showChar ' '
 
 -- | shows Terms fully bracketed for mixfix errors
-showTerm :: TERM -> ShowS
+showTerm :: AParsable f => TERM f -> ShowS
 showTerm (Simple_id s)               = showTok s
 showTerm (Qual_var v s _ )           = showParen True $ 
     showString varS . bl . showTok v  . showString colonS . showId s
@@ -61,7 +62,7 @@ showOpt (Partial_op_type sorts s _ ) =
      showProduct sorts . bl . showString funS) . showString quMark . showId s
 
 -- die show-Funktion fuer den Daten-Typ FORMULA
-showFormula :: FORMULA -> ShowS
+showFormula :: AParsable f => FORMULA f -> ShowS
 showFormula (Quantification qu var_Ds f _) 
             = showQuantifier qu . bl . showVarDecls var_Ds  
               . showString dotS . showFormula f

@@ -19,6 +19,7 @@ module CASL.MixfixParser ( resolveFormula, resolveMixfix)
     where 
 import CASL.AS_Basic_CASL 
 import Common.GlobalAnnotations
+import Common.AnnoState
 import Common.Result
 import Common.Id
 import qualified Common.Lib.Set as Set
@@ -74,7 +75,7 @@ initRules ga (opS, predS, _) maybeFormula =
        map (mkArgsRule False) ops]
 
 -- | meaningful position of a term
-posOfTerm :: TERM -> Pos
+posOfTerm :: AParsable f => TERM f -> Pos
 posOfTerm trm =
     case trm of
 	      Mixfix_token t -> tokPos t
@@ -91,11 +92,11 @@ posOfTerm trm =
 	      _ -> getMyPos trm 
 
 -- | construct application
-asAppl :: Id -> [TERM] -> [Pos] -> TERM
+asAppl :: AParsable f => Id -> [TERM f] -> [Pos] -> TERM f
 asAppl f as ps = Application (Op_name f) as ps
 
 -- | constructing the parse tree from (the final) parser state(s)
-toAppl :: Id -> Bool -> [TERM] -> [Pos] -> TERM
+toAppl :: AParsable f => Id -> Bool -> [TERM f] -> [Pos] -> TERM f
 toAppl ide _ ar qs = 
        if ide == singleArgId || ide == multiArgsId
 	    then assert (length ar > 1) $ 
@@ -111,7 +112,7 @@ toAppl ide _ ar qs =
 
 type IdSet = (Set.Set Id, Set.Set Id, Set.Set Id)
 
-addType :: TERM -> TERM -> TERM
+addType :: AParsable f => TERM f -> TERM f -> TERM f
 addType tt t = 
     case tt of
     Mixfix_sorted_term s ps -> Sorted_term t s ps
@@ -124,10 +125,11 @@ filterByPredicate bArg bOp =
     if bArg then Just False else
        if bOp then Just True else Nothing
 
-type TermChart = Chart TERM Bool
+type TermChart f = Chart (TERM f) Bool
 
-iterateCharts :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> TermChart 
-	      -> TermChart
+iterateCharts :: AParsable f =>
+              GlobalAnnos -> IdSet -> Bool -> [TERM f] -> TermChart f 
+	      -> TermChart f
 iterateCharts g ids maybeFormula terms c = 
     let self = iterateCharts g ids maybeFormula
 	expand = expandPos Mixfix_token 
@@ -185,26 +187,28 @@ mkIdSet ops preds =
     let both = Set.intersection ops preds in
 	(ops, Set.difference preds both, preds)
 
-resolveMixfix :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> Bool -> TERM 
-	      -> Result TERM
+resolveMixfix :: AParsable f => GlobalAnnos -> Set.Set Id -> Set.Set Id -> Bool -> TERM f 
+	      -> Result (TERM f)
 resolveMixfix g ops preds maybeFormula t = 
     let r@(Result ds _) = resolveMixTrm g (mkIdSet ops preds) maybeFormula t 
 	in if null ds then r else Result ds Nothing
 
-resolveMixTrm :: GlobalAnnos -> IdSet -> Bool 
-	      -> TERM -> Result TERM
+resolveMixTrm :: AParsable f => GlobalAnnos -> IdSet -> Bool 
+	      -> TERM f -> Result (TERM f)
 resolveMixTrm ga ids maybeFormula trm =
 	getResolved showTerm (posOfTerm trm) toAppl
 	   $ iterateCharts ga ids maybeFormula [trm] $ 
 	    initChart (initRules ga ids maybeFormula) Set.empty
 
-resolveFormula :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> FORMULA 
-	       -> Result FORMULA
+resolveFormula :: AParsable f => 
+               GlobalAnnos -> Set.Set Id -> Set.Set Id -> (FORMULA f)
+	       -> Result (FORMULA f)
 resolveFormula g ops preds f =     
     let r@(Result ds _) = resolveMixFrm g (mkIdSet ops preds) f 
 	in if null ds then r else Result ds Nothing
 
-resolveMixFrm :: GlobalAnnos -> IdSet-> FORMULA -> Result FORMULA
+resolveMixFrm :: AParsable f => 
+                 GlobalAnnos -> IdSet-> FORMULA f -> Result (FORMULA f)
 resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
     let self = resolveMixFrm g ids 
 	resolveTerm = resolveMixTrm g ids False in

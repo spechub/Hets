@@ -72,6 +72,7 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.AS_Annotation
+import Common.AnnoState
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
@@ -303,10 +304,10 @@ mapPos c p f l = let
 
 -- FORMULA, P-ATOM
 --
-is_atomic_f :: FORMULA -> Bool
+is_atomic_f :: AParsable f => FORMULA f -> Bool
 is_atomic_f (Quantification q _ f _) = (is_atomic_q q) && (is_atomic_f f)
 is_atomic_f (Conjunction l _) = -- F-CONJUNCTION
-                                (l /= []) && (and $ map is_atomic_f l)
+                                (not (null l)) && (and $ map is_atomic_f l)
 is_atomic_f (True_atom _) = True
 is_atomic_f (Predication _ _ _) = True
 is_atomic_f (Definedness _ _) = True
@@ -323,20 +324,20 @@ is_atomic_q _ = False
 
 -- FORMULA
 --
-is_horn_f :: FORMULA -> Bool
+is_horn_f :: AParsable f => FORMULA f -> Bool
 is_horn_f (Quantification q _ f _) = (is_atomic_q q) && (is_horn_f f)
 is_horn_f (Implication f g _) = (is_horn_p_conj f) && (is_horn_a g)
 is_horn_f _ = False
 
 -- P-CONJUNCTION
 --
-is_horn_p_conj :: FORMULA -> Bool
+is_horn_p_conj :: AParsable f => FORMULA f -> Bool
 is_horn_p_conj (Conjunction l _) = and ((map is_horn_p_a) l)
 is_horn_p_conj _ = False
 
 -- ATOM
 --
-is_horn_a :: FORMULA -> Bool
+is_horn_a :: AParsable f => FORMULA f -> Bool
 is_horn_a (True_atom _) = True
 is_horn_a (Predication _ _ _) = True
 is_horn_a (Definedness _ _) = True
@@ -347,7 +348,7 @@ is_horn_a _ = False
 
 -- P-ATOM
 --
-is_horn_p_a :: FORMULA -> Bool
+is_horn_p_a :: AParsable f => FORMULA f -> Bool
 is_horn_p_a (True_atom _) = True
 is_horn_p_a (Predication _ _ _) = True
 is_horn_p_a (Definedness _ _) = True
@@ -359,7 +360,7 @@ is_horn_p_a _ = False
 
 -- FORMULA, ATOM
 --
-is_ghorn_f :: FORMULA -> Bool
+is_ghorn_f :: AParsable f => FORMULA f -> Bool
 is_ghorn_f (Quantification q _ f _) = (is_atomic_q q) && (is_ghorn_f f)
 is_ghorn_f (Conjunction l _) = (is_ghorn_c_conj l) || (is_ghorn_f_conj l)
 is_ghorn_f (Implication f g _) = (is_ghorn_prem f) && (is_ghorn_conc g)
@@ -374,34 +375,34 @@ is_ghorn_f _ = False
 
 -- C-CONJUNCTION
 --
-is_ghorn_c_conj :: [FORMULA] -> Bool
+is_ghorn_c_conj :: AParsable f => [FORMULA f] -> Bool
 is_ghorn_c_conj l = and ((map is_ghorn_conc) l)
 
 -- F-CONJUNCTION
 --
-is_ghorn_f_conj :: [FORMULA] -> Bool
+is_ghorn_f_conj :: AParsable f => [FORMULA f] -> Bool
 is_ghorn_f_conj l = and ((map is_ghorn_f) l)
 
 -- P-CONJUNCTION
 --
-is_ghorn_p_conj :: [FORMULA] -> Bool
+is_ghorn_p_conj :: AParsable f => [FORMULA f] -> Bool
 is_ghorn_p_conj l = and ((map is_ghorn_prem) l)
 
 -- PREMISE
 --
-is_ghorn_prem :: FORMULA -> Bool
+is_ghorn_prem :: AParsable f => FORMULA f -> Bool
 is_ghorn_prem (Conjunction l _) = is_ghorn_p_conj l
 is_ghorn_prem x = is_horn_p_a x
 
 -- CONCLUSION
 --
-is_ghorn_conc :: FORMULA -> Bool
+is_ghorn_conc :: AParsable f => FORMULA f -> Bool
 is_ghorn_conc (Conjunction l _) = is_ghorn_c_conj l
 is_ghorn_conc x = is_horn_a x
 
 -- compute logic of a formula by checking all logics in turn
 --
-get_logic :: FORMULA -> CASL_Sublogics
+get_logic :: AParsable f => FORMULA f -> CASL_Sublogics
 get_logic f = if (is_atomic_f f) then bottom else
               if (is_horn_f f) then need_horn else
               if (is_ghorn_f f) then need_ghorn else
@@ -409,7 +410,7 @@ get_logic f = if (is_atomic_f f) then bottom else
 
 -- for the formula inside a subsort-defn
 --
-get_logic_sd :: FORMULA -> CASL_Sublogics
+get_logic_sd :: AParsable f => FORMULA f -> CASL_Sublogics
 get_logic_sd f = if (is_horn_p_a f) then need_horn else
                  if (is_ghorn_prem f) then need_ghorn else
                  need_fol
@@ -423,7 +424,8 @@ sl_basic_spec :: BASIC_SPEC -> CASL_Sublogics
 sl_basic_spec (Basic_spec l) = comp_list $ map sl_basic_items
                                          $ map item l
 
-sl_basic_items :: BASIC_ITEMS -> CASL_Sublogics
+sl_basic_items :: (AParsable b, AParsable s, AParsable f) =>
+                  BASIC_ITEMS b s f -> CASL_Sublogics
 sl_basic_items (Sig_items i) = sl_sig_items i
 sl_basic_items (Free_datatype l _) = comp_list $ map sl_datatype_decl
                                                $ map item l
@@ -438,7 +440,7 @@ sl_basic_items (Local_var_axioms d l _) = sublogics_max
 sl_basic_items (Axiom_items l _) = comp_list $ map sl_formula
                                              $ map item l
 
-sl_sig_items :: SIG_ITEMS -> CASL_Sublogics
+sl_sig_items :: (AParsable b, AParsable s, AParsable f) => SIG_ITEMS b s f -> CASL_Sublogics
 sl_sig_items (Sort_items l _) = comp_list $ map sl_sort_item $ map item l
 sl_sig_items (Op_items l _) = comp_list $ map sl_op_item $ map item l
 sl_sig_items (Pred_items l _) = comp_list $ map sl_pred_item $ map item l
@@ -449,7 +451,7 @@ sl_sig_items (Datatype_items l _) = comp_list $ map sl_datatype_decl
 -- because the expressiveness allowed in the formula may be different
 -- from more general formulae in the same expression logic
 --
-sl_sort_item :: SORT_ITEM -> CASL_Sublogics
+sl_sort_item :: AParsable f => SORT_ITEM f -> CASL_Sublogics
 sl_sort_item (Subsort_decl _ _ _) = need_sub
 sl_sort_item (Subsort_defn _ _ _ f _) = sublogics_max
                                         (get_logic_sd $ item f)
@@ -457,13 +459,13 @@ sl_sort_item (Subsort_defn _ _ _ f _) = sublogics_max
                                         (sl_formula $ item f))
 sl_sort_item _ = bottom
 
-sl_op_item :: OP_ITEM -> CASL_Sublogics
+sl_op_item :: AParsable f => OP_ITEM f -> CASL_Sublogics
 sl_op_item (Op_decl _ t l _) = sublogics_max (sl_op_type t)
                                (comp_list $ map sl_op_attr l)
 sl_op_item (Op_defn _ h t _) = sublogics_max (sl_op_head h)
                                              (sl_term $ item t)
 
-sl_op_attr :: OP_ATTR -> CASL_Sublogics
+sl_op_attr :: AParsable f => OP_ATTR f -> CASL_Sublogics
 sl_op_attr (Unit_op_attr t) = sl_term t
 sl_op_attr _ = bottom
 
@@ -475,7 +477,7 @@ sl_op_head :: OP_HEAD -> CASL_Sublogics
 sl_op_head (Partial_op_head _ _ _) = need_part
 sl_op_head _ = bottom
 
-sl_pred_item :: PRED_ITEM -> CASL_Sublogics
+sl_pred_item :: AParsable f => PRED_ITEM f -> CASL_Sublogics
 sl_pred_item (Pred_decl _ _ _) = need_pred
 sl_pred_item (Pred_defn _ _ f _) = sublogics_max need_pred
                                                  (sl_formula $ item f)
@@ -496,15 +498,15 @@ sl_components _ = bottom
 sl_var_decl :: VAR_DECL -> CASL_Sublogics
 sl_var_decl _ = bottom
 
-sl_term :: TERM -> CASL_Sublogics
+sl_term :: AParsable f => TERM f -> CASL_Sublogics
 sl_term (Cast _ _ _) = need_part
 sl_term (Conditional t f u _) = comp_list [sl_term t,sl_formula f,sl_term u]
 sl_term _ = bottom
 
-sl_formula :: FORMULA -> CASL_Sublogics
+sl_formula :: AParsable f => FORMULA f -> CASL_Sublogics
 sl_formula f = sublogics_max (get_logic f) (sl_form f)
 
-sl_form :: FORMULA -> CASL_Sublogics
+sl_form :: AParsable f => FORMULA f -> CASL_Sublogics
 sl_form (Quantification _ _ f _) = sl_form f
 sl_form (Conjunction l _) = comp_list $ map sl_form l
 sl_form (Disjunction l _) = comp_list $ map sl_form l
@@ -559,7 +561,7 @@ sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
 -- them will be included by just checking the signatures
 --
 
-sl_sign :: Sign -> CASL_Sublogics
+sl_sign :: Analyzable lid b s f e => Sign lid b s f e -> CASL_Sublogics
 sl_sign s = 
     let subs = if Rel.isEmpty $ sortRel s then need_sub else bottom
 	preds = if Map.isEmpty $ predMap s then need_pred else bottom
@@ -567,10 +569,10 @@ sl_sign s =
 		  $ Set.unions $ Map.elems $ opMap s then need_part else bottom
 	in sublogics_max subs (sublogics_max preds partial)
 
-sl_sentence :: FORMULA -> CASL_Sublogics
+sl_sentence :: AParsable f => FORMULA f -> CASL_Sublogics
 sl_sentence = sl_formula
 
-sl_morphism :: Morphism -> CASL_Sublogics
+sl_morphism :: Analyzable lid b s f e => Morphism lid b s f e -> CASL_Sublogics
 sl_morphism (Morphism a b _ _ _) = sublogics_max (sl_sign a) (sl_sign b)
 
 sl_symbol :: Symbol -> CASL_Sublogics
@@ -616,7 +618,7 @@ in_x l x f = sl_in l (f x)
 in_basic_spec :: CASL_Sublogics -> BASIC_SPEC -> Bool
 in_basic_spec l x = in_x l x sl_basic_spec
 
-in_sentence :: CASL_Sublogics -> FORMULA -> Bool
+in_sentence :: AParsable f => CASL_Sublogics -> FORMULA f -> Bool
 in_sentence l x = in_x l x sl_sentence
 
 in_symb_items :: CASL_Sublogics -> SYMB_ITEMS -> Bool
@@ -631,10 +633,10 @@ in_symb_items_list l x = in_x l x sl_symb_items_list
 in_symb_map_items_list :: CASL_Sublogics -> SYMB_MAP_ITEMS_LIST -> Bool
 in_symb_map_items_list l x = in_x l x sl_symb_map_items_list
 
-in_sign :: CASL_Sublogics -> Sign -> Bool
+in_sign :: Analyzable lid b s f e => CASL_Sublogics -> Sign lid b s f e -> Bool
 in_sign l x = in_x l x sl_sign
 
-in_morphism :: CASL_Sublogics -> Morphism -> Bool
+in_morphism :: Analyzable lid b s f e => CASL_Sublogics -> Morphism lid b s f e -> Bool
 in_morphism l x = in_x l x sl_morphism
 
 in_symbol :: CASL_Sublogics -> Symbol -> Bool
@@ -681,12 +683,12 @@ pr_annoted_dt sl f a = let
 pr_check :: CASL_Sublogics -> (a -> CASL_Sublogics) -> a -> Maybe a
 pr_check l f e = if (in_x l e f) then (Just e) else Nothing
 
-pr_formula :: CASL_Sublogics -> FORMULA -> Maybe FORMULA
+pr_formula :: AParsable f => CASL_Sublogics -> FORMULA f -> Maybe (FORMULA f)
 pr_formula l f = pr_check l sl_formula f
 
 -- make full Annoted Sig_items out of a SORT list
 --
-pr_make_sorts :: [SORT] -> Annoted BASIC_ITEMS
+pr_make_sorts :: (AParsable b, AParsable s, AParsable f) => [SORT] -> Annoted (BASIC_ITEMS b s f)
 pr_make_sorts s =
   Annoted (Sig_items (Sort_items [Annoted (Sort_decl s [])[][][]][]))[][][]
 
@@ -711,7 +713,9 @@ pr_basic_spec l (Basic_spec s) =
 -- returns a non-empty list of [SORT] if datatypes had to be removed
 -- completely
 --
-pr_basic_items :: CASL_Sublogics -> BASIC_ITEMS -> (Maybe BASIC_ITEMS, [SORT])
+pr_basic_items :: (AParsable b, AParsable s, AParsable f) => 
+                   CASL_Sublogics -> BASIC_ITEMS b s f 
+                   -> (Maybe (BASIC_ITEMS b s f), [SORT])
 pr_basic_items l (Sig_items s) =
                let
                  (res,lst) = pr_sig_items l s
@@ -725,7 +729,7 @@ pr_basic_items l (Free_datatype d p) =
                  (res,pos) = mapPos 2 p (pr_annoted l pr_datatype_decl) d
                  lst       = pr_lost_dt l (map item d)
                in
-                 if (res==[]) then
+                 if (null res) then
                    (Nothing,lst)
                  else
                    (Just (Free_datatype res pos),lst)
@@ -736,7 +740,7 @@ pr_basic_items l (Sort_gen s p) =
                    res = catMaybes $ map fst tmp
                    lst = concat $ map snd tmp
                  in
-                   if (res==[]) then
+                   if (null res) then
                      (Nothing,lst)
                    else
                      (Just (Sort_gen res p),lst)
@@ -747,7 +751,7 @@ pr_basic_items l (Local_var_axioms v f p) =
                let
                  (res,pos) = mapPos (length v) p (pr_annoted l pr_formula) f
                in
-                 if (res==[]) then
+                 if (null res) then
                    (Nothing,[])
                  else
                    (Just (Local_var_axioms v res pos),[])
@@ -755,7 +759,7 @@ pr_basic_items l (Axiom_items f p) =
                let
                  (res,pos) = mapPos 0 p (pr_annoted l pr_formula) f
                in
-                 if (res==[]) then
+                 if (null res) then
                    (Nothing,[])
                  else
                    (Just (Axiom_items res pos),[])
@@ -765,7 +769,7 @@ pr_datatype_decl l (Datatype_decl s a p) =
                  let
                    (res,pos) = mapPos 1 p (pr_annoted l pr_alternative) a
                  in
-                   if (res==[]) then
+                   if (null res) then
                      Nothing
                    else
                      Just (Datatype_decl s res pos)
@@ -776,7 +780,7 @@ pr_alternative l (Total_construct n c p) =
                let
                  (res,pos) = mapPos 1 p (pr_components l) c
                in
-                 if (res==[]) then
+                 if (null res) then
                    Nothing
                  else
                    Just (Total_construct n res pos)
@@ -821,12 +825,14 @@ pr_symbol l s = pr_check l sl_symbol s
 -- returns a non-empty list of [SORT] if datatypes had to be removed
 -- completely
 --
-pr_sig_items :: CASL_Sublogics -> SIG_ITEMS -> (Maybe SIG_ITEMS,[SORT])
+pr_sig_items :: (AParsable b, AParsable s, AParsable f) => 
+                CASL_Sublogics -> SIG_ITEMS b s f 
+                -> (Maybe (SIG_ITEMS b s f),[SORT])
 pr_sig_items l (Sort_items s p) =
              let
                (res,pos) = mapPos 1 p (pr_annoted l pr_sort_item) s
              in
-               if (res==[]) then
+               if (null res) then
                  (Nothing,[])
                else
                  (Just (Sort_items res pos),[])
@@ -834,7 +840,7 @@ pr_sig_items l (Op_items o p) =
              let
                (res,pos) = mapPos 1 p (pr_annoted l pr_op_item) o
              in
-               if (res==[]) then
+               if (null res) then
                  (Nothing,[])
                else
                  (Just (Op_items res pos),[])
@@ -848,19 +854,20 @@ pr_sig_items l (Datatype_items d p) =
                (res,pos) = mapPos 1 p (pr_annoted l pr_datatype_decl) d
                lst       = pr_lost_dt l (map item d)
              in
-               if (res==[]) then
+               if (null res) then
                  (Nothing,lst)
                else
                  (Just (Datatype_items res pos),lst)
 
-pr_op_item :: CASL_Sublogics -> OP_ITEM -> Maybe OP_ITEM
+pr_op_item :: AParsable f => CASL_Sublogics -> OP_ITEM f -> Maybe (OP_ITEM f)
 pr_op_item l i = pr_check l sl_op_item i
 
 -- subsort declarations and definitions are reduced to simple
 -- sort declarations if the sublogic disallows subsorting to
 -- avoid loosing sorts in the projection
 --
-pr_sort_item :: CASL_Sublogics -> SORT_ITEM -> Maybe SORT_ITEM
+pr_sort_item :: AParsable f => 
+                CASL_Sublogics -> SORT_ITEM f -> Maybe (SORT_ITEM f)
 pr_sort_item _ (Sort_decl s p) = Just (Sort_decl s p)
 pr_sort_item l (Subsort_decl sl s p) =
              if (has_sub l) then
@@ -883,7 +890,7 @@ pr_symb_items l1 (Symb_items k s p) =
                 let
                   (res,pos) = mapPos 1 p (pr_symb l) s
                 in
-                  if (res==[]) then
+                  if (null res) then
                     Nothing
                   else
                     Just (Symb_items k res pos)
@@ -899,7 +906,7 @@ pr_symb_map_items l1 (Symb_map_items k s p) =
                     let
                       (res,pos) = mapPos 1 p (pr_symb_or_map l) s
                     in
-                      if (res==[]) then
+                      if (null res) then
                         Nothing
                       else
                         Just (Symb_map_items k res pos)
@@ -933,10 +940,10 @@ pr_symb l (Qual_id i t p) =
         else
           Nothing
 
-pr_sign :: CASL_Sublogics -> Sign -> Sign
+pr_sign :: Analyzable lid b s f e => CASL_Sublogics -> Sign lid b s f e -> Sign lid b s f e
 pr_sign _sl s = s -- do something here
     
-pr_morphism :: CASL_Sublogics -> Morphism -> Morphism
+pr_morphism :: Analyzable lid b s f e => CASL_Sublogics -> Morphism lid b s f e -> Morphism lid b s f e
 pr_morphism l1 (Morphism s t sm fm pm) =
   let
     l = adjust_logic l1
@@ -961,7 +968,7 @@ pr_fun_map_entry l (_,t) (_,b) =
 -- compute a morphism that consists of the original signature
 -- and the projected signature
 --
-pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
+pr_epsilon :: Analyzable lid b s f e => CASL_Sublogics -> Sign lid b s f e -> Morphism lid b s f e
 pr_epsilon l1 s = let
                     l = adjust_logic l1
                     new = pr_sign l s

@@ -21,13 +21,10 @@ data Modal = Modal deriving (Show)
 
 instance Language Modal where  -- default definition is okay
 
-type Sign = Set Id 
-instance Show Sign where
+type ModalSign = Sign Modal M_BASIC_SPEC M_BASIC_ITEM M_FORMULA
+type ModalMor = Morphism M_BASIC_SPEC M_BASIC_ITEM M_FORMULA
 
-type Morphism = (Sign, EndoMap Id, Sign)
-
-
-instance Category Modal Sign Morphism  
+instance Category Modal ModalSign ModalMorphism  
     where
        -- ide :: id -> object -> morphism
        ide Modal sigma = (sigma, Map.fromList 

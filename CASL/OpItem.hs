@@ -51,7 +51,7 @@ opHead = do Pred_head vs ps <- predHead
 	      return (if b then Partial_op_head vs s qs
 	              else Total_op_head vs s qs)
 
-opAttr :: AParser (OP_ATTR, Token)
+opAttr :: AParsable f => AParser (OP_ATTR f, Token)
 opAttr =    do p <- asKey assocS
 	       return (Assoc_op_attr, p)
 	    <|> 
@@ -75,7 +75,7 @@ toHead c (Total_op_type [] s _) = Total_op_head [] s [c]
 toHead c (Partial_op_type [] s _) = Partial_op_head [] s [c] 
 toHead _ _ = error "toHead got non-empty argument type"
 
-opItem :: AParser OP_ITEM 
+opItem :: AParsable f => AParser (OP_ITEM f)
 opItem = do (os, cs)  <- parseId `separatedBy` anComma
 	    if isSingle os then 
 	      do c <- colonST
@@ -92,13 +92,13 @@ opItem = do (os, cs)  <- parseId `separatedBy` anComma
 		 t <- opType
 		 opAttrs os t (cs++[c])
 
-opBody :: OP_NAME -> OP_HEAD -> AParser OP_ITEM
+opBody :: AParsable f => OP_NAME -> OP_HEAD -> AParser (OP_ITEM f)
 opBody o h = do e <- equalT
 		a <- annos
 		t <- term
 		return (Op_defn o h (Annoted t [] a []) [tokPos e])
 	  
-opAttrs :: [OP_NAME] -> OP_TYPE -> [Token] -> AParser OP_ITEM
+opAttrs :: AParsable f => [OP_NAME] -> OP_TYPE -> [Token] -> AParser (OP_ITEM f)
 opAttrs os t c = do q <- anComma 
 		    (as, cs) <- opAttr `separatedBy` anComma
 		    let ps = sort (map tokPos (c ++ map snd as ++ (q:cs)))
@@ -111,7 +111,7 @@ opAttrs os t c = do q <- anComma
 -- predicates
 -- ----------------------------------------------------------------------
 
-predItem :: AParser PRED_ITEM 
+predItem :: AParsable f => AParser (PRED_ITEM f)
 predItem = do (ps, cs)  <- parseId `separatedBy` anComma
 	      if isSingle ps then
 		predBody (head ps) (Pred_head [] [])
@@ -122,13 +122,13 @@ predItem = do (ps, cs)  <- parseId `separatedBy` anComma
 		predTypeCont ps cs
 		else predTypeCont ps cs
 		
-predBody :: PRED_NAME -> PRED_HEAD -> AParser PRED_ITEM	
+predBody :: AParsable f => PRED_NAME -> PRED_HEAD -> AParser (PRED_ITEM f)	
 predBody p h = do e <- asKey equivS
 		  a <- annos
 		  f <- formula
 		  return (Pred_defn p h (Annoted f [] a []) [tokPos e])
 
-predTypeCont :: [PRED_NAME] -> [Token] -> AParser PRED_ITEM	
+predTypeCont :: AParsable f => [PRED_NAME] -> [Token] -> AParser (PRED_ITEM f)
 predTypeCont ps cs = do c <- colonT
 			t <- predType
 			return (Pred_decl ps t (map tokPos (cs++[c])))

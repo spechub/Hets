@@ -549,7 +549,7 @@ instance ATermConvertibleSML BASIC_SPEC where
 		    getATermByIndex1 item_i att
 		_  -> att
 
-instance ATermConvertibleSML BASIC_ITEMS where
+instance ATermConvertibleSML (BASIC_ITEMS () () ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"BASIC_ITEMS\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"BASIC_ITEMS\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"BASIC_ITEMS\" not implemented"
@@ -594,7 +594,7 @@ instance ATermConvertibleSML BASIC_ITEMS where
 		    (posFromRegion reg_i att,getATermByIndex1 item_i att)
 		_  -> ([],att)
 
-instance ATermConvertibleSML SIG_ITEMS where
+instance ATermConvertibleSML (SIG_ITEMS () () ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"SIG_ITEMS\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"SIG_ITEMS\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SIG_ITEMS\" not implemented"
@@ -637,7 +637,7 @@ instance ATermConvertibleSML SIG_ITEMS where
 		    (posFromRegion reg_i att,getATermByIndex1 item_i att)
 		_  -> ([],att)
 
-instance ATermConvertibleSML SORT_ITEM where
+instance ATermConvertibleSML (SORT_ITEM ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"SORT_ITEM\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"SORT_ITEM\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SORT_ITEM\" not implemented"
@@ -678,7 +678,7 @@ instance ATermConvertibleSML SORT_ITEM where
 		    (posFromRegion reg_i att,getATermByIndex1 item_i att)
 		_  -> ([],att)
 
-instance ATermConvertibleSML OP_ITEM where
+instance ATermConvertibleSML (OP_ITEM ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"OP_ITEM\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"OP_ITEM\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"OP_ITEM\" not implemented"
@@ -807,7 +807,7 @@ instance ATermConvertibleSML ARG_DECL where
 		    (posFromRegion reg_i att,getATermByIndex1 item_i att)
 		_  -> ([],att)
 
-instance ATermConvertibleSML OP_ATTR where
+instance ATermConvertibleSML (OP_ATTR ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"OP_ATTR\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"OP_ATTR\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"OP_ATTR\" not implemented"
@@ -835,7 +835,7 @@ instance ATermConvertibleSML OP_ATTR where
 		    getATermByIndex1 item_i att
 		_  -> att
 
-instance ATermConvertibleSML PRED_ITEM where
+instance ATermConvertibleSML (PRED_ITEM ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"PRED_ITEM\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"PRED_ITEM\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"PRED_ITEM\" not implemented"
@@ -1004,7 +1004,7 @@ instance ATermConvertibleSML VAR_DECL where
 	where
 	    aterm = getATerm att
 
-instance ATermConvertibleSML FORMULA where
+instance ATermConvertibleSML (FORMULA ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"FORMULA\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"FORMULA\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"FORMULA\" not implemented"
@@ -1092,7 +1092,7 @@ instance ATermConvertibleSML FORMULA where
 	    (pos_l,_g_flag,att') = skipPosFlag "pos-FORMULA" att
 
 ---- a helper for the SML-datatype TERMS -------------------------------
-from_sml_ATermTERMS :: ATermTable -> ([TERM],[Pos])
+from_sml_ATermTERMS :: ATermTable -> ([TERM ()],[Pos])
 from_sml_ATermTERMS att = 
     case aterm of
 	     (ShAAppl "terms" [ aa ] _)  ->
@@ -1177,7 +1177,7 @@ instance ATermConvertibleSML PRED_SYMB where
 		    (posFromRegion reg_i att,getATermByIndex1 item_i att)
 		_  -> ([],att)
 
-instance ATermConvertibleSML TERM where
+instance ATermConvertibleSML (TERM ()) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"TERM\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"TERM\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"TERM\" not implemented"

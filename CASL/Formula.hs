@@ -53,14 +53,14 @@ import Common.Token
 import CASL.AS_Basic_CASL
 import Common.Lib.Parsec
 
-simpleTerm :: [String] -> AParser TERM
+simpleTerm :: AParsable f => [String] -> AParser (TERM f)
 simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString 
 		       <|>  scanQuotedChar <|> scanDotWords 
 		       <|>  reserved (k ++ casl_reserved_fwords) scanAnyWords
 		       <|>  reserved (k ++ casl_reserved_fops) scanAnySigns
 		       <|>  placeS <?> "id/literal" )) 
 
-startTerm, restTerm, mixTerm, whenTerm  :: [String] -> AParser TERM
+startTerm, restTerm, mixTerm, whenTerm  :: AParsable f => [String] -> AParser (TERM f)
 startTerm k = parenTerm k <|> braceTerm k <|> bracketTerm k <|> simpleTerm k
 
 restTerm k = startTerm k <|> typedTerm <|> castedTerm
@@ -78,13 +78,13 @@ whenTerm k =
 		 return (Conditional t f r $ toPos w [] e)
 		<|> return t
 
-term :: AParser TERM
+term :: AParsable f => AParser (TERM f)
 term = whenTerm []
 
-restrictedTerm :: [String] -> AParser TERM
+restrictedTerm :: AParsable f => [String] -> AParser (TERM f)
 restrictedTerm = whenTerm 
 
-typedTerm, castedTerm :: AParser TERM
+typedTerm, castedTerm :: AParsable f => AParser (TERM f)
 typedTerm = do c <- colonT
                t <- sortId
                return (Mixfix_sorted_term t [tokPos c])
@@ -93,12 +93,12 @@ castedTerm = do c <- asT
 		t <- sortId
 		return (Mixfix_cast t [tokPos c])
 
-terms :: [String] -> AParser ([TERM], [Token])
+terms :: AParsable f => [String] -> AParser ([TERM f], [Token])
 terms k = 
     do (ts, ps) <- whenTerm k `separatedBy` anComma
        return (ts, ps)
 
-qualVarName, qualOpName :: Token -> AParser TERM
+qualVarName, qualOpName :: AParsable f => Token -> AParser (TERM f)
 qualVarName o = do v <- asKey varS
 		   i <- varId
 		   c <- colonT 
@@ -137,7 +137,7 @@ opType = do (b, s, p) <- opSort
  	            <|> opFunSort [s] []
 	            <|> return (Total_op_type [] s [])
 
-parenTerm, braceTerm, bracketTerm :: [String] -> AParser TERM
+parenTerm, braceTerm, bracketTerm :: AParsable f => [String] -> AParser (TERM f)
 parenTerm k = 
             do o <- oParenT
                qualVarName o
@@ -173,7 +173,7 @@ quant = try(
 	   return (Universal, q))
         <?> "quantifier"
        
-quantFormula :: [String] -> AParser FORMULA
+quantFormula :: AParsable f => [String] -> AParser (FORMULA f)
 quantFormula k = 
     do (q, p) <- quant
        (vs, ps) <- varDecl `separatedBy` anSemi
@@ -188,7 +188,7 @@ varDecl = do (vs, ps) <- varId `separatedBy` anComma
 	     s <- sortId
 	     return (Var_decl vs s (map tokPos ps ++[tokPos c]))
 
-updFormulaPos :: Pos -> Pos -> FORMULA -> FORMULA
+updFormulaPos :: AParsable f => Pos -> Pos -> (FORMULA f) -> (FORMULA f)
 updFormulaPos o c = up_pos_l (\l-> o:l++[c])  
 
 predType :: AParser PRED_TYPE
@@ -201,7 +201,7 @@ predUnitType = do o <- oParenT
 		  c <- cParenT
 		  return (Pred_type [] [tokPos o, tokPos c])
 
-qualPredName :: Token -> AParser TERM
+qualPredName :: AParsable f => Token -> AParser (TERM f)
 qualPredName o = do v <- asKey predS
 		    i <- parseId
 		    c <- colonT 
@@ -210,7 +210,7 @@ qualPredName o = do v <- asKey predS
 		    return $ Mixfix_qual_pred
 			    $ Qual_pred_name i s $ toPos o [v, c] p
 
-parenFormula :: [String] -> AParser FORMULA
+parenFormula :: AParsable f => [String] -> AParser (FORMULA f)
 parenFormula k = 
     do o <- oParenT
        do q <- qualPredName o <|> qualVarName o <|> qualOpName o
@@ -231,7 +231,7 @@ parenFormula k =
 				  return (updFormulaPos 
 						 (tokPos o) (tokPos c) f)
 
-termFormula :: [String] -> TERM -> AParser FORMULA
+termFormula :: AParsable f => [String] -> (TERM f) -> AParser (FORMULA f)
 termFormula k t =  do e <- asKey exEqual
 		      r <- whenTerm k
 		      return (Existl_equation t r [tokPos e])
@@ -248,7 +248,7 @@ termFormula k t =  do e <- asKey exEqual
 		      return (Membership t s [tokPos e])
 		   <|> return (Mixfix_formula t)
 
-primFormula :: [String] -> AParser FORMULA
+primFormula :: AParsable f => [String] -> AParser (FORMULA f)
 primFormula k = 
               do c <- asKey trueS
 		 return (True_atom [tokPos c])
@@ -265,13 +265,15 @@ primFormula k =
 		 return (Negation f [tokPos c])
               <|> parenFormula k <|> quantFormula k 
 		      <|> (whenTerm k >>= termFormula k)
+              <|> do f <- aparser k
+                     return (ExtFORMULA f)
 
 
 andKey, orKey :: AParser Token
 andKey = asKey lAnd
 orKey = asKey lOr
 
-andOrFormula :: [String] -> AParser FORMULA
+andOrFormula :: AParsable f => [String] -> AParser (FORMULA f)
 andOrFormula k = 
                do f <- primFormula k
 		  do c <- andKey
@@ -287,7 +289,7 @@ implKey, ifKey :: AParser Token
 implKey = asKey implS
 ifKey = asKey ifS
 
-impFormula :: [String] -> AParser FORMULA
+impFormula :: AParsable f => [String] -> AParser (FORMULA f)
 impFormula k = 
              do f <- andOrFormula k
 		do c <- implKey
@@ -308,8 +310,8 @@ impFormula k =
 		          makeImpl _ _ = error "makeImpl got illegal argument"
 			  makeIf l p = makeImpl (reverse l) (reverse p)
 
-formula :: AParser FORMULA
+formula :: AParsable f => AParser (FORMULA f)
 formula = impFormula []
 
-restrictedFormula :: [String] -> AParser FORMULA
+restrictedFormula :: AParsable f => [String] -> AParser (FORMULA f)
 restrictedFormula = impFormula

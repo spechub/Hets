@@ -35,30 +35,57 @@ import CASL.OpItem
 -- sigItems
 -- ------------------------------------------------------------------------
 
-sortItems :: AParser SIG_ITEMS
+sortItems :: (AParsable b, AParsable s, AParsable f) => 
+             AParser (SIG_ITEMS b s f)
 sortItems = itemList sortS sortItem Sort_items
 
-typeItems :: AParser SIG_ITEMS
+typeItems :: (AParsable b, AParsable s, AParsable f) => 
+             AParser (SIG_ITEMS b s f)
 typeItems = itemList typeS datatype Datatype_items
 
-opItems :: AParser SIG_ITEMS
+opItems :: (AParsable b, AParsable s, AParsable f) => 
+           AParser (SIG_ITEMS b s f)
 opItems = itemList opS opItem Op_items
 
-predItems :: AParser SIG_ITEMS
+predItems :: (AParsable b, AParsable s, AParsable f) => AParser (SIG_ITEMS b s f)
 predItems = itemList predS predItem Pred_items
 
-sigItems :: AParser SIG_ITEMS
+sigItems :: (AParsable b, AParsable s, AParsable f) => AParser (SIG_ITEMS b s f)
 sigItems = sortItems <|> opItems <|> predItems <|> typeItems
+           <|> do s <- aparser []
+                  return (Ext_SIG_ITEMS s)
+
+
+---- helpers ----------------------------------------------------------------
+
+datatypeToFreetype :: (AParsable b, AParsable s, AParsable f) =>
+                      SIG_ITEMS b s f -> Pos -> BASIC_ITEMS b s f 
+datatypeToFreetype d pos =
+   case d of
+     Datatype_items ts ps -> Free_datatype ts (pos : ps)
+     _ -> error "Parse_AS_Basic: This cannot happen"
+
+axiomToLocalVarAxioms :: (AParsable b, AParsable s, AParsable f) => 
+     BASIC_ITEMS b s f -> [Annotation] -> [VAR_DECL] -> [Pos] 
+     -> BASIC_ITEMS b s f
+axiomToLocalVarAxioms ai a vs posl =
+   case ai of
+     Axiom_items ((Annoted ft qs as rs):fs) ds
+      ->  let aft = Annoted ft qs (a++as) rs
+            in Local_var_axioms vs (aft:fs) 
+				   (posl ++ ds)
 
 -- ------------------------------------------------------------------------
 -- basicItems
 -- ------------------------------------------------------------------------
 
-basicItems :: AParser BASIC_ITEMS
-basicItems = fmap Sig_items sigItems
+basicItems :: (AParsable b, AParsable s, AParsable f) => 
+              AParser (BASIC_ITEMS b s f)
+basicItems = 
+         fmap Sig_items sigItems
 	     <|> do f <- asKey freeS
-		    Datatype_items ts ps <- typeItems
-		    return (Free_datatype ts (tokPos f : ps))
+		    ti <- typeItems
+		    return (datatypeToFreetype ti (tokPos f))
 	     <|> do g <- asKey generatedS
 		    do t <- typeItems
 		       return (Sort_gen [Annoted t [] [] []] [tokPos g])
@@ -74,10 +101,8 @@ basicItems = fmap Sig_items sigItems
 	     <|> do f <- forallT 
 		    (vs, ps) <- varDecl `separatedBy` anSemi 
 		    a <- annos
-		    Axiom_items ((Annoted ft qs as rs):fs) ds <- dotFormulae
-		    let aft = Annoted ft qs (a++as) rs
-		        in return (Local_var_axioms vs (aft:fs) 
-				   (map tokPos (f:ps) ++ ds))
+		    ai <- dotFormulae
+		    return (axiomToLocalVarAxioms ai a vs (map tokPos (f:ps)))
 	     <|> dotFormulae
              <|> do a <- pluralKeyword axiomS
 		    (fs, ps, ans) <- itemAux startKeyword (annoParser formula)
@@ -85,6 +110,8 @@ basicItems = fmap Sig_items sigItems
 					 (\ x y -> Annoted (item x) 
 					           [] (l_annos x) y) 
 					 fs ans) (map tokPos (a:ps)))
+             <|> do b <- aparser []
+                    return (Ext_BASIC_ITEMS b)
 
 varItems :: AParser ([VAR_DECL], [Token])
 varItems = do v <- varDecl
@@ -97,7 +124,7 @@ varItems = do v <- varDecl
 		<|>
 		return ([v], [])
              
-dotFormulae :: AParser BASIC_ITEMS
+dotFormulae :: (AParsable b, AParsable s, AParsable f) => AParser (BASIC_ITEMS b s f)
 dotFormulae = do d <- dotT
 		 (fs, ds) <- aFormula `separatedBy` dotT
 		 (m, an) <- optSemi
@@ -108,7 +135,7 @@ dotFormulae = do d <- dotT
 			Just t -> return (Axiom_items ns
 			       (ps ++ [tokPos t]))
 
-aFormula  :: AParser (Annoted FORMULA)
+aFormula  :: AParsable f => AParser (Annoted (FORMULA f))
 aFormula = bind appendAnno (annoParser formula) lineAnnos
 
 -- ------------------------------------------------------------------------

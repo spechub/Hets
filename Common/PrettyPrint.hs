@@ -31,9 +31,91 @@ import Common.GlobalAnnotations
 class PrettyPrint a => PrintLaTeX a where
     printLatex0 :: GlobalAnnos -> a -> Doc
 
+class Gen1PrettyPrint s => Gen1PrintLaTeX s where
+    gen1PrintLatex0 :: PrintLaTeX a => GlobalAnnos -> s a -> Doc
+
+class Gen2PrettyPrint s => Gen2PrintLaTeX s where
+    gen2PrintLatex0 :: (PrintLaTeX a,PrintLaTeX b) => 
+                       GlobalAnnos -> s a b -> Doc
+
+class Gen3PrettyPrint s => Gen3PrintLaTeX s where
+    gen3PrintLatex0 :: (PrintLaTeX a,PrintLaTeX b, PrintLaTeX c) => 
+                       GlobalAnnos -> s a b c -> Doc
+
 -- This type class allows pretty printing of instantiating Datatypes
 class Show a => PrettyPrint a where
     printText0 :: GlobalAnnos -> a -> Doc
+
+class Gen1Show s where
+    gen1ShowsPrec :: Show a => Int -> s a -> ShowS
+    gen1Show      :: Show a => s a   -> String
+    gen1ShowList  :: Show a => [s a] -> ShowS
+
+    gen1ShowsPrec _ x s = gen1Show x ++ s
+    gen1Show x          = gen1Shows x ""
+    gen1ShowList ls   s = gen1ShowList__ gen1Shows ls s
+
+gen1ShowList__ :: Show a => (s a -> ShowS) ->  [s a] -> ShowS
+gen1ShowList__ _     []     s = "[]" ++ s
+gen1ShowList__ gen1Showx (x:xs) s = '[' : gen1Showx x (gen1Showl xs)
+  where
+    gen1Showl []     = ']' : s
+    gen1Showl (y:ys) = ',' : gen1Showx y (gen1Showl ys)
+  
+gen1Shows           :: (Gen1Show s, Show a) => s a -> ShowS
+gen1Shows           =  gen1ShowsPrec 0
+
+class Gen1Show s => Gen1PrettyPrint s where
+    gen1PrintText0 :: PrettyPrint a => GlobalAnnos -> s a -> Doc
+
+-- 2 type parameters
+class Gen2Show s where
+    gen2ShowsPrec :: (Show a, Show b) => Int -> s a b -> ShowS
+    gen2Show      :: (Show a, Show b) => s a b   -> String
+    gen2ShowList  :: (Show a, Show b) => [s a b] -> ShowS
+
+    gen2ShowsPrec _ x s = gen2Show x ++ s
+    gen2Show x          = gen2Shows x ""
+    gen2ShowList ls   s = gen2ShowList__ gen2Shows ls s
+
+gen2ShowList__ :: (Show a, Show b) => (s a b -> ShowS) ->  [s a b] -> ShowS
+gen2ShowList__ _     []     s = "[]" ++ s
+gen2ShowList__ gen2Showx (x:xs) s = '[' : gen2Showx x (gen2Showl xs)
+  where
+    gen2Showl []     = ']' : s
+    gen2Showl (y:ys) = ',' : gen2Showx y (gen2Showl ys)
+  
+gen2Shows           :: (Gen2Show s, Show a, Show b) => s a b -> ShowS
+gen2Shows           =  gen2ShowsPrec 0
+
+class Gen2Show s => Gen2PrettyPrint s where
+    gen2PrintText0 :: (PrettyPrint a, PrettyPrint b) => 
+                      GlobalAnnos -> s a b -> Doc
+
+-- 3 type parameters
+class Gen3Show s where
+    gen3ShowsPrec :: (Show a, Show b, Show c) => Int -> s a b c -> ShowS
+    gen3Show      :: (Show a, Show b, Show c) => s a b c   -> String
+    gen3ShowList  :: (Show a, Show b, Show c) => [s a b c] -> ShowS
+
+    gen3ShowsPrec _ x s = gen3Show x ++ s
+    gen3Show x          = gen3Shows x ""
+    gen3ShowList ls   s = gen3ShowList__ gen3Shows ls s
+
+gen3ShowList__ :: (Show a, Show b, Show c) => 
+                  (s a b c -> ShowS) ->  [s a b c] -> ShowS
+gen3ShowList__ _     []     s = "[]" ++ s
+gen3ShowList__ gen3Showx (x:xs) s = '[' : gen3Showx x (gen3Showl xs)
+  where
+    gen3Showl []     = ']' : s
+    gen3Showl (y:ys) = ',' : gen3Showx y (gen3Showl ys)
+  
+gen3Shows           :: (Gen3Show s, Show a, Show b, Show c) => s a b c -> ShowS
+gen3Shows           =  gen3ShowsPrec 0
+
+class Gen3Show s => Gen3PrettyPrint s where
+    gen3PrintText0 :: (PrettyPrint a, PrettyPrint b, PrettyPrint c) => 
+                      GlobalAnnos -> s a b c -> Doc
 
 -- | printText uses empty global annotations
 printText :: PrettyPrint a  => a -> Doc

@@ -35,21 +35,21 @@ import CASL.Formula
 -- sortItem
 -- ------------------------------------------------------------------------
 
-commaSortDecl :: Id -> AParser SORT_ITEM
+commaSortDecl :: AParsable f => Id -> AParser (SORT_ITEM f)
 commaSortDecl s = do c <- anComma
 		     (is, cs) <- sortId `separatedBy` anComma
 		     let l = s : is 
 		         p = map tokPos (c:cs) in
 		       subSortDecl (l, p) <|> return (Sort_decl l p)
 
-isoDecl :: Id -> AParser SORT_ITEM
+isoDecl :: AParsable f => Id -> AParser (SORT_ITEM f)
 isoDecl s = do e <- equalT
                subSortDefn (s, tokPos e)
 		 <|>
 		 (do (l, p) <- sortId `separatedBy` equalT
 		     return (Iso_decl (s:l) (map tokPos (e:p))))
 
-subSortDefn :: (Id, Pos) -> AParser SORT_ITEM
+subSortDefn :: AParsable f => (Id, Pos) -> AParser (SORT_ITEM f)
 subSortDefn (s, e) = do a <- annos
 			o <- oBraceT
 			v <- varId
@@ -61,12 +61,12 @@ subSortDefn (s, e) = do a <- annos
 			return $ Subsort_defn s v t (Annoted f [] a []) 
 				(e: map tokPos [o, c, d, p])
 
-subSortDecl :: ([Id], [Pos]) -> AParser SORT_ITEM
+subSortDecl :: AParsable f => ([Id], [Pos]) -> AParser (SORT_ITEM f)
 subSortDecl (l, p) = do t <- lessT
 			s <- sortId
 			return (Subsort_decl l s (p++[tokPos t]))
 
-sortItem :: AParser SORT_ITEM 
+sortItem :: AParsable f => AParser (SORT_ITEM f) 
 sortItem = do s <- sortId ;
 	      subSortDecl ([s],[])
 		    <|>

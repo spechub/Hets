@@ -309,3 +309,9 @@ instance PosItem Id where
     up_pos_l fn1 (Id aa ab ac) = (Id aa ab (fn1 ac))
     get_pos_l (Id _ _ ac) = Just ac
     get_pos = Just . posOfId
+
+-- handcoded instance
+instance PosItem () where
+    up_pos_l fn1 () = ()
+    get_pos_l () = Nothing
+    get_pos () = Nothing

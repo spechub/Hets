@@ -15,9 +15,13 @@ module Isabelle.IsaProve where
 
 import Logic.Prover
 import Isabelle.IsaSign
+import Isabelle.IsaPrint
 
 import Common.AS_Annotation
 import Common.PrettyPrint
+
+import Data.List
+import Data.Maybe
 
 import TextDisplay
 import Configuration
@@ -34,9 +38,11 @@ isabelleProver =
 isaProve :: String -> (Sign,[Named Sentence]) -> [Named Sentence] 
               -> IO([Proof_status Sentence ()])
 isaProve thName (sig,axs) goals = do
-  let showAxs = concat $ map ((++"\n") . showSen) (nameSens axs)
+  let disAxs = disambiguateSens [] $ nameSens $ transSens axs
+      showAxs = concat $ map ((++"\n") . showSen) disAxs
       showGoals = concat 
-         $ map (("theorem "++) . (++"\noops\n\n") . showSen) goals
+         $ map (("theorem "++) . (++"\noops\n\n") . showSen) 
+                  $ disambiguateSens disAxs $ nameSens $ transSens goals
       showTheory = "theory " ++ thName ++ " = " 
                    ++ showPretty sig "\n\naxioms\n" 
                    ++ showAxs ++ "\n\n" ++ showGoals
@@ -46,8 +52,25 @@ isaProve thName (sig,axs) goals = do
                     [size(50,10)]
   return [] -- ??? to be implemented
 
+-- translate special characters in sentence names
+transSens :: [Named a] -> [Named a]
+transSens = map (\ax -> ax{senName = transString $ senName ax})
 
--- output an axiom
+-- disambiguate sentence names
+disambiguateSens :: [Named a] -> [Named a] -> [Named a]
+disambiguateSens others axs = reverse $ disambiguateSensAux others axs []
+disambiguateSensAux others [] soFar = soFar
+disambiguateSensAux others (ax:rest) soFar =
+  disambiguateSensAux (ax':others) rest (ax':soFar)
+  where
+  name' = fromJust $ find (not . flip elem namesSoFar) 
+                          (name:[name++show i | i<-[1..]])
+  name = senName ax 
+  namesSoFar = map senName others
+  ax' = ax{senName = name'}
+
+
+-- output a sentences
 showSen :: PrettyPrint a => Named a -> String
 showSen x =  (if null (senName x) then "" 
                 else senName x++": ")

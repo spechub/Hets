@@ -21,10 +21,11 @@ import CASL.Print_AS_Basic
 import Common.Id
 import Common.Result
 
-mapSrt :: Morphism -> SORT -> SORT
+mapSrt :: Analyzable lid b s f e => Morphism lid b s f e -> SORT -> SORT
 mapSrt m = mapSort (sort_map m)
 
-mapTerm :: Morphism -> TERM -> Result TERM
+mapTerm :: Analyzable lid b s f e => 
+           Morphism lid b s f e -> TERM f -> Result (TERM f)
 mapTerm m t = case t of
    Qual_var v s ps -> return $ Qual_var v (mapSrt m s) ps
    Application o ts ps -> do 
@@ -44,7 +45,8 @@ mapTerm m t = case t of
        return $ Conditional t3 newF t4 ps 
    _ -> error ("mapTerm: unexpected term: " ++ showPretty t "")
 
-mapOpSymb :: Morphism -> OP_SYMB -> Result OP_SYMB
+mapOpSymb :: Analyzable lid b s f e => 
+             Morphism lid b s f e -> OP_SYMB -> Result OP_SYMB
 mapOpSymb m os@(Qual_op_name i t ps) = do 
    (j, ty) <- maybeToResult (posOfId i) 
 	      ("no mapping for: " ++ showPretty os "") $ 
@@ -52,10 +54,11 @@ mapOpSymb m os@(Qual_op_name i t ps) = do
    return $ Qual_op_name j (toOP_TYPE ty) ps
 mapOpSymb _ os = error ("mapOpSymb: unexpected op symb: "++ showPretty os "")
 
-mapVars :: Morphism -> VAR_DECL -> VAR_DECL
+mapVars :: Analyzable lid b s f e => Morphism lid b s f e -> VAR_DECL -> VAR_DECL
 mapVars m (Var_decl vs s ps) = Var_decl vs (mapSrt m s) ps
 
-mapSen :: Morphism -> FORMULA -> Result FORMULA
+mapSen :: Analyzable lid b s f e => 
+          Morphism lid b s f e -> FORMULA f -> Result (FORMULA f)
 mapSen m f = case f of 
    Quantification q vs qf ps -> do
        newF <- mapSen m qf
@@ -99,7 +102,8 @@ mapSen m f = case f of
        return $ Membership newT (mapSrt m s) ps
    _ -> error ("mapSen: unexpected formula: " ++ showPretty f "")
 
-mapPrSymb :: Morphism -> PRED_SYMB -> Result PRED_SYMB
+mapPrSymb :: Analyzable lid b s f e => 
+             Morphism lid b s f e -> PRED_SYMB -> Result PRED_SYMB
 mapPrSymb m p@(Qual_pred_name i t ps) = do 
    (j, ty) <- maybeToResult (posOfId i) 
 	      ("no mapping for: " ++ showPretty p "") $ 

@@ -60,7 +60,7 @@ data PROCESS_DEFN = Basic PROCESS
 data NAMED_PROCESS = Named PROCESS_NAME 
 		   deriving (Show,Eq)
 
-data GEN_NAMED_PROCESS = Generic_named PROCESS_NAME TERM
+data GEN_NAMED_PROCESS = Generic_named PROCESS_NAME (TERM ())
 		   deriving (Show,Eq)
 
 data GENERIC_EQUATION = Generic PROCESS_NAME VAR EVENT_SET
@@ -87,9 +87,9 @@ data PROCESS = Named_process NAMED_PROCESS
              | Hiding PROCESS EVENT_SET
              | Csp_sort_renaming PROCESS SORT_RENAMING
              | Csp_channel_renaming PROCESS CHANNEL_RENAMING
-             | Conditional_process FORMULA PROCESS 
-             | Conditional_choice FORMULA PROCESS PROCESS                              
-		         | Guarded_command FORMULA PROCESS
+             | Conditional_process (FORMULA ()) PROCESS 
+             | Conditional_choice (FORMULA ()) PROCESS PROCESS                              
+		         | Guarded_command (FORMULA ()) PROCESS
              | Channel_parallel PROCESS CHANNEL_NAME CHANNEL_NAME PROCESS
 		   deriving (Show,Eq)
 
@@ -103,8 +103,8 @@ data SORT_RENAMING = Op_list [OP_NAME]
 data CHANNEL_RENAMING = Channel_renaming CHANNEL_NAME CHANNEL_NAME
 		   deriving (Show,Eq)
 	   
-data EVENT        = Term TERM
-                  | Send CHANNEL_NAME TERM 
+data EVENT        = Term (TERM ())
+                  | Send CHANNEL_NAME (TERM ()) 
                   | Receive CHANNEL_NAME VAR SORT
 		   deriving (Show,Eq)
 

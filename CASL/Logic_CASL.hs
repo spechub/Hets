@@ -35,12 +35,9 @@ import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 
--- a dummy datatype for the LogicGraph and for identifying the right
--- instances
-data CASL = CASL deriving (Show)
 instance Language CASL  -- default definition is okay
 
-instance Category CASL Sign Morphism  
+instance Category CASL CASLSign CASLMor  
     where
          -- ide :: id -> object -> morphism
 	 ide CASL = idMor
@@ -75,7 +72,7 @@ instance LatticeWithTop CASL_Sublogics where
 
 -- CASL logic
 
-instance Sentences CASL FORMULA () Sign Morphism Symbol where
+instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       map_sen CASL = mapSen
       parse_sentence CASL = Just
         ( \ _sign str ->
@@ -88,17 +85,17 @@ instance Sentences CASL FORMULA () Sign Morphism Symbol where
       provers CASL = [] 
       cons_checkers CASL = []
 
-instance StaticAnalysis CASL BASIC_SPEC FORMULA ()
+instance StaticAnalysis CASL BASIC_SPEC CASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
-               Sign 
-               Morphism 
+               CASLSign 
+               CASLMor 
                Symbol RawSymbol where
          basic_analysis CASL = Just basicAnalysis
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          -- ensures_amalgamability :: id
-         --   -> (Diagram Sign Morphism, Node, Sign, LEdge Morphism, Morphism)
-         --   -> Result (Diagram Sign Morphism)
+         --   -> (Diagram CASLSign CASLMor, Node, CASLSign, LEdge CASLMor, CASLMor)
+         --   -> Result (Diagram CASLSign CASLMor)
 	 ensures_amalgamability CASL _ = fail "ensures_amalgamability nyi" -- ???
 
          sign_to_basic_spec CASL _sigma _sens = Basic_spec [] -- ???
@@ -120,9 +117,9 @@ instance StaticAnalysis CASL BASIC_SPEC FORMULA ()
          induced_from_to_morphism CASL = inducedFromToMorphism
 
 instance Logic CASL CASL.Sublogic.CASL_Sublogics
-               BASIC_SPEC FORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               Sign 
-               Morphism
+               BASIC_SPEC CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CASLSign 
+               CASLMor
                Symbol RawSymbol () where
          sublogic_names CASL = CASL.Sublogic.sublogics_name
          all_sublogics CASL = CASL.Sublogic.sublogics_all

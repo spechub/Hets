@@ -23,6 +23,10 @@ Portability :  non-portable(Logic)
 
 todo:
 
+Order of rule application: try to use local links induced by %implies 
+for subsumption proofs (such that the %implied formulas need not be
+re-proved)
+
 Integrate stuff from Saarbrücken
 Add proof status information
 

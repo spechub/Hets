@@ -26,6 +26,12 @@ import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
+import Common.AnnoState
+
+-- a dummy datatype for the LogicGraph and for identifying the right
+-- instances
+data CASL = CASL deriving (Show)
+
 
 data FunKind = Total | Partial deriving (Show, Eq, Ord)
 
@@ -35,25 +41,39 @@ data OpType = OpType {opKind :: FunKind, opArgs :: [SORT], opRes :: SORT}
 
 data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 
-data Sign = Sign { sortSet :: Set.Set SORT
+class (Show lid, AParsable b, AParsable s, AParsable f, PrettyPrint e,
+      Eq f, Eq e) => 
+      Analyzable lid b s f e | lid -> b, lid -> s, lid -> f, lid -> e where
+      analyzeExtBasicItems :: lid -> b -> (Maybe e) -> (Maybe e)
+      analyzeExtSigItems :: lid -> s -> (Maybe e) -> (Maybe e)
+      analyzeExtFormula :: lid -> f -> f
+
+data Analyzable lid b s f e =>
+     Sign lid b s f e = Sign { sortSet :: Set.Set SORT
 	       , sortRel :: Rel.Rel SORT	 
                , opMap :: Map.Map Id (Set.Set OpType)
 	       , assocOps :: Map.Map Id (Set.Set OpType)
 	       , predMap :: Map.Map Id (Set.Set PredType)
                , varMap :: Map.Map SIMPLE_ID (Set.Set SORT)
-	       , sentences :: [Named FORMULA]	 
+	       , sentences :: [Named (FORMULA f)]	 
 	       , envDiags :: [Diagnosis]
+               , extendedInfo :: Maybe e
 	       } deriving (Show)
 
+-- specific types for CASL logic
+type CASLSign = Sign CASL () () () ()
+type CASLFORMULA = FORMULA ()
+
 -- better ignore assoc flags for equality
-instance Eq Sign where
+instance Analyzable lid b s f e => Eq (Sign lid b s f e) where
     e1 == e2 = 
 	sortSet e1 == sortSet e1 &&
 	sortRel e1 == sortRel e2 &&
 	opMap e1 == opMap e2 &&
-	predMap e1 == predMap e2
+	predMap e1 == predMap e2 &&
+        extendedInfo e1 == extendedInfo e2
 
-emptySign :: Sign
+emptySign :: Analyzable lid b s f e => Sign lid b s f e
 emptySign = Sign { sortSet = Set.empty
 	       , sortRel = Rel.empty
 	       , opMap = Map.empty
@@ -61,9 +81,11 @@ emptySign = Sign { sortSet = Set.empty
 	       , predMap = Map.empty
 	       , varMap = Map.empty
 	       , sentences = []
-	       , envDiags = [] }
+	       , envDiags = []
+               , extendedInfo = Nothing }
 
-subsortsOf :: SORT -> Sign -> Set.Set SORT
+subsortsOf :: Analyzable lid b s f e => 
+              SORT -> Sign lid b s f e -> Set.Set SORT
 subsortsOf s e =
   Set.insert s $
     Map.foldWithKey addSubs (Set.empty) (Rel.toMap $ sortRel e)
@@ -72,7 +94,7 @@ subsortsOf s e =
             then Set.insert sub
             else id
 
-supersortsOf :: SORT -> Sign -> Set.Set SORT
+supersortsOf :: Analyzable lid b s f e => SORT -> Sign lid b s f e -> Set.Set SORT
 supersortsOf s e =
   case Map.lookup s $ Rel.toMap $ sortRel e of
     Nothing -> Set.single s
@@ -100,7 +122,7 @@ instance PrettyPrint OpType where
 instance PrettyPrint PredType where
   printText0 ga pt = printText0 ga $ toPRED_TYPE pt
 
-instance PrettyPrint Sign where
+instance Analyzable lid b s f e => PrettyPrint (Sign lid b s f e) where
     printText0 ga s = 
 	ptext "sorts" <+> commaT_text ga (Set.toList $ sortSet s) 
 	$$ 
@@ -128,7 +150,7 @@ instance PrettyPrint Sign where
 
 -- working with Sign
 
-diffSig :: Sign -> Sign -> Sign
+diffSig :: Analyzable lid b s f e => Sign lid b s f e -> Sign lid b s f e -> Sign lid b s f e
 diffSig a b = 
     a { sortSet = sortSet a `Set.difference` sortSet b
       , sortRel = Rel.transClosure $ Rel.fromSet $ Set.difference
@@ -147,7 +169,7 @@ diffMapSet =
 			 if Set.isEmpty d then Nothing 
 			 else Just d )
 
-addSig :: Sign -> Sign -> Sign
+addSig :: Analyzable lid b s f e => Sign lid b s f e -> Sign lid b s f e -> Sign lid b s f e
 addSig a b = 
     a { sortSet = sortSet a `Set.union` sortSet b
       , sortRel = Rel.transClosure $ Rel.fromSet $ Set.union
@@ -157,14 +179,14 @@ addSig a b =
       , predMap = Map.unionWith Set.union (predMap a) $ predMap b	
       }
 
-isEmptySig :: Sign -> Bool 
+isEmptySig :: Analyzable lid b s f e => Sign lid b s f e -> Bool 
 isEmptySig s = 
     Set.isEmpty (sortSet s) && 
     Rel.isEmpty (sortRel s) && 
     Map.isEmpty (opMap s) &&
     Map.isEmpty (predMap s)
 
-isSubSig :: Sign -> Sign -> Bool
+isSubSig :: Analyzable lid b s f e => Sign lid b s f e -> Sign lid b s f e -> Bool
 isSubSig sub super = isEmptySig $ diffSig sub 
                       (super 
 		       { opMap = addPartOpsM $ opMap super })
@@ -187,12 +209,12 @@ addPartOpsM :: Ord a => Map.Map a (Set.Set OpType)
 	    -> Map.Map a (Set.Set OpType) 
 addPartOpsM = Map.map addPartOps
 
-addDiags :: [Diagnosis] -> State Sign ()
+addDiags :: Analyzable lid b s f e => [Diagnosis] -> State (Sign lid b s f e) ()
 addDiags ds = 
     do e <- get
        put e { envDiags = ds ++ envDiags e }
 
-addSort :: SORT -> State Sign ()
+addSort :: Analyzable lid b s f e => SORT -> State (Sign lid b s f e) ()
 addSort s = 
     do e <- get
        let m = sortSet e
@@ -200,27 +222,28 @@ addSort s =
 	  addDiags [mkDiag Hint "redeclared sort" s] 
 	  else put e { sortSet = Set.insert s m }
 
-checkSort :: SORT -> State Sign ()
+checkSort :: Analyzable lid b s f e => SORT -> State (Sign lid b s f e) ()
 checkSort s = 
     do m <- gets sortSet
        addDiags $ if Set.member s m then [] else 
 		    [mkDiag Error "unknown sort" s]
 
-addSubsort :: SORT -> SORT -> State Sign ()
+addSubsort :: Analyzable lid b s f e => SORT -> SORT -> State (Sign lid b s f e) ()
 addSubsort super sub = 
     do e <- get
        mapM_ checkSort [super, sub] 
        put e { sortRel = Rel.insert sub super $ sortRel e }
 
-closeSubsortRel :: State Sign ()
+closeSubsortRel :: Analyzable lid b s f e => State (Sign lid b s f e) ()
 closeSubsortRel= 
     do e <- get
        put e { sortRel = Rel.transClosure $ sortRel e }
 
-addVars :: VAR_DECL -> State Sign ()
+addVars :: Analyzable lid b s f e => VAR_DECL -> State (Sign lid b s f e) ()
 addVars (Var_decl vs s _) = mapM_ (addVar s) vs
 
-addVar :: SORT -> SIMPLE_ID -> State Sign ()
+addVar :: Analyzable lid b s f e => 
+          SORT -> SIMPLE_ID -> State (Sign lid b s f e) ()
 addVar s v = 
     do e <- get
        let m = varMap e

@@ -27,16 +27,19 @@ import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.AnnoState
 import Common.Result
 import Data.Maybe
 import Data.List
+
 
 checkPlaces :: [SORT] -> Id -> [Diagnosis]
 checkPlaces args i = 
     if let n = placeCount i in n == 0 || n == length args then []
 	   else [mkDiag Error "wrong number of places" i]
 
-addOp :: OpType -> Id -> State Sign ()
+addOp :: Analyzable lid b s f e => 
+                OpType -> Id -> State (Sign lid b s f e) ()
 addOp ty i = 
     do mapM_ checkSort (opRes ty : opArgs ty)
        e <- get
@@ -55,7 +58,8 @@ addOp ty i =
 			 addDiags [mkDiag Hint "redeclared as total" i] 
 			 else check
 
-addAssocOp :: OpType -> Id -> State Sign ()
+addAssocOp :: Analyzable lid b s f e => 
+                OpType -> Id -> State (Sign lid b s f e) ()
 addAssocOp ty i = do
        e <- get
        let m = assocOps e
@@ -63,7 +67,8 @@ addAssocOp ty i = do
            l = Map.findWithDefault Set.empty i m
        put e { assocOps = Map.insert i (Set.insert pty l) m }
 
-addPred :: PredType -> Id -> State Sign ()
+addPred :: Analyzable lid b s f e => 
+                PredType -> Id -> State (Sign lid b s f e) ()
 addPred ty i = 
     do mapM_ checkSort $ predArgs ty
        e <- get
@@ -74,12 +79,14 @@ addPred ty i =
 	  else do put e { predMap = Map.insert i (Set.insert ty l) m }
 		  addDiags $ checkPlaces (predArgs ty) i
 
-allOpIds :: State Sign (Set.Set Id)
+allOpIds :: Analyzable lid b s f e => 
+                State (Sign lid b s f e) (Set.Set Id)
 allOpIds = do 
     e <- get
     return $ Set.fromDistinctAscList $ Map.keys $ opMap e 
 
-addAssocs :: GlobalAnnos -> State Sign GlobalAnnos
+addAssocs :: Analyzable lid b s f e => 
+                GlobalAnnos -> State (Sign lid b s f e) GlobalAnnos
 addAssocs ga = do 
     e <- get
     return ga { assoc_annos =  
@@ -87,19 +94,22 @@ addAssocs ga = do
 			Nothing -> Map.insert i ALeft m
 			_ -> m ) (assoc_annos ga) (Map.keys $ assocOps e) } 
 
-formulaIds :: State Sign (Set.Set Id)
+formulaIds :: Analyzable lid b s f e => 
+                State (Sign lid b s f e) (Set.Set Id)
 formulaIds = do
     e <- get
     ops <- allOpIds
     return (Set.fromDistinctAscList (map simpleIdToId $ Map.keys $ varMap e) 
 	       `Set.union` ops)
 
-allPredIds :: State Sign (Set.Set Id)
+allPredIds :: Analyzable lid b s f e => 
+                State (Sign lid b s f e) (Set.Set Id)
 allPredIds = do
     e <- get
     return $ Set.fromDistinctAscList $ Map.keys $ predMap e
 
-addSentences :: [Named FORMULA] -> State Sign ()
+addSentences :: Analyzable lid b s f e => 
+                [Named (FORMULA f)] -> State (Sign lid b s f e) ()
 addSentences ds = 
     do e <- get
        put e { sentences = ds ++ sentences e }
@@ -107,18 +117,21 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: GlobalAnnos -> BASIC_SPEC -> State Sign BASIC_SPEC
+ana_BASIC_SPEC ::  
+        GlobalAnnos -> BASIC_SPEC -> State (CASLSign) BASIC_SPEC
 ana_BASIC_SPEC ga (Basic_spec al) = fmap Basic_spec $
 			       mapAnM (ana_BASIC_ITEMS ga) al
 
 -- looseness of a datatype
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
 
-mkForall :: [VAR_DECL] -> FORMULA -> [Pos] -> FORMULA
+mkForall :: AParsable f => [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
 mkForall vl f ps = if null vl then f else 
 		   Quantification Universal vl f ps
 
-ana_BASIC_ITEMS :: GlobalAnnos -> BASIC_ITEMS -> State Sign BASIC_ITEMS
+ana_BASIC_ITEMS :: Analyzable lid b s f e => 
+                GlobalAnnos -> (BASIC_ITEMS b s f) 
+                -> State (Sign lid b s f e) (BASIC_ITEMS b s f)
 ana_BASIC_ITEMS ga bi = 
     case bi of 
     Sig_items sis -> fmap Sig_items $ ana_SIG_ITEMS ga Loose sis 
@@ -130,8 +143,7 @@ ana_BASIC_ITEMS ga bi =
            closeSubsortRel 
 	   return bi
     Sort_gen al ps ->
-	do ul <- mapAnM (ana_SIG_ITEMS ga Generated) al 
-	   let gs = map (getGenSig . item) ul
+	do (gs,ul) <- ana_Generated ga al
 	   toSortGenAx ps (Set.unions $ map fst gs, Set.unions $ map snd gs)
 	   return $ Sort_gen ul ps
     Var_items il _ -> 
@@ -171,7 +183,8 @@ ana_BASIC_ITEMS ga bi =
            addSentences sens			    
            return $ Axiom_items ufs ps
 
-toSortGenAx :: [Pos] -> (Set.Set Id, Set.Set Component) -> State Sign ()
+toSortGenAx :: Analyzable lid b s f e => 
+                [Pos] -> (Set.Set Id, Set.Set Component) -> State (Sign lid b s f e) ()
 toSortGenAx ps (sorts, ops) = do
     let s = Set.toList sorts
         f =  Sort_gen_ax s $
@@ -183,7 +196,8 @@ toSortGenAx ps (sorts, ops) = do
     addSentences [NamedSen ("ga_generated_" ++ 
  			 showSepList (showString "_") showId s "") f]
 
-ana_SIG_ITEMS :: GlobalAnnos -> GenKind -> SIG_ITEMS -> State Sign SIG_ITEMS
+ana_SIG_ITEMS :: Analyzable lid b s f e => 
+                GlobalAnnos -> GenKind -> SIG_ITEMS b s f -> State (Sign lid b s f e) (SIG_ITEMS b s f)
 ana_SIG_ITEMS ga gk si = 
     case si of 
     Sort_items al ps -> 
@@ -203,12 +217,21 @@ ana_SIG_ITEMS ga gk si =
            closeSubsortRel
 	   return si
 
-getGenSig :: SIG_ITEMS -> (Set.Set Id, Set.Set Component)
-getGenSig si = case si of 
-    Sort_items al _ -> (Set.unions (map (getSorts . item) al), Set.empty)
-    Op_items al _ -> (Set.empty, Set.unions (map (getOps . item) al))
-    Pred_items _ _ -> (Set.empty, Set.empty)
-    Datatype_items dl _ -> getDataGenSig dl
+-- helper
+ana_Generated :: Analyzable lid b s f e => 
+      GlobalAnnos -> [Annoted (SIG_ITEMS b s f)] -> 
+      State (Sign lid b s f e) ([(Set.Set Id, Set.Set Component)],[Annoted (SIG_ITEMS b s f)])
+ana_Generated ga al = do
+   ul <- mapAnM (ana_SIG_ITEMS ga Generated) al
+   return (map (getGenSig . item) ul,ul)
+   where 
+   --getGenSig :: Analyzable lid b s f e => 
+   --                (SIG_ITEMS b s f) -> (Set.Set Id, Set.Set Component)
+   getGenSig si = case si of 
+      Sort_items al _ -> (Set.unions (map (getSorts . item) al), Set.empty)
+      Op_items al _ -> (Set.empty, Set.unions (map (getOps . item) al))
+      Pred_items _ _ -> (Set.empty, Set.empty)
+      Datatype_items dl _ -> getDataGenSig dl
 
 getDataGenSig :: [Annoted DATATYPE_DECL] -> (Set.Set Id, Set.Set Component)
 getDataGenSig dl = 
@@ -224,7 +247,7 @@ getDataGenSig dl =
 		       $ map item al) alts
 	in (Set.fromList sorts, Set.fromList cs)
 
-getSorts :: SORT_ITEM -> Set.Set Id
+getSorts :: AParsable f => SORT_ITEM f -> Set.Set Id
 getSorts si = 
     case si of 
     Sort_decl il _ -> Set.fromList il
@@ -232,14 +255,15 @@ getSorts si =
     Subsort_defn sub _ _ _ _ -> Set.single sub
     Iso_decl il _ -> Set.fromList il
 
-getOps :: OP_ITEM -> Set.Set Component
+getOps :: AParsable f => OP_ITEM f -> Set.Set Component
 getOps oi = case oi of 
     Op_decl is ty _ _ -> 
 	Set.fromList $ map ( \ i -> Component i $ toOpType ty) is
     Op_defn i par _ _ -> Set.single $ Component i $ toOpType $ headToType par
 
-ana_SORT_ITEM :: GlobalAnnos -> Annoted SORT_ITEM 
-	      -> State Sign (Annoted SORT_ITEM)
+ana_SORT_ITEM :: Analyzable lid b s f e => 
+                GlobalAnnos -> Annoted (SORT_ITEM  f)
+	      -> State (Sign lid b s f e) (Annoted (SORT_ITEM f))
 ana_SORT_ITEM ga asi =
     case item asi of 
     Sort_decl il _ ->
@@ -276,7 +300,8 @@ ana_SORT_ITEM ga asi =
 	   mapM_ ( \ i -> mapM_ (addSubsort i) il) il
 	   return asi
 
-ana_OP_ITEM :: GlobalAnnos -> Annoted OP_ITEM -> State Sign (Annoted OP_ITEM)
+ana_OP_ITEM :: Analyzable lid b s f e => 
+                GlobalAnnos -> Annoted (OP_ITEM f) -> State (Sign lid b s f e) (Annoted (OP_ITEM f))
 ana_OP_ITEM ga aoi = 
     case item aoi of 
     Op_decl ops ty il ps -> 
@@ -325,8 +350,9 @@ headToType (Partial_op_head args r ps) =
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
-ana_OP_ATTR :: GlobalAnnos -> OpType -> [Id] -> OP_ATTR 
-	    -> State Sign (Maybe OP_ATTR)
+ana_OP_ATTR :: Analyzable lid b s f e => 
+            GlobalAnnos -> OpType -> [Id] -> (OP_ATTR f)
+	    -> State (Sign lid b s f e) (Maybe (OP_ATTR f))
 ana_OP_ATTR ga ty ois oa = 
     let sty = toOP_TYPE ty
 	rty = opRes ty 
@@ -387,7 +413,7 @@ ana_OP_ATTR ga ty ois oa =
       addSentences $ map makeIdem ois
       return $ Just oa
 
-makeUnit :: Bool -> TERM -> OpType -> Id -> Named FORMULA
+makeUnit :: AParsable f => Bool -> TERM f -> OpType -> Id -> Named (FORMULA f)
 makeUnit b t ty i =
     let lab = "ga_" ++ (if b then "right" else "left") ++ "_unit_"
 	      ++ showId i ""
@@ -403,8 +429,9 @@ makeUnit b t ty i =
 		      (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
 		      qv p) p
 
-ana_PRED_ITEM :: GlobalAnnos -> Annoted PRED_ITEM 
-	      -> State Sign (Annoted PRED_ITEM)
+ana_PRED_ITEM :: Analyzable lid b s f e => 
+                GlobalAnnos -> Annoted (PRED_ITEM f)
+	      -> State (Sign lid b s f e) (Annoted (PRED_ITEM f))
 ana_PRED_ITEM ga ap = 
     case item ap of 
     Pred_decl preds ty _ -> 
@@ -457,7 +484,8 @@ instance PosItem Component where
     get_pos = Just . posOfId . compId
 
 -- | return list of constructors 
-ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State Sign [Component]
+ana_DATATYPE_DECL :: Analyzable lid b s f e => 
+                GenKind -> DATATYPE_DECL -> State (Sign lid b s f e) [Component]
 ana_DATATYPE_DECL gk (Datatype_decl s al _) = 
     do ul <- mapM (ana_ALTERNATIVE s . item) al
        let constr = catMaybes ul
@@ -493,14 +521,14 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
 	 _ -> return ()
        return cs
 
-makeDisjToSort :: (Id, OpType, [COMPONENTS]) -> SORT -> Named FORMULA
+makeDisjToSort :: AParsable f => (Id, OpType, [COMPONENTS]) -> SORT -> Named (FORMULA f)
 makeDisjToSort a s = 
     let (c, v, t, _) = selForms1 "X" a 
 	p = [posOfId s] in
 	NamedSen ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "") $
 	mkForall v (Negation (Membership t s p) p) p
 
-makeInjective :: (Id, OpType, [COMPONENTS]) -> Named FORMULA
+makeInjective :: AParsable f => (Id, OpType, [COMPONENTS]) -> Named (FORMULA f)
 makeInjective a = 
     let (c, v1, t1, _) = selForms1 "X" a
 	(_, v2, t2, _) = selForms1 "Y" a
@@ -513,11 +541,12 @@ makeInjective a =
 	 in if isSingle ces then head ces else Conjunction ces p)
 	p) p
 
-makeDisjoint :: [(Id, OpType, [COMPONENTS])] -> [Named FORMULA]
+makeDisjoint :: AParsable f => [(Id, OpType, [COMPONENTS])] -> [Named (FORMULA f)]
 makeDisjoint [] = []
 makeDisjoint (a:as) = map (makeDisj a) as ++ makeDisjoint as
-makeDisj :: (Id, OpType, [COMPONENTS]) -> (Id, OpType, [COMPONENTS])
-	    -> Named FORMULA
+makeDisj :: AParsable f => (Id, OpType, [COMPONENTS]) 
+                           -> (Id, OpType, [COMPONENTS])
+                           -> Named (FORMULA f)
 makeDisj a1 a2 = 
     let (c1, v1, t1, _) = selForms1 "X" a1
 	(c2, v2, t2, _) = selForms1 "Y" a2
@@ -530,8 +559,8 @@ catSels :: [(Maybe Id, OpType)] -> [(Id, OpType)]
 catSels =  map ( \ (m, t) -> (fromJust m, t)) . 
 		 filter ( \ (m, _) -> isJust m)
 
-makeUndefForm :: (Id, OpType) -> (Id, [VAR_DECL], TERM, [(Id, OpType)])
-	      -> Maybe (Named FORMULA)
+makeUndefForm :: AParsable f => (Id, OpType) -> (Id, [VAR_DECL], TERM f, [(Id, OpType)])
+	      -> Maybe (Named (FORMULA f))
 makeUndefForm (s, ty) (i, vs, t, sels) = 
     let p = [posOfId s] in
     if any ( \ (se, ts) -> s == se && opRes ts == opRes ty ) sels
@@ -568,8 +597,8 @@ genSelVars str n ((_, ty):rs)  =
 mkSelVar :: String -> Int -> Token
 mkSelVar str n = mkSimpleId (str ++ show n)
 
-makeSelForms :: Int -> (Id, [VAR_DECL], TERM, [(Maybe Id, OpType)])
-	     -> [Named FORMULA]
+makeSelForms :: AParsable f => Int -> (Id, [VAR_DECL], TERM f, [(Maybe Id, OpType)])
+	     -> [Named (FORMULA f)]
 makeSelForms _ (_, _, _, []) = []
 makeSelForms n (i, vs, t, (mi, ty):rs) =
     (case mi of 
@@ -584,24 +613,25 @@ makeSelForms n (i, vs, t, (mi, ty):rs) =
 		       (Qual_var (mkSelVar "X" n) rty q) p) p]
     )  ++ makeSelForms (n+1) (i, vs, t, rs)
 
-selForms1 :: String -> (Id, OpType, [COMPONENTS]) 
-	  -> (Id, [VAR_DECL], TERM, [(Maybe Id, OpType)])
+selForms1 :: AParsable f => String -> (Id, OpType, [COMPONENTS]) 
+	  -> (Id, [VAR_DECL], TERM f, [(Maybe Id, OpType)])
 selForms1 str (i, ty, il) =
     let cs = concatMap (getCompType $ opRes ty) il
 	vs = genSelVars str 1 cs 
     in (i, vs, Application (Qual_op_name i (toOP_TYPE ty) [])
 	    (map toQualVar vs) [], cs)
 
-toQualVar :: VAR_DECL -> TERM
+toQualVar :: AParsable f => VAR_DECL -> TERM f
 toQualVar (Var_decl v s ps) = 
     if isSingle v then Qual_var (head v) s ps else error "toQualVar"
 
-selForms :: (Id, OpType, [COMPONENTS]) -> [Named FORMULA]
+selForms :: AParsable f => (Id, OpType, [COMPONENTS]) -> [Named (FORMULA f)]
 selForms = makeSelForms 1 . selForms1 "X"
  
 -- | return the constructor and the set of total selectors 
-ana_ALTERNATIVE :: SORT -> ALTERNATIVE 
-		-> State Sign (Maybe (Component, Set.Set Component))
+ana_ALTERNATIVE :: Analyzable lid b s f e => 
+                SORT -> ALTERNATIVE 
+		-> State (Sign lid b s f e) (Maybe (Component, Set.Set Component))
 ana_ALTERNATIVE s c = 
     case c of 
     Subsorts ss _ ->
@@ -617,7 +647,8 @@ ana_ALTERNATIVE s c =
 
  
 -- | return total and partial selectors
-ana_COMPONENTS :: SORT -> COMPONENTS -> State Sign ([Component], [Component])
+ana_COMPONENTS :: Analyzable lid b s f e => 
+                SORT -> COMPONENTS -> State (Sign lid b s f e) ([Component], [Component])
 ana_COMPONENTS s c = do
     let cs = getCompType s c
     sels <- mapM ( \ (mi, ty) -> 
@@ -629,8 +660,14 @@ ana_COMPONENTS s c = do
 
 -- wrap it all up for a logic
 
-basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
-                 -> Result (BASIC_SPEC, Sign, Sign, [Named FORMULA])
+instance Analyzable CASL () () () () where
+      analyzeExtBasicItems CASL () x = x
+      analyzeExtSigItems CASL () x = x
+      analyzeExtFormula CASL () = ()
+
+basicAnalysis ::(BASIC_SPEC, CASLSign, GlobalAnnos)
+   -> Result (BASIC_SPEC, CASLSign, CASLSign, 
+              [Named (CASLFORMULA)])
 
 basicAnalysis (bs, inSig, ga) = do 
     let (newBs, accSig) = runState (ana_BASIC_SPEC ga bs) inSig

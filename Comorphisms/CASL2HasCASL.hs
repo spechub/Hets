@@ -48,9 +48,9 @@ instance Typeable CASL2HasCASL where
 
 instance Comorphism CASL2HasCASL
                CASL CASL.Sublogic.CASL_Sublogics
-               BASIC_SPEC FORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               Sign 
-               CASL.Morphism.Morphism
+               BASIC_SPEC CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CASLSign 
+               CASL.Morphism.CASLMor
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
                HasCASL HasCASL_Sublogics
                BasicSpec Term SymbItems SymbMapItems
@@ -108,7 +108,7 @@ trPredType pt = OpInfo { opType = simpleTypeScheme t,
                      arg = if isSingle args then head args else 
 			   ProductType args []
 
-mapSignature :: CASL.Sign.Sign -> Maybe(HasCASL.Le.Env,[Named Term]) 
+mapSignature :: CASL.Sign.CASLSign -> Maybe(HasCASL.Le.Env,[Named Term]) 
 mapSignature sign = Just (initialEnv { 
     classMap = Map.empty,
     typeMap = Map.fromList $ map (\s -> (s,sortTypeinfo)) 

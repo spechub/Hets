@@ -35,6 +35,7 @@ import CASL.Quantification
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
+import Isabelle.IsaPrint
 
 -- | The identity of the comorphism
 data CASL2IsabelleHOL = CASL2IsabelleHOL deriving (Show)
@@ -49,9 +50,9 @@ instance Typeable CASL2IsabelleHOL where
 
 instance Comorphism CASL2IsabelleHOL
                CASL CASL.Sublogic.CASL_Sublogics
-               BASIC_SPEC FORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CASL.Sign.Sign 
-               CASL.Morphism.Morphism
+               BASIC_SPEC CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CASL.Sign.CASLSign 
+               CASL.Morphism.CASLMor
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign 
@@ -75,29 +76,10 @@ instance Comorphism CASL2IsabelleHOL
 
 ------------------------------ Ids ---------------------------------
 
--- drop special characters from Ids
-transChar :: Char -> String
-transChar '[' = "__"
-transChar ']' = "__"
-transChar x = [x]
-
-transString :: String -> String
-transString = concat . map transChar
-
-showIsa :: Id -> String
-showIsa = transString . flip showPretty ""
-
-showIsaSid :: SIMPLE_ID -> String
-showIsaSid = transString . flip showPretty ""
-
--- disambiguation of overloaded ids
-showIsaI :: Id -> Int -> String
-showIsaI ident i = showIsa ident ++ "__" ++ show i
-
 
 ---------------------------- Signature -----------------------------
 
-transSignature :: CASL.Sign.Sign 
+transSignature :: CASL.Sign.CASLSign  
                    -> Maybe(IsaSign.Sign,[Named IsaSign.Sentence]) 
 transSignature sign = 
   Just(IsaSign.Sign{
@@ -163,7 +145,7 @@ transOP_SYMB sign (Qual_op_name op ot _) =
   case (do ots <- Map.lookup op (opMap sign)
            if Set.size ots == 1 then return $ showIsa op
             else do i <- elemIndex (toOpType ot) (Set.toList ots)
-                    return $ showIsaI op i) of
+                    return $ showIsaI op (i+1)) of
     Just str -> str  
     Nothing -> showIsa op
 
@@ -172,11 +154,11 @@ transPRED_SYMB sign (Qual_pred_name p pt _) =
   case (do pts <- Map.lookup p (predMap sign)
            if Set.size pts == 1 then return $ showIsa p 
             else do i <- elemIndex (toPredType pt) (Set.toList pts)
-                    return $ showIsaI p i) of
+                    return $ showIsaI p (i+1)) of
     Just str -> str
     Nothing -> error "showIsa p"
 
-transFORMULA :: CASL.Sign.Sign -> FORMULA -> Term
+transFORMULA :: CASL.Sign.CASLSign  -> CASLFORMULA -> Term
 transFORMULA sign (Quantification quant vdecl phi _) =
   foldr (quantify quant) (transFORMULA sign phi) (flatVAR_DECLs vdecl)
 transFORMULA sign (Conjunction phis _) =

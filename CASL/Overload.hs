@@ -19,7 +19,7 @@
 
 -- does anyone ever need anything else from me?
 module CASL.Overload (
-    overloadResolution          -- :: Sign -> [FORMULA] -> Result [FORMULA]
+    overloadResolution          -- :: Sign lid b s f e -> [FORMULA] -> Result [FORMULA]
     ) where
 
 import CASL.Sign                -- Sign, OpType
@@ -33,6 +33,7 @@ import qualified Common.AS_Annotation   as Named
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Lib.State
+import Common.AnnoState
 
 import Data.Maybe
 import Data.List                ( partition )
@@ -65,11 +66,12 @@ import Data.List                ( partition )
 {-----------------------------------------------------------
     Overload Resolution
 -----------------------------------------------------------}
-overloadResolution      :: Sign -> [Named.Named FORMULA]
-                        -> Result [Named.Named FORMULA]
-overloadResolution sign  = mapM overload
+overloadResolution      :: Analyzable lid b s f e => 
+                Sign lid b s f e -> [Named.Named (FORMULA f)]
+                        -> Result [Named.Named (FORMULA f)]
+overloadResolution (sign :: Sign lid b s f e)  = mapM overload
     where
-        overload :: (Named.Named FORMULA) -> Result (Named.Named FORMULA)
+        overload :: (Named.Named (FORMULA f)) -> Result (Named.Named (FORMULA f))
         overload sent = do
             let sent' = Named.sentence sent
             --debug 1 ("sent'",sent')
@@ -80,8 +82,9 @@ overloadResolution sign  = mapM overload
 {-----------------------------------------------------------
     Minimal Expansions of a FORMULA
 -----------------------------------------------------------}
-minExpFORMULA :: Sign -> FORMULA -> Result FORMULA
-minExpFORMULA sign formula
+minExpFORMULA :: Analyzable lid b s f e => 
+                Sign lid b s f e -> (FORMULA f) -> Result (FORMULA f)
+minExpFORMULA (sign :: Sign lid b s f e) formula
     = case formula of
         -- Trivial Atom         -> Return untouched
         True_atom _     -> return formula                       -- :: FORMULA
@@ -133,7 +136,7 @@ minExpFORMULA sign formula
 	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)
     where
-        is_unambiguous          :: [[TERM]] -> [Id.Pos] -> Result TERM
+        is_unambiguous          :: [[TERM f]] -> [Id.Pos] -> Result (TERM f)
         is_unambiguous term pos     = do
             case term of
                 [] -> pplain_error (Unparsed_term "<error>" [])
@@ -148,8 +151,10 @@ minExpFORMULA sign formula
 {-----------------------------------------------------------
     Minimal Expansions of a Predicate Application Formula
 -----------------------------------------------------------}
-minExpFORMULA_pred :: Sign -> PRED_SYMB -> [TERM] -> [Id.Pos] -> Result FORMULA
-minExpFORMULA_pred sign predicate terms pos = do
+minExpFORMULA_pred :: Analyzable lid b s f e => 
+                Sign lid b s f e -> PRED_SYMB -> [TERM f] -> [Id.Pos] 
+                -> Result (FORMULA f)
+minExpFORMULA_pred (sign :: Sign lid b s f e) predicate terms pos = do
     expansions          <- mapM
         (minExpTerm sign) terms                 -- ::        [[[TERM]]]
     permuted_exps       <- return
@@ -173,7 +178,7 @@ minExpFORMULA_pred sign predicate terms pos = do
         pred_name pred'  = case pred' of
             (Pred_name name')           -> name'
             (Qual_pred_name name' _ _)  -> name'
-        choose          :: [[(PredType, [TERM])]] -> Result (PredType, [TERM])
+        choose          :: [[(PredType, [TERM f])]] -> Result (PredType, [TERM f])
         choose ps        = case ps of
             [] -> pplain_error (PredType [],[])
                    (ptext "No correct typing for " <+> printText ps)
@@ -185,13 +190,13 @@ minExpFORMULA_pred sign predicate terms pos = do
                     <+> (printText (predicate, terms))
                     $$ ptext "Possible Expansions: " 
                     <+> (printText ps)) (Id.headPos pos)
-        qualify_pred    :: (PredType, [TERM]) -> FORMULA
+        qualify_pred    :: (PredType, [TERM f]) -> FORMULA f
         qualify_pred (pred', terms')
             = (Predication                                      -- :: FORMULA
                 (Qual_pred_name name (toPRED_TYPE pred') [])    -- :: PRED_SYMB
                 terms'                                          -- :: [TERM]
                 pos)                                            -- :: [Pos]
-        get_profile     :: [[TERM]] -> [(PredType, [TERM])]
+        get_profile     :: [[TERM f]] -> [(PredType, [TERM f])]
         get_profile cs
             = [ (pred', ts) |
                 pred' <- preds,                                 -- :: PredType
@@ -199,7 +204,7 @@ minExpFORMULA_pred sign predicate terms pos = do
                 zipped_all (leq_SORT sign)                      -- ::   Bool
                     (map term_sort ts)                          -- ::  [SORT]
                     (predArgs pred') ]                          -- ::  [SORT]
-        pred_eq         :: (PredType, [TERM]) -> (PredType, [TERM]) -> Bool
+        pred_eq         :: (PredType, [TERM f]) -> (PredType, [TERM f]) -> Bool
         pred_eq (pred1,ts1) (pred2,ts2)
             = let   w1 = predArgs pred1                         -- :: [SORT]
                     w2 = predArgs pred2                         -- :: [SORT]
@@ -215,9 +220,10 @@ minExpFORMULA_pred sign predicate terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Strong/Existl. Equation Formula
 -----------------------------------------------------------}
-minExpFORMULA_eq :: Sign -> (TERM -> TERM -> [Id.Pos] -> FORMULA)
-                    -> TERM -> TERM -> [Id.Pos] -> Result FORMULA
-minExpFORMULA_eq sign eq term1 term2 pos = do
+minExpFORMULA_eq :: Analyzable lid b s f e => 
+                Sign lid b s f e -> (TERM f -> TERM f -> [Id.Pos] -> FORMULA f)
+                    -> TERM f -> TERM f -> [Id.Pos] -> Result (FORMULA f)
+minExpFORMULA_eq (sign :: Sign lid b s f e) eq term1 term2 pos = do
     exps1       <- minExpTerm sign term1                -- :: [[TERM]]
     exps2       <- minExpTerm sign term2                -- :: [[TERM]]
     --debug 1 ("exps1",exps1)
@@ -239,7 +245,7 @@ minExpFORMULA_eq sign eq term1 term2 pos = do
             (ptext "Cannot disambiguate3! Possible Expansions: "
              <+> (printText exps1) $$ (printText exps2)) (Id.headPos pos)
     where
-        fit     :: [TERM] -> Bool
+        fit     :: [TERM f] -> Bool
         fit      = (have_common_supersorts sign) . (map term_sort)
         maybeHead :: [a] -> Maybe a
         maybeHead (x:_) = Just x
@@ -248,8 +254,9 @@ minExpFORMULA_eq sign eq term1 term2 pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a TERM
 -----------------------------------------------------------}
-minExpTerm :: Sign -> TERM -> Result [[TERM]]
-minExpTerm sign term'
+minExpTerm :: Analyzable lid b s f e => 
+                Sign lid b s f e -> TERM f -> Result [[TERM f]]
+minExpTerm (sign :: Sign lid b s f e) term'
  = do -- debug 66 ("term'",term')
       u <- case term' of
         Simple_id var
@@ -274,8 +281,9 @@ minExpTerm sign term'
 {-----------------------------------------------------------
     Minimal Expansions of a Simple_id Term
 -----------------------------------------------------------}
-minExpTerm_simple :: Sign -> Id.SIMPLE_ID -> Result [[TERM]]
-minExpTerm_simple sign var = do
+minExpTerm_simple :: Analyzable lid b s f e => 
+                Sign lid b s f e -> Id.SIMPLE_ID -> Result [[TERM f]]
+minExpTerm_simple (sign :: Sign lid b s f e) var = do
     vars        <- return
         $ Map.findWithDefault                   -- :: Set.Set SORT
             Set.empty var (varMap sign)
@@ -310,25 +318,26 @@ minExpTerm_simple sign var = do
         is_least_sort ss s
             = Set.size (Set.intersection ss (subsortsOf s sign)) == 1
         eq                       = xeq_TUPLE sign
-        pair_with_id            :: SORT -> (TERM, SORT)
+        pair_with_id            :: SORT -> (TERM f, SORT)
         pair_with_id sort        = ((Qual_var var sort []), sort)
 
 {-----------------------------------------------------------
     Minimal Expansions of a Qual_var Term
 -----------------------------------------------------------}
-minExpTerm_qual :: Sign -> VAR -> SORT -> [Id.Pos] -> Result [[TERM]]
-minExpTerm_qual sign var sort pos = do
+minExpTerm_qual :: Analyzable lid b s f e => 
+                Sign lid b s f e -> VAR -> SORT -> [Id.Pos] -> Result [[TERM f]]
+minExpTerm_qual (sign :: Sign lid b s f e) var sort pos = do
     expandedVar <- minExpTerm_simple sign var   -- :: [[TERM]]
     return
         $ qualifyTerms pos                      -- :: [[TERM]]
         $ map selectExpansions expandedVar      -- :: [[(TERM, SORT)]]
     where
-        fits                    :: TERM -> Bool
+        fits                    :: TERM f -> Bool
         fits term                = case term of
             (Sorted_term (Qual_var var' _ _) sort' _)
                 -> (var == var') && (sort == sort')
             _   -> error "Internal error: minExpTerm: unsorted TERM after expansion"
-        selectExpansions        :: [TERM] -> [(TERM, SORT)]
+        selectExpansions        :: [TERM f] -> [(TERM f, SORT)]
         selectExpansions c
             = [ ((Qual_var var sort []), sort) |       -- :: (TERM, SORT)
                 sorted <- c,                    -- :: TERM
@@ -337,20 +346,21 @@ minExpTerm_qual sign var sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Sorted_term Term
 -----------------------------------------------------------}
-minExpTerm_sorted :: Sign -> TERM -> SORT -> [Id.Pos] -> Result [[TERM]]
-minExpTerm_sorted sign term sort pos = do
+minExpTerm_sorted :: Analyzable lid b s f e => 
+                Sign lid b s f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
+minExpTerm_sorted (sign :: Sign lid b s f e) term sort pos = do
     expandedTerm <- minExpTerm sign term        -- :: [[TERM]]
     --debug 7 ("expandedTerm", expandedTerm)
     return
         $ qualifyTerms pos                      -- :: [[TERM]]
         $ map selectExpansions expandedTerm     -- :: [[(TERM, SORT)]]
     where
-        fits                    :: TERM -> Bool
+        fits                    :: TERM f -> Bool
         fits term'               = case term' of
             (Sorted_term _ sort' _)
                 -> sort == sort'
             _   -> error "Internal error: minExpTerm: unsorted TERM after expansion"
-        selectExpansions        :: [TERM] -> [(TERM, SORT)]
+        selectExpansions        :: [TERM f] -> [(TERM f, SORT)]
         selectExpansions c
             = [ (sorted, sort) |                  -- :: (TERM, SORT)
                 sorted <- c,                    -- :: TERM
@@ -359,13 +369,15 @@ minExpTerm_sorted sign term sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
-minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> [Id.Pos] -> Result [[TERM]]
-minExpTerm_op sign (Op_name (Id.Id [tok] [] _)) [] _ = 
+minExpTerm_op :: Analyzable lid b s f e => 
+                Sign lid b s f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
+minExpTerm_op (sign :: Sign lid b s f e) (Op_name (Id.Id [tok] [] _)) [] _ = 
   minExpTerm_simple sign tok
 minExpTerm_op sign op terms pos = minExpTerm_op1 sign op terms pos
 
-minExpTerm_op1 :: Sign -> OP_SYMB -> [TERM] -> [Id.Pos] -> Result [[TERM]]
-minExpTerm_op1 sign op terms pos = do
+minExpTerm_op1 :: Analyzable lid b s f e => 
+                Sign lid b s f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
+minExpTerm_op1 (sign :: Sign lid b s f e) op terms pos = do
     --debug 3 ("op",op)
     --debug 3 ("terms",show terms)
     expansions          <- mapM
@@ -400,16 +412,16 @@ minExpTerm_op1 sign op terms pos = do
         op_name op'      = case op' of
             (Op_name name')             -> name'
             (Qual_op_name name' _ _)    -> name'
-        qualifyOps      :: [[(OpType, [TERM])]] -> [[(TERM, SORT)]]
+        qualifyOps      :: [[(OpType, [TERM f])]] -> [[(TERM f, SORT)]]
         qualifyOps       = map (map qualify_op)
-        qualify_op      :: (OpType, [TERM]) -> (TERM, SORT)
+        qualify_op      :: (OpType, [TERM f]) -> (TERM f, SORT)
         qualify_op (op', terms')
             = ((Application                                     -- ::  TERM
                 (Qual_op_name name (toOP_TYPE op') [])          -- :: OP_SYMB
                 terms'                                          -- :: [TERM]
                 [])                                             -- :: [Pos]
               , (opRes op'))                                    -- ::  SORT
-        get_profile     :: [[TERM]] -> [(OpType, [TERM])]
+        get_profile     :: [[TERM f]] -> [(OpType, [TERM f])]
         get_profile cs
             = [ (op', ts) |                             -- :: (OpType, [TERM])
                 op'     <- ops,                         -- ::  OpType
@@ -417,7 +429,7 @@ minExpTerm_op1 sign op terms pos = do
                 zipped_all (leq_SORT sign)              -- ::   Bool
                     (map term_sort ts)                  -- ::  [SORT]
                     (opArgs op') ]                      -- ::  [SORT]
-        op_eq           :: (OpType, [TERM]) -> (OpType, [TERM]) -> Bool
+        op_eq           :: (OpType, [TERM f]) -> (OpType, [TERM f]) -> Bool
         op_eq (op1,ts1) (op2,ts2)
             = let   w1 = opArgs op1                             -- :: [SORT]
                     w2 = opArgs op2                             -- :: [SORT]
@@ -433,8 +445,9 @@ minExpTerm_op1 sign op terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Cast Term
 -----------------------------------------------------------}
-minExpTerm_cast :: Sign -> TERM -> SORT -> [Id.Pos] -> Result [[TERM]]
-minExpTerm_cast sign term sort pos = do
+minExpTerm_cast :: Analyzable lid b s f e => 
+                Sign lid b s f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
+minExpTerm_cast (sign :: Sign lid b s f e) term sort pos = do
     expandedTerm        <- minExpTerm sign term         -- :: [[TERM]]
     --debug 1 ("expandedTerm",expandedTerm)
     validExps           <- return
@@ -448,9 +461,10 @@ minExpTerm_cast sign term sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Conditional Term
 -----------------------------------------------------------}
-minExpTerm_cond :: Sign -> TERM -> FORMULA -> TERM -> [Id.Pos]
-                -> Result [[TERM]]
-minExpTerm_cond sign term1 formula term2 pos = do
+minExpTerm_cond :: Analyzable lid b s f e => 
+                Sign lid b s f e -> TERM f -> FORMULA f -> TERM f -> [Id.Pos]
+                -> Result [[TERM f]]
+minExpTerm_cond (sign :: Sign lid b s f e) term1 formula term2 pos = do
     expansions1
         <- minExpTerm sign term1                -- ::       [[TERM]]
     expansions2
@@ -476,19 +490,19 @@ minExpTerm_cond sign term1 formula term2 pos = do
         $ qualifyTerms pos                      -- ::       [[TERM]]
         $ qualifyConds expanded_formula p'      -- ::   [[(TERM, SORT)]]
     where
-        have_supersort          :: [TERM] -> Bool
+        have_supersort          :: [TERM f] -> Bool
         have_supersort           = not . Set.isEmpty . supersorts
-        supersorts              :: [TERM] -> Set.Set SORT
+        supersorts              :: [TERM f] -> Set.Set SORT
         supersorts               = common_supersorts sign . map term_sort
         eq                       = xeq_TUPLE sign
-        qualifyConds            :: FORMULA -> [[([TERM], SORT)]] -> [[(TERM, SORT)]]
+        qualifyConds            :: FORMULA f -> [[([TERM f], SORT)]] -> [[(TERM f, SORT)]]
         qualifyConds f           = map $ map (qualify_cond f)
-        qualify_cond            :: FORMULA -> ([TERM], SORT) -> (TERM, SORT)
+        qualify_cond            :: FORMULA f -> ([TERM f], SORT) -> (TERM f, SORT)
         qualify_cond f (ts, s)   = case ts of
             [t1, t2]    -> (Conditional t1 f t2 [], s)
             _           -> (Unparsed_term "" [],s) {-error
                 $ "Internal Error: wrong number of TERMs in qualify_cond!"-}
-        get_profile             :: [[TERM]] -> [([TERM], SORT)]
+        get_profile             :: [[TERM f]] -> [([TERM f], SORT)]
         get_profile cs
             = [ (c, s) |                                -- :: ([TERM], SORT)
                 c <- permute cs,                        -- ::  [TERM]
@@ -530,18 +544,20 @@ zipped_all _  _      _     = False
     Construct a TERM of type Sorted_term
     from each (TERM, SORT) tuple
 -----------------------------------------------------------}
-qualifyTerms            :: [Id.Pos] -> [[(TERM, SORT)]] -> [[TERM]]
-qualifyTerms pos pairs   = map (map qualify_term) pairs
+qualifyTerms            :: AParsable f => [Id.Pos] -> [[(TERM f, SORT)]] -> [[TERM f]]
+qualifyTerms pos (pairs :: [[(TERM f, SORT)]])   = 
+    map (map qualify_term) pairs
     where
-        qualify_term       :: (TERM, SORT) -> TERM
+        qualify_term       :: (TERM f, SORT) -> TERM f
         qualify_term (t, s) = Sorted_term t s pos
 
 {-----------------------------------------------------------
     For each C in P (see above), let C' choose _one_
     f:s \in C for each s minimal such that f:s \in C
 -----------------------------------------------------------}
-minimize_op :: Sign -> [(OpType, [TERM])] -> [(OpType, [TERM])]
-minimize_op sign ops_n_terms
+minimize_op :: Analyzable lid b s f e => 
+                Sign lid b s f e -> [(OpType, [TERM f])] -> [(OpType, [TERM f])]
+minimize_op (sign :: Sign lid b s f e) ops_n_terms
     = concat $ map reduce ops_n_terms
     where
         results         :: Set.Set SORT
@@ -550,14 +566,15 @@ minimize_op sign ops_n_terms
         lesserSorts s    = Set.intersection results (subsortsOf s sign)
         leastSort       :: SORT -> Bool
         leastSort s      = Set.size (lesserSorts s) == 1
-        reduce          :: (OpType, [TERM]) -> [(OpType, [TERM])]
+        reduce          :: (OpType, [TERM f]) -> [(OpType, [TERM f])]
         reduce x@(op,_)  = if (leastSort (opRes op)) then [x] else []
 
 {-----------------------------------------------------------
     Workalike for minimize_op, but used inside m_e_t_cond
 -----------------------------------------------------------}
-minimize_cond :: Sign -> [([TERM], SORT)] -> [([TERM], SORT)]
-minimize_cond sign terms_n_sort
+minimize_cond :: Analyzable lid b s f e => 
+                Sign lid b s f e -> [([TERM f], SORT)] -> [([TERM f], SORT)]
+minimize_cond (sign :: Sign lid b s f e) terms_n_sort
     = concat $ map reduce terms_n_sort
     where
         sorts           :: Set.Set SORT
@@ -566,10 +583,10 @@ minimize_cond sign terms_n_sort
         lesserSorts s    = Set.intersection sorts (subsortsOf s sign)
         leastSort       :: SORT -> Bool
         leastSort s      = Set.size (lesserSorts s) == 1
-        reduce          :: ([TERM], SORT) -> [([TERM], SORT)]
+        reduce          :: ([TERM f], SORT) -> [([TERM f], SORT)]
         reduce x@(_,s)   = if (leastSort s) then [x] else []
 
-term_sort       :: TERM -> SORT
+term_sort   :: AParsable f => TERM f -> SORT
 term_sort term'  = case term' of
     (Sorted_term _ sort _ )     -> sort
     _                           -> error                -- unlikely
@@ -578,15 +595,17 @@ term_sort term'  = case term' of
 {-----------------------------------------------------------
     Set of SubSORTs common to all given SORTs
 -----------------------------------------------------------}
-common_subsorts :: Sign -> [SORT] -> Set.Set SORT
-common_subsorts sign = let
+common_subsorts :: Analyzable lid b s f e => 
+                Sign lid b s f e -> [SORT] -> Set.Set SORT
+common_subsorts (sign :: Sign lid b s f e) = let
     get_subsorts = flip subsortsOf sign
     in (foldr Set.intersection Set.empty) . (map get_subsorts)
 
 {-----------------------------------------------------------
     Set of SuperSORTs common to all given SORTs
 -----------------------------------------------------------}
-common_supersorts :: Sign -> [SORT] -> Set.Set SORT
+common_supersorts :: Analyzable lid b s f e => 
+                Sign lid b s f e -> [SORT] -> Set.Set SORT
 common_supersorts _ [] = Set.empty
 common_supersorts sign srts = let
     get_supersorts = flip supersortsOf sign
@@ -595,45 +614,52 @@ common_supersorts sign srts = let
 {-----------------------------------------------------------
     True if all SORTs have a common subSORT
 -----------------------------------------------------------}
-have_common_subsorts :: Sign -> [SORT] -> Bool
+have_common_subsorts :: Analyzable lid b s f e => 
+                Sign lid b s f e -> [SORT] -> Bool
 have_common_subsorts s = (not . Set.isEmpty . common_subsorts s)
 
 {-----------------------------------------------------------
     True if all SORTs have a common superSORT
 -----------------------------------------------------------}
-have_common_supersorts :: Sign -> [SORT] -> Bool
+have_common_supersorts :: Analyzable lid b s f e => 
+                Sign lid b s f e -> [SORT] -> Bool
 have_common_supersorts s = (not . Set.isEmpty . common_supersorts s)
 
 {-----------------------------------------------------------
     True if s1 <= s2 OR s1 >= s2
 -----------------------------------------------------------}
-xeq_SORT :: Sign -> SORT -> SORT -> Bool
+xeq_SORT :: Analyzable lid b s f e => 
+                Sign lid b s f e -> SORT -> SORT -> Bool
 xeq_SORT sign s1 s2 = (leq_SORT sign s1 s2) || (geq_SORT sign s1 s2)
 
 {-----------------------------------------------------------
     True if s1 <= s2 OR s1 >= s2
 -----------------------------------------------------------}
-xeq_TUPLE :: Sign -> (a, SORT) -> (a, SORT) -> Bool
+xeq_TUPLE :: Analyzable lid b s f e => 
+                Sign lid b s f e -> (a, SORT) -> (a, SORT) -> Bool
 xeq_TUPLE sign (_,s1) (_,s2) = xeq_SORT sign s1 s2
 
 {-----------------------------------------------------------
     True if s1 <= s2
 -----------------------------------------------------------}
-leq_SORT :: Sign -> SORT -> SORT -> Bool
+leq_SORT :: Analyzable lid b s f e => 
+                Sign lid b s f e -> SORT -> SORT -> Bool
 leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
 -- leq_SORT = (flip Set.member) . (flip supersortsOf)
 
 {-----------------------------------------------------------
     True if s1 >= s2
 -----------------------------------------------------------}
-geq_SORT :: Sign -> SORT -> SORT -> Bool
+geq_SORT :: Analyzable lid b s f e => 
+                Sign lid b s f e -> SORT -> SORT -> Bool
 geq_SORT sign s1 s2 = Set.member s2 (subsortsOf s1 sign)
 -- geq_SORT = (flip Set.member) . (flip subsortsOf)
 
 {-----------------------------------------------------------
     True if o1 ~F o2
 -----------------------------------------------------------}
-leqF :: Sign -> OpType -> OpType -> Bool
+leqF :: Analyzable lid b s f e => 
+                Sign lid b s f e -> OpType -> OpType -> Bool
 leqF sign o1 o2 = zipped_all are_legal (opArgs o1) (opArgs o2)
                 && have_common_supersorts sign [(opRes o1), (opRes o2)]
     where are_legal a b = have_common_subsorts sign [a, b]
@@ -641,7 +667,8 @@ leqF sign o1 o2 = zipped_all are_legal (opArgs o1) (opArgs o2)
 {-----------------------------------------------------------
     True if p1 ~P p2
 -----------------------------------------------------------}
-leqP :: Sign -> PredType -> PredType -> Bool
+leqP :: Analyzable lid b s f e => 
+                Sign lid b s f e -> PredType -> PredType -> Bool
 leqP sign p1 p2 = zipped_all are_legal (predArgs p1) (predArgs p2)
     where are_legal a b = have_common_subsorts sign [a, b]
 

@@ -20,6 +20,9 @@
 
    Name views in devgraphs?
 
+   Issue warning for unions of non-disjoint signatures
+     (and offer tool for renaming?)
+
    Check that translations and reductions do not effect local env
    (Implement new semantics for revealing here)
 

@@ -21,6 +21,7 @@ import CASL.Print_AS_Basic
 import Common.AS_Annotation
 import Common.Print_AS_Annotation
 import Common.GlobalAnnotations
+import Common.AnnoState
 import CASL.LiteralFuns
 
 import Common.LaTeX_AS_Annotation
@@ -35,7 +36,9 @@ instance PrintLaTeX BASIC_SPEC where
     printLatex0 ga (Basic_spec l) = 
 	if null l then braces_latex empty else vcat (map (printLatex0 ga) l) 
 
-instance PrintLaTeX BASIC_ITEMS where
+instance (AParsable b, AParsable s, AParsable f,
+          PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) => 
+         PrintLaTeX (BASIC_ITEMS b s f) where
     printLatex0 ga (Sig_items s) = printLatex0 ga s 
     printLatex0 ga (Free_datatype l _) = 
 	fsep_latex [hc_sty_plain_keyword "free"
@@ -72,11 +75,18 @@ instance PrintLaTeX BASIC_ITEMS where
 	semiT_latex ga l
     printLatex0 ga (Local_var_axioms l f p) = 
 	hc_sty_axiom "\\forall" <\+> semiT_latex ga l
-		 $$ printLatex0 ga (Axiom_items f p)
-    printLatex0 ga (Axiom_items f _) = 
+		 $$ printLatex0Axioms ga f
+    printLatex0 ga (Axiom_items f _) =
+        printLatex0Axioms ga f
+    printLatex0 ga (Ext_BASIC_ITEMS b) = printLatex0 ga b
+
+printLatex0Axioms :: (AParsable f, PrintLaTeX f) => 
+               GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
+printLatex0Axioms ga f =
 	vcat $ map (printAnnotedFormula_Latex0 ga) f
 
-printAnnotedFormula_Latex0 :: GlobalAnnos -> Annoted FORMULA -> Doc
+printAnnotedFormula_Latex0 :: (AParsable f, PrintLaTeX f) => 
+               GlobalAnnos -> Annoted (FORMULA f) -> Doc
 printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
 	let i'   = hc_sty_axiom "\\bullet" 
 		      <\+> set_tabbed_nest_latex (printLatex0 ga i)
@@ -91,7 +101,9 @@ printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
 				    (latex_macro "\\`") ga ras
         in  {-trace (show i)-} (las' $+$ fsep_latex [i',la] $$ ras')
 
-instance PrintLaTeX SIG_ITEMS where
+instance (AParsable b, AParsable s, AParsable f,
+          PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) => 
+          PrintLaTeX (SIG_ITEMS b s f) where
     printLatex0 ga (Sort_items l _) =  
 	hc_sty_sig_item_keyword ga  (sortS++pluralS l) <\+>
 	set_tabbed_nest_latex (semiAnno_latex ga l)
@@ -104,8 +116,9 @@ instance PrintLaTeX SIG_ITEMS where
     printLatex0 ga (Datatype_items l _) = 
 	hc_sty_sig_item_keyword ga (typeS++pluralS l) <\+> 
 	set_tabbed_nest_latex (semiAnno_latex ga l) 
+    printLatex0 ga (Ext_SIG_ITEMS s) = printLatex0 ga s
 
-instance PrintLaTeX SORT_ITEM where
+instance (AParsable f, PrintLaTeX f) => PrintLaTeX (SORT_ITEM f) where
     printLatex0 ga (Sort_decl l _) = commaT_latex ga l
     printLatex0 ga (Subsort_decl l t _) = 
 	hang_latex (commaT_latex ga l) 8 $ 
@@ -122,7 +135,7 @@ instance PrintLaTeX SORT_ITEM where
 	fsep_latex $ punctuate  (space_latex<>equals_latex) $ 
 		   map (printLatex0 ga) l
 
-instance PrintLaTeX OP_ITEM where
+instance (AParsable f, PrintLaTeX f) => PrintLaTeX (OP_ITEM f) where
     printLatex0 ga (Op_decl l t a _) = 
 	{-cat [ cat [commaT_latex ga l
 		  ,colon_latex <> printLatex0 ga t <> condComma] 
@@ -182,13 +195,13 @@ instance PrintLaTeX ARG_DECL where
 			      <> colon_latex
 			      <\+> printLatex0 ga s
 
-instance PrintLaTeX OP_ATTR where
+instance (AParsable f, PrintLaTeX f) => PrintLaTeX (OP_ATTR f) where
     printLatex0 _ (Assoc_op_attr)   = hc_sty_id assocS
     printLatex0 _ (Comm_op_attr)    = hc_sty_id commS 
     printLatex0 _ (Idem_op_attr)    = hc_sty_id idemS
     printLatex0 ga (Unit_op_attr t) = hc_sty_id unitS <\+> printLatex0 ga t
 
-instance PrintLaTeX PRED_ITEM where
+instance (AParsable f, PrintLaTeX f) => PrintLaTeX (PRED_ITEM f) where
     printLatex0 ga (Pred_decl l t _) = commaT_latex ga l 
 				  <\+> colon_latex <\+> printLatex0 ga t
     printLatex0 ga (Pred_defn n h f _) = 
@@ -243,7 +256,7 @@ instance PrintLaTeX VAR_DECL where
 				<> colon_latex 
 				<\+> printLatex0 ga s 
 
-instance PrintLaTeX FORMULA where
+instance (AParsable f, PrintLaTeX f) => PrintLaTeX (FORMULA f) where
     printLatex0 ga (Quantification q l f _) = 
        set_tabbed_nest_latex $ fsep_latex  
            [printLatex0 ga q <\+> semiT_latex ga l ,
@@ -318,6 +331,7 @@ instance PrintLaTeX FORMULA where
 	hc_sty_id generatedS <> braces_latex
 		      (hc_sty_id sortS <\+> commaT_latex ga sorts 
 		       <> semi_latex <\+> semiT_latex ga ops) 
+    printLatex0 ga (ExtFORMULA f) = printLatex0 ga f
 
 instance PrintLaTeX QUANTIFIER where
     printLatex0 _ (Universal) = hc_sty_axiom "\\forall"
@@ -331,7 +345,7 @@ instance PrintLaTeX PRED_SYMB where
 			 <\+> printLatex0 ga n 
 			 <\+> colon_latex <\+> printLatex0 ga t
 
-instance PrintLaTeX TERM where
+instance (AParsable f, PrintLaTeX f) => PrintLaTeX (TERM f) where
     printLatex0 ga (Simple_id i) = printLatex0 ga i
     printLatex0 ga (Qual_var n t _) = -- HERE
 	parens_latex $ hc_sty_id varS 
@@ -427,7 +441,7 @@ print_kind_latex ga k l =
 	       "" -> empty 
 	       s' -> casl_keyword_latex s'
 
-condPrint_Mixfix_latex :: GlobalAnnos -> Id -> [TERM] -> Doc
+condPrint_Mixfix_latex :: (AParsable f, PrintLaTeX f) => GlobalAnnos -> Id -> [TERM f] -> Doc
 condPrint_Mixfix_latex ga =
     condPrint_Mixfix (printLatex0 ga) (printLatex0 ga) (printLatex0 ga)
 		     parens_tab_latex
@@ -435,11 +449,11 @@ condPrint_Mixfix_latex ga =
                      (Just $ printDisplayToken_latex casl_axiom_latex) 
                      (Just DF_LATEX) ga
 
-print_prefix_appl_latex :: GlobalAnnos -> Doc -> [TERM] -> Doc
+print_prefix_appl_latex :: (AParsable f, PrintLaTeX f) => GlobalAnnos -> Doc -> [TERM f] -> Doc
 print_prefix_appl_latex ga = 
     print_prefix_appl (printLatex0 ga) parens_tab_latex fsep_latex comma_latex
 
-print_Literal_latex :: GlobalAnnos -> Id -> [TERM] -> Doc
+print_Literal_latex :: (AParsable f, PrintLaTeX f) => GlobalAnnos -> Id -> [TERM f] -> Doc
 print_Literal_latex ga =
     print_Literal (printLatex0 ga) (printLatex0 ga) (printLatex0 ga) 
 		  parens_tab_latex
