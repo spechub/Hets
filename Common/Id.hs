@@ -133,7 +133,7 @@ expandPos f (o, c) ts ps =
 		    else if diff == 0 then ps
 			 else take n $ drop (- diff `div` 2) ps
 		    -- cut off longer lists on both ends
-	      commas j = if n == 2 then [c] else "," : commas (j - 1)
+	      commas j = if j == 2 then [c] else "," : commas (j - 1)
 	      seps = map f
 		(zipWith Token (o : commas n) ps1)
 	  in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
