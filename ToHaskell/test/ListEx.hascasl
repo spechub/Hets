@@ -1,6 +1,3 @@
 var a :Type+
-free type List a ::= Nil | Cons(head : a; tail : List a)
+free type List a ::= Nil | Cons(myhead : a; List a)
 
-op f(x : List a) : List a = x
-
-op g : List a -> List a

@@ -2,18 +2,11 @@
 
 .PHONY: check
 
-check: translateAna
-	./runcheck.sh ../translateAna
+check: h2h hacapa
+	./runcheck.sh ../h2h
 
-output: translateAna
-	./runcheck.sh ../translateAna set
-
-translateAna:
-	if test ! -x ../translateAna; then (cd ..; ./ghc-call); fi
-	if test ! -x ../../HasCASL/hacapa; \
-               then (cd ../../HasCASL; ./ghc-call); fi
-	if test ! -x ../../Haskell/Hatchet/hatch; \
-               then (cd ../../Haskell/Hatchet; ./ghc-call); fi
+output: h2h hacapa
+	./runcheck.sh ../h2h set
 
 %: 
 	(cd ../..; $(MAKE) $@)

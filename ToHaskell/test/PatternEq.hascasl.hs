@@ -1,27 +1,55 @@
-module Dummy where
-import Prelude (undefined, Show, Eq, Ord, Bool)
-import MyLogic
- 
-data A__s = A__s
-          deriving (Show, Eq, Ord)
- 
-data A__t = A__t
-          deriving (Show, Eq, Ord)
- 
+{-
+
+types:
+A__s :: (*, data)
+A__t :: (*, data)
+
+values:
 a :: A__s
-a = undefined
- 
-b :: A__s
- 
-c :: A__t
- 
 a__snd :: (A__s, A__t) -> A__t
- 
+b :: A__s
+c :: A__t
 x :: A__s
-x = undefined
- 
 y :: A__t
-y = undefined
-c = a__snd (x, y)
-b = a
+A__s :: A__s
+A__t :: A__t
+
+scope:
+Prelude.A__s |-> Prelude.A__s, Type [A__s] []
+Prelude.A__s |-> Prelude.A__s, con of A__s
+Prelude.A__t |-> Prelude.A__t, Type [A__t] []
+Prelude.A__t |-> Prelude.A__t, con of A__t
+Prelude.a |-> Prelude.a, Value
+Prelude.a__snd |-> Prelude.a__snd, Value
+Prelude.b |-> Prelude.b, Value
+Prelude.c |-> Prelude.c, Value
+Prelude.x |-> Prelude.x, Value
+Prelude.y |-> Prelude.y, Value
+A__s |-> Prelude.A__s, Type [A__s] []
+A__s |-> Prelude.A__s, con of A__s
+A__t |-> Prelude.A__t, Type [A__t] []
+A__t |-> Prelude.A__t, con of A__t
+a |-> Prelude.a, Value
+a__snd |-> Prelude.a__snd, Value
+b |-> Prelude.b, Value
+c |-> Prelude.c, Value
+x |-> Prelude.x, Value
+y |-> Prelude.y, Value
+-}
+module Dummy where
+import Prelude (error, Show, Eq, Ord, Bool)
+import MyLogic
+data A__s = A__s
+data A__t = A__t
+a :: A__s
+a = error "a"
+b :: A__s
+c :: A__t
+a__snd :: (A__s, A__t) -> A__t
+x :: A__s
+x = error "x"
+y :: A__t
+y = error "y"
 a__snd (x, y) = y
+b = a
+c = a__snd (x, y)

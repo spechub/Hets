@@ -14,44 +14,41 @@ module Main where
 
 import System.Environment
 
-import Common.AnnoState
 import Text.ParserCombinators.Parsec
-import Common.Lib.State
+import Common.Result
+import Common.AnnoState
 import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.PrettyPrint
 
-import Haskell.Hatchet.MultiModuleBasics
-import Haskell.Hatchet.HsPretty
-import Haskell.Hatchet.HsSyn
-import Haskell.PrintModuleInfo
+import ToHaskell.FromHasCASL
 
-import ToHaskell.TranslateAna
+import Haskell.HatAna
 
 import HasCASL.Le
-import HasCASL.AsToLe(cleanEnv, anaBasicSpec)
+import HasCASL.AsToLe
 import HasCASL.ParseItem(basicSpec)
 import HasCASL.ProgEq
 
-hParser :: AParser [HsDecl]
-hParser = do b <- basicSpec
-	     let env = snd $ runState 
-		       (anaBasicSpec emptyGlobalAnnos b) initialEnv
-		 hs = translateSig $ cleanEnv env
-		 nhs = concatMap (translateSentence env . mapNamed
-				  (translateSen env)) 
-		       $ sentences env
-	     return (cleanSig hs nhs ++ map sentence nhs)
-	  
+hParser :: AParser () (Sign, [Named (HsDeclI PNT)])
+hParser = do 
+   b <- basicSpec
+   let res@(Result _ m) = do 
+          (_, _, sig, sens) <- basicAnalysis(b, initialEnv, emptyGlobalAnnos)
+          mapTheory (sig, map (mapNamed $ translateSen sig) sens)
+   case m of 
+      Nothing -> error $ show res
+      Just x -> return x
+
 main :: IO ()
 main = do l <- getArgs
 	  if length l >= 1 then
 	     do s <- readFile $ head l
-		let r = runParser hParser emptyAnnos (head l) s 
+		let r = runParser hParser (emptyAnnos ()) (head l) s 
 	        case r of 
-		       Right hs -> do
-		           putStrLn $ showPretty emptyModuleInfo ""
-			   mapM_ (putStrLn . render . ppHsDecl) hs
+		       Right (sig, hs) -> do
+		           putStrLn $ showPretty sig ""
+			   mapM_ (putStrLn . flip showPretty "") hs
 		       Left err -> putStrLn $ show err
 	     else putStrLn "missing argument"

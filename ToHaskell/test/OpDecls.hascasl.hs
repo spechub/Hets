@@ -1,21 +1,45 @@
-module Dummy where
-import Prelude (undefined, Show, Eq, Ord, Bool)
-import MyLogic
- 
-data A__s = A__s
-          deriving (Show, Eq, Ord)
- 
-data A__t = A__t
-          deriving (Show, Eq, Ord)
- 
+{-
+
+types:
+A__s :: (*, data)
+A__t :: (*, data)
+
+values:
 a___2_P_2 :: (A__s, A__s) -> A__s
-a___2_P_2 = undefined
- 
 x1 :: A__s
-x1 = undefined
- 
 x2 :: A__s
-x2 = undefined
- 
+y :: A__s
+A__s :: A__s
+A__t :: A__t
+
+scope:
+Prelude.A__s |-> Prelude.A__s, Type [A__s] []
+Prelude.A__s |-> Prelude.A__s, con of A__s
+Prelude.A__t |-> Prelude.A__t, Type [A__t] []
+Prelude.A__t |-> Prelude.A__t, con of A__t
+Prelude.a___2_P_2 |-> Prelude.a___2_P_2, Value
+Prelude.x1 |-> Prelude.x1, Value
+Prelude.x2 |-> Prelude.x2, Value
+Prelude.y |-> Prelude.y, Value
+A__s |-> Prelude.A__s, Type [A__s] []
+A__s |-> Prelude.A__s, con of A__s
+A__t |-> Prelude.A__t, Type [A__t] []
+A__t |-> Prelude.A__t, con of A__t
+a___2_P_2 |-> Prelude.a___2_P_2, Value
+x1 |-> Prelude.x1, Value
+x2 |-> Prelude.x2, Value
+y |-> Prelude.y, Value
+-}
+module Dummy where
+import Prelude (error, Show, Eq, Ord, Bool)
+import MyLogic
+data A__s = A__s
+data A__t = A__t
+a___2_P_2 :: (A__s, A__s) -> A__s
+a___2_P_2 = error "a___2_P_2"
+x1 :: A__s
+x1 = error "x1"
+x2 :: A__s
+x2 = error "x2"
 y :: A__s
 y = a___2_P_2 (x2, x2)
