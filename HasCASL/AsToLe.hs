@@ -82,6 +82,15 @@ diffAss tm (OpInfos l1) (OpInfos l2) =
 	      if any (\ p -> isUnifiable tm 0 (opType o) (opType p)) ps
 		 then rs else o:rs
  
+-- | environment with predefined types and operations
+addPreDefs :: Env -> Env  
+addPreDefs e = e { typeMap = addUnit $ typeMap e
+		    , assumps = addOps $ assumps e }
+
+-- | environment with predefined types and operations
+preEnv :: Env  
+preEnv = addPreDefs initialEnv
+
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
 cleanEnv e = diffEnv initialEnv 
@@ -90,24 +99,12 @@ cleanEnv e = diffEnv initialEnv
 	     , assumps = filterVars $ assumps e }
 	     preEnv 
 
--- | environment with predefined types and operations
-preEnv :: Env  
-preEnv = initialEnv { typeMap = addUnit Map.empty
-		    , assumps = addOps Map.empty }
-
-addPreIds :: (PrecMap, Set.Set Id) -> State Env ()
-addPreIds r = do e <- get
-		 put e { preIds = r }
-
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
 anaBasicSpec ga b@(BasicSpec l) = do 
-    tm <- gets typeMap
-    as <- gets assumps
-    putTypeMap $ addUnit tm
-    putAssumps $ addOps as
-    newAs <- gets assumps
-    let preds = Set.fromDistinctAscList 
+    e <- get
+    let newAs = assumps e
+        preds = Set.fromDistinctAscList 
 		   $ Map.keys $ Map.filter (any ( \ oi -> 
 				 case opDefn oi of
 				 NoOpDefn Pred -> True
@@ -117,7 +114,7 @@ anaBasicSpec ga b@(BasicSpec l) = do
 	rels = Set.union preds newPreds
 	newGa = addBuiltins ga
 	precs = mkPrecIntMap $ prec_annos newGa
-    addPreIds (precs, rels)
+    put (addPreDefs e) { preIds = (precs, rels) }
     ul <- mapAnM (anaBasicItem newGa) l
     return $ BasicSpec ul
 
