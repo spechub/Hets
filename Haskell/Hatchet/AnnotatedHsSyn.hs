@@ -17,7 +17,7 @@
 -------------------------------------------------------------------------------}
 
 module Haskell.Hatchet.AnnotatedHsSyn (bogusASrcLoc,
-    ASrcLoc(..), AModule(..), AHsName(..), AHsName(..),
+    ASrcLoc(..), AModule(..), AHsName(..),
     AHsModule(..), AHsExportSpec(..),
     AHsImportDecl(..), AHsImportSpec(..), AHsAssoc(..),
     AHsDecl(..), AHsMatch(..), AHsConDecl(..), AHsBangType(..), AHsRhs(..),
@@ -31,6 +31,7 @@ module Haskell.Hatchet.AnnotatedHsSyn (bogusASrcLoc,
 data ASrcLoc = ASrcLoc Int Int -- (Line, Indentation)
   deriving (Eq,Ord,Show)
 
+bogusASrcLoc :: ASrcLoc
 bogusASrcLoc = ASrcLoc (-1) (-1)
 
 newtype AModule = AModule String
@@ -42,11 +43,8 @@ data AHsName
 	| AUnQual AHsIdentifier 
   deriving (Eq,Ord)
 
-
 instance Show AHsName where
-   showsPrec _ (AQual (AModule m) i) = showString m . showString "." . shows i
-   showsPrec _ (AUnQual i) = shows i
-   show (AQual (AModule m) i) = (show m) ++ "." ++ (show i)
+   show (AQual (AModule m) i) = m ++ "." ++ show i
    show (AUnQual i) = show i
 
 
@@ -54,16 +52,12 @@ data AHsIdentifier
      = AHsIdent String
      | AHsSymbol String
      | AHsSpecial String
-  -- deriving (Eq,Ord, Show)
   deriving (Eq,Ord)
 
 instance Show AHsIdentifier where
-   showsPrec _ (AHsIdent s) = showString s
-   showsPrec _ (AHsSymbol s) = showString s
-   showsPrec _ (AHsSpecial s) = showString s
-   show (AHsIdent s) = show s
-   show (AHsSymbol s) = show s
-   show (AHsSpecial s) = show s 
+   show (AHsIdent s) = s
+   show (AHsSymbol s) = s
+   show (AHsSpecial s) = s 
 
 data AHsModule = AHsModule AModule (Maybe [AHsExportSpec])
                          [AHsImportDecl] [AHsDecl]
