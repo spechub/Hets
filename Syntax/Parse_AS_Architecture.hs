@@ -1,10 +1,11 @@
 {- |
    Module      :  $Header$
    Author      :  Maciek Makowski
-   Maintainer  :  hets@tzi.de
    Year        :  2003
    Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004
    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+   Maintainer  :  hets@tzi.de
    Stability   :  provisional
    Portability :  non-portable (via imports)
 
