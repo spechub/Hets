@@ -9,11 +9,11 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable 
 
-This module provides converters for (Sign f e) and [Named (FORMULA f)] to MMiSSOntology
+This module provides converters for theories ((Sign f e) and [Named (FORMULA f)]) to MMiSSOntology
 
 -}
 
-module CASL.Taxonomy where
+module CASL.Taxonomy (convTaxo) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
