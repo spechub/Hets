@@ -177,7 +177,7 @@ inferAppl ps mt t1 t2 = do
                 putLocalVars $ Map.map (subst sf) vs            
                 args2 <- infer (Just $ liftType sfty ps) t2 >>= reduce False
                 putLocalVars vs
-                let args = args2 ++ args1
+                let args = args1 ++ args2
                     combs2 = map ( \ (sa, ca, _, ta) ->
                         let sr = compSubst sf sa in
                           [(sr, joinC ca $ substC sa cf, subst sr rty, 
@@ -227,20 +227,16 @@ infer mt trm = do
                                     (OpInfos []) i as
                          Just t -> [OpInfo (simpleTypeScheme t) [] VarDefn]
                insts <- mapM instOpInfo ois 
-               ls <- case mt of 
-                     Nothing -> return $ map ( \ (ty, is, cs, oi) 
-                                              -> (eps, ty, is, cs, oi)) insts
-                     Just inTy -> do 
-                         let rs = map ( \ (ty, is, cs, oi) ->
-                                  (eps, ty, is, 
-                                   insertC (Subtyping ty inTy) cs, oi)) insts
-                         if null rs then 
-                            addDiags [Diag Hint
-                               ("no type match for: " ++ showId i "\n"
-                                ++ lookupError inTy ois)
-                               (posOfId i) ]
-                            else return ()
-                         return rs
+               let ls = map ( \ (ty, is, cs, oi) ->
+                              (eps, ty, is, case mt of 
+                               Just inTy -> insertC (Subtyping ty inTy) cs
+                               Nothing -> cs, oi)) insts
+               if null ls then addDiags 
+                   [Diag Hint
+                       ("no type match for: " ++ showId i "" ++ case mt of 
+                        Nothing -> ""
+                        Just inTy -> '\n' : lookupError inTy ois) (posOfId i)]
+                   else return ()
                return $ typeNub tm q2p $ map ( \ (s, ty, is, cs, oi) -> 
                               case opDefn oi of
                               VarDefn -> (s, cs, ty, QualVar $ 
@@ -271,15 +267,6 @@ infer mt trm = do
                                 mkTupleTerm trms ps)) ls
         TypedTerm t qual ty ps -> do 
             case qual of 
-                OfType -> do
-                    rs <- infer (Just ty) t
-                    return $ map ( \ (s, cs, _, tr) -> 
-                          let sTy = subst s ty in
-                                (s, case mt of 
-                                 Nothing -> cs
-                                 Just jTy -> insertC (Subtyping sTy
-                                                      $ subst s jTy) cs,
-                                 sTy, TypedTerm tr qual sTy ps)) rs
                 InType -> do 
                     vTy <- freshTypeVar $ headPos ps
                     rs <- infer Nothing t
@@ -304,6 +291,15 @@ infer mt trm = do
                                  Nothing -> cs
                                  Just jTy -> insertC (Subtyping (subst s jTy)
                                                       sTy) cs,
+                                 sTy, TypedTerm tr qual sTy ps)) rs
+                _ -> do
+                    rs <- infer (Just ty) t
+                    return $ map ( \ (s, cs, _, tr) -> 
+                          let sTy = subst s ty in
+                                (s, case mt of 
+                                 Nothing -> cs
+                                 Just jTy -> insertC (Subtyping sTy
+                                                      $ subst s jTy) cs,
                                  sTy, TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenLocalVar decls
@@ -346,7 +342,7 @@ infer mt trm = do
             rty <- case mt of 
                    Nothing -> freshTypeVar $ posOfTerm trm
                    Just ty -> return ty
-            if null ts then addDiags [mkDiag Error 
+            if null ts then addDiags [mkDiag Hint 
                                       "unresolved of-term in case" ofTrm]
                 else return () 
             rs <- mapM ( \ (s1, cs, oty, otrm) -> do 
@@ -401,7 +397,7 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
    pats1 <- infer (Just pty) pat >>= reduce False
    e <- get            
    let pats = filter ( \ (_, _, _, p) -> isPat e p) pats1
-   if null pats then addDiags [mkDiag Error "unresolved case pattern" pat]
+   if null pats then addDiags [mkDiag Hint "unresolved case pattern" pat]
       else return ()
    vs <- gets localVars
    es <- mapM ( \ (s, cs, ty, p) -> do 
