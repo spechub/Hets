@@ -113,7 +113,7 @@ showTerm t = showPTree (toPrecTree t)
 
 showPat :: Bool -> (Term, Term) -> String
 showPat b (pat, term) = 
-  let s = sp ++ showTerm pat ++ sp ++ "=" ++ sp ++ lb ++ showTerm term ++ rb
+  let s = sp ++ showTerm pat ++ sp ++ "=" ++ sp ++ showTerm term
   in
     if b then ";" ++ s
       else s
@@ -121,8 +121,11 @@ showPat b (pat, term) =
 
 showCaseAlt :: (Term, Term) -> String
 showCaseAlt (pat, term) =
--- trace ("Pat: " ++ show pat ++ "\n Term: " ++ show term ++ "\n")
-  showTerm pat ++ sp ++ "=>" ++ sp ++ showTerm term
+  showPattern pat ++ sp ++ "=>" ++ sp ++ showTerm term
+
+showPattern :: Term -> String
+showPattern (App t t' _) = showPattern t ++ sp ++ showPattern t'
+showPattern t = showTerm t
 
 showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var typ term =
@@ -345,22 +348,6 @@ pr (Node (PrecTerm _ p) _) = p
 pair :: PrecTermTree -> PrecTermTree -> String
 pair leftChild rightChild = lb++showPTree leftChild++", "++
                                 showPTree rightChild++rb
-
--- Not, =, and, or, -->: Absteigende Prio, alle rechtsassoz (ausser Not)
-
---sT t = trace ("[sT] "++st t++"\n") (showTerm 1000 t)
-
--- st (Const (c,_)) =  "Const ("++c++")"
--- st (Free (v,_)) = "Free ("++v++")"
--- st (Abs (v,_,t)) = "%"++showTerm v++" . "++showTerm t
--- st (Const ("All",_) `App` Abs (v,ty,t)) = 
---    ("! "++showTerm v++" :: "++show ty++" . "++showTerm t)
--- st (Const ("Ex",_) `App` Abs (v,_,t)) = 
---    ( "? "++showTerm v++" . "++showTerm t)
--- st (Const ("Ex1",_) `App` Abs (v,_,t)) = 
---    ( "?! "++showTerm v++" . "++showTerm t)
--- st (t1 `App` t2) = "App(["++st t1++"],["++st t2++"])"
-
 
 instance PrettyPrint Sign where
   printText0 ga sig = text
