@@ -29,8 +29,9 @@ mapTerm :: Morphism -> Term -> Term
 mapTerm m t = case t of
    QualVar v ty ps -> QualVar v (mapTp m ty) ps
    QualOp b (InstOpId i ts ps) sc qs -> 
-        let (i2, TySc sc2) = Map.findWithDefault (i, TySc sc) (i, TySc sc) 
-			$ funMap m
+        let (i2, TySc sc2) = Map.findWithDefault 
+			     (i, TySc $ mapTypeScheme (typeIdMap m) sc) 
+			     (i, TySc sc) $ funMap m
 	    in QualOp b (InstOpId i2 (map (mapTp m) ts) ps) sc2 qs
    ApplTerm t1 t2 ps ->
        ApplTerm (mapTerm m t1) (mapTerm m t2) ps
@@ -60,8 +61,9 @@ mapPat ::  Morphism -> Pattern -> Pattern
 mapPat m p = case p of
    PatternVar vd -> PatternVar $ mapVar m vd
    PatternConstr (InstOpId i ts ps) sc qs ->
-       let (i2, TySc sc2) = Map.findWithDefault (i, TySc sc) (i, TySc sc) 
-			    $ funMap m
+       let (i2, TySc sc2) = Map.findWithDefault 
+			    (i, TySc $ mapTypeScheme (typeIdMap m) sc) 
+			    (i, TySc sc) $ funMap m
 	    in PatternConstr (InstOpId i2 (map (mapTp m) ts) ps) sc2 qs
    ApplPattern p1 p2 ps -> ApplPattern (mapPat m p1) (mapPat m p2) ps
    TuplePattern ps qs -> TuplePattern (map (mapPat m) ps) qs
