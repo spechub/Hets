@@ -46,8 +46,8 @@ b [a __ b] a
 (op __<__ : ##)
 (op __<__ : ## -> --)
 (op __<__ : bb)
-(op __<__ : () ->? bb)
-(op __<__ : () ->? ##)
+(op __<__ : Unit ->? bb)
+(op __<__ : Unit ->? ##)
 (predfun y : bb ->? Unit)
 (predfun y : bb × bb ->? Unit)
 (var y : bb -> bb)
@@ -97,8 +97,8 @@ a \ a : v .! ! x
 =e= e =e=
 =e= e =e=
 = e =e= e =
-(op __<__ : () ->? ## -> bb)
-(op __<__ : () ->? aa × bb)
+(op __<__ : Unit ->? ## -> bb)
+(op __<__ : Unit ->? aa × bb)
 let x = y in z
 let x = y;
     x = y;
