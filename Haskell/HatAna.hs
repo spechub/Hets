@@ -22,6 +22,7 @@ import ReAssocModule
 import AST4ModSys
 import HsName
 import ReAssocBase
+import SpecialNames
 import Names
 import Ents
 import SourceNames
@@ -29,9 +30,13 @@ import Relations
 import WorkModule
 import ScopeModule
 import OrigTiMonad
+import TypedIds(namespace)
+import HasBaseName
+import TiNames
 import TiTypes
 import TiInstanceDB
 import TiClasses
+import HsConstants
 import PPfeInstances
 import PNT
 import Lift
@@ -144,9 +149,19 @@ hatAna (hs@(HsDecls ds), e, _) = do
        fixMap = Map.fromList fixs `Map.union` fixities e
        rm = reAssocModule wm [(mn, Map.toList fixMap)] parsedMod
        (sm, _) = scopeModule (wm, [(mn, expScope)]) rm
+       ent2pnt (Ent m (HsCon i) t) = 
+           HsCon (topName Nothing m (bn i) (origt m t))
+       ent2pnt (Ent m (HsVar i) t) = 
+           HsVar (topName Nothing m (bn i) (origt m t))
+       bn i = getBaseName i
+       origt m = fmap (osub m) 
+       osub m n = origName n m n
+       findPredef ns (_, n) = 
+           case filter ((==ns) . namespace) $ applyRel expScope (fakeSN n) of
+           [v] -> Right (ent2pnt v)
+           _ -> Left ("'" ++ n ++ "' unknown or ambiguous")
    (HsModule _ _ _ _  fs : _) :>: (is, (ts, vs)) <- 
-        lift $ inMyEnv $ tcModuleGroup 
-            (const $ const $ Left "Bla")  -- new argument in newer version
+        lift $ inMyEnv $ tcModuleGroup findPredef
             id [sm]
    let accSign = extendSign e is ts vs insc fixs
    return (hs, diffSign accSign e, accSign, map emptyName fs)
