@@ -62,5 +62,36 @@ data Annoted a = Annoted { item::a
 		 deriving (Show,Eq) 
 
 
+-- | 
+-- 'isSemanticAnno' tests if the given 'Annotation' is a semantic one
+isSemanticAnno :: Annotation -> Bool
+isSemanticAnno a = case a of
+		   Implies _      -> True
+		   Definitional _ -> True
+		   Conservative _ -> True
+		   Monomorph _    -> True
+		   _              -> False
 
+-- | 
+-- 'isComment' tests if the given 'Annotation' is a comment line or a
+-- comment group
+isComment :: Annotation -> Bool
+isComment c = case c of
+	      Comment_line  _ _ -> True
+	      Comment_group _ _ -> True
+	      _                 -> False
+
+-- |
+-- 'isAnnote' is the invers function to 'isComment'
+isAnnote :: Annotation -> Bool
+isAnnote = not . isComment
+
+isLabel :: Annotation -> Bool
+isLabel a = case a of
+	    Label _ _ -> True
+	    _         -> False
+
+allPrecIds :: Annotation -> [Id]
+allPrecIds (Prec_anno _ ll rl _) = ll ++ rl
+allPrecIds _ = error "unsupported annotation"
 
