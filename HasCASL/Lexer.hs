@@ -2,6 +2,7 @@ module Lexer where
 
 import Char
 import Id
+import Monad
 import ParsecPos
 import ParsecPrim
 import ParsecCombinator
@@ -13,10 +14,7 @@ import ParsecChar
 signChars = "!#$&*+-./:<=>?@\\^|~" ++ "°¢£ß©¨∞±≤≥µ∂∑πø◊˜"
 
 -- "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
-
---    \172 neg
---    \183 middle dot
---    \215 times 
+-- \172 neg \183 middle dot \215 times 
 
 scanAnySigns = many1 (oneOf signChars) <?> "signs"
 
@@ -28,15 +26,8 @@ scanPlace = try (string place) <?> "place"
 caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++ 
 	      "¿¡¬√ƒ≈∆«»… ÀÃÕŒœ—“”‘’÷ÿŸ⁄€‹›ﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ¯˘˙˚¸˝ˇ"
 
-{- see http://www.htmlhelp.com/reference/charset/
-              ['\192' .. '\207'] ++ -- \208 ETH 
-              ['\209' .. '\214'] ++ -- \215 times
-              ['\216' .. '\221'] ++ -- \222 THORN
-              ['\223' .. '\239'] ++ -- \240 eth
-              ['\241' .. '\246'] ++ -- \247 divide
-              ['\248' .. '\253'] ++ -- \254 thorn
-              ['\255'] 
--}
+-- see http://www.htmlhelp.com/reference/charset/ starting from \192
+-- \208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn
 
 caslLetter :: Parser Char
 caslLetter = oneOf caslLetters <?> "casl letter"
@@ -44,67 +35,95 @@ caslLetter = oneOf caslLetters <?> "casl letter"
 prime = char '\'' -- also used for quoted chars
 
 scanLPD :: Parser Char
-scanLPD = caslLetter <|> digit <|> prime <?> "word"
+scanLPD = caslLetter <|> digit <|> prime
 
 -- ----------------------------------------------
--- parsec/Monad extension
+-- Monad/Functor extensions
+-- ----------------------------------------------
+
+ignore :: (Monad m) => m a -> m b -> m a
+p `ignore` q = do { x <- p; q; return x }
+
+bind :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
+bind f p q = do { x <- p; y <- q; return (f x y) }
+
 infixr 1 <:>
 
--- (<:>) :: GenParser tok st a -> GenParser tok st [a] -> GenParser tok st [a]
 (<:>) :: (Monad m) => m a -> m [a] -> m [a]
-(<:>) p1 p2 = do { e <- p1; l <- p2; return (e:l) } 
+(<:>) = liftM2 (:)
+
+infixr 1 <++>
+
+(<++>) :: (Monad m, MonadPlus p) => m (p a) -> m (p a) -> m (p a)
+(<++>) = liftM2 mplus
+
+-- Functor extension
+single :: (Functor f, Monad m) => f a -> f (m a)
+single = fmap return
+
+flat :: (Functor f) => f [[a]] -> f [a]
+flat = fmap concat
+
+-- ----------------------------------------------
+-- ParsecCombinator extension
+-- ----------------------------------------------
+
+notFollowedWith :: (Show b) => GenParser tok st a 
+		-> GenParser tok st b -> GenParser tok st a
+p `notFollowedWith` q = do { x <- p 
+			   ; try ((q >>= unexpected . show) <|> return x)
+			   }
+
+followedBy :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
+p `followedBy` q = try (do { x <- p
+			   ; lookAhead q
+			   ; return x
+			   })
+
+begDoEnd :: (Monad f, Functor f) => f a -> f [a] -> f a -> f [a]
+begDoEnd open p close = (open <:> p) <++> single close  
+
+enclosedBy :: (Monad f, Functor f) => f [a] -> f a -> f [a]
+p `enclosedBy` q = begDoEnd q p q
+
+checkWith :: (Show a) => GenParser tok st a -> (a -> Bool) -> GenParser tok st a
+p `checkWith` f = do { x <- p
+		     ; if f x then return x else unexpected (show x)
+		     }
 
 -- ----------------------------------------------
 -- casl words
 -- ----------------------------------------------
 
-scanLetterWord = caslLetter <:> many scanLPD
+scanLetterWord = caslLetter <:> many scanLPD <?> "letter word"
 
-singleUnderline = try (do { c <- char '_'
-			  ; lookAhead scanLPD
-			  ; return c
-			  }) 
+singleUnderline = (char '_') `followedBy` scanLPD
 
-scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "word"
+scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "underline word"
 
 scanAnyWords :: Parser String
-scanAnyWords = do { ws <- scanLetterWord <:> many scanUnderlineWord <?> "words"
-		  ; return (concat ws)
-		  } 
+scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord <?> "words")
 
-scanDot = try (do { d <- char '.'
-		  ; lookAhead caslLetter
-		  ; return d
-		  })
+scanDot = (char '.') `followedBy` caslLetter
 
 scanDotWords = scanDot <:> scanAnyWords <?> "dot-words"
-
--- ----------------------------------------------
--- parsec/Functor extension
-single :: (Functor f) => f a -> f [a]
-single p = fmap (:[]) p 
-
--- see ParsecToken.number
-value :: Int -> String -> Int
-value base s = foldl (\x d -> base*x + (digitToInt d)) 0 s
 
 -- ----------------------------------------------
 -- casl escape chars for quoted chars and literal strings
 -- ----------------------------------------------
 
+-- see ParsecToken.number
+value :: Int -> String -> Int
+value base s = foldl (\x d -> base*x + (digitToInt d)) 0 s
+
 simpleEscape = single (oneOf "'\"\\ntrvbfa?")
 
-decEscape = do { s <- count 3 digit;
-		 if value 10 s <= 255 then return s
-	         else unexpected "decimal escape code (> 255)"
-	       }
+decEscape = (count 3 digit) `checkWith` (\s -> value 10 s <= 255)
+
 hexEscape = char 'x' <:> count 2 hexDigit -- cannot be too big
 
-octEscape = do { c <- char 'o';
-		 s <- count 3 octDigit;
-		 if value 8 s <= 255 then return (c:s)
-	         else unexpected "octal escape code (> o377)"
-	       }
+octEscape = char 'o' <:> 
+	    ((count 3 octDigit) `checkWith`(\s -> value 8 s <= 255))
 
 escapeChar = char '\\' <:> 
 	     (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)
@@ -118,16 +137,10 @@ printable = single (satisfy (\c -> (c /= '\'')  && (c /= '"')
 
 caslChar = escapeChar <|> printable
 
+scanQuotedChar = (caslChar <|> string "\"") `enclosedBy` prime <?> "quoted char"
 
-scanQuotedChar = do { s <- between prime prime (caslChar <|> string "\"");
-		      return ("'" ++ s ++ "'") 
-                    } <?> "quoted char"
-
-dblquote = char '"'
-
-scanString = do { s <- between dblquote dblquote (caslChar <|> string "'");
-		  return ("\"" ++ s ++ "\"")
-		} <?> "literal string"
+scanString = flat (many (caslChar <|> string "'")) `enclosedBy` char '"'
+	     <?> "literal string"
 
 -- ----------------------------------------------
 -- digit, number, fraction, float
@@ -135,60 +148,13 @@ scanString = do { s <- between dblquote dblquote (caslChar <|> string "'");
 
 getNumber = many1 digit
 
-scanFloat = do { n1 <- getNumber <?> "number, fraction or float";
-		 n3 <- option n1 
-		 (do { d <- char '.';
-		       n2 <- getNumber;
-		       return (n1 ++ d:n2)
-		     });
-		 n5 <- option n3
-		 (do { e <- char 'E';
-		       o <- option [e] 
-		       (do { s <- oneOf "+-";
-			     return (e:[s])
-			   });
-		       n4 <- getNumber;
-		       return (n3 ++ o ++ n4)
-		     });
-		 if length n5 == 1 then unexpected "single digit"
-		 else return n5
-	       }
+scanFloat = (getNumber <++> option "" 
+	     ((char '.' <:> getNumber)
+	      <++> option "" 
+	      ((char 'E' <:> option "" (single (oneOf "+-")))
+	       <++> getNumber))) `checkWith` (\n -> length n > 1)
 
-scanDigit = do { n <- getNumber;
-                 if length n > 1 then unexpected "multiple digits"
-		 else return n
-	       }
-
-
--- ----------------------------------------------
--- comments and label
--- ----------------------------------------------
-
-newlineChars = "\n\r"
-
-textLine = many (noneOf newlineChars)
-eol = (eof >> return '\n') <|> oneOf newlineChars
-
-commentLine = between (try (string "%%")) eol textLine
-              >>= return . ("%%" ++)
-
-notEndText c = try (do { char c;
-			notFollowedBy (char '%');
-			return c;
-		      }) <?> ""
-
-middleText c = many ((satisfy (/=c)) <|> notEndText c) 
-
-comment o c = let op = "%" ++ [o]
-		  cl = c : "%"
-	      in do { t <- between (try (string op)) (string cl) 
-		          (middleText c);
-		      return (op ++ t ++ cl)
-		    }
-
-commentOut = comment '[' ']' 
-commentGroup = comment '{' '}'
-labelAnn = comment '(' ')'
+scanDigit = getNumber `checkWith` (\n -> length n == 1)
 
 -- ----------------------------------------------
 -- skip whitespaces and comment out
@@ -196,28 +162,40 @@ labelAnn = comment '(' ')'
 
 blankChars = "\t\v\f \160" -- non breaking space
 
-skip p = do {t <- p ; 
-	     skipMany(single (oneOf (newlineChars ++ blankChars)) 
-		      <|> commentOut <?> "");
-	     return t} 
+skip p = p `ignore` 
+	 skipMany(single (oneOf (newlineChars ++ blankChars)) 
+		  <|> commentOut <?> "")
+
+-- ----------------------------------------------
+-- comments and label
+-- ----------------------------------------------
+
+newlineChars = "\n\r"
+
+eol = (eof >> return '\n') <|> oneOf newlineChars
+
+textLine = many (noneOf newlineChars) `ignore` eol
+
+commentLine = try (string "%%") <++> textLine
+
+notEndText c = try (char c) `notFollowedWith` char '%' <?> ""
+
+middleText c = many ((satisfy (/=c)) <|> notEndText c) 
+
+comment o c = try (string ("%" ++ [o])) <++> middleText c <++> string (c : "%")
+
+commentOut = comment '[' ']' 
+commentGroup = comment '{' '}'
+labelAnn = comment '(' ')'
+
 
 -- ----------------------------------------------
 -- annotations starting with %word
 -- ----------------------------------------------
 
--- starting with %word
-annote = 
-    do { w <- try ((char '%') >> scanAnyWords);
-         (do { try(char '(');
-		   t <- middleText ')';
-	       string ")%";
-	       return ("%" ++ w ++ "(" ++ t ++ ")%")
-	     })  
-	 <|> (do { t <- textLine;
-                   eol; 
-		   return ("%" ++ w ++ t)
-		 })
-       }
+annote = try(char '%' <:> scanAnyWords) <++>
+	 (((try(char '(') <:> middleText ')') <++> string ")%")
+	  <|> textLine)
 
 -- annotations between items
 ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
@@ -230,8 +208,4 @@ ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
 setTokPos :: SourcePos -> String -> Token
 setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
 
-makeToken parser = skip(do { p <- getPosition;
-		             s <- parser;
-			     return (setTokPos p s)
-			   })
-
+makeToken parser = skip(bind setTokPos getPosition parser)

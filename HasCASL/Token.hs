@@ -54,21 +54,6 @@ scanMixLeaf = makeToken(try scanFloat <|> scanString <|> otherToken
 			<|> scanTermSigns <|> scanPlace)
 
 -- ----------------------------------------------
--- balanced brackets
--- ----------------------------------------------
-
-balanced = many (noneOf brackets
-		 <|>
-		 between (char '[')(char ']') balanced
-                 <|>			    
-		 between (char '{')(char '}') balanced) >> return ' ' 
-
-isBalanced ts = let s = concat (map show ts) in
-		    case parse (balanced >> eof) "" s of 
-						      Right _ -> True 
-						      _ -> False
-
--- ----------------------------------------------
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
@@ -82,24 +67,10 @@ uu = makeToken (scanPlace)
 -- simple id
 sid = makeToken (otherToken <|> scanSigns <|> scanWords) <?> "simple-id"
 
-notFollowedBy2 p     = try (do{ c <- p; unexpected (show c) }
-                           <|> return ()
-                          )
+curly =  begDoEnd ocb iList ccb
+noComp = begDoEnd obr iList cbr 
 
-between2 :: Parser Token -> Parser Token -> Parser [Token] -> Parser [Token]
-between2 open close p = do { o <- open
-			   ; x <- p
-			   ; c <- close
-			   ; return (o:x ++ [c])
-			   }
-
-curly =  between2 ocb ccb iList
-noComp = between2 obr cbr iList 
-
-singleId = do { i <- sid
-	      ;	notFollowedBy2 sid
-	      ; return [i]
-	      }
+singleId = single (sid `notFollowedWith` sid)
 
 iList =  fmap concat (many (many1 uu
 	          <|> singleId 
