@@ -20,7 +20,7 @@ import Common.Id (Id(..),splitMixToken)
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Lexer(whiteChars)
-import Common.LaTeX_funs
+import Common.LaTeX_funs 
 import Data.Maybe(fromJust)
 
 infixl 6 <\\+>
@@ -89,12 +89,13 @@ instance PrettyPrint Annotation where
 			    Comment_start -> 	
 				hc_sty_comment 
 				( hc_sty_small_keyword "\\%\\%" 
-				  <> casl_comment_latex (escape_latex str))
+				  <> casl_comment_latex 
+				       (escape_comment_latex str))
 			    Annote_word w -> printLatexLine w $ 
 					     if all (`elem` whiteChars) str 
 						then empty 
 						else casl_annotation_latex 
-							 (escape_latex str)
+						     (escape_comment_latex str)
 		Group_anno strs ->
 		    case aw of 
 		    Comment_start ->
@@ -104,14 +105,14 @@ instance PrettyPrint Annotation where
 				  hc_sty_small_keyword "\\}\\%")
 			[x] -> hc_sty_comment (hc_sty_small_keyword "\\%\\{" <>
 				  conv x <> hc_sty_small_keyword "\\}\\%")
-			(x:xs) -> vcat (hc_sty_comment 
-					(hc_sty_small_keyword "\\%\\{" <>
-					conv x) 
-					: map (hc_sty_comment . conv') xs) 
-				  <> hc_sty_comment 
-					 (hc_sty_small_keyword "\\}\\%")
-			where conv  = casl_comment_latex . escape_latex
-			      conv' s = casl_comment_latex "~~~~" <> conv s
+			xs -> hc_sty_comment 
+				     (hc_sty_small_keyword "\\%\\{" <>
+				      latex_macro setTab <> 
+				      latex_macro startTab <>
+				      vcat (map conv xs) <> 
+				      hc_sty_small_keyword "\\}\\%" <>
+				      latex_macro endTab)
+			where conv  = casl_comment_latex . escape_comment_latex
 		    Annote_word w -> printLatexGroup w $ vcat 
 				     $ map (casl_annotation_latex 
 					    . escape_latex) strs
@@ -119,8 +120,12 @@ instance PrettyPrint Annotation where
 	let aa' = printSmallId_latex ga aa
 	    ab' = fsep_latex $ map printPair $ filter nullSnd ab
 	in printLatexGroup "display" $ aa' <\\+> ab'
-	   where printPair (s1,s2) = la ("\\%" ++ showDF s1) <\\+> la s2
+	   where printPair (s1,s2) = la ("%" ++ showDF s1) 
+				     <\\+> maybe (la s2) pr_tops tops
+		 tops = lookupDisplay ga DF_LATEX aa
 		 la = casl_annotation_latex . escape_latex  
+		 pr_tops = 
+		     hcat . map (printDisplayToken_latex casl_annotation_latex)
 		 nullSnd (_,s2) = not $ null s2
     printLatex0 ga (String_anno aa ab _) =
 	let aa' = printSmallId_latex ga aa
@@ -155,7 +160,9 @@ instance PrettyPrint Annotation where
 	map (printSmallId_latex ga) aa
     printLatex0 _ (Label aa _) =
 	let aa' = vcat $ map (casl_annotation_latex . escape_latex) aa
-	in latex_macro "\\`" <> printLatexGroup "" aa'
+	in latex_macro "\\`" <>
+           hc_sty_annotation (hc_sty_small_keyword ("\\%(") <>
+			      aa' <> hc_sty_small_keyword ")\\%" )
     printLatex0 _ (Semantic_anno sa  _) =
 	printLatexLine (fromJust $ lookup sa semantic_anno_table)  empty
 
@@ -206,12 +213,14 @@ printSmallId_latex ga (Id tops ids _) =
     in pr_tops ts <> ids' <> pr_tops ps
 
 printGroup :: Doc -> Doc -> Doc
-printGroup key grp = ptext "%" <> key <> ptext "(" <+> grp <> ptext ")%"
+printGroup key grp = ptext "%" <> key <> ptext "(" <> grp <> ptext ")%"
 
 printLatexGroup :: String -> Doc -> Doc
 printLatexGroup kw grp = 
-    hc_sty_annotation (  hc_sty_small_keyword ("\\%"++kw++"(")<>grp
-		       <> hc_sty_small_keyword ")\\%")
+    hc_sty_annotation (hc_sty_small_keyword ("\\%"++kw++"(") 
+		       <> latex_macro setTab <> latex_macro startTab 
+		       <> grp<> hc_sty_small_keyword ")\\%" 
+		       <> latex_macro endTab)
 
 printLine :: Doc -> Doc -> Doc
 printLine key line = if isEmpty line then pkey else pkey <+> line
@@ -219,7 +228,7 @@ printLine key line = if isEmpty line then pkey else pkey <+> line
 
 printLatexLine :: String -> Doc -> Doc
 printLatexLine kw line = 
-    hc_sty_annotation (if isEmpty line then kw_d else kw_d <\+> line)
+    hc_sty_annotation (if isEmpty line then kw_d else kw_d <\\+> line)
     where kw_d = hc_sty_small_keyword ("\\%"++kw)
 
 printAnnotationList_Text0 :: GlobalAnnos -> [Annotation] -> Doc
@@ -243,10 +252,44 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
     printLatex0 ga (Annoted i _ las ras) =
 	let i'   = printLatex0 ga i
 	    las' = printAnnotationList_Latex0 ga las
-	    (la,rras) = case ras of
-			[]     -> (empty,[])
-			r@(l:xs)
-			    | isLabel l -> (printLatex0 ga l,xs)
-			    | otherwise -> (empty,r)
-	    ras' =printAnnotationList_Latex0 ga rras
-        in las' $+$ (hang_latex i' 0 la) $$ ras'
+	    (la,ras') = splitAndPrintRAnnos printLatex0
+			                    printAnnotationList_Latex0
+					    (<\+>)
+					    (latex_macro "\\`")
+					    ga ras
+	    la' = hspace_latex "3mm"<>la
+	    leftASF  = if null las then id else ($+$) las' 
+	    rightASF = if null ras then id else (\x -> x $$ ras')
+        in leftASF ( rightASF (if isEmpty la then i' else fcat [i',la'])) 
+
+-- | function to split the annotation to the right of an item
+-- * fst contains printed label and implied annotion if any at the begining of the list of annotations
+-- * snd contains the remaining annos
+splitAndPrintRAnnos :: (GlobalAnnos -> Annotation -> Doc)
+		       -> (GlobalAnnos -> [Annotation] -> Doc)
+		       -> (Doc -> Doc -> Doc)    -- ^ a beside with space 
+						 -- like <+> or <\+>
+		       -> Doc -- ^ for Latex something to move the label 
+			      -- and/or implied annotation to the right 
+			      -- margin                       
+		       -> GlobalAnnos -> [Annotation] -> (Doc,Doc)
+splitAndPrintRAnnos pf pf_list sepF move ga ras =
+    case ras of
+	     []     -> (empty,empty)
+	     r@(l:[])
+		 | isLabel l -> (pf ga l,empty)
+		 | isImplied l -> (move <> pf ga l, empty)
+		 | otherwise -> (empty,pf_list ga r)
+	     r@(l:impl:xs)
+		 | isLabel l && not (isImplied impl) 
+		     -> (pf ga l, pf_list ga (impl:xs))
+		 | isLabel l && isImplied impl 
+		     -> (pf ga l `sepF` pf ga impl, pf_list ga xs)
+		 | isImplied l 
+		     -> (move  <> pf ga l, pf_list ga (impl:xs))
+		 | otherwise -> (empty,pf_list ga r)
+
+-- |
+-- makes a \hspace*{String} as Doc with appropiate size
+hspace_latex :: String -> Doc
+hspace_latex str = sp_text (calc_line_length str) ("\\hspace*{"++str++"}")
