@@ -45,10 +45,13 @@ import Common.Lib.Pretty
 
 checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
 checkFreeType m fsn 
-       | any (\s->not $ elem s srts) newSorts = Nothing
-       | any (\s->not $ elem s f_Inhabited) newSorts = Just False   -- check if *new* sorts are inhabited
-       | elem Nothing l_Syms = Nothing                                                                  
-       | any id $ map (\s->elem s sorts) $ ops_sorts ++ preds_sorts = Nothing
+       | Set.any (\s->not $ elem s srts) newSorts = Nothing     
+       | Set.any (\s->not $ elem s f_Inhabited) newSorts = Just False   
+ --      | any (\s->not $ elem s srts) newSorts = Nothing     
+ --      | any (\s->not $ elem s f_Inhabited) newSorts = Just False  
+       | elem Nothing l_Syms = Nothing
+       | any id $ map (\s->Set.member s oldSorts) $ ops_sorts ++ preds_sorts = Nothing                            
+ --      | any id $ map (\s->elem s sorts) $ ops_sorts ++ preds_sorts = Nothing
        | not $ and $ map checkTerm leadingTerms = Nothing                 
        | not $ and $ map checkVar leadingTerms = Nothing 
        | not $ checkPatterns leadingPatterns = Nothing              
@@ -58,17 +61,23 @@ checkFreeType m fsn
          is_user_or_sort_gen ax = take 12 name == "ga_generated" || take 3 name /= "ga_"
              where name = senName ax
          sig = imageOfMorphism m
-         sorts1 = Set.toList (sortSet sig)
-         sorts = trace (showPretty sorts1 "old sorts") sorts1            -- "old" sorts
-         newSorts1 = Set.toList $ sortSet (mtarget m)
-         newSorts = trace (showPretty newSorts1 "new sorts") newSorts1    -- "new" sorts 
+         oldSorts = sortSet sig
+         allSorts = sortSet $ mtarget m
+         newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
+   --      sorts1 = Set.toList $ sortSet sig
+   --      sorts = trace (showPretty sorts1 "old sorts") sorts1            -- "old" sorts
+   --      newSorts2 = Set.toList $ sortSet (mtarget m)
+   --      newSorts1 = filter (\s->not $ elem s sorts) newSorts2
+   --      newSorts = trace (showPretty newSorts1 "new sorts") newSorts1    -- "new" sorts 
          fconstrs = concat $ map fc fs
          fc f = case f of
                      Sort_gen_ax constrs True -> constrs
                      _->[]
-         (srts,constructors1,_) = recover_Sort_gen_ax fconstrs
-         constructors = trace (showPretty constructors1 "constructors") constructors1 
-         f_Inhabited = inhabited fconstrs
+         (srts1,constructors1,_) = recover_Sort_gen_ax fconstrs
+         srts = trace (showPretty srts1 "srts") srts1      --   srts
+         constructors = trace (showPretty constructors1 "constructors") constructors1       -- constructors
+         f_Inhabited1 = inhabited fconstrs
+         f_Inhabited = trace (showPretty f_Inhabited1 "f_inhabited" ) f_Inhabited1      --  f_inhabited
          op_preds1 = filter (\f->case f of
                                   Quantification Universal _ _ _ -> True
                                   _ -> False) fs
@@ -84,7 +93,7 @@ checkFreeType m fsn
          ops_sorts = concat $ map filterOp $ l_Syms 
          preds_sorts = concat $ map filterPred $ l_Syms
          ltp1 = map leading_Term_Predication op_preds                 
-         ltp = trace (showPretty ltp1 "leading_term_pre") ltp1 
+         ltp = trace (showPretty ltp1 "leading_term_pre") ltp1              --  leading_term_pre
          leadingTerms1 = concat $ map (\tp->case tp of
                                               Just (Left t)->[t]
                                               _ -> []) $ ltp
@@ -94,20 +103,19 @@ checkFreeType m fsn
                                                                Application op' _ _ -> elem op' constructors && 
                                                                                       checkTerm (term t) 
                                                                _ -> False) ts 
-         checkVar (Application _ ts _) = overlap ts
-
-{-
-let check [] = True
-                                             check (p:ps)=if elem p ps then False
-                                                          else check ps
-                                         in check ts
--}
+         checkVar (Application _ ts _) = overlap $ concat $ map allVarOfTerm ts
+         allVarOfTerm t = case t of
+                            Qual_var _ _ _ -> [t]
+                            Sorted_term t' _ _ -> allVarOfTerm  t'
+                            Application _ ts _ -> if length ts==0 then []
+                                                  else concat $ map allVarOfTerm ts
+                            _ -> [] 
          leadingPatterns1 = map (\l-> case l of                     
                                        Just (Left (Application _ ts _))->ts
                                        Just (Right (Predication _ ts _))->ts
                                        _ ->[]) $ 
                             map leading_Term_Predication op_preds
-         leadingPatterns = trace (showPretty leadingPatterns1 "leading Pattern") leadingPatterns1
+         leadingPatterns = trace (showPretty leadingPatterns1 "leading Pattern") leadingPatterns1    --leading Patterns
          isNil t = case t of
                      Application _ ts _-> if length ts==0 then True
                                           else False
@@ -132,8 +140,8 @@ let check [] = True
                                        else check ps
                       in check ts 
          patternsOfTerm t = case t of
-                              Application (Qual_op_name _ _ _) ts _->ts
-                              Sorted_term t' _ _ ->patternsOfTerm t'
+                              Application (Qual_op_name _ _ _) ts _-> ts
+                              Sorted_term t' _ _ -> patternsOfTerm t'
                               _ -> []
          checkMatrix ps 
                 | length ps <=1 = True
@@ -146,7 +154,9 @@ let check [] = True
                 | otherwise = False     
          checkPatterns [] = True
          checkPatterns ps
-                | (length ps) == 1 = (all isVar $ head ps) && (overlap $ head ps)
+                | (length ps) == 1 = overlap $ filter (\t->case (term t) of
+                                                             Qual_var _ _ _ ->True
+                                                             _ -> False) $ head ps
                 | otherwise = checkMatrix ps
          term t = case t of
                     Sorted_term t' _ _ ->term t'
