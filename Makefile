@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
-CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/inlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
+CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
 
 ## set ghc imports properly for your system
 LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
@@ -35,8 +35,9 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 CPPP       = cpp 
 
-HC_FLAGS   = -Wall -fglasgow-exts -fallow-overlapping-instances  
-# -fglasgow-exts comes in via  ../uni/uni-package.conf
+HC_FLAGS   = -Wall -fglasgow-exts -fallow-overlapping-instances 
+# -ddump-minimal-imports 
+# flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
 
 HC_INCLUDE = -i$(INCLUDE_PATH)
