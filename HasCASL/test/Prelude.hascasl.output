@@ -104,7 +104,7 @@ class Cpo < Type
               = all (\ n : nat . s (n) <<= x);
        op sup : (nat -> c) ->? c;}
 class Pcpo < Cpo
-      {var p : Pcpo; op : p;}
+      {var p : Pcpo; op bottom : p;}
 class instance Flatcpo < Cpo
                {var f : Flatcpo; program __ <<= [f] __ = eq}
 var c : Cpo; d : Cpo
@@ -180,7 +180,7 @@ __res__
     %(op)% = \ (var x : s, var y : t) .! (var x : s)
 __when__else__
   : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
-bottom : forall a : Type . a_v-1 %(fun)%
+bottom : forall p : Pcpo . p_v-1 %(fun)%
 def : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit) %(op)%
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 eq : forall s : Type . s_v-1 * s_v-1 ->? Unit %(pred)%
@@ -352,10 +352,6 @@ free type bool
 *** Error 134.20, unexpected mixfix token: isChain
 *** Error 134.3, unexpected mixfix token: all
 *** Hint 139.5, is type variable 'p'
-*** Error 141.4, wrong type scheme of 'bottom'
-  expected: forall p : Pcpo . p_v-1
-     found: forall a : Type . a_v-1
-
 *** Error 141.4, illegal overloading of predefined identifier 'bottom'
 *** Error 143.3, unexpected mixfix token: all
 *** Hint 148.6, is type variable 'f'

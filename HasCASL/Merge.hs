@@ -21,10 +21,12 @@ import HasCASL.Le
 import HasCASL.AsUtils
 import HasCASL.PrintLe
 import HasCASL.Unify
+import HasCASL.Builtin
 import HasCASL.MapTerm
 import qualified Common.Lib.Map as Map
 
 import Control.Monad(foldM)
+import Data.List
 
 
 
@@ -120,13 +122,6 @@ mergeScheme s1@(TypeScheme a1 t1 _)
 			 ++ expected s1 s2) 
     else fail ("wrong type scheme" ++ expected s1 s2)
 
-instance Mergeable OpInfo where
-   merge o1 o2 = 
-	do sc <- mergeScheme (opType o1) $ opType o2
-           as <- merge (opAttrs o1) $ opAttrs o2
- 	   d <- merge (opDefn o1) $ opDefn o2
-	   return $ OpInfo sc as d
-
 instance Mergeable OpAttr where
     merge (UnitOpAttr t1 p1) (UnitOpAttr t2 p2) = 
 	do t <- mergeTerm t1 t2
@@ -146,13 +141,13 @@ instance Mergeable OpDefn where
     merge _ VarDefn       = fail "illegal redeclaration as variable"
     merge (NoOpDefn _) d  = return d
     merge d (NoOpDefn _)  = return d
-    merge (ConstructData d1) (ConstructData d2) = do 
-        d <- mergeA "constructor target type" d1 d2
-	return $ ConstructData d
-    merge (SelectData c1 d1) (SelectData c2 d2) = do
-        d <- mergeA "selector source type" d1 d2
+    merge (ConstructData d1) (ConstructData _d2) = do 
+--        d <- mergeA "constructor target type" d1 d2
+	return $ ConstructData d1
+    merge (SelectData c1 d1) (SelectData c2 _d2) = do
+--        d <- mergeA "selector source type" d1 d2
 	c <- merge c1 c2
-	return $ SelectData c d
+	return $ SelectData c d1
     merge (Definition b1 d1) (Definition b2 d2) =
 	do d <- mergeTerm d1 d2
 	   b <- merge b1 b2
@@ -166,10 +161,26 @@ instance Eq a => Mergeable [a] where
       return $ if any (e==) l2 then l3
 	 else e:l3
 
-mergeOpInfos :: OpInfos -> OpInfos -> Result OpInfos 
-mergeOpInfos (OpInfos l1) (OpInfos l2) = 
-    do l <- merge l1 l2
+mergeOpInfos :: TypeMap -> OpInfos -> OpInfos -> Result OpInfos 
+mergeOpInfos tm (OpInfos l1) (OpInfos l2) = 
+    do l <- mergeOps (addUnit tm) l1 l2
        return $ OpInfos  l
+
+mergeOps :: TypeMap -> [OpInfo] -> [OpInfo] -> Result [OpInfo]
+mergeOps _ [] l = return l
+mergeOps tm (o:os) l2 = do 
+    let (es, us) = partition (isUnifiable tm 1
+			      (opType o) . opType) l2
+    l1 <- mergeOps tm os us 
+    if null es then return (o : l1)
+       else do r <- merge o $ head es
+	       return (r : l1)
+
+instance Mergeable OpInfo where
+    merge o1 o2 = 
+	do as <- merge (opAttrs o1) $ opAttrs o2
+ 	   d <- merge (opDefn o1) $ opDefn o2
+	   return $ OpInfo (opType o1) as d
 
 instance Mergeable Env where
     merge e1 e2 =
@@ -178,7 +189,7 @@ instance Mergeable Env where
 		   (typeMap e1) $ typeMap e2
 	   as <- mergeMap (OpInfos . 
 			   map (mapOpInfo (id, expandAlias tMap)) . opInfos) 
-		 mergeOpInfos
+		 (mergeOpInfos tMap)
 		 (assumps e1) $ assumps e2
 	   return initialEnv { classMap = cMap
 			     , typeMap = tMap
