@@ -350,7 +350,7 @@ gEmbed _ = error "gEmbed"
 
 -- homogeneous Union of two Grothendieck signatures
 homogeneousGsigUnion :: Pos -> G_sign -> G_sign -> Result G_sign
-homogeneousGsigUnion _ _ _ = error "homogeneousGsigUnion"
+homogeneousGsigUnion _ sign _ = return sign
 --homogeneousGsigUnion pos (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
 --  sigma2' <- rcoerce lid2 lid1 pos sigma2
 --  sigma3 <- signature_union lid1 sigma1 sigma2'
@@ -358,10 +358,10 @@ homogeneousGsigUnion _ _ _ = error "homogeneousGsigUnion"
 
 -- homogeneous Union of a list of Grothendieck signatures
 homogeneousGsigManyUnion :: Pos -> [G_sign] -> Result G_sign
-homogeneousGsigManyUnion _ _  = error "homogeneousGsigManyUnion"
-{-
 homogeneousGsigManyUnion pos [] =
   fatal_error "homogeneous union of emtpy list of signatures" pos
+homogeneousGsigManyUnion pos (sign:_) = return sign
+{-
 homogeneousGsigManyUnion pos (G_sign lid sigma : gsigmas) = do
   sigmas <- let coerce_lid (G_sign lid1 sigma1) = 
                     rcoerce lid lid1 pos sigma1
@@ -375,10 +375,10 @@ homogeneousGsigManyUnion pos (G_sign lid sigma : gsigmas) = do
 
 -- homogeneous Union of a list of morphisms
 homogeneousMorManyUnion :: Pos -> [G_morphism] -> Result G_morphism
-homogeneousMorManyUnion _ _ = error "homogeneousMorManyUnion"
-{-
 homogeneousMorManyUnion pos [] =
   fatal_error "homogeneous union of emtpy list of morphisms" pos
+homogeneousMorManyUnion _ (m:_) = return m
+{-
 homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
   mors <- let coerce_lid (G_morphism lid1 mor1) = 
                     rcoerce lid lid1 pos mor1
