@@ -19,9 +19,8 @@ import Haskell.Hatchet.HsSyn
 cvrtHsModule :: HsModule -> HsModule
 cvrtHsModule (HsModule name exports imports declList) = 
               HsModule name 
-                       exports 
-                       ((HsImportDecl (SrcLoc (-1) (-1)) 
-                        (Module "Haskell.Logical") False Nothing Nothing):imports) 
+                       exports
+                       imports
                        (cvrtHsDeclList declList)
 
 cvrtHsDeclList :: [HsDecl] -> [HsDecl]
@@ -72,7 +71,7 @@ cvrtWithoutQuant :: Formula -> HsExp
 cvrtWithoutQuant (AxExp expr) = expr
 cvrtWithoutQuant (AxEq form expr _) = HsInfixApp 
                                        (cvrtWithoutQuant form) 
-                                       (HsCon (UnQual (HsSymbol "==="))) expr
+                                       (HsVar (UnQual (HsSymbol "==="))) expr
 
 
 cvrtAxiomBndr :: AxiomBndr -> HsName
