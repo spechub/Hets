@@ -43,6 +43,14 @@ read_LIB_DEFN_M defl file input =
 	 Left err  -> fail (showErr err)
 	 Right ast -> return ast
 
+read_LIB_DEFN_M_WI :: Monad m => AnyLogic -> FilePath -> String -> m (String, LIB_DEFN)
+read_LIB_DEFN_M_WI defl file input  =
+       case runParser (library (defl, logicGraph)) emptyAnnos
+	    file input of
+	    Left err  -> return (showErr err, Lib_defn (Lib_id (Indirect_link "" [])) [] [] [])  
+	    Right ast -> return ("",ast)
+
+
 read_LIB_DEFN :: HetcatsOpts -> FilePath -> IO LIB_DEFN
 read_LIB_DEFN opt file = 
     do putIfVerbose opt 3 ("Reading file: " ++ file)
