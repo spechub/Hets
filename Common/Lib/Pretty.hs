@@ -899,8 +899,7 @@ easy_display nl_text txt end doc
     lay (NilAbove p)        no_doc = nl_text `txt` lay p cant_fail      -- NoDoc always on first line
     lay (TextBeside s sl p) no_doc = s `txt` lay p no_doc
 
-indent n | n >= 8 = '\t' : indent (n - 8)
-         | otherwise      = spaces n
+indent n = spaces n
 
 multi_ch 0 ch = ""
 multi_ch n       ch = ch : multi_ch (n - 1) ch
