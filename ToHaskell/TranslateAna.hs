@@ -55,7 +55,7 @@ translateSig env =
 -- Uses 'translateIdWithType'.
 translateTypeInfo :: Env -> (TypeId, TypeInfo) -> [HsDecl]
 translateTypeInfo env (tid,info) = 
-  let hsname = (HsIdent (translateIdWithType UpperId tid))
+  let hsname = mkHsIdent UpperId tid
       ddecl = HsDataDecl nullLoc
 	               [] -- empty HsContext
 	               hsname
@@ -100,7 +100,7 @@ getAliasArgs (TypeScheme arglist (_plist :=> _t) _poslist) =
     map getArg arglist
 
 getArg :: TypeArg -> HsName
-getArg (TypeArg tid _ _ _) = (HsIdent (translateIdWithType LowerId tid))
+getArg (TypeArg tid _ _ _) = mkHsIdent LowerId tid
 -- ist UpperId oder LowerId hier richtig?
 
 getAliasType :: TypeScheme -> HsType
@@ -120,7 +120,7 @@ translateDt :: Env -> DataEntry -> Named HsDecl
 translateDt env (DataEntry im i _ args alts) = 
    	 let j = Map.findWithDefault i i im
 	     dt = typeIdToType j args star
-	     hsname = HsIdent $ translateIdWithType UpperId j in
+	     hsname = mkHsIdent UpperId j in
          NamedSen ("ga_" ++ showId j "") $
          HsDataDecl nullLoc
 	               [] -- empty HsContext
@@ -140,10 +140,10 @@ translateDt env (DataEntry im i _ args alts) =
 -- defined in HasCASL.
 translateAssump :: (Id, OpInfo) -> [HsDecl]
 translateAssump (i, opinf) = 
-  let fname = translateIdWithType LowerId i
+  let fname = mkHsIdent LowerId i
       res = HsTypeSig nullLoc
-                       [(HsIdent fname)]
-                       (translateTypeScheme (opType opinf))
+                       [fname]
+                       $ translateTypeScheme $ opType opinf
   in case opDefn opinf of
     VarDefn -> []
     ConstructData _ -> [] -- wrong case!
@@ -169,16 +169,20 @@ translateType t =
   KindedType kt _kind _poslist -> translateType kt
   TypeAppl t1 t2 -> HsTyApp (translateType t1) (translateType t2)
   TypeName tid _kind n -> 
-      if n > 0 then
-	 HsTyVar (HsIdent (translateIdWithType LowerId tid))
-      else
-         HsTyCon (UnQual (HsIdent (translateIdWithType UpperId tid)))
+      if n == 0 then
+	 HsTyCon $ snd $ mkUnQual UpperId tid
+      else HsTyVar $ mkHsIdent LowerId tid
   _ -> error ("translateType: unexpected type: " ++ show t)
+
+mkHsIdent :: IdCase -> Id -> HsName
+mkHsIdent c i = HsIdent $ translateIdWithType c i
+
+mkUnQual :: IdCase -> Id -> (IdCase, HsQName)
+mkUnQual c j = (c, UnQual $ mkHsIdent c j)
 
 translateId :: Env -> Id -> TypeScheme -> (IdCase, HsQName)
 translateId env uid sc = 
       let oid = findUniqueId env uid sc
-	  mkUnQual c j = (c, UnQual $ HsIdent $ translateIdWithType c j)
       in case oid of
         Just (i, oi) -> if isConstructor oi then mkUnQual UpperId i
 			else mkUnQual LowerId i
@@ -300,10 +304,10 @@ nullLoc = SrcLoc 1 0
 
 -- For the definition of an undefined function.
 -- Takes the name of the function as argument.
-functionUndef :: String -> HsDecl
+functionUndef :: HsName -> HsDecl
 functionUndef s = 
     HsPatBind nullLoc
-	      (HsPVar (HsIdent s))
+	      (HsPVar s)
 	      (HsUnGuardedRhs (HsVar (UnQual (HsIdent "undefined"))))
 	      []
 
