@@ -22,6 +22,7 @@ import Common.ListBrackets
 -- import CaslLanguage
 import Common.Id
 import Common.AS_Annotation
+import Data.Maybe(fromJust)
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
@@ -34,14 +35,15 @@ newlineOrEof = charOrEof '\n'
 commentLine :: GenParser Char st Annotation
 commentLine = do try (string "%%")
                  line <- manyTill anyChar newlineOrEof
-		 return (Comment_line line [])
+		 return $ Unparsed_anno Comment_start (Line_anno line) []
 
 commentGroup :: GenParser Char st Annotation 
 commentGroup = do try (string "%{")
 		  text_lines <- manyTill anyChar (try (string "}%"))
 		  sp <- getPosition
-		  return (Comment_group (lines text_lines) [conv sp])
-    where conv sp = incSourceColumn sp (-2)
+		  return $ Unparsed_anno Comment_start 
+			   (Group_anno $ lines text_lines) 
+			   [incSourceColumn sp (-2)]
 
 annote :: GenParser Char st Annotation
 annote = label <|> 
@@ -60,34 +62,29 @@ annote = label <|>
     where add_pos sp a =
 	      up_pos_l (\l -> l++[conv sp a]) a
 	  conv sp a = case a of
-			   Annote_group _ _ _ -> incSourceColumn sp (-2)
-			   Annote_line  _ _ _ -> sp
-			   _ -> error "nothing to be done for other Annos"
+		      Unparsed_anno _ (Group_anno _) _ -> 
+			  incSourceColumn sp (-2)
+		      _ -> sp
 
 label :: GenParser Char st Annotation
 label = do try(string "%(")
-	   label_lines <- manyTill anyChar (string ")%")
+	   label_lines <- manyTill anyChar $ string ")%"
 	   sp <- getPosition
-	   return (Label (lines label_lines) [conv sp])
-    where conv sp = incSourceColumn sp (-2)
+	   return (Label (lines label_lines) [incSourceColumn sp (-2)])
 
-anno_ident :: GenParser Char st String
-anno_ident = string "%" >> casl_words
+anno_ident :: GenParser Char st Annote_word
+anno_ident = fmap Annote_word $ string "%" >> casl_words
 
-annote_group :: String -> GenParser Char st Annotation
+annote_group :: Annote_word -> GenParser Char st Annotation
 annote_group s = do char '(' -- ) 
-		    annote_lines <- manyTill anyChar (string ")%")
-		    return (Annote_group s (lines annote_lines) [])
+		    annote_lines <- manyTill anyChar $ string ")%"
+		    return $ Unparsed_anno s
+			    (Group_anno $ lines annote_lines) []
 
-annote_line :: String -> GenParser Char st Annotation
-annote_line s = do anno <- do char ' '
-			      line <- manyTill anyChar newlineOrEof
-			      return (Annote_line s line [])
-
-			       -- AnnoteWord (%implies ...)
-			   <|> do newlineOrEof
-				  return (Annote_line s "" [])
-		   return(anno)
+annote_line :: Annote_word -> GenParser Char st Annotation
+annote_line s = 
+    do line <- manyTill anyChar newlineOrEof
+       return $ Unparsed_anno s (Line_anno line) []
 
 annotationL :: GenParser Char st Annotation
 annotationL = do start_source_pos <- getPosition
@@ -106,48 +103,31 @@ annotations = many annotation
 -- parser for the contents of annotations
 -----------------------------------------
 
+commaIds :: GenParser Char st [Id]
+commaIds = commaSep1 casl_id 
+
 parse_anno :: Annotation -> SourcePos -> Either ParseError Annotation
-parse_anno anno sp = case anno of
- 		     Annote_line kw as pos ->  			 
-		        case kw of
-			 "def"     -> semantic_anno Definitional kw as sp pos
-			 "implies" -> semantic_anno Implies      kw as sp pos
-			 "cons"    -> semantic_anno Conservative kw as sp pos
-			 "mono"    -> semantic_anno Monomorph    kw as sp pos
-			 _         -> 
-			     case parse_anno (Annote_group kw [as] pos) sp of
-			     x@(Left _)  -> x
-			     Right (Annote_group _ _ _) -> Right anno
-			     x@(Right _) -> x
-		     Annote_group kw as _pos -> 
-			 case kw of
-			  "prec"    -> parse_internal prec_anno    nsp inp
-			  "display" -> parse_internal display_anno nsp inp
-			  "left_assoc" -> parse_internal 
-                                                   (lassoc assoc_anno) 
-			                           nsp inp
-			  "right_assoc" -> parse_internal 
-			                           (rassoc assoc_anno) 
-			                           nsp inp
-			  "number"   -> parse_internal number_anno   nsp inp
-			  "string"   -> parse_internal string_anno   nsp inp
-			  "list"     -> parse_internal list_anno     nsp inp
-			  "floating" -> parse_internal floating_anno nsp inp
-			  _ -> Right anno
-			  {- a strict implementation:
-			     _ -> Left(newErrorMessage 
-					    (UnExpect ("kind of annotation or this kind is not allowed as group: " ++ kw))
-					    sp) -}
-			 where nsp = updatePosString sp (kw ++ "(")
-			       inp = unlines as
-			       lassoc p = do res <- p
-					     return (Lassoc_anno res [])     
-			       rassoc p = do res <- p
-					     return (Rassoc_anno res [])
-			       assoc_anno = commaSep1 casl_id
-
-
-		     _ -> Right anno
+parse_anno anno sp = 
+    case anno of
+    Unparsed_anno (Annote_word kw) as _ ->
+	case lookup kw $ swapTable semantic_anno_table of
+	Just sa -> semantic_anno sa as sp 
+	_  -> let nsp = updatePosString sp (kw ++ "(")
+		  inp = case as of Line_anno str -> str 
+				   Group_anno ls -> unlines ls
+		  mkAssoc dir p = do res <- p
+				     return (Assoc_anno dir res []) in
+		  case kw of
+	     "prec"    -> parse_internal prec_anno    nsp inp
+	     "display" -> parse_internal display_anno nsp inp
+	     "left_assoc" -> parse_internal (mkAssoc ALeft commaIds) nsp inp
+	     "right_assoc" -> parse_internal (mkAssoc ARight commaIds) nsp inp
+	     "number"   -> parse_internal number_anno   nsp inp
+	     "string"   -> parse_internal string_anno   nsp inp
+	     "list"     -> parse_internal list_anno     nsp inp
+	     "floating" -> parse_internal floating_anno nsp inp
+	     _ -> Right anno
+    _ -> Right anno
 
 parse_internal :: GenParser Char () a -> SourcePos -> [Char] 
 	       -> Either ParseError a
@@ -161,14 +141,14 @@ parse_internal p sp inp = parse (do setPosition sp
 
 prec_anno, number_anno, string_anno, list_anno, floating_anno 
     :: GenParser Char st Annotation
-prec_anno = do left_ids <- braces $ commaSep1 casl_id
+prec_anno = do left_ids <- braces commaIds
 	       sign <- lexeme (try (string "<>") <|> (string "<"))
-	       right_ids <- braces $ commaSep1 casl_id 
-	       return ( Prec_anno (sign == "<")
-				  left_ids
-				  right_ids
-			          []
-		      )
+	       right_ids <- braces commaIds
+	       return $ Prec_anno 
+			  (if sign == "<" then Lower else BothDirections)
+			  left_ids
+			  right_ids
+			  [] 
 
 number_anno   = 
     do n <- casl_id
@@ -196,32 +176,26 @@ literal_2ids_anno con =
 
 display_anno :: GenParser Char st Annotation
 display_anno = do ident <- casl_id
-		  tls <- {- permute ( mklst <$?> (disp_symb "HTML")
-				         <|?> (disp_symb "LATEX")
-				         <|?> (disp_symb "RTF") ) -}
-		         many (disp_symb "HTML"
-			       <|> disp_symb "LATEX"
-			       <|> disp_symb "RTF")   
+		  tls <- many $ foldl1 (<|>) $ map disp_symb 
+			 display_format_table
 		  return (Display_anno ident tls [])
-    where -- mklst a b c = [a,b,c] 
-	  disp_symb sym = ( -- (ready_symb,""), default for optional ParsecPerm
-				 do symb <- lexeme (try (string 
-							   ready_symb))
-				    str <- manyTill anyChar $ charOrEof '%'
-				    return (symb, reverse $
-					      dropWhile (`elem` blankChars)
-					      $ reverse str)
-				) where ready_symb = "%"++sym
+    where  disp_symb (df_symb, symb) = 
+	       do lexeme $ try $ string $ "%"++symb
+		  str <- manyTill anyChar $ charOrEof '%'
+		  return (df_symb, reverse $ dropWhile (`elem` whiteChars)
+			 $ reverse str)
 
-semantic_anno :: ([Pos] -> Annotation)
-	         -> String -> String -> SourcePos -> [Pos] 
+semantic_anno :: Semantic_anno -> Annote_text -> SourcePos
 		 -> Either ParseError Annotation
-semantic_anno anno kw as sp pos = 
-    if all (`elem` blankChars) as then 
-       Right (anno pos)
-    else 
-       Left (newErrorMessage (Expect("only whitespaces after %" ++ kw)) sp)
-
-blankChars :: String
-blankChars = "\n\r\t\v\f \160"
+semantic_anno sa text sp =
+    let err = Left $ newErrorMessage 
+	      (UnExpect ("garbage after %" 
+			 ++ fromJust (lookup sa semantic_anno_table ))) 
+	      sp
+	in case text of
+		     Line_anno str ->      
+			 if all (`elem` whiteChars) str then 
+			    Right $ Semantic_anno sa []
+			 else err
+		     _ -> err
 

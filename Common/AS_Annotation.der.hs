@@ -1,16 +1,16 @@
 
-{- HetCATS/AS_Annotation.hs
-   $Id$
-   Author: Klaus Lüttich
-   Year:   2002
+{- |
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Christian Maeder, and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
 
-   These datastructures describe the Annotaions of (Het)CASL. 
-   There is also a type class for Annoted items.
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
-   todo:
-      - ATermConversion SML-CATS has now his own module 
-        (s. HetCATS/aterm_conv/)
-      - LaTeX Pretty Printing
+   These datastructures describe the Annotations of (Het)CASL. 
+   There is also a paramterized data type for an 'Annoted' 'item'.
+
 -}
 
 module Common.AS_Annotation where
@@ -19,85 +19,119 @@ import Common.Id
 -- DrIFT command
 {-! global: UpPos !-}
 
-data Annotation = Comment_line String [Pos]
-		| Comment_group [String] [Pos]
-		-- constructors for unparsed annotes
-		| Annote_line String String [Pos]
-		| Annote_group String [String] [Pos]
-		-- known annotes
-		| Display_anno Id [(String,String)] [Pos]
+-- | start of an annote with its WORD or a comment
+data Annote_word = Annote_word String | Comment_start deriving (Show, Eq)
+
+-- | line or group for 'Unparsed_anno' 
+data Annote_text = Line_anno String | Group_anno [String] deriving (Show, Eq)
+
+-- | formats to be displayed (may be extended in the future).
+-- Drop 3 from the show result to get the string for parsing and printing  
+data Display_format = DF_HTML | DF_LATEX | DF_RTF
+		     deriving (Show, Eq, Ord)
+
+-- | swap a pair
+swap :: (a, b) -> (b, a)
+swap (a, b) = (b, a)
+
+-- | swap the entries of a lookup table
+swapTable :: [(a, b)] -> [(b, a)]
+swapTable = map swap
+
+-- | drop the first 3 characters from the show result
+toTable :: (Show a) => [a] -> [(a, String)]
+toTable l = zip l $ map (drop 3 . show) l 
+
+-- | a lookup table for the textual representation of display formats
+display_format_table :: [(Display_format, String)]
+display_format_table = toTable [ DF_HTML, DF_LATEX, DF_RTF ]
+
+-- | precedence 'Lower' means less and 'BothDirections' means less and greater.
+-- 'Higher' means greater but this is syntactically not allowed in 'Prec_anno'.
+-- 'NoDirection' can also not be specified explicitly,
+-- but covers those ids that are not mentionend in precedences.
+data PrecRel = Higher | Lower | BothDirections | NoDirection 
+	       deriving (Show, Eq)
+
+-- | either left or right associative 
+data AssocEither = ALeft | ARight deriving (Show,Eq)
+
+-- | semantic (line) annotations without further information. 
+-- Use the same drop-3-trick as for the 'Display_format'.
+data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono
+		     deriving (Show, Eq)
+
+-- | a lookup table for the textual representation of semantic annos
+semantic_anno_table :: [(Semantic_anno, String)]
+semantic_anno_table = toTable [SA_cons, SA_def, SA_implies, SA_mono]
+
+
+-- | all possible annotations (without comment-outs)
+data Annotation = -- | constructor for comments or unparsed annotes
+                Unparsed_anno Annote_word Annote_text [Pos]
+		-- | known annotes
+		| Display_anno Id [(Display_format, String)] [Pos]
 		-- postion of anno start, keywords and anno end
-		| String_anno Id Id [Pos] 
-		-- postion of anno start, commas and anno end
 		| List_anno Id Id Id [Pos] 
 		-- postion of anno start, commas and anno end
 		| Number_anno Id [Pos] 
 		-- postion of anno start, commas and anno end
 		| Float_anno Id Id [Pos] 
 		-- postion of anno start, commas and anno end
-		| Prec_anno Bool [Id] [Id] [Pos] 
-		--          ^              ^ "{",commas,"}", "<",
-		--          |                "{",commas,"}"
-		--          | true = <   false = <>
-		| Lassoc_anno [Id] [Pos] -- position of commas
-		| Rassoc_anno [Id] [Pos] -- position of commas
+		| String_anno Id Id [Pos] 
+		-- postion of anno start, commas and anno end
+		| Prec_anno PrecRel [Id] [Id] [Pos] 
+		--          ^ positions: "{",commas,"}", RecRel, "{",commas,"}"
+		--          | Lower = "< "  BothDirections = "<>"
+		| Assoc_anno AssocEither [Id] [Pos] -- position of commas
 		| Label [String] [Pos] 
 		-- postion of anno start and anno end
 
-		-- All annotations below are only as annotationline allowed
-		| Implies [Pos] 
-		| Definitional [Pos]
-		| Conservative [Pos]
-		| Monomorph [Pos] 
-		-- position information for annotations is now provided 
+		-- All annotations below are only as annote line allowed
+		| Semantic_anno Semantic_anno [Pos] 
+		-- position information for annotations is provided 
 		-- by every annotation
-		--  Pos_anno Region Annotation 
-		  deriving (Show,Eq)
+		  deriving (Show, Eq)
 
 
-data Annoted a = Annoted { item::a
-			 , opt_pos::[Pos]
+-- | an item wrapped in preceeding (left 'l_annos') 
+-- and following (right 'r_annos') annotations
+data Annoted a = Annoted { item::a, opt_pos :: [Pos]
 			 , l_annos, r_annos::[Annotation]}
-	                   -- left or preceeding, right or following
-		 deriving (Show,Eq) 
+		 deriving (Show, Eq) 
 
+-- | get the label following (or to the right of) an 'item'
 getRLabel :: Annoted a -> String
 getRLabel a = let ls = filter isLabel (r_annos a) in
 		  if null ls then "" else 
 		     let Label l _ = head ls 
-			 in unlines l   -- might be a multiline labels?
+			 in unlines l   -- might be a multiline label
                                         -- maybe remove white spaces
 
+-- | 
+-- 'isLabel' tests if the given 'Annotation' is a label
+-- (a 'Label' typically follows a formula)
+isLabel :: Annotation -> Bool
+isLabel a = case a of
+	    Label _ _ -> True
+	    _         -> False
 -- | 
 -- 'isSemanticAnno' tests if the given 'Annotation' is a semantic one
 isSemanticAnno :: Annotation -> Bool
 isSemanticAnno a = case a of
-		   Implies _      -> True
-		   Definitional _ -> True
-		   Conservative _ -> True
-		   Monomorph _    -> True
-		   _              -> False
+		   Semantic_anno _ _  -> True
+		   _ -> False
 
--- | 
+-- |  
 -- 'isComment' tests if the given 'Annotation' is a comment line or a
 -- comment group
 isComment :: Annotation -> Bool
 isComment c = case c of
-	      Comment_line  _ _ -> True
-	      Comment_group _ _ -> True
-	      _                 -> False
+	      Unparsed_anno Comment_start _ _ -> True
+	      _ -> False
 
 -- |
 -- 'isAnnote' is the invers function to 'isComment'
 isAnnote :: Annotation -> Bool
 isAnnote = not . isComment
-
-isLabel :: Annotation -> Bool
-isLabel a = case a of
-	    Label _ _ -> True
-	    _         -> False
-
-allPrecIds :: Annotation -> [Id]
-allPrecIds (Prec_anno _ ll rl _) = ll ++ rl
-allPrecIds _ = error "unsupported annotation"
 

@@ -309,12 +309,12 @@ instance ATermConvertibleSML Annotation where
                 let
                 aa' = chomp $ from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Comment_line aa' ab')
+                in (Unparsed_anno Comment_start (Line_anno aa') ab')
             (ShAAppl "comment" [ aa ] _)  ->
                 let
                 aa' = lines (from_sml_ShATerm (getATermByIndex1 aa att))
                 ab' = pos_l
-                in (Comment_group aa' ab')
+                in (Unparsed_anno Comment_start (Group_anno aa') ab')
             (ShAAppl "unparsed-anno" [ aa ] _)  ->
 		parse_anno pos_l 
 		   (from_sml_ShATerm (getATermByIndex1 aa att))
@@ -323,13 +323,13 @@ instance ATermConvertibleSML Annotation where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Annote_line aa' ab' ac')
+                in (Unparsed_anno (Annote_word aa') (Line_anno ab') ac')
             (ShAAppl "annote-group" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Annote_group aa' ab' ac')
+                in (Unparsed_anno (Annote_word aa') (Group_anno ab') ac')
             (ShAAppl "display-anno" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
@@ -366,17 +366,18 @@ instance ATermConvertibleSML Annotation where
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
                 ad' = pos_l
-                in (Prec_anno aa' ab' ac' ad')
+                in (Prec_anno (if aa' then Lower else BothDirections) 
+		    ab' ac' ad')
             (ShAAppl "lassoc-anno" [ aa ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Lassoc_anno aa' ab')
+                in (Assoc_anno ALeft aa' ab')
             (ShAAppl "rassoc-anno" [ aa ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Rassoc_anno aa' ab')
+                in (Assoc_anno ARight aa' ab')
             (ShAAppl "label-anno" [ aa ] _)  ->
                 let
                 aa' = 
@@ -386,17 +387,17 @@ instance ATermConvertibleSML Annotation where
             (ShAAppl "implies" [] _)  ->
                 let
                 aa' = pos_l
-                in (Implies aa')
+                in (Semantic_anno SA_implies aa')
             (ShAAppl "definitional" [] _)  ->
                 let
                 aa' = pos_l
-                in (Definitional aa')
+                in (Semantic_anno SA_def aa')
             (ShAAppl "conservative" [] _)  ->
                 let
                 aa' = pos_l
-                in (Conservative aa')
+                in (Semantic_anno SA_cons aa')
 	    (ShAAppl "mono" [] _) ->
-		Monomorph pos_l
+		Semantic_anno SA_mono pos_l
 	    _ -> from_sml_ShATermError "Annotation" aterm
         where
             aterm = getATerm att'
@@ -511,7 +512,8 @@ parse_anno pos_l inp =
 
 parse_disp_anno :: Id -> [Pos] -> String -> Annotation
 parse_disp_anno i pos_l inp =
-    case (Common.Anno_Parser.parse_anno (Annote_group "display" [inp'] pos_l) sp) of
+    case (Common.Anno_Parser.parse_anno (Unparsed_anno (Annote_word "display")
+					 (Group_anno [inp']) pos_l) sp) of
        Left err   -> error ("internal parse error at " ++ (show err))
        --Right [] -> error $ "No displayanno: " ++ inp' 
        Right x  -> x -- trace ("parsed display anno:" ++ show x) x

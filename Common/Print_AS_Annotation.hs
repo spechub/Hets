@@ -12,8 +12,6 @@
 
 module Common.Print_AS_Annotation where
 
-import Data.Char (isSpace)
-
 import Common.AS_Annotation
 
 import Common.GlobalAnnotations
@@ -21,27 +19,33 @@ import Common.GlobalAnnotations
 import Common.Id (Id(..),splitMixToken)
 import Common.PrettyPrint
 import Common.Lib.Pretty
+import Common.Lexer(whiteChars)
 import Common.LaTeX_funs
+import Data.Maybe(fromJust)
 
 infixl 6 <\\+>
 
+
 instance PrettyPrint Annotation where
-    printText0 _ (Comment_line aa _) =
-	ptext "%%" <> ptext aa -- <> ptext "\n"
-    printText0 _ (Comment_group aa _) =
-	let aa' = vcat $ map ptext aa
-	in ptext "%{" <> aa' <> ptext "}%"
-    printText0 _ (Annote_line aa ab _) =
-	printLine (ptext aa) $ if all isSpace ab then empty else ptext ab
-    printText0 _ (Annote_group aa ab _) =
-	let aa' = ptext aa
-	    ab' = vcat $ map ptext ab
-	in printGroup aa' ab'
+    printText0 _ (Unparsed_anno aw at _) =
+	case at of 
+		Line_anno str -> 
+		    (case aw of 
+			    Comment_start -> ptext "%%"
+		            Annote_word w ->  ptext $ "%" ++ w) 
+		    <> (if all (`elem` whiteChars) str 
+			then empty else ptext str)
+		Group_anno strs -> 
+		    let lns = vcat $ map ptext strs in
+		    case aw of 
+			    Comment_start -> ptext "%{" <> lns <> ptext "}%"
+			    Annote_word w -> ptext ("%" ++ w ++ "(")
+					 <> lns <> ptext ")%"    
     printText0 ga (Display_anno aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = fcat $ punctuate space $ map printPair $ filter nullSnd ab
 	in printGroup (ptext "display") $ aa' <+> ab'
-	   where printPair (s1,s2) = ptext s1 <+> ptext s2
+	   where printPair (s1,s2) = ptext (showDF s1) <+> ptext s2
 		 nullSnd (_,s2) = not $ null s2
     printText0 ga (String_anno aa ab _) =
 	let aa' = printText0 ga aa
@@ -60,67 +64,62 @@ instance PrettyPrint Annotation where
 	    ab' = printText0 ga ab
 	in printLine (ptext "floating") $ aa' <> comma <+> ab'
     printText0 ga (Prec_anno pflag ab ac _) =
-	let aa' = if pflag then ptext "<" else ptext "<>"
+	let aa' = ptext $ showPrecRel pflag
 	    ab' = fcat $ punctuate (comma <> space) $ map (printText0 ga) ab
 	    ac' = fcat $ punctuate (comma <> space) $ map (printText0 ga) ac
 	in  printGroup (ptext "prec") $ braces ab' <+> aa' <+> braces ac'
-    printText0 ga (Lassoc_anno aa _) =
-	printGroup (ptext "left_assoc") $ fcat $ 
-				punctuate (comma <> space) $ 
-					  map (printText0 ga) aa
-    printText0 ga (Rassoc_anno aa _) =
-	printGroup (ptext "right_assoc") $ fcat $ 
+    printText0 ga (Assoc_anno as aa _) =
+	printGroup (case as of ARight -> ptext "right_assoc"
+		               ALeft -> ptext "left_assoc") $ fcat $ 
 				punctuate (comma <> space) $ 
 					  map (printText0 ga) aa
     printText0 _ (Label aa _) =
 	let aa' = vcat $ map ptext aa
 	in ptext "%(" <> aa' <> ptext ")%"
-    printText0 _ (Implies _) =
-	printLine (ptext "implies") empty
-    printText0 _ (Definitional _) =
-	printLine (ptext "def") empty
-    printText0 _ (Conservative _) =
-	printLine (ptext "cons") empty
-    printText0 _ (Monomorph _) =
-	printLine (ptext "mono") empty
+    printText0 _ (Semantic_anno sa _) =
+	printLine (ptext $ fromJust $ lookup sa $ semantic_anno_table) empty
+-- -------------------------------------------------------------------------
+-- LaTeX pretty printing
+-- -------------------------------------------------------------------------
 
-    printLatex0 _ (Comment_line aa _) =
-	hc_sty_comment (   hc_sty_small_keyword "\\%\\%" 
-			<> casl_comment_latex (escape_latex aa)) 
-	   -- <> ptext "\n"
-    printLatex0 _ (Comment_group ls _) =
-	case ls of
-	[]     -> hc_sty_comment (hc_sty_small_keyword "\\%\\{" <\\+> 
+    printLatex0 _ (Unparsed_anno aw at _) =
+	case at of 
+		Line_anno str ->
+		    case aw of 
+			    Comment_start -> 	
+				hc_sty_comment 
+				( hc_sty_small_keyword "\\%\\%" 
+				  <> casl_comment_latex (escape_latex str))
+			    Annote_word w -> printLatexLine w $ 
+					     if all (`elem` whiteChars) str 
+						then empty 
+						else casl_annotation_latex 
+							 (escape_latex str)
+		Group_anno strs ->
+		    case aw of 
+		    Comment_start ->
+			case strs of
+			[] -> hc_sty_comment 
+			      (hc_sty_small_keyword "\\%\\{" <\\+> 
 				  hc_sty_small_keyword "\\}\\%")
-	[x]    -> hc_sty_comment (hc_sty_small_keyword "\\%\\{" <>
-				  conv x <>
-				  hc_sty_small_keyword "\\}\\%")
-	(x:xs) -> vcat (hc_sty_comment (hc_sty_small_keyword "\\%\\{" <>
-					conv x)
-			  :map (hc_sty_comment . conv') xs) 
-		  <> hc_sty_comment (hc_sty_small_keyword "\\}\\%")
-	where conv  = casl_comment_latex . escape_latex
-	      conv' s = casl_comment_latex "~~~~" <> conv s
-	{- let aa' = 
-	      map (casl_comment_latex . escape_latex) aa
-	    (first_l,rem_ls) = case aa' of
-			       [] -> (empty,[])
-			       _  -> (head aa',tail aa')
-	in hc_sty_comment $ -- TODO: Correct this!!
-	   cat [hc_sty_small_keyword "\\%\\{"<> first_l,
-		nest 6 (vcat rem_ls)] <> hc_sty_small_keyword "\\}\\%" -}
-    printLatex0 _ (Annote_line aa ab _) =
-	printLatexLine aa $ if all isSpace ab 
-		            then empty 
-		            else casl_annotation_latex (escape_latex ab)
-    printLatex0 _ga (Annote_group aa ab _) =
-	printLatexGroup aa $ 
-			vcat $ map (casl_annotation_latex . escape_latex) ab
+			[x] -> hc_sty_comment (hc_sty_small_keyword "\\%\\{" <>
+				  conv x <> hc_sty_small_keyword "\\}\\%")
+			(x:xs) -> vcat (hc_sty_comment 
+					(hc_sty_small_keyword "\\%\\{" <>
+					conv x) 
+					: map (hc_sty_comment . conv') xs) 
+				  <> hc_sty_comment 
+					 (hc_sty_small_keyword "\\}\\%")
+			where conv  = casl_comment_latex . escape_latex
+			      conv' s = casl_comment_latex "~~~~" <> conv s
+		    Annote_word w -> printLatexGroup w $ vcat 
+				     $ map (casl_annotation_latex 
+					    . escape_latex) strs
     printLatex0 ga (Display_anno aa ab _) =
 	let aa' = printSmallId_latex ga aa
 	    ab' = fsep_latex $ map printPair $ filter nullSnd ab
 	in printLatexGroup "display" $ aa' <\\+> ab'
-	   where printPair (s1,s2) = la s1 <\\+> la s2
+	   where printPair (s1,s2) = la (showDF s1) <\\+> la s2
 		 la = casl_annotation_latex . escape_latex  
 		 nullSnd (_,s2) = not $ null s2
     printLatex0 ga (String_anno aa ab _) =
@@ -141,32 +140,40 @@ instance PrettyPrint Annotation where
 	    ab' = printSmallId_latex ga ab
 	in printLatexLine "floating" $ aa' <> smallComma_latex <\\+> ab'
     printLatex0 ga (Prec_anno pflag ab ac _) =
-	let aa' = hc_sty_axiom $ if pflag then "<" else "<>"
+	let aa' = hc_sty_axiom $ showPrecRel pflag
 	    p_list = (\l -> casl_comment_latex "\\{" <> l 
 		                <> casl_comment_latex "\\}")
 		     .fcat
 		     .(punctuate (smallComma_latex<>smallSpace_latex))
 		     .(map (printSmallId_latex ga))
 	in  printLatexGroup "prec" $ p_list ab <\\+> aa' <\\+> p_list ac
-    printLatex0 ga (Lassoc_anno aa _) =
-	printLatexGroup "left\\_assoc" $ fcat $
+    printLatex0 ga (Assoc_anno as aa _) =
+	printLatexGroup (case as of 
+			 ALeft -> "left\\_assoc"
+			 ARight -> "right\\_assoc") $ fcat $
 	punctuate (smallComma_latex<>smallSpace_latex) $ 
-	map (printSmallId_latex ga) aa
-    printLatex0 ga (Rassoc_anno aa _) =
-	printLatexGroup "right\\_assoc" $ fcat $
-	punctuate (smallComma_latex<>smallSpace_latex) $
 	map (printSmallId_latex ga) aa
     printLatex0 _ (Label aa _) =
 	let aa' = vcat $ map (casl_annotation_latex . escape_latex) aa
 	in latex_macro "\\`" <> printLatexGroup "" aa'
-    printLatex0 _ (Implies _) =
-	printLatexLine "implies" empty
-    printLatex0 _ (Definitional _) =
-	printLatexLine "def" empty
-    printLatex0 _ (Conservative _) =
-	printLatexLine "cons" empty
-    printLatex0 _ (Monomorph _) =
-	printLatexLine "mono" empty
+    printLatex0 _ (Semantic_anno sa  _) =
+	printLatexLine (fromJust $ lookup sa semantic_anno_table)  empty
+
+-- -------------------------------------------------------------------------
+-- utilies
+-- -------------------------------------------------------------------------
+
+showDF :: Display_format -> String
+showDF df = fromJust $ lookup df display_format_table
+
+showPrecRel :: PrecRel -> String
+showPrecRel p = case p of Lower -> "<"
+			  Higher -> ">"
+			  BothDirections -> "<>"
+			  NoDirection -> error "showPrecRel"
+
+printCommaIds :: GlobalAnnos -> [Id] -> Doc
+printCommaIds ga = fcat . punctuate (comma <> space) . map (printText0 ga)
 
 smallSpace_latex :: Doc
 smallSpace_latex = casl_comment_latex " "

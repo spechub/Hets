@@ -18,6 +18,7 @@
 module CASL.MixfixParser ( resolveFormula, resolveMixfix)
     where 
 import CASL.AS_Basic_CASL 
+import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
@@ -154,14 +155,13 @@ checkArg g dir op arg =
        else 
        case precRel (prec_annos g) op arg of
        Lower -> True
-       Higher -> False
-       ExplGroup BothDirections -> False
-       ExplGroup NoDirection -> not $ isInfix arg
+       NoDirection -> not $ isInfix arg
+       _ -> False
 
 checkAnyArg :: GlobalAnnos -> Id -> Id -> Bool
 checkAnyArg g op arg = 
     case precRel (prec_annos g) op arg of
-    ExplGroup BothDirections -> isInfix op && op == arg
+    BothDirections -> isInfix op && op == arg
     _ -> True				       
 
 isLeftArg, isRightArg :: Id -> Int -> Bool

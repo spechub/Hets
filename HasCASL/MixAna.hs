@@ -16,6 +16,7 @@ module HasCASL.MixAna where
 import HasCASL.As
 import HasCASL.PrintAs
 import HasCASL.Le
+import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.GlobalAnnotationsFunctions
 import Common.Result
@@ -244,13 +245,13 @@ checkArg g dir op arg =
        case precRel (prec_annos g) op arg of
        Lower -> True
        Higher -> False
-       ExplGroup BothDirections -> False
-       ExplGroup NoDirection -> not $ isInfix arg
+       BothDirections -> False
+       NoDirection -> not $ isInfix arg
 
 checkAnyArg :: GlobalAnnos -> Id -> Id -> Bool
 checkAnyArg g op arg = 
     case precRel (prec_annos g) op arg of
-    ExplGroup BothDirections -> isInfix op && op == arg
+    BothDirections -> isInfix op && op == arg
     _ -> True				       
 
 isLeftArg, isRightArg :: Id -> Int -> Bool

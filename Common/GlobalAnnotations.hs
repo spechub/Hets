@@ -19,6 +19,7 @@ import Common.Id
 
 import Common.Lib.Rel
 import Common.Lib.Map
+import Common.AS_Annotation
 
 data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
 		      , assoc_annos    :: AssocMap
@@ -44,17 +45,9 @@ emptyLiteralAnnos = LA { string_lit  = Nothing
 
 type PrecedenceGraph = Rel Id
 
-data PrecRel = Higher | Lower | ExplGroup Direct
-	       deriving (Show)
-
-data Direct = BothDirections | NoDirection
-	      deriving (Show)
-
 type AssocMap = Map Id AssocEither
 
-data AssocEither = ALeft | ARight deriving (Show,Eq)
-
-type DisplayMap = Map Id [(String,String)]
+type DisplayMap = Map Id [(Display_format,String)]
 
 type LiteralMap = Map Id LiteralType
 
