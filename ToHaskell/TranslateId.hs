@@ -34,13 +34,22 @@ translateIdWithType ty i =
 lowerCaseList, upperCaseList :: Set.Set String
 lowerCaseList = Set.fromList ["undefined", "error", "seq", "fst", "snd",
 		 "curry", "uncurry", "and",
+                 "compare", "min", "max",
+                 "lexOrder", "primError",
+                 "negate", "abs", "signum", "fromInteger",
+                 "recip", "fromRational", "otherwise",
                  "or", "const", "id", "flip", "not",
 		 "case", "class", "data", "default", "deriving", "do", "else",
 	         "if", "import", "in", "infix", "infixl", "infixr", "instance",
-	         "let", "module", "newtype", "of", "then", "type", "where"]
+	         "let", "module", "newtype", "of", 
+                 "show", "showList", "showsPrec","shows",
+                 "showChar", "showString", "showParen",
+                 "showArgument", "showParenArg", "then", "type", "where"]
 upperCaseList = Set.fromList ["True", "False", "Bool", "Int", "Num", 
-			 "Char", "String", "Read", "Show", "IO",
-			 "Eq", "Ord", "Enum", "Bounded"]
+                         "Ordering",
+			 "Char", "String", "Read", "Show", "ShowS", "IO",
+                         "Integer", "Rational", "Double", "Fractional",
+			 "Eq", "Ord", "LT", "EQ", "GT", "Enum", "Bounded"]
 
 -- | Letter case indicator
 data IdCase = UpperId | LowerId
