@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm:fgl/Data/Graph:fgl/Data/Graph/Inductive:fgl/Data/Graph/Inductive/Aux:fgl/Data/Graph/Inductive/Monad:fgl/Data/Graph/Inductive/Query
-CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet:$(PFE_DRIFTPATH)
+CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet:$(PFE_PATHS)
 
 ## set ghc imports properly for your system
 LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
@@ -23,9 +23,6 @@ DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}'
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
 empty:=
 space:= $(empty) $(empty)
-# add PFE_DRIFTPATH to DERIVEPATH if needed
-# but name clashes currently prevent ATC generation in a single file
-PFE_DRIFTPATH = $(subst $(space),:,$(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS)))
 
 # override on commandline for other architectures
 INSTALLDIR = /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
@@ -48,10 +45,25 @@ HC_FLAGS   = -Wall -fglasgow-exts
 # but added it here in case of compilation without uni
 
 HC_INCLUDE = -i$(INCLUDE_PATH)
-HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
+
+UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
+ifneq ($(strip $(PFE_TOOLDIR)),)
+HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
              -package uni-server -DUNI_PACKAGE
 
-PFE_TOOLDIR = $(wildcard ../programatica/tools)
+# some modules from uni for haddock
+# if uni/server is included also HaXml sources are needed
+uni_sources = $(wildcard ../uni/davinci/haddock/*.hs) \
+  $(wildcard ../uni/graphs/haddock/*.hs) \
+  ../uni/htk/toplevel/HTk.hs \
+  $(wildcard ../uni/htk/haddock/*/*.hs) \
+  $(wildcard ../uni/events/haddock/*.hs) \
+  $(wildcard ../uni/reactor/haddock/*.hs) \
+  $(wildcard ../uni/util/haddock/*.hs) \
+  $(wildcard ../uni/posixutil/haddock/*.hs)
+endif
+
+PFE_TOOLDIR := $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
       base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
@@ -60,6 +72,11 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
       property/TI property/defs property/parse2 property/parse2/Parser \
       hs2stratego hs2stratego/AST
 PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
+
+# add PFE_PATHS to DERIVEPATH if needed
+# but name clashes currently prevent ATC generation in a single file
+PFE_PATHS = $(subst $(space),:,$(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS)))
+pfe_sources = $(wildcard $(subst :,/*hs , $(PFE_PATHS)))
 PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
 #-fallow-undecidable-instances -fno-monomorphism-restriction 
 endif
@@ -89,8 +106,8 @@ GHCMAKE_OUTPUT = $(wildcard hetcats-make)
 ifneq ($(strip $(GHCMAKE_OUTPUT)),)
 include sources_hetcats.mk
 else
-SOURCE_PATH = $(COMMON_LIB_PATH):$(CLEAN_PATH)
-sources = $(wildcard $(subst :,/*hs , $(SOURCE_PATH))/*hs)
+SOURCE_PATHS = $(COMMON_LIB_PATH):$(CLEAN_PATH)
+sources = $(wildcard $(subst :,/*hs , $(SOURCE_PATHS))/*hs)
 endif
 
 objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
@@ -110,7 +127,8 @@ atc_files := Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
 		Proofs/Proofs.hs \
                 Isabelle/IsaSign.hs 
 
-atc_der_files = $(foreach file, $(atc_files), ATC/$(basename $(basename $(notdir $(file)))).der.hs)
+atc_der_files = $(foreach file, $(atc_files), \
+                ATC/$(basename $(basename $(notdir $(file)))).der.hs)
 
 CASL_files := CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
               CASL/AS_Basic_CASL.der.hs 
@@ -131,12 +149,15 @@ generated_rule_files = $(atc_der_files) $(atc_logic_files)
 
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
-inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs Comorphisms/Modal2CASL.hs
+inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
+                     Comorphisms/Modal2CASL.hs
+
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
 happy_files = 
 
-derived_sources = $(drifted_files) $(happy_files) hetcats/Version.hs $(inline_axiom_files) Modal/ModalSystems.hs
+derived_sources = $(drifted_files) $(happy_files) hetcats/Version.hs \
+                  $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = ./Isabelle/Logic_Isabelle.hs \
@@ -144,19 +165,8 @@ cpp_sources = ./Isabelle/Logic_Isabelle.hs \
     ./Comorphisms/LogicList.hs ./Comorphisms/LogicGraph.hs
 
 # this variable holds the modules that should be documented
-doc_sources = $(filter-out $(cpp_sources) ,$(sources)) \
-               $(patsubst %.hs, %.hspp, $(cpp_sources))
-
-# some modules from uni for haddock
-# if uni/server is included also HaXml sources are needed
-uni_sources = $(wildcard ../uni/davinci/haddock/*.hs) \
-  $(wildcard ../uni/graphs/haddock/*.hs) \
-  ../uni/htk/toplevel/HTk.hs \
-  $(wildcard ../uni/htk/haddock/*/*.hs) \
-  $(wildcard ../uni/events/haddock/*.hs) \
-  $(wildcard ../uni/reactor/haddock/*.hs) \
-  $(wildcard ../uni/util/haddock/*.hs) \
-  $(wildcard ../uni/posixutil/haddock/*.hs)
+doc_sources = $(filter-out $(cpp_sources), $(filter-out $(pfe_sources), \
+	$(sources))) $(patsubst %.hs, %.hspp, $(cpp_sources))
 
 tax_sources = Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs \
                    Taxonomy/MMiSSOntologyGraph.hs Taxonomy/OntoParser.hs
@@ -179,13 +189,13 @@ all: hets
 hets: $(sources) $(derived_sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS) 2>&1 | tee hetcats-make 
 
-hets-opt: $(sources) $(derived_sources)
+hets-opt: 
 	$(MAKE) distclean
 	$(MAKE) derivedSources
 	$(MAKE) real_clean
 	$(MAKE) hets-optimized
 
-hets-optimized: $(sources) $(derived_sources) 
+hets-optimized: $(derived_sources) 
 	$(HC) --make -O -o hets hets.hs $(HC_OPTS) -w 2>&1 | tee hetcats-make
 	strip hets 
 
@@ -194,7 +204,9 @@ hets-old: $(objects)
 	$(HC) -o hets $(HC_OPTS) $(objects)
 
 hets.cgi: $(sources) GUI/hets_cgi.hs
-	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_INCLUDE) $(HC_FLAGS) -O
+	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf \
+            -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_INCLUDE) \
+            $(HC_FLAGS) -O
 
 taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
 	$(HC) --make -o Taxonomy/taxonomyTool $< -ifgl $(HC_OPTS)
@@ -248,8 +260,8 @@ utils/DrIFT: $(DRIFT_deps)
 
 utils/genRules: $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
-         $(HC) --make '-i../..:../DrIFT-src' -package text GenerateRules.hs -o ../genRules && \
-         strip ../genRules)
+         $(HC) --make '-i../..:../DrIFT-src' -package text \
+              GenerateRules.hs -o ../genRules && strip ../genRules)
 
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs \
@@ -258,7 +270,8 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 
 release: 
 	$(RM) -r HetCATS
-	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository co HetCATS
+	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository\
+            co HetCATS
 	$(RM) -r uni
 	ln -s ../uni uni
 	(cd HetCATS; $(MAKE) derivedSources; ./clean.sh; \
@@ -304,11 +317,11 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) utils/genRules
 
 rule:= ShATermConvertible
 
-gen_atc_files = if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; then \
-                   utils/genRules -r $(rule) -o ATC -h ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
-                else \
-                   utils/genRules -r $(rule) -o ATC $(file); \
-                fi ;
+gen_atc_files = \
+  if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; \
+  then utils/genRules -r $(rule) -o ATC -h \
+          ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
+  else utils/genRules -r $(rule) -o ATC $(file); fi ;
 
 clean_genRules: 
 	$(RM) $(generated_rule_files) $(gendrifted_files)
@@ -405,7 +418,8 @@ Haskell/hapa: Haskell/hapa.hs Haskell/Hatchet/*.hs $(happy_files)
 ### Haskell analysis
 hana: Haskell/hana
 
-Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/Hatchet/*.hs $(happy_files)
+Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/Hatchet/*.hs \
+              $(happy_files)
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
@@ -424,20 +438,21 @@ atctest: ATC/ATCTest.hs ATC/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-atctest2: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs Common/ATerm/*.hs Common/Lib/*.hs
+atctest2: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs \
+          Common/ATerm/*.hs Common/Lib/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### ATerm.Lib test system
-atermlibtest: Common/ATerm/ATermLibTest.hs Common/ATerm/*.hs Common/SimpPretty.hs
+atermlibtest: Common/ATerm/ATermLibTest.hs Common/ATerm/*.hs \
+              Common/SimpPretty.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL with dev graph
 hetdg: GUI/hetdg.hs $(drifted_files) *.hs 
 	$(RM) $@
-	$(HC) --make -o $@ $< $(HC_OPTS)  -package-conf ../uni/uni-package.conf  -package uni-davinci -package uni-server
-
+	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### run tests in other directories
 check: hetcats
@@ -484,7 +499,8 @@ hets.hs: hetcats/Version.hs
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
 
 ## rule for Modal/ModalSystems.hs needed for ModalLogic Translation
-Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in utils/genTransMFormFunc.pl $(INLINEAXIOMS)
+Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
+                       utils/genTransMFormFunc.pl $(INLINEAXIOMS)
 	$(PERL) utils/genTransMFormFunc.pl $< $@
 
 # hetcats-make is created as side-effect of hets or hets-optimized
