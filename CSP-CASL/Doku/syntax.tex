@@ -1,0 +1,594 @@
+\documentclass[11pt]{article}
+
+\newcommand{\Mod}[1]{\mathbf{Mod}(#1)}
+\newcommand{\Sen}[1]{\mathbf{Sen}(#1)}
+\newcommand{\Sig}{\mathbf{Sig}}
+\newcommand{\PF}{\mathit{PF}}
+\newcommand{\TF}{\mathit{TF}}
+
+% \Gram is modified wrt the language summary so that it works in
+% italics as well as roman.
+%\newcommand{\Gram}[1]{{\textup{\texttt{#1}}}}
+
+\newenvironment{Grammar}
+ {\texonly{\footnotesize\setlength{\exampleindent}{0pt}}
+  \begin{example}}{\end{example}\ignorespaces}
+
+\newenvironment{AbstractGrammar}
+ {\par\texonly{\smallskip\samepage}\begin{Grammar}}{\end{Grammar}\par}
+
+\newenvironment{ConcreteDisplay}
+ {\nopagebreak\begin{quote}\caslInit}{\end{quote}\pagebreak[3]}
+
+\newcommand{\DisplayLatexInput}[3]
+ {The sign displayed as \texorhtml{`\Math{\caslInit{#1}}'}{#2 in \LaTeX}
+ is input as `\Gram{#3}'.} 
+
+\newcommand{\DisplayISOInput}[3]
+ {The sign displayed as `\Math{\caslInit{#1}}' may be input as
+ `\Math{#2}' in ISO Latin-1, or as `\Gram{#3}' in ASCII.} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Text within an "explanation" environment, which is printed in
+% indented italics, is the semantics.  Semantic definitions should be
+% kept as close as possible to the text that presents the relevant
+% construct.
+
+\newenvironment{explanation}
+        {\begin{quote}\em}
+        {\end{quote}\normalsize}
+
+% Text within a "doubt" environment, which is printed in indented
+% small roman font, is for (e.g.) comments on inadequacies in the
+% semantics.
+
+\newcounter{doubt}[section]
+\renewcommand{\thedoubt}{\thesection.\arabic{doubt}}
+\newenvironment{doubt}
+        {\begin{quote}\upshape\footnotesize\refstepcounter{doubt}%
+         Doubt \thedoubt:\ }
+        {\end{quote}\normalsize}
+
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%    Macros for Basic specifications.  Many of them are also used by
+%    later parts.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\FunName}{\mathit{FunName}}
+\newcommand{\PredName}{\mathit{PredName}}
+\newcommand{\FinSet}[1]{\mathit{FinSet}(#1)}
+\newcommand{\Set}[1]{\mathit{Set}(#1)}
+\newcommand{\FinSeq}[1]{\mathit{FinSeq}(#1)}
+\newcommand{\ang}[1]{\langle #1 \rangle}
+\newcommand{\harpoon}{\rightharpoonup}
+\newcommand{\PartialFun}[2]{#1 \harpoon #2}
+\newcommand{\TotalFun}[2]{#1 \to #2}
+\newcommand{\Dom}[1]{\mathit{Dom}(#1)}
+\newcommand{\app}[2]{#1(#2)}
+\newcommand{\FinMap}[2]{#1 \stackrel{\scriptstyle\mathrm{fin}}{\rightarrow} #2}
+\newcommand{\complete}[2]{\mathit{complete}(#1,#2)}
+\newcommand{\qua}[2]{#1 \: \textrm{qua} \: #2}
+\newcommand{\unit}{\mathit{unit}}
+\newcommand{\Signature}{\mathit{Signature}}
+\newcommand{\SemModel}{\mathbf{Model}}
+\newcommand{\SortSet}{\mathit{SortSet}}
+\newcommand{\orelse}{\textrm{or}}
+\newcommand{\ws}{\mathit{ws}}
+\newcommand{\FunProfile}{\mathit{FunProfile}}
+\newcommand{\FunNameSet}{\mathit{FunNameSet}}
+\newcommand{\FunSet}{\mathit{FunSet}}
+\newcommand{\PredProfile}{\mathit{PredProfile}}
+\newcommand{\PredNameSet}{\mathit{PredNameSet}}
+\newcommand{\PredSet}{\mathit{PredSet}}
+% \newcommand{\Qual}{\mathit{Qual}}
+% \newcommand{\sortqual}{\mathit{sort}}
+% \newcommand{\tfunqual}{\mathit{tfun}}
+% \newcommand{\pfunqual}{\mathit{pfun}}
+% \newcommand{\predqual}{\mathit{pred}}
+\newcommand{\Sym}{\mathit{Sym}}
+\newcommand{\totqual}{\mathsf{t}}
+\newcommand{\parqual}{\mathsf{p}}
+\newcommand{\SigFragment}{\mathit{SigFragment}}
+\newcommand{\sorts}[1]{\mathit{sorts}(#1)}
+\newcommand{\Extension}{\mathit{Extension}}
+\newcommand{\QualFunName}{\mathit{QualFunName}}
+\newcommand{\QualPredName}{\mathit{QualPredName}}
+\newcommand{\SortMap}{\mathit{SMap}}
+\newcommand{\TotalFunMap}{\mathit{TFMap}}
+\newcommand{\PartialFunMap}{\mathit{PFMap}}
+\newcommand{\PredMap}{\mathit{PMap}}
+\newcommand{\SignatureMorphism}{\mathit{SignatureMorphism}}
+\newcommand{\hook}{\hookrightarrow}
+\newcommand{\identity}{\mathit{id}}
+\newcommand{\SigCategory}{\Sig}
+\newcommand{\SemCarrier}{\mathbf{Carrier}}
+\newcommand{\SemCarriers}{\mathbf{Carriers}}
+\newcommand{\SemPartialFun}{\mathbf{PartialFun}}
+\newcommand{\SemPartialFuns}{\mathbf{PartialFuns}}
+\newcommand{\SemPred}{\mathbf{Pred}}
+\newcommand{\SemPreds}{\mathbf{Preds}}
+\newcommand{\Mset}{{\cal M}}
+\newcommand{\SemModelClass}{\mathbf{ModelClass}}
+\newcommand{\Homomorphism}{\mathbf{Homomorphism}}
+\newcommand{\reduct}[2]{#1|_{#2}}
+\newcommand{\ModFunctor}{\mathbf{Mod}}
+\newcommand{\CatCategory}{\mathbf{Cat}}
+\newcommand{\op}{\mathit{op}}
+\newcommand{\SynVar}{\mathit{Var}}
+\newcommand{\Variables}{\mathit{Variables}}
+\newcommand{\QualVarName}{\mathit{QualVarName}}
+\newcommand{\FQTerm}{\mathit{FQTerm}}
+\newcommand{\conditional}[3]{#1 \rightarrow #2 \mid #3}
+\newcommand{\sort}[1]{\mathit{sort}(#1)}
+\newcommand{\SynFormula}{\mathit{Formula}}
+\newcommand{\strongeq}{\stackrel{\scriptstyle\mathrm{s}}{=}}
+\newcommand{\existseq}{\stackrel{\scriptstyle\mathrm{e}}{=}}
+\newcommand{\false}{\mathit{false}}
+\newcommand{\true}{\mathit{true}}
+\newcommand{\abbreviates}{\textrm{abbreviates}}
+\newcommand{\Constraint}{\mathit{Constraint}}
+\newcommand{\Sentence}{\mathit{Sentence}}
+\newcommand{\SenFunctor}{\mathbf{Sen}}
+\newcommand{\SetCategory}{\mathbf{Set}}
+\newcommand{\Enrichment}{\mathit{Enrichment}}
+\newcommand{\Assignment}{\mathbf{Assignment}}
+\newcommand{\lsem}{\mathopen{\lbrack\!\lbrack}}
+\newcommand{\rsem}{\mathopen{\rbrack\!\rbrack}}
+\newcommand{\termvalue}[2]{\lsem #1 \rsem_{#2}}
+\newcommand{\infrule}[2]{\frac{#1}{#2}}
+\newcommand{\satisfies}[3]{#1 \models_{#2} #3}
+\newcommand{\notsatisfies}[3]{#1 \not\models_{#2} #3}
+\newcommand{\staticsem}[3]{#1 \vdash #2 \rhd #3}
+\newcommand{\modelsem}[3]{#1 \vdash #2 \Rightarrow #3}
+\newcommand{\rulesection}[1]{\[\fbox{$#1$}\]}
+\newcommand{\disjointfunctions}[1]{\textit{disjoint-functions\/}(#1)}
+\newcommand{\consistentselectors}{\textit{consistent-selectors}\:\:}
+\newcommand{\injective}[1]{\mathit{injective}(#1)}
+\newcommand{\disjoint}[2]{\mathit{disjoint}(#1,#2)}
+\newcommand{\undef}[2]{\mathit{undef}(#1,#2)}
+\newcommand{\calC}{{\cal C}}
+
+\usepackage{cofidoc}
+\usepackage{casl}
+\usepackage{alltt}
+\usepackage{xspace}
+
+\newcommand{\point} {\mbox{ $\scriptstyle\bullet$ }}
+
+%\newcommand{\undef}{\mbox{\it undef}\xspace}
+
+\newcommand{\tick}{tick}
+
+\newcommand{\ar}{ \ - \! \! >}
+\newcommand{\lar}{ <  \! \! - \ }
+\newcommand{\lrar}{ <  \! \! - \!\! > }
+\newcommand{\ec}{ \, [\,] \, }
+\newcommand{\ic}{ \, |^\sim| \,}
+\newcommand{\genp}[1]{ \, [| \, #1 \, |] \,}
+\newcommand{\alphp}[2]{ \, [ \, #1 \, || \, #2 \,] \,}
+\newcommand{\synp}{ \, || \, }
+\newcommand{\intp}{ \, ||| \, }
+
+\newcommand{\traces}{\mbox{\it traces}}
+\newcommand{\free}{\mbox{\it free}\,}
+
+\newcommand{\Seq}{\mbox{\it Seq}\,}
+\newcommand{\IntC}{\mbox{\it IntC}\,}
+\newcommand{\ExtC}{\mbox{\it ExtC}\,}
+\newcommand{\GenP}{\mbox{\it GenP}\,}
+\newcommand{\Synch}{\mbox{\it Synch}\,}
+\newcommand{\Int}{\mbox{\it Int}\,}
+
+\newcommand{\va}{\mbox{\it var}\,}
+
+\newcommand{\CSP}{\textrm{\textsc{Csp}}\xspace}
+\newcommand{\CC} {\textrm{\textsc{Csp}-\textsc{Casl}}\xspace}
+
+\newcommand{\Gram}[1]{\texttt{#1}}
+\newcommand{\ul}[1]{\underline{#1}}
+\newcommand{\annodef}{ {\bf \%def}}
+\newcommand{\annocons}{ {\bf \%cons}}
+
+%\newenvironment{Grammar}
+% {\texonly{\footnotesize\setlength{\exampleindent}{0pt}}
+%  \begin{example}}{\end{example}\normalsize\ignorespaces}
+
+
+\title{Concrete and Abstract Syntax of \CC}
+
+\begin{document}
+
+\maketitle
+
+\section{\CC without Channels}
+
+\subsection{Overall Specification}
+
+{\bf hier wird sich noch viel aendern!!!}
+
+\begin{Grammar}
+CSP-CASL-SPEC ::= data DATA-DEFN process PROCESS-DEFN end/
+
+DATA-DEFN     ::=   \ul{BASIC-SPEC}
+
+PROCESS-DEFN  ::=   PROCESS 
+                  | REC-PROCESS
+                  | var/vars \ul{VAR-DECL}; ...; \ul{VAR-DECL};/ . PROCESS 
+                  | var/vars \ul{VAR-DECL}; ...; \ul{VAR-DECL};/ . REC-PROCESS 
+\end{Grammar}
+
+\subsection{Basic Processes}
+
+\begin{Grammar}
+PROCESS ::=   (PROCESS)
+            | Skip
+            | Stop
+            | EVENT -> PROCESS
+            | [] \ul{VAR}: EVENT-SET -> PROCESS
+            | PROCESS ; PROCESS
+            | PROCESS [] PROCESS
+            | PROCESS |~| PROCESS
+            | PROCESS [| EVENT-SET |] PROCESS
+            | PROCESS [ EVENT-Set || EVENT-SET ] PROCESS
+            | PROCESS || PROCESS
+            | PROCESS ||| PROCESS
+            | PROCESS \back EVENT-SET
+            | PROCESS [[CSP-RENAMING]]
+            | if \ul{FORMULA} then PROCESS else PROCESS
+\end{Grammar}
+
+This context-free grammar for input syntax is quite ambiguous. For a
+\Gram{PROCESS} a unique syntax tree is requiered. This can be achieved
+by brackets. Beyond that ambiguities of this grammar are resolved by
+precedences\footnote{This definition is an extension of the FDR
+conventions as documented e.g.~in \cite{roscoe98}: all its rules are
+preserved, new precedences have been defined for hiding (the same
+precedence as renaming) and multiple prefix (the same precedence as
+prefix).}:
+\begin{itemize}
+  
+\item Renaming $\_\_[[\_\_]]$ and hiding $\_\_ \backslash \_\_$ have the
+highest precedence.
+  
+\item 
+%
+Prefix $\_\_\ar\_\_$, 
+%
+multiple prefix $[]\_\_: \_\_ \ar \_\_$, and 
+%
+sequential composition $\_\_;\_\_$ have
+lower precedence.
+  
+\item External choice $\_\_ \ec \_\_$ and internal choice $\_\_ \ic \_\_$
+  have still lower precendence.
+  
+\item The parallel operators $\_\_[|\_\_|]\_\_,$ $\_\_\synp\_\_,$ and
+$\_\_\intp\_\_$ have lower precedence than all the above.
+  
+\item The conditional $\_\_<\_\_>\_\_$ has the lowest precedence.
+
+\end{itemize}
+
+%% Precedence:s Roscoe, S. 512; FDR Manual 2.78, page 65.
+
+To avoid brackets in case of consecutive occurences of the same
+operator the following operators are considered as left
+associative\footnote{As these operators turn out to be associative,
+  this convention gives not rise to any problem with the semantics.}:
+\begin{itemize}
+\item $\_\_;\_\_,$
+\item $\_\_\ec\_\_,$
+\item $\_\_\ic\_\_,$
+\item $\_\_\synp\_\_,$ and
+\item $\_\_\intp\_\_.$
+\end{itemize}
+This means that, for instance, $P_1;P_2;P_3$ is parsed as
+$(P_1;P_2);P_3.$ The prefix operator is assumed to be right
+associative. 
+
+{\bf right assoc für prefix wirklich notwendig?}
+
+The non terminals  
+%
+\Gram{FORMULA}, 
+\Gram{OP-Name}, 
+\Gram{SORT},
+\Gram{TERM}, and
+\Gram{VAR}
+%
+of the above grammar refer to appendix C of the \CASL language summary
+\cite{CASL/Summary00}. The others are explained in the following
+sections.
+
+\subsubsection{Event Sets}\label{subsec:event_sets}
+
+\begin{Grammar}
+EVENT-SET ::= \ul{SORT}
+\end{Grammar}
+
+\subsubsection{Prefix and Multiple Prefix}
+
+\begin{Grammar}
+EVENT ::= \ul{TERM}
+\end{Grammar}
+
+\subsubsection{Predefined Macros}
+
+With the above operators one can define:
+\begin{enumerate}
+
+\item ``time-out operator'':
+$
+P \, [> Q := (P \ic Stop) \ec Q
+$
+%% Roscoe, S.80.
+
+\item ``boolean guard'':
+$
+F \ \& \ P := P < F > Stop
+$
+%% Roscoe, S.508
+
+\end{enumerate}
+
+These operators are added to the input syntax of \CC, but do not
+belong to its core language. Each occurence of them is replaced
+according to their above definition.
+
+These operators are parsed with the following precedences:
+
+\begin{enumerate}
+
+\item Time-out has the same precedence as the choice operators.
+
+\item Boolean guard has the same precedence as the conditional.
+
+\end{enumerate}
+
+\section{{\sc CSP-CASL} with Channels}\label{chap:csp_with_channels}
+
+A \Gram{CSP-CASL-CHAN-SPEC} consists of a data part, a channel part,
+and a process part:
+
+\begin{Grammar}
+CSP-CASL-CHAN-SPEC ::= data DATA-DEFN 
+                       channel/channels CHANNEL-DECL
+                       process PROCESS-DEFN
+                       end/
+\end{Grammar}
+
+\subsection{Channel Declaration}\label{sec:channel_decl}
+
+A channel declaration is a non-empty list of \Gram{CHANNEL-ITEM}s.
+
+\begin{Grammar}
+CHANNEL-DECL ::= CHANNEL-ITEM ; ... ; CHANNEL-ITEM ;/
+\end{Grammar}
+
+\begin{Grammar}
+CHANNEL-ITEM ::=  CHANNEL-NAME, ..., CHANNEL-NAME : \ul{SORT}             
+CHANNEL-NAME ::=  \ul{SIMPLE-ID}
+\end{Grammar}
+
+\subsection{Extensions in the Process Part}
+
+\subsubsection{Event sets}\label{subs:event_sets}
+
+\begin{Grammar}
+EVENT-SET ::=  ... 
+              | \{| CHANNEL-NAME |\}
+\end{Grammar}
+
+Assuming there is a \Gram{CHANNEL-ITEM}
+\begin{casl}\(c:s\)\end{casl} declared in the channel part,
+the \Gram{EVENT-SET}
+%
+\begin{center}
+\begin{casl}
+\( \{| c |\} \)
+\end{casl}
+\end{center} 
+within the process part of a \Gram{CSP-CASL-CHAN-SPEC} specification
+is translated into
+\begin{center}
+\begin{casl}
+\(CHANNEL\_c\) .
+\end{casl} 
+\end{center}
+
+\subsubsection{Prefix}\label{subs:prefix}
+
+{\sc CSP-CASL} with Channels extends the set of possible events
+\Gram{EVENT} by writing and reading on an (indexed) channel:
+
+\begin{Grammar}
+EVENT ::=   ... 
+          | CHANNEL-NAME ! \ul{TERM} 
+          | CHANNEL-NAME ? \ul{VAR} : \ul{SORT}
+\end{Grammar}
+
+\subsubsection{Linked Parallel}\label{subs:linkedParallel}
+
+\begin{Grammar}
+PROCESS ::=   ...
+            | PROCESS [ CHANNEL-NAME <-> CHANNEL-NAME ] PROCESS
+              ...
+\end{Grammar}
+
+\subsubsection{Renaming}\label{subs:renaming}
+
+\begin{Grammar}
+  CHANNEL-RENAMING ::= CHANNEL-NAME <- CHANNEL-NAME
+\end{Grammar}
+
+
+\begin{Grammar}
+CSP-RENAMING ::=   ...  
+                 | CHANNEL-RENAMING
+\end{Grammar}
+
+\newpage
+\section{Complete Concrete Syntax: without Channels}
+
+\begin{Grammar}
+CSP-CASL-SPEC ::=   data DATA-DEFN process PROCESS-DEFN end/
+
+DATA-DEFN     ::=   \ul{BASIC-SPEC}
+
+PROCESS-DEFN  ::=   PROCESS 
+
+PROCESS ::=         (PROCESS)
+                  | PROCESS-NAME
+                  | PROCESS-NAME (\ul{TERM})
+                  | Skip
+                  | Stop
+                  | EVENT -> PROCESS
+                  | [] \ul{VAR}: EVENT-SET -> PROCESS
+                  | PROCESS ; PROCESS
+                  | PROCESS [] PROCESS
+                  | PROCESS |~| PROCESS
+                  | PROCESS [| EVENT-SET |] PROCESS
+                  | PROCESS [ EVENT-Set || EVENT-SET ] PROCESS
+                  | PROCESS || PROCESS
+                  | PROCESS ||| PROCESS
+                  | PROCESS \back EVENT-SET
+                  | PROCESS [[CSP-RENAMING]]
+                  | if \ul{FORMULA} then PROCESS else PROCESS
+                  | PROCESS [> PROCESS
+                  | \ul{FORMULA} & PROCESS
+
+EVENT-SET ::=       \ul{SORT}
+
+EVENT ::=           \ul{TERM}
+
+CSP-RENAMING  ::=  SORT-RENAMING
+
+SORT-RENAMING ::=  \ul{OP-NAME}, ..., \ul{OP-NAME}
+
+
+PROCESS-NAME ::=    \ul{SIMPLE-ID}
+\end{Grammar}
+
+\newpage
+\section{Complete Concrete Syntax: with Channels}
+
+\begin{Grammar}
+CSP-CASL-C-SPEC ::= data DATA-DEFN 
+                    channel/channels CHANNEL-DECL
+                    process PROCESS-DEFN
+                    end/
+
+DATA-DEFN     ::=   \ul{BASIC-SPEC}
+
+CHANNEL-DECL  ::=   CHANNEL-ITEM ; ... ; CHANNEL-ITEM ;/
+
+CHANNEL-ITEM ::=    CHANNEL-NAME, ..., CHANNEL-NAME : \ul{SORT}             
+
+CHANNEL-NAME ::=    \ul{SIMPLE-ID}
+
+PROCESS-DEFN ::=    PROCESS 
+
+PROCESS ::=         (PROCESS)
+                  | PROCESS-NAME
+                  | PROCESS-NAME (\ul{TERM})
+                  | Skip
+                  | Stop
+                  | EVENT -> PROCESS
+                  | [] \ul{VAR}: EVENT-SET -> PROCESS
+                  | PROCESS ; PROCESS
+                  | PROCESS [] PROCESS
+                  | PROCESS |~| PROCESS
+                  | PROCESS [| EVENT-SET |] PROCESS
+                  | PROCESS [ EVENT-Set || EVENT-SET ] PROCESS
+                  | PROCESS || PROCESS
+                  | PROCESS ||| PROCESS
+                  | PROCESS \back EVENT-SET
+                  | PROCESS [[CSP-RENAMING]]
+                  | if \ul{FORMULA} then PROCESS else PROCESS
+                  | PROCESS [> PROCESS
+                  | \ul{FORMULA} & PROCESS
+                  | PROCESS [ CHANNEL-NAME <-> CHANNEL-NAME ] PROCESS
+
+
+EVENT-SET ::=       \ul{SORT}
+                  | \{| CHANNEL-NAME |\}
+
+EVENT ::=           \ul{TERM}
+                  | CHANNEL-NAME ! \ul{TERM} 
+                  | CHANNEL-NAME ? \ul{VAR} : \ul{SORT}
+
+CSP-RENAMING ::=    SORT-RENAMING
+                  | CHANNEL-RENAMING
+
+SORT-RENAMING ::=  \ul{OP-NAME}, ..., \ul{OP-NAME}
+
+CHANNEL-RENAMING ::= CHANNEL-NAME <- CHANNEL-NAME
+
+PROCESS-NAME ::=    \ul{SIMPLE-ID}
+\end{Grammar}
+
+
+\newpage
+\section{Complete Abstract Syntax: with Channels}
+
+\begin{Grammar}
+CSP-CASL-C-SPEC ::= cc_c_spec DATA-DEFN CHANNEL-DECL PROCESS-DEFN
+
+DATA-DEFN     ::=   \ul{BASIC-SPEC}
+
+CHANNEL-DECL  ::=   ch_items CHANNEL-ITEM*
+
+CHANNEL-ITEM  ::=   ch_decl CHANNEL-NAME+ \ul{SORT}
+
+CHANNEL-NAME ::=    \ul{SIMPLE-ID}
+
+PROCESS-DEFN ::=    basic PROCESS 
+
+PROCESS ::=         named_process PROCESS-NAME
+                  | generic_named_process PROCESS-NAME \ul{TERM}
+                  | skip
+                  | stop
+                  | prefix EVENT PROCESS
+                  | multiple_prefix \ul{VAR} EVENT-SET PROCESS
+                  | sequential PROCESS+ 
+                  | external_choice PROCESS+
+                  | internal_choice PROCESS+
+                  | alphabet_parallel PROCESS EVENT-SET PROCESS
+                  | general_parallel PROCESS EVENT-SET EVENT-SET PROCESS
+                  | synchronous_parallel PROCESS+
+                  | interleaving_parallel PROCESS+
+                  | hiding PROCESS EVENT-SET
+                  | renaming PROCESS CSP-RENAMING
+                  | conditional \ul{FORMULA} PROCESS PROCESS
+                  | channel_parallel PROCESS CHANNEL-NAME CHANNEL-NAME PROCESS
+
+EVENT-SET ::=       sort \ul{SORT}
+                  | channel CHANNEL-NAME
+
+EVENT ::=           term \ul{TERM}
+                  | send CHANNEL-NAME \ul{TERM} 
+                  | receive CHANNEL-NAME \ul{VAR} \ul{SORT}
+
+CSP-RENAMING ::=    SORT-RENAMING
+                  | CHANNEL-RENAMING
+
+SORT-RENAMING ::=  op_list \ul{OP-NAME}+
+
+CHANNEL-RENAMING ::= channel_renaming CHANNEL-NAME CHANNEL-NAME
+
+PROCESS-NAME ::=    \ul{SIMPLE-ID}
+\end{Grammar}
+
+
+\end{document}
+
+
+
+
+
+
+

@@ -1,0 +1,244 @@
+% CoFI Document style for LaTeX formatting
+% Version 1.2
+
+% Last updated: 29 Sep 1998 by Peter D. Mosses, pdmosses@brics.dk
+% - \email and \version defaults provided
+% Version 1.1
+% - \xspace inserted in several commands
+% - added {CHANGED}, \DELETED (but avoiding non-portable changebars)
+% - added \htmlenddocument (for suppressing body)
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cofidoc}
+
+\typeout{Package: 'cofidoc' v1.2} 
+
+
+% BIBLIOGRAPHY STYLE alpha (OPTIONALLY unsrt):
+
+\newcommand{\cofibibliographystyle}{alpha}
+\DeclareOption{unsrt}
+ {\renewcommand{\cofibibliographystyle}{unsrt}}
+\ProcessOptions
+\bibliographystyle{\cofibibliographystyle}
+
+
+% REQUIRED PACKAGES:
+
+\RequirePackage{latexsym}
+\RequirePackage{xspace}
+\RequirePackage{makeidx}
+\makeindex
+
+\RequirePackage{hyperlatex} % VERSION 2.3.1 OR LATER
+%ftp://ftp.brics.dk/Projects/CoFI/Formatting/CoFIdoc/hyperlatex.sty
+
+\RequirePackage{array}
+
+% FANCY HEADINGS:
+
+\RequirePackage{fancyheadings}
+\pagestyle{fancy}
+\addtolength{\headheight}{2pt}
+\addtolength{\headsep}{-2pt}
+\lhead{\fancyplain{}{\footnotesize\sl\rightmark}}
+\rhead{\fancyplain{}{\normalsize\rm\thepage}}
+\chead{}
+\lfoot{}
+\rfoot{}
+\cfoot{\fancyplain{\rm\thepage}{}}
+
+
+% EXTRA FRONT MATTER INFO:
+
+\newcommand{\email}[1]{\def\@email{#1}}
+\email{E-MAIL ADDRESS?}
+
+\newcommand{\version}[1]{\def\@version{#1}}
+\version{DRAFT}
+
+
+% THE LABELLING COMMANDS ARE FOR USE BY THE INSTALLER:
+
+\newcommand{\cofidocdirectory}{}
+\newcommand{\cofiWWWpath}{}
+\newcommand{\cofidoctype}{}
+\newcommand{\cofidoclabel}{}
+
+\newcommand{\cofilabel}[4]
+ {\renewcommand{\cofidocdirectory}{#1}
+  \renewcommand{\cofiWWWpath}{\cofiWWW}
+  \renewcommand{\cofidoctype}{#3}
+  \renewcommand{\cofidoclabel}{#4}}
+
+\cofilabel{uninstalled}{\cofiWWW}{Document}{not yet installed}
+
+\newcommand{\cofilabelTop}[1]
+ {\cofilabel{..}{.}{}{#1}}
+
+\newcommand{\cofilabelNote}[1]
+ {\cofilabel{Notes}{../..}{Note}{#1}}
+
+\newcommand{\cofilabelDocument}[1]
+ {\cofilabel{Documents}{../..}{Document}{#1}}
+
+\newcommand{\cofilabelCASLDocument}[1]
+ {\cofilabel{Documents}{../../..}{Document}{CASL/#1}}
+
+\newcommand{\cofilabelTentativeDocument}[1]
+ {\cofilabel{Documents/Tentative}{../../..}{Tentative Document}{#1}}
+
+
+% THE SUMMARY IS GIVEN USING THE ABSTRACT ENVIRONMENT:
+
+\renewenvironment{abstract}
+ {\section*{Abstract}
+  \small\begin{quote}}
+ {\end{quote}}
+
+
+% FOR TRUNCATING HTML FORMATTING:
+
+\newcommand{\htmlenddocument}{}
+
+
+% FOR INDICATING CHANGED AND DELETED PARTS:
+% [OPTIONAL ARGUMENTS ARE FOR CONCISE EXPLANATION]
+
+\newcounter{CHANGE}
+
+\newenvironment{CHANGED}[1][]
+ {\marginpar{\tiny{[CHANGED:]}}%
+  \stepcounter{CHANGE}\label{CHANGE-\theCHANGE}%
+  \glossary{[\protect\ref{CHANGE-\theCHANGE}:] #1}}
+ {\marginpar{\tiny{[]}}}
+
+\newcommand{\DELETED}[1][]
+ {\marginpar{\tiny[DELETED]}%
+  \stepcounter{CHANGE}\label{CHANGE-\theCHANGE}%
+  \glossary{[\protect\ref{CHANGE-\theCHANGE}:] #1}}
+
+
+% \begin{THECHANGES}\input{JOBNAME.gly}\end{THECHANGES}
+% where JOBNAME.gly is simply a copy of JOBNAME.glo
+
+\newenvironment{THECHANGES}
+ {\newcommand{\glossaryentry}[2]
+   {\item[Page~##2] {##1}}
+  \begin{description}}
+ {\end{description}}
+
+\newcommand{\makeCHANGES}{\makeglossary}
+
+
+% TABLE OF CONTENTS FORMATTING:
+
+\setcounter{tocdepth}{2}	% MAY BE RESET BY USERS
+
+\renewcommand{\@pnumwidth}{25pt}
+
+
+% USEFUL COMMANDS:
+
+\newcommand{\CoFI}{\textrm{\textsc{CoFI}}\xspace}
+\newcommand{\CASL}{\textrm{\textsc{Casl}}\xspace}
+\newcommand{\cofiWWW}{http://www.brics.dk/Projects/CoFI\xspace}
+\newcommand{\cofiFTP}{ftp://ftp.brics.dk/Projects/CoFI\xspace}
+
+\newcommand{\URL}[1]{#1}			% GENERATES LINK IN HTML
+\newcommand{\footlink}[2]{#1\footnote{#2}}	% GENERATES LINK IN HTML
+
+\newcommand{\Meta}[1]{\mbox{$\it#1$}}
+\newcommand{\Metasub}[2]{\mbox{$\it#1_{#2}$}}
+
+
+% TITLE FORMATTING:
+
+\def\@maketitle{% changed from article.cls to incorporate CoFI stuff
+  \newpage
+  \null
+  \vskip 2em%
+  \begin{center}%
+    {\LARGE \@title\par}
+    \vskip 1.5em%
+    \framebox{\begin{tabular}{c}\normalsize\bf 
+      CoFI\xspace\cofidoctype: \cofidoclabel\\
+      {Version: \@version}\quad\hfill\quad\@date\end{tabular}}\par%
+    \vskip 1.5em%
+    {\large
+      \lineskip .5em%
+      \begin{tabular}[t]{c}%
+        \@author \and
+        {\normalsize\it E-mail address for comments: \@email}
+      \end{tabular}\\
+      \normalsize\begin{tabular}[t]{c}%
+        \CoFI: The Common Framework Initiative\\
+        {\cofiWWW}
+      \end{tabular}\par}%
+  \end{center}%
+  \par
+  \vskip 1.5em
+  \begin{center}
+  \emph{This document is available on
+  \footlink{WWW}{\cofiWWW/\cofidocdirectory/\cofidoclabel/},
+  and by
+  \footlink{FTP}{\cofiFTP/\cofidocdirectory/\cofidoclabel/}.}
+  \end{center}}
+
+
+% GENERATE TOC ENTRY FOR INDEX:
+
+\renewenvironment{theindex}
+               {\if@twocolumn
+                  \@restonecolfalse
+                \else
+                  \@restonecoltrue
+                \fi
+                \columnseprule \z@
+                \columnsep 35\p@
+                \twocolumn[\section*{\indexname}]%
+\ifx\chapter\relax
+\addcontentsline{toc}{section}{Index}%
+\else
+\addcontentsline{toc}{chapter}{Index}%
+\fi
+                \@mkboth{\MakeUppercase\indexname}%
+                        {\MakeUppercase\indexname}%
+                \thispagestyle{plain}\parindent\z@
+                \parskip\z@ \@plus .3\p@\relax
+                \let\item\@idxitem}
+               {\if@restonecol\onecolumn\else\clearpage\fi}
+
+
+% FORMATTING WITH BLANK LINES BETWEEN PARAGRAPHS:
+
+% This is PARSKIP.STY by H.Partl, TU Wien, as of 19 Jan 1989.
+
+% Document Style Option to be used with any style and with any size.
+% It produces the following Paragraph Layout:
+%    Zero Parindent and non-zero Parskip. The stretchable glue in \parskip
+%    helps LaTeX in finding the best place for page breaks.
+
+\parskip=0.5\baselineskip \advance\parskip by 0pt plus 2pt
+\parindent=\z@
+
+% To accompany this, the vertical spacing in the list environments is changed
+% to use the same as \parskip in all relevant places (for normalsize only):
+%   \parsep = \parskip
+%   \itemsep = \z@ % add nothing to \parskip between items
+%   \topsep = \z@ % add nothing to \parskip before first item
+
+\def\@listI{\leftmargin\leftmargini
+   \topsep\z@ \parsep\parskip \itemsep\z@}
+\let\@listi\@listI
+\@listi
+
+\def\@listii{\leftmargin\leftmarginii
+   \labelwidth\leftmarginii\advance\labelwidth-\labelsep
+   \topsep\z@ \parsep\parskip \itemsep\z@}
+
+\def\@listiii{\leftmargin\leftmarginiii
+    \labelwidth\leftmarginiii\advance\labelwidth-\labelsep
+    \topsep\z@ \parsep\parskip \itemsep\z@}
+
+% Note that listiv, listv and listvi don't change vertical parameters.

@@ -1,0 +1,220 @@
+% CASL package for LaTeX formatting of CASL specifications
+
+\typeout{Package: 'casl' v1.3 - for CASL v1.0}
+
+% Last updated: 30 Nov 1998 by Peter D. Mosses, mosses@csl.sri.com
+% Version 1.3:
+% - documentation CoFI Note C-2 updated to v0.3
+% - \math, \text provided; \Math, \Text removed
+% Version 1.2:
+% - \mbox{...} inserted in \margin
+% - Usage of \[...\] changed, {Lines} removed
+% - \footlinkindex removed
+% Version 1.1:
+% - Removed implicit \[...\] around #2 in some abstract commands
+% - Adjusted italics
+% Version 1.0:
+% - Major revision, see CoFI Note C-2
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{casl}
+
+
+% DEFAULT INDENTATION IN LISTS OF ITEMS
+
+\newcommand{\Margin}{~~~~}
+
+
+% PAGE-BREAKING IN SPECS
+
+\newif\ifsamepage		
+\samepagefalse
+
+
+% THE FOLLOWING COMMANDS MIGHT BE ALREADY DEFINED BY OTHER PACKAGES:
+
+\providecommand{\text}[1]	{\)#1\(}
+\providecommand{\math}[1]	{\(#1\)}
+
+\providecommand{\M}		{\Margin}
+\providecommand{\tfun}		{\rightarrow}
+\providecommand{\pfun}		{\mathrel{\rightarrow?}}
+\providecommand{\imp}		{\Rightarrow}
+\providecommand{\eeq}		{\stackrel{e}{=}}
+\providecommand{\land}		{\mathrel{\wedge}}
+\providecommand{\lor}		{\mathrel{\vee}}
+
+% \caslInit OVERWRITES SOME COMMANDS:
+
+\newcommand{\caslInit}
+ {\everymath{\it}%
+  \renewcommand{\.}	{\mbox{ $\scriptstyle\bullet$ }}%
+  \renewcommand{\*}	{\times}%
+  \renewcommand{\|}	{\mid}%
+  \renewcommand{\iff}	{\Leftrightarrow}%
+  \renewcommand{\[}
+   {\begingroup
+    \ifmmode
+      \renewcommand{\]}{\end{array}\endgroup}%
+      \begin{array}[t]{@{}l@{}l@{}l@{}}%
+    \else
+      \renewcommand{\]}{\end{tabular}\endgroup}%
+      \begin{tabular}[t]{@{}l@{}l@{}l@{}}%
+    \fi}%
+  \renewcommand{\M}	{\Margin}%
+  \renewcommand{\tfun}	{\rightarrow}%
+  \renewcommand{\pfun}	{\mathrel{\rightarrow?}}%
+  \renewcommand{\imp}	{\Rightarrow}%
+  \renewcommand{\eeq}	{\stackrel{e}{=}}%
+  \renewcommand{\land}	{\mathrel{\wedge}}%
+  \renewcommand{\lor}	{\mathrel{\vee}}%
+  \ifsamepage\samepage\fi}
+
+
+% CASL ENVIRONMENTS:
+
+\newenvironment{casl}	{\caslInit}{}
+
+\newenvironment{BasicSpec}[1][\Pred]
+ {\caslInit\begin{Items}[#1]}
+ {\end{Items}}
+
+\newenvironment{SpecDefn}[2][\Spec]	
+ {\medskip\caslInit\begin{Items}[\Group]\item[#1{}] \SpecName{#2}}
+ {\end{Items}}
+
+\newcommand{\SpecName}[1]{\textmd{\textsc{#1}}}
+
+
+% THE FOLLOWING ARE FOR USE INSIDE THE ABOVE ENVIRONMENTS :
+
+% ITEMS:
+
+\newenvironment{Items}[1][\Margin]
+ {\begin{list}{}
+  {\renewcommand{\makelabel}[1]{##1\hfil}
+   \settowidth{\labelwidth}{#1}
+   \setlength{\leftmargin}{\labelwidth}
+   \addtolength{\leftmargin}{\labelsep}
+   \setlength{\topsep}{0pt}
+   \setlength{\itemsep}{0pt}
+   \setlength{\parsep}{0pt}
+   \setlength{\parskip}{0pt}}}
+ {\end{list}}
+  
+\newcommand{\I}[1]{\item[#1]}
+
+% FOR USE IN TEXT AND MATH:
+
+\newcommand{\Sort}	{\textbf{sort}}
+\newcommand{\Sorts}	{\textbf{sorts}}
+
+\newcommand{\Assoc}	{\textbf{assoc}}
+\newcommand{\Comm}	{\textbf{comm}}
+\newcommand{\Idem}	{\textbf{idem}}
+\newcommand{\Unit}	{\textbf{unit}}
+
+\newcommand{\Bullet}	{\.}
+
+% SYMBOLS AND KEYWORDS FOR USE ONLY IN MATH:
+
+\newcommand{\Prod}	{\*}
+\newcommand{\Total}	{\tfun}
+\newcommand{\Partial}	{\pfun}
+\newcommand{\MapsTo}	{\mapsto}
+
+\newcommand{\Forall}	{\forall}
+\newcommand{\Exists}	{\exists}
+\newcommand{\ExistsUnique}{\exists!}
+
+\newcommand{\Equiv}	{\iff}
+\newcommand{\Implies}	{\imp}
+\newcommand{\Conj}	{\land}
+\newcommand{\Disj}	{\lor}
+\newcommand{\Not}	{\neg}
+\newcommand{\ExistlEq}	{\eeq}
+\newcommand{\In}	{\in}
+
+\newcommand{\IF}	{\mathit{if}}
+\newcommand{\WHEN}	{\mathit{when}}
+\newcommand{\ELSE}	{\mathit{else}}
+\newcommand{\DEF}	{\mathit{def}}
+\newcommand{\AS}	{\mathit{as}}
+\newcommand{\TRUE}	{\mathit{true}}
+\newcommand{\FALSE}	{\mathit{false}}
+\newcommand{\NOT}	{\Not}
+\newcommand{\PRED}	{\mathit{pred}}
+\newcommand{\OP}	{\mathit{op}}
+\newcommand{\VAR}	{\mathit{var}}
+
+% SYMBOLS AND KEYWORDS FOR USE IN TEXT:
+
+\newcommand{\Comment}	{\textbf{\%\%}}
+\newcommand{\Group}	{\textbf{\{}}
+\newcommand{\EndGroup}	{\textbf{\}}}
+
+\newcommand{\Op}	{\textbf{op}}
+\newcommand{\Ops}	{\textbf{ops}}
+\newcommand{\Pred}	{\textbf{pred}}
+\newcommand{\Preds}	{\textbf{preds}}
+\newcommand{\Free}	{\textbf{free}}
+\newcommand{\Generated}	{\textbf{generated}}
+\newcommand{\Type}	{\textbf{type}}
+\newcommand{\Types}	{\textbf{types}}
+\newcommand{\Var}	{\textbf{var}}
+\newcommand{\Vars}	{\textbf{vars}}
+\newcommand{\Axiom}	{\textbf{axiom}}
+\newcommand{\Axioms}	{\textbf{axioms}}
+
+\newcommand{\Spec}	{\textbf{spec}}
+\newcommand{\Hide}	{\textbf{hide}}
+\newcommand{\Reveal}	{\textbf{reveal}}
+\newcommand{\With}	{\textbf{with}}
+\newcommand{\Then}	{\textbf{then}}
+\newcommand{\And}	{\textbf{and}}
+\newcommand{\Local}	{\textbf{local}}
+\newcommand{\Within}	{\textbf{within}}
+\newcommand{\Closed}	{\textbf{closed}}
+\newcommand{\End}	{\textbf{end}}
+
+\newcommand{\Imports}	{\textbf{imports}}
+\newcommand{\Fit}	{\textbf{fit}}
+\newcommand{\View}	{\textbf{view}}
+\newcommand{\From}	{\textbf{from}}
+\newcommand{\To}	{\textbf{to}}
+
+\newcommand{\Arch}	{\textbf{arch}}
+\newcommand{\Units}	{\textbf{units}}
+\newcommand{\Given}	{\textbf{given}}
+\newcommand{\Result}	{\textbf{result}}
+
+\newcommand{\Library}	{\textbf{library}}
+\newcommand{\Get}	{\textbf{get}}
+\newcommand{\Version}	{\textbf{version}}
+
+% ABSTRACT SYNTAX CONSTRUCTS:
+
+\newcommand{\SortDecl}[1]	{\(#1\)}
+\newcommand{\SubsortDecl}[2]	{\(#1 < #2\)}
+\newcommand{\SubsortDefn}[3]	{\(#1 = \{~#2~\Bullet~#3~\}\)}
+\newcommand{\IsoDecl}[1]	{\(#1\)}
+\newcommand{\OpDecl}[2]		{\(#1 : #2\)}
+\newcommand{\OpDefn}[3]		{\(#1 #2~=~#3\)}
+\newcommand{\PredDecl}[2]	{\(#1 : #2\)}
+\newcommand{\PredDefn}[3]	{\(#1 #2~\Equiv~#3\)}
+\newcommand{\VarDecl}[2]	{\(#1 : #2\)}
+\newcommand{\Formula}[1]	{\(#1\)}
+\newcommand{\Term}[1]		{\(#1\)}
+\newcommand{\Symb}[1]		{\(#1\)}
+\newcommand{\SymbMap}[2]	{\(#1~\MapsTo~#2\)}
+\newcommand{\DatatypeDecl}[2]	{\(#1~::=~#2\)}
+\newcommand{\Alternatives}[1]	{\(#1\)}
+\newcommand{\Construct}[1]	{\(#1\)}
+\newcommand{\Components}[1]	{\(#1\)}
+\newcommand{\Subsorts}		{\Sorts}
+\newcommand{\Subsort}		{\Sort}
+\newcommand{\UnitDecl}[2]	{\(#1 : #2\)}
+\newcommand{\UnitDefn}[2]	{\(#1~=~#2\)}
+\newcommand{\UnitName}[1]	{\(#1\)}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
