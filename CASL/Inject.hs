@@ -36,9 +36,9 @@ injTerm mf t = case t of
    Application o@(Qual_op_name _ ty _) args ps -> 
        let newArgs = map (injTerm mf) args in
        Application o (zipWith (inject ps) newArgs $ args_OP_TYPE ty) ps
-   Sorted_term st s ps -> case injTerm mf st of 
-                          Simple_id var -> Qual_var var s ps
-                          r -> inject ps r s
+   Sorted_term st s ps -> let 
+       newT = injTerm mf st 
+       in inject ps newT s
    Cast st s ps -> let
        newT = injTerm mf st
        in Cast newT s ps
