@@ -98,6 +98,22 @@ x : tuple3 r s t %(var)%
   expected: b -> c
      found: a -> b
 
+*** Hint 38.17, in type of '(var x : t, var x : t)'
+  type 't * t' (38.14)
+  is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
+
+*** Hint 38.17, in type of '(var x : t, var x : tuple3 r s t)'
+  type 't * tuple3 r s t' (38.14)
+  is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
+
+*** Hint 38.17, in type of '(var x : tuple3 r s t, var x : t)'
+  type 'tuple3 r s t * t' (11.9)
+  is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
+
+*** Hint 38.17, in type of '(var x : tuple3 r s t, var x : tuple3 r s t)'
+  type 'tuple3 r s t * tuple3 r s t' (11.9)
+  is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
+
 *** Hint 38.19, in type of '(fun __=__[_var_3_v3] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (var x : t, var x : tuple3 r s t)'
   typename 't' (11.20)

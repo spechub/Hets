@@ -30,3 +30,8 @@ true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 program (op f : a -> a)(v : a @ (var _ : a)) = (var v : a) %(pe_f)%
+%% Diagnostics -----------------------------------------------------------
+*** Hint 5.12, in type of 'v : a @ (var _ : a)'
+  typename 'a' (5.16)
+  is not unifiable with type 'Unit ->? _var_2_v2' (5.12)
+

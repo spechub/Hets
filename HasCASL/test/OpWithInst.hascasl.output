@@ -34,3 +34,8 @@ true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (op __=[s]__[s] : forall a : Type . a_v-1 * a_v-1 -> Unit)
   (op a : s, op a : s)
+%% Diagnostics -----------------------------------------------------------
+*** Hint 6.47, in type of '(op a : s, op a : s)'
+  type 's * s' (2.8)
+  is not unifiable with type 'Unit ->? _var_5_v5 * _var_6_v6' (6.16)
+

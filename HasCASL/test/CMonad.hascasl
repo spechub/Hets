@@ -34,6 +34,6 @@ var g : a -> b; var x : m a
 
 . fmap g = map g
 
-. fmap g x = x bind \ y: a . return (g y)
+. fmap g x = x bind \ y: a .! return (g y)
 
 

@@ -78,7 +78,10 @@ checkList [] [] = return [(eps, noC, [], [])]
 checkList (ty : rty) (trm : rt) = do 
       fts <- infer ty trm >>= reduce False 
       combs <- mapM ( \ (sf, cs, tyf, tf) -> do
+                      vs <- gets localVars
+                      putLocalVars $ Map.map (subst sf) vs
                       rts <- checkList (map (fmap (subst sf)) rty) rt
+                      putLocalVars vs
                       return $ map ( \ (sr, cr, tys, tts) ->
                              (compSubst sf sr, 
                               substC sr cs `joinC` cr,
@@ -168,20 +171,23 @@ inferAppl ps mt t1 t2 = do
                    >>= reduce False
             combs <- mapM ( \ (sf, cf, _, tf) -> do 
                 let sfty = subst sf aty
-                args <- infer (Just sfty) t2 >>= reduce False
-{-                args2 <- infer (Just $  FunType logicalType 
+                vs <- gets localVars
+                putLocalVars $ Map.map (subst sf) vs
+                args1 <- infer (Just sfty) t2 >>= reduce False
+                putLocalVars $ Map.map (subst sf) vs            
+                args2 <- infer (Just $  FunType logicalType 
                                          PFunArr sfty ps) t2 >>= reduce False
-                let args = args1 ++ args2
--}
-                combs2 <- mapM ( \ (sa, ca, _, ta) -> do
-                    let sr = compSubst sf sa
-                    return [(sr, joinC ca $ substC sa cf, subst sr rty, 
+                putLocalVars vs
+                let args = args2 ++ args1
+                    combs2 = map ( \ (sa, ca, _, ta) ->
+                        let sr = compSubst sf sa in
+                          [(sr, joinC ca $ substC sa cf, subst sr rty, 
                                      ApplTerm tf ta ps)]) args
                 return $ concat combs2) ops
             let res = concat combs 
             if null res then 
                addDiags [case mt of 
-                       Nothing -> mkDiag Error
+                       Nothing -> mkDiag Hint
                                   "untypable application" origAppl
                        Just ty -> mkDiag Hint 
                             ("untypable application (with result type: "

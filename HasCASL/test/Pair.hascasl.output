@@ -100,3 +100,19 @@ program (op g[_var_17_v17; _var_19_v19]
             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
              (var a : _var_17_v17, var b : _var_19_v19))
           = (var a : _var_17_v17) %(pe_g)%
+%% Diagnostics -----------------------------------------------------------
+*** Hint 4.39, in type of '(var a : a, var b : b)'
+  type 'a * b' (4.11)
+  is not unifiable with type 'Unit ->? _var_8_v8 * _var_9_v9' (2.16)
+
+*** Hint 8.17, in type of '(var a : _var_14_v14, var b : _var_15_v15)'
+  type '_var_14_v14 * _var_15_v15' (8.17)
+  is not unifiable with type 'Unit ->? _var_25_v25 * _var_26_v26' (2.16)
+
+*** Hint 8.11, in type of '(op Pair[_var_28_v28; _var_29_v29]
+ : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)'
+  type 'Pair _var_28_v28 _var_29_v29' (2.11)
+  is not unifiable with type 'Unit ->? Pair _var_18_v18 _var_19_v19' (6.8)
+
+*** Hint 8.11, untypable application (with result type: Unit ->? Pair _var_18_v18 _var_19_v19)
+ 'Pair(var a : _var_14_v14, var b : _var_15_v15)'

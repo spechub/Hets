@@ -72,5 +72,33 @@ program (op b : s) : s = (op a : s) %(pe_b)%
    (op snd : s * t -> t)((op x : s) : s, (op y : t) : t) as
        t) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
+*** Hint 3.14, in type of '(var x : _var_1_v1, var y : _var_2_v2)'
+  type '_var_1_v1 * _var_2_v2' (3.14)
+  is not unifiable with type 'Unit ->? _var_5_v5 * _var_6_v6' (2.10)
+
+*** Hint 5.15, in type of '(var x : _var_7_v7, var y : _var_8_v8)'
+  type '_var_7_v7 * _var_8_v8' (5.15)
+  is not unifiable with type 'Unit ->? _var_11_v11 * _var_12_v12' (2.10)
+
+*** Hint 6.15, in type of '(var x : _var_13_v13, var y : _var_14_v14)'
+  type '_var_13_v13 * _var_14_v14' (6.15)
+  is not unifiable with type 'Unit ->? _var_17_v17 * _var_18_v18' (2.10)
+
+*** Hint 7.15, in type of '(var x : _var_19_v19, var y : _var_20_v20)'
+  type '_var_19_v19 * _var_20_v20' (7.15)
+  is not unifiable with type 'Unit ->? _var_22_v22 * _var_23_v23' (2.10)
+
+*** Hint 10.14, in type of '(var x : _var_24_v24, var y : _var_25_v25)'
+  type '_var_24_v24 * _var_25_v25' (10.14)
+  is not unifiable with type 'Unit ->? _var_27_v27 * _var_28_v28' (2.10)
+
+*** Hint 12.14, in type of '(var x : s, var y : t)'
+  type 's * t' (12.18)
+  is not unifiable with type 'Unit ->? _var_30_v30 * _var_31_v31' (2.10)
+
 *** Error 14.10, illegal toplevel pattern '(var x : s, var y : s)'
 *** Warning 17.9, illegal lhs pattern '(var b : s)'
+*** Hint 23.17, in type of '((op x : s) : s, (op y : t) : t)'
+  type 's * t' (23.21)
+  is not unifiable with type 'Unit ->? _var_35_v35 * _var_36_v36' (2.10)
+
