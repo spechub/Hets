@@ -39,6 +39,7 @@
 
 module GlobalEnv where
 import Id
+import AS_Annotation
 import Grothendieck
 import Logic
 import AS_Structured
@@ -54,31 +55,31 @@ data SpecEnv = Basic_specEnv G_sign G_l_sentence_list
 	  | TranslationEnv SpecEnv G_morphism
 	  | ReductionEnv SpecEnv G_morphism
 	  | UnionEnv [SpecEnv]
-	  | ExtensionEnv [(SpecEnv,Anno)]
+	  | ExtensionEnv [(SpecEnv,Annotation)]
 	  | Free_spec SpecEnv
           | Cofree SpecEnv  -- covers CoCASL as well
 	  | Local_spec SpecEnv SpecEnv G_morphism
 	  | Closed_spec SpecEnv 
 	  | Spec_instEnv {
-                Name :: SPEC_NAME,
-                Body :: SpecEnv,
-                FittingMorphism :: G_morphism,
-                ActualParams :: [SpecEnv]
+                name :: SPEC_NAME,
+                body :: SpecEnv,
+                fittingMorphism :: G_morphism,
+                actualParams :: [SpecEnv]
               }
-            deriving (Show,Eq)
+           -- deriving (Show,Eq)
 
 -- Add flattened Env at the outer level
 -- for purposes of a quick static analysis
 data SpecLenv = SpecLenv {
-                    FlattenedEnv :: G_local_env,
-                    HiddenEnv :: G_local_env,
-                    StructuredEnv :: SpecEnv
+                    flattenedEnv :: G_local_env,
+                    hiddenEnv :: G_local_env,
+                    structuredEnv :: SpecEnv
                   }
                           
 data GenericityEnv = GenericityEnv {
-                       AllImports :: SpecLenv, 
-                       FormalParams :: [SpecLenv], 
-                       FlattenedParams :: G_local_env
+                       allImports :: SpecLenv, 
+                       formalParams :: [SpecLenv], 
+                       flattenedParams :: G_local_env
                   }
 
 -- Follows the semantic domains of the architectural semantics
@@ -97,19 +98,19 @@ data GlobalEntry =
   | ArchSpecDefnEnv ArchSig
   | UnitSpecDefnEnv UnitSig
 
-data GlobalEnv = GlobalEnv (Table SimpleId GlobalEntry) [Anno]
+data GlobalEnv = GlobalEnv (Table SIMPLE_ID GlobalEntry) [Annotation]
 emptyGlobalEnv = []
 
 
 -- Flattened global environment
 data FSign = FSign {
-        FFlattenedEnv, FHiddenEnv :: G_local_env,
-        Axioms :: G_l_sentence_list
+        fFlattenedEnv, fHiddenEnv :: G_local_env,
+        fAxioms :: G_l_sentence_list
       }
 data FGenericityEnv  = FGenericityEnv {
-                         FAllImports :: FSign, 
-                         FFormalParams :: FSign,
-                         FFlattenedParams :: FSign
+                         fAllImports :: FSign, 
+                         fFormalParams :: FSign,
+                         fFlattenedParams :: FSign
              }
 
 data FGlobalEntry = 
@@ -118,7 +119,7 @@ data FGlobalEntry =
    | FArchSpecDefnEnv ArchSig
    | FUnitSpecDefnEnv UnitSig
 			
-data FGlobalEnv = FGlobalEnv (Table SimpleId FGlobalEntry) [Anno]
+data FGlobalEnv = FGlobalEnv (Table SIMPLE_ID FGlobalEntry) [Annotation]
 emptyFGlobalEnv = []
 
 

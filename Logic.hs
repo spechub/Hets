@@ -34,7 +34,7 @@
 
    T. Mossakowski, B. Klin:
    Institution Independent Static Analysis for CASL
-   15h WADT 2001, LNCS
+   15h WADT 2001, LNCS 2267, p. 221-237, 2002.
    (what is needed for static anaylsis)
 
    S. Autexier and T. Mossakowski

@@ -4,6 +4,8 @@ import Char
 -- identifiers, fixed for all logics
 
 type Pos = (Int, Int) -- line, column
+
+nullPos :: Pos = (0,0)
  
 type Region = (Pos,Pos)
  
@@ -52,3 +54,8 @@ showId (Id ts is) =
 
 instance Show Id where
     showsPrec _ = showId 
+
+
+-- Simple Ids
+
+data SIMPLE_ID = SimpleId String Pos deriving (Eq, Show)
