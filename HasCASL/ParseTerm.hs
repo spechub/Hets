@@ -117,19 +117,16 @@ mkBraces :: AParser a -> ([a] -> [Pos] -> b)
        -> AParser b
 mkBraces p c = bracketParser p oBraceT cBraceT anComma c
 
-data TokenMode = AnyToken
-               | NoToken String   
+type TokenMode = [String]   
 
 -- [...] may contain types or ids
 aToken :: TokenMode -> AParser Token
 aToken b = pToken (scanQuotedChar <|> scanDotWords 
 		   <|> scanDigit <|> scanWords <|> placeS <|> 
-		   case b of 
-		   AnyToken -> scanSigns 
-		   NoToken s -> reserved [s] scanSigns)
+		   reserved b scanSigns)
 
 idToken :: AParser Token
-idToken = aToken AnyToken
+idToken = aToken []
 
 primTypeOrId, typeOrId :: AParser Type
 primTypeOrId = fmap TypeToken idToken
@@ -367,7 +364,7 @@ asPattern b =
          <|> return v
 
 pattern :: AParser Pattern
-pattern = asPattern AnyToken
+pattern = asPattern []
 
 -----------------------------------------------------------------------------
 -- instOpId
@@ -403,9 +400,10 @@ typeScheme = do f <- forallT
 
 tToken :: AParser Token
 tToken = pToken(scanFloat <|> scanString 
-		       <|> scanQuotedChar <|> scanDotWords 
-		       <|> reserved [ifS] scanWords 
-		       <|> scanSigns <|> placeS <?> "id/literal" )
+		<|> scanQuotedChar <|> scanDotWords 
+		<|> reserved [ifS] scanWords 
+		<|> reserved [barS] scanSigns 
+		<|> placeS <?> "id/literal" )
 
 termToken :: AParser Term
 termToken = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken)
@@ -587,7 +585,7 @@ caseTerm b =
            do c <- asKey caseS
 	      t <- term
 	      o <- asKey ofS
-	      (ts, ps) <- patternTermPair (NoToken funS) b funS 
+	      (ts, ps) <- patternTermPair ([funS]) b funS 
 			  `separatedBy` barT
 	      return (CaseTerm t ts (map tokPos (c:o:ps)))
 
@@ -598,7 +596,7 @@ caseTerm b =
 letTerm :: TypeMode -> AParser Term
 letTerm b = 
           do l <- asKey letS
-	     (es, ps) <- patternTermPair (NoToken equalS) NoIn equalS 
+	     (es, ps) <- patternTermPair ([equalS]) NoIn equalS 
 			 `separatedBy` anSemi 
 	     i <- asKey inS
 	     t <- mixTerm b

@@ -475,7 +475,7 @@ freeDatatype =   do f <- asKey freeS
                     FreeDatatype ds ps <- dataItems
                     return (FreeDatatype ds (tokPos f : ps))
 
-progItems = hasCaslItemList programS (patternTermPair (NoToken equalS) 
+progItems = hasCaslItemList programS (patternTermPair ([equalS]) 
 				      WithIn equalS) ProgItems
 
 axiomItems =     do a <- pluralKeyword axiomS
