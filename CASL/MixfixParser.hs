@@ -22,10 +22,8 @@ import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
 import qualified Common.Lib.Set as Set
-import Common.Lexer
-import Control.Monad
-import Common.Lib.Parsec
 import Common.Earley
+import Common.ConvertLiteral
 import CASL.ShowMixfix 
 -- import Control.Exception (assert)
 
@@ -165,8 +163,8 @@ iterateCharts g ids maybeFormula terms c =
 		    c2 = self (tail terms) 
 			 (oneStep (tNew, varTok {tokPos = posOfTerm tNew}))
 		in mixDiags mds c2
-            Mixfix_token t -> let (ds1, trm) = 
-				      convertMixfixToken (literal_annos g) t
+            Mixfix_token t -> let (ds1, trm) = convertMixfixToken 
+				     (literal_annos g) asAppl Mixfix_token t
 			          c2 = self (tail terms) $ oneStep $ 
 				       case trm of 
 						Mixfix_token tok -> (trm, tok)
@@ -277,81 +275,3 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
 	                ("not a formula: " ++ showTerm t "")
 			(posOfTerm t)
        f -> return f
-
--- --------------------------------------------------------------- 
--- convert literals 
--- --------------------------------------------------------------- 
-
-makeStringTerm :: Id -> Id -> Token -> TERM
-makeStringTerm c f tok = 
-  makeStrTerm (incSourceColumn sp 1) str
-  where 
-  sp = tokPos tok
-  str = init (tail (tokStr tok))
-  makeStrTerm p l = 
-    if null l then asAppl c [] [p]
-    else let (hd, tl) = splitString caslChar l
-         in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p] [] []) [] [p], 
-		      makeStrTerm (incSourceColumn p $ length hd) tl] [p]
-
-makeNumberTerm :: Id -> Token -> TERM
-makeNumberTerm f t@(Token n p) =
-    case n of
-           [] -> error "makeNumberTerm"
-	   [_] -> asAppl (Id [t] [] []) [] [p]
-	   hd:tl -> asAppl f [asAppl (Id [Token [hd] p] [] []) [] [p], 
-			      makeNumberTerm f (Token tl 
-						(incSourceColumn p 1))] [p]
-
-makeFraction :: Id -> Id -> Token -> TERM
-makeFraction f d t@(Token s p) = 
-    let (n, r) = span (\c -> c /= '.') s
-        dotOffset = length n 
-    in if null r then makeNumberTerm f t
-       else asAppl d [makeNumberTerm f (Token n p),
-		      makeNumberTerm f (Token (tail r) 
-					(incSourceColumn p $ dotOffset + 1))]
-            [incSourceColumn p dotOffset]
-
-makeSignedNumber :: Id -> Token -> TERM
-makeSignedNumber f t@(Token n p) = 
-  case n of 
-  [] -> error "makeSignedNumber"
-  hd:tl ->   
-    if hd == '-' || hd == '+' then
-       asAppl (Id [Token [hd] p] [] []) 
-		  [makeNumberTerm f (Token tl $ incSourceColumn p 1)] [p]
-    else makeNumberTerm f t
-
-makeFloatTerm :: Id -> Id -> Id -> Token -> TERM
-makeFloatTerm f d e t@(Token s p) = 
-    let (m, r) = span (\c -> c /= 'E') s
-        offset = length m
-    in if null r then makeFraction f d t
-       else asAppl e [makeFraction f d (Token m p),
-		      makeSignedNumber f (Token (tail r) 
-					  $ incSourceColumn p (offset + 1))]
-		[incSourceColumn p offset]
-
-
--- analyse Mixfix_token
-convertMixfixToken::  LiteralAnnos -> Token  -> ([Diagnosis], TERM) 
-convertMixfixToken ga t = 
-     if isString t then 
-	case string_lit ga of
-	Nothing -> err "string"
-        Just (c, f) -> ([], makeStringTerm c f t)
-     else if isNumber t then
-	  case number_lit ga of
-	  Nothing -> err "number"
-	  Just f -> if isFloating t then
-		        case float_lit ga of
-			Nothing -> err "floating"
-			Just (d, e) -> ([], makeFloatTerm f d e t)
-		    else ([], makeNumberTerm f t)
-     else ([], te)
-    where te =  Mixfix_token t
-          err s = ([Diag Error ("missing %" ++ s ++ " annotation") (tokPos t)]
-		  , te)
-
-
