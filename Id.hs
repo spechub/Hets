@@ -101,19 +101,12 @@ isMixfix :: Id -> Bool
 isMixfix (Id tops _ _) = any isPlace tops 
 
 isPrefix :: Id -> Bool
-isPrefix (Id tops _ _) = isFstTokenRemPlaces tops 
+isPrefix (Id tops _ _) = (not . isPlace . head) tops 
+			 && (isPlace . last) tops 
 
 isPostfix :: Id -> Bool
-isPostfix (Id tops _ _) = isFstTokenRemPlaces $ reverse tops
-
--- a helper predicate on [TokenOrPlace]
-isFstTokenRemPlaces :: [TokenOrPlace] -> Bool
-isFstTokenRemPlaces tops = 
-    case tops of
-    [] -> False
-    (x:xs)
-	| null xs   -> False
-	| otherwise -> (not $ isPlace x) && all isPlace xs
+isPostfix (Id tops _ _) = (isPlace . head) tops 
+			  && (not . isPlace . last) tops 
 
 isInfix2 :: Id -> Bool
 isInfix2 (Id tops _ _)
