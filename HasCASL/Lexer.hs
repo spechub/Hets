@@ -10,25 +10,18 @@ import ParsecChar
 
 -- phase 1
 
-type Scanner = Parser Token
+special :: Parser String
+special = fmap (\c -> [c]) (oneOf "_.'()[]{};,`\"%·");
 
-special :: Scanner
-special = fmap (\c -> Token([c], nullPos)) (oneOf "_.'()[]{};,`\"%·");
+newline = fmap (\c -> [c]) (oneOf "\n\r")
 
-manyChar :: Parser Char -> Scanner
-manyChar parser = fmap (\s -> Token(s, nullPos)) (many1 parser)
-
-letters :: Scanner
-letters =  manyChar letter
-digits = manyChar digit
-whitespace = manyChar space
-signs = manyChar sign
-others = manyChar anyChar
-
+letters :: Parser String
+letters =  many1 letter
+digits = many1 digit
+whitespace = many1 (oneOf " \t\f\v\xA0")
 -- dot not included (see special)
-sign :: Parser Char
-sign = oneOf "+-*/|\\&=,`<>!?:$@#^~¡¿×÷£©±¶§¹²³¢º¬µ"
-
+signs = many1 (oneOf "+-*/|\\&=,`<>!?:$@#^~¡¿×÷£©±¶§¹²³¢º¬µ")
+others = many1 anyChar
 
 --    [\192-\207\209-\214\216-\221]             -> Letter  
 --    [\223-\239\241-\246\248-\253\255]         -> Letter
@@ -36,27 +29,18 @@ sign = oneOf "+-*/|\\&=,`<>!?:$@#^~¡¿×÷£©±¶§¹²³¢º¬µ"
 --    [\181-\183\185\191\215\247]               -> No-Bracket-Sign
 
 
-
-tokenize :: Scanner
+tokenize :: Parser String
 tokenize = special <|> whitespace <|> digits <|> letters 
 			<|> signs <|> others
 
-setTokPos :: SourcePos -> Scanner -> Scanner
-setTokPos p = fmap (\t-> setPos(t, (sourceLine p, sourceColumn p)))
+setTokPos :: SourcePos -> String -> Token
+setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
 
-fc :: Token -> Char
-fc (Token (c : _, _)) = c
-isLetter :: Token -> Bool 
-isLetter  = isAlpha . fc  
-isNumber  = isDigit . fc 
-isPrime t = fc(t) == '\''
-isDot t =  fc(t) == '.' || fc(t) == '·'
-isUnderline t = showTok t == "_"
 
 -- test
-scanToken :: Scanner
+scanToken :: Parser Token
 scanToken = do {p <- getPosition; 
-                setTokPos p tokenize; 
+                fmap (setTokPos p) tokenize; 
 	       }
 
 scan :: String -> [Token]
@@ -70,9 +54,17 @@ getToken :: (Token -> Bool) -> TokScanner
 getToken f = token showTok getPos (\x->if f(x) then Just x else Nothing)
     where getPos (Token(_, (l,c))) = newPos "" l c 
 
+fc :: Token -> Char
+fc (Token (c : _, _)) = c
+isLetter :: Token -> Bool 
+isLetter  = isAlpha . fc  
+isNumber  = isDigit . fc 
+isPrime t = fc(t) == '\''
+isDot t =  fc(t) == '.' || fc(t) == '·'
+isUnderline t = showTok t == "_"
+
 getLetters :: TokScanner
 getLetters = getToken isLetter
-
 
 scanLPD :: TokScanner
 scanLPD = getLetters <|> (getToken isNumber) <|> (getToken isPrime)
@@ -86,17 +78,25 @@ takToks ts = foldl1 tak ts
 scanWord :: TokScanner
 scanWord = fmap takToks (many1 scanLPD)
 
-scanLetterWord = do { t <- getLetters;
-                      ts <- (many scanLPD);
+scanLetterWord = do { t <- getLetters; 
+		      ts <- many scanLPD;
                       return (takToks (t:ts))
 		    }
 
 getUnderline = getToken isUnderline
 
 scanUnderlineWord = do { u <- getUnderline;
-			 t <- scanWord <?> "word";
-			 return (tak u t)
+			 do { t <- scanWord <?> "word";
+			      return (tak u t)
+			    }
+			 <|>
+			 do { u2 <- getUnderline;
+			      return (tak u u2)
+			    }
+			 <?> "word or place"  
+			 
 		       }
+
 scanWords = do { t <- scanLetterWord;
                  ts <- (many scanUnderlineWord);
                  return (takToks (t:ts))
