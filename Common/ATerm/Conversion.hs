@@ -44,7 +44,7 @@ import Common.ATerm.AbstractSyntax
 import Common.ATerm.ReadWrite
 import List (mapAccumL)
 import Data.Maybe
-import GHC.Real
+import Data.Ratio
 
 class ATermConvertible t where
   -- ATerm  
@@ -160,15 +160,16 @@ mi x = if toInteger ((fromInteger::Integer->Int) x) == x
 	          else Nothing       	           
 
 instance (ATermConvertible a,Integral a) => ATermConvertible (Ratio a) where
-   toATerm ((:%) i1 i2) = let at1 = toATerm i1
+   toATerm i =            let (i1, i2) = (numerator i, denominator i)
+                              at1 = toATerm i1
                               at2 = toATerm i2
                           in AAppl "Ratio" [at1,at2] []
    fromATerm at = case at of
-                   (AAppl "Ration" [at1,at2] _) -> let i1 = fromATerm at1
+                   (AAppl "Ratio" [at1,at2] _) -> let i1 = fromATerm at1
 						       i2 = fromATerm at2
 						   in (i1 % i2)
 		   _ -> fromATermError "Ratio" at
-   toShATerm att0 ((:%) i1 i2) = 
+   toShATerm att0 i = let (i1, i2) = (numerator i, denominator i) in
        case toShATerm att0 i1 of
        (att1,i1') -> 
 	  case toShATerm att1 i2 of

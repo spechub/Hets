@@ -22,7 +22,7 @@ module Common.ATerm.ConvInstances where
 import Common.ATerm.Conversion
 import Common.ATerm.AbstractSyntax
 import Common.Lib.Parsec.Pos
-import qualified Common.Lib.Map as Map hiding (map)
+import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set 
 import qualified Common.Lib.Rel as Rel
 import Common.Id
