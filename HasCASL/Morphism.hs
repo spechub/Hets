@@ -43,6 +43,7 @@ instance PrettyPrint SymbolType where
       ClassAsItemType k -> printText0 ga k
 
 instance Ord TypeScheme where
+-- this does not match with Eq TypeScheme!
     sc1 <= sc2 = let (t1, c) = runState (freshInst sc1) 1
 		     t2 = evalState (freshInst sc2) c
 		     v1 = varsOf t1
@@ -124,9 +125,7 @@ matchSymb :: Symbol -> RawSymbol -> Bool
 matchSymb x                               (ASymbol y)            =  x==y
 matchSymb (Symbol idt _)                  (AnID di)              = idt==di
 matchSymb (Symbol idt (TypeAsItemType _)) (AKindedId SK_type di) = idt==di
-matchSymb (Symbol idt (TypeAsItemType _)) (AKindedId SK_sort di) = idt==di
 matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_op di)   = idt==di
-matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_pred di) = idt==di
 matchSymb _                               _                      = False
 
 rawSymName :: RawSymbol -> Id
@@ -314,16 +313,14 @@ morphismToSymbMap mor =
                         (idToOpSymbol id2 t2) m)
          typeSymMap $ funMap mor 
 
-
-
 -- | Check if two OpTypes are equal except from totality or partiality
 compatibleOpTypes :: TypeScheme -> TypeScheme -> Bool
 compatibleOpTypes = isUnifiable Map.empty 0 
 
--- Some quick and dirty instances
-
 instance PrettyPrint Morphism where
-  printText0 _ga s = text (show s)
+  printText0 ga m = braces (printText0 ga (msource m)) 
+		    <+> text mapsTo
+		    <+> braces (printText0 ga (mtarget m))
 
 instance PrettyPrint Symbol where
   printText0 ga s = text (case symbType s of 
@@ -334,4 +331,11 @@ instance PrettyPrint Symbol where
 		    printText0 ga (symbType s)
 
 instance PrettyPrint RawSymbol where
-  printText0 _ga s = text (show s)
+  printText0 ga rs = case rs of
+      ASymbol s -> printText0 ga s
+      AnID i -> printText0 ga i
+      AKindedId k i -> text (case k of 
+           SK_type -> typeS
+           SK_op -> opS 
+           SK_class -> classS
+	   _ -> "") <+> printText0 ga i

@@ -43,7 +43,7 @@ data SymbMapItems = SymbMapItems SymbKind [SymbOrMap] [Annotation] [Pos]
 		      deriving (Show, Eq, Typeable)
 
 -- | kind of symbols
-data SymbKind = Implicit | SK_sort | SK_type | SK_op | SK_pred | SK_class
+data SymbKind = Implicit | SK_type | SK_op | SK_class
 		 deriving (Show, Eq, Ord)
 
 -- | type annotated symbols

@@ -25,6 +25,7 @@ import HasCASL.AsToIds
 import HasCASL.Le
 import HasCASL.ClassDecl
 import HasCASL.VarDecl
+import HasCASL.Unify
 import HasCASL.OpDecl
 import HasCASL.TypeDecl
 import HasCASL.TypeCheck
@@ -51,19 +52,25 @@ diffEnv e1 e2 =
 
 -- | compute difference of class infos
 diffClass :: ClassInfo -> ClassInfo -> Maybe ClassInfo
-diffClass c1 c2 = 
-    let diff = classKinds c1 \\ classKinds c2
-    in if null diff
-       then Nothing
-       else Just c1 { classKinds = diff }
+diffClass _ _ = Nothing 
 
 -- | compute difference of type infos
 diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
-diffType _t1 _t2 = Nothing -- Just t1
+diffType _ _ = Nothing
+
+-- | Check if two OpTypes are equal except from totality or partiality
+compatibleOpTypes :: TypeScheme -> TypeScheme -> Bool
+compatibleOpTypes = isUnifiable Map.empty 0 
 
 -- | compute difference of overloaded operations
 diffAss :: OpInfos -> OpInfos -> Maybe OpInfos
-diffAss _a1 _a2 = Nothing -- Just a1
+diffAss (OpInfos []) (OpInfos _) = Nothing 
+diffAss (OpInfos (o:l1)) (OpInfos l2) = 
+    let m = diffAss (OpInfos l1) (OpInfos l2) in
+    if any (\ p -> compatibleOpTypes (opType o) (opType p)) l2 
+      then m
+      else do OpInfos l <- m
+	      return (OpInfos (o:l))
 
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
