@@ -66,10 +66,10 @@ FatalError (line 18, column 1) no analysis yet for: program tt = \ x : s . ()
 FatalError (line 20, column 1) no analysis yet for: program __ res __ (x : s; y : t) : s = x;
 	fst (x : s; y : t) : s = x; snd (x : s; y : t) : t = y
 Error (line 27, column 3) unexpected mixfix token 'fst'
-Error (line 26, column 30) unexpected mixfix token '='
+Error (line 26, column 15) unexpected mixfix token 'def'
 FatalError (line 31, column 1) no analysis yet for: pred eq : s × s
-Error (line 34, column 28) unexpected mixfix token '='
-Error (line 33, column 21) unexpected mixfix token '='
+Error (line 34, column 15) unexpected mixfix token 'res'
+Error (line 33, column 11) unexpected mixfix token 'eq'
 FatalError (line 39, column 1) no analysis yet for: program all (p : (? s)) : (? ()) = eq (p, tt)
 FatalError (line 41, column 1) no analysis yet for: program And (x, y : (? ())) : (? ()) = t1 () res t2 ()
 FatalError (line 43, column 1) no analysis yet for: program __ impl __ (x, y : (? ())) = eq (x, x And y)

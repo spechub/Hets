@@ -11,7 +11,7 @@ Mixfix analysis of terms, adapted from the CASL analysis
 
 -}
 
-module HasCASL.MixAna (resolveTerm) where 
+module HasCASL.MixAna where 
 
 import Common.GlobalAnnotations
 import Common.Result
@@ -23,6 +23,8 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Unify
+import HasCASL.TypeAna
+import HasCASL.Reader
 import HasCASL.MixParserState
 import Data.Maybe
 
@@ -33,127 +35,157 @@ import Data.Maybe
 lookUp :: (Ord a) => Map.Map a [b] -> a -> [b]
 lookUp ce k = Map.findWithDefault [] k ce
 
+type PMap = Map.Map Index [PState]
+
 data ParseMap = ParseMap { varCount :: Int
-			 , typeAliases :: TypeMap
 			 , lastIndex :: Index
 			 , failDiags :: [Diagnosis]
-			 , parseMap :: Map.Map Index [PState]
+			 , parseMap :: PMap
 			 }
 
 -- match (and shift) a token (or partially finished term)
-scan :: (Type, Term) -> ParseMap -> ParseMap
-scan (ty, trm) pm =
+scan :: TypeMap -> (Type, Term) -> ParseMap -> ParseMap
+scan tm (ty, trm) pm =
   let m = parseMap pm
-      tm = typeAliases pm
       i = lastIndex pm
       t = case trm of 
 	  TermToken x -> x 
-	  QualVar _ _ _ -> varTok
+	  QualVar _ _ _ -> opTok
+	  QualOp _ _ _ -> opTok
+	  TypedTerm _ _ _ _ -> inTok
 	  _ -> opTok
       incI = incrIndex i
-      (tvar, c2) = runState freshVar $ varCount pm
+      (ps, c2) = runState (mapM (scanState tm (ty, trm) t) 
+			     $ lookUp m i) $ varCount pm
   in
     pm { lastIndex = incI
        , varCount = c2
-       , parseMap = Map.insert incI ( 
-       foldr (\ p l ->
-	      let ts = restRule p
-	          a = ruleArgs p in
-	      if null ts || head ts /= t then l 
-	      else if t == commaTok then 
-	      let newTy = case ruleType p of 
-	                  FunType (ProductType tys ps) 
-	                      PFunArr (ProductType _ _) _ -> 
-	                      let newTuple = ProductType 
-	                           (tys++[TypeName tvar star 1]) ps in
-	                      FunType newTuple PFunArr newTuple []
-	                  same -> same 
-              in  
-	      -- list elements separator 
-	             p { restRule = termTok : commaTok : tail ts
-		       , ruleType = newTy }
-	             : p { restRule = termTok : tail ts } : l
-              else if t == varTok || t == opTok || t == predTok then
-	             let mp = do q <- filterByType tm (ty,trm) p
-	                         return q { restRule = tail ts }
-	             in maybeToList mp ++ l
-	      else if t == colonTok || t == asTok || t == inTok then
-	             p { restRule = [], ruleArgs = [head a] } : l
-	      else p { restRule = tail ts, posList = tokPos t : posList p } : l
-	     ) [] (lookUp m i)) m }
+       , parseMap = Map.insert incI (concat ps) m }
 	      
 -- final complete/reduction phase 
 -- when a grammar rule (mixfix Id) has been fully matched
 
-collectArg :: GlobalAnnos -> ParseMap -> PState -> [PState]
+collectArg :: GlobalAnnos -> TypeMap -> PMap -> PState -> [PState]
 -- pre: finished rule 
-collectArg g (ParseMap { typeAliases = tm, parseMap = m })
+collectArg ga tm m
 	   s@(PState { ruleId = argIde, stateNo = arg, ruleType = argType }) =
     map (\ p -> p { restRule = tail $ restRule p })  
     $ mapMaybe (filterByType tm (argType, stateToAppl s))
-    $ filter (filterByPrec g argIde)
+    $ filter (filterByPrec ga argIde)
     $ lookUp m arg
 
-compl :: GlobalAnnos -> ParseMap -> [PState] -> [PState]
-compl g m l = 
-  concat $ map (collectArg g m) 
+compl :: GlobalAnnos -> TypeMap -> PMap -> [PState] -> [PState]
+compl ga tm m l = 
+  concat $ map (collectArg ga tm m) 
   $ filter (null . restRule) l
 
-complRec :: GlobalAnnos -> ParseMap -> [PState] -> [PState]
-complRec g m l = let l1 = compl g m l in 
-    if null l1 then l else complRec g m l1 ++ l
+complRec :: GlobalAnnos -> TypeMap -> PMap -> [PState] -> [PState]
+complRec ga tm m l = let l1 = compl ga tm m l in 
+    if null l1 then l else complRec ga tm m l1 ++ l
 
-complete :: GlobalAnnos -> ParseMap -> ParseMap
-complete g pm =
+complete :: GlobalAnnos -> TypeMap -> ParseMap -> ParseMap
+complete ga tm pm =
     let m = parseMap pm
 	i = lastIndex pm in
-    pm { parseMap = Map.insert i (complRec g pm $ lookUp m i) m }
+    pm { parseMap = Map.insert i (complRec ga tm m $ lookUp m i) m }
 
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
 
 predict :: GlobalAnnos -> Assumps -> ParseMap -> ParseMap
-predict g is pm = 
+predict ga is pm = 
     let m = parseMap pm
 	i = lastIndex pm 
 	c = varCount pm in
     if not (isStartIndex i) && any (\ (PState { restRule = ts }) ->
 				    not (null ts) && head ts == termTok) 
 	                       (lookUp m i)
-		 then let (nextStates, c2) = runState (initialState g is i) c
+		 then let (nextStates, c2) = runState (initialState ga is i) c
 		      in pm { varCount = c2
 			    , parseMap = Map.insertWith (++) i nextStates m }
 		 else pm
 
-nextState :: GlobalAnnos -> Assumps -> (Type, Term) 
+nextState :: GlobalAnnos -> Assumps -> TypeMap -> (Type, Term) 
 	  -> ParseMap -> ParseMap
-nextState g is (ty, trm) pm =
-    let pm3 = complete g
-	      $ scan (ty, trm)
-	      $ predict g is pm
+nextState ga is tm (ty, trm) pm =
+    let pm3 = complete ga tm
+	      $ scan tm (ty, trm)
+	      $ predict ga is pm
     in if (null $ lookUp (parseMap pm3) $ lastIndex pm3) 
 	   && null (failDiags pm3)
        then  pm3 { failDiags = [mkDiag Error "unexpected mixfix token" trm] }
        else pm3
 
-iterStates :: GlobalAnnos -> Assumps -> Type -> [Term] 
+iterStates :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Type -> [Term] 
 	   -> ParseMap -> ParseMap
-iterStates g ops ty terms pm = 
-    let self = iterStates g ops ty
+iterStates ga as tm cm ty terms pm = 
+    let self = iterStates ga as tm cm ty
     in if null terms then pm
        else case head terms of
             MixfixTerm ts -> self (ts ++ tail terms) pm
             BracketTerm b ts ps -> self 
 	       (expandPos TermToken (getBrackets b) ts ps ++ tail terms) pm
-	    t@(QualVar v qty _) -> let l = Map.findWithDefault [] v ops in
+	    t@(QualVar v qty _) -> let l = Map.findWithDefault [] v as in
 	        if null l then pm { failDiags = 
 				    [mkDiag Error "variable not found" v] }
-		else self (tail terms) $ nextState g ops (qty, t) pm
-	    t  ->  self (tail terms) $ nextState g ops (MixfixType [], t) pm
+		else self (tail terms) $ nextState ga as tm (qty, t) pm
+	    t@(QualOp (InstOpId v _ _) (TypeScheme _ (_ :=> qty) _) _) ->
+		let l = Map.findWithDefault [] v as in
+	        if null l then pm { failDiags = 
+				    [mkDiag Error "operation not found" v] }
+		else self (tail terms) $ nextState ga as tm (qty, t) pm
+	    TypedTerm hd tqual tyq ps -> 
+		let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) in
+	        case mt of 
+		Just (_, typq) -> 
+		    let (Result ds mtt, c2) = runState
+			   (case tqual of 
+			        OfType -> resolve ga as tm cm (typq, hd)
+			        _ -> resolveAny ga as tm cm hd) 
+				       $ varCount pm
+			pm2 = pm { varCount = c2, failDiags = es++ds }
+			in case mtt of  
+			Just (_, ttt) -> self (tail terms) 
+				   $ nextState ga as tm 
+				   (case tqual of 
+				    InType -> logicalType
+				    _ -> typq, TypedTerm ttt tqual typq ps) pm2
+			Nothing -> pm2
+		Nothing -> pm { failDiags = es }
+	    QuantifiedTerm quant decls hd ps ->
+		let (Result ds mtt, c2) = runState 
+		        (resolve ga as tm cm (logicalType, hd)) $ varCount pm
+		    pm2 = pm { varCount = c2, failDiags = ds }
+		    in case mtt of 
+		    Just (_, tt) -> self (tail terms) $ nextState ga as tm 
+		         (logicalType, QuantifiedTerm quant decls tt ps) pm2
+		    Nothing -> pm2
+	    LambdaTerm decls part hd ps -> 
+		let (Result ds mtt, c2) = runState 
+		            (resolveAny ga as tm cm hd) $ varCount pm
+		    pm2 = pm { varCount = c2, failDiags = ds }
+		    in case mtt of 
+		    Just (typq, tt) -> self (tail terms) $ nextState ga as tm 
+		         (typq, LambdaTerm decls part tt ps) pm2
+		    Nothing -> pm2
+	    t@(CaseTerm hd eqs ps) -> 
+                    pm { failDiags = [mkDiag Error "not handle" t] }
+	    LetTerm eqs hd ps ->
+		let (Result ds mtt, c2) = runState 
+		            (resolveAny ga as tm cm hd) $ varCount pm
+		    pm2 = pm { varCount = c2, failDiags = ds }
+		    in case mtt of 
+		    Just (typq, tt) -> self (tail terms) $ nextState ga as tm 
+		         (typq, LetTerm eqs tt ps) pm2
+		    Nothing -> pm2
+	    t  ->  self (tail terms) $ nextState ga as tm (MixfixType [], t) pm
+
+logicalType :: Type 
+logicalType = TypeName (simpleIdToId (mkSimpleId "logical")) star 0
 
 getAppls :: GlobalAnnos -> ParseMap -> [Term]
-getAppls g pm = 
-    map (toAppl g) $ 
+getAppls ga pm = 
+    map (toAppl ga) $ 
 	filter (\ (PState { restRule = ts, stateNo = k }) 
 		-> null ts && isStartIndex k) $ 
 	     lookUp (parseMap pm) $ lastIndex pm
@@ -166,32 +198,37 @@ getLastType pm =
 	      lookUp (parseMap pm) $ lastIndex pm
     in if null tys then error "getLastType" else head tys
 
-resolveToParseMap :: GlobalAnnos -> Assumps -> TypeMap -> Int 
+resolveToParseMap :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Int 
 		  -> Type -> Term -> ParseMap
-resolveToParseMap g ops tm c ty trm = 
-    let (initStates, c2) = runState (initialState g ops startIndex) c in
-    iterStates g ops ty [trm] 
+resolveToParseMap ga as tm cm c ty trm = 
+    let (initStates, c2) = runState (initialState ga as startIndex) c in
+    iterStates ga as tm cm ty [trm] 
 	       ParseMap { lastIndex = startIndex
-			, typeAliases = tm
 			, failDiags = []  
 			, varCount = c2
 			, parseMap = Map.single startIndex initStates }
 
-checkResultType :: Type -> ParseMap -> ParseMap
-checkResultType t pm =
+checkResultType :: TypeMap -> Type -> ParseMap -> ParseMap
+checkResultType tm t pm =
     let m = parseMap pm
 	i = lastIndex pm in
 	    pm { parseMap = Map.insert i 
-		 (mapMaybe (filterByResultType (typeAliases pm) t) 
+		 (mapMaybe (filterByResultType tm t) 
 		 $ lookUp m i) m }
 
-resolve :: GlobalAnnos -> Assumps -> TypeMap 
+resolveAny :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
+	-> Term -> State Int (Result (Type, Term))
+resolveAny ga as tm cm trm =
+    do tvar <- freshVar
+       resolve ga as tm cm (TypeName tvar star 1, trm)
+
+resolve :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
 	-> (Type, Term) -> State Int (Result (Type, Term))
-resolve g ops tm (ty, trm) =
+resolve ga as tm cm (ty, trm) =
     do c <- get
-       let pm = checkResultType ty $ resolveToParseMap g ops tm c ty trm
+       let pm = checkResultType tm ty $ resolveToParseMap ga as tm cm c ty trm
 	   ds = failDiags pm
-	   ts = getAppls g pm 
+	   ts = getAppls ga pm 
        return $ 
          if null ts then if null ds then 
                         fatal_error ("no resolution for term: "
@@ -207,10 +244,6 @@ resolve g ops tm (ty, trm) =
 resolveTerm :: Type -> Term -> State Env (Result Term)
 resolveTerm ty trm = 
     do s <- get
-       let tm = typeMap s
-	   as = assumps s
-	   c = counter s
-	   ga = globalAnnos s
-           (r, c2) = runState (resolve ga as tm (ty, trm)) c
-       put s { counter = c2 }
+       r <- toEnvState $ resolve (globalAnnos s) 
+	    (assumps s) (typeMap s) (classMap s) (ty, trm)
        return $ fmap snd r 

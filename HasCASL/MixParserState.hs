@@ -81,26 +81,19 @@ placeTok = mkSimpleId place
 oParenTok = mkSimpleId "(" 
 cParenTok = mkSimpleId ")" 
 
-colonTok, asTok, varTok, opTok, predTok, inTok, caseTok :: Token
-colonTok = mkSimpleId ":"
-asTok = mkSimpleId "as"
+opTok, inTok, caseTok :: Token
 inTok = mkSimpleId "in"
 caseTok = mkSimpleId "case"
-varTok = mkSimpleId "(v)"
 opTok = mkSimpleId "(o)"
-predTok = mkSimpleId "(p)"
 
 mkRuleId :: [Token] -> Id
 mkRuleId toks = Id toks [] []
-applId, parenId, colonId, asId, inId, varId, opId, tupleId, unitId :: Id
+applId, parenId, inId, opId, tupleId, unitId :: Id
 applId       = mkRuleId [placeTok, placeTok]
 parenId      = mkRuleId [oParenTok, placeTok, cParenTok]
 tupleId      = mkRuleId [oParenTok, placeTok, commaTok, cParenTok]
 unitId       = mkRuleId [oParenTok, cParenTok]
-colonId      = mkRuleId [placeTok, colonTok]
-asId         = mkRuleId [placeTok, asTok]
-inId  	     = mkRuleId [placeTok, inTok]
-varId	     = mkRuleId [varTok]
+inId  	     = mkRuleId [inTok]
 opId	     = mkRuleId [opTok]
 
 mkPState :: Index -> Id -> TypeScheme -> Type -> [Token] -> PState
@@ -212,12 +205,33 @@ initialState g as i =
        t  <- mkTupleTokState i tupleId
        l3 <- mapM (mkTokState i)
               [unitId,
-	       colonId,
-	       asId,
 	       inId,
-	       varId,
 	       opId]
        return (a:p:t:ls ++ l1 ++ l2 ++ l3)
+
+-- recognize next token (possible introduce new tuple variable)
+scanState :: TypeMap -> (Type, Term) -> Token -> PState -> State Int [PState]
+scanState tm (ty, trm) t p =
+    do let ts = restRule p
+       if null ts || head ts /= t then return []
+	  else if t == commaTok then -- list and tuple elements separator 
+	       do tvar <- freshVar
+		  let newTy = case ruleType p of 
+	                  FunType (ProductType tys ps) 
+	                      PFunArr (ProductType _ _) _ -> 
+	                      let newTuple = ProductType 
+	                           (tys++[TypeName tvar star 1]) ps in
+	                      FunType newTuple PFunArr newTuple []
+	                  same -> same 
+		  return [ p { restRule = termTok : commaTok : tail ts
+			     , ruleType = newTy }
+			 , p { restRule = termTok : tail ts }]
+              else return $
+		   if t == opTok || t == inTok then
+	             let mp = do q <- filterByType tm (ty,trm) p
+	                         return q { restRule = tail ts }
+	             in maybeToList mp
+	      else [p { restRule = tail ts, posList = tokPos t : posList p }]
 
 -- construct resulting term from PState 
 
@@ -226,11 +240,8 @@ stateToAppl p =
     let r = ruleId p
         ar = reverse $ ruleArgs p
 	qs = reverse $ posList p
-    in if r == colonId 
-	   || r == asId 
-	   || r == inId 
+    in if  r == inId 
 	   || r == parenId 
-	   || r == varId 
 	   || r == opId 
        then head ar
        else if r == applId then

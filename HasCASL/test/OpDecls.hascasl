@@ -39,6 +39,12 @@ op l5 : s * s * s = (a, b, c)
 
 var x : s
 
-op y : s = (var x : s) + (var x : s) 
+op y : s = (op a : s) <= (var x : s) <= (a : s) 
+
+op z : s = ( x as s) + ((x as t) as s)
+
+. x in s
+
+. x in t
 
 

@@ -29,7 +29,10 @@ l4 : s = (op __<=__<=__ : s × s × s -> s) (((op a : s), (op b : s),
 					    (op c : s)))
 l5 : s × s × s = (((op a : s), (op b : s), (op c : s)))
 x : s %(var)%
-y : s = (op __+__ : s × s -> s) ((var x : s), (var x : s))
+y : s = (op __<=__<=__ : s × s × s -> s) ((op a : s), (var x : s),
+					  (op a : s) : s)
+z : s = (op __+__ : s × s -> s) ((op x : s) as s,
+				 (op x : s) as t as s)
 %% Diagnostics -----------------------------------------------------------
 Hint (line 7, column 14) type 't' is not unifiable with 's'
 Hint (line 8, column 14) type 't' is not unifiable with 't × t'
