@@ -589,7 +589,9 @@ typedTerm (i, b) =
     do t <- primTerm b
        do (q, p) <- typeQual i
 	  ty <- parseType
-	  return (TypedTerm t q ty [tokPos p])
+	  return (case q of 
+			  InType -> MixfixTerm [t, MixInTerm ty [tokPos p]]
+			  _ -> TypedTerm t q ty [tokPos p])
         <|> return t
       <|> baseTerm (i, b)
 

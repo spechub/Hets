@@ -33,7 +33,6 @@ import HasCASL.Le
 import HasCASL.Unify 
 import HasCASL.TypeAna
 import Data.Maybe
-import Data.List
 
 -- import Debug.Trace
 -- import Control.Exception(assert)
@@ -94,7 +93,7 @@ addBuiltins ga opIds predIds =
 	precs = prec_annos ga
 	logIds = Set.fromList [eqvId, implId, infixIf, andId, orId, notId] 
 	relIds = (Set.filter isInfix predIds Set.\\ logIds) `Set.union` 
-		 Set.fromList [exEq, eqId, defId]
+		 Set.fromList [exEq, eqId, defId, typeId]
 	opIs = Set.toList ((((Set.filter isInfix opIds)
 		Set.\\ relIds) Set.\\ logIds) 
 	        Set.\\ Set.fromList [whenElse, applId])
@@ -113,14 +112,16 @@ addBuiltins ga opIds predIds =
     in ga { assoc_annos = newAss
 	  , prec_annos = Rel.transClosure newPrecs }
 
-initTermRules :: [Id] -> [Rule]
-initTermRules is = (map (mixRule ()) . nub)
-    ([tupleId, parenId, unitId, applId, exprId] ++ is) ++
+initTermRules :: Set.Set Id -> [Rule]
+initTermRules is = map (mixRule ()) (Set.toList
+    (Set.fromList [typeId, tupleId, parenId, unitId, applId, exprId] 
+     `Set.union` is)) ++
     map ( \ i -> (protect i, (), getPlainTokenList i )) 
-	    (nub $ filter isMixfix is)
+	    (filter isMixfix $ Set.toList is)
 
 addType :: Term -> Term -> Term
 addType (TypedTerm _ qual ty ps) t = TypedTerm t qual ty ps 
+addType (MixInTerm ty ps) t = TypedTerm t InType ty ps 
 addType _ _ = error "addType"
 
 dummyFilter :: () -> () -> Maybe Bool
@@ -155,6 +156,8 @@ iterateCharts ga terms chart =
 		          oneStep (trm, exprTok {tokPos = posOfTerm trm})
              case t of
 		    MixfixTerm ts -> self (ts ++ tt) chart
+		    MixInTerm _ ps -> self tt $ oneStep (t, 
+				typeTok {tokPos = headPos ps})
 		    BracketTerm b ts ps -> self 
 		      (expandPos TermToken (getBrackets b) ts ps ++ tt) chart
 		    QualVar v typ ps -> do 
@@ -238,13 +241,13 @@ iterateCharts ga terms chart =
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolve ga trm =
     do as <- gets assumps
-       let ids = Map.keys as 
+       let ids = Set.fromList $ Map.keys as 
 	   preds = Set.fromList $ Map.keys $ Map.filter (any ( \ oi -> 
 				 case opDefn oi of
 				 NoOpDefn Pred -> True
 				 Definition Pred _ -> True
 				 _ -> False) . opInfos) as
-       chart<- iterateCharts (addBuiltins ga (Set.fromList ids) preds) [trm] $ 
+       chart<- iterateCharts (addBuiltins ga ids preds) [trm] $ 
 	       initChart (initTermRules ids) Set.empty
        let Result ds mr = getResolved showPretty (posOfTerm trm) 
 			  toMixTerm chart

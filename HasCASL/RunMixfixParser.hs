@@ -65,7 +65,7 @@ stdPreds = mkIds stdPredsL
 resolveTerm :: GlobalAnnos -> AParser (Result Term)
 resolveTerm ga = do 
        trm <- term  
-       let ids = Set.toList (stdOps `Set.union` stdPreds)
+       let ids = stdOps `Set.union` stdPreds
            chart = evalState (iterateCharts (addBuiltins ga 
 					     stdOps stdPreds) [trm] $ 
 	    initChart (initTermRules ids) Set.empty) initialEnv 

@@ -218,6 +218,7 @@ instance PrettyPrint Term where
 		  Let -> text letS <+> des <+> text inS <+> dt
 		  Where -> dt <+> text whereS <+> des 
     printText0 ga (TermToken t) = printText0 ga t
+    printText0 ga (MixInTerm t _) = text inS <+> printText0 ga t
     printText0 ga (MixfixTerm ts) = fsep $ map (printText0 ga) ts
     printText0 ga (BracketTerm k l _) = bracket k $ commaT_text ga l
 

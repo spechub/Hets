@@ -93,9 +93,9 @@ class instance Flatcpo < Cpo
 var c : Cpo; d : Cpo
 type instance __*__ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
-program __<<=__ : forall c : Cpo .  c × c ->? Unit ((x1 : _var_74,
-						     y1 : _var_75),
-						    (x2 : _var_76, y2 : _var_77))
+program __<<=__ : forall c : Cpo .  c × c ->? Unit ((x1 : _var_67,
+						     y1 : _var_68),
+						    (x2 : _var_69, y2 : _var_70))
 	= (x1 <<= x2) und (y1 <<= y2)
 type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
@@ -108,8 +108,8 @@ program f <<= [c -->? d] g =
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 type __-->__(c : Cpo)(d : Cpo) < c -->? d
 var f : c --> d; g : c --> d
-program __<<=__ : forall c : Cpo .  c × c ->? Unit (f : _var_102,
-						    g : _var_103)
+program __<<=__ : forall c : Cpo .  c × c ->? Unit (f : _var_81,
+						    g : _var_82)
 	= f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op Y : forall p : Pcpo .  (p -->? p) --> p
@@ -205,21 +205,13 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
 
-*** Error 54.3, expected further mixfix token: ["/\\","<=>","=","=>","=e="]
 *** Error 54.42, ambiguous mixfix term
 	(def__)(f x)
 	def f x
 *** Error 54.32, unexpected mixfix token: all
-*** Error 54.3, unexpected term '__'
-*** Hint 54.32, in type of '\ f : s ->? t . all (\ x : s . def f (x))'
-  type 'Unit'
-  is not unifiable with type '_var_13 ->? _var_14'
-
-*** Hint 54.16, wrong result type 'Unit'
-  for application '(__=__) (__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
-*** Error 54.16, no typing for '(__=__)(__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
+*** Error 54.6, unexpected mixfix token: :
 *** Hint 60.9, no type match for: snd
-  with type: '_var_15 ->? t' (line 60, column 28)
+  with type: '_var_8 ->? t' (line 60, column 28)
   known types:
     
 *** Hint 60.9, wrong result type 't' (line 60, column 28)
@@ -231,38 +223,38 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Error 65.59, unexpected mixfix token: und
 *** Error 65.18, unexpected term 'def (x res y)'
 *** Error 65.52, unexpected term '(def y) und (def x)'
-*** Error , undeclared type '_var_45'
+*** Error , undeclared type '_var_38'
 *** Hint 75.21, no type match for: eq
-  with type: '_var_58 ->? t' (line 58, column 22)
+  with type: '_var_51 ->? t' (line 58, column 22)
   known types:
     'forall s : Type .  s × s ->? Unit' (line 72, column 11)
 *** Hint 75.21, wrong result type 't' (line 58, column 22)
   for application 'eq (x, y)'
-*** Hint 75.17, wrong result type '_var_52'
+*** Hint 75.17, wrong result type '_var_45'
   for application '(__res__) (x, eq (x, y))'
 *** Hint 75.30, wrong result type 'Unit'
-  for application '(__=__) (\ (x : _var_45, y : s) . (__res__)(x, eq (x, y)),
-	 \ (x : _var_46, y : s) . (__res__)(y, eq (x, y)))'
-*** Error 75.30, no typing for '(__=__)(\ (x : _var_45, y : s) . (__res__)(x, eq (x, y)),
-	\ (x : _var_46, y : s) . (__res__)(y, eq (x, y)))'
+  for application '(__=__) (\ (x : _var_38, y : s) . (__res__)(x, eq (x, y)),
+	 \ (x : _var_39, y : s) . (__res__)(y, eq (x, y)))'
+*** Error 75.30, no typing for '(__=__)(\ (x : _var_38, y : s) . (__res__)(x, eq (x, y)),
+	\ (x : _var_39, y : s) . (__res__)(y, eq (x, y)))'
 *** Warning 85.6, redeclared type 's'
 *** Error 85.6, merge: TypeVarDefn of 's'
 
 *** Error 85.11, cyclic super type '? s'
 *** Hint 87.9, no type match for: all
-  with type: '_var_60 ->? Unit ->? Unit'
+  with type: '_var_53 ->? Unit ->? Unit'
   known types:
     
 *** Hint 87.9, wrong result type 'Unit ->? Unit'
   for application 'all (p : s ->? Unit)'
 *** Error 87.9, no typing for 'all(p : s ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
-  with type: '_var_62 ->? Unit ->? Unit'
+  with type: '_var_55 ->? Unit ->? Unit'
   known types:
     
 *** Hint 90.9, wrong result type 'Unit ->? Unit'
-  for application 'And (x : _var_61, y : Unit ->? Unit)'
-*** Error 90.9, no typing for 'And(x : _var_61, y : Unit ->? Unit) : Unit ->? Unit'
+  for application 'And (x : _var_54, y : Unit ->? Unit)'
+*** Error 90.9, no typing for 'And(x : _var_54, y : Unit ->? Unit) : Unit ->? Unit'
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 93.9, unexpected pattern '__ impl __ (x, y : Pred Unit)'
 *** Error 93.53, unexpected mixfix token: x
@@ -271,7 +263,7 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Error 96.19, unexpected mixfix token: x
 *** Error 95.48, unexpected mixfix token: all
 *** Hint 98.9, no type match for: ex
-  with type: '_var_65 ->? Unit ->? Unit'
+  with type: '_var_58 ->? Unit ->? Unit'
   known types:
     
 *** Hint 98.9, wrong result type 'Unit ->? Unit'
@@ -281,7 +273,7 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Error 101.9, unexpected pattern 'ff ()'
 *** Error 101.29, unexpected mixfix token: all
 *** Hint 103.9, no type match for: neg
-  with type: '_var_67 ->? Unit ->? Unit'
+  with type: '_var_60 ->? Unit ->? Unit'
   known types:
     
 *** Hint 103.9, wrong result type 'Unit ->? Unit'
@@ -311,65 +303,33 @@ undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x 
 *** Hint 153.5, is type variable 'c'
 *** Warning 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
-*** Error , undeclared type '_var_74'
-*** Error , undeclared type '_var_75'
-*** Error , undeclared type '_var_76'
-*** Error , undeclared type '_var_77'
+*** Error , undeclared type '_var_67'
+*** Error , undeclared type '_var_68'
+*** Error , undeclared type '_var_69'
+*** Error , undeclared type '_var_70'
 *** Error 159.45, unexpected mixfix token: und
 *** Error 169.9, incompatible kind of: __-->?__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
 
-*** Error 170.4, expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 *** Error 171.35, unexpected mixfix token: und
 *** Error 174.45, unexpected mixfix token: +
 *** Error 173.40, unexpected mixfix token: und
 *** Error 172.28, unexpected mixfix token: isChain
 *** Error 171.9, unexpected mixfix token: all
-*** Error 170.4, unexpected term '__'
-*** Hint 171.9, in type of '\ f : c ->? d . all
-		(\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
-		(\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
-				  (\ m : nat . def f (s (m)) und eq
-					       (sup (\ n : nat .! f (s (n + m))), f (sup (s)))))'
-  type 'Unit'
-  is not unifiable with type '_var_93 ->? _var_94'
-
-*** Hint 170.20, wrong result type 'Unit'
-  for application '(__=__) (__ in c -->? d,
-	 \ f : c ->? d . all
-			 (\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
-			 (\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
-					   (\ m : nat . def f (s (m)) und eq
-							(sup (\ n : nat .! f (s (n + m))),
-							 f (sup (s))))))'
-*** Error 170.20, no typing for '(__=__)(__ in c -->? d,
-	\ f : c ->? d . all
-			(\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
-			(\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
-					  (\ m : nat . def f (s (m)) und eq
-						       (sup (\ n : nat .! f (s (n + m))),
-							f (sup (s))))))'
+*** Error 170.7, unexpected mixfix token: :
 *** Error 176.16, unexpected mixfix token: [
 *** Error 181.9, incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
 
-*** Error 182.4, expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 *** Error 182.46, ambiguous mixfix term
 	(def__)(f x)
 	def f x
 *** Error 182.36, unexpected mixfix token: all
-*** Error 182.4, unexpected term '__'
-*** Hint 182.36, in type of '\ f : c -->? d . all (\ x : c . def f (x))'
-  type 'Unit'
-  is not unifiable with type '_var_100 ->? _var_101'
-
-*** Hint 182.18, wrong result type 'Unit'
-  for application '(__=__) (__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
-*** Error 182.18, no typing for '(__=__)(__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
-*** Error , undeclared type '_var_102'
-*** Error , undeclared type '_var_103'
+*** Error 182.7, unexpected mixfix token: :
+*** Error , undeclared type '_var_81'
+*** Error , undeclared type '_var_82'
 *** Error 186.25, unexpected mixfix token: [
 *** Error 190.9, incompatible kind of: p -->? p
   expected: Cpo-
