@@ -10,17 +10,19 @@
    Useful functions to parse and check the user-provided functions
    and for filling in default values.
 
-   A record datatype for fast and easy access and modification \/
+   A record datatype for fast and easy access and modification
    extension of the options. 
 
-   TODO:
+-}
+
+{- TODO:
      - Posix Spezifikation zu command line interfaces \/
      - Dokumentation zu System.Console.GetOpt vom ghc \/
      - Flag und HetCATSOpts Datentyp anpassen \/
      - options Liste erweitern 
-     - parse funktionen schreiben 
+     - parse funktionen schreiben \/
      - form_opt_rec anpassen 
-     - perm_infile und check_in_file implemetieren 
+     - perm_infile und check_in_file implemetieren \/
 
    Optionen:
 
@@ -41,7 +43,6 @@ OTYPE is (pp.(het|tex|html))|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)|
          (graph.(dot|ps|davinci))
          (default: dg.taf)
 
-
 -}
 
 module Options where
@@ -52,7 +53,7 @@ import Common.Utils
 import System.Directory
 import System.Exit
 
-import Data.Char (isSpace)
+-- import Data.Char (isSpace) -- unused...
 import Data.List
 
 import Control.Monad (filterM)
@@ -191,50 +192,80 @@ parseInputType "gen_trm.baf"      = InType (ATerm BAF)
 parseInputType "tree.gen_trm.baf" = InType (ATerm BAF)
 parseInputType "ast"              = InType (ASTree NonBAF)
 parseInputType "ast.baf"          = InType (ASTree BAF)
-parseInputType s                  = error' s
+parseInputType str                = error' str
     where
     error' s = hetsError User (s ++ " is not a valid ITYPE")
+
+-- parse the output types 
+parseOutputTypes :: String -> Flag
+parseOutputTypes str
+    | ',' `elem` str = OutTypes $ 
+		       (map maybeOType . map parseOType . splitOn ',') 
+		       str
+    | otherwise = case (parseOType str) of
+					(Just ts) -> OutTypes [ts]
+					Nothing   -> error' str
+    where
+    error' s = hetsError User (s ++ " is not a valid OTYPE")
+    maybeOType (Just t) = t
+    maybeOType Nothing  = error' str
+
+-- parse a single output type from a string
+parseOType :: String -> Maybe OutType
+parseOType s
+    | "pp."    `isPrefixOf` s =
+	parseOType' (getPrettyType $ drop 3 s) PrettyPrint
+    | "graph." `isPrefixOf` s =
+	parseOType' (getGraphType $ drop 6 s) Graph
+    | "ast."   `isPrefixOf` s =
+	parseOType' (getOutFormat $ drop 4 s) (HetCASLOut OutASTree)
+    | "fdg.nax."   `isPrefixOf` s =
+	parseOType' (getOutFormat $ drop 8 s) 
+		      (HetCASLOut $ OutDGraph Flattened True)
+    | "fdg."   `isPrefixOf` s =
+	parseOType' (getOutFormat $ drop 4 s)
+		      (HetCASLOut $ OutDGraph Flattened False)
+    | "hdg.nax."   `isPrefixOf` s =
+	parseOType' (getOutFormat $ drop 8 s) 
+		      (HetCASLOut $ OutDGraph HidingOutside True)
+    | "hdg."   `isPrefixOf` s =
+	parseOType' (getOutFormat $ drop 4 s)
+		      (HetCASLOut $ OutDGraph HidingOutside False)
+    | "dg.nax."    `isPrefixOf` s =
+	parseOType' (getOutFormat $ drop 7 s)
+		      (HetCASLOut $ OutDGraph Full True)
+    | "dg."    `isPrefixOf` s =
+	parseOType' (getOutFormat $ drop 3 s)
+		      (HetCASLOut $ OutDGraph Full False)
+    | otherwise               = Nothing
+    where
+    getPrettyType "het"  = Just PrettyAscii
+    getPrettyType "tex"  = Just PrettyLatex
+    getPrettyType "html" = Just PrettyHtml
+    getPrettyType _      = Nothing
+    getGraphType "dot"     = Just Dot
+    getGraphType "ps"      = Just PostScript
+    getGraphType "davinci" = Just Davinci
+    getGraphType _         = Nothing
+{-    getOutFormat s  
+	| "nax." `isPrefixOf` s = 
+	    parseOType' (getOutFormat' $ drop 4 s) (True)
+	| otherwise             = 
+	    parseOType' (getOutFormat' s) (False) -}
+    getOutFormat "het"  = Just Ascii
+    getOutFormat "taf"  = Just Term
+    getOutFormat "trm"  = Just Taf
+    getOutFormat "html" = Just Html
+    getOutFormat "xml"  = Just Xml
+    getOutFormat _      = Nothing
+    parseOType' getter typ =
+	case getter of
+		    (Just t) -> Just (typ t)
+		    Nothing  -> Nothing
 
 -- parse the output directory 
 parseOutputDir :: String -> Flag
 parseOutputDir s = OutDir s
-
--- parse the output types 
--- TODO: implement this function
-parseOutputTypes :: String -> Flag
-parseOutputTypes s = OutTypes []
-{- parseOutputTypes s
-    | "pp."    `isPrefixOf` s = OutType PrettyPrint getPrettyType (drop 3 s)
-    | "graph." `isPrefixOf` s = OutType Graph getGraphType (drop 6 s)
-    | "ast."   `isPrefixOf` s = OutType HetCASLOut OutASTree getOutFormat
-				(drop 4 s)
-    | "fdg."   `isPrefixOf` s = OutType HetCASLOut $ OutGraph Flattened
-    $ getOutFormat (drop 4 s)
-    | "hdg."   `isPrefixOf` s = OutType HetCASLOut $ OutGraph HidingOutside
-    $ getOutFormat (drop 4 s)
-    | "dg."    `isPrefixOf` s = OutType HetCASLOut $ OutGraph Full
-    $ getOutFormat (drop 3 s)
-    | otherwise               = error' s
-    where
-    getPrettyType "het"  = PrettyAscii
-    getPrettyType "tex"  = PrettyLatex
-    getPrettyType "html" = PrettyHtml
-    getPrettyType _      = error' s
-    getGraphType "dot"     = Dot
-    getGraphType "ps"      = PostScript
-    getGraphType "davinci" = Davinci
-    getGraphType _         = error' s
-    getOutFormat s
-	| "nax." `isPrefixOf` s = True  $ getOutFormat' (drop 4 s)
-	| otherwise             = False $ getOutFormat' s
-    getOutFormat' "het"  = Ascii
-    getOutFormat' "taf"  = Term
-    getOutFormat' "trm"  = Taf
-    getOutFormat' "html" = Html
-    getOutFormat' "xml"  = Xml
-    getOutFormat' _      = error' s
-    error' str = hetsError User (str ++ " is not a valid OTYPE")
--}
 
 -- parse casl library directory
 parseLibDir :: String -> Flag
@@ -263,7 +294,7 @@ formInFiles fs = do ifs <- checkInFiles fs
 -- at least for now - will be implemented later
     where
     inFile x opts = opts { infile = x }
-    error' e = (\x -> hetsError User e)
+    error' e = (\_ -> hetsError User e)
 
 -- TODO: implement some kind of sequence...
 formOpts :: [Flag] -> IO (HetcatsOpts -> HetcatsOpts)
@@ -308,6 +339,7 @@ checkOutDirs = (filterM checkOutDir) . (map extrOutDir) . (filter isOutDir)
     isOutDir (OutDir _ ) = True
     isOutDir _           = False
     extrOutDir (OutDir x) = x
+    extrOutDir _          = hetsError Intern "error in checkOutDirs"
 
 checkOutDir :: String -> IO Bool
 checkOutDir file = do exists <- doesDirectoryExist file
