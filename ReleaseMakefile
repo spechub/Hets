@@ -25,7 +25,7 @@ HAPPY      = happy
 DRIFT      = $(DRIFT_ENV) utils/DrIFT
 HADDOCK    = haddock
 
-HC_FLAGS   = -fglasgow-exts
+#HC_FLAGS   = -fglasgow-exts
 
 HC_INCLUDE = -i$(INCLUDE_PATH)
 
@@ -94,7 +94,7 @@ hets-opt: hetcats/Version.hs
 	$(MAKE) hets-optimized
 
 hets-optimized:
-	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
+	$(HC) --make -O2 -o hets hets.hs $(HC_OPTS)
 	strip hets
 
 derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
