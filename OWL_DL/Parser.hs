@@ -27,11 +27,10 @@ import Common.Id
 type ResXmlTree = XmlTree -> Result XmlTrees
 type ResXmlTrees = XmlTrees -> Result XmlTrees
 
-propAndValideNamespaces :: ResXmlTree
-propAndValideNamespaces t
+propAndValidateNamespaces :: ResXmlTree
+propAndValidateNamespaces t
       = checkErrs $ (propagateNamespaces 
-                     .> validateNamespaces 
-                     .> canonicalizeAllNodes) t
+                     {- .> validateNamespaces -} ) t
 
 checkErrs :: ResXmlTrees
 checkErrs [] = Result { diags = [], maybeResult = Just []}
@@ -58,21 +57,30 @@ checkErrs xt@[(NTree node ntrees)] =
 class XmlTransformer a where
     fromXmlTree  :: XmlTree  -> Result a
     fromXmlTrees :: XmlTrees -> Result [a]
+    fromXmlTrees = mapM fromXmlTree
 
 
-{-
 instance XmlTransformer Ontology where
-   fromXmlTree = Result{ diags = [],
-			 maybeResult = Nothing
-		       }
- 
+    fromXmlTree _ = Result{ diags = [],
+			    maybeResult = (Nothing::Maybe Ontology)
+		          }
+{- 
    fromXmlTrees = Result{ diags = [],
 			 maybeResult = Nothing
 			}
 
 -}
+{-
+owl_parserT :: String -> String -> Result XmlTree
+owl_parserT fname fcont =
+     Result ds mtree = checkErrs (tryP fname fcont)
+     Result = propAndValidateNamespaces mtree
+     canonicalizeAllNodes
+     
+owl_parser :: XmlTree -> Result Ontology
+owl_parser = fromXmlTree 
 
-
+-}
 
 -- for test
 tryP :: String -> String -> XmlTrees
