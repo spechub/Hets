@@ -15,7 +15,7 @@ ops __+__, __*__ : Nat * Nat -> Nat;
     __@@__ : Nat * Nat -> Nat
 forall m, n, r, s:Nat
 . 0 <= n %(Nat_leq_def1)%
-. not suc (n) <= 0 %(Nat_leq_def2)%
+. not suc(n) <= 0 %(Nat_leq_def2)%
 . suc(m) <= suc(n) <=> m <= n %(Nat_leq_def3)%
 . m >= n <=> n <= m %(Nat_geq_def)%
 . m < n <=> m <= n /\ not m = n %(Nat_less_def)%
@@ -108,9 +108,9 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . ((- 1)) ^ a = 1 when even(a) else - 1 %(Int_neg1_power_def)%
 . m ^ a = sign(m) ^ a * abs(m) ^ a %(Int_power_def)%
 . even(m) <=> even(abs(m)) %(Int_even_def)%
-. odd(m) <=> not even (m) %(Int_odd_def)%
+. odd(m) <=> not even(m) %(Int_odd_def)%
 . m /? n = sign(m) * sign(n) * ((abs(m) /? abs(n))) %(Int_divide)%
-. not n = 0 => (m mod n < abs (n)) %(Int_mod_range)%
+. not n = 0 => (m mod n) < abs(n) %(Int_mod_range)%
 . not n = 0 => m = ((m div n)) * n + ((m mod n))
 %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
@@ -148,7 +148,7 @@ ops 0, 1 : Rat;
     __^__ : Rat * Int -> Rat;
     min, max : Rat * Rat -> Rat
 forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
-. (i / p <= j / q) <=> (i * q <= j * p) %(Rat_leq_def)%
+. (i / p) <= (j / q) <=> (i * q) <= (j * p) %(Rat_leq_def)%
 . x >= y <=> y <= x %(Rat_geq_def)%
 . x < y <=> x <= y /\ not x = y %(Rat_less_def)%
 . x > y <=> y < x %(Rat_greater_def)%
@@ -1392,8 +1392,3 @@ Error (line 267, column 9) unknown sort 'b'
 Error (line 265, column 20) unknown sort 'a'
 Error (line 265, column 16) unknown sort 'a'
 Error (line 260, column 9) no resolution for term: i * q - j * p
-Error (line 227, column 15) unexpected mixfix token: <=
-Error (line 227, column 34) unexpected mixfix token: <=
-Error (line 164, column 23) unexpected mixfix token: even
-Error (line 169, column 16) unexpected mixfix token: <
-Error (line 32, column 20) unexpected mixfix token: <=

@@ -178,11 +178,14 @@ isLeftArg (Id ts _ _) n = n + 1 == (length $ takeWhile isPlace ts)
 isRightArg (Id ts _ _) n = n == (length $ filter isPlace ts) - 
 	      (length $ takeWhile isPlace (reverse ts))
 	  
-filterByPrec :: GlobalAnnos -> State -> State -> Bool
-filterByPrec _ _ (State _ _ _ [] _) = False 
-filterByPrec g (State argIde _ _ _ _) (State opIde _ args (hd:_) _) = 
+filterByPrec :: GlobalAnnos -> Set Id -> Bool -> State -> State -> Bool
+filterByPrec _ _ _ _ (State _ _ _ [] _) = False 
+filterByPrec g preds maybeFormula 
+		 (State argIde _ _ _ _) (State opIde _ args (hd:_) _) = 
        if hd == termTok then 
-	  if isListId opIde || isListId argIde then True
+	  if isListId opIde || isListId argIde || 
+		 (Set.member opIde preds && maybeFormula)
+	  then True
 	  else let n = length args in
 		    if isLeftArg opIde n then 
 		       if isPostfix opIde && (isPrefix argIde
@@ -290,26 +293,28 @@ asListAppl g s@(State i bs a _ _) =
 -- final complete/reduction phase 
 -- when a grammar rule (mixfix Id) has been fully matched
 
-collectArg :: GlobalAnnos -> ParseMap -> State -> [State]
+collectArg :: GlobalAnnos -> Set Id -> Bool -> ParseMap -> State -> [State]
 -- pre: finished rule 
-collectArg g m s@(State _ _ _ _ k) = 
+collectArg g preds maybeFormula m s@(State _ _ _ _ k) = 
     map (\ (State o b a ts k1) ->
 	 State o b (asListAppl g s : a) 
 	 (tail ts) k1)
-    $ filter (filterByPrec g s)
+    $ filter (filterByPrec g preds maybeFormula s)
     $ lookUp m k
 
-compl :: GlobalAnnos -> ParseMap -> [State] -> [State]
-compl g m l = 
-  concat $ map (collectArg g m) 
+compl :: GlobalAnnos -> Set Id -> Bool -> ParseMap -> [State] -> [State]
+compl g preds maybeFormula m l = 
+  concat $ map (collectArg g preds maybeFormula m) 
   $ filter (\ (State _ _ _ ts _) -> null ts) l
 
-complRec :: GlobalAnnos -> ParseMap -> [State] -> [State]
-complRec g m l = let l1 = compl g m l in 
-    if null l1 then l else complRec g m l1 ++ l
+complRec :: GlobalAnnos -> Set Id -> Bool -> ParseMap -> [State] -> [State]
+complRec g preds maybeFormula m l = 
+    let l1 = compl g preds maybeFormula m l in 
+	if null l1 then l else complRec g preds maybeFormula m l1 ++ l
 
-complete :: GlobalAnnos -> Int  -> ParseMap -> ParseMap
-complete g i m = Map.insert i (complRec g m $ lookUp m i) m
+complete :: GlobalAnnos -> Set Id -> Bool -> Int  -> ParseMap -> ParseMap
+complete g preds maybeFormula i m = 
+    Map.insert i (complRec g preds maybeFormula m $ lookUp m i) m
 
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
@@ -323,9 +328,9 @@ predict g is i m = if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts)
 
 type Chart = (Int, [Diagnosis], ParseMap)
 
-nextState :: GlobalAnnos -> Set Id -> TERM -> Chart -> Chart
-nextState g is trm (i, ds, m) = 
-    let m1 = complete g (i+1) $
+nextState :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Chart -> Chart
+nextState g is preds maybeFormula trm (i, ds, m) = 
+    let m1 = complete g preds maybeFormula (i+1) $
 		 scan trm i $
 		 predict g is i m
     in if null (lookUp m1 (i+1)) && null ds
@@ -334,10 +339,14 @@ nextState g is trm (i, ds, m) =
 			       (posOfTerm trm) : ds, m)
        else (i+1, ds, m1)
 
-iterateStates :: GlobalAnnos -> Set Id -> Set Id -> [TERM] -> Chart -> Chart
-iterateStates g ops preds terms c@(i, ds, m) = 
-    let self = iterateStates g ops preds 
-        resolveTerm = resolveMixfix g ops preds False
+iterateStates :: GlobalAnnos -> Set Id -> Set Id -> Bool -> [TERM] 
+	      -> Chart -> Chart
+iterateStates g ops preds maybeFormula terms c@(i, ds, m) = 
+    let self = iterateStates g ops preds maybeFormula
+	expand = expandPos Mixfix_token 
+	oneStep = nextState g ops preds maybeFormula
+	resolvePred = resolveMixfix g ops preds
+        resolveTerm = resolvePred maybeFormula
     in if null terms then c
        else case head terms of
             Mixfix_term ts -> self (ts ++ tail terms) c
@@ -351,22 +360,22 @@ iterateStates g ops preds terms c@(i, ds, m) =
 			   return (Mixfix_parenthesized tsNew ps)
                     tNew = case v of Nothing -> head terms
 				     Just x -> x
-		in self (tail terms) (nextState g ops tNew (i, ds++mds, m))
+		in self (tail terms) (oneStep tNew (i, ds++mds, m))
 	    Conditional t1 f2 t3 ps -> 
                 let Result mds v = 
-			do t4 <- resolveTerm t1
+			do t4 <- resolvePred False t1
 			   f5 <- resolveFormula g ops preds f2 		 
-			   t6 <- resolveTerm t3 
+			   t6 <- resolvePred False t3 
 			   return (Conditional t4 f5 t6 ps)
                     tNew = case v of Nothing -> head terms
 				     Just x -> x
-		in self (tail terms) (nextState g ops tNew (i, ds++mds, m)) 
+		in self (tail terms) (oneStep tNew (i, ds++mds, m)) 
             Mixfix_token t -> let (ds1, trm) = 
 				      convertMixfixToken (literal_annos g) t
 			      in self (tail terms) 
-				     (nextState g ops trm (i, ds1++ds, m))
-	    t ->  self (tail terms) (nextState g ops t c)
-  where expand = expandPos Mixfix_token 
+				     (oneStep trm (i, ds1++ds, m))
+	    t ->  self (tail terms) (oneStep t c)
+
 
 posOfTerm :: TERM -> Pos
 posOfTerm trm =
@@ -393,7 +402,7 @@ getAppls g i m =
 
 resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
 resolveMixfix g ops preds mayBeFormula trm =
-    let (i, ds, m) = iterateStates g ops preds [trm] 
+    let (i, ds, m) = iterateStates g ops preds mayBeFormula [trm] 
 		     (0, [], Map.single 0 $ initialState g 
 		      (if mayBeFormula then ops `Set.union` preds else ops) 0)
         ts = getAppls g i m

@@ -1,1 +1,5 @@
 forall aa, ab:s . aa <= ab => p
+not s(n) <= 0
+not s(n) <= 0
+(i * q) <= (j * p)
+((i * q)) <= ((j * p))
