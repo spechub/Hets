@@ -193,8 +193,8 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
                    (ptext "No correct typing for " <+> printText ps)
                    (Id.headPos pos)
         -- BEWARE! Oversimplified disambiguation!
-            (p:_):[] -> return p
-            --(_:_):_ -> return $ head $ head ps
+            --(p:_):[] -> return p
+            (_:_):_ -> return $ head $ head ps
             _   -> pplain_error (PredType [], terms)
                    (ptext "Cannot disambiguate! Term: " 
                     <+> (printText (predicate, terms))
