@@ -210,8 +210,8 @@ makeFromShATermFn dat =
 	    where isUpper_ x = x == '_' || isUpper x 
 
 makeFromToATermErrors dat = 
-    block ((text "fromShATerm _ =" <+> errorFn "fromShATerm"): 
-	   [text "toShATerm _ =" <+> errorFn "toShATerm"])
+    block ((text "fromATerm _ =" <+> errorFn "fromATerm"): 
+	   [text "toATerm _ =" <+> errorFn "toATerm"])
 	where 
 	errorFn fn_name = text "error \"function " 
 			  <> (esc_quotes fn_name) 
