@@ -1,51 +1,74 @@
-*********************************************************************************
-*                                                                               *
-*       John Hughes's and Simon Peyton Jones's Pretty Printer Combinators       *
-*                                                                               *
-*               based on "The Design of a Pretty-printing Library"              *
-*               in Advanced Functional Programming,                             *
-*               Johan Jeuring and Erik Meijer (eds), LNCS 925                   *
-*               http://www.cs.chalmers.se/~rjmh/Papers/pretty.ps                *
-*                                                                               *
-*               Heavily modified by Simon Peyton Jones, Dec 96                  *
-*                                                                               *
-*********************************************************************************
+{- |
+   > HetCATS/pretty/Pretty
+   > $Id$
+   > Authors: Hughes, Peyton Jones, Klaus Lüttich
+   > Year:    2002/2003
 
-Further Modifications done by Klaus Lüttich for rendering LaTeX in very 
-special way.
+   An imported and only slightly modified module of GHC
+   
+   modifications are marked by "added by KL"
 
+   GHCs documentation follows 
+
+-}
+
+-----------------------------------------------------------------------------
+-- 
+-- Module      :  Text.PrettyPrint.HughesPJ
+-- Copyright   :  (c) The University of Glasgow 2001
+-- License     :  BSD-style (see the file libraries/base/LICENSE)
+-- 
+-- Maintainer  :  libraries@haskell.org
+-- Stability   :  provisional
+-- Portability :  portable
+--
+-- John Hughes's and Simon Peyton Jones's Pretty Printer Combinators
+-- 
+-- Based on /The Design of a Pretty-printing Library/
+-- in Advanced Functional Programming,
+-- Johan Jeuring and Erik Meijer (eds), LNCS 925
+-- <http://www.cs.chalmers.se/~rjmh/Papers/pretty.ps>
+--
+-- Heavily modified by Simon Peyton Jones, Dec 96
+--
+-----------------------------------------------------------------------------
+
+{-
 Version 3.0     28 May 1997
   * Cured massive performance bug.  If you write
 
         foldl <> empty (map (text.show) [1..10000])
 
-    you get quadratic behaviour with V2.0.  Why?  For just the same reason as you get
-    quadratic behaviour with left-associated (++) chains.
+    you get quadratic behaviour with V2.0.  Why?  For just the same
+    reason as you get quadratic behaviour with left-associated (++)
+    chains.
 
-    This is really bad news.  One thing a pretty-printer abstraction should
-    certainly guarantee is insensivity to associativity.  It matters: suddenly
-    GHC's compilation times went up by a factor of 100 when I switched to the
-    new pretty printer.
- 
-    I fixed it with a bit of a hack (because I wanted to get GHC back on the
-    road).  I added two new constructors to the Doc type, Above and Beside:
- 
+    This is really bad news.  One thing a pretty-printer abstraction
+    should certainly guarantee is insensivity to associativity.  It
+    matters: suddenly GHC's compilation times went up by a factor of
+    100 when I switched to the new pretty printer.
+
+    I fixed it with a bit of a hack (because I wanted to get GHC back
+    on the road).  I added two new constructors to the Doc type, Above
+    and Beside:
+
          <> = Beside
          $$ = Above
- 
-    Then, where I need to get to a "TextBeside" or "NilAbove" form I "force"
-    the Doc to squeeze out these suspended calls to Beside and Above; but in so
-    doing I re-associate. It's quite simple, but I'm not satisfied that I've done
-    the best possible job.  I'll send you the code if you are interested.
+
+    Then, where I need to get to a "TextBeside" or "NilAbove" form I
+    "force" the Doc to squeeze out these suspended calls to Beside and
+    Above; but in so doing I re-associate. It's quite simple, but I'm
+    not satisfied that I've done the best possible job.  I'll send you
+    the code if you are interested.
 
   * Added new exports:
         punctuate, hang
         int, integer, float, double, rational,
         lparen, rparen, lbrack, rbrack, lbrace, rbrace,
 
-  * fullRender's type signature has changed.  Rather than producing a string it
-    now takes an extra couple of arguments that tells it how to glue fragments
-    of output together:
+  * fullRender's type signature has changed.  Rather than producing a
+    string it now takes an extra couple of arguments that tells it how
+    to glue fragments of output together:
 
         fullRender :: Mode
                    -> Int                       -- Line length
@@ -56,16 +79,19 @@ Version 3.0     28 May 1997
                    -> a                         -- Result
 
     The "fragments" are encapsulated in the TextDetails data type:
+
         data TextDetails = Chr  Char
                          | Str  String
                          | PStr FAST_STRING
 
-    The Chr and Str constructors are obvious enough.  The PStr constructor has a packed
-    string (FAST_STRING) inside it.  It's generated by using the new "ptext" export.
+    The Chr and Str constructors are obvious enough.  The PStr
+    constructor has a packed string (FAST_STRING) inside it.  It's
+    generated by using the new "ptext" export.
 
-    An advantage of this new setup is that you can get the renderer to do output
-    directly (by passing in a function of type (TextDetails -> IO () -> IO ()),
-    rather than producing a string that you then print.
+    An advantage of this new setup is that you can get the renderer to
+    do output directly (by passing in a function of type (TextDetails
+    -> IO () -> IO ()), rather than producing a string that you then
+    print.
 
 
 Version 2.0     24 April 1997
@@ -110,9 +136,11 @@ Relative to John's original paper, there are the following new features:
                 char, semi, comma, colon, space,
                 parens, brackets, braces, 
                 quotes, doubleQuotes
-        
-4.      The "above" combinator, $$, now overlaps its two arguments if the
-        last line of the top argument stops before the first line of the second begins.
+
+4.  The "above" combinator, $$, now overlaps its two arguments if the
+    last line of the top argument stops before the first line of the
+    second begins.
+
         For example:  text "hi" $$ nest 5 "there"
         lays out as
                         hi   there
@@ -151,185 +179,171 @@ Relative to John's original paper, there are the following new features:
 
 6.      Numerous implementation tidy-ups
         Use of unboxed data types to speed up the implementation
+-}
 
-
-
-\begin{code}
 module Pretty (
+
+	-- * The document type
         Doc,            -- Abstract
-        Mode(..),
-	TextDetails(..),
 
-        empty,		-- :: Doc
-	isEmpty,	-- :: Doc -> Bool
-	nest,		-- :: Int -> Doc -> Doc
+	-- * Primitive Documents
+        empty,
+        semi, comma, colon, space, equals,
+        lparen, rparen, lbrack, rbrack, lbrace, rbrace,
 
-        text,		-- :: String -> Doc
-	ptext,		-- :: String -> Doc
-	char,		-- :: Char   -> Doc
+	-- * Converting values into documents
+        text, char, ptext, sp_text,
+        int, integer, float, double, rational,
 
-	sp_text,        -- :: String -> Int -> Doc
+	-- * Wrapping documents in delimiters
+        parens, brackets, braces, quotes, doubleQuotes,
 
-        int,		-- :: Int     -> Doc
-	integer,	-- :: Integer -> Doc
-	float,		-- :: Float   -> Doc
-	double,		-- :: Double  -> Doc
-	rational,	-- :: Ration  -> Doc
-
-        parens,		-- :: Doc     -> Doc
-	brackets,	-- :: Doc     -> Doc
-	braces,		-- :: Doc     -> Doc
-	quotes,		-- :: Doc     -> Doc
-	doubleQuotes,	-- :: Doc     -> Doc
-	
-	spaces,         -- :: Int     -> Doc -> Doc
-
-        semi,		-- :: Doc
-	comma,		-- :: Doc
-	colon,	 	-- :: Doc
-	space,		-- :: Doc
-	equals,		-- :: Doc
-        lparen, rparen, -- :: Doc
-	lbrack, rbrack, -- :: Doc
-	lbrace, rbrace, -- :: Doc
-
-        (<>),		-- :: Doc -> Doc -> Doc (beside)
-	(<+>),		-- :: Doc -> Doc -> Doc (beside w/space)
-	hcat,		-- :: [Doc] -> Doc      (list version of <>)
-	hsep, 		-- :: [Doc] -> Doc      (list version of <+>)
-
-        ($$),		-- :: Doc -> Doc -> Doc (above)
-	($+$),  	-- :: Doc -> Doc -> Doc (above, no overlap)
-	vcat,		-- :: Doc -> Doc -> Doc (list version of $$)
-
-	cat, 		-- :: [Doc] -> Doc (either hcat or vcat)
-        sep,		-- :: [Doc] -> Doc (either hsep or vsep)
-
-        fsep,		-- :: [Doc] -> Doc  ('paragraph'-versions of the prev 2)
-	fcat, 		-- :: [Doc] -> Doc
-
-        hang,		-- :: Doc   -> Int -> Doc -> Doc
-	punctuate,      -- :: Doc   -> [Doc] -> [Doc]
+	-- * Combining documents
+        (<>), (<+>), hcat, hsep, 
+        ($$), ($+$), vcat, 
+        sep, cat, 
+        fsep, fcat, 
+	nest,
+        hang, punctuate,
         
-        render, 		-- :: Doc -> String
-        renderStyle,		-- :: Style -> Doc -> String
+	-- * Predicates on documents
+	isEmpty,
 
-	Style( mode		-- :: Mode
-	     , lineLength       -- :: Int
-	     , ribbonsPerLine   -- :: Float (ribbon length / line length)
-	     ), 
-	style,			-- :: Style  (default)
+	-- * Rendering documents
 
-	fullRender		-- :: Mode
-				-- -> Int
-				-- -> Float
-				-- -> (TextDetails -> a -> a)
-				-- -> a
-				-- -> Doc
-				-- -> a
+	-- ** Default rendering
+	render, 
+
+	-- ** Rendering with a particular style
+	Style(..),
+	style,
+        renderStyle,
+
+	-- ** General rendering
+        fullRender,
+        Mode(..), TextDetails(..),
+
   ) where
+
+
+import Prelude
 
 infixl 6 <> 
 infixl 6 <+>
 infixl 5 $$, $+$
-\end{code}
 
-*********************************************************
-*                                                       *
-\subsection{The interface}
-*                                                       *
-*********************************************************
+-- ---------------------------------------------------------------------------
+-- The interface
 
-The primitive @Doc@ values
+-- The primitive Doc values
 
-\begin{code}
-empty                     :: Doc
-isEmpty                   :: Doc    -> Bool
-text                      :: String -> Doc 
-char                      :: Char -> Doc
+isEmpty :: Doc    -> Bool;  -- ^ Returns 'True' if the document is empty
 
-semi, comma, colon, space, equals              :: Doc
-lparen, rparen, lbrack, rbrack, lbrace, rbrace :: Doc
+empty   :: Doc;			-- ^ An empty document
+semi	:: Doc;			-- ^ A ';' character
+comma	:: Doc;			-- ^ A ',' character
+colon	:: Doc;			-- ^ A ':' character
+space	:: Doc;			-- ^ A space character
+equals	:: Doc;			-- ^ A '=' character
+lparen	:: Doc;			-- ^ A '(' character
+rparen	:: Doc;			-- ^ A ')' character
+lbrack	:: Doc;			-- ^ A '[' character
+rbrack	:: Doc;			-- ^ A ']' character
+lbrace	:: Doc;			-- ^ A '{' character
+rbrace	:: Doc;			-- ^ A '}' character
 
-parens, brackets, braces  :: Doc -> Doc 
-quotes, doubleQuotes      :: Doc -> Doc
-
-int      :: Int -> Doc
-integer  :: Integer -> Doc
-float    :: Float -> Doc
-double   :: Double -> Doc
+text	 :: String   -> Doc
+ptext	 :: String   -> Doc
+-- added by KL
+{- |
+the conversion function @sp_text@ can be used for a special use of this
+library. This function enables the possibility to use the rendering
+alghorithms provided for rendering LaTeX with a proportional font. It
+can also be abused because you can add text that has a zero width.
+-}
+sp_text  :: Int -> String -> Doc
+char 	 :: Char     -> Doc
+int      :: Int      -> Doc
+integer  :: Integer  -> Doc
+float    :: Float    -> Doc
+double   :: Double   -> Doc
 rational :: Rational -> Doc
-\end{code}
 
-Combining @Doc@ values
 
-\begin{code}
-(<>)   :: Doc -> Doc -> Doc     -- Beside
-hcat   :: [Doc] -> Doc          -- List version of <>
-(<+>)  :: Doc -> Doc -> Doc     -- Beside, separated by space
-hsep   :: [Doc] -> Doc          -- List version of <+>
+parens       :: Doc -> Doc; 	-- ^ Wrap document in @(...)@
+brackets     :: Doc -> Doc;  	-- ^ Wrap document in @[...]@
+braces	     :: Doc -> Doc;   	-- ^ Wrap document in @{...}@
+quotes	     :: Doc -> Doc;	-- ^ Wrap document in @'...'@
+doubleQuotes :: Doc -> Doc;	-- ^ Wrap document in @\"...\"@
 
-($$)   :: Doc -> Doc -> Doc     -- Above; if there is no
-                                -- overlap it "dovetails" the two
-vcat   :: [Doc] -> Doc          -- List version of $$
+-- Combining @Doc@ values
 
-cat    :: [Doc] -> Doc          -- Either hcat or vcat
-sep    :: [Doc] -> Doc          -- Either hsep or vcat
-fcat   :: [Doc] -> Doc          -- ``Paragraph fill'' version of cat
-fsep   :: [Doc] -> Doc          -- ``Paragraph fill'' version of sep
+(<>)   :: Doc -> Doc -> Doc;     -- ^Beside
+hcat   :: [Doc] -> Doc;          -- ^List version of '<>'
+(<+>)  :: Doc -> Doc -> Doc;     -- ^Beside, separated by space
+hsep   :: [Doc] -> Doc;          -- ^List version of '<+>'
 
-nest   :: Int -> Doc -> Doc     -- Nested
-\end{code}
+($$)   :: Doc -> Doc -> Doc;     -- ^Above; if there is no
+                                -- overlap it \"dovetails\" the two
+vcat   :: [Doc] -> Doc;          -- ^List version of '$$'
 
-GHC-specific ones.
+cat    :: [Doc] -> Doc;          -- ^ Either hcat or vcat
+sep    :: [Doc] -> Doc;          -- ^ Either hsep or vcat
+fcat   :: [Doc] -> Doc;          -- ^ \"Paragraph fill\" version of cat
+fsep   :: [Doc] -> Doc;          -- ^ \"Paragraph fill\" version of sep
 
-\begin{code}
-hang :: Doc -> Int -> Doc -> Doc
-punctuate :: Doc -> [Doc] -> [Doc]      -- punctuate p [d1, ... dn] = [d1 <> p, d2 <> p, ... dn-1 <> p, dn]
-\end{code}
+nest   :: Int -> Doc -> Doc;     -- ^ Nested
 
-Displaying @Doc@ values. 
 
-\begin{code}
+-- GHC-specific ones.
+
+hang :: Doc -> Int -> Doc -> Doc;	-- ^ @hang d1 n d2 = sep [d1, nest n d2]@
+punctuate :: Doc -> [Doc] -> [Doc];      -- ^ @punctuate p [d1, ... dn] = [d1 \<> p, d2 \<> p, ... dn-1 \<> p, dn]@
+
+
+-- Displaying @Doc@ values. 
+
 instance Show Doc where
   showsPrec prec doc cont = showDoc doc cont
 
-render     :: Doc -> String             -- Uses default style
-fullRender :: Mode
-           -> Int                       -- Line length
-           -> Float                     -- Ribbons per line
-           -> (TextDetails -> a -> a)   -- What to do with text
-           -> a                         -- What to do at the end
-           -> Doc
-           -> a                         -- Result
+-- | Renders the document as a string using the default style
+render     :: Doc -> String
 
+-- | The general rendering interface
+fullRender :: Mode			-- ^Rendering mode
+           -> Int                       -- ^Line length
+           -> Float                     -- ^Ribbons per line
+           -> (TextDetails -> a -> a)   -- ^What to do with text
+           -> a                         -- ^What to do at the end
+           -> Doc			-- ^The document
+           -> a                         -- ^Result
+
+-- | Render the document as a string using a specified style
 renderStyle  :: Style -> Doc -> String
 
+-- | A rendering style
 data Style
- = Style { mode           :: Mode
- 	 , lineLength     :: Int      -- In chars
-         , ribbonsPerLine :: Float    -- Ratio of ribbon length to line length
+ = Style { mode           :: Mode     -- ^ The rendering mode
+ 	 , lineLength     :: Int      -- ^ Length of line, in chars
+         , ribbonsPerLine :: Float    -- ^ Ratio of ribbon length to line length
          }
 
-style :: Style          -- The default style
+-- | The default style (@mode=PageMode, lineLength=100, ribbonsPerLine=1.5@)
+style :: Style
 style = Style { lineLength = 100, ribbonsPerLine = 1.5, mode = PageMode }
 
-data Mode = PageMode            -- Normal 
-          | ZigZagMode          -- With zig-zag cuts
-          | LeftMode            -- No indentation, infinitely long lines
-          | OneLineMode         -- All on one line
+-- | Rendering mode
+data Mode = PageMode            -- ^Normal 
+          | ZigZagMode          -- ^With zig-zag cuts
+          | LeftMode            -- ^No indentation, infinitely long lines
+          | OneLineMode         -- ^All on one line
 
-\end{code}
+-- ---------------------------------------------------------------------------
+-- The Doc calculus
 
+-- The Doc combinators satisfy the following laws:
 
-*********************************************************
-*                                                       *
-\subsection{The @Doc@ calculus}
-*                                                       *
-*********************************************************
-
-The @Doc@ combinators satisfy the following laws:
-\begin{verbatim}
+{-
 Laws for $$
 ~~~~~~~~~~~
 <a1>    (x $$ y) $$ z   = x $$ (y $$ z)
@@ -384,30 +398,22 @@ Laws for oneLiner
 ~~~~~~~~~~~~~~~~~
 <o1>    oneLiner (nest k p) = nest k (oneLiner p)
 <o2>    oneLiner (x <> y)   = oneLiner x <> oneLiner y 
-\end{verbatim}
-
 
 You might think that the following verion of <m1> would
 be neater:
-\begin{verbatim}
+
 <3 NO>  (text s <> x) $$ y = text s <> ((empty <> x)) $$ 
                                          nest (-length s) y)
-\end{verbatim}
+
 But it doesn't work, for if x=empty, we would have
-\begin{verbatim}
+
         text s $$ y = text s <> (empty $$ nest (-length s) y)
                     = text s <> nest (-length s) y
-\end{verbatim}
+-}
 
+-- ---------------------------------------------------------------------------
+-- Simple derived definitions
 
-
-*********************************************************
-*                                                       *
-\subsection{Simple derived definitions}
-*                                                       *
-*********************************************************
-
-\begin{code}
 semi  = char ';'
 colon = char ':'
 comma = char ','
@@ -425,12 +431,15 @@ integer  n = text (show n)
 float    n = text (show n)
 double   n = text (show n)
 rational n = text (show n)
+-- SIGBJORN wrote instead:
+-- rational n = text (show (fromRationalX n))
 
 quotes p        = char '`' <> p <> char '\''
 doubleQuotes p  = char '"' <> p <> char '"'
 parens p        = char '(' <> p <> char ')'
 brackets p      = char '[' <> p <> char ']'
 braces p        = char '{' <> p <> char '}'
+
 
 hcat = foldr (<>)  empty
 hsep = foldr (<+>) empty
@@ -443,18 +452,14 @@ punctuate p (d:ds) = go d ds
                    where
                      go d [] = [d]
                      go d (e:es) = (d <> p) : go e es
-\end{code}
 
+-- ---------------------------------------------------------------------------
+-- The Doc data type
 
-*********************************************************
-*                                                       *
-\subsection{The @Doc@ data type}
-*                                                       *
-*********************************************************
+-- A Doc represents a *set* of layouts.  A Doc with
+-- no occurrences of Union or NoDoc represents just one layout.
 
-A @Doc@ represents a {\em set} of layouts.  A @Doc@ with
-no occurrences of @Union@ or @NoDoc@ represents just one layout.
-\begin{code}
+-- | The abstract type of documents
 data Doc
  = Empty                                -- empty
  | NilAbove Doc                         -- text "" $$ x
@@ -479,41 +484,35 @@ data TextDetails = Chr  Char
                  | PStr String
 space_text = Chr ' '
 nl_text    = Chr '\n'
-\end{code}
 
-Here are the invariants:
-\begin{itemize}
-\item
-The argument of @NilAbove@ is never @Empty@. Therefore
-a @NilAbove@ occupies at least two lines.
+{-
+  Here are the invariants:
+  
+  * The argument of NilAbove is never Empty. Therefore
+    a NilAbove occupies at least two lines.
+  
+  * The arugment of @TextBeside@ is never @Nest@.
+  
+  
+  * The layouts of the two arguments of @Union@ both flatten to the same 
+    string.
+  
+  * The arguments of @Union@ are either @TextBeside@, or @NilAbove@.
+  
+  * The right argument of a union cannot be equivalent to the empty set
+    (@NoDoc@).  If the left argument of a union is equivalent to the
+    empty set (@NoDoc@), then the @NoDoc@ appears in the first line.
+  
+  * An empty document is always represented by @Empty@.  It can't be
+    hidden inside a @Nest@, or a @Union@ of two @Empty@s.
+  
+  * The first line of every layout in the left argument of @Union@ is
+    longer than the first line of any layout in the right argument.
+    (1) ensures that the left argument has a first line.  In view of
+    (3), this invariant means that the right argument must have at
+    least two lines.
+-}
 
-\item
-The arugment of @TextBeside@ is never @Nest@.
-
-\item 
-The layouts of the two arguments of @Union@ both flatten to the same string.
-
-\item 
-The arguments of @Union@ are either @TextBeside@, or @NilAbove@.
-
-\item
-The right argument of a union cannot be equivalent to the empty set (@NoDoc@).
-If the left argument of a union is equivalent to the empty set (@NoDoc@),
-then the @NoDoc@ appears in the first line.
-
-\item 
-An empty document is always represented by @Empty@.
-It can't be hidden inside a @Nest@, or a @Union@ of two @Empty@s.
-
-\item 
-The first line of every layout in the left argument of @Union@
-is longer than the first line of any layout in the right argument.
-(1) ensures that the left argument has a first line.  In view of (3),
-this invariant means that the right argument must have at least two
-lines.
-\end{itemize}
-
-\begin{code}
         -- Arg of a NilAbove is always an RDoc
 nilAbove_ p = NilAbove p
 
@@ -526,24 +525,17 @@ nest_ k p = Nest k p
         -- Args of union are always RDocs
 union_ p q = Union p q
 
-\end{code}
+
+-- Notice the difference between
+-- 	   * NoDoc (no documents)
+-- 	   * Empty (one empty document; no height and no width)
+-- 	   * text "" (a document containing the empty string;
+-- 		      one line high, but has no width)
 
 
-Notice the difference between
-        * NoDoc (no documents)
-        * Empty (one empty document; no height and no width)
-        * text "" (a document containing the empty string;
-                   one line high, but has no width)
+-- ---------------------------------------------------------------------------
+-- @empty@, @text@, @nest@, @union@
 
-
-
-*********************************************************
-*                                                       *
-\subsection{@empty@, @text@, @nest@, @union@}
-*                                                       *
-*********************************************************
-
-\begin{code}
 empty = Empty
 
 isEmpty Empty = True
@@ -552,6 +544,8 @@ isEmpty _     = False
 char  c = textBeside_ (Chr c) 1 Empty
 text  s = case length   s of {sl -> textBeside_ (Str s)  sl Empty}
 ptext s = case length s of {sl -> textBeside_ (PStr s) sl Empty}
+-- added by KL
+sp_text sl s = case sl of {sl1 -> textBeside_ (PStr s) sl1 Empty}
 
 nest k  p = mkNest k (reduceDoc p)        -- Externally callable version
 
@@ -566,36 +560,10 @@ mkNest k       p           = nest_ k p
 -- mkUnion checks for an empty document
 mkUnion Empty q = Empty
 mkUnion p q     = p `union_` q
-\end{code}
 
-*********************************************************
-*                                                       *
-\subsection{additional primitive Doc}
-*                                                       *
-*********************************************************
+-- ---------------------------------------------------------------------------
+-- Vertical composition @$$@
 
-added by Klaus Lüttich
-
-the primitive command sp_text can be used for a special use of this
-library. This function enables the possibility to use the rendering
-alghorithms provided for rendering LaTeX with a proportional font. It
-can also be abused because you can add text that has a zero width.
-
-
-\begin{code}
-
-sp_text :: Int -> String -> Doc
-sp_text sl s = case sl of {sl1 -> textBeside_ (PStr s) sl1 Empty}
-\end{code}
-
-*********************************************************
-*                                                       *
-\subsection{Vertical composition @$$@}
-*                                                       *
-*********************************************************
-
-
-\begin{code}
 p $$  q = Above p False q
 p $+$ q = Above p True q
 
@@ -623,9 +591,8 @@ aboveNest (TextBeside s sl p) g k q = k1 `seq` textBeside_ s sl rest
                                       rest = case p of
                                                 Empty -> nilAboveNest g k1 q
                                                 other -> aboveNest  p g k1 q
-\end{code}
 
-\begin{code}
+
 nilAboveNest :: Bool -> Int -> RDoc -> RDoc
 -- Specification: text s <> nilaboveNest g k q 
 --              = text s <> (text "" $g$ nest k q)
@@ -638,16 +605,10 @@ nilAboveNest g k q           | (not g) && (k > 0)        -- No newline if no ove
                              = textBeside_ (Str (spaces k)) k q
                              | otherwise                        -- Put them really above
                              = nilAbove_ (mkNest k q)
-\end{code}
 
+-- ---------------------------------------------------------------------------
+-- Horizontal composition @<>@
 
-*********************************************************
-*                                                       *
-\subsection{Horizontal composition @<>@}
-*                                                       *
-*********************************************************
-
-\begin{code}
 p <>  q = Beside p False q
 p <+> q = Beside p True  q
 
@@ -670,9 +631,8 @@ beside (TextBeside s sl p) g q   = textBeside_ s sl rest
                                   rest = case p of
                                            Empty -> nilBeside g q
                                            other -> beside p g q
-\end{code}
 
-\begin{code}
+
 nilBeside :: Bool -> RDoc -> RDoc
 -- Specification: text "" <> nilBeside g p 
 --              = text "" <g> p
@@ -681,15 +641,10 @@ nilBeside g Empty      = Empty  -- Hence the text "" in the spec
 nilBeside g (Nest _ p) = nilBeside g p
 nilBeside g p          | g         = textBeside_ space_text 1 p
                        | otherwise = p
-\end{code}
 
-*********************************************************
-*                                                       *
-\subsection{Separate, @sep@, Hughes version}
-*                                                       *
-*********************************************************
+-- ---------------------------------------------------------------------------
+-- Separate, @sep@, Hughes version
 
-\begin{code}
 -- Specification: sep ps  = oneLiner (hsep ps)
 --                         `union`
 --                          vcat ps
@@ -732,15 +687,10 @@ sepNB g Empty k ys        = oneLiner (nilBeside g (reduceDoc rest))
                                  | otherwise = hcat ys
 
 sepNB g p k ys            = sep1 g p k ys
-\end{code}
 
-*********************************************************
-*                                                       *
-\subsection{@fill@}
-*                                                       *
-*********************************************************
+-- ---------------------------------------------------------------------------
+-- @fill@
 
-\begin{code}
 fsep = fill True
 fcat = fill False
 
@@ -780,16 +730,11 @@ fillNB g Empty k (y:ys)    = nilBeside g (fill1 g (oneLiner (reduceDoc y)) k1 ys
                                 | otherwise = k
 
 fillNB g p k ys            = fill1 g p k ys
-\end{code}
 
 
-*********************************************************
-*                                                       *
-\subsection{Selecting the best layout}
-*                                                       *
-*********************************************************
+-- ---------------------------------------------------------------------------
+-- Selecting the best layout
 
-\begin{code}
 best :: Mode
      -> Int             -- Line length
      -> Int             -- Ribbon length
@@ -849,12 +794,10 @@ fits n (TextBeside _ sl p) = fits (n - sl) p
 
 minn x y | x < y    = x
          | otherwise = y
-\end{code}
 
-@first@ and @nonEmptySet@ are similar to @nicest@ and @fits@, only simpler.
-@first@ returns its first argument if it is non-empty, otherwise its second.
+-- @first@ and @nonEmptySet@ are similar to @nicest@ and @fits@, only simpler.
+-- @first@ returns its first argument if it is non-empty, otherwise its second.
 
-\begin{code}
 first p q | nonEmptySet p = p 
           | otherwise     = q
 
@@ -864,11 +807,9 @@ nonEmptySet Empty              = True
 nonEmptySet (NilAbove p)       = True           -- NoDoc always in first line
 nonEmptySet (TextBeside _ _ p) = nonEmptySet p
 nonEmptySet (Nest _ p)         = nonEmptySet p
-\end{code}
 
-@oneLiner@ returns the one-line members of the given set of @Doc@s.
+-- @oneLiner@ returns the one-line members of the given set of @Doc@s.
 
-\begin{code}
 oneLiner :: Doc -> Doc
 oneLiner NoDoc               = NoDoc
 oneLiner Empty               = Empty
@@ -876,20 +817,18 @@ oneLiner (NilAbove p)        = NoDoc
 oneLiner (TextBeside s sl p) = textBeside_ s sl (oneLiner p)
 oneLiner (Nest k p)          = nest_ k (oneLiner p)
 oneLiner (p `Union` q)       = oneLiner p
-\end{code}
 
 
+-- ---------------------------------------------------------------------------
+-- Displaying the best layout
 
-*********************************************************
-*                                                       *
-\subsection{Displaying the best layout}
-*                                                       *
-*********************************************************
-
-
-\begin{code}
-renderStyle (Style mode lineLength ribbonsPerLine) doc 
-  = fullRender mode lineLength ribbonsPerLine string_txt "" doc
+renderStyle style doc 
+  = fullRender (mode style)
+               (lineLength style)
+	       (ribbonsPerLine style)
+	       string_txt
+	       ""
+	       doc
 
 render doc       = showDoc doc ""
 showDoc doc rest = fullRender PageMode 100 1.5 string_txt rest doc
@@ -897,9 +836,7 @@ showDoc doc rest = fullRender PageMode 100 1.5 string_txt rest doc
 string_txt (Chr c)   s  = c:s
 string_txt (Str s1)  s2 = s1 ++ s2
 string_txt (PStr s1) s2 = s1 ++ s2
-\end{code}
 
-\begin{code}
 
 fullRender OneLineMode _ _ txt end doc = easy_display space_text txt end (reduceDoc doc)
 fullRender LeftMode    _ _ txt end doc = easy_display nl_text    txt end (reduceDoc doc)
@@ -962,10 +899,12 @@ easy_display nl_text txt end doc
     lay (NilAbove p)        no_doc = nl_text `txt` lay p cant_fail      -- NoDoc always on first line
     lay (TextBeside s sl p) no_doc = s `txt` lay p no_doc
 
-indent n | n >= 8     = '\t' : indent (n - 8)
-         | otherwise  = spaces n
+indent n | n >= 8 = '\t' : indent (n - 8)
+         | otherwise      = spaces n
 
-multi_ch n ch = replicate n ch
-spaces n = replicate n ' '
-\end{code}
+multi_ch 0 ch = ""
+multi_ch n       ch = ch : multi_ch (n - 1) ch
+
+spaces 0 = ""
+spaces n       = ' ' : spaces (n - 1)
 
