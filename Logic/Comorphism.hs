@@ -8,8 +8,8 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)
    
-   Provides data structures logic (co)morphisms. 
-   Logic (co)morphisms are just collections of
+   Provides data structures for institution comorphisms. 
+   These are just collections of
    functions between (some of) the types of logics.
 
 -}
