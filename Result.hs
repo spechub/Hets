@@ -19,24 +19,24 @@ data Diagnosis = Error String Pos
 	       | FatalError String Pos
                | Warning String Pos
 
-newtype Result a = Result ([Diagnosis],Maybe a)
+data Result a = Result [Diagnosis] (Maybe a)
     deriving (Show)
 
 instance Monad Result where
-  return x = Result ([],Just x)
-  Result (errs, Nothing) >>= _ = Result (errs,Nothing)
-  Result (errs1, Just x) >>= f = Result (errs1++errs2,y)
-     where Result (errs2,y) = f x
-  fail s = Result ([FatalError s nullPos],Nothing) -- better use fatal_error
+  return x = Result [] $ Just x
+  Result errs Nothing >>= _ = Result errs Nothing
+  Result errs1 (Just x) >>= f = Result (errs1++errs2) y
+     where Result errs2 y = f x
+  fail s = fatal_error s nullPos
 
-fatal_error :: (String,Pos) -> Result a
-fatal_error (s,p) = Result ([FatalError s p], Nothing)  
+fatal_error :: String -> Pos -> Result a
+fatal_error s p = Result [FatalError s p] Nothing  
 
-non_fatal_error :: a -> (String,Pos) -> Result a
-non_fatal_error x (s,p) = Result ([Error s p], Just x)  
+non_fatal_error :: a -> String -> Pos -> Result a
+non_fatal_error x s p = Result [Error s p] $ Just x  
 
-warning :: a -> (String,Pos) -> Result a
-warning x (s,p) = Result ([Warning s p], Just x)  
+warning :: a -> String -> Pos -> Result a
+warning x s p = Result [Warning s p] $ Just x  
 
 instance Show Diagnosis where
     showsPrec _ d = case d of
