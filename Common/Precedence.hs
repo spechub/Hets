@@ -37,10 +37,9 @@ isRightArg op num = endPlace op && num + 1 == placeCount op
 -- (The 'Bool' indicates if the operator is any infix .)
 comparePrecs :: GlobalAnnos -> Bool -> AssocEither -> Id -> Id -> Bool
 comparePrecs ga isInfixOp ass arg op = 
-    case precRel (prec_annos ga) op arg of
-    BothDirections -> False
-    rel -> case (begPlace arg, endPlace arg, isInfixOp) of
-	   (True, True, True) -> case rel of -- arg and op are infixes
+    case (begPlace arg, endPlace arg, isInfixOp) of
+	   (True, True, True) -> case precRel (prec_annos ga) op arg of 
+	   -- arg and op are infixes
 				 Lower -> True
 				 NoDirection -> if arg == op then 
 					  isAssoc ass (assoc_annos ga) op
@@ -57,8 +56,10 @@ comparePrecs ga isInfixOp ass arg op =
 -- (The 'Int' is the number of current arguments of the operator.)
 checkPrecs :: GlobalAnnos -> Id -> Id -> Int -> Bool
 checkPrecs ga arg op num =
-    if isLeftArg op num 
-    then comparePrecs ga (endPlace op) ALeft arg op
-    else if isRightArg op num 
-    then comparePrecs ga (begPlace op) ARight arg op
-    else True 
+    case precRel (prec_annos ga) op arg of
+    BothDirections -> False
+    _ -> if isLeftArg op num 
+	 then comparePrecs ga (endPlace op) ALeft arg op
+	 else if isRightArg op num 
+	 then comparePrecs ga (begPlace op) ARight arg op
+	 else True 

@@ -10,12 +10,6 @@ Portability :  portable
     
    generic mixfix analysis
 
-   - Ambiguities are not removed yet and may cause explosion
-
-   - filtering by longest id is not symmetric
-
-   todo: move 'getTokenList' and 'setIdePos' stuff from 'Id' into this module
-
 -}
 
 module Common.Earley (
@@ -43,6 +37,40 @@ import Data.List
 assert :: Bool -> a -> a
 assert b a = if b then a else error ("assert")
 
+-- | reconstruct the token list of an 'Id'.
+-- Replace top-level places with the input String 
+getTokenList :: String -> Id -> [Token]
+getTokenList placeStr (Id ts cs ps) = 
+    let convert =  map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
+    in if null cs then convert ts else 
+       let (toks, pls) = splitMixToken ts in
+	   convert toks ++ getCompoundTokenList cs ps ++ convert pls
+
+-- | update token positions.
+-- return remaining positions 
+setToksPos :: [Token] -> [Pos] -> ([Token], [Pos])
+setToksPos (h:ts) (p:ps) = 
+    let (rt, rp) = setToksPos ts ps
+	in (h {tokPos = p} : rt, rp)
+setToksPos ts ps = (ts, ps)
+
+-- | update positions in 'Id'.
+-- return remaining positions 
+setPlainIdePos :: Id -> [Pos] -> (Id, [Pos]) 
+setPlainIdePos (Id ts cs _) ps =
+    if null cs then 
+       let (newTs, restPs) = setToksPos ts ps
+	   in (Id newTs cs [], restPs)
+    else let (toks, pls) = splitMixToken ts
+	     ttail l = if null l then l else tail l
+	     (front, ps2) = setToksPos toks ps
+	     (newCs, ps3, ps4) = foldl ( \ (prevCs, seps, restPs) a -> 
+				  let (c1, qs) = setPlainIdePos a restPs
+				  in (c1: prevCs, head qs : seps, ttail qs))
+			   ([], [head ps2], ttail ps2) cs
+	     (newPls, ps7) = setToksPos pls ps4
+           in (Id (front ++ newPls) (reverse newCs) (reverse ps3), ps7)
+
 -- | a special index type for more type safety
 newtype Index = Index Int deriving (Eq, Ord, Show)
 
@@ -61,7 +89,8 @@ data Item a b = Item
     , posList :: [Pos]  -- positions of Id tokens
     , args :: [a]       -- currently collected arguments 
       -- both in reverse order
-    , ambigs :: [[a]]   -- currently unused fields for ambiguities
+    , ambigArgs :: [[a]] -- field for ambiguities
+    , ambigs :: [[a]]   -- field for ambiguities
     , rest :: [Token]   -- part of the rule after the "dot"
     , index :: Index    -- index into the Table/input string
     }
@@ -170,6 +199,7 @@ mkItem ind (ide, inf, toks) =
 	 , info = inf
 	 , posList = []
 	 , args = []
+	 , ambigArgs = []
 	 , ambigs = []
 	 , rest = toks
 	 , index = ind }
@@ -243,7 +273,8 @@ scanItem addType ks (trm, t) p =
 		   assert (null tt && isSingle as) $
 		   [q { rest = [], args = [addType trm $ head as] }]
 	      else [r]
-	  else if isUnknownId ide
+	  else if Set.isEmpty ks then []
+	       else if isUnknownId ide
 	         && not (tokStr t `Set.member` ks) then
 	       [r { rule = mkId [unknownTok, t]}]
 	       else []
@@ -252,12 +283,25 @@ scan :: (a -> a -> a) -> Knowns -> (a, Token) -> [Item a b]
      -> [Item a b] 
 scan f ks term = concatMap (scanItem f ks term)
 
-addArg :: [[a]] -> (a, Pos) -> Item a b -> Item a b
-addArg ams (arg, q) p = assert (not $ null $ rest p) $
+mkAmbigs :: ToExpr a b -> Item a b -> [a]
+mkAmbigs toExpr p = 
+    let l = args p in
+    map ( \ as -> fst $ 
+	  mkExpr toExpr 
+	  p { args = take (length l - length as) l ++ as
+	    } ) $ ambigArgs p
+
+addArg :: ToExpr a b -> Item a b -> Item a b -> Item a b
+addArg toExpr argItem p = 
+    let (arg, q) = mkExpr toExpr argItem 
+	ams = ambigs argItem
+	newAms = mkAmbigs toExpr argItem
+	in assert (not $ null $ rest p) $
                p { rest = tail $ rest p
 		 , posList = q : posList p
 		 , args = arg : args p 
-		 , ambigs = ams ++ ambigs p }
+		 , ambigs = (if null newAms then ams else newAms : ams)
+		   ++ ambigs p }
 
 -- | shortcut for a function that constructs an expression
 type ToExpr a b = Id -> b -> [a] -> [Pos] -> a 
@@ -279,7 +323,7 @@ reduce :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool)
 reduce ga table filt toExpr item = 
     let ide = rule item
 	inf = info item
-    in map (addArg (ambigs item) $ mkExpr toExpr item)
+    in map (addArg toExpr item)
 	$ filter ( \ oi ->  let ts = rest oi in
 		   if null ts then False
 		   else if head ts == termTok
@@ -317,43 +361,24 @@ predict rs items =
     then rs ++ items
     else items
 
-overlap :: Item a b -> Item a b -> Bool
-overlap i1 i2 = index i1 == index i2 && rest i1 == rest i2
-
 equivItem :: Item a b -> Item a b -> Bool
-equivItem i1 i2 = overlap i1 i2 && 
-		  rule i1 == rule i2
-
-size :: Item a b -> Int
-size = length . getPlainTokenList . rule 
+equivItem i1 i2 = (index i1, rest i1, rule i1) 
+		  == (index i2, rest i2, rule i2)
 
 ordItem :: Item a b -> Item a b -> Ordering
 ordItem i1 i2 = 
-    compare (index i1, rest i1, size i2, rule i1)
-		(index i2, rest i2, size i1, rule i2)
+    compare (index i1, rest i1, rule i1)
+		(index i2, rest i2, rule i2)
 
-flatItems :: ToExpr a b -> [Item a b] -> Item a b
-flatItems toExpr (i:is) = 
+flatItems :: [Item a b] -> Item a b
+flatItems (i:is) = 
     if null is 
     then i
-    else i { ambigs = map (fst . mkExpr toExpr) (i:is) : concatMap ambigs is }
-flatItems _ [] = error "flatItems: empty list"
+    else i { ambigArgs = map args (i:is) }
+flatItems [] = error "flatItems: empty list"
 
-packAmbigs :: ToExpr a b -> [Item a b] -> [Item a b]
-packAmbigs toExpr = map (flatItems toExpr) . groupBy equivItem
-
-longest :: [Item a b] -> [Item a b]
-longest (i:is) =
-    if null is 
-    then [i]
-    else if size i > size (head is) 
-	 then [i]
-	 else i : longest is
-longest [] = error "longest: empty list"
-
-filterLongest :: [Item a b] -> [Item a b]
-filterLongest = 
-    concatMap longest . groupBy overlap
+packAmbigs :: [Item a b] -> [Item a b]
+packAmbigs = map flatItems . groupBy equivItem
 
 -- | the whole state for mixfix resolution 
 data Chart a b = Chart { prevTable :: Table a b
@@ -381,9 +406,8 @@ nextChart addType filt toExpr ga st term@(_, tok) =
 	st { prevTable = nextTable
 	   , currIndex = nextIdx
 	   , currItems =  predict (map (mkItem nextIdx) $ rules st)
---	   $ packAmbigs toExpr
---	   $ filterLongest
---	   $ sortBy ordItem
+	   $ packAmbigs
+	   $ sortBy ordItem
 	   $ complete filt toExpr ga nextTable scannedItems
 	   , solveDiags = (if null scannedItems then 
 		      [Diag Error ("unexpected mixfix token: " ++ tokStr tok)
@@ -432,10 +456,14 @@ getResolved pp p toExpr st =
 		       else if null $ tail result then
 			    let har = head result 
 				ams = ambigs har
+				ambAs = mkAmbigs toExpr har
 				res = Just $ fst $ mkExpr toExpr har
 				in 
 				if null ams then 
-				   Result ds res
+				   if null ambAs then
+				      Result ds res
+				   else Result ((showAmbigs pp p $ 
+					     take 5 ambAs) : ds) res
 				else Result ((map (showAmbigs pp p) $ 
 					     take 5 ams) ++ ds) res
 		       else Result ((showAmbigs pp p $

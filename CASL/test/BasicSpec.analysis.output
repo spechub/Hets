@@ -1496,8 +1496,6 @@ Error (line 266, column 16) unknown sort 'a'
 Error (line 261, column 9) ambiguous mixfix term
 	__*__(i,__-__(q,__*__(j,p)))
 	__-__(__*__(i,q),__*__(j,p))
-	__*__(__*__(i,__-__(q,j)),p)
-	__*__(__-__(__*__(i,q),j),p)
 Hint (line 209, column 11) redeclared sort 'Int'
 Hint (line 209, column 17) redeclared sort 'Rat'
 Hint (line 121, column 12) redeclared sort 'Nat'

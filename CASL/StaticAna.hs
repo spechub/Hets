@@ -127,15 +127,15 @@ addPred ty i =
 		  addDiags $ checkPlaces (predArgs ty) i
 
 allOpIds :: Env -> Set.Set Id
-allOpIds = Set.fromAscList . Map.keys . opMap 
+allOpIds = Set.fromDistinctAscList . Map.keys . opMap 
 
 formulaIds :: Env -> Set.Set Id
 formulaIds e = 
-    Set.fromList (map simpleIdToId $ Map.keys $ varMap e) 
+    Set.fromDistinctAscList (map simpleIdToId $ Map.keys $ varMap e) 
 	   `Set.union` allOpIds e
 
 allPredIds :: Env -> Set.Set Id
-allPredIds = Set.fromAscList . Map.keys . predMap 
+allPredIds = Set.fromDistinctAscList . Map.keys . predMap 
 
 addDiags :: [Diagnosis] -> State Env ()
 addDiags ds = 
@@ -467,7 +467,7 @@ isSubSig sub super = isEmptySig $ diffSig sub super
 		     { opMap = addPartOpsM $ opMap super }
 
 partOps :: Set.Set OpType -> Set.Set OpType
-partOps s = Set.fromAscList $ map ( \ t -> t { opKind = Partial } ) 
+partOps s = Set.fromDistinctAscList $ map ( \ t -> t { opKind = Partial } ) 
 	 $ Set.toList $ Set.filter ((==Total) . opKind) s
 
 remPartOps :: Set.Set OpType -> Set.Set OpType 

@@ -146,7 +146,6 @@ expandPos f (o, c) ts ps =
 		(zipWith Token (o : commas n) ps1)
 	  in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
 	    		    
-
 -- | reconstruct the token list of an 'Id'
 -- including square brackets and commas of (nested) compound lists.
 getPlainTokenList :: Id -> [Token]
@@ -160,51 +159,6 @@ getCompoundTokenList :: [Id] -> [Pos] -> [Token]
 getCompoundTokenList cs ps = concat $ expandPos (:[]) ("[", "]") 
 	      -- although positions will be replaced (by scan)
 			     (map getPlainTokenList cs) ps
-
--- | reconstruct the token list of an 'Id'.
--- Replace top-level places with the input String 
-getTokenList :: String -> Id -> [Token]
-getTokenList placeStr (Id ts cs ps) = 
-    let convert =  map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
-    in if null cs then convert ts else 
-       let (toks, pls) = splitMixToken ts in
-	   convert toks ++ getCompoundTokenList cs ps ++ convert pls
-
--- | update token positions.
--- return remaining positions 
-setToksPos :: [Token] -> [Pos] -> ([Token], [Pos])
-setToksPos (h:ts) (p:ps) = 
-    let (rt, rp) = setToksPos ts ps
-	in (h {tokPos = p} : rt, rp)
-setToksPos ts ps = (ts, ps)
-
--- | update positions in 'Id'.
--- return remaining positions 
-setPlainIdePos :: Id -> [Pos] -> (Id, [Pos]) 
-setPlainIdePos (Id ts cs _) ps =
-    if null cs then 
-       let (newTs, restPs) = setToksPos ts ps
-	   in (Id newTs cs [], restPs)
-    else let (toks, pls) = splitMixToken ts
-	     ttail l = if null l then l else tail l
-	     (front, ps2) = setToksPos toks ps
-	     (newCs, ps3, ps4) = foldl ( \ (prevCs, seps, rest) a -> 
-				  let (c1, qs) = setPlainIdePos a rest
-				  in (c1: prevCs, head qs : seps, ttail qs))
-			   ([], [head ps2], ttail ps2) cs
-	     (newPls, ps7) = setToksPos pls ps4
-           in (Id (front ++ newPls) (reverse newCs) (reverse ps3), ps7)
-
--- | update positions in 'Id' also using positions from arguments.
--- There must be sufficiently many positions
-setIdePos :: (PosItem a) => Id -> [a] -> [Pos] -> Id
-setIdePos i ar pl =
-    fst $ setPlainIdePos i $ mergePos pl $ map getMyPos ar
-    where mergePos (p:ps) (q:qs) =
-	      if p <= q then p : mergePos ps (q:qs) 
-		 else q : mergePos (p:ps) qs 
-	  mergePos [] qs = qs
-	  mergePos ps [] = ps
 
 -- | compute a meaningful single position from an 'Id' for diagnostics 
 posOfId :: Id -> Pos
