@@ -7,10 +7,10 @@
    (further) auxiliary functions
 -}
 
-module AsUtils where
+module HasCASL.AsUtils where
 
-import As
-import Id
+import HasCASL.As
+import Common.Id
 
 posOf :: PosItem a => [a] -> Pos
 posOf l = if null l then nullPos else 

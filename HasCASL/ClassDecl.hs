@@ -7,17 +7,17 @@
    analyse class decls
 -}
 
-module ClassDecl where
+module HasCASL.ClassDecl where
 
-import As
+import HasCASL.As
 import FiniteMap
-import Id
-import Le
+import Common.Id
+import HasCASL.Le
 import Data.List
 import Data.Maybe
 import Control.Monad.State
-import Result
-import ClassAna
+import Common.Result
+import HasCASL.ClassAna
 
 anaClassDecls :: ClassDecl -> State Env ()
 anaClassDecls (ClassDecl cls _) = 

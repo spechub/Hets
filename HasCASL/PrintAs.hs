@@ -7,16 +7,16 @@
    printing As data types
 -}
 
-module PrintAs where
+module HasCASL.PrintAs where
 
-import As
-import Keywords
-import HToken
+import HasCASL.As
+import Common.Keywords
+import HasCASL.HToken
 import Common.Lib.Pretty 
-import PrettyPrint
-import GlobalAnnotations(GlobalAnnos)
-import GlobalAnnotationsFunctions(emptyGlobalAnnos)
-import Print_AS_Annotation
+import Common.PrettyPrint
+import Common.GlobalAnnotations(GlobalAnnos)
+import Common.GlobalAnnotationsFunctions(emptyGlobalAnnos)
+import Common.Print_AS_Annotation
 
 noPrint :: Bool -> Doc -> Doc
 noPrint b d = if b then empty else d

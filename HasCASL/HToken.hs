@@ -8,12 +8,12 @@
    adapted from HetCATS/CASL/Token.hs, v 1.9
 -}
 
-module HToken where
+module HasCASL.HToken where
 
-import Id
-import Keywords
-import Lexer
-import Token(casl_reserved_ops, casl_reserved_words
+import Common.Id
+import Common.Keywords
+import Common.Lexer
+import Common.Token(casl_reserved_ops, casl_reserved_words
 	    , start, comps, mixId)
 import Common.Lib.Parsec
 

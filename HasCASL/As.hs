@@ -9,10 +9,10 @@
    annotations almost as in HetCATS/CASL/AS_Basic_CASL.hs v 1.8 
 -}
 
-module As where
+module HasCASL.As where
 
-import Id
-import AS_Annotation 
+import Common.Id
+import Common.AS_Annotation 
 
 data BasicSpec = BasicSpec [Annoted BasicItem]
                   deriving (Show, Eq)

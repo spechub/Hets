@@ -7,19 +7,19 @@
    analyse given classes
 -}
 
-module ClassAna where
+module HasCASL.ClassAna where
 
-import As
-import AsUtils
-import Id
-import Le
+import HasCASL.As
+import HasCASL.AsUtils
+import Common.Id
+import HasCASL.Le
 import Data.List
 import Data.Maybe
 import Control.Monad.State
-import PrintAs(showPretty)
-import PrettyPrint
+import HasCASL.PrintAs(showPretty)
+import Common.PrettyPrint
 import FiniteMap
-import Result
+import Common.Result
 
 mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
 mkDiag k s a =

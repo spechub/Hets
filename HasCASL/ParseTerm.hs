@@ -7,18 +7,18 @@
    parser for HasCASL kind, types, terms and pattern/equations
 -}
 
-module ParseTerm where
+module HasCASL.ParseTerm where
 
-import AnnoState
-import Id
-import Keywords
-import Lexer
+import Common.AnnoState
+import Common.Id
+import Common.Keywords
+import Common.Lexer
 import Data.List(nub)
-import Token
-import HToken
-import As
+import Common.Token
+import HasCASL.HToken
+import HasCASL.As
 import Common.Lib.Parsec
-import ItemList
+import CASL.ItemList
 
 noQuMark :: String -> AParser Token
 noQuMark s = try $ asKey s << notFollowedBy (char '?')
@@ -535,7 +535,7 @@ forallTerm b =
 		return (QuantifiedTerm Universal (concat vs) t 
 			(toPos f ps d))
 
-exQuant :: AParser (Quantifier, Id.Token)
+exQuant :: AParser (Quantifier, Token)
 exQuant =
         do { q <- asKey (existsS++exMark)
 	   ; return (Unique, q)

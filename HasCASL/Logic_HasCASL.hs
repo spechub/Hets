@@ -12,17 +12,17 @@
 
 -}
 
-module Logic_HasCASL where
+module HasCASL.Logic_HasCASL where
 
-import As
-import AS_Basic_CASL(SYMB_ITEMS, SYMB_MAP_ITEMS)
-import PrintAs
-import Print_AS_Basic
-import ParseItem
-import SymbolParser
-import ParsecInterface
-import Logic
-import AnnoState(emptyAnnos)
+import HasCASL.As
+import CASL.AS_Basic_CASL(SYMB_ITEMS, SYMB_MAP_ITEMS)
+import HasCASL.PrintAs
+import CASL.Print_AS_Basic
+import HasCASL.ParseItem
+import CASL.SymbolParser
+import Logic.ParsecInterface
+import Logic.Logic
+import Common.AnnoState(emptyAnnos)
 import Data.Dynamic
 
 -- a dummy datatype for the LogicGraph and for identifying the right

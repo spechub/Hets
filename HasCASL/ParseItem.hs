@@ -7,19 +7,19 @@
    parser for HasCASL basic Items
 -}
 
-module ParseItem where
+module HasCASL.ParseItem where
 
-import AnnoState
-import Id
-import Keywords
-import Lexer
-import Token
-import HToken
-import As
+import Common.AnnoState
+import Common.Id
+import Common.Keywords
+import Common.Lexer
+import Common.Token
+import HasCASL.HToken
+import HasCASL.As
 import Common.Lib.Parsec
-import AS_Annotation
-import ParseTerm
-import ItemList
+import Common.AS_Annotation
+import HasCASL.ParseTerm
+import CASL.ItemList
 
 hasCaslStartKeywords :: [String]
 hasCaslStartKeywords = dotS:cDot: hascasl_reserved_words
@@ -461,7 +461,7 @@ generatedItems = do { g <- asKey generatedS
 genVarItems :: AParser ([GenVarDecl], [Token])
 genVarItems = 
            do { vs <- genVarDecls
-              ; do { s <- try (addAnnos >> Lexer.semiT << addLineAnnos)
+              ; do { s <- try (addAnnos >> Common.Lexer.semiT << addLineAnnos)
                    ; do { tryItemEnd hasCaslStartKeywords
                         ; return (vs, [s])
                         }

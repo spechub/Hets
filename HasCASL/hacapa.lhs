@@ -10,13 +10,13 @@ test some parsers (and printers)
 \begin{code}
 module Main where
 
-import ParseItem
-import ParseTerm
-import PrintAs
-import PrintLe
-import HToken
-import RunParsers
-import RunStaticAna
+import HasCASL.ParseItem
+import HasCASL.ParseTerm
+import HasCASL.PrintAs
+import HasCASL.PrintLe
+import HasCASL.HToken
+import CASL.RunParsers
+import HasCASL.RunStaticAna
 
 main :: IO ()
 main = exec lineParser fileParser

@@ -7,24 +7,24 @@
    conversion of As.hs to Le.hs
 -}
 
-module AsToLe where
+module HasCASL.AsToLe where
 
-import AS_Annotation
-import As
-import ClassAna
-import ClassDecl
+import Common.AS_Annotation
+import HasCASL.As
+import HasCASL.ClassAna
+import HasCASL.ClassDecl
 import FiniteMap
-import Id
-import Le
-import Lexer 
+import Common.Id
+import HasCASL.Le
+import Common.Lexer 
 import Data.Maybe
 import Control.Monad
 import Control.Monad.State
-import OpDecl
-import Result
-import PrintAs
-import TypeAna
-import TypeDecl
+import HasCASL.OpDecl
+import Common.Result
+import HasCASL.PrintAs
+import HasCASL.TypeAna
+import HasCASL.TypeDecl
 
 ----------------------------------------------------------------------------
 -- analysis

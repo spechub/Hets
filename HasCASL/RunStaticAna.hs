@@ -8,12 +8,12 @@
 -}
 
 
-module RunStaticAna where
+module HasCASL.RunStaticAna where
 
-import AnnoState
-import Le
-import AsToLe(anaBasicSpec)
-import ParseItem(basicSpec)
+import Common.AnnoState
+import HasCASL.Le
+import HasCASL.AsToLe(anaBasicSpec)
+import HasCASL.ParseItem(basicSpec)
 import Control.Monad.State
 
 anaParser :: AParser Env

@@ -7,19 +7,19 @@
    analyse given classes and types
 -}
 
-module TypeAna where
+module HasCASL.TypeAna where
 
-import As
-import AsUtils
-import ClassAna
-import Id
-import Le
+import HasCASL.As
+import HasCASL.AsUtils
+import HasCASL.ClassAna
+import Common.Id
+import HasCASL.Le
 import Data.List
 import Data.Maybe
 import Control.Monad.State
-import PrintAs(showPretty)
+import HasCASL.PrintAs(showPretty)
 import FiniteMap
-import Result
+import Common.Result
 
 data ApplMode = OnlyArg | TopLevel 
 

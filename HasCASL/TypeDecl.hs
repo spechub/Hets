@@ -7,25 +7,25 @@
    analyse type decls
 -}
 
-module TypeDecl where
+module HasCASL.TypeDecl where
 
-import As
-import AsUtils
-import AS_Annotation(item)
-import ClassAna
+import HasCASL.As
+import HasCASL.AsUtils
+import Common.AS_Annotation(item)
+import HasCASL.ClassAna
 import FiniteMap
-import Id
-import Le
+import Common.Id
+import HasCASL.Le
 import Data.Maybe
 import Control.Monad.State
 
-import MixfixParser(getTokenList, expandPos)
+import CASL.MixfixParser(getTokenList, expandPos)
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Error
 
-import PrintAs(showPretty)
-import Result
-import TypeAna
+import HasCASL.PrintAs(showPretty)
+import Common.Result
+import HasCASL.TypeAna
 
 compatibleTypeDefn :: TypeDefn -> TypeDefn -> Id -> [Diagnosis]
 compatibleTypeDefn d1 d2 i = 

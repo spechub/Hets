@@ -7,18 +7,18 @@
    printing Le data types
 -}
 
-module PrintLe where
+module HasCASL.PrintLe where
 
-import As
-import HToken
-import PrintAs
-import Le
+import HasCASL.As
+import HasCASL.HToken
+import HasCASL.PrintAs
+import HasCASL.Le
 import Data.Maybe
-import PrettyPrint
+import Common.PrettyPrint
 import Common.Lib.Pretty
 import FiniteMap
-import Keywords
-import GlobalAnnotations
+import Common.Keywords
+import Common.GlobalAnnotations
 
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
 printList0 ga l = noPrint (null l)

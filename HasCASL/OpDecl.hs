@@ -7,20 +7,20 @@
    analyse op decls
 -}
 
-module OpDecl where
+module HasCASL.OpDecl where
 
-import As
-import AsUtils
-import ClassAna
+import HasCASL.As
+import HasCASL.AsUtils
+import HasCASL.ClassAna
 import FiniteMap
-import Id
-import Le
+import Common.Id
+import HasCASL.Le
 import Control.Monad.State
-import PrettyPrint
-import PrintAs(showPretty)
+import Common.PrettyPrint
+import HasCASL.PrintAs(showPretty)
 import Common.Lib.Parsec.Pos
-import Result
-import TypeDecl
+import Common.Result
+import HasCASL.TypeDecl
 import Data.List
 
 missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()

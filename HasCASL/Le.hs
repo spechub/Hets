@@ -7,14 +7,14 @@
    abstract syntax after/during static analysis
 -}
 
-module Le where
+module HasCASL.Le where
 
-import Id
-import As
+import Common.Id
+import HasCASL.As
 import FiniteMap
 import Data.List
 import Control.Monad.State
-import Result
+import Common.Result
 
 -----------------------------------------------------------------------------
 -- classInfo
