@@ -339,9 +339,9 @@ release:
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository\
             co -P HetCATS
 	$(RM) -r uni
-	if [ -a ../uni ] ; then ln -s ../uni uni ; fi
+	if [ -d ../uni ] ; then ln -s ../uni uni ; fi
 	$(RM) -r programatica
-	if [ -a ../programatica ] ; then \
+	if [ -d ../programatica ] ; then \
           mkdir programatica; \
           ln -s ../../programatica/tools programatica/tools ; fi
 	(cd HetCATS; $(MAKE) derivedSources; \
