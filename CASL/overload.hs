@@ -117,7 +117,7 @@ TODO: All das hier implementieren und testen :D
 -- -- -- Die Hilfsfunktionen fuer minExpTerm, je nach Typ des Terms
 
 -- minExpTerm_simple sign var =
---     let 
+-- let 
 --     my_consts = [ (var, sort) | (var', sort) <- (varMap sign), var' == var ]
 --     my_funcs = [ (var, sort) | (var', sort) <- (opMap sign), var' == var ]
 --     my_subset = (minimize sign) (my_consts ++ my_funcs)
@@ -146,7 +146,14 @@ TODO: All das hier implementieren und testen :D
 
 -- -- Diese Funktionen fehlen in jedem Fall noch und sich ziemlich wichtig:
 -- minimize :: Sign -> [TERM] -> [TERM] -- minimiert
+
 -- equiv :: (a -> a -> Bool) -> [a] -> [[a]] -- Aequivalenzklassen
+-- -- naive Implementation:
+-- equiv _ [] = []
+-- equiv eq (x:xs) = let
+--                   (xs', ys) = partition (eq x) xs
+--                   in xs':(equiv eq ys)
+
 -- leqF :: a -> a -> Bool -- Funktionsgleichheit
 -- leqP :: a -> a -> Bool -- Praedikatsgleichheit
 
