@@ -26,7 +26,9 @@ AG         = $(PERL) utils/ag
 HADDOCK    = $(PERL) utils/haddock
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
-# use target hets-opt for optimization
+# please remove '-O2' if compilation lasts to long on your system
+# but please don't commit to cvs server
+
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
              -package uni-server
@@ -58,7 +60,9 @@ ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),genRules)
 ifneq ($(MAKECMDGOALS),apache_doc)
 ifneq ($(MAKECMDGOALS),clean_genRules)
+ifneq ($(MAKECMDGOALS),atctest2)
 include sources_hetcats.mk
+endif
 endif
 endif
 endif
@@ -301,6 +305,10 @@ hetana: Static/hetana.hs Static/*.hs
 
 ### ATC test system
 atctest: ATC/ATCTest.hs ATC/*.hs 
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+atctest2: ATC/ATCTest2.hs Common/SimpPretty.hs Common/ATerm/*.hs Common/Lib/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
