@@ -20,7 +20,6 @@
     -- there's got to be a better way to realize parseOutType...
     -- an Error should be raised when more than one OutDir were specified,
        or when the OutDir wasn't approved sane
-    -- implement gui ( -s )
 -}
 
 {- Optionen:
@@ -29,13 +28,16 @@ Usage: hetcats [OPTION...] file ... file
   -v[Int]   --verbose[=Int]       chatty output to stderr
   -q        --quiet               no output to stderr
   -V        --version             print version number and exit
+  -g        --gui                 use graphical user interface
   -h        --help, --usage       print usage information and exit
   -i ITYPE  --input-type=ITYPE    ITYPE of input file: 
             (tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?
   -p        --just-parse          skip analysis - just parse
-  -s        --just-structure      skip basic analysis - just do structured analysis
+  -s        --just-structure      skip basic analysis - just do structured
+            analysis
   -O DIR    --output-dir=DIR      destination directory for output files
-  -o OTYPES --output-types=OTYPES OTYPES of output files, a comma seperated list of OTYPE
+  -o OTYPES --output-types=OTYPES OTYPES of output files, a comma seperated
+            list of OTYPE
             OTYPE is (pp.(het|tex|html))
             |(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)
             |(graph.(dot|ps|davinci))
@@ -44,9 +46,8 @@ Usage: hetcats [OPTION...] file ... file
                 mit Parsec (Token.simpleId) parsen
   -L DIR    --casl-libdir=DIR     CASL library directory
   -r RAW    --raw=RAW             raw options passed to the pretty-printer
-            RAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer
-
-  -g        --gui                 use graphical user interface
+            RAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the
+            appropiate pretty-printer
 -}
 
 module Options where
@@ -67,19 +68,21 @@ import System.Console.GetOpt
 
 -- | 'HetcatsOpts' is a record set of all options received from the command line
 data HetcatsOpts = 
-    HcOpt { verbose  :: Int        -- greater than null to turn verbosity on
-          , analysis :: AnaType    -- Skip | Structured | Basic
+    HcOpt { analysis :: AnaType    -- Skip | Structured | Basic
+          , gui      :: Bool       -- True when Output is shown in a GUI
+          , infiles  :: [FilePath] -- files to be read
           , intype   :: InType     -- type of the file to be read
-          , outtypes :: [OutType]  -- list of output types to be generated
-          , rawopts  :: [RawOpt]   -- raw options for the pretty printer
           , libdir   :: FilePath   -- CASL library directory
           , outdir   :: FilePath   -- output directory
-          , infiles  :: [FilePath] -- files to be read
+          , outtypes :: [OutType]  -- list of output types to be generated
+          , rawopts  :: [RawOpt]   -- raw options for the pretty printer
+          , verbose  :: Int        -- greater than null to turn verbosity on
           }
     deriving (Eq)
 
 instance Show HetcatsOpts where
     show opts =    " --verbose="      ++ show (verbose opts)
+                ++ showGui (gui opts)
                 ++ showAnalysis (analysis opts)
                 ++ " --input-type="   ++ show (intype opts)
                 ++ " --output-types=" ++ showOutTypes (outtypes opts)
@@ -91,6 +94,7 @@ instance Show HetcatsOpts where
         showAnalysis x = case x of  Skip -> " --just-parse"
                                     Structured -> " --just-structured"
                                     Basic -> ""
+        showGui x = if x then " --gui" else ""
         showInFiles  = joinWith ' '
         showOutTypes = joinWith ',' . map show
         showRaw = joinWith ' ' . map showRaw'
@@ -99,46 +103,47 @@ instance Show HetcatsOpts where
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
-makeOpts opts (Version)    = opts -- skipped
-makeOpts opts (Help)       = opts -- skipped
-makeOpts opts (Verbose x)  = opts { verbose = x }
-makeOpts opts (InType x)   = opts { intype = x }
-makeOpts opts (OutTypes x) = opts { outtypes = x }
-makeOpts opts (OutDir x)   = opts { outdir = x }
 makeOpts opts (Analysis x) = opts { analysis = x }
+makeOpts opts (Gui x)      = opts { gui = x }
+makeOpts opts (Help)       = opts -- skipped
+makeOpts opts (InType x)   = opts { intype = x }
 makeOpts opts (LibDir x)   = opts { libdir = x }
+makeOpts opts (OutDir x)   = opts { outdir = x }
+makeOpts opts (OutTypes x) = opts { outtypes = x }
 makeOpts opts (Raw x)      = opts { rawopts = x }
+makeOpts opts (Verbose x)  = opts { verbose = x }
+makeOpts opts (Version)    = opts -- skipped
 makeOpts _     x           = hetsError Intern ("unrecognized Flag: " ++ (show x))
 
 -- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 -- basic values when the user specifies nothing else
 defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
-    HcOpt { verbose  = 1
-          , analysis = Basic
+    HcOpt { analysis = Basic
+          , gui      = False
+          , infiles  = []
           , intype   = GuessIn
-          , outtypes = [HetCASLOut OutASTree OutAscii]
-            {- better default options, but 
-            the underlying functions are not yet implemented:
-          , outtypes = [HetCASLOut OutASTree OutXml]
-            -}
-          , rawopts  = []
           , libdir   = ""
           , outdir   = ""
-          , infiles  = []
+          , outtypes = [HetCASLOut OutASTree OutAscii]
+          -- better default options, but not implemented yet:
+          --, outtypes = [HetCASLOut OutASTree OutXml]
+          , rawopts  = []
+          , verbose  = 1
           }
 
 -- | every 'Flag' describes a raw option
-data Flag = Verbose  Int         -- how verbose shall we be?
-          | Quiet                -- Ssht! Be silent!
-          | Version              -- print version number
+data Flag = Analysis AnaType     -- to analyse or not to analyse
+          | Gui      Bool        -- show Output in GUI
           | Help                 -- print usage message
-          | Analysis AnaType     -- to analyse or not to analyse
           | InType   InType      -- type of input file
-          | OutTypes [OutType]   -- types of output to generate
-          | Raw      [RawOpt]    -- raw options passed on to the pretty-printer
           | LibDir   FilePath    -- CASL library directory
           | OutDir   FilePath    -- destination directory for output files
+          | OutTypes [OutType]   -- types of output to generate
+          | Quiet                -- Ssht! Be silent!
+          | Raw      [RawOpt]    -- raw options passed on to the pretty-printer
+          | Verbose  Int         -- how verbose shall we be?
+          | Version              -- print version number
             deriving (Show,Eq)
 
 -- | 'AnaType' describes the type of analysis we want performed
@@ -168,7 +173,7 @@ data PrettyType = PrettyAscii | PrettyLatex | PrettyHtml
 data HetOutType = OutASTree | OutDGraph Flattening Bool
                   deriving (Show, Eq)
 
--- | 'Flattening' describes how flat the Earth really is :-) TODO!
+-- | 'Flattening' describes how flat the Earth really is (TODO: add comment)
 data Flattening = Flattened | HidingOutside | Full
                   deriving (Show, Eq)
 
@@ -197,6 +202,8 @@ options =
       "chatty output to stderr"
     , Option ['q'] ["quiet"] (NoArg Quiet)
       "no output at all to stderr. overrides --verbose!"
+    , Option ['g'] ["gui"] (NoArg (Gui True))
+      "show graphical output in a GUI window"
     , Option ['V'] ["version"] (NoArg Version)
       "print version number and exit"
     , Option ['h'] ["help", "usage"] (NoArg Help)
@@ -216,6 +223,7 @@ options =
     , Option ['r'] ["raw"] (ReqArg parseRawOpts "RAW")
       "raw options passed to the pretty-printer \n\tRAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer"
     ]
+-- TODO: order in some useful way...
 
 
 -- parser functions returning Flags --
