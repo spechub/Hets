@@ -125,10 +125,10 @@ checkImports fn xs = do let imports = nub xs
 checkSpecialImports :: String -> [Import] -> [Import]
 checkSpecialImports fn []     = []
 checkSpecialImports fn (x:xs) | x == "Logic.Grothendieck" = 
-                                  x : "ATC.Grothendieck" : xs
-                              | x == "ATC."++fn           = xs
-                              | otherwise                 = 
-                                  x : (checkSpecialImports fn xs)
+                                  x : "ATC.Grothendieck" : ys
+                              | x == "ATC."++fn           = ys
+                              | otherwise                 = x : ys
+    where ys = checkSpecialImports fn xs
 
 cutModuleName :: FilePath -> FilePath
 cutModuleName fp = reverse $ remP $ fst $ break (=='.') (reverse fp)
