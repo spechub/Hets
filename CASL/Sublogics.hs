@@ -35,7 +35,47 @@ Korrespondenz abstrakt-konkret:
 
 -}
 
-module Sublogics where
+module Sublogics ( -- datatype
+                   CASL_Sublogics(..),
+
+                   -- lattice functions
+                   top,
+                   sublogics_max,
+                   sublogics_min,
+                   
+                   -- sublogic to string converstion
+                   sublogics_name,
+                   
+                   -- list of all sublogics
+                   sublogics_all,
+
+                   -- check functions: element in given sublogic?
+                   in_basic_spec,
+                   in_sentence,
+                   in_symb_items,
+                   in_symb_map_items,
+                   in_sign,
+                   in_morphism,
+                   in_symbol,
+
+                   -- computation functions: sublogic of given element
+                   sl_basic_spec,
+                   sl_sentence,
+                   sl_symb_items,
+                   sl_symb_map_items,
+                   sl_sign,
+                   sl_morphism,
+                   sl_symbol,
+                   
+                   -- projection function: project element into given sublogic
+                   pr_basic_spec,
+                   pr_symb_items,
+                   pr_symb_map_items,
+                   pr_sign,
+                   pr_morphism,
+                   pr_epsilon,
+                   pr_symbol
+                 ) where
 
 import Maybe
 import FiniteMap
@@ -70,6 +110,11 @@ top = (CASL_SL True True True True True FOL)
 -- bottom element
 bottom :: CASL_Sublogics
 bottom = (CASL_SL False False False False False Atomic)
+
+-- all elements
+-- FIXME
+sublogics_all :: [CASL_Sublogics]
+sublogics_all = [top]
 
 ------------------------------------------------------------------------------
 -- special constants
@@ -143,9 +188,6 @@ sublogics_min (CASL_SL a1 b1 c1 d1 e1 l1) (CASL_SL a2 b2 c2 d2 e2 l2)
 ------------------------------------------------------------------------------
 -- helper functions
 ------------------------------------------------------------------------------
-
-strip_anno :: Annoted a -> a
-strip_anno (Annoted i _ _ _) = i
 
 comp_list_helper :: CASL_Sublogics -> [CASL_Sublogics] -> CASL_Sublogics
 comp_list_helper x []    = x
@@ -286,7 +328,7 @@ is_Atomic_f (TrueAtom _) = True
 is_Atomic_f (PredAppl _ _ _ _ _) = True
 is_Atomic_f (TermTest ExEqualOp _ _) = True
 is_Atomic_f (TermTest DefOp _ _) = True
-is_Atomic_f (AnnFormula f) = is_Atomic_f (strip_anno f)
+is_Atomic_f (AnnFormula f) = is_Atomic_f (item f)
 is_Atomic_f _ = False
 
 is_Atomic_q :: Quantifier -> Bool
@@ -297,12 +339,12 @@ is_Horn_f :: Formula -> Bool
 is_Horn_f (Quantified q _ f _) = (is_Atomic_q q) && (is_Horn_f f)
 is_Horn_f (Connect ImplOp [f,g] _) = (is_Horn_p_conj f) && (is_Horn_a g)
 is_Horn_f (Connect IfOp [g,f] _) = (is_Horn_p_conj f) && (is_Horn_a g) 
-is_Horn_f (AnnFormula f) = is_Horn_f (strip_anno f)
+is_Horn_f (AnnFormula f) = is_Horn_f (item f)
 is_Horn_f _ = False
 
 is_Horn_p_conj :: Formula -> Bool
 is_Horn_p_conj (Connect AndOp l _) = and ((map is_Horn_p_a) l)
-is_Horn_p_conj (AnnFormula f) = is_Horn_p_conj (strip_anno f)
+is_Horn_p_conj (AnnFormula f) = is_Horn_p_conj (item f)
 is_Horn_p_conj _ = False
 
 is_Horn_a :: Formula -> Bool
@@ -310,7 +352,7 @@ is_Horn_a (TrueAtom _) = True
 is_Horn_a (PredAppl _ _ _ _ _) = True
 is_Horn_a (TermTest _ _ _) = True
 is_Horn_a (ElemTest _ _ _) = True
-is_Horn_a (AnnFormula f) = is_Horn_a (strip_anno f)
+is_Horn_a (AnnFormula f) = is_Horn_a (item f)
 is_Horn_a _ = False
 
 is_Horn_p_a :: Formula -> Bool
@@ -319,7 +361,7 @@ is_Horn_p_a (PredAppl _ _ _ _ _) = True
 is_Horn_p_a (TermTest DefOp _ _) = True
 is_Horn_p_a (TermTest ExEqualOp _ _) = True
 is_Horn_p_a (ElemTest _ _ _) = True
-is_Horn_p_a (AnnFormula f) = is_Horn_p_a (strip_anno f)
+is_Horn_p_a (AnnFormula f) = is_Horn_p_a (item f)
 is_Horn_p_a _ = False
 
 is_Ghorn_f :: Formula -> Bool
@@ -332,7 +374,7 @@ is_Ghorn_f (TrueAtom _) = True
 is_Ghorn_f (PredAppl _ _ _ _ _) = True
 is_Ghorn_f (TermTest _ _ _) = True
 is_Ghorn_f (ElemTest _ _ _) = True
-is_Ghorn_f (AnnFormula f) = is_Ghorn_f (strip_anno f)
+is_Ghorn_f (AnnFormula f) = is_Ghorn_f (item f)
 is_Ghorn_f _ = False
 
 is_Ghorn_c_conj :: [Formula] -> Bool
@@ -370,43 +412,43 @@ get_Logic_sd f = if (is_Horn_p_a f) then need_horn else
 
 sl_basic_spec :: BASIC_SPEC -> CASL_Sublogics
 sl_basic_spec (Basic_spec l) = comp_list $ map sl_basic_items
-                                         $ map strip_anno l
+                                         $ map item l
 
 sl_basic_items :: BASIC_ITEMS -> CASL_Sublogics
 sl_basic_items (Sig_items i) = sl_sig_items i
 sl_basic_items (Free_datatype l _) = comp_list $ map sl_datatype_decl
-                                               $ map strip_anno l
+                                               $ map item l
 sl_basic_items (Sort_gen l _) = sublogics_max need_cons
                                 (comp_list $ map sl_sig_items
-                                           $ map strip_anno l)
+                                           $ map item l)
 sl_basic_items (Var_items l _) = comp_list $ map sl_var_decl l
 sl_basic_items (Local_var_axioms d l _) = sublogics_max
                                           (comp_list $ map sl_var_decl d)
                                           (comp_list $ map sl_formula
-                                                     $ map strip_anno l)
+                                                     $ map item l)
 sl_basic_items (Axiom_items l _) = comp_list $ map sl_formula
-                                             $ map strip_anno l
+                                             $ map item l
 
 sl_sig_items :: SIG_ITEMS -> CASL_Sublogics
-sl_sig_items (Sort_items l _) = comp_list $ map sl_sort_item $ map strip_anno l
-sl_sig_items (Op_items l _) = comp_list $ map sl_op_item $ map strip_anno l
-sl_sig_items (Pred_items l _) = comp_list $ map sl_pred_item $ map strip_anno l
+sl_sig_items (Sort_items l _) = comp_list $ map sl_sort_item $ map item l
+sl_sig_items (Op_items l _) = comp_list $ map sl_op_item $ map item l
+sl_sig_items (Pred_items l _) = comp_list $ map sl_pred_item $ map item l
 sl_sig_items (Datatype_items l _) = comp_list $ map sl_datatype_decl
-                                              $ map strip_anno l
+                                              $ map item l
 
 sl_sort_item :: SORT_ITEM -> CASL_Sublogics
 sl_sort_item (Subsort_decl _ _ _) = need_sub
 sl_sort_item (Subsort_defn _ _ _ f _) = sublogics_max
-                                        (get_logic_sd $ strip_anno f)
+                                        (get_logic_sd $ item f)
                                         (sublogics_max need_sub
-                                        (sl_formula $ strip_anno f))
+                                        (sl_formula $ item f))
 sl_sort_item _ = bottom
 
 sl_op_item :: OP_ITEM -> CASL_Sublogics
 sl_op_item (Op_decl _ t l _) = sublogics_max (sl_op_type t)
                                (comp_list $ map sl_op_attr l)
 sl_op_item (Op_defn _ h t _) = sublogics_max (sl_op_head h)
-                                             (sl_term $ strip_anno t)
+                                             (sl_term $ item t)
 
 sl_op_attr :: OP_ATTR -> CASL_Sublogics
 sl_op_attr (Unit_op_attr t) = sl_term t
@@ -423,11 +465,11 @@ sl_op_head _ = bottom
 sl_pred_item :: PRED_ITEM -> CASL_Sublogics
 sl_pred_item (Pred_decl _ _ _) = need_pred
 sl_pred_item (Pred_defn _ _ f _) = sublogics_max need_pred
-                                                 (sl_formula $ strip_anno f)
+                                                 (sl_formula $ item f)
 
 sl_datatype_decl :: DATATYPE_DECL -> CASL_Sublogics
 sl_datatype_decl (Datatype_decl _ l _) = comp_list $ map sl_alternative
-                                                   $ map strip_anno l
+                                                   $ map item l
 
 sl_alternative :: ALTERNATIVE -> CASL_Sublogics
 sl_alternative (Total_construct _ l _) =  comp_list $ map sl_components l
@@ -471,7 +513,7 @@ sl_form (Mixfix_formula t) = sl_term t
 sl_form (Unparsed_formula _ _) = bottom
 
 sl_sentence :: Sentence -> CASL_Sublogics
-sl_sentence (Axiom a) = sl_axiom $ strip_anno a
+sl_sentence (Axiom a) = sl_axiom $ item a
 sl_sentence (GenItems i _) = sl_genitems i
 
 sl_axiom :: Axiom -> CASL_Sublogics
@@ -515,9 +557,9 @@ sl_sign :: Sign -> CASL_Sublogics
 sl_sign (SignAsList l) = comp_list $ map sl_sigitem l
 
 sl_sigitem :: SigItem -> CASL_Sublogics
-sl_sigitem (ASortItem i) = sl_sortitem $ strip_anno i
-sl_sigitem (AnOpItem i) = sl_opitem $ strip_anno i
-sl_sigitem (APredItem i) = sl_preditem $ strip_anno i
+sl_sigitem (ASortItem i) = sl_sortitem $ item i
+sl_sigitem (AnOpItem i) = sl_opitem $ item i
+sl_sigitem (APredItem i) = sl_preditem $ item i
 
 sl_sortitem :: SortItem -> CASL_Sublogics
 sl_sortitem (SortItem _ r d _ _) = sublogics_max (sl_sortrels r)
@@ -548,7 +590,7 @@ sl_funkind (Partial) = need_part
 sl_funkind _ = bottom
 
 sl_opdefn :: OpDefn -> CASL_Sublogics
-sl_opdefn (OpDef _ t _) = sl_Term (strip_anno t)
+sl_opdefn (OpDef _ t _) = sl_Term (item t)
 sl_opdefn (Constr c) = sl_symbol c
 sl_opdefn (Select l s) = sublogics_max (sl_symbol s)
                                        (comp_list $ map sl_symbol l)
@@ -579,7 +621,7 @@ sl_Form (PredAppl _ _ l _ _) = sublogics_max need_pred
 sl_Form (ElemTest t _ _) = sublogics_max need_sub (sl_Term t)
 sl_Form (FalseAtom _) = bottom
 sl_Form (TrueAtom _) = bottom
-sl_Form (AnnFormula f) = sl_Form $ strip_anno f
+sl_Form (AnnFormula f) = sl_Form $ item f
 
 sl_morphism :: Morphism -> CASL_Sublogics
 sl_morphism (Morphism a b _ f p) = sublogics_max
