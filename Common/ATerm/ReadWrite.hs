@@ -43,7 +43,6 @@ import Common.ATerm.AbstractSyntax
 -- added by KL
 import Char
 import List
-import Data.Array.Unboxed
 import Data.FiniteMap
 import Common.SimpPretty
 
@@ -232,7 +231,7 @@ isAFunChar c		= (isAlphaNum c) || (c `elem` "-_*+")
 spanNotQuote 		= span (/='"')
 -}
 spanAbbrevChar :: String -> (String,String)
-spanAbbrevChar		= span (`elem` toBase64)
+spanAbbrevChar		= span isBase64Char
 
 isIntHead :: Char -> Bool
 isIntHead c		= (isDigit c) || (c=='-')
@@ -570,13 +569,11 @@ getAbbrevTerm i at (RTab abb_ai_map _) =
 []     !!! _       =  error "!!!: index too large"
 -}
 --- Intger Read ---------------------------------------------------------------
-digArr :: Array Char Integer
-digArr = listArray ('0','9') [0..9]
 
 readInteger :: Char -> String -> Integer
 readInteger hd str = condNeg (conv (reverse str'))
     where conv []   = 0
-	  conv (x:xs) = (digArr ! x) + (conv xs * 10)
+	  conv (x:xs) = toInteger (ord x - ord '0') + 10 * conv xs
 	  str'    = if hd == '-' then str    else (hd:str)
 	  condNeg = if hd == '-' then negate else id
 
@@ -584,36 +581,20 @@ readInteger hd str = condNeg (conv (reverse str'))
 
 mkAbbrev :: Int -> [Char]
 mkAbbrev x
-  | x == 0	= [revBase64Array ! 0]
+  | x == 0	= "A"
+  | x < 0       = error ("mkAbbrev: negative Int "++ show x)
   | otherwise   = reverse (mkAbbrevAux x)
 
 mkAbbrevAux :: Int -> [Char]
 mkAbbrevAux x
-  | x == 0	= []
-  | x > 0	= seq d $ seq m (revBase64Array ! m:mkAbbrevAux d) 
-  | otherwise   = error ("mkAbbrevAux: Int "++ show x++" to big")
-  where (d,m) = divMod x 64
+  | x > 0	= case quotRem x 64 of 
+		  (d, m) -> toBase64Char m : mkAbbrevAux d
+  | otherwise	= []
 
 deAbbrev :: [Char] -> Int
-deAbbrev x		=  deAbbrevAux (reverse x)
+deAbbrev =  let f m c = 64*m + toBase64Int c in foldl f 0 
 
-deAbbrevAux :: [Char] -> Int
-deAbbrevAux []		=  0
-deAbbrevAux (c:cs)	=  case base64Array ! c of
-			   i -> case deAbbrevAux cs of
-				r -> seq r (i + 64*r)
-
-revBase64Array :: Array Int Char
-revBase64Array = listArray (0,63) toBase64
-
-base64Array :: Array Char Int
-base64Array = array ('+','z') toBase64pairs
-
-toBase64pairs :: [(Char,Int)]
-toBase64pairs =  zip toBase64 integerList
-    where integerList :: [Int]
-	  integerList = [0..63]
-
+{-
 toBase64 :: [Char]
 toBase64 =
   [ 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
@@ -621,6 +602,29 @@ toBase64 =
     'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
     'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/' 
   ]
+-}
+
+toBase64Int :: Char -> Int
+toBase64Int c 
+    | c >= 'A' && c <= 'Z' = ord c - ord 'A'
+    | c >= 'a' && c <= 'z' = ord c - ord 'a' + 26
+    | isDigit c = ord c - ord '0' + 52
+    | c == '+' = 62
+    | c == '/' = 63
+    | otherwise = error "toBase64Int"
+
+toBase64Char :: Int -> Char
+toBase64Char i
+    | i < 26 = chr (ord 'A' + i)
+    | i < 52 = chr (ord 'a' + i - 26)
+    | i < 62 = chr (ord '0' + i - 52)
+    | i == 62 = '+'
+    | i == 63 = '/'
+    | otherwise = error "toBase64Char"
+
+isBase64Char :: Char -> Bool
+isBase64Char c = c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || isDigit c
+		 || c == '+' || c == '/'
 
 -- helpers --
 abbrevD :: Int -> Doc_len
