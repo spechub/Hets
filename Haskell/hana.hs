@@ -14,12 +14,10 @@ test the haskell parser
 module Main where
 
 import System.Environment
-import Haskell.Hatchet.HsParseMonad
-import Haskell.Hatchet.HsParser
-import Haskell.Hatchet.HsSyn
-import Haskell.Hatchet.HsPretty
+import Haskell.HatParser
 import Haskell.HatAna
-import Haskell.Hatchet.MultiModuleBasics
+import Text.ParserCombinators.Parsec
+import Common.GlobalAnnotations
 
 main :: IO ()
 main = do
@@ -27,13 +25,11 @@ main = do
     if length l == 1 
        then do
 	    let f = head l
-	    s <- readFile f
-	    let r = parse s (SrcLoc 1 0) 0 []
+	    r <- parseFromFile hatParser f 
 	    putStrLn $ case r of
-			 Ok _ (HsModule _ _ _ decls) -> 
-                           show (hatAna decls emptyModuleInfo)
-			 Failed msg -> msg
--- OK and Failed are constructors of HsParseMonad.ParseResult
+			 Right decls -> 
+                           show $ hatAna (decls, emptySign, emptyGlobalAnnos)
+			 Left msg -> show msg
 	else do 
 	     p <- getProgName
              putStrLn("Usage: "++p++" <file>")
