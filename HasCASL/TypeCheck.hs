@@ -130,11 +130,12 @@ freshVars l = mapM (freshTypeVar . posOfTerm) l
 inferAppl :: [Pos] -> Maybe Type -> Term  -> Term 
           -> State Env [(Subst, Constraints, Type, Term)]
 inferAppl ps mt t1 t2 = do
+            let origAppl = ApplTerm t1 t2 ps
             tm <- gets typeMap
             aty <- freshTypeVar $ posOfTerm t2
             rty <- case mt of 
-                  Nothing -> freshTypeVar $ posOfTerm t1
-                  Just ty -> return ty
+                Nothing -> freshTypeVar $ posOfTerm t1
+                Just ty -> return ty
             ops <- infer (Just $ FunType aty PFunArr rty []) t1
             combs <- mapM ( \ (sf, cs, _, tf) -> do 
                    let sfty = subst sf aty
@@ -157,22 +158,16 @@ inferAppl ps mt t1 t2 = do
                            mkATM u = maybe [] ((:[]) . mkAT u) . maybeResult
                            l1 = mkATM False m1
                            l2 = mkATM True m2
---                           (as, acs, ty, atrm) = mkAT False eps
                            in if null l1 then 
                                  if null l2 then 
                                     if lesserType tm (subst sf tya) sfty then
                                         [mkAT False eps]
                                     else []
-{-
-                                       [(as, Subtyping (subst sf tya) sfty
-                                         `Set.insert` acs, ty, atrm)]
--}
                                  else l2 
                                else l1
                           ) args) ops
             let res2 = concat combs 
                 res = typeNub tm q2p res2
-                origAppl = ApplTerm t1 t2 ps
             if null res then 
                addDiags [case mt of 
                        Nothing -> mkDiag Error
@@ -252,8 +247,8 @@ infer mt trm = do
                                       (s, cs, ty, 
                                        QualOp br (InstOpId i is [])
                                                   (opType oi) ps)) ls
-            else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)
-                 (mkTupleTerm ts ps) ps
+            else inferAppl ps mt (ResolvedMixTerm i [] ps)
+                 $ mkTupleTerm ts ps
         ApplTerm t1 t2 ps -> inferAppl ps mt t1 t2
         TupleTerm ts ps -> 
             case mt of 
@@ -300,7 +295,7 @@ infer mt trm = do
                             rs <- infer Nothing t
                             return $ map ( \ (s2, cs, typ, tr) -> 
                                 (compSubst s s2, 
-                                 substC s $ Set.insert (Subtyping ty typ) cs, 
+                                 substC s $ insertC (Subtyping ty typ) cs, 
                                  logicalType, 
                                  TypedTerm tr qual ty ps)) rs
                 AsType -> do
@@ -312,7 +307,7 @@ infer mt trm = do
                             rs <- infer Nothing t
                             return $ map ( \ (s2, cs, typ, tr) -> 
                                 (compSubst s s2, 
-                                 substC s $ Set.insert (Subtyping ty typ) cs, 
+                                 substC s $ insertC (Subtyping ty typ) cs, 
                                  ty, TypedTerm tr qual ty ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenVarDecl decls
