@@ -43,13 +43,7 @@ dependentSyms sym sig =
 
 hideRelSymbol :: Symbol -> Env -> Env
 hideRelSymbol sym sig = 
-    let depSyms = dependentSyms sym sig 
-	relSyms = relatedSyms sig sym
-	in
-    if Set.isEmpty depSyms then hideSymbol sym sig
-       else if Set.isEmpty relSyms then 
-	    hideSymbol sym $ Set.fold hideSymbol sig depSyms
-	    else sig
+    hideSymbol sym $ Set.fold hideSymbol sig $ dependentSyms sym sig
 
 
 hideSymbol :: Symbol -> Env -> Env
