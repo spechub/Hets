@@ -331,7 +331,7 @@ utils/genRules: $(GENERATERULES_deps)
 
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs \
-                          $(HC_OPTS) -o $(INLINEAXIOMS)
+                          -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
 release: 

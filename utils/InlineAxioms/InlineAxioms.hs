@@ -5,7 +5,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  non-portable (import Logic.Logic)
+Portability :  portable
 
    Preprocessor for sentences written in some logic, usually used for
    transforming file.inline.hs into file.hs.  The sentences are
