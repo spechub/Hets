@@ -1,4 +1,4 @@
-{- Version 0.9b, 10,06,2004 -}
+{- Version 0.9b, 11,06,2004 -}
 
 module GUI.ShowLogicGraph
 where
@@ -46,7 +46,7 @@ showLogicGraph
            disp s tD = debug (s ++ (show tD))
        logicG <- newGraph displaySort graphParms
        
-       (killChannel :: Channel ()) <- newChannel   
+ --    (killChannel :: Channel ()) <- newChannel   
 
        let logicNodeMenu = LocalMenu(Menu (Just "Info") 
                [Button "Tools" (\lg -> createTextDisplay ("Parsers, Provers and Cons_Checker of " ++ showTitle lg) (showTools lg) [size(80,25)]),
@@ -78,6 +78,7 @@ showLogicGraph
        let namesAndNodes = Map.fromList (zip (Map.keys(logics logicGraph)) nodeList)
        
            lookupLogic(Logic lid) = fromJust (Map.lookup (language_name lid) namesAndNodes)
+
            -- eath edge can also show the informations 
            -- (the description of comorphism and names of source/target-Logic as well as
 	   -- the sublogics.)
@@ -85,14 +86,19 @@ showLogicGraph
 	       LocalMenu(Button "Info" 
                  (\c -> case c of
                          Comorphism cid ->
-			  let sid = Logic (sourceLogic cid)
-                              tid = Logic (targetLogic cid)
+                          let ssid = G_sublogics (sourceLogic cid) (sourceSublogic cid)
+                              tsid = G_sublogics (targetLogic cid) (targetSublogic cid)
                           in  createTextDisplay (show c) (showComoDescription c ++ "\n\n" ++
-			      "Sublogic of " ++ showTitle sid ++ ":\n" ++ showSublogic sid ++ 
-			      "\nSublogic of " ++ showTitle tid ++ ":\n" ++ showSublogic tid )
-                              [size(83,50)]))
+			      "source logic:     " ++ (language_name $ sourceLogic cid) ++
+			      "\n" ++
+                              "target logic:     " ++ (language_name $ targetLogic cid) ++ 
+			      "\n" ++
+                              "source sublogic:  " ++ showSubTitle ssid ++ "\n" ++
+			      "target sublogic:  " ++ showSubTitle tsid)
+                              [size(83,25)]))
            normalArcTypeParms = logicArcMenu $$$         -- normal comorphism
                                 Color "black" $$$
+				ValueTitle (\c -> return $ show c) $$$
                                 nullArcTypeParms
                             
            inclArcTypeParms = logicArcMenu $$$           -- inclusion
@@ -102,14 +108,14 @@ showLogicGraph
        normalArcType <- newArcType logicG normalArcTypeParms
        inclArcType   <- newArcType logicG inclArcTypeParms   
        
-       let insertComo = 
+       let insertComo =            -- for cormophism
              (\c -> 
                 case c of
                   Comorphism cid ->
                     let sid = Logic (sourceLogic cid)
                         tid = Logic (targetLogic cid)
                     in  newArc logicG normalArcType c (lookupLogic sid) (lookupLogic tid))   
-           insertIncl =
+           insertIncl =            -- for inclusion
              (\i -> 
                 case i of
                   Comorphism cid -> 
@@ -122,9 +128,8 @@ showLogicGraph
                   --(drop (length arcList1) (Map.elems (comorphisms logicGraph)))
        
        redraw logicG
-       
 
-     where 		
+    where 		
         (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms
 	(nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
 	(nullSubNodeParms :: nodeTypeParms G_sublogics) = emptyNodeTypeParms
@@ -134,6 +139,11 @@ showLogicGraph
             case l of
               Logic lid -> unlines (map unwords $ 
                                 map (sublogic_names lid) (all_sublogics lid))
+
+	showSubTitle gsl = 
+	    case gsl of 
+	      G_sublogics lid sls -> unwords $ sublogic_names lid sls
+
         showTitle l = 
             case l of
               Logic lid -> language_name lid
