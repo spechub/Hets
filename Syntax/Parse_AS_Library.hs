@@ -113,6 +113,16 @@ libItem l@(log, lG) =
        q <- optEnd
        return (Syntax.AS_Library.View_defn vn g vt symbMap 
                     (map tokPos ([s1, s2] ++ ps ++ maybeToList q)), log)
+  <|> -- unit spec
+    do kUnit <- asKey unitS
+       kSpec <- asKey specS
+       name <- simpleId
+       kEqu <- asKey equalS
+       usp <- unitSpec l
+       kEnd <- optEnd
+       return (Syntax.AS_Library.Unit_spec_defn name usp
+	           (map tokPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)), 
+	       log)
   <|> -- arch spec
     do kArch <- asKey archS
        kSpec <- asKey specS
