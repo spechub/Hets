@@ -49,9 +49,9 @@ instance Comorphism HasCASL2Haskell
     sourceSublogic _ = ()
     targetLogic _ = Haskell
     targetSublogic _ = ()
-    map_sign _ = mapSignature
+    map_sign _ = Just . mapSignature
     --map_morphism _ morphism1 -> Maybe morphism2
-    map_sentence _ _ _ = Nothing
+    map_sentence _ = mapSingleSentence
     --map_symbol :: cid -> symbol1 -> Set symbol2
     map_theory _ = Just . mapTheory
 
