@@ -15,7 +15,6 @@ module HasCASL.Unify where
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
-import HasCASL.ClassAna
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -130,7 +129,7 @@ class Unifiable a where
 -- | most general unifier via 'match' 
 -- where both sides may contribute substitutions
 mgu :: Unifiable a => TypeMap -> a -> a -> Result Subst
-mgu tm a b = match tm (relatedTypeIds tm) (True, a) (True, b)
+mgu tm a b = match tm (==) (True, a) (True, b)
 
 shapeMatch :: Unifiable a => TypeMap -> a -> a -> Result Subst
 shapeMatch tm a b = match tm (const $ const True) (True, a) (True, b)
@@ -140,7 +139,7 @@ unify tm a b = isJust $ maybeResult $ mgu tm a b
 
 subsume :: Unifiable a => TypeMap -> a -> a -> Bool
 subsume tm a b = 
-    isJust $ maybeResult $ match tm (relatedTypeIds tm) (False, a) (True, b)
+    isJust $ maybeResult $ match tm (==) (False, a) (True, b)
 
 equalSubs :: Unifiable a => TypeMap -> a -> a -> Bool
 equalSubs tm a b = subsume tm a b && subsume tm b a
@@ -151,16 +150,6 @@ getTypeVar(TypeArg v _ _ _) = v
 
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
 idsOf b = Set.fromList . map (getTypeVar . fst) . leaves b
-
-occursIn :: TypeMap -> TypeId -> Type -> Bool
-occursIn tm i =  Set.any (relatedTypeIds tm i) . idsOf (const True)
-
-relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
-relatedTypeIds _tm i1 i2 = i1 == i2 
---    not $ Set.disjoint (allRelIds tm i1) $ allRelIds tm i2
-
-allRelIds :: TypeMap -> TypeId -> Set.Set TypeId
-allRelIds tm i = Set.union (superIds tm i) $ subIds tm i 
 
 mapType :: IdMap -> Type -> Type
 mapType m ty = if Map.isEmpty m then ty else 
@@ -319,31 +308,3 @@ expandAliases tm t = case t of
     KindedType ty k ps -> wrap $ KindedType (expandAlias tm ty) k ps
     _ -> wrap t
     where wrap ty = ([], [], ty, False)
-
--- | super type ids
-superIds :: TypeMap -> Id -> Set.Set Id
-superIds tm = supIds tm Set.empty . Set.single
-
-subIds :: TypeMap -> Id -> Set.Set Id
-subIds tm i = foldr ( \ j s ->
-		 if Set.member i $ superIds tm j then
-		      Set.insert j s else s) Set.empty $ Map.keys tm
-
-supIds :: TypeMap -> Set.Set Id -> Set.Set Id -> Set.Set Id
-supIds tm known new = 
-    if Set.isEmpty new then known else 
-       let more = Set.unions $ map superTypeToId $ 
-		  concatMap ( \ i -> superTypes 
-			    $ Map.findWithDefault starTypeInfo i tm)
-                  $ Set.toList new 
-	   newKnown = Set.union known new
-    in supIds tm newKnown (more Set.\\ newKnown)
-
-starTypeInfo :: TypeInfo
-starTypeInfo = TypeInfo star [] [] NoTypeDefn
-
-superTypeToId :: Type -> Set.Set Id
-superTypeToId t = 
-    case t of
-	   TypeName i _ _ -> Set.single i
-	   _ -> Set.empty

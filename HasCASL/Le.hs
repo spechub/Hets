@@ -61,6 +61,9 @@ data TypeInfo = TypeInfo { typeKind :: Kind
                          , typeDefn :: TypeDefn
                          } deriving (Show, Eq)
 
+starTypeInfo :: TypeInfo
+starTypeInfo = TypeInfo star [] [] NoTypeDefn
+
 isTypeVarDefn :: TypeInfo -> Bool
 isTypeVarDefn t = case typeDefn t of
                   TypeVarDefn _ -> True
@@ -115,7 +118,7 @@ data Env = Env { classMap :: ClassMap
                , sentences :: [Named Sentence]       
                , envDiags :: [Diagnosis]
                , preIds :: (PrecMap, Set.Set Id)
-               , counter :: Int
+               , counter :: !Int
                } deriving Show
 
 initialEnv :: Env
@@ -185,4 +188,3 @@ symbKindToRaw sk = AKindedId $ case sk of
                    SK_fun -> SK_op
                    SK_sort -> SK_type
                    _ -> sk
-
