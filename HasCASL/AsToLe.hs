@@ -30,7 +30,6 @@ import HasCASL.TypeDecl
 import HasCASL.Builtin
 import HasCASL.MapTerm
 import Data.Maybe
-import Data.List
 
 -- | basic analysis
 basicAnalysis :: (BasicSpec, Env, GlobalAnnos) -> 
@@ -80,9 +79,9 @@ diffAss tm (OpInfos l1) (OpInfos l2) =
     where diffOps [] _ = []
           diffOps (o:os) ps = 
               let rs = diffOps os ps 
-		  n = mapOpInfo (id, expandAlias tm) o
+                  n = mapOpInfo (id, expandAlias tm) o
               in if any (instScheme tm 1 (opType n) . expand tm . opType) ps
-		 then rs else n:rs
+                 then rs else n:rs
  
 -- | environment with predefined types and operations
 addPreDefs :: Env -> Env  
