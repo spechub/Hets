@@ -2,6 +2,7 @@ module BasicItem where
 
 import Id
 import Lexer
+import LocalEnv
 import Parsec
 
 {-
@@ -14,61 +15,83 @@ skipChar c = skip (char c)
 semi = skipChar ';' >> ann
 optSemi = option [] semi
 
-
-
 pluralKeyword s = skip (do { w <- string s;
 			     option (w) (char 's' >> return (w++"s"))
 			   })
+
 sortId = mixId
 varId = mixId
+opId = mixId
 comma = skipChar ','
-sortEq = skipChar '='
+equal = skipChar '='
 
-type SortId = Id
-
-data SortItem = AllLess [SortId] (Maybe SortId) 
-	      | AllEqual [SortId] 
-	      | SubType SortId -- Term
+data SortItem = AllLess [Id] (Maybe Id) 
+	      | AllEqual [Id] 
+	      | SubType Id -- Term
 		deriving (Show)
 
-commaSortList s1 = do { comma;
-			s <- sepBy sortId comma;
-			option (AllLess (s1:s) Nothing) (superSort (s1:s));
-		      }
-
-superSort l = do { skipChar '<';
-		   s <- sortId;
-		   return (AllLess l (Just s))
+sortDecl s1 = do { comma;
+		   s <- sepBy sortId comma;
+		   option (AllLess (s1:s) Nothing) (subSortDecl (s1:s));
 		 }
 
-equalSort s1 = do { sortEq;
-		    s <- sepBy sortId sortEq;
-		    return (AllEqual (s1:s))
-		  }
+subSortDecl l = do { skipChar '<';
+		     s <- sortId;
+		     return (AllLess l (Just s))
+		   }
+
+isoDecl s1 = do { equal;
+                  subSortDefn s1
+		  <|>
+		  do { s <- sepBy sortId equal;
+		       return (AllEqual (s1:s))
+		     }
+		}
+
+subSortDefn s = do { t <- between (try (skipChar '{')) (skipChar '}') 
+		     (return ""); -- parse single var decl and term
+		     return (SubType s)
+		   }
 
 sortItem = do { s1 <- sortId;
-		commaSortList s1
+		sortDecl s1
 		<|>
-		superSort [s1]
+		subSortDecl [s1]
 		<|>
-                equalSort s1;
+                isoDecl s1
 	      } 		
 
-parseSortItems = do { pluralKeyword "sort";
-		      s <- sepBy1 sortItem semi;
-		      optSemi;
-		      return s 
-		    }
+sortItems = do { pluralKeyword "sort";
+		 s <- sepBy1 sortItem semi;
+		 optSemi;
+		 return s 
+	       }
+
+opItem = do { o1 <- opId;
+	      opDecl o1
+	      <|>
+	      opDefn o1
+	    }
+
+opDecl = return 
+opDefn = return
+
+opItems = do { pluralKeyword "op";
+	       s <- sepBy1 opItem semi;
+	       optSemi;
+	       return s;
+	     }
 		   
-parseSigItems = parseSortItems
+sigItems = sortItems -- <|> opItems
 
 
-parseBasicItem = parseSigItems 
+basicItem = sigItems 
 
 
-parseBasicSpec = do { ann;
-		      many1 parseBasicItem;
-		   }
+basicSpec = do { ann;
+--		 setState(empty);
+		 many1 basicItem;
+	       }
 
 
 

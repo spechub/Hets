@@ -172,20 +172,25 @@ textLine = many (noneOf newlineChars)
 eol = (eof >> return '\n') <|> oneOf newlineChars
 
 commentLine = between (try (string "%%")) eol textLine
+              >>= return . ("%%" ++)
 
-notEndText c = try(do { char c;
+notEndText c = try (do { char c;
 			notFollowedBy (char '%');
 			return c;
 		      }) <?> ""
 
 middleText c = many ((satisfy (/=c)) <|> notEndText c) 
 
-comment o c = between (try (string ("%" ++ [o]))) (string (c : "%")) 
-	     (middleText c)
+comment o c = let op = "%" ++ [o]
+		  cl = c : "%"
+	      in do { t <- between (try (string op)) (string cl) 
+		          (middleText c);
+		      return (op ++ t ++ cl)
+		    }
 
 commentOut = comment '[' ']' 
 commentGroup = comment '{' '}'
-label = comment '(' ')'
+labelAnn = comment '(' ')'
 
 -- ----------------------------------------------
 -- skip whitespaces and comment out
@@ -216,7 +221,8 @@ annote =
 		 })
        }
 
-ann = annote <|> label <|> commentGroup <|> commentLine
+-- annotations between items
+ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
 
 -- ----------------------------------------------
 -- no-bracket-token, literal or place (for terms)
@@ -264,7 +270,7 @@ placeTokenId = do { p <- placeToken;
 placeTokenIds = fmap concat (many1 placeTokenId)
 
 comps  = between (skip (char '[')) (skip (char ']')) 
-	 (sepBy1 mixId (skip (char ',')))
+	 (sepBy1 mixId (skip (char ','))) <?> "[<id>,...,<id>]"
 
 compId = do { b <- bracketToken;
 	      option b (do {cs <- comps; return (CompId b cs)})

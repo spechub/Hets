@@ -35,15 +35,15 @@ data OpAttr = AssocOpAttr | CommonOpAttr | IdemOpAttr | UnitOpAttr Term
 	       deriving (Show,Eq)
 
 -- synonyms to indicate the order of arguments
-type SortId = Symb
-type ConsId = Symb  
-type SelId = Symb  
+type SortId = Id
+type ConsSymb = Symb  
+type SelSymb = Symb  
 
 -- operation defined by a Lambda-Term or generated from a datatype
 -- a selector may cover several constructors/alternatives 
 data OpDefn = Definition Term
-            | Constructor(SortId, ConsId)
-            | Selector (SortId, [ConsId], SelId)  
+            | Constructor(SortId, ConsSymb)
+            | Selector (SortId, [ConsSymb], SelSymb)  
 	      deriving (Show,Eq)
 
 data OpItem = OpItem(Decl, [OpAttr], Maybe OpDefn) 
@@ -57,4 +57,4 @@ type LocalEnv = ([SortItem], [OpItem],
                 [Axiom],   
                 [GenItems])
 
-
+empty = ([],[],[],[],[])

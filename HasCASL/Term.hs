@@ -10,7 +10,7 @@ data Symb = Symb(Id, Type) deriving (Show, Eq, Ord)
 data DeclNotation = PreviousKeyword Keyword deriving (Show,Eq)
 -- "sort s"     -> PreviousKeyword(s) = "sort") 
 -- "sorts s; t" -> PreviousKeyword(t) = ";")
--- "sorts s, t" -> PreviousKeyword(t) = "'")
+-- "sorts s, t" -> PreviousKeyword(t) = "s")
 -- for iso-decl or subsort-decl PreviousKeyword could be "<" or "="
 
 -- declaration of a variable or operation 
