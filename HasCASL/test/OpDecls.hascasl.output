@@ -10,8 +10,6 @@ a : t
   : s
 b : t
   : s
-c : s = a + b
-d : s = (op a : s)
 %% Diagnostics -----------------------------------------------------------
 Hint (line 5, column 14) type 's × s' is not unifiable with 's'
 Hint (line 7, column 14) type 't' is not unifiable with 's'

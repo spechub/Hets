@@ -27,7 +27,7 @@ import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Lib.State
-import Data.Maybe(mapMaybe)
+import Data.Maybe
 import HasCASL.Unify
 
 -- Earley Algorithm
@@ -140,7 +140,7 @@ listId :: Id -> Id
 listId i = Id [listToken] [i] []
 
 isListId :: Id -> Bool
-isListId (Id ts cs _) = head ts == listToken && length cs == 1
+isListId (Id ts cs _) = not (null ts) && head ts == listToken && length cs == 1
 
 listStates :: GlobalAnnos -> Index -> State Int [PState]
 -- no empty list (can be written down directly)
@@ -190,10 +190,24 @@ data ParseMap = ParseMap { varCount :: Int
 			 , parseMap :: Map.Map Index [PState]
 			 }
 
+addArgument :: TypeMap -> Term -> PState -> [PState]
+addArgument tm arg opState =
+    let prevArgs = ruleArgs opState 
+	newRule = tail $ restRule opState
+	in
+    case expandType tm $ ruleType opState of
+		FunType _ _ t2 _ -> [
+		    opState { ruleType = t2
+			    , restRule = newRule
+			    , ruleArgs = arg : prevArgs } ]
+		_ -> [opState { restRule = newRule
+				  , ruleArgs = arg: prevArgs } ]
+
 -- match (and shift) a token (or partially finished term)
 scan :: Term -> ParseMap -> ParseMap
 scan trm pm =
   let m = parseMap pm
+      tm = typeAliases pm
       i = lastIndex pm
       t = case trm of 
 	  TermToken x -> if isLitToken x then litTok else
@@ -212,7 +226,7 @@ scan trm pm =
 	             p { restRule = termTok : commaTok : tail ts }
 	             : p { restRule = termTok : tail ts } : l
               else if t == parenTok || t == litTok then
-	              p { restRule = tail ts, ruleArgs = trm : a } : l 
+	           addArgument tm trm p ++ l 
               else if t == varTok || t == opTok || t == predTok then
                      p { restRule = tail ts, ruleArgs = [trm] } : l 
 	      else if t == colonTok || t == asTok then
@@ -423,19 +437,22 @@ nextState g is trm pm =
 iterStates :: GlobalAnnos -> [(Id, OpInfo)] -> [Term] -> ParseMap -> ParseMap
 iterStates g ops terms pm = 
     let self = iterStates g ops
-        resolveInternal = resolve g ops (typeAliases pm) (varCount pm) Nothing
+        resolveInternal = resolve g ops (typeAliases pm) Nothing
     in if null terms then pm
        else case head terms of
             MixfixTerm ts -> self (ts ++ tail terms) pm
             BracketTerm Parens ts ps -> 
-		let Result mds v = 
-			do tsNew <- mapM resolveInternal ts
+		let (rtsNew, c2) = runState (mapM resolveInternal ts) 
+					 $ varCount pm 
+		    Result mds v = 
+			do ttsNew <- sequence rtsNew
+			   let tsNew = map snd ttsNew
 			   return (if length tsNew == 1 then head tsNew 
 				   else TupleTerm tsNew ps)
                     tNew = case v of Nothing -> head terms
 				     Just x -> x
 		in self (tail terms) $ nextState g ops tNew 
-		   pm { failDiags = mds ++ failDiags pm }
+		   pm { varCount = c2, failDiags = mds ++ failDiags pm }
             BracketTerm b ts ps -> self 
 	       (expandPos TermToken (getBrackets b) ts ps ++ tail terms) pm
 	    t ->  self (tail terms) (nextState g ops t pm)
@@ -446,6 +463,14 @@ getAppls g pm =
 	filter (\ (PState { restRule = ts, stateNo = k }) 
 		-> null ts && isStartIndex k) $ 
 	     lookUp (parseMap pm) $ lastIndex pm
+
+getLastType :: ParseMap -> Type
+getLastType pm = 
+    let tys =  map ruleType $ 
+	      filter (\ (PState { restRule = ts, stateNo = k }) 
+		      -> null ts && isStartIndex k) $ 
+	      lookUp (parseMap pm) $ lastIndex pm
+    in if null tys then error "getLastType" else head tys
 
 resolveToParseMap :: GlobalAnnos -> [(Id, OpInfo)] -> TypeMap -> Int 
 		  -> Term -> ParseMap
@@ -474,32 +499,37 @@ filterByResultType tm t p =
        s <- maybeResult $ unify tm t rt
        return p { ruleType = subst s rt } 
 
-resolve :: GlobalAnnos -> [(Id, OpInfo)] -> TypeMap -> Int 
-	-> Maybe Type -> Term -> Result Term
-resolve g ops tm c ty trm =
-    let pm = checkResultType ty $ resolveToParseMap g ops tm c trm
-	ds = failDiags pm
-        ts = getAppls g pm 
-    in if null ts then if null ds then 
-                        plain_error trm ("no resolution for term: "
+resolve :: GlobalAnnos -> [(Id, OpInfo)] -> TypeMap 
+	-> Maybe Type -> Term -> State Int (Result (Type, Term))
+resolve g ops tm ty trm =
+    do c <- get
+       let pm = checkResultType ty $ resolveToParseMap g ops tm c trm
+	   ds = failDiags pm
+	   ts = getAppls g pm 
+       return $ 
+         if null ts then if null ds then 
+                        fatal_error ("no resolution for term: "
 					     ++ showPretty trm "")
 					    (posOfTerm trm)
-		       else Result ds (Just trm)
-       else if null $ tail ts then Result ds (Just (head ts))
+		       else Result ds Nothing
+         else if null $ tail ts then Result ds (Just (getLastType pm, head ts))
 	    else Result (Diag Error ("ambiguous mixfix term: " ++ 
 				     showPretty trm "\n\t" ++ 
 			 (concatMap ( \ t -> showPretty t "\n\t" )
-			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
+			 $ take 5 ts)) (posOfTerm trm) : ds) Nothing
 
 resolveTermWithType :: Maybe Type -> Term -> State Env (Result Term)
 resolveTermWithType ty trm = 
-    do tm <- gets typeMap
-       as <- gets assumps
-       c <- gets counter
-       ga <- gets globalAnnos
-       let ops = concatMap (\ (i, l) -> map ( \ e -> (i, e)) l) 
+    do s <- get
+       let tm = typeMap s
+	   as = assumps s
+	   c = counter s
+	   ga = globalAnnos s
+           ops = concatMap (\ (i, l) -> map ( \ e -> (i, e)) l) 
 		 $ Map.toList as  
-       return $ resolve ga ops tm c ty trm
+           (r, c2) = runState (resolve ga ops tm ty trm) c
+       put s { counter = c2 }
+       return $ fmap snd r 
 
 resolveTerm :: Term -> State Env (Result Term)
 resolveTerm = resolveTermWithType Nothing
