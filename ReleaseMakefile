@@ -17,7 +17,7 @@ COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
 CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:CspCASL:ATC:Proofs:Comorphisms:$(INCLUDE_PATH):Haskell/Hatchet
 
 ## set ghc imports properly for your system!
-DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0.1/imports'
+DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0.1/imports:${GHC_IMPORTS}'
 
 HC         = ghc
 PERL       = perl
@@ -159,7 +159,7 @@ lib_clean: clean
 	for p in $(subst :, ,$(COMMONLIB_PATH)) . ; do \
 	(cd $$p ; $(RM) *.hi *.o) ; done
 
-### additionally removes the files that define the sources-variable
+### synonym
 real_clean: lib_clean
 
 ### additionally generated files not in CVS tree
