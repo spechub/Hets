@@ -19,9 +19,8 @@
    Todo:
    Add many many logics.
 
-   Wiebke: Modallogiken
 
-   Logic-Representations (Sublogic immer = top)
+   Logic-Representations (Sublogic always = top)
 
 -}
 
@@ -34,10 +33,12 @@ import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
 import Haskell.Logic_Haskell
 import CspCASL.Logic_CspCASL
+import Comorphisms.CASL2HasCASL
 import qualified Common.Lib.Map as Map
 
 logicList :: ([AnyLogic],[AnyComorphism])
-logicList = ([Logic CASL, Logic HasCASL, Logic Haskell, Logic CspCASL],[])
+logicList = ([Logic CASL, Logic HasCASL, Logic Haskell, Logic CspCASL],
+             [Comorphism CASL2HasCASL])
 
 logicGraph :: LogicGraph
 logicGraph = (Map.fromList logicTuple, Map.fromList representationTuple)

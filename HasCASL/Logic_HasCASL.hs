@@ -96,7 +96,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     basic_analysis HasCASL = Just ( \ (b, e, ga) ->
 		let (nb, ne) = runState (anaBasicSpec ga b) e 
 		    in Result (reverse (envDiags ne)) $ 
-				    Just (nb, initialEnv, ne, sentences ne)) 
+				    Just (nb, ne, ne, sentences ne)) 
   
     signature_union HasCASL = merge
     empty_signature HasCASL = initialEnv

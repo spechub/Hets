@@ -25,12 +25,13 @@ spec Extensionality = {}
    Set membership is just holding of the predicate: x isIn s <=> s x
    Note that for disjoint unions and products, the type changes.  }%
 
-spec Set = InternalLogic and Extensionality and Bool then
+spec Set = Bool and InternalLogic and Extensionality then
   var S,T : Type
-  type Pred : Type -> Type;
-       Set : Type -> Type := Pred;
-       Bool : Type; 
-       Unit : Type
+  type Unit : Type;
+       Pred : Type -> Type;
+       Set : Type -> Type;
+       Set := \ S . S ->? Unit;
+       %%Bool : Type; 
   ops __=__ : S * S ->? Unit;
       __<=>__ : Unit * Unit ->? Unit;
       emptySet : Set S;
@@ -42,11 +43,12 @@ spec Set = InternalLogic and Extensionality and Bool then
       __*__ : Set S -> Set T -> Set (S*T);
       __disjointUnion__ :  Set S -> Set S -> Set (S*Bool);
       inl,inr : S -> S*Bool;
-  forall x,x':S; y:T; s,s':Set(S); t:Set(T) 
+  forall x,x':S; y:T; s,s':S ->? Unit; t:Set(T) 
   . not x isIn emptySet
-  . x isIn {x'} <=> x=x'
-  . x isIn s <=> s x
-  . s subset s' <=> (forall x:S . x isIn s => x isIn s')
+  . (x isIn {x'}) <=> (x=x')
+  . (x isIn s)
+  . (s x)
+  . (s subset s') <=> (forall x:S . x isIn s => x isIn s')
   . x isIn (s union s') <=> x isIn s \/ x isIn s'
   . x isIn (s intersection s') <=> x isIn s /\ x isIn s'
   . x isIn (s \\ s') <=> x isIn s /\ not x isIn s'

@@ -1,7 +1,7 @@
 
 -- needs ghc -fglasgow-exts -package data
 
-{- HetCATS/Comorphism,.hs
+{- HetCATS/Comorphism.hs
    $Id$
    Till Mossakowski, Christian Maeder
    
