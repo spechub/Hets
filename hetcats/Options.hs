@@ -26,8 +26,6 @@ import Char (isSpace)
 import List
 import GetOpt
 
-import GHC.Read (readEither)
-
 {- | 'Flag' describes the raw options -}
 data Flag = Verbose Int
 	  | Version
@@ -192,11 +190,11 @@ options =
 parse_verb :: Maybe String -- ^ optional Argument to --verbose
 	   -> Flag -- ^ Parsed verbose flag 
 parse_verb Nothing  = Verbose 1
-parse_verb (Just s) = Verbose (case readEither s of
-			       Right i -> i
-			       Left _  -> error $ "\""++ s
-			                          ++"\" is not an Int\n"
-			                          ++ hetcats_usage)
+parse_verb (Just s) = Verbose $ case reads s of
+					     []   -> error'
+					     [(i,"")] -> i
+					     _    -> error'
+    where error' = error $ "\""++ s ++"\" is not an Int\n" ++ hetcats_usage
 
 -- Just the function to get the input-type right
 inp_type :: String -> Flag
