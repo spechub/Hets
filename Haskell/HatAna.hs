@@ -39,9 +39,6 @@ import qualified NewPrettyPrint as HatPretty
 import Haskell.HatParser
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Common.ATerm.Lib
-import Common.DynamicUtils
-import Data.Dynamic
 import Data.List((\\))
 import Data.Set
 import qualified Common.Lib.Map as Map
@@ -85,7 +82,8 @@ instance PrettyPrint (HsDeclI PNT) where
      printText0 _ = text . HatPretty.pp
 
 instance PrettyPrint Sign where
-    printText0 _ Sign { instances = is, types = ts, values = vs }
+    printText0 _ Sign { instances = is, types = ts, 
+                        values = vs, fixities = fs }
         = text "{-" $$ (if null is then empty else
               text "instances:" $$ 
                    vcat (map (text . HatPretty.pp) is)) $$ 
@@ -97,6 +95,10 @@ instance PrettyPrint Sign where
               text "\nvalues:" $$ 
                    vcat (map (text . HatPretty.pp) 
                          [ a :>: b | (a, b) <- Map.toList vs ])) $$
+          (if Map.isEmpty fs then empty else
+              text "\nfixities:" $$ 
+                   vcat [ text (HatPretty.pp b) <+> text (HatPretty.pp a) 
+                              | (a, b) <- Map.toList fs ]) $$
           text "-}"
 
 extendSign :: Sign -> [TiInstanceDB.Instance PNT]
@@ -138,8 +140,7 @@ hatAna (hs@(HsDecls ds), e, _) = do
                               [] :: [(ModuleName, Rel (SN Id) (Ent (SN Id)))])
                  rm
    (HsModule _ _ _ _  fs :>: (is, (ts, vs))) <- 
-            lift $ inMyEnv $ tcModule 
-                      (sm :: HsModuleI (SN ModuleName) PNT [HsDeclI PNT])
+            lift $ inMyEnv $ tcModule sm
    let accSign = extendSign e is ts vs insc fixs
    return (hs, diffSign accSign e, accSign, map emptyName fs)
    where
