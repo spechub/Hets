@@ -6,14 +6,14 @@ import Token
 import Parsec
 import LocalEnv
 
-isStartKeyword s = s `elem` ([".","\183"] ++ casl_reserved_words)
-
 pluralKeyword s = makeToken (string s <++> option "" (string "s"))
 
 optSemi = bind (\ x y -> (x, y)) (option Nothing (fmap Just semi)) ann
 
 dot = skip (keySign (oneOf ".\183") <?> "dot")
 bar = skip (keySign (char '|'))
+
+isStartKeyword s = s `elem` ([".","\183"] ++ casl_reserved_words)
 
 lookAheadItemKeyword :: Ast -> Parser Ast
 lookAheadItemKeyword ast = 
