@@ -1,7 +1,7 @@
 Error (line 1, column 1) unexpected mixfix token: *
 Error (line 2, column 1) unexpected mixfix token: **
 Error (line 3, column 1) unexpected mixfix token: a_a
-Error (line 4, column 1) no resolution for term: __
+Error (line 4, column 1) expected further mixfix token: ["!","*","+","-","-->"]
 123
 1.2
 1
@@ -18,10 +18,12 @@ Error (line 17, column 1) unexpected mixfix token: <
 Error (line 18, column 1) unexpected mixfix token: <=
 Error (line 19, column 1) unexpected mixfix token: .a
 Error (line 20, column 1) unexpected mixfix token: 'a'
-Error (line 21, column 1) no resolution for term: __ * __
+Error (line 21, column 1) expected further mixfix token: ["(var )","(op )","("]
 Error (line 22, column 7) unexpected mixfix token: b
+Error (line 23, column 1) expected further mixfix token: ["p","x","["]
 Error (line 23, column 7) unexpected mixfix token: b
 Error (line 24, column 8) unexpected mixfix token: b
+Error (line 25, column 1) expected further mixfix token: ["p","x","["]
 Error (line 25, column 8) unexpected mixfix token: b
 Error (line 26, column 7) unexpected mixfix token: b
 Error (line 27, column 7) unexpected mixfix token: b
@@ -31,8 +33,7 @@ Error (line 30, column 7) unexpected mixfix token: b
 Error (line 31, column 7) unexpected mixfix token: b
 Error (line 32, column 8) unexpected mixfix token: b
 Error (line 33, column 8) unexpected mixfix token: b
-Error (line 34, column 3) unexpected mixfix token: }
-Error (line 34, column 14) unexpected mixfix token: }
+Error (line 34, column 1) unexpected mixfix token: (
 Error (line 35, column 3) unexpected mixfix token: }
 Error (line 36, column 3) unexpected mixfix token: }
 (var y : bb)
@@ -52,12 +53,7 @@ Error (line 50, column 2) unexpected mixfix token: predy
 Error (line 51, column 2) unexpected mixfix token: predy
 a when b else c
 Error (line 53, column 1) unexpected mixfix token: #
-Error (line 54, column 1) no resolution for term: a b
-Error (line 54, column 10) no resolution for term: b c
-Error (line 54, column 19) no resolution for term: a f g
-Error (line 54, column 30) no resolution for term: f a f
-Error (line 54, column 41) no resolution for term: f a f g
-Error (line 54, column 54) no resolution for term: f a f
+Error (line 54, column 1) expected further mixfix token: ["p","x"]
 (pred y : bb)
 (pred y : bb)
 (pred y : ())

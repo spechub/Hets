@@ -13,10 +13,6 @@ Portability :  portable
    Missing features:
    - the positions of ids from string, list, number and floating annotations
      is not changed within applications (and might be misleading)
-   - using (Set State) instead of [State] avoids explosion
-     but detection of local ambiguities (that of subterms) is more difficult,
-     solution: equal list states should be merged into a single state
-               that stores the local ambiguity
 -}
 
 module CASL.MixfixParser ( resolveFormula, resolveMixfix)
@@ -30,7 +26,6 @@ import Common.Lexer
 import Control.Monad
 import Common.Lib.Parsec
 import Common.Earley
-import CASL.Formula(updFormulaPos)
 import CASL.ShowMixfix 
 -- import Control.Exception (assert)
 
@@ -41,15 +36,20 @@ mkSItem i b ide = mkMixfixItem i (ide,b)
 
 mkSingleArgSItem :: Index -> Bool -> Id -> SItem
 mkSingleArgSItem i b ide = mkItem i ide b 
-    (getPlainTokenList ide ++ getTokenPlaceList parenId)
+    (getPlainTokenList ide ++ [varTok])
+
+mkSingleOpArgSItem :: Index -> Bool -> Id -> SItem
+mkSingleOpArgSItem i b ide = mkItem i ide b 
+    (getPlainTokenList ide ++ [exprTok])
 
 mkArgsSItem :: Index -> Bool -> Id -> SItem
 mkArgsSItem i b ide = mkItem i ide b 
     (getPlainTokenList ide ++ getTokenPlaceList tupleId)
 
-singleArgId, multiArgsId :: Id
-singleArgId = mkRuleId (getPlainTokenList exprId ++
-				 getPlainTokenList parenId)
+singleArgId, singleOpArgId, multiArgsId :: Id
+singleArgId = mkRuleId (getPlainTokenList exprId ++ [varTok])
+singleOpArgId = mkRuleId (getPlainTokenList exprId ++ [exprTok])
+
 multiArgsId = mkRuleId (getPlainTokenList exprId ++
 				 getPlainTokenList tupleId)
 
@@ -58,18 +58,20 @@ multiArgsId = mkRuleId (getPlainTokenList exprId ++
 
 initialSItem :: GlobalAnnos -> ([Id], [Id]) -> Index -> [SItem]
 initialSItem g (ops, preds) i = 
-    concat [mkSItem i False parenId : 
-       mkSItem i False typeId :
+    concat [mkSItem i False typeId :
        mkSItem i False exprId :
        mkSItem i False varId :
        mkSItem i False singleArgId :
+       mkSItem i False singleOpArgId :
        mkSItem i False multiArgsId :
        listStates False g i, 
        map (mkSItem i True) preds,
        map (mkSingleArgSItem i True) preds,
+       map (mkSingleOpArgSItem i True) preds,
        map (mkArgsSItem i True) preds,
        map (mkSItem i False) ops,
        map (mkSingleArgSItem i False) ops,
+       map (mkSingleOpArgSItem i False) ops,
        map (mkArgsSItem i False) ops]
 
 -- | meaningful position of a term
@@ -104,17 +106,17 @@ stateToAppl st =
 	   || ide == exprId 
            || ide == parenId
 	   || ide == varId
-       then assert (isSingle ar) $ 
-	    case head ar of 
-            Mixfix_parenthesized ts _ -> if isSingle ts then head ts
-					 else head ar
-	    har -> har
+       then assert (isSingle ar) $ head ar
+       else if ide == tupleId then  Mixfix_parenthesized ar qs
        else if ide == singleArgId || ide == multiArgsId
-	    then case head ar of
-		 Application q ts _  -> assert (null ts) $ 
-					Application q (tail ar) qs
-		 har@(Mixfix_qual_pred _) -> Mixfix_term [har,
-				   Mixfix_parenthesized (tail ar) qs]
+	    then assert (length ar > 1) $ 
+		 let har:tar = ar
+		     ps = posOfTerm har : qs 
+		     in case har of
+		 Application q ts _ -> assert (null ts) $ 
+					Application q tar ps
+		 Mixfix_qual_pred _ -> Mixfix_term [har,
+				   Mixfix_parenthesized tar ps]
 		 _ -> error "stateToAppl"
 	    else let newIde@(Id (t:_) _ _) = setIdePos ide ar qs
 		     pos = if isPlace t then posOfTerm $ head ar
@@ -161,19 +163,25 @@ initSItems ga (ops, preds, _) maybeFormula =
     initialSItem ga (Set.toList ops,  if maybeFormula then 
 		     Set.toList preds else [])
 
+filterByPredicate :: Bool -> Bool -> Maybe Bool
+filterByPredicate bArg bOp = 
+    if bArg then Just False else
+       if bOp then Just True else Nothing
+
 nextStep :: GlobalAnnos -> IdSet -> Bool -> Chart -> (TERM, Token) -> Chart
 nextStep ga ids maybeFormula =
     nextState (initSItems ga ids maybeFormula)
-    addType Set.empty (asListAppl ga) ga
-
+    addType Set.empty filterByPredicate (asListAppl ga) ga
 
 iterateStates :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> Chart 
 	      -> Chart
 iterateStates g ids maybeFormula terms c = 
-    let self = iterateStates g ids maybeFormula
+    let selfcall = iterateStates g ids
+	self = selfcall maybeFormula
+	selfTerm = selfcall False
 	expand = expandPos Mixfix_token 
 	oneStep = nextStep g ids maybeFormula c
-	resolvePred = resolveMixTrm g ids
+	resolveTerm = resolveMixTrm g ids False
     in if null terms then c
        else case head terms of
             Mixfix_term ts -> self (ts ++ tail terms) c
@@ -182,31 +190,38 @@ iterateStates g ids maybeFormula terms c =
 	    Mixfix_braced ts ps -> 
 		self (expand ("{", "}") ts ps ++ tail terms) c
 	    Mixfix_parenthesized ts ps -> 
-		self (expand ("(", ")") ts ps ++ tail terms) c
+		if isSingle ts then 
+		   let Result mds v = resolveMixTrm g ids maybeFormula
+				      $ head ts
+		       tNew = case v of Nothing -> head ts
+					Just x -> x
+		       c2 = selfTerm (tail terms) (oneStep (tNew, varTok))
+		   in c2 {solveDiags = mds ++ solveDiags c2 }
+		else self (expand ("(", ")") ts ps ++ tail terms) c
 	    Conditional t1 f2 t3 ps -> 
                 let Result mds v = 
-			do t4 <- resolvePred False t1
+			do t4 <- resolveTerm t1
 			   f5 <- resolveMixFrm g ids f2 		 
-			   t6 <- resolvePred False t3 
+			   t6 <- resolveTerm t3 
 			   return (Conditional t4 f5 t6 ps)
                     tNew = case v of Nothing -> head terms
 				     Just x -> x
-		    c2 = self (tail terms) (oneStep (tNew, varTok))
+		    c2 = selfTerm (tail terms) (oneStep (tNew, varTok))
 		in c2 {solveDiags = mds ++ solveDiags c2 }
             Mixfix_token t -> let (ds1, trm) = 
 				      convertMixfixToken (literal_annos g) t
-			          c2 = self (tail terms) $ oneStep $ 
+			          c2 = selfTerm (tail terms) $ oneStep $ 
 				       case trm of 
 						Mixfix_token tok -> (trm, tok)
 						_ -> (trm, varTok)
 				  in c2 {solveDiags = ds1 ++ solveDiags c2 }
-	    t@(Mixfix_sorted_term _ _) -> self (tail terms) 
+	    t@(Mixfix_sorted_term _ _) -> selfTerm (tail terms) 
 					  (oneStep (t, typeTok))
-	    t@(Mixfix_cast _ _) -> self (tail terms) 
+	    t@(Mixfix_cast _ _) -> selfTerm (tail terms) 
 					  (oneStep (t, typeTok))
-	    t@(Qual_var _ _ _) -> self (tail terms) 
+	    t@(Qual_var _ _ _) -> selfTerm (tail terms) 
 					  (oneStep (t, varTok))
-	    t ->  self (tail terms) (oneStep (t, exprTok))
+	    t ->  selfTerm (tail terms) (oneStep (t, exprTok))
 
 mkIdSet :: Set.Set Id -> Set.Set Id -> IdSet
 mkIdSet ops preds = 
@@ -284,10 +299,6 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
 	      mkPredication tNew
          where mkPredication t = 
 	         case t of 
-		 Mixfix_parenthesized [t0] ps ->
-		  do p <- mkPredication t0
-		     return $ if null ps then p 
-                            else updFormulaPos (head ps) (last ps) p
 		 Application (Op_name ide) as ps -> 
 		     let p = Predication (Pred_name ide) as ps in
 		     if ide `Set.member` preds 
@@ -300,12 +311,10 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
 		 Mixfix_term [Mixfix_qual_pred qide, 
 			      Mixfix_parenthesized ts ps] ->
 		  return $ Predication qide ts ps
-                 Mixfix_term _ -> return $ Mixfix_formula t -- still wrong
 		 _ -> plain_error (Mixfix_formula t)
 	                ("not a formula: " ++ showTerm t "")
 			(posOfTerm t)
        f -> return f
-
 
 -- --------------------------------------------------------------- 
 -- convert literals 

@@ -1233,10 +1233,9 @@ Error (line 285, column 52) unknown sort 'a'
 Error (line 285, column 34) duplicates at '(285,41)' for 'a : s -> t'
 Error (line 285, column 31) unknown sort 'a'
 Error (line 270, column 3) unexpected mixfix token: a
-Error (line 270, column 7) unexpected mixfix token: a
 Error (line 268, column 15) unknown sort 'b'
 Error (line 268, column 6) wrong number of places '__a'
 Error (line 268, column 9) unknown sort 'b'
 Error (line 266, column 20) unknown sort 'a'
 Error (line 266, column 16) unknown sort 'a'
-Error (line 261, column 9) no resolution for term: i * q - j * p
+Error (line 261, column 9) expected further mixfix token: ["*","+",":","!","-"]

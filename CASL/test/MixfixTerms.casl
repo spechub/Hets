@@ -9,7 +9,7 @@
 ""+""
 (op x: a)(a,b)
 (a)
-(a,b)
+(a+b)
 a:s + b:s
 a as s : s as s 
 a:s:s as s as s

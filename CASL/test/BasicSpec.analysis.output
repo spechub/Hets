@@ -1487,14 +1487,13 @@ Hint (line 272, column 13) redeclared var 'b'
 Hint (line 272, column 11) redeclared var 'a'
 Hint (line 272, column 6) redeclared var 'a'
 Error (line 270, column 3) unexpected mixfix token: a
-Error (line 270, column 7) unexpected mixfix token: a
 Hint (line 269, column 6) redeclared sort 's'
 Error (line 268, column 15) unknown sort 'b'
 Error (line 268, column 6) wrong number of places '__a'
 Error (line 268, column 9) unknown sort 'b'
 Error (line 266, column 20) unknown sort 'a'
 Error (line 266, column 16) unknown sort 'a'
-Error (line 261, column 9) no resolution for term: i * q - j * p
+Error (line 261, column 9) expected further mixfix token: ["*","+",":","!","-"]
 Hint (line 209, column 11) redeclared sort 'Int'
 Hint (line 209, column 17) redeclared sort 'Rat'
 Hint (line 121, column 12) redeclared sort 'Nat'

@@ -1,3 +1,19 @@
+
+{- |
+Module      :  $Header$
+Copyright   :  Christian Maeder and Uni Bremen 2003 
+Licence     :  All rights reserved.
+
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable
+    
+   generic mixfix analysis
+
+   Ambiguities are not removed yet and may cause explosion
+
+-}
+
 module Common.Earley where
 
 import Common.Id
@@ -54,7 +70,7 @@ instance Show (Item a b) where
 			  . shows i . showChar ']'
 
 termStr :: String
-termStr = "_"
+termStr = "(__)"
 commaTok, termTok, oParenTok, cParenTok, placeTok :: Token
 commaTok = mkSimpleId "," -- for list elements 
 termTok = mkSimpleId termStr
@@ -66,8 +82,8 @@ exprTok, varTok, typeTok, unknownTok :: Token
 typeTok = mkSimpleId ":"
 listToken :: Token 
 listToken = mkSimpleId "[]"
-exprTok = mkSimpleId "(_)"
-varTok = mkSimpleId "(v)"
+exprTok = mkSimpleId "(op )"
+varTok = mkSimpleId "(var )"
 unknownTok = mkSimpleId "(?)"
 
 mkRuleId :: [Token] -> Id
@@ -145,8 +161,7 @@ scanItem addType knowns (trm, t) p =
 		  [ q { rest = termTok : ts }
 		  , q { rest = tail ts }]
               else if t == exprTok || t == varTok then 
-		   assert (null as) $
-		   [p { rest = tail ts, args = [trm] }]
+		   [p { rest = tail ts, args = trm : args p }]
               else if t == typeTok then 
 		   assert (null (tail ts) && isSingle as) $
 		   [p { rest = [], args = [addType trm $ head as] }]
@@ -166,29 +181,28 @@ addArg arg p = assert (not $ null $ rest p) $
                p { rest = tail $ rest p
 		 , args = arg : args p }
 
-checkArg :: GlobalAnnos -> Id -> Item a b -> Bool
-checkArg ga arg p = 
-    let ts = rest p in
-	if null ts then False
-	   else if head ts == termTok
-		then checkPrecs ga arg (rule p) $ length $ args p
-		else False
-
-reduce :: GlobalAnnos -> Table a b -> (Item a b -> a) 
-       -> Item a b -> [Item a b]
-reduce ga table toExpr item = 
+reduce :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
+       -> (Item a b -> a) -> Item a b -> [Item a b]
+reduce ga table filt toExpr item = 
     map (addArg $ toExpr item)
-	$ filter (checkArg ga $ rule item)
+	$ filter ( \ oi ->  let ts = rest oi in
+		   if null ts then False
+		   else if head ts == termTok
+		   then case filt (info item) $ info oi of 
+		   Nothing -> checkPrecs ga (rule item) (rule oi) 
+		              $ length $ args oi
+		   Just b -> b 
+		   else False )
 	$ lookUp table $ index item
 
-complete :: (Item a b -> a) -> GlobalAnnos -> Table a b
-	 -> [Item a b] -> [Item a b]
-complete toExpr ga table items = 
+complete :: (b -> b -> Maybe Bool) -> (Item a b -> a) -> GlobalAnnos 
+	 -> Table a b -> [Item a b] -> [Item a b]
+complete filt toExpr ga table items = 
     let completedItems = filter (null . rest) items
-        reducedItems = concatMap (reduce ga table toExpr) completedItems 
+        reducedItems = concatMap (reduce ga table filt toExpr) completedItems 
     in 	if null reducedItems 
 	then items
-	else complete toExpr ga table reducedItems ++ items
+	else complete filt toExpr ga table reducedItems ++ items
 
 predict :: [Item a b] -> [Item a b] -> [Item a b]
 predict rules items =
@@ -243,9 +257,9 @@ data State a b = State { prevTable :: Table a b
 
 nextState :: (Index -> [Item a b]) -> 
 	     (a -> a -> a) -> Knowns -> 
-	     (Item a b -> a) -> GlobalAnnos -> 
+	     (b -> b -> Maybe Bool) -> (Item a b -> a) -> GlobalAnnos -> 
 	     State a b -> (a, Token) -> State a b
-nextState fromRules addType knowns toExpr ga st term@(_, tok) = 
+nextState fromRules addType knowns filt toExpr ga st term@(_, tok) = 
     let table = prevTable st
 	idx = currIndex st
 	items = currItems st
@@ -256,9 +270,9 @@ nextState fromRules addType knowns toExpr ga st term@(_, tok) =
 	st { prevTable = nextTable
 	   , currIndex = nextIdx
 	   , currItems =  predict (fromRules nextIdx)
-	   $ filterLongest
-	   $ sortBy ordItem
-	   $ complete toExpr ga nextTable scannedItems
+--	   $ filterLongest
+--	   $ sortBy ordItem
+	   $ complete filt toExpr ga nextTable scannedItems
 	   , solveDiags = (if null scannedItems then 
 		      [Diag Error ("unexpected mixfix token: " ++ tokStr tok)
 		      $ tokPos tok]
@@ -276,19 +290,23 @@ getResolved pp p toExpr st =
 	ds = solveDiags st
 	in if null items 
 	   then Result ds Nothing
-	   else let (completed, uncompleted) = partition (null . rest) items
-		    finals = filter  ((startIndex==) . index) completed
-		    in if null finals then 
-		       Result (Diag Error 
-			       ("expecting further mixfix token: " 
-				++ show (nub $ map (tokStr . head . rest) 
-					 uncompleted)) p : ds) Nothing
-		       else if null $ tail finals then
-			    Result ds $ Just $ toExpr $ head finals
+	   else let (finals, rest1) = partition ((startIndex==) . index) items
+		    (result, rest2) = partition (null . rest) finals
+		    in if null result then 
+		          let expected = if null rest2 
+					 then filter (not . null . rest) rest1 
+					 else rest2 
+			      in Result (Diag Error 
+			       ("expected further mixfix token: " 
+				++ show (take 5 $ nub 
+					$ map (tokStr . head . rest) 
+					 expected)) p : ds) Nothing
+		       else if null $ tail result then
+			    Result ds $ Just $ toExpr $ head result
 		       else Result (Diag Error 
-				    ("ambiguous mixfix \n\t" ++ 
+				    ("ambiguous mixfix term\n\t" ++ 
 				     showSepList (showString "\n\t") pp
-				     (map toExpr $ take 5 finals) "") p : ds)
+				     (map toExpr $ take 5 result) "") p : ds)
 		            Nothing   
 
 				   

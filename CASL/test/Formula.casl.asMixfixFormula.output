@@ -1,11 +1,11 @@
 (pred y : bb)
 (pred y : bb * bb)
 (pred y : bb * bb)(a, b)
-Error (line 4, column 18) unexpected mixfix token: a
+Error (line 4, column 1) expected further mixfix token: [":","!","*","+","-"]
 Error (line 5, column 7) unexpected mixfix token: <
 Error (line 6, column 3) unexpected mixfix token: #=
-Error (line 7, column 1) unexpected mixfix token: exists1
 Error (line 7, column 10) unexpected mixfix token: predy
+Error (line 7, column 1) unexpected mixfix token: exists1
 exists predy:bb . a
 exists! a:v . x
 exists! a:v . x
@@ -15,8 +15,6 @@ b => a
 def x
 Error (line 15, column 4) unexpected mixfix token: #
 Error (line 16, column 2) unexpected mixfix token: }
-Error (line 16, column 7) not a predicate: []
-Error (line 16, column 14) unexpected mixfix token: }
 Error (line 16, column 3) not a formula: {} when [] else {}
 a /\ b /\ c
 a \/ b \/ c
