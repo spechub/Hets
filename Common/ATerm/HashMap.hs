@@ -29,8 +29,7 @@ findWithDefault :: Ord k => a -> k -> Map k a -> a
 findWithDefault d k fm = maybe d id $ luk k fm
 
 insert :: Ord k => k -> a -> Map k a -> Map k a
-insert k e (Map f im) = 
-    let ik = f k
-    in case IntMap.lookup ik im of 
-       Nothing -> Map f $ IntMap.insert ik [(k, e)] im
-       Just l -> Map f $ IntMap.insert ik ((k, e): l) im
+insert k e (Map f im) = let ik = f k in 
+    case IntMap.findWithDefault [] ik im of
+    l -> Map f $ IntMap.insert ik ((k, e): l) im
+
