@@ -72,7 +72,7 @@ anaFile logicGraph defaultLogic opts libenv fname = do
           case res of 
             Nothing -> return()
             Just (ln,_,_,lenv) ->
-              writeFileInfo opts fname'' ln lenv
+              writeFileInfo opts diags fname'' ln lenv
           return res
 
 -- lookup/read a library

@@ -14,6 +14,8 @@ module WriteFn where
 import Options
 
 import Common.Utils
+import Common.Result
+
 
 import System.IO
 import Syntax.Print_HetCASL
@@ -115,9 +117,10 @@ toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
 globalContexttoShATerm :: FilePath -> GlobalContext -> IO ()
 globalContexttoShATerm fp gc = writeShATermFileSDoc fp gc
 
-writeFileInfo :: HetcatsOpts -> String -> LIB_NAME -> LibEnv -> IO()
-writeFileInfo opts file ln lenv = 
-  case Map.lookup ln lenv of
+writeFileInfo :: HetcatsOpts -> [Diagnosis] -> String -> LIB_NAME -> LibEnv -> IO()
+writeFileInfo opts diags file ln lenv = 
+  if hasErrors diags then return ()
+   else case Map.lookup ln lenv of
     Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
     Just gctx -> do
       let envFile = rmSuffix file ++ ".env"

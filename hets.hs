@@ -69,7 +69,7 @@ processFile opt file =
                                 showDiags opt diags
                                 case res of
                                      Just (ln,ld1,_,lenv) -> do
-                                       writeFileInfo opt file ln lenv
+                                       writeFileInfo opt diags file ln lenv
 				       --checkFile opt file ln lenv
                                        return (ld1,res)
                                      Nothing -> return (ld, res)
