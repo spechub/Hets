@@ -49,14 +49,16 @@ import Data.Maybe(maybeToList)
 
 
 -- | Parse a library of specifications
-library :: (AnyLogic, LogicGraph) -> AParser AnyLogic LIB_DEFN
-library l = do (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
+library :: (AnyLogic,LogicGraph) -> AParser AnyLogic LIB_DEFN
+library (l,lG) = 
+   do (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
 			   (do s1 <- asKey libraryS -- 'library' keyword
 			       n <- libName         -- library name
 			       return ([tokPos s1], n))
-               an <- annos          -- annotations 
-               ls <- libItems l     -- library elements
-               return (Lib_defn ln ls ps an)
+      an <- annos          -- annotations 
+      setUserState l
+      ls <- libItems lG     -- library elements
+      return (Lib_defn ln ls ps an)
 
 -- | Parse library name
 libName :: AParser st LIB_NAME
@@ -84,19 +86,19 @@ libId = do pos <- getPos
            -- ??? URL need to be added
 
 -- | Parse the library elements
-libItems :: (AnyLogic, LogicGraph) -> AParser AnyLogic [Annoted LIB_ITEM]
-libItems l@(_, lG) = 
+libItems :: LogicGraph -> AParser AnyLogic [Annoted LIB_ITEM]
+libItems l = 
     (eof >> return [])
     <|> do 
-    (r, newlog) <- libItem l
+    r <- libItem l
     an <- annos 
-    is <- libItems (newlog, lG)
+    is <- libItems l
     return ((Annoted r [] [] an) : is)
 
 
 -- | Parse an element of the library
-libItem :: (AnyLogic, LogicGraph) -> AParser AnyLogic (LIB_ITEM, AnyLogic)
-libItem l@(lgc, lG) = 
+libItem :: LogicGraph -> AParser AnyLogic LIB_ITEM
+libItem l = 
      -- spec defn
     do s <- asKey specS 
        n <- simpleId
@@ -105,7 +107,7 @@ libItem l@(lgc, lG) =
        a <- aSpec l
        q <- optEnd
        return (Syntax.AS_Library.Spec_defn n g a 
-	       (map tokPos ([s, e] ++ maybeToList q)), lgc)
+	       (map tokPos ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS
        vn <- simpleId
@@ -114,11 +116,11 @@ libItem l@(lgc, lG) =
        vt <- viewType l
        (symbMap,ps) <- option ([],[]) 
                         (do s <- asKey equalS               
-                            (m, _, _) <- parseMapping l
+                            (m, _) <- parseMapping l
                             return (m,[s]))          
        q <- optEnd
        return (Syntax.AS_Library.View_defn vn g vt symbMap 
-                    (map tokPos ([s1, s2] ++ ps ++ maybeToList q)), lgc)
+                    (map tokPos ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
@@ -127,8 +129,8 @@ libItem l@(lgc, lG) =
        usp <- unitSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Unit_spec_defn name usp
-	           (map tokPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)), 
-	       lgc)
+	           (map tokPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd))
+	       )
   <|> -- arch spec
     do kArch <- asKey archS
        kSpec <- asKey specS
@@ -137,8 +139,8 @@ libItem l@(lgc, lG) =
        asp <- annotedArchSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Arch_spec_defn name asp
-	           (map tokPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd)), 
-	       lgc)
+	           (map tokPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd))
+	       )
   <|> -- download
     do s1 <- asKey fromS
        ln <- libName
@@ -146,19 +148,19 @@ libItem l@(lgc, lG) =
        (il,ps) <- itemNameOrMap `separatedBy` anComma
        q <- optEnd
        return (Download_items ln il 
-                (map tokPos ([s1, s2] ++ ps ++ maybeToList q)), lgc)
+                (map tokPos ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- logic
     do s1 <- asKey logicS
        logN@(Logic_name t _) <- logicName
-       newLog <- lookupLogicName logN lG
-       return (Logic_decl logN (map tokPos [s1,t]), newLog)
-  <|> 
+       lookupAndSetLogicName logN l
+       return (Logic_decl logN (map tokPos [s1,t]))
+  <|> -- just a spec (turned into "spec spec = sp")
      do a <- aSpec l
         return (Syntax.AS_Library.Spec_defn (mkSimpleId specS)
-	       (Genericity (Params []) (Imported []) []) a [], lgc)	
+	       (Genericity (Params []) (Imported []) []) a [])	
 
 -- | Parse view type
-viewType :: (AnyLogic, LogicGraph) -> AParser AnyLogic VIEW_TYPE
+viewType :: LogicGraph -> AParser AnyLogic VIEW_TYPE
 viewType l = do sp1 <- annoParser (groupSpec l)
                 s <- asKey toS
                 sp2 <- annoParser (groupSpec l)
