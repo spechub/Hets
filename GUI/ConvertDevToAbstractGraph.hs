@@ -231,7 +231,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		   Button "Local Decomposition (merge of rules)"
 			  (proofMenuSef gInfo locDecomp),
 		   Button "Hide Theorem Shift"
-		          (proofMenuSef gInfo hideTheoremShift)
+		          (return ()) --(proofMenuSef gInfo hideTheoremShift)
                     ]])]
       -- the node types
                [("spec", 

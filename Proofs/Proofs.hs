@@ -506,44 +506,52 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 -- hide theorem shift
 -- ----------------------------------------------
 
-hideTheoremShift :: ProofStatus -> ProofStatus
+hideTheoremShift :: ProofStatus -> IO ProofStatus
 hideTheoremShift proofStatus@(globalContext,libEnv,history,dGraph) =
-  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
+  do result <- hideTheoremShiftAux libEnv dGraph ([],[]) hidingThmEdges
+     let nextDGraph = fst result
+         nextHistoryElem = snd result
+     return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
 
   where
     hidingThmEdges = filter isHidingThm (labEdges dGraph)
-    result = hideTheoremShiftAux libEnv dGraph ([],[]) hidingThmEdges
-    nextDGraph = fst result
-    nextHistoryElem = snd result
+
 
 {- auxiliary method for hideTheoremShift -}
 hideTheoremShiftAux :: LibEnv -> DGraph -> ([DGRule],[DGChange])
-		    -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
-hideTheoremShiftAux libEnv dgraph historyElement [] = (dgraph, historyElement)
-hideTheoremShiftAux
-           libEnv dgraph history ((ledge@(src,tgt,edgeLab)):list) = 
+		    -> [LEdge DGLinkLab] -> IO (DGraph,([DGRule],[DGChange]))
+hideTheoremShiftAux libEnv dgraph historyElement [] =
+  return (dgraph, historyElement)
+hideTheoremShiftAux libEnv dgraph (rules,changes) (ledge:list) = 
   case (findProofBasisForHideTheoremShift dgraph ledge) of
-    Nothing -> hideTheoremShiftAux libEnv dgraph history list
-    Just proofBasis ->
-      hideTheoremShiftAuxHandleNextStep libEnv dgraph history proofBasis ledge list
+    Nothing -> do hideTheoremShiftAux libEnv dgraph (rules,changes) list
+    Just (fstEdge,sndEdge) -> do
+      let auxGraph = delLEdge ledge dgraph
+          newEdge = makeProvenHidingThmEdge (fstEdge,sndEdge) ledge
+          newDGraph = insEdge sndEdge 
+		      (insEdge fstEdge 
+		       (insEdge newEdge auxGraph))
+          newRules = (HideTheoremShift ledge):rules
+          newChanges = (InsertEdge fstEdge):
+		       ((InsertEdge sndEdge):
+			((DeleteEdge ledge):
+			 ((InsertEdge newEdge):changes)))
+      hideTheoremShiftAux libEnv newDGraph (newRules,newChanges) list
 {-      hideTheoremShiftAux libEnv dgraph
 	  (newRules,((InsertEdge fstEdge):
 		     ((InsertEdge sndEdge):changes))) list-}
 
-hideTheoremShiftAuxHandleNextStep :: LibEnv -> DGraph -> ([DGRule],[DGChange])
+{-hideTheoremShiftAuxHandleNextStep :: LibEnv -> DGraph -> ([DGRule],[DGChange])
 		    -> (LEdge DGLinkLab,LEdge DGLinkLab) -> LEdge DGLinkLab-> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
 hideTheoremShiftAuxHandleNextStep libEnv dgraph (rules,changes) (fstEdge, sndEdge) ledge list =
   hideTheoremShiftAux libEnv newDGraph (newRules,newChanges) list
   where 
-    auxGraph = delLEdge ledge dgraph
-    newEdge = makeProvenHidingThmEdge (fstEdge,sndEdge) ledge
-    newDGraph = insEdge sndEdge (insEdge fstEdge (insEdge newEdge auxGraph))
     newRules = (HideTheoremShift ledge):rules
     newChanges = (InsertEdge fstEdge):
 		 ((InsertEdge sndEdge):
 		  ((DeleteEdge ledge):
 		   ((InsertEdge newEdge):changes)))
-
+-}
 makeProvenHidingThmEdge :: (LEdge DGLinkLab, LEdge DGLinkLab) -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge ((_,_,fstLab),(_,_,sndLab)) (src,tgt,edgeLab) =
   (src,
