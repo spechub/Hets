@@ -155,17 +155,34 @@ minExpTerm_sorted sign term sort
 
 minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> [[TERM]]
 minExpTerm_op sign op terms
-    = let expandedTerms = map minExpTerm sign terms
-          expansions = permute expandedTerms
-          possiblsOps = Map.toList $ Map.filter (==op) (opMap sign)
-          computeProfile cs
-              = [ (op, qualifiedTerms) | qualifiedTerms <- permute cs,
-                  lessSort sign possibleOps qualifiedTerms ]
-          profiles = map computeProfile expansions
-          in map qualifyTerm profiles
+    = let exps = permute $ map minExpTerm sign terms -- [[[TERM]]]
+          profiles = map profile exps                -- [[(OP, [TERM])]]
+          p = map (equiv op_equal) profiles
+--           p = concat $ map (equiv op_equal) profiles
+          p' = minimize sign p
+--          p' = map (minimize sign) p
+          in {-map-} qualifyTerm p'
     where
-    lessSort sign ops terms
-        = all ((a,b) -> b <= a) (zip ops terms) -- < def. in sign
+    list_all _ [] [] = True
+    list_all p (a:as) (b:bs) = (p a b) && (list_all p as bs)
+    list_all _ _ _ = False
+    ops = Map.toList (opMap sign)
+    op_name (Op_name name) = name
+    op_name (Qual_op_name name _ _) = name
+    op_terms (Op_name _) = error "unqualified op received, qualified expected"
+    op_terms (Qual_op_name _ w _) = w
+    op_equal (op1,ts1) (op2,ts2)
+        = let w1 = op_terms op1
+              w2 = op_terms op2
+              t1 = list_all (sort_less sign) ts1 w1
+              t2 = list_all (sort_less sign) ts2 w2
+              ops_are_equal = op1 == op2
+              ops_are_equiv = op1 leqF op2
+              in t1 && t2 && (ops_are_equal || ops_are_equiv)
+    profile cs -- cs ist (C1,..,Cn)
+        = [ (op', ts) | op' <- ops, ts <- (permute cs),
+            (op_name op') == (op_name op),
+            list_all (sort_less sign) ts (op_terms op') ]
 
 -- -- --
 -- ein Problem koennten noch die Definitionen von sort' <= sort und
@@ -198,6 +215,8 @@ permute (x:l)
     = concat (map (distribute (permute l)) x)
     where
     distribute perms y = map ((:) y) perms
+
+sort_leq :: Sign -> SORT -> SORT -> Bool
 
 leqF :: a -> a -> Bool -- Funktionsgleichheit
 leqP :: a -> a -> Bool -- Praedikatsgleichheit
