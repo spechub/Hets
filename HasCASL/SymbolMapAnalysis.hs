@@ -148,7 +148,7 @@ directOpMap rmap e type_Map i oi (ots,m) = let ot = opType oi in
     case Map.lookup (ASymbol $ idToOpSymbol e i ot) rmap of
         Just rsy -> 
           (ots, insertmapOpSym e type_Map i rsy ot m)
-        Nothing -> (Set.insert (ot) ots, m)
+        Nothing -> (Set.insert ot ots, m)
     -- map op symbol (id,ot) to raw symbol rsy
 mapOpSym :: Env -> IdMap -> Id -> TypeScheme -> RawSymbol 
              -> Result (Id, TypeScheme)
