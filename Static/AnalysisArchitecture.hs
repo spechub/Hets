@@ -524,7 +524,9 @@ ana_REF_SPEC lgraph defl gctx curl just_struct nsig (Unit_spec asp) =
 ana_REF_SPEC lgraph defl gctx curl just_struct _ (Arch_unit_spec asp poss) =
     do ((_, usig), dg', asp') <- ana_ARCH_SPEC lgraph defl gctx curl just_struct (item asp)
        return (usig, dg', Arch_unit_spec (replaceAnnoted asp' asp) poss)
-
+-- dummy implementation for the rest
+ana_REF_SPEC lgraph defl gctx@(_,_,dg) curl just_struct nsig rsp =
+  return (Unit_sig nsig,dg,rsp)
 
 
 -- | Analyse a list of argument specifications

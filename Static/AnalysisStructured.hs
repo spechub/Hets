@@ -541,6 +541,10 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
      plain_error (sp,nsig,dg) 
       (showPretty spname
        " is a unit specification, not a structured specification") pos
+    Just (RefEntry) -> 
+     plain_error (sp,nsig,dg) 
+      (showPretty spname
+       " is a refinement specification, not a structured specification") pos
     Just (SpecEntry gs@(imps,params,_,body)) -> 
      case (\x y -> (x,x-y)) (length afitargs) (length params) of
 
@@ -887,6 +891,10 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
      plain_error (fv,dg,error "no fit view") 
       (showPretty spname
        " is a unit specification, not a view") pos
+    Just (RefEntry) -> 
+     plain_error (sp,nsig,dg) 
+      (showPretty spname
+       " is a refinement specification, not a view") pos
     Just (ViewEntry (src,mor,gs@(imps,params,_,target))) -> do
      nSrc <- maybeToResult pos 
              "Internal error: empty source spec of view" (getNode src)
