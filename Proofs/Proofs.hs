@@ -258,8 +258,8 @@ locDecomp proofStatus@(globalContext,history,dGraph) =
 locDecompAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locDecompAux dgraph historyElement [] = (dgraph, historyElement)
-locDecompAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
-  if null allPaths
+locDecompAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+  if null proofBasis
      then
        globSubsumeAux dgraph (rules,changes) list     
      else
@@ -268,16 +268,13 @@ locDecompAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
 
   where
     morphism = dgl_morphism edgeLab
-    allPaths =
-	getAllProvenLocGlobPathsOfMorphismBetween dgraph morphism source target
-    proofBasis =
-      case allPaths of
-        [] -> []
-        (path:paths) -> map getLabelOfEdge path
+    allPaths = getAllThmDefPathsOfMorphismBetween dgraph morphism src tgt 
+--	getAllProvenLocGlobPathsOfMorphismBetween dgraph morphism source target
+    proofBasis = selectProofBasis edgeLab allPaths
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
-    newEdge = (source,
-	       target,
+    newEdge = (src,
+	       tgt,
 	       DGLink {dgl_morphism = morphism,
 		       dgl_type = 
 		         (LocalThm (Proven proofBasis)
@@ -672,8 +669,11 @@ getInsertedEdges (change:list) =
 {- wenn die Proofbasis angelegt wird gucken, ob der erste pfad kanten enthält, die die zu beweisende kante in ihrer proofbasis haben, falls ja, mit dem nächsten versuchen usw., falls nein: nehmen
 -}
 
+
 {- gets all paths consisting of local/global thm/def edges
    of the given morphism -}
+getAllThmDefPathsOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
+				  -> [[LEdge DGLinkLab]]
 getAllThmDefPathsOfMorphismBetween dgraph morphism src tgt =
   filterPathsByMorphism morphism allPaths
 
@@ -688,9 +688,21 @@ getAllThmDefPathsOfMorphismBetween dgraph morphism src tgt =
        isGlobalDef,
        isLocalDef]
 
+{- selects the first path that does not form a proof cycle with the given
+ label (if such a path exits) and returns the labels of its edges -}
+selectProofBasis :: DGLinkLab -> [[LEdge DGLinkLab]] -> [DGLinkLab]
+selectProofBasis _ [] = []
+selectProofBasis label (path:list) =
+  if notProofCycle label path then [lab|(_,_,lab)<- path]
+   else selectProofBasis label list
+
+{- opposite of isProofCycle -}
+notProofCycle :: DGLinkLab -> [LEdge DGLinkLab] -> Bool
+notProofCycle label  = not.(isProofCycle label)
+
 {- checks if the given label is contained in the ProofBasis of one of the edges of the given path -}
 isProofCycle :: DGLinkLab -> [LEdge DGLinkLab] -> Bool
-isProofCycle label [] = False
+isProofCycle _ [] = False
 isProofCycle label (edge:path) =
   if (elemOfProofBasis label edge) then True else (isProofCycle label path)
 
