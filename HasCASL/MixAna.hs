@@ -47,7 +47,6 @@ getIdPrec (pm, r, m) ps i =  Map.findWithDefault
 					 
 addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps 
-addType (TypedTerm _ q ty ps) p = TypedTerm p q ty ps 
 addType _ _ = error "addType"
 
 type TermChart = Chart Term Int
@@ -72,11 +71,6 @@ iterateCharts ga terms chart =
 		          oneStep (trm, exprTok {tokPos = posOfTerm trm})
              case t of
 		    MixfixTerm ts -> self (ts ++ tt) chart
- 		    TypedTerm hd q typ ps -> do  
-		        mp <- resolvePattern ga hd 
-		        let np = case mp of Just pt -> pt
-					    _ -> t
-			recurse $ TypedTerm np q typ ps
 		    MixTypeTerm q typ ps -> do 
 		       mTyp <- anaStarType typ
 		       case mTyp of 
@@ -275,8 +269,8 @@ resolver ga bs trm =
     do as <- gets assumps
        ps@((_, _, m), _) <- gets preIds
        let ids = Map.keys as
-           ks = Set.union (Set.fromList (tokStr exprTok: inS : 
-					 map (:[]) "{}[](),"))
+           ks = Set.union (Set.fromList (tokStr exprTok: inS :
+					 map (:[]) ":{}[](),"))
 		    $ Set.unions $ map getKnowns ids
        chart<- iterateCharts ga [trm] $ 
 	       initChart (listRules (m+2) ga ++ 

@@ -210,13 +210,12 @@ type TokenMode = [String]
 -- | parse a 'Token' of an 'Id' (to be declared) 
 -- but exclude the signs in 'TokenMode'
 aToken :: TokenMode -> AParser Token
-aToken b = pToken (scanQuotedChar <|> scanDotWords 
-		   <|> scanDigit <|> scanHCWords <|> placeS <|> 
+aToken b = pToken (scanQuotedChar <|> scanDigit <|> scanHCWords <|> placeS <|> 
 		   reserved b scanHCSigns)
 
 -- | just 'aToken' only excluding basic HasCASL keywords
 idToken :: AParser Token
-idToken = aToken []
+idToken = aToken [] <|> pToken scanDotWords 
 
 -- * type patterns
 
@@ -246,10 +245,9 @@ typePatternToken = fmap TypePatternToken (pToken (scanHCWords <|> placeS <|>
 -- or parenthesis ('typePatternArg')
 primTypePattern :: AParser TypePattern
 primTypePattern = typePatternToken 
-	   <|> typePatternArg
-	   <|> mkBraces typePattern (BracketTypePattern Braces)
            <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
-
+	   <|> mkBraces typePattern (BracketTypePattern Braces)
+	   <|> typePatternArg
 
 -- several 'primTypePatter's possibly yielding a 'MixfixTypePattern'
 typePattern :: AParser TypePattern
@@ -265,8 +263,7 @@ typePattern = do ts <- many1 primTypePattern
 typeToken :: AParser Type
 typeToken = fmap TypeToken (pToken (scanHCWords <|> placeS <|> 
 				    reserved (assignS : lessS : equalS : barS :
-					      hascasl_type_ops 
-					      ++ hascasl_reserved_ops)
+					      hascasl_type_ops) 
 				    scanHCSigns))
 
 
@@ -275,8 +272,8 @@ typeToken = fmap TypeToken (pToken (scanHCWords <|> placeS <|>
 -- or may be interpreted as 'Intersection' later in a GEN-VAR-DECL.
 primTypeOrId :: AParser Type
 primTypeOrId = fmap TypeToken idToken
-	       <|> mkBraces typeOrId (BracketType Braces)
 	       <|> mkBrackets typeOrId (BracketType Squares)
+	       <|> mkBraces typeOrId (BracketType Braces)
 	       <|> bracketParser typeOrId oParenT cParenT anComma
 		       (BracketType Parens)
 	       
@@ -300,10 +297,10 @@ kindAnno t = do c <- colT
 -- | a typeToken' or a 'BracketType'. Square brackets may contain 'typeOrId'.
 primType :: AParser Type
 primType = typeToken 
+           <|> mkBrackets typeOrId (BracketType Squares)
+	   <|> mkBraces parseType (BracketType Braces)
 	   <|> bracketParser parseType oParenT cParenT anComma 
 		   (BracketType Parens)
-	   <|> mkBraces parseType (BracketType Braces)
-           <|> mkBrackets typeOrId (BracketType Squares)
 
 -- | a 'primType' possibly preceded by 'quMarkT'
 lazyType :: AParser Type
@@ -417,31 +414,33 @@ genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
 
 -- * patterns
 
--- | different legal 'PatternToken's (in- or excluding 'funS')
+{- | different legal 'PatternToken's possibly excluding 'funS' or
+'equalS' for case or let patterns resp. -}
 tokenPattern :: TokenMode -> AParser Pattern
 tokenPattern b = fmap TermToken (aToken b)
 					  
 -- | 'tokenPattern' or 'BracketPattern'
 primPattern :: TokenMode -> AParser Pattern
 primPattern b = tokenPattern b 
-		<|> mkBraces pattern (BracketTerm Braces) 
 		<|> mkBrackets pattern (BracketTerm Squares)
+		<|> mkBraces pattern (BracketTerm Braces) 
 		<|> bracketParser pattern oParenT cParenT anComma
 			(BracketTerm Parens)
 
--- | several 'primPattern' possibly with a 'typeAnno'
+-- | several 'typedPattern'
 mixPattern :: TokenMode -> AParser Pattern
 mixPattern b = 
-    do l <- many1 $ primPattern b
-       let p = if isSingle l then head l else MixfixTerm l
-	   in typeAnno p <|> return p
+    do l <- many1 $ typedPattern b
+       return $ if isSingle l then head l else MixfixTerm l
 
--- | a type ('parseType') preceded by 'colT'
-typeAnno :: Pattern -> AParser Pattern
-typeAnno p = 
-    do c <- colT
-       t <- parseType
-       return $ TypedTerm p OfType t [tokPos c]
+-- | a possibly typed ('parseType') pattern
+typedPattern :: TokenMode -> AParser Pattern
+typedPattern b = 
+    do t <- primPattern b 
+       do c <- colT
+          ty <- parseType
+          return (MixfixTerm [t, MixTypeTerm OfType ty [tokPos c]])
+        <|> return t
 
 -- | top-level pattern (possibly 'AsPattern')
 asPattern :: TokenMode -> AParser Pattern
@@ -486,9 +485,11 @@ instOpId = do i@(Id is cs ps) <- uninstOpId
 			   u <- many placeT
 			   return (InstOpId (Id (is++u) cs ps) ts qs)
 
-{- | 'Token's that may occur in 'Term's including literals 
-   ('scanFloat', 'scanString') excluding 'ifS', 'whenS' and 'elseS' 
-    to allow a quantifier after 'whenS'. -}
+{- | 'Token's that may occur in 'Term's including literals
+   'scanFloat', 'scanString' but excluding 'ifS', 'whenS' and 'elseS'
+   to allow a quantifier after 'whenS'. In case terms also 'barS' will
+   excluded on the top-levek. -}
+
 tToken :: TokenMode -> AParser Token
 tToken b = pToken(scanFloat <|> scanString 
 		<|> scanQuotedChar <|> scanDotWords 
@@ -501,12 +502,13 @@ tToken b = pToken(scanFloat <|> scanString
 termToken :: TokenMode -> AParser Term
 termToken b = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken b)
 
--- | 'termToken' plus 'BracketTerm's or 'parenTerm'
+-- | 'termToken' plus 'BracketTerm's
 primTerm :: TokenMode -> AParser Term
 primTerm b = termToken b
-	   <|> mkBraces term (BracketTerm Braces)
-	   <|> mkBrackets term (BracketTerm Squares)
- 	   <|> parenTerm
+	   <|> mkBraces termInParens (BracketTerm Braces)
+	   <|> mkBrackets termInParens (BracketTerm Squares)
+ 	   <|> bracketParser termInParens oParenT cParenT anComma
+		       (BracketTerm Parens)
 
 -- | how the keyword 'inS' should be treated  
 data InMode = NoIn   -- ^ next 'inS' belongs to 'letS' 
@@ -547,28 +549,18 @@ ifTerm b =
 	   <|> return (MixfixTerm [TermToken i, c, TermToken t, e]) 
 	<|> return (MixfixTerm [TermToken i, c])
 
--- | a 'Term' in parentheses, may be a qualified name or a tuple 
--- ('BracketTerm')
-parenTerm :: AParser Term
-parenTerm = do o <- oParenT
-	       varTerm o
-	         <|>
-		 qualOpName o
-		 <|> 
-		 qualPredName o
-		 <|>
-		 do (ts, ps) <- option ([],[]) (term `separatedBy` anComma)
-		    p <- cParenT
-		    return (BracketTerm Parens ts (toPos o ps p))
-		     		
+-- | unrestricted terms including qualified names 
+termInParens :: AParser Term
+termInParens = term <|> varTerm <|> qualOpName <|> qualPredName
+
 -- | a qualified 'var'
-varTerm :: Token -> AParser Term
-varTerm o = do v <- asKey varS
-	       i <- var
-	       c <- colT
-	       t <- parseType
-	       p <- cParenT
-	       return (QualVar i t (toPos o [v, c] p))
+varTerm :: AParser Term
+varTerm = 
+    do v <- asKey varS
+       i <- var
+       c <- colT
+       t <- parseType
+       return $ QualVar i t $ toPos v [] c
 
 -- | 'opS' or 'functS'
 opBrand :: AParser (Token, OpBrand)
@@ -576,23 +568,21 @@ opBrand = bind (,) (asKey opS) (return Op)
 	  <|> bind (,) (asKey functS) (return Fun) 
 
 -- | a qualified operation (with 'opBrand') 
-qualOpName :: Token -> AParser Term
-qualOpName o = 
+qualOpName :: AParser Term
+qualOpName = 
     do (v, b) <- opBrand
        i <- instOpId
        (c, t) <- partialTypeScheme
-       p <- cParenT
-       return $ QualOp b i t (toPos o [v, c] p)
+       return $ QualOp b i t $ toPos v [] c
 
 -- | a qualified predicate
-qualPredName :: Token -> AParser Term
-qualPredName o = 
+qualPredName :: AParser Term
+qualPredName = 
     do v <- asKey predS
        i <- instOpId
        c <- colT 
        t <- typeScheme
-       p <- cParenT
-       return $ QualOp Pred i (predTypeScheme t) (toPos o [v, c] p)
+       return $ QualOp Pred i (predTypeScheme t) $ toPos v [] c
 
 
 -- | a qualifier expecting a further 'Type'. 
