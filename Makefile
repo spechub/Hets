@@ -182,6 +182,7 @@ apache_doc:
 	$(MAKE) distclean
 	cvs up -d
 	$(MAKE) hetcats-make
+	strip hets
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
 
