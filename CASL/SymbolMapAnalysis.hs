@@ -566,6 +566,8 @@ inducedFromToMorphism :: (PrettyPrint f, PrettyPrint e, PrettyPrint m) =>
 			 Ext f e m -> RawSymbolMap -> Sign f e -> Sign f e 
 		      -> Result (Morphism f e m)
 inducedFromToMorphism extEm rmap sigma1 sigma2 = do
+  let symset1 = symOf sigma1
+      symset2 = symOf sigma2
   -- 1. use rmap to get a renaming...
   mor1 <- inducedFromMorphism extEm rmap sigma1
   -- 1.1 ... is the renamed source signature contained in the target signature?
@@ -573,14 +575,17 @@ inducedFromToMorphism extEm rmap sigma1 sigma2 = do
    -- yes => we are done
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
-   else if Set.size (symOf sigma1) == 1 && Set.size (symOf sigma2) == 1 then
-        return mor1 { sort_map = Map.single
-        (symName $ Set.findMin $ symOf sigma1) 
-                   (symName $ Set.findMin $ symOf sigma2) }   
+   else let sortSet2 = sortSet sigma2 in 
+        if Set.size symset1 == 1 && Set.size sortSet2 == 1 then
+           return Morphism 
+                      { msource = sigma1
+                      , mtarget = sigma2 
+                      , sort_map = Map.single (symName $ Set.findMin symset1) 
+                                   $ Set.findMin sortSet2
+                      , fun_map = Map.empty
+                      , pred_map = Map.empty }
    else do -- 2. Compute initial posmap, using all possible mappings of symbols
-     let symset1 = symOf sigma1
-         symset2 = symOf sigma2
-         addCard sym s = (s,(postponeEntry sym s,Set.size s))
+     let addCard sym s = (s,(postponeEntry sym s,Set.size s))
          ins1 sym = Map.insert sym
                        (addCard sym $ Set.filter (canBeMapped rmap sym) symset2)
          posmap1 = Set.fold ins1 Map.empty symset1
