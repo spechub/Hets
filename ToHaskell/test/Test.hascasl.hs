@@ -1,6 +1,7 @@
 module HasCASLModul where
+import Prelude (undefined)
  
-data AT = A{f1 :: Int, f2 :: Int, f2 :: B}
+data AT = A{f1 :: !Int, f2 :: !B}
  
 data B = B
  
@@ -11,3 +12,4 @@ data Int = Int
 data A_s = A_s
  
 _P :: (AT, B) -> C
+_P = undefined
