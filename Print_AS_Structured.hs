@@ -17,6 +17,7 @@ module Print_AS_Structured where
 
 import Pretty
 import PrettyPrint
+import PPUtils
 
 -- debugging stuff
 --import IOExts (trace)

@@ -64,13 +64,4 @@ renderLatexVerb d = renderStyle latexStyle d'
 
 renderText d = renderStyle textStyle d
 
--- helpers ------------------------------------
-sp_hang :: Doc -> Int -> Doc -> Doc
-sp_hang d1 n d2 = cat [d1, nest n d2]
-
-sp_brackets :: Doc -> Doc 
-sp_brackets p = sp_hang (sp_hang lbrack 1 p) 0 rbrack
-
-sp_braces :: Doc -> Doc 
-sp_braces p = sp_hang (sp_hang lbrace 1 p) 0 rbrace
 
