@@ -69,10 +69,6 @@ import Common.Id (Id(Id), Token(..), Pos, toPos, isPlace)
 import Common.Lib.Parsec
 
 -- ----------------------------------------------
--- keyword tokens
--- ----------------------------------------------
-
--- ----------------------------------------------
 -- casl keyword handling
 -- ----------------------------------------------
 
@@ -110,16 +106,17 @@ sid (kOps, kWords) = pToken (scanQuotedChar <|> scanDotWords
 		<|> reserved kWords scanAnyWords <?> "simple-id")
 
 -- balanced mixfix-components {...}, [...]
-braced, noComp :: ([String], [String]) -> GenParser Char st [Token]
-braced l = begDoEnd oBraceT (innerList l) cBraceT
-noComp l = begDoEnd oBracketT (innerList l) cBracketT
+braceP, bracketP :: GenParser Char st [Token] -> GenParser Char st [Token]
+braceP p = begDoEnd oBraceT p cBraceT
+bracketP p = begDoEnd oBracketT p cBracketT
 
 -- alternating sid and other mixfix components (including places)
 -- no two sid stand side by side
 innerMix1, innerMix2 :: ([String], [String]) -> GenParser Char st [Token]
 innerMix1 l = sid l <:> option [] (innerMix2 l)
-innerMix2 l = flat (many1 (braced l <|> noComp l<|> many1 placeT))
-            <++> option [] (innerMix1 l)
+innerMix2 l = let p = innerList l in 
+		  flat (many1 (braceP p <|> bracketP p <|> many1 placeT))
+			   <++> option [] (innerMix1 l)
 
 -- ingredients starting either with an sid or brackets, braces or place 
 innerList :: ([String], [String]) -> GenParser Char st [Token]
@@ -131,10 +128,12 @@ topMix1 l = sid l <:> option [] (topMix2 l)
 
 -- following an sid only braced mixfix-components are acceptable
 -- square brackets after an sid will be taken as compound part
-topMix2 l = flat (many1 (braced l)) <++> option [] (topMix1 l)
+topMix2 l = flat (many1 (braceP $ innerList l)) <++> option [] (topMix1 l)
 
 -- square brackets (as mixfix component) are ok following a place 
-topMix3 l = noComp l <++> flat (many (braced l)) <++> option [] (topMix1 l)
+topMix3 l = let p = innerList l in 
+		bracketP p <++> flat (many (braceP p)) 
+			     <++> option [] (topMix1 l)
 
 afterPlace, middle :: ([String], [String]) -> GenParser Char st [Token]
 afterPlace l = topMix1 l <|> topMix2 l<|> topMix3 l
