@@ -11,15 +11,15 @@ test some parsers (and printers)
 
 module Main where
 
-import Token
-import Formula
-import Print_AS_Basic
-import Parse_AS_Basic
-import SortItem
-import OpItem
-import RunParsers
-import RunMixfixParser
-import RunStaticAna
+import Common.Token
+import CASL.Formula
+import CASL.Print_AS_Basic
+import CASL.Parse_AS_Basic
+import CASL.SortItem
+import CASL.OpItem
+import CASL.RunParsers
+import CASL.RunMixfixParser
+import CASL.RunStaticAna
 
 main :: IO ()
 main = exec lineParser fileParser
