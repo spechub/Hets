@@ -11,21 +11,19 @@
 module Main where
 
 import Common.Utils
+import Common.Result
 
-import Options
-import System.Environment
-import Static.AnalysisLibrary
 import Logic.LogicGraph
--- import GUI.ConvertDevToAbstractGraph -- requires uni-package
+import Options
+import Static.AnalysisLibrary
+import Static.DevGraph
+import System.Environment
+--import Syntax.Print_HetCASL
+--import GUI.ConvertDevToAbstractGraph -- requires uni-package
 
 import ReadFn
 import WriteFn
--- import ProcessFn
-import Common.Result
-import Syntax.Print_HetCASL
-import Static.DevGraph
-
-import Debug.Trace
+--import ProcessFn
 
 main :: IO ()
 main = 
@@ -35,19 +33,22 @@ main =
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opt file = 
-    do ld <- read_LIB_DEFN opt file
+    do putIfVerbose opt 2 ("Processing file: " ++ file)
+       ld <- read_LIB_DEFN opt file
        -- (env,ld') <- analyse_LIB_DEFN opt
        (ld',env) <- 
            if (analysis opt)
                then do 
+                   putIfVerbose opt 2 ("Analyzing file: " ++ file)
                    Result diags res <- ioresToIO 
                      (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv opt ld)
                    -- sequence (map (putStrLn . show) diags)
                    return (ld, res)
-               else return (ld, Nothing)
-       let odir = if (null (outdir opt)) then (dirname file)
-                     else (outdir opt)
-       trace ("selected OutDir: " ++ odir) (return ())
-       write_LIB_DEFN (opt { outdir = odir }) ld'
+               else do putIfVerbose opt 2
+                        ("Skipping static analysis on file: " ++ file)
+                       return (ld, Nothing)
+       let odir = if null (outdir opt) then dirname file else outdir opt
+       putIfVerbose opt 3 ("Current OutDir: " ++ odir)
+       write_LIB_DEFN file (opt { outdir = odir }) ld'
        -- write_GLOBAL_ENV env
 

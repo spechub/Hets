@@ -22,8 +22,8 @@ import Logic.LogicGraph
 
 read_LIB_DEFN :: HetcatsOpts -> FilePath -> IO LIB_DEFN
 read_LIB_DEFN opt file = 
-    do putStrLn ("Reading " ++ file)
-       ld <- case (guess (intype opt)) of
+    do putIfVerbose opt 3 ("Reading file: " ++ file)
+       ld <- case guess (intype opt) of
          ATermIn _  -> read_sml_ATerm file
          ASTreeIn _ -> error "Abstract Syntax Trees aren't implemented yet"
          CASLIn     -> do
