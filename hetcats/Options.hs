@@ -4,42 +4,217 @@
    Author: Klaus Lüttich
    Year:   2002
 
-   A datatype for options and a list of options hetcats understands.
+   Datatypes for options, a list of options hetcats understands.
+   Useful functions to parse and check the user-provided functions
+   and for filling in default values.
+
+   A record datatype for fast and easy access and modification /
+   extension of the options.
 
 -}
 
 module Options where
 
+import Version
+import Directory
+import System
+import Char (isSpace)
+import List
 import GetOpt
 
 data Flag = Verbose
 	  | Version
-	  | InTypes  InType
-	  | OutFlags [OutFlag] 
+	  | Help
+	  | InType   InType
+	  | OutTypes [OutType] 
 	  | Analysis [AnaFlag]
+	  | LibDir FilePath
+	  | OutDir FilePath
+	    deriving (Show,Eq)
 
-data InType = SML_Gen_ATerm [ATFlags] | CaslIn
+data HetcatsOpts = HcOpt { verbose  :: Int     -- greater than null for 
+			                       -- turning verbosity on.  
+			 , libdir   :: FilePath
+			 , outdir   :: FilePath
+			 , infile   :: FilePath
+			 , intype   :: InType
+			 , outtypes :: [OutType]
+			 } deriving (Show,Eq)
 
-data ATFlags = BAF | TAF | TRM
+default_HetcatsOpts :: HetcatsOpts
+default_HetcatsOpts = HcOpt { verbose = 0
+			    , libdir  = ""
+			    , outdir = "." -- or like cats the same as
+					   -- that of the input file
+			    , infile = ""
+			    , intype   = SML_Gen_ATerm NonBAF
+			    , outtypes = [CASLOut]
+                           {- The better default options, but 
+			      they are not jet implemented :
+			    , intype   = HetCASLIn
+			    , outtypes = [Global_Env [XML]] -}
+			    }
 
-data OutFlag = LaTeX | CaslOut | Casl0 | Global_Env [GE_Type]
+data InType = SML_Gen_ATerm ATFlag | CASLIn | HetCASLIn
+	      deriving (Show,Eq)
 
-data AnaFlag = Static
+data ATFlag = BAF | NonBAF
+	       deriving (Show,Eq)
+
+data OutType = LaTeX | CASLOut | Casl0 | Global_Env [GE_Type]
+	       deriving (Show,Eq)
 
 data GE_Type = ATerm_TAF | ATerm_TRM | XML
+	       deriving (Show,Eq)
 
-options :: [OptDescr Flag]
-options =
- [ Option ['v']     ["verbose"] (NoArg Verbose)       "chatty output on stderr"
- , Option ['V']     ["version"] (NoArg Version)       "show version number"
-{- , Option ['i']     ["input-type"]  (OpIn)  "output FILE"
- , Option ['c']     []          (OptArg inp  "FILE")  "input FILE"
- , Option ['L']     ["libdir"]  (ReqArg LibDir "DIR") "library directory"-}
- ]
+data AnaFlag = Static
+	       deriving (Show,Eq)
 
-hetcatsOpts :: [String] -> IO ([Flag], [String])
+
+-- This function parses all options
+hetcatsOpts :: [String] -> IO HetcatsOpts
 hetcatsOpts argv =
    case (getOpt Permute options argv) of
-      (o,n,[]  ) -> return (o,n)
-      (_,_,errs) -> fail (concat errs ++ usageInfo header options)
-  where header = "Usage: hetcats [OPTION...] files..."
+      (o,n,[]  ) -> form_opt_rec (merge_out_types o) n
+      (_,_,errs) -> fail (concat errs ++ hetcats_usage)
+
+form_opt_rec :: [Flag] -> [String] -> IO HetcatsOpts
+form_opt_rec flags inp_files = 
+    let req_in_file = case inp_files of
+		      [] -> error $ "one input filename is required\n" ++
+				    hetcats_usage
+		      [x] -> x
+		      _   -> error $ "Only one input filename allowed\n" ++ 
+				     hetcats_usage
+	verb' = foldl collect_verb 0 flags
+	    where collect_verb v f = case f of 
+				     Verbose -> 1 + v
+				     _       -> v
+    in do if Help `elem` flags then 
+	     do putStrLn $ "\n" ++ hetcats_usage
+		exitWith ExitSuccess
+	   else 
+	     if Version `elem` flags then 
+		do putStrLn $ "version of hetcats: " ++ hetcats_version
+		   exitWith ExitSuccess
+	     else
+	        return ()
+          in_file <- check_in_file req_in_file
+	  od <- check_out_dir flags in_file
+	  return $ default_HetcatsOpts { infile  = in_file 
+				       , outdir  = od 
+				       , verbose = verb'
+				       }
+
+-- some suffixes to try in turn 
+-- TODO: implement perm_in_file
+perm_in_file :: FilePath -> [FilePath]
+perm_in_file f = [f]
+
+-- check if the on of the possible files exists and is readable
+-- TODO: implement check_in_file
+check_in_file :: FilePath -> IO FilePath
+check_in_file = return . head . perm_in_file
+
+-- check the output directory and choose a default one if none is specified
+-- TODO: implement the checking of the out_dir
+check_out_dir :: [Flag] -> FilePath -> IO FilePath
+check_out_dir flags in_file = 
+    let ods = filter (\f -> case f of
+		            OutDir _ -> True
+		            _ -> False) flags
+	default_dir = joinWith '/' $ init $ splitOn '/' in_file
+	od = if null ods then 
+	        if    null default_dir 
+		   || all isSpace default_dir
+		then 
+		   "."
+		else
+		   default_dir
+	     else 
+	        (\(OutDir fp) -> fp) $ last ods
+    in do od' <- if od == "." then
+                    getCurrentDirectory
+	         else
+		    return od
+	  existsDir <- doesDirectoryExist od'
+          perms <- if existsDir then getPermissions od'
+		   else error $ "requested nonexistent output directory \"" ++ 
+			       od' ++ "\"\n" ++ hetcats_usage
+	  if existsDir && writable perms then 
+	     return od'
+	   else
+	     fail $ "no writeable output directory available\n" ++
+		    hetcats_usage
+
+-- a String describing the Options of hetcats
+hetcats_usage :: String
+hetcats_usage = usageInfo header options
+    where header = "Usage: hetcats [OPTION...] file"
+
+-- this list describes all options and gives usage Information
+options :: [OptDescr Flag]
+options =
+ [ Option ['v'] ["verbose"] (NoArg Verbose)       
+            "chatty output on stderr"
+ , Option ['V'] ["version"] (NoArg Version)       
+            "show version number"
+ , Option ['h'] ["help"] (NoArg Help) 
+            "show usage information"
+ , Option ['i'] ["input-type"]  (ReqArg inp_type "TYPE")  
+            "TYPE of input file: gen-trm | gen-trm-baf | hetcasl (default) | casl (via cats)"
+ , Option ['O'] ["output-dir"]  (ReqArg out_dir  "DIR")  
+            "output DIR"
+ , Option ['o'] ["output-types"] (ReqArg out_types "TYPE") 
+            "select TYPE of output files: latex | casl | global-env"
+ , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR") 
+            "CASL library directory"
+ ]
+
+-- Just the function to get the input-type right
+inp_type :: String -> Flag
+inp_type s | "gen-trm" `isPrefixOf` s = InType $ trm_type s
+	   | s == "casl"    = InType CASLIn
+	   | s == "hetcasl" = InType HetCASLIn
+	   | otherwise = error ("unknown input type: " ++ s ++ "\n" ++
+				hetcats_usage)
+    where trm_type trm | "baf" `isSuffixOf` trm = SML_Gen_ATerm BAF 
+		       | otherwise = SML_Gen_ATerm NonBAF
+
+-- Processing the out dir
+out_dir :: String -> Flag
+out_dir dir_name = OutDir dir_name
+
+out_types :: String -> Flag
+out_types s | ',' `elem` s = case merge_out_types $ split_types s of
+			     [x] -> x
+			     _ -> error "another thing went wrong!!"
+	    | s == "latex"      = OutTypes [LaTeX]
+	    | s == "casl"       = OutTypes [CASLOut]
+	    | s == "global-env" = OutTypes [Global_Env [XML]]
+	    | otherwise = error ("unknown output type: " ++ s ++ "\n" ++
+				 hetcats_usage)
+    where split_types = map out_types . splitOn ',' 
+
+
+merge_out_types :: [Flag] -> [Flag]
+merge_out_types flags = 
+    let (ots,flags') = partition is_out_type flags 
+	is_out_type f = case f of
+			OutTypes _ -> True
+			_          -> False
+	concatTypes l ot = case ot of
+			     OutTypes l' -> l++l'
+			     _ -> error "something went very wrong!!"
+    in (OutTypes $ foldl concatTypes [] ots):flags'  
+
+
+joinWith :: a -> [[a]] -> [a]
+joinWith sep = concat . intersperse (sep:[])
+
+splitOn :: Eq a => a -> [a] -> [[a]]
+splitOn sep = (\(f,r) -> f : case r of 
+	                     [] -> []
+			     _  -> (splitOn sep $ tail r)
+	      ) . break ((==) sep)
+
