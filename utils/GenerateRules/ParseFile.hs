@@ -33,13 +33,15 @@ parseInputFile fp inp = case (ds,is) of
 			(Right x, Right y) -> Right (x,y)
     where ds = case papply dat (0,0) ((0,0),inp) of
 			[]           -> Left (fp++": No parse (data)")
-			xs -> case filter (\ (_,(_,rs)) -> null rs) xs of
-			      [] ->Left (fp++": Ambigous parse (data); no end")
-			      ((x,(_,"")):xs) -> 
-				   Right $ transformD x
+			xs -> case filter (\ (_,(_,rs)) -> True) xs of
+			      [] ->Left (fp++":"++
+					 show (fst . snd $ (head xs))++
+					 ": Ambigous parse (data); no end")
+			      ((x,(_,_)):xs) -> 
+				   traceERR xs $ Right $ transformD x
 		--	_            -> Left (fp++": Ambigous parse (data)")
 	  dat = parse . skipUntilOff $ (datadecl +++ newtypedecl)
-	  traceERR xxs = trace (concatMap (\ (xx,(_,rs)) -> concat (transformD xx)++","++rs++";") xxs)
+	  traceERR xxs = trace (concatMap (\ (xx,(p,rs)) -> concat (transformD xx)++","++show p++","++rs++";") xxs)
 	  is = case papply (parse header2) (0,-1) ((0,0),inp) of
 	       []           -> Left (fp++": No parse (imports)")
 	       [(x,_)] -> Right x
