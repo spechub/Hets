@@ -86,6 +86,7 @@ pretty
 test
 todo
 
+utils/appendHaskellPreludeString
 utils/outlineAxioms
 utils/DrIFT
 utils/ag
