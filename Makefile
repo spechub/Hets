@@ -16,8 +16,8 @@ INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
 CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
 ## set ghc imports properly for your system
-GHC_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
-DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${GHC_IMPORTS}'
+LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
+DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}'
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
@@ -28,7 +28,8 @@ HAPPY      = happy
 DRIFT      = $(DRIFT_ENV) utils/DrIFT
 HADDOCK    = haddock
 
-HC_FLAGS   = -fglasgow-exts -Wall
+HC_FLAGS   = -Wall  
+# -fglasgow-exts comes in via  ../uni/uni-package.conf
 
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
