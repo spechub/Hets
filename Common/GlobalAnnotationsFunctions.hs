@@ -305,5 +305,5 @@ bracketList ga = case list_lit $ literal_annos ga of
 annotationConflict :: String -> [Annotation] -> a
 annotationConflict tp ans = 
     error $ ("*** conflicting %"++ tp ++ " annotations:\n"
-	      ++ showPretty ans "")
+	      ++ show (printText0 emptyGlobalAnnos ans))
 
