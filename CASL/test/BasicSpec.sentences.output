@@ -3837,12 +3837,12 @@
   forall X1:Nat
       . (op pre : Nat ->? Nat)((op suc : Nat -> Nat)((var X1 : Nat) : Nat) : Nat) : Nat =
             (var X1 : Nat) : Nat %(ga_selector_pre)% ]
-*** Error 343.36, No correct typing for 
-*** Error 343.20, No correct typing for 
-*** Error 343.5, No correct typing for 
-*** Error 342.39, No correct typing for 
-*** Error 342.26, No correct typing for 
-*** Error 342.14, No correct typing for 
+*** Error 343.36, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E -(3 @@ 4)
+*** Error 343.20, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E +(3 @@ 4)
+*** Error 343.5, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E (3 @@ 4)
+*** Error 342.39, No correct typing for  (1 @@ 2) ::: (3 @@ 4)
+*** Error 342.26, No correct typing for  (1 @@ 2) E -(3 @@ 4)
+*** Error 342.14, No correct typing for  (1 @@ 2) E (3 @@ 4)
 *** Error 261.9, ambiguous mixfix term
 	__*__(i,__-__(q,__*__(j,p)))
 	__-__(__*__(i,q),__*__(j,p))
