@@ -45,36 +45,44 @@ The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (maeder@tzi.de) and Till Mossakowski
 (till@tzi.de). The mailing list is hets@tzi.de.
 
-Files in the Tools/Hets/src directory:
---------------------------------------
+Files in the Tools/Hets/src directory, with maintainers:
+--------------------------------------------------------
 
-LICENCE.txt                 Licence information (english)
-LIZENZ.txt                  Licence information (german)
-INSTALL                     Installation and compilation instructions
-Makefile                    GNU-Makefile to compile sources
-README                      This file
-hets.hs                     Top-level Haskell module for hets
-version_nr
-ATC/                        Conversion from and to ATerms (specific)
-CASL/                       Instance of Logic: CASL
+LICENCE.txt                 Licence information (english) (Till Mossakowski)
+LIZENZ.txt                  Licence information (german)  (Till Mossakowski)
+INSTALL                     Installation and compilation instructions (???)
+Makefile                    GNU-Makefile to compile sources (Klaus Luettich)
+README                      This file (Till Mossakowski)
+hets.hs                     Top-level Haskell module for hets (Till Mossakowski)
+version_nr                  Current version (Till Mossakowski)
+ATC/                        Conversion from and to ATerms (Klaus Luettich)
+CASL/                       Instance of Logic: CASL (Till Mossakowski/Christian Maeder)
 Common/                     Modules common to all logics
-Common/ATerm/                 Conversion from and to ATerms (general)
+Common/ATerm/                 Conversion from and to ATerms (Klaus Luettich)
 Common/Lib/                   Third-party modules
-Common/Lib/Parsec/              Parsec combinator parser
-Comorphisms/                Comorphisms of the logic graph
-CspCASL/                    Instance of Logic: CspCASL
-ghc/                        Some ghc-specific stuff 
-GUI/                        GUI for displaying development graphs
-HasCASL/                    Instance of Logic: HasCASL
-Haskell/                    Instance of Logic: Haskell
+Common/Lib/Parsec/              Parsec combinator parser (Christian Maeder)
+Comorphisms/                Comorphisms of the logic graph (Till Mossakowski)
+CspCASL/                    Instance of Logic: CspCASL (Markus Roggenbach)
+doc/                        Documentation (Till Mossakowski)
+docs/                       Haddock generated documentation (Klaus Luettich)
+ghc/                        Some ghc-specific stuff (Christian Maeder)
+GUI/                        GUI for displaying development graphs  (Till Mossakowski/Jorina Gerken)
+HasCASL/                    Instance of Logic: HasCASL (Christian Maeder)
+Haskell/                    Instance of Logic: Haskell (Christian Maeder)
 Haskell/Hatchet/              Static anaylsis of Haskell
 Haskell/Language/             Haskell syntax in Haskell
-hetcats/                    Command line interface
-hugs/                       Some hugs-specific stuff
-Logic/                      Infrastructure for logic independence
-Proofs/                     Heterogeneous proof engine
-Static/                     Heterogeneous development graphs and static analysis
-Syntax/                     Heterogeneous syntax and parsing
+haterm-1.0                  ATerm library (Klaus Luettich)
+hetcats/                    Command line interface (Klaus Luettich)
+hugs/                       Some hugs-specific stuff (Christian Maeder)
+Isabelle/                   Instance of Logic: Isabelle
+Logic/                      Infrastructure for logic independence (Till Mossakowski)
+Modal/                      Instance of Logic: ModalCASL (Till Mossakowski)
+Proofs/                     Heterogeneous proof engine (Till Mossakowski)
+Static/                     Heterogeneous development graphs and static analysis  (Till Mossakowski/Maciek Makowski)
+Syntax/                     Heterogeneous syntax and parsing (Christian Maeder)
+ToHaskell/                  translation to Haskell (Christian Maeder)
+                             should be moved to Comorpisms
 utils/                      Utilities
-utils/DrIFT-src/              DrIFT (for polytpyic conversion functions)
-utils/GenerateRules/          generate files to be DRIFTed 
+utils/DrIFT-src/              DrIFT (for polytpyic conversion functions) (Klaus Luettich)
+utils/GenerateRules/          generate files to be DRIFTed (Klaus Luettich)
+utils/inlineAxioms            parse inline axioms (Till Mossakowski)
