@@ -199,6 +199,7 @@ Isabelle: (ask Christoph)
    CASL annotation for lemmas that should be used in proof
    inherit CASL's mixfix syntax
 
+Signatures versus theories: where to store additional infos?
 
 comp(id,x)=x for comorphism names
 
