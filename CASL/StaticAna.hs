@@ -163,38 +163,47 @@ ana_BASIC_ITEMS mef ab as ga bi =
     Local_var_axioms il afs ps -> 
         do e <- get -- save
            mapM_ addVars il
+           vds <- gets envDiags
            sign <- get
-           put e -- restore 
+           put e { envDiags = vds } -- restore with shadowing warnings 
            let preds = allPredIds sign
                ops = formulaIds sign
                newGa = addAssocs ga sign
-               rfs = map (anaForm mef newGa ops preds sign . item) afs 
-               ds = concatMap diags rfs
-               arfs = zipWith ( \ a m -> case maybeResult m of 
-                                Nothing -> Nothing
-                                Just f -> Just a { item = f }) afs rfs
-               ufs = catMaybes arfs
+               (es, resFs, anaFs) = foldr ( \ f (dss, ress, anas) -> 
+                      let Result ds m = anaForm mef newGa ops preds sign 
+                                        $ item f
+                      in case m of
+                         Nothing -> (ds ++ dss, ress, anas)
+                         Just (resF, anaF) -> 
+                             (ds ++ dss, f {item = resF} : ress, 
+                                 f {item = anaF} : anas))
+                     ([], [], []) afs
                fufs = map ( \ a -> a { item = mkForall il 
-                                     (item a) ps } ) ufs
+                                     (item a) ps } ) anaFs
                sens = map ( \ a -> NamedSen (getRLabel a) $ item a) fufs
-           addDiags ds
+           addDiags es
            addSentences sens                        
-           return $ Local_var_axioms il ufs ps
+           return $ Local_var_axioms il resFs ps
     Axiom_items afs ps ->                   
         do sign <- get
            ops <- gets formulaIds
            preds <- gets allPredIds
            newGa <- gets $ addAssocs ga
-           let rfs = map (anaForm mef newGa ops preds sign . item) afs 
-               ds = concatMap diags rfs
-               arfs = zipWith ( \ a m -> case maybeResult m of 
-                                Nothing -> Nothing
-                                Just f -> Just a { item = f }) afs rfs
-               ufs = catMaybes arfs
-               sens = map ( \ a -> NamedSen (getRLabel a) $ item a) ufs
-           addDiags ds
+           let (es, resFs, anaFs) = foldr ( \ f (dss, ress, anas) -> 
+                      let Result ds m = anaForm mef newGa ops preds sign 
+                                        $ item f
+                      in case m of
+                         Nothing -> (ds ++ dss, ress, anas)
+                         Just (resF, anaF) -> 
+                             (ds ++ dss, f {item = resF} : ress, 
+                                 f {item = anaF} : anas))
+                     ([], [], []) afs
+               fufs = map ( \ a -> a { item = mkForall [] 
+                                     (item a) ps } ) anaFs
+               sens = map ( \ a -> NamedSen (getRLabel a) $ item a) fufs
+           addDiags es
            addSentences sens                        
-           return $ Axiom_items ufs ps
+           return $ Axiom_items resFs ps
     Ext_BASIC_ITEMS b -> fmap Ext_BASIC_ITEMS $ ab ga b
 
 toSortGenAx :: [Pos] -> Bool ->
@@ -312,15 +321,16 @@ ana_SORT_ITEM mef ga asi =
            addSubsort super sub
            case mf of 
              Nothing -> return asi { item = Subsort_decl [sub] super ps}
-             Just f -> do 
+             Just (resF, anaF) -> do 
                let p = [posOfId sub]
                    pv = [tokPos v]
                addSentences[NamedSen lab $
                              mkForall [Var_decl [v] super pv] 
                              (Equivalence 
                               (Membership (Qual_var v super pv) sub p)
-                              f p) p]
-               return asi { item = Subsort_defn sub v super af { item = f } ps}
+                              anaF p) p]
+               return asi { item = Subsort_defn sub v super 
+                                   af { item = resF } ps}
     Iso_decl il _ ->
         do mapM_ addSort il
            mapM_ ( \ i -> mapM_ (addSubsort i) il) il
@@ -358,18 +368,18 @@ ana_OP_ITEM mef ga aoi =
            preds <- gets allPredIds 
            newGa <- gets $ addAssocs ga
            put e -- restore
-           let  Result ds mt = anaTerm mef newGa ops preds sign $ 
-                               Sorted_term (item at) (res_OP_TYPE ty) ps
+           let Result ds mt = anaTerm mef newGa ops preds sign 
+                              (res_OP_TYPE ty) ps $ item at
            addDiags ds
            case mt of 
              Nothing -> return aoi { item = Op_decl [i] ty [] ps }
-             Just t -> do let p = [posOfId i]
-                          addSentences [NamedSen lab $
-                             mkForall vs 
-                             (Strong_equation 
-                              (Application (Qual_op_name i ty p) arg ps)
-                              t p) ps]
-                          return aoi {item = Op_defn i ohd at { item = t } ps }
+             Just (resT, anaT) -> do 
+                 let p = [posOfId i]
+                 addSentences [NamedSen lab $ mkForall vs 
+                     (Strong_equation 
+                      (Application (Qual_op_name i ty p) arg ps)
+                      anaT p) ps]
+                 return aoi {item = Op_defn i ohd at { item = resT } ps }
 
 headToType :: OP_HEAD -> OP_TYPE
 headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
@@ -390,15 +400,14 @@ ana_OP_ATTR mef ga ty ois oa =
            ops <- gets allOpIds
            preds <- gets allPredIds 
            newGa <- gets $ addAssocs ga
-           let Result ds mt = anaTerm mef newGa ops preds sign 
-                              (Sorted_term t rty q)
+           let Result ds mt = anaTerm mef newGa ops preds sign rty q t
            addDiags ds
            case mt of 
              Nothing -> return Nothing
-             Just e -> do 
-               addSentences $ map (makeUnit True e ty) ois
-               addSentences $ map (makeUnit False e ty) ois
-               return $ Just $ Unit_op_attr e
+             Just (resT, anaT)  -> do 
+               addSentences $ map (makeUnit True anaT ty) ois
+               addSentences $ map (makeUnit False anaT ty) ois
+               return $ Just $ Unit_op_attr resT
     Assoc_op_attr -> do
       let ns = map mkSimpleId ["x", "y", "z"]
           vs = map ( \ v -> Var_decl [v] rty q) ns
@@ -486,13 +495,13 @@ ana_PRED_ITEM mef ga ap =
            addDiags ds
            case mt of 
              Nothing -> return ap {item = Pred_decl [i] ty ps}
-             Just t -> do 
+             Just (resF, anaF) -> do 
                let p = [posOfId i]
                addSentences [NamedSen lab $
                              mkForall vs 
                              (Equivalence (Predication (Qual_pred_name i ty p)
-                                           arg p) t p) p]
-               return ap {item = Pred_defn i phd at { item = t } ps}
+                                           arg p) anaF p) p]
+               return ap {item = Pred_defn i phd at { item = resF } ps}
 
 -- full function type of a selector (result sort is component sort)
 data Component = Component { compId :: Id, compType :: OpType }
@@ -706,18 +715,20 @@ class PrettyPrint f => Resolver f where
    putInj :: f -> f -- ^ insert injections 
 
 anaForm :: Resolver f => Min f e -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
-        -> Sign f e -> (FORMULA f) -> Result (FORMULA f)
+        -> Sign f e -> (FORMULA f) -> Result (FORMULA f, FORMULA f)
 anaForm mef ga ops preds sign f = do 
-    f' <- resolveFormula putParen mixResolve ga ops preds f
-    fmap (injFormula putInj) . minExpFORMULA mef ga sign 
-         $ assert (noMixfixF checkMix f') f'
+    resF <- resolveFormula putParen mixResolve ga ops preds f
+    anaF <- minExpFORMULA mef ga sign 
+         $ assert (noMixfixF checkMix resF) resF
+    return (resF, injFormula putInj anaF)
 
 anaTerm :: Resolver f => Min f e -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
-        -> Sign f e -> (TERM f) -> Result (TERM f)
-anaTerm mef ga ops preds sign t = do 
-    t' <- resolveMixfix putParen mixResolve ga ops preds t
-    fmap (injTerm putInj) . oneExpTerm mef ga sign 
-         $ assert (noMixfixT checkMix t') t'
+        -> Sign f e -> SORT -> [Pos] -> (TERM f) -> Result (TERM f, TERM f)
+anaTerm mef ga ops preds sign srt pos t = do 
+    resT <- resolveMixfix putParen mixResolve ga ops preds t
+    anaT <- oneExpTerm mef ga sign 
+         $ assert (noMixfixT checkMix resT) $ Sorted_term resT srt pos
+    return (resT, injTerm putInj anaT)
 
 basicAnalysis :: Resolver f
               => Min f e -- ^ type analysis of f
