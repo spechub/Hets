@@ -67,6 +67,7 @@ Lottery
 Modal/Basic.mod
 Static/hetana.hs
 Syntax/hetpa.hs
+Test.hs
 ToHaskell
 aterm_conv
 distribution
@@ -80,6 +81,7 @@ hetcats/README
 
 doc
 ideas
+install.sh
 mini
 parsec
 pretty
