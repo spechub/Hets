@@ -213,6 +213,7 @@ showLogicGraph
 	         let 
                      graphParms = GraphTitle "SubLogic Graph" $$
 				             OptimiseLayout True $$
+                                             AllowClose (return True) $$ 
 		        		     emptyGraphParms
 							    
                  subLogicG <- newGraph displaySort' graphParms 
