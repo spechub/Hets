@@ -41,6 +41,8 @@ development graph calculus
 - view-test7.casl should be provable with globDecomp + locDecopm
 - fail when doing first globDecomp, then local decomp in RelationsAndOrders
 - correct MAYA: glob decomp: some links are not found (Jorina)
+- Fail: No match in record selector Static.DevGraph.dgn_sign
+  for local subsume in RelationsAndOrders
 
 ************************************************
 Martin (Till)
@@ -337,7 +339,6 @@ Prover windows
 FOR STUDENTS
 ************************************************
 
-Emacs mode
 Hets interactive (provide cmd line interface, but hold loaded libraries in memory, provide switch to context of spec, and type checking of expressions, interaction with emacs mode)
 Packaging of installation
 
