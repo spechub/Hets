@@ -72,7 +72,7 @@ doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
 ####################################################################
 ### targets
 
-.PHONY : clean d_clean real_clean bin_clean check
+.PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg hets
 .SECONDARY : %.hs %.d 
 #.PRECIOUS: sources_hetcats.mk
 
