@@ -33,7 +33,6 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.List
 -- import Control.Exception (assert)
-import Debug.Trace(trace)
 
 assert :: Bool -> a -> a
 assert b a = if b then a else error ("assert")
