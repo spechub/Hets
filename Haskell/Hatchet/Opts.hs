@@ -81,8 +81,8 @@ processCmdLine progName cmdLine
    = case getOpt RequireOrder options cmdLine of
           ([Help], _, _)              -> error $ makeUsageInfo (usageHeader progName)
           (_, [],  _)                 -> error $ makeUsageInfo errorMsg1 
-          (_, (_:_:_) , [])           -> error $ makeUsageInfo errorMsg2 
-          (opts, [hsFile], [])        -> findFlags hsFile opts
+--          (_, (_:_:_) , [])           -> error $ makeUsageInfo errorMsg2 
+          (opts, hsFile:_, [])        -> findFlags hsFile opts
           (_,  _, errs)               -> error $ concat errs ++ makeUsageInfo (usageHeader progName)
    where
    errorMsg1 = progName ++ ": no haskell input file specified\n"
