@@ -842,7 +842,12 @@ proveAtNode checkCons gInfo@(_,_,convRef,_,_,_,_) descr ab2dgNode dgraph =
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showMorphismOfEdge _ (Just (_,_,linklab)) = 
       createTextDisplay "Signature morphism" 
-           (showPretty (dgl_morphism linklab) "") [size(150,50)]
+           ((showPretty (dgl_morphism linklab) "")++hidingMorph) [size(150,50)]
+  where
+    hidingMorph = case (dgl_type linklab) of
+		    (HidingThm morph _) -> "\n ++++++ \n"
+					   ++ (showPretty morph "")
+                    _ -> ""
 showMorphismOfEdge descr Nothing = 
       createTextDisplay "Error" 
           ("edge "++(show descr)++" has no corresponding edge"
