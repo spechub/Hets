@@ -196,9 +196,6 @@ program load a = ([], Empty, a :: []) :: [] ;
  run d = repeat isFinal d
 ]%
 
-view Secd : Machine[Run] to SecdMachine =
-     sorts State |-> Dump, Expr |-> ClosedTerm
-
 spec Time = Eval[view TermReduction] then 
 {}%[op time : ClosedTerm ->? Nat 
 forall x: Variable; a, b, f : ClosedTerm; v: Value
