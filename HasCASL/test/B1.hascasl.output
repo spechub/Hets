@@ -31,7 +31,7 @@ h = (a, b)
 j = {_ < t}
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
-Unit : Type
+Unit : Type := Unit
 [ : a -> b
 a : (a -> b, b)
 t : a

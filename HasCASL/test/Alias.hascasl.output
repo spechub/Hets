@@ -3,7 +3,7 @@ type MyPred : Type := \ s : Type . s ->? Unit
 %% Type Constructors -----------------------------------------------------
 MyPred : Type := \ s : Type . s ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
-Unit : Type
+Unit : Type := Unit
 s : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit × Unit ->? Unit

@@ -56,11 +56,11 @@ bList = (defId, defType) : (notId, notType) : (ifThenElse, ifType) :
 	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId]
 	    
 addUnit :: TypeMap -> TypeMap
-addUnit tm = let TypeName ui uk _ = logicalType in
-	      foldr ( \ (i, k, d) m -> 
+addUnit tm = foldr ( \ (i, k, d) m -> 
 		 Map.insertWith ( \ _ old -> old) i
 			 (TypeInfo k [] [] d) m) tm
-	      [(ui, uk, NoTypeDefn), 
+	      [(simpleIdToId $ mkSimpleId "Unit",
+	        star, AliasTypeDefn $ simpleTypeScheme logicalType), 
 	       (simpleIdToId $ mkSimpleId "Pred", 
 		KindAppl star star [],
 		AliasTypeDefn defType)]
@@ -238,13 +238,36 @@ infer mt trm = do
 		    putAssumps as
 		    return $ map ( \ (s, typ, tr) -> 
 			(s, typ, QuantifiedTerm quant decls tr ps)) rs
-	CaseTerm oft eqs ps -> do 
-	    ts <- infer Nothing oft
+        LambdaTerm pats part resTrm ps -> do 
+	    vs <- freshVars pats
+	    rty <- freshTypeVar
+	    let fty l = if null l then rty else 
+			FunType (head l) PFunArr (fty $ tail l) []
+		myty = fty vs
+                Result ds ms = mUnify tm mt myty
+	    addDiags ds 
+	    case ms of 
+	        Nothing -> return []
+		Just s -> do 
+                    ls <- checkList inferPat (subst s vs) pats
+		    rs <- mapM ( \ ( s2, _, nps) -> do
+		       bs <- mapM extractBindings nps
+		       mapM_ addVarDecl (concatMap snd bs)
+		       let newS = compSubst s s2 
+		       es <- infer (Just $ subst newS rty) resTrm
+                       putAssumps as
+		       return $ map ( \ (s3, _, rtm) -> 
+				      (compSubst newS s3,
+				       subst s3 (subst newS myty), 
+				       LambdaTerm nps part rtm ps)) es) ls
+		    return $ concat rs 
+	CaseTerm ofTrm eqs ps -> do 
+	    ts <- infer Nothing ofTrm
 	    rty <- case mt of 
 		   Nothing -> freshTypeVar
 		   Just ty -> return ty
 	    if null ts then addDiags [mkDiag Error 
-				      "unresolved of-term in case" oft]
+				      "unresolved of-term in case" ofTrm]
 	        else return () 
 	    rs <- mapM ( \ (s1, oty, otrm) -> do 
 		 es <- inferCaseEqs oty (subst s1 rty) eqs
@@ -252,9 +275,32 @@ infer mt trm = do
 				(compSubst s1 s2, ty, 
 				 CaseTerm otrm nes ps)) es) ts
 	    return $ concat rs
+        LetTerm eqs inTrm ps -> do 
+	    vs <- freshVars eqs
+	    es <- checkList inferLetEq vs eqs
+	    rs <- mapM ( \ (s1, _, nes) -> do 
+	       ts <- infer mt inTrm 
+	       return $ map ( \ (s2, ty, nt) -> 
+ 			      (compSubst s1 s2, ty, 
+			       LetTerm nes nt ps)) ts) es
+	    putAssumps as
+	    return $ concat rs
     	_ -> do ty <- freshTypeVar
 		addDiags [mkDiag Error "unexpected term" trm]
-		return [(eps, ty, trm)] 
+		return [(eps, ty, trm)]
+
+
+inferLetEq :: Maybe Type -> ProgEq -> State Env [(Subst, Type, ProgEq)]
+inferLetEq _ (ProgEq pat trm ps) = do
+    ts <- infer Nothing trm
+    nps <- mapM ( \ (s2, tyt, nt) -> do
+           pps <- inferPat (Just tyt) pat		     
+           mapM ( \ (s3, _, pp) -> do
+               (_, nbs) <- extractBindings pp 
+               mapM_ addVarDecl nbs
+	       return (compSubst s2 s3, tyt, ProgEq pp nt ps)) pps) ts
+    return $ concat nps
+
                 
 {-
 Quantifier [GenVarDecl] Term [Pos]

@@ -28,7 +28,7 @@ e = a
 h < (a, b, e)
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
-Unit : Type
+Unit : Type := Unit
 s : Type %(var)%
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------

@@ -122,8 +122,8 @@ simpleTypeScheme :: Type -> TypeScheme
 simpleTypeScheme t = TypeScheme [] ([] :=> t) []
 
 logicalType :: Type 
-logicalType = TypeName (simpleIdToId (mkSimpleId "Unit")) star 0
--- or ProductType [] [] 
+logicalType = -- TypeName (simpleIdToId (mkSimpleId "Unit")) star 0
+	      ProductType [] [] 
 
 predTypeScheme :: TypeScheme -> TypeScheme
 predTypeScheme (TypeScheme vs (qs :=> t) ps) = 
