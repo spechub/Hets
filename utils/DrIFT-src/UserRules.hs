@@ -1,7 +1,7 @@
 -- stub module to add your own rules.
-module UserRules (userRules) where
+module UserRules where
 
-import List (nub,intersperse)
+import List (nub,intersperse,mapAccumL)
 import StandardRules(Rule,Tag) -- gives some examples 
 import RuleUtils -- useful to have a look at this too
 
@@ -246,43 +246,86 @@ childExplode v
 atermfn dat
   = instanceSkeleton "ATermConvertible" 
       [ (makeToATerm (name dat),defaultToATerm)
-      , (makeFromATerm (name dat),defaultFromATerm (name dat))
+{-      , (makeFromATerm (name dat),defaultFromATerm (name dat))-}
       ] 
-      dat
+      dat 
+      $$ (makeFromATermFn dat)
 
 makeToATerm name body
   = let cvs = head (mknss [body] namesupply)
-    in text "toATerm" <+> 
+    in text "toATerm att0" <+> -- this first Argument is an ATermTable
        ppCons cvs body <+>
-       text "=" <+>
-       text "(AAppl" <+>
-       con body <+>
-       text "[" <+> 
-       hcat (intersperse (text ",") (map childToATerm cvs)) <+> 
-       text "])" <+> 
-       c_parens body
+       text "=" $$ nest 4 
+       ((if null cvs then text "let lat = []" $$ text "in"
+	 else
+	 text "let" <+>
+	 vcat ((childToATerm "att" cvs (types body))++
+	       [text "lat = [" <+>
+		hcat (intersperse (text ",") (map addPrime cvs)) <+>  
+		text "]" ]) $$
+	 text "in") <+> 
+	text "addATermSp (AAppl" <+>
+	con body <+>
+	text " lat)" <+> c_parens body <+> 
+	text ("att"++(show (length cvs))))
+
+
 defaultToATerm
   = empty
-childToATerm v
-  = text "toATerm" <+> v
+
+childToATerm s vs ts = 
+    let (_,vs') = List.mapAccumL childToATerm' (0,ts) vs in vs'
+    where childToATerm' (i,t:ts) v = 
+	      ((i+1,ts), 
+	       attN_v' <+> text "=" <+> text ("toATerm"++str) <+> attO <+> v)
+	      where attN_v' = hcat [text "(",text (s++(show (i+1))),
+			      text ",", addPrime v, text ")"]
+		    attO = text (s++(show i))
+		    str = case t of
+			  Con "String" -> "Str"
+			  otherwise    -> ""
+makeFromATermFn dat = 
+    block (text "fromATerm att =": 
+	   [block (fnstart:(block cases):[whereblock])])
+	where 
+	fnstart     = text "case" <+> text "aterm" <+> text "of"
+        cases       = map (makeFromATerm (name dat)) (body dat)
+	whereblock  =
+	    text "where" $$
+            block [(text "aterm = let" <+> text "aterms" <+> text "=" <+>
+		    text "map (getATermSp att) pat_list" <+>
+		    text "in" <+> text "findATerm aterms")
+		  ,text "pat_list =" <+> 
+		   bracketList (map makeFromATermPat (body dat))
+		  ] 
+		   
+makeFromATermPat body = 
+    text "(AAppl" <+> con body <+> text "[ ])" <+> c_parens body
 
 makeFromATerm name body
   = let cvs = head (mknss [body] namesupply)
-    in text "fromATerm" <+> 
-       text "(AAppl" <+>
-       con body <+>
+    in text "(AAppl" <+> con body <+>
        text "[" <+> 
        hcat (intersperse (text ",") cvs) <+> 
        text "])" <+>
        c_parens body <+>
-       text "=" <+> text "let" <+>
-       vcat (map childFromATerm cvs) <+>
-       text "in" <+>
-       ppCons (map addPrime cvs) body
-defaultFromATerm name
-  = hsep $ texts ["fromATerm", "u", "=", "fromATermError", (doublequote name), "u"]
-childFromATerm v
-  = (addPrime v) <+> text "=" <+> text "fromATerm" <+> v
+       text "->" $$ 
+	    block ((text "let"):(kids cvs)++
+		   [text "in" <+> ppCons (map addPrime cvs) body])
+   where kids cvs = let (_,ks) = (List.mapAccumL 
+				     (childFromATerm (text "att")) 
+			             (types body)
+                                     cvs)
+ 		 in ks
+
+defaultFromATerm name = empty
+{-  = hsep $ texts ["fromATerm", "u", "=", "fromATermError", (doublequote name), "u"] -}
+childFromATerm atn (t:ts) v
+    = (ts,(addPrime v) <+> text "=" <+> text ("fromATerm"++str) <+> 
+       parens (text "getATermByIndexSp1" <+> v <+> atn))
+    where str = case t of
+		Con "String" -> "Str"
+		otherwise    -> ""
 
 con body = let atc       = aterm_constructor body
 	       (fc,atc') = case atc of
@@ -290,7 +333,7 @@ con body = let atc       = aterm_constructor body
 				    Args -> error "number of constructors < 1"
 	   in text (doublequote fc) <+> con' atc'
     where con' atc = case atc of 
-			      Args         -> text ""
+			      Args         -> empty
 			      Const s atc' -> text "[" <+>
 					      text "(AAppl" <+> 
 					      text (doublequote s) <+> 

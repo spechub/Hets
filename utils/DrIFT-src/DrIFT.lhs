@@ -22,7 +22,7 @@
 >	file <- readFile fname
 >       let (body,_) = userCode file
 >           b = isLiterate body
->	    (docs,dats,todo) = process  . parser . fromLit b $ body
+>	    (docs,_,todo) = process  . parser . fromLit b $ body
 >	moreDocs <- fmap ((\(x,_,_) -> x) . process) (chaseImports body todo)
 >	let result = toLit b . (\r -> codeSeperator ++ '\n':r) . 
 >			render . vsep $ (docs ++ sepDoc:moreDocs)

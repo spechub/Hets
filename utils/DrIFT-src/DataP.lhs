@@ -40,7 +40,7 @@ needs to be fixed.
  application in aterms. The dots will be replaced with the arguments.
 
  Syntax:
- {-!==> A(B(C(..))) -}
+ {-!==> A(B(C(..))) !-}
 
 >at_constructor = bracket (symbol"{-!") cons (symbol"!-}")
 >
