@@ -155,9 +155,7 @@ inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
-happy_files = 
-
-derived_sources = $(drifted_files) $(happy_files) hetcats/Version.hs \
+derived_sources = $(drifted_files) hetcats/Version.hs \
                   $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
@@ -327,6 +325,24 @@ gen_atc_files = \
 clean_genRules: 
 	$(RM) $(generated_rule_files) $(gendrifted_files)
 
+#############################
+### programatica stuff
+
+LEX_DIR := $(PFE_TOOLDIR)/base/parse2/Lexer
+
+$(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
+	$< > $@
+
+$(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
+                          $(LEX_DIR)/HsTokens.hs
+	$(HC) --make -O -package data \
+           -i$(PFE_TOOLDIR)/base/tests/HbcLibraries \
+           -i$(PFE_TOOLDIR)/base/lib \
+	   -i$(LEX_DIR):$(LEX_DIR)Gen:$(LEX_DIR)Spec \
+              $@.hs -o $@
+
+Haskell/HatParser.hs: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
+
 ###############
 ### clean up
 
@@ -377,7 +393,6 @@ distclean: real_clean clean_genRules d_clean
 	$(RM) hetcats/Version.hs
 	$(RM) $(drifted_file) $(inline_axiom_files)
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
-#	$(RM) $(happy_files)
 
 ####################################################################
 ### test targets
@@ -409,18 +424,10 @@ HasCASL/hacapa: HasCASL/hacapa.hs Common/*.hs HasCASL/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-### Haskell parser
-hapa: Haskell/hapa
-
-Haskell/hapa: Haskell/hapa.hs Haskell/Hatchet/*.hs $(happy_files)
-	$(RM) $@
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
 ### Haskell analysis
 hana: Haskell/hana
 
-Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/Hatchet/*.hs \
-              $(happy_files)
+Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
@@ -475,7 +482,7 @@ hets.hs: hetcats/Version.hs
 	$(HAPPY) $<
 
 %.hs: %.y
-	$(HAPPY) $<
+	$(HAPPY) -o $@ $<
 
 %.hs: %.der.hs utils/DrIFT
 	$(DRIFT) $(DRIFT_OPTS) $< > $@
