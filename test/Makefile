@@ -2,5 +2,8 @@
 
 .PHONY: check
 
-check: ../hetana ../hetpa
+check: hetana hetpa
 	bash ./runcheck.sh
+
+%: 
+	(cd ..; $(MAKE) $@)
