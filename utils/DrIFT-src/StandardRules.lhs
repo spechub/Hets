@@ -1,10 +1,8 @@
->module StandardRules (Tag,Rule,standardRules) where
+>module StandardRules (standardRules) where
 
 >import RuleUtils
 >import List 
 
->type Tag = String
->type Rule = (Tag,Data -> Doc)
 
 --- Add Rules Below Here ----------------------------------------------------
 
@@ -209,7 +207,7 @@ Show
 >	recordBody = parens $ fsep [c,comp,showChar '{',comp,
 >				    fsep (sepWith s' b'),comp,showChar '}']
 >	c = showString constructor
->	b = map (\x -> fsep[text "showsPrec", text "10", x]) (varNames types)
+>	b = map (\x -> fsep[text "showsPrec", text "0", x]) (varNames types)
 >	b' = zipWith (\x l -> fsep[showString l,comp,showChar '=',comp,x])
 >			            b labels
 >	s = fsep [comp,showChar ' ', comp]
@@ -263,7 +261,7 @@ Read
 >	rest = text "rest"
 >	tup x y = parens $ fsep [x, char ',',y]
 >	lex = fsep[from,text "lex",ip]
->	readsPrec = fsep [text "readsPrec",text "10"]
+>	readsPrec = fsep [text "readsPrec",text "0"]
 >	from = text "<-"
 
 ----------------------------------------------------------------------

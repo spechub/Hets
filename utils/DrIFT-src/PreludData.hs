@@ -11,30 +11,21 @@ import DataP
 preludeData :: [Data]
 preludeData = [
 	D{name="Bool",constraints=[],vars=[],body=[
-		Body{constructor="False",labels=[],types=[],
-		    aterm_constructor=Const "False" Args},
-		Body{constructor="True",labels=[],types=[],
-		    aterm_constructor=Const "True" Args}] 
+		Body{constructor="False",labels=[],types=[]},
+		Body{constructor="True",labels=[],types=[]}] 
 	,derives=["Eq", "Ord", "Ix", "Enum", "Read", "Show", "Bounded"]
 	,statement=DataStmt}, 
 	D{name="Maybe",constraints=[],vars=["a"],body=[
-		Body{constructor="Just",labels=[],types=[Var "a"],
-		    aterm_constructor=Const "Just" Args},
-		Body{constructor="Nothing",labels=[],types=[],
-		    aterm_constructor=Const "Nothing" Args}] ,
+		Body{constructor="Just",labels=[],types=[Var "a"]},
+		Body{constructor="Nothing",labels=[],types=[]}] ,
 	derives=["Eq", "Ord", "Read", "Show"],statement=DataStmt},
 	D{name="Either",constraints=[],vars=["a", "b"],body=[
-		Body{constructor="Left",labels=[],types=[Var "a"],
-		    aterm_constructor=Const "Left" Args},
-		Body{constructor="Right",labels=[],types=[Var "b"],
-		    aterm_constructor=Const "Right" Args}],
+		Body{constructor="Left",labels=[],types=[Var "a"]},
+		Body{constructor="Right",labels=[],types=[Var "b"]}],
         derives=["Eq", "Ord", "Read", "Show"],statement=DataStmt}, 
 	D{name="Ordering",constraints=[],vars=[],body=[
-		Body{constructor="LT",labels=[],types=[],
-		    aterm_constructor=Const "LT" Args},
-		Body{constructor="EQ",labels=[],types=[],
-		    aterm_constructor=Const "EQ" Args}, 
-		Body{constructor="GT",labels=[],types=[],
-		    aterm_constructor=Const "GT" Args}],
+		Body{constructor="LT",labels=[],types=[]},
+		Body{constructor="EQ",labels=[],types=[]}, 
+		Body{constructor="GT",labels=[],types=[]}],
 	derives=["Eq", "Ord", "Ix", "Enum", "Read", "Show", "Bounded"],
 	statement=DataStmt}]

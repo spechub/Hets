@@ -22,6 +22,7 @@ to the library have been made in the move from Gofer to Haskell:
 -- extra characters in identifiers .. - 
 -- extra combinator parsers for skipping over input
 
+
 module ParseLib2
    (Parser, item, papply, (+++), sat, many, many1, sepby, sepby1, chainl,
     chainl1, chainr, chainr1, ops, bracket, char, digit, lower, upper,
@@ -57,9 +58,9 @@ instance Monad Parser where
 
 instance MonadPlus Parser where
    -- mzero            :: Parser a
-   mzero                = fail ""
+   mzero                = P (\pos inp -> [])
    -- mplus            :: Parser a -> Parser a -> Parser a
-   (P p) `mplus` (P q)  = P (\pos inp -> (p pos inp ++ q pos inp))
+   (P p) `mplus` (P q)    = P (\pos inp -> (p pos inp ++ q pos inp))
 
 -- bits which donn't fit into Haskell's type classes just yet :-(
 

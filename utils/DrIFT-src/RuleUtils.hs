@@ -3,8 +3,13 @@
 module RuleUtils (module Pretty,module RuleUtils, module DataP)where
 
 import Pretty
-import DataP (Statement(..),Data(..),Type(..),Name(..),Var(..),Class(..),
-		Body(..),Constructor,AtermConst(..))
+import DataP (Statement(..),Data(..),Type(..),Name,Var,Class,
+		Body(..),Constructor)
+
+-- Rule Declarations 
+
+type Tag = String
+type Rule = (Tag,Data -> Doc)
 
 
 -- New Pretty Printers ---------------
@@ -89,5 +94,6 @@ pattern' c l = parens $ fsep (text c : varNames' l)
 
 -- test that a datatype has at least one record constructor
 hasRecord :: Data -> Bool
-hasRecord d  = statement d == DataStmt && any (not . null . labels) (body d)
+hasRecord d =   statement d == DataStmt
+		&& any (not . null . labels) (body d)
 
