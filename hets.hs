@@ -70,7 +70,7 @@ processFile opt file =
                                 case res of
                                      Just (ln,ld1,_,lenv) -> do
                                        writeFileInfo opt file ln lenv
-				       --checkFile file ln lenv
+				       --checkFile opt file ln lenv
                                        return (ld1,res)
                                      Nothing -> return (ld, res)
                   let odir = if null (outdir opt) then dirname file else outdir opt
@@ -103,28 +103,41 @@ processFile opt file =
 						(opt { outdir = odir }) 
 						ld'
 
-checkFile :: FilePath -> LIB_NAME -> LibEnv -> IO ()
-checkFile fp ln lenv =
+checkFile ::  HetcatsOpts -> FilePath -> LIB_NAME -> LibEnv -> IO ()
+checkFile opts fp ln lenv =
     case Map.lookup ln lenv of
     Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
     Just gctx -> do 
       let envFile = rmSuffix fp ++ ".env"
-      read_gctx <- globalContextfromShATerm envFile
-      putStrLn ("read " ++ show (show ln) 
-		++ " from env-file " ++ show envFile
-		++ ": status: " 
-		++ (if read_gctx == gctx 
-		    then "no differences found"
-		    else "INCONSISTENT environments!!"))
-
-
-
+      putStrLn "reading in..."
+      (Common.Result.Result dias mread_gctx) <- 
+	  globalContextfromShATerm envFile
+      maybe (showDiags opts dias)
+          (\ read_gctx  -> do
+        putStrLn ("read " ++ show (show ln) 
+		  ++ " from env-file " ++ show envFile
+		  ++ ": status: " 
+		  ++ (case read_gctx of
+		      (r_globalAnnos, r_globalEnv, r_dGraph) ->
+		       case gctx of
+		       (globalAnnos, globalEnv, dGraph) ->
+		         concat $ 
+		          zipWith (\label status ->
+				     label ++ ": " ++ status ++ ";")
+                             ["GlobalAnnos", " GlobalEnv", " DGraph"]
+		             (map (\b -> if b then "ok" else "DIFF!!") 
+                                 [r_globalAnnos == globalAnnos,
+			          r_globalEnv   == globalEnv,
+			          r_dGraph      == dGraph]))))
+           mread_gctx
+		         
 {- showGraph :: FilePath -> HetcatsOpts -> (Maybe (LIB_NAME, -- filename
                                                       HsModule, -- as tree
                                                       DGraph,   -- development graph
                                                       LibEnv    -- DGraphs for imported modules 
                                                       )  -> IO ()
 -}
+
 showGraph file opt env =
     case env of
         Just (ln,_,_,libenv) -> do
