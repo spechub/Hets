@@ -57,7 +57,42 @@ x2 : c %(var)%
 y1 : d %(var)%
 y2 : d %(var)%
 %% Sentences -------------------------------------------------------------
+__ in s -> t = \ f : s ->? t . all (\ x : s . def f (x)) %()%
+(\ (x : s, y : t) . def (x res y)) =
+(\ (x : s, y : t) . (def y) und (def x)) %()%
 (op __=__ : s × s ->? Unit) ((op fst : s), (op __res__ : s)) %()%
+(\ x : s . eq (x, x)) = tt %()%
+(\ (x, y : s) . x res eq (x, y)) =
+(\ (x, y : s) . y res eq (x, y)) %()%
+all
+(\ (f, g) : s ->? t . all
+		      (\ x : s . eq (\ . f (x), g (x)) impl eq (f, g))) %()%
+all (\ x : c . x <<= x) %(reflexive)%
+all
+(\ (x, y, z : c) . ((x <<= y) und (y <<= z)) impl x <<=
+		   z) %(transitive)%
+all
+(\ (x, y, z : c) . ((x <<= y) und (y <<= x)) impl eq
+		   (x, y)) %(antisymmetric)%
+all
+(\ s : nat -> c . def (sup s) impl
+		  (isBound (sup s, s) und all
+		   (\ x : c . isBound (x, s) impl sup (s) <<=
+			      x))) %(sup is minimally bound)%
+all
+(\ s : nat -> c . isChain (s) impl def (sup (s))) %(sup exists)%
+all (\ x : p . bottom <<= x) %()%
+__ in c -->? d =
+\ f : c ->? d . all
+		(\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
+		(\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
+				  (\ m : nat . def f (s (m)) und eq
+					       (sup (\ n : nat .! f (s (n + m))),
+						f (sup (s))))) %()%
+__ in c --> d = \ f : c -->? d . all (\ x : c . def f (x)) %()%
+all
+(\ f : p -->? p . eq (f (Y (f)), Y (f)) und all
+		  (\ x : p . eq (f (x), x) impl Y (f) <<= x)) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 4, column 7) illegal universe class declaration 'Type'
 Error (line 14, column 44) incompatible kind of: t ->? Unit
@@ -69,6 +104,7 @@ Hint (line 40, column 9) not a class 's'
 Error (line 46, column 11) unexpected mixfix token 'und'
 FatalError (line 54, column 3) no resolution for '__'
 Error (line 60, column 13) unexpected mixfix token '('
+Error (line 60, column 32) unexpected mixfix token 'y'
 Error (line 65, column 22) unexpected mixfix token '('
 FatalError (line 65, column 18) no resolution for '(\ (x : s, y : t) . def (x res y)) =
 (\ (x : s, y : t) . (def y) und (def x))'
@@ -77,12 +113,23 @@ Error (line 75, column 26) unexpected mixfix token 'y'
 FatalError (line 75, column 15) no resolution for '(\ (x, y : s) . x res eq (x, y)) = (\ (x, y : s) . y res eq (x, y))'
 Warning (line 85, column 6) redeclared type 's'
 Error (line 87, column 13) unexpected mixfix token '('
+Error (line 87, column 43) unexpected mixfix token 'p'
 Error (line 90, column 13) unexpected mixfix token '('
+Error (line 90, column 45) unexpected mixfix token 't1'
 Error (line 93, column 11) unexpected mixfix token 'impl'
+Error (line 93, column 58) unexpected mixfix token 'And'
 Error (line 95, column 11) unexpected mixfix token 'or'
+Error (line 95, column 48) unexpected mixfix token 'all'
+Error (line 96, column 21) unexpected mixfix token 'impl'
 Error (line 98, column 12) unexpected mixfix token '('
+Error (line 98, column 39) unexpected mixfix token 'all'
+Error (line 99, column 17) unexpected mixfix token 'all'
+Error (line 99, column 27) unexpected mixfix token 'p'
 Error (line 101, column 12) unexpected mixfix token '('
+Error (line 101, column 29) unexpected mixfix token 'all'
+Error (line 101, column 49) unexpected mixfix token 'r'
 Error (line 103, column 13) unexpected mixfix token '('
+Error (line 103, column 42) unexpected mixfix token 'r'
 Error (line 108, column 3) unexpected mixfix token 'all'
 Error (line 108, column 22) unexpected mixfix token 'all'
 Error (line 108, column 39) unexpected mixfix token 'f'
@@ -112,12 +159,16 @@ Hint (line 157, column 13) not a class 'c'
 Hint (line 157, column 25) not a class 'd'
 Hint (line 157, column 25) not a class 'd'
 FatalError (line 159, column 10) no resolution for '(x1, y1) <<= (x2, y2)'
+Error (line 159, column 45) unexpected mixfix token 'und'
 FatalError (line 170, column 4) no resolution for '__'
 Error (line 176, column 16) unexpected mixfix token '['
+Error (line 176, column 31) unexpected mixfix token 'all'
+Error (line 176, column 45) unexpected mixfix token '('
 FatalError (line 182, column 4) no resolution for '__'
 Hint (line 184, column 13) not a class 'c --> d'
 Hint (line 184, column 13) not a class 'c --> d'
 Error (line 186, column 12) unexpected mixfix token '<<='
+Error (line 186, column 22) unexpected mixfix token '<<='
 Error (line 192, column 3) unexpected mixfix token 'all'
 Error (line 192, column 38) unexpected mixfix token ')'
 Error (line 193, column 32) unexpected mixfix token 'impl'

@@ -46,13 +46,15 @@ addSuperType t i =
 					      tk
 
 -- | analyse a 'TypeItem'
-anaTypeItem :: GenKind -> Instance -> TypeItem -> State Env ()
-anaTypeItem _ inst (TypeDecl pats kind _) = 
+anaTypeItem :: GenKind -> Instance -> TypeItem -> State Env TypeItem
+anaTypeItem _ inst ti@(TypeDecl pats kind _) = 
     do anaKind kind
        let Result ds (Just is) = convertTypePatterns pats
        addDiags ds
-       mapM_ (addTypeId NoTypeDefn inst kind) is   
-anaTypeItem _ inst (SubtypeDecl pats t _) = 
+       mapM_ (addTypeId NoTypeDefn inst kind) is
+       return ti
+
+anaTypeItem _ inst ti@(SubtypeDecl pats t _) = 
     do let Result ds (Just is) = convertTypePatterns pats
        addDiags ds  
        mapM_ (addTypeId NoTypeDefn inst star) is   
@@ -60,14 +62,16 @@ anaTypeItem _ inst (SubtypeDecl pats t _) =
        case mt of
            Nothing -> return ()
            Just newT -> mapM_ (addSuperType newT) is
+       return ti
 
-anaTypeItem _ inst (IsoDecl pats _) = 
+anaTypeItem _ inst ti@(IsoDecl pats _) = 
     do let Result ds (Just is) = convertTypePatterns pats
        addDiags ds
        mapM_ (addTypeId NoTypeDefn inst star) is
        mapM_ ( \ i -> mapM_ (addSuperType (TypeName i star 0)) is) is 
+       return ti
 
-anaTypeItem _ inst (SubtypeDefn pat v t f ps) = 
+anaTypeItem _ inst ti@(SubtypeDefn pat v t f ps) = 
     do addDiags [Diag Warning ("unchecked formula '" ++ showPretty f "'")
 		$ firstPos [v] ps]
        let Result ds m = convertTypePattern pat
@@ -82,9 +86,9 @@ anaTypeItem _ inst (SubtypeDefn pat v t f ps) =
 		      addSuperType newT i
        addDiags [Diag Warning ("unchecked formula '" ++ showPretty f "'")
 		   $ firstPos [v] ps]
-				   
+       return ti
 	   
-anaTypeItem _ inst (AliasType pat mk sc _) = 
+anaTypeItem _ inst ti@(AliasType pat mk sc _) = 
     do let Result ds m = convertTypePattern pat
        addDiags ds
        (ik, mt) <- anaPseudoType mk sc
@@ -94,12 +98,15 @@ anaTypeItem _ inst (AliasType pat mk sc _) =
 		  Just newPty -> do addTypeId (AliasTypeDefn newPty) inst ik i 
 				    return ()
 	      _ -> return ()
+       return ti
 
-anaTypeItem gk inst (Datatype d) = anaDatatype gk inst d 
-
+anaTypeItem gk inst (Datatype d) = 
+    do anaDatatype gk inst d 
+       return $ Datatype d
+		   
 -- | analyse a 'DatatypeDecl'
-anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env ()
-anaDatatype genKind inst (DatatypeDecl pat kind alts derivs _) =
+anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env DatatypeDecl
+anaDatatype genKind inst dd@(DatatypeDecl pat kind alts derivs _) =
     do k <- anaKind kind
        checkKinds pat star k
        case derivs of 
@@ -125,6 +132,7 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs _) =
 			           ) sels) newAlts
 		     addTypeId (DatatypeDefn genKind [] newAlts) inst k i
 		     return ()
+       return dd
 
 -- | analyse a pseudo type (represented as a 'TypeScheme')
 anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, Maybe TypeScheme)

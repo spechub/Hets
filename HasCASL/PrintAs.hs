@@ -119,36 +119,7 @@ instance PrettyPrint TypeQual where
     printText0 _ AsType = text asS
     printText0 _ InType = text inS
 
-instance PrettyPrint LogOp where
-    printText0 _ NotOp = text notS
-    printText0 _ AndOp = text lAnd
-    printText0 _ OrOp = text lOr
-    printText0 _ ImplOp = text implS
-    printText0 _ EquivOp = text equivS
-
-instance PrettyPrint EqOp where
-    printText0 _ EqualOp = text equalS
-    printText0 _ ExEqualOp = text exEqual
-
-instance PrettyPrint Formula where
-    printText0 ga (TermFormula t) = printText0 ga t
-    printText0 ga (ConnectFormula o fs _) = parens $
-	fsep (punctuate (space <> printText0 ga o) (map (printText0 ga) fs))
-    printText0 ga (EqFormula o t1 t2 _) = printText0 ga t1
-					  <+> printText0 ga o
-					  <+> printText0 ga t2
-    printText0 ga (DefFormula t _) = text defS <+> printText0 ga t
-    printText0 ga (QuantifiedFormula q vs f _) =
-	printText0 ga q <+> semiT_text ga vs <+> text dotS <+> printText0 ga f
-    printText0 ga (PolyFormula ts f _) = 
-	text forallS <+> semiT_text ga ts <+> text dotS <+> printText0 ga f
-
 instance PrettyPrint Term where
-    printText0 ga (CondTerm t1 f t2 _) =  printText0 ga t1
-				      <+> text whenS
-				      <+> printText0 ga f
-				      <+> text elseS
-				      <+> printText0 ga t2
     printText0 ga (QualVar v t _) = parens $ text varS
 			<+> printText0 ga v
 			<+> colon

@@ -28,13 +28,14 @@ import HasCASL.TypeAna
 -- analyse class decls
 -- ---------------------------------------------------------------------------
 
-anaClassDecls :: ClassDecl -> State Env ()
-anaClassDecls (ClassDecl cls k _) = 
+anaClassDecls :: ClassDecl -> State Env ClassDecl
+anaClassDecls cd@(ClassDecl cls k _) = 
     do ak <- anaKind k
        mapM_ (addClassDecl ak Set.empty Nothing) cls
+       return cd
 
 anaClassDecls (SubclassDecl _ _ (Downset _) _) = error "anaClassDecl"
-anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
+anaClassDecls cd@(SubclassDecl cls k sc@(Intersection supcls ps) qs) =
     do ak <- anaKind k
        if Set.isEmpty supcls then 
 	  do addDiags [Diag Warning
@@ -56,16 +57,19 @@ anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
 		  else do (sk, Intersection newSups _) <- anaClass sc
 			  checkKinds hd sk ak
 			  mapM_ (addClassDecl ak newSups Nothing) cls
+       return cd
 
-anaClassDecls (ClassDefn ci k ic _) =
+anaClassDecls cd@(ClassDefn ci k ic _) =
     do ak <- anaKind k
        (dk, newIc) <- anaClass ic
        checkKinds ci dk ak
        addClassDecl ak Set.empty (Just newIc) ci 
+       return cd
 
-anaClassDecls (DownsetDefn ci _ t _) = 
+anaClassDecls cd@(DownsetDefn ci _ t _) = 
     do mt <- anaStarType t 
        addClassDecl star Set.empty (fmap Downset mt) ci
+       return cd 
 
 -- ---------------------------------------------------------------------------
 -- store class decls

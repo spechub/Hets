@@ -280,11 +280,6 @@ checkResultType tm t pm =
 		 (mapMaybe (filterByResultType tm t) 
 		 $ lookUp m i) m }
 
-resolveAny :: GlobalAnnos -> Term -> State Env (Maybe (Type, Term))
-resolveAny ga trm =
-    do tvar <- toEnvState freshVar
-       resolve ga (TypeName tvar star 1, trm)
-
 resolveFromParseMap :: (PosItem a, PrettyPrint a) => (PState a -> a) 
 		    -> (Type, a) -> ParseMap a -> State Env (Maybe (Type, a))
 resolveFromParseMap f (ty, a) pm0 =
@@ -314,6 +309,17 @@ resolveTerm :: GlobalAnnos -> Type -> Term -> State Env (Maybe Term)
 resolveTerm ga ty trm = 
     do mr <- resolve ga (ty, trm)	    
        return $ fmap snd mr 
+
+resolveAny :: GlobalAnnos -> Term -> State Env (Maybe (Type, Term))
+resolveAny ga trm =
+    do tvar <- toEnvState freshVar
+       resolve ga (TypeName tvar star 1, trm)
+
+anaFormula :: GlobalAnnos -> Term -> State Env Term
+anaFormula ga t = 
+    do mt <- resolveTerm ga logicalType t 
+       case mt of Nothing -> return t
+		  Just e -> return e
 
 -- ---------------------------------
 -- patterns

@@ -76,7 +76,7 @@ subTypeDefn (s, e) = do a <- annos
 			c <- colT
 			t <- parseType
 			d <- dotT -- or bar
-			f <- fmap TermFormula term
+			f <- term
 			p <- cBraceT
 			return (SubtypeDefn s v t (Annoted f [] a []) 
 				  (toPos e [o,c,d] p))
@@ -478,7 +478,7 @@ progItems = hasCaslItemList programS (patternTermPair (NoToken equalS)
 				      WithIn equalS) ProgItems
 
 axiomItems =     do a <- pluralKeyword axiomS
-                    (fs, ps, ans) <- hasCaslItemAux (fmap TermFormula term)
+                    (fs, ps, ans) <- hasCaslItemAux term
                     return (AxiomItems [] (zipWith 
                                            (\ x y -> Annoted x [] [] y) 
                                            fs ans) (map tokPos (a:ps)))
@@ -507,7 +507,7 @@ dotFormulae = do d <- dotT
                                (ps ++ [tokPos t]))
                    else return (AxiomItems [] fs ps)
     where aFormula = bind appendAnno 
-		     (annoParser (fmap TermFormula term)) lineAnnos
+		     (annoParser term) lineAnnos
 
 basicItems = fmap SigItems sigItems
 	     <|> classItems

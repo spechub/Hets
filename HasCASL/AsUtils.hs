@@ -95,7 +95,6 @@ instance PosItem Term where
 posOfTerm :: Term -> Pos
 posOfTerm trm =
     case trm of
-    CondTerm t1 _ t2 ps -> firstPos [t1, t2] ps
     QualVar v _ ps -> firstPos [v] ps
     QualOp (InstOpId i _ ps) _ qs -> firstPos [i] (ps++qs) 
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps

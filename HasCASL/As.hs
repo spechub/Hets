@@ -30,7 +30,7 @@ data BasicItem = SigItems SigItems
                | GenItems [Annoted SigItems] [Pos] 
                -- pos "generated" "{", ";"s, "}"
                -- or "generated" "type" ";"s
-               | AxiomItems [GenVarDecl] [Annoted Formula] [Pos]
+               | AxiomItems [GenVarDecl] [Annoted Term] [Pos]
                -- pos "forall" (if GenVarDecl not empty), dots 
                  deriving (Show, Eq)
 
@@ -63,7 +63,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos ","s, "<"
                | IsoDecl [TypePattern] [Pos]
                -- pos "="s
-               | SubtypeDefn TypePattern Vars Type (Annoted Formula) [Pos]
+               | SubtypeDefn TypePattern Vars Type (Annoted Term) [Pos]
                -- pos "=", "{", ":", dot, "}"
                | AliasType TypePattern (Maybe Kind) TypeScheme [Pos]
                -- pos ":="
@@ -175,29 +175,10 @@ getBrackets b = case b of
 		       Squares -> ("[", "]")
 		       Braces -> ("{", "}")
 
-data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp deriving (Show, Eq, Ord)
-data EqOp = EqualOp | ExEqualOp deriving (Show, Eq, Ord)
-
--- proper formulae only exist after static analysis
-data Formula = TermFormula Term 	  
-	     | ConnectFormula LogOp [Formula] [Pos]
-	     -- pos not, "/\", "\/", impl, "<=>"
-	     | EqFormula EqOp Term Term [Pos]
-	     -- pos "=", "=e="
-	     | DefFormula Term [Pos] 
-	     -- pos "def"
-	     | QuantifiedFormula Quantifier [VarDecl] Formula [Pos]
-             -- pos quantifier, ";"s, dot
-	     | PolyFormula [TypeArg] Formula [Pos]
-             -- pos "forall", ";"s, dot
-	       deriving (Show)
-
 -- parse quantified formulae as terms first
 -- eases also parsing of formulae in parenthesis
 
-data Term = CondTerm Term Formula Term [Pos]
-	  -- pos "when", "else" (or if-then-else)
-	  | QualVar Var Type [Pos]
+data Term = QualVar Var Type [Pos]
 	  -- pos "(", "var", ":", ")"
 	  | QualOp InstOpId TypeScheme [Pos]
 	  -- pos "(", "op", ":", ")" 
@@ -335,19 +316,7 @@ instance Eq TypeScheme where
 instance Eq VarDecl where
     VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2) 
 
-instance Eq Formula where
-    TermFormula t1 == TermFormula t2 = t1 == t2
-    ConnectFormula o1 l1 _ == ConnectFormula o2 l2 _ = (o1, l1) == (o2, l2)
-    EqFormula e1 s1 t1 _ == EqFormula e2 s2 t2 _ = 
-	e1 == e2 && ((s1, t1) == (s2, t2) || (t1, s1) == (s2, t2))
-    DefFormula t1 _ == DefFormula t2 _ = t1 == t2
-    QuantifiedFormula q1 v1 f1 _ == QuantifiedFormula q2 v2 f2 _ =
-	(q1, v1, f1) == (q2, v2, f2)
-    PolyFormula a1 f1 _ == PolyFormula a2 f2 _ = (a1, f1) == (a2, f2)
-    _ == _ = False
-		    
 instance Eq Term where
-    CondTerm s1 f1 t1 _ == CondTerm s2 f2 t2 _ = (s1, f1, t1) == (s2, f2, t2)
     QualVar v1 t1 _ == QualVar v2 t2 _ = (v1, t1) == (v2, t2) 
     QualOp i1 s1 _ == QualOp  i2 s2 _ = (i1, s1) == (i2, s2) 
     ApplTerm s1 t1 _ == ApplTerm s2 t2 _ = (s1, t1) == (s2, t2) 

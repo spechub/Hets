@@ -48,7 +48,7 @@ data Selector = Select UninstOpId Type Partiality -- only result type
 		deriving (Show, Eq) 
 
 data TypeDefn = NoTypeDefn
-              | Supertype Vars Type Formula 
+              | Supertype Vars Type Term 
 	      | DatatypeDefn GenKind [TypeArg] [AltDefn]
 	      | AliasTypeDefn TypeScheme
 	      | TypeVarDefn deriving (Show, Eq)
@@ -94,7 +94,7 @@ type Assumps = Map UninstOpId OpInfos
 data Env = Env { classMap :: ClassMap
                , typeMap :: TypeMap
 	       , assumps :: Assumps
-	       , sentences :: [Named Formula]	 
+	       , sentences :: [Named Term]	 
 	       , envDiags :: [Diagnosis]
 	       , counter :: Int
 	       } deriving (Show, Eq)

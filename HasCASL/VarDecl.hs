@@ -75,9 +75,14 @@ addSingleTypeKind d i k =
 anaTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
 anaTypeVarDecl(TypeArg t k s ps) = 
     do nk <- anaKind k
-       b <- addTypeId TypeVarDefn Plain nk t
+       b <- addTypeVarDecl $ TypeArg t nk s ps
        return $ if b then Just $ TypeArg t nk s ps
 	      else Nothing
+
+-- | add an analysed type argument
+addTypeVarDecl :: TypeArg -> State Env Bool
+addTypeVarDecl(TypeArg t k _ _) = 
+       addTypeId TypeVarDefn Plain k t
 
 -- | compute arity from a 'Kind'
 kindArity :: ApplMode -> Kind -> Int

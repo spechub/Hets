@@ -45,6 +45,11 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
 		       Cons32 : Data2 × Data1 -> Data3))%
 tt : s ->? Unit = \ x : s . ()
 x : s %(var)%
+%% Sentences -------------------------------------------------------------
+x = y %()%
+true %()%
+e %()%
+e %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration 'Type'
 Warning (line 5, column 20) redeclared class 'TYPE'
@@ -59,12 +64,23 @@ Hint (line 16, column 9) not a class 's'
 Error (line 20, column 12) unexpected mixfix token 'res'
 Error (line 21, column 5) unexpected mixfix token '('
 Error (line 22, column 5) unexpected mixfix token '('
+Error (line 22, column 24) unexpected mixfix token 'y'
 Error (line 28, column 13) unexpected mixfix token '('
+Error (line 28, column 38) unexpected mixfix token 'p'
 Error (line 30, column 13) unexpected mixfix token '('
+Error (line 30, column 40) unexpected mixfix token 't1'
 Error (line 32, column 12) unexpected mixfix token 'impl'
+Error (line 32, column 45) unexpected mixfix token 'And'
 Error (line 34, column 12) unexpected mixfix token 'or'
+Error (line 34, column 44) unexpected mixfix token 'all'
+Error (line 35, column 21) unexpected mixfix token 'impl'
 Error (line 37, column 6) unexpected mixfix token '('
+Error (line 37, column 27) unexpected mixfix token 'all'
+Error (line 38, column 17) unexpected mixfix token 'all'
+Error (line 38, column 27) unexpected mixfix token 'p'
 Error (line 40, column 6) unexpected mixfix token '('
+Error (line 40, column 20) unexpected mixfix token 'all'
+Error (line 40, column 37) unexpected mixfix token 'r'
 Hint (line 45, column 11) not a class 't'
 Error (line 45, column 8) wrong type scheme of 'x'
   expected: s

@@ -29,49 +29,58 @@ import Data.Maybe
 -- analysis
 -----------------------------------------------------------------------------
 
-anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env ()
-anaBasicSpec ga (BasicSpec l) = mapM_ (anaBasicItem ga) $ map item l
+anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
+anaBasicSpec ga (BasicSpec l) = fmap BasicSpec $ 
+				mapAnM (anaBasicItem ga) l
 
-anaBasicItem :: GlobalAnnos -> BasicItem -> State Env ()
-anaBasicItem ga (SigItems i) = anaSigItems ga Loose i
-anaBasicItem ga (ClassItems inst l _) = mapM_ (anaAnnotedClassItem ga inst) l
-anaBasicItem _ (GenVarItems l _) = mapM_ anaGenVarDecl l
-anaBasicItem ga (ProgItems l _) = mapM_ (anaProgEq ga) $ map item l
-anaBasicItem _ (FreeDatatype l _) = mapM_ (anaDatatype Free Plain) $ map item l
-anaBasicItem ga (GenItems l _) = mapM_ (anaSigItems ga Generated) $ map item l
-anaBasicItem ga (AxiomItems decls fs _) = 
+anaBasicItem :: GlobalAnnos -> BasicItem -> State Env BasicItem
+anaBasicItem ga (SigItems i) = fmap SigItems $ anaSigItems ga Loose i
+anaBasicItem ga (ClassItems inst l ps) = 
+    do ul <- mapAnM (anaClassItem ga inst) l
+       return $ ClassItems inst ul ps
+anaBasicItem _ (GenVarItems l ps) = 
+    do ul <- mapM anaGenVarDecl l
+       return $ GenVarItems (catMaybes ul) ps
+anaBasicItem ga (ProgItems l ps) = 
+    do ul <- mapAnM (anaProgEq ga) l
+       return $ ProgItems ul ps
+anaBasicItem _ (FreeDatatype l ps) = 
+    do ul <- mapAnM (anaDatatype Free Plain) l
+       return $ FreeDatatype ul ps
+anaBasicItem ga (GenItems l ps) = 
+    do ul <- mapAnM (anaSigItems ga Generated) l
+       return $ GenItems ul ps
+anaBasicItem ga (AxiomItems decls fs ps) = 
     do tm <- gets typeMap -- save type map
        as <- gets assumps -- save vars
-       mapM_ anaGenVarDecl decls
-       ts <- mapM (( \ (TermFormula t) -> 
-		     resolveTerm ga logicalType t ) . item) fs
+       ds <- mapM anaGenVarDecl decls
+       ts <- mapAnM (anaFormula ga) fs
        putTypeMap tm -- restore 
        putAssumps as -- restore
-       let sens = concat $ zipWith ( \ mt f -> 
-			    case mt of 
-			    Nothing -> []
-			    Just t -> [NamedSen (getRLabel f) $ TermFormula t])
-		  ts fs
+       let sens = map ( \ f -> NamedSen (getRLabel f) $ item f) ts 
        appendSentences sens
+       return $ AxiomItems (catMaybes ds) ts ps
 
-appendSentences :: [Named Formula] -> State Env ()
+appendSentences :: [Named Term] -> State Env ()
 appendSentences fs =
     do e <- get
        put $ e {sentences = sentences e ++ fs}
 
-anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env ()
-anaSigItems _ gk (TypeItems inst l _) = 
-    mapM_ (anaTypeItem gk inst) $ map item l
-anaSigItems ga _ (OpItems l _) =  mapM_ (anaOpItem ga) $ map item l
+anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems
+anaSigItems _ gk (TypeItems inst l ps) = 
+    do ul <- mapAnM (anaTypeItem gk inst) l
+       return $ TypeItems inst ul ps
+anaSigItems ga _ (OpItems l ps) = 
+    do ul <- mapAnM (anaOpItem ga) l
+       return $ OpItems ul ps
 
 -- ----------------------------------------------------------------------------
 -- ClassItem
 -- ----------------------------------------------------------------------------
 
-anaAnnotedClassItem :: GlobalAnnos -> Instance -> Annoted ClassItem 
-		    -> State Env ()
-anaAnnotedClassItem ga _ aci = 
-    let ClassItem d l _ = item aci in
-    do anaClassDecls d 
-       mapM_ (anaBasicItem ga) $ map item l
-
+anaClassItem :: GlobalAnnos -> Instance -> ClassItem 
+		    -> State Env ClassItem
+anaClassItem ga _ (ClassItem d l ps) = 
+    do cd <- anaClassDecls d 
+       ul <- mapAnM (anaBasicItem ga) l
+       return $ ClassItem cd ul ps
