@@ -61,7 +61,8 @@ class (Language cid,
     map_sign :: cid -> sign1 -> Maybe (sign2,[Named sentence2])
     map_theory :: cid -> (sign1,[Named sentence1])
                       -> Maybe (sign2,[Named sentence2])
-    --default implementation
+    --default implementations
+    map_sign cid sign = map_theory cid (sign,[])
     map_theory cid (sign,sens) = do
        (sign',sens') <- map_sign cid sign
        sens'' <- mapM (mapNamedM (map_sentence cid sign)) sens
