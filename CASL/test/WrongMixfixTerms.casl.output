@@ -62,7 +62,9 @@
 	__!([__](a))
 	__!(__::__(a,[]))
 *** Error 30.1, ambiguous mixfix term
+	[__](__[__]__(A,a,+__(b)))
 	[__](A__([__]__(a,+__(b))))
+	__::__(__[__]__(A,a,+__(b)),[])
 	__::__(A__([__]__(a,+__(b))),[])
 *** Error 31.1, ambiguous mixfix term
 	[__](__+__(b,A__([__](a))))
@@ -78,4 +80,4 @@
 	__[__]__(A,a,+__(b))
 	__+__(A__([__](a)),b)
 	__+__(A[a],b)
-*** Error 34.4, expected further mixfix token: ["*","+","-","-->","::"]
+*** Error 34.4, expected further mixfix token: ["*","+",":","!","-"]
