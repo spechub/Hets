@@ -15,12 +15,13 @@ module HasCASL.TypeAna where
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.ClassAna
-import Common.Id
 import HasCASL.Le
+import HasCASL.Unify
 import Data.List
 import Data.Maybe
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Common.Id
 import Common.Result
 import Common.Lib.State
 
@@ -175,11 +176,13 @@ isTypeVar tk i =
 anaType :: (Kind, Type) -> State Env (Kind, Maybe Type)
 anaType (k, t) = 
     do mT <- mkTypeConstrAppls TopLevel t
+       tm <- gets typeMap
        case mT of 
             Nothing -> return (star, mT)
-	    Just newT -> do newK <- inferKind newT 
-			    checkKinds newT newK k
-			    return (newK, Just newT)
+	    Just nt -> do let (newT,_) = expandAlias tm nt
+			  newK <- inferKind newT 
+			  checkKinds newT newK k
+			  return (newK, Just newT)
 
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = fmap snd $ anaType (star, t)
