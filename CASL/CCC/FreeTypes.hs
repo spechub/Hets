@@ -62,38 +62,39 @@ import Common.Result
 -}
 checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] 
    -> Result (Maybe Bool)
-checkFreeType m fsn = return $ checkFreeType1 m fsn
+-- checkFreeType m fsn = return $ checkFreeType1 m fsn
 
-checkFreeType1 :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
-checkFreeType1 m fsn 
-       | Set.any (\s->not $ elem s srts) newSorts = Nothing
-       | Set.any (\s->not $ elem s f_Inhabited) newSorts = Just False
-       | elem Nothing l_Syms = Nothing
-       | any id $ map find_ot id_ots ++ map find_pt id_pts = Nothing
-       | not $ and $ map checkTerm leadingTerms = Nothing                 
-       | not $ and $ map checkVar leadingTerms = Nothing 
-       | not $ checkPatterns leadingPatterns = Nothing            
-       | otherwise = Just True
+-- checkFreeType1 :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
+checkFreeType m fsn 
+       | Set.any (\s->not $ elem s srts) newSorts = return Nothing 
+                   --   warning Nothing "sort s is not in srts" pos
+       | Set.any (\s->not $ elem s f_Inhabited) newSorts = return (Just False)
+                   --   warning (Just False) "sort s is not inhabited" pos
+       | elem Nothing l_Syms = return Nothing
+                   --   warning Nothing "formula f is illegal" pos
+       | any id $ map find_ot id_ots ++ map find_pt id_pts = return Nothing
+                   --   warning Nothing "leading symbol ist not new" pos
+       | not $ and $ map checkTerm leadingTerms = return Nothing   
+                   --   warning Nothing "the leading term consist of not only variables and constructors" pos              
+       | not $ and $ map checkVar leadingTerms = return Nothing 
+                   --   warning Nothing "a variable occurs twice in a leading term" pos
+       | not $ checkPatterns leadingPatterns = return Nothing
+                   --   warning Nothing "patterns overlap" pos            
+       | otherwise = return (Just True)
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
          fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
          is_user_or_sort_gen ax = take 12 name == "ga_generated" || take 3 name /= "ga_"
              where name = senName ax
          sig = imageOfMorphism m
          oldSorts1 = sortSet sig
-         oldSorts = trace (showPretty oldSorts1 "old sorts") oldSorts1          --   old sorts
+         oldSorts = trace (showPretty oldSorts1 "old sorts") oldSorts1          -- old sorts
          allSorts1 = sortSet $ mtarget m
          allSorts = trace (showPretty allSorts1 "all sorts") allSorts1
-         newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
+         newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts     -- new sorts
          newSorts = trace (showPretty newSorts1 "new sorts") newSorts1
          oldOpMap = opMap sig
-         oldPredMap = predMap sig
-   --      sorts1 = Set.toList $ sortSet sig
-   --      sorts = trace (showPretty sorts1 "old sorts") sorts1            -- "old" sorts
-   --      newSorts2 = Set.toList $ sortSet (mtarget m)
-   --      newSorts1 = filter (\s->not $ elem s sorts) newSorts2
-   --      newSorts = trace (showPretty newSorts1 "new sorts") newSorts1    -- "new" sorts 
+         oldPredMap = predMap sig 
          fconstrs = concat $ map fc fs
-   --      fconstrs = trace (showPretty fconstrs1 "fconstrs") fconstrs1
          fc f = case f of
                      Sort_gen_ax constrs True -> constrs
                      _->[]
@@ -150,6 +151,7 @@ checkFreeType1 m fsn
                                        _ ->[]) $ 
                             map leading_Term_Predication op_preds
          leadingPatterns = trace (showPretty leadingPatterns1 "leading Pattern") leadingPatterns1    --leading Patterns
+{-
          isNil t = case t of
                      Application _ ts _-> if length ts==0 then True
                                           else False
@@ -160,6 +162,7 @@ checkFreeType1 m fsn
                                            else False
                       Sorted_term t' _ _ ->isCons t'
                       _ -> False
+-}
          isApp t = case t of
                      Application _ _ _->True
                      Sorted_term t' _ _ ->isApp t'
@@ -193,11 +196,6 @@ checkFreeType1 m fsn
                 | all (\p-> sameOps p (head (head ps))) $ map head ps = 
                                             checkMatrix $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps 
                 | all isApp $ map head ps = all id $ map checkMatrix $ group ps
- --                | all isApp $ map head ps = (checkMatrix $ map tail $ filter (\p->isNil $ head p) ps) &&
- --                                            (checkMatrix $ map (\p'->(patternsOfTerm $ head p')++(tail p')) $ 
- --                                                                             filter (\p->isCons $ head p) ps)
- --                | all isVar $ map head ps = if allIdentic $ map head ps then checkMatrix $ map tail ps
- --                                            else False
                 | otherwise = False     
          checkPatterns [] = True
          checkPatterns ps
