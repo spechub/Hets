@@ -25,7 +25,9 @@ module Common.DFiniteMap (
             , lookup
             , find          
             , findWithDefault
-            
+            , findMin 
+            , elemAt            
+
             -- * Construction
             , empty
             , single
@@ -33,6 +35,9 @@ module Common.DFiniteMap (
             -- ** Insertion
             , insert
             , insertWith, insertWithKey, insertLookupWithKey
+            , update
+            , setInsert
+            , listInsert
 
             -- ** Delete
             , delete
@@ -41,11 +46,15 @@ module Common.DFiniteMap (
 
             -- ** Union
             , union         
+            , unions         
             , unionWith          
             , unionWithKey
 
             -- ** Difference
             , difference
+            , differenceWith
+            , subset
+            , differentKeys
             
             -- ** Intersection
             , intersection           
@@ -77,11 +86,19 @@ module Common.DFiniteMap (
             -- * Filter
             , filter
             , filterWithKey
+            , partitionWithKey
 
-	    ) where
+            -- * Misc. additions
+            , image
+            , kernel
+
+            ) where
 
 import Data.FiniteMap
+import Data.Maybe
+import Data.List(foldl')
 import Prelude hiding (lookup,map,filter)
+import qualified Common.Lib.Set as Set
 
 infixl 9 !,\\
 
@@ -151,7 +168,7 @@ difference = minusFM
 intersection :: Ord k => Map k a -> Map k a -> Map k a
 intersection = intersectFM
 
-intersectionWith :: Ord k => (a -> a -> a) -> Map k a -> Map k a -> Map k a
+intersectionWith :: Ord k => (a -> b -> c) -> Map k a -> Map k b -> Map k c
 intersectionWith = intersectFM_C
 
 filter :: Ord k => (a -> Bool) -> Map k a -> Map k a
@@ -159,6 +176,9 @@ filter f = filterFM (\_ e -> f e)
 
 filterWithKey :: Ord k => (k -> a -> Bool) -> Map k a -> Map k a
 filterWithKey = filterFM
+
+partitionWithKey :: Ord k => (k -> a -> Bool) -> Map k a -> (Map k a, Map k a)
+partitionWithKey p m = (filterFM p m, filterFM ( \ k v -> not $ p k v) m)
 
 map :: (a -> b) -> Map k a -> Map k b
 map f = mapFM (\_ e -> f e)
@@ -195,3 +215,87 @@ fromAscList = fromList
 
 fromDistinctAscList :: Ord k => [(k,a)] -> Map k a
 fromDistinctAscList = fromList
+
+-- | Insert into a set of values
+setInsert :: (Ord k, Ord a) => k -> a -> Map k (Set.Set a) -> Map k (Set.Set a)
+setInsert  kx x t = case lookup kx t of
+  Nothing -> insert kx (Set.single x) t
+  Just xs -> insert kx (Set.insert x xs) t
+
+-- | Insert into a list of values
+listInsert :: Ord k => k -> a -> Map k [a] -> Map k [a]
+listInsert  kx x t = case lookup kx t of
+  Nothing -> insert kx [x] t
+  Just xs -> insert kx (x:xs) t
+
+-- | Difference with a combining function. 
+differenceWith :: Ord k => (a -> a -> Maybe a) -> Map k a -> Map k a -> Map k a
+differenceWith f m1 m2 = difference m1 m2 `union` 
+    (map fromJust $ filter isJust $ intersectionWith f m1 m2)
+
+subset :: (Ord k,Eq a) => Map k a -> Map k a -> Bool
+subset m1 m2 = isEmpty $ 
+    differenceWith ( \ a b -> if a == b then Nothing else Just a) m1 m2
+
+-- | The expression (@update f k map@) updates the value @x@
+-- at @k@ (if it is in the map). If (@f x@) is @Nothing@, the element is
+-- deleted. If it is (@Just y@), the key @k@ is bound to the new value @y@.
+update :: Ord k => (a -> Maybe a) -> k -> Map k a -> Map k a
+update f k m = case lookup k m of 
+     Nothing -> m
+     Just v -> case f v of 
+	       Nothing -> delete k m
+	       Just w -> insert k w m
+
+-- | The union of a list of maps: (@unions == foldl union empty@).
+unions :: Ord k => [Map k a] -> Map k a
+unions ts = foldl' union empty ts
+
+-- | find keys that are mapped differently
+differentKeys :: (Ord k, Eq a) => Map k a -> Map k a -> [k]
+differentKeys f1 f2 = keys $ filter id $ intersectionWith (/=) f1 f2 
+
+-- | The minimal key of the map.
+findMin :: Map k a -> (k,a)
+findMin m = case toList m of
+            [] -> error "Map.findMin: no minimal element"
+            (x: _) -> x
+
+{--------------------------------------------------------------------
+  Image
+--------------------------------------------------------------------}
+image :: (Ord k, Ord a) => Map k a -> Set.Set k -> Set.Set a
+image f s =
+  Set.fold ins Set.empty s
+  where ins x = case lookup x f of
+                 Nothing -> id
+                 Just y -> Set.insert y
+
+{--------------------------------------------------------------------
+  Kernel
+--------------------------------------------------------------------}
+kernel :: (Ord k, Eq a) => Map k a -> Set.Set (k,k)
+kernel f = 
+  Set.fromList [(k1,k2) | k1 <- keysF, k2 <- keysF, lookup k1 f == lookup k2 f]
+  where keysF = keys f
+
+{--------------------------------------------------------------------
+  Show
+--------------------------------------------------------------------}
+instance (Show k, Show a) => Show (Map k a) where
+  showsPrec _ m  = showMap (toAscList m)
+
+-- | Retrieve an element by /index/. Calls 'error' when an
+-- invalid index is used.
+elemAt :: Int -> Map k a -> (k,a)
+elemAt i m = toList m !! i
+
+showMap :: (Show k,Show a) => [(k,a)] -> ShowS
+showMap []     
+  = showString "{}" 
+showMap (x:xs) 
+  = showChar '{' . showElem x . showTail xs
+  where
+    showTail []     = showChar '}'
+    showTail (y:ys) = showChar ',' . showElem y . showTail ys
+    showElem (k,v)  = shows k . showString ":=" . shows v
