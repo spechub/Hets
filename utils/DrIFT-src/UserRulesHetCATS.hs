@@ -7,63 +7,9 @@ import Pretty
 import List 
 import Char
 
-hetcatsrules :: [Rule]
-hetcatsrules = [("ATermConvertible",atermfn),
-		("ShATermConvertible",shatermfn),
-		("CATermConvertible",catermfn),
-	       	("UpPos",updateposfn)]
-	    
-
-catermfn dat = instanceSkeleton "ATermConvertible" 
-	       [ (makeToATerm (name dat),defaultToATerm)
-	       , (makeFromATerm (name dat),defaultFromATerm (name dat))
-	       , (makeToShATerm (name dat),defaultToATerm)
-	       ] dat $$ (makeFromShATermFn dat)
-
--- begin of ATermConvertible derivation 
--- Author: Joost.Visser@cwi.nl
-
-atermfn dat
-  = instanceSkeleton "ATermConvertible" 
-      [ (makeToATerm (name dat),defaultToATerm)
-      , (makeFromATerm (name dat),defaultFromATerm (name dat))
-      ] 
-      dat
-
-makeToATerm name body
-  = let cvs = head (mknss [body] namesupply)
-    in text "toATerm" <+> 
-       ppCons cvs body <+>
-       text "=" <+>
-       text "(AAppl" <+>
-       doubleQuotes (text (constructor body)) <+>
-       text "[" <+> 
-       hcat (intersperse (text ",") (map childToATerm cvs)) <+> 
-       text "] [])"
-defaultToATerm
-  = empty
-childToATerm v
-  = text "toATerm" <+> v
-
-makeFromATerm name body
-  = let cvs = head (mknss [body] namesupply)
-    in text "fromATerm" <+> 
-       text "(AAppl" <+>
-       doubleQuotes (text (constructor body)) <+>
-       text "[" <+> 
-       hcat (intersperse (text ",") cvs) <+> 
-       text "] _)" <+>
-       text "=" <+> text "let" <+>
-       vcat (map childFromATerm cvs) <+>
-       text "in" <+>
-       ppCons (map addPrime cvs) body
-defaultFromATerm name
-  = hsep $ texts ["fromATerm", "u", "=", "fromATermError", 
-		  ('\"':name++"\""), "u"]
-childFromATerm v
-  = (addPrime v) <+> text "=" <+> text "fromATerm" <+> v
-
--- end of ATermConvertible derivation
+hetcatsrules :: [RuleDef]
+hetcatsrules = [("ShATermConvertible",shatermfn, "", "", Nothing),
+	       	("UpPos",updateposfn, "", "", Nothing)]
 
 -- useful helper things
 namesupply   = [text [x,y] | x <- ['a' .. 'z'], 
@@ -155,7 +101,7 @@ makeGetPosFn fname tp hasPos body =
 
 shatermfn dat
   = instanceSkeleton "ATermConvertible" 
-      [ (makeToShATerm (name dat),defaultToATerm)
+      [ (makeToShATerm (name dat), empty)
 {-      , (makeFromATerm (name dat),defaultFromATerm (name dat))-}
       ] 
       dat 
