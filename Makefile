@@ -41,7 +41,7 @@ HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 
 ### list of directories to run checks in
-TESTDIRS    = Common/test CASL HasCASL ToHaskell test
+TESTDIRS    = Common/test CASL/test HasCASL ToHaskell test
 
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
