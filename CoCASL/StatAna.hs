@@ -128,7 +128,7 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
                   addDiags $ map ( \ (c, _) -> mkDiag Error 
                       ("total selectors '" ++ showSepList (showString ",")
                        showPretty (Set.toList totalSels) 
-                       "'\n\tmust appear in alternative") c) wrongConstr
+                       "'\n  must appear in alternative") c) wrongConstr
        case gk of 
          Free -> do 
            let allts = map item al
