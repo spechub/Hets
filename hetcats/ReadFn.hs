@@ -19,6 +19,7 @@ import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
 import Common.Lib.Parsec
 import Logic.LogicGraph
+import Common.ATerm.Lib
 
 read_LIB_DEFN :: HetcatsOpts -> FilePath -> IO LIB_DEFN
 read_LIB_DEFN opt file = 
@@ -41,4 +42,8 @@ read_LIB_DEFN opt file =
     where
     guess GuessIn = guessInType file
     guess itype   = itype
+
+readShATermFile :: (ATermConvertible a) => FilePath -> IO a
+readShATermFile fp = do str <- readFile fp
+                        return $ fromShATerm $ readATerm str                        
 
