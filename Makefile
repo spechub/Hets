@@ -18,7 +18,7 @@ CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic
 
 ## set ghc imports properly for your system
 LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
-DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}'
+DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}:${PFE_PATHS}'
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
 empty:=
@@ -152,7 +152,21 @@ Hatchet_files := Haskell/Hatchet/AnnotatedHsSyn.hs \
                 Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
                 Haskell/Hatchet/Env.hs \
 
-logics := CASL HasCASL Modal CoCASL COL CspCASL Hatchet
+Ast_Haskell_files := HsDeclStruct HsExpStruct HsFieldsStruct \
+          HsGuardsStruct HsKindStruct HsPatStruct HsTypeStruct HsAssocStruct \
+          HsModule HsName HsLiteral HsIdent
+
+Other_PFE_files := property/AST/HsPropStruct base/defs/PNT \
+      base/defs/UniqueNames base/Modules/TypedIds \
+      base/TI/TiKinds \
+      base/parse2/SourceNames base/syntax/SyntaxRec \
+      property/syntax/PropSyntaxStruct
+
+Haskell_files = $(addsuffix .hs, \
+	$(addprefix $(PFE_TOOLDIR)/base/AST/, $(Ast_Haskell_files)) \
+	$(addprefix $(PFE_TOOLDIR)/, $(Other_PFE_files)))
+
+logics := CASL HasCASL Modal CoCASL COL CspCASL Hatchet Haskell
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
@@ -333,6 +347,10 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) utils/genRules
 Hatchet/ATC_Hatchet.der.hs: $(Hatchet_files) utils/genRules
 	utils/genRules -r $(rule) -o Hatchet -h ATC/Hatchet.header.hs \
              $(Hatchet_files)
+
+Haskell/ATC_Haskell.der.hs: $(Haskell_files) utils/genRules
+	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
+             $(Haskell_files)
 
 rule:= ShATermConvertible
 

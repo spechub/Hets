@@ -23,17 +23,12 @@ import Common.DynamicUtils
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.AS_Annotation
-import Common.ATerm.Conversion
 
--- import Haskell.ATC_Haskell      -- generated ATerm conversions
+import Haskell.ATC_Haskell      -- generated ATerm conversions
 import Haskell.HatParser                
 import Haskell.HatAna
 
 import Logic.Logic             
-
-instance ATermConvertible HsDecls
-instance ATermConvertible Sign
-instance ATermConvertible (TiDecl PNT)
 
 hsDeclsTc :: TyCon
 hsDeclsTc = mkTyCon "Haskell.HatParser.HsDecls"
