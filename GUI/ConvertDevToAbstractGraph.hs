@@ -316,7 +316,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
 		    createLocalMenuButtonShowSignature convRef dGraph,
 		    createLocalMenuButtonShowTheory gInfo convRef dGraph,
 		    createLocalMenuButtonTranslateTheory gInfo convRef dGraph,
-		    createLocalMenuButtonShowSublogic convRef dGraph,
+		    createLocalMenuButtonShowSublogic gInfo convRef dGraph,
                     createLocalMenuButtonShowNodeOrigin convRef dGraph,
                     createLocalMenuButtonProveAtNode gInfo convRef dGraph,
                     createLocalMenuButtonCCCAtNode gInfo convRef dGraph,
@@ -340,7 +340,7 @@ createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
 		     createLocalMenuButtonShowSignature convRef dGraph,
  		     createLocalMenuButtonShowTheory gInfo convRef dGraph,
 		     createLocalMenuButtonTranslateTheory gInfo convRef dGraph,
- 		     createLocalMenuButtonShowSublogic convRef dGraph,
+ 		     createLocalMenuButtonShowSublogic gInfo convRef dGraph,
                      createLocalMenuButtonProveAtNode gInfo convRef dGraph,
                      createLocalMenuButtonCCCAtNode gInfo convRef dGraph,
                      createLocalMenuButtonShowNodeOrigin convRef dGraph])
@@ -393,8 +393,8 @@ createLocalMenuButtonShowTheory (proofStatus,_,_,_,_,_) =
   createMenuButton "Show theory" (getTheoryOfNode proofStatus)
 createLocalMenuButtonTranslateTheory (proofStatus,_,_,_,_,_) = 
   createMenuButton "Translate theory" (translateTheoryOfNode proofStatus)
-createLocalMenuButtonShowSublogic = 
-  createMenuButton "Show sublogic" getSublogicOfNode 
+createLocalMenuButtonShowSublogic (proofStatus,_,_,_,_,_) = 
+  createMenuButton "Show sublogic" (getSublogicOfNode proofStatus)
 createLocalMenuButtonShowNodeOrigin  = 
   createMenuButton "Show origin" showOriginOfNode 
 createLocalMenuButtonProveAtNode gInfo =
@@ -649,15 +649,17 @@ translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
 
 {- outputs the sublogic of a node in a window;
 used by the node menu defined in initializeGraph-}
-getSublogicOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
-getSublogicOfNode descr ab2dgNode dgraph = 
+getSublogicOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> DGraph -> IO()
+getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
+  (_,libEnv,_,_) <- readIORef proofStatusRef
   case Map.lookup descr ab2dgNode of
     Just (libname, node) -> 
-      do let dgnode = lab' (context node dgraph)
-	 case dgnode of
-           (DGNode name _ _ _) ->
-	     case (dgn_sign dgnode,dgn_sens dgnode) of
-	       (G_sign lid sigma,G_l_sentence_list lid' sens) ->
+      let dgnode = lab' (context node dgraph)
+          name = case dgnode of
+                       (DGNode name (G_sign _ _) _ _) -> name
+                       _ -> Nothing
+       in case computeTheory libEnv dgraph node of
+        Res.Result _ (Just (G_sign lid sigma,G_l_sentence_list lid' sens)) ->
                 let sens' = fromJust $ coerce lid lid' (map sentence sens)
                     logstr = (language_name lid ++ "." 
 			      ++ head (sublogic_names lid 
@@ -667,7 +669,7 @@ getSublogicOfNode descr ab2dgNode dgraph =
                      Nothing -> "Sublogic"
                      Just n -> "Sublogic of "++showPretty n ""
                  in createTextDisplay title logstr [size(30,10)]
-           (DGRef _ _ _) -> error "nodes of type dg_ref do not have a sublogic"
+        _ -> error "illegal node type in sublogic computation"
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
