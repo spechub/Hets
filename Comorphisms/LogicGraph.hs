@@ -42,6 +42,7 @@ import HasCASL.Logic_HasCASL
 import Haskell.Logic_Haskell
 import CspCASL.Logic_CspCASL
 import Isabelle.Logic_Isabelle
+import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2Haskell
 import Comorphisms.CASL2IsabelleHOL
@@ -66,7 +67,7 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2Haskell,
                  Comorphism CASL2IsabelleHOL, Comorphism CASL2Modal]
 
 comorphismList :: [AnyComorphism]
-comorphismList = inclusionList ++ []
+comorphismList = inclusionList ++ [Comorphism CASL2PCFOL]
 
 logicGraph :: LogicGraph
 logicGraph = 

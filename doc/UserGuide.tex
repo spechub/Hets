@@ -104,6 +104,7 @@
 \newcommand{\CASLChart}{\normalTEXTSC{C}{ASL}-\normalTEXTSC{C}{HART}\xspace}
 \newcommand{\SBCASL}{\normalTEXTSC{S}{B}-\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\HetCASL}{\normalTEXTSC{H}{ET}\normalTEXTSC{C}{ASL}\xspace}
+\newcommand{\ModalCASL}{\normalTEXTSC{M}{odal}\normalTEXTSC{C}{ASL}\xspace}
 
 
 \begin{document}
@@ -150,11 +151,14 @@ encountered.
 $$\xymatrix{
 \Text{Haskell} 
 &
-\Text{\HasCASL}
+\Text{\HasCASL} \ar[l]
 &
-\Text{\CspCASL} \\
+\Text{\CspCASL}
 &
-\Text{\CASL} \ar[u] \ar[ur]
+\Text{\ModalCASL}
+ \\
+&
+\Text{\CASL} \ar[u] \ar[ur] \ar[urr]
 &
 }$$
 \caption{Graph of logics currently supported by \Hets.\label{fig:LogicGraph}}
@@ -163,7 +167,8 @@ $$\xymatrix{
 \begin{figure}
 \begin{tabular}{|l|c|c|c|}\hline
 Language & Parser & Static Analysis & Prover \\\hline
-\CASL & x & x & - \\\hline
+\CASL & x & x & (x) \\\hline
+\ModalCASL & x & x & - \\\hline
 \HasCASL & x & (x) & - \\\hline
 Haskell & x & x & -\\\hline
 \CspCASL & (x) & - & - \\\hline

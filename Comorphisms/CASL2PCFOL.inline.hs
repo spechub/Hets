@@ -24,7 +24,7 @@ Portability :  portable
 
 module Comorphisms.CASL2PCFOL where
 
-import Test
+--import Test
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
@@ -38,7 +38,47 @@ import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism 
+import CASL.Sublogic
 import List (nub,delete)
+
+-- | The identity of the comorphism
+data CASL2PCFOL = CASL2PCFOL deriving (Show)
+
+instance Language CASL2PCFOL -- default definition is okay
+
+instance Comorphism CASL2PCFOL
+               CASL CASL_Sublogics
+               CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CASLSign 
+               CASLMor
+               Symbol RawSymbol ()
+               CASL CASL_Sublogics
+               CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CASLSign 
+               CASLMor
+               Symbol RawSymbol () where
+    sourceLogic CASL2PCFOL = CASL
+    sourceSublogic CASL2PCFOL = CASL_SL
+                      { has_sub = True,
+                        has_part = True,
+                        has_cons = True,
+                        has_eq = True,
+                        has_pred = True,
+                        which_logic = FOL
+                      }
+    targetLogic CASL2PCFOL = CASL
+    targetSublogic CASL2PCFOL = CASL_SL
+                      { has_sub = False, -- subsorting is coded out
+                        has_part = True,
+                        has_cons = True,
+                        has_eq = True,
+                        has_pred = True,
+                        which_logic = FOL
+                      }
+    map_sign CASL2PCFOL sig = let e = encodeSig sig in Just (e, [])
+    map_morphism CASL2PCFOL = Just . id
+    map_sentence CASL2PCFOL sig = Just -- needs to be improved !
+    map_symbol CASL2PCFOL = Set.single . id
 
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Sign f e -> Sign f e
