@@ -24,7 +24,7 @@ Portability :  portable
 
 module Comorphisms.CASL2PCFOL where
 
---import Test
+import Test
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
@@ -42,6 +42,64 @@ import CASL.Morphism
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Sign f e -> Sign f e
 encodeSig sig = error "encodeSig not yet implemented"
+
+
+--opMap sig -> Map.Map Id (Set.Set OpType)
+--predMap sig -> Map.Map Id (Set.Set PredType)
+--Id Set.Set SORT
+--sortRel sig -> Rel.Rel SORT
+--Rel.toList (sortRel sig) -> [(SORT,SORT)]
+--Set.fromList [(SORT,SORT)]->Set (SORT,SORT)
+
+
+{-
+Test:
+*Comorphisms.CASL2PCFOL> sig <- getCASLSig "test/encode.casl"
+
+<interactive>:1: Warning: Defined but not used: sig
+Reading test/encode.casl
+Analyzing spec sp
+Writing test/encode.env
+
+*Comorphisms.CASL2PCFOL> sig
+Sign {sortSet = {s,s'}, sortRel = {(s,s')}, 
+opMap = {inj:={OpType {opKind = Total, opArgs = [s], opRes = s'}},
+pr:={OpType {opKind = Partial, opArgs = [s], opRes = s'}}}, assocOps = {}, predMap = {}, varMap = {}, sentences = [], envDiags = [], extendedInfo = ()}
+
+*Comorphisms.CASL2PCFOL> insteadOfpi sig
+{_inj:={OpType {opKind = Total, opArgs = [s], opRes = s'}},
+_proj:={OpType {opKind = Partial, opArgs = [s], opRes = s'}}}
+
+
+Habe ich richtig gemacht oder schief gemacht?? Die 2 Methode sind so einfach.
+Wenn sie falsch sind, wie soll ich machen??
+
+Wenn die beide richtig sind,baue ich am ende  die 2 Methode in encodeSig. 
+
+-}
+
+
+  
+insteadOfpi::Sign f e -> Map.Map Id (Set.Set OpType)
+insteadOfpi  sig =Map.fromList(map pif opList)
+ where
+   opList=Map.toList(opMap sig)
+   inj=mkId[mkSimpleId "_inj"]
+   pro=mkId[mkSimpleId "_proj"] 
+   pif   (x,y)
+        |x==mkId[mkSimpleId "inj"] = (inj,y)
+        |x==mkId[mkSimpleId "pr"] = (pro,y)
+        |otherwise=(x,y) 
+        
+insteadOfpre::Sign f e -> Map.Map Id (Set.Set PredType)
+insteadOfpre   sig = Map.fromList(predList) 
+ where
+   predList = Map.toList  (predMap sig)  
+   predf  (x,y) = if x==mkId[mkSimpleId "pr"] then (pred,y) else (x,y)
+   pred=mkId[mkSimpleId "_elem_e"]
+   
+
+
 {- todo
    setRel sig angucken
    Liste von Paaren (s,s') daraus generieren (siehe toList aus Common/Lib/Rel.hs)
@@ -69,11 +127,15 @@ generateAxioms sig =
     inlineAxioms CASL
       " sort s<s' \
       \ op pr : s'->?s \
-      \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(projection_transitive)% " ++
+      \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(projection_transitiv)% " ++
     inlineAxioms CASL
       " sort s \
       \ op inj : s->s \
-      \ forall x:s . inj(x)=e=x               %(identity)%"             
+      \ forall x:s . inj(x)=e=x               %(indentity)%" ++
+    inlineAxioms CASL
+      " sort s<s' \
+      \ op pr : s' -> ?s \
+      \ forall x:s . x<=>def(pr(x))            %(mebership)%"                               
           | (s,s') <- rel2List]++               
    [inlineAxioms CASL
      " sort s<s';s'<s'' \
@@ -86,9 +148,9 @@ generateAxioms sig =
         y = mkSimpleId "y"
         inj = mkId [mkSimpleId "_inj"]
         pr=mkId [mkSimpleId "_pr"]
-        pr_trans=mkId [mkSimpleId "_pr_trans"]  
-        identity=mkId[mkSimpleId "_identity"]
-        tans=mkId[mkSimpleId "_trans"]
+        pr_trans=mkId [mkSimpleId "_pr_trans"]
+        indentity=mkId [mkSimpleId "_indentity"]
+        membership=mkId[mkSimpleId "_membership"]
         rel2List=Rel.toList(sortRel sig)
         rel2Map=Rel.toMap(sortRel sig)
         
