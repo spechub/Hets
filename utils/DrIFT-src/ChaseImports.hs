@@ -11,6 +11,7 @@
 --GHC version
 module ChaseImports where
 
+import Debug.Trace
 import RuleUtils (Tag)
 import DataP
 import CommandP 
@@ -84,13 +85,15 @@ chaseImports' text dats =
 	action :: (ToDo,ToDo) -> FilePath -> IO (ToDo,ToDo)     
 	action (dats,done) m | null dats = return ([],done)
 			     | otherwise = do 
+	     --trace ("chasing Module " ++ m) (return ()) 
 	     paths <- fmap breakPaths (getEnv "DERIVEPATH")
 	     -- may want a few more envs here ...
 	     c <- findModule paths m
 	     let (found,rest) = scanModule dats c
-	     if (null rest) then return ([],done ++ found) -- finished
-	       else do  (dats',done') <- chaseImports' c rest
-			return (dats',done' ++ done ++ found) 
+	     return (rest,done ++ found) -- finished
+	     -- only one level of export / import is now supported
+	       {-else do  (dats',done') <- chaseImports' c rest
+			return (dats',done' ++ done ++ found) -}
 			
 -- break DERIVEPATH into it's components			
 breakPaths :: String -> [String]
@@ -103,7 +106,7 @@ findModule :: [String] -> String -> IO String
 findModule paths modname = let
 	action p = try $ do h <- readFile p
  	                    return (h,p)
-	fnames = combine paths modname ++ combine paths hiracle_modname
+	fnames = {- combine paths modname ++ -} combine paths hiracle_modname
 	hiracle_modname = map (\x -> if x == '.' then '/' else x) modname
 	isLeft (Left _ ) = True
 	isLeft _ = False
