@@ -168,7 +168,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
   where
     morphism = case calculateMorphismOfPath path of
                  Just morph -> morph
-                 otherwise ->
+                 Nothing ->
 		   error "globDecomp: could not determine morphism of new edge"
     newEdge = (node,
 	       target,
@@ -463,10 +463,10 @@ filterByTypes (isType:typeChecks) edges =
 
 -- determines the morphism of a given path
 calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
-calculateMorphismOfPath [] = error "getMorphismOfPath: empty path"
+calculateMorphismOfPath [] = Nothing
 calculateMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
   case maybeMorphismOfFurtherPath of
-    Nothing -> Nothing
+    Nothing -> Just morphism
     Just morphismOfFurtherPath ->
 		  comp Grothendieck morphism morphismOfFurtherPath
 
@@ -485,7 +485,7 @@ isValidMorphism :: Maybe GMorphism -> Bool
 isValidMorphism morphism =
   case morphism of
     Nothing -> False
-    otherwise -> True
+    Just _  -> True
 
 
 -- ------------------------------------
