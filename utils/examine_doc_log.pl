@@ -63,7 +63,7 @@ if ($fail == 0) {
 		$report .= "haddock cannot parse $1 at line $2 char $3\n";
 	    };
 	# lines that should occur
-	m/^cvs server:/o && do {$test_vars{'cvs_updated'}++;};
+	m/^cvs update:/o && do {$test_vars{'cvs_updated'}++;};
 	m/^rm -f /o && do {$test_vars{'cleaning_started'}++;};
 	m/^perl utils\/build_version/o && 
 	    do {$test_vars{'version build'}++;};
