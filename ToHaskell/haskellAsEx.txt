@@ -1,0 +1,103 @@
+-- Examples for abstract Syntax in Haskell
+
+--*********************************************************************
+-- HsPatBind
+
+module X where x = y
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"X\") Nothing [] [
+
+HsPatBind (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 16}) (HsPVar x) (HsUnGuardedRhs (HsVar y)) []
+
+]
+
+--*********************************************************************
+--HsTypeSig
+
+f :: a -> b -> c
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"Main\") (Just [HsEVar main]) [] [
+
+HsTypeSig (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) [f] (HsQualType [] (HsTyFun (HsTyVar a) (HsTyFun (HsTyVar b) (HsTyVar c))))
+
+]
+
+--*********************************************************************
+-- HsFunBind
+
+f a b = a + b
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"Main\") (Just [HsEVar main]) [] [
+
+HsFunBind [HsMatch (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) f [HsPVar a,HsPVar b] (HsUnGuardedRhs (HsInfixApp (HsVar a) + (HsVar b))) []]
+
+]
+
+--*********************************************************************
+-- [HsTypeSig, HsFunBind]
+module X where \n f :: Int -> Int -> Int \n f a b = a + b
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"X\") Nothing [] [
+
+HsTypeSig (SrcLoc {srcFilename = \"\", srcLine = 2, srcColumn = 2}) [f] (HsQualType [] (HsTyFun (HsTyCon Int) (HsTyFun (HsTyCon Int) (HsTyCon Int))))
+,
+HsFunBind [HsMatch (SrcLoc {srcFilename = \"\", srcLine = 3, srcColumn = 2}) f [HsPVar a,HsPVar b] (HsUnGuardedRhs (HsInfixApp (HsVar a) + (HsVar b))) []]
+
+]
+
+--*********************************************************************
+-- HsDataDecl (one constructor)
+
+data A = B a b Int
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"Main\") (Just [HsEVar main]) [] [
+
+HsDataDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) [] A [] [HsConDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 10}) B [HsUnBangedTy (HsTyVar a),HsUnBangedTy (HsTyVar b),HsUnBangedTy (HsTyCon Int)]] []
+
+]
+
+--*********************************************************************
+-- HsDataDecl (one constructor)
+
+data A = B [b]
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"Main\") (Just [HsEVar main]) [] [
+
+HsDataDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) [] A [] [HsConDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 10}) B [HsUnBangedTy (HsTyApp (HsTyCon []) (HsTyVar b))]] []
+
+]
+
+--*********************************************************************
+-- HsDataDecl (several constructors)
+
+module X where data A = B | C | D
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"X\") Nothing [] [
+
+HsDataDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 16}) [] A [] [HsConDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 25}) B [],HsConDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 29}) C [],HsConDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 33}) D []] []
+
+]
+
+--*********************************************************************
+-- HsDataDecl (with "deriving")
+
+module X where data A = B a deriving (Eq,Show)
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"X\") Nothing [] [
+
+HsDataDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 16}) [] A [] [HsConDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 25}) B [HsUnBangedTy (HsTyVar a)]] [Eq,Show]
+
+]
+
+--*********************************************************************
+-- HsTypeDecl
+
+module X where type A = (B,c)
+
+HsModule (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 1}) (Module \"X\") Nothing [] [
+
+HsTypeDecl (SrcLoc {srcFilename = \"\", srcLine = 1, srcColumn = 16}) A [] (HsTyTuple [HsTyCon B,HsTyVar c])
+
+]
+
+--*********************************************************************
