@@ -33,7 +33,7 @@ import Common.ATerm.AbstractSyntax
 -- added by KL
 import Char
 import List
-import Data.Array
+import Data.Array.Unboxed
 import Data.FiniteMap
 import Common.SimpPretty
 
@@ -134,7 +134,8 @@ readTAF at ('[':str) tbl l =
 	   t -> case  {-# SCC "RaddAList" #-} addATermNoFullSharing t at'' of
 		at_t@(_,ai) -> 
                  case {-# SCC "RaddAListAbbr" #-}  
-		  seq ai (condAddElement (addRAbbrev ai) (l''+l') tbl'') of
+		  seq ai (condAddElement next_abbrev_R_len 
+                                         (addRAbbrev ai) (l''+l') tbl'') of
 		 tbl''' -> {-# SCC "RTS_AList" #-} 
 		       RTS at_t str'' tbl''' (l+l'+l'')
 readTAF at str@(x:xs) tbl l 
@@ -151,7 +152,8 @@ readTAF at str@(x:xs) tbl l
 	       addATermNoFullSharing (ShAInt integer ann) at' of
 	    at_t@(_,ai) ->
               case {-# SCC "RaddAIntAbbrev" #-}  
-	         seq ai (condAddElement (addRAbbrev ai) (l'+l'') tbl') of
+	         seq ai (condAddElement next_abbrev_R_len 
+			                (addRAbbrev ai) (l'+l'') tbl') of
 	      tbl'' -> {-# SCC "RTS_AInt" #-} RTS at_t str'' tbl'' (l+l'+l'')
   | isAFunChar x || x=='"' || x=='(' = 
      case {-# SCC "RspanConstructor" #-} readAFun str of
@@ -167,7 +169,8 @@ readTAF at str@(x:xs) tbl l
              case ((length c) + l'+l'') of
 	     l''' -> seq l''' 
               (case {-# SCC "RaddAApplAbbrev" #-} 
-		  seq ai (condAddElement (addRAbbrev ai) l''' tbl'') of
+		  seq ai (condAddElement next_abbrev_R_len 
+                                         (addRAbbrev ai) l''' tbl'') of
 	       tbl''' -> {-# SCC "RTS_AAppl" #-} 
                     RTS at_t str''' tbl''' l''')
   | otherwise             = error $ error_saterm (take 5 str)
@@ -230,10 +233,11 @@ quote str		= ('"':str)++"\""
 spanNotQuote' :: String -> (String,String)
 spanNotQuote' []		= ([],[])
 spanNotQuote' xs@('"':_xs')  	= ([],xs)
-spanNotQuote' ('\\':'"':xs')	= ('\\':'"':ys,zs) 
-                                  where (ys,zs) = spanNotQuote' xs'
-spanNotQuote' (x:xs')	= (x:ys,zs) 
-                                  where (ys,zs) = spanNotQuote' xs'
+spanNotQuote' ('\\':'"':xs')	= case spanNotQuote' xs' of
+                                  (ys,zs) -> ('\\':'"':ys,zs) 
+spanNotQuote' (x:xs')	= case spanNotQuote' xs' of
+			       (ys,zs) -> (x:ys,zs) 
+
 {-
 span :: (a -> Bool) -> [a] -> ([a],[a])
 span p []            = ([],[])
@@ -243,17 +247,17 @@ span p xs@(x:xs')
                        where (ys,zs) = span p xs'
 -}
 
-condAddElement ::(Next_Abb tab) => (tab -> tab) -> Int -> tab -> tab
-condAddElement add l tbl = 
+{-# SPEZIALIZE condAddElement :: (WriteTable -> Int) -> (WriteTable -> WriteTable) -> Int -> WriteTable -> WriteTable #-}
+{-# SPEZIALIZE condAddElement :: (ReadTable -> Int) -> (ReadTable -> ReadTable) -> Int -> ReadTable -> ReadTable #-}
+
+condAddElement :: (tab -> Int) -> (tab -> tab) -> Int -> tab -> tab
+condAddElement next_abbrev_len add l tbl = 
     -- length $ abbrev (maxBound::Int) == 7, so every ATerm with a
     -- string size greater than 7 must be added
     if l>7 || (next_abbrev_len tbl) < l then
        add tbl
     else
        tbl
-
-class Next_Abb a where
-    next_abbrev_len :: a -> Int
 
 --- From ATerm to String  -----------------------------------------------------
 
@@ -321,7 +325,7 @@ writeTAF :: ATermTable -> WriteTable -> Write_struct
 writeTAF at tbl =  
     case indexOf at tbl of
     (Just s) -> WS tbl s 
-    Nothing  -> seq tbl' $ WS (condAddElement 
+    Nothing  -> seq tbl' $ WS (condAddElement next_abbrev_W_len
                                 (addWAbbrev (getTopIndex at)) 
 		                len tbl') 
 		   d_len
@@ -493,17 +497,11 @@ parenthesiseAnnS s@(Doc_len d dl)
 -- Map: Abbrev     -> ATermIndex
 data ReadTable  = RTab (FiniteMap Int Int) {-# UNPACK #-} !Int
 
-instance Next_Abb ReadTable where
-    next_abbrev_len = next_abbrev_R_len 
-
 -- 1st Map: ATermIndex -> Abbrev
 -- TODO: implement 2nd Map as WriteCache 
 --         (sf::ShowS,length of String in sf::Int) .. done
 data WriteTable = WTab (FiniteMap Int Doc_len) 
                        {-# UNPACK #-} !(Doc_len,Int)
-
-instance Next_Abb WriteTable where
-    next_abbrev_len = next_abbrev_W_len
 
 emptyRTable :: ReadTable
 emptyRTable = RTab emptyFM 0
