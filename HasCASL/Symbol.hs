@@ -87,14 +87,6 @@ subSymsOf sy = case symType sy of
      OpAsItemType (TypeScheme _ ty _) -> subSyms (symEnv sy) ty
      _ -> Set.empty
 
-relatedSyms :: Env -> Symbol -> SymbolSet
-relatedSyms e sy = 
-    case symType sy of
-    TypeAsItemType _ -> Set.delete sy $ 
-			Set.image ( \ i -> sy { symName = i }) $
-			   allRelIds (typeMap e) $ symName sy
-    _ -> Set.empty
-
 closeSymbSet :: SymbolSet -> SymbolSet
 closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s)) 
 
