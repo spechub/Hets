@@ -137,7 +137,7 @@ data FORMULA = Quantfication QUANTIFIER [VAR_DECL] FORMULA [Pos]
 	       -- pos: =
 	     | Membership TERM SORT [Pos]
                -- pos: in
-	     | Mixfix_formula [TERM] [Pos]
+	     | Mixfix_formula TERM  -- Mixfix_ Term/Token/(..)/[..]/{..}
 	     -- a formula left original for mixfix analysis
 	     | Unparsed_formula String [Pos]
 	       -- pos: first Char in String
