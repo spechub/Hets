@@ -1,7 +1,6 @@
 module Main where
 
 import System
-import Common.ATerm.AbstractSyntax
 import Common.ATerm.ReadWrite
 import Common.SimpPretty
 
