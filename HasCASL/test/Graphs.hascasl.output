@@ -7,13 +7,15 @@ op emptySet : forall S : Type .  S ->? Unit;
    __isIn__ : forall S : Type .  S × (S ->? Unit) ->? Unit;
    __subset__ : forall S : Type .  (S ->? Unit) ×
 				   (S ->? Unit) ->? Unit;
-   : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit;
+   __union__, __intersection__,
+   __\\__ : forall S : Type .  (S ->? Unit) ×
+			       (S ->? Unit) -> S ->? Unit;
    __disjoint__ : forall S : Type .  (S ->? Unit) ×
 				     (S ->? Unit) ->? Unit;
-   : forall S : Type; T : Type .  (S ->? Unit) -> (T ->? Unit) -> S ×
-								  T ->? Unit;
-   : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ×
-							Bool ->? Unit;
+   __*__ : forall S : Type; T : Type .  (S ->? Unit) ×
+					(T ->? Unit) -> S × T ->? Unit;
+   __disjointUnion__ : forall S : Type .  (S ->? Unit) ×
+					  (S ->? Unit) -> S × Bool ->? Unit;
    inl, inr : forall S : Type .  S -> S × Bool
 forall x : S; x' : S; y : T; s : S ->? Unit; s' : S ->? Unit;
        t : T ->? Unit
@@ -35,7 +37,77 @@ forall x : S; x' : S; y : T; s : S ->? Unit; s' : S ->? Unit;
 		 Unit ->? Unit) ((op __subset__ : forall S : Type .  (S ->? Unit) ×
 								     (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
 											     (var s' : S ->? Unit)),
-				 forall x : S . x isIn s => x isIn s')
+				 forall x : S . (fun __=>__ : Unit ×
+							      Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+														(S ->? Unit) ->? Unit) ((var x : S),
+																	(var s : S ->? Unit)),
+									      (op __isIn__ : forall S : Type .  S ×
+														(S ->? Unit) ->? Unit) ((var x : S),
+																	(var s' : S ->? Unit))))
+. (fun __<=>__ : Unit ×
+		 Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								   (S ->? Unit) ->? Unit) ((var x : S),
+											   (op __union__ : forall S : Type .  (S ->? Unit) ×
+															      (S ->? Unit) -> S ->? Unit) ((var s : S ->? Unit),
+																			   (var s' : S ->? Unit))),
+				 (fun __\/__ : Unit ×
+					       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+												 (S ->? Unit) ->? Unit) ((var x : S),
+															 (var s : S ->? Unit)),
+							       (op __isIn__ : forall S : Type .  S ×
+												 (S ->? Unit) ->? Unit) ((var x : S),
+															 (var s' : S ->? Unit))))
+. (fun __<=>__ : Unit ×
+		 Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								   (S ->? Unit) ->? Unit) ((var x : S),
+											   (op __intersection__ : forall S : Type .  (S ->? Unit) ×
+																     (S ->? Unit) -> S ->? Unit) ((var s : S ->? Unit),
+																				  (var s' : S ->? Unit))),
+				 (fun __/\__ : Unit ×
+					       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+												 (S ->? Unit) ->? Unit) ((var x : S),
+															 (var s : S ->? Unit)),
+							       (op __isIn__ : forall S : Type .  S ×
+												 (S ->? Unit) ->? Unit) ((var x : S),
+															 (var s' : S ->? Unit))))
+. (fun __<=>__ : Unit ×
+		 Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								   (S ->? Unit) ->? Unit) ((var x : S),
+											   (op __\\__ : forall S : Type .  (S ->? Unit) ×
+															   (S ->? Unit) -> S ->? Unit) ((var s : S ->? Unit),
+																			(var s' : S ->? Unit))),
+				 (fun __/\__ : Unit ×
+					       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+												 (S ->? Unit) ->? Unit) ((var x : S),
+															 (var s : S ->? Unit)),
+							       (fun not__ : Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+															      (S ->? Unit) ->? Unit) ((var x : S),
+																		      (var s' : S ->? Unit)))))
+. (fun __<=>__ : Unit ×
+		 Unit ->? Unit) ((op __disjoint__ : forall S : Type .  (S ->? Unit) ×
+								       (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
+											       (var s' : S ->? Unit)),
+				 (fun __=__ : forall a : Type .  a ×
+								 a ->? Unit) ((op __intersection__ : forall S : Type .  (S ->? Unit) ×
+															(S ->? Unit) -> S ->? Unit) ((var s : S ->? Unit),
+																		     (var s' : S ->? Unit)),
+									      (op emptySet : forall S : Type .  S ->? Unit)))
+. (fun __<=>__ : Unit ×
+		 Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								   (S ->? Unit) ->? Unit) (((var x : S),
+											    (var y : T)),
+											   (op __*__ : forall S : Type;
+													      T : Type .  (S ->? Unit) ×
+															  (T ->? Unit) -> S ×
+																	  T ->? Unit) ((var s : S ->? Unit),
+																		       (var t : T ->? Unit))),
+				 (fun __/\__ : Unit ×
+					       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+												 (S ->? Unit) ->? Unit) ((var x : S),
+															 (var s : S ->? Unit)),
+							       (op __isIn__ : forall S : Type .  S ×
+												 (S ->? Unit) ->? Unit) ((var y : T),
+															 (var t : T ->? Unit))))
 . (fun __=__ : forall a : Type .  a ×
 				  a ->? Unit) ((op inl : forall S : Type .  S -> S ×
 										 Bool) (var x : S),
@@ -57,18 +129,28 @@ __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
 %% Assumptions -----------------------------------------------------------
+__*__ : forall S : Type; T : Type .  (S ->? Unit) ×
+				     (T ->? Unit) -> S × T ->? Unit %(Op)%
 __/\__ : Unit × Unit ->? Unit %(Fun)%
 __<=>__ : Unit × Unit ->? Unit %(Fun)%
 __=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
+__\\__ : forall S : Type .  (S ->? Unit) ×
+			    (S ->? Unit) -> S ->? Unit %(Op)%
 __disjoint__ : forall S : Type .  (S ->? Unit) ×
 				  (S ->? Unit) ->? Unit %(Op)%
+__disjointUnion__ : forall S : Type .  (S ->? Unit) ×
+				       (S ->? Unit) -> S × Bool ->? Unit %(Op)%
 __if__ : Unit × Unit ->? Unit %(Fun)%
+__intersection__ : forall S : Type .  (S ->? Unit) ×
+				      (S ->? Unit) -> S ->? Unit %(Op)%
 __isIn__ : forall S : Type .  S × (S ->? Unit) ->? Unit %(Op)%
 __subset__ : forall S : Type .  (S ->? Unit) ×
 				(S ->? Unit) ->? Unit %(Op)%
+__union__ : forall S : Type .  (S ->? Unit) ×
+			       (S ->? Unit) -> S ->? Unit %(Op)%
 __when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
 emptySet : forall S : Type .  S ->? Unit %(Op)%
@@ -100,7 +182,77 @@ true : Bool %(Op)%
 	       Unit ->? Unit) ((op __subset__ : forall S : Type .  (S ->? Unit) ×
 								   (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
 											   (var s' : S ->? Unit)),
-			       forall x : S . x isIn s => x isIn s') %()%
+			       forall x : S . (fun __=>__ : Unit ×
+							    Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+													      (S ->? Unit) ->? Unit) ((var x : S),
+																      (var s : S ->? Unit)),
+									    (op __isIn__ : forall S : Type .  S ×
+													      (S ->? Unit) ->? Unit) ((var x : S),
+																      (var s' : S ->? Unit)))) %()%
+(fun __<=>__ : Unit ×
+	       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								 (S ->? Unit) ->? Unit) ((var x : S),
+											 (op __union__ : forall S : Type .  (S ->? Unit) ×
+															    (S ->? Unit) -> S ->? Unit) ((var s : S ->? Unit),
+																			 (var s' : S ->? Unit))),
+			       (fun __\/__ : Unit ×
+					     Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+											       (S ->? Unit) ->? Unit) ((var x : S),
+														       (var s : S ->? Unit)),
+							     (op __isIn__ : forall S : Type .  S ×
+											       (S ->? Unit) ->? Unit) ((var x : S),
+														       (var s' : S ->? Unit)))) %()%
+(fun __<=>__ : Unit ×
+	       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								 (S ->? Unit) ->? Unit) ((var x : S),
+											 (op __intersection__ : forall S : Type .  (S ->? Unit) ×
+																   (S ->? Unit) -> S ->? Unit) ((var s : S ->? Unit),
+																				(var s' : S ->? Unit))),
+			       (fun __/\__ : Unit ×
+					     Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+											       (S ->? Unit) ->? Unit) ((var x : S),
+														       (var s : S ->? Unit)),
+							     (op __isIn__ : forall S : Type .  S ×
+											       (S ->? Unit) ->? Unit) ((var x : S),
+														       (var s' : S ->? Unit)))) %()%
+(fun __<=>__ : Unit ×
+	       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								 (S ->? Unit) ->? Unit) ((var x : S),
+											 (op __\\__ : forall S : Type .  (S ->? Unit) ×
+															 (S ->? Unit) -> S ->? Unit) ((var s : S ->? Unit),
+																		      (var s' : S ->? Unit))),
+			       (fun __/\__ : Unit ×
+					     Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+											       (S ->? Unit) ->? Unit) ((var x : S),
+														       (var s : S ->? Unit)),
+							     (fun not__ : Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+															    (S ->? Unit) ->? Unit) ((var x : S),
+																		    (var s' : S ->? Unit))))) %()%
+(fun __<=>__ : Unit ×
+	       Unit ->? Unit) ((op __disjoint__ : forall S : Type .  (S ->? Unit) ×
+								     (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
+											     (var s' : S ->? Unit)),
+			       (fun __=__ : forall a : Type .  a ×
+							       a ->? Unit) ((op __intersection__ : forall S : Type .  (S ->? Unit) ×
+														      (S ->? Unit) -> S ->? Unit) ((var s : S ->? Unit),
+																		   (var s' : S ->? Unit)),
+									    (op emptySet : forall S : Type .  S ->? Unit))) %()%
+(fun __<=>__ : Unit ×
+	       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								 (S ->? Unit) ->? Unit) (((var x : S),
+											  (var y : T)),
+											 (op __*__ : forall S : Type;
+													    T : Type .  (S ->? Unit) ×
+															(T ->? Unit) -> S ×
+																	T ->? Unit) ((var s : S ->? Unit),
+																		     (var t : T ->? Unit))),
+			       (fun __/\__ : Unit ×
+					     Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+											       (S ->? Unit) ->? Unit) ((var x : S),
+														       (var s : S ->? Unit)),
+							     (op __isIn__ : forall S : Type .  S ×
+											       (S ->? Unit) ->? Unit) ((var y : T),
+														       (var t : T ->? Unit)))) %()%
 (fun __=__ : forall a : Type .  a ×
 				a ->? Unit) ((op inl : forall S : Type .  S -> S ×
 									       Bool) (var x : S),
@@ -115,18 +267,3 @@ true : Bool %(Op)%
 *** Warning 3.18, redeclared type 'S'
 *** Warning 3.8, redeclared type 'Pred'
 *** Warning 4.17, redeclared type 'S'
-*** Error 11.9, expected tuple argument for '__union__'
-*** Error 11.20, expected tuple argument for '__intersection__'
-*** Error 11.38, expected tuple argument for '__\\__'
-*** Error 13.9, expected tuple argument for '__*__'
-*** Error 14.9, expected tuple argument for '__disjointUnion__'
-*** Error 20.39, ambiguous mixfix term
-	(__isIn__)(x, (__=>__)(s, (__isIn__)(x, s')))
-	(__=>__)((__isIn__)(x, s), (__isIn__)(x, s'))
-	(__isIn__)((__=>__)((__isIn__)(x, s), x), s')
-*** Error 20.37, unexpected term 'x isIn s => x isIn s''
-*** Error 21.15, unexpected mixfix token: union
-*** Error 22.15, unexpected mixfix token: intersection
-*** Error 23.15, unexpected mixfix token: \\
-*** Error 24.25, unexpected mixfix token: intersection
-*** Error 25.18, unexpected mixfix token: *

@@ -9,7 +9,7 @@ ANNOS=../../Common/test/Standard.annos
 runchecker MixIds ../../Common/test/MixIds.casl MixIds.casl.output
 runchecker MixIds ../../Common/test/WrongMixIds.casl WrongMixIds.casl.output
 runchecker BasicSpec ../../CASL/test/BasicSpec.casl BasicSpec.casl.output
-runchecker MixfixTerms ../../CASL/test/MixfixTerms.casl MixfixTerms.casl.out
+runchecker MixfixTerms ../../CASL/test/MixfixTerms.casl MixfixTerms.casl.output
 runchecker MixfixTerms ../../CASL/test/MixfixFormula.casl MixfixFormula.casl.output
 
 for i in Kinds Types Terms Items MixfixTerms

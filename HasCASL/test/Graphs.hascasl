@@ -8,10 +8,10 @@
       {__} : S -> Set S;
       __isIn__ : S * Set S ->? Unit;
       __subset__ :Pred( Set(S) * Set(S) );
-      __union__, __intersection__, __\\__  : Set S -> Set S -> Set S;
+      __union__, __intersection__, __\\__  : Set S * Set S -> Set S;
       __disjoint__ : Pred( Set(S) * Set(S) );
-      __*__ : Set S -> Set T -> Set (S*T);
-      __disjointUnion__ :  Set S -> Set S -> Set (S*Bool);
+      __*__ : Set S * Set T -> Set (S*T);
+      __disjointUnion__ :  Set S * Set S -> Set (S*Bool);
       inl,inr : S -> S*Bool;
   forall x,x':S; y:T; s,s':Set(S); t:Set(T) 
   . not (x isIn emptySet)
@@ -22,6 +22,6 @@
   . x isIn (s intersection s') <=> x isIn s /\ x isIn s'
   . x isIn (s \\ s') <=> x isIn s /\ not x isIn s'
   . s disjoint s' <=> s intersection s' = emptySet
-  . (x,y) isIn s * t <=> x isIn s /\ y isIn t
+  . (x,y) isIn (s * t) <=> x isIn s /\ y isIn t
   . inl x = (x,false)
   . inr x = (x,true)

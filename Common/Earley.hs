@@ -313,24 +313,24 @@ addArg ga toExpr argItem p =
 getLWeight :: GlobalAnnos -> Item a b -> Item a b -> Id 
 getLWeight ga argItem opItem = 
     let op = rule opItem
-	arg = rule argItem
+	arg = lWeight argItem
 	num = length $ args opItem in
     if isLeftArg op num then 
        case precRel (prec_annos ga) op arg of
-            Higher -> arg 
-	    _ -> op 
-    else op
+            Lower -> op 
+	    _ -> if arg == unitId then op else arg
+    else lWeight opItem
 
 getRWeight :: GlobalAnnos -> Item a b -> Item a b -> Id 
 getRWeight ga argItem opItem = 
     let op = rule opItem
-	arg = rule argItem
+	arg = rWeight argItem
 	num = length $ args opItem in 
     if isRightArg op num then 
        case precRel (prec_annos ga) op arg of
-            Higher -> arg 
-	    _ -> op 
-    else op
+            Lower -> op
+	    _ -> if arg == unitId then op else arg
+    else rWeight opItem
 
 -- | shortcut for a function that constructs an expression
 type ToExpr a b = Id -> b -> [a] -> [Pos] -> a 
@@ -347,15 +347,15 @@ mkExpr toExpr itm =
 	in (asListAppl toExpr ide inf as qs, 
 	    if null ps then nullPos else head ps)
 
-reduce :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
+reduce :: GlobalAnnos -> Table a b -> [Id] -> (b -> b -> Maybe Bool) 
        -> ToExpr a b -> Item a b -> [Item a b]
-reduce ga table filt toExpr itm = 
+reduce ga table rs filt toExpr itm = 
     map (addArg ga toExpr itm)
 	$ filter ( \ oi ->  let ts = rest oi in
 		   if null ts then False
 		   else if head ts == termTok
 		   then case filt (info itm) $ info oi of 
-		   Nothing -> checkPrecs ga itm oi 
+		   Nothing -> checkPrecs ga rs itm oi 
 		   Just b -> b 
 		   else False )
 	$ lookUp table $ index itm
@@ -375,58 +375,65 @@ isLeftArg op num = begPlace op && num == 0
 isRightArg :: Id -> Int -> Bool
 isRightArg op num = endPlace op && num + 1 == placeCount op
 
--- | compare precedences of a left or right argument and a top-level operator.
--- (The 'Bool' indicates if the operator is any infix .)
-comparePrecs :: GlobalAnnos -> Bool -> AssocEither -> Id -> Id -> Bool
-comparePrecs ga isInfixOp ass arg op = 
-    case (begPlace arg, endPlace arg, isInfixOp) of
-	   (True, True, True) -> case precRel (prec_annos ga) op arg of 
-	   -- arg and op are infixes
-				 Lower -> True
-				 NoDirection -> if arg == op then 
-					  isAssoc ass (assoc_annos ga) op
-						  else True
-				 _ -> False 
-	   (True, True, False) -> False 
-            -- infix arg binds weaker than non-infix op
-	   (False, True, False) -> ARight == ass
-            -- prefix arg binds weaker than postfix op
-            -- (not possible on the right side)
-	   _ -> True
+joinIds :: Id -> Id -> Id
+joinIds (Id ts1 _ _) (Id ts2 cs ps) = Id (init ts1 ++ ts2) cs ps 
 
 -- | check precedences of an argument and a top-level operator.
 -- (The 'Int' is the number of current arguments of the operator.)
-checkPrecs :: GlobalAnnos -> Item a b -> Item a b -> Bool
-checkPrecs ga argItem opItem =
+checkPrecs :: GlobalAnnos -> [Id] -> Item a b -> Item a b -> Bool
+checkPrecs ga rs argItem opItem =
     let op = rule opItem
 	arg = rule argItem 
+	precs = prec_annos ga
+        assocs = assoc_annos ga
 	num = length $ args opItem in
-    case precRel (prec_annos ga) op arg of
+    case precRel precs op arg of
     BothDirections -> False
-    _ -> if isLeftArg op num 
-	 then comparePrecs ga (endPlace op) ALeft (rWeight argItem) op
-	 else if isRightArg op num 
-	 then comparePrecs ga (begPlace op) ARight (lWeight argItem) op
-	 else True 
+    _ -> if isLeftArg op num then
+	    if endPlace arg then
+	       case precRel precs op (rWeight argItem) of
+	       Lower -> True
+	       Higher -> False
+	       BothDirections -> False
+	       NoDirection -> case (begPlace arg, endPlace op) of 
+		        (True, True) -> arg == op && isAssoc ALeft assocs op
+			(False, True) -> True
+			(_, False) -> rWeight argItem == unitId
+	    else not (begPlace arg && isNonCompound arg 
+		      && joinIds arg op `elem` rs)
+	 else if isRightArg op num then
+		 if begPlace arg then 
+		   case precRel precs op (lWeight argItem) of
+		   Lower -> True
+		   Higher -> False
+		   BothDirections -> False
+		   NoDirection -> case (begPlace op, endPlace arg) of
+		        (True, True) -> arg == op && isAssoc ARight assocs op
+			(False, True) -> lWeight argItem == unitId
+			(_, False) -> True
+		 else not (endPlace arg && isNonCompound op 
+			  && joinIds op arg `elem` rs)
+	 else True
 
-reduceCompleted :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
-		-> ToExpr a b -> [Item a b] -> [Item a b]
-reduceCompleted ga table filt toExpr = 
-    foldr mergeItems [] . map (reduce ga table filt toExpr) . 
+reduceCompleted :: GlobalAnnos -> Table a b -> [Id] 
+		-> (b -> b -> Maybe Bool) -> ToExpr a b 
+		-> [Item a b] -> [Item a b]
+reduceCompleted ga table rs filt toExpr = 
+    foldr mergeItems [] . map (reduce ga table rs filt toExpr) . 
 	  filter (null . rest)
 
-recReduce :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
+recReduce :: GlobalAnnos -> Table a b -> [Id] -> (b -> b -> Maybe Bool) 
 	  -> ToExpr a b	-> [Item a b] -> [Item a b]
-recReduce ga table filt toExpr items = 
-    let reduced = reduceCompleted ga table filt toExpr items 
+recReduce ga table rs filt toExpr items = 
+    let reduced = reduceCompleted ga table rs filt toExpr items 
 	in if null reduced then items
-	   else recReduce ga table filt toExpr reduced `mergeItems` items
+	   else recReduce ga table rs filt toExpr reduced `mergeItems` items
 
 complete :: (b -> b -> Maybe Bool) -> ToExpr a b -> GlobalAnnos 
-	 -> Table a b -> [Item a b] -> [Item a b]
-complete filt toExpr ga table items = 
-    let reducedItems = recReduce ga table filt toExpr $ 
-		       reduceCompleted ga table filt toExpr items 
+	 -> Table a b -> [Id] -> [Item a b] -> [Item a b]
+complete filt toExpr ga table rs items = 
+    let reducedItems = recReduce ga table rs filt toExpr $ 
+		       reduceCompleted ga table rs filt toExpr items 
 	in reducedItems
 	   ++ items
 
@@ -476,14 +483,15 @@ nextChart addType filt toExpr ga st term@(_, tok) =
     let table = prevTable st
 	idx = currIndex st
 	items = currItems st
+	rs = rules st
 	scannedItems = scan addType (knowns st) term items
         nextTable = Map.insert idx items table
 	nextIdx = incrIndex idx
     in	if null items then st else
 	st { prevTable = nextTable
 	   , currIndex = nextIdx
-	   , currItems =  predict (map (mkItem nextIdx) $ rules st)
-	   $ complete filt toExpr ga nextTable 
+	   , currItems =  predict (map (mkItem nextIdx) rs)
+	   $ complete filt toExpr ga nextTable (map ( \ (i, _, _) -> i) rs)
 	   $ sortBy ordItem scannedItems
 	   , solveDiags = (if null scannedItems then 
 		      [Diag Error ("unexpected mixfix token: " ++ tokStr tok)

@@ -83,28 +83,28 @@ defId = mkId $ map mkSimpleId [defS, place]
 notId :: Id 
 notId = mkId $ map mkSimpleId [notS, place]
 
-addBuiltins :: GlobalAnnos -> GlobalAnnos
-addBuiltins ga = 
+addBuiltins :: GlobalAnnos -> [Id] -> GlobalAnnos
+addBuiltins ga ids = 
     let ass = assoc_annos ga
 	newAss = Map.union ass $ Map.fromList 
 		 [(applId, ALeft), (andId, ALeft), (orId, ALeft), 
 		  (implId, ARight), (infixIf, ALeft), 
 		  (whenElse, ARight)]
 	precs = Rel.toList $ prec_annos ga
-        lows = map fst $ filter ((==eqId) . snd) precs
+	logIds = [eqvId, implId, infixIf, andId, orId, notId, 
+		 eqId, exEq, defId]
+        lows = map fst $ filter ((`elem` logIds) . snd) precs
 	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
 		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
 		 (andId, notId), (orId, notId), (notId, eqId), (notId, exEq),
 	         (eqId, defId), (exEq, defId)]
 	eqs = map ( \ i -> (defId, i)) (whenElse : 
-	      (filter (`notElem` (defId : lows)) $ filter isInfix 
-	      $ map fst precs))
+	      (filter (`notElem` (lows ++ logIds)) $ filter isInfix ids))
 	appls = map ( \ i -> (i, applId)) (whenElse : 
-		(filter (/=applId) $ filter isInfix $ map snd precs))
+		(filter (/=applId) $ filter isInfix ids))
     in ga { assoc_annos = newAss
 	  , prec_annos = Rel.transClosure $ 
-	    Rel.fromList $ concat [logs, eqs, [(exEq, applId), (eqId, applId)],
-				   appls, precs] }
+	    Rel.fromList $ concat [logs, eqs, appls, precs] }
 
 initTermRules :: [Id] -> [Rule]
 initTermRules is = (map (mixRule ()) . nub)
@@ -221,9 +221,9 @@ iterateCharts ga terms chart =
 
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolve ga trm =
-    do as <- gets assumps
-       chart<- iterateCharts (addBuiltins ga) [trm] $ 
-	    initChart (initTermRules $ Map.keys as) Set.empty
+    do ids <- gets (Map.keys . assumps)
+       chart<- iterateCharts (addBuiltins ga ids) [trm] $ 
+	    initChart (initTermRules ids) Set.empty
        let Result ds mr = getResolved showPretty (posOfTerm trm) 
 			  toMixTerm chart
        addDiags ds
