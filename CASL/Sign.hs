@@ -74,7 +74,7 @@ emptySign e = Sign { sortSet = Set.empty
 subsortsOf :: SORT -> Sign f e -> Set.Set SORT
 subsortsOf s e =
   Set.insert s $
-    Map.foldWithKey addSubs (Set.empty) (Rel.toMap $ sortRel e)
+    Map.foldWithKey addSubs (Set.single s) (Rel.toMap $ sortRel e)
   where addSubs sub supers =
          if s `Set.member` supers 
             then Set.insert sub
