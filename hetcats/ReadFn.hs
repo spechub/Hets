@@ -52,7 +52,7 @@ read_LIB_DEFN opt file =
 		 file input of
                Left err  -> error (show err)
                Right ast -> return ast
-               _         -> error "Unknown InType wanted in read_LIB_DEFN"
+         _         -> error "Unknown InType wanted in read_LIB_DEFN"
        return ld
 
 readLIB_DEFN_from_file :: FilePath -> IO (Result LIB_DEFN)
