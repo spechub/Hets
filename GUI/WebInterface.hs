@@ -1,3 +1,15 @@
+{- |
+Module       : $Header: 
+Copyright    : (c) Heng Jiang, Uni Bremen 2004
+Licence      : 
+
+Maintainer   : hets@tzi.de
+Stability    : provisional
+Protability  : 
+
+   Interface for web page.
+-}
+
 module GUI.WebInterface where
 
 import Options
@@ -9,9 +21,9 @@ import Comorphisms.LogicGraph
 import Logic.Grothendieck
 import Static.DevGraph
 import Maybe
-
 -- import Debug.Trace
 
+{- -}
 mapString :: Char -> Int
 mapString c = case c of
                 '0' -> 0
@@ -38,6 +50,7 @@ mapString c = case c of
 		'F' -> 15
 		s   -> ord s
 
+{-  -}
 convert_cgi :: String -> String
 convert_cgi "" = ""
 convert_cgi (s0:rest) =
@@ -51,6 +64,7 @@ convert_cgi (s0:rest) =
 	         '+'  -> ' ':(convert_cgi rest)
 		 _    -> s0:(convert_cgi rest)
 
+{-  -}
 convert_arg :: (String, String) -> String
 convert_arg (arg, spec) = 
     case spec of
@@ -63,8 +77,7 @@ scanwords str
 	    | otherwise       = let headStr = takeWhile (\x -> not (x == '&' || x == '\n')) str
 				in  headStr:(scanwords $ drop ((length headStr) +1) str)
 
--- Output File is /tmp/output.web
-
+{-  -}
 webInterface :: String -> HetcatsOpts -> IO()
 webInterface contents opt =
    do
@@ -77,7 +90,9 @@ webInterface contents opt =
       -- putStrLn $ show pars
       -- putStrLn sp
       -- putStrLn $ unwords args
-      res  <- anaString logicGraph defl opt emptyLibEnv sp Nothing      
+      putStrLn "<font face=\"Arial\" size=+2>"
+      res  <- anaString logicGraph defl opt emptyLibEnv sp Nothing  
+      putStrLn "...</font>"
       web_interface_aux1 pars res outputfile
 
    where 		
@@ -85,73 +100,42 @@ webInterface contents opt =
 	     do 
 	       case res of 
 	          Just (libName, libDefn, _, libEnv) ->
-		     let (globalAnnos, globalEnv, dGraph) =  fromJust $ Map.lookup libName libEnv
+		     let (globalAnnos, _, _) =  fromJust $ Map.lookup libName libEnv
 	             in do 
 			if show_trees then 	
 			   do
-			   putStrLn "<H2>Parse Tree:</H2>"
+			   putStrLn "<H2>Parse tree:</H2>"
 			   putStrLn $ show libDefn
 			   -- globalContexttoShATerm outfile (globalAnnos, globalEnv, dGraph)
 			   else return()
 		        if show_env then
 			   do
-			   putStrLn "<H2>Global Environment:</H2>"
+			   putStrLn "<H2>ASCII code:</H2>"
 			   result <- write_casl_asc_stdout opt globalAnnos libDefn
 			   putStrLn $ foldl (\x y -> x ++ "<br>" ++ y) "" (lines result)
 			   else return () 
 			if show_latex then
 			   do
-			   putStrLn "<H2>LaTex code:</H2>"
+			   putStrLn "<H2>LaTeX code:</H2>"
 			   result <- write_casl_latex_stdout opt globalAnnos libDefn
+			   write_casl_latex opt globalAnnos outfile libDefn
 			   putStrLn result
+			   write_HTML outfile
 		           else return ()
 		  Nothing -> return ()
-			    
 
-{-
-fun  convert_cgi [] = []
-|   convert_cgi ("%"::"0"::"D"::s) = convert_cgi s
-|   convert_cgi ("%"::s1::s2::rest) = (chr( (mapstring s1) * 16 + mapstring s2)::
-                                                                  convert_cgi rest)
-|   convert_cgi ("+"::s) = ((" "::(convert_cgi s)))
-|   convert_cgi (s::s1) = s::convert_cgi s1
+         write_HTML :: FilePath -> IO()
+	 write_HTML downF = 
+	     do
+	      putStrLn "<P><I>You can here <A HREF=\""
+	      putStrLn "http://www.informatik.uni-bremen.de/cofi/hets-tmp/"
+	       -- putStrLn ((takeWhile (\x->x /= '.') downF) ++ ".pdf")
+	      putStrLn $ drop 24 downF
+	      putStrLn "\">the LaTeX file</A> download. The file will be deleted after 30 minutes<br>"
+	      putStrLn "For compiling the LaTeX output, you need <A HREF=\"http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hetcasl.sty\">hetcasl.sty.</I></P>"
 
-fun convert_arg (_,("s"::"p"::"e"::"c"::"="::s)) = implode (convert_cgi s)
-  | convert_arg (arg,_) = arg
-fun web_interface s =
-let val args = scanwords (fn a => not (a="&")) (explode s@["&"])
-    val del_blank = implode o (filter_out is_blank) o explode
-    val args' = map del_blank args
--- the following line must be adapted, construct a value of type HetcatsOpts
-    val pars = ("tree=yes" mem args',"env=yes" mem args',"tex=yes" mem args')
-    val sp = foldl convert_arg ("",map explode args')
--- the following line must be adpated to Hets, see hets.hs or Static/AnalysisLibrary.hs
-    val res =  parse_and_check (!basic_lib_env) (fn x => ()) true sp
-               handle exn => (empty_lib_env,empty_global_env,empty_lib_defn)
-in  
-    web_interface_aux1 pars res
-end
-
-and web_interface_aux1 (show_trees,show_env,latex) (_,genv,trees) =
-
-    ( 
-      if show_trees then
-      -- use showPretty instead of print
-        (print (print_heading true "Parse tree");
-         print (AT.mkA (trees)) )
-     else ()
-     handle exn => print ("Internal error #2. Please send us your specification");
-     if show_env then
-        (print (print_heading true "Global Environment");
-         print (format_text HTML_pre (StructuredPrint.print_global_env genv trees))
-        )
-     else ();
-     if latex then
-        (print (print_heading true "LaTeX code");
-         (*print (format_text HTML_pre (Makellos.mkTeX (true,genv,trees)) ) *)
-         print (format_text HTML_pre "Sorry, not LaTeX output yet. Use CATS 0.56")
-        )
-     else ()
-    )
-
--}
+              {-where getName filepath =
+			let rest =  dropWhile (\x -> not (x == '/')) (teil filepath)
+			in  if length rest > 0 then getName rest
+			    else filepath
+		-}	    
