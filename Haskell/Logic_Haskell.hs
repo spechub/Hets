@@ -18,7 +18,7 @@ module Haskell.Logic_Haskell where
 
 import CASL.AS_Basic_CASL
 import CASL.Print_AS_Basic
-import Language.Haskell.Syntax
+import Haskell.Language.Syntax
 import Haskell.HParser
 import CASL.SymbolParser
 import Logic.ParsecInterface

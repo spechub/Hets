@@ -195,7 +195,7 @@ Haskell/wrap: Haskell/wrap.lhs Haskell/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL parser
-hetpa: Syntax/hetpa.hs $(drifted_files) *.hs 
+hetpa: Syntax/hetpa.hs $(drifted_files) Haskell/Language/Parser.hs *.hs 
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
