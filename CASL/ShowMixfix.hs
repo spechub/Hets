@@ -31,7 +31,7 @@ showTerm (Conditional t1 f t2 _)     = showTerm t1 ++ whenS
 showTerm (Unparsed_term str _)       = str
 -- A new intermediate state
 showTerm (Mixfix_qual_pred ps)       = showPredSymb ps
-showTerm (Mixfix_term ts)            = showFnTs showTerm ts " " " " ","
+showTerm (Mixfix_term ts)            = showFnTs showTerm ts "" "" ","
 showTerm (Mixfix_token t)            = tokStr t
 showTerm (Mixfix_sorted_term s _ )   = colonS++showId s ""
 showTerm (Mixfix_cast s _)           = asS++showId s ""
