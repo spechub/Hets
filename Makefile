@@ -13,11 +13,12 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = Common/ATerm:HasCASL:ghc:Modal:Haskell:hetcats
-CLEAN_PATH = Common/Lib:Common/Lib/Parsec:Common:Logic:CASL:Syntax:Static:GUI:$(INCLUDE_PATH)
+INCLUDE_PATH = Common/ATerm:ghc:Modal:hetcats
+CLEAN_PATH = Common/Lib:Common/Lib/Parsec:Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:$(INCLUDE_PATH)
 
 HC         = ghc
 PERL       = perl
+HAPPY      = happy
 DRIFT      = $(PERL) utils/DrIFT
 AG         = $(PERL) utils/ag
 HADDOCK    = $(PERL) utils/haddock
@@ -112,7 +113,10 @@ bin_clean: clean
 	$(RM) hets
 	$(RM) CASL/capa
 	$(RM) HasCASL/hacapa
+	$(RM) Haskell/hapa
+	$(RM) Haskell/wrap
 	$(RM) Syntax/hetpa
+	$(RM) Static/hetana
 	$(RM) Static/hetana
 	$(RM) GUI/hetdg
 	$(RM) hetpa
@@ -158,21 +162,24 @@ CASL/capa: CASL/capa.lhs $(drifted_files) CASL/*.hs
 ### HasCASL parser
 hacapa: HasCASL/hacapa
 
-HasCASL/hacapa: HasCASL/hacapa.lhs $(drifted_files) HasCASL/*.hs 
+HasCASL/hacapa: HasCASL/hacapa.lhs CASL/capa HasCASL/*.hs 
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### Haskell parser
 hapa: Haskell/hapa
 
-Haskell/hapa: Haskell/hapa.lhs Haskell/*.hs 
+Haskell/hapa: Haskell/hapa.lhs Haskell/*.hs $(drifted_files) Haskell/Language/Parser.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-### Haskell parser
+Haskell/Language/Parser.hs: Haskell/Language/Parser.ly
+	$(HAPPY) $<
+
+### Haskell wrap parser
 wrap: Haskell/wrap
 
-Haskell/wrap: Haskell/wrap.lhs Haskell/*.hs 
+Haskell/wrap: Haskell/wrap.lhs Haskell/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
@@ -206,6 +213,9 @@ hetcats/Options.hs: hetcats/Version.hs
 hets.hs: hetcats/Version.hs
 ####################################################################
 ## rules for DrIFT
+
+%.ly: %.hs
+	$(HAPPY) $<
 
 %.hs: %.ag.hs
 	$(AG) $<
