@@ -6,13 +6,7 @@ version 0.9
 
 %left_assoc __intersection__  %[ Should go to StructuredDatatypes ]%
 
-%prec {__<=>__} < {__=>__}
-%prec {__=>__} < {__/\__, __\/__}
-%right_assoc __=>__
-%left_assoc __/\__, __\/__
-%prec {__/\__, __\/__} < {__=__, __=!=__}
-%prec {__/\__, __\/__} < {__isIn__, __subset__, __disjoint__}
-%prec({__isIn__, __subset__, __disjoint__} 
+%prec({__isIn__, __subset__, __disjoint__,__ :: __ --> __} 
 		 < {__union__, __intersection__, __\\__, __*__, 
 		    __disjointUnion__} )%
 
@@ -23,6 +17,7 @@ logic HasCASL
 
 spec Bool = 
   sort Bool
+  ops false, true : Bool;
 end
 
 spec Nat = {}
@@ -41,25 +36,20 @@ spec Set = Bool and InternalLogic and Extensionality then
        Set := \ S . S ->? Unit;
        Pred := \ S . S ->? Unit;
        %%Bool : Type; 
-  ops __=__ : forall S:Type . S -> S ->? Unit;
-      __<=>__,__=>__,__/\__,__\/__ : Unit * Unit ->? Unit;
-      false, true : Bool;
-      not__ : Unit ->? Unit;
-      emptySet : Set S;
+  ops emptySet : Set S;
       {__} : S -> Set S;
       __isIn__ : S * Set S ->? Unit;
-      __isIn__ : (S*S) * Set (S*S) ->? Unit;
       __subset__ :Pred( Set(S) * Set(S) );
-      __union__, __intersection__, __\\__  : Set S -> Set S -> Set S;
+      __union__, __intersection__, __\\__  : Set S * Set S -> Set S;
       __disjoint__ : Pred( Set(S) * Set(S) );
       __*__ : Set S -> Set T -> Set (S*T);
       __disjointUnion__ :  Set S -> Set S -> Set (S*Bool);
       inl,inr : S -> S*Bool;
   forall x,x':S; y:T; s,s':Set S; t:Set(T) 
-  . not x isIn emptySet
-  . (x isIn {x'}) <=> (x=x')
-  . (x isIn s) <=> (s x)
-  . (s subset s') <=> (forall x:S . (x isIn s) => (x isIn s'))
+  . not (x isIn emptySet)
+  . x isIn {x'} <=> x=x'
+  . x isIn s <=> s x
+  . s subset s' <=> forall x:S . (x isIn s) => (x isIn s')
   . (x isIn (s union s')) <=> ((x isIn s) \/ (x isIn s'))
   . (x isIn (s intersection s')) <=> ((x isIn s) /\ (x isIn s'))
   . (x isIn (s \\ s')) <=> ((x isIn s) /\ (not x isIn s'))
@@ -96,23 +86,23 @@ spec Map =
       range : (S->?T) -> Set T; 
       image : (S->?T) -> Set S -> Set T;
       emptyMap : (S->?T);
-      __ :: __ --> __ : Pred ( S->?T * Pred(S) * Pred(T) );
+      __ :: __ --> __ : Pred ( (S->?T) * Pred(S) * Pred(T) );
       __ [__/__] : (S->?T) * S * T -> (S->?T);
       __ - __ : (S->?T) * S -> (S->?T);
-      __ intersection __, __union__ : (S->?T) * (S->?T) -> (S->?T);
       __o__ : (T->?U) * (S->?T) -> (S->?U);
       __||__ : (S->?T) -> Set S -> (S->?T);
+      undef : S ->? Unit;
       ker : (S->?T) -> Pred (S*S);
       injective : Pred(S->?T)
   forall f,g:S->?T; h:T->?U; s,s':Set S; t:Set T; x,x':S; y:T
-  . x isIn dom f <=> def f x
+  . x isIn dom f <=> def (f x)
   . y isIn range f <=> exists x:S . f x = y
   . y isIn image f s <=> exists x:S . x isIn s /\ f x = y
-  . not def emptyMap x
+  . not def (emptyMap x)
   . f :: s --> t <=> (forall x:S . x isIn s => f x isIn t) 
-  . f[x/y] x' = if x=x' then y else f x
-  . (f - x) x' = if x=x' then undef() else f x
-  . f intersection g x = if f x = g x then f x else undef()
+  . f[x/y] x' = if x=x' then y else (f x)
+  . (f - x) x' = if x=x' then undef() else (f x)
+  . f intersection g x = if f x = g x then f x else (undef())
   . def f union g <=> (forall x:S. def f x /\ def g x => f x = g x)
   . def f union g => f union g x = if def f x  then f x else g x
   . (h o g) x = h(g(x))
