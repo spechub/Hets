@@ -171,8 +171,10 @@ inferAppl ps mt t1 t2 = do
                 Just ty -> return ty
             ops <- infer (Just $ FunType aty PFunArr rty []) t1 
                    >>= reduce False
-            combs <- mapM ( \ (sf, cf, _, tf) -> do 
-                let sfty = subst sf aty
+            combs <- mapM ( \ (sf, cf, funty, tf) -> do 
+                let (sfty, frty) = case funty of 
+                          FunType paty _ prty _ -> (paty, prty)
+                          _ -> (subst sf aty, subst sf rty)
                 vs <- gets localVars
                 putLocalVars $ Map.map (subst sf) vs
                 args1 <- infer (Just sfty) t2 >>= reduce False
@@ -182,7 +184,7 @@ inferAppl ps mt t1 t2 = do
                 let args = args1 ++ args2
                     combs2 = map ( \ (sa, ca, _, ta) ->
                         let sr = compSubst sf sa 
-                            nTy = subst sr rty in 
+                            nTy = subst sa frty in 
                           [(sr, joinC ca $ substC sa cf, nTy, 
                             TypedTerm (ApplTerm tf ta ps) 
                             Inferred nTy ps)]) args

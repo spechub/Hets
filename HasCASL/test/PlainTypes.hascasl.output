@@ -99,5 +99,5 @@ x : tuple3 r s t %(var)%
 *** Hint 38.12, variable shadows global name(s) 'x'
 *** Hint 38.17, in type of '(var x : t, var x : t)'
   type 't * t' (38.14)
-  is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
+  is not unifiable with type 'Unit ->? _var_3_v3 * _var_3_v3'
 

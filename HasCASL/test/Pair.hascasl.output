@@ -117,11 +117,11 @@ program ((op g[_var_17_v17; _var_19_v19]
 %% Diagnostics -----------------------------------------------------------
 *** Hint 4.39, in type of '(var a : a, var b : b)'
   type 'a * b' (4.11)
-  is not unifiable with type 'Unit ->? _var_8_v8 * _var_9_v9' (2.16)
+  is not unifiable with type 'Unit ->? _var_6_v6 * _var_7_v7' (2.16)
 
 *** Hint 8.17, in type of '(var a : _var_14_v14, var b : _var_15_v15)'
   type '_var_14_v14 * _var_15_v15' (8.17)
-  is not unifiable with type 'Unit ->? _var_25_v25 * _var_26_v26' (2.16)
+  is not unifiable with type 'Unit ->? _var_18_v18 * _var_19_v19' (6.13)
 
 *** Hint 8.11, in type of '(op Pair[_var_28_v28; _var_29_v29]
  : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :

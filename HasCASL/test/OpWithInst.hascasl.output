@@ -41,5 +41,5 @@ true : Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 6.47, in type of '(op a : s, op a : s)'
   type 's * s' (2.8)
-  is not unifiable with type 'Unit ->? _var_5_v5 * _var_6_v6' (6.16)
+  is not unifiable with type 'Unit ->? s * s' (6.16)
 

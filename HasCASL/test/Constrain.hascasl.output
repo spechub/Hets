@@ -70,58 +70,58 @@ true : Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 10.8, in type of '(op c : a)'
   typename 'a' (8.8)
-  is not unifiable with type 'Unit ->? _var_9_v9' (10.8)
+  is not unifiable with type 'Unit ->? _var_10_v10' (6.25)
 
 *** Hint 10.8, in type of '(op c : a)'
   typename 'a' (8.8)
-  is not unifiable with type '_var_15_v15 ->? _var_16_v16' (10.6)
+  is not unifiable with type '_var_13_v13 ->? _var_14_v14' (6.25)
 
 *** Hint 10.8, in type of '(op c : a)'
   typename 'a' (8.8)
-  is not unifiable with type 'Unit ->? _var_15_v15 ->? _var_16_v16' (10.6)
+  is not unifiable with type 'Unit ->? _var_13_v13 ->? _var_14_v14' (6.25)
 
-*** Hint 10.6, untypable application (with result type: Unit ->? _var_6_v6)
+*** Hint 10.6, untypable application (with result type: Unit ->? _var_8_v8)
  'f(c)'
 *** Hint 10.8, in type of '(op c : a)'
   typename 'a' (8.8)
-  is not unifiable with type 'Unit ->? _var_20_v20' (10.8)
+  is not unifiable with type 'Unit ->? _var_21_v21' (6.25)
 
 *** Hint 10.8, in type of '(op c : a)'
   typename 'a' (8.8)
-  is not unifiable with type '_var_26_v26 ->? _var_27_v27' (10.6)
+  is not unifiable with type '_var_24_v24 ->? _var_25_v25' (6.25)
 
 *** Hint 10.8, in type of '(op c : a)'
   typename 'a' (8.8)
-  is not unifiable with type 'Unit ->? _var_26_v26 ->? _var_27_v27' (10.6)
+  is not unifiable with type 'Unit ->? _var_24_v24 ->? _var_25_v25' (6.25)
 
-*** Hint 10.6, untypable application (with result type: Unit ->? _var_17_v17)
+*** Hint 10.6, untypable application (with result type: Unit ->? _var_19_v19)
  'f(c)'
 *** Hint 10.3, in type of '(((op f[_var_19_v19] : forall e : Ord . e_v-1 -> e_v-1) :
       _var_19_v19 -> _var_19_v19)
    (((op f[_var_21_v21] : forall e : Ord . e_v-1 -> e_v-1) :
          _var_21_v21 -> _var_21_v21)
       (op c : a) :
-        _var_17_v17) :
-     _var_18_v18,
+        _var_21_v21) :
+     _var_19_v19,
  op c : a)'
   type 'a * a' (8.8)
-  is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
+  is not unifiable with type 'Unit ->? _var_3_v3 * _var_3_v3'
 
 *** Hint 16.5, in type of '(op b : t)'
   typename 't' (14.8)
-  is not unifiable with type 'Unit ->? _var_32_v32' (16.5)
+  is not unifiable with type 'Unit ->? _var_34_v34' (6.25)
 
 *** Hint 16.5, in type of '(op b : t)'
   typename 't' (14.8)
-  is not unifiable with type 'Unit ->? _var_35_v35' (16.5)
+  is not unifiable with type 'Unit ->? _var_37_v37' (6.25)
 
 *** Hint 16.3, in type of '(((op f[_var_37_v37] : forall e : Ord . e_v-1 -> e_v-1) :
       _var_37_v37 -> _var_37_v37)
    (op b : t) :
-     _var_36_v36,
+     _var_37_v37,
  op b : t)'
   type 't * t' (14.8)
-  is not unifiable with type 'Unit ->? _var_30_v30 * _var_31_v31'
+  is not unifiable with type 'Unit ->? _var_29_v29 * _var_29_v29'
 
 *** Hint 16.7, 
   expected: Ord

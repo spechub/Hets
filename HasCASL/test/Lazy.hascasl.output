@@ -6,7 +6,7 @@ op c, d : Unit ->? t
 . ((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
        t * t ->? Unit)
     ((op f : ? t -> t)(op a : t) : t,
-     (op g : t -> ? t)(op c : Unit ->? t) : t) :
+     (op g : t -> ? t)(op c : Unit ->? t) : ? t) :
       Unit
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
@@ -44,27 +44,27 @@ true : Unit %(fun)%
 ((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      t * t ->? Unit)
   ((op f : ? t -> t)(op a : t) : t,
-   (op g : t -> ? t)(op c : Unit ->? t) : t) :
+   (op g : t -> ? t)(op c : Unit ->? t) : ? t) :
     Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 8.5, in type of '(op a : t)'
   typename 't' (4.10)
-  is not unifiable with type 'Unit ->? _var_5_v5' (8.5)
+  is not unifiable with type 'Unit ->? ? t' (2.9)
 
-*** Hint 8.9, in type of '(op g : t -> ? t)(op c : Unit ->? t) : _var_8_v8'
+*** Hint 8.11, in type of '(op c : Unit ->? t)'
   typename 't' (3.8)
   is not unifiable with type 'Unit ->? t' (6.10)
 
 *** Hint 8.5, in type of '(op a : t)'
   typename 't' (4.10)
-  is not unifiable with type 'Unit ->? _var_11_v11' (8.5)
+  is not unifiable with type 'Unit ->? ? t' (2.9)
 
-*** Hint 8.9, in type of '(op g : t -> ? t)(op c : Unit ->? t) : _var_14_v14'
+*** Hint 8.11, in type of '(op c : Unit ->? t)'
   typename 't' (3.8)
   is not unifiable with type 'Unit ->? t' (6.10)
 
-*** Hint 8.3, in type of '((op f : ? t -> t)(op a : t) : _var_12_v12,
- (op g : t -> ? t)(op c : Unit ->? t) : _var_14_v14)'
-  type 't * t' (4.10)
-  is not unifiable with type 'Unit ->? _var_3_v3 * _var_4_v4'
+*** Hint 8.3, in type of '((op f : ? t -> t)(op a : t) : t,
+ (op g : t -> ? t)(op c : Unit ->? t) : ? t)'
+  type 't * ? t' (2.14)
+  is not unifiable with type 'Unit ->? _var_2_v2 * _var_2_v2'
 

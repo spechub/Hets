@@ -234,11 +234,11 @@ type Data4
 *** Error 40.20, unexpected mixfix token: all
 *** Hint 47.3, in type of '(var x : t, var y : t)'
   type 't * t' (45.11)
-  is not unifiable with type 'Unit ->? _var_9_v9 * _var_10_v10'
+  is not unifiable with type 'Unit ->? _var_8_v8 * _var_8_v8'
 
 *** Hint 47.3, in type of '(var x : s, var y : t)'
   type 's * t' (16.9)
-  is not unifiable with type 'Unit ->? _var_9_v9 * _var_10_v10'
+  is not unifiable with type 'Unit ->? _var_8_v8 * _var_8_v8'
 
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e
