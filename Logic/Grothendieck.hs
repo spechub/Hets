@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-overlapping-instances -fallow-incoherent-instances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2004

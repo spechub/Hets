@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-overlapping-instances #-}
 -- (c) 1999-2002 by Martin Erwig [see file COPYRIGHT]
 -- | Static and Dynamic Inductive Graphs  
 module Data.Graph.Inductive.Graph (

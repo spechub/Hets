@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-overlapping-instances #-}
 -- (c) 2000 by Martin Erwig
 -- | Inward directed trees as lists of paths.
 module Data.Graph.Inductive.Aux.RootPath (

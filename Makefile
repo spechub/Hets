@@ -39,7 +39,8 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 CPPP       = cpp 
 
-HC_FLAGS   = -Wall -fglasgow-exts -fallow-overlapping-instances -fallow-incoherent-instances
+HC_FLAGS   = -Wall -fglasgow-exts 
+# -fallow-overlapping-instances -fallow-incoherent-instances
 # -ddump-minimal-imports 
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
