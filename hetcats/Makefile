@@ -25,8 +25,15 @@ HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package util -package data
 
-HC_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
+### Profiling and Warnings (only for debugging)
+### Attention every module must be compiled with profiling or the linker
+### cannot link the various .o files properly. So after switching on
+### Profiling, do an 'gmake clean; gmake'
+### If you need Profiling comment out the following line 
+# HC_PROF    = -prof -auto-all -Wall
 
+HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE) 
+HC_OPTS     = $(HCI_OPTS) $(HC_PROF) 
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
 ifneq ($(MAKECMDGOALS),clean)
@@ -54,18 +61,26 @@ hetcats-make: hetcats.hs ../utils/create_sources.pl $(drifted_files)
 	rm -f hetcats
 	$(HC) --make -o hetcats $< $(HC_OPTS) 2>&1 | tee hetcats-make
 	$(PERL) ../utils/create_sources.pl < hetcats-make > sources_hetcats.mk
-
+###############
 ### clean up
-.PHONY : clean
+.PHONY : clean d_clean real_clean
+### removes *.hi and *.o in all include directories and the binary 'hetcats'
 clean:
 	rm -f hetcats
 	THIS_DIR=`pwd`;\
          for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
-         cd $$p ; rm -f *.d *.hi *.o ; cd $$THIS_DIR;\
+         cd $$p ; rm -f *.hi *.o ; cd $$THIS_DIR;\
          done; \
          unset p THIS_DIR
-
-real_clean: clean
+### additonally removes *.d (dependency files) in every include directory
+d_clean: clean
+	THIS_DIR=`pwd`;\
+         for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
+         cd $$p ; rm -f *.d ; cd $$THIS_DIR;\
+         done; \
+         unset p THIS_DIR
+### additionally removes the files that define the sources-variable
+real_clean: d_clean 
 	rm -f hetcats-make sources_hetcats.mk
 ####################################################################
 ### test targets
@@ -73,11 +88,11 @@ real_clean: clean
 ### a parser to test annotation parser and Id parsers
 test_parser: ../test_parser.hs $(drifted_files)
 	rm -f $@
-	$(HC) --make -o $@ $< $(HC_OPTS)
+	$(HC) --make -o $@ $< $(HC_OPTS) 
 
 ### interactive
 ghci: 
-	$(HC)i $(HC_OPTS)
+	$(HC)i $(HCI_OPTS)
 
 ### christian's target
 casl_test_parser: ../CASL/Main.hs $(drifted_files)
@@ -111,11 +126,9 @@ casl_test_parser: ../CASL/Main.hs $(drifted_files)
 
 %.d : %.hs
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
-	[ -s $@ ] || rm -f $@
 
 %.d : %.lhs
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
-	[ -s $@ ] || rm -f $@
 
 
 ####################################################################
