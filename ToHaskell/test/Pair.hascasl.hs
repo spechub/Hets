@@ -1,4 +1,14 @@
 {-
+instances:
+(Eq A__a, (derived__Prelude_Eq_A__a, []))
+(Ord A__a, (derived__Prelude_Ord_A__a, []))
+(Show A__a, (derived__Prelude_Show_A__a, []))
+(Eq A__b, (derived__Prelude_Eq_A__b, []))
+(Ord A__b, (derived__Prelude_Ord_A__b, []))
+(Show A__b, (derived__Prelude_Show_A__b, []))
+(Eq Pair, (derived__Prelude_Eq_Pair, []))
+(Ord Pair, (derived__Prelude_Ord_Pair, []))
+(Show Pair, (derived__Prelude_Show_Pair, []))
 
 types:
 A__a :: (*, data)
@@ -6,8 +16,15 @@ A__b :: (*, data)
 Pair :: (*, data)
 
 values:
-a__fst :: Pair -> A__a
-a__snd :: Pair -> A__b
+derived__Prelude_Eq_A__a :: Eq A__a
+derived__Prelude_Eq_A__b :: Eq A__b
+derived__Prelude_Eq_Pair :: Eq Pair
+derived__Prelude_Ord_A__a :: Ord A__a
+derived__Prelude_Ord_A__b :: Ord A__b
+derived__Prelude_Ord_Pair :: Ord Pair
+derived__Prelude_Show_A__a :: Show A__a
+derived__Prelude_Show_A__b :: Show A__b
+derived__Prelude_Show_Pair :: Show Pair
 f :: (A__a, A__b) -> Pair
 g :: Pair -> A__a
 A__a :: A__a
@@ -21,8 +38,6 @@ Prelude.A__b |-> Prelude.A__b, Type [A__b] []
 Prelude.A__b |-> Prelude.A__b, con of A__b
 Prelude.Pair |-> Prelude.Pair, Type [Pair] []
 Prelude.Pair |-> Prelude.Pair, con of Pair
-Prelude.a__fst |-> Prelude.a__fst, Value
-Prelude.a__snd |-> Prelude.a__snd, Value
 Prelude.f |-> Prelude.f, Value
 Prelude.g |-> Prelude.g, Value
 A__a |-> Prelude.A__a, Type [A__a] []
@@ -31,22 +46,16 @@ A__b |-> Prelude.A__b, Type [A__b] []
 A__b |-> Prelude.A__b, con of A__b
 Pair |-> Prelude.Pair, Type [Pair] []
 Pair |-> Prelude.Pair, con of Pair
-a__fst |-> Prelude.a__fst, Value
-a__snd |-> Prelude.a__snd, Value
 f |-> Prelude.f, Value
 g |-> Prelude.g, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord)
 import MyLogic
-data A__a = A__a
-data A__b = A__b
+data A__a = A__a deriving (Show, Eq, Ord)
+data A__b = A__b deriving (Show, Eq, Ord)
 f :: (A__a, A__b) -> Pair
-a__fst :: Pair -> A__a
 g :: Pair -> A__a
-a__snd :: Pair -> A__b
-a__fst (Pair (x_11_11, x_11_12)) = x_11_11
-a__snd (Pair (x_11_11, x_11_12)) = x_11_12
-data Pair = Pair !(A__a, A__b)
+data Pair
+    = Pair !(A__a, A__b) deriving (Show, Eq, Ord)
 f (a, b) = Pair (a, b)
 g (Pair (a, b)) = a

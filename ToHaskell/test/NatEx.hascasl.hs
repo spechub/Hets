@@ -1,9 +1,16 @@
 {-
+instances:
+(Eq Nat, (derived__Prelude_Eq_Nat, []))
+(Ord Nat, (derived__Prelude_Ord_Nat, []))
+(Show Nat, (derived__Prelude_Show_Nat, []))
 
 types:
 Nat :: (*, data)
 
 values:
+derived__Prelude_Eq_Nat :: Eq Nat
+derived__Prelude_Ord_Nat :: Ord Nat
+derived__Prelude_Show_Nat :: Show Nat
 f :: Nat -> Nat
 prec :: Nat -> Nat
 Suc :: Nat -> Nat
@@ -22,10 +29,9 @@ f |-> Prelude.f, Value
 prec |-> Prelude.prec, Value
 -}
 module Dummy where
-import Prelude (error, Show, Eq, Ord)
 import MyLogic
 f :: Nat -> Nat
 prec :: Nat -> Nat
 prec (Suc x_11_11) = x_11_11
-data Nat = Zero | Suc !Nat
+data Nat = Zero | Suc !Nat deriving (Show, Eq, Ord)
 f x = Suc x

@@ -1,9 +1,9 @@
-type bool ::= True | False
+type Bool ::= True | False
 
-op a : bool = True
+op a : Bool = True
 
-op notA : bool = case a of True -> False | False -> True
+op notA : Bool = case a of True -> False | False -> True
 
-op b : bool = let x = True; y = False; z = x in True
+op b : Bool = let x = True; y = False; z = x in True
 
-op b : bool -> bool = \x .! x
+op b : Bool -> Bool = \x .! x
