@@ -81,7 +81,8 @@ curriedKind os ps = do a <- asKey funS
 
 idToken = pToken (scanQuotedChar <|> scanDotWords 
 		 <|> scanDigit <|> scanWords <|> placeS <|> 
-		  reserved (formula_ops ++ hascasl_reserved_ops) scanAnySigns)
+		  reserved (funS:formula_ops ++ hascasl_reserved_ops) 
+		  scanAnySigns)
 
 typeToken :: GenParser Char st Type
 typeToken = fmap TypeToken (pToken (toKey typeS <|> scanWords <|> placeS <|> 
@@ -358,15 +359,16 @@ tToken = pToken(scanFloat <|> scanString
 
 termToken = fmap TermToken (try (asKey exEqual) <|> tToken)
 
-primTerm = termToken
+-- flag if within brackets: True allows "in"-Terms
+primTerm b = termToken
 	   <|> braces term (BracketTerm Braces)
-	   <|> brackets term
-		   (BracketTerm Squares)
+	   <|> brackets term  (BracketTerm Squares)
  	   <|> parenTerm
-           <|> forallTerm
-	   <|> exTerm
-	   <|> lambdaTerm
-	   <|> caseTerm
+           <|> forallTerm b 
+	   <|> exTerm b 
+	   <|> lambdaTerm b 
+	   <|> caseTerm b
+	   <|> letTerm b
 
 
 parenTerm = do o <- oParenT
@@ -413,38 +415,44 @@ qualPredName o = do { v <- asKey predS
 			      (map tokPos [o,v,c,p]))
 		  }
 
-
-
-typeQual = try $
+typeQual b = try $ 
 	      do q <- colonT
 	         return (OfType, q)
 	      <|> 
+	   if b then 
 	      do q <- asKey (asS)
 	         return (AsType, q)
 	      <|> 
 	      do q <- asKey (inS)
-	         return (InType, q)
+		 return (InType, q)
+	   else
+	      do q <- asKey (asS)
+	         return (AsType, q)
 
+typedTerm f b = 
+    do (q, p) <- typeQual b
+       t <- parseType
+       return (TypedTerm f q t (tokPos p))
 
-typedTerm f = do (q, p) <- typeQual
-		 t <- parseType
-		 return (TypedTerm f q t (tokPos p))
+mixTerm b = 
+    do ts <- many1 $ primTerm b
+       let t = if length ts == 1 then head ts else MixfixTerm ts
+	   in typedTerm t b <|> return t
 
-mixTerm = do ts <- many1 primTerm
-	     let t = if length ts == 1 then head ts else MixfixTerm ts
-		 in typedTerm t <|> return t
+wTerm b = 
+    do t <- mixTerm b 
+       whereTerm b t <|> return t
 
-term = do t <- mixTerm  
-	  whereTerm t <|> return t
-
+term = wTerm True
 -----------------------------------------------------------------------------
 -- quantified term
 -----------------------------------------------------------------------------
 
-forallTerm = do f <- try forallT
+forallTerm b = 
+             do f <- try forallT
 		(vs, ps) <- genVarDecls `separatedBy` semiT
 		d <- dotT
-		t <- term
+		t <- wTerm b
 		return (QuantifiedTerm Universal (concat vs) t 
 			(map tokPos (f:ps++[d])))
 
@@ -457,14 +465,14 @@ exQuant = try(
 	   ; return (Existential, q)
 	   })
 
-exTerm = do { (q, p) <- exQuant
+exTerm b = 
+         do { (q, p) <- exQuant
 	    ; (vs, ps) <- varDecls `separatedBy` semiT
 	    ; d <- dotT
-	    ; f <- term
+	    ; f <- wTerm b
 	    ; return (QuantifiedTerm q (map GenVarDecl (concat vs)) f
 		      (map tokPos (p:ps++[d])))
 	    }
-
 
 lamDot = do d <- asKey (dotS++exMark) <|> asKey (cDot++exMark)
 	    return (Total,d)
@@ -472,10 +480,11 @@ lamDot = do d <- asKey (dotS++exMark) <|> asKey (cDot++exMark)
 	 do d <- dotT
 	    return (Partial,d)
 
-lambdaTerm = do l <- try (asKey lamS)
+lambdaTerm b = 
+             do l <- try (asKey lamS)
 		pl <- lamPattern
 		(k, d) <- lamDot      
-		t <- term
+		t <- wTerm b
 		return (LambdaTerm pl k t (map tokPos [l,d]))
 
 lamPattern = do (vs, ps) <- varDecls `separatedBy` semiT
@@ -488,16 +497,17 @@ lamPattern = do (vs, ps) <- varDecls `separatedBy` semiT
 -- case-term
 -----------------------------------------------------------------------------
 
-patternTermPair :: String -> GenParser Char st ProgEq
-patternTermPair sep = do p <- pattern
-			 s <- asKey sep
-			 t <- term
-			 return (ProgEq p t (tokPos s))
+patternTermPair :: Bool -> String -> GenParser Char st ProgEq
+patternTermPair b sep = do p <- pattern
+			   s <- asKey sep
+			   t <- wTerm b
+			   return (ProgEq p t (tokPos s))
 
-caseTerm = do c <- try(asKey caseS)
+caseTerm b = 
+           do c <- try(asKey caseS)
 	      t <- term
 	      o <- asKey ofS
-	      (ts, ps) <- patternTermPair funS `separatedBy` barT
+	      (ts, ps) <- patternTermPair b funS `separatedBy` barT
 	      return (CaseTerm t ts (map tokPos (c:o:ps)))
 
 -----------------------------------------------------------------------------
@@ -525,14 +535,14 @@ startKeyword = dotS:cDot: hascasl_reserved_words
 -- where-term
 -----------------------------------------------------------------------------
 
-whereEquations = 
-    do { p <- patternTermPair equalS
+whereEquations b = 
+             do { p <- patternTermPair b equalS
 		; do { s <- semiT
                      ; do { tryItemEnd startKeyword
                           ; return ([p], [s])
                           }
                        <|> 
-                       do { (ps, ts) <- whereEquations
+                       do { (ps, ts) <- whereEquations b 
                           ; return (p:ps, s:ts)
                           }
                      }
@@ -540,7 +550,14 @@ whereEquations =
                   return ([p], [])
 		}
 
-whereTerm t = do w <- try $ asKey whereS
-		 (ts, ps) <- whereEquations
-		 return (WhereTerm t ts (map tokPos (w:ps)))
-           
+whereTerm b t = 
+              do w <- try $ asKey whereS
+		 (ts, ps) <- whereEquations b
+		 return (LetTerm ts t (map tokPos (w:ps)))
+
+letTerm b = 
+          do l <- try $ asKey letS
+	     (es, ps) <- patternTermPair False equalS `separatedBy` semiT 
+	     i <- asKey inS
+	     t <- wTerm b
+	     return (LetTerm es t (map tokPos (l:ps ++ [i])))

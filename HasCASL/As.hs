@@ -64,11 +64,11 @@ data ClassDecl = ClassDecl [ClassName] [Pos]
                           
 data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos ","s
-               | SubtypeDecl [TypePattern] [Type] [Pos]
+               | SubtypeDecl [TypePattern] Type [Pos]
                -- pos ","s, "<"
                | IsoDecl [TypePattern] [Pos]
                -- pos "="s
-               | SubtypeDefn TypePattern Var Type Formula [Pos]
+               | SubtypeDefn TypePattern Var Type (Annoted Formula) [Pos]
                -- pos "=", "{", ":", dot, "}"
                | AliasType TypePattern PseudoType [Pos]
                -- pos ":="
@@ -199,7 +199,7 @@ data Term = CondTerm Term Formula Term [Pos]
           -- pos "\", dot (plus "!") 
 	  | CaseTerm Term [ProgEq] [Pos]
 	  -- pos "case", "of", "|"s 
-	  | WhereTerm Term [ProgEq] [Pos]
+	  | LetTerm [ProgEq] Term [Pos]
 	  -- pos "where", ";"s
 	  | TermToken Token
           | MixfixTerm [Term]

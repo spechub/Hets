@@ -25,13 +25,13 @@ SIG-ITEMS       ::= sort/sorts SORT-ITEM ; ... ; SORT-ITEM
                   | op/ops OP-ITEM ; ... ; OP-ITEM ;/
                   | pred/preds PRED-ITEM ; ... ; PRED-ITEM ;/   %% old style
 
-SORT-ITEM       ::= TYPE-PATTERN , ... , TYPE-PATTERN
+TYPE-ITEM       ::= TYPE-PATTERN , ... , TYPE-PATTERN
+                  | TYPE-PATTERN , ... , TYPE-PATTERN : KIND
                   | TYPE-PATTERN , ... , TYPE-PATTERN < TYPE 
                   | TYPE-PATTERN = ... = TYPE-PATTERN
                   | TYPE-PATTERN = { VAR : TYPE "." FORMULA }
 
 TYPE-ITEM       ::= SORT-ITEM
-                  | TYPE-PATTERN , ... , TYPE-PATTERN : KIND
                   | TYPE-PATTERN := PSEUDOTYPE
 
 TYPE-PATTERN      ::= TYPE-NAME 
@@ -220,6 +220,7 @@ TERM            ::= MIXFIX-TERM
                   | MIXFIX-TERM TYPE-OP TYPE
 		  | MIXFIX-TERM QUANT-TERM
 		  | QUANT-TERM
+		  | MIXFIX-TERM where PROG-EQ ; ... ; PROG-EQ
 		  | MIXFIX-TERM CASE-TERM
 		  | CASE-TERM
 		  | MIXFIX-TERM LET-TERM
@@ -229,6 +230,7 @@ MIXFIX-TERM     ::= INST-TERM ... INST-TERM
 
 TYPE-OP         ::= ":" | as | in
 
+%% terms in let-PROG-EQs must not have "in" at the top-level 
 LET-TERM        ::= let PROG-EQ ; ... ; PROG-EQ in TERM
 
 %% ";" is already used as item-separator

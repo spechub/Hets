@@ -33,6 +33,7 @@ instanceS = "instance"
 caseS = "case"
 ofS = "of"
 whereS = "where"
+letS = "let"
 
 -- ----------------------------------------------
 -- hascasl keyword handling
@@ -45,7 +46,8 @@ hascasl_reserved_ops = [dotS++exMark, cDot++exMark, asP, assignS, lamS]
 hascasl_type_ops = [funS, pFun, contFun, pContFun, prodS, timesS, quMark, 
 		   lessS] 
 
-hascasl_reserved_words = [classS, instanceS, programS, caseS, ofS, whereS] 
+hascasl_reserved_words = 
+    [classS, instanceS, programS, caseS, ofS, whereS, letS] 
 			 ++ casl_reserved_words
 
 scanWords = reserved (formula_words ++ hascasl_reserved_words) scanAnyWords 
