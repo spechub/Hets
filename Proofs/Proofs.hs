@@ -111,7 +111,7 @@ globDecomp = undefined
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 globSubsume ::  ProofStatus -> ProofStatus
 globSubsume proofStatus@(globalContext,history,dGraph) =
--- ##### überprüfung überflüssig?! #####
+-- -- ##### überprüfung überflüssig?! #####
   if null (snd nextHistoryElem) then proofStatus  
    else (globalContext, nextHistoryElem:history, nextDGraph)
 
