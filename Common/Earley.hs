@@ -33,7 +33,7 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.List
 -- import Control.Exception (assert)
--- import Debug.Trace(trace)
+import Debug.Trace(trace)
 
 assert :: Bool -> a -> a
 assert b a = if b then a else error ("assert")
@@ -196,13 +196,12 @@ unToken :: Id -> Token
 unToken (Id [_,t] _ _) = t
 unToken _ = error "unToken"
 
--- make unitId the Id with the higest priority
 mkItem :: Index -> (Id, b, [Token]) -> Item a b
 mkItem ind (ide, inf, toks) = 
     Item { rule = ide
 	 , info = inf
-	 , lWeight = unitId
-	 , rWeight = unitId
+	 , lWeight = ide
+	 , rWeight = ide
 	 , posList = []
 	 , args = []
 	 , ambigArgs = []
@@ -397,12 +396,13 @@ checkPrecs filt ga rs argItem opItem =
 	precs = prec_annos ga
         assocs = assoc_annos ga
 	num = length $ args opItem in
-    if isLeftArg op num then case filt argPrec opPrec of 
+    if isLeftArg op num then 
+       if isNonCompound arg && joinLIds arg op `elem` rs then False
+	  else case filt argPrec opPrec of 
 	   Just b -> b     
            Nothing ->
 	    let rarg = rWeight argItem in 
 	    if endPlace arg then
-	       if rarg == unitId then True else
 	       case precRel precs op rarg of
 	       Lower -> True
 	       Higher -> False
@@ -413,14 +413,13 @@ checkPrecs filt ga rs argItem opItem =
 					arg == op && isAssoc ALeft assocs op
 			(False, True) -> True
 			(_, False) -> False
-	    else not (begPlace arg && isNonCompound arg 
-		      && joinLIds arg op `elem` rs)
-	 else if isRightArg op num then case filt argPrec opPrec of 
+	    else True
+	 else if isRightArg op num then
+	      if isNonCompound op && joinRIds op arg `elem` rs then False
+	      else case filt argPrec opPrec of 
 	        Just b -> b     
-                Nothing ->
-	         let larg = lWeight argItem in 
+                Nothing -> let larg = lWeight argItem in 
 		 if begPlace arg then 
-		   if larg == unitId then True else
 		   case precRel precs op larg of
 		   Lower -> True
 		   Higher -> False
@@ -431,8 +430,7 @@ checkPrecs filt ga rs argItem opItem =
 					arg == op && isAssoc ARight assocs op
 			(False, True) -> False
 			(_, False) -> True
-		 else not (endPlace arg && isNonCompound op 
-			  && joinRIds op arg `elem` rs)
+		 else True
 	 else True
 
 reduceCompleted :: GlobalAnnos -> Table a b -> [Id] 
