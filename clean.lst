@@ -65,7 +65,7 @@ Haskell/questions
 Haskell/todo
 Haskell/wrap.lhs
 
-Haskell/Hatchet/Main.hs
+Haskell/Hatchet
 Haskell/Language
 Lottery
 Modal/Basic.mod
@@ -86,7 +86,6 @@ distribution
 
 docs
 
-fgl
 haterm-1.0  
 
 hetcats/Algebra_I.tree.gen_trm
