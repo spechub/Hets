@@ -101,16 +101,16 @@ freshTypeVar p =
 freshVars :: [Term] -> State Env [Type]
 freshVars l = mapM (freshTypeVar . posOfTerm) l
 
-inferAppl :: (Maybe Type -> Term -> State Env [(Subst, Type, Term)]) -> [Pos]
-          -> Maybe Type -> Term  -> Term -> State Env [(Subst, Type, Term)]
-inferAppl inf ps mt t1 t2 = do
+inferAppl :: [Pos] -> Maybe Type -> Term  -> Term 
+	  -> State Env [(Subst, Type, Term)]
+inferAppl ps mt t1 t2 = do
 	    aty <- freshTypeVar $ posOfTerm t2
 	    rty <- case mt of 
 		  Nothing -> freshTypeVar $ posOfTerm t1
 		  Just ty -> return ty
-	    ops <- inf (Just $ FunType aty PFunArr rty []) t1
+	    ops <- infer (Just $ FunType aty PFunArr rty []) t1
 	    combs <- mapM ( \ (sf, _, tf) -> do 
-		   args <- inf (Just $ subst sf aty) t2 
+		   args <- infer (Just $ subst sf aty) t2 
 		   return $ map ( \ (sa, _, ta) -> 
 				  let s = compSubst sf sa in
 			  (s, subst s rty, 
@@ -186,7 +186,7 @@ infer mt trm = do
 						  (opType oi) ps)) ls
 	    else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)
 		 (mkTupleTerm ts ps) ps
-	ApplTerm t1 t2 ps -> inferAppl infer ps
+	ApplTerm t1 t2 ps -> inferAppl ps
 			     mt t1 t2
 	TupleTerm ts ps -> 
 	    case mt of 
