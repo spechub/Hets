@@ -13,7 +13,7 @@ Portability :  non-portable (rank-2-polymorphism)
 
 module CASL.Print_AS_Basic where
 
-import Debug.Trace
+--import Debug.Trace
 
 import Data.List (mapAccumL)
 import Data.Char (isDigit)
@@ -30,6 +30,9 @@ import Common.Keywords
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
+
+trace :: String -> a -> a
+trace _ a = a
 
 instance PrettyPrint BASIC_SPEC where
     printText0 ga (Basic_spec l) = 
