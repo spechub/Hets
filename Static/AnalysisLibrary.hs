@@ -24,7 +24,8 @@ import Logic.Grothendieck
 import Common.Lib.Graph
 import Static.DevGraph
 import qualified Syntax.AS_Structured
-import Syntax.Parse_AS_Structured (lookupLogicName,library)
+import Syntax.Parse_AS_Structured (lookupLogicName)
+import Syntax.Parse_AS_Library(library)
 import Common.Lib.Parsec
 import Syntax.AS_Library
 import Static.AnalysisStructured

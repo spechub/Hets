@@ -17,7 +17,8 @@ import ATC.Sml_cats
 import Syntax.AS_Library
 import ATC.AS_Library
 
-import Syntax.Parse_AS_Structured
+--import Syntax.Parse_AS_Structured
+import Syntax.Parse_AS_Library
 import Common.Lib.Parsec
 import Comorphisms.LogicGraph
 import Common.ATerm.Lib

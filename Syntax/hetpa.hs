@@ -2,7 +2,9 @@ module Main
 
 where
 
-import Syntax.Parse_AS_Structured
+--import Syntax.Parse_AS_Architecture
+--import Syntax.Parse_AS_Structured
+import Syntax.Parse_AS_Library
 import System.Environment
 import Common.Lib.Parsec
 import Common.AnnoState

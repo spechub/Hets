@@ -21,6 +21,7 @@ import Common.AS_Annotation
 import Syntax.AS_Structured
 import Logic.Grothendieck
 
+-- Drift directive:
 {-! global : UpPos !-}
 
 data ARCH_SPEC_DEFN = Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) [Pos]
