@@ -70,7 +70,9 @@ ifneq ($(MAKECMDGOALS),check)
 ifneq ($(MAKECMDGOALS),apache_doc)
 ifneq ($(MAKECMDGOALS),clean_genRules)
 ifneq ($(MAKECMDGOALS),atctest2)
+ifneq ($(MAKECMDGOALS),hetana)
 include sources_hetcats.mk
+endif
 endif
 endif
 endif
@@ -282,6 +284,9 @@ bin_clean:
 	$(RM) hetpa
 	$(RM) hetana
 	$(RM) hetdg
+	$(RM) atctest2
+	$(RM) atctest
+	$(RM) Common/annos
 
 ### additonally removes *.d (dependency files) in every include directory
 ### also delete *.d.bak (dependency file backups)
@@ -357,7 +362,7 @@ atctest: ATC/ATCTest.hs ATC/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-atctest2: ATC/ATCTest2.hs Common/SimpPretty.hs Common/ATerm/*.hs Common/Lib/*.hs
+atctest2: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs Common/ATerm/*.hs Common/Lib/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
