@@ -19,7 +19,6 @@ import HasCASL.As
 import HasCASL.RawSym
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
