@@ -134,21 +134,25 @@ options =
     , Option ['h'] ["help", "usage"] (NoArg Help) 
       "show usage information"
     , Option ['i'] ["input-type"]  (ReqArg inp_type "TYPE")  
-      "TYPE of input file: gen_trm | gen_trm_baf | hetcasl (default) | casl (via cats)"
+      "TYPE of input file: tree.gen_trm(_baf)? | het(casl)? | casl"
     , Option ['O'] ["output-dir"]  (ReqArg (\x -> OutDir x) "DIR")  
       "destination directory for output files"
     , Option ['o'] ["output-types"] (ReqArg out_types "TYPE") 
       "TYPE of output files: hetcasl-latex | hetcasl-ascii | global-env"
-    , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR") 
-      "CASL library directory"
     , Option ['p'] ["just-parse"]  (NoArg (Analysis [None]))
       "skip static analysis - just parse"
+    , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR") 
+      "CASL library directory"
     ]
 
 -- a String describing the Options of hetcats
 hetcats_usage :: String
 hetcats_usage = usageInfo header options
     where header = "Usage: hetcats [OPTION...] file"
+
+-- custom error-message prepended to our usage info
+hetcats_error :: String -> IO String
+hetcast_error s = error (s ++ "\n" ++ hetcats_usage)
 
 -- parses the optional Argument to --verbose
 parse_verb :: Maybe String -- optional Argument to --verbose
@@ -159,19 +163,21 @@ parse_verb (Just s) = Verbose $
 				   []   -> error'
 				   [(i,"")] -> i
 				   _    -> error'
-    where error' = error $
-		   "\""++ s ++"\" is not a valid Int\n"
-			   ++ hetcats_usage
+    where error' = hetcats_error ("\""++ s ++"\" is not a valid Int")
 
--- Just the function to get the input-type right
+-- sets the correct input-type
 inp_type :: String -> Flag
-inp_type s | "gen-trm" `isPrefixOf` s = InType $ trm_type s
-	   | s == "casl"    = InType CASLIn
-	   | s == "hetcasl" = InType HetCASLIn
-	   | otherwise = error ("unknown input type: " ++ s ++ "\n" ++
-				hetcats_usage)
-    where trm_type trm | "baf" `isSuffixOf` trm = SML_Gen_ATerm BAF 
-		       | otherwise = SML_Gen_ATerm NonBAF
+inp_type s 
+    | s == "casl"                   = InType CASLIn
+    | s == "hetcasl"                = InType HetCASLIn
+    | s == "het"                    = InType HetCASLIn
+    | "gen_trm"      `isPrefixOf` s = InType $ trm_type s
+    | "tree.gen_trm" `isPrefixOf` s = InType $ trm_type s
+    | otherwise      = hetcats_error ("unknown input type: " ++ s)
+    where trm_type trm 
+	      | "baf" `isSuffixOf` trm = SML_Gen_ATerm BAF 
+	      | otherwise              = SML_Gen_ATerm NonBAF
+	      -- ouch: gen_trm_bogus_grrrrr_meep gives SML_Gen_ATerm NonBAF!
 
 -- sets the corect output type(s)
 out_types :: String -> Flag
@@ -181,8 +187,7 @@ out_types s | ',' `elem` s = case merge_out_types $ split_types s of
 	    | s == "hetcasl-latex"  = OutTypes [HetCASLOut Latex]
 	    | s == "hetcasl-ascii"  = OutTypes [HetCASLOut Ascii]
 	    | s == "global-env-xml" = OutTypes [Global_Env XML]
-	    | otherwise = error ("unknown output type: " ++ s ++ "\n" ++
-				 hetcats_usage)
+	    | otherwise = hetcats_error ("unknown output type: " ++ s)
     where split_types = map out_types . splitOn ',' 
 
 -- merges [OutTypes[a]] into OutTypes[a]
@@ -202,7 +207,7 @@ merge_out_types flags =
 hetcatsOpts :: [String] -> IO HetcatsOpts
 hetcatsOpts argv =
    case (getOpt Permute options argv) of
-      (o,n,[]  ) -> form_opt_rec (merge_out_types o) n
+      (opts,non_opts,[]  ) -> form_opt_rec (merge_out_types opts) non_opts
       (_,_,errs) -> fail (concat errs ++ hetcats_usage)
 
 form_opt_rec :: [Flag] -> [String] -> IO HetcatsOpts
