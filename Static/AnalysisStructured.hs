@@ -133,7 +133,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
       G_sign lid' sigma' <- return gsigma'
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_sign = G_sign lid' (empty_signature lid'), -- delta is empty
+            dgn_sign = gsigma',
             dgn_sens = G_l_sentence lid' [],
             dgn_origin = DGTranslation }
           [node] = newNodes 0 dg'

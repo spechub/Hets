@@ -257,7 +257,7 @@ legalMor mor =
   && legalSign sigma2
   && Map.foldWithKey
         (\s1 s2 b -> b && Set.member s1 (sortSet sigma1)
-                      && Set.member s2 (sortSet sigma2))
+                       && Set.member s2 (sortSet sigma2))
         True smap
   && Map.foldWithKey 
         (\(id1,t) (id2,k) b -> 
@@ -292,11 +292,12 @@ inducedFromMorphism rmap sigma = do
               (return Map.empty) sortsSigma
   let sigma' = 
         sigma {sortSet = Set.image (\s -> Map.find s sortMap) sortsSigma}
-  return Morphism { msource = sigma,
-                    mtarget = sigma',
-                    sort_map = sortMap,
-                    fun_map = Map.empty,
-                    pred_map = Map.empty }
+      mor = Morphism { msource = sigma,
+                   mtarget = sigma',
+                   sort_map = sortMap,
+                   fun_map = Map.empty,
+                   pred_map = Map.empty }
+  return mor
   where 
   sortsSigma = sortSet sigma
   mapSort s = 
