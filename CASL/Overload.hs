@@ -61,10 +61,10 @@ minExpFORMULA sign formula
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- is_unambiguous t                             -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
-        Existl_equation term1 term2 pos ->
+        Existl_equation term1 term2 _ ->
             minExpFORMULA_eq sign Existl_equation term1 term2
-        Strong_equation term1 term2 pos ->
-            minExpFORMULA_eq sign Strong_equation term2 term2
+        Strong_equation term1 term2 _ ->
+            minExpFORMULA_eq sign Strong_equation term1 term2
         Membership term sort pos        -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- return
@@ -95,7 +95,7 @@ minExpFORMULA sign formula
                     ++ (show term)
 
 {-----------------------------------------------------------
-    Minimal Expansions of a Predicate Application Term
+    Minimal Expansions of a Predicate Application Formula
 -----------------------------------------------------------}
 minExpFORMULA_pred :: Sign -> PRED_SYMB -> [TERM] -> Result FORMULA
 minExpFORMULA_pred sign predicate terms = do
@@ -155,7 +155,7 @@ minExpFORMULA_pred sign predicate terms = do
                 in b1 && b2 && (preds_equal || (preds_equiv && types_equal))
 
 {-----------------------------------------------------------
-    Minimal Expansions of a Predicate Application Term
+    Minimal Expansions of a Strong/Existl. Equation Formula
 -----------------------------------------------------------}
 minExpFORMULA_eq :: Sign -> (TERM -> TERM -> [Id.Pos] -> FORMULA)
                     -> TERM -> TERM -> Result FORMULA
@@ -176,11 +176,12 @@ minExpFORMULA_eq sign eq term1 term2 = do
         have_supersort terms
             = not $ Set.isEmpty                         -- ::    Bool
                 $ foldr Set.intersection Set.empty      -- ::  Set.Set SORT
-                $ map term_to_supersort terms           -- :: [Set.Set SORT]
+                $ map term_to_supersort                 -- :: [Set.Set SORT]
+                  terms
             where term_to_supersort = (flip supersortsOf sign) . term_sort
 
 {-----------------------------------------------------------
-    Minimal Expansions of a Term
+    Minimal Expansions of a TERM
 -----------------------------------------------------------}
 minExpTerm :: Sign -> TERM -> Result [[TERM]]
 minExpTerm sign term'
@@ -196,8 +197,7 @@ minExpTerm sign term'
         Cast term sort _
             -> minExpTerm_cast sign term sort
         Conditional term1 formula term2 _
-            -> error $ "not implemented ... yet"        -- conditional ?
-        -- FIXME: implement conditionals
+            -> minExpTerm_cond sign term1 formula term2
         Unparsed_term string _
             -> error $ "minExpTerm: Parser Error - Unparsed `Unparsed_term' "
                ++ string
@@ -290,20 +290,20 @@ minExpTerm_sorted sign term sort = do
 minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> Result [[TERM]]
 minExpTerm_op sign op terms = do
     expansions          <- mapM
-        (minExpTerm sign) terms                 -- :: [[[TERM]]]
+        (minExpTerm sign) terms                 -- ::       [[[TERM]]]
     permuted_exps       <- return
-        $ permute expansions                    -- :: [[[TERM]]]
+        $ permute expansions                    -- ::       [[[TERM]]]
     profiles            <- return
-        $ map get_profile permuted_exps         -- :: [[(OpType, [TERM])]]
+        $ map get_profile permuted_exps         -- ::  [[(OpType, [TERM])]]
     p                   <- return
-        $ concat                                -- :: [[(OpType, [TERM])]]
+        $ concat                                -- ::  [[(OpType, [TERM])]]
         $ map (equivalence_Classes op_eq)       -- :: [[[(OpType, [TERM])]]]
-          profiles                              -- :: [[(OpType, [TERM])]]
+          profiles                              -- ::  [[(OpType, [TERM])]]
     p'                  <- return
-        $ map (minimize sign) p                 -- :: [[(OpType, [TERM])]]
+        $ map (minimize_op sign) p              -- ::  [[(OpType, [TERM])]]
     return
-        $ qualifyTerms                          -- :: [[TERM]]
-        $ qualifyOps p'                         -- :: [[(TERM, SORT)]]
+        $ qualifyTerms                          -- ::        [[TERM]]
+        $ qualifyOps p'                         -- ::    [[(TERM, SORT)]]
     where
         name            :: OP_NAME
         name             = op_name op
@@ -325,12 +325,12 @@ minExpTerm_op sign op terms = do
               , (opRes op'))                                    -- ::  SORT
         get_profile     :: [[TERM]] -> [(OpType, [TERM])]
         get_profile cs
-            = [ (op', ts) |
-                op' <- ops,                                     -- :: OpType
-                ts <- (permute cs),                             -- :: [TERM]
-                zipped_all (leq_SORT sign)                      -- ::  Bool
-                    (map term_sort ts)                          -- :: [SORT]
-                    (opArgs op') ]                              -- :: [SORT]
+            = [ (op', ts) |                             -- :: (OpType, [TERM])
+                op'     <- ops,                         -- ::  OpType
+                ts      <- (permute cs),                -- ::  [TERM]
+                zipped_all (leq_SORT sign)              -- ::   Bool
+                    (map term_sort ts)                  -- ::  [SORT]
+                    (opArgs op') ]                      -- ::  [SORT]
         op_eq           :: (OpType, [TERM]) -> (OpType, [TERM]) -> Bool
         op_eq (op1,ts1) (op2,ts2)
             = let   w1 = opArgs op1                             -- :: [SORT]
@@ -358,7 +358,56 @@ minExpTerm_cast sign term sort = do
         $ [map (\ t -> (t, sort)) validExps]            -- :: [[(TERM, SORT)]]
 
 {-----------------------------------------------------------
-    Divide a Set (list) into equivalence classes w.r. to eq
+    Minimal Expansions of a Conditional Term
+-----------------------------------------------------------}
+minExpTerm_cond :: Sign -> TERM -> FORMULA -> TERM -> Result [[TERM]]
+minExpTerm_cond sign term1 formula term2 = do
+    expansions1
+        <- minExpTerm sign term1                -- ::       [[TERM]]
+    expansions2
+        <- minExpTerm sign term2                -- ::       [[TERM]]
+    expanded_formula
+        <- minExpFORMULA sign formula           -- ::       FORMULA
+    permuted_exps       <- return
+        $ permute [expansions1, expansions2]    -- ::      [[[TERM]]]
+    profiles            <- return
+        $ map get_profile permuted_exps         -- ::  [[([TERM], SORT)]]
+    p                   <- return
+        $ concat                                -- ::  [[([TERM], SORT)]]
+        $ map (equivalence_Classes eq)          -- :: [[[([TERM], SORT)]]]
+          profiles                              -- ::  [[([TERM], SORT)]]
+    p'                  <- return
+        $ map (minimize_cond sign) p            -- ::  [[([TERM], SORT)]]
+    return
+        $ qualifyTerms                          -- ::       [[TERM]]
+        $ qualifyConds expanded_formula p'      -- ::   [[(TERM, SORT)]]
+    where
+        have_supersort          :: [TERM] -> Bool
+        have_supersort           = not . Set.isEmpty . common_supersort
+        common_supersort        :: [TERM] -> Set.Set SORT
+        common_supersort terms
+            = foldr Set.intersection Set.empty          -- ::  Set.Set SORT
+                $ map term_to_supersort terms           -- :: [Set.Set SORT]
+            where term_to_supersort = (flip supersortsOf sign) . term_sort
+        eq                      :: ([TERM], SORT) -> ([TERM], SORT) -> Bool
+        eq (_, s1) (_, s2)
+            = (leq_SORT sign s1 s2) || (geq_SORT sign s1 s2)
+        qualifyConds            :: FORMULA -> [[([TERM], SORT)]] -> [[(TERM, SORT)]]
+        qualifyConds f           = map $ map (qualify_cond f)
+        qualify_cond            :: FORMULA -> ([TERM], SORT) -> (TERM, SORT)
+        qualify_cond f (ts, s)   = case ts of
+            [t1, t2]    -> (Conditional t1 f t2 [], s)
+            _           -> error
+                $ "Internal Error: wrong number of TERMs in qualify_cond!"
+        get_profile             :: [[TERM]] -> [([TERM], SORT)]
+        get_profile cs
+            = [ (c, s) |                                -- :: ([TERM], SORT)
+                c <- cs,                                -- ::  [TERM]
+                have_supersort c,                       -- ::   Bool
+                s <- Set.toList $ common_supersort c ]  -- ::   SORT
+
+{-----------------------------------------------------------
+    Divide a Set (List) into equivalence classes w.r. to eq
 -----------------------------------------------------------}
 -- also look below for Till's SML-version of this
 equivalence_Classes         :: (a -> a -> Bool) -> [a] -> [[a]]
@@ -402,18 +451,34 @@ qualifyTerms  = map (map qualify_term)
     For each C in P (see above), let C' choose _one_
     f:s \in C for each s minimal such that f:s \in C
 -----------------------------------------------------------}
-minimize :: Sign -> [(OpType, [TERM])] -> [(OpType, [TERM])]
-minimize sign ops_n_terms
+minimize_op :: Sign -> [(OpType, [TERM])] -> [(OpType, [TERM])]
+minimize_op sign ops_n_terms
     = concat $ map reduce ops_n_terms
     where
-        results        :: Set.Set SORT
-        results         = Set.fromList (map (opRes . fst) ops_n_terms)
-        lesserSorts    :: SORT -> Set.Set SORT
-        lesserSorts s   = Set.intersection results (subsortsOf s sign)
-        leastSort      :: SORT -> Bool
-        leastSort s     = Set.size (lesserSorts s) == 1
-        reduce         :: (OpType, [TERM]) -> [(OpType, [TERM])]
-        reduce x@(op,_) = if (leastSort (opRes op)) then [x] else []
+        results         :: Set.Set SORT
+        results          = Set.fromList (map (opRes . fst) ops_n_terms)
+        lesserSorts     :: SORT -> Set.Set SORT
+        lesserSorts s    = Set.intersection results (subsortsOf s sign)
+        leastSort       :: SORT -> Bool
+        leastSort s      = Set.size (lesserSorts s) == 1
+        reduce          :: (OpType, [TERM]) -> [(OpType, [TERM])]
+        reduce x@(op,_)  = if (leastSort (opRes op)) then [x] else []
+
+{-----------------------------------------------------------
+    Workalike for minimize_op, but used inside m_e_t_cond
+-----------------------------------------------------------}
+minimize_cond :: Sign -> [([TERM], SORT)] -> [([TERM], SORT)]
+minimize_cond sign terms_n_sort
+    = concat $ map reduce terms_n_sort
+    where
+        sorts           :: Set.Set SORT
+        sorts            = Set.fromList (map snd terms_n_sort)
+        lesserSorts     :: SORT -> Set.Set SORT
+        lesserSorts s    = Set.intersection sorts (subsortsOf s sign)
+        leastSort       :: SORT -> Bool
+        leastSort s      = Set.size (lesserSorts s) == 1
+        reduce          :: ([TERM], SORT) -> [([TERM], SORT)]
+        reduce x@(_,s)   = if (leastSort s) then [x] else []
 
 term_sort       :: TERM -> SORT
 term_sort term'  = case term' of
