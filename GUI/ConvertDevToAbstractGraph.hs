@@ -966,7 +966,7 @@ getDGLinkTypeAux HidingDef = "hidingdef"
 getDGLinkTypeAux (FreeDef _) = "def"
 getDGLinkTypeAux (CofreeDef _) = "def"
 getDGLinkTypeAux (LocalThm thmLinkStatus _ _) = 
-    "local"++(getThmType thmLinkStatus)
+    "local"++(getThmType thmLinkStatus)++"thm"
 getDGLinkTypeAux (GlobalThm thmLinkStatus _ _) = 
     (getThmType thmLinkStatus)++"thm"
 getDGLinkTypeAux (HidingThm _ thmLinkStatus) =
@@ -1146,16 +1146,10 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 		               Map.insert descr dgEdge (abstr2dgEdge convMaps)}
                        applyChangesAux gid libname graphInfo (descr+1)
 			 	 newConvMaps changes
-	          Just _ -> 
--- -- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
--- Momentane Lösung: ignorieren...
-	           applyChangesAux gid libname graphInfo eventDescr
-			         convMaps changes
+	          Just msg -> 
+                   error ("Could not add link from " ++ (show src) ++ " to " ++ (show tgt) ++ ": " ++ (show msg))
            _ -> 
--- -- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
--- Momentane Lösung: ignorieren...
-	     applyChangesAux gid libname graphInfo eventDescr
-		 	         convMaps changes
+	       error ("Could not add link " ++ (show src) ++ " to " ++ (show tgt) ++ ": illigal end nodes")
    
 
     DeleteEdge (src,tgt,edgelab) -> 
@@ -1174,10 +1168,8 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 							   convMaps)}
  		        applyChangesAux gid libname graphInfo (descr+1)
 				 newConvMaps changes
--- -- @@@ was machen, wenn Entfernen nicht erfolgreich?! @@@
--- Momentane Lösung: abbrechen...
- 		   Just _ -> error ("applyChangesAux: could not delete edge "
-			         ++ (show abstrEdge))
+ 		   Just msg -> error ("applyChangesAux: could not delete edge "
+			         ++ (show abstrEdge) ++ ": " ++msg)
 
 	    Nothing -> error ("applyChangesAux: deleted edge from " 
 			      ++ (show src) ++ " to " ++ (show tgt) 
