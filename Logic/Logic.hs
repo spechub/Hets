@@ -242,6 +242,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          signature_union :: lid -> sign -> sign -> Result sign
          morphism_union :: lid -> morphism -> morphism -> Result morphism
          final_union :: lid -> sign -> sign -> Result sign
+           -- see CASL reference manual, III.4.1.2
          is_subsig :: lid -> sign -> sign -> Bool
          inclusion :: lid -> sign -> sign -> Result morphism
          generated_sign, cogenerated_sign :: 

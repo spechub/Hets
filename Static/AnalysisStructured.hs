@@ -18,11 +18,12 @@
    To appear in the CASL book.
 
    Todo:
-   Combine signature fragments into whole signatures
+   Improve efficiency by storing local signature fragments only
 
    Name views in devgraphs?
 
    Check that translations and reductions do not effect local env
+   (Implement new semantics for revealing here)
 
    Unions (already in the parser) need unions of logics  
      = suprema in the lattice of default logic inclusions!
@@ -977,7 +978,7 @@ mapID pos idmap id@(Id toks comps pos1) =
     Just ids -> case Set.size ids of
       0 -> return id
       1 -> return $ Set.findMin ids
-      2 -> pplain_error id 
+      _ -> pplain_error id 
              (ptext "Identifier component " <+> printText id
               <+> ptext "can be mapped in various ways:"
               <+> printText ids) pos
