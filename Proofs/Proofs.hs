@@ -527,22 +527,22 @@ hideTheoremShiftAux
   case (findProofBasisForHideTheoremShift dgraph ledge) of
     Nothing -> hideTheoremShiftAux libEnv dgraph (rules,changes) list
     Just (fstEdge,sndEdge) ->
-      hideTheoremShiftAux libEnv newDgraph
+      hideTheoremShiftAux libEnv dgraph
 	  (newRules,((InsertEdge fstEdge):
-		     ((InsertEdge sndEdge):newChanges))) list
+		     ((InsertEdge sndEdge):changes))) list
 
   where
     morphism = dgl_morphism edgeLab
     auxGraph = delLEdge ledge dgraph
     (HidingThm hidingMorphism _) = (dgl_type edgeLab)
     newRules = (HideTheoremShift ledge):rules
-    (newDgraph,newEdge) = changeDGraph (fstEdge, sndEdge) ledge
-    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+--    (newDgraph,newEdge) = changeDGraph (fstEdge, sndEdge) ledge
+ --   newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
 
-changeDGraph :: DGraph -> (LEdge DGLinkLab, LEdge DGLinkLab) -> GMorphism 
-	     -> DGraph
-changeDGraph dgraph (fstEdge, sndEdge) (src,tgt,edgeLab) =
+changeDGraph :: DGraph -> (LEdge DGLinkLab, LEdge DGLinkLab) -> LEdge DGLinkLab
+	     -> (DGraph, LEdge DGLinkLab)
+changeDGraph dgraph (fstEdge@(_,_,fstLab), sndEdge@(_,_,sndLab)) ledge@(src,tgt,edgeLab) =
       (newDgraph, newEdge)
   where
     morphism = dgl_morphism edgeLab
@@ -551,7 +551,7 @@ changeDGraph dgraph (fstEdge, sndEdge) (src,tgt,edgeLab) =
     newEdge = (src,
 	       tgt,
 	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (HidingThm hidingMorphism (Proven [fstEdge,sndEdge])),
+		       dgl_type = (HidingThm hidingMorphism (Proven [fstLab,sndLab])),
 		       dgl_origin = DGProof}
                )
     newDgraph = insEdge sndEdge (insEdge fstEdge (insEdge newEdge auxGraph))
@@ -578,7 +578,7 @@ findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
     sndPath = snd (head pathPairsFilteredByMorphism)
 
 
-createEdgeForPath :: [LEdge DGLinkLab] -> Maybe (LEdge DGLinkLab)
+createEdgeForPath :: [LEdge DGLinkLab] -> LEdge DGLinkLab
 createEdgeForPath path =
   case (calculateMorphismOfPath path) of
     Just morphism -> (getSourceNode (head path),
@@ -589,7 +589,7 @@ createEdgeForPath path =
 			                -- conservativity conservStatus
 			      dgl_origin = DGProof}
 		     )    
-    Nothing -> error ("Could not determine morphism of path "2 ++ (show path))
+    Nothing -> error ("Could not determine morphism of path " ++ (show path))
 
 -- ----- DEBUGGING METHODS -----
 prettyPrintPossiblePathPairs :: DGraph -> GMorphism -> GMorphism
