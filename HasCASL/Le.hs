@@ -90,7 +90,7 @@ isVarDefn o = case opDefn o of
 	      VarDefn -> True
 	      _       -> False 
 
-newtype OpInfos = OpInfos { opInfos :: [OpInfo] } deriving (Show, Eq)
+data OpInfos = OpInfos { opInfos :: [OpInfo] } deriving (Show, Eq)
 
 type Assumps = Map UninstOpId OpInfos
 
