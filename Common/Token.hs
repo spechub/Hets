@@ -265,4 +265,4 @@ colonST = pToken (string colonS)
 
 -- | parse the product key sign ('prodS' or 'timesS')
 crossT :: GenParser Char st Token
-crossT = try (pToken (toKey prodS <|> toKey timesS) <?> "cross")
+crossT = pToken (toKey prodS <|> toKey timesS) <?> "cross"
