@@ -44,6 +44,7 @@ import Common.Result
 import Common.Id
 import Common.Named
 import Data.Dynamic
+import Common.ATerm.Lib
 
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
@@ -81,7 +82,7 @@ data G_l_sentence_list = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
+          sign morphism symbol raw_symbol proof_tree  =>
   G_l_sentence lid [Named sentence] 
 
 data G_sign = forall lid sublogics
@@ -115,7 +116,7 @@ data G_symbol = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
+          sign morphism symbol raw_symbol proof_tree  =>
   G_symbol lid symbol 
 
 instance Show G_symbol where
@@ -130,7 +131,7 @@ data G_symb_items_list = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
+          sign morphism symbol raw_symbol proof_tree  =>
         G_symb_items_list lid [symb_items] 
 
 instance Show G_symb_items_list where
@@ -152,7 +153,7 @@ data G_symb_map_items_list = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
+          sign morphism symbol raw_symbol proof_tree  =>
         G_symb_map_items_list lid [symb_map_items] 
 
 instance Show G_symb_map_items_list where
@@ -174,7 +175,7 @@ data G_diagram = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
+          sign morphism symbol raw_symbol proof_tree  =>
         G_diagram lid (Diagram sign morphism) 
 
 data G_sublogics = forall lid sublogics
@@ -229,6 +230,12 @@ lookupLogic error_prefix logname (logics,_) =
     case Map.lookup logname  logics of
     Nothing -> error (error_prefix++"logic "++logname++" unknown")
     Just lid -> lid
+
+lookupComorphism :: String -> String -> LogicGraph -> AnyComorphism
+lookupComorphism error_prefix coname (_,comorphisms) =
+    case Map.lookup coname comorphisms of
+    Nothing -> error (error_prefix++"logic "++coname++" unknown")
+    Just cid -> cid
 
 
 {- This does not work due to needed ordering:
@@ -392,3 +399,8 @@ homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
 
 inclusion :: G_sign -> G_sign -> GMorphism
 inclusion (G_sign _lid1 _sigma1) (G_sign _lid2 _sigma2) = error "inclusion"
+
+
+
+
+
