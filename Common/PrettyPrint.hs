@@ -366,49 +366,39 @@ renderText mi d = fullRender (mode           textStyle')
 -- moved instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
 instance PrettyPrint Token where
     printText0 _ = ptext . tokStr
-
     printLatex0 _ = printToken_latex casl_axiom_latex
+
+isChar :: Token -> Bool
+isChar t = "\'" `isPrefixOf` tokStr t 
 
 printToken_latex :: (String -> Doc) -> Token -> Doc
 printToken_latex strConvDoc_fun t =
-    let s =  tokStr t
-	printToken = 
-	    if isPlace t 
-	    then strConvDoc_fun . escape_latex 
-	    else 
-	       if  all isAlphaNum s  
-		|| '\\' `elem` escape_latex s
-		|| head s == '\''
-	       then (\x -> latex_macro "\\Id{"<>x<>latex_macro "}") 
-			. strConvDoc_fun . escape_latex
-	       else (\x -> latex_macro "\\Ax{"<>x<>latex_macro "}") 
-			. strConvDoc_fun
-	    in printToken s
+    let s = tokStr t
+	esc = escape_latex s
+	in if s `elem` map (:[]) "[](),;" then strConvDoc_fun s 
+	   else if isPlace t || s `elem` map (:[]) "{}" then strConvDoc_fun esc
+	   else if  all isAlphaNum s  
+		|| '\\' `elem` esc
+		|| isChar t
+		then (\x -> latex_macro "\\Id{"<>x<>latex_macro "}") 
+			 $ strConvDoc_fun esc
+		else (\x -> latex_macro "\\Ax{"<>x<>latex_macro "}") 
+			 $ strConvDoc_fun s
 
 instance PrettyPrint Id where
     printText0  ga i = 
-	printId printText0  comma       brackets       ga i
+	printId printText0 ga i
     printLatex0 ga i = 
-	printId printLatex0 comma_latex brackets_latex ga i
+	printId printLatex0 ga i
 
 printId :: (GlobalAnnos -> Token -> Doc)
-	   -> Doc -- ^ a comma seperator
-	   -> (Doc -> Doc) -- ^ a function that surrounds the given Doc 
-			-- with brackets
 	   -> GlobalAnnos -> Id -> Doc
-printId pf comma_fun brackets_fun ga (Id tops ids _) =
-    let (toks,places) = splitMixToken tops
-	glue_tok = fcat . (map (pf ga))
-	comp = noPrint (null ids) $
-		   brackets_fun $ fcat $ 
-			punctuate comma_fun $ map 
-		   (printId pf comma_fun brackets_fun ga) ids
-	in  fcat [glue_tok toks, comp, glue_tok places]
-
--- some useful instances ---------------------------------------------
-
-{-
-instance PrettyPrint String where
-    printText0  _ = ptext 
-    printLatex0  _ = error "use a function from module LaTeX_funs" 
--}
+printId pf ga (Id tops ids ps) =
+    let glue_tok = hcat . map (pf ga)
+	in if null ids then glue_tok tops 
+	   else let (toks, places) = splitMixToken tops
+		    comp = pf ga (mkSimpleId "[") <> 
+			   fcat (punctuate (pf ga $ mkSimpleId ",") 
+				$ map (printId pf ga) ids)
+			   <> pf ga (mkSimpleId "]")
+		    in fcat [glue_tok toks, comp, glue_tok places]
