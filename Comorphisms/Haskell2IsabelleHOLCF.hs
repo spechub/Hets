@@ -51,7 +51,7 @@ import Haskell.Hatchet.FiniteMaps as FiniteMaps
 import Haskell.Hatchet.Representation as Rep
 
 -- Isabelle
-import Isabelle.IsaSign4 as IsaSign
+import Isabelle.IsaSign as IsaSign
 -- import Isabelle.Logic_Isabelle
 -- import Isabelle.IsaPrint
 
