@@ -26,10 +26,8 @@ import qualified Common.Lib.Map as Map
 import Common.AS_Annotation
 
 import HasCASL.As
-import HasCASL.Le
-import HasCASL.Unify
 import HasCASL.AsUtils
-import HasCASL.ProgEq
+import HasCASL.Le
 
 import Haskell.Hatchet.HsSyn
 
@@ -57,21 +55,21 @@ translateTypeInfo :: Env -> (TypeId, TypeInfo) -> [HsDecl]
 translateTypeInfo env (tid,info) = 
   let hsname = mkHsIdent UpperId tid
       ddecl = HsDataDecl nullLoc
-	               [] -- empty HsContext
-	               hsname
-		       (kindToTypeArgs 1 $ typeKind info)
-		       [(HsConDecl nullLoc hsname [])]
-		       derives
+                       [] -- empty HsContext
+                       hsname
+                       (kindToTypeArgs 1 $ typeKind info)
+                       [(HsConDecl nullLoc hsname [])]
+                       derives
   in case typeDefn info of
        NoTypeDefn -> case superTypes info of
          [] -> [ddecl]
-	 [si] -> if isSameId tid si then [ddecl] else 
-		 [typeSynonym hsname si]
+         [si] -> if isSameId tid si then [ddecl] else 
+                 [typeSynonym hsname si]
          si : _ -> [typeSynonym hsname si]
        Supertype _ ts _ ->
-	   [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
+           [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
        AliasTypeDefn ts -> 
-	   [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
+           [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
        DatatypeDefn de -> [sentence $ translateDt env de] 
        TypeVarDefn _-> [] -- ignore others
        PreDatatype -> [] -- ignore others
@@ -92,7 +90,7 @@ kindToTypeArgs i k = case k of
     Downset _ _ rk _ -> kindToTypeArgs i rk
     FunKind _ kr _ -> HsIdent ("a" ++ show i) : kindToTypeArgs (i+1) kr
     Intersection l _ -> if null l then []
-			 else kindToTypeArgs i $ head l
+                         else kindToTypeArgs i $ head l
     ExtKind ek _ _ -> kindToTypeArgs i ek
 
 getAliasArgs :: TypeScheme -> [HsName]
@@ -107,26 +105,26 @@ getAliasType (TypeScheme _ t _) = translateType t
 
 -- | Translation of an alternative constructor for a datatype definition.
 translateAltDefn :: Env -> DataPat -> [TypeArg] -> IdMap -> AltDefn 
-		 -> [HsConDecl]
+                 -> [HsConDecl]
 translateAltDefn env dt args im (Construct muid origTs p _) = 
     let ts = map (mapType im) origTs in
     case muid of
     Just uid -> let sc = TypeScheme args (getConstrType dt p ts) []
                     (UpperId, UnQual ui) = translateId env uid sc
-		in [HsConDecl nullLoc ui $ map (HsBangedTy . translateType) ts]
+                in [HsConDecl nullLoc ui $ map (HsBangedTy . translateType) ts]
     Nothing -> []
 
 translateDt :: Env -> DataEntry -> Named HsDecl
 translateDt env (DataEntry im i _ args alts) = 
-   	 let j = Map.findWithDefault i i im in
+         let j = Map.findWithDefault i i im in
          NamedSen ("ga_" ++ showId j "") $
          HsDataDecl nullLoc
-	               [] -- empty HsContext
-	               (mkHsIdent UpperId j)
-		       (map getArg args) -- type arguments
-		       (concatMap (translateAltDefn env (j, args, star)
-				   args im) alts)
-		       derives
+                       [] -- empty HsContext
+                       (mkHsIdent UpperId j)
+                       (map getArg args) -- type arguments
+                       (concatMap (translateAltDefn env (j, args, star)
+                                   args im) alts)
+                       derives
 
 
 -------------------------------------------------------------------------
@@ -161,13 +159,13 @@ translateType t =
   FunType t1 _arr t2 _ -> HsTyFun (translateType t1) (translateType t2)
   ProductType tlist _ -> if null tlist 
                then HsTyCon (UnQual (HsIdent "Bool"))
-	       else HsTyTuple (map translateType tlist)
+               else HsTyTuple (map translateType tlist)
   LazyType lt _ -> translateType lt
   KindedType kt _kind _ -> translateType kt
   TypeAppl t1 t2 -> HsTyApp (translateType t1) (translateType t2)
   TypeName tid _kind n -> 
       if n == 0 then
-	 HsTyCon $ snd $ mkUnQual UpperId tid
+         HsTyCon $ snd $ mkUnQual UpperId tid
       else HsTyVar $ mkHsIdent LowerId tid
   _ -> error ("translateType: unexpected type: " ++ show t)
 
@@ -182,8 +180,8 @@ translateId env uid sc =
       let oid = findUniqueId env uid sc
       in case oid of
         Just (i, oi) -> if isConstructor oi then mkUnQual UpperId i
-			else mkUnQual LowerId i
-	_ -> mkUnQual LowerId uid -- variable
+                        else mkUnQual LowerId i
+        _ -> mkUnQual LowerId uid -- variable
  
 -- | Converts a term in HasCASL to an expression in haskell
 translateTerm :: Env -> Term -> HsExp
@@ -191,7 +189,7 @@ translateTerm env t =
   let undef = HsVar $ UnQual $ HsIdent "undefined" in
   case t of
     QualVar (VarDecl v ty _ _) -> 
-	let (LowerId, i) = translateId env v $ simpleTypeScheme ty in HsVar i
+        let (LowerId, i) = translateId env v $ simpleTypeScheme ty in HsVar i
     QualOp _ (InstOpId uid _ _) sc _ -> 
     -- The identifier 'uid' may have been renamed. To find its new name,
     -- the typescheme 'ts' is tested for unifiability with the 
@@ -200,7 +198,7 @@ translateTerm env t =
       let (c, ui) = translateId env uid sc
       in case c of
         UpperId -> HsCon ui
-	LowerId -> HsVar ui
+        LowerId -> HsVar ui
     ApplTerm t1 t2 _ -> let at = translateTerm env t2 in
        HsApp (translateTerm env t1) $ (case at of 
        HsTuple _ -> id
@@ -217,46 +215,46 @@ translateTerm env t =
     LambdaTerm pats _part t1 _ -> 
         HsLambda nullLoc
                  (map (translatePattern env) pats)
-	         (translateTerm env t1)
+                 (translateTerm env t1)
     CaseTerm t1 progeqs _ -> 
         HsCase (translateTerm env t1)
-	       (map (translateCaseProgEq env) progeqs)
+               (map (translateCaseProgEq env) progeqs)
 
     LetTerm _ progeqs t1 _ -> 
         HsLet (map (translateLetProgEq env) progeqs)
-	      (translateTerm env t1)
+              (translateTerm env t1)
     _ -> error ("translateTerm: unexpected term: " ++ show t)
 
 -- | Conversion of patterns form HasCASL to haskell.
 translatePattern :: Env -> Pattern -> HsPat
 translatePattern env pat = case pat of
       QualVar (VarDecl v ty _ _) -> 
-	  if show v == "_" then HsPWildCard else
-	  let (c, UnQual i) = translateId env v $ simpleTypeScheme ty
-	      in case c of 
-		 LowerId -> HsPVar i
-		 _ -> error ("unexpected constructor as variable: " ++ show v) 
+          if show v == "_" then HsPWildCard else
+          let (c, UnQual i) = translateId env v $ simpleTypeScheme ty
+              in case c of 
+                 LowerId -> HsPVar i
+                 _ -> error ("unexpected constructor as variable: " ++ show v) 
       QualOp _ (InstOpId uid _t _p) sc _ -> 
         let (_, ui) = translateId env uid sc
-	in HsPApp ui []
+        in HsPApp ui []
       ApplTerm p1 p2 _ -> 
-	  let tp = translatePattern env p1
-	      a = translatePattern env p2
-	      in case tp of
+          let tp = translatePattern env p1
+              a = translatePattern env p2
+              in case tp of
                  HsPApp u os -> HsPParen $ HsPApp u (os ++ [a])
-		 HsPParen (HsPApp u os) -> HsPParen $ HsPApp u (os ++ [a])
-		 _ -> error ("problematic application pattern " ++ show pat)
+                 HsPParen (HsPApp u os) -> HsPParen $ HsPApp u (os ++ [a])
+                 _ -> error ("problematic application pattern " ++ show pat)
       TupleTerm pats _ -> 
-	  HsPTuple $ map (translatePattern env) pats
+          HsPTuple $ map (translatePattern env) pats
       TypedTerm p OfType _ty _ -> translatePattern env p 
                                  --the type is implicit
       --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
       AsPattern (VarDecl v ty _ _) p _ -> 
-	    let (c, UnQual i) = translateId env v $ simpleTypeScheme ty
-		hp = translatePattern env p
-	    in case c of 
-	       LowerId ->  HsPAsPat i hp
-	       _ -> error ("unexpected constructor as @-variable: " ++ show v)
+            let (c, UnQual i) = translateId env v $ simpleTypeScheme ty
+                hp = translatePattern env p
+            in case c of 
+               LowerId ->  HsPAsPat i hp
+               _ -> error ("unexpected constructor as @-variable: " ++ show v)
       _ -> error ("translatePattern: unexpected pattern: " ++ show pat)
 
 
@@ -264,17 +262,17 @@ translatePattern env pat = case pat of
 translateCaseProgEq :: Env -> ProgEq -> HsAlt
 translateCaseProgEq env (ProgEq pat t _) = 
   HsAlt nullLoc
-	(translatePattern env pat)
-	(HsUnGuardedAlt (translateTerm env t))
-	[]
+        (translatePattern env pat)
+        (HsUnGuardedAlt (translateTerm env t))
+        []
 
 -- | Translation of a program equation of a let term in HasCASL
 translateLetProgEq :: Env -> ProgEq -> HsDecl
 translateLetProgEq env (ProgEq pat t _) = 
   HsPatBind nullLoc
-	    (translatePattern env pat)
-	    (HsUnGuardedRhs (translateTerm env t))
-	    []
+            (translatePattern env pat)
+            (HsUnGuardedRhs (translateTerm env t))
+            []
 
 -- | Translation of a toplevel program equation
 translateProgEq :: Env -> ProgEq -> HsDecl
@@ -282,17 +280,17 @@ translateProgEq env (ProgEq pat t _) =
     case getAppl pat of
     Just (uid, sc, args) -> 
         let (_, ui) = translateId env uid sc
-	in HsFunBind [HsMatch nullLoc ui
-	             (map (translatePattern env) args) -- [HsPat]
-	             (HsUnGuardedRhs $ translateTerm env t) -- HsRhs
-	             []]
+        in HsFunBind [HsMatch nullLoc ui
+                     (map (translatePattern env) args) -- [HsPat]
+                     (HsUnGuardedRhs $ translateTerm env t) -- HsRhs
+                     []]
     Nothing -> error ("translateLetProgEq: no toplevel id: " ++ show pat)
 
 translateSentence ::  Env -> Named Sentence -> [Named HsDecl] 
 translateSentence env sen = case sentence sen of
     DatatypeSen dt -> map (translateDt env) dt
     ProgEqSen _ _ pe -> [NamedSen (senName sen) 
-			$ translateProgEq env pe]
+                        $ translateProgEq env pe]
     _ -> []
 
 -------------------------------------------------------------------------
@@ -308,25 +306,25 @@ nullLoc = SrcLoc 1 0
 functionUndef :: HsName -> HsDecl
 functionUndef s = 
     HsPatBind nullLoc
-	      (HsPVar s)
-	      (HsUnGuardedRhs (HsVar (UnQual (HsIdent "undefined"))))
-	      []
+              (HsPVar s)
+              (HsUnGuardedRhs (HsVar (UnQual (HsIdent "undefined"))))
+              []
 
 -- | remove dummy decls given by sentences
 cleanSig :: [HsDecl] -> [Named HsDecl] -> [HsDecl]
 cleanSig ds sens = 
     let dds = foldr ( \ nd l -> case sentence nd of
-		      HsDataDecl _ _ n _ _ _ -> n : l
-		      _ -> l) [] sens
-	funs = foldr ( \ nd l -> case sentence nd of
-		      HsFunBind (HsMatch _ n _ _ _ : _) -> n : l
-		      _ -> l) [] sens
+                      HsDataDecl _ _ n _ _ _ -> n : l
+                      _ -> l) [] sens
+        funs = foldr ( \ nd l -> case sentence nd of
+                      HsFunBind (HsMatch _ n _ _ _ : _) -> n : l
+                      _ -> l) [] sens
     in filter ( \ hs -> case hs of 
         HsDataDecl _ _ n _ _ _ -> n `notElem` dds
         HsTypeDecl _ n _ _ -> n `notElem` dds
         HsPatBind _ (HsPVar n) _ _ -> UnQual n `notElem` funs
-	_ -> True)
+        _ -> True)
        ds 
 derives :: [HsQName]
 derives = [(UnQual $ HsIdent "Show"), (UnQual $ HsIdent "Eq"),
-	   (UnQual $ HsIdent "Ord")] 
+           (UnQual $ HsIdent "Ord")] 
