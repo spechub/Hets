@@ -11,11 +11,6 @@ Portability :  portable
    Interface for Isabelle theorem prover.
 -}
 
-{- todo
-  remove axioms/theorems keyword when formula list is empty
-  datatypes
--}
-
 module Isabelle.IsaProve where
 
 import Logic.Prover
@@ -28,12 +23,14 @@ import Common.PrettyPrint
 import Data.List
 import Data.Maybe
 
--- import TextDisplay
--- import Configuration
+import Configuration
+
+import System.Posix.IO
+import ChildProcess
 
 isabelleProver :: Prover Sign Sentence () ()
 isabelleProver =
-     Prover { prover_name ="Isabelle",
+     Prover { prover_name = "Isabelle",
               prover_sublogic = "Isabelle",
               prove = isaProve
             }
@@ -43,23 +40,37 @@ isabelleProver =
 isaProve :: String -> (Sign,[Named Sentence]) -> [Named Sentence] 
               -> IO([Proof_status Sentence ()])
 isaProve thName (sig,axs) goals = do
-  let disAxs = disambiguateSens [] $ nameSens $ transSens axs
-      showAxs = if null disAxs then ""
-                 else "axioms\n"++(concat $ map ((++"\n") . showSen) disAxs)
-      showGoals = concat 
-         $ map (("theorem "++) . (++"\noops\n\n") . showSen) 
-                  $ disambiguateSens disAxs $ nameSens $ transSens goals
-      getFileName = reverse . fst . break (=='/') . reverse
-      showTheory = "theory " ++ getFileName thName ++ " = " 
-                   ++ showPretty sig "\n\n" 
-                   ++ showAxs ++ "\n\n" ++ showGoals
-                   ++ "\nend\n"
-  writeFile (thName++".thy") showTheory
-  putStrLn 
-  -- createTextDisplay thName 
-          ("Wrote Isabelle/Isar theory "++thName++".thy") 
-  --                    [size(50,10)]
+  writeFile (thName++".thy") showTheory 
+  isa <- newChildProcess "/home/linux-bkb/bin/Isabelle" [arguments (["/home/cofi/sonja/HetCATS/Comorphisms/MainHC.thy"]++[thName++".thy"])]
+--  writeFile (thName++".thy") (showTheory (writeTo isa))
+  msgs <- readProofs isa
+  closeChildProcessFds isa
   return [] -- ??? to be implemented
+  where
+      disAxs = disambiguateSens [] $ nameSens $ transSens axs
+      showLemma = concat $ map ((++"\n") . formLemmas) disAxs
+      showAxs = concat $ map ((++"\n") . showSen) disAxs
+      disGoals = disambiguateSens disAxs $ nameSens $ transSens goals
+      showGoals = concat 
+         $ map showGoal disGoals
+      getFileName = reverse . fst . break (=='/') . reverse
+      showGoal goal = (("theorem "++) . -- (++(ipc (show fd) (senName goal))) .
+                      (++"\noops\n") . showSen) goal
+      showTheory = "theory " ++ getFileName thName ++ " = " 
+                   ++ showPretty sig "\n\naxioms\n" 
+                   ++ showAxs ++ "\n" ++ showLemma ++ "\n\n" ++ showGoals --fd
+                   ++ "\nend\n"
+      -- ipc fd thmName = "\nML \" writeArr("++ fd ++ ", {Pretty.string_of(pretty_proof_of \""++ thmName ++"\") , 0, None})\"\n\n"
+
+readProofs :: ChildProcess -> IO [String]
+readProofs = rP []
+
+rP :: [String] -> ChildProcess -> IO [String]
+rP s cp = do
+  msg <- readMsg cp
+  case msg of
+     "EOF" -> return s
+     _ -> rP (s++[msg]) cp
 
 -- translate special characters in sentence names
 transSens :: [Named a] -> [Named a]
@@ -92,3 +103,14 @@ nameSens sens =
   where nameSen (sen,no) = if senName sen == "" 
                               then sen{senName = "Ax"++show no}
                               else sen
+
+-- form a lemmas from given axiom and add them both to Isabelles simplifier
+formLemmas :: Named a -> String
+formLemmas sen = 
+  let (sn, ln) = lemmaName (senName sen)
+   in
+     "lemmas " ++ ln ++ " = " ++ sn ++ " [simplified]\n" ++
+     dec ln ++ "\n" ++ dec sn
+  where 
+  lemmaName s = (s, s++"a")
+  dec s = "declare " ++ s ++ "[simp]"
