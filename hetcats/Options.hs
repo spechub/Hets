@@ -7,12 +7,8 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Datatypes for options, a list of options hets understands.
-   Useful functions to parse and check the user-provided functions
-   and for filling in default values.
-
-   A record datatype for fast and easy access and modification
-   extension of the options. 
+   Datatypes for options that hets understands.
+   Useful functions to parse and check user-provided values.
 -}
 
 {- Maybe TODO:
@@ -32,8 +28,9 @@ module Options ( defaultHetcatsOpts
                , HetcatsOpts(..)
                , GuiType(..)
                , InType(..)
-               , CASLAmalgOpt(..)
                , AnaType(..)
+               , CASLAmalgOpt(..)
+               , RawOpt(..)
                , OutType(..)
                , WebType(..)
                , HetOutFormat(..)
