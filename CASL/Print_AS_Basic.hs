@@ -13,7 +13,7 @@ Portability :  non-portable (rank-2-polymorphism)
 
 module CASL.Print_AS_Basic where
 
---import Debug.Trace
+
 
 import Data.List (mapAccumL)
 import Data.Char (isDigit)
@@ -31,8 +31,9 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 
-trace :: String -> a -> a
-trace _ a = a
+import Debug.Trace
+--trace :: String -> a -> a
+--trace _ a = a
 
 instance PrettyPrint BASIC_SPEC where
     printText0 ga (Basic_spec l) = 
@@ -143,7 +144,7 @@ printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
 				    printAnnotationList_Latex0 
 				    (<\+>)
 				    (latex_macro "\\`") ga ras
-        in  las' $+$ fsep_latex [i',la] $$ ras'
+        in  {-trace (show i)-} (las' $+$ fsep_latex [i',la] $$ ras')
 
 
 instance PrettyPrint SIG_ITEMS where
@@ -569,7 +570,7 @@ instance PrettyPrint TERM where
 	parens_latex $ hc_sty_id varS 
 			 <\+> printLatex0 ga n 
 			 <\+> colon_latex <\+> printLatex0 ga t
-    printLatex0 ga (Application o l _) = 
+    printLatex0 ga ap@(Application o l _) = 
 	let (o_id,isQual) = 
 		case o of
 		       Op_name i          -> (i,False)
@@ -579,7 +580,8 @@ instance PrettyPrint TERM where
 	     print_prefix_appl_latex ga o' l
 	   else 
 	     if isLiteral ga o_id l then
-	       print_Literal_latex ga o_id l
+	       {-trace ("print_Application: "++show ap)-}
+	       (print_Literal_latex ga o_id l)
 	     else
 	       condPrint_Mixfix_latex ga o_id l
     printLatex0 ga (Sorted_term t s _) = 
@@ -867,7 +869,7 @@ print_Literal pf parens_fun
     | isSignedNumber ga li ts = let [t_ts] = ts
 				in pf ga li <> 
 				       ((uncurry p_l) (splitAppl t_ts))
-    | isNumber ga li ts = hcat $ map (pf ga) $ toksNumber li
+    | isNumber ga li ts = pf ga $ tokNumber li
     | isFrac   ga li ts = let [lt,rt] = ts
 			      (lni,lnt) = splitAppl lt
 			      (rni,rnt) = splitAppl rt
@@ -896,12 +898,12 @@ print_Literal pf parens_fun
 				 beside_fun fsep_fun
 				 commaT_fun dot_doc e_doc mpt_fun mdf ga
 
-	  toksNumber i   = if tokIsDigit then
-			     [tok]
+	  tokNumber i   = if tokIsDigit then
+			     tok
 			   else
-			     -- trace (show ts) $ 
-			     map (termToTok "number") $
-				 collectElements Nothing i ts
+			    -- trace ("Number: "++show ts) $ 
+			     mergeTok $ map (termToTok "number") $
+				 leftAssCollElems i ts
 	     where tok = case i of
 			 Id []     _ _ -> error "malformed Id!!!"
 			 Id [tokk] [] _ -> tokk
@@ -926,6 +928,13 @@ print_Literal pf parens_fun
 			   ListNull b -> b
 			   ListCons b _ -> b
 			   _ -> error "listBrackets"
+
+mergeTok :: [Token] -> Token
+mergeTok ts 
+    | not (null ts) = foldr merge initTok ts
+    | otherwise = error "mergeTok: wrong call with empty list" 
+    where initTok = Token {tokStr="",tokPos = tokPos (head ts)}
+	  merge tok newTok = newTok {tokStr = tokStr tok ++ tokStr newTok} 
 
 print_Literal_text :: GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal_text =
@@ -957,6 +966,9 @@ condParensAppl pf parens_fun ga o_i t mdir =
 	| isOrdAppl o_i && isPostfix i_i -> t' 
 	-- prefix appl w/o parens
 	| isOrdAppl o_i && isPrefix  i_i -> t'
+	-- both mixfix and in <> prec relation so parens
+	| isMixfix o_i && isMixfix i_i 
+	  && explicitGrouping o_i i_i    -> parens_fun t'
 	| isPostfix o_i && isPrefix  i_i -> parens_fun t'
 	| isPrefix  o_i && isPostfix i_i -> t'
 	| isPrefix  o_i && isInfix   i_i -> parens_fun t'
@@ -978,6 +990,11 @@ condParensAppl pf parens_fun ga o_i t mdir =
 			       Lower -> t'
 			       _     -> parens_fun t'
 	      amap = assoc_annos ga
+	      explicitGrouping :: Id -> Id -> Bool
+	      explicitGrouping i1 i2 = 
+		  case precRel (prec_annos ga) i1 i2 of
+		  BothDirections -> True
+		  _              -> False
     Sorted_term _ _ _ -> t'
     Cast _ _ _ -> t'
     _ -> parens_fun t'
