@@ -1,6 +1,6 @@
-module ATermAbstractSyntax where
+module Common.ATerm.AbstractSyntax where
 
-import FiniteMap
+import Common.Lib.Map hiding (map)
 
 data ATerm = AAppl String [ATerm]
            | AList [ATerm]
@@ -9,22 +9,22 @@ data ATerm = AAppl String [ATerm]
              deriving (Read,Show,Eq,Ord)
 
 
-type ATermTable = (FiniteMap ATerm Int,FiniteMap Int ATerm, Int)
+type ATermTable = (Map ATerm Int, Map Int ATerm, Int)
 
 emptyATermTable :: ATermTable
-emptyATermTable =  (emptyFM,emptyFM,0)
+emptyATermTable =  (empty,empty,0)
 
 addATerm :: ATerm -> ATermTable -> (ATermTable,ATerm)
-addATerm t tbl = 
+addATerm t tbl@(a_iFM, i_aFM, i)= 
     if hasATerm t tbl then 
-       (tbl,AIndex (getATermIndex t tbl))
+       (tbl, AIndex (getATermIndex t tbl))
     else
-       addATerm' t tbl
-    where addATerm' t (a_iFM,i_aFM,i) = 
-	      if elemFM i i_aFM then
+       addATerm'
+    where addATerm' = 
+	      if member i i_aFM then
 		 error err_destruct_up
 	      else
-	         ((addToFM a_iFM t i,addToFM i_aFM i t,i+1), AIndex i)
+	         ((insert t i a_iFM, insert i t i_aFM, i+1), AIndex i)
 
 addATerm1 :: ATerm -> ATermTable -> ATermTable
 addATerm1 t tbl = let (tbl',_) = addATerm t tbl in tbl'
@@ -32,23 +32,23 @@ addATerm1 t tbl = let (tbl',_) = addATerm t tbl in tbl'
 addATermSp :: ATerm -> ATermTable -> (ATermTable,ATerm)
 addATermSp t tbl = 
     case t of 
-    (AAppl s [])   -> addATerm t tbl
+    (AAppl _ [])   -> addATerm t tbl
     (AAppl s [t']) -> let (tbl',t'') = case t' of 
 				       (AIndex _) -> (tbl,t')
-				       otherwise  -> addATermSp t' tbl
+				       _  -> addATermSp t' tbl
 		      in addATerm (AAppl s [t'']) tbl'
-    (AAppl s ts)   -> addATerm t tbl
+    (AAppl _ _)   -> addATerm t tbl
     (AIndex _)     -> error err_index_store
-    otherwise      -> addATerm t tbl
+    _              -> addATerm t tbl
 
 addATermSp1 :: ATerm -> ATermTable -> ATermTable
 addATermSp1 t tbl = let (tbl',_) = addATermSp t tbl in tbl'
 
 hasATerm :: ATerm -> ATermTable -> Bool
-hasATerm t (a_iFM,_,_) = elemFM t a_iFM 
+hasATerm t (a_iFM,_,_) = member t a_iFM 
 
 getATerm :: ATermTable -> ATerm
-getATerm (_,i_aFM,i) = lookupWithDefaultFM i_aFM (AIndex (-1)) (i-1)
+getATerm (_,i_aFM,i) = findWithDefault (AIndex (-1)) (i-1) i_aFM
 
 getATermFull :: ATermTable -> ATerm
 getATermFull at = 
@@ -81,14 +81,14 @@ getATermSp at (AAppl s [t']) = let (AAppl s' ts) = getATerm at
 					   Nothing    -> Nothing
 				  else
 				    Nothing
-getATermSp at _              = error err_wrong_sp_call
+getATermSp _at _              = error err_wrong_sp_call
 
 getATermIndex :: ATerm -> ATermTable -> Int
-getATermIndex t (a_iFM,_,_) = lookupWithDefaultFM a_iFM (-1) t
+getATermIndex t (a_iFM,_,_) = findWithDefault (-1) t a_iFM
 
 getATermByIndex :: Int -> ATermTable -> (ATermTable,ATerm)
 getATermByIndex i (a_iFM,i_aFM,_) = 
-    ((a_iFM,i_aFM,i+1),lookupWithDefaultFM i_aFM (AIndex (-1)) i)
+    ((a_iFM, i_aFM,i+1), findWithDefault (AIndex (-1)) i i_aFM)
 
 getATermByIndex1 :: Int -> ATermTable -> ATermTable
 getATermByIndex1 i at = let (at',_) = getATermByIndex i at in at'

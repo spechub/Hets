@@ -50,7 +50,6 @@ import Version
 import Common.Utils
 
 import System.Directory
-import System.Environment
 import System.Exit
 
 import Data.Char (isSpace)

@@ -25,7 +25,8 @@ module ATC_sml_cats (from_sml_ATerm,read_sml_ATerm) where
 
 import Data.List (isPrefixOf)
 
-import ATermLib
+import Common.ATerm.Conversion
+import Common.ATerm.ReadWrite
 
 import Common.Utils
 
@@ -901,7 +902,7 @@ instance ATermConvertible FORMULA where
 			AAppl "atom" [AAppl "existl-equation" [ ]] ,
 			AAppl "atom" [AAppl "strong-equation" [ ]] ,
 			AAppl "atom" [AAppl "membership" [ ]]]
-	    (pos_l,g_flag,att') = skipPosFlag "pos-FORMULA" att
+	    (pos_l,_g_flag,att') = skipPosFlag "pos-FORMULA" att
 
 ---- a helper for the SML-datatype TERMS -------------------------------
 fromATermTERMS :: ATermTable -> ([TERM],[Pos])
@@ -1032,7 +1033,7 @@ instance ATermConvertible TERM where
 	    pat_list = [(AAppl "var-or-const" [ ]) ,(AAppl "qual-var" [ ]) ,
 			(AAppl "application" [ ]) ,(AAppl "sorted-term" [ ]) ,
 			(AAppl "cast" [ ]) ,(AAppl "conditional" [ ]) ]
-	    (pos_l,p_flag,att') = skipPosFlag "pos-TERM" att
+	    (pos_l,_p_flag,att') = skipPosFlag "pos-TERM" att
 
 instance ATermConvertible OP_SYMB where
     toATerm _ _ = error "*** toATerm for \"OP_SYMB\" not implemented"
@@ -1928,7 +1929,7 @@ skipPosFlag :: String -> ATermTable -> ([Pos],Bool,ATermTable)
 skipPosFlag mcon att   = 		
     case getATerm att of
     AAppl con [reg_i,b_i,item_i] | mcon == con ->
-          if pCon then let (r_pos_l,r_b,r_at') = skipPosFlag mcon at'
+          if pCon then let (_r_pos_l,r_b,r_at') = skipPosFlag mcon at'
 		       in (pos_l,r_b || b,r_at')
 	  else (pos_l,b,at')
 	      where pCon  = case getATerm at' of

@@ -8,13 +8,13 @@ writeATerm (fst (addATerm (AAppl "f" [][]) emptyATermTable))
 
 
 -}
-module ATermReadWrite (
+module Common.ATerm.ReadWrite (
 
 	readATerm,
 	writeATerm,
 	writeSharedATerm,
 
-	module ATermAbstractSyntax
+	module Common.ATerm.AbstractSyntax
 
 ) where
 
@@ -37,13 +37,13 @@ module ATermReadWrite (
 
 -}
 
-import ATermAbstractSyntax
+import Common.ATerm.AbstractSyntax
 
 -- added by KL
-import Char
+import Data.Char
 
-import FiniteMap
-import List
+import Common.Lib.Map
+import Data.List
 --- From String to ATerm ------------------------------------------------------
 
 readATerm ('!':str)	= 
@@ -58,10 +58,11 @@ readAT at ('[':str)	=  let ((at',kids), str') = readATs at (dropSpaces str)
 readAT at str@(c:cs)
   | isIntHead c		=  let (i,str') = span isDigit cs
                            in (addATerm (AInt (read (c:i))) at,str')
-  | otherwise		=  let (c,str')      = readAFun str
+  | otherwise		=  let (c',str')      = readAFun str
 		   	       ((at',kids), str'') = readParenATs at 
 	                                               (dropSpaces str')
- 			   in (addATerm (AAppl c kids) at', str'')
+ 			   in (addATerm (AAppl c' kids) at', str'')
+readAT _a []            =  error "empty argument: readAT _ \"\""
 
 readAFun ('"':str)	=  let (c,('"':str')) = spanNotQuote' str 
                            in (quote c,str')
@@ -83,7 +84,7 @@ readATs1 at str		=  let ((at',t),str')    = readAT at (dropSpaces str)
 readATs' at (',':str)	= readATs1 at (dropSpaces str)
 readATs' at (')':str)	= ((at,[]),str)
 readATs' at (']':str)	= ((at,[]),str)
-
+readATs' _at str        = error ("readAts' _ " ++ str)
                                                                    -- shared --
 
 readTAF at ('#':str) tbl l =  let (i,str') = spanAbbrevChar str
@@ -111,6 +112,7 @@ readTAF at str@(x:xs) tbl l
 	                       tbl''  = condAddElement t l'' tbl'
 	                       at_t   = addATerm t at'
  			   in (at_t, str'',tbl'',l'')
+readTAF _ [] _ _        = error "empty argument: readTAF _ \"\""
 
 readParenTAFs at ('(':str)	tbl l	=  readTAFs at (dropSpaces str) tbl l
 readParenTAFs at str tbl l		=  ((at,[]),str,tbl,l)
@@ -128,22 +130,23 @@ readTAFs1 at str tbl l = let ((at',t),str',tbl',l')= readTAF at
 readTAFs' at (',':str) tbl	l = readTAFs1 at (dropSpaces str) tbl (l+1)
 readTAFs' at (')':str) tbl	l = ((at,[]),str,tbl,l+1)
 readTAFs' at (']':str) tbl	l = ((at,[]),str,tbl,l+1)
+readTAFs' _at str _ _             = error ("readTAFs' _ " ++ str)
 
                                                                   -- helpers --
 
 dropSpaces		= dropWhile isSpace
 spanAFunChar		= span isAFunChar
 isAFunChar c		= (isAlphaNum c) || (c `elem` "-_*+")
-spanNotQuote 		= span (/='"')
+-- spanNotQuote 		= span (/='"')
 spanAbbrevChar		= span (`elem` toBase64)
 isIntHead c		= (isDigit c) || (c=='-')
 quote str		= ('"':str)++"\""
 
 spanNotQuote' []		= ([],[])
-spanNotQuote' xs@('"':xs')  	= ([],xs)
-spanNotQuote' xs@('\\':'"':xs')	= ('\\':'"':ys,zs) 
+spanNotQuote' xs@('"': _)  	= ([],xs)
+spanNotQuote' ('\\':'"':xs')    = ('\\':'"':ys,zs) 
                                   where (ys,zs) = spanNotQuote' xs'
-spanNotQuote' xs@(x:xs')	= (x:ys,zs) 
+spanNotQuote' (x:xs')	        = (x:ys,zs) 
                                   where (ys,zs) = spanNotQuote' xs'
 
 {-
@@ -174,16 +177,16 @@ writeAT at     =
 	     (AInt i)     -> (show i)
 	     (AIndex _)   -> error err_wrong_store
 
-writeAT' at []     = []
+writeAT' _at []    = []
 writeAT' at (t:ts) = 
     case t of 
     (AIndex i) -> let (at',t')   = getATermByIndex i at
 		      str = case t' of
 			    (AIndex _) -> error err_ref_index
-			    otherwise  -> writeAT at'
+			    _  -> writeAT at'
 		      strs = writeAT' at ts
 		  in str:strs
-    otherwise -> error err_wrong_store
+    _ -> error err_wrong_store
   						                   -- shared --
 
 writeTAF :: ATermTable -> Table	-> (String,Table)
@@ -206,16 +209,16 @@ writeTAF' at tbl =
 	     (AInt i)     -> (show i,tbl)
 	     (AIndex _)   -> error err_wrong_store
 
-writeTAFs at [] tbl	=  ([],tbl)
+writeTAFs _at [] tbl	=  ([],tbl)
 writeTAFs at (t:ts) tbl =  
     case t of
     (AIndex i) -> let (at',t')   = getATermByIndex i at
 		      (str,tbl') = case t' of
 				   (AIndex _) -> error err_ref_index
-				   otherwise  -> writeTAF at' tbl
+				   _  -> writeTAF at' tbl
 		      (strs,tbl'') =  writeTAFs at ts tbl'
 		  in ((str:strs),tbl'')
-    otherwise -> error err_wrong_store
+    _ -> error err_wrong_store
 
                                                                   -- helpers --
  
@@ -223,7 +226,7 @@ writeATermAux c []	=  c
 writeATermAux c ts	=  c++(parenthesise (commaSep ts))
 
 sepBy sep (x:y:ys)	=  x:sep:sepBy sep (y:ys)
-sepBy sep ys            =  ys
+sepBy _sep ys           =  ys
 
 commaSep strs		=  concat (sepBy "," strs)
 bracket str		= "["++str++"]"
@@ -268,7 +271,8 @@ mkAbbrev x
 
 mkAbbrevAux x
   | x == 0	= []
-  | x > 0	= (toBase64!!m:mkAbbrevAux d) where (d,m) = divMod x 64
+  | x > 0	= let (d,m) = divMod x 64 in (toBase64!!m:mkAbbrevAux d)
+  | otherwise   = error ("negativ index: mkAbbrevAux " ++ show x)
 
 deAbbrev x		=  deAbbrevAux (reverse x)
 

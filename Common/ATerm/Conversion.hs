@@ -1,9 +1,9 @@
 {-# OPTIONS -fallow-overlapping-instances #-}
-module ATermConversion where
+module Common.ATerm.Conversion where
 
-import ATermAbstractSyntax
-import ATermReadWrite
-import List (find,mapAccumL)
+import Common.ATerm.AbstractSyntax
+import Common.ATerm.ReadWrite
+import Data.List (find,mapAccumL)
 
 class ATermConvertible t where
   toATerm   :: ATermTable -> t -> (ATermTable,ATerm)
@@ -23,7 +23,7 @@ fromATermError t u = error ("Cannot convert ATerm to "++t++": "++(err u))
     where err u = case u of 
 		  AAppl s _ -> "!AAppl "++s
 		  AList _   -> "!AList"
-		  otherwise -> "!AInt"
+		  _ -> "!AInt"
 
 -- some instances -----------------------------------------------
 instance ATermConvertible Bool where
@@ -42,7 +42,7 @@ instance ATermConvertible Integer where
     toATerm at x        = addATerm (AInt x) at
     fromATerm at = case aterm of 
 		   (AInt x)  -> x
-		   otherwise -> fromATermError "Integer" aterm
+		   _ -> fromATermError "Integer" aterm
 	where aterm = getATerm at
 
 instance ATermConvertible Int where
@@ -86,14 +86,14 @@ instance ATermConvertible String where
 			     conv (x:xs)      = x:(conv xs)
 		   _    -> err 4
 	where aterm = getATerm at
-	      err i = fromATermError ("String"++ show i) aterm
+	      err (i :: Int) = fromATermError ("String"++ show i) aterm
 
 instance ATermConvertible a => ATermConvertible [a] where
     toATerm at l       = addATerm (AList l') at'
-	where (at',l') = List.mapAccumL toATerm at l
+	where (at',l') = mapAccumL toATerm at l
     fromATerm at = case aterm of
 		   (AList l) -> map conv l
-		   otherwise -> fromATermError "[a]" aterm
+		   _ -> fromATermError "[a]" aterm
 	where aterm  = getATerm at
 	      conv t = fromATerm (getATermByIndexSp1 t at)
 
@@ -112,7 +112,7 @@ instance (ATermConvertible a,ATermConvertible b) => ATermConvertible (a,b)
 --- some helpers needed and used by DrIFT instances ---------------------------
 -- throws an error in case that there is no ATerm in the list
 findATerm :: ATermTable -> [Maybe ATerm] -> ATerm 
-findATerm att l = case List.find just l of
+findATerm att l = case find just l of
 				    (Just(Just t)) -> t
 				    _ -> error'
     where just mt = case mt of
