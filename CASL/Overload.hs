@@ -17,7 +17,6 @@
     LNCS 1376, p. 333-348
 -}
 
--- does anyone ever need anything else from me? (yes, in Logic_Modal!)
 module CASL.Overload where
 
 import Debug.Trace
@@ -72,17 +71,18 @@ import Data.Maybe
 
 type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
 
-overloadResolution      :: (Eq f, PrettyPrint f) => Min f e -> GlobalAnnos -> Sign f e 
-			-> [Named.Named (FORMULA f)]
-			-> Result [Named.Named (FORMULA f)]
+overloadResolution :: (Eq f, PrettyPrint f) =>
+                      Min f e -> GlobalAnnos -> Sign f e 
+			      -> [Named.Named (FORMULA f)]
+			      -> Result [Named.Named (FORMULA f)]
 overloadResolution mef ga sign  = mapM overload
     where
-        overload sent = do
-            let sent' = Named.sentence sent
-            --debug 1 ("sent'",sent')
-            exp_sent    <- minExpFORMULA mef ga sign sent'
-            --debug 2 ("exp_sent",exp_sent)
-            return sent { Named.sentence = exp_sent }
+    overload sent = do
+        let sent' = Named.sentence sent
+        --debug 1 ("sent'",sent')
+        exp_sent    <- minExpFORMULA mef ga sign sent'
+        --debug 2 ("exp_sent",exp_sent)
+        return sent { Named.sentence = exp_sent }
 
 {-----------------------------------------------------------
     Minimal Expansions of a FORMULA
@@ -424,6 +424,8 @@ minExpTerm_op1 mef ga sign op terms pos = do
     where
         name            :: OP_NAME
         name             = op_name op
+        result          :: SORT
+        result           = opRes $ toOpType $ op_type op
         ops             :: [OpType]
         ops              = Set.toList
             $ Map.findWithDefault
@@ -432,15 +434,31 @@ minExpTerm_op1 mef ga sign op terms pos = do
         op_name op'      = case op' of
             (Op_name name')             -> name'
             (Qual_op_name name' _ _)    -> name'
+        op_type         :: OP_SYMB -> OP_TYPE
+        op_type (Op_name _)                     = error "unqualified op"
+        op_type (Qual_op_name _ type' _)        = type'
         qualifyOps      :: [[(OpType, [TERM f])]] -> [[(TERM f, SORT)]]
         qualifyOps       = map (map qualify_op)
         qualify_op      :: (OpType, [TERM f]) -> (TERM f, SORT)
         qualify_op (op', terms')
-            = ((Application                                     -- ::  TERM
-                (Qual_op_name name (toOP_TYPE op') [])          -- :: OP_SYMB
-                terms'                                          -- :: [TERM]
-                [])                                             -- :: [Pos]
-              , (opRes op'))                                    -- ::  SORT
+            | result == (opRes op')
+                = ((Application                                 -- ::  TERM
+                    (Qual_op_name name (toOP_TYPE op') [])      -- :: OP_SYMB
+                    terms'                                      -- :: [TERM]
+                    [])                                         -- :: [Pos]
+                  , (opRes op'))                                -- ::  SORT
+            | otherwise
+                = ((Application
+                    (Qual_op_name
+                     (Id.mkId [Id.Token {Id.tokStr="_inj",
+                                         Id.tokPos=Id.nullPos}])
+                     (Total_op_type [(opRes op')] result [Id.nullPos])
+                     [])
+                    [(Application
+                      (Qual_op_name name (toOP_TYPE op') [])
+                      terms' [])]
+                    [])
+                  , result)
         get_profile     :: [[TERM f]] -> [(OpType, [TERM f])]
         get_profile cs
             = [ (op', ts) |                             -- :: (OpType, [TERM])
