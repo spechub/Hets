@@ -118,7 +118,7 @@ aType = TypeName aVar star 1
 bindA :: Type -> TypeScheme
 bindA ty = TypeScheme [TypeArg aVar star Other []] ([] :=> ty) []
 
-eqType, logType, defType, notType, ifType, whenType :: TypeScheme
+eqType, logType, defType, notType, ifType, whenType, unitType :: TypeScheme
 eqType = bindA $ 
 	  FunType (ProductType [aType, aType] [])
 	  PFunArr logicalType []
@@ -134,12 +134,12 @@ ifType = bindA $
 whenType = bindA $ 
 	  FunType (ProductType [aType, logicalType, aType] [])
 	  PFunArr aType []
+unitType = simpleTypeScheme logicalType
 
 bList :: [(Id, TypeScheme)]
 bList = (defId, defType) : (notId, notType) : 
 	(ifThenElse, ifType) : (whenElse, whenType) :
-        (trueId, simpleTypeScheme logicalType) : 
-	(falseId, simpleTypeScheme logicalType)	:
+        (trueId, unitType) : (falseId, unitType) :
         map ( \ e -> (e, eqType)) [eqId, exEq] ++
 	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
@@ -160,3 +160,31 @@ addOps :: Assumps -> Assumps
 addOps as = foldr ( \ (i, sc) m -> 
 		 Map.insertWith ( \ _ old -> old) i
 		 (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
+
+mkQualOp :: Id -> TypeScheme -> [Pos] -> Term 
+mkQualOp i sc ps = QualOp Fun (InstOpId i [] ps) sc ps
+
+mkTerm :: Id -> TypeScheme -> [Pos] -> Term  -> Term
+mkTerm i sc ps t = ApplTerm (mkQualOp i sc ps) t ps
+
+mkBinTerm :: Id -> TypeScheme -> [Pos] -> Term  -> Term -> Term
+mkBinTerm i sc ps t1 t2 = mkTerm i sc ps $ TupleTerm [t1, t2] ps
+
+mkLogTerm :: Id -> [Pos] -> Term  -> Term -> Term
+mkLogTerm i ps = mkBinTerm i logType ps
+
+mkEqTerm :: Id -> [Pos] -> Term  -> Term -> Term
+mkEqTerm i ps = mkBinTerm i eqType ps
+
+unitTerm :: Id -> [Pos] -> Term
+unitTerm i ps = mkQualOp i unitType ps
+
+toBinJunctor :: Id -> [Term] -> [Pos] -> Term
+toBinJunctor i ts ps = case ts of
+    [] -> error "toBinJunctor"
+    [t] -> t
+    t:rs -> mkLogTerm i [headPos ps] t 
+	    (toBinJunctor i rs (if null ps then [] else tail ps))
+
+
+
