@@ -202,6 +202,9 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
+Overload.hs never returns ambiguities thus SimplifySen.hs always
+removes all types.
+
 non-free/generated datatype declarations generate ga-axioms
 (this is indented)
 
