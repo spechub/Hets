@@ -186,11 +186,12 @@ setPlainIdePos (Id ts cs _) ps =
        let (newTs, restPs) = setToksPos ts ps
 	   in (Id newTs cs [], restPs)
     else let (toks, pls) = splitMixToken ts
+	     ttail l = if null l then l else tail l
 	     (front, ps2) = setToksPos toks ps
 	     (newCs, ps3, ps4) = foldl ( \ (prevCs, seps, rest) a -> 
 				  let (c1, qs) = setPlainIdePos a rest
-				  in (c1: prevCs, head qs : seps, tail qs))
-			   ([], [head ps2], tail ps2) cs
+				  in (c1: prevCs, head qs : seps, ttail qs))
+			   ([], [head ps2], ttail ps2) cs
 	     (newPls, ps7) = setToksPos pls ps4
            in (Id (front ++ newPls) (reverse newCs) (reverse ps3), ps7)
 
