@@ -1,8 +1,6 @@
 {- |
    Module      :  $Header$
-   Author      :  Maciek Makowski
-   Year        :  2003
-   Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004
+   Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
    Maintainer  :  hets@tzi.de
@@ -10,7 +8,8 @@
    Portability :  non-portable (via imports)
 
    Parsing the architectural part of heterogenous specifications.
-   Follows Sect. II:3.1.4 of the CASL Reference Manual.
+   Follows Sect. II:3.1.4 of the CASL Reference Manual plus refinement
+   extensions
 
    TODO:
    - make sure the precedence is OK
@@ -22,7 +21,6 @@ module Syntax.Parse_AS_Architecture where
 
 import Logic.Grothendieck
 import Logic.Logic
--- import CASL.Logic_CASL  -- we don't need the default logic
 import Syntax.AS_Structured
 import Syntax.AS_Architecture
 import Syntax.Parse_AS_Structured
@@ -69,11 +67,11 @@ groupArchSpec l =
        anno <- annos
        asp <- archSpec l
        kClBr <- asKey "}"
-       return (Annoted (Syntax.AS_Architecture.Group_arch_spec asp (map tokPos [kOpBr, kClBr]))
+       return (Annoted (Group_arch_spec asp (map tokPos [kOpBr, kClBr]))
 	               [] anno [])
     <|>  
     do name <- simpleId
-       return (Annoted (Syntax.AS_Architecture.Arch_spec_name name)
+       return (Annoted (Arch_spec_name name)
 	               [] [] [])
 
 
@@ -89,7 +87,7 @@ basicArchSpec l =
        kResult <- asKey resultS
        expr <- unitExpr l
        kSc <- option Nothing (fmap Just (asKey ";"))
-       return (Annoted (Syntax.AS_Architecture.Basic_arch_spec declDefn expr
+       return (Annoted (Basic_arch_spec declDefn expr
 			    (map tokPos ([kUnit, kResult] ++ maybeToList kSc))) 
 	                [] [] [])
 
@@ -118,7 +116,7 @@ unitDeclDefn :: LogicGraph -> AParser AnyLogic UNIT_DECL_DEFN
 unitDeclDefn l = 
         -- unit declaration 
     try (do decl <- unitDecl l
-            return decl)
+            return $ Unit_decl_defn decl)
     <|> -- unit definition
     do defn <- unitDefn l
        return defn
@@ -127,27 +125,23 @@ unitDeclDefn l =
 
 -- | Parse unit declaration
 -- @
--- UNIT-DECL ::= UNIT-NAME : UNIT-SPEC
---             | UNIT-NAME : UNIT-SPEC given GROUP-UNIT-TERMS
+-- UNIT-DECL ::= UNIT-NAME : REF-SPEC
 -- @
-unitDecl :: LogicGraph -> AParser AnyLogic UNIT_DECL_DEFN
+unitDecl :: LogicGraph -> AParser AnyLogic UNIT_DECL
 unitDecl l = 
         do name <- simpleId
 	   sep1 <- asKey ":"
-	   usp <- unitSpec l
-	   (kGiven, guts) <- option (Nothing, [])
-			     (do kGiven <- fmap Just (asKey givenS)
-				 guts <- groupUnitTerms l
-				 return (kGiven, guts))
-	   return (Syntax.AS_Architecture.Unit_decl name usp guts
-		       (map tokPos (sep1 : maybeToList kGiven)))
+	   usp <- refSpec l
+           option () $ do  -- ignore given stuff
+               asKey givenS
+               unexpected givenS
+	   return $ Unit_decl name usp [tokPos sep1]
 
 
 -- | Parse unit specification
 -- @
 -- UNIT-SPEC ::= SPEC-NAME
 --             | UNIT-ARGS GROUP-SPEC
---             | arch spec GROUP-ARCH-SPEC
 --             | closed UNIT-SPEC
 -- @
 -- TODO: check the precedence
@@ -156,25 +150,65 @@ unitSpec l =
        -- closed unit spec
     do kClosed <- asKey closedS
        uSpec <- unitSpec l
-       return (Syntax.AS_Architecture.Closed_unit_spec uSpec (map tokPos [kClosed]))
-    <|> -- architectural spec
-    do kArch <- asKey archS
-       kSpec <- asKey specS
-       asp <- groupArchSpec l
-       return (Syntax.AS_Architecture.Arch_unit_spec asp (map tokPos [kArch, kSpec]))
+       return (Closed_unit_spec uSpec [tokPos kClosed])
     <|> -- unit type 
 	{- NOTE: this can also be a spec name. If this is the case, this unit spec 
 	   will be converted on the static analysis stage.
 	   See Static.AnalysisArchitecture.ana_UNIT_SPEC. -}
     try (do (gss, poss) <- unitArgs l
 	    gs <- groupSpec l
-	    return (Syntax.AS_Architecture.Unit_type gss (emptyAnno gs) poss))
+	    return (Unit_type gss (emptyAnno gs) poss))
     <|> -- specification name 
 	{- NOTE: this option will never be executed as the spec name will be parsed as
 	   unit type (see the comment above). -}
     do name <- simpleId
-       return (Syntax.AS_Architecture.Spec_name name)
+       return (Spec_name name)
 
+refSpec :: LogicGraph -> AParser AnyLogic REF_SPEC
+refSpec l = do 
+      (rs, ps) <- basicRefSpec l `separatedBy` (asKey thenS)
+      return $ if isSingle rs then head rs
+         else Compose_ref rs $ map tokPos ps
+
+-- | Parse refinement specification
+-- @
+-- REF-SPEC ::= UNIT_SPEC
+--             | UNIT_SPEC [bahav..] refined [via SYMB-MAP-ITEMS*] to REF-SPEC
+--             | arch spec GROUP-ARCH-SPEC
+--             | { UNIT-DECL, ..., UNIT-DECL }
+-- @
+basicRefSpec :: LogicGraph -> AParser AnyLogic REF_SPEC
+basicRefSpec l =
+    do uSpec <- unitSpec l
+       refinedRestSpec l uSpec <|> return (Unit_spec uSpec)
+    <|> -- architectural spec
+    do kArch <- asKey archS
+       kSpec <- asKey specS
+       asp <- groupArchSpec l
+       return (Arch_unit_spec asp (toPos kArch [] kSpec))
+    <|> -- component spec 
+    do  o <- oBraceT
+        (us, ps) <- unitDecl l `separatedBy` anComma
+        c <- oBraceT
+        return (Component_ref us $ toPos c ps o)
+
+refinedRestSpec :: LogicGraph -> UNIT_SPEC -> AParser AnyLogic REF_SPEC
+refinedRestSpec l u = do
+      b <- asKey behaviourallyS 
+      onlyRefinedRestSpec l [tokPos b] u
+    <|> onlyRefinedRestSpec l [] u
+
+onlyRefinedRestSpec :: LogicGraph -> [Pos] -> UNIT_SPEC -> 
+                       AParser AnyLogic REF_SPEC
+onlyRefinedRestSpec l b u = do
+    r <- asKey refinedS
+    (ms, ps) <- option ([], []) $ do
+                 v <- asKey "via" -- not a keyword
+                 (m, ts) <- parseMapping l
+                 return (m, v : ts)
+    t <- asKey toS
+    rsp <- refSpec l
+    return $ Refinement (null b) u ms rsp (b ++ toPos r ps t)           
 
 -- | Parse a (possibly empty) list of group specs separated by "*"
 -- and ending with "->".
@@ -236,12 +270,12 @@ groupUnitTerm l =
         -- unit name/application
     do name <- simpleId
        (args, pos) <- fitArgUnits l
-       return (Syntax.AS_Architecture.Unit_appl name args pos)
+       return (Unit_appl name args pos)
     <|> -- unit term in brackets
     do lbr <- asKey "{"
        ut <- unitTerm l
        rbr <- asKey "}"
-       return (Syntax.AS_Architecture.Group_unit_term ut (map tokPos [lbr, rbr]))
+       return (Group_unit_term ut (map tokPos [lbr, rbr]))
 
 
 -- | Parse the (possibly empty) list of arguments for unit application.
@@ -268,14 +302,12 @@ fitArgUnits l =
 -- The SYMB-MAP-ITEMS-LIST is parsed using parseItemsMap.
 fitArgUnit :: LogicGraph -> AParser AnyLogic FIT_ARG_UNIT
 fitArgUnit l =
-    do Logic curLog <- getUserState
-       ut <- unitTerm l
-       (kFit, smis) <- option (Nothing, G_symb_map_items_list curLog [])
-		       (do kFit <- fmap Just (asKey fitS)
-			   (smis, _) <- parseItemsMap
-			   return (kFit, smis))
-       return (Syntax.AS_Architecture.Fit_arg_unit ut smis 
-	           (map tokPos (maybeToList kFit)))
+    do ut <- unitTerm l
+       (fargs, qs) <- option ([], [])
+		       (do kFit <- asKey fitS
+			   (smis, ps) <- parseMapping l
+			   return (smis, kFit:ps))
+       return $ Fit_arg_unit ut fargs $ map tokPos qs
 
 
 -- | Parse unit term.
@@ -316,7 +348,7 @@ unitTermLocal l =
        uDefns <- unitDefns l
        kWithin <- asKey withinS
        uTerm <- unitTermLocal l
-       return (Annoted (Syntax.AS_Architecture.Local_unit uDefns uTerm
+       return (Annoted (Local_unit uDefns uTerm
 			    (map tokPos [kLocal, kWithin]))
 	               [] [] [])
     <|> -- translation/reduction
@@ -407,7 +439,7 @@ unitExpr l =
 				    return (bindings,
 					    [tokPos kLambda] ++ poss ++ [tokPos kDot]))
 	    ut <- unitTerm l
-	    return (Annoted (Syntax.AS_Architecture.Unit_expression bindings ut poss) [] [] [])
+	    return (Annoted (Unit_expression bindings ut poss) [] [] [])
 
 
 -- | Parse a nonempty list of unit bindings separated by
@@ -432,7 +464,7 @@ unitBinding l =
     do name <- simpleId
        kCol <- asKey colonS
        usp <- unitSpec l
-       return (Syntax.AS_Architecture.Unit_binding name usp [tokPos kCol])
+       return (Unit_binding name usp [tokPos kCol])
 
 
 -- | Parse a nonempty list of unit definitions separated by
@@ -460,5 +492,5 @@ unitDefn l =
     do name <- simpleId
        kEqu <- asKey equalS
        expr <- unitExpr l
-       return (Syntax.AS_Architecture.Unit_defn name (item expr) (map tokPos [kEqu]))
+       return (Unit_defn name (item expr) (map tokPos [kEqu]))
 

@@ -44,8 +44,11 @@ data ARCH_SPEC = Basic_arch_spec [Annoted UNIT_DECL_DEFN]
 		 -- pos: "{","}"
 		 deriving (Show)
 
-data UNIT_DECL_DEFN = Unit_decl UNIT_NAME UNIT_SPEC [Annoted UNIT_TERM] [Pos]
-		      -- pos: ":",opt ("given"; Annoted holds pos of commas)
+data UNIT_DECL = Unit_decl UNIT_NAME REF_SPEC [Pos] 
+		 -- pos: ":"
+                 deriving (Show)
+
+data UNIT_DECL_DEFN = Unit_decl_defn UNIT_DECL
 		    | Unit_defn UNIT_NAME UNIT_EXPRESSION [Pos]
 		      -- pos: "="
 		      deriving (Show)
@@ -57,12 +60,21 @@ data UNIT_SPEC_DEFN = Unit_spec_defn SPEC_NAME UNIT_SPEC [Pos]
 data UNIT_SPEC = Unit_type [Annoted SPEC] (Annoted SPEC) [Pos]
 	         -- pos: opt "*"s , "->"
 	       | Spec_name SPEC_NAME
-	       | Arch_unit_spec (Annoted ARCH_SPEC) [Pos] 
+	       | Closed_unit_spec UNIT_SPEC [Pos]
+		 -- pos: "closed"
+		 deriving (Show)
+
+data REF_SPEC = Unit_spec UNIT_SPEC
+              | Refinement Bool UNIT_SPEC [G_mapping] REF_SPEC [Pos]
+                -- false means "behaviourally"
+	      | Arch_unit_spec (Annoted ARCH_SPEC) [Pos] 
 		 -- pos: "arch","spec"
 		 -- The ARCH_SPEC has to be surrounded with braces and
 		 -- after the opening brace is a [Annotation] allowed
-	       | Closed_unit_spec UNIT_SPEC [Pos]
-		 -- pos: "closed"
+	      | Compose_ref [REF_SPEC] [Pos]
+		 -- pos: "then"
+              | Component_ref [UNIT_DECL] [Pos]
+                -- pos "{", commas and "}"
 		 deriving (Show)
 
 data UNIT_EXPRESSION = Unit_expression [UNIT_BINDING] (Annoted UNIT_TERM) [Pos]
@@ -85,8 +97,7 @@ data UNIT_TERM = Unit_reduction (Annoted UNIT_TERM) RESTRICTION
 		 -- pos: "{","}"
 		 deriving (Show)
 
-data FIT_ARG_UNIT = Fit_arg_unit (Annoted UNIT_TERM) 
-		                 G_symb_map_items_list [Pos] 
+data FIT_ARG_UNIT = Fit_arg_unit (Annoted UNIT_TERM) [G_mapping] [Pos] 
 		    -- pos: opt "fit"
 		    deriving (Show)
 

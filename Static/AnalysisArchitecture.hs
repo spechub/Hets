@@ -91,19 +91,19 @@ ana_UNIT_DECL_DEFNS' lgraph defl gctx@(gannos, genv, _) curl opts uctx (udd : ud
        return (uctx'', dg'', (replaceAnnoted udd' udd) : udds')
 
 
--- | Analyse unit declaration or definition
-ana_UNIT_DECL_DEFN :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-                   -> HetcatsOpts -> ExtStUnitCtx -> UNIT_DECL_DEFN -> Result (ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
+-- | Analyse unit declaration
+ana_UNIT_DECL :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
+              -> HetcatsOpts -> ExtStUnitCtx -> UNIT_DECL -> Result (ExtStUnitCtx, DGraph, UNIT_DECL)
 -- ^ returns 1. extended static unit context 2. possibly modified development graph 
 -- 3. possibly modified UNIT_DECL_DEFN
 
 -- unit declaration
-ana_UNIT_DECL_DEFN lgraph defl gctx@(gannos, genv, _) curl opts 
-                   uctx@(buc, _) (Unit_decl un@(Token _ unpos) usp uts pos) =
-    do (dns, diag', dg', uts') <- ana_UNIT_IMPORTED lgraph defl gctx curl opts uctx pos uts
+ana_UNIT_DECL lgraph defl gctx@(gannos, genv, _) curl opts 
+                   uctx@(buc, _) (Unit_decl un@(Token _ unpos) usp pos) =
+    do (dns, diag', dg', uts') <- ana_UNIT_IMPORTED lgraph defl gctx curl opts uctx pos []
        let impSig = getSigFromDiag dns
-       (usig, dg'', usp') <- ana_UNIT_SPEC lgraph defl (gannos, genv, dg') curl opts impSig usp
-       let ud' = Unit_decl un usp' uts' pos
+       (usig, dg'', usp') <- ana_REF_SPEC lgraph defl (gannos, genv, dg') curl opts impSig usp
+       let ud' = Unit_decl un usp' pos
        if Map.member un buc 
           then
           plain_error (uctx, dg'', ud')
@@ -120,6 +120,16 @@ ana_UNIT_DECL_DEFN lgraph defl gctx@(gannos, genv, _) curl opts
                       (dn', diag'') <- extendDiagramIncl lgraph diag' [dns] nsig' (renderText Nothing (printText un))
                       return ((Map.insert un (Based_unit_sig dn') buc, diag''), dg''', ud')
 
+-- | Analyse unit declaration or definition
+ana_UNIT_DECL_DEFN :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
+                   -> HetcatsOpts -> ExtStUnitCtx -> UNIT_DECL_DEFN -> Result (ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
+-- ^ returns 1. extended static unit context 2. possibly modified development graph 
+-- 3. possibly modified UNIT_DECL_DEFN
+
+-- unit declaration
+ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx (Unit_decl_defn usp) = do
+    (uctx', df, usp') <- ana_UNIT_DECL lgraph defl gctx curl opts uctx usp
+    return (uctx', df, Unit_decl_defn usp')
 -- unit definition
 ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx@(buc, _) 
                    (Unit_defn un@(Token _ unpos) uexp poss) =
@@ -424,7 +434,7 @@ ana_FIT_ARG_UNIT lgraph defl gctx curl opts uctx nsig (Fit_arg_unit ut symbMap p
            gsigmaT = getSig (getSigFromDiag p)
        G_sign lidS sigmaS <- return gsigmaS
        G_sign lidT sigmaT <- return gsigmaT
-       G_symb_map_items_list lid sis <- return symbMap
+       G_symb_map_items_list lid sis <- adj $ homogenizeGM (Logic lidS) symbMap
        sigmaT' <- rcoerce lidT lidS (headPos poss) sigmaT
        mor <- if isStructured opts then return (ide lidS sigmaS)
                  else do rmap <- adj $ stat_symb_map_items lid sis
@@ -476,13 +486,27 @@ ana_UNIT_SPEC _ _ (_, genv, dg) _ _ impsig usp@(Spec_name usn@(Token _ pos)) =
             _ -> plain_error (Unit_sig impsig, dg, usp)
                              ((showPretty usn "") ++ " is not an unit specification")
                              pos
--- ARCH-UNIT-SPEC
-ana_UNIT_SPEC lgraph defl gctx curl just_struct _ (Arch_unit_spec asp poss) =
-    do ((_, usig), dg', asp') <- ana_ARCH_SPEC lgraph defl gctx curl just_struct (item asp)
-       return (usig, dg', Arch_unit_spec (replaceAnnoted asp' asp) poss)
 -- CLOSED-UNIT-SPEC
 ana_UNIT_SPEC lgraph defl gctx curl just_struct _ (Closed_unit_spec usp' _) =
     ana_UNIT_SPEC lgraph defl gctx curl just_struct (EmptyNode curl) usp'
+
+
+
+-- | Analyse refinement specification
+ana_REF_SPEC :: LogicGraph -> AnyLogic    -- ^ the default logic
+              -> GlobalContext -> AnyLogic -- ^ current logic
+              -> HetcatsOpts                      -- ^ should only the structure be analysed?
+              -> NodeSig                   -- ^ the signature of imports
+              -> REF_SPEC -> Result (UnitSig, DGraph, REF_SPEC)
+-- UNIT-SPEC
+ana_REF_SPEC lgraph defl gctx curl just_struct nsig (Unit_spec asp) =
+    do (usig, dg', asp') <- ana_UNIT_SPEC lgraph defl gctx curl just_struct nsig asp
+       return (usig, dg', Unit_spec asp')
+-- ARCH-UNIT-SPEC
+ana_REF_SPEC lgraph defl gctx curl just_struct _ (Arch_unit_spec asp poss) =
+    do ((_, usig), dg', asp') <- ana_ARCH_SPEC lgraph defl gctx curl just_struct (item asp)
+       return (usig, dg', Arch_unit_spec (replaceAnnoted asp' asp) poss)
+
 
 
 -- | Analyse a list of argument specifications

@@ -20,10 +20,6 @@ import Syntax.AS_Architecture
 import Syntax.LaTeX_AS_Structured
 import Syntax.Print_AS_Structured
 import Syntax.Print_AS_Architecture
-
-import Data.List
-
-import Logic.LaTeX_Grothendieck
 import Logic.Grothendieck
 
 instance PrintLaTeX ARCH_SPEC where
@@ -36,15 +32,14 @@ instance PrintLaTeX ARCH_SPEC where
     printLatex0 ga (Group_arch_spec aa _) =
 	braces $ printLatex0 ga aa
 
-instance PrintLaTeX UNIT_DECL_DEFN where
-    printLatex0 ga (Unit_decl aa ab ac _) =
+instance PrintLaTeX UNIT_DECL where
+    printLatex0 ga (Unit_decl aa ab _) =
 	let aa' = simple_id_latex aa
 	    ab' = printLatex0 ga ab
-	    ac' = if null ac then empty 
-	          else ptext "given" <+> 
-		       (fcat $  punctuate (comma <> space) $ 
-			           map (printLatex0 ga) ac)
-	in hang (aa' <> colon <+> ab') 4  ac'
+	in aa' <> colon <+> ab'
+
+instance PrintLaTeX UNIT_DECL_DEFN where
+    printLatex0 ga (Unit_decl_defn u) = printLatex0 ga u
     printLatex0 ga (Unit_defn aa ab _) =
 	let aa' = simple_id_latex aa
 	    ab' = printLatex0 ga ab
@@ -61,12 +56,15 @@ instance PrintLaTeX UNIT_SPEC where
     printLatex0 ga (Spec_name aa) =
 	let aa' = printLatex0 ga aa
 	in aa'
-    printLatex0 ga (Arch_unit_spec aa _) =
-	let aa' = printLatex0 ga aa
-	in hang (ptext "arch spec") 4 aa'
     printLatex0 ga (Closed_unit_spec aa _) =
 	let aa' = printLatex0 ga aa
 	in hang (ptext "closed") 4 aa'
+
+instance PrintLaTeX REF_SPEC where
+    printLatex0 ga (Unit_spec u) = printLatex0 ga u
+    printLatex0 ga (Arch_unit_spec aa _) =
+	let aa' = printLatex0 ga aa
+	in hang (ptext "arch spec") 4 aa'
 
 instance PrintLaTeX UNIT_EXPRESSION where
     printLatex0 ga (Unit_expression aa ab _) =
@@ -91,7 +89,7 @@ instance PrintLaTeX UNIT_TERM where
 	    ab' = printLatex0 ga ab
 	in fsep [aa', ab']
     printLatex0 ga (Amalgamation aa _) =
-	fsep $ intersperse (ptext "and") $ map (printLatex0 ga) aa
+	fsep $ punctuate (space <> ptext "and") $ map (printLatex0 ga) aa
     printLatex0 ga (Local_unit aa ab _) =
 	let aa' = fcat $ punctuate (semi<>space) $ map (printLatex0 ga) aa
 	    ab' = printLatex0 ga ab
@@ -107,9 +105,9 @@ instance PrintLaTeX UNIT_TERM where
 
 instance PrintLaTeX FIT_ARG_UNIT where
     printLatex0 ga (Fit_arg_unit aa ab _) =
-	let aa' = printLatex0 ga aa
-	    ab' = printLatex0 ga ab
-	    null' = case ab of
-	            G_symb_map_items_list _ l -> null l
-	in aa' <+> (if null' then empty else ptext "fit" <+> ab')
+	printLatex0 ga aa <> 
+        (if null ab then empty else space <> 
+            hc_sty_plain_keyword "fit"<\+>
+            set_tabbed_nest_latex (fsep_latex (map (printLatex0 ga) ab)))
+
 

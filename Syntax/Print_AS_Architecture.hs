@@ -20,36 +20,31 @@ Portability :  non-portable(Grothendieck)
 module Syntax.Print_AS_Architecture where
 
 import Common.Lib.Pretty
+import Common.PPUtils
 import Common.PrettyPrint
+import Common.Keywords
 
 import Syntax.AS_Architecture
-
 import Syntax.Print_AS_Structured
-
-
-import Data.List
-
-import Logic.Grothendieck
 
 instance PrettyPrint ARCH_SPEC where
     printText0 ga (Basic_arch_spec aa ab _) =
 	let aa' = fsep $ punctuate semi $ map (printText0 ga) aa
 	    ab' = printText0 ga ab
-	in (hang (ptext "units") 4 aa') $$ (ptext "result" <+> ab')
+	in (hang (text (unitS ++ sS)) 4 aa') $$ (text resultS <+> ab')
     printText0 ga (Arch_spec_name aa) =
 	printText0 ga aa
     printText0 ga (Group_arch_spec aa _) =
 	braces $ printText0 ga aa
 
-instance PrettyPrint UNIT_DECL_DEFN where
-    printText0 ga (Unit_decl aa ab ac _) =
+instance PrettyPrint UNIT_DECL where
+    printText0 ga (Unit_decl aa ab  _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	    ac' = if null ac then empty 
-	          else ptext "given" <+> 
-		       (fcat $  punctuate (comma <> space) $ 
-			           map (printText0 ga) ac)
-	in hang (aa' <> colon <+> ab') 4  ac'
+	in aa' <> colon <+> ab'
+
+instance PrettyPrint UNIT_DECL_DEFN where
+    printText0 ga (Unit_decl_defn u) = printText0 ga u
     printText0 ga (Unit_defn aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
@@ -57,27 +52,39 @@ instance PrettyPrint UNIT_DECL_DEFN where
 
 instance PrettyPrint UNIT_SPEC where
     printText0 ga (Unit_type aa ab _) =
-	let aa' = fsep $ punctuate (ptext " * ") $ 
+	let aa' = fsep $ punctuate (space<>char '*') $ 
 			 map (condBracesGroupSpec printText0 
 			                   braces Nothing ga) aa
 	    ab' = printText0 ga ab
-	in if null aa then ab' else aa' <+> ptext "->" <+> ab'
+	in if null aa then ab' else aa' <+> text funS <+> ab'
     printText0 ga (Spec_name aa) =
 	let aa' = printText0 ga aa
 	in aa'
-    printText0 ga (Arch_unit_spec aa _) =
-	let aa' = printText0 ga aa
-	in hang (ptext "arch spec") 4 aa'
     printText0 ga (Closed_unit_spec aa _) =
 	let aa' = printText0 ga aa
-	in hang (ptext "closed") 4 aa'
+	in hang (text closedS) 4 aa'
+
+instance PrettyPrint REF_SPEC where
+    printText0 ga (Unit_spec u) = printText0 ga u
+    printText0 ga (Refinement b u m r _) =
+       (if b then empty else text behaviourallyS <> space)
+       <> text refinedS <+> printText0 ga u <+>
+       (if null m then empty else text "via" <+> 
+          commaT_text ga m <> space) <> printText0 ga r
+    printText0 ga (Arch_unit_spec aa _) =
+	let aa' = printText0 ga aa
+	in hang (text archS <+> text specS) 4 aa'
+    printText0 ga (Compose_ref aa _) =
+        listSep_text (space <> text thenS) ga aa
+    printText0 ga (Component_ref aa _) =
+        braces $ commaT_text ga aa
 
 instance PrettyPrint UNIT_EXPRESSION where
     printText0 ga (Unit_expression aa ab _) =
 	let aa' = cat $ punctuate (semi <> space) $ map (printText0 ga) aa
 	    ab' = printText0 ga ab
 	in if null aa then ab' 
-	   else hang (ptext "lambda") 4 (hang aa' (-2) (ptext "." <+> ab'))
+	   else hang (text lambdaS) 4 (hang aa' (-2) (char '.' <+> ab'))
 
 instance PrettyPrint UNIT_BINDING where
     printText0 ga (Unit_binding aa ab _) =
@@ -95,12 +102,12 @@ instance PrettyPrint UNIT_TERM where
 	    ab' = printText0 ga ab
 	in fsep [aa', ab']
     printText0 ga (Amalgamation aa _) =
-	fsep $ intersperse (ptext "and") $ map (printText0 ga) aa
+	listSep_text (space <> text andS) ga aa
     printText0 ga (Local_unit aa ab _) =
 	let aa' = fcat $ punctuate (semi<>space) $ map (printText0 ga) aa
 	    ab' = printText0 ga ab
-	in (hang (ptext "local") 4 aa') $$ 
-	   (hang (ptext "within") 4 ab')
+	in (hang (text localS) 4 aa') $$ 
+	   (hang (text withinS) 4 ab')
     printText0 ga (Unit_appl aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = fsep $ map (brackets . (printText0 ga)) ab
@@ -110,10 +117,6 @@ instance PrettyPrint UNIT_TERM where
 
 instance PrettyPrint FIT_ARG_UNIT where
     printText0 ga (Fit_arg_unit aa ab _) =
-	let aa' = printText0 ga aa
-	  --  ab' = fcat $ punctuate (comma<>space) $ 
-	  --                 map (print_symb_map_items_text lid ga) ab
-	    ab' = printText0 ga ab
-	    null' = case ab of
-	            G_symb_map_items_list _ l -> null l
-	in aa' <+> (if null' then empty else ptext "fit" <+> ab')
+	printText0 ga aa  <> 
+        (if null ab then empty else space <> text fitS <+> 
+            printText0 ga ab)
