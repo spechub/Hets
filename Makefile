@@ -1,7 +1,7 @@
 # hetcats/Makefile
-# $Id$
-# Author: Klaus Lüttich
-# Year:   2003
+# $Header$
+# Author: (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2004
+# Year:   2004
 
 # This Makefile will compile the new hetcats system and provides also
 # targets for test programs during implementation phases.
@@ -196,7 +196,7 @@ release:
 	$(RM) -r uni
 	ln -s ../uni uni
 	(cd HetCATS; $(MAKE) driftedSources; ./clean.sh)
-	find HetCATS -name CVS -exec $(RM) -r {} \;
+	find HetCATS -name CVS | xargs -r $(RM) -r
 	tar zcvf HetCATS.tgz HetCATS     
 
 #############################
