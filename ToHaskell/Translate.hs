@@ -1,4 +1,4 @@
-module Translate where
+module ToHaskell.Translate where
 
 import HasCASL.As
 import Haskell.Language.Syntax
