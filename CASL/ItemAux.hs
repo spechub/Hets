@@ -1,3 +1,17 @@
+
+{- HetCATS/CASL/ItemAux.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+   
+   parse a list of items separated by semicolons (or dots) including annotations 
+   The leading keyword may be singular or plural
+
+   CASL-Summary
+   Draft from 8 April 2002 
+   C.5 Comments and Annotations
+-}
+
 module ItemAux where
 
 import Id(Token())

@@ -1,3 +1,19 @@
+
+{- HetCATS/CASL/Lexer.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+
+   scanner for CASL tokens and extensions to parsec
+   
+   http://www.cs.uu.nl/~daan/parsec.html)
+   
+   http://www.cofi.info/Documents/CASL/Summary/
+   from 25 March 2001
+   C.4 Lexical Syntax
+
+-}
+
 module Lexer ( bind, (<<), (<:>), (<++>), signChars, scanLPD
 	     , begDoEnd, flat, single, separatedBy
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
@@ -217,6 +233,7 @@ keyWord p = try(p << notFollowedBy scanLPD)
 keySign :: GenParser Char st a -> GenParser Char st a
 keySign p = try(p << notFollowedBy (oneOf signChars))
 
+-- check for keywords (depending on lexem class)
 toKey s = let p = string s in 
 	      if last s `elem` "[]{}(),;" then p 
 		 else if last s `elem` signChars then keySign p 

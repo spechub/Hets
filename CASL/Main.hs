@@ -1,15 +1,23 @@
+
+{- HetCATS/CASL/Main.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+   
+   test some parsers (and printers)
+-}
+
 module Main where
 
 import Id
 import Token
 import Formula
--- import LocalEnv
 import Parsec
 import ParsecPos
 import Pretty
 import PrettyPrint
 import System
-import PrintFormula
+import Print_AS_Basic
 import SortItem
 import OpItem
 

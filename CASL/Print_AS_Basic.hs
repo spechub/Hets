@@ -1,20 +1,14 @@
------------------------------------------------------------------------------
--- 
--- Module      :  PrintFormula
--- Copyright   :  (c) Christian Maeder 2002
--- License     :  
--- 
--- Maintainer  :  maeder@tzi.de
--- Stability   :  experimental 
--- Portability :  ghc-5.02.3 / Haskell98 compatible
---
--- $Header$
---
--- Description : create a readable string (Pretty.Doc) for formulae 
---               and other data types of the AS_Basic_CASL
------------------------------------------------------------------------------
 
-module PrintFormula where
+{- HetCATS/CASL/Print_AS_Basic.hs
+   $Id$
+   Authors: Christian Maeder
+            Klaus Lüttich
+   Year:    2002
+   
+   printing AS_BASIC data types
+-}
+
+module Print_AS_Basic where
 
 import AS_Basic_CASL
 import AS_Annotation

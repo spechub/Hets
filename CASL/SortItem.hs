@@ -1,3 +1,17 @@
+
+{- HetCATS/CASL/SortItem.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+   
+   parse SORT-ITEM and "sort/sorts SORT-ITEM ; ... ; SORT-ITEM"
+
+   http://www.cofi.info/Documents/CASL/Summary/
+   from 25 March 2001
+
+   C.2.1 Basic Specifications with Subsorts
+-}
+
 module SortItem where
 
 import Id

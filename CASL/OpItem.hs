@@ -1,3 +1,17 @@
+
+{- HetCATS/CASL/OpItem.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+   
+   parse OP-ITEM and "op/ops OP-ITEM ; ... ; OP-ITEM"
+
+   http://www.cofi.info/Documents/CASL/Summary/
+   from 25 March 2001
+
+   C.2.1 Basic Specifications with Subsorts
+-}
+
 module OpItem where
 
 import Id

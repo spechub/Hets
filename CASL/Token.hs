@@ -1,4 +1,63 @@
--- $Header$
+
+{- HetCATS/CASL/Token.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+   
+   parser for CASL IDs
+   http://www.cofi.info/Documents/CASL/Summary/
+   from 25 March 2001
+
+   C.2.1 Basic Specifications with Subsorts
+
+SIMPLE-ID       ::= WORDS
+ID              ::= TOKEN-ID  |  MIXFIX-ID
+TOKEN-ID        ::= TOKEN
+MIXFIX-ID       ::= TOKEN-ID PLACE-TOKEN-ID ... PLACE-TOKEN-ID
+                  |          PLACE-TOKEN-ID ... PLACE-TOKEN-ID
+PLACE-TOKEN-ID  ::= PLACE TOKEN-ID
+                  | PLACE
+PLACE           ::= __
+
+TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR 
+                  | SIGNS
+
+   SIGNS are adapted here and more permissive as in the summary
+   WORDS and NO-BRACKET-SIGNS are treated equally
+   legal are, ie. "{a}", "{+}", "a{}="
+   illegal is "a=" (no two SIMPLE-TOKEN stay beside each other)
+ 
+   SIMPLE-TOKEN ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR   
+                  | NO-BRACKET-SIGNS
+  
+   SIGNS = BRACKETS SIMPLE-TOKEN BRACKETS ... BRACKETS SIMPLE-TOKEN
+         | BRACKETS SIMPLE-TOKEN BRACKETS ... BRACKETS SIMPLE-TOKEN BRACKETS
+	 | SIMPLE-TOKEN BRACKETS ... BRACKETS SIMPLE-TOKEN
+	 | SIMPLE-TOKEN BRACKETS ... BRACKETS SIMPLE-TOKEN BRACKETS
+	 | BRACKETS
+	 | SIMPLE-TOKEN
+
+   A SIMPLE-TOKEN followed by "[" outside nested brackets 
+   will be taken as the beginning of a compound list.
+   Within SIGNS brackets need not be balanced, 
+   only after their composition to a MIXFIX-ID.
+
+   BRACKETS = BRACKET ... BRACKET
+   BRACKET         ::= [  |  ]  |  {  |  }
+
+   2.4 Identifiers
+   brackets/braces within MIXFIX-ID must be balanced
+
+   C.2.2 Structured Specifications
+
+   TOKEN-ID        ::= ...  |  TOKEN [ ID ,..., ID ]
+
+   A compound list must follow the last TOKEN within MIXFIX-ID,
+   so a compound list is never nested within (balanced) mixfix BRACKETS.
+   Only PLACEs may follow a compound list.
+   The IDs within the compound list may surely be compound IDs again.
+-}
+
 module Token where
 
 import Keywords

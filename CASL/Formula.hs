@@ -1,18 +1,39 @@
------------------------------------------------------------------------------
--- 
--- Module      :  Formula
--- Copyright   :  (c) Christian Maeder 2002
--- License     :  
--- 
--- Maintainer  :  maeder@tzi.de
--- Stability   :  experimental 
--- Portability :  ghc-5.02.3 / Haskell98 compatible
---
--- $Header$
---
--- Description : parse terms and formulae
---               
------------------------------------------------------------------------------
+
+{- HetCATS/CASL/Formula.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+   
+   parse terms and formulae
+
+   http://www.cofi.info/Documents/CASL/Summary/
+   from 25 March 2001
+   C.2.1 Basic Specifications with Subsorts
+
+   remarks: 
+   
+   when-else-TERMs are non-mixfix, 
+   because when-else has lowest precedence.
+   C.3.1 Precedence
+ 
+   Sorted (or casted) terms are not directly recognized, 
+   because "u v : s" may be "u (v:s)" or "(u v):s"
+   
+   No term or formula may start with a parenthesized argument list that
+   includes commas.
+
+   The arguments of qualified ops or preds can only be given by a following
+   parenthesized argument list.
+
+   Braced or bracketed term-lists including commas stem from a possible 
+   %list-annotation or (for brackets) from compound lists.
+
+   C.6.3 Literal syntax for lists
+   
+   `%list b1__b2, c, f'. 
+   b1 must contain at least one open brace or bracket ("{" or [")
+   and all brackets must be balanced in "b1 b2" (the empty list).
+-}
 
 module Formula where
 

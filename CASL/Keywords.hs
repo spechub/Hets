@@ -1,37 +1,30 @@
------------------------------------------------------------------------------
--- 
--- Module      :  Keywords (for CASL)
--- Copyright   :  (c) Christian Maeder 2002
--- License     :  
--- 
--- Maintainer  :  maeder@tzi.de
--- Stability   :  experimental 
--- Portability :  ghc-5.02.3 / Haskell98 compatible
---
--- $Header$
---
--- Description : string constants for CASL keywords 
---               to be used for parsing and printing   
---               mixed case identifiers (usually keyword plus capital S)
------------------------------------------------------------------------------
+
+{- HetCATS/CASL/Keywords.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+   
+   string constants for CASL keywords to be used for parsing and printing
+   all exported identifiers are mixed case (usually keyword plus capital S)
+
+   http://www.cofi.info/Documents/CASL/Summary/
+   from 25 March 2001
+   C.4 Lexical Syntax
+-}
 
 module Keywords where
 
 -- ----------------------------------------------
--- casl quasi keywords for sorts 
+-- casl special strings 
 -- ----------------------------------------------
 
 exMark = "!" -- in "exists!"
 quMark = "?"
 funS = "->"
-pFun = funS++quMark
 prodS = "*"
 timesS = "\215"
 lessS = "<"
 colonS = ":"
-
-non_sort_signs = [colonS, equalS, lessS, prodS, timesS, 
-	   quMark, funS, pFun]
 
 -- ----------------------------------------------
 -- casl keywords
@@ -42,8 +35,7 @@ cDot = "\183"
 barS = "|"
 mapsTo = "|->"
 defnS = "::="
-pColon = colonS++quMark
-casl_reserved_ops = [colonS, pColon, defnS, dotS, cDot, barS, mapsTo]
+casl_reserved_ops = [colonS, colonS++quMark, defnS, dotS, cDot, barS, mapsTo]
 
 equalS = "="
 exEqual = "=e="  -- unusual keyword 
