@@ -7,9 +7,9 @@ where
 
 import Data.FiniteMap
 import Data.List
-import Monad
-import IORef
-import Char
+import Control.Monad
+import Data.IORef
+import Data.Char
 
 import DaVinciGraph
 import GraphDisp

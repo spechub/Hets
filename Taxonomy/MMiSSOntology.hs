@@ -97,9 +97,7 @@ module Taxonomy.MMiSSOntology (
 where
 
 import Computation hiding (try)
--- import List
-import System
-import List
+import Data.List
 import Data.FiniteMap 
 
 import Data.Graph.Inductive

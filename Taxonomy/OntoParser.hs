@@ -16,10 +16,8 @@ where
 
 import Taxonomy.MMiSSOntology
 import Computation hiding (try)
-import Parsec
-import ParsecError
-import List
-import System
+import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Error
 
 type Other = String
 
