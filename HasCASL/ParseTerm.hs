@@ -34,22 +34,6 @@ qColonT = asKey (colonS++quMark)
 forallT = asKey forallS
 
 -----------------------------------------------------------------------------
--- classDecl
------------------------------------------------------------------------------
-
-pparseDownSet = 
-	     do c <- className
-		e <- equalT     
-	        o <- oBraceT
-		i <- typeVar
-		d <- dotT
-                j <- asKey (tokStr i)
-		l <- lessT
-                t <- parseType
-		p <- cBraceT
-		return (DownsetDefn c i t (map tokPos [e,o,d,j,l,p])) 
-
------------------------------------------------------------------------------
 -- kind
 -----------------------------------------------------------------------------
 
@@ -97,11 +81,12 @@ curriedKind os ps = do a <- asKey funS
 
 idToken = pToken (scanQuotedChar <|> scanDotWords 
 		 <|> scanDigit <|> scanWords <|> placeS <|> 
-		  reserved hascasl_reserved_ops scanAnySigns)
+		  reserved (formula_ops ++ hascasl_reserved_ops) scanAnySigns)
 
 typeToken :: GenParser Char st Type
 typeToken = fmap TypeToken (pToken (toKey typeS <|> scanWords <|> placeS <|> 
 				    reserved (hascasl_type_ops ++
+					      formula_ops ++
 					      hascasl_reserved_ops)
 				    scanAnySigns))
 
@@ -332,9 +317,11 @@ typedPattern p = do { c <- colonT
 		    }
 
 asPattern = do { v <- mixPattern
-	       ; c <- asT 
-	       ; t <- mixPattern 
-	       ; return (AsPattern v t [tokPos c])
+	       ; do { c <- asT 
+		    ; t <- mixPattern 
+		    ; return (AsPattern v t [tokPos c])
+		    } 
+		 <|> return v
 	       }
 
 pattern = asPattern
@@ -365,7 +352,7 @@ typeScheme = do f <- forallT
 -----------------------------------------------------------------------------
 
 tToken = pToken(scanFloat <|> scanString 
-		       <|> scanQuotedChar <|> scanDotWords <|> scanWords 
+		       <|> scanQuotedChar <|> scanDotWords <|> scanTermWords 
 		       <|> reserved hascasl_reserved_ops scanAnySigns 
 		       <|> placeS <?> "id/literal" )
 

@@ -11,12 +11,15 @@ import System
 
 main = do {l <- getArgs;
 	   if length l < 2 then print 
-	   "usage: main {id,type,term,items} <filename>"
+	   "usage: main <opt> <filename>"
 	   else let opt = head l 
 	            file = head (tail l)
 	   in if opt == "id" then checkLines uninstOpName file
+	   else if opt == "typename" then checkLines typeName file
 	   else if opt == "type" then checkLines parseType file
 	   else if opt == "term" then checkLines term file
+	   else if opt == "typepattern" then checkLines typePattern file
+	   else if opt == "pattern" then checkLines pattern file
 --	   else if opt == "items" then parseSpec file
 	   else print ("unknown option: " ++ opt) 
 	  }
