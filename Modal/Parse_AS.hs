@@ -40,7 +40,3 @@ basicItems = fmap Sig_items sigItems
 
 sigItems :: AParser SIG_ITEMS
 sigItems = sortItems <|> opItems <|> predItems <|> typeItems
-            
-
-
-
