@@ -91,7 +91,7 @@ instance Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree =>
          Language (IdComorphism lid sublogics) where
            language_name (IdComorphism lid sub) = 
-             "id_"++language_name lid++"."++show sub
+             "id_"++language_name lid++"."++head (sublogic_names lid sub)
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
