@@ -1,0 +1,2988 @@
+cofi.bib
+
+BibTeX data for publications on:
+
+* CoFI: The Common Framework Initiative
+        for algebraic specification and development
+
+* CASL: The Common Algebraic Specification Language
+
+The companion file cofi-abbr.bib provides abbreviated output.
+
+Maintained by Peter D. Mosses <pdmosses at brics.dk>
+
+Last updated: 11 Jan 2004
+
+See <http://www.cofi.info/Bibliography> for updates.
+
+****************************************************************
+JOURNALS:
+
+@String{acmcs =  "ACM Computing Surveys"}
+
+@String{acta =   "Acta Informatica"}
+
+@String{cacm =   "Communications of the ACM"}
+
+@String{cai =    "Computing and Informatics"}
+
+@String{eatcs =  "Bulletin of the EATCS"}
+
+@String{fac =    "Formal Aspects of Computing"}
+
+@String{ieeese = "IEEE Transactions on Software Engineering"}
+
+@String{ieeetc = "IEEE Transactions on Computers"}
+
+@String{ipl =    "Information Processing Letters"}
+
+@String{jacm =   "Journal of the ACM"}
+
+@String{jcss =   "Journal of Computer and System Sciences"}
+
+@String{jlc =    "Journal of Logic and Computation"}
+
+@String{njc =    "Nordic Journal of Computing"}
+
+@String{scp =    "Science of Computer Programming"}
+
+@String{sicomp = "SIAM Journal on Computing"}
+
+@String{tocs =   "ACM Transactions on Computer Systems"}
+
+@String{toplas = "ACM Transactions on Programming Languages and
+                 Systems"}
+
+@String{tcs =    "Theoretical Computer Science"}
+
+@String{spe =    "Software: Practice and Experience"}
+
+SERIES, to be concatenated with the VOLUME NUMBER:
+
+@String{amast =  "AMAST Series in Computing Vol.~"}
+
+@String{entcs =  "ENTCS Vol.~"}
+
+@String{facit =  "FACIT (Formal Approaches to Computing and Information
+                 Technology)"}
+
+@String{lncs =   "LNCS Vol.~"}
+
+E.g. series = lncs # "1234", and OMIT volume = ...
+
+TYPES:
+
+@String{chap =   "Chapter"}
+
+@String{tech-rep = "Technical Report"}
+
+PUBLISHERS:
+
+@String{pub-acm = "ACM Press"}
+
+@String{pub-bcs = "British Computer Society"}
+
+@String{pub-cup = "Cambridge University Press"}
+
+@String{pub-elsevier = "Elsevier"}
+
+@String{pub-ieee = "IEEE Press"}
+
+@String{pub-ios = "IOS Press"}
+
+@String{pub-kluwer = "Kluwer Academic Publishers Group"}
+
+@String{pub-oxford = "Oxford University Press"}
+
+@String{pub-prentice-hall = "Prentice-Hall"}
+
+@String{pub-springer = "Springer"}
+
+@String{pub-world-sci = "World Scientific"}
+
+****************************************************************
+REFERENCES:
+
+* The tag format is generally Author:YYYY:TTT, where:
+* - Author is surname of first author
+* - YYYY is the 4-digit year of PUBLICATION
+* - TTT is usually the initial letters of
+*   the first 3 SIGNIFICANT words in the title
+
+@InProceedings{Ancona:2000:ECL,
+  author =       "Davide Ancona and Maura Cerioli and Elena Zucca",
+  title =        "Extending \textsc{Casl} by Late Binding",
+  pages =        "53--72",
+  crossref =     "WADT-99",
+  URL =          "ftp://ftp.disi.unige.it/pub/person/AnconaD/DISI-TR-99-14.ps.gz",
+  abstract =     "We define an extension of \textsc{Casl}, the standard
+                 language for algebraic specification, with a late
+                 binding mechanism. More precisely, we introduce a
+                 special kind of functions called methods, for which,
+                 differently to what happens for usual functions,
+                 overloading resolution is delayed at evaluation time
+                 and not required to be conservative. The extension
+                 consists, at the semantic level, in the definition of
+                 an institution LBInst supporting late binding which is
+                 defined on top of the standard subsorted institution of
+                 \textsc{Casl} and, at the linguistic level, in the
+                 enrichment of the \textsc{Casl} language with
+                 appropriate constructs for dealing with methods. In
+                 addition to this, we propose a further enrichment of
+                 the \textsc{Casl} language which is made possible by
+                 introduction of late binding, that is a mechanism for
+                 ``inheriting'' axioms from a supersort with the
+                 possibility of overriding them. The aim is to obtain
+                 advantages in terms of reuse of specifications similar
+                 to those obtained by inheritance in object-oriented
+                 programming languages.",
+  annote =       "Proposes an extension of \textsc{Casl} with methods,
+                 which are special functions s.t.\ overloading
+                 resolution for them is delayed to evaluation time and
+                 is not required to be conservative.",
+}
+
+@InProceedings{Aspinall:2002:FSC,
+  author =       "David Aspinall and Donald Sannella",
+  title =        "From Specifications to Code in \textsc{Casl}",
+  pages =        "1--14",
+  crossref =     "AMAST-2002",
+  URL =          "http://www.dcs.ed.ac.uk/home/dts/pub/amast2002.pdf",
+  abstract =     "The status of the Common Framework Initiative
+                 (\textsc{CoFI}) and the Common Algebraic Specification
+                 Language (\textsc{Casl}) are briefly presented. One
+                 important outstanding point concerns the relationship
+                 between \textsc{Casl} and programming languages; making
+                 a proper connection is obviously central to the use of
+                 \textsc{Casl} specifications for software specification
+                 and development. Some of the issues involved in making
+                 this connection are discussed.",
+  annote =       "Discusses the relationship between \textsc{Casl} and
+                 programming languages.",
+}
+
+@InProceedings{Astesiano:1998:UHM,
+  author =       "Egidio Astesiano and Gianna Reggio",
+  title =        "{UML} as Heterogeneous Multiview Notation: Strategies
+                 for a Formal Foundation",
+  editor =       "L. Andrade and A. Moreira and A. Deshpande and S.
+                 Kent",
+  booktitle =    "Proceedings of the OOPSLA'98 Workshop on Formalizing
+                 UML. Why? How?",
+  year =         "1998",
+  publisher =    pub-acm,
+annote =
+"The paper presents some initial ideas about the
+formalization of the  UML."
+}
+
+@InCollection{Astesiano:1999:ASC,
+  author =       "Egidio Astesiano and Manfred Broy and Gianna Reggio",
+  title =        "Algebraic Specification of Concurrent Systems",
+  chapter =      "13",
+  type =         chap,
+  crossref =     "IFIP-AFS",
+annote = "Presents a survey of the algebraic methods
+for the specification of 
+concurrent systems,  using a common
+simple example, 
+and classifying them in four kinds."
+}
+
+@InProceedings{Astesiano:2000:PDC,
+  author =       "Egidio Astesiano and Maura Cerioli and Gianna Reggio",
+  title =        "Plugging Data Constructs into Paradigm-Specific
+                 Languages: Towards an Application to {UML}",
+  pages =        "273--292",
+  crossref =     "AMAST-2000",
+  URL =          "ftp://ftp.disi.unige.it/pub/person/ReggioG/AstesianoEtAll00a.ps",
+  abstract =     "We are interested in the composition of languages, in
+                 particular a data description language and a
+                 paradigm-specific language, from a pragmatic point of
+                 view. Roughly speaking our goal is the description of
+                 languages in a component-based style, focussing on the
+                 data definition component. The proposed approach is to
+                 substitute the constructs dealing with data from the
+                 ``data'' language for the constructs describing data
+                 that are not specific to the particular paradigm of the
+                 ``paradigm-specific'' language in a way that syntax,
+                 semantics as well as methodologies of the two
+                 components are preserved. We illustrate our proposal on
+                 a toy example: using the algebraic specification
+                 language \textsc{Casl}, as data language, and a
+                 ``pre-post'' condition logic à la Hoare, as the
+                 paradigm specific one. A more interesting application
+                 of our technique is fully worked out elsewhere and the
+                 first step towards an application to UML, that is an
+                 analysis of UML from the data viewpoint, following the
+                 guidelines given here, is sketched at the end.",
+annote = "Presents an approach for the composition of languages, in
+                 particular a data description language and a
+                 paradigm-specific language, exemplified by sketching how 
+                 to combine UML and a data language."
+}
+
+@Article{Astesiano:2001:LTL,
+  author =       "Egidio Astesiano and Gianna Reggio",
+  title =        "{Labelled Transition Logic}: An Outline",
+  journal =      acta,
+  year =         "2001",
+  volume =       "37",
+  number =       "11--12",
+  OPTpublisher = pub-springer,
+  abstract =     "In the last ten years we have developed and
+                 experimented in a series of projects, including
+                 industry test cases, a method for the specification of
+                 reactive/distributed/\ldots\ systems both at the
+                 requirement and at the design level. We present here in
+                 outline its main technical features, providing
+                 appropriate references for more detailed presentations
+                 of single aspects and applications. The overall main
+                 feature of the method is its logical (algebraic)
+                 character, because it extends to labelled transition
+                 systems the logical/algebraic specification method of
+                 abstract data types; moreover systems are viewed as
+                 data within first-order structures called
+                 LT-structures. Some advantages of the approach are the
+                 full integration of the specification of static data
+                 and of dynamic systems, which includes by free
+                 higher-order concurrency, and the exploitation of
+                 well-explored classical techniques in many respects,
+                 including implementation and tools.",
+  annote =       "Outlines a logical (algebraic) method for the
+                 specification of reactive/distributed systems both at
+                 the requirement and at the design level, providing
+                 references for detailed presentations of single aspects
+                 and applications.",
+}
+
+@Article{Astesiano:2002:CASL,
+  author =       "Egidio Astesiano and Michel Bidoit and H{\'e}l{\`e}ne
+                 Kirchner and Bernd Krieg-Br{\"u}ckner and Peter D.
+                 Mosses and Donald Sannella and Andrzej Tarlecki",
+  title =        "\textsc{Casl}: The {Common Algebraic Specification
+                 Language}",
+  journal =      tcs,
+  year =         "2002",
+  volume =       "286",
+  number =       "2",
+  pages =        "153--196",
+  abstract =     "The Common Algebraic Specification Language
+                 (\textsc{Casl}) is an expressive language for the
+                 formal specification of functional requirements and
+                 modular design of software. It has been designed by
+                 COFI, the international Common Framework Initiative for
+                 algebraic specification and development. It is based on
+                 a critical selection of features that have already been
+                 explored in various contexts, including subsorts,
+                 partial functions, first-order logic, and structured
+                 and architectural specifications. \textsc{Casl} should
+                 facilitate interoperability of many existing algebraic
+                 prototyping and verification tools. This paper gives an
+                 overview of the \textsc{Casl} design. The major issues
+                 that had to be resolved in the design process are
+                 indicated, and all the main concepts and constructs of
+                 \textsc{Casl} are briefly explained and illustrated the
+                 reader is referred to the \textsc{Casl} Language
+                 Summary for further details. Some familiarity with the
+                 fundamental concepts of algebraic specification would
+                 be advantageous.",
+  annote =       "Gives an overview of the \textsc{Casl} design,
+                 indicating major issues, and explaining main concepts
+                 and constructs. Compares \textsc{Casl} to some other
+                 major algebraic specification languages.",
+}
+
+@InProceedings{Autexier:2000:TEF,
+  author =       "Serge Autexier and Dieter Hutter and Heiko Mantel and
+                 Axel Schairer",
+  title =        "Towards an Evolutionary Formal Software-Development
+                 Using \textsc{Casl}",
+  pages =        "73--88",
+  crossref =     "WADT-99",
+  annote =       "Defines a translation of a subset of CASL into the
+                 notion of development graphs, in order to maintain
+                 evolving \textsc{Casl} specifications.",
+}
+
+@InProceedings{Autexier:2002:DGM,
+  author =       "Serge Autexier and Dieter Hutter and Till Mossakowski
+                 and Axel Schairer",
+  title =        "The Development Graph Manager \textsc{Maya} (System
+                 Description)",
+  crossref =     "AMAST-2002",
+  pages =        "495--502",
+  annote =       "Explains the \textsc{Maya} system, which maintains
+                 structured specifications and their proofs with the
+                 help of development graphs.",
+}
+
+@InProceedings{Autexier:2002:IHD,
+  author =       "Serge Autexier and Till Mossakowski",
+  title =        "Integrating \textsc{Hol-Casl} into the Development
+                 Graph Manager \textsc{Maya}",
+  pages =        "2--17",
+  crossref =     "FROCOS-2002",
+  abstract =     "For the recently developed specification language
+                 \textsc{Casl}, there exist two different kinds of proof
+                 support: while \textsc{Hol-Casl} has its strength in
+                 proofs about specifications in-the-small, MAYA has been
+                 designed for management of proofs in (\textsc{Casl})
+                 specifications in-the-large, within an evolutionary
+                 formal software development process involving changes
+                 of specifications. In this work, we discuss our
+                 integration of \textsc{Hol-Casl} and MAYA into a
+                 powerful system providing tool support for
+                 \textsc{Casl}, which will also serve as a basis for the
+                 integration of further proof tools.",
+  annote =       "\textsc{Maya} provides management of proofs for
+                 structured specifications; \textsc{Hol-Casl} is a
+                 prover for \textsc{Casl} basic specifications. Here,
+                 these two are combined",
+}
+
+@InProceedings{Baumeister:2000:ASC,
+  author =       "Hubert Baumeister and Didier Bert",
+  title =        "Algebraic Specification in \textsc{Casl}",
+  crossref =     "FACIT-2000",
+  chapter =      "12",
+  type =         chap,
+  pages =        "209--224",
+  URL =          "http://www.informatik.uni-muenchen.de/~baumeist/CoFI/case/pubs/casl-case.ps.gz",
+  annote =       "Explains the basic features of \textsc{Casl}
+                 specifications using the warehouse case study.",
+}
+
+@InProceedings{Baumeister:2000:RAD,
+  author =       "Hubert Baumeister",
+  title =        "Relating Abstract Datatypes and {Z}-Schemata",
+  pages =        "366--382",
+  crossref =     "WADT-99",
+  URL =          "http://www.informatik.uni-muenchen.de/~baumeist/publications/wadt99.pdf",
+  abstract =     "In this paper we investigate formally the relationship
+                 between the notion of abstract datatypes in an
+                 arbitrary institution, found in algebraic specification
+                 languages like Clear, ASL and \textsc{Casl}; and the
+                 notion of schemata from the model-oriented
+                 specification language Z. To this end the institution S
+                 of the logic underlying Z is defined and a translation
+                 of Z-schemata to abstract datatypes over S is given.
+                 The notion of a schema is internal to the logic of Z
+                 and thus specification techniques of Z relying on the
+                 notion of a schema can only be applied in the context
+                 of Z. By translating Z-schemata to abstract datatypes
+                 these specification techniques can be transformed to
+                 specification techniques using abstract datatypes.
+                 Since the notion of abstract datatypes is institution
+                 independent, this results in a separation of these
+                 specification techniques from the specification
+                 language Z and allows them to be applied in the context
+                 of other, e.g. algebraic, specification languages.",
+  annote =       "Defines an institution for the logic underlying Z.
+                 Shows a translation of Z-schemata to abstract datatypes
+                 over that institution.",
+}
+
+@InProceedings{Baumeister:2000:SBE,
+  author =       "Hubert Baumeister and Alexandre V. Zamulin",
+  title =        "State-Based Extension of \textsc{Casl}",
+  pages =        "3--24",
+  crossref =     "IFM-2000",
+  URL =          "http://www.informatik.uni-muenchen.de/~baumeist/ifm2000.ps.gz",
+  abstract =     "A state-based extension of the algebraic specification
+                 language \textsc{Casl} is presented. It permits the
+                 specification of the static part of a complex dynamic
+                 system by means of \textsc{Casl} and the dynamic part
+                 by means of the facilities described in the paper. The
+                 dynamic system is defined as possessing a number of
+                 states and a number of operations (procedures) for
+                 transforming one state into another. Each state
+                 possesses one and the same static part specified by
+                 \textsc{Casl} and a varying part specified by
+                 additional tools. The varying part includes dynamic
+                 sorts/functions/predicates and dependent
+                 functions/predicates. The dependent
+                 functions/predicates are specified by formulae using
+                 the names of the dynamic functions/predicates so that
+                 each time one of the last ones is updated the
+                 corresponding former ones are also updated. The updates
+                 of the dynamic entities are produced by procedures
+                 which are specified by means of preconditions,
+                 postconditions and dynamic equations.",
+  annote =       "Presents an extension of \textsc{Casl} for writing
+                 model-oriented specifications. The extension is based
+                 on the state-as-algebra approach.",
+}
+
+@InCollection{Baumeister:2004:CASL-Semantics,
+  author =       "Hubert Baumeister and Maura Cerioli and Anne
+                 Haxthausen and Till Mossakowski and Peter D. Mosses and
+                 Donald Sannella and Andrzej Tarlecki",
+  title =        "\textsc{Casl} Semantics",
+  chapter =      "III",
+  type =         "Part",
+  note =         "Edited by D. Sannella and A. Tarlecki",
+  crossref =     "CASL-RM",
+  annote =       "Presents the complete semantics of \textsc{Casl} in
+                 natural semantics style.",
+}
+
+@InProceedings{Bert:2000:ASO,
+  author =       "Didier Bert and S. {Lo Presti}",
+  title =        "Algebraic Specification of Operator-based Multimedia
+                 Scenarios",
+  pages =        "383--400",
+  crossref =     "WADT-99",
+  annote =       "Presents a set of algebraic operators in CASL to
+                 create complex scenarios. Provides a semantics in a
+                 temporal model and shows how to derive some properties
+                 of the scenarios.",
+}
+
+@InProceedings{Bidoit:1998:ASC,
+  author =       "Michel Bidoit and Donald Sannella and Andrzej
+                 Tarlecki",
+  title =        "Architectural Specifications in \textsc{Casl}",
+  pages =        "341--357",
+  crossref =     "AMAST-98",
+  note =         "An extended and improved version is
+                 \citeann{ann-Bidoit:2002:ASC}",
+  annote =       "Motivates and presents \textsc{Casl} architectural
+                 specifications.",
+}
+
+@Article{Bidoit:2002:ASC,
+  author =       "Michel Bidoit and Donald Sannella and Andrzej
+                 Tarlecki",
+  title =        "Architectural Specifications in \textsc{Casl}",
+  journal =      fac,
+  year =         "2002",
+  volume =       "13",
+  pages =        "252--273",
+  URL =          "http://www.dcs.ed.ac.uk/home/dts/pub/archs.pdf",
+  abstract =     "One of the most novel features of \textsc{Casl}, the
+                 Common Algebraic Specification Language, is the
+                 provision of so-called architectural specifications for
+                 describing the modular structure of software systems. A
+                 brief discussion of refinement of \textsc{Casl}
+                 specifications provides the setting for a presentation
+                 of the rationale behind architectural specifications.
+                 This is followed by some details of the features
+                 provided in \textsc{Casl} for architectural
+                 specifications, hints concerning their semantics, and
+                 simple results justifying their usefulness in the
+                 development process.",
+  annote =       "Gives an informal motivation for and presentation of
+                 \textsc{Casl} architectural specifications, with hints
+                 on their semantics and use in the development
+                 process.",
+}
+
+@InProceedings{Bidoit:2002:GDL,
+  author =       "Michel Bidoit and Donald Sannella and Andrzej
+                 Tarlecki",
+  title =        "Global Development via Local Observational
+                 Construction Steps",
+  pages =        "1--24",
+  crossref =     "MFCS-2002",
+  abstract =     "The way that refinement of individual ``local''
+                 components of a specification relates to development of
+                 a ``global'' system from a specification of
+                 requirements is explored. Observational interpretation
+                 of specifications and refinements add expressive power
+                 and flexibility while bringing in some subtle problems.
+                 The results are instantiated in the context of
+                 \textsc{Casl} architectural specifications.",
+  annote =       "Studies development steps that apply local
+                 constructions in a global context, and gives the
+                 semantics of a version of \textsc{Casl} architectural
+                 specifications, including their observational
+                 interpretation.",
+}
+
+@Book{Bidoit:2004:CASL-UM,
+  author =       "Michel Bidoit and Peter D. Mosses",
+  title =        "\textsc{Casl} User Manual",
+  publisher =    pub-springer,
+  year =         "2004",
+  series =       lncs # "2900 (IFIP Series)",
+  note =         "With chapters by Till Mossakowski, Donald Sannella,
+                 and Andrzej Tarlecki",
+  annote =       "Illustrates and discusses how to write \textsc{Casl}
+                 specifications, with additional chapters on
+                 foundations, tools, and libraries, a realistic case
+                 study, and a quick-reference overview of
+                 \textsc{Casl}.",
+}
+
+@InProceedings{Bidoit:2004:CFS,
+  author =       "Michel Bidoit and Donald Sannella and Andrzej
+                 Tarlecki",
+  title =        "Toward Component-Oriented Formal Software Development:
+                 An Algebraic Approach",
+  booktitle =    "Radical Innovations of Software and Systems
+                 Engineering in the Future, Proc. 9th Monterey Software
+                 Engineering Workshop, Venice, Italy, Sep. 2002",
+  editor =       "M. Wirsing and A. Knapp and S. Balsamo",
+  missingpages = "not known yet",
+  series =       lncs # "2941",
+  year =         "2004",
+  publisher =    pub-springer,
+  URL =          "http://www.dcs.ed.ac.uk/home/dts/pub/monterey.pdf",
+  abstract =     "Component based design and development of software is
+                 one of the most challenging issues in software
+                 engineering. In this paper, we adopt a somewhat
+                 simplified view of software components and discuss how
+                 they can be conveniently modeled in a framework that
+                 provides a modular approach to formal software
+                 development by means of stepwise refinements. In
+                 particular we take into account an observational
+                 interpretation of requirements specifications and study
+                 its impact on the definition of the semantics of
+                 specifications of (parametrized) components. Our study
+                 is carried out in the context of \textsc{Casl}
+                 architectural specifications.",
+  annote =       "Provides a light-weight introduction to
+                 \citeann{ann-Bidoit:2002:GDL}, with an illustrative example.",
+}
+
+@Article{Borzyszkowski:2000:GIC,
+  author =       "Tomasz Borzyszkowski",
+  title =        "Generalized Interpolation in \textsc{Casl}",
+  journal =      ipl,
+  year =         "2000",
+  volume =       "76",
+  pages =        "19--24",
+  URL =          "http://delta.math.univ.gda.pl/~tomek/papers/ipl00.pdf",
+  abstract =     "In this paper we consider the partial many-sorted 
+                  first-order logic and its extension to the subsorted 
+                  partial many-sorted first-order logic
+                  that underly the \textsc{Casl} specification formalism.
+                  First we present counterexamples showing that
+                  the generalization of the Craig Interpolation Property 
+                  does not hold for these logics in general 
+                  (i.e., with respect to arbitrary signature morphisms).
+                  Then we formulate conditions under which
+                  the generalization of the Craig Interpolation Property 
+                  holds for the first logic.",
+ annote =        "Gives a proof of the Craig Interpolation Property for 
+                  the partial many-sorted first-order logic, underlying \textsc{Casl}.
+                  This property is crucial for results presented 
+                  in~\cite{ann-Borzyszkowski:2002:LSS}.",
+}
+
+@InProceedings{Borzyszkowski:2000:HOL,
+  author =       "Tomasz Borzyszkowski",
+  title =        "Higher-Order Logic and Theorem Proving for Structured
+                 Specifications",
+  pages =        "401--418",
+  crossref =     "WADT-99",
+  URL =          "http://delta.math.univ.gda.pl/~tomek/papers/wadt99.pdf",
+  abstract =     "In this paper we present the higher-order 
+                  logic used in theorem-provers like
+                  the HOL system or Isabelle HOL logic
+                  as an institution. Then we show that for maps 
+                  of institutions into HOL that satisfy certain 
+                  technical conditions we can reuse the proof 
+                  system of the higher-order logic to reason 
+                  about structured specifications built over
+                  the institutions mapped into HOL.
+                  We also show some maps of institutions
+                  underlying the \textsc{Casl} specification formalism
+                  into HOL that satisfy conditions needed for 
+                  reusing proof systems.",
+  annote =       "Formulates conditions under which we can reuse 
+                  the HOL logic to reason about structured specifications 
+                  built over institutions mapped into HOL. It works also for 
+                  the \emph{structured part} of \textsc{Casl}.",
+}
+
+@Article{Borzyszkowski:2002:LSS,
+  author =       "Tomasz Borzyszkowski",
+  title =        "Logical systems for structured specifications",
+  journal =      tcs,
+  year =         "2002",
+  volume =       "286",
+  pages =        "197--245",
+  URL =          "http://delta.math.univ.gda.pl/~tomek/papers/tcs02.pdf",
+  abstract =     "We study proof systems for reasoning about 
+                  logical consequences and refinement of structured 
+                  specifications, based on similar
+                  systems proposed earlier in the literature.
+                  Following Goguen and Burstall, the notion of 
+                  an underlying logical system over which we build 
+                  specifications is formalized as an institution and 
+                  extended to a more general notion, called 
+                  $(\cal{D},\cal{T})$-institution.
+                  We show that under simple assumptions 
+                  (essentially: amalgamation and interpolation) 
+                  the proposed proof systems are sound and complete.
+                  The completeness proofs are inspired by proofs due 
+                  to M.~V.~Cengarle for specifications in first-order 
+                  logic and the logical systems for reasoning about them. 
+                  We then propose a methodology for reusing proof systems
+                  built over institutions rich enough to satisfy 
+                  the properties required for the completeness results 
+                  for specifications built over poorer institutions 
+                  where these properties need not hold.",
+  annote =       "Presents completeness results for proof 
+                  systems for structured specifications. 
+                  Also introduces a methodology for reusing complete proof systems 
+                  for systems that are not complete.",
+}
+
+@InProceedings{Brand:2000:DPT,
+  author =       "Mark G. J. {\iffalse{brandscheerder}\fi}{van den}
+                 Brand and Jeroen Scheerder",
+  author-alpha = "Mark G. J. {\iffalse{bs}\fi}{van den} Brand and Jeroen
+                 Scheerder",
+  title =        "Development of Parsing Tools for \textsc{Casl} using
+                 Generic Language Technology",
+  pages =        "89--105",
+  crossref =     "WADT-99",
+  abstract =     "An environment for the Common Algebraic Specification
+                 Language CASL consists of several independent tools. A
+                 number of CASL tools have been built using the
+                 algebraic specification formalism {\sc Asf+Sdf} and the
+                 {\sc Asf+Sdf} Meta-Environment. CASL supports
+                 user-defined syntax which non-trivial to process: {\sc
+                 Asf+Sdf} offers a powerful parsing technology
+                 (Generalized LR). Its interactive development
+                 environment facilitates rapid prototyping complemented
+                 bt early detection and correction of errors. A number
+                 of core technologies developed for the {\sc Asf+Sdf}
+                 Meta-Environment can be reused in the context of CASL.
+                 Furthermore, an instantiaion of a generic format
+                 developed for the representation of {\sc Asf+Sdf}
+                 specifications and terms provides a CASL-specific
+                 exchange format.",
+  annote =       "Describes the architecture of a \textsc{Casl} parser
+                 based on the SGLR parsing technology developed for
+                 \textsc{Asf+Sdf}, and discusses the mapping to abstract
+                 syntax trees represented as ATerms.",
+}
+
+@Article{Brand:2000:EAT,
+  author =       "Mark G. J. {\iffalse{brandjongklintolivier}\fi}{van
+                 den} Brand and Hayco A. {\iffalse{}\fi}{de} Jong and
+                 Paul Klint and Pieter A. Olivier",
+  author-alpha = "Mark G. J. {\iffalse{bjko}\fi}{van den} Brand and
+                 Hayco A. {\iffalse{}\fi}{de} Jong and Paul Klint and
+                 Pieter A. Olivier",
+  title =        "Efficient Annotated Terms",
+  journal =      spe,
+  year =         "2000",
+  volume =       "30",
+  number =       "3",
+  pages =        "259--291",
+abstract =
+"How do distributed applications exchange tree-like data structures? We
+introduce the abstract data type of \emph{Annotated Terms}
+(\emph{ATerms}) and discuss their design, implementation and
+application.  A comprehensive procedural interface enables
+creation and manipulation of ATerms in C or Java.
+The ATerm implementation is based on maximal subterm
+sharing and automatic garbage collection.
+A binary exchange format for the
+concise representation of ATerms (sharing preserved) allows the
+fast exchange of ATerms between applications.  In a typical
+application---parse trees which contain considerable redundant
+information---less than 2 \emph{bytes} are needed to represent
+a node in memory,
+and less than 2 \emph{bits} are needed to represent it in binary format.
+The implementation of ATerms scales up to the manipulation
+of ATerms in the giga-byte range.",
+annote = "Describes an efficient and generic representation of 
+tree-like data structures, and reports on several case studies, 
+including the abstract syntax of \textsc{Casl}.",
+}
+
+@Book{COMPASS:1997,
+  editor =       "Maura Cerioli and Martin Gogolla and H{\'e}l{\`e}ne
+                 Kirchner and Bernd Krieg-Br{\"u}ckner and Zhenyu Qian
+                 and Markus Wolf",
+  title =        "Algebraic System Specification and Development: Survey
+                 and Annotated Bibliography",
+  publisher =    "Shaker",
+  year =         "1998",
+  series =       "BISS Monographs",
+  edition =      "2nd",
+  annote = "Provides an overview of the state of the art in algebraic 
+  specification at the end of the 90's, with a comprehensive bibliography.
+  Discusses semantics, structuring constructs, specific algebraic 
+  paradigms, methodology issues, and existing tools.",
+}
+
+@InProceedings{Cerioli:1997:PSP,
+  author =       "Maura Cerioli and Anne Haxthausen and Bernd
+                 Krieg-Br{\"u}ckner and Till Mossakowski",
+  title =        "Permissive Subsorted Partial Logic in \textsc{Casl}",
+  pages =        "91--107",
+  crossref =     "AMAST-97",
+  abstract =     "This paper presents a permissive subsorted partial
+                 logic used in the CoFI Algebraic Specification
+                 Language. In contrast to other order-sorted logics,
+                 subsorting is not modeled by set inclusions, but by
+                 injective embeddings allowing for more general models
+                 in which subtypes can have different data type
+                 representations. Furthermore, there are no restrictions
+                 like monotonicity, regularity or local filtration on
+                 signatures at all. Instead, the use of overloaded
+                 functions and predicates in formulae is required to be
+                 sufficiently disambiguated, such that all parses have
+                 the same semantics. An overload resolution algorithm is
+                 sketched.",
+  annote =       "Presents the permissive subsorted partial logic used
+                 in the \textsc{Casl} semantics.",
+}
+
+@InCollection{Cerioli:1999:TEP,
+  author =       "Maura Cerioli and Till Mossakowski and Horst Reichel",
+  title =        "From Total Equational to Partial First-Order Logic",
+  chapter =      "3",
+  crossref =     "IFIP-AFS",
+  abstract =     "The focus of this chapter is the incremental
+                 presentation of partial first-order logic, seen as a
+                 powerful framework where the specification of most data
+                 types can be directly represented in the most natural
+                 way. Both model theory and logical deduction are fully
+                 described. Alternatives to partiality, like (variants
+                 of) error algebras and order-sortedness, are also
+                 discussed, emphasizing their uses and limitations.
+                 Moreover, both the total and the partial (positive)
+                 conditional fragments are investigated in detail, and
+                 in particular the existence of initial (free) models
+                 for such restricted logical paradigms is proved.
+                 Finally some more powerful algebraic frameworks are
+                 sketched.",
+  annote =       "Presents partial first-order logic, both model theory
+                 and logical deduction. Compares partial specifications
+                 to error algebras and order-sortedness.",
+}
+
+@TechReport{Choppy:1999:UCS,
+  author =       "Christine Choppy and Gianna Reggio",
+  title =        "Using \textsc{Casl} to Specify the Requirements and
+                 the Design: {A} Problem Specific Approach -- Complete
+                 Version",
+  institution =  "Univ. of Genova",
+  year =         "1999",
+  type =         tech-rep,
+  number =       "DISI-TR-99-33",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/ChoppyReggio99a.ps",
+  note =         "This is an extended version of \citeann{ann-Choppy:2000:UCS},
+                 including complete case studies.",
+  annote =       "Shows how formal specification skeletons may be
+                 associated with the structuring concepts provided by M.
+                 Jackson's Problem Frames, used to provide a first gross
+                 structure and characterization of the system under
+                 study.",
+}
+
+@InProceedings{Choppy:2000:UCS,
+  author =       "Christine Choppy and Gianna Reggio",
+  title =        "Using \textsc{Casl} to Specify the Requirements and
+                 the Design: {A} Problem Specific Approach",
+  pages =        "104--123",
+  crossref =     "WADT-99",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/ChoppyReggio99a.ps",
+  abstract =     "In his 1995 book, M. Jackson introduces the concept of
+                 \textit{problem frame} to describe specific classes of
+                 problems, to help in the specification and design of
+                 systems, and also to provide a framework for
+                 reusability. He thus identifies some particular frames,
+                 such as the translation frame (e.g., a compiler), the
+                 information system frame, the control frame (or
+                 reactive system frame), \ldots . Each frame is
+                 described along three viewpoints that are application
+                 domains, requirements, and design. Our aim is to use
+                 \textsc{Casl} (or possibly a sublanguage or an
+                 extension of \textsc{Casl} if and when appropriate) to
+                 formally specify the requirements and the design of
+                 particular classes of problems (``problem frames'').
+                 This goal is related to methodology issues for
+                 \textsc{Casl}, that are here addressed in a more
+                 specific way, having in mind some particular problem
+                 frame, i.e., a class of systems. It is hoped that this
+                 will provide both a help in using, in a really
+                 effective way, \textsc{Casl} for system specifications,
+                 a link with approaches that are currently used in the
+                 industry, and a framework for the reusability. This
+                 approach is illustrated with some case studies, e.g.,
+                 the information system frame is illustrated with the
+                 invoice system.",
+  note =         "An extended version is provided in
+                 \citeann{ann-Choppy:1999:UCS}",
+  annote =       "Shows how formal specification skeletons may be
+                 associated with the structuring concepts provided by M.
+                 Jackson's Problem Frames, used to provide a first gross
+                 structure and characterization of the system under
+                 study.",
+}
+
+@TechReport{Choppy:2003:TFG,
+  author =       "Christine Choppy and Gianna Reggio",
+  title =        "Towards a Formally Grounded Software Development
+                 Method",
+  year =         "2003",
+  institution =  "Univ. of Genova",
+  type =         tech-rep,
+  number =       "DISI-TR-03-35",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/ChoppyReggio03a.pdf",
+  url-ps =       "ftp://ftp.disi.unige.it/person/ReggioG/ChoppyReggio03a.ps",
+  month =        aug,
+  abstract =     "One of the goals of software engineering is to provide
+                 what is necessary to write relevant, legible, useful
+                 descriptions of the systems to be developed, which will
+                 be the basis of successful developments. This goal was
+                 addressed both from informal approaches (providing in
+                 particular visual languages) and formal ones (providing
+                 a formal sound semantic basis). Informal approaches are
+                 often driven by a software development method, and
+                 while formal approaches sometimes provide a user
+                 method, it is usually aimed at helping to use the
+                 proposed formalism/language when writing a
+                 specification. Our goal here is to provide a companion
+                 method that helps the user to understand the system to
+                 be developed, and to write the corresponding formal
+                 specifications. We also aim at supporting visual
+                 presentations of formal specifications, so as to ``make
+                 the best of both formal and informal worlds''. We
+                 developed this method for the (logical-algebraic)
+                 specification languages \textsc{Casl} (Common Algebraic
+                 Specification Language, developed within the joint
+                 initiative CoFI) and for an extension for dynamic
+                 systems \textsc{Cas-Ltl}, and we believe it is general
+                 enough to be adapted to other paradigms. Another
+                 challenge is that a method that is too general does not
+                 encompass the different kinds of systems to be studied,
+                 while too many different specialized methods and
+                 paradigms result in partial views that may be difficult
+                 to integrate in a single global one. We deal with this
+                 issue by providing a limited number of instances of our
+                 method, fitted for three different kinds of software
+                 items and two specification approaches, while keeping a
+                 common ``meta''-structure and way of thinking. More
+                 precisely, we consider here that a software item may be
+                 a simple dynamic system, a structured dynamic system,
+                 or a data structure. We also support both
+                 property-oriented (axiomatic) and model-oriented
+                 (constructive) specifications. We are thus providing
+                 support for the ``building-bricks'' tasks of
+                 specifying/modelling software artifacts that in our
+                 experience are needed for the development process. Our
+                 approach is illustrated with a lift case study, it was
+                 also used with other large case studies, and when used
+                 on projects by students yielded homogeneous results.
+                 Let us note that it may be used either as itself, e.g.,
+                 for requirements specification, or in combination with
+                 structuring concepts such as the Jackson's problem
+                 frames.",
+  annote =       "Presents guidelines for writing (and meanwhile
+                 understanding) descriptions/specifications, both in
+                 property-oriented and model-oriented styles. Provides
+                 visual descriptions, and formal specifications in
+                 \textsc{Casl-Ltl}.",
+}
+
+@TechReport{Choppy:2003:IUC,
+  author =       "Christine Choppy and Gianna Reggio",
+  title =        "Improving Use Case Based Requirements Using Formally
+                 Grounded Specifications (Complete Version)",
+  year =         "2003",
+  institution =  "Univ. of Genova",
+  type =         tech-rep,
+  number =       "DISI-TR-03-45",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/ChoppyReggio03c.pdf",
+  url-ps =       "ftp://ftp.disi.unige.it/person/ReggioG/ChoppyReggio03c.ps",
+  month =        oct,
+  note =         "A short version is to appear in Proc. FASE 2004",
+  abstract =     "Our approach aims at helping to produce adequate
+                 requirements, both clear and precise enough so as to
+                 provide a sound basis to the overall development. Our
+                 idea here is to find a way to combine both advantages
+                 of use cases and of formal specifications. We present a
+                 technique for improving use case based requirements,
+                 using the formally grounded development of the
+                 requirements specification, and that results both in an
+                 improved requirements capture, and in a requirement
+                 validation. The formally grounded requirements
+                 specification is written in a ``visual'' notation,
+                 using both diagrams and text, with a formal counterpart
+                 (written in the Casl and Casl-Ltl languages). Being
+                 formally grounded, our method is systematic, and it
+                 yields further questions on the system that will be
+                 reflected in the improved use case descriptions. The
+                 resulting use case descriptions are of high quality,
+                 more systematic, more precise, and its corresponding
+                 formally grounded specification is available. We
+                 illustrate our approach on part of the Auction System
+                 case study.",
+  annote =       "Presents a technique for improving use case based
+                 requirements, using the formally grounded development
+                 of the requirements specification (in \textsc{Casl} and
+                 \textsc{Casl-Ltl}).",
+}
+
+@Book{CoFI:2004:CASL-RM,
+  author =       "{CoFI (The Common Framework Initiative)}",
+  title =        "\textsc{Casl} Reference Manual",
+  year =         "2004",
+  publisher =    pub-springer,
+  series =       lncs # "2960 (IFIP Series)",
+  annote =       "Gives full details of the design of \textsc{Casl}: an
+                 informal language summary, concrete and abstract
+                 syntax, well-formedness and model-class semantics, and
+                 proof rules. Includes the libraries of basic
+                 datatypes.",
+}
+
+@InCollection{CoFI:2004:CASL-Summary,
+  author =       "{CoFI Language Design Group}",
+  title =        "\textsc{Casl} Summary",
+  chapter =      "I",
+  type =         "Part",
+  note =         "Edited by B.~Krieg-Br{\"u}ckner and P.~D.~Mosses",
+  crossref =     "CASL-RM",
+  annote =       "Gives an informal summary of the \textsc{Casl}
+                 constructs for basic, structured, architectural, and
+                 library specifications. Defines sublanguages and lists
+                 proposed extensions of \textsc{Casl}.",
+}
+
+@InCollection{CoFI:2004:CASL-Syntax,
+  author =       "{CoFI Language Design Group}",
+  title =        "\textsc{Casl} Syntax",
+  chapter =      "II",
+  type =         "Part",
+  note =         "Edited by B.~Krieg-Br{\"u}ckner and P.~D.Mosses",
+  crossref =     "CASL-RM",
+  annote =       "Defines the lexical, concrete, and abstract syntax of
+                 \textsc{Casl}.",
+}
+
+@InProceedings{Coscia:1999:JJT,
+  author =       "Eva Coscia and Gianna Reggio",
+  title =        "{JTN}: {A} {Java}-Targeted Graphic Formal Notation for
+                 Reactive and Concurrent Systems",
+  pages =        "77--97",
+  crossref =     "FASE-99",
+annote =
+"JTN is a formal graphic notation for Java-targeted
+design specifications 
+(i.e.,  of systems that will be
+implemented using Java).",
+}
+
+@Article{Costa:1997:SAD,
+  author =       "Gerardo Costa and Gianna Reggio",
+  title =        "Specification of Abstract Dynamic DataTypes: {A}
+                 Temporal Logic Approach",
+  journal =      tcs,
+  year =         "1997",
+  volume =       "173",
+  number =       "2",
+  pages =        "513--554",
+annote = "Proposes a logic which combines
+many-sorted first-order logic with branching-time
+combinators for the 
+specification of dynamic-data types.",
+}
+
+@Article{Haveraaen:1999:FSE,
+  author =       "Magne Haveraaen and Helmer Andr{\'e} Friis and Tor
+                 Arne Johansen",
+  title =        "Formal Software Engineering for Computational
+                 Modeling",
+  journal =      njc,
+  year =         "1999",
+  volume =       "6",
+  number =       "3",
+  pages =        "241--270",
+  OPTnote =      "Preliminary tech. report available at
+                 \url{http://www.ii.uib.no/saga/papers/sophus-4g.ps}",
+  annote =       "Descripes the development of a software family for
+                 seismic simulations. Algebraic methods are used for
+                 domain and software architecture engineering.
+                 Quantitative estimates of the benefits are made.",
+  abstract =     "Software itself may be considered a formal structure
+                 and may be subject to mathematical analysis. This leads
+                 to a discipline of formal software engineering (which
+                 is not necessarily the same as the use of formal
+                 methods in software engineering), where a formal
+                 understanding of what software components are and how
+                 they may interact is used to engineer both the
+                 components themselves and their organisation. A
+                 strategy is using the concepts that are suited for
+                 organising the problem domain itself to organise the
+                 software as well. In this paper we apply this idea in
+                 the development of computational modeling software, in
+                 particular in the development of a family of related
+                 programs for simulation of elastic wave propagation in
+                 earth materials. We also discuss some data on the
+                 technique's effectiveness.",
+}
+
+@TechReport{Haveraaen:2000:2TS,
+  author =       "Magne Haveraaen",
+  title =        "A 2-Tiered Software Process Model for Utilizing
+                 \textsc{Casl}",
+  institution =  "Dept. of Informatics, Univ. of Bergen",
+  year =         "2000",
+  number =       "208",
+  month =        oct,
+  URL =          "http://www.ii.uib.no/saga/papers/2tier-1d.ps",
+  annote =       "Describes a software process model where \textsc{Casl}
+                 is used for domain engineering.",
+  abstract =     "The broader adoption of \textsc{Casl} will depend on
+                 its use being perceived as beneficial in the software
+                 development process. Traditionally the algebraic
+                 specifications community has focused on the use of
+                 algebraic methods for development of correct software
+                 within the standard \emph{waterfall software process
+                 model} (and derivatives) for the implementation of
+                 software. Here we suggest a two-tiered softare process
+                 model, in which the first tier focuses on problem
+                 domain investigation and software architecture
+                 development, while the second tier is the
+                 implementation of software. Our experience has shown
+                 that algebraic methodology may play a significant role
+                 in the first tier, with significant improvements in
+                 software productivity as a result.",
+}
+
+@Article{Haveraaen:2000:CSA,
+  author =       "Magne Haveraaen",
+  title =        "Case Study on Algebraic Software Methodologies for
+                 Scientific Computing",
+  journal =      "Scientific Programming",
+  year =         "2000",
+  volume =       "8",
+  number =       "4",
+  pages =        "261--273",
+  URL =          "http://www.ii.uib.no/saga/papers/spr67.pdf",
+  annote =       "Presents the notion of algebraic software
+                 methodologies and their use for domain engineering and
+                 software architecture design.",
+  abstract =     "The use of domain specific languages and appropriate
+                 software architectures are currently seen as the way to
+                 enhance reusability and improve software productivity.
+                 Here we outline a use of algebraic software
+                 methodologies and advanced program constructors to
+                 improve the abstraction level of software for
+                 scientific computing. This led us to the language of
+                 coordinate free numerics as an alternative to the
+                 traditional coordinate dependent array notation. We
+                 also sketch how the coordinate free language may be
+                 realised on a computer.",
+}
+
+@MastersThesis{Hoffman:2000:SAS,
+  author =       "Piotr Hoffman",
+  title =        "Semantics of Architectural Specifications",
+  school =       "Warsaw Univ.",
+  year =         "2000",
+  note =         "In Polish",
+  annote =       "Defines and discusses static and model semantics of
+                 architectural specifications, as well as a semantics
+                 for programs and a verification semantics, which makes
+                 use of so-called sharing maps.",
+}
+
+@InProceedings{Hoffman:2001:VAS,
+  author =       "Piotr Hoffman",
+  title =        "Verifying Architectural Specifications",
+  pages =        "152--175",
+  crossref =     "WADT-2001",
+  URL =          "http://www.mimuw.edu.pl/~piotrek/WADT2001.ps.gz",
+  abstract =     "In this paper we develop methods for verifying the
+                 correctness of architectural specifications, a
+                 mechanism introduced in the \textsc{Casl} specification
+                 language. This mechanism offers a formal way to express
+                 implementation steps in program development. Each such
+                 step states that to implement the unit of interest, one
+                 may implement some other units and then assemble them
+                 in the prescribed manner. In this paper we define a
+                 formal institution-independent semantics of
+                 architectural specifications, as well as sound and
+                 complete methods for proving them correct, applicable
+                 in the case of many institutions, in particular
+                 first-order logic.",
+  annote =       "Develops techniques for verifying architectural
+                 specifications w.r.t.\ a non-generative semantics for
+                 institutions with logical amalgamation, obtaining full
+                 verification for first-order logic.",
+}
+
+@InProceedings{Hoffman:2003:VGC,
+  author =       "Piotr Hoffman",
+  title =        "Verifying Generative \textsc{Casl} Architectural
+                 Specifications",
+  pages =        "233--252",
+  crossref =     "WADT-2002",
+  abstract =     "We present a proof-calculus for architectural
+                 specifications, complete w.r.t.~their generative
+                 semantics. Architectural specifications, introduced in
+                 the \textsc{Casl} specification language, are a formal
+                 mechanism for expressing implementation steps in
+                 program development. They state that to implement a
+                 needed unit, one may implement some other units and
+                 then assemble them in the prescribed manner; thus they
+                 capture modular design steps in the development
+                 process. We focus on developing verification techniques
+                 applicable to full \textsc{Casl} architectural
+                 specifications, which involves, inter alia, getting
+                 around the lack of amalgamation in the \textsc{Casl}
+                 institution.",
+  annote =       "Presents an institution-independent proof-calculus for
+                 architectural specifications, complete w.r.t.\ a
+                 generative semantics, and applies it to the full
+                 \textsc{Casl} institution.",
+}
+
+@InProceedings{Hoffmann:2003:AHO,
+  author =       "Kathrin Hoffmann and Till Mossakowski",
+  title =        "Algebraic Higher Order Nets: Graphs and {Petri} Nets
+                 as Tokens",
+  abtract =      "Petri nets and Algebraic High-Level Nets are
+                 well-known to model parallel and concurrent systems. In
+                 this paper, we introduce the concept of Algebraic
+                 Higher-Order Nets, which allow to have dynamical tokens
+                 like graphs or (ordinary low-level) Petri nets. For
+                 this purpose, we specify graphs and Petri nets in the
+                 higher-order algebraic specification language
+                 \textsc{HasCASL} such that graphs and Petri nets become
+                 first-class citizens, i.e.\ members of algebras (rather
+                 than algebras themselves). As an example, we model
+                 hospital therapeutic processes by a single higher-order
+                 net. Individual care plans for each patient are tokens
+                 modeled by low-level nets.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/petri.ps",
+  pages =        "253--267",
+  crossref =     "WADT-2002",
+  annote =       "Case study in \textsc{HasCasl}. Graphs and Petri nets
+                 become first-class citizens and can be used as tokens
+                 in Petri nets.",
+}
+
+@TechReport{Hussmann:1999:ADT,
+  author =       "Heinrich Hussmann and Maura Cerioli and Gianna Reggio
+                 and Fran{\c{c}}oise Tort",
+  title =        "Abstract Data Types and {UML} Models",
+  institution =  "Univ. of Genova",
+  year =         "1999",
+  type =         tech-rep,
+  number =       "DISI-TR-99-15",
+  abstract =     "Object-oriented modelling, using for instance the
+                 Unified Modeling Language (UML), is based on the
+                 principles of data abstraction and data encapsulation.
+                 In this paper, we closely examine the relationship
+                 between object-oriented models (using UML) and the
+                 classical algebraic approach to data abstraction (using
+                 the Common Algebraic Specification Language
+                 \textsc{Casl}). Technically, possible alternatives for
+                 a translation from UML to \textsc{Casl} are studied,
+                 and analysed for their principal consequences. It is
+                 shown that object-oriented approaches and algebraic
+                 approaches differ in their view of data abstraction.
+                 Moreover, it is explained how specification methodology
+                 derived from the algebraic world can be used to achieve
+                 highquality in object-oriented models.",
+  OPTnote =      "Presented at WADT'99, Bonas",
+  annote =       "Examines the relationship between object-oriented
+                 models (using {UML}) and the classical algebraic
+                 approach to data abstraction (using \textsc{Casl}).",
+}
+
+@TechReport{Hussmann:2000:UC,
+  author =       "Heinrich Hussmann and Maura Cerioli and Hubert
+                 Baumeister",
+  title =        "From {UML} to \textsc{Casl} (Static Part)",
+  institution =  "Univ. of Genova",
+  year =         "2000",
+  type =         tech-rep,
+  number =       "DISI-TR-00-06",
+  abstract =     "Based on a few concrete cases, we present a
+                 translation of {UML} class diagrams into \textsc{Casl}.
+                 The major difference w{.}r{.}t{.} other ``algebraic''
+                 approaches is that this translation is intended to be
+                 integrated with translations of the other types of
+                 {UML} diagrams to \textsc{Casl}. The idea is that,
+                 while each kind of diagram has its own independent
+                 semantics, their semantics can be integrated to get an
+                 overall system description. In particular, the
+                 integration of the semantics of statecharts with class
+                 diagrams leads to a translation of operations in class
+                 diagrams to predicates instead of functions.",
+  annote =       "Introduces step by step a semantic translation of
+                 {UML} class diagrams into \textsc{Casl} specifications
+                 in a way that the result may be integrated with the
+                 semantics of other kinds of diagrams.",
+}
+
+@Book{IFIP:1999:AFS,
+  editor =       "Egidio Astesiano and Hans-J{\"org} Kreowski and Bernd
+                 Krieg-Br{\"u}ckner",
+  title =        "Algebraic Foundations of Systems Specification",
+  year =         "1999",
+  publisher =    pub-springer,
+  series =       "IFIP State-of-the-Art Reports",
+  warning =      "Use this entry only for citing the whole book. For
+                 crossrefs to chapters, use IFIP-AFS",
+annote = "Presents   state-of-the art   surveys of  the major research 
+topics in the area of algebraic specifications, written 
+by  leading experts in the field.",
+}
+
+@MastersThesis{Klin:2000:ISS,
+  author =       "Bartek Klin",
+  title =        "An Implementation of Static Semantics for
+                 Architectural Specifications in \textsc{Casl}",
+  school =       "Warsaw Univ.",
+  year =         "2000",
+  note =         "In Polish",
+  annote = "Describes algorithmic aspects of static analysis of \textsc{Casl},
+including the cell calculus for architectural specifications.",
+}
+
+@InProceedings{Klin:2001:CAC,
+  author =       "Bartek Klin and Piotr Hoffman and Andrzej Tarlecki and
+                 Lutz Schr{\"o}der and Till Mossakowski",
+  title =        "Checking Amalgamability Conditions for \textsc{Casl}
+                 Architectural Specifications",
+  pages =        "451--463",
+  crossref =     "MFCS-2001",
+  abstract =     "\textsc{Casl}, a specification formalism developed
+                 recently by the CoFI group, offers architectural
+                 specifications as a way to describe how simpler modules
+                 can be used to construct more complex ones. The
+                 semantics for \textsc{Casl} architectural
+                 specifications formulates static {\em amalgamation
+                 conditions} as a prerequisite for such constructions to
+                 be well-formed. These are non-trivial in the presence
+                 of subsorts due to the failure of the amalgamation
+                 property for the \textsc{Casl} institution. We show
+                 that indeed the static amalgamation conditions for
+                 \textsc{Casl} are undecidable in general. However, we
+                 identify a number of practically relevant special cases
+                 where the problem becomes decidable and analyze its
+                 complexity there. In cases where the result turns out
+                 to be $\PSPACE$-hard, we discuss further restrictions
+                 under which polynomial algorithms become available. All
+                 this underlies the static analysis as implemented in
+                 the \textsc{Casl} tool set.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/Cellpaper.ps",
+  annote =       "Provides static analysis for \textsc{Casl}
+                 architectural specifications with cell calculus.",
+}
+
+@TechReport{Ledoux:2000:FSM,
+  author =       "Franck Ledoux and Jean-Marc Mota and Agn{\`e}s Arnould
+                 and Catherine Dubois and Pascale {\iffalse{Gall}\fi}{Le
+                 Gall} and Yves Bertrand",
+  title =        "Formal Specification for a Mathematics-Based
+                 Application Domain: Geometric Modeling",
+  institution =  "LaMI, Universit\'e d'Evry-Val d'Essonne, Evry",
+  year =         "2000",
+  type =         tech-rep,
+  number =       "51",
+  URL =          "ftp://ftp.lami.univ-evry.fr/pub/publications/reports/index.html",
+  abstract =     "In this paper, we discuss the use of formal methods in
+                 the domain of geometric modeling. More precisely, the
+                 purpose of our work is to provide a formal
+                 specification language convenient for geometric
+                 modeling with tools. To do it, we are interested in a
+                 high-level operation, the chamfering with is already
+                 mathematically defined. Then we propose two
+                 specifications of it, using the two langages B and
+                 \textsc{Casl}, respectively representative of
+                 model-oriented approch and property-oriented approch.
+                 In order to as well as possible take advantage of the B
+                 and \textsc{Casl} characteristcs, we explicitly specify
+                 the chamfering in B and implicitly in \textsc{Casl}. In
+                 both cases, we succeded in providing a specification
+                 easily understandable by the experts of the application
+                 domain.",
+  annote =       "Gives a first comparison of using \textsc{Casl} and
+                 the B method on the chamfering operation in
+                 topology-based modeling.",
+}
+
+@TechReport{Ledoux:2000:HLO,
+  author =       "Franck Ledoux and Agn{\`e}s Arnould and Pascale
+                 {\iffalse{Gall}\fi}{Le Gall} and Yves Bertrand",
+  title =        "A High-Level Operation in 3{D} Modeling: {A}
+                 \textsc{Casl} Case Study",
+  institution =  "Lami, Universit\'e d'Evry-Val d'Essonne, Evry",
+  year =         "2000",
+  type =         tech-rep,
+  number =       "52",
+  URL =          "ftp://ftp.lami.univ-evry.fr/pub/publications/reports/index.html",
+  abstract =     "This paper describes a case study to demonstrate the
+                 feasibility of successfully applying \textsc{Casl} to
+                 dedesing 3D geometric modeling softwares. Then it
+                 presents an abstract specification of a 3D geometric
+                 model, its basic constructive primitives and a
+                 hight-level operation: the chanfering one. We highlight
+                 the different useful \textsc{Casl} features for
+                 geometric modeling like free types or structured
+                 specifications. The resulting specification presents
+                 the advantages of being both abstract and helpful to
+                 easily write code.",
+  annote =       "Provides a \textsc{Casl} case study in geometric
+                 modeling and presents the different useful
+                 \textsc{Casl} features for geometric modeling.",
+}
+
+@InProceedings{Ledoux:2001:GMC,
+  author =       "Franck Ledoux and Agn{\`e}s Arnould and Pascale
+                 {\iffalse{Gall}\fi}{Le Gall} and Yves Bertrand",
+  title =        "Geometric Modeling with \textsc{Casl}",
+  pages =        "176--200",
+  crossref =     "WADT-2001",
+  abstract =     "This paper presents an experiment that demonstrates
+                 the feasibility of successfully applying \textsc{Casl}
+                 to design 3D geometric modelling software. It presents
+                 an abstract specification of a 3D geometric model, its
+                 basic constructive primitives together with the
+                 definition of the rounding high-level operation. A
+                 novel methodology for abstractly specifying geometric
+                 operations is also highlighted. It allows one to
+                 faithfully specify the requirements of this specific
+                 area and reveals new mathematical definitions of
+                 geometric operations. The key point is to introduce an
+                 inclusion notion between geometric objects, in such a
+                 way that the result of an operation is defined as the
+                 smallest or largest object satisfying some pertinent
+                 criteria. This work has been made easier by using
+                 different useful \textsc{Casl} features, like
+                 first-order logic, free types or structured
+                 specifications. Some assets of this specification are
+                 to be abstract, readable by researchers in geometric
+                 modelling and simplify the programming process.",
+  annote =       "Gives a specification methodology dedicated to
+                 topology-based modeling. This methodology is commented
+                 and illustrated with several examples.",
+}
+
+@InProceedings{Ledoux:2001:SFC,
+  author =       "Franck Ledoux and Jean-Marc Mota and Agn{\`e}s Arnould
+                 and Catherine Dubois and Pascale {\iffalse{Gall}\fi}{Le
+                 Gall} and Yves Bertrand",
+  title =        "Sp{\'e}cifications Formelles du Chanfreinage",
+  booktitle =    "Approches Formelles dans l'Assistance au
+                 D{\'e}veloppement de Logiciels (AFADL), Nancy, France",
+  year =         "2001",
+  month =        jun,
+  publisher =    "ADER/LORIA",
+  URL =          "http://www.loria.fr/conferences/afadl/",
+  abstract =     "La repr\'esentation math\'ematique des objets
+                 g\'eom\'etriques, la complexit\'e et le nombre
+                 d'algorithmes n\'ecessaire \`a leur manipulation, sont
+                 des indices forts pour une utilisation ais\'ee et
+                 b\'en\'efique des m\'ethodes formelles. Nous
+                 pr\'esentons dans cet article une \'etude de la
+                 sp\'ecification formelle d'une op\'eration complexe et
+                 importante en mod\'elisation g\'eom\'etrique. Il s'agit
+                 de l'op\'eration de chanfreinage consistant \`a
+                 arrondir les angles vifs des objets 3D. Cette \'etude
+                 est men\'ee dans le cadre de deux m\'ethodes formelles,
+                 B (orient\'ee mod\`eles) et \textsc{Casl} (orient\'e
+                 propri\'et\'es) dans l'objectif de privil\'egier la
+                 lisibilit\'e par les experts du domaine. De plus, la
+                 formalisation et la r\'etro-ing\'enierie que nous avons
+                 r\'ealis\'ees, nous permettent de jeter les bases d'une
+                 m\'ethodologie d\'edi\'ee.",
+  annote =       "Gives a complete case study of using \textsc{Casl} and
+                 the B method in topology-based modeling. Includes
+                 foundations of dedicated methodology.",
+}
+
+@Article{Ledoux:2002:SPF,
+  author =       "Franck Ledoux and Jean-Marc Mota and Agn{\`e}s Arnould
+                 and Catherine Dubois and Pascale {\iffalse{Gall}\fi}{Le
+                 Gall} and Yves Bertrand",
+  title =        "Sp{\'e}cifications Formelles du Chanfreinage",
+  journal =      "Technique et Science Informatiques",
+  year =         "2002",
+  volume =       "21",
+  number =       "8",
+  pages =        "1--26",
+  OPTabstract =  "La repr\'esentation math\'ematique des objets
+                 g\'eom\'etriques, la complexit\'e et le nombre
+                 d'algorithmes n\'ecessaire \`a leur manipulation, sont
+                 des indices forts pour une utilisation b\'en\'efique
+                 des m\'ethodes formelles. Nous pr\'esentons une \'etude
+                 de la sp\'ecification formelle de deux op\'erations
+                 importantes : la premi\`ere permet de coller deux
+                 objets ensembles et la seconde, plus complexe
+                 chamfreine les angles vifs des objets 3D. Cette \'etude
+                 est men\'ee dans le cadre de deux m\'ethodes formelles,
+                 B (orient\'ee mod\`eles) et \textsc{Casl} (orient\'e
+                 propri\'et\'es) avec pour objectif de privil\'egier la
+                 lisibilit\'e par les experts du domaine. De plus, la
+                 formalisation et la r\'etro-ing\'enierie que nous avons
+                 r\'ealis\'ees, nous permettent de jeter les bases d'une
+                 m\'ethodologie d\'edi\'ee.",
+  abstract =     "The mathematical representation of geometric objects,
+                 the complexity and the number of algorithms necessary
+                 to handle them, make us believe that formal methodes
+                 are well suited to this field. In this article, we
+                 study the formal specification of tow important
+                 operations for geometric modelling: sewing and
+                 chanfering. Sewing consists in building a new object
+                 from two objects by joining them and chamfering is to
+                 flatten 3D objects' angles. We have used two formal
+                 methods, the B method (model oriented) and
+                 \textsc{Casl} (property oriented) in order to make it
+                 readable by the think-tank of the concerned field.
+                 Moreover, as realized formalisation and reengeneering
+                 we are able to lay foundations of dedicated
+                 methodology.",
+  annote =       "An extended version of \citeann{ann-Ledoux:2001:SFC}. Gives a
+                 complete case study of using CASL and the B method in
+                 topology-based modeling. Includes foundations of
+                 dedicated methodology.",
+}
+
+@InProceedings{Machado:2002:UTC,
+  author =       "Patricia D. L. Machado and Donald Sannella",
+  title =        "Unit Testing for \textsc{Casl} Architectural
+                 Specifications",
+  pages =        "506--518",
+  crossref =     "MFCS-2002",
+  URL =          "http://www.dcs.ed.ac.uk/home/dts/pub/mfcs2002.pdf",
+  abstract =     "The problem of testing modular systems against
+                 algebraic specifications is discussed. We focus on
+                 systems where the decomposition into parts is specified
+                 by a \textsc{Casl}-style architectural specification
+                 and the parts (\emph{units}) are developed separately,
+                 perhaps by an independent supplier. We consider how to
+                 test such units without reference to their context of
+                 use. This problem is most acute for generic units where
+                 the particular instantiation cannot be predicted.",
+  annote =       "Studies the problem of testing modular systems against
+                 \textsc{Casl} architectural specifications, focussing
+                 on unit testing.",
+}
+
+@InProceedings{Mossakowski:1998:COS,
+  author =       "Till Mossakowski",
+  title =        "Colimits of Order-Sorted Specifications",
+  pages =        "316--332",
+  crossref =     "WADT-97",
+  abstract =     "We prove cocompleteness of the category of
+                 \textsc{Casl} signatures, of monotone signatures, of
+                 strongly regular signatures, and of strongly locally
+                 filtered signatures. This shows that using these
+                 signature categories is compatible with a pushout or
+                 colimit based module system.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/colimits.ps",
+  annote =       "Proves cocompleteness of the \textsc{Casl} signature
+                 category and explains the relation to order-sorted
+                 algebra.",
+}
+
+@InProceedings{Mossakowski:1998:SSA,
+  author =       "Till Mossakowski and Kolyang and Bernd
+                 Krieg-Br{\"u}ckner",
+  title =        "Static Semantic Analysis and Theorem Proving for
+                 \textsc{Casl}",
+  pages =        "333--348",
+  crossref =     "WADT-97",
+  abstract =     "This paper presents a static semantic analysis for
+                 \textsc{Casl}, the Common Algebraic Specification
+                 Language. Abstract syntax trees are generated including
+                 subsorts and overloaded functions and predicates. The
+                 static semantic analysis, through the implementation of
+                 an overload resolution algorithm, checks and qualifies
+                 these abstract syntax trees. The result is a fully
+                 qualified \textsc{Casl} abstract syntax tree where the
+                 overloading has been resolved. This abstract syntax
+                 tree corresponds to a theory in the institution
+                 underlying \textsc{Casl}, subsorted partial first-order
+                 logic (SubPFOL). Two ways of embedding SubPFOL in
+                 higher-order logic (HOL) of the logical framework
+                 Isabelle are discussed: the first one from SubPFOL to
+                 HOL via PFOL (partial first-order logic) first drops
+                 subsorting and then partiality, and the second one is
+                 the counterpart via SubFOL (subsorted first-order
+                 logic). Finally, we sketch an integration of the
+                 embedding of \textsc{Casl} into the UniForM
+                 Workbench.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/CASL.ps",
+  annote =       "Describes the \textsc{Casl} tool set, including the
+                 overload resolution algorithm and encodings to
+                 higher-order logic.",
+}
+
+@InProceedings{Mossakowski:1999:TOC,
+  author =       "Till Mossakowski",
+  title =        "Translating {OBJ3} to \textsc{Casl}: The Institution
+                 Level",
+  pages =        "198--215",
+  crossref =     "WADT-98",
+  abstract =     "We translate OBJ3 to \textsc{Casl}. At the level of
+                 basic specifications, we set up several institution
+                 representations between the underlying institutions.
+                 They correspond to different methodological views of
+                 OBJ3. The translations can be the basis for automated
+                 tools translating OBJ3 to \textsc{Casl}.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/CASLOBJ.ps",
+  annote =       "Presents different translations of OBJ3 to
+                 \textsc{Casl}, using different treatments of OBJ3's
+                 total retracts.",
+}
+
+@InProceedings{Mossakowski:2000:CST,
+  author =       "Till Mossakowski",
+  title =        "\textsc{Casl}: From Semantics to Tools",
+  pages =        "93--108",
+  crossref =     "TACAS-2000",
+  abstract =     "\textsc{Casl}, the common algebraic specification
+                 language, has been developed as a language that
+                 subsumes many previous algebraic specification
+                 frameworks and also provides tool interoperability.
+                 \textsc{Casl} is a complex language with a complete
+                 formal semantics. It is therefore a challenge to build
+                 good tools for \textsc{Casl}. In this work, we present
+                 and discuss the Bremen \textsc{Hol-Casl} system, which
+                 provides parsing, static checking, conversion to LaTeX
+                 and theorem proving for \textsc{Casl} specifications.
+                 To make tool construction manageable, we have followed
+                 some guidelines: re-use of existing tools,
+                 interoperability of tools developed at different sites,
+                 and construction of generic tools that can be used for
+                 several languages. We describe the structure of and the
+                 experiences with our tool and discuss how the
+                 guidelines work in practice.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/casltools.ps",
+  annote =       "Gives a description of the \textsc{Casl} tool set and
+                 the \textsc{Hol-Casl} theorem prover.",
+}
+
+@InProceedings{Mossakowski:2000:SAI,
+  author =       "Till Mossakowski",
+  title =        "Specification in an Arbitrary Institution with
+                 Symbols",
+  pages =        "252--270",
+  crossref =     "WADT-99",
+  abstract =     "We develop a notion of institution with symbols and a
+                 kernel language for writing structured specifications
+                 in \textsc{Casl}. This kernel language has a semantics
+                 in an arbitrary but fixed institution with symbols.
+                 Compared with other institution-independent kernel
+                 languages, the advantage is that translations, hidings
+                 etc.\ can be written in a symbol-oriented way (rather
+                 than being based on signature morphisms as primitive
+                 notion), while still being institution-independent. The
+                 semantics of the kernel language has been used as the
+                 basis for the semantics of structured specifications in
+                 \textsc{Casl}.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/inst.ps",
+  annote =       "Adds symbols to institutions, needed for \textsc{Casl}
+                 symbol maps.",
+}
+
+@InProceedings{Mossakowski:2000:SPH,
+  author =       "Till Mossakowski and Anne Haxthausen and Bernd
+                 Krieg-Br{\"u}ckner",
+  title =        "Subsorted Partial Higher-Order Logic as an Extension
+                 of \textsc{Casl}",
+  pages =        "126--145",
+  crossref =     "WADT-99",
+  abstract =     "\textsc{Casl} is a specification language combining
+                 first-order logic, partiality and subsorting. This
+                 paper generalizes the \textsc{Casl} logic to also
+                 include higher-order functions and predicates. The
+                 logic is presented in a modular step-by-step reduction:
+                 the logic is defined in terms of a generalized
+                 subsorted partial logic which in turn is defined in
+                 terms of many-sorted partial first-order logic. A new
+                 notion of homomorphism is introduced to meet the need
+                 to get a faithful embedding of first-order
+                 \textsc{Casl} into higher-order \textsc{Casl}. Finally,
+                 it is discussed how a proof calculus for the proposed
+                 logic can be developed.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/HOCASL.ps",
+  annote =       "This was the first proposal for a higher-order
+                 extension of \textsc{Casl}, superseded by
+                 \textsc{HasCasl} \citeann{ann-Schroeder:2002:HIS}.",
+}
+
+@InProceedings{Mossakowski:2001:EDG,
+  author =       "Till Mossakowski and Serge Autexier and Dieter
+                 Hutter",
+  title =        "Extending Development Graphs with Hiding",
+  pages =        "269--283",
+  crossref =     "FASE-2001",
+  abstract =     "Development graphs are a tool for dealing with
+                 structured specifications in a way easing management of
+                 change and reusing proofs. In this work, we extend
+                 development graphs with hiding. Hiding is a
+                 particularly difficult to realize operation, since it
+                 does not admit such a good decomposition of the
+                 involved specifications as other structuring operations
+                 do. We develop both a semantics and proof rules for
+                 development graphs with hiding. The rules are proven to
+                 be sound, and also complete relative to an oracle for
+                 conservative extensions. We also show that an absolute
+                 complete set of rules cannot exist. The whole framework
+                 is developed in a way independent of the underlying
+                 logical system.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/dgh.ps",
+  url-extended = "http://www.informatik.uni-bremen.de/~till/papers/dgh_journal.ps",
+  annote =       "Presents the kernel formalism for structured theorem
+                 proving that is used in the \textsc{Casl} proof
+                 calculus.",
+}
+
+@InProceedings{Mossakowski:2001:IIS,
+  author =       "Till Mossakowski and Bartek Klin",
+  title =        "Institution-Independent Static Analysis for
+                 \textsc{Casl}",
+  pages =        "221--237",
+  crossref =     "WADT-2001",
+  abstract =     "We describe a way to make the static analysis for the
+                 in-the-large part of the Common Algebraic Specification
+                 Language (\textsc{Casl}) independent of the underlying
+                 logic that is used for specification in-the-small. The
+                 logic here is formalized as an institution with some
+                 extra components. Following the institution independent
+                 semantics of \textsc{Casl} in-the-large, we thus get an
+                 institution independent static analysis for
+                 \textsc{Casl} in-the-large. With this, it is possible
+                 to re-use the \textsc{Casl} static analysis for
+                 extensions of \textsc{Casl}, or even completely
+                 different logics. One only has to provide a static
+                 analysis for specifications in-the-small for the given
+                 logic. This then can be plugged into the generic static
+                 analysis for \textsc{Casl} in-the-large.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/cats.ps",
+  annote =       "Makes the \textsc{Casl} tool set as much institution
+                 independent as possible.",
+}
+
+@Article{Mossakowski:2002:RCO,
+  author =       "Till Mossakowski",
+  title =        "Relating \textsc{Casl} with Other Specification
+                 Languages: The Institution Level",
+  journal =      tcs,
+  year =         "2002",
+  volume =       "286",
+  pages =        "367--475",
+  abstract =     "In this work, we investigate various specification
+                 languages and their relation to \textsc{Casl}, the
+                 recently developed Common Algebraic Specification
+                 Language. In particular, we consider the languages
+                 Larch, OBJ3 and functional CafeOBJ, ACT ONE, ASF, and
+                 HEP-theories, as well as various sublanguages of
+                 \textsc{Casl}. All these languages are translated to an
+                 appropriate sublanguage of \textsc{Casl}. The
+                 translation mainly concerns the level of specification
+                 in-the-small: the logics underlying the languages are
+                 formalized as institutions, and representations among
+                 the institutions are developed. However, it is also
+                 considered how these translations interact with
+                 specification in-the-large. Thus, we obtain on the one
+                 hand translations of any of the abovementioned
+                 specification languages to an appropriate sublanguage
+                 of \textsc{Casl}. This allows us to take libraries and
+                 case studies that have been developed for other
+                 languages and re-use them in \textsc{Casl}. On the
+                 other hand, we set up institution representations going
+                 from the \textsc{Casl} institution (and some of its
+                 subinstitutions) to simpler subinstitutions. Given a
+                 theorem proving tool for such a simpler subinstitution,
+                 with the help of a representation, it can also be used
+                 for a more complex institution. Thus, first-order
+                 theorem provers and conditional term rewriting tools
+                 become usable for \textsc{Casl}.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/RelatingCASL.ps",
+  annote =       "Provides translations from other specification
+                 languages to \textsc{Casl}, as well as translations
+                 among sublanguages, including those needed for the
+                 \textsc{Casl} tool set.",
+}
+
+@InProceedings{Mossakowski:2003:ACS,
+  author =       "Till Mossakowski and Horst Reichel and Markus
+                 Roggenbach and Lutz Schr{\"o}der",
+  title =        "Algebraic-Coalgebraic Specification in
+                 \textsc{CoCasl}",
+  pages =        "376--392",
+  note =         "Extended version submitted for publication",
+  crossref =     "WADT-2002",
+  abstract =     "We introduce Co\textsc{Casl} as a simple coalgebraic
+                 extension of the algebraic specification language
+                 \textsc{Casl}. Co\textsc{Casl} allows the nested
+                 combination of algebraic datatypes and coalgebraic
+                 process types. We show that the well-known coalgebraic
+                 modal logic and even the modal mu-calculus can be
+                 expressed in Co\textsc{Casl}. We present sufficient
+                 criteria for the existence of cofree models, also for
+                 several variants of nested cofree and free
+                 specifications. Moreover, we describe an extension of
+                 the existing proof support for \textsc{Casl} (in the
+                 shape of an encoding into higher-order logic) to
+                 Co\textsc{Casl}.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/cocasl.ps",
+  url-extended = "http://www.informatik.uni-bremen.de/~till/papers/cocasl_journal.ps",
+  annote =       "Proposes a coalgebraic extension of \textsc{Casl},
+                 including cogenerated, simple and structured cofree and
+                 modal logic.",
+}
+
+@InProceedings{Mossakowski:2003:CWM,
+  author =       "Till Mossakowski and Markus Roggenbach and Lutz
+                 Schr{\"o}der",
+  title =        "\textsc{CoCasl} at Work -- Modelling Process Algebra",
+  crossref =     "CMCS-2003",
+  abstract =     "Co\textsc{Casl}, a recently defined coalgebraic
+                 extension of the algebraic specification language
+                 \textsc{Casl}, allows for modelling systems in terms of
+                 inductive datatypes as well as of co-inductive process
+                 types. Here, we demonstrate how to specify process
+                 algebras, namely CCS and CSP, within such an
+                 algebraic-coalgebraic framework. It turns out that
+                 Co\textsc{Casl} can deal with the fundamental concepts
+                 of process algebra in a natural way: The type system of
+                 communications, the syntax of processes and their
+                 structured operational semantics fit well in the
+                 algebraic world of \textsc{Casl}, while the additional
+                 coalgebraic constructs of Co\textsc{Casl} cover the
+                 various process equivalences (bisimulation, weak
+                 bisimulation, observational congruence, and trace
+                 equivalence) and provide fully abstract semantic
+                 domains.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/process_algebra.ps",
+  annote =       "Presents a case study in \textsc{CoCasl}, specifying
+                 CCS and CSP coalgebraically.",
+}
+
+@InProceedings{Mossakowski:2003:FHS,
+  author =       "Till Mossakowski",
+  title =        "Foundations of Heterogeneous Specification",
+  pages =        "359--375",
+  crossref =     "WADT-2002",
+  abstract =     "We provide a semantic basis for heterogeneous
+                 specifications that not only involve different logics,
+                 but also different kinds of translations between these.
+                 We show that Grothendieck institutions based on spans
+                 of (co)morphisms can serve as a unifying framework
+                 providing a simple but powerful semantics for
+                 heterogeneous specification.",
+  annote =       "Provides a semantics for heterogeneous specifications
+                 involving both different institutions and institution
+                 translations of different kinds.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/hetspec.ps",
+}
+
+@Article{Mossakowski:2003:CCA,
+  author =       "Till Mossakowski and Anne Haxthausen and Donald
+                 Sannella and Andrzej Tarlecki",
+  title =        "\textsc{Casl}, the {Common Algebraic Specification
+                 Language}: Semantics and Proof Theory",
+  journal =      cai,
+  year =         "2003",
+  volume =       "22",
+  pages =        "285--321",
+  abstract =     "\textsc{Casl} is an expressive specification language
+                 that has been designed to supersede many existing
+                 algebraic specification languages and provide a
+                 standard. \textsc{Casl} consists of several layers,
+                 including basic (unstructured) specifications,
+                 structured specifications and architectural
+                 specifications (the latter are used to prescribe the
+                 structure of implementations). We describe an
+                 simplified version of the \textsc{Casl} syntax,
+                 semantics and proof calculus at each of these three
+                 layers and state the corresponding soundness and
+                 completeness theorems. The layers are orthogonal in the
+                 sense that the semantics of a given layer uses that of
+                 the previous layer as a ``black box'', and similarly
+                 for the proof calculi. In particular, this means that
+                 \textsc{Casl} can easily be adapted to other logical
+                 systems.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/cai.ps",
+  annote =       "Gives an overview of a simplified version of the
+                 \textsc{Casl} syntax, semantics and proof calculus, for
+                 basic, structured and architectural specifications.",
+}
+
+@InCollection{Mossakowski:2004:CASL-Logic,
+  author =       "Till Mossakowski and Piotr Hoffman and Serge Autexier
+                 and Dieter Hutter",
+  title =        "\textsc{Casl} Logic",
+  chapter =      "IV",
+  type =         "Part",
+  note =         "Edited by T. Mossakowski",
+  crossref =     "CASL-RM",
+  annote = "Presents proof calculi that support reasoning about 
+  \textsc{Casl} specifications; proves soundness and discusses
+  completeness.",
+}
+
+@Article{Mosses:1996:CoFI,
+  author =       "Peter D. Mosses",
+  title =        "{CoFI}: The {Common Framework Initiative} for
+                 Algebraic Specification",
+  journal =      eatcs,
+  year =         "1996",
+  volume =       "59",
+  pages =        "127--132",
+  month =        jun,
+  note =         "An updated version is \citeann{ann-Mosses:2001:CoFI}",
+  annote =       "Presents CoFI, describing the aims and goals.",
+}
+
+@InProceedings{Mosses:1997:CAS,
+  author =       "Peter D. Mosses",
+  title =        "\textsc{Casl} for \textsc{Asf+Sdf} Users",
+  crossref =     "ASF+SDF-97",
+  annote =       "Gives an overview of \textsc{Casl}, comparing it to
+                 \textsc{Asf+Sdf}.",
+}
+
+@InProceedings{Mosses:1997:CoFI,
+  author =       "Peter D. Mosses",
+  title =        "{CoFI}: The {Common Framework Initiative} for
+                 Algebraic Specification and Development",
+  pages =        "115--137",
+  crossref =     "TAPSOFT-97",
+  annote =       "Describes a tentative design for \textsc{Casl},
+                 motivating some of the design choices.",
+}
+
+@InProceedings{Mosses:1999:CGT,
+  author =       "Peter D. Mosses",
+  title =        "\textsc{Casl}: {A} Guided Tour of its Design",
+  pages =        "216--240",
+  crossref =     "WADT-98",
+  annote =       "Indicates the major issues in the \textsc{Casl}
+                 design, explains and illustrates the main concepts and
+                 constructs. Based on a $\frac{1}{2}$-day tutorial.",
+}
+
+@InProceedings{Mosses:2000:CAS,
+  author =       "Peter D. Mosses",
+  title =        "\textsc{Casl} and {Action Semantics}",
+  pages =        "62--78",
+  URL =          "http://www.brics.dk/~pdm/papers/Mosses-AS-2000-CASL+AS/",
+  crossref =     "AS-2000",
+  annote =       "Gives an overview of \textsc{Casl}, and considers pros
+                 and cons of using it as meta-notation in action
+                 semantic descriptions of programming languages.",
+}
+
+@InCollection{Mosses:2000:CCU,
+  author =       "Peter D. Mosses",
+  title =        "\textsc{Casl} for {CafeOBJ} Users",
+  chapter =      "6",
+  type =         chap,
+  pages =        "121--144",
+  crossref =     "CAFE-2000",
+  annote =       "Gives an overview of \textsc{Casl}, comparing it to
+                 \textsc{CafeOBJ}.",
+}
+
+@InCollection{Mosses:2001:CoFI,
+  author =       "Peter D. Mosses",
+  title =        "{CoFI}: The Common Framework Initiative for Algebraic
+                 Specification and Development",
+  pages =        "153--163",
+  crossref =     "EATCS-2001",
+  annote =       "Describes the aims, goals, and initial achievements of
+                 CoFI, extending and updating \citeann{ann-Mosses:1996:CoFI}.",
+}
+
+@TechReport{Reggio:1999:CLC,
+  author =       "Gianna Reggio and Egidio Astesiano and Christine
+                 Choppy",
+  title =        "\textsc{Casl-Ltl}: {A} \textsc{Casl} Extension for
+                 Dynamic Reactive Systems -- Summary",
+  type =         tech-rep,
+  number =       "DISI-TR-99-34",
+  institution =  "Univ. of Genova",
+  year =         "1999",
+  note =         "Revised August 2003, see \citeann{ann-Reggio:2003:CLC}",
+  annote =       "Describes the \textsc{Casl-Ltl} extension language
+                 proposed for dynamic systems specification, with
+                 dynamic sorts and temporal formulas.",
+}
+
+@TechReport{Reggio:1999:CFD,
+  author =       "Gianna Reggio and Egidio Astesiano and Christine
+                 Choppy and Heinrich Hussmann",
+  title =        "A \textsc{Casl} Formal Definition of {UML} Active
+                 Classes and Associated State Machines",
+  institution =  "Univ. of Genova",
+  year =         "1999",
+  type =         tech-rep,
+  number =       "DISI-TR-99-16",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/Reggio99b.ps",
+  abstract =     "We consider the problem of precisely defining UML
+                 active classes with an associated state chart. We are
+                 convinced that the first step to make UML precise is to
+                 find an underlying formal model for the systems
+                 modelled by UML. We argue that labelled transition
+                 systems are a sensible choice; indeed they have worked
+                 quite successfully for languages as Ada and Java.
+                 Moreover, we think that this modelization will help to
+                 understand the UML constructs and to improve their use
+                 in practice. Here we present the labelled transition
+                 system associated with an active class using the
+                 algebraic specification language CASL. The task of
+                 making precise this fragment of UML raises many
+                 questions about both the ``precise'' meaning of some
+                 constructs and the soundness of some allowed
+                 combination of constructs.",
+  note =         "A short version is published in
+                 \citeann{ann-Reggio:2000:AUA}",
+  annote =       "Presents the labelled transition system associated
+                 with an active class using \textsc{Casl}.",
+}
+
+@TechReport{Reggio:1999:MPU,
+  author =       "Gianna Reggio and Egidio Astesiano and Christine
+                 Choppy and Heinrich Hussmann",
+  title =        "Making Precise {UML} Active Classes Modeled by State
+                 Charts",
+  institution =  "Univ. of Genova",
+  year =         "1999",
+  type =         tech-rep,
+  number =       "DISI-TR-99-14",
+  annote =       "Presents the labelled transition system associated
+                 with an active class using \textsc{Casl}.",
+}
+
+@InProceedings{Reggio:2000:ASU,
+  author =       "Gianna Reggio and Maura Cerioli and Egidio Astesiano",
+  title =        "An Algebraic Semantics of {UML} Supporting its
+                 Multiview Approach",
+  crossref =     "AMILP-2000",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/ReggioEtAll00a.ps",
+ annote =       "Using \textsc{Casl} as a metalanguage, proposes a
+                 semantics for class diagrams, state machines and
+                 overall systems described using the {UML}.",
+}
+
+@InProceedings{Reggio:2000:AUA,
+  author =       "Gianna Reggio and Egidio Astesiano and Christine
+                 Choppy and Heinrich Hussmann",
+  title =        "Analysing {UML} Active Classes and Associated State
+                 Machines -- {A} Lightweight Approach",
+  pages =        "127--146",
+  crossref =     "FASE-2000",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/Reggio99a.ps",
+  abstract =     "We consider the problem of precisely defining UML
+                 active classes with an associated state chart. We are
+                 convinced that the first step to make UML precise is to
+                 find an underlying formal model for the systems
+                 modelled by UML. We argue that labelled transition
+                 systems are a sensible choice; indeed they have worked
+                 quite successfully for languages as Ada and Java.
+                 Moreover, we think that this modelization will help to
+                 understand the UML constructs and to improve their use
+                 in practice. Here we present the labelled transition
+                 system associated with an active class using the
+                 algebraic specification language CASL. The task of
+                 making precise this fragment of UML raises many
+                 questions about both the ``precise'' meaning of some
+                 constructs and the soundness of some allowed
+                 combination of constructs",
+  note =         "An extended version is provided in
+                 \citeann{ann-Reggio:1999:CFD}",
+  annote =       "Presents the labelled transition system associated
+                 with an active class using \textsc{Casl}.",
+}
+
+@InProceedings{Reggio:2000:CCC,
+  author =       "Gianna Reggio and Lorenzo Repetto",
+  title =        "\textsc{Casl}-\textsc{Chart}: {A} Combination of
+                 Statecharts and of the Algebraic Specification Language
+                 \textsc{Casl}",
+  pages =        "243--257",
+  crossref =     "AMAST-2000",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/ReggioRepetto00b.ps",
+annote = "Presents a combination of statecharts and \textsc{Casl}.",
+}
+
+@TechReport{Reggio:2000:CCS,
+  author =       "Gianna Reggio and Lorenzo Repetto",
+  title =        "\textsc{Casl}-\textsc{Chart}: Syntax and Semantics",
+  institution =  "Univ. of Genova",
+  year =         "2000",
+  type =         tech-rep,
+  number =       "DISI-TR-00-1",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/ReggioRepetto00a.ps",
+annote = "Presents the complete syntax and semantics
+of a combination of statecharts and \textsc{Casl}.",
+}
+
+@InProceedings{Reggio:2001:RSU,
+  author =       "Gianna Reggio and Maura Cerioli and Egidio Astesiano",
+  title =        "Towards a Rigorous Semantics of {UML} Supporting its
+                 Multiview Approach",
+  pages =        "171--186",
+  crossref =     "FASE-2001",
+  abstract =     "We discuss the nature of the semantics of the {UML}.
+                 Contrary to the case of most languages, this task is
+                 far from trivial. Indeed, not only the {UML} notation
+                 is complex and its informal description is incomplete
+                 and ambiguous, but we also have the {UML}
+                 \emph{multiview} aspect to take into account. We
+                 propose a general schema of the semantics of the {UML},
+                 where the different kinds of diagrams within a {UML}
+                 model are given individual semantics and then such
+                 semantics are composed to get the semantics on the
+                 overall model. Moreover, we fill part of such a schema,
+                 by using the algebraic language \textsc{Casl} as a
+                 metalanguage to describe the semantics of class
+                 diagrams, state machines and the complete {UML} formal
+                 systems.",
+  annote =       "Using \textsc{Casl} as a metalanguage, proposes a
+                 semantics for class diagrams, state machines and
+                 overall systems described using the {UML}.",
+}
+
+@TechReport{Reggio:2003:CLC,
+  author =       "Gianna Reggio and Egidio Astesiano and Christine
+                 Choppy",
+  title =        "\textsc{Casl-Ltl}: {A} \textsc{Casl} Extension for
+                 Dynamic Reactive Systems -- Version 1.0 -- Summary",
+  type =         tech-rep,
+  number =       "DISI-TR-03-36",
+  institution =  "Univ. of Genova",
+  year =         "2003",
+  URL =          "ftp://ftp.disi.unige.it/person/ReggioG/ReggioEtAll03b.pdf",
+  url-ps =       "ftp://ftp.disi.unige.it/person/ReggioG/ReggioEtAll03b.ps",
+  note =         "A revision of \citeann{ann-Reggio:1999:CLC}",
+  abstract =     "\textsc{Casl} the basic language developed within
+                 CoFI, the Common Framework Initiative for algebraic
+                 specification and development, cannot be used for
+                 specifying the requirements and the design of dynamic
+                 software systems. \textsc{Casl-Ltl} is an extension to
+                 overcome this limit, allowing to specify dynamic system
+                 by modelling them by means of labelled transition
+                 systems and by expressing their properties with
+                 temporal formulae. It is based on \textsf{LTL}, the
+                 Labelled Transition Logic, that is a logic-algebraic
+                 formalism for the specification of dynamic systems,
+                 mainly developed by E. Astesiano and G. Reggio (see
+                 \citeann{Astesiano:2001:LTL} and
+                 \citeann{Costa:1997:SAD}). This document gives a
+                 detailed summary of the syntax and intended semantics
+                 of \textsc{Casl-Ltl}. It is intended for readers who
+                 are already familiar with
+                 \textsc{Casl}\citeann{Bidoit:2003:CASL-UM}. Four short
+                 examples are given in the appendix, and extended case
+                 studies using \textsc{Casl-Ltl} are given in
+                 \citeann{Choppy:1999:UCS,Choppy:2003:TFG}. An extensive
+                 companion user method is given in
+                 \citeann{Choppy:2003:TFG} (while
+                 \citeann{Choppy:2000:UCS} gives a first attempt to rely
+                 on structuring concepts). \textsc{Casl-Ltl} was also
+                 used to present the semantics of some parts of UML in
+                 \citeann{Reggio:2000:AUA,Reggio:2001:RSU}.",
+  annote =       "Describes the \textsc{Casl-Ltl} extension language
+                 proposed for dynamic systems specification, with
+                 dynamic sorts and temporal formulae.",
+}
+
+@InProceedings{Roggenbach:2000:SRN,
+  author =       "Markus Roggenbach and Lutz Schr{\"o}der and Till
+                 Mossakowski",
+  title =        "Specifying Real Numbers in \textsc{Casl}",
+  pages =        "146--161",
+  crossref =     "WADT-99",
+  abstract =     "We present a weak theory BasicReal of the real numbers
+                 in the first order specification language
+                 \textsc{Casl}. The aim is to provide a datatype for
+                 practical purposes, including the central notions and
+                 results of basic analysis. BasicReal captures for
+                 instance e and pi as well as the trigonometric and
+                 other standard functions. Concepts such as continuity,
+                 differentiation and integration are shown to be
+                 definable and tractable in this setting; Newton's
+                 Method is presented as an example of a numerical
+                 application. Finally, we provide a proper connection
+                 between the specified datatype BasicReal and
+                 specifications of the real numbers in higher order
+                 logic and various set theories.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/reals.ps",
+  annote =       "Presents a weak first-order theory of real numbers in
+                 \textsc{Casl}.",
+}
+
+@InProceedings{Roggenbach:2001:TTS,
+  author =       "Markus Roggenbach and Lutz Schr{\"o}der",
+  title =        "Towards Trustworthy Specifications {I}: Consistency
+                 Checks",
+  pages =        "305--327",
+  crossref =     "WADT-2001",
+  annote =       "Introduces a calculus for proving consistency of
+                 \textsc{Casl} specifications; the syntax-driven
+                 approach exploits in particular the \textsc{Casl}
+                 structuring operations",
+}
+
+@InProceedings{Roggenbach:2003:CCN,
+  author =       "Markus Roggenbach",
+  title =        "{CSP}-\textsc{Casl} -- {A} New Integration of Process
+                 Algebra and Algebraic Specification",
+  pages =        "229--243",
+  crossref =     "AMILP-2003",
+  annote =       "Describes the integration of the process algebra CSP
+                 and the algebraic specification language \textsc{Casl}
+                 into one language, with denotational semantics in the
+                 process part and loose semantics for the datatypes.",
+}
+
+@InCollection{Roggenbach:2004:CASL-Libraries,
+  author =       "Markus Roggenbach and Till Mossakowski and Lutz
+                 Schr{\"o}der",
+  title =        "\textsc{Casl} Libraries",
+  chapter =      "V",
+  type =         "Part",
+  crossref =     "CASL-RM",
+  annote =       "Provides libraries of basic datatypes in
+                 \textsc{Casl}, including order-theoretic and basic
+                 algebraic concepts, simple and structured datatypes,
+                 and graphs.",
+}
+
+@InProceedings{Salauen:2002:SAC,
+  author =       "Gwen Sala{\"u}n and Michel Allemand and Christian
+                 Attiogb{\'e}",
+  year =         "2002",
+  title =        "Specification of an Access Control System with a
+                 Formalism Combining {CCS} and \textsc{Casl}",
+  crossref =     "FMPPTA-2002",
+  URL =          "http://www.dis.uniroma1.it/~salaun/papers/fmppta02.ps",
+  annote =       "Advocates a formalism which combines the CCS process
+                 algebra with the \textsc{Casl} algebraic specification
+                 language, presents formal foundations of this
+                 combination, and illustrates it with a real size case
+                 study: an access control system to a set of
+                 buildings.",
+}
+
+@InProceedings{Sannella:2000:ASP,
+  author =       "Donald Sannella",
+  title =        "Algebraic Specification and Program Development by
+                 Stepwise Refinement",
+  pages =        "1--9",
+  crossref =     "LOPSTR-99",
+  URL =          "http://www.dcs.ed.ac.uk/home/dts/pub/lopstr99.pdf",
+  abstract =     "Various formalizations of the concept of ``refinement
+                 step'' as used in the formal development of programs
+                 from algebraic specifications are presented and
+                 compared.",
+  annote =       "Provides an overview of formal algebraic notions of
+                 refinement step.",
+}
+
+@InProceedings{Sannella:2000:CoFI,
+  author =       "Donald Sannella",
+  title =        "The Common Framework Initiative for Algebraic
+                 Specification and Development of Software",
+  pages =        "1--9",
+  crossref =     "PSI-99",
+  URL =          "http://www.dcs.ed.ac.uk/home/dts/pub/psi.pdf",
+  abstract =     "The Common Framework Initiative (CoFI) is an open
+                 international collaboration which aims to provide a
+                 common framework for algebraic specification and
+                 development of software. The central element of the
+                 Common Framework is a specification language called
+                 \textsc{Casl} for formal specification of functional
+                 requirements and modular software design which subsumes
+                 many previous algebraic specification languages. This
+                 paper is a brief summary of past and present work on
+                 CoFI.",
+  annote =       "Gives an overview of CoFI, with emphasis on the
+                 features of \textsc{Casl}.",
+}
+
+@InProceedings{Sannella:2001:CoFI-RP,
+  author =       "Donald Sannella",
+  title =        "The Common Framework Initiative for Algebraic
+                 Specification and Development of Software: Recent
+                 Progress",
+  URL =          "http://www.dcs.ed.ac.uk/home/dts/pub/wadt2001.pdf",
+  crossref =     "WADT-2001",
+  pages =        "328--343",
+  annote =       "Reports on progress with CoFI during 1998-2001.",
+}
+
+@InProceedings{Schroeder:2001:ACE,
+  author =       "Lutz Schr{\"o}der and Till Mossakowski and Andrzej
+                 Tarlecki",
+  title =        "Amalgamation in \textsc{Casl} via Enriched
+                 Signatures",
+  pages =        "993--1004",
+  crossref =     "ICALP-2001",
+  abstract =     "We construct a representation of the institution of
+                 the algebraic specification language \textsc{Casl} in
+                 an institution called enriched \textsc{Casl}. Enriched
+                 \textsc{Casl} satisfies the amalgamation property,
+                 which fails in the \textsc{Casl} institution, as well
+                 as its converse. Thus, the previously suggested
+                 institution-independent semantics of architectural
+                 specifications is actually applicable to \textsc{Casl}.
+                 Moreover, a variety of results for institutions with
+                 amalgamation, such as computation of normal forms and
+                 theorem proving for structured specifications, can now
+                 be used for \textsc{Casl}.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/EnrAmalg.ps",
+  note =         "Extended version to appear in " # tcs,
+  annote =       "Presents definition of and results about enriched
+                 \textsc{Casl}, which restores the lacking amalgamation
+                 property.",
+}
+
+@InProceedings{Schroeder:2001:SAS,
+  author =       "Lutz Schr{\"o}der and Till Mossakowski and Andrzej
+                 Tarlecki and Piotr Hoffman and Bartek Klin",
+  title =        "Semantics of Architectural Specifications in
+                 \textsc{Casl}",
+  pages =        "253--268",
+  note =         "Extended version to appear in " # tcs,
+  crossref =     "FASE-2001",
+  abstract =     "We present a semantics for architectural
+                 specifications in \textsc{Casl}, including an extended
+                 static analysis compatible with model-theoretic
+                 requirements. The main obstacle here is the lack of
+                 amalgamation for \textsc{Casl} models. To circumvent
+                 this problem, we extend the \textsc{Casl} logic by
+                 introducing enriched signatures, where subsort
+                 embeddings form a category rather than just a preorder.
+                 The extended model functor has amalgamation, which
+                 makes it possible to express the amalgamability
+                 conditions in the semantic rules in static terms. Using
+                 these concepts, we develop the semantics at various
+                 levels in an institution-independent fashion.
+                 Concretizing to the \textsc{Casl} institution, we
+                 discuss a calculus for discharging the static
+                 amalgamation conditions. These are in general
+                 undecidable, but can be dealt with by approximative
+                 algorithms in all practically relevant cases.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/ArchSpec.ps",
+  url-extended = "http://www.informatik.uni-bremen.de/~till/papers/CASLamalg.ps",
+  annote =       "Solves the problems of \textsc{Casl} architectural
+                 specifications with subsorts by introducing enriched
+                 \textsc{Casl} and a diagram static semantics.",
+}
+
+@InProceedings{Schroeder:2002:HIS,
+  author =       "Lutz Schr{\"o}der and Till Mossakowski",
+  title =        "\textsc{HasCasl}: Towards Integrated Specification and
+                 Development of {Haskell} Programs",
+  crossref =     "AMAST-2002",
+  pages =        "99--116",
+  abstract =     "The specification of programs in modern functional
+                 languages such as Haskell requires a specification
+                 language that supports the type system of these
+                 languages, in particular higher order types, type
+                 constructors, and parametric polymorphism. We lay out
+                 the design of Has\textsc{Casl}, a higher order
+                 extension of the algebraic specification language
+                 \textsc{Casl} that is geared towards precisely this
+                 purpose. Its semantics is tuned to allow program
+                 development by specification refinement, while at the
+                 same time staying close to the set-theoretic semantics
+                 of first order \textsc{Casl}. The number of primitive
+                 concepts in the logic has been kept as small as
+                 possible; we demonstrate how various extensions to the
+                 logic can be formulated within the language itself.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/hascasl.ps",
+  annote =       "The central paper explaining Has\textsc{Casl}, a
+                 higher-order extension of \textsc{Casl} including type
+                 constructors, polymorphism and recursion.",
+}
+
+@InProceedings{Schroeder:2003:CCP,
+  author =       "Lutz Schr{\"o}der",
+  title =        "Classifying Categories for Partial Equational Logic",
+  crossref =     "CTCS-2002",
+  URL =          "http://www.informatik.uni-bremen.de/~lschrode/hascasl/classcat.ps",
+  abstract =     "Along the lines of classical categorical type theory
+                 for total functions, we establish correspondence
+                 results between certain classes of partial equational
+                 theories on the one hand and suitable classes of
+                 categories having certain finite limits on the other
+                 hand. E.g., we show that finitary partial theories with
+                 existentially conditioned equations are essentially the
+                 same as cartesian categories with distinguished
+                 domains, and that partial lambda-theories with internal
+                 equality are equivalent to a suitable class of partial
+                 cartesian closed categories.",
+annote = "Establishes correspondence results between partial equational 
+theories, of which \textsc{Casl} signatures are a special case, and 
+categories with certain finite limits, in preparation for the semantics 
+of \textsc{HasCasl}.",
+  OPTannote =       "Establishes correspondence results between certain
+                 classes of partial equational theories and suitable
+                 classes of categories with certain finite limits.",
+}
+
+@InProceedings{Schroeder:2003:HMP,
+  author =       "Lutz Schr{\"o}der",
+  title =        "Henkin Models of the Partial {$\lambda$}-Calculus",
+  pages =        "498--512",
+  crossref =     "CSL-2003",
+  URL =          "http://www.informatik.uni-bremen.de/~lschrode/hascasl/henkinpl.ps",
+  abstract =     "We define (set-theoretic) notions of intensional
+                 Henkin model and syntactic lambda-algebra for Moggi's
+                 partial lambda-calculus. These models are shown to be
+                 equivalent to the originally described categorical
+                 models via the global element construction; the proof
+                 makes use of a previously introduced construction of
+                 classifying categories. The set-theoretic semantics
+                 thus obtained is the foundation of the higher order
+                 algebraic specification language Has\textsc{Casl},
+                 which combines specification and functional
+                 programming.",
+annote = "Shows that categorical models of the partial lambda-calculus 
+and intensional Henkin models, as used in the semantics of \textsc{HasCasl},
+ are equivalent",
+  OPTannote =       "Shows that categorical models of the partial
+                 lambda-calculus and intensional Henkin models are
+                 equivalent.",
+}
+
+@InProceedings{Schroeder:2003:MID,
+  author =       "Lutz Schr{\"o}der and Till Mossakowski",
+  title =        "Monad-Independent Dynamic Logic in \textsc{HasCasl}",
+  pages =        "425--441",
+  crossref =     "WADT-2002",
+  note =         "Extended version to appear in " # jlc,
+  abstract =     "Monads have been recognized by Moggi as an elegant
+                 device for dealing with stateful computation in
+                 functional programming languages. In previous work, we
+                 have introduced a Hoare calculus for partial
+                 correctness of monadic programs. All this has been done
+                 in an entirely monad-independent way. Here, we extend
+                 this to a monad-independent dynamic logic (assuming a
+                 moderate amount of additional infrastructure for the
+                 monad). Dynamic logic is more expressive than the Hoare
+                 calculus; in particular, it allows reasoning about
+                 termination and total correctness. As the background
+                 formalism for these concepts, we use the logic of
+                 Has\textsc{Casl}, a higher-order language for
+                 functional specification and programming.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/FinalPdl.ps",
+  annote =       "Monad-independent dynamic logic 
+                 in the framework of \textsc{HasCasl}; admits reasoning
+                 about termination and total correctness.",
+}
+
+@InProceedings{Schroeder:2003:MIH,
+  author =       "Lutz Schr{\"o}der and Till Mossakowski",
+  title =        "Monad-Independent {Hoare} Logic in \textsc{HasCasl}",
+  pages =        "261--277",
+  crossref =     "FASE-2003",
+  abstract =     "Monads have been recognized by Moggi as an elegant
+                 device for dealing with stateful computation in
+                 functional programming languages. It is thus natural to
+                 develop a Hoare calculus for reasoning about
+                 computational monads. While this has previously been
+                 done only for the state monad, we here provide a
+                 generic, monad-independent approach, which applies also
+                 to further computational monads such as exceptions,
+                 input/output, and non-determinism. All this is
+                 formalized within the logic of Has\textsc{Casl}, a
+                 higher-order language for functional specification and
+                 programming. Combination of monadic features can be
+                 obtained by combining their loose specifications. As an
+                 application, we prove partial correctness of Dijkstra's
+                 nondeterministic version of Euclid's algorithm in a
+                 monad with nondeterministic dynamic references.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/hascaslMonads.ps",
+  annote =       "Hoare logic for arbitrary monads (e.g., exceptions,
+                 non-determinism, references, input/output)  
+                 in the framework of \textsc{HasCasl}.",
+}
+
+@Article{Schroeder:????:ASC,
+  author =       "Lutz Schr{\"o}der and Till Mossakowski and Andrzej
+                 Tarlecki and Bartek Klin and Piotr Hoffman",
+  title =        "Amalgamation in the Semantics of \textsc{Casl}",
+  journal =      tcs,
+  note =         "To appear; extends
+                 \citeann{ann-Schroeder:2001:SAS,ann-Schroeder:2001:ACE}",
+  abstract =     "We present a semantics for architectural
+                 specifications in \textsc{Casl}, including an extended
+                 static analysis compatible with model-theoretic
+                 requirements. The main obstacle here is the lack of
+                 amalgamation for \textsc{Casl} models. To circumvent
+                 this problem, we extend the \textsc{Casl} logic by
+                 introducing enriched signatures, where subsort
+                 embeddings form a category rather than just a preorder.
+                 The extended model functor satisfies the amalgamation
+                 property as well as its converse, which makes it
+                 possible to express the amalgamability conditions in
+                 the semantic rules in static terms. Using these
+                 concepts, we develop the semantics at various levels in
+                 an institution-independent fashion. Moreover,
+                 amalgamation for enriched \textsc{Casl} means that a
+                 variety of results for institutions with amalgamation,
+                 such as computation of normal forms and theorem proving
+                 for structured specifications, can now be used for
+                 \textsc{Casl}.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/CASLamalg.ps",
+  annote =       "Solves the problems of \textsc{Casl} architectural
+                 specifications with subsorts by introducing enriched
+                 \textsc{Casl} and a diagram static semantics.",
+}
+
+@Article{Schroeder:????:MID,
+  author =       "Lutz Schr{\"o}der and Till Mossakowski",
+  title =        "Monad-Independent Dynamic Logic in \textsc{HasCasl}",
+  journal =      jlc,
+  note =         "To appear; extends \citeann{ann-Schroeder:2003:MID}",
+  abstract =     "Monads have been recognized by Moggi as an elegant
+                 device for dealing with stateful computation in
+                 functional programming languages. In previous work, we
+                 have introduced a Hoare calculus for partial
+                 correctness of monadic programs. All this has been done
+                 in an entirely monad-independent way. Here, we extend
+                 this to a monad-independent dynamic logic (assuming a
+                 moderate amount of additional infrastructure for the
+                 monad). Dynamic logic is more expressive than the Hoare
+                 calculus; in particular, it allows reasoning about
+                 termination and total correctness. As the background
+                 formalism for these concepts, we use the logic of
+                 \textsc{HasCasl}, a higher-order language for
+                 functional specification and programming. As an example
+                 application, we develop a monad-independent Hoare
+                 calulus for total correctness based on our dynamic
+                 logic, and illustrate this calculus by a termination
+                 proof for Dijkstra's non-deterministic implementation
+                 of Euclid's algorithm.",
+  URL =          "http://www.informatik.uni-bremen.de/~till/papers/pdlJournal.ps",
+  annote =       "Monad-independent dynamic logic 
+                 in the framework of \textsc{HasCasl}; admits reasoning
+                 about termination, partial and total correctness.",
+}
+
+@InProceedings{Tarlecki:2003:AST,
+  author =       "Andrzej Tarlecki",
+  title =        "Abstract Specification Theory: An Overview",
+  editor =       "M. Pizka and M. Broy",
+  booktitle =    "Models, Algebras and Logic of Engineering Software",
+  year =         "2003",
+  series =       "NATO Science Series: Computer \& Systems Sciences
+                 Vol.~191",
+  pages =        "43--79",
+  publisher =    pub-ios,
+  abstract =     "This paper presents an overview of abstract
+                 specification theory, as understood and viewed by the
+                 author. We start with a brief outline of the basic
+                 assumptions underlying work in this area in the
+                 tradition of algebraic specification and with a sketch
+                 of the algebraic and categorical foundations for this
+                 work. Then, we discuss the issues of specification
+                 construction and of systematic development of software
+                 from formal requirements specification. Special
+                 attention is paid to architectural design: formal
+                 description of the modular structure of the system
+                 under development, as captured by architectural
+                 specifications in \texsc{Casl}. In particular, we
+                 present a simplified but representative formalism of
+                 architectural specifications with complete semantics
+                 and verification rules. We conclude by adapting the
+                 ideas, concepts and results presented to the
+                 observational view of software systems and their
+                 specification.",
+  annote =       "Provides an overall view of abstract specification and
+                 software development theory, including a version of
+                 \textsc{Casl} architectural specifications with an
+                 example, semantics and verification rules.",
+}
+
+****************************************************************
+CROSS REFERENCES:
+
+* The format is generally ACRO-YEAR, where:
+* - ACRO is the acronym of the conference or organization
+* - YEAR is YY for conferences HELD in 19YY
+* - YEAR is 20YY for conferences HELD in 20YY
+
+* The key and abbrev fields are for use in cofi-abbr.bib
+
+
+@Proceedings{AMAST-97,
+  key =          "AMAST'97",
+  editor =       "M. Johnson",
+  title =        "Algebraic Methodology and Software Technology, 6th
+                 International Conference, {AMAST}'97, Sydney,
+                 Australia, Proceedings",
+  booktitle =    "Algebraic Methodology and Software Technology, 6th
+                 International Conference, {AMAST}'97, Sydney,
+                 Australia, Proceedings",
+  year =         "1997",
+  series =       lncs # "1349",
+  publisher =    pub-springer,
+}
+
+@Proceedings{AMAST-98,
+  key =          "AMAST'98",
+  editor =       "A. M. Haeberer",
+  title =        "Algebraic Methodology and Software Technology, 7th
+                 International Conference, {AMAST}'98, Amazonia, Brazil,
+                 January 1999, Proceedings",
+  booktitle =    "Algebraic Methodology and Software Technology, 7th
+                 International Conference, {AMAST}'98, Amazonia, Brazil,
+                 January 1999, Proceedings",
+  year =         "1998",
+  series =       lncs # "1548",
+  publisher =    pub-springer,
+}
+
+@Proceedings{AMAST-2000,
+  key =          "AMAST~2000",
+  editor =       "T. Rus",
+  title =        "Algebraic Methodology and Software Technology, 8th
+                 International Conference, {AMAST} 2000, Iowa City,
+                 Iowa, {USA}, Proceedings",
+  booktitle =    "Algebraic Methodology and Software Technology, 8th
+                 International Conference, {AMAST} 2000, Iowa City,
+                 Iowa, {USA}, Proceedings",
+  year =         "2000",
+  series =       lncs # "1816",
+  publisher =    pub-springer,
+}
+
+@Proceedings{AMAST-2002,
+  key =          "AMAST~2002",
+  editor =       "H. Kirchner and C. Ringeissen",
+  title =        "Algebraic Methods and Software Technology, 9th
+                 International Conference, {AMAST} 2002,
+                 Saint-Gilles-les-Bains, Reunion Island, France,
+                 Proceedings",
+  booktitle =    "Algebraic Methods and Software Technology, 9th
+                 International Conference, {AMAST} 2002,
+                 Saint-Gilles-les-Bains, Reunion Island, France,
+                 Proceedings",
+  year =         "2002",
+  series =       lncs # "2422",
+  publisher =    pub-springer,
+}
+
+@Proceedings{AMILP-2000,
+  key =          "AMiLP~2000",
+  editor =       "D. Heylen and A. Nijholt and G. Scollo",
+  title =        "Algebraic Methods in Language Processing, {AMiLP}
+                 2000",
+  booktitle =    "Algebraic Methods in Language Processing, {AMiLP}
+                 2000",
+  year =         "2000",
+  series =       "TWLT Vol.~16",
+  publisher =    "Univ. of Twente",
+}
+
+@Proceedings{AMILP-2003,
+  key =          "AMiLP~2003",
+  editor =       "F. Spoto and G. Scollo and A. Nijholt",
+  title =        "Algebraic Methods in Language Processing, {AMiLP}
+                 2003",
+  booktitle =    "Algebraic Methods in Language Processing, {AMiLP}
+                 2003",
+  year =         "2003",
+  series =       "TWLT Vol.~21",
+  publisher =    "Univ. of Twente",
+}
+
+@Proceedings{AS-2000,
+  key =          "AS~2000",
+  editor =       "P. D. Mosses and H. Moura",
+  title =        "{AS} 2000, Third International Workshop on Action
+                 Semantics, Recife, Brazil, Proceedings",
+  booktitle =    "{AS} 2000, Third International Workshop on Action
+                 Semantics, Recife, Brazil, Proceedings",
+  year =         "2000",
+  series =       "BRICS NS-00-6",
+  publisher =    "Dept. of Computer Science, Univ. of Aarhus",
+  URL =          "http://www.brics.dk/NS/00/6/",
+}
+
+@Proceedings{ASF+SDF-97,
+  key =          "ASF+SDF'97",
+  editor =       "M. P. A. Sellink",
+  title =        "{ASF+SDF}'97, Proc. 2nd Intl. Workshop on the Theory
+                 and Practice of Algebraic Specifications",
+  booktitle =    "{ASF+SDF}'97, Proc. 2nd Intl. Workshop on the Theory
+                 and Practice of Algebraic Specifications",
+  year =         "1997",
+  series =       "Electronic Workshops in Computing",
+  volume =       "ASFSDF-97",
+  publisher =    pub-bcs,
+  URL =          "http://www.ewic.org.uk/ewic/workshop/list.cfm",
+}
+
+@Proceedings{CAFE-2000,
+  key =          "CAFE",
+  editor =       "K. Futatsugi and A. T. Nakagawa and T. Tamai",
+  title =        "{CAFE}: An Industrial-Strength Algebraic Formal
+                 Method",
+  booktitle =    "{CAFE}: An Industrial-Strength Algebraic Formal
+                 Method",
+  publisher =    pub-elsevier,
+  year =         "2000",
+}
+
+@Book{CASL-RM,
+  key =          "\textsc{Casl} Reference Manual",
+  author =       "{CoFI (The Common Framework Initiative)}",
+  title =        "\textsc{Casl} Reference Manual",
+  booktitle =    "\textsc{Casl} Reference Manual",
+  year =         "2004",
+  publisher =    pub-springer,
+  series =       lncs # "2960 (IFIP Series)",
+  warning =      "Use CoFI:2004:CASL-RM to refer to the entire volume",
+}
+
+@Proceedings{CMCS-2003,
+  editor =       "H. P. Gumm",
+  title =        "Coalgebraic Methods in Computer Science, {CMCS}'03,
+                 Warsaw, Poland, Proceedings",
+  booktitle =    "Coalgebraic Methods in Computer Science, {CMCS}'03,
+                 Warsaw, Poland, Proceedings",
+  series =       entcs # "82.1",
+  publisher =    pub-elsevier,
+  year =         "2003",
+}
+
+@Proceedings{CSL-2003,
+  key =          "CSL~2003",
+  editor =       "M. Baaz and J. M. Makowsky",
+  title =        "Computer Science Logic, 17th International Workshop,
+                 {CSL} 2003, 12th Annual Conference of the {EACSL}, and
+                 8th Kurt {G}{\"o}del Colloquium, {KGC} 2003, Vienna,
+                 Austria, Proceedings",
+  booktitle =    "Computer Science Logic, 17th International Workshop,
+                 {CSL} 2003, 12th Annual Conference of the {EACSL}, and
+                 8th Kurt {G}{\"o}del Colloquium, {KGC} 2003, Vienna,
+                 Austria, Proceedings",
+  year =         "2003",
+  series =       lncs # "2803",
+  publisher =    pub-springer,
+}
+
+@Proceedings{CTCS-2002,
+  key =          "CTCS'02",
+  editor =       "R. Blute and P. Selinger",
+  title =        "Category Theory and Computer Science, {CTCS}'02",
+  booktitle =    "Category Theory and Computer Science, {CTCS}'02",
+  year =         "2003",
+  series =       entcs # "69",
+  publisher =    pub-elsevier,
+}
+
+@Book{EATCS-2001,
+  key =          "Current Trends in Theoretical Computer Science",
+  editor =       "G. P{\u{a}}un and G. Rozenberg and A. Salomaa",
+  title =        "Current Trends in Theoretical Computer Science:
+                 Entering the 21st Century",
+  booktitle =    "Current Trends in Theoretical Computer Science:
+                 Entering the 21st Century",
+  year =         "2001",
+  publisher =    pub-world-sci,
+}
+
+@Proceedings{FACIT-2000,
+  key =          "FACIT",
+  editor =       "M. Frappier and H. Habrias",
+  title =        "Software Specification Methods: An Overview Using a
+                 Case Study",
+  booktitle =    "Software Specification Methods: An Overview Using a
+                 Case Study",
+  year =         "2000",
+  series =       facit,
+  publisher =    pub-springer,
+}
+
+@Proceedings{FASE-99,
+  key =          "FASE'99",
+  editor =       "J.-P. Finance",
+  title =        "Fundamental Approaches to Software Engineering, Second
+                 International Conference, {FASE}'99, Amsterdam, The
+                 Netherlands, Proceedings",
+  booktitle =    "Fundamental Approaches to Software Engineering, Second
+                 International Conference, {FASE}'99, Amsterdam, The
+                 Netherlands, Proceedings",
+  year =         "1999",
+  series =       lncs # "1577",
+  publisher =    pub-springer,
+}
+
+@Proceedings{FASE-2000,
+  key =          "FASE~2000",
+  editor =       "T. Maibaum",
+  title =        "Fundamental Approaches to Software Engineering, Third
+                 International Conference, {FASE} 2000, Berlin, Germany,
+                 Proceedings",
+  booktitle =    "Fundamental Approaches to Software Engineering, Third
+                 International Conference, {FASE} 2000, Berlin, Germany,
+                 Proceedings",
+  year =         "2000",
+  series =       lncs # "1783",
+  publisher =    pub-springer,
+}
+
+@Proceedings{FASE-2001,
+  key =          "FASE~2001",
+  editor =       "H. Hussmann",
+  title =        "Fundamental Approaches to Software Engineering, 4th
+                 International Conference, {FASE} 2001, Genova, Italy,
+                 Proceedings",
+  booktitle =    "Fundamental Approaches to Software Engineering, 4th
+                 International Conference, {FASE} 2001, Genova, Italy,
+                 Proceedings",
+  year =         "2001",
+  series =       lncs # "2029",
+  publisher =    pub-springer,
+}
+
+@Proceedings{FASE-2003,
+  key =          "FASE~2003",
+  editor =       "M. Pezz{\`e}",
+  title =        "Fundamental Approaches to Software Engineering, 6th
+                 International Conference, {FASE} 2003, Warsaw, Poland,
+                 Proceedings",
+  booktitle =    "Fundamental Approaches to Software Engineering, 6th
+                 International Conference, {FASE} 2003, Warsaw, Poland,
+                 Proceedings",
+  year =         "2003",
+  series =       lncs # "2621",
+  publisher =    pub-springer,
+}
+
+@Proceedings{FMPPTA-2002,
+  key =          "FMPPTA'02",
+  OPTeditor =    "???",
+  title =        "Proc. of the 7th International Workshop on Formal
+                 Methods for Parallel Programming: Theory and
+                 Applications, {FMPPTA}'02",
+  booktitle =    "Proc. of the 7th International Workshop on Formal
+                 Methods for Parallel Programming: Theory and
+                 Applications, {FMPPTA}'02",
+  year =         "2002",
+  publisher =    pub-ieee,
+  address =      "USA",
+}
+
+@Proceedings{FROCOS-2002,
+  key =          "FRoCoS~2002",
+  editor =       "A. Armando",
+  title =        "Frontiers of Combining Systems, 4th International
+                 Workshop, {FroCoS} 2002, Santa Margherita Ligure,
+                 Italy, Proceedings",
+  booktitle =    "Frontiers of Combining Systems, 4th International
+                 Workshop, {FroCoS} 2002, Santa Margherita Ligure,
+                 Italy, Proceedings",
+  year =         "2002",
+  series =       lncs # "2309",
+  publisher =    pub-springer,
+}
+
+@Proceedings{ICALP-2001,
+  key =          "ICALP~2001",
+  editor =       "F. Orejas and P. G. Spirakis and J. van Leeuwen",
+  title =        "Automata, Languages and Programming, 28th
+                 International Colloquium, {ICALP} 2001, Crete, Greece,
+                 Proceedings",
+  booktitle =    "Automata, Languages and Programming, 28th
+                 International Colloquium, {ICALP} 2001, Crete, Greece,
+                 Proceedings",
+  year =         "2001",
+  series =       lncs # "2076",
+  publisher =    pub-springer,
+}
+
+@Book{IFIP-AFS,
+  key =          "Algebraic Foundations of Systems Specification",
+  editor =       "E. Astesiano and H.-J. Kreowski and B.
+                 Krieg-Br{\"u}ckner",
+  title =        "Algebraic Foundations of Systems Specification",
+  booktitle =    "Algebraic Foundations of Systems Specification",
+  year =         "1999",
+  publisher =    pub-springer,
+  series =       "IFIP State-of-the-Art Reports",
+  warning =      "Use IFIP:1999:AFS to refer to the entire book",
+}
+
+@Proceedings{IFM-2000,
+  key =          "IFM~2000",
+  editor =       "W. Grieskamp and T. Santen and B. Stoddart",
+  title =        "Integrated Formal Methods, Second International
+                 Conference, {IFM} 2000, Dagstuhl Castle, Germany,
+                 Proceedings",
+  booktitle =    "Integrated Formal Methods, Second International
+                 Conference, {IFM} 2000, Dagstuhl Castle, Germany,
+                 Proceedings",
+  year =         "2000",
+  series =       lncs # "1945",
+  publisher =    pub-springer,
+}
+
+@Proceedings{LOPSTR-99,
+  key =          "LOPSTR'99",
+  editor =       "A. Bossi",
+  title =        "Logic-Based Program Synthesis and Transformation, 9th
+                 International Workshop, {LOPSTR}'99, Venice, Italy,
+                 1999 Selected Papers",
+  booktitle =    "Logic-Based Program Synthesis and Transformation, 9th
+                 International Workshop, {LOPSTR}'99, Venice, Italy,
+                 1999 Selected Papers",
+  year =         "2000",
+  series =       lncs # "1817",
+  publisher =    pub-springer,
+}
+
+@Proceedings{MFCS-2001,
+  key =          "MFCS~2001",
+  editor =       "J. Sgall and A. Pultr and P. Kolman",
+  title =        "Mathematical Foundations of Computer Science 2001,
+                 26th International Symposium, {MFCS} 2001, Marianske
+                 Lazne, Czech Republic, Proceedings",
+  booktitle =    "Mathematical Foundations of Computer Science 2001,
+                 26th International Symposium, {MFCS} 2001, Marianske
+                 Lazne, Czech Republic, Proceedings",
+  year =         "2001",
+  series =       lncs # "2136",
+  publisher =    pub-springer,
+}
+
+@Proceedings{MFCS-2002,
+  key =          "MFCS~2002",
+  editor =       "K. Diks and W. Rytter",
+  title =        "Mathematical Foundations of Computer Science 2002,
+                 27th International Symposium, {MFCS} 2002, Warsaw,
+                 Poland, Proceedings",
+  booktitle =    "Mathematical Foundations of Computer Science 2002,
+                 27th International Symposium, {MFCS} 2002, Warsaw,
+                 Poland, Proceedings",
+  year =         "2002",
+  series =       lncs # "2420",
+  publisher =    pub-springer,
+}
+
+@Proceedings{PSI-99,
+  key =          "PSI'99",
+  editor =       "D. Bj{\o}rner and M. Broy and A. V. Zamulin",
+  title =        "Perspectives of System Informatics, Third
+                 International Andrei Ershov Memorial Conference,
+                 {PSI}'99, Akademgorodok, Novosibirsk, Russia,
+                 Proceedings",
+  booktitle =    "Perspectives of System Informatics, Third
+                 International Andrei Ershov Memorial Conference,
+                 {PSI}'99, Akademgorodok, Novosibirsk, Russia,
+                 Proceedings",
+  year =         "2000",
+  series =       lncs # "1755",
+  publisher =    pub-springer,
+}
+
+@Proceedings{TACAS-2000,
+  key =          "TACAS~2000",
+  editor =       "S. Graf and M. Schwartzbach",
+  title =        "Tools and Algorithms for the Construction and Analysis
+                 of Systems, 6th International Conference, {TACAS} 2000,
+                 Berlin, Germany, Proceedings",
+  booktitle =    "Tools and Algorithms for the Construction and Analysis
+                 of Systems, 6th International Conference, {TACAS} 2000,
+                 Berlin, Germany, Proceedings",
+  year =         "2000",
+  series =       lncs # "1785",
+  publisher =    pub-springer,
+}
+
+@Proceedings{TAPSOFT-97,
+  key =          "TAPSOFT'97",
+  editor =       "M. Bidoit and M. Dauchet",
+  title =        "{TAPSOFT}'97: Theory and Practice of Software
+                 Development, 7th International Joint Conference
+                 {CAAP}/{FASE}, Lille, France, Proceedings",
+  booktitle =    "TAPSOFT'97: Theory and Practice of Software
+                 Development, 7th International Joint Conference
+                 {CAAP}/{FASE}, Lille, France, Proceedings",
+  year =         "1997",
+  series =       lncs # "1214",
+  publisher =    pub-springer,
+}
+
+@Proceedings{WADT-97,
+  key =          "WADT'97",
+  editor =       "F. Parisi-Presicce",
+  title =        "Recent Trends in Algebraic Development Techniques,
+                 12th International Workshop, {WADT}'97, Tarquinia,
+                 Italy, 1997, Selected Papers",
+  booktitle =    "Recent Trends in Algebraic Development Techniques,
+                 12th International Workshop, {WADT}'97, Tarquinia,
+                 Italy, 1997, Selected Papers",
+  year =         "1998",
+  series =       lncs # "1376",
+  publisher =    pub-springer,
+}
+
+@Proceedings{WADT-98,
+  key =          "WADT'98",
+  editor =       "J. L. Fiadeiro",
+  title =        "Recent Trends in Algebraic Development Techniques,
+                 13th International Workshop, {WADT}'98, Lisbon,
+                 Portugal, 1998, Selected Papers",
+  booktitle =    "Recent Trends in Algebraic Development Techniques,
+                 13th International Workshop, {WADT}'98, Lisbon,
+                 Portugal, 1998, Selected Papers",
+  year =         "1999",
+  series =       lncs # "1589",
+  publisher =    pub-springer,
+}
+
+@Proceedings{WADT-99,
+  key =          "WADT'99",
+  editor =       "D. Bert and C. Choppy and P. D. Mosses",
+  title =        "Recent Trends in Algebraic Development Techniques,
+                 14th International Workshop, {WADT}'99, Ch{\^a}teau de
+                 Bonas, France, 1999, Selected Papers",
+  booktitle =    "Recent Trends in Algebraic Development Techniques,
+                 14th International Workshop, {WADT}'99, Ch{\^a}teau de
+                 Bonas, France, 1999, Selected Papers",
+  year =         "2000",
+  series =       lncs # "1827",
+  publisher =    pub-springer,
+}
+
+@Proceedings{WADT-2001,
+  key =          "WADT~2001",
+  editor =       "M. Cerioli and G. Reggio",
+  title =        "Recent Trends in Algebraic Development Techniques,
+                 15th International Workshop, {WADT} 2001, Joint with
+                 the {CoFI} {WG} Meeting, Genova, Italy, 2001, Selected
+                 Papers",
+  booktitle =    "Recent Trends in Algebraic Development Techniques,
+                 15th International Workshop, {WADT} 2001, Joint with
+                 the {CoFI} {WG} Meeting, Genova, Italy, 2001, Selected
+                 Papers",
+  year =         "2001",
+  series =       lncs # "2267",
+  publisher =    pub-springer,
+}
+
+@Proceedings{WADT-2002,
+  key =          "WADT~2002",
+  editor =       "M. Wirsing and D. Pattinson and R. Hennicker",
+  title =        "Recent Trends in Algebraic Development Techniques,
+                 16th International Workshop, {WADT} 2002,
+                 Frauenchiemsee, Germany, 2002, Revised Selected
+                 Papers",
+  booktitle =    "Recent Trends in Algebraic Development Techniques,
+                 16th International Workshop, {WADT} 2002,
+                 Frauenchiemsee, Germany, 2002, Revised Selected
+                 Papers",
+  year =         "2003",
+  series =       lncs # "2755",
+  publisher =    pub-springer,
+}

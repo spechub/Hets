@@ -1,0 +1,1006 @@
+CoFI Document Bibliography v2.0
+BibTeX source
+
+Last updated: 29 June 2001 by Peter D. Mosses, pdmosses(a)brics.dk
+- Mosses98WADT added
+- Mosses-CAFE added
+- Mosses-ASF+SDF-97 publisher corrected
+
+Updated: 28 Jan 2001 by Peter D. Mosses, pdmosses(a)brics.dk
+- adjusted for hyperref and cofidoc-v2.0.
+
+Updated: 28 Nov 1999 by Peter D. Mosses, pdmosses(a)brics.dk
+- authors CoFI-LD etc. now OK with all standard bib styles
+- published papers now only with OPTnote showing CoFI archive copy
+- format of published papers entries made uniform
+
+******************************************************************
+
+The string CoFI may be used as the author field of documents:
+
+@string(CoFI = "{CoFI}")
+@string(CoFI-LD = "{CoFI Language Design Task Group}")
+@string(CoFI-S = "{CoFI Methodology Task Group}")
+@string(CoFI-R = "{CoFI Reactive Systems Task Group}")
+@string(CoFI-S = "{CoFI Semantics Task Group}")
+@string(CoFI-T = "{CoFI Tools Task Group}")
+
+The `note' field is used for referring to electronically-available
+documents, e.g. when the URL should always be displayed:
+
+  note = "\url{URL}"
+
+or merely to generate a hypertext link without showing the URL:
+
+  note = "\href{URL}{TEXT}"
+
+For CoFI documents, however, ALWAYS use one of the following commands 
+instead of explicit \url or \href commands:
+
+  \cofiNote{...}, \cofiDocument{...}, \cofiPublishedDocument{...}
+
+The following commands are provided by the CoFIdoc package:
+
+  \CoFI, \CASL, \cofiWWW, \cofiFTP, \url{URL}, \href{URL}{TEXT}
+
+and used in the bib entries below.  The following preamble ensures
+that they are available also when the bibliography is used in
+documents without the CoFIdoc package.  It also provides some
+auxiliary commands which get redefined to provide links when
+converting documents to HTML.
+
+To avoid relying on the xspace package, ALWAYS follow the \CASL and
+\CoFI commands by a non-space character in bib entries.
+
+@preamble("
+  \providecommand{\CoFI}{CoFI}
+  \providecommand{\CASL}{CASL}
+  \providecommand{\cofiWWW}{http://www.cofi.info}
+  \providecommand{\cofiWWWpath}{http://www.cofi.info}
+  \providecommand{\cofiFTP}{ftp://ftp.brics.dk/Projects/CoFI}
+  \providecommand{\url}[1]{#1}
+  \providecommand{\href}[2]{#2}
+  \providecommand{\cofiWWWref}[2]{\href{\cofiWWWpath/#1}{#2}}
+  \providecommand{\cofiSN}[1]
+   {\cofiWWWref{StudyNotes/#1.html}{Study Note~#1}}
+  \providecommand{\cofiLDSN}[1]
+   {\cofiWWWref{StudyNotes/Lang/#1.html}{Language Design Study Note~#1}}
+  \providecommand{\cofiLDSNnoWWW}[1]
+   {\href{\cofiFTP/StudyNotes/Lang/}{Language Design Study Note~#1}}
+  \providecommand{\cofiNote}[1]
+   {\cofiWWWref{Notes/#1/index.html}{Note~#1}}
+  \providecommand{\cofiDissentNote}[1]
+   {\cofiWWWref{Notes/#1/index.html}{Note~#1}}
+  \providecommand{\cofiDocument}[1]
+   {\cofiWWWref{Documents/#1/index.html}{Documents/#1}}
+  \providecommand{\cofiTentativeDocument}[1]
+   {\cofiWWWref{Documents/Tentative/#1/index.html}{Documents/Tentative/#1}}
+")
+
+
+ENTRY TEMPLATES for CoFI documents  ****************************
+
+
+CoFI Note:
+
+unpublished(?-?,
+ author = "AUTHOR",
+ title  = "TITLE",
+ month  = MON,
+ year   = "YEAR",
+ note   = "\cofiNote{?-?}, in \cite{CoFI}")
+
+The BibTeX key is always to be the same as the CoFI Note label.
+
+
+ENTRIES for CoFI Documents  ************************************
+
+@Book{CASL/RefManual,
+   editor = {Peter D. Mosses},
+   title = {{\CASL} Reference Manual},
+   publisher = {Springer},
+   series = {Lecture Notes in Computer Science},
+   year = 2004,
+   volume = {2960},
+   note = {To appear},
+}
+
+@Book{CASL/UserManual,
+   author = {Michel Bidoit and Peter D. Mosses},
+   title = {{\CASL} User Manual},
+   publisher = {Springer},
+   series = {Lecture Notes in Computer Science},
+   year = 2003,
+   volume = {2900},
+   note = {To appear}
+}
+
+
+@misc(CoFI, 
+ author = "CoFI",
+ title  = "{The Common Framework Initiative}
+           for algebraic specification and development, Electronic Archives",
+ booktitle = "CoFI Archives",
+ howpublished   = "Notes and Documents accessible from 
+                   \url{http://www.cofi.info/}")
+
+
+@misc(CoFI/Tools, 
+ author = CoFI-T,
+ title  = "{The Common Framework Initiative}
+           for algebraic specification and development: Tools",
+ booktitle = "CoFI Tools",
+ howpublished   = "\url{http://www.loria.fr/\~{}hkirchne/CoFI/Tools/}")
+
+
+@unpublished(TentativeLanguageSummary,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language
+           (Tentative Design, version 0.95) -- Language Summary}",
+ month  = dec,
+ year   = "1996",
+ note   = "\cofiTentativeDocument{LanguageSummary}, in \cite{CoFI}")
+
+@unpublished(CASL/Summary-v0.97,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language --
+           Summary, version 0.97}",
+ month  = may,
+ year   = "1997",
+ note   = "\cofiDocument{CASL/Summary-v0.97}, in \cite{CoFI}")
+
+@unpublished(Rationale,
+ author = CoFI,
+ title  = "{\CoFI\ -- The Common Framework Initiative for Algebraic 
+            Specification and Development -- Rationale}",
+ month  = may,
+ year   = "1997",
+ note   = "\cofiDocument{Rationale}, in \cite{CoFI}")
+
+@unpublished(CASL/Proposal,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language --
+           Design Proposal}",
+ month  = may,
+ year   = "1997",
+ note   = "\cofiDocument{CASL/Proposal}, in \cite{CoFI}")
+
+@unpublished(CASL/Dissent,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language --
+           Notes of Dissent from the Design Proposal}",
+ month  = may,
+ year   = "1997",
+ note   = "\cofiDocument{CASL/Dissent}, in \cite{CoFI}")
+
+@unpublished(CASL/Tools,
+ author = CoFI-T,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language --
+           Intended Tools}",
+ month  = may,
+ year   = "1997",
+ note   = "\cofiDocument{CASL/Tools}, in \cite{CoFI}")
+
+@unpublished(CASL/SyntaxExamples/Bremen,
+ author = "Bernd Krieg-Br{\"{u}}ckner",
+ title  = "A Proposal for a Concrete Syntax for {\CASL}",
+ month  = may,
+ year   = "1997",
+ note   = "Revised version:
+           \footlink{Postscript}{\cofiWWW/Documents/CASL/SyntaxExamples/Bremen.ps}, in \cite{CoFI}") 
+
+@unpublished(CASL/SyntaxExamples/Paris,
+ author = "Fr\'ed\'eric Voisin and Michel Bidoit and Christine Choppy",
+ title  = "A Concrete Syntax for {\CASL} (Tentative Proposal)",
+ month  = may,
+ year   = "1997",
+ note   = "Version 2: \footlink{Postscript}{\cofiWWW/Documents/CASL/SyntaxExamples/Paris.ps}, in \cite{CoFI}") 
+
+@unpublished(CASL/v0.97/RefereeReport,
+ author = "{IFIP WG 1.3}",
+ title  = "{Referee Report on \CASL}",
+ month  = jun,
+ year   = "1997",
+ note   = "\cofiDocument{CASL/RefereeReport} 
+           (referring to \CASL version 0.97), in \cite{CoFI}")
+
+@unpublished(CASL/v0.97/RefereeResponse,
+ author = CoFI-LD,
+ title  = "{Response to the Referee Report on \CASL}",
+ month  = aug,
+ year   = "1997",
+ note   = "\cofiDocument{CASL/RefereeResponse} (initial response, 
+           referring to \CASL version 0.97), in \cite{CoFI}")
+
+@unpublished(CASL/RefereeResponse,
+ author = CoFI-LD,
+ title  = "{Response to the Referee Report on \CASL}",
+ month  = mar,
+ year   = "2000",
+ note   = "\cofiDocument{CASL/RefereeResponse} (final response), 
+           in \cite{CoFI}")
+
+@unpublished(CASL/Summary-v0.98,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language --
+           Summary, version 0.98}",
+ month  = sep,
+ year   = "1997",
+ note   = "\cofiDocument{CASL/Summary-v0.98}, in \cite{CoFI}")
+
+@unpublished(CASL/SyntaxIssues,
+ author = "Michel Bidoit and Christine Choppy and 
+           Bernd Krieg-Br{\"{u}}ckner and Peter D. Mosses and 
+           Fr\'ed\'eric Voisin",
+ title  = "Concrete Syntax for {\CASL}",
+ month  = feb,
+ year   = "1998",
+ note   = "\cofiDocument{CASL/SyntaxIssues}, in \cite{CoFI}")
+
+@unpublished(CASL/SyntaxExamples,
+ author = "Michel Bidoit and Christine Choppy and 
+           Bernd Krieg-Br{\"{u}}ckner and Peter D. Mosses and 
+           Fr\'ed\'eric Voisin",
+ title  = "Concrete Syntax for {\CASL} -- 
+           Examples of Structured Specifications",
+ month  = feb,
+ year   = "1998",
+ note   = "\cofiDocument{CASL/SyntaxExamples} (obsolete), in \cite{CoFI}")
+
+
+@unpublished(CASL/AbstractSyntax,
+ author = CoFI-LD,
+ title  = "Abstract Syntax for {\CASL}",
+ month  = feb,
+ year   = "1998",
+ note   = "\cofiDocument{CASL/AbstractSyntax}, in \cite{CoFI}")
+
+
+@unpublished(CASL/Summary-v0.99,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language --
+           Summary, version 0.99}",
+ month  = apr,
+ year   = "1998",
+ note   = "\cofiDocument{CASL/Summary-v0.99}, in \cite{CoFI}")
+
+@unpublished(CASL/Summary-v1.0,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language --
+           Summary, version 1.0}",
+ month  = oct,
+ year   = "1998",
+ note   = "\cofiDocument{CASL/Summary-v1.0}, in \cite{CoFI}")
+
+@unpublished(CASL/Summary-v1.0.1,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language --
+           Summary, version 1.0.1}",
+ month  = mar,
+ year   = "2001",
+ note   = "\cofiDocument{CASL/v1.0.1/Summary}, in \cite{CoFI}")
+
+@unpublished(CASL/Summary,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language --
+           Summary}",
+ month  = mar,
+ year   = "2001",
+ note   = "\cofiDocument{CASL/Summary}, in \cite{CoFI}")
+
+@unpublished(CASL/Summary-Changes,
+ author = CoFI-LD,
+ title  = "{\CASL\ -- The Common Algebraic Specification Language --
+           Summary: List of Changes}",
+ month  = mar,
+ year   = "1999",
+ note   = "\cofiDocument{CASL/v1.0.1/Summary-Changes}, in \cite{CoFI}")
+
+@unpublished(CASL/GuidedTour,
+  author =	 "Peter D. Mosses",
+  title =	 "{\CASL: A Guided Tour of its Design}",
+  month =	 jul,
+  year =	 "1999",
+  note =	 "\cofiDocument{CASL/GuidedTour}, in \cite{CoFI}; also
+                  available as slides:
+                  \cofiWWWref{Presentations/GuidedTour/index.html}
+                  {Presentations/GuidedTour} and
+                  \cofiWWWref{Presentations/Overview/index.html}
+                  {Presentations/Overview}, in \cite{CoFI}"
+)
+
+@unpublished(CASL/Semantics,
+ author = CoFI-S,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language
+      -- Semantics}",
+ month  = jul,
+ year   = "1999",
+ note   = "\cofiDocument{CASL/Semantics} (version 0.96), in \cite{CoFI}")
+
+
+COORDINATION Notes C-? *****************************************
+
+@unpublished(CoFIdoc,
+ author = "Peter D. Mosses",
+ title  = "The \texttt{CoFIdoc} package",
+ month  = may,
+ year   = "1997",
+ note   = "\href{\cofiFTP/Formatting/CoFIdoc/}{Formatting/CoFIdoc}, 
+           in \cite{CoFI}") 
+
+@unpublished(C-1,
+ author = "Peter D. Mosses",
+ title  = "Formatting {\CoFI} documents using {\LaTeX}",
+ month  = may,
+ year   = "1997",
+ note   = "\cofiNote{C-1}, in \cite{CoFI}")
+
+@unpublished(C-2,
+ author = "Peter D. Mosses",
+ title  = "Formatting {\CASL} specifications using {\LaTeX}",
+ month  = jun,
+ year   = "1998",
+ note   = "\cofiNote{C-2}, in \cite{CoFI}")
+
+
+LANGUAGE DESIGN Notes L-? **************************************
+
+CoFI Language Design Study Notes (1995-96) are listed at the end.
+Future notes about language design will appear as CoFI Notes L-?.
+
+@unpublished(L-1,
+ author = "Don Sannella",
+ title  = "Variables in Basic Specifications: Overloading and Overriding",
+ month  = mar,
+ year   = "1997",
+ note   = "\cofiNote{L-1}, in \cite{CoFI}")
+
+@unpublished(L-2,
+ author = "Anne Haxthausen and Bernd Krieg-Br{\"u}ckner and Till Mossakowski", 
+ title  = "Extending {\CASL} with Higher-order Functions",
+ month  = apr,
+ year   = "1997",
+ note   = "\cofiNote{L-2} (superceded by \cofiNote{L-10}), in \cite{CoFI}")
+
+@unpublished(L-3,
+ author = "Maura Cerioli and Gianna Reggio", 
+ title  = "Generic Specifications in {\CASL}: An Alternative Proposal",
+ month  = may,
+ year   = "1997",
+ note   = "\cofiDissentNote{L-3}, in \cite{CoFI}")
+
+@unpublished(L-4,
+ author = "Anne Haxthausen and Maura Cerioli", 
+ title  = "The Role of Subsorts in Subsort Declarations and Datatype
+           Declarations",
+ month  = may,
+ year   = "1997",
+ note   = "\cofiDissentNote{L-4}, in \cite{CoFI}")
+
+@unpublished(L-5,
+ author = "Hubert Baumeister", 
+ title  = "On the Definedness of Instantiation of Generics",
+ month  = may,
+ year   = "1997",
+ note   = "\cofiDissentNote{L-5}, in \cite{CoFI}")
+
+@unpublished(L-6,
+ author = "Didier Bert",
+ title  = "Introduction of Morphisms as First Class Citizens in {\CASL}",
+ month  = jul,
+ year   = "1997",
+ note   = "\cofiNote{L-6}, in \cite{CoFI}")
+
+@unpublished(L-7,
+ author = "Till Mossakowski",
+ title  = "Sublanguages of {\CASL}",
+ month  = dec,
+ year   = "1997",
+ note   = "\cofiNote{L-7}, in \cite{CoFI}")
+
+@unpublished(L-8,
+ author = "Anne Haxthausen and Bernd Krieg-Br{\"u}ckner and Till Mossakowski",
+ title  = "Extending {\CASL} with Higher-order Functions --- Design Proposal",
+ month  = jan,
+ year   = "1998",
+ note   = "\cofiNote{L-8} (see also \cofiNote{L-10}), in \cite{CoFI}")
+
+@unpublished(L-9,
+ author = "Till Mossakowski",
+ title  = "Two ``Functional Programming'' Sublanguages of {\CASL}",
+ month  = mar,
+ year   = "1998",
+ note   = "\cofiNote{L-9}, in \cite{CoFI}")
+
+@unpublished(L-10,
+ author = "Anne Haxthausen and Bernd Krieg-Br{\"u}ckner and Till Mossakowski",
+ title  = "Subsorted Partial Higher-order Logic as an Extension of {\CASL}",
+ month  = oct,
+ year   = "1998",
+ note   = "\cofiNote{L-10}, in \cite{CoFI}")
+
+@unpublished(L-11,
+ author = "Markus Roggenbach and Till Mossakowski",
+ title  = "Proposal of Some Annotations and Literal Syntax in {\CASL}",
+ month  = mar,
+ year   = "1999",
+ note   = "\cofiNote{L-11}, in \cite{CoFI}")
+
+@unpublished(L-12,
+ author = "Markus Roggenbach and Till Mossakowski",
+ title  = "Basic Datatypes  in {\CASL}",
+ month  = may,
+ year   = "2000",
+ note   = "\cofiNote{L-12}, version 0.4.1, in \cite{CoFI}")
+
+METHODOLOGY Notes M-? ******************************************
+
+@unpublished(M-1,
+ author = "Hubert Baumeister", 
+ title  = "Methodological Considerations on the Use of Extension and Union",
+ month  = sep,
+ year   = "1997",
+ note   = "\cofiNote{M-1}, in \cite{CoFI}")
+
+
+@unpublished(M-2,
+ author = "Christine Choppy", 
+ title  = "Note on Data Type Declaration",
+ month  = jan,
+ year   = "1998",
+ note   = "\cofiNote{M-2}, in \cite{CoFI}")
+
+@unpublished(M-3,
+ author = "Maura Cerioli", 
+ title  = "Different Kinds of Subsorting in {\CASL}",
+ month  = jan,
+ year   = "1998",
+ note   = "\cofiNote{M-3}, in \cite{CoFI}")
+
+@unpublished(M-4,
+ author = "Michel Bidoit and Don Sannella and Andrzej Tarlecki", 
+ title  = "Architectural Specifications in {\CASL}",
+ month  = nov,
+ year   = "2000",
+ note   = "\cofiNote{M-4} (submitted for publication), in \cite{CoFI}")
+
+@unpublished(M-5,
+ author = "Till Mossakowski", 
+ title  = "Version Control and Registration for {\CASL} Libraries",
+ month  = sep,
+ year   = "1998",
+ note   = "\cofiNote{M-5}, in \cite{CoFI}")
+
+@unpublished(M-6,
+  author =	 "Markus Roggenbach and Till Mossakowski",
+  title =	 "Methodological Guidelines",
+  month =	 jun,
+  year =	 "2002",
+  note =	 "\cofiNote{M-6}, in \cite{CoFI} (see also
+                  \cofiNote{L-12} on \emph{Basic Datatypes in {\CASL}}, in
+                  which an earlier version of Note~M-6 was originally
+                  incorporated)"
+)
+
+@unpublished(M-7,
+ author = "Till Mossakowski and Markus Roggenbach", 
+ title  = "The Datatypes {REAL} and {COMPLEX} in {\CASL}",
+ month  = apr,
+ year   = "1999",
+ note   = "\cofiNote{M-7}, in \cite{CoFI}")
+
+@unpublished(M-8,
+ author = "Till Mossakowski", 
+ title  = "How to Write Consistent {\CASL} Design Specifications",
+ month  = mar,
+ year   = "2000",
+ note   = "\cofiNote{M-8}, in \cite{CoFI}")
+
+
+REACTIVE SYSTEMS Notes R-? *************************************
+
+
+SEMANTICS Notes S-? ********************************************
+
+@unpublished(S-1,
+ author = CoFI-S,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language
+     (Tentative Design, version 0.95) -- Language Summary,
+     with annotations concerning questions and doubts}",
+ month  = apr,
+ year   = "1997",
+ note   = "\cofiNote{S-1} (revised), in \cite{CoFI}")
+
+@unpublished(S-2,
+ author = "Michel Bidoit and Andrzej Tarlecki",
+ title  = "Signature Morphisms with Compound Identifiers in {\CASL}",
+ month  = feb,
+ year   = "1997",
+ note   = "\cofiNote{S-2}, in \cite{CoFI}")
+
+@unpublished(S-3,
+ author = "Till Mossakowski",
+ title  = "Subsorting and Structured Specification",
+ month  = mar,
+ year   = "1997",
+ note   = "\cofiNote{S-3}, in \cite{CoFI}")
+
+@unpublished(S-4,
+ author = CoFI-S,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language
+     (Tentative Design, version 0.95) -- Language Summary,
+     with annotations concerning the semantics of constructs}",
+ month  = apr,
+ year   = "1997",
+ note   = "\cofiNote{S-4}, in \cite{CoFI}")
+
+@unpublished(S-5,
+ author = "Maura Cerioli and Anne Haxthausen and 
+           Bernd Krieg-Br{\"u}ckner and Till Mossakowski",
+ title  = "Permissive Subsorted Partial Logic in {CASL}",
+ month  = sep,
+ year   = "1997",
+ note   = "\cofiNote{S-5} (to appear in Proc.\ AMAST'97), in \cite{CoFI}")
+
+@unpublished(S-6,
+ author = CoFI-S,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language
+     (version 0.97) -- Semantics}",
+ month  = jul,
+ year   = "1997",
+ note   = "\cofiNote{S-6}, in \cite{CoFI}")
+
+
+@unpublished(S-7,
+ author = "Till Mossakowski",
+ title  = "Cocompleteness of the {\CASL} Signature Category",
+ month  = feb,
+ year   = "1998",
+ note   = "\cofiNote{S-7}, in \cite{CoFI}")
+
+@unpublished(S-8,
+ author = "Till Mossakowski",
+ title  = "Institution-Independent Semantics for {\CASL}-in-the-large",
+ month  = oct,
+ year   = "1998",
+ note   = "\cofiNote{S-8} (revised), superseded by \cofiNote{S-10}, in \cite{CoFI}")
+
+@unpublished(S-9,
+ author = CoFI-S,
+ title  = "{\CASL\ -- The \CoFI\ Algebraic Specification Language
+      -- Semantics}",
+ month  = jul,
+ year   = "1999",
+ note   = "\cofiNote{S-9} (\cofiDocument{CASL/Semantics}, version 0.96), 
+           in \cite{CoFI}")
+
+@unpublished(S-10,
+ author = "Till Mossakowski",
+ title  = "Specifications in an Arbitrary Institution with Symbols",
+ month  = nov,
+ year   = "1999",
+ note   = "\cofiNote{S-10} (supersedes \cofiNote{S-8}), in \cite{CoFI}")
+
+@unpublished(S-11,
+  author =	 "Lutz Schr{\"o}der and Till Mossakowski and Andrzej
+                  Tarlecki and Bartek Klin and Piotr Hoffman",
+  title =	 "Semantics of Architectural Specifications in {\CASL}",
+  month =	 nov,
+  year =	 "2000",
+  note =	 "\cofiNote{S-11}, in \cite{CoFI}"
+)
+
+@unpublished(S-12,
+  author =	 "Till Mossakowski and Serge Autexier and  Dieter Hutter",
+  title =	 "Extending Development Graphs with Hiding",
+  month =	 nov,
+  year =	 "2000",
+  note =	 "\cofiNote{S-12}, in \cite{CoFI}"
+)
+
+TOOLS Notes T-? ************************************************
+
+
+@unpublished(T-1,
+ author = "Magne Haveraaen",
+ title  = "Some Thoughts on {\CASL} Concrete Syntax",
+ month  = apr,
+ year   = "1997",
+ note   = "\cofiNote{T-1}, in \cite{CoFI}")
+
+
+@unpublished(T-2,
+ crossref = "MossakowskiKolyangKrieg-Brueckner97WADT",
+ note   = "\cofiNote{T-2}, in \cite{CoFI}")
+
+@unpublished(T-3,
+ author = "Mark van den Brand and Paul Klint and Pieter Olivier",
+ title  = "ATerms: Exchanging Data between Heterogeneous Tools for {\CASL}",
+ month  = mar,
+ year   = "1998",
+ note   = "\cofiNote{T-3} (revised draft), in \cite{CoFI}")
+
+@unpublished(T-4,
+ author = "Peter D. Mosses",
+ title  = "Potential Use of {SGML} for the {\CASL} Interchange Format",
+ month  = oct,
+ year   = "1997",
+ note   = "\cofiNote{T-4}, in \cite{CoFI}")
+
+@unpublished(T-5,
+ author = "Einar W. Karlsen",
+ title  = "Interoperability of {\CASL} Tools using {CORBA}",
+ month  = oct,
+ year   = "1997",
+ note   = "\cofiNote{T-5}, in \cite{CoFI}")
+
+@unpublished(T-6,
+ author = "Till Mossakowski",
+ title  = "Standard annotations for parsers and static semantic checkers
+-- a proposal",
+ month  = sep,
+ year   = "1998",
+ note   = "\cofiNote{T-6} (revised), in \cite{CoFI}")
+
+@unpublished(T-7,
+ author = "Axel Schairer",
+ title  = "Using Standard Tools to Create  Lexers and Parsers for {\CASL}",
+ month  = apr,
+ year   = "1999",
+ note   = "\cofiNote{T-7}, in \cite{CoFI}")
+
+@unpublished(T-8,
+  author =	 "Dieter Hutter",
+  title =	 "Some Remarks on the Annotation \%cons",
+  month =	 oct,
+  year =	 "1999",
+  note =	 "\cofiNote{T-8}, in \cite{CoFI}")
+
+@unpublished(T-9,
+  author =	 "H{\'e}l{\`e}ne Kirchner and Christophe Ringeissen",
+  title =	 "Executing {\CASL} Equational Specifications with the
+                  {ELAN} Rewrite Engine",
+  month =	 nov,
+  year =	 "2000",
+  note =	 "\cofiNote{T-9} (revised version), in \cite{CoFI}")
+
+@unpublished(T-10,
+  author =	 "Till Mossakowski",
+  title =	 "{\CASL}: From Semantics to Tools",
+  month =	 dec,
+  year =	 "1999",
+  note =	 "\cofiNote{T-10}, in \cite{CoFI}")
+
+
+Language Design Study Notes (1995-96) **************************
+
+All CoFI Language Design Study Notes (1995-96) are listed below.
+Future notes about language design will appear as CoFI Notes with
+labels of the form L-?.
+
+The following list is approximately in order of installation on
+the CoFI FTP and WWW archives.
+
+@unpublished(CFIPatternsDoc,
+ author = "Hubert Baumeister",
+ title  = "How to Write {CFI Language Design Study Notes}",
+ year   = "1996",
+ note   = "\cofiSN{CFIPatternsDoc}, in \cite{CoFI}")
+
+@unpublished(AH+FN-1,
+ author = "Anne Haxthausen and Friederike Nickl",
+ title  = "Parameterization and Subsorting",
+ year   = "1996",
+ note   = "\cofiLDSN{AH+FN-1}, in \cite{CoFI}")
+
+@unpublished(OJD+AH+BKB-1,
+ author = "Ole-Johan Dahl and Anne Haxthausen and Bernd Krieg-Br{\"u}ckner",
+ title  = "Subsorting and Higher-order Functions",
+ year   = "1996",
+ note   = "\cofiLDSN{OJD+AH+BKB-1}, in \cite{CoFI}")
+
+@unpublished(BKB+AH-1,
+ author = "Bernd Krieg-Br{\"u}ckner and Anne Haxthausen",
+ title  = "Overloading, Subtypes and Higher Order Functions",
+ year   = "1996",
+ note   = "\cofiLDSN{BKB+AH-1}, in \cite{CoFI}")
+
+@unpublished(BKB+DTS-1,
+ author = "Bernd Krieg-Br{\"u}ckner and Don Sannella",
+ title  = "Structuring Concepts In-The-Small",
+ year   = "1996",
+ note   = "\cofiLDSN{BKB+DTS-1}, in \cite{CoFI}")
+
+@unpublished(BKB+DTS-2,
+ author = "Bernd Krieg-Br{\"u}ckner and Don Sannella ",
+ title  = "Structuring Concepts",
+ year   = "1996",
+ note   = "\cofiLDSN{BKB+DTS-2}, in \cite{CoFI}")
+
+@unpublished(BKB-3,
+ author = "Bernd Krieg-Br{\"u}ckner",
+ title  = "Partiality",
+ year   = "1996",
+ note   = "\cofiLDSN{BKB-3}, in \cite{CoFI}")
+
+@unpublished(BKB-4,
+ author = "Bernd Krieg-Br{\"u}ckner",
+ title  = "Data Types and Constraints",
+ year   = "1996",
+ note   = "\cofiLDSN{BKB-4}, in \cite{CoFI}")
+
+@unpublished(OO-1,
+ author = "Olaf Owe",
+ title  = "3-Valued Logic",
+ year   = "1996",
+ note   = "\cofiLDSN{OO-1}, in \cite{CoFI}")
+
+@unpublished(RG-1,
+ author = "Radu Grosu",
+ title  = "Hiding",
+ year   = "1996",
+ note   = "\cofiLDSN{RG-1}, in \cite{CoFI}")
+
+@unpublished(EA+AH+GR-1,
+ author = "Egidio Astesiano and Anne Haxthausen and Gianna Reggio",
+ title  = "Constraints",
+ year   = "1996",
+ note   = "\cofiLDSN{EA+AH+GR-1}, in \cite{CoFI}")
+
+@unpublished(GR-1,
+ author = "Gianna Reggio",
+ title  = "Modules",
+ year   = "1996",
+ note   = "\cofiLDSN{GR-1}, in \cite{CoFI}")
+
+@unpublished(EA+GR-1,
+ author = "Egidio Astesiano and Gianna Reggio",
+ title  = "Entities for {CFI}",
+ year   = "1996",
+ note   = "\cofiLDSNnoWWW{EA+GR-1}, in \cite{CoFI}")
+
+@unpublished(EA+GR-2,
+ author = "Egidio Astesiano and Gianna Reggio",
+ title  = "Development Process Methodology",
+ year   = "1996",
+ note   = "\cofiLDSN{EA+GR-2}, in \cite{CoFI}")
+
+@unpublished(DTS+AT-1,
+ author = "Don Sannella and Andrzej Tarlecki",
+ title  = "Constructor implementations",
+ year   = "1996",
+ note   = "\cofiLDSNnoWWW{DTS+AT-1}, in \cite{CoFI}")
+
+@unpublished(DTS+AT-2,
+ author = "Don Sannella and Andrzej Tarlecki",
+ title  = "Specifying and developing parameterised programs",
+ year   = "1996",
+ note   = "\cofiLDSNnoWWW{DTS+AT-2}, in \cite{CoFI}")
+
+@unpublished(DTS+RG-1,
+ author = "Don Sannella and Radu Grosu",
+ title  = "Types in specification languages",
+ year   = "1996",
+ note   = "\cofiLDSNnoWWW{DTS+RG-1}, in \cite{CoFI}")
+
+@unpublished(MB+DTS+AT-1,
+ author = "Michel Bidoit and Don Sannella and Andrzej Tarlecki",
+ title  = "Behavioural Encapsulation",
+ year   = "1996",
+ note   = "\cofiLDSNnoWWW{MB+DTS+AT-1}, in \cite{CoFI}")
+
+@unpublished(DB-1,
+ author = "Didier Bert",
+ title  = "Morphisms",
+ year   = "1996",
+ note   = "\cofiLDSNnoWWW{DB-1}, in \cite{CoFI}")
+
+@unpublished(MW-1,
+ author = "Martin Wirsing",
+ title  = "Partiality",
+ year   = "1996",
+ note   = "\cofiLDSN{MW-1}, in \cite{CoFI}")
+
+@unpublished(OO+OJD-1,
+ author = "Olaf Owe and Ole-Johan Dahl",
+ title  = "Consistency Requirements and Constructivity",
+ year   = "1996",
+ note   = "\cofiLDSN{OO+OJD-1}, in \cite{CoFI}")
+
+@unpublished(PDM-1,
+ author = "Peter D. Mosses",
+ title  = "On Abstract Syntax",
+ year   = "1996",
+ note   = "\cofiLDSN{PDM-1}, in \cite{CoFI}")
+
+@unpublished(PDM-2,
+ author = "Peter D. Mosses",
+ title  = "On Architectural Specifications",
+ year   = "1996",
+ note   = "\cofiLDSN{PDM-2}, in \cite{CoFI}")
+
+@unpublished(MC+PDM-1,
+ author = "Maura Cerioli and Peter D. Mosses",
+ title  = "On Subsorting",
+ year   = "1996",
+ note   = "\cofiLDSN{MC+PDM-1}, in \cite{CoFI}")
+
+@unpublished(MB-2,
+ author = "Michel Bidoit",
+ title  = "On Generic Specifications",
+ year   = "1996",
+ note   = "\cofiLDSN{MB-2}, in \cite{CoFI}")
+
+@unpublished(MC++-1,
+ author = "Maura Cerioli and Till Mossakowski and
+           Bernd Krieg-Br{\"u}ckner and  Anne Haxthausen and
+           Peter D. Mosses and Olaf Owe",
+ title  = "Subsorting in {CASL}",
+ year   = "1996",
+ note   = "\cofiLDSN{MC++-1}, in \cite{CoFI}")
+
+
+PUBLISHED DOCUMENTS *****************************************
+
+@article{Mosses96EATCS,
+  author = 	 {Peter D. Mosses},
+  title = 	 {{CoFI}: The {Common Framework Initiative} for 
+                   Algebraic Specification},
+  journal = 	 {Bull. EATCS},
+  year = 	 {1996},
+  number = 	 {59},
+  month = 	 jun,
+  pages = 	 {127--132}
+}
+
+@inproceedings{Mosses97TAPSOFT,
+  author =	 {Peter D. Mosses},
+  title =	 {{\CoFI: The Common Framework Initiative for
+                  Algebraic Specification and Development}},
+  booktitle =	 {TAPSOFT '97, Proc. Intl. Symp. on Theory and
+                  Practice of Software Development},
+  series =	 {LNCS},
+  volume =	 {1214},
+  publisher =	 {Springer-Verlag},
+  pages =	 {115--137},
+  year =	 {1997},
+  OPTnote =	 "\cofiTentativeDocument{Mosses97TAPSOFT}, in
+                  \cite{CoFI}"
+}
+
+@inproceedings{Mosses97ASF+SDF,
+  author =	 {Peter D. Mosses},
+  title =	 {{\CASL} for {ASF+SDF} Users},
+  booktitle =	 {ASF+SDF '97, Proc. 2nd Intl. Workshop on the Theory and
+                  Practice of Algebraic Specifications},
+  year =	 {1997},
+  publisher =	 {British Computer Society,
+                  \url{http://www.ewic.org.uk/ewic/workshop/list.cfm}},
+  volume =	 {ASFSDF-97},
+  series =	 {Electronic Workshops in Computing}
+}
+
+@inproceedings{Mosses98WADT,
+  author =	 {Peter D. Mosses},
+  title =	 {{\CASL}: A Guided Tour of its Design},
+  booktitle =	 {Recent Trends in Algebraic Development Techniques,
+                  Proc. 13th International Workshop, WADT '98, Lisbon,
+                  1998, Selected Papers},
+  OPTeditor =	 {J. L. Fiadeiro},
+  series =	 {LNCS},
+  volume =	 {1589},
+  pages =	 {216--240},
+  publisher =	 {Springer-Verlag},
+  year =	 {1999},
+}
+
+@InCollection{Mosses-CAFE,
+  author =	 {Peter D. Mosses},
+  editor = 	 {K. Futatsugi and A. T. Nakagawa and T. Tamai},
+  title =        {{\CASL} for {CafeOBJ} Users},
+  booktitle = 	 {{CAFE}: An Industrial-Strength Algebraic Formal Method},
+  chapter = 	 {6},
+  publisher = 	 {Elsevier},
+  year = 	 {2000},
+  pages =	 {121-144}}
+}
+
+
+@inproceedings(Mossakowski97WADT,
+  author =	 {Till Mossakowski},
+  title =	 {Colimits of Order-Sorted Specifications},
+  booktitle =	 {Recent Trends in Algebraic Development
+                  Techniques, Proc. 12th International Workshop,
+                  WADT '97, Tarquinia, 1997, Selected Papers},
+  OPTeditor =	 {F. Parisi-Presicce},
+  series =	 {LNCS},
+  volume =	 {1376},
+  pages =	 {316--332},
+  publisher =	 {Springer-Verlag},
+  year =	 {1998}
+)
+
+@inproceedings{MossakowskiKolyangKrieg-Brueckner97WADT,
+  author =	 {Till Mossakowski and Kolyang and Bernd
+                  Krieg-Br{\"u}ckner},
+  title =	 {Static Semantic Analysis and Theorem Proving for
+                  {\CASL}},
+  booktitle =	 {Recent Trends in Algebraic Development Techniques,
+                  Proc. 12th International Workshop, WADT '97,
+                  Tarquinia, 1997, Selected Papers},
+  OPTeditor =	 {F. Parisi-Presicce},
+  series =	 {LNCS},
+  volume =	 {1376},
+  pages =	 {333--348},
+  publisher =	 {Springer-Verlag},
+  year =	 {1998}
+}
+
+@inproceedings{Mossakowski98WADT,
+  author =	 {Till Mossakowski},
+  title =	 {Translating {OBJ3} to {\CASL}: The Institution
+                  Level},
+  booktitle =	 {Recent Trends in Algebraic Development Techniques,
+                  Proc. 13th International Workshop, WADT '98, Lisbon,
+                  1998, Selected Papers},
+  OPTeditor =	 {J. L. Fiadeiro},
+  series =	 {LNCS},
+  volume =	 {1589},
+  pages =	 {198--214},
+  publisher =	 {Springer-Verlag},
+  year =	 {1999},
+}
+
+
+@inproceedings{BidoitSannellaTarlecki98AMAST,
+  author =	 {Michel Bidoit and Donald Sannella and Andrzej
+                  Tarlecki},
+  title =	 {Architectural Specifications in {\CASL}},
+  booktitle =	 {AMAST '98, Proc. 7th Intl. Conference on Algebraic
+                  Methodology and Software Technology, Manaus},
+  publisher =	 {Springer-Verlag},
+  series =	 {LNCS},
+  volume =	 {1548},
+  pages =	 {341--357},
+  year =	 1998
+}
+
+
+@article{CaslTCS2002,
+  author = 	 "Astesiano, Egidio and Bidoit, Michel and
+                  Krieg-Br{\"u}ckner, Bernd and Mosses, Peter D.
+                  and Sannella, Don and Tarlecki, Andrzej",
+  title = 	 "{\CASL}: The Common Algebraic Specification
+                  Language",
+  journal = 	 tcs,
+  year = 	 2002,
+  volume = 	 286,
+  number = 	 2,
+  pages = 	 "153--196",
+  month = 	 "",
+  abstract = 	 "The Common Algebraic Specification Language
+                  (CASL) is an expressive language for the formal
+                  specification of functional requirements and
+                  modular design of software. It has been
+                  designed by COFI, the international Common
+                  Framework Initiative for algebraic
+                  specification and development. It is based on a
+                  critical selection of features that have
+                  already been explored in various contexts,
+                  including subsorts, partial functions,
+                  first-order logic, and structured and
+                  architectural specifications. CASL should
+                  facilitate interoperability of many existing
+                  algebraic prototyping and verification tools.
+                  
+                  This paper gives an overview of the CASL
+                  design. The major issues that had to be
+                  resolved in the design process are indicated,
+                  and all the main concepts and constructs of
+                  CASL are briefly explained and illustrated the
+                  reader is referred to the CASL Language Summary
+                  for further details. Some familiarity with the
+                  fundamental concepts of algebraic specification
+                  would be advantageous."
+}
+

@@ -1,9 +1,36 @@
 \documentclass{article}
 \usepackage{alltt}
 \usepackage{casl}
+\usepackage{xspace}
+\usepackage{color}
 
 \input{xy}
 \xyoption{v2}
+
+\newcommand{\QUERY}[1]%{}
+{\marginpar{\raggedright\hspace{0pt}\small #1\\~}}
+
+\newcommand{\eat}[1]{}
+
+\newenvironment{EXAMPLE}[1][]   {\par#1\begin{EXAMPLEFORMAT}\begin{ITEMS}}
+                                {\end{ITEMS}\end{EXAMPLEFORMAT}\par}
+\newcommand{\IEXT}[1]           {\\#1\I}
+\newcommand{\IEND}              {\I\END}
+\newenvironment{EXAMPLEFORMAT}  {}{}
+
+%% Added by MB to have some extra vertical space after the ``main'' examples
+%% following the points (and some others in the text): 
+\newenvironment{BIGEXAMPLE}   {\begin{EXAMPLE}} {\end{EXAMPLE}\medskip}
+\newenvironment{DETAILS}[1][]   {#1\begin{DETAILSFORMAT}}{\end{DETAILSFORMAT}}
+\newenvironment{DETAILSFORMAT}  {}{}
+\newenvironment{META}[1][]      {#1\begin{METAFORMAT}}{\end{METAFORMAT}}
+\newenvironment{METAFORMAT}     {\medskip\vrule\hspace{1ex}\vrule\hspace{1ex}%
+                                 \begin{minipage}{0.9\textwidth}\it}
+                                {\end{minipage}\par\medskip}
+
+\newcommand{\SLIDESMALL}        {}
+\newcommand{\SLIDESONLY}[1]     {}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SIMULATING SMALL-CAPS FOR BOLD, EMPH
@@ -17,20 +44,21 @@
 \newcommand{\HugeTEXTSC}  [2]{{\Huge      #1\LARGE     #2}}
 
 
-\newcommand     {\CASL}{\normalTEXTSC{C}{ASL}\xspace}
+%\newcommand     {\CASL}{\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\largeCASL} {\largeTEXTSC{C}{ASL}\xspace}
 \newcommand{\LargeCASL} {\LargeTEXTSC{C}{ASL}\xspace}
 \newcommand{\LARGECASL} {\LARGETEXTSC{C}{ASL}\xspace}
 \newcommand {\hugeCASL}  {\hugeTEXTSC{C}{ASL}\xspace}
 \newcommand {\HugeCASL}  {\HugeTEXTSC{C}{ASL}\xspace}
 
-\newcommand     {\CoFI}{CoFI\xspace}
+%\newcommand     {\CoFI}{CoFI\xspace}
 
 \newcommand     {\MAYA}{\normalTEXTSC{M}{AYA}\xspace}
 \newcommand{\largeMAYA} {\largeTEXTSC{M}{AYA}\xspace}
 
 \newcommand     {\Hets}{\normalTEXTSC{H}{ETS}\xspace}
 \newcommand{\largeHets} {\largeTEXTSC{H}{ETS}\xspace}
+\newcommand{\LARGEHets} {\LARGETEXTSC{H}{ETS}\xspace}
 
 \newcommand     {\Cats}{\normalTEXTSC{C}{ATS}\xspace}
 \newcommand{\largeCats} {\largeTEXTSC{C}{ATS}\xspace}
@@ -70,6 +98,7 @@
 
 \newcommand{\CoCASL}{\normalTEXTSC{C}{O}\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\CspCASL}{\normalTEXTSC{C}{SP}-\normalTEXTSC{C}{ASL}\xspace}
+\newcommand{\Csp}{\normalTEXTSC{C}{SP}\xspace}
 \newcommand{\CcsCASL}{CCS-\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\CASLLtl}{\normalTEXTSC{C}{ASL}-\normalTEXTSC{L}{TL}\xspace}
 \newcommand{\CASLChart}{\normalTEXTSC{C}{ASL}-\normalTEXTSC{C}{HART}\xspace}
@@ -79,7 +108,7 @@
 
 \begin{document}
 
-\title{{\bf \Hets User Guide}\\ 
+\title{{\bf \protect{\LARGEHets} User Guide}\\ 
 -- Version 0.3 --}
 \author{Till Mossakowski\\[1em]
 Department of Computer Science\\ and Bremen
@@ -125,21 +154,21 @@ $$\xymatrix{
 &
 \Text{\CspCASL} \\
 &
-\CASL \ar[u] \ar[ur]
+\Text{\CASL} \ar[u] \ar[ur]
 &
 }$$
 \caption{Graph of logics currently supported by \Hets.\label{fig:LogicGraph}}
 \end{figure}
 
 \begin{figure}
-\begin{tabular}{|l|l|l|}\\\hline
+\begin{tabular}{|l|c|c|c|}\hline
 Language & Parser & Static Analysis & Prover \\\hline
 \CASL & x & x & - \\\hline
 \HasCASL & x & (x) & - \\\hline
 Haskell & x & x & -\\\hline
 \CspCASL & x & - & - \\\hline
-Structured specifications & x & x & - \\\hline
-Architectural specifications & x & - & x\hline
+Structured specifications & x & x & (x) \\\hline
+Architectural specifications & x & - & -\\\hline
 \end{tabular}
 \caption{Current degree of \Hets support for the different languages.\label{fig:Languages}}
 \end{figure}
@@ -157,7 +186,7 @@ in Sect.~\ref{sec:HetSpec} below.
 
 An overview of \HasCASL is given in \cite{Schroeder:2002:HIS};
 the language is summarized in \cite{HasCASL/Summary}.
-The definitive reference for Haskell is \cite{Haskell98},
+The definitive reference for Haskell is \cite{PeytonJones03},
 see also \url{www.haskell.org}. An introduction to \CspCASL
 is given in \cite{Roggenbach:2003:CCN}.
 
@@ -177,9 +206,10 @@ gunzip hets.tgz
 tar xf hets.tar
 \end{verbatim}
 
+Then please follow the instructions of the \texttt{INSTALL} file.
 \QUERY{Install script needed?!?}
 
-
+For the display of development graphs, \Hets uses daVinci.
 daVinci is maintained by b-novative and b-novative holds all rights.
 This release may be accompanied with free binary releases of daVinci
 Version 2.1, but daVinci 2.1 is no longer supported or maintained.
@@ -208,7 +238,7 @@ export DAVINCIHOME=<path>/daVinci_V2.1
 export UNIDAVINCI=<path>/daVinci_V2.1/daVinci
 \end{verbatim}
 
-The environment variable \texttt{HETS_LIB} should be set to
+The environment variable \texttt{HETS\_LIB} should be set to
 a location where specification libraries are stored.
 
 
@@ -217,7 +247,7 @@ a location where specification libraries are stored.
 Consider the following \CASL
 specification:
 
-\VERTSPACE
+\medskip
 \begin{BIGEXAMPLE}
 \I\SPEC \NAMEREF{Strict\_Partial\_Order} =
 %%PDM\I{}    \COMMENTENDLINE{Let's start with a simple example !}
@@ -271,21 +301,22 @@ This can be used to quickly produce a development graph
 showing the dependencies among the specifications (cf. Sect.~\ref{sec:DevGraph}).
 \item[\texttt{-L DIR}, \texttt{--hets-libdir=DIR}]
 Use \texttt{DIR} as the directory for specification libraries
-(equivalently, you can set the variable \texttt{HETS_LIB} before
+(equivalently, you can set the variable \texttt{HETS\_LIB} before
 calling \Hets).
-\end{itemize}
+\end{description}
 
 \section{Heterogeneous Specification} \label{sec:HetSpec}
 
-\Hets accepts plain text input files with the following endings:
+\Hets accepts plain text input files with the following endings:\\
 
-\begin{tabular}{lll}\hline
+\begin{tabular}{|l|c|c|}\hline
 Ending & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
-\texttt{.hs} & Haskell & Haskell\hline
+\texttt{.hs} & Haskell & Haskell\\\hline
 \end{tabular}
 
+\medskip
 Although the endings \texttt{.casl} and \texttt{.het} are
 interchangeable, the former should be used for libraries of
 homogeneous \CASL specifications and the latter for \HetCASL libraries
@@ -301,7 +332,8 @@ The subsequent specifications are then parsed and analysed as
 \HasCASL specifications. Within such specifications,
 it is possible to use references to named \CASL specifications;
 these are then automatically translated along the default
-embedding of \CASL into \HasCASL. (Heterogeneous constructs
+embedding of \CASL into \HasCASL (cf.\ Fig.~\ref{fig:LogicGraph}). 
+(Heterogeneous constructs
 for explicit translations between logics will be made available
 in the future.)
 
@@ -356,35 +388,34 @@ Note that according to the Haskell syntax, Haskell function
 declarations and definitions need to start with the first column of
 the text.
 
-\section{Formatting}
-
-A formatter with pretty-printed output currently is available only for
-the \CASL logic. For example, it is possible to generate a pretty
-printed \LaTeX\ version of \texttt{Order.casl} by typing:
-
-\begin{quote}
-\texttt{hets -o pp.tex Order.casl}
-\end{quote}
-
-The option \texttt{-r RAW} or \texttt{--raw=RAW},
-where \texttt{RAW} is \texttt{(ascii|text|(la)?tex)=STRING},
-and \texttt{STRING} is passed to the appropiate pretty-printer.
 
 
 
 \section{Development Graphs}\label{sec:DevGraph}
 
+Development graphs are a simple kernel formalism for (heterogeneous)
+structured theorem proving and proof management.  A development graph
+consists of a set of nodes (corresponding to whole structured
+specifications or parts thereof), and a set of arrows called
+definition links, indicating the dependency of each involved
+structured specification on its subparts.  Arising proof obligations
+are attached as so-called theorem links to this graph.
+Details can be found in the \CASL Reference Manual \cite[IV:4]{CASL/RefManual}.
+
 The following options let \Hets show the development graph of
 a specification library:
 \begin{description}
-\item[\texttt{-g}, \texttt{--gui}]  show graphical output in a GUI window
-  -G         --only-gui             show graphical output in a GUI window - don't write Output to file
+\item[\texttt{-g}, \texttt{--gui}]  Shows the development graph in a GUI window.
+\item[\texttt{-G}, \texttt{--only-gui}] Shows the development graph in a GUI window,
+and suppresses the writing of an output file.
+\end{description}
 
+\eat{
+Let us extend the above library \texttt{Order.casl}. One use of the
+library might be to express the fact that the natural numbers form a
+strict partial order as a view, as follows:
 
-One use of \texttt{Order.casl} might be to express the fact that
-the natural numbers form a strict partial order as a view, as follows:
-
-\VERTSPACE
+\medskip
 \begin{BIGEXAMPLE}
 \I\SPEC \NAMEREF{Natural} = ~\FREE \TYPE \(Nat ::= 0 \| suc(Nat)\)~\END
 \end{BIGEXAMPLE}
@@ -418,12 +449,6 @@ only checks syntactic and static semantic well-formedness -- it is
 by a strict partial ordering relation. Checking this requires theorem
 proving, which will be discussed below.
 
-\POINT{\protect\Hets also displays and manages 
-proof obligations, using development graphs.}
-
-                \index{proof!obligation}%
-                \index{development graph}%
-
 However, before coming to theorem proving, let us first inspect the
 proof obligations arising from a specification.  This can be done with:
 \begin{quote}
@@ -444,20 +469,19 @@ of the specifications in the library), see Fig.~\ref{fig:dg0}.
 \caption{Sample development graph.\label{fig:dg0}}
 \end{figure}
 
-\POINT{Nodes in a development graph correspond to \CASL specifications.
+Nodes in a development graph correspond to \CASL specifications.
 Arrows show how specifications are related by the structuring
-constructs.}
+constructs.
 
-The solid arrow denotes an ordinary import of
-specifications (generated by the extension), while the dashed\FOOTNOTE
-{Actually, the dashed arrow will be displayed as solid and in red by \Hets;
-we do not have colors available here.} arrow
+The black arrow denotes an ordinary import of
+specifications (generated by the extension), while the red arrow
 denotes a proof obligation (corresponding to the view).
 This proof obligation needs to be discharged in order to
-show that the view is well-formed.
+show that the view is well-formed (then its color turns into green).
 
 As a more complex example, consider the following loose specification
-of a sorting function, taken from Chap.~\ref{UM--structuring}:
+of a sorting function, taken from the \CASL User Manual
+\cite{CASL/UserManual}, Chap.~6:
 
 \begin{BIGEXAMPLE}
 \I\SPEC \NAMEREF{List\_Order\_Sorted}
@@ -483,7 +507,7 @@ of a sorting function, taken from Chap.~\ref{UM--structuring}:
 \end{BIGEXAMPLE}
 
 The following specification of sorting by insertion also is taken from
-Chap.~\ref{UM--structuring}:
+the \CASL User Manual \cite{CASL/UserManual}, Chap.~6:
 
 \begin{BIGEXAMPLE}
 \I\SPEC \NAMEREF{List\_Order}
@@ -528,19 +552,17 @@ assuming that \texttt{Sorting.casl} contains the above specifications.
 \caption{Development graph for the two sorting specifications.\label{fig:dg1}}
 \end{figure}
 
-\POINT{Internal nodes in a development graph correspond
-to unnamed parts of a structured specification.}
 
 In the above-mentioned development graph, we have two types of nodes.
 The named ones correspond to named specifications, but there
 are also unnamed nodes corresponding to anonymous basic
 specifications like the declaration of the $insert$ operation in 
 \NAMEREF{List\_Order} above. Basically, there is an
-internal node for each structured specification that is not named.
+unnamed node for each structured specification that is not named.
 
-Again, the simple solid arrows denote an ordinary import of specifications
+Again, the black arrows denote an ordinary import of specifications
 (corresponding to the extensions and unions in the
-specifications), while the double arrows denote hiding (corresponding to 
+specifications), while the blue arrows denote hiding (corresponding to 
 the local specification).
 
 By clicking on the nodes, one can inspect their signatures.
@@ -558,51 +580,145 @@ We have already added this view to \texttt{Sorting.casl}.
 The corresponding 
 proof obligation between \NAMEREF{List\_Order\_Sorted}  and 
 \NAMEREF{List\_Order} is displayed in Fig.~\ref{fig:dg1}
- as a dotted arrow.
-
-\NOPOINT{Proof obligations can be discharged in various ways.}
-
-Trivial proof obligations can be discharged 
-by \Hets alone using the ``Proofs'' menu.
-The proof obligation in Fig.~\ref{fig:dg1},
-indicated by the lower dotted
-arrow between \NAMEREF{List\_Order\_Sorted}  and 
-\NAMEREF{List\_Order}, states that insertion sort,
-as defined by the operation \(order\) in \NAMEREF{List\_Order},
-actually has the properties of a sorting algorithm.  Here, one has to
-choose a theorem prover that 
-is to be used to discharge the proof
-obligation, which is then done by using commands specific to the
-theorem prover (cf. e.g.\ Section~\ref{sec:HOLCASL}).  Alternatively,
-one can state that one just conjectures the obligation to be true.
+ as a red arrow.
+}
+ 
 
 
-In order to be able to tackle proof
-obligations occurring in (statically well-formed) specifications, \Hets
-is interfaced with various logic-specific theorem proving, rewriting
-and consistency checking tools.  On top of this, there is a
-logic-independent proof engine called \MAYA, which manages the proof
-obligations. \MAYA uses so-called \emph{development graphs}, a
-graphical representation of \CASL structured specifications.
+Here is a summary of the types of nodes and links occurring in 
+development graphs:
+\begin{description}
+\item[Named nodes] correspond to a named specification.
+\item[Unnamed nodes] correspond to an anonymous specification.
+\item[Elliptic nodes] correspond to a specification in the current library.
+\item[Rectangular nodes] are external nodes corresponding
+ to a specification downloaded from
+another library.
+\item[Black links] correspond to reference to other specifications
+(definition links in the sense of \cite[IV:4]{CASL/RefManual}).
+\item[Blue links] correspond to hiding (hiding definition links).
+\item[Red links] correspond to open proof obligations (theorem links).
+\item[Green links] correspond to proved proof obligations (theorem links).
+\item[Solid links] correspond to global (definition or theorem) 
+links in the sense of \cite[IV:4]{CASL/RefManual}.
+\item[Dashed links] correspond to local (definition or theorem) links in the sense of \cite[IV:4]{CASL/RefManual}.
+\end{description}
 
+We now explain the menus of the development graph window.
+Most of the pull-down menus of the window are daVinci-specific
+layout menus;
+their function can be looked up in the daVinci documentation.
+The exception is the Edit menu. Moreover, the nodes and links
+of the graph have attached pop-up menus, which appear when
+clicking with the right mouse button.
+ 
+\begin{description}
+\item[Edit] This menu has two submenus:
+\begin{description}
+\item[Unnamed nodes] With the ``Hide'' submenu, it is possible
+to reduce the complexity of the graph by hiding all unnamed nodes;
+only nodes corresponding to named specifications remain displayed.
+Paths between named nodes going through unnamed nodes
+are displayed as links. With the ``Show'' submenu, the unnamed
+nodes re-appear.
+\item[Proofs] This menu allows to apply some of the deduction
+rules for development graphs, see Sect. IV:4.4 of the \CASL 
+Reference Manual \cite{CASL/RefManual}. However, it is still
+experimental and far from being completely implemented.
+Moreover, in the future \Hets will be interfaced with various
+ logic-specific theorem proving, rewriting and consistency checking
+ tools.  
+\end{description}
+\item[Pop-up menu for nodes]
+Here, the number of submenus depends on the type of the node:
+\begin{description}
+\item[Show signature] Shows the signature of the node.
+\item[Show sublogic] Shows the logic and, within that logic, the minimal sublogic
+for the signature and the axioms of the node.
+\item[Show just subtree] (Only for named nodes) Reduce the complexity
+of the graph by just showing the subtree below the current node.
+\item[Undo show just subtree] (Only for named nodes) Undo the reduction.
+\item[Show referenced library] (Only for external nodes) Open a new window
+showing the development graph for the library the external node refers to.
+\end{description}
+\item[Pop-up menu for links]
+Again, the number of submenus depends on the type of the node:
+\begin{description}
+\item[Show morphism] Shows the signature morphism of the link. It consists
+of two components: a logic translation and a signature morphism in the
+target logic of the logic translation.
+In the (most frequent) case
+of an intra-logic signature morphism, the logic translation component is
+just the identity.
+\item[Show origin] Shows the kind of \CASL structuring construct that
+led to the link.
+\item[Show proof status] (Only for theorem links) Show the proof status.
+\end{description}
+\end{description}
 
-\section{Input, Output}
+\section{Reading, Writing and Formatting}
 
-  -i ITYPE   --input-type=ITYPE     ITYPE of input file:
-        (tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?
+\Hets provides several options controlling the types of files
+that are read and written.
+\begin{description}
+\item[\texttt{-i ITYPE}, \texttt{--input-type=ITYPE}] Specify
+\texttt{ITYPE} as the type of the input file.  The default is
+\texttt{het} (\HetCASL plain text). \texttt{ast} is for reading
+in abstract syntax trees in ATerm format, while \texttt{ast.baf}
+reads in the compressed ATerm format.
 
-  -O DIR     --output-dir=DIR       destination directory for output files
-  -o OTYPES  --output-types=OTYPES  OTYPES of output files, a comma seperated list of OTYPE
-        OTYPE is (pp.(het|tex|html))
-                |(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)
-                |(graph.(dot|ps|davinci))
-                (default: dg.taf)
+\item[\texttt{-O DIR}, \texttt{--output-dir=DIR}] 
+Specify \texttt{DIR} as  destination directory for output files.
+
+\item[\texttt{-o OTYPES}, \texttt{--output-types=OTYPES}]  
+\texttt{OTYPES} is a comma seperated list of output types:
+\begin{verbatim}
+             (ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)
+            |(pp.(het|tex|html))
+            |(graph.(dot|ps|davinci))
+\end{verbatim}
+The default is \texttt{dg.taf}, which means that the development
+graph of the library is stored in textual ATerm format (\texttt{taf}).
+This format can be read in when a library is downloaded from
+another library, avoiding the need to re-analyse the downloaded library.
+
+The \texttt{pp} format is for pretty printing, either as plain text
+(\texttt{het}), \LaTeX input (\texttt{tex}) or HTML (\texttt{html}).
+A formatter with pretty-printed output currently is available only for
+the \CASL logic. For example, it is possible to generate a pretty
+printed \LaTeX\ version of \texttt{Order.casl} by typing:
+
+\begin{quote}
+\texttt{hets -o pp.tex Order.casl}
+\end{quote}
+
+This will generate a file \texttt{Order.pp.tex}. It can be included
+into \LaTeX\ documents, provided that the style \texttt{hets.sty}
+coming with the \Hets distribution is used.
+
+The option \texttt{-r RAW} or \texttt{--raw=RAW} allows one
+to influence the formatting in more detail.
+\QUERY{Is the pretty printer documentation OK, Klaus?}
+Here, \texttt{RAW} is \texttt{(ascii|text|(la)?tex)=STRING},
+and \texttt{STRING} is passed to the appropiate pretty-printer.
+
+The other output formats are for future usage.
+\end{description}
 
 \section{Miscellaneous Options}
-  -v[Int]    --verbose[=Int]        chatty output to stderr
-  -q         --quiet                no output at all to stderr. overrides --verbose!
-  -V         --version              print version number and exit
-  -h         --help, --usage        print usage information and exit
+
+\begin{description}
+\item[\texttt{-v[Int]}, \texttt{--verbose[=Int]}] 
+Set the verbosity level according to \texttt{Int}. Default is 1.
+\item[\texttt{-q}, \texttt{--quiet}] 
+Be quiet -- no diagnostic output at all. Overrides -v.
+\item[\texttt{-V}, \texttt{--version}] Print version number and exit.
+\item[\texttt{-h}, \texttt{--help}, \texttt{--usage}]  
+Print usage information and exit.
+\item[\texttt{+RTS IntM -RTS}] Increase the stack size to 
+ \texttt{Int} megabytes (needed in case of a stack overflow). 
+This must be the first option.
+\end{description}
 
 
 \section{Precursors of \Hets}
@@ -615,7 +731,10 @@ precursors,
 \MAYA.
 The \CASL Tool Set (\Cats) 
 \cite{Mossakowski:2000:CST,Mossakowski:1998:SSA}
-comes with roughly the same analysis tools as \Hets.
+comes with similar analysis tools as \Hets (only for \CASL).
+\Cats should be used if a static analysis of architectural
+specifications is needed, because this is not available
+in \Hets yet.
 %,
 %but neither supports extensions nor does it identify
 %sublanguages of \CASL (and the tools to be used with
@@ -702,6 +821,8 @@ Markus Roggenbach,
 and
 Pascal Schmidt.
 
+\bibliographystyle{plain}
+\bibliography{cofibib,cofi-ann,UM,hets}
 \end{document}
 
 
