@@ -29,7 +29,7 @@ s : Type < ? s %(var)%
 s->t : Type < s ->? t
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-Y : p -->? p --> p
+Y : (p -->? p) --> p
 __/\__ : Unit × Unit ->? Unit
 __<<=__ : c × c ->? Unit
 __<=>__ : Unit × Unit ->? Unit
@@ -47,7 +47,7 @@ false : bool %(construct bool)%
 fst : s = \ (x : s; y : t) .! (op x : s)
 g : c --> d %(var)%
 not : Unit ->? Unit
-sup : nat -> c ->? c
+sup : (nat -> c) ->? c
 true : bool %(construct bool)%
      : Unit ->? Unit
 tt : (Pred)(s)
@@ -62,26 +62,31 @@ y2 : d %(var)%
 Error (line 4, column 7) illegal universe class declaration
 Warning (line 15, column 16) redeclared type 't'
 Hint (line 40, column 9) not a class 's'
-FatalError (line 42, column 1) no analysis yet for: program def = \ x : s . ()
-	%% def is also total (identical to tt) 
-FatalError (line 44, column 1) no analysis yet for: program tt = \ x : s . ()
-	%% tt is total "op tt(x: s): unit = ()"
-FatalError (line 46, column 1) no analysis yet for: program __ und __ (x, y : Unit) : Unit = ()
+Error (line 42, column 9) ambiguous applications:
+	def : (Pred)(s)
+	def : _var_8
+	for 'def'
+Error (line 44, column 9) ambiguous applications:
+	tt : (Pred)(s)
+	tt : _var_9
+	for 'tt'
+Error (line 46, column 21) unexpected mixfix token 'y : Unit : Unit'
 FatalError (line 54, column 3) no resolution for '__'
-FatalError (line 60, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
+Error (line 60, column 14) ambiguous applications:
+	x : s
+	x : _var_29
+	for 'x'
 Error (line 65, column 19) unexpected mixfix token '('
 Error (line 75, column 24) unexpected mixfix token 'y'
 FatalError (line 74, column 11) no resolution for '(\ x : s . eq (x, x)) = tt'
 Warning (line 85, column 6) redeclared type 's'
-FatalError (line 87, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
-FatalError (line 90, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
-FatalError (line 93, column 1) no analysis yet for: program __ impl __ (x, y : Pred Unit) : Pred Unit = eq (x, x And y)
-FatalError (line 95, column 1) no analysis yet for: program __ or __ (x, y : Pred Unit) : Pred Unit =
-	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
-FatalError (line 98, column 1) no analysis yet for: program ex (p : Pred (s)) : Pred Unit =
-	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
-FatalError (line 101, column 1) no analysis yet for: program ff () : Pred Unit = all (\ r : Pred Unit . r ())
-FatalError (line 103, column 1) no analysis yet for: program neg (r : Pred Unit) : Pred Unit = r impl ff
+Error (line 87, column 14) unexpected mixfix token 'p : (Pred)(s) : (Pred)(s)'
+Error (line 90, column 17) unexpected mixfix token 'y : (Pred)(Unit) : (Pred)(Unit)'
+Error (line 93, column 22) unexpected mixfix token 'y : (Pred)(Unit) : (Pred)(Unit)'
+Error (line 95, column 20) unexpected mixfix token 'y : (Pred)(Unit) : (Pred)(Unit)'
+Error (line 98, column 13) unexpected mixfix token 'p : (Pred)(s) : (Pred)(s)'
+Error (line 101, column 12) unexpected mixfix token '('
+Error (line 103, column 14) unexpected mixfix token 'r : (Pred)(Unit) : (Pred)(Unit)'
 Error (line 108, column 37) unexpected mixfix token 'f'
 Warning (line 115, column 13) redundant universe class
 Error (line 123, column 26) unexpected mixfix token 'y'
@@ -92,21 +97,21 @@ Error (line 126, column 50) unexpected mixfix token 's'
 Error (line 134, column 20) unexpected mixfix token 'isChain'
 Error (line 131, column 42) unexpected mixfix token 'isBound'
 FatalError (line 143, column 15) no resolution for 'bottom <<= x'
-FatalError (line 150, column 2) no analysis yet for: program __ <<= [f] __ = eq
+Error (line 150, column 15) unexpected mixfix token '['
 Warning (line 153, column 5) redeclared type 'c'
 Hint (line 157, column 13) not a class 'c'
 Hint (line 157, column 13) not a class 'c'
 Hint (line 157, column 25) not a class 'd'
 Hint (line 157, column 25) not a class 'd'
-FatalError (line 159, column 1) no analysis yet for: program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)
+FatalError (line 159, column 10) no resolution for '(x1, y1) <<= (x2, y2)'
 FatalError (line 170, column 4) no resolution for '__'
-FatalError (line 176, column 3) no analysis yet for: program f <<= [c -->? d] g =
-	all (\ x : c . def (f x) impl f (x) <<= g (x))
+Error (line 176, column 16) unexpected mixfix token '['
 FatalError (line 182, column 4) no resolution for '__'
 Hint (line 184, column 13) not a class 'c --> d'
 Hint (line 184, column 13) not a class 'c --> d'
-FatalError (line 186, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
+Error (line 186, column 10) ambiguous applications:
+	f : c --> d (<<= : _var_31)(g : c --> d)
+	f : c --> d (<<= : _var_31)(g : _var_40)
+	for 'f <<= g'
 Error (line 193, column 32) unexpected mixfix token 'impl'
 FatalError (line 195, column 27) no resolution for 'Y (\ x : c -->? p .! x)'
-Hint (line 17, column 20) type 'bool' is not unifiable with 'Unit ->? Unit'
-Hint (line 17, column 20) type 'bool' is not unifiable with 'Unit ->? Unit'

@@ -24,6 +24,7 @@ import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Unify
 import HasCASL.TypeAna
+import HasCASL.TypeDecl
 import HasCASL.Reader
 import HasCASL.MixParserState
 import Data.Maybe
@@ -47,10 +48,8 @@ termToToken :: Term -> Token
 termToToken trm = 
     case trm of 
 	  TermToken x -> x 
-	  QualVar _ _ _ -> opTok
-	  QualOp _ _ _ -> opTok
 	  TypedTerm _ _ _ _ -> inTok
-	  _ -> opTok
+          _ -> opTok
 
 -- match (and shift) a token (or partially finished term)
 scan :: TypeMap -> (Type, a) -> (a -> Token) -> ParseMap a -> ParseMap a
@@ -133,12 +132,9 @@ nextState ga is tm (ty, trm) =
 			initialState ga is 
 
 -- | find information for qualified operation
-findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> Type
-	 -> Maybe OpInfo
-findOpId as tm c i ty = 
-    let l = Map.findWithDefault [] i as 
-	s = filter (isUnifiable tm c (TypeScheme [] ([] :=> ty) []) . opType) l
-	in if null s then Nothing else Just $ head s
+findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> Type -> Maybe OpInfo
+findOpId as tm c i ty = listToMaybe $ fst $
+			partitionOpId as tm c i $ TypeScheme [] ([] :=> ty) []
 
 iterStates :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Type -> [Term] 
 	   -> ParseMap Term -> ParseMap Term
@@ -226,7 +222,9 @@ iterStates ga as tm cm ty terms pm =
 		    Just (typq, tt) -> self (tail terms) $ nextState ga as tm 
 		         (typq, LetTerm eqs tt ps) pm2
 		    Nothing -> pm2
-	    t  ->  self (tail terms) $ nextState ga as tm (MixfixType [], t) pm
+	    t@(TermToken _) ->  self (tail terms) 
+		 $ nextState ga as tm (MixfixType [], t) pm
+	    t -> error ("iterStates: " ++ show t)
 
 getAppls :: ParseMap a -> [PState a]
 getAppls pm = 
@@ -308,31 +306,59 @@ extractBindings pat =
     TuplePattern ps _ -> concatMap extractBindings ps
     TypedPattern p _ _ -> extractBindings p
     AsPattern p q _ -> extractBindings p ++ extractBindings q
-    _ -> error "extractBindings"
+    _ -> error ("extractBindings: " ++ show pat)
 
 patToToken :: Pattern -> Token
 patToToken pat =
     case pat of 
     PatternToken x -> x 
     TypedPattern _ _ _ -> inTok
-    _ -> opTok
+    _ -> error ("patToToken: " ++ show pat)
 
 patFromState :: PState Pattern -> Pattern
 patFromState p =
-    let r = ruleId p
+    let r@(Id ts _ _)= ruleId p
         sc@(TypeScheme _ (_ :=> _ty) _) = ruleScheme p
         ar = reverse $ ruleArgs p
 	qs = reverse $ posList p
     in if  r == inId 
 	   || r == opId 
+	   || r == parenId
        then head ar
-       else PatternConstr (InstOpId r [] []) sc ar qs
+       else if r == applId then
+	    case head ar of 
+	    PatternConstr instOp isc args ps ->
+		PatternConstr instOp isc (args ++ tail ar) (ps ++ qs)  
+	    t -> error ("patFromState: " ++ show t)
+       else if r == tupleId || r == unitId then
+	    TuplePattern ar qs
+       else if isUnknownId r then 
+	        if null $ tail ts then error "patFromState"
+	        else PatternVars [VarDecl (Id [head $ tail ts] [] []) 
+				 (ruleType p) Other qs] qs
+	    else PatternConstr (InstOpId (setIdePos r ar qs) [] []) sc ar qs
+
+initialPatState :: Assumps -> Index -> State Int [PState a]
+initialPatState as i = 
+    do let ids = concatMap (\ (ide, l) -> map ( \ e -> (ide, e)) l) 
+		 $ Map.toList as
+       l1 <- mapM (mkMixfixState i) ids
+       l2 <- mapM (mkPlainApplState i) $ filter (isMixfix . fst) ids
+       a  <- mkApplTokState i applId
+       p  <- mkParenTokState i parenId
+       t  <- mkTupleTokState i tupleId
+       l3 <- mapM (mkTokState i)
+              [unitId,
+	       unknownId,
+	       inId,
+	       opId]
+       return (a:p:t:l1 ++ l2 ++ l3)
 
 nextPatState :: GlobalAnnos -> Assumps -> TypeMap -> (Type, Pattern) 
 	      -> ParseMap Pattern -> ParseMap Pattern
 nextPatState ga is tm (ty, trm) = 
     completeScanPredict ga tm (ty, trm) patFromState patToToken
-			$ initialState ga is
+			$ initialPatState is
 
 iterPatStates :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Type 
 	   -> [Pattern] -> ParseMap Pattern -> ParseMap Pattern
@@ -343,6 +369,8 @@ iterPatStates ga as tm cm ty pats pm =
             MixfixPattern ts -> self (ts ++ tail pats) pm
             BracketPattern b ts ps -> self 
 	       (expandPos PatternToken (getBrackets b) ts ps ++ tail pats) pm
+            TuplePattern ts ps -> self 
+	       (expandPos PatternToken ("(", ")") ts ps ++ tail pats) pm
 	    TypedPattern hd tyq ps -> 
 		let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) in
 	        case mt of 
@@ -356,13 +384,14 @@ iterPatStates ga as tm cm ty pats pm =
 				   (typq, TypedPattern ttt typq ps) pm2
 			Nothing -> pm2
 		Nothing -> pm { failDiags = es }
-	    t -> self (tail pats) $ nextPatState ga as tm 
+	    t@(PatternToken _) -> self (tail pats) $ nextPatState ga as tm 
 		   (MixfixType [], t) pm
+	    t -> error ("iterPatState: " ++ show t)
 
 resolvePatToParseMap :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap -> Int 
 		     -> Type -> Pattern -> ParseMap Pattern
 resolvePatToParseMap ga as tm cm c ty trm = 
-    let (initStates, c2) = runState (initialState ga as startIndex) c in
+    let (initStates, c2) = runState (initialPatState as startIndex) c in
     iterPatStates ga as tm cm ty [trm] 
 	       ParseMap { lastIndex = startIndex
 			, failDiags = []  
@@ -382,9 +411,9 @@ resolvePat ga as tm cm (ty, trm) =
        return $ resolveFromParseMap patFromState tm (ty, trm) $ 
 	      resolvePatToParseMap ga as tm cm c ty trm
 
-resolvePattern :: Type -> Pattern -> State Env (Result Pattern)
-resolvePattern ty trm = 
+resolvePattern :: Pattern -> State Env (Result (Type, Pattern))
+resolvePattern pat = 
     do s <- get
-       r <- toEnvState $ resolvePat (globalAnnos s) 
-	    (assumps s) (typeMap s) (classMap s) (ty, trm)
-       return $ fmap snd r 
+       toEnvState $ resolveAnyPat (globalAnnos s) 
+		      (assumps s) (typeMap s) (classMap s) pat
+

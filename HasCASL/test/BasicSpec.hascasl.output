@@ -63,42 +63,60 @@ Warning (line 11, column 13) redeclared class 'c'
 Warning (line 11, column 19) redeclared class 'a'
 Error (line 11, column 19) class cannot become an alias class 'a'
 Hint (line 16, column 9) not a class 's'
-FatalError (line 18, column 1) no analysis yet for: program tt = \ x : s . ()
-FatalError (line 20, column 1) no analysis yet for: program __ res __ (x : s; y : t) : s = x;
-	fst (x : s; y : t) : s = x; snd (x : s; y : t) : t = y
+Error (line 18, column 9) ambiguous applications:
+	tt : s ->? Unit
+	tt : _var_8
+	for 'tt'
+Error (line 20, column 19) ambiguous applications:
+	x : s
+	x : _var_27
+	for 'x'
+Error (line 21, column 6) ambiguous applications:
+	x : s
+	x : _var_28
+	for 'x'
+Error (line 22, column 6) ambiguous applications:
+	x : s
+	x : _var_29
+	for 'x'
 Error (line 27, column 3) unexpected mixfix token 'fst'
 Error (line 26, column 15) unexpected mixfix token 'def'
 Error (line 34, column 15) unexpected mixfix token 'res'
 Error (line 33, column 21) unexpected mixfix token '='
-FatalError (line 39, column 1) no analysis yet for: program all (p : (? s)) : (? ()) = eq (p, tt)
-FatalError (line 41, column 1) no analysis yet for: program And (x, y : (? ())) : (? ()) = t1 () res t2 ()
-FatalError (line 43, column 1) no analysis yet for: program __ impl __ (x, y : (? ())) = eq (x, x And y)
-FatalError (line 45, column 1) no analysis yet for: program __ or __ (x, y : (? ())) : (? ()) =
-	all (\ r : (? ()) . ((x impl r) res (y impl r)) impl r);
-	ex (p : (? s)) : (? ()) =
-	all (\ r : (? ()) . all (\ x : s . p (x) impl r) impl r);
-	ff () : (? ()) = all (\ r : (? ()) . r ())
+Error (line 39, column 14) unexpected mixfix token 'p : ? s : ? s'
+Error (line 39, column 27) unresolved type '()'
+Error (line 41, column 22) unresolved type '()'
+Error (line 41, column 30) unresolved type '()'
+Error (line 43, column 28) unresolved type '()'
+Error (line 45, column 26) unresolved type '()'
+Error (line 45, column 34) unresolved type '()'
+Error (line 48, column 7) unexpected mixfix token 'p : ? s : ? s'
+Error (line 48, column 19) unresolved type '()'
+Error (line 51, column 6) unexpected mixfix token '('
+Error (line 51, column 12) unresolved type '()'
 Hint (line 56, column 11) not a class 't'
-Error (line 56, column 8) illegal overloading of 'x'
+Error (line 56, column 8) wrong type scheme of 'x'
+  expected: s
+     found: t
+
 Hint (line 56, column 18) not a class 't'
 Error (line 58, column 5) unexpected mixfix token '='
 Warning (line 68, column 11) redeclared type 's'
-Hint (line 69, column 14) type 'Data1' is not unifiable with '? s'
 Warning (line 72, column 73) data subtype ignored
 Error (line 72, column 52) undeclared type 'Data2'
 Error (line 72, column 36) undeclared type 'Data2'
-Warning (line 73, column 64) repeated value 'sel2'
-Warning (line 73, column 77) repeated value 'sel1'
+Error (line 73, column 64) wrong associated constructors of 'sel2'
+
+Error (line 73, column 77) wrong associated constructors of 'sel1'
+
 Error (line 75, column 90) undeclared type '?'
 Error (line 75, column 54) undeclared type '?'
-Hint (line 73, column 11) type 'Data4' is not unifiable with 'Data3'
-Hint (line 73, column 11) type 'Data4' is not unifiable with 'Data3'
-Warning (line 75, column 65) repeated value 'sel2'
-Warning (line 75, column 78) repeated value 'sel1'
+Error (line 75, column 65) wrong associated constructors of 'sel2'
+
+Error (line 75, column 78) wrong associated constructors of 'sel1'
+
 Error (line 77, column 8) unexpected mixfix token 'true'
 Hint (line 77, column 23) not a class 's'
-Warning (line 77, column 21) repeated value 'x'
 Error (line 77, column 25) unexpected mixfix token 'e'
 Hint (line 78, column 10) not a class 's'
-Warning (line 78, column 8) repeated value 'x'
 Error (line 78, column 12) unexpected mixfix token 'e'

@@ -42,7 +42,6 @@ Error (line 12, column 5) incompatible kind of: y
   inferred: Type -> Type
 Hint (line 18, column 9) not a class 'm [__]'
 Error (line 18, column 12) undeclared type '__'
-Hint (line 7, column 15) type 'm' is not unifiable with '{__}'
 Hint (line 24, column 10) not a class 'm'
 Error (line 24, column 5) incompatible kind of: o1
   expected: Type

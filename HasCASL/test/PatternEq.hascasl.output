@@ -1,0 +1,10 @@
+%% Type Constructors -----------------------------------------------------
+s : Type
+t : Type
+%% Assumptions -----------------------------------------------------------
+snd : s × t -> t = \ (x : _var_35, y : _var_45) . (op y : _var_45)
+%% Diagnostics -----------------------------------------------------------
+Error (line 5, column 9) merge: definition of 'snd'
+
+Error (line 6, column 9) merge: definition of 'snd'
+

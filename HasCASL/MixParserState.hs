@@ -81,20 +81,22 @@ placeTok = mkSimpleId place
 oParenTok = mkSimpleId "(" 
 cParenTok = mkSimpleId ")" 
 
-opTok, inTok, caseTok :: Token
+opTok, inTok, caseTok, unknownTok :: Token
 inTok = mkSimpleId "in"
 caseTok = mkSimpleId "case"
 opTok = mkSimpleId "(o)"
+unknownTok = mkSimpleId "(?)"
 
 mkRuleId :: [Token] -> Id
 mkRuleId toks = Id toks [] []
-applId, parenId, inId, opId, tupleId, unitId :: Id
+applId, parenId, inId, opId, tupleId, unitId, unknownId :: Id
 applId       = mkRuleId [placeTok, placeTok]
 parenId      = mkRuleId [oParenTok, placeTok, cParenTok]
 tupleId      = mkRuleId [oParenTok, placeTok, commaTok, cParenTok]
 unitId       = mkRuleId [oParenTok, cParenTok]
 inId  	     = mkRuleId [inTok]
 opId	     = mkRuleId [opTok]
+unknownId    = mkRuleId [unknownTok]
 
 mkPState :: Index -> Id -> TypeScheme -> Type -> [Token] -> PState a
 mkPState ind ide sc ty toks = 
@@ -132,6 +134,9 @@ listId i = Id [listToken] [i] []
 
 isListId :: Id -> Bool
 isListId (Id ts cs _) = not (null ts) && head ts == listToken && length cs == 1
+
+isUnknownId :: Id -> Bool
+isUnknownId (Id ts _ _) = not (null ts) && head ts == unknownTok
 
 listStates :: GlobalAnnos -> Index -> State Int [PState a]
 -- no empty list (can be written down directly)
@@ -214,8 +219,9 @@ scanState :: TypeMap -> (Type, a) -> Token -> PState a
 	  -> State Int [PState a]
 scanState tm (ty, trm) t p =
     do let ts = restRule p
-       if null ts || head ts /= t then return []
-	  else if t == commaTok then -- list and tuple elements separator 
+       if null ts then return [] else 
+	  if head ts == t then 
+	       if t == commaTok then -- tuple elements separator 
 	       do tvar <- freshVar
 		  let nextTy = TypeName tvar star 1
                       newTy = case ruleType p of 
@@ -232,7 +238,12 @@ scanState tm (ty, trm) t p =
 	             let mp = do q <- filterByType tm (ty,trm) p
 	                         return q { ruleType = ty, restRule = tail ts }
 	             in maybeToList mp
-	      else [p { restRule = tail ts, posList = tokPos t : posList p }]
+ 	      else [p { restRule = tail ts, posList = tokPos t : posList p }]
+	  else return $ if ruleId p == unknownId 
+	         && tokStr t `notElem` tokStr inTok : map (:[]) "{}[]()," then
+	       [p { restRule = tail ts, posList = tokPos t : posList p
+		  , ruleId = mkRuleId [unknownTok, t] }]
+	       else []
 
 -- construct resulting term from PState 
 
@@ -249,7 +260,8 @@ stateToAppl p =
        else if r == applId then
 	    ApplTerm (head ar) (head (tail ar)) qs 
        else if r == tupleId || r == unitId then TupleTerm ar qs
-       else addFunArguments (ty, QualOp (InstOpId r [] []) sc qs) 
+       else addFunArguments (ty, QualOp (InstOpId (setIdePos r ar qs) [] []) 
+			     sc qs) 
 		$ concatMap expandArgument ar
 
 expandArgument :: Term -> [Term]
@@ -341,7 +353,9 @@ filterByPrec g argIde
 		 PState { ruleId = opIde, ruleArgs = args, restRule = ts } =
     if null ts then False else
        if head ts == termTok then 
-	  if isListId opIde || isListId argIde || opIde == applId then True
+	  if isUnknownId opIde then False else
+	  if opIde == applId then not (null args && isUnknownId argIde) else
+	  if isListId opIde || isListId argIde then True
 	  else let n = length args in
 		    if isLeftArg opIde n then 
 		       if isPostfix opIde && (isPrefix argIde

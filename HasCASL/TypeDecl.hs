@@ -18,6 +18,7 @@ import qualified Common.Lib.Map as Map
 import Common.Id
 import HasCASL.Le
 import Data.Maybe
+import Data.List
 import Common.Lib.State
 
 import Common.Lib.Parsec
@@ -29,6 +30,7 @@ import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.Reader
 import HasCASL.Unify
+import HasCASL.Merge
 
 -- ---------------------------------------------------------------------------
 -- analyse types as state
@@ -297,24 +299,25 @@ hasTypeArgs (TypePatternArg _ _) = True
 putAssumps :: Assumps -> State Env ()
 putAssumps as =  do { e <- get; put e { assumps = as } }
 
-unifiable :: TypeScheme -> TypeScheme -> State Env Bool
-unifiable sc1 sc2 =
-    do tm <- gets typeMap
-       c <- gets counter
-       let Result ds mm = evalState (unifIable tm sc1 sc2) c
-       appendDiags ds
-       return $ isJust mm
+-- | find information for qualified operation
+partitionOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> TypeScheme
+	 -> ([OpInfo], [OpInfo])
+partitionOpId as tm c i sc = 
+    let l = Map.findWithDefault [] i as 
+	in partition (isUnifiable tm c sc . opType) l
 
 -- | storing an operation
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env () 
 addOpId i sc attrs defn = 
     do as <- gets assumps
-       let l = Map.findWithDefault [] i as
-       if sc `elem` map opType l then 
-	  addDiag $ mkDiag Warning 
-		      "repeated value" i
-	  else do bs <- mapM (unifiable sc) $ map opType l
-		  if or bs then addDiag $ mkDiag Error
-			 "illegal overloading of" i
-	             else putAssumps $ Map.insert i 
-			      (OpInfo sc attrs defn : l ) as
+       tm <- gets typeMap
+       c <- gets counter
+       let (l,r) = partitionOpId as tm c i sc
+	   oInfo = OpInfo sc attrs defn 
+       if null l then putAssumps $ Map.insert i 
+			 (oInfo : r ) as
+	  else do let Result ds mo = merge (head l) oInfo
+		  appendDiags $ map (improveDiag i) ds
+		  case mo of 
+		      Nothing -> return ()
+		      Just oi -> putAssumps $ Map.insert i (oi : r ) as

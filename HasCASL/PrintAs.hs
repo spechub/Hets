@@ -52,7 +52,9 @@ instance PrettyPrint Type where
     printText0 ga (ProductType ts _) = if null ts then parens empty 
 			  else fsep (punctuate (space <> text timesS) 
 				     (map (printText0 ga) ts))
-    printText0 ga (FunType t1 arr t2 _) = printText0 ga t1
+    printText0 ga (FunType t1 arr t2 _) = (case t1 of 
+					   FunType _ _ _ _ -> parens
+					   _ -> id) (printText0 ga t1)
 				      <+> printText0 ga arr
 				      <+> printText0 ga t2
 

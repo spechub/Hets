@@ -42,6 +42,9 @@ Warning (line 27, column 21) unchecked type 't'
 Hint (line 31, column 26) not a class 'y'
 Hint (line 33, column 9) not a class 's'
 Error (line 33, column 9) undeclared type 's'
-Error (line 33, column 5) illegal overloading of 'x'
+Error (line 33, column 5) wrong type scheme of 'x'
+  expected: y
+     found: s
+
 Warning (line 37, column 9) unchecked type 't'
 Error (line 39, column 6) wrong arity of 'a__'

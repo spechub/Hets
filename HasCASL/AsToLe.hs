@@ -43,7 +43,7 @@ anaBasicItem (SigItems i) = anaSigItems Loose i
 anaBasicItem (ClassItems inst l _) = mapM_ (anaAnnotedClassItem inst) l
 anaBasicItem (GenVarItems l _) = mapM_ anaGenVarDecl l
 
-anaBasicItem t@(ProgItems _ p) = missingAna t p
+anaBasicItem (ProgItems l _) = mapM_ anaProgEq $ map item l
 anaBasicItem (FreeDatatype l _) = mapM_ (anaDatatype Free Plain) $ map item l
 anaBasicItem (GenItems l _) = mapM_ (anaSigItems Generated) $ map item l
 anaBasicItem (AxiomItems decls fs _) = 
@@ -146,4 +146,37 @@ anaAnnotedClassItem _ aci =
     let ClassItem d l _ = item aci in
     do anaClassDecls d 
        mapM_ anaBasicItem $ map item l
+
+-- ----------------------------------------------------------------------------
+-- ProgEq
+-- ----------------------------------------------------------------------------
+
+anaProgEq :: ProgEq -> State Env ()
+anaProgEq (ProgEq pat trm _) =
+    do Result es mp <- resolvePattern pat
+       appendDiags es
+       case mp of 
+	   Nothing -> return ()
+	   Just (ty, newPat) -> do
+	       let bs = extractBindings newPat
+	       e <- get
+	       mapM_ anaVarDecl bs
+	       Result ts mt <- resolveTerm ty trm
+	       put e
+	       appendDiags ts
+	       case mt of 
+		   Nothing -> return ()
+		   Just newTerm -> 
+		       case removeResultType newPat of
+		       PatternConstr (InstOpId i _tys _) sc args ps ->
+				addOpId i sc [] $ Definition $ 
+					if null args then newTerm
+					else LambdaTerm args Partial newTerm ps
+		       _ -> appendDiags $ [mkDiag Error 
+					   "no toplevel pattern" newPat]
+		       where removeResultType p = 
+				 case p of 
+				 TypedPattern tp _ _ -> 
+				     removeResultType tp
+				 _ -> p
 

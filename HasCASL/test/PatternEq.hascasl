@@ -1,0 +1,6 @@
+type s, t
+op snd : s * t -> t 
+program snd (x, y) = y
+
+program snd (x : s; y : t) : t = y
+program snd (x : s, y : t) : t = y

@@ -37,9 +37,4 @@ z : s = (op __+__ : s × s -> s) ((op x : s) as s,
 (op x : s) in s %(bla_label)%
 (op x : s) in t %()%
 %% Diagnostics -----------------------------------------------------------
-Hint (line 7, column 14) type 't' is not unifiable with 's'
-Hint (line 8, column 14) type 't' is not unifiable with 't × t'
-Hint (line 7, column 14) type 't' is not unifiable with 's × s'
-Hint (line 3, column 12) type 't' is not unifiable with 's'
-Hint (line 3, column 12) type 't' is not unifiable with 's'
 Hint (line 40, column 9) not a class 's'

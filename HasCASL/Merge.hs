@@ -10,6 +10,7 @@
 module HasCASL.Merge where
 
 import Common.Id
+import Common.PrettyPrint
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.AsUtils
@@ -37,22 +38,29 @@ instance Mergeable GlobalAnnos where
     merge a _ = return a 
 	-- if a == b then return a else fail "merge: GlobalAnnos"
 
-instance (Ord a, PosItem a, Mergeable b) => Mergeable (Map.Map a b) where
+instance (Ord a, PosItem a, PrettyPrint a, Mergeable b) 
+    => Mergeable (Map.Map a b) where
     merge = mergeMap merge
 
-mergeMap :: (Ord a, PosItem a) => (b -> b -> Result b) 
+improveDiag :: (PosItem a, PrettyPrint a) => a -> Diagnosis -> Diagnosis
+improveDiag v d = d { diagString = let f:l = lines $ diagString d in 
+		      unlines $ (f ++ " of '" ++ showPretty v "'") : l
+		    , diagPos = getMyPos v
+		    , diagKind = case diagKind d of 
+		                 FatalError -> Error
+		                 w -> w }
+
+mergeMap :: (Ord a, PosItem a, PrettyPrint a) => (b -> b -> Result b) 
 	 -> Map.Map a b -> Map.Map a b -> Result  (Map.Map a b)
 mergeMap f m1 m2 = foldM ( \ m (k, v) -> 
 			  case k `Map.lookup` m of
 			  Nothing -> return $ Map.insert k v m
 			  Just w -> 
 			      let Result ds mu = f v w
-			          ns = map ( \ d -> if diagPos d == nullPos 
-					     then d { diagPos = posOf [k] } 
-					     else d) ds 
+			          ns = map (improveDiag k) ds  
 			      in case mu of 
 			         Nothing -> Result ns $ Nothing
-			         Just u -> return $ Map.insert k u m)
+			         Just u -> Result ns $ Just $ Map.insert k u m)
 		  m1 (Map.toList m2)  
 
 instance Mergeable a => Mergeable (Maybe a) where
@@ -114,15 +122,10 @@ mergeAssumps tm c = mergeMap (mergeOpInfos tm c)
 mergeOpInfos :: TypeMap -> Int -> [OpInfo] -> [OpInfo] -> Result [OpInfo] 
 mergeOpInfos tm c l1 l2 = 
     foldM ( \ l o -> 
-	   let os = opType o
-	       (es, us) = partition (\ e -> opType e == os) l
-	   in if null es then 
-	       let bs = map (isUnifiable tm c os . opType) l
-	       in if or bs then fail "illegal overloading" 
-	          else return (o:l)
+	   let (es, us) = partition (isUnifiable tm c (opType o) . opType) l
+	   in if null es then return (o:l)
 	      else do r <- merge o $ head es
 	              return (r : us)) l1 l2 
-
 
 instance Mergeable OpInfo where
     merge o1 o2 = 
@@ -131,9 +134,16 @@ instance Mergeable OpInfo where
  	   d <- merge (opDefn o1) $ opDefn o2
 	   return $ OpInfo sc as d
 
+
+expected :: PrettyPrint a => a -> a -> String
+expected a b = 
+    "\n  expected: " ++ showPretty a 
+    "\n     found: " ++ showPretty b "\n" 
+
 instance Mergeable TypeScheme where
     merge s1 s2 = if s1 == s2 then return s1 
-		  else fail "unequal type schemes" 
+		  else fail ("wrong type scheme"
+			     ++ expected s1 s2)
 
 instance Mergeable [OpAttr] where
     merge l1 l2 = 
@@ -156,20 +166,21 @@ instance Mergeable OpAttr where
 
 instance Mergeable OpDefn where
     merge VarDefn VarDefn = return VarDefn
-    merge VarDefn _       = fail "merge: VarDefn"
-    merge _ VarDefn       = fail "merge: VarDefn"
+    merge VarDefn _       = fail "illegal redeclaration of a variable"
+    merge _ VarDefn       = fail "illegal redeclaration as variable"
     merge NoOpDefn d      = return d
     merge d NoOpDefn      = return d
     merge d@(ConstructData d1) (ConstructData d2) = 
 	if d1 == d2 then return d else 
-	   fail "merge: constructor"
+	   fail ("wrong constructor target type" ++
+		 expected d1 d2)
     merge d@(SelectData c1 d1) (SelectData c2 d2) = 
-	if d1 == d2 && sort c1 == sort c2 then return d else 
-	   fail "merge: selector"
+	if d1 == d2 then 
+	       if sort c1 == sort c2 then return d else 
+		  fail ("wrong associated constructors")
+	else fail ("wrong selector's source type" ++
+		   expected d1 d2)
     merge d@(Definition d1) (Definition d2) =  
 	if d1 == d2 then return d else 
 	   fail "merge: definition"
-    merge _ _ = fail "merge: OpDefn"
-
-	    
-
+    merge _d1 _d2 = fail "illegal redefinition"
