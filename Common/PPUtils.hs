@@ -66,10 +66,10 @@ sp_hang d1 n d2 = cat [d1, nest n d2]
 -- one line otherwise the brackets stand alone and aligned one their own lines
 -- and the enclosed document is nested one charcter wide.
 sp_brackets :: Doc -> Doc 
-sp_brackets p = sp_hang (sp_hang lbrack 1 p) 0 rbrack
+sp_brackets p = sp_between lbrack rbrack p
 
 sp_braces :: Doc -> Doc 
-sp_braces p = sp_hang (sp_hang lbrace 1 p) 0 rbrace
+sp_braces p = sp_between lbrace rbrace p
 
 sp_between :: Doc -> Doc -> Doc -> Doc
 sp_between lb rb p = sp_hang (sp_hang lb 1 p) 0 rb
@@ -85,18 +85,14 @@ prepPunctuate symb (x:xs) = x:map (\e -> symb <> e) xs
 -- the functions 'commaT', 'semiT', 'crossT' and 'semiAnno' are good
 -- for ASCII pretty printing but don't work well for LaTeX output.
 
-listSep :: PrettyPrint a => Doc -> GlobalAnnos -> [a] -> Doc
-listSep separator ga = fsep . punctuate separator . map (printText0 ga)
+commaT_text, semiT_text, crossT_text 
+    :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
+commaT_text = listSep_text comma
+semiT_text = listSep_text semi
+crossT_text = listSep_text (space<>char '*')
 
-commaT_text :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
-commaT_text = listSep comma
-
-commaT,semiT,crossT :: PrettyPrint a => (GlobalAnnos -> a -> Doc) -> 
-		       GlobalAnnos -> [a] -> Doc
-semiT pf ga l = fsep $ punctuate semi $ map (pf ga) l
-commaT pf ga l = fsep $ punctuate comma $ map (pf ga) l
-
-crossT pf ga l = fsep $ punctuate (space<>char '*') $ map (pf ga) l
+listSep_text :: PrettyPrint a => Doc -> GlobalAnnos -> [a] -> Doc
+listSep_text separator ga = fsep . punctuate separator . map (printText0 ga)
 
 semiAnno_text :: (PrettyPrint a) => 
 		 GlobalAnnos -> [Annoted a] -> Doc
@@ -115,16 +111,16 @@ semiAnno_text ga l = noPrint (null l)
 -- | 
 -- LaTeX variants of 'commaT' ...
 commaT_latex,semiT_latex,crossT_latex 
-    :: PrettyPrint a => (GlobalAnnos -> a -> Doc) -> 
-                         GlobalAnnos -> [a] -> Doc
-commaT_latex pf ga l = fsep_latex $ punctuate comma_latex $ map (pf ga) l
+    :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
 
-semiT_latex pf ga l = fsep_latex $ punctuate semi_latex $ map (pf ga) l
+commaT_latex = listSep_latex comma_latex
+semiT_latex = listSep_latex semi_latex
+crossT_latex = listSep_latex 
+	       (space_latex <> hc_sty_axiom "\\times"<> space_latex)
 
-crossT_latex pf ga l = 
-    fcat $ punctuate (space_latex 
-		      <> hc_sty_axiom "\\times"<> space_latex) $ 
-	       map (pf ga) l
+listSep_latex :: PrettyPrint a => Doc -> GlobalAnnos -> [a] -> Doc
+listSep_latex separator ga = fsep_latex . punctuate separator .
+			     map (printLatex0 ga)
 
 semiAnno_latex :: (PrettyPrint a) => 
 		  GlobalAnnos -> [Annoted a] -> Doc

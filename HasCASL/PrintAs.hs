@@ -17,18 +17,13 @@ import Common.PPUtils
 import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.GlobalAnnotations(GlobalAnnos)
-import Common.Print_AS_Annotation
-
-commas, semis :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
-commas = commaT printText0
-semis = semiT printText0
 
 instance PrettyPrint TypePattern where 
     printText0 ga (TypePattern name args _) = printText0 ga name
 				 <> fcat (map (parens . printText0 ga) args)
     printText0 ga (TypePatternToken t) = printText0 ga t
     printText0 ga (MixfixTypePattern ts) = fsep (map (printText0 ga) ts)
-    printText0 ga (BracketTypePattern k l _) = bracket k $ commas ga l
+    printText0 ga (BracketTypePattern k l _) = bracket k $ commaT_text ga l
     printText0 ga (TypePatternArg t _) = parens $ printText0 ga t
 
 bracket :: BracketKind -> Doc -> Doc
@@ -49,7 +44,7 @@ instance PrettyPrint Type where
     printText0 ga (TypeAppl t1 t2) = parens (printText0 ga t1) 
     			  <> parens (printText0 ga t2) 
     printText0 ga (TypeToken t) = printText0 ga t
-    printText0 ga (BracketType k l _) = bracket k $ commas ga l
+    printText0 ga (BracketType k l _) = bracket k $ commaT_text ga l
     printText0 ga (KindedType t kind _) = printText0 ga t  
 			  <> space <> colon <> printText0 ga kind
     printText0 ga (MixfixType ts) = fsep (map (printText0 ga) ts)
@@ -72,14 +67,14 @@ instance PrettyPrint Pred where
 				     
 instance PrettyPrint t => PrettyPrint (Qual t) where
     printText0 ga (ps :=> t) = (if null ps then empty
-			       else parens $ commas ga ps <+>
+			       else parens $ commaT_text ga ps <+>
 				    ptext implS <+> space) <>
 					       printText0 ga t
 
 -- no curried notation for bound variables 
 instance PrettyPrint TypeScheme where
     printText0 ga (TypeScheme vs t _) = noPrint (null vs) (text forallS
-						    <+> semis ga vs 
+						    <+> semiT_text ga vs 
 						    <+> text dotS <+> space)
 					 <> printText0 ga t
 
@@ -124,9 +119,9 @@ instance PrettyPrint Formula where
 					  <+> printText0 ga t2
     printText0 ga (DefFormula t _) = text defS <+> printText0 ga t
     printText0 ga (QuantifiedFormula q vs f _) =
-	printText0 ga q <+> semis ga vs <+> text dotS <+> printText0 ga f
+	printText0 ga q <+> semiT_text ga vs <+> text dotS <+> printText0 ga f
     printText0 ga (PolyFormula ts f _) = 
-	text forallS <+> semis ga ts <+> text dotS <+> printText0 ga f
+	text forallS <+> semiT_text ga ts <+> text dotS <+> printText0 ga f
 
 instance PrettyPrint Term where
     printText0 ga (CondTerm t1 f t2 _) =  printText0 ga t1
@@ -145,12 +140,12 @@ instance PrettyPrint Term where
 			<+> printText0 ga t
     printText0 ga (ApplTerm t1 t2 _) = printText0 ga t1
 			<+> parens (printText0 ga t2)
-    printText0 ga (TupleTerm ts _) = parens $ commas ga ts 
+    printText0 ga (TupleTerm ts _) = parens $ commaT_text ga ts 
     printText0 ga (TypedTerm term q typ _) = printText0 ga term
 			  <+> printText0 ga q
 			  <+> printText0 ga typ
     printText0 ga (QuantifiedTerm q vs t _) = printText0 ga q
-					  <+> semis ga vs 
+					  <+> semiT_text ga vs 
 					  <+> text dotS    
 					  <+> printText0 ga t
     printText0 ga (LambdaTerm ps q t _) = text lamS
@@ -174,10 +169,10 @@ instance PrettyPrint Term where
 				   <+> printText0 ga t
     printText0 ga (TermToken t) = printText0 ga t
     printText0 ga (MixfixTerm ts) = fsep $ map (printText0 ga) ts
-    printText0 ga (BracketTerm k l _) = bracket k $ commas ga l
+    printText0 ga (BracketTerm k l _) = bracket k $ commaT_text ga l
 
 instance PrettyPrint Pattern where 
-    printText0 ga (PatternVars vs _) = semis ga vs
+    printText0 ga (PatternVars vs _) = semiT_text ga vs
     printText0 ga (PatternConstr n t args _) = printText0 ga n 
 			  <+> colon
 			  <+> printText0 ga t 
@@ -187,9 +182,9 @@ instance PrettyPrint Pattern where
 	case l of 
 	       [TuplePattern _ _] -> printText0 ga $ head l 
 	       _ -> case k of 
-		    Parens -> bracket k $ semis ga l
-		    _ -> bracket k $ commas ga l
-    printText0 ga (TuplePattern ps _) = parens $ commas ga ps
+		    Parens -> bracket k $ semiT_text ga l
+		    _ -> bracket k $ commaT_text ga l
+    printText0 ga (TuplePattern ps _) = parens $ commaT_text ga ps
     printText0 ga (MixfixPattern ps) = fsep (map (printText0 ga) ps)
     printText0 ga (TypedPattern p t _) = printText0 ga p 
 			  <+> colon
@@ -234,7 +229,7 @@ instance PrettyPrint Kind where
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
 printList0 ga l = noPrint (null l)
 		      (if null $ tail l then printText0 ga $ head l
-		       else parens $ commas ga l)
+		       else parens $ commaT_text ga l)
 
 instance PrettyPrint Class where 
     printText0 ga (Downset t) = braces $ 
@@ -245,7 +240,7 @@ instance PrettyPrint Class where
 instance PrettyPrint InstOpId where
     printText0 ga (InstOpId n l _) = printText0 ga n 
 				     <> noPrint (null l) 
-					(brackets $ semis ga l)
+					(brackets $ semiT_text ga l)
 
 ------------------------------------------------------------------------
 -- item stuff
@@ -265,24 +260,24 @@ instance PrettyPrint ProgEq where
 
 instance PrettyPrint BasicItem where 
     printText0 ga (SigItems s) = printText0 ga s
-    printText0 ga (ProgItems l _) = text programS <+> semis ga l
+    printText0 ga (ProgItems l _) = text programS <+> semiT_text ga l
     printText0 ga (ClassItems i l _) = text classS <+> printText0 ga i
-			       <+> semis ga l
-    printText0 ga (GenVarItems l _) = text varS <+> semis ga l
+			       <+> semiT_text ga l
+    printText0 ga (GenVarItems l _) = text varS <+> semiT_text ga l
     printText0 ga (FreeDatatype l _) = text freeS <+> text typeS 
-				    <+> semis ga l
-    printText0 ga (GenItems l _) = text generatedS <+> braces (semis ga l)
+				    <+> semiT_text ga l
+    printText0 ga (GenItems l _) = text generatedS <+> braces (semiT_text ga l)
     printText0 ga (AxiomItems vs fs _) = (if null vs then empty
-			       else text forallS <+> semis ga vs)
+			       else text forallS <+> semiT_text ga vs)
 			       $$ vcat (map 
 					 (\x -> text dotS <+> printText0 ga x) 
 					 fs)
 
 instance PrettyPrint SigItems where 
     printText0 ga (TypeItems i l _) = text typeS <+> printText0 ga i 
-				      <+> semis ga l
-    printText0 ga (OpItems l _) = text opS <+> semis ga l
-    printText0 ga (PredItems l _) = text predS <+> semis ga l
+				      <+> semiT_text ga l
+    printText0 ga (OpItems l _) = text opS <+> semiT_text ga l
+    printText0 ga (PredItems l _) = text predS <+> semiT_text ga l
 
 instance PrettyPrint Instance where
     printText0 _ Instance = text instanceS
@@ -291,11 +286,11 @@ instance PrettyPrint Instance where
 instance PrettyPrint ClassItem where 
     printText0 ga (ClassItem d l _) = printText0 ga d $$ 
 				   if null l then empty 
-				      else braces (semis ga l)
+				      else braces (semiT_text ga l)
 
 instance PrettyPrint ClassDecl where 
-    printText0 ga (ClassDecl l k _) = commas ga l <> printKind ga k
-    printText0 ga (SubclassDecl l k s _) = commas ga l 
+    printText0 ga (ClassDecl l k _) = commaT_text ga l <> printKind ga k
+    printText0 ga (SubclassDecl l k s _) = commaT_text ga l 
 			                   <> printKind ga k
 					   <+> text lessS 
 					   <+> printText0 ga s
@@ -312,9 +307,9 @@ instance PrettyPrint ClassDecl where
 					       <+> printText0 ga t)
 
 instance PrettyPrint TypeItem where 
-    printText0 ga (TypeDecl l k _) = commas ga l <> 
+    printText0 ga (TypeDecl l k _) = commaT_text ga l <> 
 				  printKind ga k
-    printText0 ga (SubtypeDecl l t _) = commas ga l <+> text lessS 
+    printText0 ga (SubtypeDecl l t _) = commaT_text ga l <+> text lessS 
 					<+> printText0 ga t
     printText0 ga (IsoDecl l _) = cat(punctuate (text " = ") 
 				      (map (printText0 ga) l))
@@ -335,10 +330,10 @@ instance PrettyPrint TypeItem where
     printText0 ga (Datatype t) = printText0 ga t
 
 instance PrettyPrint OpItem where 
-    printText0 ga (OpDecl l t as _) = commas ga l <+> colon
+    printText0 ga (OpDecl l t as _) = commaT_text ga l <+> colon
 				   <+> (printText0 ga t
 					<> (if null as then empty else comma)
-					<> commas ga as)
+					<> commaT_text ga as)
     printText0 ga (OpDefn n ps s p t _) = (printText0 ga n 
 					<> fcat (map (printText0 ga) ps))
 			    <+> (colon <> if p == Partial 
@@ -348,7 +343,8 @@ instance PrettyPrint OpItem where
 			    <+> printText0 ga t
 
 instance PrettyPrint PredItem where 
-    printText0 ga (PredDecl l t _) = commas ga l <+> colon <+> printText0 ga t
+    printText0 ga (PredDecl l t _) = commaT_text ga l 
+				     <+> colon <+> printText0 ga t
     printText0 ga (PredDefn n ps f _) = (printText0 ga n 
 					 <> fcat (map (printText0 ga) ps))
 				     <+> text equivS
@@ -379,7 +375,7 @@ instance PrettyPrint Alternative where
 					<> fcat (map (printText0 ga) cs)
 					<> (case p of {Partial -> text quMark;
 						       _ -> empty})
-    printText0 ga (Subtype l _) = text typeS <+> commas ga l
+    printText0 ga (Subtype l _) = text typeS <+> commaT_text ga l
 
 instance PrettyPrint Components where 
     printText0 ga (Selector n p t _ _) = printText0 ga n 
@@ -387,10 +383,10 @@ instance PrettyPrint Components where
 							 _ -> empty } 
 					      <+> printText0 ga t)
     printText0 ga (NoSelector t) = printText0 ga t
-    printText0 ga (NestedComponents l _) = parens $ semis ga l
+    printText0 ga (NestedComponents l _) = parens $ semiT_text ga l
 
 instance PrettyPrint OpId where 
     printText0 ga (OpId n ts _) = printText0 ga n 
 				  <+> noPrint (null ts) 
-				      (brackets $ commas ga ts)
+				      (brackets $ commaT_text ga ts)
 

@@ -16,6 +16,7 @@ import HasCASL.PrintAs
 import HasCASL.Le
 import Data.Maybe
 import Common.PrettyPrint
+import Common.PPUtils
 import Common.Lib.Pretty as Pretty
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
@@ -78,7 +79,7 @@ instance PrettyPrint OpInfo where
     printText0 ga o = space <> colon <+> printText0 ga (opType o)
 		      <> (case opAttrs o of 
 			  [] -> empty 
-			  l -> comma <> commas ga l)
+			  l -> comma <> commaT_text ga l)
 		      <>  printText0 ga (opDefn o)
 
 instance PrettyPrint [OpInfo] where

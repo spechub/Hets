@@ -69,9 +69,9 @@ instance PrettyPrint BASIC_ITEMS where
 			 _ -> False
 		  _  -> False
     printText0 ga (Var_items l _) = 
-	text varS<>pluralS_doc l <+> semiT printText0 ga l
+	text varS<>pluralS_doc l <+> semiT_text ga l
     printText0 ga (Local_var_axioms l f p) = 
-	text forallS <+> semiT printText0 ga l
+	text forallS <+> semiT_text ga l
 		 $$ printText0 ga (Axiom_items f p)
     printText0 ga (Axiom_items f _) = 
 	vcat $ map (printAnnotedFormula_Text0 ga) f
@@ -109,9 +109,9 @@ instance PrettyPrint BASIC_ITEMS where
 		  _  -> False
     printLatex0 ga (Var_items l _) = 
 	hc_sty_plain_keyword (varS++pluralS l) <\+> 
-	semiT_latex printLatex0 ga l
+	semiT_latex ga l
     printLatex0 ga (Local_var_axioms l f p) = 
-	hc_sty_axiom "\\forall" <\+> semiT_latex printLatex0 ga l
+	hc_sty_axiom "\\forall" <\+> semiT_latex ga l
 		 $$ printLatex0 ga (Axiom_items f p)
     printLatex0 ga (Axiom_items f _) = 
 	vcat $ map (printAnnotedFormula_Latex0 ga) f
@@ -171,9 +171,9 @@ instance PrettyPrint SIG_ITEMS where
 	set_tabbed_nest_latex (semiAnno_latex ga l) 
 
 instance PrettyPrint SORT_ITEM where
-    printText0 ga (Sort_decl l _) = commaT printText0 ga l
+    printText0 ga (Sort_decl l _) = commaT_text ga l
     printText0 ga (Subsort_decl l t _) = 
-	hang (commaT printText0 ga l) 4 $ text lessS <+> printText0 ga t
+	hang (commaT_text ga l) 4 $ text lessS <+> printText0 ga t
     printText0 ga (Subsort_defn s v t f _) = 
 	-- TODO: lannos of f should printed after the equal sign 
 	printText0 ga s <+> ptext equalS <+> 
@@ -182,9 +182,9 @@ instance PrettyPrint SORT_ITEM where
     printText0 ga (Iso_decl l _) = 
 	fsep $ punctuate  (space <>text equalS) $ map (printText0 ga) l
 
-    printLatex0 ga (Sort_decl l _) = commaT_latex printLatex0 ga l
+    printLatex0 ga (Sort_decl l _) = commaT_latex ga l
     printLatex0 ga (Subsort_decl l t _) = 
-	hang_latex (commaT_latex printLatex0 ga l) 8 $ 
+	hang_latex (commaT_latex ga l) 8 $ 
 		   hc_sty_axiom lessS <\+> printLatex0 ga t
     printLatex0 ga (Subsort_defn s v t f _) = 
 	printLatex0 ga s <\+> equals_latex <\+> 
@@ -198,12 +198,12 @@ instance PrettyPrint SORT_ITEM where
 
 instance PrettyPrint OP_ITEM where
     printText0 ga (Op_decl l t a _) = 
-	hang (hang (commaT printText0 ga l) 
+	hang (hang (commaT_text ga l) 
 	            4 
 	            (colon <> printText0 ga t <> condComma)) 
              4 $
 	       if na then empty 
-	       else commaT printText0 ga a
+	       else commaT_text ga a
 	where na = null a
 	      condComma = if na then empty
 			  else comma
@@ -213,18 +213,18 @@ instance PrettyPrint OP_ITEM where
 				  <+> printText0 ga t
 
     printLatex0 ga (Op_decl l t a _) = 
-	{-cat [ cat [commaT_latex printLatex0 ga l
+	{-cat [ cat [commaT_latex ga l
 		  ,colon_latex <> printLatex0 ga t <> condComma] 
             , if na then empty 
-	      else commaT_latex printLatex0 ga a
+	      else commaT_latex ga a
 	    ]-}
         if na then ids_sig
 	else setTabWithSpaces_latex 4 
 		 <> 
 		 (tab_hang_latex ids_sig
-		                 4 $ commaT_latex printLatex0 ga a)
+		                 4 $ commaT_latex ga a)
 	where ids_sig = setTabWithSpaces_latex 6 
-			<> tab_hang_latex (commaT_latex printLatex0 ga l) 
+			<> tab_hang_latex (commaT_latex ga l) 
 	                                  6 
 	                                  (if na then sig 
 					   else sig <> comma_latex)
@@ -239,57 +239,57 @@ instance PrettyPrint OP_ITEM where
 instance PrettyPrint OP_TYPE where
     printText0 ga (Total_op_type l s _) = (if null l then empty
 					   else space 
-					        <> crossT printText0 ga l 
+					        <> crossT_text ga l 
 				                <+> text funS)
 				           <> space <> printText0 ga s
     printText0 ga (Partial_op_type l s _) = (if null l then text quMark 
 					     else space 
-                                                  <> crossT printText0 ga l 
+                                                  <> crossT_text ga l 
 					          <+> text (funS ++ quMark))
 					    <+> printText0 ga s
 
     printLatex0 ga (Total_op_type l s _) = 
 	(if null l then empty
 	 else space_latex <>
-	      set_tabbed_nest_latex (crossT_latex printLatex0 ga l
+	      set_tabbed_nest_latex (crossT_latex ga l
 				     <\+> hc_sty_axiom "\\rightarrow"))
 				     <~> printLatex0 ga s
     printLatex0 ga (Partial_op_type l s _) = 
 	(if null l then hc_sty_axiom quMark 
 	 else space_latex
-              <> crossT_latex printLatex0 ga l 
+              <> crossT_latex ga l 
 	      <\+> hc_sty_axiom ("\\rightarrow" ++ quMark))
 	<~> printLatex0 ga s
 
 instance PrettyPrint OP_HEAD where
     printText0 ga (Total_op_head l s _) = 
 	(if null l then empty 
-	 else parens(semiT printText0 ga l))
+	 else parens(semiT_text ga l))
 	<> colon
 	<+> printText0 ga s
     printText0 ga (Partial_op_head l s _) = 
 	(if null l then empty 
-	 else parens(semiT printText0 ga l))
+	 else parens(semiT_text ga l))
 	<> text (colonS ++ quMark)
         <+> printText0 ga s
 
     printLatex0 ga (Total_op_head l s _) = 
 	(if null l then empty 
-	 else parens_latex (semiT_latex printLatex0 ga l))
+	 else parens_latex (semiT_latex ga l))
 	<> colon_latex
 	<\+> printLatex0 ga s
     printLatex0 ga (Partial_op_head l s _) = 
 	(if null l then empty 
-	 else parens_latex(semiT_latex printLatex0 ga l))
+	 else parens_latex(semiT_latex ga l))
 	<> colon_latex <> hc_sty_axiom quMark
         <\+> printLatex0 ga s
 
 instance PrettyPrint ARG_DECL where
-    printText0 ga (Arg_decl l s _) = commaT printText0 ga l 
+    printText0 ga (Arg_decl l s _) = commaT_text ga l 
 			      <+> colon
 			      <> printText0 ga s
 
-    printLatex0 ga (Arg_decl l s _) = commaT_latex printLatex0 ga l 
+    printLatex0 ga (Arg_decl l s _) = commaT_latex ga l 
 			      <\+> colon_latex
 			      <> printLatex0 ga s
 
@@ -305,14 +305,14 @@ instance PrettyPrint OP_ATTR where
     printLatex0 ga (Unit_op_attr t) = hc_sty_id unitS <\+> printLatex0 ga t
 
 instance PrettyPrint PRED_ITEM where
-    printText0 ga (Pred_decl l t _) = commaT printText0 ga l 
+    printText0 ga (Pred_decl l t _) = commaT_text ga l 
 				  <+> colon <+> printText0 ga t
     printText0 ga (Pred_defn n h f _) = printText0 ga n 
 				        <> printText0 ga h
                                         <+> text equivS
 				        <+> printText0 ga f
 
-    printLatex0 ga (Pred_decl l t _) = commaT_latex printLatex0 ga l 
+    printLatex0 ga (Pred_decl l t _) = commaT_latex ga l 
 				  <\+> colon_latex <\+> printLatex0 ga t
     printLatex0 ga (Pred_defn n h f _) = printLatex0 ga n 
 				        <> printLatex0 ga h
@@ -321,16 +321,16 @@ instance PrettyPrint PRED_ITEM where
 
 instance PrettyPrint PRED_TYPE where
     printText0 _ (Pred_type [] _) = parens empty
-    printText0 ga (Pred_type l _) = crossT printText0 ga l
+    printText0 ga (Pred_type l _) = crossT_text ga l
 
     printLatex0 _ (Pred_type [] _) = parens_latex empty
-    printLatex0 ga (Pred_type l _) = crossT_latex printLatex0 ga l
+    printLatex0 ga (Pred_type l _) = crossT_latex ga l
 
 instance PrettyPrint PRED_HEAD where
-    printText0 ga (Pred_head l _) = parens (semiT printText0 ga l)
+    printText0 ga (Pred_head l _) = parens (semiT_text ga l)
 
     printLatex0 ga (Pred_head l _) = 
-	parens_latex (semiT_latex printLatex0 ga l)
+	parens_latex (semiT_latex ga l)
 
 instance PrettyPrint DATATYPE_DECL where
     printText0 ga (Datatype_decl s a _) = 
@@ -350,50 +350,50 @@ instance PrettyPrint DATATYPE_DECL where
 instance PrettyPrint ALTERNATIVE where
     printText0 ga (Total_construct n l _) = printText0 ga n 
 				 <> if null l then empty 
-				    else parens(semiT printText0 ga l)
+				    else parens(semiT_text ga l)
     printText0 ga (Partial_construct n l _) = printText0 ga n 
-				 <> parens(semiT printText0 ga l)
+				 <> parens(semiT_text ga l)
 				 <> text quMark
-    printText0 ga (Subsorts l _) = text sortS <+> commaT printText0 ga l 
+    printText0 ga (Subsorts l _) = text sortS <+> commaT_text ga l 
 
     printLatex0 ga (Total_construct n l _) = 
 	printLatex0 ga n <> if null l then empty 
-		            else parens_latex (semiT_latex printLatex0 ga l)
+		            else parens_latex (semiT_latex ga l)
     printLatex0 ga (Partial_construct n l _) = printLatex0 ga n 
-				 <> parens_latex (semiT_latex printLatex0 ga l)
+				 <> parens_latex (semiT_latex ga l)
 				 <> hc_sty_axiom quMark 
     printLatex0 ga (Subsorts l _) = 
-	hc_sty_plain_keyword sortS <\+> commaT_latex printLatex0 ga l 
+	hc_sty_plain_keyword sortS <\+> commaT_latex ga l 
 
 instance PrettyPrint COMPONENTS where
-    printText0 ga (Total_select l s _) = commaT printText0 ga l 
+    printText0 ga (Total_select l s _) = commaT_text ga l 
 				<> colon 
 				<> printText0 ga s 
-    printText0 ga (Partial_select l s _) = commaT printText0 ga l 
+    printText0 ga (Partial_select l s _) = commaT_text ga l 
 				<> text (colonS ++ quMark) 
 				<> printText0 ga s 
     printText0 ga (Sort s) = printText0 ga s 	  
 
     printLatex0 ga (Total_select l s _) = 
-	commaT_latex printLatex0 ga l <> colon_latex <> printLatex0 ga s 
+	commaT_latex ga l <> colon_latex <> printLatex0 ga s 
     printLatex0 ga (Partial_select l s _) = 
-	commaT_latex printLatex0 ga l 
+	commaT_latex ga l 
 			 <> colon_latex <> hc_sty_axiom quMark 
 			 <> printLatex0 ga s 
     printLatex0 ga (Sort s) = printLatex0 ga s 	  
 
 instance PrettyPrint VAR_DECL where
-    printText0 ga (Var_decl l s _) = commaT printText0 ga l 
+    printText0 ga (Var_decl l s _) = commaT_text ga l 
 				<> colon 
 				<> printText0 ga s 
 
-    printLatex0 ga (Var_decl l s _) = commaT_latex printLatex0 ga l 
+    printLatex0 ga (Var_decl l s _) = commaT_latex ga l 
 				<> colon_latex 
 				<> printLatex0 ga s 
 
 instance PrettyPrint FORMULA where
     printText0 ga (Quantification q l f _) = 
-	hang (printText0 ga q <+> semiT printText0 ga l) 4 $ 
+	hang (printText0 ga q <+> semiT_text ga l) 4 $ 
 	     char '.' <+> printText0 ga f
     printText0 ga (Conjunction l _) = 
 	sep $ prepPunctuate (ptext lAnd <> space) $ 
@@ -432,7 +432,7 @@ instance PrettyPrint FORMULA where
     printText0 _ (Unparsed_formula s _) = text s 
 
     printLatex0 ga (Quantification q l f _) = 
-	hang_latex (printLatex0 ga q <\+> semiT_latex printLatex0 ga l) 8 $ 
+	hang_latex (printLatex0 ga q <\+> semiT_latex ga l) 8 $ 
 	     hc_sty_axiom "\\bullet" <\+> printLatex0 ga f
     printLatex0 ga (Conjunction l _) = 
 	sep_latex $ prepPunctuate (hc_sty_axiom "\\wedge" <> space_latex) $ 
@@ -530,9 +530,9 @@ instance PrettyPrint TERM where
 					     <> printText0 ga s
     printText0 ga (Mixfix_cast s _) = text asS
 				     <+> printText0 ga s
-    printText0 ga (Mixfix_parenthesized l _) = parens (commaT printText0 ga l)
-    printText0 ga (Mixfix_bracketed l _) =   brackets (commaT printText0 ga l)
-    printText0 ga (Mixfix_braced l _) =        braces (commaT printText0 ga l)
+    printText0 ga (Mixfix_parenthesized l _) = parens (commaT_text ga l)
+    printText0 ga (Mixfix_bracketed l _) =   brackets (commaT_text ga l)
+    printText0 ga (Mixfix_braced l _) =        braces (commaT_text ga l)
 
     printLatex0 ga (Simple_id i) = printLatex0 ga i
     printLatex0 ga (Qual_var n t _) = -- HERE
@@ -570,11 +570,11 @@ instance PrettyPrint TERM where
     printLatex0 ga (Mixfix_cast s _) = text asS
 				     <+> printLatex0 ga s
     printLatex0 ga (Mixfix_parenthesized l _) = 
-	parens_latex (commaT_latex printLatex0 ga l)
+	parens_latex (commaT_latex ga l)
     printLatex0 ga (Mixfix_bracketed l _) =   
-	brackets (commaT printLatex0 ga l)
+	brackets_latex (commaT_latex ga l)
     printLatex0 ga (Mixfix_braced l _) =        
-	braces (commaT printLatex0 ga l)
+	braces_latex (commaT_latex ga l)
 
 instance PrettyPrint OP_SYMB where
     printText0 ga (Op_name o) = printText0 ga o
@@ -592,29 +592,29 @@ instance PrettyPrint OP_SYMB where
 instance PrettyPrint SYMB_ITEMS where
     printText0 ga (Symb_items k l _) = 
 	printText0 ga k <> ptext (pluralS_symb_list k l) 
-		        <+> commaT printText0 ga l
+		        <+> commaT_text ga l
 
     printLatex0 ga (Symb_items k l _) = 
-	print_kind_latex ga k l <\+> commaT_latex printLatex0 ga l
+	print_kind_latex ga k l <\+> commaT_latex ga l
 	
 
 instance PrettyPrint SYMB_ITEMS_LIST where
-    printText0 ga (Symb_items_list l _) = commaT printText0 ga l
+    printText0 ga (Symb_items_list l _) = commaT_text ga l
 
-    printLatex0 ga (Symb_items_list l _) = commaT_latex printLatex0 ga l
+    printLatex0 ga (Symb_items_list l _) = commaT_latex ga l
 
 instance PrettyPrint SYMB_MAP_ITEMS where
     printText0 ga (Symb_map_items k l _) = 
 	printText0 ga k <> ptext (pluralS_symb_list k l) 
-		        <+> commaT printText0 ga l
+		        <+> commaT_text ga l
 
     printLatex0 ga (Symb_map_items k l _) = 
-	print_kind_latex ga k l <\+> commaT_latex printLatex0 ga l
+	print_kind_latex ga k l <\+> commaT_latex ga l
 
 instance PrettyPrint SYMB_MAP_ITEMS_LIST where 
-    printText0 ga (Symb_map_items_list l _) = commaT printText0 ga l
+    printText0 ga (Symb_map_items_list l _) = commaT_text ga l
 
-    printLatex0 ga (Symb_map_items_list l _) = commaT_latex printLatex0 ga l
+    printLatex0 ga (Symb_map_items_list l _) = commaT_latex ga l
 
 instance PrettyPrint SYMB_KIND where 
     printText0 _ Implicit   = empty
@@ -702,12 +702,12 @@ condPrint_Mixfix pf parens_fun
 condPrint_Mixfix_text :: GlobalAnnos -> Id -> [TERM] -> Doc
 condPrint_Mixfix_text =
     condPrint_Mixfix printText0 parens 
-		     (<+>) fsep (commaT printText0)
+		     (<+>) fsep (commaT_text)
 
 condPrint_Mixfix_latex :: GlobalAnnos -> Id -> [TERM] -> Doc
 condPrint_Mixfix_latex =
     condPrint_Mixfix printLatex0 parens_latex 
-		     (<\+>) fsep_latex (commaT_latex printLatex0)
+		     (<\+>) fsep_latex (commaT_latex)
 
 -- printing consistent prefix application and predication
 print_prefix_appl :: (Doc -> Doc)    -- ^ a function that surrounds 
@@ -725,11 +725,11 @@ print_prefix_appl parens_fun commaT_fun ga po' l = po' <>
 
 print_prefix_appl_text :: GlobalAnnos -> Doc -> [TERM] -> Doc
 print_prefix_appl_text =
-    print_prefix_appl parens (commaT printText0)
+    print_prefix_appl parens (commaT_text)
 
 print_prefix_appl_latex :: GlobalAnnos -> Doc -> [TERM] -> Doc
 print_prefix_appl_latex = 
-    print_prefix_appl parens_latex (commaT_latex printLatex0)
+    print_prefix_appl parens_latex (commaT_latex)
 
 print_Literal :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc)
 	      -> (Doc -> Doc)    -- ^ a function that surrounds 
@@ -808,13 +808,13 @@ print_Literal pf parens_fun
 
 print_Literal_text :: GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal_text =
-    print_Literal printText0 parens (<+>) fsep (commaT printText0)
+    print_Literal printText0 parens (<+>) fsep (commaT_text)
 		  (char '.') (char 'E')
 
 print_Literal_latex :: GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal_latex =
     print_Literal printLatex0 parens_latex
-		  (<\+>) fsep_latex (commaT_latex printLatex0)
+		  (<\+>) fsep_latex (commaT_latex)
 		  (casl_normal_latex ".") (casl_normal_latex "E")
 
 -- printing consitent mixfix application or predication
