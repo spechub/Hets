@@ -201,14 +201,6 @@ uniResult s1 a s2 b =
                          showPrettyWithPos a "\n  " ++ s2 ++ " " ++
                          showPrettyWithPos b "") nullPos] Nothing
 
-instance PosItem a => PosItem (a, b) where
-    get_pos   = get_pos . fst
-    get_pos_l = get_pos_l . fst
-
-instance PosItem a => PosItem [a] where
-    get_pos l = let p = posOf l in 
-                 if p == nullPos then Nothing else Just p
-
 instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
     subst s (t1, t2) = (subst s t1, subst s t2)
     match tm rel (b1, (t1, t2)) (b2, (t3, t4)) =

@@ -17,6 +17,7 @@ import HasCASL.As
 import HasCASL.PrintAs()
 import Common.Id
 import Common.PrettyPrint
+import Common.Lib.Set
 
 -- | recursively substitute type names within a type 
 rename :: (TypeId -> Kind -> Int -> Type) -> Type -> Type
@@ -228,3 +229,13 @@ posOfVarDecl (VarDecl v _ _ ps) = firstPos [v] ps
 
 instance PosItem VarDecl where
     get_pos = Just . posOfVarDecl
+
+instance PosItem a => PosItem [a] where
+    get_pos l = let p = posOf l in 
+                 if p == nullPos then Nothing else Just p
+
+instance PosItem a => PosItem (a, b) where
+    get_pos (a, _) = get_pos [a]
+
+instance PosItem a => PosItem (Set a) where
+    get_pos = get_pos . toList
