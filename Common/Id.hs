@@ -33,9 +33,13 @@ type Pos = SourcePos
 nullPos :: Pos 
 nullPos = newPos "" 0 0 
 
-isNullPos :: Pos -> Bool
-isNullPos p = 
-    sourceName p == "" && sourceLine p == 0 && sourceColumn p == 0
+showPos :: Pos -> ShowS
+showPos p = let name = sourceName p
+		line = sourceLine p
+		column = sourceColumn p
+            in noShow (null name) (showString name . showChar ':') . 
+	       noShow (line == 0 && column == 0) 
+			  (shows line . showChar '.' . shows column)
 
 -- * Tokens as 'String's with positions that are ignored for 'Eq' and 'Ord'
 
@@ -45,7 +49,7 @@ data Token = Token { tokStr :: String
 		   } --deriving (Show)
 
 instance Show Token where
-  show (Token t _) = t
+  show = tokStr
 
 -- | simple ids are just tokens 
 type SIMPLE_ID = Token
@@ -88,9 +92,7 @@ data Id = Id [Token] [Id] [Pos]
 	  --deriving Show
 
 instance Show Id where
-  show (Id toks ids _) = 
-     concat (map show1 toks) ++ concat (map show ids)
-     where show1 (Token t _) = t
+  showsPrec _ = showId 
 
 -- | construct an 'Id' from a token list
 mkId :: [Token] -> Id

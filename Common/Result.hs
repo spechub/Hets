@@ -14,13 +14,14 @@ Portability :  portable
 
 -}
 
-module Common.Result (module Common.Result, showPretty) where
+module Common.Result(module Common.Result, showPretty) where
 
 import Common.Id
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Data.List
 import Common.Lib.Parsec.Pos
+import Common.Lib.Parsec.Error
 
 -- ---------------------------------------------------------------------
 -- diagnostic messages
@@ -31,7 +32,8 @@ maxdiags :: Int
 maxdiags = 20
 
 -- | severness of diagnostic messages
-data DiagKind = FatalError | Error | Warning | Hint | Debug deriving (Eq, Ord, Show)
+data DiagKind = FatalError | Error | Warning | Hint | Debug 
+		deriving (Eq, Ord, Show)
 
 -- | a diagnostic message with a position
 data Diagnosis = Diag { diagKind :: DiagKind
@@ -193,15 +195,21 @@ propagateErrors r =
 -- instances for Result
 -- ---------------------------------------------------------------------
 
+showErr :: ParseError -> String
+showErr err
+    = showPos (errorPos err) ":" ++ 
+      showErrorMessages "or" "unknown parse error" 
+                        "expecting" "unexpected" "end of input"
+                       (errorMessages err)
+
 instance Show Diagnosis where
     showsPrec _ = showPretty
 
 instance PrettyPrint Diagnosis where
     printText0 _ (Diag k s sp) = 
-	ptext "***" 
-        <+> ptext (show k)
-        <+> text (show sp)
-        <> text ","
+	text "***" 
+        <+> text (show k)
+        <+> text (showPos sp ",")
 	<+> text s
 
 instance PosItem Diagnosis where

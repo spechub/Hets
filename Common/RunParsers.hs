@@ -19,11 +19,13 @@ module Common.RunParsers (exec, StringParser, toStringParser, fromAParser)
 import Common.Lexer((<<), parseString)
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Pos
+import Common.Lib.Parsec.Error
 import Common.Anno_Parser
 import Common.AnnoState
 import Common.PrettyPrint
 import Common.GlobalAnnotations
 import Common.AnalyseAnnos(addGlobalAnnos)
+import Common.Id
 import Common.Result
 import System.Environment
 
@@ -89,5 +91,5 @@ parseSpec ga p = do str <- getContents
 
 showParse :: Either ParseError String -> String
 showParse e = case e of 
-		     Left err -> "parse error at " ++ show err ++ "\n"
+		     Left err -> "parse error at " ++ showErr err ++ "\n"
 		     Right x -> x
