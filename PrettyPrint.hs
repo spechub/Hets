@@ -16,6 +16,7 @@
 
 module PrettyPrint where
 
+import Id
 import Pretty
 import GlobalAnnotations
 
@@ -27,10 +28,17 @@ class Show a => PrettyPrint a where
     printLatex  ga a = printText  ga a
     printText   ga a = printText0 ga a
 
+-- copied instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
+instance PrettyPrint Token where
+ printText0 _ t = ptext (tokStr t)
+
+instance PrettyPrint Id where
+ printText0 _ i = text (showId i "")
+
 -- some useful instances ---------------------------------------------
 instance PrettyPrint String where
-    printText0  ga = ptext
-    printLatex0 ga = ptext
+    printText0  _ = ptext
+    printLatex0 _ = ptext
 
 instance (PrettyPrint a) => PrettyPrint [a] where
     printText0  ga l = cat $ map (printText0  ga) l

@@ -7,12 +7,14 @@
    Some datastructures for fast access of GlobalAnnotations
 
    todo:
+   did: 12.7.02
+   removed PrettyPrint from Id to avoid cyclic imports
 
 -}
 
 module GlobalAnnotations where
 
-import {-# SOURCE #-} Id 
+import Id
 
 import Graph
 import FiniteMap
