@@ -91,34 +91,42 @@ cast_L_S_Spec_defn :: LIB_ITEM  -> AS_Structured.SPEC_DEFN
 
 cast_S_L_Spec_defn (AS_Structured.Spec_defn x y z p) = 
     (AS_Library.Spec_defn x y z p) 
+cast_S_L_Spec_defn _ = error "wrong constructor for \"cast_S_L_Spec_defn\""
 
 cast_L_S_Spec_defn (AS_Library.Spec_defn x y z p) =
     (AS_Structured.Spec_defn x y z p)
+cast_L_S_Spec_defn _ = error "wrong constructor for \"cast_L_S_Spec_defn\""
 
 cast_S_L_View_defn :: AS_Structured.VIEW_DEFN -> LIB_ITEM 
 cast_L_S_View_defn :: LIB_ITEM  -> AS_Structured.VIEW_DEFN
 
 cast_S_L_View_defn (AS_Structured.View_defn w x y z p) = 
     (AS_Library.View_defn w x y z p) 
+cast_S_L_View_defn _ = error "wrong constructor for \"cast_S_L_View_defn\""
 
 cast_L_S_View_defn (AS_Library.View_defn w x y z p) =
     (AS_Structured.View_defn w x y z p)
+cast_L_S_View_defn _ = error "wrong constructor for \"cast_L_S_View_defn\""
 
 cast_A_L_Arch_spec_defn :: AS_Architecture.ARCH_SPEC_DEFN -> LIB_ITEM
 cast_L_A_Arch_spec_defn :: LIB_ITEM       -> AS_Architecture.ARCH_SPEC_DEFN
 
 cast_A_L_Arch_spec_defn (AS_Architecture.Arch_spec_defn x y p) =
     (AS_Library.Arch_spec_defn x y p)
+cast_A_L_Arch_spec_defn _ = 
+    error "wrong constructor for \"cast_A_L_Arch_defn\""
 
 cast_L_A_Arch_spec_defn (AS_Library.Arch_spec_defn x y p) =
     (AS_Architecture.Arch_spec_defn x y p)
+cast_L_A_Arch_defn _ = error "wrong constructor for \"cast_L_A_Arch_defn\""
 
 cast_A_L_Unit_spec_defn :: AS_Architecture.UNIT_SPEC_DEFN -> LIB_ITEM
 cast_L_A_Unit_spec_defn :: LIB_ITEM       -> AS_Architecture.UNIT_SPEC_DEFN
 
 cast_A_L_Unit_spec_defn (AS_Architecture.Unit_spec_defn x y p) =
     (AS_Library.Unit_spec_defn x y p)
+cast_A_L_Unit_defn _ = error "wrong constructor for \"cast_A_L_Unit_defn\""
 
 cast_L_A_Unit_spec_defn (AS_Library.Unit_spec_defn x y p) =
     (AS_Architecture.Unit_spec_defn x y p)
-
+cast_L_A_Spec_defn _ = error "wrong constructor for \"cast_L_A_Unit_defn\""
