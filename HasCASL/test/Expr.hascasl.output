@@ -3,6 +3,9 @@ type bool ::= true |
 var x : bool
 . case (var x : bool) of true : bool -> () | 
 			 false : bool -> ()
+. let x : bool = (op true : bool);
+      y : bool = (op false : bool);
+      z : bool = (var x : bool) in ()
 %% Type Constructors -----------------------------------------------------
 bool : Type %[type __ ::=
 	      true : -> __
@@ -14,5 +17,8 @@ x : bool %(var)%
 %% Sentences -------------------------------------------------------------
 case (var x : bool) of true : bool -> () | 
 		       false : bool -> () %()%
+let x : bool = (op true : bool);
+    y : bool = (op false : bool);
+    z : bool = (var x : bool) in () %()%
 %% Diagnostics -----------------------------------------------------------
 Hint (line 3, column 9) not a class 'bool'
