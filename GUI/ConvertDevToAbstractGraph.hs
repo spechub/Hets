@@ -28,8 +28,7 @@ import Syntax.AS_Library
 import Syntax.Print_HetCASL
 
 import Common.Lib.Graph
-import Common.PrettyPrint
-import Common.GlobalAnnotationsFunctions
+import Common.Id
 import Data.IORef
 import Static.DGToSpec
 import List(nub)
@@ -404,7 +403,7 @@ convertNodesAux convMaps descr graphInfo ((node,dgnode):lNodes) libname =
 getDGNodeName :: DGNode -> String
 getDGNodeName dgnode =
   case get_dgn_name dgnode of
-    Just simpleId -> pretty simpleId
+    Just simpleId -> tokStr simpleId
     Nothing -> ""
 
 -- gets the type of a development graph edge as a string
