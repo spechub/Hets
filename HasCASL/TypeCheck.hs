@@ -101,16 +101,23 @@ mUnifySc mt oi = do
      case ms of Nothing -> return Nothing
 		Just s -> return $ Just (s, subst s ty, oi)
 
+lookupError :: Maybe Type -> [OpInfo] -> String
+lookupError mt ois = 
+    (case mt of 
+     Nothing -> ""
+     Just ty -> "expected type: " ++  showPretty ty "\n")
+    ++ "known types:\n  " ++
+       showSepList (showString "\n  ") (showPretty . opType) ois "" 
+
 checkList :: (Maybe Type -> a -> State Env [(Subst, Type, a)])
 	  -> [Type] -> [a] -> State Env [(Subst, [Type], [a])]
 checkList _ [] [] = return [(eps, [], [])]
 checkList inf (ty : rty) (trm : rt) = do 
       fts <- inf (Just ty) trm
       combs <- mapM ( \ (sf, tyf, tf) -> do
-		      rts <- checkList inf (map (subst sf) rty) rt
+		      rts <- checkList inf (subst sf rty) rt
 		      return $ map ( \ (sr, tys, tts) ->
-				     let s3 = compSubst sf sr in
-			     (s3, subst s3 tyf : tys,
+			     (compSubst sf sr, subst sr tyf : tys,
 				     tf : tts)) rts) fts
       return $ concat combs
 checkList _ _ _ = error "checkList"
@@ -158,7 +165,8 @@ inferAppl inf appl mt t1 t2 = do
 			   appl tf ta)) args) ops
 	    let res = concat combs 
 	    if null res then 
-	       do addDiags [mkDiag Error "no type match for" (appl t1 t2)]
+	       do addDiags [mkDiag Error "wrongly typed application" 
+			    (appl t1 t2)]
 		  return res
 	       else  return res
 
@@ -186,8 +194,12 @@ infer mt trm = do
 	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
 	       mls <- mapM (mUnifySc mt) ois
 	       let ls = catMaybes mls
-	       if null ls then do addDiags [mkDiag Error "no match for" i]
-				  return []
+	       if null ls then 
+		  do addDiags [Diag Error 
+			       ("no type match for: " ++ showId i "\n"
+				++ lookupError mt ois)
+			       (posOfId i) ]
+		     return []
 	          else return $ map ( \ (s, ty, oi) -> 
 			      case opDefn oi of
 			      VarDefn -> (s, subst s ty, QualVar i ty ps)
@@ -212,8 +224,7 @@ infer mt trm = do
 		     Just s  -> do 
                          ls <- checkList infer (subst s vs) ts 
 			 return $ map ( \ (su, tys, trms) ->
-				   let s3 = compSubst s su in	
-                                   (s3 , ProductType (map (subst s3) tys) ps, 
+                                   (compSubst s su, ProductType tys ps, 
 				    TupleTerm trms ps)) ls
 	TypedTerm t qual ty ps -> do 
 	    case qual of 
@@ -245,8 +256,7 @@ infer mt trm = do
 			Just s -> do 
 			    rs <- infer Nothing t 
 			    return $ map ( \ (s2, _, tr) -> 
-				let s3 = compSubst s s2 in	   
-				(s3, subst s3 ty, 
+				(compSubst s s2, ty, 
 				 TypedTerm tr qual ty ps)) rs
 	QuantifiedTerm quant decls t ps -> do
 	    mapM_ addGenVarDecl decls

@@ -221,10 +221,10 @@ Error (line 54, column 42) ambiguous mixfix term
 Error (line 54, column 32) unexpected mixfix token: all
 Error (line 54, column 3) unexpected term '__'
 Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_13 ->? _var_14'
-Error (line 54, column 16) no type match for '(__=__) (__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
+Error (line 54, column 16) wrongly typed application '(__=__) (__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
 Error (line 54, column 16) no typing for '(__=__)(__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
 Error (line 60, column 9) no match for 'snd'
-Error (line 60, column 9) no type match for 'snd (x : s, y : t)'
+Error (line 60, column 9) wrongly typed application 'snd (x : s, y : t)'
 Error (line 60, column 9) no typing for 'snd(x : s, y : t) : t'
 Error (line 65, column 18) ambiguous mixfix term
 	def ((__res__)(x, y))
@@ -246,10 +246,10 @@ Warning (line 85, column 6) redeclared type 's'
 Error (line 85, column 6) merge: TypeVarDefn of 's'
 
 Error (line 87, column 9) no match for 'all'
-Error (line 87, column 9) no type match for 'all (p : s ->? Unit)'
+Error (line 87, column 9) wrongly typed application 'all (p : s ->? Unit)'
 Error (line 87, column 9) no typing for 'all(p : s ->? Unit) : Unit ->? Unit'
 Error (line 90, column 9) no match for 'And'
-Error (line 90, column 9) no type match for 'And (x : _var_62, y : Unit ->? Unit)'
+Error (line 90, column 9) wrongly typed application 'And (x : _var_62, y : Unit ->? Unit)'
 Error (line 90, column 9) no typing for 'And(x : _var_62, y : Unit ->? Unit) : Unit ->? Unit'
 Error (line 93, column 11) unexpected mixfix token: impl
 Error (line 93, column 9) unexpected pattern '__ impl __ (x, y : Pred Unit)'
@@ -259,13 +259,13 @@ Error (line 95, column 9) unexpected pattern '__ or __ (x, y : Pred Unit)'
 Error (line 96, column 19) unexpected mixfix token: x
 Error (line 95, column 48) unexpected mixfix token: all
 Error (line 98, column 9) no match for 'ex'
-Error (line 98, column 9) no type match for 'ex (p : s ->? Unit)'
+Error (line 98, column 9) wrongly typed application 'ex (p : s ->? Unit)'
 Error (line 98, column 9) no typing for 'ex(p : s ->? Unit) : Unit ->? Unit'
 Error (line 101, column 13) unexpected mixfix token: )
 Error (line 101, column 9) unexpected pattern 'ff ()'
 Error (line 101, column 29) unexpected mixfix token: all
 Error (line 103, column 9) no match for 'neg'
-Error (line 103, column 9) no type match for 'neg (r : Unit ->? Unit)'
+Error (line 103, column 9) wrongly typed application 'neg (r : Unit ->? Unit)'
 Error (line 103, column 9) no typing for 'neg(r : Unit ->? Unit) : Unit ->? Unit'
 Error (line 108, column 51) unexpected mixfix token: impl
 Error (line 108, column 22) unexpected mixfix token: all
@@ -311,7 +311,7 @@ Error (line 172, column 28) unexpected mixfix token: isChain
 Error (line 171, column 9) unexpected mixfix token: all
 Error (line 170, column 4) unexpected term '__'
 Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_94 ->? _var_95'
-Error (line 170, column 20) no type match for '(__=__) (__ in c -->? d,
+Error (line 170, column 20) wrongly typed application '(__=__) (__ in c -->? d,
 	 \ f : c ->? d . all
 			 (\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
 			 (\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
@@ -337,7 +337,7 @@ Error (line 182, column 46) ambiguous mixfix term
 Error (line 182, column 36) unexpected mixfix token: all
 Error (line 182, column 4) unexpected term '__'
 Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_101 ->? _var_102'
-Error (line 182, column 18) no type match for '(__=__) (__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
+Error (line 182, column 18) wrongly typed application '(__=__) (__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
 Error (line 182, column 18) no typing for '(__=__)(__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
 Error (line 0, column 0) undeclared type '_var_103'
 Error (line 0, column 0) undeclared type '_var_104'

@@ -130,16 +130,16 @@ Error (line 20, column 12) unexpected mixfix token: res
 Error (line 20, column 10) unexpected pattern '__ res __ (x : s, y : t)'
 Error (line 20, column 37) unexpected mixfix token: x
 Error (line 21, column 1) no match for 'fst'
-Error (line 21, column 1) no type match for 'fst (x : s, y : t)'
+Error (line 21, column 1) wrongly typed application 'fst (x : s, y : t)'
 Error (line 21, column 1) no typing for 'fst(x : s, y : t) : s'
 Error (line 22, column 1) no match for 'snd'
-Error (line 22, column 1) no type match for 'snd (x : s, y : t)'
+Error (line 22, column 1) wrongly typed application 'snd (x : s, y : t)'
 Error (line 22, column 1) no typing for 'snd(x : s, y : t) : t'
 Error (line 28, column 9) no match for 'all'
-Error (line 28, column 9) no type match for 'all (p : ? s)'
+Error (line 28, column 9) wrongly typed application 'all (p : ? s)'
 Error (line 28, column 9) no typing for 'all(p : ? s) : ? Unit'
 Error (line 30, column 9) no match for 'And'
-Error (line 30, column 9) no type match for 'And (x : _var_7, y : ? Unit)'
+Error (line 30, column 9) wrongly typed application 'And (x : _var_7, y : ? Unit)'
 Error (line 30, column 9) no typing for 'And(x : _var_7, y : ? Unit) : ? Unit'
 Error (line 32, column 12) unexpected mixfix token: impl
 Error (line 34, column 12) unexpected mixfix token: or
@@ -147,7 +147,7 @@ Error (line 34, column 10) unexpected pattern '__ or __ (x, y : (? Unit))'
 Error (line 35, column 19) unexpected mixfix token: x
 Error (line 34, column 44) unexpected mixfix token: all
 Error (line 37, column 3) no match for 'ex'
-Error (line 37, column 3) no type match for 'ex (p : ? s)'
+Error (line 37, column 3) wrongly typed application 'ex (p : ? s)'
 Error (line 37, column 3) no typing for 'ex(p : ? s) : ? Unit'
 Error (line 40, column 7) unexpected mixfix token: )
 Error (line 40, column 3) unexpected pattern 'ff ()'
