@@ -129,7 +129,10 @@ occursIn tm i =  Set.any (relatedTypeIds tm i) . idsOf (const True)
 
 relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
 relatedTypeIds tm i1 i2 =  
-    not $ Set.disjoint (superIds tm i1) $ superIds tm i2
+    not $ Set.disjoint (allRelIds tm i1) $ allRelIds tm i2
+
+allRelIds :: TypeMap -> TypeId -> Set.Set TypeId
+allRelIds tm i = Set.union (superIds tm i) $ subIds tm i 
 
 instance Unifiable Type where
     subst m t = case t of
@@ -278,6 +281,11 @@ expandAliases _ t = ([], [], t, False)
 -- | super type ids
 superIds :: TypeMap -> Id -> Set.Set Id
 superIds tm = supIds tm Set.empty . Set.single
+
+subIds :: TypeMap -> Id -> Set.Set Id
+subIds tm i = foldr ( \ j s ->
+		 if Set.member i $ superIds tm j then
+		      Set.insert j s else s) Set.empty $ Map.keys tm
 
 supIds :: TypeMap -> Set.Set Id -> Set.Set Id -> Set.Set Id
 supIds tm known new = 

@@ -113,6 +113,23 @@ checkSymbols s1 s2 r =
        (ptext "unknown symbols: " 
           <+> printText s) $ posOfId $ symName $ Set.findMin s
 
+dependentSyms :: Symbol -> Env -> SymbolSet
+dependentSyms sym sig = 
+    Set.fold ( \ op se -> 
+	       if Set.member sym $ subSymsOf op then
+	       Set.insert op se else se) Set.empty $ symOf sig
+
+hideRelSymbol :: Symbol -> Env -> Env
+hideRelSymbol sym sig = 
+    let depSyms = dependentSyms sym sig 
+	relSyms = relatedSyms sig sym
+	in
+    if Set.isEmpty depSyms then hideSymbol sym sig
+       else if Set.isEmpty relSyms then 
+	    hideSymbol sym $ Set.fold hideSymbol sig depSyms
+	    else sig
+
+
 hideSymbol :: Symbol -> Env -> Env
 hideSymbol sym sig = 
     let i = symName sym
@@ -152,6 +169,14 @@ subSymsOf :: Symbol -> SymbolSet
 subSymsOf sy = case symType sy of
      OpAsItemType (TypeScheme _ (_ :=> ty) _) -> subSyms (symEnv sy) ty
      _ -> Set.empty
+
+relatedSyms :: Env -> Symbol -> SymbolSet
+relatedSyms e sy = 
+    case symType sy of
+    TypeAsItemType _ -> Set.delete sy $ 
+			Set.image ( \ i -> sy { symName = i }) $
+			   allRelIds (typeMap e) $ symName sy
+    _ -> Set.empty
 
 closeSymbSet :: SymbolSet -> SymbolSet
 closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s)) 

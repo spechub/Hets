@@ -137,7 +137,6 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 					    Nothing -> return $ SubtypeDefn 
 						         newPat v ty f ps
 					    Just vds -> do 
-					        addSuperType ty i
 						checkUniqueVars vds
 						ass <- gets assumps
 				                mapM_ addVarDecl vds
@@ -159,6 +158,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 						          (Supertype v newPty
 							  $ item newF)
 						           inst fullKind i
+							addSuperType ty i
 							return $ SubtypeDefn 
 							       newPat v ty 
 							       newF ps

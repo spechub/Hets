@@ -63,8 +63,7 @@ inducedFromMorphism rmap sigma = do
        (ptext "the following symbols:"
         <+> printText incorrectRsyms 
         $$ ptext "are already mapped directly or do not match with signature"
-        $$ printText sigma) 
-       $ posOfId $ rawSymName $ Set.findMin incorrectRsyms
+        $$ printText sigma) nullPos
   -- compute the sort map (as a Map)
   myTypeIdMap <- foldr
               (\ (s, ti) m -> 
@@ -329,7 +328,12 @@ inducedFromToMorphism2 rmap sigma1 sigma2 = do
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
      smap1 <- case smap of
-                 Nothing -> fail "No signature morphism for symbol map"
+                 Nothing -> pfatal_error
+			    (ptext "No signature morphism for symbol map"
+			     $$ text "rmap" $$ printText rmap
+			     $$ text "sigma1" $$ printText sigma1
+			     $$ text "sigma2" $$ printText sigma2)
+			    nullPos
                  Just x -> return x
      -- 9./10. compute and return the resulting morphism
      symbMapToMorphism sigma1 sigma2 smap1
@@ -394,9 +398,6 @@ generatedSign syms sigma =
 cogeneratedSign :: SymbolSet -> Env -> Result Morphism
 cogeneratedSign syms sigma = 
     let signSyms = symOf sigma 
-	allSyms = Set.fold ( \ sy se -> 
-			       if Set.disjoint syms $ subSymsOf sy then
-			       se else Set.insert sy se) syms signSyms
-	subSigma = plainHide allSyms sigma
+	subSigma = Set.fold hideRelSymbol sigma syms
 	in checkSymbols syms signSyms $ 
 	   return $ embedMorphism subSigma sigma

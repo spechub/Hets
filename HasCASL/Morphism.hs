@@ -165,7 +165,8 @@ symbMapToMorphism sigma1 sigma2 smap = do
              ("symbMapToMorphism - Could not map sort "++showId i "")
              $ Map.lookup (Symbol { symName = i
 				  , symType = TypeAsItemType 
-				               $ typeKind k}) smap
+				               $ typeKind k
+				  , symEnv = sigma1 }) smap
     return (Map.insert i (symName sym) m1)
   myAsMap i (OpInfos ots) m = foldr (insFun i) m ots
   insFun i ot m = do
@@ -174,7 +175,8 @@ symbMapToMorphism sigma1 sigma2 smap = do
     sym <- maybeToResult nullPos 
              ("symbMapToMorphism - Could not map op "++showId i "")
              $ Map.lookup (Symbol { symName = i
-				  , symType = OpAsItemType osc}) smap
+				  , symType = OpAsItemType osc
+				  , symEnv = sigma1 }) smap
     k <- case symType sym of
         OpAsItemType sc -> return $ TySc sc
         _ -> plain_error (TySc osc)
