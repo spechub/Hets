@@ -21,7 +21,7 @@
 
 -}
 
-module Sublogics_CASL where
+module Sublogics where
 
 import AS_Annotation
 import AS_Basic_CASL
