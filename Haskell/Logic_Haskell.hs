@@ -36,9 +36,6 @@ import Logic.Logic              (Language,
 import Data.Dynamic             (Typeable)
 import Haskell.ATC_Haskell      -- ???
 
-import Common.PrettyPrint       (PrettyPrint)
--- import Common.ATerm.Conversion  -- ???
-
 import System.IO.Unsafe (unsafePerformIO)
 import Haskell.Hatchet.MultiModule (readModuleInfo)
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
@@ -70,16 +67,21 @@ import Haskell.HaskellUtils              (extractSentences)
 import Common.Result                     (Result (..))
 import Common.Lib.Pretty
 import Common.PrettyPrint
+import Common.PrintLaTeX
 
 import Haskell.ExtHaskellCvrt            (cvrtHsModule)
 
 instance Typeable ModuleInfo
 instance PrettyPrint ModuleInfo where
   printText0 ga s = text (show s)
+instance PrintLaTeX ModuleInfo where
+  printLatex0 ga s = text (show s)
 instance Typeable HsDecls
 instance Typeable AHsDecl
 instance PrettyPrint HsDecls where
   printText0 ga s = text (show s)
+instance PrintLaTeX HsDecls where
+  printLatex0 ga s = text (show s)
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
