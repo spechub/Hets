@@ -250,8 +250,14 @@ tax_objects = $(patsubst %.hs,%.o,$(tax_sources))
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 #.PRECIOUS: sources_hetcats.mk
 
+### call run_hc with
+#   $(call run_hc,<command-that-compiles-hetc-with-ghc>)
+# and it generates hetcats-make 
+# iff there was no error during compilation
+run_hc = ($(1) 2>&1 || $(RM) hetcats-make) | tee hetcats-make 
+
 hets: $(sources) $(derived_sources)
-	$(HC) --make -o $@ hets.hs $(HC_OPTS) 2>&1 | tee hetcats-make 
+	$(call run_hc, $(HC) --make -o $@ hets.hs $(HC_OPTS))
 
 hets-opt: 
 	$(MAKE) distclean
@@ -260,7 +266,7 @@ hets-opt:
 	$(MAKE) hets-optimized
 
 hets-optimized: $(derived_sources) 
-	$(HC) --make -O -o hets hets.hs $(HC_OPTS) -w 2>&1 | tee hetcats-make
+	$(call run_hc, $(HC) --make -O -o hets hets.hs $(HC_OPTS))
 	strip hets 
 
 hets-old: $(objects)
