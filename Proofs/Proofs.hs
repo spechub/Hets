@@ -524,40 +524,46 @@ hideTheoremShiftAux :: LibEnv -> DGraph -> ([DGRule],[DGChange])
 hideTheoremShiftAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 hideTheoremShiftAux
            libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) = 
-  if null (findProofBasisForHideTheoremShift dgraph ledge) then
-    hideTheoremShiftAux libEnv dgraph (rules,changes) list
-   else 
-    hideTheoremShiftAux libEnv newDgraph (newRules,newChanges) list
+  case (findProofBasisForHideTheoremShift dgraph ledge) of
+    Nothing -> hideTheoremShiftAux libEnv dgraph (rules,changes) list
+    Just (fstEdge,sndEdge) ->
+      hideTheoremShiftAux libEnv newDgraph
+	  (newRules,((InsertEdge fstEdge):
+		     ((InsertEdge sndEdge):newChanges))) list
 
   where
-  --  globThms = filter isGlobalThm (labEdges dgraph)
-    --consGlobThms = [edge| edge <- globThms, (getConservativity edge) <= Cons]
---    consGlobThmsFromTgt = [edge|edge@(source,_,_) <- consGlobThms,
-	--		  source == tgt]
---    globThmsFromSrc = [edge| edge@(_,target,_) <- globThms, target == src]
     morphism = dgl_morphism edgeLab
---    maybeThSrc = computeLocalTheory libEnv dgraph src
+    auxGraph = delLEdge ledge dgraph
+    (HidingThm hidingMorphism _) = (dgl_type edgeLab)
+    newRules = (HideTheoremShift ledge):rules
+    (newDgraph,newEdge) = changeDGraph (fstEdge, sndEdge) ledge
+    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+
+
+changeDGraph :: DGraph -> (LEdge DGLinkLab, LEdge DGLinkLab) -> GMorphism 
+	     -> DGraph
+changeDGraph dgraph (fstEdge, sndEdge) (src,tgt,edgeLab) =
+      (newDgraph, newEdge)
+  where
+    morphism = dgl_morphism edgeLab
     auxGraph = delLEdge ledge dgraph
     (HidingThm hidingMorphism _) = (dgl_type edgeLab)
     newEdge = (src,
 	       tgt,
 	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (HidingThm hidingMorphism (Proven [])),
+		       dgl_type = (HidingThm hidingMorphism (Proven [fstEdge,sndEdge])),
 		       dgl_origin = DGProof}
                )
-    newDgraph = insEdge newEdge auxGraph
-    newRules = (HideTheoremShift ledge):rules
-    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+    newDgraph = insEdge sndEdge (insEdge fstEdge (insEdge newEdge auxGraph))
 
 {- selects a proof basis for 'hide theorem shift' if there is one-}
 findProofBasisForHideTheoremShift :: DGraph -> LEdge DGLinkLab
-				  -> [LEdge DGLinkLab]
+			  -> Maybe ((LEdge DGLinkLab),(LEdge DGLinkLab))
 findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
-  if (null pathPairsFilteredByMorphism) then ([]::[LEdge DGLinkLab])
+  if (null pathPairsFilteredByMorphism) then Nothing
  {-    error (prettyPrintPossiblePathPairs dgraph hidingMorphism morphism
 	    possiblePathPairs)-}
-   else (fst (head pathPairsFilteredByMorphism))
-	 ++(snd (head pathPairsFilteredByMorphism))
+   else Just (createEdgeForPath fstPath, createEdgeForPath sndPath)
 
    where
     pathsFromSrc = getAllPathsOfTypeFrom dgraph src (ledge /=)
@@ -568,6 +574,22 @@ findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
     pathPairsFilteredByMorphism 
 	= filterPairsByResultingMorphisms possiblePathPairs
 	  hidingMorphism morphism
+    fstPath = fst (head pathPairsFilteredByMorphism)
+    sndPath = snd (head pathPairsFilteredByMorphism)
+
+
+createEdgeForPath :: [LEdge DGLinkLab] -> Maybe (LEdge DGLinkLab)
+createEdgeForPath path =
+  case (calculateMorphismOfPath path) of
+    Just morphism -> (getSourceNode (head path),
+                      getTargetNode (last path),
+		      DGLink {dgl_morphism = morphism,
+			      dgl_type = (GlobalThm Static.DevGraph.Open Cons
+					  Static.DevGraph.Open),
+			                -- conservativity conservStatus
+			      dgl_origin = DGProof}
+		     )    
+    Nothing -> error ("Could not determine morphism of path "2 ++ (show path))
 
 -- ----- DEBUGGING METHODS -----
 prettyPrintPossiblePathPairs :: DGraph -> GMorphism -> GMorphism
