@@ -17,6 +17,8 @@
 
    References:
 
+   The FLIRTS home page: http://www.tzi.de/flirts
+
    T. Mossakowski:
    Relating CASL with Other Specification Languages:
         the Institution Level
@@ -27,7 +29,8 @@
 
 -}
 
-module Comorphisms.LogicGraph
+module Comorphisms.LogicGraph (defaultLogic, logicList, logicGraph, 
+                               lookupLogic_in_LG, lookupComorphism_in_LG)
 where
 
 import Common.Result
@@ -46,19 +49,9 @@ import qualified Common.Lib.Map as Map
 import CASL.ATC_CASL
 import Modal.Logic_Modal
 
-logicList :: [AnyLogic]
-logicList = [Logic CASL, Logic HasCASL, Logic Haskell, 
-	     Logic Modal, Logic CspCASL, Logic Isabelle]
+-- This needs to be seperated for utils/InlineAxioms/InlineAxioms.hs
+import Comorphisms.LogicList
 
-inclusionList :: [AnyComorphism]
-inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2Haskell,
-                 Comorphism CASL2IsabelleHOL]
-
-comorphismList :: [AnyComorphism]
-comorphismList = inclusionList ++ []
-
-addLogicName :: AnyLogic -> (String,AnyLogic)
-addLogicName l@(Logic lid) = (language_name lid, l)
 addComorphismName :: AnyComorphism -> (String,AnyComorphism)
 addComorphismName c@(Comorphism cid) = (language_name cid, c)
 addInclusionNames :: AnyComorphism -> ((String,String),AnyComorphism)
@@ -67,6 +60,13 @@ addInclusionNames c@(Comorphism cid) =
     language_name $ targetLogic cid),
    c)
 
+inclusionList :: [AnyComorphism]
+inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2Haskell,
+                 Comorphism CASL2IsabelleHOL]
+
+comorphismList :: [AnyComorphism]
+comorphismList = inclusionList ++ []
+
 logicGraph :: LogicGraph
 logicGraph = 
   LogicGraph {
@@ -74,13 +74,6 @@ logicGraph =
     comorphisms = Map.fromList $ map addComorphismName comorphismList,
     inclusions =  Map.fromList $ map addInclusionNames inclusionList
              }
-
-defaultLogic :: AnyLogic
-defaultLogic = Logic CASL
-
-lookupLogic_in_LG :: String -> String -> AnyLogic
-lookupLogic_in_LG errorPrefix logname =
-    lookupLogic errorPrefix (logname) logicGraph
 
 lookupComorphism_in_LG :: String -> Result AnyComorphism
 lookupComorphism_in_LG coname =
