@@ -30,6 +30,10 @@ type CHANNEL_NAME = SIMPLE_ID
 
 type PROCESS_NAME = SIMPLE_ID
 
+type EVENT_SET = SORT
+
+type CSP_RENAMING = [OP_NAME]
+
 data EVENT        = Term TERM
                   | Send CHANNEL_NAME TERM 
                   | Receive CHANNEL_NAME VAR SORT
@@ -38,28 +42,24 @@ data EVENT        = Term TERM
 data PROCESS_DEFN = Basic PROCESS
 		   deriving (Show,Eq)
 
-data PROCESS      =  Named_process PROCESS_NAME
-                  |  Generic_named_process PROCESS_NAME TERM
-                  |  Skip
-                  |  Stop
-                  |  Prefix EVENT PROCESS
-{-
-                  | multiple_prefix VAR EVENT-SET PROCESS
--}
+data PROCESS      = Named_process PROCESS_NAME
+                  | Generic_named_process PROCESS_NAME TERM
+                  | Skip
+                  | Stop
+                  | Prefix EVENT PROCESS
+                  | Multiple_prefix VAR EVENT_SET PROCESS
                   | Sequential [PROCESS]
-
                   | External_choice [PROCESS]
                   | Internal_choice [PROCESS]
-{-
-                  | alphabet_parallel PROCESS EVENT-SET PROCESS
-                  | general_parallel PROCESS EVENT-SET EVENT-SET PROCESS
-                  | synchronous_parallel PROCESS+
-                  | interleaving_parallel PROCESS+
-                  | hiding PROCESS EVENT-SET
-                  | renaming PROCESS CSP-RENAMING
-                  | conditional FORMULA PROCESS PROCESS
-                  | channel_parallel PROCESS CHANNEL-NAME CHANNEL-NAME PROCESS
--}
+                  | Alphabet_parallel PROCESS EVENT_SET PROCESS
+                  | General_parallel PROCESS EVENT_SET EVENT_SET PROCESS
+                  | Synchronous_parallel [PROCESS]
+                  | Interleaving_parallel [PROCESS]
+                  | Hiding PROCESS EVENT_SET
+                  | Renaming PROCESS CSP_RENAMING
+                  | Process_conditional FORMULA PROCESS PROCESS
+		  | Guarded FORMULA PROCESS
+                  | Channel_parallel PROCESS CHANNEL_NAME CHANNEL_NAME PROCESS
 		   deriving (Show,Eq)
 
 
