@@ -19,7 +19,7 @@
    To appear in the CASL book.
 
    Todo:
-   Option: only the structure is analysed
+   Option: only the structure is analysed => also for symbol maps!
 
    Check that translations and reductions do not effect local env
 
