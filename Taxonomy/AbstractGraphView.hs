@@ -1,3 +1,14 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Uni Bremen 2004-2005
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable (uni)
+
+-}
+
 module Taxonomy.AbstractGraphView where
 
 {- Interface for graph viewing and abstraction.
@@ -33,10 +44,10 @@ import qualified Data.Graph.Inductive.Tree as T
 
 -- Which graph display tool to be used, perhaps make it more tool independent?
 
-instance Eq (DaVinciNode (String, Int, Int)) where
+instance Eq (DaVinciNode a) where
     (==) = eq1
     
-instance Eq (DaVinciArc (String, Int)) where
+instance Eq (DaVinciArc a) where
     (==) = eq1
     
 
