@@ -25,9 +25,13 @@
 \begin{verbatim}
 sorts Principal
 op 1 : Principal
+op P : Principal
+op Q : Principal
 op __&__ : Principal * Principal -> Principal
 op __|__ : Principal * Principal -> Principal
 pred __==>__ : Principal * Principal
+pred p : ()
+pred q : ()
 term modality Principal
 
 
@@ -47,17 +51,23 @@ term modality Principal
  . forall x:Principal . 1 | x = x %(ga_left_unit___|__)%
 
  . forall A, B, C:Principal . (A | B) & C = (A & C) | (B & C)
+
+ . [P]( . p => [Q] . q)
+
+ . < P > ( . p => < Q >  . q)
+
+ . [P | Q]( . p <=> [Q | P] . p)
+
 \end{verbatim}
 
 \section*{Dynamic}
 \begin{verbatim}
-sorts Prog
-op __* : Prog -> Prog
-op __seq__ : Prog * Prog -> Prog
-op __union__ : Prog * Prog -> Prog
-op skip : Prog
-op stop : Prog
-term modality Prog
+
+logic Modal
+Analyzing spec Dynamic
+*** Error CASL-lib/Modal/Dynamic.het:17.16, unexpected mixfix token: p
+
+Fail: user error (Stopped due to errors)
 
 \end{verbatim}
 \end{document}
