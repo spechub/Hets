@@ -81,7 +81,7 @@ import Common.PrettyPrint
 
 -- should be moved to eslewhere!
 
-lookupNode :: Node -> Graph a b -> b 
+lookupNode :: Node -> Graph a b -> a
 lookupNode n dg = lab' $ context n dg
 
 setFilter p s = fromList (filter p (toList s))
