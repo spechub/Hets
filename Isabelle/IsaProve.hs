@@ -215,13 +215,13 @@ formLemmas sen =
 freeTypesSen (Sentence t) = Sentence (freeTypesTerm t)
 
 freeTypesTerm :: Term -> Term
-freeTypesTerm (Const "O") = Const "OO"  
-freeTypesTerm (Const c) = Const c 
-freeTypesTerm (Free v) = Free v  
--- freeTypesTerm (Const "O" t) = Const "OO" (freeTypesTyp t) 
--- freeTypesTerm (Const c t) = Const c (freeTypesTyp t)
--- freeTypesTerm (Free v t) = Free v (freeTypesTyp t) 
-freeTypesTerm (Abs vs t f) = Abs [(freeTypesTerm x, freeTypesTyp y) | (x,y) <- vs] (freeTypesTerm t) f 
+--freeTypesTerm (Const "O") = Const "OO"  
+--freeTypesTerm (Const c) = Const c 
+--freeTypesTerm (Free v) = Free v  
+freeTypesTerm (Const "O" t) = Const "OO" (freeTypesTyp t) 
+freeTypesTerm (Const c t) = Const c (freeTypesTyp t)
+freeTypesTerm (Free v t) = Free v (freeTypesTyp t) 
+freeTypesTerm (Abs v ty t f) = Abs (freeTypesTerm v) (freeTypesTyp ty) (freeTypesTerm t) f 
 freeTypesTerm (App t1 t2 f) = App (freeTypesTerm t1) (freeTypesTerm t2) f
 freeTypesTerm (Case term alts) = 
   Case (freeTypesTerm term) (map freeTypesTermPair alts)

@@ -195,7 +195,7 @@ transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 
 var :: String -> Term
 --(c) var v = IsaSign.Free v noType isaTerm
-var v = IsaSign.Free v -- noType
+var v = IsaSign.Free v noType
 
 transVar :: VAR -> String
 transVar = showIsaSid
@@ -206,13 +206,14 @@ xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
 rvar :: Int -> String
 rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
 
---(c) quantifyIsa :: String -> (String, Typ) -> Term -> Term
---(c) quantifyIsa q (v,t) phi =
---(c)  App (Const q noType isaTerm) (Abs (Const v noType isaTerm) t phi NotCont)
---(c)      NotCont
 quantifyIsa :: String -> (String, Typ) -> Term -> Term
 quantifyIsa q (v,t) phi =
- App (Const q) (Abs [(Free v, t)] phi NotCont) NotCont
+  App (Const q noType) (Abs (Free v noType) t phi NotCont) NotCont
+--(c) App (Const q noType isaTerm) (Abs (Cont v noType isaTerm) t phi NotCont) 
+--(c) NotCont
+--quantifyIsa :: String -> (String, Typ) -> Term -> Term
+--quantifyIsa q (v,t) phi =
+-- App (Const q) (Abs [(Free v, t)] phi NotCont) NotCont
 
 quantify :: QUANTIFIER -> (VAR, SORT) -> Term -> Term
 quantify q (v,t) phi  = 
@@ -309,7 +310,7 @@ transTERM sign tr (Conditional t1 phi t2 _) =
        transTERM sign tr t1, transTERM sign tr t2]
 transTERM _sign _tr (Simple_id v) =
 --(c)  IsaSign.Free (transVar v) noType isaTerm
-  IsaSign.Free (transVar v) -- noType
+  IsaSign.Free (transVar v) noType
 --error "No translation for undisambiguated identifier"
 transTERM _sign _tr _ =
   error "CASL2IsabelleHOL.transTERM" 

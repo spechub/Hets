@@ -74,6 +74,8 @@ instance PrettyPrint Term where
   printText0 _ = text . showTerm -- outerShowTerm   
   -- back to showTerm, because meta !! causes problems with show ?thesis
 
+
+-- NO MORE NEEDED
 stringMap :: (a -> String) -> [a] -> String
 stringMap f ls = concat [" " ++ (f x) | x <- ls]
 
@@ -82,6 +84,8 @@ typedVars2st f g ls = concat [" (" ++ (f x) ++ "::" ++ (g y) ++ ")" | (x,y) <- l
 
 showTypedVars :: [(Term,Typ)] -> String
 showTypedVars ls = typedVars2st showTerm (showTyp 1000) ls
+---
+
 
 showQuantStr :: String -> String
 showQuantStr s | s == allS = "!"
@@ -90,14 +94,16 @@ showQuantStr s | s == allS = "!"
                | otherwise = error "IsaPrint.showQuantStr"
 
 showTerm :: Term -> String
-showTerm (Const c) = c
-showTerm (Free v) = v
-showTerm (Abs vs t NotCont) = lb++"%"++(showTypedVars vs)++" . "++showTerm t++rb
-showTerm (Abs vs t IsCont) = lb++"LAM"++(showTypedVars vs)++" . "++showTerm t++rb
+showTerm (Const c _) = c
+showTerm (Free v _) = v
+showTerm (Abs v _ t NotCont) = lb++"%"++(showTerm v)++" . "++showTerm t++rb
+showTerm (Abs v _ t IsCont) = lb++"LAM"++(showTerm v)++" . "++showTerm t++rb
+--showTerm (Abs vs t NotCont) = lb++"%"++(showTypedVars vs)++" . "++showTerm t++rb
+--showTerm (Abs vs t IsCont) = lb++"LAM"++(showTypedVars vs)++" . "++showTerm t++rb
 -- showTerm (Abs vs t NotCont) = lb++"% "++(stringMap (show . fst) vs)++" . "++showTerm t++rb
 -- showTeshowTerm (Abs vs t IsCont) = lb++"LAM "++(stringMap (show . fst) vs)++" . "++showTerm t++rb
-showTerm (App (Const q) (Abs vs t _) _) | q `elem` [allS, exS, ex1S] =
-  showQuant (showQuantStr q) vs t
+showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
+  showQuant (showQuantStr q) v ty t
 showTerm (Case term alts) =
   let sAlts = map showCaseAlt alts
   in 
@@ -131,28 +137,28 @@ showPattern :: Term -> String
 showPattern (App t t' _) = showPattern t ++ sp ++ showPattern t'
 showPattern t = showTerm t
 
-showQuant :: String -> [(Term, Typ)] -> Term -> String
-showQuant s vs term =
-  (s++sp++(showTypedVars vs)++" . "++showTerm term)
+showQuant :: String -> Term -> Typ -> Term -> String
+showQuant s var typ term =
+  (s++sp++(showTerm var)++" :: "++showTyp 1000 typ++" . "++showTerm term)
 -- showQuant :: String -> [String] -> Term -> String
 -- showQuant s vs term = 
 --  (s++sp++(stringMap showTerm vs)++" . "++showTerm term)
 
 outerShowTerm :: Term -> String
-outerShowTerm (App (Const q) (Abs vs t _) _) | q == allS = 
-  outerShowQuant "!!" vs t
-outerShowTerm (App (App (Const o) t1 _) t2 _) | o == impl =
+outerShowTerm (App (Const q _) (Abs v ty t _) _) | q == allS = 
+  outerShowQuant "!!" v ty t 
+outerShowTerm (App (App (Const o _) t1 _) t2 _) | o == impl =
   showTerm t1 ++ " ==> " ++ outerShowTerm1 t2
 outerShowTerm t = showTerm t
 
 outerShowTerm1 :: Term -> String
-outerShowTerm1 t@(App (App (Const o) _ _) _ _) | o == impl =
+outerShowTerm1 t@(App (App (Const o _) _ _) _ _) | o == impl =
   outerShowTerm t
 outerShowTerm1 t = showTerm t
 
-outerShowQuant :: String -> [(Term,Typ)] -> Term -> String
-outerShowQuant s vs term =
-  (s++sp++(showTypedVars vs)++" . "++outerShowTerm term)
+outerShowQuant :: String -> Term -> Typ -> Term -> String
+outerShowQuant s var typ term =
+  (s++sp++(showTerm var)++" :: "++showTyp 1000 typ++" . "++outerShowTerm term)
 
 
 {-   
@@ -222,9 +228,9 @@ binFunct s | s == eqv  = eqvPrec
 toPrecTree :: Term -> PrecTermTree
 toPrecTree trm =
   case trm of
-    App c1@(Const q) a2@(Abs _ _ _) _ | q `elem` [allS, exS, ex1S] -> 
+    App c1@(Const q _) a2@(Abs _ _ _ _) _ | q `elem` [allS, exS, ex1S] -> 
        Node (isaAppPrec $ con quantS) [toPrecTree c1, toPrecTree a2]
-    App (App t@(Const o) t3 _) t2 _ ->
+    App (App t@(Const o _) t3 _) t2 _ ->
       Node (binFunct o t) [toPrecTree t3, toPrecTree t2]
     App t1 t2 _ -> Node (isaAppPrec $ con dummyS) 
                    [toPrecTree t1, toPrecTree t2] 
@@ -239,14 +245,14 @@ showPTree (Node (PrecTerm term pre) annos) =
       rightChild = last annos
    in
      case term of
-            Const c | c == eq -> infixP pre "=" LeftAs leftChild rightChild
+          Const c _ | c == eq -> infixP pre "=" LeftAs leftChild rightChild
                     | c `elem` [conj, disj, impl] ->
                         infixP pre (drop 3 c) RightAs leftChild rightChild
                     | c == dummyS  -> simpleInfix pre leftChild rightChild
                     | c == isaPair -> pair leftChild rightChild
                     | c == quantS  -> quant leftChild rightChild
                     | otherwise    -> prefixP pre c leftChild rightChild
-            _ -> showTerm term
+          _ -> showTerm term
 
 {- Logical connectors: For readability and by habit they are written 
    at an infix position.
@@ -342,9 +348,9 @@ simpleInfix pAdult leftChild rightChild
 {- Quantification _in_ Formulas
 -}
 quant :: PrecTermTree -> PrecTermTree -> String
-quant (Node (PrecTerm (Const q) _) []) 
-          (Node (PrecTerm (Abs vs t _) _) []) = 
-              lb++showQuant (showQuantStr q)  vs t++rb
+quant (Node (PrecTerm (Const q _) _) []) 
+          (Node (PrecTerm (Abs v ty t _) _) []) = 
+              lb++showQuant (showQuantStr q) v ty t++rb
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 
 
