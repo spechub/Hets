@@ -36,7 +36,7 @@ write_LIB_DEFN opt ld = sequence_ $ map write_type $ outtypes opt
 	      case t of 
 	      HetCASLOut OutASTree Ascii -> 
 		  write_casl_asc (verbose opt) (casl_asc_filename opt) ld
-	      PrettyPrint PrettyLatex ->
+	      PrettyOut PrettyLatex ->
 		  write_casl_latex (verbose opt) (casl_latex_filename opt) ld
 	      _ -> trace ( "the outtype \"" ++ 
 		           show t ++ "\" is not implemented")
